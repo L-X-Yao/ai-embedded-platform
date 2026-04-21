@@ -153,19 +153,24 @@ ai-embedded-platform/
 
 ## 当前状态
 
-Sprint 0 已完成：
+Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/patches）
 - ✅ 核心文档（philosophy / wheel-contract / api-conventions / ai-workflow / debugging-playbook）
-- ✅ 7 个 ADR
+- ✅ 7 个 ADR（平台决策历史）
 - ✅ tooling/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
-- ✅ memory 6 条（用户背景 + 战略决策 + feedback）
+- ✅ memory 7 条（用户背景 + 战略决策 + 4 条 feedback）
 - ✅ 历史评估归档 `_eval/`
+- ✅ git 仓库（8 commits，vsf/ vendored 不 fork）
+- ✅ **第一个 wheel：`wheels/_draft/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
+- ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
 
 未开展：
-- 第一个真实项目（待用户选 PoC）
-- 基础 wheels（按项目触发，不预制）
+- 第一个真实项目（待用户提 PoC——触发 `ai-workflow.md` 任务类型 2）
+- 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
 - HIL 自动化（当前人工粘日志过渡）
+- `tooling/scripts/test_downstream.sh`（等 projects/ 有内容再写）
+- 硬件平台 port（国民技术/兆易/先辑——项目来时走 `vsf-addon/hal/driver/<vendor>/`）
 
 ## 下一步触发点
 
