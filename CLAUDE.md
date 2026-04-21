@@ -151,19 +151,73 @@ ai-embedded-platform/
 
 全部见 `docs/adr/README.md`。
 
-## Commit 规范
+## Commit 规范（严格）
 
-从 git log 归纳的现有风格：
+**格式**（不可破）：
 
-- 标题：`<type>(<scope>): <english summary>`
-  - summary 小写、祈使语气、< 70 字符
-  - scope 可选、小写 kebab（已出现：`_draft/log`）
-- body（可选）：改动值得解释时说 **why**（diff 已显示 what）
-- type 从已用过的挑（当前：`docs`、`wheel`）；新场景出现再加，**不预先枚举**
+```
+<type>(<scope>): <summary>
 
-AI 易踩的 2 个坑：
-- ❌ `feat:` / `chore:` 等 Conventional Commits 类型——本仓用意译（`docs` / `wheel`）
-- ❌ summary 中英混写
+<optional body>
+
+<optional footer>
+```
+
+### type（封闭集）
+
+只允许已列出的类型。**遇到不在列表里的场景，AI 必须先问用户拍板并把新类型追加到本节，再 commit。**
+
+- `docs` — 文档改动（`docs/`、`CLAUDE.md`、`README.md`、各 wheel README）
+- `wheel` — wheel 代码或结构改动（不含其 README，那归 `docs`）
+
+### scope（可选，与目录对齐）
+
+- `wheels/_draft/<name>/` → `_draft/<name>`
+- `wheels/<层>/<name>/` → `<层>/<name>`（例：`primitives/log`）
+- `docs/adr/` → `adr`
+- 顶层或跨多个 scope（`CLAUDE.md`、跨目录改动）→ 省略
+
+小写、kebab-case。
+
+### summary
+
+- 小写、**祈使语气动词开头**（`add` / `fix` / `trim` / `tighten` / `codify` / `relax` / `freeze`…）
+- **无结尾句号**
+- 整行 < 70 字符
+- 英文；禁止中英混排
+- 标点严格：`<type>`、`(<scope>)`、`:` 之间不空格；`:` 后**一个**空格
+
+### body（可选）
+
+- 说 **why**（原因 / 触发 / 权衡）——diff 已显示 what
+- 空行与标题隔开；每行 ≤ 72 字符
+- 单纯格式化 / typo / rename 可省 body
+
+### footer（可选）
+
+- 引用 ADR：`Relates to: ADR-NNN`
+- 引用既有 commit：`Follows <short-sha>`
+- AI 生成 commit **必带**（精确一行，模型变就换对应行）：
+  ```
+  Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+  ```
+
+### 拆分
+
+- 一 commit = 一逻辑改动
+- 跨 type 或跨 scope 必拆
+
+### AI 易踩的坑
+
+- ❌ Conventional Commits 类型（`feat:` / `chore:` / `refactor:` / `build:` / `ci:`）
+- ❌ summary 中英混排
+- ❌ summary 结尾加句号
+- ❌ summary 名词短语无动词（反例 `first wheel — leveled logging`；正例 `add leveled logging wheel`）
+- ❌ body 只说 what（反例 `update log.c`；正例 `fix race in log_emit flush`）
+
+### 新场景处理（escape hatch）
+
+遇到本规范未覆盖的情况（新 type / 新 scope 结构 / 特殊 footer / ...），AI **必须先问用户拍板**，拍板后将新规则追加到本节，再 commit。**不得沉默创造**。
 
 ## 当前状态
 
