@@ -1,0 +1,80 @@
+# Build artifacts
+build/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+*.elf
+*.hex
+*.bin
+*.map
+*.d
+*.ddc
+*.gcno
+*.gcda
+*.su
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+.cmake/
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# NuttX artifacts (inside _eval/)
+_eval/_compare/nuttx/.config
+_eval/_compare/nuttx/.config.old
+_eval/_compare/nuttx/Kconfig
+_eval/_compare/nuttx/boards/dummy/
+_eval/_compare/nuttx/staging/
+_eval/_compare/nuttx/.tmp_nuttx*
+_eval/_compare/nuttx/nuttx
+_eval/_compare/nuttx/nuttx.tgz
+_eval/_compare/nuttx/include/nuttx/config.h
+_eval/_compare/nuttx/sim-pac/
+_eval/_compare/apps/libapps.a
+_eval/_compare/apps/etctmp/
+
+# Ignore NuttX/Zephyr clones in _eval (kept as reference only, not versioned)
+# If we need to reproduce comparisons, we clone them fresh
+_eval/_compare/nuttx/
+_eval/_compare/zephyr/
+_eval/_compare/apps/
+
+# tooling generated
+tooling/patches/*.rej
+
+# OS-specific
+.DS_Store
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Local overrides
+CLAUDE.local.md
+*.local.md
