@@ -172,10 +172,13 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - `tooling/scripts/test_downstream.sh`（等 projects/ 有内容再写）
 - 硬件平台 port（国民技术/兆易/先辑——项目来时走 `vsf-addon/hal/driver/<vendor>/`）
 
-## 下一步触发点
+## 下一步触发点（Sprint 0 已封版）
 
-用户说"开始第 N 个项目 yyy" → 走 `ai-workflow.md` 任务类型 2。
+**无真实项目触发前不改 `docs/`**。继续 polish 文档 ROI 为负（规则未经项目检验 + 文档-代码比例已严重倒挂：~2000 行文档 vs 1 个 draft wheel）。
 
-用户说"加个 wheel xxx" → 走任务类型 1，**强制先 grep VSF**。
+解冻条件（触发就开工，未触发就别动文档）：
 
-用户说"项目 zzz 交付了" → 走任务类型 9（沉淀），不做沉淀 = 浪费这次经验。
+- 用户说"开始第 N 个项目 yyy" → 走 `ai-workflow.md` 任务类型 2
+- 用户说"加个 wheel xxx" → 走任务类型 1，**强制先 grep VSF**
+- 用户说"项目 zzz 交付了" → 走任务类型 9（沉淀）
+- 用户主动要求"平台自省" → 走任务类型 11（必须基于新发现，不做无素材 polish）

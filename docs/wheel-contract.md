@@ -65,7 +65,7 @@ python3 -m pytest test_*.py -v
 \`\`\`
 ```
 
-**就这么多**。draft 阶段求快，不求齐全。
+**最小门槛如此**。但 draft 也**允许**（且推荐）直接写接近 candidate 级的完整 README——设计热度在手时写比事后补便宜（log wheel 就是这样做的）。candidate/stable 的真实门槛是 §3.2/§3.3 内容 + 真实项目使用次数，不由 README 长短把关。
 
 ### 3.2 candidate 级完整要求
 
