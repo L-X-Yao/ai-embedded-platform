@@ -151,6 +151,20 @@ ai-embedded-platform/
 
 全部见 `docs/adr/README.md`。
 
+## Commit 规范
+
+从 git log 归纳的现有风格：
+
+- 标题：`<type>(<scope>): <english summary>`
+  - summary 小写、祈使语气、< 70 字符
+  - scope 可选、小写 kebab（已出现：`_draft/log`）
+- body（可选）：改动值得解释时说 **why**（diff 已显示 what）
+- type 从已用过的挑（当前：`docs`、`wheel`）；新场景出现再加，**不预先枚举**
+
+AI 易踩的 2 个坑：
+- ❌ `feat:` / `chore:` 等 Conventional Commits 类型——本仓用意译（`docs` / `wheel`）
+- ❌ summary 中英混写
+
 ## 当前状态
 
 Sprint 0 + Sprint 0.1（自审改进）已完成：
