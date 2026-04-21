@@ -78,3 +78,6 @@ desktop.ini
 # Local overrides
 CLAUDE.local.md
 *.local.md
+
+# Claude Code local state
+.claude/
