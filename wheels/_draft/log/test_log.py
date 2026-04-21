@@ -29,4 +29,33 @@ def test_all_cases_report_pass(sim_output):
 def test_expected_case_count(sim_output):
     _, out = sim_output
     passes = re.findall(r"^PASS: (\w+)$", out, re.MULTILINE)
-    assert len(passes) == 10, f"expected 10 cases, got {len(passes)}: {passes}"
+    assert len(passes) == 11, f"expected 11 cases, got {len(passes)}: {passes}"
+
+
+# --- release build verification (LOG_LEVEL_MAX=LOG_LEVEL_WARN) ---
+
+RELEASE_BIN = Path(__file__).parent / "build_release" / "log_test"
+
+
+@pytest.fixture(scope="module")
+def release_sim_output():
+    """Runs the test binary built with LOG_LEVEL_MAX=LOG_LEVEL_WARN.
+    Verifies DEBUG/INFO macros truly expanded to ((void)0) — no emit,
+    and (crucially) no arg evaluation (proves compile-time elimination)."""
+    if not RELEASE_BIN.exists():
+        pytest.skip(f"release binary not built: {RELEASE_BIN}")
+    r = subprocess.run([str(RELEASE_BIN)], capture_output=True, text=True, timeout=10)
+    return r.returncode, r.stdout
+
+
+def test_release_build_eliminates_debug_info(release_sim_output):
+    """At LOG_LEVEL_MAX=WARN, test_side_effect_at_default_level's
+    internal #if selects the 'warn max: 2 args evaluated' assertion.
+    If compile-time filter were broken (DEBUG/INFO still calling their
+    side_effect args), counter would be 4 and the assertion fails.
+    Thus: exit 0 on release build == compile-time elimination works."""
+    rc, out = release_sim_output
+    assert rc == 0, f"release build verification failed: rc={rc}\n{out}"
+    assert "PASS: test_side_effect_at_default_level" in out, \
+        f"side-effect test did not run in release build:\n{out}"
+    assert "DONE: 0 failures" in out, f"expected 0 failures:\n{out}"

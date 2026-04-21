@@ -24,12 +24,20 @@
 
 ```bash
 cd wheels/_draft/log
+
+# 默认构建（LOG_LEVEL_MAX=LOG_LEVEL_DEBUG，所有级别都输出）
 VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build
 cmake --build build
+
+# release 风格构建（LOG_LEVEL_MAX=LOG_LEVEL_WARN，DEBUG/INFO 被编译器消除）
+# 这个构建用于验证：DEBUG/INFO 的宏真的扩展成 ((void)0)，参数副作用不求值
+VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build_release -DCMAKE_C_FLAGS='-DLOG_LEVEL_MAX=LOG_LEVEL_WARN'
+cmake --build build_release
+
 python3 -m pytest test_log.py -v
 ```
 
-预期：10 个 C 测试 + 3 个 pytest 用例全绿。
+预期：**11 个 C 测试 + 4 个 pytest 用例全绿**（含 release 构建编译期消除验证）。
 
 ## API 摘要
 

@@ -46,18 +46,32 @@ typedef enum {
  * log_set_level() filters at runtime (strings still in binary).
  * ====================================================================== */
 
-#define LOG_ERROR(fmt, ...)  LOG_AT_(LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...)   LOG_AT_(LOG_LEVEL_WARN,  fmt, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...)   LOG_AT_(LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...)  LOG_AT_(LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+/* True compile-time elimination: levels above LOG_LEVEL_MAX expand to
+ * ((void)0), so both the log_emit() call AND argument evaluation (side
+ * effects!) are removed by preprocessor — no dependency on LTO. */
+#if LOG_LEVEL_MAX >= LOG_LEVEL_ERROR
+#   define LOG_ERROR(fmt, ...)  log_emit(LOG_LEVEL_ERROR, LOG_MODULE, (fmt), ##__VA_ARGS__)
+#else
+#   define LOG_ERROR(fmt, ...)  ((void)0)
+#endif
 
-/* Internal; not for direct use */
-#define LOG_AT_(level, fmt, ...)                                               \
-    do {                                                                       \
-        if ((int)(level) <= (int)LOG_LEVEL_MAX) {                              \
-            log_emit((level), LOG_MODULE, (fmt), ##__VA_ARGS__);               \
-        }                                                                      \
-    } while (0)
+#if LOG_LEVEL_MAX >= LOG_LEVEL_WARN
+#   define LOG_WARN(fmt, ...)   log_emit(LOG_LEVEL_WARN,  LOG_MODULE, (fmt), ##__VA_ARGS__)
+#else
+#   define LOG_WARN(fmt, ...)   ((void)0)
+#endif
+
+#if LOG_LEVEL_MAX >= LOG_LEVEL_INFO
+#   define LOG_INFO(fmt, ...)   log_emit(LOG_LEVEL_INFO,  LOG_MODULE, (fmt), ##__VA_ARGS__)
+#else
+#   define LOG_INFO(fmt, ...)   ((void)0)
+#endif
+
+#if LOG_LEVEL_MAX >= LOG_LEVEL_DEBUG
+#   define LOG_DEBUG(fmt, ...)  log_emit(LOG_LEVEL_DEBUG, LOG_MODULE, (fmt), ##__VA_ARGS__)
+#else
+#   define LOG_DEBUG(fmt, ...)  ((void)0)
+#endif
 
 /* ======================================================================
  * Runtime level control

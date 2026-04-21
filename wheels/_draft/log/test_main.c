@@ -239,6 +239,40 @@ static void test_time_fn_disable(void) {
     PASS();
 }
 
+/* Side-effect counter: proves compile-time filter either evaluates or
+ * doesn't evaluate its args. */
+static int g_se_counter = 0;
+static int side_effect(int x) { g_se_counter++; return x; }
+
+static void test_side_effect_at_default_level(void) {
+    /* At default LOG_LEVEL_MAX=LOG_LEVEL_DEBUG, all LOG_* macros expand
+     * to a real call → side effect IS evaluated. */
+    g_se_counter = 0;
+    capture_reset();
+    log_set_level(LOG_LEVEL_DEBUG);
+
+    #define LOG_MODULE "se"
+    LOG_DEBUG("dbg %d", side_effect(1));
+    LOG_INFO("info %d",  side_effect(2));
+    LOG_WARN("warn %d",  side_effect(3));
+    LOG_ERROR("err %d",  side_effect(4));
+    #undef LOG_MODULE
+    #define LOG_MODULE "test"
+
+#if LOG_LEVEL_MAX >= LOG_LEVEL_DEBUG
+    CHECK(g_se_counter == 4, "debug max: all 4 args evaluated");
+#elif LOG_LEVEL_MAX >= LOG_LEVEL_INFO
+    CHECK(g_se_counter == 3, "info max: 3 args evaluated, debug gone");
+#elif LOG_LEVEL_MAX >= LOG_LEVEL_WARN
+    CHECK(g_se_counter == 2, "warn max: 2 args evaluated, debug/info gone");
+#elif LOG_LEVEL_MAX >= LOG_LEVEL_ERROR
+    CHECK(g_se_counter == 1, "error max: 1 arg evaluated");
+#else
+    CHECK(g_se_counter == 0, "none: nothing evaluated");
+#endif
+    PASS();
+}
+
 static void test_sink_slots_exhausted(void) {
     /* remove existing */
     for (int i = 0; i < 8; i++) log_remove_sink(i);
@@ -275,6 +309,7 @@ static void run_tests(vsf_eda_t *eda, vsf_evt_t evt) {
         test_multi_sink();
         test_no_sinks_no_crash();
         test_time_fn_disable();
+        test_side_effect_at_default_level();
         test_sink_slots_exhausted();
 
         printf("DONE: %d failures\n", g_fail);
