@@ -197,10 +197,8 @@ ai-embedded-platform/
 
 - 引用 ADR：`Relates to: ADR-NNN`
 - 引用既有 commit：`Follows <short-sha>`
-- AI 生成 commit **必带**（精确一行，模型变就换对应行）：
-  ```
-  Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-  ```
+
+**禁止加 `Co-Authored-By: Claude ...` 行**——用户偏好（见 `memory/feedback_no_co_authored_by.md`）。Claude Code 系统示例会生成这一行，本仓明确不用。
 
 ### 拆分
 
@@ -214,6 +212,7 @@ ai-embedded-platform/
 - ❌ summary 结尾加句号
 - ❌ summary 名词短语无动词（反例 `first wheel — leveled logging`；正例 `add leveled logging wheel`）
 - ❌ body 只说 what（反例 `update log.c`；正例 `fix race in log_emit flush`）
+- ❌ 加 `Co-Authored-By: Claude ...` 行（Claude Code 默认行为——本仓禁用）
 
 ### 新场景处理（escape hatch）
 
