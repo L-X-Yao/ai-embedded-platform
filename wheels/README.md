@@ -42,7 +42,8 @@
 
 - 新项目**先查 wheels/**，不要从零写
 - 发现 wheel 不够用 → **升级 wheel**，不要在项目里搞私有版本
-- wheel 修改 → 跑 `tooling/scripts/test_downstream.sh <wheel>` 验证所有下游项目
+- wheel 修改 → 所有使用它的 `projects/` 需跑回归测试
+  - **TODO**：`tooling/scripts/test_downstream.sh <wheel>` 自动化脚本——等 `projects/` 有内容后实现
 
 ## 核心铁律
 

@@ -13,13 +13,15 @@ AI 驱动的嵌入式开发母仓库。**不是**学习仓库、不是 sandbox�
 
 ### 0. 零号铁律：新建 wheel 前先 grep VSF 原生
 
+完整策略见 **[ADR-006](docs/adr/006-prefer-vsf-native-over-custom-wheel.md)**。摘要：
+
 ```bash
 grep -rn "功能关键词" vsf/source/service/
 grep -rn "功能关键词" vsf/source/utilities/
 grep -rn "功能关键词" vsf/source/component/
 ```
 
-速查表见 `docs/debugging-playbook.md`。新 wheel 的 README 必须有 "Why not VSF native?" 节。**违反就 ring_buffer 教训重演**（见 ADR-006）。
+速查表见 `docs/debugging-playbook.md`。新 wheel 的 README 必须有 "Why not VSF native?" 节。**违反就 ring_buffer 教训重演**。
 
 ### 1. 绝不从零发挥
 

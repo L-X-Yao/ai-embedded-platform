@@ -1,5 +1,10 @@
 # 轮子合格定义（Wheel Contract）
 
+**定位**：这是**每个 wheel 的质量门清单**——单个 wheel 能不能从 draft 过审到 candidate/stable 的检查表。
+
+- 这个文档回答"一个 wheel 过不过审"
+- `api-conventions.md` 回答"API 怎么写才合规"
+
 一个目录要被放进 `wheels/<层>/`（非 `_draft/`），必须满足本文档清单。没满足就还是草稿。
 
 ## 0. 三级门槛（按状态）
@@ -14,23 +19,15 @@
 
 ## 1. 零号铁律：Why not VSF native?
 
-**新建 wheel 的第一件事**：检查 VSF 是否已有等价物。
+完整策略见 **[ADR-006](adr/006-prefer-vsf-native-over-custom-wheel.md)**（单一来源）。
 
-必须在 README 里写一节：
+**本文关心的验收点**：
 
-```markdown
-## 为什么不用 VSF 原生？
+- 每个 wheel 的 README 必须有 "为什么不用 VSF 原生？" 一节
+- 该节必须列出已检查的 VSF 模块 + 结论（等价物不存在 / 存在但缺 X 功能）
+- 如果等价物存在且功能够用 → **不做这个 wheel**，应直接文档化"请使用 vsf_xxx"
 
-已检查以下 VSF 模块：
-- `vsf_xxx`：✓ / ✗（原因）
-- `vsf_yyy`：✓ / ✗（原因）
-
-结论：VSF 无等价物 / VSF 有部分等价物但缺 A/B 功能 / VSF 等价物语义不符因 C
-```
-
-**如果等价物存在且功能够用 → 不做这个 wheel**，直接文档化"用 vsf_xxx"。
-
-常见等价物速查见 `docs/debugging-playbook.md` → "VSF 数据结构速查表"。
+速查表：`docs/debugging-playbook.md` → "VSF 数据结构速查表"。
 
 ## 2. 结构（强制）
 
@@ -144,13 +141,18 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 
 ## 5. API 设计规则（强制）
 
-遵守 `docs/api-conventions.md`。关键点：
+**完整规则见 [`docs/api-conventions.md`](api-conventions.md)**（单一来源，不在本文重复）。
 
-- 命名前缀 `<wheel>_*`
-- 错误码用 `vsf_err_t`
-- 返回值 0 成功 / 负数错误
-- Context 调用方分配
-- 线程安全必须在头文件注释里声明
+**本文关心的验收点**：
+- README 或代码中有"Convention Deviations"节——如偏离 api-conventions 需列出并说明理由
+- 否则：wheel 必须遵守 api-conventions 全部强制条款
+
+**文档与行为绑定**（强制）：
+- 每个公开函数的 header 注释必须描述**完整行为**：输入约束、输出、边界（NULL / 0 / 上限）、错误条件、线程安全
+- 测试必须覆盖每个文档描述的行为点——尤其 NULL / 0 / 边界输入
+- **文档说了什么、测试必须测什么**。文档与代码漂移被 CI 抓 = 比被用户抓便宜
+
+（反例：log wheel 初版 README 写 "NULL = 关时间戳" 但代码 fallback 到默认；测试 catch 了。这条规则就是从这次经验来的。）
 
 ## 6. 跨平台抽象（强制）
 

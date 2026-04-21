@@ -6,14 +6,10 @@
 
 **触发**：用户说"给我写个 xxx"，或项目中发现需要一个通用组件。
 
+**零号铁律**：新建 wheel 前先查 VSF 原生——完整策略见 [ADR-006](adr/006-prefer-vsf-native-over-custom-wheel.md)。
+
 1. **查重（wheels 内）**：`ls wheels/` + `ls wheels/_draft/`。已有？去用。
-2. **查 VSF 原生（零号铁律）**：
-   ```
-   grep -rn "关键词" vsf/source/service/
-   grep -rn "关键词" vsf/source/utilities/
-   grep -rn "关键词" vsf/source/component/
-   ```
-   VSF 常已提供。速查表见 `debugging-playbook.md`。
+2. **查 VSF 原生**（按 ADR-006）：grep `vsf/source/service/` + `utilities/` + `component/`。速查表 `debugging-playbook.md`。
 3. **写 "Why not VSF native?" 提案**：说明 VSF 等价物的不足。无足够理由 → **放弃这个 wheel**。
 4. **对齐 API（人审批）**：列 5-10 个关键函数签名 + 2 个使用示例，给用户 15 分钟拍板。
 5. **草稿化**：放 `wheels/_draft/<name>/`，按 `wheel-contract.md` §3.1 搭最小结构。

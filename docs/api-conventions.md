@@ -1,6 +1,11 @@
 # API 约定：跨 wheel 一致性
 
-本文档**在所有 wheel 之间强制统一的约定**。每个 wheel 的 contract 要求遵循本文档。
+**定位**：这是**跨 wheel 的风格统一规则**。目的是整个平台的 wheels 看起来像一套东西，而不是各说各话。
+
+- 这个文档回答"怎么写 API"
+- `wheel-contract.md` 回答"wheel 什么时候能过审"
+
+每个 wheel 必须遵守本文档。偏离条款需在 wheel README 的"Convention Deviations"节说明理由。
 
 ## 1. 命名
 
@@ -54,19 +59,37 @@
 
 ### 2.1 返回值约定
 
-所有可失败函数：
-- `0` → 成功
-- 负数 → 错误（按 POSIX errno 命名约定，正数保留给"有意义的正返回"如字节数）
+按函数语义分三类：
 
-**错误码来源**：**复用 VSF `vsf_err_t`**（`-VSF_ERR_*`），不自造新错误码空间。
+**(a) 纯状态函数** — 用 `vsf_err_t`，复用 VSF 错误码空间
 
 ```c
 vsf_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_cfg_t *cfg);
 // 返回: VSF_ERR_NONE (0) / -VSF_ERR_NOT_READY / -VSF_ERR_FAIL / ...
-
-size_t mpu6050_read_fifo(mpu6050_t *dev, uint8_t *buf, size_t len);
-// 返回: 实际读取字节数（可能 < len）
 ```
+
+**(b) 返回有意义数值的函数** — 正数是有效值，可能用负数或 0 表示错误（POSIX 风格）
+
+```c
+size_t ring_buffer_write(ring_buffer_t *rb, const uint8_t *data, size_t len);
+// 返回: 实际写入字节数（可能 < len；0 = 写不进去，满了）
+
+int log_add_sink(log_sink_fn fn, void *ctx);
+// 返回: sink id >=0，或 -1 失败（POSIX 风格，类比 open/socket）
+
+int some_fd_open(const char *path);
+// 返回: fd >=0，或 -1 失败
+```
+
+**何时选 (b) 不选 (a)**：函数本质要**返回一个值**（id / size / count / fd）。硬塞 `vsf_err_t` 就得用 out-parameter，难用。
+
+**(c) 布尔函数** — 用 `bool`（命名 `xxx_is_xxx`）
+
+```c
+bool ring_buffer_is_empty(ring_buffer_t *rb);
+```
+
+**原则**：不自造错误码空间——要么 `vsf_err_t`，要么 POSIX 风格 -1。不要写"自己一套 `MYWHEEL_ERR_*` 枚举"。
 
 ### 2.2 不用 `errno` 全局变量
 
