@@ -1,0 +1,2 @@
+add_subdirectory(74hc165)
+add_subdirectory(74hc595)

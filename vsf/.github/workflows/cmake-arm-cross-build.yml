@@ -1,0 +1,78 @@
+name: vsf cmake arm cross build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  arm-cross-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aic8800] # Removed: m484, mps2
+        # all available releases in https://github.com/carlosperate/arm-none-eabi-gcc-action
+        cc: [
+          'latest',
+          '15.2.Rel1',
+          '14.3.Rel1',
+          '14.2.Rel1',
+          '13.3.Rel1',
+          '12.3.Rel1',
+          '11.3.Rel1',
+          '10.3-2021.10',
+          '9-2019-q4',
+          '8-2019-q3',
+          '7-2018-q2',
+          '6-2017-q2',
+          '5-2016-q3',
+          '4.9-2015-q3'
+        ]
+        os: [ubuntu-latest]
+        exclude:
+          # vsfteam/vsf: Linking error on arm-none-eabi-gcc-7:
+          #   ld: region `FLASH' overflowed by 27580 bytes
+          # vsfteam/vsf-all-in-one: Linking error on arm-none-eabi-gcc-5:
+          #   ld: region `FLASH' overflowed by 44 bytes
+          - os: ubuntu-latest
+            cc: 7-2018-q2
+          - os: ubuntu-latest
+            cc: 5-2016-q3
+          - os: ubuntu-latest
+            cc: 4.9-2015-q3
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true # without recursive
+
+    - name: get latest cmake and ninja
+      uses: lukka/get-cmake@latest
+
+    - name: arm-none-eabi-gcc
+      uses: carlosperate/arm-none-eabi-gcc-action@v1
+      with:
+        release: ${{matrix.cc}}
+
+    - name: install depends
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+      shell: bash
+
+    - name: configure cmake
+      working-directory: ${{github.workspace}}/example/template/project/cmake/${{matrix.target}}
+      run: |
+        cmake --version
+        cmake -GNinja -B ./build
+      env:
+        VSF_PATH: ${{github.workspace}}
+
+    - name: build
+      working-directory: ${{github.workspace}}/example/template/project/cmake/${{matrix.target}}
+      run: cmake --build ./build -v

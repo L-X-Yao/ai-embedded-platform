@@ -1,0 +1,26 @@
+# arch specified
+if(${VSF_ARCH_SERIES} STREQUAL "arm")
+elseif(${VSF_ARCH_SERIES} STREQUAL "rv")
+elseif(${VSF_ARCH_SERIES} STREQUAL "x86")
+elseif(${VSF_ARCH_SERIES} STREQUAL "x64")
+elseif(${VSF_ARCH_SERIES} STREQUAL "generic")
+else()
+    message(FATAL_ERROR "ARCH ${VSF_ARCH_SERIES} not supported yet")
+endif()
+
+message(STATUS "Compiler: ${CMAKE_C_COMPILER_ID}")
+message(STATUS "\tCC: ${CMAKE_C_COMPILER}")
+message(STATUS "\tCXX: ${CMAKE_CXX_COMPILER}")
+message(STATUS "\tASM: ${CMAKE_ASM_COMPILER}")
+message(STATUS "\tOBJCOPY: ${CMAKE_OBJCOPY}")
+message(STATUS "\tOBJDUMP: ${CMAKE_OBJDUMP}")
+message(STATUS "\tSIZE: ${CMAKE_SIZE}")
+
+if(("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "AppleClang") OR ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"))
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -fdiagnostics-color=always")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions")
+
+    foreach(api ${VSF_TARGET_WRAPPER_LIST})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--wrap=${api}")
+    endforeach()
+endif()

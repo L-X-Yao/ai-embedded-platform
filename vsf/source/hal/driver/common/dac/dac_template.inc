@@ -1,0 +1,394 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+#if VSF_HAL_USE_DAC == ENABLED
+
+/*============================ INCLUDES ======================================*/
+/*============================ MACROS ========================================*/
+
+
+#if defined(VSF_DAC_CFG_IMP_RENAME_DEVICE_PREFIX) && (VSF_DAC_CFG_IMP_RENAME_DEVICE_PREFIX == ENABLED)
+#   define vsf_real_dac_t                      VSF_MCONNECT(VSF_DAC_CFG_IMP_DEVICE_PREFIX, _t)
+#   define vsf_real_dac_capability             VSF_MCONNECT(VSF_DAC_CFG_IMP_DEVICE_PREFIX, _capability)
+#   define vsf_real_dac_ctrl                   VSF_MCONNECT(VSF_DAC_CFG_IMP_DEVICE_PREFIX, _ctrl)
+#   define vsf_real_dac_get_configuration      VSF_MCONNECT(VSF_DAC_CFG_IMP_DEVICE_PREFIX, _get_configuration)
+#else
+#   define vsf_real_dac_t                      VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_t)
+#   define vsf_real_dac_capability             VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_capability)
+#   define vsf_real_dac_ctrl                   VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_ctrl)
+#   define vsf_real_dac_get_configuration      VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_get_configuration)
+#endif
+
+#ifndef VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY
+#   define  VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY              DISABLED
+#endif
+
+#ifndef VSF_DAC_CFG_REIMPLEMENT_API_CTRL
+#   define  VSF_DAC_CFG_REIMPLEMENT_API_CTRL                    DISABLED
+#endif
+
+#ifndef VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION        DISABLED
+#endif
+
+#ifdef VSF_DAC_CFG_IMP_REMAP_PREFIX
+#   undef VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY
+#   define VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY               ENABLED
+#   undef VSF_DAC_CFG_REIMPLEMENT_API_CTRL
+#   define VSF_DAC_CFG_REIMPLEMENT_API_CTRL                     ENABLED
+#   undef VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION        ENABLED
+#endif
+
+#if VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+#   ifndef VSF_DAC_CFG_CAPABILITY_IRQ_MASK
+#       define VSF_DAC_CFG_CAPABILITY_IRQ_MASK                  VSF_DAC_IRQ_ALL_BITS_MASK
+#   endif
+#   ifndef VSF_DAC_CFG_CAPABILITY_MAX_RESOLUTION_BITS
+#       define VSF_DAC_CFG_CAPABILITY_MAX_RESOLUTION_BITS       12
+#   endif
+#   ifndef VSF_DAC_CFG_CAPABILITY_MIN_RESOLUTION_BITS
+#       define VSF_DAC_CFG_CAPABILITY_MIN_RESOLUTION_BITS       8
+#   endif
+#   ifndef VSF_DAC_CFG_CAPABILITY_CHANNEL_COUNT
+#       define VSF_DAC_CFG_CAPABILITY_CHANNEL_COUNT             4
+#   endif
+#endif
+
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ IMPLEMENTATION ================================*/
+
+#if VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+vsf_dac_capability_t vsf_real_dac_capability(vsf_real_dac_t *dac_ptr)
+{
+    vsf_dac_capability_t dac_capability = {
+        .irq_mask               = VSF_DAC_CFG_CAPABILITY_IRQ_MASK,
+        .max_resolution_bits    = VSF_DAC_CFG_CAPABILITY_MAX_RESOLUTION_BITS,
+        .min_resolution_bits    = VSF_DAC_CFG_CAPABILITY_MIN_RESOLUTION_BITS,
+        .channel_count          = VSF_DAC_CFG_CAPABILITY_CHANNEL_COUNT,
+    };
+
+    return dac_capability;
+}
+#endif
+
+#if VSF_DAC_CFG_REIMPLEMENT_API_CTRL == DISABLED
+vsf_err_t vsf_real_dac_ctrl(vsf_real_dac_t *dac_ptr, vsf_dac_ctrl_t ctrl, void *param)
+{
+    VSF_HAL_ASSERT(NULL != dac_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION == DISABLED
+vsf_err_t vsf_real_dac_get_configuration(vsf_real_dac_t *dac_ptr, vsf_dac_cfg_t *cfg_ptr)
+{
+    VSF_HAL_ASSERT(NULL != dac_ptr);
+    VSF_HAL_ASSERT(NULL != cfg_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+/*============================ MACROS ========================================*/
+
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_CAPABILITY
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_CFG
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_CHANNEL_CFG
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_IRQ_MASK
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_STATUS
+#undef VSF_DAC_CFG_REIMPLEMENT_TYPE_CTRL
+#undef VSF_DAC_CFG_REIMPLEMENT_API_CAPABILITY
+#undef VSF_DAC_CFG_REIMPLEMENT_API_CTRL
+#undef VSF_DAC_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#undef VSF_DAC_CFG_CAPABILITY_IRQ_MASK
+#undef VSF_DAC_CFG_CAPABILITY_MAX_RESOLUTION_BITS
+#undef VSF_DAC_CFG_CAPABILITY_MIN_RESOLUTION_BITS
+#undef VSF_DAC_CFG_CAPABILITY_CHANNEL_COUNT
+
+#undef vsf_real_dac_t
+#undef vsf_real_dac_capability
+#undef vsf_real_dac_ctrl
+#undef vsf_real_dac_get_configuration
+
+/*============================ MACROS ========================================*/
+
+#ifdef VSF_DAC_CFG_IMP_REMAP_PREFIX
+#   define vsf_imp_dac_t                                    VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_t)
+#   define vsf_imp_dac_init(__DAC)                          VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_init)
+#   define vsf_imp_dac_fini(__DAC)                          VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_fini)
+#   define vsf_imp_dac_enable(__DAC)                        VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_enable)
+#   define vsf_imp_dac_disable(__DAC)                       VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_disable)
+#   define vsf_imp_dac_status(__DAC)                        VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_status)
+#   define vsf_imp_dac_capability(__DAC)                    VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_capability)
+#   define vsf_imp_dac_irq_enable(__DAC, ...)               VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_irq_enable)
+#   define vsf_imp_dac_irq_disable(__DAC, ...)              VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_irq_disable)
+#   define vsf_imp_dac_irq_clear(__DAC, ...)                VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_irq_clear)
+#   define vsf_imp_dac_channel_request_once(__DAC, ...)     VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_channel_request_once)
+#   define vsf_imp_dac_channel_config(__DAC, ...)           VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_channel_config)
+#   define vsf_imp_dac_channel_request(__DAC, ...)          VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_channel_request)
+#   define vsf_imp_dac_get_configuration                    VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_get_configuration)
+#   define vsf_imp_dac_ctrl                                 VSF_MCONNECT(VSF_DAC_CFG_IMP_PREFIX, _dac_ctrl)
+
+#   define vsf_remap_dac_t                                  VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_t)
+#   define vsf_remap_dac_init(__DAC)                        VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_init)
+#   define vsf_remap_dac_fini(__DAC)                        VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_fini)
+#   define vsf_remap_dac_enable(__DAC)                      VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_enable)
+#   define vsf_remap_dac_disable(__DAC)                     VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_disable)
+#   define vsf_remap_dac_status(__DAC)                      VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_status)
+#   define vsf_remap_dac_capability(__DAC)                  VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_capability)
+#   define vsf_remap_dac_irq_enable(__DAC, ...)             VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_irq_enable)
+#   define vsf_remap_dac_irq_disable(__DAC, ...)            VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_irq_disable)
+#   define vsf_remap_dac_irq_clear(__DAC, ...)              VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_irq_clear)
+#   define vsf_remap_dac_channel_request_once(__DAC, ...)   VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_channel_request_once)
+#   define vsf_remap_dac_channel_config(__DAC, ...)         VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_channel_config)
+#   define vsf_remap_dac_channel_request(__DAC, ...)        VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_channel_request)
+#   define vsf_remap_dac_get_configuration                  VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_get_configuration)
+#   define vsf_remap_dac_ctrl                               VSF_MCONNECT(VSF_DAC_CFG_IMP_REMAP_PREFIX, _dac_ctrl)
+
+#   define VSF_DAC_CFG_IMP_REMAP_FUNCTIONS                                                                            \
+        vsf_err_t vsf_imp_dac_init(vsf_imp_dac_t *dac)                                                  \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_init((vsf_remap_dac_t *)dac);                                          \
+        }                                                                                               \
+                                                                                                        \
+        void vsf_imp_dac_fini(vsf_imp_dac_t *dac)                                                       \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            vsf_remap_dac_fini((vsf_remap_dac_t *)dac);                                                 \
+        }                                                                                               \
+                                                                                                        \
+        vsf_remap_dac_status_t vsf_imp_dac_status(vsf_imp_dac_t *dac)                                   \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_status((vsf_remap_dac_t *)dac);                                        \
+        }                                                                                               \
+                                                                                                        \
+        vsf_remap_dac_capability_t vsf_imp_dac_capability(vsf_imp_dac_t *dac)                           \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_capability((vsf_remap_dac_t *)dac);                                    \
+        }                                                                                               \
+                                                                                                        \
+        fsm_rt_t vsf_imp_dac_enable(vsf_imp_dac_t *dac)                                                 \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_enable((vsf_remap_dac_t *)dac);                                        \
+        }                                                                                               \
+                                                                                                        \
+        fsm_rt_t vsf_imp_dac_disable(vsf_imp_dac_t *dac)                                                \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_disable((vsf_remap_dac_t *)dac);                                       \
+        }                                                                                               \
+                                                                                                        \
+        void vsf_imp_dac_irq_enable(vsf_imp_dac_t *dac, vsf_remap_dac_irq_mask_t irq_mask)              \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            vsf_remap_dac_irq_enable((vsf_remap_dac_t *)dac, irq_mask);                                 \
+        }                                                                                               \
+                                                                                                        \
+        void vsf_imp_dac_irq_disable(vsf_imp_dac_t *dac, vsf_remap_dac_irq_mask_t irq_mask)             \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            vsf_remap_dac_irq_disable((vsf_remap_dac_t *)dac, irq_mask);                                \
+        }                                                                                               \
+                                                                                                        \
+        vsf_dac_irq_mask_t vsf_imp_dac_irq_clear(vsf_imp_dac_t *dac, vsf_remap_dac_irq_mask_t irq_mask) \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_irq_clear((vsf_remap_dac_t *)dac, irq_mask);                           \
+        }                                                                                               \
+                                                                                                        \
+        vsf_err_t vsf_imp_dac_channel_request_once(vsf_imp_dac_t *dac,                                  \
+                vsf_remap_dac_channel_cfg_t *channel_cfg, uint_fast16_t value)                          \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_channel_request_once((vsf_remap_dac_t *)dac, channel_cfg, value);      \
+        }                                                                                               \
+                                                                                                        \
+        vsf_err_t vsf_imp_dac_channel_config(vsf_imp_dac_t *dac,                                        \
+                vsf_remap_dac_channel_cfg_t *channel_cfgs, uint_fast8_t channel_cfgs_cnt)               \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_channel_config((vsf_remap_dac_t *)dac, channel_cfgs, channel_cfgs_cnt);\
+        }                                                                                               \
+                                                                                                        \
+        vsf_err_t vsf_imp_dac_channel_request(vsf_imp_dac_t *dac,                                       \
+                void *buffer, uint_fast32_t count)                                                      \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_channel_request((vsf_remap_dac_t *)dac, buffer, count);                \
+        }                                                                                               \
+                                                                                                        \
+        vsf_err_t vsf_imp_dac_get_configuration(vsf_imp_dac_t *dac, vsf_dac_cfg_t *cfg)                 \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_get_configuration((vsf_remap_dac_t *)dac, cfg);                        \
+        }                                                                                               \
+        vsf_err_t vsf_imp_dac_ctrl(vsf_imp_dac_t *dac, vsf_dac_ctrl_t ctrl, void *param)                \
+        {                                                                                               \
+            VSF_HAL_ASSERT(dac != NULL);                                                                \
+            return vsf_remap_dac_ctrl((vsf_remap_dac_t *)dac, ctrl, param);                             \
+        }
+#endif
+
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ IMPLEMENTATION ================================*/
+/*============================ MACROS ========================================*/
+/*============================ GLOBAL VARIABLES ==============================*/
+
+#define VSF_HAL_TEMPLATE_IMP_NAME                   _dac
+#define VSF_HAL_TEMPLATE_IMP_UPCASE_NAME            _DAC
+
+#if !defined(VSF_DAC_CFG_IMP_PREFIX) && !defined(VSF_DAC_CFG_IMP_DEVICE_PREFIX)
+#   error "Please define VSF_DAC_CFG_IMP_PREFIX in dac driver"
+#endif
+
+#if !defined(VSF_DAC_CFG_IMP_UPCASE_PREFIX) && !defined(VSF_DAC_CFG_IMP_DEVICE_UPCASE_PREFIX)
+#   error "Please define VSF_DAC_CFG_IMP_UPCASE_PREFIX in dac driver"
+#endif
+
+#ifndef VSF_DAC_CFG_IMP_COUNT_MASK_PREFIX
+#   define VSF_DAC_CFG_IMP_COUNT_MASK_PREFIX        VSF_DAC_CFG_IMP_UPCASE_PREFIX
+#endif
+
+#ifdef VSF_DAC_CFG_IMP_REMAP_FUNCTIONS
+#   define VSF_HAL_CFG_IMP_REMAP_FUNCTIONS          VSF_DAC_CFG_IMP_REMAP_FUNCTIONS
+#endif
+
+#include "hal/driver/common/template/vsf_template_instance_implementation.h"
+
+#undef VSF_DAC_CFG_IMP_PREFIX
+#undef VSF_DAC_CFG_IMP_COUNT_MASK_PREFIX
+#undef VSF_DAC_CFG_IMP_UPCASE_PREFIX
+#undef VSF_DAC_CFG_IMP_DEVICE_PREFIX
+#undef VSF_DAC_CFG_IMP_DEVICE_UPCASE_PREFIX
+#undef VSF_DAC_CFG_IMP_LV0
+#undef VSF_DAC_CFG_IMP_RENAME_DEVICE_PREFIX
+#undef VSF_DAC_CFG_IMP_REMAP_FUNCTIONS
+#undef VSF_DAC_CFG_IMP_HAS_OP
+#undef VSF_DAC_CFG_IMP_EXTERN_OP
+
+#undef vsf_imp_dac_t
+#undef vsf_imp_dac_init
+#undef vsf_imp_dac_fini
+#undef vsf_imp_dac_enable
+#undef vsf_imp_dac_disable
+#undef vsf_imp_dac_status
+#undef vsf_imp_dac_capability
+#undef vsf_imp_dac_irq_enable
+#undef vsf_imp_dac_irq_disable
+#undef vsf_imp_dac_irq_clear
+#undef vsf_imp_dac_channel_request_once
+#undef vsf_imp_dac_channel_config
+#undef vsf_imp_dac_channel_request
+#undef vsf_imp_dac_get_configuration
+#undef vsf_imp_dac_ctrl
+
+#undef vsf_remap_dac_t
+#undef vsf_remap_dac_init
+#undef vsf_remap_dac_fini
+#undef vsf_remap_dac_enable
+#undef vsf_remap_dac_disable
+#undef vsf_remap_dac_status
+#undef vsf_remap_dac_capability
+#undef vsf_remap_dac_irq_enable
+#undef vsf_remap_dac_irq_disable
+#undef vsf_remap_dac_irq_clear
+#undef vsf_remap_dac_channel_request_once
+#undef vsf_remap_dac_channel_config
+#undef vsf_remap_dac_channel_request
+#undef vsf_remap_dac_get_configuration
+#undef vsf_remap_dac_ctrl
+
+#undef VSF_HAL_TEMPLATE_IMP_NAME
+#undef VSF_HAL_TEMPLATE_IMP_UPCASE_NAME
+
+/*============================ STATIC ASSERTIONS ==============================*/
+
+/* User-extensible macros for custom mode and IRQ mask values
+ * Users can define these macros before including this template to append
+ * their custom enum values to the uniqueness checks.
+ *
+ * Check modes for custom values:
+ *   VSF_DAC_CFG_MODE_CHECK_UNIQUE - Check mode for custom mode values
+ *     Default: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *   VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE - Check mode for custom IRQ mask values
+ *     Default: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *
+ * Example usage in vendor driver:
+ *   #define VSF_DAC_CUSTOM_MODE_VALUES           MY_CUSTOM_MODE1, MY_CUSTOM_MODE2
+ *   #define VSF_DAC_CFG_MODE_CHECK_UNIQUE        VSF_HAL_CHECK_MODE_LOOSE
+ *   #define VSF_DAC_CUSTOM_IRQ_MASK_VALUES       MY_CUSTOM_IRQ1, MY_CUSTOM_IRQ2
+ *   #define VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE    VSF_HAL_CHECK_MODE_STRICT
+ *   #include "hal/driver/common/dac/dac_template.inc"
+ */
+
+
+#ifdef VSF_DAC_CFG_MODE_CHECK_UNIQUE
+/* Default mode lists - can be redefined by users before including this file */
+/* Note: DAC typically doesn't have mode enums, but custom modes can be added */
+
+#ifdef VSF_DAC_CUSTOM_MODE_VALUES
+/* Check uniqueness among custom mode values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_DAC_CFG_MODE_CHECK_UNIQUE, VSF_DAC_CUSTOM_MODE_VALUES);
+#endif
+#endif  /* VSF_DAC_CFG_MODE_CHECK_UNIQUE */
+
+/* ==================== IRQ MASK UNIQUENESS CHECKS ==================== */
+
+#ifdef VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE
+
+#ifdef VSF_DAC_CUSTOM_IRQ_MASK_VALUES
+/* Check uniqueness among custom IRQ mask values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE, VSF_DAC_CUSTOM_IRQ_MASK_VALUES);
+#endif
+
+/* Check uniqueness within vsf_dac_irq_mask_t enum */
+
+/* Check IRQ mask uniqueness - all IRQ mask bits should have different values
+ * Mandatory: VSF_DAC_IRQ_MASK_IDLE, VSF_DAC_IRQ_MASK_CPL
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE,
+    /* Mandatory IRQ masks - always included */
+    VSF_DAC_IRQ_MASK_IDLE,
+    VSF_DAC_IRQ_MASK_CPL
+    /* User-defined IRQ masks - appended by user configuration */
+#ifdef VSF_DAC_CUSTOM_IRQ_MASK_VALUES
+    , VSF_DAC_CUSTOM_IRQ_MASK_VALUES
+#endif
+);
+#endif  /* VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE */
+
+#undef VSF_DAC_CFG_MODE_CHECK_UNIQUE
+#undef VSF_DAC_CFG_IRQ_MASK_CHECK_UNIQUE
+#undef VSF_DAC_CUSTOM_MODE_VALUES
+#undef VSF_DAC_CUSTOM_IRQ_MASK_VALUES
+
+#endif  /* VSF_HAL_USE_DAC */

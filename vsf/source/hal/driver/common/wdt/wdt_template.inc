@@ -1,0 +1,347 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+#if VSF_HAL_USE_WDT == ENABLED
+
+/*============================ INCLUDES ======================================*/
+/*============================ MACROS ========================================*/
+
+#if defined(VSF_WDT_CFG_IMP_RENAME_DEVICE_PREFIX) && (VSF_WDT_CFG_IMP_RENAME_DEVICE_PREFIX == ENABLED)
+#   define vsf_real_wdt_t                      VSF_MCONNECT(VSF_WDT_CFG_IMP_DEVICE_PREFIX, _t)
+#   define vsf_real_wdt_capability             VSF_MCONNECT(VSF_WDT_CFG_IMP_DEVICE_PREFIX, _capability)
+#   define vsf_real_wdt_ctrl                   VSF_MCONNECT(VSF_WDT_CFG_IMP_DEVICE_PREFIX, _ctrl)
+#   define vsf_real_wdt_get_configuration      VSF_MCONNECT(VSF_WDT_CFG_IMP_DEVICE_PREFIX, _get_configuration)
+#else
+#   define vsf_real_wdt_t                      VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_t)
+#   define vsf_real_wdt_capability             VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_capability)
+#   define vsf_real_wdt_ctrl                   VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_ctrl)
+#   define vsf_real_wdt_get_configuration      VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_get_configuration)
+#endif
+
+#ifndef VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY
+#   define  VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY              DISABLED
+#endif
+
+#ifndef VSF_WDT_CFG_REIMPLEMENT_API_CTRL
+#   define  VSF_WDT_CFG_REIMPLEMENT_API_CTRL                    DISABLED
+#endif
+
+#ifndef VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION        DISABLED
+#endif
+
+#ifdef VSF_WDT_CFG_IMP_REMAP_PREFIX
+#   undef VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY
+#   define VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY               ENABLED
+#   undef VSF_WDT_CFG_REIMPLEMENT_API_CTRL
+#   define VSF_WDT_CFG_REIMPLEMENT_API_CTRL                     ENABLED
+#   undef VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION        ENABLED
+#endif
+
+#if VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+#   ifndef VSF_WDT_CFG_CAPABILITY_SUPPORT_EARLY_WAKEUP
+#       define  VSF_WDT_CFG_CAPABILITY_SUPPORT_EARLY_WAKEUP             1
+#   endif
+#   ifndef VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_NONE
+#       define  VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_NONE               1
+#   endif
+#   ifndef VSF_WDT_CFG_CAPABILITY_support_reset_cpu
+#       define  VSF_WDT_CFG_CAPABILITY_support_reset_cpu                1
+#   endif
+#   ifndef VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_SOC
+#       define  VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_SOC                1
+#   endif
+#   ifndef VSF_WDT_CFG_CAPABILITY_SUPPORT_DISABLE
+#       define  VSF_WDT_CFG_CAPABILITY_SUPPORT_DISABLE                  1
+#   endif
+#   ifndef VSF_WDT_CFG_CAPABILITY_MAX_TIMEOUT_MS
+#       define  VSF_WDT_CFG_CAPABILITY_MAX_TIMEOUT_MS                   (1000 * 1000)
+#   endif
+#endif
+
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ IMPLEMENTATION ================================*/
+
+#if VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+vsf_wdt_capability_t vsf_real_wdt_capability(vsf_real_wdt_t *wdt_ptr)
+{
+    vsf_wdt_capability_t wdt_capability = {
+        .support_early_wakeup   = VSF_WDT_CFG_CAPABILITY_SUPPORT_EARLY_WAKEUP,
+        .support_reset_none     = VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_NONE,
+        .support_reset_cpu     = VSF_WDT_CFG_CAPABILITY_support_reset_cpu,
+        .support_reset_soc      = VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_SOC,
+        .support_disable        = VSF_WDT_CFG_CAPABILITY_SUPPORT_DISABLE,
+        .max_timeout_ms         = VSF_WDT_CFG_CAPABILITY_MAX_TIMEOUT_MS,
+    };
+
+    return wdt_capability;
+}
+#endif
+
+#if VSF_WDT_CFG_REIMPLEMENT_API_CTRL == DISABLED
+vsf_err_t vsf_real_wdt_ctrl(vsf_real_wdt_t *wdt_ptr, vsf_wdt_ctrl_t ctrl, void *param)
+{
+    VSF_HAL_ASSERT(NULL != wdt_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION == DISABLED
+vsf_err_t vsf_real_wdt_get_configuration(vsf_real_wdt_t *wdt_ptr, vsf_wdt_cfg_t *cfg_ptr)
+{
+    VSF_HAL_ASSERT(NULL != wdt_ptr);
+    VSF_HAL_ASSERT(NULL != cfg_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+/*============================ MACROS ========================================*/
+
+#undef VSF_WDT_CFG_REIMPLEMENT_TYPE_CAPABILITY
+#undef VSF_WDT_CFG_REIMPLEMENT_TYPE_CFG
+#undef VSF_WDT_CFG_REIMPLEMENT_TYPE_MODE
+#undef VSF_WDT_CFG_REIMPLEMENT_TYPE_CTRL
+#undef VSF_WDT_CFG_REIMPLEMENT_API_CAPABILITY
+#undef VSF_WDT_CFG_REIMPLEMENT_API_CTRL
+#undef VSF_WDT_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#undef VSF_WDT_CFG_CAPABILITY_SUPPORT_EARLY_WAKEUP
+#undef VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_NONE
+#undef VSF_WDT_CFG_CAPABILITY_support_reset_cpu
+#undef VSF_WDT_CFG_CAPABILITY_SUPPORT_RESET_SOC
+#undef VSF_WDT_CFG_CAPABILITY_SUPPORT_DISABLE
+#undef VSF_WDT_CFG_CAPABILITY_MAX_TIMEOUT_MS
+
+#undef vsf_real_wdt_t
+#undef vsf_real_wdt_capability
+#undef vsf_real_wdt_ctrl
+#undef vsf_real_wdt_get_configuration
+
+/*============================ MACROS ========================================*/
+
+#ifdef VSF_WDT_CFG_IMP_REMAP_PREFIX
+
+#   define vsf_imp_wdt_t                    VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_t)
+#   define vsf_imp_wdt_init                 VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_init)
+#   define vsf_imp_wdt_fini                 VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_fini)
+#   define vsf_imp_wdt_enable               VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_enable)
+#   define vsf_imp_wdt_disable              VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_disable)
+#   define vsf_imp_wdt_capability           VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_capability)
+#   define vsf_imp_wdt_feed                 VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_feed)
+#   define vsf_imp_wdt_get_configuration    VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_get_configuration)
+#   define vsf_imp_wdt_ctrl                 VSF_MCONNECT(VSF_WDT_CFG_IMP_PREFIX, _wdt_ctrl)
+
+#   define vsf_remap_wdt_t                  VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_t)
+#   define vsf_remap_wdt_init               VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_init)
+#   define vsf_remap_wdt_fini               VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_fini)
+#   define vsf_remap_wdt_enable             VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_enable)
+#   define vsf_remap_wdt_disable            VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_disable)
+#   define vsf_remap_wdt_capability         VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_capability)
+#   define vsf_remap_wdt_feed               VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_feed)
+#   define vsf_remap_wdt_get_configuration  VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_get_configuration)
+#   define vsf_remap_wdt_ctrl               VSF_MCONNECT(VSF_WDT_CFG_IMP_REMAP_PREFIX, _wdt_ctrl)
+
+#   define VSF_WDT_CFG_IMP_REMAP_FUNCTIONS                                                        \
+        vsf_err_t vsf_imp_wdt_init(vsf_imp_wdt_t *wdt_ptr, vsf_wdt_cfg_t *cfg_ptr)  \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_init(wdt_ptr, cfg_ptr);                            \
+        }                                                                           \
+        void vsf_imp_wdt_fini(vsf_imp_wdt_t *wdt_ptr)                               \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            vsf_remap_wdt_fini(wdt_ptr);                                            \
+        }                                                                           \
+        fsm_rt_t vsf_imp_wdt_enable(vsf_imp_wdt_t *wdt_ptr)                         \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_enable(wdt_ptr);                                   \
+        }                                                                           \
+        fsm_rt_t vsf_imp_wdt_disable(vsf_imp_wdt_t *wdt_ptr)                        \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_disable(wdt_ptr);                                  \
+        }                                                                           \
+        vsf_wdt_capability_t vsf_imp_wdt_capability(vsf_imp_wdt_t *wdt_ptr)         \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_capability(wdt_ptr);                               \
+        }                                                                           \
+        void vsf_imp_wdt_feed(vsf_imp_wdt_t *wdt_ptr)                               \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            vsf_remap_wdt_feed(wdt_ptr);                                            \
+        }                                                                           \
+        vsf_err_t vsf_imp_wdt_get_configuration(vsf_imp_wdt_t *wdt_ptr,             \
+                                                vsf_wdt_cfg_t *cfg_ptr)             \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_get_configuration(wdt_ptr, cfg_ptr);               \
+        }                                                                           \
+        vsf_err_t vsf_imp_wdt_ctrl(vsf_imp_wdt_t *wdt_ptr, vsf_wdt_ctrl_t ctrl, void *param) \
+        {                                                                           \
+            VSF_HAL_ASSERT(wdt_ptr != NULL);                                        \
+            return vsf_remap_wdt_ctrl(wdt_ptr, ctrl, param);                        \
+        }
+#endif
+
+/*============================ GLOBAL VARIABLES ==============================*/
+
+#define VSF_HAL_TEMPLATE_IMP_NAME                   _wdt
+#define VSF_HAL_TEMPLATE_IMP_UPCASE_NAME            _WDT
+
+#if !defined(VSF_WDT_CFG_IMP_PREFIX) && !defined(VSF_WDT_CFG_IMP_DEVICE_PREFIX)
+#   error "Please define VSF_WDT_CFG_IMP_PREFIX in wdt driver"
+#endif
+
+#if !defined(VSF_WDT_CFG_IMP_UPCASE_PREFIX) && !defined(VSF_WDT_CFG_IMP_DEVICE_UPCASE_PREFIX)
+#   error "Please define VSF_WDT_CFG_IMP_UPCASE_PREFIX in wdt driver"
+#endif
+
+#ifndef VSF_WDT_CFG_IMP_COUNT_MASK_PREFIX
+#   define VSF_WDT_CFG_IMP_COUNT_MASK_PREFIX        VSF_WDT_CFG_IMP_UPCASE_PREFIX
+#endif
+
+#ifdef VSF_WDT_CFG_IMP_REMAP_FUNCTIONS
+#   define VSF_HAL_CFG_IMP_REMAP_FUNCTIONS          VSF_WDT_CFG_IMP_REMAP_FUNCTIONS
+#endif
+
+#include "hal/driver/common/template/vsf_template_instance_implementation.h"
+
+#undef VSF_WDT_CFG_IMP_PREFIX
+#undef VSF_WDT_CFG_IMP_COUNT_MASK_PREFIX
+#undef VSF_WDT_CFG_IMP_UPCASE_PREFIX
+#undef VSF_WDT_CFG_IMP_DEVICE_PREFIX
+#undef VSF_WDT_CFG_IMP_DEVICE_UPCASE_PREFIX
+#undef VSF_WDT_CFG_IMP_LV0
+#undef VSF_WDT_CFG_IMP_REMAP_FUNCTIONS
+#undef VSF_WDT_CFG_IMP_HAS_OP
+#undef VSF_WDT_CFG_IMP_EXTERN_OP
+#undef VSF_WDT_CFG_IMP_RENAME_DEVICE_PREFIX
+
+#undef vsf_imp_wdt_t
+#undef vsf_imp_wdt_init
+#undef vsf_imp_wdt_fini
+#undef vsf_imp_wdt_enable
+#undef vsf_imp_wdt_disable
+#undef vsf_imp_wdt_capability
+#undef vsf_imp_wdt_feed
+#undef vsf_imp_wdt_get_configuration
+#undef vsf_imp_wdt_ctrl
+
+#undef vsf_remap_wdt_t
+#undef vsf_remap_wdt_init
+#undef vsf_remap_wdt_fini
+#undef vsf_remap_wdt_enable
+#undef vsf_remap_wdt_disable
+#undef vsf_remap_wdt_capability
+#undef vsf_remap_wdt_feed
+#undef vsf_remap_wdt_get_configuration
+#undef vsf_remap_wdt_ctrl
+
+#undef VSF_HAL_TEMPLATE_IMP_NAME
+#undef VSF_HAL_TEMPLATE_IMP_UPCASE_NAME
+
+/*============================ STATIC ASSERTIONS ==============================*/
+
+/* User-extensible macros for custom mode and IRQ mask values
+ * Users can define these macros before including this template to append
+ * their custom enum values to the uniqueness checks.
+ *
+ * Check modes for custom values:
+ *   VSF_WDT_CFG_MODE_CHECK_UNIQUE - Check mode for custom mode values
+ *     Default: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *   VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE - Check mode for custom IRQ mask values
+ *     Default: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *
+ * Example usage in vendor driver:
+ *   #define VSF_WDT_CUSTOM_MODE_VALUES           MY_CUSTOM_MODE1, MY_CUSTOM_MODE2
+ *   #define VSF_WDT_CFG_MODE_CHECK_UNIQUE        VSF_HAL_CHECK_MODE_LOOSE
+ *   #define VSF_WDT_CUSTOM_IRQ_MASK_VALUES       MY_CUSTOM_IRQ1, MY_CUSTOM_IRQ2
+ *   #define VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE    VSF_HAL_CHECK_MODE_STRICT
+ *   #include "hal/driver/common/wdt/wdt_template.inc"
+ */
+
+
+#ifdef VSF_WDT_CFG_MODE_CHECK_UNIQUE
+/* ==================== GROUP INTERNAL UNIQUENESS CHECKS ==================== */
+/* Check uniqueness within each functional group */
+
+/* Check early wakeup mode uniqueness - all early wakeup modes should have different values
+ * Mandatory: VSF_WDT_MODE_NO_EARLY_WAKEUP, VSF_WDT_MODE_EARLY_WAKEUP
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_WDT_CFG_MODE_CHECK_UNIQUE,
+    VSF_WDT_MODE_NO_EARLY_WAKEUP,
+    VSF_WDT_MODE_EARLY_WAKEUP
+);
+
+/* Check reset mode uniqueness - all reset modes should have different values
+ * Mandatory: VSF_WDT_MODE_RESET_NONE, VSF_WDT_MODE_RESET_CPU, VSF_WDT_MODE_RESET_SOC
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_WDT_CFG_MODE_CHECK_UNIQUE,
+    VSF_WDT_MODE_RESET_NONE,
+    VSF_WDT_MODE_RESET_CPU,
+    VSF_WDT_MODE_RESET_SOC
+);
+
+#ifdef VSF_WDT_CUSTOM_MODE_VALUES
+/* Check uniqueness among custom mode values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_WDT_CFG_MODE_CHECK_UNIQUE, VSF_WDT_CUSTOM_MODE_VALUES);
+#endif
+
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_WDT_CFG_MODE_CHECK_UNIQUE,
+    /* Mandatory modes - always included */
+    VSF_WDT_MODE_NO_EARLY_WAKEUP, VSF_WDT_MODE_EARLY_WAKEUP,
+    VSF_WDT_MODE_RESET_NONE, VSF_WDT_MODE_RESET_CPU, VSF_WDT_MODE_RESET_SOC
+    /* User-defined modes - appended by user configuration */
+#ifdef VSF_WDT_CUSTOM_MODE_VALUES
+    , VSF_WDT_CUSTOM_MODE_VALUES
+#endif
+);
+#endif  /* VSF_WDT_CFG_MODE_CHECK_UNIQUE */
+
+/* ==================== IRQ MASK UNIQUENESS CHECKS ==================== */
+
+#ifdef VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE
+
+#ifdef VSF_WDT_CUSTOM_IRQ_MASK_VALUES
+/* Check uniqueness among custom IRQ mask values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE, VSF_WDT_CUSTOM_IRQ_MASK_VALUES);
+#endif
+
+/* Note: WDT typically doesn't have a standard IRQ mask enum, but custom IRQ masks can be added */
+#endif  /* VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE */
+
+#undef VSF_WDT_CFG_MODE_CHECK_UNIQUE
+#undef VSF_WDT_CFG_IRQ_MASK_CHECK_UNIQUE
+#undef VSF_WDT_CUSTOM_MODE_VALUES
+#undef VSF_WDT_CUSTOM_IRQ_MASK_VALUES
+
+#endif  /* VSF_HAL_USE_WDT */

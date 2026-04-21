@@ -1,0 +1,2034 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="vsf_template" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/vsf_template" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-fms-extensions" />
+					<Add option="-D__CPU_X64__" />
+					<Add option="-D__LINUX__" />
+					<Add option="-DFT2_BUILD_LIBRARY" />
+					<Add option="-DLV_CONF_INCLUDE_SIMPLE" />
+					<Add directory="../../../config" />
+					<Add directory="../../../../../source" />
+					<Add directory="../../../../../source/shell/sys/linux/include/simple_libc" />
+					<Add directory="../../../../../source/shell/sys/linux/include" />
+					<Add directory="../../../../../source/shell/media/sdl2/include/SDL2" />
+					<Add directory="../../../../../source/shell/media/sdl2/include" />
+					<Add directory="../../../../../source/shell/media/sdl2/3rd-party/SDL_ttf" />
+					<Add directory="../../../../../source/shell/media/sdl2/3rd-party/SDL_image" />
+					<Add directory="../../../../../source/component/3rd-party/freetype/port" />
+					<Add directory="../../../../../source/component/3rd-party/freetype/raw/include" />
+					<Add directory="../../../../../source/component/3rd-party/lvgl/raw" />
+					<Add directory="../../../../../source/component/3rd-party/libjpeg-turbo/port" />
+					<Add directory="../../../../../source/component/3rd-party/libjpeg-turbo/raw" />
+					<Add directory="../../../../../source/component/3rd-party/libpng/port" />
+					<Add directory="../../../../../source/component/3rd-party/libpng/raw" />
+					<Add directory="../../../../../source/component/3rd-party/zlib/raw" />
+					<Add directory="../../../../../source/component/3rd-party/evm/port" />
+					<Add directory="../../../../../source/component/3rd-party/evm/raw/include" />
+					<Add directory="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/include" />
+					<Add directory="../../../../../source/component/3rd-party/lua/extension/oo" />
+					<Add directory="../../../../../source/component/3rd-party/lua/extension/lovevsf" />
+					<Add directory="../../../../../source/component/3rd-party/evm/raw/components/webclient/inc" />
+					<Add directory="../../../../../source/component/3rd-party/coremark/port" />
+					<Add directory="../../../../../source/component/3rd-party/coremark/raw" />
+				</Compiler>
+				<Linker>
+					<Add option="-lpthread" />
+					<Add option="-lSDL2" />
+					<Add option="-lrt" />
+					<Add library="../../../../../source/component/3rd-party/evm/raw/lib/x86/linux/libelua.a" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/vsf_template" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/port/core_portme.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/port/core_portme.h" />
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/core_list_join.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/core_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/core_matrix.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/core_state.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/core_util.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/coremark/raw/coremark.h" />
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_fs_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_gpio_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_log_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_malloc_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_msgbus_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_netclient_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_socket_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_timer_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_uart_vsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/eluaos/luat_vsf_base.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/evm_port.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/port/iotjs/evm_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/components/webclient/inc/webclient.h" />
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/bget.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/lbaselib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/linit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/liolib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/lmathlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/loslib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/ltablib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/printf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/lualib/rotable.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_gpio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_log.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_rtos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_socket.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_timer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_lib_uart.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_luat_bin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/evm/raw/modules/eluaos/modules/luat_malloc_weak.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/ft2build.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/vsf_config/ftconfig.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/vsf_config/ftheader.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/vsf_config/ftmodule.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/vsf_config/ftoption.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/port/vsf_config/ftstdlib.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/config/ftconfig.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/config/ftheader.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/config/ftmodule.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/config/ftoption.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/config/ftstdlib.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/freetype.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftadvanc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftbbox.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftbdf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftbitmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftbzip2.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftcache.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftchapters.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftcid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftcolor.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftdriver.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/fterrdef.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/fterrors.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftfntfmt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftgasp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftglyph.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftgxval.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftgzip.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftimage.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftincrem.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftlcdfil.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftlist.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftlzw.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftmac.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftmm.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftmodapi.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftmoderr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftotval.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftoutln.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftparams.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftpfr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftrender.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftsizes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftsnames.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftstroke.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftsynth.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftsystem.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/fttrigon.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/fttypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ftwinfnt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/autohint.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/cffotypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/cfftypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftcalc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftdebug.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftdrv.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftgloadr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/fthash.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftmemory.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftpsprop.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftrfork.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftserv.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftstream.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/fttrace.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/ftvalid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/internal.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/psaux.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/pshints.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svbdf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svcfftl.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svcid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svfntfmt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svgldict.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svgxval.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svkern.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svmetric.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svmm.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svotval.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svpfr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svpostnm.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svprop.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svpscmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svpsinfo.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svsfnt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svttcmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svtteng.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svttglyf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/services/svwinfnt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/sfnt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/t1types.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/tttypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/internal/wofftypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/t1tables.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/ttnameid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/tttables.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/freetype/tttags.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/include/ft2build.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afangles.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afblue.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afcjk.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afcover.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afdummy.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/aferrors.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afglobal.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afhints.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afindic.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/aflatin.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/aflatin2.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afloader.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afmodule.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afranges.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afscript.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afshaper.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afstyles.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/aftypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afwarp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/afwrtsys.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/autofit/autofit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftbase.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftbase.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftbbox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftbdf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftbitmap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftcid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftdebug.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftfstype.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftgasp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftglyph.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftgxval.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftinit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftmm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftotval.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftpfr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftstroke.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftsynth.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftsystem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/fttype1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/ftwinfnt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/base/md5.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/bdf/bdf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/bdf/bdf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/bdf/bdfdrivr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/bdf/bdferror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/bzip2/ftbzip2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcache.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftccache.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftccback.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcerror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcglyph.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcimage.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcmanag.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcmru.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cache/ftcsbits.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffcmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffdrivr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cfferrs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffgload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cffparse.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cff/cfftoken.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/ciderrs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidgload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidparse.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidriver.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/cidtoken.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/cid/type1cid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvalid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvalid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvcommn.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxverror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvfeat.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvmod.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvmort.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gxvalid/gxvmorx.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/ftgzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/ftzconf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/infblock.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/infcodes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/inffixed.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/inftrees.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/infutil.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/zlib.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/gzip/zutil.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/lzw/ftlzw.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/lzw/ftzopen.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otvalid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otvalid.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otvcommn.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otverror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otvgpos.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/otvalid/otvmod.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcfdrivr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcferror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcfread.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pcf/pcfutil.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrcmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrdrivr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrerror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrgload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrsbit.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pfr/pfrtypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/afmparse.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/cffdecode.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psarrst.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psaux.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psauxerr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psauxmod.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psblues.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psconv.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/pserror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psfixed.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psfont.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psft.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psglue.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/pshints.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psintrp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psread.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/psstack.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/pstypes.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/t1cmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psaux/t1decode.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshalgo.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshglob.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshinter.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshmod.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshnterr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/pshinter/pshrec.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psnames/psmodule.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psnames/psnamerr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psnames/psnames.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/psnames/pstables.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/raster/ftmisc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/raster/ftraster.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/raster/ftrend1.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/raster/raster.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/raster/rasterrs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/pngshim.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/sfdriver.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/sferrors.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/sfnt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/sfobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/sfwoff.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttbdf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttcmap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttcmapc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttcolr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttcpal.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttkern.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttmtx.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttpost.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/sfnt/ttsbit.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/smooth/ftgrays.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/smooth/ftsmerrs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/smooth/ftsmooth.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/smooth/smooth.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/truetype.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttdriver.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/tterrors.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttgload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttgxvar.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttinterp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttobjs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttpload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/truetype/ttsubpix.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1afm.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1driver.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1errors.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1gload.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1load.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1objs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1parse.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/t1tokens.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type1/type1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/t42drivr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/t42error.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/t42objs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/t42parse.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/t42types.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/type42/type42.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/winfonts/fnterrs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/winfonts/winfnt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/freetype/raw/src/winfonts/winfnt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/port/jconfig.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/port/jconfigint.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/cderror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/cdjpeg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/cdjpeg.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jaricom.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcapimin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcapistd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcarith.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jccoefct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jccolor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcdctmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jchuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jchuff.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcicc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcinit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcmainct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcmarker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcmaster.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcomapi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcparam.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcphuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcprepct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jcsample.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jctrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdapimin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdapistd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdarith.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdatadst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdatasrc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdcoefct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdcoefct.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdcolor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdct.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jddctmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdhuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdhuff.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdicc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdinput.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmainct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmainct.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmarker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmaster.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmaster.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmerge.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdmerge.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdphuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdpostct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdsample.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdsample.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jdtrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jerror.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jerror.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jfdctflt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jfdctfst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jfdctint.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jidctflt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jidctfst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jidctint.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jidctred.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jinclude.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jmemmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jmemnobs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jmemsys.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jmorecfg.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jpeg_nbits_table.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jpegcomp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jpegint.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jpeglib.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jquant1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jquant2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jsimd.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jsimd_none.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jsimddct.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jutils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/jversion.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdbmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdcolmap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdgif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdppm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdswitch.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/rdtarga.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/transupp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/transupp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/wrbmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/wrgif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/wrppm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libjpeg-turbo/raw/wrtarga.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/port/pnglibconf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/png.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/png.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngconf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngdebug.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngerror.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngget.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pnginfo.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngmem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngpread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngpriv.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngrio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngrtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngrutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngset.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngstruct.h" />
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngtrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngwio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngwrite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngwtran.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/libpng/raw/pngwutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/lovevsf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/lovevsf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/modules/l_filesystem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/modules/l_font.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/modules/l_graphics.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/modules/l_image.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/lovevsf/modules/l_timer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/oo/lua_oo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lua/extension/oo/lua_oo.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/extension/lv_lib_freetype/raw/lv_freetype.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/extension/lv_lib_freetype/raw/lv_freetype.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/port/vsf_lvgl_port.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/port/vsf_lvgl_port.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/lvgl.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_api_map.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_conf_internal.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_conf_kconfig.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_disp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_disp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_group.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_group.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_indev.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_indev.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_obj.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_obj.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_obj_style_dec.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_refr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_refr.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_style.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_core/lv_style.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_arc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_arc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_blend.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_blend.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_img.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_img.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_label.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_label.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_line.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_line.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_mask.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_mask.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_rect.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_rect.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_triangle.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_draw_triangle.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_buf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_buf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_cache.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_cache.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_decoder.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_draw/lv_img_decoder.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_dejavu_16_persian_hebrew.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_fmt_txt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_fmt_txt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_loader.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_loader.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_10.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_12.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_12_subpx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_14.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_16.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_18.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_20.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_22.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_24.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_26.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_28.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_28_compressed.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_30.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_34.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_36.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_38.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_40.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_42.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_44.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_46.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_48.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_montserrat_8.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_simsun_16_cjk.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_unscii_16.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_font_unscii_8.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_font/lv_symbol_def.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_pxp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_pxp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_pxp_osa.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_pxp_osa.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_vglite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_nxp_vglite.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_stm32_dma2d.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_gpu/lv_gpu_stm32_dma2d.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_disp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_disp.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_indev.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_indev.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_tick.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_hal/lv_hal_tick.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_anim.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_anim.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_area.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_area.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_async.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_async.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_bidi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_bidi.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_color.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_color.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_debug.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_debug.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_fs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_fs.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_gc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_gc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_ll.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_ll.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_log.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_log.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_math.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_math.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_mem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_mem.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_printf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_printf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_task.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_task.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_templ.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_templ.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_txt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_txt.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_txt_ap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_txt_ap.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_types.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_utils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_misc/lv_utils.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_empty.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_empty.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_material.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_material.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_mono.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_mono.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_template.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_themes/lv_theme_template.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_arc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_arc.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_bar.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_bar.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_btn.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_btn.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_btnmatrix.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_btnmatrix.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_calendar.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_calendar.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_canvas.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_canvas.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_chart.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_chart.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_checkbox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_checkbox.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_cont.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_cont.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_cpicker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_cpicker.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_dropdown.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_dropdown.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_gauge.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_gauge.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_img.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_img.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_imgbtn.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_imgbtn.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_keyboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_keyboard.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_label.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_label.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_led.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_led.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_line.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_line.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_linemeter.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_linemeter.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_list.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_msgbox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_msgbox.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_objmask.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_objmask.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_objx_templ.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_objx_templ.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_page.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_page.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_roller.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_roller.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_slider.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_slider.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_spinbox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_spinbox.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_spinner.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_spinner.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_switch.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_switch.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_table.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_table.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_tabview.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_tabview.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_textarea.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_textarea.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_tileview.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_tileview.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_win.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lv_widgets/lv_win.h" />
+		<Unit filename="../../../../../source/component/3rd-party/lvgl/raw/lvgl/src/lvgl.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/adler32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/compress.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/crc32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/crc32.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/deflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/deflate.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/gzclose.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/gzguts.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/gzlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/gzread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/gzwrite.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/infback.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inffast.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inffast.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inffixed.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inflate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inflate.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inftrees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/inftrees.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/trees.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/trees.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/uncompr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/zconf.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/zlib.h" />
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/zutil.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/3rd-party/zlib/raw/zutil.h" />
+		<Unit filename="../../../../../source/component/fs/driver/fatfs/vsf_fatfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/fs/driver/fatfs/vsf_fatfs.h" />
+		<Unit filename="../../../../../source/component/fs/driver/malfs/vsf_malfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/fs/driver/malfs/vsf_malfs.h" />
+		<Unit filename="../../../../../source/component/fs/driver/memfs/vsf_memfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/fs/driver/memfs/vsf_memfs.h" />
+		<Unit filename="../../../../../source/component/fs/driver/winfs/vsf_winfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/fs/driver/winfs/vsf_winfs.h" />
+		<Unit filename="../../../../../source/component/fs/vsf_fs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/fs/vsf_fs.h" />
+		<Unit filename="../../../../../source/component/fs/vsf_fs_cfg.h" />
+		<Unit filename="../../../../../source/component/input/driver/hid/vsf_input_hid.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/driver/hid/vsf_input_hid.h" />
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_gamepad.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_gamepad.h" />
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_keyboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_keyboard.h" />
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_mouse.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_mouse.h" />
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_sensor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_sensor.h" />
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_touchscreen.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/protocol/vsf_input_touchscreen.h" />
+		<Unit filename="../../../../../source/component/input/vsf_input.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/input/vsf_input.h" />
+		<Unit filename="../../../../../source/component/input/vsf_input_cfg.h" />
+		<Unit filename="../../../../../source/component/input/vsf_input_get_type.h" />
+		<Unit filename="../../../../../source/component/input/vsf_input_get_type_1bit.h" />
+		<Unit filename="../../../../../source/component/input/vsf_input_get_type_4bit.h" />
+		<Unit filename="../../../../../source/component/mal/driver/fakefat32_mal/vsf_fakefat32_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/driver/fakefat32_mal/vsf_fakefat32_mal.h" />
+		<Unit filename="../../../../../source/component/mal/driver/file_mal/vsf_file_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/driver/file_mal/vsf_file_mal.h" />
+		<Unit filename="../../../../../source/component/mal/driver/mem_mal/vsf_mem_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/driver/mem_mal/vsf_mem_mal.h" />
+		<Unit filename="../../../../../source/component/mal/driver/mim_mal/vsf_mim_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/driver/mim_mal/vsf_mim_mal.h" />
+		<Unit filename="../../../../../source/component/mal/driver/scsi_mal/vsf_scsi_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/driver/scsi_mal/vsf_scsi_mal.h" />
+		<Unit filename="../../../../../source/component/mal/vsf_mal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/mal/vsf_mal.h" />
+		<Unit filename="../../../../../source/component/mal/vsf_mal_cfg.h" />
+		<Unit filename="../../../../../source/component/scsi/driver/mal_scsi/vsf_mal_scsi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/scsi/driver/mal_scsi/vsf_mal_scsi.h" />
+		<Unit filename="../../../../../source/component/scsi/driver/virtual_scsi/vsf_virtual_scsi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/scsi/driver/virtual_scsi/vsf_virtual_scsi.h" />
+		<Unit filename="../../../../../source/component/scsi/vsf_scsi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/scsi/vsf_scsi.h" />
+		<Unit filename="../../../../../source/component/scsi/vsf_scsi_cfg.h" />
+		<Unit filename="../../../../../source/component/ui/disp/driver/sdl2/vsf_disp_sdl2.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options -I ../../../config -I ../../../../../source -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/component/ui/disp/driver/sdl2/vsf_disp_sdl2.h" />
+		<Unit filename="../../../../../source/component/ui/disp/vsf_disp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/ui/disp/vsf_disp.h" />
+		<Unit filename="../../../../../source/component/ui/vsf_ui.h" />
+		<Unit filename="../../../../../source/component/ui/vsf_ui_cfg.h" />
+		<Unit filename="../../../../../source/component/vsf_component.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/component/vsf_component.h" />
+		<Unit filename="../../../../../source/component/vsf_component_cfg.h" />
+		<Unit filename="../../../../../source/hal/arch/__vsf_arch_interface.h" />
+		<Unit filename="../../../../../source/hal/arch/vsf_arch.h" />
+		<Unit filename="../../../../../source/hal/arch/vsf_arch_abstraction.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/hal/arch/vsf_arch_abstraction.h" />
+		<Unit filename="../../../../../source/hal/arch/x86/linux/linux_generic.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options -I ../../../config -I ../../../../../source -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/hal/arch/x86/linux/linux_generic.h" />
+		<Unit filename="../../../../../source/hal/driver/x86/linux/device.h" />
+		<Unit filename="../../../../../source/hal/driver/x86/linux/driver.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options -I ../../../config -I ../../../../../source -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/hal/driver/x86/linux/driver.h" />
+		<Unit filename="../../../../../source/hal/vsf_hal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/hal/vsf_hal.h" />
+		<Unit filename="../../../../../source/hal/vsf_hal_cfg.h" />
+		<Unit filename="../../../../../source/kernel/__eda/vsf_eda_bmpevt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/__eda/vsf_eda_queue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/__eda/vsf_eda_sync.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/__eda/vsf_eda_timer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/lib/__kernel_lib_with_full_feature_set.h" />
+		<Unit filename="../../../../../source/kernel/shell/simple/vsf_simple.h" />
+		<Unit filename="../../../../../source/kernel/shell/simple/vsf_simple_bmpevt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/shell/simple/vsf_simple_bmpevt.h" />
+		<Unit filename="../../../../../source/kernel/shell/simple/vsf_simple_task.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/shell/vsf_shell.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/shell/vsf_shell.h" />
+		<Unit filename="../../../../../source/kernel/task/__vsf_task_common.h" />
+		<Unit filename="../../../../../source/kernel/task/vsf_fsm.h" />
+		<Unit filename="../../../../../source/kernel/task/vsf_pt.h" />
+		<Unit filename="../../../../../source/kernel/task/vsf_task.h" />
+		<Unit filename="../../../../../source/kernel/task/vsf_thread.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/task/vsf_thread.h" />
+		<Unit filename="../../../../../source/kernel/vsf_eda.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_eda.h" />
+		<Unit filename="../../../../../source/kernel/vsf_eda_slist_queue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_eda_slist_queue.h" />
+		<Unit filename="../../../../../source/kernel/vsf_evtq.h" />
+		<Unit filename="../../../../../source/kernel/vsf_evtq_array.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_evtq_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_kernel.h" />
+		<Unit filename="../../../../../source/kernel/vsf_kernel_bsp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_kernel_cfg.h" />
+		<Unit filename="../../../../../source/kernel/vsf_kernel_common.h" />
+		<Unit filename="../../../../../source/kernel/vsf_os.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/kernel/vsf_os.h" />
+		<Unit filename="../../../../../source/kernel/vsf_timq.h" />
+		<Unit filename="../../../../../source/kernel/vsf_timq_dlist.h" />
+		<Unit filename="../../../../../source/service/dynarr/vsf_dynarr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/dynarr/vsf_dynarr.h" />
+		<Unit filename="../../../../../source/service/dynstack/vsf_dynstack.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/dynstack/vsf_dynstack.h" />
+		<Unit filename="../../../../../source/service/fifo/vsf_fifo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/fifo/vsf_fifo.h" />
+		<Unit filename="../../../../../source/service/heap/vsf_heap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/heap/vsf_heap.h" />
+		<Unit filename="../../../../../source/service/json/vsf_json.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/json/vsf_json.h" />
+		<Unit filename="../../../../../source/service/pbuf/vsf_pbuf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/pbuf/vsf_pbuf.h" />
+		<Unit filename="../../../../../source/service/pbuf/vsf_pbuf_pool.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/pbuf/vsf_pbuf_pool.h" />
+		<Unit filename="../../../../../source/service/pool/vsf_pool.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/pool/vsf_pool.h" />
+		<Unit filename="../../../../../source/service/simple_stream/block_stream/vsf_block_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/simple_stream/block_stream/vsf_block_stream.h" />
+		<Unit filename="../../../../../source/service/simple_stream/fifo_stream/vsf_fifo_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/simple_stream/fifo_stream/vsf_fifo_stream.h" />
+		<Unit filename="../../../../../source/service/simple_stream/mem_stream/vsf_mem_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/simple_stream/mem_stream/vsf_mem_stream.h" />
+		<Unit filename="../../../../../source/service/simple_stream/vsf_simple_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/simple_stream/vsf_simple_stream.h" />
+		<Unit filename="../../../../../source/service/stream/interface.h" />
+		<Unit filename="../../../../../source/service/stream/pbuf_queue/vsf_pbuf_queue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/stream/pbuf_queue/vsf_pbuf_queue.h" />
+		<Unit filename="../../../../../source/service/stream/vsf_stream.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/stream/vsf_stream.h" />
+		<Unit filename="../../../../../source/service/stream/vsf_stream_base.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/stream/vsf_stream_base.h" />
+		<Unit filename="../../../../../source/service/stream/vsf_stream_reader.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/stream/vsf_stream_reader.h" />
+		<Unit filename="../../../../../source/service/stream/vsf_stream_writer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/stream/vsf_stream_writer.h" />
+		<Unit filename="../../../../../source/service/trace/vsf_trace.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/trace/vsf_trace.h" />
+		<Unit filename="../../../../../source/service/vsf_service.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/service/vsf_service.h" />
+		<Unit filename="../../../../../source/service/vsf_service_cfg.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_WIC.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_bmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_gif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_jpg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_lbm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_pcx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_png.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_pnm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_svg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_tga.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_tif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_webp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_xcf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_xpm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_xv.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/IMG_xxx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_image/SDL_image.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_ttf/SDL_ttf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/3rd-party/SDL_ttf/SDL_ttf.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_cpuinfo.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_endian.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_events.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_keyboard.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_keycode.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_log.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_mouse.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_mutex.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_rwops.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_stdinc.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_surface.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_thread.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_timer.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/SDL_version.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/begin_code.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/include/SDL2/close_code.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/vsf_sdl2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/vsf_sdl2_cfg.h" />
+		<Unit filename="../../../../../source/shell/media/sdl2/vsf_sdl2_event.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/media/sdl2/vsf_sdl2_pixelformat.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/include/dirent.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/errno.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/fcntl.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/libusb.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/linux/limits.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/poll.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/pthread.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/semaphore.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/signal.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/ctype.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/stddef.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/stdio.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/stdlib.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/string.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/time.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/simple_libc/wchar.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/mount.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/select.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/stat.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/time.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/types.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/sys/wait.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/termios.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/include/unistd.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_ctype.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_pthread.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_sem.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_stdio.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_stdlib.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_string.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/lib/glibc/vsf_linux_glibc_time.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/port/busybox/busybox.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/port/busybox/busybox.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/port/busybox/config.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/port/busybox/shell/vsh.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/vsf_linux.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/vsf_linux.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/vsf_linux_cfg.h" />
+		<Unit filename="../../../../../source/shell/sys/linux/vsf_linux_devfs.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/shell/sys/linux/vsf_linux_socket.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler $options $includes -I ../../../../../source/shell/sys/linux/include -I ../../../../../source/shell/sys/linux/include/simple_libc -c $file -o $object" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/compiler/__common/__compiler.h" />
+		<Unit filename="../../../../../source/utilities/compiler/__common/__retarget_io.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/compiler/__common/__retarget_io/__retarget_io_gcc_llvm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/compiler/__common/__retarget_io/__retarget_io_iar.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/compiler/__common/__type.h" />
+		<Unit filename="../../../../../source/utilities/compiler/x86/type.h" />
+		<Unit filename="../../../../../source/utilities/compiler/x86/x86_compiler.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/compiler/x86/x86_compiler.h" />
+		<Unit filename="../../../../../source/utilities/language_extension/code_region.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/language_extension/code_region.h" />
+		<Unit filename="../../../../../source/utilities/language_extension/delegate.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/language_extension/delegate.h" />
+		<Unit filename="../../../../../source/utilities/language_extension/language_extension.h" />
+		<Unit filename="../../../../../source/utilities/language_extension/simple_sprintf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/language_extension/simple_sscanf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/template/template.h" />
+		<Unit filename="../../../../../source/utilities/template/vsf_bitmap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/template/vsf_bitmap.h" />
+		<Unit filename="../../../../../source/utilities/template/vsf_list.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/template/vsf_list.h" />
+		<Unit filename="../../../../../source/utilities/template/vsf_queue.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../../../source/utilities/template/vsf_queue.h" />
+		<Unit filename="../../../config/awtk_config.h" />
+		<Unit filename="../../../config/btstack_config.h" />
+		<Unit filename="../../../config/lv_conf.h" />
+		<Unit filename="../../../config/lwipopts.h" />
+		<Unit filename="../../../config/vsf_tgui_cfg.h" />
+		<Unit filename="../../../config/vsf_usr_cfg.h" />
+		<Unit filename="../../../config/vsf_usr_cfg/vsf_usr_cfg_linux.h" />
+		<Unit filename="../../../demo/LingLongGUI_demo/application/Fonts/SimSun_9.h" />
+		<Unit filename="../../../demo/LingLongGUI_demo/application/LL_User.h" />
+		<Unit filename="../../../demo/LingLongGUI_demo/application/ui_ll_application.h" />
+		<Unit filename="../../../demo/LingLongGUI_demo/application/ui_ll_applicationLogic.h" />
+		<Unit filename="../../../demo/aic8800/aic8800_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/aic8800/bt_demo/bt_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/aic8800/wifi_demo/wifi_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/audio_demo/audio_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/awtk_demo/awtk_application.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/awtk_demo/awtk_assets.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/awtk_demo/awtk_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/btstack_demo/btstack_application.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/btstack_demo/btstack_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_audio_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_audio_common.h" />
+		<Unit filename="../../../demo/common/usrapp_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_common.h" />
+		<Unit filename="../../../demo/common/usrapp_net_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_net_common.h" />
+		<Unit filename="../../../demo/common/usrapp_ui_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_ui_common.h" />
+		<Unit filename="../../../demo/common/usrapp_usbd_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_usbd_common.h" />
+		<Unit filename="../../../demo/common/usrapp_usbh_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/common/usrapp_usbh_common.h" />
+		<Unit filename="../../../demo/cpp_demo/cpp_demo.cpp" />
+		<Unit filename="../../../demo/disp_demo/disp_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/distbus_demo/app/distbus_hal.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/distbus_demo/bus/distbus_lwip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/distbus_demo/bus/distbus_usart.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/distbus_demo/distbus_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/evm_demo/evm_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/fakefat32.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/fakefat32.h" />
+		<Unit filename="../../../demo/freetype_demo/freetype_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/gato_demo/gato_application.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/gato_demo/gato_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/hal_demo/usart_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/json_demo/json_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/kernel_test/cross_task_test.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/kernel_test/eda_test.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/kernel_test/fsm_test.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/kernel_test/sem_test.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/linux_demo/libusb_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/linux_demo/linux_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/linux_demo/mount_file_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/lua_demo/love_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/lvgl_demo/lvgl_application.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/lvgl_demo/lvgl_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/lvgl_demo/lvgl_terminal_application.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/lwip_demo/lwip_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/nnom_demo/model/mnist/image.h" />
+		<Unit filename="../../../demo/nnom_demo/model/mnist/weights.h" />
+		<Unit filename="../../../demo/nnom_demo/nnom_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/nuklear_demo/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/nuklear_demo/sdl2surface_rawfb.h" />
+		<Unit filename="../../../demo/scsi_demo/scsi_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/sdl2_demo/sdl2_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/socket_demo/socket_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/stream_hal_demo/stream_usart_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/images/demo_images.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/images/demo_images.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/images/demo_images_data.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/stopwatch/stopwatch.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/stopwatch/stopwatch.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_custom.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_custom.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_control_create.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_control_create.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_control_tree_dump.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_control_tree_dump.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_designer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_designer.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_designer_common.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_designer/tgui_designer_common.h" />
+		<Unit filename="../../../demo/tgui_demo/tgui_demo/tgui_port.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/tgui_demo/tgui_main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbd_demo/usbd_demo_cdc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbd_demo/usbd_demo_msc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbd_demo/usbd_demo_uac.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbd_demo/usbd_demo_user.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbd_demo/usbd_demo_uvc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/usbh_demo/usbh_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/vsfip_demo/vsfip_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/vsfvm_demo/vsfvm_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../demo/xui_demo/xui_demo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>

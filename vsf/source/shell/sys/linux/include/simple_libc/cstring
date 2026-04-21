@@ -1,0 +1,38 @@
+#include <string.h>
+
+namespace std {
+    using ::ffs;
+    using ::memset;
+    using ::strlen;
+    using ::strnlen;
+    using ::strcmp;
+    using ::strncmp;
+    using ::strverscmp;
+#if VSF_LINUX_SIMPLE_STDLIB_CFG_HEAP_MONITOR == ENABLED
+    using ::____strdup_ex;
+#endif
+
+#if     VSF_LINUX_SIMPLE_STDLIB_CFG_HEAP_MONITOR != ENABLED                     \
+    ||  VSF_LINUX_SIMPLE_STDLIB_CFG_HEAP_MONITOR_TRACE_CALLER != ENABLED
+    using ::strdup;
+#endif
+    using ::strndup;
+    using ::strscpy;
+    using ::strcat;
+    using ::strncat;
+    using ::strcoll;
+    using ::strtok;
+    using ::strxfrm;
+    using ::strspn;
+    using ::strcspn;
+    using ::strpbrk;
+    using ::strerror;
+    using ::strstr;
+    using ::strchr;
+    using ::strrchr;
+    using ::memchr;
+
+    using ::memcpy;
+    using ::memmove;
+    using ::memcmp;
+};

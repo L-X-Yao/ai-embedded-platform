@@ -1,0 +1,625 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+/****************************************************************************
+*  Copyright 2020 by Gorgon Meducer (Email:embedded_zhuoran@hotmail.com)    *
+*                                                                           *
+*  Licensed under the Apache License, Version 2.0 (the "License");          *
+*  you may not use this file except in compliance with the License.         *
+*  You may obtain a copy of the License at                                  *
+*                                                                           *
+*     http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                           *
+*  Unless required by applicable law or agreed to in writing, software      *
+*  distributed under the License is distributed on an "AS IS" BASIS,        *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+*  See the License for the specific language governing permissions and      *
+*  limitations under the License.                                           *
+*                                                                           *
+****************************************************************************/
+
+#ifndef __VSF_TINY_GUI_COMMON_H__
+#define __VSF_TINY_GUI_COMMON_H__
+
+/*============================ INCLUDES ======================================*/
+
+#if VSF_USE_TINY_GUI == ENABLED
+#include "osa_service/vsf_osa_service.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*============================ MACROS ========================================*/
+
+#define VSF_TGUI_COLORSIZE_1BIT     0
+#define VSF_TGUI_COLORSIZE_4BIT     2
+#define VSF_TGUI_COLORSIZE_8BIT     3
+#define VSF_TGUI_COLORSIZE_16BIT    4
+#define VSF_TGUI_COLORSIZE_24BIT    6
+#define VSF_TGUI_COLORSIZE_32BIT    5
+
+/*============================ MACROFIED FUNCTIONS ===========================*/
+
+
+#   define tgui_contains(...)          __VA_ARGS__
+
+#   define tgui_null_parent(__type)     ((__type *)0)
+
+#   define __tgui_attribute(__NAME, ...)  .__NAME = __VA_ARGS__
+#   define tgui_attribute(__NAME, ...)     __tgui_attribute(__NAME, __VA_ARGS__)
+
+#   if VSF_TGUI_CFG_SUPPORT_CONTROL_LAYOUT_ALIGN == ENABLED
+#       define tgui_alignto(...)    __tgui_attribute(tAlign,        {__VA_ARGS__})
+#   endif
+
+#   if VSF_TGUI_CFG_SUPPORT_CONTROL_LAYOUT_ANCHOR == ENABLED
+#       define tgui_anchor(...)     __tgui_attribute(tAnchor,       __VA_ARGS__)
+#   endif
+
+#   if VSF_TGUI_CFG_SUPPORT_CONTROL_LAYOUT_DOCK == ENABLED
+#       define tgui_dock(...)       __tgui_attribute(tDock,         __VA_ARGS__)
+#   endif
+
+#   if VSF_TGUI_CFG_SUPPORT_CONTROL_LAYOUT_MARGIN == ENABLED
+#       define tgui_margin(...)     __tgui_attribute(tMargin,       {__VA_ARGS__})
+#   else
+#       define tgui_margin(...)     .dummy_bits = 0
+#   endif
+#   if VSF_TGUI_CFG_SUPPORT_CONTROL_LAYOUT_PADDING == ENABLED
+#       define tgui_padding(...)                                                \
+            __tgui_attribute(tContainerPadding, {__VA_ARGS__})
+#   else
+#       define tgui_padding(...)    .dummy_bits = 0
+#   endif
+
+#   if VSF_TGUI_CFG_SUPPORT_MULTI_LANGUAGE_EXTERNSION == ENABLED
+#       define __tgui_text(__NAME, __ID, __ALIGN)                               \
+                .__NAME.tString.tID = (__ID),                                   \
+                .__NAME.bIsChanged = true,                                      \
+                .__NAME.bIsAutoSize = false,                                    \
+                .__NAME.u4Align = (__ALIGN)
+#       define __tgui_text0(__NAME, __ID)                                       \
+                __tgui_text1(__NAME, (__ID), 0)
+#       define __tgui_text(__NAME, __ID, ...)                                   \
+            __PLOOC_EVAL(__tgui_text, __VA_ARGS__)(__NAME, (__ID), ##__VA_ARGS__)
+#   else
+
+#       if VSF_TGUI_CFG_SAFE_STRING_MODE == ENABLED
+#           define __tgui_text1(__NAME, __TEXT, __AUTOSIZE, __ALIGN)            \
+                .__NAME.tString.pstrText = __TEXT,                              \
+                .__NAME.tString.s16_size = sizeof(__TEXT) - 1,                  \
+                .__NAME.bIsChanged = true,                                      \
+                .__NAME.bIsAutoSize = (__AUTOSIZE),                             \
+                .__NAME.u4Align = (__ALIGN)
+#       else
+#           define __tgui_text1(__NAME, __TEXT, __AUTOSIZE, __ALIGN)            \
+                .__NAME.tString.pstrText = __TEXT,                              \
+                .__NAME.bIsChanged = true,                                      \
+                .__NAME.bIsAutoSize = (__AUTOSIZE),                             \
+                .__NAME.u4Align = (__ALIGN)
+#       endif
+#       define __tgui_text0(__NAME, __TEXT, __AUTOSIZE)                         \
+                __tgui_text1(__NAME, (__TEXT), (__AUTOSIZE), 0)
+#       define __tgui_text(__NAME, __TEXT, __AUTOSIZE, ...)                     \
+            __PLOOC_EVAL(__tgui_text, __VA_ARGS__)(__NAME, (__TEXT), (__AUTOSIZE), ##__VA_ARGS__)
+#   endif
+
+#   define __tgui_container_type1(__TYPE, __AUTOSIZE)                           \
+                .ContainerAttribute.u5Type = (__TYPE),                          \
+                .ContainerAttribute.bIsAutoSize = (__AUTOSIZE)
+#   define __tgui_container_type0(__TYPE)                                       \
+                __tgui_container_type1((__TYPE), true)
+#   define __tgui_container_type(__TYPE, ...)                                   \
+                __PLOOC_EVAL(__tgui_container_type, __VA_ARGS__)((__TYPE), ##__VA_ARGS__)
+
+#   define __tgui_line_space(__NAME, __PIX)                                     \
+                .__NAME.chInterLineSpace = (__PIX)
+
+#   define tgui_size(...)                                                       \
+                __tgui_attribute(tSize,                 {__VA_ARGS__})
+#   define tgui_location(...)                                                   \
+                __tgui_attribute(tLocation,             {__VA_ARGS__})
+#   define tgui_region(...)                                                     \
+                __tgui_attribute(tRegion,               {__VA_ARGS__})
+#   define tgui_background(...)                                                 \
+                __tgui_attribute(tBackground,           {__VA_ARGS__})
+#   define tgui_text(__NAME, __TEXT, __AUTOSIZE, ...)                           \
+                __tgui_text(__NAME, __TEXT, __AUTOSIZE, ##__VA_ARGS__)
+#   define tgui_line_space(__NAME, __PIX)                                       \
+                __tgui_line_space(__NAME, (__PIX))
+
+#   if VSF_TGUI_CFG_SUPPORT_TIMER == ENABLED
+#       define tgui_timer1(__NAME, __INTERVAL, __REPEATE, __ENABLED)            \
+                __tgui_attribute(__NAME,   {.u29Interval = (__INTERVAL),        \
+                                            .bIsRepeat = (__REPEATE),           \
+                                            .bEnabled = (__ENABLED),            \
+                                           })
+#       define tgui_timer0(__NAME, __INTERVAL, __REPEATE)                       \
+                tgui_timer1(__NAME, (__INTERVAL), (__REPEATE), true)
+#       define tgui_timer(__NAME, __INTERVAL, __REPEATE, ...)                   \
+                __PLOOC_EVAL(tgui_timer, __VA_ARGS__)(__NAME, (__INTERVAL), (__REPEATE), ##__VA_ARGS__)
+#   endif
+
+#   define tgui_handler(...)                                                    \
+                __tgui_attribute(msg_handler,       {__VA_ARGS__})
+#   define tgui_container_type(__TYPE, ...)                                     \
+                __tgui_container_type(__TYPE, ##__VA_ARGS__)
+
+#define __describe_tgui_msgmap(__NAME, ...)                                     \
+            const vsf_tgui_user_evt_handler __NAME[] = {                        \
+                __VA_ARGS__                                                     \
+            };
+#define describe_tgui_msgmap(__NAME, ...)                                       \
+            __describe_tgui_msgmap(__NAME, __VA_ARGS__)
+
+
+#define __tgui_handlers(...)                                                    \
+                .tMSGMap = {                                                    \
+                    .ptItems =  ((const vsf_tgui_user_evt_handler *)({          \
+                        static const vsf_tgui_user_evt_handler                  \
+                            VSF_MACRO_SAFE_NAME(MessageMap)[] = {__VA_ARGS__};  \
+                        VSF_MACRO_SAFE_NAME(MessageMap);})),                    \
+                    .chCount = sizeof((const vsf_tgui_user_evt_handler []) {    \
+                                    __VA_ARGS__                                 \
+                                }) / sizeof(vsf_tgui_user_evt_handler),         \
+                }
+
+
+#define __tgui_msgmap(...)                                                      \
+                .tMSGMap = {                                                    \
+                    .ptItems =  (const vsf_tgui_user_evt_handler []) {          \
+                        __VA_ARGS__                                             \
+                    },                                                          \
+                    .chCount = dimof(((const vsf_tgui_user_evt_handler []) {    \
+                        __VA_ARGS__                                             \
+                    })),                                                        \
+                }
+
+#define __tgui_msgmap_var(__msgmap)                                             \
+                .tMSGMap = {                                                    \
+                    .ptItems = (__msgmap),                                      \
+                    .chCount = dimof(__msgmap),                                 \
+                }
+
+#if VSF_TGUI_CFG_SUPPORT_NAME_STRING == ENABLED
+
+#   define __tgui_msg_handler1(__MSG, __FUNC, __MASK)                           \
+            {                                                                   \
+                .msg = (__MSG),                                                 \
+                .u2Type = VSF_MSGT_NODE_HANDLER_TYPE_CALLBACK,                  \
+                .FSM = (vsf_tgui_controal_fsm_t *)&__FUNC,                      \
+                .u10EvtMask = (__MASK),                                         \
+                .handler_name_ptr = #__FUNC,                                    \
+            }
+
+#   define __tgui_msg_mux1(__MSG, __FUNC, __MASK)                               \
+            {                                                                   \
+                .msg = (__MSG),                                                 \
+                .u2Type = VSF_MSGT_NODE_HANDLER_TYPE_CALLBACK,                  \
+                .FSM = (vsf_tgui_controal_fsm_t *)&__FUNC,                      \
+                .u10EvtMask = (__MASK),                                         \
+                .handler_name_ptr = #__FUNC,                                    \
+            }
+#else
+
+#   define __tgui_msg_handler1(__MSG, __FUNC, __MASK)                           \
+            {                                                                   \
+                .msg = (__MSG),                                                 \
+                .u2Type = VSF_MSGT_NODE_HANDLER_TYPE_CALLBACK,                  \
+                .FSM = (vsf_tgui_controal_fsm_t *)&__FUNC,                      \
+                .u10EvtMask = (__MASK),                                         \
+            }
+
+#   define __tgui_msg_mux1(__MSG, __FUNC, __MASK)                               \
+            {                                                                   \
+                .msg = (__MSG),                                                 \
+                .u2Type = VSF_MSGT_NODE_HANDLER_TYPE_CALLBACK,                  \
+                .FSM = (vsf_tgui_controal_fsm_t *)&__FUNC,                      \
+                .u10EvtMask = (__MASK),                                         \
+            }
+#endif
+
+#define __tgui_msg_handler0(__MSG, __FUNC)                                      \
+            __tgui_msg_handler1((__MSG), __FUNC, (uint16_t)-1)
+#define __tgui_msg_handler(__MSG, __FUNC, ...)                                  \
+            __PLOOC_EVAL(__tgui_msg_handler, __VA_ARGS__)((__MSG), __FUNC, ##__VA_ARGS__)
+
+#define __tgui_msg_mux0(__MSG, __FUNC)                                          \
+            __tgui_msg_mux1((__MSG), __FUNC, 0)
+#define __tgui_msg_mux(__MSG, __FUNC, ...)                                      \
+            __PLOOC_EVAL(__tgui_msg_mux, __VA_ARGS__)((__MSG), __FUNC, ##__VA_ARGS__)
+
+#define tgui_handlers(...)              __tgui_handlers(__VA_ARGS__)
+
+#define tgui_msgmap(...)                __tgui_msgmap(__VA_ARGS__)
+#define tgui_msgmap_var(__msgmap)       __tgui_msgmap_var(__msgmap)
+
+#define tgui_msg_handler(__MSG, __FUNC, ...)                                    \
+            __tgui_msg_handler(__MSG, __FUNC, ##__VA_ARGS__)
+
+
+
+#define tgui_msg_mux(__MSG, __FUNC, ...)                                        \
+            __tgui_msg_mux((__MSG), __FUNC, ##__VA_ARGS__)
+
+#define tgui_initalize_top_container(__DESCRIPTOR_NAME, __PTR)                  \
+            do {                                                                \
+                *(__PTR) = __DESCRIPTOR_NAME;                                   \
+                vsf_msgt_offset_tree_init((const vsf_msgt_container_t*)(__PTR));\
+            } while(0)
+
+/*============================ TYPES =========================================*/
+
+/*----------------------------------------------------------------------------*
+ *  Layout                                                                    *
+ *----------------------------------------------------------------------------*/
+typedef struct vsf_tgui_location_t {
+    int16_t iX;
+    int16_t iY;
+}vsf_tgui_location_t;
+
+typedef struct vsf_tgui_size_t  {
+    int16_t iWidth;
+    int16_t iHeight;
+} vsf_tgui_size_t;
+
+typedef struct vsf_tgui_region_t {
+    implement_ex(vsf_tgui_location_t, tLocation)
+    implement_ex(vsf_tgui_size_t, tSize)
+}vsf_tgui_region_t;
+
+
+typedef enum {
+    VSF_TGUI_ALIGN_CENTER       = 0,
+    VSF_TGUI_ALIGN_LEFT         = VSF_BIT(0),
+    VSF_TGUI_ALIGN_RIGHT        = VSF_BIT(1),
+    VSF_TGUI_ALIGN_TOP          = VSF_BIT(2),
+    VSF_TGUI_ALIGN_BOTTOM       = VSF_BIT(3),
+    VSF_TGUI_ALIGN_FILL         = VSF_TGUI_ALIGN_LEFT
+                                | VSF_TGUI_ALIGN_RIGHT
+                                | VSF_TGUI_ALIGN_TOP
+                                | VSF_TGUI_ALIGN_BOTTOM,
+
+    VSF_TGUI_ALIGN_MID_TOP      = VSF_TGUI_ALIGN_TOP,
+                                
+    VSF_TGUI_ALIGN_MID_BOTTOM   = VSF_TGUI_ALIGN_BOTTOM,
+
+    VSF_TGUI_ALIGN_MID_LEFT     = VSF_TGUI_ALIGN_LEFT,
+
+    VSF_TGUI_ALIGN_MID_RIGHT    = VSF_TGUI_ALIGN_RIGHT,
+
+    VSF_TGUI_ALIGN_TOP_LEFT     = VSF_TGUI_ALIGN_LEFT
+                                | VSF_TGUI_ALIGN_TOP,
+
+    VSF_TGUI_ALIGN_TOP_RIGHT    = VSF_TGUI_ALIGN_RIGHT
+                                | VSF_TGUI_ALIGN_TOP,
+
+    VSF_TGUI_ALIGN_BOTTOM_LEFT  = VSF_TGUI_ALIGN_LEFT
+                                | VSF_TGUI_ALIGN_BOTTOM,
+
+    VSF_TGUI_ALIGN_BOTTOM_RIGHT = VSF_TGUI_ALIGN_RIGHT
+                                | VSF_TGUI_ALIGN_BOTTOM,
+
+}vsf_tgui_align_mode_t;
+
+typedef enum {
+    VSF_TGUI_DOCK_NONE      = 0,
+    VSF_TGUI_DOCK_LEFT      = VSF_BIT(0),
+    VSF_TGUI_DOCK_RIGHT     = VSF_BIT(1),
+    VSF_TGUI_DOCK_TOP       = VSF_BIT(2),
+    VSF_TGUI_DOCK_BOTTOM    = VSF_BIT(3),
+    VSF_TGUI_DOCK_FILL      =   VSF_TGUI_DOCK_LEFT
+                            |   VSF_TGUI_DOCK_RIGHT
+                            |   VSF_TGUI_DOCK_TOP
+                            |   VSF_TGUI_DOCK_BOTTOM,
+}vsf_tgui_dock_mode_t;
+
+typedef enum {
+    VSF_TGUI_ANCHOR_NONE    = 0,
+    VSF_TGUI_ANCHOR_LEFT    = VSF_BIT(0),
+    VSF_TGUI_ANCHOR_RIGHT   = VSF_BIT(1),
+    VSF_TGUI_ANCHOR_TOP     = VSF_BIT(2),
+    VSF_TGUI_ANCHOR_BOTTOM  = VSF_BIT(3),
+}vsf_tgui_anchor_mode_t;
+
+
+/*----------------------------------------------------------------------------*
+ *  String & Language                                                         *
+ *----------------------------------------------------------------------------*/
+
+#if VSF_TGUI_CFG_SUPPORT_MULTI_LANGUAGE_EXTERNSION == ENABLED
+#   if !defined(VSF_TGUI_CFG_LANGUAGE_ID_TYPE)
+#       define VSF_TGUI_CFG_LANGUAGE_ID_TYPE            uint8_t
+#   endif
+
+typedef VSF_TGUI_CFG_LANGUAGE_ID_TYPE                   vsf_tgui_text_id_t;
+
+typedef struct vsf_tgui_string_t {
+    vsf_tgui_text_id_t                                  tID;
+} vsf_tgui_string_t;
+
+#else
+
+#if !defined(VSF_TGUI_CFG_STRING_TYPE)
+#   define VSF_TGUI_CFG_STRING_TYPE                     const char
+#endif
+
+typedef struct vsf_tgui_string_t {
+    VSF_TGUI_CFG_STRING_TYPE    *pstrText;
+#if VSF_TGUI_CFG_SAFE_STRING_MODE == ENABLED
+    int16_t                     s16_size;
+#endif
+} vsf_tgui_string_t;
+
+#endif
+
+typedef struct vsf_tgui_text_info_t {
+    vsf_tgui_string_t   tString;
+    uint8_t             u4Align     : 4;
+    uint8_t                         : 2;
+    uint8_t             bIsChanged  : 1;
+    uint8_t             bIsAutoSize : 1;
+    int8_t              chInterLineSpace;
+#   if VSF_TGUI_CFG_TEXT_SIZE_INFO_CACHING == ENABLED
+    struct {
+        vsf_tgui_size_t tStringSize;
+        uint16_t        hwLines;
+        uint8_t         chCharHeight;
+    } tInfoCache;
+#   endif
+
+}vsf_tgui_text_info_t;
+
+/*----------------------------------------------------------------------------*
+ *  Tile                                                                      *
+ *----------------------------------------------------------------------------*/
+
+#ifndef VSF_TGUI_CFG_DRAM_POINTER_TYPE
+#   define VSF_TGUI_CFG_DRAM_POINTER_TYPE           uintptr_t
+#endif
+
+typedef VSF_TGUI_CFG_DRAM_POINTER_TYPE vsf_tgui_disp_ram_uintptr_t;
+
+#define VSF_TGUI_TILE_COLORTYPE_RGB         0
+#define VSF_TGUI_TILE_COLORTYPE_RGBA        1
+#define VSF_TGUI_TILE_COLORTYPE_A           2
+
+typedef struct vsf_tgui_tile_core_t {
+    struct {
+        uint8_t         u2RootTileType      : 2;    /* 0: buf_offset tile, 1: index tile, 2 buf_addr tile, 3 undefined*/
+        uint8_t         u2ColorType         : 2;    /* 0: rgb, 1: rgba, 2: alpha/graysacle */
+        uint8_t         u3ColorSize         : 3;    /* 0: 1bit, 2: 4bit, 3: 8bit 4: 16bit, 5: 32bit, 6: 24bit */
+        uint8_t         bIsRootTile         : 1;    /* 0: Child Tile, u3ColorSize and u4RootTileType have no meaning
+                                                       1: Root Tile, u3ColorSize and u4RootTileType have meaning*/
+    } Attribute;
+
+#if VSF_TGUI_CFG_SUPPORT_NAME_STRING == ENABLED
+    const char *name_ptr;
+#endif
+} vsf_tgui_tile_core_t;
+
+typedef struct vsf_tgui_tile_idx_root_t {
+    uint8_t chIndex;                                /*index is stored in the lower 8bit*/
+    implement(vsf_tgui_tile_core_t)
+}vsf_tgui_tile_idx_root_t;
+
+typedef struct vsf_tgui_tile_buf_root_t {
+    uint8_t                 : 8;
+    implement(vsf_tgui_tile_core_t)
+    implement_ex(vsf_tgui_size_t, tSize)            /* the size of the tile */
+    vsf_tgui_disp_ram_uintptr_t   ptBitmap;         /*A pointer points to bitmap buffer*/
+}vsf_tgui_tile_buf_root_t;
+
+typedef struct vsf_tgui_tile_child_t {
+
+    union {
+        union {
+            struct {
+                uint8_t : 8;
+                implement(vsf_tgui_tile_core_t)
+            };
+            implement_ex(vsf_tgui_location_t, tLocation)
+        };
+    };
+
+    implement_ex(vsf_tgui_size_t, tSize)            /* the size of the tile */
+    vsf_tgui_tile_core_t    *parent_ptr;              /* points to the parent */
+} vsf_tgui_tile_child_t;
+
+typedef union vsf_tgui_tile_t {
+    implement_ex(
+        struct {
+            uint8_t : 8;
+            vsf_tgui_tile_core_t    tCore;
+        },
+        _
+    )
+    vsf_tgui_tile_idx_root_t    tIndexRoot;
+    vsf_tgui_tile_buf_root_t    tBufRoot;
+    vsf_tgui_tile_child_t       tChild;
+} vsf_tgui_tile_t;
+
+
+/*----------------------------------------------------------------------------*
+ *  Container                                                                 *
+ *----------------------------------------------------------------------------*/
+typedef enum vsf_tgui_container_type_t {
+    VSF_TGUI_CONTAINER_TYPE_PLANE,
+    VSF_TGUI_CONTAINER_TYPE_STREAM_HORIZONTAL,
+    VSF_TGUI_CONTAINER_TYPE_STREAM_VERTICAL,
+    VSF_TGUI_CONTAINER_TYPE_LINE_STREAM_HORIZONTAL,
+    VSF_TGUI_CONTAINER_TYPE_LINE_STREAM_VERTICAL,
+}vsf_tgui_container_type_t;
+
+
+/*----------------------------------------------------------------------------*
+ *  tGUI Message & Event                                                      *
+ *----------------------------------------------------------------------------*/
+#define VSF_TGUI_MSG_MSK    (0x1F0)
+#define VSF_TGUI_EVT_MSK    (0x00F)
+
+enum {
+    VSF_TGUI_MSG_AVAILABLE          = 0x200,    //VSF_EVT_SYSTEM + 0x100,
+    VSF_TGUI_MSG_LOW_LEVEL_READY_TO_REFRESH,
+    VSF_TGUI_MSG = 0x210,
+
+    //! control events
+    VSF_TGUI_MSG_CONTROL_EVT        = VSF_TGUI_MSG + 0x00,
+        VSF_TGUI_EVT_ON_SET_TOP_CONTAINER,
+        VSF_TGUI_EVT_ON_LOAD,
+        VSF_TGUI_EVT_ON_DEPOSE,
+        VSF_TGUI_EVT_UPDATE,
+        VSF_TGUI_EVT_UPDATE_TREE,
+        VSF_TGUI_EVT_REFRESH,
+        VSF_TGUI_EVT_POST_REFRESH,
+        VSF_TGUI_EVT_GET_ACTIVE,
+        VSF_TGUI_EVT_LOST_ACTIVE,
+        VSF_TGUI_EVT_ON_TIME,
+
+    //! pointer events
+    VSF_TGUI_MSG_POINTER_EVT        = VSF_TGUI_MSG + 0x10,
+
+        VSF_TGUI_EVT_POINTER_DOWN = VSF_TGUI_MSG_POINTER_EVT,
+        VSF_TGUI_EVT_POINTER_HOLD,                                              //!< not all device support this
+        VSF_TGUI_EVT_POINTER_UP,
+        VSF_TGUI_EVT_POINTER_CLICK,
+        VSF_TGUI_EVT_POINTER_DOUBLE_CLICK,
+
+        /*! pointer first entering the region of a control*/
+        VSF_TGUI_EVT_POINTER_ENTER,                                             //!< not all device support this
+
+        /*! pointer move out of the region of the target control*/
+        VSF_TGUI_EVT_POINTER_LEFT,                                              //!< not all device support this
+
+        /*! pointer stay in the region of a control for a while,
+         *! it is different from VSF_TGUI_EVT_POINTER_HOLD. Hold requires that
+         *! the pointer is down at the same control. Hover requires no pointer
+         *! down at the target control.
+         *!
+         *! this event is currently not supported but reserved.
+         */
+        VSF_TGUI_EVT_POINTER_HOVER,                                             //!< not all device support this
+
+        VSF_TGUI_EVT_POINTER_MOVE,                                              //!< not all device support this
+
+    //! key events
+    VSF_TGUI_MSG_KEY_EVT            = VSF_TGUI_MSG + 0x20,
+        VSF_TGUI_EVT_KEY_DOWN = VSF_TGUI_MSG_KEY_EVT,
+        VSF_TGUI_EVT_KEY_REPEATE,                                               //!< not all device support this
+        VSF_TGUI_EVT_KEY_UP,
+        VSF_TGUI_EVT_KEY_PRESSED,
+        VSF_TGUI_EVT_KEY_LONG_PRESSED,                                          //!< not all device support this
+        VSF_TGUI_EVT_KEY_DOUBLE_CLICK,                                          //!< not all device support this
+
+    //! gesture events
+    VSF_TGUI_MSG_GESTURE_EVT        = VSF_TGUI_MSG + 0x30,
+
+        VSF_TGUI_EVT_GESTURE_SLIDE = VSF_TGUI_MSG_GESTURE_EVT,
+        VSF_TGUI_EVT_GESTURE_WHEEL,                                             //!< not all device support this
+        VSF_TGUI_EVT_GESTURE_ZOOM_IN,                                           //!< not all device support this
+        VSF_TGUI_EVT_GESTURE_ZOOM_OUT,                                          //!< not all device support this
+        VSF_TGUI_EVT_GESTURE_ROTATE_CLOCKWISE,                                  //!< not all device support this
+        VSF_TGUI_EVT_GESTURE_ROTATE_ANTICLOCKWISE,                              //!< not all device support this
+
+    //! All control specific events share the same code region
+    VSF_TGUI_MSG_CONTROL_SPECIFIC_EVT   = VSF_TGUI_MSG + 0x40,
+
+    VSF_TGUI_MSG_LIST_EVT           = VSF_TGUI_MSG_CONTROL_SPECIFIC_EVT,
+        VSF_TGUI_EVT_LIST_SELECTION_CHANGED = VSF_TGUI_MSG_LIST_EVT,
+        VSF_TGUI_EVT_LIST_SLIDING_STARTED,
+        VSF_TGUI_EVT_LIST_SLIDING_STOPPED,
+};
+
+enum {
+    VSF_TGUI_MSG_RT_UNHANDLED   = fsm_rt_err,
+    VSF_TGUI_MSG_RT_DONE        = fsm_rt_cpl,
+    VSF_TGUI_MSG_RT_REFRESH     = fsm_rt_user,
+    VSF_TGUI_MSG_RT_REFRESH_PARENT,
+};
+
+typedef struct vsf_tgui_control_t vsf_tgui_control_t;
+typedef struct vsf_tgui_root_container_t vsf_tgui_root_container_t;
+
+typedef struct vsf_tgui_msg_t {
+    implement(vsf_msgt_msg_t)
+    vsf_tgui_control_t *target_ptr;
+} vsf_tgui_msg_t;
+
+typedef struct vsf_tgui_refresh_evt_t {
+    implement(vsf_tgui_msg_t)
+#if VSF_TGUI_CFG_SUPPORT_DIRTY_REGION == ENABLED
+    bool refresh_dirty;
+#endif
+    vsf_tgui_region_t *region_ptr;
+} vsf_tgui_refresh_evt_t;
+
+typedef struct vsf_tgui_pointer_evt_t {
+    implement(vsf_tgui_msg_t)
+    implement(vsf_tgui_location_t)
+    int8_t idx;
+} vsf_tgui_pointer_evt_t;
+
+typedef struct vsf_tgui_gesture_evt_t {
+    implement(vsf_tgui_msg_t)
+    struct {
+        implement(vsf_tgui_location_t)
+        uint16_t    ms;
+    } delta;
+    int8_t idx;
+}vsf_tgui_gesture_evt_t;
+
+typedef struct vsf_tgui_key_evt_t {
+    implement(vsf_tgui_msg_t)
+    uint16_t hwKeyValue;                                                        //!< control, alt, shift, Fn and etc can be encoded with
+} vsf_tgui_key_evt_t;
+
+typedef union vsf_tgui_evt_t {
+    implement(vsf_tgui_msg_t)
+    vsf_tgui_refresh_evt_t  RefreshEvt;
+    vsf_tgui_key_evt_t      tKeyEvt;
+    vsf_tgui_pointer_evt_t  PointerEvt;
+    vsf_tgui_gesture_evt_t  tGestureEvt;
+}  vsf_tgui_evt_t;
+
+/*============================ GLOBAL VARIABLES ==============================*/
+/*============================ PROTOTYPES ====================================*/
+
+extern
+vsf_tgui_tile_t* vsf_tgui_tile_get_root(    const vsf_tgui_tile_t* ptTile,
+                                            vsf_tgui_region_t* region_ptr);
+
+extern
+vsf_tgui_size_t vsf_tgui_root_tile_get_size(const vsf_tgui_tile_t* ptTile);
+
+extern
+uint16_t vsf_tgui_root_tile_get_pixel_bitsize(const vsf_tgui_tile_t* ptTile);
+
+extern
+bool vsf_tgui_tile_is_root(const vsf_tgui_tile_t* ptTile);
+
+extern
+void vsf_tgui_text_set( vsf_tgui_text_info_t *ptTextInfo,
+                        VSF_TGUI_CFG_STRING_TYPE *pstrNew);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+#endif
+/* EOF */

@@ -1,0 +1,568 @@
+#ifndef __SIMPLE_LIBC_STRING_VIEW__
+#define __SIMPLE_LIBC_STRING_VIEW__
+
+#if __cplusplus > 201703L
+#   include <compare>
+#endif
+#include <iosfwd>
+#include <type_traits>
+
+namespace std {
+    template <class T>
+    T * __memcpy(T *dst, const T *src, size_t count)
+    {
+        return (T *)memcpy((void *)dst, (void *)src, count * sizeof(T));
+    }
+
+    template <class T>
+    T * __memmove(T *dst, const T *src, size_t count)
+    {
+        return (T *)memmove((void *)dst, (void *)src, count * sizeof(T));
+    }
+
+    template <class T>
+    // avoid to use memcmp in constexpr function
+    constexpr int __memcmp(const T *str1, const T *str2, size_t count)
+    {
+        while (count-- > 0) {
+            if (*str1 != *str2) {
+                return *str1 > *str2 ? 1 : -1;
+            }
+            str1++;
+            str2++;
+        }
+        return 0;
+    }
+
+    template <class T>
+    T * __memset(T *dst, T t, size_t n)
+    {
+        T *tmp = dst;
+        while (n--) {
+            *tmp++ = t;
+        }
+        return dst;
+    }
+
+    template <class T>
+    constexpr size_t __strlen(const T *str)
+    {
+        size_t result = 0;
+        for (; str[result]; result++);
+        return result;
+    }
+
+    template <class T>
+    T * __strcpy(T *dst, const T *src)
+    {
+        T *result = dst;
+        while ((*dst++ = *src++) != 0);
+        return result;
+    }
+
+    template <class T>
+    constexpr T * __strchr(const T *str, T c)
+    {
+        T ch;
+        while ((ch = *str) != '\0') {
+            if (ch == c) {
+                return (T *)str;
+            }
+            str++;
+        }
+        return nullptr;
+    }
+
+    template <class T>
+    constexpr static T * __strstr(const T *s1, const T *s2)
+    {
+        size_t l1 = 0, l2 = 0;
+        l2 = __strlen(s2);
+        if (!l2) { return (T *)s1; }
+        l1 = __strlen(s1);
+        while (l1 >= l2) {
+            l1--;
+            if (!__memcmp(s1, s2, l2)) {
+                return (T *)s1;
+            }
+            s1++;
+        }
+        return nullptr;
+    }
+
+    template <class T>
+    constexpr static T * __strrstr(const T *start, const T *end, const T *sub)
+    {
+        T *r = nullptr, *p;
+
+        end -= __strlen(sub);
+        if (sub[0] == T(0)) {
+            return (T *)end;
+        }
+        while (1) {
+            p = __strstr(start, sub);
+            if (!p || (p > end)) {
+                return r;
+            }
+            r = p;
+            start = p + 1;
+        }
+    }
+
+    template <class T>
+    constexpr uint64_t __strhash(const T *str, size_t len)
+    {
+        uint64_t hash = 14695981039346656037ULL;
+        size_t elem_size = sizeof(T), elem_size_remain = 0;
+        for (size_t i = 0; i < len; i++) {
+            elem_size_remain = elem_size;
+            while (elem_size_remain--) {
+                hash ^= (uint64_t)(uint8_t)(str[i] >> (elem_size_remain * 8));
+                hash *= 1099511628211ULL;
+            }
+        }
+        return hash;
+    }
+
+    template <class T, class Traits = char_traits<T>>
+    class basic_string_view {
+    private:
+        const T *__str;
+        size_t __length;
+
+    public:
+        typedef Traits traits_type;
+
+        typedef T value_type;
+        typedef size_t size_type;
+        typedef ptrdiff_t difference_type;
+        typedef T * pointer;
+        typedef const T * const_pointer;
+        typedef T & reference;
+        typedef const T & const_reference;
+
+        typedef T * iterator;
+        typedef const T * const_iterator;
+        typedef T * reverse_iterator;
+        typedef const T * const_reverse_iterator;
+
+        static const size_t npos = -1;
+
+        constexpr basic_string_view(const T *str) : __str(str), __length(__strlen(str)) { }
+        constexpr basic_string_view(const basic_string_view<T, Traits> &s) : __str(s.cbegin()), __length(s.length()) { }
+        constexpr basic_string_view() : __str(nullptr), __length(0) { }
+        constexpr basic_string_view(const T *str, size_t num) : __str(str), __length(num) { }
+
+        // construct from any string-like type that provides data()/size()
+        template <typename S, typename = std::enable_if_t<
+            std::is_class<S>::value &&
+            std::is_convertible<decltype(std::declval<const S&>().data()), const T*>::value &&
+            std::is_convertible<decltype(std::declval<const S&>().size()), size_t>::value
+        >>
+        constexpr basic_string_view(const S &s) : __str(s.data()), __length(s.size()) {}
+
+        constexpr iterator begin() const
+        {
+            return __str == nullptr ? (iterator)nullptr : (iterator)&__str[0];
+        }
+        constexpr iterator end() const
+        {
+            return __str == nullptr ? (iterator)nullptr : (iterator)&__str[__length];
+        }
+        constexpr const_iterator cbegin() const
+        {
+            return (const_iterator)begin();
+        }
+        constexpr const_iterator cend() const
+        {
+            return (const_iterator)end();
+        }
+        constexpr reverse_iterator rbegin() const
+        {
+            return (reverse_iterator)(__length > 0 ? &__str[__length - 1] : nullptr);
+        }
+        constexpr reverse_iterator rend() const
+        {
+            return (reverse_iterator)(__length > 0 ? &__str[-1] : nullptr);
+        }
+        constexpr const_reverse_iterator crbegin() const
+        {
+            return (const_reverse_iterator)rbegin();
+        }
+        constexpr const_reverse_iterator crend() const
+        {
+            return (const_reverse_iterator)rend();
+        }
+
+        constexpr bool empty() const
+        {
+            return (0 == __length);
+        }
+        constexpr const T & at(size_t pos) const
+        {
+            VSF_ASSERT(pos < __length);
+            return __str[pos];
+        }
+        constexpr const T & back() const
+        {
+            return at(__length);
+        }
+        constexpr const T & front() const
+        {
+            return at(0);
+        }
+        constexpr size_t size() const
+        {
+            return __length;
+        }
+        constexpr size_t length() const
+        {
+            return __length;
+        }
+        constexpr const T * data() const
+        {
+            return cbegin();
+        }
+        // disallow implicit conversion to C string pointer to avoid overload ambiguity
+//        constexpr explicit operator const T *() const noexcept {
+//            return data();
+//        }
+        constexpr basic_string_view<T, Traits> & assign(const T *str, size_t num)
+        {
+            __str = str;
+            __length = num;
+            return (*this);
+        }
+        constexpr basic_string_view<T, Traits> & assign(const basic_string_view<T, Traits> &str)
+        {
+            return assign(str.cbegin(), str.length());
+        }
+        constexpr basic_string_view<T, Traits> & assign(const T *str)
+        {
+            return assign(str, __strlen(str));
+        }
+        constexpr int compare(const basic_string_view<T, Traits> & right) const
+        {
+            size_t lsize = length(), rsize = right.length();
+            size_t len = vsf_min(lsize, rsize) + 1;
+            return Traits::compare(__str, right.c_str(), len);
+        }
+        constexpr int compare(size_t pos1, size_t count1, const basic_string_view<T, Traits> &right) const
+        {
+            size_t lsize = length();
+            if (pos1 > lsize) pos1 = lsize;
+            size_t len1 = (count1 == npos) ? (lsize - pos1) : vsf_min(count1, lsize - pos1);
+            size_t len2 = right.length();
+            size_t n = vsf_min(len1, len2);
+            if (n > 0) {
+                int c = Traits::compare(__str + pos1, right.c_str(), n);
+                if (c != 0) return c;
+            }
+            if (len1 < len2) return -1;
+            if (len1 > len2) return 1;
+            return 0;
+        }
+        constexpr basic_string_view<T, Traits> substr(size_t start = 0, size_t count = npos) const
+        {
+            size_t len = length();
+            if (start >= len) {
+                count = 0;
+            }
+            if ((count == npos) || (start + count > len)) {
+                count = len - start;
+            }
+
+            const T *sub = cbegin();
+            return basic_string_view<T, Traits>(&sub[start], count);
+        }
+        constexpr size_t find(const T *str, size_t pos = 0) const
+        {
+            const T *start = cbegin();
+            if (pos < length()) {
+                T *found = __strstr(start + pos, str);
+                if (found) {
+                    return (found - start) / sizeof(T);
+                }
+            }
+            return npos;
+        }
+        constexpr size_t find(const basic_string_view<T, Traits> &str, size_t pos = 0) const
+        {
+            return find(str.c_str(), pos);
+        }
+        constexpr size_t find(T c, size_t pos = 0) const
+        {
+            T str[2] = { c, T(0) };
+            return find(str, pos);
+        }
+
+        constexpr size_t find_first_of(const T *str, size_t pos = 0) const
+        {
+            const T *start = cbegin();
+            ssize_t curpos = pos, slen = length();
+            if (pos >= slen) {
+                return npos;
+            }
+
+            while (curpos < slen) {
+                if (__strchr(str, start[curpos])) {
+                    break;
+                }
+                curpos++;
+            }
+            return curpos < slen ? curpos : npos;
+        }
+        constexpr size_t find_first_of(const basic_string_view<T, Traits> & str, size_t pos = 0) const
+        {
+            return find_first_of(str.cbegin(), pos);
+        }
+        constexpr size_t find_first_of(char c, size_t pos = 0) const
+        {
+            const T str[2] = { c, T(0) };
+            return find_first_of(str, pos);
+        }
+        constexpr size_t find_first_not_of(const T *str, size_t pos = 0) const
+        {
+            const T *start = cbegin();
+            ssize_t curpos = pos, slen = length();
+            if (pos >= slen) {
+                return npos;
+            }
+
+            while (curpos < slen) {
+                if (!__strchr(str, start[curpos])) {
+                    break;
+                }
+                curpos++;
+            }
+            return curpos < slen ? curpos : npos;
+        }
+        constexpr size_t find_first_not_of(const basic_string_view<T, Traits> & str, size_t pos = 0) const
+        {
+            return find_first_not_of(str.cbegin(), pos);
+        }
+        constexpr size_t find_first_not_of(char c, size_t pos = 0) const
+        {
+            const T str[2] = { c, T(0) };
+            return find_first_not_of(str, pos);
+        }
+
+        constexpr size_t find_last_of(const T *str, size_t pos = npos) const
+        {
+            const T *start = cbegin();
+            if (nullptr == start) {
+                assert(false);
+            }
+
+            ssize_t curpos = length() - 1;
+            if (pos > curpos) {
+                pos = curpos;
+            }
+
+            while (curpos >= 0) {
+                if (__strchr(str, start[curpos])) {
+                    break;
+                }
+                curpos--;
+            }
+            return curpos >= 0 ? curpos : npos;
+        }
+        constexpr size_t find_last_of(const basic_string_view<T, Traits> & str, size_t pos = npos) const
+        {
+            return find_last_of(str.cbegin(), pos);
+        }
+        constexpr size_t find_last_of(char c, size_t pos = npos) const
+        {
+            const T str[2] = { c, T(0) };
+            return find_last_of(str, pos);
+        }
+        constexpr size_t find_last_not_of(const T *str, size_t pos = npos) const
+        {
+            const T *start = cbegin();
+            if (nullptr == start) {
+                return npos;
+            }
+
+            ssize_t curpos = length() - 1;
+            if (pos > curpos) {
+                pos = curpos;
+            }
+
+            while (curpos >= 0) {
+                if (!__strchr(str, start[curpos])) {
+                    break;
+                }
+                curpos--;
+            }
+            return curpos >= 0 ? curpos : npos;
+        }
+        constexpr size_t find_last_not_of(const basic_string_view<T, Traits> & str, size_t pos = npos) const
+        {
+            return find_last_not_of(str.cbegin(), pos);
+        }
+        constexpr size_t find_last_not_of(char c, size_t pos = npos) const
+        {
+            const T str[2] = { c, T(0) };
+            return find_last_not_of(str, pos);
+        }
+        constexpr void remove_prefix(size_t n)
+        {
+            VSF_ASSERT(__length >= n);
+            __str += n;
+            __length -= n;
+        }
+        constexpr void remove_suffix(size_t n)
+        {
+            VSF_ASSERT(__length >= n);
+            __length -= n;
+        }
+
+        constexpr basic_string_view<T, Traits> & operator =(const T *s)
+        {
+            size_t size = (nullptr == s) ? 1 : __strlen(s) + 1;
+            return (basic_string_view<T, Traits> &)(assign(s, size));
+        }
+        constexpr basic_string_view<T, Traits> & operator =(const basic_string_view<T, Traits> &s)
+        {
+            return operator =(s.cbegin());
+        }
+        constexpr bool operator ==(const T *str) const
+        {
+            size_t len = str != nullptr ? __strlen(str) : 0;
+            return (length() == len) && !__memcmp(cbegin(), str, len);
+        }
+        constexpr bool operator ==(const basic_string_view<T, Traits> &str) const
+        {
+            return operator ==(str.cbegin());
+        }
+        constexpr bool operator >(const T *str) const
+        {
+            size_t slen = str != nullptr ? __strlen(str) : 0;
+            size_t len = vsf_min(slen, length());
+            return __memcmp(cbegin(), str, len) > 0;
+        }
+        constexpr bool operator >(const basic_string_view<T, Traits> &str) const
+        {
+            return operator >(str.cbegin());
+        }
+        constexpr bool operator <(const T *str) const
+        {
+            size_t slen = str != nullptr ? __strlen(str) : 0;
+            size_t len = vsf_min(slen, length());
+            return __memcmp(cbegin(), str, len) < 0;
+        }
+        constexpr bool operator <(const basic_string_view<T, Traits> &str) const
+        {
+            return operator <(str.cbegin());
+        }
+        constexpr const T & operator [](size_t pos) const
+        {
+            return at(pos);
+        }
+        const T * c_str() const
+        {
+            return cbegin();
+        }
+    };
+
+    typedef basic_string_view<char, char_traits<char>> string_view;
+    typedef basic_string_view<wchar_t, char_traits<wchar_t>> wstring_view;
+    typedef basic_string_view<char16_t, char_traits<char16_t>> u16string_view;
+    typedef basic_string_view<char32_t, char_traits<char32_t>> u32string_view;
+
+    // hash<string_view>
+    template <class CharT, class Traits>
+    struct hash<basic_string_view<CharT, Traits>> {
+        using argument_type = basic_string_view<CharT, Traits>;
+        using result_type = size_t;
+        result_type operator()(const argument_type & key) const noexcept {
+            return static_cast<result_type>(__strhash(key.data(), key.size()));
+        }
+    };
+
+    template <class T, class Traits>
+    bool operator ==(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return left.operator==(right);
+    }
+    template <class T, class Traits>
+    bool operator ==(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return left.operator==(right);
+    }
+
+#if __cplusplus > 201703L
+    template <class T, class Traits>
+    std::strong_ordering operator <=>(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept
+    {
+        return left.compare(right) <=> 0;
+    }
+
+    template <class T, class Traits>
+    std::strong_ordering operator <=>(const basic_string_view<T, Traits> &left, const T * const right) noexcept
+    {
+        return left.compare(right) <=> 0;
+    }
+#else
+    template <class T, class Traits>
+    bool operator !=(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return !left.operator==(right);
+    }
+    template <class T, class Traits>
+    bool operator !=(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return !left.operator==(right);
+    }
+
+    template <class T, class Traits>
+    bool operator <(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return left.compare(right) < 0;
+    }
+    template <class T, class Traits>
+    bool operator <(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return left.compare(right) < 0;
+    }
+
+    template <class T, class Traits>
+    bool operator <=(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return left.compare(right) <= 0;
+    }
+    template <class T, class Traits>
+    bool operator <=(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return left.compare(right) <= 0;
+    }
+
+    template <class T, class Traits>
+    bool operator >(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return left.compare(right) > 0;
+    }
+    template <class T, class Traits>
+    bool operator >(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return left.compare(right) > 0;
+    }
+
+    template <class T, class Traits>
+    bool operator >=(const basic_string_view<T, Traits> &left, const basic_string_view<T, Traits> &right) noexcept {
+        return left.compare(right) >= 0;
+    }
+    template <class T, class Traits>
+    bool operator >=(const basic_string_view<T, Traits> &left, const T * const right) noexcept {
+        return left.compare(right) >= 0;
+    }
+#endif
+
+    template <class T, class Traits>
+    basic_ostream<T, Traits>& operator<<(basic_ostream<T, Traits> &ostr, const basic_string_view<T, Traits> str) {
+        return ostr.write(str.data(), str.size());
+    }
+
+#ifdef __WIN__
+    // used in microsoft <bitset>
+    template <class T>
+    constexpr bool _Is_implementation_handled_char_like_type = is_arithmetic_v<T> || is_null_pointer_v<T>;
+
+    template <class>
+    constexpr bool _Is_implementation_handled_char_traits = false;
+    template <class T>
+    constexpr bool _Is_implementation_handled_char_traits<char_traits<T>> = _Is_implementation_handled_char_like_type<T>;
+#endif
+}
+
+#endif      // __SIMPLE_LIBC_STRING_VIEW__

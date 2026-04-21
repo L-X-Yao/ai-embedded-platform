@@ -1,0 +1,1817 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+#ifndef __VSF_TEMPLATE_GPIO_H__
+#define __VSF_TEMPLATE_GPIO_H__
+
+/*============================ INCLUDES ======================================*/
+
+#include "./vsf_template_hal_driver.h"
+#include "hal/arch/vsf_arch.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*============================ MACROS ========================================*/
+
+/**
+ * \~english
+ * @brief Enable multi-class support by default for maximum availability.
+ *
+ * \~chinese
+ * @brief 默认启用多类支持，以获得最大可用性。
+ */
+#ifndef VSF_GPIO_CFG_MULTI_CLASS
+#   define VSF_GPIO_CFG_MULTI_CLASS                 ENABLED
+#endif
+
+/**
+ * \~english
+ * @brief Define GPIO hardware mask if count is defined.
+ *
+ * \~chinese
+ * @brief 如果定义了 GPIO 硬件数量，则定义对应的掩码。
+ */
+#if defined(VSF_HW_GPIO_PORT_COUNT) && !defined(VSF_HW_GPIO_PORT_MASK)
+#   define VSF_HW_GPIO_PORT_MASK                    VSF_HAL_COUNT_TO_MASK(VSF_HW_GPIO_PORT_COUNT)
+#endif
+
+/**
+ * \~english
+ * @brief Define GPIO hardware count if mask is defined.
+ *
+ * \~chinese
+ * @brief 如果定义了 GPIO 硬件掩码，则定义对应的数量。
+ */
+#if defined(VSF_HW_GPIO_PORT_MASK) && !defined(VSF_HW_GPIO_PORT_COUNT)
+#   define VSF_HW_GPIO_PORT_COUNT                   VSF_HAL_MASK_TO_COUNT(VSF_HW_GPIO_PORT_MASK)
+#endif
+
+/**
+ * \~english
+ * @brief Define GPIO pin mask if count is defined.
+ *
+ * \~chinese
+ * @brief 如果定义了 GPIO 引脚数量，则定义对应的掩码。
+ */
+#if defined(VSF_HW_GPIO_PIN_COUNT) && !defined(VSF_HW_GPIO_PIN_MASK)
+#   define VSF_HW_GPIO_PIN_MASK                     VSF_HAL_COUNT_TO_MASK(VSF_HW_GPIO_PIN_COUNT)
+#endif
+
+/**
+ * \~english
+ * @brief Define GPIO pin count if mask is defined.
+ *
+ * \~chinese
+ * @brief 如果定义了 GPIO 引脚掩码，则定义对应的数量。
+ */
+#if defined(VSF_HW_GPIO_PIN_MASK) && !defined(VSF_HW_GPIO_PIN_COUNT)
+#   define VSF_HW_GPIO_PIN_COUNT                    VSF_HAL_MASK_TO_COUNT(VSF_HW_GPIO_PIN_MASK)
+#endif
+
+/**
+ * \~english
+ * @brief Hardware GPIO count
+ *
+ * \~chinese
+ * @brief 硬件 GPIO 的数量
+ */
+#ifdef VSF_HW_GPIO_PORT_COUNT
+#	define VSF_HW_GPIO_COUNT                        VSF_HW_GPIO_PORT_COUNT
+#endif
+
+/**
+ * \~english
+ * @brief Hardware GPIO mask
+ *
+ * \~chinese
+ * @brief 硬件 GPIO 的掩码
+ */
+#ifdef VSF_HW_GPIO_PORT_MASK
+#	define VSF_HW_GPIO_MASK                         VSF_HW_GPIO_PORT_MASK
+#endif
+
+/**
+ * \~english
+ * @brief GPIO Groups
+ * \~chinese
+ * @brief GPIO 组
+ *
+ * @{
+ */
+#if !defined(VSF_GPIO_CFG_PORT0) && (VSF_HW_GPIO_PORT_MASK & (1ul << 0))
+#   define VSF_GPIO_CFG_PORT0                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT1) && (VSF_HW_GPIO_PORT_MASK & (1ul << 1))
+#   define VSF_GPIO_CFG_PORT1                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT2) && (VSF_HW_GPIO_PORT_MASK & (1ul << 2))
+#   define VSF_GPIO_CFG_PORT2                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT3) && (VSF_HW_GPIO_PORT_MASK & (1ul << 3))
+#   define VSF_GPIO_CFG_PORT3                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT4) && (VSF_HW_GPIO_PORT_MASK & (1ul << 4))
+#   define VSF_GPIO_CFG_PORT4                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT5) && (VSF_HW_GPIO_PORT_MASK & (1ul << 5))
+#   define VSF_GPIO_CFG_PORT5                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT6) && (VSF_HW_GPIO_PORT_MASK & (1ul << 6))
+#   define VSF_GPIO_CFG_PORT6                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT7) && (VSF_HW_GPIO_PORT_MASK & (1ul << 7))
+#   define VSF_GPIO_CFG_PORT7                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT8) && (VSF_HW_GPIO_PORT_MASK & (1ul << 8))
+#   define VSF_GPIO_CFG_PORT8                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT9) && (VSF_HW_GPIO_PORT_MASK & (1ul << 9))
+#   define VSF_GPIO_CFG_PORT9                       ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT10) && (VSF_HW_GPIO_PORT_MASK & (1ul << 10))
+#   define VSF_GPIO_CFG_PORT10                      ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT11) && (VSF_HW_GPIO_PORT_MASK & (1ul << 11))
+#   define VSF_GPIO_CFG_PORT11                      ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT12) && (VSF_HW_GPIO_PORT_MASK & (1ul << 12))
+#   define VSF_GPIO_CFG_PORT12                      ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT13) && (VSF_HW_GPIO_PORT_MASK & (1ul << 13))
+#   define VSF_GPIO_CFG_PORT13                      ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT14) && (VSF_HW_GPIO_PORT_MASK & (1ul << 14))
+#   define VSF_GPIO_CFG_PORT14                      ENABLED
+#endif
+
+#if !defined(VSF_GPIO_CFG_PORT15) && (VSF_HW_GPIO_PORT_MASK & (1ul << 15))
+#   define VSF_GPIO_CFG_PORT15                      ENABLED
+#endif
+/**
+ * @}
+ */
+
+#ifndef VSF_GPIO_CFG_PIN_COUNT
+#   if defined(VSF_HW_GPIO_PIN_COUNT) && (VSF_HW_GPIO_PIN_COUNT > 32)
+#       define VSF_GPIO_CFG_PIN_COUNT               64
+#       define VSF_GPIO_CFG_PIN_MASK                0xFFFFFFFFFFFFFFFF
+#   elif defined(VSF_HW_GPIO_PIN_MASK) && (VSF_HW_GPIO_PIN_MASK & 0xFFFFFFFF00000000)
+#       define VSF_GPIO_CFG_PIN_COUNT               64
+#       define VSF_GPIO_CFG_PIN_MASK                0xFFFFFFFFFFFFFFFF
+#   else
+#       define VSF_GPIO_CFG_PIN_COUNT               32
+#       define VSF_GPIO_CFG_PIN_MASK                0xFFFFFFFF
+#   endif
+#endif
+
+/**
+ \~english
+ VSF_GPIO_CFG_PREFIX is used to set the actual API call when calling the vsf_gpio_*().
+ For example, if you configure VSF_GPIO_CFG_PREFIX to be vsf_hw, then call
+ vsf_gpio_set_output(), which is actually vsf_hw_gpio_set_output()
+
+ If we want the call to vsf_gpio_set_output in xxxx.c to actually call vsf_example_gpio_set_output,
+ then it can be configured in front of the .c:
+
+ \~chinese
+ VSF_GPIO_CFG_PREFIX 是用来配置调用 vsf_gpio_*() 的时候实际调用的 API。
+ 例如，当 VSF_GPIO_CFG_PREFIX 配置成 vsf_hw 的时候，调用 vsf_gpio_set_output()
+ 实际调用的是 vsf_hw_gpio_set_output()
+
+ 如果我们想要 xxxx.c 里调用 vsf_gpio_set_output() 实际调用的是 vsf_example_gpio_set_output()，
+ 那么可以在 xxxx.c 源码前面配置：
+
+ \~
+ \code {.c}
+    #undef  VSF_GPIO_CFG_PREFIX
+    #define VSF_GPIO_CFG_PREFIX     vsf_example
+ \endcode
+ */
+#ifndef VSF_GPIO_CFG_PREFIX
+#   if VSF_GPIO_CFG_MULTI_CLASS == ENABLED
+#       define VSF_GPIO_CFG_PREFIX                  vsf
+#   elif defined(VSF_HW_GPIO_PIN_MASK) && (VSF_HW_GPIO_PIN_MASK != 0)
+#       define VSF_GPIO_CFG_PREFIX                  vsf_hw
+#   else
+#       define VSF_GPIO_CFG_PREFIX                  vsf
+#   endif
+#endif
+
+/**
+ * \~english
+ * @brief Enable option to reimplement mode type in specific hardware drivers.
+ *
+ * \~chinese
+ * @brief 在具体硬件驱动中启用重新实现模式类型的选项。
+ */
+#ifndef VSF_GPIO_CFG_REIMPLEMENT_TYPE_MODE
+#   define VSF_GPIO_CFG_REIMPLEMENT_TYPE_MODE       DISABLED
+#endif
+
+/**
+ * \~english
+ * @brief Enable function rename feature.
+ *
+ * \~chinese
+ * @brief 启用函数重命名特性。
+ */
+#ifndef VSF_GPIO_CFG_FUNCTION_RENAME
+#   define VSF_GPIO_CFG_FUNCTION_RENAME             ENABLED
+#endif
+
+
+//! Redefine struct vsf_gpio_cfg_t. The vsf_gpio_exti_isr_handler_t type also needs to
+//! be redefined For compatibility, members should not be deleted when struct
+//! @ref vsf_gpio_cfg_t redefining.
+#ifndef VSF_GPIO_CFG_REIMPLEMENT_TYPE_CFG
+#    define VSF_GPIO_CFG_REIMPLEMENT_TYPE_CFG DISABLED
+#endif
+
+//! Redefine struct vsf_gpio_capability_t.
+//! For compatibility, members should not be deleted when struct @ref
+//! vsf_gpio_capability_t redefining.
+#ifndef VSF_GPIO_CFG_REIMPLEMENT_TYPE_CAPABILITY
+#    define VSF_GPIO_CFG_REIMPLEMENT_TYPE_CAPABILITY DISABLED
+#endif
+
+/**
+ * \~english
+ * @brief Enable standard optional features support.
+ *
+ * This macro controls the availability of standard optional features in the template.
+ * Standard optional features include:
+ * - Ports configuration functions (vsf_gpio_ports_config_pin, vsf_gpio_ports_config_pins)
+ *
+ * @note This macro is for testing purposes only. Users should NOT enable this macro.
+ *       Standard optional features should be implemented directly in hardware drivers
+ *       if the hardware supports them, rather than enabling this macro in the template.
+ *       Enabling this macro may cause compilation errors or unexpected behavior.
+ *
+ * \~chinese
+ * @brief 启用标准可选功能支持。
+ *
+ * 此宏控制模板中标准可选功能的可用性。标准可选功能包括：
+ * - 端口配置函数（vsf_gpio_ports_config_pin, vsf_gpio_ports_config_pins）
+ *
+ * @note 此宏仅用于测试目的。用户不应启用此宏。
+ *       如果硬件支持标准可选功能，应在硬件驱动中直接实现，而不是在模板中启用此宏。
+ *       启用此宏可能导致编译错误或意外行为。
+ */
+#ifndef __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL
+#   define __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL  DISABLED
+#endif
+
+#ifndef VSF_GPIO_CFG_INHERIT_HAL_CAPABILITY
+#   define VSF_GPIO_CFG_INHERIT_HAL_CAPABILITY       ENABLED
+#endif
+
+/**
+ * \~english
+ * @brief Enable macro VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL in specific hardware
+ * drivers to redefine enum @ref vsf_gpio_ctrl_t. This allows hardware-specific
+ * control commands to be added to the control enumeration.
+ * \~chinese
+ * @brief 在特定硬件驱动中启用宏 VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL
+ * 来重新定义枚举 @ref vsf_gpio_ctrl_t。这允许在控制枚举中添加特定
+ * 硬件的控制命令。
+ */
+#ifndef VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL
+#   define VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL        DISABLED
+#endif
+
+/*============================ MACROFIED FUNCTIONS ===========================*/
+
+#define __VSF_GPIO_PORT_PIN_NUM(__PIN_NUM, __PORT_NUM, __PORT_CHAR)             \
+    VSF_P ## __PORT_NUM ## _ ## __PIN_NUM = ((VSF_PORT ## __PORT_NUM) << 8) | __PIN_NUM,\
+    VSF_P ## __PORT_CHAR ## __PIN_NUM = ((VSF_PORT ## __PORT_NUM) << 8) | __PIN_NUM,
+
+#define VSF_GPIO_APIS(__prefix_name)                                                                                                                                                                          \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_gpio_capability_t, gpio, capability,              VSF_MCONNECT(__prefix_name, _t) *gpio_ptr)                                                                    \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, port_config_pins,        VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask, vsf_gpio_cfg_t * cfg_ptr)            \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, get_pin_configuration,   VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, uint16_t pin_index, vsf_gpio_cfg_t * cfg_ptr)                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, set_direction,           VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask, vsf_gpio_pin_mask_t direction_mask)  \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_gpio_pin_mask_t,   gpio, get_direction,           VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, set_input,               VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, set_output,              VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, switch_direction,        VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_gpio_pin_mask_t,   gpio, read,                    VSF_MCONNECT(__prefix_name, _t) *gpio_ptr)                                                                    \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_gpio_pin_mask_t,   gpio, read_output_register,    VSF_MCONNECT(__prefix_name, _t) *gpio_ptr)                                                                    \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, write,                   VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask, vsf_gpio_pin_mask_t value)           \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, set,                     VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, clear,                   VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, toggle,                  VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, output_and_set,          VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, void,                  gpio, output_and_clear,        VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, exti_irq_config,         VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_exti_irq_cfg_t *irq_cfg_ptr)                              \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, exti_irq_get_configuration, VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_exti_irq_cfg_t *irq_cfg_ptr)                           \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, exti_irq_enable,         VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, exti_irq_disable,        VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_gpio_pin_mask_t,   gpio, exti_irq_clear,           VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_pin_mask_t pin_mask)                                      \
+    __VSF_HAL_TEMPLATE_API(__prefix_name, vsf_err_t,             gpio, ctrl,                     VSF_MCONNECT(__prefix_name, _t) *gpio_ptr, vsf_gpio_ctrl_t ctrl, void* param)
+
+/*============================ TYPES =========================================*/
+
+#ifndef vsf_gpio_pin_mask_t
+#   if defined(VSF_HW_GPIO_PIN_COUNT) && (VSF_HW_GPIO_PIN_COUNT > 32)
+typedef uint64_t vsf_gpio_pin_mask_t;
+#   elif defined(VSF_HW_GPIO_PIN_MASK) && (VSF_HW_GPIO_PIN_MASK & 0xFFFFFFFF00000000)
+typedef uint64_t vsf_gpio_pin_mask_t;
+#   else
+typedef uint32_t vsf_gpio_pin_mask_t;
+#   endif
+#   define vsf_gpio_pin_mask_t vsf_gpio_pin_mask_t
+#endif
+
+#ifndef vsf_gpio_alternate_function_t
+typedef uint16_t vsf_gpio_alternate_function_t;
+#   define vsf_gpio_alternate_function_t vsf_gpio_alternate_function_t
+#endif
+
+#if VSF_GPIO_CFG_REIMPLEMENT_TYPE_MODE == DISABLED
+/**
+ * \~english
+ * @brief Predefined VSF GPIO modes that can be reimplemented in specific hal drivers.
+ *
+ * \~chinese
+ * @brief 预定义的 VSF GPIO 模式，可以在具体的 hal 驱动重新实现。
+ *
+ * \~english
+ * Even if the hardware doesn't support these features, these modes must be implemented:
+ * If the IO supports more modes, We can implement it in the hardware driver.
+ * If we add a new mode in the hardware driver, then we also need to define the
+ * macro VSF_GPIO_MODE_MASK, whose value is the OR of the value of all modes.
+ * \~chinese
+ * 即使硬件不支持这些功能，但是这些模式是必须实现的。
+ * 如果硬件驱动里我们添加了新的模式，那么也需要定义宏 VSF_GPIO_MODE_MASK，它的值是所有模式的值的或。
+ *
+ * - INPUT/OUTPUT
+ *  - VSF_GPIO_INPUT
+ *  - VSF_GPIO_ANALOG
+ *  - VSF_GPIO_OUTPUT_PUSH_PULL
+ *  - VSF_GPIO_OUTPUT_OPEN_DRAIN
+ *  - VSF_GPIO_EXTI
+ * - PULL_UP_AND_DOWN:
+ *  - VSF_GPIO_NO_PULL_UP_DOWN
+ *  - VSF_GPIO_PULL_UP
+ *  - VSF_GPIO_PULL_DOWN
+ *
+ * \~english
+ *  Optional features require one or more enumeration options and a macro with the same
+ *  name to determine if they are supported at runtime. If the feature supports more than
+ *  one option, it is recommended to provide the corresponding MASK option, so that the
+ *  user can switch to different modes at runtime.
+ * \~chinese
+ * 可选特性需要提供一个或者多个枚举选项，还需要提供同名的宏，方便用户在运行时判断是否支持。
+ * 如果它特性支持多个选项，建议提供对应的 MASK 选项，方便用户在运行时切换到不同的模式。
+ *
+ * ```c
+ * vsf_gpio_cfg_t cfg = {
+ *     .mode = VSF_GPIO_OUTPUT_PUSH_PULL,
+ *     ...
+ * };
+ * vsf_gpio_pin_mask pin_mask = 0x00000001;
+ * vsf_gpio_port_config_pins(&vsf_hw_gpi0, pin_mask, &cfg);
+ * ```
+ *
+ */
+typedef enum vsf_gpio_mode_t {
+    /**
+     * \~english
+     * @brief Set the GPIO pin as general-purpose input.
+     * Selects GPIO for the alternative function.
+     * Independent of pull-up, pull-down, and float configurations.
+     * \~chinese
+     * @brief 将 GPIO 设置为通用输入模式。
+     * 选择 GPIO 作为替代功能。
+     * 与上拉、下拉和浮空配置无关。
+     */
+    VSF_GPIO_INPUT                    = (0 << 0),
+
+    /**
+     * \~english
+     * @brief Set the GPIO pin as analog IO (input or output).
+     * Selects analog or GPIO as an alternative function and sets to input direction.
+     * \~chinese
+     * @brief 将 GPIO 设置为模拟 IO（输入或输出）。
+     * 选择模拟或 GPIO 作为替代功能并设置为输入方向。
+     */
+    VSF_GPIO_ANALOG                   = (1 << 0),
+
+    /**
+     * \~english
+     * @brief Set GPIO pin as general-purpose push-pull output.
+     * Selects GPIO for the alternative function.
+     * \~chinese
+     * @brief 将 GPIO 设置为通用推挽输出模式。
+     * 选择 GPIO 作为替代功能。
+     */
+    VSF_GPIO_OUTPUT_PUSH_PULL         = (2 << 0),
+
+    /**
+     * \~english
+     * @brief Set GPIO pin as general-purpose open-drain output.
+     * Selects GPIO for the alternative function.
+     * \~chinese
+     * @brief 将 GPIO 设置为通用开漏输出模式。
+     * 选择 GPIO 作为替代功能。
+     */
+    VSF_GPIO_OUTPUT_OPEN_DRAIN        = (3 << 0),
+
+    /**
+     * \~english
+     * @brief Set GPIO pin as external interrupt IO.
+     * Configures the pin to detect and generate interrupts on signal changes.
+     * \~chinese
+     * @brief 将 GPIO 设置为外部中断 IO。
+     * 配置引脚以检测信号变化并生成中断。
+     */
+    VSF_GPIO_EXTI                     = (4 << 0),
+
+    /**
+     * \~english
+     * @brief Set GPIO pin to Alternative Function mode.
+     * Configures pin for peripheral-specific functions like UART, SPI, etc.
+     * Hardware can implement one of the following ways based on hardware support:
+     *   1. Only VSF_GPIO_AF
+     *   2. VSF_GPIO_AF_OUTPUT_PUSH_PULL and VSF_GPIO_AF_OUTPUT_OPEN_DRAIN
+     *   3. VSF_GPIO_AF_OUTPUT_PUSH_PULL, VSF_GPIO_AF_OUTPUT_OPEN_DRAIN, and VSF_GPIO_AF_INPUT
+     * \~chinese
+     * @brief 将 GPIO 设置为替代功能模式。
+     * 为外设特定功能（如 UART、SPI 等）配置引脚。
+     * 硬件可以根据硬件支持的情况采用以下方式之一实现：
+     *   1. 仅实现 VSF_GPIO_AF
+     *   2. 实现 VSF_GPIO_AF_OUTPUT_PUSH_PULL 和 VSF_GPIO_AF_OUTPUT_OPEN_DRAIN
+     *   3. 实现 VSF_GPIO_AF_OUTPUT_PUSH_PULL、VSF_GPIO_AF_OUTPUT_OPEN_DRAIN 和 VSF_GPIO_AF_INPUT
+     */
+    /*
+    VSF_GPIO_AF                        = (5 << 0),
+    #define VSF_GPIO_AF                VSF_GPIO_AF
+    VSF_GPIO_AF_OUTPUT_PUSH_PULL       = (5 << 0),
+    #define VSF_GPIO_AF_OUTPUT_PUSH_PULL VSF_GPIO_AF_OUTPUT_PUSH_PULL
+    VSF_GPIO_AF_OUTPUT_OPEN_DRAIN      = (6 << 0),
+    #define VSF_GPIO_AF_OUTPUT_OPEN_DRAIN VSF_GPIO_AF_OUTPUT_OPEN_DRAIN
+    VSF_GPIO_AF_INPUT                  = (7 << 0),
+    #define VSF_GPIO_AF_INPUT            VSF_GPIO_AF_INPUT
+    */
+
+    /**
+     * \~english
+     * @brief No pull-up or pull-down resistors enabled.
+     * Independent of IO direction and alternative function.
+     * \~chinese
+     * @brief 不启用上拉或下拉电阻。
+     * 与 IO 方向和替代功能无关。
+     */
+    VSF_GPIO_NO_PULL_UP_DOWN          = (0 << 4),
+
+    /**
+     * \~english
+     * @brief Enable internal pull-up resistor.
+     * Independent of IO direction and alternative function.
+     * \~chinese
+     * @brief 启用内部上拉电阻。
+     * 与 IO 方向和替代功能无关。
+     */
+    VSF_GPIO_PULL_UP                  = (1 << 4),
+
+    /**
+     * \~english
+     * @brief Enable internal pull-down resistor.
+     * Independent of IO direction and alternative function.
+     * \~chinese
+     * @brief 启用内部下拉电阻。
+     * 与 IO 方向和替代功能无关。
+     */
+    VSF_GPIO_PULL_DOWN                = (2 << 4),
+
+    /**
+     * \~english
+     * @brief No external interrupt detection enabled.
+     * \~chinese
+     * @brief 不启用外部中断检测。
+     */
+    VSF_GPIO_EXTI_MODE_NONE           = (0 << 6),
+
+    /**
+     * \~english
+     * @brief Detect interrupts on low signal level.
+     * \~chinese
+     * @brief 在低电平信号上检测中断。
+     */
+    VSF_GPIO_EXTI_MODE_LOW_LEVEL      = (1 << 6),
+
+    /**
+     * \~english
+     * @brief Detect interrupts on high signal level.
+     * \~chinese
+     * @brief 在高电平信号上检测中断。
+     */
+    VSF_GPIO_EXTI_MODE_HIGH_LEVEL     = (2 << 6),
+
+    /**
+     * \~english
+     * @brief Detect interrupts on rising edge of signal.
+     * \~chinese
+     * @brief 在信号上升沿检测中断。
+     */
+    VSF_GPIO_EXTI_MODE_RISING         = (3 << 6),
+
+    /**
+     * \~english
+     * @brief Detect interrupts on falling edge of signal.
+     * \~chinese
+     * @brief 在信号下降沿检测中断。
+     */
+    VSF_GPIO_EXTI_MODE_FALLING        = (4 << 6),
+
+    /**
+     * \~english
+     * @brief Detect interrupts on both rising and falling edges.
+     * \~chinese
+     * @brief 在信号上升沿和下降沿检测中断。
+     */
+    VSF_GPIO_EXTI_MODE_RISING_FALLING = (5 << 6),
+
+/*
+    VSF_GPIO_INVERT_INPUT             = (1 << 7),
+    #define VSF_GPIO_INVERT_INPUT     VSF_GPIO_INVERT_INPUT
+
+    VSF_GPIO_DRIVE_STRENGTH_LOW       = (0 << 8),
+    VSF_GPIO_DRIVE_STRENGTH_MEDIUM    = (1 << 8),
+    VSF_GPIO_DRIVE_STRENGTH_HIGH      = (2 << 8),
+    VSF_GPIO_DRIVE_STRENGTH_VERY_HIGH = (3 << 8),
+    VSF_GPIO_DRIVE_STRENGTH_MASK      = (3 << 8),
+    #define VSF_GPIO_DRIVE_STRENGTH_LOW       VSF_GPIO_DRIVE_STRENGTH_LOW
+    #define VSF_GPIO_DRIVE_STRENGTH_MEDIUM    VSF_GPIO_DRIVE_STRENGTH_MEDIUM
+    #define VSF_GPIO_DRIVE_STRENGTH_HIGH      VSF_GPIO_DRIVE_STRENGTH_HIGH
+    #define VSF_GPIO_DRIVE_STRENGTH_VERY_HIGH VSF_GPIO_DRIVE_STRENGTH_VERY_HIGH
+    #define VSF_GPIO_DRIVE_STRENGTH_MASK      VSF_GPIO_DRIVE_STRENGTH_MASK
+
+    VSF_GPIO_SPEED_LOW                = (0 << 10),
+    VSF_GPIO_SPEED_MEDIUM             = (1 << 10),
+    VSF_GPIO_SPEED_HIGH               = (2 << 10),
+    VSF_GPIO_SPEED_VERY_HIGH          = (3 << 10),
+    VSF_GPIO_SPEED_MASK               = (3 << 10),
+    #define VSF_GPIO_SPEED_LOW        VSF_GPIO_SPEED_LOW
+    #define VSF_GPIO_SPEED_MEDIUM     VSF_GPIO_SPEED_MEDIUM
+    #define VSF_GPIO_SPEED_HIGH       VSF_GPIO_SPEED_HIGH
+    #define VSF_GPIO_SPEED_VERY_HIGH  VSF_GPIO_SPEED_VERY_HIGH
+    #define VSF_GPIO_SPEED_MASK       VSF_GPIO_SPEED_MASK
+*/
+} vsf_gpio_mode_t;
+#endif
+
+enum {
+    VSF_GPIO_FLOATING               = VSF_GPIO_NO_PULL_UP_DOWN,
+
+#ifndef VSF_GPIO_MODE_AF_MASK
+    VSF_GPIO_MODE_AF_MASK           = 0
+#ifdef VSF_GPIO_AF
+                                    | VSF_GPIO_AF
+#endif
+#ifdef VSF_GPIO_AF_OUTPUT_PUSH_PULL
+                                    | VSF_GPIO_AF_OUTPUT_PUSH_PULL
+#endif
+#ifdef VSF_GPIO_AF_OUTPUT_OPEN_DRAIN
+                                    | VSF_GPIO_AF_OUTPUT_OPEN_DRAIN
+#endif
+#ifdef VSF_GPIO_AF_INPUT
+                                    | VSF_GPIO_AF_INPUT
+#endif
+                                    ,
+#endif
+
+#ifndef VSF_GPIO_MODE_MASK
+    VSF_GPIO_MODE_MASK              = VSF_GPIO_INPUT
+                                    | VSF_GPIO_EXTI
+                                    | VSF_GPIO_ANALOG
+                                    | VSF_GPIO_OUTPUT_PUSH_PULL
+                                    | VSF_GPIO_OUTPUT_OPEN_DRAIN
+                                    | VSF_GPIO_MODE_AF_MASK,
+#endif
+
+    VSF_GPIO_PULL_UP_DOWN_MASK      = VSF_GPIO_NO_PULL_UP_DOWN
+                                    | VSF_GPIO_PULL_UP
+                                    | VSF_GPIO_PULL_DOWN,
+
+    VSF_GPIO_EXTI_MODE_MASK         = VSF_GPIO_EXTI_MODE_NONE
+                                    | VSF_GPIO_EXTI_MODE_LOW_LEVEL
+                                    | VSF_GPIO_EXTI_MODE_HIGH_LEVEL
+                                    | VSF_GPIO_EXTI_MODE_RISING
+                                    | VSF_GPIO_EXTI_MODE_FALLING
+                                    | VSF_GPIO_EXTI_MODE_RISING_FALLING,
+
+    VSF_GPIO_MODE_ALL_BITS_MASK     = VSF_GPIO_MODE_MASK
+                                    | VSF_GPIO_PULL_UP_DOWN_MASK
+                                    | VSF_GPIO_EXTI_MODE_MASK
+#ifdef VSF_GPIO_INVERT_INPUT
+                                    | VSF_GPIO_INVERT_INPUT
+#endif
+#ifdef VSF_GPIO_DRIVE_STRENGTH_MASK
+                                    | VSF_GPIO_DRIVE_STRENGTH_MASK
+#endif
+#ifdef VSF_GPIO_SPEED_MASK
+                                    | VSF_GPIO_SPEED_MASK
+#endif
+};
+
+#if VSF_GPIO_CFG_REIMPLEMENT_TYPE_CFG == DISABLED
+//! Pre-declaration of GPIO structures
+typedef struct vsf_gpio_t vsf_gpio_t;
+
+//! External interrupt callback function for gpio
+typedef void vsf_gpio_exti_isr_handler_t(void *target_ptr, vsf_gpio_t *gpio_ptr,
+                                         vsf_gpio_pin_mask_t pin_mask);
+
+//! Configure external interrupts for the entire GPIO port, not the specific
+//! pins.
+typedef struct vsf_gpio_exti_irq_cfg_t {
+    vsf_gpio_exti_isr_handler_t *handler_fn;
+    void                        *target_ptr;
+    vsf_arch_prio_t              prio;
+} vsf_gpio_exti_irq_cfg_t;
+
+//! gpio configuration
+typedef struct vsf_gpio_cfg_t {
+    vsf_gpio_mode_t                 mode;
+    //! alternate function is only valid in GPIO_AF mode
+    vsf_gpio_alternate_function_t   alternate_function;
+} vsf_gpio_cfg_t;
+#endif
+
+typedef struct vsf_gpio_port_cfg_pin_t {
+    uint16_t                        port_pin_index;
+
+    //! For simplicity, the expansion of type vsf_gpio_cfg_t is used here instead
+    //! of using type vsf_gpio_cfg_t directly
+    vsf_gpio_mode_t                 mode;
+    //! alternate function is only valid in GPIO_AF mode
+    vsf_gpio_alternate_function_t   alternate_function;
+} vsf_gpio_port_cfg_pin_t;
+
+/*! \note Memory layout is not optimal due to padding between members.
+ *        However, we keep current layout for compatibility reasons.
+ */
+typedef struct vsf_gpio_port_cfg_pins_t {
+    uint16_t                        port_index;
+    vsf_gpio_pin_mask_t             pin_mask;
+    //! For simplicity, the expansion of type vsf_gpio_cfg_t is used here instead
+    //! of using type vsf_gpio_cfg_t directly
+    vsf_gpio_mode_t                 mode;
+    //! alternate function is only valid in GPIO_AF mode
+    vsf_gpio_alternate_function_t   alternate_function;
+} vsf_gpio_port_cfg_pins_t;
+
+#if VSF_GPIO_CFG_REIMPLEMENT_TYPE_CAPABILITY == DISABLED
+typedef struct vsf_gpio_capability_t {
+#if VSF_GPIO_CFG_INHERIT_HAL_CAPABILITY == ENABLED
+    inherit(vsf_peripheral_capability_t)
+#endif
+    /**
+     * \~english
+     * @brief Flag indicating if GPIO operations are asynchronous.
+     * When set, operations are only guaranteed to be sequential when operating
+     * on the same port consecutively. When used with different ports, operations
+     * on pins may not be sequential.
+     * \~chinese
+     * @brief 指示 GPIO 操作是否为异步的标志。
+     * 当设置此标志时，仅在连续操作同一端口时才能保证操作的顺序性。
+     * 当与不同端口一起使用时，对引脚的操作可能不是顺序执行的。
+     */
+    uint8_t is_async                     : 1;
+
+    /**
+     * \~english
+     * @brief Support for atomic output and set operations.
+     * Prevents signal glitches when switching from input to output mode.
+     * \~chinese
+     * @brief 支持原子输出和设置操作。
+     * 在从输入模式切换到输出模式时防止信号抖动。
+     */
+    uint8_t support_output_and_set       : 1;
+
+    /**
+     * \~english
+     * @brief Support for atomic output and clear operations.
+     * Prevents signal glitches when switching from input to output mode.
+     * \~chinese
+     * @brief 支持原子输出和清除操作。
+     * 在从输入模式切换到输出模式时防止信号抖动。
+     */
+    uint8_t support_output_and_clear     : 1;
+
+    /**
+     * \~english
+     * @brief Indicates whether vsf_gpio_read is valid when configured as GPIO output mode.
+     * When set, reading pin state is supported in GPIO output mode (not alternate function output).
+     * \~chinese
+     * @brief 指示在配置为 GPIO 输出模式时 vsf_gpio_read 是否有效。
+     * 当设置此标志时，在 GPIO 输出模式下（非复用功能输出）支持读取引脚状态。
+     */
+    uint8_t can_read_in_gpio_output_mode : 1;
+
+    /**
+     * \~english
+     * @brief Indicates whether vsf_gpio_read is valid in alternate function mode.
+     * When set, reading pin state is supported when pin is in AF mode.
+     * \~chinese
+     * @brief 指示在复用模式下 vsf_gpio_read 是否有效。
+     * 当设置此标志时，引脚处于复用模式时也支持读取引脚状态。
+     */
+    uint8_t can_read_in_alternate_mode   : 1;
+
+    /**
+     * \~english
+     * @brief Support for external interrupt functionality.
+     * When set, the GPIO pins can be configured to generate interrupts.
+     * \~chinese
+     * @brief 支持外部中断功能。
+     * 当设置此标志时，GPIO 引脚可以配置为生成中断。
+     */
+    uint8_t support_interrupt   : 1;
+
+    /**
+     * \~english
+     * @brief Total number of pins in hardware.
+     * Includes all pins, even those that cannot be configured as GPIO.
+     * If some pins cannot be used as GPIO, the corresponding bit in pin_mask is 0.
+     * \~chinese
+     * @brief 硬件中引脚的总数。
+     * 包括所有引脚，即使有些引脚不能配置为 GPIO。
+     * 如果某些引脚不能用作 GPIO，则 pin_mask 中相应的位为 0。
+     */
+    uint8_t pin_count;
+
+    /**
+     * \~english
+     * @brief Available pin mask indicating which pins can be used as GPIO.
+     * Common bit patterns include:
+     * - 0x000000FF: 8 pins available
+     * - 0x0000FFFF: 16 pins available
+     * - 0xFFFFFFFF: All 32 pins available
+     * - 0xFFFFFFFE: 31 pins available (PIN0 is not available)
+     * \~chinese
+     * @brief 可用引脚掩码，指示哪些引脚可用作 GPIO。
+     * 常见的位模式包括：
+     * - 0x000000FF：8 个可用引脚
+     * - 0x0000FFFF：16 个可用引脚
+     * - 0xFFFFFFFF：所有 32 个引脚都可用
+     * - 0xFFFFFFFE：31 个可用引脚（PIN0 不可用）
+     */
+    vsf_gpio_pin_mask_t pin_mask;
+} vsf_gpio_capability_t;
+#endif
+
+#if VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL == DISABLED
+/**
+ * \~english
+ * @brief GPIO control commands for hardware-specific operations
+ * @note These commands provide additional control beyond basic GPIO operations
+ * \~chinese
+ * @brief GPIO 控制命令，用于硬件特定操作
+ * @note 这些命令提供了基本 GPIO 操作之外的额外控制功能
+ */
+typedef enum vsf_gpio_ctrl_t {
+    //! \~english
+    //! @brief Dummy value for compilation, required when no actual control commands are defined.
+    //! @note This value is needed only when using the template default enum definition
+    //!       (VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL == DISABLED) and all optional control
+    //!       commands are commented out. It ensures the enum has at least one member
+    //!       to avoid compilation errors with some C compilers that don't allow empty enums.
+    //! @note If you enable any control commands below (uncomment them), or if you
+    //!       redefine the enum in a specific hardware driver (VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL == ENABLED),
+    //!       you can remove this DUMMY value as long as at least one actual command is defined.
+    //! \~chinese
+    //! @brief 编译占位值，当没有定义实际控制命令时需要。
+    //! @note 此值仅在以下情况需要：使用模板默认枚举定义
+    //!       (VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL == DISABLED) 且所有可选控制命令都被注释掉时。
+    //!       它确保枚举至少有一个成员，以避免某些不允许空枚举的 C 编译器报错。
+    //! @note 如果启用了以下任何控制命令（取消注释），或者在特定硬件驱动中重新定义了枚举
+    //!       (VSF_GPIO_CFG_REIMPLEMENT_TYPE_CTRL == ENABLED)，只要定义了至少一个实际命令，
+    //!       就可以删除此 DUMMY 值。
+    __VSF_GPIO_CTRL_DUMMY = 0,
+} vsf_gpio_ctrl_t;
+#endif
+
+typedef struct vsf_gpio_op_t {
+/// @cond
+#undef __VSF_HAL_TEMPLATE_API
+#define __VSF_HAL_TEMPLATE_API VSF_HAL_TEMPLATE_API_FP
+/// @endcond
+
+    VSF_GPIO_APIS(vsf_gpio)
+} vsf_gpio_op_t;
+
+#if VSF_GPIO_CFG_MULTI_CLASS == ENABLED
+/**
+ \~english
+ When enabling multiple classes, the first member of all gpio implementations
+ needs to be of type const "vsf_gpio_op_t * op"
+
+ \~chinese
+ 当使能多类的时候，所有的具体 gpio 实现的第一个成员都需要是 const vsf_gpio_op_t * 类型。
+ */
+struct vsf_gpio_t  {
+    const vsf_gpio_op_t * op;
+};
+#endif
+
+
+#if VSF_HW_GPIO_PORT_COUNT > 0
+typedef enum vsf_gpio_port_no_t {
+#if defined(VSF_GPIO_CFG_PORT0)
+    VSF_PORT0,
+#endif
+#if defined(VSF_GPIO_CFG_PORT1)
+    VSF_PORT1,
+#endif
+#if defined(VSF_GPIO_CFG_PORT2)
+    VSF_PORT2,
+#endif
+#if defined(VSF_GPIO_CFG_PORT3)
+    VSF_PORT3,
+#endif
+#if defined(VSF_GPIO_CFG_PORT4)
+    VSF_PORT4,
+#endif
+#if defined(VSF_GPIO_CFG_PORT5)
+    VSF_PORT5,
+#endif
+#if defined(VSF_GPIO_CFG_PORT6)
+    VSF_PORT6,
+#endif
+#if defined(VSF_GPIO_CFG_PORT7)
+    VSF_PORT7,
+#endif
+#if defined(VSF_GPIO_CFG_PORT8)
+    VSF_PORT8,
+#endif
+#if defined(VSF_GPIO_CFG_PORT9)
+    VSF_PORT9,
+#endif
+#if defined(VSF_GPIO_CFG_PORT10)
+    VSF_PORT10,
+#endif
+#if defined(VSF_GPIO_CFG_PORT11)
+    VSF_PORT11,
+#endif
+#if defined(VSF_GPIO_CFG_PORT12)
+    VSF_PORT12,
+#endif
+#if defined(VSF_GPIO_CFG_PORT13)
+    VSF_PORT13,
+#endif
+#if defined(VSF_GPIO_CFG_PORT14)
+    VSF_PORT14,
+#endif
+#if defined(VSF_GPIO_CFG_PORT15)
+    VSF_PORT15,
+#endif
+#if defined(VSF_GPIO_CFG_PORT0)
+    VSF_PORTA = VSF_PORT0,
+#endif
+#if defined(VSF_GPIO_CFG_PORT1)
+    VSF_PORTB = VSF_PORT1,
+#endif
+#if defined(VSF_GPIO_CFG_PORT2)
+    VSF_PORTC = VSF_PORT2,
+#endif
+#if defined(VSF_GPIO_CFG_PORT3)
+    VSF_PORTD = VSF_PORT3,
+#endif
+#if defined(VSF_GPIO_CFG_PORT4)
+    VSF_PORTE = VSF_PORT4,
+#endif
+#if defined(VSF_GPIO_CFG_PORT5)
+    VSF_PORTF = VSF_PORT5,
+#endif
+#if defined(VSF_GPIO_CFG_PORT6)
+    VSF_PORTG = VSF_PORT6,
+#endif
+#if defined(VSF_GPIO_CFG_PORT7)
+    VSF_PORTH = VSF_PORT7,
+#endif
+#if defined(VSF_GPIO_CFG_PORT8)
+    VSF_PORTI = VSF_PORT8,
+#endif
+#if defined(VSF_GPIO_CFG_PORT9)
+    VSF_PORTJ = VSF_PORT9,
+#endif
+#if defined(VSF_GPIO_CFG_PORT10)
+    VSF_PORTK = VSF_PORT10,
+#endif
+#if defined(VSF_GPIO_CFG_PORT11)
+    VSF_PORTL = VSF_PORT11,
+#endif
+#if defined(VSF_GPIO_CFG_PORT12)
+    VSF_PORTM = VSF_PORT12,
+#endif
+#if defined(VSF_GPIO_CFG_PORT13)
+    VSF_PORTN = VSF_PORT13,
+#endif
+#if defined(VSF_GPIO_CFG_PORT14)
+    VSF_PORTO = VSF_PORT14,
+#endif
+#if defined(VSF_GPIO_CFG_PORT15)
+    VSF_PORTP = VSF_PORT15,
+#endif
+} vsf_gpio_port_no_t;
+
+typedef enum vsf_gpio_port_pin_no_t {
+#if defined(VSF_GPIO_CFG_PORT0)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 0, A)
+#endif
+#if defined(VSF_GPIO_CFG_PORT1)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 1, B)
+#endif
+#if defined(VSF_GPIO_CFG_PORT2)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 2, C)
+#endif
+#if defined(VSF_GPIO_CFG_PORT3)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 3, D)
+#endif
+#if defined(VSF_GPIO_CFG_PORT4)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 4, E)
+#endif
+#if defined(VSF_GPIO_CFG_PORT5)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 5, F)
+#endif
+#if defined(VSF_GPIO_CFG_PORT6)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 6, G)
+#endif
+#if defined(VSF_GPIO_CFG_PORT7)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 7, H)
+#endif
+#if defined(VSF_GPIO_CFG_PORT8)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 8, I)
+#endif
+#if defined(VSF_GPIO_CFG_PORT9)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 9, J)
+#endif
+#if defined(VSF_GPIO_CFG_PORT10)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 10, K)
+#endif
+#if defined(VSF_GPIO_CFG_PORT11)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 11, L)
+#endif
+#if defined(VSF_GPIO_CFG_PORT12)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 12, M)
+#endif
+#if defined(VSF_GPIO_CFG_PORT13)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 13, N)
+#endif
+#if defined(VSF_GPIO_CFG_PORT14)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 14, O)
+#endif
+#if defined(VSF_GPIO_CFG_PORT15)
+    VSF_MREPEAT(VSF_GPIO_CFG_PIN_COUNT, __VSF_GPIO_PORT_PIN_NUM, 15, P)
+#endif
+} vsf_gpio_port_pin_no_t;
+#endif
+
+/*============================ GLOBAL VARIABLES ==============================*/
+/*============================ MACROFIED FUNCTIONS ===========================*/
+/*============================ PROTOTYPES ====================================*/
+
+/**
+ \~english
+ @brief Configure one or more pins of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, the value of
+            this bit 1 means the configuration will be applied to the corresponding pin
+ @param[in] cfg_ptr: a pointer to structure @ref vsf_gpio_cfg_t
+ @return vsf_err_t: VSF_ERR_NONE if GPIO Configuration Successful, or a negative error code
+
+ \~chinese
+ @brief 配置 gpio 实例的一个或者多个引脚
+ @param[in] gpio_ptr: 结构体 vsf_gpio_t 的指针，参考 @ref vsf_gpio_t
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，该 bit 的值位 1 表示需要配置
+ @param[in] cfg_ptr: 结构体 vsf_gpio_cfg_t 的指针，参考 @ref vsf_gpio_cfg_t
+ @return vsf_err_t: 如果 GPIO 配置成功返回 VSF_ERR_NONE，失败返回负值错误码。
+ */
+extern vsf_err_t vsf_gpio_port_config_pins(vsf_gpio_t         *gpio_ptr,
+                                           vsf_gpio_pin_mask_t pin_mask,
+                                           vsf_gpio_cfg_t     *cfg_ptr);
+
+/**
+ \~english
+ @brief Get configuration of a specific pin of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_index: pin index (0-based), specifies which pin's configuration to retrieve
+ @param[out] cfg_ptr: a pointer to structure @ref vsf_gpio_cfg_t to store the configuration
+ @return vsf_err_t: VSF_ERR_NONE if GPIO Pin Configuration Retrieved Successfully, or a negative error code
+ @note This function retrieves the configuration of a single pin only.
+       To get configurations of multiple pins, call this function separately for each pin.
+
+ \~chinese
+ @brief 获取 gpio 实例的指定引脚的配置
+ @param[in] gpio_ptr: 结构体 vsf_gpio_t 的指针，参考 @ref vsf_gpio_t
+ @param[in] pin_index: 引脚索引（从0开始），指定要获取配置的引脚
+ @param[out] cfg_ptr: 结构体 vsf_gpio_cfg_t 的指针，用于存储配置，参考 @ref vsf_gpio_cfg_t
+ @return vsf_err_t: 如果 GPIO 引脚配置获取成功返回 VSF_ERR_NONE，失败返回负值错误码。
+ @note 此函数仅获取单个引脚的配置。要获取多个引脚的配置，请为每个引脚单独调用此函数。
+ */
+extern vsf_err_t vsf_gpio_get_pin_configuration(vsf_gpio_t    *gpio_ptr,
+                                                uint16_t       pin_index,
+                                                vsf_gpio_cfg_t *cfg_ptr);
+
+///**
+// \~english
+// @brief Configure one or more ports and pin of the gpio instance
+// @param[in] cfg: array of vsf_gpio_port_cfg_pins_t structures, refer @ref vsf_gpio_port_cfg_pins_t
+// @param[in] count: number of struct array vsf_gpio_port_cfg_pins_t
+// @return vsf_err_t: VSF_ERR_NONE if GPIO Configuration Successful, or a negative error code
+// @note The VSF_PREFIX prefix of this can be replaced with the actual prefix, e.g. vsf_hw
+//
+// \~chinese
+// @brief 配置 gpio 的一个或者多个端口和引脚
+// @param[in] cfg: vsf_gpio_port_cfg_pins_t 结构体数组，参考 @ref vsf_gpio_port_cfg_pins_t
+// @param[in] count: 结构体数组 vsf_gpio_port_cfg_pins_t 的数量
+// @return vsf_err_t: 如果 GPIO 配置成功返回 VSF_ERR_NONE，失败返回负值错误码。
+// @note VSF_PREFIX 前缀可以替换成实际的前缀，例如 vsf_hw
+// */
+#if __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL
+/**
+ \~english
+ @brief Configure one or more pins for one or more ports of the gpio instance
+ @param[in] cfg_ptr: a pointer to structure array @ref vsf_gpio_port_cfg_pins_t
+ @param[in] count: number of struct array vsf_gpio_port_cfg_pins_t
+ @return vsf_err_t: VSF_ERR_NONE if GPIO Configuration Successful, or a negative error code
+ @note This function is a standard optional feature and should NOT be enabled in the template.
+       (protected by __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL, should not be enabled)
+
+ \~chinese
+ @brief 配置 gpio 的一个或者多个端口和引脚
+ @param[in] cfg_ptr: vsf_gpio_port_cfg_pins_t 结构体数组的指针，参考 @ref vsf_gpio_port_cfg_pins_t
+ @param[in] count: 结构体数组 vsf_gpio_port_cfg_pins_t 的数量
+ @return vsf_err_t: 如果 GPIO 配置成功返回 VSF_ERR_NONE，失败返回负值错误码。
+ @note 这是标准可选功能，不应在模板中启用。
+       （由 __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL 宏保护，不应被开启）
+ */
+extern vsf_err_t vsf_gpio_ports_config_pins(vsf_gpio_port_cfg_pins_t *cfg_ptr,
+                                            uint_fast8_t              count);
+
+/**
+ \~english
+ @brief Configure one pin for one or more ports of the gpio instance
+ @param[in] cfg_ptr: a pointer to structure array @ref vsf_gpio_port_cfg_pin_t
+ @param[in] count: number of struct array vsf_gpio_port_cfg_pin_t
+ @return vsf_err_t: VSF_ERR_NONE if GPIO Configuration Successful, or a negative error code
+ @note This function is a standard optional feature and should NOT be enabled in the template.
+       (protected by __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL, should not be enabled)
+
+ \~chinese
+ @brief 配置 gpio 的一个或者多个端口的一个引脚
+ @param[in] cfg_ptr: 结构体数组 vsf_gpio_port_cfg_pin_t 的指针，参考 @ref vsf_gpio_port_cfg_pin_t
+ @param[in] count: 结构体数组 vsf_gpio_port_cfg_pin_t 的数量
+ @return vsf_err_t: 如果 GPIO 配置成功返回 VSF_ERR_NONE，失败返回负值错误码。
+ @note 这是标准可选功能，不应在模板中启用。
+       （由 __VSF_GPIO_CFG_SUPPORT_STANDARD_OPTIONAL 宏保护，不应被开启）
+ */
+extern vsf_err_t vsf_gpio_ports_config_pin(vsf_gpio_port_cfg_pin_t *cfg_ptr,
+                                           uint_fast8_t              count);
+#endif
+
+
+/**
+ \~english
+ @brief Set GPIO port pin direction
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: a pin mask, each pin corresponds to a bit, value 1 of the bit to change, 0 means unchanged
+ @param[in] direction_mask: a direction mask, each pin corresponds to a bit, value 1 for output, 0 for input
+
+ \~chinese
+ @brief 设置 GPIO 引脚方向
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，该位的值为 1 表示修改，0 表示不变
+ @param[in] direction_mask: 方向掩码，每一个引脚对应一个位，1 表示输出，0 表示输入
+ */
+extern void vsf_gpio_set_direction(vsf_gpio_t *gpio_ptr,
+                                   vsf_gpio_pin_mask_t pin_mask,
+                                   vsf_gpio_pin_mask_t direction_mask);
+
+/**
+ \~english
+ @brief Get GPIO port pin direction
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: a pin mask, each pin corresponds to a bit. direction of all pins in pin_mask will be returned.
+ @return vsf_gpio_pin_mask_t: the direction of all pins, value 1 for output, 0 for input
+
+ \~chinese
+ @brief 获取 GPIO 引脚方向
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，返回 pin_mask 中所有引脚的方向
+ @return vsf_gpio_pin_mask_t: 所有引脚的方向，1 表示输出，0 表示输入
+ */
+extern vsf_gpio_pin_mask_t vsf_gpio_get_direction(vsf_gpio_t *gpio_ptr,
+                                                  vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief set specified pins to input mode
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: a pin mask, each pin corresponds to a bit, value 1 to set as input
+
+ \~chinese
+ @brief 设置指定引脚为输入模式
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，该 bit 的值位 1 表示需要设置成输入
+ */
+extern void vsf_gpio_set_input(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Set the direction of one or more pins of the gpio instance to output
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, the value of the bit 1
+            indicates the need to set to output
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个引脚的方向为输出
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，该 bit 的值位 1 表示需要设置成输出
+ */
+extern void vsf_gpio_set_output(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Toggle the orientation of one or more pins of a gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, the value of the bit 1
+            indicates the need to set to output
+
+ \~chinese
+ @brief 反转 gpio 实例的一个或者多个引脚的方向
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，该 bit 的值位 1 表示需要反转
+ */
+extern void vsf_gpio_switch_direction(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Read the values of all pins of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @return vsf_gpio_pin_mask_t: Value of all pins, 1 for high level, 0 for low level
+ @note This function reads the actual pin levels (input values). For pins configured as
+       output, this may differ from the output register value if the pin is driven
+       externally or has hardware issues.
+
+ \~chinese
+ @brief 读取 gpio 实例的所有引脚的值
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @return vsf_gpio_pin_mask_t: 所有引脚的值，1 表示高电平，0 表示低电平
+ @note 此函数读取引脚的实际电平值（输入值）。对于配置为输出的引脚，如果引脚被外部驱动
+       或存在硬件问题，此值可能与输出寄存器值不同。
+ */
+extern vsf_gpio_pin_mask_t vsf_gpio_read(vsf_gpio_t *gpio_ptr);
+
+/**
+ \~english
+ @brief Read the output register values of all pins of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @return vsf_gpio_pin_mask_t: Output register values of all pins, 1 for high, 0 for low
+ @note This function reads the output register values, which represent what the GPIO
+       controller is trying to drive on the pins. This is different from vsf_gpio_read()
+       which reads the actual pin levels. For output pins, this shows the intended output
+       state regardless of external conditions.
+
+ \~chinese
+ @brief 读取 gpio 实例的所有引脚的输出寄存器值
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @return vsf_gpio_pin_mask_t: 所有引脚的输出寄存器值，1 表示高电平，0 表示低电平
+ @note 此函数读取输出寄存器值，表示 GPIO 控制器试图在引脚上驱动的值。这与 vsf_gpio_read()
+       不同，后者读取引脚的实际电平值。对于输出引脚，此函数显示预期的输出状态，
+       不受外部条件影响。
+ */
+extern vsf_gpio_pin_mask_t vsf_gpio_read_output_register(vsf_gpio_t *gpio_ptr);
+
+/**
+ \~english
+ @brief set the value of one or more of the gpio instances
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] value: value of the pin, each pin corresponds to a bit, 1 means high, 0 means low
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个的值
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ @param[in] value: 引脚的值，每一个引脚对应一个位，1 表示高电平，0 表示低电平
+ */
+extern void vsf_gpio_write(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask,
+                           vsf_gpio_pin_mask_t value);
+
+/**
+ \~english
+ @brief Set the value of one or more pins of the gpio instance to high
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个引脚的值为高电平
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ */
+extern void vsf_gpio_set(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Set the value of one or more pins of the gpio instance to low
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个引脚的值为低电平
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ */
+extern void vsf_gpio_clear(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Toggle the value of one or more pins of the gpio instance
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+
+ \~chinese
+ @brief 反转 gpio 实例的一个或者多个引脚的值
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ */
+extern void vsf_gpio_toggle(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Set the direction of one or more pins of the gpio instance to output high
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+ @note This API can be used when modifying the IO direction to output and set to
+       high in order to avoid possible pulses. Note that it is not supported by all hardware.
+       You can get if this mode is supported with vsf_gpio_capability()
+       (support_output_and_set)
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个引脚的方向为输出高电平
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ @note 修改 IO 方向为输出并且设置成高电平的时候，为了避免可能的脉冲，可以使用这个 API。
+       需要注意的是，并不是所有硬件都支持。可以通过 vsf_gpio_capability() 获取是否支持该特性
+      (support_output_and_set)
+ */
+extern void vsf_gpio_output_and_set(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Set the direction of one or more pins of the gpio instance to output low
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be written, 0 means the corresponding pin does not need to be updated
+ @note This API can be used when modifying the IO direction to output and set to
+       low in order to avoid possible pulses. Note that it is not supported by all hardware.
+       You can get if this mode is supported with vsf_gpio_capability()
+       (support_output_and_clear)
+
+ \~chinese
+ @brief 设置 gpio 实例的一个或者多个引脚的方向为输出低电平
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要写入，0 表示该位不需要更新
+ @note 修改 IO 方向为输出并且设置成低电平的时候，为了避免可能的脉冲，可以使用这个 API。
+       需要注意的是，并不是所有硬件都支持。可以通过 vsf_gpio_capability() 获取是否支持该特性
+      (support_output_and_clear)
+ */
+extern void vsf_gpio_output_and_clear(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Get the capability of gpio instance
+ @param[in] gpio_ptr: pointer to the structure vsf_gpio_t, refer to @ref vsf_gpio_t
+
+ \~chinese
+ @brief 获取 gpio 实例的能力
+ @param[in] gpio_ptr: 结构体 vsf_gpio_t 的指针，参考 @ref vsf_gpio_t
+ */
+extern vsf_gpio_capability_t vsf_gpio_capability(vsf_gpio_t *gpio_ptr);
+
+/**
+ \~english
+ @brief Configure external interrupt of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] cfg_ptr: a pointer to structure @ref vsf_gpio_exti_irq_cfg_t
+ @return vsf_err_t: VSF_ERR_NONE if successful, or a negative error code
+
+ \~chinese
+ @brief 配置 gpio 实例的外部中断
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] cfg_ptr: 指向结构体 @ref vsf_gpio_exti_irq_cfg_t 的指针
+ @return vsf_err_t: 如果成功返回 VSF_ERR_NONE，失败返回负值错误码
+ */
+extern vsf_err_t vsf_gpio_exti_irq_config(vsf_gpio_t *gpio_ptr, vsf_gpio_exti_irq_cfg_t *cfg_ptr);
+
+/**
+ \~english
+ @brief Get the current external interrupt configuration of the gpio instance
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[out] cfg_ptr: a pointer to structure @ref vsf_gpio_exti_irq_cfg_t to store the current configuration
+ @return vsf_err_t: VSF_ERR_NONE if successful, or a negative error code
+
+ \~chinese
+ @brief 获取 gpio 实例的当前外部中断配置
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[out] cfg_ptr: 指向结构体 @ref vsf_gpio_exti_irq_cfg_t 的指针，用于存储当前配置
+ @return vsf_err_t: 如果成功返回 VSF_ERR_NONE，失败返回负值错误码
+ */
+extern vsf_err_t vsf_gpio_exti_irq_get_configuration(vsf_gpio_t *gpio_ptr, vsf_gpio_exti_irq_cfg_t *cfg_ptr);
+
+/**
+ \~english
+ @brief Enable interrupt of one or more pins
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be enabled, 0 means the corresponding pin does not need to be enabled
+ @return vsf_err_t: VSF_ERR_NONE if successful, or a negative error code
+ @note For some devices, the interrupt priority may be shared between pins on the gpio.
+ @note All pending interrupts should be cleared before interrupts are enabled.
+
+ \~chinese
+ @brief 使能指定的一个或者多个引脚的中断
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要使能，0 表示该位不需要使能
+ @return vsf_err_t: 如果成功返回 VSF_ERR_NONE，失败返回负值错误码
+ @note 对于一些芯片，中断优先级可能是 gpio 上所有引脚共用的。
+ @note 在中断使能之前，应该清除所有悬挂的中断。
+ */
+extern vsf_err_t vsf_gpio_exti_irq_enable(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ \~english
+ @brief Disable interrupt of one or more pins
+ @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ @param[in] pin_mask: pin mask, each pin corresponds to one bit, 1 means the corresponding pin
+            needs to be disabled, 0 means the corresponding pin does not need to be disabled
+ @return vsf_err_t: VSF_ERR_NONE if successful, or a negative error code
+ @note For some devices, the interrupt settings may be shared between pins on the gpio.
+
+ \~chinese
+ @brief 禁能指定引脚的中断
+ @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ @param[in] pin_mask: 引脚掩码，每一个引脚对应一个位，1 表示该位需要禁能，0 表示该位不需要禁能
+ @return vsf_err_t: 如果成功返回 VSF_ERR_NONE，失败返回负值错误码
+ @note 对于一些芯片，中断设置可能是 gpio 上所有引脚共用的。
+ */
+extern vsf_err_t vsf_gpio_exti_irq_disable(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ * \~english
+ * @brief Clear interrupt flags of GPIO EXTI instance and return previous state
+ * @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ * @param[in] pin_mask: one or more values of enum @ref vsf_gpio_pin_mask_t to clear
+ * @return vsf_gpio_pin_mask_t: the pin mask state before clearing (0 if no flags were set)
+ *
+ * @note This function attempts to clear the specified interrupt flags if they are set,
+ *       and returns the state of those flags before clearing. This is useful for
+ *       polling operations and determining if interrupts occurred.
+ *       Note that if interrupts are enabled and an interrupt handler is active,
+ *       the interrupt handler may clear the interrupt flags automatically.
+ *       In such cases, this function will return 0 even if interrupts occurred.
+ *
+ * \~chinese
+ * @brief 清除 GPIO EXTI 实例的中断标志并返回之前的状态
+ * @param[in] gpio_ptr: 指向结构体 @ref vsf_gpio_t 的指针
+ * @param[in] pin_mask: 要清除的一个或多个枚举 vsf_gpio_pin_mask_t 值的按位或
+ * @return vsf_gpio_pin_mask_t: 清除前的引脚掩码状态（如果没有标志被设置则返回0）
+ *
+ * @note 此函数尝试清除指定的中断标志（如果它们已设置），并返回清除前这些标志的状态。
+ *       这对于轮询操作和确定是否发生了中断很有用。
+ *       注意：如果中断已启用且中断处理函数处于活动状态，中断处理函数可能会自动清除中断标志。
+ *       在这种情况下，即使发生了中断，此函数也会返回0。
+ */
+extern vsf_gpio_pin_mask_t vsf_gpio_exti_irq_clear(vsf_gpio_t *gpio_ptr, vsf_gpio_pin_mask_t pin_mask);
+
+/**
+ * \~english
+ * @brief Calls the specified GPIO command
+ * @param[in] gpio_ptr: a pointer to structure @ref vsf_gpio_t
+ * @param[in] ctrl: GPIO control command @ref vsf_gpio_ctrl_t
+ * @param[in,out] param: the parameter of the command, its use is determined by the command
+ * @return vsf_err_t: returns VSF_ERR_NONE if successful, or a negative error code
+ *
+ * \~chinese
+ * @brief 调用指定的 GPIO 命令
+ * @param[in] gpio_ptr: 结构体 @ref vsf_gpio_t 的指针
+ * @param[in] ctrl: GPIO 控制命令，参考 @ref vsf_gpio_ctrl_t
+ * @param[in,out] param: 命令的参数，其用途由命令决定
+ * @return vsf_err_t: 成功返回 VSF_ERR_NONE，否则返回负数
+ */
+extern vsf_err_t vsf_gpio_ctrl(vsf_gpio_t *gpio_ptr, vsf_gpio_ctrl_t ctrl, void * param);
+
+/*============================ INLINE FUNCTIONS ==============================*/
+
+static inline uint8_t vsf_gpio_get_port(uint16_t port_pin_index)
+{
+    return port_pin_index >> 8;
+}
+
+static inline uint8_t vsf_gpio_get_pin(uint16_t port_pin_index)
+{
+    return port_pin_index & 0xFF;
+}
+
+static inline vsf_err_t vsf_gpio_port_config_pin(vsf_gpio_t      *gpio_ptr,
+                                                 uint16_t         pin_index,
+                                                 vsf_gpio_cfg_t  *cfg_ptr)
+{
+    return vsf_gpio_port_config_pins(gpio_ptr, 1 << pin_index, cfg_ptr);
+}
+
+
+/*============================ MACROS ========================================*/
+
+/// @cond
+#if VSF_GPIO_CFG_FUNCTION_RENAME == ENABLED
+#   define __vsf_gpio_t                                 VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_t)
+#   define vsf_gpio_capability(__GPIO)                  VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_capability)             ((__vsf_gpio_t *)(__GPIO))
+#   define vsf_gpio_port_config_pins(__GPIO, ...)       VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_port_config_pins)       ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_get_pin_configuration(__GPIO, ...)  VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_get_pin_configuration)  ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_set_direction(__GPIO, ...)          VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_set_direction)          ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_get_direction(__GPIO, ...)          VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_get_direction)          ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_set_input(__GPIO, ...)              VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_set_input)              ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_set_output(__GPIO, ...)             VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_set_output)             ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_switch_direction(__GPIO, ...)       VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_switch_direction)       ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_read(__GPIO)                        VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_read)                   ((__vsf_gpio_t *)(__GPIO))
+#   define vsf_gpio_read_output_register(__GPIO)        VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_read_output_register)   ((__vsf_gpio_t *)(__GPIO))
+#   define vsf_gpio_write(__GPIO, ...)                  VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_write)                  ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_set(__GPIO, ...)                    VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_set)                    ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_clear(__GPIO, ...)                  VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_clear)                  ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_output_and_set(__GPIO, ...)         VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_output_and_set)         ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_output_and_clear(__GPIO, ...)       VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_output_and_clear)       ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_toggle(__GPIO, ...)                 VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_toggle)                 ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_exti_irq_config(__GPIO, ...)        VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_exti_irq_config)        ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_exti_irq_get_configuration(__GPIO, ...) VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_exti_irq_get_configuration) ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_exti_irq_enable(__GPIO, ...)        VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_exti_irq_enable)        ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_exti_irq_disable(__GPIO, ...)       VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_exti_irq_disable)       ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_exti_irq_clear(__GPIO, ...)         VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_exti_irq_clear)         ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#   define vsf_gpio_ctrl(__GPIO, ...)                   VSF_MCONNECT(VSF_GPIO_CFG_PREFIX, _gpio_ctrl)                   ((__vsf_gpio_t *)(__GPIO), ##__VA_ARGS__)
+#endif
+/// @endcond
+
+// too long, put it end of file
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 0)
+#   define VSF_PIN0         0
+#   define VSF_PIN0_MASK    (1 << VSF_PIN0)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 1)
+#   define VSF_PIN1         1
+#   define VSF_PIN1_MASK    (1 << VSF_PIN1)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 2)
+#   define VSF_PIN2         2
+#   define VSF_PIN2_MASK    (1 << VSF_PIN2)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 3)
+#   define VSF_PIN3         3
+#   define VSF_PIN3_MASK    (1 << VSF_PIN3)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 4)
+#   define VSF_PIN4         4
+#   define VSF_PIN4_MASK    (1 << VSF_PIN4)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 5)
+#   define VSF_PIN5         5
+#   define VSF_PIN5_MASK    (1 << VSF_PIN5)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 6)
+#   define VSF_PIN6         6
+#   define VSF_PIN6_MASK    (1 << VSF_PIN6)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 7)
+#   define VSF_PIN7         7
+#   define VSF_PIN7_MASK    (1 << VSF_PIN7)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 8)
+#   define VSF_PIN8         8
+#   define VSF_PIN8_MASK    (1 << VSF_PIN8)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 9)
+#   define VSF_PIN9         9
+#   define VSF_PIN9_MASK    (1 << VSF_PIN9)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 10)
+#   define VSF_PIN10         10
+#   define VSF_PIN10_MASK    (1 << VSF_PIN10)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 11)
+#   define VSF_PIN11         11
+#   define VSF_PIN11_MASK    (1 << VSF_PIN11)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 12)
+#   define VSF_PIN12         12
+#   define VSF_PIN12_MASK    (1 << VSF_PIN12)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 13)
+#   define VSF_PIN13         13
+#   define VSF_PIN13_MASK    (1 << VSF_PIN13)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 14)
+#   define VSF_PIN14         14
+#   define VSF_PIN14_MASK    (1 << VSF_PIN14)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 15)
+#   define VSF_PIN15         15
+#   define VSF_PIN15_MASK    (1 << VSF_PIN15)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 16)
+#   define VSF_PIN16         16
+#   define VSF_PIN16_MASK    (1 << VSF_PIN16)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 17)
+#   define VSF_PIN17         17
+#   define VSF_PIN17_MASK    (1 << VSF_PIN17)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 18)
+#   define VSF_PIN18         18
+#   define VSF_PIN18_MASK    (1 << VSF_PIN18)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 19)
+#   define VSF_PIN19         19
+#   define VSF_PIN19_MASK    (1 << VSF_PIN19)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 20)
+#   define VSF_PIN20         20
+#   define VSF_PIN20_MASK    (1 << VSF_PIN20)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 21)
+#   define VSF_PIN21         21
+#   define VSF_PIN21_MASK    (1 << VSF_PIN21)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 22)
+#   define VSF_PIN22         22
+#   define VSF_PIN22_MASK    (1 << VSF_PIN22)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 23)
+#   define VSF_PIN23         23
+#   define VSF_PIN23_MASK    (1 << VSF_PIN23)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 24)
+#   define VSF_PIN24         24
+#   define VSF_PIN24_MASK    (1 << VSF_PIN24)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 25)
+#   define VSF_PIN25         25
+#   define VSF_PIN25_MASK    (1 << VSF_PIN25)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 26)
+#   define VSF_PIN26         26
+#   define VSF_PIN26_MASK    (1 << VSF_PIN26)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 27)
+#   define VSF_PIN27         27
+#   define VSF_PIN27_MASK    (1 << VSF_PIN27)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 28)
+#   define VSF_PIN28         28
+#   define VSF_PIN28_MASK    (1 << VSF_PIN28)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 29)
+#   define VSF_PIN29         29
+#   define VSF_PIN29_MASK    (1 << VSF_PIN29)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 30)
+#   define VSF_PIN30         30
+#   define VSF_PIN30_MASK    (1 << VSF_PIN30)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 31)
+#   define VSF_PIN31         31
+#   define VSF_PIN31_MASK    (1 << VSF_PIN31)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 32)
+#   define VSF_PIN32         32
+#   define VSF_PIN32_MASK    (1 << VSF_PIN32)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 33)
+#   define VSF_PIN33         33
+#   define VSF_PIN33_MASK    (1 << VSF_PIN33)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 34)
+#   define VSF_PIN34         34
+#   define VSF_PIN34_MASK    (1 << VSF_PIN34)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 35)
+#   define VSF_PIN35         35
+#   define VSF_PIN35_MASK    (1 << VSF_PIN35)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 36)
+#   define VSF_PIN36         36
+#   define VSF_PIN36_MASK    (1 << VSF_PIN36)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 37)
+#   define VSF_PIN37         37
+#   define VSF_PIN37_MASK    (1 << VSF_PIN37)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 38)
+#   define VSF_PIN38         38
+#   define VSF_PIN38_MASK    (1 << VSF_PIN38)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 39)
+#   define VSF_PIN39         39
+#   define VSF_PIN39_MASK    (1 << VSF_PIN39)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 40)
+#   define VSF_PIN40         40
+#   define VSF_PIN40_MASK    (1 << VSF_PIN40)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 41)
+#   define VSF_PIN41         41
+#   define VSF_PIN41_MASK    (1 << VSF_PIN41)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 42)
+#   define VSF_PIN42         42
+#   define VSF_PIN42_MASK    (1 << VSF_PIN42)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 43)
+#   define VSF_PIN43         43
+#   define VSF_PIN43_MASK    (1 << VSF_PIN43)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 44)
+#   define VSF_PIN44         44
+#   define VSF_PIN44_MASK    (1 << VSF_PIN44)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 45)
+#   define VSF_PIN45         45
+#   define VSF_PIN45_MASK    (1 << VSF_PIN45)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 46)
+#   define VSF_PIN46         46
+#   define VSF_PIN46_MASK    (1 << VSF_PIN46)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 47)
+#   define VSF_PIN47         47
+#   define VSF_PIN47_MASK    (1 << VSF_PIN47)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 48)
+#   define VSF_PIN48         48
+#   define VSF_PIN48_MASK    (1 << VSF_PIN48)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 49)
+#   define VSF_PIN49         49
+#   define VSF_PIN49_MASK    (1 << VSF_PIN49)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 50)
+#   define VSF_PIN50         50
+#   define VSF_PIN50_MASK    (1 << VSF_PIN50)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 51)
+#   define VSF_PIN51         51
+#   define VSF_PIN51_MASK    (1 << VSF_PIN51)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 52)
+#   define VSF_PIN52         52
+#   define VSF_PIN52_MASK    (1 << VSF_PIN52)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 53)
+#   define VSF_PIN53         53
+#   define VSF_PIN53_MASK    (1 << VSF_PIN53)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 54)
+#   define VSF_PIN54         54
+#   define VSF_PIN54_MASK    (1 << VSF_PIN54)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 55)
+#   define VSF_PIN55         55
+#   define VSF_PIN55_MASK    (1 << VSF_PIN55)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 56)
+#   define VSF_PIN56         56
+#   define VSF_PIN56_MASK    (1 << VSF_PIN56)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 57)
+#   define VSF_PIN57         57
+#   define VSF_PIN57_MASK    (1 << VSF_PIN57)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 58)
+#   define VSF_PIN58         58
+#   define VSF_PIN58_MASK    (1 << VSF_PIN58)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 59)
+#   define VSF_PIN59         59
+#   define VSF_PIN59_MASK    (1 << VSF_PIN59)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 60)
+#   define VSF_PIN60         60
+#   define VSF_PIN60_MASK    (1 << VSF_PIN60)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 61)
+#   define VSF_PIN61         61
+#   define VSF_PIN61_MASK    (1 << VSF_PIN61)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 62)
+#   define VSF_PIN62         62
+#   define VSF_PIN62_MASK    (1 << VSF_PIN62)
+#endif
+
+#if VSF_GPIO_CFG_PIN_MASK & (0x01ul << 63)
+#   define VSF_PIN63         63
+#   define VSF_PIN63_MASK    (1 << VSF_PIN63)
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* __VSF_TEMPLATE_GPIO_H__ */

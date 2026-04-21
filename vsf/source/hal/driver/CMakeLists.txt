@@ -1,0 +1,13 @@
+if(IS_DIRECTORY ${VSF_PRIVATE_HAL_CHIP_VENDOR})
+    add_subdirectory(${VSF_PRIVATE_HAL_CHIP_VENDOR} ${CMAKE_CURRENT_BINARY_DIR}/private_hal_chip_vendor)
+else()
+    add_subdirectory_existed(${VSF_HAL_CHIP_VENDOR})
+endif()
+
+if(VSF_HAL_HOST_SYSTEM_VENDOR)
+    add_subdirectory_existed(${VSF_HAL_HOST_SYSTEM_VENDOR})
+endif()
+
+add_subdirectory(vsf)
+add_subdirectory(common)
+add_subdirectory(IPCore)

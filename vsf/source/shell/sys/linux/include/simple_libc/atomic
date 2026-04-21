@@ -1,0 +1,487 @@
+#ifndef __SIMPLE_LIBC_ATOMIC__
+#define __SIMPLE_LIBC_ATOMIC__
+
+// for vsf_protect
+#include "hal/arch/vsf_arch.h"
+
+#include <stdatomic.h>
+#undef atomic_exchange
+#undef atomic_load
+#undef atomic_load_explicit
+#undef atomic_store
+#undef atomic_store_explicit
+#undef atomic_fetch_add
+#undef atomic_fetch_add_explicit
+#undef atomic_fetch_sub
+#undef atomic_fetch_sub_explicit
+#undef atomic_fetch_and
+#undef atomic_fetch_and_explicit
+#undef atomic_fetch_or
+#undef atomic_fetch_or_explicit
+#undef atomic_fetch_xor
+#undef atomic_fetch_xor_explicit
+#undef atomic_exchange
+#undef atomic_exchange_explicit
+#undef atomic_compare_exchange_weak
+#undef atomic_compare_exchange_weak_explicit
+#undef atomic_compare_exchange_strong
+#undef atomic_compare_exchange_strong_explicit
+
+namespace std {
+    // copied from stdatomic.h
+    enum memory_order {
+        memory_order_relaxed,
+        memory_order_consume,
+        memory_order_acquire,
+        memory_order_release,
+        memory_order_acq_rel,
+        memory_order_seq_cst,
+    };
+
+    template<typename T>
+    struct atomic_base {
+        using value_type = T;
+
+    protected:
+        T __base;
+
+    private:
+        T __exchange(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = __base;
+                __base = val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+
+    public:
+        atomic_base() noexcept = default;
+        ~atomic_base() noexcept = default;
+        atomic_base(const atomic_base&) = delete;
+        atomic_base& operator=(const atomic_base&) = delete;
+        atomic_base& operator=(const atomic_base&) volatile = delete;
+        constexpr atomic_base(T val) noexcept : __base(val) { }
+
+        T store(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = __base = val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T store(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = __base = val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T load(memory_order sync = memory_order_seq_cst) const noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = __base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T load(memory_order sync = memory_order_seq_cst) const volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = __base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+
+        T exchange(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __exchange(val, sync);
+        }
+        T exchange(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __exchange(val, sync);
+        }
+    };
+
+    template<typename T>
+    struct atomic;
+
+    template <>
+    struct atomic<bool> : public atomic_base<bool> {
+        using value_type = bool;
+
+    public:
+        atomic() noexcept = default;
+        ~atomic() noexcept = default;
+        atomic(const atomic&) = delete;
+        atomic& operator=(const atomic&) = delete;
+        atomic& operator=(const atomic&) volatile = delete;
+
+        constexpr atomic(bool val) noexcept : atomic_base<bool>(val) { }
+
+        operator bool() const noexcept {
+            return atomic_base<bool>::load();
+        }
+        operator bool() const volatile noexcept {
+            return atomic_base<bool>::load();
+        }
+        bool operator=(bool val) noexcept {
+            return atomic_base<bool>::store(val);
+        }
+        bool operator=(bool val) volatile noexcept {
+            return atomic_base<bool>::store(val);
+        }
+
+        bool store(bool val, memory_order sync = memory_order_seq_cst) noexcept {
+            return atomic_base<bool>::store(val, sync);
+        }
+        bool store(bool val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return atomic_base<bool>::store(val, sync);
+        }
+        bool load(memory_order sync = memory_order_seq_cst) const noexcept {
+            return atomic_base<bool>::load(sync);
+        }
+        bool load(memory_order sync = memory_order_seq_cst) const volatile noexcept {
+            return atomic_base<bool>::load(sync);
+        }
+        bool exchange(bool val, memory_order sync = memory_order_seq_cst) noexcept {
+            return atomic_base<bool>::exchange(val);
+        }
+        bool exchange(bool val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return atomic_base<bool>::exchange(val);
+        }
+    };
+
+    template <typename T>
+    struct atomic : public atomic_base<T> {
+        using value_type = T;
+
+    private:
+        T __fetch_add(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                atomic_base<T>::__base += val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T __fetch_sub(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                atomic_base<T>::__base -= val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T __fetch_and(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                atomic_base<T>::__base &= val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T __fetch_or(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                atomic_base<T>::__base |= val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T __fetch_xor(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                atomic_base<T>::__base ^= val;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+
+        bool __compare_exchange(T &expected, T desired) volatile noexcept
+        {
+            T tmp;
+            bool res;
+
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base;
+                if ((res = (tmp == expected))) {
+                    atomic_base<T>::__base = desired;
+                } else {
+                    expected = tmp;
+                }
+            vsf_unprotect_int(orig);
+            return res;
+        }
+
+    public:
+        atomic() noexcept = default;
+        ~atomic() noexcept = default;
+        atomic(const atomic&) = delete;
+        atomic& operator=(const atomic&) = delete;
+        atomic& operator=(const atomic&) volatile = delete;
+
+        constexpr atomic(T val) noexcept : atomic_base<T>(val) { }
+
+        operator T() const noexcept {
+            return atomic_base<T>::load();
+        }
+        operator T() const volatile noexcept {
+            return atomic_base<T>::load();
+        }
+        T operator=(T val) noexcept {
+            return atomic_base<T>::store(val);
+        }
+        T operator=(T val) volatile noexcept {
+            return atomic_base<T>::store(val);
+        }
+        T operator++(int) noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base++;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T operator++() noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = ++atomic_base<T>::__base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T operator++() volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = ++atomic_base<T>::__base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T operator--(int) noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = atomic_base<T>::__base--;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T operator--() noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = --atomic_base<T>::__base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+        T operator--() volatile noexcept {
+            T tmp;
+            vsf_protect_t orig = vsf_protect_int();
+                tmp = --atomic_base<T>::__base;
+            vsf_unprotect_int(orig);
+            return tmp;
+        }
+
+        T store(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return atomic_base<T>::store(val, sync);
+        }
+        T store(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return atomic_base<T>::store(val, sync);
+        }
+        T load(memory_order sync = memory_order_seq_cst) const noexcept {
+            return atomic_base<T>::load(sync);
+        }
+        T load(memory_order sync = memory_order_seq_cst) const volatile noexcept {
+            return atomic_base<T>::load(sync);
+        }
+        T exchange(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return atomic_base<T>::exchange(val);
+        }
+        T exchange(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return atomic_base<T>::exchange(val);
+        }
+
+        T fetch_add(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __fetch_add(val, sync);
+        }
+        T fetch_add(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __fetch_add(val, sync);
+        }
+
+        T fetch_sub(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __fetch_sub(val, sync);
+        }
+        T fetch_sub(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __fetch_sub(val, sync);
+        }
+
+        T fetch_and(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __fetch_and(val, sync);
+        }
+        T fetch_and(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __fetch_and(val, sync);
+        }
+
+        T fetch_or(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __fetch_or(val, sync);
+        }
+        T fetch_or(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __fetch_or(val, sync);
+        }
+
+        T fetch_xor(T val, memory_order sync = memory_order_seq_cst) noexcept {
+            return __fetch_xor(val, sync);
+        }
+        T fetch_xor(T val, memory_order sync = memory_order_seq_cst) volatile noexcept {
+            return __fetch_xor(val, sync);
+        }
+
+        bool compare_exchange_strong(T &expected, T desired, memory_order success, memory_order failure) noexcept
+        {
+            return __compare_exchange(expected, desired);
+        }
+        bool compare_exchange_strong(T &expected, T desired, memory_order success, memory_order failure) volatile noexcept
+        {
+            return __compare_exchange(expected, desired);
+        }
+        bool compare_exchange_strong(T &expected, T desired, memory_order order = memory_order_seq_cst) noexcept
+        {
+            return __compare_exchange(expected, desired);
+        }
+        bool compare_exchange_strong(T &expected, T desired, memory_order order = memory_order_seq_cst) volatile noexcept
+        {
+            return __compare_exchange(expected, desired);
+        }
+        bool compare_exchange_weak(T &expected, T desired, memory_order success, memory_order failure) noexcept
+        {
+            return compare_exchange_strong(expected, desired, success, failure);
+        }
+        bool compare_exchange_weak(T &expected, T desired, memory_order success, memory_order failure) volatile noexcept
+        {
+            return compare_exchange_strong(expected, desired, success, failure);
+        }
+        bool compare_exchange_weak(T &expected, T desired, memory_order order = memory_order_seq_cst) noexcept
+        {
+            return compare_exchange_strong(expected, desired, order);
+        }
+        bool compare_exchange_weak(T &expected, T desired, memory_order order = memory_order_seq_cst) volatile noexcept
+        {
+            return compare_exchange_strong(expected, desired, order);
+        }
+    };
+
+    template<typename T>
+    inline T atomic_exchange(atomic<T> *obj, T val) {
+        return obj->exchange(val);
+    }
+
+    template<class T>
+    T atomic_load(const atomic<T> *obj) noexcept
+    {
+        return obj->load();
+    }
+    template<class T>
+    T atomic_load_explicit(const atomic<T> *obj, memory_order order) noexcept
+    {
+        return obj->load();
+    }
+
+    template<class T>
+    void atomic_store(atomic<T> *obj, typename atomic<T>::value_type value) noexcept
+    {
+        obj->store(value);
+    }
+    template<class T>
+    void atomic_store_explicit(atomic<T> *obj, typename atomic<T>::value_type value, memory_order order) noexcept
+    {
+        obj->store(value);
+    }
+
+    template<class T>
+    T atomic_fetch_add_explicit(atomic<T> *obj, typename atomic<T>::difference_type value, memory_order order) noexcept
+    {
+        return obj->fetch_add(value, order);
+    }
+    template<class T>
+    T atomic_fetch_add(atomic<T> *obj, typename atomic<T>::difference_type value) noexcept
+    {
+        return atomic_fetch_add_explicit(obj, value, memory_order_seq_cst);
+    }
+
+    template<class T>
+    T atomic_fetch_sub_explicit(atomic<T> *obj, typename atomic<T>::difference_type value, memory_order order) noexcept
+    {
+        return obj->fetch_sub(value, order);
+    }
+    template<class T>
+    T atomic_fetch_sub(atomic<T> *obj, typename atomic<T>::difference_type value) noexcept
+    {
+        return atomic_fetch_sub_explicit(obj, value, memory_order_seq_cst);
+    }
+
+    template<class T>
+    T atomic_fetch_and_explicit(atomic<T> *obj, typename atomic<T>::value_type value, memory_order order) noexcept
+    {
+        return obj->fetch_and(value, order);
+    }
+    template<class T>
+    T atomic_fetch_and(atomic<T> *obj, typename atomic<T>::value_type value) noexcept
+    {
+        return atomic_fetch_and_explicit(obj, value, memory_order_seq_cst);
+    }
+
+    template<class T>
+    T atomic_fetch_or_explicit(atomic<T> *obj, typename atomic<T>::value_type value, memory_order order) noexcept
+    {
+        return obj->fetch_or(value, order);
+    }
+    template<class T>
+    T atomic_fetch_or(atomic<T> *obj, typename atomic<T>::value_type value) noexcept
+    {
+        return atomic_fetch_or_explicit(obj, value, memory_order_seq_cst);
+    }
+
+    template<class T>
+    T atomic_fetch_xor_explicit(atomic<T> *obj, typename atomic<T>::value_type value, memory_order order) noexcept
+    {
+        return obj->fetch_xor(value, order);
+    }
+    template<class T>
+    T atomic_fetch_xor(atomic<T> *obj, typename atomic<T>::value_type value) noexcept
+    {
+        return atomic_fetch_xor_explicit(obj, value, memory_order_seq_cst);
+    }
+
+    extern "C" {
+        void atomic_thread_fence(memory_order order) noexcept;
+        void atomic_signal_fence(memory_order m) noexcept;
+    }
+
+    using atomic_bool = atomic<bool>;
+    using atomic_char = atomic<char>;
+    using atomic_schar = atomic<signed char>;
+    using atomic_uchar = atomic<unsigned char>;
+    using atomic_short = atomic<short>;
+    using atomic_ushort = atomic<unsigned short>;
+    using atomic_int = atomic<int>;
+    using atomic_uint = atomic<unsigned int>;
+    using atomic_long = atomic<long>;
+    using atomic_ulong = atomic<unsigned long>;
+    using atomic_llong = atomic<long long>;
+    using atomic_ullong = atomic<unsigned long long>;
+
+    struct atomic_flag {
+        bool test_and_set(const memory_order order = memory_order_seq_cst) noexcept {
+            return _storage.exchange(true, order) != 0;
+        }
+        bool test_and_set(const memory_order order = memory_order_seq_cst) volatile noexcept {
+            return _storage.exchange(true, order) != 0;
+        }
+        void clear(const memory_order _Order = memory_order_seq_cst) noexcept {
+            _storage.store(false, _Order);
+        }
+
+        void clear(const memory_order _Order = memory_order_seq_cst) volatile noexcept {
+            _storage.store(false, _Order);
+        }
+
+//        constexpr atomic_flag() noexcept = default;
+
+        atomic<bool> _storage;
+    };
+}
+
+#endif

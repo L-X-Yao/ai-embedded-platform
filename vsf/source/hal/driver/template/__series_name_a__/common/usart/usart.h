@@ -1,0 +1,336 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+#ifndef __HAL_DRIVER_${SERIES/USART_IP}_USART_H__
+#define __HAL_DRIVER_${SERIES/USART_IP}_USART_H__
+
+/*============================ INCLUDES ======================================*/
+
+#include "hal/vsf_hal_cfg.h"
+
+#if VSF_HAL_USE_USART == ENABLED
+
+// HW/IPCore
+/**
+ * \note When vsf_peripheral_status_t is inherited, vsf_template_hal_driver.h needs to be included
+ */
+#include "hal/driver/common/template/vsf_template_hal_driver.h"
+// HW/IPCore end
+
+/*\note Refer to template/README.md for usage cases.
+ *      For peripheral drivers, blackbox mode is recommended but not required, reimplementation part MUST be open.
+ *      For IPCore drivers, class structure, MULTI_CLASS configuration, reimplementation and class APIs should be open to user.
+ *      For emulated drivers, **** No reimplementation ****.
+ */
+
+/*\note Includes CAN ONLY be put here. */
+/*\note If current header is for a peripheral driver(hw driver), and inherit from an IPCore driver, include IPCore header here. */
+
+// IPCore
+#if     defined(__VSF_HAL_${USART_IP}_USART_CLASS_IMPLEMENT)
+#   define __VSF_CLASS_IMPLEMENT__
+#elif   defined(__VSF_HAL_${USART_IP}_USART_CLASS_INHERIT__)
+#   define __VSF_CLASS_INHERIT__
+#endif
+
+#include "utilities/ooc_class.h"
+// IPCore end
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*============================ MACROS ========================================*/
+
+/*\note VSF_${USART_IP}_USART_CFG_MULTI_CLASS should be implemented for IP drives and open to user,
+ *          while VSF_HW_USART_CFG_MULTI_CLASS should be in usart.c.
+ */
+
+// IPCore
+#ifndef VSF_${USART_IP}_USART_CFG_MULTI_CLASS
+#   define VSF_${USART_IP}_USART_CFG_MULTI_CLASS    VSF_USART_CFG_MULTI_CLASS
+#endif
+// IPCore end
+
+// HW
+/*\note hw USART driver can reimplement following types:
+ *      To enable reimplementation, please enable macro below:
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_MODE for vsf_usart_mode_t
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_STATUS for vsf_usart_status_t
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_IRQ_MASK for vsf_usart_irq_mask_t
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_CTRL for vsf_usart_ctrl_t
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_CFG for vsf_usart_cfg_t
+ *          VSF_USART_CFG_REIMPLEMENT_TYPE_CAPABILITY for vsf_usart_capability_t
+ *      Reimplementation is used for optimization hw/IPCore drivers, reimplement the bit mask according to hw registers.
+ *      *** DO NOT reimplement these in emulated drivers. ***
+ */
+
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_MODE         ENABLED
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_STATUS       ENABLED
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_IRQ_MASK     ENABLED
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_CTRL         ENABLED
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_CFG          ENABLED
+#define VSF_USART_CFG_REIMPLEMENT_TYPE_CAPABILITY   ENABLED
+// HW end
+
+// TODO: add comments about fifo2req
+
+/*============================ TYPES =========================================*/
+
+// IPCore
+vsf_class(vsf_${usart_ip}_usart_t) {
+#if VSF_${USART_IP}_CFG_MULTI_CLASS == ENABLED
+    public_member(
+        vsf_usart_t                 vsf_usart;
+    )
+#endif
+
+/*\note You can add more member in vsf_${usart_ip}_usart_t instance.
+ *      For members accessible from child, put in protected_member.
+ *      Else, put in private_member.
+ */
+
+    protected_member(
+        vsf_${usart_ip}_usart_reg_t *reg;
+        vsf_usart_isr_t             isr;
+    )
+};
+// IPCore end
+
+// HW/IPCore, not for emulated drivers
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_MODE == ENABLED
+typedef enum vsf_usart_mode_t {
+    VSF_USART_NO_PARITY                 = (0x0ul << 0),
+    VSF_USART_EVEN_PARITY               = (0x1ul << 0),
+    VSF_USART_ODD_PARITY                = (0x2ul << 0),
+    VSF_USART_FORCE_0_PARITY            = (0x3ul << 0),
+    VSF_USART_FORCE_1_PARITY            = (0x4ul << 0),
+
+    VSF_USART_1_STOPBIT                 = (0x0ul << 3),
+    VSF_USART_1_5_STOPBIT               = (0x1ul << 3),
+    VSF_USART_0_5_STOPBIT               = (0x2ul << 3),
+    VSF_USART_2_STOPBIT                 = (0x3ul << 3),
+
+    VSF_USART_8_BIT_LENGTH              = (0x0ul << 5),
+    VSF_USART_5_BIT_LENGTH              = (0x1ul << 5),
+    VSF_USART_6_BIT_LENGTH              = (0x2ul << 5),
+    VSF_USART_7_BIT_LENGTH              = (0x3ul << 5),
+    VSF_USART_9_BIT_LENGTH              = (0x4ul << 5),
+    VSF_USART_10_BIT_LENGTH             = (0x5ul << 5),
+
+    VSF_USART_NO_HWCONTROL              = (0x0ul << 8),
+    VSF_USART_RTS_HWCONTROL             = (0x1ul << 8),
+    VSF_USART_CTS_HWCONTROL             = (0x2ul << 8),
+    VSF_USART_RTS_CTS_HWCONTROL         = (0x3ul << 8),
+
+    VSF_USART_TX_ENABLE                 = (0x0ul << 9),
+    VSF_USART_TX_DISABLE                = (0x1ul << 9),
+
+    VSF_USART_RX_ENABLE                 = (0x0ul << 10),
+    VSF_USART_RX_DISABLE                = (0x1ul << 10),
+
+    VSF_USART_SYNC_CLOCK_ENABLE         = (0x0ul << 11),
+    VSF_USART_SYNC_CLOCK_DISABLE        = (0x1ul << 11),
+
+    VSF_USART_HALF_DUPLEX_DISABLE       = (0x0ul << 14),
+    VSF_USART_HALF_DUPLEX_ENABLE        = (0x1ul << 14),
+
+    VSF_USART_TX_FIFO_THRESHOLD_EMPTY   = (0x0ul << 15),
+    VSF_USART_TX_FIFO_THRESHOLD_HALF_EMPTY
+                                        = (0x1ul << 15),
+    VSF_USART_TX_FIFO_THRESHOLD_NOT_FULL
+                                        = (0x2ul << 15),
+
+    VSF_USART_RX_FIFO_THRESHOLD_NOT_EMPTY
+                                        = (0x0ul << 17),
+    VSF_USART_RX_FIFO_THRESHOLD_HALF_FULL
+                                        = (0x1ul << 17),
+    VSF_USART_RX_FIFO_THRESHOLD_FULL    = (0x2ul << 17),
+
+    // more vendor specified modes can be added here
+} vsf_usart_mode_t;
+#endif
+
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_IRQ_MASK == ENABLED
+typedef enum vsf_usart_irq_mask_t {
+    // request_rx/request_tx complete
+    VSF_USART_IRQ_MASK_TX_CPL           = (0x1ul << 0),
+    VSF_USART_IRQ_MASK_RX_CPL           = (0x1ul << 1),
+
+    // TX/RX reach fifo threshold, threshold on some devices is bound to 1
+    VSF_USART_IRQ_MASK_TX               = (0x1ul << 2),
+    VSF_USART_IRQ_MASK_RX               = (0x1ul << 3),
+    VSF_USART_IRQ_MASK_RX_TIMEOUT       = (0x1ul << 4),
+#   define VSF_USART_IRQ_MASK_RX_TIMEOUT VSF_USART_IRQ_MASK_RX_TIMEOUT
+
+    // clear to send interrupt
+    VSF_USART_IRQ_MASK_CTS              = (0x1ul << 5),
+#   define VSF_USART_IRQ_MASK_CTS VSF_USART_IRQ_MASK_CTS
+
+    // Error interrupt
+    VSF_USART_IRQ_MASK_FRAME_ERR        = (0x1ul << 6),
+#   define VSF_USART_IRQ_MASK_FRAME_ERR VSF_USART_IRQ_MASK_FRAME_ERR
+    VSF_USART_IRQ_MASK_BREAK_ERR        = (0x1ul << 7),
+#   define VSF_USART_IRQ_MASK_BREAK_ERR VSF_USART_IRQ_MASK_BREAK_ERR
+    VSF_USART_IRQ_MASK_PARITY_ERR       = (0x1ul << 8),
+#   define VSF_USART_IRQ_MASK_PARITY_ERR VSF_USART_IRQ_MASK_PARITY_ERR
+    VSF_USART_IRQ_MASK_RX_OVERFLOW_ERR  = (0x1ul << 9),
+#   define VSF_USART_IRQ_MASK_RX_OVERFLOW_ERR VSF_USART_IRQ_MASK_RX_OVERFLOW_ERR
+
+    // RX idle interrupt (Implementation Required, Hardware Optional). If hardware does not support this, VSF_USART_IRQ_MASK_RX_IDLE will be mapped to VSF_USART_IRQ_MASK_RX_TIMEOUT
+    VSF_USART_IRQ_MASK_RX_IDLE          = (0x1ul << 12),
+#   define VSF_USART_IRQ_MASK_RX_IDLE      VSF_USART_IRQ_MASK_RX_IDLE
+
+    // Standard Optional: only include these if hardware supports them
+    //VSF_USART_IRQ_MASK_TX_OVERFLOW_ERR  = (0x1ul << 10),
+    //#define VSF_USART_IRQ_MASK_TX_OVERFLOW_ERR VSF_USART_IRQ_MASK_TX_OVERFLOW_ERR
+    //VSF_USART_IRQ_MASK_TX_IDLE          = (0x1ul << 11),
+    //#define VSF_USART_IRQ_MASK_TX_IDLE      VSF_USART_IRQ_MASK_TX_IDLE
+    //VSF_USART_IRQ_MASK_NOISE_ERR        = (0x1UL << 13),
+    //#define VSF_USART_IRQ_MASK_NOISE_ERR VSF_USART_IRQ_MASK_NOISE_ERR
+
+    // more vendor specified irq_masks can be added here
+} vsf_usart_irq_mask_t;
+#endif
+
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_CTRL == ENABLED
+// By default, the template contains two control commands:
+// - send BREAK signal (self-clearing)
+// - set and clear BREAK signal
+// The driver needs to select and implement according to the hardware support situation.
+typedef enum vsf_usart_ctrl_t {
+    // usart default command
+    VSF_USART_CTRL_SEND_BREAK           = (0x01ul << 0),
+    #define VSF_USART_CTRL_SEND_BREAK VSF_USART_CTRL_SEND_BREAK
+
+    VSF_USART_CTRL_SET_BREAK            = (0x01ul << 1),
+    #define VSF_USART_CTRL_SET_BREAK VSF_USART_CTRL_SET_BREAK
+    VSF_USART_CTRL_CLEAR_BREAK          = (0x01ul << 2),
+    #define VSF_USART_CTRL_CLEAR_BREAK VSF_USART_CTRL_CLEAR_BREAK
+
+    // more vendor specified command can be added here
+} vsf_usart_ctrl_t;
+#endif
+
+/** \note It's not obligated to inherit from vsf_peripheral_status_t.
+ *      If not, there MUST be a is_busy bit in vsf_usart_status_t.
+ */
+
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_STATUS == ENABLED
+typedef struct vsf_usart_status_t {
+    union {
+        inherit(vsf_peripheral_status_t)
+        uint32_t value;
+        struct {
+            uint32_t is_busy         : 1;
+            uint32_t is_tx_busy      : 1;
+            uint32_t is_rx_busy      : 1;
+            uint32_t tx_fifo_level   : 8;
+            uint32_t rx_fifo_level   : 8;
+        };
+    };
+} vsf_usart_status_t;
+#endif
+
+/** \note Redefining vsf_usart_cfg_t usually requires declaring vsf_usart_t
+ *        and vsf_usart_isr_handler_t types and define vsf_usart_isr_t.
+ */
+
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_CFG == ENABLED
+typedef struct vsf_usart_t vsf_usart_t;
+typedef void vsf_usart_isr_handler_t(void *target_ptr,
+                                     vsf_usart_t *usart_ptr,
+                                     vsf_usart_irq_mask_t irq_mask);
+typedef struct vsf_usart_isr_t {
+    vsf_usart_isr_handler_t *handler_fn;    //!< \~english Interrupt handler function pointer \~chinese 中断处理函数指针
+    void                    *target_ptr;     //!< \~english User target pointer \~chinese 用户目标指针
+    vsf_arch_prio_t         prio;            //!< \~english Interrupt priority \~chinese 中断优先级
+} vsf_usart_isr_t;
+typedef struct vsf_usart_cfg_t {
+    vsf_usart_mode_t        mode;           //!< \~english USART working mode \~chinese USART 工作模式
+    uint32_t                baudrate;       //!< \~english Baudrate in Hz \~chinese 波特率(Hz)
+    uint32_t                rx_timeout;     //!< \~english RX timeout in microseconds \~chinese 接收超时时间(微秒)
+#   ifdef VSF_USART_IRQ_MASK_RX_IDLE
+    uint32_t                rx_idle_cnt;
+#   endif
+    vsf_usart_isr_t         isr;            //!< \~english Interrupt configuration \~chinese 中断配置
+
+    // more vendor specified cfg can be added here
+} vsf_usart_cfg_t;
+#endif
+
+#if VSF_USART_CFG_REIMPLEMENT_TYPE_CAPABILITY == ENABLED
+typedef struct vsf_usart_capability_t {
+#if VSF_USART_CFG_INHERIT_HAL_CAPABILITY == ENABLED
+    inherit(vsf_peripheral_capability_t)
+#endif
+    vsf_usart_irq_mask_t irq_mask;          //!< \~english Supported interrupt mask bits \~chinese 支持的中断掩码位
+
+    uint32_t max_baudrate;                  //!< \~english Maximum supported baudrate (bps) according to current clock configurations \~chinese 当前时钟配置下支持的最大波特率(bps)
+    uint32_t min_baudrate;                  //!< \~english Minimum supported baudrate (bps) according to current clock configurations \~chinese 当前时钟配置下支持的最小波特率(bps)
+
+    uint8_t txfifo_depth;                   //!< \~english TX FIFO depth in data frames (0 means no FIFO) \~chinese TX FIFO 深度(数据帧数，0表示无FIFO)
+    uint8_t rxfifo_depth;                   //!< \~english RX FIFO depth in data frames (0 means no FIFO) \~chinese RX FIFO 深度(数据帧数，0表示无FIFO)
+
+    uint8_t max_data_bits;                  //!< \~english Maximum data bits per frame \~chinese 每帧最大数据位数
+    uint8_t min_data_bits;                  //!< \~english Minimum data bits per frame \~chinese 每帧最小数据位数
+
+    uint8_t support_rx_timeout          : 1;//!< \~english Support receive timeout \~chinese 支持接收超时
+    uint8_t support_send_break          : 1;//!< \~english Support send break \~chinese 支持发送 break 信号
+    uint8_t support_set_and_clear_break : 1;//!< \~english Support set and clear break \~chinese 支持设置和清除 break 信号
+    uint8_t support_sync_clock          : 1;//!< \~english Support Synchronous clock \~chinese 支持同步时钟
+#   ifdef VSF_USART_IRQ_MASK_TX_IDLE
+    uint8_t support_tx_idle             : 1;//!< \~english Support TX idle interrupt \~chinese 支持发送空闲中断
+#   endif
+#   ifdef VSF_USART_IRQ_MASK_RX_IDLE
+    uint8_t support_rx_idle             : 1;//!< \~english Support RX idle interrupt \~chinese 支持接收空闲中断
+#   endif
+
+    // more vendor specified capability can be added here
+} vsf_usart_capability_t;
+#endif
+// HW/IPCore end
+
+/*============================ INLINE FUNCTIONS ==============================*/
+
+/*\note The following break-related functions are defined as static inline in vsf_template_usart.h.
+ *      They will be available when the template header is included.
+ *      No need to redefine them here to avoid conflicts.
+ */
+
+/*============================ GLOBAL VARIABLES ==============================*/
+/*============================ PROTOTYPES ====================================*/
+
+// IPCore
+/*\note Extern APIs for ip core diriver.
+ *      There is no requirement about how APIs of IPCore drivers should be implemented.
+ *      Just consider the simplicity for actual peripheral drivers.
+ */
+// IPCore end
+
+#ifdef __cplusplus
+}
+#endif
+
+// IPCore
+#undef __VSF_HAL_${USART_IP}_USART_CLASS_IMPLEMENT
+#undef __VSF_HAL_${USART_IP}_USART_CLASS_INHERIT__
+// IPCore end
+
+#endif      // VSF_HAL_USE_USART
+#endif      // __HAL_DRIVER_${SERIES/USART_IP}_USART_H__
+/* EOF */

@@ -1,0 +1,597 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+#if VSF_HAL_USE_DMA == ENABLED
+
+/*============================ INCLUDES ======================================*/
+/*============================ MACROS ========================================*/
+
+#if defined(VSF_DMA_CFG_IMP_RENAME_DEVICE_PREFIX) && (VSF_DMA_CFG_IMP_RENAME_DEVICE_PREFIX == ENABLED)
+#   define vsf_real_dma_t                           VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _t)
+#   define vsf_real_dma_capability                  VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _capability)
+#   define vsf_real_dma_ctrl                        VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _ctrl)
+#   define vsf_real_dma_get_configuration           VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _get_configuration)
+#   define vsf_real_dma_channel_get_configuration   VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _channel_get_configuration)
+#   define vsf_real_dma_channel_sg_config_desc      VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _channel_sg_config_desc)
+#   define vsf_real_dma_channel_sg_start            VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _channel_sg_start)
+#   define vsf_real_dma_channel_acquire_from_all    VSF_MCONNECT(VSF_DMA_CFG_IMP_DEVICE_PREFIX, _channel_acquire_from_all)
+#else
+#   define vsf_real_dma_t                           VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_t)
+#   define vsf_real_dma_capability                  VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_capability)
+#   define vsf_real_dma_ctrl                        VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_ctrl)
+#   define vsf_real_dma_get_configuration           VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_get_configuration)
+#   define vsf_real_dma_channel_get_configuration   VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_get_configuration)
+#   define vsf_real_dma_channel_sg_config_desc      VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_sg_config_desc)
+#   define vsf_real_dma_channel_sg_start            VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_sg_start)
+#   define vsf_real_dma_channel_acquire_from_all    VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_acquire_from_all)
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY
+#   define  VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY          DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_CTRL
+#   define  VSF_DMA_CFG_REIMPLEMENT_API_CTRL                DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_SG_CONFIG_DESC
+#   define VSF_DMA_CFG_REIMPLEMENT_API_SG_CONFIG_DESC       DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_SG_START
+#   define VSF_DMA_CFG_REIMPLEMENT_API_SG_START             DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION    DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION    \
+                                                            DISABLED
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_FROM_ALL
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_FROM_ALL     \
+                                                            DISABLED
+#endif
+
+#ifdef VSF_DMA_CFG_IMP_REMAP_PREFIX
+#   undef VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY           ENABLED
+#   undef VSF_DMA_CFG_REIMPLEMENT_API_CTRL
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CTRL                 ENABLED
+#   undef VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#   define VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION    ENABLED
+#   undef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION ENABLED
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+#   ifndef VSF_DMA_CFG_CAPABILITY_IRQ_MASK
+#       define VSF_DMA_CFG_CAPABILITY_IRQ_MASK                  VSF_DMA_IRQ_ALL_BITS_MASK
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_CHANNEL_COUNT
+#       define VSF_DMA_CFG_CAPABILITY_CHANNEL_COUNT             8
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_IRQ_COUNT
+#       define VSF_DMA_CFG_CAPABILITY_IRQ_COUNT                 VSF_DMA_CFG_CAPABILITY_CHANNEL_COUNT
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_SUPPORTED_MODES
+#       define VSF_DMA_CFG_CAPABILITY_SUPPORTED_MODES           VSF_DMA_MODE_ALL_BITS_MASK
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_MAX_TRANSFER_COUNT
+#       define VSF_DMA_CFG_CAPABILITY_MAX_TRANSFER_COUNT        0xFFFFFFFF
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_ADDR_ALIGNMENT
+#       define VSF_DMA_CFG_CAPABILITY_ADDR_ALIGNMENT            1
+#   endif
+#   ifndef VSF_DMA_CFG_CAPABILITY_SUPPORT_SCATTER_GATHER
+#       define VSF_DMA_CFG_CAPABILITY_SUPPORT_SCATTER_GATHER    0
+#   endif
+#endif
+
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ IMPLEMENTATION ================================*/
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY == DISABLED
+vsf_dma_capability_t vsf_real_dma_capability(vsf_real_dma_t *dma_ptr)
+{
+    vsf_dma_capability_t dma_capability = {
+        .irq_mask               = VSF_DMA_CFG_CAPABILITY_IRQ_MASK,
+        .channel_count          = VSF_DMA_CFG_CAPABILITY_CHANNEL_COUNT,
+        .irq_count              = VSF_DMA_CFG_CAPABILITY_IRQ_COUNT,
+        .supported_modes        = VSF_DMA_CFG_CAPABILITY_SUPPORTED_MODES,
+        .max_transfer_count     = VSF_DMA_CFG_CAPABILITY_MAX_TRANSFER_COUNT,
+        .addr_alignment         = VSF_DMA_CFG_CAPABILITY_ADDR_ALIGNMENT,
+        .support_scatter_gather = VSF_DMA_CFG_CAPABILITY_SUPPORT_SCATTER_GATHER,
+    };
+
+    return dma_capability;
+}
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_SG_CONFIG_DESC == DISABLED
+vsf_err_t vsf_real_dma_channel_sg_config_desc(vsf_real_dma_t *dma_ptr, uint8_t channel, vsf_dma_isr_t isr,
+            vsf_dma_channel_sg_desc_t *sg_desc_ptr, uint32_t sg_count)
+{
+    VSF_HAL_ASSERT(dma_ptr != NULL);
+    VSF_HAL_ASSERT(sg_desc_ptr != NULL);
+    VSF_HAL_ASSERT(sg_count > 0);
+
+    if ((NULL == dma_ptr) || (NULL == sg_desc_ptr) || (sg_count == 0)) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+
+    // TODO
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_SG_START == DISABLED
+vsf_err_t vsf_real_dma_channel_sg_start(vsf_real_dma_t *dma_ptr, uint8_t channel)
+{
+    VSF_HAL_ASSERT(dma_ptr != NULL);
+
+    if (NULL == dma_ptr) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+
+    // TODO
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION == DISABLED
+vsf_err_t vsf_real_dma_get_configuration(vsf_real_dma_t *dma_ptr, vsf_dma_cfg_t *cfg_ptr)
+{
+    VSF_HAL_ASSERT(NULL != dma_ptr);
+    VSF_HAL_ASSERT(NULL != cfg_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION == DISABLED
+vsf_err_t vsf_real_dma_channel_get_configuration(vsf_real_dma_t *dma_ptr, uint8_t channel, vsf_dma_channel_cfg_t *cfg_ptr)
+{
+    VSF_HAL_ASSERT(NULL != dma_ptr);
+    VSF_HAL_ASSERT(NULL != cfg_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_CTRL == DISABLED
+vsf_err_t vsf_real_dma_ctrl(vsf_real_dma_t *dma_ptr, vsf_dma_ctrl_t ctrl, void *param)
+{
+    VSF_HAL_ASSERT(NULL != dma_ptr);
+
+    // Default implementation: not supported, trigger assertion
+    VSF_HAL_ASSERT(0);
+
+    return VSF_ERR_NOT_SUPPORT;
+}
+#endif
+
+#ifndef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_ADJUST_HINT
+#   define VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_ADJUST_HINT    DISABLED
+#endif
+
+#if VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_FROM_ALL == DISABLED
+vsf_dma_t * vsf_real_dma_channel_acquire_from_all(vsf_dma_channel_hint_t *channel_hint_ptr)
+{
+    VSF_HAL_ASSERT(channel_hint_ptr != NULL);
+
+#   define require_dma_channel(_idx, _hint_ptr)                                             \
+        if (VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_acquire)(                     \
+            &VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma, _idx), _hint_ptr) == VSF_ERR_NONE) {\
+            return (vsf_dma_t *)&VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma, _idx);          \
+        }
+
+#   define __VSF_HAL_TEMPLATE_MASK                         VSF_MCONNECT(VSF_DMA_CFG_IMP_UPCASE_PREFIX, _DMA_MASK)
+#   define __VSF_HAL_TEMPLATE_MACRO                        require_dma_channel
+#   define __VSF_HAL_TEMPLATE_ARG                          channel_hint_ptr
+#   include "hal/driver/common/template/vsf_template_instance_mask.h"
+
+    return NULL;
+}
+#endif
+
+/*============================ MACROS ========================================*/
+
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_ADDR
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CAPABILITY
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CFG
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CHANNEL_CFG
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CHANNEL_HINT
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CHANNEL_MODE
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CHANNEL_SG_CFG
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CHANNEL_STATUS
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_IRQ_MASK
+#undef VSF_DMA_CFG_REIMPLEMENT_TYPE_CTRL
+#undef VSF_DMA_CFG_REIMPLEMENT_API_CAPABILITY
+#undef VSF_DMA_CFG_REIMPLEMENT_API_CTRL
+#undef VSF_DMA_CFG_REIMPLEMENT_API_GET_CONFIGURATION
+#undef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_GET_CONFIGURATION
+#undef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_ADJUST_HINT
+#undef VSF_DMA_CFG_REIMPLEMENT_API_CHANNEL_ACQUIRE_FROM_ALL
+#undef VSF_DMA_CFG_CAPABILITY_IRQ_MASK
+#undef VSF_DMA_CFG_CAPABILITY_CHANNEL_COUNT
+#undef VSF_DMA_CFG_CAPABILITY_IRQ_COUNT
+#undef VSF_DMA_CFG_CAPABILITY_SUPPORTED_MODES
+#undef VSF_DMA_CFG_CAPABILITY_MAX_TRANSFER_COUNT
+#undef VSF_DMA_CFG_CAPABILITY_ADDR_ALIGNMENT
+#undef VSF_DMA_CFG_CAPABILITY_SUPPORT_SCATTER_GATHER
+#undef vsf_real_dma_t
+#undef vsf_real_dma_capability
+#undef vsf_real_dma_ctrl
+#undef vsf_real_dma_get_configuration
+#undef vsf_real_dma_channel_get_configuration
+#undef vsf_real_dma_channel_sg_config_desc
+#undef vsf_real_dma_channel_sg_start
+#undef vsf_real_dma_channel_acquire_from_all
+
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ IMPLEMENTATION ================================*/
+/*============================ MACROS ========================================*/
+
+
+#ifdef VSF_DMA_CFG_IMP_REMAP_PREFIX
+#   define vsf_imp_dma_t                                VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_t)
+#   define vsf_imp_dma_init                             VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_init)
+#   define vsf_imp_dma_fini                             VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_fini)
+#   define vsf_imp_dma_get_configuration                VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_get_configuration)
+#   define vsf_imp_dma_capability                       VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_capability)
+#   define vsf_imp_dma_ctrl                             VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_ctrl)
+#   define vsf_imp_dma_channel_acquire                  VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_acquire)
+#   define vsf_imp_dma_channel_release                  VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_release)
+#   define vsf_imp_dma_channel_config                   VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_config)
+#   define vsf_imp_dma_channel_get_configuration        VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_get_configuration)
+#   define vsf_imp_dma_channel_start                    VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_start)
+#   define vsf_imp_dma_channel_cancel                   VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_cancel)
+#   define vsf_imp_dma_channel_get_transferred_count    VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_get_transferred_count)
+#   define vsf_imp_dma_channel_status                   VSF_MCONNECT(VSF_DMA_CFG_IMP_PREFIX, _dma_channel_status)
+
+#   define vsf_remap_dma_t                              VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_t)
+#   define vsf_remap_dma_init                           VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_init)
+#   define vsf_remap_dma_fini                           VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_fini)
+#   define vsf_remap_dma_get_configuration              VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_get_configuration)
+#   define vsf_remap_dma_capability                     VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_capability)
+#   define vsf_remap_dma_channel_acquire                VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_acquire)
+#   define vsf_remap_dma_channel_release                VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_release)
+#   define vsf_remap_dma_channel_config                 VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_config)
+#   define vsf_remap_dma_channel_get_configuration      VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_get_configuration)
+#   define vsf_remap_dma_channel_start                  VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_start)
+#   define vsf_remap_dma_channel_cancel                 VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_cancel)
+#   define vsf_remap_dma_channel_get_transferred_count  VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_get_transferred_count)
+#   define vsf_remap_dma_channel_status                 VSF_MCONNECT(VSF_DMA_CFG_IMP_REMAP_PREFIX, _dma_channel_status)
+
+#   define VSF_DMA_CFG_IMP_REMAP_FUNCTIONS                                              \
+        vsf_err_t vsf_imp_dma_init(vsf_imp_dma_t *dma_ptr)                              \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_init(dma_ptr);                                         \
+        }                                                                               \
+        void vsf_imp_dma_fini(vsf_imp_dma_t *dma_ptr)                                   \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            vsf_remap_dma_fini(dma_ptr);                                                \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_get_configuration(vsf_imp_dma_t *dma_ptr,                 \
+                                                vsf_dma_cfg_t *cfg_ptr)                 \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            VSF_HAL_ASSERT(cfg_ptr != NULL);                                            \
+            return vsf_remap_dma_get_configuration(dma_ptr, cfg_ptr);                   \
+        }                                                                               \
+        vsf_dma_capability_t vsf_imp_dma_capability(vsf_imp_dma_t *dma_ptr)             \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_capability(dma_ptr);                                   \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_ctrl(vsf_imp_dma_t *dma_ptr, vsf_dma_ctrl_t ctrl, void *param) \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_ctrl(dma_ptr, ctrl, param);                            \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_acquire(vsf_imp_dma_t *dma_ptr,                   \
+                                              vsf_dma_channel_hint_t *channel_hint_ptr) \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_acquire(dma_ptr, channel_hint_ptr);            \
+        }                                                                               \
+        void vsf_imp_dma_channel_release(vsf_imp_dma_t *dma_ptr, int8_t channel)        \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            vsf_remap_dma_channel_release(dma_ptr, channel);                            \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_config(vsf_imp_dma_t *dma_ptr, int8_t channel,    \
+                                         vsf_dma_channel_cfg_t *cfg_ptr)                \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_config(dma_ptr, channel, cfg_ptr);             \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_get_configuration(vsf_imp_dma_t *dma_ptr,         \
+                                                        int8_t channel,                 \
+                                                        vsf_dma_channel_cfg_t *cfg_ptr) \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            VSF_HAL_ASSERT(cfg_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_get_configuration(dma_ptr, channel, cfg_ptr);  \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_start(vsf_imp_dma_t *dma_ptr, int8_t channel,     \
+                                            uint32_t src_address, uint32_t dst_address, \
+                                            uint32_t count)                             \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_start(dma_ptr, channel, src_address,           \
+                                               dst_address, count);                     \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_cancel(vsf_imp_dma_t *dma_ptr, int8_t channel)    \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_cancel(dma_ptr, channel);                      \
+        }                                                                               \
+        vsf_err_t vsf_imp_dma_channel_get_transferred_count(vsf_imp_dma_t *dma_ptr,     \
+                                                            int8_t channel)             \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_get_transferred_count(dma_ptr, channel);       \
+        }                                                                               \
+        vsf_dma_channel_status_t vsf_imp_dma_channel_status(vsf_imp_dma_t *dma_ptr,     \
+                                                             int8_t channel)            \
+        {                                                                               \
+            VSF_HAL_ASSERT(dma_ptr != NULL);                                            \
+            return vsf_remap_dma_channel_status(dma_ptr, channel);                      \
+        }
+#endif
+
+
+/*============================ GLOBAL VARIABLES ==============================*/
+
+#define VSF_HAL_TEMPLATE_IMP_NAME                   _dma
+#define VSF_HAL_TEMPLATE_IMP_UPCASE_NAME            _DMA
+
+#if !defined(VSF_DMA_CFG_IMP_PREFIX) && !defined(VSF_DMA_CFG_IMP_DEVICE_PREFIX)
+#   error "Please define VSF_DMA_CFG_IMP_PREFIX in dma driver"
+#endif
+
+#if !defined(VSF_DMA_CFG_IMP_UPCASE_PREFIX) && !defined(VSF_DMA_CFG_IMP_DEVICE_UPCASE_PREFIX)
+#   error "Please define VSF_DMA_CFG_IMP_UPCASE_PREFIX in dma driver"
+#endif
+
+#ifndef VSF_DMA_CFG_IMP_COUNT_MASK_PREFIX
+#   define VSF_DMA_CFG_IMP_COUNT_MASK_PREFIX        VSF_DMA_CFG_IMP_UPCASE_PREFIX
+#endif
+
+#ifdef VSF_DMA_CFG_IMP_REMAP_FUNCTIONS
+#   define VSF_HAL_CFG_IMP_REMAP_FUNCTIONS          VSF_DMA_CFG_IMP_REMAP_FUNCTIONS
+#endif
+
+#include "hal/driver/common/template/vsf_template_instance_implementation.h"
+
+#undef VSF_DMA_CFG_IMP_PREFIX
+#undef VSF_DMA_CFG_IMP_COUNT_MASK_PREFIX
+#undef VSF_DMA_CFG_IMP_UPCASE_PREFIX
+#undef VSF_DMA_CFG_IMP_DEVICE_PREFIX
+#undef VSF_DMA_CFG_IMP_DEVICE_UPCASE_PREFIX
+#undef VSF_DMA_CFG_IMP_LV0
+#undef VSF_DMA_CFG_IMP_RENAME_DEVICE_PREFIX
+#undef VSF_DMA_CFG_IMP_REMAP_FUNCTIONS
+#undef VSF_DMA_CFG_IMP_HAS_OP
+#undef VSF_DMA_CFG_IMP_EXTERN_OP
+
+#undef vsf_imp_dma_t
+#undef vsf_imp_dma_init
+#undef vsf_imp_dma_fini
+#undef vsf_imp_dma_get_configuration
+#undef vsf_imp_dma_capability
+#undef vsf_imp_dma_ctrl
+#undef vsf_imp_dma_channel_acquire
+#undef vsf_imp_dma_channel_release
+#undef vsf_imp_dma_channel_config
+#undef vsf_imp_dma_channel_get_configuration
+#undef vsf_imp_dma_channel_start
+#undef vsf_imp_dma_channel_cancel
+#undef vsf_imp_dma_channel_get_transferred_count
+#undef vsf_imp_dma_channel_status
+
+#undef vsf_remap_dma_t
+#undef vsf_remap_dma_init
+#undef vsf_remap_dma_fini
+#undef vsf_remap_dma_get_configuration
+#undef vsf_remap_dma_capability
+#undef vsf_remap_dma_ctrl
+#undef vsf_remap_dma_channel_acquire
+#undef vsf_remap_dma_channel_release
+#undef vsf_remap_dma_channel_config
+#undef vsf_remap_dma_channel_get_configuration
+#undef vsf_remap_dma_channel_start
+#undef vsf_remap_dma_channel_cancel
+#undef vsf_remap_dma_channel_get_transferred_count
+#undef vsf_remap_dma_channel_status
+
+#undef VSF_HAL_TEMPLATE_IMP_NAME
+#undef VSF_HAL_TEMPLATE_IMP_UPCASE_NAME
+
+/*============================ STATIC ASSERTIONS ==============================*/
+
+/* User-extensible macros for custom mode and IRQ mask values
+ * Users can define these macros before including this template to append
+ * their custom enum values to the uniqueness checks.
+ *
+ * Check modes for custom values:
+ *   VSF_DMA_CFG_MODE_CHECK_UNIQUE - Check mode for custom mode values
+ *     Default: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *   VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE - Check mode for custom IRQ mask values
+ *     Default: VSF_HAL_CHECK_MODE_STRICT (strict mode, no overlapping bits)
+ *     Can be set to: VSF_HAL_CHECK_MODE_LOOSE (loose mode, no overlapping bits)
+ *
+ * Example usage in vendor driver:
+ *   #define VSF_DMA_CUSTOM_MODE_VALUES           MY_CUSTOM_MODE1, MY_CUSTOM_MODE2
+ *   #define VSF_DMA_CFG_MODE_CHECK_UNIQUE        VSF_HAL_CHECK_MODE_LOOSE
+ *   #define VSF_DMA_CUSTOM_IRQ_MASK_VALUES       MY_CUSTOM_IRQ1, MY_CUSTOM_IRQ2
+ *   #define VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE    VSF_HAL_CHECK_MODE_STRICT
+ *   #include "hal/driver/common/dma/dma_template.inc"
+ */
+
+
+#ifdef VSF_DMA_CFG_MODE_CHECK_UNIQUE
+/* Default mode lists - can be redefined by users before including this file */
+#ifndef VSF_DMA_CHECK_UNIQUE_DIRECTION_MODES
+#   define VSF_DMA_CHECK_UNIQUE_DIRECTION_MODES \
+        VSF_DMA_MEMORY_TO_MEMORY, \
+        VSF_DMA_MEMORY_TO_PERIPHERAL, \
+        VSF_DMA_PERIPHERAL_TO_MEMORY, \
+        VSF_DMA_PERIPHERAL_TO_PERIPHERAL
+#endif
+
+#ifndef VSF_DMA_CHECK_UNIQUE_SRC_ADDR_MODES
+#   define VSF_DMA_CHECK_UNIQUE_SRC_ADDR_MODES \
+        VSF_DMA_SRC_ADDR_INCREMENT, \
+        VSF_DMA_SRC_ADDR_DECREMENT, \
+        VSF_DMA_SRC_ADDR_NO_CHANGE
+#endif
+
+#ifndef VSF_DMA_CHECK_UNIQUE_DST_ADDR_MODES
+#   define VSF_DMA_CHECK_UNIQUE_DST_ADDR_MODES \
+        VSF_DMA_DST_ADDR_INCREMENT, \
+        VSF_DMA_DST_ADDR_DECREMENT, \
+        VSF_DMA_DST_ADDR_NO_CHANGE
+#endif
+
+#ifndef VSF_DMA_CHECK_UNIQUE_PRIORITY_MODES
+#   define VSF_DMA_CHECK_UNIQUE_PRIORITY_MODES \
+        VSF_DMA_PRIORITY_LOW, \
+        VSF_DMA_PRIORITY_MEDIUM, \
+        VSF_DMA_PRIORITY_HIGH, \
+        VSF_DMA_PRIORITY_VERY_HIGH
+#endif
+
+/* ==================== GROUP INTERNAL UNIQUENESS CHECKS ==================== */
+/* Check uniqueness within each functional group */
+
+/* Check direction mode uniqueness - all direction modes should have different values
+ * Mandatory: VSF_DMA_MEMORY_TO_MEMORY, VSF_DMA_MEMORY_TO_PERIPHERAL,
+ *            VSF_DMA_PERIPHERAL_TO_MEMORY, VSF_DMA_PERIPHERAL_TO_PERIPHERAL
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_MODE_CHECK_UNIQUE,
+    VSF_DMA_MEMORY_TO_MEMORY,
+    VSF_DMA_MEMORY_TO_PERIPHERAL,
+    VSF_DMA_PERIPHERAL_TO_MEMORY,
+    VSF_DMA_PERIPHERAL_TO_PERIPHERAL
+);
+
+/* Check source address mode uniqueness - all source address modes should have different values
+ * Mandatory: VSF_DMA_SRC_ADDR_INCREMENT, VSF_DMA_SRC_ADDR_DECREMENT, VSF_DMA_SRC_ADDR_NO_CHANGE
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_MODE_CHECK_UNIQUE,
+    VSF_DMA_SRC_ADDR_INCREMENT,
+    VSF_DMA_SRC_ADDR_DECREMENT,
+    VSF_DMA_SRC_ADDR_NO_CHANGE
+);
+
+/* Check destination address mode uniqueness - all destination address modes should have different values
+ * Mandatory: VSF_DMA_DST_ADDR_INCREMENT, VSF_DMA_DST_ADDR_DECREMENT, VSF_DMA_DST_ADDR_NO_CHANGE
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_MODE_CHECK_UNIQUE,
+    VSF_DMA_DST_ADDR_INCREMENT,
+    VSF_DMA_DST_ADDR_DECREMENT,
+    VSF_DMA_DST_ADDR_NO_CHANGE
+);
+
+/* Check priority mode uniqueness - all priority modes should have different values
+ * Mandatory: VSF_DMA_PRIORITY_LOW, VSF_DMA_PRIORITY_MEDIUM, VSF_DMA_PRIORITY_HIGH, VSF_DMA_PRIORITY_VERY_HIGH
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_MODE_CHECK_UNIQUE,
+    VSF_DMA_PRIORITY_LOW,
+    VSF_DMA_PRIORITY_MEDIUM,
+    VSF_DMA_PRIORITY_HIGH,
+    VSF_DMA_PRIORITY_VERY_HIGH
+);
+
+#ifdef VSF_DMA_CUSTOM_MODE_VALUES
+/* Check uniqueness among custom mode values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_DMA_CFG_MODE_CHECK_UNIQUE, VSF_DMA_CUSTOM_MODE_VALUES);
+#endif
+
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_MODE_CHECK_UNIQUE,
+    /* Mandatory modes - always included */
+    VSF_DMA_MEMORY_TO_MEMORY, VSF_DMA_MEMORY_TO_PERIPHERAL,
+    VSF_DMA_PERIPHERAL_TO_MEMORY, VSF_DMA_PERIPHERAL_TO_PERIPHERAL,
+    VSF_DMA_SRC_ADDR_INCREMENT, VSF_DMA_SRC_ADDR_DECREMENT, VSF_DMA_SRC_ADDR_NO_CHANGE,
+    VSF_DMA_DST_ADDR_INCREMENT, VSF_DMA_DST_ADDR_DECREMENT, VSF_DMA_DST_ADDR_NO_CHANGE,
+    VSF_DMA_PRIORITY_LOW, VSF_DMA_PRIORITY_MEDIUM, VSF_DMA_PRIORITY_HIGH, VSF_DMA_PRIORITY_VERY_HIGH
+    /* Implementation Required modes - conditionally included */
+    /* User-defined modes - appended by user configuration */
+#ifdef VSF_DMA_CUSTOM_MODE_VALUES
+    , VSF_DMA_CUSTOM_MODE_VALUES
+#endif
+);
+
+#undef VSF_DMA_CHECK_UNIQUE_DIRECTION_MODES
+#undef VSF_DMA_CHECK_UNIQUE_SRC_ADDR_MODES
+#undef VSF_DMA_CHECK_UNIQUE_DST_ADDR_MODES
+#undef VSF_DMA_CHECK_UNIQUE_PRIORITY_MODES
+#endif  /* VSF_DMA_CFG_MODE_CHECK_UNIQUE */
+
+/* ==================== IRQ MASK UNIQUENESS CHECKS ==================== */
+
+#ifdef VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE
+
+#ifdef VSF_DMA_CUSTOM_IRQ_MASK_VALUES
+/* Check uniqueness among custom IRQ mask values using user-specified check mode */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE, VSF_DMA_CUSTOM_IRQ_MASK_VALUES);
+#endif
+
+/* Check uniqueness within vsf_dma_irq_mask_t enum */
+
+/* Check IRQ mask uniqueness - all IRQ mask bits should have different values
+ * Mandatory: VSF_DMA_IRQ_MASK_CPL, VSF_DMA_IRQ_MASK_HALF_CPL, VSF_DMA_IRQ_MASK_ERROR
+ */
+VSF_HAL_CHECK_UNIQUE_CUSTOM(
+    VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE,
+    /* Mandatory IRQ masks - always included */
+    VSF_DMA_IRQ_MASK_CPL,
+    VSF_DMA_IRQ_MASK_HALF_CPL,
+    VSF_DMA_IRQ_MASK_ERROR
+    /* User-defined IRQ masks - appended by user configuration */
+#ifdef VSF_DMA_CUSTOM_IRQ_MASK_VALUES
+    , VSF_DMA_CUSTOM_IRQ_MASK_VALUES
+#endif
+);
+#endif  /* VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE */
+
+#undef VSF_DMA_CFG_MODE_CHECK_UNIQUE
+#undef VSF_DMA_CFG_IRQ_MASK_CHECK_UNIQUE
+#undef VSF_DMA_CUSTOM_MODE_VALUES
+#undef VSF_DMA_CUSTOM_IRQ_MASK_VALUES
+
+#endif  /* VSF_HAL_USE_DMA */

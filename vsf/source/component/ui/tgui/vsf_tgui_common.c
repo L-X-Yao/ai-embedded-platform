@@ -1,0 +1,134 @@
+/*****************************************************************************
+ *   Copyright(C)2009-2022 by VSF Team                                       *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *     http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ ****************************************************************************/
+
+/****************************************************************************
+*  Copyright 2020 by Gorgon Meducer (Email:embedded_zhuoran@hotmail.com)    *
+*                                                                           *
+*  Licensed under the Apache License, Version 2.0 (the "License");          *
+*  you may not use this file except in compliance with the License.         *
+*  You may obtain a copy of the License at                                  *
+*                                                                           *
+*     http://www.apache.org/licenses/LICENSE-2.0                            *
+*                                                                           *
+*  Unless required by applicable law or agreed to in writing, software      *
+*  distributed under the License is distributed on an "AS IS" BASIS,        *
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+*  See the License for the specific language governing permissions and      *
+*  limitations under the License.                                           *
+*                                                                           *
+****************************************************************************/
+
+/*============================ INCLUDES ======================================*/
+#include "./vsf_tgui_cfg.h"
+
+#if VSF_USE_TINY_GUI == ENABLED
+#include "./vsf_tgui.h"
+
+/*============================ MACROS ========================================*/
+/*============================ MACROFIED FUNCTIONS ===========================*/
+/*============================ TYPES =========================================*/
+/*============================ GLOBAL VARIABLES ==============================*/
+/*============================ LOCAL VARIABLES ===============================*/
+/*============================ PROTOTYPES ====================================*/
+/*============================ IMPLEMENTATION ================================*/
+
+VSF_CAL_WEAK(vsf_tgui_idx_root_tile_get_size)
+vsf_tgui_size_t vsf_tgui_idx_root_tile_get_size(const vsf_tgui_tile_t* ptTile)
+{
+    vsf_tgui_size_t tSize = {0};
+    VSF_TGUI_ASSERT(0);
+    return tSize;
+}
+
+vsf_tgui_size_t vsf_tgui_root_tile_get_size(const vsf_tgui_tile_t* ptTile)
+{
+    VSF_TGUI_ASSERT(ptTile != NULL);
+    VSF_TGUI_ASSERT(ptTile->_.tCore.Attribute.bIsRootTile == 1);
+
+    if (ptTile->_.tCore.Attribute.u2RootTileType == 1) {   //vsf_tgui_tile_idx_root_t
+        return vsf_tgui_idx_root_tile_get_size(ptTile);
+    } else {                                            //vsf_tgui_tile_buf_root_t
+        return ptTile->tBufRoot.tSize;
+    }
+}
+
+uint16_t vsf_tgui_root_tile_get_pixel_bitsize(const vsf_tgui_tile_t* ptTile)
+{
+    VSF_TGUI_ASSERT(ptTile != NULL);
+    VSF_TGUI_ASSERT(ptTile->_.tCore.Attribute.bIsRootTile == 1);
+    static const uint16_t __color_sizes[8] = {
+        /* 0: 1bit, 2: 4bit, 3: 8bit 4: 16bit, 5: 32bit, 6: 24bit */
+        1, 0, 4, 8, 16, 32, 24, 0
+    };
+
+    return __color_sizes[ptTile->tCore.Attribute.u3ColorSize];
+}
+
+vsf_tgui_tile_t* vsf_tgui_tile_get_root(    const vsf_tgui_tile_t* ptTile,
+                                            vsf_tgui_region_t* region_ptr)
+{
+    VSF_TGUI_ASSERT(ptTile != NULL);
+    VSF_TGUI_ASSERT(region_ptr != NULL);
+
+    if (ptTile->_.tCore.Attribute.bIsRootTile == 0) {      //vsf_tgui_tile_child_t
+
+        const vsf_tgui_tile_child_t* ptChildTile = &ptTile->tChild;
+        ptTile = vsf_tgui_tile_get_root((const vsf_tgui_tile_t *)ptChildTile->parent_ptr, region_ptr);
+
+
+        region_ptr->tLocation.iX += ptChildTile->tLocation.iX;
+        region_ptr->tLocation.iY += ptChildTile->tLocation.iY;
+        region_ptr->tSize = ptChildTile->tSize;
+
+        VSF_TGUI_ASSERT(ptTile != NULL);
+        VSF_TGUI_ASSERT(ptTile->_.tCore.Attribute.bIsRootTile == 1);
+    } else {
+        region_ptr->tLocation.iX = 0;
+        region_ptr->tLocation.iY = 0;
+
+        region_ptr->tSize = vsf_tgui_root_tile_get_size(ptTile);
+    }
+
+    return (vsf_tgui_tile_t *)ptTile;
+}
+
+bool vsf_tgui_tile_is_root(const vsf_tgui_tile_t* ptTile)
+{
+    VSF_TGUI_ASSERT(ptTile != NULL);
+    return ptTile->_.tCore.Attribute.bIsRootTile == 1;
+}
+
+
+void vsf_tgui_text_set( vsf_tgui_text_info_t *ptTextInfo,
+                        VSF_TGUI_CFG_STRING_TYPE *pstrNew)
+{
+    VSF_TGUI_ASSERT(NULL != ptTextInfo);
+    VSF_TGUI_ASSERT(NULL != pstrNew);
+
+    ptTextInfo->tString.pstrText = pstrNew;
+#if VSF_TGUI_CFG_SAFE_STRING_MODE == ENABLED
+    ptTextInfo->tString.s16_size = strlen(pstrNew);
+#endif
+#if VSF_TGUI_CFG_TEXT_SIZE_INFO_CACHING
+    ptTextInfo->bIsChanged = true;
+#endif
+}
+
+#endif
+
+
+/* EOF */

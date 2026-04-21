@@ -1,0 +1,41 @@
+name: vsf doxygen
+
+on:
+  push:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  doxygen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: update version
+        run: |
+          COMMIT_SHORT_HASH=$(git rev-parse --short HEAD)
+          COMMIT_FULL_HASH=$(git rev-parse HEAD)
+          sed -i "s/COMMIT_SHORT_HASH/${COMMIT_SHORT_HASH}/" doxygen/footer_zh.html
+          sed -i "s/COMMIT_FULL_HASH/${COMMIT_FULL_HASH}/" doxygen/footer_zh.html
+          sed -i "s/COMMIT_SHORT_HASH/${COMMIT_SHORT_HASH}/" doxygen/footer_en.html
+          sed -i "s/COMMIT_FULL_HASH/${COMMIT_FULL_HASH}/" doxygen/footer_en.html
+
+      - name: doxygen-en
+        uses: mattnotmitt/doxygen-action@v1.9
+        with:
+          doxyfile-path: 'doxygen/vsf_doxygen_en.conf'
+
+      - name: doxygen-zh
+        uses: mattnotmitt/doxygen-action@v1.9
+        with:
+          doxyfile-path: 'doxygen/vsf_doxygen_zh.conf'
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.VSF_AIO }}
+          external_repository: vsfteam/vsfteam.github.io
+          publish_dir: doxygen
+          publish_branch: master

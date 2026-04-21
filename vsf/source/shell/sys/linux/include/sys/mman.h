@@ -1,0 +1,133 @@
+#ifndef __VSF_LINUX_SYS_MMAN_H__
+#define __VSF_LINUX_SYS_MMAN_H__
+
+#include "shell/sys/linux/vsf_linux_cfg.h"
+
+#if VSF_LINUX_CFG_RELATIVE_PATH == ENABLED
+#   include "../sys/types.h"
+#else
+#   include <sys/types.h>
+#endif
+
+// for VSF_FILE_ATTR_XXXX
+#include "component/fs/vsf_fs_cfg.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if VSF_LINUX_CFG_WRAPPER == ENABLED
+#define mmap                VSF_LINUX_WRAPPER(mmap)
+#define mmap64              VSF_LINUX_WRAPPER(mmap64)
+#define munmap              VSF_LINUX_WRAPPER(munmap)
+#define mprotect            VSF_LINUX_WRAPPER(mprotect)
+#endif
+
+#define PROT_NONE       0
+#define PROT_READ       VSF_FILE_ATTR_READ
+#define PROT_WRITE      VSF_FILE_ATTR_WRITE
+#define PROT_EXEC       VSF_FILE_ATTR_EXECUTE
+#define MAP_32BIT       0
+
+#define MAP_FILE        0
+#define MAP_SHARED      1
+#define MAP_PRIVATE     2
+#define MAP_TYPE        0xf
+#define MAP_FIXED       0x10
+#define MAP_ANONYMOUS   0x20
+#define MAP_ANON        MAP_ANONYMOUS
+
+#define MAP_FAILED      ((void *)-1)
+
+#define MS_ASYNC        1
+#define MS_SYNC         2
+#define MS_INVALIDATE   4
+
+#if VSF_LINUX_APPLET_USE_SYS_MMAN == ENABLED
+typedef struct vsf_linux_sys_mman_vplt_t {
+    vsf_vplt_info_t info;
+
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(shm_open);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(shm_unlink);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(mmap);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(mmap64);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(munmap);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(mprotect);
+    VSF_APPLET_VPLT_ENTRY_FUNC_DEF(msync);
+} vsf_linux_sys_mman_vplt_t;
+#   ifndef __VSF_APPLET__
+extern __VSF_VPLT_DECORATOR__ vsf_linux_sys_mman_vplt_t vsf_linux_sys_mman_vplt;
+#   endif
+#endif
+
+#if     defined(__VSF_APPLET__) && (defined(__VSF_APPLET_LIB__) || defined(__VSF_APPLET_LINUX_SYS_MMAN_LIB__))\
+    &&  VSF_APPLET_CFG_ABI_PATCH != ENABLED && VSF_LINUX_APPLET_USE_SYS_MMAN == ENABLED
+
+#ifndef VSF_LINUX_APPLET_SYS_MMAN_VPLT
+#   if VSF_LINUX_USE_APPLET == ENABLED
+#       define VSF_LINUX_APPLET_SYS_MMAN_VPLT                                   \
+            ((vsf_linux_sys_mman_vplt_t *)(VSF_LINUX_APPLET_VPLT->sys_mman_vplt))
+#   else
+#       define VSF_LINUX_APPLET_SYS_MMAN_VPLT                                   \
+            ((vsf_linux_sys_mman_vplt_t *)vsf_vplt((void *)0))
+#   endif
+#endif
+
+#define VSF_LINUX_APPLET_SYS_MMAN_ENTRY(__NAME)                                 \
+            VSF_APPLET_VPLT_ENTRY_FUNC_ENTRY(VSF_LINUX_APPLET_SYS_MMAN_VPLT, __NAME)
+#define VSF_LINUX_APPLET_SYS_MMAN_IMP(...)                                      \
+            VSF_APPLET_VPLT_ENTRY_FUNC_IMP(VSF_LINUX_APPLET_SYS_MMAN_VPLT, __VA_ARGS__)
+
+VSF_LINUX_APPLET_SYS_MMAN_IMP(shm_open, int, const char *name, int oflag, mode_t mode) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(shm_open)(name, oflag, mode);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(shm_unlink, int, const char *name) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(shm_unlink)(name);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(mmap, void *, void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(mmap)(addr, len, prot, flags, fildes, off);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(mmap64, void *, void *addr, size_t len, int prot, int flags, int fildes, off64_t off) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(mmap64)(addr, len, prot, flags, fildes, off);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(munmap, int, void *addr, size_t len) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(munmap)(addr, len);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(mprotect, int, void *addr, size_t len, int prot) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(mprotect)(addr, len, prot);
+}
+VSF_LINUX_APPLET_SYS_MMAN_IMP(msync, int, void *addr, size_t len, int flags) {
+    VSF_APPLET_VPLT_ENTRY_FUNC_TRACE();
+    return VSF_LINUX_APPLET_SYS_MMAN_ENTRY(msync)(addr, len, flags);
+}
+
+#else       // __VSF_APPLET__ && VSF_LINUX_APPLET_USE_SYS_MMAN
+
+int shm_open(const char *name, int oflag, mode_t mode);
+int shm_unlink(const char *name);
+
+void * mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
+void * mmap64(void *addr, size_t len, int prot, int flags, int fildes, off64_t off);
+int munmap(void *addr, size_t len);
+int mprotect(void *addr, size_t len, int prot);
+int msync(void *addr, size_t len, int flags);
+
+#endif      // __VSF_APPLET__ && VSF_LINUX_APPLET_USE_SYS_MMAN
+
+static inline int mlock(const void *addr, size_t len) { return 0; }
+static inline int mlock2(const void *addr, size_t len, unsigned int flags) { return 0; }
+static inline int munlock(const void *addr, size_t len) { return 0; }
+static inline int mlockall(int flags) { return 0; }
+static inline int munlockall(void) { return 0; }
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

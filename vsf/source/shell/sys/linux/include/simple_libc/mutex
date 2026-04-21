@@ -1,0 +1,233 @@
+#ifndef __SIMPLE_LIBC_MUTEX__
+#define __SIMPLE_LIBC_MUTEX__
+
+#include <pthread.h>
+
+namespace std {
+    struct defer_lock_t {};
+    struct try_to_lock_t {};
+    struct adopt_lock_t {};
+
+    struct once_flag {
+        constexpr once_flag() noexcept : __has_runned(false) {}
+        once_flag(const once_flag&)            = delete;
+        once_flag& operator=(const once_flag&) = delete;
+        bool __has_runned;
+    };
+    template <class F, class ...Args>
+    void call_once(once_flag& flag, F&& f, Args&&... args)
+    {
+        vsf_protect_t orig = vsf_protect_int();
+        if (!flag.__has_runned) {
+            flag.__has_runned = true;
+            vsf_unprotect_int(orig);
+            std::forward<F>(f)(std::forward<Args>(args)...);
+        } else {
+            vsf_unprotect_int(orig);
+        }
+    }
+
+    class mutex {
+    public:
+        typedef pthread_mutex_t * native_handle_type;
+    protected:
+        pthread_mutex_t __mutex;
+    public:
+        mutex() noexcept {
+            pthread_mutex_init(&__mutex, NULL);
+        }
+        ~mutex() = default;
+
+        void lock() {
+            pthread_mutex_lock(&__mutex);
+        }
+        bool try_lock() noexcept {
+            return !pthread_mutex_trylock(&__mutex);
+        }
+        void unlock() {
+            pthread_mutex_unlock(&__mutex);
+        }
+
+        native_handle_type native_handle() noexcept {
+            return &__mutex;
+        }
+    };
+
+    class recursive_mutex : public mutex {
+    protected:
+        pthread_mutexattr_t __attr;
+    public:
+        recursive_mutex() noexcept {
+            pthread_mutexattr_init(&__attr);
+            pthread_mutexattr_settype(&__attr, PTHREAD_MUTEX_RECURSIVE);
+            pthread_mutex_init(&__mutex, (const pthread_mutexattr_t *)&__attr);
+        }
+        ~recursive_mutex() = default;
+    };
+
+    template<typename Mutex>
+    class lock_guard {
+    private:
+        Mutex & __device;
+    public:
+        explicit lock_guard(Mutex & m) : __device(m) {
+            __device.lock();
+        }
+        ~lock_guard() {
+            __device.unlock();
+        }
+
+        lock_guard(const lock_guard &) = delete;
+        lock_guard & operator=(const lock_guard &) = delete;
+    };
+
+    template<typename Mutex>
+    class unique_lock {
+    private:
+        Mutex * __device;
+        bool __owns;
+    public:
+        typedef Mutex mutex_type;
+
+        unique_lock() noexcept : __device(NULL), __owns(false) { }
+        explicit unique_lock(Mutex & m) : __device(std::addressof(m)), __owns(false) {
+            lock();
+            __owns = true;
+        }
+        unique_lock(Mutex &m, defer_lock_t) noexcept : __device(std::addressof(m)), __owns(false) { }
+        unique_lock(Mutex &m, try_to_lock_t) : __device(std::addressof(m)), __owns(__device->try_lock()) { }
+        unique_lock(Mutex &m, adopt_lock_t) noexcept : __device(std::addressof(m)), __owns(true) { }
+
+        ~unique_lock() {
+            if (__owns) {
+                unlock();
+            }
+        }
+
+        // some applications like QT will need methods below
+        unique_lock(const unique_lock &) = delete;
+        unique_lock & operator=(const unique_lock &) = delete;
+
+        unique_lock(unique_lock && l) noexcept: __device(l.__device), __owns(l.__owns)
+        {
+            l.__device = nullptr;
+            l.__owns = false;
+        }
+
+        unique_lock& operator=(unique_lock && l) noexcept
+        {
+            if(__owns) {
+                unlock();
+            }
+
+            unique_lock(std::move(l)).swap(*this);
+
+            l.__device = 0;
+            l.__owns = false;
+
+            return *this;
+        }
+
+        void lock() {
+            __device->lock();
+            __owns = true;
+        }
+        bool try_lock() {
+            return __owns = __device->try_lock();
+        }
+        void unlock() {
+            if (__owns) {
+                __device->unlock();
+                __owns = false;
+            }
+        }
+        Mutex * release() noexcept
+        {
+            Mutex *ret = __device;
+            __device = 0;
+            __owns = false;
+            return ret;
+        }
+        void swap(unique_lock & l) noexcept
+        {
+            std::swap(__device, l.__device);
+            std::swap(__owns, l.__owns);
+        }
+        bool owns_lock() const noexcept {
+            return __owns;
+        }
+        explicit operator bool() const noexcept {
+            return owns_lock();
+        }
+        Mutex * mutex() const noexcept {
+            return __device;
+        }
+    };
+
+    template <class Mutex>
+    class scoped_lock {
+    public:
+        typedef Mutex mutex_type;
+
+        scoped_lock() : __mutex(nullptr), __locked(false) { }
+        explicit scoped_lock(Mutex &m) : __mutex(&m), __locked(false)
+        {
+            __mutex->lock();
+            __locked = true;
+        }
+
+        ~scoped_lock()
+        {
+            if (__locked && (__mutex != nullptr)) {
+                __mutex->unlock();
+            }
+        }
+
+        void lock()
+        {
+            if ((nullptr == __mutex) || __locked) {
+                VSF_ASSERT(false);
+            }
+            __mutex->lock();
+            __locked = true;
+        }
+        bool try_lock()
+        {
+            if ((nullptr == __mutex) || __locked) {
+                VSF_ASSERT(false);
+            }
+            __locked = __mutex->try_lock();
+            return __locked;
+        }
+        void unlock()
+        {
+            if ((nullptr == __mutex) || !__locked) {
+                VSF_ASSERT(false);
+            }
+            __mutex->unlock();
+            __locked = false;
+        }
+        bool owns() const
+        {
+            return __locked && (__mutex != nullptr);
+        }
+
+        Mutex * mutex() const
+        {
+            return __mutex;
+        }
+        Mutex * release()
+        {
+            Mutex *res = __mutex;
+            __mutex = nullptr;
+            __locked = false;
+            return res;
+        }
+
+    private:
+        mutex_type *__mutex;
+        bool __locked;
+    };
+}
+
+#endif
