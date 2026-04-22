@@ -41,13 +41,16 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 
 ### C. 切 mps2 + QEMU 作为 kernel-only sim 目标 ✓
 
-- **做法**：VSF 已有 `vsf/example/template/project/cmake/mps2/` target；用 QEMU `-M mps2-an385` 跑 Cortex-M3 bare-metal；kernel_test 的独立 example（`example/kernel_test/project/mdk/`）就是 bare-metal 模式
+- **做法**：VSF 已有 `vsf/example/template/project/cmake/mps2/` target（`VSF_TARGET=an500`，Cortex-M7 / `mps2-an500`，`.vscode/launch.json` 已配 QEMU servertype）；kernel_test 的独立 example（`example/kernel_test/project/mdk/`）就是 bare-metal 模式
 - **优点**：
   - bare-metal target 是 VSF first-class 支持（`VSF_ARCH_ENTRY_NO_PENDING` 等机制都为 MCU 设计）
   - 对真实项目映射直接（真实项目都是 MCU）
   - QEMU 跑 Cortex-M3 很轻（几百 KB），CI 友好
   - 能真正测 kernel 调度、中断、systimer 等（linux host 上这些都被 pthread 模拟）
-- **缺点**：需装 QEMU（WSL apt install qemu-system-arm 30 秒）；调试反馈没 linux native 快；stdout 要经 QEMU serial 转发
+- **缺点**（2026-04-22 晚 feasibility sanity check 补）：
+  - 工具链 setup：`qemu-system-arm` + `gcc-arm-none-eabi` 默认都没装，WSL apt install 需 sudo（各 ~30 秒）
+  - template CMakeLists 强启 `VSF_USE_LVGL/DISP/FREETYPE`——下次真实触发时要么 `git submodule update --init` 拉 LVGL/FreeType/evm 子模块，要么复用昨天 linux64 minimal scaffold 思路外置一份最小配置绕开 GUI 依赖
+  - 调试反馈没 linux native 快；stdout 要经 QEMU serial 转发
 - **ROI 判断**：高
 
 ### D. `fake_chip` target
@@ -76,7 +79,7 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 
 ### 坏
 
-- mps2+QEMU 自身是否 VSF 闭环 sim 路径，**今天没验证**——下次触发时仍有成本
+- mps2+QEMU 自身**没跑通实证**（2026-04-22 晚 sanity check 仅到"target 存在 + 工具链/依赖 scoped"，未出 binary）。但两项附带 finding 降低了下次触发成本：(a) 昨天"mps2 需要 `vsf_arch_main`"的假设已证伪——该符号仅在 wasm/Emscripten arch 定义，cortex-m 走 VSF 常规 bare-metal 路径；(b) setup cost 估 ~30 分钟（apt 2 个包 + 外置 minimal scaffold 绕 LVGL/FreeType 依赖）
 - 如果未来项目要求 linux host sim（例如 VSF 工具链跑在 linux server 上提供 web 服务），这条 ADR 需要重评
 - `tooling/experiments/vsf-tryouts/kernel_test/` 留着但不活跃——可能 VSF upgrade 后 build 不通也没人注意到
 
