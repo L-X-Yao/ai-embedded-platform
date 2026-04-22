@@ -130,13 +130,13 @@ qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
 
 `-semihosting` 启用 ARM semihosting（`bkpt 0xAB`）——初期 probe 绕过 trace/UART 直接输出到 host stdio。
 
-### 5 条必踩坑（按触发顺序）
+### 6 条必踩坑（按触发顺序）
 
 1. **`VSF_SYSTIMER_FREQ` 缺失** → `vsf_arch_abstraction.c:583: error: 'VSF_SYSTIMER_FREQ' undeclared`。cortex-m 必填，linux64 target 不 check
 2. **`VSF_USE_TRACE` 没配对 `VSF_USE_SIMPLE_STREAM`** → `vsf_trace.c:37: #error stream MUST be enabled to use trace`
 3. **Linker 缺 `_stext/_etext`** → `cortex_m_generic.c:(.text.vsf_arch_low_level_init): undefined reference to '_etext'`。用 `--defsym` 补 alias，不碰 linker.ld（VSF upstream 文件）
 4. **Template mps2 CMakeLists 强启 LVGL/DISP/FREETYPE** → 需 `git submodule update --init --recursive` 拉几百 MB 子模块。用 `mps2_bare` scaffold 外置配置避开（同昨天 linux64 kernel_test 策略）
-5. **`vsf_trace_info` 静默失败**：没调 `vsf_trace_init(stream)` 时既不 crash 也没 output。Early probe 改用 ARM semihosting：
+5. **`vsf_trace_info` 静默失败**：没调 `vsf_trace_init(stream)` 时既不 crash 也没 output。Early probe 改用 ARM semihosting SYS_WRITE0 (0x04) 直接写字符串：
 
     ```c
     static void sh_write0(const char *s) {
@@ -144,6 +144,20 @@ qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
         asm volatile ("mov r0, #0x04\n bkpt 0xAB" : : "r"(r1) : "r0", "memory");
     }
     ```
+
+6. **VSF 自带 `kernel_test/sem_test.c` 等文件不能直接 drop-in**：它们在 `#if VSF_USE_TRACE == ENABLED` 里调 `vsf_start_trace()` **无参版本**，要求 `VSF_DEBUGGER_CFG_CONSOLE` / `VSF_HAL_USE_DEBUG_STREAM == ENABLED` / `VSF_CFG_DEBUG_STREAM_TX_T` 之一定义 + 对应 `VSF_DEBUG_STREAM_TX` 符号（BSP 级别 wiring）。没配齐会 compile error `vsf.h: expected expression before ')' token`。Minimal scaffold 短路方式：**放弃 `vsf_trace`，用 `printf` + stdio retarget**——override VSF weak `vsf_stdout_putchar` 到 ARM semihosting SYS_WRITEC (0x03)：
+
+    ```c
+    int vsf_stdout_putchar(char ch) {
+        register char *r1 asm("r1") = &ch;
+        asm volatile ("mov r0, #0x03\n bkpt 0xAB" : : "r"(r1) : "r0", "memory");
+        return 0;
+    }
+    void vsf_stdout_init(void) {}
+    void vsf_stdin_init(void) {}
+    ```
+
+    `mps2_bare/main.c` 用此法跑通 teda + sem ping-pong 测试（实证 VSF kernel 调度 + vsf_systimer + eda 同步）。
 
 ---
 
