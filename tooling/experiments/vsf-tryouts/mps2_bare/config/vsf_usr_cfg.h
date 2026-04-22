@@ -19,7 +19,11 @@
 // No Linux userspace layer on bare-metal. Explicitly OFF.
 #define VSF_USE_LINUX                                   DISABLED
 
-// Keep all demo apps OFF — our main.c owns VSF_USER_ENTRY.
+// All demo apps OFF — main.c provides VSF_USER_ENTRY directly with an
+// inline teda+sem test (VSF's in-tree sem_test.c needs vsf_start_trace()
+// with a board-level debug stream wired up, which a minimal scaffold
+// doesn't have).
+#define APP_USE_KERNEL_TEST                             DISABLED
 #define APP_USE_LINUX_DEMO                              DISABLED
 #define APP_USE_USBH_DEMO                               DISABLED
 #define APP_USE_USBD_DEMO                               DISABLED
@@ -27,7 +31,6 @@
 #define APP_USE_AUDIO_DEMO                              DISABLED
 #define APP_USE_TGUI_DEMO                               DISABLED
 #define APP_USE_SDL2_DEMO                               DISABLED
-#define APP_USE_KERNEL_TEST                             DISABLED
 #define APP_USE_LVGL_DEMO                               DISABLED
 #define APP_USE_FREETYPE_DEMO                           DISABLED
 #define APP_USE_HAL_DEMO                                DISABLED
