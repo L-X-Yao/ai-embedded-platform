@@ -104,6 +104,7 @@ log_set_time_fn(my_ms_fn);           /* NULL 可关时间戳 */
 ## 支持的平台
 
 - [x] VSF linux host (sim) — 测试通过 2026-04-21
+- [x] VSF mps2-an500 bare-metal (QEMU) — 2026-04-22 via custom semihosting sink，见 `tooling/experiments/vsf-tryouts/mps2_bare/`
 - [ ] VSF + STM32F4 — 未验证
 - [ ] VSF + ESP32 — 未验证
 
