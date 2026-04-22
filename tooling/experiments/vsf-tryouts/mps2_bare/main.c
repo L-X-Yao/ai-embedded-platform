@@ -1,6 +1,9 @@
 #include "vsf.h"
 #include <stdio.h>
 
+#define LOG_MODULE "kerneltest"
+#include "log.h"
+
 // ------------ stdio retarget via ARM semihosting ------------
 // Why semihosting instead of CMSDK_UART0 + vsf_usart_stream? The UART
 // path needs a real hw init + stream op table + debug-stream wiring that
@@ -26,6 +29,17 @@ int vsf_stdout_putchar(char ch) { sh_writec(ch); return 0; }
 void vsf_stdout_init(void) {}
 void vsf_stdin_init(void) {}
 
+// ------------ log wheel sink: one byte at a time to semihosting ------------
+// Pushes each byte of a formatted log line through the same bkpt 0xAB path
+// used by sh_writec. Demonstrates log wheel's sink API on a non-host target.
+static void log_sink_semihosting(void *ctx, const char *line, size_t len)
+{
+    (void)ctx;
+    for (size_t i = 0; i < len; i++) {
+        sh_writec(line[i]);
+    }
+}
+
 // ------------ VSF kernel test: teda + sem round-trip ------------
 // Exercises: teda scheduling, vsf_systimer, sem init/post/pend, VSF_EVT
 // dispatch (INIT → TIMER → SYNC). Sender posts on a 1 ms teda timer,
@@ -48,7 +62,7 @@ static void __sender_handler(vsf_eda_t *eda, vsf_evt_t evt)
     case VSF_EVT_INIT:
     case VSF_EVT_TIMER:
         __t.posted++;
-        printf("[sender] post #%d\n", __t.posted);
+        LOG_INFO("sender post #%d", __t.posted);
         vsf_eda_sem_post(&__t.sem);
         if (__t.posted < TEST_ROUNDS) {
             vsf_teda_set_timer(vsf_systimer_us_to_tick(1000));
@@ -67,9 +81,9 @@ pend_next:
                                              vsf_systimer_us_to_tick(100 * 1000))) {
 got_sem:
             __t.got++;
-            printf("[recver] got #%d\n", __t.got);
+            LOG_INFO("recver got #%d", __t.got);
             if (__t.got >= TEST_ROUNDS) {
-                printf("[pass] %d sem ping-pongs completed\n", __t.got);
+                LOG_INFO("pass: %d sem ping-pongs completed", __t.got);
                 sh_exit(0);
             }
             goto pend_next;
@@ -87,7 +101,8 @@ got_sem:
 
 int VSF_USER_ENTRY(void)
 {
-    printf("[main] VSF kernel teda+sem test start\n");
+    log_add_sink(log_sink_semihosting, NULL);
+    LOG_INFO("VSF kernel teda+sem test start");
     vsf_eda_sem_init(&__t.sem, 0);
 
     vsf_eda_cfg_t cfg = {
