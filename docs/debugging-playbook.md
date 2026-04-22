@@ -80,7 +80,7 @@
 
 > ✅ **首选 kernel-only sim 路径**（[ADR-008](adr/008-vsf-linux64-sim-strategy.md) 选项 C，2026-04-22 晚实证通过）。新项目跑 VSF kernel / shell / USB CDC 等 bare-metal 场景走这条，不走 linux64。
 
-`tooling/experiments/vsf-tryouts/mps2_bare/` 是实证跑通的 scaffold——build + link + QEMU 调度 + semihosting 输出全通。下面是 minimal 配置里的 5 个必踩坑。
+`tooling/experiments/vsf-tryouts/mps2_bare/` 是实证跑通的 scaffold——build + link + QEMU 调度 + semihosting 输出全通，外加 pytest harness 一把跑完 5 条断言。下面是 minimal 配置里的 7 个必踩坑。
 
 ### 工具链（WSL Ubuntu 24.04 apt）
 
@@ -130,7 +130,7 @@ qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
 
 `-semihosting` 启用 ARM semihosting（`bkpt 0xAB`）——初期 probe 绕过 trace/UART 直接输出到 host stdio。
 
-### 6 条必踩坑（按触发顺序）
+### 7 条必踩坑（按触发顺序）
 
 1. **`VSF_SYSTIMER_FREQ` 缺失** → `vsf_arch_abstraction.c:583: error: 'VSF_SYSTIMER_FREQ' undeclared`。cortex-m 必填，linux64 target 不 check
 2. **`VSF_USE_TRACE` 没配对 `VSF_USE_SIMPLE_STREAM`** → `vsf_trace.c:37: #error stream MUST be enabled to use trace`
@@ -158,6 +158,8 @@ qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
     ```
 
     `mps2_bare/main.c` 用此法跑通 teda + sem ping-pong 测试（实证 VSF kernel 调度 + vsf_systimer + eda 同步）。
+
+7. **QEMU `-nographic -semihosting` 把 `SYS_WRITEC` 送到 stderr，不是 stdout**（自动化场景踩的坑）：bash 手跑看不见这问题（终端把 stdout / stderr 都显示），但在 pytest / CI 用 `subprocess.run(capture_output=True)` 抓输出时，`r.stdout == ''`、rc == 0——以为 main.c 没打印，其实打了只是管道走 stderr。工作流：**fixture 读 `r.stderr`**（或 `stderr=subprocess.STDOUT` 合流）。验证环境 QEMU 8.2.2 / WSL Ubuntu 24.04。参见 `tooling/experiments/vsf-tryouts/mps2_bare/test_mps2_bare.py` fixture 里的注释。
 
 ---
 
