@@ -76,6 +76,77 @@
 
 ---
 
+## VSF mps2-an500 bare-metal sim 最小跑通配置（首选，canonical checklist）
+
+> ✅ **首选 kernel-only sim 路径**（[ADR-008](adr/008-vsf-linux64-sim-strategy.md) 选项 C，2026-04-22 晚实证通过）。新项目跑 VSF kernel / shell / USB CDC 等 bare-metal 场景走这条，不走 linux64。
+
+`tooling/experiments/vsf-tryouts/mps2_bare/` 是实证跑通的 scaffold——build + link + QEMU 调度 + semihosting 输出全通。下面是 minimal 配置里的 5 个必踩坑。
+
+### 工具链（WSL Ubuntu 24.04 apt）
+
+```bash
+sudo apt install -y qemu-system-arm gcc-arm-none-eabi \
+                    binutils-arm-none-eabi libnewlib-arm-none-eabi
+```
+
+### 必须的 cmake 设置
+
+```cmake
+# arm-none-eabi-gcc 无法 link cmake 的 host compiler test，flags 必须先于 project() 设
+set(CMAKE_C_FLAGS "-Ofast" CACHE INTERNAL "...")
+include($ENV{VSF_PATH}/script/cmake/compilers/gnuarmemb.cmake)
+project(vsf_mps2_bare)
+set(VSF_TARGET an500)                   # Cortex-M7 / CMSDK_CM7 / mps2-an500
+
+# linker script 复用 template/cmake/mps2/linker.ld（注释写 aic8800 但
+# FLASH@0x0 / RAM@0x20000000 布局兼容 mps2-an500 memory map）
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    LINKER:-T$ENV{VSF_PATH}/example/template/project/cmake/mps2/linker.ld
+    # cortex_m_generic.c 引用 _stext/_etext，aic8800 linker 只定义 __etext
+    LINKER:--defsym=_stext=0
+    LINKER:--defsym=_etext=__etext
+)
+```
+
+### 必须的 vsf_usr_cfg.h
+
+```c
+#define VSF_KERNEL_CFG_ENTRY_IS_MAIN    ENABLED
+#define VSF_SYSTIMER_FREQ               25000000  // cortex-m 必填，linux64 不需要
+#define VSF_USE_TRACE                   ENABLED
+#define VSF_USE_SIMPLE_STREAM           ENABLED   // trace 硬依赖
+#define VSF_USE_LINUX                   DISABLED  // bare-metal 明确关
+#define APP_USE_LINUX_DEMO              DISABLED
+// 其他 APP_USE_* (LVGL/TGUI/SDL2/USBD/USBH/AUDIO/HAL/…) 全 DISABLED
+```
+
+### QEMU 启动
+
+```bash
+qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
+    -kernel build/vsf_mps2_bare.elf \
+    -nographic -monitor null -semihosting
+```
+
+`-semihosting` 启用 ARM semihosting（`bkpt 0xAB`）——初期 probe 绕过 trace/UART 直接输出到 host stdio。
+
+### 5 条必踩坑（按触发顺序）
+
+1. **`VSF_SYSTIMER_FREQ` 缺失** → `vsf_arch_abstraction.c:583: error: 'VSF_SYSTIMER_FREQ' undeclared`。cortex-m 必填，linux64 target 不 check
+2. **`VSF_USE_TRACE` 没配对 `VSF_USE_SIMPLE_STREAM`** → `vsf_trace.c:37: #error stream MUST be enabled to use trace`
+3. **Linker 缺 `_stext/_etext`** → `cortex_m_generic.c:(.text.vsf_arch_low_level_init): undefined reference to '_etext'`。用 `--defsym` 补 alias，不碰 linker.ld（VSF upstream 文件）
+4. **Template mps2 CMakeLists 强启 LVGL/DISP/FREETYPE** → 需 `git submodule update --init --recursive` 拉几百 MB 子模块。用 `mps2_bare` scaffold 外置配置避开（同昨天 linux64 kernel_test 策略）
+5. **`vsf_trace_info` 静默失败**：没调 `vsf_trace_init(stream)` 时既不 crash 也没 output。Early probe 改用 ARM semihosting：
+
+    ```c
+    static void sh_write0(const char *s) {
+        register const char *r1 asm("r1") = s;
+        asm volatile ("mov r0, #0x04\n bkpt 0xAB" : : "r"(r1) : "r0", "memory");
+    }
+    ```
+
+---
+
 ## VSF linux64 target 最小跑通配置（canonical checklist）
 
 > ⚠️ **读前必知**（**[ADR-008](adr/008-vsf-linux64-sim-strategy.md)**）：

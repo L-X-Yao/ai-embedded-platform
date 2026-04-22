@@ -148,7 +148,7 @@ ai-embedded-platform/
 | 005 | VSF 修改走 patches + vsf-addon |
 | 006 | 新 wheel 前必须 grep VSF 原生 |
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
-| 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU） |
+| 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU，已实证） |
 
 全部见 `docs/adr/README.md`。
 
@@ -233,7 +233,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ git 仓库（13 commits，vsf/ vendored 不 fork）
 - ✅ **第一个 wheel：`wheels/_draft/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
 - ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
-- ✅ **VSF SIM 投资期探索 1 轮（2026-04-22）**：`tooling/experiments/vsf-tryouts/kernel_test/` build+link 通最小脚手架；linux64 kernel-only 路径证伪（见 ADR-008）；debugging-playbook 新增 ~150 行 canonical checklist + 4 条坑条目；kernel-only sim 下次走 mps2+QEMU
+- ✅ **VSF SIM 投资期探索 2 轮（2026-04-22 日 / 晚）**：(1) linux64 kernel-only 路径证伪（scaffold `tooling/experiments/vsf-tryouts/kernel_test/` 保留作 triage 基线，见 ADR-008）；(2) mps2-an500 bare-metal 首选路径**实证跑通**（scaffold `tooling/experiments/vsf-tryouts/mps2_bare/`，QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 下 user_main 正常调度 + semihosting probe 输出 + exit 42 全通）；ADR-008 选项 C 从"选了但没验证"升级为 first-class；debugging-playbook 新增两组 canonical checklist（mps2 首选 + linux64 triage）共 10 条坑
 
 未开展：
 - 第一个真实项目（待用户提 PoC——触发 `ai-workflow.md` 任务类型 2）
@@ -241,7 +241,6 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - HIL 自动化（当前人工粘日志过渡）
 - `tooling/scripts/test_downstream.sh`（等 projects/ 有内容再写）
 - 硬件平台 port（国民技术/兆易/先辑——项目来时走 `vsf-addon/hal/driver/<vendor>/`）
-- **mps2+QEMU SIM 路径实证**（ADR-008 定性但未跑通；等真实项目触发或用户主动启动）
 
 ## 下一步触发点（Sprint 0 已封版）
 

@@ -79,7 +79,7 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 
 ### 坏
 
-- mps2+QEMU 自身**没跑通实证**（2026-04-22 晚 sanity check 仅到"target 存在 + 工具链/依赖 scoped"，未出 binary）。但两项附带 finding 降低了下次触发成本：(a) 昨天"mps2 需要 `vsf_arch_main`"的假设已证伪——该符号仅在 wasm/Emscripten arch 定义，cortex-m 走 VSF 常规 bare-metal 路径；(b) setup cost 估 ~30 分钟（apt 2 个包 + 外置 minimal scaffold 绕 LVGL/FreeType 依赖）
+- ~~mps2+QEMU 自身没跑通实证~~ **2026-04-22 晚完整实证通过**：minimal scaffold `tooling/experiments/vsf-tryouts/mps2_bare/` build+link 通（32K text / 128K heap），QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 启动后 user_main **被正常调度执行**（ARM semihosting `bkpt 0xAB` probe 验证输出 `[user_main] reached` + exit 42）。和 linux64 "user_main 永不被调" 形成鲜明对比——选项 C 从"选了但没验证"升级为"实证 first-class 路径"
 - 如果未来项目要求 linux host sim（例如 VSF 工具链跑在 linux server 上提供 web 服务），这条 ADR 需要重评
 - `tooling/experiments/vsf-tryouts/kernel_test/` 留着但不活跃——可能 VSF upgrade 后 build 不通也没人注意到
 
@@ -87,8 +87,8 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 
 - 真实项目明确要求 linux host sim（非嵌入式 MCU 场景）
 - VSF upstream 把 linux64 的 `vsf_arch_main` + `ENTRY_NO_PENDING` 实现了（linux arch 支持 kernel-only）
-- mps2+QEMU 自身被证明也跑不通（需要 fallback plan）
 - `tooling/experiments/vsf-tryouts/kernel_test/` build 在 VSF 升级后失败（要么修要么删）
+- `tooling/experiments/vsf-tryouts/mps2_bare/` build 或 QEMU 跑法在 VSF 升级后失败（需 re-baseline）
 
 ## 相关
 
@@ -96,4 +96,6 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 - ADR-002（wheel sim 优先）
 - `docs/debugging-playbook.md` § "VSF linux64 target 最小跑通配置"（配置依赖链速查）
 - `docs/debugging-playbook.md` § "VSF linux64 kernel-only 模式 user_main 永不被调"（根因诊断）
-- `tooling/experiments/vsf-tryouts/kernel_test/`（build 通但 user_main 不跑的最小脚手架，作为排查基线）
+- `docs/debugging-playbook.md` § "VSF mps2-an500 bare-metal sim 最小跑通配置"（首选路径 canonical checklist，5 条踩坑）
+- `tooling/experiments/vsf-tryouts/kernel_test/`（linux64 build 通但 user_main 不跑的最小脚手架，作为 triage 基线）
+- `tooling/experiments/vsf-tryouts/mps2_bare/`（mps2 实证跑通的 minimal scaffold，build + link + QEMU user_main 调度 + semihosting probe 全通）
