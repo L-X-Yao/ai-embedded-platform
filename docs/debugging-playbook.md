@@ -242,6 +242,31 @@ int VSF_USER_ENTRY(void)   // 展开为 user_main (当 ENTRY_IS_MAIN 启时)
 
 ---
 
+## VSF USB CDC sim 在 linux64 busybox 模式此路不通（2026-04-22 晚 sanity-check spike）
+
+**结论**：VSF 上游在 linux64 host 上不启 USBD DCD 代码路径；`usbip_dcd` 也没有 linux-native BSD socket backend（只有 Windows WinSock + lwIP 两个 backend）。想在 linux64 host 做 USBD CDC sim 必须自港 `vsf_usbip_dcd_linux.c` + 解决 WSL2 宿主 `vhci_hcd` kernel 模块问题——多日工程，不是 sanity-check 范围。
+
+### 3 条硬证据
+
+- **E1**：`vsf/example/template/config/vsf_usr_cfg/vsf_usr_cfg_linux.h:43/125` 双开关 `APP_USE_USBD_DEMO` / `VSF_USBD_USE_DCD_USBIP` 均 `DISABLED`（VSF 上游自己都不测这条路）
+- **E2**：`vsf/source/component/usb/driver/dcd/usbip_dcd/backend/` 只有两个 backend 实现——`vsf_usbip_dcd_win.c`（硬依赖 `#include <Windows.h>` + WinSock `SOCKET`）和 `vsf_usbip_dcd_lwip.c`（需 `VSF_USE_LWIP`）；**无** POSIX/BSD socket backend
+- **E3**：linux 目标 CMakeLists（`vsf/example/template/project/cmake/linux/CMakeLists.txt`）默认拉 LVGL + SDL2 + FreeType + libpng/jpeg + zlib + MBEDTLS + LITTLEFS + LUA + COREMARK（几百 MB 子模块），但 `VSF_USE_USB_*` 一项都没配；busybox applets 里也无 usbip 观察面（`grep usbip vsf/source/shell/sys/linux` 零命中）
+
+### 替代路径（真实项目触发时评估，当前不投）
+
+- **路径 A — mps2 + lwIP + usbip_dcd over QEMU netdev**（最干净但多日工程）：复用已实证跑通的 mps2 scaffold（`tooling/experiments/vsf-tryouts/mps2_bare/`），加 CMSDK_ETHLAN eth driver + lwip 配置 + `usbip_dcd` LWIP backend；host 用 `usbip-utils` 吸附。三层（lwip / eth / usbip）都没踩过，是新 rabbit hole
+- **路径 B — Windows host VSF（win target）**：`VSF_USBIP_DCD_CFG_BACKEND_WIN` 是 first-class path，Windows 原生有 WinSock + 装 `usbipd-win` 即可；但用户主开发环境是 WSL2，切 Windows native 成本高
+- **路径 C — 真机 USB CDC**：任意 MCU target（GD32 / M484 / AT32 / MT071 / aic8800 等）USBD CDC demo 一键跑（VSF 主流做法）——真实项目触发时直接走这条，不做 sim
+
+### 何时重新评估
+
+- 真实项目要求在无硬件阶段就把 USB CDC 协议栈 sim 调通 → 届时走路径 A（或 B）
+- VSF upstream 加了 `vsf_usbip_dcd_linux.c` / linux-native socket backend → 本结论失效
+
+**相关**：ADR-008 § 选项 B（同一"VSF 在 linux64 host 上某些 sim 路径此路不通"家族的第二个案例——第一个是 ADR-008 主体的 kernel-only 路径证伪）
+
+---
+
 ## 已收集的坑（项目遇到后追加）
 
 ### [编译] VSF cmake 报 `plooc.h: No such file`
