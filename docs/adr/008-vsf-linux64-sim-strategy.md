@@ -36,8 +36,11 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 
 - **做法**：`git submodule update --init --recursive` 拉全部 VSF 3rd-party 子模块（LVGL / SDL2 / FreeType / mbedtls / littlefs 等），启 `APP_USE_LINUX_DEMO` + 所有依赖链，跑 busybox shell 里的 `eda_test` applet
 - **优点**：这是 VSF 官方测试过的路径，能真跑
-- **缺点**：拉 ~几百 MB 外部依赖；build 时间长；跑起来只是"busybox 里跑 kernel_test applet"——不是"我们掌控 VSF kernel 启动"；对真实 MCU 项目的映射不直接
-- **ROI 判断**：中低。能跑起来但学到的是 busybox 用法，不是 VSF kernel
+- **缺点**：
+  - 拉 ~几百 MB 外部依赖；build 时间长
+  - 跑起来只是"busybox 里跑 kernel_test applet"——不是"我们掌控 VSF kernel 启动"；对真实 MCU 项目的映射不直接
+  - （2026-04-22 晚 usbip sanity-check spike 补）busybox 模式下"做 USBD CDC sim"这条很常见的需求 **linux64 host 上跑不了**——VSF `usbip_dcd` 只有 Windows（硬依赖 `#include <Windows.h>` + WinSock）和 lwIP 两个 backend，**没有 linux-native BSD socket backend**；`vsf_usr_cfg_linux.h:43/125` 双开关 `APP_USE_USBD_DEMO` / `VSF_USBD_USE_DCD_USBIP` VSF 上游自己都 `DISABLED`。想上必须自港 `vsf_usbip_dcd_linux.c` + WSL2 装 `vhci_hcd` kernel module + `usbip-utils`，多日工程。详见 `docs/debugging-playbook.md` § "VSF USB CDC sim 在 linux64 busybox 模式此路不通"
+- **ROI 判断**：中低。能跑起来但学到的是 busybox 用法，不是 VSF kernel；且"busybox 能干的典型 sim 场景"里 USB 这条还进一步踩空
 
 ### C. 切 mps2 + QEMU 作为 kernel-only sim 目标 ✓
 
