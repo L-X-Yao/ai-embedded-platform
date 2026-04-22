@@ -148,6 +148,7 @@ ai-embedded-platform/
 | 005 | VSF 修改走 patches + vsf-addon |
 | 006 | 新 wheel 前必须 grep VSF 原生 |
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
+| 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU） |
 
 全部见 `docs/adr/README.md`。
 
@@ -169,6 +170,7 @@ ai-embedded-platform/
 
 - `docs` — 文档改动（`docs/`、`CLAUDE.md`、`README.md`、各 wheel README）
 - `wheel` — wheel 代码或结构改动（不含其 README，那归 `docs`）
+- `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
 
 ### scope（可选，与目录对齐）
 
@@ -223,14 +225,15 @@ ai-embedded-platform/
 Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/patches）
 - ✅ 核心文档（philosophy / wheel-contract / api-conventions / ai-workflow / debugging-playbook）
-- ✅ 7 个 ADR（平台决策历史）
+- ✅ 8 个 ADR（平台决策历史）
 - ✅ tooling/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
-- ✅ memory 7 条（用户背景 + 战略决策 + 4 条 feedback）
+- ✅ memory 8 条（用户背景 + 战略决策 + 5 条 feedback）
 - ✅ 历史评估归档 `_eval/`
-- ✅ git 仓库（8 commits，vsf/ vendored 不 fork）
+- ✅ git 仓库（13 commits，vsf/ vendored 不 fork）
 - ✅ **第一个 wheel：`wheels/_draft/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
 - ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
+- ✅ **VSF SIM 投资期探索 1 轮（2026-04-22）**：`tooling/experiments/vsf-tryouts/kernel_test/` build+link 通最小脚手架；linux64 kernel-only 路径证伪（见 ADR-008）；debugging-playbook 新增 ~150 行 canonical checklist + 4 条坑条目；kernel-only sim 下次走 mps2+QEMU
 
 未开展：
 - 第一个真实项目（待用户提 PoC——触发 `ai-workflow.md` 任务类型 2）
@@ -238,6 +241,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - HIL 自动化（当前人工粘日志过渡）
 - `tooling/scripts/test_downstream.sh`（等 projects/ 有内容再写）
 - 硬件平台 port（国民技术/兆易/先辑——项目来时走 `vsf-addon/hal/driver/<vendor>/`）
+- **mps2+QEMU SIM 路径实证**（ADR-008 定性但未跑通；等真实项目触发或用户主动启动）
 
 ## 下一步触发点（Sprint 0 已封版）
 
