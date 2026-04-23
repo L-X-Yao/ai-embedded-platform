@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  log-wheel:
+    name: log wheel (linux64 sim)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: wheels/primitives/log
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build libusb-1.0-0-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Build (debug)
+        run: |
+          cmake -GNinja -S . -B build
+          cmake --build build
+
+      - name: Build (release, LOG_LEVEL_MAX=WARN)
+        run: |
+          cmake -GNinja -S . -B build_release \
+            -DCMAKE_C_FLAGS='-DLOG_LEVEL_MAX=LOG_LEVEL_WARN'
+          cmake --build build_release
+
+      - name: Test
+        run: python -m pytest test_log.py -v
