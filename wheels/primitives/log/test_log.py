@@ -34,16 +34,27 @@ def test_expected_case_count(sim_output):
 
 # --- release build verification (LOG_LEVEL_MAX=LOG_LEVEL_WARN) ---
 
-RELEASE_BIN = Path(__file__).parent / "build_release" / "log_test"
+WHEEL_DIR = Path(__file__).parent
+RELEASE_BIN = WHEEL_DIR / "build_release" / "log_test"
 
 
 @pytest.fixture(scope="module")
 def release_sim_output():
     """Runs the test binary built with LOG_LEVEL_MAX=LOG_LEVEL_WARN.
     Verifies DEBUG/INFO macros truly expanded to ((void)0) — no emit,
-    and (crucially) no arg evaluation (proves compile-time elimination)."""
+    and (crucially) no arg evaluation (proves compile-time elimination).
+    Auto-builds if the release binary is missing."""
     if not RELEASE_BIN.exists():
-        pytest.skip(f"release binary not built: {RELEASE_BIN}")
+        subprocess.run(
+            ["cmake", "-GNinja", "-S", str(WHEEL_DIR), "-B", str(WHEEL_DIR / "build_release"),
+             "-DCMAKE_C_FLAGS=-DLOG_LEVEL_MAX=LOG_LEVEL_WARN"],
+            check=True, capture_output=True, text=True, timeout=120,
+        )
+        subprocess.run(
+            ["cmake", "--build", str(WHEEL_DIR / "build_release")],
+            check=True, capture_output=True, text=True, timeout=120,
+        )
+    assert RELEASE_BIN.exists(), f"release binary not found after build: {RELEASE_BIN}"
     r = subprocess.run([str(RELEASE_BIN)], capture_output=True, text=True, timeout=10)
     return r.returncode, r.stdout
 
