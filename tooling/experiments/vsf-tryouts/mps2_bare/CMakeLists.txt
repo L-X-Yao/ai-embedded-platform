@@ -44,10 +44,10 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
     LINKER:--defsym=_etext=__etext
 )
 
-# Integration demo: consume wheels/_draft/log from the MCU-sim side to prove
+# Integration demo: consume wheels/primitives/log from the MCU-sim side to prove
 # the wheel survives outside host pytest (different target, different sink,
 # different time source). See main.c for the semihosting sink.
-get_filename_component(LOG_WHEEL_DIR ../../../../wheels/_draft/log ABSOLUTE)
+get_filename_component(LOG_WHEEL_DIR ../../../../wheels/primitives/log ABSOLUTE)
 
 target_sources(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/main.c
