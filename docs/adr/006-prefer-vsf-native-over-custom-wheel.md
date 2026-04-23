@@ -49,6 +49,7 @@ AI 有"我写简单 C 比读 PLOOC 宏容易"的倾向，如果不强制约束�
 ### 强制检查顺序
 
 AI 新建 wheel 流程：
+0. **（仅板级能力判定需要，纯算法/数据结构跳过）** `cat vsf/example/template/config/vsf_usr_cfg/vsf_usr_cfg_<board>.h` — VSF 官方对每块板能力的"真相表"。看哪些 `VSF_USE_*` 被注释（`//#define`）、哪些 `APP_USE_*_DEMO` 默认 DISABLED，即知 VSF 作者判定该 board 不适合此路。**比读 HAL 源码快 10 倍**。来源：2026-04-23 USB probe（`vsf_usr_cfg_mps2.h:91-92` 明文 "USB device will be enabled if target chip supports USBD"，直接证伪 "USB device sim on mps2" 方向）
 1. `grep -rn "功能关键词" vsf/source/service/`
 2. `grep -rn "功能关键词" vsf/source/utilities/`
 3. `grep -rn "功能关键词" vsf/source/component/`

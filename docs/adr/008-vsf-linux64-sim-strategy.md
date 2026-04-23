@@ -86,12 +86,33 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 - 如果未来项目要求 linux host sim（例如 VSF 工具链跑在 linux server 上提供 web 服务），这条 ADR 需要重评
 - `tooling/experiments/vsf-tryouts/kernel_test/` 留着但不活跃——可能 VSF upgrade 后 build 不通也没人注意到
 
+## USB device 在 mps2 不可达（2026-04-23 USB probe 补）
+
+选 C（mps2+QEMU）的**边界补强**：kernel / teda / sem / systimer / log 已全部跑通，但 **USB device stack 在 mps2-an500 target 下硬性不可达**。
+
+### 3 条决定性证据
+
+1. **QEMU 硬件层**：`qemu-system-arm -M mps2-an500 -device help` 所有 USB 条目都要 `bus usb-bus` 或 `bus PCI`——mps2-an500 物理上无 PCI bridge 也无 usb-bus 背板
+2. **VSF HAL 层**：`grep -i usb vsf/source/hal/driver/arm/mps2/` **零命中**——mps2 port 未实现任何 USB peripheral
+3. **VSF 官方 config 层**：`vsf/example/template/config/vsf_usr_cfg/vsf_usr_cfg_mps2.h:91-92` `//#define VSF_USE_USB_DEVICE` 被 VSF 作者注释，明文 "will be enabled if target chip supports USBD"
+
+三层一致认定——mps2 物理上无 USB IP。
+
+### 真项目 USB 路径三档（按投资递增）
+
+- **短路径 — QEMU 换 target**：stm32h743xi 等 VSF 已 port + QEMU 支持好的 USB-capable MCU（VSF 有 `vsf_usr_cfg_stm32h743xi.h` + DWCOTG dcd）。验证 VSF USB stack 逻辑首选
+- **中路径（当前默认）— 真机 HIL**：任意 USB-capable MCU（stm32h7 / nrf / esp32s2）跑 `usbd_demo_msc.c` / `hidmsc`，走 ADR-002 人工 HIL 流程。真项目 90% 场景默认走这条
+- **长路径 — usbip over lwip over SMSC over mps2**：`VSF_USBD_USE_DCD_USBIP` + LWIP backend + QEMU mps2 SMSC 9220 ethernet HAL port + host usbip-utils。**3-5 天独立 sprint 级**，非本 ADR 投资范围。非真项目触发不启
+
 ## 何时应重新评估
 
 - 真实项目明确要求 linux host sim（非嵌入式 MCU 场景）
 - VSF upstream 把 linux64 的 `vsf_arch_main` + `ENTRY_NO_PENDING` 实现了（linux arch 支持 kernel-only）
 - `tooling/experiments/vsf-tryouts/kernel_test/` build 在 VSF 升级后失败（要么修要么删）
 - `tooling/experiments/vsf-tryouts/mps2_bare/` build 或 QEMU 跑法在 VSF 升级后失败（需 re-baseline）
+- 真项目需要在 sim 里跑 USB device 且 HIL / 换 target 都不合适（触发长路径评估）
+- QEMU 加了 mps2-an500 的 USB 背板扩展（目前 8.2.2 没有）
+- VSF 加了 mps2 HAL 的 USB port（目前没有迹象）
 
 ## 相关
 
@@ -102,3 +123,5 @@ VSF 官方 linux 示例（`linux_demo.c`）能跑是因为它走 `APP_USE_LINUX_
 - `docs/debugging-playbook.md` § "VSF mps2-an500 bare-metal sim 最小跑通配置"（首选路径 canonical checklist，5 条踩坑）
 - `tooling/experiments/vsf-tryouts/kernel_test/`（linux64 build 通但 user_main 不跑的最小脚手架，作为 triage 基线）
 - `tooling/experiments/vsf-tryouts/mps2_bare/`（mps2 实证跑通的 minimal scaffold，build + link + QEMU user_main 调度 + semihosting probe 全通）
+- `docs/adr/006-prefer-vsf-native-over-custom-wheel.md` § Phase 0（2026-04-23 同次 USB probe 发现 `vsf_usr_cfg_<board>.h` 作"真相表"的查询法）
+- `docs/debugging-playbook.md` § "预判外设可行性"（本 ADR USB 补的战术 checklist 落地）
