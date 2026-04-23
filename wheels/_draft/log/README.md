@@ -177,3 +177,4 @@ log_add_sink(my_net_sink, NULL);
 - [ ] README 补 "性能参考" 节（log_emit 耗时 / RAM 占用）
 - [ ] README 补 "变更历史" 节
 - [ ] 跨平台 打勾（至少 STM32/ESP32 之一真机跑过）
+- [ ] 评估 rtdbg.h 3 条参考点（`_eval/rtthread_rtdbg/`）：ANSI 彩色（需 per-sink 方案）/ `LOG_HERE`（函数+行号）/ `LOG_RAW`（跳过前缀）。**均属新 API**，真实项目触发后独立走 wheel-contract §7 审批。hex dump 不自造，走 VSF `vsf_trace_dump_buff`（ADR-006）。
