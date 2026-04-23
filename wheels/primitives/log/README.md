@@ -23,7 +23,7 @@
 ## How to test
 
 ```bash
-cd wheels/_draft/log
+cd wheels/primitives/log
 
 # 默认构建（LOG_LEVEL_MAX=LOG_LEVEL_DEBUG，所有级别都输出）
 VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build

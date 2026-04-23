@@ -36,11 +36,11 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 cd /mnt/d/temp/project/ai-embedded-platform
 
 # 跑 log wheel 测试（当前唯一 wheel）
-cd wheels/_draft/log && mkdir -p build && cd build
+cd wheels/primitives/log && mkdir -p build && cd build
 cmake .. && make && ./test_log
 
 # pytest 回归
-cd wheels/_draft/log && pytest -v
+cd wheels/primitives/log && pytest -v
 ```
 
 ## 验证路径
