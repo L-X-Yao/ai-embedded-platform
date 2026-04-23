@@ -161,6 +161,25 @@ qemu-system-arm -M mps2-an500 -cpu cortex-m7 \
 
 7. **QEMU `-nographic -semihosting` 把 `SYS_WRITEC` 送到 stderr，不是 stdout**（自动化场景踩的坑）：bash 手跑看不见这问题（终端把 stdout / stderr 都显示），但在 pytest / CI 用 `subprocess.run(capture_output=True)` 抓输出时，`r.stdout == ''`、rc == 0——以为 main.c 没打印，其实打了只是管道走 stderr。工作流：**fixture 读 `r.stderr`**（或 `stderr=subprocess.STDOUT` 合流）。验证环境 QEMU 8.2.2 / WSL Ubuntu 24.04。参见 `tooling/experiments/vsf-tryouts/mps2_bare/test_mps2_bare.py` fixture 里的注释。
 
+### 预判外设可行性（proactive，上 sim 前先跑，2026-04-23 USB probe 发现）
+
+**10 秒级外设可行性判定**——上 sim 前跑两条命令，避开几轮编译试错：
+
+```bash
+# QEMU 层：看 target 是否暴露目标外设
+qemu-system-arm -M mps2-an500 -device help 2>&1 | grep -iE "usb|hid|eth|scsi"
+
+# VSF 层：看 VSF 作者对此板能力的"真相表"
+cat vsf/example/template/config/vsf_usr_cfg/vsf_usr_cfg_mps2.h  # 替换 board 名
+```
+
+**判读**：
+- USB 相关条目都要求 `bus usb-bus` 或 `bus PCI`，mps2-an500 无 PCI bridge 也无 usb-bus 背板 → **USB device sim on mps2 直接证伪**
+- `vsf_usr_cfg_mps2.h:91-92` `//#define VSF_USE_USB_DEVICE` 被注释 + 注明 "will be enabled if target chip supports USBD" → VSF 作者同判
+- 同理可判 ethernet / LCD panel / SD host 等外设可行性
+
+**相关**：ADR-008 § "USB device 在 mps2 不可达" / ADR-006 § Phase 0
+
 ---
 
 ## VSF linux64 target 最小跑通配置（canonical checklist）
