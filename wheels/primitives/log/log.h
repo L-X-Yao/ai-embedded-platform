@@ -2,7 +2,7 @@
  * log — leveled + module-tagged logging, wraps vsf_trace.
  *
  * Layer:   L0
- * Status:  stable
+ * Status:  candidate
  * Deps:    VSF kernel, vsf_trace (optional sink), vsf_stream (optional sink)
  */
 #ifndef LOG_H
