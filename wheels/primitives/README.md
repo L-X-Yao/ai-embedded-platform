@@ -10,7 +10,7 @@
 
 ## 典型 wheel 候选
 
-- `log` — 带等级 + 模块标签的日志（考虑：VSF 已有 `vsf_trace`，评估差异）
+- ~~`log`~~ — **已实现**，见 `log/README.md`
 - `cli_parser` — 命令/参数解析
 - `state_machine` — 层次状态机模板（考虑：VSF 已有 `vsf_eda` 的 FSM 模式）
 - `retry` — 指数退避重试
@@ -23,4 +23,4 @@
 
 ## 目录清单
 
-（待添加）
+- `log/` — 带等级 + 模块标签 + 多 sink + 编译期过滤的日志（candidate）

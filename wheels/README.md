@@ -24,7 +24,7 @@
 ## 目录
 
 ### L0 Primitives（`primitives/`）
-（待添加）
+- `log/` — 带等级 + 模块标签 + 多 sink + 编译期过滤的日志（candidate）
 
 ### L1 Drivers（`drivers/`）
 （待添加——按芯片型号命名：`mpu6050/`、`w25q64/` 等）
@@ -36,7 +36,7 @@
 （待添加）
 
 ### Draft（`_draft/`）
-（待添加——孵化中）
+（暂无）
 
 ## 使用原则
 
