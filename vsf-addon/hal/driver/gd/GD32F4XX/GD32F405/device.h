@@ -85,11 +85,13 @@
 
 // USART: 6 units (USART0/1/2/5 sync, UART3/4 async-only)
 // Flybox uses: USART0 (debug PA9/PA10), USART1 (Air780EG PA2/PA3)
+// NOTE: count=1 to avoid USART1_IRQHandler conflict with air780eg_driver.
+//       Increase when air780eg is migrated to VSF HAL callbacks.
 //
 // PCLK_HZ: peripheral clock for baud rate calculation.
 // Defaults assume 168MHz HCLK, APB2=/2 (84MHz), APB1=/4 (42MHz).
 // Override in project vsf_usr_cfg.h if using different clock configuration.
-#define VSF_HW_USART_COUNT              6
+#define VSF_HW_USART_COUNT              1
 
 #ifndef VSF_HW_USART0_PCLK_HZ
 #   define VSF_HW_USART0_PCLK_HZ       84000000U

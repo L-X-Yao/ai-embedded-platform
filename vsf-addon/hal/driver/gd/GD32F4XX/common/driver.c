@@ -21,6 +21,7 @@
 #include "../__device.h"
 
 #include "./vendor/Include/gd32f4xx.h"
+#include "./vendor/Include/gd32f4xx_rcu.h"
 
 /*============================ IMPLEMENTATION ================================*/
 
