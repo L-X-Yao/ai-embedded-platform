@@ -237,14 +237,18 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **VSF SIM 投资期探索 2 轮（2026-04-22 日 / 晚）**：(1) linux64 kernel-only 路径证伪（scaffold `tooling/experiments/vsf-tryouts/kernel_test/` 保留作 triage 基线，见 ADR-008）；(2) mps2-an500 bare-metal 首选路径**实证跑通**（scaffold `tooling/experiments/vsf-tryouts/mps2_bare/`，QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 下 user_main 正常调度 + semihosting probe 输出 + exit 42 全通）；ADR-008 选项 C 从"选了但没验证"升级为 first-class；debugging-playbook 新增两组 canonical checklist（mps2 首选 + linux64 triage）共 10 条坑
 
 进行中：
-- ✅ **第一个真实项目 `projects/flybox/`**（无人机遥测盒子，GD32F405 + FreeRTOS + Air780EG）——阶段 A（结构整合）完成，阶段 B（VSF 替换）等应用逻辑稳定后启动
-- VSF 对 GD32F4xx 支持摸底：无现成 HAL（只有 GD32VF103 RISC-V），需在 `vsf-addon/` 新建 port
+- ✅ **第一个真实项目 `projects/flybox/`**（无人机遥测盒子，GD32F405 + FreeRTOS + Air780EG）
+  - 阶段 A（结构整合）完成
+  - 阶段 B 预备完成：分层策略定（驱动=VSF 原生，应用=POSIX），QEMU 实证 pthread/sem/recursive-mutex 全部通过
+  - 阶段 B（VSF 替换）等应用逻辑稳定后启动，预估 7-9 天
+- ✅ **GD32F4xx VSF HAL port 骨架**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO 驱动复用 GD32H7XX，RCU 时钟枚举已映射
+- ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 
 未开展：
 - 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
 - HIL 自动化（当前人工粘日志过渡）
 - `tooling/scripts/test_downstream.sh`（等多项目时再写）
-- GD32F4xx VSF HAL port（`vsf-addon/hal/driver/GigaDevice/GD32F4xx/`——flybox 触发，阶段 B 启动时做）
+- GD32F4xx USART/SPI/I2C/Flash HAL 驱动（阶段 B 启动时按需补）
 
 ## 下一步触发点（Sprint 0 已封版）
 

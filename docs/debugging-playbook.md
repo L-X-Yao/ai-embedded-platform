@@ -477,6 +477,83 @@ make olddefconfig && make context && make -j$(nproc)
 
 ---
 
+### [VSF] linux shell 初始化：pthread_create 直接挂死
+
+**错误**：调用 `pthread_create` 无任何输出，程序挂死。
+
+**原因**：未调用 `vsf_linux_init()` 初始化 linux shell 的进程模型。pthread 依赖 linux 进程上下文（PID、线程列表、fd 表），裸调必挂。
+
+**修**：在 `VSF_USER_ENTRY` 中先调 `vsf_linux_init(&stream)`，提供 stdio 流。应用代码必须作为 linux 进程运行（通过 `busybox_bind(VSF_LINUX_CFG_BIN_PATH "/init", app_main)` 注册）。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
+### [VSF] linux shell：vsf_linux_init 返回但 init 进程不启动
+
+**错误**：`vsf_linux_init` 返回 0，但注册的 init 进程永远不执行。
+
+**原因**：`VSF_USER_ENTRY` return 后主线程结束，idle 循环不处理事件队列。linux 内核进程无法被调度。
+
+**修**：主线程不要 return，改为 `while(1) { vsf_thread_delay_ms(1000); }` 持续让出 CPU。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
+### [VSF] linux shell：init 路径必须用 VSF_LINUX_CFG_BIN_PATH
+
+**错误**：`busybox_bind("/sbin/init", ...)` 后 init 不启动，打印 "linux: missing init?"。
+
+**原因**：VSF 内核进程调 `execlp(VSF_LINUX_CFG_BIN_PATH "/init", ...)` 查找 init。默认 `VSF_LINUX_CFG_BIN_PATH = "/bin"`，所以路径是 `/bin/init`，不是 `/sbin/init`。
+
+**修**：`busybox_bind(VSF_LINUX_CFG_BIN_PATH "/init", app_main)`。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
+### [VSF] linux shell：busybox_install() 在 mps2-an500 上挂死
+
+**错误**：`busybox_install()` 调用后不返回，程序停在此处。
+
+**原因**：未排查根因（可能依赖终端或 FS 子系统）。flybox 不需要 busybox shell。
+
+**修**：跳过 `busybox_install()`，直接 `busybox_bind()` 注册 init 入口。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
+### [VSF] linux shell：VSF_USE_FS + VSF_USE_MAL 是硬依赖
+
+**错误**：`#error VSF_USE_FS MUST be enabled to use fs in linux`。
+
+**原因**：linux shell 内部依赖 VFS（fd 表、mount 等）。VFS 又依赖 MAL（block device 抽象）。
+
+**修**：`vsf_usr_cfg.h` 加 `#define VSF_USE_FS ENABLED` + `#define VSF_USE_MAL ENABLED`。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
+### [VSF] linux shell：newlib 类型冲突（clock_t / off_t）
+
+**错误**：`error: unknown type name 'clock_t'` 或 `conflicting types for 'off_t'`。
+
+**原因**：arm-none-eabi-gcc 的 newlib 定义了 `clock_t`/`off_t`，VSF linux shell 也定义了，两者冲突。
+
+**修**：启用 VSF 自带的 simple_libc 替代 newlib 的冲突部分：
+```c
+#define VSF_LINUX_USE_SIMPLE_LIBC    ENABLED
+#define VSF_LINUX_CFG_RELATIVE_PATH  ENABLED
+```
+CMake 中加 `set(VSF_LINUX_USE_SIMPLE_LIBC 1)`。
+
+**发现于**：flybox 迁移预研 / 2026-04-24
+
+---
+
 ## 模板：新坑记录
 
 ```markdown
