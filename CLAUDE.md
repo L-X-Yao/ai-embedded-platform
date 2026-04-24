@@ -228,9 +228,9 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 8 个 ADR（平台决策历史）
 - ✅ tooling/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
-- ✅ Claude Code 自动记忆 8 条（用户背景 + 战略决策 + 5 条 feedback）
+- ✅ Claude Code 自动记忆（用户背景 + 战略决策 + feedback）
 - ✅ 历史评估归档 `_eval/`
-- ✅ git 仓库（13 commits，vsf/ vendored 不 fork）
+- ✅ git 仓库（vsf/ vendored 不 fork）
 - ✅ **第一个 wheel：`wheels/primitives/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
 - ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
 - ✅ **VSF SIM 投资期探索 2 轮（2026-04-22 日 / 晚）**：(1) linux64 kernel-only 路径证伪（scaffold `tooling/experiments/vsf-tryouts/kernel_test/` 保留作 triage 基线，见 ADR-008）；(2) mps2-an500 bare-metal 首选路径**实证跑通**（scaffold `tooling/experiments/vsf-tryouts/mps2_bare/`，QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 下 user_main 正常调度 + semihosting probe 输出 + exit 42 全通）；ADR-008 选项 C 从"选了但没验证"升级为 first-class；debugging-playbook 新增两组 canonical checklist（mps2 首选 + linux64 triage）共 10 条坑
@@ -244,7 +244,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 
 ## 下一步触发点（Sprint 0 已封版）
 
-**无真实项目触发前不改 `docs/`**。继续 polish 文档 ROI 为负（规则未经项目检验 + 文档-代码比例已严重倒挂：~2000 行文档 vs 1 个 draft wheel）。
+**无真实项目触发前不改 `docs/`**。继续 polish 文档 ROI 为负（规则未经项目检验 + 文档-代码比例已严重倒挂：~2000 行文档 vs 1 个 candidate wheel）。
 
 解冻条件（触发就开工，未触发就别动文档）：
 
