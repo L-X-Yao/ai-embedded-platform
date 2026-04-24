@@ -158,9 +158,9 @@
 #define VSF_HW_FLASH0_IRQN              FMC_IRQn
 #define VSF_HW_FLASH0_IRQHandler        FMC_IRQHandler
 
-// SPI: 6 units (SPI0/3/4/5 on APB2, SPI1/2 on APB1)
+// SPI: GD32F405 has SPI0/1/2 (SPI3/4/5 only on GD32F450+)
 // Flybox uses: SPI1 (W25Q64 NOR flash, PB12-15)
-#define VSF_HW_SPI_COUNT                6
+#define VSF_HW_SPI_COUNT                3
 
 #ifndef VSF_HW_SPI0_PCLK_HZ
 #   define VSF_HW_SPI0_PCLK_HZ         84000000U
@@ -188,33 +188,6 @@
 #define VSF_HW_SPI2_RST                VSF_HW_RST_SPI2
 #define VSF_HW_SPI2_IRQN               SPI2_IRQn
 #define VSF_HW_SPI2_IRQHandler         SPI2_IRQHandler
-
-#ifndef VSF_HW_SPI3_PCLK_HZ
-#   define VSF_HW_SPI3_PCLK_HZ         84000000U
-#endif
-#define VSF_HW_SPI3_REG_BASE           SPI3
-#define VSF_HW_SPI3_EN                 VSF_HW_EN_SPI3
-#define VSF_HW_SPI3_RST                VSF_HW_RST_SPI3
-#define VSF_HW_SPI3_IRQN               SPI3_IRQn
-#define VSF_HW_SPI3_IRQHandler         SPI3_IRQHandler
-
-#ifndef VSF_HW_SPI4_PCLK_HZ
-#   define VSF_HW_SPI4_PCLK_HZ         84000000U
-#endif
-#define VSF_HW_SPI4_REG_BASE           SPI4
-#define VSF_HW_SPI4_EN                 VSF_HW_EN_SPI4
-#define VSF_HW_SPI4_RST                VSF_HW_RST_SPI4
-#define VSF_HW_SPI4_IRQN               SPI4_IRQn
-#define VSF_HW_SPI4_IRQHandler         SPI4_IRQHandler
-
-#ifndef VSF_HW_SPI5_PCLK_HZ
-#   define VSF_HW_SPI5_PCLK_HZ         84000000U
-#endif
-#define VSF_HW_SPI5_REG_BASE           SPI5
-#define VSF_HW_SPI5_EN                 VSF_HW_EN_SPI5
-#define VSF_HW_SPI5_RST                VSF_HW_RST_SPI5
-#define VSF_HW_SPI5_IRQN               SPI5_IRQn
-#define VSF_HW_SPI5_IRQHandler         SPI5_IRQHandler
 
 // I2C: 3 units (all on APB1)
 // Flybox uses: I2C1 (QMI8658A IMU, PB10/PB11, 400kHz)

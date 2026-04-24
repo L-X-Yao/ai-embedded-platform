@@ -48,7 +48,7 @@ typedef enum vsf_i2c_mode_t {
 
     VSF_I2C_SPEED_STANDARD_MODE         = (0 << 1),
     VSF_I2C_SPEED_FAST_MODE             = (1 << 1),
-    VSF_I2C_SPEED_FAST_PLUS_MODE        = (2 << 1),
+    VSF_I2C_SPEED_FAST_MODE_PLUS        = (2 << 1),
     VSF_I2C_SPEED_HIGH_SPEED_MODE       = (3 << 1),
 
     VSF_I2C_ADDR_7_BITS                 = (0 << 4),
@@ -57,7 +57,7 @@ typedef enum vsf_i2c_mode_t {
     __VSF_HW_I2C_MODE_MASK              = VSF_I2C_MODE_MASTER
                                         | (3 << 1)
                                         | VSF_I2C_ADDR_10_BITS,
-    __VSF_HW_I2C_NOT_SUPPORT_MASK       = VSF_I2C_SPEED_FAST_PLUS_MODE
+    __VSF_HW_I2C_NOT_SUPPORT_MASK       = VSF_I2C_SPEED_FAST_MODE_PLUS
                                         | VSF_I2C_SPEED_HIGH_SPEED_MODE,
 } vsf_i2c_mode_t;
 
@@ -69,6 +69,8 @@ typedef enum vsf_i2c_cmd_t {
     VSF_I2C_CMD_STOP                    = (1 << 2),
     VSF_I2C_CMD_RESTART                 = (1 << 3),
     VSF_I2C_CMD_NO_START                = (0 << 1),
+    VSF_I2C_CMD_NO_STOP                 = (0 << 2),
+    VSF_I2C_CMD_NO_RESTART              = (0 << 3),
 
     VSF_I2C_CMD_7_BITS                  = (0 << 4),
     VSF_I2C_CMD_10_BITS                 = (1 << 4),
@@ -88,8 +90,18 @@ typedef enum vsf_i2c_irq_mask_t {
     VSF_I2C_IRQ_MASK_MASTER_ADDRESS_NACK        = (1 << 4),
     VSF_I2C_IRQ_MASK_MASTER_NACK_DETECT         = (1 << 5),
 
+    VSF_I2C_IRQ_MASK_MASTER_TX_NACK_DETECT      = (1 << 6),
     VSF_I2C_IRQ_MASK_MASTER_STARTED             = (1 << 10),
     VSF_I2C_IRQ_MASK_MASTER_STOPPED             = (1 << 11),
+    VSF_I2C_IRQ_MASK_MASTER_START_OR_RESTART_DETECT = (1 << 12),
+    VSF_I2C_IRQ_MASK_MASTER_STOP_DETECT         = (1 << 13),
+
+    // slave mode (not implemented, required by template)
+    VSF_I2C_IRQ_MASK_SLAVE_START_OR_RESTART_DETECT = (1 << 16),
+    VSF_I2C_IRQ_MASK_SLAVE_STOP_DETECT           = (1 << 17),
+    VSF_I2C_IRQ_MASK_SLAVE_TX                    = (1 << 18),
+    VSF_I2C_IRQ_MASK_SLAVE_RX                    = (1 << 19),
+    VSF_I2C_IRQ_MASK_SLAVE_TRANSFER_COMPLETE     = (1 << 20),
 
     __VSF_HW_I2C_IRQ_MASK              = VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE
                                         | VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST

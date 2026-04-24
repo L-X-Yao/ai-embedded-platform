@@ -220,8 +220,8 @@ vsf_spi_capability_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_capability)(
 ) {
     return (vsf_spi_capability_t) {
         .irq_mask                   = __VSF_HW_SPI_IRQ_MASK,
-        .support_hw_cs              = 0,
-        .support_sw_cs              = 1,
+        .support_hardware_cs              = 0,
+        .support_software_cs              = 1,
         .cs_count                   = 1,
         .max_clock_hz               = 0,
         .min_clock_hz               = 0,
@@ -246,7 +246,7 @@ static void VSF_MCONNECT(__, VSF_SPI_CFG_IMP_PREFIX, _spi_irqhandler)(
         irq_mask |= VSF_SPI_IRQ_MASK_TX;
     }
     if ((stat & SPI_STAT_RXORERR) && (ctl1 & SPI_CTL1_ERRIE)) {
-        irq_mask |= VSF_SPI_IRQ_MASK_OVERFLOW_ERR;
+        irq_mask |= VSF_SPI_IRQ_MASK_RX_OVERFLOW_ERR;
         volatile uint32_t __dummy = SPI_DATA(reg);
         (void)__dummy;
         (void)SPI_STAT(reg);

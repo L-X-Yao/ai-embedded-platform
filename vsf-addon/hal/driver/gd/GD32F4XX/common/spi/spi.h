@@ -102,14 +102,13 @@ typedef enum vsf_spi_irq_mask_t {
     // 7: TBEIE(7) in SPI_CTL1
     VSF_SPI_IRQ_MASK_TX                 = (1 << 7),
 
-    VSF_SPI_IRQ_MASK_TX_CPL             = (0),
-    VSF_SPI_IRQ_MASK_CPL                = (0),
-    VSF_SPI_IRQ_MASK_RX_CPL             = (0),
-    VSF_SPI_IRQ_MASK_OVERFLOW_ERR       = (1 << 5),
+    VSF_SPI_IRQ_MASK_TX_CPL             = (1 << 16),
+    VSF_SPI_IRQ_MASK_RX_CPL             = (1 << 17),
+    VSF_SPI_IRQ_MASK_RX_OVERFLOW_ERR    = (1 << 5),
 
     __VSF_HW_SPI_IRQ_MASK               = VSF_SPI_IRQ_MASK_RX
                                         | VSF_SPI_IRQ_MASK_TX
-                                        | VSF_SPI_IRQ_MASK_OVERFLOW_ERR,
+                                        | VSF_SPI_IRQ_MASK_RX_OVERFLOW_ERR,
 } vsf_spi_irq_mask_t;
 
 /*============================ PROTOTYPES ====================================*/
