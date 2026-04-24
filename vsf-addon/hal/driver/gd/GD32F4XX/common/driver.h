@@ -32,6 +32,7 @@
 #   include "hal/driver/common/template/vsf_template_hal_driver.h"
 
 #   include "../common/gpio/gpio.h"
+#   include "../common/usart/usart.h"
 
 /*============================ MACROS ========================================*/
 /*============================ MACROFIED FUNCTIONS ===========================*/
@@ -48,6 +49,14 @@
 #   define VSF_GPIO_CFG_DEC_PREFIX                          vsf_hw
 #   define VSF_GPIO_CFG_DEC_UPCASE_PREFIX                   VSF_HW
 #   include "hal/driver/common/gpio/gpio_template.h"
+#endif
+
+#if VSF_HAL_USE_USART == ENABLED
+#   include "hal/driver/common/template/vsf_template_usart.h"
+
+#   define VSF_USART_CFG_DEC_PREFIX                         vsf_hw
+#   define VSF_USART_CFG_DEC_UPCASE_PREFIX                  VSF_HW
+#   include "hal/driver/common/usart/usart_template.h"
 #endif
 
 #endif      // __HAL_DRIVER_GIGADEVICE_GD32F4XX_H__

@@ -14,7 +14,7 @@ GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 | 外设 | 状态 | 来源 | 说明 |
 |------|------|------|------|
 | GPIO | draft | 复用 GD32H7XX | 寄存器布局完全一致 |
-| USART | TODO | — | Flybox 需要 USART0 + USART1(DMA) |
+| USART | draft | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
 | SPI | TODO | — | Flybox 需要 SPI1 (W25Q64) |
 | I2C | TODO | — | Flybox 需要 I2C1 (QMI8658A) |
 | Flash (FMC) | TODO | — | Flybox 需要 OTA A/B slot 操作 |
@@ -36,6 +36,7 @@ GD32F4XX/
 │   ├── common.h            RCU 时钟/复位 region 枚举
 │   ├── driver.h            VSF 模板实例化入口
 │   ├── gpio/               GPIO 驱动（复用 GD32H7XX 逻辑）
+│   ├── usart/              USART 驱动（改写自 GD32H7XX，适配 F4XX 寄存器）
 │   └── vendor/             GD32F4xx 官方外设库头文件（需手动放置）
 └── README.md               本文件
 ```

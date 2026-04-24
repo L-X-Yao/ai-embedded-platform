@@ -85,37 +85,65 @@
 
 // USART: 6 units (USART0/1/2/5 sync, UART3/4 async-only)
 // Flybox uses: USART0 (debug PA9/PA10), USART1 (Air780EG PA2/PA3)
+//
+// PCLK_HZ: peripheral clock for baud rate calculation.
+// Defaults assume 168MHz HCLK, APB2=/2 (84MHz), APB1=/4 (42MHz).
+// Override in project vsf_usr_cfg.h if using different clock configuration.
 #define VSF_HW_USART_COUNT              6
+
+#ifndef VSF_HW_USART0_PCLK_HZ
+#   define VSF_HW_USART0_PCLK_HZ       84000000U
+#endif
 #define VSF_HW_USART0_REG_BASE         USART0
 #define VSF_HW_USART0_EN               VSF_HW_EN_USART0
 #define VSF_HW_USART0_RST              VSF_HW_RST_USART0
 #define VSF_HW_USART0_SYNC             true
 #define VSF_HW_USART0_IRQN             USART0_IRQn
 #define VSF_HW_USART0_IRQHandler       USART0_IRQHandler
+
+#ifndef VSF_HW_USART1_PCLK_HZ
+#   define VSF_HW_USART1_PCLK_HZ       42000000U
+#endif
 #define VSF_HW_USART1_REG_BASE         USART1
 #define VSF_HW_USART1_EN               VSF_HW_EN_USART1
 #define VSF_HW_USART1_RST              VSF_HW_RST_USART1
 #define VSF_HW_USART1_SYNC             true
 #define VSF_HW_USART1_IRQN             USART1_IRQn
 #define VSF_HW_USART1_IRQHandler       USART1_IRQHandler
+
+#ifndef VSF_HW_USART2_PCLK_HZ
+#   define VSF_HW_USART2_PCLK_HZ       42000000U
+#endif
 #define VSF_HW_USART2_REG_BASE         USART2
 #define VSF_HW_USART2_EN               VSF_HW_EN_USART2
 #define VSF_HW_USART2_RST              VSF_HW_RST_USART2
 #define VSF_HW_USART2_SYNC             true
 #define VSF_HW_USART2_IRQN             USART2_IRQn
 #define VSF_HW_USART2_IRQHandler       USART2_IRQHandler
+
+#ifndef VSF_HW_USART3_PCLK_HZ
+#   define VSF_HW_USART3_PCLK_HZ       42000000U
+#endif
 #define VSF_HW_USART3_REG_BASE         UART3
 #define VSF_HW_USART3_EN               VSF_HW_EN_UART3
 #define VSF_HW_USART3_RST              VSF_HW_RST_UART3
 #define VSF_HW_USART3_SYNC             false
 #define VSF_HW_USART3_IRQN             UART3_IRQn
 #define VSF_HW_USART3_IRQHandler       UART3_IRQHandler
+
+#ifndef VSF_HW_USART4_PCLK_HZ
+#   define VSF_HW_USART4_PCLK_HZ       42000000U
+#endif
 #define VSF_HW_USART4_REG_BASE         UART4
 #define VSF_HW_USART4_EN               VSF_HW_EN_UART4
 #define VSF_HW_USART4_RST              VSF_HW_RST_UART4
 #define VSF_HW_USART4_SYNC             false
 #define VSF_HW_USART4_IRQN             UART4_IRQn
 #define VSF_HW_USART4_IRQHandler       UART4_IRQHandler
+
+#ifndef VSF_HW_USART5_PCLK_HZ
+#   define VSF_HW_USART5_PCLK_HZ       84000000U
+#endif
 #define VSF_HW_USART5_REG_BASE         USART5
 #define VSF_HW_USART5_EN               VSF_HW_EN_USART5
 #define VSF_HW_USART5_RST              VSF_HW_RST_USART5
