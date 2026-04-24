@@ -72,9 +72,9 @@ ai-embedded-platform/
 │   ├── philosophy.md               10/90 愿景
 │   ├── wheel-contract.md           轮子合格定义
 │   ├── api-conventions.md          跨 wheel 命名/错误/内存/线程约定
-│   ├── ai-workflow.md              10 类任务标准路径
+│   ├── ai-workflow.md              11 类任务标准路径
 │   ├── debugging-playbook.md       踩坑指南 + VSF 数据结构速查
-│   └── adr/                        7 个架构决策记录
+│   └── adr/                        8 个架构决策记录
 ├── vsf/                            上游源码（干净，不直接改）
 ├── vsf-addon/                      新增代码（新 MCU port / 新组件）
 ├── wheels/

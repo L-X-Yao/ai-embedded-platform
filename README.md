@@ -36,11 +36,12 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 cd /mnt/d/temp/project/ai-embedded-platform
 
 # 跑 log wheel 测试（当前唯一 wheel）
-cd wheels/primitives/log && mkdir -p build && cd build
-cmake .. && make && ./test_log
+cd wheels/primitives/log
+cmake -GNinja -S . -B build && cmake --build build
+./build/log_test
 
 # pytest 回归
-cd wheels/primitives/log && pytest -v
+python3 -m pytest test_log.py -v
 ```
 
 ## 验证路径
@@ -60,6 +61,6 @@ linux64 kernel-only 路径已证伪，保留 triage 用途。详见 ADR-008。
 | `CLAUDE.md` | AI 工作指令（零号铁律、commit 规范、任务流程） |
 | `docs/philosophy.md` | 10/90 人-AI 分工愿景 |
 | `docs/wheel-contract.md` | 轮子合格定义 + 升级流程 |
-| `docs/ai-workflow.md` | 10 类任务标准路径 |
+| `docs/ai-workflow.md` | 11 类任务标准路径 |
 | `docs/debugging-playbook.md` | 踩坑指南 + mps2 checklist |
 | `docs/adr/` | 8 个架构决策记录 |
