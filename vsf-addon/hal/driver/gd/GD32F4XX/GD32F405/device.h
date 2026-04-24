@@ -158,6 +158,102 @@
 #define VSF_HW_FLASH0_IRQN              FMC_IRQn
 #define VSF_HW_FLASH0_IRQHandler        FMC_IRQHandler
 
+// SPI: 6 units (SPI0/3/4/5 on APB2, SPI1/2 on APB1)
+// Flybox uses: SPI1 (W25Q64 NOR flash, PB12-15)
+#define VSF_HW_SPI_COUNT                6
+
+#ifndef VSF_HW_SPI0_PCLK_HZ
+#   define VSF_HW_SPI0_PCLK_HZ         84000000U
+#endif
+#define VSF_HW_SPI0_REG_BASE           SPI0
+#define VSF_HW_SPI0_EN                 VSF_HW_EN_SPI0
+#define VSF_HW_SPI0_RST                VSF_HW_RST_SPI0
+#define VSF_HW_SPI0_IRQN               SPI0_IRQn
+#define VSF_HW_SPI0_IRQHandler         SPI0_IRQHandler
+
+#ifndef VSF_HW_SPI1_PCLK_HZ
+#   define VSF_HW_SPI1_PCLK_HZ         42000000U
+#endif
+#define VSF_HW_SPI1_REG_BASE           SPI1
+#define VSF_HW_SPI1_EN                 VSF_HW_EN_SPI1
+#define VSF_HW_SPI1_RST                VSF_HW_RST_SPI1
+#define VSF_HW_SPI1_IRQN               SPI1_IRQn
+#define VSF_HW_SPI1_IRQHandler         SPI1_IRQHandler
+
+#ifndef VSF_HW_SPI2_PCLK_HZ
+#   define VSF_HW_SPI2_PCLK_HZ         42000000U
+#endif
+#define VSF_HW_SPI2_REG_BASE           SPI2
+#define VSF_HW_SPI2_EN                 VSF_HW_EN_SPI2
+#define VSF_HW_SPI2_RST                VSF_HW_RST_SPI2
+#define VSF_HW_SPI2_IRQN               SPI2_IRQn
+#define VSF_HW_SPI2_IRQHandler         SPI2_IRQHandler
+
+#ifndef VSF_HW_SPI3_PCLK_HZ
+#   define VSF_HW_SPI3_PCLK_HZ         84000000U
+#endif
+#define VSF_HW_SPI3_REG_BASE           SPI3
+#define VSF_HW_SPI3_EN                 VSF_HW_EN_SPI3
+#define VSF_HW_SPI3_RST                VSF_HW_RST_SPI3
+#define VSF_HW_SPI3_IRQN               SPI3_IRQn
+#define VSF_HW_SPI3_IRQHandler         SPI3_IRQHandler
+
+#ifndef VSF_HW_SPI4_PCLK_HZ
+#   define VSF_HW_SPI4_PCLK_HZ         84000000U
+#endif
+#define VSF_HW_SPI4_REG_BASE           SPI4
+#define VSF_HW_SPI4_EN                 VSF_HW_EN_SPI4
+#define VSF_HW_SPI4_RST                VSF_HW_RST_SPI4
+#define VSF_HW_SPI4_IRQN               SPI4_IRQn
+#define VSF_HW_SPI4_IRQHandler         SPI4_IRQHandler
+
+#ifndef VSF_HW_SPI5_PCLK_HZ
+#   define VSF_HW_SPI5_PCLK_HZ         84000000U
+#endif
+#define VSF_HW_SPI5_REG_BASE           SPI5
+#define VSF_HW_SPI5_EN                 VSF_HW_EN_SPI5
+#define VSF_HW_SPI5_RST                VSF_HW_RST_SPI5
+#define VSF_HW_SPI5_IRQN               SPI5_IRQn
+#define VSF_HW_SPI5_IRQHandler         SPI5_IRQHandler
+
+// I2C: 3 units (all on APB1)
+// Flybox uses: I2C1 (QMI8658A IMU, PB10/PB11, 400kHz)
+// Note: I2C has separate EV and ER interrupts
+#define VSF_HW_I2C_COUNT                3
+
+#ifndef VSF_HW_I2C0_PCLK_HZ
+#   define VSF_HW_I2C0_PCLK_HZ         42000000U
+#endif
+#define VSF_HW_I2C0_REG_BASE           I2C0
+#define VSF_HW_I2C0_EN                 VSF_HW_EN_I2C0
+#define VSF_HW_I2C0_RST                VSF_HW_RST_I2C0
+#define VSF_HW_I2C0_EV_IRQN            I2C0_EV_IRQn
+#define VSF_HW_I2C0_EV_IRQHandler      I2C0_EV_IRQHandler
+#define VSF_HW_I2C0_ER_IRQN            I2C0_ER_IRQn
+#define VSF_HW_I2C0_ER_IRQHandler      I2C0_ER_IRQHandler
+
+#ifndef VSF_HW_I2C1_PCLK_HZ
+#   define VSF_HW_I2C1_PCLK_HZ         42000000U
+#endif
+#define VSF_HW_I2C1_REG_BASE           I2C1
+#define VSF_HW_I2C1_EN                 VSF_HW_EN_I2C1
+#define VSF_HW_I2C1_RST                VSF_HW_RST_I2C1
+#define VSF_HW_I2C1_EV_IRQN            I2C1_EV_IRQn
+#define VSF_HW_I2C1_EV_IRQHandler      I2C1_EV_IRQHandler
+#define VSF_HW_I2C1_ER_IRQN            I2C1_ER_IRQn
+#define VSF_HW_I2C1_ER_IRQHandler      I2C1_ER_IRQHandler
+
+#ifndef VSF_HW_I2C2_PCLK_HZ
+#   define VSF_HW_I2C2_PCLK_HZ         42000000U
+#endif
+#define VSF_HW_I2C2_REG_BASE           I2C2
+#define VSF_HW_I2C2_EN                 VSF_HW_EN_I2C2
+#define VSF_HW_I2C2_RST                VSF_HW_RST_I2C2
+#define VSF_HW_I2C2_EV_IRQN            I2C2_EV_IRQn
+#define VSF_HW_I2C2_EV_IRQHandler      I2C2_EV_IRQHandler
+#define VSF_HW_I2C2_ER_IRQN            I2C2_ER_IRQn
+#define VSF_HW_I2C2_ER_IRQHandler      I2C2_ER_IRQHandler
+
 /*============================ MACROFIED FUNCTIONS ===========================*/
 /*============================ TYPES =========================================*/
 /*============================ GLOBAL VARIABLES ==============================*/

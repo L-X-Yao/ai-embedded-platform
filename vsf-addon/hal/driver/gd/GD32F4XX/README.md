@@ -15,9 +15,9 @@ GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 |------|------|------|------|
 | GPIO | draft | 复用 GD32H7XX | 寄存器布局完全一致 |
 | USART | draft | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
-| SPI | TODO | — | Flybox 需要 SPI1 (W25Q64) |
-| I2C | TODO | — | Flybox 需要 I2C1 (QMI8658A) |
-| Flash (FMC) | TODO | — | Flybox 需要 OTA A/B slot 操作 |
+| Flash (FMC) | draft | 改写自 GD32H7XX | 非均匀扇区(16K×4+64K+128K×7)，word 编程 |
+| SPI | draft | 从零编写 | Master/Slave 模式，8/16-bit，FIFO 轮询+中断 |
+| I2C | draft | 从零编写 | Master 事件驱动状态机(EV5/6/7/8)，EV+ER 双中断 |
 
 ## Why not VSF native?
 
@@ -37,6 +37,9 @@ GD32F4XX/
 │   ├── driver.h            VSF 模板实例化入口
 │   ├── gpio/               GPIO 驱动（复用 GD32H7XX 逻辑）
 │   ├── usart/              USART 驱动（改写自 GD32H7XX，适配 F4XX 寄存器）
+│   ├── flash/              Flash (FMC) 驱动（改写自 GD32H7XX，非均匀扇区）
+│   ├── spi/                SPI 驱动（从零编写，master + FIFO 轮询）
+│   ├── i2c/                I2C 驱动（从零编写，master 事件状态机）
 │   └── vendor/             GD32F4xx 官方外设库头文件（需手动放置）
 └── README.md               本文件
 ```

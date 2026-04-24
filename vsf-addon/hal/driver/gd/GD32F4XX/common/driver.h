@@ -33,6 +33,9 @@
 
 #   include "../common/gpio/gpio.h"
 #   include "../common/usart/usart.h"
+#   include "../common/flash/flash.h"
+#   include "../common/spi/spi.h"
+#   include "../common/i2c/i2c.h"
 
 /*============================ MACROS ========================================*/
 /*============================ MACROFIED FUNCTIONS ===========================*/
@@ -57,6 +60,30 @@
 #   define VSF_USART_CFG_DEC_PREFIX                         vsf_hw
 #   define VSF_USART_CFG_DEC_UPCASE_PREFIX                  VSF_HW
 #   include "hal/driver/common/usart/usart_template.h"
+#endif
+
+#if VSF_HAL_USE_FLASH == ENABLED
+#   include "hal/driver/common/template/vsf_template_flash.h"
+
+#   define VSF_FLASH_CFG_DEC_PREFIX                         vsf_hw
+#   define VSF_FLASH_CFG_DEC_UPCASE_PREFIX                  VSF_HW
+#   include "hal/driver/common/flash/flash_template.h"
+#endif
+
+#if VSF_HAL_USE_SPI == ENABLED
+#   include "hal/driver/common/template/vsf_template_spi.h"
+
+#   define VSF_SPI_CFG_DEC_PREFIX                           vsf_hw
+#   define VSF_SPI_CFG_DEC_UPCASE_PREFIX                    VSF_HW
+#   include "hal/driver/common/spi/spi_template.h"
+#endif
+
+#if VSF_HAL_USE_I2C == ENABLED
+#   include "hal/driver/common/template/vsf_template_i2c.h"
+
+#   define VSF_I2C_CFG_DEC_PREFIX                           vsf_hw
+#   define VSF_I2C_CFG_DEC_UPCASE_PREFIX                    VSF_HW
+#   include "hal/driver/common/i2c/i2c_template.h"
 #endif
 
 #endif      // __HAL_DRIVER_GIGADEVICE_GD32F4XX_H__
