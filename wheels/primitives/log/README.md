@@ -1,6 +1,6 @@
 # log
 
-**STATUS: draft**
+**STATUS: candidate**
 **Layer: L0 (primitives)**
 
 带等级 + 模块标签 + 多 sink + 编译期过滤的日志 wheel，封装在 `vsf_trace` 之上。
@@ -57,9 +57,11 @@ LOG_DEBUG("...");
 
 /* 运行时 */
 log_set_level(LOG_LEVEL_INFO);
+log_get_level();                     /* 查询当前运行时等级 */
 log_add_vsf_trace_sink();            /* 预置：路由到 vsf_trace 的 stream */
 log_add_stream_sink(&my_stream);     /* 任意 VSF stream */
-log_add_sink(my_sink_fn, ctx);       /* 自定义 */
+log_add_sink(my_sink_fn, ctx);       /* 自定义，返回 sink id */
+log_remove_sink(sink_id);            /* 移除已注册的 sink */
 log_set_time_fn(my_ms_fn);           /* NULL 可关时间戳 */
 ```
 
@@ -116,7 +118,7 @@ log_set_time_fn(my_ms_fn);           /* NULL 可关时间戳 */
 
 ## 测试状态
 
-- 单元测试（sim）：PASS（10/10 C 测试 + 3/3 pytest）
+- 单元测试（sim）：PASS（11/11 C 测试 + 4/4 pytest）
 - 硬件在环：N/A
 
 ## 用法示例
@@ -171,7 +173,7 @@ log_add_sink(my_net_sink, NULL);
 - 审批人：@user
 - 关键决策：采纳所有默认推荐（Q1-Q5 全按 AI 建议执行）
 
-## 升级到 candidate 前要做
+## 升级到 stable 前要做
 
 - [ ] 至少 1 个真项目使用过
 - [ ] README 补 "性能参考" 节（log_emit 耗时 / RAM 占用）
