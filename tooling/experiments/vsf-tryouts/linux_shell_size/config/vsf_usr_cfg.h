@@ -8,23 +8,25 @@
 #define VSF_KERNEL_CFG_ENTRY_IS_MAIN                    ENABLED
 #define VSF_SYSTIMER_FREQ                               25000000
 
+#define VSF_OS_CFG_MAIN_MODE                            VSF_OS_CFG_MAIN_MODE_THREAD
+#define VSF_OS_CFG_MAIN_STACK_SIZE                      4096
+
 // Kernel: EDA + thread + sync (mandatory for linux shell)
 #define VSF_KERNEL_CFG_EDA_SUPPORT_ON_TERMINATE         ENABLED
 #define VSF_KERNEL_CFG_EDA_SUPPORT_SUB_CALL             ENABLED
 #define VSF_KERNEL_CFG_EDA_SUPPORT_TIMER                ENABLED
 #define VSF_KERNEL_CFG_SUPPORT_THREAD                   ENABLED
+#define VSF_KERNEL_CFG_THREAD_SIGNAL                    ENABLED
 #define VSF_KERNEL_CFG_SUPPORT_SYNC                     ENABLED
 #define VSF_SYNC_CFG_SUPPORT_ISR                        ENABLED
 
 // OS config
 #define VSF_OS_CFG_PRIORITY_NUM                         1
 #define VSF_OS_CFG_ADD_EVTQ_TO_IDLE                     ENABLED
-#define VSF_OS_CFG_MAIN_MODE                            VSF_OS_CFG_MAIN_MODE_THREAD
-#define VSF_OS_CFG_MAIN_STACK_SIZE                      4096
 
 // Heap + stream + FS (mandatory for linux shell)
 #define VSF_USE_HEAP                                    ENABLED
-#define VSF_HEAP_SIZE                                   (16 * 1024)
+#define VSF_HEAP_SIZE                                   (48 * 1024)
 #define VSF_USE_SIMPLE_STREAM                           ENABLED
 #define VSF_USE_FS                                      ENABLED
 #define VSF_USE_MAL                                     ENABLED
@@ -41,8 +43,7 @@
 #define VSF_LINUX_CFG_SUPPORT_SEM                       ENABLED
 #define VSF_LINUX_CFG_SUPPORT_SIG                       ENABLED
 
-// Disable heavy subsystems
-#define VSF_LINUX_USE_BUSYBOX                           DISABLED
+// Disable heavy subsystems we don't need
 #define VSF_LINUX_USE_SOCKET                            DISABLED
 #define VSF_LINUX_USE_DRM                               DISABLED
 #define VSF_LINUX_USE_TERMINFO                          DISABLED
