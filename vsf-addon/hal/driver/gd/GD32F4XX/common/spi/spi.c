@@ -215,6 +215,24 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_get_transferred_count)(
     if (rx_count) *rx_count = 0;
 }
 
+vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_active)(
+    VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr,
+    uint_fast8_t index
+) {
+    VSF_HAL_ASSERT(NULL != spi_ptr);
+    (void)index;
+    return VSF_ERR_NONE;
+}
+
+vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_inactive)(
+    VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr,
+    uint_fast8_t index
+) {
+    VSF_HAL_ASSERT(NULL != spi_ptr);
+    (void)index;
+    return VSF_ERR_NONE;
+}
+
 vsf_spi_capability_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_capability)(
     VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr
 ) {

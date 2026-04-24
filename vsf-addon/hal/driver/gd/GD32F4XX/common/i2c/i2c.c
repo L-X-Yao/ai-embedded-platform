@@ -194,6 +194,46 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
     return VSF_ERR_NONE;
 }
 
+fsm_rt_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_fifo_transfer)(
+    VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr,
+    uint16_t address,
+    vsf_i2c_cmd_t cmd,
+    uint_fast16_t count,
+    uint8_t *buffer_ptr,
+    vsf_i2c_cmd_t *cur_cmd_ptr,
+    uint_fast16_t *offset_ptr
+) {
+    VSF_HAL_ASSERT(NULL != i2c_ptr);
+    return fsm_rt_err;
+}
+
+uint_fast16_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_slave_fifo_transfer)(
+    VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr,
+    bool transmit_or_receive,
+    uint_fast16_t count,
+    uint8_t *buffer_ptr
+) {
+    VSF_HAL_ASSERT(NULL != i2c_ptr);
+    return 0;
+}
+
+vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_slave_request)(
+    VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr,
+    bool transmit_or_receive,
+    uint_fast16_t count,
+    uint8_t *buffer_ptr
+) {
+    VSF_HAL_ASSERT(NULL != i2c_ptr);
+    return VSF_ERR_NOT_SUPPORT;
+}
+
+uint_fast16_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_slave_get_transferred_count)(
+    VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr
+) {
+    VSF_HAL_ASSERT(NULL != i2c_ptr);
+    return 0;
+}
+
 uint_fast16_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_get_transferred_count)(
     VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr
 ) {

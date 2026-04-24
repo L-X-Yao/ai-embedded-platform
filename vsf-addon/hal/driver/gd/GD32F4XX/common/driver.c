@@ -93,6 +93,15 @@ uint_fast8_t vsf_hw_clkrst_region_get_bit(uint32_t region)
 
 #include "hal/driver/common/swi/arm/vsf_swi_template.inc"
 
+/*============================ MISC =========================================*/
+
+VSF_CAL_WEAK(nvic_vector_table_set)
+void nvic_vector_table_set(uint32_t nvic_vict_tab, uint32_t offset)
+{
+    SCB->VTOR = nvic_vict_tab | (offset & 0x1FFFFF80U);
+    __DSB();
+}
+
 /*============================ DRIVER INIT ==================================*/
 
 VSF_CAL_WEAK(vsf_driver_init)
