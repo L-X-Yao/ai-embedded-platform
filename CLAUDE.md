@@ -246,6 +246,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
   - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
 - ✅ **GD32F4xx VSF HAL port 骨架**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO 驱动复用 GD32H7XX，RCU 时钟枚举已映射
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
+- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——log wheel debug/release 构建 + pytest，push/PR 自动触发，当前全绿
 
 未开展：
 - 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
