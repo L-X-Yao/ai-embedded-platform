@@ -32,7 +32,6 @@ AI 有"我写简单 C 比读 PLOOC 宏容易"的倾向，如果不强制约束�
 - `docs/wheel-contract.md` §1（零号铁律）
 - `docs/ai-workflow.md` 任务类型 1 第 2 步
 - `docs/debugging-playbook.md` VSF 数据结构速查表
-- `memory/feedback_always_grep_vsf_first.md`
 
 ### 速查表（记不住时查 debugging-playbook.md）
 
@@ -77,4 +76,3 @@ AI 新建 wheel 流程：
 
 - ADR-001（VSF 为基座，所以才有"原生优先"的意义）
 - `docs/wheel-contract.md` §1
-- `memory/feedback_always_grep_vsf_first.md`

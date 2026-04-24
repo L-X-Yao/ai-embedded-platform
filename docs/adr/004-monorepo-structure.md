@@ -45,8 +45,7 @@ ai-embedded-platform/    (整个私有 monorepo)
 ├── templates/           (项目模板)
 ├── projects/            (真实项目)
 ├── tooling/patches/     (对 vsf/ 的修改以 patch 形式)
-├── docs/                (平台文档)
-└── memory/              (AI 跨对话记忆)
+└── docs/                (平台文档)
 ```
 
 ### 为何不 fork VSF

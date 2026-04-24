@@ -49,7 +49,7 @@ HIL 当前是人工（见 ADR-002）——AI 生成粘贴模板 → 用户手烧
 更新：
 - `docs/debugging-playbook.md`（公共）
 - wheel 的 `README.md`（局部）
-- `memory/`（跨项目规律）
+- Claude Code 自动记忆（跨项目规律，由 Claude Code 管理，不在 repo 内）
 
 ### 5. 配置优先于代码
 
@@ -89,7 +89,6 @@ ai-embedded-platform/
 │   ├── patches/                    VSF 上游修改（patch 文件）
 │   ├── hil/                        硬件在环自动化（未来）
 │   └── scripts/                    通用工具脚本
-├── memory/                         AI 跨对话持久记忆
 └── _eval/                          评估历史遗留物
 ```
 
@@ -229,7 +228,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 8 个 ADR（平台决策历史）
 - ✅ tooling/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
-- ✅ memory 8 条（用户背景 + 战略决策 + 5 条 feedback）
+- ✅ Claude Code 自动记忆 8 条（用户背景 + 战略决策 + 5 条 feedback）
 - ✅ 历史评估归档 `_eval/`
 - ✅ git 仓库（13 commits，vsf/ vendored 不 fork）
 - ✅ **第一个 wheel：`wheels/primitives/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例

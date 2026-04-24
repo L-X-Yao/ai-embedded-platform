@@ -82,5 +82,5 @@
 ## 相关
 
 - ADR-007（VSF 永久基座决策）
-- `memory/project_rtos_comparison.md`（评估历史数据）
 - `docs/philosophy.md`（平台愿景）
+- RTOS 评估历史排序：NuttX > VSF > Zephyr（记录于 Claude Code 自动记忆）

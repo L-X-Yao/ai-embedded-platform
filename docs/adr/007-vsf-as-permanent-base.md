@@ -77,5 +77,4 @@
 ## 相关
 
 - ADR-001（VSF 为基座）
-- `memory/project_vsf_permanent_base.md`
 - `docs/wheel-contract.md` §6
