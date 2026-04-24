@@ -171,6 +171,7 @@ ai-embedded-platform/
 - `docs` — 文档改动（`docs/`、`CLAUDE.md`、`README.md`、各 wheel README）
 - `wheel` — wheel 代码或结构改动（不含其 README，那归 `docs`）
 - `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
+- `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
 
 ### scope（可选，与目录对齐）
 

@@ -1,0 +1,5 @@
+# GD32F4xx vendor library — third-party copyrighted code.
+# Obtain from GigaDevice SDK or copy from projects/flybox/third_party/.
+# See ../README.md for details.
+*
+!.gitignore

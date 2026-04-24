@@ -49,12 +49,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../vsf-addon/hal/driver/gd)
 
 ## 当前 addon 清单
 
-（暂无）
-
-添加 addon 后，更新本清单：
-
-```markdown
 | 路径 | 描述 | 状态 | 验证平台 |
 |------|------|------|---------|
-| hal/driver/gd/gd32e230 | GD32E230 MCU HAL port | draft | GD32E230C8T6 × 2026-xx-xx |
-```
+| hal/driver/gd/GD32F4XX | GD32F405 MCU HAL port (GPIO) | draft | GD32F405RGT6 — 待真机验证 |
