@@ -241,6 +241,9 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
   - 阶段 A（结构整合）完成
   - 阶段 B 预备完成：分层策略定（驱动=VSF 原生，应用=POSIX），QEMU 实证 pthread/sem/recursive-mutex 全部通过
   - 阶段 B（VSF 替换）等应用逻辑稳定后启动，预估 7-9 天
+- ✅ **第二个真实项目 `projects/drone_light/`**（无人机 LED 灯控，N32G003 裸机）
+  - 轻量整合完成：不做 VSF 迁移（30KB Flash 放不下），保持裸机
+  - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
 - ✅ **GD32F4xx VSF HAL port 骨架**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO 驱动复用 GD32H7XX，RCU 时钟枚举已映射
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 
