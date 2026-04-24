@@ -25,12 +25,12 @@ typedef struct {
     int          in_use;
 } log_sink_slot_t;
 
-static log_level_t      g_runtime_level = LOG_LEVEL_INFO;
+static volatile log_level_t g_runtime_level = LOG_LEVEL_INFO;
 static log_sink_slot_t  g_sinks[LOG_MAX_SINKS];
 
 /* forward decl so we can use it as static initializer below */
 static uint32_t default_time_ms(void);
-static uint32_t       (*g_time_fn)(void) = default_time_ms;  /* NULL => disabled */
+static uint32_t (* volatile g_time_fn)(void) = default_time_ms;
 
 /* Indexed by log_level_t value (0..4). */
 static const char LOG_LEVEL_CHAR[] = { 'N', 'E', 'W', 'I', 'D' };
@@ -136,9 +136,10 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     int rem = (int)sizeof(buf);
     int n;
 
-    /* Timestamp (skip if user disabled by setting NULL) */
-    if (g_time_fn) {
-        uint32_t ts = g_time_fn();
+    /* Snapshot volatile pointer once to avoid TOCTOU with log_set_time_fn() */
+    uint32_t (*time_fn)(void) = g_time_fn;
+    if (time_fn) {
+        uint32_t ts = time_fn();
         n = snprintf(buf + pos, (size_t)rem, "[%08u] ", (unsigned)ts);
         if (n > 0 && n < rem) { pos += n; rem -= n; }
     }

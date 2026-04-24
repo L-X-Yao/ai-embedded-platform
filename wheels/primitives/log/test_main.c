@@ -160,16 +160,6 @@ static void test_multi_sink(void) {
     capture_reset();
     log_set_level(LOG_LEVEL_DEBUG);
 
-    /* second capture buffer via a second sink */
-    static char second_buf[256] = {0};
-    static int  second_len = 0;
-    static int  second_calls = 0;
-
-    void (*second_fn)(void *, const char *, size_t) =
-        (void (*)(void *, const char *, size_t))
-        (uintptr_t)&second_buf;  /* placeholder to silence static analyzers */
-    (void)second_fn;
-
     /* use a simple local callback */
     struct second_ctx { int calls; char last[256]; };
     static struct second_ctx sctx;
@@ -191,7 +181,6 @@ static void test_multi_sink(void) {
     CHECK(strstr(sctx.last, "[multi]") != NULL, "second got module");
 
     log_remove_sink(sid);
-    (void)second_len;
     PASS();
 }
 
