@@ -99,7 +99,12 @@ uint_fast8_t vsf_hw_clkrst_region_get_bit(uint32_t region)
 VSF_CAL_WEAK(nvic_vector_table_set)
 void nvic_vector_table_set(uint32_t nvic_vict_tab, uint32_t offset)
 {
+#ifdef APP_SLOT_ADDR
+    // Bootloader already set VTOR to the correct slot; don't reset to flash base
+    SCB->VTOR = APP_SLOT_ADDR;
+#else
     SCB->VTOR = nvic_vict_tab | (offset & 0x1FFFFF80U);
+#endif
     __DSB();
 }
 
