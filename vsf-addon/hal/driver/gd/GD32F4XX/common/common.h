@@ -132,5 +132,11 @@ typedef enum vsf_hw_peripheral_en_t {
 /*============================ LOCAL VARIABLES ===============================*/
 /*============================ PROTOTYPES ====================================*/
 
+extern void vsf_hw_clkrst_region_set(uint32_t region, uint_fast8_t value);
+extern uint_fast8_t vsf_hw_clkrst_region_get(uint32_t region);
+extern void vsf_hw_clkrst_region_set_bit(uint32_t region);
+extern void vsf_hw_clkrst_region_clear_bit(uint32_t region);
+extern uint_fast8_t vsf_hw_clkrst_region_get_bit(uint32_t region);
+
 #endif      // __HAL_DRIVER_GIGADEVICE_GD32F4XX_COMMON_H__
 /* EOF */
