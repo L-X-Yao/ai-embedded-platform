@@ -175,6 +175,49 @@ static void test_reset(void)
     ASSERT_EQ(mock_regs[0x60], 0xB0, "reset register written");
 }
 
+static void test_read_negative(void)
+{
+    printf("test_read_negative\n");
+    mock_reset();
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_init(&mock_i2c, &c);
+
+    /* ax = -4096 (0xF000) → -1.0 G at ±8g (div=4096) */
+    mock_regs[0x35] = 0x00; mock_regs[0x36] = 0xF0;
+    mock_regs[0x37] = 0; mock_regs[0x38] = 0;
+    mock_regs[0x39] = 0; mock_regs[0x3A] = 0;
+    mock_regs[0x3B] = 0; mock_regs[0x3C] = 0;
+    mock_regs[0x3D] = 0; mock_regs[0x3E] = 0;
+    mock_regs[0x3F] = 0; mock_regs[0x40] = 0;
+
+    qmi8658a_data_t d;
+    qmi8658a_err_t e = qmi8658a_read(&mock_i2c, &d);
+    ASSERT_EQ(e, QMI8658A_OK, "read negative OK");
+    ASSERT_NEAR(d.ax, -1.0f, 0.01f, "ax = -1.0 G");
+}
+
+static void test_read_int16_extremes(void)
+{
+    printf("test_read_int16_extremes\n");
+    mock_reset();
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_init(&mock_i2c, &c);
+
+    /* ax = INT16_MAX (0x7FFF = 32767) → 32767/4096 ≈ 8.0 G */
+    mock_regs[0x35] = 0xFF; mock_regs[0x36] = 0x7F;
+    /* ay = INT16_MIN (0x8000 = -32768) → -32768/4096 = -8.0 G */
+    mock_regs[0x37] = 0x00; mock_regs[0x38] = 0x80;
+    mock_regs[0x39] = 0; mock_regs[0x3A] = 0;
+    mock_regs[0x3B] = 0; mock_regs[0x3C] = 0;
+    mock_regs[0x3D] = 0; mock_regs[0x3E] = 0;
+    mock_regs[0x3F] = 0; mock_regs[0x40] = 0;
+
+    qmi8658a_data_t d;
+    qmi8658a_read(&mock_i2c, &d);
+    ASSERT_NEAR(d.ax, 32767.0f / 4096.0f, 0.01f, "ax = INT16_MAX / div");
+    ASSERT_NEAR(d.ay, -32768.0f / 4096.0f, 0.01f, "ay = INT16_MIN / div");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -185,6 +228,8 @@ int main(void)
     test_init_i2c_fail();
     test_read_data();
     test_read_i2c_fail();
+    test_read_negative();
+    test_read_int16_extremes();
     test_config_range();
     test_reset();
 

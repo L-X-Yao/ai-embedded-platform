@@ -94,12 +94,12 @@ qmi8658a_err_t qmi8658a_read(const qmi8658a_i2c_t *i2c,
     qmi8658a_err_t e = rd(i2c, REG_AX_L, raw, 12);
     if (e != QMI8658A_OK) return e;
 
-    out->ax = (float)((int16_t)(raw[1]  << 8 | raw[0]))  / s_acc_div;
-    out->ay = (float)((int16_t)(raw[3]  << 8 | raw[2]))  / s_acc_div;
-    out->az = (float)((int16_t)(raw[5]  << 8 | raw[4]))  / s_acc_div;
-    out->gx = (float)((int16_t)(raw[7]  << 8 | raw[6]))  / s_gyr_div;
-    out->gy = (float)((int16_t)(raw[9]  << 8 | raw[8]))  / s_gyr_div;
-    out->gz = (float)((int16_t)(raw[11] << 8 | raw[10])) / s_gyr_div;
+    out->ax = (float)((int16_t)((uint16_t)raw[1]  << 8 | raw[0]))  / s_acc_div;
+    out->ay = (float)((int16_t)((uint16_t)raw[3]  << 8 | raw[2]))  / s_acc_div;
+    out->az = (float)((int16_t)((uint16_t)raw[5]  << 8 | raw[4]))  / s_acc_div;
+    out->gx = (float)((int16_t)((uint16_t)raw[7]  << 8 | raw[6]))  / s_gyr_div;
+    out->gy = (float)((int16_t)((uint16_t)raw[9]  << 8 | raw[8]))  / s_gyr_div;
+    out->gz = (float)((int16_t)((uint16_t)raw[11] << 8 | raw[10])) / s_gyr_div;
 
     return QMI8658A_OK;
 }
