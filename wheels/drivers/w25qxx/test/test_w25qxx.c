@@ -236,19 +236,62 @@ static void test_read_status(void)
     ASSERT_EQ(sr & 0x01, 0, "not busy");
 }
 
+static void test_init_null_jedec_out(void)
+{
+    printf("test_init_null_jedec_out\n");
+    mock_reset();
+    w25qxx_err_t e = w25qxx_init(&mock_spi, NULL);
+    ASSERT_EQ(e, W25QXX_OK, "init with NULL jedec_id_out");
+}
+
+static void test_page_program_full_page(void)
+{
+    printf("test_page_program_full_page\n");
+    mock_reset();
+    uint8_t data[256];
+    for (int i = 0; i < 256; i++) data[i] = (uint8_t)i;
+    w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0x100, data, 256);
+    ASSERT_EQ(e, W25QXX_OK, "full page program OK");
+    ASSERT_EQ(mock_mem[0x100], 0x00, "first byte");
+    ASSERT_EQ(mock_mem[0x1FF], 0xFF, "last byte");
+    ASSERT_EQ(mock_mem[0x200], 0xFF, "next page untouched");
+}
+
+static void test_nor_program_semantics(void)
+{
+    printf("test_nor_program_semantics\n");
+    mock_reset();
+    /* Write 0x0F first */
+    uint8_t d1 = 0x0F;
+    w25qxx_page_program(&mock_spi, 0x300, &d1, 1);
+    ASSERT_EQ(mock_mem[0x300], 0x0F, "first write");
+
+    /* Write 0xF0 on top — NOR can only clear bits, not set them */
+    uint8_t d2 = 0xF0;
+    w25qxx_page_program(&mock_spi, 0x300, &d2, 1);
+    ASSERT_EQ(mock_mem[0x300], 0x00, "NOR: 0x0F & 0xF0 = 0x00");
+
+    /* Erase restores 0xFF */
+    w25qxx_sector_erase(&mock_spi, 0x300);
+    ASSERT_EQ(mock_mem[0x300], 0xFF, "erase restores 0xFF");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
 {
     test_init();
     test_init_bad_id();
+    test_init_null_jedec_out();
     test_read();
     test_page_program();
+    test_page_program_full_page();
     test_page_program_cross_boundary();
     test_sector_erase();
     test_chip_erase();
     test_read_write_cycle();
     test_read_status();
+    test_nor_program_semantics();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
