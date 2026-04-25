@@ -172,11 +172,13 @@ ai-embedded-platform/
 - `wheel` — wheel 代码或结构改动（不含其 README，那归 `docs`）
 - `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
 - `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
+- `project` — `projects/` 下真实项目的代码改动。scope 用项目名小写（如 `flybox`、`drone_light`）
 
 ### scope（可选，与目录对齐）
 
 - `wheels/_draft/<name>/` → `_draft/<name>`
 - `wheels/<层>/<name>/` → `<层>/<name>`（例：`primitives/log`）
+- `projects/<name>/` → `<name>`（例：`flybox`、`drone_light`）
 - `docs/adr/` → `adr`
 - 顶层或跨多个 scope（`CLAUDE.md`、跨目录改动）→ 省略
 
