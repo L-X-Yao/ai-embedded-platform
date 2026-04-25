@@ -283,6 +283,10 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
 
     // EV6: address sent, clear by reading STAT0 then STAT1
     if (stat0 & I2C_STAT0_ADDSEND) {
+        if ((i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->count == 2)) {
+            // I2C v1 2-byte RX: disable ACK before clearing ADDR
+            I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
+        }
         (void)I2C_STAT1(reg);
         if ((i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->count == 1)) {
             I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
@@ -294,13 +298,33 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
     }
 
     if (i2c_ptr->cmd & VSF_I2C_CMD_READ) {
-        // EV7: RBNE — receive data
+        // 2-byte RX: wait for BTC (both bytes received), then read both
+        if (i2c_ptr->count == 2 && (stat0 & I2C_STAT0_BTC)) {
+            if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
+                I2C_CTL0(reg) |= I2C_CTL0_STOP;
+            }
+            if (i2c_ptr->buffer) {
+                i2c_ptr->buffer[0] = (uint8_t)I2C_DATA(reg);
+                i2c_ptr->buffer[1] = (uint8_t)I2C_DATA(reg);
+            }
+            i2c_ptr->transferred = 2;
+            I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
+            vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
+            if (isr_ptr->handler_fn != NULL) {
+                isr_ptr->handler_fn(isr_ptr->target_ptr,
+                    (vsf_i2c_t *)i2c_ptr,
+                    VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
+            }
+            return;
+        }
+        // EV7: RBNE — receive data (N=1 or N>=3)
         if (stat0 & I2C_STAT0_RBNE) {
             if (i2c_ptr->buffer && i2c_ptr->transferred < i2c_ptr->count) {
                 i2c_ptr->buffer[i2c_ptr->transferred] = (uint8_t)I2C_DATA(reg);
                 i2c_ptr->transferred++;
             }
-            if (i2c_ptr->transferred == i2c_ptr->count - 1) {
+            // Disable ACK before receiving last byte (N>=3 path)
+            if (i2c_ptr->count >= 3 && i2c_ptr->transferred == i2c_ptr->count - 1) {
                 I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
                 if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
                     I2C_CTL0(reg) |= I2C_CTL0_STOP;
@@ -317,23 +341,24 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
             }
         }
     } else {
-        // EV8: TBE — transmit data
+        // EV8: TBE — load next byte
         if (stat0 & I2C_STAT0_TBE) {
             if (i2c_ptr->transferred < i2c_ptr->count) {
                 I2C_DATA(reg) = i2c_ptr->buffer[i2c_ptr->transferred];
                 i2c_ptr->transferred++;
-            } else {
-                // EV8_2: all bytes sent, generate STOP
-                if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
-                    I2C_CTL0(reg) |= I2C_CTL0_STOP;
-                }
-                I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
-                vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
-                if (isr_ptr->handler_fn != NULL) {
-                    isr_ptr->handler_fn(isr_ptr->target_ptr,
-                        (vsf_i2c_t *)i2c_ptr,
-                        VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
-                }
+            }
+        }
+        // EV8_2: BTC — last byte fully clocked out, safe to STOP
+        if ((stat0 & I2C_STAT0_BTC) && (i2c_ptr->transferred >= i2c_ptr->count)) {
+            if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
+                I2C_CTL0(reg) |= I2C_CTL0_STOP;
+            }
+            I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
+            vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
+            if (isr_ptr->handler_fn != NULL) {
+                isr_ptr->handler_fn(isr_ptr->target_ptr,
+                    (vsf_i2c_t *)i2c_ptr,
+                    VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
             }
         }
     }

@@ -310,7 +310,7 @@ static void VSF_MCONNECT(__, VSF_USART_CFG_IMP_PREFIX, _usart_irqhandler)(
     }
 }
 
-// DMA stubs — not implemented, use fifo2req template if needed
+// STUB: DMA not implemented — returns NOT_SUPPORT so callers know transfer did not start
 
 vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_request_rx)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr,
@@ -318,7 +318,7 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_request_rx)(
     uint_fast32_t count
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    return VSF_ERR_NONE;
+    return VSF_ERR_NOT_SUPPORT;
 }
 
 vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_request_tx)(
@@ -327,21 +327,21 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_request_tx)(
     uint_fast32_t count
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    return VSF_ERR_NONE;
+    return VSF_ERR_NOT_SUPPORT;
 }
 
 vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_cancel_rx)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    return VSF_ERR_NONE;
+    return VSF_ERR_NOT_SUPPORT;
 }
 
 vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_cancel_tx)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    return VSF_ERR_NONE;
+    return VSF_ERR_NOT_SUPPORT;
 }
 
 int_fast32_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_get_rx_count)(
