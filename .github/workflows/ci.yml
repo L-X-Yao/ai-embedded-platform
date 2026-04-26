@@ -57,6 +57,21 @@ jobs:
             binutils-arm-none-eabi \
             libnewlib-arm-none-eabi
 
+      - name: Assert GCC ARM major version
+        # Soft-pin: don't lock the apt version string (brittle), but fail CI
+        # if a runner image upgrade brings in GCC 14+. GCC version directly
+        # affects stack frame size, so the stack_analyzer baseline is only
+        # comparable across the same major. When this assert fails, recalibrate
+        # stack_tasks.flybox.json and bump the version here in the same commit.
+        run: |
+          set -e
+          GCC_VER=$(arm-none-eabi-gcc -dumpversion)
+          echo "arm-none-eabi-gcc version: $GCC_VER"
+          case "$GCC_VER" in
+            13.*) echo "[OK] GCC 13.x as expected" ;;
+            *)    echo "[FAIL] expected GCC 13.x, got $GCC_VER — recalibrate stack baseline"; exit 1 ;;
+          esac
+
       - name: Stage GD32 vendor SDK from flybox/third_party
         # The SDK headers live under projects/flybox/third_party/ (tracked) but
         # vsf-addon's drivers reference them via ../common/vendor/Include/.
