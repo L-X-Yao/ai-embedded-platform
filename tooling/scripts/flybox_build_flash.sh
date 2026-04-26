@@ -69,26 +69,12 @@ do_check() {
     local wait_sec="${1:-30}"
     echo "=== SERIAL CHECK (${wait_sec}s) ==="
 
-    # Reset MCU, then immediately open serial.
-    # Bootloader takes ~1s before app starts printing.
-    openocd -f interface/cmsis-dap.cfg -c "adapter speed 1000" \
-        -f target/stm32f4x.cfg -c "cortex_m reset_config sysresetreq" \
-        -c "init" -c "reset run" -c "shutdown" 2>/dev/null
-    powershell -NoProfile -Command "
-        '' | Set-Content '$SERIAL_LOG' -Encoding ascii
-        \$sp = New-Object System.IO.Ports.SerialPort 'COM25', 115200, 'None', 8, 'One'
-        \$sp.ReadTimeout = 1000
-        \$sp.Open()
-        \$end = (Get-Date).AddSeconds($wait_sec)
-        while ((Get-Date) -lt \$end) {
-            try {
-                \$d = \$sp.ReadExisting()
-                if (\$d.Length -gt 0) { [IO.File]::AppendAllText('$SERIAL_LOG', \$d) }
-            } catch {}
-            Start-Sleep -Milliseconds 100
-        }
-        \$sp.Close()
-    "
+    # Capture is delegated to a standalone PowerShell script so bash heredoc
+    # escaping doesn't mangle the dollar-sign syntax. Script opens COM25
+    # before triggering reset to avoid losing the early-boot byte burst.
+    local capture_ps="$(dirname "$0")/flybox_serial_capture.ps1"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "$capture_ps" \
+        -WaitSec "$wait_sec" -LogFile "$SERIAL_LOG"
     do_verdict
 }
 
