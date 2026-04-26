@@ -5,7 +5,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ELF=~/flybox_build/flybox_vsf.elf
-GDBINIT="$SCRIPT_DIR/flybox.gdbinit"
+GDBINIT="flybox.gdbinit"
 
 if [ ! -f "$ELF" ]; then
     echo "[ERROR] ELF not found: $ELF — run flybox_build_flash.sh build first"
@@ -23,4 +23,7 @@ else
     exit 1
 fi
 
+# cd into script dir so the relative `source gd32f4xx_debug/...` lines in
+# flybox.gdbinit resolve correctly.
+cd "$SCRIPT_DIR"
 eval "$GDB -x \"\$GDBINIT\" \"\$@\""
