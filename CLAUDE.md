@@ -174,6 +174,7 @@ ai-embedded-platform/
 - `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
 - `project` — `projects/` 下真实项目的代码改动。scope 用项目名小写（如 `flybox`、`drone_light`）
 - `tool` — 跨项目可复用的工具脚本，落 `tooling/scripts/` 与 `tooling/hil/` 下的子目录（如 `gd32f4xx_debug`、未来的 HIL 自动化）。注意：`tooling/experiments/` 走 `exp`；`tooling/patches/` 通常归对应 `project`（patch 是为某个项目写的）
+- `ci` — CI/CD 配置，落 `.github/workflows/` 与未来其他 CI 系统配置。scope 用 job 名小写（如 `flybox`、`log`），跨 job 结构改动省略
 
 ### scope（可选，与目录对齐）
 
@@ -181,6 +182,7 @@ ai-embedded-platform/
 - `wheels/<层>/<name>/` → `<层>/<name>`（例：`primitives/log`）
 - `projects/<name>/` → `<name>`（例：`flybox`、`drone_light`）
 - `tooling/scripts/<name>/` 或 `tooling/hil/<name>/` → `<name>`（例：`gd32f4xx_debug`）
+- `.github/workflows/<job>` → job 名（例：`flybox`、`log`）
 - `docs/adr/` → `adr`
 - 顶层或跨多个 scope（`CLAUDE.md`、跨目录改动）→ 省略
 
