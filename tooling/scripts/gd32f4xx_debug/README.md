@@ -59,6 +59,48 @@ end
 
 See `projects/flybox/` (via `tooling/scripts/flybox.gdbinit`) for a real example.
 
+## Porting to other MCUs
+
+This pack was built layered so most of it survives an MCU swap. Two layers:
+
+- **Generic Cortex-M layer** — fault decode, exception frame, PC sampling, register peek. Backed by ARM-standard SCB registers (CFSR / HFSR / MMFAR / BFAR / SHCSR / VTOR at fixed addresses 0xE000ED**xx**), ARM-standard exception stacking, and the `bl`/`b` opcode patterns GCC emits. Works on any Cortex-M4 unchanged; M3/M7/M33 with small adaptations.
+- **Chip-specific layer** — RCC/RCU clock register addresses, peripheral register layouts, vendor-specific OpenOCD target. One file per chip family.
+
+### Reuse matrix
+
+| New MCU | Cortex-M layer (5 files) | GD32F4 layer (1 file) | Need to write | Effort |
+|---------|--------------------------|------------------------|---------------|--------|
+| **STM32F4** | ✅ direct | ❌ RCC layout differs but similar | `stm32f4xx.gdbinit` | ~30 min |
+| **STM32H7** (M7) | ✅ M7 is M4 superset | ❌ different RCC | `stm32h7xx.gdbinit` | 1 h |
+| **NXP K22 / ATSAM4** (M4) | ✅ direct | ❌ different vendor regs | `<chip>.gdbinit` | 1 h |
+| **STM32F1** (M3) | ⚠️ trim FPU-related fault bits | ❌ different RCC | `cortex_m3.gdbinit` + chip layer | 2 h |
+| **N32G003 / RP2040** (M0+) | ❌ M0+ has no CFSR/HFSR/MMFAR/BFAR (only HardFault, no breakdown) | ❌ | `cortex_m0plus.gdbinit` (simplified fault decode — read SHCSR + VECTACTIVE only) + chip | 3-4 h |
+| **ESP32** (Xtensa) | ❌ different ISA, exception frame is Xtensa-specific | ❌ | full new architecture layer | 1-2 day |
+| **CH32V / GD32V** (RISC-V) | ❌ RISC-V exception frame | ❌ | RISC-V layer + chip | 1 day |
+
+### Tools that are MCU-agnostic (reuse on any platform)
+
+- `stack_analyzer.py` — only needs GCC `-fstack-usage` output and an objdump that disassembles the ELF. Works on any GCC-built embedded target (ARM, RISC-V, Xtensa, AVR…)
+- `serial_capture.ps1` — runs on the host, captures from any USB-UART. Pass a different `-OcdTarget` for non-stm32f4 chips
+- `diag_halt.cfg` / `diag_where.cfg` — Cortex-M generic (M0/M3/M4/M7/M33). Just feed a different `-f target/<vendor>.cfg`
+
+### Adding a new chip layer (recipe)
+
+For a new Cortex-M chip on the same family (e.g. STM32F4):
+
+1. Copy `gd32f4xx.gdbinit` to `<chip>.gdbinit` in this directory (or a sibling subdirectory if you want to keep packs separate).
+2. Update register addresses in `rcu_clk` / `i2c_regs` (look up `RCC` and `I2C` base addresses in the chip's reference manual).
+3. In your project's gdbinit, replace `source gd32f4xx.gdbinit` with `source <chip>.gdbinit`.
+
+For a new core (M0+ / M3 / M7):
+
+1. Copy `cortex_m4.gdbinit` to `cortex_m<X>.gdbinit`.
+2. M0+ has no CFSR — drop `fault_info`'s MMFSR/BFSR/UFSR bit decoding; keep only HFSR + VECTACTIVE from ICSR.
+3. M7 — keep everything; optionally add cache control register dumps (CCR/CCSIDR).
+4. Update references in your project's gdbinit.
+
+For a new architecture (Xtensa / RISC-V): start fresh — exception frame layout, fault registers, and call instruction patterns are all different. The `stack_analyzer.py` framework still applies (it's GCC-driven, ISA-agnostic).
+
 ## OpenOCD note on GD32F4
 
 GD32F4xx is SWD-compatible with STM32F4 — `target/stm32f4x.cfg` works. Use
