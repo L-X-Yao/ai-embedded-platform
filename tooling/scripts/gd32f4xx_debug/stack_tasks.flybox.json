@@ -1,0 +1,17 @@
+{
+  "_comment": "Flybox per-task stack budget for stack_analyzer.py. stack_scale=2 compensates for the VSF POSIX shim's ~13-frame overhead on every blocking call (sleep/sem/mutex) — see projects/flybox/vsf_build/compat/task.h.",
+
+  "stack_scale": 2,
+  "min_bytes":   2048,
+  "tasks": [
+    { "entry": "air780eg_task_entry",    "words": 768 },
+    { "entry": "gnss_task_entry",        "words": 512 },
+    { "entry": "imu_task_entry",         "words": 512 },
+    { "entry": "baro_task_entry",        "words": 256 },
+    { "entry": "data_fusion_task_entry", "words": 512 },
+    { "entry": "mqtt_task_entry",        "words": 512 },
+    { "entry": "ota_task_entry",         "words": 512 },
+    { "entry": "TaskWatchdog",           "words": 128 },
+    { "entry": "TaskLED",                "words": 128 }
+  ]
+}

@@ -24,7 +24,8 @@ Cortex-M4 SWD target — see "Genericity" column).
 | `diag_halt.cfg` | **Any Cortex-M** | OpenOCD one-shot: halt + dump CFSR/HFSR/MMFAR/BFAR/SHCSR/ICSR/VTOR + resume |
 | `diag_where.cfg` | **Any Cortex-M** | OpenOCD one-shot: 3 PC samples 400 ms apart — useful for "where is it stuck?" |
 | `stack_analyzer.py` | **Any GCC ARM project** | Static stack analysis from `-fstack-usage` + objdump callgraph; per-task budget check vs JSON config |
-| `stack_tasks.example.json` | example | Format reference for `--task-config` |
+| `stack_tasks.example.json` | template | Clean schema reference — copy and edit per project |
+| `stack_tasks.flybox.json` | flybox | Real-project config (9 tasks, VSF POSIX scale=2) — used by CI |
 | `serial_capture.ps1` | **Any STM32-family / GD32 SWD + USB-UART** | PowerShell SerialPort capture with CH340 DTR/RTS fix + boot-burst-friendly buffer |
 
 ## Why each asset exists (real flybox lessons)
