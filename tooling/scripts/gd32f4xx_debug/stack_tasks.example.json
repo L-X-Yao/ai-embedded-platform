@@ -1,0 +1,25 @@
+{
+  "_comment_1": "Per-task stack budget for stack_analyzer.py.",
+  "_comment_2": "stack_scale compensates for RTOS/shim overhead. Set to 2 if",
+  "_comment_3": "the RTOS layer (e.g. VSF POSIX shim wrapping FreeRTOS API)",
+  "_comment_4": "consumes ~half the user-supplied stack on every blocking call.",
+  "_comment_5": "min_bytes enforces a floor (some kernels won't run < 2KB).",
+  "_comment_6": "",
+  "_comment_7": "tasks[].entry is the C symbol name as it appears in the ELF.",
+  "_comment_8": "Use 'words' (FreeRTOS xTaskCreate stack words) or 'bytes' directly.",
+  "_comment_9": "Final allocated = max(min_bytes, words*4*scale)  or  bytes*scale.",
+
+  "stack_scale": 2,
+  "min_bytes":   2048,
+  "tasks": [
+    { "entry": "air780eg_task_entry",    "words": 768 },
+    { "entry": "gnss_task_entry",        "words": 512 },
+    { "entry": "imu_task_entry",         "words": 512 },
+    { "entry": "baro_task_entry",        "words": 256 },
+    { "entry": "data_fusion_task_entry", "words": 512 },
+    { "entry": "mqtt_task_entry",        "words": 512 },
+    { "entry": "ota_task_entry",         "words": 512 },
+    { "entry": "TaskWatchdog",           "words": 128 },
+    { "entry": "TaskLED",                "words": 128 }
+  ]
+}
