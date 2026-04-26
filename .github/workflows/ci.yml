@@ -62,12 +62,21 @@ jobs:
         # vsf-addon's drivers reference them via ../common/vendor/Include/.
         # Locally the user copies the SDK into vendor/Include manually
         # (vendor/.gitignore = '*'); CI does the same copy non-interactively.
+        #
+        # IMPORTANT: copy ONLY the GD32-specific files (gd32f4xx.h, system_gd32f4xx.h,
+        # gd32f4xx_*.h peripherals) — NOT the CMSIS 4 core_cm*.h headers from
+        # third_party/CMSIS/. gd32f4xx.h does `#include "core_cm4.h"` (quotes,
+        # same-dir search). If CMSIS 4 core_cm4.h sits next to it, that wins
+        # and pulls in CMSIS 4 core_cmInstr.h / core_cmFunc.h which don't
+        # exist anywhere reachable. Locally vendor/Include omits the core files
+        # entirely so the same-dir search fails and the include falls through
+        # to VSF's bundled CMSIS 5 (utilities/compiler/arm/3rd-party/CMSIS/...).
         run: |
           SDK_DST=vsf-addon/hal/driver/gd/GD32F4XX/common/vendor
           mkdir -p "$SDK_DST/Include"
-          cp projects/flybox/third_party/CMSIS/*.h "$SDK_DST/Include/"
+          cp projects/flybox/third_party/CMSIS/gd32f4xx.h        "$SDK_DST/Include/"
+          cp projects/flybox/third_party/CMSIS/system_gd32f4xx.h "$SDK_DST/Include/"
           cp projects/flybox/third_party/gd32_periph/Include/*.h "$SDK_DST/Include/"
-          ls "$SDK_DST/Include/" | head -5
           echo "Total headers: $(ls $SDK_DST/Include/ | wc -l)"
 
       - name: Configure
