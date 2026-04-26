@@ -57,6 +57,19 @@ jobs:
             binutils-arm-none-eabi \
             libnewlib-arm-none-eabi
 
+      - name: Stage GD32 vendor SDK from flybox/third_party
+        # The SDK headers live under projects/flybox/third_party/ (tracked) but
+        # vsf-addon's drivers reference them via ../common/vendor/Include/.
+        # Locally the user copies the SDK into vendor/Include manually
+        # (vendor/.gitignore = '*'); CI does the same copy non-interactively.
+        run: |
+          SDK_DST=vsf-addon/hal/driver/gd/GD32F4XX/common/vendor
+          mkdir -p "$SDK_DST/Include"
+          cp projects/flybox/third_party/CMSIS/*.h "$SDK_DST/Include/"
+          cp projects/flybox/third_party/gd32_periph/Include/*.h "$SDK_DST/Include/"
+          ls "$SDK_DST/Include/" | head -5
+          echo "Total headers: $(ls $SDK_DST/Include/ | wc -l)"
+
       - name: Configure
         run: cmake -GNinja -S projects/flybox/vsf_build -B build
 
