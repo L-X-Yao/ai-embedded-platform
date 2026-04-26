@@ -173,12 +173,14 @@ ai-embedded-platform/
 - `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
 - `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
 - `project` — `projects/` 下真实项目的代码改动。scope 用项目名小写（如 `flybox`、`drone_light`）
+- `tool` — 跨项目可复用的工具脚本，落 `tooling/scripts/` 与 `tooling/hil/` 下的子目录（如 `gd32f4xx_debug`、未来的 HIL 自动化）。注意：`tooling/experiments/` 走 `exp`；`tooling/patches/` 通常归对应 `project`（patch 是为某个项目写的）
 
 ### scope（可选，与目录对齐）
 
 - `wheels/_draft/<name>/` → `_draft/<name>`
 - `wheels/<层>/<name>/` → `<层>/<name>`（例：`primitives/log`）
 - `projects/<name>/` → `<name>`（例：`flybox`、`drone_light`）
+- `tooling/scripts/<name>/` 或 `tooling/hil/<name>/` → `<name>`（例：`gd32f4xx_debug`）
 - `docs/adr/` → `adr`
 - 顶层或跨多个 scope（`CLAUDE.md`、跨目录改动）→ 省略
 
