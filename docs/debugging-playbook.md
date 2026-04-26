@@ -76,6 +76,54 @@
 
 ---
 
+## GD32F4xx 调试快速包（HIL boot / fault / 栈溢出 一键定位）
+
+> 📦 `tooling/scripts/gd32f4xx_debug/` —— flybox Phase B + 后期 triage 沉淀的 reusable 调试资产，**任何 GD32F4xx 项目可直接拿来用**（其中 5/7 是任意 Cortex-M / GCC ARM 项目通用）。
+
+### 何时打开包
+
+| 症状 | 工具 | 一行调用 |
+|------|------|----------|
+| Boot 卡死 / 静默 reset loop | `diag_halt.cfg` | `openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg -f gd32f4xx_debug/diag_halt.cfg` |
+| 想知道 MCU 卡在哪条指令 | `diag_where.cfg` | `openocd -f ... -f gd32f4xx_debug/diag_where.cfg` |
+| HardFault / BusFault / UsageFault | `cortex_m4.gdbinit` → `fault_full` | GDB 中 `monitor halt; fault_full` |
+| 怀疑栈溢出（HardFault on push） | `stack_analyzer.py` | `python stack_analyzer.py BUILD_DIR --task-config tasks.json` |
+| 抓 boot burst 但 PowerShell 只抓两行 | `serial_capture.ps1` | `pwsh -File serial_capture.ps1 -Port COM25` |
+
+### 快速包内容速查
+
+- **`cortex_m4.gdbinit`**（任意 Cortex-M4）：`fault_info` / `exc_frame [sp]` / `ret_lr` / `fault_full` / `vtor`
+- **`gd32f4xx.gdbinit`**（GD32F4xx）：`rcu_clk` / `i2c_regs <base>`
+- **`diag_halt.cfg` / `diag_where.cfg`**（任意 Cortex-M）：OpenOCD 一次性 halt + 寄存器/PC 采样，免开 GDB 会话
+- **`stack_analyzer.py`**（任意 GCC ARM）：从 `-fstack-usage` + objdump callgraph 静态分析 per-task 累积栈使用，配合 `--task-config tasks.json` 描述任务入口
+- **`serial_capture.ps1`**（STM32 / GD32 + USB-UART）：CH340 DTR/RTS=true + 64KB ReadBuffer + 25ms 轮询，避免 boot burst 丢失
+
+### 沉淀来源（每条工具背后的真实教训）
+
+- `stack_analyzer.py` ← flybox mqtt_task_entry 累积 6KB > 4KB 分配 → HardFault on push（`feedback_debug_toolchain_first.md`）
+- `cortex_m4.gdbinit::fault_full` ← 手解 Cortex-M4 fault 5 个寄存器组 + EXC_RETURN 4 位 + 栈帧 = 15 min/次，自动化后 < 1 sec
+- `diag_halt.cfg` ← W25Q64 SPI 总线挂掉 spi_xfer 死循环 → reset loop。OpenOCD 一次性 halt + addr2line = 5 min（`feedback_hw_flag_wait_guard.md`）
+- `serial_capture.ps1` DTR/RTS ← CH340 USB-UART 不拉高 DTR/RTS 会在第一波数据后停止转发 RX，让"诊断管道"撒谎 30 min（`feedback_verify_capture_pipeline.md`）
+
+### 用法（项目级 gdbinit 套这个包）
+
+参考 `tooling/scripts/flybox.gdbinit` 写法：
+
+```gdb
+source gd32f4xx_debug/cortex_m4.gdbinit
+source gd32f4xx_debug/gd32f4xx.gdbinit
+
+target extended-remote :3333
+file build/myproject.elf
+break HardFault_Handler
+```
+
+启动脚本（参考 `flybox_gdb.sh`）需 `cd` 到 `tooling/scripts/` 让相对 `source` 路径生效。
+
+完整说明：`tooling/scripts/gd32f4xx_debug/README.md`。
+
+---
+
 ## VSF mps2-an500 bare-metal sim 最小跑通配置（首选，canonical checklist）
 
 > ✅ **首选 kernel-only sim 路径**（[ADR-008](adr/008-vsf-linux64-sim-strategy.md) 选项 C，2026-04-22 晚实证通过）。新项目跑 VSF kernel / shell / USB CDC 等 bare-metal 场景走这条，不走 linux64。
