@@ -12,4 +12,15 @@ if [ ! -f "$ELF" ]; then
     exit 1
 fi
 
-arm-none-eabi-gdb -x "$GDBINIT" "$@"
+# Pick whichever cross GDB is installed.
+if command -v arm-none-eabi-gdb >/dev/null 2>&1; then
+    GDB=arm-none-eabi-gdb
+elif command -v gdb-multiarch >/dev/null 2>&1; then
+    GDB="gdb-multiarch -ex 'set arch armv7e-m'"
+else
+    echo "[ERROR] No GDB found. Install gdb-multiarch:"
+    echo "        sudo apt-get install gdb-multiarch"
+    exit 1
+fi
+
+eval "$GDB -x \"\$GDBINIT\" \"\$@\""
