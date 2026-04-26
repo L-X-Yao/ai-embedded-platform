@@ -42,6 +42,35 @@ jobs:
       - name: Test
         run: python -m pytest test_log.py -v
 
+  crc16-wheel:
+    name: crc16 wheel (host C99)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: wheels/_draft/crc16
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Build
+        run: |
+          cmake -GNinja -S . -B build
+          cmake --build build
+
+      - name: Test
+        run: python -m pytest test_crc16.py -v
+
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
     runs-on: ubuntu-24.04
