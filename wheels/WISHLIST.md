@@ -26,7 +26,6 @@
 |------|------|-------------|
 | `gpio_led` | LED 状态机：闪烁 / 呼吸 / 脉冲 / 组合 pattern | VSF 无（HAL 只提供 GPIO 原语） |
 | `gpio_button` | 按键消抖 + 长按 / 双击 / 组合键 | VSF 无 |
-| `w25qxx` | SPI NOR flash 家族（国民/兆易 MCU 常配） | VSF 有 `component/mal/driver/mem_mal/` 但芯片层需自写 |
 | `ws2812` | WS2812B RGB LED 驱动（timer PWM bit-bang） | VSF 无 · 触发：drone_light (×1) |
 | `ssd1306` | OLED（I2C，调试常用） | VSF 有 tgui 但底层驱动需自写 |
 
