@@ -256,12 +256,12 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——8 个 job：wheel-audit + 6 个 wheel 构建测试 + flybox cross-compile + stack 分析，push/PR 自动触发，当前全绿
 - ✅ **开发效率工具链**（`tooling/scripts/`）——test_all.sh（统一测试 + --changed 增量）/ new_wheel.sh（wheel 脚手架）/ session_bootstrap.sh（会话上下文）/ wheel_promote.sh（阶段升级）/ build_flash（JSON verdict HIL 输出）/ gd32f4xx_debug/parse_fault.py（离线 Cortex-M fault 分类器）
 - ✅ **6 个 wheels**：log (L0 candidate) / crc16 (L0 candidate) / w25qxx (L1 candidate) / qmi8658a (L1 candidate) / xgzp6816d (L1 candidate) / qmc5883p (L1 candidate)
+- ✅ **HIL 自动化**（`tooling/hil/hil_runner.py`）——封装 build_flash_check.sh，soak 三档（quick 30s / standard 600s / stress 1800s），结果按时间戳存档，--compare 对比历史
+- ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
 未开展：
 - 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
-- HIL 自动化（当前人工粘日志过渡）
 - `tooling/scripts/test_downstream.sh`（等多项目时再写）
-- 项目模板（`templates/` 仅占位，待第 3 个项目时提取）
 
 ## 下一步触发点（Sprint 0 已封版）
 
