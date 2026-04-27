@@ -30,7 +30,6 @@
 
 | 候选 | 功能 | VSF 原生检查 |
 |------|------|-------------|
-| `at_command` | AT 指令解析器（WiFi / 4G / BLE 模组通用） | VSF 无专门 AT 引擎 |
 | `mqtt_client` | MQTT 3.1.1 客户端（IoT 场景必备） | VSF 无；选型 paho / mongoose / mqttnet |
 | `modbus_rtu_master` | Modbus RTU 主站（工业项目典型） | VSF 无 |
 | `modbus_rtu_slave` | Modbus RTU 从站 | VSF 无 |
