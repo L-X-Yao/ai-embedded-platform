@@ -14,12 +14,23 @@
 #define CR2_RANGE_2G    (0x03u << 2)
 #define CR2_SOFT_RST    0x80u
 
+#define REG_WAKE        0x0Du
+#define WAKE_VALUE      0x40u
+
 #define STATUS_DRDY     0x01u
 
 #define SENSITIVITY_2G  15000.0f
 
+/* ~1-2ms at 168MHz; covers wake-to-ready and soft-reset recovery */
+#define STARTUP_DELAY_LOOPS 200000U
+
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c)
 {
+    if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_WAKE, WAKE_VALUE))
+        return QMC5883P_ERR_I2C;
+
+    for (volatile uint32_t d = 0; d < STARTUP_DELAY_LOOPS; d++) { }
+
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, QMC5883P_DEV_ADDR, REG_CHIP_ID, &id, 1))
         return QMC5883P_ERR_I2C;
@@ -29,7 +40,7 @@ qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c)
     if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_CR2, CR2_SOFT_RST))
         return QMC5883P_ERR_I2C;
 
-    for (volatile uint32_t d = 0; d < 200000U; d++) { }
+    for (volatile uint32_t d = 0; d < STARTUP_DELAY_LOOPS; d++) { }
 
     if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_SIGN, 0x06u))
         return QMC5883P_ERR_I2C;
