@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: wheels/_draft/crc16
+        working-directory: wheels/primitives/crc16
     steps:
       - uses: actions/checkout@v5
 
