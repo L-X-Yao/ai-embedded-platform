@@ -7,6 +7,7 @@
 #   test_all.sh --wheel          # wheels only (skip project tests)
 #   test_all.sh --project        # project tests only
 #   test_all.sh --list           # just list discoverable targets, don't run
+#   test_all.sh --changed        # only run tests affected by uncommitted changes
 #
 # Each test dir gets its own build_ta/ subdirectory (ignored via .gitignore).
 # VSF-dependent tests (log wheel) are skipped unless VSF_PATH is set or
@@ -29,6 +30,7 @@ NC='\033[0m'
 FILTER_WHEEL=false
 FILTER_PROJECT=false
 LIST_ONLY=false
+CHANGED_ONLY=false
 declare -a NAME_FILTER=()
 
 while [[ $# -gt 0 ]]; do
@@ -36,6 +38,7 @@ while [[ $# -gt 0 ]]; do
         --wheel)    FILTER_WHEEL=true; shift ;;
         --project)  FILTER_PROJECT=true; shift ;;
         --list)     LIST_ONLY=true; shift ;;
+        --changed)  CHANGED_ONLY=true; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -43,6 +46,49 @@ while [[ $# -gt 0 ]]; do
         *)          NAME_FILTER+=("$1"); shift ;;
     esac
 done
+
+# --changed: derive affected test targets from git diff
+if $CHANGED_ONLY; then
+    changed_files=$(git -C "$REPO" diff --name-only HEAD 2>/dev/null || true)
+    # Also include staged + untracked
+    changed_files+=$'\n'$(git -C "$REPO" diff --name-only --cached 2>/dev/null || true)
+    changed_files+=$'\n'$(git -C "$REPO" ls-files --others --exclude-standard 2>/dev/null || true)
+
+    declare -A affected_names=()
+    while IFS= read -r f; do
+        [[ -z "$f" ]] && continue
+        # wheels/<layer>/<name>/... → name
+        if [[ "$f" =~ ^wheels/([^/]+)/([^/]+)/ ]]; then
+            layer="${BASH_REMATCH[1]}"
+            wname="${BASH_REMATCH[2]}"
+            [[ "$layer" == "_draft" ]] && continue
+            affected_names["$wname"]=1
+        fi
+        # projects/<proj>/test/<name>/... → name
+        if [[ "$f" =~ ^projects/([^/]+)/test/([^/]+)/ ]]; then
+            affected_names["${BASH_REMATCH[2]}"]=1
+        fi
+        # projects/<proj>/src/... → find which project tests exist
+        if [[ "$f" =~ ^projects/([^/]+)/src/ ]]; then
+            proj="${BASH_REMATCH[1]}"
+            while IFS= read -r tdir; do
+                tname=$(basename "$tdir")
+                affected_names["$tname"]=1
+            done < <(find "$REPO/projects/$proj/test" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+        fi
+    done <<< "$changed_files"
+
+    if [[ ${#affected_names[@]} -eq 0 ]]; then
+        echo -e "${YELLOW}No test-affecting changes detected in git diff.${NC}"
+        exit 0
+    fi
+
+    for n in "${!affected_names[@]}"; do
+        NAME_FILTER+=("$n")
+    done
+    echo -e "${CYAN}Changed targets: ${NAME_FILTER[*]}${NC}"
+    echo ""
+fi
 
 # --- Discover test targets ---------------------------------------------------
 
