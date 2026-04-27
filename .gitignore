@@ -81,6 +81,9 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
+# HIL test results (local hardware artifacts)
+tooling/hil/results/
+
 # Local overrides
 CLAUDE.local.md
 *.local.md
