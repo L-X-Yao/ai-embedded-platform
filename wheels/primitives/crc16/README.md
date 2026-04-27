@@ -1,6 +1,6 @@
 # crc16
 
-**STATUS: draft**
+**STATUS: candidate**
 **Layer: L0 (primitives)**
 
 CRC16-MODBUS computation (table-based, ~1 KB ROM). Drop-in for Modbus RTU
@@ -37,7 +37,7 @@ other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
 ## How to test
 
 ```bash
-cd wheels/_draft/crc16
+cd wheels/primitives/crc16
 cmake -GNinja -S . -B build
 cmake --build build
 python3 -m pytest test_crc16.py -v
@@ -71,7 +71,7 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 
 - [x] Linux host (sim) — 测试通过 2026-04-26
 - [x] WSL Ubuntu 24.04 — 测试通过 2026-04-26
-- [ ] ARM Cortex-M (cross-compile) — **能编**，待真机验证（flybox 集成后即可打勾）
+- [x] ARM Cortex-M4 (GD32F405 cross-compile) — 集成进 flybox 2026-04-26，HIL 实跑通过
 
 ## 依赖
 
