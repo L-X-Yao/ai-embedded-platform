@@ -4,7 +4,7 @@
 
 ## 目录
 
-（暂无模板；第一个模板预计在第 1-2 个真实项目之后抽取出来。）
+- `project-integration/` —— 项目整合脚手架（CLAUDE.md 骨架 + 目录结构指南），从 flybox + drone_light 共同模式提取
 
 ## 模板的合格定义
 
