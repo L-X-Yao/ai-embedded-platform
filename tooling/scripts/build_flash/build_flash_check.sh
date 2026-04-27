@@ -218,6 +218,41 @@ do_verdict() {
         done
     fi
 
+    # Structured JSON verdict — faster for AI analysis than grepping raw log
+    local json_file="${SERIAL_LOG%.log}_verdict.json"
+    local wdg_count mqtt_connect_count rdy_count online_count total_lines
+    total_lines=$(wc -l < "$SERIAL_LOG" 2>/dev/null || echo 0)
+    wdg_count=$(echo "$log" | grep -ciE '\[WDG\]' || true)
+    mqtt_connect_count=$(echo "$log" | grep -ciE 'MQTT Session Established|CONNACK' || true)
+    rdy_count=$(echo "$log" | grep -ciE 'Air RDY|RDY detected' || true)
+    online_count=$(echo "$log" | grep -ciE '"online"' || true)
+
+    local fault_count hardfault_lines
+    fault_count=$(echo "$log" | grep -ciE 'HardFault|BusFault|MemManage|UsageFault' || true)
+    hardfault_lines=$(echo "$log" | grep -iE 'HardFault|BusFault|MemManage|UsageFault' | head -3 || true)
+
+    cat > "$json_file" << JSONEOF
+{
+  "verdict": "$([ $ok -eq 1 ] && echo PASS || echo FAIL)",
+  "duration_sec": $CHECK_DURATION,
+  "total_lines": $total_lines,
+  "pass_matched": $passed,
+  "pass_required": $MIN_PASSED,
+  "pass_total": ${#PASS_PATTERNS[@]},
+  "counters": {
+    "watchdog_reset": $wdg_count,
+    "hardfault": $fault_count,
+    "mqtt_connect": $mqtt_connect_count,
+    "air_rdy": $rdy_count,
+    "online_msg": $online_count
+  },
+  "fault_lines": $(if [[ -z "$hardfault_lines" ]]; then echo '[]'; else echo '["'"$(echo "$hardfault_lines" | sed 's/"/\\"/g' | paste -sd'","' -)"'"]'; fi)
+}
+JSONEOF
+    echo ""
+    echo "--- verdict JSON: $json_file ---"
+    cat "$json_file"
+
     if [[ $ok -eq 1 ]]; then
         return 0
     else
