@@ -20,6 +20,9 @@ build_*/
 *.gcda
 *.su
 
+# test_all.sh logs
+build_ta.*.log
+
 # CMake
 CMakeCache.txt
 CMakeFiles/
