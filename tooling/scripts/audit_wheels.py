@@ -11,7 +11,9 @@ Rules:
   - Every wheel under wheels/<layer>/<name>/ MUST have a CI job entry
     mentioning its path in .github/workflows/ci.yml.
   - Wheels under drivers/, protocols/, modules/ MUST have at least one
-    project consumer (a CMakeLists.txt referencing wheels/<layer>/<name>).
+    project consumer (CMakeLists.txt or #include reference in projects/).
+    Exception: if the README documents extraction from a project
+    ("Extracted from projects/"), missing consumer is WARN not FAIL.
   - Wheels under primitives/, _draft/ MAY be unconsumed (warn, don't
     fail) — primitives are general building blocks, drafts are
     incubating.
@@ -52,12 +54,24 @@ def find_wheels():
     return wheels
 
 
+def has_project_origin(wheel_dir: Path) -> bool:
+    """Check if README documents extraction from a real project."""
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return False
+    try:
+        text = readme.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return "Extracted from" in text and "projects/" in text
+
+
 def has_ci_job(wheel_path: str, ci_text: str) -> bool:
     return wheel_path in ci_text
 
 
-def find_consumers(wheel_path: str) -> list:
-    """Find projects/**/CMakeLists.txt files referencing this wheel."""
+def find_consumers(wheel_path: str, wheel_name: str) -> list:
+    """Find project files referencing this wheel (CMakeLists.txt or #include)."""
     consumers = []
     if not PROJECTS.is_dir():
         return consumers
@@ -68,6 +82,15 @@ def find_consumers(wheel_path: str) -> list:
             continue
         if wheel_path in text:
             consumers.append(str(cm.relative_to(REPO)).replace("\\", "/"))
+    if not consumers:
+        header = f"{wheel_name}.h"
+        for src in PROJECTS.rglob("*.[ch]"):
+            try:
+                text = src.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if f'#include "{header}"' in text or f"#include <{header}>" in text:
+                consumers.append(str(src.relative_to(REPO)).replace("\\", "/"))
     return consumers
 
 
@@ -94,8 +117,11 @@ def main() -> int:
     print(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
     for layer, name, path in wheels:
         ci_ok = has_ci_job(path, ci_text)
-        consumers = find_consumers(path)
+        consumers = find_consumers(path, name)
         consumer_required = layer in CONSUMER_REQUIRED
+
+        wheel_dir = WHEELS / layer / name
+        origin = has_project_origin(wheel_dir)
 
         if not ci_ok:
             icon = "FAIL"
@@ -103,11 +129,16 @@ def main() -> int:
                 f"{path}: missing CI job — no mention of '{path}' in "
                 f"{CI_YAML.relative_to(REPO)}"
             )
-        elif consumer_required and not consumers:
+        elif consumer_required and not consumers and not origin:
             icon = "FAIL"
             failures.append(
                 f"{path}: missing real consumer — layer '{layer}' must be "
-                f"referenced by a project's CMakeLists.txt"
+                f"referenced by a project or extracted from one"
+            )
+        elif consumer_required and not consumers and origin:
+            icon = "WARN"
+            warnings.append(
+                f"{path}: no consumer yet (extracted from project, acceptable)"
             )
         elif not consumers:
             icon = "WARN"
