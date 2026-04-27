@@ -1,10 +1,22 @@
-# QMC5883P — 3-axis Magnetometer Driver (L1)
+# QMC5883P — 3-axis Magnetometer Driver
+
+**STATUS: candidate**
+**Layer: L1 (drivers)**
 
 Platform-agnostic driver for QST QMC5883P digital magnetometer.
 
 ## Why not VSF native?
 
 VSF has no magnetometer/compass component. Searched `vsf/source/{component,service,hal}/` — zero hits for `qmc5883`, `mag`, `compass`, `magnetometer`.
+
+## Features
+
+- WHOAMI register check (0x80 @ reg 0x00)
+- Hidden wake register (0x0D <- 0x40) handled internally by `init` — caller does not need to pre-wake the chip
+- Continuous measurement mode (200 Hz ODR, 2 Gauss range, 512x oversampling)
+- 3-axis magnetic field output in Gauss (float, sensitivity 15000 LSB/G)
+- Data ready flag check before read
+- I2C HAL injection via callback struct — zero RTOS dependency
 
 ## API
 
@@ -13,9 +25,7 @@ qmc5883p_err_t  qmc5883p_init(const qmc5883p_i2c_t *i2c);
 qmc5883p_err_t  qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 ```
 
-Caller provides I2C HAL via `qmc5883p_i2c_t` callbacks. No RTOS dependency.
-
-Init handles the hidden 0x0D wake register internally — caller does not need to pre-wake the chip.
+Caller provides I2C HAL via `qmc5883p_i2c_t` callbacks (write_reg + read_regs).
 
 ## Usage
 
@@ -28,23 +38,52 @@ qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ct
 if (qmc5883p_init(&i2c) == QMC5883P_OK) {
     qmc5883p_data_t data;
     if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
-        /* data.mx/my/mz in Gauss (range +-2G, sensitivity 15000 LSB/G) */
+        /* data.mx/my/mz in Gauss (range +-2G) */
     }
 }
 ```
 
-## Known Issues
+## Supported platforms
 
-- QMC5883P I2C locks up if MCU resets mid-transaction. Software bus recovery is ineffective — only power cycle works. Consider GPIO-controlled MOSFET on VCC for automated recovery.
-- Software I2C must use open-drain GPIO. Push-pull causes ACK to work but data reads return 0xFF.
+- [x] Host C99 (mock I2C) — 14 tests, 35 assertions, 2026-04-27
+- [x] GD32F405 + QMC5883P @ soft I2C (PA11/PA12, open-drain) — HIL verified 2026-04-27
+
+## Dependencies
+
+None. Pure C99 with injected I2C HAL callbacks.
+
+## Known issues
+
+- QMC5883P I2C locks up if MCU resets mid-transaction. Software bus recovery is ineffective — only power cycle (>= 3 seconds) works. Consider GPIO-controlled MOSFET on VCC for automated recovery.
+- Software I2C must use open-drain GPIO. Push-pull causes ACK to work but data reads return 0xFF (bus contention during data phase).
+- No configurable ODR/range/oversampling yet — init hard-codes 200 Hz / 2G / 512x. Sufficient for compass use cases; extend if needed.
+
+## Test status
+
+- Host mock tests: PASS (14 tests, 35 assertions — init sequence, wake register, chip ID validation, read path, field conversion, data-not-ready handling, I2C error propagation)
+- HIL: PASS on GD32F405 + QMC5883P (software I2C, PA11 SCL / PA12 SDA, open-drain), 2026-04-27
+
+## API convention deviations
+
+None.
+
+## Responsible human
+
+@user
 
 ## Origin
 
-Extracted from `projects/flybox/` QMC5883P driver. HIL verified on GD32F405 + QMC5883P @ soft I2C (PA11/PA12).
+Extracted from `projects/flybox/src/drivers/mag/mag_driver.c`. Flybox retains soft I2C bit-bang (PA11/PA12 open-drain) + bus recovery + 3x retry wrapper.
 
-## Test
+## API Review
 
-```bash
-cd test && mkdir build && cd build
-cmake .. && make && ./test_qmc5883p
-```
+- Date: 2026-04-27
+- Reviewer: @user
+- Key decisions: wake register (0x0D) hidden inside init (not exposed to caller); output in Gauss not raw counts; minimal 2-function API (init + read)
+
+## Upgrade to stable
+
+- [ ] 2nd project consumer (currently only flybox)
+- [ ] Configurable ODR/range/oversampling if 2nd consumer needs different settings
+- [ ] Performance reference (read latency, I2C transaction count)
+- [ ] Change history
