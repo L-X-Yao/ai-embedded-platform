@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_qmc5883p C)
+
+add_executable(test_qmc5883p
+    test_qmc5883p.c
+    ../qmc5883p.c
+)
+
+target_include_directories(test_qmc5883p PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(test_qmc5883p PRIVATE m)
+
+enable_testing()
+add_test(NAME qmc5883p_tests COMMAND test_qmc5883p)
