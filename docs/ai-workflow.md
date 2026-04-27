@@ -149,11 +149,24 @@
 
 ### 阶段 3：AI 实现（1-3 小时）
 
-5. **按拍板后 API 实现**在 `wheels/_draft/<name>/`。
+**沉淀闭环 = 三件套，缺一不可（由 `tooling/scripts/audit_wheels.py` + `wheel-audit` CI job 强制执行）**：
+
+(1) **wheel 代码 + 测试**
+
+5. **按拍板后 API 实现**在 `wheels/_draft/<name>/`（或合适的 L 层目录）。
 6. **写测试**（sim 级别，不照抄项目集成测试）。
 7. **写 README**（按 wheel-contract §3.1 的 draft 要求）。
 8. **跑 sim 验证**全绿。
-9. **在项目里改为引用新 wheel**：项目测试仍通过。
+
+(2) **CI job**
+
+9. **在 `.github/workflows/ci.yml` 加 wheel build + test job**（mirror 现有 `crc16-wheel` / `w25qxx-wheel` 模式）。push 后 CI 全绿才算 step 完成。
+
+(3) **真项目消费**
+
+10. **在 `projects/<name>/CMakeLists.txt` 引用 wheel**（include path + add to sources），项目原代码改为调用 wheel API，项目测试仍通过。
+
+⚠️ **wheel commit ≠ 沉淀闭环**：仅做 step (1) 而忘 (2)/(3) → 产生 floating wheel（代码看似 done 但没人跑、没人用，腐烂只是时间问题）。2026-04-25/26 曾出现 `w25qxx` + `qmi8658a` 两个 orphan wheel 持续 1-2 天才被发现，现已工具化拦截。
 
 ### 阶段 4：更新交叉资料（AI 做）
 

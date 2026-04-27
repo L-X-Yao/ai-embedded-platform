@@ -17,6 +17,17 @@
 
 **AI 新建的 wheel 默认为 draft**。升 candidate / stable 需人审批。
 
+### 0.1 自动化护栏
+
+`tooling/scripts/audit_wheels.py` 在 `wheel-audit` CI job 里强制以下规则——push 阶段直接 fail，不靠人脑或 review checklist 维护：
+
+- 每个 `wheels/<层>/<name>/` **必须**在 `.github/workflows/ci.yml` 有对应 build + test job
+- `drivers/` / `protocols/` / `modules/` 层的 wheel **必须**至少被一个 `projects/*/CMakeLists.txt` 引用（real consumer）
+- `primitives/` 和 `_draft/` 层可以暂无 consumer（作为 building block 或孵化品）
+- `wheels/WISHLIST.md` 不能列已存在的 wheel 名（stale candidate）
+
+历史教训详见 `memory/feedback_wheel_commit_not_sunk.md`：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。
+
 ## 1. 零号铁律：Why not VSF native?
 
 完整策略见 **[ADR-006](adr/006-prefer-vsf-native-over-custom-wheel.md)**（单一来源）。
