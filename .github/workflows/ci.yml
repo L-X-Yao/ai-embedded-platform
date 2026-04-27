@@ -7,6 +7,19 @@ on:
     branches: [main]
 
 jobs:
+  wheel-audit:
+    name: wheel audit (orphan + WISHLIST drift)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Audit wheels
+        run: python tooling/scripts/audit_wheels.py
+
   log-wheel:
     name: log wheel (linux64 sim)
     runs-on: ubuntu-24.04
