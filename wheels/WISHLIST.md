@@ -26,7 +26,6 @@
 |------|------|-------------|
 | `gpio_led` | LED 状态机：闪烁 / 呼吸 / 脉冲 / 组合 pattern | VSF 无（HAL 只提供 GPIO 原语） |
 | `gpio_button` | 按键消抖 + 长按 / 双击 / 组合键 | VSF 无 |
-| `ws2812` | WS2812B RGB LED 驱动（timer PWM bit-bang） | VSF 无 · 触发：drone_light (×1) |
 | `ssd1306` | OLED（I2C，调试常用） | VSF 有 tgui 但底层驱动需自写 |
 
 ## L2 · 协议 / 服务
@@ -37,7 +36,6 @@
 | `mqtt_client` | MQTT 3.1.1 客户端（IoT 场景必备） | VSF 无；选型 paho / mongoose / mqttnet |
 | `modbus_rtu_master` | Modbus RTU 主站（工业项目典型） | VSF 无 |
 | `modbus_rtu_slave` | Modbus RTU 从站 | VSF 无 |
-| `ncp5623_parser` | I2C 从机解析 NCP5623 兼容 LED 颜色协议（飞控 → LED 控制器通用） | VSF 无应用层 I2C 协议 · 触发：drone_light (×1) |
 
 ## L3 · 功能模块
 
