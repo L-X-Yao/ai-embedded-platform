@@ -1,0 +1,82 @@
+# gpio_button — button debounce and gesture driver
+
+**Status: candidate**
+
+Tick-driven button state machine with debounce, click, double-click, and long-press detection.
+Single HAL callback, zero hardware dependency, no dynamic allocation.
+
+## Why not VSF native?
+
+Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
+`button`, `debounce`, `key`, `input_event` — zero results.
+
+VSF provides GPIO HAL primitives but no button debounce or gesture detection.
+
+## Origin
+
+Extracted from common embedded button patterns. Proactive build for `projects/flybox/` and `projects/drone_light/` platform.
+
+## API
+
+```c
+/* HAL: caller provides a read-level function */
+gpio_btn_hal_t hal = {
+    .read = my_gpio_read,   /* returns 0 or 1 */
+    .ctx  = &my_pin,
+};
+
+/* Configuration (or use defaults) */
+gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
+/* Defaults: debounce=20ms, long_press=1000ms, double_click=300ms, active_low */
+
+gpio_btn_t btn;
+gpio_btn_init(&btn, &hal, &cfg);
+
+/* Call periodically (1-10ms recommended) */
+gpio_btn_evt_t evt = gpio_btn_tick(&btn, 1);
+
+switch (evt) {
+case GPIO_BTN_EVT_PRESS:        /* raw press edge (debounced) */
+case GPIO_BTN_EVT_RELEASE:      /* raw release edge */
+case GPIO_BTN_EVT_CLICK:        /* short press + release (after dc window) */
+case GPIO_BTN_EVT_DOUBLE_CLICK: /* two clicks within dc window */
+case GPIO_BTN_EVT_LONG_PRESS:   /* held ≥ long_press_ms */
+default: break;
+}
+
+/* Query current state */
+if (gpio_btn_is_pressed(&btn)) { /* ... */ }
+```
+
+## Event priority
+
+| Gesture | Condition | When emitted |
+|---------|-----------|--------------|
+| PRESS | Debounced press edge | Immediately |
+| RELEASE | Debounced release edge | Immediately |
+| LONG_PRESS | Held ≥ `long_press_ms` | During hold |
+| CLICK | Short press + release | After `double_click_ms` idle |
+| DOUBLE_CLICK | Two presses within `double_click_ms` | On second release |
+
+LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.
+
+## Known issues
+
+- CLICK event is delayed by `double_click_ms` (default 300ms) to distinguish from double-click. Set `double_click_ms=0` to disable double-click and get immediate clicks (not yet supported — would need code change).
+- No triple-click or hold-duration reporting. Add if a project needs them.
+- Tick resolution affects debounce accuracy. 1ms ticks give ±1ms jitter.
+
+## Tests
+
+```bash
+cd wheels/drivers/gpio_button/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_gpio_button
+```
+
+27 assertions across 12 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks.
+
+## API review
+
+- **Date**: 2026-04-27
+- **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_btn_cfg_t`.
