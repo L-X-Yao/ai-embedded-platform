@@ -242,27 +242,30 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
 - ✅ **VSF SIM 投资期探索 2 轮（2026-04-22 日 / 晚）**：(1) linux64 kernel-only 路径证伪（scaffold `tooling/experiments/vsf-tryouts/kernel_test/` 保留作 triage 基线，见 ADR-008）；(2) mps2-an500 bare-metal 首选路径**实证跑通**（scaffold `tooling/experiments/vsf-tryouts/mps2_bare/`，QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 下 user_main 正常调度 + semihosting probe 输出 + exit 42 全通）；ADR-008 选项 C 从"选了但没验证"升级为 first-class；debugging-playbook 新增两组 canonical checklist（mps2 首选 + linux64 triage）共 10 条坑
 
-进行中：
+已完成：
 - ✅ **第一个真实项目 `projects/flybox/`**（无人机遥测盒子，GD32F405 + FreeRTOS + Air780EG）
   - 阶段 A（结构整合）完成
-  - 阶段 B 预备完成：分层策略定（驱动=VSF 原生，应用=POSIX），QEMU 实证 pthread/sem/recursive-mutex 全部通过
-  - 阶段 B（VSF 替换）等应用逻辑稳定后启动，预估 7-9 天
+  - VSF compat 层完成：FreeRTOS API 通过 POSIX shim 运行在 VSF 上，8 个 compat 问题已修，600s HIL soak 0 watchdog reset（2026-04-27）
+  - 5 个 wheel 沉淀完成（crc16 / w25qxx / qmi8658a / xgzp6816d / qmc5883p），全部 CI + flybox 真消费
+  - 磁力计功能完成：QMC5883P 驱动 + Mahony 9 轴 + 校准（Flash 持久化）
 - ✅ **第二个真实项目 `projects/drone_light/`**（无人机 LED 灯控，N32G003 裸机）
   - 轻量整合完成：不做 VSF 迁移（30KB Flash 放不下），保持裸机
   - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
-- ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox 所需外设全覆盖
+- ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
-- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——log wheel debug/release 构建 + pytest，push/PR 自动触发，当前全绿
+- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——8 个 job：wheel-audit + 6 个 wheel 构建测试 + flybox cross-compile + stack 分析，push/PR 自动触发，当前全绿
+- ✅ **开发效率工具链**（`tooling/scripts/`）——test_all.sh（统一测试 + --changed 增量）/ new_wheel.sh（wheel 脚手架）/ session_bootstrap.sh（会话上下文）/ wheel_promote.sh（阶段升级）/ build_flash（JSON verdict HIL 输出）/ gd32f4xx_debug/parse_fault.py（离线 Cortex-M fault 分类器）
+- ✅ **6 个 wheels**：log (L0 candidate) / crc16 (L0 candidate) / w25qxx (L1 candidate) / qmi8658a (L1 candidate) / xgzp6816d (L1 candidate) / qmc5883p (L1 candidate)
 
 未开展：
 - 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
 - HIL 自动化（当前人工粘日志过渡）
 - `tooling/scripts/test_downstream.sh`（等多项目时再写）
-- GD32F4xx HAL 真机验证（draft 状态，待 Phase B 真机调试确认）
+- 项目模板（`templates/` 仅占位，待第 3 个项目时提取）
 
 ## 下一步触发点（Sprint 0 已封版）
 
-**无真实项目触发前不改 `docs/`**。继续 polish 文档 ROI 为负（规则未经项目检验 + 文档-代码比例已严重倒挂：~2000 行文档 vs 1 个 candidate wheel）。
+**无真实项目触发前不改 `docs/`**。文档规则已经被 flybox + drone_light 两个项目检验，当前无新发现驱动的修改需求。
 
 解冻条件（触发就开工，未触发就别动文档）：
 

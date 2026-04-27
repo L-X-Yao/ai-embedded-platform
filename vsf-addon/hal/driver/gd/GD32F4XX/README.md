@@ -80,4 +80,6 @@ common/vendor/
 ## 验证平台
 
 - GD32F405RGT6 (Flybox 项目硬件)
-- 尚未真机验证（draft 状态）
+- CI cross-compile: gcc-arm-none-eabi 13.x (`.github/workflows/ci.yml` flybox-build job)
+- HIL 验证: flybox 固件在 GD32F405 + Air780EG 上跑 600s soak，0 watchdog reset (2026-04-26)
+- 已验证外设链路: SPI1 (W25Q64), I2C1 (QMI8658A), 软件 I2C (XGZP6816D, QMC5883P), USART0/1, GPIO, FMC
