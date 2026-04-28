@@ -268,6 +268,47 @@ static void test_rapid_clicks_separated(void)
     ASSERT(e == GPIO_BTN_EVT_CLICK, "second click");
 }
 
+static void test_reinit_resets_state(void)
+{
+    gpio_btn_t btn;
+    gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
+
+    printf("test_reinit_resets_state\n");
+    mock_level = 1;
+    gpio_btn_init(&btn, &mock_hal, &cfg);
+
+    mock_level = 0;
+    tick_ms(&btn, 25);
+    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed before re-init");
+
+    mock_level = 1;
+    gpio_btn_init(&btn, &mock_hal, &cfg);
+    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed after re-init");
+    ASSERT(gpio_btn_tick(&btn, 1) == GPIO_BTN_EVT_NONE, "no event after re-init");
+}
+
+static void test_debounce_boundary(void)
+{
+    gpio_btn_t btn;
+    gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
+
+    printf("test_debounce_boundary\n");
+
+    mock_level = 1;
+    gpio_btn_init(&btn, &mock_hal, &cfg);
+    mock_level = 0;
+    gpio_btn_evt_t e = tick_ms(&btn, 19);
+    ASSERT(e == GPIO_BTN_EVT_NONE, "no press at 19ms");
+    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed at 19ms");
+
+    mock_level = 1;
+    gpio_btn_init(&btn, &mock_hal, &cfg);
+    mock_level = 0;
+    e = tick_ms(&btn, 21);
+    ASSERT(e == GPIO_BTN_EVT_PRESS, "press at 21ms");
+    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed at 21ms");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -284,6 +325,8 @@ int main(void)
     test_null_safety();
     test_zero_dt();
     test_rapid_clicks_separated();
+    test_reinit_resets_state();
+    test_debounce_boundary();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;
