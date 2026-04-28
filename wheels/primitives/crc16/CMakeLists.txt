@@ -13,3 +13,6 @@ target_compile_options(crc16 PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(test_crc16 test_main.c)
 target_link_libraries(test_crc16 PRIVATE crc16)
 target_compile_options(test_crc16 PRIVATE -Wall -Wextra -Wpedantic)
+
+enable_testing()
+add_test(NAME crc16_tests COMMAND test_crc16)
