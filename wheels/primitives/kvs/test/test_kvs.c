@@ -268,6 +268,7 @@ int main(void)
     test_multiple_keys();
     test_iterator();
 
-    printf("\n%d tests, %d failures\n", tests_run, tests_fail);
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
     return tests_fail ? 1 : 0;
 }

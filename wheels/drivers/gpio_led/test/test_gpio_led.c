@@ -391,6 +391,7 @@ int main(void)
     test_blink_zero_on();
     test_pulse_zero_on();
 
-    printf("\n%d tests, %d failures\n", tests_run, tests_fail);
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
     return tests_fail ? 1 : 0;
 }
