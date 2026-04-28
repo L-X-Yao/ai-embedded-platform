@@ -29,6 +29,7 @@
 - `cli_parser/` — 嵌入式调试 shell 的最小 CLI 解析器（candidate）
 - `fal/` — Flash 抽象层（vendor: RT-Thread FAL）（candidate）
 - `kvs/` — 键值存储（vendor: FlashDB KVDB）（candidate）
+- `mahony_ahrs/` — Mahony AHRS 姿态估计滤波器（6/9 轴）（candidate）
 
 ### L1 Drivers（`drivers/`）
 - `w25qxx/` — W25Q 系列 SPI NOR Flash 驱动（candidate）
