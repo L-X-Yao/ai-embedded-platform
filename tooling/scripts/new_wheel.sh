@@ -510,6 +510,11 @@ TODO: list wheel dependencies (or "None.").
 |--------|---------|---------|
 | TODO   | TODO    | TODO    |
 
+## Supported platforms
+
+- [x] Host (sim) — TODO: date
+- [ ] TODO: real hardware target — not yet verified
+
 ## Known issues
 
 TODO.
@@ -521,6 +526,11 @@ cd wheels/${LAYER}/${NAME_LOWER}/test
 cmake -GNinja -S . -B build && cmake --build build
 ./build/test_${NAME_LOWER}
 \`\`\`
+
+## Test status
+
+- Unit tests (sim): TODO
+- HIL: N/A
 
 ## Convention Deviations
 
@@ -676,6 +686,11 @@ TODO: document any deviations from api-conventions.md.
 
 TODO.
 
+## Supported platforms
+
+- [x] Host (sim) — TODO: date
+- [ ] TODO: real hardware target — not yet verified
+
 ## Tests
 
 \`\`\`bash
@@ -683,6 +698,11 @@ cd wheels/${LAYER}/${NAME_LOWER}/test
 cmake -GNinja -S . -B build && cmake --build build
 ./build/test_${NAME_LOWER}
 \`\`\`
+
+## Test status
+
+- Unit tests (sim): TODO
+- HIL: N/A
 
 ## API review
 
