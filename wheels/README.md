@@ -25,15 +25,27 @@
 
 ### L0 Primitives（`primitives/`）
 - `log/` — 带等级 + 模块标签 + 多 sink + 编译期过滤的日志（candidate）
+- `crc16/` — CRC16-MODBUS 校验（table-based）（candidate）
+- `cli_parser/` — 嵌入式调试 shell 的最小 CLI 解析器（candidate）
+- `fal/` — Flash 抽象层（vendor: RT-Thread FAL）（candidate）
+- `kvs/` — 键值存储（vendor: FlashDB KVDB）（candidate）
 
 ### L1 Drivers（`drivers/`）
-（待添加——按芯片型号命名：`mpu6050/`、`w25q64/` 等）
+- `w25qxx/` — W25Q 系列 SPI NOR Flash 驱动（candidate）
+- `qmi8658a/` — QMI8658A 6 轴 IMU 驱动（I2C）（candidate）
+- `qmc5883p/` — QMC5883P 三轴磁力计驱动（I2C）（candidate）
+- `xgzp6816d/` — XGZP6816D 气压计驱动（I2C）（candidate）
+- `gpio_led/` — GPIO LED 控制（闪烁 / 呼吸 / 模式）（candidate）
+- `gpio_button/` — GPIO 按键（消抖 / 长按 / 连击）（candidate）
+- `ws2812/` — WS2812 RGB LED 驱动（bit-bang）（candidate）
 
 ### L2 Protocols（`protocols/`）
-（待添加）
+- `at_command/` — AT 指令解析器（URC + 超时 + 多匹配）（candidate）
+- `modbus_rtu/` — Modbus RTU 协议帧编解码（candidate）
+- `ncp5623_parser/` — NCP5623 I2C 命令解析器（candidate）
 
 ### L3 Modules（`modules/`）
-（待添加）
+（暂无——按项目触发，见 WISHLIST.md）
 
 ### Draft（`_draft/`）
 （暂无）
@@ -43,7 +55,7 @@
 - 新项目**先查 wheels/**，不要从零写
 - 发现 wheel 不够用 → **升级 wheel**，不要在项目里搞私有版本
 - wheel 修改 → 所有使用它的 `projects/` 需跑回归测试
-  - **TODO**：`tooling/scripts/test_downstream.sh <wheel>` 自动化脚本——等 `projects/` 有内容后实现
+  - 用 `tooling/scripts/test_downstream.sh <wheel>` 自动发现下游 wheel + 项目并回归测试
 
 ## 核心铁律
 
