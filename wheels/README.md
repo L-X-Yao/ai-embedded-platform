@@ -51,7 +51,33 @@
 （暂无——按项目触发，见 WISHLIST.md）
 
 ### Draft（`_draft/`）
-（暂无）
+- `ota_ab/` — A/B 固件槽管理 + 回滚（draft，待 API 审批）
+
+## Registry（快速查表）
+
+| Wheel | 层级 | 状态 | HAL 类型 | 消费者 |
+|-------|------|------|----------|--------|
+| `log` | L0 | candidate | VSF trace | drone_light |
+| `crc16` | L0 | candidate | (none) | flybox, modbus_rtu |
+| `cli_parser` | L0 | candidate | write_fn callback | — |
+| `fal` | L0 | candidate (vendor) | flash partition | kvs |
+| `kvs` | L0 | candidate (vendor) | fal | — |
+| `mahony_ahrs` | L0 | candidate | (none, pure math) | — |
+| `mag_cal` | L0 | candidate | (none, pure math) | flybox (test) |
+| `w25qxx` | L1 | candidate | SPI cs/xfer | flybox |
+| `qmi8658a` | L1 | candidate | I2C write/read | flybox |
+| `qmc5883p` | L1 | candidate | I2C write/read | flybox |
+| `xgzp6816d` | L1 | candidate | I2C write/read | flybox |
+| `gpio_led` | L1 | candidate | GPIO set | — |
+| `gpio_button` | L1 | candidate | GPIO read | — |
+| `ws2812` | L1 | candidate | PWM compare/wait | drone_light |
+| `at_command` | L2 | candidate | UART send | — |
+| `modbus_rtu` | L2 | candidate | (none, uses crc16) | — |
+| `ncp5623_parser` | L2 | candidate | (none, pure parser) | — |
+| `nmea_parser` | L2 | candidate | (none, pure parser) | — |
+| `ota_ab` | L2 | **draft** | flash erase/write/read | — |
+
+接入方法见 [`docs/integrating-wheels.md`](../docs/integrating-wheels.md)。
 
 ## 使用原则
 
