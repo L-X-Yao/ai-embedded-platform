@@ -268,6 +268,17 @@ static void test_init_write_order(void)
     ASSERT_EQ(write_log[4].reg, 0x0A, "5th: CR1 (mode)");
 }
 
+static void test_init_mid_step_fail(void)
+{
+    printf("test_init_mid_step_fail\n");
+    mock_reset();
+    /* op0=wake_write(ok), op1=chip_id_read(ok), op2=soft_reset_write(ok),
+     * op3=sign_write(fail) — tests that failure at 4th I2C op propagates */
+    mock_fail_at = 3;
+    qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(e, QMC5883P_ERR_I2C, "mid-init I2C failure propagated");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -280,6 +291,7 @@ int main(void)
     test_init_bad_chip_id();
     test_init_i2c_write_fail();
     test_init_i2c_read_fail();
+    test_init_mid_step_fail();
     test_read_ok();
     test_read_not_ready();
     test_read_i2c_fail();

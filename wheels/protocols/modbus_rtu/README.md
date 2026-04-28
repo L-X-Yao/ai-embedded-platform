@@ -90,11 +90,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_modbus_rtu
 ```
 
-108 assertions across 34 test cases: frame build/parse/CRC, master request builders (FC 03/04/06/10), master response parsing, slave dispatch (read holding/input, write single/multiple), address mismatch, broadcast (write executes + no response, read skipped), exception responses (unknown FC, missing callback, callback failure), null safety, master-slave round-trip integration.
+109 assertions across 34 test cases: frame build/parse/CRC, master request builders (FC 03/04/06/10), master response parsing, slave dispatch (read holding/input, write single/multiple), address mismatch, broadcast (write executes + no response, read skipped), exception responses (unknown FC, missing callback, callback failure), write_regs count boundary validation, null safety, master-slave round-trip integration.
 
 ## Test status
 
-- Unit tests (sim): PASS (34 C tests, 108 assertions)
+- Unit tests (sim): PASS (34 C tests, 109 assertions)
 - HIL: N/A
 
 ## API review

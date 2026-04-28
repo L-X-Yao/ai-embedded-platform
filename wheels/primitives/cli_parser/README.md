@@ -87,10 +87,10 @@ None.
 
 ## Test status
 
-- Unit tests: **PASS** (32 assertions across 15 test cases)
+- Unit tests: **PASS** (34 assertions across 16 test cases)
 - Coverage: init, known/unknown/empty commands, argument parsing, whitespace
-  handling, help, handler errors, overflow, null safety, feed+enter,
-  backspace, DEL, feed overflow, backspace on empty
+  handling, help, handler errors, overflow, max args truncation, null safety,
+  feed+enter, backspace, DEL, feed overflow, backspace on empty
 
 ## Usage example
 

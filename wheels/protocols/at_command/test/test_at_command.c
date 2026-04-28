@@ -360,6 +360,33 @@ static void test_null_safety(void)
     ASSERT(strcmp(at_cmd_get_prev_line(NULL), "") == 0, "null get_prev_line");
 }
 
+static void test_cms_error(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_cms_error\n");
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_expect(&at, "OK");
+
+    at_evt_type_t r = feed_string(&at, "+CMS ERROR: 305\r\n", &evt);
+    ASSERT(r == AT_EVT_ERROR, "CMS ERROR detected");
+}
+
+static void test_bare_newline(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_bare_newline\n");
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_expect(&at, "+CSQ:");
+
+    at_evt_type_t r = feed_string(&at, "+CSQ: 15,0\n", &evt);
+    ASSERT(r == AT_EVT_OK, "bare LF triggers line processing");
+    ASSERT(strcmp(at_cmd_get_matched(&at), "+CSQ: 15,0") == 0, "matched without CR");
+}
+
 static void test_urc_table_full(void)
 {
     at_cmd_t at;
@@ -395,6 +422,8 @@ int main(void)
     test_multiple_urc_handlers();
     test_cr_stripping();
     test_empty_lines_ignored();
+    test_cms_error();
+    test_bare_newline();
     test_null_safety();
     test_urc_table_full();
 
