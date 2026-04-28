@@ -149,6 +149,7 @@ ai-embedded-platform/
 | 006 | 新 wheel 前必须 grep VSF 原生 |
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
 | 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU，已实证） |
+| 009 | Wheel 依赖规则：具体/接口两类，方向只能向下，禁止循环 |
 
 全部见 `docs/adr/README.md`。
 

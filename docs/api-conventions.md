@@ -229,13 +229,23 @@ LOG_ERROR("mpu6050 read timeout");
  */
 ```
 
-## 9. 版本
+## 9. 依赖
+
+完整规则见 **[ADR-009](adr/009-wheel-dependency-rules.md)**（单一来源）。摘要：
+
+- **方向**：只能向下（L3→L2→L1→L0→无），禁止向上，同层需说明理由
+- **具体依赖**：直接 `#include`，仅用于唯一实现的算法（如 modbus→crc16）。文件头 `Deps:` 列 wheel 名
+- **接口依赖**：HAL callback 注入，用于可替换的服务（如 kvs→flash_hal）。文件头 `Deps:` 列 `<名>_hal`
+- **判据**：只有一种正确实现→具体依赖；多种实现都合理→接口依赖
+- **禁止循环**
+
+## 10. 版本
 
 wheel 内部不写死版本号。版本 = git tag（如 `wheel/mpu6050/v0.2.0`）。
 
 ---
 
-## 10. 偏离约定的处理
+## 11. 偏离约定的处理
 
 **偏离约定需明确理由**：在 wheel 的 README 写一节 "Convention Deviations"，列出哪些约定没遵守、为什么。
 

@@ -50,3 +50,4 @@
 | 006 | 优先用 VSF 原生，不重造轮子 | accepted | 新 wheel 前必须 grep VSF |
 | 007 | VSF 作为永久基座 | accepted | 不为切 RTOS 做架构预案，AI 兜底维护 |
 | 008 | VSF linux64 不是 kernel-only sim 路径 | accepted | kernel-only sim 走 mps2+QEMU，linux64 仅用于 busybox 模式 |
+| 009 | Wheel 依赖规则 | proposed | 两种类型（具体/接口）+ 方向只能向下 + 禁止循环 |
