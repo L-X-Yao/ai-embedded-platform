@@ -61,12 +61,22 @@
 
 按函数语义分三类：
 
-**(a) 纯状态函数** — 用 `vsf_err_t`，复用 VSF 错误码空间
+**(a) 纯状态函数** — 用 wheel 级错误枚举
 
 ```c
-vsf_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_cfg_t *cfg);
-// 返回: VSF_ERR_NONE (0) / -VSF_ERR_NOT_READY / -VSF_ERR_FAIL / ...
+typedef enum {
+    QMI8658A_OK = 0,
+    QMI8658A_ERR_I2C,
+    QMI8658A_ERR_ID,
+    QMI8658A_ERR_NOT_READY,
+} qmi8658a_err_t;
+
+qmi8658a_err_t qmi8658a_init(const qmi8658a_i2c_t *i2c);
 ```
+
+命名：`<WHEEL_NAME>_OK = 0`，其余 `<WHEEL_NAME>_ERR_<原因>`。OK 必须为 0。
+
+**为什么不用 `vsf_err_t`**：wheels 设计为可脱离 VSF 独立编译（host 测试、其他 RTOS 复用），依赖 `vsf_err_t` 会引入不必要的 VSF 耦合。Wheel 级枚举还能携带 domain-specific 错误语义（如 `ERR_I2C` vs `ERR_ID`）。
 
 **(b) 返回有意义数值的函数** — 正数是有效值，可能用负数或 0 表示错误（POSIX 风格）
 
@@ -76,12 +86,9 @@ size_t ring_buffer_write(ring_buffer_t *rb, const uint8_t *data, size_t len);
 
 int log_add_sink(log_sink_fn fn, void *ctx);
 // 返回: sink id >=0，或 -1 失败（POSIX 风格，类比 open/socket）
-
-int some_fd_open(const char *path);
-// 返回: fd >=0，或 -1 失败
 ```
 
-**何时选 (b) 不选 (a)**：函数本质要**返回一个值**（id / size / count / fd）。硬塞 `vsf_err_t` 就得用 out-parameter，难用。
+**何时选 (b) 不选 (a)**：函数本质要**返回一个值**（id / size / count / fd）。硬塞错误枚举就得用 out-parameter，难用。
 
 **(c) 布尔函数** — 用 `bool`（命名 `xxx_is_xxx`）
 
@@ -89,7 +96,7 @@ int some_fd_open(const char *path);
 bool ring_buffer_is_empty(ring_buffer_t *rb);
 ```
 
-**原则**：不自造错误码空间——要么 `vsf_err_t`，要么 POSIX 风格 -1。不要写"自己一套 `MYWHEEL_ERR_*` 枚举"。
+**原则**：每个 wheel 用自己的 `<name>_err_t` 枚举。不用 `vsf_err_t`（可移植性），也不用裸 int（无类型安全）。Vendor wheel 例外——沿用上游 API 的错误码风格。
 
 ### 2.2 不用 `errno` 全局变量
 
