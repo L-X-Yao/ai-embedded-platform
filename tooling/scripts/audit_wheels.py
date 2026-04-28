@@ -192,6 +192,22 @@ def has_thread_safe_annotations(wheel_dir: Path, name: str) -> bool:
     return "@thread_safe" in text
 
 
+def has_test_exit_code(wheel_dir: Path) -> bool:
+    """Check test main() returns non-zero on failure."""
+    patterns = ["tests_fail", "g_failures", "failures"]
+    for glob_pat in ["test/test_*.c", "test_*.c"]:
+        for src in wheel_dir.glob(glob_pat):
+            try:
+                text = src.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if "return" in text and any(p in text for p in patterns):
+                return True
+    if list(wheel_dir.glob("test_*.py")) or list(wheel_dir.glob("test/test_*.py")):
+        return True
+    return False
+
+
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -411,6 +427,19 @@ def main() -> int:
             continue
         if not has_thread_safe_annotations(wheel_dir, name):
             warnings.append(f"{path}: .h missing @thread_safe annotations")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- Test exit code check ---
+    print("\n=== Test exit code (return tests_fail) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_test_exit_code(wheel_dir):
+            warnings.append(f"{path}: test harness may not return non-zero on failure")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")
