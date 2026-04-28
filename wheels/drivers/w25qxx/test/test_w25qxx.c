@@ -5,6 +5,7 @@
 
 /* ---------- mock SPI flash (64KB simulated) ---------- */
 
+#define SR1_BUSY   0x01
 #define MOCK_SIZE  65536U
 static uint8_t mock_mem[MOCK_SIZE];
 static int     mock_cs;
@@ -15,6 +16,7 @@ static int     mock_addr_bytes;
 static uint8_t mock_status;
 static int     mock_fail_next;
 static uint32_t mock_jedec;
+static int     mock_stuck_busy;
 
 static int     tests_run, tests_fail;
 
@@ -29,6 +31,7 @@ static void mock_reset(void)
     mock_status = 0;
     mock_fail_next = 0;
     mock_jedec = 0xEF4017; /* W25Q64 */
+    mock_stuck_busy = 0;
 }
 
 static void mock_cs_low(void *ctx) { (void)ctx; mock_cs = 0; mock_phase = 1; mock_addr_bytes = 0; }
@@ -85,7 +88,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             id_byte = (id_byte + 1) % 3;
             return r;
         }
-        if (mock_cmd == 0x05) return mock_status;
+        if (mock_cmd == 0x05) return mock_status | (mock_stuck_busy ? SR1_BUSY : 0);
         if (mock_cmd == 0x03) {
             uint8_t r = (mock_addr < MOCK_SIZE) ? mock_mem[mock_addr] : 0xFF;
             mock_addr++;
@@ -276,6 +279,17 @@ static void test_nor_program_semantics(void)
     ASSERT_EQ(mock_mem[0x300], 0xFF, "erase restores 0xFF");
 }
 
+static void test_timeout_stuck_busy(void)
+{
+    printf("test_timeout_stuck_busy\n");
+    mock_reset();
+    mock_stuck_busy = 1;
+    uint8_t data[] = {0x42};
+    w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, data, 1);
+    ASSERT_EQ(e, W25QXX_ERR_TIMEOUT, "stuck busy returns timeout");
+    mock_stuck_busy = 0;
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -292,6 +306,7 @@ int main(void)
     test_read_write_cycle();
     test_read_status();
     test_nor_program_semantics();
+    test_timeout_stuck_busy();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

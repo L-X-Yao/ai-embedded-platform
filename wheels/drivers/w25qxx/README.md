@@ -64,7 +64,7 @@ None. Pure C99 with injected SPI HAL callbacks.
 
 ## Test status
 
-- Host mock tests: PASS (29 tests covering init, read, program, erase, status, timeout, alignment, edge cases)
+- Host mock tests: PASS (30 tests covering init, read, program, erase, status, timeout, alignment, edge cases)
 - HIL: PASS on GD32F405 + W25Q64 (SPI1 PB12-15), 2026-04-26
 
 ## API convention deviations
