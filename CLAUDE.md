@@ -9,6 +9,16 @@ AI 驱动的嵌入式开发母仓库。**不是**学习仓库、不是 sandbox�
 - 随项目积累，`wheels/` + `templates/` 越来越厚，新项目起点逐步降为"配参数 + 写应用"
 - 时间尺度：前 2-3 个项目是投资期（AI 占比 40-50%），第 4 个起 ROI 显著正，24 月稳态 80%+
 
+## 新项目启动清单（Day 1）
+
+1. `mkdir -p projects/<name>` + `cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md`
+2. 填写项目 CLAUDE.md（硬件表 / 技术栈 / VSF 迁移决策）
+3. `ls wheels/` 查可用 wheel，选需要的列入项目 CLAUDE.md
+4. 候选 wheel 同步到 `wheels/WISHLIST.md`（信号计数 +1）
+5. 搭建构建系统，接入 wheel（见 [`docs/integrating-wheels.md`](docs/integrating-wheels.md)）
+6. 加 CI job（参考 `.github/workflows/ci.yml` flybox-build）
+7. 首次构建通过 → 开始写功能
+
 ## 给 AI 的工作原则（按重要度）
 
 ### 0. 零号铁律：新建 wheel 前先 grep VSF 原生
