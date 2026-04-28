@@ -46,12 +46,13 @@
 - `modbus_rtu/` — Modbus RTU 协议帧编解码（candidate）
 - `ncp5623_parser/` — NCP5623 I2C 命令解析器（candidate）
 - `nmea_parser/` — NMEA 0183 GPS/GNSS 句子解析器（candidate）
+- `ota_ab/` — A/B 固件槽管理 + 回滚（candidate）
 
 ### L3 Modules（`modules/`）
 （暂无——按项目触发，见 WISHLIST.md）
 
 ### Draft（`_draft/`）
-- `ota_ab/` — A/B 固件槽管理 + 回滚（draft，待 API 审批）
+（暂无）
 
 ## Registry（快速查表）
 
@@ -75,7 +76,7 @@
 | `modbus_rtu` | L2 | candidate | (none, uses crc16) | — |
 | `ncp5623_parser` | L2 | candidate | (none, pure parser) | — |
 | `nmea_parser` | L2 | candidate | (none, pure parser) | — |
-| `ota_ab` | L2 | **draft** | flash erase/write/read | — |
+| `ota_ab` | L2 | candidate | flash erase/write/read | — |
 
 接入方法见 [`docs/integrating-wheels.md`](../docs/integrating-wheels.md)。
 

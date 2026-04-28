@@ -1,6 +1,6 @@
 # ota_ab — A/B firmware slot manager with rollback
 
-**Status: draft**
+**Status: candidate**
 **Layer: L2 (protocols)**
 
 Platform-agnostic A/B firmware slot management for OTA upgrades. Handles slot selection,
@@ -92,5 +92,5 @@ None.
 
 ## API review
 
-- **Date**: 2026-04-28 (draft, pending human review for candidate promotion)
+- **Date**: 2026-04-28
 - **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
