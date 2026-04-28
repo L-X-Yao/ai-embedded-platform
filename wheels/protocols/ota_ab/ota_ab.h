@@ -2,7 +2,7 @@
  * ota_ab — A/B firmware slot manager with rollback
  *
  * Layer:   L2
- * Status:  draft
+ * Status:  candidate
  * Deps:    flash_hal
  */
 
