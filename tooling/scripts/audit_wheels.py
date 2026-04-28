@@ -154,16 +154,17 @@ def has_candidate_sections(wheel_dir: Path) -> list:
 
 
 def has_file_header(wheel_dir: Path, name: str) -> bool:
-    """Check .h and .c have api-conventions §8 file header (Layer/Status/Deps)."""
+    """Check .h and .c have api-conventions §8 file header in first 10 lines."""
     for ext in (".h", ".c"):
         src = wheel_dir / f"{name}{ext}"
         if not src.exists():
             continue
         try:
-            text = src.read_text(encoding="utf-8", errors="ignore")
+            lines = src.read_text(encoding="utf-8", errors="ignore").splitlines()[:10]
+            top = "\n".join(lines)
         except OSError:
             continue
-        if "Layer:" not in text or "Status:" not in text:
+        if "Layer:" not in top or "Status:" not in top:
             return False
     return True
 
