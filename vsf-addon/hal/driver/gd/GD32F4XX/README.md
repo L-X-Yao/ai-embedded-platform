@@ -2,7 +2,9 @@
 
 GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 
-## Status: draft
+## Status
+
+GPIO/USART/Flash/SPI/I2C 五个外设驱动已通过 flybox HIL 验证（600s soak, 0 watchdog reset, 2026-04-26）。CI cross-compile 全绿。代码稳定但未经第二个 GD32F4 项目复验，整体标记 **candidate**。
 
 ## 支持的型号
 
@@ -13,11 +15,11 @@ GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 
 | 外设 | 状态 | 来源 | 说明 |
 |------|------|------|------|
-| GPIO | draft | 复用 GD32H7XX | 寄存器布局完全一致 |
-| USART | draft | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
-| Flash (FMC) | draft | 改写自 GD32H7XX | 非均匀扇区(16K×4+64K+128K×7)，word 编程 |
-| SPI | draft | 从零编写 | Master/Slave 模式，8/16-bit，FIFO 轮询+中断 |
-| I2C | draft | 从零编写 | Master 事件驱动状态机(EV5/6/7/8)，EV+ER 双中断 |
+| GPIO | HIL verified | 复用 GD32H7XX | 寄存器布局完全一致 |
+| USART | HIL verified | 改写自 GD32H7XX | F4XX 无 FIFO/CMD/INTC，用 STAT0+DATA 清中断 |
+| Flash (FMC) | HIL verified | 改写自 GD32H7XX | 非均匀扇区(16K×4+64K+128K×7)，word 编程 |
+| SPI | HIL verified | 从零编写 | Master/Slave 模式，8/16-bit，FIFO 轮询+中断 |
+| I2C | HIL verified | 从零编写 | Master 事件驱动状态机(EV5/6/7/8)，EV+ER 双中断 |
 
 ## Why not VSF native?
 
