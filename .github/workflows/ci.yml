@@ -125,7 +125,7 @@ jobs:
           cmake --build build
 
       - name: Test
-        run: ./build/test_${{ matrix.name }}
+        run: ctest --test-dir build --output-on-failure
 
   flybox-tests:
     name: flybox project tests (host)
@@ -139,7 +139,7 @@ jobs:
         run: |
           cmake -GNinja -S . -B build
           cmake --build build
-          ./build/test_mag_cal
+          ctest --test-dir build --output-on-failure
 
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
