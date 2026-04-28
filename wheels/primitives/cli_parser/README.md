@@ -72,6 +72,10 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 | `CLI_LINE_BUFSIZE` | 128 | Max input line length |
 | `CLI_MAX_ARGS` | 8 | Max number of arguments per command |
 
+## Origin
+
+Proactive build for embedded debug shells. Not extracted from a specific project — common pattern across flybox (USART0 debug) and drone_light (development diagnostics).
+
 ## Dependencies
 
 None. Pure C99 with `<string.h>` and `<stddef.h>` only.
