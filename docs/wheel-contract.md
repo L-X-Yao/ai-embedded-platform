@@ -172,6 +172,7 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 - pytest 能 discover 且所有测试绿
 - 至少 **3 个测试 case**：正常路径 / 边界 / 错误输入
 - 测试独立可复现（不依赖全局状态、不依赖外部网络）
+- **输出格式**：`N tests, M passed, M failed`（`test_all.sh` 靠此正则解析结果）
 
 **L0**：sim 测试覆盖 ≥ 80% 代码行（目测或用 gcov）  
 **L1**：sim mock 测试 + 至少 1 次真机验收记录  
