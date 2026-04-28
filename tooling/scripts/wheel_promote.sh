@@ -177,6 +177,12 @@ fi
 echo ""
 echo -e "${BOLD}=== Summary ===${NC}"
 echo -e "  Changes: $CHANGES"
+
+# --- Vendor wheel check (ADR-010) ---
+if [[ -d "$TO_DIR/vendor" ]] && [[ ! -f "$TO_DIR/VENDOR.md" ]]; then
+    echo -e "  ${RED}WARNING: vendor/ dir found but VENDOR.md missing — ADR-010 requires it${NC}"
+fi
+
 if $DRY_RUN; then
     echo -e "  ${YELLOW}Dry run — no files were modified. Remove --dry-run to execute.${NC}"
 else

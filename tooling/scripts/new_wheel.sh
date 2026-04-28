@@ -713,33 +713,17 @@ find "$WHEEL_DIR" -type f | sort | while read -r f; do
 done
 
 echo ""
-echo "=== CI job snippet (paste into .github/workflows/ci.yml) ==="
+echo "=== CI: add this line to the wheel-test matrix in .github/workflows/ci.yml ==="
 echo ""
-cat << CI_EOF
-  ${NAME_LOWER}-wheel:
-    name: ${NAME_LOWER} wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/${LAYER}/${NAME_LOWER}/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_${NAME_LOWER}
-CI_EOF
-
+# Determine test directory path
+if [[ "$VENDOR" -eq 1 ]] || [[ -d "$WHEEL_DIR/test" ]]; then
+    CI_DIR="wheels/${LAYER}/${NAME_LOWER}/test"
+else
+    CI_DIR="wheels/${LAYER}/${NAME_LOWER}"
+fi
+echo "          - { name: ${NAME_LOWER}, dir: ${CI_DIR} }"
 echo ""
+
 echo "Done. Next steps:"
 if [[ "$VENDOR" -eq 1 ]]; then
 echo "  1. Copy upstream headers to vendor/inc/ and sources to vendor/src/"
@@ -751,6 +735,6 @@ else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
 fi
-echo "  $(( VENDOR ? 6 : 3 )). Paste CI snippet into .github/workflows/ci.yml"
+echo "  $(( VENDOR ? 6 : 3 )). Add the matrix entry above to ci.yml"
 echo "  $(( VENDOR ? 7 : 4 )). Run: tooling/scripts/test_all.sh ${NAME_LOWER}"
 echo "  $(( VENDOR ? 8 : 5 )). Run: python tooling/scripts/audit_wheels.py"
