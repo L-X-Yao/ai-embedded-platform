@@ -286,7 +286,21 @@ extern "C" {
 
 ## 11. 版本
 
-wheel 内部不写死版本号。版本 = git tag（如 `wheel/mpu6050/v0.2.0`）。
+wheel 内部不写死版本号。版本 = git tag。
+
+**Tag 格式**：`wheel/<name>/v<MAJOR>.<MINOR>.<PATCH>`
+
+```bash
+git tag -a "wheel/crc16/v0.1.0" -m "crc16 v0.1.0: initial candidate release"
+git push origin --tags
+```
+
+- `v0.1.0` = 首次 candidate release
+- MAJOR 升级 = API 破坏性变更
+- MINOR 升级 = 新功能，向后兼容
+- PATCH 升级 = bug fix
+
+项目可通过 tag 锁定 wheel 版本（monorepo 内用 commit hash 引用即可，tag 作为可读标记）。
 
 ---
 
