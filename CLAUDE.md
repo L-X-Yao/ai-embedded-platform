@@ -255,9 +255,9 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
   - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
-- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——15 个 job：wheel-audit + 13 个 wheel 构建测试 + flybox cross-compile + stack 分析，push/PR 自动触发，当前全绿
+- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——16 个 job：wheel-audit + 14 个 wheel 构建测试 + flybox cross-compile + stack 分析，push/PR 自动触发，当前全绿
 - ✅ **开发效率工具链**（`tooling/scripts/`）——test_all.sh（统一测试 + --changed 增量）/ new_wheel.sh（wheel 脚手架）/ session_bootstrap.sh（会话上下文）/ wheel_promote.sh（阶段升级）/ build_flash（JSON verdict HIL 输出）/ gd32f4xx_debug/parse_fault.py（离线 Cortex-M fault 分类器）
-- ✅ **13 个 wheels**：log (L0) / crc16 (L0) / fal (L0, vendor) / w25qxx (L1) / qmi8658a (L1) / xgzp6816d (L1) / qmc5883p (L1) / ws2812 (L1) / gpio_led (L1) / gpio_button (L1) / ncp5623_parser (L2) / at_command (L2) / modbus_rtu (L2)，全部 candidate
+- ✅ **14 个 wheels**：log (L0) / crc16 (L0) / fal (L0, vendor) / kvs (L0, vendor FlashDB) / w25qxx (L1) / qmi8658a (L1) / xgzp6816d (L1) / qmc5883p (L1) / ws2812 (L1) / gpio_led (L1) / gpio_button (L1) / ncp5623_parser (L2) / at_command (L2) / modbus_rtu (L2)，全部 candidate
 - ✅ **HIL 自动化**（`tooling/hil/hil_runner.py`）——封装 build_flash_check.sh，soak 三档（quick 30s / standard 600s / stress 1800s），结果按时间戳存档，--compare 对比历史
 - ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
