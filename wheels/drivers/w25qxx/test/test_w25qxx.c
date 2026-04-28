@@ -290,6 +290,38 @@ static void test_timeout_stuck_busy(void)
     mock_stuck_busy = 0;
 }
 
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    uint32_t id;
+    uint8_t buf[4];
+    uint8_t sr;
+    ASSERT_EQ(w25qxx_init(NULL, &id), W25QXX_ERR_SPI, "init(NULL)");
+    ASSERT_EQ(w25qxx_read(NULL, 0, buf, 4), W25QXX_ERR_SPI, "read(NULL spi)");
+    ASSERT_EQ(w25qxx_read(&mock_spi, 0, NULL, 4), W25QXX_ERR_SPI, "read(NULL buf)");
+    ASSERT_EQ(w25qxx_page_program(NULL, 0, buf, 1), W25QXX_ERR_SPI, "program(NULL spi)");
+    ASSERT_EQ(w25qxx_page_program(&mock_spi, 0, NULL, 1), W25QXX_ERR_SPI, "program(NULL data)");
+    ASSERT_EQ(w25qxx_sector_erase(NULL, 0), W25QXX_ERR_SPI, "erase(NULL)");
+    ASSERT_EQ(w25qxx_chip_erase(NULL), W25QXX_ERR_SPI, "chip_erase(NULL)");
+    ASSERT_EQ(w25qxx_read_status(NULL, &sr), W25QXX_ERR_SPI, "status(NULL spi)");
+    ASSERT_EQ(w25qxx_read_status(&mock_spi, NULL), W25QXX_ERR_SPI, "status(NULL sr)");
+}
+
+static void test_reinit_different_chip(void)
+{
+    printf("test_reinit_different_chip\n");
+    mock_reset();
+    uint32_t id1 = 0;
+    w25qxx_init(&mock_spi, &id1);
+    ASSERT_EQ(id1, 0xEF4017, "first init W25Q64");
+
+    mock_jedec = 0xEF4018;
+    uint32_t id2 = 0;
+    w25qxx_err_t e = w25qxx_init(&mock_spi, &id2);
+    ASSERT_EQ(e, W25QXX_OK, "re-init OK");
+    ASSERT_EQ(id2, 0xEF4018, "second init W25Q128");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -307,6 +339,8 @@ int main(void)
     test_read_status();
     test_nor_program_semantics();
     test_timeout_stuck_busy();
+    test_null_safety();
+    test_reinit_different_chip();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

@@ -263,6 +263,40 @@ static void test_off_color(void)
     ASSERT(evt.data.color.b == 0, "b=0");
 }
 
+static void test_reinit_clears_enabled(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_reinit_clears_enabled\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable[] = {0x04, 0x03};
+    send_transaction(&p, enable, 2, NULL);
+    ASSERT(p.enabled == 1, "enabled before re-init");
+
+    ncp5623_parser_init(&p);
+    ASSERT(p.enabled == 0, "disabled after re-init");
+    ASSERT(p.idx == 0, "idx reset after re-init");
+
+    uint8_t color[] = {0x01, 0x0F, 0x00, 0x00};
+    ncp5623_evt_type_t r = send_transaction(&p, color, 4, &evt);
+    ASSERT(r == NCP5623_EVT_NONE, "color ignored after re-init (not enabled)");
+}
+
+static void test_empty_transaction(void)
+{
+    ncp5623_parser_t p;
+
+    printf("test_empty_transaction\n");
+    ncp5623_parser_init(&p);
+
+    ncp5623_parser_start(&p);
+    ncp5623_parser_stop(&p);
+    ASSERT(p.idx == 0, "idx stays 0 after empty transaction");
+    ASSERT(p.enabled == 0, "still disabled after empty transaction");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -280,6 +314,8 @@ int main(void)
     test_short_color_packet_ignored();
     test_null_safety();
     test_off_color();
+    test_reinit_clears_enabled();
+    test_empty_transaction();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;
