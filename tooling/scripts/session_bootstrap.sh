@@ -150,8 +150,10 @@ fi
 
 echo ""
 echo -e "${BOLD}=== CI ===${NC}"
-job_count=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || echo "?")
-echo "  Jobs in ci.yml: $job_count"
+yaml_jobs=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || echo 0)
+matrix_entries=$(grep -cE '^\s+- \{ name:' "$CI_YAML" 2>/dev/null || echo 0)
+job_count=$((yaml_jobs + matrix_entries - (matrix_entries > 0 ? 1 : 0)))
+echo "  Jobs in ci.yml: $job_count ($yaml_jobs definitions, $matrix_entries matrix entries)"
 
 last_run=$(git -C "$REPO" log --oneline -1 --format="%h %s" -- .github/workflows/ 2>/dev/null || echo "n/a")
 echo "  Last CI change: $last_run"
