@@ -3,69 +3,70 @@
 **STATUS: candidate**
 **Layer: L0 (primitives)**
 
-带等级 + 模块标签 + 多 sink + 编译期过滤的日志 wheel，封装在 `vsf_trace` 之上。
+Leveled logging with module tags, multi-sink output, and compile-time filtering.
+Built on top of `vsf_trace`.
 
 ## Why not VSF native?
 
-已检查 VSF 模块：
+Checked VSF modules:
 
-- `vsf_trace`（`service/trace/`）：✓ 提供等级（NONE/ERROR/WARNING/INFO/DEBUG）、printf 风格、彩色、stream 输出、buffer hex dump。**覆盖 ~60% 需求**。
-- `vsf_bgtrace`（同文件）：✓ 类型化后台 ring buffer trace，用于高频追踪场景。与本 wheel 定位不冲突。
+- `vsf_trace` (`service/trace/`): provides levels (NONE/ERROR/WARNING/INFO/DEBUG), printf-style, color, stream output, buffer hex dump. **Covers ~60% of requirements.**
+- `vsf_bgtrace` (same file): typed background ring buffer trace for high-frequency tracing. Non-competing with this wheel.
 
-**VSF 原生缺的 4 个能力**（嵌入式产品常需）：
-1. **模块标识** — 日志里分不出 BLE / driver / app 来源
-2. **多 sink 同时输出** — vsf_trace 绑定单一 stream，不能 UART + flash + 远程并行
-3. **编译期 level 过滤** — vsf_trace 是运行时等级，DEBUG 字符串仍编译进 release binary
-4. **时间戳** — vsf_trace 不自动加时间前缀
+**4 capabilities VSF native lacks** (common in embedded products):
+1. **Module tagging** — cannot distinguish BLE / driver / app origin in logs
+2. **Multi-sink output** — vsf_trace binds to a single stream, cannot UART + flash + remote in parallel
+3. **Compile-time level filtering** — vsf_trace is runtime-only, DEBUG strings still compiled into release binary
+4. **Timestamps** — vsf_trace does not auto-prepend time
 
-**结论**：本 wheel **在 vsf_trace 之上封装**，不替换。默认 sink (`log_add_vsf_trace_sink`) 直接 bypass vsf_trace 自身格式化、把我们组好的行 `__vsf_trace_output()` 输出到 vsf_trace 绑定的 stream。复用 vsf_trace 的成熟 stream + 锁保护，不重造底层 IO。
+**Conclusion**: this wheel **wraps vsf_trace**, does not replace it. Default sink (`log_add_vsf_trace_sink`) bypasses vsf_trace formatting and outputs pre-formatted lines via `__vsf_trace_output()` to vsf_trace's bound stream. Reuses vsf_trace's mature stream + lock protection, no custom low-level IO.
 
 ## How to test
 
 ```bash
 cd wheels/primitives/log
 
-# 默认构建（LOG_LEVEL_MAX=LOG_LEVEL_DEBUG，所有级别都输出）
+# Default build (LOG_LEVEL_MAX=LOG_LEVEL_DEBUG, all levels emit)
 VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build
 cmake --build build
 
-# release 风格构建（LOG_LEVEL_MAX=LOG_LEVEL_WARN，DEBUG/INFO 被编译器消除）
-# 这个构建用于验证：DEBUG/INFO 的宏真的扩展成 ((void)0)，参数副作用不求值
+# Release-style build (LOG_LEVEL_MAX=LOG_LEVEL_WARN, DEBUG/INFO eliminated by compiler)
+# Verifies that DEBUG/INFO macros expand to ((void)0) with no side-effect evaluation
 VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build_release -DCMAKE_C_FLAGS='-DLOG_LEVEL_MAX=LOG_LEVEL_WARN'
 cmake --build build_release
 
 python3 -m pytest test_log.py -v
 ```
 
-预期：**11 个 C 测试 + 4 个 pytest 用例全绿**（含 release 构建编译期消除验证）。
+Expected: **11 C tests + 4 pytest cases all green** (including release build compile-time elimination verification).
 
-## API 摘要
+## API summary
 
 ```c
-/* 每个 .c 顶部声明模块名 */
+/* Declare module name at top of each .c file */
 #define LOG_MODULE "mymodule"
 #include "log.h"
 
-/* 四个主宏 */
+/* Four main macros */
 LOG_ERROR("...");
 LOG_WARN("...");
 LOG_INFO("...");
 LOG_DEBUG("...");
 
-/* 编译期过滤（release 可设 LOG_LEVEL_WARN 去掉 DEBUG/INFO 字符串） */
+/* Compile-time filtering (set LOG_LEVEL_WARN in release to strip DEBUG/INFO strings) */
 #define LOG_LEVEL_MAX  LOG_LEVEL_DEBUG
 
-/* 运行时 */
+/* Runtime */
 log_set_level(LOG_LEVEL_INFO);
-log_get_level();                     /* 查询当前运行时等级 */
-log_add_vsf_trace_sink();            /* 预置：路由到 vsf_trace 的 stream */
-log_add_stream_sink(&my_stream);     /* 任意 VSF stream */
-log_add_sink(my_sink_fn, ctx);       /* 自定义，返回 sink id */
-log_remove_sink(sink_id);            /* 移除已注册的 sink */
-log_set_time_fn(my_ms_fn);           /* NULL 可关时间戳 */
+log_get_level();                     /* query current runtime level */
+log_add_vsf_trace_sink();            /* built-in: route to vsf_trace stream */
+log_add_stream_sink(&my_stream);     /* any VSF stream */
+log_add_sink(my_sink_fn, ctx);       /* custom sink, returns sink id */
+log_remove_sink(sink_id);            /* remove registered sink */
+log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 ```
 
-## 输出格式
+## Output format
 
 ```
 [00012345] [I] [ble] connected to peer 0a:1b:2c
@@ -73,55 +74,55 @@ log_set_time_fn(my_ms_fn);           /* NULL 可关时间戳 */
 [00012389] [E] [app] config crc mismatch
 ```
 
-- `[XXXXXXXX]` 时间戳（ms，8 位对齐），可关
-- `[L]` 等级字符 `E/W/I/D`
-- `[module]` 调用处 `LOG_MODULE` 值
+- `[XXXXXXXX]` timestamp (ms, 8-digit padded), can be disabled
+- `[L]` level character `E/W/I/D`
+- `[module]` caller's `LOG_MODULE` value
 
-## 配置宏（可在项目侧覆盖）
+## Configuration macros
 
-| 宏 | 默认 | 说明 |
-|---|-----|------|
-| `LOG_LEVEL_MAX` | `LOG_LEVEL_DEBUG` | 编译期最高等级（高于此级的字符串被优化掉） |
-| `LOG_MAX_SINKS` | 4 | 最多注册的 sink 数 |
-| `LOG_LINE_BUFSIZE` | 256 | 每行最大字节（含前缀 + 消息 + 换行） |
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `LOG_LEVEL_MAX` | `LOG_LEVEL_DEBUG` | Compile-time max level (higher levels optimized out) |
+| `LOG_MAX_SINKS` | 4 | Maximum registered sinks |
+| `LOG_LINE_BUFSIZE` | 256 | Max bytes per line (prefix + message + newline) |
 
-## 设计取舍
+## Design tradeoffs
 
-| 点 | 选择 | 原因 |
-|----|------|------|
-| 模块标识 | `#define LOG_MODULE` 每文件手写 | 最简单、不依赖链接器、编译期常量可参与优化 |
-| 编译期过滤 | `if ((level) <= LOG_LEVEL_MAX)` | 编译器能把 DEAD 分支 + 字符串一起消除 |
-| Sink 注册 | 动态列表（runtime） | 灵活、多项目可插拔；空闲时零开销 |
-| vsf_trace 集成 | bypass 其格式化，复用其 stream 输出 | 避免双重前缀、复用成熟锁保护 |
-| 线程安全 | 每次 log_emit 用栈 buffer 256B | 无共享状态，无需锁；代价是栈使用 |
-| 结构化日志 | 暂不做 | 一般嵌入式产品不需要 JSON 日志 |
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Module tagging | `#define LOG_MODULE` per file | Simplest, no linker dependency, compile-time constant enables optimization |
+| Compile-time filter | `if ((level) <= LOG_LEVEL_MAX)` | Compiler eliminates dead branch + string literals |
+| Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
+| vsf_trace integration | Bypass its formatting, reuse stream output | Avoids double prefix, reuses mature lock protection |
+| Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
+| Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
-## 依赖
+## Dependencies
 
 - VSF kernel
 - `VSF_USE_SIMPLE_STREAM = ENABLED`
-- `VSF_USE_TRACE = ENABLED`（若用 `log_add_vsf_trace_sink`）
-- libc `snprintf` / `vsnprintf`（linux skin 带 simple_libc 即有）
+- `VSF_USE_TRACE = ENABLED` (if using `log_add_vsf_trace_sink`)
+- libc `snprintf` / `vsnprintf` (available via linux skin simple_libc)
 
-## 支持的平台
+## Supported platforms
 
-- [x] VSF linux host (sim) — 测试通过 2026-04-21
-- [x] VSF mps2-an500 bare-metal (QEMU) — 2026-04-22 via custom semihosting sink，见 `tooling/experiments/vsf-tryouts/mps2_bare/`
-- [ ] VSF + STM32F4 — 未验证
-- [ ] VSF + ESP32 — 未验证
+- [x] VSF linux host (sim) — passed 2026-04-21
+- [x] VSF mps2-an500 bare-metal (QEMU) — 2026-04-22 via custom semihosting sink, see `tooling/experiments/vsf-tryouts/mps2_bare/`
+- [ ] VSF + STM32F4 — not yet verified
+- [ ] VSF + ESP32 — not yet verified
 
-（L0 wheel 不强求真机，但可以在首个项目里顺便打勾。）
+(L0 wheels don't require real hardware, but can be ticked off when a project uses it.)
 
-## 已知坑
+## Known issues
 
-（暂无；发现后追加）
+None so far.
 
-## 测试状态
+## Test status
 
-- 单元测试（sim）：PASS（11/11 C 测试 + 4/4 pytest）
-- 硬件在环：N/A
+- Unit tests (sim): PASS (11/11 C tests + 4/4 pytest)
+- HIL: N/A
 
-## 用法示例
+## Usage examples
 
 ### 基础
 
@@ -165,18 +166,18 @@ log_add_sink(my_net_sink, NULL);
 
 ## Responsible human
 
-@user（2-3 人团队，暂）
+@user (2-3 person team)
 
 ## API review
 
-- 提案日期：2026-04-21
-- 审批人：@user
-- 关键决策：采纳所有默认推荐（Q1-Q5 全按 AI 建议执行）
+- Proposal date: 2026-04-21
+- Reviewer: @user
+- Key decisions: accepted all default recommendations (Q1-Q5 per AI suggestion)
 
-## 升级到 stable 前要做
+## Before promoting to stable
 
-- [ ] 至少 1 个真项目使用过
-- [ ] README 补 "性能参考" 节（log_emit 耗时 / RAM 占用）
-- [ ] README 补 "变更历史" 节
-- [ ] 跨平台 打勾（至少 STM32/ESP32 之一真机跑过）
-- [ ] 评估 rtdbg.h 3 条参考点（`_eval/rtthread_rtdbg/`）：ANSI 彩色（需 per-sink 方案）/ `LOG_HERE`（函数+行号）/ `LOG_RAW`（跳过前缀）。**均属新 API**，真实项目触发后独立走 wheel-contract §7 审批。hex dump 不自造，走 VSF `vsf_trace_dump_buff`（ADR-006）。
+- [ ] At least 1 real project uses it
+- [ ] Add "Performance reference" section (log_emit latency / RAM footprint)
+- [ ] Add "Changelog" section
+- [ ] Cross-platform tick (at least STM32/ESP32 verified on real hardware)
+- [ ] Evaluate rtdbg.h reference points (`_eval/rtthread_rtdbg/`): ANSI color (needs per-sink scheme) / `LOG_HERE` (function+line) / `LOG_RAW` (skip prefix). All are **new API** — go through wheel-contract §7 approval when triggered by a real project. Hex dump: use VSF `vsf_trace_dump_buff` (ADR-006), don't reinvent.
