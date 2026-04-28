@@ -243,6 +243,16 @@ static void test_feed_backspace_empty(void)
     ASSERT(out_len == 0);
 }
 
+static void test_run_max_args(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    cli_err_t err = cli_parser_run(&parser, "ping a b c d e f g h i");
+    ASSERT(err == CLI_OK);
+    ASSERT(last_argc == CLI_MAX_ARGS);
+}
+
 int main(void)
 {
     printf("test_cli_parser\n");
@@ -261,6 +271,7 @@ int main(void)
     test_feed_overflow();
     test_feed_del();
     test_feed_backspace_empty();
+    test_run_max_args();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_failed);
     return tests_failed ? 1 : 0;

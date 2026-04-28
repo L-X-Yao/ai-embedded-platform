@@ -269,6 +269,9 @@ static void test_master_write_multiple_invalid(void)
            "count 0");
     ASSERT(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0, 1, NULL) == -1,
            "null values");
+    ASSERT(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0,
+           MODBUS_MAX_WRITE_REGS + 1, &v) == -1,
+           "count > MODBUS_MAX_WRITE_REGS");
 }
 
 static void test_master_get_regs(void)
