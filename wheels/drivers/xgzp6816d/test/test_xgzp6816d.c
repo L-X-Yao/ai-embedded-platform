@@ -230,6 +230,27 @@ static void test_full_cycle(void)
     ASSERT(out.temperature_c > -40.0f && out.temperature_c < 150.0f, "temp in range");
 }
 
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    xgzp6816d_data_t out;
+    ASSERT_EQ(xgzp6816d_probe(NULL), XGZP6816D_ERR_I2C, "probe(NULL)");
+    ASSERT_EQ(xgzp6816d_trigger(NULL), XGZP6816D_ERR_I2C, "trigger(NULL)");
+    ASSERT_EQ(xgzp6816d_read(NULL, &out), XGZP6816D_ERR_I2C, "read(NULL, &out)");
+    mock_reset();
+    mock_set_pt_response(8388608, 22417);
+    ASSERT_EQ(xgzp6816d_read(&mock_i2c, NULL), XGZP6816D_ERR_I2C, "read(i2c, NULL)");
+}
+
+static void test_reprobe(void)
+{
+    printf("test_reprobe\n");
+    mock_reset();
+    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK, "first probe");
+    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK, "second probe");
+    ASSERT_EQ(mock_write_called, 2, "two probe calls");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -247,6 +268,8 @@ int main(void)
     test_read_temp_max();
     test_read_i2c_err();
     test_full_cycle();
+    test_null_safety();
+    test_reprobe();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

@@ -279,6 +279,38 @@ static void test_init_mid_step_fail(void)
     ASSERT_EQ(e, QMC5883P_ERR_I2C, "mid-init I2C failure propagated");
 }
 
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    qmc5883p_data_t d;
+    ASSERT_EQ(qmc5883p_init(NULL), QMC5883P_ERR_I2C, "init(NULL) returns ERR_I2C");
+    ASSERT_EQ(qmc5883p_read(NULL, &d), QMC5883P_ERR_I2C, "read(NULL, &d) returns ERR_I2C");
+    mock_reset();
+    qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(qmc5883p_read(&mock_i2c, NULL), QMC5883P_ERR_I2C, "read(i2c, NULL) returns ERR_I2C");
+}
+
+static void test_reinit(void)
+{
+    printf("test_reinit\n");
+    mock_reset();
+    qmc5883p_init(&mock_i2c);
+
+    mock_regs[0x01] = 0xDC; mock_regs[0x02] = 0x05;
+    mock_regs[0x03] = 0; mock_regs[0x04] = 0;
+    mock_regs[0x05] = 0; mock_regs[0x06] = 0;
+    mock_regs[0x09] = 0x01;
+    qmc5883p_data_t d;
+    qmc5883p_read(&mock_i2c, &d);
+
+    write_log_idx = 0;
+    mock_regs[0x00] = 0x80;
+    qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(e, QMC5883P_OK, "re-init OK");
+    ASSERT(write_log_idx >= 5, "all registers re-written on re-init");
+    ASSERT_EQ(mock_regs[0x0A], 0x0F, "CR1 restored after re-init");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -298,6 +330,8 @@ int main(void)
     test_read_negative();
     test_read_int16_extremes();
     test_read_zero();
+    test_null_safety();
+    test_reinit();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

@@ -72,7 +72,7 @@ Temperature: `(t_raw / 65536) * 190 - 40`, range -40 to ~150 C.
 
 ## Supported platforms
 
-- [x] Host C99 (mock I2C) — 13 tests, 2026-04-27
+- [x] Host C99 (mock I2C) — 15 tests, 33 assertions, 2026-04-28
 - [x] GD32F405 + XGZP6816D @ soft I2C ~50 kHz (PB6/PB7) — HIL verified 2026-04-27
 
 ## Dependencies
@@ -86,7 +86,7 @@ None. Pure C99 with injected I2C HAL callbacks.
 
 ## Test status
 
-- Host mock tests: PASS (13 tests covering probe, trigger, read, pressure low/mid/high rails + clamping, temperature endpoints, I2C error surfacing)
+- Host mock tests: PASS (15 tests, 33 assertions — probe, trigger, read, pressure low/mid/high rails + clamping, temperature endpoints, I2C error surfacing, NULL safety, re-probe idempotency)
 - HIL: PASS on GD32F405 + XGZP6816D (software bit-bang I2C, PB6/PB7), 2026-04-27
 
 ## API convention deviations

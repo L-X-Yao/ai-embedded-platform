@@ -218,6 +218,35 @@ static void test_read_int16_extremes(void)
     ASSERT_NEAR(d.ay, -32768.0f / 4096.0f, 0.01f, "ay = INT16_MIN / div");
 }
 
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_data_t d;
+    ASSERT_EQ(qmi8658a_init(NULL, &c), QMI8658A_ERR_I2C, "init(NULL, cfg)");
+    ASSERT_EQ(qmi8658a_init(&mock_i2c, NULL), QMI8658A_ERR_I2C, "init(i2c, NULL)");
+    ASSERT_EQ(qmi8658a_read(NULL, &d), QMI8658A_ERR_I2C, "read(NULL, &d)");
+    ASSERT_EQ(qmi8658a_read(&mock_i2c, NULL), QMI8658A_ERR_I2C, "read(i2c, NULL)");
+    ASSERT_EQ(qmi8658a_reset(NULL), QMI8658A_ERR_I2C, "reset(NULL)");
+}
+
+static void test_reinit_changes_config(void)
+{
+    printf("test_reinit_changes_config\n");
+    mock_reset();
+    qmi8658a_cfg_t c1 = qmi8658a_default_cfg();
+    c1.acc_range = QMI8658A_ACC_RANGE_8G;
+    qmi8658a_init(&mock_i2c, &c1);
+    uint8_t ctrl2_first = mock_regs[0x03];
+
+    qmi8658a_cfg_t c2 = qmi8658a_default_cfg();
+    c2.acc_range = QMI8658A_ACC_RANGE_2G;
+    qmi8658a_err_t e = qmi8658a_init(&mock_i2c, &c2);
+    ASSERT_EQ(e, QMI8658A_OK, "re-init OK");
+    ASSERT(mock_regs[0x03] != ctrl2_first, "CTRL2 updated on re-init");
+    ASSERT_EQ(mock_regs[0x03], 0x04, "CTRL2 = ±2g, 500Hz");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -232,6 +261,8 @@ int main(void)
     test_read_int16_extremes();
     test_config_range();
     test_reset();
+    test_null_safety();
+    test_reinit_changes_config();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
