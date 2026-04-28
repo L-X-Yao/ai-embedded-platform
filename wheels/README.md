@@ -43,6 +43,7 @@
 - `at_command/` — AT 指令解析器（URC + 超时 + 多匹配）（candidate）
 - `modbus_rtu/` — Modbus RTU 协议帧编解码（candidate）
 - `ncp5623_parser/` — NCP5623 I2C 命令解析器（candidate）
+- `nmea_parser/` — NMEA 0183 GPS/GNSS 句子解析器（candidate）
 
 ### L3 Modules（`modules/`）
 （暂无——按项目触发，见 WISHLIST.md）
