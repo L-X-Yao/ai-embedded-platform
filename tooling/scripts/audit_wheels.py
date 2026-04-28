@@ -103,6 +103,20 @@ def has_dependencies_section(wheel_dir: Path) -> bool:
     return "## Dependencies" in text or "## 依赖" in text
 
 
+def has_ctest_registration(wheel_dir: Path) -> bool:
+    """Check that test CMakeLists.txt has enable_testing() + add_test()."""
+    cmake = wheel_dir / "test" / "CMakeLists.txt"
+    if not cmake.exists():
+        cmake = wheel_dir / "CMakeLists.txt"
+    if not cmake.exists():
+        return True
+    try:
+        text = cmake.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    return "enable_testing()" in text and "add_test(" in text
+
+
 def has_c99_standard(wheel_dir: Path) -> bool:
     """Check that test CMakeLists.txt sets CMAKE_C_STANDARD 99."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -264,6 +278,16 @@ def main() -> int:
         wheel_dir = WHEELS / layer / name
         if not has_api_review(wheel_dir):
             warnings.append(f"{path}: README missing API review section")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- ctest registration check ---
+    print("\n=== ctest registration (enable_testing + add_test) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not has_ctest_registration(wheel_dir):
+            warnings.append(f"{path}: test CMakeLists.txt missing enable_testing()/add_test()")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")
