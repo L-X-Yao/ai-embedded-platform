@@ -109,6 +109,10 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (20 C tests, 61 assertions)
 - HIL: N/A
 
+## Convention Deviations
+
+- **`at_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
+
 ## API review
 
 - **Date**: 2026-04-27
