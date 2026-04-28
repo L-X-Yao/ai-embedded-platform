@@ -75,7 +75,7 @@ None.
 
 Extracted from `projects/flybox/src/drivers/mag/mag_driver.c`. Flybox retains soft I2C bit-bang (PA11/PA12 open-drain) + bus recovery + 3x retry wrapper.
 
-## API Review
+## API review
 
 - Date: 2026-04-27
 - Reviewer: @user

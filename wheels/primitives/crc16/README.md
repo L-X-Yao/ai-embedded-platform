@@ -124,7 +124,7 @@ while (rx_byte_available()) {
 - 栈使用：< 16 字节（含 GCC -fstack-usage 输出）
 - 比 vsf_crc bit-by-bit 实现快 ~8 倍
 
-## API Review
+## API review
 
 - 提案日期：2026-04-26
 - 审批人：@user
