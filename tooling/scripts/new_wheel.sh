@@ -77,11 +77,23 @@ mkdir -p "$WHEEL_DIR/test"
 
 generate_header_i2c() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #ifndef ${NAME_UPPER}_H
 #define ${NAME_UPPER}_H
 
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
     ${NAME_UPPER}_OK = 0,
@@ -103,9 +115,15 @@ typedef struct {
     float x, y, z;
 } ${NAME_LOWER}_data_t;
 
+/** Configure and verify chip ID. @thread_safe: caller_must_lock */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_i2c_t *i2c);
 
+/** Read sensor data. @thread_safe: caller_must_lock */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_read(const ${NAME_LOWER}_i2c_t *i2c, ${NAME_LOWER}_data_t *out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ${NAME_UPPER}_H */
 HEADER_EOF
@@ -113,11 +131,23 @@ HEADER_EOF
 
 generate_header_spi() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    spi_hal
+ */
+
 #ifndef ${NAME_UPPER}_H
 #define ${NAME_UPPER}_H
 
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
     ${NAME_UPPER}_OK = 0,
@@ -133,7 +163,12 @@ typedef struct {
     void    *ctx;
 } ${NAME_LOWER}_spi_t;
 
+/** Initialize and verify chip identity. @thread_safe: caller_must_lock */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ${NAME_UPPER}_H */
 HEADER_EOF
@@ -141,18 +176,34 @@ HEADER_EOF
 
 generate_header_none() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #ifndef ${NAME_UPPER}_H
 #define ${NAME_UPPER}_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     ${NAME_UPPER}_OK = 0,
     ${NAME_UPPER}_ERR_PARAM,
 } ${NAME_LOWER}_err_t;
 
-/* TODO: define API */
+/* TODO: define API — add @thread_safe annotation to each function */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ${NAME_UPPER}_H */
 HEADER_EOF
@@ -162,6 +213,14 @@ HEADER_EOF
 
 generate_c_i2c() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #include "${NAME_LOWER}.h"
 
 /* TODO: register defines */
@@ -190,6 +249,14 @@ C_EOF
 
 generate_c_spi() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    spi_hal
+ */
+
 #include "${NAME_LOWER}.h"
 
 /* TODO: command defines */
@@ -213,6 +280,14 @@ C_EOF
 
 generate_c_none() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #include "${NAME_LOWER}.h"
 
 /* TODO: implement */
