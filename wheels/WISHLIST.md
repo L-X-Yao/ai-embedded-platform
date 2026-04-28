@@ -35,7 +35,7 @@
 
 | 候选 | 功能 | VSF 原生检查 | 触发项目 | 信号次数 |
 |------|------|-------------|---------|---------|
-| `ota_updater` | 固件升级（版本检查 / 断点续传 / 回滚 / 签名） | VSF 有 bootloader 素材但无集成 OTA | flybox（A/B slot 自实现） | 1 |
+| `ota_updater` | 固件升级（版本检查 / 断点续传 / 回滚 / 签名） | VSF 有 bootloader 素材但无集成 OTA | flybox（A/B slot 自实现） | 1 | ⚡ `_draft/ota_ab` 已创建（A/B slot 管理 + rollback），待 API 审批升级 |
 
 ---
 

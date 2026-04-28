@@ -100,6 +100,7 @@ jobs:
           - { name: ws2812,         dir: wheels/drivers/ws2812/test }
           - { name: ncp5623_parser, dir: wheels/protocols/ncp5623_parser/test }
           - { name: nmea_parser, dir: wheels/protocols/nmea_parser/test }
+          - { name: ota_ab,      dir: wheels/_draft/ota_ab/test }
           - { name: at_command,     dir: wheels/protocols/at_command/test }
           - { name: modbus_rtu,     dir: wheels/protocols/modbus_rtu/test }
           - { name: fal,            dir: wheels/primitives/fal/test }
