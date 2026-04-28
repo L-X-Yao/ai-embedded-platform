@@ -1,3 +1,11 @@
+/*
+ * qmi8658a — QMI8658A 6-axis IMU driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #ifndef QMI8658A_H
 #define QMI8658A_H
 
@@ -69,14 +77,18 @@ typedef struct {
 
 /* ---------- API ---------- */
 
+/** Return sensible default configuration. @thread_safe: yes (pure) */
 qmi8658a_cfg_t  qmi8658a_default_cfg(void);
 
+/** Configure and verify chip ID. @thread_safe: caller_must_lock */
 qmi8658a_err_t  qmi8658a_init(const qmi8658a_i2c_t *i2c,
                                const qmi8658a_cfg_t *cfg);
 
+/** Read accel + gyro sample. @thread_safe: caller_must_lock */
 qmi8658a_err_t  qmi8658a_read(const qmi8658a_i2c_t *i2c,
                                qmi8658a_data_t *out);
 
+/** Soft-reset the device. @thread_safe: caller_must_lock */
 qmi8658a_err_t  qmi8658a_reset(const qmi8658a_i2c_t *i2c);
 
 #endif /* QMI8658A_H */

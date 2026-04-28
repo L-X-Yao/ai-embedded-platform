@@ -1,3 +1,11 @@
+/*
+ * ws2812 — WS2812 addressable RGB LED driver (bit-bang)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal
+ */
+
 #include "ws2812.h"
 #include <stddef.h>
 

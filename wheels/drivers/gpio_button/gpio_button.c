@@ -1,3 +1,11 @@
+/*
+ * gpio_button — GPIO button with debounce, long-press, multi-click
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal
+ */
+
 #include "gpio_button.h"
 #include <stddef.h>
 

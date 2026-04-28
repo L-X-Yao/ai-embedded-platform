@@ -1,3 +1,11 @@
+/*
+ * ws2812 — WS2812 addressable RGB LED driver (bit-bang)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal
+ */
+
 #ifndef WS2812_H
 #define WS2812_H
 
@@ -40,15 +48,18 @@ typedef struct {
 
 /* ---------- API ---------- */
 
+/** Send color array to LED strip. @thread_safe: caller_must_lock */
 ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
                          const ws2812_timing_t *timing,
                          const ws2812_color_t *colors,
                          uint32_t num_leds);
 
+/** Encode one color to 24 GRB PWM slots. @thread_safe: yes (pure) */
 void ws2812_encode_grb(const ws2812_color_t *color,
                        const ws2812_timing_t *timing,
                        uint16_t *slots_out);
 
+/** Scale 5-bit (0-31) to 8-bit (0-255). @thread_safe: yes (pure) */
 uint8_t ws2812_scale5to8(uint8_t v5);
 
 #endif /* WS2812_H */

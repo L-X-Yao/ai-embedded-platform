@@ -1,3 +1,11 @@
+/*
+ * xgzp6816d — XGZP6816D barometric pressure sensor driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #ifndef XGZP6816D_H
 #define XGZP6816D_H
 
@@ -56,10 +64,13 @@ typedef struct {
  * loop, even queueing the read in a different task).
  */
 
+/** Probe device on bus. @thread_safe: caller_must_lock */
 xgzp6816d_err_t xgzp6816d_probe(const xgzp6816d_i2c_t *i2c);
 
+/** Start one P+T conversion. @thread_safe: caller_must_lock */
 xgzp6816d_err_t xgzp6816d_trigger(const xgzp6816d_i2c_t *i2c);
 
+/** Read last conversion result. @thread_safe: caller_must_lock */
 xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
                                 xgzp6816d_data_t *out);
 

@@ -1,3 +1,11 @@
+/*
+ * gpio_led — GPIO LED control (on/off, blink, breathe, pattern)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal
+ */
+
 #include "gpio_led.h"
 #include <stddef.h>
 

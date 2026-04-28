@@ -1,3 +1,11 @@
+/*
+ * ncp5623_parser — NCP5623 I2C LED driver command parser
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #ifndef NCP5623_PARSER_H
 #define NCP5623_PARSER_H
 
@@ -38,13 +46,17 @@ typedef struct {
     uint8_t enabled;
 } ncp5623_parser_t;
 
-/* ---------- API ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
+/** Initialize parser state. @thread_safe: no */
 void               ncp5623_parser_init(ncp5623_parser_t *p);
+/** Begin I2C transaction (address phase). @thread_safe: caller_must_lock */
 void               ncp5623_parser_start(ncp5623_parser_t *p);
+/** Feed one received byte. @thread_safe: caller_must_lock */
 ncp5623_evt_type_t ncp5623_parser_feed(ncp5623_parser_t *p,
                                         uint8_t byte,
                                         ncp5623_evt_t *evt);
+/** End I2C transaction. @thread_safe: caller_must_lock */
 void               ncp5623_parser_stop(ncp5623_parser_t *p);
 
 #endif /* NCP5623_PARSER_H */
