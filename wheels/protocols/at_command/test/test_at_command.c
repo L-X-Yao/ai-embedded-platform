@@ -396,6 +396,62 @@ static void test_urc_table_full(void)
     ASSERT(at_cmd_register_urc(&at, "Y", urc_handler, NULL) == -1, "table full");
 }
 
+static void test_line_buffer_overflow(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_line_buffer_overflow\n");
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_expect(&at, "OK");
+
+    for (int i = 0; i < AT_CMD_LINE_SIZE + 100; i++) {
+        at_cmd_feed(&at, 'A', &evt);
+    }
+    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "buffer clamped at max");
+
+    at_evt_type_t r = at_cmd_feed(&at, '\n', &evt);
+    ASSERT(r != AT_EVT_NONE, "overlong line still processed");
+    ASSERT(at.line_idx == 0, "idx reset after newline");
+}
+
+static void test_reinit_clears_urcs(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_reinit_clears_urcs\n");
+    urc_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
+    at_cmd_expect(&at, "OK");
+
+    at_cmd_init(&at, &mock_hal);
+    ASSERT(at.urc_count == 0, "URCs cleared after re-init");
+    ASSERT(at.waiting == 0, "not waiting after re-init");
+
+    feed_string(&at, "RDY\r\n", &evt);
+    ASSERT(urc_count == 0, "old URC handler not called after re-init");
+}
+
+static void test_line_exact_boundary(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_line_exact_boundary\n");
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_expect(&at, "OK");
+
+    for (int i = 0; i < AT_CMD_LINE_SIZE - 1; i++) {
+        at_cmd_feed(&at, 'O', &evt);
+    }
+    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "filled exactly to limit");
+
+    at_cmd_feed(&at, 'X', &evt);
+    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "one extra byte dropped");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -422,6 +478,9 @@ int main(void)
     test_bare_newline();
     test_null_safety();
     test_urc_table_full();
+    test_line_buffer_overflow();
+    test_reinit_clears_urcs();
+    test_line_exact_boundary();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;

@@ -253,6 +253,45 @@ static void test_run_max_args(void)
     ASSERT(last_argc == CLI_MAX_ARGS);
 }
 
+static void test_exact_buffer_boundary(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    char exact[CLI_LINE_BUFSIZE];
+    memset(exact, 'a', CLI_LINE_BUFSIZE - 1);
+    exact[CLI_LINE_BUFSIZE - 1] = '\0';
+    memcpy(exact, "ping ", 5);
+    cli_err_t err = cli_parser_run(&parser, exact);
+    ASSERT(err == CLI_OK);
+    ASSERT(last_argc == 2);
+}
+
+static void test_exact_buffer_plus_one(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    char over[CLI_LINE_BUFSIZE + 1];
+    memset(over, 'a', CLI_LINE_BUFSIZE);
+    over[CLI_LINE_BUFSIZE] = '\0';
+    cli_err_t err = cli_parser_run(&parser, over);
+    ASSERT(err == CLI_ERR_OVERFLOW);
+}
+
+static void test_feed_exact_then_enter(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    for (int i = 0; i < CLI_LINE_BUFSIZE - 1; i++) {
+        cli_parser_feed(&parser, 'b');
+    }
+    ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
+    cli_parser_feed(&parser, 'c');
+    ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
+}
+
 int main(void)
 {
     printf("test_cli_parser\n");
@@ -272,6 +311,9 @@ int main(void)
     test_feed_del();
     test_feed_backspace_empty();
     test_run_max_args();
+    test_exact_buffer_boundary();
+    test_exact_buffer_plus_one();
+    test_feed_exact_then_enter();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_failed);
     return tests_failed ? 1 : 0;

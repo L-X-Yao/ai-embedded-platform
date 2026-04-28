@@ -297,6 +297,46 @@ static void test_empty_transaction(void)
     ASSERT(p.enabled == 0, "still disabled after empty transaction");
 }
 
+static void test_extra_long_packet(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_extra_long_packet\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable[] = {0x04, 0x03};
+    send_transaction(&p, enable, 2, NULL);
+
+    uint8_t long_pkt[] = {0x01, 0x0F, 0x05, 0x0A, 0xFF, 0xFF, 0xFF};
+    ncp5623_evt_type_t r = send_transaction(&p, long_pkt, 7, &evt);
+    ASSERT(r == NCP5623_EVT_COLOR, "color parsed from overlong packet");
+    ASSERT(evt.data.color.b == 0x0F, "blue from extra-long");
+    ASSERT(evt.data.color.g == 0x05, "green from extra-long");
+    ASSERT(evt.data.color.r == 0x0A, "red from extra-long");
+}
+
+static void test_disable_then_color_ignored(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_disable_then_color_ignored\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable[] = {0x04, 0x03};
+    send_transaction(&p, enable, 2, NULL);
+    ASSERT(p.enabled == 1, "enabled");
+
+    uint8_t disable[] = {0x04, 0x00};
+    send_transaction(&p, disable, 2, NULL);
+    ASSERT(p.enabled == 0, "disabled");
+
+    uint8_t color[] = {0x01, 0x0F, 0x0F, 0x0F};
+    ncp5623_evt_type_t r = send_transaction(&p, color, 4, &evt);
+    ASSERT(r == NCP5623_EVT_NONE, "color ignored after disable");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -316,6 +356,8 @@ int main(void)
     test_off_color();
     test_reinit_clears_enabled();
     test_empty_transaction();
+    test_extra_long_packet();
+    test_disable_then_color_ignored();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;
