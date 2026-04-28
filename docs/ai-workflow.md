@@ -277,3 +277,16 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 - 默默跑 1 小时，最后丢一大段"我做完了"
 - 遇问题不问、自试 N 种方法
 - 只有结果没有过程
+
+---
+
+## 可用工具脚本（`tooling/scripts/`）
+
+| 脚本 | 用途 | 常用参数 |
+|------|------|---------|
+| `test_all.sh` | 统一跑所有 host 测试 | `--wheel <name>`, `--changed`, `--list` |
+| `test_downstream.sh` | Wheel 下游消费者回归测试 | `--all`, `--list` |
+| `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
+| `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
+| `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
+| `audit_wheels.py` | CI 一致性审计（11 项检查） | 无 |
