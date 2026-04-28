@@ -107,7 +107,7 @@
 
 ### 用法（项目级 gdbinit 套这个包）
 
-参考 `tooling/scripts/flybox.gdbinit` 写法：
+参考 `projects/flybox/scripts/flybox.gdbinit` 写法：
 
 ```gdb
 source gd32f4xx_debug/cortex_m4.gdbinit
@@ -118,7 +118,7 @@ file build/myproject.elf
 break HardFault_Handler
 ```
 
-启动脚本（参考 `flybox_gdb.sh`）需 `cd` 到 `tooling/scripts/` 让相对 `source` 路径生效。
+启动脚本（参考 `projects/flybox/scripts/gdb.sh`）需 `cd` 到 `tooling/scripts/` 让相对 `source` 路径生效。
 
 完整说明：`tooling/scripts/gd32f4xx_debug/README.md`。
 

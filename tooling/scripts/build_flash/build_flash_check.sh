@@ -1,6 +1,6 @@
 #!/bin/bash
 # Generic build → flash → serial check pipeline driven by a project conf file.
-# Replaces project-specific orchestration scripts (e.g. flybox_build_flash.sh).
+# Replaces project-specific orchestration scripts (e.g. projects/flybox/scripts/build_flash.sh).
 #
 # Usage:
 #   build_flash_check.sh --conf <path> [build|flash|check|all] [SECONDS]
