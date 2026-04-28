@@ -3,13 +3,13 @@
 #include "../cli_parser.h"
 
 static int tests_run = 0;
-static int tests_failed = 0;
+static int tests_fail = 0;
 
 #define ASSERT(cond) do { \
     tests_run++; \
     if (!(cond)) { \
         printf("  FAIL: %s line %d: %s\n", __func__, __LINE__, #cond); \
-        tests_failed++; \
+        tests_fail++; \
     } \
 } while (0)
 
@@ -292,6 +292,23 @@ static void test_feed_exact_then_enter(void)
     ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
 }
 
+static void test_null_commands(void)
+{
+    printf("%s\n", __func__);
+    capture_reset();
+    cli_cfg_t cfg = {
+        .commands = NULL,
+        .num_commands = 5,
+        .write_fn = capture_write,
+        .user_ctx = NULL,
+        .prompt = NULL,
+    };
+    cli_parser_init(&parser, &cfg);
+    ASSERT(parser.cfg.num_commands == 0);
+    cli_err_t err = cli_parser_run(&parser, "ping");
+    ASSERT(err == CLI_ERR_NOT_FOUND);
+}
+
 int main(void)
 {
     printf("test_cli_parser\n");
@@ -314,7 +331,8 @@ int main(void)
     test_exact_buffer_boundary();
     test_exact_buffer_plus_one();
     test_feed_exact_then_enter();
+    test_null_commands();
 
-    printf("\n%d tests, %d failures\n", tests_run, tests_failed);
-    return tests_failed ? 1 : 0;
+    printf("\n%d tests, %d failures\n", tests_run, tests_fail);
+    return tests_fail ? 1 : 0;
 }
