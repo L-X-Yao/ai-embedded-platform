@@ -234,7 +234,7 @@ ai-embedded-platform/
 Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/patches）
 - ✅ 核心文档（philosophy / wheel-contract / api-conventions / ai-workflow / debugging-playbook）
-- ✅ 8 个 ADR（平台决策历史）
+- ✅ 10 个 ADR（平台决策历史）
 - ✅ tooling/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
 - ✅ Claude Code 自动记忆（用户背景 + 战略决策 + feedback）

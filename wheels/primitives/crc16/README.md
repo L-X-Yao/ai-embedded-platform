@@ -43,7 +43,7 @@ cmake --build build
 python3 -m pytest test_crc16.py -v
 ```
 
-预期：**1 个 C 测试 harness（7 个内嵌 case） + 8 个 pytest 用例全绿。**
+预期：**1 个 C 测试 harness（7 个内嵌 case） + 9 个 pytest 用例全绿。**
 
 ## API
 
@@ -106,7 +106,7 @@ while (rx_byte_available()) {
 
 ## Test status
 
-- Unit tests: **PASS** (7 C cases + 8 pytest cases)
+- Unit tests: **PASS** (7 C cases + 9 pytest cases)
 - Test vectors:
   - Empty buffer (NULL + len=0) → 0xFFFF
   - "123456789" standard MODBUS test vector → 0x4B37
