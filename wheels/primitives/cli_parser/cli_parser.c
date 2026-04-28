@@ -58,6 +58,9 @@ void cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg)
 {
     if (!ctx || !cfg) return;
     ctx->cfg = *cfg;
+    if (ctx->cfg.commands == NULL) {
+        ctx->cfg.num_commands = 0;
+    }
     ctx->line_len = 0;
     ctx->line_buf[0] = '\0';
     cli_prompt(ctx);
