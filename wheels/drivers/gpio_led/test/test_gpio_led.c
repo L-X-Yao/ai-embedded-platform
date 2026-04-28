@@ -339,6 +339,36 @@ static void test_reinit_resets(void)
     ASSERT(mock_current == 0, "LED off after re-init");
 }
 
+static void test_blink_zero_on(void)
+{
+    gpio_led_t led;
+
+    printf("test_blink_zero_on\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_blink(&led, 0, 100, 0);
+
+    gpio_led_tick(&led, 1);
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "still blink mode");
+
+    gpio_led_tick(&led, 1);
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "still blink after 2 ticks");
+}
+
+static void test_pulse_zero_on(void)
+{
+    gpio_led_t led;
+
+    printf("test_pulse_zero_on\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_pulse(&led, 0);
+
+    gpio_led_tick(&led, 1);
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "pulse 0ms turns off immediately");
+    ASSERT(mock_current == 0, "LED off after 0ms pulse");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -358,6 +388,8 @@ int main(void)
     test_zero_dt();
     test_custom_brightness();
     test_reinit_resets();
+    test_blink_zero_on();
+    test_pulse_zero_on();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;

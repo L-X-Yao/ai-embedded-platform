@@ -105,6 +105,9 @@ static void tick_blink(gpio_led_t *led, uint16_t dt_ms)
 
     led->elapsed += dt_ms;
     threshold = (led->phase == 0U) ? led->on_ms : led->off_ms;
+    if (threshold == 0U) {
+        threshold = 1U;
+    }
 
     if (led->elapsed >= threshold) {
         led->elapsed -= threshold;
