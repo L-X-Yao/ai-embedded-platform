@@ -1,3 +1,11 @@
+/*
+ * qmc5883p — QMC5883P 3-axis magnetometer driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #include "qmc5883p.h"
 
 #define REG_CHIP_ID     0x00u

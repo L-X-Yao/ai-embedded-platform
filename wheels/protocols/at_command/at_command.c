@@ -1,3 +1,11 @@
+/*
+ * at_command — AT command parser with URC, timeout, multi-match
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    uart_hal
+ */
+
 #include "at_command.h"
 #include <stddef.h>
 #include <string.h>

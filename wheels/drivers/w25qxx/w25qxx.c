@@ -1,3 +1,11 @@
+/*
+ * w25qxx — W25Q series SPI NOR flash driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    spi_hal
+ */
+
 #include "w25qxx.h"
 
 /* ---------- SPI flash commands ---------- */

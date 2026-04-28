@@ -1,3 +1,11 @@
+/*
+ * xgzp6816d — XGZP6816D barometric pressure sensor driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #include "xgzp6816d.h"
 #include <stddef.h>
 

@@ -1,3 +1,11 @@
+/*
+ * gpio_button — GPIO button with debounce, long-press, multi-click
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal
+ */
+
 #ifndef GPIO_BUTTON_H
 #define GPIO_BUTTON_H
 
@@ -47,10 +55,14 @@ typedef struct {
 
 /* ---------- API ---------- */
 
+/** Return sensible default configuration. @thread_safe: yes (pure) */
 gpio_btn_cfg_t gpio_btn_default_cfg(void);
+/** Initialize button instance. @thread_safe: no */
 void           gpio_btn_init(gpio_btn_t *btn, const gpio_btn_hal_t *hal,
                               const gpio_btn_cfg_t *cfg);
+/** Advance debounce/click state machine. @thread_safe: caller_must_lock */
 gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms);
+/** Query current stable press state. @thread_safe: caller_must_lock */
 uint8_t        gpio_btn_is_pressed(const gpio_btn_t *btn);
 
 #endif /* GPIO_BUTTON_H */

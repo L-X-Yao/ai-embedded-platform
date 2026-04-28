@@ -1,3 +1,11 @@
+/*
+ * qmi8658a — QMI8658A 6-axis IMU driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #include "qmi8658a.h"
 
 /* ---------- register map ---------- */

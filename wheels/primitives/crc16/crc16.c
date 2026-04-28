@@ -1,11 +1,9 @@
-/**
- * @file    crc16.c
- * @brief   CRC16-MODBUS implementation (256-entry table).
+/*
+ * crc16 — CRC16-MODBUS implementation (256-entry table)
  *
- * Table copied from a production-verified flybox build (frame_pack.c).
- * Generated from polynomial 0xA001 (reflected) starting from each
- * possible 8-bit input byte XORed against the low byte of the
- * accumulator and shifted right 8 times.
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
  */
 
 #include "crc16.h"

@@ -1,3 +1,11 @@
+/*
+ * cli_parser — minimal CLI parser for embedded debug shells
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #ifndef CLI_PARSER_H
 #define CLI_PARSER_H
 
@@ -42,8 +50,13 @@ typedef struct {
     size_t      line_len;
 } cli_parser_t;
 
+/** Initialize parser. @thread_safe: no */
 void      cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg);
+
+/** Feed one byte (from UART ISR or poll). @thread_safe: caller_must_lock */
 void      cli_parser_feed(cli_parser_t *ctx, uint8_t byte);
+
+/** Parse and execute a complete line. @thread_safe: caller_must_lock */
 cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 
 #endif /* CLI_PARSER_H */

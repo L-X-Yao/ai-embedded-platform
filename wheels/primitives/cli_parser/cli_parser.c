@@ -1,3 +1,11 @@
+/*
+ * cli_parser — minimal CLI parser for embedded debug shells
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #include "cli_parser.h"
 #include <string.h>
 

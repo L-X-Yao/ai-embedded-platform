@@ -1,3 +1,11 @@
+/*
+ * at_command — AT command parser with URC, timeout, multi-match
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    uart_hal
+ */
+
 #ifndef AT_COMMAND_H
 #define AT_COMMAND_H
 
@@ -61,17 +69,26 @@ typedef struct {
     uint8_t         waiting;
 } at_cmd_t;
 
-/* ---------- API ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
+/** Initialize parser state. @thread_safe: no */
 void          at_cmd_init(at_cmd_t *at, const at_hal_t *hal);
+/** Send AT command string (appends \r\n). @thread_safe: caller_must_lock */
 void          at_cmd_send(at_cmd_t *at, const char *cmd);
+/** Send raw bytes. @thread_safe: caller_must_lock */
 void          at_cmd_send_raw(at_cmd_t *at, const uint8_t *data, uint16_t len);
+/** Set expected response prefix. @thread_safe: caller_must_lock */
 void          at_cmd_expect(at_cmd_t *at, const char *expected);
+/** Cancel pending expect. @thread_safe: caller_must_lock */
 void          at_cmd_cancel(at_cmd_t *at);
+/** Feed one received byte. @thread_safe: caller_must_lock */
 at_evt_type_t at_cmd_feed(at_cmd_t *at, uint8_t byte, at_evt_t *evt);
+/** Register URC handler. @thread_safe: caller_must_lock */
 int           at_cmd_register_urc(at_cmd_t *at, const char *prefix,
                                    at_urc_cb_t cb, void *ctx);
+/** Get last matched response. @thread_safe: caller_must_lock */
 const char   *at_cmd_get_matched(const at_cmd_t *at);
+/** Get previous complete line. @thread_safe: caller_must_lock */
 const char   *at_cmd_get_prev_line(const at_cmd_t *at);
 
 #endif /* AT_COMMAND_H */

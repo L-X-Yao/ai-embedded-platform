@@ -1,3 +1,11 @@
+/*
+ * ncp5623_parser — NCP5623 I2C LED driver command parser
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
 #include "ncp5623_parser.h"
 #include <stddef.h>
 

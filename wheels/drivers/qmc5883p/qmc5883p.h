@@ -1,3 +1,11 @@
+/*
+ * qmc5883p — QMC5883P 3-axis magnetometer driver (I2C)
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal
+ */
+
 #ifndef QMC5883P_H
 #define QMC5883P_H
 
@@ -25,8 +33,10 @@ typedef struct {
     float mx, my, mz;
 } qmc5883p_data_t;
 
+/** Configure and verify chip ID. @thread_safe: caller_must_lock */
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c);
 
+/** Read magnetometer sample (uT). @thread_safe: caller_must_lock */
 qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 
 #endif
