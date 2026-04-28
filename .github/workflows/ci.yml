@@ -191,6 +191,8 @@ jobs:
           test -f build/flybox_vsf.bin
           test -f build/flybox_vsf.hex
           arm-none-eabi-size build/flybox_vsf.elf
+          arm-none-eabi-readelf -h build/flybox_vsf.elf | grep -q "ARM"
+          echo "ELF header: valid ARM binary"
 
       - name: Stack analysis (fail on overflow)
         run: |
