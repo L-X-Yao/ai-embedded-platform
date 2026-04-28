@@ -25,6 +25,8 @@ Rules:
     documenting upstream origin (ADR-010).
   - Wheels with cross-wheel dependencies (detected via test CMakeLists)
     SHOULD document them in a "Dependencies" README section (ADR-009).
+  - Non-vendor wheel .h/.c files SHOULD have the Layer/Status/Deps file
+    header per api-conventions §8.
 
 Exit 0 if all checks pass; 1 if any failure.
 """
@@ -131,6 +133,21 @@ def has_c99_standard(wheel_dir: Path) -> bool:
     if "vsf.cmake" in text:
         return True  # VSF cmake sets standard internally
     return "CMAKE_C_STANDARD" in text
+
+
+def has_file_header(wheel_dir: Path, name: str) -> bool:
+    """Check .h and .c have api-conventions §8 file header (Layer/Status/Deps)."""
+    for ext in (".h", ".c"):
+        src = wheel_dir / f"{name}{ext}"
+        if not src.exists():
+            continue
+        try:
+            text = src.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "Layer:" not in text or "Status:" not in text:
+            return False
+    return True
 
 
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
@@ -298,6 +315,19 @@ def main() -> int:
         wheel_dir = WHEELS / layer / name
         if not has_c99_standard(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing CMAKE_C_STANDARD 99")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- File header (Layer/Status/Deps) check (api-conventions §8) ---
+    print("\n=== File header (api-conventions §8) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_file_header(wheel_dir, name):
+            warnings.append(f"{path}: .h/.c missing Layer/Status/Deps file header")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")

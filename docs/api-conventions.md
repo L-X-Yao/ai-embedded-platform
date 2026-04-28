@@ -222,6 +222,8 @@ LOG_ERROR("mpu6050 read timeout");
 #define LOG_MODULE "mpu6050"
 ```
 
+**例外**：L0/L1 wheel 的 host sim 测试构建不强制依赖 `log` 模块——这些 wheel 设计为零依赖或仅依赖 HAL callback，在 sim 测试中不需要日志。真机集成时由项目层决定是否接入 `log`。
+
 ## 8. 文件头
 
 每个 wheel 的 `.c` 和 `.h` 顶部：
