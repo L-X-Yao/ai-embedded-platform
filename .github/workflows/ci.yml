@@ -105,6 +105,7 @@ jobs:
           - { name: fal,            dir: wheels/primitives/fal/test }
           - { name: kvs,            dir: wheels/primitives/kvs/test }
           - { name: cli_parser,    dir: wheels/primitives/cli_parser/test }
+          - { name: mahony_ahrs,  dir: wheels/primitives/mahony_ahrs/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
