@@ -41,6 +41,10 @@ ctest --test-dir build --output-on-failure
 
 # 审计所有 wheel 合规性
 python tooling/scripts/audit_wheels.py
+
+# 或用 Makefile 快捷命令
+make test-wheels
+make audit
 ```
 
 ## 新项目启动
