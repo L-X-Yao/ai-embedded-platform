@@ -68,15 +68,16 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
     [[ "$name" == "_draft" || "$name" == "__pycache__" ]] && continue
     [[ "$layer" == "_draft" ]] && layer="draft"
 
-    # Count tests
+    # Count assertions across all test files (ASSERT / TEST macros)
     test_count="0"
+    tc=0
     for tf in "$wheel_dir"/test/test_*.c "$wheel_dir"/test_*.c; do
         if [[ -f "$tf" ]]; then
-            tc=$(grep -c 'ASSERT\|assert' "$tf" 2>/dev/null || true)
-            test_count="$tc"
-            break
+            n=$(grep -cE 'ASSERT\(|TEST\(|CHECK\(' "$tf" 2>/dev/null || true)
+            tc=$((tc + n))
         fi
     done
+    test_count="$tc"
 
     # CI job?
     ci="--"
@@ -84,9 +85,11 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
         ci="yes"
     fi
 
-    # Consumer? (project CMakeLists.txt referencing this wheel)
+    # Consumer? (project CMakeLists.txt or #include in .c files)
     consumer="--"
     if grep -rq "wheels/${layer}/${name}\|wheels/[a-z]*/${name}" "$REPO"/projects/*/CMakeLists.txt "$REPO"/projects/*/vsf_build/CMakeLists.txt 2>/dev/null; then
+        consumer="yes"
+    elif grep -rq "#include.*[\"<]${name}\.h[\">]" "$REPO"/projects/ 2>/dev/null; then
         consumer="yes"
     fi
 
@@ -147,7 +150,7 @@ fi
 
 echo ""
 echo -e "${BOLD}=== CI ===${NC}"
-job_count=$(grep -cP '^  [a-z][a-z0-9_-]+:$' "$CI_YAML" 2>/dev/null || echo "?")
+job_count=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || echo "?")
 echo "  Jobs in ci.yml: $job_count"
 
 last_run=$(git -C "$REPO" log --oneline -1 --format="%h %s" -- .github/workflows/ 2>/dev/null || echo "n/a")
