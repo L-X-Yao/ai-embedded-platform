@@ -103,6 +103,7 @@ jobs:
           - { name: modbus_rtu,     dir: wheels/protocols/modbus_rtu/test }
           - { name: fal,            dir: wheels/primitives/fal/test }
           - { name: kvs,            dir: wheels/primitives/kvs/test }
+          - { name: cli_parser,    dir: wheels/primitives/cli_parser/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
