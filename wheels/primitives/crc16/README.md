@@ -7,7 +7,7 @@ CRC16-MODBUS computation (table-based, ~1 KB ROM). Drop-in for Modbus RTU
 frame check, custom telemetry frames using the same polynomial, and any
 other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
 
-## 为什么不用 VSF 原生？
+## Why not VSF native?
 
 已检查 VSF 模块（2026-04-26）：
 

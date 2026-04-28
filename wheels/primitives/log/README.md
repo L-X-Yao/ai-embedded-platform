@@ -5,7 +5,7 @@
 
 带等级 + 模块标签 + 多 sink + 编译期过滤的日志 wheel，封装在 `vsf_trace` 之上。
 
-## 为什么不用 VSF 原生？
+## Why not VSF native?
 
 已检查 VSF 模块：
 
