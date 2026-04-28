@@ -103,6 +103,22 @@ def has_dependencies_section(wheel_dir: Path) -> bool:
     return "## Dependencies" in text or "## 依赖" in text
 
 
+def has_c99_standard(wheel_dir: Path) -> bool:
+    """Check that test CMakeLists.txt sets CMAKE_C_STANDARD 99."""
+    cmake = wheel_dir / "test" / "CMakeLists.txt"
+    if not cmake.exists():
+        cmake = wheel_dir / "CMakeLists.txt"
+    if not cmake.exists():
+        return True  # no cmake = nothing to check
+    try:
+        text = cmake.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    if "vsf.cmake" in text:
+        return True  # VSF cmake sets standard internally
+    return "CMAKE_C_STANDARD" in text
+
+
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -248,6 +264,16 @@ def main() -> int:
         wheel_dir = WHEELS / layer / name
         if not has_api_review(wheel_dir):
             warnings.append(f"{path}: README missing API review section")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- CMAKE_C_STANDARD 99 check ---
+    print("\n=== CMAKE_C_STANDARD 99 ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not has_c99_standard(wheel_dir):
+            warnings.append(f"{path}: test CMakeLists.txt missing CMAKE_C_STANDARD 99")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")

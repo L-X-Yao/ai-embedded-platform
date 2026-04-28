@@ -224,6 +224,8 @@ C_EOF
 cat > "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_EOF
 cmake_minimum_required(VERSION 3.13)
 project(test_${NAME_LOWER} C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_executable(test_${NAME_LOWER}
     test_${NAME_LOWER}.c
@@ -576,6 +578,8 @@ generate_vendor_test_cmake() {
     cat > "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_EOF
 cmake_minimum_required(VERSION 3.13)
 project(test_${NAME_LOWER} C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_executable(test_${NAME_LOWER}
     test_${NAME_LOWER}.c
