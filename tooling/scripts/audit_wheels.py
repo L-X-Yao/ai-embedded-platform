@@ -19,6 +19,12 @@ Rules:
     incubating.
   - Names listed in wheels/WISHLIST.md MUST NOT correspond to existing
     wheels (a stale candidate is finished work that wasn't pruned).
+  - Every wheel README MUST have a "Why not VSF native?" section
+    (ADR-006 / CLAUDE.md zero-rule).
+  - Vendor wheels (those with vendor/ subdir) MUST have VENDOR.md
+    documenting upstream origin (ADR-010).
+  - Wheels with cross-wheel dependencies (detected via test CMakeLists)
+    SHOULD document them in a "Dependencies" README section (ADR-009).
 
 Exit 0 if all checks pass; 1 if any failure.
 """
@@ -54,16 +60,54 @@ def find_wheels():
     return wheels
 
 
-def has_project_origin(wheel_dir: Path) -> bool:
-    """Check if README documents extraction from a real project."""
+def read_readme(wheel_dir: Path) -> str:
+    """Return README.md text or empty string."""
     readme = wheel_dir / "README.md"
     if not readme.exists():
-        return False
+        return ""
     try:
-        text = readme.read_text(encoding="utf-8")
+        return readme.read_text(encoding="utf-8")
     except OSError:
-        return False
+        return ""
+
+
+def has_project_origin(wheel_dir: Path) -> bool:
+    """Check if README documents extraction from a real project."""
+    text = read_readme(wheel_dir)
     return "Extracted from" in text and "projects/" in text
+
+
+def has_vsf_native_section(wheel_dir: Path) -> bool:
+    """Check README has 'Why not VSF native?' heading (ADR-006)."""
+    text = read_readme(wheel_dir)
+    return "## Why not VSF native?" in text
+
+
+def is_vendor_wheel(wheel_dir: Path) -> bool:
+    """A vendor wheel has a vendor/ subdirectory."""
+    return (wheel_dir / "vendor").is_dir()
+
+
+def has_vendor_md(wheel_dir: Path) -> bool:
+    return (wheel_dir / "VENDOR.md").exists()
+
+
+def has_dependencies_section(wheel_dir: Path) -> bool:
+    text = read_readme(wheel_dir)
+    return "## Dependencies" in text or "## 依赖" in text
+
+
+def detect_cross_wheel_deps(wheel_dir: Path) -> list:
+    """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
+    cmake = wheel_dir / "test" / "CMakeLists.txt"
+    if not cmake.exists():
+        return []
+    try:
+        text = cmake.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    pattern = re.compile(r"\.\./\.\./\.\./(primitives|drivers|protocols|modules)/([a-z0-9_]+)/")
+    return list({m[1] for m in pattern.findall(text)})
 
 
 def has_ci_job(wheel_path: str, ci_text: str) -> bool:
@@ -144,6 +188,51 @@ def main() -> int:
         ci_label = "yes" if ci_ok else "MISSING"
         cons_label = ", ".join(consumers) if consumers else "(none)"
         print(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
+
+    # --- "Why not VSF native?" section check (ADR-006) ---
+    print("\n=== README: 'Why not VSF native?' (ADR-006) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not has_vsf_native_section(wheel_dir):
+            failures.append(f"{path}: README missing '## Why not VSF native?' section")
+            print(f"  [FAIL]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- Vendor wheel VENDOR.md check (ADR-010) ---
+    print("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
+    vendor_found = False
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not is_vendor_wheel(wheel_dir):
+            continue
+        vendor_found = True
+        if not has_vendor_md(wheel_dir):
+            failures.append(f"{path}: has vendor/ but no VENDOR.md")
+            print(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
+        else:
+            print(f"  [ ok ]  {path}")
+    if not vendor_found:
+        print("  (no vendor wheels found)")
+
+    # --- Cross-wheel dependency documentation (ADR-009) ---
+    print("\n=== Cross-wheel deps documented (ADR-009) ===\n")
+    deps_found = False
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        deps = detect_cross_wheel_deps(wheel_dir)
+        if not deps:
+            continue
+        deps_found = True
+        if not has_dependencies_section(wheel_dir):
+            warnings.append(
+                f"{path}: depends on {', '.join(deps)} but README has no Dependencies section"
+            )
+            print(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
+        else:
+            print(f"  [ ok ]  {path} → {', '.join(deps)}")
+    if not deps_found:
+        print("  (no cross-wheel dependencies detected)")
 
     print("\n=== WISHLIST staleness ===\n")
     wishlist_names = parse_wishlist_names()
