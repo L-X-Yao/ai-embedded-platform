@@ -127,6 +127,20 @@ jobs:
       - name: Test
         run: ./build/test_${{ matrix.name }}
 
+  flybox-tests:
+    name: flybox project tests (host)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+      - name: Build and run mag_cal
+        working-directory: projects/flybox/test/mag_cal
+        run: |
+          cmake -GNinja -S . -B build
+          cmake --build build
+          ./build/test_mag_cal
+
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
     runs-on: ubuntu-24.04
