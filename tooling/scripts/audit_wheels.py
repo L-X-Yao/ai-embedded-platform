@@ -10,10 +10,10 @@ the three-step sink checklist.
 Rules:
   - Every wheel under wheels/<layer>/<name>/ MUST have a CI job entry
     mentioning its path in .github/workflows/ci.yml.
-  - Wheels under drivers/, protocols/, modules/ MUST have at least one
+  - Wheels under drivers/, protocols/, modules/ SHOULD have at least one
     project consumer (CMakeLists.txt or #include reference in projects/).
-    Exception: if the README documents extraction from a project
-    ("Extracted from projects/"), missing consumer is WARN not FAIL.
+    Missing consumer is WARN not FAIL — proactive building is encouraged
+    (see feedback_no_human_cost_model.md). CI presence remains hard FAIL.
   - Wheels under primitives/, _draft/ MAY be unconsumed (warn, don't
     fail) — primitives are general building blocks, drafts are
     incubating.
@@ -129,16 +129,11 @@ def main() -> int:
                 f"{path}: missing CI job — no mention of '{path}' in "
                 f"{CI_YAML.relative_to(REPO)}"
             )
-        elif consumer_required and not consumers and not origin:
-            icon = "FAIL"
-            failures.append(
-                f"{path}: missing real consumer — layer '{layer}' must be "
-                f"referenced by a project or extracted from one"
-            )
-        elif consumer_required and not consumers and origin:
+        elif consumer_required and not consumers:
             icon = "WARN"
+            reason = "extracted from project" if origin else "proactively built"
             warnings.append(
-                f"{path}: no consumer yet (extracted from project, acceptable)"
+                f"{path}: no consumer yet ({reason}, acceptable)"
             )
         elif not consumers:
             icon = "WARN"

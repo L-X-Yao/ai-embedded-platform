@@ -21,8 +21,8 @@
 
 `tooling/scripts/audit_wheels.py` 在 `wheel-audit` CI job 里强制以下规则——push 阶段直接 fail，不靠人脑或 review checklist 维护：
 
-- 每个 `wheels/<层>/<name>/` **必须**在 `.github/workflows/ci.yml` 有对应 build + test job
-- `drivers/` / `protocols/` / `modules/` 层的 wheel **必须**至少被一个 `projects/*/CMakeLists.txt` 引用（real consumer）
+- 每个 `wheels/<层>/<name>/` **必须**在 `.github/workflows/ci.yml` 有对应 build + test job（FAIL）
+- `drivers/` / `protocols/` / `modules/` 层的 wheel **应该**有项目 consumer（CMakeLists.txt 或 #include）；缺失为 WARN 不阻塞——AI 主动构建是鼓励的（见 ADR-009）
 - `primitives/` 和 `_draft/` 层可以暂无 consumer（作为 building block 或孵化品）
 - `wheels/WISHLIST.md` 不能列已存在的 wheel 名（stale candidate）
 
