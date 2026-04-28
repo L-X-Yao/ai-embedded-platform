@@ -83,6 +83,12 @@ def has_vsf_native_section(wheel_dir: Path) -> bool:
     return "## Why not VSF native?" in text
 
 
+def has_api_review(wheel_dir: Path) -> bool:
+    """Check README has an API review section (wheel-contract §7)."""
+    text = read_readme(wheel_dir)
+    return "## API Review" in text or "## API review" in text
+
+
 def is_vendor_wheel(wheel_dir: Path) -> bool:
     """A vendor wheel has a vendor/ subdirectory."""
     return (wheel_dir / "vendor").is_dir()
@@ -233,6 +239,18 @@ def main() -> int:
             print(f"  [ ok ]  {path} → {', '.join(deps)}")
     if not deps_found:
         print("  (no cross-wheel dependencies detected)")
+
+    # --- API review section (wheel-contract §7) ---
+    print("\n=== API review metadata (wheel-contract §7) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if not has_api_review(wheel_dir):
+            warnings.append(f"{path}: README missing API review section")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
 
     print("\n=== WISHLIST staleness ===\n")
     wishlist_names = parse_wishlist_names()
