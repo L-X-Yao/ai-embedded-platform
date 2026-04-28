@@ -1,0 +1,47 @@
+#!/bin/bash
+# commit-msg hook — validates commit message against CLAUDE.md convention.
+#
+# Install: git config core.hooksPath .githooks
+#
+# Checks:
+#   1. First line matches <type>(<scope>): <summary> or <type>: <summary>
+#   2. Type is from the allowed set
+#   3. Summary starts with lowercase verb, no trailing period
+#   4. No Co-Authored-By line (project convention)
+#   5. Summary line <= 70 chars
+
+MSG_FILE="$1"
+MSG=$(head -1 "$MSG_FILE")
+
+TYPES="docs|wheel|exp|port|project|tool|ci"
+PATTERN="^($TYPES)(\([a-z0-9/_-]+\))?: [a-z]"
+
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+    echo "ERROR: commit message does not match convention."
+    echo ""
+    echo "  Expected: <type>(<scope>): <lowercase verb> ..."
+    echo "  Got:      $MSG"
+    echo ""
+    echo "  Allowed types: $TYPES"
+    echo "  See CLAUDE.md 'Commit 规范' section."
+    exit 1
+fi
+
+if echo "$MSG" | grep -qE '\.$'; then
+    echo "ERROR: summary must not end with a period."
+    echo "  Got: $MSG"
+    exit 1
+fi
+
+if [ ${#MSG} -gt 70 ]; then
+    echo "ERROR: summary line too long (${#MSG} > 70 chars)."
+    echo "  Got: $MSG"
+    exit 1
+fi
+
+if grep -qi "Co-Authored-By" "$MSG_FILE"; then
+    echo "ERROR: Co-Authored-By is not used in this project (see CLAUDE.md)."
+    exit 1
+fi
+
+exit 0
