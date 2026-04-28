@@ -328,6 +328,7 @@ int main(void)
     test_reinit_resets_state();
     test_debounce_boundary();
 
-    printf("\n%d tests, %d failures\n", tests_run, tests_fail);
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
     return tests_fail ? 1 : 0;
 }
