@@ -323,6 +323,26 @@ static void test_different_timing(void)
     }
 }
 
+static void test_large_led_count(void)
+{
+    ws2812_color_t colors[30];
+
+    printf("test_large_led_count\n");
+    for (int i = 0; i < 30; i++) {
+        colors[i].r = (uint8_t)(i * 8);
+        colors[i].g = (uint8_t)(255 - i * 8);
+        colors[i].b = 128;
+    }
+
+    mock_reset();
+    ws2812_err_t err = ws2812_send(&mock_hal, &timing_48mhz, colors, 30);
+    ASSERT(err == WS2812_OK, "send 30 leds ok");
+
+    uint16_t vals[1024];
+    int n = extract_data_compares(vals, 1024);
+    ASSERT(n == 30 * 24 + 1, "721 compares for 30 LEDs");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -337,6 +357,7 @@ int main(void)
     test_critical_section();
     test_scale5to8();
     test_different_timing();
+    test_large_led_count();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;

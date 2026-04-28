@@ -322,6 +322,28 @@ static void test_reinit_different_chip(void)
     ASSERT_EQ(id2, 0xEF4018, "second init W25Q128");
 }
 
+static void test_read_address_zero(void)
+{
+    printf("test_read_address_zero\n");
+    mock_reset();
+    mock_mem[0] = 0x42;
+    mock_mem[1] = 0x99;
+    uint8_t buf[2] = {0};
+    w25qxx_err_t e = w25qxx_read(&mock_spi, 0, buf, 2);
+    ASSERT_EQ(e, W25QXX_OK, "read addr 0 OK");
+    ASSERT_EQ(buf[0], 0x42, "byte at 0");
+    ASSERT_EQ(buf[1], 0x99, "byte at 1");
+}
+
+static void test_page_program_zero_len(void)
+{
+    printf("test_page_program_zero_len\n");
+    mock_reset();
+    uint8_t data = 0x55;
+    w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, &data, 0);
+    ASSERT_EQ(e, W25QXX_ERR_ALIGN, "zero len rejected");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -341,6 +363,8 @@ int main(void)
     test_timeout_stuck_busy();
     test_null_safety();
     test_reinit_different_chip();
+    test_read_address_zero();
+    test_page_program_zero_len();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
