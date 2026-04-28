@@ -90,11 +90,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_gpio_led
 ```
 
-56 assertions across 15 test cases: init, on/off, blink (basic/asymmetric/repeat/single), pulse, breathe (ramp/continuous), mode switching, deduplication, null safety, zero-dt, custom brightness, re-init reset.
+60 assertions across 17 test cases: init, on/off, blink (basic/asymmetric/repeat/single/zero-on), pulse (normal/zero-on), breathe (ramp/continuous), mode switching, deduplication, null safety, zero-dt, custom brightness, re-init reset.
 
 ## Test status
 
-- Unit tests (sim): PASS (15 C tests, 56 assertions)
+- Unit tests (sim): PASS (17 C tests, 60 assertions)
 - HIL: N/A
 
 ## API convention deviations
