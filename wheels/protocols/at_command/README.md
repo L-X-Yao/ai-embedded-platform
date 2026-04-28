@@ -102,11 +102,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_at_command
 ```
 
-64 assertions across 22 test cases: init, send framing, OK/ERROR/CME/CMS response, bare-LF line ending, prev-line capture, URC dispatch (single/multiple/during-wait), prompt detection, cancel, raw send, CR stripping, empty lines, null safety, table full.
+72 assertions across 25 test cases: init, send framing, OK/ERROR/CME/CMS response, bare-LF line ending, prev-line capture, URC dispatch (single/multiple/during-wait), prompt detection, cancel, raw send, CR stripping, empty lines, null safety, table full, line buffer overflow protection, re-init clears URCs, exact buffer boundary.
 
 ## Test status
 
-- Unit tests (sim): PASS (22 C tests, 64 assertions)
+- Unit tests (sim): PASS (25 C tests, 72 assertions)
 - HIL: N/A
 
 ## Convention Deviations
