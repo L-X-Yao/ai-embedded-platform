@@ -27,6 +27,8 @@ Rules:
     SHOULD document them in a "Dependencies" README section (ADR-009).
   - Non-vendor wheel .h/.c files SHOULD have the Layer/Status/Deps file
     header per api-conventions §8.
+  - Non-draft wheel READMEs SHOULD have candidate-level sections:
+    Supported platforms, Test status, Dependencies (wheel-contract §3.2).
 
 Exit 0 if all checks pass; 1 if any failure.
 """
@@ -133,6 +135,22 @@ def has_c99_standard(wheel_dir: Path) -> bool:
     if "vsf.cmake" in text:
         return True  # VSF cmake sets standard internally
     return "CMAKE_C_STANDARD" in text
+
+
+def has_candidate_sections(wheel_dir: Path) -> list:
+    """Check README has candidate-level sections (wheel-contract §3.2).
+
+    Returns list of missing section names (empty = all present).
+    """
+    text = read_readme(wheel_dir)
+    missing = []
+    if "## Supported platforms" not in text and "## 支持的平台" not in text:
+        missing.append("Supported platforms")
+    if "## Test status" not in text and "## 测试状态" not in text:
+        missing.append("Test status")
+    if "## Dependencies" not in text and "## 依赖" not in text:
+        missing.append("Dependencies")
+    return missing
 
 
 def has_file_header(wheel_dir: Path, name: str) -> bool:
@@ -316,6 +334,21 @@ def main() -> int:
         if not has_c99_standard(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing CMAKE_C_STANDARD 99")
             print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- Candidate README sections (wheel-contract §3.2) ---
+    print("\n=== Candidate README sections (wheel-contract §3.2) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        missing = has_candidate_sections(wheel_dir)
+        if missing:
+            warnings.append(
+                f"{path}: README missing candidate sections: {', '.join(missing)}"
+            )
+            print(f"  [WARN]  {path}: missing {', '.join(missing)}")
         else:
             print(f"  [ ok ]  {path}")
 
