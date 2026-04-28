@@ -167,7 +167,7 @@ log_add_sink(my_net_sink, NULL);
 
 @user（2-3 人团队，暂）
 
-## API Review
+## API review
 
 - 提案日期：2026-04-21
 - 审批人：@user

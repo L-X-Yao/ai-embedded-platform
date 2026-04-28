@@ -101,7 +101,7 @@ I2C HAL uses generic `write(addr, buf, len)` / `read(addr, buf, len)` instead of
 
 Extracted from `projects/flybox/src/drivers/baro/baro_driver.c` 2026-04-27.
 
-## API Review
+## API review
 
 - Date: 2026-04-27
 - Reviewer: @user

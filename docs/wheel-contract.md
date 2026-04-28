@@ -28,6 +28,7 @@
 - 每个 wheel 的 README **必须**有 `## Why not VSF native?` 标题（ADR-006，FAIL）
 - Vendor wheel（含 `vendor/` 子目录）**必须**有 `VENDOR.md`（ADR-010，FAIL）
 - 有跨 wheel 依赖的 wheel **应该**在 README 写 `## Dependencies` 节（ADR-009，WARN）
+- 非 `_draft/` 层的 wheel **应该**在 README 有 `## API review` 节（wheel-contract §7，WARN）
 
 历史教训详见 `memory/feedback_wheel_commit_not_sunk.md`：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。
 

@@ -79,7 +79,7 @@ None.
 
 Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox retains GD32F4xx SPI1 bring-up + `flash_ring_*` application-layer ring buffer; platform-agnostic command logic moved to this wheel.
 
-## API Review
+## API review
 
 - Date: 2026-04-25
 - Reviewer: @user

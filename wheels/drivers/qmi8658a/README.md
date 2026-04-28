@@ -79,7 +79,7 @@ None.
 
 Extracted from `projects/flybox/src/drivers/imu/imu_driver.c`.
 
-## API Review
+## API review
 
 - Date: 2026-04-25
 - Reviewer: @user
