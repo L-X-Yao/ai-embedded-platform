@@ -18,7 +18,6 @@ VSF has no IMU/motion-sensor component. Searched `vsf/source/{component,service,
 - Acceleration output in G, angular rate in deg/s (float)
 - Soft reset command
 - I2C HAL injection via callback struct — zero RTOS dependency
-- I2C wait loops have 100k spin guards — dead bus triggers init failure instead of hanging
 
 ## API
 
