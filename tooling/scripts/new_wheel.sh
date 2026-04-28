@@ -5,13 +5,22 @@
 #   new_wheel.sh --layer drivers --name bmp280 --hal i2c [--addr 0x76]
 #   new_wheel.sh --layer drivers --name enc28j60 --hal spi
 #   new_wheel.sh --layer primitives --name ringbuf
+#   new_wheel.sh --layer primitives --name kvs --vendor   # ADR-010 vendor mode
 #
-# Generated files:
+# Generated files (standard):
 #   wheels/<layer>/<name>/<name>.h       — header with HAL injection struct + error enum
 #   wheels/<layer>/<name>/<name>.c       — implementation skeleton
 #   wheels/<layer>/<name>/test/CMakeLists.txt
 #   wheels/<layer>/<name>/test/test_<name>.c — mock HAL + test harness + 2 starter tests
 #   wheels/<layer>/<name>/README.md      — with "Why not VSF native?" section
+#
+# Generated files (--vendor, ADR-010):
+#   wheels/<layer>/<name>/vendor/inc/    — place upstream headers here
+#   wheels/<layer>/<name>/vendor/src/    — place upstream sources here
+#   wheels/<layer>/<name>/VENDOR.md      — upstream tracking template
+#   wheels/<layer>/<name>/test/CMakeLists.txt
+#   wheels/<layer>/<name>/test/test_<name>.c
+#   wheels/<layer>/<name>/README.md      — with vendor-specific sections
 #
 # Also prints a CI job YAML snippet to paste into .github/workflows/ci.yml.
 
@@ -25,6 +34,7 @@ LAYER=""
 NAME=""
 HAL=""
 ADDR=""
+VENDOR=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -32,6 +42,7 @@ while [[ $# -gt 0 ]]; do
         --name)   NAME="$2";   shift 2 ;;
         --hal)    HAL="$2";    shift 2 ;;
         --addr)   ADDR="$2";   shift 2 ;;
+        --vendor) VENDOR=1;    shift   ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -490,13 +501,175 @@ cmake .. && make && ./test_${NAME_LOWER}
 \`\`\`
 README_EOF
 
+# ---- Vendor mode (ADR-010) ---------------------------------------------------
+
+generate_vendor_dirs() {
+    mkdir -p "$WHEEL_DIR/vendor/inc"
+    mkdir -p "$WHEEL_DIR/vendor/src"
+}
+
+generate_vendor_md() {
+    cat > "$WHEEL_DIR/VENDOR.md" << VENDOR_EOF
+# Upstream
+
+- **Project**: TODO
+- **Author**: TODO
+- **URL**: TODO
+- **Version**: TODO
+- **License**: TODO
+- **Vendored**: $(date +%Y-%m-%d)
+
+## What was vendored
+
+TODO: list files copied into vendor/inc/ and vendor/src/.
+
+Excluded:
+- TODO: list what was deliberately omitted and why.
+
+## Source
+
+TODO: describe where the files came from (GitHub release, user's copy, etc.).
+
+## Update procedure
+
+1. Download new release from upstream
+2. Copy headers to \`vendor/inc/\`
+3. Copy sources to \`vendor/src/\`
+4. Run tests: \`cd test && cmake -GNinja -S . -B build && cmake --build build && ./build/test_${NAME_LOWER}\`
+5. Update version and date in this file
+VENDOR_EOF
+}
+
+generate_vendor_test_cmake() {
+    cat > "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_EOF
+cmake_minimum_required(VERSION 3.13)
+project(test_${NAME_LOWER} C)
+
+add_executable(test_${NAME_LOWER}
+    test_${NAME_LOWER}.c
+    # TODO: add vendor sources
+    # ../vendor/src/xxx.c
+)
+
+target_include_directories(test_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
+    \${CMAKE_CURRENT_SOURCE_DIR}
+    # TODO: add per-project config header dir if needed
+)
+
+enable_testing()
+add_test(NAME ${NAME_LOWER}_tests COMMAND test_${NAME_LOWER})
+CMAKE_EOF
+}
+
+generate_vendor_test() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include <stdio.h>
+#include <string.h>
+
+/* TODO: #include upstream header */
+
+static int tests_run, tests_fail;
+
+#define ASSERT(cond, msg) do { \\
+    tests_run++; \\
+    if (!(cond)) { \\
+        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
+        tests_fail++; \\
+    } \\
+} while(0)
+
+#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
+
+/* TODO: add tests */
+
+int main(void)
+{
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
+    return tests_fail ? 1 : 0;
+}
+TEST_EOF
+}
+
+generate_vendor_readme() {
+    cat > "$WHEEL_DIR/README.md" << README_EOF
+# ${NAME_LOWER} — TODO: one-line description
+
+**Status: candidate**
+
+TODO: 2-3 sentence description.
+
+## Why not VSF native?
+
+Searched \`vsf/source/service/\`, \`vsf/source/component/\`, \`vsf/source/utilities/\` for:
+\`TODO: keywords\` — TODO: results.
+
+## Why this upstream?
+
+TODO: why this library was chosen. List evaluated alternatives.
+See ADR-010.
+
+## Dependencies
+
+TODO: list wheel dependencies (or "None.").
+
+## API
+
+Upstream API is used directly. Consumers \`#include <TODO.h>\`.
+
+\`\`\`c
+/* TODO: key API examples */
+\`\`\`
+
+## Porting (per-project config)
+
+TODO: describe per-project config files if applicable.
+
+## Convention Deviations
+
+TODO: document any deviations from api-conventions.md.
+
+## Configuration (compile-time)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| TODO   | TODO    | TODO    |
+
+## Known issues
+
+TODO.
+
+## Tests
+
+\`\`\`bash
+cd wheels/${LAYER}/${NAME_LOWER}/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_${NAME_LOWER}
+\`\`\`
+
+## API review
+
+- **Date**: TODO
+- **Key decisions**: TODO
+README_EOF
+}
+
 # ---- Dispatch generation -----------------------------------------------------
 
-case "${HAL:-none}" in
-    i2c)  generate_header_i2c;  generate_c_i2c;  generate_test_i2c  ;;
-    spi)  generate_header_spi;  generate_c_spi;   generate_test_spi  ;;
-    *)    generate_header_none; generate_c_none;   generate_test_none ;;
-esac
+if [[ "$VENDOR" -eq 1 ]]; then
+    generate_vendor_dirs
+    generate_vendor_md
+    generate_vendor_test_cmake
+    generate_vendor_test
+    generate_vendor_readme
+else
+    case "${HAL:-none}" in
+        i2c)  generate_header_i2c;  generate_c_i2c;  generate_test_i2c  ;;
+        spi)  generate_header_spi;  generate_c_spi;   generate_test_spi  ;;
+        *)    generate_header_none; generate_c_none;   generate_test_none ;;
+    esac
+fi
 
 # ---- CI snippet --------------------------------------------------------------
 
@@ -536,8 +709,16 @@ CI_EOF
 
 echo ""
 echo "Done. Next steps:"
+if [[ "$VENDOR" -eq 1 ]]; then
+echo "  1. Copy upstream headers to vendor/inc/ and sources to vendor/src/"
+echo "  2. Fill in VENDOR.md (upstream URL, version, license, file list)"
+echo "  3. Fill in TODO placeholders in README.md"
+echo "  4. Wire vendor sources in test/CMakeLists.txt"
+echo "  5. Add tests to test/test_${NAME_LOWER}.c"
+else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
-echo "  3. Paste CI snippet into .github/workflows/ci.yml"
-echo "  4. Run: tooling/scripts/test_all.sh ${NAME_LOWER}"
-echo "  5. Run: python tooling/scripts/audit_wheels.py"
+fi
+echo "  $(( VENDOR ? 6 : 3 )). Paste CI snippet into .github/workflows/ci.yml"
+echo "  $(( VENDOR ? 7 : 4 )). Run: tooling/scripts/test_all.sh ${NAME_LOWER}"
+echo "  $(( VENDOR ? 8 : 5 )). Run: python tooling/scripts/audit_wheels.py"
