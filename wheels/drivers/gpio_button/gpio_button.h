@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- events ---------- */
 
 typedef enum {
@@ -64,5 +68,9 @@ void           gpio_btn_init(gpio_btn_t *btn, const gpio_btn_hal_t *hal,
 gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms);
 /** Query current stable press state. @thread_safe: caller_must_lock */
 uint8_t        gpio_btn_is_pressed(const gpio_btn_t *btn);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GPIO_BUTTON_H */

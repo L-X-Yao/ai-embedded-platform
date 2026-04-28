@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     QMC5883P_OK = 0,
     QMC5883P_ERR_I2C,
@@ -39,4 +43,8 @@ qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c);
 /** Read magnetometer sample (uT). @thread_safe: caller_must_lock */
 qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* QMC5883P_H */

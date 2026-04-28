@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- event types ---------- */
 
 typedef enum {
@@ -58,5 +62,9 @@ ncp5623_evt_type_t ncp5623_parser_feed(ncp5623_parser_t *p,
                                         ncp5623_evt_t *evt);
 /** End I2C transaction. @thread_safe: caller_must_lock */
 void               ncp5623_parser_stop(ncp5623_parser_t *p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* NCP5623_PARSER_H */

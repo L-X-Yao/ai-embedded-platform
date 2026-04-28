@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- error codes ---------- */
 
 typedef enum {
@@ -90,5 +94,9 @@ qmi8658a_err_t  qmi8658a_read(const qmi8658a_i2c_t *i2c,
 
 /** Soft-reset the device. @thread_safe: caller_must_lock */
 qmi8658a_err_t  qmi8658a_reset(const qmi8658a_i2c_t *i2c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* QMI8658A_H */

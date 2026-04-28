@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- error codes ---------- */
 
 typedef enum {
@@ -61,5 +65,9 @@ void ws2812_encode_grb(const ws2812_color_t *color,
 
 /** Scale 5-bit (0-31) to 8-bit (0-255). @thread_safe: yes (pure) */
 uint8_t ws2812_scale5to8(uint8_t v5);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* WS2812_H */
