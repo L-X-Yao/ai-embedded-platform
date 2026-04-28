@@ -83,6 +83,10 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (10 C tests, 164 assertions)
 - HIL: N/A
 
+## API convention deviations
+
+- **Stateless API (no instance struct)**: `ws2812_send` takes HAL + timing + colors per call instead of storing HAL in an instance struct. Reason: the entire operation is a single atomic bit-bang burst — there is no persistent state between calls, so an instance struct would add overhead with no benefit.
+
 ## API review
 
 - **Date**: 2026-04-27
