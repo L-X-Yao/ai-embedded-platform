@@ -49,8 +49,8 @@
 |---------|---------|------|
 | 日志 / trace | `vsf_trace` | `service/trace/` |
 | JSON 解析 | `vsf_json` | `service/json/` |
-| 哈希 | `vsf_hash` | `service/hash/` |
-| CRC | `vsf_hash/crc` | `component/hash/crc/` |
+| 哈希 | `vsf_hash` | `component/crypto/hash/` |
+| CRC | `vsf_crc` | `component/crypto/hash/crc/` |
 | ELF loader | `vsf_elfloader` | `service/loader/elf/` |
 | 分布式总线 | `vsf_distbus` | `service/distbus/` |
 
