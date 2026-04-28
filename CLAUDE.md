@@ -150,6 +150,7 @@ ai-embedded-platform/
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
 | 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU，已实证） |
 | 009 | Wheel 依赖规则：具体/接口两类，方向只能向下，禁止循环 |
+| 010 | 优先采纳开源实现：查 VSF → 联网搜开源 → 都没有才从零写 |
 
 全部见 `docs/adr/README.md`。
 
