@@ -58,7 +58,7 @@ define reflash
 end
 ```
 
-See `projects/flybox/` (via `tooling/scripts/flybox.gdbinit`) for a real example.
+See `projects/flybox/` (via `projects/flybox/scripts/flybox.gdbinit`) for a real example.
 
 ## Porting to other MCUs
 

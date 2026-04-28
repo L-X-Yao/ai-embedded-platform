@@ -2,7 +2,7 @@
 
 Configurable pipeline for the standard "compile → flash → boot → check log"
 loop on STM32-family / GD32 + CMSIS-DAP targets. Replaces project-specific
-orchestration scripts (e.g. `flybox_build_flash.sh`) with a generic driver
+orchestration scripts (e.g. `projects/flybox/scripts/build_flash.sh`) with a generic driver
 fed by a `.conf` file per project.
 
 ## Quick start
@@ -29,7 +29,7 @@ exec "$SCRIPT_DIR/build_flash/build_flash_check.sh" \
     --conf "$SCRIPT_DIR/build_flash/myproject.conf" "$@"
 ```
 
-See `tooling/scripts/flybox_build_flash.sh` for a real example.
+See `projects/flybox/scripts/build_flash.sh` for a real example.
 
 ## Subcommands
 
@@ -64,7 +64,7 @@ Either works — `--conf` takes any path. Pick one and stay consistent across pr
 
 ## Why generic, not per-project?
 
-flybox's original `flybox_build_flash.sh` was 134 lines of bash with the
+flybox's original `build_flash.sh` was 134 lines of bash with the
 build dir, ELF name, SRAM layout, OpenOCD target, COM port, and verdict
 keywords all hard-coded. Every new GD32F4 / STM32F4 project would copy and
 edit that script — diverging fixes, inconsistent verdict logic, no shared
