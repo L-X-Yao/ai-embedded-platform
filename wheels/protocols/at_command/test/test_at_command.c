@@ -295,13 +295,9 @@ static void test_multiple_urc_handlers(void)
 {
     at_cmd_t at;
     at_evt_t evt;
-    static char urc2_buf[64];
-    static int urc2_count;
 
     printf("test_multiple_urc_handlers\n");
     urc_reset();
-    urc2_buf[0] = '\0';
-    urc2_count = 0;
 
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "RDY", urc_handler, NULL);

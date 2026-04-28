@@ -12,5 +12,7 @@ target_include_directories(test_ncp5623_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
+target_compile_options(test_ncp5623_parser PRIVATE -Wall -Wextra -Wpedantic)
+
 enable_testing()
 add_test(NAME ncp5623_parser_tests COMMAND test_ncp5623_parser)

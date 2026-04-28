@@ -38,7 +38,7 @@ static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
 {
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
-    if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
+    mock_regs[reg] = val;
     if (write_log_idx < WRITE_LOG_MAX) {
         write_log[write_log_idx].reg = reg;
         write_log[write_log_idx].val = val;

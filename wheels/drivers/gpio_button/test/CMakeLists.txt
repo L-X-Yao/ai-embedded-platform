@@ -12,5 +12,7 @@ target_include_directories(test_gpio_button PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
+target_compile_options(test_gpio_button PRIVATE -Wall -Wextra -Wpedantic)
+
 enable_testing()
 add_test(NAME gpio_button_tests COMMAND test_gpio_button)

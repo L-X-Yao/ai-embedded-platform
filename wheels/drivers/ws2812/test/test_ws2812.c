@@ -7,8 +7,10 @@
 
 #define MAX_EVENTS 2048
 
+typedef enum { EVT_SET_COMPARE, EVT_WAIT_PERIOD, EVT_ENTER_CRIT, EVT_EXIT_CRIT } mock_evt_type_t;
+
 typedef struct {
-    enum { EVT_SET_COMPARE, EVT_WAIT_PERIOD, EVT_ENTER_CRIT, EVT_EXIT_CRIT } type;
+    mock_evt_type_t type;
     uint16_t value;
 } mock_event_t;
 
@@ -90,7 +92,7 @@ static int tests_run, tests_fail;
 } while(0)
 
 /* count events of a given type in the mock log */
-static int count_events(int type)
+static int count_events(mock_evt_type_t type)
 {
     int n = 0;
     for (int i = 0; i < mock_log_idx; i++) {
