@@ -32,6 +32,7 @@
 - 每个 wheel 的 test CMakeLists.txt **应该**有 `enable_testing()` + `add_test()`（ctest 兼容，WARN）
 - 每个 wheel 的 test CMakeLists.txt **应该**设置 `CMAKE_C_STANDARD 99`（构建一致性，WARN）
 - 非 vendor 的 wheel `.h`/`.c` **应该**有 `Layer:`/`Status:`/`Deps:` 文件头（api-conventions §8，WARN）
+- 非 vendor 的 wheel `.h` **应该**有 `extern "C"` 守卫（api-conventions §9，WARN）
 - 非 `_draft/` 层的 wheel README **应该**有 `## Supported platforms` + `## Test status` + `## Dependencies` 节（wheel-contract §3.2 候选级，WARN）
 
 历史教训：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。

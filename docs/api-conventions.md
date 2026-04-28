@@ -102,10 +102,28 @@ bool ring_buffer_is_empty(ring_buffer_t *rb);
 
 嵌入式多任务环境下 errno 容易错乱。**错误直接通过返回值传**。
 
-### 2.3 断言 vs 返回错误
+### 2.3 NULL 指针守卫（强制）
 
-- **编程错误**（API 误用、NULL 指针等不该发生的情况）→ `VSF_ASSERT()`，不通过返回值传
+所有公开 API 函数**必须在入口检查指针参数**。wheel 代码运行在裸机 ISR 或 RTOS 任务中，NULL 解引用直接 HardFault。
+
+```c
+// ✅
+w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi, ...) {
+    if (!spi || !buf) return W25QXX_ERR_SPI;
+    ...
+}
+
+// ❌ 裸机上 assert 通常是死循环，不如返回错误码让调用方处理
+w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi, ...) {
+    VSF_ASSERT(spi != NULL);  // 不做——用返回值
+    ...
+}
+```
+
+### 2.4 断言 vs 返回错误
+
 - **运行时错误**（硬件无响应、buffer 满等可恢复情况）→ 返回错误码
+- **内部不变量**（只有代码 bug 才能触发）→ `VSF_ASSERT()`（不在公开 API 边界使用）
 
 ## 3. 内存所有权
 
@@ -238,7 +256,25 @@ LOG_ERROR("mpu6050 read timeout");
  */
 ```
 
-## 9. 依赖
+## 9. C++ 兼容（强制）
+
+所有 wheel 的 `.h` 文件**必须包含 `extern "C"` 守卫**：
+
+```c
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* ... 全部声明 ... */
+
+#ifdef __cplusplus
+}
+#endif
+```
+
+放在 `#include` 之后、`#endif /* GUARD */` 之前。目的：wheel 可能被 C++ 项目（VSF 组件、测试框架）直接 include。`audit_wheels.py` 自动检查。
+
+## 10. 依赖
 
 完整规则见 **[ADR-009](adr/009-wheel-dependency-rules.md)**（单一来源）。摘要：
 
