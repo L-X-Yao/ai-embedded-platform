@@ -73,6 +73,10 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 - [x] WSL Ubuntu 24.04 — passed 2026-04-26
 - [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified
 
+## Origin
+
+Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
+
 ## Dependencies
 
 None.

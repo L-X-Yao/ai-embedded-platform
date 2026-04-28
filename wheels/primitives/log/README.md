@@ -97,6 +97,10 @@ log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 | Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
+## Origin
+
+First wheel built for the platform (Sprint 0). Not extracted from a project — designed as canonical example for wheel structure, testing, and CI patterns. Consumed by drone_light BSP log adapter.
+
 ## Dependencies
 
 - VSF kernel
