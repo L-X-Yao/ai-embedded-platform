@@ -30,6 +30,8 @@
    - 硬件选型
    - 使用的 wheels（引用 `wheels/...`，锁 git tag 版本）
    - 项目特定约定
+   - wheel 候选清单（从项目代码识别的可抽取组件）
+4.5. **同步 WISHLIST**：项目 CLAUDE.md 的 wheel 候选清单 → `wheels/WISHLIST.md` 对应行触发计数 +1（跨项目 ≥3 升级阈值需要此数据）
 5. **配 build**：按硬件调 `VSF_TARGET`、引用 wheels、Kconfig。
 6. **至少 build 一次**（host sim），确保脚手架正常。
 7. **交回**：问用户第一个功能。
