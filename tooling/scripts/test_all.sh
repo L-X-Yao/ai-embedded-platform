@@ -246,7 +246,7 @@ run_c_test() {
     local output
     if output=$("$exe" 2>&1); then
         local summary_line
-        summary_line=$(echo "$output" | grep -E '[0-9]+ tests?,\s*[0-9]+ passed' | tail -1 || true)
+        summary_line=$(echo "$output" | grep -E '[0-9]+ tests?,\s*[0-9]+ (passed|failures?)' | tail -1 || true)
         if [[ -n "$summary_line" ]]; then
             echo -e "  ${GREEN}PASS${NC}  $name  (${summary_line})"
         else
