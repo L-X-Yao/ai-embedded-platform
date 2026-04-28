@@ -67,6 +67,15 @@ gpio_led_on(&led);  /* outputs 128 */
 
 For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes duty cycle (0-255). The `emit` deduplication avoids redundant HAL calls.
 
+## Dependencies
+
+- None (interface dependency: `gpio_led_hal_t` set callback provided by caller)
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-27
+- [ ] Real hardware — not yet verified (no project consumer)
+
 ## Known issues
 
 - Breathe mode requires PWM-capable output for smooth dimming. On plain GPIO, it produces rapid on/off toggling.
@@ -82,6 +91,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 52 assertions across 14 test cases: init, on/off, blink (basic/asymmetric/repeat/single), pulse, breathe (ramp/continuous), mode switching, deduplication, null safety, zero-dt, custom brightness.
+
+## Test status
+
+- Unit tests (sim): PASS (14 C tests, 52 assertions)
+- HIL: N/A
 
 ## API review
 

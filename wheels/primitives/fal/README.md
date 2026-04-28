@@ -27,6 +27,11 @@ See ADR-010.
 
 - None (interface dependency: flash device ops provided by project at compile time)
 
+## Supported platforms
+
+- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
+- [ ] GD32F405 (flybox) — FAL used via kvs in project, wheel not separately HIL tested
+
 ## API
 
 FAL's upstream API is used directly (no wrapper). Consumers `#include <fal.h>`.
@@ -103,6 +108,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 27 assertions across 13 test cases: init, partition find (existing/missing), flash device find, partition table query, write-read round-trip, offset write-read, erase, erase-all, boundary checks (read/write/erase out of bounds), partition isolation, flash write semantics (AND-only), show_part_table.
+
+## Test status
+
+- Unit tests (sim): PASS (13 C tests, 27 assertions)
+- HIL: N/A
 
 ## API review
 

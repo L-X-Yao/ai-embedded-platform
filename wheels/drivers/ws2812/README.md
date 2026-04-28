@@ -53,6 +53,15 @@ uint8_t r8 = ws2812_scale5to8(15);  /* → 123 */
 | 72 MHz | 89 | 24 | 47 |
 | 168 MHz | 209 | 56 | 109 |
 
+## Dependencies
+
+- None (interface dependency: `ws2812_hal_t` timer callbacks provided by caller)
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-27
+- [ ] N32G003 (drone_light) — original project code verified, wheel not separately HIL tested
+
 ## Known issues
 
 - Critical section disables all interrupts for `num_leds × 30µs`. For long chains (>16 LEDs), consider DMA-based approach instead.
@@ -68,6 +77,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 164 assertions across 10 test cases: null safety, GRB encoding, bit patterns, multi-LED, reset latch timing, critical section, 5-to-8 scaling, multi-clock timing.
+
+## Test status
+
+- Unit tests (sim): PASS (10 C tests, 164 assertions)
+- HIL: N/A
 
 ## API review
 

@@ -78,6 +78,15 @@ const char *imei = at_cmd_get_prev_line(&at);
 | `AT_CMD_MATCH_SIZE` | 256 | Matched/prev-line buffer |
 | `AT_CMD_MAX_URCS` | 16 | Max URC handler slots |
 
+## Dependencies
+
+- None (interface dependency: `at_hal_t` send callback provided by caller)
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-27
+- [ ] GD32F405 (flybox) — original project code verified, wheel not separately HIL tested
+
 ## Known issues
 
 - No built-in timeout — consumer must implement timeout externally (check elapsed time, call `at_cmd_cancel()`).
@@ -94,6 +103,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 61 assertions across 20 test cases: init, send framing, OK/ERROR/CME response, prev-line capture, URC dispatch (single/multiple/during-wait), prompt detection, cancel, raw send, CR stripping, empty lines, null safety, table full.
+
+## Test status
+
+- Unit tests (sim): PASS (20 C tests, 61 assertions)
+- HIL: N/A
 
 ## API review
 
