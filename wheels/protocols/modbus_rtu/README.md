@@ -24,6 +24,11 @@ the Modbus Application Protocol Specification V1.1b3.
 
 - `crc16` (L0, concrete) — CRC16-MODBUS frame check per ADR-009
 
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-28
+- [ ] Real hardware — not yet verified (no project consumer)
+
 ## Features
 
 - **Frame layer**: build/parse/validate any Modbus RTU ADU with CRC16
@@ -86,6 +91,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 108 assertions across 34 test cases: frame build/parse/CRC, master request builders (FC 03/04/06/10), master response parsing, slave dispatch (read holding/input, write single/multiple), address mismatch, broadcast (write executes + no response, read skipped), exception responses (unknown FC, missing callback, callback failure), null safety, master-slave round-trip integration.
+
+## Test status
+
+- Unit tests (sim): PASS (34 C tests, 108 assertions)
+- HIL: N/A
 
 ## API review
 

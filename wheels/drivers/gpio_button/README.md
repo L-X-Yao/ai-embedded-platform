@@ -60,6 +60,15 @@ if (gpio_btn_is_pressed(&btn)) { /* ... */ }
 
 LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.
 
+## Dependencies
+
+- None (interface dependency: `gpio_btn_hal_t` read callback provided by caller)
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-27
+- [ ] Real hardware — not yet verified (no project consumer)
+
 ## Known issues
 
 - CLICK event is delayed by `double_click_ms` (default 300ms) to distinguish from double-click. Set `double_click_ms=0` to disable double-click and get immediate clicks (not yet supported — would need code change).
@@ -75,6 +84,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 27 assertions across 12 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks.
+
+## Test status
+
+- Unit tests (sim): PASS (12 C tests, 27 assertions)
+- HIL: N/A
 
 ## API review
 

@@ -50,6 +50,15 @@ if (r == NCP5623_EVT_COLOR) {
 ncp5623_parser_stop(&parser);
 ```
 
+## Dependencies
+
+- None (pure software, no external dependency)
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-27
+- [ ] N32G003 (drone_light) — original project code verified, wheel not separately HIL tested
+
 ## Known issues
 
 - Only handles the ArduPilot NCP5623 subset (ENABLE + COLOR). Real NCP5623 has PWM, gradual dimming, and off-timer registers — not implemented.
@@ -65,6 +74,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ```
 
 40 assertions across 13 test cases: init state, enable/disable, color parsing, enable gating, 4-bit masking, unknown register rejection, persistence, short packet, null safety, off color.
+
+## Test status
+
+- Unit tests (sim): PASS (13 C tests, 40 assertions)
+- HIL: N/A
 
 ## API review
 

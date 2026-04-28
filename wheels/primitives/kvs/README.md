@@ -26,6 +26,11 @@ See ADR-010.
 
 - `fal` (L0, concrete, ADR-009) — flash partition management
 
+## Supported platforms
+
+- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
+- [ ] GD32F405 (flybox) — FlashDB used in project, wheel not separately HIL tested
+
 ## API
 
 FlashDB's upstream API is used directly. Consumers `#include <flashdb.h>`.
@@ -105,6 +110,11 @@ cmake -GNinja -S . -B build && cmake --build build
 42 assertions across 11 test cases: FAL init, KVDB init, default KV values,
 string set/get, overwrite, delete, binary blob set/get, persistence across
 re-init, nonexistent key, 20-key batch, KV iterator.
+
+## Test status
+
+- Unit tests (sim): PASS (11 C tests, 42 assertions)
+- HIL: N/A
 
 ## API review
 
