@@ -1,6 +1,6 @@
 # ADR 009: Wheel 依赖规则
 
-**状态**：proposed
+**状态**：accepted
 **日期**：2026-04-28
 **决策人**：@user
 
