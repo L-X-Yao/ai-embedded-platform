@@ -570,6 +570,10 @@ TODO: 2-3 sentence description.
 Searched \`vsf/source/service/\`, \`vsf/source/component/\`, \`vsf/source/utilities/\` for:
 \`TODO: keywords\` — TODO: results.
 
+## Origin
+
+TODO: "Extracted from \`projects/<proj>/src/...\`" or "Proactive build for <use case>".
+
 ## Dependencies
 
 TODO: list wheel dependencies (or "None.").
