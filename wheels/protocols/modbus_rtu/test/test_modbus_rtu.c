@@ -668,6 +668,70 @@ static void test_roundtrip_write_multiple(void)
 }
 
 /* ============================================================ */
+/*                    BOUNDARY TESTS                           */
+/* ============================================================ */
+
+static void test_build_max_data(void)
+{
+    uint8_t buf[MODBUS_RTU_MAX_FRAME];
+    uint8_t data[MODBUS_RTU_MAX_FRAME - 4];
+
+    printf("test_build_max_data\n");
+    memset(data, 0xAA, sizeof(data));
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03,
+                               data, MODBUS_RTU_MAX_FRAME - 4);
+    ASSERT(len == MODBUS_RTU_MAX_FRAME, "max frame built");
+    ASSERT(modbus_rtu_check_crc(buf, len), "CRC valid at max size");
+
+    modbus_rtu_frame_t frame;
+    ASSERT(modbus_rtu_parse(buf, len, &frame) == 0, "max frame parseable");
+    ASSERT(frame.data_len == MODBUS_RTU_MAX_FRAME - 4, "max data_len");
+}
+
+static void test_build_exceeds_max_frame(void)
+{
+    uint8_t buf[MODBUS_RTU_MAX_FRAME + 4];
+    uint8_t data[MODBUS_RTU_MAX_FRAME - 3];
+
+    printf("test_build_exceeds_max_frame\n");
+    memset(data, 0xBB, sizeof(data));
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03,
+                               data, MODBUS_RTU_MAX_FRAME - 3);
+    ASSERT(len == -1, "oversized frame rejected");
+}
+
+static void test_slave_reinit_address(void)
+{
+    modbus_rtu_slave_t s;
+    uint8_t req[32], resp[256];
+
+    printf("test_slave_reinit_address\n");
+    mock_reset();
+    holding_regs[0] = 0xAAAA;
+
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = mock_read_holding;
+
+    int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
+                                               0x01, MODBUS_FC_READ_HOLDING_REGS,
+                                               0, 1);
+    ASSERT(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) > 0,
+           "responds to addr 0x01");
+
+    modbus_rtu_slave_init(&s, 0x05, NULL);
+    s.read_holding = mock_read_holding;
+
+    ASSERT(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) == 0,
+           "ignores old addr after re-init");
+
+    req_len = modbus_rtu_master_read_regs(req, sizeof(req),
+                                           0x05, MODBUS_FC_READ_HOLDING_REGS,
+                                           0, 1);
+    ASSERT(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) > 0,
+           "responds to new addr 0x05");
+}
+
+/* ============================================================ */
 
 int main(void)
 {
@@ -714,6 +778,11 @@ int main(void)
     test_roundtrip_read();
     test_roundtrip_write_single();
     test_roundtrip_write_multiple();
+
+    /* Boundary */
+    test_build_max_data();
+    test_build_exceeds_max_frame();
+    test_slave_reinit_address();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;
