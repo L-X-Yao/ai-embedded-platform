@@ -25,6 +25,9 @@
 - `drivers/` / `protocols/` / `modules/` 层的 wheel **应该**有项目 consumer（CMakeLists.txt 或 #include）；缺失为 WARN 不阻塞——AI 主动构建是鼓励的（见 ADR-009）
 - `primitives/` 和 `_draft/` 层可以暂无 consumer（作为 building block 或孵化品）
 - `wheels/WISHLIST.md` 不能列已存在的 wheel 名（stale candidate）
+- 每个 wheel 的 README **必须**有 `## Why not VSF native?` 标题（ADR-006，FAIL）
+- Vendor wheel（含 `vendor/` 子目录）**必须**有 `VENDOR.md`（ADR-010，FAIL）
+- 有跨 wheel 依赖的 wheel **应该**在 README 写 `## Dependencies` 节（ADR-009，WARN）
 
 历史教训详见 `memory/feedback_wheel_commit_not_sunk.md`：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。
 
@@ -34,7 +37,7 @@
 
 **本文关心的验收点**：
 
-- 每个 wheel 的 README 必须有 "为什么不用 VSF 原生？" 一节
+- 每个 wheel 的 README 必须有 `## Why not VSF native?` 一节（英文标题，CI 检查此精确标题）
 - 该节必须列出已检查的 VSF 模块 + 结论（等价物不存在 / 存在但缺 X 功能）
 - 如果等价物存在且功能够用 → **不做这个 wheel**，应直接文档化"请使用 vsf_xxx"
 
@@ -42,18 +45,37 @@
 
 ## 2. 结构（强制）
 
+### 2.1 自写 wheel（标准结构）
+
 ```
 wheels/<层>/<wheel-name>/
 ├── README.md                 必须
-├── CMakeLists.txt            必须（能被 add_subdirectory 纳入）
 ├── <wheel-name>.h            必须（public API）
 ├── <wheel-name>.c            必须
-├── test_<wheel-name>.py      必须（pytest 可跑）
-├── test_main.c               常有（C 测试 harness，sim 里跑）
+├── test/                     必须
+│   ├── CMakeLists.txt        必须（独立可构建）
+│   └── test_<wheel-name>.c   必须（C 测试 harness）
 ├── config.h                  可选（编译期配置）
 └── examples/                 可选
-    └── basic.c
 ```
+
+### 2.2 Vendor wheel（ADR-010 结构）
+
+```
+wheels/<层>/<wheel-name>/
+├── README.md                 必须（含 "Why this upstream?" 节）
+├── VENDOR.md                 必须（upstream URL / 版本 / 更新步骤）
+├── vendor/                   必须
+│   ├── inc/                  上游 headers（不修改）
+│   └── src/                  上游 sources（不修改）
+├── test/                     必须
+│   ├── CMakeLists.txt        必须（引用 ../vendor/src/）
+│   ├── test_<wheel-name>.c   必须
+│   └── <xxx>_cfg.h           常有（per-project 配置示例）
+└── examples/                 可选
+```
+
+脚手架生成：`tooling/scripts/new_wheel.sh --vendor --layer <layer> --name <name>`
 
 ## 3. README.md 内容（按层差异）
 
@@ -83,8 +105,8 @@ python3 -m pytest test_*.py -v
 在 draft 基础上补：
 
 ```markdown
-## 为什么不用 VSF 原生？
-（见 §1，强制）
+## Why not VSF native?
+（见 §1，强制；必须用英文标题）
 
 ## 功能
 - 要点列表
