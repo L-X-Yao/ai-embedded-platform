@@ -213,6 +213,18 @@ static void test_south_west_coordinates(void)
     ASSERT(d.longitude < 0.0f, "west is negative");
 }
 
+static void test_equator_prime_meridian(void)
+{
+    nmea_data_t d;
+
+    printf("test_equator_prime_meridian\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010126,,,A*6F", &d);
+    ASSERT_NEAR(d.latitude, 0.0f, 0.001f, "equator lat=0");
+    ASSERT_NEAR(d.longitude, 0.0f, 0.001f, "prime meridian lon=0");
+    ASSERT_EQ(d.fix_valid, 1, "fix valid at origin");
+}
+
 static void test_accumulate_gga_rmc(void)
 {
     nmea_data_t d;
@@ -265,6 +277,7 @@ int main(void)
     test_south_west_coordinates();
     test_accumulate_gga_rmc();
     test_reinit_clears();
+    test_equator_prime_meridian();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
