@@ -478,5 +478,41 @@ def main() -> int:
     return 0
 
 
+def print_dep_graph(wheels):
+    """Print wheel dependency graph in Mermaid format."""
+    print("```mermaid")
+    print("graph TD")
+    layer_style = {"primitives": ":::prim", "drivers": ":::drv",
+                   "protocols": ":::proto", "modules": ":::mod", "_draft": ":::draft"}
+    for layer, name, path in wheels:
+        label = f"{name}"
+        style = layer_style.get(layer, "")
+        print(f"    {name}[\"{label} ({layer[0].upper()}{layer[1:3]})\"]")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        deps = detect_cross_wheel_deps(wheel_dir)
+        for dep in deps:
+            print(f"    {name} --> {dep}")
+    consumers = {}
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        rel = str(wheel_dir.relative_to(REPO)).replace("\\", "/")
+        found = find_consumers(rel, name)
+        for c in found:
+            proj = c.split("/")[1] if c.startswith("projects/") else None
+            if proj:
+                consumers.setdefault(proj, set()).add(name)
+    for proj, wset in consumers.items():
+        print("    " + proj + '{{"' + proj + '"}}')
+        for w in sorted(wset):
+            print(f"    {proj} -.-> {w}")
+    print("```")
+
+
 if __name__ == "__main__":
+    if "--graph" in sys.argv:
+        sys.argv.remove("--graph")
+        wheels = find_wheels()
+        print_dep_graph(wheels)
+        sys.exit(0)
     sys.exit(main())
