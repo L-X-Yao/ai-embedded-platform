@@ -141,6 +141,14 @@ jobs:
           cmake --build build
           ctest --test-dir build --output-on-failure
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: pip install pytest
+      - name: Test parse_fault.py
+        run: python -m pytest tooling/scripts/gd32f4xx_debug/test_parse_fault.py -v
+
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
     runs-on: ubuntu-24.04
