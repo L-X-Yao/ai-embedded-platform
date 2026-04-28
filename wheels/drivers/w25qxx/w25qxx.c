@@ -61,6 +61,7 @@ static void send_addr(const w25qxx_spi_t *s, uint32_t addr)
 
 w25qxx_err_t w25qxx_init(const w25qxx_spi_t *spi, uint32_t *jedec_id_out)
 {
+    if (!spi) return W25QXX_ERR_SPI;
     spi->cs_low(spi->ctx);
     spi->xfer(spi->ctx, CMD_JEDEC_ID);
     uint8_t mfr = spi->xfer(spi->ctx, 0xFF);
@@ -78,6 +79,7 @@ w25qxx_err_t w25qxx_init(const w25qxx_spi_t *spi, uint32_t *jedec_id_out)
 w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi,
                           uint32_t addr, uint8_t *buf, uint32_t len)
 {
+    if (!spi || !buf) return W25QXX_ERR_SPI;
     spi->cs_low(spi->ctx);
     spi->xfer(spi->ctx, CMD_READ_DATA);
     send_addr(spi, addr);
@@ -91,6 +93,7 @@ w25qxx_err_t w25qxx_page_program(const w25qxx_spi_t *spi,
                                   uint32_t addr, const uint8_t *data,
                                   uint16_t len)
 {
+    if (!spi || !data) return W25QXX_ERR_SPI;
     if (len == 0 || len > W25QXX_PAGE_SIZE) return W25QXX_ERR_ALIGN;
     if (((addr & 0xFF) + len) > W25QXX_PAGE_SIZE) return W25QXX_ERR_ALIGN;
 
@@ -107,6 +110,7 @@ w25qxx_err_t w25qxx_page_program(const w25qxx_spi_t *spi,
 
 w25qxx_err_t w25qxx_sector_erase(const w25qxx_spi_t *spi, uint32_t addr)
 {
+    if (!spi) return W25QXX_ERR_SPI;
     write_enable(spi);
     spi->cs_low(spi->ctx);
     spi->xfer(spi->ctx, CMD_SECTOR_ERASE);
@@ -118,6 +122,7 @@ w25qxx_err_t w25qxx_sector_erase(const w25qxx_spi_t *spi, uint32_t addr)
 
 w25qxx_err_t w25qxx_chip_erase(const w25qxx_spi_t *spi)
 {
+    if (!spi) return W25QXX_ERR_SPI;
     write_enable(spi);
     cmd1(spi, CMD_CHIP_ERASE);
     return wait_busy(spi);
@@ -125,6 +130,7 @@ w25qxx_err_t w25qxx_chip_erase(const w25qxx_spi_t *spi)
 
 w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1)
 {
+    if (!spi || !sr1) return W25QXX_ERR_SPI;
     spi->cs_low(spi->ctx);
     spi->xfer(spi->ctx, CMD_READ_STATUS1);
     *sr1 = spi->xfer(spi->ctx, 0xFF);

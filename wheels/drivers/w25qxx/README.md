@@ -50,7 +50,7 @@ if (w25qxx_init(&spi, &id) == W25QXX_OK) {
 
 ## Supported platforms
 
-- [x] Host C99 (mock SPI) — 29 tests, 2026-04-25
+- [x] Host C99 (mock SPI) — 15 tests, 42 assertions, 2026-04-28
 - [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26
 
 ## Dependencies
@@ -64,7 +64,7 @@ None. Pure C99 with injected SPI HAL callbacks.
 
 ## Test status
 
-- Host mock tests: PASS (30 tests covering init, read, program, erase, status, timeout, alignment, edge cases)
+- Host mock tests: PASS (15 tests, 42 assertions — init, read, program, erase, status, timeout, alignment, NULL safety, re-init, edge cases)
 - HIL: PASS on GD32F405 + W25Q64 (SPI1 PB12-15), 2026-04-26
 
 ## API convention deviations
