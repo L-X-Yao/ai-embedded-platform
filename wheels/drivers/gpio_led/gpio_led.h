@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- HAL (caller provides) ---------- */
 
 typedef struct {
@@ -62,5 +66,9 @@ void            gpio_led_pulse(gpio_led_t *led, uint16_t on_ms);
 void            gpio_led_tick(gpio_led_t *led, uint16_t dt_ms);
 /** Query current mode. @thread_safe: caller_must_lock */
 gpio_led_mode_t gpio_led_get_mode(const gpio_led_t *led);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GPIO_LED_H */

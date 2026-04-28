@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- error codes ---------- */
 
 typedef enum {
@@ -73,5 +77,9 @@ xgzp6816d_err_t xgzp6816d_trigger(const xgzp6816d_i2c_t *i2c);
 /** Read last conversion result. @thread_safe: caller_must_lock */
 xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
                                 xgzp6816d_data_t *out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* XGZP6816D_H */

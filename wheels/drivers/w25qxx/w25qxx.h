@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ---------- error codes ---------- */
 
 typedef enum {
@@ -58,5 +62,9 @@ w25qxx_err_t w25qxx_chip_erase(const w25qxx_spi_t *spi);
 
 /** Read status register 1. @thread_safe: caller_must_lock */
 w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* W25QXX_H */

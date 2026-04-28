@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef AT_CMD_LINE_SIZE
 #define AT_CMD_LINE_SIZE   256
 #endif
@@ -90,5 +94,9 @@ int           at_cmd_register_urc(at_cmd_t *at, const char *prefix,
 const char   *at_cmd_get_matched(const at_cmd_t *at);
 /** Get previous complete line. @thread_safe: caller_must_lock */
 const char   *at_cmd_get_prev_line(const at_cmd_t *at);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AT_COMMAND_H */
