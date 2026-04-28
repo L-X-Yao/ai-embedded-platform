@@ -32,7 +32,7 @@
    - 项目特定约定
    - wheel 候选清单（从项目代码识别的可抽取组件）
 4.5. **同步 WISHLIST**：项目 CLAUDE.md 的 wheel 候选清单 → `wheels/WISHLIST.md` 对应行触发计数 +1（跨项目 ≥3 升级阈值需要此数据）
-5. **配 build**：按硬件调 `VSF_TARGET`、引用 wheels、Kconfig。
+5. **配 build**：按硬件调 `VSF_TARGET`、引用 wheels（接入方法见 [`docs/integrating-wheels.md`](integrating-wheels.md)）、Kconfig。
 6. **至少 build 一次**（host sim），确保脚手架正常。
 7. **交回**：问用户第一个功能。
 
@@ -289,4 +289,4 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（11 项检查） | 无 |
+| `audit_wheels.py` | CI 一致性审计（14 项检查） | 无 |
