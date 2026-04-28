@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(test_qmi8658a C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_executable(test_qmi8658a
     test_qmi8658a.c
