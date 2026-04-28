@@ -468,14 +468,33 @@ TEST_EOF
 
 # ---- README ------------------------------------------------------------------
 
-cat > "$WHEEL_DIR/README.md" << README_EOF
-# ${NAME_UPPER} — (L1 TODO: one-line description)
+# Map layer to level label
+case "$LAYER" in
+    primitives) LAYER_LABEL="L0 (primitives)" ;;
+    drivers)    LAYER_LABEL="L1 (drivers)" ;;
+    protocols)  LAYER_LABEL="L2 (protocols)" ;;
+    modules)    LAYER_LABEL="L3 (modules)" ;;
+    _draft)     LAYER_LABEL="draft" ;;
+    *)          LAYER_LABEL="$LAYER" ;;
+esac
 
-Platform-agnostic driver for TODO.
+generate_standard_readme() {
+    cat > "$WHEEL_DIR/README.md" << README_EOF
+# ${NAME_LOWER} — TODO: one-line description
+
+**Status: candidate**
+**Layer: ${LAYER_LABEL}**
+
+TODO: 2-3 sentence description.
 
 ## Why not VSF native?
 
-TODO: document grep results from \`vsf/source/{component,service,hal}/\`.
+Searched \`vsf/source/service/\`, \`vsf/source/component/\`, \`vsf/source/utilities/\` for:
+\`TODO: keywords\` — TODO: results.
+
+## Dependencies
+
+TODO: list wheel dependencies (or "None.").
 
 ## API
 
@@ -483,23 +502,36 @@ TODO: document grep results from \`vsf/source/{component,service,hal}/\`.
 /* TODO: document public API */
 \`\`\`
 
-## Usage
+## Configuration (compile-time)
 
-\`\`\`c
-/* TODO: minimal usage example */
-\`\`\`
+| Define | Default | Purpose |
+|--------|---------|---------|
+| TODO   | TODO    | TODO    |
 
-## Origin
+## Known issues
 
-TODO: where this was extracted from.
+TODO.
 
-## Test
+## Tests
 
 \`\`\`bash
-cd test && mkdir build && cd build
-cmake .. && make && ./test_${NAME_LOWER}
+cd wheels/${LAYER}/${NAME_LOWER}/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_${NAME_LOWER}
 \`\`\`
+
+## Convention Deviations
+
+None.
+
+## API review
+
+- **Date**: TODO
+- **Key decisions**: TODO
 README_EOF
+}
+
+generate_standard_readme
 
 # ---- Vendor mode (ADR-010) ---------------------------------------------------
 
