@@ -84,12 +84,28 @@ jobs:
       - name: Test
         run: python -m pytest test_crc16.py -v
 
-  w25qxx-wheel:
-    name: w25qxx wheel (host C99)
+  wheel-test:
+    name: ${{ matrix.name }} wheel (host C99)
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: w25qxx,         dir: wheels/drivers/w25qxx/test }
+          - { name: qmi8658a,       dir: wheels/drivers/qmi8658a/test }
+          - { name: qmc5883p,       dir: wheels/drivers/qmc5883p/test }
+          - { name: xgzp6816d,      dir: wheels/drivers/xgzp6816d/test }
+          - { name: gpio_button,    dir: wheels/drivers/gpio_button/test }
+          - { name: gpio_led,       dir: wheels/drivers/gpio_led/test }
+          - { name: ws2812,         dir: wheels/drivers/ws2812/test }
+          - { name: ncp5623_parser, dir: wheels/protocols/ncp5623_parser/test }
+          - { name: at_command,     dir: wheels/protocols/at_command/test }
+          - { name: modbus_rtu,     dir: wheels/protocols/modbus_rtu/test }
+          - { name: fal,            dir: wheels/primitives/fal/test }
+          - { name: kvs,            dir: wheels/primitives/kvs/test }
     defaults:
       run:
-        working-directory: wheels/drivers/w25qxx/test
+        working-directory: ${{ matrix.dir }}
     steps:
       - uses: actions/checkout@v5
 
@@ -104,249 +120,7 @@ jobs:
           cmake --build build
 
       - name: Test
-        run: ./build/test_w25qxx
-
-  qmi8658a-wheel:
-    name: qmi8658a wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/qmi8658a/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_qmi8658a
-
-  qmc5883p-wheel:
-    name: qmc5883p wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/qmc5883p/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_qmc5883p
-
-  xgzp6816d-wheel:
-    name: xgzp6816d wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/xgzp6816d/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_xgzp6816d
-
-  gpio-button-wheel:
-    name: gpio_button wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/gpio_button/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_gpio_button
-
-  gpio-led-wheel:
-    name: gpio_led wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/gpio_led/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_gpio_led
-
-  ws2812-wheel:
-    name: ws2812 wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/drivers/ws2812/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_ws2812
-
-  ncp5623-parser-wheel:
-    name: ncp5623_parser wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/protocols/ncp5623_parser/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_ncp5623_parser
-
-  at-command-wheel:
-    name: at_command wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/protocols/at_command/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_at_command
-
-  kvs-wheel:
-    name: kvs wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/primitives/kvs/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_kvs
-
-  fal-wheel:
-    name: fal wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/primitives/fal/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_fal
-
-  modbus-rtu-wheel:
-    name: modbus_rtu wheel (host C99)
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: wheels/protocols/modbus_rtu/test
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ./build/test_modbus_rtu
+        run: ./build/test_${{ matrix.name }}
 
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
