@@ -59,29 +59,29 @@ uint16_t crc16_modbus(const uint8_t *data, size_t len);
 uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 ```
 
-## 功能
+## Features
 
 - CRC16-MODBUS (poly 0xA001 reflected, init 0xFFFF, no final XOR)
-- 一次性 bulk + 增量 step 两种 API
-- 256-entry 查找表（~512 字节 ROM）
-- 纯 C99，零依赖（no VSF / no RTOS / no syscall）
-- 全 reentrant，no global state
+- Bulk + incremental step API
+- 256-entry lookup table (~512 bytes ROM)
+- Pure C99, zero dependencies (no VSF / no RTOS / no syscall)
+- Fully reentrant, no global state
 
-## 支持的平台
+## Supported platforms
 
-- [x] Linux host (sim) — 测试通过 2026-04-26
-- [x] WSL Ubuntu 24.04 — 测试通过 2026-04-26
-- [x] ARM Cortex-M4 (GD32F405 cross-compile) — 集成进 flybox 2026-04-26，HIL 实跑通过
+- [x] Linux host (sim) — passed 2026-04-26
+- [x] WSL Ubuntu 24.04 — passed 2026-04-26
+- [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified
 
-## 依赖
+## Dependencies
 
-无。
+None.
 
-## 已知坑
+## Known issues
 
-无。本 wheel 是纯 stateless 计算函数，对齐 / 字节序无关（按 byte 处理）。
+None. Pure stateless computation, alignment/endianness irrelevant (byte-level).
 
-## 用法示例
+## Usage example
 
 **Modbus RTU frame check:**
 
@@ -104,25 +104,25 @@ while (rx_byte_available()) {
 /* crc now equals crc16_modbus(<all bytes received>, total_len) */
 ```
 
-## 测试状态
+## Test status
 
-- 单元测试：**PASS**（7 C cases + 8 pytest cases）
-- 测试向量：
-  - 空缓冲（NULL + len=0）→ 0xFFFF
-  - "123456789" 标准 MODBUS 测试向量 → 0x4B37
-  - Modbus RTU 帧（读 10 寄存器） → 0xCDC5
-  - 单字节 0x00 / 0xFF
-  - step API 与 bulk API 等价
-  - 分段 step（3+4+3）等价于一次性
-  - flybox 34 字节确定性帧（regression guard）
-- 硬件在环：N/A（pure compute），或 flybox 集成后即标记
+- Unit tests: **PASS** (7 C cases + 8 pytest cases)
+- Test vectors:
+  - Empty buffer (NULL + len=0) → 0xFFFF
+  - "123456789" standard MODBUS test vector → 0x4B37
+  - Modbus RTU frame (read 10 registers) → 0xCDC5
+  - Single byte 0x00 / 0xFF
+  - Step API equivalent to bulk API
+  - Segmented step (3+4+3) equivalent to one-shot
+  - flybox 34-byte deterministic frame (regression guard)
+- HIL: N/A (pure compute); flybox integration verified
 
-## 性能参考
+## Performance reference
 
-- 时间复杂度：O(n) 每字节 1 次查表 + 1 次 XOR
-- ROM 开销：~512 字节（256 项 × 2 字节表）+ ~50 字节代码
-- 栈使用：< 16 字节（含 GCC -fstack-usage 输出）
-- 比 vsf_crc bit-by-bit 实现快 ~8 倍
+- Time complexity: O(n), 1 table lookup + 1 XOR per byte
+- ROM footprint: ~512 bytes (256-entry × 2-byte table) + ~50 bytes code
+- Stack usage: < 16 bytes (GCC -fstack-usage verified)
+- ~8x faster than vsf_crc bit-by-bit implementation
 
 ## API review
 
