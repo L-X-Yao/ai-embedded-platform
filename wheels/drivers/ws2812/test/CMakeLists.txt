@@ -12,5 +12,7 @@ target_include_directories(test_ws2812 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
+target_compile_options(test_ws2812 PRIVATE -Wall -Wextra -Wpedantic)
+
 enable_testing()
 add_test(NAME ws2812_tests COMMAND test_ws2812)

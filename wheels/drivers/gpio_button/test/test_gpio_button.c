@@ -6,11 +6,6 @@
 
 static uint8_t mock_level;
 
-static void mock_set(uint8_t level)
-{
-    mock_level = level;
-}
-
 static uint8_t mock_read(void *ctx)
 {
     (void)ctx;
