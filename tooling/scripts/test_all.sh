@@ -8,6 +8,7 @@
 #   test_all.sh --project        # project tests only
 #   test_all.sh --list           # just list discoverable targets, don't run
 #   test_all.sh --changed        # only run tests affected by uncommitted changes
+#   test_all.sh --coverage       # build with gcov instrumentation, print coverage after tests
 #
 # Each test dir gets its own build_ta/ subdirectory (ignored via .gitignore).
 # VSF-dependent tests (log wheel) are skipped unless VSF_PATH is set or
@@ -31,6 +32,7 @@ FILTER_WHEEL=false
 FILTER_PROJECT=false
 LIST_ONLY=false
 CHANGED_ONLY=false
+COVERAGE=false
 declare -a NAME_FILTER=()
 
 while [[ $# -gt 0 ]]; do
@@ -39,6 +41,7 @@ while [[ $# -gt 0 ]]; do
         --project)  FILTER_PROJECT=true; shift ;;
         --list)     LIST_ONLY=true; shift ;;
         --changed)  CHANGED_ONLY=true; shift ;;
+        --coverage) COVERAGE=true; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -209,7 +212,11 @@ run_c_test() {
     local build_dir="$src_dir/$BUILD_DIR_NAME"
 
     # Configure
-    if ! cmake -GNinja -S "$src_dir" -B "$build_dir" > "$build_dir.cmake.log" 2>&1; then
+    local cov_flags=""
+    if $COVERAGE; then
+        cov_flags="-DCMAKE_C_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
+    fi
+    if ! cmake -GNinja -S "$src_dir" -B "$build_dir" $cov_flags > "$build_dir.cmake.log" 2>&1; then
         echo -e "  ${RED}FAIL${NC}  $name  (cmake configure failed)"
         FAILED=$((FAILED + 1))
         FAIL_NAMES+=("$name")
@@ -335,4 +342,29 @@ if [[ $PASSED -eq 0 && $SKIPPED -gt 0 ]]; then
 fi
 
 echo -e "  ${GREEN}All tests passed.${NC}"
+
+# --- Coverage report ----------------------------------------------------------
+
+if $COVERAGE; then
+    echo ""
+    echo -e "${BOLD}--- Coverage ---${NC}"
+    gcov_files=$(find "$REPO/wheels" -name "*.gcda" 2>/dev/null)
+    if [[ -n "$gcov_files" ]]; then
+        total_lines=0 hit_lines=0
+        while IFS= read -r gcda; do
+            dir=$(dirname "$gcda")
+            gcov -n "$gcda" -o "$dir" 2>/dev/null | while IFS= read -r line; do
+                if [[ "$line" =~ Lines\ executed:([0-9.]+)%\ of\ ([0-9]+) ]]; then
+                    pct="${BASH_REMATCH[1]}"
+                    lines="${BASH_REMATCH[2]}"
+                    src=$(echo "$line" | grep -oP "File '.*'" || true)
+                    printf "  %6s%%  (%3d lines)  %s\n" "$pct" "$lines" "$src"
+                fi
+            done
+        done <<< "$gcov_files"
+    else
+        echo "  No .gcda files found. Ensure tests ran with --coverage."
+    fi
+fi
+
 exit 0
