@@ -323,6 +323,22 @@ static void test_custom_brightness(void)
     ASSERT(mock_current == 128, "blink ON again at 128");
 }
 
+static void test_reinit_resets(void)
+{
+    gpio_led_t led;
+
+    printf("test_reinit_resets\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_on(&led);
+    ASSERT(mock_current == 255, "on before re-init");
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_ON, "mode ON");
+
+    gpio_led_init(&led, &mock_hal);
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF after re-init");
+    ASSERT(mock_current == 0, "LED off after re-init");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -341,6 +357,7 @@ int main(void)
     test_null_safety();
     test_zero_dt();
     test_custom_brightness();
+    test_reinit_resets();
 
     printf("\n%d tests, %d failures\n", tests_run, tests_fail);
     return tests_fail ? 1 : 0;

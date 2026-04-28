@@ -83,12 +83,17 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_gpio_button
 ```
 
-27 assertions across 12 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks.
+34 assertions across 14 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks, re-init state reset, debounce boundary.
 
 ## Test status
 
-- Unit tests (sim): PASS (12 C tests, 27 assertions)
+- Unit tests (sim): PASS (14 C tests, 34 assertions)
 - HIL: N/A
+
+## API convention deviations
+
+- **`gpio_btn_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
+- **Internal state fields exposed** in `gpio_btn_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly.
 
 ## API review
 

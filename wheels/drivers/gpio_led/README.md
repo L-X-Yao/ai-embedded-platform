@@ -90,12 +90,17 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_gpio_led
 ```
 
-52 assertions across 14 test cases: init, on/off, blink (basic/asymmetric/repeat/single), pulse, breathe (ramp/continuous), mode switching, deduplication, null safety, zero-dt, custom brightness.
+56 assertions across 15 test cases: init, on/off, blink (basic/asymmetric/repeat/single), pulse, breathe (ramp/continuous), mode switching, deduplication, null safety, zero-dt, custom brightness, re-init reset.
 
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests, 52 assertions)
+- Unit tests (sim): PASS (15 C tests, 56 assertions)
 - HIL: N/A
+
+## API convention deviations
+
+- **All API functions return void** instead of error codes. Reason: operations are pure state-machine transitions on a caller-allocated struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
+- **Internal state fields exposed** in `gpio_led_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly (except `brightness`, which is a user-settable field).
 
 ## API review
 
