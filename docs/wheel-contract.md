@@ -244,4 +244,6 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 - `STATUS: draft` → `STATUS: candidate`：API review 通过后人手改
 - `STATUS: candidate` → `STATUS: stable`：人验证"至少 2 个真项目使用"后手改
 
+自动化脚本：`tooling/scripts/wheel_promote.sh <wheel-path>` 处理目录移动和引用更新。
+
 **降级**（冷门、API 过时等）由 AI 季度审计提议，人批准。
