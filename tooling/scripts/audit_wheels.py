@@ -180,6 +180,18 @@ def has_extern_c_guard(wheel_dir: Path, name: str) -> bool:
     return 'extern "C"' in text or "extern \"C\"" in text
 
 
+def has_thread_safe_annotations(wheel_dir: Path, name: str) -> bool:
+    """Check .h has at least one @thread_safe annotation (api-conventions §4)."""
+    header = wheel_dir / f"{name}.h"
+    if not header.exists():
+        return True
+    try:
+        text = header.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return True
+    return "@thread_safe" in text
+
+
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -386,6 +398,19 @@ def main() -> int:
             continue
         if not has_extern_c_guard(wheel_dir, name):
             warnings.append(f"{path}: .h missing extern \"C\" guard")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- @thread_safe annotation check (api-conventions §4) ---
+    print("\n=== @thread_safe annotations (api-conventions §4) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_thread_safe_annotations(wheel_dir, name):
+            warnings.append(f"{path}: .h missing @thread_safe annotations")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")
