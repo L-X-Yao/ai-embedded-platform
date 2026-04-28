@@ -20,3 +20,6 @@ target_sources(${CMAKE_PROJECT_NAME} PUBLIC
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+enable_testing()
+add_test(NAME log_tests COMMAND ${CMAKE_PROJECT_NAME})
