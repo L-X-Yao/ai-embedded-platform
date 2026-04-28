@@ -33,6 +33,7 @@
 
 xgzp6816d_err_t xgzp6816d_probe(const xgzp6816d_i2c_t *i2c)
 {
+    if (!i2c) return XGZP6816D_ERR_I2C;
     /* Zero-byte write — START + addr_W + STOP. The HAL layer is expected to
      * report failure if the device NACKs the address; that's the only signal
      * we have at this stage (no chip-id register on the XGZP6816D). */
@@ -42,6 +43,7 @@ xgzp6816d_err_t xgzp6816d_probe(const xgzp6816d_i2c_t *i2c)
 
 xgzp6816d_err_t xgzp6816d_trigger(const xgzp6816d_i2c_t *i2c)
 {
+    if (!i2c) return XGZP6816D_ERR_I2C;
     uint8_t cmd = CMD_MEASURE_PT;
     return i2c->write(i2c->ctx, XGZP6816D_DEV_ADDR, &cmd, 1)
            ? XGZP6816D_OK : XGZP6816D_ERR_I2C;
@@ -50,6 +52,7 @@ xgzp6816d_err_t xgzp6816d_trigger(const xgzp6816d_i2c_t *i2c)
 xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
                                 xgzp6816d_data_t *out)
 {
+    if (!i2c || !out) return XGZP6816D_ERR_I2C;
     uint8_t buf[6];
     if (!i2c->read(i2c->ctx, XGZP6816D_DEV_ADDR, buf, 6)) {
         return XGZP6816D_ERR_I2C;

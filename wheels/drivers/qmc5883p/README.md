@@ -45,7 +45,7 @@ if (qmc5883p_init(&i2c) == QMC5883P_OK) {
 
 ## Supported platforms
 
-- [x] Host C99 (mock I2C) — 15 tests, 36 assertions, 2026-04-28
+- [x] Host C99 (mock I2C) — 17 tests, 42 assertions, 2026-04-28
 - [x] GD32F405 + QMC5883P @ soft I2C (PA11/PA12, open-drain) — HIL verified 2026-04-27
 
 ## Dependencies
@@ -60,7 +60,7 @@ None. Pure C99 with injected I2C HAL callbacks.
 
 ## Test status
 
-- Host mock tests: PASS (15 tests, 36 assertions — init sequence, wake register, mid-init failure, chip ID validation, read path, field conversion, data-not-ready handling, I2C error propagation)
+- Host mock tests: PASS (17 tests, 42 assertions — init sequence, wake register, mid-init failure, chip ID validation, read path, field conversion, data-not-ready handling, I2C error propagation, NULL safety, re-init idempotency)
 - HIL: PASS on GD32F405 + QMC5883P (software I2C, PA11 SCL / PA12 SDA, open-drain), 2026-04-27
 
 ## API convention deviations
