@@ -74,6 +74,8 @@ _eval/_compare/apps/
 
 # tooling generated
 tooling/patches/*.rej
+tooling/.vsf-upstream/
+tooling/.vsf-version
 
 # OS-specific
 .DS_Store
