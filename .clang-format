@@ -1,0 +1,84 @@
+---
+Language:        Cpp
+# 基于 LLVM，但我们会重写大部分规则
+BasedOnStyle:    LLVM
+
+# --- 1. 核心排版：拒绝“楼梯状”代码 ---
+# 嵌入式开发通常屏幕较大，且 HAL 库函数名很长，120 是黄金标准
+# 既避免了过早换行，又能在 Git Diff 并排查看时不至于还要横向滚动
+ColumnLimit:     120
+
+# --- 2. 缩进与对齐：严谨为王 ---
+IndentWidth:     4
+TabWidth:        4
+# 严禁使用 Tab！不同编辑器 Tab 宽度不同会导致代码在示波器截图/Review时对不齐
+UseTab:          Never
+# 连续赋值时对齐等号（如寄存器配置列表），极大提升可读性
+# x = 1;
+# y = 2; -> 看着舒服
+AlignConsecutiveAssignments: true
+# 连续声明时对齐变量名
+# int a   = 1;
+# float b = 2.0;
+AlignConsecutiveDeclarations: true
+# 宏定义对齐（对齐反斜杠 \），这是嵌入式中的刚需
+AlignEscapedNewlines: Left
+
+# --- 3. 括号与换行：安全第一 ---
+# 关键！函数参数如果换行，必须对齐到括号后面，而不是简单的缩进
+# void foo(int a,
+#          int b); // 这样才清晰
+AlignAfterOpenBracket: Align
+# 操作符对齐（如长表达式换行时，操作符对齐）
+AlignOperands:   Align
+
+# --- 4. 大括号风格：Allman (独占一行) ---
+# 这是车规级代码最推荐的风格。
+# 理由：清晰的视觉块分隔。注释代码时（//）不容易误伤大括号，减少“括号不匹配”的低级编译错误。
+BreakBeforeBraces: Allman
+
+# --- 5. 安全性限制：禁止单行语句 ---
+# 绝对禁止 if (err) return; 这种写法！
+# 理由：在嵌入式调试中，你无法在 return 语句上单独打断点，如果出了 Bug 很难定位。
+# 必须强制换行并加括号。
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# --- 6. 指针与引用 ---
+# C 语言标准写法：char *p; （星号靠右，绑定变量）
+# 避免 char* a, b; 这种初学者陷阱（b 变成了 char 而不是指针）
+PointerAlignment: Right
+
+# --- 7. 预处理指令 (Macro) ---
+# 复杂的 #ifdef 嵌套时，允许缩进 (#  ifdef)，否则 10 层宏定义直接瞎眼
+IndentPPDirectives: AfterHash
+
+# --- 8. 结构体与数组 ---
+# 数组初始化（如 Hex 数据表、字模）左对齐，不要乱排版
+AlignArrayOfStructures: Left
+# 如果初始化列表太长，允许压缩（为了省行数），但在嵌入式里通常建议 false 以保持清晰
+# 这里选 true 是为了兼容大的配置表
+BinPackArguments: true
+BinPackParameters: true
+
+# --- 9. 头文件排序 ---
+# 这是一个坑！嵌入式代码中，头文件往往有隐式依赖顺序（先 include配置头，再 include 驱动头）。
+# 自动排序会导致编译挂掉，所以必须关掉！
+SortIncludes:    false
+
+# --- 10. 其他细节 ---
+# switch-case 中，case 缩进一级，逻辑层次更清晰
+IndentCaseLabels: true
+# 空行处理：保留代码里原本的最大空行数（通常1行），不要把我的逻辑分段给删了
+MaxEmptyLinesToKeep: 1
+# 命名空间缩进（C++ 项目有用，C 项目忽略）
+NamespaceIndentation: All
+# 尾随逗号：在枚举和数组最后加逗号，方便未来 diff 修改（减少修改上一行的噪音）
+# 需要 Clang-Format 较新版本
+# TrailingComma: Any
+
+# 禁止 extern "C" 代码块内的缩进
+IndentExternBlock: NoIndent
