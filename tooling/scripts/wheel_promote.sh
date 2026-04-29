@@ -80,6 +80,38 @@ echo -e "  Name: $WHEEL_NAME"
 $DRY_RUN && echo -e "  ${YELLOW}(dry run — no changes will be made)${NC}"
 echo ""
 
+# --- Pre-flight checks -------------------------------------------------------
+
+echo -e "${BOLD}[Pre-flight] Validating wheel readiness${NC}"
+PREFLIGHT_OK=true
+
+[[ -f "$FROM_DIR/README.md" ]] || { echo -e "  ${RED}FAIL: $FROM_DIR/README.md missing${NC}"; PREFLIGHT_OK=false; }
+
+test_dir=""
+if [[ -d "$FROM_DIR/test" ]]; then
+    test_dir="$FROM_DIR/test"
+elif ls "$FROM_DIR"/test_*.c > /dev/null 2>&1; then
+    test_dir="$FROM_DIR"
+else
+    echo -e "  ${RED}FAIL: no test directory or test_*.c found${NC}"
+    PREFLIGHT_OK=false
+fi
+
+if [[ -n "$test_dir" ]] && ! ls "$test_dir"/CMakeLists.txt > /dev/null 2>&1 && ! ls "$FROM_DIR"/CMakeLists.txt > /dev/null 2>&1; then
+    echo -e "  ${RED}FAIL: no CMakeLists.txt found for test build${NC}"
+    PREFLIGHT_OK=false
+fi
+
+$PREFLIGHT_OK && echo -e "  ${GREEN}All pre-flight checks passed${NC}" || { echo -e "  ${RED}Fix pre-flight issues before promoting${NC}"; exit 1; }
+
+from_layer=$(echo "$FROM" | cut -d'/' -f1)
+if [[ "$from_layer" == "_draft" ]] && [[ -f "$FROM_DIR/README.md" ]]; then
+    if grep -q "STATUS:.*draft" "$FROM_DIR/README.md" 2>/dev/null; then
+        echo -e "  ${YELLOW}REMIND: Update README STATUS from 'draft' to 'candidate' after move${NC}"
+    fi
+fi
+echo ""
+
 CHANGES=0
 
 # --- Step 1: Move directory ---------------------------------------------------
