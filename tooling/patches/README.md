@@ -47,14 +47,28 @@ bash tooling/patches/apply.sh
 
 ## 定期同步 upstream（每季度或重要更新时）
 
-```bash
-cd vsf
-git checkout .                     # 撤回任何未归档的改动
-git pull origin master             # 或其他上游分支
+`vsf/` 是 vendor 进母仓的文件（非 submodule），同步使用专用脚本：
 
-cd ..
-bash tooling/patches/apply.sh      # 重新应用 patches
+```bash
+# 查看当前版本 vs 上游最新
+bash tooling/scripts/sync_vsf.sh --status
+
+# 预览变更（不写入）
+bash tooling/scripts/sync_vsf.sh --dry-run
+
+# 同步到 upstream master HEAD
+bash tooling/scripts/sync_vsf.sh
+
+# 同步到指定 tag / commit
+bash tooling/scripts/sync_vsf.sh --ref v1.2.3
 ```
+
+脚本自动处理：
+1. 缓存上游 clone 到 `tooling/.vsf-upstream/`（首次慢，后续增量 fetch）
+2. 回退已应用的 patches
+3. 替换 `vsf/` 全部内容
+4. 重新应用 patches（冲突时报告 `.rej` 文件）
+5. 打印 diff 摘要，**不自动 commit**
 
 遇冲突时：
 - 看 upstream 是否已修掉问题 → 删除该 patch
