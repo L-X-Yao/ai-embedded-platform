@@ -71,11 +71,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_mahony_ahrs
 ```
 
-25 assertions across 11 test cases: default config, identity quaternion, zero Euler at init, level accel convergence, tilted accel (~30° pitch), gyro-only integration (90°/s for 1s), null safety, re-init reset, quaternion normalization after 5000 noisy updates, zero-accel skip, 6-axis vs 9-axis comparison.
+29 assertions across 13 test cases: default config, identity quaternion, zero Euler at init, level accel convergence, tilted accel (~30° pitch), gyro-only integration (90°/s for 1s), null safety, re-init reset, quaternion normalization after 5000 noisy updates, zero-accel skip, 6-axis vs 9-axis comparison, zero-frequency guard (no NaN), negative-frequency guard.
 
 ## Test status
 
-- Unit tests (sim): PASS (11 C tests, 25 assertions)
+- Unit tests (sim): PASS (13 C tests, 29 assertions)
 - HIL: N/A
 
 ## Convention Deviations
