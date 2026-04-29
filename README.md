@@ -6,7 +6,7 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 
 ## 平台现状
 
-- **18 个 candidate wheels + 1 draft**（L0 原语 7 / L1 驱动 7 / L2 协议 4 / draft 1）
+- **19 个 candidate wheels**（L0 原语 7 / L1 驱动 7 / L2 协议 5）
 - **2 个真实项目**：flybox（无人机遥测盒子）/ drone_light（无人机 LED 灯控）
 - **6 个 CI jobs / 22 个测试实例**，push 自动触发
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
@@ -20,9 +20,9 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 ├── wheels/               可复用轮子（L0 原语 → L3 模块）
 │   ├── primitives/       L0：log, crc16, cli_parser, fal, kvs, mahony_ahrs, mag_cal
 │   ├── drivers/          L1：w25qxx, qmi8658a, qmc5883p, xgzp6816d, gpio_led, gpio_button, ws2812
-│   ├── protocols/        L2：at_command, modbus_rtu, ncp5623_parser, nmea_parser
+│   ├── protocols/        L2：at_command, modbus_rtu, ncp5623_parser, nmea_parser, ota_ab
 │   ├── modules/          L3：（暂无）
-│   └── _draft/           ota_ab
+│   └── _draft/           （暂无）
 ├── templates/            项目起步模板
 ├── projects/             真实项目（flybox, drone_light）
 └── tooling/              patches / HIL / 脚本 / 实验
