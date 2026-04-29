@@ -23,7 +23,7 @@
 
 | 候选 | 功能 | VSF 原生检查 | 触发项目 | 信号次数 |
 |------|------|-------------|---------|---------|
-| `ssd1306` | OLED（I2C，调试常用） | VSF 有原生驱动（`component/ui/disp/driver/solomon-systech/ssd1306/`），需 `VSF_USE_UI`；非 VSF 项目不可用 | flybox（调试屏预留） | 1 |
+| ~~`ssd1306`~~ | ~~OLED（I2C，调试常用）~~ | **已实现**：`wheels/drivers/oled_ssd1306/`（candidate, 2026-04-29） | flybox（调试屏预留） | 1 |
 
 ## L2 · 协议 / 服务
 
