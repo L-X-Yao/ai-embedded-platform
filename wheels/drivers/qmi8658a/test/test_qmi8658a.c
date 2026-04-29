@@ -280,6 +280,81 @@ static void test_init_ctrl7_write_fail(void)
     ASSERT_EQ(e, QMI8658A_ERR_I2C, "CTRL7 write failure propagated");
 }
 
+static void test_all_acc_ranges(void)
+{
+    printf("test_all_acc_ranges\n");
+    const float divs[] = {16384.0f, 8192.0f, 4096.0f, 2048.0f};
+    const int ranges[] = {QMI8658A_ACC_RANGE_2G, QMI8658A_ACC_RANGE_4G,
+                          QMI8658A_ACC_RANGE_8G, QMI8658A_ACC_RANGE_16G};
+    for (int r = 0; r < 4; r++) {
+        mock_reset();
+        qmi8658a_cfg_t c = qmi8658a_default_cfg();
+        c.acc_range = ranges[r];
+        qmi8658a_init(&mock_i2c, &c);
+
+        int16_t raw = 1000;
+        mock_regs[0x35] = (uint8_t)(raw & 0xFF);
+        mock_regs[0x36] = (uint8_t)(raw >> 8);
+        memset(&mock_regs[0x37], 0, 10);
+
+        qmi8658a_data_t d;
+        qmi8658a_read(&mock_i2c, &d);
+        ASSERT_NEAR(d.ax, 1000.0f / divs[r], 0.01f, "acc scale correct");
+    }
+}
+
+static void test_gyro_range_scaling(void)
+{
+    printf("test_gyro_range_scaling\n");
+    mock_reset();
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    c.gyr_range = QMI8658A_GYR_RANGE_256;
+    qmi8658a_init(&mock_i2c, &c);
+
+    int16_t raw = 128;
+    memset(&mock_regs[0x35], 0, 6);
+    mock_regs[0x3B] = (uint8_t)(raw & 0xFF);
+    mock_regs[0x3C] = (uint8_t)(raw >> 8);
+    mock_regs[0x3D] = 0; mock_regs[0x3E] = 0;
+    mock_regs[0x3F] = 0; mock_regs[0x40] = 0;
+
+    qmi8658a_data_t d;
+    qmi8658a_read(&mock_i2c, &d);
+    ASSERT_NEAR(d.gx, 128.0f / 128.0f, 0.01f, "gx = 1.0 dps at ±256");
+}
+
+static void test_reset_i2c_fail(void)
+{
+    printf("test_reset_i2c_fail\n");
+    mock_reset();
+    mock_fail_next = 1;
+    qmi8658a_err_t e = qmi8658a_reset(&mock_i2c);
+    ASSERT_EQ(e, QMI8658A_ERR_I2C, "reset I2C error propagated");
+}
+
+static void test_all_six_axes(void)
+{
+    printf("test_all_six_axes\n");
+    mock_reset();
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_init(&mock_i2c, &c);
+
+    int16_t vals[] = {4096, -2048, 1024, 16, -32, 8};
+    for (int i = 0; i < 6; i++) {
+        mock_regs[0x35 + i*2]     = (uint8_t)(vals[i] & 0xFF);
+        mock_regs[0x35 + i*2 + 1] = (uint8_t)(vals[i] >> 8);
+    }
+
+    qmi8658a_data_t d;
+    qmi8658a_read(&mock_i2c, &d);
+    ASSERT_NEAR(d.ax,  4096.0f / 4096.0f, 0.01f, "ax");
+    ASSERT_NEAR(d.ay, -2048.0f / 4096.0f, 0.01f, "ay");
+    ASSERT_NEAR(d.az,  1024.0f / 4096.0f, 0.01f, "az");
+    ASSERT_NEAR(d.gx,    16.0f / 16.0f,   0.01f, "gx");
+    ASSERT_NEAR(d.gy,   -32.0f / 16.0f,   0.01f, "gy");
+    ASSERT_NEAR(d.gz,     8.0f / 16.0f,   0.01f, "gz");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -299,6 +374,10 @@ int main(void)
     test_init_ctrl2_write_fail();
     test_init_ctrl3_write_fail();
     test_init_ctrl7_write_fail();
+    test_all_acc_ranges();
+    test_gyro_range_scaling();
+    test_reset_i2c_fail();
+    test_all_six_axes();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
