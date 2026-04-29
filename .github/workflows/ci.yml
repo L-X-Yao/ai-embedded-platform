@@ -127,6 +127,7 @@ jobs:
           - { name: bmp280,         dir: wheels/drivers/bmp280/test }
           - { name: sht30,          dir: wheels/drivers/sht30/test }
           - { name: mpu6050,        dir: wheels/drivers/mpu6050/test }
+          - { name: oled_ssd1306,   dir: wheels/drivers/oled_ssd1306/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
