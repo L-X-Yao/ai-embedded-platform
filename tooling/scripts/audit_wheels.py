@@ -193,6 +193,22 @@ def has_thread_safe_annotations(wheel_dir: Path, name: str) -> bool:
     return "@thread_safe" in text
 
 
+def has_werror(wheel_dir: Path) -> bool:
+    """Check that test CMakeLists.txt includes -Werror (non-vendor only)."""
+    cmake = wheel_dir / "test" / "CMakeLists.txt"
+    if not cmake.exists():
+        cmake = wheel_dir / "CMakeLists.txt"
+    if not cmake.exists():
+        return True
+    try:
+        text = cmake.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    if "-Wall" not in text:
+        return True  # no warning flags at all — different problem
+    return "-Werror" in text
+
+
 def has_test_exit_code(wheel_dir: Path) -> bool:
     """Check test main() returns non-zero on failure."""
     patterns = ["tests_fail", "g_failures", "failures"]
@@ -441,6 +457,19 @@ def main() -> int:
             continue
         if not has_test_exit_code(wheel_dir):
             warnings.append(f"{path}: test harness may not return non-zero on failure")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- -Werror check ---
+    print("\n=== -Werror flag (warnings as errors) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_werror(wheel_dir):
+            warnings.append(f"{path}: test CMakeLists.txt missing -Werror")
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")

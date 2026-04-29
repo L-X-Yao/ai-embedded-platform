@@ -289,4 +289,4 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（14 项检查） | 无 |
+| `audit_wheels.py` | CI 一致性审计（15 项检查） | 无 |
