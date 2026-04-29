@@ -43,7 +43,7 @@ cmake --build build
 python3 -m pytest test_crc16.py -v
 ```
 
-预期：**1 个 C 测试 harness（7 个内嵌 case） + 9 个 pytest 用例全绿。**
+预期：**1 个 C 测试 harness（12 个内嵌 case） + 9 个 pytest 用例全绿。**
 
 ## API
 
@@ -110,7 +110,7 @@ while (rx_byte_available()) {
 
 ## Test status
 
-- Unit tests: **PASS** (7 C cases + 9 pytest cases)
+- Unit tests: **PASS** (12 C cases + 9 pytest cases, 17 assertions)
 - Test vectors:
   - Empty buffer (NULL + len=0) → 0xFFFF
   - "123456789" standard MODBUS test vector → 0x4B37
@@ -119,6 +119,10 @@ while (rx_byte_available()) {
   - Step API equivalent to bulk API
   - Segmented step (3+4+3) equivalent to one-shot
   - flybox 34-byte deterministic frame (regression guard)
+  - 256-byte all-zeros / all-ones buffers (step vs bulk consistency)
+  - Single-byte uniqueness (all 256 CRCs distinct — proves table collision-free)
+  - CRC residue self-check (append CRC little-endian → residue is 0x0000)
+  - 1024-byte buffer step vs bulk equivalence
 - HIL: N/A (pure compute); flybox integration verified
 
 ## Performance reference

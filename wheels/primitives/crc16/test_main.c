@@ -109,6 +109,79 @@ static int test_flybox_compatibility(void)
     return 0;
 }
 
+static int test_all_zeros_buffer(void)
+{
+    uint8_t buf[256];
+    memset(buf, 0x00, sizeof(buf));
+    uint16_t crc = crc16_modbus(buf, sizeof(buf));
+    TEST("256x 0x00 differs from init", crc != CRC16_MODBUS_INIT);
+    TEST("256x 0x00 differs from single 0x00", crc != 0x40BFu);
+
+    uint16_t step = CRC16_MODBUS_INIT;
+    for (size_t i = 0; i < sizeof(buf); i++)
+        step = crc16_modbus_step(step, buf[i]);
+    TEST("256x 0x00 step matches bulk", step == crc);
+    return 0;
+}
+
+static int test_all_ones_buffer(void)
+{
+    uint8_t buf[256];
+    memset(buf, 0xFF, sizeof(buf));
+    uint16_t crc = crc16_modbus(buf, sizeof(buf));
+    TEST("256x 0xFF differs from init", crc != CRC16_MODBUS_INIT);
+
+    uint8_t zeros[256];
+    memset(zeros, 0x00, sizeof(zeros));
+    TEST("256x 0xFF differs from 256x 0x00",
+         crc != crc16_modbus(zeros, sizeof(zeros)));
+    return 0;
+}
+
+static int test_single_byte_all_distinct(void)
+{
+    uint16_t crcs[256];
+    for (int i = 0; i < 256; i++)
+        crcs[i] = crc16_modbus((const uint8_t *)&i, 1);
+
+    int collisions = 0;
+    for (int i = 0; i < 256; i++) {
+        for (int j = i + 1; j < 256; j++) {
+            if (crcs[i] == crcs[j]) collisions++;
+        }
+    }
+    TEST("all 256 single-byte CRCs distinct", collisions == 0);
+    return 0;
+}
+
+static int test_crc_residue_zero(void)
+{
+    const uint8_t data[] = "123456789";
+    uint16_t crc = crc16_modbus(data, 9);
+    uint8_t extended[11];
+    memcpy(extended, data, 9);
+    extended[9]  = (uint8_t)(crc & 0xFF);
+    extended[10] = (uint8_t)(crc >> 8);
+    uint16_t residue = crc16_modbus(extended, 11);
+    TEST("CRC residue is zero (Modbus self-check)", residue == 0x0000u);
+    return 0;
+}
+
+static int test_long_buffer_step(void)
+{
+    uint8_t buf[1024];
+    for (size_t i = 0; i < sizeof(buf); i++)
+        buf[i] = (uint8_t)(i * 13 + 7);
+
+    uint16_t bulk = crc16_modbus(buf, sizeof(buf));
+
+    uint16_t step = CRC16_MODBUS_INIT;
+    for (size_t i = 0; i < sizeof(buf); i++)
+        step = crc16_modbus_step(step, buf[i]);
+    TEST("1024-byte step matches bulk", step == bulk);
+    return 0;
+}
+
 int main(void)
 {
     printf("=== crc16 wheel test suite ===\n");
@@ -119,6 +192,11 @@ int main(void)
     test_step_equivalence();
     test_step_chunked();
     test_flybox_compatibility();
+    test_all_zeros_buffer();
+    test_all_ones_buffer();
+    test_single_byte_all_distinct();
+    test_crc_residue_zero();
+    test_long_buffer_step();
 
     printf("\n=== %d failures ===\n", g_failures);
     return g_failures == 0 ? 0 : 1;
