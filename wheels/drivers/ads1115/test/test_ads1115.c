@@ -26,20 +26,15 @@ static uint8_t mock_config_written[2];
 static int16_t mock_conversion_value;
 static bool mock_i2c_fail;
 
-static bool mock_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
-                           const uint8_t *data, uint16_t len)
+static bool mock_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
 {
-    (void)ctx; (void)dev_addr;
+    (void)ctx; (void)dev_addr; (void)reg; (void)val;
     if (mock_i2c_fail) return false;
-    if (reg == 0x01 && len == 2) {
-        mock_config_written[0] = data[0];
-        mock_config_written[1] = data[1];
-    }
     return true;
 }
 
-static bool mock_read_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
-                          uint8_t *data, uint16_t len)
+static bool mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t *data, uint16_t len)
 {
     (void)ctx; (void)dev_addr;
     if (mock_i2c_fail) return false;
@@ -50,10 +45,23 @@ static bool mock_read_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
     return true;
 }
 
+static bool mock_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                            const uint8_t *data, uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (mock_i2c_fail) return false;
+    if (reg == 0x01 && len == 2) {
+        mock_config_written[0] = data[0];
+        mock_config_written[1] = data[1];
+    }
+    return true;
+}
+
 static ads1115_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_reg  = mock_read_reg,
-    .ctx       = NULL
+    .write_reg  = mock_write_reg,
+    .read_regs  = mock_read_regs,
+    .write_regs = mock_write_regs,
+    .ctx        = NULL
 };
 
 TEST(test_init_null)

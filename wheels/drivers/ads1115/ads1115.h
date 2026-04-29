@@ -28,10 +28,11 @@ typedef enum {
 } ads1115_err_t;
 
 typedef struct {
-    bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg,
-                      const uint8_t *data, uint16_t len);
-    bool (*read_reg)(void *ctx, uint8_t dev_addr, uint8_t reg,
-                     uint8_t *data, uint16_t len);
+    bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
+    bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
+                      uint8_t *buf, uint16_t len);
+    bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
+                       const uint8_t *buf, uint16_t len);
     void *ctx;
 } ads1115_i2c_t;
 

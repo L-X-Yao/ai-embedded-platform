@@ -195,6 +195,57 @@ typedef void (*<wheel>_cb_t)(void *ctx, <wheel>_event_t event, void *data);
 - 是否允许在中断里调用？**头文件注释必须写明**
 - 回调内可调用哪些 wheel API？**必须列出限制**（通常禁止调用会引发回调循环的函数）
 
+### 5.3 HAL 注入标准签名（L1 驱动）
+
+L1 驱动通过 callback struct 注入 HAL。按 I2C 协议模式分三种标准签名，**新 wheel 必须选其中之一**：
+
+**Pattern A — register-based**（BMP280, MPU6050, QMI8658A, QMC5883P, HMC5883L）
+
+```c
+typedef struct {
+    bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
+    bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
+                      uint8_t *buf, uint16_t len);
+    void *ctx;
+} <wheel>_i2c_t;
+```
+
+用于标准 8-bit 寄存器寻址设备。如果设备有 16-bit 寄存器（如 ADS1115 config），额外添加 `write_regs` 回调：
+
+```c
+    bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
+                       const uint8_t *buf, uint16_t len);
+```
+
+**Pattern B — command-based**（SHT30, BH1750）
+
+```c
+typedef struct {
+    bool (*write)(void *ctx, uint8_t dev_addr,
+                  const uint8_t *data, uint16_t len);
+    bool (*read)(void *ctx, uint8_t dev_addr,
+                 uint8_t *data, uint16_t len);
+    void *ctx;
+} <wheel>_i2c_t;
+```
+
+用于 Sensirion 等发送 command word（非寄存器地址）的设备。
+
+**Pattern C — SPI**（W25QXX, MAX7219）
+
+```c
+typedef struct {
+    bool (*transfer)(void *ctx, const uint8_t *tx, uint8_t *rx, uint16_t len);
+    void (*cs_low)(void *ctx);
+    void (*cs_high)(void *ctx);
+    void *ctx;
+} <wheel>_spi_t;
+```
+
+**其他 HAL**：GPIO（`set_output/set_input/write_pin/read_pin/delay_us`）、1-Wire（`reset/write_byte/read_byte`）、PWM（`set_pulse_us`）。`new_wheel.sh` 的 `--hal` 参数对应以上全部模式。
+
+**选择依据**：开始写新 L1 驱动前先查 datasheet 的总线协议，不要盲用 register-based 模板。
+
 ## 6. 配置
 
 ### 6.1 编译期配置 vs 运行时配置
