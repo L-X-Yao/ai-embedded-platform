@@ -251,6 +251,73 @@ static void test_reprobe(void)
     ASSERT_EQ(mock_write_called, 2, "two probe calls");
 }
 
+static void test_pressure_standard_atmosphere(void)
+{
+    printf("test_pressure_standard_atmosphere\n");
+    mock_reset();
+    /* p_raw=13644071 ↔ ~101.325 kPa (standard atmosphere)
+     * Exact: (13644071-1677722)/13421772*80+30 ≈ 101.323 kPa */
+    mock_set_pt_response(13644071u, 22417);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.pressure_pa, 101325.0f, 50.0f, "standard atmosphere ~101325 Pa");
+}
+
+static void test_pressure_quarter_range(void)
+{
+    printf("test_pressure_quarter_range\n");
+    mock_reset();
+    /* p_raw=5033165 ↔ 50 kPa (quarter range) */
+    mock_set_pt_response(5033165u, 0);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.pressure_pa, 50000.0f, 5.0f, "quarter range ~50 kPa");
+}
+
+static void test_pressure_three_quarter_range(void)
+{
+    printf("test_pressure_three_quarter_range\n");
+    mock_reset();
+    /* p_raw=11744051 ↔ 90 kPa (three-quarter range) */
+    mock_set_pt_response(11744051u, 0);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.pressure_pa, 90000.0f, 5.0f, "three-quarter range ~90 kPa");
+}
+
+static void test_temp_zero_celsius(void)
+{
+    printf("test_temp_zero_celsius\n");
+    mock_reset();
+    /* t_raw=13796 ↔ ~0°C: (13796/65536)*190-40 ≈ -0.005 */
+    mock_set_pt_response(8388608u, 13796);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.temperature_c, 0.0f, 0.05f, "temp ~0 C");
+}
+
+static void test_temp_midrange(void)
+{
+    printf("test_temp_midrange\n");
+    mock_reset();
+    /* t_raw=32768 ↔ 55°C: (32768/65536)*190-40 = 55 */
+    mock_set_pt_response(8388608u, 32768);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.temperature_c, 55.0f, 0.01f, "temp midrange 55 C");
+}
+
+static void test_temp_hundred_celsius(void)
+{
+    printf("test_temp_hundred_celsius\n");
+    mock_reset();
+    /* t_raw=48286 ↔ ~100°C */
+    mock_set_pt_response(8388608u, 48286);
+    xgzp6816d_data_t out = {0};
+    xgzp6816d_read(&mock_i2c, &out);
+    ASSERT_NEAR(out.temperature_c, 100.0f, 0.1f, "temp ~100 C");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -270,6 +337,12 @@ int main(void)
     test_full_cycle();
     test_null_safety();
     test_reprobe();
+    test_pressure_standard_atmosphere();
+    test_pressure_quarter_range();
+    test_pressure_three_quarter_range();
+    test_temp_zero_celsius();
+    test_temp_midrange();
+    test_temp_hundred_celsius();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
