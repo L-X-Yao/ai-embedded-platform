@@ -327,6 +327,48 @@ static void test_rmc_empty_speed_course(void)
     ASSERT_EQ(d.course_valid, 0, "empty course invalid");
 }
 
+static void test_alternate_talker_id(void)
+{
+    nmea_data_t d;
+
+    printf("test_alternate_talker_id\n");
+    nmea_data_init(&d);
+    ASSERT_EQ(nmea_identify("$GNGGA,092750,,,,,0,0,,,,,,,*7C"), NMEA_SENTENCE_GGA,
+              "GNGGA identified as GGA");
+    ASSERT_EQ(nmea_identify("$GLRMC,120000,V,,,,,,,010100,,,N*4F"), NMEA_SENTENCE_RMC,
+              "GLRMC identified as RMC");
+    ASSERT_EQ(nmea_identify("$BDGSA,A,1,,,,,,,,,,,,,,,*1A"), NMEA_SENTENCE_GSA,
+              "BDGSA identified as GSA");
+}
+
+static void test_truncated_rmc(void)
+{
+    nmea_data_t d;
+
+    printf("test_truncated_rmc\n");
+    nmea_data_init(&d);
+    nmea_err_t e = nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E*64", &d);
+    ASSERT_EQ(e, NMEA_OK, "truncated RMC still parses");
+    ASSERT_NEAR(d.speed_kmh, 0.0f, 0.01f, "missing speed field → 0");
+}
+
+static void test_checksum_truncated_star(void)
+{
+    printf("test_checksum_truncated_star\n");
+    ASSERT(!nmea_verify_checksum("$GPGGA*"), "truncated after star");
+    ASSERT(!nmea_verify_checksum("$GPGGA*7"), "only one hex digit after star");
+}
+
+static void test_speed_conversion(void)
+{
+    nmea_data_t d;
+
+    printf("test_speed_conversion\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,100.0,,010126,,,A*2D", &d);
+    ASSERT_NEAR(d.speed_kmh, 185.2f, 0.5f, "100 knots = 185.2 km/h");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -355,6 +397,10 @@ int main(void)
     test_year_boundary();
     test_gga_no_fix();
     test_rmc_empty_speed_course();
+    test_alternate_talker_id();
+    test_truncated_rmc();
+    test_checksum_truncated_star();
+    test_speed_conversion();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
