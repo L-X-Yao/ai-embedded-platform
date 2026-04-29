@@ -124,6 +124,7 @@ jobs:
           - { name: moving_average, dir: wheels/primitives/moving_average/test }
           - { name: state_machine,  dir: wheels/primitives/state_machine/test }
           - { name: soft_timer,     dir: wheels/primitives/soft_timer/test }
+          - { name: bmp280,         dir: wheels/drivers/bmp280/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
