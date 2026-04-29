@@ -6,7 +6,7 @@
 #   make test-projects  # project tests only
 #   make test-changed   # only tests affected by uncommitted changes
 #   make test-fast      # stop on first failure (fast iteration)
-#   make audit          # run wheel audit (14 checks)
+#   make audit          # run wheel audit (15 checks)
 #   make coverage       # tests with gcov coverage report
 #   make bootstrap      # print session context
 #   make list           # list all discoverable test targets
