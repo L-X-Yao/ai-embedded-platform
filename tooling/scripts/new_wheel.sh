@@ -4,6 +4,9 @@
 # Usage:
 #   new_wheel.sh --layer drivers --name bmp280 --hal i2c [--addr 0x76]
 #   new_wheel.sh --layer drivers --name enc28j60 --hal spi
+#   new_wheel.sh --layer drivers --name dht11 --hal gpio
+#   new_wheel.sh --layer drivers --name ds18b20 --hal onewire
+#   new_wheel.sh --layer drivers --name servo --hal pwm
 #   new_wheel.sh --layer primitives --name ringbuf
 #   new_wheel.sh --layer primitives --name kvs --vendor   # ADR-010 vendor mode
 #
@@ -59,7 +62,7 @@ NAME_UPPER=$(echo "$NAME" | tr '[:lower:]' '[:upper:]')
 NAME_LOWER=$(echo "$NAME" | tr '[:upper:]' '[:lower:]')
 
 if [[ "$LAYER" == "drivers" && -z "$HAL" ]]; then
-    echo "Error: --hal required for drivers (i2c|spi)"
+    echo "Error: --hal required for drivers (i2c|spi|gpio|onewire|pwm)"
     exit 1
 fi
 
@@ -174,6 +177,156 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi);
 HEADER_EOF
 }
 
+generate_header_gpio() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    gpio_hal (injected)
+ * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ */
+
+#ifndef ${NAME_UPPER}_H
+#define ${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    ${NAME_UPPER}_OK = 0,
+    ${NAME_UPPER}_ERR_PARAM,
+    ${NAME_UPPER}_ERR_TIMEOUT,
+} ${NAME_LOWER}_err_t;
+
+typedef struct {
+    void (*set_output)(void *ctx);
+    void (*set_input)(void *ctx);
+    void (*write_pin)(void *ctx, bool level);
+    bool (*read_pin)(void *ctx);
+    void (*delay_us)(void *ctx, uint32_t us);
+    void *ctx;
+} ${NAME_LOWER}_gpio_t;
+
+typedef struct {
+    ${NAME_LOWER}_gpio_t gpio;
+} ${NAME_LOWER}_t;
+
+/** @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_gpio_t *gpio);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ${NAME_UPPER}_H */
+HEADER_EOF
+}
+
+generate_header_onewire() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    onewire_hal (injected)
+ * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ */
+
+#ifndef ${NAME_UPPER}_H
+#define ${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    ${NAME_UPPER}_OK = 0,
+    ${NAME_UPPER}_ERR_PARAM,
+    ${NAME_UPPER}_ERR_NO_DEVICE,
+    ${NAME_UPPER}_ERR_CRC,
+} ${NAME_LOWER}_err_t;
+
+typedef struct {
+    bool    (*reset)(void *ctx);
+    void    (*write_byte)(void *ctx, uint8_t byte);
+    uint8_t (*read_byte)(void *ctx);
+    void    *ctx;
+} ${NAME_LOWER}_ow_t;
+
+typedef struct {
+    ${NAME_LOWER}_ow_t ow;
+    uint8_t rom[8];
+    bool    use_rom;
+} ${NAME_LOWER}_t;
+
+/** @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_ow_t *ow);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ${NAME_UPPER}_H */
+HEADER_EOF
+}
+
+generate_header_pwm() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    pwm_hal (injected)
+ * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ */
+
+#ifndef ${NAME_UPPER}_H
+#define ${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    ${NAME_UPPER}_OK = 0,
+    ${NAME_UPPER}_ERR_PARAM,
+    ${NAME_UPPER}_ERR_HAL,
+} ${NAME_LOWER}_err_t;
+
+typedef struct {
+    bool (*set_pulse_us)(void *ctx, uint32_t pulse_us);
+    void *ctx;
+} ${NAME_LOWER}_pwm_t;
+
+typedef struct {
+    ${NAME_LOWER}_pwm_t pwm;
+} ${NAME_LOWER}_t;
+
+/** @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_pwm_t *pwm);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ${NAME_UPPER}_H */
+HEADER_EOF
+}
+
 generate_header_none() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
 /*
@@ -275,6 +428,88 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi)
     /* TODO: read JEDEC ID, configure */
     return ${NAME_UPPER}_OK;
 }
+C_EOF
+}
+
+generate_c_gpio() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    gpio_hal (injected)
+ */
+
+#include "${NAME_LOWER}.h"
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_gpio_t *gpio)
+{
+    if (!dev || !gpio)
+        return ${NAME_UPPER}_ERR_PARAM;
+    if (!gpio->set_output || !gpio->set_input || !gpio->write_pin ||
+        !gpio->read_pin || !gpio->delay_us)
+        return ${NAME_UPPER}_ERR_PARAM;
+    dev->gpio = *gpio;
+    return ${NAME_UPPER}_OK;
+}
+
+/* TODO: implement read/write functions */
+C_EOF
+}
+
+generate_c_onewire() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    onewire_hal (injected)
+ */
+
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_ow_t *ow)
+{
+    if (!dev || !ow)
+        return ${NAME_UPPER}_ERR_PARAM;
+    if (!ow->reset || !ow->write_byte || !ow->read_byte)
+        return ${NAME_UPPER}_ERR_PARAM;
+    dev->ow = *ow;
+    memset(dev->rom, 0, 8);
+    dev->use_rom = false;
+    return ${NAME_UPPER}_OK;
+}
+
+/* TODO: implement read_rom, start_conversion, read_data */
+C_EOF
+}
+
+generate_c_pwm() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    pwm_hal (injected)
+ */
+
+#include "${NAME_LOWER}.h"
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_pwm_t *pwm)
+{
+    if (!dev || !pwm)
+        return ${NAME_UPPER}_ERR_PARAM;
+    if (!pwm->set_pulse_us)
+        return ${NAME_UPPER}_ERR_PARAM;
+    dev->pwm = *pwm;
+    return ${NAME_UPPER}_OK;
+}
+
+/* TODO: implement control functions */
 C_EOF
 }
 
@@ -532,6 +767,210 @@ int main(void)
     test_init_ok();
     test_null_safety();
     test_init_spi_fail();
+
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
+    return tests_fail ? 1 : 0;
+}
+TEST_EOF
+}
+
+generate_test_gpio() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include <stdio.h>
+#include <string.h>
+#include "../${NAME_LOWER}.h"
+
+/* ---------- mock GPIO ---------- */
+
+static void mock_set_output(void *ctx) { (void)ctx; }
+static void mock_set_input(void *ctx)  { (void)ctx; }
+static void mock_write_pin(void *ctx, bool level) { (void)ctx; (void)level; }
+static bool mock_read_pin(void *ctx)   { (void)ctx; return false; }
+static void mock_delay_us(void *ctx, uint32_t us) { (void)ctx; (void)us; }
+
+static const ${NAME_LOWER}_gpio_t mock_gpio = {
+    .set_output = mock_set_output,
+    .set_input  = mock_set_input,
+    .write_pin  = mock_write_pin,
+    .read_pin   = mock_read_pin,
+    .delay_us   = mock_delay_us,
+    .ctx        = NULL,
+};
+
+/* ---------- test helpers ---------- */
+
+static int tests_run, tests_fail;
+
+#define ASSERT(cond, msg) do { \\
+    tests_run++; \\
+    if (!(cond)) { \\
+        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
+        tests_fail++; \\
+    } \\
+} while(0)
+
+#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
+
+/* ---------- tests ---------- */
+
+static void test_init_ok(void)
+{
+    printf("test_init_ok\n");
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_gpio), ${NAME_UPPER}_OK, "init returns OK");
+}
+
+static void test_init_null(void)
+{
+    printf("test_init_null\n");
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_gpio), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+}
+
+/* TODO: add protocol-specific tests */
+
+int main(void)
+{
+    test_init_ok();
+    test_init_null();
+
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
+    return tests_fail ? 1 : 0;
+}
+TEST_EOF
+}
+
+generate_test_onewire() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include <stdio.h>
+#include <string.h>
+#include "../${NAME_LOWER}.h"
+
+/* ---------- mock 1-Wire ---------- */
+
+static bool mock_presence;
+
+static bool mock_reset(void *ctx)      { (void)ctx; return mock_presence; }
+static void mock_write_byte(void *ctx, uint8_t b) { (void)ctx; (void)b; }
+static uint8_t mock_read_byte(void *ctx) { (void)ctx; return 0xFF; }
+
+static const ${NAME_LOWER}_ow_t mock_ow = {
+    .reset      = mock_reset,
+    .write_byte = mock_write_byte,
+    .read_byte  = mock_read_byte,
+    .ctx        = NULL,
+};
+
+/* ---------- test helpers ---------- */
+
+static int tests_run, tests_fail;
+
+#define ASSERT(cond, msg) do { \\
+    tests_run++; \\
+    if (!(cond)) { \\
+        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
+        tests_fail++; \\
+    } \\
+} while(0)
+
+#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
+
+/* ---------- tests ---------- */
+
+static void test_init_ok(void)
+{
+    printf("test_init_ok\n");
+    mock_presence = true;
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_ow), ${NAME_UPPER}_OK, "init returns OK");
+}
+
+static void test_init_null(void)
+{
+    printf("test_init_null\n");
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_ow), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+}
+
+/* TODO: add device-specific tests */
+
+int main(void)
+{
+    test_init_ok();
+    test_init_null();
+
+    printf("\n%d tests, %d passed, %d failed\n",
+           tests_run, tests_run - tests_fail, tests_fail);
+    return tests_fail ? 1 : 0;
+}
+TEST_EOF
+}
+
+generate_test_pwm() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include <stdio.h>
+#include "../${NAME_LOWER}.h"
+
+/* ---------- mock PWM ---------- */
+
+static uint32_t mock_last_pulse;
+static bool mock_fail;
+
+static bool mock_set_pulse(void *ctx, uint32_t pulse_us)
+{
+    (void)ctx;
+    if (mock_fail) return false;
+    mock_last_pulse = pulse_us;
+    return true;
+}
+
+static const ${NAME_LOWER}_pwm_t mock_pwm = {
+    .set_pulse_us = mock_set_pulse,
+    .ctx = NULL,
+};
+
+/* ---------- test helpers ---------- */
+
+static int tests_run, tests_fail;
+
+#define ASSERT(cond, msg) do { \\
+    tests_run++; \\
+    if (!(cond)) { \\
+        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
+        tests_fail++; \\
+    } \\
+} while(0)
+
+#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
+
+/* ---------- tests ---------- */
+
+static void test_init_ok(void)
+{
+    printf("test_init_ok\n");
+    mock_fail = false;
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_pwm), ${NAME_UPPER}_OK, "init returns OK");
+}
+
+static void test_init_null(void)
+{
+    printf("test_init_null\n");
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_pwm), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+}
+
+/* TODO: add control tests */
+
+int main(void)
+{
+    test_init_ok();
+    test_init_null();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
@@ -830,9 +1269,12 @@ if [[ "$VENDOR" -eq 1 ]]; then
     generate_vendor_readme
 else
     case "${HAL:-none}" in
-        i2c)  generate_header_i2c;  generate_c_i2c;  generate_test_i2c  ;;
-        spi)  generate_header_spi;  generate_c_spi;   generate_test_spi  ;;
-        *)    generate_header_none; generate_c_none;   generate_test_none ;;
+        i2c)     generate_header_i2c;     generate_c_i2c;     generate_test_i2c     ;;
+        spi)     generate_header_spi;     generate_c_spi;     generate_test_spi     ;;
+        gpio)    generate_header_gpio;    generate_c_gpio;    generate_test_gpio    ;;
+        onewire) generate_header_onewire; generate_c_onewire; generate_test_onewire ;;
+        pwm)     generate_header_pwm;     generate_c_pwm;     generate_test_pwm     ;;
+        *)       generate_header_none;    generate_c_none;    generate_test_none    ;;
     esac
 fi
 

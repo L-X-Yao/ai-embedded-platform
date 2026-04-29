@@ -64,7 +64,7 @@ jobs:
         run: python3 -m pytest test_log.py -v
 
   crc16-wheel:
-    name: crc16 wheel (host C99)
+    name: crc16 wheel (host C99 + pytest)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
@@ -87,12 +87,15 @@ jobs:
       - name: Install pytest
         run: pip install -r ${{ github.workspace }}/tooling/requirements-ci.txt
 
-      - name: Build
+      - name: Build (C test)
         run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
+          cmake -GNinja -S test -B test/build
+          cmake --build test/build
 
-      - name: Test
+      - name: Run C test
+        run: ctest --test-dir test/build --output-on-failure
+
+      - name: Run pytest
         run: python3 -m pytest test_crc16.py -v
 
   wheel-test:
@@ -150,6 +153,7 @@ jobs:
           - { name: checksum,       dir: wheels/primitives/checksum/test }
           - { name: debounce,       dir: wheels/primitives/debounce/test }
           - { name: led_pattern,    dir: wheels/primitives/led_pattern/test }
+          - { name: crc16,          dir: wheels/primitives/crc16/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
