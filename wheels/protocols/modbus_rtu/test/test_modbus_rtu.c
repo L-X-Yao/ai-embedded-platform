@@ -841,10 +841,9 @@ static void test_slave_read_max_regs(void)
 
 static void test_build_data_len_overflow(void)
 {
-    uint8_t buf[512];
+    uint8_t buf[512] = {0};
 
     printf("test_build_data_len_overflow\n");
-    /* data_len near uint16_t max would overflow frame_len computation */
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, 0xFFFF);
     ASSERT(len == -1, "uint16 overflow data_len rejected");
 
