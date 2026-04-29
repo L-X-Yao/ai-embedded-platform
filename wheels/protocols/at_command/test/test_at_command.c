@@ -532,6 +532,61 @@ static void test_urc_not_matched_as_response(void)
     ASSERT(r == AT_EVT_OK, "response matched after URC");
 }
 
+static void test_send_raw_zero_length(void)
+{
+    at_cmd_t at;
+
+    printf("test_send_raw_zero_length\n");
+    mock_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_send_raw(&at, (const uint8_t *)"ABC", 0);
+    ASSERT(tx_len == 0, "zero-length raw sends nothing");
+}
+
+static void test_error_clears_matched(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_error_clears_matched\n");
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_expect(&at, "OK");
+    feed_string(&at, "OK\r\n", &evt);
+    ASSERT(strlen(at_cmd_get_matched(&at)) > 0, "matched after OK");
+
+    at_cmd_expect(&at, "OK");
+    feed_string(&at, "ERROR\r\n", &evt);
+    ASSERT(strlen(at_cmd_get_matched(&at)) == 0, "matched cleared on ERROR");
+    ASSERT(at.waiting == 0, "not waiting after ERROR");
+}
+
+static void test_send_appends_crlf(void)
+{
+    at_cmd_t at;
+
+    printf("test_send_appends_crlf\n");
+    mock_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_send(&at, "AT+CSQ");
+    ASSERT(tx_len >= 8, "cmd + CRLF length");
+    ASSERT(tx_buf[6] == '\r' && tx_buf[7] == '\n', "CRLF appended");
+}
+
+static void test_urc_before_any_expect(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_urc_before_any_expect\n");
+    urc_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
+
+    at_evt_type_t r = feed_string(&at, "RDY\r\n", &evt);
+    ASSERT(r == AT_EVT_URC, "URC event when not waiting");
+    ASSERT(urc_count == 1, "URC handler called");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -567,6 +622,10 @@ int main(void)
     test_send_null_cmd();
     test_send_raw_null();
     test_urc_not_matched_as_response();
+    test_send_raw_zero_length();
+    test_error_clears_matched();
+    test_send_appends_crlf();
+    test_urc_before_any_expect();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
