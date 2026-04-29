@@ -76,11 +76,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_nmea_parser
 ```
 
-65 assertions across 18 test cases: checksum validation (valid/invalid/null), sentence identification (GP/GN prefixes), GGA parsing (quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state.
+77 assertions across 24 test cases: checksum validation (valid/invalid/null/lowercase-hex), sentence identification (GP/GN prefixes), GGA parsing (quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course.
 
 ## Test status
 
-- Unit tests (sim): PASS (18 C tests, 65 assertions)
+- Unit tests (sim): PASS (24 C tests, 77 assertions)
 - HIL: N/A
 
 ## Convention Deviations

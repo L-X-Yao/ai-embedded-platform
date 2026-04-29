@@ -74,16 +74,16 @@ None. Pure C99 with injected flash HAL callbacks.
 ## Tests
 
 ```bash
-cd wheels/_draft/ota_ab/test
+cd wheels/protocols/ota_ab/test
 cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ota_ab
 ```
 
-47 assertions across 14 test cases: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback).
+66 assertions across 21 test cases: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback), double-confirm no-op, flash read fail on init, flash erase fail on pending, corrupted CRC recovery, persistence across re-init, mark pending overwrite, invalid active_slot recovery.
 
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests, 47 assertions)
+- Unit tests (sim): PASS (21 C tests, 66 assertions)
 - HIL: N/A
 
 ## Convention Deviations
