@@ -343,6 +343,77 @@ static void test_large_led_count(void)
     ASSERT(n == 30 * 24 + 1, "721 compares for 30 LEDs");
 }
 
+static void test_all_color_corners(void)
+{
+    uint8_t vals[] = {0, 255};
+    printf("test_all_color_corners\n");
+
+    for (int ri = 0; ri < 2; ri++) {
+        for (int gi = 0; gi < 2; gi++) {
+            for (int bi = 0; bi < 2; bi++) {
+                ws2812_color_t c = { vals[ri], vals[gi], vals[bi] };
+                uint16_t slots[24];
+                ws2812_encode_grb(&c, &timing_48mhz, slots);
+
+                uint16_t t0 = timing_48mhz.t0h_ticks;
+                uint16_t t1 = timing_48mhz.t1h_ticks;
+                uint16_t expect_g = gi ? t1 : t0;
+                uint16_t expect_r = ri ? t1 : t0;
+                uint16_t expect_b = bi ? t1 : t0;
+
+                for (int b = 0; b < 8; b++)
+                    ASSERT(slots[b] == expect_g, "G byte corner");
+                for (int b = 8; b < 16; b++)
+                    ASSERT(slots[b] == expect_r, "R byte corner");
+                for (int b = 16; b < 24; b++)
+                    ASSERT(slots[b] == expect_b, "B byte corner");
+            }
+        }
+    }
+}
+
+static void test_mid_gray_encoding(void)
+{
+    ws2812_color_t c = {128, 128, 128};
+    uint16_t slots[24];
+    uint16_t t0 = timing_48mhz.t0h_ticks;
+    uint16_t t1 = timing_48mhz.t1h_ticks;
+
+    printf("test_mid_gray_encoding\n");
+    ws2812_encode_grb(&c, &timing_48mhz, slots);
+
+    /* 128 = 0x80 = 10000000, all three channels identical */
+    uint16_t expected_byte[8] = { t1, t0, t0, t0, t0, t0, t0, t0 };
+    for (int ch = 0; ch < 3; ch++) {
+        for (int b = 0; b < 8; b++) {
+            ASSERT(slots[ch * 8 + b] == expected_byte[b], "mid-gray bit");
+        }
+    }
+}
+
+static void test_data_inside_critical_section(void)
+{
+    ws2812_color_t c = {0xAA, 0x55, 0xCC};
+
+    printf("test_data_inside_critical_section\n");
+    mock_reset();
+    ws2812_send(&mock_hal, &timing_48mhz, &c, 1);
+
+    int in_crit = 0;
+    int data_outside_crit = 0;
+    for (int i = 0; i < mock_log_idx; i++) {
+        if (mock_log[i].type == EVT_ENTER_CRIT) in_crit = 1;
+        if (mock_log[i].type == EVT_EXIT_CRIT)  in_crit = 0;
+        if (!in_crit && mock_log[i].type == EVT_SET_COMPARE) {
+            /* set_compare(0) for reset latch is ok, only count data values */
+            if (mock_log[i].value == timing_48mhz.t0h_ticks ||
+                mock_log[i].value == timing_48mhz.t1h_ticks)
+                data_outside_crit++;
+        }
+    }
+    ASSERT(data_outside_crit == 0, "no data bits outside critical section");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -358,6 +429,9 @@ int main(void)
     test_scale5to8();
     test_different_timing();
     test_large_led_count();
+    test_all_color_corners();
+    test_mid_gray_encoding();
+    test_data_inside_critical_section();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

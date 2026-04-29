@@ -76,11 +76,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ws2812
 ```
 
-166 assertions across 11 test cases: null safety, GRB encoding, bit patterns, multi-LED, large LED chain (30), reset latch timing, critical section, 5-to-8 scaling, multi-clock timing.
+383 assertions across 14 test cases: null safety, GRB encoding, bit patterns, multi-LED, large LED chain (30), reset latch timing, critical section, 5-to-8 scaling, multi-clock timing, all 8 RGB corners ({0,255}^3), mid-gray encoding, data-inside-critical-section isolation.
 
 ## Test status
 
-- Unit tests (sim): PASS (11 C tests, 166 assertions)
+- Unit tests (sim): PASS (14 C tests, 383 assertions)
 - HIL: N/A
 
 ## API convention deviations
