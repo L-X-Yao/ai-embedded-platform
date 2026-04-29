@@ -9,6 +9,7 @@
 #define MOCK_REG_COUNT 128
 static uint8_t mock_regs[MOCK_REG_COUNT];
 static int     mock_fail_next;    /* 1 = next I2C op fails */
+static int     mock_fail_at_write; /* fail at Nth write (0=disabled) */
 static int     mock_write_count;
 static int     mock_read_count;
 
@@ -17,6 +18,7 @@ static void mock_reset(void)
     memset(mock_regs, 0, sizeof(mock_regs));
     mock_regs[0x00] = 0x05; /* WHO_AM_I */
     mock_fail_next  = 0;
+    mock_fail_at_write = 0;
     mock_write_count = 0;
     mock_read_count  = 0;
 }
@@ -25,8 +27,9 @@ static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
 {
     (void)ctx; (void)addr;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
-    if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
     mock_write_count++;
+    if (mock_fail_at_write && mock_write_count == mock_fail_at_write) { return false; }
+    if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
     return true;
 }
 
@@ -247,6 +250,36 @@ static void test_reinit_changes_config(void)
     ASSERT_EQ(mock_regs[0x03], 0x04, "CTRL2 = ±2g, 500Hz");
 }
 
+static void test_init_ctrl2_write_fail(void)
+{
+    printf("test_init_ctrl2_write_fail\n");
+    mock_reset();
+    mock_fail_at_write = 2;
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_err_t e = qmi8658a_init(&mock_i2c, &c);
+    ASSERT_EQ(e, QMI8658A_ERR_I2C, "CTRL2 write failure propagated");
+}
+
+static void test_init_ctrl3_write_fail(void)
+{
+    printf("test_init_ctrl3_write_fail\n");
+    mock_reset();
+    mock_fail_at_write = 3;
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_err_t e = qmi8658a_init(&mock_i2c, &c);
+    ASSERT_EQ(e, QMI8658A_ERR_I2C, "CTRL3 write failure propagated");
+}
+
+static void test_init_ctrl7_write_fail(void)
+{
+    printf("test_init_ctrl7_write_fail\n");
+    mock_reset();
+    mock_fail_at_write = 4;
+    qmi8658a_cfg_t c = qmi8658a_default_cfg();
+    qmi8658a_err_t e = qmi8658a_init(&mock_i2c, &c);
+    ASSERT_EQ(e, QMI8658A_ERR_I2C, "CTRL7 write failure propagated");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -263,6 +296,9 @@ int main(void)
     test_reset();
     test_null_safety();
     test_reinit_changes_config();
+    test_init_ctrl2_write_fail();
+    test_init_ctrl3_write_fail();
+    test_init_ctrl7_write_fail();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
