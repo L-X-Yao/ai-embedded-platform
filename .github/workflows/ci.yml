@@ -148,6 +148,8 @@ jobs:
           - { name: rotary_encoder, dir: wheels/drivers/rotary_encoder/test }
           - { name: median_filter,  dir: wheels/primitives/median_filter/test }
           - { name: checksum,       dir: wheels/primitives/checksum/test }
+          - { name: debounce,       dir: wheels/primitives/debounce/test }
+          - { name: led_pattern,    dir: wheels/primitives/led_pattern/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
