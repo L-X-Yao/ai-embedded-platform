@@ -83,7 +83,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (11 C tests, 531 assertions)
+- Unit tests (sim): PASS (15 C tests, 537 assertions)
 - HIL: N/A
 
 ## Convention Deviations

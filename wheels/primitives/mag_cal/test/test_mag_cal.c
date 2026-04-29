@@ -198,6 +198,54 @@ static void test_buffer_full(void)
     ASSERT_EQ(mag_cal_sample_count(&cal), MAG_CAL_MAX_SAMPLES, "max samples");
 }
 
+static void test_single_sample(void)
+{
+    mag_cal_t cal;
+
+    printf("test_single_sample\n");
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+    mag_cal_feed(&cal, 1.0f, 2.0f, 3.0f);
+    ASSERT_EQ(mag_cal_sample_count(&cal), 1, "1 sample");
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL,
+              "single sample insufficient spread");
+}
+
+static void test_collinear_samples(void)
+{
+    mag_cal_t cal;
+
+    printf("test_collinear_samples\n");
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+    for (int i = 0; i < 500; i++)
+        mag_cal_feed(&cal, (float)i * 0.01f, 0.0f, 0.0f);
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL,
+              "collinear samples (Y/Z zero spread) fail");
+}
+
+static void test_apply_null_outputs(void)
+{
+    mag_cal_result_t r = { .offset_x = 1, .offset_y = 2, .offset_z = 3,
+                           .scale_x = 1, .scale_y = 1, .scale_z = 1 };
+    float x = 999.0f, z = 999.0f;
+
+    printf("test_apply_null_outputs\n");
+    mag_cal_apply(&r, 1, 2, 3, &x, NULL, &z);
+    ASSERT_NEAR(x, 999.0f, 0.01f, "x untouched when out_y null");
+    ASSERT_NEAR(z, 999.0f, 0.01f, "z untouched when out_z null");
+}
+
+static void test_compute_before_start(void)
+{
+    mag_cal_t cal;
+
+    printf("test_compute_before_start\n");
+    mag_cal_init(&cal);
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL,
+              "compute in IDLE fails");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -213,6 +261,10 @@ int main(void)
     test_null_safety();
     test_reinit_clears();
     test_buffer_full();
+    test_single_sample();
+    test_collinear_samples();
+    test_apply_null_outputs();
+    test_compute_before_start();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
