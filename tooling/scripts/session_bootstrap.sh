@@ -56,7 +56,7 @@ $SHORT && { echo ""; echo "(use without --short for full wheel/project/audit dum
 
 echo ""
 echo -e "${BOLD}=== Wheels ===${NC}"
-printf "  ${CYAN}%-20s %-12s %-6s %-4s %-8s${NC}\n" "NAME" "LAYER" "TESTS" "CI" "CONSUMER"
+printf "  ${CYAN}%-20s %-12s %-7s %-4s %-8s${NC}\n" "NAME" "LAYER" "ASSERTS" "CI" "CONSUMER"
 
 for wheel_dir in "$REPO"/wheels/*/*/ ; do
     [[ ! -d "$wheel_dir" ]] && continue
