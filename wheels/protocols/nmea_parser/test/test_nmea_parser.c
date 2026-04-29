@@ -256,6 +256,77 @@ static void test_reinit_clears(void)
     ASSERT_NEAR(d.altitude_m, 0.0f, 0.001f, "alt cleared");
 }
 
+static void test_checksum_lowercase(void)
+{
+    printf("test_checksum_lowercase\n");
+    ASSERT(nmea_verify_checksum("$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6a"),
+           "lowercase hex checksum accepted");
+}
+
+static void test_no_comma_in_sentence(void)
+{
+    nmea_data_t d;
+
+    printf("test_no_comma_in_sentence\n");
+    nmea_data_init(&d);
+    ASSERT_EQ(nmea_parse("$GPGGA*00", &d), NMEA_ERR_UNKNOWN, "no comma rejected");
+}
+
+static void test_max_latitude_longitude(void)
+{
+    nmea_data_t d;
+
+    printf("test_max_latitude_longitude\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,9000.000,N,18000.000,E,0.0,0.0,010126,,,A*2E", &d);
+    ASSERT_NEAR(d.latitude, 90.0f, 0.01f, "max latitude 90");
+    ASSERT_NEAR(d.longitude, 180.0f, 0.01f, "max longitude 180");
+}
+
+static void test_year_boundary(void)
+{
+    nmea_data_t d;
+
+    printf("test_year_boundary\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010100,,,A*67", &d);
+    ASSERT_EQ(d.year, 2000, "year 00 -> 2000");
+
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010179,,,A*6D", &d);
+    ASSERT_EQ(d.year, 2079, "year 79 -> 2079");
+
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010180,,,A*63", &d);
+    ASSERT_EQ(d.year, 1980, "year 80 -> 1980");
+
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010199,,,A*63", &d);
+    ASSERT_EQ(d.year, 1999, "year 99 -> 1999");
+}
+
+static void test_gga_no_fix(void)
+{
+    nmea_data_t d;
+
+    printf("test_gga_no_fix\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPGGA,,,,,,,0,0,,,,,,,*66", &d);
+    ASSERT_EQ(d.fix_quality, 0, "no fix quality=0");
+    ASSERT_EQ(d.satellites, 0, "no fix sats=0");
+}
+
+static void test_rmc_empty_speed_course(void)
+{
+    nmea_data_t d;
+
+    printf("test_rmc_empty_speed_course\n");
+    nmea_data_init(&d);
+    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,,,010126,,,A*57", &d);
+    ASSERT_NEAR(d.speed_kmh, 0.0f, 0.01f, "empty speed=0");
+    ASSERT_EQ(d.course_valid, 0, "empty course invalid");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -278,6 +349,12 @@ int main(void)
     test_accumulate_gga_rmc();
     test_reinit_clears();
     test_equator_prime_meridian();
+    test_checksum_lowercase();
+    test_no_comma_in_sentence();
+    test_max_latitude_longitude();
+    test_year_boundary();
+    test_gga_no_fix();
+    test_rmc_empty_speed_course();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

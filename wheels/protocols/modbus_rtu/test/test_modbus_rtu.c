@@ -731,6 +731,129 @@ static void test_slave_reinit_address(void)
            "responds to new addr 0x05");
 }
 
+static void test_crc_corruption_middle_byte(void)
+{
+    uint8_t buf[32];
+    uint8_t data[] = {0x00, 0x6B, 0x00, 0x03};
+    modbus_rtu_frame_t frame;
+
+    printf("test_crc_corruption_middle_byte\n");
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, 4);
+    ASSERT(len == 8, "8 bytes");
+    ASSERT(modbus_rtu_parse(buf, len, &frame) == 0, "valid before corruption");
+
+    buf[3] ^= 0xFF;
+    ASSERT(modbus_rtu_parse(buf, len, &frame) == -1, "middle byte corruption detected");
+
+    buf[3] ^= 0xFF;
+    buf[0] ^= 0x01;
+    ASSERT(modbus_rtu_parse(buf, len, &frame) == -1, "first byte corruption detected");
+}
+
+static void test_build_null_data_nonzero_len(void)
+{
+    uint8_t buf[32];
+
+    printf("test_build_null_data_nonzero_len\n");
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 4);
+    ASSERT(len == 8, "frame built despite null data");
+    ASSERT(modbus_rtu_check_crc(buf, len), "CRC valid");
+    ASSERT(buf[0] == 0x01, "addr preserved");
+    ASSERT(buf[1] == 0x03, "func preserved");
+}
+
+static void test_slave_resp_buffer_too_small(void)
+{
+    modbus_rtu_slave_t s;
+    uint8_t req[32], resp[4];
+
+    printf("test_slave_resp_buffer_too_small\n");
+    mock_reset();
+    holding_regs[0] = 0x1234;
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = mock_read_holding;
+
+    int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
+                                               0x01, MODBUS_FC_READ_HOLDING_REGS,
+                                               0, 1);
+    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    ASSERT(resp_len == -1, "resp buffer too small returns -1");
+}
+
+static void test_slave_write_multiple_mismatched_count(void)
+{
+    modbus_rtu_slave_t s;
+    uint8_t raw[32], resp[64];
+
+    printf("test_slave_write_multiple_mismatched_count\n");
+    mock_reset();
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.write_holding = mock_write_holding;
+
+    uint8_t bad_data[] = {
+        0x00, 0x00,  /* start = 0 */
+        0x00, 0x02,  /* count = 2 */
+        0x02,        /* byte_count = 2 (should be 4 for 2 regs) */
+        0x00, 0x0A   /* only 1 register value */
+    };
+    int raw_len = modbus_rtu_build(raw, sizeof(raw), 0x01,
+                                    MODBUS_FC_WRITE_MULTIPLE_REGS,
+                                    bad_data, 7);
+    int resp_len = modbus_rtu_slave_process(&s, raw, raw_len, resp, sizeof(resp));
+    ASSERT(resp_len > 0, "exception response");
+
+    modbus_rtu_frame_t frame;
+    modbus_rtu_parse(resp, resp_len, &frame);
+    ASSERT(modbus_rtu_is_exception(&frame), "mismatched count triggers exception");
+    ASSERT(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_DATA_VALUE,
+           "illegal data value");
+}
+
+static void test_slave_read_max_regs(void)
+{
+    modbus_rtu_slave_t s;
+    uint8_t req[32], resp[512];
+
+    printf("test_slave_read_max_regs\n");
+    mock_reset();
+    for (int i = 0; i < REG_BANK_SIZE; i++)
+        holding_regs[i] = (uint16_t)(i + 1);
+
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = mock_read_holding;
+
+    int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
+                                               0x01, MODBUS_FC_READ_HOLDING_REGS,
+                                               0, REG_BANK_SIZE);
+    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    ASSERT(resp_len > 0, "response for max regs");
+
+    modbus_rtu_frame_t frame;
+    modbus_rtu_parse(resp, resp_len, &frame);
+    ASSERT(!modbus_rtu_is_exception(&frame), "no exception");
+
+    uint16_t regs[REG_BANK_SIZE];
+    int n = modbus_rtu_master_get_regs(&frame, regs, REG_BANK_SIZE);
+    ASSERT(n == REG_BANK_SIZE, "all regs returned");
+    ASSERT(regs[0] == 1, "first reg correct");
+    ASSERT(regs[REG_BANK_SIZE - 1] == REG_BANK_SIZE, "last reg correct");
+}
+
+static void test_parse_exact_min_frame(void)
+{
+    uint8_t buf[4];
+    modbus_rtu_frame_t frame;
+
+    printf("test_parse_exact_min_frame\n");
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
+    ASSERT(len == 4, "minimum frame is 4 bytes");
+    ASSERT(modbus_rtu_parse(buf, len, &frame) == 0, "parseable");
+    ASSERT(frame.data == NULL, "no data");
+    ASSERT(frame.data_len == 0, "data_len 0");
+    ASSERT(frame.addr == 0x01, "addr");
+    ASSERT(frame.func == 0x03, "func");
+}
+
 /* ============================================================ */
 
 int main(void)
@@ -783,6 +906,12 @@ int main(void)
     test_build_max_data();
     test_build_exceeds_max_frame();
     test_slave_reinit_address();
+    test_crc_corruption_middle_byte();
+    test_build_null_data_nonzero_len();
+    test_slave_resp_buffer_too_small();
+    test_slave_write_multiple_mismatched_count();
+    test_slave_read_max_regs();
+    test_parse_exact_min_frame();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

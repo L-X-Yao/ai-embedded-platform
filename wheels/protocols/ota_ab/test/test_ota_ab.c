@@ -288,6 +288,123 @@ static void test_full_ota_cycle(void)
     ASSERT_EQ(ota_ab_active_slot(&m), 1, "rolled back to B");
 }
 
+static void test_double_confirm_noop(void)
+{
+    ota_ab_t m;
+
+    printf("test_double_confirm_noop\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    ota_ab_mark_pending(&m, 512, 0);
+    ota_ab_boot_event(&m);
+    ota_ab_confirm(&m);
+    ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE, "idle after first confirm");
+
+    int writes_before = mock_write_count;
+    ota_ab_err_t e = ota_ab_confirm(&m);
+    ASSERT_EQ(e, OTA_AB_OK, "double confirm ok");
+    ASSERT_EQ(mock_write_count, writes_before, "no flash write on idle confirm");
+}
+
+static void test_flash_read_fail_on_init(void)
+{
+    ota_ab_t m;
+
+    printf("test_flash_read_fail_on_init\n");
+    mock_reset();
+    mock_fail_read = 1;
+    ota_ab_err_t e = ota_ab_init(&m, &mock_flash, &test_layout);
+    ASSERT_EQ(e, OTA_AB_ERR_FLASH, "read fail on init");
+}
+
+static void test_flash_erase_fail_on_pending(void)
+{
+    ota_ab_t m;
+
+    printf("test_flash_erase_fail_on_pending\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    mock_fail_erase = 1;
+    ota_ab_err_t e = ota_ab_mark_pending(&m, 512, 0);
+    ASSERT_EQ(e, OTA_AB_ERR_FLASH, "erase fail on pending");
+}
+
+static void test_corrupted_params_recovery(void)
+{
+    ota_ab_t m;
+
+    printf("test_corrupted_params_recovery\n");
+    mock_reset();
+
+    ota_ab_params_t bad;
+    memset(&bad, 0, sizeof(bad));
+    bad.magic = OTA_AB_PARAMS_MAGIC;
+    bad.active_slot = 1;
+    bad.crc32 = 0xDEADDEAD;
+    mock_write(NULL, test_layout.params_addr, (uint8_t *)&bad, sizeof(bad));
+
+    ota_ab_err_t e = ota_ab_init(&m, &mock_flash, &test_layout);
+    ASSERT_EQ(e, OTA_AB_OK, "init ok despite bad CRC");
+    ASSERT_EQ(ota_ab_active_slot(&m), 0, "reset to default slot A");
+    ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE, "reset to idle");
+}
+
+static void test_reinit_persists_state(void)
+{
+    ota_ab_t m;
+
+    printf("test_reinit_persists_state\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    ota_ab_mark_pending(&m, 512, 0xABCD);
+    ota_ab_boot_event(&m);
+    ota_ab_confirm(&m);
+    ASSERT_EQ(ota_ab_active_slot(&m), 1, "on slot B");
+
+    ota_ab_t m2;
+    ota_ab_err_t e = ota_ab_init(&m2, &mock_flash, &test_layout);
+    ASSERT_EQ(e, OTA_AB_OK, "re-init ok");
+    ASSERT_EQ(ota_ab_active_slot(&m2), 1, "persisted slot B");
+    ASSERT_EQ(m2.params.ota_flag, OTA_AB_FLAG_IDLE, "persisted idle");
+    ASSERT_EQ(m2.params.boot_count, 0, "persisted boot_count=0");
+}
+
+static void test_mark_pending_overwrite(void)
+{
+    ota_ab_t m;
+
+    printf("test_mark_pending_overwrite\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    ota_ab_mark_pending(&m, 512, 0x1111);
+    ASSERT_EQ(m.params.fw_crc, 0x1111, "first pending");
+
+    ota_ab_err_t e = ota_ab_mark_pending(&m, 256, 0x2222);
+    ASSERT_EQ(e, OTA_AB_OK, "overwrite ok");
+    ASSERT_EQ(m.params.fw_size, 256, "overwritten size");
+    ASSERT_EQ(m.params.fw_crc, 0x2222, "overwritten crc");
+}
+
+static void test_invalid_active_slot_recovery(void)
+{
+    ota_ab_t m;
+
+    printf("test_invalid_active_slot_recovery\n");
+    mock_reset();
+
+    ota_ab_params_t bad;
+    memset(&bad, 0, sizeof(bad));
+    bad.magic = OTA_AB_PARAMS_MAGIC;
+    bad.active_slot = 5;
+    bad.crc32 = ota_ab_crc32((const uint8_t *)&bad,
+                              sizeof(bad) - sizeof(uint32_t));
+    mock_write(NULL, test_layout.params_addr, (uint8_t *)&bad, sizeof(bad));
+
+    ota_ab_err_t e = ota_ab_init(&m, &mock_flash, &test_layout);
+    ASSERT_EQ(e, OTA_AB_OK, "init ok despite invalid slot");
+    ASSERT_EQ(ota_ab_active_slot(&m), 0, "reset to slot A");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -306,6 +423,13 @@ int main(void)
     test_null_safety();
     test_flash_fail_on_write();
     test_full_ota_cycle();
+    test_double_confirm_noop();
+    test_flash_read_fail_on_init();
+    test_flash_erase_fail_on_pending();
+    test_corrupted_params_recovery();
+    test_reinit_persists_state();
+    test_mark_pending_overwrite();
+    test_invalid_active_slot_recovery();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
