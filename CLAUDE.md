@@ -54,10 +54,18 @@ grep -rn "功能关键词" vsf/source/component/
 
 HIL 当前是人工（见 ADR-002）——AI 生成粘贴模板 → 用户手烧录 → 日志粘回。
 
-### 4. 踩坑即记录
+### 4. 踩坑即记录 + 每轮工作后复盘
 
-更新：
-- `docs/debugging-playbook.md`（公共）
+每完成一批工作（不是等用户问），主动回顾并写入 memory：
+- **踩了什么坑？** → 记录，避免下次重复
+- **什么方法特别快？** → 记录，下次直接复用
+- **有新的架构/技术决策吗？** → 记录决策和理由
+- **用户偏好/角色有变化吗？** → 更新 user 类型 memory
+
+目的：**AI 越做越快，不重复犯错。** 每个 session 的经验沉淀到 memory，下个 session 站在这个基础上继续。
+
+同步更新：
+- `docs/debugging-playbook.md`（公共踩坑）
 - wheel 的 `README.md`（局部）
 - Claude Code 自动记忆（跨项目规律，由 Claude Code 管理，不在 repo 内）
 
