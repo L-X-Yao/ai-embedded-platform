@@ -26,6 +26,10 @@ See ADR-010.
 
 - `fal` (L0, concrete, ADR-009) — flash partition management
 
+## Origin
+
+Vendor: see VENDOR.md.
+
 ## Supported platforms
 
 - [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
@@ -99,7 +103,7 @@ Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
 - No thread safety by default — set lock/unlock via `fdb_kvdb_control()` if multi-threaded.
 - TSDB included but optional — disable by omitting `FDB_USING_TSDB` in fdb_cfg.h.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/kvs/test

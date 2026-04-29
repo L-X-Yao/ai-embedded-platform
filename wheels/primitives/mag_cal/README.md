@@ -71,7 +71,7 @@ None. Pure C99 + libm.
 - No outlier rejection — a single extreme sample skews min/max. Collect in magnetically clean environment.
 - Scale factors assume ellipsoidal distortion; more complex soft-iron (rotation) is not corrected.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/mag_cal/test

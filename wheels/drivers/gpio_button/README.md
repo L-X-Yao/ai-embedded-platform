@@ -75,7 +75,7 @@ LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pe
 - No triple-click or hold-duration reporting. Add if a project needs them.
 - Tick resolution affects debounce accuracy. 1ms ticks give ±1ms jitter.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/gpio_button/test

@@ -53,7 +53,7 @@ uint32_t         soft_timer_get_tick(const soft_timer_mgr_t *mgr);
 
 None.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/soft_timer/test

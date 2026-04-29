@@ -68,7 +68,7 @@ uint8_t r8 = ws2812_scale5to8(15);  /* → 123 */
 - No DMA support — pure CPU bit-bang via timer CCR updates.
 - `scale5to8` LUT uses perceptually-weighted mapping, not linear `v * 255 / 31`.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/ws2812/test

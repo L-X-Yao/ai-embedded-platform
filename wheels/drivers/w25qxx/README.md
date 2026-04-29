@@ -48,6 +48,14 @@ if (w25qxx_init(&spi, &id) == W25QXX_OK) {
 }
 ```
 
+## How to test
+
+```bash
+cd wheels/drivers/w25qxx/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock SPI) — 21 tests, 55 assertions, 2026-04-29

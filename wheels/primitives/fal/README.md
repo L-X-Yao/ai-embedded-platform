@@ -27,6 +27,10 @@ See ADR-010.
 
 - None (interface dependency: flash device ops provided by project at compile time)
 
+## Origin
+
+Vendor: see VENDOR.md.
+
 ## Supported platforms
 
 - [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
@@ -99,7 +103,7 @@ const struct fal_flash_dev onchip_flash = {
 - Dynamic partition table loading (scan flash at boot) removed — only static config mode supported
 - RT-Thread block device layer excluded — not applicable outside RT-Thread
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/fal/test

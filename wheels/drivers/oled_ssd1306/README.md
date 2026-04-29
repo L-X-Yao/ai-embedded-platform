@@ -54,7 +54,7 @@ None. Display dimensions and I2C address are runtime-configurable.
 - No text/font rendering built in — add a font wheel or use LVGL for rich UI.
 - No SPI support — I2C only.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/oled_ssd1306/test

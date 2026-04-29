@@ -53,7 +53,7 @@ None. Window size and alpha are runtime parameters.
 
 None.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/moving_average/test

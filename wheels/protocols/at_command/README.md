@@ -94,7 +94,7 @@ const char *imei = at_cmd_get_prev_line(&at);
 - No binary/fixed-length data mode (HTTP chunked, MQTT payload). Consumer handles mode switching externally.
 - URC matching is prefix-only (`starts_with`), not substring. Register `"+CME"` not `"CME"`.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/at_command/test

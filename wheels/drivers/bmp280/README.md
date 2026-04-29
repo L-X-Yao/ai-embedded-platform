@@ -47,7 +47,7 @@ None. Oversampling and I2C address are runtime-configurable via `bmp280_cfg_t`.
   consider switching to normal mode (not yet implemented).
 - BMP280 also supports SPI — only I2C is implemented.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/bmp280/test

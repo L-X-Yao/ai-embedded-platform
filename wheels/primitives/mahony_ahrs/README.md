@@ -63,7 +63,7 @@ Tuning via `mahony_cfg_t`:
 - No automatic sample rate detection — caller must match `sample_freq_hz` to actual loop rate.
 - Gimbal lock at ±90° pitch (inherent Euler angle limitation, quaternion output unaffected).
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/mahony_ahrs/test

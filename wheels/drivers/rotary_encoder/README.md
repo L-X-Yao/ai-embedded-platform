@@ -31,6 +31,22 @@ void          encoder_reset(rotary_encoder_t *enc);
 
 None (pure software decoder).
 
+## How to test
+
+```bash
+cd wheels/drivers/rotary_encoder/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Known issues
+
+None.
+
 ## Supported platforms
 
 - [x] Linux host (sim) — passed 2026-04-29

@@ -65,7 +65,7 @@ None. All parameters are runtime.
 - No QoS 2 (PUBREC/PUBREL/PUBCOMP) support.
 - No will message support in CONNECT.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/mqtt_packet/test

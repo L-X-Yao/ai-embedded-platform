@@ -31,6 +31,22 @@ uint16_t checksum_internet(const uint8_t *data, size_t len);
 
 None.
 
+## How to test
+
+```bash
+cd wheels/primitives/checksum/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Known issues
+
+None.
+
 ## Supported platforms
 
 - [x] Linux host (sim) — passed 2026-04-29

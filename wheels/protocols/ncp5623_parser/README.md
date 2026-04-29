@@ -65,7 +65,7 @@ ncp5623_parser_stop(&parser);
 - Color output is raw 4-bit. Brightness mapping (e.g., non-zero → full brightness) is left to the consumer.
 - The `enabled` flag persists across I2C transactions (by design — ArduPilot sends ENABLE once at boot, then only COLOR commands).
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/ncp5623_parser/test
