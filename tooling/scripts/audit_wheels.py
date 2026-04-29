@@ -93,6 +93,20 @@ def has_api_review(wheel_dir: Path) -> bool:
     return "## API Review" in text or "## API review" in text
 
 
+def has_responsible_human(wheel_dir: Path) -> bool:
+    """Check README has 'Responsible human' section (wheel-contract template)."""
+    text = read_readme(wheel_dir)
+    return "## Responsible human" in text
+
+
+def has_standard_deviation_heading(wheel_dir: Path) -> bool:
+    """Check that deviation heading is 'API convention deviations', not legacy."""
+    text = read_readme(wheel_dir)
+    if "## Convention Deviations" in text:
+        return False
+    return True
+
+
 def is_vendor_wheel(wheel_dir: Path) -> bool:
     """A vendor wheel has a vendor/ subdirectory."""
     return (wheel_dir / "vendor").is_dir()
@@ -470,6 +484,30 @@ def main() -> int:
             continue
         if not has_werror(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing -Werror")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- Responsible human section (wheel-contract template) ---
+    print("\n=== Responsible human (wheel-contract template) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if not has_responsible_human(wheel_dir):
+            warnings.append(f"{path}: README missing '## Responsible human' section")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- API convention deviations heading consistency ---
+    print("\n=== API convention deviations heading ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not has_standard_deviation_heading(wheel_dir):
+            warnings.append(
+                f"{path}: use '## API convention deviations' not '## Convention Deviations'"
+            )
             print(f"  [WARN]  {path}")
         else:
             print(f"  [ ok ]  {path}")
