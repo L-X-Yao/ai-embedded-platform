@@ -47,6 +47,14 @@ if (qmi8658a_init(&i2c, &cfg) == QMI8658A_OK) {
 }
 ```
 
+## How to test
+
+```bash
+cd wheels/drivers/qmi8658a/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 19 tests, 44 assertions, 2026-04-29

@@ -50,7 +50,7 @@ None. I2C address is runtime-configurable via `sht30_cfg_t`.
 - Uses single-shot high-repeatability mode. No continuous (periodic) mode yet.
 - No clock-stretching timeout handling — relies on I2C HAL.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/sht30/test

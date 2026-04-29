@@ -70,6 +70,14 @@ high-side clamp.
 
 Temperature: `(t_raw / 65536) * 190 - 40`, range -40 to ~150 C.
 
+## How to test
+
+```bash
+cd wheels/drivers/xgzp6816d/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 21 tests, 39 assertions, 2026-04-29

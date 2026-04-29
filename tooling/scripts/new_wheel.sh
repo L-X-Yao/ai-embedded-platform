@@ -1062,7 +1062,7 @@ TODO: list wheel dependencies (or "None.").
 
 TODO.
 
-## Tests
+## How to test
 
 \`\`\`bash
 cd wheels/${LAYER}/${NAME_LOWER}/test
@@ -1220,9 +1220,9 @@ Upstream API is used directly. Consumers \`#include <TODO.h>\`.
 
 TODO: describe per-project config files if applicable.
 
-## Convention Deviations
+## Origin
 
-TODO: document any deviations from api-conventions.md.
+Vendor: see VENDOR.md.
 
 ## Configuration (compile-time)
 
@@ -1239,7 +1239,7 @@ TODO.
 - [x] Host (sim) — TODO: date
 - [ ] TODO: real hardware target — not yet verified
 
-## Tests
+## How to test
 
 \`\`\`bash
 cd wheels/${LAYER}/${NAME_LOWER}/test
@@ -1252,10 +1252,18 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): TODO
 - HIL: N/A
 
+## API convention deviations
+
+TODO: document any deviations from api-conventions.md.
+
 ## API review
 
 - **Date**: TODO
 - **Key decisions**: TODO
+
+## Responsible human
+
+@user
 README_EOF
 }
 

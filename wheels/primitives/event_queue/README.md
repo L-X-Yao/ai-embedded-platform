@@ -51,7 +51,7 @@ None. Queue capacity is runtime (size of caller-provided array).
 - Usable capacity is N-1 (one slot reserved for full/empty disambiguation).
 - Only SPSC (single-producer single-consumer) safe. Multi-producer needs external locking.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/event_queue/test

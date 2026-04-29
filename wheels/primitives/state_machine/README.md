@@ -48,7 +48,7 @@ None. States, events, transitions, and actions are all defined at runtime via
 
 None.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/state_machine/test

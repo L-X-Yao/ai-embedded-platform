@@ -71,7 +71,7 @@ None. Pure C99 with injected flash HAL callbacks.
 - No built-in flash wear leveling — params are erased+rewritten on every state transition.
 - Boot count rollback is based on boot_event calls, not wall time. If bootloader doesn't call boot_event, rollback won't trigger.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/ota_ab/test

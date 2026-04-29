@@ -43,6 +43,14 @@ if (qmc5883p_init(&i2c) == QMC5883P_OK) {
 }
 ```
 
+## How to test
+
+```bash
+cd wheels/drivers/qmc5883p/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 20 tests, 45 assertions, 2026-04-29

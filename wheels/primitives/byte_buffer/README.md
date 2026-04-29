@@ -59,7 +59,7 @@ None. Buffer capacity is runtime.
 
 None.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/byte_buffer/test

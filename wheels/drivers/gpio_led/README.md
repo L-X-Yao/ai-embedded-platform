@@ -82,7 +82,7 @@ For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes d
 - No gamma correction on breathe ramp — perceptually dim at low levels. Add a gamma LUT in the HAL callback if needed.
 - Tick resolution limits minimum blink period. With 10ms ticks, periods below ~20ms are unreliable.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/gpio_led/test

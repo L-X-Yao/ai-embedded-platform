@@ -50,7 +50,7 @@ I2C address are runtime-configurable via `mpu6050_cfg_t`.
 - No temperature readout (available in MPU-6050 but rarely used).
 - Init does a device reset; caller must wait ~100ms after init before first read on real hardware.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/drivers/mpu6050/test

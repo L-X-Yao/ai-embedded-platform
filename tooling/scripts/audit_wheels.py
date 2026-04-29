@@ -164,6 +164,12 @@ def has_candidate_sections(wheel_dir: Path) -> list:
         missing.append("Test status")
     if "## Dependencies" not in text and "## 依赖" not in text:
         missing.append("Dependencies")
+    if "## How to test" not in text and "## 如何测试" not in text:
+        missing.append("How to test")
+    if "## Known issues" not in text and "## 已知坑" not in text and "## 已知问题" not in text:
+        missing.append("Known issues")
+    if "## Origin" not in text and "## 来源" not in text:
+        missing.append("Origin")
     return missing
 
 

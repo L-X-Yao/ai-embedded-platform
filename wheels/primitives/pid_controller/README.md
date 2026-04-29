@@ -50,7 +50,7 @@ None. All parameters are runtime-configurable via `pid_controller_cfg_t`.
 
 None.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/primitives/pid_controller/test

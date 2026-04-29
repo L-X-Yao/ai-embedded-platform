@@ -82,7 +82,7 @@ if (resp_len > 0) uart_send(resp, resp_len);
 - No command queue — single request/response at a time.
 - Slave stack usage: up to ~251 bytes for read response data array (reduce `MODBUS_MAX_READ_REGS` if stack-constrained).
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/modbus_rtu/test

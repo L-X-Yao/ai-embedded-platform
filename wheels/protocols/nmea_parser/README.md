@@ -68,7 +68,7 @@ No compile-time configuration needed.
 - Year field uses 80-threshold: YY≥80 → 19XX, YY<80 → 20XX (standard NMEA convention).
 - `nmea_parse()` does not verify checksum internally — caller should call `nmea_verify_checksum()` first if data integrity matters.
 
-## Tests
+## How to test
 
 ```bash
 cd wheels/protocols/nmea_parser/test

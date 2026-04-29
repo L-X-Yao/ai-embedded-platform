@@ -39,6 +39,14 @@ ctest --test-dir build --output-on-failure
 
 GPIO HAL (injected via callbacks).
 
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Known issues
+
+None.
+
 ## Supported platforms
 
 - [x] Linux host (sim) — passed 2026-04-29

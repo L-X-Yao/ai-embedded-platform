@@ -80,6 +80,14 @@ Proactive build for embedded debug shells. Not extracted from a specific project
 
 None. Pure C99 with `<string.h>` and `<stddef.h>` only.
 
+## How to test
+
+```bash
+cd wheels/primitives/cli_parser/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) — passed 2026-04-28
