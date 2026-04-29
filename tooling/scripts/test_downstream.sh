@@ -208,8 +208,9 @@ for key in "${!WHEEL_CONSUMERS[@]}"; do
     build_dir="$test_dir/$BUILD_DIR_NAME"
     rm -rf "$build_dir"
 
-    if cmake -GNinja -S "$test_dir" -B "$build_dir" > /dev/null 2>&1 && \
-       cmake --build "$build_dir" > /dev/null 2>&1; then
+    local build_log="$build_dir.log"
+    if cmake -GNinja -S "$test_dir" -B "$build_dir" > "$build_log" 2>&1 && \
+       cmake --build "$build_dir" >> "$build_log" 2>&1; then
         # Find test executable
         test_exe="$build_dir/test_${name}"
         if [[ -x "$test_exe" ]]; then
@@ -226,6 +227,7 @@ for key in "${!WHEEL_CONSUMERS[@]}"; do
         fi
     else
         echo -e "  ${RED}FAIL (build error)${NC}"
+        tail -10 "$build_log" 2>/dev/null
         FAIL=$((FAIL + 1))
     fi
 done
