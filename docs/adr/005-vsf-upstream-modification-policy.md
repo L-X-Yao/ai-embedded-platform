@@ -59,13 +59,24 @@
 
 ### 定期同步 upstream
 
-每季度或重要更新时：
-1. 记录当前 vsf/ commit hash
-2. `cd vsf && git pull`
-3. 逐条重新应用 `tooling/patches/*.patch`
-4. 冲突的 patch 要么改、要么丢弃（上游可能已自己修了）
-5. 更新 patches/README 每条状态
-6. 全平台 wheels 回归测试
+`vsf/` 是 vendor 进母仓的文件（非 submodule / subtree），使用 `tooling/scripts/sync_vsf.sh` 同步：
+
+```bash
+bash tooling/scripts/sync_vsf.sh              # sync to upstream master HEAD
+bash tooling/scripts/sync_vsf.sh --ref v1.2.3 # sync to specific tag/commit
+bash tooling/scripts/sync_vsf.sh --dry-run     # preview only
+bash tooling/scripts/sync_vsf.sh --status      # compare current vs upstream
+```
+
+脚本流程（每季度或重要更新时执行）：
+1. 获取上游最新到本地缓存 `tooling/.vsf-upstream/`
+2. 回退已应用的 patches（`apply.sh --revert`）
+3. 替换 `vsf/` 全部内容为上游目标版本
+4. 重新应用 `tooling/patches/*.patch`
+5. 冲突的 patch 要么改、要么丢弃（上游可能已自己修了）
+6. 更新 patches/README 每条状态
+7. `make test-wheels` 全平台回归测试
+8. 用户审 diff → commit
 
 AI 可主导该流程，最终 merge 人审批。
 
