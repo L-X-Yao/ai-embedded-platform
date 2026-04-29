@@ -332,6 +332,44 @@ static void test_mixed_spaces_tabs(void)
     ASSERT(strcmp(last_argv1, "arg1") == 0);
 }
 
+static void test_feed_cr_only(void)
+{
+    printf("%s\n", __func__);
+    setup("> ");
+    capture_reset();
+    cli_parser_feed(&parser, 'A');
+    cli_parser_feed(&parser, '\r');
+    ASSERT(last_argc == 0);
+    ASSERT(parser.line_len == 0);
+}
+
+static void test_feed_crlf(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    last_argc = -1;
+    cli_parser_feed(&parser, 'p');
+    cli_parser_feed(&parser, 'i');
+    cli_parser_feed(&parser, 'n');
+    cli_parser_feed(&parser, 'g');
+    cli_parser_feed(&parser, '\r');
+    ASSERT(last_argc == 1);
+    cli_parser_feed(&parser, '\n');
+    ASSERT(parser.line_len == 0);
+}
+
+static void test_feed_control_chars_ignored(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    cli_parser_feed(&parser, 0x01);
+    cli_parser_feed(&parser, 0x02);
+    cli_parser_feed(&parser, 0x1B);
+    ASSERT(parser.line_len == 0);
+}
+
 int main(void)
 {
     printf("test_cli_parser\n");
@@ -357,6 +395,9 @@ int main(void)
     test_null_commands();
     test_tab_separated_args();
     test_mixed_spaces_tabs();
+    test_feed_cr_only();
+    test_feed_crlf();
+    test_feed_control_chars_ignored();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

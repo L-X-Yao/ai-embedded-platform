@@ -91,11 +91,12 @@ None.
 
 ## Test status
 
-- Unit tests: **PASS** (48 assertions across 22 test cases)
+- Unit tests: **PASS** (53 assertions across 25 test cases)
 - Coverage: init, known/unknown/empty commands, argument parsing, whitespace
   handling, tab tokenization, mixed spaces+tabs, help, handler errors, overflow,
   max args truncation, null safety, feed+enter, backspace, DEL, feed overflow,
-  backspace on empty, null commands
+  backspace on empty, null commands, CR-only line ending, CRLF sequence,
+  control characters ignored
 
 ## Usage example
 
