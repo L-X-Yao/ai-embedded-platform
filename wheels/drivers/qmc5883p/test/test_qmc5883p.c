@@ -279,6 +279,33 @@ static void test_init_mid_step_fail(void)
     ASSERT_EQ(e, QMC5883P_ERR_I2C, "mid-init I2C failure propagated");
 }
 
+static void test_init_soft_reset_fail(void)
+{
+    printf("test_init_soft_reset_fail\n");
+    mock_reset();
+    mock_fail_at = 2;
+    qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(e, QMC5883P_ERR_I2C, "soft reset write failure propagated");
+}
+
+static void test_init_cr2_write_fail(void)
+{
+    printf("test_init_cr2_write_fail\n");
+    mock_reset();
+    mock_fail_at = 4;
+    qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(e, QMC5883P_ERR_I2C, "CR2 range write failure propagated");
+}
+
+static void test_init_cr1_write_fail(void)
+{
+    printf("test_init_cr1_write_fail\n");
+    mock_reset();
+    mock_fail_at = 5;
+    qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
+    ASSERT_EQ(e, QMC5883P_ERR_I2C, "CR1 mode write failure propagated");
+}
+
 static void test_null_safety(void)
 {
     printf("test_null_safety\n");
@@ -324,6 +351,9 @@ int main(void)
     test_init_i2c_write_fail();
     test_init_i2c_read_fail();
     test_init_mid_step_fail();
+    test_init_soft_reset_fail();
+    test_init_cr2_write_fail();
+    test_init_cr1_write_fail();
     test_read_ok();
     test_read_not_ready();
     test_read_i2c_fail();
