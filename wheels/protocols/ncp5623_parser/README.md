@@ -73,11 +73,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ncp5623_parser
 ```
 
-53 assertions across 17 test cases: init state, enable/disable, color parsing, enable gating, 4-bit masking, unknown register rejection, persistence, short packet, null safety, off color, re-init state reset, empty transaction, extra-long packet, disable-then-color gating.
+70 assertions across 20 test cases: init state, enable/disable, color parsing, enable gating, 4-bit masking, unknown register rejection, persistence, short packet, null safety, off color, re-init state reset, empty transaction, extra-long packet, disable-then-color gating, rapid enable/disable/enable toggle, non-standard enable values (0x01/0xFF), register address boundaries (0x00/0x02/0x03/0x05/0xFF).
 
 ## Test status
 
-- Unit tests (sim): PASS (17 C tests, 53 assertions)
+- Unit tests (sim): PASS (20 C tests, 70 assertions)
 - HIL: N/A
 
 ## API review
