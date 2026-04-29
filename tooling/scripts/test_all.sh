@@ -309,7 +309,7 @@ run_pytest() {
 
     local output
     if output=$("$py" -m pytest "$pyf" -v --tb=short 2>&1); then
-        local count; count=$(echo "$output" | grep -oP '\d+(?= passed)' | tail -1 || true)
+        local count; count=$(echo "$output" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | tail -1 || true)
         echo -e "  ${GREEN}PASS${NC}  ${name}(py)  (${count:-?} pytest cases)"
         PASSED=$((PASSED + 1))
     else
@@ -373,7 +373,7 @@ if $COVERAGE; then
                 if [[ "$line" =~ Lines\ executed:([0-9.]+)%\ of\ ([0-9]+) ]]; then
                     pct="${BASH_REMATCH[1]}"
                     lines="${BASH_REMATCH[2]}"
-                    src=$(echo "$line" | grep -oP "File '.*'" || true)
+                    src=$(echo "$line" | grep -oE "File '.*'" || true)
                     printf "  %6s%%  (%3d lines)  %s\n" "$pct" "$lines" "$src"
                 fi
             done

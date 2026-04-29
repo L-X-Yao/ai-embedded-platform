@@ -104,7 +104,7 @@ if $STATUS_ONLY; then
         upstream_date=$(git -C "$CACHE_DIR" log -1 --format="%ci" origin/master 2>/dev/null || echo "unknown")
         echo -e "  ${BOLD}Upstream HEAD:${NC}   ${upstream_head:0:12} ($upstream_date)"
 
-        current_hash=$(read_current_version | grep -oP '[a-f0-9]{7,40}' | head -1 || true)
+        current_hash=$(read_current_version | grep -oE '[a-f0-9]{7,40}' | head -1 || true)
         if [[ -n "$current_hash" ]] && [[ "$upstream_head" != "$current_hash"* ]]; then
             behind=$(git -C "$CACHE_DIR" rev-list --count "$current_hash..origin/master" 2>/dev/null || echo "?")
             echo -e "  ${YELLOW}Behind upstream by ~$behind commits${NC}"
