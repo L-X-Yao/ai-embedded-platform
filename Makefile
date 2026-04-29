@@ -7,9 +7,11 @@
 #   make audit          # run wheel audit (14 checks)
 #   make coverage       # tests with gcov coverage report
 #   make bootstrap      # print session context
+#   make test-fast      # stop on first failure (fast iteration)
 #   make list           # list all discoverable test targets
+#   make graph          # wheel dependency graph (Mermaid)
 
-.PHONY: test test-wheels test-projects test-changed audit coverage bootstrap list
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -23,6 +25,9 @@ test-projects:
 test-changed:
 	bash tooling/scripts/test_all.sh --changed
 
+test-fast:
+	bash tooling/scripts/test_all.sh --wheel --fail-fast
+
 audit:
 	python tooling/scripts/audit_wheels.py
 
@@ -34,3 +39,6 @@ bootstrap:
 
 list:
 	bash tooling/scripts/test_all.sh --list
+
+graph:
+	python tooling/scripts/audit_wheels.py --graph
