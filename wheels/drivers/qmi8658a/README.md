@@ -49,7 +49,7 @@ if (qmi8658a_init(&i2c, &cfg) == QMI8658A_OK) {
 
 ## Supported platforms
 
-- [x] Host C99 (mock I2C) — 15 tests, 32 assertions, 2026-04-29
+- [x] Host C99 (mock I2C) — 19 tests, 44 assertions, 2026-04-29
 - [x] GD32F405 + QMI8658A @ I2C1 400 kHz (PB10/PB11) — HIL verified 2026-04-26
 
 ## Dependencies
@@ -63,7 +63,7 @@ None. Pure C99 with injected I2C HAL callbacks.
 
 ## Test status
 
-- Host mock tests: PASS (15 tests, 32 assertions — init, chip ID validation, config register writes, mid-init I2C failure at CTRL2/CTRL3/CTRL7, data read conversion, range/ODR combinations, I2C failure propagation, boundary values, NULL safety, re-init config update)
+- Host mock tests: PASS (19 tests, 44 assertions — init, chip ID validation, config register writes, mid-init I2C failure at CTRL2/CTRL3/CTRL7, data read conversion, all 4 acc ranges, gyro range scaling, range/ODR combinations, I2C failure propagation, boundary values, NULL safety, re-init config update, reset I2C failure, all-six-axes read)
 - HIL: PASS on GD32F405 + QMI8658A (I2C1 PB10/PB11, 400 kHz), 2026-04-26
 
 ## API convention deviations
