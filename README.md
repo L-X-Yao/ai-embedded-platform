@@ -6,9 +6,9 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 
 ## 平台现状
 
-- **19 个 candidate wheels**（L0 原语 7 / L1 驱动 7 / L2 协议 5）
+- **49 个 candidate wheels**（L0 原语 21 / L1 驱动 19 / L2 协议 9），audit 全绿
 - **2 个真实项目**：flybox（无人机遥测盒子）/ drone_light（无人机 LED 灯控）
-- **6 个 CI jobs / 22 个测试实例**，push 自动触发
+- **53 个 CI jobs**（wheel-audit + 48 matrix + 4 standalone），push 自动触发
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
@@ -18,9 +18,9 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 ├── vsf/                  VSF 上游源码（不直接改）
 ├── vsf-addon/            新增代码（MCU port / 组件）
 ├── wheels/               可复用轮子（L0 原语 → L3 模块）
-│   ├── primitives/       L0：log, crc16, cli_parser, fal, kvs, mahony_ahrs, mag_cal
-│   ├── drivers/          L1：w25qxx, qmi8658a, qmc5883p, xgzp6816d, gpio_led, gpio_button, ws2812
-│   ├── protocols/        L2：at_command, modbus_rtu, ncp5623_parser, nmea_parser, ota_ab
+│   ├── primitives/       L0 (21)：log, crc16, crc32, fal, kvs, cli_parser, ...
+│   ├── drivers/          L1 (19)：bmp280, sht30, mpu6050, dht11, ads1115, ...
+│   ├── protocols/        L2 (9)：mqtt_packet, http_parser, coap_packet, modbus_rtu, ...
 │   ├── modules/          L3：（暂无）
 │   └── _draft/           （暂无）
 ├── templates/            项目起步模板
