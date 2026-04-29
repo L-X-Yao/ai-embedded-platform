@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   wheel-audit:
     name: wheel audit (orphan + WISHLIST drift)
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
 
@@ -23,6 +28,7 @@ jobs:
   log-wheel:
     name: log wheel (linux64 sim)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: wheels/primitives/log
@@ -59,6 +65,7 @@ jobs:
   crc16-wheel:
     name: crc16 wheel (host C99)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: wheels/primitives/crc16
@@ -89,6 +96,7 @@ jobs:
   wheel-test:
     name: ${{ matrix.name }} wheel (host C99)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +140,7 @@ jobs:
   flybox-tests:
     name: flybox project tests (host)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - name: Install dependencies
@@ -155,6 +164,7 @@ jobs:
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
