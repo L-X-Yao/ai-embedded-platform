@@ -78,7 +78,7 @@ Each project must provide `fdb_cfg.h` on the include path:
 
 Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
 
-## Convention Deviations
+## API convention deviations
 
 - **No `kvs_` wrapper**: Uses upstream FlashDB API directly (`fdb_kv_set` not `kvs_set`). Wrapping a production-grade API adds confusion for anyone familiar with FlashDB.
 
@@ -120,3 +120,6 @@ re-init, nonexistent key, 20-key batch, KV iterator.
 
 - **Date**: 2026-04-28
 - **Key decisions**: Vendor FlashDB v2.1.0 (user's production copy) per ADR-010. Use upstream API directly (no wrapper). Concrete dependency on fal wheel per ADR-009. FAL mode only (no file mode). Both KVDB and TSDB vendored, TSDB optional via compile flag.
+
+## Responsible human
+@user

@@ -86,7 +86,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (21 C tests, 66 assertions)
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 None.
 
@@ -94,3 +94,6 @@ None.
 
 - **Date**: 2026-04-28
 - **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
+
+## Responsible human
+@user

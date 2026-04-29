@@ -84,3 +84,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-27
 - **Key decisions**: Parser is stateful (tracks `enabled` across transactions); output is raw 4-bit values (consumer decides brightness mapping); feed-byte API for ISR-safe operation (no buffering, immediate event emission); transaction boundaries via `start`/`stop` calls.
+
+## Responsible human
+@user

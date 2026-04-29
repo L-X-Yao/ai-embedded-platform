@@ -106,3 +106,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-27
 - **Key decisions**: Single `set(ctx, level)` HAL callback covers both GPIO and PWM; `tick(dt_ms)` avoids timer dependency; `brightness` field allows per-LED dimming; `emit` deduplication prevents redundant HAL calls; `repeat=0` means infinite, `repeat=N` means N cycles then auto-off.
+
+## Responsible human
+@user

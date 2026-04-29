@@ -109,7 +109,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (31 C tests, 82 assertions)
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 - **`at_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
 
@@ -117,3 +117,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-27
 - **Key decisions**: Byte-feed API (no UART dependency); events instead of semaphores (portable); URC table with prefix matching (not regex); single `expected` register (matches flybox pattern); `prev_line` for multi-line responses; `send_raw` for data-mode payloads.
+
+## Responsible human
+@user

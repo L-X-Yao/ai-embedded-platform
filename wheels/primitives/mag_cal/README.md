@@ -86,7 +86,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (15 C tests, 537 assertions)
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 - `mag_cal_t` contains a large sample buffer (6 KB). Caller must ensure sufficient stack/heap. This is inherent to the min/max algorithm needing all samples in memory.
 
@@ -94,3 +94,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-28
 - **Key decisions**: Stateful collection (feed → compute two-phase) decouples timing from algorithm; result struct by pointer for caller-managed persistence; apply() is pure and separate from compute() for use after loading saved calibration; no RTOS dependency (caller manages timing/scheduling).
+
+## Responsible human
+@user

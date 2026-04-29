@@ -99,3 +99,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-27
 - **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_btn_cfg_t`.
+
+## Responsible human
+@user
