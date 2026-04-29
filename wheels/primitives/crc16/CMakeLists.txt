@@ -8,11 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(crc16 STATIC crc16.c)
 target_include_directories(crc16 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_options(crc16 PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(crc16 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 add_executable(test_crc16 test_main.c)
 target_link_libraries(test_crc16 PRIVATE crc16)
-target_compile_options(test_crc16 PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_crc16 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME crc16_tests COMMAND test_crc16)

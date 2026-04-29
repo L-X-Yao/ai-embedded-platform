@@ -11,7 +11,7 @@ add_executable(test_nmea_parser
 target_include_directories(test_nmea_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
-target_compile_options(test_nmea_parser PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_nmea_parser PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME nmea_parser_tests COMMAND test_nmea_parser)

@@ -310,7 +310,7 @@ add_executable(test_${NAME_LOWER}
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
 )
-target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME ${NAME_LOWER}_tests COMMAND test_${NAME_LOWER})

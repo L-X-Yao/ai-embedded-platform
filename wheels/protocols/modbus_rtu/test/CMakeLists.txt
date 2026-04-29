@@ -14,7 +14,7 @@ target_include_directories(test_modbus_rtu PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../primitives/crc16
 )
 
-target_compile_options(test_modbus_rtu PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_modbus_rtu PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME modbus_rtu_tests COMMAND test_modbus_rtu)
