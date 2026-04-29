@@ -452,6 +452,86 @@ static void test_line_exact_boundary(void)
     ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "one extra byte dropped");
 }
 
+static void test_consecutive_commands(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_consecutive_commands\n");
+    mock_reset();
+    at_cmd_init(&at, &mock_hal);
+
+    at_cmd_send(&at, "AT");
+    at_cmd_expect(&at, "OK");
+    feed_string(&at, "OK\r\n", &evt);
+    ASSERT(at.waiting == 0, "first cycle done");
+
+    at_cmd_send(&at, "AT+CSQ");
+    at_cmd_expect(&at, "+CSQ:");
+    at_evt_type_t r = feed_string(&at, "+CSQ: 20,0\r\n", &evt);
+    ASSERT(r == AT_EVT_OK, "second cycle matched");
+    ASSERT(strcmp(at_cmd_get_matched(&at), "+CSQ: 20,0") == 0, "second match correct");
+}
+
+static void test_register_urc_null_cb(void)
+{
+    at_cmd_t at;
+
+    printf("test_register_urc_null_cb\n");
+    at_cmd_init(&at, &mock_hal);
+    ASSERT(at_cmd_register_urc(&at, "X", NULL, NULL) == -1, "null cb rejected");
+}
+
+static void test_register_urc_null_prefix(void)
+{
+    at_cmd_t at;
+
+    printf("test_register_urc_null_prefix\n");
+    at_cmd_init(&at, &mock_hal);
+    ASSERT(at_cmd_register_urc(&at, NULL, urc_handler, NULL) == -1, "null prefix rejected");
+}
+
+static void test_send_null_cmd(void)
+{
+    at_cmd_t at;
+
+    printf("test_send_null_cmd\n");
+    mock_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_send(&at, NULL);
+    ASSERT(tx_len == 0, "null cmd sends nothing");
+}
+
+static void test_send_raw_null(void)
+{
+    at_cmd_t at;
+
+    printf("test_send_raw_null\n");
+    mock_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_send_raw(&at, NULL, 5);
+    ASSERT(tx_len == 0, "null raw sends nothing");
+}
+
+static void test_urc_not_matched_as_response(void)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+
+    printf("test_urc_not_matched_as_response\n");
+    urc_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_register_urc(&at, "+CGREG:", urc_handler, NULL);
+    at_cmd_expect(&at, "+CSQ:");
+
+    feed_string(&at, "+CGREG: 1,5\r\n", &evt);
+    ASSERT(urc_count == 1, "URC dispatched");
+    ASSERT(at.waiting == 1, "still waiting for +CSQ:");
+
+    at_evt_type_t r = feed_string(&at, "+CSQ: 15,0\r\n", &evt);
+    ASSERT(r == AT_EVT_OK, "response matched after URC");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -481,6 +561,12 @@ int main(void)
     test_line_buffer_overflow();
     test_reinit_clears_urcs();
     test_line_exact_boundary();
+    test_consecutive_commands();
+    test_register_urc_null_cb();
+    test_register_urc_null_prefix();
+    test_send_null_cmd();
+    test_send_raw_null();
+    test_urc_not_matched_as_response();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
