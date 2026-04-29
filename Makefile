@@ -33,7 +33,7 @@ test-fast:
 	bash tooling/scripts/test_all.sh --wheel --fail-fast
 
 audit:
-	python tooling/scripts/audit_wheels.py
+	python3 tooling/scripts/audit_wheels.py
 
 coverage:
 	bash tooling/scripts/test_all.sh --wheel --coverage
@@ -45,7 +45,7 @@ list:
 	bash tooling/scripts/test_all.sh --list
 
 graph:
-	python tooling/scripts/audit_wheels.py --graph
+	python3 tooling/scripts/audit_wheels.py --graph
 
 downstream:
 	@test -n "$(W)" || { echo "Usage: make downstream W=<wheel-name>"; exit 1; }
