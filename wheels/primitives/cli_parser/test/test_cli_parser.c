@@ -309,6 +309,29 @@ static void test_null_commands(void)
     ASSERT(err == CLI_ERR_NOT_FOUND);
 }
 
+static void test_tab_separated_args(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    cli_err_t err = cli_parser_run(&parser, "ping\targ1");
+    ASSERT(err == CLI_OK);
+    ASSERT(last_argc == 2);
+    ASSERT(strcmp(last_argv0, "ping") == 0);
+    ASSERT(strcmp(last_argv1, "arg1") == 0);
+}
+
+static void test_mixed_spaces_tabs(void)
+{
+    printf("%s\n", __func__);
+    setup(NULL);
+    capture_reset();
+    cli_err_t err = cli_parser_run(&parser, "ping \t arg1");
+    ASSERT(err == CLI_OK);
+    ASSERT(last_argc == 2);
+    ASSERT(strcmp(last_argv1, "arg1") == 0);
+}
+
 int main(void)
 {
     printf("test_cli_parser\n");
@@ -332,6 +355,8 @@ int main(void)
     test_exact_buffer_plus_one();
     test_feed_exact_then_enter();
     test_null_commands();
+    test_tab_separated_args();
+    test_mixed_spaces_tabs();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
