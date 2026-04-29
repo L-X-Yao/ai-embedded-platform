@@ -15,6 +15,7 @@ make coverage       # 测试 + gcov 覆盖率报告
 make bootstrap      # 打印 session 上下文（wheel 表 + CI + git）
 make graph          # 依赖关系图（Mermaid）
 make list           # 列出所有可发现的测试目标
+make downstream W=<name>  # 测试指定 wheel 的下游消费者
 ```
 
 ## 通用规则

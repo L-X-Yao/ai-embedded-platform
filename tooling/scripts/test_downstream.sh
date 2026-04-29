@@ -208,7 +208,7 @@ for key in "${!WHEEL_CONSUMERS[@]}"; do
     build_dir="$test_dir/$BUILD_DIR_NAME"
     rm -rf "$build_dir"
 
-    local build_log="$build_dir.log"
+    build_log="$build_dir.log"
     if cmake -GNinja -S "$test_dir" -B "$build_dir" > "$build_log" 2>&1 && \
        cmake --build "$build_dir" >> "$build_log" 2>&1; then
         # Find test executable
