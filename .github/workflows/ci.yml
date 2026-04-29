@@ -141,6 +141,9 @@ jobs:
           - { name: ds18b20,        dir: wheels/drivers/ds18b20/test }
           - { name: max7219,        dir: wheels/drivers/max7219/test }
           - { name: hmc5883l,       dir: wheels/drivers/hmc5883l/test }
+          - { name: http_parser,    dir: wheels/protocols/http_parser/test }
+          - { name: websocket_frame, dir: wheels/protocols/websocket_frame/test }
+          - { name: coap_packet,    dir: wheels/protocols/coap_packet/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
