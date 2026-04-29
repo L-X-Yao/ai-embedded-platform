@@ -11,7 +11,7 @@ add_executable(test_mag_cal
 target_include_directories(test_mag_cal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
-target_compile_options(test_mag_cal PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_mag_cal PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_mag_cal m)
 
 enable_testing()

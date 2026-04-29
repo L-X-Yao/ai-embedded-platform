@@ -12,7 +12,7 @@ target_include_directories(test_w25qxx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_compile_options(test_w25qxx PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME w25qxx_tests COMMAND test_w25qxx)

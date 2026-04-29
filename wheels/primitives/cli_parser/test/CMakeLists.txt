@@ -12,7 +12,7 @@ target_include_directories(test_cli_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_compile_options(test_cli_parser PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_cli_parser PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME cli_parser_tests COMMAND test_cli_parser)

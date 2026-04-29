@@ -13,7 +13,7 @@ target_include_directories(test_xgzp6816d PRIVATE
 )
 
 target_link_libraries(test_xgzp6816d PRIVATE m)
-target_compile_options(test_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME xgzp6816d_tests COMMAND test_xgzp6816d)

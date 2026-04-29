@@ -11,7 +11,7 @@ add_executable(test_ota_ab
 target_include_directories(test_ota_ab PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
-target_compile_options(test_ota_ab PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_ota_ab PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
 add_test(NAME ota_ab_tests COMMAND test_ota_ab)
