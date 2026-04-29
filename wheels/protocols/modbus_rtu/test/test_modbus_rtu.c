@@ -839,6 +839,22 @@ static void test_slave_read_max_regs(void)
     ASSERT(regs[REG_BANK_SIZE - 1] == REG_BANK_SIZE, "last reg correct");
 }
 
+static void test_build_data_len_overflow(void)
+{
+    uint8_t buf[512];
+
+    printf("test_build_data_len_overflow\n");
+    /* data_len near uint16_t max would overflow frame_len computation */
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, 0xFFFF);
+    ASSERT(len == -1, "uint16 overflow data_len rejected");
+
+    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 3);
+    ASSERT(len == -1, "data_len exceeding max-4 rejected");
+
+    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 4);
+    ASSERT(len == MODBUS_RTU_MAX_FRAME, "data_len at max-4 accepted");
+}
+
 static void test_parse_exact_min_frame(void)
 {
     uint8_t buf[4];
@@ -911,6 +927,7 @@ int main(void)
     test_slave_resp_buffer_too_small();
     test_slave_write_multiple_mismatched_count();
     test_slave_read_max_regs();
+    test_build_data_len_overflow();
     test_parse_exact_min_frame();
 
     printf("\n%d tests, %d passed, %d failed\n",
