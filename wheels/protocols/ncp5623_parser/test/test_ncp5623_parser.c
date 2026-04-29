@@ -337,6 +337,86 @@ static void test_disable_then_color_ignored(void)
     ASSERT(r == NCP5623_EVT_NONE, "color ignored after disable");
 }
 
+static void test_rapid_enable_disable_enable(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_rapid_enable_disable_enable\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable[] = {0x04, 0x03};
+    send_transaction(&p, enable, 2, &evt);
+    ASSERT(p.enabled == 1, "first enable");
+
+    uint8_t disable[] = {0x04, 0x00};
+    send_transaction(&p, disable, 2, &evt);
+    ASSERT(p.enabled == 0, "disabled");
+
+    ncp5623_evt_type_t r = send_transaction(&p, enable, 2, &evt);
+    ASSERT(r == NCP5623_EVT_ENABLE, "re-enable event");
+    ASSERT(p.enabled == 1, "re-enabled");
+    ASSERT(evt.data.enabled == 1, "re-enable data correct");
+
+    /* color should work after re-enable */
+    uint8_t color[] = {0x01, 0x05, 0x0A, 0x0F};
+    r = send_transaction(&p, color, 4, &evt);
+    ASSERT(r == NCP5623_EVT_COLOR, "color after re-enable");
+    ASSERT(evt.data.color.b == 0x05, "blue ok");
+}
+
+static void test_enable_non_standard_value(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_enable_non_standard_value\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable_0x01[] = {0x04, 0x01};
+    ncp5623_evt_type_t r = send_transaction(&p, enable_0x01, 2, &evt);
+    ASSERT(r == NCP5623_EVT_ENABLE, "event fired for 0x01");
+    ASSERT(evt.data.enabled == 0, "0x01 does not enable");
+    ASSERT(p.enabled == 0, "parser stays disabled");
+
+    uint8_t enable_0xff[] = {0x04, 0xFF};
+    r = send_transaction(&p, enable_0xff, 2, &evt);
+    ASSERT(r == NCP5623_EVT_ENABLE, "event fired for 0xFF");
+    ASSERT(evt.data.enabled == 0, "0xFF does not enable");
+}
+
+static void test_register_address_boundaries(void)
+{
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+
+    printf("test_register_address_boundaries\n");
+    ncp5623_parser_init(&p);
+
+    uint8_t enable[] = {0x04, 0x03};
+    send_transaction(&p, enable, 2, NULL);
+
+    uint8_t reg00[] = {0x00, 0x0F, 0x0F, 0x0F};
+    ASSERT(send_transaction(&p, reg00, 4, &evt) == NCP5623_EVT_NONE,
+           "reg 0x00 ignored");
+
+    uint8_t reg02[] = {0x02, 0x0F, 0x0F, 0x0F};
+    ASSERT(send_transaction(&p, reg02, 4, &evt) == NCP5623_EVT_NONE,
+           "reg 0x02 ignored");
+
+    uint8_t reg03[] = {0x03, 0xFF};
+    ASSERT(send_transaction(&p, reg03, 2, &evt) == NCP5623_EVT_NONE,
+           "reg 0x03 ignored");
+
+    uint8_t reg05[] = {0x05, 0xAA, 0xBB};
+    ASSERT(send_transaction(&p, reg05, 3, &evt) == NCP5623_EVT_NONE,
+           "reg 0x05 ignored");
+
+    uint8_t regFF[] = {0xFF, 0x00, 0x00, 0x00};
+    ASSERT(send_transaction(&p, regFF, 4, &evt) == NCP5623_EVT_NONE,
+           "reg 0xFF ignored");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -358,6 +438,9 @@ int main(void)
     test_empty_transaction();
     test_extra_long_packet();
     test_disable_then_color_ignored();
+    test_rapid_enable_disable_enable();
+    test_enable_non_standard_value();
+    test_register_address_boundaries();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
