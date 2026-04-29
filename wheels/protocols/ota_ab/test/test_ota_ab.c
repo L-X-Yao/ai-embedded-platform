@@ -405,6 +405,56 @@ static void test_invalid_active_slot_recovery(void)
     ASSERT_EQ(ota_ab_active_slot(&m), 0, "reset to slot A");
 }
 
+static void test_boot_count_exact_boundary(void)
+{
+    ota_ab_t m;
+
+    printf("test_boot_count_exact_boundary\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    ota_ab_mark_pending(&m, 512, 0xAAAA);
+
+    ota_ab_boot_event(&m);
+    ASSERT_EQ(ota_ab_active_slot(&m), 1, "switched to B");
+    ASSERT_EQ(m.params.boot_count, 1, "boot 1");
+
+    ota_ab_boot_event(&m);
+    ASSERT_EQ(m.params.boot_count, 2, "boot 2");
+
+    ota_ab_boot_event(&m);
+    ASSERT_EQ(m.params.boot_count, 3, "boot 3 = max");
+    ASSERT_EQ(ota_ab_active_slot(&m), 1, "still on B at max");
+
+    ota_ab_boot_event(&m);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0, "rolled back to A at max+1");
+    ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE, "flag idle after rollback");
+}
+
+static void test_target_slot_both_directions(void)
+{
+    ota_ab_t m;
+
+    printf("test_target_slot_both_directions\n");
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0, "active=0");
+    ASSERT_EQ(ota_ab_target_slot(&m), 1, "target=1 when active=0");
+
+    ota_ab_mark_pending(&m, 512, 0xBBBB);
+    ota_ab_boot_event(&m);
+    ota_ab_confirm(&m);
+    ASSERT_EQ(ota_ab_active_slot(&m), 1, "active=1");
+    ASSERT_EQ(ota_ab_target_slot(&m), 0, "target=0 when active=1");
+}
+
+static void test_crc32_known_vector(void)
+{
+    printf("test_crc32_known_vector\n");
+    const uint8_t data[] = "123456789";
+    uint32_t crc = ota_ab_crc32(data, 9);
+    ASSERT_EQ(crc, 0xCBF43926u, "CRC32 of '123456789' = 0xCBF43926");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -430,6 +480,9 @@ int main(void)
     test_reinit_persists_state();
     test_mark_pending_overwrite();
     test_invalid_active_slot_recovery();
+    test_boot_count_exact_boundary();
+    test_target_slot_both_directions();
+    test_crc32_known_vector();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

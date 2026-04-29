@@ -79,11 +79,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ota_ab
 ```
 
-66 assertions across 21 test cases: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback), double-confirm no-op, flash read fail on init, flash erase fail on pending, corrupted CRC recovery, persistence across re-init, mark pending overwrite, invalid active_slot recovery.
+78 assertions across 24 test cases: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback), double-confirm no-op, flash read fail on init, flash erase fail on pending, corrupted CRC recovery, persistence across re-init, mark pending overwrite, invalid active_slot recovery, exact boot_count boundary (rollback at max+1), target_slot bidirectional, CRC32 IEEE 802.3 known vector.
 
 ## Test status
 
-- Unit tests (sim): PASS (21 C tests, 66 assertions)
+- Unit tests (sim): PASS (24 C tests, 78 assertions)
 - HIL: N/A
 
 ## API convention deviations
