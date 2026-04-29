@@ -344,6 +344,51 @@ static void test_page_program_zero_len(void)
     ASSERT_EQ(e, W25QXX_ERR_ALIGN, "zero len rejected");
 }
 
+static void test_page_program_oversized(void)
+{
+    printf("test_page_program_oversized\n");
+    mock_reset();
+    uint8_t data[257];
+    memset(data, 0x55, sizeof(data));
+    w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, data, 257);
+    ASSERT_EQ(e, W25QXX_ERR_ALIGN, "257 bytes rejected (> page size)");
+}
+
+static void test_init_jedec_zero_manufacturer(void)
+{
+    printf("test_init_jedec_zero_manufacturer\n");
+    mock_reset();
+    mock_jedec = 0x004017;
+    uint32_t id = 0;
+    w25qxx_err_t e = w25qxx_init(&mock_spi, &id);
+    ASSERT_EQ(e, W25QXX_ERR_JEDEC_ID, "manufacturer 0x00 rejected");
+}
+
+static void test_page_program_end_of_page(void)
+{
+    printf("test_page_program_end_of_page\n");
+    mock_reset();
+    uint8_t data = 0xAA;
+    w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0x1FF, &data, 1);
+    ASSERT_EQ(e, W25QXX_OK, "write at last byte of page");
+    ASSERT_EQ(mock_mem[0x1FF], 0xAA, "byte written correctly");
+    ASSERT_EQ(mock_mem[0x200], 0xFF, "next page untouched");
+}
+
+static void test_sector_erase_non_aligned(void)
+{
+    printf("test_sector_erase_non_aligned\n");
+    mock_reset();
+    mock_mem[0x1000] = 0x42;
+    mock_mem[0x1800] = 0x42;
+    mock_mem[0x1FFF] = 0x42;
+    w25qxx_err_t e = w25qxx_sector_erase(&mock_spi, 0x1800);
+    ASSERT_EQ(e, W25QXX_OK, "erase with non-aligned addr");
+    ASSERT_EQ(mock_mem[0x1000], 0xFF, "sector start erased");
+    ASSERT_EQ(mock_mem[0x1800], 0xFF, "target addr erased");
+    ASSERT_EQ(mock_mem[0x1FFF], 0xFF, "sector end erased");
+}
+
 /* ---------- main ---------- */
 
 int main(void)
@@ -365,6 +410,10 @@ int main(void)
     test_reinit_different_chip();
     test_read_address_zero();
     test_page_program_zero_len();
+    test_page_program_oversized();
+    test_init_jedec_zero_manufacturer();
+    test_page_program_end_of_page();
+    test_sector_erase_non_aligned();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
