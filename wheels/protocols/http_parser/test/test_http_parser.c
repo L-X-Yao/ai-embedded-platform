@@ -1,0 +1,157 @@
+#include "http_parser.h"
+#include <stdio.h>
+#include <string.h>
+
+static int g_pass = 0, g_fail = 0;
+
+#define TEST(name) static void name(void)
+#define ASSERT_EQ(a, b) do { \
+    if ((a) != (b)) { \
+        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
+               (int)(a), (int)(b)); \
+        g_fail++; return; \
+    } } while(0)
+#define ASSERT_MEMEQ(p, s) do { \
+    if (memcmp((p), (s), strlen(s)) != 0) { \
+        printf("  FAIL %s:%d: memcmp\n", __func__, __LINE__); \
+        g_fail++; return; \
+    } } while(0)
+#define RUN(fn) do { int pf = g_fail; fn(); if(g_fail == pf) { \
+    printf("  PASS %s\n", #fn); g_pass++; } } while(0)
+
+TEST(test_parse_get_request)
+{
+    const char *data = "GET /index.html HTTP/1.1\r\n"
+                       "Host: example.com\r\n"
+                       "Connection: close\r\n"
+                       "\r\n";
+    http_request_t req;
+    ASSERT_EQ(http_parse_request(data, strlen(data), &req), HTTP_OK);
+    ASSERT_EQ(req.method_len, 3);
+    ASSERT_MEMEQ(req.method, "GET");
+    ASSERT_EQ(req.uri_len, 11);
+    ASSERT_MEMEQ(req.uri, "/index.html");
+    ASSERT_EQ(req.version_major, 1);
+    ASSERT_EQ(req.version_minor, 1);
+    ASSERT_EQ(req.header_count, 2);
+    ASSERT_EQ(req.body_len, 0);
+}
+
+TEST(test_parse_post_with_body)
+{
+    const char *data = "POST /api/data HTTP/1.1\r\n"
+                       "Content-Length: 13\r\n"
+                       "\r\n"
+                       "Hello, World!";
+    http_request_t req;
+    ASSERT_EQ(http_parse_request(data, strlen(data), &req), HTTP_OK);
+    ASSERT_MEMEQ(req.method, "POST");
+    ASSERT_EQ(req.body_len, 13);
+    ASSERT_MEMEQ(req.body, "Hello, World!");
+}
+
+TEST(test_parse_response_200)
+{
+    const char *data = "HTTP/1.1 200 OK\r\n"
+                       "Content-Length: 5\r\n"
+                       "Content-Type: text/plain\r\n"
+                       "\r\n"
+                       "Hello";
+    http_response_t resp;
+    ASSERT_EQ(http_parse_response(data, strlen(data), &resp), HTTP_OK);
+    ASSERT_EQ(resp.status_code, 200);
+    ASSERT_EQ(resp.reason_len, 2);
+    ASSERT_MEMEQ(resp.reason, "OK");
+    ASSERT_EQ(resp.header_count, 2);
+    ASSERT_EQ(resp.body_len, 5);
+    ASSERT_MEMEQ(resp.body, "Hello");
+}
+
+TEST(test_parse_response_404)
+{
+    const char *data = "HTTP/1.1 404 Not Found\r\n"
+                       "\r\n";
+    http_response_t resp;
+    ASSERT_EQ(http_parse_response(data, strlen(data), &resp), HTTP_OK);
+    ASSERT_EQ(resp.status_code, 404);
+    ASSERT_EQ(resp.body_len, 0);
+}
+
+TEST(test_incomplete_request)
+{
+    const char *data = "GET /index.html HTTP/1.1\r\n"
+                       "Host: example";
+    http_request_t req;
+    ASSERT_EQ(http_parse_request(data, strlen(data), &req), HTTP_ERR_INCOMPLETE);
+}
+
+TEST(test_incomplete_body)
+{
+    const char *data = "POST /api HTTP/1.1\r\n"
+                       "Content-Length: 100\r\n"
+                       "\r\n"
+                       "short";
+    http_request_t req;
+    ASSERT_EQ(http_parse_request(data, strlen(data), &req), HTTP_ERR_INCOMPLETE);
+}
+
+TEST(test_find_header)
+{
+    const char *data = "GET / HTTP/1.1\r\n"
+                       "Host: example.com\r\n"
+                       "Accept: text/html\r\n"
+                       "\r\n";
+    http_request_t req;
+    http_parse_request(data, strlen(data), &req);
+
+    const http_header_t *hdr = NULL;
+    ASSERT_EQ(http_find_header(req.headers, req.header_count, "Host", &hdr), HTTP_OK);
+    ASSERT_EQ(hdr->value_len, 11);
+    ASSERT_MEMEQ(hdr->value, "example.com");
+
+    ASSERT_EQ(http_find_header(req.headers, req.header_count, "host", &hdr), HTTP_OK);
+}
+
+TEST(test_find_header_missing)
+{
+    const char *data = "GET / HTTP/1.1\r\n"
+                       "Host: example.com\r\n"
+                       "\r\n";
+    http_request_t req;
+    http_parse_request(data, strlen(data), &req);
+
+    const http_header_t *hdr = NULL;
+    ASSERT_EQ(http_find_header(req.headers, req.header_count, "X-Missing", &hdr),
+              HTTP_ERR_MALFORMED);
+}
+
+TEST(test_null_safety)
+{
+    ASSERT_EQ(http_parse_request(NULL, 0, NULL), HTTP_ERR_PARAM);
+    ASSERT_EQ(http_parse_response(NULL, 0, NULL), HTTP_ERR_PARAM);
+    ASSERT_EQ(http_find_header(NULL, 0, NULL, NULL), HTTP_ERR_PARAM);
+}
+
+TEST(test_content_length)
+{
+    http_header_t hdr = { .name = "Content-Length", .name_len = 14,
+                          .value = "42", .value_len = 2 };
+    ASSERT_EQ(http_get_content_length(&hdr, 1), 42);
+}
+
+int main(void)
+{
+    printf("http_parser tests:\n");
+    RUN(test_parse_get_request);
+    RUN(test_parse_post_with_body);
+    RUN(test_parse_response_200);
+    RUN(test_parse_response_404);
+    RUN(test_incomplete_request);
+    RUN(test_incomplete_body);
+    RUN(test_find_header);
+    RUN(test_find_header_missing);
+    RUN(test_null_safety);
+    RUN(test_content_length);
+    printf("\n%d passed, %d failed\n", g_pass, g_fail);
+    return g_fail ? 1 : 0;
+}
