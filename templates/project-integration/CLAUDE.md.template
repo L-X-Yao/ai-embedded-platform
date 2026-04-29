@@ -48,6 +48,12 @@
 
 {{描述构建方式：Keil 工程文件 / CMake 命令 / ...}}
 
+## 构建验证
+
+- [ ] 固件大小：`arm-none-eabi-size build/*.elf`（App 区不超过 {{大小}}）
+- [ ] 栈分析：`stack_analyzer.py build/ --task-config {{path}}`（如有）
+- [ ] 烧写命令：{{OpenOCD / J-Link / ...}}
+
 ## Wheel 使用与沉淀
 
 ### 依赖规则（ADR-009）
