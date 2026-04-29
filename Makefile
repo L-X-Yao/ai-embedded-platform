@@ -11,8 +11,9 @@
 #   make bootstrap      # print session context
 #   make list           # list all discoverable test targets
 #   make graph          # wheel dependency graph (Mermaid)
+#   make downstream W=<wheel>  # test downstream consumers of a wheel
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -43,3 +44,7 @@ list:
 
 graph:
 	python tooling/scripts/audit_wheels.py --graph
+
+downstream:
+	@test -n "$(W)" || { echo "Usage: make downstream W=<wheel-name>"; exit 1; }
+	bash tooling/scripts/test_downstream.sh $(W)
