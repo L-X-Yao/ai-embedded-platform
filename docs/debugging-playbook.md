@@ -2,6 +2,18 @@
 
 遇到问题按以下顺序处理。AI 每解决一个非显然问题，回来更新此文档。
 
+## 快捷命令
+
+```bash
+make test           # 全部测试
+make test-wheels    # 仅 wheel 测试
+make test-fast      # wheel 测试 + 首个失败即停
+make audit          # 14 项 wheel 审计
+make coverage       # 测试 + gcov 覆盖率报告
+make graph          # 依赖关系图（Mermaid）
+make list           # 列出所有可发现的测试目标
+```
+
 ## 通用规则
 
 1. **错误信息完整读一遍**——不要根据第一行猜。
