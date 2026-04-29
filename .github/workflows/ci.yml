@@ -144,6 +144,10 @@ jobs:
           - { name: http_parser,    dir: wheels/protocols/http_parser/test }
           - { name: websocket_frame, dir: wheels/protocols/websocket_frame/test }
           - { name: coap_packet,    dir: wheels/protocols/coap_packet/test }
+          - { name: servo,          dir: wheels/drivers/servo/test }
+          - { name: rotary_encoder, dir: wheels/drivers/rotary_encoder/test }
+          - { name: median_filter,  dir: wheels/primitives/median_filter/test }
+          - { name: checksum,       dir: wheels/primitives/checksum/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
