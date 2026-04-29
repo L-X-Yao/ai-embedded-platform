@@ -199,6 +199,36 @@ static void test_6axis_vs_9axis(void)
     ASSERT_NEAR(e9.pitch_deg, 0.0f, 1.0f, "9-axis pitch~0");
 }
 
+static void test_zero_freq_guard(void)
+{
+    printf("test_zero_freq_guard\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    cfg.sample_freq_hz = 0.0f;
+    mahony_init(&f, &cfg);
+    mahony_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+
+    mahony_euler_t e;
+    mahony_get_euler(&f, &e);
+    ASSERT(!isnan(e.roll_deg), "roll not NaN with freq=0");
+    ASSERT(!isnan(e.pitch_deg), "pitch not NaN with freq=0");
+    ASSERT(!isnan(e.yaw_deg), "yaw not NaN with freq=0");
+}
+
+static void test_negative_freq_guard(void)
+{
+    printf("test_negative_freq_guard\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    cfg.sample_freq_hz = -100.0f;
+    mahony_init(&f, &cfg);
+    mahony_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+
+    mahony_euler_t e;
+    mahony_get_euler(&f, &e);
+    ASSERT(!isnan(e.roll_deg), "roll not NaN with negative freq");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -214,6 +244,8 @@ int main(void)
     test_quaternion_norm();
     test_zero_accel_skipped();
     test_6axis_vs_9axis();
+    test_zero_freq_guard();
+    test_negative_freq_guard();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);

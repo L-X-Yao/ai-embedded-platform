@@ -29,8 +29,9 @@ void mahony_init(mahony_t *f, const mahony_cfg_t *cfg)
     f->q0 = 1.0f;
     f->kp = cfg->kp;
     f->ki = cfg->ki;
-    f->half_t = 0.5f / cfg->sample_freq_hz;
-    f->inv_freq = 1.0f / cfg->sample_freq_hz;
+    float freq = (cfg->sample_freq_hz > 0.0f) ? cfg->sample_freq_hz : 1.0f;
+    f->half_t = 0.5f / freq;
+    f->inv_freq = 1.0f / freq;
 }
 
 void mahony_update(mahony_t *f,
@@ -94,6 +95,7 @@ void mahony_update(mahony_t *f,
     float nq3 = f->q3 + ( f->q0 * gz + f->q1 * gy - f->q2 * gx) * f->half_t;
 
     norm = sqrtf(nq0 * nq0 + nq1 * nq1 + nq2 * nq2 + nq3 * nq3);
+    if (norm < 1e-8f) { f->q0 = 1.0f; f->q1 = f->q2 = f->q3 = 0.0f; return; }
     f->q0 = nq0 / norm;
     f->q1 = nq1 / norm;
     f->q2 = nq2 / norm;
