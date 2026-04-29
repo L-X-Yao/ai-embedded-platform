@@ -162,3 +162,6 @@ void debug_shell_rx(uint8_t byte) {
 - [ ] Evaluate history support (ring buffer, up/down arrow)
 - [ ] Evaluate tab completion
 - [ ] Real hardware UART test
+
+## Responsible human
+@user

@@ -142,7 +142,7 @@ while (rx_byte_available()) {
   - 提供 step API（streaming）+ bulk API 两种
   - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
 
-## Convention Deviations
+## API convention deviations
 
 无。函数命名 `crc16_<verb>` 符合 api-conventions.md §1.1。
 

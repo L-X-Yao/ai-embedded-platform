@@ -172,7 +172,7 @@ log_add_sink(my_net_sink, NULL);
 
 @user (2-3 person team)
 
-## Convention Deviations
+## API convention deviations
 
 - **`log_sink_fn` uses `_fn` suffix instead of `_t`** (api-conventions §1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Common C idiom for readability. Not renamed to avoid breaking existing consumers.
 

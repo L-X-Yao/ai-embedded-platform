@@ -91,3 +91,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-27
 - **Key decisions**: HAL is `set_compare` + `wait_period` (maps 1:1 to timer register ops); timing is caller-configured (not hardcoded to any clock); color input is 8-bit (not 5-bit — the 5→8 conversion is a utility, not the main path); multi-LED via color array.
+
+## Responsible human
+@user

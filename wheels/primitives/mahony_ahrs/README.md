@@ -78,7 +78,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (13 C tests, 29 assertions)
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 - Init takes `mahony_cfg_t` by pointer (not individual params) — single struct preferred for 3+ tuning parameters.
 - No error return from `mahony_update()` — void return is standard for real-time filter loops where checking errors on every sample adds overhead.
@@ -87,3 +87,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-28
 - **Key decisions**: State in struct (not globals) for multi-instance; gyro input in deg/s (matches typical IMU output); mag input optional (zeros = 6-axis fallback); Kp/Ki/freq as config struct; Euler extraction separate from update for callers who only need quaternion.
+
+## Responsible human
+@user

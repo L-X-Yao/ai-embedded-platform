@@ -81,7 +81,7 @@ const struct fal_flash_dev onchip_flash = {
 };
 ```
 
-## Convention Deviations
+## API convention deviations
 
 - **No `fal_` wrapper**: Uses upstream FAL API directly (`fal_partition_read` not `fal_wheel_read`). Wrapping a well-known API adds confusion for anyone familiar with FAL.
 
@@ -118,3 +118,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-28
 - **Key decisions**: Vendor FAL as-is, no wrapper (upstream API is already clean). Static partition table only. FAL is independently useful (OTA, bootloader, crash dump, not just FlashDB). First vendor wheel per ADR-010.
+
+## Responsible human
+@user

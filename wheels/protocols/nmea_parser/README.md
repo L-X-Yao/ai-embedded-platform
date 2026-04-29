@@ -83,7 +83,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (24 C tests, 77 assertions)
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 None.
 
@@ -91,3 +91,6 @@ None.
 
 - **Date**: 2026-04-28
 - **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); checksum verification is separate from parsing (caller decides); single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
+
+## Responsible human
+@user

@@ -101,3 +101,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Date**: 2026-04-28
 - **Key decisions**: Stateless frame layer (pure functions on buffers); master/slave in one wheel with compile-time selection; concrete dependency on crc16 per ADR-009; register-only (no coils in v1); slave uses per-register callbacks (not block read/write); broadcast per Modbus spec (writes execute, no response).
+
+## Responsible human
+@user
