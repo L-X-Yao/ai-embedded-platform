@@ -20,6 +20,12 @@ make sync-vsf             # 同步 vsf/ 到上游最新
 make sync-vsf-status      # 查看当前 vs 上游版本
 ```
 
+## 首次设置（clone 后执行一次）
+
+```bash
+git config core.hooksPath .githooks   # 启用 commit-msg 格式守卫
+```
+
 ## 通用规则
 
 1. **错误信息完整读一遍**——不要根据第一行猜。
