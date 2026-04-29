@@ -9,6 +9,7 @@
 #   3. Summary starts with lowercase verb, no trailing period
 #   4. No Co-Authored-By line (project convention)
 #   5. Summary line <= 70 chars
+#   6. Summary must be ASCII only (no Chinese/mixed text)
 
 MSG_FILE="$1"
 MSG=$(head -1 "$MSG_FILE")
@@ -41,6 +42,12 @@ fi
 
 if grep -qi "Co-Authored-By" "$MSG_FILE"; then
     echo "ERROR: Co-Authored-By is not used in this project (see CLAUDE.md)."
+    exit 1
+fi
+
+if echo "$MSG" | grep -qP '[^\x00-\x7F]'; then
+    echo "ERROR: summary must be English only (no Chinese or non-ASCII characters)."
+    echo "  Got: $MSG"
     exit 1
 fi
 
