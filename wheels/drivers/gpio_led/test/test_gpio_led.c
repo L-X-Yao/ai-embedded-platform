@@ -369,6 +369,74 @@ static void test_pulse_zero_on(void)
     ASSERT(mock_current == 0, "LED off after 0ms pulse");
 }
 
+static void test_breathe_period_one(void)
+{
+    gpio_led_t led;
+
+    printf("test_breathe_period_one\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_breathe(&led, 1);
+
+    /* period=1, half=0→1: elapsed wraps to 0 every tick */
+    gpio_led_tick(&led, 1);
+    ASSERT(mock_current == 0, "period=1 wraps to 0");
+    gpio_led_tick(&led, 1);
+    ASSERT(mock_current == 0, "period=1 stays at 0");
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "still breathing");
+}
+
+static void test_breathe_period_zero(void)
+{
+    gpio_led_t led;
+
+    printf("test_breathe_period_zero\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_breathe(&led, 0);
+
+    int calls_before = mock_idx;
+    gpio_led_tick(&led, 100);
+    ASSERT(mock_idx == calls_before, "period=0 tick is no-op");
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "mode unchanged");
+}
+
+static void test_blink_zero_off(void)
+{
+    gpio_led_t led;
+
+    printf("test_blink_zero_off\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_blink(&led, 100, 0, 0);
+
+    ASSERT(mock_current == 255, "starts ON");
+
+    gpio_led_tick(&led, 100);
+    ASSERT(mock_current == 0, "OFF after 100ms");
+
+    /* off_ms=0 clamped to 1: should return to ON after 1ms */
+    gpio_led_tick(&led, 1);
+    ASSERT(mock_current == 255, "back to ON after 1ms off");
+}
+
+static void test_breathe_large_dt(void)
+{
+    gpio_led_t led;
+
+    printf("test_breathe_large_dt\n");
+    mock_reset();
+    gpio_led_init(&led, &mock_hal);
+    gpio_led_breathe(&led, 1000);
+
+    /* tick with dt larger than period — should wrap correctly */
+    gpio_led_tick(&led, 1500);
+    /* elapsed = 1500 - 1000 = 500. half=500. elapsed(500) < half(500)? No.
+       level = (1000-500)*255/500 = 255. */
+    ASSERT(mock_current > 240, "large dt wraps and reaches peak");
+    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "still breathing");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -390,6 +458,10 @@ int main(void)
     test_reinit_resets();
     test_blink_zero_on();
     test_pulse_zero_on();
+    test_breathe_period_one();
+    test_breathe_period_zero();
+    test_blink_zero_off();
+    test_breathe_large_dt();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
