@@ -229,6 +229,80 @@ static void test_negative_freq_guard(void)
     ASSERT(!isnan(e.roll_deg), "roll not NaN with negative freq");
 }
 
+static void test_gimbal_lock_pitch90(void)
+{
+    printf("test_gimbal_lock_pitch90\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_init(&f, &cfg);
+
+    for (int i = 0; i < 4000; i++) {
+        mahony_update(&f, 0, 0, 0, 1.0f, 0, 0, 0, 0, 0);
+    }
+
+    mahony_euler_t e;
+    mahony_get_euler(&f, &e);
+    ASSERT_NEAR(e.pitch_deg, -90.0f, 3.0f, "pitch near -90 (gimbal lock)");
+    ASSERT(!isnan(e.roll_deg), "roll not NaN at gimbal lock");
+    ASSERT(!isnan(e.yaw_deg), "yaw not NaN at gimbal lock");
+}
+
+static void test_large_gyro_rate_stability(void)
+{
+    printf("test_large_gyro_rate_stability\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    cfg.sample_freq_hz = 1000.0f;
+    mahony_init(&f, &cfg);
+
+    for (int i = 0; i < 1000; i++) {
+        mahony_update(&f, 2000, -1500, 1800, 0, 0, 1.0f, 0, 0, 0);
+    }
+
+    float q0, q1, q2, q3;
+    mahony_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    float norm = sqrtf(q0*q0 + q1*q1 + q2*q2 + q3*q3);
+    ASSERT_NEAR(norm, 1.0f, 0.01f, "quaternion still unit at high rate");
+    ASSERT(!isnan(q0), "q0 not NaN after extreme gyro");
+}
+
+static void test_near_inverted_accel(void)
+{
+    printf("test_near_inverted_accel\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    cfg.kp = 5.0f;
+    mahony_init(&f, &cfg);
+
+    for (int i = 0; i < 8000; i++) {
+        mahony_update(&f, 0, 0, 0, 0.05f, 0, -1.0f, 0, 0, 0);
+    }
+
+    mahony_euler_t e;
+    mahony_get_euler(&f, &e);
+    ASSERT(fabsf(e.roll_deg) > 90.0f || fabsf(e.pitch_deg) > 80.0f,
+           "filter tracks near-inverted gravity");
+}
+
+static void test_ki_corrects_bias(void)
+{
+    printf("test_ki_corrects_bias\n");
+    mahony_t f;
+    mahony_cfg_t cfg = mahony_default_cfg();
+    cfg.ki = 0.1f;
+    mahony_init(&f, &cfg);
+
+    for (int i = 0; i < 5000; i++) {
+        mahony_update(&f, 5.0f, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+    }
+
+    ASSERT(fabsf(f.integral_fb_x) > 0.001f, "ki accumulates integral");
+
+    mahony_euler_t e;
+    mahony_get_euler(&f, &e);
+    ASSERT_NEAR(e.roll_deg, 0.0f, 5.0f, "ki corrects gyro bias on roll");
+}
+
 int main(void)
 {
     tests_run = tests_fail = 0;
@@ -246,6 +320,10 @@ int main(void)
     test_6axis_vs_9axis();
     test_zero_freq_guard();
     test_negative_freq_guard();
+    test_gimbal_lock_pitch90();
+    test_large_gyro_rate_stability();
+    test_near_inverted_accel();
+    test_ki_corrects_bias();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
