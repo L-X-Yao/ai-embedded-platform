@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 WHEEL_DIR = Path(__file__).parent
-BUILD_DIR = WHEEL_DIR / "build"
+TEST_DIR = WHEEL_DIR / "test"
+BUILD_DIR = TEST_DIR / "build"
 TEST_BIN = BUILD_DIR / "test_crc16"
 
 
@@ -22,7 +23,7 @@ def build():
     cmake = shutil.which("cmake")
     assert cmake, "cmake not on PATH"
     subprocess.run(
-        [cmake, "-GNinja", "-S", str(WHEEL_DIR), "-B", str(BUILD_DIR)],
+        [cmake, "-GNinja", "-S", str(TEST_DIR), "-B", str(BUILD_DIR)],
         check=True,
         capture_output=True,
     )

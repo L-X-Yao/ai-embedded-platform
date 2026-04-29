@@ -1,12 +1,12 @@
 /**
- * @file    test_main.c
+ * @file    test_crc16.c
  * @brief   C unit tests for crc16 wheel.
  *
  * Returns 0 on all-pass, non-zero on first failure (pytest checks exit code).
  * Each TEST() prints PASS/FAIL line for human + machine readability.
  */
 
-#include "crc16.h"
+#include "../crc16.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>

@@ -273,9 +273,12 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
   - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
-- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——6 YAML job（wheel-audit + log + crc16 + 17-entry matrix wheel-test + flybox-tests(mag_cal+parse_fault) + flybox cross-compile），共 23 个测试实例，push/PR 自动触发，当前全绿
-- ✅ **开发效率工具链**（`tooling/scripts/`）——test_all.sh（统一测试 + --changed 增量 + --coverage 覆盖率 + --fail-fast）/ test_downstream.sh（wheel 下游回归）/ new_wheel.sh（wheel 脚手架，含 mock 错误注入 + NULL safety 模板）/ session_bootstrap.sh（会话上下文）/ wheel_promote.sh（阶段升级 + pre-flight 校验）/ audit_wheels.py（17 项自动检查 + --graph 依赖图）/ build_flash（JSON verdict HIL 输出）/ gd32f4xx_debug/parse_fault.py（离线 Cortex-M fault 分类器，16 pytest）/ sync_vsf.sh（上游同步：缓存 clone + rsync 替换 + patch 重应用 + diff 摘要）/ Makefile（13 个快捷目标：test / test-wheels / test-projects / test-changed / test-fast / audit / coverage / bootstrap / list / graph / downstream / sync-vsf / sync-vsf-status）/ `.githooks/commit-msg`（7 项格式守卫：type/scope/verb/period/length/co-author/ascii/body-length）/ `.githooks/pre-commit`（拦截误提交的二进制产物：.o/.exe/.elf/.bin 等）
-- ✅ **19 个 wheels**：log (L0) / crc16 (L0) / fal (L0, vendor) / kvs (L0, vendor FlashDB) / cli_parser (L0) / mahony_ahrs (L0) / mag_cal (L0) / w25qxx (L1) / qmi8658a (L1) / xgzp6816d (L1) / qmc5883p (L1) / ws2812 (L1) / gpio_led (L1) / gpio_button (L1) / ncp5623_parser (L2) / at_command (L2) / modbus_rtu (L2) / nmea_parser (L2) / ota_ab (L2)，全部 candidate
+- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——wheel-audit + log + crc16 + 47-entry matrix wheel-test + flybox-tests + flybox cross-compile，共 53 个 job，push/PR 自动触发（Actions 分钟数已用完，下月重置）
+- ✅ **开发效率工具链**（`tooling/scripts/`）——test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（17 项自动检查 + --graph）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（13 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **49 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
+  - L0 (21): log / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
+  - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
+  - L2 (9): ncp5623_parser / at_command / modbus_rtu / nmea_parser / ota_ab / mqtt_packet / http_parser / websocket_frame / coap_packet
 - ✅ **HIL 自动化**（`tooling/hil/hil_runner.py`）——封装 build_flash_check.sh，soak 三档（quick 30s / standard 600s / stress 1800s），结果按时间戳存档，--compare 对比历史
 - ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
