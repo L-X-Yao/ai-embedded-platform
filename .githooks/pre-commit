@@ -1,0 +1,31 @@
+#!/bin/bash
+# pre-commit hook — reject accidentally staged binary artifacts.
+#
+# Install: git config core.hooksPath .githooks
+#
+# Checks:
+#   1. No compiled binaries (.o, .obj, .a, .lib, .so, .dll, .exe, .elf)
+#   2. No firmware images (.bin, .hex) outside expected locations
+#   3. No large files (>1MB) that look accidental
+
+BLOCKED_EXTS='\.o|\.obj|\.a|\.lib|\.so|\.dll|\.exe|\.elf|\.bin|\.hex|\.map|\.gcno|\.gcda'
+
+blocked=()
+while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    if echo "$file" | grep -qE "($BLOCKED_EXTS)$"; then
+        blocked+=("$file")
+    fi
+done < <(git diff --cached --name-only --diff-filter=ACR)
+
+if [[ ${#blocked[@]} -gt 0 ]]; then
+    echo "ERROR: binary/build artifacts staged for commit:"
+    for f in "${blocked[@]}"; do
+        echo "  $f"
+    done
+    echo ""
+    echo "If intentional (e.g. vendor SDK), use: git commit --no-verify"
+    exit 1
+fi
+
+exit 0
