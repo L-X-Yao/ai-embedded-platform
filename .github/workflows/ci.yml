@@ -120,6 +120,10 @@ jobs:
           - { name: cli_parser,    dir: wheels/primitives/cli_parser/test }
           - { name: mahony_ahrs,  dir: wheels/primitives/mahony_ahrs/test }
           - { name: mag_cal,     dir: wheels/primitives/mag_cal/test }
+          - { name: pid_controller, dir: wheels/primitives/pid_controller/test }
+          - { name: moving_average, dir: wheels/primitives/moving_average/test }
+          - { name: state_machine,  dir: wheels/primitives/state_machine/test }
+          - { name: soft_timer,     dir: wheels/primitives/soft_timer/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
