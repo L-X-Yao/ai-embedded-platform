@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_mqtt_packet C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(test_mqtt_packet
+    test_mqtt_packet.c
+    ../mqtt_packet.c
+)
+
+target_include_directories(test_mqtt_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+target_compile_options(test_mqtt_packet PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+enable_testing()
+add_test(NAME mqtt_packet_tests COMMAND test_mqtt_packet)
