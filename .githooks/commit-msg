@@ -46,7 +46,7 @@ if grep -qi "Co-Authored-By" "$MSG_FILE"; then
     exit 1
 fi
 
-if echo "$MSG" | grep -qP '[^\x00-\x7F]'; then
+if echo "$MSG" | LC_ALL=C grep -q '[^ -~]'; then
     echo "ERROR: summary must be English only (no Chinese or non-ASCII characters)."
     echo "  Got: $MSG"
     exit 1
