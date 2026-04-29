@@ -636,7 +636,7 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): TODO
 - HIL: N/A
 
-## Convention Deviations
+## API convention deviations
 
 None.
 
@@ -644,6 +644,10 @@ None.
 
 - **Date**: TODO
 - **Key decisions**: TODO
+
+## Responsible human
+
+@user
 README_EOF
 }
 
