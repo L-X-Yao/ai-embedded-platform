@@ -578,7 +578,7 @@ static void test_slave_write_callback_failure(void)
 
 static void test_slave_null_safety(void)
 {
-    uint8_t req[32], resp[32];
+    uint8_t req[32] = {0}, resp[32] = {0};
 
     printf("test_slave_null_safety\n");
     ASSERT(modbus_rtu_slave_process(NULL, req, 8, resp, 32) == -1, "null slave");
