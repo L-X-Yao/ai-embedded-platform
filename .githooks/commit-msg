@@ -10,6 +10,7 @@
 #   4. No Co-Authored-By line (project convention)
 #   5. Summary line <= 70 chars
 #   6. Summary must be ASCII only (no Chinese/mixed text)
+#   7. Body lines > 72 chars (warning only, not blocking)
 
 MSG_FILE="$1"
 MSG=$(head -1 "$MSG_FILE")
@@ -50,5 +51,18 @@ if echo "$MSG" | grep -qP '[^\x00-\x7F]'; then
     echo "  Got: $MSG"
     exit 1
 fi
+
+# Check body lines (skip first line and blank separator) for <= 72 chars
+LINE_NUM=0
+while IFS= read -r LINE; do
+    LINE_NUM=$((LINE_NUM + 1))
+    if [ $LINE_NUM -le 2 ]; then
+        continue
+    fi
+    if [ ${#LINE} -gt 72 ]; then
+        echo "WARNING: body line $LINE_NUM exceeds 72 chars (${#LINE})."
+        echo "  Line: $LINE"
+    fi
+done < "$MSG_FILE"
 
 exit 0
