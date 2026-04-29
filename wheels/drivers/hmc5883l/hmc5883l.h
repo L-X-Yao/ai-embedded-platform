@@ -8,6 +8,7 @@
  * I2C register-based interface. Fixed address 0x1E.
  * Outputs in raw counts or milligauss (configurable gain).
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the hmc5883l_t struct.
  */
 
 #ifndef HMC5883L_H
@@ -76,6 +77,7 @@ typedef struct {
 
 #define HMC5883L_ADDR 0x1E
 
+/** @thread_safe: no */
 hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
                              const hmc5883l_cfg_t *cfg);
 

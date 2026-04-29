@@ -1,3 +1,10 @@
+/*
+ * http_parser — lightweight HTTP/1.1 request/response parser
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "http_parser.h"
 #include <string.h>
 

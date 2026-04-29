@@ -1,3 +1,10 @@
+/*
+ * max7219 — Maxim MAX7219 LED matrix/7-segment display driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    spi_hal (injected)
+ */
 #include "max7219.h"
 
 #define REG_NOOP         0x00

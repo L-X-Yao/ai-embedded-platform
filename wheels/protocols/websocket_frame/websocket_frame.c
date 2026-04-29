@@ -1,3 +1,10 @@
+/*
+ * websocket_frame — WebSocket frame encoder/decoder (RFC 6455)
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "websocket_frame.h"
 #include <string.h>
 

@@ -3,18 +3,18 @@
 #include <string.h>
 #include <stdlib.h>
 
-static int g_pass = 0, g_fail = 0;
+static int tests_pass = 0, tests_fail = 0;
 
 #define TEST(name) static void name(void)
 #define ASSERT_EQ(a, b) do { \
     if ((a) != (b)) { \
         printf("  FAIL %s:%d: 0x%08X != 0x%08X\n", __func__, __LINE__, \
                (unsigned)(a), (unsigned)(b)); \
-        g_fail++; return; \
+        tests_fail++; return; \
     } } while(0)
 
-#define RUN(fn) do { fn(); if(!g_fail || g_fail == prev_fail) { \
-    printf("  PASS %s\n", #fn); g_pass++; } prev_fail = g_fail; } while(0)
+#define RUN(fn) do { fn(); if(!tests_fail || tests_fail == pf) { \
+    printf("  PASS %s\n", #fn); tests_pass++; } pf = tests_fail; } while(0)
 
 TEST(test_standard_vector)
 {
@@ -112,7 +112,7 @@ TEST(test_1024_byte_consistency)
 
 int main(void)
 {
-    int prev_fail = 0;
+    int pf = 0;
     printf("crc32 tests:\n");
     RUN(test_standard_vector);
     RUN(test_empty);
@@ -124,6 +124,6 @@ int main(void)
     RUN(test_residue_check);
     RUN(test_known_string);
     RUN(test_1024_byte_consistency);
-    printf("\n%d passed, %d failed\n", g_pass, g_fail);
-    return g_fail ? 1 : 0;
+    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
+    return tests_fail ? 1 : 0;
 }

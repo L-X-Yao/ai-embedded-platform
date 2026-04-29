@@ -1,3 +1,10 @@
+/*
+ * ads1115 — TI ADS1115 16-bit 4-channel ADC driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal (injected)
+ */
 #include "ads1115.h"
 
 #define REG_CONVERSION 0x00

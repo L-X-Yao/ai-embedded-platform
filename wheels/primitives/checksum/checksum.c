@@ -1,3 +1,10 @@
+/*
+ * checksum — common checksum algorithms collection
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "checksum.h"
 
 uint8_t checksum_xor(const uint8_t *data, size_t len)

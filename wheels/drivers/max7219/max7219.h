@@ -8,6 +8,7 @@
  * SPI interface: 16-bit shift register (address + data).
  * Supports 8 digits/rows, intensity control, BCD/raw mode.
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the max7219_t struct.
  */
 
 #ifndef MAX7219_H
@@ -37,6 +38,7 @@ typedef struct {
     max7219_spi_t spi;
 } max7219_t;
 
+/** @thread_safe: no */
 max7219_err_t max7219_init(max7219_t *dev, const max7219_spi_t *spi);
 
 max7219_err_t max7219_set_intensity(max7219_t *dev, uint8_t level);

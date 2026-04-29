@@ -1,3 +1,10 @@
+/*
+ * median_filter — sliding window median filter
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "median_filter.h"
 #include <string.h>
 

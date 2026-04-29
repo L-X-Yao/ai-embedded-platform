@@ -2,17 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 
-static int g_pass = 0, g_fail = 0;
+static int tests_pass = 0, tests_fail = 0;
 
 #define TEST(name) static void name(void)
 #define ASSERT_EQ(a, b) do { \
     if ((a) != (b)) { \
         printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
                (int)(a), (int)(b)); \
-        g_fail++; return; \
+        tests_fail++; return; \
     } } while(0)
-#define RUN(fn) do { int pf = g_fail; fn(); if(g_fail == pf) { \
-    printf("  PASS %s\n", #fn); g_pass++; } } while(0)
+#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
+    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 static bool pin_seq[256];
 static int  pin_seq_idx;
@@ -160,6 +160,6 @@ int main(void)
     RUN(test_checksum_fail);
     RUN(test_read_null);
     RUN(test_all_ones);
-    printf("\n%d passed, %d failed\n", g_pass, g_fail);
-    return g_fail ? 1 : 0;
+    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
+    return tests_fail ? 1 : 0;
 }

@@ -1,3 +1,10 @@
+/*
+ * debounce — software button debouncing
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "debounce.h"
 
 void debounce_init(debounce_t *d, uint8_t threshold, bool initial_state)

@@ -1,3 +1,10 @@
+/*
+ * bitfield — bit-level pack/unpack from byte arrays
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "bitfield.h"
 
 int bitfield_get(const uint8_t *data, size_t data_len,

@@ -39,6 +39,7 @@ typedef struct {
     uint32_t next_delay_ms;
 } retry_ctx_t;
 
+/** @thread_safe: no */
 void retry_init(retry_ctx_t *ctx, const retry_config_t *config);
 
 bool retry_should_retry(retry_ctx_t *ctx);

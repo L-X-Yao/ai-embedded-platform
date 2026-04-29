@@ -22,6 +22,7 @@ extern "C" {
 
 #define CRC32_INIT  0xFFFFFFFFu
 
+/** @thread_safe: yes (pure function, no state) */
 uint32_t crc32_compute(const uint8_t *data, size_t len);
 
 uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len);

@@ -8,6 +8,7 @@
  * Caller provides the window buffer. Uses insertion sort on each sample
  * for O(N) update. Window sizes 3-31 (odd recommended for true median).
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the median_filter_t struct.
  */
 
 #ifndef MEDIAN_FILTER_H
@@ -32,6 +33,7 @@ typedef struct {
     uint8_t  index;
 } median_filter_t;
 
+/** @thread_safe: no */
 int median_filter_init(median_filter_t *f, uint8_t size);
 
 int32_t median_filter_update(median_filter_t *f, int32_t sample);

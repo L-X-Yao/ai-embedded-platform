@@ -8,6 +8,7 @@
  * Drives LED on/off patterns from a simple descriptor array.
  * Caller ticks at fixed interval, engine returns on/off state.
  * Supports one-shot and looping patterns. Pure C99, no heap.
+ * Thread safety: caller owns the led_pattern_t struct.
  */
 
 #ifndef LED_PATTERN_H
@@ -39,6 +40,7 @@ typedef struct {
     bool              finished;
 } led_pattern_t;
 
+/** @thread_safe: no */
 void led_pattern_init(led_pattern_t *p, const led_pattern_cfg_t *cfg);
 
 bool led_pattern_tick(led_pattern_t *p);

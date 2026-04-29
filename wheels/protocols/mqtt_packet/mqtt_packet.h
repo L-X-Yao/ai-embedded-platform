@@ -65,6 +65,7 @@ typedef struct {
     bool           dup;
 } mqtt_publish_t;
 
+/** @thread_safe: yes (pure function, no state) */
 int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
                               const mqtt_connect_opts_t *opts);
 

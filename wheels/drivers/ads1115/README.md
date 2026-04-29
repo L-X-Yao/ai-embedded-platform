@@ -39,3 +39,21 @@ ctest --test-dir build --output-on-failure
 ## Dependencies
 
 I2C HAL (injected via callbacks).
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## API review
+
+- 提案日期：2026-04-29
+- 审批人：@user（批量生成，待审）
+
+## API convention deviations
+
+无。
+
+## Responsible human
+
+@user

@@ -9,6 +9,7 @@
  * Supports single-device bus (skip ROM) and multi-device (match ROM).
  * 12-bit resolution default (0.0625°C), configurable 9-12 bits.
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the ds18b20_t struct.
  */
 
 #ifndef DS18B20_H
@@ -49,6 +50,7 @@ typedef struct {
     bool         use_rom;
 } ds18b20_t;
 
+/** @thread_safe: no */
 ds18b20_err_t ds18b20_init(ds18b20_t *dev, const ds18b20_ow_t *ow);
 
 ds18b20_err_t ds18b20_read_rom(ds18b20_t *dev);

@@ -1,3 +1,10 @@
+/*
+ * servo — PWM servo motor driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    pwm_hal (injected)
+ */
 #include "servo.h"
 
 servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,

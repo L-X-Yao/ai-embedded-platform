@@ -1,3 +1,10 @@
+/*
+ * bh1750 — ROHM BH1750FVI ambient light sensor driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal (injected)
+ */
 #include "bh1750.h"
 
 #define CMD_POWER_ON  0x01

@@ -20,6 +20,7 @@
 extern "C" {
 #endif
 
+/** @thread_safe: yes (pure function, no state) */
 int bitfield_get(const uint8_t *data, size_t data_len,
                  size_t bit_offset, size_t bit_count,
                  uint32_t *out);

@@ -1,3 +1,10 @@
+/*
+ * hmc5883l — Honeywell HMC5883L 3-axis digital magnetometer driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    i2c_hal (injected)
+ */
 #include "hmc5883l.h"
 
 #define REG_CONFIG_A 0x00

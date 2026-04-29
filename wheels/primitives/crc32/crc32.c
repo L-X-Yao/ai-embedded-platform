@@ -1,3 +1,10 @@
+/*
+ * crc32 — CRC32 (IEEE 802.3 / Ethernet / zlib-compatible), table-based
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "crc32.h"
 
 static const uint32_t crc32_table[256] = {
