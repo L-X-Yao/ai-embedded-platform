@@ -11,10 +11,12 @@
 #include <string.h>
 #include <stdint.h>
 
+static int g_tests = 0;
 static int g_failures = 0;
 
 #define TEST(name, cond) do {                                          \
     int _ok = (cond);                                                  \
+    g_tests++;                                                         \
     printf("[%s] %s\n", _ok ? "PASS" : "FAIL", name);                  \
     if (!_ok) g_failures++;                                            \
 } while (0)
@@ -198,6 +200,7 @@ int main(void)
     test_crc_residue_zero();
     test_long_buffer_step();
 
-    printf("\n=== %d failures ===\n", g_failures);
+    printf("\n%d tests, %d passed, %d failed\n",
+           g_tests, g_tests - g_failures, g_failures);
     return g_failures == 0 ? 0 : 1;
 }
