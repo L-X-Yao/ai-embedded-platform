@@ -12,8 +12,10 @@
 #   make list           # list all discoverable test targets
 #   make graph          # wheel dependency graph (Mermaid)
 #   make downstream W=<wheel>  # test downstream consumers of a wheel
+#   make sync-vsf              # sync vsf/ with upstream (interactive)
+#   make sync-vsf-status       # show current vs upstream vsf version
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -48,3 +50,9 @@ graph:
 downstream:
 	@test -n "$(W)" || { echo "Usage: make downstream W=<wheel-name>"; exit 1; }
 	bash tooling/scripts/test_downstream.sh $(W)
+
+sync-vsf:
+	bash tooling/scripts/sync_vsf.sh
+
+sync-vsf-status:
+	bash tooling/scripts/sync_vsf.sh --status
