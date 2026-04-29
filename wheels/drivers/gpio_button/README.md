@@ -83,11 +83,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_gpio_button
 ```
 
-34 assertions across 14 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks, re-init state reset, debounce boundary.
+44 assertions across 17 test cases: config defaults, idle, debounce, bounce rejection, click, double-click, long press, active-high, long-press vs double-click, null safety, zero-dt, separated rapid clicks, re-init state reset, debounce boundary, barely-miss long press (hold_cnt=999), triple click (double-click + click sequence), large dt behavior.
 
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests, 34 assertions)
+- Unit tests (sim): PASS (17 C tests, 44 assertions)
 - HIL: N/A
 
 ## API convention deviations
