@@ -467,8 +467,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
     (void)ctx;
     if (xfer_log_idx < (int)sizeof(xfer_log))
         xfer_log[xfer_log_idx++] = tx;
-    /* TODO: return appropriate mock data */
-    return 0xFF;
+    return 0xFF; /* override for device-specific responses */
 }
 
 static const ${NAME_LOWER}_spi_t mock_spi = {
@@ -501,6 +500,13 @@ static void test_init_ok(void)
     mock_reset();
     ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
     ASSERT_EQ(e, ${NAME_UPPER}_OK, "init returns OK");
+    ASSERT(xfer_log_idx > 0, "SPI transfer occurred");
+}
+
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_SPI, "init(NULL)");
 }
 
 /* TODO: add more tests */
@@ -508,6 +514,7 @@ static void test_init_ok(void)
 int main(void)
 {
     test_init_ok();
+    test_null_safety();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
