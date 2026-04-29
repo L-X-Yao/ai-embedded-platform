@@ -129,6 +129,7 @@ jobs:
           - { name: mpu6050,        dir: wheels/drivers/mpu6050/test }
           - { name: oled_ssd1306,   dir: wheels/drivers/oled_ssd1306/test }
           - { name: mqtt_packet,    dir: wheels/protocols/mqtt_packet/test }
+          - { name: byte_buffer,    dir: wheels/primitives/byte_buffer/test }
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
