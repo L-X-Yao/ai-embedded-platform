@@ -29,13 +29,15 @@ target_sources(my_app PRIVATE
 
 ### VSF-based 项目（参考 flybox）
 
+VSF 项目同样使用标准 CMake 命令（不需要 `vsf_add_*` 宏）：
+
 ```cmake
-# VSF 项目用 vsf_add_sources / vsf_add_include_directories
-vsf_add_include_directories(
+# projects/flybox/vsf_build/CMakeLists.txt 实际模式
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${PLATFORM_ROOT}/wheels/primitives/crc16
     ${PLATFORM_ROOT}/wheels/drivers/qmi8658a
 )
-vsf_add_sources(
+target_sources(${CMAKE_PROJECT_NAME} PUBLIC
     ${PLATFORM_ROOT}/wheels/primitives/crc16/crc16.c
     ${PLATFORM_ROOT}/wheels/drivers/qmi8658a/qmi8658a.c
 )
@@ -82,7 +84,13 @@ w25qxx_init(&flash_spi, &jedec_id);
 
 ```bash
 ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/ wheels/_draft/
-python tooling/scripts/audit_wheels.py   # 查看完整清单 + 状态
+python3 tooling/scripts/audit_wheels.py  # 查看完整清单 + 状态
 ```
 
 每个 wheel 的 README 有 API 示例和使用说明。
+
+## 相关文档
+
+- [wheel-contract.md](wheel-contract.md) — wheel 分级标准 + 各阶段验收清单
+- [api-conventions.md](api-conventions.md) — 跨 wheel 命名/错误码/内存/线程约定
+- [ADR-009](adr/009-wheel-dependency-rules.md) — 依赖方向规则（只向下，禁循环）
