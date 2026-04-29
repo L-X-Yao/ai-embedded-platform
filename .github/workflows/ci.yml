@@ -18,7 +18,7 @@ jobs:
           python-version: "3.12"
 
       - name: Audit wheels
-        run: python tooling/scripts/audit_wheels.py
+        run: python3 tooling/scripts/audit_wheels.py
 
   log-wheel:
     name: log wheel (linux64 sim)
@@ -37,9 +37,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install pytest
-        run: pip install pytest
+        run: pip install -r tooling/requirements-ci.txt
 
       - name: Build (debug)
         run: |
@@ -53,7 +54,7 @@ jobs:
           cmake --build build_release
 
       - name: Test
-        run: python -m pytest test_log.py -v
+        run: python3 -m pytest test_log.py -v
 
   crc16-wheel:
     name: crc16 wheel (host C99)
@@ -72,9 +73,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install pytest
-        run: pip install pytest
+        run: pip install -r tooling/requirements-ci.txt
 
       - name: Build
         run: |
@@ -82,7 +84,7 @@ jobs:
           cmake --build build
 
       - name: Test
-        run: python -m pytest test_crc16.py -v
+        run: python3 -m pytest test_crc16.py -v
 
   wheel-test:
     name: ${{ matrix.name }} wheel (host C99)
@@ -144,10 +146,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install pytest
-        run: pip install pytest
+        run: pip install -r tooling/requirements-ci.txt
       - name: Test parse_fault.py
-        run: python -m pytest tooling/scripts/gd32f4xx_debug/test_parse_fault.py -v
+        run: python3 -m pytest tooling/scripts/gd32f4xx_debug/test_parse_fault.py -v
 
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
