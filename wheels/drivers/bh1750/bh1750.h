@@ -8,6 +8,7 @@
  * Command-based I2C: write command byte, read 2 bytes.
  * NOT register-based (no register address in reads).
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the bh1750_t struct.
  */
 
 #ifndef BH1750_H
@@ -56,6 +57,7 @@ typedef struct {
 #define BH1750_ADDR_LOW   0x23
 #define BH1750_ADDR_HIGH  0x5C
 
+/** @thread_safe: no */
 bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
                          const bh1750_cfg_t *cfg);
 

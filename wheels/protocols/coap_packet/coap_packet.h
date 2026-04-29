@@ -8,6 +8,7 @@
  * Stateless packet-level codec for CoAP over UDP.
  * Supports CON/NON/ACK/RST types, options, payload marker.
  * Pure C99, no heap, zero-copy parsing.
+ * Thread safety: all functions are pure / reentrant (no global state).
  */
 
 #ifndef COAP_PACKET_H
@@ -86,6 +87,7 @@ typedef struct {
     size_t         total_len;
 } coap_packet_t;
 
+/** @thread_safe: yes (pure function, no state) */
 coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
 
 coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,

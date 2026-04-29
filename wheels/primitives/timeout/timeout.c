@@ -1,3 +1,10 @@
+/*
+ * timeout — deadline-based timeout tracking
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "timeout.h"
 
 void timeout_set(timeout_t *t, uint32_t now, uint32_t duration)

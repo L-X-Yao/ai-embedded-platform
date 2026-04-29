@@ -1,3 +1,10 @@
+/*
+ * rotary_encoder — quadrature rotary encoder decoder
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "rotary_encoder.h"
 
 /* Quadrature state transition table:

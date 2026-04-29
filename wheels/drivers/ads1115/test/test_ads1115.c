@@ -3,23 +3,23 @@
 #include <string.h>
 #include <math.h>
 
-static int g_pass = 0, g_fail = 0;
+static int tests_pass = 0, tests_fail = 0;
 
 #define TEST(name) static void name(void)
 #define ASSERT_EQ(a, b) do { \
     if ((a) != (b)) { \
         printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
                (int)(a), (int)(b)); \
-        g_fail++; return; \
+        tests_fail++; return; \
     } } while(0)
 #define ASSERT_NEAR(a, b, tol) do { \
     if (fabsf((a) - (b)) > (tol)) { \
         printf("  FAIL %s:%d: %.4f not near %.4f\n", __func__, __LINE__, \
                (double)(a), (double)(b)); \
-        g_fail++; return; \
+        tests_fail++; return; \
     } } while(0)
-#define RUN(fn) do { int pf = g_fail; fn(); if(g_fail == pf) { \
-    printf("  PASS %s\n", #fn); g_pass++; } } while(0)
+#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
+    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 /* Mock I2C */
 static uint8_t mock_config_written[2];
@@ -194,6 +194,6 @@ int main(void)
     RUN(test_i2c_failure);
     RUN(test_set_channel);
     RUN(test_config_bits);
-    printf("\n%d passed, %d failed\n", g_pass, g_fail);
-    return g_fail ? 1 : 0;
+    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
+    return tests_fail ? 1 : 0;
 }

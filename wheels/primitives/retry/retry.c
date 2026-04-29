@@ -1,3 +1,10 @@
+/*
+ * retry — configurable retry strategy with backoff
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "retry.h"
 
 void retry_init(retry_ctx_t *ctx, const retry_config_t *config)

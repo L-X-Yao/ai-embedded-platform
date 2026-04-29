@@ -1,3 +1,10 @@
+/*
+ * led_pattern — LED blink pattern engine
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "led_pattern.h"
 
 void led_pattern_init(led_pattern_t *p, const led_pattern_cfg_t *cfg)

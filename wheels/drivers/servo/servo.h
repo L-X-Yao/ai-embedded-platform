@@ -8,6 +8,7 @@
  * Maps angle (0-180°) to pulse width (typically 500-2500µs).
  * Caller provides PWM set-pulse-width callback.
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the servo_t struct.
  */
 
 #ifndef SERVO_H
@@ -43,6 +44,7 @@ typedef struct {
     uint16_t    current_angle;
 } servo_t;
 
+/** @thread_safe: no */
 servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
                        const servo_cfg_t *cfg);
 

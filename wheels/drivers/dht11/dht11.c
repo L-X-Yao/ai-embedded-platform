@@ -1,3 +1,10 @@
+/*
+ * dht11 — DHT11 temperature and humidity sensor driver
+ *
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:    gpio_hal (injected)
+ */
 #include "dht11.h"
 #include <string.h>
 

@@ -8,6 +8,7 @@
  * Stateless frame-level codec. Does NOT handle handshake (use http_parser
  * for that). Supports masking, fragmentation, control frames.
  * Pure C99, no heap.
+ * Thread safety: all functions are pure / reentrant (no global state).
  */
 
 #ifndef WEBSOCKET_FRAME_H
@@ -48,6 +49,7 @@ typedef struct {
     size_t      frame_len;
 } ws_frame_t;
 
+/** @thread_safe: yes (pure function, no state) */
 ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame);
 
 ws_err_t ws_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,

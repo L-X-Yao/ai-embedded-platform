@@ -1,3 +1,10 @@
+/*
+ * coap_packet — CoAP message encoder/decoder (RFC 7252)
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:    (none)
+ */
 #include "coap_packet.h"
 #include <string.h>
 

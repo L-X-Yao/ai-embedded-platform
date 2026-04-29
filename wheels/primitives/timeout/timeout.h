@@ -25,6 +25,7 @@ typedef struct {
     uint32_t duration;
 } timeout_t;
 
+/** @thread_safe: no */
 void timeout_set(timeout_t *t, uint32_t now, uint32_t duration);
 
 bool timeout_expired(const timeout_t *t, uint32_t now);

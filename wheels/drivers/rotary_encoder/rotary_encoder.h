@@ -7,6 +7,7 @@
  *
  * Software quadrature decoder. Feed A/B pin states on each edge interrupt.
  * Tracks position (int32_t) and direction. Pure C99, no heap.
+ * Thread safety: caller owns the rotary_encoder_t struct.
  */
 
 #ifndef ROTARY_ENCODER_H
@@ -31,6 +32,7 @@ typedef struct {
     uint8_t      last_state;
 } rotary_encoder_t;
 
+/** @thread_safe: no */
 void encoder_init(rotary_encoder_t *enc);
 
 void encoder_update(rotary_encoder_t *enc, bool a, bool b);

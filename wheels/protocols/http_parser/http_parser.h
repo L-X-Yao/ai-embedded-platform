@@ -8,6 +8,7 @@
  * Zero-copy: parsed fields point into the caller's input buffer.
  * Supports chunked parsing (feed partial data).
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: all functions are pure / reentrant (zero-copy, no global state).
  */
 
 #ifndef HTTP_PARSER_H
@@ -67,6 +68,7 @@ typedef struct {
     size_t         total_consumed;
 } http_response_t;
 
+/** @thread_safe: yes (pure function, no state) */
 http_err_t http_parse_request(const char *data, size_t len,
                               http_request_t *req);
 

@@ -7,6 +7,7 @@
  *
  * Feed raw pin state at fixed intervals. Output stable state after
  * N consecutive identical readings. Pure C99, no heap, no timer HW.
+ * Thread safety: caller owns the debounce_t struct.
  */
 
 #ifndef DEBOUNCE_H
@@ -27,6 +28,7 @@ typedef struct {
     bool     changed;
 } debounce_t;
 
+/** @thread_safe: no */
 void debounce_init(debounce_t *d, uint8_t threshold, bool initial_state);
 
 bool debounce_update(debounce_t *d, bool raw);

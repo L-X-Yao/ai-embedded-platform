@@ -8,6 +8,7 @@
  * Single-wire protocol: host pulls low 18ms, sensor responds with 40 bits.
  * HAL callbacks provide pin control and microsecond timing.
  * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the dht11_t struct.
  */
 
 #ifndef DHT11_H
@@ -47,6 +48,7 @@ typedef struct {
     uint8_t temperature_dec;
 } dht11_data_t;
 
+/** @thread_safe: no */
 dht11_err_t dht11_init(dht11_t *dev, const dht11_gpio_t *gpio);
 
 dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out);

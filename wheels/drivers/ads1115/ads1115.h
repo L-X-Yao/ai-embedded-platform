@@ -7,6 +7,7 @@
  *
  * I2C register-based interface. Supports single-shot mode, configurable
  * gain (PGA), and mux channel selection. Pure C99, no heap.
+ * Thread safety: caller owns the ads1115_t struct.
  */
 
 #ifndef ADS1115_H
@@ -82,6 +83,7 @@ typedef struct {
 #define ADS1115_ADDR_SDA  0x4A
 #define ADS1115_ADDR_SCL  0x4B
 
+/** @thread_safe: no */
 ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
                            const ads1115_cfg_t *cfg);
 
