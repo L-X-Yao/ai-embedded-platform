@@ -9,6 +9,7 @@
 #   test_all.sh --list           # just list discoverable targets, don't run
 #   test_all.sh --changed        # only run tests affected by uncommitted changes
 #   test_all.sh --coverage       # build with gcov instrumentation, print coverage after tests
+#   test_all.sh --fail-fast      # stop on first test failure
 #
 # Each test dir gets its own build_ta/ subdirectory (ignored via .gitignore).
 # VSF-dependent tests (log wheel) are skipped unless VSF_PATH is set or
@@ -33,6 +34,7 @@ FILTER_PROJECT=false
 LIST_ONLY=false
 CHANGED_ONLY=false
 COVERAGE=false
+FAIL_FAST=false
 declare -a NAME_FILTER=()
 
 while [[ $# -gt 0 ]]; do
@@ -42,6 +44,7 @@ while [[ $# -gt 0 ]]; do
         --list)     LIST_ONLY=true; shift ;;
         --changed)  CHANGED_ONLY=true; shift ;;
         --coverage) COVERAGE=true; shift ;;
+        --fail-fast) FAIL_FAST=true; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -196,14 +199,23 @@ is_vsf_dependent() {
     grep -q "vsf\.cmake" "$1/CMakeLists.txt" 2>/dev/null
 }
 
+is_linux() {
+    [[ "$(uname -s)" == "Linux" ]]
+}
+
 run_c_test() {
     local name="$1" src_dir="$2" type="$3"
     TOTAL=$((TOTAL + 1))
 
-    # Check VSF dependency
+    # Check VSF dependency — linux64 sim target requires Linux + pkg-config
     if is_vsf_dependent "$src_dir"; then
         if [[ -z "${VSF_PATH:-}" && ! -d "$REPO/vsf" ]]; then
             echo -e "  ${YELLOW}SKIP${NC}  $name  (VSF sim, VSF_PATH not set)"
+            SKIPPED=$((SKIPPED + 1))
+            return 0
+        fi
+        if ! is_linux; then
+            echo -e "  ${YELLOW}SKIP${NC}  $name  (VSF linux64 sim requires Linux)"
             SKIPPED=$((SKIPPED + 1))
             return 0
         fi
@@ -316,14 +328,18 @@ for t in "${TARGETS[@]:-}"; do
     [[ -z "$t" ]] && continue
     IFS='|' read -r name src_dir type <<< "$t"
     run_c_test "$name" "$src_dir" "$type"
+    $FAIL_FAST && [[ $FAILED -gt 0 ]] && break
 done
 
 # pytest
-for p in "${PYTEST[@]:-}"; do
-    [[ -z "$p" ]] && continue
-    IFS='|' read -r name pyf <<< "$p"
-    run_pytest "$name" "$pyf"
-done
+if ! { $FAIL_FAST && [[ $FAILED -gt 0 ]]; }; then
+    for p in "${PYTEST[@]:-}"; do
+        [[ -z "$p" ]] && continue
+        IFS='|' read -r name pyf <<< "$p"
+        run_pytest "$name" "$pyf"
+        $FAIL_FAST && [[ $FAILED -gt 0 ]] && break
+    done
+fi
 
 # --- Summary ------------------------------------------------------------------
 
