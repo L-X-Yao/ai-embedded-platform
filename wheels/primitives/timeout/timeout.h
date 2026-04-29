@@ -1,0 +1,44 @@
+/*
+ * timeout — deadline-based timeout tracking
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ *
+ * Uses caller-provided tick value (no HAL dependency).
+ * Handles 32-bit tick wraparound correctly.
+ * Thread safety: caller owns the timeout_t struct.
+ */
+
+#ifndef TIMEOUT_H
+#define TIMEOUT_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+    uint32_t start;
+    uint32_t duration;
+} timeout_t;
+
+void timeout_set(timeout_t *t, uint32_t now, uint32_t duration);
+
+bool timeout_expired(const timeout_t *t, uint32_t now);
+
+uint32_t timeout_remaining(const timeout_t *t, uint32_t now);
+
+uint32_t timeout_elapsed(const timeout_t *t, uint32_t now);
+
+void timeout_restart(timeout_t *t, uint32_t now);
+
+void timeout_extend(timeout_t *t, uint32_t extra);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* TIMEOUT_H */
