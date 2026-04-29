@@ -459,6 +459,27 @@ def main() -> int:
     else:
         print("  [ ok ]  no stale entries")
 
+    # --- Consumer mapping summary ---
+    print("\n=== Consumer mapping ===\n")
+    consumed = []
+    unconsumed = []
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        cons = find_consumers(path, name)
+        if cons:
+            consumed.append((path, cons))
+        else:
+            unconsumed.append(path)
+    if consumed:
+        for wpath, cons in consumed:
+            projs = set()
+            for c in cons:
+                parts = c.split("/")
+                if len(parts) > 1 and parts[0] == "projects":
+                    projs.add(parts[1])
+            print(f"  {wpath:36s} ← {', '.join(sorted(projs))}")
+    print(f"\n  consumed: {len(consumed)}/{len(wheels)}  |  unconsumed: {len(unconsumed)}")
+
     print("\n=== Summary ===")
     print(f"  wheels:   {len(wheels)}")
     print(f"  failures: {len(failures)}")
