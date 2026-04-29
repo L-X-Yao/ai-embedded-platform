@@ -419,12 +419,19 @@ static void test_init_i2c_fail(void)
     ASSERT_EQ(e, ${NAME_UPPER}_ERR_I2C, "init fails on I2C error");
 }
 
+static void test_null_safety(void)
+{
+    printf("test_null_safety\n");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_I2C, "init(NULL)");
+}
+
 /* TODO: add more tests */
 
 int main(void)
 {
     test_init_ok();
     test_init_i2c_fail();
+    test_null_safety();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
@@ -509,12 +516,22 @@ static void test_null_safety(void)
     ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_SPI, "init(NULL)");
 }
 
+static void test_init_spi_fail(void)
+{
+    printf("test_init_spi_fail\n");
+    mock_reset();
+    mock_fail_at = 0;
+    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
+    ASSERT_NEQ(e, ${NAME_UPPER}_OK, "init fails on SPI error");
+}
+
 /* TODO: add more tests */
 
 int main(void)
 {
     test_init_ok();
     test_null_safety();
+    test_init_spi_fail();
 
     printf("\n%d tests, %d passed, %d failed\n",
            tests_run, tests_run - tests_fail, tests_fail);
