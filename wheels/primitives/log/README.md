@@ -88,6 +88,7 @@ log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 | Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
 | No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
 | Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
+| **Stack budget** | **log_emit=256B + each sink's own buffer** | **With log_color(512B): ~800B per LOG_* call. Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
 ## Companion sink wheels

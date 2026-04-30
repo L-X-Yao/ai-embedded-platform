@@ -8,6 +8,8 @@ static int mock_fail_next;
 static int mock_op_count;
 static int mock_fail_at;
 static uint8_t last_cmd;
+static uint8_t cmd_log[64];
+static int cmd_log_count;
 static const uint8_t *last_data_ptr;
 static uint16_t last_data_len;
 
@@ -19,6 +21,8 @@ static void mock_reset(void)
     mock_op_count = 0;
     mock_fail_at = -1;
     last_cmd = 0;
+    cmd_log_count = 0;
+    memset(cmd_log, 0, sizeof(cmd_log));
     last_data_ptr = NULL;
     last_data_len = 0;
 }
@@ -35,6 +39,7 @@ static bool mock_write_cmd(void *ctx, uint8_t addr, uint8_t c)
 {
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
+    if (cmd_log_count < 64) cmd_log[cmd_log_count++] = c;
     mock_cmd_count++;
     last_cmd = c;
     return true;
@@ -202,8 +207,36 @@ TEST(test_null_clear_fill)
     ASSERT_TRUE(1);
 }
 
+TEST(test_init_com_pin_config)
+{
+    /* 64px height → COM pin config = 0x12 (alternative COM pin mapping) */
+    mock_reset();
+    oled_ssd1306_t d64;
+    oled_ssd1306_cfg_t cfg64 = { .addr = OLED_SSD1306_ADDR_A, .width = 128, .height = 64 };
+    uint8_t fb64[OLED_SSD1306_BUF_SIZE(128, 64)];
+    ASSERT_EQ(oled_ssd1306_init(&d64, &mock_i2c, &cfg64, fb64), OLED_SSD1306_OK);
+    int found_da = 0;
+    for (int i = 0; i < cmd_log_count - 1; i++) {
+        if (cmd_log[i] == 0xDA) { ASSERT_EQ(cmd_log[i+1], 0x12); found_da = 1; break; }
+    }
+    ASSERT_TRUE(found_da);
+
+    /* 32px height → COM pin config = 0x02 (sequential COM pin mapping) */
+    mock_reset();
+    oled_ssd1306_t d32;
+    oled_ssd1306_cfg_t cfg32 = { .addr = OLED_SSD1306_ADDR_A, .width = 128, .height = 32 };
+    uint8_t fb32[OLED_SSD1306_BUF_SIZE(128, 32)];
+    ASSERT_EQ(oled_ssd1306_init(&d32, &mock_i2c, &cfg32, fb32), OLED_SSD1306_OK);
+    found_da = 0;
+    for (int i = 0; i < cmd_log_count - 1; i++) {
+        if (cmd_log[i] == 0xDA) { ASSERT_EQ(cmd_log[i+1], 0x02); found_da = 1; break; }
+    }
+    ASSERT_TRUE(found_da);
+}
+
 TEST_MAIN("oled_ssd1306")
     RUN(test_init_ok);
+    RUN(test_init_com_pin_config);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_set_get_pixel);
