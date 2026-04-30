@@ -55,11 +55,11 @@ typedef struct {
 } mpu6050_cfg_t;
 
 typedef struct {
-    float ax, ay, az;
+    float ax, ay, az; /* acceleration (G) */
 } mpu6050_accel_t;
 
 typedef struct {
-    float gx, gy, gz;
+    float gx, gy, gz; /* angular rate (deg/s) */
 } mpu6050_gyro_t;
 
 typedef struct {

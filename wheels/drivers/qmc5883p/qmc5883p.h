@@ -34,7 +34,7 @@ typedef struct {
 #define QMC5883P_CHIP_ID    0x80u
 
 typedef struct {
-    float mx, my, mz;
+    float mx, my, mz; /* magnetic field (Gauss) */
 } qmc5883p_data_t;
 
 /** Configure and verify chip ID. @thread_safe: caller_must_lock */

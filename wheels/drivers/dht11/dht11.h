@@ -42,10 +42,10 @@ typedef struct {
 } dht11_t;
 
 typedef struct {
-    uint8_t humidity_int;
-    uint8_t humidity_dec;
-    uint8_t temperature_int;
-    uint8_t temperature_dec;
+    uint8_t humidity_int;     /* relative humidity integer part (%RH) */
+    uint8_t humidity_dec;     /* relative humidity decimal part */
+    uint8_t temperature_int;  /* temperature integer part (C) */
+    uint8_t temperature_dec;  /* temperature decimal part */
 } dht11_data_t;
 
 /** @thread_safe: no */

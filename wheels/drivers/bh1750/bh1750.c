@@ -28,12 +28,19 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
     dev->i2c = *i2c;
     dev->cfg = *cfg;
 
+    switch (dev->cfg.mode) {
+    case BH1750_CONT_H_RES: case BH1750_CONT_H_RES2: case BH1750_CONT_L_RES:
+    case BH1750_ONCE_H_RES: case BH1750_ONCE_H_RES2: case BH1750_ONCE_L_RES:
+        break;
+    default:
+        return BH1750_ERR_PARAM;
+    }
+
     bh1750_err_t err = send_cmd(dev, CMD_POWER_ON);
     if (err != BH1750_OK)
         return err;
 
-    uint8_t mode = (uint8_t)dev->cfg.mode;
-    return send_cmd(dev, mode);
+    return send_cmd(dev, (uint8_t)dev->cfg.mode);
 }
 
 bh1750_err_t bh1750_read_lux(bh1750_t *dev, float *lux)
