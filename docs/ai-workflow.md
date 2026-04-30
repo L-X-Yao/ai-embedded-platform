@@ -163,7 +163,7 @@
 
 (2) **CI job**
 
-9. **在 `.github/workflows/ci.yml` 加 wheel build + test job**（mirror 现有 `crc16-wheel` / `w25qxx-wheel` 模式）。push 后 CI 全绿才算 step 完成。
+9. **CI 自动覆盖**：标准 wheel（有 `test/CMakeLists.txt`）被 CI detect-changes 自动发现，无需手动编辑 ci.yml。仅含 pytest 的 wheel（如 log / crc16）需添加独立 job。push 后 CI 全绿才算 step 完成。
 
 (3) **真项目消费**
 
