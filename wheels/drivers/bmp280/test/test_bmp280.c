@@ -1,70 +1,33 @@
 #include "test_harness.h"
-#include <string.h>
+#include "test_mock_i2c.h"
 #include <math.h>
 #include "bmp280.h"
 
-/* ---------- mock I2C ---------- */
-
-#define MOCK_REG_COUNT 256
-static uint8_t mock_regs[MOCK_REG_COUNT];
-static int     mock_fail_next;
-static int     mock_op_count;
-static int     mock_fail_at;
+/* ---------- chip-specific mock setup ---------- */
 
 static void mock_reset(void)
 {
-    memset(mock_regs, 0, sizeof(mock_regs));
-    mock_fail_next  = 0;
-    mock_op_count   = 0;
-    mock_fail_at    = -1;
+    mock_i2c_reset();
 
     mock_regs[0xD0] = 0x58;
 
-    /* Calibration data from Bosch datasheet example (approximate) */
-    mock_regs[0x88] = 0x70; mock_regs[0x89] = 0x6B; /* dig_T1 = 27504 */
-    mock_regs[0x8A] = 0x43; mock_regs[0x8B] = 0x67; /* dig_T2 = 26435 */
-    mock_regs[0x8C] = 0x18; mock_regs[0x8D] = 0xFC; /* dig_T3 = -1000 */
-
-    mock_regs[0x8E] = 0x7D; mock_regs[0x8F] = 0x8E; /* dig_P1 = 36477 */
-    mock_regs[0x90] = 0x43; mock_regs[0x91] = 0xD6; /* dig_P2 = -10685 */
-    mock_regs[0x92] = 0xD0; mock_regs[0x93] = 0x0B; /* dig_P3 = 3024 */
-    mock_regs[0x94] = 0x27; mock_regs[0x95] = 0x0B; /* dig_P4 = 2855 */
-    mock_regs[0x96] = 0x8C; mock_regs[0x97] = 0x00; /* dig_P5 = 140 */
-    mock_regs[0x98] = 0xF9; mock_regs[0x99] = 0xFF; /* dig_P6 = -7 */
-    mock_regs[0x9A] = 0x8C; mock_regs[0x9B] = 0x3C; /* dig_P7 = 15500 */
-    mock_regs[0x9C] = 0xF8; mock_regs[0x9D] = 0xC6; /* dig_P8 = -14600 */
-    mock_regs[0x9E] = 0x70; mock_regs[0x9F] = 0x17; /* dig_P9 = 6000 */
-}
-
-static bool mock_should_fail(void)
-{
-    int n = mock_op_count++;
-    if (mock_fail_next) { mock_fail_next = 0; return true; }
-    if (mock_fail_at >= 0 && n == mock_fail_at) return true;
-    return false;
-}
-
-static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    mock_regs[reg] = val;
-    return true;
-}
-
-static bool mock_read_regs(void *ctx, uint8_t addr, uint8_t reg,
-                            uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    for (uint16_t i = 0; i < len; i++)
-        buf[i] = ((reg + i) < MOCK_REG_COUNT) ? mock_regs[reg + i] : 0xFF;
-    return true;
+    mock_regs[0x88] = 0x70; mock_regs[0x89] = 0x6B;
+    mock_regs[0x8A] = 0x43; mock_regs[0x8B] = 0x67;
+    mock_regs[0x8C] = 0x18; mock_regs[0x8D] = 0xFC;
+    mock_regs[0x8E] = 0x7D; mock_regs[0x8F] = 0x8E;
+    mock_regs[0x90] = 0x43; mock_regs[0x91] = 0xD6;
+    mock_regs[0x92] = 0xD0; mock_regs[0x93] = 0x0B;
+    mock_regs[0x94] = 0x27; mock_regs[0x95] = 0x0B;
+    mock_regs[0x96] = 0x8C; mock_regs[0x97] = 0x00;
+    mock_regs[0x98] = 0xF9; mock_regs[0x99] = 0xFF;
+    mock_regs[0x9A] = 0x8C; mock_regs[0x9B] = 0x3C;
+    mock_regs[0x9C] = 0xF8; mock_regs[0x9D] = 0xC6;
+    mock_regs[0x9E] = 0x70; mock_regs[0x9F] = 0x17;
 }
 
 static const bmp280_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_regs = mock_read_regs,
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
 
