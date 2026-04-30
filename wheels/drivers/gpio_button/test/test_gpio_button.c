@@ -262,6 +262,15 @@ TEST(test_debounce_boundary)
     ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
     ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
 
+    /* debounce_ms=20 with 1ms ticks: first tick resets counter (raw change),
+     * then 19 more ticks accumulate to 19 < 20, so 20ms is NOT enough.
+     * 21st tick reaches counter=20 >= threshold → state_changed. */
+    mock_level = 1;
+    gpio_btn_init(&btn, &mock_hal, &cfg);
+    mock_level = 0;
+    e = tick_ms(&btn, 20);
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
+
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
     mock_level = 0;
