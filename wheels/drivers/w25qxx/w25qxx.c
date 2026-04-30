@@ -21,7 +21,10 @@
 #define SR1_BUSY            0x01
 #define SR1_WEL             0x02
 
-#define BUSY_TIMEOUT        500000U
+#ifndef W25QXX_BUSY_TIMEOUT
+#define W25QXX_BUSY_TIMEOUT 500000U
+#endif
+#define BUSY_TIMEOUT        W25QXX_BUSY_TIMEOUT
 
 /* ---------- helpers ---------- */
 
