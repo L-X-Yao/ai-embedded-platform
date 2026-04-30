@@ -82,22 +82,28 @@ if [[ $count_l3 -gt 0 ]]; then
   - L3 (${count_l3}): ${l3_list}"
 fi
 
-# Replace in CLAUDE.md using sed: find the wheels block and replace
-# Pattern: line starting with "- ✅ **N 个 wheels**" through the last "  - L" line
-python3 -c "
-import re, sys
+# Replace in CLAUDE.md — pass data via env vars to avoid injection
+export WHEEL_BLOCK="$BLOCK"
+export WHEEL_TOTAL="$total"
+python3 - "$CLAUDE_MD" << 'PYEOF'
+import os, re, sys
 
-text = open('$CLAUDE_MD', 'r', encoding='utf-8').read()
+claude_path = sys.argv[1]
+block = os.environ["WHEEL_BLOCK"]
+total = os.environ["WHEEL_TOTAL"]
 
-# Match from '- ✅ **N 个 wheels**' through consecutive '  - L' lines
-pattern = r'- ✅ \*\*\d+ 个 wheels\*\*.*?\n(?:  - L\d.*\n)+'
-replacement = '''$BLOCK\n'''
+text = open(claude_path, "r", encoding="utf-8").read()
+
+pattern = r"- ✅ \*\*\d+ 个 wheels\*\*.*?\n(?:  - L\d.*\n)+"
+replacement = block + "\n"
 
 new_text, count = re.subn(pattern, replacement, text, count=1)
 if count == 0:
-    print('ERROR: could not find wheel inventory block in CLAUDE.md', file=sys.stderr)
+    print("ERROR: could not find wheel inventory block in CLAUDE.md", file=sys.stderr)
     sys.exit(1)
 
-open('$CLAUDE_MD', 'w', encoding='utf-8').write(new_text)
-print(f'Updated CLAUDE.md: {$total} wheels')
-"
+tmp = claude_path + ".tmp"
+open(tmp, "w", encoding="utf-8").write(new_text)
+os.replace(tmp, claude_path)
+print(f"Updated CLAUDE.md: {total} wheels")
+PYEOF

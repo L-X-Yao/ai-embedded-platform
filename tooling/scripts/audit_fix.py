@@ -43,13 +43,24 @@ def find_wheels(filter_names=None):
     return wheels
 
 
+def _read_lines(path):
+    """Read file preserving line ending style. Returns (lines, newline)."""
+    raw = path.read_bytes()
+    if b"\r\n" in raw:
+        nl = "\r\n"
+    else:
+        nl = "\n"
+    text = raw.decode("utf-8", errors="replace")
+    return text.split(nl), nl
+
+
 def fix_doc_comments(wheel_dir, name, apply=False):
     """Add stub doc comments before undocumented public function declarations."""
     h = wheel_dir / f"{name}.h"
     if not h.exists():
         return []
 
-    lines = h.read_text(encoding="utf-8", errors="replace").split("\n")
+    lines, nl = _read_lines(h)
     fixes = []
     new_lines = []
     i = 0
@@ -112,7 +123,7 @@ def fix_doc_comments(wheel_dir, name, apply=False):
         i += 1
 
     if fixes and apply:
-        h.write_text("\n".join(new_lines), encoding="utf-8")
+        h.write_text(nl.join(new_lines), encoding="utf-8")
 
     return fixes
 
@@ -127,7 +138,7 @@ def fix_error_enum(wheel_dir, name, apply=False):
     if f"{name}_err_t" not in text:
         return []
 
-    lines = text.split("\n")
+    lines, nl = _read_lines(h)
     fixes = []
     new_lines = []
     in_enum = False
@@ -164,7 +175,7 @@ def fix_error_enum(wheel_dir, name, apply=False):
         new_lines.append(line)
 
     if fixes and apply:
-        h.write_text("\n".join(new_lines), encoding="utf-8")
+        h.write_text(nl.join(new_lines), encoding="utf-8")
 
     return fixes
 
@@ -185,12 +196,12 @@ def fix_missing_stddef(wheel_dir, name, apply=False):
 
     fixes = [f"{name}.c: uses NULL without #include <stddef.h>"]
     if apply:
-        lines = text.split("\n")
+        lines, nl = _read_lines(c)
         for i, line in enumerate(lines):
             if line.startswith(f'#include "{name}.h"'):
                 lines.insert(i + 1, "#include <stddef.h>")
                 break
-        c.write_text("\n".join(lines), encoding="utf-8")
+        c.write_text(nl.join(lines), encoding="utf-8")
 
     return fixes
 

@@ -65,7 +65,11 @@ static bool mock_i2c_write_reg(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     if (mock_i2c_should_fail()) return false;
     mock_write_count++;
+#if MOCK_I2C_REG_COUNT < 256
+    if (reg < MOCK_I2C_REG_COUNT) mock_regs[reg] = val;
+#else
     mock_regs[reg] = val;
+#endif
     return true;
 }
 
