@@ -41,6 +41,10 @@ ota_ab_layout_t layout = {
     .params_size   = 4096,
     .max_boot_count = 3,
 };
+static bool my_erase(void *ctx, uint32_t addr, uint32_t size) { (void)ctx; /* ... */ return true; }
+static bool my_write(void *ctx, uint32_t addr, const uint8_t *data, uint32_t len) { (void)ctx; /* ... */ return true; }
+static bool my_read(void *ctx, uint32_t addr, uint8_t *buf, uint32_t len) { (void)ctx; /* ... */ return true; }
+const ota_ab_flash_t flash_hal = { .erase = my_erase, .write = my_write, .read = my_read, .ctx = NULL };
 ota_ab_init(&m, &flash_hal, &layout);
 
 /* App: after downloading + CRC-verifying new firmware */
