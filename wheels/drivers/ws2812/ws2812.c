@@ -45,6 +45,7 @@ void ws2812_encode_grb(const ws2812_color_t *color,
                        const ws2812_timing_t *timing,
                        uint16_t *slots_out)
 {
+    if (!color || !timing || !slots_out) return;
     encode_byte(color->g, timing, &slots_out[0]);
     encode_byte(color->r, timing, &slots_out[8]);
     encode_byte(color->b, timing, &slots_out[16]);

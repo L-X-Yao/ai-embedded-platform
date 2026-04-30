@@ -65,6 +65,9 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
         return BMP280_ERR_PARAM;
     }
 
+    if ((unsigned)cfg->osrs_t > 5 || (unsigned)cfg->osrs_p > 5)
+        return BMP280_ERR_PARAM;
+
     memset(dev, 0, sizeof(*dev));
     dev->i2c = *i2c;
     dev->cfg = *cfg;

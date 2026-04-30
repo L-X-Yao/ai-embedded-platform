@@ -97,7 +97,8 @@ gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
             }
         }
     } else if (btn->pressed) {
-        btn->hold_cnt += dt_ms;
+        if (btn->hold_cnt <= UINT32_MAX - dt_ms)
+            btn->hold_cnt += dt_ms;
         if (!btn->long_fired && btn->hold_cnt >= btn->cfg.long_press_ms) {
             btn->long_fired = 1U;
             btn->click_pending = 0U;
@@ -107,7 +108,8 @@ gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
 
     /* pending click: emit after double-click window expires */
     if (btn->click_pending && !btn->pressed) {
-        btn->idle_cnt += dt_ms;
+        if (btn->idle_cnt <= UINT32_MAX - dt_ms)
+            btn->idle_cnt += dt_ms;
         if (btn->idle_cnt >= btn->cfg.double_click_ms) {
             btn->click_pending = 0U;
             return GPIO_BTN_EVT_CLICK;

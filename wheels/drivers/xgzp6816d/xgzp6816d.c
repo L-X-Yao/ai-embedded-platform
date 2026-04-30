@@ -33,7 +33,7 @@
 
 xgzp6816d_err_t xgzp6816d_probe(const xgzp6816d_i2c_t *i2c)
 {
-    if (!i2c) return XGZP6816D_ERR_I2C;
+    if (!i2c || !i2c->write || !i2c->read) return XGZP6816D_ERR_I2C;
     /* Zero-byte write — START + addr_W + STOP. The HAL layer is expected to
      * report failure if the device NACKs the address; that's the only signal
      * we have at this stage (no chip-id register on the XGZP6816D). */
