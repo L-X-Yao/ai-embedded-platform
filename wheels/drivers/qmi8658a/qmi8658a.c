@@ -19,8 +19,7 @@
 #define REG_AX_L       0x35
 
 #define WHO_AM_I_VAL   0x05
-/* 8-bit (write) address: 0x6B << 1 = 0xD6. Matches flybox HAL convention. */
-#define DEV_ADDR       (0x6B << 1)
+#define DEV_ADDR       0x6B
 
 /* ---------- scale tables ---------- */
 

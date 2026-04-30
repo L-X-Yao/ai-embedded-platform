@@ -44,5 +44,9 @@ void timeout_restart(timeout_t *t, uint32_t now)
 void timeout_extend(timeout_t *t, uint32_t extra)
 {
     if (!t) return;
-    t->duration += extra;
+    if (extra > UINT32_MAX - t->duration) {
+        t->duration = UINT32_MAX;
+    } else {
+        t->duration += extra;
+    }
 }

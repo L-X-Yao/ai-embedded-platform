@@ -105,7 +105,7 @@ TEST(test_find_header_missing)
 
     const http_header_t *hdr = NULL;
     ASSERT_EQ(http_find_header(req.headers, req.header_count, "X-Missing", &hdr),
-              HTTP_ERR_MALFORMED);
+              HTTP_ERR_NOT_FOUND);
 }
 
 TEST(test_null_safety)

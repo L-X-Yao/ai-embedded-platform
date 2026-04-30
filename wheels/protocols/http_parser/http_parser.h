@@ -28,6 +28,7 @@ typedef enum {
     HTTP_ERR_INCOMPLETE = -2,
     HTTP_ERR_MALFORMED  = -3,
     HTTP_ERR_TOO_MANY   = -4,
+    HTTP_ERR_NOT_FOUND  = -5,
 } http_err_t;
 
 typedef struct {

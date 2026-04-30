@@ -37,9 +37,9 @@ typedef enum {
 typedef struct {
     const gpio_led_hal_t *hal;
     gpio_led_mode_t mode;
-    uint16_t on_ms;
-    uint16_t off_ms;
-    uint16_t elapsed;
+    uint32_t on_ms;
+    uint32_t off_ms;
+    uint32_t elapsed;
     uint8_t  brightness;
     uint8_t  repeat;
     uint8_t  remaining;
