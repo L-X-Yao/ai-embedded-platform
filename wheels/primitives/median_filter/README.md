@@ -41,6 +41,12 @@ ctest --test-dir build --output-on-failure
 
 Proactive build for common embedded components (2026-04-29 batch).
 
+## Configuration macros
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `MEDIAN_FILTER_MAX_SIZE` | 31 | Maximum window size (odd recommended) |
+
 ## Known issues
 
 None.

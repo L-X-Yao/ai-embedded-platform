@@ -45,6 +45,12 @@ None.
 
 Proactive build for common embedded components (2026-04-29 batch).
 
+## Configuration macros
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `COAP_MAX_OPTIONS` | 8 | Maximum number of CoAP options per packet |
+
 ## Known issues
 
 None.

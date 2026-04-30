@@ -44,6 +44,12 @@ None.
 
 Proactive build for common embedded components (2026-04-29 batch).
 
+## Configuration macros
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `HTTP_MAX_HEADERS` | 16 | Maximum number of parsed headers per request/response |
+
 ## Known issues
 
 None.
