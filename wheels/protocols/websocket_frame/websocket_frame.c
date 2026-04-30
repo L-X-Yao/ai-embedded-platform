@@ -27,9 +27,16 @@ ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame)
     frame->opcode = (ws_opcode_t)(data[0] & 0x0F);
     frame->masked = (data[1] & 0x80) != 0;
 
+    if ((data[0] & 0x70) != 0)
+        return WS_ERR_PROTOCOL;
+
+    bool is_control = (frame->opcode & 0x08) != 0;
     uint64_t payload_len;
     size_t hdr_len = 2;
     uint8_t len7 = data[1] & 0x7F;
+
+    if (is_control && (!frame->fin || len7 > 125))
+        return WS_ERR_PROTOCOL;
 
     if (len7 <= 125) {
         payload_len = len7;
@@ -53,7 +60,9 @@ ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame)
         memset(frame->mask_key, 0, 4);
     }
 
-    if (payload_len > SIZE_MAX || len < hdr_len + (size_t)payload_len)
+    if (payload_len > (uint64_t)(SIZE_MAX - hdr_len))
+        return WS_ERR_INCOMPLETE;
+    if (len < hdr_len + (size_t)payload_len)
         return WS_ERR_INCOMPLETE;
 
     frame->payload = &data[hdr_len];

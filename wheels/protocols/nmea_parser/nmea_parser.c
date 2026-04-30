@@ -192,6 +192,8 @@ nmea_err_t nmea_parse(const char *sentence, nmea_data_t *data)
     nmea_sentence_t type = nmea_identify(sentence);
     if (type == NMEA_SENTENCE_UNKNOWN) return NMEA_ERR_UNKNOWN;
 
+    if (!nmea_verify_checksum(sentence)) return NMEA_ERR_CHECKSUM;
+
     const char *body = strchr(sentence, ',');
     if (!body) return NMEA_ERR_UNKNOWN;
 

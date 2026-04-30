@@ -30,6 +30,7 @@ typedef enum {
 typedef struct {
     bool (*write)(void *ctx, uint8_t dev_addr, const uint8_t *data, uint16_t len);
     bool (*read)(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len);
+    void (*delay_ms)(void *ctx, uint16_t ms);
     void *ctx;
 } sht30_i2c_t;
 

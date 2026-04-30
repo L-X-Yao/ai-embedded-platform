@@ -150,6 +150,23 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
         return BMP280_ERR_I2C;
     }
 
+    for (int tries = 0; tries < 500; tries++)
+    {
+        uint8_t status;
+        if (!read_regs(dev, REG_STATUS, &status, 1))
+        {
+            return BMP280_ERR_I2C;
+        }
+        if ((status & 0x08) == 0)
+        {
+            break;
+        }
+        if (tries == 499)
+        {
+            return BMP280_ERR_TIMEOUT;
+        }
+    }
+
     uint8_t buf[6];
     if (!read_regs(dev, REG_PRESS_MSB, buf, 6))
     {

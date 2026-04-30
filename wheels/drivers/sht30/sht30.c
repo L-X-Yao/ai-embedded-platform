@@ -73,6 +73,11 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
         return SHT30_ERR_I2C;
     }
 
+    if (dev->i2c.delay_ms)
+    {
+        dev->i2c.delay_ms(dev->i2c.ctx, 16);
+    }
+
     uint8_t buf[6];
     if (!dev->i2c.read(dev->i2c.ctx, dev->cfg.addr, buf, 6))
     {

@@ -85,7 +85,7 @@ TEST(test_parse_rmc_void_fix)
     nmea_data_t d;
     nmea_data_init(&d);
 
-    nmea_parse("$GPRMC,123519,V,,,,,,,230394,,,N*7C", &d);
+    nmea_parse("$GPRMC,123519,V,,,,,,,230394,,,N*51", &d);
     ASSERT_EQ(d.fix_valid, 0);
 }
 
@@ -111,7 +111,7 @@ TEST(test_parse_gsa_2d)
     nmea_data_t d;
     nmea_data_init(&d);
 
-    nmea_parse("$GPGSA,A,2,04,05,,,,,,,,,,,,3.0,2.0,*34", &d);
+    nmea_parse("$GPGSA,A,2,04,05,,,,,,,,,,,,3.0,2.0,*31", &d);
     ASSERT_EQ(d.fix_mode, 1);
 }
 
@@ -120,7 +120,7 @@ TEST(test_parse_gsa_nofix)
     nmea_data_t d;
     nmea_data_init(&d);
 
-    nmea_parse("$GPGSA,A,1,,,,,,,,,,,,,,,,*1E", &d);
+    nmea_parse("$GPGSA,A,1,,,,,,,,,,,,,,,,*32", &d);
     ASSERT_EQ(d.fix_mode, 0);
 }
 
@@ -158,7 +158,7 @@ TEST(test_rmc_no_course)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,123519,A,4807.038,N,01131.000,E,0.0,,230394,,,A*68", &d);
+    nmea_parse("$GPRMC,123519,A,4807.038,N,01131.000,E,0.0,,230394,,,A*5E", &d);
     ASSERT_EQ(d.course_valid, 0);
 }
 
@@ -166,7 +166,7 @@ TEST(test_south_west_coordinates)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,000000,A,3349.500,S,15051.000,W,0.0,0.0,010126,,,A*2A", &d);
+    nmea_parse("$GPRMC,000000,A,3349.500,S,15051.000,W,0.0,0.0,010126,,,A*73", &d);
     ASSERT_TRUE(d.latitude < 0.0f);
     ASSERT_TRUE(d.longitude < 0.0f);
 }
@@ -175,7 +175,7 @@ TEST(test_equator_prime_meridian)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010126,,,A*6F", &d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010126,,,A*77", &d);
     ASSERT_NEAR(d.latitude, 0.0f, 0.001f);
     ASSERT_NEAR(d.longitude, 0.0f, 0.001f);
     ASSERT_EQ(d.fix_valid, 1);
@@ -190,7 +190,7 @@ TEST(test_accumulate_gga_rmc)
     ASSERT_EQ(d.satellites, 8);
     ASSERT_NEAR(d.altitude_m, 61.7f, 0.1f);
 
-    nmea_parse("$GPRMC,092750,A,5321.6802,N,00630.3372,W,0.0,0.0,230394,,,A*50", &d);
+    nmea_parse("$GPRMC,092750,A,5321.6802,N,00630.3372,W,0.0,0.0,230394,,,A*6D", &d);
     ASSERT_EQ(d.fix_valid, 1);
     ASSERT_EQ(d.satellites, 8);
     ASSERT_NEAR(d.altitude_m, 61.7f, 0.1f);
@@ -217,14 +217,24 @@ TEST(test_no_comma_in_sentence)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    ASSERT_EQ(nmea_parse("$GPGGA*00", &d), NMEA_ERR_UNKNOWN);
+    ASSERT_EQ(nmea_parse("$GPGGA*56", &d), NMEA_ERR_UNKNOWN);
+}
+
+TEST(test_parse_bad_checksum_rejected)
+{
+    nmea_data_t d;
+    nmea_data_init(&d);
+    ASSERT_EQ(nmea_parse(
+        "$GPGGA,092750.000,5321.6802,N,00630.3372,W,1,8,1.03,61.7,M,55.2,M,,*FF",
+        &d), NMEA_ERR_CHECKSUM);
+    ASSERT_EQ(d.fix_quality, 0);
 }
 
 TEST(test_max_latitude_longitude)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,9000.000,N,18000.000,E,0.0,0.0,010126,,,A*2E", &d);
+    nmea_parse("$GPRMC,120000,A,9000.000,N,18000.000,E,0.0,0.0,010126,,,A*77", &d);
     ASSERT_NEAR(d.latitude, 90.0f, 0.01f);
     ASSERT_NEAR(d.longitude, 180.0f, 0.01f);
 }
@@ -233,19 +243,19 @@ TEST(test_year_boundary)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010100,,,A*67", &d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010100,,,A*73", &d);
     ASSERT_EQ(d.year, 2000);
 
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010179,,,A*6D", &d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010179,,,A*7D", &d);
     ASSERT_EQ(d.year, 2079);
 
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010180,,,A*63", &d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010180,,,A*7B", &d);
     ASSERT_EQ(d.year, 1980);
 
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010199,,,A*63", &d);
+    nmea_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010199,,,A*73", &d);
     ASSERT_EQ(d.year, 1999);
 }
 
@@ -253,7 +263,7 @@ TEST(test_gga_no_fix)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPGGA,,,,,,,0,0,,,,,,,*66", &d);
+    nmea_parse("$GPGGA,,,,,,,0,0,,,,,,,*7A", &d);
     ASSERT_EQ(d.fix_quality, 0);
     ASSERT_EQ(d.satellites, 0);
 }
@@ -262,7 +272,7 @@ TEST(test_rmc_empty_speed_course)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,,,010126,,,A*57", &d);
+    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,,,010126,,,A*75", &d);
     ASSERT_NEAR(d.speed_kmh, 0.0f, 0.01f);
     ASSERT_EQ(d.course_valid, 0);
 }
@@ -280,7 +290,7 @@ TEST(test_truncated_rmc)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_err_t e = nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E*64", &d);
+    nmea_err_t e = nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E*30", &d);
     ASSERT_EQ(e, NMEA_OK);
     ASSERT_NEAR(d.speed_kmh, 0.0f, 0.01f);
 }
@@ -295,7 +305,7 @@ TEST(test_speed_conversion)
 {
     nmea_data_t d;
     nmea_data_init(&d);
-    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,100.0,,010126,,,A*2D", &d);
+    nmea_parse("$GPRMC,120000,A,4807.038,N,01131.000,E,100.0,,010126,,,A*5A", &d);
     ASSERT_NEAR(d.speed_kmh, 185.2f, 0.5f);
 }
 
@@ -320,6 +330,7 @@ TEST_MAIN("nmea_parser")
     RUN(test_equator_prime_meridian);
     RUN(test_checksum_lowercase);
     RUN(test_no_comma_in_sentence);
+    RUN(test_parse_bad_checksum_rejected);
     RUN(test_max_latitude_longitude);
     RUN(test_year_boundary);
     RUN(test_gga_no_fix);
