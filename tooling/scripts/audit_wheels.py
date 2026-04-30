@@ -395,6 +395,49 @@ def audit_projects() -> list:
     return issues
 
 
+def has_negative_error_codes(wheel_dir: Path, name: str) -> bool:
+    """Check that error enum uses explicit negative values (Q4 audit)."""
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return True
+    text = h.read_text(encoding="utf-8", errors="replace")
+    if f"{name}_err_t" not in text:
+        return True
+    lines = text.split("\n")
+    in_enum = False
+    for line in lines:
+        stripped = line.strip()
+        if f"_OK" in stripped and "= 0" in stripped:
+            in_enum = True
+            continue
+        if in_enum:
+            if "}" in stripped:
+                break
+            if "_ERR_" in stripped and "=" not in stripped:
+                return False
+    return True
+
+
+def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
+    """Check that every function declaration in .h has a doc comment (Q29)."""
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return True
+    lines = h.read_text(encoding="utf-8", errors="replace").split("\n")
+    undoc = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if (f"{name}_" in stripped and "(" in stripped and ");" in stripped
+                and not stripped.startswith("typedef")
+                and not stripped.startswith("//")
+                and not stripped.startswith("/*")
+                and not stripped.startswith("*")):
+            prev = lines[i - 1].strip() if i > 0 else ""
+            if not prev.startswith("/**") and not prev.startswith("*") and not prev.endswith("*/"):
+                undoc += 1
+    return undoc == 0
+
+
 def main() -> int:
     if not WHEELS.is_dir():
         print(f"ERROR: wheels/ not found at {WHEELS}", file=sys.stderr)
@@ -653,6 +696,34 @@ def main() -> int:
         print(f"  [WARN]  {msg}")
     if not proj_issues:
         print("  [ ok ]  no stray files detected")
+
+    # --- Error code sign convention (Q4 audit) ---
+    print("\n=== Error code sign convention (Q4) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_negative_error_codes(wheel_dir, name):
+            warnings.append(f"{path}: error enum uses auto-increment (should be explicit negative)")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- Function documentation completeness (Q29 audit) ---
+    print("\n=== Function doc completeness (Q29) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_function_doc_all(wheel_dir, name):
+            warnings.append(f"{path}: some functions lack doc comment before declaration")
+            print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
 
     # --- Consumer mapping summary ---
     print("\n=== Consumer mapping ===\n")
