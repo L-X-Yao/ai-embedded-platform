@@ -19,12 +19,14 @@ static int mock_init(void)
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
 {
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, mock_flash_buf + offset, size);
     return (int)size;
 }
 
 static int mock_write(long offset, const uint8_t *buf, size_t size)
 {
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     for (size_t i = 0; i < size; i++)
         mock_flash_buf[offset + i] &= buf[i];
     return (int)size;
@@ -32,6 +34,7 @@ static int mock_write(long offset, const uint8_t *buf, size_t size)
 
 static int mock_erase(long offset, size_t size)
 {
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memset(mock_flash_buf + offset, 0xFF, size);
     return (int)size;
 }
