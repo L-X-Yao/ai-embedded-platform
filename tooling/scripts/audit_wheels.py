@@ -282,8 +282,12 @@ def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     return list({m[1] for m in pattern.findall(text)})
 
 
-def has_ci_job(wheel_path: str, ci_text: str) -> bool:
-    return wheel_path in ci_text
+def has_ci_job(wheel_path: str, ci_text: str, wheel_dir: Path) -> bool:
+    if wheel_path in ci_text:
+        return True
+    if "wheels/*/*/test/CMakeLists.txt" in ci_text and (wheel_dir / "test" / "CMakeLists.txt").exists():
+        return True
+    return False
 
 
 def find_consumers(wheel_path: str, wheel_name: str) -> list:
@@ -332,11 +336,10 @@ def main() -> int:
 
     print(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
     for layer, name, path in wheels:
-        ci_ok = has_ci_job(path, ci_text)
+        wheel_dir = WHEELS / layer / name
+        ci_ok = has_ci_job(path, ci_text, wheel_dir)
         consumers = find_consumers(path, name)
         consumer_required = layer in CONSUMER_REQUIRED
-
-        wheel_dir = WHEELS / layer / name
         origin = has_project_origin(wheel_dir)
 
         if not ci_ok:
