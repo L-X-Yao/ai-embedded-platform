@@ -84,8 +84,10 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_init)(
 ) {
     VSF_HAL_ASSERT((flash_ptr != NULL) && (cfg_ptr != NULL));
 
-    FMC_KEY = UNLOCK_KEY0;
-    FMC_KEY = UNLOCK_KEY1;
+    if (FMC_CTL & FMC_CTL_LK) {
+        FMC_KEY = UNLOCK_KEY0;
+        FMC_KEY = UNLOCK_KEY1;
+    }
 
     // word-size programming (32-bit)
     FMC_CTL = (FMC_CTL & ~FMC_CTL_PSZ) | ((uint32_t)2U << 8);
@@ -188,6 +190,7 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     flash_ptr->size_orig = flash_ptr->size_cur = size;
     flash_ptr->buffer = buffer;
 
+    while (FMC_STAT & FMC_STAT_BUSY) { }
     FMC_CTL |= FMC_CTL_PG;
     __ISB();
     __DSB();
@@ -243,7 +246,7 @@ vsf_flash_capability_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_capability)
         .irq_mask                  = VSF_FLASH_IRQ_ALL_BITS_MASK,
         .base_address              = 0x08000000,
         .max_size                  = 1024 * 1024,
-        .erase_sector_size         = 0x4000,
+        .erase_sector_size         = 0x20000, /* largest sector (128KB, sectors 5-11) */
         .write_sector_size         = 4,
         .none_sector_aligned_write = 0,
         .none_sector_aligned_read  = 1,

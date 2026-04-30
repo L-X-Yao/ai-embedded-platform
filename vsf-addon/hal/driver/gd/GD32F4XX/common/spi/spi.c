@@ -158,8 +158,10 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_fifo_transfer)(
     uint_fast32_t tx_offset = out_offset_ptr ? *out_offset_ptr : 0;
     uint_fast32_t rx_offset = in_offset_ptr  ? *in_offset_ptr  : 0;
 
+    uint32_t guard = 0;
     while (tx_offset < count || rx_offset < count) {
         stat = SPI_STAT(reg);
+        bool progress = false;
         if ((tx_offset < count) && (stat & SPI_STAT_TBE)) {
             if (out_buffer_ptr != NULL) {
                 if (is16bit) {
@@ -171,6 +173,7 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_fifo_transfer)(
                 SPI_DATA(reg) = 0xFFFF;
             }
             tx_offset++;
+            progress = true;
         }
         if ((rx_offset < count) && (stat & SPI_STAT_RBNE)) {
             uint16_t data = SPI_DATA(reg);
@@ -182,7 +185,10 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_fifo_transfer)(
                 }
             }
             rx_offset++;
+            progress = true;
         }
+        if (!progress && ++guard > 100000U) break;
+        if (progress) guard = 0;
     }
 
     if (out_offset_ptr) *out_offset_ptr = tx_offset;
