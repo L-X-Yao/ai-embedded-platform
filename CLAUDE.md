@@ -275,8 +275,8 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
 - ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（18 项自动检查 + TEST/RUN 平衡检测 + --graph）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（13 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
-- ✅ **49 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
-  - L0 (21): log / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
+- ✅ **50 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
+  - L0 (22): log / log_ringbuf / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
   - L2 (9): ncp5623_parser / at_command / modbus_rtu / nmea_parser / ota_ab / mqtt_packet / http_parser / websocket_frame / coap_packet
 - ✅ **HIL 自动化**（`tooling/hil/hil_runner.py`）——封装 build_flash_check.sh，soak 三档（quick 30s / standard 600s / stress 1800s），结果按时间戳存档，--compare 对比历史
