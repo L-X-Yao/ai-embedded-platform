@@ -33,6 +33,7 @@ static uint16_t get_u16(const uint8_t *buf)
 
 int mqtt_packet_encode_remaining_length(uint8_t *buf, uint32_t length)
 {
+    if (length > 268435455u) return -1;
     int i = 0;
     do
     {
@@ -81,6 +82,8 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
     var_header[2] = 'M';  var_header[3] = 'Q';
     var_header[4] = 'T';  var_header[5] = 'T';
     var_header[6] = 0x04;
+
+    if (opts->password && !opts->username) return MQTT_PACKET_ERR_PARAM;
 
     uint8_t flags = 0;
     if (opts->clean_session) flags |= 0x02;
