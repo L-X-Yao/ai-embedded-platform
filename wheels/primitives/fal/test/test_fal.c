@@ -13,6 +13,7 @@ static uint8_t mock_flash_buf[MOCK_FLASH_SIZE];
 static int mock_init(void)
 {
     memset(mock_flash_buf, 0xFF, sizeof(mock_flash_buf));
+    return 0;
 }
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
