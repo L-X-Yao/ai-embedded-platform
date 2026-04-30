@@ -77,7 +77,7 @@ clean:
 	@echo "Done."
 
 check:
-	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet
+	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet && python3 tooling/scripts/doc_drift_check.py
 
 ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
