@@ -35,12 +35,16 @@ typedef struct {
 /** @thread_safe: no */
 void encoder_init(rotary_encoder_t *enc);
 
+/** Feed current A/B pin states to update position and direction. @thread_safe: no */
 void encoder_update(rotary_encoder_t *enc, bool a, bool b);
 
+/** Return accumulated position count. @thread_safe: no */
 int32_t encoder_get_position(const rotary_encoder_t *enc);
 
+/** Return last detected rotation direction. @thread_safe: no */
 encoder_dir_t encoder_get_direction(const rotary_encoder_t *enc);
 
+/** Reset position to zero and clear direction. @thread_safe: no */
 void encoder_reset(rotary_encoder_t *enc);
 
 #ifdef __cplusplus

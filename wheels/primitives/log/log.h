@@ -78,7 +78,9 @@ typedef enum {
  *               callers should disable interrupts around set/get.
  * ====================================================================== */
 
+/** Set the runtime log level. @thread_safe: yes (single word write) */
 void log_set_level(log_level_t level);
+/** Return the current runtime log level. @thread_safe: yes */
 log_level_t log_get_level(void);
 
 /* ======================================================================
@@ -93,14 +95,13 @@ log_level_t log_get_level(void);
 
 typedef void (*log_sink_fn)(void *ctx, const char *line, size_t len);
 
-/* Register a sink. Returns sink id (>=0) or -1 on no slots. */
+/** Register a sink; return sink id (>=0) or -1 on no slots. @thread_safe: no */
 int log_add_sink(log_sink_fn fn, void *ctx);
 
-/* Returns 0 on success, -1 on invalid id. */
+/** Remove a sink by id; return 0 on success, -1 on invalid id. @thread_safe: no */
 int log_remove_sink(int sink_id);
 
-/* Preset sink: route to stdout (fprintf). Useful for host testing / sim.
- * Returns sink id (>=0) or -1 on no slots. */
+/** Add preset stdout sink for host testing. @thread_safe: no */
 int log_add_stdout_sink(void);
 
 /* ======================================================================
@@ -111,6 +112,7 @@ int log_add_stdout_sink(void);
  * disable again.
  * ====================================================================== */
 
+/** Set timestamp source; pass NULL to disable timestamps. @thread_safe: no */
 void log_set_time_fn(uint32_t (*fn)(void));
 
 /* ======================================================================
@@ -126,6 +128,7 @@ void log_set_time_fn(uint32_t (*fn)(void));
  *               after init)
  * ====================================================================== */
 
+/** Format and dispatch a log line to all sinks. @thread_safe: yes (after init) */
 void log_emit(log_level_t level, const char *module, const char *fmt, ...);
 
 #ifdef __cplusplus

@@ -69,30 +69,40 @@ typedef struct {
 int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
                               const mqtt_connect_opts_t *opts);
 
+/** Build PUBLISH packet into buf. @thread_safe: yes (pure function) */
 int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
                               const mqtt_publish_t *pub);
 
+/** Build SUBSCRIBE packet into buf. @thread_safe: yes (pure function) */
 int mqtt_packet_build_subscribe(uint8_t *buf, size_t buf_size,
                                 uint16_t packet_id,
                                 const char *topic, uint8_t qos);
 
+/** Build PINGREQ packet into buf. @thread_safe: yes (pure function) */
 int mqtt_packet_build_pingreq(uint8_t *buf, size_t buf_size);
 
+/** Build DISCONNECT packet into buf. @thread_safe: yes (pure function) */
 int mqtt_packet_build_disconnect(uint8_t *buf, size_t buf_size);
 
+/** Extract packet type from raw MQTT header byte. @thread_safe: yes (pure function) */
 mqtt_packet_type_t mqtt_packet_get_type(const uint8_t *buf, size_t len);
 
+/** Parse CONNACK packet into out struct. @thread_safe: yes (pure function) */
 mqtt_packet_err_t mqtt_packet_parse_connack(const uint8_t *buf, size_t len,
                                             mqtt_connack_t *out);
 
+/** Parse incoming PUBLISH packet fields into out struct. @thread_safe: yes (pure function) */
 mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
                                             mqtt_publish_t *out);
 
+/** Parse PUBACK packet and extract packet_id. @thread_safe: yes (pure function) */
 mqtt_packet_err_t mqtt_packet_parse_puback(const uint8_t *buf, size_t len,
                                            uint16_t *packet_id);
 
+/** Encode MQTT remaining-length field into buf. @thread_safe: yes (pure function) */
 int mqtt_packet_encode_remaining_length(uint8_t *buf, uint32_t length);
 
+/** Decode MQTT remaining-length field from buf. @thread_safe: yes (pure function) */
 uint32_t mqtt_packet_decode_remaining_length(const uint8_t *buf, size_t len,
                                              int *bytes_used);
 

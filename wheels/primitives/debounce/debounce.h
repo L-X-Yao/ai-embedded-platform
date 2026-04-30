@@ -31,14 +31,19 @@ typedef struct {
 /** @thread_safe: no */
 void debounce_init(debounce_t *d, uint8_t threshold, bool initial_state);
 
+/** Feed a raw sample and return current stable state. @thread_safe: no */
 bool debounce_update(debounce_t *d, bool raw);
 
+/** Return current stable (debounced) state. @thread_safe: no */
 bool debounce_get(const debounce_t *d);
 
+/** Return true if stable state changed on last update. @thread_safe: no */
 bool debounce_changed(const debounce_t *d);
 
+/** Return true if a rising edge (false->true) occurred on last update. @thread_safe: no */
 bool debounce_rising(const debounce_t *d);
 
+/** Return true if a falling edge (true->false) occurred on last update. @thread_safe: no */
 bool debounce_falling(const debounce_t *d);
 
 #ifdef __cplusplus

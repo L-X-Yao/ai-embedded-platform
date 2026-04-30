@@ -42,12 +42,16 @@ typedef struct {
 /** @thread_safe: no */
 void retry_init(retry_ctx_t *ctx, const retry_config_t *config);
 
+/** Return true if attempts remain and advance to next attempt. @thread_safe: no */
 bool retry_should_retry(retry_ctx_t *ctx);
 
+/** Return the computed delay in ms for the current attempt. @thread_safe: no */
 uint32_t retry_get_delay(const retry_ctx_t *ctx);
 
+/** Return the current attempt number (0-based). @thread_safe: no */
 uint8_t retry_get_attempt(const retry_ctx_t *ctx);
 
+/** Reset attempt counter and delay to initial state. @thread_safe: no */
 void retry_reset(retry_ctx_t *ctx);
 
 #ifdef __cplusplus

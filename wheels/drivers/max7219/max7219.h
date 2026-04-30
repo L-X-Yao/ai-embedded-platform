@@ -41,18 +41,25 @@ typedef struct {
 /** @thread_safe: no */
 max7219_err_t max7219_init(max7219_t *dev, const max7219_spi_t *spi);
 
+/** Set display brightness level (0-15). @thread_safe: caller_must_lock */
 max7219_err_t max7219_set_intensity(max7219_t *dev, uint8_t level);
 
+/** Set number of digits to scan (1-8). @thread_safe: caller_must_lock */
 max7219_err_t max7219_set_scan_limit(max7219_t *dev, uint8_t digits);
 
+/** Enter or exit shutdown mode. @thread_safe: caller_must_lock */
 max7219_err_t max7219_shutdown(max7219_t *dev, bool shutdown);
 
+/** Set BCD decode mode bitmask for digits. @thread_safe: caller_must_lock */
 max7219_err_t max7219_set_decode_mode(max7219_t *dev, uint8_t mask);
 
+/** Write value to a single digit register (0-7). @thread_safe: caller_must_lock */
 max7219_err_t max7219_set_digit(max7219_t *dev, uint8_t digit, uint8_t value);
 
+/** Clear all digit registers to zero. @thread_safe: caller_must_lock */
 max7219_err_t max7219_clear(max7219_t *dev);
 
+/** Enable or disable display test mode (all segments on). @thread_safe: caller_must_lock */
 max7219_err_t max7219_display_test(max7219_t *dev, bool enable);
 
 #ifdef __cplusplus

@@ -25,8 +25,10 @@ extern "C" {
 /** @thread_safe: yes (pure function, no state) */
 uint32_t crc32_compute(const uint8_t *data, size_t len);
 
+/** Feed data into running CRC (pass CRC32_INIT for first call). @thread_safe: yes */
 uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len);
 
+/** Apply final XOR to produce the standard CRC32 value. @thread_safe: yes */
 uint32_t crc32_finalize(uint32_t crc);
 
 #ifdef __cplusplus
