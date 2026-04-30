@@ -10,7 +10,7 @@
 | `审计 <维度名>` | 单维度审查 + 修复 |
 | `超级审计` | 全维度并行启动，按完成顺序汇报 + 修复 |
 
-## 18 个审计维度
+## 24 个审计维度
 
 ### 批次 1 — Wheel 源码
 
@@ -48,6 +48,17 @@
 | Q5 | **命名深度扫描** | struct 字段名模式（`ctx` vs `user_data`）、enum 值前缀、宏大小写、typedef 后缀（`_t` vs `_fn`）、跨 wheel 同类概念命名一致性 | 全部 wheel .h |
 | Q6 | **README 示例可编译** | 每个 wheel README 中的代码片段提取后能否通过 C99 编译（语法正确、函数签名匹配当前 API） | 全部 wheel README.md |
 
+### 批次 5 — 静态分析级
+
+| ID | 维度 | 检查内容 | 范围 |
+|----|------|----------|------|
+| Q7 | **MISRA-C 子集合规** | Rule 10.x 隐式转换、Rule 14.x 控制流（unreachable code）、Rule 17.x 函数（隐式声明、参数不匹配）、Rule 21.x 禁用标准库函数（atoi/atof/sprintf→snprintf） | 全部 wheel .c |
+| Q8 | **防御性编程完整性** | switch 必须有 default、if-else 链兜底、除法前检查除数非零、移位量 < 位宽、循环有上界 | 全部 wheel .c |
+| Q9 | **数值精度** | float == 比较、累积浮点误差、整数截断（uint32→uint16 无 guard）、有符号/无符号混用比较 | 全部 wheel .c |
+| Q10 | **头文件自包含** | 每个 .h 是否包含自身需要的全部 #include（不依赖 .c 的 include 顺序） | 全部 wheel .h |
+| Q11 | **宏卫生** | 多次求值风险（宏参数含副作用）、缺少外层括号、命名空间污染（过于通用的宏名如 MAX/MIN/OK） | 全部 wheel .h/.c |
+| Q12 | **测试质量** | 是否只验证 happy path、是否缺少边界值（0/MAX/溢出）、assert 密度、空测试体、error path 覆盖 | 全部 wheel test/*.c |
+
 ## 每维度输出规范
 
 每个维度审查完成后，AI 按以下格式汇报：
@@ -74,13 +85,14 @@
 2. 启动批次 2（T1 + C1 + P1）— 3 个 agent 并行
 3. 启动批次 3（D1 + H1 + S1 + B1）— 4 个 agent 并行
 4. 启动批次 4（Q1 + Q2 + Q3, Q4 + Q5 + Q6）— 2-3 个 agent 并行
-5. 每个 agent 返回后立即开始修复
-6. 全部修复完成后分类 commit（按 type × scope 拆分）
-7. 跑 test_all.sh + audit_wheels.py 验证
-8. 推送
+5. 启动批次 5（Q7 + Q8 + Q9, Q10 + Q11 + Q12）— 2-3 个 agent 并行
+6. 每个 agent 返回后立即开始修复
+7. 全部修复完成后分类 commit（按 type × scope 拆分）
+8. 跑 test_all.sh + audit_wheels.py 验证
+9. 推送
 ```
 
-完整超级审计（18 维度）从启动到推送约 30-45 分钟。
+完整超级审计（24 维度）从启动到推送约 40-60 分钟。
 
 ## 审计频率建议
 
