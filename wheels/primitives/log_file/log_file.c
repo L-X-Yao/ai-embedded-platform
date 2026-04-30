@@ -7,6 +7,7 @@
  */
 
 #include "log_file.h"
+#include <stddef.h>
 
 int log_file_open(log_file_t *lf, const char *path, int auto_flush) {
     if (!lf || !path) return -1;

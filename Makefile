@@ -7,6 +7,8 @@
 #   make test-changed   # only tests affected by uncommitted changes
 #   make test-fast      # stop on first failure (fast iteration)
 #   make audit          # run wheel audit (22 checks)
+#   make audit-fix      # auto-fix mechanical audit findings (dry-run)
+#   make audit-fix-apply  # auto-fix and apply
 #   make coverage       # tests with gcov coverage report
 #   make bootstrap      # print session context
 #   make list           # list all discoverable test targets
@@ -16,8 +18,10 @@
 #   make sync-vsf-status       # show current vs upstream vsf version
 #   make clean                 # remove all build_* directories
 #   make check                 # test + audit in one shot (pre-push)
+#   make ship M="msg"          # check + commit + push in one shot
+#   make inventory             # update CLAUDE.md wheel counts
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check inventory
+.PHONY: test test-wheels test-projects test-changed test-fast audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -36,6 +40,12 @@ test-fast:
 
 audit:
 	python3 tooling/scripts/audit_wheels.py
+
+audit-fix:
+	python3 tooling/scripts/audit_fix.py
+
+audit-fix-apply:
+	python3 tooling/scripts/audit_fix.py --apply
 
 coverage:
 	bash tooling/scripts/test_all.sh --wheel --coverage
@@ -68,6 +78,14 @@ clean:
 
 check:
 	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet
+
+ship:
+	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
+	bash tooling/scripts/test_all.sh
+	python3 tooling/scripts/audit_wheels.py --quiet
+	git add -A
+	git commit -m "$(M)"
+	git push
 
 inventory:
 	bash tooling/scripts/update_wheel_inventory.sh --apply

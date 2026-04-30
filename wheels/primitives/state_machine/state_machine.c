@@ -7,6 +7,7 @@
  */
 
 #include "state_machine.h"
+#include <stddef.h>
 
 static const sm_state_def_t *find_state_def(const state_machine_t *ctx,
                                             sm_state_t id)
