@@ -10,8 +10,7 @@ from pathlib import Path
 
 import pytest
 
-WHEEL_DIR = Path(__file__).parent
-TEST_DIR = WHEEL_DIR / "test"
+TEST_DIR = Path(__file__).parent
 BUILD_DIR = TEST_DIR / "build"
 TEST_BIN = BUILD_DIR / "test_crc16"
 
