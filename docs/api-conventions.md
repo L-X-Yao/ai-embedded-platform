@@ -98,6 +98,8 @@ bool ring_buffer_is_empty(ring_buffer_t *rb);
 
 **原则**：每个 wheel 用自己的 `<name>_err_t` 枚举。不用 `vsf_err_t`（可移植性），也不用裸 int（无类型安全）。Vendor wheel 例外——沿用上游 API 的错误码风格。
 
+**符号约定**：`_OK = 0`，所有错误码为**显式负值**（`_ERR_X = -1, _ERR_Y = -2`）。禁止自增（`_ERR_X,`），因为自增产生正值，`if (err < 0)` 检查会失效。
+
 ### 2.2 不用 `errno` 全局变量
 
 嵌入式多任务环境下 errno 容易错乱。**错误直接通过返回值传**。

@@ -19,9 +19,9 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    QMI8658A_OK = 0,
-    QMI8658A_ERR_I2C,
-    QMI8658A_ERR_CHIP_ID,
+    QMI8658A_OK          =  0,
+    QMI8658A_ERR_I2C     = -1,
+    QMI8658A_ERR_CHIP_ID = -2,
 } qmi8658a_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */

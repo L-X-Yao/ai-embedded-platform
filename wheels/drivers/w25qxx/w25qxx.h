@@ -19,11 +19,11 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    W25QXX_OK = 0,
-    W25QXX_ERR_SPI,
-    W25QXX_ERR_JEDEC_ID,
-    W25QXX_ERR_TIMEOUT,
-    W25QXX_ERR_ALIGN,
+    W25QXX_OK           =  0,
+    W25QXX_ERR_SPI      = -1,
+    W25QXX_ERR_JEDEC_ID = -2,
+    W25QXX_ERR_TIMEOUT  = -3,
+    W25QXX_ERR_ALIGN    = -4,
 } w25qxx_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */

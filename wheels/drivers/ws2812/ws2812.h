@@ -18,9 +18,9 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    WS2812_OK = 0,
-    WS2812_ERR_NULL,
-    WS2812_ERR_HAL,
+    WS2812_OK       =  0,
+    WS2812_ERR_NULL = -1,
+    WS2812_ERR_HAL  = -2,
 } ws2812_err_t;
 
 /* ---------- timing configuration (clock-dependent) ---------- */

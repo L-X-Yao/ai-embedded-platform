@@ -19,10 +19,10 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    NMEA_OK = 0,
-    NMEA_ERR_NULL,
-    NMEA_ERR_CHECKSUM,
-    NMEA_ERR_UNKNOWN,
+    NMEA_OK           =  0,
+    NMEA_ERR_NULL     = -1,
+    NMEA_ERR_CHECKSUM = -2,
+    NMEA_ERR_UNKNOWN  = -3,
 } nmea_err_t;
 
 /* ---------- sentence types ---------- */
