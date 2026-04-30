@@ -178,6 +178,27 @@ TEST(test_fill_exact_capacity) {
     ASSERT_MEMEQ(out, "12345678");
 }
 
+TEST(test_evict_at_exact_capacity)
+{
+    uint8_t small_buf[8];
+    log_ringbuf_t rb;
+    log_ringbuf_init(&rb, small_buf, sizeof(small_buf));
+
+    log_ringbuf_write(&rb, "AAAA\n", 5);
+    log_ringbuf_write(&rb, "BB\n", 3);
+    ASSERT_EQ(log_ringbuf_used(&rb), 8);
+    ASSERT_EQ(log_ringbuf_dropped(&rb), 0);
+
+    log_ringbuf_write(&rb, "C\n", 2);
+    ASSERT_EQ(log_ringbuf_dropped(&rb), 1);
+    ASSERT_EQ(log_ringbuf_used(&rb), 5);
+
+    char out[16];
+    size_t n = log_ringbuf_read(&rb, out, sizeof(out));
+    out[n] = '\0';
+    ASSERT_MEMEQ(out, "BB\nC\n");
+}
+
 TEST_MAIN("log_ringbuf")
     RUN(test_init);
     RUN(test_write_and_read);
@@ -191,4 +212,5 @@ TEST_MAIN("log_ringbuf")
     RUN(test_wraparound_read);
     RUN(test_null_safety);
     RUN(test_fill_exact_capacity);
+    RUN(test_evict_at_exact_capacity);
 TEST_MAIN_END()
