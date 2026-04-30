@@ -225,6 +225,24 @@ TEST(test_side_effect_at_default_level) {
 #endif
 }
 
+TEST(test_stdout_sink) {
+    for (int i = 0; i < 8; i++) log_remove_sink(i);
+    g_cap_sink_id = -1;
+    log_set_level(LOG_LEVEL_DEBUG);
+
+    int sid = log_add_stdout_sink();
+    ASSERT_TRUE(sid >= 0);
+
+#undef LOG_MODULE
+#define LOG_MODULE "stdout"
+    LOG_INFO("stdout sink works");
+#undef LOG_MODULE
+#define LOG_MODULE "test"
+
+    ASSERT_EQ(log_remove_sink(sid), 0);
+    capture_reset();
+}
+
 TEST(test_sink_slots_exhausted) {
     for (int i = 0; i < 8; i++) log_remove_sink(i);
     g_cap_sink_id = -1;
@@ -258,5 +276,6 @@ TEST_MAIN("log")
     RUN(test_no_sinks_no_crash);
     RUN(test_time_fn_disable);
     RUN(test_side_effect_at_default_level);
+    RUN(test_stdout_sink);
     RUN(test_sink_slots_exhausted);
 TEST_MAIN_END()
