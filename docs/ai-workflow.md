@@ -377,6 +377,8 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `doc_drift_check.py` | 检查文档数字断言 vs 实际值 | `--fix` |
 | `find_all_refs.sh` | 搜索 wheel 在代码+文档的全部引用 | `--code-only`, `--docs-only` |
 | `sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
+| `platform_metrics.sh` | 平台健康指标快照 + 对比 | `--save`, `--compare`, `--history` |
+| `test_scaffold.sh` | 验证 7 种 scaffold 模板编译 | 无 |
 
 ### 工具决策树
 
