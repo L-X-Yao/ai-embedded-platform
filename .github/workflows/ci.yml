@@ -284,7 +284,7 @@ jobs:
 
       - name: Install arm-none-eabi-gcc
         run: |
-          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
+          wget -q --fail "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
           sudo mkdir -p /opt/gcc-arm
           sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
           echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
@@ -293,6 +293,5 @@ jobs:
       - name: Build flybox firmware
         working-directory: projects/flybox/vsf_build
         run: |
-          cmake -GNinja -S . -B build \
-            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vsf/script/cmake/gnuarmemb.cmake
+          cmake -GNinja -S . -B build
           cmake --build build
