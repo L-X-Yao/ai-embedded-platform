@@ -231,6 +231,18 @@ TEST(test_remaining_length_4byte)
     ASSERT_EQ(used, 0);
 }
 
+TEST(test_parse_malformed_type)
+{
+    uint8_t pub[] = {0x30, 0x02, 0x00, 0x00};
+    mqtt_connack_t ca;
+    ASSERT_EQ(mqtt_packet_parse_connack(pub, sizeof(pub), &ca),
+              MQTT_PACKET_ERR_MALFORMED);
+
+    uint16_t pid;
+    ASSERT_EQ(mqtt_packet_parse_puback(pub, sizeof(pub), &pid),
+              MQTT_PACKET_ERR_MALFORMED);
+}
+
 TEST(test_build_publish_qos3_rejected)
 {
     uint8_t buf[64];
@@ -274,6 +286,7 @@ TEST_MAIN("mqtt_packet")
     RUN(test_roundtrip_publish_qos1);
     RUN(test_remaining_length_4byte);
     RUN(test_build_publish_qos3_rejected);
+    RUN(test_parse_malformed_type);
     RUN(test_null_params);
 TEST_MAIN_END()
 

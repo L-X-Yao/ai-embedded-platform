@@ -122,6 +122,17 @@ TEST(test_content_length)
     ASSERT_EQ(http_get_content_length(&hdr, 1), 42);
 }
 
+TEST(test_malformed_request)
+{
+    http_request_t req;
+    const char *no_space = "GETONLY\r\n\r\n";
+    ASSERT_EQ(http_parse_request(no_space, strlen(no_space), &req),
+              HTTP_ERR_MALFORMED);
+    const char *bad_ver = "GET / HTTP/1X1\r\n\r\n";
+    ASSERT_EQ(http_parse_request(bad_ver, strlen(bad_ver), &req),
+              HTTP_ERR_MALFORMED);
+}
+
 TEST_MAIN("http_parser")
     RUN(test_parse_get_request);
     RUN(test_parse_post_with_body);
@@ -133,4 +144,5 @@ TEST_MAIN("http_parser")
     RUN(test_find_header_missing);
     RUN(test_null_safety);
     RUN(test_content_length);
+    RUN(test_malformed_request);
 TEST_MAIN_END()
