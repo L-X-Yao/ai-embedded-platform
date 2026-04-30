@@ -176,6 +176,12 @@ TEST(test_config_bits)
     ASSERT_EQ((written >> 8) & 1, 1);
 }
 
+TEST(test_ads1115_err_busy_triggered)
+{
+    /* TODO: trigger ADS1115_ERR_BUSY and assert return value */
+}
+
+
 TEST_MAIN("ads1115")
     RUN(test_init_null);
     RUN(test_read_raw_positive);
@@ -185,4 +191,5 @@ TEST_MAIN("ads1115")
     RUN(test_i2c_failure);
     RUN(test_set_channel);
     RUN(test_config_bits);
+    RUN(test_ads1115_err_busy_triggered);
 TEST_MAIN_END()

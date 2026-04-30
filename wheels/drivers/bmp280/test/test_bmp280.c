@@ -192,6 +192,12 @@ TEST(test_calib_i2c_fail)
     ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
+TEST(test_bmp280_err_timeout_triggered)
+{
+    /* TODO: trigger BMP280_ERR_TIMEOUT and assert return value */
+}
+
+
 TEST_MAIN("bmp280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -206,5 +212,6 @@ TEST_MAIN("bmp280")
     RUN(test_oversampling_16x);
     RUN(test_calib_readback);
     RUN(test_calib_i2c_fail);
+    RUN(test_bmp280_err_timeout_triggered);
 TEST_MAIN_END()
 

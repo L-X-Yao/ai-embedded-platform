@@ -396,6 +396,17 @@ TEST(test_crc32_known_vector)
     ASSERT_EQ(crc, 0xCBF43926u);
 }
 
+TEST(test_ota_ab_err_crc_triggered)
+{
+    /* TODO: trigger OTA_AB_ERR_CRC and assert return value */
+}
+
+TEST(test_ota_ab_err_params_triggered)
+{
+    /* TODO: trigger OTA_AB_ERR_PARAMS and assert return value */
+}
+
+
 TEST_MAIN("ota_ab")
     RUN(test_init_fresh);
     RUN(test_init_with_saved_params);
@@ -421,5 +432,7 @@ TEST_MAIN("ota_ab")
     RUN(test_boot_count_exact_boundary);
     RUN(test_target_slot_both_directions);
     RUN(test_crc32_known_vector);
+    RUN(test_ota_ab_err_crc_triggered);
+    RUN(test_ota_ab_err_params_triggered);
 TEST_MAIN_END()
 
