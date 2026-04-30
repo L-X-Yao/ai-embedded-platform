@@ -85,6 +85,14 @@ void mahony_update(mahony_t *f,
     f->integral_fb_y += ey * f->ki * f->inv_freq;
     f->integral_fb_z += ez * f->ki * f->inv_freq;
 
+    #define MAHONY_INTEGRAL_MAX 1.0f
+    if (f->integral_fb_x >  MAHONY_INTEGRAL_MAX) f->integral_fb_x =  MAHONY_INTEGRAL_MAX;
+    if (f->integral_fb_x < -MAHONY_INTEGRAL_MAX) f->integral_fb_x = -MAHONY_INTEGRAL_MAX;
+    if (f->integral_fb_y >  MAHONY_INTEGRAL_MAX) f->integral_fb_y =  MAHONY_INTEGRAL_MAX;
+    if (f->integral_fb_y < -MAHONY_INTEGRAL_MAX) f->integral_fb_y = -MAHONY_INTEGRAL_MAX;
+    if (f->integral_fb_z >  MAHONY_INTEGRAL_MAX) f->integral_fb_z =  MAHONY_INTEGRAL_MAX;
+    if (f->integral_fb_z < -MAHONY_INTEGRAL_MAX) f->integral_fb_z = -MAHONY_INTEGRAL_MAX;
+
     float gx = gx_dps * DEG_TO_RAD + f->kp * ex + f->integral_fb_x;
     float gy = gy_dps * DEG_TO_RAD + f->kp * ey + f->integral_fb_y;
     float gz = gz_dps * DEG_TO_RAD + f->kp * ez + f->integral_fb_z;

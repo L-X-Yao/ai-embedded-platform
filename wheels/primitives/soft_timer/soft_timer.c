@@ -93,7 +93,8 @@ void soft_timer_tick(soft_timer_mgr_t *mgr)
 
     mgr->tick_count++;
 
-    for (size_t i = 0; i < mgr->count; i++)
+    size_t n = mgr->count;
+    for (size_t i = 0; i < n; i++)
     {
         soft_timer_entry_t *t = &mgr->timers[i];
         if (!t->active)

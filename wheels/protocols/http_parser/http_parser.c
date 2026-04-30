@@ -201,7 +201,7 @@ http_err_t http_find_header(const http_header_t *headers, int count,
             return HTTP_OK;
         }
     }
-    return HTTP_ERR_MALFORMED;
+    return HTTP_ERR_NOT_FOUND;
 }
 
 int http_get_content_length(const http_header_t *headers, int count)

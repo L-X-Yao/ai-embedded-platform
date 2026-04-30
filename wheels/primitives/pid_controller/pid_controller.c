@@ -22,6 +22,11 @@ pid_controller_err_t pid_controller_init(pid_controller_t *ctx,
     {
         return PID_CONTROLLER_ERR_PARAM;
     }
+    if (cfg->output_min > cfg->output_max ||
+        cfg->integral_min > cfg->integral_max)
+    {
+        return PID_CONTROLLER_ERR_PARAM;
+    }
     ctx->cfg = *cfg;
     ctx->integral = 0.0f;
     ctx->prev_error = 0.0f;

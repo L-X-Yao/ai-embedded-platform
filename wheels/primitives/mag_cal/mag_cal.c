@@ -66,7 +66,7 @@ mag_cal_state_t mag_cal_compute(mag_cal_t *cal)
     }
 
     for (int a = 0; a < 3; a++) {
-        if (radius[a] < MAG_CAL_MIN_SPREAD) {
+        if (radius[a] < MAG_CAL_MIN_SPREAD || radius[a] <= 0.0f) {
             cal->state = MAG_CAL_DONE_FAIL;
             return MAG_CAL_DONE_FAIL;
         }

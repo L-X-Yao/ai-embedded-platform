@@ -24,8 +24,8 @@ int bitfield_get(const uint8_t *data, size_t data_len,
         size_t pos = bit_offset + i;
         size_t byte_idx = pos / 8;
         size_t bit_idx  = 7 - (pos % 8);
-        if (data[byte_idx] & (1u << bit_idx))
-            result |= (1u << (bit_count - 1 - i));
+        if (data[byte_idx] & (UINT32_C(1) << bit_idx))
+            result |= (UINT32_C(1) << (bit_count - 1 - i));
     }
     *out = result;
     return BITFIELD_OK;
@@ -46,10 +46,10 @@ int bitfield_set(uint8_t *data, size_t data_len,
         size_t pos = bit_offset + i;
         size_t byte_idx = pos / 8;
         size_t bit_idx  = 7 - (pos % 8);
-        if (value & (1u << (bit_count - 1 - i)))
-            data[byte_idx] |= (uint8_t)(1u << bit_idx);
+        if (value & (UINT32_C(1) << (bit_count - 1 - i)))
+            data[byte_idx] |= (uint8_t)(UINT32_C(1) << bit_idx);
         else
-            data[byte_idx] &= (uint8_t)~(1u << bit_idx);
+            data[byte_idx] &= (uint8_t)~(UINT32_C(1) << bit_idx);
     }
     return BITFIELD_OK;
 }
@@ -60,7 +60,7 @@ bool bitfield_test_bit(const uint8_t *data, size_t data_len, size_t bit_index)
         return false;
     size_t byte_idx = bit_index / 8;
     size_t bit_idx  = 7 - (bit_index % 8);
-    return (data[byte_idx] & (1u << bit_idx)) != 0;
+    return (data[byte_idx] & (UINT32_C(1) << bit_idx)) != 0;
 }
 
 void bitfield_set_bit(uint8_t *data, size_t data_len, size_t bit_index)
@@ -69,7 +69,7 @@ void bitfield_set_bit(uint8_t *data, size_t data_len, size_t bit_index)
         return;
     size_t byte_idx = bit_index / 8;
     size_t bit_idx  = 7 - (bit_index % 8);
-    data[byte_idx] |= (uint8_t)(1u << bit_idx);
+    data[byte_idx] |= (uint8_t)(UINT32_C(1) << bit_idx);
 }
 
 void bitfield_clear_bit(uint8_t *data, size_t data_len, size_t bit_index)
@@ -78,5 +78,5 @@ void bitfield_clear_bit(uint8_t *data, size_t data_len, size_t bit_index)
         return;
     size_t byte_idx = bit_index / 8;
     size_t bit_idx  = 7 - (bit_index % 8);
-    data[byte_idx] &= (uint8_t)~(1u << bit_idx);
+    data[byte_idx] &= (uint8_t)~(UINT32_C(1) << bit_idx);
 }

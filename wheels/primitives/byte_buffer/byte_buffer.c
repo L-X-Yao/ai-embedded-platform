@@ -82,7 +82,8 @@ byte_buffer_err_t byte_buffer_get_u16_be(byte_buffer_t *buf, uint16_t *val)
 {
     if (!buf || !val) return BYTE_BUFFER_ERR_PARAM;
     if (buf->write_pos - buf->read_pos < 2) return BYTE_BUFFER_ERR_EMPTY;
-    *val = (uint16_t)(buf->data[buf->read_pos] << 8 | buf->data[buf->read_pos + 1]);
+    *val = (uint16_t)(((uint16_t)buf->data[buf->read_pos] << 8) |
+                      (uint16_t)buf->data[buf->read_pos + 1]);
     buf->read_pos += 2;
     return BYTE_BUFFER_OK;
 }

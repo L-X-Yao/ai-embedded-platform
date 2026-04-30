@@ -22,9 +22,16 @@ static uint32_t calc_delay(const retry_ctx_t *ctx)
     uint8_t n = ctx->attempt;
 
     switch (ctx->config.strategy) {
-    case RETRY_LINEAR:
-        delay = ctx->config.base_delay_ms * (uint32_t)(n + 1);
+    case RETRY_LINEAR: {
+        uint32_t mult = (uint32_t)(n + 1);
+        if (ctx->config.base_delay_ms != 0 &&
+            mult > ctx->config.max_delay_ms / ctx->config.base_delay_ms) {
+            delay = ctx->config.max_delay_ms;
+        } else {
+            delay = ctx->config.base_delay_ms * mult;
+        }
         break;
+    }
     case RETRY_EXPONENTIAL: {
         delay = ctx->config.base_delay_ms;
         for (uint8_t i = 0; i < n; i++) {

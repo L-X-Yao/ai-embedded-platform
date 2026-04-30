@@ -24,13 +24,13 @@ static void advance_step(led_pattern_t *p)
     if (p->current_step >= p->cfg.step_count) {
         if (p->cfg.loop) {
             p->current_step = 0;
-            p->is_on = true;
+            p->is_on = (p->cfg.steps[0].on_ticks > 0);
         } else {
             p->finished = true;
             p->is_on = false;
         }
     } else {
-        p->is_on = true;
+        p->is_on = (p->cfg.steps[p->current_step].on_ticks > 0);
     }
 }
 
