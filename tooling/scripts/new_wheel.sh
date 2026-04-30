@@ -109,10 +109,10 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_I2C,
-    ${NAME_UPPER}_ERR_ID,
-    ${NAME_UPPER}_ERR_NOT_READY,
+    ${NAME_UPPER}_OK        =  0,
+    ${NAME_UPPER}_ERR_I2C   = -1,
+    ${NAME_UPPER}_ERR_ID    = -2,
+    ${NAME_UPPER}_ERR_PARAM = -3,
 } ${NAME_LOWER}_err_t;
 
 typedef struct {
@@ -128,11 +128,18 @@ typedef struct {
     float x, y, z;
 } ${NAME_LOWER}_data_t;
 
+typedef struct {
+    const ${NAME_LOWER}_i2c_t *i2c;
+    float scale;  /* internal — set by init */
+} ${NAME_LOWER}_dev_t;
+
 /** Configure and verify chip ID. @thread_safe: caller_must_lock */
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_i2c_t *i2c);
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_dev_t *dev,
+                               const ${NAME_LOWER}_i2c_t *i2c);
 
 /** Read sensor data. @thread_safe: caller_must_lock */
-${NAME_LOWER}_err_t ${NAME_LOWER}_read(const ${NAME_LOWER}_i2c_t *i2c, ${NAME_LOWER}_data_t *out);
+${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_dev_t *dev,
+                               ${NAME_LOWER}_data_t *out);
 
 #ifdef __cplusplus
 }
@@ -163,10 +170,10 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_SPI,
-    ${NAME_UPPER}_ERR_ID,
-    ${NAME_UPPER}_ERR_TIMEOUT,
+    ${NAME_UPPER}_OK          =  0,
+    ${NAME_UPPER}_ERR_SPI     = -1,
+    ${NAME_UPPER}_ERR_ID      = -2,
+    ${NAME_UPPER}_ERR_TIMEOUT = -3,
 } ${NAME_LOWER}_err_t;
 
 typedef struct {
@@ -209,9 +216,9 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_PARAM,
-    ${NAME_UPPER}_ERR_TIMEOUT,
+    ${NAME_UPPER}_OK          =  0,
+    ${NAME_UPPER}_ERR_PARAM   = -1,
+    ${NAME_UPPER}_ERR_TIMEOUT = -2,
 } ${NAME_LOWER}_err_t;
 
 typedef struct {
@@ -224,10 +231,11 @@ typedef struct {
 } ${NAME_LOWER}_gpio_t;
 
 typedef struct {
-    ${NAME_LOWER}_gpio_t gpio;
+    ${NAME_LOWER}_gpio_t gpio;  /* caller-provided HAL */
+    /* internal state below — do not access directly */
 } ${NAME_LOWER}_t;
 
-/** @thread_safe: no */
+/** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_gpio_t *gpio);
 
 #ifdef __cplusplus
@@ -260,10 +268,10 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_PARAM,
-    ${NAME_UPPER}_ERR_NO_DEVICE,
-    ${NAME_UPPER}_ERR_CRC,
+    ${NAME_UPPER}_OK            =  0,
+    ${NAME_UPPER}_ERR_PARAM     = -1,
+    ${NAME_UPPER}_ERR_NO_DEVICE = -2,
+    ${NAME_UPPER}_ERR_CRC       = -3,
 } ${NAME_LOWER}_err_t;
 
 typedef struct {
@@ -274,12 +282,13 @@ typedef struct {
 } ${NAME_LOWER}_ow_t;
 
 typedef struct {
-    ${NAME_LOWER}_ow_t ow;
+    ${NAME_LOWER}_ow_t ow;     /* caller-provided HAL */
+    /* internal state below — do not access directly */
     uint8_t rom[8];
     bool    use_rom;
 } ${NAME_LOWER}_t;
 
-/** @thread_safe: no */
+/** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_ow_t *ow);
 
 #ifdef __cplusplus
@@ -312,9 +321,9 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_PARAM,
-    ${NAME_UPPER}_ERR_HAL,
+    ${NAME_UPPER}_OK        =  0,
+    ${NAME_UPPER}_ERR_PARAM = -1,
+    ${NAME_UPPER}_ERR_HAL   = -2,
 } ${NAME_LOWER}_err_t;
 
 typedef struct {
@@ -323,10 +332,11 @@ typedef struct {
 } ${NAME_LOWER}_pwm_t;
 
 typedef struct {
-    ${NAME_LOWER}_pwm_t pwm;
+    ${NAME_LOWER}_pwm_t pwm;  /* caller-provided HAL */
+    /* internal state below — do not access directly */
 } ${NAME_LOWER}_t;
 
-/** @thread_safe: no */
+/** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_pwm_t *pwm);
 
 #ifdef __cplusplus
@@ -358,11 +368,16 @@ extern "C" {
 #endif
 
 typedef enum {
-    ${NAME_UPPER}_OK = 0,
-    ${NAME_UPPER}_ERR_PARAM,
+    ${NAME_UPPER}_OK        =  0,
+    ${NAME_UPPER}_ERR_PARAM = -1,
 } ${NAME_LOWER}_err_t;
 
-/* TODO: define API — add @thread_safe annotation to each function */
+/* TODO: define API
+ * Every function MUST have a @thread_safe annotation:
+ *   /** Brief description. @thread_safe: yes|no|caller_must_lock *x/
+ * Struct internal fields MUST be marked:
+ *   /* internal — do not access directly *x/
+ */
 
 #ifdef __cplusplus
 }
