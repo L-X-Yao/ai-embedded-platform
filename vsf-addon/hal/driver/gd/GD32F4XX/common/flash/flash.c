@@ -190,7 +190,7 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     flash_ptr->size_orig = flash_ptr->size_cur = size;
     flash_ptr->buffer = buffer;
 
-    while (FMC_STAT & FMC_STAT_BUSY) { }
+    { uint32_t guard = 500000; while ((FMC_STAT & FMC_STAT_BUSY) && --guard) { } }
     FMC_CTL |= FMC_CTL_PG;
     __ISB();
     __DSB();
