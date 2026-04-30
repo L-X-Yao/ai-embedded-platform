@@ -61,8 +61,9 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
 
     uint32_t reg = usart_ptr->reg;
     uint32_t pclk = usart_ptr->pclk_hz;
-    uint32_t over8 = (cfg_ptr->mode & VSF_USART_OVERSAMPLE_MASK) >> 3;
-    cfg_ptr->mode &= ~VSF_USART_OVERSAMPLE_MASK;
+    uint32_t mode = cfg_ptr->mode;
+    uint32_t over8 = (mode & VSF_USART_OVERSAMPLE_MASK) >> 3;
+    mode &= ~VSF_USART_OVERSAMPLE_MASK;
     uint32_t baudval = cfg_ptr->baudrate;
 
     vsf_hw_peripheral_enable(usart_ptr->en);
@@ -90,21 +91,21 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
     ctl = USART_CTL0(reg);
     ctl &= ~(USART_CTL0_REN | USART_CTL0_TEN | USART_CTL0_PM
             | USART_CTL0_PCEN | USART_CTL0_WL);
-    ctl |= cfg_ptr->mode & __VSF_HW_USART_CTL0_MASK;
+    ctl |= mode & __VSF_HW_USART_CTL0_MASK;
     USART_CTL0(reg) = ctl | over8;
 
     // CTL1: STB from mode[0:1] << 12, sync clock from mode[20:23] >> 12
     ctl = USART_CTL1(reg);
     ctl &= ~(USART_CTL1_CKEN | USART_CTL1_STB | USART_CTL1_CPL
             | USART_CTL1_CPH | USART_CTL1_CLEN);
-    cfg = cfg_ptr->mode & __VSF_HW_USART_CTL1_MASK;
+    cfg = mode & __VSF_HW_USART_CTL1_MASK;
     ctl |= ((cfg & 0x03U) << 12) | ((cfg & 0x00F00000U) >> 12);
     USART_CTL1(reg) = ctl;
 
     // CTL2: RTSEN/CTSEN from mode[4:5] << 4, HDEN from mode[6] >> 3
     ctl = USART_CTL2(reg);
     ctl &= ~(USART_CTL2_RTSEN | USART_CTL2_CTSEN | USART_CTL2_HDEN);
-    cfg = cfg_ptr->mode & __VSF_HW_USART_CTL2_MASK;
+    cfg = mode & __VSF_HW_USART_CTL2_MASK;
     ctl |= ((cfg & 0x30U) << 4) | ((cfg & 0x40U) >> 3);
     USART_CTL2(reg) = ctl;
 

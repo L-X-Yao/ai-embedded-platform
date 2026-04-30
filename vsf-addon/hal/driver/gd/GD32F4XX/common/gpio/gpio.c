@@ -153,7 +153,7 @@ void VSF_MCONNECT(VSF_GPIO_CFG_IMP_PREFIX, _gpio_toggle)(
     vsf_gpio_pin_mask_t pin_mask
 ) {
     VSF_HAL_ASSERT(NULL != gpio_ptr);
-    GPIO_TG(gpio_ptr->reg) |= pin_mask;
+    GPIO_TG(gpio_ptr->reg) = pin_mask;
 }
 
 vsf_err_t VSF_MCONNECT(VSF_GPIO_CFG_IMP_PREFIX, _gpio_exti_irq_config)(

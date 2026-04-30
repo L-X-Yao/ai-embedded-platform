@@ -270,7 +270,7 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
     if (stat0 & I2C_STAT0_SBSEND) {
         uint8_t addr_byte;
         if (i2c_ptr->cmd & VSF_I2C_CMD_10_BITS) {
-            addr_byte = 0xF0 | ((i2c_ptr->addr >> 7) & 0x06);
+            addr_byte = 0xF0 | ((i2c_ptr->addr >> 8) & 0x06);
         } else {
             addr_byte = (uint8_t)(i2c_ptr->addr << 1);
         }
