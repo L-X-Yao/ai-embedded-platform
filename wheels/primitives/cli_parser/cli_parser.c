@@ -63,6 +63,7 @@ void cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg)
     }
     ctx->line_len = 0;
     ctx->line_buf[0] = '\0';
+    ctx->last_was_cr = 0;
     cli_prompt(ctx);
 }
 
@@ -71,10 +72,11 @@ void cli_parser_feed(cli_parser_t *ctx, uint8_t byte)
     if (!ctx) return;
 
     if (byte == '\r' || byte == '\n') {
-        if (ctx->line_len == 0 && byte == '\n') {
-            cli_prompt(ctx);
+        if (byte == '\n' && ctx->last_was_cr) {
+            ctx->last_was_cr = 0;
             return;
         }
+        ctx->last_was_cr = (byte == '\r');
         if (ctx->line_len > 0) {
             cli_puts(ctx, "\r\n");
             ctx->line_buf[ctx->line_len] = '\0';
@@ -84,6 +86,8 @@ void cli_parser_feed(cli_parser_t *ctx, uint8_t byte)
         cli_prompt(ctx);
         return;
     }
+
+    ctx->last_was_cr = 0;
 
     if (byte == '\b' || byte == 0x7F) {
         if (ctx->line_len > 0) {

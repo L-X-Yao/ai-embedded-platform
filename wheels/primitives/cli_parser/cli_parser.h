@@ -52,6 +52,7 @@ typedef struct {
     cli_cfg_t   cfg;
     char        line_buf[CLI_LINE_BUFSIZE];
     size_t      line_len;
+    uint8_t     last_was_cr;
 } cli_parser_t;
 
 /** Initialize parser. @thread_safe: no */
