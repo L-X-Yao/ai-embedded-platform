@@ -6,7 +6,7 @@
 #   make test-projects  # project tests only
 #   make test-changed   # only tests affected by uncommitted changes
 #   make test-fast      # stop on first failure (fast iteration)
-#   make audit          # run wheel audit (19 checks)
+#   make audit          # run wheel audit (22 checks)
 #   make coverage       # tests with gcov coverage report
 #   make bootstrap      # print session context
 #   make list           # list all discoverable test targets
@@ -14,8 +14,9 @@
 #   make downstream W=<wheel>  # test downstream consumers of a wheel
 #   make sync-vsf              # sync vsf/ with upstream (interactive)
 #   make sync-vsf-status       # show current vs upstream vsf version
+#   make clean                 # remove all build_* directories
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -56,3 +57,10 @@ sync-vsf:
 
 sync-vsf-status:
 	bash tooling/scripts/sync_vsf.sh --status
+
+clean:
+	@echo "Removing build_* directories under wheels/ and projects/..."
+	@find wheels/ -type d -name "build_*" -exec rm -rf {} + 2>/dev/null || true
+	@find projects/ -type d -name "build_*" -exec rm -rf {} + 2>/dev/null || true
+	@find _eval/ -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+	@echo "Done."
