@@ -98,6 +98,10 @@ int log_add_sink(log_sink_fn fn, void *ctx);
 /* Returns 0 on success, -1 on invalid id. */
 int log_remove_sink(int sink_id);
 
+/* Preset sink: route to stdout (fprintf). Useful for host testing / sim.
+ * Returns sink id (>=0) or -1 on no slots. */
+int log_add_stdout_sink(void);
+
 /* ======================================================================
  * Time source
  *

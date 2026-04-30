@@ -87,6 +87,15 @@ int log_remove_sink(int sink_id) {
     return 0;
 }
 
+static void sink_stdout(void *ctx, const char *line, size_t len) {
+    (void)ctx;
+    fwrite(line, 1, len, stdout);
+}
+
+int log_add_stdout_sink(void) {
+    return log_add_sink(sink_stdout, NULL);
+}
+
 /* ======================================================================
  * Emit
  * ====================================================================== */

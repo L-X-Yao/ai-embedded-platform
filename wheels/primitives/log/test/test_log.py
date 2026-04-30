@@ -61,6 +61,7 @@ def test_all_c_tests_pass():
     "test_no_sinks_no_crash",
     "test_time_fn_disable",
     "test_side_effect_at_default_level",
+    "test_stdout_sink",
     "test_sink_slots_exhausted",
 ])
 def test_c_case_passed(marker):
