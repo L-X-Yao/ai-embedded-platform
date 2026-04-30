@@ -19,6 +19,7 @@
 #define REG_AX_L       0x35
 
 #define WHO_AM_I_VAL   0x05
+/* 8-bit (write) address: 0x6B << 1 = 0xD6. Matches flybox HAL convention. */
 #define DEV_ADDR       (0x6B << 1)
 
 /* ---------- scale tables ---------- */
@@ -48,11 +49,6 @@ static qmi8658a_err_t rd(const qmi8658a_i2c_t *i2c, uint8_t reg,
            ? QMI8658A_OK : QMI8658A_ERR_I2C;
 }
 
-/* ---------- saved config (for scale lookup in read) ---------- */
-
-static float s_acc_div = 4096.0f;
-static float s_gyr_div = 16.0f;
-
 /* ---------- API ---------- */
 
 qmi8658a_cfg_t qmi8658a_default_cfg(void)
@@ -65,10 +61,12 @@ qmi8658a_cfg_t qmi8658a_default_cfg(void)
     return c;
 }
 
-qmi8658a_err_t qmi8658a_init(const qmi8658a_i2c_t *i2c,
+qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
+                              const qmi8658a_i2c_t *i2c,
                               const qmi8658a_cfg_t *cfg)
 {
-    if (!i2c || !cfg) return QMI8658A_ERR_I2C;
+    if (!dev || !i2c || !cfg) return QMI8658A_ERR_I2C;
+    dev->i2c = i2c;
     uint8_t id = 0;
     qmi8658a_err_t e;
 
@@ -90,32 +88,32 @@ qmi8658a_err_t qmi8658a_init(const qmi8658a_i2c_t *i2c,
     e = wr(i2c, REG_CTRL7, 0x03);
     if (e != QMI8658A_OK) return e;
 
-    s_acc_div = acc_scale[cfg->acc_range & 0x03];
-    s_gyr_div = gyr_scale[cfg->gyr_range & 0x07];
+    dev->acc_div = acc_scale[cfg->acc_range & 0x03];
+    dev->gyr_div = gyr_scale[cfg->gyr_range & 0x07];
 
     return QMI8658A_OK;
 }
 
-qmi8658a_err_t qmi8658a_read(const qmi8658a_i2c_t *i2c,
+qmi8658a_err_t qmi8658a_read(qmi8658a_dev_t *dev,
                               qmi8658a_data_t *out)
 {
-    if (!i2c || !out) return QMI8658A_ERR_I2C;
+    if (!dev || !dev->i2c || !out) return QMI8658A_ERR_I2C;
     uint8_t raw[12];
-    qmi8658a_err_t e = rd(i2c, REG_AX_L, raw, 12);
+    qmi8658a_err_t e = rd(dev->i2c, REG_AX_L, raw, 12);
     if (e != QMI8658A_OK) return e;
 
-    out->ax = (float)((int16_t)((uint16_t)raw[1]  << 8 | raw[0]))  / s_acc_div;
-    out->ay = (float)((int16_t)((uint16_t)raw[3]  << 8 | raw[2]))  / s_acc_div;
-    out->az = (float)((int16_t)((uint16_t)raw[5]  << 8 | raw[4]))  / s_acc_div;
-    out->gx = (float)((int16_t)((uint16_t)raw[7]  << 8 | raw[6]))  / s_gyr_div;
-    out->gy = (float)((int16_t)((uint16_t)raw[9]  << 8 | raw[8]))  / s_gyr_div;
-    out->gz = (float)((int16_t)((uint16_t)raw[11] << 8 | raw[10])) / s_gyr_div;
+    out->ax = (float)((int16_t)((uint16_t)raw[1]  << 8 | raw[0]))  / dev->acc_div;
+    out->ay = (float)((int16_t)((uint16_t)raw[3]  << 8 | raw[2]))  / dev->acc_div;
+    out->az = (float)((int16_t)((uint16_t)raw[5]  << 8 | raw[4]))  / dev->acc_div;
+    out->gx = (float)((int16_t)((uint16_t)raw[7]  << 8 | raw[6]))  / dev->gyr_div;
+    out->gy = (float)((int16_t)((uint16_t)raw[9]  << 8 | raw[8]))  / dev->gyr_div;
+    out->gz = (float)((int16_t)((uint16_t)raw[11] << 8 | raw[10])) / dev->gyr_div;
 
     return QMI8658A_OK;
 }
 
-qmi8658a_err_t qmi8658a_reset(const qmi8658a_i2c_t *i2c)
+qmi8658a_err_t qmi8658a_reset(const qmi8658a_dev_t *dev)
 {
-    if (!i2c) return QMI8658A_ERR_I2C;
-    return wr(i2c, REG_RESET, 0xB0);
+    if (!dev || !dev->i2c) return QMI8658A_ERR_I2C;
+    return wr(dev->i2c, REG_RESET, 0xB0);
 }

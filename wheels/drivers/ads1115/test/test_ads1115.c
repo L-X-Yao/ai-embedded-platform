@@ -23,6 +23,9 @@ static bool mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
     if (reg == 0x00 && len == 2) {
         data[0] = (uint8_t)((uint16_t)mock_conversion_value >> 8);
         data[1] = (uint8_t)(mock_conversion_value & 0xFF);
+    } else if (reg == 0x01 && len == 2) {
+        data[0] = 0x80 | mock_config_written[0];
+        data[1] = mock_config_written[1];
     }
     return true;
 }

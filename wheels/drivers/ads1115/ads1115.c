@@ -62,6 +62,15 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
     if (err != ADS1115_OK)
         return err;
 
+    /* Poll for conversion complete (bit 15 of config register = 1) */
+    uint8_t cfg_buf[2];
+    for (int retry = 0; retry < 200; retry++) {
+        if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONFIG, cfg_buf, 2))
+            return ADS1115_ERR_I2C;
+        if (cfg_buf[0] & 0x80) break;
+        if (retry == 199) return ADS1115_ERR_BUSY;
+    }
+
     uint8_t buf[2] = {0};
     if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONVERSION, buf, 2))
         return ADS1115_ERR_I2C;
