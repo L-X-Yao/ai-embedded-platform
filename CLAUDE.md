@@ -157,6 +157,54 @@ ai-embedded-platform/
 - VSF 路径（WSL）：`/mnt/d/temp/project/ai-embedded-platform/vsf`
 - PLOOC 子模块：已 clone 在 `vsf/source/utilities/3rd-party/PLOOC/raw/`
 
+## 多窗口并行开发
+
+多个 Claude Code 窗口同时操作本仓库时，用 **git worktree 按 scope 隔离**，避免文件冲突。
+
+### 开窗
+
+```bash
+git worktree add ../ai-ep-wheels  -b session/wheels    # 窗口 A：wheel 开发
+git worktree add ../ai-ep-project -b session/<project>  # 窗口 B：项目集成
+# 主目录（本目录）                                      # 窗口 C：tooling / docs / CI
+```
+
+每个 Claude Code 实例打开对应 worktree 目录，文件系统级隔离。
+
+### scope 分配
+
+| 窗口 | 拥有的目录 | 可读但不改 |
+|------|-----------|-----------|
+| A（wheels） | `wheels/` | `tooling/test/`、`docs/api-conventions.md` |
+| B（project） | `projects/<name>/`、`vsf-addon/` | `wheels/`（只用不改） |
+| C（infra） | `tooling/`、`docs/`、`CLAUDE.md`、`.github/`、`memory/` | 全部 |
+
+### 铁律
+
+1. **CLAUDE.md / docs/ 只在 C 窗口改**——A/B 只读
+2. **Memory 文件名不重复**——各窗口按 `{type}_{topic}.md` 命名，MEMORY.md 索引合并时由 C 窗口统一整理
+3. **同一个 wheel 不拆两个窗口**——改 API + 改消费者放同一窗口顺序做
+4. **合并顺序：下游先合**——C（tooling）→ A（wheels）→ B（project），因为 project 依赖 wheel，wheel 依赖 tooling
+
+### 收窗
+
+```bash
+# 在主目录
+git merge session/wheels     # 先合 wheel
+git merge session/<project>  # 再合 project
+git worktree remove ../ai-ep-wheels
+git worktree remove ../ai-ep-project
+git branch -d session/wheels session/<project>
+```
+
+合并后在 C 窗口统一：更新 CLAUDE.md wheel 计数表、整理 MEMORY.md、跑 `make check`。
+
+### 注意
+
+- 连续 merge + push 会触发 CI `cancel-in-progress` 全取消——合并完统一 push 一次
+- worktree 内 `vsf/` 子模块可能需要 `git submodule update`
+- 如果只开 2 个窗口，合并 A+C（wheels + infra）为一个即可
+
 ## 关键决策（ADR）
 
 | # | 决策 |
