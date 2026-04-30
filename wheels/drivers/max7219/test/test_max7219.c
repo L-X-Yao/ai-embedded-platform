@@ -153,6 +153,31 @@ TEST(test_scan_limit)
     ASSERT_EQ(spi_log[0].val, 3);
 }
 
+TEST(test_display_test)
+{
+    max7219_t dev;
+    mock_reset();
+    max7219_init(&dev, &mock_spi);
+    mock_reset();
+    ASSERT_EQ(max7219_display_test(&dev, true), MAX7219_OK);
+    ASSERT_EQ(spi_log[0].reg, 0x0F);
+    ASSERT_EQ(spi_log[0].val, 0x01);
+    mock_reset();
+    ASSERT_EQ(max7219_display_test(&dev, false), MAX7219_OK);
+    ASSERT_EQ(spi_log[0].val, 0x00);
+}
+
+TEST(test_decode_mode)
+{
+    max7219_t dev;
+    mock_reset();
+    max7219_init(&dev, &mock_spi);
+    mock_reset();
+    ASSERT_EQ(max7219_set_decode_mode(&dev, 0xFF), MAX7219_OK);
+    ASSERT_EQ(spi_log[0].reg, 0x09);
+    ASSERT_EQ(spi_log[0].val, 0xFF);
+}
+
 TEST_MAIN("max7219")
     RUN(test_init_null);
     RUN(test_init_sequence);
@@ -164,4 +189,6 @@ TEST_MAIN("max7219")
     RUN(test_clear);
     RUN(test_spi_failure);
     RUN(test_scan_limit);
+    RUN(test_display_test);
+    RUN(test_decode_mode);
 TEST_MAIN_END()

@@ -129,6 +129,18 @@ TEST(test_read_null)
     ASSERT_EQ(bh1750_read_lux(NULL, NULL), BH1750_ERR_PARAM);
 }
 
+TEST(test_reset)
+{
+    mock_reset();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    bh1750_init(&dev, &mock_i2c, &cfg);
+    mock_cmd_count = 0;
+    ASSERT_EQ(bh1750_reset(&dev), BH1750_OK);
+    ASSERT_EQ(mock_cmd_log[0], 0x07);
+    ASSERT_EQ(bh1750_reset(NULL), BH1750_ERR_PARAM);
+}
+
 TEST_MAIN("bh1750")
     RUN(test_init_null);
     RUN(test_init_sends_power_on_and_mode);
@@ -138,4 +150,5 @@ TEST_MAIN("bh1750")
     RUN(test_i2c_failure);
     RUN(test_power_off_on);
     RUN(test_read_null);
+    RUN(test_reset);
 TEST_MAIN_END()
