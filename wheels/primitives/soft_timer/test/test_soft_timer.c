@@ -205,6 +205,12 @@ TEST(test_period_1)
     ASSERT_EQ(cb_count, 3);
 }
 
+TEST(test_soft_timer_err_full_triggered)
+{
+    /* TODO: trigger SOFT_TIMER_ERR_FULL and assert return value */
+}
+
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -219,5 +225,6 @@ TEST_MAIN("soft_timer")
     RUN(test_get_tick);
     RUN(test_tick_null);
     RUN(test_period_1);
+    RUN(test_soft_timer_err_full_triggered);
 TEST_MAIN_END()
 

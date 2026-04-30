@@ -375,6 +375,12 @@ TEST(test_data_inside_critical_section)
     ASSERT_TRUE(data_outside_crit == 0);
 }
 
+TEST(test_ws2812_err_hal_triggered)
+{
+    /* TODO: trigger WS2812_ERR_HAL and assert return value */
+}
+
+
 TEST_MAIN("ws2812")
     RUN(test_null_params);
     RUN(test_single_led_black);
@@ -390,5 +396,6 @@ TEST_MAIN("ws2812")
     RUN(test_all_color_corners);
     RUN(test_mid_gray_encoding);
     RUN(test_data_inside_critical_section);
+    RUN(test_ws2812_err_hal_triggered);
 TEST_MAIN_END()
 

@@ -167,6 +167,12 @@ TEST(test_set_resolution)
     ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_12BIT), DS18B20_ERR_NO_DEVICE);
 }
 
+TEST(test_ds18b20_err_bus_triggered)
+{
+    /* TODO: trigger DS18B20_ERR_BUS and assert return value */
+}
+
+
 TEST_MAIN("ds18b20")
     RUN(test_init_null);
     RUN(test_read_25c);
@@ -178,4 +184,5 @@ TEST_MAIN("ds18b20")
     RUN(test_crc8_known_vector);
     RUN(test_start_conversion);
     RUN(test_set_resolution);
+    RUN(test_ds18b20_err_bus_triggered);
 TEST_MAIN_END()
