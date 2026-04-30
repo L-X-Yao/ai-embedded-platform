@@ -69,9 +69,6 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
 {
     if (!buf || !opts || !opts->client_id) return MQTT_PACKET_ERR_PARAM;
 
-    uint8_t payload[512];
-    int plen = 0;
-
     uint8_t var_header[10];
     var_header[0] = 0x00; var_header[1] = 0x04;
     var_header[2] = 'M';  var_header[3] = 'Q';
@@ -85,22 +82,24 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
     var_header[7] = flags;
     put_u16(&var_header[8], opts->keepalive_s);
 
-    plen += put_str(payload + plen, opts->client_id);
-    if (opts->username) plen += put_str(payload + plen, opts->username);
-    if (opts->password) plen += put_str(payload + plen, opts->password);
+    size_t plen = 2 + strlen(opts->client_id);
+    if (opts->username) plen += 2 + strlen(opts->username);
+    if (opts->password) plen += 2 + strlen(opts->password);
 
     uint32_t remaining = 10 + (uint32_t)plen;
     uint8_t rl_buf[4];
     int rl_len = mqtt_packet_encode_remaining_length(rl_buf, remaining);
 
-    int total = 1 + rl_len + 10 + plen;
-    if ((size_t)total > buf_size) return MQTT_PACKET_ERR_SIZE;
+    size_t total = 1 + (size_t)rl_len + 10 + plen;
+    if (total > buf_size) return MQTT_PACKET_ERR_SIZE;
 
     int pos = 0;
     buf[pos++] = (MQTT_CONNECT << 4);
     memcpy(buf + pos, rl_buf, (size_t)rl_len); pos += rl_len;
     memcpy(buf + pos, var_header, 10); pos += 10;
-    memcpy(buf + pos, payload, (size_t)plen); pos += plen;
+    pos += put_str(buf + pos, opts->client_id);
+    if (opts->username) pos += put_str(buf + pos, opts->username);
+    if (opts->password) pos += put_str(buf + pos, opts->password);
 
     return pos;
 }

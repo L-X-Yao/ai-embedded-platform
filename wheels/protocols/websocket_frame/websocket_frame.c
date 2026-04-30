@@ -96,8 +96,11 @@ ws_err_t ws_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
         buf[idx++] = (uint8_t)(payload_len & 0xFF);
     } else {
         buf[idx++] = (uint8_t)(mask_bit | 127);
-        for (int i = 7; i >= 0; i--)
-            buf[idx++] = (uint8_t)((payload_len >> (i * 8)) & 0xFF);
+        {
+            uint64_t plen64 = (uint64_t)payload_len;
+            for (int i = 7; i >= 0; i--)
+                buf[idx++] = (uint8_t)((plen64 >> (i * 8)) & 0xFF);
+        }
     }
 
     if (mask_key) {
