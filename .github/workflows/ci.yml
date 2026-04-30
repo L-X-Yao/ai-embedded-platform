@@ -129,7 +129,7 @@ jobs:
   # ---- Standalone wheel jobs (special build requirements) ----
 
   log-wheel:
-    name: log wheel (linux64 sim)
+    name: log wheel (host C99 + pytest)
     needs: detect-changes
     if: needs.detect-changes.outputs.log-changed == 'true'
     runs-on: ubuntu-24.04
@@ -143,7 +143,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build libusb-1.0-0-dev libbsd-dev
+          sudo apt-get install -y -qq ninja-build
 
       - uses: actions/setup-python@v6
         with:
@@ -154,19 +154,16 @@ jobs:
       - name: Install pytest
         run: pip install -r ${{ github.workspace }}/tooling/requirements-ci.txt
 
-      - name: Build (debug)
+      - name: Build (C test)
         run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
+          cmake -GNinja -S test -B test/build
+          cmake --build test/build
 
-      - name: Build (release, LOG_LEVEL_MAX=WARN)
-        run: |
-          cmake -GNinja -S . -B build_release \
-            -DCMAKE_C_FLAGS='-DLOG_LEVEL_MAX=LOG_LEVEL_WARN'
-          cmake --build build_release
+      - name: Run C test
+        run: ctest --test-dir test/build --output-on-failure
 
-      - name: Test
-        run: python3 -m pytest test_log.py -v
+      - name: Run pytest (includes release build elimination check)
+        run: python3 -m pytest test/test_log.py -v
 
   crc16-wheel:
     name: crc16 wheel (host C99 + pytest)

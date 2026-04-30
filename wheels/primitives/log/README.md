@@ -4,7 +4,7 @@
 **Layer: L0 (primitives)**
 
 Leveled logging with module tags, multi-sink output, and compile-time filtering.
-Built on top of `vsf_trace`.
+Pure C99, zero dependencies.
 
 ## Why not VSF native?
 
@@ -19,26 +19,21 @@ Checked VSF modules:
 3. **Compile-time level filtering** — vsf_trace is runtime-only, DEBUG strings still compiled into release binary
 4. **Timestamps** — vsf_trace does not auto-prepend time
 
-**Conclusion**: this wheel **wraps vsf_trace**, does not replace it. Default sink (`log_add_vsf_trace_sink`) bypasses vsf_trace formatting and outputs pre-formatted lines via `__vsf_trace_output()` to vsf_trace's bound stream. Reuses vsf_trace's mature stream + lock protection, no custom low-level IO.
+**Conclusion**: independent wheel. Output via function-pointer sink injection
+(`log_add_sink`), not tied to any framework. Projects using VSF can bridge to
+`vsf_trace` by registering a custom sink that calls `__vsf_trace_output()`.
 
 ## How to test
 
 ```bash
 cd wheels/primitives/log
-
-# Default build (LOG_LEVEL_MAX=LOG_LEVEL_DEBUG, all levels emit)
-VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build
-cmake --build build
-
-# Release-style build (LOG_LEVEL_MAX=LOG_LEVEL_WARN, DEBUG/INFO eliminated by compiler)
-# Verifies that DEBUG/INFO macros expand to ((void)0) with no side-effect evaluation
-VSF_PATH=/mnt/d/temp/project/ai-embedded-platform/vsf cmake -GNinja -S . -B build_release -DCMAKE_C_FLAGS='-DLOG_LEVEL_MAX=LOG_LEVEL_WARN'
-cmake --build build_release
-
-python3 -m pytest test_log.py -v
+cmake -GNinja -S test -B test/build
+cmake --build test/build
+ctest --test-dir test/build --output-on-failure
+python3 -m pytest test/test_log.py -v
 ```
 
-Expected: **11 C tests + 4 pytest cases all green** (including release build compile-time elimination verification).
+Expected: **11 C tests + 13 pytest cases all green** (including release build compile-time elimination verification).
 
 ## API summary
 
@@ -59,8 +54,6 @@ LOG_DEBUG("...");
 /* Runtime */
 log_set_level(LOG_LEVEL_INFO);
 log_get_level();                     /* query current runtime level */
-log_add_vsf_trace_sink();            /* built-in: route to vsf_trace stream */
-log_add_stream_sink(&my_stream);     /* any VSF stream */
 log_add_sink(my_sink_fn, ctx);       /* custom sink, returns sink id */
 log_remove_sink(sink_id);            /* remove registered sink */
 log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
@@ -93,7 +86,7 @@ log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 | Module tagging | `#define LOG_MODULE` per file | Simplest, no linker dependency, compile-time constant enables optimization |
 | Compile-time filter | `if ((level) <= LOG_LEVEL_MAX)` | Compiler eliminates dead branch + string literals |
 | Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
-| vsf_trace integration | Bypass its formatting, reuse stream output | Avoids double prefix, reuses mature lock protection |
+| No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
 | Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
@@ -103,17 +96,12 @@ First wheel built for the platform (Sprint 0). Not extracted from a project — 
 
 ## Dependencies
 
-- VSF kernel
-- `VSF_USE_SIMPLE_STREAM = ENABLED`
-- `VSF_USE_TRACE = ENABLED` (if using `log_add_vsf_trace_sink`)
-- libc `snprintf` / `vsnprintf` (available via linux skin simple_libc)
+None. Pure C99 with libc `snprintf` / `vsnprintf`.
 
 ## Supported platforms
 
-- [x] VSF linux host (sim) — passed 2026-04-21
-- [x] VSF mps2-an500 bare-metal (QEMU) — 2026-04-22 via custom semihosting sink, see `tooling/experiments/vsf-tryouts/mps2_bare/`
-- [ ] VSF + STM32F4 — not yet verified
-- [ ] VSF + ESP32 — not yet verified
+- [x] Linux host (gcc) — passed 2026-04-30
+- [x] Windows host (TDM-GCC) — passed 2026-04-30
 
 (L0 wheels don't require real hardware, but can be ticked off when a project uses it.)
 
@@ -128,44 +116,45 @@ None so far.
 
 ## Usage examples
 
-### 基础
+### UART sink (bare-metal)
 
 ```c
-#include "log.h"
 #define LOG_MODULE "app"
+#include "log.h"
+
+static void uart_sink(void *ctx, const char *line, size_t len) {
+    (void)ctx;
+    uart_write((const uint8_t *)line, len);
+}
 
 int main(void) {
-    log_add_vsf_trace_sink();           /* 默认路由到 vsf_trace */
+    log_add_sink(uart_sink, NULL);
     log_set_level(LOG_LEVEL_INFO);
     LOG_INFO("boot ok version=%d.%d", 1, 2);
-    return 0;
 }
 ```
 
-### 多 sink
+### Multi-sink (UART + Flash)
 
 ```c
-#include "log.h"
 #define LOG_MODULE "ble"
-
-extern vsf_stream_t flash_log_stream;
+#include "log.h"
 
 void ble_init(void) {
-    log_add_stream_sink(&flash_log_stream);   /* 日志同时存 flash */
+    log_add_sink(uart_sink, NULL);
+    log_add_sink(flash_sink, &flash_ctx);
     LOG_INFO("ble stack started");
 }
 ```
 
-### 自定义 sink
+### VSF project bridge
 
 ```c
-static void my_net_sink(void *ctx, const char *line, size_t len) {
-    /* 发到远程 MQTT topic 等 */
+static void vsf_trace_sink(void *ctx, const char *line, size_t len) {
     (void)ctx;
-    mqtt_publish("device/log", line, len);
+    __vsf_trace_output(line, (uint_fast32_t)len);
 }
-
-log_add_sink(my_net_sink, NULL);
+log_add_sink(vsf_trace_sink, NULL);
 ```
 
 ## Responsible human

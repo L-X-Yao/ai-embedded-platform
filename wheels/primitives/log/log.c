@@ -1,9 +1,9 @@
 /*
- * log — leveled + module-tagged logging, wraps vsf_trace.
+ * log — leveled + module-tagged logging, pure C99.
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    VSF kernel, vsf_trace (optional sink), vsf_stream (optional sink)
+ * Deps:    none
  */
 #include "log.h"
 #include <stdarg.h>
@@ -35,9 +35,7 @@ typedef struct {
 static volatile log_level_t g_runtime_level = LOG_LEVEL_INFO;
 static log_sink_slot_t  g_sinks[LOG_MAX_SINKS];
 
-/* forward decl so we can use it as static initializer below */
-static uint32_t default_time_ms(void);
-static uint32_t (* volatile g_time_fn)(void) = default_time_ms;
+static uint32_t (* volatile g_time_fn)(void) = NULL;
 
 /* Indexed by log_level_t value (0..4). */
 static const char LOG_LEVEL_CHAR[] = { 'N', 'E', 'W', 'I', 'D' };
@@ -60,10 +58,6 @@ log_level_t log_get_level(void) {
 
 void log_set_time_fn(uint32_t (*fn)(void)) {
     g_time_fn = fn;
-}
-
-static uint32_t default_time_ms(void) {
-    return vsf_systimer_tick_to_ms(vsf_systimer_get_tick());
 }
 
 /* ======================================================================
@@ -91,40 +85,6 @@ int log_remove_sink(int sink_id) {
     g_sinks[sink_id].ctx = NULL;
     g_sinks[sink_id].in_use = 0;
     return 0;
-}
-
-/* --- preset: vsf_trace sink ---
- * Bypasses vsf_trace's own formatting, feeds our line as raw bytes to its
- * stream output. Requires VSF_USE_TRACE == ENABLED in user config. */
-#if VSF_USE_TRACE == ENABLED
-extern uint_fast32_t __vsf_trace_output(const char *buff, uint_fast32_t size);
-
-static void sink_vsf_trace(void *ctx, const char *line, size_t len) {
-    (void)ctx;
-    __vsf_trace_output(line, (uint_fast32_t)len);
-}
-
-int log_add_vsf_trace_sink(void) {
-    return log_add_sink(sink_vsf_trace, NULL);
-}
-#else
-int log_add_vsf_trace_sink(void) {
-    /* VSF_USE_TRACE is disabled in this build — nothing to attach to. */
-    return -1;
-}
-#endif
-
-/* --- preset: stream sink --- */
-static void sink_stream(void *ctx, const char *line, size_t len) {
-    vsf_stream_t *stream = (vsf_stream_t *)ctx;
-    if (stream) {
-        vsf_stream_write(stream, (uint8_t *)line, (uint_fast32_t)len);
-    }
-}
-
-int log_add_stream_sink(vsf_stream_t *stream) {
-    if (!stream) return -1;
-    return log_add_sink(sink_stream, stream);
 }
 
 /* ======================================================================
