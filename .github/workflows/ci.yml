@@ -62,6 +62,8 @@ jobs:
           CHANGED=""
           if [ -n "$BASE" ]; then
             CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || echo "")
+          else
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || echo "")
           fi
 
           # If harness or audit changed, test everything
@@ -133,7 +135,7 @@ jobs:
           fi
           echo "crc16_changed=$CRC16" >> "$GITHUB_OUTPUT"
 
-          echo "::notice::Changed wheels: $(echo $MATRIX | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED"
+          echo "::notice::Changed wheels: $(echo "$MATRIX" | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED"
 
   # ---- Standalone wheel jobs (special build requirements) ----
 
