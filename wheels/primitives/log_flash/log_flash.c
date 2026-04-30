@@ -75,11 +75,11 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
     hdr[1] = (uint8_t)(len & 0xFF);
     hdr[2] = (uint8_t)((len >> 8) & 0xFF);
 
-    if (write_at(f, abs_offset, hdr, ENTRY_HEADER_SIZE) != 0) {
+    if (write_at(f, abs_offset + ENTRY_HEADER_SIZE, (const uint8_t *)line, len) != 0) {
         f->dropped++;
         return;
     }
-    if (write_at(f, abs_offset + ENTRY_HEADER_SIZE, (const uint8_t *)line, len) != 0) {
+    if (write_at(f, abs_offset, hdr, ENTRY_HEADER_SIZE) != 0) {
         f->dropped++;
         return;
     }
