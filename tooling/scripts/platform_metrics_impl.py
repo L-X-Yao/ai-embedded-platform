@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+"""Platform metrics collection and comparison — implementation."""
+
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+def collect(repo: Path) -> dict:
+    wheels = repo / "wheels"
+    counts = {}
+    for layer in ["primitives", "drivers", "protocols", "modules"]:
+        ld = wheels / layer
+        if ld.is_dir():
+            counts[layer] = len([d for d in ld.iterdir()
+                                 if d.is_dir() and d.name != "__pycache__"])
+        else:
+            counts[layer] = 0
+
+    test_suites = len(list(wheels.rglob("test/test_*.c")))
+    assertions = 0
+    for tc in wheels.rglob("test/test_*.c"):
+        try:
+            assertions += tc.read_text(encoding="utf-8", errors="ignore").count("ASSERT")
+        except OSError:
+            pass
+
+    audit_fail = 0
+    audit_warn = 0
+    try:
+        r = subprocess.run(
+            [sys.executable, str(repo / "tooling/scripts/audit_wheels.py"), "--quiet"],
+            capture_output=True, text=True, cwd=str(repo), timeout=30
+        )
+        out = r.stdout + r.stderr
+        audit_fail = out.count("[FAIL]")
+        audit_warn = out.count("[WARN]")
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+    scripts_dir = repo / "tooling" / "scripts"
+    tool_count = len([f for f in scripts_dir.iterdir()
+                      if f.is_file() and f.suffix in (".sh", ".py")
+                      and not f.name.startswith("__")]) if scripts_dir.is_dir() else 0
+
+    makefile = repo / "Makefile"
+    make_targets = 0
+    if makefile.exists():
+        mk_text = makefile.read_text(encoding="utf-8")
+        phony = re.search(r'^\.PHONY:\s*(.+)$', mk_text, re.MULTILINE)
+        if phony:
+            make_targets = len(phony.group(1).split())
+
+    claude_lines = 0
+    claude_md = repo / "CLAUDE.md"
+    if claude_md.exists():
+        claude_lines = len(claude_md.read_text(encoding="utf-8").splitlines())
+
+    commits = 0
+    try:
+        r = subprocess.run(["git", "rev-list", "--count", "HEAD"],
+                           capture_output=True, text=True, cwd=str(repo))
+        commits = int(r.stdout.strip())
+    except (OSError, ValueError):
+        pass
+
+    commit_hash = "unknown"
+    try:
+        r = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True, cwd=str(repo))
+        commit_hash = r.stdout.strip()
+    except OSError:
+        pass
+
+    return {
+        "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "commit": commit_hash,
+        "wheels_l0": counts["primitives"],
+        "wheels_l1": counts["drivers"],
+        "wheels_l2": counts["protocols"],
+        "wheels_l3": counts["modules"],
+        "wheels_total": sum(counts.values()),
+        "test_suites": test_suites,
+        "assertions": assertions,
+        "audit_fail": audit_fail,
+        "audit_warn": audit_warn,
+        "tool_scripts": tool_count,
+        "makefile_targets": make_targets,
+        "claude_md_lines": claude_lines,
+        "commits": commits,
+    }
+
+
+def print_metrics(d: dict, label: str = "Current"):
+    print(f"\033[1m=== {label} ===\033[0m")
+    print(f"  Wheels:     {d['wheels_total']} (L0:{d['wheels_l0']} L1:{d['wheels_l1']} L2:{d['wheels_l2']} L3:{d['wheels_l3']})")
+    print(f"  Tests:      {d['test_suites']} suites, {d['assertions']} assertions")
+    print(f"  Audit:      {d['audit_fail']} FAIL, {d['audit_warn']} WARN")
+    print(f"  Tools:      {d['tool_scripts']} scripts, {d['makefile_targets']} make targets")
+    print(f"  CLAUDE.md:  {d['claude_md_lines']} lines")
+    print(f"  Commits:    {d['commits']}")
+    print(f"  As of:      {d['timestamp']} ({d['commit']})")
+
+
+def print_delta(prev: dict, curr: dict):
+    print("\033[1m=== Delta ===\033[0m")
+    keys = [
+        ("wheels_total", "Wheels"),
+        ("test_suites", "Test suites"),
+        ("assertions", "Assertions"),
+        ("audit_fail", "Audit FAIL"),
+        ("audit_warn", "Audit WARN"),
+        ("tool_scripts", "Tool scripts"),
+        ("makefile_targets", "Make targets"),
+        ("claude_md_lines", "CLAUDE.md lines"),
+        ("commits", "Commits"),
+    ]
+    decrease_is_good = {"audit_fail", "audit_warn"}
+    for key, label in keys:
+        p = prev.get(key, 0)
+        c = curr.get(key, 0)
+        delta = c - p
+        if delta == 0:
+            sym = "  "
+            color = "\033[0m"
+        elif delta > 0:
+            if key in decrease_is_good:
+                color = "\033[0;33m"  # yellow (bad: more failures)
+            else:
+                color = "\033[0;32m"  # green (good: more wheels/tests)
+            sym = "▲"
+        else:
+            if key in decrease_is_good:
+                color = "\033[0;32m"  # green (good: fewer failures)
+            else:
+                color = "\033[0;33m"  # yellow (shrinkage)
+            sym = "▼"
+        sign = "+" if delta > 0 else ""
+        print(f"  {color}{sym} {label:20s} {p:>8} → {c:>8}  ({sign}{delta})\033[0m")
+
+
+def main():
+    repo = Path(sys.argv[1])
+    metrics_dir = Path(sys.argv[2])
+    args = sys.argv[3:]
+
+    if "--history" in args:
+        print("\033[1m=== Metric Snapshots ===\033[0m")
+        for f in sorted(metrics_dir.glob("*.json")):
+            d = json.loads(f.read_text())
+            print(f"  {f.stem}  wheels={d.get('wheels_total','-')}  tests={d.get('test_suites','-')}  assertions={d.get('assertions','-')}")
+        return
+
+    current = collect(repo)
+
+    if "--compare" in args:
+        snapshots = sorted(metrics_dir.glob("*.json"))
+        if not snapshots:
+            print("No saved snapshots. Run with --save first.")
+            sys.exit(1)
+        prev = json.loads(snapshots[-1].read_text())
+        print_metrics(prev, f"Previous ({snapshots[-1].stem})")
+        print()
+        print_metrics(current, "Current")
+        print()
+        print_delta(prev, current)
+        return
+
+    print_metrics(current)
+
+    if "--save" in args:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out = metrics_dir / f"{ts}.json"
+        out.write_text(json.dumps(current, indent=2))
+        print(f"\n\033[0;32mSaved: {out}\033[0m")
+
+
+if __name__ == "__main__":
+    main()

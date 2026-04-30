@@ -371,3 +371,35 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
+| `audit_fix.py` | 自动修复机械审计发现 | `--apply`, `--only <类别>`, `--wheel <name>` |
+| `batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
+| `commit_suggest.sh` | 从 staged diff 生成 commit message | 无 |
+| `doc_drift_check.py` | 检查文档数字断言 vs 实际值 | `--fix` |
+| `find_all_refs.sh` | 搜索 wheel 在代码+文档的全部引用 | `--code-only`, `--docs-only` |
+| `sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
+
+### 工具决策树
+
+| 我想要… | 用这个 |
+|---------|--------|
+| 开始新 session | `make bootstrap` |
+| 建一个新 wheel | `new_wheel.sh --layer X --name Y [--hal Z]` |
+| 跑所有测试 | `make test`（或 `make test-fast` 快速迭代） |
+| 只测改了的部分 | `make test-changed` |
+| 测某个具体 wheel | `bash test_all.sh <name>` |
+| 改了 wheel 后查下游影响 | `make downstream W=<name>` |
+| commit 前全面验证 | `make check`（= test + audit） |
+| 看 commit message 该怎么写 | `bash commit_suggest.sh` |
+| commit + push 一步到位 | `make ship M="message"` |
+| 审计发现了机械问题要批量修 | `make audit-fix-apply` |
+| 跨多个 wheel 做同类文本替换 | `batch_fix.sh --sed 's/old/new/g' --all` |
+| 改了 wheel 名想找所有引用 | `find_all_refs.sh <name>` |
+| 检查文档数字有没有过时 | `python3 doc_drift_check.py`（或 `--fix`） |
+| 升级 wheel 从 draft 到 candidate | `wheel_promote.sh _draft/X primitives/X` |
+| 查 ARM 二进制体积 | `wsl bash arm_size_audit.sh --markdown` |
+| 更新 CLAUDE.md 的 wheel 计数 | `make inventory` |
+| 打版本标签 | `release.sh v1.0.0` |
+| 查当前版本 | `release.sh --current` |
+| 看 wheel 依赖关系图 | `make graph` |
+| 同步 VSF 上游 | `make sync-vsf` |
+| 清理构建残留 | `make clean` |
