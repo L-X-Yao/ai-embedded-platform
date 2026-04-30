@@ -61,12 +61,16 @@ typedef struct {
 bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
                          const bh1750_cfg_t *cfg);
 
+/** Read ambient light measurement in lux. @thread_safe: caller_must_lock */
 bh1750_err_t bh1750_read_lux(bh1750_t *dev, float *lux);
 
+/** Send power-on command to enable measurement. @thread_safe: caller_must_lock */
 bh1750_err_t bh1750_power_on(bh1750_t *dev);
 
+/** Send power-down command to enter low-power mode. @thread_safe: caller_must_lock */
 bh1750_err_t bh1750_power_off(bh1750_t *dev);
 
+/** Reset data register value; sensor must be powered on first. @thread_safe: caller_must_lock */
 bh1750_err_t bh1750_reset(bh1750_t *dev);
 
 #ifdef __cplusplus

@@ -25,14 +25,18 @@ int bitfield_get(const uint8_t *data, size_t data_len,
                  size_t bit_offset, size_t bit_count,
                  uint32_t *out);
 
+/** Pack value into bit range in byte array. @thread_safe: yes */
 int bitfield_set(uint8_t *data, size_t data_len,
                  size_t bit_offset, size_t bit_count,
                  uint32_t value);
 
+/** Return true if bit at given index is set. @thread_safe: yes */
 bool bitfield_test_bit(const uint8_t *data, size_t data_len, size_t bit_index);
 
+/** Set a single bit to 1. @thread_safe: yes */
 void bitfield_set_bit(uint8_t *data, size_t data_len, size_t bit_index);
 
+/** Clear a single bit to 0. @thread_safe: yes */
 void bitfield_clear_bit(uint8_t *data, size_t data_len, size_t bit_index);
 
 #define BITFIELD_OK           0

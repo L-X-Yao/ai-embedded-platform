@@ -19,9 +19,9 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    XGZP6816D_OK = 0,
-    XGZP6816D_ERR_I2C,        /* transport layer reported failure */
-    XGZP6816D_ERR_NO_ACK,     /* device did not acknowledge */
+    XGZP6816D_OK         =  0,
+    XGZP6816D_ERR_I2C    = -1,
+    XGZP6816D_ERR_NO_ACK = -2,
 } xgzp6816d_err_t;
 
 /* ---------- I2C HAL (caller provides) ----------

@@ -48,10 +48,13 @@ typedef struct {
 servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
                        const servo_cfg_t *cfg);
 
+/** Set servo position by angle in degrees. @thread_safe: no */
 servo_err_t servo_set_angle(servo_t *dev, uint16_t angle);
 
+/** Set servo position by raw pulse width in microseconds. @thread_safe: no */
 servo_err_t servo_set_pulse(servo_t *dev, uint32_t pulse_us);
 
+/** Return current angle in degrees. @thread_safe: no */
 uint16_t servo_get_angle(const servo_t *dev);
 
 #ifdef __cplusplus

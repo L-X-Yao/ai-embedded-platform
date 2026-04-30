@@ -23,12 +23,16 @@ extern "C" {
 /** @thread_safe: yes (pure function, no state) */
 uint8_t checksum_xor(const uint8_t *data, size_t len);
 
+/** Compute 8-bit arithmetic sum of data bytes. @thread_safe: yes */
 uint8_t checksum_sum8(const uint8_t *data, size_t len);
 
+/** Compute Fletcher-16 checksum. @thread_safe: yes */
 uint16_t checksum_fletcher16(const uint8_t *data, size_t len);
 
+/** Compute longitudinal redundancy check (two's complement of sum). @thread_safe: yes */
 uint8_t checksum_lrc(const uint8_t *data, size_t len);
 
+/** Compute RFC 1071 Internet checksum (IP/TCP/UDP). @thread_safe: yes */
 uint16_t checksum_internet(const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
