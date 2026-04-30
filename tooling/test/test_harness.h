@@ -22,6 +22,7 @@
 #define TEST_HARNESS_H
 
 #include <stdio.h>
+#include <string.h>
 
 static int tests_pass = 0;
 static int tests_fail = 0;
@@ -54,7 +55,8 @@ static int tests_fail = 0;
     } } while(0)
 
 #define ASSERT_MEMEQ(p, s) do { \
-    if (memcmp((p), (s), strlen(s)) != 0) { \
+    const char *_s = (s); \
+    if (memcmp((p), _s, strlen(_s)) != 0) { \
         printf("  FAIL %s:%d: memcmp mismatch\n", __func__, __LINE__); \
         tests_fail++; return; \
     } } while(0)
