@@ -151,9 +151,11 @@ http_err_t http_parse_response(const char *data, size_t len,
 
     p += 9;
     resp->status_code = 0;
-    while (p < crlf && *p >= '0' && *p <= '9') {
+    int digits = 0;
+    while (p < crlf && *p >= '0' && *p <= '9' && digits < 3) {
         resp->status_code = resp->status_code * 10 + (*p - '0');
         p++;
+        digits++;
     }
     if (p < crlf && *p == ' ') p++;
     resp->reason = p;
@@ -212,6 +214,8 @@ int http_get_content_length(const http_header_t *headers, int count)
             for (size_t j = 0; j < headers[i].value_len; j++) {
                 char c = headers[i].value[j];
                 if (c < '0' || c > '9') return -1;
+                if (val > 214748364 || (val == 214748364 && (c - '0') > 7))
+                    return -1;
                 val = val * 10 + (c - '0');
             }
             return val;

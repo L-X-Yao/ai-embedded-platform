@@ -52,7 +52,7 @@ int modbus_rtu_build(uint8_t *buf, uint16_t buf_size,
                      uint8_t addr, uint8_t func,
                      const uint8_t *data, uint16_t data_len)
 {
-    if (!buf || data_len > MODBUS_RTU_MAX_FRAME - 4)
+    if (!buf || data_len > MODBUS_RTU_MAX_FRAME - 4 || (data_len > 0 && !data))
         return -1;
     uint16_t frame_len = 2 + data_len + 2;
     if (buf_size < frame_len)

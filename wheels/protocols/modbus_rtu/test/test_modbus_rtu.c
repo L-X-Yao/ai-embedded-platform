@@ -657,10 +657,11 @@ TEST(test_build_null_data_nonzero_len)
 {
     uint8_t buf[32];
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 4);
-    ASSERT_TRUE(len == 8);
+    ASSERT_EQ(len, -1);
+
+    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
+    ASSERT_EQ(len, 4);
     ASSERT_TRUE(modbus_rtu_check_crc(buf, len));
-    ASSERT_TRUE(buf[0] == 0x01);
-    ASSERT_TRUE(buf[1] == 0x03);
 }
 
 TEST(test_slave_resp_buffer_too_small)

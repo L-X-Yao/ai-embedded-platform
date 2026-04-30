@@ -122,7 +122,7 @@ ota_ab_err_t ota_ab_boot_event(ota_ab_t *m)
     }
 
     if (m->params.ota_flag == OTA_AB_FLAG_SUCCESS) {
-        m->params.boot_count++;
+        if (m->params.boot_count < 255) m->params.boot_count++;
         if (m->params.boot_count > m->layout.max_boot_count) {
             m->params.active_slot = 1u - m->params.active_slot;
             m->params.ota_flag = OTA_AB_FLAG_IDLE;
