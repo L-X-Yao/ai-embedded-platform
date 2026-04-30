@@ -236,6 +236,36 @@ ai-embedded-platform/
 - 一 commit = 一逻辑改动
 - 跨 type 或跨 scope 必拆
 
+### 批量改动的拆分策略（审计/重构/迁移等）
+
+大量改动（如超级审计产出 50+ 项修复）时，按 **type × 逻辑批次** 拆 commit，不需要每个文件或每个 fix 一个 commit：
+
+| 粒度 | 拆法 | 示例 |
+|------|------|------|
+| **同 type + 同体系** | 合并为 1 个 commit | log 生态 10 个 wheel 的 19 项修复 → 1 commit |
+| **同 type + 同层不同 wheel** | 合并为 1 个 commit | L1 driver 3 个 wheel 修复 → 1 commit |
+| **跨 type** | 必须拆 | wheel 修复和 CI 修复 → 2 个 commit |
+| **跨 scope 但强关联** | 可合并（body 说明） | qmi8658a API 重构 + flybox 消费者适配 → wheel commit 含 consumer 更新，或拆为 wheel + project 两个 |
+
+**实操原则**：
+- 每个 commit 能独立 revert 且 diff 可读（<300 行改动为佳）
+- summary 列出涉及的 wheel/文件数量和修复类别
+- body 按 CRITICAL / MODERATE / MINOR 分级列出修复内容
+- 不要为了拆而拆——5 个同类 typo 修复合成 1 个 commit 比 5 个微 commit 有意义
+
+**典型审计 commit 序列**（按 type 分组）：
+```
+wheel(primitives/log): fix N audit findings across log ecosystem
+wheel: fix L0 primitive audit findings
+wheel: fix L1 driver audit findings
+wheel: fix L2 protocol audit findings
+project(flybox): fix N audit findings across tasks and drivers
+tool: fix N tooling script audit findings
+ci: fix CI pipeline audit findings
+docs: fix documentation drift across N files
+port(gd32f4xx): fix N HAL audit findings
+```
+
 ### AI 易踩的坑
 
 - ❌ Conventional Commits 类型（`feat:` / `chore:` / `refactor:` / `build:` / `ci:`）
