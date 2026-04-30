@@ -1,48 +1,24 @@
 #include "test_harness.h"
+#define MOCK_I2C_REG_COUNT 16
+#include "test_mock_i2c.h"
 #include "hmc5883l.h"
-#include <string.h>
 #include <math.h>
 
-/* Mock */
-#define MOCK_REG_COUNT 16
-static uint8_t mock_regs[MOCK_REG_COUNT];
-static bool mock_i2c_fail;
-
-static bool mock_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)dev_addr;
-    if (mock_i2c_fail) return false;
-    if (reg < MOCK_REG_COUNT)
-        mock_regs[reg] = val;
-    return true;
-}
-
-static bool mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
-                           uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)dev_addr;
-    if (mock_i2c_fail) return false;
-    for (uint16_t i = 0; i < len; i++) {
-        uint8_t r = (uint8_t)(reg + i);
-        buf[i] = (r < MOCK_REG_COUNT) ? mock_regs[r] : 0;
-    }
-    return true;
-}
-
-static hmc5883l_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_regs = mock_read_regs,
-    .ctx       = NULL
-};
+/* ---------- chip-specific mock setup ---------- */
 
 static void mock_reset(void)
 {
-    memset(mock_regs, 0, sizeof(mock_regs));
+    mock_i2c_reset();
     mock_regs[0x0A] = 'H';
     mock_regs[0x0B] = '4';
     mock_regs[0x0C] = '3';
-    mock_i2c_fail = false;
 }
+
+static hmc5883l_i2c_t mock_i2c = {
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .ctx       = NULL
+};
 
 static void set_mock_data(int16_t x, int16_t y, int16_t z)
 {
@@ -125,7 +101,7 @@ TEST(test_different_gain)
 TEST(test_i2c_failure)
 {
     mock_reset();
-    mock_i2c_fail = true;
+    mock_fail_next = 1;
     hmc5883l_t dev;
     hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
     ASSERT_EQ(hmc5883l_init(&dev, &mock_i2c, &cfg), HMC5883L_ERR_I2C);

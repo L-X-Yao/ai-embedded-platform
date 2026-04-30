@@ -58,6 +58,7 @@ static bool mock_i2c_should_fail(void)
     return false;
 }
 
+__attribute__((unused))
 static bool mock_i2c_write_reg(void *ctx, uint8_t dev_addr,
                                 uint8_t reg, uint8_t val)
 {
@@ -68,6 +69,7 @@ static bool mock_i2c_write_reg(void *ctx, uint8_t dev_addr,
     return true;
 }
 
+__attribute__((unused))
 static bool mock_i2c_read_regs(void *ctx, uint8_t dev_addr,
                                 uint8_t reg, uint8_t *buf, uint16_t len)
 {
