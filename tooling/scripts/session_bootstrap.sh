@@ -88,7 +88,7 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
 
     # Consumer? (project CMakeLists.txt or #include in .c files)
     consumer="--"
-    if grep -rq "wheels/${layer}/${name}\|wheels/[a-z]*/${name}" "$REPO"/projects/*/CMakeLists.txt "$REPO"/projects/*/vsf_build/CMakeLists.txt 2>/dev/null; then
+    if grep -rqE "wheels/${ci_layer}/${name}|wheels/[a-z_]*/${name}" "$REPO"/projects/*/CMakeLists.txt "$REPO"/projects/*/vsf_build/CMakeLists.txt 2>/dev/null; then
         consumer="yes"
     elif grep -rq "#include.*[\"<]${name}\.h[\">]" "$REPO"/projects/ 2>/dev/null; then
         consumer="yes"
