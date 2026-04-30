@@ -121,7 +121,9 @@ void log_set_time_fn(uint32_t (*fn)(void));
  *   - L is one char: E/W/I/D
  *   - module is whatever LOG_MODULE expands to
  *
- * @thread_safe: yes (uses stack buffer, no shared state during format)
+ * @thread_safe: yes after init (format uses stack buffer; sink dispatch
+ *               reads g_sinks without lock — safe if sinks not modified
+ *               after init)
  * ====================================================================== */
 
 void log_emit(log_level_t level, const char *module, const char *fmt, ...);

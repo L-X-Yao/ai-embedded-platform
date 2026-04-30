@@ -90,6 +90,7 @@ ads1115_err_t ads1115_read_voltage(ads1115_t *dev, float *voltage_mv)
         return err;
 
     int pga_idx = (int)dev->cfg.pga;
+    if (pga_idx < 0) pga_idx = 0;
     if (pga_idx > 5) pga_idx = 5;
     *voltage_mv = (float)raw * pga_scale_mv[pga_idx];
     return ADS1115_OK;
