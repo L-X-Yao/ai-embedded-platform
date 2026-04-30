@@ -81,7 +81,7 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     return MPU6050_OK;
 }
 
-mpu6050_err_t mpu6050_read_accel(mpu6050_t *dev, mpu6050_accel_t *out)
+mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out)
 {
     if (!dev || !out)
     {
@@ -105,7 +105,7 @@ mpu6050_err_t mpu6050_read_accel(mpu6050_t *dev, mpu6050_accel_t *out)
     return MPU6050_OK;
 }
 
-mpu6050_err_t mpu6050_read_gyro(mpu6050_t *dev, mpu6050_gyro_t *out)
+mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out)
 {
     if (!dev || !out)
     {

@@ -144,7 +144,7 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
         return BMP280_ERR_PARAM;
     }
 
-    uint8_t ctrl = (uint8_t)((dev->cfg.osrs_t << 5) | (dev->cfg.osrs_p << 2) | MODE_FORCED);
+    uint8_t ctrl = (uint8_t)(((dev->cfg.osrs_t & 0x07) << 5) | ((dev->cfg.osrs_p & 0x07) << 2) | MODE_FORCED);
     if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
     {
         return BMP280_ERR_I2C;
