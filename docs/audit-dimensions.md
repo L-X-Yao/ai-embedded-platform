@@ -216,3 +216,4 @@ wsl bash tooling/scripts/arm_size_audit.sh   # Q21
 | 2026-04-30 | Scaffold 集成测试 | 3 | 3 | I2C/SPI/primitives 模板编译失败 |
 | 2026-04-30 | 超级审计二轮（Q6-Q30） | 1C+5M | 6 | bh1750 enum 验证 + 5 单位注释 |
 | 2026-04-30 | 超级审计三轮（全 40 维度） | 7C+16M | 23 | 协议溢出/BMP280 STATUS/nmea checksum/CI 路径/脚本 bug |
+| 2026-04-30 | 超级审计四轮（全 40 维度） | 5C+15M | 26 | log NUL/bitfield overflow/mqtt build overflow/flash busy-wait/CoAP C++ keyword |
