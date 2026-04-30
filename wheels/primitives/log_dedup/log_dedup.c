@@ -38,11 +38,15 @@ static int lines_equal(const char *a, size_t a_len, const char *b, size_t b_len)
     const char *sa = a, *sb = b;
     size_t la = a_len, lb = b_len;
 
-    if (la > 12 && sa[0] == '[' && sa[9] == ']' && sa[10] == ' ') {
-        sa += 11; la -= 11;
+    if (la > 4 && sa[0] == '[') {
+        for (size_t i = 1; i < la - 1; i++) {
+            if (sa[i] == ']' && sa[i + 1] == ' ') { sa += i + 2; la -= i + 2; break; }
+        }
     }
-    if (lb > 12 && sb[0] == '[' && sb[9] == ']' && sb[10] == ' ') {
-        sb += 11; lb -= 11;
+    if (lb > 4 && sb[0] == '[') {
+        for (size_t i = 1; i < lb - 1; i++) {
+            if (sb[i] == ']' && sb[i + 1] == ' ') { sb += i + 2; lb -= i + 2; break; }
+        }
     }
 
     return (la == lb) && (memcmp(sa, sb, la) == 0);
