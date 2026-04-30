@@ -1,53 +1,19 @@
 #include "test_harness.h"
-#include <string.h>
+#include "test_mock_i2c.h"
 #include <math.h>
 #include "mpu6050.h"
 
-/* ---------- mock I2C ---------- */
-
-static uint8_t mock_regs[256];
-static int     mock_fail_next;
-static int     mock_op_count;
-static int     mock_fail_at;
+/* ---------- chip-specific mock setup ---------- */
 
 static void mock_reset(void)
 {
-    memset(mock_regs, 0, sizeof(mock_regs));
-    mock_fail_next = 0;
-    mock_op_count  = 0;
-    mock_fail_at   = -1;
+    mock_i2c_reset();
     mock_regs[0x75] = 0x68;
 }
 
-static bool mock_should_fail(void)
-{
-    int n = mock_op_count++;
-    if (mock_fail_next) { mock_fail_next = 0; return true; }
-    if (mock_fail_at >= 0 && n == mock_fail_at) return true;
-    return false;
-}
-
-static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    mock_regs[reg] = val;
-    return true;
-}
-
-static bool mock_read_regs(void *ctx, uint8_t addr, uint8_t reg,
-                            uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    for (uint16_t i = 0; i < len; i++)
-        buf[i] = mock_regs[(uint8_t)(reg + i)];
-    return true;
-}
-
 static const mpu6050_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_regs = mock_read_regs,
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
 
@@ -245,4 +211,3 @@ TEST_MAIN("mpu6050")
     RUN(test_addr_high);
     RUN(test_config_registers);
 TEST_MAIN_END()
-

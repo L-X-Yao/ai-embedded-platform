@@ -1,52 +1,34 @@
 #include "test_harness.h"
-#include <string.h>
+#define MOCK_I2C_REG_COUNT 128
+#include "test_mock_i2c.h"
 #include <stdlib.h>
 #include <math.h>
 #include "qmi8658a.h"
 
-/* ---------- mock I2C ---------- */
+/* ---------- chip-specific: write-count failure on top of shared mock ---------- */
 
-#define MOCK_REG_COUNT 128
-static uint8_t mock_regs[MOCK_REG_COUNT];
-static int     mock_fail_next;    /* 1 = next I2C op fails */
-static int     mock_fail_at_write; /* fail at Nth write (0=disabled) */
-static int     mock_write_count;
-static int     mock_read_count;
+static int mock_fail_at_write;
+
+static bool qmi_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    (void)ctx; (void)dev_addr;
+    if (mock_i2c_should_fail()) return false;
+    mock_write_count++;
+    if (mock_fail_at_write && mock_write_count == mock_fail_at_write) return false;
+    if (reg < MOCK_I2C_REG_COUNT) mock_regs[reg] = val;
+    return true;
+}
 
 static void mock_reset(void)
 {
-    memset(mock_regs, 0, sizeof(mock_regs));
+    mock_i2c_reset();
     mock_regs[0x00] = 0x05; /* WHO_AM_I */
-    mock_fail_next  = 0;
     mock_fail_at_write = 0;
-    mock_write_count = 0;
-    mock_read_count  = 0;
-}
-
-static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)addr;
-    if (mock_fail_next) { mock_fail_next = 0; return false; }
-    mock_write_count++;
-    if (mock_fail_at_write && mock_write_count == mock_fail_at_write) { return false; }
-    if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
-    return true;
-}
-
-static bool mock_read_regs(void *ctx, uint8_t addr, uint8_t reg,
-                            uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)addr;
-    if (mock_fail_next) { mock_fail_next = 0; return false; }
-    for (uint16_t i = 0; i < len; i++)
-        buf[i] = ((reg + i) < MOCK_REG_COUNT) ? mock_regs[reg + i] : 0xFF;
-    mock_read_count++;
-    return true;
 }
 
 static const qmi8658a_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_regs = mock_read_regs,
+    .write_reg = qmi_write_reg,
+    .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
 
@@ -94,11 +76,11 @@ TEST(test_read_data)
     qmi8658a_cfg_t c = qmi8658a_default_cfg();
     qmi8658a_init(&g_dev, &mock_i2c, &c);
 
-    mock_regs[0x35] = 0x00; mock_regs[0x36] = 0x10; /* ax = 0x1000 = 4096 */
+    mock_regs[0x35] = 0x00; mock_regs[0x36] = 0x10;
     mock_regs[0x37] = 0x00; mock_regs[0x38] = 0x00;
     mock_regs[0x39] = 0x00; mock_regs[0x3A] = 0x00;
     mock_regs[0x3B] = 0x00; mock_regs[0x3C] = 0x00;
-    mock_regs[0x3D] = 0xA0; mock_regs[0x3E] = 0x00; /* gy = 0x00A0 = 160 */
+    mock_regs[0x3D] = 0xA0; mock_regs[0x3E] = 0x00;
     mock_regs[0x3F] = 0x00; mock_regs[0x40] = 0x00;
 
     qmi8658a_data_t d;
@@ -133,7 +115,7 @@ TEST(test_config_range)
     ASSERT_EQ(mock_regs[0x03], 0x05);
     ASSERT_EQ(mock_regs[0x04], 0x56);
 
-    mock_regs[0x35] = 0x00; mock_regs[0x36] = 0x40; /* 0x4000 = 16384 */
+    mock_regs[0x35] = 0x00; mock_regs[0x36] = 0x40;
     mock_regs[0x37] = 0; mock_regs[0x38] = 0;
     mock_regs[0x39] = 0; mock_regs[0x3A] = 0;
     mock_regs[0x3B] = 0; mock_regs[0x3C] = 0;
