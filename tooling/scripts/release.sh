@@ -157,24 +157,25 @@ if $DRY_RUN; then
     exit 0
 fi
 
-# --- Write changelog ---
+# --- Write changelog (atomic: write tmp then rename) ---
+TMP_CL="${CHANGELOG}.tmp"
 if [[ -f "$CHANGELOG" ]]; then
-    # Insert after the first heading line
-    HEADER=$(head -2 "$CHANGELOG")
-    BODY=$(tail -n +3 "$CHANGELOG")
-    echo "$HEADER" > "$CHANGELOG"
-    echo "" >> "$CHANGELOG"
-    echo "$ENTRY" >> "$CHANGELOG"
-    echo "$BODY" >> "$CHANGELOG"
+    {
+        head -2 "$CHANGELOG"
+        echo ""
+        echo "$ENTRY"
+        tail -n +3 "$CHANGELOG"
+    } > "$TMP_CL"
 else
-    cat > "$CHANGELOG" << HEADER
+    cat > "$TMP_CL" << HEADER
 # Changelog
 
 $ENTRY
 HEADER
 fi
+mv "$TMP_CL" "$CHANGELOG"
 
-# --- Create tag ---
+# --- Create tag (after changelog so tag commit can include it) ---
 git -C "$REPO" tag "$VERSION"
 
 echo ""

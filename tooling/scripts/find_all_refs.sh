@@ -76,10 +76,10 @@ if ! $DOCS_ONLY; then
         [[ -n "$SELF_DIR" && "$rel" == "$SELF_DIR"/* ]] && continue
         echo "  $rel"
         COUNT=$((COUNT + 1))
-    done < <(grep -rl "$NAME" "$REPO" \
+    done < <(grep -rlF "$NAME" "$REPO" \
         --include="CMakeLists.txt" --include="*.cmake" \
         --exclude-dir=build --exclude-dir=build_* --exclude-dir=.git \
-        2>/dev/null | grep -v "$SELF_DIR" || true)
+        2>/dev/null | grep -vF "${SELF_DIR:-__NOMATCH__}" || true)
     [[ $COUNT -eq 0 ]] && echo "  (none)"
     TOTAL=$((TOTAL + COUNT))
 fi
@@ -94,13 +94,13 @@ if ! $CODE_ONLY; then
         [[ -z "$f" ]] && continue
         echo "  ${f#$REPO/}"
         COUNT=$((COUNT + 1))
-    done < <(grep -rl "$NAME" "$REPO/docs" --include="*.md" 2>/dev/null || true)
+    done < <(grep -rlF "$NAME" "$REPO/docs" --include="*.md" 2>/dev/null || true)
     [[ $COUNT -eq 0 ]] && echo "  (none)"
     TOTAL=$((TOTAL + COUNT))
 
     echo -e "\n${CYAN}CLAUDE.md:${NC}"
-    if grep -q "$NAME" "$REPO/CLAUDE.md" 2>/dev/null; then
-        grep -n "$NAME" "$REPO/CLAUDE.md" | head -5 | sed 's/^/  /'
+    if grep -qF "$NAME" "$REPO/CLAUDE.md" 2>/dev/null; then
+        grep -nF "$NAME" "$REPO/CLAUDE.md" | head -5 | sed 's/^/  /'
         TOTAL=$((TOTAL + 1))
     else
         echo "  (not mentioned)"
@@ -114,7 +114,7 @@ if ! $CODE_ONLY; then
         [[ -n "$SELF_DIR" && "$rel" == "$SELF_DIR"/* ]] && continue
         echo "  $rel"
         COUNT=$((COUNT + 1))
-    done < <(grep -rl "$NAME" "$REPO/wheels" --include="README.md" 2>/dev/null || true)
+    done < <(grep -rlF "$NAME" "$REPO/wheels" --include="README.md" 2>/dev/null || true)
     [[ $COUNT -eq 0 ]] && echo "  (none)"
     TOTAL=$((TOTAL + COUNT))
 
