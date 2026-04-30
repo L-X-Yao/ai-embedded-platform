@@ -27,6 +27,7 @@ typedef struct {
     void               *inner_ctx;
     char                last_line[LOG_DEDUP_LINE_MAX];
     size_t              last_len;
+    size_t              last_full_len;
     uint32_t            repeat_count;
     uint32_t            total_suppressed;
 } log_dedup_t;

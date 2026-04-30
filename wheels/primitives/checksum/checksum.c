@@ -40,7 +40,9 @@ uint16_t checksum_fletcher16(const uint8_t *data, size_t len)
         sum2 = (uint16_t)((sum2 & 0xFF) + (sum2 >> 8));
     }
     sum1 = (uint16_t)((sum1 & 0xFF) + (sum1 >> 8));
+    if (sum1 >= 255) sum1 -= 255;
     sum2 = (uint16_t)((sum2 & 0xFF) + (sum2 >> 8));
+    if (sum2 >= 255) sum2 -= 255;
     return (uint16_t)((sum2 << 8) | sum1);
 }
 
