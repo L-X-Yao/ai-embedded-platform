@@ -75,8 +75,8 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
         return MPU6050_ERR_I2C;
     }
 
-    dev->accel_scale = accel_scales[cfg->accel_range];
-    dev->gyro_scale  = gyro_scales[cfg->gyro_range];
+    dev->accel_scale = accel_scales[cfg->accel_range & 0x03];
+    dev->gyro_scale  = gyro_scales[cfg->gyro_range & 0x03];
 
     return MPU6050_OK;
 }

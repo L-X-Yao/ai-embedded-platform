@@ -35,6 +35,7 @@ hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
     dev->cfg = *cfg;
 
     int gain_idx = (int)cfg->gain;
+    if (gain_idx < 0) gain_idx = 0;
     if (gain_idx > 7) gain_idx = 7;
     dev->scale = gain_scale[gain_idx];
 
