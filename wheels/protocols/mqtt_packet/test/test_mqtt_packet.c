@@ -231,6 +231,17 @@ TEST(test_remaining_length_4byte)
     ASSERT_EQ(used, 0);
 }
 
+TEST(test_build_publish_qos3_rejected)
+{
+    uint8_t buf[64];
+    mqtt_publish_t pub = {
+        .topic = "t/1", .payload = (const uint8_t *)"x",
+        .payload_len = 1, .qos = 3,
+    };
+    ASSERT_EQ(mqtt_packet_build_publish(buf, sizeof(buf), &pub),
+              MQTT_PACKET_ERR_PARAM);
+}
+
 TEST(test_null_params)
 {
     ASSERT_EQ(mqtt_packet_build_connect(NULL, 128, NULL), MQTT_PACKET_ERR_PARAM);
@@ -262,6 +273,7 @@ TEST_MAIN("mqtt_packet")
     RUN(test_roundtrip_publish);
     RUN(test_roundtrip_publish_qos1);
     RUN(test_remaining_length_4byte);
+    RUN(test_build_publish_qos3_rejected);
     RUN(test_null_params);
 TEST_MAIN_END()
 

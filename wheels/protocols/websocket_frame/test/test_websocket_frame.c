@@ -139,6 +139,27 @@ TEST(test_null_safety)
                              NULL, NULL, 0), WS_ERR_PARAM);
 }
 
+TEST(test_parse_reserved_opcode)
+{
+    ws_frame_t f;
+    uint8_t d3[] = {0x83, 0x00};
+    ASSERT_EQ(ws_frame_parse(d3, sizeof(d3), &f), WS_ERR_PROTOCOL);
+    uint8_t db[] = {0x8B, 0x00};
+    ASSERT_EQ(ws_frame_parse(db, sizeof(db), &f), WS_ERR_PROTOCOL);
+    uint8_t df[] = {0x8F, 0x00};
+    ASSERT_EQ(ws_frame_parse(df, sizeof(df), &f), WS_ERR_PROTOCOL);
+}
+
+TEST(test_build_null_payload_nonzero_len)
+{
+    uint8_t buf[32];
+    size_t out;
+    ASSERT_EQ(ws_frame_build(buf, sizeof(buf), &out, true, WS_OPCODE_TEXT,
+                             NULL, NULL, 5), WS_ERR_PARAM);
+    ASSERT_EQ(ws_frame_build(buf, sizeof(buf), &out, true, WS_OPCODE_TEXT,
+                             NULL, NULL, 0), WS_OK);
+}
+
 TEST_MAIN("websocket_frame")
     RUN(test_parse_unmasked_text);
     RUN(test_parse_masked_text);
@@ -151,4 +172,6 @@ TEST_MAIN("websocket_frame")
     RUN(test_build_overflow);
     RUN(test_roundtrip);
     RUN(test_null_safety);
+    RUN(test_parse_reserved_opcode);
+    RUN(test_build_null_payload_nonzero_len);
 TEST_MAIN_END()
