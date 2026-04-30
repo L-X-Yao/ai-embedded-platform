@@ -29,10 +29,20 @@ void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
         return;
     }
 
-    /* Evict oldest bytes until enough space */
+    /* Evict oldest complete lines until enough space */
     while (rb->count + len > rb->capacity) {
-        rb->head = (rb->head + 1) % rb->capacity;
-        rb->count--;
+        size_t evicted = 0;
+        int found_newline = 0;
+        for (size_t i = 0; i < rb->count; i++) {
+            evicted++;
+            if (rb->buf[(rb->head + i) % rb->capacity] == '\n') {
+                found_newline = 1;
+                break;
+            }
+        }
+        if (!found_newline) evicted = rb->count;
+        rb->head = (rb->head + evicted) % rb->capacity;
+        rb->count -= evicted;
         rb->dropped_lines++;
     }
 

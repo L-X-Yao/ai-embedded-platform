@@ -74,7 +74,8 @@ typedef enum {
 
 /* ======================================================================
  * Runtime level control
- * @thread_safe: yes (atomic word write)
+ * @thread_safe: yes on 32-bit MCUs (single word write). On 8-bit MCUs
+ *               callers should disable interrupts around set/get.
  * ====================================================================== */
 
 void log_set_level(log_level_t level);

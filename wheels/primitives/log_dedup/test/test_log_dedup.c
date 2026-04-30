@@ -75,7 +75,7 @@ TEST(test_flush_pending) {
 
     log_dedup_flush(&d);
     ASSERT_EQ(g_cap_count, 2);
-    ASSERT_TRUE(strstr(g_cap[1], "repeated 1 times") != NULL);
+    ASSERT_TRUE(strstr(g_cap[1], "repeated 1 time]") != NULL);
 }
 
 TEST(test_timestamp_ignored_for_comparison) {

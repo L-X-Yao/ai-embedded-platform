@@ -43,6 +43,7 @@ void log_filter_init(log_filter_t *f, log_filter_output_fn inner_fn,
                      void *inner_ctx, log_filter_mode_t mode);
 
 /* Add a module name to the filter list. Returns 0 on success, -1 if full.
+ * The pointer must remain valid (use string literals or static storage).
  * @thread_safe: no — call during init */
 int log_filter_add(log_filter_t *f, const char *module);
 
@@ -52,7 +53,7 @@ void log_filter_clear(log_filter_t *f);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_filter_t* as ctx when registering via log_add_sink().
- * @thread_safe: yes (no shared state modified during filtering) */
+ * @thread_safe: yes if module list is not modified concurrently */
 void log_filter_sink(void *ctx, const char *line, size_t len);
 
 #ifdef __cplusplus

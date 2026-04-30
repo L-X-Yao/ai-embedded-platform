@@ -61,12 +61,31 @@ TEST(test_overflow_evicts_oldest) {
 
     log_ringbuf_write(&rb, "CCCC\n", 5);
     ASSERT_EQ(log_ringbuf_used(&rb), 10);
-    ASSERT_TRUE(log_ringbuf_dropped(&rb) > 0);
+    ASSERT_EQ(log_ringbuf_dropped(&rb), 1);
 
     char out[32];
     size_t n = log_ringbuf_read(&rb, out, sizeof(out));
     ASSERT_EQ(n, 10);
-    ASSERT_MEMEQ(out + 5, "CCCC\n");
+    ASSERT_MEMEQ(out, "BBBB\nCCCC\n");
+}
+
+TEST(test_eviction_preserves_line_boundary) {
+    uint8_t small_buf[16];
+    log_ringbuf_t rb;
+    log_ringbuf_init(&rb, small_buf, sizeof(small_buf));
+
+    log_ringbuf_write(&rb, "AA\n", 3);
+    log_ringbuf_write(&rb, "BBBB\n", 5);
+    log_ringbuf_write(&rb, "CC\n", 3);
+    ASSERT_EQ(log_ringbuf_used(&rb), 11);
+
+    log_ringbuf_write(&rb, "DDDDDD\n", 7);
+    ASSERT_EQ(log_ringbuf_dropped(&rb), 1);
+
+    char out[32];
+    size_t n = log_ringbuf_read(&rb, out, sizeof(out));
+    out[n] = '\0';
+    ASSERT_MEMEQ(out, "BBBB\nCC\nDDDDDD\n");
 }
 
 TEST(test_line_too_large_dropped) {
@@ -164,6 +183,7 @@ TEST_MAIN("log_ringbuf")
     RUN(test_write_and_read);
     RUN(test_multiple_writes);
     RUN(test_overflow_evicts_oldest);
+    RUN(test_eviction_preserves_line_boundary);
     RUN(test_line_too_large_dropped);
     RUN(test_clear);
     RUN(test_sink_adapter);

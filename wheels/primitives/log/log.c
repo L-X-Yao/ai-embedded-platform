@@ -117,7 +117,10 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     if (time_fn) {
         uint32_t ts = time_fn();
         n = snprintf(buf + pos, (size_t)rem, "[%08u] ", (unsigned)ts);
-        if (n > 0 && n < rem) { pos += n; rem -= n; }
+        if (n > 0) {
+            int adv = n < rem ? n : rem - 1;
+            pos += adv; rem -= adv;
+        }
     }
 
     /* Level + module */
@@ -125,7 +128,10 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
                     ? LOG_LEVEL_CHAR[(int)level] : '?';
     n = snprintf(buf + pos, (size_t)rem, "[%c] [%s] ",
                  lvl_char, module ? module : "-");
-    if (n > 0 && n < rem) { pos += n; rem -= n; }
+    if (n > 0) {
+        int adv = n < rem ? n : rem - 1;
+        pos += adv; rem -= adv;
+    }
 
     /* User message */
     va_list ap;

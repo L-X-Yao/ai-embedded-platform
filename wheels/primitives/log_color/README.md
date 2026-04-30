@@ -72,7 +72,7 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests (sim): PASS (8 tests)
+- Unit tests (sim): PASS (9 tests)
 - HIL: N/A
 
 ## API convention deviations

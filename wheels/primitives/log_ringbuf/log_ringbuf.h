@@ -53,7 +53,7 @@ uint32_t log_ringbuf_total(const log_ringbuf_t *rb);
  * @thread_safe: no */
 uint32_t log_ringbuf_dropped(const log_ringbuf_t *rb);
 
-/* Clear all stored data.
+/* Clear all stored data. Counters (total/dropped) are preserved.
  * @thread_safe: no */
 void log_ringbuf_clear(log_ringbuf_t *rb);
 

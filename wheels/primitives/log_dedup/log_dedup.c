@@ -24,7 +24,9 @@ static void emit_repeat(log_dedup_t *d) {
     if (d->repeat_count > 0 && d->inner_fn) {
         char buf[64];
         int n = snprintf(buf, sizeof(buf),
-                         "  [repeated %u times]\n", (unsigned)d->repeat_count);
+                         "  [repeated %u time%s]\n",
+                         (unsigned)d->repeat_count,
+                         d->repeat_count == 1 ? "" : "s");
         if (n > 0) {
             d->inner_fn(d->inner_ctx, buf, (size_t)n);
         }
@@ -50,7 +52,8 @@ void log_dedup_sink(void *ctx, const char *line, size_t len) {
     log_dedup_t *d = (log_dedup_t *)ctx;
     if (!d || !d->inner_fn || !line || len == 0) return;
 
-    if (d->last_len > 0 && lines_equal(d->last_line, d->last_len, line, len)) {
+    size_t cmp_len = len < LOG_DEDUP_LINE_MAX - 1 ? len : LOG_DEDUP_LINE_MAX - 1;
+    if (d->last_len > 0 && lines_equal(d->last_line, d->last_len, line, cmp_len)) {
         d->repeat_count++;
         d->total_suppressed++;
         return;

@@ -64,7 +64,11 @@ TEST(test_attach_stderr) {
     log_file_t lf;
     log_file_attach(&lf, stderr, 0);
     ASSERT_TRUE(lf.fp == stderr);
+    ASSERT_EQ(lf.owned, 0);
     log_file_sink(&lf, "[D] [test] stderr\n", 18);
+    log_file_close(&lf);
+    ASSERT_TRUE(lf.fp == NULL);
+    fprintf(stderr, "stderr still works after close-on-attach\n");
 }
 
 TEST(test_multiple_writes) {
