@@ -440,53 +440,6 @@ def has_error_code_test_coverage(wheel_dir: Path, name: str) -> list:
     return uncovered
 
 
-def fix_error_test_stubs(wheel_dir: Path, name: str) -> int:
-    """Auto-generate TEST() stubs for uncovered error codes. Returns count added."""
-    uncovered = has_error_code_test_coverage(wheel_dir, name)
-    if not uncovered:
-        return 0
-    test_dir = wheel_dir / "test"
-    test_file = test_dir / f"test_{name}.c"
-    if not test_file.exists():
-        return 0
-    text = test_file.read_text(encoding="utf-8", errors="replace")
-    nl = "\r\n" if "\r\n" in text else "\n"
-    lines = text.split(nl)
-
-    insert_idx = None
-    main_run_idx = None
-    for i, line in enumerate(lines):
-        if "TEST_MAIN_END()" in line:
-            insert_idx = i
-        if "TEST_MAIN(" in line and "TEST_MAIN_END" not in line:
-            main_run_idx = i
-
-    if insert_idx is None:
-        return 0
-
-    stubs = []
-    runs = []
-    for code in uncovered:
-        fn_name = f"test_{code.lower()}_triggered"
-        stubs.append(f"TEST({fn_name})")
-        stubs.append("{")
-        stubs.append(f"    /* TODO: trigger {code} and assert return value */")
-        stubs.append("}")
-        stubs.append("")
-        runs.append(f"    RUN({fn_name});")
-
-    if main_run_idx is not None:
-        stub_block = stubs + [""]
-        lines = lines[:main_run_idx] + stub_block + lines[main_run_idx:]
-        insert_idx += len(stub_block)
-
-    for i, run_line in enumerate(runs):
-        lines.insert(insert_idx + i, run_line)
-
-    test_file.write_text(nl.join(lines), encoding="utf-8")
-    return len(uncovered)
-
-
 def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     """Check that every function declaration in .h has a doc comment (Q29)."""
     h = wheel_dir / f"{name}.h"
@@ -885,33 +838,13 @@ def print_dep_graph(wheels):
     print("```")
 
 
-def do_fix_error_tests():
-    """Auto-generate test stubs for all uncovered error codes."""
-    wheels = find_wheels()
-    total = 0
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            continue
-        n = fix_error_test_stubs(wheel_dir, name)
-        if n > 0:
-            print(f"  [fixed]  {path}: added {n} test stub(s)")
-            total += n
-    print(f"\nTotal: {total} test stubs added across {len(wheels)} wheels")
-    return 0
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Wheel audit")
     parser.add_argument("--graph", action="store_true", help="Print Mermaid dependency graph")
     parser.add_argument("--quiet", "-q", action="store_true", help="Only show WARN/FAIL and summary")
-    parser.add_argument("--fix-error-tests", action="store_true",
-                        help="Auto-generate TEST() stubs for uncovered error codes")
     args = parser.parse_args()
     if args.graph:
         wheels = find_wheels()
         print_dep_graph(wheels)
         sys.exit(0)
-    if args.fix_error_tests:
-        sys.exit(do_fix_error_tests())
     sys.exit(main(quiet=args.quiet))
