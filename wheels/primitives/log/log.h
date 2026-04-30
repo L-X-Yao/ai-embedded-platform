@@ -1,14 +1,13 @@
 /*
- * log — leveled + module-tagged logging, wraps vsf_trace.
+ * log — leveled + module-tagged logging, pure C99.
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    VSF kernel, vsf_trace (optional sink), vsf_stream (optional sink)
+ * Deps:    none
  */
 #ifndef LOG_H
 #define LOG_H
 
-#include "vsf.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -99,19 +98,12 @@ int log_add_sink(log_sink_fn fn, void *ctx);
 /* Returns 0 on success, -1 on invalid id. */
 int log_remove_sink(int sink_id);
 
-/* Preset sink: route to vsf_trace's internal stream.
- * Requires vsf_trace to have been initialized (vsf_start_trace + stream).
- * Returns sink id. */
-int log_add_vsf_trace_sink(void);
-
-/* Preset sink: route to an arbitrary VSF stream. */
-int log_add_stream_sink(vsf_stream_t *stream);
-
 /* ======================================================================
  * Time source
  *
- * Default: vsf_systimer-based ms. Override by calling log_set_time_fn()
- * with a function returning uint32_t ms (or NULL to disable timestamps).
+ * Default: disabled (no timestamps). Call log_set_time_fn() with a
+ * function returning uint32_t ms to enable timestamps. Pass NULL to
+ * disable again.
  * ====================================================================== */
 
 void log_set_time_fn(uint32_t (*fn)(void));
