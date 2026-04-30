@@ -154,6 +154,42 @@ echo "  Jobs in ci.yml: $job_count ($yaml_jobs definitions, $matrix_entries matr
 last_run=$(git -C "$REPO" log --oneline -1 --format="%h %s" -- .github/workflows/ 2>/dev/null || echo "n/a")
 echo "  Last CI change: $last_run"
 
+# --- Audit trigger detection --------------------------------------------------
+
+echo ""
+echo -e "${BOLD}=== Audit Triggers ===${NC}"
+last_audit_commit=$(git -C "$REPO" log --oneline --grep="audit history" -1 --format=%H 2>/dev/null || echo "")
+if [ -n "$last_audit_commit" ]; then
+    wheel_c_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "\.c$" | wc -l | xargs)
+    new_wheels=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "README.md" | wc -l | xargs)
+    days_since=$(( ($(date +%s) - $(git -C "$REPO" log -1 --format=%ct "$last_audit_commit" 2>/dev/null || echo "$(date +%s)")) / 86400 ))
+    triggers=""
+    if [ "$wheel_c_changed" -gt 10 ] 2>/dev/null; then
+        triggers="${triggers}\n  ${YELLOW}▶ $wheel_c_changed wheel .c files changed since last audit${NC}"
+    fi
+    if [ "$new_wheels" -gt 0 ] 2>/dev/null; then
+        triggers="${triggers}\n  ${YELLOW}▶ $new_wheels new wheel(s) added since last audit${NC}"
+    fi
+    if [ "$days_since" -gt 7 ] 2>/dev/null; then
+        triggers="${triggers}\n  ${YELLOW}▶ $days_since days since last audit${NC}"
+    fi
+    if [ -n "$triggers" ]; then
+        echo -e "$triggers"
+    else
+        echo -e "  ${GREEN}No triggers (last audit: $days_since days ago, $wheel_c_changed files changed)${NC}"
+    fi
+else
+    echo -e "  ${YELLOW}No audit history commit found${NC}"
+fi
+
+# --- Session state (if exists) ------------------------------------------------
+
+if [ -f "$REPO/docs/session-state.md" ]; then
+    echo ""
+    echo -e "${BOLD}=== Session State ===${NC}"
+    grep -E "^\- " "$REPO/docs/session-state.md" 2>/dev/null | head -8 | sed 's/^/  /'
+fi
+
 # --- Recent playbook entries --------------------------------------------------
 
 PLAYBOOK="$REPO/docs/debugging-playbook.md"
