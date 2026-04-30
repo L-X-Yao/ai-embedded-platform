@@ -194,6 +194,43 @@ TEST(test_roundtrip_publish)
     ASSERT_EQ(pub_in.qos, 0);
 }
 
+TEST(test_roundtrip_publish_qos1)
+{
+    uint8_t buf[128];
+    mqtt_publish_t pub_out = {
+        .topic = "cmd/ack",
+        .payload = (const uint8_t *)"ok",
+        .payload_len = 2,
+        .qos = 1,
+        .packet_id = 42,
+        .retain = false,
+    };
+    int len = mqtt_packet_build_publish(buf, sizeof(buf), &pub_out);
+    ASSERT_TRUE(len > 0);
+
+    mqtt_publish_t pub_in = {0};
+    ASSERT_EQ(mqtt_packet_parse_publish(buf, (size_t)len, &pub_in), MQTT_PACKET_OK);
+    ASSERT_EQ(pub_in.qos, 1);
+    ASSERT_EQ(pub_in.packet_id, 42);
+    ASSERT_EQ(pub_in.payload_len, 2);
+    ASSERT_TRUE(memcmp(pub_in.payload, "ok", 2) == 0);
+}
+
+TEST(test_remaining_length_4byte)
+{
+    uint8_t buf[4];
+    ASSERT_EQ(mqtt_packet_encode_remaining_length(buf, 2097152), 4);
+
+    int used = 0;
+    uint32_t val = mqtt_packet_decode_remaining_length(buf, 4, &used);
+    ASSERT_EQ(val, 2097152);
+    ASSERT_EQ(used, 4);
+
+    uint8_t bad[] = { 0x80, 0x80, 0x80, 0x80 };
+    val = mqtt_packet_decode_remaining_length(bad, 4, &used);
+    ASSERT_EQ(used, 0);
+}
+
 TEST(test_null_params)
 {
     ASSERT_EQ(mqtt_packet_build_connect(NULL, 128, NULL), MQTT_PACKET_ERR_PARAM);
@@ -223,6 +260,8 @@ TEST_MAIN("mqtt_packet")
     RUN(test_parse_connack_rejected);
     RUN(test_parse_puback);
     RUN(test_roundtrip_publish);
+    RUN(test_roundtrip_publish_qos1);
+    RUN(test_remaining_length_4byte);
     RUN(test_null_params);
 TEST_MAIN_END()
 
