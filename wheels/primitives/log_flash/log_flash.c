@@ -80,7 +80,6 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
         return;
     }
     if (write_at(f, abs_offset + ENTRY_HEADER_SIZE, (const uint8_t *)line, len) != 0) {
-        f->write_pos += needed;
         f->dropped++;
         return;
     }
@@ -133,6 +132,8 @@ void log_flash_erase_all(log_flash_t *f) {
     }
     f->write_sector = 0;
     f->write_pos = 0;
+    f->total_entries = 0;
+    f->dropped = 0;
 }
 
 uint32_t log_flash_total(const log_flash_t *f) {

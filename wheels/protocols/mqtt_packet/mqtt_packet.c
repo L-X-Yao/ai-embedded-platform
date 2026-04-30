@@ -60,6 +60,11 @@ uint32_t mqtt_packet_decode_remaining_length(const uint8_t *buf, size_t len,
         multiplier *= 128;
     } while ((buf[i++] & 0x80) != 0 && i < 4);
 
+    if (i == 4 && (buf[3] & 0x80) != 0) {
+        if (bytes_used) *bytes_used = 0;
+        return 0;
+    }
+
     if (bytes_used) *bytes_used = i;
     return value;
 }
@@ -236,7 +241,7 @@ mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
     if (packet_end > len) packet_end = len;
 
     out->payload = (payload_start < packet_end) ? (buf + payload_start) : NULL;
-    out->payload_len = (uint16_t)(packet_end - payload_start);
+    out->payload_len = packet_end - payload_start;
 
     return MQTT_PACKET_OK;
 }

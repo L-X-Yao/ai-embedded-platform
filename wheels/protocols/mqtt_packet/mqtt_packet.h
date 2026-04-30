@@ -58,7 +58,7 @@ typedef struct {
 typedef struct {
     const char    *topic;
     const uint8_t *payload;
-    uint16_t       payload_len;
+    size_t         payload_len;
     uint16_t       packet_id;
     uint8_t        qos;
     bool           retain;

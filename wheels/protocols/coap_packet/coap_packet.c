@@ -50,7 +50,9 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
             delta = (uint16_t)(data[pos++] + 13);
         } else if (delta == 14) {
             if (pos + 1 >= len) return COAP_ERR_INCOMPLETE;
-            delta = (uint16_t)(((uint16_t)data[pos] << 8 | data[pos + 1]) + 269);
+            uint32_t raw_delta = ((uint32_t)data[pos] << 8 | data[pos + 1]) + 269u;
+            if (raw_delta > UINT16_MAX) return COAP_ERR_MALFORMED;
+            delta = (uint16_t)raw_delta;
             pos += 2;
         } else if (delta == 15) {
             return COAP_ERR_MALFORMED;
@@ -61,7 +63,9 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
             opt_len = (uint16_t)(data[pos++] + 13);
         } else if (opt_len == 14) {
             if (pos + 1 >= len) return COAP_ERR_INCOMPLETE;
-            opt_len = (uint16_t)(((uint16_t)data[pos] << 8 | data[pos + 1]) + 269);
+            uint32_t raw_olen = ((uint32_t)data[pos] << 8 | data[pos + 1]) + 269u;
+            if (raw_olen > UINT16_MAX) return COAP_ERR_MALFORMED;
+            opt_len = (uint16_t)raw_olen;
             pos += 2;
         } else if (opt_len == 15) {
             return COAP_ERR_MALFORMED;

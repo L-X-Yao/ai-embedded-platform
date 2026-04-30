@@ -25,6 +25,7 @@ typedef enum {
     BMP280_ERR_I2C      = -1,
     BMP280_ERR_ID       = -2,
     BMP280_ERR_PARAM    = -3,
+    BMP280_ERR_TIMEOUT  = -4,
 } bmp280_err_t;
 
 typedef struct {
