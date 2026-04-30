@@ -92,6 +92,12 @@ tooling/hil/results/
 # Environment secrets
 .env
 .env.local
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+credentials.json
 
 # Local overrides
 CLAUDE.local.md
