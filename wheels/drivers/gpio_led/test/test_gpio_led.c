@@ -1,6 +1,6 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../gpio_led.h"
+#include "gpio_led.h"
 
 /* ---------- mock HAL ---------- */
 
@@ -32,187 +32,158 @@ static const gpio_led_hal_t mock_hal = {
 };
 
 /* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
 /* ---------- tests ---------- */
 
-static void test_init(void)
+TEST(test_init)
 {
     gpio_led_t led;
-
-    printf("test_init\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF after init");
-    ASSERT(mock_current == 0, "LED off after init");
-    ASSERT(mock_idx == 1, "one set call on init");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
+    ASSERT_TRUE(mock_current == 0);
+    ASSERT_TRUE(mock_idx == 1);
 }
 
-static void test_on_off(void)
+TEST(test_on_off)
 {
     gpio_led_t led;
-
-    printf("test_on_off\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
 
     gpio_led_on(&led);
-    ASSERT(mock_current == 255, "on → 255");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_ON, "mode ON");
+    ASSERT_TRUE(mock_current == 255);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_ON);
 
     gpio_led_off(&led);
-    ASSERT(mock_current == 0, "off → 0");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF");
+    ASSERT_TRUE(mock_current == 0);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
 }
 
-static void test_blink_basic(void)
+TEST(test_blink_basic)
 {
     gpio_led_t led;
-
-    printf("test_blink_basic\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 100, 100, 0);
 
-    ASSERT(mock_current == 255, "blink starts ON");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "mode BLINK");
+    ASSERT_TRUE(mock_current == 255);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BLINK);
 
     /* tick 50ms: still in ON phase */
     gpio_led_tick(&led, 50);
-    ASSERT(mock_current == 255, "still ON at 50ms");
+    ASSERT_TRUE(mock_current == 255);
 
     /* tick 50ms more: transition to OFF at 100ms */
     gpio_led_tick(&led, 50);
-    ASSERT(mock_current == 0, "OFF at 100ms");
+    ASSERT_TRUE(mock_current == 0);
 
     /* tick 100ms: back to ON at 200ms */
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 255, "ON at 200ms");
+    ASSERT_TRUE(mock_current == 255);
 }
 
-static void test_blink_asymmetric(void)
+TEST(test_blink_asymmetric)
 {
     gpio_led_t led;
-
-    printf("test_blink_asymmetric\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 200, 50, 0);
 
-    ASSERT(mock_current == 255, "starts ON");
+    ASSERT_TRUE(mock_current == 255);
 
     gpio_led_tick(&led, 200);
-    ASSERT(mock_current == 0, "OFF at 200ms");
+    ASSERT_TRUE(mock_current == 0);
 
     gpio_led_tick(&led, 50);
-    ASSERT(mock_current == 255, "ON at 250ms");
+    ASSERT_TRUE(mock_current == 255);
 }
 
-static void test_blink_repeat(void)
+TEST(test_blink_repeat)
 {
     gpio_led_t led;
-
-    printf("test_blink_repeat\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 100, 100, 2);
 
     /* cycle 1: ON→OFF */
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "cycle 1 OFF");
+    ASSERT_TRUE(mock_current == 0);
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 255, "cycle 2 ON");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "still blinking");
+    ASSERT_TRUE(mock_current == 255);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BLINK);
 
     /* cycle 2: ON→OFF → should stop */
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "cycle 2 OFF");
+    ASSERT_TRUE(mock_current == 0);
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "stopped after 2 repeats");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF after repeat");
+    ASSERT_TRUE(mock_current == 0);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
 }
 
-static void test_blink_single(void)
+TEST(test_blink_single)
 {
     gpio_led_t led;
-
-    printf("test_blink_single\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 50, 50, 1);
 
     gpio_led_tick(&led, 50);
-    ASSERT(mock_current == 0, "OFF phase");
+    ASSERT_TRUE(mock_current == 0);
     gpio_led_tick(&led, 50);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "stopped after 1");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
 }
 
-static void test_pulse(void)
+TEST(test_pulse)
 {
     gpio_led_t led;
-
-    printf("test_pulse\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_pulse(&led, 200);
 
-    ASSERT(mock_current == 255, "pulse starts ON");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_PULSE, "mode PULSE");
+    ASSERT_TRUE(mock_current == 255);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_PULSE);
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 255, "still ON at 100ms");
+    ASSERT_TRUE(mock_current == 255);
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "OFF at 200ms");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF after pulse");
+    ASSERT_TRUE(mock_current == 0);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
 
     /* further ticks do nothing */
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "stays OFF");
+    ASSERT_TRUE(mock_current == 0);
 }
 
-static void test_breathe_ramp(void)
+TEST(test_breathe_ramp)
 {
     gpio_led_t led;
-
-    printf("test_breathe_ramp\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_breathe(&led, 1000);
 
-    ASSERT(mock_current == 0, "breathe starts at 0");
+    ASSERT_TRUE(mock_current == 0);
 
     /* at 250ms: 50% through first half → ~127 */
     gpio_led_tick(&led, 250);
-    ASSERT(mock_current > 120 && mock_current < 135, "ramp up at 250ms");
+    ASSERT_TRUE(mock_current > 120 && mock_current < 135);
 
     /* at 500ms: peak */
     gpio_led_tick(&led, 250);
-    ASSERT(mock_current > 240, "peak at 500ms");
+    ASSERT_TRUE(mock_current > 240);
 
     /* at 750ms: ramp down to ~127 */
     gpio_led_tick(&led, 250);
-    ASSERT(mock_current > 120 && mock_current < 135, "ramp down at 750ms");
+    ASSERT_TRUE(mock_current > 120 && mock_current < 135);
 
     /* at 1000ms: back to 0, cycle repeats */
     gpio_led_tick(&led, 250);
-    ASSERT(mock_current < 10, "back to 0 at 1000ms");
+    ASSERT_TRUE(mock_current < 10);
 }
 
-static void test_breathe_continuous(void)
+TEST(test_breathe_continuous)
 {
     gpio_led_t led;
-
-    printf("test_breathe_continuous\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_breathe(&led, 200);
@@ -220,40 +191,36 @@ static void test_breathe_continuous(void)
     /* run 3 full cycles */
     for (int cycle = 0; cycle < 3; cycle++) {
         gpio_led_tick(&led, 100);
-        ASSERT(mock_current > 200, "peak each cycle");
+        ASSERT_TRUE(mock_current > 200);
         gpio_led_tick(&led, 100);
     }
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "still breathing");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
-static void test_mode_switch(void)
+TEST(test_mode_switch)
 {
     gpio_led_t led;
-
-    printf("test_mode_switch\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
 
     gpio_led_blink(&led, 100, 100, 0);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "blink");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BLINK);
 
     gpio_led_on(&led);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_ON, "switch to on");
-    ASSERT(mock_current == 255, "level 255");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_ON);
+    ASSERT_TRUE(mock_current == 255);
 
     /* tick should do nothing in ON mode */
     gpio_led_tick(&led, 200);
-    ASSERT(mock_current == 255, "stays on after tick");
+    ASSERT_TRUE(mock_current == 255);
 
     gpio_led_breathe(&led, 500);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "switch to breathe");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
-static void test_no_redundant_calls(void)
+TEST(test_no_redundant_calls)
 {
     gpio_led_t led;
-
-    printf("test_no_redundant_calls\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
 
@@ -263,18 +230,17 @@ static void test_no_redundant_calls(void)
     /* tick in ON mode should not call set again */
     gpio_led_tick(&led, 100);
     gpio_led_tick(&led, 100);
-    ASSERT(mock_idx == calls_after_on, "no redundant set calls in ON");
+    ASSERT_TRUE(mock_idx == calls_after_on);
 
     gpio_led_off(&led);
     int calls_after_off = mock_idx;
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_idx == calls_after_off, "no redundant set calls in OFF");
+    ASSERT_TRUE(mock_idx == calls_after_off);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
     gpio_led_init(NULL, &mock_hal);
     gpio_led_on(NULL);
     gpio_led_off(NULL);
@@ -282,149 +248,131 @@ static void test_null_safety(void)
     gpio_led_breathe(NULL, 500);
     gpio_led_pulse(NULL, 200);
     gpio_led_tick(NULL, 10);
-    ASSERT(gpio_led_get_mode(NULL) == GPIO_LED_OFF, "null returns OFF");
+    ASSERT_TRUE(gpio_led_get_mode(NULL) == GPIO_LED_OFF);
     /* no crash = pass */
-    ASSERT(1, "null safety no crash");
+    ASSERT_TRUE(1);
 }
 
-static void test_zero_dt(void)
+TEST(test_zero_dt)
 {
     gpio_led_t led;
-
-    printf("test_zero_dt\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 100, 100, 0);
 
     int calls_before = mock_idx;
     gpio_led_tick(&led, 0);
-    ASSERT(mock_idx == calls_before, "zero dt is no-op");
+    ASSERT_TRUE(mock_idx == calls_before);
 }
 
-static void test_custom_brightness(void)
+TEST(test_custom_brightness)
 {
     gpio_led_t led;
-
-    printf("test_custom_brightness\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     led.brightness = 128;
 
     gpio_led_on(&led);
-    ASSERT(mock_current == 128, "on at custom brightness");
+    ASSERT_TRUE(mock_current == 128);
 
     gpio_led_blink(&led, 100, 100, 0);
-    ASSERT(mock_current == 128, "blink ON at custom brightness");
+    ASSERT_TRUE(mock_current == 128);
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "blink OFF");
+    ASSERT_TRUE(mock_current == 0);
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 128, "blink ON again at 128");
+    ASSERT_TRUE(mock_current == 128);
 }
 
-static void test_reinit_resets(void)
+TEST(test_reinit_resets)
 {
     gpio_led_t led;
-
-    printf("test_reinit_resets\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_on(&led);
-    ASSERT(mock_current == 255, "on before re-init");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_ON, "mode ON");
+    ASSERT_TRUE(mock_current == 255);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_ON);
 
     gpio_led_init(&led, &mock_hal);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "mode OFF after re-init");
-    ASSERT(mock_current == 0, "LED off after re-init");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
+    ASSERT_TRUE(mock_current == 0);
 }
 
-static void test_blink_zero_on(void)
+TEST(test_blink_zero_on)
 {
     gpio_led_t led;
-
-    printf("test_blink_zero_on\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 0, 100, 0);
 
     gpio_led_tick(&led, 1);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "still blink mode");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BLINK);
 
     gpio_led_tick(&led, 1);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BLINK, "still blink after 2 ticks");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BLINK);
 }
 
-static void test_pulse_zero_on(void)
+TEST(test_pulse_zero_on)
 {
     gpio_led_t led;
-
-    printf("test_pulse_zero_on\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_pulse(&led, 0);
 
     gpio_led_tick(&led, 1);
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_OFF, "pulse 0ms turns off immediately");
-    ASSERT(mock_current == 0, "LED off after 0ms pulse");
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_OFF);
+    ASSERT_TRUE(mock_current == 0);
 }
 
-static void test_breathe_period_one(void)
+TEST(test_breathe_period_one)
 {
     gpio_led_t led;
-
-    printf("test_breathe_period_one\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_breathe(&led, 1);
 
     /* period=1, half=0→1: elapsed wraps to 0 every tick */
     gpio_led_tick(&led, 1);
-    ASSERT(mock_current == 0, "period=1 wraps to 0");
+    ASSERT_TRUE(mock_current == 0);
     gpio_led_tick(&led, 1);
-    ASSERT(mock_current == 0, "period=1 stays at 0");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "still breathing");
+    ASSERT_TRUE(mock_current == 0);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
-static void test_breathe_period_zero(void)
+TEST(test_breathe_period_zero)
 {
     gpio_led_t led;
-
-    printf("test_breathe_period_zero\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_breathe(&led, 0);
 
     int calls_before = mock_idx;
     gpio_led_tick(&led, 100);
-    ASSERT(mock_idx == calls_before, "period=0 tick is no-op");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "mode unchanged");
+    ASSERT_TRUE(mock_idx == calls_before);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
-static void test_blink_zero_off(void)
+TEST(test_blink_zero_off)
 {
     gpio_led_t led;
-
-    printf("test_blink_zero_off\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_blink(&led, 100, 0, 0);
 
-    ASSERT(mock_current == 255, "starts ON");
+    ASSERT_TRUE(mock_current == 255);
 
     gpio_led_tick(&led, 100);
-    ASSERT(mock_current == 0, "OFF after 100ms");
+    ASSERT_TRUE(mock_current == 0);
 
     /* off_ms=0 clamped to 1: should return to ON after 1ms */
     gpio_led_tick(&led, 1);
-    ASSERT(mock_current == 255, "back to ON after 1ms off");
+    ASSERT_TRUE(mock_current == 255);
 }
 
-static void test_breathe_large_dt(void)
+TEST(test_breathe_large_dt)
 {
     gpio_led_t led;
-
-    printf("test_breathe_large_dt\n");
     mock_reset();
     gpio_led_init(&led, &mock_hal);
     gpio_led_breathe(&led, 1000);
@@ -433,37 +381,31 @@ static void test_breathe_large_dt(void)
     gpio_led_tick(&led, 1500);
     /* elapsed = 1500 - 1000 = 500. half=500. elapsed(500) < half(500)? No.
        level = (1000-500)*255/500 = 255. */
-    ASSERT(mock_current > 240, "large dt wraps and reaches peak");
-    ASSERT(gpio_led_get_mode(&led) == GPIO_LED_BREATHE, "still breathing");
+    ASSERT_TRUE(mock_current > 240);
+    ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
-int main(void)
-{
-    tests_run = tests_fail = 0;
+TEST_MAIN("gpio_led")
+    RUN(test_init);
+    RUN(test_on_off);
+    RUN(test_blink_basic);
+    RUN(test_blink_asymmetric);
+    RUN(test_blink_repeat);
+    RUN(test_blink_single);
+    RUN(test_pulse);
+    RUN(test_breathe_ramp);
+    RUN(test_breathe_continuous);
+    RUN(test_mode_switch);
+    RUN(test_no_redundant_calls);
+    RUN(test_null_safety);
+    RUN(test_zero_dt);
+    RUN(test_custom_brightness);
+    RUN(test_reinit_resets);
+    RUN(test_blink_zero_on);
+    RUN(test_pulse_zero_on);
+    RUN(test_breathe_period_one);
+    RUN(test_breathe_period_zero);
+    RUN(test_blink_zero_off);
+    RUN(test_breathe_large_dt);
+TEST_MAIN_END()
 
-    test_init();
-    test_on_off();
-    test_blink_basic();
-    test_blink_asymmetric();
-    test_blink_repeat();
-    test_blink_single();
-    test_pulse();
-    test_breathe_ramp();
-    test_breathe_continuous();
-    test_mode_switch();
-    test_no_redundant_calls();
-    test_null_safety();
-    test_zero_dt();
-    test_custom_brightness();
-    test_reinit_resets();
-    test_blink_zero_on();
-    test_pulse_zero_on();
-    test_breathe_period_one();
-    test_breathe_period_zero();
-    test_blink_zero_off();
-    test_breathe_large_dt();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

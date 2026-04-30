@@ -7,7 +7,10 @@ add_executable(test_http_parser
     test_http_parser.c
     ../http_parser.c
 )
-target_include_directories(test_http_parser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_http_parser PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_http_parser PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

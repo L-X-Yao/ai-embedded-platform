@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <math.h>
-#include "../xgzp6816d.h"
+#include "xgzp6816d.h"
 
 /* ---------- mock I2C transport ---------- */
 
@@ -16,9 +16,6 @@ static uint8_t  mock_read_response[MOCK_BUF_MAX];
 static uint16_t mock_read_response_len;
 static int      mock_write_should_fail;
 static int      mock_read_should_fail;
-
-static int tests_run, tests_fail;
-
 static void mock_reset(void)
 {
     mock_write_called = 0;
@@ -62,19 +59,6 @@ static const xgzp6816d_i2c_t mock_i2c = {
 
 /* ---------- helpers ---------- */
 
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg) ASSERT((a) == (b), msg)
-
-#define ASSERT_NEAR(a, b, tol, msg) \
-    ASSERT(fabsf((float)(a) - (float)(b)) < (float)(tol), msg)
-
 static void mock_set_pt_response(uint32_t p_raw, uint16_t t_raw)
 {
     mock_read_response[0] = 0x00;                          /* status */
@@ -88,263 +72,238 @@ static void mock_set_pt_response(uint32_t p_raw, uint16_t t_raw)
 
 /* ---------- tests ---------- */
 
-static void test_probe_ok(void)
+TEST(test_probe_ok)
 {
-    printf("test_probe_ok\n");
     mock_reset();
     xgzp6816d_err_t e = xgzp6816d_probe(&mock_i2c);
-    ASSERT_EQ(e, XGZP6816D_OK, "probe OK");
-    ASSERT_EQ(mock_write_called, 1, "one write call");
-    ASSERT_EQ(mock_last_addr, XGZP6816D_DEV_ADDR, "addr matches");
-    ASSERT_EQ(mock_last_write_len, 0, "zero-length write");
+    ASSERT_EQ(e, XGZP6816D_OK);
+    ASSERT_EQ(mock_write_called, 1);
+    ASSERT_EQ(mock_last_addr, XGZP6816D_DEV_ADDR);
+    ASSERT_EQ(mock_last_write_len, 0);
 }
 
-static void test_probe_no_ack(void)
+TEST(test_probe_no_ack)
 {
-    printf("test_probe_no_ack\n");
     mock_reset();
     mock_write_should_fail = 1;
     xgzp6816d_err_t e = xgzp6816d_probe(&mock_i2c);
-    ASSERT_EQ(e, XGZP6816D_ERR_NO_ACK, "no-ack detected");
+    ASSERT_EQ(e, XGZP6816D_ERR_NO_ACK);
 }
 
-static void test_trigger_ok(void)
+TEST(test_trigger_ok)
 {
-    printf("test_trigger_ok\n");
     mock_reset();
     xgzp6816d_err_t e = xgzp6816d_trigger(&mock_i2c);
-    ASSERT_EQ(e, XGZP6816D_OK, "trigger OK");
-    ASSERT_EQ(mock_write_called, 1, "one write call");
-    ASSERT_EQ(mock_last_addr, XGZP6816D_DEV_ADDR, "addr matches");
-    ASSERT_EQ(mock_last_write_len, 1, "one byte written");
-    ASSERT_EQ(mock_last_write[0], 0xAC, "MEASURE_PT cmd");
+    ASSERT_EQ(e, XGZP6816D_OK);
+    ASSERT_EQ(mock_write_called, 1);
+    ASSERT_EQ(mock_last_addr, XGZP6816D_DEV_ADDR);
+    ASSERT_EQ(mock_last_write_len, 1);
+    ASSERT_EQ(mock_last_write[0], 0xAC);
 }
 
-static void test_trigger_i2c_err(void)
+TEST(test_trigger_i2c_err)
 {
-    printf("test_trigger_i2c_err\n");
     mock_reset();
     mock_write_should_fail = 1;
     xgzp6816d_err_t e = xgzp6816d_trigger(&mock_i2c);
-    ASSERT_EQ(e, XGZP6816D_ERR_I2C, "trigger surfaces i2c error");
+    ASSERT_EQ(e, XGZP6816D_ERR_I2C);
 }
 
-static void test_read_midrange(void)
+TEST(test_read_midrange)
 {
-    printf("test_read_midrange\n");
     mock_reset();
     /* p_raw = 8388608 (mid 24-bit) → ~70 kPa = 70000 Pa */
     /* t_raw = 22417 → ~25 °C */
     mock_set_pt_response(8388608, 22417);
     xgzp6816d_data_t out = {0};
     xgzp6816d_err_t e = xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_EQ(e, XGZP6816D_OK, "read OK");
-    ASSERT_NEAR(out.pressure_pa,    70000.0f, 1.0f, "pressure ~70 kPa");
-    ASSERT_NEAR(out.temperature_c,    25.0f, 0.05f, "temp ~25 °C");
+    ASSERT_EQ(e, XGZP6816D_OK);
+    ASSERT_NEAR(out.pressure_pa,    70000.0f, 1.0f);
+    ASSERT_NEAR(out.temperature_c,    25.0f, 0.05f);
 }
 
-static void test_read_low_rail(void)
+TEST(test_read_low_rail)
 {
-    printf("test_read_low_rail\n");
     mock_reset();
     mock_set_pt_response(1677722, 0);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 30000.0f, 1.0f, "low rail = 30 kPa");
+    ASSERT_NEAR(out.pressure_pa, 30000.0f, 1.0f);
 }
 
-static void test_read_below_low_clamps(void)
+TEST(test_read_below_low_clamps)
 {
-    printf("test_read_below_low_clamps\n");
     mock_reset();
     mock_set_pt_response(1000000, 0);   /* below low rail */
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 30000.0f, 1.0f, "clamped to 30 kPa");
+    ASSERT_NEAR(out.pressure_pa, 30000.0f, 1.0f);
 }
 
-static void test_read_high_rail(void)
+TEST(test_read_high_rail)
 {
-    printf("test_read_high_rail\n");
     mock_reset();
     mock_set_pt_response(15099494, 0);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 110000.0f, 1.0f, "high rail = 110 kPa");
+    ASSERT_NEAR(out.pressure_pa, 110000.0f, 1.0f);
 }
 
-static void test_read_above_high_clamps(void)
+TEST(test_read_above_high_clamps)
 {
-    printf("test_read_above_high_clamps\n");
     mock_reset();
     mock_set_pt_response(16000000, 0);   /* above high rail */
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
     /* This is the NEW behavior — pre-wheel flybox driver only clamped low,
      * letting saturated readings produce 119 kPa garbage. */
-    ASSERT_NEAR(out.pressure_pa, 110000.0f, 1.0f, "clamped to 110 kPa");
+    ASSERT_NEAR(out.pressure_pa, 110000.0f, 1.0f);
 }
 
-static void test_read_temp_min(void)
+TEST(test_read_temp_min)
 {
-    printf("test_read_temp_min\n");
     mock_reset();
     mock_set_pt_response(8388608, 0);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.temperature_c, -40.0f, 0.001f, "t_raw=0 → -40 °C");
+    ASSERT_NEAR(out.temperature_c, -40.0f, 0.001f);
 }
 
-static void test_read_temp_max(void)
+TEST(test_read_temp_max)
 {
-    printf("test_read_temp_max\n");
     mock_reset();
     mock_set_pt_response(8388608, 65535);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
     /* (65535 / 65536) * 190 - 40 ≈ 149.997 */
-    ASSERT_NEAR(out.temperature_c, 150.0f, 0.01f, "t_raw=65535 → ~150 °C");
+    ASSERT_NEAR(out.temperature_c, 150.0f, 0.01f);
 }
 
-static void test_read_i2c_err(void)
+TEST(test_read_i2c_err)
 {
-    printf("test_read_i2c_err\n");
     mock_reset();
     mock_read_should_fail = 1;
     xgzp6816d_data_t out = {0};
     xgzp6816d_err_t e = xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_EQ(e, XGZP6816D_ERR_I2C, "read surfaces i2c error");
+    ASSERT_EQ(e, XGZP6816D_ERR_I2C);
 }
 
-static void test_full_cycle(void)
+TEST(test_full_cycle)
 {
-    printf("test_full_cycle\n");
     mock_reset();
     /* probe → trigger → (caller waits) → read */
-    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK, "probe");
-    ASSERT_EQ(xgzp6816d_trigger(&mock_i2c), XGZP6816D_OK, "trigger");
+    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK);
+    ASSERT_EQ(xgzp6816d_trigger(&mock_i2c), XGZP6816D_OK);
     mock_set_pt_response(8388608, 22417);
     xgzp6816d_data_t out = {0};
-    ASSERT_EQ(xgzp6816d_read(&mock_i2c, &out), XGZP6816D_OK, "read");
-    ASSERT(out.pressure_pa > 0.0f, "pressure positive");
-    ASSERT(out.temperature_c > -40.0f && out.temperature_c < 150.0f, "temp in range");
+    ASSERT_EQ(xgzp6816d_read(&mock_i2c, &out), XGZP6816D_OK);
+    ASSERT_TRUE(out.pressure_pa > 0.0f);
+    ASSERT_TRUE(out.temperature_c > -40.0f && out.temperature_c < 150.0f);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
     xgzp6816d_data_t out;
-    ASSERT_EQ(xgzp6816d_probe(NULL), XGZP6816D_ERR_I2C, "probe(NULL)");
-    ASSERT_EQ(xgzp6816d_trigger(NULL), XGZP6816D_ERR_I2C, "trigger(NULL)");
-    ASSERT_EQ(xgzp6816d_read(NULL, &out), XGZP6816D_ERR_I2C, "read(NULL, &out)");
+    ASSERT_EQ(xgzp6816d_probe(NULL), XGZP6816D_ERR_I2C);
+    ASSERT_EQ(xgzp6816d_trigger(NULL), XGZP6816D_ERR_I2C);
+    ASSERT_EQ(xgzp6816d_read(NULL, &out), XGZP6816D_ERR_I2C);
     mock_reset();
     mock_set_pt_response(8388608, 22417);
-    ASSERT_EQ(xgzp6816d_read(&mock_i2c, NULL), XGZP6816D_ERR_I2C, "read(i2c, NULL)");
+    ASSERT_EQ(xgzp6816d_read(&mock_i2c, NULL), XGZP6816D_ERR_I2C);
 }
 
-static void test_reprobe(void)
+TEST(test_reprobe)
 {
-    printf("test_reprobe\n");
     mock_reset();
-    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK, "first probe");
-    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK, "second probe");
-    ASSERT_EQ(mock_write_called, 2, "two probe calls");
+    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK);
+    ASSERT_EQ(xgzp6816d_probe(&mock_i2c), XGZP6816D_OK);
+    ASSERT_EQ(mock_write_called, 2);
 }
 
-static void test_pressure_standard_atmosphere(void)
+TEST(test_pressure_standard_atmosphere)
 {
-    printf("test_pressure_standard_atmosphere\n");
     mock_reset();
     /* p_raw=13644071 ↔ ~101.325 kPa (standard atmosphere)
      * Exact: (13644071-1677722)/13421772*80+30 ≈ 101.323 kPa */
     mock_set_pt_response(13644071u, 22417);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 101325.0f, 50.0f, "standard atmosphere ~101325 Pa");
+    ASSERT_NEAR(out.pressure_pa, 101325.0f, 50.0f);
 }
 
-static void test_pressure_quarter_range(void)
+TEST(test_pressure_quarter_range)
 {
-    printf("test_pressure_quarter_range\n");
     mock_reset();
     /* p_raw=5033165 ↔ 50 kPa (quarter range) */
     mock_set_pt_response(5033165u, 0);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 50000.0f, 5.0f, "quarter range ~50 kPa");
+    ASSERT_NEAR(out.pressure_pa, 50000.0f, 5.0f);
 }
 
-static void test_pressure_three_quarter_range(void)
+TEST(test_pressure_three_quarter_range)
 {
-    printf("test_pressure_three_quarter_range\n");
     mock_reset();
     /* p_raw=11744051 ↔ 90 kPa (three-quarter range) */
     mock_set_pt_response(11744051u, 0);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.pressure_pa, 90000.0f, 5.0f, "three-quarter range ~90 kPa");
+    ASSERT_NEAR(out.pressure_pa, 90000.0f, 5.0f);
 }
 
-static void test_temp_zero_celsius(void)
+TEST(test_temp_zero_celsius)
 {
-    printf("test_temp_zero_celsius\n");
     mock_reset();
     /* t_raw=13796 ↔ ~0°C: (13796/65536)*190-40 ≈ -0.005 */
     mock_set_pt_response(8388608u, 13796);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.temperature_c, 0.0f, 0.05f, "temp ~0 C");
+    ASSERT_NEAR(out.temperature_c, 0.0f, 0.05f);
 }
 
-static void test_temp_midrange(void)
+TEST(test_temp_midrange)
 {
-    printf("test_temp_midrange\n");
     mock_reset();
     /* t_raw=32768 ↔ 55°C: (32768/65536)*190-40 = 55 */
     mock_set_pt_response(8388608u, 32768);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.temperature_c, 55.0f, 0.01f, "temp midrange 55 C");
+    ASSERT_NEAR(out.temperature_c, 55.0f, 0.01f);
 }
 
-static void test_temp_hundred_celsius(void)
+TEST(test_temp_hundred_celsius)
 {
-    printf("test_temp_hundred_celsius\n");
     mock_reset();
     /* t_raw=48286 ↔ ~100°C */
     mock_set_pt_response(8388608u, 48286);
     xgzp6816d_data_t out = {0};
     xgzp6816d_read(&mock_i2c, &out);
-    ASSERT_NEAR(out.temperature_c, 100.0f, 0.1f, "temp ~100 C");
+    ASSERT_NEAR(out.temperature_c, 100.0f, 0.1f);
 }
 
 /* ---------- main ---------- */
 
-int main(void)
-{
-    test_probe_ok();
-    test_probe_no_ack();
-    test_trigger_ok();
-    test_trigger_i2c_err();
-    test_read_midrange();
-    test_read_low_rail();
-    test_read_below_low_clamps();
-    test_read_high_rail();
-    test_read_above_high_clamps();
-    test_read_temp_min();
-    test_read_temp_max();
-    test_read_i2c_err();
-    test_full_cycle();
-    test_null_safety();
-    test_reprobe();
-    test_pressure_standard_atmosphere();
-    test_pressure_quarter_range();
-    test_pressure_three_quarter_range();
-    test_temp_zero_celsius();
-    test_temp_midrange();
-    test_temp_hundred_celsius();
+TEST_MAIN("xgzp6816d")
+    RUN(test_probe_ok);
+    RUN(test_probe_no_ack);
+    RUN(test_trigger_ok);
+    RUN(test_trigger_i2c_err);
+    RUN(test_read_midrange);
+    RUN(test_read_low_rail);
+    RUN(test_read_below_low_clamps);
+    RUN(test_read_high_rail);
+    RUN(test_read_above_high_clamps);
+    RUN(test_read_temp_min);
+    RUN(test_read_temp_max);
+    RUN(test_read_i2c_err);
+    RUN(test_full_cycle);
+    RUN(test_null_safety);
+    RUN(test_reprobe);
+    RUN(test_pressure_standard_atmosphere);
+    RUN(test_pressure_quarter_range);
+    RUN(test_pressure_three_quarter_range);
+    RUN(test_temp_zero_celsius);
+    RUN(test_temp_midrange);
+    RUN(test_temp_hundred_celsius);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

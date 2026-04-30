@@ -1,18 +1,6 @@
+#include "test_harness.h"
 #include "max7219.h"
-#include <stdio.h>
 #include <string.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 /* Mock SPI */
 typedef struct {
@@ -165,9 +153,7 @@ TEST(test_scan_limit)
     ASSERT_EQ(spi_log[0].val, 3);
 }
 
-int main(void)
-{
-    printf("max7219 tests:\n");
+TEST_MAIN("max7219")
     RUN(test_init_null);
     RUN(test_init_sequence);
     RUN(test_set_digit);
@@ -178,6 +164,4 @@ int main(void)
     RUN(test_clear);
     RUN(test_spi_failure);
     RUN(test_scan_limit);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

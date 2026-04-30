@@ -1,18 +1,6 @@
+#include "test_harness.h"
 #include "coap_packet.h"
-#include <stdio.h>
 #include <string.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_parse_con_get)
 {
@@ -170,9 +158,7 @@ TEST(test_null_safety)
                          NULL, 0, NULL, 0, NULL, 0), COAP_ERR_PARAM);
 }
 
-int main(void)
-{
-    printf("coap_packet tests:\n");
+TEST_MAIN("coap_packet")
     RUN(test_parse_con_get);
     RUN(test_parse_with_payload);
     RUN(test_parse_ack_empty);
@@ -183,6 +169,4 @@ int main(void)
     RUN(test_build_overflow);
     RUN(test_roundtrip_multi_options);
     RUN(test_null_safety);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

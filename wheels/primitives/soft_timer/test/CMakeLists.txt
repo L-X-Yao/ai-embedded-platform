@@ -10,6 +10,7 @@ add_executable(test_soft_timer
 
 target_include_directories(test_soft_timer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_soft_timer PRIVATE -Wall -Wextra -Wpedantic -Werror)
 

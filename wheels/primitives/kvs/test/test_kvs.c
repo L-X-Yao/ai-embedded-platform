@@ -1,20 +1,9 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <flashdb.h>
 #include <fal.h>
 
 /* ---------- test harness ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
 /* ---------- mock flash device ---------- */
 
 #define MOCK_FLASH_SIZE  (64 * 1024)
@@ -25,7 +14,6 @@ static uint8_t mock_flash_buf[MOCK_FLASH_SIZE];
 static int mock_init(void)
 {
     memset(mock_flash_buf, 0xFF, sizeof(mock_flash_buf));
-    return 0;
 }
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
@@ -86,53 +74,48 @@ static fdb_err_t init_kvdb(void)
 
 /* ---------- tests ---------- */
 
-static void test_fal_init(void)
+TEST(test_fal_init)
 {
-    printf("test_fal_init\n");
     int n = fal_init();
-    ASSERT(n == 3, "3 partitions");
+    ASSERT_TRUE(n == 3);
 }
 
-static void test_kvdb_init(void)
+TEST(test_kvdb_init)
 {
-    printf("test_kvdb_init\n");
     reset_flash();
     fdb_err_t err = init_kvdb();
-    ASSERT(err == FDB_NO_ERR, "kvdb init ok");
+    ASSERT_TRUE(err == FDB_NO_ERR);
 }
 
-static void test_default_kv(void)
+TEST(test_default_kv)
 {
-    printf("test_default_kv\n");
     reset_flash();
     init_kvdb();
 
     char *val = fdb_kv_get(&test_kvdb, "boot_count");
-    ASSERT(val != NULL, "boot_count exists");
-    ASSERT(strcmp(val, "0") == 0, "boot_count default is 0");
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp(val, "0") == 0);
 
     val = fdb_kv_get(&test_kvdb, "device_id");
-    ASSERT(val != NULL, "device_id exists");
-    ASSERT(strcmp(val, "A01") == 0, "device_id default is A01");
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp(val, "A01") == 0);
 }
 
-static void test_set_get_string(void)
+TEST(test_set_get_string)
 {
-    printf("test_set_get_string\n");
     reset_flash();
     init_kvdb();
 
     fdb_err_t err = fdb_kv_set(&test_kvdb, "wifi_ssid", "MyNetwork");
-    ASSERT(err == FDB_NO_ERR, "set string ok");
+    ASSERT_TRUE(err == FDB_NO_ERR);
 
     char *val = fdb_kv_get(&test_kvdb, "wifi_ssid");
-    ASSERT(val != NULL, "get string not null");
-    ASSERT(strcmp(val, "MyNetwork") == 0, "string value matches");
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp(val, "MyNetwork") == 0);
 }
 
-static void test_overwrite(void)
+TEST(test_overwrite)
 {
-    printf("test_overwrite\n");
     reset_flash();
     init_kvdb();
 
@@ -141,29 +124,27 @@ static void test_overwrite(void)
     fdb_kv_set(&test_kvdb, "counter", "3");
 
     char *val = fdb_kv_get(&test_kvdb, "counter");
-    ASSERT(val != NULL, "overwritten value exists");
-    ASSERT(strcmp(val, "3") == 0, "latest value is 3");
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp(val, "3") == 0);
 }
 
-static void test_delete(void)
+TEST(test_delete)
 {
-    printf("test_delete\n");
     reset_flash();
     init_kvdb();
 
     fdb_kv_set(&test_kvdb, "temp_key", "temp_val");
-    ASSERT(fdb_kv_get(&test_kvdb, "temp_key") != NULL, "key exists before delete");
+    ASSERT_TRUE(fdb_kv_get(&test_kvdb, "temp_key") != NULL);
 
     fdb_err_t err = fdb_kv_del(&test_kvdb, "temp_key");
-    ASSERT(err == FDB_NO_ERR, "delete ok");
+    ASSERT_TRUE(err == FDB_NO_ERR);
 
     char *val = fdb_kv_get(&test_kvdb, "temp_key");
-    ASSERT(val == NULL, "key gone after delete");
+    ASSERT_TRUE(val == NULL);
 }
 
-static void test_blob(void)
+TEST(test_blob)
 {
-    printf("test_blob\n");
     reset_flash();
     init_kvdb();
 
@@ -171,18 +152,17 @@ static void test_blob(void)
     struct fdb_blob blob;
     fdb_err_t err = fdb_kv_set_blob(&test_kvdb, "magic",
                                      fdb_blob_make(&blob, &write_val, sizeof(write_val)));
-    ASSERT(err == FDB_NO_ERR, "set blob ok");
+    ASSERT_TRUE(err == FDB_NO_ERR);
 
     uint32_t read_val = 0;
     size_t read_len = fdb_kv_get_blob(&test_kvdb, "magic",
                                        fdb_blob_make(&blob, &read_val, sizeof(read_val)));
-    ASSERT(read_len == sizeof(uint32_t), "blob read 4 bytes");
-    ASSERT(read_val == 0xDEADBEEF, "blob value matches");
+    ASSERT_TRUE(read_len == sizeof(uint32_t));
+    ASSERT_TRUE(read_val == 0xDEADBEEF);
 }
 
-static void test_persistence(void)
+TEST(test_persistence)
 {
-    printf("test_persistence\n");
     reset_flash();
     init_kvdb();
 
@@ -191,26 +171,24 @@ static void test_persistence(void)
 
     /* Re-init without erasing flash — data should survive */
     fdb_err_t err = init_kvdb();
-    ASSERT(err == FDB_NO_ERR, "re-init ok");
+    ASSERT_TRUE(err == FDB_NO_ERR);
 
     char *val = fdb_kv_get(&test_kvdb, "persist_key");
-    ASSERT(val != NULL, "persisted key survives re-init");
-    ASSERT(strcmp(val, "persist_val") == 0, "persisted value correct");
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp(val, "persist_val") == 0);
 }
 
-static void test_get_nonexistent(void)
+TEST(test_get_nonexistent)
 {
-    printf("test_get_nonexistent\n");
     reset_flash();
     init_kvdb();
 
     char *val = fdb_kv_get(&test_kvdb, "no_such_key");
-    ASSERT(val == NULL, "nonexistent returns NULL");
+    ASSERT_TRUE(val == NULL);
 }
 
-static void test_multiple_keys(void)
+TEST(test_multiple_keys)
 {
-    printf("test_multiple_keys\n");
     reset_flash();
     init_kvdb();
 
@@ -226,13 +204,12 @@ static void test_multiple_keys(void)
         snprintf(key, sizeof(key), "key_%d", i);
         snprintf(expected, sizeof(expected), "val_%d", i);
         char *got = fdb_kv_get(&test_kvdb, key);
-        ASSERT(got != NULL && strcmp(got, expected) == 0, "batch key matches");
+        ASSERT_TRUE(got != NULL && strcmp(got, expected) == 0);
     }
 }
 
-static void test_iterator(void)
+TEST(test_iterator)
 {
-    printf("test_iterator\n");
     reset_flash();
     init_kvdb();
 
@@ -247,28 +224,22 @@ static void test_iterator(void)
         count++;
     }
     /* defaults (2) + iter_a + iter_b = 4 */
-    ASSERT(count >= 4, "iterator finds all keys");
+    ASSERT_TRUE(count >= 4);
 }
 
 /* ---------- main ---------- */
 
-int main(void)
-{
-    tests_run = tests_fail = 0;
+TEST_MAIN("kvs")
+    RUN(test_fal_init);
+    RUN(test_kvdb_init);
+    RUN(test_default_kv);
+    RUN(test_set_get_string);
+    RUN(test_overwrite);
+    RUN(test_delete);
+    RUN(test_blob);
+    RUN(test_persistence);
+    RUN(test_get_nonexistent);
+    RUN(test_multiple_keys);
+    RUN(test_iterator);
+TEST_MAIN_END()
 
-    test_fal_init();
-    test_kvdb_init();
-    test_default_kv();
-    test_set_get_string();
-    test_overwrite();
-    test_delete();
-    test_blob();
-    test_persistence();
-    test_get_nonexistent();
-    test_multiple_keys();
-    test_iterator();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

@@ -10,6 +10,7 @@ add_executable(test_oled_ssd1306
 
 target_include_directories(test_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 

@@ -1,6 +1,6 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../gpio_button.h"
+#include "gpio_button.h"
 
 /* ---------- mock HAL ---------- */
 
@@ -18,17 +18,6 @@ static const gpio_btn_hal_t mock_hal = {
 };
 
 /* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
 /* simulate ticking N ms in 1ms steps, return last non-NONE event */
 static gpio_btn_evt_t tick_ms(gpio_btn_t *btn, uint16_t ms)
 {
@@ -44,57 +33,50 @@ static gpio_btn_evt_t tick_ms(gpio_btn_t *btn, uint16_t ms)
 
 /* ---------- tests ---------- */
 
-static void test_default_cfg(void)
+TEST(test_default_cfg)
 {
-    printf("test_default_cfg\n");
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-    ASSERT(cfg.debounce_ms == 20, "debounce 20ms");
-    ASSERT(cfg.long_press_ms == 1000, "long press 1000ms");
-    ASSERT(cfg.double_click_ms == 300, "double click 300ms");
-    ASSERT(cfg.active_level == 0, "active low");
+    ASSERT_TRUE(cfg.debounce_ms == 20);
+    ASSERT_TRUE(cfg.long_press_ms == 1000);
+    ASSERT_TRUE(cfg.double_click_ms == 300);
+    ASSERT_TRUE(cfg.active_level == 0);
 }
 
-static void test_init_idle(void)
+TEST(test_init_idle)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_init_idle\n");
     mock_level = 1;  /* inactive (active low) */
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
-    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed after init");
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
 
     gpio_btn_evt_t e = tick_ms(&btn, 100);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no event when idle");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
 }
 
-static void test_press_debounce(void)
+TEST(test_press_debounce)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_press_debounce\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
     /* press (active low → level 0) */
     mock_level = 0;
     gpio_btn_evt_t e = tick_ms(&btn, 10);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no event before debounce");
-    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed yet");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
 
     e = tick_ms(&btn, 15);
-    ASSERT(e == GPIO_BTN_EVT_PRESS, "press after debounce");
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "now pressed");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_PRESS);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 }
 
-static void test_bounce_rejection(void)
+TEST(test_bounce_rejection)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_bounce_rejection\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -106,15 +88,13 @@ static void test_bounce_rejection(void)
     mock_level = 0;
     gpio_btn_evt_t e = tick_ms(&btn, 25);
     /* should get exactly one PRESS */
-    ASSERT(e == GPIO_BTN_EVT_PRESS, "single press after bounce");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_PRESS);
 }
 
-static void test_click(void)
+TEST(test_click)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_click\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -125,19 +105,17 @@ static void test_click(void)
     /* release after short press */
     mock_level = 1;
     gpio_btn_evt_t e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_RELEASE, "release event");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_RELEASE);
 
     /* wait for double-click window to expire */
     e = tick_ms(&btn, 310);
-    ASSERT(e == GPIO_BTN_EVT_CLICK, "click after dc window");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_CLICK);
 }
 
-static void test_double_click(void)
+TEST(test_double_click)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_double_click\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -152,15 +130,13 @@ static void test_double_click(void)
     tick_ms(&btn, 25);
     mock_level = 1;
     gpio_btn_evt_t e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_DOUBLE_CLICK, "double click");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_DOUBLE_CLICK);
 }
 
-static void test_long_press(void)
+TEST(test_long_press)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_long_press\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -169,43 +145,39 @@ static void test_long_press(void)
     tick_ms(&btn, 25);  /* debounce → PRESS */
 
     gpio_btn_evt_t e = tick_ms(&btn, 1000);
-    ASSERT(e == GPIO_BTN_EVT_LONG_PRESS, "long press at 1000ms");
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "still pressed");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_LONG_PRESS);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 
     /* release after long press → no click */
     mock_level = 1;
     e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_RELEASE, "release after long");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_RELEASE);
 
     /* no click event should follow */
     e = tick_ms(&btn, 400);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no click after long press");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
 }
 
-static void test_active_high(void)
+TEST(test_active_high)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
     cfg.active_level = 1;
-
-    printf("test_active_high\n");
     mock_level = 0;  /* inactive */
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
-    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed");
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
 
     mock_level = 1;  /* active */
     gpio_btn_evt_t e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_PRESS, "press active high");
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_PRESS);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 }
 
-static void test_long_press_no_double_click(void)
+TEST(test_long_press_no_double_click)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_long_press_no_double_click\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -219,36 +191,30 @@ static void test_long_press_no_double_click(void)
     mock_level = 0;
     tick_ms(&btn, 25);
     gpio_btn_evt_t e = tick_ms(&btn, 1000);
-    ASSERT(e == GPIO_BTN_EVT_LONG_PRESS, "long press not double click");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_LONG_PRESS);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_null_safety\n");
     gpio_btn_init(NULL, &mock_hal, &cfg);
-    ASSERT(gpio_btn_tick(NULL, 10) == GPIO_BTN_EVT_NONE, "null tick");
-    ASSERT(gpio_btn_is_pressed(NULL) == 0, "null is_pressed");
+    ASSERT_TRUE(gpio_btn_tick(NULL, 10) == GPIO_BTN_EVT_NONE);
+    ASSERT_TRUE(gpio_btn_is_pressed(NULL) == 0);
 }
 
-static void test_zero_dt(void)
+TEST(test_zero_dt)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_zero_dt\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
-    ASSERT(gpio_btn_tick(&btn, 0) == GPIO_BTN_EVT_NONE, "zero dt noop");
+    ASSERT_TRUE(gpio_btn_tick(&btn, 0) == GPIO_BTN_EVT_NONE);
 }
 
-static void test_rapid_clicks_separated(void)
+TEST(test_rapid_clicks_separated)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_rapid_clicks_separated\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -258,63 +224,56 @@ static void test_rapid_clicks_separated(void)
     mock_level = 1;
     tick_ms(&btn, 25);
     gpio_btn_evt_t e = tick_ms(&btn, 310);
-    ASSERT(e == GPIO_BTN_EVT_CLICK, "first click");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_CLICK);
 
     mock_level = 0;
     tick_ms(&btn, 25);
     mock_level = 1;
     tick_ms(&btn, 25);
     e = tick_ms(&btn, 310);
-    ASSERT(e == GPIO_BTN_EVT_CLICK, "second click");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_CLICK);
 }
 
-static void test_reinit_resets_state(void)
+TEST(test_reinit_resets_state)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_reinit_resets_state\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
     mock_level = 0;
     tick_ms(&btn, 25);
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed before re-init");
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
-    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed after re-init");
-    ASSERT(gpio_btn_tick(&btn, 1) == GPIO_BTN_EVT_NONE, "no event after re-init");
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
+    ASSERT_TRUE(gpio_btn_tick(&btn, 1) == GPIO_BTN_EVT_NONE);
 }
 
-static void test_debounce_boundary(void)
+TEST(test_debounce_boundary)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_debounce_boundary\n");
-
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
     mock_level = 0;
     gpio_btn_evt_t e = tick_ms(&btn, 19);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no press at 19ms");
-    ASSERT(gpio_btn_is_pressed(&btn) == 0, "not pressed at 19ms");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 0);
 
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
     mock_level = 0;
     e = tick_ms(&btn, 21);
-    ASSERT(e == GPIO_BTN_EVT_PRESS, "press at 21ms");
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed at 21ms");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_PRESS);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 }
 
-static void test_barely_miss_long_press(void)
+TEST(test_barely_miss_long_press)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_barely_miss_long_press\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -322,23 +281,21 @@ static void test_barely_miss_long_press(void)
     tick_ms(&btn, 25);  /* PRESS at tick 21, hold_cnt=4 after 25ms */
 
     gpio_btn_evt_t e = tick_ms(&btn, 975);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no long press during hold");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
 
     mock_level = 1;
     e = tick_ms(&btn, 25);
     /* hold_cnt = 4 + 975 + 20 = 999 at state change — below 1000 */
-    ASSERT(e == GPIO_BTN_EVT_RELEASE, "release not long press");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_RELEASE);
 
     e = tick_ms(&btn, 310);
-    ASSERT(e == GPIO_BTN_EVT_CLICK, "click follows near-miss");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_CLICK);
 }
 
-static void test_triple_click(void)
+TEST(test_triple_click)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_triple_click\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
@@ -353,66 +310,58 @@ static void test_triple_click(void)
     tick_ms(&btn, 25);
     mock_level = 1;
     gpio_btn_evt_t e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_DOUBLE_CLICK, "double click on 2nd release");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_DOUBLE_CLICK);
 
     /* 3rd press+release → new click_pending */
     mock_level = 0;
     tick_ms(&btn, 25);
     mock_level = 1;
     e = tick_ms(&btn, 25);
-    ASSERT(e == GPIO_BTN_EVT_RELEASE, "3rd release");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_RELEASE);
 
     e = tick_ms(&btn, 310);
-    ASSERT(e == GPIO_BTN_EVT_CLICK, "click after 3rd release dc window");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_CLICK);
 }
 
-static void test_large_dt(void)
+TEST(test_large_dt)
 {
     gpio_btn_t btn;
     gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
-
-    printf("test_large_dt\n");
     mock_level = 1;
     gpio_btn_init(&btn, &mock_hal, &cfg);
 
     /* single large tick while idle — no crash */
     gpio_btn_evt_t e = gpio_btn_tick(&btn, 10000);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "large dt idle no crash");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
 
     /* level change tick resets debounce — no press on change tick */
     mock_level = 0;
     e = gpio_btn_tick(&btn, 10000);
-    ASSERT(e == GPIO_BTN_EVT_NONE, "no press on level-change tick");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_NONE);
 
     /* sustained level with large dt → debounce completes instantly */
     e = gpio_btn_tick(&btn, 10000);
-    ASSERT(e == GPIO_BTN_EVT_PRESS, "press after sustained large dt");
-    ASSERT(gpio_btn_is_pressed(&btn) == 1, "pressed after large dt");
+    ASSERT_TRUE(e == GPIO_BTN_EVT_PRESS);
+    ASSERT_TRUE(gpio_btn_is_pressed(&btn) == 1);
 }
 
-int main(void)
-{
-    tests_run = tests_fail = 0;
+TEST_MAIN("gpio_button")
+    RUN(test_default_cfg);
+    RUN(test_init_idle);
+    RUN(test_press_debounce);
+    RUN(test_bounce_rejection);
+    RUN(test_click);
+    RUN(test_double_click);
+    RUN(test_long_press);
+    RUN(test_active_high);
+    RUN(test_long_press_no_double_click);
+    RUN(test_null_safety);
+    RUN(test_zero_dt);
+    RUN(test_rapid_clicks_separated);
+    RUN(test_reinit_resets_state);
+    RUN(test_debounce_boundary);
+    RUN(test_barely_miss_long_press);
+    RUN(test_triple_click);
+    RUN(test_large_dt);
+TEST_MAIN_END()
 
-    test_default_cfg();
-    test_init_idle();
-    test_press_debounce();
-    test_bounce_rejection();
-    test_click();
-    test_double_click();
-    test_long_press();
-    test_active_high();
-    test_long_press_no_double_click();
-    test_null_safety();
-    test_zero_dt();
-    test_rapid_clicks_separated();
-    test_reinit_resets_state();
-    test_debounce_boundary();
-    test_barely_miss_long_press();
-    test_triple_click();
-    test_large_dt();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

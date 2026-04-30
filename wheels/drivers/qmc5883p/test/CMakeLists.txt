@@ -10,6 +10,7 @@ add_executable(test_qmc5883p
 
 target_include_directories(test_qmc5883p PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 target_link_libraries(test_qmc5883p PRIVATE m)

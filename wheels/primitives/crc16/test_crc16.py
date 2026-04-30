@@ -48,19 +48,22 @@ def test_all_c_tests_pass():
 @pytest.mark.parametrize(
     "marker",
     [
-        "empty buffer returns 0xFFFF",
-        "empty with non-NULL pointer",
-        "123456789 -> 0x4B37",
-        "modbus rtu read-10-regs frame -> 0xCDC5",
-        "single 0x00 -> 0x40BF",
-        "single 0xFF -> 0x00FF",
-        "step API equals bulk API",
-        "chunked step matches bulk",
-        "flybox 34-byte deterministic frame CRC stable",
+        "test_empty_buffer",
+        "test_canonical_vector",
+        "test_modbus_rtu_frame",
+        "test_single_byte",
+        "test_step_equivalence",
+        "test_step_chunked",
+        "test_flybox_compatibility",
+        "test_all_zeros_buffer",
+        "test_all_ones_buffer",
+        "test_single_byte_all_distinct",
+        "test_crc_residue_zero",
+        "test_long_buffer_step",
     ],
 )
 def test_c_case_passed(marker):
-    """Each named C test case must report [PASS]."""
+    """Each named C test case must report PASS."""
     stdout, _ = _run_tests()
-    line = f"[PASS] {marker}"
+    line = f"PASS {marker}"
     assert line in stdout, f"missing or failing: {marker}\n--- output ---\n{stdout}"

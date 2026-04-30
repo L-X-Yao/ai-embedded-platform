@@ -544,6 +544,7 @@ add_executable(test_${NAME_LOWER}
 
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
@@ -555,39 +556,29 @@ CMAKE_EOF
 
 generate_test_i2c() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include <math.h>
-#include "../${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
 
 /* ---------- mock I2C ---------- */
 
 #define MOCK_REG_COUNT 256
 static uint8_t mock_regs[MOCK_REG_COUNT];
-static int     mock_fail_next;
-static int     mock_op_count;
 static int     mock_fail_at;
-
-#define WRITE_LOG_MAX 32
-static struct { uint8_t reg; uint8_t val; } write_log[WRITE_LOG_MAX];
-static int write_log_idx;
+static int     mock_op_count;
 
 static void mock_reset(void)
 {
     memset(mock_regs, 0, sizeof(mock_regs));
-    mock_fail_next  = 0;
-    mock_op_count   = 0;
-    mock_fail_at    = -1;
-    write_log_idx   = 0;
-    /* TODO: set default register values (chip ID, status flags, etc.) */
+    mock_fail_at  = -1;
+    mock_op_count = 0;
+    /* TODO: set default register values (chip ID, etc.) */
 }
 
 static bool mock_should_fail(void)
 {
     int n = mock_op_count++;
-    if (mock_fail_next) { mock_fail_next = 0; return true; }
-    if (mock_fail_at >= 0 && n == mock_fail_at) return true;
-    return false;
+    return (mock_fail_at >= 0 && n == mock_fail_at);
 }
 
 static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
@@ -595,11 +586,6 @@ static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
     if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
-    if (write_log_idx < WRITE_LOG_MAX) {
-        write_log[write_log_idx].reg = reg;
-        write_log[write_log_idx].val = val;
-        write_log_idx++;
-    }
     return true;
 }
 
@@ -619,67 +605,41 @@ static const ${NAME_LOWER}_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
-/* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-#define ASSERT_NEQ(a, b, msg)  ASSERT((a) != (b), msg)
-#define ASSERT_NEAR(a, b, tol, msg) ASSERT(fabsf((a)-(b)) < (tol), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     mock_reset();
-    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_i2c);
-    ASSERT_EQ(e, ${NAME_UPPER}_OK, "init returns OK");
+    ASSERT_EQ(${NAME_LOWER}_init(&mock_i2c), ${NAME_UPPER}_OK);
 }
 
-static void test_init_i2c_fail(void)
+TEST(test_init_i2c_fail)
 {
-    printf("test_init_i2c_fail\n");
     mock_reset();
     mock_fail_at = 0;
-    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_i2c);
-    ASSERT_EQ(e, ${NAME_UPPER}_ERR_I2C, "init fails on I2C error");
+    ASSERT_EQ(${NAME_LOWER}_init(&mock_i2c), ${NAME_UPPER}_ERR_I2C);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
-    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_I2C, "init(NULL)");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_I2C);
 }
 
 /* TODO: add more tests */
 
-int main(void)
-{
-    test_init_ok();
-    test_init_i2c_fail();
-    test_null_safety();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_init_i2c_fail);
+    RUN(test_null_safety);
+TEST_MAIN_END()
 TEST_EOF
 }
 
 generate_test_spi() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
 
 /* ---------- mock SPI ---------- */
 
@@ -719,67 +679,43 @@ static const ${NAME_LOWER}_spi_t mock_spi = {
     .ctx     = NULL,
 };
 
-/* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-#define ASSERT_NEQ(a, b, msg)  ASSERT((a) != (b), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     mock_reset();
     ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
-    ASSERT_EQ(e, ${NAME_UPPER}_OK, "init returns OK");
-    ASSERT(xfer_log_idx > 0, "SPI transfer occurred");
+    ASSERT_EQ(e, ${NAME_UPPER}_OK);
+    ASSERT_TRUE(xfer_log_idx > 0);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
-    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_SPI, "init(NULL)");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_SPI);
 }
 
-static void test_init_spi_fail(void)
+TEST(test_init_spi_fail)
 {
-    printf("test_init_spi_fail\n");
     mock_reset();
     mock_fail_at = 0;
     ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
-    ASSERT_NEQ(e, ${NAME_UPPER}_OK, "init fails on SPI error");
+    ASSERT_TRUE(e != ${NAME_UPPER}_OK);
 }
 
 /* TODO: add more tests */
 
-int main(void)
-{
-    test_init_ok();
-    test_null_safety();
-    test_init_spi_fail();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_null_safety);
+    RUN(test_init_spi_fail);
+TEST_MAIN_END()
 TEST_EOF
 }
 
 generate_test_gpio() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
-#include <string.h>
-#include "../${NAME_LOWER}.h"
+#include "test_harness.h"
+#include "${NAME_LOWER}.h"
 
 /* ---------- mock GPIO ---------- */
 
@@ -798,56 +734,35 @@ static const ${NAME_LOWER}_gpio_t mock_gpio = {
     .ctx        = NULL,
 };
 
-/* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_gpio), ${NAME_UPPER}_OK, "init returns OK");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_gpio), ${NAME_UPPER}_OK);
 }
 
-static void test_init_null(void)
+TEST(test_init_null)
 {
-    printf("test_init_null\n");
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_gpio), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_gpio), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
 /* TODO: add protocol-specific tests */
 
-int main(void)
-{
-    test_init_ok();
-    test_init_null();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_init_null);
+TEST_MAIN_END()
 TEST_EOF
 }
 
 generate_test_onewire() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
 
 /* ---------- mock 1-Wire ---------- */
 
@@ -864,56 +779,35 @@ static const ${NAME_LOWER}_ow_t mock_ow = {
     .ctx        = NULL,
 };
 
-/* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     mock_presence = true;
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_ow), ${NAME_UPPER}_OK, "init returns OK");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_ow), ${NAME_UPPER}_OK);
 }
 
-static void test_init_null(void)
+TEST(test_init_null)
 {
-    printf("test_init_null\n");
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_ow), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_ow), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
 /* TODO: add device-specific tests */
 
-int main(void)
-{
-    test_init_ok();
-    test_init_null();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_init_null);
+TEST_MAIN_END()
 TEST_EOF
 }
 
 generate_test_pwm() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
-#include "../${NAME_LOWER}.h"
+#include "test_harness.h"
+#include "${NAME_LOWER}.h"
 
 /* ---------- mock PWM ---------- */
 
@@ -933,77 +827,41 @@ static const ${NAME_LOWER}_pwm_t mock_pwm = {
     .ctx = NULL,
 };
 
-/* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)  ASSERT((a) == (b), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     mock_fail = false;
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_pwm), ${NAME_UPPER}_OK, "init returns OK");
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_pwm), ${NAME_UPPER}_OK);
 }
 
-static void test_init_null(void)
+TEST(test_init_null)
 {
-    printf("test_init_null\n");
     ${NAME_LOWER}_t dev;
-    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_pwm), ${NAME_UPPER}_ERR_PARAM, "init(NULL, ...)");
-    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM, "init(..., NULL)");
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_pwm), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
 /* TODO: add control tests */
 
-int main(void)
-{
-    test_init_ok();
-    test_init_null();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_init_null);
+TEST_MAIN_END()
 TEST_EOF
 }
 
 generate_test_none() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
-#include "../${NAME_LOWER}.h"
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
+#include "test_harness.h"
+#include "${NAME_LOWER}.h"
 
 /* TODO: add tests */
 
-int main(void)
-{
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN("${NAME_LOWER}")
+    /* RUN(test_example); */
+TEST_MAIN_END()
 TEST_EOF
 }
 

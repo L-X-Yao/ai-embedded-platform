@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <math.h>
-#include "../bmp280.h"
+#include "bmp280.h"
 
 /* ---------- mock I2C ---------- */
 
@@ -69,20 +69,6 @@ static const bmp280_i2c_t mock_i2c = {
 };
 
 /* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-#define ASSERT_NEAR(a, b, tol, msg) ASSERT(fabsf((a)-(b)) < (tol), msg)
-
 static bmp280_t dev;
 static bmp280_cfg_t default_cfg = {
     .addr = BMP280_ADDR_LOW,
@@ -98,46 +84,42 @@ static void setup(void)
 
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("%s\n", __func__);
     mock_reset();
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, BMP280_OK, "init ok");
+    ASSERT_EQ(e, BMP280_OK);
 }
 
-static void test_init_wrong_id(void)
+TEST(test_init_wrong_id)
 {
-    printf("%s\n", __func__);
     mock_reset();
     mock_regs[0xD0] = 0x00;
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, BMP280_ERR_ID, "wrong chip ID");
+    ASSERT_EQ(e, BMP280_ERR_ID);
 }
 
-static void test_init_i2c_fail(void)
+TEST(test_init_i2c_fail)
 {
-    printf("%s\n", __func__);
     mock_reset();
     mock_fail_at = 0;
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, BMP280_ERR_I2C, "I2C fail on ID read");
+    ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("%s\n", __func__);
-    ASSERT_EQ(bmp280_init(NULL, &mock_i2c, &default_cfg), BMP280_ERR_PARAM, "null dev");
+    ASSERT_EQ(bmp280_init(NULL, &mock_i2c, &default_cfg), BMP280_ERR_PARAM);
     bmp280_t d;
-    ASSERT_EQ(bmp280_init(&d, NULL, &default_cfg), BMP280_ERR_PARAM, "null i2c");
-    ASSERT_EQ(bmp280_init(&d, &mock_i2c, NULL), BMP280_ERR_PARAM, "null cfg");
+    ASSERT_EQ(bmp280_init(&d, NULL, &default_cfg), BMP280_ERR_PARAM);
+    ASSERT_EQ(bmp280_init(&d, &mock_i2c, NULL), BMP280_ERR_PARAM);
     bmp280_data_t data;
-    ASSERT_EQ(bmp280_read(NULL, &data), BMP280_ERR_PARAM, "read null dev");
-    ASSERT_EQ(bmp280_read(&d, NULL), BMP280_ERR_PARAM, "read null out");
-    ASSERT_EQ(bmp280_reset(NULL), BMP280_ERR_PARAM, "reset null");
+    ASSERT_EQ(bmp280_read(NULL, &data), BMP280_ERR_PARAM);
+    ASSERT_EQ(bmp280_read(&d, NULL), BMP280_ERR_PARAM);
+    ASSERT_EQ(bmp280_reset(NULL), BMP280_ERR_PARAM);
 }
 
 static void plant_adc(uint32_t adc_p, uint32_t adc_t)
@@ -150,9 +132,8 @@ static void plant_adc(uint32_t adc_p, uint32_t adc_t)
     mock_regs[0xFC] = (uint8_t)((adc_t & 0x0F) << 4);
 }
 
-static void test_read_temperature(void)
+TEST(test_read_temperature)
 {
-    printf("%s\n", __func__);
     setup();
 
     /* adc_t chosen to produce ~25°C with the example calibration data */
@@ -160,67 +141,59 @@ static void test_read_temperature(void)
 
     bmp280_data_t data;
     bmp280_err_t e = bmp280_read(&dev, &data);
-    ASSERT_EQ(e, BMP280_OK, "read ok");
-    ASSERT(data.temperature_c > 15.0f && data.temperature_c < 45.0f,
-           "temperature in plausible range");
+    ASSERT_EQ(e, BMP280_OK);
+    ASSERT_TRUE(data.temperature_c > 15.0f && data.temperature_c < 45.0f);
 }
 
-static void test_read_pressure(void)
+TEST(test_read_pressure)
 {
-    printf("%s\n", __func__);
     setup();
 
     plant_adc(415148, 519888);
 
     bmp280_data_t data;
     bmp280_err_t e = bmp280_read(&dev, &data);
-    ASSERT_EQ(e, BMP280_OK, "read ok");
-    ASSERT(data.pressure_pa > 10000.0f && data.pressure_pa < 200000.0f,
-           "pressure in plausible range");
+    ASSERT_EQ(e, BMP280_OK);
+    ASSERT_TRUE(data.pressure_pa > 10000.0f && data.pressure_pa < 200000.0f);
 }
 
-static void test_read_i2c_fail(void)
+TEST(test_read_i2c_fail)
 {
-    printf("%s\n", __func__);
     setup();
     mock_fail_next = 1;
     bmp280_data_t data;
     bmp280_err_t e = bmp280_read(&dev, &data);
-    ASSERT_EQ(e, BMP280_ERR_I2C, "read fails on I2C error");
+    ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
-static void test_reset(void)
+TEST(test_reset)
 {
-    printf("%s\n", __func__);
     setup();
     bmp280_err_t e = bmp280_reset(&dev);
-    ASSERT_EQ(e, BMP280_OK, "reset ok");
-    ASSERT_EQ(mock_regs[0xE0], 0xB6, "reset command written");
+    ASSERT_EQ(e, BMP280_OK);
+    ASSERT_EQ(mock_regs[0xE0], 0xB6);
 }
 
-static void test_reset_i2c_fail(void)
+TEST(test_reset_i2c_fail)
 {
-    printf("%s\n", __func__);
     setup();
     mock_fail_next = 1;
     bmp280_err_t e = bmp280_reset(&dev);
-    ASSERT_EQ(e, BMP280_ERR_I2C, "reset I2C fail");
+    ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
-static void test_addr_high(void)
+TEST(test_addr_high)
 {
-    printf("%s\n", __func__);
     mock_reset();
     bmp280_cfg_t cfg = { .addr = BMP280_ADDR_HIGH, .osrs_t = BMP280_OVERSAMPLING_1,
                          .osrs_p = BMP280_OVERSAMPLING_1 };
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &cfg);
-    ASSERT_EQ(e, BMP280_OK, "init with addr 0x77");
+    ASSERT_EQ(e, BMP280_OK);
 }
 
-static void test_oversampling_16x(void)
+TEST(test_oversampling_16x)
 {
-    printf("%s\n", __func__);
     mock_reset();
     bmp280_cfg_t cfg = { .addr = BMP280_ADDR_LOW,
                          .osrs_t = BMP280_OVERSAMPLING_16,
@@ -232,50 +205,43 @@ static void test_oversampling_16x(void)
 
     bmp280_data_t data;
     bmp280_err_t e = bmp280_read(&d, &data);
-    ASSERT_EQ(e, BMP280_OK, "read with 16x oversampling");
+    ASSERT_EQ(e, BMP280_OK);
     uint8_t ctrl = mock_regs[0xF4];
-    ASSERT_EQ((ctrl >> 5) & 0x07, BMP280_OVERSAMPLING_16, "osrs_t=16x in ctrl_meas");
-    ASSERT_EQ((ctrl >> 2) & 0x07, BMP280_OVERSAMPLING_16, "osrs_p=16x in ctrl_meas");
+    ASSERT_EQ((ctrl >> 5) & 0x07, BMP280_OVERSAMPLING_16);
+    ASSERT_EQ((ctrl >> 2) & 0x07, BMP280_OVERSAMPLING_16);
 }
 
-static void test_calib_readback(void)
+TEST(test_calib_readback)
 {
-    printf("%s\n", __func__);
     setup();
-    ASSERT_EQ(dev.calib.dig_t1, 27504, "dig_T1");
-    ASSERT_EQ(dev.calib.dig_t2, 26435, "dig_T2");
-    ASSERT_EQ(dev.calib.dig_t3, -1000, "dig_T3");
-    ASSERT_EQ(dev.calib.dig_p1, 36477, "dig_P1");
+    ASSERT_EQ(dev.calib.dig_t1, 27504);
+    ASSERT_EQ(dev.calib.dig_t2, 26435);
+    ASSERT_EQ(dev.calib.dig_t3, -1000);
+    ASSERT_EQ(dev.calib.dig_p1, 36477);
 }
 
-static void test_calib_i2c_fail(void)
+TEST(test_calib_i2c_fail)
 {
-    printf("%s\n", __func__);
     mock_reset();
     mock_fail_at = 1;
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, BMP280_ERR_I2C, "calib read I2C fail");
+    ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
-int main(void)
-{
-    printf("test_bmp280\n");
-    test_init_ok();
-    test_init_wrong_id();
-    test_init_i2c_fail();
-    test_null_safety();
-    test_read_temperature();
-    test_read_pressure();
-    test_read_i2c_fail();
-    test_reset();
-    test_reset_i2c_fail();
-    test_addr_high();
-    test_oversampling_16x();
-    test_calib_readback();
-    test_calib_i2c_fail();
+TEST_MAIN("bmp280")
+    RUN(test_init_ok);
+    RUN(test_init_wrong_id);
+    RUN(test_init_i2c_fail);
+    RUN(test_null_safety);
+    RUN(test_read_temperature);
+    RUN(test_read_pressure);
+    RUN(test_read_i2c_fail);
+    RUN(test_reset);
+    RUN(test_reset_i2c_fail);
+    RUN(test_addr_high);
+    RUN(test_oversampling_16x);
+    RUN(test_calib_readback);
+    RUN(test_calib_i2c_fail);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

@@ -10,6 +10,7 @@ add_executable(test_qmi8658a
 
 target_include_directories(test_qmi8658a PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 target_link_libraries(test_qmi8658a PRIVATE m)

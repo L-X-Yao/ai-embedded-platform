@@ -1,20 +1,7 @@
+#include "test_harness.h"
 #include "crc32.h"
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: 0x%08X != 0x%08X\n", __func__, __LINE__, \
-               (unsigned)(a), (unsigned)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-
-#define RUN(fn) do { fn(); if(!tests_fail || tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } pf = tests_fail; } while(0)
 
 TEST(test_standard_vector)
 {
@@ -110,10 +97,7 @@ TEST(test_1024_byte_consistency)
     ASSERT_EQ(bulk, crc);
 }
 
-int main(void)
-{
-    int pf = 0;
-    printf("crc32 tests:\n");
+TEST_MAIN("crc32")
     RUN(test_standard_vector);
     RUN(test_empty);
     RUN(test_single_byte_zero);
@@ -124,6 +108,4 @@ int main(void)
     RUN(test_residue_check);
     RUN(test_known_string);
     RUN(test_1024_byte_consistency);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

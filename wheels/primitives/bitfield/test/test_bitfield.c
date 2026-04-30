@@ -1,20 +1,6 @@
+#include "test_harness.h"
 #include "bitfield.h"
-#include <stdio.h>
 #include <string.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: 0x%X != 0x%X\n", __func__, __LINE__, \
-               (unsigned)(a), (unsigned)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_TRUE(x)  ASSERT_EQ(!!(x), 1)
-#define ASSERT_FALSE(x) ASSERT_EQ(!!(x), 0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_get_aligned_byte)
 {
@@ -128,9 +114,7 @@ TEST(test_oob_bit_ops)
     ASSERT_EQ(data[0], 0xFF);
 }
 
-int main(void)
-{
-    printf("bitfield tests:\n");
+TEST_MAIN("bitfield")
     RUN(test_get_aligned_byte);
     RUN(test_get_unaligned);
     RUN(test_get_16bit);
@@ -143,6 +127,4 @@ int main(void)
     RUN(test_range_check);
     RUN(test_width_check);
     RUN(test_oob_bit_ops);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

@@ -10,6 +10,7 @@ add_executable(test_xgzp6816d
 
 target_include_directories(test_xgzp6816d PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 target_link_libraries(test_xgzp6816d PRIVATE m)

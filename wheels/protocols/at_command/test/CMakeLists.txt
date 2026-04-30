@@ -10,6 +10,7 @@ add_executable(test_at_command
 
 target_include_directories(test_at_command PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 target_compile_options(test_at_command PRIVATE -Wall -Wextra -Wpedantic -Werror)

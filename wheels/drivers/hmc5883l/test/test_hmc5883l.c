@@ -1,25 +1,7 @@
+#include "test_harness.h"
 #include "hmc5883l.h"
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_NEAR(a, b, tol) do { \
-    if (fabsf((a) - (b)) > (tol)) { \
-        printf("  FAIL %s:%d: %.6f not near %.6f\n", __func__, __LINE__, \
-               (double)(a), (double)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 /* Mock */
 #define MOCK_REG_COUNT 16
@@ -159,9 +141,7 @@ TEST(test_read_null)
     ASSERT_EQ(hmc5883l_read_gauss(&dev, NULL), HMC5883L_ERR_PARAM);
 }
 
-int main(void)
-{
-    printf("hmc5883l tests:\n");
+TEST_MAIN("hmc5883l")
     RUN(test_init_null);
     RUN(test_init_id_check);
     RUN(test_init_bad_id);
@@ -170,6 +150,4 @@ int main(void)
     RUN(test_different_gain);
     RUN(test_i2c_failure);
     RUN(test_read_null);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

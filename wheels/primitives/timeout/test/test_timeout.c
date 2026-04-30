@@ -1,19 +1,5 @@
+#include "test_harness.h"
 #include "timeout.h"
-#include <stdio.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %u != %u\n", __func__, __LINE__, \
-               (unsigned)(a), (unsigned)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_TRUE(x)  ASSERT_EQ(!!(x), 1)
-#define ASSERT_FALSE(x) ASSERT_EQ(!!(x), 0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_basic_expiry)
 {
@@ -103,9 +89,7 @@ TEST(test_null_safety)
     timeout_extend(NULL, 100);
 }
 
-int main(void)
-{
-    printf("timeout tests:\n");
+TEST_MAIN("timeout")
     RUN(test_basic_expiry);
     RUN(test_remaining);
     RUN(test_elapsed);
@@ -115,6 +99,4 @@ int main(void)
     RUN(test_zero_duration);
     RUN(test_max_duration);
     RUN(test_null_safety);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

@@ -7,7 +7,10 @@ add_executable(test_websocket_frame
     test_websocket_frame.c
     ../websocket_frame.c
 )
-target_include_directories(test_websocket_frame PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_websocket_frame PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_websocket_frame PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

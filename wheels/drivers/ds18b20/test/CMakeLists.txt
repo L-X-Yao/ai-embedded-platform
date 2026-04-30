@@ -7,7 +7,10 @@ add_executable(test_ds18b20
     test_ds18b20.c
     ../ds18b20.c
 )
-target_include_directories(test_ds18b20 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_ds18b20 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()
