@@ -84,16 +84,20 @@ jobs:
             [ "$name" = "log" ] && continue
             [ "$name" = "crc16" ] && continue
 
-            # Include if: harness changed, or wheel files changed, or dependency changed, or no BASE (full run)
+            # Include if: harness changed, or wheel files changed, or upstream dep changed, or no BASE (full run)
             INCLUDE=false
             if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ]; then
               INCLUDE=true
             elif echo "$CHANGED" | grep -q "^${wheel_dir}/"; then
               INCLUDE=true
-            elif [ "$name" = "modbus_rtu" ] && echo "$CHANGED" | grep -q "^wheels/primitives/crc16/"; then
-              INCLUDE=true
-            elif [ "$name" = "kvs" ] && echo "$CHANGED" | grep -q "^wheels/primitives/fal/"; then
-              INCLUDE=true
+            else
+              # Auto-detect upstream deps from test/CMakeLists.txt cross-wheel paths
+              for upstream in $(grep -oP '\.\./\.\./\.\./\K(primitives|drivers|protocols|modules)/[a-z0-9_]+' "$test_cmake" 2>/dev/null | sort -u); do
+                if echo "$CHANGED" | grep -q "^wheels/${upstream}/"; then
+                  INCLUDE=true
+                  break
+                fi
+              done
             fi
 
             if [ "$INCLUDE" = "true" ]; then

@@ -299,6 +299,51 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 
 ---
 
+## 跨切面：Wheel 变更影响分析
+
+**不是任务类型，而是修改任何已有 wheel 时必须执行的协议。** 适用于任务类型 1（改已有 wheel）、3（加功能需改 wheel）、4（修 wheel bug）、9（沉淀改 API）。
+
+### 何时触发
+
+只要改了 `wheels/<layer>/<name>/` 下的 `.h` 或 `.c` 文件，在 commit 前执行。
+
+### 执行步骤
+
+```bash
+# 1. 查下游消费者
+make downstream W=<wheel-name>      # 或 --list 只看不跑
+
+# 2. 如果有 wheel 消费者 → 脚本自动构建 + 测试
+#    如果有 project 消费者 → 脚本报告，手动判断
+
+# 3. 全部绿 → commit
+#    有失败 → 在同一个 commit 或紧接的 commit 中修复消费者
+```
+
+### Breaking change 处理
+
+当 wheel 的公开 API 签名改变（函数增删改参数、struct 字段变化、错误码含义变化）：
+
+1. **先列出所有下游**：`bash tooling/scripts/test_downstream.sh --list <name>`
+2. **评估影响范围**：
+   - 只有 test mock 引用 → 低风险，直接改
+   - wheel-to-wheel 依赖 → 同 commit 修上下游
+   - project 消费者 → 告知用户，协商时机
+3. **改的顺序**：先改 wheel API + 测试 → 再改所有 wheel 消费者 → 最后改 project 消费者
+4. **commit 策略**：wheel API + wheel 消费者可合一个 commit（body 说明 breaking change）；project 消费者单独 commit（type=project）
+
+### CI 自动保障
+
+CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下游 wheel 的测试也会被包含在矩阵中。无需手动添加依赖映射。
+
+### Non-breaking change（bug fix、内部重构）
+
+公开 API 不变，只改内部实现：
+1. `make downstream W=<name>` 验证下游仍然通过
+2. 直接 commit，不需要改消费者
+
+---
+
 ## 与用户协同的节奏
 
 **好节奏**：
