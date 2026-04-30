@@ -146,10 +146,10 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
         }
     }
 
-    /* Append newline (ensure at least 1 byte free) */
-    if (pos >= (int)sizeof(buf)) pos = (int)sizeof(buf) - 1;
+    /* Append newline + NUL (ensure room for both) */
+    if (pos > (int)sizeof(buf) - 2) pos = (int)sizeof(buf) - 2;
     buf[pos++] = '\n';
-    if (pos < (int)sizeof(buf)) buf[pos] = '\0';  /* convenience for sinks */
+    buf[pos] = '\0';
 
     /* Dispatch */
     for (int i = 0; i < LOG_MAX_SINKS; i++) {

@@ -132,5 +132,12 @@ state_machine_err_t state_machine_reset(state_machine_t *ctx, sm_state_t state)
     }
     ctx->current = state;
     ctx->transition_count = 0;
+
+    const sm_state_def_t *def = find_state_def(ctx, state);
+    if (def && def->on_enter)
+    {
+        def->on_enter(ctx->cfg.user_ctx);
+    }
+
     return STATE_MACHINE_OK;
 }
