@@ -34,7 +34,7 @@ if ! command -v "$CC" &>/dev/null; then
 fi
 
 TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+trap 'rm -rf "$TMPDIR"' EXIT
 
 # Header
 case "$FORMAT" in
@@ -79,7 +79,6 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
         INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
     fi
     # Cross-wheel dependencies: add include paths for known deps
-    local root_c_files
     root_c_files=$(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null || true)
     if [[ -n "$root_c_files" ]]; then
         if echo "$root_c_files" | xargs grep -lq '#include "crc16.h"' 2>/dev/null; then

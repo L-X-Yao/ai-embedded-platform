@@ -129,9 +129,11 @@ done
 
 echo ""
 echo -e "${BOLD}=== Wheel Audit ===${NC}"
-if audit_out=$(timeout 15 python3 "$REPO/tooling/scripts/audit_wheels.py" 2>&1); then
+audit_exit=0
+audit_out=$(timeout 15 python3 "$REPO/tooling/scripts/audit_wheels.py" 2>&1) || audit_exit=$?
+if [[ $audit_exit -eq 0 ]]; then
     echo -e "  ${GREEN}All checks passed${NC}"
-elif [[ $? -eq 124 ]]; then
+elif [[ $audit_exit -eq 124 ]]; then
     echo -e "  ${YELLOW}Timed out (15s)${NC} — run manually: python3 tooling/scripts/audit_wheels.py"
 else
     echo -e "  ${RED}FAILURES:${NC}"
@@ -142,7 +144,11 @@ echo ""
 echo -e "${BOLD}=== CI ===${NC}"
 yaml_jobs=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || echo 0)
 matrix_entries=$(grep -cE '^\s+- \{ name:' "$CI_YAML" 2>/dev/null || echo 0)
-job_count=$((yaml_jobs + matrix_entries - (matrix_entries > 0 ? 1 : 0)))
+if [[ "$matrix_entries" -gt 0 ]]; then
+    job_count=$((yaml_jobs + matrix_entries - 1))
+else
+    job_count=$yaml_jobs
+fi
 echo "  Jobs in ci.yml: $job_count ($yaml_jobs definitions, $matrix_entries matrix entries)"
 
 last_run=$(git -C "$REPO" log --oneline -1 --format="%h %s" -- .github/workflows/ 2>/dev/null || echo "n/a")
