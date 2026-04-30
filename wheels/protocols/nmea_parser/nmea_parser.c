@@ -34,14 +34,14 @@ static float field_float(const char *line, int n)
 {
     const char *f = get_field(line, n);
     if (*f == '\0' || *f == ',') return 0.0f;
-    return (float)atof(f);
+    return strtof(f, NULL);
 }
 
 static int field_int(const char *line, int n)
 {
     const char *f = get_field(line, n);
     if (*f == '\0' || *f == ',') return 0;
-    return atoi(f);
+    return (int)strtol(f, NULL, 10);
 }
 
 static char field_char(const char *line, int n)
@@ -53,7 +53,7 @@ static char field_char(const char *line, int n)
 
 static float parse_lat(const char *raw, char ns)
 {
-    float v = (float)atof(raw);
+    float v = strtof(raw, NULL);
     int deg = (int)(v / 100.0f);
     float min = v - deg * 100.0f;
     float result = deg + min / 60.0f;
@@ -63,7 +63,7 @@ static float parse_lat(const char *raw, char ns)
 
 static float parse_lon(const char *raw, char ew)
 {
-    float v = (float)atof(raw);
+    float v = strtof(raw, NULL);
     int deg = (int)(v / 100.0f);
     float min = v - deg * 100.0f;
     float result = deg + min / 60.0f;
@@ -121,7 +121,7 @@ static void parse_rmc(const char *line, nmea_data_t *d)
 
     const char *course_f = get_field(line, 8);
     if (*course_f && *course_f != ',' && *course_f != '*') {
-        d->course_deg = (float)atof(course_f);
+        d->course_deg = strtof(course_f, NULL);
         d->course_valid = 1;
     } else {
         d->course_valid = 0;
