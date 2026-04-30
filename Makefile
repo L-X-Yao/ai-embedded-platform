@@ -17,7 +17,7 @@
 #   make clean                 # remove all build_* directories
 #   make check                 # test + audit in one shot (pre-push)
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check inventory
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -68,3 +68,6 @@ clean:
 
 check:
 	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet
+
+inventory:
+	bash tooling/scripts/update_wheel_inventory.sh --apply

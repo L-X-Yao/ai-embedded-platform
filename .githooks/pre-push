@@ -1,0 +1,26 @@
+#!/bin/bash
+# pre-push hook — run wheel audit before pushing.
+#
+# Install: git config core.hooksPath .githooks
+#
+# Runs audit_wheels.py --quiet. Blocks push on FAIL only (WARN passes).
+# Skips if audit script is not found (e.g. shallow clone).
+
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+AUDIT="$REPO/tooling/scripts/audit_wheels.py"
+
+if [[ ! -f "$AUDIT" ]]; then
+    exit 0
+fi
+
+echo "pre-push: running wheel audit..."
+if output=$(python3 "$AUDIT" --quiet 2>&1); then
+    echo "pre-push: audit passed"
+    exit 0
+else
+    echo "pre-push: audit FAILED — fix before pushing"
+    echo "$output"
+    echo ""
+    echo "To skip: git push --no-verify"
+    exit 1
+fi

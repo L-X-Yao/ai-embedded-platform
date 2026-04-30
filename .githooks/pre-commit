@@ -1,31 +1,68 @@
 #!/bin/bash
-# pre-commit hook — reject accidentally staged binary artifacts.
+# pre-commit hook — reject accidentally staged dangerous files.
 #
 # Install: git config core.hooksPath .githooks
 #
 # Checks:
 #   1. No compiled binaries (.o, .obj, .a, .lib, .so, .dll, .exe, .elf)
 #   2. No firmware images (.bin, .hex) outside expected locations
-#   3. No large files (>1MB) that look accidental
+#   3. No secrets (.env, credentials, private keys)
+#   4. No large files (>1MB)
 
 BLOCKED_EXTS='\.o|\.obj|\.a|\.lib|\.so|\.dll|\.exe|\.elf|\.bin|\.hex|\.map|\.gcno|\.gcda'
+SECRET_PATTERNS='\.env$|credentials\.json|\.pem$|\.key$|id_rsa|\.p12$|\.pfx$'
 
 blocked=()
+secrets=()
+large=()
+
 while IFS= read -r file; do
     [[ -z "$file" ]] && continue
+
+    # Binary artifacts
     if echo "$file" | grep -qE "($BLOCKED_EXTS)$"; then
         blocked+=("$file")
     fi
+
+    # Secrets
+    if echo "$file" | grep -qE "($SECRET_PATTERNS)"; then
+        secrets+=("$file")
+    fi
+
+    # Large files (>1MB)
+    if [[ -f "$file" ]]; then
+        size=$(wc -c < "$file" 2>/dev/null || echo 0)
+        if [[ "$size" -gt 1048576 ]]; then
+            large+=("$file ($(( size / 1024 ))KB)")
+        fi
+    fi
 done < <(git diff --cached --name-only --diff-filter=ACR)
+
+EXIT=0
 
 if [[ ${#blocked[@]} -gt 0 ]]; then
     echo "ERROR: binary/build artifacts staged for commit:"
-    for f in "${blocked[@]}"; do
-        echo "  $f"
-    done
+    for f in "${blocked[@]}"; do echo "  $f"; done
     echo ""
-    echo "If intentional (e.g. vendor SDK), use: git commit --no-verify"
-    exit 1
+    EXIT=1
 fi
 
-exit 0
+if [[ ${#secrets[@]} -gt 0 ]]; then
+    echo "ERROR: potential secrets staged for commit:"
+    for f in "${secrets[@]}"; do echo "  $f"; done
+    echo ""
+    EXIT=1
+fi
+
+if [[ ${#large[@]} -gt 0 ]]; then
+    echo "ERROR: large files (>1MB) staged for commit:"
+    for f in "${large[@]}"; do echo "  $f"; done
+    echo ""
+    EXIT=1
+fi
+
+if [[ $EXIT -ne 0 ]]; then
+    echo "If intentional, use: git commit --no-verify"
+fi
+
+exit $EXIT

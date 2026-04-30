@@ -204,6 +204,26 @@ else
     echo "  No source references to wheels/$FROM"
 fi
 
+# --- Auto-verify (test + audit) -----------------------------------------------
+
+if ! $DRY_RUN; then
+    echo ""
+    echo -e "${BOLD}[Auto] Running tests for $WHEEL_NAME${NC}"
+    if bash "$REPO/tooling/scripts/test_all.sh" "$WHEEL_NAME" 2>&1; then
+        echo -e "  ${GREEN}Tests passed${NC}"
+    else
+        echo -e "  ${RED}Tests FAILED — review before committing${NC}"
+    fi
+
+    echo ""
+    echo -e "${BOLD}[Auto] Running wheel audit${NC}"
+    if python3 "$REPO/tooling/scripts/audit_wheels.py" --quiet 2>&1; then
+        echo -e "  ${GREEN}Audit passed${NC}"
+    else
+        echo -e "  ${YELLOW}Audit warnings — review output above${NC}"
+    fi
+fi
+
 # --- Summary ------------------------------------------------------------------
 
 echo ""
@@ -222,7 +242,5 @@ else
     echo ""
     echo "  Next steps:"
     echo "    1. git diff  — review all changes"
-    echo "    2. tooling/scripts/test_all.sh $WHEEL_NAME  — verify tests still pass"
-    echo "    3. python3 tooling/scripts/audit_wheels.py  — verify wheel health"
-    echo "    4. git add + commit"
+    echo "    2. git add + commit"
 fi
