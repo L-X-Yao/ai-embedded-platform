@@ -79,9 +79,10 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
     done
     test_count="$tc"
 
-    # CI job?
+    # CI job? (use actual dir layer for path matching, not display label)
     ci="--"
-    if grep -q "wheels/${layer}/${name}" "$CI_YAML" 2>/dev/null; then
+    ci_layer=$(basename "$layer_dir")
+    if grep -q "wheels/${ci_layer}/${name}" "$CI_YAML" 2>/dev/null; then
         ci="yes"
     fi
 
@@ -105,17 +106,6 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
     printf "  %-20s %-12s %-6s ${ci_color}%-4s${NC} ${cons_color}%-8s${NC}\n" \
         "$name" "$layer" "$test_count" "$ci" "$consumer"
 done
-
-# --- _draft wheels ------------------------------------------------------------
-
-if [[ -d "$REPO/wheels/_draft" ]]; then
-    for draft_dir in "$REPO"/wheels/_draft/*/ ; do
-        [[ ! -d "$draft_dir" ]] && continue
-        name=$(basename "$draft_dir")
-        printf "  %-20s %-12s %-6s ${YELLOW}%-4s${NC} ${YELLOW}%-8s${NC}\n" \
-            "$name" "_draft" "?" "--" "--"
-    done
-fi
 
 # --- Project summary ----------------------------------------------------------
 

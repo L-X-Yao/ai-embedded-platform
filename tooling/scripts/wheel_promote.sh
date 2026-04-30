@@ -117,9 +117,9 @@ CHANGES=0
 # --- Step 1: Move directory ---------------------------------------------------
 
 echo -e "${BOLD}[1/5] Move directory${NC}"
-echo "  mv wheels/$FROM → wheels/$TO"
+echo "  git mv wheels/$FROM → wheels/$TO"
 if ! $DRY_RUN; then
-    mv "$FROM_DIR" "$TO_DIR"
+    git mv "$FROM_DIR" "$TO_DIR"
 fi
 CHANGES=$((CHANGES + 1))
 

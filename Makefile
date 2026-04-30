@@ -49,7 +49,7 @@ graph:
 
 downstream:
 	@test -n "$(W)" || { echo "Usage: make downstream W=<wheel-name>"; exit 1; }
-	bash tooling/scripts/test_downstream.sh $(W)
+	bash tooling/scripts/test_downstream.sh "$(W)"
 
 sync-vsf:
 	bash tooling/scripts/sync_vsf.sh

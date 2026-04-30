@@ -57,6 +57,16 @@ done
 [[ -z "$LAYER" ]] && echo "Error: --layer required (primitives|drivers|protocols|modules)" && exit 1
 [[ -z "$NAME" ]]  && echo "Error: --name required" && exit 1
 
+if ! echo "$NAME" | grep -qE '^[a-z][a-z0-9_]*$'; then
+    echo "Error: --name must match [a-z][a-z0-9_]* (got: $NAME)"
+    exit 1
+fi
+
+if ! echo "$LAYER" | grep -qE '^(primitives|drivers|protocols|modules|_draft)$'; then
+    echo "Error: --layer must be primitives|drivers|protocols|modules|_draft (got: $LAYER)"
+    exit 1
+fi
+
 # Normalize
 NAME_UPPER=$(echo "$NAME" | tr '[:lower:]' '[:upper:]')
 NAME_LOWER=$(echo "$NAME" | tr '[:upper:]' '[:lower:]')
