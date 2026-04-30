@@ -16,7 +16,7 @@ int bitfield_get(const uint8_t *data, size_t data_len,
         return BITFIELD_ERR_NULL;
     if (bit_count == 0 || bit_count > 32)
         return BITFIELD_ERR_WIDTH;
-    if ((bit_offset + bit_count + 7) / 8 > data_len)
+    if (bit_offset > data_len * 8 || bit_count > data_len * 8 - bit_offset)
         return BITFIELD_ERR_RANGE;
 
     uint32_t result = 0;
@@ -39,7 +39,7 @@ int bitfield_set(uint8_t *data, size_t data_len,
         return BITFIELD_ERR_NULL;
     if (bit_count == 0 || bit_count > 32)
         return BITFIELD_ERR_WIDTH;
-    if ((bit_offset + bit_count + 7) / 8 > data_len)
+    if (bit_offset > data_len * 8 || bit_count > data_len * 8 - bit_offset)
         return BITFIELD_ERR_RANGE;
 
     for (size_t i = 0; i < bit_count; i++) {

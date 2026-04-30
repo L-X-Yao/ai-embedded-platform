@@ -53,6 +53,7 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte)
 
 uint16_t crc16_modbus(const uint8_t *data, size_t len)
 {
+    if (!data) return CRC16_MODBUS_INIT;
     uint16_t crc = CRC16_MODBUS_INIT;
     for (size_t i = 0; i < len; i++) {
         crc = (uint16_t)((crc >> 8) ^ crc16_modbus_table[(crc ^ data[i]) & 0xFF]);

@@ -52,8 +52,7 @@ void log_dedup_sink(void *ctx, const char *line, size_t len) {
     log_dedup_t *d = (log_dedup_t *)ctx;
     if (!d || !d->inner_fn || !line || len == 0) return;
 
-    size_t cmp_len = len < LOG_DEDUP_LINE_MAX - 1 ? len : LOG_DEDUP_LINE_MAX - 1;
-    if (d->last_len > 0 && lines_equal(d->last_line, d->last_len, line, cmp_len)) {
+    if (d->last_len > 0 && lines_equal(d->last_line, d->last_len, line, len)) {
         d->repeat_count++;
         d->total_suppressed++;
         return;

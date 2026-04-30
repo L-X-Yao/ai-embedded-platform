@@ -25,9 +25,8 @@ void log_rate_init(log_rate_t *r, log_rate_output_fn inner_fn, void *inner_ctx,
 static void refill(log_rate_t *r, uint32_t now) {
     uint32_t elapsed = now - r->last_refill_ms;
     if (elapsed >= r->refill_interval_ms) {
-        uint32_t intervals = elapsed / r->refill_interval_ms;
         r->tokens = r->max_tokens;
-        r->last_refill_ms += intervals * r->refill_interval_ms;
+        r->last_refill_ms = now - (elapsed % r->refill_interval_ms);
     }
 }
 

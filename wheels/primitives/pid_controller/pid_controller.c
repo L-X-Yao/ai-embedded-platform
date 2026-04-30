@@ -95,6 +95,10 @@ pid_controller_err_t pid_controller_set_output_limits(pid_controller_t *ctx,
     {
         return PID_CONTROLLER_ERR_PARAM;
     }
+    if (min > max)
+    {
+        return PID_CONTROLLER_ERR_PARAM;
+    }
     ctx->cfg.output_min = min;
     ctx->cfg.output_max = max;
     return PID_CONTROLLER_OK;
