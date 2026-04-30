@@ -4,14 +4,17 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
-## Fixed in R3-R8 (do NOT re-report)
+## Fixed in R3-R9 (do NOT re-report)
 
 ### L0 Primitives
 - `bitfield`: overflow-safe range check (subtraction form), UINT32_C(1) shifts
 - `crc16`: NULL guard in crc16_modbus
 - `byte_buffer`: uint16 signed promotion
 - `checksum`: fletcher-16 mod-255 final normalization
-- `cli_parser`: CRLF double-prompt fix (last_was_cr flag)
+- `cli_parser`: CRLF double-prompt fix (last_was_cr flag); error enum explicit negative values (was auto-increment positive)
+- `log`: log_emit NULL guard on fmt parameter
+- `log_rtt`: size_t→unsigned truncation guard before HAL write
+- `log_flash`: sector_size type changed from size_t to uint32_t (consistent with flash address space)
 - `event_queue`: push/pop/is_full guard against capacity=0/buf=NULL
 - `kvs`: test mock bounds checking
 - `log`: NUL terminator clamp (pos > sizeof(buf)-2)
@@ -29,7 +32,7 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `median_filter`: even window upper-middle (documented design)
 
 ### L1 Drivers
-- `bmp280`: STATUS polling + timeout + osrs mask + calibration 24 bytes (not 26)
+- `bmp280`: STATUS polling + timeout + osrs mask + calibration 24 bytes (not 26); osrs_t/osrs_p enum range validation
 - `sht30`: delay_ms callback; NULL check on HAL write/read
 - `hmc5883l`/`mpu6050`: const on read functions
 - `mpu6050`: accel/gyro range enum validation
@@ -37,21 +40,25 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `gpio_led`: uint32_t timing fields + uint32_t locals
 - `bh1750`: enum validation
 - `qmc5883p`: NULL check on HAL function pointers
-- `w25qxx`: BUSY_TIMEOUT promoted to configurable macro
+- `w25qxx`: BUSY_TIMEOUT promoted to configurable macro; HAL fn ptr (cs_low/cs_high/xfer) NULL validation in init
 - `rotary_encoder`: renamed to rotary_encoder_* prefix
-- `ads1115`: PGA scale 32767→32768
-- `ws2812`: validate 4 HAL function pointers
+- `ads1115`: PGA scale 32767→32768; pga/mux/rate enum range validation in init
+- `ws2812`: validate 4 HAL function pointers; ws2812_encode_grb NULL guard on all 3 pointers
 - `oled_ssd1306`: validate write_cmd/write_data in init
+- `xgzp6816d`: HAL fn ptr (write/read) NULL validation in probe
+- `gpio_button`: hold_cnt/idle_cnt uint32_t saturation (prevent wrap-around re-trigger)
+- `hmc5883l`: rate/gain enum range validation in init
+- `servo`: set_pulse bounds check against configured min/max pulse
 
 ### L2 Protocols
 - `websocket_frame`: SIZE_MAX overflow (parse+build), RSV bits, control frame validation, reserved opcodes 3-7/0xB-0xF, WS_ERR_OVERFLOW for oversized, NULL payload+nonzero len
 - `coap_packet`: delta=14 uint32, subtraction-safe bounds, opt_num overflow, C++ keyword (class→cls), ascending order guard, value_len UINT16_MAX, NULL options, bare payload marker rejection
-- `mqtt_packet`: payload_len size_t, 4th-byte continuation, topic_len guards (publish+subscribe+put_str), QoS overflow with extra, size_t total, QoS>2 rejection, parse_publish payload_len wrap, password-without-username, remaining_length>268M rejection
-- `nmea_parser`: checksum verification in parse, 16 test checksums fixed
-- `http_parser`: HTTP_ERR_NOT_FOUND, version digit+dot validation, OWS tab stripping
-- `ota_ab`: flash fn NULL checks, max_boot_count=0, params_size minimum
+- `mqtt_packet`: payload_len size_t, 4th-byte continuation, topic_len guards (publish+subscribe+put_str), QoS overflow with extra, size_t total, QoS>2 rejection, parse_publish payload_len wrap, password-without-username, remaining_length>268M rejection; put_str return value checked (prevent buffer underwrite); encode/decode_remaining_length NULL guard on buf
+- `nmea_parser`: checksum verification in parse, 16 test checksums fixed; parse_time/parse_date digit validation
+- `http_parser`: HTTP_ERR_NOT_FOUND, version digit+dot validation, OWS tab stripping; status code must be exactly 3 digits (RFC 7230)
+- `ota_ab`: flash fn NULL checks, max_boot_count=0, params_size minimum; ota_ab_crc32 NULL guard on data
 - `at_command`: empty expected guard, strlen UINT16_MAX guard
-- `modbus_rtu`: byte_count>250, register address wrap guard (read+write)
+- `modbus_rtu`: byte_count>250, register address wrap guard (read+write); master_read_regs/master_write_reg buf NULL guards
 - `ncp5623_parser`: idx sentinel prevents stale re-trigger
 
 ### Infrastructure
@@ -88,5 +95,4 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `http_parser`: HTTP_ERR_TOO_MANY (>16 headers) untested
 - `modbus_rtu`: MODBUS_EX_ILLEGAL_DATA_ADDR never emitted/tested
 - `ota_ab`: OTA_AB_ERR_CRC and OTA_AB_ERR_PARAMS untested
-- `nmea_parser`: parse_time/parse_date digit validation (MINOR)
 - `mqtt_packet`: build_connect per-string UINT16_MAX guards (theoretical in embedded)
