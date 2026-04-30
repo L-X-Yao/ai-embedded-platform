@@ -124,8 +124,8 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     }
 
     /* Level + module */
-    char lvl_char = ((int)level >= 0 && (int)level < (int)sizeof(LOG_LEVEL_CHAR))
-                    ? LOG_LEVEL_CHAR[(int)level] : '?';
+    char lvl_char = ((unsigned)level < sizeof(LOG_LEVEL_CHAR))
+                    ? LOG_LEVEL_CHAR[(unsigned)level] : '?';
     n = snprintf(buf + pos, (size_t)rem, "[%c] [%s] ",
                  lvl_char, module ? module : "-");
     if (n > 0) {
