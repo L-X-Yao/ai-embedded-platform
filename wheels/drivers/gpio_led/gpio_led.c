@@ -101,7 +101,7 @@ gpio_led_mode_t gpio_led_get_mode(const gpio_led_t *led)
 
 static void tick_blink(gpio_led_t *led, uint16_t dt_ms)
 {
-    uint16_t threshold;
+    uint32_t threshold;
 
     led->elapsed += dt_ms;
     threshold = (led->phase == 0U) ? led->on_ms : led->off_ms;
@@ -132,8 +132,8 @@ static void tick_blink(gpio_led_t *led, uint16_t dt_ms)
 
 static void tick_breathe(gpio_led_t *led, uint16_t dt_ms)
 {
-    uint16_t period = led->on_ms;
-    uint16_t half;
+    uint32_t period = led->on_ms;
+    uint32_t half;
     uint32_t level;
 
     if (period == 0U) {
