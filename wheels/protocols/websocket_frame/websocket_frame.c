@@ -30,6 +30,10 @@ ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame)
     if ((data[0] & 0x70) != 0)
         return WS_ERR_PROTOCOL;
 
+    uint8_t op = (uint8_t)frame->opcode;
+    if ((op >= 3 && op <= 7) || (op >= 0x0B))
+        return WS_ERR_PROTOCOL;
+
     bool is_control = (frame->opcode & 0x08) != 0;
     uint64_t payload_len;
     size_t hdr_len = 2;
@@ -77,6 +81,8 @@ ws_err_t ws_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
                         const uint8_t *payload, size_t payload_len)
 {
     if (!buf || !out_len)
+        return WS_ERR_PARAM;
+    if (!payload && payload_len > 0)
         return WS_ERR_PARAM;
 
     size_t hdr_len = 2;

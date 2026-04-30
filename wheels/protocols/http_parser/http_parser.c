@@ -101,7 +101,7 @@ http_err_t http_parse_request(const char *data, size_t len,
     p++;
     if (p + 8 > crlf) return HTTP_ERR_MALFORMED;
     if (memcmp(p, "HTTP/", 5) != 0) return HTTP_ERR_MALFORMED;
-    if (p[5] < '0' || p[5] > '9' || p[7] < '0' || p[7] > '9')
+    if (p[5] < '0' || p[5] > '9' || p[6] != '.' || p[7] < '0' || p[7] > '9')
         return HTTP_ERR_MALFORMED;
     req->version_major = p[5] - '0';
     req->version_minor = p[7] - '0';
@@ -148,7 +148,7 @@ http_err_t http_parse_response(const char *data, size_t len,
     const char *p = data;
     if (p + 9 > crlf) return HTTP_ERR_MALFORMED;
     if (memcmp(p, "HTTP/", 5) != 0) return HTTP_ERR_MALFORMED;
-    if (p[5] < '0' || p[5] > '9' || p[7] < '0' || p[7] > '9')
+    if (p[5] < '0' || p[5] > '9' || p[6] != '.' || p[7] < '0' || p[7] > '9')
         return HTTP_ERR_MALFORMED;
     resp->version_major = p[5] - '0';
     resp->version_minor = p[7] - '0';
