@@ -323,6 +323,78 @@ def parse_wishlist_names() -> list:
     return pattern.findall(text)
 
 
+STRAY_EXTENSIONS = {".log", ".o", ".obj", ".a", ".lib", ".elf", ".hex", ".bin",
+                    ".map", ".d", ".gcda", ".gcno", ".su", ".pyc"}
+ROOT_CONFIGS = {".clang-format", ".editorconfig"}
+
+
+def _git_tracked_files(directory: Path) -> set:
+    """Return set of git-tracked file paths (relative to repo) under directory."""
+    import subprocess
+    rel = str(directory.relative_to(REPO)).replace("\\", "/")
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--", f"{rel}/"],
+            capture_output=True, text=True, cwd=str(REPO)
+        )
+        return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+    except (OSError, subprocess.SubprocessError):
+        return set()
+
+
+def audit_projects() -> list:
+    """Lightweight scan of projects/ for stray or duplicate tracked files."""
+    issues = []
+    if not PROJECTS.is_dir():
+        return issues
+
+    tracked = _git_tracked_files(PROJECTS)
+
+    for proj_dir in sorted(PROJECTS.iterdir()):
+        if not proj_dir.is_dir() or proj_dir.name.startswith("."):
+            continue
+        proj_name = proj_dir.name
+
+        for cfg_name in ROOT_CONFIGS:
+            rel_path = f"projects/{proj_name}/{cfg_name}"
+            if rel_path not in tracked:
+                continue
+            cfg = proj_dir / cfg_name
+            root_cfg = REPO / cfg_name
+            if root_cfg.exists():
+                try:
+                    if cfg.read_bytes() == root_cfg.read_bytes():
+                        issues.append(
+                            f"{rel_path}: duplicate of repo root "
+                            f"(clang-format inherits upward, safe to delete)"
+                        )
+                except OSError:
+                    pass
+
+        for f in proj_dir.iterdir():
+            if not f.is_file():
+                continue
+            rel_path = f"projects/{proj_name}/{f.name}"
+            if rel_path not in tracked:
+                continue
+            if f.suffix in STRAY_EXTENSIONS:
+                issues.append(
+                    f"{rel_path}: build artifact tracked in git"
+                )
+            if f.suffix == ".py" and f.name != "__init__.py":
+                try:
+                    text = f.read_text(encoding="utf-8", errors="ignore")
+                    if re.search(r'[A-Z]:\\', text) or re.search(r'filepath\s*=\s*r"', text):
+                        issues.append(
+                            f"{rel_path}: "
+                            f"looks like a one-time script with hardcoded paths"
+                        )
+                except OSError:
+                    pass
+
+    return issues
+
+
 def main() -> int:
     if not WHEELS.is_dir():
         print(f"ERROR: wheels/ not found at {WHEELS}", file=sys.stderr)
@@ -572,6 +644,15 @@ def main() -> int:
             print(f"  [FAIL]  {n} listed in WISHLIST but already exists")
     else:
         print("  [ ok ]  no stale entries")
+
+    # --- Projects directory hygiene ---
+    print("\n=== Projects directory hygiene ===\n")
+    proj_issues = audit_projects()
+    for msg in proj_issues:
+        warnings.append(msg)
+        print(f"  [WARN]  {msg}")
+    if not proj_issues:
+        print("  [ ok ]  no stray files detected")
 
     # --- Consumer mapping summary ---
     print("\n=== Consumer mapping ===\n")
