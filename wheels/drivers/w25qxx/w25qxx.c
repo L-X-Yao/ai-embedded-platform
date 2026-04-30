@@ -64,7 +64,8 @@ static void send_addr(const w25qxx_spi_t *s, uint32_t addr)
 
 w25qxx_err_t w25qxx_init(const w25qxx_spi_t *spi, uint32_t *jedec_id_out)
 {
-    if (!spi) return W25QXX_ERR_SPI;
+    if (!spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
+        return W25QXX_ERR_SPI;
     spi->cs_low(spi->ctx);
     spi->xfer(spi->ctx, CMD_JEDEC_ID);
     uint8_t mfr = spi->xfer(spi->ctx, 0xFF);

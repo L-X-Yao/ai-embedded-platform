@@ -47,6 +47,8 @@ ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
         return ADS1115_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return ADS1115_ERR_PARAM;
+    if ((unsigned)cfg->mux > 7 || (unsigned)cfg->pga > 5 || (unsigned)cfg->rate > 7)
+        return ADS1115_ERR_PARAM;
     dev->i2c = *i2c;
     dev->cfg = *cfg;
     return ADS1115_OK;

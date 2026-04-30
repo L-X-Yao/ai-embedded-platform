@@ -44,6 +44,8 @@ servo_err_t servo_set_pulse(servo_t *dev, uint32_t pulse_us)
 {
     if (!dev)
         return SERVO_ERR_PARAM;
+    if (pulse_us < dev->cfg.min_pulse_us || pulse_us > dev->cfg.max_pulse_us)
+        return SERVO_ERR_PARAM;
     if (!dev->pwm.set_pulse_us(dev->pwm.ctx, pulse_us))
         return SERVO_ERR_HAL;
     return SERVO_OK;

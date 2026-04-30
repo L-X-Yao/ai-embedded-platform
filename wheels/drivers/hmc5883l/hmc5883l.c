@@ -31,6 +31,8 @@ hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
         return HMC5883L_ERR_PARAM;
     if (!i2c->write_reg || !i2c->read_regs)
         return HMC5883L_ERR_PARAM;
+    if ((unsigned)cfg->rate > 6 || (unsigned)cfg->gain > 7)
+        return HMC5883L_ERR_PARAM;
     dev->i2c = *i2c;
     dev->cfg = *cfg;
 
