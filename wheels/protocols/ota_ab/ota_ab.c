@@ -13,6 +13,7 @@
 
 uint32_t ota_ab_crc32(const uint8_t *data, uint32_t len)
 {
+    if (!data) return 0;
     uint32_t crc = 0xFFFFFFFFu;
     for (uint32_t i = 0; i < len; i++) {
         crc ^= data[i];

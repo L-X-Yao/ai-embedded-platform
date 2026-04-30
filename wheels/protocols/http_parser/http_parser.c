@@ -161,6 +161,7 @@ http_err_t http_parse_response(const char *data, size_t len,
         p++;
         digits++;
     }
+    if (digits != 3) return HTTP_ERR_MALFORMED;
     if (p < crlf && *p == ' ') p++;
     resp->reason = p;
     resp->reason_len = (size_t)(crlf - p);

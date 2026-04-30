@@ -33,6 +33,7 @@ static uint16_t get_u16(const uint8_t *buf)
 
 int mqtt_packet_encode_remaining_length(uint8_t *buf, uint32_t length)
 {
+    if (!buf) return -1;
     if (length > 268435455u) return -1;
     int i = 0;
     do
@@ -48,6 +49,7 @@ int mqtt_packet_encode_remaining_length(uint8_t *buf, uint32_t length)
 uint32_t mqtt_packet_decode_remaining_length(const uint8_t *buf, size_t len,
                                              int *bytes_used)
 {
+    if (!buf) { if (bytes_used) *bytes_used = 0; return 0; }
     uint32_t value = 0;
     uint32_t multiplier = 1;
     int i = 0;
@@ -104,12 +106,23 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
     if (total > buf_size) return MQTT_PACKET_ERR_SIZE;
 
     int pos = 0;
-    buf[pos++] = (MQTT_CONNECT << 4);
+    buf[pos++] = (uint8_t)(MQTT_CONNECT << 4);
     memcpy(buf + pos, rl_buf, (size_t)rl_len); pos += rl_len;
     memcpy(buf + pos, var_header, 10); pos += 10;
-    pos += put_str(buf + pos, opts->client_id);
-    if (opts->username) pos += put_str(buf + pos, opts->username);
-    if (opts->password) pos += put_str(buf + pos, opts->password);
+    int n;
+    n = put_str(buf + pos, opts->client_id);
+    if (n < 0) return MQTT_PACKET_ERR_SIZE;
+    pos += n;
+    if (opts->username) {
+        n = put_str(buf + pos, opts->username);
+        if (n < 0) return MQTT_PACKET_ERR_SIZE;
+        pos += n;
+    }
+    if (opts->password) {
+        n = put_str(buf + pos, opts->password);
+        if (n < 0) return MQTT_PACKET_ERR_SIZE;
+        pos += n;
+    }
 
     return pos;
 }

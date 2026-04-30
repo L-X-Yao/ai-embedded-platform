@@ -71,9 +71,14 @@ static float parse_lon(const char *raw, char ew)
     return result;
 }
 
+static int is_digit(char c) { return c >= '0' && c <= '9'; }
+
 static void parse_time(const char *field, nmea_data_t *d)
 {
     if (strlen(field) < 6) return;
+    if (!is_digit(field[0]) || !is_digit(field[1]) ||
+        !is_digit(field[2]) || !is_digit(field[3]) ||
+        !is_digit(field[4]) || !is_digit(field[5])) return;
     d->hour = (uint8_t)((field[0] - '0') * 10 + (field[1] - '0'));
     d->min  = (uint8_t)((field[2] - '0') * 10 + (field[3] - '0'));
     d->sec  = (uint8_t)((field[4] - '0') * 10 + (field[5] - '0'));
@@ -82,6 +87,9 @@ static void parse_time(const char *field, nmea_data_t *d)
 static void parse_date(const char *field, nmea_data_t *d)
 {
     if (strlen(field) < 6) return;
+    if (!is_digit(field[0]) || !is_digit(field[1]) ||
+        !is_digit(field[2]) || !is_digit(field[3]) ||
+        !is_digit(field[4]) || !is_digit(field[5])) return;
     d->day   = (uint8_t)((field[0] - '0') * 10 + (field[1] - '0'));
     d->month = (uint8_t)((field[2] - '0') * 10 + (field[3] - '0'));
     uint8_t yy = (uint8_t)((field[4] - '0') * 10 + (field[5] - '0'));
