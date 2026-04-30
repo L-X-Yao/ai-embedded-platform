@@ -7,6 +7,7 @@
  */
 
 #include "log_rtt.h"
+#include <limits.h>
 
 void log_rtt_init(log_rtt_t *r, log_rtt_write_fn write, void *ctx,
                   unsigned channel) {
@@ -19,5 +20,6 @@ void log_rtt_init(log_rtt_t *r, log_rtt_write_fn write, void *ctx,
 void log_rtt_sink(void *ctx, const char *line, size_t len) {
     log_rtt_t *r = (log_rtt_t *)ctx;
     if (!r || !r->write || !line || len == 0) return;
+    if (len > UINT_MAX) len = UINT_MAX;
     r->write(r->ctx, r->channel, line, (unsigned)len);
 }
