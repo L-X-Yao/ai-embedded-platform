@@ -85,11 +85,11 @@ for wd in "${WHEEL_DIRS[@]}"; do
 
     if [[ -n "$SED_EXPR" ]]; then
         pattern="${FILE_GLOB:-*.[ch]}"
-        files=$(find "$wd" -maxdepth 1 -name "$pattern" 2>/dev/null)
-        [[ -z "$files" ]] && continue
+        mapfile -t files < <(find "$wd" -maxdepth 1 -name "$pattern" 2>/dev/null)
+        [[ ${#files[@]} -eq 0 ]] && continue
 
         changed=false
-        for f in $files; do
+        for f in "${files[@]}"; do
             if $DRY_RUN; then
                 if sed -n "${SED_EXPR}p" "$f" | grep -q .; then
                     echo "  [would fix] $(basename "$f") in $name"

@@ -79,11 +79,15 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
         INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
     fi
     # Cross-wheel dependencies: add include paths for known deps
-    if grep -q '#include "crc16.h"' "$wheel_dir"/*.c 2>/dev/null; then
-        INCLUDES="$INCLUDES -I$REPO/wheels/primitives/crc16"
-    fi
-    if grep -q '#include "fal.h"' "$wheel_dir"/*.c 2>/dev/null; then
-        INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal/vendor/inc"
+    local root_c_files
+    root_c_files=$(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null || true)
+    if [[ -n "$root_c_files" ]]; then
+        if echo "$root_c_files" | xargs grep -lq '#include "crc16.h"' 2>/dev/null; then
+            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/crc16"
+        fi
+        if echo "$root_c_files" | xargs grep -lq '#include "fal.h"' 2>/dev/null; then
+            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal/vendor/inc"
+        fi
     fi
 
     # Compile each source

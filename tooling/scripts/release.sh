@@ -38,7 +38,14 @@ while [[ $# -gt 0 ]]; do
         --list)    LIST=true; shift ;;
         --current) CURRENT=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
-        --from)    FROM="$2"; shift 2 ;;
+        --from)
+            [[ $# -lt 2 ]] && { echo "Error: --from requires a version argument"; exit 1; }
+            FROM="$2"
+            if ! echo "$FROM" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+                echo "Error: --from must be vMAJOR.MINOR.PATCH (got: $FROM)"
+                exit 1
+            fi
+            shift 2 ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0 ;;
