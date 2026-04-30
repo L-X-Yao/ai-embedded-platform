@@ -156,6 +156,17 @@ TEST(test_start_conversion)
     ASSERT_EQ(ds18b20_start_conversion(&dev), DS18B20_OK);
 }
 
+TEST(test_set_resolution)
+{
+    ds18b20_t dev;
+    mock_presence = true;
+    ds18b20_init(&dev, &mock_ow);
+    ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_9BIT), DS18B20_OK);
+    ASSERT_EQ(ds18b20_set_resolution(NULL, DS18B20_RES_12BIT), DS18B20_ERR_PARAM);
+    mock_presence = false;
+    ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_12BIT), DS18B20_ERR_NO_DEVICE);
+}
+
 TEST_MAIN("ds18b20")
     RUN(test_init_null);
     RUN(test_read_25c);
@@ -166,4 +177,5 @@ TEST_MAIN("ds18b20")
     RUN(test_read_rom);
     RUN(test_crc8_known_vector);
     RUN(test_start_conversion);
+    RUN(test_set_resolution);
 TEST_MAIN_END()
