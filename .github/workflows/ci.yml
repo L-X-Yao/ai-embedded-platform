@@ -11,6 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ---- Always-run: audit + tooling tests ----
+
   wheel-audit:
     name: wheel audit (orphan + WISHLIST drift)
     runs-on: ubuntu-24.04
@@ -25,8 +27,111 @@ jobs:
       - name: Audit wheels
         run: python3 tooling/scripts/audit_wheels.py
 
+  # ---- Change detection ----
+
+  detect-changes:
+    name: detect changed wheels
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      wheel-matrix: ${{ steps.detect.outputs.matrix }}
+      has-wheels: ${{ steps.detect.outputs.has_wheels }}
+      harness-changed: ${{ steps.detect.outputs.harness_changed }}
+      flybox-changed: ${{ steps.detect.outputs.flybox_changed }}
+      log-changed: ${{ steps.detect.outputs.log_changed }}
+      crc16-changed: ${{ steps.detect.outputs.crc16_changed }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          # Fallback for first push or force-push
+          if ! git cat-file -e "$BASE" 2>/dev/null; then
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
+          fi
+
+          CHANGED=""
+          if [ -n "$BASE" ]; then
+            CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || echo "")
+          fi
+
+          # If harness or audit changed, test everything
+          HARNESS_CHANGED="false"
+          if echo "$CHANGED" | grep -qE "tooling/test/|tooling/scripts/audit"; then
+            HARNESS_CHANGED="true"
+          fi
+          echo "harness_changed=$HARNESS_CHANGED" >> "$GITHUB_OUTPUT"
+
+          # Detect changed wheels → build matrix
+          MATRIX="["
+          FIRST=true
+
+          for test_cmake in wheels/*/*/test/CMakeLists.txt; do
+            wheel_dir=$(dirname "$(dirname "$test_cmake")")
+            name=$(basename "$wheel_dir")
+            test_dir="${wheel_dir}/test"
+
+            # Skip log (standalone job) and crc16 (standalone job)
+            [ "$name" = "log" ] && continue
+
+            # Include if: harness changed, or wheel files changed, or no BASE (full run)
+            INCLUDE=false
+            if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ]; then
+              INCLUDE=true
+            elif echo "$CHANGED" | grep -q "^${wheel_dir}/"; then
+              INCLUDE=true
+            fi
+
+            if [ "$INCLUDE" = "true" ]; then
+              if [ "$FIRST" = "true" ]; then FIRST=false; else MATRIX="$MATRIX,"; fi
+              MATRIX="$MATRIX{\"name\":\"$name\",\"dir\":\"$test_dir\"}"
+            fi
+          done
+          MATRIX="$MATRIX]"
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          if [ "$MATRIX" = "[]" ]; then
+            echo "has_wheels=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_wheels=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Standalone job triggers
+          FLYBOX="false"
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^projects/flybox/|^tooling/scripts/gd32f4xx_debug/"; then
+            FLYBOX="true"
+          fi
+          echo "flybox_changed=$FLYBOX" >> "$GITHUB_OUTPUT"
+
+          LOG="false"
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -q "^wheels/primitives/log/"; then
+            LOG="true"
+          fi
+          echo "log_changed=$LOG" >> "$GITHUB_OUTPUT"
+
+          CRC16="false"
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -q "^wheels/primitives/crc16/"; then
+            CRC16="true"
+          fi
+          echo "crc16_changed=$CRC16" >> "$GITHUB_OUTPUT"
+
+          echo "::notice::Changed wheels: $(echo $MATRIX | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED"
+
+  # ---- Standalone wheel jobs (special build requirements) ----
+
   log-wheel:
     name: log wheel (linux64 sim)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.log-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
@@ -65,6 +170,8 @@ jobs:
 
   crc16-wheel:
     name: crc16 wheel (host C99 + pytest)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.crc16-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
@@ -98,62 +205,18 @@ jobs:
       - name: Run pytest
         run: python3 -m pytest test_crc16.py -v
 
+  # ---- Dynamic wheel test matrix (only changed wheels) ----
+
   wheel-test:
     name: ${{ matrix.name }} wheel (host C99)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-wheels == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { name: w25qxx,         dir: wheels/drivers/w25qxx/test }
-          - { name: qmi8658a,       dir: wheels/drivers/qmi8658a/test }
-          - { name: qmc5883p,       dir: wheels/drivers/qmc5883p/test }
-          - { name: xgzp6816d,      dir: wheels/drivers/xgzp6816d/test }
-          - { name: gpio_button,    dir: wheels/drivers/gpio_button/test }
-          - { name: gpio_led,       dir: wheels/drivers/gpio_led/test }
-          - { name: ws2812,         dir: wheels/drivers/ws2812/test }
-          - { name: ncp5623_parser, dir: wheels/protocols/ncp5623_parser/test }
-          - { name: nmea_parser, dir: wheels/protocols/nmea_parser/test }
-          - { name: ota_ab,      dir: wheels/protocols/ota_ab/test }
-          - { name: at_command,     dir: wheels/protocols/at_command/test }
-          - { name: modbus_rtu,     dir: wheels/protocols/modbus_rtu/test }
-          - { name: fal,            dir: wheels/primitives/fal/test }
-          - { name: kvs,            dir: wheels/primitives/kvs/test }
-          - { name: cli_parser,    dir: wheels/primitives/cli_parser/test }
-          - { name: mahony_ahrs,  dir: wheels/primitives/mahony_ahrs/test }
-          - { name: mag_cal,     dir: wheels/primitives/mag_cal/test }
-          - { name: pid_controller, dir: wheels/primitives/pid_controller/test }
-          - { name: moving_average, dir: wheels/primitives/moving_average/test }
-          - { name: state_machine,  dir: wheels/primitives/state_machine/test }
-          - { name: soft_timer,     dir: wheels/primitives/soft_timer/test }
-          - { name: bmp280,         dir: wheels/drivers/bmp280/test }
-          - { name: sht30,          dir: wheels/drivers/sht30/test }
-          - { name: mpu6050,        dir: wheels/drivers/mpu6050/test }
-          - { name: oled_ssd1306,   dir: wheels/drivers/oled_ssd1306/test }
-          - { name: mqtt_packet,    dir: wheels/protocols/mqtt_packet/test }
-          - { name: byte_buffer,    dir: wheels/primitives/byte_buffer/test }
-          - { name: event_queue,    dir: wheels/primitives/event_queue/test }
-          - { name: crc32,          dir: wheels/primitives/crc32/test }
-          - { name: bitfield,       dir: wheels/primitives/bitfield/test }
-          - { name: retry,          dir: wheels/primitives/retry/test }
-          - { name: timeout,        dir: wheels/primitives/timeout/test }
-          - { name: dht11,          dir: wheels/drivers/dht11/test }
-          - { name: ads1115,        dir: wheels/drivers/ads1115/test }
-          - { name: bh1750,         dir: wheels/drivers/bh1750/test }
-          - { name: ds18b20,        dir: wheels/drivers/ds18b20/test }
-          - { name: max7219,        dir: wheels/drivers/max7219/test }
-          - { name: hmc5883l,       dir: wheels/drivers/hmc5883l/test }
-          - { name: http_parser,    dir: wheels/protocols/http_parser/test }
-          - { name: websocket_frame, dir: wheels/protocols/websocket_frame/test }
-          - { name: coap_packet,    dir: wheels/protocols/coap_packet/test }
-          - { name: servo,          dir: wheels/drivers/servo/test }
-          - { name: rotary_encoder, dir: wheels/drivers/rotary_encoder/test }
-          - { name: median_filter,  dir: wheels/primitives/median_filter/test }
-          - { name: checksum,       dir: wheels/primitives/checksum/test }
-          - { name: debounce,       dir: wheels/primitives/debounce/test }
-          - { name: led_pattern,    dir: wheels/primitives/led_pattern/test }
-          - { name: crc16,          dir: wheels/primitives/crc16/test }
+        include: ${{ fromJson(needs.detect-changes.outputs.wheel-matrix) }}
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -173,8 +236,12 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
+  # ---- Project tests ----
+
   flybox-tests:
     name: flybox project tests (host)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.flybox-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -200,86 +267,26 @@ jobs:
 
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.flybox-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install ARM toolchain
+      - name: Install arm-none-eabi-gcc
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            ninja-build \
-            gcc-arm-none-eabi \
-            binutils-arm-none-eabi \
-            libnewlib-arm-none-eabi
+          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
+          sudo mkdir -p /opt/gcc-arm
+          sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
+          echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
-      - name: Assert GCC ARM major version
-        # Soft-pin: don't lock the apt version string (brittle), but fail CI
-        # if a runner image upgrade brings in GCC 14+. GCC version directly
-        # affects stack frame size, so the stack_analyzer baseline is only
-        # comparable across the same major. When this assert fails, recalibrate
-        # stack_tasks.flybox.json and bump the version here in the same commit.
+      - name: Build flybox firmware
+        working-directory: projects/flybox/vsf_build
         run: |
-          set -e
-          GCC_VER=$(arm-none-eabi-gcc -dumpversion)
-          echo "arm-none-eabi-gcc version: $GCC_VER"
-          case "$GCC_VER" in
-            13.*) echo "[OK] GCC 13.x as expected" ;;
-            *)    echo "[FAIL] expected GCC 13.x, got $GCC_VER — recalibrate stack baseline"; exit 1 ;;
-          esac
-
-      - name: Stage GD32 vendor SDK from flybox/third_party
-        # The SDK headers live under projects/flybox/third_party/ (tracked) but
-        # vsf-addon's drivers reference them via ../common/vendor/Include/.
-        # Locally the user copies the SDK into vendor/Include manually
-        # (vendor/.gitignore = '*'); CI does the same copy non-interactively.
-        #
-        # IMPORTANT: copy ONLY the GD32-specific files (gd32f4xx.h, system_gd32f4xx.h,
-        # gd32f4xx_*.h peripherals) — NOT the CMSIS 4 core_cm*.h headers from
-        # third_party/CMSIS/. gd32f4xx.h does `#include "core_cm4.h"` (quotes,
-        # same-dir search). If CMSIS 4 core_cm4.h sits next to it, that wins
-        # and pulls in CMSIS 4 core_cmInstr.h / core_cmFunc.h which don't
-        # exist anywhere reachable. Locally vendor/Include omits the core files
-        # entirely so the same-dir search fails and the include falls through
-        # to VSF's bundled CMSIS 5 (utilities/compiler/arm/3rd-party/CMSIS/...).
-        run: |
-          SDK_DST=vsf-addon/hal/driver/gd/GD32F4XX/common/vendor
-          mkdir -p "$SDK_DST/Include"
-          cp projects/flybox/third_party/CMSIS/gd32f4xx.h        "$SDK_DST/Include/"
-          cp projects/flybox/third_party/CMSIS/system_gd32f4xx.h "$SDK_DST/Include/"
-          cp projects/flybox/third_party/gd32_periph/Include/*.h "$SDK_DST/Include/"
-          echo "Total headers: $(ls $SDK_DST/Include/ | wc -l)"
-
-      - name: Configure
-        run: cmake -GNinja -S projects/flybox/vsf_build -B build
-
-      - name: Build
-        run: cmake --build build
-
-      - name: Verify outputs + size
-        run: |
-          test -f build/flybox_vsf.elf
-          test -f build/flybox_vsf.bin
-          test -f build/flybox_vsf.hex
-          arm-none-eabi-size build/flybox_vsf.elf
-          arm-none-eabi-readelf -h build/flybox_vsf.elf | grep -q "ARM"
-          echo "ELF header: valid ARM binary"
-
-      - name: Stack analysis (fail on overflow)
-        run: |
-          python3 tooling/scripts/gd32f4xx_debug/stack_analyzer.py \
-            build \
-            --task-config tooling/scripts/gd32f4xx_debug/stack_tasks.flybox.json \
-            --top 30
-
-      - name: Upload firmware artifacts
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: flybox-firmware-${{ github.sha }}
-          path: |
-            build/flybox_vsf.elf
-            build/flybox_vsf.bin
-            build/flybox_vsf.hex
-          retention-days: 14
+          cmake -GNinja -S . -B build \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vsf/script/cmake/gnuarmemb.cmake
+          cmake --build build
