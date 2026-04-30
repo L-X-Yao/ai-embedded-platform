@@ -7,7 +7,10 @@ add_executable(test_dht11
     test_dht11.c
     ../dht11.c
 )
-target_include_directories(test_dht11 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_dht11 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_dht11 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

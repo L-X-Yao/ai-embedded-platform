@@ -10,6 +10,7 @@ add_executable(test_sht30
 
 target_include_directories(test_sht30 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_sht30 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_sht30 PRIVATE m)

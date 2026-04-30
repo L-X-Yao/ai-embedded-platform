@@ -1,6 +1,6 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../at_command.h"
+#include "at_command.h"
 
 /* ---------- mock HAL ---------- */
 
@@ -48,17 +48,6 @@ static void urc_reset(void)
 }
 
 /* ---------- helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
 static at_evt_type_t feed_string(at_cmd_t *at, const char *s, at_evt_t *evt)
 {
     at_evt_type_t last = AT_EVT_NONE;
@@ -73,105 +62,89 @@ static at_evt_type_t feed_string(at_cmd_t *at, const char *s, at_evt_t *evt)
 
 /* ---------- tests ---------- */
 
-static void test_init(void)
+TEST(test_init)
 {
     at_cmd_t at;
-
-    printf("test_init\n");
     at_cmd_init(&at, &mock_hal);
-    ASSERT(at.waiting == 0, "not waiting after init");
-    ASSERT(at.urc_count == 0, "no URCs after init");
-    ASSERT(strlen(at_cmd_get_matched(&at)) == 0, "no match after init");
+    ASSERT_TRUE(at.waiting == 0);
+    ASSERT_TRUE(at.urc_count == 0);
+    ASSERT_TRUE(strlen(at_cmd_get_matched(&at)) == 0);
 }
 
-static void test_send_command(void)
+TEST(test_send_command)
 {
     at_cmd_t at;
-
-    printf("test_send_command\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send(&at, "AT");
 
-    ASSERT(tx_len == 4, "4 bytes sent (AT\\r\\n)");
-    ASSERT(memcmp(tx_buf, "AT\r\n", 4) == 0, "correct framing");
+    ASSERT_TRUE(tx_len == 4);
+    ASSERT_TRUE(memcmp(tx_buf, "AT\r\n", 4) == 0);
 }
 
-static void test_send_with_args(void)
+TEST(test_send_with_args)
 {
     at_cmd_t at;
-
-    printf("test_send_with_args\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send(&at, "AT+CSQ");
 
-    ASSERT(tx_len == 8, "8 bytes");
-    ASSERT(memcmp(tx_buf, "AT+CSQ\r\n", 8) == 0, "AT+CSQ framing");
+    ASSERT_TRUE(tx_len == 8);
+    ASSERT_TRUE(memcmp(tx_buf, "AT+CSQ\r\n", 8) == 0);
 }
 
-static void test_ok_response(void)
+TEST(test_ok_response)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_ok_response\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = feed_string(&at, "OK\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "OK event");
-    ASSERT(strcmp(at_cmd_get_matched(&at), "OK") == 0, "matched line is OK");
-    ASSERT(at.waiting == 0, "no longer waiting");
+    ASSERT_TRUE(r == AT_EVT_OK);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(&at), "OK") == 0);
+    ASSERT_TRUE(at.waiting == 0);
 }
 
-static void test_response_with_prefix(void)
+TEST(test_response_with_prefix)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_response_with_prefix\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "+CSQ:");
 
     at_evt_type_t r = feed_string(&at, "+CSQ: 18,0\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "matched +CSQ:");
-    ASSERT(strcmp(at_cmd_get_matched(&at), "+CSQ: 18,0") == 0, "full line captured");
+    ASSERT_TRUE(r == AT_EVT_OK);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(&at), "+CSQ: 18,0") == 0);
 }
 
-static void test_error_response(void)
+TEST(test_error_response)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_error_response\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = feed_string(&at, "ERROR\r\n", &evt);
-    ASSERT(r == AT_EVT_ERROR, "ERROR event");
-    ASSERT(at.waiting == 0, "no longer waiting");
+    ASSERT_TRUE(r == AT_EVT_ERROR);
+    ASSERT_TRUE(at.waiting == 0);
 }
 
-static void test_cme_error(void)
+TEST(test_cme_error)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_cme_error\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = feed_string(&at, "+CME ERROR: 10\r\n", &evt);
-    ASSERT(r == AT_EVT_ERROR, "CME ERROR detected");
+    ASSERT_TRUE(r == AT_EVT_ERROR);
 }
 
-static void test_prev_line(void)
+TEST(test_prev_line)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_prev_line\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
@@ -179,47 +152,41 @@ static void test_prev_line(void)
     feed_string(&at, "862104025396754\r\n", &evt);
     feed_string(&at, "OK\r\n", &evt);
 
-    ASSERT(strcmp(at_cmd_get_prev_line(&at), "862104025396754") == 0, "prev line is IMEI");
-    ASSERT(strcmp(at_cmd_get_matched(&at), "OK") == 0, "matched is OK");
+    ASSERT_TRUE(strcmp(at_cmd_get_prev_line(&at), "862104025396754") == 0);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(&at), "OK") == 0);
 }
 
-static void test_urc_dispatch(void)
+TEST(test_urc_dispatch)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_urc_dispatch\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
 
     at_evt_type_t r = feed_string(&at, "RDY\r\n", &evt);
-    ASSERT(r == AT_EVT_URC, "URC event");
-    ASSERT(urc_count == 1, "handler called once");
-    ASSERT(strcmp(urc_captured, "RDY") == 0, "URC line captured");
+    ASSERT_TRUE(r == AT_EVT_URC);
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(strcmp(urc_captured, "RDY") == 0);
 }
 
-static void test_urc_with_prefix(void)
+TEST(test_urc_with_prefix)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_urc_with_prefix\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "+CGREG:", urc_handler, NULL);
 
     feed_string(&at, "+CGREG: 0,1\r\n", &evt);
-    ASSERT(urc_count == 1, "CGREG handler called");
-    ASSERT(strcmp(urc_captured, "+CGREG: 0,1") == 0, "full URC line");
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(strcmp(urc_captured, "+CGREG: 0,1") == 0);
 }
 
-static void test_urc_during_wait(void)
+TEST(test_urc_during_wait)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_urc_during_wait\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "$GP", urc_handler, NULL);
@@ -227,76 +194,66 @@ static void test_urc_during_wait(void)
 
     /* NMEA URC while waiting for CSQ */
     feed_string(&at, "$GPRMC,123456,A,2345.6789,N,12345.6789,E,0.0,0.0,010126,,\r\n", &evt);
-    ASSERT(urc_count == 1, "URC dispatched during wait");
-    ASSERT(at.waiting == 1, "still waiting for response");
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(at.waiting == 1);
 
     /* actual response */
     at_evt_type_t r = feed_string(&at, "+CSQ: 20,0\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "response matched");
+    ASSERT_TRUE(r == AT_EVT_OK);
 }
 
-static void test_prompt(void)
+TEST(test_prompt)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_prompt\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, ">");
 
     at_evt_type_t r = at_cmd_feed(&at, '>', &evt);
-    ASSERT(r == AT_EVT_PROMPT, "prompt event");
-    ASSERT(at.waiting == 0, "no longer waiting");
-    ASSERT(at_cmd_get_matched(&at)[0] == '>', "matched is >");
+    ASSERT_TRUE(r == AT_EVT_PROMPT);
+    ASSERT_TRUE(at.waiting == 0);
+    ASSERT_TRUE(at_cmd_get_matched(&at)[0] == '>');
 }
 
-static void test_prompt_no_match_when_not_expected(void)
+TEST(test_prompt_no_match_when_not_expected)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_prompt_no_match_when_not_expected\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = at_cmd_feed(&at, '>', &evt);
-    ASSERT(r == AT_EVT_NONE, "no prompt match");
-    ASSERT(at.waiting == 1, "still waiting");
+    ASSERT_TRUE(r == AT_EVT_NONE);
+    ASSERT_TRUE(at.waiting == 1);
 }
 
-static void test_cancel(void)
+TEST(test_cancel)
 {
     at_cmd_t at;
-
-    printf("test_cancel\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
-    ASSERT(at.waiting == 1, "waiting");
+    ASSERT_TRUE(at.waiting == 1);
 
     at_cmd_cancel(&at);
-    ASSERT(at.waiting == 0, "cancelled");
+    ASSERT_TRUE(at.waiting == 0);
 }
 
-static void test_send_raw(void)
+TEST(test_send_raw)
 {
     at_cmd_t at;
-
-    printf("test_send_raw\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
 
     uint8_t data[] = {0x01, 0x02, 0x03};
     at_cmd_send_raw(&at, data, 3);
-    ASSERT(tx_len == 3, "3 raw bytes");
-    ASSERT(tx_buf[0] == 0x01 && tx_buf[2] == 0x03, "correct raw data");
+    ASSERT_TRUE(tx_len == 3);
+    ASSERT_TRUE(tx_buf[0] == 0x01 && tx_buf[2] == 0x03);
 }
 
-static void test_multiple_urc_handlers(void)
+TEST(test_multiple_urc_handlers)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_multiple_urc_handlers\n");
     urc_reset();
 
     at_cmd_init(&at, &mock_hal);
@@ -304,330 +261,286 @@ static void test_multiple_urc_handlers(void)
     at_cmd_register_urc(&at, "+PDP", (at_urc_cb_t)(void(*)(void))urc_handler, NULL);
 
     feed_string(&at, "RDY\r\n", &evt);
-    ASSERT(urc_count == 1, "first URC handler");
+    ASSERT_TRUE(urc_count == 1);
 
     feed_string(&at, "+PDP DEACT\r\n", &evt);
-    ASSERT(urc_count == 2, "second URC handler");
+    ASSERT_TRUE(urc_count == 2);
 }
 
-static void test_cr_stripping(void)
+TEST(test_cr_stripping)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_cr_stripping\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = feed_string(&at, "OK\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "OK matched");
-    ASSERT(strcmp(evt.line, "OK") == 0, "CR stripped");
+    ASSERT_TRUE(r == AT_EVT_OK);
+    ASSERT_TRUE(strcmp(evt.line, "OK") == 0);
 }
 
-static void test_empty_lines_ignored(void)
+TEST(test_empty_lines_ignored)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_empty_lines_ignored\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     /* empty lines before response */
     feed_string(&at, "\r\n\r\n", &evt);
-    ASSERT(at.waiting == 1, "still waiting after empty lines");
+    ASSERT_TRUE(at.waiting == 1);
 
     at_evt_type_t r = feed_string(&at, "OK\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "OK after empties");
+    ASSERT_TRUE(r == AT_EVT_OK);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
     at_evt_t evt;
-
-    printf("test_null_safety\n");
     at_cmd_init(NULL, &mock_hal);
     at_cmd_send(NULL, "AT");
     at_cmd_expect(NULL, "OK");
     at_cmd_cancel(NULL);
-    ASSERT(at_cmd_feed(NULL, 'A', &evt) == AT_EVT_NONE, "null feed");
-    ASSERT(at_cmd_register_urc(NULL, "X", urc_handler, NULL) == -1, "null register");
-    ASSERT(strcmp(at_cmd_get_matched(NULL), "") == 0, "null get_matched");
-    ASSERT(strcmp(at_cmd_get_prev_line(NULL), "") == 0, "null get_prev_line");
+    ASSERT_TRUE(at_cmd_feed(NULL, 'A', &evt) == AT_EVT_NONE);
+    ASSERT_TRUE(at_cmd_register_urc(NULL, "X", urc_handler, NULL) == -1);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(NULL), "") == 0);
+    ASSERT_TRUE(strcmp(at_cmd_get_prev_line(NULL), "") == 0);
 }
 
-static void test_cms_error(void)
+TEST(test_cms_error)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_cms_error\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     at_evt_type_t r = feed_string(&at, "+CMS ERROR: 305\r\n", &evt);
-    ASSERT(r == AT_EVT_ERROR, "CMS ERROR detected");
+    ASSERT_TRUE(r == AT_EVT_ERROR);
 }
 
-static void test_bare_newline(void)
+TEST(test_bare_newline)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_bare_newline\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "+CSQ:");
 
     at_evt_type_t r = feed_string(&at, "+CSQ: 15,0\n", &evt);
-    ASSERT(r == AT_EVT_OK, "bare LF triggers line processing");
-    ASSERT(strcmp(at_cmd_get_matched(&at), "+CSQ: 15,0") == 0, "matched without CR");
+    ASSERT_TRUE(r == AT_EVT_OK);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(&at), "+CSQ: 15,0") == 0);
 }
 
-static void test_urc_table_full(void)
+TEST(test_urc_table_full)
 {
     at_cmd_t at;
-
-    printf("test_urc_table_full\n");
     at_cmd_init(&at, &mock_hal);
 
     for (int i = 0; i < AT_CMD_MAX_URCS; i++) {
-        ASSERT(at_cmd_register_urc(&at, "X", urc_handler, NULL) == 0, "register ok");
+        ASSERT_TRUE(at_cmd_register_urc(&at, "X", urc_handler, NULL) == 0);
     }
-    ASSERT(at_cmd_register_urc(&at, "Y", urc_handler, NULL) == -1, "table full");
+    ASSERT_TRUE(at_cmd_register_urc(&at, "Y", urc_handler, NULL) == -1);
 }
 
-static void test_line_buffer_overflow(void)
+TEST(test_line_buffer_overflow)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_line_buffer_overflow\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     for (int i = 0; i < AT_CMD_LINE_SIZE + 100; i++) {
         at_cmd_feed(&at, 'A', &evt);
     }
-    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "buffer clamped at max");
+    ASSERT_TRUE(at.line_idx == AT_CMD_LINE_SIZE - 1);
 
     at_evt_type_t r = at_cmd_feed(&at, '\n', &evt);
-    ASSERT(r != AT_EVT_NONE, "overlong line still processed");
-    ASSERT(at.line_idx == 0, "idx reset after newline");
+    ASSERT_TRUE(r != AT_EVT_NONE);
+    ASSERT_TRUE(at.line_idx == 0);
 }
 
-static void test_reinit_clears_urcs(void)
+TEST(test_reinit_clears_urcs)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_reinit_clears_urcs\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
     at_cmd_expect(&at, "OK");
 
     at_cmd_init(&at, &mock_hal);
-    ASSERT(at.urc_count == 0, "URCs cleared after re-init");
-    ASSERT(at.waiting == 0, "not waiting after re-init");
+    ASSERT_TRUE(at.urc_count == 0);
+    ASSERT_TRUE(at.waiting == 0);
 
     feed_string(&at, "RDY\r\n", &evt);
-    ASSERT(urc_count == 0, "old URC handler not called after re-init");
+    ASSERT_TRUE(urc_count == 0);
 }
 
-static void test_line_exact_boundary(void)
+TEST(test_line_exact_boundary)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_line_exact_boundary\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
 
     for (int i = 0; i < AT_CMD_LINE_SIZE - 1; i++) {
         at_cmd_feed(&at, 'O', &evt);
     }
-    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "filled exactly to limit");
+    ASSERT_TRUE(at.line_idx == AT_CMD_LINE_SIZE - 1);
 
     at_cmd_feed(&at, 'X', &evt);
-    ASSERT(at.line_idx == AT_CMD_LINE_SIZE - 1, "one extra byte dropped");
+    ASSERT_TRUE(at.line_idx == AT_CMD_LINE_SIZE - 1);
 }
 
-static void test_consecutive_commands(void)
+TEST(test_consecutive_commands)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_consecutive_commands\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
 
     at_cmd_send(&at, "AT");
     at_cmd_expect(&at, "OK");
     feed_string(&at, "OK\r\n", &evt);
-    ASSERT(at.waiting == 0, "first cycle done");
+    ASSERT_TRUE(at.waiting == 0);
 
     at_cmd_send(&at, "AT+CSQ");
     at_cmd_expect(&at, "+CSQ:");
     at_evt_type_t r = feed_string(&at, "+CSQ: 20,0\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "second cycle matched");
-    ASSERT(strcmp(at_cmd_get_matched(&at), "+CSQ: 20,0") == 0, "second match correct");
+    ASSERT_TRUE(r == AT_EVT_OK);
+    ASSERT_TRUE(strcmp(at_cmd_get_matched(&at), "+CSQ: 20,0") == 0);
 }
 
-static void test_register_urc_null_cb(void)
+TEST(test_register_urc_null_cb)
 {
     at_cmd_t at;
-
-    printf("test_register_urc_null_cb\n");
     at_cmd_init(&at, &mock_hal);
-    ASSERT(at_cmd_register_urc(&at, "X", NULL, NULL) == -1, "null cb rejected");
+    ASSERT_TRUE(at_cmd_register_urc(&at, "X", NULL, NULL) == -1);
 }
 
-static void test_register_urc_null_prefix(void)
+TEST(test_register_urc_null_prefix)
 {
     at_cmd_t at;
-
-    printf("test_register_urc_null_prefix\n");
     at_cmd_init(&at, &mock_hal);
-    ASSERT(at_cmd_register_urc(&at, NULL, urc_handler, NULL) == -1, "null prefix rejected");
+    ASSERT_TRUE(at_cmd_register_urc(&at, NULL, urc_handler, NULL) == -1);
 }
 
-static void test_send_null_cmd(void)
+TEST(test_send_null_cmd)
 {
     at_cmd_t at;
-
-    printf("test_send_null_cmd\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send(&at, NULL);
-    ASSERT(tx_len == 0, "null cmd sends nothing");
+    ASSERT_TRUE(tx_len == 0);
 }
 
-static void test_send_raw_null(void)
+TEST(test_send_raw_null)
 {
     at_cmd_t at;
-
-    printf("test_send_raw_null\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send_raw(&at, NULL, 5);
-    ASSERT(tx_len == 0, "null raw sends nothing");
+    ASSERT_TRUE(tx_len == 0);
 }
 
-static void test_urc_not_matched_as_response(void)
+TEST(test_urc_not_matched_as_response)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_urc_not_matched_as_response\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "+CGREG:", urc_handler, NULL);
     at_cmd_expect(&at, "+CSQ:");
 
     feed_string(&at, "+CGREG: 1,5\r\n", &evt);
-    ASSERT(urc_count == 1, "URC dispatched");
-    ASSERT(at.waiting == 1, "still waiting for +CSQ:");
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(at.waiting == 1);
 
     at_evt_type_t r = feed_string(&at, "+CSQ: 15,0\r\n", &evt);
-    ASSERT(r == AT_EVT_OK, "response matched after URC");
+    ASSERT_TRUE(r == AT_EVT_OK);
 }
 
-static void test_send_raw_zero_length(void)
+TEST(test_send_raw_zero_length)
 {
     at_cmd_t at;
-
-    printf("test_send_raw_zero_length\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send_raw(&at, (const uint8_t *)"ABC", 0);
-    ASSERT(tx_len == 0, "zero-length raw sends nothing");
+    ASSERT_TRUE(tx_len == 0);
 }
 
-static void test_error_clears_matched(void)
+TEST(test_error_clears_matched)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_error_clears_matched\n");
     at_cmd_init(&at, &mock_hal);
     at_cmd_expect(&at, "OK");
     feed_string(&at, "OK\r\n", &evt);
-    ASSERT(strlen(at_cmd_get_matched(&at)) > 0, "matched after OK");
+    ASSERT_TRUE(strlen(at_cmd_get_matched(&at)) > 0);
 
     at_cmd_expect(&at, "OK");
     feed_string(&at, "ERROR\r\n", &evt);
-    ASSERT(strlen(at_cmd_get_matched(&at)) == 0, "matched cleared on ERROR");
-    ASSERT(at.waiting == 0, "not waiting after ERROR");
+    ASSERT_TRUE(strlen(at_cmd_get_matched(&at)) == 0);
+    ASSERT_TRUE(at.waiting == 0);
 }
 
-static void test_send_appends_crlf(void)
+TEST(test_send_appends_crlf)
 {
     at_cmd_t at;
-
-    printf("test_send_appends_crlf\n");
     mock_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_send(&at, "AT+CSQ");
-    ASSERT(tx_len >= 8, "cmd + CRLF length");
-    ASSERT(tx_buf[6] == '\r' && tx_buf[7] == '\n', "CRLF appended");
+    ASSERT_TRUE(tx_len >= 8);
+    ASSERT_TRUE(tx_buf[6] == '\r' && tx_buf[7] == '\n');
 }
 
-static void test_urc_before_any_expect(void)
+TEST(test_urc_before_any_expect)
 {
     at_cmd_t at;
     at_evt_t evt;
-
-    printf("test_urc_before_any_expect\n");
     urc_reset();
     at_cmd_init(&at, &mock_hal);
     at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
 
     at_evt_type_t r = feed_string(&at, "RDY\r\n", &evt);
-    ASSERT(r == AT_EVT_URC, "URC event when not waiting");
-    ASSERT(urc_count == 1, "URC handler called");
+    ASSERT_TRUE(r == AT_EVT_URC);
+    ASSERT_TRUE(urc_count == 1);
 }
 
-int main(void)
-{
-    tests_run = tests_fail = 0;
+TEST_MAIN("at_command")
+    RUN(test_init);
+    RUN(test_send_command);
+    RUN(test_send_with_args);
+    RUN(test_ok_response);
+    RUN(test_response_with_prefix);
+    RUN(test_error_response);
+    RUN(test_cme_error);
+    RUN(test_prev_line);
+    RUN(test_urc_dispatch);
+    RUN(test_urc_with_prefix);
+    RUN(test_urc_during_wait);
+    RUN(test_prompt);
+    RUN(test_prompt_no_match_when_not_expected);
+    RUN(test_cancel);
+    RUN(test_send_raw);
+    RUN(test_multiple_urc_handlers);
+    RUN(test_cr_stripping);
+    RUN(test_empty_lines_ignored);
+    RUN(test_cms_error);
+    RUN(test_bare_newline);
+    RUN(test_null_safety);
+    RUN(test_urc_table_full);
+    RUN(test_line_buffer_overflow);
+    RUN(test_reinit_clears_urcs);
+    RUN(test_line_exact_boundary);
+    RUN(test_consecutive_commands);
+    RUN(test_register_urc_null_cb);
+    RUN(test_register_urc_null_prefix);
+    RUN(test_send_null_cmd);
+    RUN(test_send_raw_null);
+    RUN(test_urc_not_matched_as_response);
+    RUN(test_send_raw_zero_length);
+    RUN(test_error_clears_matched);
+    RUN(test_send_appends_crlf);
+    RUN(test_urc_before_any_expect);
+TEST_MAIN_END()
 
-    test_init();
-    test_send_command();
-    test_send_with_args();
-    test_ok_response();
-    test_response_with_prefix();
-    test_error_response();
-    test_cme_error();
-    test_prev_line();
-    test_urc_dispatch();
-    test_urc_with_prefix();
-    test_urc_during_wait();
-    test_prompt();
-    test_prompt_no_match_when_not_expected();
-    test_cancel();
-    test_send_raw();
-    test_multiple_urc_handlers();
-    test_cr_stripping();
-    test_empty_lines_ignored();
-    test_cms_error();
-    test_bare_newline();
-    test_null_safety();
-    test_urc_table_full();
-    test_line_buffer_overflow();
-    test_reinit_clears_urcs();
-    test_line_exact_boundary();
-    test_consecutive_commands();
-    test_register_urc_null_cb();
-    test_register_urc_null_prefix();
-    test_send_null_cmd();
-    test_send_raw_null();
-    test_urc_not_matched_as_response();
-    test_send_raw_zero_length();
-    test_error_clears_matched();
-    test_send_appends_crlf();
-    test_urc_before_any_expect();
-
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

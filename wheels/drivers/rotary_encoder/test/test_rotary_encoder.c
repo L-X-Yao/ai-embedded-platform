@@ -1,17 +1,5 @@
+#include "test_harness.h"
 #include "rotary_encoder.h"
-#include <stdio.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_init)
 {
@@ -25,12 +13,12 @@ TEST(test_cw_full_cycle)
 {
     rotary_encoder_t enc;
     encoder_init(&enc);
-    /* CW sequence: 00→01→11→10→00 */
-    encoder_update(&enc, false, true);   /* 00→01 */
+    /* CW sequence: 00->01->11->10->00 */
+    encoder_update(&enc, false, true);   /* 00->01 */
     ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_CW);
-    encoder_update(&enc, true,  true);   /* 01→11 */
-    encoder_update(&enc, true,  false);  /* 11→10 */
-    encoder_update(&enc, false, false);  /* 10→00 */
+    encoder_update(&enc, true,  true);   /* 01->11 */
+    encoder_update(&enc, true,  false);  /* 11->10 */
+    encoder_update(&enc, false, false);  /* 10->00 */
     ASSERT_EQ(encoder_get_position(&enc), 4);
 }
 
@@ -38,12 +26,12 @@ TEST(test_ccw_full_cycle)
 {
     rotary_encoder_t enc;
     encoder_init(&enc);
-    /* CCW sequence: 00→10→11→01→00 */
-    encoder_update(&enc, true,  false);  /* 00→10 */
+    /* CCW sequence: 00->10->11->01->00 */
+    encoder_update(&enc, true,  false);  /* 00->10 */
     ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_CCW);
-    encoder_update(&enc, true,  true);   /* 10→11 */
-    encoder_update(&enc, false, true);   /* 11→01 */
-    encoder_update(&enc, false, false);  /* 01→00 */
+    encoder_update(&enc, true,  true);   /* 10->11 */
+    encoder_update(&enc, false, true);   /* 11->01 */
+    encoder_update(&enc, false, false);  /* 01->00 */
     ASSERT_EQ(encoder_get_position(&enc), -4);
 }
 
@@ -101,9 +89,7 @@ TEST(test_many_steps)
     ASSERT_EQ(encoder_get_position(&enc), 400);
 }
 
-int main(void)
-{
-    printf("rotary_encoder tests:\n");
+TEST_MAIN("rotary_encoder")
     RUN(test_init);
     RUN(test_cw_full_cycle);
     RUN(test_ccw_full_cycle);
@@ -112,6 +98,4 @@ int main(void)
     RUN(test_reset);
     RUN(test_null_safety);
     RUN(test_many_steps);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

@@ -1,19 +1,6 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../state_machine.h"
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-
+#include "state_machine.h"
 /* --- Test FSM: traffic light --- */
 
 enum { S_RED = 0, S_GREEN, S_YELLOW };
@@ -72,94 +59,85 @@ static void setup_traffic_light(void)
 
 /* --- Tests --- */
 
-static void test_init(void)
+TEST(test_init)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "starts in RED");
-    ASSERT_EQ(state_machine_transition_count(&sm), 0, "zero transitions");
-    ASSERT_EQ(enter_count[S_RED], 1, "on_enter called for initial state");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(state_machine_transition_count(&sm), 0);
+    ASSERT_EQ(enter_count[S_RED], 1);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("%s\n", __func__);
     sm_cfg_t cfg = {0};
-    ASSERT_EQ(state_machine_init(NULL, &cfg, 0), STATE_MACHINE_ERR_PARAM, "init null ctx");
-    ASSERT_EQ(state_machine_init(&sm, NULL, 0), STATE_MACHINE_ERR_PARAM, "init null cfg");
-    ASSERT_EQ(state_machine_process(NULL, 0), STATE_MACHINE_ERR_PARAM, "process null");
-    ASSERT_EQ(state_machine_current(NULL), 0, "current null");
-    ASSERT_EQ(state_machine_transition_count(NULL), 0, "count null");
-    ASSERT_EQ(state_machine_reset(NULL, 0), STATE_MACHINE_ERR_PARAM, "reset null");
+    ASSERT_EQ(state_machine_init(NULL, &cfg, 0), STATE_MACHINE_ERR_PARAM);
+    ASSERT_EQ(state_machine_init(&sm, NULL, 0), STATE_MACHINE_ERR_PARAM);
+    ASSERT_EQ(state_machine_process(NULL, 0), STATE_MACHINE_ERR_PARAM);
+    ASSERT_EQ(state_machine_current(NULL), 0);
+    ASSERT_EQ(state_machine_transition_count(NULL), 0);
+    ASSERT_EQ(state_machine_reset(NULL, 0), STATE_MACHINE_ERR_PARAM);
 }
 
-static void test_basic_transition(void)
+TEST(test_basic_transition)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_err_t err = state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(err, STATE_MACHINE_OK, "transition ok");
-    ASSERT_EQ(state_machine_current(&sm), S_GREEN, "RED->GREEN on TIMER");
-    ASSERT_EQ(state_machine_transition_count(&sm), 1, "count=1");
+    ASSERT_EQ(err, STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&sm), S_GREEN);
+    ASSERT_EQ(state_machine_transition_count(&sm), 1);
 }
 
-static void test_full_cycle(void)
+TEST(test_full_cycle)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_GREEN, "step 1");
+    ASSERT_EQ(state_machine_current(&sm), S_GREEN);
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_YELLOW, "step 2");
+    ASSERT_EQ(state_machine_current(&sm), S_YELLOW);
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "step 3 back to RED");
-    ASSERT_EQ(state_machine_transition_count(&sm), 3, "3 transitions");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(state_machine_transition_count(&sm), 3);
 }
 
-static void test_entry_exit_actions(void)
+TEST(test_entry_exit_actions)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
 
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(exit_count[S_RED], 1, "exit RED called");
-    ASSERT_EQ(enter_count[S_GREEN], 1, "enter GREEN called");
-    ASSERT_EQ(action_count, 1, "action called");
+    ASSERT_EQ(exit_count[S_RED], 1);
+    ASSERT_EQ(enter_count[S_GREEN], 1);
+    ASSERT_EQ(action_count, 1);
 }
 
-static void test_emergency(void)
+TEST(test_emergency)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_GREEN, "at GREEN");
+    ASSERT_EQ(state_machine_current(&sm), S_GREEN);
 
     state_machine_process(&sm, E_EMERGENCY);
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "emergency -> RED");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
 }
 
-static void test_no_transition(void)
+TEST(test_no_transition)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_err_t err = state_machine_process(&sm, E_EMERGENCY);
-    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION, "no emergency from RED");
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "still RED");
-    ASSERT_EQ(state_machine_transition_count(&sm), 0, "no transition counted");
+    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION);
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(state_machine_transition_count(&sm), 0);
 }
 
-static void test_unknown_event(void)
+TEST(test_unknown_event)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_err_t err = state_machine_process(&sm, 99);
-    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION, "unknown event");
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "state unchanged");
+    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION);
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
 }
 
-static void test_guard_pass(void)
+TEST(test_guard_pass)
 {
-    printf("%s\n", __func__);
     reset_counters();
     static const sm_transition_t guarded[] = {
         { S_RED, E_TIMER, guard_true, S_GREEN, NULL },
@@ -173,13 +151,12 @@ static void test_guard_pass(void)
     };
     state_machine_init(&sm, &cfg, S_RED);
     state_machine_err_t err = state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(err, STATE_MACHINE_OK, "guard pass");
-    ASSERT_EQ(state_machine_current(&sm), S_GREEN, "transitioned");
+    ASSERT_EQ(err, STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&sm), S_GREEN);
 }
 
-static void test_guard_block(void)
+TEST(test_guard_block)
 {
-    printf("%s\n", __func__);
     reset_counters();
     static const sm_transition_t guarded[] = {
         { S_RED, E_TIMER, guard_false, S_GREEN, NULL },
@@ -193,13 +170,12 @@ static void test_guard_block(void)
     };
     state_machine_init(&sm, &cfg, S_RED);
     state_machine_err_t err = state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION, "guard blocked");
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "still RED");
+    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION);
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
 }
 
-static void test_self_transition(void)
+TEST(test_self_transition)
 {
-    printf("%s\n", __func__);
     reset_counters();
     static const sm_transition_t self[] = {
         { S_RED, E_TIMER, NULL, S_RED, action_switch },
@@ -215,28 +191,26 @@ static void test_self_transition(void)
     reset_counters();
 
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "self-transition stays");
-    ASSERT_EQ(action_count, 1, "action called on self-transition");
-    ASSERT_EQ(enter_count[S_RED], 0, "no re-enter on self-transition");
-    ASSERT_EQ(exit_count[S_RED], 0, "no exit on self-transition");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(action_count, 1);
+    ASSERT_EQ(enter_count[S_RED], 0);
+    ASSERT_EQ(exit_count[S_RED], 0);
 }
 
-static void test_reset(void)
+TEST(test_reset)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     state_machine_process(&sm, E_TIMER);
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_YELLOW, "at YELLOW");
+    ASSERT_EQ(state_machine_current(&sm), S_YELLOW);
 
     state_machine_reset(&sm, S_RED);
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "reset to RED");
-    ASSERT_EQ(state_machine_transition_count(&sm), 0, "count cleared");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(state_machine_transition_count(&sm), 0);
 }
 
-static void test_no_state_defs(void)
+TEST(test_no_state_defs)
 {
-    printf("%s\n", __func__);
     reset_counters();
     sm_cfg_t cfg = {
         .transitions = transitions,
@@ -247,13 +221,12 @@ static void test_no_state_defs(void)
     };
     state_machine_init(&sm, &cfg, S_RED);
     state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(state_machine_current(&sm), S_GREEN, "works without state defs");
-    ASSERT_EQ(enter_count[S_GREEN], 0, "no enter callback");
+    ASSERT_EQ(state_machine_current(&sm), S_GREEN);
+    ASSERT_EQ(enter_count[S_GREEN], 0);
 }
 
-static void test_no_transitions(void)
+TEST(test_no_transitions)
 {
-    printf("%s\n", __func__);
     sm_cfg_t cfg = {
         .transitions = NULL,
         .num_transitions = 0,
@@ -263,41 +236,35 @@ static void test_no_transitions(void)
     };
     state_machine_init(&sm, &cfg, S_RED);
     state_machine_err_t err = state_machine_process(&sm, E_TIMER);
-    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION, "no transitions defined");
+    ASSERT_EQ(err, STATE_MACHINE_ERR_NO_TRANSITION);
 }
 
-static void test_multiple_cycles(void)
+TEST(test_multiple_cycles)
 {
-    printf("%s\n", __func__);
     setup_traffic_light();
     for (int i = 0; i < 9; i++)
     {
         state_machine_process(&sm, E_TIMER);
     }
-    ASSERT_EQ(state_machine_current(&sm), S_RED, "3 full cycles back to RED");
-    ASSERT_EQ(state_machine_transition_count(&sm), 9, "9 transitions total");
+    ASSERT_EQ(state_machine_current(&sm), S_RED);
+    ASSERT_EQ(state_machine_transition_count(&sm), 9);
 }
 
-int main(void)
-{
-    printf("test_state_machine\n");
-    test_init();
-    test_null_safety();
-    test_basic_transition();
-    test_full_cycle();
-    test_entry_exit_actions();
-    test_emergency();
-    test_no_transition();
-    test_unknown_event();
-    test_guard_pass();
-    test_guard_block();
-    test_self_transition();
-    test_reset();
-    test_no_state_defs();
-    test_no_transitions();
-    test_multiple_cycles();
+TEST_MAIN("state_machine")
+    RUN(test_init);
+    RUN(test_null_safety);
+    RUN(test_basic_transition);
+    RUN(test_full_cycle);
+    RUN(test_entry_exit_actions);
+    RUN(test_emergency);
+    RUN(test_no_transition);
+    RUN(test_unknown_event);
+    RUN(test_guard_pass);
+    RUN(test_guard_block);
+    RUN(test_self_transition);
+    RUN(test_reset);
+    RUN(test_no_state_defs);
+    RUN(test_no_transitions);
+    RUN(test_multiple_cycles);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

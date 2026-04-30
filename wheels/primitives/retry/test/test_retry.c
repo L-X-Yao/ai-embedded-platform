@@ -1,19 +1,5 @@
+#include "test_harness.h"
 #include "retry.h"
-#include <stdio.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %u != %u\n", __func__, __LINE__, \
-               (unsigned)(a), (unsigned)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_TRUE(x)  ASSERT_EQ(!!(x), 1)
-#define ASSERT_FALSE(x) ASSERT_EQ(!!(x), 0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_fixed_strategy)
 {
@@ -190,9 +176,7 @@ TEST(test_null_safety)
     retry_reset(NULL);
 }
 
-int main(void)
-{
-    printf("retry tests:\n");
+TEST_MAIN("retry")
     RUN(test_fixed_strategy);
     RUN(test_linear_strategy);
     RUN(test_exponential_strategy);
@@ -201,6 +185,4 @@ int main(void)
     RUN(test_reset);
     RUN(test_zero_attempts);
     RUN(test_null_safety);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

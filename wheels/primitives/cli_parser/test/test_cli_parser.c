@@ -1,17 +1,6 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
-#include "../cli_parser.h"
-
-static int tests_run = 0;
-static int tests_fail = 0;
-
-#define ASSERT(cond) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s line %d: %s\n", __func__, __LINE__, #cond); \
-        tests_fail++; \
-    } \
-} while (0)
+#include "cli_parser.h"
 
 /* ---- Output capture ---- */
 
@@ -80,114 +69,103 @@ static void setup(const char *prompt)
 
 /* ---- Tests ---- */
 
-static void test_init(void)
+TEST(test_init)
 {
-    printf("%s\n", __func__);
     setup("> ");
-    ASSERT(parser.line_len == 0);
-    ASSERT(strstr(out_buf, "> ") != NULL);
+    ASSERT_TRUE(parser.line_len == 0);
+    ASSERT_TRUE(strstr(out_buf, "> ") != NULL);
 }
 
-static void test_run_known(void)
+TEST(test_run_known)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "ping");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 1);
-    ASSERT(strcmp(last_argv0, "ping") == 0);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 1);
+    ASSERT_TRUE(strcmp(last_argv0, "ping") == 0);
 }
 
-static void test_run_unknown(void)
+TEST(test_run_unknown)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "nosuchcmd");
-    ASSERT(err == CLI_ERR_NOT_FOUND);
-    ASSERT(strstr(out_buf, "unknown command") != NULL);
+    ASSERT_TRUE(err == CLI_ERR_NOT_FOUND);
+    ASSERT_TRUE(strstr(out_buf, "unknown command") != NULL);
 }
 
-static void test_run_empty(void)
+TEST(test_run_empty)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     cli_err_t err = cli_parser_run(&parser, "");
-    ASSERT(err == CLI_OK);
+    ASSERT_TRUE(err == CLI_OK);
     err = cli_parser_run(&parser, "   ");
-    ASSERT(err == CLI_OK);
+    ASSERT_TRUE(err == CLI_OK);
 }
 
-static void test_run_args(void)
+TEST(test_run_args)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "ping world");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 2);
-    ASSERT(strcmp(last_argv0, "ping") == 0);
-    ASSERT(strcmp(last_argv1, "world") == 0);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 2);
+    ASSERT_TRUE(strcmp(last_argv0, "ping") == 0);
+    ASSERT_TRUE(strcmp(last_argv1, "world") == 0);
 }
 
-static void test_run_extra_whitespace(void)
+TEST(test_run_extra_whitespace)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "  ping   hello  ");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 2);
-    ASSERT(strcmp(last_argv1, "hello") == 0);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 2);
+    ASSERT_TRUE(strcmp(last_argv1, "hello") == 0);
 }
 
-static void test_help(void)
+TEST(test_help)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "help");
-    ASSERT(err == CLI_OK);
-    ASSERT(strstr(out_buf, "ping") != NULL);
-    ASSERT(strstr(out_buf, "test command") != NULL);
-    ASSERT(strstr(out_buf, "help") != NULL);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(strstr(out_buf, "ping") != NULL);
+    ASSERT_TRUE(strstr(out_buf, "test command") != NULL);
+    ASSERT_TRUE(strstr(out_buf, "help") != NULL);
 }
 
-static void test_handler_error(void)
+TEST(test_handler_error)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     cli_err_t err = cli_parser_run(&parser, "fail");
-    ASSERT(err == CLI_ERR_ARGS);
+    ASSERT_TRUE(err == CLI_ERR_ARGS);
 }
 
-static void test_overflow(void)
+TEST(test_overflow)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     char long_line[CLI_LINE_BUFSIZE + 10];
     memset(long_line, 'a', sizeof(long_line) - 1);
     long_line[sizeof(long_line) - 1] = '\0';
     cli_err_t err = cli_parser_run(&parser, long_line);
-    ASSERT(err == CLI_ERR_OVERFLOW);
+    ASSERT_TRUE(err == CLI_ERR_OVERFLOW);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("%s\n", __func__);
     cli_parser_init(NULL, NULL);
     cli_parser_feed(NULL, 'x');
     cli_err_t err = cli_parser_run(NULL, "ping");
-    ASSERT(err == CLI_ERR_ARGS);
+    ASSERT_TRUE(err == CLI_ERR_ARGS);
     setup(NULL);
     err = cli_parser_run(&parser, NULL);
-    ASSERT(err == CLI_ERR_ARGS);
+    ASSERT_TRUE(err == CLI_ERR_ARGS);
 }
 
-static void test_feed_and_enter(void)
+TEST(test_feed_and_enter)
 {
-    printf("%s\n", __func__);
     setup("> ");
     capture_reset();
     const char *input = "ping";
@@ -195,67 +173,61 @@ static void test_feed_and_enter(void)
         cli_parser_feed(&parser, (uint8_t)input[i]);
     }
     cli_parser_feed(&parser, '\r');
-    ASSERT(last_argc == 1);
-    ASSERT(strcmp(last_argv0, "ping") == 0);
-    ASSERT(strstr(out_buf, "> ") != NULL);
+    ASSERT_TRUE(last_argc == 1);
+    ASSERT_TRUE(strcmp(last_argv0, "ping") == 0);
+    ASSERT_TRUE(strstr(out_buf, "> ") != NULL);
 }
 
-static void test_feed_backspace(void)
+TEST(test_feed_backspace)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_parser_feed(&parser, 'x');
     cli_parser_feed(&parser, '\b');
     cli_parser_feed(&parser, '\r');
-    ASSERT(last_argc == 0);
+    ASSERT_TRUE(last_argc == 0);
 }
 
-static void test_feed_overflow(void)
+TEST(test_feed_overflow)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     for (int i = 0; i < CLI_LINE_BUFSIZE + 10; i++) {
         cli_parser_feed(&parser, 'a');
     }
-    ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
+    ASSERT_TRUE(parser.line_len == CLI_LINE_BUFSIZE - 1);
 }
 
-static void test_feed_del(void)
+TEST(test_feed_del)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_parser_feed(&parser, 'a');
     cli_parser_feed(&parser, 'b');
     cli_parser_feed(&parser, 0x7F);
-    ASSERT(parser.line_len == 1);
+    ASSERT_TRUE(parser.line_len == 1);
 }
 
-static void test_feed_backspace_empty(void)
+TEST(test_feed_backspace_empty)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_parser_feed(&parser, '\b');
-    ASSERT(parser.line_len == 0);
-    ASSERT(out_len == 0);
+    ASSERT_TRUE(parser.line_len == 0);
+    ASSERT_TRUE(out_len == 0);
 }
 
-static void test_run_max_args(void)
+TEST(test_run_max_args)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "ping a b c d e f g h i");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == CLI_MAX_ARGS);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == CLI_MAX_ARGS);
 }
 
-static void test_exact_buffer_boundary(void)
+TEST(test_exact_buffer_boundary)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     char exact[CLI_LINE_BUFSIZE];
@@ -263,38 +235,35 @@ static void test_exact_buffer_boundary(void)
     exact[CLI_LINE_BUFSIZE - 1] = '\0';
     memcpy(exact, "ping ", 5);
     cli_err_t err = cli_parser_run(&parser, exact);
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 2);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 2);
 }
 
-static void test_exact_buffer_plus_one(void)
+TEST(test_exact_buffer_plus_one)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     char over[CLI_LINE_BUFSIZE + 1];
     memset(over, 'a', CLI_LINE_BUFSIZE);
     over[CLI_LINE_BUFSIZE] = '\0';
     cli_err_t err = cli_parser_run(&parser, over);
-    ASSERT(err == CLI_ERR_OVERFLOW);
+    ASSERT_TRUE(err == CLI_ERR_OVERFLOW);
 }
 
-static void test_feed_exact_then_enter(void)
+TEST(test_feed_exact_then_enter)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     for (int i = 0; i < CLI_LINE_BUFSIZE - 1; i++) {
         cli_parser_feed(&parser, 'b');
     }
-    ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
+    ASSERT_TRUE(parser.line_len == CLI_LINE_BUFSIZE - 1);
     cli_parser_feed(&parser, 'c');
-    ASSERT(parser.line_len == CLI_LINE_BUFSIZE - 1);
+    ASSERT_TRUE(parser.line_len == CLI_LINE_BUFSIZE - 1);
 }
 
-static void test_null_commands(void)
+TEST(test_null_commands)
 {
-    printf("%s\n", __func__);
     capture_reset();
     cli_cfg_t cfg = {
         .commands = NULL,
@@ -304,48 +273,44 @@ static void test_null_commands(void)
         .prompt = NULL,
     };
     cli_parser_init(&parser, &cfg);
-    ASSERT(parser.cfg.num_commands == 0);
+    ASSERT_TRUE(parser.cfg.num_commands == 0);
     cli_err_t err = cli_parser_run(&parser, "ping");
-    ASSERT(err == CLI_ERR_NOT_FOUND);
+    ASSERT_TRUE(err == CLI_ERR_NOT_FOUND);
 }
 
-static void test_tab_separated_args(void)
+TEST(test_tab_separated_args)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "ping\targ1");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 2);
-    ASSERT(strcmp(last_argv0, "ping") == 0);
-    ASSERT(strcmp(last_argv1, "arg1") == 0);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 2);
+    ASSERT_TRUE(strcmp(last_argv0, "ping") == 0);
+    ASSERT_TRUE(strcmp(last_argv1, "arg1") == 0);
 }
 
-static void test_mixed_spaces_tabs(void)
+TEST(test_mixed_spaces_tabs)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_err_t err = cli_parser_run(&parser, "ping \t arg1");
-    ASSERT(err == CLI_OK);
-    ASSERT(last_argc == 2);
-    ASSERT(strcmp(last_argv1, "arg1") == 0);
+    ASSERT_TRUE(err == CLI_OK);
+    ASSERT_TRUE(last_argc == 2);
+    ASSERT_TRUE(strcmp(last_argv1, "arg1") == 0);
 }
 
-static void test_feed_cr_only(void)
+TEST(test_feed_cr_only)
 {
-    printf("%s\n", __func__);
     setup("> ");
     capture_reset();
     cli_parser_feed(&parser, 'A');
     cli_parser_feed(&parser, '\r');
-    ASSERT(last_argc == 0);
-    ASSERT(parser.line_len == 0);
+    ASSERT_TRUE(last_argc == 0);
+    ASSERT_TRUE(parser.line_len == 0);
 }
 
-static void test_feed_crlf(void)
+TEST(test_feed_crlf)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     last_argc = -1;
@@ -354,52 +319,46 @@ static void test_feed_crlf(void)
     cli_parser_feed(&parser, 'n');
     cli_parser_feed(&parser, 'g');
     cli_parser_feed(&parser, '\r');
-    ASSERT(last_argc == 1);
+    ASSERT_TRUE(last_argc == 1);
     cli_parser_feed(&parser, '\n');
-    ASSERT(parser.line_len == 0);
+    ASSERT_TRUE(parser.line_len == 0);
 }
 
-static void test_feed_control_chars_ignored(void)
+TEST(test_feed_control_chars_ignored)
 {
-    printf("%s\n", __func__);
     setup(NULL);
     capture_reset();
     cli_parser_feed(&parser, 0x01);
     cli_parser_feed(&parser, 0x02);
     cli_parser_feed(&parser, 0x1B);
-    ASSERT(parser.line_len == 0);
+    ASSERT_TRUE(parser.line_len == 0);
 }
 
-int main(void)
-{
-    printf("test_cli_parser\n");
-    test_init();
-    test_run_known();
-    test_run_unknown();
-    test_run_empty();
-    test_run_args();
-    test_run_extra_whitespace();
-    test_help();
-    test_handler_error();
-    test_overflow();
-    test_null_safety();
-    test_feed_and_enter();
-    test_feed_backspace();
-    test_feed_overflow();
-    test_feed_del();
-    test_feed_backspace_empty();
-    test_run_max_args();
-    test_exact_buffer_boundary();
-    test_exact_buffer_plus_one();
-    test_feed_exact_then_enter();
-    test_null_commands();
-    test_tab_separated_args();
-    test_mixed_spaces_tabs();
-    test_feed_cr_only();
-    test_feed_crlf();
-    test_feed_control_chars_ignored();
+TEST_MAIN("cli_parser")
+    RUN(test_init);
+    RUN(test_run_known);
+    RUN(test_run_unknown);
+    RUN(test_run_empty);
+    RUN(test_run_args);
+    RUN(test_run_extra_whitespace);
+    RUN(test_help);
+    RUN(test_handler_error);
+    RUN(test_overflow);
+    RUN(test_null_safety);
+    RUN(test_feed_and_enter);
+    RUN(test_feed_backspace);
+    RUN(test_feed_overflow);
+    RUN(test_feed_del);
+    RUN(test_feed_backspace_empty);
+    RUN(test_run_max_args);
+    RUN(test_exact_buffer_boundary);
+    RUN(test_exact_buffer_plus_one);
+    RUN(test_feed_exact_then_enter);
+    RUN(test_null_commands);
+    RUN(test_tab_separated_args);
+    RUN(test_mixed_spaces_tabs);
+    RUN(test_feed_cr_only);
+    RUN(test_feed_crlf);
+    RUN(test_feed_control_chars_ignored);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

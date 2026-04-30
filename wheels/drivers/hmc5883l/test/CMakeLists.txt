@@ -7,7 +7,10 @@ add_executable(test_hmc5883l
     test_hmc5883l.c
     ../hmc5883l.c
 )
-target_include_directories(test_hmc5883l PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_hmc5883l PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_hmc5883l PRIVATE m)
 

@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <math.h>
-#include "../sht30.h"
+#include "sht30.h"
 
 /* ---------- mock I2C ---------- */
 
@@ -71,20 +71,6 @@ static void plant_reading(uint16_t raw_t, uint16_t raw_h)
 }
 
 /* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-#define ASSERT_NEAR(a, b, tol, msg) ASSERT(fabsf((a)-(b)) < (tol), msg)
-
 static sht30_t dev;
 static sht30_cfg_t default_cfg = { .addr = SHT30_ADDR_A };
 
@@ -97,43 +83,39 @@ static void setup(void)
 
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("%s\n", __func__);
     mock_reset();
     sht30_t d;
     sht30_err_t e = sht30_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, SHT30_OK, "init ok");
-    ASSERT_EQ(mock_last_write[0], 0x30, "soft reset MSB");
-    ASSERT_EQ(mock_last_write[1], 0xA2, "soft reset LSB");
+    ASSERT_EQ(e, SHT30_OK);
+    ASSERT_EQ(mock_last_write[0], 0x30);
+    ASSERT_EQ(mock_last_write[1], 0xA2);
 }
 
-static void test_init_i2c_fail(void)
+TEST(test_init_i2c_fail)
 {
-    printf("%s\n", __func__);
     mock_reset();
     mock_fail_at = 0;
     sht30_t d;
     sht30_err_t e = sht30_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, SHT30_ERR_I2C, "init I2C fail");
+    ASSERT_EQ(e, SHT30_ERR_I2C);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("%s\n", __func__);
-    ASSERT_EQ(sht30_init(NULL, &mock_i2c, &default_cfg), SHT30_ERR_PARAM, "init null dev");
+    ASSERT_EQ(sht30_init(NULL, &mock_i2c, &default_cfg), SHT30_ERR_PARAM);
     sht30_t d;
-    ASSERT_EQ(sht30_init(&d, NULL, &default_cfg), SHT30_ERR_PARAM, "init null i2c");
-    ASSERT_EQ(sht30_init(&d, &mock_i2c, NULL), SHT30_ERR_PARAM, "init null cfg");
+    ASSERT_EQ(sht30_init(&d, NULL, &default_cfg), SHT30_ERR_PARAM);
+    ASSERT_EQ(sht30_init(&d, &mock_i2c, NULL), SHT30_ERR_PARAM);
     sht30_data_t data;
-    ASSERT_EQ(sht30_read(NULL, &data), SHT30_ERR_PARAM, "read null dev");
-    ASSERT_EQ(sht30_read(&d, NULL), SHT30_ERR_PARAM, "read null out");
-    ASSERT_EQ(sht30_reset(NULL), SHT30_ERR_PARAM, "reset null");
+    ASSERT_EQ(sht30_read(NULL, &data), SHT30_ERR_PARAM);
+    ASSERT_EQ(sht30_read(&d, NULL), SHT30_ERR_PARAM);
+    ASSERT_EQ(sht30_reset(NULL), SHT30_ERR_PARAM);
 }
 
-static void test_read_25c_50pct(void)
+TEST(test_read_25c_50pct)
 {
-    printf("%s\n", __func__);
     setup();
 
     /* raw_t for 25°C: raw = (25+45)/175 * 65535 = 26214 */
@@ -142,14 +124,13 @@ static void test_read_25c_50pct(void)
 
     sht30_data_t data;
     sht30_err_t e = sht30_read(&dev, &data);
-    ASSERT_EQ(e, SHT30_OK, "read ok");
-    ASSERT_NEAR(data.temperature_c, 25.0f, 0.1f, "temp ~25°C");
-    ASSERT_NEAR(data.humidity_pct, 50.0f, 0.1f, "humidity ~50%");
+    ASSERT_EQ(e, SHT30_OK);
+    ASSERT_NEAR(data.temperature_c, 25.0f, 0.1f);
+    ASSERT_NEAR(data.humidity_pct, 50.0f, 0.1f);
 }
 
-static void test_read_0c_0pct(void)
+TEST(test_read_0c_0pct)
 {
-    printf("%s\n", __func__);
     setup();
 
     /* raw_t for 0°C: raw = 45/175 * 65535 = 16852 */
@@ -158,135 +139,120 @@ static void test_read_0c_0pct(void)
 
     sht30_data_t data;
     sht30_read(&dev, &data);
-    ASSERT_NEAR(data.temperature_c, 0.0f, 0.2f, "temp ~0°C");
-    ASSERT_NEAR(data.humidity_pct, 0.0f, 0.1f, "humidity ~0%");
+    ASSERT_NEAR(data.temperature_c, 0.0f, 0.2f);
+    ASSERT_NEAR(data.humidity_pct, 0.0f, 0.1f);
 }
 
-static void test_read_minus40c(void)
+TEST(test_read_minus40c)
 {
-    printf("%s\n", __func__);
     setup();
 
     plant_reading(0, 0);
 
     sht30_data_t data;
     sht30_read(&dev, &data);
-    ASSERT_NEAR(data.temperature_c, -45.0f, 0.1f, "temp -45°C at raw=0");
+    ASSERT_NEAR(data.temperature_c, -45.0f, 0.1f);
 }
 
-static void test_read_crc_fail_temp(void)
+TEST(test_read_crc_fail_temp)
 {
-    printf("%s\n", __func__);
     setup();
     plant_reading(26214, 32768);
     mock_read_data[2] = 0x00;
 
     sht30_data_t data;
     sht30_err_t e = sht30_read(&dev, &data);
-    ASSERT_EQ(e, SHT30_ERR_CRC, "CRC fail on temperature");
+    ASSERT_EQ(e, SHT30_ERR_CRC);
 }
 
-static void test_read_crc_fail_humidity(void)
+TEST(test_read_crc_fail_humidity)
 {
-    printf("%s\n", __func__);
     setup();
     plant_reading(26214, 32768);
     mock_read_data[5] = 0x00;
 
     sht30_data_t data;
     sht30_err_t e = sht30_read(&dev, &data);
-    ASSERT_EQ(e, SHT30_ERR_CRC, "CRC fail on humidity");
+    ASSERT_EQ(e, SHT30_ERR_CRC);
 }
 
-static void test_read_i2c_fail_cmd(void)
+TEST(test_read_i2c_fail_cmd)
 {
-    printf("%s\n", __func__);
     setup();
     mock_fail_next = 1;
     sht30_data_t data;
     sht30_err_t e = sht30_read(&dev, &data);
-    ASSERT_EQ(e, SHT30_ERR_I2C, "read cmd I2C fail");
+    ASSERT_EQ(e, SHT30_ERR_I2C);
 }
 
-static void test_read_i2c_fail_data(void)
+TEST(test_read_i2c_fail_data)
 {
-    printf("%s\n", __func__);
     setup();
     mock_fail_at = 1;
     sht30_data_t data;
     sht30_err_t e = sht30_read(&dev, &data);
-    ASSERT_EQ(e, SHT30_ERR_I2C, "read data I2C fail");
+    ASSERT_EQ(e, SHT30_ERR_I2C);
 }
 
-static void test_reset(void)
+TEST(test_reset)
 {
-    printf("%s\n", __func__);
     setup();
     sht30_err_t e = sht30_reset(&dev);
-    ASSERT_EQ(e, SHT30_OK, "reset ok");
-    ASSERT_EQ(mock_last_write[0], 0x30, "reset cmd MSB");
-    ASSERT_EQ(mock_last_write[1], 0xA2, "reset cmd LSB");
+    ASSERT_EQ(e, SHT30_OK);
+    ASSERT_EQ(mock_last_write[0], 0x30);
+    ASSERT_EQ(mock_last_write[1], 0xA2);
 }
 
-static void test_reset_i2c_fail(void)
+TEST(test_reset_i2c_fail)
 {
-    printf("%s\n", __func__);
     setup();
     mock_fail_next = 1;
     sht30_err_t e = sht30_reset(&dev);
-    ASSERT_EQ(e, SHT30_ERR_I2C, "reset I2C fail");
+    ASSERT_EQ(e, SHT30_ERR_I2C);
 }
 
-static void test_addr_b(void)
+TEST(test_addr_b)
 {
-    printf("%s\n", __func__);
     mock_reset();
     sht30_cfg_t cfg = { .addr = SHT30_ADDR_B };
     sht30_t d;
     sht30_err_t e = sht30_init(&d, &mock_i2c, &cfg);
-    ASSERT_EQ(e, SHT30_OK, "init with addr 0x45");
+    ASSERT_EQ(e, SHT30_OK);
 }
 
-static void test_crc8_known_vector(void)
+TEST(test_crc8_known_vector)
 {
-    printf("%s\n", __func__);
     uint8_t data[] = { 0xBE, 0xEF };
     uint8_t crc = sht30_crc8(data, 2);
-    ASSERT_EQ(crc, 0x92, "CRC-8 of 0xBEEF = 0x92");
+    ASSERT_EQ(crc, 0x92);
 }
 
-static void test_read_sends_measure_cmd(void)
+TEST(test_read_sends_measure_cmd)
 {
-    printf("%s\n", __func__);
     setup();
     plant_reading(26214, 32768);
 
     sht30_data_t data;
     sht30_read(&dev, &data);
-    ASSERT_EQ(mock_last_write[0], 0x24, "measure cmd MSB");
-    ASSERT_EQ(mock_last_write[1], 0x00, "measure cmd LSB");
+    ASSERT_EQ(mock_last_write[0], 0x24);
+    ASSERT_EQ(mock_last_write[1], 0x00);
 }
 
-int main(void)
-{
-    printf("test_sht30\n");
-    test_init_ok();
-    test_init_i2c_fail();
-    test_null_safety();
-    test_read_25c_50pct();
-    test_read_0c_0pct();
-    test_read_minus40c();
-    test_read_crc_fail_temp();
-    test_read_crc_fail_humidity();
-    test_read_i2c_fail_cmd();
-    test_read_i2c_fail_data();
-    test_reset();
-    test_reset_i2c_fail();
-    test_addr_b();
-    test_crc8_known_vector();
-    test_read_sends_measure_cmd();
+TEST_MAIN("sht30")
+    RUN(test_init_ok);
+    RUN(test_init_i2c_fail);
+    RUN(test_null_safety);
+    RUN(test_read_25c_50pct);
+    RUN(test_read_0c_0pct);
+    RUN(test_read_minus40c);
+    RUN(test_read_crc_fail_temp);
+    RUN(test_read_crc_fail_humidity);
+    RUN(test_read_i2c_fail_cmd);
+    RUN(test_read_i2c_fail_data);
+    RUN(test_reset);
+    RUN(test_reset_i2c_fail);
+    RUN(test_addr_b);
+    RUN(test_crc8_known_vector);
+    RUN(test_read_sends_measure_cmd);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

@@ -10,6 +10,7 @@ add_executable(test_bmp280
 
 target_include_directories(test_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_bmp280 PRIVATE m)

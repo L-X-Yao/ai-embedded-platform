@@ -10,6 +10,7 @@ add_executable(test_byte_buffer
 
 target_include_directories(test_byte_buffer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror)
 

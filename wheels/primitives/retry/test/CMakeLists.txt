@@ -7,7 +7,10 @@ add_executable(test_retry
     test_retry.c
     ../retry.c
 )
-target_include_directories(test_retry PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_retry PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_retry PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

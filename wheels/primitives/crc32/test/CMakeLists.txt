@@ -7,7 +7,10 @@ add_executable(test_crc32
     test_crc32.c
     ../crc32.c
 )
-target_include_directories(test_crc32 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_crc32 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_crc32 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

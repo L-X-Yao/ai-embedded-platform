@@ -231,13 +231,15 @@ def has_werror(wheel_dir: Path) -> bool:
 
 def has_test_exit_code(wheel_dir: Path) -> bool:
     """Check test main() returns non-zero on failure."""
-    patterns = ["tests_fail", "g_failures", "failures"]
+    patterns = ["tests_fail", "g_failures", "failures", "TEST_MAIN_END"]
     for glob_pat in ["test/test_*.c", "test_*.c"]:
         for src in wheel_dir.glob(glob_pat):
             try:
                 text = src.read_text(encoding="utf-8", errors="ignore")
             except OSError:
                 continue
+            if 'test_harness.h' in text:
+                return True
             if "return" in text and any(p in text for p in patterns):
                 return True
     if list(wheel_dir.glob("test_*.py")) or list(wheel_dir.glob("test/test_*.py")):

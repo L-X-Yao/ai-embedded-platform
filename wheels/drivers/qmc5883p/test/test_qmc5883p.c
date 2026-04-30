@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <math.h>
-#include "../qmc5883p.h"
+#include "qmc5883p.h"
 
 /* ---------- mock I2C ---------- */
 
@@ -64,94 +64,71 @@ static const qmc5883p_i2c_t mock_i2c = {
 };
 
 /* ---------- test helpers ---------- */
-
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-#define ASSERT_NEQ(a, b, msg)  ASSERT((a) != (b), msg)
-#define ASSERT_NEAR(a, b, tol, msg) ASSERT(fabsf((a)-(b)) < (tol), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init_ok(void)
+TEST(test_init_ok)
 {
-    printf("test_init_ok\n");
     mock_reset();
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_OK, "init returns OK");
+    ASSERT_EQ(e, QMC5883P_OK);
 }
 
-static void test_init_wake_register(void)
+TEST(test_init_wake_register)
 {
-    printf("test_init_wake_register\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
-    ASSERT(write_log_idx >= 1, "at least one write");
-    ASSERT_EQ(write_log[0].reg, 0x0D, "first write is wake register 0x0D");
-    ASSERT_EQ(write_log[0].val, 0x40, "wake value is 0x40");
+    ASSERT_TRUE(write_log_idx >= 1);
+    ASSERT_EQ(write_log[0].reg, 0x0D);
+    ASSERT_EQ(write_log[0].val, 0x40);
 }
 
-static void test_init_registers(void)
+TEST(test_init_registers)
 {
-    printf("test_init_registers\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(mock_regs[0x29], 0x06, "SIGN = 0x06");
-    ASSERT_EQ(mock_regs[0x0B], 0x0C, "CR2 = range ±2G");
-    ASSERT_EQ(mock_regs[0x0A], 0x0F, "CR1 = OSR_8x | ODR_200Hz | MODE_CONT");
+    ASSERT_EQ(mock_regs[0x29], 0x06);
+    ASSERT_EQ(mock_regs[0x0B], 0x0C);
+    ASSERT_EQ(mock_regs[0x0A], 0x0F);
 }
 
-static void test_init_soft_reset(void)
+TEST(test_init_soft_reset)
 {
-    printf("test_init_soft_reset\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
     int found = 0;
     for (int i = 0; i < write_log_idx; i++) {
         if (write_log[i].reg == 0x0B && write_log[i].val == 0x80) { found = 1; break; }
     }
-    ASSERT(found, "soft reset (CR2=0x80) was issued");
+    ASSERT_TRUE(found);
 }
 
-static void test_init_bad_chip_id(void)
+TEST(test_init_bad_chip_id)
 {
-    printf("test_init_bad_chip_id\n");
     mock_reset();
     mock_regs[0x00] = 0xFF;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_ID, "wrong chip ID detected");
+    ASSERT_EQ(e, QMC5883P_ERR_ID);
 }
 
-static void test_init_i2c_write_fail(void)
+TEST(test_init_i2c_write_fail)
 {
-    printf("test_init_i2c_write_fail\n");
     mock_reset();
     mock_fail_next = 1;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "I2C write failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_init_i2c_read_fail(void)
+TEST(test_init_i2c_read_fail)
 {
-    printf("test_init_i2c_read_fail\n");
     mock_reset();
     /* op 0 = wake write (succeed), op 1 = chip ID read (fail) */
     mock_fail_at = 1;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "chip ID read failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_read_ok(void)
+TEST(test_read_ok)
 {
-    printf("test_read_ok\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
@@ -163,39 +140,36 @@ static void test_read_ok(void)
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_OK, "read OK");
-    ASSERT_NEAR(d.mx, 1500.0f / 15000.0f, 0.001f, "mx = 0.1 Gauss");
-    ASSERT_NEAR(d.my, -1500.0f / 15000.0f, 0.001f, "my = -0.1 Gauss");
-    ASSERT_NEAR(d.mz, 3000.0f / 15000.0f, 0.001f, "mz = 0.2 Gauss");
+    ASSERT_EQ(e, QMC5883P_OK);
+    ASSERT_NEAR(d.mx, 1500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my, -1500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mz, 3000.0f / 15000.0f, 0.001f);
 }
 
-static void test_read_not_ready(void)
+TEST(test_read_not_ready)
 {
-    printf("test_read_not_ready\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
     mock_regs[0x09] = 0x00; /* DRDY not set */
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_ERR_NOT_READY, "not ready detected");
+    ASSERT_EQ(e, QMC5883P_ERR_NOT_READY);
 }
 
-static void test_read_i2c_fail(void)
+TEST(test_read_i2c_fail)
 {
-    printf("test_read_i2c_fail\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
     mock_fail_next = 1;
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "read I2C error propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_read_negative(void)
+TEST(test_read_negative)
 {
-    printf("test_read_negative\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
@@ -208,15 +182,14 @@ static void test_read_negative(void)
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_OK, "read negative OK");
-    ASSERT_NEAR(d.mx, -7500.0f / 15000.0f, 0.001f, "mx = -0.5 Gauss");
-    ASSERT_NEAR(d.my, -15000.0f / 15000.0f, 0.001f, "my = -1.0 Gauss");
-    ASSERT_NEAR(d.mz, -1.0f / 15000.0f, 0.001f, "mz ~ 0");
+    ASSERT_EQ(e, QMC5883P_OK);
+    ASSERT_NEAR(d.mx, -7500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my, -15000.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mz, -1.0f / 15000.0f, 0.001f);
 }
 
-static void test_read_int16_extremes(void)
+TEST(test_read_int16_extremes)
 {
-    printf("test_read_int16_extremes\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
@@ -228,14 +201,13 @@ static void test_read_int16_extremes(void)
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_OK, "read int16 extremes OK");
-    ASSERT_NEAR(d.mx, 32767.0f / 15000.0f, 0.001f, "mx = INT16_MAX / sensitivity");
-    ASSERT_NEAR(d.my, -32768.0f / 15000.0f, 0.001f, "my = INT16_MIN / sensitivity");
+    ASSERT_EQ(e, QMC5883P_OK);
+    ASSERT_NEAR(d.mx, 32767.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my, -32768.0f / 15000.0f, 0.001f);
 }
 
-static void test_read_zero(void)
+TEST(test_read_zero)
 {
-    printf("test_read_zero\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
@@ -246,80 +218,73 @@ static void test_read_zero(void)
 
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
-    ASSERT_EQ(e, QMC5883P_OK, "read zero OK");
-    ASSERT_NEAR(d.mx, 0.0f, 0.001f, "mx = 0");
-    ASSERT_NEAR(d.my, 0.0f, 0.001f, "my = 0");
-    ASSERT_NEAR(d.mz, 0.0f, 0.001f, "mz = 0");
+    ASSERT_EQ(e, QMC5883P_OK);
+    ASSERT_NEAR(d.mx, 0.0f, 0.001f);
+    ASSERT_NEAR(d.my, 0.0f, 0.001f);
+    ASSERT_NEAR(d.mz, 0.0f, 0.001f);
 }
 
-static void test_init_write_order(void)
+TEST(test_init_write_order)
 {
-    printf("test_init_write_order\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
     /* Expected order: wake(0x0D), soft_reset(0x0B), sign(0x29), cr2(0x0B), cr1(0x0A) */
-    ASSERT(write_log_idx >= 5, "at least 5 writes during init");
-    ASSERT_EQ(write_log[0].reg, 0x0D, "1st: wake register");
-    ASSERT_EQ(write_log[1].reg, 0x0B, "2nd: soft reset (CR2)");
-    ASSERT_EQ(write_log[1].val, 0x80, "2nd: soft reset value");
-    ASSERT_EQ(write_log[2].reg, 0x29, "3rd: SIGN register");
-    ASSERT_EQ(write_log[3].reg, 0x0B, "4th: CR2 (range)");
-    ASSERT_EQ(write_log[4].reg, 0x0A, "5th: CR1 (mode)");
+    ASSERT_TRUE(write_log_idx >= 5);
+    ASSERT_EQ(write_log[0].reg, 0x0D);
+    ASSERT_EQ(write_log[1].reg, 0x0B);
+    ASSERT_EQ(write_log[1].val, 0x80);
+    ASSERT_EQ(write_log[2].reg, 0x29);
+    ASSERT_EQ(write_log[3].reg, 0x0B);
+    ASSERT_EQ(write_log[4].reg, 0x0A);
 }
 
-static void test_init_mid_step_fail(void)
+TEST(test_init_mid_step_fail)
 {
-    printf("test_init_mid_step_fail\n");
     mock_reset();
     /* op0=wake_write(ok), op1=chip_id_read(ok), op2=soft_reset_write(ok),
      * op3=sign_write(fail) — tests that failure at 4th I2C op propagates */
     mock_fail_at = 3;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "mid-init I2C failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_init_soft_reset_fail(void)
+TEST(test_init_soft_reset_fail)
 {
-    printf("test_init_soft_reset_fail\n");
     mock_reset();
     mock_fail_at = 2;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "soft reset write failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_init_cr2_write_fail(void)
+TEST(test_init_cr2_write_fail)
 {
-    printf("test_init_cr2_write_fail\n");
     mock_reset();
     mock_fail_at = 4;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "CR2 range write failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_init_cr1_write_fail(void)
+TEST(test_init_cr1_write_fail)
 {
-    printf("test_init_cr1_write_fail\n");
     mock_reset();
     mock_fail_at = 5;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_ERR_I2C, "CR1 mode write failure propagated");
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
     qmc5883p_data_t d;
-    ASSERT_EQ(qmc5883p_init(NULL), QMC5883P_ERR_I2C, "init(NULL) returns ERR_I2C");
-    ASSERT_EQ(qmc5883p_read(NULL, &d), QMC5883P_ERR_I2C, "read(NULL, &d) returns ERR_I2C");
+    ASSERT_EQ(qmc5883p_init(NULL), QMC5883P_ERR_I2C);
+    ASSERT_EQ(qmc5883p_read(NULL, &d), QMC5883P_ERR_I2C);
     mock_reset();
     qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(qmc5883p_read(&mock_i2c, NULL), QMC5883P_ERR_I2C, "read(i2c, NULL) returns ERR_I2C");
+    ASSERT_EQ(qmc5883p_read(&mock_i2c, NULL), QMC5883P_ERR_I2C);
 }
 
-static void test_reinit(void)
+TEST(test_reinit)
 {
-    printf("test_reinit\n");
     mock_reset();
     qmc5883p_init(&mock_i2c);
 
@@ -333,37 +298,33 @@ static void test_reinit(void)
     write_log_idx = 0;
     mock_regs[0x00] = 0x80;
     qmc5883p_err_t e = qmc5883p_init(&mock_i2c);
-    ASSERT_EQ(e, QMC5883P_OK, "re-init OK");
-    ASSERT(write_log_idx >= 5, "all registers re-written on re-init");
-    ASSERT_EQ(mock_regs[0x0A], 0x0F, "CR1 restored after re-init");
+    ASSERT_EQ(e, QMC5883P_OK);
+    ASSERT_TRUE(write_log_idx >= 5);
+    ASSERT_EQ(mock_regs[0x0A], 0x0F);
 }
 
 /* ---------- main ---------- */
 
-int main(void)
-{
-    test_init_ok();
-    test_init_wake_register();
-    test_init_registers();
-    test_init_soft_reset();
-    test_init_write_order();
-    test_init_bad_chip_id();
-    test_init_i2c_write_fail();
-    test_init_i2c_read_fail();
-    test_init_mid_step_fail();
-    test_init_soft_reset_fail();
-    test_init_cr2_write_fail();
-    test_init_cr1_write_fail();
-    test_read_ok();
-    test_read_not_ready();
-    test_read_i2c_fail();
-    test_read_negative();
-    test_read_int16_extremes();
-    test_read_zero();
-    test_null_safety();
-    test_reinit();
+TEST_MAIN("qmc5883p")
+    RUN(test_init_ok);
+    RUN(test_init_wake_register);
+    RUN(test_init_registers);
+    RUN(test_init_soft_reset);
+    RUN(test_init_write_order);
+    RUN(test_init_bad_chip_id);
+    RUN(test_init_i2c_write_fail);
+    RUN(test_init_i2c_read_fail);
+    RUN(test_init_mid_step_fail);
+    RUN(test_init_soft_reset_fail);
+    RUN(test_init_cr2_write_fail);
+    RUN(test_init_cr1_write_fail);
+    RUN(test_read_ok);
+    RUN(test_read_not_ready);
+    RUN(test_read_i2c_fail);
+    RUN(test_read_negative);
+    RUN(test_read_int16_extremes);
+    RUN(test_read_zero);
+    RUN(test_null_safety);
+    RUN(test_reinit);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

@@ -7,7 +7,10 @@ add_executable(test_coap_packet
     test_coap_packet.c
     ../coap_packet.c
 )
-target_include_directories(test_coap_packet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_coap_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_coap_packet PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

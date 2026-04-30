@@ -7,7 +7,10 @@ add_executable(test_ads1115
     test_ads1115.c
     ../ads1115.c
 )
-target_include_directories(test_ads1115 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_ads1115 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_ads1115 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_ads1115 PRIVATE m)
 

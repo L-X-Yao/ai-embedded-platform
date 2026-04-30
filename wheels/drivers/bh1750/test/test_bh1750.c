@@ -1,25 +1,7 @@
+#include "test_harness.h"
 #include "bh1750.h"
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_NEAR(a, b, tol) do { \
-    if (fabsf((a) - (b)) > (tol)) { \
-        printf("  FAIL %s:%d: %.2f not near %.2f\n", __func__, __LINE__, \
-               (double)(a), (double)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 static uint8_t mock_cmd_log[16];
 static int mock_cmd_count;
@@ -147,9 +129,7 @@ TEST(test_read_null)
     ASSERT_EQ(bh1750_read_lux(NULL, NULL), BH1750_ERR_PARAM);
 }
 
-int main(void)
-{
-    printf("bh1750 tests:\n");
+TEST_MAIN("bh1750")
     RUN(test_init_null);
     RUN(test_init_sends_power_on_and_mode);
     RUN(test_read_lux_h_res);
@@ -158,6 +138,4 @@ int main(void)
     RUN(test_i2c_failure);
     RUN(test_power_off_on);
     RUN(test_read_null);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

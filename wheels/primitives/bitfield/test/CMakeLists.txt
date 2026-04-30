@@ -7,7 +7,10 @@ add_executable(test_bitfield
     test_bitfield.c
     ../bitfield.c
 )
-target_include_directories(test_bitfield PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_bitfield PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_bitfield PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

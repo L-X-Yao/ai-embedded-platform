@@ -7,7 +7,10 @@ add_executable(test_bh1750
     test_bh1750.c
     ../bh1750.c
 )
-target_include_directories(test_bh1750 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_bh1750 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(test_bh1750 PRIVATE m)
 

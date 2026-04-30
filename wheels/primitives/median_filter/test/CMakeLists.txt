@@ -4,7 +4,10 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_executable(test_median_filter test_median_filter.c ../median_filter.c)
-target_include_directories(test_median_filter PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_median_filter PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
 target_compile_options(test_median_filter PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 enable_testing()

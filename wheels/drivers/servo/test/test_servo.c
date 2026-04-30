@@ -1,17 +1,5 @@
+#include "test_harness.h"
 #include "servo.h"
-#include <stdio.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 static uint32_t mock_last_pulse;
 static bool mock_fail;
@@ -108,9 +96,7 @@ TEST(test_set_pulse_direct)
     ASSERT_EQ(mock_last_pulse, 1234);
 }
 
-int main(void)
-{
-    printf("servo tests:\n");
+TEST_MAIN("servo")
     RUN(test_init_null);
     RUN(test_init_bad_config);
     RUN(test_angle_0);
@@ -119,6 +105,4 @@ int main(void)
     RUN(test_angle_clamp);
     RUN(test_hal_failure);
     RUN(test_set_pulse_direct);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

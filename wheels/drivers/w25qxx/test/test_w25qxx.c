@@ -1,7 +1,7 @@
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 #include <stdlib.h>
-#include "../w25qxx.h"
+#include "w25qxx.h"
 
 /* ---------- mock SPI flash (64KB simulated) ---------- */
 
@@ -17,9 +17,6 @@ static uint8_t mock_status;
 static int     mock_fail_next;
 static uint32_t mock_jedec;
 static int     mock_stuck_busy;
-
-static int     tests_run, tests_fail;
-
 static void mock_reset(void)
 {
     memset(mock_mem, 0xFF, MOCK_SIZE);
@@ -123,101 +120,83 @@ static const w25qxx_spi_t mock_spi = {
 
 /* ---------- test helpers ---------- */
 
-#define ASSERT(cond, msg) do { \
-    tests_run++; \
-    if (!(cond)) { \
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        tests_fail++; \
-    } \
-} while(0)
-
-#define ASSERT_EQ(a, b, msg) ASSERT((a) == (b), msg)
-
 /* ---------- tests ---------- */
 
-static void test_init(void)
+TEST(test_init)
 {
-    printf("test_init\n");
     mock_reset();
     uint32_t id = 0;
     w25qxx_err_t e = w25qxx_init(&mock_spi, &id);
-    ASSERT_EQ(e, W25QXX_OK, "init OK");
-    ASSERT_EQ(id, 0xEF4017, "JEDEC ID = W25Q64");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(id, 0xEF4017);
 }
 
-static void test_init_bad_id(void)
+TEST(test_init_bad_id)
 {
-    printf("test_init_bad_id\n");
     mock_reset();
     mock_jedec = 0xFF0000;
     uint32_t id = 0;
     w25qxx_err_t e = w25qxx_init(&mock_spi, &id);
-    ASSERT_EQ(e, W25QXX_ERR_JEDEC_ID, "bad JEDEC detected");
+    ASSERT_EQ(e, W25QXX_ERR_JEDEC_ID);
 }
 
-static void test_read(void)
+TEST(test_read)
 {
-    printf("test_read\n");
     mock_reset();
     mock_mem[0x100] = 0xAB;
     mock_mem[0x101] = 0xCD;
     uint8_t buf[2] = {0};
     w25qxx_err_t e = w25qxx_read(&mock_spi, 0x100, buf, 2);
-    ASSERT_EQ(e, W25QXX_OK, "read OK");
-    ASSERT_EQ(buf[0], 0xAB, "byte 0");
-    ASSERT_EQ(buf[1], 0xCD, "byte 1");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(buf[0], 0xAB);
+    ASSERT_EQ(buf[1], 0xCD);
 }
 
-static void test_page_program(void)
+TEST(test_page_program)
 {
-    printf("test_page_program\n");
     mock_reset();
     uint8_t data[] = {0x11, 0x22, 0x33, 0x44};
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0x200, data, 4);
-    ASSERT_EQ(e, W25QXX_OK, "page program OK");
-    ASSERT_EQ(mock_mem[0x200], 0x11, "written byte 0");
-    ASSERT_EQ(mock_mem[0x203], 0x44, "written byte 3");
-    ASSERT_EQ(mock_mem[0x204], 0xFF, "unwritten stays 0xFF");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0x200], 0x11);
+    ASSERT_EQ(mock_mem[0x203], 0x44);
+    ASSERT_EQ(mock_mem[0x204], 0xFF);
 }
 
-static void test_page_program_cross_boundary(void)
+TEST(test_page_program_cross_boundary)
 {
-    printf("test_page_program_cross_boundary\n");
     mock_reset();
     uint8_t data[2] = {0xAA, 0xBB};
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0xFF, data, 2);
-    ASSERT_EQ(e, W25QXX_ERR_ALIGN, "cross-page rejected");
+    ASSERT_EQ(e, W25QXX_ERR_ALIGN);
 }
 
-static void test_sector_erase(void)
+TEST(test_sector_erase)
 {
-    printf("test_sector_erase\n");
     mock_reset();
     mock_mem[0x1000] = 0x42;
     mock_mem[0x1FFF] = 0x42;
     mock_mem[0x2000] = 0x42;
     w25qxx_err_t e = w25qxx_sector_erase(&mock_spi, 0x1000);
-    ASSERT_EQ(e, W25QXX_OK, "erase OK");
-    ASSERT_EQ(mock_mem[0x1000], 0xFF, "erased byte");
-    ASSERT_EQ(mock_mem[0x1FFF], 0xFF, "erased last byte");
-    ASSERT_EQ(mock_mem[0x2000], 0x42, "next sector untouched");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0x1000], 0xFF);
+    ASSERT_EQ(mock_mem[0x1FFF], 0xFF);
+    ASSERT_EQ(mock_mem[0x2000], 0x42);
 }
 
-static void test_chip_erase(void)
+TEST(test_chip_erase)
 {
-    printf("test_chip_erase\n");
     mock_reset();
     mock_mem[0] = 0x42;
     mock_mem[MOCK_SIZE - 1] = 0x42;
     w25qxx_err_t e = w25qxx_chip_erase(&mock_spi);
-    ASSERT_EQ(e, W25QXX_OK, "chip erase OK");
-    ASSERT_EQ(mock_mem[0], 0xFF, "first byte erased");
-    ASSERT_EQ(mock_mem[MOCK_SIZE - 1], 0xFF, "last byte erased");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0], 0xFF);
+    ASSERT_EQ(mock_mem[MOCK_SIZE - 1], 0xFF);
 }
 
-static void test_read_write_cycle(void)
+TEST(test_read_write_cycle)
 {
-    printf("test_read_write_cycle\n");
     mock_reset();
     w25qxx_sector_erase(&mock_spi, 0);
 
@@ -226,196 +205,179 @@ static void test_read_write_cycle(void)
 
     uint8_t rd[8] = {0};
     w25qxx_read(&mock_spi, 0, rd, 8);
-    ASSERT(memcmp(wr, rd, 8) == 0, "write-read roundtrip");
+    ASSERT_TRUE(memcmp(wr, rd, 8) == 0);
 }
 
-static void test_read_status(void)
+TEST(test_read_status)
 {
-    printf("test_read_status\n");
     mock_reset();
     uint8_t sr = 0xFF;
     w25qxx_err_t e = w25qxx_read_status(&mock_spi, &sr);
-    ASSERT_EQ(e, W25QXX_OK, "read status OK");
-    ASSERT_EQ(sr & 0x01, 0, "not busy");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(sr & 0x01, 0);
 }
 
-static void test_init_null_jedec_out(void)
+TEST(test_init_null_jedec_out)
 {
-    printf("test_init_null_jedec_out\n");
     mock_reset();
     w25qxx_err_t e = w25qxx_init(&mock_spi, NULL);
-    ASSERT_EQ(e, W25QXX_OK, "init with NULL jedec_id_out");
+    ASSERT_EQ(e, W25QXX_OK);
 }
 
-static void test_page_program_full_page(void)
+TEST(test_page_program_full_page)
 {
-    printf("test_page_program_full_page\n");
     mock_reset();
     uint8_t data[256];
     for (int i = 0; i < 256; i++) data[i] = (uint8_t)i;
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0x100, data, 256);
-    ASSERT_EQ(e, W25QXX_OK, "full page program OK");
-    ASSERT_EQ(mock_mem[0x100], 0x00, "first byte");
-    ASSERT_EQ(mock_mem[0x1FF], 0xFF, "last byte");
-    ASSERT_EQ(mock_mem[0x200], 0xFF, "next page untouched");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0x100], 0x00);
+    ASSERT_EQ(mock_mem[0x1FF], 0xFF);
+    ASSERT_EQ(mock_mem[0x200], 0xFF);
 }
 
-static void test_nor_program_semantics(void)
+TEST(test_nor_program_semantics)
 {
-    printf("test_nor_program_semantics\n");
     mock_reset();
     /* Write 0x0F first */
     uint8_t d1 = 0x0F;
     w25qxx_page_program(&mock_spi, 0x300, &d1, 1);
-    ASSERT_EQ(mock_mem[0x300], 0x0F, "first write");
+    ASSERT_EQ(mock_mem[0x300], 0x0F);
 
     /* Write 0xF0 on top — NOR can only clear bits, not set them */
     uint8_t d2 = 0xF0;
     w25qxx_page_program(&mock_spi, 0x300, &d2, 1);
-    ASSERT_EQ(mock_mem[0x300], 0x00, "NOR: 0x0F & 0xF0 = 0x00");
+    ASSERT_EQ(mock_mem[0x300], 0x00);
 
     /* Erase restores 0xFF */
     w25qxx_sector_erase(&mock_spi, 0x300);
-    ASSERT_EQ(mock_mem[0x300], 0xFF, "erase restores 0xFF");
+    ASSERT_EQ(mock_mem[0x300], 0xFF);
 }
 
-static void test_timeout_stuck_busy(void)
+TEST(test_timeout_stuck_busy)
 {
-    printf("test_timeout_stuck_busy\n");
     mock_reset();
     mock_stuck_busy = 1;
     uint8_t data[] = {0x42};
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, data, 1);
-    ASSERT_EQ(e, W25QXX_ERR_TIMEOUT, "stuck busy returns timeout");
+    ASSERT_EQ(e, W25QXX_ERR_TIMEOUT);
     mock_stuck_busy = 0;
 }
 
-static void test_null_safety(void)
+TEST(test_null_safety)
 {
-    printf("test_null_safety\n");
     uint32_t id;
     uint8_t buf[4];
     uint8_t sr;
-    ASSERT_EQ(w25qxx_init(NULL, &id), W25QXX_ERR_SPI, "init(NULL)");
-    ASSERT_EQ(w25qxx_read(NULL, 0, buf, 4), W25QXX_ERR_SPI, "read(NULL spi)");
-    ASSERT_EQ(w25qxx_read(&mock_spi, 0, NULL, 4), W25QXX_ERR_SPI, "read(NULL buf)");
-    ASSERT_EQ(w25qxx_page_program(NULL, 0, buf, 1), W25QXX_ERR_SPI, "program(NULL spi)");
-    ASSERT_EQ(w25qxx_page_program(&mock_spi, 0, NULL, 1), W25QXX_ERR_SPI, "program(NULL data)");
-    ASSERT_EQ(w25qxx_sector_erase(NULL, 0), W25QXX_ERR_SPI, "erase(NULL)");
-    ASSERT_EQ(w25qxx_chip_erase(NULL), W25QXX_ERR_SPI, "chip_erase(NULL)");
-    ASSERT_EQ(w25qxx_read_status(NULL, &sr), W25QXX_ERR_SPI, "status(NULL spi)");
-    ASSERT_EQ(w25qxx_read_status(&mock_spi, NULL), W25QXX_ERR_SPI, "status(NULL sr)");
+    ASSERT_EQ(w25qxx_init(NULL, &id), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_read(NULL, 0, buf, 4), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_read(&mock_spi, 0, NULL, 4), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_page_program(NULL, 0, buf, 1), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_page_program(&mock_spi, 0, NULL, 1), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_sector_erase(NULL, 0), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_chip_erase(NULL), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_read_status(NULL, &sr), W25QXX_ERR_SPI);
+    ASSERT_EQ(w25qxx_read_status(&mock_spi, NULL), W25QXX_ERR_SPI);
 }
 
-static void test_reinit_different_chip(void)
+TEST(test_reinit_different_chip)
 {
-    printf("test_reinit_different_chip\n");
     mock_reset();
     uint32_t id1 = 0;
     w25qxx_init(&mock_spi, &id1);
-    ASSERT_EQ(id1, 0xEF4017, "first init W25Q64");
+    ASSERT_EQ(id1, 0xEF4017);
 
     mock_jedec = 0xEF4018;
     uint32_t id2 = 0;
     w25qxx_err_t e = w25qxx_init(&mock_spi, &id2);
-    ASSERT_EQ(e, W25QXX_OK, "re-init OK");
-    ASSERT_EQ(id2, 0xEF4018, "second init W25Q128");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(id2, 0xEF4018);
 }
 
-static void test_read_address_zero(void)
+TEST(test_read_address_zero)
 {
-    printf("test_read_address_zero\n");
     mock_reset();
     mock_mem[0] = 0x42;
     mock_mem[1] = 0x99;
     uint8_t buf[2] = {0};
     w25qxx_err_t e = w25qxx_read(&mock_spi, 0, buf, 2);
-    ASSERT_EQ(e, W25QXX_OK, "read addr 0 OK");
-    ASSERT_EQ(buf[0], 0x42, "byte at 0");
-    ASSERT_EQ(buf[1], 0x99, "byte at 1");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(buf[0], 0x42);
+    ASSERT_EQ(buf[1], 0x99);
 }
 
-static void test_page_program_zero_len(void)
+TEST(test_page_program_zero_len)
 {
-    printf("test_page_program_zero_len\n");
     mock_reset();
     uint8_t data = 0x55;
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, &data, 0);
-    ASSERT_EQ(e, W25QXX_ERR_ALIGN, "zero len rejected");
+    ASSERT_EQ(e, W25QXX_ERR_ALIGN);
 }
 
-static void test_page_program_oversized(void)
+TEST(test_page_program_oversized)
 {
-    printf("test_page_program_oversized\n");
     mock_reset();
     uint8_t data[257];
     memset(data, 0x55, sizeof(data));
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0, data, 257);
-    ASSERT_EQ(e, W25QXX_ERR_ALIGN, "257 bytes rejected (> page size)");
+    ASSERT_EQ(e, W25QXX_ERR_ALIGN);
 }
 
-static void test_init_jedec_zero_manufacturer(void)
+TEST(test_init_jedec_zero_manufacturer)
 {
-    printf("test_init_jedec_zero_manufacturer\n");
     mock_reset();
     mock_jedec = 0x004017;
     uint32_t id = 0;
     w25qxx_err_t e = w25qxx_init(&mock_spi, &id);
-    ASSERT_EQ(e, W25QXX_ERR_JEDEC_ID, "manufacturer 0x00 rejected");
+    ASSERT_EQ(e, W25QXX_ERR_JEDEC_ID);
 }
 
-static void test_page_program_end_of_page(void)
+TEST(test_page_program_end_of_page)
 {
-    printf("test_page_program_end_of_page\n");
     mock_reset();
     uint8_t data = 0xAA;
     w25qxx_err_t e = w25qxx_page_program(&mock_spi, 0x1FF, &data, 1);
-    ASSERT_EQ(e, W25QXX_OK, "write at last byte of page");
-    ASSERT_EQ(mock_mem[0x1FF], 0xAA, "byte written correctly");
-    ASSERT_EQ(mock_mem[0x200], 0xFF, "next page untouched");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0x1FF], 0xAA);
+    ASSERT_EQ(mock_mem[0x200], 0xFF);
 }
 
-static void test_sector_erase_non_aligned(void)
+TEST(test_sector_erase_non_aligned)
 {
-    printf("test_sector_erase_non_aligned\n");
     mock_reset();
     mock_mem[0x1000] = 0x42;
     mock_mem[0x1800] = 0x42;
     mock_mem[0x1FFF] = 0x42;
     w25qxx_err_t e = w25qxx_sector_erase(&mock_spi, 0x1800);
-    ASSERT_EQ(e, W25QXX_OK, "erase with non-aligned addr");
-    ASSERT_EQ(mock_mem[0x1000], 0xFF, "sector start erased");
-    ASSERT_EQ(mock_mem[0x1800], 0xFF, "target addr erased");
-    ASSERT_EQ(mock_mem[0x1FFF], 0xFF, "sector end erased");
+    ASSERT_EQ(e, W25QXX_OK);
+    ASSERT_EQ(mock_mem[0x1000], 0xFF);
+    ASSERT_EQ(mock_mem[0x1800], 0xFF);
+    ASSERT_EQ(mock_mem[0x1FFF], 0xFF);
 }
 
 /* ---------- main ---------- */
 
-int main(void)
-{
-    test_init();
-    test_init_bad_id();
-    test_init_null_jedec_out();
-    test_read();
-    test_page_program();
-    test_page_program_full_page();
-    test_page_program_cross_boundary();
-    test_sector_erase();
-    test_chip_erase();
-    test_read_write_cycle();
-    test_read_status();
-    test_nor_program_semantics();
-    test_timeout_stuck_busy();
-    test_null_safety();
-    test_reinit_different_chip();
-    test_read_address_zero();
-    test_page_program_zero_len();
-    test_page_program_oversized();
-    test_init_jedec_zero_manufacturer();
-    test_page_program_end_of_page();
-    test_sector_erase_non_aligned();
+TEST_MAIN("w25qxx")
+    RUN(test_init);
+    RUN(test_init_bad_id);
+    RUN(test_init_null_jedec_out);
+    RUN(test_read);
+    RUN(test_page_program);
+    RUN(test_page_program_full_page);
+    RUN(test_page_program_cross_boundary);
+    RUN(test_sector_erase);
+    RUN(test_chip_erase);
+    RUN(test_read_write_cycle);
+    RUN(test_read_status);
+    RUN(test_nor_program_semantics);
+    RUN(test_timeout_stuck_busy);
+    RUN(test_null_safety);
+    RUN(test_reinit_different_chip);
+    RUN(test_read_address_zero);
+    RUN(test_page_program_zero_len);
+    RUN(test_page_program_oversized);
+    RUN(test_init_jedec_zero_manufacturer);
+    RUN(test_page_program_end_of_page);
+    RUN(test_sector_erase_non_aligned);
+TEST_MAIN_END()
 
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
-}

@@ -1,19 +1,5 @@
+#include "test_harness.h"
 #include "debounce.h"
-#include <stdio.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_TRUE(x)  ASSERT_EQ(!!(x), 1)
-#define ASSERT_FALSE(x) ASSERT_EQ(!!(x), 0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 TEST(test_init)
 {
@@ -98,9 +84,7 @@ TEST(test_rapid_toggle)
     ASSERT_FALSE(debounce_get(&d));
 }
 
-int main(void)
-{
-    printf("debounce tests:\n");
+TEST_MAIN("debounce")
     RUN(test_init);
     RUN(test_stable_after_threshold);
     RUN(test_bounce_rejection);
@@ -109,6 +93,4 @@ int main(void)
     RUN(test_threshold_1);
     RUN(test_null_safety);
     RUN(test_rapid_toggle);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()

@@ -10,6 +10,7 @@ add_executable(test_ws2812
 
 target_include_directories(test_ws2812 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 target_compile_options(test_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror)

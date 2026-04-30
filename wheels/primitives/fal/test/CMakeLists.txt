@@ -13,6 +13,7 @@ add_executable(test_fal
 target_include_directories(test_fal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 
 enable_testing()

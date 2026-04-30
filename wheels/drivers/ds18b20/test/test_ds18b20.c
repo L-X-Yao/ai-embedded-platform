@@ -1,25 +1,6 @@
+#include "test_harness.h"
 #include "ds18b20.h"
-#include <stdio.h>
 #include <string.h>
-
-static int tests_pass = 0, tests_fail = 0;
-
-#define TEST(name) static void name(void)
-#define ASSERT_EQ(a, b) do { \
-    if ((a) != (b)) { \
-        printf("  FAIL %s:%d: %d != %d\n", __func__, __LINE__, \
-               (int)(a), (int)(b)); \
-        tests_fail++; return; \
-    } } while(0)
-#define ASSERT_NEAR(a, b, tol) do { \
-    float _a = (a), _b = (b); \
-    if ((_a - _b) > (tol) || (_b - _a) > (tol)) { \
-        printf("  FAIL %s:%d: %.4f not near %.4f\n", __func__, __LINE__, \
-               (double)_a, (double)_b); \
-        tests_fail++; return; \
-    } } while(0)
-#define RUN(fn) do { int pf = tests_fail; fn(); if(tests_fail == pf) { \
-    printf("  PASS %s\n", #fn); tests_pass++; } } while(0)
 
 /* Mock 1-Wire bus */
 static uint8_t mock_scratchpad[9];
@@ -175,9 +156,7 @@ TEST(test_start_conversion)
     ASSERT_EQ(ds18b20_start_conversion(&dev), DS18B20_OK);
 }
 
-int main(void)
-{
-    printf("ds18b20 tests:\n");
+TEST_MAIN("ds18b20")
     RUN(test_init_null);
     RUN(test_read_25c);
     RUN(test_read_negative);
@@ -187,6 +166,4 @@ int main(void)
     RUN(test_read_rom);
     RUN(test_crc8_known_vector);
     RUN(test_start_conversion);
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail);
-    return tests_fail ? 1 : 0;
-}
+TEST_MAIN_END()
