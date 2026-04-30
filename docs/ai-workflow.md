@@ -217,7 +217,7 @@
 
 **目的**：平台文档/代码/流程之间**不一致 / 过时 / 腐烂**的地方，被积累前发现。
 
-**完整维度清单和执行协议**：见 [`docs/audit-dimensions.md`](audit-dimensions.md)（42 个维度，8 个并行批次）。
+**完整维度清单和执行协议**：见 [`docs/audit-dimensions.md`](audit-dimensions.md)（40 个维度，三阶段执行（自动→人工→记录））。
 
 **交互协议**：
 

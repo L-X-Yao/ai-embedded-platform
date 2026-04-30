@@ -147,7 +147,7 @@ ai-embedded-platform/
 | 8. VSF 上游修改 | patch 文件走 `tooling/patches/`，保持 vsf/ 干净 |
 | 9. **沉淀**（项目结束后）🔑 | AI 扫 + API 提案 → 人 15 分钟审批 → AI 实现 |
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
-| 11. 平台自省 | 42 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
+| 11. 平台自省 | 40 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
 
 ## 平台选择：VSF
 
@@ -382,4 +382,4 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - 用户说"开始第 N 个项目 yyy" → 走 `ai-workflow.md` 任务类型 2
 - 用户说"加个 wheel xxx" → 走任务类型 1，**强制先 grep VSF**
 - 用户说"项目 zzz 交付了" → 走任务类型 9（沉淀）
-- 用户说"审计" → 列维度表选择；"超级审计" → 42 维度全量并行（见 `docs/audit-dimensions.md`）
+- 用户说"审计" → 列维度表选择；"超级审计" → 40 维度三阶段（见 `docs/audit-dimensions.md`）
