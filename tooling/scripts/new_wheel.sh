@@ -372,12 +372,9 @@ typedef enum {
     ${NAME_UPPER}_ERR_PARAM = -1,
 } ${NAME_LOWER}_err_t;
 
-/* TODO: define API
- * Every function MUST have a @thread_safe annotation:
- *   /** Brief description. @thread_safe: yes|no|caller_must_lock *x/
- * Struct internal fields MUST be marked:
- *   /* internal — do not access directly *x/
- */
+/* TODO: define API — see api-conventions.md for rules.
+ * Add @thread_safe annotation to every function declaration.
+ * Mark internal struct fields with a comment. */
 
 #ifdef __cplusplus
 }
@@ -404,8 +401,12 @@ generate_c_i2c() {
 /* TODO: register defines */
 #define REG_CHIP_ID     0x00u
 
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_i2c_t *i2c)
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_dev_t *dev,
+                               const ${NAME_LOWER}_i2c_t *i2c)
 {
+    if (!dev || !i2c) return ${NAME_UPPER}_ERR_PARAM;
+    dev->i2c = i2c;
+
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, ${NAME_UPPER}_DEV_ADDR, REG_CHIP_ID, &id, 1))
         return ${NAME_UPPER}_ERR_I2C;
@@ -416,11 +417,13 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_i2c_t *i2c)
     return ${NAME_UPPER}_OK;
 }
 
-${NAME_LOWER}_err_t ${NAME_LOWER}_read(const ${NAME_LOWER}_i2c_t *i2c, ${NAME_LOWER}_data_t *out)
+${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_dev_t *dev,
+                               ${NAME_LOWER}_data_t *out)
 {
-    (void)i2c; (void)out;
+    if (!dev || !out) return ${NAME_UPPER}_ERR_PARAM;
+    (void)dev;
     /* TODO: implement */
-    return ${NAME_UPPER}_ERR_NOT_READY;
+    return ${NAME_UPPER}_ERR_I2C;
 }
 C_EOF
 }
@@ -449,8 +452,9 @@ static uint8_t spi_cmd(const ${NAME_LOWER}_spi_t *spi, uint8_t cmd)
 
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi)
 {
-    (void)spi;
-    /* TODO: read JEDEC ID, configure */
+    if (!spi) return ${NAME_UPPER}_ERR_SPI;
+    /* TODO: read JEDEC ID — e.g. spi_cmd(spi, 0x9F) */
+    (void)spi_cmd;
     return ${NAME_UPPER}_OK;
 }
 C_EOF
@@ -600,24 +604,27 @@ static const ${NAME_LOWER}_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
+static ${NAME_LOWER}_dev_t dev;
+
 /* ---------- tests ---------- */
 
 TEST(test_init_ok)
 {
     mock_reset();
-    ASSERT_EQ(${NAME_LOWER}_init(&mock_i2c), ${NAME_UPPER}_OK);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_i2c), ${NAME_UPPER}_OK);
 }
 
 TEST(test_init_i2c_fail)
 {
     mock_reset();
     mock_fail_at = 0;
-    ASSERT_EQ(${NAME_LOWER}_init(&mock_i2c), ${NAME_UPPER}_ERR_I2C);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &mock_i2c), ${NAME_UPPER}_ERR_I2C);
 }
 
 TEST(test_null_safety)
 {
-    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_I2C);
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_i2c), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
 /* TODO: add more tests */
