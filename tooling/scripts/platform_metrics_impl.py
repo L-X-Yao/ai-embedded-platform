@@ -95,6 +95,77 @@ def collect(repo: Path) -> dict:
     }
 
 
+def collect_quality(repo: Path) -> dict:
+    """Collect code quality metrics: test/code ratio, assertion density, error coverage."""
+    wheels = repo / "wheels"
+    total_code_lines = 0
+    total_test_lines = 0
+    total_test_funcs = 0
+    total_asserts = 0
+    total_err_codes = 0
+    covered_err_codes = 0
+
+    err_pattern_cache = {}
+    for h in wheels.rglob("*.h"):
+        if "vendor" in str(h) or "test" in str(h):
+            continue
+        name = h.stem
+        text = h.read_text(encoding="utf-8", errors="ignore")
+        pat = re.compile(r'\b' + re.escape(name.upper()) + r'_ERR_\w+\b')
+        codes = set(pat.findall(text))
+        if codes:
+            err_pattern_cache[h.parent] = (name, codes)
+
+    for c_file in wheels.rglob("*.c"):
+        rel = str(c_file).replace("\\", "/")
+        if "vendor" in rel or "/build" in rel:
+            continue
+        try:
+            text = c_file.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "/test/" in rel:
+            total_test_lines += len(text.splitlines())
+            total_test_funcs += text.count("TEST(")
+            total_asserts += text.count("ASSERT")
+        else:
+            total_code_lines += len(text.splitlines())
+
+    for wheel_dir, (name, codes) in err_pattern_cache.items():
+        total_err_codes += len(codes)
+        test_dir = wheel_dir / "test"
+        if test_dir.is_dir():
+            test_text = ""
+            for tf in test_dir.glob("*.c"):
+                test_text += tf.read_text(encoding="utf-8", errors="ignore")
+            covered_err_codes += sum(1 for c in codes if c in test_text)
+
+    assert_density = (total_asserts / total_test_funcs) if total_test_funcs else 0
+    test_ratio = (total_test_lines / total_code_lines) if total_code_lines else 0
+    err_coverage = (covered_err_codes / total_err_codes * 100) if total_err_codes else 0
+
+    return {
+        "code_lines": total_code_lines,
+        "test_lines": total_test_lines,
+        "test_ratio": round(test_ratio, 2),
+        "test_functions": total_test_funcs,
+        "assertions": total_asserts,
+        "assert_density": round(assert_density, 1),
+        "error_codes_total": total_err_codes,
+        "error_codes_covered": covered_err_codes,
+        "error_coverage_pct": round(err_coverage, 1),
+    }
+
+
+def print_quality(q: dict):
+    print("\033[1m=== Quality Metrics ===\033[0m")
+    print(f"  Code:       {q['code_lines']} lines (non-vendor, non-test)")
+    print(f"  Tests:      {q['test_lines']} lines ({q['test_functions']} functions)")
+    print(f"  Test/Code:  {q['test_ratio']}x")
+    print(f"  Asserts:    {q['assertions']} total, {q['assert_density']} per test function")
+    print(f"  Error codes: {q['error_codes_covered']}/{q['error_codes_total']} covered ({q['error_coverage_pct']}%)")
+
+
 def print_metrics(d: dict, label: str = "Current"):
     print(f"\033[1m=== {label} ===\033[0m")
     print(f"  Wheels:     {d['wheels_total']} (L0:{d['wheels_l0']} L1:{d['wheels_l1']} L2:{d['wheels_l2']} L3:{d['wheels_l3']})")
@@ -153,6 +224,11 @@ def main():
         for f in sorted(metrics_dir.glob("*.json")):
             d = json.loads(f.read_text())
             print(f"  {f.stem}  wheels={d.get('wheels_total','-')}  tests={d.get('test_suites','-')}  assertions={d.get('assertions','-')}")
+        return
+
+    if "--quality" in args:
+        q = collect_quality(repo)
+        print_quality(q)
         return
 
     current = collect(repo)
