@@ -88,6 +88,8 @@ ws_err_t ws_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
     if (mask_key)
         hdr_len += 4;
 
+    if (payload_len > SIZE_MAX - hdr_len)
+        return WS_ERR_OVERFLOW;
     size_t total = hdr_len + payload_len;
     if (total > buf_len)
         return WS_ERR_OVERFLOW;

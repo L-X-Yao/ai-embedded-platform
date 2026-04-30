@@ -71,10 +71,12 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
             return COAP_ERR_MALFORMED;
         }
 
-        if (pos + opt_len > len)
+        if (opt_len > len - pos)
             return COAP_ERR_INCOMPLETE;
 
-        uint16_t opt_num = (uint16_t)(prev_opt_num + delta);
+        uint32_t opt_num32 = (uint32_t)prev_opt_num + delta;
+        if (opt_num32 > UINT16_MAX) return COAP_ERR_MALFORMED;
+        uint16_t opt_num = (uint16_t)opt_num32;
 
         if (pkt->option_count < COAP_MAX_OPTIONS) {
             pkt->options[pkt->option_count].number = opt_num;

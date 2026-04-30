@@ -135,7 +135,7 @@ static at_evt_type_t process_line(at_cmd_t *at, at_evt_t *evt)
     evt->line     = line;
     evt->line_len = len;
 
-    if (at->waiting) {
+    if (at->waiting && at->expected[0] != '\0') {
         if (contains(line, at->expected)) {
             strncpy(at->matched, line, sizeof(at->matched) - 1U);
             at->matched[sizeof(at->matched) - 1U] = '\0';

@@ -128,7 +128,8 @@ int modbus_rtu_master_get_regs(const modbus_rtu_frame_t *frame,
     if (!frame || !regs || !frame->data || frame->data_len < 1)
         return -1;
     uint8_t byte_count = frame->data[0];
-    if (byte_count % 2 != 0 || (uint16_t)(byte_count + 1) > frame->data_len)
+    if (byte_count == 0 || byte_count > 250 || byte_count % 2 != 0
+        || (uint16_t)(byte_count + 1) > frame->data_len)
         return -1;
     uint16_t reg_count = byte_count / 2;
     if (reg_count > max_count)

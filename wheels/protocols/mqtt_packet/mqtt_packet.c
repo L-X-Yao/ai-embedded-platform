@@ -114,8 +114,12 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
 {
     if (!buf || !pub || !pub->topic) return MQTT_PACKET_ERR_PARAM;
 
-    uint16_t topic_len = (uint16_t)strlen(pub->topic);
-    uint32_t remaining = 2 + topic_len + pub->payload_len;
+    size_t raw_topic_len = strlen(pub->topic);
+    if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
+    uint16_t topic_len = (uint16_t)raw_topic_len;
+    if (pub->payload_len > UINT32_MAX - 2u - topic_len)
+        return MQTT_PACKET_ERR_SIZE;
+    uint32_t remaining = 2 + topic_len + (uint32_t)pub->payload_len;
     if (pub->qos > 0) remaining += 2;
 
     uint8_t rl_buf[4];
