@@ -175,14 +175,11 @@ HEADER
 fi
 mv "$TMP_CL" "$CHANGELOG"
 
-# --- Create tag (after changelog so tag commit can include it) ---
-git -C "$REPO" tag "$VERSION"
-
 echo ""
-echo -e "${GREEN}✓ Tagged: $VERSION${NC}"
 echo -e "${GREEN}✓ Updated: CHANGELOG.md${NC}"
 echo ""
 echo "Next steps:"
 echo "  1. Review: git diff CHANGELOG.md"
 echo "  2. Commit: git add CHANGELOG.md && git commit -m 'docs: add $VERSION release notes'"
-echo "  3. Push:   git push && git push --tags"
+echo "  3. Tag:    git tag $VERSION"
+echo "  4. Push:   git push && git push --tags"
