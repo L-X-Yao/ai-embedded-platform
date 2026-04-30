@@ -111,6 +111,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
+- **`at_cmd_` prefix instead of `at_command_`** (api-conventions §1.1): Shortened for readability — `at_command_send_and_wait` would be excessively long. All public API uses `at_cmd_` consistently.
 - **`at_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
 
 ## API review

@@ -10,7 +10,7 @@ make test-wheels    # 仅 wheel 测试
 make test-projects  # 仅项目测试
 make test-changed   # 仅受未提交变更影响的测试
 make test-fast      # wheel 测试 + 首个失败即停
-make audit          # 17 项 wheel 审计
+make audit          # 19 项 wheel 审计
 make coverage       # 测试 + gcov 覆盖率报告
 make bootstrap      # 打印 session 上下文（wheel 表 + CI + git）
 make graph          # 依赖关系图（Mermaid）
@@ -47,8 +47,8 @@ git config core.hooksPath .githooks   # 启用 commit-msg 格式守卫
 | 字节 ring buffer / 流 | `vsf_fifo_stream` | `service/simple_stream/fifo_stream/` | 带事件机制（connect TX/RX、on_evt） |
 | 字节流 / mem stream | `vsf_mem_stream` | `service/simple_stream/mem_stream/` | 调用方提供 buffer |
 | 类型化 FIFO（存结构体） | `vsf_fifo` | `service/fifo/` | `def_vsf_fifo(name, type, depth)` 模板式 |
-| 单链表 | `vsf_slist_t` | `utilities/vsf_list.h` | `vsf_slist_append/remove` |
-| 双链表 | `vsf_dlist_t` | `utilities/vsf_list.h` | `vsf_dlist_*` |
+| 单链表 | `vsf_slist_t` | `utilities/template/vsf_list.h` | `vsf_slist_append/remove` |
+| 双链表 | `vsf_dlist_t` | `utilities/template/vsf_list.h` | `vsf_dlist_*` |
 | 对象池 | `vsf_pool_t` | `service/pool/` | 预分配对象池 |
 | 动态数组 | `vsf_dynarr_t` | `service/dynarr/` | 类 vector |
 | 动态栈 | `vsf_dynstack_t` | `service/dynstack/` | LIFO |

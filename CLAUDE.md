@@ -105,8 +105,10 @@ ai-embedded-platform/
 ├── projects/                       真实项目
 ├── tooling/
 │   ├── patches/                    VSF 上游修改（patch 文件）
-│   ├── hil/                        硬件在环自动化（未来）
-│   └── scripts/                    通用工具脚本
+│   ├── hil/                        硬件在环自动化
+│   ├── scripts/                    通用工具脚本
+│   ├── test/                       test_harness.h（统一测试框架）
+│   └── experiments/                VSF tryout scaffolds
 └── _eval/                          评估历史遗留物
 ```
 
@@ -115,8 +117,8 @@ ai-embedded-platform/
 | 层 | 目录 | 举例 | 验证 |
 |----|------|------|------|
 | L0 原语 | `primitives/` | log / cli_parser / state_machine / crc | sim 100% + ≥80% 覆盖 |
-| L1 驱动 | `drivers/` | mpu6050 / w25q64 / lcd_st7789 | sim mock + ≥1 真机 |
-| L2 协议 | `protocols/` | mqtt_client / ble_uart_service / at_command | sim loopback + 一致性 |
+| L1 驱动 | `drivers/` | mpu6050 / w25qxx / bmp280 | sim mock + ≥1 真机 |
+| L2 协议 | `protocols/` | mqtt_packet / modbus_rtu / at_command | sim loopback + 一致性 |
 | L3 模块 | `modules/` | ota_updater / data_logger / cli_shell | 集成 sim + 真机 |
 
 详见 `docs/wheel-contract.md`。
@@ -258,7 +260,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ Claude Code 自动记忆（用户背景 + 战略决策 + feedback）
 - ✅ 历史评估归档 `_eval/`
 - ✅ git 仓库（vsf/ vendored 不 fork）
-- ✅ **第一个 wheel：`wheels/primitives/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；11 C 测试 + 4 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
+- ✅ **第一个 wheel：`wheels/primitives/log/`** —— 带等级 + 模块 + 编译期过滤 + 多 sink；12 C 测试 + 3 pytest（含 release 构建编译期消除验证）全绿；作为后续 wheel 的 canonical 例
 - ✅ `wheels/WISHLIST.md`（记忆库，不是 TODO）
 - ✅ **VSF SIM 投资期探索 2 轮（2026-04-22 日 / 晚）**：(1) linux64 kernel-only 路径证伪（scaffold `tooling/experiments/vsf-tryouts/kernel_test/` 保留作 triage 基线，见 ADR-008）；(2) mps2-an500 bare-metal 首选路径**实证跑通**（scaffold `tooling/experiments/vsf-tryouts/mps2_bare/`，QEMU `-M mps2-an500 -cpu cortex-m7 -semihosting` 下 user_main 正常调度 + semihosting probe 输出 + exit 42 全通）；ADR-008 选项 C 从"选了但没验证"升级为 first-class；debugging-playbook 新增两组 canonical checklist（mps2 首选 + linux64 triage）共 10 条坑
 
@@ -274,7 +276,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（18 项自动检查 + TEST/RUN 平衡检测 + --graph）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（13 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（19 项自动检查 + TEST/RUN 平衡检测 + --graph）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（13 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 - ✅ **58 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (30): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
