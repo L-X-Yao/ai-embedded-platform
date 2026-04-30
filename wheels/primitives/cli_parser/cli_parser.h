@@ -25,10 +25,10 @@ extern "C" {
 #endif
 
 typedef enum {
-    CLI_OK = 0,
-    CLI_ERR_NOT_FOUND,
-    CLI_ERR_ARGS,
-    CLI_ERR_OVERFLOW,
+    CLI_OK            =  0,
+    CLI_ERR_NOT_FOUND = -1,
+    CLI_ERR_ARGS      = -2,
+    CLI_ERR_OVERFLOW  = -3,
 } cli_err_t;
 
 typedef cli_err_t (*cli_handler_t)(int argc, const char *argv[], void *user_ctx);

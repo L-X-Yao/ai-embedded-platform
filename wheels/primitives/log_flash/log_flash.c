@@ -13,7 +13,7 @@
 #define MAX_ENTRY_LEN      0xFFFF
 
 static uint32_t sector_offset(const log_flash_t *f, uint32_t sector) {
-    return f->base_offset + sector * (uint32_t)f->sector_size;
+    return f->base_offset + sector * f->sector_size;
 }
 
 static int erase_sector(log_flash_t *f, uint32_t sector) {
@@ -32,7 +32,7 @@ static int read_at(log_flash_t *f, uint32_t offset, uint8_t *buf, size_t len) {
 }
 
 int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
-                   uint32_t base_offset, size_t sector_size,
+                   uint32_t base_offset, uint32_t sector_size,
                    uint32_t sector_count) {
     if (!f || !hal || sector_size == 0 || sector_count == 0) return -1;
     f->hal = *hal;

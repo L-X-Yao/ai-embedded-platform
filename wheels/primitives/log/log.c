@@ -101,6 +101,7 @@ int log_add_stdout_sink(void) {
  * ====================================================================== */
 
 void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
+    if (!fmt) return;
     /* runtime filter (compile-time is in the macros) */
     if (level == LOG_LEVEL_NONE || level > g_runtime_level) {
         return;

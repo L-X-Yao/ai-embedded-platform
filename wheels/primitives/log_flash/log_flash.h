@@ -28,7 +28,7 @@ typedef struct {
     log_flash_hal_t  hal;
     void            *hal_ctx;
     uint32_t         base_offset;
-    size_t           sector_size;
+    uint32_t         sector_size;
     uint32_t         sector_count;
     uint32_t         write_sector;
     uint32_t         write_pos;
@@ -42,7 +42,7 @@ typedef struct {
  *   sector_count: number of sectors to use as ring
  * @thread_safe: no — call during init */
 int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
-                   uint32_t base_offset, size_t sector_size,
+                   uint32_t base_offset, uint32_t sector_size,
                    uint32_t sector_count);
 
 /* Sink adapter: compatible with log_sink_fn.
