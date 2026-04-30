@@ -171,6 +171,19 @@
 
 ⚠️ **wheel commit ≠ 沉淀闭环**：仅做 step (1) 而忘 (2)/(3) → 产生 floating wheel（代码看似 done 但没人跑、没人用，腐烂只是时间问题）。2026-04-25/26 曾出现 `w25qxx` + `qmi8658a` 两个 orphan wheel 持续 1-2 天才被发现，现已工具化拦截。
 
+### 批量沉淀（多 wheel 并行）
+
+当一个项目同时沉淀 3+ 个 wheel 时（如 flybox 一次沉淀 5 个），走并行路径：
+
+1. **AI 一次性扫完所有候选**，统一列表给用户
+2. **用户批量拍板**（可以一次通过多个 API 提案）
+3. **AI 按依赖顺序实现**：先做被依赖的 wheel（如 crc16），再做依赖它的（如 w25qxx）
+4. **CI job 批量追加**：一次性加完所有 wheel 的 CI 条目，避免连续 push 触发 cancel-in-progress
+5. **消费者适配一次性做完**：项目代码改为引用所有新 wheel，一次构建验证
+6. **拆 commit 按 type × 批次**：全部 wheel 代码合 1-2 个 commit，CI 改动 1 个，项目适配 1 个
+
+**不要**每个 wheel 走一遍完整的单 wheel 流程——那会产生 N×5 个 commit 和 N 轮 CI，效率极低。
+
 ### 阶段 4：更新交叉资料（AI 做）
 
 10. **更新 `docs/debugging-playbook.md`**：项目踩的坑。
@@ -204,7 +217,7 @@
 
 **目的**：平台文档/代码/流程之间**不一致 / 过时 / 腐烂**的地方，被积累前发现。
 
-**完整维度清单和执行协议**：见 [`docs/audit-dimensions.md`](audit-dimensions.md)（12 个维度，7 个并行批次）。
+**完整维度清单和执行协议**：见 [`docs/audit-dimensions.md`](audit-dimensions.md)（42 个维度，8 个并行批次）。
 
 **交互协议**：
 
@@ -253,6 +266,18 @@
 
 AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 
+### 8. 盲信并行 agent 结论
+
+多 agent 并行审计的假阳性率约 **20-30%**。agent 报"发现问题"后，必须先 `grep` 验证关键 token 确实存在，再开始修。不验证就修 = 引入不必要的改动。
+
+### 9. 连续 push 触发 CI 全取消
+
+快速连续 push（如审计后 5 个 commit 连推）会被 `cancel-in-progress` 全部取消。**改完统一 push 一次**，或合并后空 commit 重触发。
+
+### 10. scaffold 缺陷传播
+
+`new_wheel.sh` 模板中的问题会传播到所有用它生成的 wheel。修 29 个 wheel 不如修 1 个模板。**发现 scaffold 缺陷优先修模板**，再决定是否回溯修已有 wheel。
+
 ---
 
 ## 与用户协同的节奏
@@ -278,4 +303,4 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（19 项检查） | `--graph` |
+| `audit_wheels.py` | CI 一致性审计（22 项检查） | `--graph`, `--quiet` |

@@ -21,6 +21,14 @@ AI 驱动的嵌入式开发母仓库。**不是**学习仓库、不是 sandbox�
 
 ## 给 AI 的工作原则（按重要度）
 
+### -1. 每次新 session 先跑 bootstrap
+
+```bash
+make bootstrap          # 或 bash tooling/scripts/session_bootstrap.sh
+```
+
+一条命令获取：git 状态 / wheel 清单（含 CI + consumer 状态）/ 项目摘要 / audit 结果 / 最近踩坑记录。替代 5-8 个 tool call。上下文压缩后也可用 `--short` 快速刷新 git 状态。
+
 ### 0. 零号铁律：新建 wheel 前先 grep VSF 原生
 
 完整策略见 **[ADR-006](docs/adr/006-prefer-vsf-native-over-custom-wheel.md)**。摘要：
@@ -354,7 +362,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（19 项自动检查 + TEST/RUN 平衡检测 + --graph）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（13 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（22 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（15 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 - ✅ **58 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (30): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
@@ -374,4 +382,4 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - 用户说"开始第 N 个项目 yyy" → 走 `ai-workflow.md` 任务类型 2
 - 用户说"加个 wheel xxx" → 走任务类型 1，**强制先 grep VSF**
 - 用户说"项目 zzz 交付了" → 走任务类型 9（沉淀）
-- 用户说"审计" → 列维度表选择；"超级审计" → 12 维度全量并行（见 `docs/audit-dimensions.md`）
+- 用户说"审计" → 列维度表选择；"超级审计" → 42 维度全量并行（见 `docs/audit-dimensions.md`）
