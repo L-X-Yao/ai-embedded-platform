@@ -62,7 +62,7 @@ None.
 
 ## API convention deviations
 
-无。
+- **`ws_` prefix instead of `websocket_frame_`** (api-conventions §1.1): Shortened to avoid excessively long function names. `ws_frame_parse` is clearer than `websocket_frame_frame_parse`.
 
 ## Responsible human
 

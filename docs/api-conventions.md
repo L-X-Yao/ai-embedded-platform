@@ -231,7 +231,9 @@ typedef struct {
 
 用于 Sensirion 等发送 command word（非寄存器地址）的设备。
 
-**Pattern C — SPI**（W25QXX, MAX7219）
+**Pattern C — SPI**（MAX7219）
+
+> **注**：W25QXX 使用单字节 `xfer` + cs_low/cs_high 签名，见其 `w25qxx.h`——比 Pattern C 的 `transfer` 批量接口更简单，是合理的偏离。
 
 ```c
 typedef struct {

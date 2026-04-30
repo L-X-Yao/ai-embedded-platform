@@ -59,7 +59,7 @@ None.
 
 ## API convention deviations
 
-无。
+- **`encoder_` prefix instead of `rotary_encoder_`** (api-conventions §1.1): Shortened for readability. All public API uses `encoder_` consistently.
 
 ## Responsible human
 
