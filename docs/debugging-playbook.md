@@ -36,6 +36,79 @@ git config core.hooksPath .githooks   # 启用 commit-msg 格式守卫
 
 ---
 
+## 错误恢复标准路径
+
+### commit-msg hook 拒绝提交
+
+```
+ERROR: commit message does not match convention.
+```
+
+**原因**：summary 格式不符（type 错误、大写开头、超 70 字符、中英混排、尾句号）。
+**恢复**：
+1. 读错误信息确认哪条规则
+2. 重新 commit（不要 --amend，因为上一次没有成功）
+3. 常见：summary 超 70 字符 → 目标 60 字符留安全余量
+
+### pre-commit hook 拒绝提交
+
+```
+ERROR: binary/build artifacts staged for commit
+ERROR: potential secrets staged for commit
+ERROR: large files (>1MB) staged for commit
+```
+
+**恢复**：
+1. `git reset HEAD <file>` 取消暂存
+2. 如果是有意的（如 vendor SDK binary）：`git commit --no-verify`（但要在 body 里说明为什么）
+
+### pre-push hook 拒绝推送
+
+```
+pre-push: audit FAILED
+```
+
+**恢复**：
+1. 读 audit 输出找 FAIL 项
+2. 修复（通常是漏了 README 节、CI 未覆盖、WISHLIST 过期）
+3. `git add + git commit` 修复
+4. 再次 `git push`
+5. 紧急情况：`git push --no-verify`（仅用于 CI 本身损坏的情况）
+
+### CI 红了
+
+**恢复**：
+1. 看 GitHub Actions 的失败 job 日志（`gh run view --log-failed`）
+2. 本地复现：`bash tooling/scripts/test_all.sh <失败的wheel>`
+3. 如果本地通但 CI 不通 → `diff build.ninja` 比对 include 路径（见 memory: CI bring-up debug）
+4. 如果是 cancel-in-progress 导致全取消（连续 push）→ 等推完后空 commit 重触发：
+   ```bash
+   git commit --allow-empty -m "ci: retrigger after batch push"
+   git push
+   ```
+
+### HIL 失败（板子行为异常）
+
+**恢复**：
+1. **先排除硬件**：裸机 UART 测试确认硬件链路（见 memory: bare_metal_first）
+2. **先排除工具链**：确认 build+flash 流程完整（见 memory: flybox_build_flash_full_pipeline）
+3. **代码分析优先**：读代码推演 > 反复烧录（见 memory: code_analysis_over_hil）
+4. **30 分钟无进展 → 暂停**：分清"诊断手段"和"实际目标"（见 memory: diagnostic_vs_goal）
+5. **记录到 playbook**：解决后回来更新本文档
+
+### audit_wheels.py 报 WARN 但不知道怎么修
+
+**恢复**：
+1. WARN 不阻塞 push，但应该趁着上下文还在修掉
+2. 查 `tooling/scripts/audit_wheels.py` 里对应的 check 函数，读它的实现理解期望
+3. 常见 WARN 和修法：
+   - "no consumer" → 等项目消费，不需要修
+   - "error enum auto-increment" → 改为 `_ERR_X = -N`
+   - "functions lack doc comment" → 加 `/** ... @thread_safe: ... */`
+   - "README missing section" → 按 scaffold 模板补齐
+
+---
+
 ## VSF 数据结构速查表（新建 wheel 前必查）
 
 **AI 新建任何 wheel 前必须先看这张表**。VSF 原生已提供的，**不要重造**。
