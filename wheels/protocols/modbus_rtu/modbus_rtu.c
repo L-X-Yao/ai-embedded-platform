@@ -84,6 +84,7 @@ int modbus_rtu_master_read_regs(uint8_t *buf, uint16_t buf_size,
                                 uint8_t slave, uint8_t func,
                                 uint16_t start, uint16_t count)
 {
+    if (!buf) return -1;
     if (count == 0 || count > MODBUS_MAX_READ_REGS)
         return -1;
     if (func != MODBUS_FC_READ_HOLDING_REGS && func != MODBUS_FC_READ_INPUT_REGS)
@@ -98,6 +99,7 @@ int modbus_rtu_master_write_reg(uint8_t *buf, uint16_t buf_size,
                                 uint8_t slave,
                                 uint16_t reg, uint16_t value)
 {
+    if (!buf) return -1;
     uint8_t data[4];
     put_u16_be(&data[0], reg);
     put_u16_be(&data[2], value);
