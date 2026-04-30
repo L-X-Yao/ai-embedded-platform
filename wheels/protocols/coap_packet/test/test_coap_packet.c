@@ -158,6 +158,13 @@ TEST(test_null_safety)
                          NULL, 0, NULL, 0, NULL, 0), COAP_ERR_PARAM);
 }
 
+TEST(test_parse_bare_payload_marker)
+{
+    uint8_t data[] = {0x40, 0x01, 0x00, 0x01, 0xFF};
+    coap_packet_t pkt;
+    ASSERT_EQ(coap_parse(data, sizeof(data), &pkt), COAP_ERR_MALFORMED);
+}
+
 TEST_MAIN("coap_packet")
     RUN(test_parse_con_get);
     RUN(test_parse_with_payload);
@@ -169,4 +176,5 @@ TEST_MAIN("coap_packet")
     RUN(test_build_overflow);
     RUN(test_roundtrip_multi_options);
     RUN(test_null_safety);
+    RUN(test_parse_bare_payload_marker);
 TEST_MAIN_END()
