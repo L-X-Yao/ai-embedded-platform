@@ -164,7 +164,8 @@ static int slave_read_regs(modbus_rtu_slave_t *s,
     uint16_t start = get_u16_be(&req->data[0]);
     uint16_t count = get_u16_be(&req->data[2]);
 
-    if (count == 0 || count > MODBUS_MAX_READ_REGS)
+    if (count == 0 || count > MODBUS_MAX_READ_REGS
+        || (uint32_t)start + count > 0x10000u)
         return build_exception(resp, resp_size, s->addr, req->func,
                                MODBUS_EX_ILLEGAL_DATA_VALUE);
 
@@ -228,6 +229,7 @@ static int slave_write_multiple(modbus_rtu_slave_t *s,
     uint8_t  byte_count = req->data[4];
 
     if (count == 0 || count > MODBUS_MAX_WRITE_REGS ||
+        (uint32_t)start + count > 0x10000u ||
         byte_count != count * 2 ||
         req->data_len < 5 + byte_count)
         return build_exception(resp, resp_size, s->addr, req->func,

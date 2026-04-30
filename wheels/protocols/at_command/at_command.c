@@ -32,7 +32,9 @@ void at_cmd_send(at_cmd_t *at, const char *cmd)
     if (at == NULL || at->hal == NULL || cmd == NULL) {
         return;
     }
-    len = (uint16_t)strlen(cmd);
+    size_t slen = strlen(cmd);
+    if (slen > UINT16_MAX) return;
+    len = (uint16_t)slen;
     at->hal->send(at->hal->ctx, (const uint8_t *)cmd, len);
 
     {
