@@ -419,6 +419,27 @@ def has_negative_error_codes(wheel_dir: Path, name: str) -> bool:
     return True
 
 
+def has_error_code_test_coverage(wheel_dir: Path, name: str) -> list:
+    """Check that every error enum value has at least one test triggering it.
+    Returns list of uncovered error code names (empty = all covered)."""
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return []
+    text = h.read_text(encoding="utf-8", errors="replace")
+    err_pattern = re.compile(r'\b(' + re.escape(name.upper()) + r'_ERR_\w+)\b')
+    err_codes = set(err_pattern.findall(text))
+    if not err_codes:
+        return []
+    test_dir = wheel_dir / "test"
+    if not test_dir.is_dir():
+        return sorted(err_codes)
+    test_text = ""
+    for tf in test_dir.glob("*.c"):
+        test_text += tf.read_text(encoding="utf-8", errors="replace")
+    uncovered = [e for e in sorted(err_codes) if e not in test_text]
+    return uncovered
+
+
 def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     """Check that every function declaration in .h has a doc comment (Q29)."""
     h = wheel_dir / f"{name}.h"
@@ -727,6 +748,22 @@ def main(quiet: bool = False) -> int:
         if not has_function_doc_all(wheel_dir, name):
             warnings.append(f"{path}: some functions lack doc comment before declaration")
             print(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- Error code test coverage (R8 audit insight) ---
+    qprint("\n=== Error code test coverage ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        uncovered = has_error_code_test_coverage(wheel_dir, name)
+        if uncovered:
+            warnings.append(
+                f"{path}: untested error codes: {', '.join(uncovered)}"
+            )
+            print(f"  [WARN]  {path}: {', '.join(uncovered)}")
         else:
             qprint(f"  [ ok ]  {path}")
 
