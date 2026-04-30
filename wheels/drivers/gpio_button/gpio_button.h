@@ -50,9 +50,9 @@ typedef struct {
     uint8_t  raw;
     uint8_t  stable;
     uint8_t  pressed;
-    uint16_t debounce_cnt;
-    uint16_t hold_cnt;
-    uint16_t idle_cnt;
+    uint32_t debounce_cnt;
+    uint32_t hold_cnt;
+    uint32_t idle_cnt;
     uint8_t  click_pending;
     uint8_t  long_fired;
 } gpio_btn_t;
