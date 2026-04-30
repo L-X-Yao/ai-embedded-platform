@@ -21,31 +21,31 @@ extern "C" {
 #endif
 
 typedef enum {
-    ENCODER_DIR_NONE = 0,
-    ENCODER_DIR_CW   = 1,
-    ENCODER_DIR_CCW  = -1,
-} encoder_dir_t;
+    ROTARY_ENCODER_DIR_NONE = 0,
+    ROTARY_ENCODER_DIR_CW   = 1,
+    ROTARY_ENCODER_DIR_CCW  = -1,
+} rotary_encoder_dir_t;
 
 typedef struct {
-    int32_t      position;
-    encoder_dir_t direction;
-    uint8_t      last_state;
+    int32_t          position;
+    rotary_encoder_dir_t direction;
+    uint8_t          last_state;
 } rotary_encoder_t;
 
 /** @thread_safe: no */
-void encoder_init(rotary_encoder_t *enc);
+void rotary_encoder_init(rotary_encoder_t *enc);
 
 /** Feed current A/B pin states to update position and direction. @thread_safe: no */
-void encoder_update(rotary_encoder_t *enc, bool a, bool b);
+void rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b);
 
 /** Return accumulated position count. @thread_safe: no */
-int32_t encoder_get_position(const rotary_encoder_t *enc);
+int32_t rotary_encoder_get_position(const rotary_encoder_t *enc);
 
 /** Return last detected rotation direction. @thread_safe: no */
-encoder_dir_t encoder_get_direction(const rotary_encoder_t *enc);
+rotary_encoder_dir_t rotary_encoder_get_direction(const rotary_encoder_t *enc);
 
 /** Reset position to zero and clear direction. @thread_safe: no */
-void encoder_reset(rotary_encoder_t *enc);
+void rotary_encoder_reset(rotary_encoder_t *enc);
 
 #ifdef __cplusplus
 }

@@ -18,7 +18,9 @@ static int put_u16(uint8_t *buf, uint16_t val)
 
 static int put_str(uint8_t *buf, const char *s)
 {
-    uint16_t len = (uint16_t)strlen(s);
+    size_t slen = strlen(s);
+    if (slen > UINT16_MAX) return -1;   /* caller must guard before calling */
+    uint16_t len = (uint16_t)slen;
     put_u16(buf, len);
     memcpy(buf + 2, s, len);
     return 2 + (int)len;
@@ -153,7 +155,9 @@ int mqtt_packet_build_subscribe(uint8_t *buf, size_t buf_size,
 {
     if (!buf || !topic) return MQTT_PACKET_ERR_PARAM;
 
-    uint16_t topic_len = (uint16_t)strlen(topic);
+    size_t raw_topic_len = strlen(topic);
+    if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
+    uint16_t topic_len = (uint16_t)raw_topic_len;
     uint32_t remaining = 2 + 2 + topic_len + 1;
 
     uint8_t rl_buf[4];

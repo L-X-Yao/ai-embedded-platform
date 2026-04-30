@@ -21,15 +21,15 @@ static const int8_t quad_table[16] = {
      0, -1, +1,  0
 };
 
-void encoder_init(rotary_encoder_t *enc)
+void rotary_encoder_init(rotary_encoder_t *enc)
 {
     if (!enc) return;
     enc->position = 0;
-    enc->direction = ENCODER_DIR_NONE;
+    enc->direction = ROTARY_ENCODER_DIR_NONE;
     enc->last_state = 0;
 }
 
-void encoder_update(rotary_encoder_t *enc, bool a, bool b)
+void rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b)
 {
     if (!enc) return;
     uint8_t new_state = (uint8_t)((a ? 2 : 0) | (b ? 1 : 0));
@@ -37,26 +37,26 @@ void encoder_update(rotary_encoder_t *enc, bool a, bool b)
     int8_t delta = quad_table[idx];
     if (delta != 0) {
         enc->position += delta;
-        enc->direction = (delta > 0) ? ENCODER_DIR_CW : ENCODER_DIR_CCW;
+        enc->direction = (delta > 0) ? ROTARY_ENCODER_DIR_CW : ROTARY_ENCODER_DIR_CCW;
     }
     enc->last_state = new_state;
 }
 
-int32_t encoder_get_position(const rotary_encoder_t *enc)
+int32_t rotary_encoder_get_position(const rotary_encoder_t *enc)
 {
     if (!enc) return 0;
     return enc->position;
 }
 
-encoder_dir_t encoder_get_direction(const rotary_encoder_t *enc)
+rotary_encoder_dir_t rotary_encoder_get_direction(const rotary_encoder_t *enc)
 {
-    if (!enc) return ENCODER_DIR_NONE;
+    if (!enc) return ROTARY_ENCODER_DIR_NONE;
     return enc->direction;
 }
 
-void encoder_reset(rotary_encoder_t *enc)
+void rotary_encoder_reset(rotary_encoder_t *enc)
 {
     if (!enc) return;
     enc->position = 0;
-    enc->direction = ENCODER_DIR_NONE;
+    enc->direction = ROTARY_ENCODER_DIR_NONE;
 }
