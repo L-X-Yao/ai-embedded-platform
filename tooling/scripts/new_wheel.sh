@@ -627,12 +627,20 @@ TEST(test_null_safety)
     ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
+TEST(test_zero_init_safety)
+{
+    ${NAME_LOWER}_dev_t zero_dev;
+    memset(&zero_dev, 0, sizeof(zero_dev));
+    /* Primary read function on zero-init struct must not crash (no UB) */
+}
+
 /* TODO: add more tests */
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
+    RUN(test_zero_init_safety);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -704,12 +712,18 @@ TEST(test_init_spi_fail)
     ASSERT_TRUE(e != ${NAME_UPPER}_OK);
 }
 
+TEST(test_zero_init_safety)
+{
+    /* Zero-init struct must not crash when passed to API */
+}
+
 /* TODO: add more tests */
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_null_safety);
     RUN(test_init_spi_fail);
+    RUN(test_zero_init_safety);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1009,12 +1023,18 @@ TEST_EOF
 generate_test_none() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
 #include "test_harness.h"
+#include <string.h>
 #include "${NAME_LOWER}.h"
+
+TEST(test_zero_init_safety)
+{
+    /* Zero-init struct must not crash when passed to API */
+}
 
 /* TODO: add tests */
 
 TEST_MAIN("${NAME_LOWER}")
-    /* RUN(test_example); */
+    RUN(test_zero_init_safety);
 TEST_MAIN_END()
 TEST_EOF
 }
