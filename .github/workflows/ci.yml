@@ -94,7 +94,7 @@ jobs:
               INCLUDE=true
             else
               # Auto-detect upstream deps from test/CMakeLists.txt cross-wheel paths
-              for upstream in $(grep -oP '\.\./\.\./\.\./\K(primitives|drivers|protocols|modules)/[a-z0-9_]+' "$test_cmake" 2>/dev/null | sort -u); do
+              for upstream in $(grep -oE '\.\./\.\./\.\./(primitives|drivers|protocols|modules)/[a-z0-9_]+' "$test_cmake" 2>/dev/null | sed 's|.*/\.\./\.\./\.\./||' | sort -u); do
                 if echo "$CHANGED" | grep -q "^wheels/${upstream}/"; then
                   INCLUDE=true
                   break
