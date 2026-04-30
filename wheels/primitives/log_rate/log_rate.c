@@ -26,9 +26,7 @@ static void refill(log_rate_t *r, uint32_t now) {
     uint32_t elapsed = now - r->last_refill_ms;
     if (elapsed >= r->refill_interval_ms) {
         uint32_t intervals = elapsed / r->refill_interval_ms;
-        uint32_t add = intervals * r->max_tokens;
-        r->tokens += add;
-        if (r->tokens > r->max_tokens) r->tokens = r->max_tokens;
+        r->tokens = r->max_tokens;
         r->last_refill_ms += intervals * r->refill_interval_ms;
     }
 }

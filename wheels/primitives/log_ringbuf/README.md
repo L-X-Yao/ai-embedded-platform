@@ -76,7 +76,7 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests (sim): PASS (11 tests, 32 assertions)
+- Unit tests (sim): PASS (12 tests)
 - HIL: N/A (pure RAM computation)
 
 ## API convention deviations

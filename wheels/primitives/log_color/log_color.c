@@ -9,6 +9,10 @@
 #include "log_color.h"
 #include <string.h>
 
+#ifndef LOG_COLOR_BUFSIZE
+#define LOG_COLOR_BUFSIZE  512
+#endif
+
 #define ANSI_RED     "\033[31m"
 #define ANSI_YELLOW  "\033[33m"
 #define ANSI_GREEN   "\033[32m"
@@ -53,7 +57,7 @@ void log_color_sink(void *ctx, const char *line, size_t len) {
     size_t reset_len = strlen(ANSI_RESET);
 
     /* Build colored line: color + original (minus trailing \n) + reset + \n */
-    char buf[512];
+    char buf[LOG_COLOR_BUFSIZE];
     size_t pos = 0;
     size_t body_len = len;
     int has_newline = (len > 0 && line[len - 1] == '\n');

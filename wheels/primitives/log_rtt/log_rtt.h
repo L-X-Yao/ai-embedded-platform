@@ -16,6 +16,7 @@
 extern "C" {
 #endif
 
+/* Matches SEGGER_RTT_Write signature (unsigned len, not size_t). */
 typedef unsigned (*log_rtt_write_fn)(void *ctx, unsigned channel,
                                      const void *data, unsigned len);
 

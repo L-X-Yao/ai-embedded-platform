@@ -88,6 +88,20 @@ TEST(test_preserves_newline) {
     ASSERT_EQ(g_cap[g_cap_len - 1], '\n');
 }
 
+TEST(test_long_line_fallback) {
+    reset();
+    log_color_t lc;
+    log_color_init(&lc, capture, NULL);
+    char long_line[600];
+    memset(long_line, 'X', sizeof(long_line));
+    memcpy(long_line, "[E] [app] ", 10);
+    long_line[sizeof(long_line) - 1] = '\n';
+    log_color_sink(&lc, long_line, sizeof(long_line));
+    ASSERT_TRUE(g_cap_len > 0);
+    ASSERT_TRUE(strstr(g_cap, "\033[31m") == NULL);
+    ASSERT_EQ(g_cap[0], '[');
+}
+
 TEST(test_null_safety) {
     log_color_sink(NULL, "x", 1);
 
@@ -107,5 +121,6 @@ TEST_MAIN("log_color")
     RUN(test_no_level_passthrough);
     RUN(test_with_timestamp);
     RUN(test_preserves_newline);
+    RUN(test_long_line_fallback);
     RUN(test_null_safety);
 TEST_MAIN_END()

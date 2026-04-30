@@ -31,8 +31,8 @@ typedef struct {
 } log_rate_t;
 
 /* Initialize rate limiter.
- *   max_per_interval: max lines forwarded per interval
- *   interval_ms: refill interval in milliseconds
+ *   max_per_interval: max lines forwarded per interval (0 blocks all)
+ *   interval_ms: refill interval in milliseconds (clamped to >= 1)
  *   time_fn: returns current time in ms (injected, no OS dependency)
  * @thread_safe: no — call during init */
 void log_rate_init(log_rate_t *r, log_rate_output_fn inner_fn, void *inner_ctx,

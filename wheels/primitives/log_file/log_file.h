@@ -19,6 +19,7 @@ extern "C" {
 typedef struct {
     FILE *fp;
     int   auto_flush;
+    int   owned;
 } log_file_t;
 
 /* Open a log file for appending. Returns 0 on success, -1 on failure.

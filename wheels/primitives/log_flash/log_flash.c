@@ -44,6 +44,7 @@ int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
     f->write_pos = 0;
     f->total_entries = 0;
     f->dropped = 0;
+    erase_sector(f, 0);
     return 0;
 }
 
@@ -79,6 +80,7 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
         return;
     }
     if (write_at(f, abs_offset + ENTRY_HEADER_SIZE, (const uint8_t *)line, len) != 0) {
+        f->write_pos += needed;
         f->dropped++;
         return;
     }

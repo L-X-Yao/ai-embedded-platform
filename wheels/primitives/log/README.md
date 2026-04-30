@@ -33,7 +33,7 @@ ctest --test-dir test/build --output-on-failure
 python3 -m pytest test/test_log.py -v
 ```
 
-Expected: **11 C tests + 13 pytest cases all green** (including release build compile-time elimination verification).
+Expected: **12 C tests + 13 pytest cases all green** (including release build compile-time elimination verification).
 
 ## API summary
 
@@ -140,7 +140,7 @@ None so far.
 
 ## Test status
 
-- Unit tests (sim): PASS (11/11 C tests + 4/4 pytest)
+- Unit tests (sim): PASS (12/12 C tests + 4/4 pytest)
 - HIL: N/A
 
 ## Usage examples

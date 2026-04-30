@@ -13,6 +13,7 @@ int log_file_open(log_file_t *lf, const char *path, int auto_flush) {
     lf->fp = fopen(path, "ab");
     if (!lf->fp) return -1;
     lf->auto_flush = auto_flush;
+    lf->owned = 1;
     return 0;
 }
 
@@ -20,6 +21,7 @@ void log_file_attach(log_file_t *lf, FILE *fp, int auto_flush) {
     if (!lf) return;
     lf->fp = fp;
     lf->auto_flush = auto_flush;
+    lf->owned = 0;
 }
 
 void log_file_sink(void *ctx, const char *line, size_t len) {
@@ -31,6 +33,6 @@ void log_file_sink(void *ctx, const char *line, size_t len) {
 
 void log_file_close(log_file_t *lf) {
     if (!lf || !lf->fp) return;
-    fclose(lf->fp);
+    if (lf->owned) fclose(lf->fp);
     lf->fp = NULL;
 }
