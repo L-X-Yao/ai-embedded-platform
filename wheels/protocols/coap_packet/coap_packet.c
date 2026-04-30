@@ -144,6 +144,8 @@ coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
         return COAP_ERR_PARAM;
     if (token_len > 8)
         return COAP_ERR_PARAM;
+    if (option_count > 0 && !options)
+        return COAP_ERR_PARAM;
 
     size_t pos = 0;
 

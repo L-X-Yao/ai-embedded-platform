@@ -4,89 +4,89 @@
 TEST(test_init)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
-    ASSERT_EQ(encoder_get_position(&enc), 0);
-    ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_NONE);
+    rotary_encoder_init(&enc);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
+    ASSERT_EQ(rotary_encoder_get_direction(&enc), ROTARY_ENCODER_DIR_NONE);
 }
 
 TEST(test_cw_full_cycle)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
+    rotary_encoder_init(&enc);
     /* CW sequence: 00->01->11->10->00 */
-    encoder_update(&enc, false, true);   /* 00->01 */
-    ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_CW);
-    encoder_update(&enc, true,  true);   /* 01->11 */
-    encoder_update(&enc, true,  false);  /* 11->10 */
-    encoder_update(&enc, false, false);  /* 10->00 */
-    ASSERT_EQ(encoder_get_position(&enc), 4);
+    rotary_encoder_update(&enc, false, true);   /* 00->01 */
+    ASSERT_EQ(rotary_encoder_get_direction(&enc), ROTARY_ENCODER_DIR_CW);
+    rotary_encoder_update(&enc, true,  true);   /* 01->11 */
+    rotary_encoder_update(&enc, true,  false);  /* 11->10 */
+    rotary_encoder_update(&enc, false, false);  /* 10->00 */
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 4);
 }
 
 TEST(test_ccw_full_cycle)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
+    rotary_encoder_init(&enc);
     /* CCW sequence: 00->10->11->01->00 */
-    encoder_update(&enc, true,  false);  /* 00->10 */
-    ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_CCW);
-    encoder_update(&enc, true,  true);   /* 10->11 */
-    encoder_update(&enc, false, true);   /* 11->01 */
-    encoder_update(&enc, false, false);  /* 01->00 */
-    ASSERT_EQ(encoder_get_position(&enc), -4);
+    rotary_encoder_update(&enc, true,  false);  /* 00->10 */
+    ASSERT_EQ(rotary_encoder_get_direction(&enc), ROTARY_ENCODER_DIR_CCW);
+    rotary_encoder_update(&enc, true,  true);   /* 10->11 */
+    rotary_encoder_update(&enc, false, true);   /* 11->01 */
+    rotary_encoder_update(&enc, false, false);  /* 01->00 */
+    ASSERT_EQ(rotary_encoder_get_position(&enc), -4);
 }
 
 TEST(test_mixed_direction)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
-    encoder_update(&enc, false, true);
-    encoder_update(&enc, true,  true);
-    ASSERT_EQ(encoder_get_position(&enc), 2);
-    encoder_update(&enc, false, true);
-    encoder_update(&enc, false, false);
-    ASSERT_EQ(encoder_get_position(&enc), 0);
+    rotary_encoder_init(&enc);
+    rotary_encoder_update(&enc, false, true);
+    rotary_encoder_update(&enc, true,  true);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 2);
+    rotary_encoder_update(&enc, false, true);
+    rotary_encoder_update(&enc, false, false);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
 }
 
 TEST(test_same_state_no_change)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
-    encoder_update(&enc, false, false);
-    encoder_update(&enc, false, false);
-    ASSERT_EQ(encoder_get_position(&enc), 0);
+    rotary_encoder_init(&enc);
+    rotary_encoder_update(&enc, false, false);
+    rotary_encoder_update(&enc, false, false);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
 }
 
 TEST(test_reset)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
-    encoder_update(&enc, false, true);
-    encoder_update(&enc, true,  true);
-    encoder_reset(&enc);
-    ASSERT_EQ(encoder_get_position(&enc), 0);
-    ASSERT_EQ(encoder_get_direction(&enc), ENCODER_DIR_NONE);
+    rotary_encoder_init(&enc);
+    rotary_encoder_update(&enc, false, true);
+    rotary_encoder_update(&enc, true,  true);
+    rotary_encoder_reset(&enc);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
+    ASSERT_EQ(rotary_encoder_get_direction(&enc), ROTARY_ENCODER_DIR_NONE);
 }
 
 TEST(test_null_safety)
 {
-    encoder_init(NULL);
-    encoder_update(NULL, false, false);
-    ASSERT_EQ(encoder_get_position(NULL), 0);
-    ASSERT_EQ(encoder_get_direction(NULL), ENCODER_DIR_NONE);
-    encoder_reset(NULL);
+    rotary_encoder_init(NULL);
+    rotary_encoder_update(NULL, false, false);
+    ASSERT_EQ(rotary_encoder_get_position(NULL), 0);
+    ASSERT_EQ(rotary_encoder_get_direction(NULL), ROTARY_ENCODER_DIR_NONE);
+    rotary_encoder_reset(NULL);
 }
 
 TEST(test_many_steps)
 {
     rotary_encoder_t enc;
-    encoder_init(&enc);
+    rotary_encoder_init(&enc);
     for (int i = 0; i < 100; i++) {
-        encoder_update(&enc, false, true);
-        encoder_update(&enc, true,  true);
-        encoder_update(&enc, true,  false);
-        encoder_update(&enc, false, false);
+        rotary_encoder_update(&enc, false, true);
+        rotary_encoder_update(&enc, true,  true);
+        rotary_encoder_update(&enc, true,  false);
+        rotary_encoder_update(&enc, false, false);
     }
-    ASSERT_EQ(encoder_get_position(&enc), 400);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 400);
 }
 
 TEST_MAIN("rotary_encoder")
