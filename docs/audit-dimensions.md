@@ -219,3 +219,4 @@ wsl bash tooling/scripts/arm_size_audit.sh   # Q21
 | 2026-04-30 | 超级审计四轮（全 40 维度） | 5C+15M | 26 | log NUL/bitfield overflow/mqtt build overflow/flash busy-wait/CoAP C++ keyword |
 | 2026-04-30 | 超级审计五轮（全 40 维度） | 2C+9M | 11 | mqtt QoS overflow/ws error code/modbus addr wrap/ads1115 scale/log_dedup timestamp |
 | 2026-04-30 | 超级审计六轮（全 40 维度） | 1C+12M | 13 | fletcher-16 mod255/mqtt QoS>2/coap bare marker/ws reserved opcodes/log_dedup R4 regression |
+| 2026-04-30 | 超级审计七轮（专项角度） | 0C+5M+4T | 9 | mqtt password-without-user/RL max/ota_ab params_size/log_flash write order/ncp5623 stale/4 tests |
