@@ -137,12 +137,6 @@ TEST(test_all_ones)
     ASSERT_EQ(data.temperature_int, 0xFF);
 }
 
-TEST(test_dht11_err_timeout_triggered)
-{
-    /* TODO: trigger DHT11_ERR_TIMEOUT and assert return value */
-}
-
-
 TEST_MAIN("dht11")
     RUN(test_init_null);
     RUN(test_init_missing_callback);
@@ -152,5 +146,4 @@ TEST_MAIN("dht11")
     RUN(test_checksum_fail);
     RUN(test_read_null);
     RUN(test_all_ones);
-    RUN(test_dht11_err_timeout_triggered);
 TEST_MAIN_END()
