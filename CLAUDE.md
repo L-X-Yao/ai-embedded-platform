@@ -139,7 +139,7 @@ ai-embedded-platform/
 | 8. VSF 上游修改 | patch 文件走 `tooling/patches/`，保持 vsf/ 干净 |
 | 9. **沉淀**（项目结束后）🔑 | AI 扫 + API 提案 → 人 15 分钟审批 → AI 实现 |
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
-| 11. 平台自省 | 18 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
+| 11. 平台自省 | 24 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
 
 ## 平台选择：VSF
 
