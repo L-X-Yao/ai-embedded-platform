@@ -162,7 +162,9 @@ coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
 
     uint16_t prev_num = 0;
     for (int i = 0; i < option_count; i++) {
+        if (options[i].number < prev_num) return COAP_ERR_MALFORMED;
         uint16_t delta = (uint16_t)(options[i].number - prev_num);
+        if (options[i].value_len > UINT16_MAX) return COAP_ERR_OVERFLOW;
         uint8_t hdr[5];
         size_t hdr_len = encode_opt_header(hdr, delta, (uint16_t)options[i].value_len);
 
