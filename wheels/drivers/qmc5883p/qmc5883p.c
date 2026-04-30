@@ -34,7 +34,7 @@
 
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c)
 {
-    if (!i2c) return QMC5883P_ERR_I2C;
+    if (!i2c || !i2c->write_reg || !i2c->read_regs) return QMC5883P_ERR_I2C;
     if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_WAKE, WAKE_VALUE))
         return QMC5883P_ERR_I2C;
 

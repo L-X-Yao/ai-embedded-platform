@@ -66,6 +66,10 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
         return MPU6050_ERR_ID;
     }
 
+    if ((unsigned)cfg->accel_range > 3 || (unsigned)cfg->gyro_range > 3)
+    {
+        return MPU6050_ERR_PARAM;
+    }
     if (!write_reg(dev, REG_ACCEL_CONFIG, (uint8_t)(cfg->accel_range << 3)))
     {
         return MPU6050_ERR_I2C;
