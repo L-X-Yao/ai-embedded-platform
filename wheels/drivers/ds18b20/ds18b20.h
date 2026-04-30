@@ -16,6 +16,7 @@
 #define DS18B20_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
