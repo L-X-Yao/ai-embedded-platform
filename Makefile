@@ -21,7 +21,7 @@
 #   make ship M="msg"          # check + commit + push in one shot
 #   make inventory             # update CLAUDE.md wheel counts
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory
+.PHONY: test test-wheels test-projects test-changed test-fast audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -89,3 +89,12 @@ ship:
 
 inventory:
 	bash tooling/scripts/update_wheel_inventory.sh --apply
+
+metrics:
+	bash tooling/scripts/platform_metrics.sh
+
+metrics-save:
+	bash tooling/scripts/platform_metrics.sh --save
+
+metrics-compare:
+	bash tooling/scripts/platform_metrics.sh --compare
