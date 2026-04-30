@@ -8,7 +8,7 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 
 - **49 个 candidate wheels**（L0 原语 21 / L1 驱动 19 / L2 协议 9），audit 全绿
 - **2 个真实项目**：flybox（无人机遥测盒子）/ drone_light（无人机 LED 灯控）
-- **53 个 CI jobs**（wheel-audit + 48 matrix + 4 standalone），push 自动触发
+- **CI 增量检测**（push 只测改动的 wheel，harness 变更时全量回归），audit 全绿
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
