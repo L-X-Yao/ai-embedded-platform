@@ -166,7 +166,7 @@ fi
 
 echo -e "${BOLD}[4/5] Update project CLAUDE.md wheel tables${NC}"
 while IFS= read -r claude_file; do
-    if grep -q "wheels/$FROM\|$FROM_NAME" "$claude_file" 2>/dev/null; then
+    if grep -qE "wheels/$FROM|$FROM_NAME" "$claude_file" 2>/dev/null; then
         proj=$(basename "$(dirname "$claude_file")")
         echo "  $proj/CLAUDE.md: found reference"
         if ! $DRY_RUN; then
