@@ -211,3 +211,7 @@ wsl bash tooling/scripts/arm_size_audit.sh   # Q21
 | 2026-04-30 | 超级审计（40 维度首轮） | 110+ | 110+ | 首次全量，含 flybox 11 项待 HIL |
 | 2026-04-30 | 循环审计（audit_wheels.py） | 20 | 20 | Q4 error enum + Q29 doc comments |
 | 2026-04-30 | Q21 ARM binary size | 2 | 2 | max7219 stddef.h + log type-limits |
+| 2026-04-30 | 工作流审计 | 20 | 20 | 含 3 缺失工作流 + 10 效率工具 |
+| 2026-04-30 | 工具代码审计 | 6C+3M | 9 | CRITICAL: mock OOB, injection, non-atomic write |
+| 2026-04-30 | Scaffold 集成测试 | 3 | 3 | I2C/SPI/primitives 模板编译失败 |
+| 2026-04-30 | 超级审计二轮（Q6-Q30） | 1C+5M | 6 | bh1750 enum 验证 + 5 单位注释 |
