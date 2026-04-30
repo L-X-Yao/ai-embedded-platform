@@ -41,18 +41,18 @@ static bmp280_err_t read_calibration(bmp280_t *dev)
         return BMP280_ERR_I2C;
     }
 
-    dev->calib.dig_t1 = (uint16_t)(buf[1] << 8 | buf[0]);
-    dev->calib.dig_t2 = (int16_t)(buf[3] << 8 | buf[2]);
-    dev->calib.dig_t3 = (int16_t)(buf[5] << 8 | buf[4]);
-    dev->calib.dig_p1 = (uint16_t)(buf[7] << 8 | buf[6]);
-    dev->calib.dig_p2 = (int16_t)(buf[9] << 8 | buf[8]);
-    dev->calib.dig_p3 = (int16_t)(buf[11] << 8 | buf[10]);
-    dev->calib.dig_p4 = (int16_t)(buf[13] << 8 | buf[12]);
-    dev->calib.dig_p5 = (int16_t)(buf[15] << 8 | buf[14]);
-    dev->calib.dig_p6 = (int16_t)(buf[17] << 8 | buf[16]);
-    dev->calib.dig_p7 = (int16_t)(buf[19] << 8 | buf[18]);
-    dev->calib.dig_p8 = (int16_t)(buf[21] << 8 | buf[20]);
-    dev->calib.dig_p9 = (int16_t)(buf[23] << 8 | buf[22]);
+    dev->calib.dig_t1 = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
+    dev->calib.dig_t2 = (int16_t)((uint16_t)buf[3] << 8 | buf[2]);
+    dev->calib.dig_t3 = (int16_t)((uint16_t)buf[5] << 8 | buf[4]);
+    dev->calib.dig_p1 = (uint16_t)((uint16_t)buf[7] << 8 | buf[6]);
+    dev->calib.dig_p2 = (int16_t)((uint16_t)buf[9] << 8 | buf[8]);
+    dev->calib.dig_p3 = (int16_t)((uint16_t)buf[11] << 8 | buf[10]);
+    dev->calib.dig_p4 = (int16_t)((uint16_t)buf[13] << 8 | buf[12]);
+    dev->calib.dig_p5 = (int16_t)((uint16_t)buf[15] << 8 | buf[14]);
+    dev->calib.dig_p6 = (int16_t)((uint16_t)buf[17] << 8 | buf[16]);
+    dev->calib.dig_p7 = (int16_t)((uint16_t)buf[19] << 8 | buf[18]);
+    dev->calib.dig_p8 = (int16_t)((uint16_t)buf[21] << 8 | buf[20]);
+    dev->calib.dig_p9 = (int16_t)((uint16_t)buf[23] << 8 | buf[22]);
 
     return BMP280_OK;
 }

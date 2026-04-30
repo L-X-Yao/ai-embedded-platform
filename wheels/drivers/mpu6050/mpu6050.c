@@ -94,9 +94,9 @@ mpu6050_err_t mpu6050_read_accel(mpu6050_t *dev, mpu6050_accel_t *out)
         return MPU6050_ERR_I2C;
     }
 
-    int16_t raw_x = (int16_t)(buf[0] << 8 | buf[1]);
-    int16_t raw_y = (int16_t)(buf[2] << 8 | buf[3]);
-    int16_t raw_z = (int16_t)(buf[4] << 8 | buf[5]);
+    int16_t raw_x = (int16_t)((uint16_t)buf[0] << 8 | buf[1]);
+    int16_t raw_y = (int16_t)((uint16_t)buf[2] << 8 | buf[3]);
+    int16_t raw_z = (int16_t)((uint16_t)buf[4] << 8 | buf[5]);
 
     out->ax = (float)raw_x / dev->accel_scale;
     out->ay = (float)raw_y / dev->accel_scale;
@@ -118,9 +118,9 @@ mpu6050_err_t mpu6050_read_gyro(mpu6050_t *dev, mpu6050_gyro_t *out)
         return MPU6050_ERR_I2C;
     }
 
-    int16_t raw_x = (int16_t)(buf[0] << 8 | buf[1]);
-    int16_t raw_y = (int16_t)(buf[2] << 8 | buf[3]);
-    int16_t raw_z = (int16_t)(buf[4] << 8 | buf[5]);
+    int16_t raw_x = (int16_t)((uint16_t)buf[0] << 8 | buf[1]);
+    int16_t raw_y = (int16_t)((uint16_t)buf[2] << 8 | buf[3]);
+    int16_t raw_z = (int16_t)((uint16_t)buf[4] << 8 | buf[5]);
 
     out->gx = (float)raw_x / dev->gyro_scale;
     out->gy = (float)raw_y / dev->gyro_scale;

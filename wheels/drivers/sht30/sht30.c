@@ -88,8 +88,8 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
         return SHT30_ERR_CRC;
     }
 
-    uint16_t raw_t = (uint16_t)(buf[0] << 8 | buf[1]);
-    uint16_t raw_h = (uint16_t)(buf[3] << 8 | buf[4]);
+    uint16_t raw_t = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+    uint16_t raw_h = (uint16_t)((uint16_t)buf[3] << 8 | buf[4]);
 
     out->temperature_c = -45.0f + 175.0f * (float)raw_t / 65535.0f;
     out->humidity_pct   = 100.0f * (float)raw_h / 65535.0f;
