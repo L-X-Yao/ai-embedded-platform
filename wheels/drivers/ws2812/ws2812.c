@@ -73,6 +73,9 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
     if (hal == NULL || timing == NULL || colors == NULL || num_leds == 0U) {
         return WS2812_ERR_NULL;
     }
+    if (!hal->set_compare || !hal->wait_period || !hal->enter_critical || !hal->exit_critical) {
+        return WS2812_ERR_NULL;
+    }
 
     reset_latch(hal, timing);
 

@@ -35,8 +35,8 @@ static bool read_regs(const bmp280_t *dev, uint8_t reg, uint8_t *buf, uint16_t l
 
 static bmp280_err_t read_calibration(bmp280_t *dev)
 {
-    uint8_t buf[26];
-    if (!read_regs(dev, REG_CALIB00, buf, 26))
+    uint8_t buf[24];
+    if (!read_regs(dev, REG_CALIB00, buf, 24))
     {
         return BMP280_ERR_I2C;
     }

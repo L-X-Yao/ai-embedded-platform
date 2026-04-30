@@ -28,6 +28,10 @@ oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
         return OLED_SSD1306_ERR_PARAM;
     }
 
+    if (!i2c->write_cmd || !i2c->write_data) {
+        return OLED_SSD1306_ERR_PARAM;
+    }
+
     memset(dev, 0, sizeof(*dev));
     dev->i2c = *i2c;
     dev->cfg = *cfg;
