@@ -106,6 +106,23 @@ TEST(test_null_safety) {
     log_file_attach(NULL, NULL, 0);
 }
 
+TEST(test_auto_flush_readable_before_close)
+{
+    cleanup();
+    log_file_t lf;
+    ASSERT_EQ(log_file_open(&lf, TMPFILE, 1), 0);
+    log_file_sink(&lf, "flush1\n", 7);
+
+    size_t len;
+    char *content = read_file(TMPFILE, &len);
+    ASSERT_TRUE(content != NULL);
+    ASSERT_EQ(len, 7);
+    free(content);
+
+    log_file_close(&lf);
+    cleanup();
+}
+
 TEST_MAIN("log_file")
     RUN(test_open_write_close);
     RUN(test_append_mode);
@@ -113,4 +130,5 @@ TEST_MAIN("log_file")
     RUN(test_multiple_writes);
     RUN(test_open_invalid_path);
     RUN(test_null_safety);
+    RUN(test_auto_flush_readable_before_close);
 TEST_MAIN_END()
