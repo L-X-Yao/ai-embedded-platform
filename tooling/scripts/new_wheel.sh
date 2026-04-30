@@ -582,51 +582,21 @@ CMAKE_EOF
 generate_test_i2c() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
 #include "test_harness.h"
-#include <string.h>
+#include "test_mock_i2c.h"
 #include "${NAME_LOWER}.h"
 
-/* ---------- mock I2C ---------- */
-
-#define MOCK_REG_COUNT 256
-static uint8_t mock_regs[MOCK_REG_COUNT];
-static int     mock_fail_at;
-static int     mock_op_count;
+/* ---------- chip-specific mock setup ---------- */
 
 static void mock_reset(void)
 {
-    memset(mock_regs, 0, sizeof(mock_regs));
-    mock_fail_at  = -1;
-    mock_op_count = 0;
+    mock_i2c_reset();
     /* TODO: set default register values (chip ID, etc.) */
-}
-
-static bool mock_should_fail(void)
-{
-    int n = mock_op_count++;
-    return (mock_fail_at >= 0 && n == mock_fail_at);
-}
-
-static bool mock_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    if (reg < MOCK_REG_COUNT) mock_regs[reg] = val;
-    return true;
-}
-
-static bool mock_read_regs(void *ctx, uint8_t addr, uint8_t reg,
-                            uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)addr;
-    if (mock_should_fail()) return false;
-    for (uint16_t i = 0; i < len; i++)
-        buf[i] = ((reg + i) < MOCK_REG_COUNT) ? mock_regs[reg + i] : 0xFF;
-    return true;
+    /* mock_regs[0xXX] = 0xYY; */
 }
 
 static const ${NAME_LOWER}_i2c_t mock_i2c = {
-    .write_reg = mock_write_reg,
-    .read_regs = mock_read_regs,
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
 
@@ -873,6 +843,158 @@ TEST(test_init_null)
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_null);
+TEST_MAIN_END()
+TEST_EOF
+}
+
+generate_header_protocol() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
+#ifndef ${NAME_UPPER}_H
+#define ${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    ${NAME_UPPER}_OK          =  0,
+    ${NAME_UPPER}_ERR_PARAM   = -1,
+    ${NAME_UPPER}_ERR_FORMAT  = -2,
+    ${NAME_UPPER}_ERR_SHORT   = -3,
+    ${NAME_UPPER}_ERR_OVERFLOW = -4,
+} ${NAME_LOWER}_err_t;
+
+typedef struct {
+    /* TODO: parsed fields */
+    uint8_t type;
+    uint16_t length;
+} ${NAME_LOWER}_msg_t;
+
+/** Parse a message from raw bytes. @thread_safe: yes (pure function) */
+${NAME_LOWER}_err_t ${NAME_LOWER}_parse(const uint8_t *data, size_t len,
+                               ${NAME_LOWER}_msg_t *out);
+
+/** Build a message into a buffer. @thread_safe: yes (pure function) */
+int ${NAME_LOWER}_build(uint8_t *buf, size_t cap,
+                        const ${NAME_LOWER}_msg_t *msg);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ${NAME_UPPER}_H */
+HEADER_EOF
+}
+
+generate_c_protocol() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:   ${LAYER_LABEL%% (*}
+ * Status:  candidate
+ * Deps:    (none)
+ */
+
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_parse(const uint8_t *data, size_t len,
+                               ${NAME_LOWER}_msg_t *out)
+{
+    if (!data || !out) return ${NAME_UPPER}_ERR_PARAM;
+    if (len < 2) return ${NAME_UPPER}_ERR_SHORT;
+
+    /* TODO: implement parsing */
+    out->type = data[0];
+    out->length = (uint16_t)len;
+
+    return ${NAME_UPPER}_OK;
+}
+
+int ${NAME_LOWER}_build(uint8_t *buf, size_t cap,
+                        const ${NAME_LOWER}_msg_t *msg)
+{
+    if (!buf || !msg) return -1;
+    /* TODO: implement building */
+    if (cap < 2) return -1;
+    buf[0] = msg->type;
+    buf[1] = 0; /* placeholder */
+    return 2;
+}
+C_EOF
+}
+
+generate_test_protocol() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include "test_harness.h"
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+TEST(test_parse_ok)
+{
+    uint8_t data[] = {0x01, 0x02, 0x03};
+    ${NAME_LOWER}_msg_t msg;
+    ASSERT_EQ(${NAME_LOWER}_parse(data, sizeof(data), &msg), ${NAME_UPPER}_OK);
+}
+
+TEST(test_parse_null)
+{
+    ${NAME_LOWER}_msg_t msg;
+    ASSERT_EQ(${NAME_LOWER}_parse(NULL, 0, &msg), ${NAME_UPPER}_ERR_PARAM);
+    uint8_t data[] = {0x01};
+    ASSERT_EQ(${NAME_LOWER}_parse(data, 1, NULL), ${NAME_UPPER}_ERR_PARAM);
+}
+
+TEST(test_parse_short)
+{
+    uint8_t data[] = {0x01};
+    ${NAME_LOWER}_msg_t msg;
+    ASSERT_EQ(${NAME_LOWER}_parse(data, 1, &msg), ${NAME_UPPER}_ERR_SHORT);
+}
+
+TEST(test_build_ok)
+{
+    ${NAME_LOWER}_msg_t msg = { .type = 0x01, .length = 2 };
+    uint8_t buf[32];
+    int n = ${NAME_LOWER}_build(buf, sizeof(buf), &msg);
+    ASSERT_TRUE(n > 0);
+}
+
+TEST(test_build_null)
+{
+    ${NAME_LOWER}_msg_t msg = { .type = 0x01 };
+    ASSERT_EQ(${NAME_LOWER}_build(NULL, 32, &msg), -1);
+    uint8_t buf[32];
+    ASSERT_EQ(${NAME_LOWER}_build(buf, 32, NULL), -1);
+}
+
+TEST(test_build_overflow)
+{
+    ${NAME_LOWER}_msg_t msg = { .type = 0x01 };
+    uint8_t buf[1];
+    ASSERT_EQ(${NAME_LOWER}_build(buf, 1, &msg), -1);
+}
+
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_parse_ok);
+    RUN(test_parse_null);
+    RUN(test_parse_short);
+    RUN(test_build_ok);
+    RUN(test_build_null);
+    RUN(test_build_overflow);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1159,13 +1281,20 @@ if [[ "$VENDOR" -eq 1 ]]; then
     generate_vendor_test
     generate_vendor_readme
 else
-    case "${HAL:-none}" in
-        i2c)     generate_header_i2c;     generate_c_i2c;     generate_test_i2c     ;;
-        spi)     generate_header_spi;     generate_c_spi;     generate_test_spi     ;;
-        gpio)    generate_header_gpio;    generate_c_gpio;    generate_test_gpio    ;;
-        onewire) generate_header_onewire; generate_c_onewire; generate_test_onewire ;;
-        pwm)     generate_header_pwm;     generate_c_pwm;     generate_test_pwm     ;;
-        *)       generate_header_none;    generate_c_none;    generate_test_none    ;;
+    # Auto-select protocol template for protocols layer
+    EFFECTIVE_HAL="${HAL:-none}"
+    if [[ "$LAYER" == "protocols" && "$EFFECTIVE_HAL" == "none" ]]; then
+        EFFECTIVE_HAL="protocol"
+    fi
+
+    case "$EFFECTIVE_HAL" in
+        i2c)      generate_header_i2c;      generate_c_i2c;      generate_test_i2c      ;;
+        spi)      generate_header_spi;      generate_c_spi;      generate_test_spi      ;;
+        gpio)     generate_header_gpio;     generate_c_gpio;     generate_test_gpio     ;;
+        onewire)  generate_header_onewire;  generate_c_onewire;  generate_test_onewire  ;;
+        pwm)      generate_header_pwm;      generate_c_pwm;      generate_test_pwm      ;;
+        protocol) generate_header_protocol; generate_c_protocol; generate_test_protocol ;;
+        *)        generate_header_none;     generate_c_none;     generate_test_none     ;;
     esac
 fi
 
@@ -1179,17 +1308,25 @@ find "$WHEEL_DIR" -type f | sort | while read -r f; do
 done
 
 echo ""
-echo "=== CI: add this line to the wheel-test matrix in .github/workflows/ci.yml ==="
-echo ""
-# Determine test directory path
-if [[ "$VENDOR" -eq 1 ]] || [[ -d "$WHEEL_DIR/test" ]]; then
-    CI_DIR="wheels/${LAYER}/${NAME_LOWER}/test"
-else
-    CI_DIR="wheels/${LAYER}/${NAME_LOWER}"
-fi
-echo "          - { name: ${NAME_LOWER}, dir: ${CI_DIR} }"
-echo ""
 
+# ---- CI coverage note --------------------------------------------------------
+
+echo "CI: auto-discovered via wheels/*/*/test/CMakeLists.txt (no manual ci.yml edit needed)"
+if [[ "$NAME_LOWER" == "log" || "$NAME_LOWER" == "crc16" ]]; then
+    echo "CI: NOTE — log and crc16 have standalone jobs with pytest. Add a similar job if this wheel needs pytest."
+fi
+
+# ---- Auto-run audit ----------------------------------------------------------
+
+echo ""
+echo "=== Running audit for ${NAME_LOWER} ==="
+if python3 "$REPO/tooling/scripts/audit_wheels.py" --quiet 2>&1; then
+    echo "Audit: passed"
+else
+    echo "Audit: warnings found (review output above)"
+fi
+
+echo ""
 echo "Done. Next steps:"
 if [[ "$VENDOR" -eq 1 ]]; then
 echo "  1. Copy upstream headers to vendor/inc/ and sources to vendor/src/"
@@ -1201,6 +1338,4 @@ else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
 fi
-echo "  $(( VENDOR ? 6 : 3 )). Add the matrix entry above to ci.yml"
-echo "  $(( VENDOR ? 7 : 4 )). Run: tooling/scripts/test_all.sh ${NAME_LOWER}"
-echo "  $(( VENDOR ? 8 : 5 )). Run: python tooling/scripts/audit_wheels.py"
+echo "  $(( VENDOR ? 6 : 3 )). Run: tooling/scripts/test_all.sh ${NAME_LOWER}"

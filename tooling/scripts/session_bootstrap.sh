@@ -147,3 +147,16 @@ echo "  Jobs in ci.yml: $job_count ($yaml_jobs definitions, $matrix_entries matr
 
 last_run=$(git -C "$REPO" log --oneline -1 --format="%h %s" -- .github/workflows/ 2>/dev/null || echo "n/a")
 echo "  Last CI change: $last_run"
+
+# --- Recent playbook entries --------------------------------------------------
+
+PLAYBOOK="$REPO/docs/debugging-playbook.md"
+echo ""
+echo -e "${BOLD}=== Recent Playbook Entries ===${NC}"
+if [[ -f "$PLAYBOOK" ]]; then
+    # Show section headers (## lines) as a quick index
+    grep -n '^## ' "$PLAYBOOK" | tail -10 | sed 's/^/  /'
+    echo -e "  ${CYAN}Full: docs/debugging-playbook.md${NC}"
+else
+    echo "  (not found)"
+fi
