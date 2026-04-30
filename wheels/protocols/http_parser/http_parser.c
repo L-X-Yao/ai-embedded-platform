@@ -63,7 +63,7 @@ static http_err_t parse_headers(const char *data, size_t len,
         headers[*count].name_len = (size_t)(colon - p);
 
         const char *val = colon + 1;
-        while (val < crlf && *val == ' ') val++;
+        while (val < crlf && (*val == ' ' || *val == '\t')) val++;
         headers[*count].value = val;
         headers[*count].value_len = (size_t)(crlf - val);
         (*count)++;

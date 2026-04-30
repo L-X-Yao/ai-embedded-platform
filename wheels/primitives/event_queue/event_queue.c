@@ -23,7 +23,7 @@ event_queue_err_t event_queue_init(event_queue_t *q, event_t *buf, size_t capaci
 
 event_queue_err_t event_queue_push(event_queue_t *q, uint16_t type, uint32_t data)
 {
-    if (!q)
+    if (!q || !q->buf || q->capacity == 0)
     {
         return EVENT_QUEUE_ERR_PARAM;
     }
@@ -44,7 +44,7 @@ event_queue_err_t event_queue_push(event_queue_t *q, uint16_t type, uint32_t dat
 
 event_queue_err_t event_queue_pop(event_queue_t *q, event_t *out)
 {
-    if (!q || !out)
+    if (!q || !out || !q->buf || q->capacity == 0)
     {
         return EVENT_QUEUE_ERR_PARAM;
     }
@@ -98,7 +98,7 @@ bool event_queue_is_empty(const event_queue_t *q)
 
 bool event_queue_is_full(const event_queue_t *q)
 {
-    if (!q)
+    if (!q || !q->buf || q->capacity == 0)
     {
         return false;
     }
