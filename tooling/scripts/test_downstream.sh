@@ -92,7 +92,7 @@ find_consumers() {
         [[ "$consumer_name" == "$target_name" ]] && continue
         local key="${consumer_name}|${test_dir}"
         WHEEL_CONSUMERS["$key"]="$target_name"
-    done < <(grep -rl "$wheel_path\|/$target_name/" "$REPO/wheels" \
+    done < <(grep -rlE "$wheel_path|/$target_name/" "$REPO/wheels" \
         --include="CMakeLists.txt" 2>/dev/null || true)
 
     # 2. Project consumers: CMakeLists.txt references
