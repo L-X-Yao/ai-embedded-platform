@@ -110,7 +110,7 @@ ai-embedded-platform/
 │   ├── philosophy.md               10/90 愿景
 │   ├── wheel-contract.md           轮子合格定义
 │   ├── api-conventions.md          跨 wheel 命名/错误/内存/线程约定
-│   ├── ai-workflow.md              11 类任务标准路径
+│   ├── ai-workflow.md              12 类任务标准路径
 │   ├── debugging-playbook.md       踩坑指南 + VSF 数据结构速查
 │   └── adr/                        10 个架构决策记录
 ├── vsf/                            上游源码（干净，不直接改）
@@ -145,7 +145,7 @@ ai-embedded-platform/
 
 ## 任务类型 → 做法
 
-见 `docs/ai-workflow.md`（11 类）：
+见 `docs/ai-workflow.md`（12 类）：
 
 | 类型 | 特别注意 |
 |------|---------|
@@ -375,7 +375,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（21 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（19 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（21 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（22 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 - ✅ **58 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (30): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
