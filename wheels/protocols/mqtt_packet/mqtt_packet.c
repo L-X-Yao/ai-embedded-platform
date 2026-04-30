@@ -26,7 +26,7 @@ static int put_str(uint8_t *buf, const char *s)
 
 static uint16_t get_u16(const uint8_t *buf)
 {
-    return (uint16_t)(buf[0] << 8 | buf[1]);
+    return (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
 }
 
 int mqtt_packet_encode_remaining_length(uint8_t *buf, uint32_t length)
