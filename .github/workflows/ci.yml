@@ -203,7 +203,7 @@ jobs:
         run: ctest --test-dir test/build --output-on-failure
 
       - name: Run pytest
-        run: python3 -m pytest test_crc16.py -v
+        run: python3 -m pytest test/test_crc16.py -v
 
   # ---- Dynamic wheel test matrix (only changed wheels) ----
 

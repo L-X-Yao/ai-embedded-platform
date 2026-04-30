@@ -38,9 +38,9 @@ other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
 
 ```bash
 cd wheels/primitives/crc16
-cmake -GNinja -S . -B build
-cmake --build build
-python3 -m pytest test_crc16.py -v
+cmake -GNinja -S test -B test/build
+cmake --build test/build
+python3 -m pytest test/test_crc16.py -v
 ```
 
 预期：**1 个 C 测试 harness（12 个内嵌 case） + 9 个 pytest 用例全绿。**
