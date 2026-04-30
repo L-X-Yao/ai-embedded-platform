@@ -6,6 +6,7 @@
  * Deps:    spi_hal (injected)
  */
 #include "max7219.h"
+#include <stddef.h>
 
 #define REG_NOOP         0x00
 #define REG_DIGIT0       0x01
