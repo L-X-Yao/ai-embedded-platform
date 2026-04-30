@@ -21,13 +21,25 @@ AI 驱动的嵌入式开发母仓库。**不是**学习仓库、不是 sandbox�
 
 ## 给 AI 的工作原则（按重要度）
 
-### -1. 每次新 session 先跑 bootstrap
+### -1. Session 生命周期
 
+**开始**（新 session 或上下文压缩后）：
 ```bash
-make bootstrap          # 或 bash tooling/scripts/session_bootstrap.sh
+make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 ```
+一条命令替代 5-8 个 tool call。压缩后用 `--short` 快速刷新。
 
-一条命令获取：git 状态 / wheel 清单（含 CI + consumer 状态）/ 项目摘要 / audit 结果 / 最近踩坑记录。替代 5-8 个 tool call。上下文压缩后也可用 `--short` 快速刷新 git 状态。
+**结束**（commit 完成后、切换任务前、用户说"到此为止"时）：
+1. `make check` — 确保测试 + 审计干净
+2. `git push` — 推送所有改动
+3. 写 memory — 本次踩坑、决策、用户偏好变化
+4. 如有 CLAUDE.md 变更（wheel 数量、工具数量等）→ 更新并 commit
+5. 如有大量工作 → 一句话告知用户下次 session 从哪里继续
+
+**交接**（换 session / 换窗口 / context 即将满）：
+- 关键上下文写入 memory（不是 CLAUDE.md——memory 跨 session 持久）
+- 未完成任务列为明确的 TODO 告知用户（不写进文件，口头说）
+- 不要假设下一个 session 能看到当前对话
 
 ### 0. 零号铁律：新建 wheel 前先 grep VSF 原生
 
@@ -148,6 +160,7 @@ ai-embedded-platform/
 | 9. **沉淀**（项目结束后）🔑 | AI 扫 + API 提案 → 人 15 分钟审批 → AI 实现 |
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
 | 11. 平台自省 | 40 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
+| 12. 发布 | `release.sh` 打版本标签 + 生成 CHANGELOG |
 
 ## 平台选择：VSF
 

@@ -280,6 +280,25 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 
 ---
 
+## 任务类型 12：发布（打版本标签）
+
+**触发**：用户说"发布"或达到里程碑（新项目完成、大批 wheel 稳定等）。
+
+**版本规则**（vMAJOR.MINOR.PATCH）：
+- **MAJOR**：wheel API 有 breaking change 或架构大调整
+- **MINOR**：新增 wheel、新功能、重要修复
+- **PATCH**：bug 修复、文档更新、工具改进
+
+1. `make check` — 确保测试 + 审计干净
+2. `bash tooling/scripts/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
+3. 用户确认版本号
+4. `bash tooling/scripts/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
+5. `git add CHANGELOG.md && git commit` + `git push && git push --tags`
+
+项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
+
+---
+
 ## 与用户协同的节奏
 
 **好节奏**：
@@ -304,3 +323,6 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
 | `audit_wheels.py` | CI 一致性审计（22 项检查） | `--graph`, `--quiet` |
+| `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
+| `update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
+| `release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
