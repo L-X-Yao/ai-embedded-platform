@@ -93,6 +93,7 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
 
     if (pos < len && data[pos] == 0xFF) {
         pos++;
+        if (pos >= len) return COAP_ERR_MALFORMED;
         pkt->payload = &data[pos];
         pkt->payload_len = len - pos;
         pos = len;
