@@ -17,10 +17,10 @@ extern "C" {
 #endif
 
 typedef enum {
-    QMC5883P_OK = 0,
-    QMC5883P_ERR_I2C,
-    QMC5883P_ERR_ID,
-    QMC5883P_ERR_NOT_READY,
+    QMC5883P_OK            =  0,
+    QMC5883P_ERR_I2C       = -1,
+    QMC5883P_ERR_ID        = -2,
+    QMC5883P_ERR_NOT_READY = -3,
 } qmc5883p_err_t;
 
 typedef struct {
