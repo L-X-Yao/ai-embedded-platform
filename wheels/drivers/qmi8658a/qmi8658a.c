@@ -65,6 +65,9 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
                               const qmi8658a_cfg_t *cfg)
 {
     if (!dev || !i2c || !cfg) return QMI8658A_ERR_I2C;
+    if ((unsigned)cfg->acc_range > 3 || (unsigned)cfg->gyr_range > 7
+        || (unsigned)cfg->acc_odr > 8 || (unsigned)cfg->gyr_odr > 8)
+        return QMI8658A_ERR_I2C;
     dev->i2c = i2c;
     uint8_t id = 0;
     qmi8658a_err_t e;

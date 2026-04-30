@@ -11,12 +11,12 @@
 #define REG_CONFIG     0x01
 
 static const float pga_scale_mv[] = {
-    6144.0f / 32767.0f,
-    4096.0f / 32767.0f,
-    2048.0f / 32767.0f,
-    1024.0f / 32767.0f,
-    512.0f  / 32767.0f,
-    256.0f  / 32767.0f,
+    6144.0f / 32768.0f,
+    4096.0f / 32768.0f,
+    2048.0f / 32768.0f,
+    1024.0f / 32768.0f,
+    512.0f  / 32768.0f,
+    256.0f  / 32768.0f,
 };
 
 static uint16_t build_config(const ads1115_cfg_t *cfg, bool start)

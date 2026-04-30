@@ -48,6 +48,10 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
     {
         return SHT30_ERR_PARAM;
     }
+    if (!i2c->write || !i2c->read)
+    {
+        return SHT30_ERR_PARAM;
+    }
 
     memset(dev, 0, sizeof(*dev));
     dev->i2c = *i2c;
