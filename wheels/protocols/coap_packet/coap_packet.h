@@ -45,7 +45,7 @@ typedef enum {
     COAP_METHOD_DELETE = 4,
 } coap_method_t;
 
-#define COAP_CODE(class, detail) (((class) << 5) | (detail))
+#define COAP_CODE(cls, detail) (((cls) << 5) | (detail))
 #define COAP_CODE_EMPTY          COAP_CODE(0, 0)
 #define COAP_CODE_GET            COAP_CODE(0, 1)
 #define COAP_CODE_POST           COAP_CODE(0, 2)
