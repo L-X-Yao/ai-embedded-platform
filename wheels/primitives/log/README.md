@@ -90,6 +90,35 @@ log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 | Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
+## Companion sink wheels
+
+All sinks use the same `log_sink_fn` signature, composable via `log_add_sink()`.
+
+| Sink | Wheel | Type | Description |
+|------|-------|------|-------------|
+| stdout | **built-in** | output | `log_add_stdout_sink()` — fprintf to stdout |
+| UART | `log_uart` | output | HAL function pointer injection, any UART |
+| RTT | `log_rtt` | output | Segger RTT-style, channel-aware, HAL injected |
+| File | `log_file` | output | FILE* with append mode + auto-flush |
+| Ring buffer | `log_ringbuf` | output | RAM circular buffer for crash dump / CLI |
+| Flash | `log_flash` | output | Persistent sector-ring on SPI flash, HAL injected |
+| Color | `log_color` | transform | ANSI color wrapper (E=red W=yellow I=green D=gray) |
+| Filter | `log_filter` | transform | Module-based ALLOW/DENY runtime filter |
+| Rate limit | `log_rate` | transform | Token bucket, prevents log flood |
+| Dedup | `log_dedup` | transform | Suppress consecutive identical lines |
+
+**Composition example** (color UART + filtered flash + crash ringbuf):
+
+```c
+log_color_init(&color, uart_write_fn, NULL);
+log_filter_init(&filter, log_flash_sink, &flash, LOG_FILTER_ALLOW);
+log_filter_add(&filter, "imu");
+
+log_add_sink(log_color_sink, &color);      /* all levels → colored UART */
+log_add_sink(log_filter_sink, &filter);    /* imu only → flash */
+log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
+```
+
 ## Origin
 
 First wheel built for the platform (Sprint 0). Not extracted from a project — designed as canonical example for wheel structure, testing, and CI patterns. Consumed by drone_light BSP log adapter.
