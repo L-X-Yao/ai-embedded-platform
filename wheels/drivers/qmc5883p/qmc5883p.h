@@ -40,7 +40,7 @@ typedef struct {
 /** Configure and verify chip ID. @thread_safe: caller_must_lock */
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c);
 
-/** Read magnetometer sample (uT). @thread_safe: caller_must_lock */
+/** Read magnetometer sample (Gauss). @thread_safe: caller_must_lock */
 qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 
 #ifdef __cplusplus
