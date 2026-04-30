@@ -75,6 +75,7 @@ ota_ab_err_t ota_ab_init(ota_ab_t *m, const ota_ab_flash_t *flash,
 {
     if (!m || !flash || !layout) return OTA_AB_ERR_NULL;
     if (!flash->erase || !flash->write || !flash->read) return OTA_AB_ERR_NULL;
+    if (layout->max_boot_count == 0) return OTA_AB_ERR_PARAMS;
     m->flash = flash;
     m->layout = *layout;
     return params_read(m);
