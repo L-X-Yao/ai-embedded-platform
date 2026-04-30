@@ -15,8 +15,9 @@
 #   make sync-vsf              # sync vsf/ with upstream (interactive)
 #   make sync-vsf-status       # show current vs upstream vsf version
 #   make clean                 # remove all build_* directories
+#   make check                 # test + audit in one shot (pre-push)
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean
+.PHONY: test test-wheels test-projects test-changed test-fast audit coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -64,3 +65,6 @@ clean:
 	@find projects/ -type d -name "build_*" -exec rm -rf {} + 2>/dev/null || true
 	@find _eval/ -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
 	@echo "Done."
+
+check:
+	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet

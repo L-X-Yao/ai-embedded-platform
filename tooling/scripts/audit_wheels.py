@@ -33,6 +33,7 @@ Rules:
 Exit 0 if all checks pass; 1 if any failure.
 """
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -438,7 +439,11 @@ def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     return undoc == 0
 
 
-def main() -> int:
+def main(quiet: bool = False) -> int:
+    def qprint(msg: str):
+        if not quiet:
+            print(msg)
+
     if not WHEELS.is_dir():
         print(f"ERROR: wheels/ not found at {WHEELS}", file=sys.stderr)
         return 2
@@ -449,7 +454,7 @@ def main() -> int:
     failures = []
     warnings = []
 
-    print(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
+    qprint(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         ci_ok = has_ci_job(path, ci_text, wheel_dir)
@@ -480,17 +485,17 @@ def main() -> int:
         print(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
 
     # --- "Why not VSF native?" section check (ADR-006) ---
-    print("\n=== README: 'Why not VSF native?' (ADR-006) ===\n")
+    qprint("\n=== README: 'Why not VSF native?' (ADR-006) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_vsf_native_section(wheel_dir):
             failures.append(f"{path}: README missing '## Why not VSF native?' section")
             print(f"  [FAIL]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Vendor wheel VENDOR.md check (ADR-010) ---
-    print("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
+    qprint("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
     vendor_found = False
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
@@ -501,12 +506,12 @@ def main() -> int:
             failures.append(f"{path}: has vendor/ but no VENDOR.md")
             print(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
     if not vendor_found:
-        print("  (no vendor wheels found)")
+        qprint("  (no vendor wheels found)")
 
     # --- Cross-wheel dependency documentation (ADR-009) ---
-    print("\n=== Cross-wheel deps documented (ADR-009) ===\n")
+    qprint("\n=== Cross-wheel deps documented (ADR-009) ===\n")
     deps_found = False
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
@@ -520,12 +525,12 @@ def main() -> int:
             )
             print(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
         else:
-            print(f"  [ ok ]  {path} → {', '.join(deps)}")
+            qprint(f"  [ ok ]  {path} → {', '.join(deps)}")
     if not deps_found:
-        print("  (no cross-wheel dependencies detected)")
+        qprint("  (no cross-wheel dependencies detected)")
 
     # --- API review section (wheel-contract §7) ---
-    print("\n=== API review metadata (wheel-contract §7) ===\n")
+    qprint("\n=== API review metadata (wheel-contract §7) ===\n")
     for layer, name, path in wheels:
         if layer == "_draft":
             continue
@@ -534,30 +539,30 @@ def main() -> int:
             warnings.append(f"{path}: README missing API review section")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- ctest registration check ---
-    print("\n=== ctest registration (enable_testing + add_test) ===\n")
+    qprint("\n=== ctest registration (enable_testing + add_test) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_ctest_registration(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing enable_testing()/add_test()")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- CMAKE_C_STANDARD 99 check ---
-    print("\n=== CMAKE_C_STANDARD 99 ===\n")
+    qprint("\n=== CMAKE_C_STANDARD 99 ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_c99_standard(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing CMAKE_C_STANDARD 99")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Candidate README sections (wheel-contract §3.2) ---
-    print("\n=== Candidate README sections (wheel-contract §3.2) ===\n")
+    qprint("\n=== Candidate README sections (wheel-contract §3.2) ===\n")
     for layer, name, path in wheels:
         if layer == "_draft":
             continue
@@ -569,89 +574,89 @@ def main() -> int:
             )
             print(f"  [WARN]  {path}: missing {', '.join(missing)}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- File header (Layer/Status/Deps) check (api-conventions §8) ---
-    print("\n=== File header (api-conventions §8) ===\n")
+    qprint("\n=== File header (api-conventions §8) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_file_header(wheel_dir, name):
             warnings.append(f"{path}: .h/.c missing Layer/Status/Deps file header")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- extern "C" guard check (api-conventions §9) ---
-    print("\n=== extern \"C\" guard (api-conventions §9) ===\n")
+    qprint("\n=== extern \"C\" guard (api-conventions §9) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_extern_c_guard(wheel_dir, name):
             warnings.append(f"{path}: .h missing extern \"C\" guard")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- @thread_safe annotation check (api-conventions §4) ---
-    print("\n=== @thread_safe annotations (api-conventions §4) ===\n")
+    qprint("\n=== @thread_safe annotations (api-conventions §4) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_thread_safe_annotations(wheel_dir, name):
             warnings.append(f"{path}: .h missing @thread_safe annotations")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Test exit code check ---
-    print("\n=== Test exit code (return tests_fail) ===\n")
+    qprint("\n=== Test exit code (return tests_fail) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_test_exit_code(wheel_dir):
             warnings.append(f"{path}: test harness may not return non-zero on failure")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- TEST/RUN balance check ---
-    print("\n=== TEST/RUN balance (no orphan tests) ===\n")
+    qprint("\n=== TEST/RUN balance (no orphan tests) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         ok, tc, rc = has_balanced_test_run(wheel_dir)
         if not ok:
             warnings.append(f"{path}: {tc} TEST() but only {rc} RUN() — orphan test functions")
             print(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- -Werror check ---
-    print("\n=== -Werror flag (warnings as errors) ===\n")
+    qprint("\n=== -Werror flag (warnings as errors) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_werror(wheel_dir):
             warnings.append(f"{path}: test CMakeLists.txt missing -Werror")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Responsible human section (wheel-contract template) ---
-    print("\n=== Responsible human (wheel-contract template) ===\n")
+    qprint("\n=== Responsible human (wheel-contract template) ===\n")
     for layer, name, path in wheels:
         if layer == "_draft":
             continue
@@ -660,10 +665,10 @@ def main() -> int:
             warnings.append(f"{path}: README missing '## Responsible human' section")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- API convention deviations heading consistency ---
-    print("\n=== API convention deviations heading ===\n")
+    qprint("\n=== API convention deviations heading ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_standard_deviation_heading(wheel_dir):
@@ -672,9 +677,9 @@ def main() -> int:
             )
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
-    print("\n=== WISHLIST staleness ===\n")
+    qprint("\n=== WISHLIST staleness ===\n")
     wishlist_names = parse_wishlist_names()
     wheel_names = {name for _, name, _ in wheels}
     stale = [n for n in wishlist_names if n in wheel_names]
@@ -686,47 +691,47 @@ def main() -> int:
             )
             print(f"  [FAIL]  {n} listed in WISHLIST but already exists")
     else:
-        print("  [ ok ]  no stale entries")
+        qprint("  [ ok ]  no stale entries")
 
     # --- Projects directory hygiene ---
-    print("\n=== Projects directory hygiene ===\n")
+    qprint("\n=== Projects directory hygiene ===\n")
     proj_issues = audit_projects()
     for msg in proj_issues:
         warnings.append(msg)
         print(f"  [WARN]  {msg}")
     if not proj_issues:
-        print("  [ ok ]  no stray files detected")
+        qprint("  [ ok ]  no stray files detected")
 
     # --- Error code sign convention (Q4 audit) ---
-    print("\n=== Error code sign convention (Q4) ===\n")
+    qprint("\n=== Error code sign convention (Q4) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_negative_error_codes(wheel_dir, name):
             warnings.append(f"{path}: error enum uses auto-increment (should be explicit negative)")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Function documentation completeness (Q29 audit) ---
-    print("\n=== Function doc completeness (Q29) ===\n")
+    qprint("\n=== Function doc completeness (Q29) ===\n")
     for layer, name, path in wheels:
         if layer == "_draft":
             continue
         wheel_dir = WHEELS / layer / name
         if is_vendor_wheel(wheel_dir):
-            print(f"  [skip]  {path} (vendor)")
+            qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_function_doc_all(wheel_dir, name):
             warnings.append(f"{path}: some functions lack doc comment before declaration")
             print(f"  [WARN]  {path}")
         else:
-            print(f"  [ ok ]  {path}")
+            qprint(f"  [ ok ]  {path}")
 
     # --- Consumer mapping summary ---
-    print("\n=== Consumer mapping ===\n")
+    qprint("\n=== Consumer mapping ===\n")
     consumed = []
     unconsumed = []
     for layer, name, path in wheels:
@@ -743,8 +748,8 @@ def main() -> int:
                 parts = c.split("/")
                 if len(parts) > 1 and parts[0] == "projects":
                     projs.add(parts[1])
-            print(f"  {wpath:36s} ← {', '.join(sorted(projs))}")
-    print(f"\n  consumed: {len(consumed)}/{len(wheels)}  |  unconsumed: {len(unconsumed)}")
+            qprint(f"  {wpath:36s} ← {', '.join(sorted(projs))}")
+    qprint(f"\n  consumed: {len(consumed)}/{len(wheels)}  |  unconsumed: {len(unconsumed)}")
 
     print("\n=== Summary ===")
     print(f"  wheels:   {len(wheels)}")
@@ -797,9 +802,12 @@ def print_dep_graph(wheels):
 
 
 if __name__ == "__main__":
-    if "--graph" in sys.argv:
-        sys.argv.remove("--graph")
+    parser = argparse.ArgumentParser(description="Wheel audit")
+    parser.add_argument("--graph", action="store_true", help="Print Mermaid dependency graph")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Only show WARN/FAIL and summary")
+    args = parser.parse_args()
+    if args.graph:
         wheels = find_wheels()
         print_dep_graph(wheels)
         sys.exit(0)
-    sys.exit(main())
+    sys.exit(main(quiet=args.quiet))
