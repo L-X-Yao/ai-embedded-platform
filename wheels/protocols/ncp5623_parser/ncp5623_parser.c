@@ -63,6 +63,7 @@ ncp5623_evt_type_t ncp5623_parser_feed(ncp5623_parser_t *p,
         p->enabled = (p->buf[0] == ENABLE_VAL) ? 1U : 0U;
         evt->type = NCP5623_EVT_ENABLE;
         evt->data.enabled = p->enabled;
+        p->idx = 3U;
         return NCP5623_EVT_ENABLE;
     }
 
@@ -71,6 +72,7 @@ ncp5623_evt_type_t ncp5623_parser_feed(ncp5623_parser_t *p,
         evt->data.color.b = p->buf[0] & 0x0FU;
         evt->data.color.g = p->buf[1] & 0x0FU;
         evt->data.color.r = p->buf[2] & 0x0FU;
+        p->idx = 5U;
         return NCP5623_EVT_COLOR;
     }
 
