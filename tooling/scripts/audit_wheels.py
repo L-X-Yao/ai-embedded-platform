@@ -247,6 +247,28 @@ def has_test_exit_code(wheel_dir: Path) -> bool:
     return False
 
 
+def has_balanced_test_run(wheel_dir: Path) -> tuple:
+    """Check that every TEST() function has a matching RUN() call.
+
+    Returns (ok: bool, test_count: int, run_count: int).
+    """
+    import re
+    for glob_pat in ["test/test_*.c", "test_*.c"]:
+        for src in wheel_dir.glob(glob_pat):
+            try:
+                text = src.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if "test_harness.h" not in text:
+                continue
+            tests = set(re.findall(r'^TEST\((\w+)\)', text, re.MULTILINE))
+            runs = set(re.findall(r'RUN\((\w+)\)', text))
+            unrun = tests - runs
+            if unrun:
+                return (False, len(tests), len(runs))
+    return (True, 0, 0)
+
+
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -480,6 +502,20 @@ def main() -> int:
         if not has_test_exit_code(wheel_dir):
             warnings.append(f"{path}: test harness may not return non-zero on failure")
             print(f"  [WARN]  {path}")
+        else:
+            print(f"  [ ok ]  {path}")
+
+    # --- TEST/RUN balance check ---
+    print("\n=== TEST/RUN balance (no orphan tests) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            print(f"  [skip]  {path} (vendor)")
+            continue
+        ok, tc, rc = has_balanced_test_run(wheel_dir)
+        if not ok:
+            warnings.append(f"{path}: {tc} TEST() but only {rc} RUN() — orphan test functions")
+            print(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
         else:
             print(f"  [ ok ]  {path}")
 
