@@ -15,6 +15,7 @@ void log_dedup_init(log_dedup_t *d, log_dedup_output_fn inner_fn, void *inner_ct
     d->inner_fn = inner_fn;
     d->inner_ctx = inner_ctx;
     d->last_len = 0;
+    d->last_full_len = 0;
     d->last_line[0] = '\0';
     d->repeat_count = 0;
     d->total_suppressed = 0;
@@ -49,7 +50,8 @@ static int lines_equal(const char *a, size_t a_len, const char *b, size_t b_len)
         }
     }
 
-    return (la == lb) && (memcmp(sa, sb, la) == 0);
+    size_t cmp = la < lb ? la : lb;
+    return (cmp > 0) && (memcmp(sa, sb, cmp) == 0);
 }
 
 void log_dedup_sink(void *ctx, const char *line, size_t len) {
