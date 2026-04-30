@@ -86,6 +86,13 @@ desktop.ini
 # HIL test results (local hardware artifacts)
 tooling/hil/results/
 
+# Debug history
+.gdb_history
+
+# Environment secrets
+.env
+.env.local
+
 # Local overrides
 CLAUDE.local.md
 *.local.md

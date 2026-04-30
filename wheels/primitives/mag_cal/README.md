@@ -79,11 +79,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_mag_cal
 ```
 
-531 assertions across 11 test cases: init, start, feed-before-start rejected, perfect sphere calibration, ellipsoid calibration with scale correction, apply (center→zero), insufficient spread failure, zero samples failure, null safety, re-init clears state, buffer full boundary.
+15 test cases: init, start, feed-before-start rejected, perfect sphere calibration, ellipsoid calibration with scale correction, apply (center→zero), insufficient spread failure, zero samples failure, null safety, re-init clears state, buffer full boundary, single sample, collinear samples, apply null outputs, compute before start.
 
 ## Test status
 
-- Unit tests (sim): PASS (15 C tests, 537 assertions)
+- Unit tests (sim): PASS (15/15 C tests)
 - HIL: N/A
 
 ## API convention deviations
