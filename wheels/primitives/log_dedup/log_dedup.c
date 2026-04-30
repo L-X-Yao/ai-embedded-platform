@@ -56,7 +56,9 @@ void log_dedup_sink(void *ctx, const char *line, size_t len) {
     log_dedup_t *d = (log_dedup_t *)ctx;
     if (!d || !d->inner_fn || !line || len == 0) return;
 
-    if (d->last_len > 0 && lines_equal(d->last_line, d->last_len, line, len)) {
+    size_t cmp_len = len < LOG_DEDUP_LINE_MAX - 1 ? len : LOG_DEDUP_LINE_MAX - 1;
+    if (d->last_len > 0 && d->last_full_len == len
+        && lines_equal(d->last_line, d->last_len, line, cmp_len)) {
         d->repeat_count++;
         d->total_suppressed++;
         return;
@@ -70,6 +72,7 @@ void log_dedup_sink(void *ctx, const char *line, size_t len) {
     memcpy(d->last_line, line, store);
     d->last_line[store] = '\0';
     d->last_len = store;
+    d->last_full_len = len;
     d->repeat_count = 0;
 }
 
