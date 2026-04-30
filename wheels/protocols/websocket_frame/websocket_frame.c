@@ -61,7 +61,7 @@ ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame)
     }
 
     if (payload_len > (uint64_t)(SIZE_MAX - hdr_len))
-        return WS_ERR_INCOMPLETE;
+        return WS_ERR_OVERFLOW;
     if (len < hdr_len + (size_t)payload_len)
         return WS_ERR_INCOMPLETE;
 

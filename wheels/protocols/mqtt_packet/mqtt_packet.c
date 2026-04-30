@@ -119,15 +119,15 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
     size_t raw_topic_len = strlen(pub->topic);
     if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
     uint16_t topic_len = (uint16_t)raw_topic_len;
-    if (pub->payload_len > UINT32_MAX - 2u - topic_len)
+    uint32_t extra = (pub->qos > 0) ? 2u : 0u;
+    if (pub->payload_len > UINT32_MAX - 2u - topic_len - extra)
         return MQTT_PACKET_ERR_SIZE;
-    uint32_t remaining = 2 + topic_len + (uint32_t)pub->payload_len;
-    if (pub->qos > 0) remaining += 2;
+    uint32_t remaining = 2 + topic_len + (uint32_t)pub->payload_len + extra;
 
     uint8_t rl_buf[4];
     int rl_len = mqtt_packet_encode_remaining_length(rl_buf, remaining);
-    int total = 1 + rl_len + (int)remaining;
-    if ((size_t)total > buf_size) return MQTT_PACKET_ERR_SIZE;
+    size_t total = 1 + (size_t)rl_len + remaining;
+    if (total > buf_size) return MQTT_PACKET_ERR_SIZE;
 
     uint8_t byte0 = (uint8_t)(MQTT_PUBLISH << 4);
     if (pub->dup)    byte0 |= 0x08;
