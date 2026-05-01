@@ -4,7 +4,7 @@
 #include "mahony_ahrs.h"
 TEST(test_default_cfg)
 {
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     ASSERT_NEAR(cfg.kp, 2.0f, 0.01f);
     ASSERT_NEAR(cfg.ki, 0.005f, 0.001f);
     ASSERT_NEAR(cfg.sample_freq_hz, 200.0f, 0.1f);
@@ -12,12 +12,12 @@ TEST(test_default_cfg)
 
 TEST(test_init_quaternion_identity)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     float q0, q1, q2, q3;
-    mahony_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    mahony_ahrs_get_quaternion(&f, &q0, &q1, &q2, &q3);
     ASSERT_NEAR(q0, 1.0f, 0.001f);
     ASSERT_NEAR(q1, 0.0f, 0.001f);
     ASSERT_NEAR(q2, 0.0f, 0.001f);
@@ -26,12 +26,12 @@ TEST(test_init_quaternion_identity)
 
 TEST(test_init_euler_zero)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.roll_deg, 0.0f, 0.1f);
     ASSERT_NEAR(e.pitch_deg, 0.0f, 0.1f);
     ASSERT_NEAR(e.yaw_deg, 0.0f, 0.1f);
@@ -39,88 +39,88 @@ TEST(test_init_euler_zero)
 
 TEST(test_level_accel_converges)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 2000; i++) {
-        mahony_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+        mahony_ahrs_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
     }
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.roll_deg, 0.0f, 1.0f);
     ASSERT_NEAR(e.pitch_deg, 0.0f, 1.0f);
 }
 
 TEST(test_tilted_accel)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     float ax = sinf(30.0f * 3.14159265f / 180.0f);
     float az = cosf(30.0f * 3.14159265f / 180.0f);
 
     for (int i = 0; i < 4000; i++) {
-        mahony_update(&f, 0, 0, 0, ax, 0, az, 0, 0, 0);
+        mahony_ahrs_update(&f, 0, 0, 0, ax, 0, az, 0, 0, 0);
     }
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.pitch_deg, -30.0f, 3.0f);
 }
 
 TEST(test_gyro_integration)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.kp = 0.0f;
     cfg.ki = 0.0f;
-    mahony_init(&f, &cfg);
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 200; i++) {
-        mahony_update(&f, 0, 0, 90.0f, 0, 0, 1.0f, 0, 0, 0);
+        mahony_ahrs_update(&f, 0, 0, 90.0f, 0, 0, 1.0f, 0, 0, 0);
     }
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.yaw_deg, 90.0f, 5.0f);
 }
 
 TEST(test_null_safety)
 {
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_euler_t e;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_euler_t e;
     float q;
 
-    mahony_init(NULL, &cfg);
-    mahony_init(NULL, NULL);
-    mahony_update(NULL, 0, 0, 0, 0, 0, 1, 0, 0, 0);
-    mahony_get_euler(NULL, &e);
-    mahony_get_euler(NULL, NULL);
-    mahony_get_quaternion(NULL, &q, &q, &q, &q);
+    mahony_ahrs_init(NULL, &cfg);
+    mahony_ahrs_init(NULL, NULL);
+    mahony_ahrs_update(NULL, 0, 0, 0, 0, 0, 1, 0, 0, 0);
+    mahony_ahrs_get_euler(NULL, &e);
+    mahony_ahrs_get_euler(NULL, NULL);
+    mahony_ahrs_get_quaternion(NULL, &q, &q, &q, &q);
     ASSERT_TRUE(1);
 
-    mahony_t f;
-    mahony_init(&f, &cfg);
-    mahony_get_quaternion(&f, NULL, NULL, NULL, NULL);
+    mahony_ahrs_t f;
+    mahony_ahrs_init(&f, &cfg);
+    mahony_ahrs_get_quaternion(&f, NULL, NULL, NULL, NULL);
     ASSERT_TRUE(1);
 }
 
 TEST(test_reinit_resets)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 1000; i++) {
-        mahony_update(&f, 10, 20, 30, 0, 0, 1, 0, 0, 0);
+        mahony_ahrs_update(&f, 10, 20, 30, 0, 0, 1, 0, 0, 0);
     }
 
-    mahony_init(&f, &cfg);
+    mahony_ahrs_init(&f, &cfg);
     float q0, q1, q2, q3;
-    mahony_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    mahony_ahrs_get_quaternion(&f, &q0, &q1, &q2, &q3);
     ASSERT_NEAR(q0, 1.0f, 0.001f);
     ASSERT_NEAR(q1, 0.0f, 0.001f);
     ASSERT_NEAR(f.integral_fb_x, 0.0f, 0.001f);
@@ -128,47 +128,47 @@ TEST(test_reinit_resets)
 
 TEST(test_quaternion_norm)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 5000; i++) {
-        mahony_update(&f, 5, -3, 15, 0.1f, -0.2f, 0.97f, 0.3f, -0.1f, 0.5f);
+        mahony_ahrs_update(&f, 5, -3, 15, 0.1f, -0.2f, 0.97f, 0.3f, -0.1f, 0.5f);
     }
 
     float q0, q1, q2, q3;
-    mahony_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    mahony_ahrs_get_quaternion(&f, &q0, &q1, &q2, &q3);
     float norm = sqrtf(q0*q0 + q1*q1 + q2*q2 + q3*q3);
     ASSERT_NEAR(norm, 1.0f, 0.001f);
 }
 
 TEST(test_zero_accel_skipped)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
-    mahony_update(&f, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    mahony_ahrs_update(&f, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     float q0;
-    mahony_get_quaternion(&f, &q0, NULL, NULL, NULL);
+    mahony_ahrs_get_quaternion(&f, &q0, NULL, NULL, NULL);
     ASSERT_NEAR(q0, 1.0f, 0.001f);
 }
 
 TEST(test_6axis_vs_9axis)
 {
-    mahony_t f6, f9;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f6, &cfg);
-    mahony_init(&f9, &cfg);
+    mahony_ahrs_t f6, f9;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f6, &cfg);
+    mahony_ahrs_init(&f9, &cfg);
 
     for (int i = 0; i < 1000; i++) {
-        mahony_update(&f6, 0, 0, 0, 0, 0, 1, 0, 0, 0);
-        mahony_update(&f9, 0, 0, 0, 0, 0, 1, 0.3f, 0, 0.5f);
+        mahony_ahrs_update(&f6, 0, 0, 0, 0, 0, 1, 0, 0, 0);
+        mahony_ahrs_update(&f9, 0, 0, 0, 0, 0, 1, 0.3f, 0, 0.5f);
     }
 
-    mahony_euler_t e6, e9;
-    mahony_get_euler(&f6, &e6);
-    mahony_get_euler(&f9, &e9);
+    mahony_ahrs_euler_t e6, e9;
+    mahony_ahrs_get_euler(&f6, &e6);
+    mahony_ahrs_get_euler(&f9, &e9);
     ASSERT_NEAR(e6.roll_deg, 0.0f, 1.0f);
     ASSERT_NEAR(e6.pitch_deg, 0.0f, 1.0f);
     ASSERT_NEAR(e9.roll_deg, 0.0f, 1.0f);
@@ -177,14 +177,14 @@ TEST(test_6axis_vs_9axis)
 
 TEST(test_zero_freq_guard)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.sample_freq_hz = 0.0f;
-    mahony_init(&f, &cfg);
-    mahony_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+    mahony_ahrs_init(&f, &cfg);
+    mahony_ahrs_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_TRUE(!isnan(e.roll_deg));
     ASSERT_TRUE(!isnan(e.pitch_deg));
     ASSERT_TRUE(!isnan(e.yaw_deg));
@@ -192,29 +192,29 @@ TEST(test_zero_freq_guard)
 
 TEST(test_negative_freq_guard)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.sample_freq_hz = -100.0f;
-    mahony_init(&f, &cfg);
-    mahony_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+    mahony_ahrs_init(&f, &cfg);
+    mahony_ahrs_update(&f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_TRUE(!isnan(e.roll_deg));
 }
 
 TEST(test_gimbal_lock_pitch90)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
-    mahony_init(&f, &cfg);
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 4000; i++) {
-        mahony_update(&f, 0, 0, 0, 1.0f, 0, 0, 0, 0, 0);
+        mahony_ahrs_update(&f, 0, 0, 0, 1.0f, 0, 0, 0, 0, 0);
     }
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.pitch_deg, -90.0f, 3.0f);
     ASSERT_TRUE(!isnan(e.roll_deg));
     ASSERT_TRUE(!isnan(e.yaw_deg));
@@ -222,17 +222,17 @@ TEST(test_gimbal_lock_pitch90)
 
 TEST(test_large_gyro_rate_stability)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.sample_freq_hz = 1000.0f;
-    mahony_init(&f, &cfg);
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 1000; i++) {
-        mahony_update(&f, 2000, -1500, 1800, 0, 0, 1.0f, 0, 0, 0);
+        mahony_ahrs_update(&f, 2000, -1500, 1800, 0, 0, 1.0f, 0, 0, 0);
     }
 
     float q0, q1, q2, q3;
-    mahony_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    mahony_ahrs_get_quaternion(&f, &q0, &q1, &q2, &q3);
     float norm = sqrtf(q0*q0 + q1*q1 + q2*q2 + q3*q3);
     ASSERT_NEAR(norm, 1.0f, 0.01f);
     ASSERT_TRUE(!isnan(q0));
@@ -240,35 +240,35 @@ TEST(test_large_gyro_rate_stability)
 
 TEST(test_near_inverted_accel)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.kp = 5.0f;
-    mahony_init(&f, &cfg);
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 8000; i++) {
-        mahony_update(&f, 0, 0, 0, 0.05f, 0, -1.0f, 0, 0, 0);
+        mahony_ahrs_update(&f, 0, 0, 0, 0.05f, 0, -1.0f, 0, 0, 0);
     }
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_TRUE(fabsf(e.roll_deg) > 90.0f || fabsf(e.pitch_deg) > 80.0f);
 }
 
 TEST(test_ki_corrects_bias)
 {
-    mahony_t f;
-    mahony_cfg_t cfg = mahony_default_cfg();
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
     cfg.ki = 0.1f;
-    mahony_init(&f, &cfg);
+    mahony_ahrs_init(&f, &cfg);
 
     for (int i = 0; i < 5000; i++) {
-        mahony_update(&f, 5.0f, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+        mahony_ahrs_update(&f, 5.0f, 0, 0, 0, 0, 1.0f, 0, 0, 0);
     }
 
     ASSERT_TRUE(fabsf(f.integral_fb_x) > 0.001f);
 
-    mahony_euler_t e;
-    mahony_get_euler(&f, &e);
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
     ASSERT_NEAR(e.roll_deg, 0.0f, 5.0f);
 }
 
