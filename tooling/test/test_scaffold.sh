@@ -24,7 +24,7 @@ test_template() {
     local dir="$REPO/wheels/$layer/$name"
     CLEANUP+=("$dir")
 
-    bash "$REPO/tooling/wheel/new_wheel.sh" --layer "$layer" --name "$name" $extra > /dev/null 2>&1
+    bash "$REPO/tooling/wheel/new_wheel.sh" --layer "$layer" --name "$name" $extra --no-audit > /dev/null 2>&1
 
     local test_dir="$dir/test"
     local build_dir="$test_dir/build_scaffold_test"
