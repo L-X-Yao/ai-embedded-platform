@@ -231,6 +231,22 @@ def has_werror(wheel_dir: Path) -> bool:
     return "-Werror" in text
 
 
+def has_wconversion(wheel_dir: Path) -> bool:
+    """Check that test CMakeLists.txt includes -Wconversion."""
+    cmake = wheel_dir / "test" / "CMakeLists.txt"
+    if not cmake.exists():
+        cmake = wheel_dir / "CMakeLists.txt"
+    if not cmake.exists():
+        return True
+    try:
+        text = cmake.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    if "-Wall" not in text:
+        return True
+    return "-Wconversion" in text
+
+
 def has_test_exit_code(wheel_dir: Path) -> bool:
     """Check test main() returns non-zero on failure."""
     patterns = ["tests_fail", "g_failures", "failures", "TEST_MAIN_END"]
@@ -502,14 +518,17 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         if not ci_ok:
             icon = "FAIL"
             record("ci_job", path, "FAIL",
-                   f"missing CI job — no mention of '{path}' in {CI_YAML.relative_to(REPO)}")
+                   f"missing CI job — no mention of '{path}' in {CI_YAML.relative_to(REPO)}",
+                   fix_cmd=f"add '{path}' to .github/workflows/ci.yml wheel-test matrix")
         elif consumer_required and not consumers:
             icon = "WARN"
             reason = "extracted from project" if origin else "proactively built"
-            record("consumer", path, "WARN", f"no consumer yet ({reason}, acceptable)")
+            record("consumer", path, "WARN", f"no consumer yet ({reason}, acceptable)",
+                   fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
         elif not consumers:
             icon = "WARN"
-            record("consumer", path, "WARN", f"no consumer yet (acceptable for {layer})")
+            record("consumer", path, "WARN", f"no consumer yet (acceptable for {layer})",
+                   fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
         else:
             icon = " ok "
 
@@ -523,7 +542,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         if not has_vsf_native_section(wheel_dir):
             record("vsf_native_section", path, "FAIL",
-                   "README missing '## Why not VSF native?' section")
+                   "README missing '## Why not VSF native?' section",
+                   fix_cmd=f"add '## Why not VSF native?' section to {path}/README.md")
             tprint(f"  [FAIL]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -537,7 +557,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             continue
         vendor_found = True
         if not has_vendor_md(wheel_dir):
-            record("vendor_md", path, "FAIL", "has vendor/ but no VENDOR.md")
+            record("vendor_md", path, "FAIL", "has vendor/ but no VENDOR.md",
+                   fix_cmd=f"create {path}/VENDOR.md documenting upstream origin (ADR-010)")
             tprint(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -555,7 +576,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         deps_found = True
         if not has_dependencies_section(wheel_dir):
             record("cross_wheel_deps", path, "WARN",
-                   f"depends on {', '.join(deps)} but README has no Dependencies section")
+                   f"depends on {', '.join(deps)} but README has no Dependencies section",
+                   fix_cmd=f"add '## Dependencies' section listing {', '.join(deps)} to {path}/README.md")
             tprint(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
         else:
             qprint(f"  [ ok ]  {path} → {', '.join(deps)}")
@@ -569,7 +591,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             continue
         wheel_dir = WHEELS / layer / name
         if not has_api_review(wheel_dir):
-            record("api_review", path, "WARN", "README missing API review section")
+            record("api_review", path, "WARN", "README missing API review section",
+                   fix_cmd=f"add '## API Review' section to {path}/README.md (see wheel-contract §7)")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -580,7 +603,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         if not has_ctest_registration(wheel_dir):
             record("ctest_registration", path, "WARN",
-                   "test CMakeLists.txt missing enable_testing()/add_test()")
+                   "test CMakeLists.txt missing enable_testing()/add_test()",
+                   fix_cmd=f"add enable_testing() + add_test(NAME ... COMMAND ...) to {path}/test/CMakeLists.txt")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -591,7 +615,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         if not has_c99_standard(wheel_dir):
             record("c99_standard", path, "WARN",
-                   "test CMakeLists.txt missing CMAKE_C_STANDARD 99")
+                   "test CMakeLists.txt missing CMAKE_C_STANDARD 99",
+                   fix_cmd=f"add set(CMAKE_C_STANDARD 99) to {path}/test/CMakeLists.txt")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -605,7 +630,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         missing = has_candidate_sections(wheel_dir)
         if missing:
             record("candidate_sections", path, "WARN",
-                   f"README missing candidate sections: {', '.join(missing)}")
+                   f"README missing candidate sections: {', '.join(missing)}",
+                   fix_cmd=f"add sections to {path}/README.md: {', '.join(missing)}")
             tprint(f"  [WARN]  {path}: missing {', '.join(missing)}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -619,7 +645,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             continue
         if not has_file_header(wheel_dir, name):
             record("file_header", path, "WARN",
-                   ".h/.c missing Layer/Status/Deps file header")
+                   ".h/.c missing Layer/Status/Deps file header",
+                   fix_cmd=f"add Layer:/Status:/Deps: header to {path}/{name}.h/.c first lines (api-conventions §8)")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -632,7 +659,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_extern_c_guard(wheel_dir, name):
-            record("extern_c_guard", path, "WARN", ".h missing extern \"C\" guard")
+            record("extern_c_guard", path, "WARN", ".h missing extern \"C\" guard",
+                   fix_cmd=f"add extern \"C\" {{ }} guard to {path}/{name}.h")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -645,7 +673,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_thread_safe_annotations(wheel_dir, name):
-            record("thread_safe", path, "WARN", ".h missing @thread_safe annotations")
+            record("thread_safe", path, "WARN", ".h missing @thread_safe annotations",
+                   fix_cmd="make audit-fix-apply --only doc_comments")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -659,7 +688,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             continue
         if not has_test_exit_code(wheel_dir):
             record("test_exit_code", path, "WARN",
-                   "test harness may not return non-zero on failure")
+                   "test harness may not return non-zero on failure",
+                   fix_cmd=f"#include \"test_harness.h\" and use TEST_MAIN_BEGIN/TEST_MAIN_END in {path}/test/")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -674,7 +704,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         ok, tc, rc = has_balanced_test_run(wheel_dir)
         if not ok:
             record("test_run_balance", path, "WARN",
-                   f"{tc} TEST() but only {rc} RUN() — orphan test functions")
+                   f"{tc} TEST() but only {rc} RUN() — orphan test functions",
+                   fix_cmd=f"add missing RUN() calls inside TEST_MAIN_BEGIN/END in {path}/test/")
             tprint(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -687,7 +718,23 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_werror(wheel_dir):
-            record("werror", path, "WARN", "test CMakeLists.txt missing -Werror")
+            record("werror", path, "WARN", "test CMakeLists.txt missing -Werror",
+                   fix_cmd=f"add -Werror to target_compile_options in {path}/test/CMakeLists.txt")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- -Wconversion check ---
+    qprint("\n=== -Wconversion (implicit conversion warnings) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_wconversion(wheel_dir):
+            record("wconversion", path, "WARN",
+                   "test CMakeLists.txt missing -Wconversion",
+                   fix_cmd=f"add -Wconversion to target_compile_options in {path}/test/CMakeLists.txt")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -700,7 +747,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         if not has_responsible_human(wheel_dir):
             record("responsible_human", path, "WARN",
-                   "README missing '## Responsible human' section")
+                   "README missing '## Responsible human' section",
+                   fix_cmd=f"add '## Responsible human' section to {path}/README.md")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -711,7 +759,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         if not has_standard_deviation_heading(wheel_dir):
             record("deviation_heading", path, "WARN",
-                   "use '## API convention deviations' not '## Convention Deviations'")
+                   "use '## API convention deviations' not '## Convention Deviations'",
+                   fix_cmd=f"rename heading in {path}/README.md to '## API convention deviations'")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -723,7 +772,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
     if stale:
         for n in stale:
             record("wishlist_stale", f"WISHLIST/{n}", "FAIL",
-                   f"'{n}' listed but already exists as a wheel")
+                   f"'{n}' listed but already exists as a wheel",
+                   fix_cmd=f"remove '{n}' row from wheels/WISHLIST.md")
             tprint(f"  [FAIL]  {n} listed in WISHLIST but already exists")
     else:
         qprint("  [ ok ]  no stale entries")
@@ -781,7 +831,8 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         uncovered = has_error_code_test_coverage(wheel_dir, name)
         if uncovered:
             record("error_code_coverage", path, "WARN",
-                   f"untested error codes: {', '.join(uncovered)}")
+                   f"untested error codes: {', '.join(uncovered)}",
+                   fix_cmd=f"add test cases covering {', '.join(uncovered)} in {path}/test/")
             tprint(f"  [WARN]  {path}: {', '.join(uncovered)}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -826,14 +877,20 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
 
     if failures:
         tprint("\nFailures:")
-        for f in failures:
-            tprint(f"  - {f}")
+        for r in results:
+            if r["level"] == "FAIL":
+                tprint(f"  - {r['wheel']}: {r['message']}")
+                if "fix" in r:
+                    tprint(f"    → {r['fix']}")
         return 1
 
     if warnings:
         tprint("\nWarnings (non-blocking):")
-        for w in warnings:
-            tprint(f"  - {w}")
+        for r in results:
+            if r["level"] == "WARN":
+                tprint(f"  - {r['wheel']}: {r['message']}")
+                if "fix" in r:
+                    tprint(f"    → {r['fix']}")
 
     return 0
 
