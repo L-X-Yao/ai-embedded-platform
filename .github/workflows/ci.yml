@@ -309,7 +309,7 @@ jobs:
 
       - name: Install arm-none-eabi-gcc
         run: |
-          wget -q --fail "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
+          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
           sudo mkdir -p /opt/gcc-arm
           sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
           echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
@@ -335,7 +335,7 @@ jobs:
 
       - name: Install arm-none-eabi-gcc
         run: |
-          wget -q --fail "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
+          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
           sudo mkdir -p /opt/gcc-arm
           sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
           echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
