@@ -42,15 +42,19 @@ uint8_t ds18b20_crc8(const uint8_t *data, size_t len)
     return crc;
 }
 
-static void address_device(ds18b20_t *dev)
+static bool address_device(ds18b20_t *dev)
 {
     if (dev->use_rom) {
-        dev->ow.write_byte(dev->ow.ctx, CMD_MATCH_ROM);
+        if (!dev->ow.write_byte(dev->ow.ctx, CMD_MATCH_ROM))
+            return false;
         for (int i = 0; i < 8; i++)
-            dev->ow.write_byte(dev->ow.ctx, dev->rom[i]);
+            if (!dev->ow.write_byte(dev->ow.ctx, dev->rom[i]))
+                return false;
     } else {
-        dev->ow.write_byte(dev->ow.ctx, CMD_SKIP_ROM);
+        if (!dev->ow.write_byte(dev->ow.ctx, CMD_SKIP_ROM))
+            return false;
     }
+    return true;
 }
 
 ds18b20_err_t ds18b20_init(ds18b20_t *dev, const ds18b20_ow_t *ow)
@@ -71,9 +75,11 @@ ds18b20_err_t ds18b20_read_rom(ds18b20_t *dev)
         return DS18B20_ERR_PARAM;
     if (!dev->ow.reset(dev->ow.ctx))
         return DS18B20_ERR_NO_DEVICE;
-    dev->ow.write_byte(dev->ow.ctx, CMD_READ_ROM);
+    if (!dev->ow.write_byte(dev->ow.ctx, CMD_READ_ROM))
+        return DS18B20_ERR_BUS;
     for (int i = 0; i < 8; i++)
-        dev->rom[i] = dev->ow.read_byte(dev->ow.ctx);
+        if (!dev->ow.read_byte(dev->ow.ctx, &dev->rom[i]))
+            return DS18B20_ERR_BUS;
     if (ds18b20_crc8(dev->rom, 7) != dev->rom[7])
         return DS18B20_ERR_CRC;
     dev->use_rom = true;
@@ -86,8 +92,10 @@ ds18b20_err_t ds18b20_start_conversion(ds18b20_t *dev)
         return DS18B20_ERR_PARAM;
     if (!dev->ow.reset(dev->ow.ctx))
         return DS18B20_ERR_NO_DEVICE;
-    address_device(dev);
-    dev->ow.write_byte(dev->ow.ctx, CMD_CONVERT_T);
+    if (!address_device(dev))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, CMD_CONVERT_T))
+        return DS18B20_ERR_BUS;
     return DS18B20_OK;
 }
 
@@ -97,12 +105,15 @@ ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c)
         return DS18B20_ERR_PARAM;
     if (!dev->ow.reset(dev->ow.ctx))
         return DS18B20_ERR_NO_DEVICE;
-    address_device(dev);
-    dev->ow.write_byte(dev->ow.ctx, CMD_READ_SCRATCHPAD);
+    if (!address_device(dev))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, CMD_READ_SCRATCHPAD))
+        return DS18B20_ERR_BUS;
 
     uint8_t sp[9];
     for (int i = 0; i < 9; i++)
-        sp[i] = dev->ow.read_byte(dev->ow.ctx);
+        if (!dev->ow.read_byte(dev->ow.ctx, &sp[i]))
+            return DS18B20_ERR_BUS;
 
     if (ds18b20_crc8(sp, 8) != sp[8])
         return DS18B20_ERR_CRC;
@@ -118,10 +129,15 @@ ds18b20_err_t ds18b20_set_resolution(ds18b20_t *dev, ds18b20_resolution_t res)
         return DS18B20_ERR_PARAM;
     if (!dev->ow.reset(dev->ow.ctx))
         return DS18B20_ERR_NO_DEVICE;
-    address_device(dev);
-    dev->ow.write_byte(dev->ow.ctx, CMD_WRITE_SCRATCHPAD);
-    dev->ow.write_byte(dev->ow.ctx, 0x00);
-    dev->ow.write_byte(dev->ow.ctx, 0x00);
-    dev->ow.write_byte(dev->ow.ctx, (uint8_t)res);
+    if (!address_device(dev))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, CMD_WRITE_SCRATCHPAD))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, 0x00))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, 0x00))
+        return DS18B20_ERR_BUS;
+    if (!dev->ow.write_byte(dev->ow.ctx, (uint8_t)res))
+        return DS18B20_ERR_BUS;
     return DS18B20_OK;
 }
