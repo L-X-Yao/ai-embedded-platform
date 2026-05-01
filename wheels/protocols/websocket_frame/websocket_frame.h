@@ -52,11 +52,13 @@ typedef struct {
 /** @thread_safe: yes (pure function, no state) */
 websocket_frame_err_t websocket_frame_parse(const uint8_t *data, size_t len, websocket_frame_t *frame);
 
+/** Build a WebSocket frame into buf; writes total frame length to out_len. */
 websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
                         bool fin, websocket_frame_opcode_t opcode,
                         const uint8_t *mask_key,
                         const uint8_t *payload, size_t payload_len);
 
+/** Apply or remove XOR masking on payload data in-place. */
 void websocket_frame_mask_payload(uint8_t *data, size_t len, const uint8_t mask_key[4]);
 
 #ifdef __cplusplus
