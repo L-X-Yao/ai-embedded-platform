@@ -90,6 +90,8 @@ at_evt_type_t at_cmd_feed(at_cmd_t *at, uint8_t byte, at_evt_t *evt);
 /** Register URC handler. @thread_safe: caller_must_lock */
 int           at_cmd_register_urc(at_cmd_t *at, const char *prefix,
                                    at_urc_cb_t cb, void *ctx);
+/** Unregister URC handler by prefix. @thread_safe: caller_must_lock */
+int           at_cmd_unregister_urc(at_cmd_t *at, const char *prefix);
 /** Get last matched response. @thread_safe: caller_must_lock */
 const char   *at_cmd_get_matched(const at_cmd_t *at);
 /** Get previous complete line. @thread_safe: caller_must_lock */

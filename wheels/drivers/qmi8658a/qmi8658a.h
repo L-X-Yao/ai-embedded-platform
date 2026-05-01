@@ -98,7 +98,7 @@ qmi8658a_err_t  qmi8658a_init(qmi8658a_dev_t *dev,
                                const qmi8658a_cfg_t *cfg);
 
 /** Read accel + gyro sample. @thread_safe: caller_must_lock */
-qmi8658a_err_t  qmi8658a_read(qmi8658a_dev_t *dev,
+qmi8658a_err_t  qmi8658a_read(const qmi8658a_dev_t *dev,
                                qmi8658a_data_t *out);
 
 /** Soft-reset the device. @thread_safe: caller_must_lock */

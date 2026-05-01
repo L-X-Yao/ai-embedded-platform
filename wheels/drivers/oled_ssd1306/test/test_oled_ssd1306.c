@@ -234,6 +234,30 @@ TEST(test_init_com_pin_config)
     ASSERT_TRUE(found_da);
 }
 
+TEST(test_display_off_sends_0xAE)
+{
+    setup();
+    mock_reset();
+    oled_ssd1306_err_t e = oled_ssd1306_display_off(&dev);
+    ASSERT_EQ(e, OLED_SSD1306_OK);
+    ASSERT_EQ(last_cmd, 0xAE);
+}
+
+TEST(test_display_on_sends_0xAF)
+{
+    setup();
+    mock_reset();
+    oled_ssd1306_err_t e = oled_ssd1306_display_on(&dev);
+    ASSERT_EQ(e, OLED_SSD1306_OK);
+    ASSERT_EQ(last_cmd, 0xAF);
+}
+
+TEST(test_display_on_off_null_param)
+{
+    ASSERT_EQ(oled_ssd1306_display_on(NULL), OLED_SSD1306_ERR_PARAM);
+    ASSERT_EQ(oled_ssd1306_display_off(NULL), OLED_SSD1306_ERR_PARAM);
+}
+
 TEST_MAIN("oled_ssd1306")
     RUN(test_init_ok);
     RUN(test_init_com_pin_config);
@@ -249,5 +273,8 @@ TEST_MAIN("oled_ssd1306")
     RUN(test_multiple_pixels_same_byte);
     RUN(test_invalid_height);
     RUN(test_null_clear_fill);
+    RUN(test_display_off_sends_0xAE);
+    RUN(test_display_on_sends_0xAF);
+    RUN(test_display_on_off_null_param);
 TEST_MAIN_END()
 

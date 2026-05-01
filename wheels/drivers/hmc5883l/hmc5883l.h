@@ -87,6 +87,9 @@ hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw);
 /** Read magnetometer values scaled to gauss. @thread_safe: caller_must_lock */
 hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out);
 
+/** Enter idle mode (stop continuous measurement). @thread_safe: caller_must_lock */
+hmc5883l_err_t hmc5883l_idle(const hmc5883l_t *dev);
+
 #ifdef __cplusplus
 }
 #endif

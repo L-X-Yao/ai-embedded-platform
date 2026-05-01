@@ -11,7 +11,7 @@
 #define CMD_POWER_OFF 0x00
 #define CMD_RESET     0x07
 
-static bh1750_err_t send_cmd(bh1750_t *dev, uint8_t cmd)
+static bh1750_err_t send_cmd(const bh1750_t *dev, uint8_t cmd)
 {
     if (!dev->i2c.write(dev->i2c.ctx, dev->cfg.addr, &cmd, 1))
         return BH1750_ERR_I2C;
@@ -43,7 +43,7 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
     return send_cmd(dev, (uint8_t)dev->cfg.mode);
 }
 
-bh1750_err_t bh1750_read_lux(bh1750_t *dev, float *lux)
+bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
 {
     if (!dev || !lux)
         return BH1750_ERR_PARAM;
@@ -63,19 +63,19 @@ bh1750_err_t bh1750_read_lux(bh1750_t *dev, float *lux)
     return BH1750_OK;
 }
 
-bh1750_err_t bh1750_power_on(bh1750_t *dev)
+bh1750_err_t bh1750_power_on(const bh1750_t *dev)
 {
     if (!dev) return BH1750_ERR_PARAM;
     return send_cmd(dev, CMD_POWER_ON);
 }
 
-bh1750_err_t bh1750_power_off(bh1750_t *dev)
+bh1750_err_t bh1750_power_off(const bh1750_t *dev)
 {
     if (!dev) return BH1750_ERR_PARAM;
     return send_cmd(dev, CMD_POWER_OFF);
 }
 
-bh1750_err_t bh1750_reset(bh1750_t *dev)
+bh1750_err_t bh1750_reset(const bh1750_t *dev)
 {
     if (!dev) return BH1750_ERR_PARAM;
     return send_cmd(dev, CMD_RESET);

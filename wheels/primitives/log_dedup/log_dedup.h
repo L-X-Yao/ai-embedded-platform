@@ -45,6 +45,10 @@ void log_dedup_sink(void *ctx, const char *line, size_t len);
  * @thread_safe: no */
 void log_dedup_flush(log_dedup_t *d);
 
+/* Teardown: flush pending repeats and clear state.
+ * @thread_safe: no */
+void log_dedup_deinit(log_dedup_t *d);
+
 /* Return total lines suppressed since init.
  * @thread_safe: no */
 uint32_t log_dedup_suppressed(const log_dedup_t *d);

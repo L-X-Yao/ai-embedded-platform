@@ -25,6 +25,13 @@ void mag_cal_start(mag_cal_t *cal)
     cal->state = MAG_CAL_COLLECTING;
 }
 
+void mag_cal_abort(mag_cal_t *cal)
+{
+    if (!cal) return;
+    cal->count = 0;
+    cal->state = MAG_CAL_IDLE;
+}
+
 bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz)
 {
     if (!cal || cal->state != MAG_CAL_COLLECTING)

@@ -506,6 +506,45 @@ TEST(test_urc_before_any_expect)
     ASSERT_TRUE(urc_count == 1);
 }
 
+TEST(test_unregister_urc_stops_dispatch)
+{
+    at_cmd_t at;
+    at_evt_t evt;
+    urc_reset();
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
+
+    /* fires before unregister */
+    feed_string(&at, "RDY\r\n", &evt);
+    ASSERT_TRUE(urc_count == 1);
+
+    ASSERT_TRUE(at_cmd_unregister_urc(&at, "RDY") == 0);
+    ASSERT_TRUE(at.urc_count == 0);
+
+    /* must not fire after unregister */
+    feed_string(&at, "RDY\r\n", &evt);
+    ASSERT_TRUE(urc_count == 1);
+}
+
+TEST(test_unregister_urc_not_found)
+{
+    at_cmd_t at;
+    at_cmd_init(&at, &mock_hal);
+    at_cmd_register_urc(&at, "RDY", urc_handler, NULL);
+
+    ASSERT_TRUE(at_cmd_unregister_urc(&at, "+NOSUCH") == -1);
+    /* existing entry must not be disturbed */
+    ASSERT_TRUE(at.urc_count == 1);
+}
+
+TEST(test_unregister_urc_null_args)
+{
+    at_cmd_t at;
+    at_cmd_init(&at, &mock_hal);
+    ASSERT_TRUE(at_cmd_unregister_urc(NULL, "RDY") == -1);
+    ASSERT_TRUE(at_cmd_unregister_urc(&at, NULL) == -1);
+}
+
 TEST_MAIN("at_command")
     RUN(test_init);
     RUN(test_send_command);
@@ -542,5 +581,8 @@ TEST_MAIN("at_command")
     RUN(test_error_clears_matched);
     RUN(test_send_appends_crlf);
     RUN(test_urc_before_any_expect);
+    RUN(test_unregister_urc_stops_dispatch);
+    RUN(test_unregister_urc_not_found);
+    RUN(test_unregister_urc_null_args);
 TEST_MAIN_END()
 

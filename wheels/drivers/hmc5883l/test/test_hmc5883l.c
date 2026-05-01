@@ -117,6 +117,23 @@ TEST(test_read_null)
     ASSERT_EQ(hmc5883l_read_gauss(&dev, NULL), HMC5883L_ERR_PARAM);
 }
 
+TEST(test_idle_writes_mode_idle)
+{
+    mock_reset();
+    hmc5883l_t dev;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    ASSERT_EQ(hmc5883l_init(&dev, &mock_i2c, &cfg), HMC5883L_OK);
+
+    /* init sets REG_MODE (0x02) = 0x00 (continuous); idle must set it to 0x02 */
+    ASSERT_EQ(hmc5883l_idle(&dev), HMC5883L_OK);
+    ASSERT_EQ(mock_regs[0x02], 0x02);
+}
+
+TEST(test_idle_null_param)
+{
+    ASSERT_EQ(hmc5883l_idle(NULL), HMC5883L_ERR_PARAM);
+}
+
 TEST_MAIN("hmc5883l")
     RUN(test_init_null);
     RUN(test_init_id_check);
@@ -126,4 +143,6 @@ TEST_MAIN("hmc5883l")
     RUN(test_different_gain);
     RUN(test_i2c_failure);
     RUN(test_read_null);
+    RUN(test_idle_writes_mode_idle);
+    RUN(test_idle_null_param);
 TEST_MAIN_END()

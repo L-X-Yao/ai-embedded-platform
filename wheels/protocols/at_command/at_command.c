@@ -87,6 +87,24 @@ int at_cmd_register_urc(at_cmd_t *at, const char *prefix,
     return 0;
 }
 
+int at_cmd_unregister_urc(at_cmd_t *at, const char *prefix)
+{
+    if (at == NULL || prefix == NULL) {
+        return -1;
+    }
+    for (uint8_t i = 0U; i < at->urc_count; i++) {
+        if (strcmp(at->urcs[i].prefix, prefix) == 0) {
+            at->urc_count--;
+            for (uint8_t j = i; j < at->urc_count; j++) {
+                at->urcs[j] = at->urcs[j + 1U];
+            }
+            memset(&at->urcs[at->urc_count], 0, sizeof(at_urc_entry_t));
+            return 0;
+        }
+    }
+    return -1;
+}
+
 const char *at_cmd_get_matched(const at_cmd_t *at)
 {
     if (at == NULL) {

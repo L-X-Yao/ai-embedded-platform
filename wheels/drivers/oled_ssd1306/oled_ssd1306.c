@@ -136,3 +136,17 @@ void oled_ssd1306_fill(oled_ssd1306_t *dev, bool on)
     }
     memset(dev->buf, on ? 0xFF : 0x00, dev->buf_size);
 }
+
+oled_ssd1306_err_t oled_ssd1306_display_on(const oled_ssd1306_t *dev)
+{
+    if (!dev) return OLED_SSD1306_ERR_PARAM;
+    if (!cmd(dev, 0xAF)) return OLED_SSD1306_ERR_I2C;
+    return OLED_SSD1306_OK;
+}
+
+oled_ssd1306_err_t oled_ssd1306_display_off(const oled_ssd1306_t *dev)
+{
+    if (!dev) return OLED_SSD1306_ERR_PARAM;
+    if (!cmd(dev, 0xAE)) return OLED_SSD1306_ERR_I2C;
+    return OLED_SSD1306_OK;
+}

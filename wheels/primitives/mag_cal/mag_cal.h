@@ -57,6 +57,9 @@ void mag_cal_init(mag_cal_t *cal);
 /** Start collecting samples. @thread_safe: caller_must_lock */
 void mag_cal_start(mag_cal_t *cal);
 
+/** Abort calibration and return to IDLE. @thread_safe: caller_must_lock */
+void mag_cal_abort(mag_cal_t *cal);
+
 /** Feed one magnetometer sample. @thread_safe: caller_must_lock */
 bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz);
 
