@@ -4,7 +4,7 @@ Cross-compiled with `arm-none-eabi-gcc 13.2.1`, flags: `-Os -mcpu=cortex-m4 -mth
 
 Sizes are per-wheel `.o` files (before linking). Actual linked size will be smaller with `--gc-sections`.
 
-Generated: 2026-04-30 by `tooling/scripts/arm_size_audit.sh`.
+Generated: 2026-04-30 by `tooling/audit/arm_size_audit.sh`.
 
 ## L0 — Primitives
 

@@ -1,6 +1,6 @@
 #include "test_harness.h"
 #define MOCK_I2C_REG_COUNT 16
-#include "test_mock_i2c.h"
+#include "mock_i2c.h"
 #include "hmc5883l.h"
 #include <math.h>
 

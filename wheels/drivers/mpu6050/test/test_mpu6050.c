@@ -1,5 +1,5 @@
 #include "test_harness.h"
-#include "test_mock_i2c.h"
+#include "mock_i2c.h"
 #include <math.h>
 #include "mpu6050.h"
 

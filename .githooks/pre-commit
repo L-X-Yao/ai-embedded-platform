@@ -68,7 +68,7 @@ fi
 
 # Auto-fix documentation drift and stage corrected files
 if command -v python3 &>/dev/null; then
-    if ! python3 tooling/scripts/doc_drift_check.py --fix 2>/dev/null; then
+    if ! python3 tooling/audit/doc_drift_check.py --fix 2>/dev/null; then
         drift_files=(CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md)
         staged=()
         for df in "${drift_files[@]}"; do

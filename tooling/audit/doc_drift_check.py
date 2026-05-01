@@ -48,7 +48,7 @@ def count_makefile_targets():
 
 
 def count_audit_checks():
-    audit = REPO / "tooling" / "scripts" / "audit_wheels.py"
+    audit = REPO / "tooling" / "audit" / "audit_wheels.py"
     if not audit.exists():
         return 0
     text = audit.read_text(encoding="utf-8")
@@ -56,7 +56,7 @@ def count_audit_checks():
 
 
 def count_audit_check_functions():
-    audit = REPO / "tooling" / "scripts" / "audit_wheels.py"
+    audit = REPO / "tooling" / "audit" / "audit_wheels.py"
     if not audit.exists():
         return 0
     text = audit.read_text(encoding="utf-8")
@@ -68,11 +68,14 @@ def count_audit_check_functions():
 
 
 def count_tooling_scripts():
-    scripts = REPO / "tooling" / "scripts"
-    if not scripts.is_dir():
-        return 0
-    return len([f for f in scripts.iterdir()
-                if f.is_file() and f.suffix in (".sh", ".py") and f.name != "__init__.py"])
+    tooling = REPO / "tooling"
+    count = 0
+    for subdir in ("audit", "test", "wheel", "session", "metrics", "ci", "fix"):
+        d = tooling / subdir
+        if d.is_dir():
+            count += len([f for f in d.iterdir()
+                          if f.is_file() and f.suffix in (".sh", ".py") and f.name != "__init__.py"])
+    return count
 
 
 def count_test_suites():

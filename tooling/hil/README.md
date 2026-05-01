@@ -7,7 +7,7 @@ Wraps `build_flash_check.sh` with soak profiles, result archival, and run compar
 - Python 3.8+
 - Hardware connected: debug probe (CMSIS-DAP) + debug UART (COM port)
 - OpenOCD in PATH
-- Project `.conf` in `tooling/scripts/build_flash/`
+- Project `.conf` in `tooling/hil/build_flash/`
 
 ## Quick start
 
@@ -62,6 +62,6 @@ Results are gitignored — they are local hardware test artifacts.
 
 ## Adding a new project
 
-1. Create `tooling/scripts/build_flash/<project>.conf` (copy `example.conf`)
+1. Create `tooling/hil/build_flash/<project>.conf` (copy `example.conf`)
 2. Add `SOAK_QUICK` / `SOAK_STANDARD` / `SOAK_STRESS` lines
 3. Run: `python tooling/hil/hil_runner.py -p <project> --soak quick`

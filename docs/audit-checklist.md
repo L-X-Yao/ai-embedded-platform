@@ -51,21 +51,21 @@ This file is read by audit agents to avoid re-reporting known issues and to focu
 make check
 
 # Phase 1: 按批次派发 agent（每个 agent 独立 worktree + 自动 commit）
-wsl bash tooling/scripts/dispatch_agent.sh \
+wsl bash tooling/session/dispatch_agent.sh \
   --name audit-w1a --budget 1.00 \
   --scope "wheels/primitives/" \
   --prompt "Read docs/audit-checklist.md. Audit W1a (bitfield→kvs). Angle: generic sweep."
 
-wsl bash tooling/scripts/dispatch_agent.sh \
+wsl bash tooling/session/dispatch_agent.sh \
   --name audit-w2 --budget 1.00 \
   --scope "wheels/drivers/" \
   --prompt "Read docs/audit-checklist.md. Audit W2: all L1 drivers."
 
 # 监控各 agent 进展
-wsl bash tooling/scripts/dispatch_agent.sh --status
+wsl bash tooling/session/dispatch_agent.sh --status
 
 # Phase 2: 全部完成后 squash merge + make check + push
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 **主窗口角色**：只做调度 + 监控 `--status` + 合并 `--merge-all`，不做修复实现。

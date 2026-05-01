@@ -52,53 +52,53 @@ help:
 	@echo "  clean             remove all build directories"
 
 test:
-	bash tooling/scripts/test_all.sh
+	bash tooling/test/test_all.sh
 
 test-wheels:
-	bash tooling/scripts/test_all.sh --wheel
+	bash tooling/test/test_all.sh --wheel
 
 test-projects:
-	bash tooling/scripts/test_all.sh --project
+	bash tooling/test/test_all.sh --project
 
 test-changed:
-	bash tooling/scripts/test_all.sh --changed
+	bash tooling/test/test_all.sh --changed
 
 test-fast:
-	bash tooling/scripts/test_all.sh --wheel --fail-fast
+	bash tooling/test/test_all.sh --wheel --fail-fast
 
 test-parallel:
-	bash tooling/scripts/test_all.sh --parallel
+	bash tooling/test/test_all.sh --parallel
 
 audit:
-	python3 tooling/scripts/audit_wheels.py
+	python3 tooling/audit/audit_wheels.py
 
 audit-fix:
-	python3 tooling/scripts/audit_fix.py
+	python3 tooling/audit/audit_fix.py
 
 audit-fix-apply:
-	python3 tooling/scripts/audit_fix.py --apply
+	python3 tooling/audit/audit_fix.py --apply
 
 coverage:
-	bash tooling/scripts/test_all.sh --wheel --coverage
+	bash tooling/test/test_all.sh --wheel --coverage
 
 bootstrap:
-	bash tooling/scripts/session_bootstrap.sh
+	bash tooling/session/bootstrap.sh
 
 list:
-	bash tooling/scripts/test_all.sh --list
+	bash tooling/test/test_all.sh --list
 
 graph:
-	python3 tooling/scripts/audit_wheels.py --graph
+	python3 tooling/audit/audit_wheels.py --graph
 
 downstream:
 	@test -n "$(W)" || { echo "Usage: make downstream W=<wheel-name>"; exit 1; }
-	bash tooling/scripts/test_downstream.sh "$(W)"
+	bash tooling/test/test_downstream.sh "$(W)"
 
 sync-vsf:
-	bash tooling/scripts/sync_vsf.sh
+	bash tooling/ci/sync_vsf.sh
 
 sync-vsf-status:
-	bash tooling/scripts/sync_vsf.sh --status
+	bash tooling/ci/sync_vsf.sh --status
 
 clean:
 	@echo "Removing build_* directories under wheels/ and projects/..."
@@ -108,52 +108,52 @@ clean:
 	@echo "Done."
 
 check:
-	bash tooling/scripts/test_all.sh && python3 tooling/scripts/audit_wheels.py --quiet && python3 tooling/scripts/doc_drift_check.py --fix
+	bash tooling/test/test_all.sh && python3 tooling/audit/audit_wheels.py --quiet && python3 tooling/audit/doc_drift_check.py --fix
 
 ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
-	bash tooling/scripts/test_all.sh
-	python3 tooling/scripts/audit_wheels.py --quiet
+	bash tooling/test/test_all.sh
+	python3 tooling/audit/audit_wheels.py --quiet
 	git add -A
 	git commit -m "$(M)"
 	git push
 
 inventory:
-	bash tooling/scripts/update_wheel_inventory.sh --apply
+	bash tooling/ci/update_wheel_inventory.sh --apply
 
 metrics:
-	bash tooling/scripts/platform_metrics.sh
+	bash tooling/metrics/platform_metrics.sh
 
 metrics-save:
-	bash tooling/scripts/platform_metrics.sh --save
+	bash tooling/metrics/platform_metrics.sh --save
 
 metrics-compare:
-	bash tooling/scripts/platform_metrics.sh --compare
+	bash tooling/metrics/platform_metrics.sh --compare
 
 metrics-quality:
-	bash tooling/scripts/platform_metrics.sh --quality
+	bash tooling/metrics/platform_metrics.sh --quality
 
 handoff:
-	bash tooling/scripts/session_handoff.sh
+	bash tooling/session/handoff.sh
 
 test-scaffold:
-	bash tooling/scripts/test_scaffold.sh
+	bash tooling/test/test_scaffold.sh
 
 new-wheel:
-	bash tooling/scripts/new_wheel.sh
+	bash tooling/wheel/new_wheel.sh
 
 promote-wheel:
-	bash tooling/scripts/wheel_promote.sh
+	bash tooling/wheel/wheel_promote.sh
 
 release:
-	bash tooling/scripts/release.sh
+	bash tooling/wheel/release.sh
 
 arm-size-audit:
-	bash tooling/scripts/arm_size_audit.sh
+	bash tooling/audit/arm_size_audit.sh
 
 find-refs:
 	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
-	bash tooling/scripts/find_all_refs.sh "$(W)"
+	bash tooling/wheel/find_all_refs.sh "$(W)"
 
 dispatch:
-	bash tooling/scripts/dispatch_agent.sh $(ARGS)
+	bash tooling/session/dispatch_agent.sh $(ARGS)

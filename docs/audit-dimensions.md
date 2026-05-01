@@ -33,7 +33,7 @@
 
 | ID | 维度 | 自动化 | 检查内容 | 范围 |
 |----|------|:------:|----------|------|
-| T1 | **工具链脚本** | 👁️ | shell 注入、未引号变量、逻辑错误、可移植性 | `tooling/scripts/` + `.githooks/` |
+| T1 | **工具链脚本** | 👁️ | shell 注入、未引号变量、逻辑错误、可移植性 | `tooling/` + `.githooks/` |
 | C1 | **CI + 跨 wheel 一致性** | ⚡ | CI job 逻辑、缓存、失败模式（规范检查 8 项已自动化，agent 只查 CI 逻辑） | `.github/workflows/` |
 | P1 | **项目代码** | 👁️ | 竞态、栈溢出、Flash 安全、协议正确性。**前置：flybox 需 HIL 硬件** | `projects/*/` |
 
@@ -124,7 +124,7 @@
 
 ```bash
 make check                    # test_all.sh + audit_wheels.py --quiet
-wsl bash tooling/scripts/arm_size_audit.sh   # Q21
+wsl bash tooling/audit/arm_size_audit.sh   # Q21
 ```
 
 如果 FAIL → 先修再继续。Phase 0 覆盖：Q4, Q21, Q29, 以及 C1/B1/D1/S1/Q12/Q27 的自动化子集。
@@ -133,17 +133,17 @@ wsl bash tooling/scripts/arm_size_audit.sh   # Q21
 
 跳过 🤖 维度（Q4, Q21, Q29）。对 ⚡ 维度，agent prompt 指明已自动化的子检查。
 
-使用 `dispatch_agent.sh` 派发每个批次到独立 worktree：
+使用 `tooling/session/dispatch_agent.sh` 派发每个批次到独立 worktree：
 
 ```bash
 # 轮次 1: 代码审阅（4 agent 并行）
-dispatch_agent.sh --name audit-w1a --budget 1.00 --scope "wheels/primitives/" \
+tooling/session/dispatch_agent.sh --name audit-w1a --budget 1.00 --scope "wheels/primitives/" \
   --prompt "审计 W1a: bitfield→kvs，L0 前 15 个 wheel"
-dispatch_agent.sh --name audit-w1b --budget 1.00 --scope "wheels/primitives/" \
+tooling/session/dispatch_agent.sh --name audit-w1b --budget 1.00 --scope "wheels/primitives/" \
   --prompt "审计 W1b: led_pattern→timeout，L0 后 15 个 wheel"
-dispatch_agent.sh --name audit-w2  --budget 1.00 --scope "wheels/drivers/" \
+tooling/session/dispatch_agent.sh --name audit-w2  --budget 1.00 --scope "wheels/drivers/" \
   --prompt "审计 W2: L1 驱动层全部 wheel"
-dispatch_agent.sh --name audit-w3  --budget 1.00 --scope "wheels/protocols/" \
+tooling/session/dispatch_agent.sh --name audit-w3  --budget 1.00 --scope "wheels/protocols/" \
   --prompt "审计 W3: L2 协议层全部 wheel"
 
 # 轮次 2-8: 同理按维度分组派发
@@ -152,7 +152,7 @@ dispatch_agent.sh --name audit-w3  --budget 1.00 --scope "wheels/protocols/" \
 # Q1+Q2+Q3, Q5+Q6, Q7+Q8+Q9, Q10+Q11+Q12 ...
 
 # 监控进度
-dispatch_agent.sh --status
+tooling/session/dispatch_agent.sh --status
 ```
 
 每个 agent 在 worktree 中完成修复并 commit（dispatch 自动追加 commit 指令 + scope 限制）。
@@ -165,7 +165,7 @@ dispatch_agent.sh --status
 
 ```bash
 # squash merge 所有 worktree 分支 + make check + push
-dispatch_agent.sh --merge-all --push
+tooling/session/dispatch_agent.sh --merge-all --push
 
 # 更新本文档末尾的"审计历史"表
 ```

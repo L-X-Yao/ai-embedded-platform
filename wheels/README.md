@@ -93,7 +93,7 @@
 - 新项目**先查 wheels/**，不要从零写
 - 发现 wheel 不够用 → **升级 wheel**，不要在项目里搞私有版本
 - wheel 修改 → 所有使用它的 `projects/` 需跑回归测试
-  - 用 `tooling/scripts/test_downstream.sh <wheel>` 自动发现下游 wheel + 项目并回归测试
+  - 用 `tooling/test/test_downstream.sh <wheel>` 自动发现下游 wheel + 项目并回归测试
 
 ## 核心铁律
 

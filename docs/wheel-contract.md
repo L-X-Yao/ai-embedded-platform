@@ -19,7 +19,7 @@
 
 ### 0.1 自动化护栏
 
-`tooling/scripts/audit_wheels.py` 在 `wheel-audit` CI job 里强制以下规则——push 阶段直接 fail，不靠人脑或 review checklist 维护：
+`tooling/audit/audit_wheels.py` 在 `wheel-audit` CI job 里强制以下规则——push 阶段直接 fail，不靠人脑或 review checklist 维护：
 
 - 每个 `wheels/<层>/<name>/` **必须**在 `.github/workflows/ci.yml` 有对应 build + test job（FAIL）
 - `drivers/` / `protocols/` / `modules/` 层的 wheel **应该**有项目 consumer（CMakeLists.txt 或 #include）；缺失为 WARN 不阻塞——AI 主动构建是鼓励的（见 ADR-009）
@@ -81,7 +81,7 @@ wheels/<层>/<wheel-name>/
 └── examples/                 可选
 ```
 
-脚手架生成：`tooling/scripts/new_wheel.sh --vendor --layer <layer> --name <name>`
+脚手架生成：`tooling/wheel/new_wheel.sh --vendor --layer <layer> --name <name>`
 
 ## 3. README.md 内容（按层差异）
 
@@ -246,6 +246,6 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 - `STATUS: draft` → `STATUS: candidate`：API review 通过后人手改
 - `STATUS: candidate` → `STATUS: stable`：人验证"至少 2 个真项目使用"后手改
 
-自动化脚本：`tooling/scripts/wheel_promote.sh <wheel-path>` 处理目录移动和引用更新。
+自动化脚本：`tooling/wheel/wheel_promote.sh <wheel-path>` 处理目录移动和引用更新。
 
 **降级**（冷门、API 过时等）由 AI 季度审计提议，人批准。

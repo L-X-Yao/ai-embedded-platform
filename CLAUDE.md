@@ -125,10 +125,16 @@ ai-embedded-platform/
 ├── templates/                      项目起步模板
 ├── projects/                       真实项目
 ├── tooling/
-│   ├── patches/                    VSF 上游修改（patch 文件）
+│   ├── audit/                      审计脚本
+│   ├── test/                       test_harness.h + 测试脚本
+│   ├── wheel/                      wheel 生命周期
+│   ├── session/                    会话管理 + 派发
+│   ├── metrics/                    平台度量
+│   ├── ci/                         CI + 仓库维护
+│   ├── fix/                        批量修复
+│   ├── debug/                      MCU 调试工具包
 │   ├── hil/                        硬件在环自动化
-│   ├── scripts/                    通用工具脚本
-│   ├── test/                       test_harness.h（统一测试框架）
+│   ├── patches/                    VSF 上游修改（patch 文件）
 │   └── experiments/                VSF tryout scaffolds
 └── _eval/                          评估历史遗留物
 ```
@@ -206,16 +212,16 @@ claude
 
 ```bash
 # 派发（后台运行，立即返回 PID）
-wsl bash tooling/scripts/dispatch_agent.sh \
+wsl bash tooling/session/dispatch_agent.sh \
   --name audit-w1 --budget 1.00 \
   --scope "wheels/primitives/" \
   --prompt "审计 W1: L0 全部 wheel"
 
 # 查看所有 agent 状态
-wsl bash tooling/scripts/dispatch_agent.sh --status
+wsl bash tooling/session/dispatch_agent.sh --status
 
 # 全部完成后一次性 squash merge + make check + push
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 核心特性：
@@ -268,7 +274,7 @@ claude -w audit --teammate-mode in-process
 
 ```bash
 # 一键 squash merge 所有 worktree-* 分支 + make check + 清理
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 自动执行：squash merge 每个 worktree 分支 → commit → 删除 worktree 和分支 → `make check` → push。
@@ -346,7 +352,7 @@ git branch -d session/wheels session/<project>
 - `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
 - `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
 - `project` — `projects/` 下真实项目的代码改动。scope 用项目名小写（如 `flybox`、`drone_light`）
-- `tool` — 跨项目可复用的工具脚本，落 `tooling/scripts/` 与 `tooling/hil/` 下的子目录（如 `gd32f4xx_debug`、未来的 HIL 自动化）。注意：`tooling/experiments/` 走 `exp`；`tooling/patches/` 通常归对应 `project`（patch 是为某个项目写的）
+- `tool` — 跨项目可复用的工具脚本，落 `tooling/audit/`、`tooling/wheel/`、`tooling/session/`、`tooling/ci/`、`tooling/fix/`、`tooling/debug/`、`tooling/metrics/`、`tooling/hil/` 等子目录（如 `gd32f4xx`、未来的 HIL 自动化）。注意：`tooling/experiments/` 走 `exp`；`tooling/patches/` 通常归对应 `project`（patch 是为某个项目写的）
 - `ci` — CI/CD 配置，落 `.github/workflows/` 与未来其他 CI 系统配置。scope 用 job 名小写（如 `flybox`、`log`），跨 job 结构改动省略
 
 ### scope（可选，与目录对齐）
@@ -354,7 +360,7 @@ git branch -d session/wheels session/<project>
 - `wheels/_draft/<name>/` → `_draft/<name>`
 - `wheels/<层>/<name>/` → `<层>/<name>`（例：`primitives/log`）
 - `projects/<name>/` → `<name>`（例：`flybox`、`drone_light`）
-- `tooling/scripts/<name>/` 或 `tooling/hil/<name>/` → `<name>`（例：`gd32f4xx_debug`）
+- `tooling/<subdir>/<name>` → `<name>`（例：`gd32f4xx`、`dispatch_agent`）
 - `.github/workflows/<job>` → job 名（例：`flybox`、`log`）
 - `docs/adr/` → `adr`
 - 顶层或跨多个 scope（`CLAUDE.md`、跨目录改动）→ 省略
@@ -457,7 +463,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（25 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet + --json）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（32 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **开发效率工具链**（`tooling/` 各子目录 + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（23 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet + --json）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（33 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 - ✅ **58 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (30): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder

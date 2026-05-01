@@ -7,7 +7,7 @@
 #
 #   build       — run BUILD_CMD then optional COPY_CMD + size check
 #   flash       — openocd write_image + verify_image at FLASH_ADDR
-#   check [sec] — capture serial via gd32f4xx_debug/serial_capture.ps1, verdict
+#   check [sec] — capture serial via debug/gd32f4xx/serial_capture.ps1, verdict
 #                  by FAIL_PATTERNS / PASS_PATTERNS in conf
 #   all         — build + flash + check (default)
 #
@@ -15,7 +15,7 @@
 # Required keys: BIN_PATH, FLASH_ADDR, SERIAL_PORT (for check),
 #                FAIL_PATTERNS (array), PASS_PATTERNS (array), MIN_PASSED.
 #
-# Reuses tooling/scripts/gd32f4xx_debug/serial_capture.ps1 for serial capture
+# Reuses tooling/debug/gd32f4xx/serial_capture.ps1 for serial capture
 # (override SERIAL_CAPTURE_SCRIPT if you ship your own).
 
 set -euo pipefail
@@ -89,7 +89,7 @@ PASS_PATTERNS_INFO=()
 # Anchor for relative paths in conf (e.g. SERIAL_CAPTURE_SCRIPT defaults)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONF_DIR="$(cd "$(dirname "$CONF")" && pwd)"
-SERIAL_CAPTURE_SCRIPT="$SCRIPT_DIR/../gd32f4xx_debug/serial_capture.ps1"
+SERIAL_CAPTURE_SCRIPT="$SCRIPT_DIR/../../debug/gd32f4xx/serial_capture.ps1"
 
 # shellcheck disable=SC1090
 . "$CONF"

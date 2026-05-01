@@ -1,5 +1,5 @@
 /*
- * test_mock_i2c.h — shared I2C register mock for L1 driver tests
+ * mock_i2c.h — shared I2C register mock for L1 driver tests
  *
  * Header-only. Include from any test_*.c that tests a register-based
  * I2C driver. Provides mock_regs[], fail injection, and standard
@@ -7,7 +7,7 @@
  *
  * Usage:
  *   #include "test_harness.h"
- *   #include "test_mock_i2c.h"
+ *   #include "mock_i2c.h"
  *   #include "my_driver.h"
  *
  *   static void mock_reset(void) {
@@ -22,8 +22,8 @@
  *   };
  */
 
-#ifndef TEST_MOCK_I2C_H
-#define TEST_MOCK_I2C_H
+#ifndef MOCK_I2C_H
+#define MOCK_I2C_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -87,4 +87,4 @@ static bool mock_i2c_read_regs(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-#endif /* TEST_MOCK_I2C_H */
+#endif /* MOCK_I2C_H */

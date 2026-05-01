@@ -586,7 +586,7 @@ CMAKE_EOF
 generate_test_i2c() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
 #include "test_harness.h"
-#include "test_mock_i2c.h"
+#include "mock_i2c.h"
 #include "${NAME_LOWER}.h"
 
 /* ---------- chip-specific mock setup ---------- */
@@ -1347,7 +1347,7 @@ fi
 
 echo ""
 echo "=== Running audit for ${NAME_LOWER} ==="
-if python3 "$REPO/tooling/scripts/audit_wheels.py" --quiet 2>&1; then
+if python3 "$REPO/tooling/audit/audit_wheels.py" --quiet 2>&1; then
     echo "Audit: passed"
 else
     echo "Audit: warnings found (review output above)"
@@ -1365,4 +1365,4 @@ else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
 fi
-echo "  $(( VENDOR ? 6 : 3 )). Run: tooling/scripts/test_all.sh ${NAME_LOWER}"
+echo "  $(( VENDOR ? 6 : 3 )). Run: tooling/test/test_all.sh ${NAME_LOWER}"

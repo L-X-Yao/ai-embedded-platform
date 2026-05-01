@@ -37,7 +37,7 @@ See `projects/flybox/scripts/build_flash.sh` for a real example.
 |------------|--------------|
 | `build`  | Run `BUILD_CMD`, then optional `COPY_CMD`, then optional size check vs `SRAM_LIMIT` |
 | `flash`  | OpenOCD `write_image erase` + `verify_image` at `FLASH_ADDR` |
-| `check [SECONDS]` | Reset + capture serial via `gd32f4xx_debug/serial_capture.ps1`, verdict by `FAIL_PATTERNS` / `PASS_PATTERNS` |
+| `check [SECONDS]` | Reset + capture serial via `debug/gd32f4xx/serial_capture.ps1`, verdict by `FAIL_PATTERNS` / `PASS_PATTERNS` |
 | `all`    | build + flash + check (default if no subcommand) |
 
 ## Verdict logic
@@ -57,7 +57,7 @@ markers. Required: `BIN_PATH`, `FLASH_ADDR` (and `SERIAL_PORT` for `check`).
 
 Two reasonable conventions:
 
-1. **Co-located with tooling** (current flybox approach): `tooling/scripts/build_flash/myproject.conf`. Easy to grep across the repo.
+1. **Co-located with tooling** (current flybox approach): `tooling/hil/build_flash/myproject.conf`. Easy to grep across the repo.
 2. **Co-located with project**: `projects/myproject/build_flash.conf`. Travels with the project if you copy it elsewhere.
 
 Either works — `--conf` takes any path. Pick one and stay consistent across projects.

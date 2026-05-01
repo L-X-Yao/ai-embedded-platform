@@ -10,7 +10,7 @@ make test-wheels    # 仅 wheel 测试
 make test-projects  # 仅项目测试
 make test-changed   # 仅受未提交变更影响的测试
 make test-fast      # wheel 测试 + 首个失败即停
-make audit          # 25 项 wheel 审计
+make audit          # 23 项 wheel 审计
 make coverage       # 测试 + gcov 覆盖率报告
 make bootstrap      # 打印 session 上下文（wheel 表 + CI + git）
 make graph          # 依赖关系图（Mermaid）
@@ -79,7 +79,7 @@ pre-push: audit FAILED
 
 **恢复**：
 1. 看 GitHub Actions 的失败 job 日志（`gh run view --log-failed`）
-2. 本地复现：`bash tooling/scripts/test_all.sh <失败的wheel>`
+2. 本地复现：`bash tooling/test/test_all.sh <失败的wheel>`
 3. 如果本地通但 CI 不通 → `diff build.ninja` 比对 include 路径（见 memory: CI bring-up debug）
 4. 如果是 cancel-in-progress 导致全取消（连续 push）→ 等推完后空 commit 重触发：
    ```bash
@@ -100,7 +100,7 @@ pre-push: audit FAILED
 
 **恢复**：
 1. WARN 不阻塞 push，但应该趁着上下文还在修掉
-2. 查 `tooling/scripts/audit_wheels.py` 里对应的 check 函数，读它的实现理解期望
+2. 查 `tooling/audit/audit_wheels.py` 里对应的 check 函数，读它的实现理解期望
 3. 常见 WARN 和修法：
    - "no consumer" → 等项目消费，不需要修
    - "error enum auto-increment" → 改为 `_ERR_X = -N`
@@ -175,14 +175,14 @@ pre-push: audit FAILED
 
 ## GD32F4xx 调试快速包（HIL boot / fault / 栈溢出 一键定位）
 
-> 📦 `tooling/scripts/gd32f4xx_debug/` —— flybox Phase B + 后期 triage 沉淀的 reusable 调试资产，**任何 GD32F4xx 项目可直接拿来用**（其中 5/7 是任意 Cortex-M / GCC ARM 项目通用）。
+> 📦 `tooling/debug/gd32f4xx/` —— flybox Phase B + 后期 triage 沉淀的 reusable 调试资产，**任何 GD32F4xx 项目可直接拿来用**（其中 5/7 是任意 Cortex-M / GCC ARM 项目通用）。
 
 ### 何时打开包
 
 | 症状 | 工具 | 一行调用 |
 |------|------|----------|
-| Boot 卡死 / 静默 reset loop | `diag_halt.cfg` | `openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg -f gd32f4xx_debug/diag_halt.cfg` |
-| 想知道 MCU 卡在哪条指令 | `diag_where.cfg` | `openocd -f ... -f gd32f4xx_debug/diag_where.cfg` |
+| Boot 卡死 / 静默 reset loop | `diag_halt.cfg` | `openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg -f tooling/debug/gd32f4xx/diag_halt.cfg` |
+| 想知道 MCU 卡在哪条指令 | `diag_where.cfg` | `openocd -f ... -f tooling/debug/gd32f4xx/diag_where.cfg` |
 | HardFault / BusFault / UsageFault | `cortex_m4.gdbinit` → `fault_full` | GDB 中 `monitor halt; fault_full` |
 | 怀疑栈溢出（HardFault on push） | `stack_analyzer.py` | `python stack_analyzer.py BUILD_DIR --task-config tasks.json` |
 | 抓 boot burst 但 PowerShell 只抓两行 | `serial_capture.ps1` | `pwsh -File serial_capture.ps1 -Port COM25` |
@@ -191,7 +191,7 @@ pre-push: audit FAILED
 
 - **`cortex_m4.gdbinit`**（任意 Cortex-M4）：`fault_info` / `exc_frame [sp]` / `ret_lr` / `fault_full` / `vtor`
 - **`gd32f4xx.gdbinit`**（GD32F4xx）：`rcu_clk` / `i2c_regs <base>`
-- **`diag_halt.cfg` / `diag_where.cfg`**（任意 Cortex-M）：OpenOCD 一次性 halt + 寄存器/PC 采样，免开 GDB 会话
+- **`diag_halt.cfg` / `diag_where.cfg`**（任意 Cortex-M）：OpenOCD 一次性 halt + 寄存器/PC 采样，免开 GDB 会话（均在 `tooling/debug/gd32f4xx/`）
 - **`stack_analyzer.py`**（任意 GCC ARM）：从 `-fstack-usage` + objdump callgraph 静态分析 per-task 累积栈使用，配合 `--task-config tasks.json` 描述任务入口
 - **`serial_capture.ps1`**（STM32 / GD32 + USB-UART）：CH340 DTR/RTS=true + 64KB ReadBuffer + 25ms 轮询，避免 boot burst 丢失
 
@@ -207,17 +207,17 @@ pre-push: audit FAILED
 参考 `projects/flybox/scripts/flybox.gdbinit` 写法：
 
 ```gdb
-source gd32f4xx_debug/cortex_m4.gdbinit
-source gd32f4xx_debug/gd32f4xx.gdbinit
+source tooling/debug/gd32f4xx/cortex_m4.gdbinit
+source tooling/debug/gd32f4xx/gd32f4xx.gdbinit
 
 target extended-remote :3333
 file build/myproject.elf
 break HardFault_Handler
 ```
 
-启动脚本（参考 `projects/flybox/scripts/gdb.sh`）需 `cd` 到 `tooling/scripts/` 让相对 `source` 路径生效。
+启动脚本（参考 `projects/flybox/scripts/gdb.sh`）需 `cd` 到 `tooling/debug/` 让相对 `source` 路径生效。
 
-完整说明：`tooling/scripts/gd32f4xx_debug/README.md`。
+完整说明：`tooling/debug/gd32f4xx/README.md`。
 
 ---
 
