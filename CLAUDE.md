@@ -235,6 +235,8 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 
 适合超级审计、批量重构、跨 wheel 修复等需要多 agent 并行的场景。主窗口只做调度 + 合并，不做长线实现。
 
+**铁律：所有 `claude -p -w` 派发必须通过 `dispatch_agent.sh`，禁止手写裸命令。** 脚本自动追加 commit 指令和 scope 限制，手写会漏导致 agent 不 commit、worktree 残留。
+
 ### 方式三：会话内 subagent
 
 当前 session 内用 Agent tool + `isolation: "worktree"` 派出隔离 agent，不需要开新终端。适合委派单次任务（审计扫描、测试覆盖检查）。
