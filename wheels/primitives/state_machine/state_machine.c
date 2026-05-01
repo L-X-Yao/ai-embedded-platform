@@ -8,6 +8,7 @@
 
 #include "state_machine.h"
 #include <stddef.h>
+#include <limits.h>
 
 static const sm_state_def_t *find_state_def(const state_machine_t *ctx,
                                             sm_state_t id)
@@ -89,7 +90,7 @@ state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event
         }
 
         ctx->current = new_state;
-        ctx->transition_count++;
+        if (ctx->transition_count < UINT32_MAX) ctx->transition_count++;
 
         if (old_state != new_state)
         {

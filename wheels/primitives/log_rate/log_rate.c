@@ -7,6 +7,7 @@
  */
 
 #include "log_rate.h"
+#include <limits.h>
 
 void log_rate_init(log_rate_t *r, log_rate_output_fn inner_fn, void *inner_ctx,
                    log_rate_time_fn time_fn,
@@ -42,7 +43,7 @@ void log_rate_sink(void *ctx, const char *line, size_t len) {
         r->tokens--;
         r->inner_fn(r->inner_ctx, line, len);
     } else {
-        r->dropped++;
+        if (r->dropped < UINT32_MAX) r->dropped++;
     }
 }
 

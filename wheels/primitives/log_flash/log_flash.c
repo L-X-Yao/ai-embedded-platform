@@ -8,6 +8,7 @@
 
 #include "log_flash.h"
 #include <string.h>
+#include <limits.h>
 
 #define ENTRY_HEADER_SIZE  3  /* magic(1) + len(2) */
 #define MAX_ENTRY_LEN      0xFFFF
@@ -53,7 +54,7 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
     if (!f || !line || len == 0) return;
 
     if (len > MAX_ENTRY_LEN || ENTRY_HEADER_SIZE + len > f->sector_size) {
-        f->dropped++;
+        if (f->dropped < UINT32_MAX) f->dropped++;
         return;
     }
 
@@ -63,7 +64,7 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
         f->write_sector = (f->write_sector + 1) % f->sector_count;
         f->write_pos = 0;
         if (erase_sector(f, f->write_sector) != 0) {
-            f->dropped++;
+            if (f->dropped < UINT32_MAX) f->dropped++;
             return;
         }
     }
@@ -76,16 +77,16 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
     hdr[2] = (uint8_t)((len >> 8) & 0xFF);
 
     if (write_at(f, abs_offset + ENTRY_HEADER_SIZE, (const uint8_t *)line, len) != 0) {
-        f->dropped++;
+        if (f->dropped < UINT32_MAX) f->dropped++;
         return;
     }
     if (write_at(f, abs_offset, hdr, ENTRY_HEADER_SIZE) != 0) {
-        f->dropped++;
+        if (f->dropped < UINT32_MAX) f->dropped++;
         return;
     }
 
     f->write_pos += needed;
-    f->total_entries++;
+    if (f->total_entries < UINT32_MAX) f->total_entries++;
 }
 
 size_t log_flash_read(log_flash_t *f, char *dst, size_t dst_size) {

@@ -8,6 +8,7 @@
 
 #include "log_ringbuf.h"
 #include <string.h>
+#include <limits.h>
 
 void log_ringbuf_init(log_ringbuf_t *rb, uint8_t *buf, size_t capacity) {
     if (!rb) return;
@@ -22,10 +23,10 @@ void log_ringbuf_init(log_ringbuf_t *rb, uint8_t *buf, size_t capacity) {
 void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
     if (!rb || !rb->buf || rb->capacity == 0 || !line || len == 0) return;
 
-    rb->total_lines++;
+    if (rb->total_lines < UINT32_MAX) rb->total_lines++;
 
     if (len > rb->capacity) {
-        rb->dropped_lines++;
+        if (rb->dropped_lines < UINT32_MAX) rb->dropped_lines++;
         return;
     }
 
@@ -43,7 +44,7 @@ void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
         if (!found_newline) evicted = rb->count;
         rb->head = (rb->head + evicted) % rb->capacity;
         rb->count -= evicted;
-        rb->dropped_lines++;
+        if (rb->dropped_lines < UINT32_MAX) rb->dropped_lines++;
     }
 
     /* Write at tail */
