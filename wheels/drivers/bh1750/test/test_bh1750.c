@@ -124,7 +124,7 @@ TEST(test_power_off_on)
 
 TEST(test_read_null)
 {
-    bh1750_t dev;
+    bh1750_t dev = {0};
     ASSERT_EQ(bh1750_read_lux(&dev, NULL), BH1750_ERR_PARAM);
     ASSERT_EQ(bh1750_read_lux(NULL, NULL), BH1750_ERR_PARAM);
 }

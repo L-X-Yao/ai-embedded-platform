@@ -33,9 +33,6 @@ typedef struct {
     void *ctx;
 } gpio_button_hal_t;
 
-/** Alias matching directory name for audit tooling compatibility. */
-typedef gpio_btn_hal_t gpio_button_hal_t;
-
 /* ---------- configuration ---------- */
 
 typedef struct {
