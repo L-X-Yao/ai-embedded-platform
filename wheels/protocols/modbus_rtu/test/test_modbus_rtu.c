@@ -58,10 +58,10 @@ TEST(test_build_and_check_crc)
     uint8_t buf[32];
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     ASSERT_TRUE(len == 4);
-    ASSERT_TRUE(modbus_rtu_check_crc(buf, len));
+    ASSERT_TRUE(modbus_rtu_check_crc(buf, (uint16_t)len));
 
     buf[len - 1] ^= 0xFF;
-    ASSERT_TRUE(!modbus_rtu_check_crc(buf, len));
+    ASSERT_TRUE(!modbus_rtu_check_crc(buf, (uint16_t)len));
 }
 
 TEST(test_build_with_data)
@@ -73,7 +73,7 @@ TEST(test_build_with_data)
     ASSERT_TRUE(buf[0] == 0x01);
     ASSERT_TRUE(buf[1] == 0x03);
     ASSERT_TRUE(buf[2] == 0x00 && buf[3] == 0x6B);
-    ASSERT_TRUE(modbus_rtu_check_crc(buf, len));
+    ASSERT_TRUE(modbus_rtu_check_crc(buf, (uint16_t)len));
 }
 
 TEST(test_build_buffer_too_small)
@@ -89,7 +89,7 @@ TEST(test_parse_valid)
     uint8_t data[] = {0x00, 0x6B, 0x00, 0x03};
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, 4);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.addr == 0x01);
     ASSERT_TRUE(frame.func == 0x03);
     ASSERT_TRUE(frame.data_len == 4);
@@ -101,7 +101,7 @@ TEST(test_parse_minimal)
     uint8_t buf[32];
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.data == NULL);
     ASSERT_TRUE(frame.data_len == 0);
 }
@@ -112,7 +112,7 @@ TEST(test_parse_bad_crc)
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     buf[len - 1] ^= 0xFF;
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == -1);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
 }
 
 TEST(test_parse_too_short)
@@ -139,13 +139,13 @@ TEST(test_exception_helpers)
     modbus_rtu_frame_t frame;
     uint8_t ex_data = MODBUS_EX_ILLEGAL_FUNCTION;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x83, &ex_data, 1);
-    modbus_rtu_parse(buf, len, &frame);
+    modbus_rtu_parse(buf, (uint16_t)len, &frame);
 
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_FUNCTION);
 
     len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
-    modbus_rtu_parse(buf, len, &frame);
+    modbus_rtu_parse(buf, (uint16_t)len, &frame);
     ASSERT_TRUE(!modbus_rtu_is_exception(&frame));
 
     ASSERT_TRUE(!modbus_rtu_is_exception(NULL));
@@ -164,7 +164,7 @@ TEST(test_master_read_holding)
                                           0x01, MODBUS_FC_READ_HOLDING_REGS,
                                           0x006B, 3);
     ASSERT_TRUE(len == 8);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.addr == 0x01);
     ASSERT_TRUE(frame.func == 0x03);
     ASSERT_TRUE(frame.data[0] == 0x00 && frame.data[1] == 0x6B);
@@ -196,7 +196,7 @@ TEST(test_master_write_single)
     int len = modbus_rtu_master_write_reg(buf, sizeof(buf),
                                           0x01, 0x0001, 0x0003);
     ASSERT_TRUE(len == 8);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.func == 0x06);
     ASSERT_TRUE(frame.data[0] == 0x00 && frame.data[1] == 0x01);
     ASSERT_TRUE(frame.data[2] == 0x00 && frame.data[3] == 0x03);
@@ -210,7 +210,7 @@ TEST(test_master_write_multiple)
     int len = modbus_rtu_master_write_regs(buf, sizeof(buf),
                                            0x01, 0x0001, 2, values);
     ASSERT_TRUE(len > 0);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.func == 0x10);
     ASSERT_TRUE(frame.data[4] == 4);
     ASSERT_TRUE(frame.data[5] == 0x00 && frame.data[6] == 0x0A);
@@ -236,7 +236,7 @@ TEST(test_master_get_regs)
                                resp_data, 5);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp_buf, len, &frame);
+    modbus_rtu_parse(resp_buf, (uint16_t)len, &frame);
 
     uint16_t regs[4];
     int n = modbus_rtu_master_get_regs(&frame, regs, 4);
@@ -252,7 +252,7 @@ TEST(test_master_get_regs_truncate)
     int len = modbus_rtu_build(resp_buf, sizeof(resp_buf), 0x01, 0x03,
                                resp_data, 7);
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp_buf, len, &frame);
+    modbus_rtu_parse(resp_buf, (uint16_t)len, &frame);
 
     uint16_t regs[2];
     int n = modbus_rtu_master_get_regs(&frame, regs, 2);
@@ -273,7 +273,7 @@ TEST(test_master_get_regs_invalid)
     uint8_t buf[32];
     uint8_t bad_data[] = {0x03, 0x00, 0x01, 0x00};
     int len = modbus_rtu_build(buf, sizeof(buf), 1, 3, bad_data, 4);
-    modbus_rtu_parse(buf, len, &frame);
+    modbus_rtu_parse(buf, (uint16_t)len, &frame);
     ASSERT_TRUE(modbus_rtu_master_get_regs(&frame, regs, 4) == -1);
 }
 
@@ -307,11 +307,11 @@ TEST(test_slave_read_holding)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 2);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    ASSERT_TRUE(modbus_rtu_parse(resp, resp_len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(resp, (uint16_t)resp_len, &frame) == 0);
     ASSERT_TRUE(frame.func == 0x03);
 
     uint16_t regs[2];
@@ -334,11 +334,11 @@ TEST(test_slave_read_input)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x02, MODBUS_FC_READ_INPUT_REGS,
                                                5, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     uint16_t val;
     modbus_rtu_master_get_regs(&frame, &val, 1);
     ASSERT_TRUE(val == 0xABCD);
@@ -354,13 +354,13 @@ TEST(test_slave_write_single)
 
     int req_len = modbus_rtu_master_write_reg(req, sizeof(req),
                                                0x01, 3, 0x00FF);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
     ASSERT_TRUE(holding_regs[3] == 0x00FF);
     ASSERT_TRUE(write_count == 1);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(frame.func == 0x06);
 }
 
@@ -375,7 +375,7 @@ TEST(test_slave_write_multiple)
 
     int req_len = modbus_rtu_master_write_regs(req, sizeof(req),
                                                 0x01, 10, 3, values);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
     ASSERT_TRUE(holding_regs[10] == 0x000A);
     ASSERT_TRUE(holding_regs[11] == 0x000B);
@@ -394,7 +394,7 @@ TEST(test_slave_address_mismatch)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x02, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len == 0);
 }
 
@@ -408,7 +408,7 @@ TEST(test_slave_broadcast_write)
 
     int req_len = modbus_rtu_master_write_reg(req, sizeof(req),
                                                0x00, 0, 0x1234);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len == 0);
     ASSERT_TRUE(holding_regs[0] == 0x1234);
 }
@@ -424,7 +424,7 @@ TEST(test_slave_broadcast_read_ignored)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x00, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len == 0);
 }
 
@@ -435,11 +435,11 @@ TEST(test_slave_unknown_function)
     modbus_rtu_slave_init(&s, 0x01, NULL);
 
     int req_len = modbus_rtu_build(req, sizeof(req), 0x01, 0x01, NULL, 0);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_FUNCTION);
 }
@@ -454,10 +454,10 @@ TEST(test_slave_no_callback)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
 }
 
@@ -473,10 +473,10 @@ TEST(test_slave_callback_failure)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_SLAVE_FAILURE);
 }
@@ -491,10 +491,10 @@ TEST(test_slave_write_callback_failure)
     s.write_holding = mock_write_holding;
 
     int req_len = modbus_rtu_master_write_reg(req, sizeof(req), 0x01, 0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
 }
 
@@ -528,10 +528,10 @@ TEST(test_roundtrip_read)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 3);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
 
     uint16_t regs[3];
     int n = modbus_rtu_master_get_regs(&frame, regs, 3);
@@ -551,11 +551,11 @@ TEST(test_roundtrip_write_single)
 
     int req_len = modbus_rtu_master_write_reg(req, sizeof(req),
                                                0x01, 5, 0xBEEF);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(holding_regs[5] == 0xBEEF);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(!modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(frame.func == 0x06);
 }
@@ -571,12 +571,12 @@ TEST(test_roundtrip_write_multiple)
 
     int req_len = modbus_rtu_master_write_regs(req, sizeof(req),
                                                 0x01, 0, 2, values);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(holding_regs[0] == 0x1111);
     ASSERT_TRUE(holding_regs[1] == 0x2222);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(!modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(frame.func == 0x10);
 }
@@ -593,10 +593,10 @@ TEST(test_build_max_data)
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03,
                                data, MODBUS_RTU_MAX_FRAME - 4);
     ASSERT_TRUE(len == MODBUS_RTU_MAX_FRAME);
-    ASSERT_TRUE(modbus_rtu_check_crc(buf, len));
+    ASSERT_TRUE(modbus_rtu_check_crc(buf, (uint16_t)len));
 
     modbus_rtu_frame_t frame;
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.data_len == MODBUS_RTU_MAX_FRAME - 4);
 }
 
@@ -623,17 +623,17 @@ TEST(test_slave_reinit_address)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) > 0);
+    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp)) > 0);
 
     modbus_rtu_slave_init(&s, 0x05, NULL);
     s.read_holding = mock_read_holding;
 
-    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) == 0);
+    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp)) == 0);
 
     req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                            0x05, MODBUS_FC_READ_HOLDING_REGS,
                                            0, 1);
-    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp)) > 0);
+    ASSERT_TRUE(modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp)) > 0);
 }
 
 TEST(test_crc_corruption_middle_byte)
@@ -643,14 +643,14 @@ TEST(test_crc_corruption_middle_byte)
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, 4);
     ASSERT_TRUE(len == 8);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
 
     buf[3] ^= 0xFF;
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == -1);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
 
     buf[3] ^= 0xFF;
     buf[0] ^= 0x01;
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == -1);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
 }
 
 TEST(test_build_null_data_nonzero_len)
@@ -661,7 +661,7 @@ TEST(test_build_null_data_nonzero_len)
 
     len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     ASSERT_EQ(len, 4);
-    ASSERT_TRUE(modbus_rtu_check_crc(buf, len));
+    ASSERT_TRUE(modbus_rtu_check_crc(buf, (uint16_t)len));
 }
 
 TEST(test_slave_resp_buffer_too_small)
@@ -676,7 +676,7 @@ TEST(test_slave_resp_buffer_too_small)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len == -1);
 }
 
@@ -697,11 +697,11 @@ TEST(test_slave_write_multiple_mismatched_count)
     int raw_len = modbus_rtu_build(raw, sizeof(raw), 0x01,
                                     MODBUS_FC_WRITE_MULTIPLE_REGS,
                                     bad_data, 7);
-    int resp_len = modbus_rtu_slave_process(&s, raw, raw_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, raw, (uint16_t)raw_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_DATA_VALUE);
 }
@@ -720,11 +720,11 @@ TEST(test_slave_read_max_regs)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, REG_BANK_SIZE);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(!modbus_rtu_is_exception(&frame));
 
     uint16_t regs[REG_BANK_SIZE];
@@ -753,7 +753,7 @@ TEST(test_parse_exact_min_frame)
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     ASSERT_TRUE(len == 4);
-    ASSERT_TRUE(modbus_rtu_parse(buf, len, &frame) == 0);
+    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
     ASSERT_TRUE(frame.data == NULL);
     ASSERT_TRUE(frame.data_len == 0);
     ASSERT_TRUE(frame.addr == 0x01);
@@ -771,11 +771,11 @@ TEST(test_slave_address_wrap)
     int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0xFFFF, 2);
-    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
     ASSERT_TRUE(resp_len > 0);
 
     modbus_rtu_frame_t frame;
-    modbus_rtu_parse(resp, resp_len, &frame);
+    modbus_rtu_parse(resp, (uint16_t)resp_len, &frame);
     ASSERT_TRUE(modbus_rtu_is_exception(&frame));
     ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_DATA_VALUE);
 }
