@@ -11,7 +11,7 @@ target_include_directories(test_ds18b20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME ds18b20_tests COMMAND test_ds18b20)

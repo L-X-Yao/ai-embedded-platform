@@ -34,15 +34,15 @@ static void mock_reset(void)
 static void mock_cs_low(void *ctx) { (void)ctx; mock_cs = 0; mock_phase = 1; mock_addr_bytes = 0; }
 static void mock_cs_high(void *ctx) {
     (void)ctx;
-    if (mock_cmd == 0x02 && mock_phase >= 3) mock_status &= ~0x01;
+    if (mock_cmd == 0x02 && mock_phase >= 3) mock_status = (uint8_t)(mock_status & ~0x01);
     if (mock_cmd == 0x20 && (mock_status & 0x02)) {
         uint32_t base = mock_addr & ~0xFFFU;
         uint32_t end = base + 4096;
         if (end > MOCK_SIZE) end = MOCK_SIZE;
         for (uint32_t i = base; i < end; i++) mock_mem[i] = 0xFF;
-        mock_status &= ~0x03;
+        mock_status = (uint8_t)(mock_status & ~0x03);
     }
-    if (mock_cmd == 0xC7) mock_status &= ~0x01;
+    if (mock_cmd == 0xC7) mock_status = (uint8_t)(mock_status & ~0x01);
     mock_cs = 1;
     mock_phase = 0;
 }
@@ -63,7 +63,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         if (tx == 0xC7) {                                       /* Chip erase */
             if (mock_status & 0x02) {
                 memset(mock_mem, 0xFF, MOCK_SIZE);
-                mock_status &= ~0x02;
+                mock_status = (uint8_t)(mock_status & ~0x02);
             }
             return 0xFF;
         }
@@ -103,7 +103,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                 uint32_t end = base + 4096;
                 if (end > MOCK_SIZE) end = MOCK_SIZE;
                 for (uint32_t i = base; i < end; i++) mock_mem[i] = 0xFF;
-                mock_status &= ~0x02;
+                mock_status = (uint8_t)(mock_status & ~0x02);
             }
             return 0xFF;
         }

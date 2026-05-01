@@ -14,7 +14,7 @@ target_include_directories(test_qmc5883p PRIVATE
 )
 
 target_link_libraries(test_qmc5883p PRIVATE m)
-target_compile_options(test_qmc5883p PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_qmc5883p PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME qmc5883p_tests COMMAND test_qmc5883p)

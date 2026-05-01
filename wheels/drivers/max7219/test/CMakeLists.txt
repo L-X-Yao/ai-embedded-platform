@@ -11,7 +11,7 @@ target_include_directories(test_max7219 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME max7219_tests COMMAND test_max7219)

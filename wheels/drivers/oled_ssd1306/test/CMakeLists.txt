@@ -12,7 +12,7 @@ target_include_directories(test_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME oled_ssd1306_tests COMMAND test_oled_ssd1306)
