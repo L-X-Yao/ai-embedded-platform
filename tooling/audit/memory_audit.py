@@ -40,9 +40,15 @@ def find_memory_dir():
 
 
 STALE_PATTERNS = re.compile(
-    r'\bTODO\b|pending|进行中|残留|未测|待执行|未完成',
+    r'\bTODO\b|(?<![A-Z_])pending(?![A-Z_])|进行中|残留|(?<!已)未测(?!试)|待执行|未完成',
     re.IGNORECASE
 )
+
+BACKTICK_RE = re.compile(r'`[^`]+`')
+
+
+def strip_code_spans(line: str) -> str:
+    return BACKTICK_RE.sub('', line)
 
 BLOAT_THRESHOLD = 60
 
@@ -77,7 +83,7 @@ def audit(mem_dir: Path) -> list:
                 continue
             if in_frontmatter:
                 continue
-            if STALE_PATTERNS.search(line):
+            if STALE_PATTERNS.search(strip_code_spans(line)):
                 issues.append(("STALE", f, f"L{i+1}: {line.strip()[:80]}"))
                 break
 

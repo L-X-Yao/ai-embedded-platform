@@ -14,6 +14,7 @@
 #   --name    <worktree-name>   worktree name (required for dispatch)
 #   --budget  <usd>             max spend in USD (required for dispatch)
 #   --prompt  <text>            task prompt (required for dispatch)
+#   --prompt-file <path>       read prompt from file (use for complex prompts)
 #   --scope   <paths>           restrict agent to these paths (comma-separated)
 #   --wait                      block until agent completes
 #   --merge-all                 squash-merge all worktree-* branches, run make check
@@ -33,6 +34,7 @@ NC='\033[0m'
 NAME=""
 BUDGET=""
 PROMPT=""
+PROMPT_FILE=""
 SCOPE=""
 WAIT=false
 MERGE_ALL=false
@@ -49,6 +51,7 @@ while [[ $# -gt 0 ]]; do
         --name)      NAME="$2";   shift 2 ;;
         --budget)    BUDGET="$2"; shift 2 ;;
         --prompt)    PROMPT="$2"; shift 2 ;;
+        --prompt-file) PROMPT_FILE="$2"; shift 2 ;;
         --scope)     SCOPE="$2";  shift 2 ;;
         --wait)      WAIT=true;   shift   ;;
         --merge-all) MERGE_ALL=true; shift ;;
@@ -168,8 +171,15 @@ if [[ -z "$BUDGET" ]]; then
     echo -e "${RED}Error: --budget is required${NC}"
     usage 1
 fi
+if [[ -n "$PROMPT_FILE" ]]; then
+    if [[ ! -f "$PROMPT_FILE" ]]; then
+        echo -e "${RED}Error: prompt file not found: $PROMPT_FILE${NC}"
+        exit 1
+    fi
+    PROMPT="$(cat "$PROMPT_FILE")"
+fi
 if [[ -z "$PROMPT" ]]; then
-    echo -e "${RED}Error: --prompt is required${NC}"
+    echo -e "${RED}Error: --prompt or --prompt-file is required${NC}"
     usage 1
 fi
 
