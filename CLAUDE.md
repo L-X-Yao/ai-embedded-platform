@@ -199,11 +199,40 @@ claude
 
 `-w <name>` 自动创建 `.claude/worktrees/<name>/` 目录和 `worktree-<name>` 分支。`-n` 命名 session 以便 `claude --resume` 恢复。
 
-### 方式二：会话内 subagent
+### 方式二：`dispatch_agent.sh` 自动派发（批量任务推荐）
+
+用 `dispatch_agent.sh` 批量派发 `claude -p -w` agent，每个 agent 在独立 worktree 中工作并自动 commit：
+
+```bash
+# 派发（后台运行，立即返回 PID）
+wsl bash tooling/scripts/dispatch_agent.sh \
+  --name audit-w1 --budget 1.00 \
+  --scope "wheels/primitives/" \
+  --prompt "审计 W1: L0 全部 wheel"
+
+# 查看所有 agent 状态
+wsl bash tooling/scripts/dispatch_agent.sh --status
+
+# 全部完成后一次性 squash merge + make check + push
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+```
+
+核心特性：
+- `--name`：worktree 名（创建 `worktree-<name>` 分支）
+- `--budget`：agent 最大花费（USD）
+- `--prompt`：任务描述（脚本自动追加 commit 指令和 scope 限制）
+- `--scope`：限制 agent 只能修改指定路径
+- `--wait`：前台运行（阻塞直到完成）
+- `--merge-all [--push]`：squash merge 所有 `worktree-*` 分支，自动 `make check`
+- `--status`：显示各 worktree 分支的 commit 数和内容
+
+适合超级审计、批量重构、跨 wheel 修复等需要多 agent 并行的场景。主窗口只做调度 + 合并，不做长线实现。
+
+### 方式三：会话内 subagent
 
 当前 session 内用 Agent tool + `isolation: "worktree"` 派出隔离 agent，不需要开新终端。适合委派单次任务（审计扫描、测试覆盖检查）。
 
-### 方式三：Agent Teams（实验性）
+### 方式四：Agent Teams（实验性）
 
 多个 Claude 实例共享任务列表、互相通信。需先启用：
 
@@ -234,12 +263,21 @@ claude -w audit --teammate-mode in-process
 
 ### 收窗
 
-**`claude -w` 方式**：无改动时 worktree 自动删除。有改动时合并到主分支：
+**`dispatch_agent.sh --merge-all` 方式**（推荐）：
+
+```bash
+# 一键 squash merge 所有 worktree-* 分支 + make check + 清理
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+```
+
+自动执行：squash merge 每个 worktree 分支 → commit → 删除 worktree 和分支 → `make check` → push。
+
+**`claude -w` 手动方式**：无改动时 worktree 自动删除。有改动时合并到主分支：
 
 ```bash
 # 在主目录
-git merge worktree-wheels     # 先合 wheel
-git merge worktree-project    # 再合 project
+git merge --squash worktree-wheels && git commit
+git merge --squash worktree-project && git commit
 ```
 
 **手动 worktree 方式**（仍可用）：

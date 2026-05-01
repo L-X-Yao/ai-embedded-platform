@@ -227,6 +227,34 @@
 | `审计 <维度名>` | 单维度审查 + 修复 |
 | `超级审计` | 全维度并行启动，按完成顺序汇报 + 修复 |
 
+**执行模式：`dispatch_agent.sh` 自动派发**
+
+超级审计使用 `dispatch_agent.sh` 将每个维度/批次派发到隔离 worktree：
+
+```bash
+# Phase 0：自动化 gate
+make check
+
+# Phase 1：按批次派发 agent（每个 agent 独立 worktree + 独立 commit）
+wsl bash tooling/scripts/dispatch_agent.sh \
+  --name audit-w1a --budget 1.00 \
+  --scope "wheels/primitives/" \
+  --prompt "审计 W1a: bitfield→kvs，按 audit-checklist.md 角度检查"
+
+wsl bash tooling/scripts/dispatch_agent.sh \
+  --name audit-w2 --budget 1.00 \
+  --scope "wheels/drivers/" \
+  --prompt "审计 W2: L1 驱动层全部 wheel"
+
+# 监控进度
+wsl bash tooling/scripts/dispatch_agent.sh --status
+
+# Phase 2：一次性合并所有 worktree 分支（squash merge）
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+```
+
+**主窗口角色**：调度中心——派发任务、监控 `--status`、合并结果、更新 memory。**不做长线实现**。
+
 **输出规范**：每维度按 CRITICAL / MODERATE / MINOR 分级汇报，附文件:行号和修复方式。用户拍板后批量执行 + 分类 commit。
 
 **反面清单**：
@@ -344,6 +372,43 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 
 ---
 
+## 主窗口调度模式
+
+大型任务（超级审计、批量沉淀、跨 wheel 重构）使用**主窗口调度 + 工作窗口执行**模式：
+
+### 主窗口职责（调度中心）
+
+1. **Phase 0**：`make check` 确保基线干净
+2. **派发**：用 `dispatch_agent.sh` 为每个子任务创建隔离 worktree agent
+3. **监控**：`dispatch_agent.sh --status` 查看各 agent 进展
+4. **合并**：`dispatch_agent.sh --merge-all` 一次性 squash merge 所有完成的 worktree 分支
+5. **验证**：合并后 `make check` 确认一致性
+6. **收尾**：更新 memory、更新 CLAUDE.md 计数、`git push`
+
+**主窗口不做长线实现**——实现全部派发给工作 agent。主窗口只做决策、调度、合并、记录。
+
+### 工作 agent 职责
+
+- 在 `dispatch_agent.sh` 创建的隔离 worktree 中工作
+- 只修改 `--scope` 指定的路径
+- 完成后自动 commit（dispatch 脚本在 prompt 中追加 commit 指令）
+- 不推送——由主窗口统一合并后推送
+
+### 合并策略
+
+```bash
+# squash merge：每个 worktree 分支合并为主分支上的一个 commit
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all
+
+# 合并后自动运行 make check
+# 全部通过后推送
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+```
+
+使用 `--squash` 而非普通 merge，避免工作 agent 的中间 commit 进入主分支历史。
+
+---
+
 ## 与用户协同的节奏
 
 **好节奏**：
@@ -367,7 +432,7 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（23 项检查） | `--graph`, `--quiet` |
+| `audit_wheels.py` | CI 一致性审计（25 项检查） | `--graph`, `--quiet`, `--json` |
 | `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
@@ -379,7 +444,7 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
 | `platform_metrics.sh` | 平台健康指标快照 + 对比 | `--save`, `--compare`, `--history` |
 | `test_scaffold.sh` | 验证 7 种 scaffold 模板编译 | 无 |
-| `dispatch_agent.sh` | 在隔离 worktree 派发 Claude Code agent | `<prompt>`, `--worktree` |
+| `dispatch_agent.sh` | 在隔离 worktree 派发 Claude Code agent | `--name`, `--budget`, `--prompt`, `--scope`, `--wait`, `--merge-all [--push]`, `--status` |
 | `session_handoff.sh` | 生成 session 交接状态文档 | 无 |
 | `platform_metrics_impl.py` | 平台指标采集实现（被 platform_metrics.sh 调用） | 内部使用 |
 
