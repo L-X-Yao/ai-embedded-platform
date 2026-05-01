@@ -66,6 +66,7 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `modbus_rtu`: explicit (uint16_t) casts on `5 + count * 2` and `1 + count * 2` (int promotion)
 - `mqtt_packet`: explicit (int) cast on payload_len in build_publish pos accumulation
 - `nmea_parser`: explicit (float) casts on int deg→float in parse_lat/parse_lon (4 sites)
+- `qmi8658a`: outer (uint8_t) cast on ctrl2/ctrl3 shift-or expressions (style consistency with bmp280/rotary_encoder)
 
 ### Negative test coverage (R10)
 - `coap_packet`: COAP_ERR_TOO_MANY now tested (9-option packet)
