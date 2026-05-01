@@ -367,7 +367,7 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（22 项检查） | `--graph`, `--quiet` |
+| `audit_wheels.py` | CI 一致性审计（23 项检查） | `--graph`, `--quiet` |
 | `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
