@@ -4,7 +4,14 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
-## Fixed in R3-R10 (do NOT re-report)
+## Fixed in R3-R11 (do NOT re-report)
+
+### Boundary value / overflow (R11)
+- `log_ringbuf`: total_lines/dropped_lines uint32 saturation (prevent wrap-around to 0)
+- `log_flash`: total_entries/dropped uint32 saturation (prevent wrap-around to 0)
+- `log_dedup`: repeat_count/total_suppressed uint32 saturation (prevent wrap-around to 0)
+- `log_rate`: dropped uint32 saturation (prevent wrap-around to 0)
+- `state_machine`: transition_count uint32 saturation (prevent wrap-around to 0)
 
 ### L0 Primitives
 - `bitfield`: overflow-safe range check (subtraction form), UINT32_C(1) shifts
