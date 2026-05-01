@@ -874,7 +874,7 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         if not has_negative_error_codes(wheel_dir, name):
             record("error_code_sign", path, "WARN",
                    "error enum uses auto-increment (should be explicit negative)",
-                   fix_cmd="python3 tooling/scripts/audit_fix.py --apply")
+                   fix_cmd="python3 tooling/audit/audit_fix.py --apply")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
@@ -891,7 +891,7 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         if not has_function_doc_all(wheel_dir, name):
             record("function_doc", path, "WARN",
                    "some functions lack doc comment before declaration",
-                   fix_cmd="python3 tooling/scripts/audit_fix.py --apply")
+                   fix_cmd="python3 tooling/audit/audit_fix.py --apply")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")

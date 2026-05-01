@@ -174,7 +174,7 @@ echo "Modified: ${#MODIFIED[@]}  Failed: ${#FAILED[@]}"
 if $VERIFY && ! $DRY_RUN && [[ ${#MODIFIED[@]} -gt 0 ]]; then
     echo ""
     echo "=== Verifying modified wheels ==="
-    if ! bash "$REPO/tooling/scripts/test_all.sh" "${MODIFIED[@]}" 2>&1; then
+    if ! bash "$REPO/tooling/test/test_all.sh" "${MODIFIED[@]}" 2>&1; then
         echo ""
         echo "=== Verification FAILED ==="
         rollback

@@ -152,7 +152,7 @@
 
 ### 阶段 3：AI 实现（1-3 小时）
 
-**沉淀闭环 = 三件套，缺一不可（由 `tooling/scripts/audit_wheels.py` + `wheel-audit` CI job 强制执行）**：
+**沉淀闭环 = 三件套，缺一不可（由 `tooling/audit/audit_wheels.py` + `wheel-audit` CI job 强制执行）**：
 
 (1) **wheel 代码 + 测试**
 
@@ -236,21 +236,21 @@
 make check
 
 # Phase 1：按批次派发 agent（每个 agent 独立 worktree + 独立 commit）
-wsl bash tooling/scripts/dispatch_agent.sh \
+wsl bash tooling/session/dispatch_agent.sh \
   --name audit-w1a --budget 1.00 \
   --scope "wheels/primitives/" \
   --prompt "审计 W1a: bitfield→kvs，按 audit-checklist.md 角度检查"
 
-wsl bash tooling/scripts/dispatch_agent.sh \
+wsl bash tooling/session/dispatch_agent.sh \
   --name audit-w2 --budget 1.00 \
   --scope "wheels/drivers/" \
   --prompt "审计 W2: L1 驱动层全部 wheel"
 
 # 监控进度
-wsl bash tooling/scripts/dispatch_agent.sh --status
+wsl bash tooling/session/dispatch_agent.sh --status
 
 # Phase 2：一次性合并所有 worktree 分支（squash merge）
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 **主窗口角色**：调度中心——派发任务、监控 `--status`、合并结果、更新 memory。**不做长线实现**。
@@ -318,9 +318,9 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 - **PATCH**：bug 修复、文档更新、工具改进
 
 1. `make check` — 确保测试 + 审计干净
-2. `bash tooling/scripts/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
+2. `bash tooling/wheel/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
 3. 用户确认版本号
-4. `bash tooling/scripts/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
+4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
 5. `git add CHANGELOG.md && git commit` + `git push && git push --tags`
 
 项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
@@ -352,7 +352,7 @@ make downstream W=<wheel-name>      # 或 --list 只看不跑
 
 当 wheel 的公开 API 签名改变（函数增删改参数、struct 字段变化、错误码含义变化）：
 
-1. **先列出所有下游**：`bash tooling/scripts/test_downstream.sh --list <name>`
+1. **先列出所有下游**：`bash tooling/test/test_downstream.sh --list <name>`
 2. **评估影响范围**：
    - 只有 test mock 引用 → 低风险，直接改
    - wheel-to-wheel 依赖 → 同 commit 修上下游
@@ -398,11 +398,11 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 
 ```bash
 # squash merge：每个 worktree 分支合并为主分支上的一个 commit
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all
+wsl bash tooling/session/dispatch_agent.sh --merge-all
 
 # 合并后自动运行 make check
 # 全部通过后推送
-wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 使用 `--squash` 而非普通 merge，避免工作 agent 的中间 commit 进入主分支历史。
@@ -423,56 +423,56 @@ wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
 
 ---
 
-## 可用工具脚本（`tooling/scripts/`）
+## 可用工具脚本（`tooling/`）
 
 | 脚本 | 用途 | 常用参数 |
 |------|------|---------|
-| `test_all.sh` | 统一跑所有 host 测试 | `<name>` (positional), `--changed`, `--list`, `--coverage`, `--fail-fast` |
-| `test_downstream.sh` | Wheel 下游消费者回归测试 | `--all`, `--list` |
-| `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
-| `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | `--short`（仅 git 状态） |
-| `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `audit_wheels.py` | CI 一致性审计（25 项检查） | `--graph`, `--quiet`, `--json` |
-| `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
-| `update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
-| `release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
-| `audit_fix.py` | 自动修复机械审计发现 | `--apply`, `--only <类别>`, `--wheel <name>` |
-| `batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
-| `commit_suggest.sh` | 从 staged diff 生成 commit message | 无 |
-| `doc_drift_check.py` | 检查文档数字断言 vs 实际值 | `--fix` |
-| `find_all_refs.sh` | 搜索 wheel 在代码+文档的全部引用 | `--code-only`, `--docs-only` |
-| `sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
-| `platform_metrics.sh` | 平台健康指标快照 + 对比 | `--save`, `--compare`, `--history` |
-| `test_scaffold.sh` | 验证 7 种 scaffold 模板编译 | 无 |
-| `dispatch_agent.sh` | 在隔离 worktree 派发 Claude Code agent | `--name`, `--budget`, `--prompt`, `--scope`, `--wait`, `--merge-all [--push]`, `--status` |
-| `session_handoff.sh` | 生成 session 交接状态文档 | 无 |
-| `platform_metrics_impl.py` | 平台指标采集实现（被 platform_metrics.sh 调用） | 内部使用 |
+| `tooling/test/test_all.sh` | 统一跑所有 host 测试 | `<name>` (positional), `--changed`, `--list`, `--coverage`, `--fail-fast` |
+| `tooling/test/test_downstream.sh` | Wheel 下游消费者回归测试 | `--all`, `--list` |
+| `tooling/wheel/new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
+| `tooling/session/bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | `--short`（仅 git 状态） |
+| `tooling/wheel/wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
+| `tooling/audit/audit_wheels.py` | CI 一致性审计（23 项检查） | `--graph`, `--quiet`, `--json` |
+| `tooling/audit/arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
+| `tooling/ci/update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
+| `tooling/wheel/release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
+| `tooling/audit/audit_fix.py` | 自动修复机械审计发现 | `--apply`, `--only <类别>`, `--wheel <name>` |
+| `tooling/fix/batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
+| `tooling/ci/commit_suggest.sh` | 从 staged diff 生成 commit message | 无 |
+| `tooling/audit/doc_drift_check.py` | 检查文档数字断言 vs 实际值 | `--fix` |
+| `tooling/wheel/find_all_refs.sh` | 搜索 wheel 在代码+文档的全部引用 | `--code-only`, `--docs-only` |
+| `tooling/ci/sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
+| `tooling/metrics/platform_metrics.sh` | 平台健康指标快照 + 对比 | `--save`, `--compare`, `--history` |
+| `tooling/test/test_scaffold.sh` | 验证 7 种 scaffold 模板编译 | 无 |
+| `tooling/session/dispatch_agent.sh` | 在隔离 worktree 派发 Claude Code agent | `--name`, `--budget`, `--prompt`, `--scope`, `--wait`, `--merge-all [--push]`, `--status` |
+| `tooling/session/handoff.sh` | 生成 session 交接状态文档 | 无 |
+| `tooling/metrics/platform_metrics_impl.py` | 平台指标采集实现（被 platform_metrics.sh 调用） | 内部使用 |
 
 ### 工具决策树
 
 | 我想要… | 用这个 |
 |---------|--------|
 | 开始新 session | `make bootstrap` |
-| 建一个新 wheel | `new_wheel.sh --layer X --name Y [--hal Z]` |
+| 建一个新 wheel | `tooling/wheel/new_wheel.sh --layer X --name Y [--hal Z]` |
 | 跑所有测试 | `make test`（或 `make test-fast` 快速迭代） |
 | 只测改了的部分 | `make test-changed` |
-| 测某个具体 wheel | `bash test_all.sh <name>` |
+| 测某个具体 wheel | `bash tooling/test/test_all.sh <name>` |
 | 改了 wheel 后查下游影响 | `make downstream W=<name>` |
 | commit 前全面验证 | `make check`（= test + audit） |
-| 看 commit message 该怎么写 | `bash commit_suggest.sh` |
+| 看 commit message 该怎么写 | `bash tooling/ci/commit_suggest.sh` |
 | commit + push 一步到位 | `make ship M="message"` |
 | 审计发现了机械问题要批量修 | `make audit-fix-apply` |
-| 跨多个 wheel 做同类文本替换 | `batch_fix.sh --sed 's/old/new/g' --all` |
-| 改了 wheel 名想找所有引用 | `find_all_refs.sh <name>` |
-| 检查文档数字有没有过时 | `python3 doc_drift_check.py`（或 `--fix`） |
-| 升级 wheel 从 draft 到 candidate | `wheel_promote.sh _draft/X primitives/X` |
-| 查 ARM 二进制体积 | `wsl bash arm_size_audit.sh --markdown` |
+| 跨多个 wheel 做同类文本替换 | `tooling/fix/batch_fix.sh --sed 's/old/new/g' --all` |
+| 改了 wheel 名想找所有引用 | `tooling/wheel/find_all_refs.sh <name>` |
+| 检查文档数字有没有过时 | `python3 tooling/audit/doc_drift_check.py`（或 `--fix`） |
+| 升级 wheel 从 draft 到 candidate | `tooling/wheel/wheel_promote.sh _draft/X primitives/X` |
+| 查 ARM 二进制体积 | `wsl bash tooling/audit/arm_size_audit.sh --markdown` |
 | 更新 CLAUDE.md 的 wheel 计数 | `make inventory` |
-| 打版本标签 | `release.sh v1.0.0` |
-| 查当前版本 | `release.sh --current` |
+| 打版本标签 | `tooling/wheel/release.sh v1.0.0` |
+| 查当前版本 | `tooling/wheel/release.sh --current` |
 | 看 wheel 依赖关系图 | `make graph` |
 | 同步 VSF 上游 | `make sync-vsf` |
 | 清理构建残留 | `make clean` |
-| 并行派发多个 agent | `dispatch_agent.sh --name X --budget N --prompt "..."` |
-| 查看派发 agent 状态 | `dispatch_agent.sh --status` |
-| 合并所有 agent 结果 | `dispatch_agent.sh --merge-all [--push]` |
+| 并行派发多个 agent | `tooling/session/dispatch_agent.sh --name X --budget N --prompt "..."` |
+| 查看派发 agent 状态 | `tooling/session/dispatch_agent.sh --status` |
+| 合并所有 agent 结果 | `tooling/session/dispatch_agent.sh --merge-all [--push]` |

@@ -7,7 +7,7 @@
 # Skips if audit script is not found (e.g. shallow clone).
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-AUDIT="$REPO/tooling/scripts/audit_wheels.py"
+AUDIT="$REPO/tooling/audit/audit_wheels.py"
 
 if [[ ! -f "$AUDIT" ]]; then
     exit 0

@@ -209,7 +209,7 @@ fi
 if ! $DRY_RUN; then
     echo ""
     echo -e "${BOLD}[Auto] Running tests for $WHEEL_NAME${NC}"
-    if bash "$REPO/tooling/scripts/test_all.sh" "$WHEEL_NAME" 2>&1; then
+    if bash "$REPO/tooling/test/test_all.sh" "$WHEEL_NAME" 2>&1; then
         echo -e "  ${GREEN}Tests passed${NC}"
     else
         echo -e "  ${RED}Tests FAILED — review before committing${NC}"
@@ -217,7 +217,7 @@ if ! $DRY_RUN; then
 
     echo ""
     echo -e "${BOLD}[Auto] Running wheel audit${NC}"
-    if python3 "$REPO/tooling/scripts/audit_wheels.py" --quiet 2>&1; then
+    if python3 "$REPO/tooling/audit/audit_wheels.py" --quiet 2>&1; then
         echo -e "  ${GREEN}Audit passed${NC}"
     else
         echo -e "  ${YELLOW}Audit warnings — review output above${NC}"

@@ -59,13 +59,13 @@
 
 ### 定期同步 upstream
 
-`vsf/` 是 vendor 进母仓的文件（非 submodule / subtree），使用 `tooling/scripts/sync_vsf.sh` 同步：
+`vsf/` 是 vendor 进母仓的文件（非 submodule / subtree），使用 `tooling/ci/sync_vsf.sh` 同步：
 
 ```bash
-bash tooling/scripts/sync_vsf.sh              # sync to upstream master HEAD
-bash tooling/scripts/sync_vsf.sh --ref v1.2.3 # sync to specific tag/commit
-bash tooling/scripts/sync_vsf.sh --dry-run     # preview only
-bash tooling/scripts/sync_vsf.sh --status      # compare current vs upstream
+bash tooling/ci/sync_vsf.sh              # sync to upstream master HEAD
+bash tooling/ci/sync_vsf.sh --ref v1.2.3 # sync to specific tag/commit
+bash tooling/ci/sync_vsf.sh --dry-run     # preview only
+bash tooling/ci/sync_vsf.sh --status      # compare current vs upstream
 ```
 
 脚本流程（每季度或重要更新时执行）：

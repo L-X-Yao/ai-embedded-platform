@@ -35,7 +35,7 @@ declare -A TYPE_COUNTS
 while IFS= read -r f; do
     case "$f" in
         wheels/*)          TYPE_COUNTS[wheel]=$(( ${TYPE_COUNTS[wheel]:-0} + 1 )) ;;
-        tooling/scripts/*|tooling/test/*|tooling/hil/*|Makefile)
+        tooling/audit/*|tooling/test/*|tooling/wheel/*|tooling/session/*|tooling/metrics/*|tooling/ci/*|tooling/fix/*|tooling/debug/*|tooling/hil/*|Makefile)
                            TYPE_COUNTS[tool]=$(( ${TYPE_COUNTS[tool]:-0} + 1 )) ;;
         docs/*|*/README.md|CLAUDE.md)
                            TYPE_COUNTS[docs]=$(( ${TYPE_COUNTS[docs]:-0} + 1 )) ;;

@@ -2,7 +2,7 @@
 build/
 build_*/
 # Exception: tooling pipeline (not a CMake build output)
-!tooling/scripts/build_flash/
+!tooling/hil/build_flash/
 *.o
 *.obj
 *.a

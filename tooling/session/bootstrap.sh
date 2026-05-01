@@ -130,11 +130,11 @@ done
 echo ""
 echo -e "${BOLD}=== Wheel Audit ===${NC}"
 audit_exit=0
-audit_out=$(timeout 15 python3 "$REPO/tooling/scripts/audit_wheels.py" 2>&1) || audit_exit=$?
+audit_out=$(timeout 15 python3 "$REPO/tooling/audit/audit_wheels.py" 2>&1) || audit_exit=$?
 if [[ $audit_exit -eq 0 ]]; then
     echo -e "  ${GREEN}All checks passed${NC}"
 elif [[ $audit_exit -eq 124 ]]; then
-    echo -e "  ${YELLOW}Timed out (15s)${NC} — run manually: python3 tooling/scripts/audit_wheels.py"
+    echo -e "  ${YELLOW}Timed out (15s)${NC} — run manually: python3 tooling/audit/audit_wheels.py"
 else
     echo -e "  ${RED}FAILURES:${NC}"
     echo "$audit_out" | sed 's/^/    /'

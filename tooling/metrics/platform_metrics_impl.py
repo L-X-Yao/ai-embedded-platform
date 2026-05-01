@@ -33,7 +33,7 @@ def collect(repo: Path) -> dict:
     audit_warn = 0
     try:
         r = subprocess.run(
-            [sys.executable, str(repo / "tooling/scripts/audit_wheels.py"), "--quiet"],
+            [sys.executable, str(repo / "tooling/audit/audit_wheels.py"), "--quiet"],
             capture_output=True, text=True, cwd=str(repo), timeout=30
         )
         out = r.stdout + r.stderr
@@ -42,10 +42,13 @@ def collect(repo: Path) -> dict:
     except (subprocess.TimeoutExpired, OSError):
         pass
 
-    scripts_dir = repo / "tooling" / "scripts"
-    tool_count = len([f for f in scripts_dir.iterdir()
-                      if f.is_file() and f.suffix in (".sh", ".py")
-                      and not f.name.startswith("__")]) if scripts_dir.is_dir() else 0
+    scripts_dir = repo / "tooling"
+    tool_count = sum(
+        1 for subdir in scripts_dir.iterdir()
+        if subdir.is_dir() and subdir.name not in ("test", "experiments", "__pycache__")
+        for f in subdir.iterdir()
+        if f.is_file() and f.suffix in (".sh", ".py") and not f.name.startswith("__")
+    ) if scripts_dir.is_dir() else 0
 
     makefile = repo / "Makefile"
     make_targets = 0

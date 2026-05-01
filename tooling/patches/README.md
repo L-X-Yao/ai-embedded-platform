@@ -51,16 +51,16 @@ bash tooling/patches/apply.sh
 
 ```bash
 # 查看当前版本 vs 上游最新
-bash tooling/scripts/sync_vsf.sh --status
+bash tooling/ci/sync_vsf.sh --status
 
 # 预览变更（不写入）
-bash tooling/scripts/sync_vsf.sh --dry-run
+bash tooling/ci/sync_vsf.sh --dry-run
 
 # 同步到 upstream master HEAD
-bash tooling/scripts/sync_vsf.sh
+bash tooling/ci/sync_vsf.sh
 
 # 同步到指定 tag / commit
-bash tooling/scripts/sync_vsf.sh --ref v1.2.3
+bash tooling/ci/sync_vsf.sh --ref v1.2.3
 ```
 
 脚本自动处理：

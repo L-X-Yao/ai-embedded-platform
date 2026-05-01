@@ -23,7 +23,7 @@ else
 fi
 
 # --- Quality snapshot ---
-quality=$(python3 "$REPO/tooling/scripts/platform_metrics_impl.py" "$REPO" "$REPO/.metrics" --quality 2>/dev/null | grep -v "===" || echo "  (unavailable)")
+quality=$(python3 "$REPO/tooling/metrics/platform_metrics_impl.py" "$REPO" "$REPO/.metrics" --quality 2>/dev/null | grep -v "===" || echo "  (unavailable)")
 
 # --- Known issues count ---
 known_fixed=$(grep -c "^- " "$REPO/docs/known-issues.md" 2>/dev/null || echo "0")

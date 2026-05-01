@@ -32,7 +32,7 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 
 ```bash
 # 跑全部 wheel 测试（Windows Git Bash 或 WSL）
-bash tooling/scripts/test_all.sh --wheel
+bash tooling/test/test_all.sh --wheel
 
 # 跑单个 wheel 测试
 cd wheels/drivers/w25qxx/test
@@ -40,7 +40,7 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 
 # 审计所有 wheel 合规性
-python tooling/scripts/audit_wheels.py
+python tooling/audit/audit_wheels.py
 
 # 或用 Makefile 快捷命令
 make test-wheels

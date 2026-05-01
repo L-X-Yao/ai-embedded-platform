@@ -20,4 +20,4 @@ METRICS_DIR="$REPO/.metrics"
 mkdir -p "$METRICS_DIR"
 grep -q '^\.metrics/' "$REPO/.gitignore" 2>/dev/null || echo '.metrics/' >> "$REPO/.gitignore"
 
-exec python3 "$REPO/tooling/scripts/platform_metrics_impl.py" "$REPO" "$METRICS_DIR" "$@"
+exec python3 "$REPO/tooling/metrics/platform_metrics_impl.py" "$REPO" "$METRICS_DIR" "$@"

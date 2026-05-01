@@ -1,5 +1,5 @@
 /*
- * test_mock_spi.h — shared SPI mock infrastructure for L1 driver tests
+ * mock_spi.h — shared SPI mock infrastructure for L1 driver tests
  *
  * Header-only. Provides CS tracking, fail injection, and xfer byte
  * logging. Unlike the I2C mock, SPI has no universal register model,
@@ -8,7 +8,7 @@
  *
  * Usage:
  *   #include "test_harness.h"
- *   #include "test_mock_spi.h"
+ *   #include "mock_spi.h"
  *   #include "my_spi_device.h"
  *
  *   static uint8_t my_xfer(void *ctx, uint8_t tx) {
@@ -26,8 +26,8 @@
  *   };
  */
 
-#ifndef TEST_MOCK_SPI_H
-#define TEST_MOCK_SPI_H
+#ifndef MOCK_SPI_H
+#define MOCK_SPI_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -87,4 +87,4 @@ static void mock_spi_log_byte(uint8_t tx)
         mock_spi_tx_log[mock_spi_tx_log_count++] = tx;
 }
 
-#endif /* TEST_MOCK_SPI_H */
+#endif /* MOCK_SPI_H */

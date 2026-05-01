@@ -84,7 +84,7 @@ w25qxx_init(&flash_spi, &jedec_id);
 
 ```bash
 ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/ wheels/_draft/
-python3 tooling/scripts/audit_wheels.py  # 查看完整清单 + 状态
+python3 tooling/audit/audit_wheels.py  # 查看完整清单 + 状态
 ```
 
 每个 wheel 的 README 有 API 示例和使用说明。
