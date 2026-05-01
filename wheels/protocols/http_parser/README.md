@@ -16,11 +16,11 @@ Checked VSF source (2026-04-29): no HTTP parser in service/utilities/component.
 ```c
 #include "http_parser.h"
 
-http_err_t http_parse_request(const char *data, size_t len, http_request_t *req);
-http_err_t http_parse_response(const char *data, size_t len, http_response_t *resp);
-http_err_t http_find_header(const http_header_t *headers, int count,
-                            const char *name, const http_header_t **out);
-int        http_get_content_length(const http_header_t *headers, int count);
+http_parser_err_t http_parser_parse_request(const char *data, size_t len, http_parser_request_t *req);
+http_parser_err_t http_parser_parse_response(const char *data, size_t len, http_parser_response_t *resp);
+http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, int count,
+                            const char *name, const http_parser_header_t **out);
+int        http_parser_get_content_length(const http_parser_header_t *headers, int count);
 ```
 
 ## How to test
@@ -48,7 +48,7 @@ Proactive build for common embedded components (2026-04-29 batch).
 
 | Macro | Default | Description |
 |-------|---------|-------------|
-| `HTTP_MAX_HEADERS` | 16 | Maximum number of parsed headers per request/response |
+| `HTTP_PARSER_MAX_HEADERS` | 16 | Maximum number of parsed headers per request/response |
 
 ## Known issues
 

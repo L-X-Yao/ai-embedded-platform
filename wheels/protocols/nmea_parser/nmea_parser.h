@@ -19,20 +19,20 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    NMEA_OK           =  0,
-    NMEA_ERR_NULL     = -1,
-    NMEA_ERR_CHECKSUM = -2,
-    NMEA_ERR_UNKNOWN  = -3,
-} nmea_err_t;
+    NMEA_PARSER_OK           =  0,
+    NMEA_PARSER_ERR_NULL     = -1,
+    NMEA_PARSER_ERR_CHECKSUM = -2,
+    NMEA_PARSER_ERR_UNKNOWN  = -3,
+} nmea_parser_err_t;
 
 /* ---------- sentence types ---------- */
 
 typedef enum {
-    NMEA_SENTENCE_UNKNOWN = 0,
-    NMEA_SENTENCE_GGA,
-    NMEA_SENTENCE_RMC,
-    NMEA_SENTENCE_GSA,
-} nmea_sentence_t;
+    NMEA_PARSER_SENTENCE_UNKNOWN = 0,
+    NMEA_PARSER_SENTENCE_GGA,
+    NMEA_PARSER_SENTENCE_RMC,
+    NMEA_PARSER_SENTENCE_GSA,
+} nmea_parser_sentence_t;
 
 /* ---------- parsed data ---------- */
 
@@ -53,21 +53,21 @@ typedef struct {
     uint8_t  satellites;
     uint8_t  fix_valid;
     uint8_t  course_valid;
-} nmea_data_t;
+} nmea_parser_data_t;
 
 /* ---------- API ---------- */
 
 /** Reset all fields to zero/invalid. @thread_safe: yes */
-void nmea_data_init(nmea_data_t *data);
+void nmea_parser_data_init(nmea_parser_data_t *data);
 
 /** Verify NMEA checksum (*HH suffix). @thread_safe: yes (pure) */
-bool nmea_verify_checksum(const char *sentence);
+bool nmea_parser_verify_checksum(const char *sentence);
 
 /** Identify sentence type (GGA/RMC/GSA). @thread_safe: yes (pure) */
-nmea_sentence_t nmea_identify(const char *sentence);
+nmea_parser_sentence_t nmea_parser_identify(const char *sentence);
 
 /** Parse one sentence, updating relevant fields in data. @thread_safe: caller_must_lock */
-nmea_err_t nmea_parse(const char *sentence, nmea_data_t *data);
+nmea_parser_err_t nmea_parser_parse(const char *sentence, nmea_parser_data_t *data);
 
 #ifdef __cplusplus
 }

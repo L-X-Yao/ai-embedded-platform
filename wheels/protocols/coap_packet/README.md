@@ -16,11 +16,11 @@ Checked VSF source (2026-04-29): no CoAP implementation in VSF.
 ```c
 #include "coap_packet.h"
 
-coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
-coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
-                      coap_type_t type, uint8_t code, uint16_t message_id,
+coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
+coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_len,
+                      coap_packet_type_t type, uint8_t code, uint16_t message_id,
                       const uint8_t *token, uint8_t token_len,
-                      const coap_option_t *options, int option_count,
+                      const coap_packet_option_t *options, int option_count,
                       const uint8_t *payload, size_t payload_len);
 ```
 

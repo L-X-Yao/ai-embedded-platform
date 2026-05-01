@@ -23,27 +23,27 @@ extern "C" {
 #endif
 
 typedef enum {
-    COAP_OK             =  0,
-    COAP_ERR_PARAM      = -1,
-    COAP_ERR_INCOMPLETE = -2,
-    COAP_ERR_MALFORMED  = -3,
-    COAP_ERR_OVERFLOW   = -4,
-    COAP_ERR_TOO_MANY   = -5,
-} coap_err_t;
+    COAP_PACKET_OK             =  0,
+    COAP_PACKET_ERR_PARAM      = -1,
+    COAP_PACKET_ERR_INCOMPLETE = -2,
+    COAP_PACKET_ERR_MALFORMED  = -3,
+    COAP_PACKET_ERR_OVERFLOW   = -4,
+    COAP_PACKET_ERR_TOO_MANY   = -5,
+} coap_packet_err_t;
 
 typedef enum {
     COAP_TYPE_CON = 0,
     COAP_TYPE_NON = 1,
     COAP_TYPE_ACK = 2,
     COAP_TYPE_RST = 3,
-} coap_type_t;
+} coap_packet_type_t;
 
 typedef enum {
     COAP_METHOD_GET    = 1,
     COAP_METHOD_POST   = 2,
     COAP_METHOD_PUT    = 3,
     COAP_METHOD_DELETE = 4,
-} coap_method_t;
+} coap_packet_method_t;
 
 #define COAP_CODE(cls, detail) (((cls) << 5) | (detail))
 #define COAP_CODE_EMPTY          COAP_CODE(0, 0)
@@ -71,16 +71,16 @@ typedef struct {
     uint16_t       number;
     const uint8_t *value;
     size_t         value_len;
-} coap_option_t;
+} coap_packet_option_t;
 
 typedef struct {
     uint8_t        version;
-    coap_type_t    type;
+    coap_packet_type_t    type;
     uint8_t        code;
     uint16_t       message_id;
     const uint8_t *token;
     uint8_t        token_len;
-    coap_option_t  options[COAP_MAX_OPTIONS];
+    coap_packet_option_t  options[COAP_MAX_OPTIONS];
     int            option_count;
     const uint8_t *payload;
     size_t         payload_len;
@@ -88,12 +88,12 @@ typedef struct {
 } coap_packet_t;
 
 /** @thread_safe: yes (pure function, no state) */
-coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
+coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
 
-coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
-                      coap_type_t type, uint8_t code, uint16_t message_id,
+coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_len,
+                      coap_packet_type_t type, uint8_t code, uint16_t message_id,
                       const uint8_t *token, uint8_t token_len,
-                      const coap_option_t *options, int option_count,
+                      const coap_packet_option_t *options, int option_count,
                       const uint8_t *payload, size_t payload_len);
 
 #ifdef __cplusplus

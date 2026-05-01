@@ -8,20 +8,20 @@
 #include "coap_packet.h"
 #include <string.h>
 
-coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
+coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
 {
     if (!data || !pkt)
-        return COAP_ERR_PARAM;
+        return COAP_PACKET_ERR_PARAM;
     if (len < 4)
-        return COAP_ERR_INCOMPLETE;
+        return COAP_PACKET_ERR_INCOMPLETE;
 
     memset(pkt, 0, sizeof(*pkt));
 
     pkt->version = (data[0] >> 6) & 0x03;
     if (pkt->version != 1)
-        return COAP_ERR_MALFORMED;
+        return COAP_PACKET_ERR_MALFORMED;
 
-    pkt->type = (coap_type_t)((data[0] >> 4) & 0x03);
+    pkt->type = (coap_packet_type_t)((data[0] >> 4) & 0x03);
     pkt->token_len = data[0] & 0x0F;
     pkt->code = data[1];
     pkt->message_id = ((uint16_t)data[2] << 8) | data[3];
@@ -29,9 +29,9 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
     size_t pos = 4;
 
     if (pkt->token_len > 8)
-        return COAP_ERR_MALFORMED;
+        return COAP_PACKET_ERR_MALFORMED;
     if (pos + pkt->token_len > len)
-        return COAP_ERR_INCOMPLETE;
+        return COAP_PACKET_ERR_INCOMPLETE;
     pkt->token = &data[pos];
     pos += pkt->token_len;
 
@@ -46,36 +46,36 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
         uint16_t opt_len = byte & 0x0F;
 
         if (delta == 13) {
-            if (pos >= len) return COAP_ERR_INCOMPLETE;
+            if (pos >= len) return COAP_PACKET_ERR_INCOMPLETE;
             delta = (uint16_t)(data[pos++] + 13);
         } else if (delta == 14) {
-            if (pos + 1 >= len) return COAP_ERR_INCOMPLETE;
+            if (pos + 1 >= len) return COAP_PACKET_ERR_INCOMPLETE;
             uint32_t raw_delta = ((uint32_t)data[pos] << 8 | data[pos + 1]) + 269u;
-            if (raw_delta > UINT16_MAX) return COAP_ERR_MALFORMED;
+            if (raw_delta > UINT16_MAX) return COAP_PACKET_ERR_MALFORMED;
             delta = (uint16_t)raw_delta;
             pos += 2;
         } else if (delta == 15) {
-            return COAP_ERR_MALFORMED;
+            return COAP_PACKET_ERR_MALFORMED;
         }
 
         if (opt_len == 13) {
-            if (pos >= len) return COAP_ERR_INCOMPLETE;
+            if (pos >= len) return COAP_PACKET_ERR_INCOMPLETE;
             opt_len = (uint16_t)(data[pos++] + 13);
         } else if (opt_len == 14) {
-            if (pos + 1 >= len) return COAP_ERR_INCOMPLETE;
+            if (pos + 1 >= len) return COAP_PACKET_ERR_INCOMPLETE;
             uint32_t raw_olen = ((uint32_t)data[pos] << 8 | data[pos + 1]) + 269u;
-            if (raw_olen > UINT16_MAX) return COAP_ERR_MALFORMED;
+            if (raw_olen > UINT16_MAX) return COAP_PACKET_ERR_MALFORMED;
             opt_len = (uint16_t)raw_olen;
             pos += 2;
         } else if (opt_len == 15) {
-            return COAP_ERR_MALFORMED;
+            return COAP_PACKET_ERR_MALFORMED;
         }
 
         if (opt_len > len - pos)
-            return COAP_ERR_INCOMPLETE;
+            return COAP_PACKET_ERR_INCOMPLETE;
 
         uint32_t opt_num32 = (uint32_t)prev_opt_num + delta;
-        if (opt_num32 > UINT16_MAX) return COAP_ERR_MALFORMED;
+        if (opt_num32 > UINT16_MAX) return COAP_PACKET_ERR_MALFORMED;
         uint16_t opt_num = (uint16_t)opt_num32;
 
         if (pkt->option_count < COAP_MAX_OPTIONS) {
@@ -84,7 +84,7 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
             pkt->options[pkt->option_count].value_len = opt_len;
             pkt->option_count++;
         } else {
-            return COAP_ERR_TOO_MANY;
+            return COAP_PACKET_ERR_TOO_MANY;
         }
 
         prev_opt_num = opt_num;
@@ -93,14 +93,14 @@ coap_err_t coap_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
 
     if (pos < len && data[pos] == 0xFF) {
         pos++;
-        if (pos >= len) return COAP_ERR_MALFORMED;
+        if (pos >= len) return COAP_PACKET_ERR_MALFORMED;
         pkt->payload = &data[pos];
         pkt->payload_len = len - pos;
         pos = len;
     }
 
     pkt->total_len = pos;
-    return COAP_OK;
+    return COAP_PACKET_OK;
 }
 
 static size_t encode_opt_header(uint8_t *buf, uint16_t delta, uint16_t opt_len)
@@ -135,23 +135,23 @@ static size_t encode_opt_header(uint8_t *buf, uint16_t delta, uint16_t opt_len)
     return pos;
 }
 
-coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
-                      coap_type_t type, uint8_t code, uint16_t message_id,
+coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_len,
+                      coap_packet_type_t type, uint8_t code, uint16_t message_id,
                       const uint8_t *token, uint8_t token_len,
-                      const coap_option_t *options, int option_count,
+                      const coap_packet_option_t *options, int option_count,
                       const uint8_t *payload, size_t payload_len)
 {
     if (!buf || !out_len)
-        return COAP_ERR_PARAM;
+        return COAP_PACKET_ERR_PARAM;
     if (token_len > 8)
-        return COAP_ERR_PARAM;
+        return COAP_PACKET_ERR_PARAM;
     if (option_count > 0 && !options)
-        return COAP_ERR_PARAM;
+        return COAP_PACKET_ERR_PARAM;
 
     size_t pos = 0;
 
     if (buf_len < 4u + token_len)
-        return COAP_ERR_OVERFLOW;
+        return COAP_PACKET_ERR_OVERFLOW;
 
     buf[pos++] = (uint8_t)((1u << 6) | ((uint8_t)type << 4) | token_len);
     buf[pos++] = code;
@@ -165,14 +165,14 @@ coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
 
     uint16_t prev_num = 0;
     for (int i = 0; i < option_count; i++) {
-        if (options[i].number < prev_num) return COAP_ERR_MALFORMED;
+        if (options[i].number < prev_num) return COAP_PACKET_ERR_MALFORMED;
         uint16_t delta = (uint16_t)(options[i].number - prev_num);
-        if (options[i].value_len > UINT16_MAX) return COAP_ERR_OVERFLOW;
+        if (options[i].value_len > UINT16_MAX) return COAP_PACKET_ERR_OVERFLOW;
         uint8_t hdr[5];
         size_t hdr_len = encode_opt_header(hdr, delta, (uint16_t)options[i].value_len);
 
         if (pos + hdr_len + options[i].value_len > buf_len)
-            return COAP_ERR_OVERFLOW;
+            return COAP_PACKET_ERR_OVERFLOW;
 
         memcpy(&buf[pos], hdr, hdr_len);
         pos += hdr_len;
@@ -185,12 +185,12 @@ coap_err_t coap_build(uint8_t *buf, size_t buf_len, size_t *out_len,
 
     if (payload && payload_len > 0) {
         if (pos + 1 + payload_len > buf_len)
-            return COAP_ERR_OVERFLOW;
+            return COAP_PACKET_ERR_OVERFLOW;
         buf[pos++] = 0xFF;
         memcpy(&buf[pos], payload, payload_len);
         pos += payload_len;
     }
 
     *out_len = pos;
-    return COAP_OK;
+    return COAP_PACKET_OK;
 }
