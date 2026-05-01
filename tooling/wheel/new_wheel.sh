@@ -38,14 +38,16 @@ NAME=""
 HAL=""
 ADDR=""
 VENDOR=0
+NO_AUDIT=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --layer)  LAYER="$2";  shift 2 ;;
-        --name)   NAME="$2";   shift 2 ;;
-        --hal)    HAL="$2";    shift 2 ;;
-        --addr)   ADDR="$2";   shift 2 ;;
-        --vendor) VENDOR=1;    shift   ;;
+        --layer)    LAYER="$2";  shift 2 ;;
+        --name)     NAME="$2";   shift 2 ;;
+        --hal)      HAL="$2";    shift 2 ;;
+        --addr)     ADDR="$2";   shift 2 ;;
+        --vendor)   VENDOR=1;    shift   ;;
+        --no-audit) NO_AUDIT=1;  shift   ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -1345,12 +1347,14 @@ fi
 
 # ---- Auto-run audit ----------------------------------------------------------
 
-echo ""
-echo "=== Running audit for ${NAME_LOWER} ==="
-if python3 "$REPO/tooling/audit/audit_wheels.py" --quiet 2>&1; then
-    echo "Audit: passed"
-else
-    echo "Audit: warnings found (review output above)"
+if [[ "$NO_AUDIT" -eq 0 ]]; then
+    echo ""
+    echo "=== Running audit for ${NAME_LOWER} ==="
+    if python3 "$REPO/tooling/audit/audit_wheels.py" --quiet 2>&1; then
+        echo "Audit: passed"
+    else
+        echo "Audit: warnings found (review output above)"
+    fi
 fi
 
 echo ""
