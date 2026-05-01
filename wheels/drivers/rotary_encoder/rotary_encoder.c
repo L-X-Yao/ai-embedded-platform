@@ -3,9 +3,10 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    (none)
+ * Deps:    gpio_hal
  */
 #include "rotary_encoder.h"
+#include <stddef.h>
 
 /* Quadrature state transition table:
  * old_state | new_state | direction
@@ -21,9 +22,11 @@ static const int8_t quad_table[16] = {
      0, -1, +1,  0
 };
 
-void rotary_encoder_init(rotary_encoder_t *enc)
+void rotary_encoder_init(rotary_encoder_t *enc,
+                         const rotary_encoder_hal_t *hal)
 {
     if (!enc) return;
+    enc->hal = hal;
     enc->position = 0;
     enc->direction = ROTARY_ENCODER_DIR_NONE;
     enc->last_state = 0;
@@ -40,6 +43,14 @@ void rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b)
         enc->direction = (delta > 0) ? ROTARY_ENCODER_DIR_CW : ROTARY_ENCODER_DIR_CCW;
     }
     enc->last_state = new_state;
+}
+
+void rotary_encoder_poll(rotary_encoder_t *enc)
+{
+    if (!enc || !enc->hal) return;
+    bool a = enc->hal->read_a(enc->hal->ctx);
+    bool b = enc->hal->read_b(enc->hal->ctx);
+    rotary_encoder_update(enc, a, b);
 }
 
 int32_t rotary_encoder_get_position(const rotary_encoder_t *enc)
