@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
 
 help:
 	@echo "Usage: make <target>"
@@ -31,6 +31,7 @@ help:
 	@echo "  promote-wheel     promote wheel across layers"
 	@echo "  release           create version tag + changelog"
 	@echo "  find-refs W=x     find all references to wheel x"
+	@echo "  dispatch          dispatch Claude agent in isolated worktree"
 	@echo ""
 	@echo "Session:"
 	@echo "  bootstrap         print session context"
@@ -153,3 +154,6 @@ arm-size-audit:
 find-refs:
 	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
 	bash tooling/scripts/find_all_refs.sh "$(W)"
+
+dispatch:
+	bash tooling/scripts/dispatch_agent.sh $(ARGS)

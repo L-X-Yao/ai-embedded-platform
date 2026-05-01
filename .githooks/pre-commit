@@ -63,6 +63,24 @@ fi
 
 if [[ $EXIT -ne 0 ]]; then
     echo "If intentional, use: git commit --no-verify"
+    exit $EXIT
 fi
 
-exit $EXIT
+# Auto-fix documentation drift and stage corrected files
+if command -v python3 &>/dev/null; then
+    if ! python3 tooling/scripts/doc_drift_check.py --fix 2>/dev/null; then
+        drift_files=(CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md)
+        staged=()
+        for df in "${drift_files[@]}"; do
+            if [[ -f "$df" ]] && ! git diff --quiet "$df" 2>/dev/null; then
+                git add "$df"
+                staged+=("$df")
+            fi
+        done
+        if [[ ${#staged[@]} -gt 0 ]]; then
+            echo "NOTE: doc drift auto-fixed and staged: ${staged[*]}"
+        fi
+    fi
+fi
+
+exit 0
