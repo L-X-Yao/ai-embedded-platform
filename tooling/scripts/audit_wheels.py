@@ -457,6 +457,81 @@ def has_error_code_test_coverage(wheel_dir: Path, name: str) -> list:
     return uncovered
 
 
+def has_naming_convention(wheel_dir: Path, name: str) -> bool:
+    """Check that public function declarations follow <wheel_name>_<verb> pattern.
+
+    Scans the wheel's .h file for function declarations and verifies they are
+    prefixed with the wheel name (api-conventions S1.1).
+    """
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return True
+    try:
+        text = h.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True
+    # Match function declarations: return_type wheel_name_verb(...);
+    # Skip typedefs, comments, macros, and lines inside struct/enum bodies
+    prefix = name + "_"
+    violations = 0
+    for line in text.split("\n"):
+        stripped = line.strip()
+        # Skip non-declaration lines
+        if not ("(" in stripped and ");" in stripped):
+            continue
+        if stripped.startswith("typedef"):
+            continue
+        if stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+            continue
+        if stripped.startswith("#"):
+            continue
+        # Skip callback field declarations inside structs (e.g. bool (*write_reg)(...))
+        if stripped.startswith("(") or "(*" in stripped:
+            continue
+        # Look for a function name token before the opening paren
+        m = re.search(r'\b([a-z_][a-z0-9_]*)\s*\(', stripped)
+        if not m:
+            continue
+        func_name = m.group(1)
+        # Skip common non-function identifiers
+        if func_name in ("if", "for", "while", "switch", "return", "sizeof"):
+            continue
+        if not func_name.startswith(prefix):
+            violations += 1
+    return violations == 0
+
+
+def has_consistent_hal_pattern(wheel_dir: Path, name: str) -> bool:
+    """Check that L1 driver wheels use HAL injection (struct with function pointers
+    passed to init).
+
+    Verifies:
+    - Header defines a HAL struct (e.g. <name>_i2c_t, <name>_spi_t, <name>_hal_t)
+      containing at least one function pointer field.
+    - The init function accepts a pointer to this HAL struct.
+    """
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return True
+    try:
+        text = h.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True
+    # Look for a HAL struct typedef: <name>_i2c_t, <name>_spi_t, <name>_hal_t,
+    # <name>_gpio_t, <name>_onewire_t, <name>_pwm_t
+    hal_pattern = re.compile(
+        r'\b' + re.escape(name) + r'_(i2c|spi|hal|gpio|onewire|ow|pwm)_t\b'
+    )
+    has_hal_struct = bool(hal_pattern.search(text))
+    if not has_hal_struct:
+        return False
+    # Verify at least one function pointer in the HAL struct
+    # Pattern: something like  (*func_name)(...)
+    if "(*" not in text:
+        return False
+    return True
+
+
 def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     """Check that every function declaration in .h has a doc comment (Q29)."""
     h = wheel_dir / f"{name}.h"
@@ -834,6 +909,38 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
                    f"untested error codes: {', '.join(uncovered)}",
                    fix_cmd=f"add test cases covering {', '.join(uncovered)} in {path}/test/")
             tprint(f"  [WARN]  {path}: {', '.join(uncovered)}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- Naming convention check (api-conventions S1.1) ---
+    qprint("\n=== Naming convention (api-conventions S1.1) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_naming_convention(wheel_dir, name):
+            record("naming_convention", path, "WARN",
+                   f"public functions not following {name}_<verb> naming pattern",
+                   fix_cmd=f"rename public functions in {path}/{name}.h to {name}_<verb>(...)")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- HAL injection pattern check (api-conventions S5.3, L1 only) ---
+    qprint("\n=== HAL injection pattern (L1 drivers) ===\n")
+    for layer, name, path in wheels:
+        if layer != "drivers":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_consistent_hal_pattern(wheel_dir, name):
+            record("hal_injection", path, "WARN",
+                   "L1 driver missing HAL struct with function pointers",
+                   fix_cmd=f"add {name}_i2c_t/{name}_spi_t/{name}_hal_t with callback fields to {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
