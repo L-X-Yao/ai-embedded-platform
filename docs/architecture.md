@@ -109,6 +109,20 @@ AI 自动生成这些胶水代码是 EmbedForge 的核心价值。
 
 Wheel 不知道自己运行在什么 OS 和什么硬件上。"跨平台"不是主动兼容的成本，而是不引入依赖的自然结果。
 
+### 应用层 OS API 是项目级选择
+
+应用层用什么 API 完全取决于项目选的 RTOS，**平台不规定**：
+
+| 项目选的 RTOS | 应用层 API |
+|-------------|-----------|
+| VSF | POSIX（VSF 皮肤）或 VSF 原生 |
+| FreeRTOS | xTaskCreate / vTaskDelay |
+| RT-Thread | rt_thread_create / rt_thread_mdelay |
+| Zephyr | k_thread_create / k_msleep |
+| 裸机 | main loop，无任务 API |
+
+例如 flybox 项目选了 POSIX（因为 VSF 有 POSIX 皮肤），但这不是平台规定——下个项目用 FreeRTOS 就直接用 FreeRTOS API。Wheel 不关心应用层用什么 OS API。
+
 ## 与 RTOS 内置组件的关系
 
 Wheel 和 RTOS 组件（如 RT-Thread 的 freemodbus、FAL、FinSH）**不冲突**：

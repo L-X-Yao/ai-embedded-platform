@@ -643,18 +643,6 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
         cons_label = ", ".join(consumers) if consumers else "(none)"
         tprint(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
 
-    # --- "Why not VSF native?" section check (ADR-006) ---
-    qprint("\n=== README: 'Why not VSF native?' (ADR-006) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if not has_vsf_native_section(wheel_dir):
-            record("vsf_native_section", path, "FAIL",
-                   "README missing '## Why not VSF native?' section",
-                   fix_cmd=f"add '## Why not VSF native?' section to {path}/README.md")
-            tprint(f"  [FAIL]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
     # --- Vendor wheel VENDOR.md check (ADR-010) ---
     qprint("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
     vendor_found = False

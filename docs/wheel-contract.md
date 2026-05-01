@@ -25,7 +25,7 @@
 - `drivers/` / `protocols/` / `modules/` 层的 wheel **应该**有项目 consumer（CMakeLists.txt 或 #include）；缺失为 WARN 不阻塞——AI 主动构建是鼓励的（见 ADR-009）
 - `primitives/` 和 `_draft/` 层可以暂无 consumer（作为 building block 或孵化品）
 - `wheels/WISHLIST.md` 不能列已存在的 wheel 名（stale candidate）
-- 每个 wheel 的 README **必须**有 `## Why not VSF native?` 标题（ADR-006，FAIL）
+- ~~每个 wheel 的 README 必须有 `## Why not VSF native?` 标题~~ （ADR-006 已被 ADR-011 supersede）
 - Vendor wheel（含 `vendor/` 子目录）**必须**有 `VENDOR.md`（ADR-010，FAIL）
 - 有跨 wheel 依赖的 wheel **应该**在 README 写 `## Dependencies` 节（ADR-009，WARN）
 - 非 `_draft/` 层的 wheel **应该**在 README 有 `## API review` 节（wheel-contract §7，WARN）
@@ -37,17 +37,16 @@
 
 历史教训：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。
 
-## 1. 零号铁律：Why not VSF native?
+## 1. 核心原则：Wheel 是被动库
 
-完整策略见 **[ADR-006](adr/006-prefer-vsf-native-over-custom-wheel.md)**（单一来源）。
+完整架构见 **[docs/architecture.md](architecture.md)**。
 
 **本文关心的验收点**：
 
-- 每个 wheel 的 README 必须有 `## Why not VSF native?` 一节（英文标题，CI 检查此精确标题）
-- 该节必须列出已检查的 VSF 模块 + 结论（等价物不存在 / 存在但缺 X 功能）
-- 如果等价物存在且功能够用 → **不做这个 wheel**，应直接文档化"请使用 vsf_xxx"
-
-速查表：`docs/debugging-playbook.md` → "VSF 数据结构速查表"。
+- Wheel 不创建任务、不加锁、不 sleep、不分配堆内存、不 `#include` OS 头文件
+- 依赖通过函数指针注入（HAL 回调）
+- 新建 wheel 前查通用开源实现（ADR-010），能 vendor 就 vendor
+- ~~ADR-006 "grep VSF" 已被 ADR-011 supersede~~——wheel 独立于 OS，VSF 有无不影响决策
 
 ## 2. 结构（强制）
 
@@ -111,8 +110,8 @@ python3 -m pytest test_*.py -v
 在 draft 基础上补：
 
 ```markdown
-## Why not VSF native?
-（见 §1，强制；必须用英文标题）
+## Origin
+（来源说明：从哪个项目提取 / 主动构建用于什么场景）
 
 ## 功能
 - 要点列表
@@ -229,7 +228,7 @@ int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 
 ## 9. 反面清单（不合格的征兆）
 
-- ❌ 没 "Why not VSF native?" 节 → 拒收
+- ❌ wheel 内部创建任务/加锁/sleep/malloc → 拒收（见 §1）
 - ❌ 没 README 或 README 只一句话（非 draft）
 - ❌ 测试全是 `assert True`
 - ❌ 代码里有 TODO / FIXME 没处理完

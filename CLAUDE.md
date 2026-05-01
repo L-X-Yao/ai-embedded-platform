@@ -52,14 +52,13 @@ make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 
 判断标准：如果一个功能需要"自己创建任务"或"自己管理中断"，它不是 wheel。
 
-### 0.1 新建 wheel 前查开源实现
+### 0.1 新建 wheel 前查通用开源实现
 
 完整策略见 **[ADR-010](docs/adr/010-prefer-open-source-implementations.md)** + **[ADR-011](docs/adr/011-ecosystem-driven-wheel-building.md)**。
 
 - **不再等项目触发**——按"嵌入式常用"标准主动构建（ADR-011）
 - **查通用开源库**（jsmn / LittleFS / cJSON 等），能 vendor 就 vendor（ADR-010）
-- **VSF 有同功能组件不阻断**——VSF 版本绑定 VSF 内核，我们的版本全平台通用（ADR-006 降级）
-- 新 wheel 的 README 仍需 "Why not VSF native?" 节（记录设计参考）
+- **不查 VSF**——VSF 组件绑定 VSF 内核，与我们的零依赖 wheel 无关
 
 ### 1. 绝不从零发挥
 
@@ -332,7 +331,7 @@ git branch -d session/wheels session/<project>
 | 003 | 客户代码分类回流 + IP 剥离 |
 | 004 | Monorepo，wheels 外置于 vsf/ |
 | 005 | VSF 修改走 patches + vsf-addon |
-| 006 | 新 wheel 前查 VSF 原生（降为参考） |
+| 006 | ~~新 wheel 前查 VSF 原生~~ (superseded by 011) |
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
 | 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU，已实证） |
 | 009 | Wheel 依赖规则：具体/接口两类，方向只能向下，禁止循环 |

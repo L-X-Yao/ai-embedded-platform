@@ -47,7 +47,7 @@
 | 003 | 客户代码回流策略 | accepted | 可回流通用部分，剥离客户 IP |
 | 004 | Monorepo 结构 | accepted | 单仓库管理所有内容，不 fork VSF |
 | 005 | VSF 上游修改策略 | accepted | patches + vsf-addon，保持 vsf/ 干净 |
-| 006 | 优先用 VSF 原生，不重造轮子 | accepted | 新 wheel 前必须 grep VSF |
+| 006 | ~~优先用 VSF 原生~~ | superseded by 011 | wheel 独立于 OS，VSF 有无不影响决策 |
 | 007 | VSF 作为永久基座 | accepted | 不为切 RTOS 做架构预案，AI 兜底维护 |
 | 008 | VSF linux64 不是 kernel-only sim 路径 | accepted | kernel-only sim 走 mps2+QEMU，linux64 仅用于 busybox 模式 |
 | 009 | Wheel 依赖规则 | accepted | 两种类型（具体/接口）+ 方向只能向下 + 禁止循环 |

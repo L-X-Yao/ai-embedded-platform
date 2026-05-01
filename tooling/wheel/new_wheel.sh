@@ -1062,11 +1062,6 @@ generate_standard_readme() {
 
 TODO: 2-3 sentence description.
 
-## Why not VSF native?
-
-Searched \`vsf/source/service/\`, \`vsf/source/component/\`, \`vsf/source/utilities/\` for:
-\`TODO: keywords\` — TODO: results.
-
 ## Origin
 
 TODO: "Extracted from \`projects/<proj>/src/...\`" or "Proactive build for <use case>".
@@ -1227,11 +1222,6 @@ generate_vendor_readme() {
 **Status: candidate**
 
 TODO: 2-3 sentence description.
-
-## Why not VSF native?
-
-Searched \`vsf/source/service/\`, \`vsf/source/component/\`, \`vsf/source/utilities/\` for:
-\`TODO: keywords\` — TODO: results.
 
 ## Why this upstream?
 
