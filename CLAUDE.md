@@ -180,19 +180,44 @@ ai-embedded-platform/
 
 ## 多窗口并行开发
 
-多个 Claude Code 窗口同时操作本仓库时，用 **git worktree 按 scope 隔离**，避免文件冲突。
+多个 Claude Code 窗口同时操作本仓库时，用 worktree 按 scope 隔离，避免文件冲突。
 
-### 开窗
+### 方式一：`claude -w`（推荐）
 
-```bash
-git worktree add ../ai-ep-wheels  -b session/wheels    # 窗口 A：wheel 开发
-git worktree add ../ai-ep-project -b session/<project>  # 窗口 B：项目集成
-# 主目录（本目录）                                      # 窗口 C：tooling / docs / CI
+Claude Code 内置 worktree 管理，一行命令创建隔离分支，无改动时自动清理：
+
+```powershell
+# 终端 1：wheel 开发/审计
+claude -w wheels -n "wheel-work"
+
+# 终端 2：项目集成
+claude -w project -n "project-work"
+
+# 终端 3：主目录——tooling / docs / CI
+claude
 ```
 
-每个 Claude Code 实例打开对应 worktree 目录，文件系统级隔离。
+`-w <name>` 自动创建 `.claude/worktrees/<name>/` 目录和 `worktree-<name>` 分支。`-n` 命名 session 以便 `claude --resume` 恢复。
 
-### scope 分配
+### 方式二：会话内 subagent
+
+当前 session 内用 Agent tool + `isolation: "worktree"` 派出隔离 agent，不需要开新终端。适合委派单次任务（审计扫描、测试覆盖检查）。
+
+### 方式三：Agent Teams（实验性）
+
+多个 Claude 实例共享任务列表、互相通信。需先启用：
+
+```json
+{ "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
+```
+
+```powershell
+claude -w audit --teammate-mode in-process
+```
+
+适合多角度并行审计（安全 + 性能 + 测试覆盖同时跑）。
+
+### scope 分配（所有方式通用）
 
 | 窗口 | 拥有的目录 | 可读但不改 |
 |------|-----------|-----------|
@@ -209,16 +234,34 @@ git worktree add ../ai-ep-project -b session/<project>  # 窗口 B：项目集�
 
 ### 收窗
 
+**`claude -w` 方式**：无改动时 worktree 自动删除。有改动时合并到主分支：
+
 ```bash
 # 在主目录
-git merge session/wheels     # 先合 wheel
-git merge session/<project>  # 再合 project
-git worktree remove ../ai-ep-wheels
-git worktree remove ../ai-ep-project
+git merge worktree-wheels     # 先合 wheel
+git merge worktree-project    # 再合 project
+```
+
+**手动 worktree 方式**（仍可用）：
+
+```bash
+git worktree add ../ai-ep-wheels  -b session/wheels
+git worktree add ../ai-ep-project -b session/<project>
+# 收窗时
+git merge session/wheels && git merge session/<project>
+git worktree remove ../ai-ep-wheels && git worktree remove ../ai-ep-project
 git branch -d session/wheels session/<project>
 ```
 
 合并后在 C 窗口统一：更新 CLAUDE.md wheel 计数表、整理 MEMORY.md、跑 `make check`。
+
+### 其他并行能力
+
+| 机制 | 用途 | 需要开终端 |
+|------|------|-----------|
+| `/loop <间隔> <任务>` | 会话内轮询（CI 状态、部署检查） | 否 |
+| Cloud Routines（claude.ai/code/routines） | 无人值守定时任务，跑在云端 | 否 |
+| `claude --resume <name>` | 恢复已命名的 session | 否 |
 
 ### 注意
 
