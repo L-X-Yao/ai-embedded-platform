@@ -11,7 +11,7 @@ target_include_directories(test_crc32 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_crc32 PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_crc32 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME crc32_tests COMMAND test_crc32)

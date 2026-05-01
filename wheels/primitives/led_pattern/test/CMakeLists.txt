@@ -8,7 +8,7 @@ target_include_directories(test_led_pattern PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_led_pattern PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_led_pattern PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME led_pattern_tests COMMAND test_led_pattern)

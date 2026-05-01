@@ -12,7 +12,7 @@ target_include_directories(test_event_queue PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_event_queue PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_event_queue PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME event_queue_tests COMMAND test_event_queue)

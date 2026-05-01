@@ -12,7 +12,7 @@ target_include_directories(test_byte_buffer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME byte_buffer_tests COMMAND test_byte_buffer)
