@@ -379,6 +379,9 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 | `sync_vsf.sh` | 同步 vsf/ 到上游 | `--status` |
 | `platform_metrics.sh` | 平台健康指标快照 + 对比 | `--save`, `--compare`, `--history` |
 | `test_scaffold.sh` | 验证 7 种 scaffold 模板编译 | 无 |
+| `dispatch_agent.sh` | 在隔离 worktree 派发 Claude Code agent | `<prompt>`, `--worktree` |
+| `session_handoff.sh` | 生成 session 交接状态文档 | 无 |
+| `platform_metrics_impl.py` | 平台指标采集实现（被 platform_metrics.sh 调用） | 内部使用 |
 
 ### 工具决策树
 
