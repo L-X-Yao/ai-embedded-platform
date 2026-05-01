@@ -252,6 +252,22 @@ TEST(test_destroy_slot_is_inactive)
     ASSERT_TRUE(mgr.timers[id].callback == NULL);
 }
 
+TEST(test_create_full_returns_err_full)
+{
+    setup();
+    /* fill every timer slot */
+    for (int i = 0; i < SOFT_TIMER_MAX; i++)
+    {
+        int id = soft_timer_create(&mgr, 10, SOFT_TIMER_ONE_SHOT, test_callback, NULL);
+        ASSERT_TRUE(id >= 0);
+    }
+    ASSERT_EQ((int)mgr.count, SOFT_TIMER_MAX);
+
+    /* next create must fail with ERR_FULL */
+    int overflow = soft_timer_create(&mgr, 10, SOFT_TIMER_ONE_SHOT, test_callback, NULL);
+    ASSERT_EQ(overflow, SOFT_TIMER_ERR_FULL);
+}
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -269,5 +285,6 @@ TEST_MAIN("soft_timer")
     RUN(test_destroy_reuses_slot);
     RUN(test_destroy_invalid_id);
     RUN(test_destroy_slot_is_inactive);
+    RUN(test_create_full_returns_err_full);
 TEST_MAIN_END()
 
