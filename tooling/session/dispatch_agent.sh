@@ -8,6 +8,7 @@
 #   dispatch_agent.sh --name audit --budget 1.00 --prompt 'run full audit'
 #   dispatch_agent.sh --name fix  --budget 0.50 --prompt 'fix L0 findings' --wait
 #   dispatch_agent.sh --merge-all [--push]
+#   dispatch_agent.sh --cleanup
 #   dispatch_agent.sh --status
 #
 # Options:
@@ -19,6 +20,7 @@
 #   --wait                      block until agent completes
 #   --merge-all                 squash-merge all worktree-* branches, run make check
 #   --push                      push after merge-all (default: don't push)
+#   --cleanup                   remove all worktree-* branches and directories
 #   --status                    show all active worktree branches and their commits
 #   -h|--help                   show this help
 #
@@ -40,6 +42,7 @@ WAIT=false
 MERGE_ALL=false
 PUSH=false
 STATUS=false
+CLEANUP=false
 
 usage() {
     sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
@@ -56,6 +59,7 @@ while [[ $# -gt 0 ]]; do
         --wait)      WAIT=true;   shift   ;;
         --merge-all) MERGE_ALL=true; shift ;;
         --push)      PUSH=true;   shift   ;;
+        --cleanup)   CLEANUP=true; shift   ;;
         --status)    STATUS=true; shift   ;;
         -h|--help)   usage 0 ;;
         *) echo -e "${RED}Unknown option: $1${NC}"; usage 1 ;;
@@ -63,6 +67,84 @@ while [[ $# -gt 0 ]]; do
 done
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# --- robust worktree directory removal (handles Windows long paths) ---
+remove_worktree_dir() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+
+    git worktree unlock "$dir" 2>/dev/null || true
+    if git worktree remove --force "$dir" 2>/dev/null; then
+        if [[ ! -d "$dir" ]]; then
+            return 0
+        fi
+    fi
+
+    # git worktree remove failed (Windows long path) — force delete
+    if command -v cmd.exe &>/dev/null; then
+        local win_path
+        win_path=$(cd "$dir" 2>/dev/null && pwd -W 2>/dev/null || echo "$dir" | sed 's|^/mnt/\([a-z]\)/|\1:/|; s|/|\\|g')
+        cmd.exe /c "rd /s /q \"$win_path\"" 2>/dev/null || true
+    fi
+
+    if [[ -d "$dir" ]]; then
+        rm -rf "$dir" 2>/dev/null || true
+    fi
+
+    if [[ -d "$dir" ]]; then
+        echo -e "  ${RED}WARN${NC}  could not remove $dir — delete manually"
+        return 1
+    fi
+    return 0
+}
+
+# --- clean up all worktree-* branches and directories ---
+cleanup_worktrees() {
+    local branches
+    branches=$(git branch --list 'worktree-*' | sed 's/^[+* ]*//' | tr -d ' ')
+    local wt_base="$REPO_ROOT/.claude/worktrees"
+    local cleaned=0
+
+    # Remove worktree directories found via git worktree list
+    while IFS= read -r line; do
+        local wt_path
+        wt_path=$(echo "$line" | awk '{print $1}')
+        [[ "$wt_path" == "$REPO_ROOT" ]] && continue
+        [[ "$wt_path" == */.claude/worktrees/* ]] || continue
+        echo -e "  ${CYAN}REMOVE${NC}  $wt_path"
+        remove_worktree_dir "$wt_path"
+        cleaned=$((cleaned + 1))
+    done < <(git worktree list 2>/dev/null)
+
+    # Also scan for orphaned directories not tracked by git worktree
+    if [[ -d "$wt_base" ]]; then
+        for d in "$wt_base"/*/; do
+            [[ -d "$d" ]] || continue
+            echo -e "  ${CYAN}REMOVE${NC}  $d (orphaned)"
+            remove_worktree_dir "${d%/}"
+            cleaned=$((cleaned + 1))
+        done
+    fi
+
+    # Delete branches
+    for b in $branches; do
+        git branch -D "$b" 2>/dev/null && echo -e "  ${GREEN}DELETE${NC}  branch $b"
+    done
+
+    git worktree prune 2>/dev/null
+
+    # Verify
+    local remaining
+    remaining=$(git branch --list 'worktree-*' 2>/dev/null | wc -l)
+    local remaining_dirs=0
+    [[ -d "$wt_base" ]] && remaining_dirs=$(find "$wt_base" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+
+    if [[ $remaining -eq 0 && $remaining_dirs -eq 0 ]]; then
+        echo -e "${GREEN}All worktrees cleaned ($cleaned removed).${NC}"
+    else
+        echo -e "${YELLOW}Warning: $remaining branch(es), $remaining_dirs dir(s) remain.${NC}"
+    fi
+}
 
 # --- --status mode ---
 if $STATUS; then
@@ -77,6 +159,13 @@ if $STATUS; then
         echo -e "  ${CYAN}$b${NC}  ($commits commits ahead of main)"
         git log main.."$b" --oneline 2>/dev/null | sed 's/^/    /'
     done
+    exit 0
+fi
+
+# --- --cleanup mode ---
+if $CLEANUP; then
+    echo -e "${BOLD}=== Cleaning up all worktrees ===${NC}"
+    cleanup_worktrees
     exit 0
 fi
 
@@ -127,20 +216,10 @@ if $MERGE_ALL; then
         echo -e "${YELLOW}Some branches failed to merge. Resolve manually.${NC}"
     fi
 
-    # Clean up merged worktrees
-    if [[ $MERGED -gt 0 ]]; then
-        echo ""
-        echo -e "${CYAN}Cleaning up merged worktrees...${NC}"
-        for b in $branches; do
-            wt_dir="$REPO_ROOT/.claude/worktrees/${b#worktree-}"
-            if [[ -d "$wt_dir" ]]; then
-                git worktree unlock "$wt_dir" 2>/dev/null
-                git worktree remove --force "$wt_dir" 2>/dev/null
-            fi
-            git branch -D "$b" 2>/dev/null
-        done
-        git worktree prune 2>/dev/null
-    fi
+    # Clean up all worktrees (merged + skipped + orphaned)
+    echo ""
+    echo -e "${CYAN}Cleaning up worktrees...${NC}"
+    cleanup_worktrees
 
     if [[ $MERGED -gt 0 ]]; then
         echo ""
