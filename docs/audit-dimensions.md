@@ -129,34 +129,48 @@ wsl bash tooling/scripts/arm_size_audit.sh   # Q21
 
 如果 FAIL → 先修再继续。Phase 0 覆盖：Q4, Q21, Q29, 以及 C1/B1/D1/S1/Q12/Q27 的自动化子集。
 
-### Phase 1 — AI 审阅（按需并行）
+### Phase 1 — `dispatch_agent.sh` 派发（按批次并行）
 
 跳过 🤖 维度（Q4, Q21, Q29）。对 ⚡ 维度，agent prompt 指明已自动化的子检查。
 
-```
-轮次 1: W1a + W1b + W2 + W3           — 4 agent（代码审阅）
-轮次 2: T1 + C1(仅CI逻辑) + P1(如有硬件) — 2-3 agent
-轮次 3: D1 + H1 + S1(仅覆盖盲区) + B1(仅依赖图) — 3-4 agent
-轮次 4: Q1+Q2+Q3, Q5+Q6               — 2 agent
-轮次 5: Q7+Q8+Q9, Q10+Q11+Q12(仅测试质量) — 2 agent
-轮次 6: Q13+Q14+Q15, Q16+Q17+Q18      — 2 agent
-轮次 7: Q19+Q20, Q22+Q23+Q24          — 2 agent
-轮次 8: Q25+Q26+Q27(仅语义), Q28+Q30  — 2 agent
+使用 `dispatch_agent.sh` 派发每个批次到独立 worktree：
+
+```bash
+# 轮次 1: 代码审阅（4 agent 并行）
+dispatch_agent.sh --name audit-w1a --budget 1.00 --scope "wheels/primitives/" \
+  --prompt "审计 W1a: bitfield→kvs，L0 前 15 个 wheel"
+dispatch_agent.sh --name audit-w1b --budget 1.00 --scope "wheels/primitives/" \
+  --prompt "审计 W1b: led_pattern→timeout，L0 后 15 个 wheel"
+dispatch_agent.sh --name audit-w2  --budget 1.00 --scope "wheels/drivers/" \
+  --prompt "审计 W2: L1 驱动层全部 wheel"
+dispatch_agent.sh --name audit-w3  --budget 1.00 --scope "wheels/protocols/" \
+  --prompt "审计 W3: L2 协议层全部 wheel"
+
+# 轮次 2-8: 同理按维度分组派发
+# T1 + C1(仅CI逻辑) + P1(如有硬件) — 2-3 agent
+# D1 + H1 + S1(仅覆盖盲区) + B1(仅依赖图) — 3-4 agent
+# Q1+Q2+Q3, Q5+Q6, Q7+Q8+Q9, Q10+Q11+Q12 ...
+
+# 监控进度
+dispatch_agent.sh --status
 ```
 
-每个 agent 返回后：
-1. grep 验证关键发现（假阳性率 ~20-30%）
-2. 修复确认的问题
-3. 立即跑 `test_all.sh`
+每个 agent 在 worktree 中完成修复并 commit（dispatch 自动追加 commit 指令 + scope 限制）。
 
-### Phase 2 — 记录 + 推送（5 分钟）
+主窗口在 agent 返回后：
+1. `--status` 确认所有 agent 完成
+2. grep 验证关键发现（假阳性率 ~20-30%）
 
+### Phase 2 — 合并 + 推送（5 分钟）
+
+```bash
+# squash merge 所有 worktree 分支 + make check + push
+dispatch_agent.sh --merge-all --push
+
+# 更新本文档末尾的"审计历史"表
 ```
-1. 按 type × scope 拆 commit
-2. 跑 make check 最终验证
-3. git push（pre-push hook 自动跑 audit）
-4. 更新本文档末尾的"审计历史"表
-```
+
+`--merge-all` 自动执行：squash merge → commit → 清理 worktree/分支 → `make check`。
 
 完整超级审计（40 维度）从启动到推送约 60-90 分钟。
 
