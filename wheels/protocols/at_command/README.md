@@ -23,49 +23,49 @@ commands, and all hardware UART/DMA code.
 
 ```c
 /* HAL: caller sends bytes to modem */
-at_hal_t hal = { .send = my_uart_write, .ctx = &uart };
+at_command_hal_t hal = { .send = my_uart_write, .ctx = &uart };
 
-at_cmd_t at;
-at_cmd_init(&at, &hal);
+at_command_t at;
+at_command_init(&at, &hal);
 
 /* Register URC handlers */
-at_cmd_register_urc(&at, "RDY", on_modem_restart, NULL);
-at_cmd_register_urc(&at, "+CGREG:", on_network_status, NULL);
-at_cmd_register_urc(&at, "$GP", on_nmea_sentence, NULL);
+at_command_register_urc(&at, "RDY", on_modem_restart, NULL);
+at_command_register_urc(&at, "+CGREG:", on_network_status, NULL);
+at_command_register_urc(&at, "$GP", on_nmea_sentence, NULL);
 
 /* Send command and set expected response */
-at_cmd_send(&at, "AT+CSQ");
-at_cmd_expect(&at, "+CSQ:");
+at_command_send(&at, "AT+CSQ");
+at_command_expect(&at, "+CSQ:");
 
 /* In RX loop: feed bytes one at a time */
-at_evt_t evt;
-at_evt_type_t r = at_cmd_feed(&at, byte, &evt);
+at_command_evt_t evt;
+at_command_evt_type_t r = at_command_feed(&at, byte, &evt);
 switch (r) {
-case AT_EVT_OK:     /* response matched */
-    parse_csq(at_cmd_get_matched(&at));
+case AT_COMMAND_EVT_OK:     /* response matched */
+    parse_csq(at_command_get_matched(&at));
     break;
-case AT_EVT_ERROR:  /* ERROR/+CME ERROR */
+case AT_COMMAND_EVT_ERROR:  /* ERROR/+CME ERROR */
     handle_error();
     break;
-case AT_EVT_URC:    /* unsolicited, dispatched to handler */
+case AT_COMMAND_EVT_URC:    /* unsolicited, dispatched to handler */
     break;
-case AT_EVT_PROMPT: /* ">" for data mode (AT+CMGS, AT+MPUBEX) */
-    at_cmd_send_raw(&at, payload, len);
+case AT_COMMAND_EVT_PROMPT: /* ">" for data mode (AT+CMGS, AT+MPUBEX) */
+    at_command_send_raw(&at, payload, len);
     break;
 }
 
 /* For commands where data appears on prev line (e.g., AT+CGSN → IMEI) */
-at_cmd_send(&at, "AT+CGSN");
-at_cmd_expect(&at, "OK");
-/* ... after AT_EVT_OK ... */
-const char *imei = at_cmd_get_prev_line(&at);
+at_command_send(&at, "AT+CGSN");
+at_command_expect(&at, "OK");
+/* ... after AT_COMMAND_EVT_OK ... */
+const char *imei = at_command_get_prev_line(&at);
 ```
 
 ## Features
 
 - **Response matching**: substring search (matches `+CSQ:` in `+CSQ: 18,0`)
 - **ERROR detection**: any line containing `ERROR` (covers `ERROR`, `+CME ERROR:`, `+CMS ERROR:`)
-- **URC dispatch**: prefix-based callback table (up to `AT_CMD_MAX_URCS`, default 16)
+- **URC dispatch**: prefix-based callback table (up to `AT_COMMAND_MAX_URCS`, default 16)
 - **Prompt detection**: `>` character for data-mode commands
 - **Prev-line capture**: for commands where response data precedes `OK`
 - **CR stripping**: handles `\r\n` and bare `\n` line endings
@@ -74,13 +74,13 @@ const char *imei = at_cmd_get_prev_line(&at);
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `AT_CMD_LINE_SIZE` | 256 | Max line buffer |
-| `AT_CMD_MATCH_SIZE` | 256 | Matched/prev-line buffer |
-| `AT_CMD_MAX_URCS` | 16 | Max URC handler slots |
+| `AT_COMMAND_LINE_SIZE` | 256 | Max line buffer |
+| `AT_COMMAND_MATCH_SIZE` | 256 | Matched/prev-line buffer |
+| `AT_COMMAND_MAX_URCS` | 16 | Max URC handler slots |
 
 ## Dependencies
 
-- None (interface dependency: `at_hal_t` send callback provided by caller)
+- None (interface dependency: `at_command_hal_t` send callback provided by caller)
 
 ## Supported platforms
 
@@ -89,7 +89,7 @@ const char *imei = at_cmd_get_prev_line(&at);
 
 ## Known issues
 
-- No built-in timeout — consumer must implement timeout externally (check elapsed time, call `at_cmd_cancel()`).
+- No built-in timeout — consumer must implement timeout externally (check elapsed time, call `at_command_cancel()`).
 - No command queue — single pending expect at a time. Consumer serializes with mutex if multi-threaded.
 - No binary/fixed-length data mode (HTTP chunked, MQTT payload). Consumer handles mode switching externally.
 - URC matching is prefix-only (`starts_with`), not substring. Register `"+CME"` not `"CME"`.
@@ -111,8 +111,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
-- **`at_cmd_` prefix instead of `at_command_`** (api-conventions §1.1): Shortened for readability — `at_command_send_and_wait` would be excessively long. All public API uses `at_cmd_` consistently.
-- **`at_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
+- **`at_command_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
 
 ## API review
 

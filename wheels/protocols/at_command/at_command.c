@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <string.h>
 
-void at_cmd_init(at_cmd_t *at, const at_hal_t *hal)
+void at_command_init(at_command_t *at, const at_command_hal_t *hal)
 {
     if (at == NULL) {
         return;
@@ -25,7 +25,7 @@ void at_cmd_init(at_cmd_t *at, const at_hal_t *hal)
     at->waiting      = 0U;
 }
 
-void at_cmd_send(at_cmd_t *at, const char *cmd)
+void at_command_send(at_command_t *at, const char *cmd)
 {
     uint16_t len;
 
@@ -43,7 +43,7 @@ void at_cmd_send(at_cmd_t *at, const char *cmd)
     }
 }
 
-void at_cmd_send_raw(at_cmd_t *at, const uint8_t *data, uint16_t len)
+void at_command_send_raw(at_command_t *at, const uint8_t *data, uint16_t len)
 {
     if (at == NULL || at->hal == NULL || data == NULL || len == 0U) {
         return;
@@ -51,7 +51,7 @@ void at_cmd_send_raw(at_cmd_t *at, const uint8_t *data, uint16_t len)
     at->hal->send(at->hal->ctx, data, len);
 }
 
-void at_cmd_expect(at_cmd_t *at, const char *expected)
+void at_command_expect(at_command_t *at, const char *expected)
 {
     if (at == NULL || expected == NULL) {
         return;
@@ -62,7 +62,7 @@ void at_cmd_expect(at_cmd_t *at, const char *expected)
     at->waiting = 1U;
 }
 
-void at_cmd_cancel(at_cmd_t *at)
+void at_command_cancel(at_command_t *at)
 {
     if (at == NULL) {
         return;
@@ -71,13 +71,13 @@ void at_cmd_cancel(at_cmd_t *at)
     at->waiting = 0U;
 }
 
-int at_cmd_register_urc(at_cmd_t *at, const char *prefix,
-                         at_urc_cb_t cb, void *ctx)
+int at_command_register_urc(at_command_t *at, const char *prefix,
+                         at_command_urc_cb_t cb, void *ctx)
 {
     if (at == NULL || prefix == NULL || cb == NULL) {
         return -1;
     }
-    if (at->urc_count >= AT_CMD_MAX_URCS) {
+    if (at->urc_count >= AT_COMMAND_MAX_URCS) {
         return -1;
     }
     at->urcs[at->urc_count].prefix = prefix;
@@ -87,7 +87,7 @@ int at_cmd_register_urc(at_cmd_t *at, const char *prefix,
     return 0;
 }
 
-int at_cmd_unregister_urc(at_cmd_t *at, const char *prefix)
+int at_command_unregister_urc(at_command_t *at, const char *prefix)
 {
     if (at == NULL || prefix == NULL) {
         return -1;
@@ -98,14 +98,14 @@ int at_cmd_unregister_urc(at_cmd_t *at, const char *prefix)
             for (uint8_t j = i; j < at->urc_count; j++) {
                 at->urcs[j] = at->urcs[j + 1U];
             }
-            memset(&at->urcs[at->urc_count], 0, sizeof(at_urc_entry_t));
+            memset(&at->urcs[at->urc_count], 0, sizeof(at_command_urc_entry_t));
             return 0;
         }
     }
     return -1;
 }
 
-const char *at_cmd_get_matched(const at_cmd_t *at)
+const char *at_command_get_matched(const at_command_t *at)
 {
     if (at == NULL) {
         return "";
@@ -113,7 +113,7 @@ const char *at_cmd_get_matched(const at_cmd_t *at)
     return at->matched;
 }
 
-const char *at_cmd_get_prev_line(const at_cmd_t *at)
+const char *at_command_get_prev_line(const at_command_t *at)
 {
     if (at == NULL) {
         return "";
@@ -131,7 +131,7 @@ static int starts_with(const char *str, const char *prefix)
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-static void dispatch_urc(at_cmd_t *at, const char *line)
+static void dispatch_urc(at_command_t *at, const char *line)
 {
     uint8_t i;
 
@@ -143,13 +143,13 @@ static void dispatch_urc(at_cmd_t *at, const char *line)
     }
 }
 
-static at_evt_type_t process_line(at_cmd_t *at, at_evt_t *evt)
+static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *evt)
 {
     const char *line = at->line_buf;
     uint16_t len = (uint16_t)strlen(line);
 
     if (len == 0U) {
-        return AT_EVT_NONE;
+        return AT_COMMAND_EVT_NONE;
     }
 
     evt->line     = line;
@@ -161,16 +161,16 @@ static at_evt_type_t process_line(at_cmd_t *at, at_evt_t *evt)
             at->matched[sizeof(at->matched) - 1U] = '\0';
             at->expected[0] = '\0';
             at->waiting = 0U;
-            evt->type = AT_EVT_OK;
-            return AT_EVT_OK;
+            evt->type = AT_COMMAND_EVT_OK;
+            return AT_COMMAND_EVT_OK;
         }
 
         if (contains(line, "ERROR")) {
             at->matched[0] = '\0';
             at->expected[0] = '\0';
             at->waiting = 0U;
-            evt->type = AT_EVT_ERROR;
-            return AT_EVT_ERROR;
+            evt->type = AT_COMMAND_EVT_ERROR;
+            return AT_COMMAND_EVT_ERROR;
         }
     }
 
@@ -179,19 +179,19 @@ static at_evt_type_t process_line(at_cmd_t *at, at_evt_t *evt)
     strncpy(at->prev_line, line, sizeof(at->prev_line) - 1U);
     at->prev_line[sizeof(at->prev_line) - 1U] = '\0';
 
-    evt->type = at->waiting ? AT_EVT_LINE : AT_EVT_URC;
+    evt->type = at->waiting ? AT_COMMAND_EVT_LINE : AT_COMMAND_EVT_URC;
     return evt->type;
 }
 
-at_evt_type_t at_cmd_feed(at_cmd_t *at, uint8_t byte, at_evt_t *evt)
+at_command_evt_type_t at_command_feed(at_command_t *at, uint8_t byte, at_command_evt_t *evt)
 {
-    at_evt_type_t result;
+    at_command_evt_type_t result;
 
     if (at == NULL || evt == NULL) {
-        return AT_EVT_NONE;
+        return AT_COMMAND_EVT_NONE;
     }
 
-    evt->type     = AT_EVT_NONE;
+    evt->type     = AT_COMMAND_EVT_NONE;
     evt->line     = NULL;
     evt->line_len = 0U;
 
@@ -201,11 +201,11 @@ at_evt_type_t at_cmd_feed(at_cmd_t *at, uint8_t byte, at_evt_t *evt)
         at->matched[1]  = '\0';
         at->expected[0] = '\0';
         at->waiting     = 0U;
-        evt->type       = AT_EVT_PROMPT;
+        evt->type       = AT_COMMAND_EVT_PROMPT;
         evt->line       = at->matched;
         evt->line_len   = 1U;
         at->line_idx    = 0U;
-        return AT_EVT_PROMPT;
+        return AT_COMMAND_EVT_PROMPT;
     }
 
     if (byte == '\n') {
@@ -219,9 +219,9 @@ at_evt_type_t at_cmd_feed(at_cmd_t *at, uint8_t byte, at_evt_t *evt)
         return result;
     }
 
-    if (at->line_idx < AT_CMD_LINE_SIZE - 1U) {
+    if (at->line_idx < AT_COMMAND_LINE_SIZE - 1U) {
         at->line_buf[at->line_idx++] = (char)byte;
     }
 
-    return AT_EVT_NONE;
+    return AT_COMMAND_EVT_NONE;
 }

@@ -17,12 +17,12 @@ not as a standalone C component.
 ```c
 #include "websocket_frame.h"
 
-ws_err_t ws_frame_parse(const uint8_t *data, size_t len, ws_frame_t *frame);
-ws_err_t ws_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
-                        bool fin, ws_opcode_t opcode,
+websocket_frame_err_t websocket_frame_parse(const uint8_t *data, size_t len, websocket_frame_t *frame);
+websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
+                        bool fin, websocket_frame_opcode_t opcode,
                         const uint8_t *mask_key,
                         const uint8_t *payload, size_t payload_len);
-void     ws_mask_payload(uint8_t *data, size_t len, const uint8_t mask_key[4]);
+void     websocket_frame_mask_payload(uint8_t *data, size_t len, const uint8_t mask_key[4]);
 ```
 
 ## How to test
@@ -62,7 +62,7 @@ None.
 
 ## API convention deviations
 
-- **`ws_` prefix instead of `websocket_frame_`** (api-conventions §1.1): Shortened to avoid excessively long function names. `ws_frame_parse` is clearer than `websocket_frame_frame_parse`.
+None.
 
 ## Responsible human
 

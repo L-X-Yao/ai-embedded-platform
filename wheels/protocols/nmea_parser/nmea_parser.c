@@ -73,7 +73,7 @@ static float parse_lon(const char *raw, char ew)
 
 static int is_digit(char c) { return c >= '0' && c <= '9'; }
 
-static void parse_time(const char *field, nmea_data_t *d)
+static void parse_time(const char *field, nmea_parser_data_t *d)
 {
     if (strlen(field) < 6) return;
     if (!is_digit(field[0]) || !is_digit(field[1]) ||
@@ -84,7 +84,7 @@ static void parse_time(const char *field, nmea_data_t *d)
     d->sec  = (uint8_t)((field[4] - '0') * 10 + (field[5] - '0'));
 }
 
-static void parse_date(const char *field, nmea_data_t *d)
+static void parse_date(const char *field, nmea_parser_data_t *d)
 {
     if (strlen(field) < 6) return;
     if (!is_digit(field[0]) || !is_digit(field[1]) ||
@@ -98,7 +98,7 @@ static void parse_date(const char *field, nmea_data_t *d)
 
 /* ---------- sentence parsers ---------- */
 
-static void parse_gga(const char *line, nmea_data_t *d)
+static void parse_gga(const char *line, nmea_parser_data_t *d)
 {
     d->fix_quality = (uint8_t)field_int(line, 6);
     d->satellites  = (uint8_t)field_int(line, 7);
@@ -106,7 +106,7 @@ static void parse_gga(const char *line, nmea_data_t *d)
     d->altitude_m  = field_float(line, 9);
 }
 
-static void parse_rmc(const char *line, nmea_data_t *d)
+static void parse_rmc(const char *line, nmea_parser_data_t *d)
 {
     const char *time_f = get_field(line, 1);
     parse_time(time_f, d);
@@ -139,7 +139,7 @@ static void parse_rmc(const char *line, nmea_data_t *d)
     parse_date(date_f, d);
 }
 
-static void parse_gsa(const char *line, nmea_data_t *d)
+static void parse_gsa(const char *line, nmea_parser_data_t *d)
 {
     int mode = field_int(line, 2);
     if (mode == 3)      d->fix_mode = 2;
@@ -153,13 +153,13 @@ static void parse_gsa(const char *line, nmea_data_t *d)
 
 /* ---------- API ---------- */
 
-void nmea_data_init(nmea_data_t *data)
+void nmea_parser_data_init(nmea_parser_data_t *data)
 {
     if (!data) return;
     memset(data, 0, sizeof(*data));
 }
 
-bool nmea_verify_checksum(const char *sentence)
+bool nmea_parser_verify_checksum(const char *sentence)
 {
     if (!sentence || *sentence != '$') return false;
 
@@ -178,39 +178,39 @@ bool nmea_verify_checksum(const char *sentence)
     return cksum == (uint8_t)((hi << 4) | lo);
 }
 
-nmea_sentence_t nmea_identify(const char *sentence)
+nmea_parser_sentence_t nmea_parser_identify(const char *sentence)
 {
-    if (!sentence || *sentence != '$') return NMEA_SENTENCE_UNKNOWN;
+    if (!sentence || *sentence != '$') return NMEA_PARSER_SENTENCE_UNKNOWN;
 
     const char *p = sentence + 1;
-    if (strlen(p) < 5) return NMEA_SENTENCE_UNKNOWN;
+    if (strlen(p) < 5) return NMEA_PARSER_SENTENCE_UNKNOWN;
 
     const char *tag = p + 2;
-    if (strncmp(tag, "GGA", 3) == 0) return NMEA_SENTENCE_GGA;
-    if (strncmp(tag, "RMC", 3) == 0) return NMEA_SENTENCE_RMC;
-    if (strncmp(tag, "GSA", 3) == 0) return NMEA_SENTENCE_GSA;
+    if (strncmp(tag, "GGA", 3) == 0) return NMEA_PARSER_SENTENCE_GGA;
+    if (strncmp(tag, "RMC", 3) == 0) return NMEA_PARSER_SENTENCE_RMC;
+    if (strncmp(tag, "GSA", 3) == 0) return NMEA_PARSER_SENTENCE_GSA;
 
-    return NMEA_SENTENCE_UNKNOWN;
+    return NMEA_PARSER_SENTENCE_UNKNOWN;
 }
 
-nmea_err_t nmea_parse(const char *sentence, nmea_data_t *data)
+nmea_parser_err_t nmea_parser_parse(const char *sentence, nmea_parser_data_t *data)
 {
-    if (!sentence || !data) return NMEA_ERR_NULL;
+    if (!sentence || !data) return NMEA_PARSER_ERR_NULL;
 
-    nmea_sentence_t type = nmea_identify(sentence);
-    if (type == NMEA_SENTENCE_UNKNOWN) return NMEA_ERR_UNKNOWN;
+    nmea_parser_sentence_t type = nmea_parser_identify(sentence);
+    if (type == NMEA_PARSER_SENTENCE_UNKNOWN) return NMEA_PARSER_ERR_UNKNOWN;
 
-    if (!nmea_verify_checksum(sentence)) return NMEA_ERR_CHECKSUM;
+    if (!nmea_parser_verify_checksum(sentence)) return NMEA_PARSER_ERR_CHECKSUM;
 
     const char *body = strchr(sentence, ',');
-    if (!body) return NMEA_ERR_UNKNOWN;
+    if (!body) return NMEA_PARSER_ERR_UNKNOWN;
 
     switch (type) {
-    case NMEA_SENTENCE_GGA: parse_gga(body, data); break;
-    case NMEA_SENTENCE_RMC: parse_rmc(body, data); break;
-    case NMEA_SENTENCE_GSA: parse_gsa(body, data); break;
-    default: return NMEA_ERR_UNKNOWN;
+    case NMEA_PARSER_SENTENCE_GGA: parse_gga(body, data); break;
+    case NMEA_PARSER_SENTENCE_RMC: parse_rmc(body, data); break;
+    case NMEA_PARSER_SENTENCE_GSA: parse_gsa(body, data); break;
+    default: return NMEA_PARSER_ERR_UNKNOWN;
     }
 
-    return NMEA_OK;
+    return NMEA_PARSER_OK;
 }

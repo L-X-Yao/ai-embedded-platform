@@ -33,12 +33,12 @@ Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.
 ## API
 
 ```c
-nmea_data_t data;
-nmea_data_init(&data);
+nmea_parser_data_t data;
+nmea_parser_data_init(&data);
 
 /* Typical GNSS cycle: multiple sentences per fix */
-if (nmea_verify_checksum(line)) {
-    nmea_parse(line, &data);
+if (nmea_parser_verify_checksum(line)) {
+    nmea_parser_parse(line, &data);
     /* data accumulates across GGA + RMC + GSA sentences */
 }
 
@@ -63,10 +63,10 @@ No compile-time configuration needed.
 
 ## Known issues
 
-- Only handles GGA, RMC, GSA. Other sentence types (VTG, GLL, ZDA) return `NMEA_ERR_UNKNOWN`.
+- Only handles GGA, RMC, GSA. Other sentence types (VTG, GLL, ZDA) return `NMEA_PARSER_ERR_UNKNOWN`.
 - Coordinate parsing uses single-precision float (~7 significant digits ≈ ~1cm at equator). Sufficient for consumer GNSS.
 - Year field uses 80-threshold: YY≥80 → 19XX, YY<80 → 20XX (standard NMEA convention).
-- `nmea_parse()` does not verify checksum internally — caller should call `nmea_verify_checksum()` first if data integrity matters.
+- `nmea_parser_parse()` does not verify checksum internally — caller should call `nmea_parser_verify_checksum()` first if data integrity matters.
 
 ## How to test
 
