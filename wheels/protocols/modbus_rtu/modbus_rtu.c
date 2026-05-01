@@ -121,7 +121,7 @@ int modbus_rtu_master_write_regs(uint8_t *buf, uint16_t buf_size,
     for (uint16_t i = 0; i < count; i++)
         put_u16_be(&data[5 + i * 2], values[i]);
     return modbus_rtu_build(buf, buf_size, slave, MODBUS_FC_WRITE_MULTIPLE_REGS,
-                            data, 5 + count * 2);
+                            data, (uint16_t)(5 + count * 2));
 }
 
 int modbus_rtu_master_get_regs(const modbus_rtu_frame_t *frame,
@@ -188,7 +188,7 @@ static int slave_read_regs(modbus_rtu_slave_t *s,
     }
 
     return modbus_rtu_build(resp, resp_size, s->addr, req->func,
-                            data, 1 + count * 2);
+                            data, (uint16_t)(1 + count * 2));
 }
 
 static int slave_write_single(modbus_rtu_slave_t *s,

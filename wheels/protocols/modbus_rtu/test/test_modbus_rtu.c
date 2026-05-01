@@ -760,6 +760,26 @@ TEST(test_parse_exact_min_frame)
     ASSERT_TRUE(frame.func == 0x03);
 }
 
+TEST(test_slave_address_wrap)
+{
+    modbus_rtu_slave_t s;
+    uint8_t req[32], resp[256];
+    mock_reset();
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = mock_read_holding;
+
+    int req_len = modbus_rtu_master_read_regs(req, sizeof(req),
+                                               0x01, MODBUS_FC_READ_HOLDING_REGS,
+                                               0xFFFF, 2);
+    int resp_len = modbus_rtu_slave_process(&s, req, req_len, resp, sizeof(resp));
+    ASSERT_TRUE(resp_len > 0);
+
+    modbus_rtu_frame_t frame;
+    modbus_rtu_parse(resp, resp_len, &frame);
+    ASSERT_TRUE(modbus_rtu_is_exception(&frame));
+    ASSERT_TRUE(modbus_rtu_exception_code(&frame) == MODBUS_EX_ILLEGAL_DATA_VALUE);
+}
+
 /* ============================================================ */
 
 TEST_MAIN("modbus_rtu")
@@ -807,5 +827,6 @@ TEST_MAIN("modbus_rtu")
     RUN(test_slave_read_max_regs);
     RUN(test_build_data_len_overflow);
     RUN(test_parse_exact_min_frame);
+    RUN(test_slave_address_wrap);
 TEST_MAIN_END()
 

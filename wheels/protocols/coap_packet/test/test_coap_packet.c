@@ -165,6 +165,20 @@ TEST(test_parse_bare_payload_marker)
     ASSERT_EQ(coap_parse(data, sizeof(data), &pkt), COAP_ERR_MALFORMED);
 }
 
+TEST(test_parse_too_many_options)
+{
+    uint8_t data[4 + 9];
+    data[0] = 0x40;       /* ver=1, CON, tkl=0 */
+    data[1] = 0x01;       /* GET */
+    data[2] = 0x00;
+    data[3] = 0x01;       /* MID */
+    for (int i = 0; i < 9; i++)
+        data[4 + i] = 0x10; /* delta=1, len=0 */
+    coap_packet_t pkt;
+    ASSERT_EQ(coap_parse(data, sizeof(data), &pkt), COAP_ERR_TOO_MANY);
+    ASSERT_EQ(pkt.option_count, COAP_MAX_OPTIONS);
+}
+
 TEST_MAIN("coap_packet")
     RUN(test_parse_con_get);
     RUN(test_parse_with_payload);
@@ -177,4 +191,5 @@ TEST_MAIN("coap_packet")
     RUN(test_roundtrip_multi_options);
     RUN(test_null_safety);
     RUN(test_parse_bare_payload_marker);
+    RUN(test_parse_too_many_options);
 TEST_MAIN_END()
