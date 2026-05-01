@@ -102,11 +102,11 @@ void *sensor_task(void *arg) {
 
 ## 切换 RTOS / MCU
 
-| 切换什么 | 改什么 | Wheel 改动 |
-|---------|--------|-----------|
-| RTOS（VSF → FreeRTOS） | 应用层任务代码（pthread → xTaskCreate） | 零 |
-| MCU（GD32 → STM32） | HAL 回调实现（gd32_spi → stm32_hal_spi） | 零 |
-| 去掉 RTOS（→ 裸机） | 任务代码改为 main loop 轮询 | 零 |
+| 切换什么 | 改什么 | 应用代码改动 | Wheel 改动 |
+|---------|--------|------------|-----------|
+| RTOS（VSF → FreeRTOS） | POSIX 实现层（VSF 皮肤 → FreeRTOS-Plus-POSIX） | 零 | 零 |
+| MCU（GD32 → STM32） | HAL 回调实现（gd32_spi → stm32_hal_spi） | 零 | 零 |
+| 去掉 RTOS（→ 裸机） | 降级为 main loop 轮询（例外情况） | 需改写 | 零 |
 
 Wheel 不知道自己运行在什么 OS 和什么硬件上。"跨平台"不是主动兼容的成本，而是不引入依赖的自然结果。
 
@@ -138,6 +138,37 @@ Wheel 不知道自己运行在什么 OS 和什么硬件上。"跨平台"不是�
 前 4 步全在 host 上完成，不需要硬件。
 
 **裸机例外**：资源极受限的项目（如 drone_light，30KB Flash）可能无法支撑 POSIX 层。这种情况降级为 main loop 轮询，但应视为例外而非常规。
+
+## RTOS 定位：实现细节，不是客户要求
+
+RTOS 在本架构中是**我们的工程选择**，不是客户的架构要求：
+
+- 应用代码用 POSIX → 不管什么 RTOS 都一样
+- Wheel 零依赖 → 不管什么 RTOS 都一样
+- RTOS 唯一影响 → 谁在底层提供 POSIX 实现 + 硬件特殊能力
+
+客户说需求，我们选最合适的 RTOS：
+
+| 客户需求 | 我们选 | 原因 |
+|---------|--------|------|
+| USB 主从设备 | VSF | USB 栈最强 |
+| GD32/CH32 中国 MCU | RT-Thread | 生态最好 |
+| 医疗/汽车认证 | SAFERTOS / 认证 ThreadX | 有认证 |
+| 极小 Flash（<32KB） | FreeRTOS 或裸机 | 最小 footprint |
+| Nordic BLE | Zephyr | 官方支持 |
+
+### RTOS template 按需添加
+
+不预制所有 RTOS 支持。每个 RTOS 首次使用时创建 template（~1 天），后续项目复用：
+
+```
+templates/rtos/
+├── vsf_gd32f4/        ← 已验证（flybox）
+├── freertos_stm32f4/  ← 第一个需要时创建
+└── ...                ← 按需添加
+```
+
+每个 template 包含：启动代码 + POSIX 层配置 + 链接脚本 + CMakeLists.txt。新项目 = 选 template + 选 wheels + AI 生成胶水代码。
 
 ## 与 RTOS 内置组件的关系
 

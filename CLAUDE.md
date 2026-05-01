@@ -162,7 +162,7 @@ ai-embedded-platform/
 
 | 类型 | 特别注意 |
 |------|---------|
-| 1. 新建 wheel | grep VSF → API 审批 → 草稿 → 测试 → 升级 |
+| 1. 新建 wheel | 查开源(ADR-010) → API 审批 → scaffold → 测试 → 升级 |
 | 2. 新建项目 | 选 template → 配硬件 → 写项目 CLAUDE.md |
 | 3. 加功能 | 先查 wheels，不偷偷在项目里重造 |
 | 4. 修 bug | 复现成 failing test → 查 playbook → 修 → 更新 playbook |
