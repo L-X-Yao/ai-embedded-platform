@@ -160,7 +160,7 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
     if (pub->payload && pub->payload_len > 0)
     {
         memcpy(buf + pos, pub->payload, pub->payload_len);
-        pos += pub->payload_len;
+        pos += (int)pub->payload_len;
     }
 
     return pos;

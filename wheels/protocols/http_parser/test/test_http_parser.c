@@ -1,6 +1,7 @@
 #include "test_harness.h"
 #include "http_parser.h"
 #include <string.h>
+#include <stdio.h>
 
 TEST(test_parse_get_request)
 {
@@ -133,6 +134,18 @@ TEST(test_malformed_request)
               HTTP_ERR_MALFORMED);
 }
 
+TEST(test_too_many_headers)
+{
+    char buf[2048];
+    int pos = snprintf(buf, sizeof(buf), "GET / HTTP/1.1\r\n");
+    for (int i = 0; i < HTTP_MAX_HEADERS + 1; i++)
+        pos += snprintf(buf + pos, sizeof(buf) - (size_t)pos,
+                        "X-Hdr-%d: val%d\r\n", i, i);
+    pos += snprintf(buf + pos, sizeof(buf) - (size_t)pos, "\r\n");
+    http_request_t req;
+    ASSERT_EQ(http_parse_request(buf, (size_t)pos, &req), HTTP_ERR_TOO_MANY);
+}
+
 TEST_MAIN("http_parser")
     RUN(test_parse_get_request);
     RUN(test_parse_post_with_body);
@@ -145,4 +158,5 @@ TEST_MAIN("http_parser")
     RUN(test_null_safety);
     RUN(test_content_length);
     RUN(test_malformed_request);
+    RUN(test_too_many_headers);
 TEST_MAIN_END()
