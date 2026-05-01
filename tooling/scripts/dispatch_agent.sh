@@ -14,8 +14,9 @@
 #   --name    <worktree-name>   worktree name (required for dispatch)
 #   --budget  <usd>             max spend in USD (required for dispatch)
 #   --prompt  <text>            task prompt (required for dispatch)
+#   --scope   <paths>           restrict agent to these paths (comma-separated)
 #   --wait                      block until agent completes
-#   --merge-all                 squash-merge all worktree-* branches into main
+#   --merge-all                 squash-merge all worktree-* branches, run make check
 #   --push                      push after merge-all (default: don't push)
 #   --status                    show all active worktree branches and their commits
 #   -h|--help                   show this help
@@ -32,6 +33,7 @@ NC='\033[0m'
 NAME=""
 BUDGET=""
 PROMPT=""
+SCOPE=""
 WAIT=false
 MERGE_ALL=false
 PUSH=false
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
         --name)      NAME="$2";   shift 2 ;;
         --budget)    BUDGET="$2"; shift 2 ;;
         --prompt)    PROMPT="$2"; shift 2 ;;
+        --scope)     SCOPE="$2";  shift 2 ;;
         --wait)      WAIT=true;   shift   ;;
         --merge-all) MERGE_ALL=true; shift ;;
         --push)      PUSH=true;   shift   ;;
@@ -60,7 +63,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # --- --status mode ---
 if $STATUS; then
-    branches=$(git branch --list 'worktree-*' | sed 's/^[* ]*//')
+    branches=$(git branch --list 'worktree-*' | sed 's/^[+* ]*//' | tr -d ' ')
     if [[ -z "$branches" ]]; then
         echo -e "${GREEN}No active worktree branches.${NC}"
         exit 0
@@ -76,7 +79,7 @@ fi
 
 # --- --merge-all mode ---
 if $MERGE_ALL; then
-    branches=$(git branch --list 'worktree-*' | sed 's/^[* ]*//')
+    branches=$(git branch --list 'worktree-*' | sed 's/^[+* ]*//' | tr -d ' ')
     if [[ -z "$branches" ]]; then
         echo -e "${GREEN}No worktree branches to merge.${NC}"
         exit 0
@@ -136,9 +139,22 @@ if $MERGE_ALL; then
         git worktree prune 2>/dev/null
     fi
 
-    if $PUSH && [[ $MERGED -gt 0 ]]; then
+    if [[ $MERGED -gt 0 ]]; then
+        echo ""
+        echo -e "${BOLD}=== Running make check ===${NC}"
+        if make -C "$REPO_ROOT" check; then
+            echo -e "  ${GREEN}make check passed${NC}"
+        else
+            echo -e "  ${RED}make check FAILED — review before pushing${NC}"
+            FAILED=$((FAILED + 1))
+        fi
+    fi
+
+    if $PUSH && [[ $MERGED -gt 0 && $FAILED -eq 0 ]]; then
         echo -e "${CYAN}Pushing...${NC}"
         git push
+    elif $PUSH && [[ $FAILED -gt 0 ]]; then
+        echo -e "${YELLOW}Skipping push due to failures.${NC}"
     fi
 
     exit $FAILED
@@ -163,6 +179,14 @@ LOG_DIR="${REPO_ROOT}/tooling/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/dispatch-${NAME}-$(date +%Y%m%d-%H%M%S).log"
 
+SCOPE_SUFFIX=""
+if [[ -n "$SCOPE" ]]; then
+    SCOPE_SUFFIX="
+
+SCOPE RESTRICTION: You may ONLY modify files under these paths: ${SCOPE}
+Do NOT modify files outside these paths. If you need to change files outside scope, note them but do not edit."
+fi
+
 COMMIT_SUFFIX="
 
 When you are done with ALL changes, you MUST commit your work:
@@ -170,7 +194,7 @@ When you are done with ALL changes, you MUST commit your work:
 2. git commit with a message following the repo's commit conventions
 Do NOT skip the commit step."
 
-FULL_PROMPT="${PROMPT}${COMMIT_SUFFIX}"
+FULL_PROMPT="${PROMPT}${SCOPE_SUFFIX}${COMMIT_SUFFIX}"
 
 echo -e "${CYAN}${BOLD}Dispatching agent:${NC} ${NAME}"
 echo -e "  worktree branch: ${GREEN}${WORKTREE_BRANCH}${NC}"
