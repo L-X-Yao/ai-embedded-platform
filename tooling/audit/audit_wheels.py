@@ -247,6 +247,35 @@ def has_wconversion(wheel_dir: Path) -> bool:
     return "-Wconversion" in text
 
 
+def has_busy_wait_timeout(wheel_dir: Path, name: str) -> list:
+    """Check that while-loops waiting on HW flags have timeout guards.
+    Returns list of (file, line_num, line) for unguarded busy-waits."""
+    patterns = re.compile(
+        r'while\s*\(.*(?:flag|status|busy|ready|done|complete|measuring|drdy'
+        r'|conversion|eoc|txe|rxne|bsy|tbe)\b',
+        re.IGNORECASE
+    )
+    timeout_patterns = re.compile(
+        r'timeout|timer|count|retry|break|MAX_WAIT|TIMEOUT|deadline',
+        re.IGNORECASE
+    )
+    unguarded = []
+    for ext in (".c",):
+        src = wheel_dir / f"{name}{ext}"
+        if not src.exists():
+            continue
+        try:
+            lines = src.read_text(encoding="utf-8", errors="ignore").splitlines()
+        except OSError:
+            continue
+        for i, line in enumerate(lines):
+            if patterns.search(line):
+                context = "\n".join(lines[max(0, i-3):i+5])
+                if not timeout_patterns.search(context):
+                    unguarded.append((src.name, i + 1, line.strip()))
+    return unguarded
+
+
 def has_test_exit_code(wheel_dir: Path) -> bool:
     """Check test main() returns non-zero on failure."""
     patterns = ["tests_fail", "g_failures", "failures", "TEST_MAIN_END"]
@@ -708,6 +737,23 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
                    f"README missing candidate sections: {', '.join(missing)}",
                    fix_cmd=f"add sections to {path}/README.md: {', '.join(missing)}")
             tprint(f"  [WARN]  {path}: missing {', '.join(missing)}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- Busy-wait timeout check ---
+    qprint("\n=== Busy-wait timeout guards ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        unguarded = has_busy_wait_timeout(wheel_dir, name)
+        if unguarded:
+            locs = "; ".join(f"{f}:{ln}" for f, ln, _ in unguarded)
+            record("busy_wait_timeout", path, "WARN",
+                   f"while-loop waiting on HW flag without timeout: {locs}",
+                   fix_cmd=f"add timeout counter or deadline check to busy-wait loops in {path}/{name}.c")
+            tprint(f"  [WARN]  {path}: {locs}")
         else:
             qprint(f"  [ ok ]  {path}")
 
