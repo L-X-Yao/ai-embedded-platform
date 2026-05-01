@@ -4,7 +4,12 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
-## Fixed in R3-R11 (do NOT re-report)
+## Fixed in R3-R12 (do NOT re-report)
+
+### Cross-wheel error propagation (R12)
+- `log_flash`: `log_flash_erase_all` changed from void to int; now propagates HAL erase errors and preserves state on failure
+- `flybox/w25q64_driver`: `flash_ring_push` now checks `w25qxx_sector_erase` return (was silently ignored → flash corruption risk)
+- `flybox/w25q64_driver`: `flash_ring_init` now checks `_flush_header_unlocked` return on fresh-flash path
 
 ### Boundary value / overflow (R11)
 - `log_ringbuf`: total_lines/dropped_lines uint32 saturation (prevent wrap-around to 0)
@@ -118,6 +123,10 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `ws2812`: WS2812_ERR_HAL defined but never returned (NULL callbacks return ERR_NULL; no other HAL failure path exists)
 - `commit_suggest.sh`: unbound variable under set -u when MAX_TYPE != wheel
 - `batch_fix.sh`: dry-run sed detection breaks with existing flags
+- `kvs` (vendor): `fal_flash_device_find()` return not NULL-checked in fdb.c:69 (vendor FlashDB code; crash on missing flash device config)
+- `w25qxx`: SPI `xfer` returns data byte (uint8_t), not error code — mid-transaction failures indistinguishable from valid 0x00 data (SPI protocol limitation; would need HAL redesign)
+- `log_uart`/`log_rtt`/`log_file`: fire-and-forget sinks discard HAL/stdio return values (architectural: log sinks must not fail the caller)
+- `mqtt_packet`: `put_u16` return value unused in `put_str` (infallible helper, always returns 2)
 
 ## Remaining test gaps (low priority)
 

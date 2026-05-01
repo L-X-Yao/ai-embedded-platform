@@ -56,7 +56,7 @@ size_t n = log_flash_read(&f, buf, sizeof(buf));
 log_flash_total(&f);    /* entries written */
 log_flash_dropped(&f);  /* entries dropped (too large or write error) */
 
-log_flash_erase_all(&f); /* wipe and reset */
+int rc = log_flash_erase_all(&f); /* wipe and reset; returns 0 or -1 */
 ```
 
 ## Entry format
@@ -96,7 +96,7 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests (sim): PASS (9 tests — RAM-backed mock flash, 4 sectors x 64 bytes)
+- Unit tests (sim): PASS (10 tests — RAM-backed mock flash, 4 sectors x 64 bytes)
 - HIL: N/A (needs real flash hardware)
 
 ## API convention deviations
