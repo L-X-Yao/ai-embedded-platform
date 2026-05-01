@@ -195,6 +195,8 @@ def main():
         return 0
 
     print(f"doc_drift_check: {len(all_drifts)} drift(s) found\n")
+    fixed = 0
+    unfixable = 0
     for filename, desc, old, new in all_drifts:
         print(f"  [{filename}] {desc}")
         if fix_mode and old and new:
@@ -205,14 +207,23 @@ def main():
             else:
                 filepath = REPO / filename
             if filepath.exists():
-                text = filepath.read_text(encoding="utf-8")
+                raw = filepath.read_bytes()
+                text = raw.decode("utf-8")
                 text = text.replace(old, new, 1)
-                filepath.write_text(text, encoding="utf-8")
+                filepath.write_bytes(text.encode("utf-8"))
                 print(f"    → fixed: {old!r} → {new!r}")
+                fixed += 1
+        elif fix_mode and (not old or not new):
+            unfixable += 1
 
-    if not fix_mode:
-        print(f"\nRe-run with --fix to auto-correct simple drifts.")
+    if fix_mode:
+        if unfixable:
+            print(f"\n{fixed} fixed, {unfixable} unfixable (manual intervention needed)")
+            return 1
+        print(f"\nAll {fixed} drift(s) auto-fixed")
+        return 0
 
+    print(f"\nRe-run with --fix to auto-correct simple drifts.")
     return 1
 
 
