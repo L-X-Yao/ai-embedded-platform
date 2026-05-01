@@ -10,6 +10,7 @@
 #define WS2812_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +36,7 @@ typedef struct {
 /* ---------- PWM HAL (caller provides) ---------- */
 
 typedef struct {
-    void (*set_compare)(void *ctx, uint16_t value);
+    bool (*set_compare)(void *ctx, uint16_t value);
     void (*wait_period)(void *ctx);
     void (*enter_critical)(void *ctx);
     void (*exit_critical)(void *ctx);

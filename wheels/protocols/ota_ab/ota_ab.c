@@ -114,12 +114,46 @@ ota_ab_err_t ota_ab_mark_pending(ota_ab_t *m, uint32_t fw_size, uint32_t fw_crc)
     return params_write(m);
 }
 
+static ota_ab_err_t verify_firmware_crc(ota_ab_t *m, uint8_t slot)
+{
+    uint32_t base = (slot == 0) ? m->layout.slot_a_addr : m->layout.slot_b_addr;
+    uint32_t remaining = m->params.fw_size;
+    uint32_t offset = 0;
+    uint32_t crc = 0xFFFFFFFFu;
+    uint8_t buf[64];
+
+    while (remaining > 0) {
+        uint32_t chunk = (remaining > sizeof(buf)) ? sizeof(buf) : remaining;
+        if (!m->flash->read(m->flash->ctx, base + offset, buf, chunk))
+            return OTA_AB_ERR_FLASH;
+        for (uint32_t i = 0; i < chunk; i++) {
+            crc ^= buf[i];
+            for (int j = 0; j < 8; j++) {
+                if (crc & 1)
+                    crc = (crc >> 1) ^ 0xEDB88320u;
+                else
+                    crc >>= 1;
+            }
+        }
+        offset += chunk;
+        remaining -= chunk;
+    }
+    crc = ~crc;
+    if (crc != m->params.fw_crc)
+        return OTA_AB_ERR_CRC;
+    return OTA_AB_OK;
+}
+
 ota_ab_err_t ota_ab_boot_event(ota_ab_t *m)
 {
     if (!m) return OTA_AB_ERR_NULL;
 
     if (m->params.ota_flag == OTA_AB_FLAG_PENDING) {
-        m->params.active_slot = 1u - m->params.active_slot;
+        uint8_t target = 1u - m->params.active_slot;
+        ota_ab_err_t err = verify_firmware_crc(m, target);
+        if (err != OTA_AB_OK)
+            return err;
+        m->params.active_slot = target;
         m->params.ota_flag = OTA_AB_FLAG_SUCCESS;
         m->params.boot_count = 1;
         return params_write(m);

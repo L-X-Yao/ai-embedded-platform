@@ -10,6 +10,10 @@ static uint8_t mock_read_buf[32];
 static int mock_read_buf_len;
 static bool mock_presence;
 static uint8_t mock_last_cmd;
+static int mock_write_fail_after;
+static int mock_read_fail_after;
+static int mock_write_count;
+static int mock_read_count;
 
 static bool mock_reset(void *ctx)
 {
@@ -18,9 +22,12 @@ static bool mock_reset(void *ctx)
     return mock_presence;
 }
 
-static void mock_write_byte(void *ctx, uint8_t byte)
+static bool mock_write_byte(void *ctx, uint8_t byte)
 {
     (void)ctx;
+    mock_write_count++;
+    if (mock_write_fail_after > 0 && mock_write_count > mock_write_fail_after)
+        return false;
     mock_last_cmd = byte;
     if (byte == 0x33) {
         memcpy(mock_read_buf, mock_rom, 8);
@@ -31,14 +38,20 @@ static void mock_write_byte(void *ctx, uint8_t byte)
         mock_read_buf_len = 9;
         mock_read_idx = 0;
     }
+    return true;
 }
 
-static uint8_t mock_read_byte(void *ctx)
+static bool mock_read_byte(void *ctx, uint8_t *byte)
 {
     (void)ctx;
+    mock_read_count++;
+    if (mock_read_fail_after > 0 && mock_read_count > mock_read_fail_after)
+        return false;
     if (mock_read_idx < mock_read_buf_len)
-        return mock_read_buf[mock_read_idx++];
-    return 0xFF;
+        *byte = mock_read_buf[mock_read_idx++];
+    else
+        *byte = 0xFF;
+    return true;
 }
 
 static ds18b20_ow_t mock_ow = {
@@ -47,6 +60,14 @@ static ds18b20_ow_t mock_ow = {
     .read_byte  = mock_read_byte,
     .ctx        = NULL
 };
+
+static void mock_bus_reset(void)
+{
+    mock_write_fail_after = 0;
+    mock_read_fail_after = 0;
+    mock_write_count = 0;
+    mock_read_count = 0;
+}
 
 static void setup_scratchpad(int16_t raw_temp)
 {
@@ -79,6 +100,7 @@ TEST(test_init_null)
 TEST(test_read_25c)
 {
     mock_presence = true;
+    mock_bus_reset();
     setup_scratchpad(0x0190);
     ds18b20_t dev;
     ds18b20_init(&dev, &mock_ow);
@@ -90,6 +112,7 @@ TEST(test_read_25c)
 TEST(test_read_negative)
 {
     mock_presence = true;
+    mock_bus_reset();
     setup_scratchpad((int16_t)0xFF5E);
     ds18b20_t dev;
     ds18b20_init(&dev, &mock_ow);
@@ -101,6 +124,7 @@ TEST(test_read_negative)
 TEST(test_read_85c_power_on_default)
 {
     mock_presence = true;
+    mock_bus_reset();
     setup_scratchpad(0x0550);
     ds18b20_t dev;
     ds18b20_init(&dev, &mock_ow);
@@ -121,6 +145,7 @@ TEST(test_no_device)
 TEST(test_crc_failure)
 {
     mock_presence = true;
+    mock_bus_reset();
     setup_scratchpad(0x0190);
     mock_scratchpad[8] = 0x00;
     ds18b20_t dev;
@@ -132,6 +157,7 @@ TEST(test_crc_failure)
 TEST(test_read_rom)
 {
     mock_presence = true;
+    mock_bus_reset();
     setup_rom();
     ds18b20_t dev;
     ds18b20_init(&dev, &mock_ow);
@@ -151,6 +177,7 @@ TEST(test_crc8_known_vector)
 TEST(test_start_conversion)
 {
     mock_presence = true;
+    mock_bus_reset();
     ds18b20_t dev;
     ds18b20_init(&dev, &mock_ow);
     ASSERT_EQ(ds18b20_start_conversion(&dev), DS18B20_OK);
@@ -160,11 +187,61 @@ TEST(test_set_resolution)
 {
     ds18b20_t dev;
     mock_presence = true;
+    mock_bus_reset();
     ds18b20_init(&dev, &mock_ow);
     ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_9BIT), DS18B20_OK);
     ASSERT_EQ(ds18b20_set_resolution(NULL, DS18B20_RES_12BIT), DS18B20_ERR_PARAM);
     mock_presence = false;
     ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_12BIT), DS18B20_ERR_NO_DEVICE);
+}
+
+TEST(test_bus_error_write)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    setup_scratchpad(0x0190);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    mock_write_fail_after = 1;
+    mock_write_count = 0;
+    float temp;
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_ERR_BUS);
+}
+
+TEST(test_bus_error_read)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    setup_scratchpad(0x0190);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    mock_read_fail_after = 1;
+    mock_read_count = 0;
+    float temp;
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_ERR_BUS);
+}
+
+TEST(test_bus_error_start_conversion)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    mock_write_fail_after = 1;
+    mock_write_count = 0;
+    ASSERT_EQ(ds18b20_start_conversion(&dev), DS18B20_ERR_BUS);
+}
+
+TEST(test_bus_error_read_rom)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    setup_rom();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    mock_read_fail_after = 1;
+    mock_read_count = 0;
+    ASSERT_EQ(ds18b20_read_rom(&dev), DS18B20_ERR_BUS);
 }
 
 TEST_MAIN("ds18b20")
@@ -178,4 +255,8 @@ TEST_MAIN("ds18b20")
     RUN(test_crc8_known_vector);
     RUN(test_start_conversion);
     RUN(test_set_resolution);
+    RUN(test_bus_error_write);
+    RUN(test_bus_error_read);
+    RUN(test_bus_error_start_conversion);
+    RUN(test_bus_error_read_rom);
 TEST_MAIN_END()

@@ -33,8 +33,8 @@ typedef enum {
 
 typedef struct {
     bool (*reset)(void *ctx);
-    void (*write_byte)(void *ctx, uint8_t byte);
-    uint8_t (*read_byte)(void *ctx);
+    bool (*write_byte)(void *ctx, uint8_t byte);
+    bool (*read_byte)(void *ctx, uint8_t *byte);
     void *ctx;
 } ds18b20_ow_t;
 

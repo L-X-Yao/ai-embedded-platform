@@ -62,7 +62,23 @@ static const ota_ab_layout_t test_layout = {
     .max_boot_count = 3,
 };
 
-/* ---------- test harness ---------- */
+static uint32_t write_test_firmware(uint32_t addr, uint32_t size)
+{
+    uint8_t buf[64];
+    uint32_t remaining = size;
+    uint32_t offset = 0;
+    while (remaining > 0) {
+        uint32_t chunk = (remaining > sizeof(buf)) ? sizeof(buf) : remaining;
+        for (uint32_t i = 0; i < chunk; i++)
+            buf[i] = (uint8_t)((offset + i) & 0xFF);
+        mock_write(NULL, addr + offset, buf, chunk);
+        offset += chunk;
+        remaining -= chunk;
+    }
+    uint32_t crc = ota_ab_crc32(&mock_mem[addr], size);
+    return crc;
+}
+
 /* ---------- tests ---------- */
 
 TEST(test_init_fresh)
@@ -127,7 +143,8 @@ TEST(test_boot_event_pending_switches_slot)
     ota_ab_init(&m, &mock_flash, &test_layout);
     ASSERT_EQ(ota_ab_active_slot(&m), 0);
 
-    ota_ab_mark_pending(&m, 512, 0x1234);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
     ota_ab_err_t e = ota_ab_boot_event(&m);
     ASSERT_EQ(e, OTA_AB_OK);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
@@ -140,7 +157,8 @@ TEST(test_confirm_clears_flag)
     ota_ab_t m;
     mock_reset();
     ota_ab_init(&m, &mock_flash, &test_layout);
-    ota_ab_mark_pending(&m, 512, 0);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
     ota_ab_boot_event(&m);
     ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_SUCCESS);
 
@@ -156,7 +174,8 @@ TEST(test_rollback_after_max_boots)
     ota_ab_t m;
     mock_reset();
     ota_ab_init(&m, &mock_flash, &test_layout);
-    ota_ab_mark_pending(&m, 512, 0);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
 
     ota_ab_boot_event(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
@@ -230,7 +249,8 @@ TEST(test_full_ota_cycle)
     ota_ab_init(&m, &mock_flash, &test_layout);
     ASSERT_EQ(ota_ab_active_slot(&m), 0);
 
-    ota_ab_mark_pending(&m, 512, 0xABCD);
+    uint32_t crc_b = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc_b);
     ota_ab_boot_event(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
 
@@ -238,7 +258,8 @@ TEST(test_full_ota_cycle)
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
     ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE);
 
-    ota_ab_mark_pending(&m, 256, 0x1111);
+    uint32_t crc_a = write_test_firmware(test_layout.slot_a_addr, 256);
+    ota_ab_mark_pending(&m, 256, crc_a);
     ota_ab_boot_event(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 0);
 
@@ -253,7 +274,8 @@ TEST(test_double_confirm_noop)
     ota_ab_t m;
     mock_reset();
     ota_ab_init(&m, &mock_flash, &test_layout);
-    ota_ab_mark_pending(&m, 512, 0);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
     ota_ab_boot_event(&m);
     ota_ab_confirm(&m);
     ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE);
@@ -306,7 +328,8 @@ TEST(test_reinit_persists_state)
     ota_ab_t m;
     mock_reset();
     ota_ab_init(&m, &mock_flash, &test_layout);
-    ota_ab_mark_pending(&m, 512, 0xABCD);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
     ota_ab_boot_event(&m);
     ota_ab_confirm(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
@@ -356,7 +379,8 @@ TEST(test_boot_count_exact_boundary)
     ota_ab_t m;
     mock_reset();
     ota_ab_init(&m, &mock_flash, &test_layout);
-    ota_ab_mark_pending(&m, 512, 0xAAAA);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
 
     ota_ab_boot_event(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
@@ -382,7 +406,8 @@ TEST(test_target_slot_both_directions)
     ASSERT_EQ(ota_ab_active_slot(&m), 0);
     ASSERT_EQ(ota_ab_target_slot(&m), 1);
 
-    ota_ab_mark_pending(&m, 512, 0xBBBB);
+    uint32_t crc = write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, crc);
     ota_ab_boot_event(&m);
     ota_ab_confirm(&m);
     ASSERT_EQ(ota_ab_active_slot(&m), 1);
@@ -394,6 +419,19 @@ TEST(test_crc32_known_vector)
     const uint8_t data[] = "123456789";
     uint32_t crc = ota_ab_crc32(data, 9);
     ASSERT_EQ(crc, 0xCBF43926u);
+}
+
+TEST(test_boot_event_crc_mismatch)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+    write_test_firmware(test_layout.slot_b_addr, 512);
+    ota_ab_mark_pending(&m, 512, 0xDEADBEEF);
+    ota_ab_err_t e = ota_ab_boot_event(&m);
+    ASSERT_EQ(e, OTA_AB_ERR_CRC);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0);
+    ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_PENDING);
 }
 
 TEST(test_init_err_params_max_boot_zero)
@@ -439,6 +477,7 @@ TEST_MAIN("ota_ab")
     RUN(test_boot_count_exact_boundary);
     RUN(test_target_slot_both_directions);
     RUN(test_crc32_known_vector);
+    RUN(test_boot_event_crc_mismatch);
     RUN(test_init_err_params_max_boot_zero);
     RUN(test_init_err_params_size_too_small);
 TEST_MAIN_END()
