@@ -12,7 +12,7 @@ target_include_directories(test_mqtt_packet PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_mqtt_packet PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_mqtt_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME mqtt_packet_tests COMMAND test_mqtt_packet)
