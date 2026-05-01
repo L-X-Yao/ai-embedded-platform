@@ -42,24 +42,31 @@ make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 - 未完成任务列为明确的 TODO 告知用户（不写进文件，口头说）
 - 不要假设下一个 session 能看到当前对话
 
-### 0. 零号铁律：新建 wheel 前先 grep VSF 原生
+### 0. 核心原则：Wheel 是被动库
 
-完整策略见 **[ADR-006](docs/adr/006-prefer-vsf-native-over-custom-wheel.md)**。摘要：
+完整架构见 **[docs/architecture.md](docs/architecture.md)**。摘要：
 
-```bash
-grep -rn "功能关键词" vsf/source/service/
-grep -rn "功能关键词" vsf/source/utilities/
-grep -rn "功能关键词" vsf/source/component/
-```
+- Wheel 不碰 OS（不创建任务、不加锁、不 sleep、不分配堆内存）
+- 依赖只通过函数指针注入
+- 所有 wheel 必须 host 可测
 
-速查表见 `docs/debugging-playbook.md`。新 wheel 的 README 必须有 "Why not VSF native?" 节。**违反就 ring_buffer 教训重演**。
+判断标准：如果一个功能需要"自己创建任务"或"自己管理中断"，它不是 wheel。
+
+### 0.1 新建 wheel 前查开源实现
+
+完整策略见 **[ADR-010](docs/adr/010-prefer-open-source-implementations.md)** + **[ADR-011](docs/adr/011-ecosystem-driven-wheel-building.md)**。
+
+- **不再等项目触发**——按"嵌入式常用"标准主动构建（ADR-011）
+- **查通用开源库**（jsmn / LittleFS / cJSON 等），能 vendor 就 vendor（ADR-010）
+- **VSF 有同功能组件不阻断**——VSF 版本绑定 VSF 内核，我们的版本全平台通用（ADR-006 降级）
+- 新 wheel 的 README 仍需 "Why not VSF native?" 节（记录设计参考）
 
 ### 1. 绝不从零发挥
 
 进入任何任务：
 1. `ls wheels/` + `ls wheels/_draft/`
 2. `ls templates/`
-3. grep VSF 原生（见上）
+3. 搜索通用开源实现（ADR-010）
 
 找到就用，不要自造。
 
@@ -325,11 +332,12 @@ git branch -d session/wheels session/<project>
 | 003 | 客户代码分类回流 + IP 剥离 |
 | 004 | Monorepo，wheels 外置于 vsf/ |
 | 005 | VSF 修改走 patches + vsf-addon |
-| 006 | 新 wheel 前必须 grep VSF 原生 |
+| 006 | 新 wheel 前查 VSF 原生（降为参考） |
 | 007 | VSF 永久基座，不为切 RTOS 做预案 |
 | 008 | VSF linux64 不是 kernel-only sim 路径（走 mps2+QEMU，已实证） |
 | 009 | Wheel 依赖规则：具体/接口两类，方向只能向下，禁止循环 |
 | 010 | 优先采纳开源实现：查 VSF → 联网搜开源 → 都没有才从零写 |
+| 011 | Wheel 构建策略：生态驱动，不等项目触发 |
 
 全部见 `docs/adr/README.md`。
 
@@ -474,7 +482,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
 未开展：
-- 基础 wheels（按项目触发，不预制。WISHLIST 是记忆而非承诺）
+- 基础 wheels（生态驱动，按领域覆盖度主动构建，见 ADR-011）
 
 ## 下一步触发点（Sprint 0 已封版）
 

@@ -1,6 +1,6 @@
 # ADR 006: 新 wheel 必须先 grep VSF 原生，不重造已有能力
 
-**状态**：accepted
+**状态**：partially superseded by ADR-011（grep VSF 从门禁降为参考）
 **日期**：2026-04-21
 **决策人**：@user
 

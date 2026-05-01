@@ -77,13 +77,21 @@
 - 安全相关（AI 按清单写，人复核）
 - 跨平台移植（AI 按 HAL 抽象写，人在真机验证）
 
-## 与 VSF 的契合
+## 技术架构
 
-这个哲学和 VSF 的设计不谋而合：
+Wheel 是零 OS 依赖的被动库（纯 C99 + 函数指针注入），设计为 AI 原生：
 
-- VSF 的"皮肤"让应用层代码与底层解耦 → 轮子可跨 MCU 复用
-- VSF 的 PLOOC OOP 让接口清晰 → AI 按"class"生成代码模式统一
-- VSF 的统一 HAL 让驱动可替换 → 轮子能跑在真机和 sim
-- VSF 的小资源特性让 sim 到真机的切换代价低
+- **统一模式**：所有 wheel 遵循相同的 scaffold 模板 + API 约定 → AI 学一次，全部适用
+- **Host 可测**：`gcc + cmake` 秒级验证 → AI 开发循环极快
+- **零依赖**：不绑定任何 RTOS/芯片 → 每个 wheel 是通用资产，跨项目零成本复用
+- **被动库**：wheel 不创建任务/不加锁/不 sleep → 应用层控制一切，AI 生成胶水代码
 
-但 VSF 本身**不提供这个工作流**——这个工作流是我们在 VSF 之上构建的。
+完整架构见 `docs/architecture.md`。
+
+## 与 VSF 的关系
+
+VSF 是项目级基座（ADR-007），不是 wheel 的依赖：
+
+- VSF 为项目提供 RTOS 调度、HAL、USB/BLE 等能力
+- Wheel 不知道 VSF 的存在——通过 HAL 回调获得硬件能力
+- 如果项目换其他 RTOS（FreeRTOS / RT-Thread / 裸机），wheel 零改动
