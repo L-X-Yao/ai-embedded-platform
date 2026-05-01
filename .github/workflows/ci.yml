@@ -302,6 +302,9 @@ jobs:
     if: needs.detect-changes.outputs.flybox-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # vendor headers (GD32F4xx SDK) are gitignored — build will fail until
+    # a CI-accessible source is set up. Non-blocking until then.
+    continue-on-error: true
     env:
       GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
     steps:
