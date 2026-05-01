@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_tlv_packet C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(test_tlv_packet
+    test_tlv_packet.c
+    ../tlv_packet.c
+)
+
+target_include_directories(test_tlv_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_tlv_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+enable_testing()
+add_test(NAME tlv_packet_tests COMMAND test_tlv_packet)
