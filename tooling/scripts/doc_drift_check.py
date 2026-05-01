@@ -60,7 +60,11 @@ def count_audit_check_functions():
     if not audit.exists():
         return 0
     text = audit.read_text(encoding="utf-8")
-    return len(re.findall(r'qprint.*=== .+ ===', text))
+    # Count section headings that represent actual checks, excluding
+    # summary/info sections (Wheel audit count, Consumer mapping)
+    exclude = {"Wheel audit", "Consumer mapping"}
+    matches = re.findall(r'qprint.*=== (.+?) ===', text)
+    return len([m for m in matches if not any(e in m for e in exclude)])
 
 
 def count_tooling_scripts():

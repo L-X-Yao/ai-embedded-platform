@@ -80,6 +80,49 @@ echo ""
 MODIFIED=()
 FAILED=()
 
+# --- Collect files that will be affected (for backup/rollback) ---
+AFFECTED_FILES=()
+
+for wd in "${WHEEL_DIRS[@]}"; do
+    name=$(basename "$wd")
+
+    if [[ -n "$SED_EXPR" ]]; then
+        pattern="${FILE_GLOB:-*.[ch]}"
+        mapfile -t files < <(find "$wd" -maxdepth 1 -name "$pattern" 2>/dev/null)
+        for f in "${files[@]}"; do
+            AFFECTED_FILES+=("$f")
+        done
+    fi
+done
+
+# --- Create backup before applying changes ---
+BACKUP_DIR=""
+if ! $DRY_RUN && [[ ${#AFFECTED_FILES[@]} -gt 0 || -n "$PY_SCRIPT" ]]; then
+    BACKUP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/batch_fix_backup.XXXXXX")
+    echo "  backup: $BACKUP_DIR"
+    for f in "${AFFECTED_FILES[@]}"; do
+        rel="${f#$REPO/}"
+        mkdir -p "$BACKUP_DIR/$(dirname "$rel")"
+        cp "$f" "$BACKUP_DIR/$rel"
+    done
+fi
+
+rollback() {
+    if [[ -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then
+        echo ""
+        echo "=== ROLLING BACK changes ==="
+        for f in "${AFFECTED_FILES[@]}"; do
+            rel="${f#$REPO/}"
+            bak="$BACKUP_DIR/$rel"
+            if [[ -f "$bak" ]]; then
+                cp "$bak" "$f"
+            fi
+        done
+        echo "  restored ${#AFFECTED_FILES[@]} file(s) from backup"
+        echo "  backup retained at: $BACKUP_DIR"
+    fi
+}
+
 for wd in "${WHEEL_DIRS[@]}"; do
     name=$(basename "$wd")
 
@@ -127,9 +170,21 @@ done
 echo ""
 echo "Modified: ${#MODIFIED[@]}  Failed: ${#FAILED[@]}"
 
-# Verify
+# Verify — rollback on failure
 if $VERIFY && ! $DRY_RUN && [[ ${#MODIFIED[@]} -gt 0 ]]; then
     echo ""
     echo "=== Verifying modified wheels ==="
-    bash "$REPO/tooling/scripts/test_all.sh" "${MODIFIED[@]}" 2>&1
+    if ! bash "$REPO/tooling/scripts/test_all.sh" "${MODIFIED[@]}" 2>&1; then
+        echo ""
+        echo "=== Verification FAILED ==="
+        rollback
+        exit 1
+    fi
+    echo ""
+    echo "=== Verification passed — changes kept ==="
+fi
+
+# Clean up backup on success
+if [[ -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then
+    rm -rf "$BACKUP_DIR"
 fi
