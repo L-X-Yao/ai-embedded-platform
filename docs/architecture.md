@@ -33,10 +33,9 @@ w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi, uint32_t addr, ...);
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  应用层（项目特定）                               │
-│  - 拥有所有任务/线程（POSIX / RTOS API / 裸机）   │
-│  - 调用 wheel，提供 HAL 回调                     │
-│  - 负责线程安全（加锁是应用层的事）                │
+│  应用层（POSIX API — 平台规定）                   │
+│  pthread_create / usleep / sem_wait / pipe       │
+│  AI 最熟悉 + Linux 上直接仿真                     │
 ├─────────────────────────────────────────────────┤
 │  Wheel（平台资产，跨项目复用）                     │
 │  ┌─────────┬──────────┬──────────┬────────────┐ │
@@ -45,9 +44,11 @@ w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi, uint32_t addr, ...);
 │  └─────────┴──────────┴──────────┴────────────┘ │
 │  零 OS 依赖 / 零硬件依赖 / 纯 C99 / host 可测    │
 ├─────────────────────────────────────────────────┤
-│  底层（项目选择，wheel 不知情）                    │
-│  RTOS: VSF / FreeRTOS / RT-Thread / Zephyr / 裸机│
-│  HAL:  厂商 SDK / VSF HAL / 直接寄存器           │
+│  POSIX 实现层（项目选择）                         │
+│  Linux 原生 / VSF 皮肤 / FreeRTOS-Plus-POSIX /   │
+│  RT-Thread POSIX / Zephyr POSIX                  │
+├─────────────────────────────────────────────────┤
+│  硬件 HAL（厂商 SDK / VSF HAL / 直接寄存器）      │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -109,19 +110,34 @@ void *sensor_task(void *arg) {
 
 Wheel 不知道自己运行在什么 OS 和什么硬件上。"跨平台"不是主动兼容的成本，而是不引入依赖的自然结果。
 
-### 应用层 OS API 是项目级选择
+### 应用层统一 POSIX（平台规定）
 
-应用层用什么 API 完全取决于项目选的 RTOS，**平台不规定**：
+应用层**一律使用 POSIX API**（pthread / usleep / sem_wait / pipe）。这是平台级决策，不是项目级选择。
 
-| 项目选的 RTOS | 应用层 API |
-|-------------|-----------|
-| VSF | POSIX（VSF 皮肤）或 VSF 原生 |
-| FreeRTOS | xTaskCreate / vTaskDelay |
-| RT-Thread | rt_thread_create / rt_thread_mdelay |
-| Zephyr | k_thread_create / k_msleep |
-| 裸机 | main loop，无任务 API |
+**两个理由**：
 
-例如 flybox 项目选了 POSIX（因为 VSF 有 POSIX 皮肤），但这不是平台规定——下个项目用 FreeRTOS 就直接用 FreeRTOS API。Wheel 不关心应用层用什么 OS API。
+1. **AI 效率最高**：POSIX 是 AI 训练数据中最密集的 OS API，AI 写 POSIX 代码正确率和速度高于任何 RTOS-specific API。
+2. **全栈 host 仿真**：POSIX 应用逻辑在 Linux 上直接运行——pthread 是真线程，usleep 是真延时。不只是 wheel 能 host 测试，**整个应用都能 host 仿真**。
+
+**"POSIX API" vs "POSIX 实现" 的区分**：
+
+| | 范围 | 谁决定 |
+|--|------|--------|
+| POSIX API（应用层用什么函数） | pthread_create / usleep / sem_wait | **平台规定**，统一 |
+| POSIX 实现（谁提供这些函数） | Linux 原生 / VSF 皮肤 / FreeRTOS-Plus-POSIX / RT-Thread POSIX 层 | **项目选择**，取决于 RTOS |
+
+**新项目最高效开发流程**：
+
+1. AI 用 POSIX 写全部应用逻辑
+2. Wheel 用 mock HAL 测试
+3. 应用逻辑在 Linux 上直接仿真
+4. 全栈 host sim 验证通过
+5. 接入目标 RTOS 的 POSIX 实现层
+6. 烧录真机做最终 HIL 验证
+
+前 4 步全在 host 上完成，不需要硬件。
+
+**裸机例外**：资源极受限的项目（如 drone_light，30KB Flash）可能无法支撑 POSIX 层。这种情况降级为 main loop 轮询，但应视为例外而非常规。
 
 ## 与 RTOS 内置组件的关系
 
