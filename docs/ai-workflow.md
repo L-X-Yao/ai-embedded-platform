@@ -430,7 +430,7 @@ wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
 | `test_all.sh` | 统一跑所有 host 测试 | `<name>` (positional), `--changed`, `--list`, `--coverage`, `--fail-fast` |
 | `test_downstream.sh` | Wheel 下游消费者回归测试 | `--all`, `--list` |
 | `new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
-| `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | 无 |
+| `session_bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | `--short`（仅 git 状态） |
 | `wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
 | `audit_wheels.py` | CI 一致性审计（25 项检查） | `--graph`, `--quiet`, `--json` |
 | `arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
@@ -473,3 +473,6 @@ wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
 | 看 wheel 依赖关系图 | `make graph` |
 | 同步 VSF 上游 | `make sync-vsf` |
 | 清理构建残留 | `make clean` |
+| 并行派发多个 agent | `dispatch_agent.sh --name X --budget N --prompt "..."` |
+| 查看派发 agent 状态 | `dispatch_agent.sh --status` |
+| 合并所有 agent 结果 | `dispatch_agent.sh --merge-all [--push]` |

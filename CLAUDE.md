@@ -31,10 +31,11 @@ make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 
 **结束**（commit 完成后、切换任务前、用户说"到此为止"时）：
 1. `make check` — 确保测试 + 审计干净
-2. `git push` — 推送所有改动
-3. 写 memory — 本次踩坑、决策、用户偏好变化
-4. 如有 CLAUDE.md 变更（wheel 数量、工具数量等）→ 更新并 commit
-5. 如有大量工作 → 一句话告知用户下次 session 从哪里继续
+2. 如有 worktree 分支未合并 → `dispatch_agent.sh --merge-all`
+3. `git push` — 推送所有改动
+4. 写 memory — 本次踩坑、决策、用户偏好变化
+5. 如有 CLAUDE.md 变更（wheel 数量、工具数量等）→ 更新并 commit
+6. 如有大量工作 → 一句话告知用户下次 session 从哪里继续
 
 **交接**（换 session / 换窗口 / context 即将满）：
 - 关键上下文写入 memory（不是 CLAUDE.md——memory 跨 session 持久）
@@ -456,7 +457,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（23 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（32 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
+- ✅ **开发效率工具链**（`tooling/scripts/` + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（25 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet + --json）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（32 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 - ✅ **58 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (30): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (19): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder

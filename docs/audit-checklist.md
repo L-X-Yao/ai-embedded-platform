@@ -6,7 +6,7 @@ This file is read by audit agents to avoid re-reporting known issues and to focu
 
 1. Read `docs/known-issues.md` — do NOT re-report anything listed there
 2. Read this checklist — follow the angle specified in your prompt
-3. Report findings only — DO NOT edit files or commit
+3. Fix confirmed issues and commit (dispatch_agent.sh auto-appends commit instructions)
 
 ## Standard edge-case traces (apply to EVERY wheel)
 
@@ -41,3 +41,35 @@ This file is read by audit agents to avoid re-reporting known issues and to focu
 | Backlog cleanup | Evaluate accumulated MINORs | After CRITICALs exhausted |
 | Test gap closure | Every guard → one test | After guards added without tests |
 | -Wconversion | Implicit type narrowing | Final polish |
+
+## Dispatch-based execution
+
+超级审计使用 `dispatch_agent.sh` 派发，不再手动启动 agent：
+
+```bash
+# Phase 0: 自动化 gate（基线必须干净）
+make check
+
+# Phase 1: 按批次派发 agent（每个 agent 独立 worktree + 自动 commit）
+wsl bash tooling/scripts/dispatch_agent.sh \
+  --name audit-w1a --budget 1.00 \
+  --scope "wheels/primitives/" \
+  --prompt "Read docs/audit-checklist.md. Audit W1a (bitfield→kvs). Angle: generic sweep."
+
+wsl bash tooling/scripts/dispatch_agent.sh \
+  --name audit-w2 --budget 1.00 \
+  --scope "wheels/drivers/" \
+  --prompt "Read docs/audit-checklist.md. Audit W2: all L1 drivers."
+
+# 监控各 agent 进展
+wsl bash tooling/scripts/dispatch_agent.sh --status
+
+# Phase 2: 全部完成后 squash merge + make check + push
+wsl bash tooling/scripts/dispatch_agent.sh --merge-all --push
+```
+
+**主窗口角色**：只做调度 + 监控 `--status` + 合并 `--merge-all`，不做修复实现。
+
+**每个 dispatch prompt 自动追加**：
+- commit 指令（agent 完成后必须 `git add` + `git commit`）
+- scope 限制（`--scope` 指定路径之外不可修改）
