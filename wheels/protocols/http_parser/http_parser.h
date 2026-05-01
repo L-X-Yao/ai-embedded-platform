@@ -73,12 +73,15 @@ typedef struct {
 http_parser_err_t http_parser_parse_request(const char *data, size_t len,
                               http_parser_request_t *req);
 
+/** Parse an HTTP/1.1 response from raw data into a response struct. */
 http_parser_err_t http_parser_parse_response(const char *data, size_t len,
                                http_parser_response_t *resp);
 
+/** Find a header by name (case-insensitive) and return a pointer to it. */
 http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, int count,
                             const char *name, const http_parser_header_t **out);
 
+/** Return the Content-Length value from headers, or -1 if absent/invalid. */
 int http_parser_get_content_length(const http_parser_header_t *headers, int count);
 
 #ifdef __cplusplus
