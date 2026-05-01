@@ -432,7 +432,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 | `tooling/wheel/new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `tooling/session/bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | `--short`（仅 git 状态） |
 | `tooling/wheel/wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `tooling/audit/audit_wheels.py` | CI 一致性审计（24 项检查） | `--graph`, `--quiet`, `--json` |
+| `tooling/audit/audit_wheels.py` | CI 一致性审计（23 项检查） | `--graph`, `--quiet`, `--json` |
 | `tooling/audit/arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `tooling/ci/update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `tooling/wheel/release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
