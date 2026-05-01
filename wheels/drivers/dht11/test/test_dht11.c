@@ -137,6 +137,23 @@ TEST(test_all_ones)
     ASSERT_EQ(data.temperature_int, 0xFF);
 }
 
+/* Pin stuck high: sensor never responds, first wait_pin(false) times out */
+static bool mock_read_pin_stuck_high(void *ctx)
+{
+    (void)ctx;
+    return true;
+}
+
+TEST(test_read_timeout)
+{
+    dht11_t dev;
+    dht11_gpio_t timeout_gpio = mock_gpio;
+    timeout_gpio.read_pin = mock_read_pin_stuck_high;
+    ASSERT_EQ(dht11_init(&dev, &timeout_gpio), DHT11_OK);
+    dht11_data_t data;
+    ASSERT_EQ(dht11_read(&dev, &data), DHT11_ERR_TIMEOUT);
+}
+
 TEST_MAIN("dht11")
     RUN(test_init_null);
     RUN(test_init_missing_callback);
@@ -146,4 +163,5 @@ TEST_MAIN("dht11")
     RUN(test_checksum_fail);
     RUN(test_read_null);
     RUN(test_all_ones);
+    RUN(test_read_timeout);
 TEST_MAIN_END()
