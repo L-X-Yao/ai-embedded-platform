@@ -55,8 +55,8 @@ static float parse_lat(const char *raw, char ns)
 {
     float v = strtof(raw, NULL);
     int deg = (int)(v / 100.0f);
-    float min = v - deg * 100.0f;
-    float result = deg + min / 60.0f;
+    float min = v - (float)deg * 100.0f;
+    float result = (float)deg + min / 60.0f;
     if (ns == 'S' || ns == 's') result = -result;
     return result;
 }
@@ -65,8 +65,8 @@ static float parse_lon(const char *raw, char ew)
 {
     float v = strtof(raw, NULL);
     int deg = (int)(v / 100.0f);
-    float min = v - deg * 100.0f;
-    float result = deg + min / 60.0f;
+    float min = v - (float)deg * 100.0f;
+    float result = (float)deg + min / 60.0f;
     if (ew == 'W' || ew == 'w') result = -result;
     return result;
 }

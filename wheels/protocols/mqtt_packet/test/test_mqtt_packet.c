@@ -1,5 +1,6 @@
 #include "test_harness.h"
 #include <string.h>
+#include <stdlib.h>
 #include "mqtt_packet.h"
 TEST(test_remaining_length_encode)
 {
@@ -267,6 +268,20 @@ TEST(test_null_params)
     ASSERT_EQ(mqtt_packet_parse_puback(NULL, 4, &pid), MQTT_PACKET_ERR_PARAM);
 }
 
+TEST(test_build_connect_string_exceeds_uint16_max)
+{
+    size_t huge = (size_t)UINT16_MAX + 2;
+    char *big = (char *)malloc(huge);
+    ASSERT_TRUE(big != NULL);
+    memset(big, 'A', huge - 1);
+    big[huge - 1] = '\0';
+    uint8_t buf[32];
+    mqtt_connect_opts_t opts = { .client_id = big, .keepalive_s = 60 };
+    ASSERT_EQ(mqtt_packet_build_connect(buf, sizeof(buf), &opts),
+              MQTT_PACKET_ERR_SIZE);
+    free(big);
+}
+
 TEST_MAIN("mqtt_packet")
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
@@ -288,5 +303,6 @@ TEST_MAIN("mqtt_packet")
     RUN(test_build_publish_qos3_rejected);
     RUN(test_parse_malformed_type);
     RUN(test_null_params);
+    RUN(test_build_connect_string_exceeds_uint16_max);
 TEST_MAIN_END()
 

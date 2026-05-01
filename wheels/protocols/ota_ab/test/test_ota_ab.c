@@ -396,6 +396,24 @@ TEST(test_crc32_known_vector)
     ASSERT_EQ(crc, 0xCBF43926u);
 }
 
+TEST(test_init_err_params_max_boot_zero)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_layout_t bad_layout = test_layout;
+    bad_layout.max_boot_count = 0;
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAMS);
+}
+
+TEST(test_init_err_params_size_too_small)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_layout_t bad_layout = test_layout;
+    bad_layout.params_size = sizeof(ota_ab_params_t) - 1;
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAMS);
+}
+
 TEST_MAIN("ota_ab")
     RUN(test_init_fresh);
     RUN(test_init_with_saved_params);
@@ -421,5 +439,7 @@ TEST_MAIN("ota_ab")
     RUN(test_boot_count_exact_boundary);
     RUN(test_target_slot_both_directions);
     RUN(test_crc32_known_vector);
+    RUN(test_init_err_params_max_boot_zero);
+    RUN(test_init_err_params_size_too_small);
 TEST_MAIN_END()
 

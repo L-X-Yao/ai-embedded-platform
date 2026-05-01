@@ -180,7 +180,7 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
     int32_t adc_t = ((int32_t)buf[3] << 12) | ((int32_t)buf[4] << 4) | (buf[5] >> 4);
 
     int32_t temp_raw = compensate_temperature(dev, adc_t);
-    out->temperature_c = temp_raw / 100.0f;
+    out->temperature_c = (float)temp_raw / 100.0f;
 
     uint32_t press_raw = compensate_pressure(dev, adc_p);
     out->pressure_pa = (float)press_raw;
