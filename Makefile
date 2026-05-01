@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
 
 help:
 	@echo "Usage: make <target>"
@@ -50,6 +50,7 @@ help:
 	@echo "  sync-vsf          sync vsf/ with upstream"
 	@echo "  sync-vsf-status   show vsf version status"
 	@echo "  clean             remove all build directories"
+	@echo "  clean-worktrees   remove all worktree-* branches and directories"
 
 test:
 	bash tooling/test/test_all.sh
@@ -106,6 +107,9 @@ clean:
 	@find projects/ -type d -name "build_*" -exec rm -rf {} + 2>/dev/null || true
 	@find _eval/ -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
 	@echo "Done."
+
+clean-worktrees:
+	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
 	bash tooling/test/test_all.sh && python3 tooling/audit/audit_wheels.py --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
