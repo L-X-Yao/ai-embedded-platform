@@ -75,6 +75,11 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `ota_ab`: OTA_AB_ERR_PARAMS now tested (max_boot_count=0 and params_size too small)
 - `mqtt_packet`: build_connect UINT16_MAX string guard now tested (65537-byte client_id)
 
+### Negative test coverage (R11)
+- `ads1115`: ADS1115_ERR_BUSY now tested (mock never sets conversion-ready bit, 200-retry poll exhausted)
+- `bmp280`: BMP280_ERR_TIMEOUT now tested (mock STATUS register measuring bit stays set, 500-poll exhausted)
+- `dht11`: DHT11_ERR_TIMEOUT now tested (mock pin stuck high, sensor never responds)
+
 ### Infrastructure
 - `ci.yml`: toolchain path, --fail wget, first-push BASE fallback, quoted $MATRIX, grep -oE (not -oP)
 - `session_bootstrap.sh`: $? capture, ternary arithmetic, _draft consumer path
@@ -102,6 +107,8 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `ota_ab`: ota_ab_crc32 publicly exported (should be static, design-level)
 - `modbus_rtu`: MODBUS_EX_ILLEGAL_DATA_ADDR defined but never emitted (address wrap returns ILLEGAL_DATA_VALUE; Modbus spec compliance gap, low risk)
 - `ota_ab`: OTA_AB_ERR_CRC defined but never returned (CRC failure in params_valid silently resets to defaults; correct behavior for embedded flash corruption recovery)
+- `ds18b20`: DS18B20_ERR_BUS defined but never returned (reset failure returns ERR_NO_DEVICE; write_byte/read_byte HAL has no failure indication)
+- `ws2812`: WS2812_ERR_HAL defined but never returned (NULL callbacks return ERR_NULL; no other HAL failure path exists)
 - `commit_suggest.sh`: unbound variable under set -u when MAX_TYPE != wheel
 - `batch_fix.sh`: dry-run sed detection breaks with existing flags
 
