@@ -192,6 +192,18 @@ TEST(test_calib_i2c_fail)
     ASSERT_EQ(e, BMP280_ERR_I2C);
 }
 
+TEST(test_read_timeout)
+{
+    setup();
+    /* Force STATUS register measuring bit (0x08) to stay set forever */
+    mock_regs[0xF3] = 0x08;
+    plant_adc(415148, 519888);
+
+    bmp280_data_t data;
+    bmp280_err_t e = bmp280_read(&dev, &data);
+    ASSERT_EQ(e, BMP280_ERR_TIMEOUT);
+}
+
 TEST_MAIN("bmp280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -206,5 +218,6 @@ TEST_MAIN("bmp280")
     RUN(test_oversampling_16x);
     RUN(test_calib_readback);
     RUN(test_calib_i2c_fail);
+    RUN(test_read_timeout);
 TEST_MAIN_END()
 

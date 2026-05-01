@@ -176,6 +176,42 @@ TEST(test_config_bits)
     ASSERT_EQ((written >> 8) & 1, 1);
 }
 
+/* Mock that never reports conversion complete (bit 15 stays clear) */
+static bool mock_busy_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                uint8_t *data, uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (reg == 0x01 && len == 2) {
+        /* Config register: bit 15 always 0 = conversion not ready */
+        data[0] = 0x00;
+        data[1] = 0x00;
+    } else if (reg == 0x00 && len == 2) {
+        data[0] = 0;
+        data[1] = 0;
+    }
+    return true;
+}
+
+TEST(test_read_busy_timeout)
+{
+    ads1115_t dev;
+    ads1115_cfg_t cfg = {
+        .addr = ADS1115_ADDR_GND,
+        .mux  = ADS1115_MUX_AIN0_GND,
+        .pga  = ADS1115_PGA_2048,
+        .rate = ADS1115_RATE_128
+    };
+    ads1115_i2c_t busy_i2c = {
+        .write_reg  = mock_write_reg,
+        .read_regs  = mock_busy_read_regs,
+        .write_regs = mock_write_regs,
+        .ctx        = NULL
+    };
+    ASSERT_EQ(ads1115_init(&dev, &busy_i2c, &cfg), ADS1115_OK);
+    int16_t raw;
+    ASSERT_EQ(ads1115_read_raw(&dev, &raw), ADS1115_ERR_BUSY);
+}
+
 TEST_MAIN("ads1115")
     RUN(test_init_null);
     RUN(test_read_raw_positive);
@@ -185,4 +221,5 @@ TEST_MAIN("ads1115")
     RUN(test_i2c_failure);
     RUN(test_set_channel);
     RUN(test_config_bits);
+    RUN(test_read_busy_timeout);
 TEST_MAIN_END()
