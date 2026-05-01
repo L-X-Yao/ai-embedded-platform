@@ -52,3 +52,4 @@
 | 008 | VSF linux64 不是 kernel-only sim 路径 | accepted | kernel-only sim 走 mps2+QEMU，linux64 仅用于 busybox 模式 |
 | 009 | Wheel 依赖规则 | accepted | 两种类型（具体/接口）+ 方向只能向下 + 禁止循环 |
 | 010 | 优先采纳开源实现 | accepted | 查 VSF → 联网搜开源 → 都没有才从零写；vendor 模式 |
+| 011 | Wheel 构建策略：生态驱动 | accepted | 不等项目触发，主动按领域构建；grep VSF 从门禁降为参考 |

@@ -4,8 +4,23 @@
 
 - 这个文档回答"怎么写 API"
 - `wheel-contract.md` 回答"wheel 什么时候能过审"
+- `architecture.md` 回答"为什么这么设计"
 
 每个 wheel 必须遵守本文档。偏离条款需在 wheel README 的"Convention Deviations"节说明理由。
+
+## 0. 核心原则：Wheel 是被动库
+
+**Wheel 永远是被调用的，永远不主动做任何事。** 完整原则见 `architecture.md`，这里列操作性规则：
+
+- **不创建任务/线程** — 应用层负责
+- **不注册中断** — ISR 设 flag，任务里调用 wheel
+- **不调用 sleep/delay** — 需要延时通过 HAL 回调注入 `delay_ms`
+- **不分配堆内存** — context 和 buffer 由调用方分配（见 §3）
+- **不加锁** — 线程安全由调用方保证（见 §4）
+- **不 `#include` 其他 wheel** — 依赖通过回调注入（见 §10）
+- **不 `#include` 任何 OS 头文件** — 零 OS 依赖
+
+判断标准：如果一个功能需要"自己创建任务"或"自己管理中断"，它不应该是 wheel。
 
 ## 1. 命名
 
@@ -175,10 +190,10 @@ int mpu6050_read_accel(mpu6050_t *dev, int16_t *x, int16_t *y, int16_t *z);
 ```
 
 **约定**：
-- L0/L1 wheel 大多 `@thread_safe: caller_must_lock`（不内置锁）
-- L2/L3 wheel 更多 `@thread_safe: yes`（内置 VSF 锁，对调用者透明）
+- 所有 wheel 标注 `@thread_safe: caller_must_lock`（wheel 不内置锁）
+- 应用层在多任务访问同一 wheel 实例时负责加锁
 
-**如果 wheel 需要锁**：用 `vsf_mutex_t` + `vsf_eda_mutex_enter/leave`。不要用 pthread_mutex（VSF 皮肤下才有，L1 驱动用会把非 VSF_USE_LINUX 环境拖下水）。
+**Wheel 不加锁**——锁是 OS 原语，wheel 不碰 OS（见 §0）。如果项目需要线程安全，在应用层用 RTOS 的 mutex 包装调用。
 
 ## 5. 回调 / 钩子
 
