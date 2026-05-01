@@ -13,16 +13,16 @@
 #define DEG_TO_RAD (3.14159265358979f / 180.0f)
 #define RAD_TO_DEG (180.0f / 3.14159265358979f)
 
-mahony_cfg_t mahony_default_cfg(void)
+mahony_ahrs_cfg_t mahony_ahrs_default_cfg(void)
 {
-    mahony_cfg_t cfg;
+    mahony_ahrs_cfg_t cfg;
     cfg.kp = 2.0f;
     cfg.ki = 0.005f;
     cfg.sample_freq_hz = 200.0f;
     return cfg;
 }
 
-void mahony_init(mahony_t *f, const mahony_cfg_t *cfg)
+void mahony_ahrs_init(mahony_ahrs_t *f, const mahony_ahrs_cfg_t *cfg)
 {
     if (!f || !cfg) return;
     memset(f, 0, sizeof(*f));
@@ -34,7 +34,7 @@ void mahony_init(mahony_t *f, const mahony_cfg_t *cfg)
     f->inv_freq = 1.0f / freq;
 }
 
-void mahony_update(mahony_t *f,
+void mahony_ahrs_update(mahony_ahrs_t *f,
                    float gx_dps, float gy_dps, float gz_dps,
                    float ax, float ay, float az,
                    float mx, float my, float mz)
@@ -110,7 +110,7 @@ void mahony_update(mahony_t *f,
     f->q3 = nq3 / norm;
 }
 
-void mahony_get_euler(const mahony_t *f, mahony_euler_t *out)
+void mahony_ahrs_get_euler(const mahony_ahrs_t *f, mahony_ahrs_euler_t *out)
 {
     if (!f || !out) return;
 
@@ -127,7 +127,7 @@ void mahony_get_euler(const mahony_t *f, mahony_euler_t *out)
                           1.0f - 2.0f * (f->q2 * f->q2 + f->q3 * f->q3)) * RAD_TO_DEG;
 }
 
-void mahony_get_quaternion(const mahony_t *f, float *q0, float *q1, float *q2, float *q3)
+void mahony_ahrs_get_quaternion(const mahony_ahrs_t *f, float *q0, float *q1, float *q2, float *q3)
 {
     if (!f) return;
     if (q0) *q0 = f->q0;

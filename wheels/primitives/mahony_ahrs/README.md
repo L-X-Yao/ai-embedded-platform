@@ -22,17 +22,17 @@ Decoupled: task scheduling, sensor drivers, motion detection stay in the project
 ## API
 
 ```c
-mahony_t f;
-mahony_cfg_t cfg = mahony_default_cfg();  /* Kp=2.0, Ki=0.005, 200Hz */
-mahony_init(&f, &cfg);
+mahony_ahrs_t f;
+mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();  /* Kp=2.0, Ki=0.005, 200Hz */
+mahony_ahrs_init(&f, &cfg);
 
 /* In sensor loop (e.g., 200 Hz): */
-mahony_update(&f, gx_dps, gy_dps, gz_dps,  /* gyro deg/s */
+mahony_ahrs_update(&f, gx_dps, gy_dps, gz_dps,  /* gyro deg/s */
                   ax, ay, az,                /* accel (G, normalized) */
                   mx, my, mz);              /* mag (pass 0,0,0 for 6-axis) */
 
-mahony_euler_t euler;
-mahony_get_euler(&f, &euler);
+mahony_ahrs_euler_t euler;
+mahony_ahrs_get_euler(&f, &euler);
 printf("roll=%.1f pitch=%.1f yaw=%.1f\n",
        euler.roll_deg, euler.pitch_deg, euler.yaw_deg);
 ```
@@ -43,7 +43,7 @@ None. Pure C99 + libm (`sqrtf`, `atan2f`, `asinf`, `fabsf`, `copysignf`).
 
 ## Configuration
 
-Tuning via `mahony_cfg_t`:
+Tuning via `mahony_ahrs_cfg_t`:
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -80,8 +80,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
-- Init takes `mahony_cfg_t` by pointer (not individual params) — single struct preferred for 3+ tuning parameters.
-- No error return from `mahony_update()` — void return is standard for real-time filter loops where checking errors on every sample adds overhead.
+- Init takes `mahony_ahrs_cfg_t` by pointer (not individual params) — single struct preferred for 3+ tuning parameters.
+- No error return from `mahony_ahrs_update()` — void return is standard for real-time filter loops where checking errors on every sample adds overhead.
 
 ## API review
 
