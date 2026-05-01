@@ -65,6 +65,12 @@ ctest --test-dir build --output-on-failure
 
 None. Pure C99 with injected SPI HAL callbacks.
 
+## Configuration
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `W25QXX_BUSY_TIMEOUT` | `500000U` | Iteration limit for busy-wait polling; tune for SPI clock speed |
+
 ## Known issues
 
 - Page program `len` must be <= 256 and must not cross a 256-byte page boundary; caller is responsible for splitting
