@@ -6,17 +6,16 @@
 
 **触发**：用户说"给我写个 xxx"，或项目中发现需要一个通用组件。
 
-**零号铁律**：新建 wheel 前先查 VSF 原生——完整策略见 [ADR-006](adr/006-prefer-vsf-native-over-custom-wheel.md)。
+**核心原则**：Wheel 是被动库（见 [architecture.md](architecture.md)）。构建策略：生态驱动（[ADR-011](adr/011-ecosystem-driven-wheel-building.md)）。
 
 1. **查重（wheels 内）**：`ls wheels/` + `ls wheels/_draft/`。已有？去用。
-2. **查 VSF 原生**（按 ADR-006）：grep `vsf/source/service/` + `utilities/` + `component/`。速查表 `debugging-playbook.md`。
-3. **联网搜索开源实现**（按 ADR-010）：**必须用 web search**（不能只凭训练知识），在 GitHub/Gitee 找生产级实现。找到多个候选时：列出选项 + 对比（体积 / 功能 / 维护活跃度）+ **明确推荐**哪个 + 用户做最终决策。有好的 → vendor 进来 + 薄封装，跳到步骤 5。
-4. **写 "Why not VSF native?" + "Why not upstream?" 提案**：说明 VSF 等价物和开源实现的不足。无足够理由 → **放弃这个 wheel**。
-5. **对齐 API（人审批）**：列 5-10 个关键函数签名 + 2 个使用示例，给用户 15 分钟拍板。
-6. **草稿化**：放 `wheels/_draft/<name>/`，按 `wheel-contract.md` §3.1 搭最小结构。vendor 类 wheel 按 ADR-010 目录结构（含 `vendor/` + `VENDOR.md`）。
-7. **TDD**：先写失败测试 → 实现 → 测试绿。
-8. **跑 sim 验证**：VSF linux host 里真跑。
-9. **交回**："draft 就绪，什么时候升 candidate？"
+2. **搜索通用开源实现**（按 ADR-010）：**必须用 web search**（不能只凭训练知识），在 GitHub/Gitee 找生产级实现。找到多个候选时：列出选项 + 对比（体积 / 功能 / 维护活跃度）+ **明确推荐**哪个 + 用户做最终决策。有好的 → vendor 进来 + 薄封装，跳到步骤 4。
+3. **判断是否适合做 wheel**：需要创建任务/加锁/sleep/中断 → 不是 wheel（见 architecture.md）。
+4. **对齐 API（人审批）**：列 5-10 个关键函数签名 + 2 个使用示例，给用户 15 分钟拍板。
+5. **Scaffold**：`new_wheel.sh --layer <层> --name <名> [--hal <类型>]`，按 `wheel-contract.md` 搭结构。vendor 类加 `--vendor`（含 `vendor/` + `VENDOR.md`）。
+6. **TDD**：先写失败测试 → 实现 → 测试绿。
+7. **跑 host sim 验证**。
+8. **交回**："draft 就绪，什么时候升 candidate？"
 
 ## 任务类型 2：新建一个项目
 
