@@ -24,9 +24,15 @@ static int mock_write(void *ctx, uint32_t offset, const uint8_t *data, size_t le
     return 0;
 }
 
+static int g_erase_fail_after = -1;
+static int g_erase_call_count = 0;
+
 static int mock_erase(void *ctx, uint32_t sector_offset, size_t sector_size) {
     (void)ctx;
     if (sector_offset + sector_size > FLASH_SIZE) return -1;
+    if (g_erase_fail_after >= 0 && g_erase_call_count >= g_erase_fail_after)
+        return -1;
+    g_erase_call_count++;
     memset(g_flash + sector_offset, 0xFF, sector_size);
     return 0;
 }
@@ -41,6 +47,8 @@ static log_flash_t g_f;
 
 static void reset(void) {
     memset(g_flash, 0xFF, sizeof(g_flash));
+    g_erase_fail_after = -1;
+    g_erase_call_count = 0;
     log_flash_init(&g_f, &g_hal, NULL, 0, SECTOR_SIZE, SECTOR_COUNT);
 }
 
@@ -123,13 +131,23 @@ TEST(test_erase_all) {
     log_flash_sink(&g_f, "more\n", 5);
     ASSERT_EQ(log_flash_total(&g_f), 2);
 
-    log_flash_erase_all(&g_f);
+    ASSERT_EQ(log_flash_erase_all(&g_f), 0);
     ASSERT_EQ(g_f.write_sector, 0);
     ASSERT_EQ(g_f.write_pos, 0);
 
     char out[256];
     size_t n = log_flash_read(&g_f, out, sizeof(out));
     ASSERT_EQ(n, 0);
+}
+
+TEST(test_erase_all_hal_failure) {
+    reset();
+    log_flash_sink(&g_f, "data\n", 5);
+    ASSERT_EQ(log_flash_total(&g_f), 1);
+
+    g_erase_fail_after = g_erase_call_count;
+    ASSERT_EQ(log_flash_erase_all(&g_f), -1);
+    ASSERT_EQ(log_flash_total(&g_f), 1);
 }
 
 TEST(test_read_partial_buffer) {
@@ -146,7 +164,7 @@ TEST(test_null_safety) {
     log_flash_sink(NULL, "x", 1);
     ASSERT_EQ(log_flash_total(NULL), 0);
     ASSERT_EQ(log_flash_dropped(NULL), 0);
-    log_flash_erase_all(NULL);
+    ASSERT_EQ(log_flash_erase_all(NULL), -1);
     ASSERT_EQ(log_flash_init(NULL, &g_hal, NULL, 0, 64, 4), -1);
 
     log_flash_t f;
@@ -163,6 +181,7 @@ TEST_MAIN("log_flash")
     RUN(test_wrap_around);
     RUN(test_entry_too_large);
     RUN(test_erase_all);
+    RUN(test_erase_all_hal_failure);
     RUN(test_read_partial_buffer);
     RUN(test_null_safety);
 TEST_MAIN_END()

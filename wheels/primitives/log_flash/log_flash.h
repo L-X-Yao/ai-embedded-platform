@@ -57,8 +57,9 @@ void log_flash_sink(void *ctx, const char *line, size_t len);
 size_t log_flash_read(log_flash_t *f, char *dst, size_t dst_size);
 
 /* Erase all sectors and reset state.
+ * Returns 0 on success, -1 if any erase failed (state not reset).
  * @thread_safe: no */
-void log_flash_erase_all(log_flash_t *f);
+int log_flash_erase_all(log_flash_t *f);
 
 /* Return total entries written since init.
  * @thread_safe: no */
