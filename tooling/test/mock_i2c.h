@@ -87,4 +87,26 @@ static bool mock_i2c_read_regs(void *ctx, uint8_t dev_addr,
     return true;
 }
 
+__attribute__((unused))
+static bool mock_i2c_write_regs(void *ctx, uint8_t dev_addr,
+                                 uint8_t reg, const uint8_t *buf, uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (mock_i2c_should_fail()) return false;
+    mock_write_count++;
+    for (uint16_t i = 0; i < len; i++) {
+        unsigned idx = (unsigned)reg + i;
+        if (idx < MOCK_I2C_REG_COUNT) mock_regs[idx] = buf[i];
+    }
+    return true;
+}
+
+static uint32_t mock_delay_ms_count;
+__attribute__((unused))
+static void mock_i2c_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+    mock_delay_ms_count++;
+}
+
 #endif /* MOCK_I2C_H */
