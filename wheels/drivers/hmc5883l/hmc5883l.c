@@ -91,3 +91,14 @@ hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out)
     out->z = (float)raw.z * dev->scale;
     return HMC5883L_OK;
 }
+
+hmc5883l_err_t hmc5883l_idle(const hmc5883l_t *dev)
+{
+    if (!dev)
+        return HMC5883L_ERR_PARAM;
+    if (!dev->i2c.write_reg)
+        return HMC5883L_ERR_I2C;
+    if (!dev->i2c.write_reg(dev->i2c.ctx, HMC5883L_ADDR, REG_MODE, 0x02))
+        return HMC5883L_ERR_I2C;
+    return HMC5883L_OK;
+}

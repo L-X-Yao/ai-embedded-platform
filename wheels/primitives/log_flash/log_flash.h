@@ -54,7 +54,7 @@ void log_flash_sink(void *ctx, const char *line, size_t len);
 /* Read all stored entries into dst, oldest first.
  * Returns bytes written to dst.
  * @thread_safe: no */
-size_t log_flash_read(log_flash_t *f, char *dst, size_t dst_size);
+size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size);
 
 /* Erase all sectors and reset state.
  * Returns 0 on success, -1 if any erase failed (state not reset).

@@ -27,7 +27,7 @@ static int write_at(log_flash_t *f, uint32_t offset, const uint8_t *data, size_t
     return f->hal.write(f->hal_ctx, offset, data, len);
 }
 
-static int read_at(log_flash_t *f, uint32_t offset, uint8_t *buf, size_t len) {
+static int read_at(const log_flash_t *f, uint32_t offset, uint8_t *buf, size_t len) {
     if (!f->hal.read) return -1;
     return f->hal.read(f->hal_ctx, offset, buf, len);
 }
@@ -89,7 +89,7 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
     if (f->total_entries < UINT32_MAX) f->total_entries++;
 }
 
-size_t log_flash_read(log_flash_t *f, char *dst, size_t dst_size) {
+size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size) {
     if (!f || !dst || dst_size == 0) return 0;
 
     size_t out_pos = 0;

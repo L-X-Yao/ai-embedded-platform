@@ -200,6 +200,29 @@ TEST(test_compute_before_start)
     ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL);
 }
 
+TEST(test_abort_resets_state_and_count)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    mag_cal_feed(&cal, 1.0f, 0.0f, 0.0f);
+    mag_cal_feed(&cal, 2.0f, 0.0f, 0.0f);
+    mag_cal_feed(&cal, 3.0f, 0.0f, 0.0f);
+    ASSERT_EQ(mag_cal_sample_count(&cal), 3);
+    ASSERT_EQ(mag_cal_get_state(&cal), MAG_CAL_COLLECTING);
+
+    mag_cal_abort(&cal);
+    ASSERT_EQ(mag_cal_get_state(&cal), MAG_CAL_IDLE);
+    ASSERT_EQ(mag_cal_sample_count(&cal), 0);
+}
+
+TEST(test_abort_null_is_safe)
+{
+    mag_cal_abort(NULL);
+    ASSERT_TRUE(1);
+}
+
 TEST_MAIN("mag_cal")
     RUN(test_init);
     RUN(test_start);
@@ -216,5 +239,7 @@ TEST_MAIN("mag_cal")
     RUN(test_collinear_samples);
     RUN(test_apply_null_outputs);
     RUN(test_compute_before_start);
+    RUN(test_abort_resets_state_and_count);
+    RUN(test_abort_null_is_safe);
 TEST_MAIN_END()
 

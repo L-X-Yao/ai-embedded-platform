@@ -72,6 +72,12 @@ bool oled_ssd1306_get_pixel(const oled_ssd1306_t *dev, uint8_t x, uint8_t y);
 /** @thread_safe: no */
 void oled_ssd1306_fill(oled_ssd1306_t *dev, bool on);
 
+/** Turn display on (0xAF). @thread_safe: no */
+oled_ssd1306_err_t oled_ssd1306_display_on(const oled_ssd1306_t *dev);
+
+/** Turn display off / enter sleep (0xAE). @thread_safe: no */
+oled_ssd1306_err_t oled_ssd1306_display_off(const oled_ssd1306_t *dev);
+
 #ifdef __cplusplus
 }
 #endif

@@ -32,7 +32,21 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
         return SOFT_TIMER_ERR_FULL;
     }
 
-    int id = (int)mgr->count;
+    int id = -1;
+    for (size_t i = 0; i < mgr->count; i++)
+    {
+        if (mgr->timers[i].callback == NULL)
+        {
+            id = (int)i;
+            break;
+        }
+    }
+    if (id < 0)
+    {
+        id = (int)mgr->count;
+        mgr->count++;
+    }
+
     soft_timer_entry_t *t = &mgr->timers[id];
     t->period = period_ticks;
     t->remaining = period_ticks;
@@ -40,9 +54,18 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
     t->user_ctx = user_ctx;
     t->mode = mode;
     t->active = false;
-    mgr->count++;
 
     return id;
+}
+
+soft_timer_err_t soft_timer_destroy(soft_timer_mgr_t *mgr, int id)
+{
+    if (!mgr || id < 0 || (size_t)id >= mgr->count)
+    {
+        return SOFT_TIMER_ERR_PARAM;
+    }
+    memset(&mgr->timers[id], 0, sizeof(soft_timer_entry_t));
+    return SOFT_TIMER_OK;
 }
 
 soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id)

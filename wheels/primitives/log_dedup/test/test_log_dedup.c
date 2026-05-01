@@ -121,6 +121,32 @@ TEST(test_null_safety) {
     ASSERT_EQ(log_dedup_suppressed(NULL), 0);
 }
 
+TEST(test_deinit_flushes_and_clears) {
+    reset();
+    log_dedup_t d;
+    log_dedup_init(&d, capture, NULL);
+
+    /* send a line twice — second is suppressed */
+    log_dedup_sink(&d, "[I] [a] msg\n", 12);
+    log_dedup_sink(&d, "[I] [a] msg\n", 12);
+    ASSERT_EQ(g_cap_count, 1);
+
+    /* deinit must flush the pending repeat before clearing state */
+    log_dedup_deinit(&d);
+
+    /* flush emitted the "[repeated 1 time]" message */
+    ASSERT_EQ(g_cap_count, 2);
+    ASSERT_TRUE(strstr(g_cap[1], "repeated 1 time") != NULL);
+
+    /* inner_fn must be NULL after deinit */
+    ASSERT_TRUE(d.inner_fn == NULL);
+}
+
+TEST(test_deinit_null_is_safe) {
+    log_dedup_deinit(NULL);
+    ASSERT_TRUE(1);
+}
+
 TEST_MAIN("log_dedup")
     RUN(test_no_duplicates);
     RUN(test_consecutive_duplicates);
@@ -130,4 +156,6 @@ TEST_MAIN("log_dedup")
     RUN(test_no_timestamp_comparison);
     RUN(test_single_line_no_repeat);
     RUN(test_null_safety);
+    RUN(test_deinit_flushes_and_clears);
+    RUN(test_deinit_null_is_safe);
 TEST_MAIN_END()

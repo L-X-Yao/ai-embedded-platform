@@ -96,7 +96,7 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
     return QMI8658A_OK;
 }
 
-qmi8658a_err_t qmi8658a_read(qmi8658a_dev_t *dev,
+qmi8658a_err_t qmi8658a_read(const qmi8658a_dev_t *dev,
                               qmi8658a_data_t *out)
 {
     if (!dev || !dev->i2c || !out) return QMI8658A_ERR_I2C;

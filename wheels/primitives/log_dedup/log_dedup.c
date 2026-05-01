@@ -85,6 +85,16 @@ void log_dedup_flush(log_dedup_t *d) {
     d->repeat_count = 0;
 }
 
+void log_dedup_deinit(log_dedup_t *d) {
+    if (!d) return;
+    log_dedup_flush(d);
+    d->inner_fn = NULL;
+    d->inner_ctx = NULL;
+    d->last_len = 0;
+    d->last_full_len = 0;
+    d->last_line[0] = '\0';
+}
+
 uint32_t log_dedup_suppressed(const log_dedup_t *d) {
     return d ? d->total_suppressed : 0;
 }
