@@ -126,15 +126,16 @@ size_t log_flash_read(log_flash_t *f, char *dst, size_t dst_size) {
     return out_pos;
 }
 
-void log_flash_erase_all(log_flash_t *f) {
-    if (!f) return;
+int log_flash_erase_all(log_flash_t *f) {
+    if (!f) return -1;
     for (uint32_t i = 0; i < f->sector_count; i++) {
-        (void)erase_sector(f, i);
+        if (erase_sector(f, i) != 0) return -1;
     }
     f->write_sector = 0;
     f->write_pos = 0;
     f->total_entries = 0;
     f->dropped = 0;
+    return 0;
 }
 
 uint32_t log_flash_total(const log_flash_t *f) {
