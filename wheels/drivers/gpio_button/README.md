@@ -20,32 +20,32 @@ Extracted from common embedded button patterns. Proactive build for `projects/fl
 
 ```c
 /* HAL: caller provides a read-level function */
-gpio_btn_hal_t hal = {
+gpio_button_hal_t hal = {
     .read = my_gpio_read,   /* returns 0 or 1 */
     .ctx  = &my_pin,
 };
 
 /* Configuration (or use defaults) */
-gpio_btn_cfg_t cfg = gpio_btn_default_cfg();
+gpio_button_cfg_t cfg = gpio_button_default_cfg();
 /* Defaults: debounce=20ms, long_press=1000ms, double_click=300ms, active_low */
 
-gpio_btn_t btn;
-gpio_btn_init(&btn, &hal, &cfg);
+gpio_button_t btn;
+gpio_button_init(&btn, &hal, &cfg);
 
 /* Call periodically (1-10ms recommended) */
-gpio_btn_evt_t evt = gpio_btn_tick(&btn, 1);
+gpio_button_evt_t evt = gpio_button_tick(&btn, 1);
 
 switch (evt) {
-case GPIO_BTN_EVT_PRESS:        /* raw press edge (debounced) */
-case GPIO_BTN_EVT_RELEASE:      /* raw release edge */
-case GPIO_BTN_EVT_CLICK:        /* short press + release (after dc window) */
-case GPIO_BTN_EVT_DOUBLE_CLICK: /* two clicks within dc window */
-case GPIO_BTN_EVT_LONG_PRESS:   /* held ≥ long_press_ms */
+case GPIO_BUTTON_EVT_PRESS:        /* raw press edge (debounced) */
+case GPIO_BUTTON_EVT_RELEASE:      /* raw release edge */
+case GPIO_BUTTON_EVT_CLICK:        /* short press + release (after dc window) */
+case GPIO_BUTTON_EVT_DOUBLE_CLICK: /* two clicks within dc window */
+case GPIO_BUTTON_EVT_LONG_PRESS:   /* held ≥ long_press_ms */
 default: break;
 }
 
 /* Query current state */
-if (gpio_btn_is_pressed(&btn)) { /* ... */ }
+if (gpio_button_is_pressed(&btn)) { /* ... */ }
 ```
 
 ## Event priority
@@ -62,7 +62,7 @@ LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pe
 
 ## Dependencies
 
-- None (interface dependency: `gpio_btn_hal_t` read callback provided by caller)
+- None (interface dependency: `gpio_button_hal_t` read callback provided by caller)
 
 ## Supported platforms
 
@@ -92,13 +92,13 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
-- **`gpio_btn_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
-- **Internal state fields exposed** in `gpio_btn_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly.
+- **`gpio_button_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
+- **Internal state fields exposed** in `gpio_button_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly.
 
 ## API review
 
 - **Date**: 2026-04-27
-- **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_btn_cfg_t`.
+- **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_button_cfg_t`.
 
 ## Responsible human
 @user

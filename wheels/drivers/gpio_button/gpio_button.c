@@ -9,9 +9,9 @@
 #include "gpio_button.h"
 #include <stddef.h>
 
-gpio_btn_cfg_t gpio_btn_default_cfg(void)
+gpio_button_cfg_t gpio_button_default_cfg(void)
 {
-    gpio_btn_cfg_t cfg;
+    gpio_button_cfg_t cfg;
     cfg.debounce_ms     = 20U;
     cfg.long_press_ms   = 1000U;
     cfg.double_click_ms = 300U;
@@ -19,8 +19,8 @@ gpio_btn_cfg_t gpio_btn_default_cfg(void)
     return cfg;
 }
 
-void gpio_btn_init(gpio_btn_t *btn, const gpio_btn_hal_t *hal,
-                    const gpio_btn_cfg_t *cfg)
+void gpio_button_init(gpio_button_t *btn, const gpio_button_hal_t *hal,
+                    const gpio_button_cfg_t *cfg)
 {
     if (btn == NULL || hal == NULL || cfg == NULL) {
         return;
@@ -37,7 +37,7 @@ void gpio_btn_init(gpio_btn_t *btn, const gpio_btn_hal_t *hal,
     btn->long_fired    = 0U;
 }
 
-uint8_t gpio_btn_is_pressed(const gpio_btn_t *btn)
+uint8_t gpio_button_is_pressed(const gpio_button_t *btn)
 {
     if (btn == NULL) {
         return 0U;
@@ -45,15 +45,15 @@ uint8_t gpio_btn_is_pressed(const gpio_btn_t *btn)
     return btn->pressed;
 }
 
-gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
+gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms)
 {
     uint8_t sample;
     uint8_t is_active;
     uint8_t state_changed = 0U;
-    gpio_btn_evt_t evt = GPIO_BTN_EVT_NONE;
+    gpio_button_evt_t evt = GPIO_BUTTON_EVT_NONE;
 
     if (btn == NULL || dt_ms == 0U) {
-        return GPIO_BTN_EVT_NONE;
+        return GPIO_BUTTON_EVT_NONE;
     }
 
     sample = btn->hal->read(btn->hal->ctx);
@@ -82,15 +82,15 @@ gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
             btn->hold_cnt   = 0U;
             btn->long_fired = 0U;
             btn->idle_cnt   = 0U;
-            evt = GPIO_BTN_EVT_PRESS;
+            evt = GPIO_BUTTON_EVT_PRESS;
         } else if (!is_active && btn->pressed) {
             btn->pressed = 0U;
-            evt = GPIO_BTN_EVT_RELEASE;
+            evt = GPIO_BUTTON_EVT_RELEASE;
 
             if (!btn->long_fired) {
                 if (btn->click_pending) {
                     btn->click_pending = 0U;
-                    return GPIO_BTN_EVT_DOUBLE_CLICK;
+                    return GPIO_BUTTON_EVT_DOUBLE_CLICK;
                 }
                 btn->click_pending = 1U;
                 btn->idle_cnt = 0U;
@@ -102,7 +102,7 @@ gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
         if (!btn->long_fired && btn->hold_cnt >= btn->cfg.long_press_ms) {
             btn->long_fired = 1U;
             btn->click_pending = 0U;
-            return GPIO_BTN_EVT_LONG_PRESS;
+            return GPIO_BUTTON_EVT_LONG_PRESS;
         }
     }
 
@@ -112,7 +112,7 @@ gpio_btn_evt_t gpio_btn_tick(gpio_btn_t *btn, uint16_t dt_ms)
             btn->idle_cnt += dt_ms;
         if (btn->idle_cnt >= btn->cfg.double_click_ms) {
             btn->click_pending = 0U;
-            return GPIO_BTN_EVT_CLICK;
+            return GPIO_BUTTON_EVT_CLICK;
         }
     }
 
