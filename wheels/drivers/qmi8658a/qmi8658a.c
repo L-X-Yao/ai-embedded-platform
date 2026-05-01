@@ -79,11 +79,11 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
     e = wr(i2c, REG_CTRL1, 0x40);
     if (e != QMI8658A_OK) return e;
 
-    uint8_t ctrl2 = ((uint8_t)cfg->acc_range << 4) | ((uint8_t)cfg->acc_odr);
+    uint8_t ctrl2 = (uint8_t)(((uint8_t)cfg->acc_range << 4) | ((uint8_t)cfg->acc_odr));
     e = wr(i2c, REG_CTRL2, ctrl2);
     if (e != QMI8658A_OK) return e;
 
-    uint8_t ctrl3 = ((uint8_t)cfg->gyr_range << 4) | ((uint8_t)cfg->gyr_odr);
+    uint8_t ctrl3 = (uint8_t)(((uint8_t)cfg->gyr_range << 4) | ((uint8_t)cfg->gyr_odr));
     e = wr(i2c, REG_CTRL3, ctrl3);
     if (e != QMI8658A_OK) return e;
 
