@@ -11,7 +11,7 @@ target_include_directories(test_retry PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_retry PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_retry PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME retry_tests COMMAND test_retry)

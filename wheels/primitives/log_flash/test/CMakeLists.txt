@@ -12,7 +12,7 @@ target_include_directories(test_log_flash PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_log_flash PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_log_flash PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME log_flash_tests COMMAND test_log_flash)
