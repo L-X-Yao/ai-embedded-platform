@@ -17,22 +17,31 @@ typedef struct {
 static mock_event_t mock_log[MAX_EVENTS];
 static int          mock_log_idx;
 static int          mock_in_critical;
+static int          mock_set_compare_count;
+static int          mock_set_compare_fail_after;
 
 static void mock_reset(void)
 {
     memset(mock_log, 0, sizeof(mock_log));
     mock_log_idx = 0;
     mock_in_critical = 0;
+    mock_set_compare_count = 0;
+    mock_set_compare_fail_after = 0;
 }
 
-static void mock_set_compare(void *ctx, uint16_t value)
+static bool mock_set_compare(void *ctx, uint16_t value)
 {
     (void)ctx;
+    mock_set_compare_count++;
+    if (mock_set_compare_fail_after > 0 &&
+        mock_set_compare_count > mock_set_compare_fail_after)
+        return false;
     if (mock_log_idx < MAX_EVENTS) {
         mock_log[mock_log_idx].type  = EVT_SET_COMPARE;
         mock_log[mock_log_idx].value = value;
         mock_log_idx++;
     }
+    return true;
 }
 
 static void mock_wait_period(void *ctx)
@@ -375,6 +384,26 @@ TEST(test_data_inside_critical_section)
     ASSERT_TRUE(data_outside_crit == 0);
 }
 
+TEST(test_hal_error_during_reset_latch)
+{
+    ws2812_color_t c = {128, 64, 32};
+    mock_reset();
+    mock_set_compare_fail_after = 1;
+    mock_set_compare_count = 0;
+    ws2812_err_t err = ws2812_send(&mock_hal, &timing_48mhz, &c, 1);
+    ASSERT_TRUE(err == WS2812_ERR_HAL);
+}
+
+TEST(test_hal_error_during_data)
+{
+    ws2812_color_t c = {128, 64, 32};
+    mock_reset();
+    mock_set_compare_fail_after = 5;
+    mock_set_compare_count = 0;
+    ws2812_err_t err = ws2812_send(&mock_hal, &timing_48mhz, &c, 1);
+    ASSERT_TRUE(err == WS2812_ERR_HAL);
+}
+
 TEST_MAIN("ws2812")
     RUN(test_null_params);
     RUN(test_single_led_black);
@@ -390,5 +419,7 @@ TEST_MAIN("ws2812")
     RUN(test_all_color_corners);
     RUN(test_mid_gray_encoding);
     RUN(test_data_inside_critical_section);
+    RUN(test_hal_error_during_reset_latch);
+    RUN(test_hal_error_during_data);
 TEST_MAIN_END()
 

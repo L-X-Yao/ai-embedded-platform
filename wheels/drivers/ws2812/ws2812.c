@@ -51,15 +51,17 @@ void ws2812_encode_grb(const ws2812_color_t *color,
     encode_byte(color->b, timing, &slots_out[16]);
 }
 
-static void reset_latch(const ws2812_hal_t *hal,
+static bool reset_latch(const ws2812_hal_t *hal,
                          const ws2812_timing_t *timing)
 {
     uint16_t i;
 
-    hal->set_compare(hal->ctx, 0U);
+    if (!hal->set_compare(hal->ctx, 0U))
+        return false;
     for (i = 0U; i < timing->reset_periods; i++) {
         hal->wait_period(hal->ctx);
     }
+    return true;
 }
 
 ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
@@ -78,7 +80,8 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
         return WS2812_ERR_NULL;
     }
 
-    reset_latch(hal, timing);
+    if (!reset_latch(hal, timing))
+        return WS2812_ERR_HAL;
 
     hal->enter_critical(hal->ctx);
 
@@ -86,16 +89,25 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
         ws2812_encode_grb(&colors[led], timing, slots);
 
         hal->wait_period(hal->ctx);
-        hal->set_compare(hal->ctx, slots[0]);
+        if (!hal->set_compare(hal->ctx, slots[0])) {
+            hal->exit_critical(hal->ctx);
+            return WS2812_ERR_HAL;
+        }
 
         for (bit = 1U; bit < WS2812_BITS_PER_LED; bit++) {
             hal->wait_period(hal->ctx);
-            hal->set_compare(hal->ctx, slots[bit]);
+            if (!hal->set_compare(hal->ctx, slots[bit])) {
+                hal->exit_critical(hal->ctx);
+                return WS2812_ERR_HAL;
+            }
         }
     }
 
     hal->wait_period(hal->ctx);
-    hal->set_compare(hal->ctx, 0U);
+    if (!hal->set_compare(hal->ctx, 0U)) {
+        hal->exit_critical(hal->ctx);
+        return WS2812_ERR_HAL;
+    }
 
     hal->exit_critical(hal->ctx);
 
