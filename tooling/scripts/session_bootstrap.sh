@@ -202,3 +202,44 @@ if [[ -f "$PLAYBOOK" ]]; then
 else
     echo "  (not found)"
 fi
+
+# --- Branch-aware tool recommendations ---------------------------------------
+
+echo ""
+echo -e "${BOLD}=== Recommended for this branch ===${NC}"
+
+case "$branch" in
+    *wheel*)
+        echo -e "  ${CYAN}make audit${NC}           — check wheel compliance"
+        echo -e "  ${CYAN}make test-wheels${NC}      — run wheel tests"
+        echo -e "  ${CYAN}make audit-fix${NC}        — preview mechanical fixes"
+        echo -e "  ${CYAN}make new-wheel${NC}        — scaffold a new wheel"
+        echo -e "  ${CYAN}make graph${NC}            — dependency graph"
+        ;;
+    *project*|*flybox*|*drone*)
+        echo -e "  ${CYAN}make test-projects${NC}    — run project tests"
+        echo -e "  ${CYAN}make downstream W=x${NC}   — test consumers of wheel x"
+        echo -e "  ${CYAN}make find-refs W=x${NC}    — find all references to wheel x"
+        ;;
+    *audit*)
+        echo -e "  ${CYAN}make audit${NC}           — full wheel audit"
+        echo -e "  ${CYAN}make audit-fix${NC}        — preview mechanical fixes"
+        echo -e "  ${CYAN}make audit-fix-apply${NC}  — apply mechanical fixes"
+        echo -e "  ${CYAN}make metrics-quality${NC}  — quality-focused metrics"
+        ;;
+    *infra*|*tool*)
+        echo -e "  ${CYAN}make check${NC}            — test + audit + doc-drift"
+        echo -e "  ${CYAN}make test-scaffold${NC}    — verify scaffold templates"
+        echo -e "  ${CYAN}make inventory${NC}         — update CLAUDE.md wheel counts"
+        echo -e "  ${CYAN}make metrics${NC}           — platform metrics"
+        ;;
+    main|master)
+        echo -e "  ${CYAN}make check${NC}            — test + audit + doc-drift (pre-push)"
+        echo -e "  ${CYAN}make metrics${NC}           — platform metrics"
+        echo -e "  ${CYAN}make inventory${NC}         — update CLAUDE.md wheel counts"
+        ;;
+    *)
+        echo -e "  ${CYAN}make check${NC}            — test + audit + doc-drift"
+        echo -e "  ${CYAN}make test-changed${NC}     — tests affected by uncommitted changes"
+        ;;
+esac
