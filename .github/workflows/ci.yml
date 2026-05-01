@@ -69,14 +69,16 @@ jobs:
       - name: Detect
         id: detect
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            BASE=""
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
           else
             BASE="${{ github.event.before }}"
           fi
 
           # Fallback for first push or force-push
-          if ! git cat-file -e "$BASE" 2>/dev/null; then
+          if [ -n "$BASE" ] && ! git cat-file -e "$BASE" 2>/dev/null; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
           fi
 
