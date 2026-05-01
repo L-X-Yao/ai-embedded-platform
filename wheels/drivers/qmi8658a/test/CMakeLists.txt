@@ -14,7 +14,7 @@ target_include_directories(test_qmi8658a PRIVATE
 )
 
 target_link_libraries(test_qmi8658a PRIVATE m)
-target_compile_options(test_qmi8658a PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_qmi8658a PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME qmi8658a_tests COMMAND test_qmi8658a)

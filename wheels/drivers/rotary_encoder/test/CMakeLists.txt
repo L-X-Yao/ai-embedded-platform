@@ -8,7 +8,7 @@ target_include_directories(test_rotary_encoder PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(test_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME rotary_encoder_tests COMMAND test_rotary_encoder)
