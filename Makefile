@@ -1,27 +1,54 @@
 # ai-embedded-platform — convenience targets
 #
-# Usage:
-#   make test           # all tests (wheels + projects)
-#   make test-wheels    # wheel tests only
-#   make test-projects  # project tests only
-#   make test-changed   # only tests affected by uncommitted changes
-#   make test-fast      # stop on first failure (fast iteration)
-#   make audit          # run wheel audit (22 checks)
-#   make audit-fix      # auto-fix mechanical audit findings (dry-run)
-#   make audit-fix-apply  # auto-fix and apply
-#   make coverage       # tests with gcov coverage report
-#   make bootstrap      # print session context
-#   make list           # list all discoverable test targets
-#   make graph          # wheel dependency graph (Mermaid)
-#   make downstream W=<wheel>  # test downstream consumers of a wheel
-#   make sync-vsf              # sync vsf/ with upstream (interactive)
-#   make sync-vsf-status       # show current vs upstream vsf version
-#   make clean                 # remove all build_* directories
-#   make check                 # test + audit in one shot (pre-push)
-#   make ship M="msg"          # check + commit + push in one shot
-#   make inventory             # update CLAUDE.md wheel counts
+# Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs help
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test              all tests (wheels + projects)"
+	@echo "  test-wheels       wheel tests only"
+	@echo "  test-projects     project tests only"
+	@echo "  test-changed      only tests affected by uncommitted changes"
+	@echo "  test-fast         stop on first failure"
+	@echo "  test-parallel     run all tests in parallel (fastest)"
+	@echo "  test-scaffold     verify new_wheel.sh templates compile"
+	@echo "  coverage          tests with gcov coverage report"
+	@echo "  downstream W=x    test downstream consumers of wheel x"
+	@echo ""
+	@echo "Audit:"
+	@echo "  audit             run wheel audit"
+	@echo "  audit-fix         auto-fix mechanical findings (dry-run)"
+	@echo "  audit-fix-apply   auto-fix and apply"
+	@echo "  arm-size-audit    ARM cross-compile size report"
+	@echo ""
+	@echo "Workflow:"
+	@echo "  check             test + audit + doc drift (pre-push)"
+	@echo "  ship M=\"msg\"      check + commit + push"
+	@echo "  new-wheel         scaffold a new wheel (interactive)"
+	@echo "  promote-wheel     promote wheel across layers"
+	@echo "  release           create version tag + changelog"
+	@echo "  find-refs W=x     find all references to wheel x"
+	@echo ""
+	@echo "Session:"
+	@echo "  bootstrap         print session context"
+	@echo "  handoff           generate session state for handoff"
+	@echo "  list              list all discoverable test targets"
+	@echo "  graph             wheel dependency graph (Mermaid)"
+	@echo "  inventory         update CLAUDE.md wheel counts"
+	@echo ""
+	@echo "Metrics:"
+	@echo "  metrics           show platform metrics"
+	@echo "  metrics-save      save metrics snapshot"
+	@echo "  metrics-compare   compare with last snapshot"
+	@echo "  metrics-quality   quality-focused metrics"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  sync-vsf          sync vsf/ with upstream"
+	@echo "  sync-vsf-status   show vsf version status"
+	@echo "  clean             remove all build directories"
 
 test:
 	bash tooling/scripts/test_all.sh
@@ -37,6 +64,9 @@ test-changed:
 
 test-fast:
 	bash tooling/scripts/test_all.sh --wheel --fail-fast
+
+test-parallel:
+	bash tooling/scripts/test_all.sh --parallel
 
 audit:
 	python3 tooling/scripts/audit_wheels.py
@@ -107,3 +137,19 @@ handoff:
 
 test-scaffold:
 	bash tooling/scripts/test_scaffold.sh
+
+new-wheel:
+	bash tooling/scripts/new_wheel.sh
+
+promote-wheel:
+	bash tooling/scripts/wheel_promote.sh
+
+release:
+	bash tooling/scripts/release.sh
+
+arm-size-audit:
+	bash tooling/scripts/arm_size_audit.sh
+
+find-refs:
+	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
+	bash tooling/scripts/find_all_refs.sh "$(W)"

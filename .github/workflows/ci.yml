@@ -27,6 +27,9 @@ jobs:
       - name: Audit wheels
         run: python3 tooling/scripts/audit_wheels.py
 
+      - name: Check documentation drift
+        run: python3 tooling/scripts/doc_drift_check.py
+
   # ---- Change detection ----
 
   detect-changes:
