@@ -4,7 +4,7 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
-## Fixed in R3-R9 (do NOT re-report)
+## Fixed in R3-R10 (do NOT re-report)
 
 ### L0 Primitives
 - `bitfield`: overflow-safe range check (subtraction form), UINT32_C(1) shifts
@@ -61,6 +61,19 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `modbus_rtu`: byte_count>250, register address wrap guard (read+write); master_read_regs/master_write_reg buf NULL guards
 - `ncp5623_parser`: idx sentinel prevents stale re-trigger
 
+### -Wconversion polish (R10)
+- `bmp280`: explicit (float) cast on int32_t→float in temperature conversion
+- `modbus_rtu`: explicit (uint16_t) casts on `5 + count * 2` and `1 + count * 2` (int promotion)
+- `mqtt_packet`: explicit (int) cast on payload_len in build_publish pos accumulation
+- `nmea_parser`: explicit (float) casts on int deg→float in parse_lat/parse_lon (4 sites)
+
+### Negative test coverage (R10)
+- `coap_packet`: COAP_ERR_TOO_MANY now tested (9-option packet)
+- `http_parser`: HTTP_ERR_TOO_MANY now tested (17-header request)
+- `modbus_rtu`: address wrap (start+count > 0x10000) confirmed to return ILLEGAL_DATA_VALUE
+- `ota_ab`: OTA_AB_ERR_PARAMS now tested (max_boot_count=0 and params_size too small)
+- `mqtt_packet`: build_connect UINT16_MAX string guard now tested (65537-byte client_id)
+
 ### Infrastructure
 - `ci.yml`: toolchain path, --fail wget, first-push BASE fallback, quoted $MATRIX, grep -oE (not -oP)
 - `session_bootstrap.sh`: $? capture, ternary arithmetic, _draft consumer path
@@ -86,13 +99,11 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `fal` (vendor): addr+size uint32 overflow on 32-bit targets (vendor code)
 - `modbus_rtu`: 251-byte stack allocation in slave_read_regs/master_write_regs
 - `ota_ab`: ota_ab_crc32 publicly exported (should be static, design-level)
+- `modbus_rtu`: MODBUS_EX_ILLEGAL_DATA_ADDR defined but never emitted (address wrap returns ILLEGAL_DATA_VALUE; Modbus spec compliance gap, low risk)
+- `ota_ab`: OTA_AB_ERR_CRC defined but never returned (CRC failure in params_valid silently resets to defaults; correct behavior for embedded flash corruption recovery)
 - `commit_suggest.sh`: unbound variable under set -u when MAX_TYPE != wheel
 - `batch_fix.sh`: dry-run sed detection breaks with existing flags
 
 ## Remaining test gaps (low priority)
 
-- `coap_packet`: COAP_ERR_TOO_MANY (>8 options) untested
-- `http_parser`: HTTP_ERR_TOO_MANY (>16 headers) untested
-- `modbus_rtu`: MODBUS_EX_ILLEGAL_DATA_ADDR never emitted/tested
-- `ota_ab`: OTA_AB_ERR_CRC and OTA_AB_ERR_PARAMS untested
-- `mqtt_packet`: build_connect per-string UINT16_MAX guards (theoretical in embedded)
+(none — all previously listed gaps resolved in R10)
