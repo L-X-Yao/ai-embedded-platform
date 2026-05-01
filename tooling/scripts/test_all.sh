@@ -10,6 +10,8 @@
 #   test_all.sh --changed        # only run tests affected by uncommitted changes
 #   test_all.sh --coverage       # build with gcov instrumentation, print coverage after tests
 #   test_all.sh --fail-fast      # stop on first test failure
+#   test_all.sh --parallel       # run tests in parallel (uses nproc cores)
+#   test_all.sh --parallel -j 4  # run tests in parallel with 4 jobs
 #
 # Each test dir gets its own build_ta/ subdirectory (ignored via .gitignore).
 # VSF-dependent tests (log wheel) are skipped unless VSF_PATH is set or
@@ -35,6 +37,8 @@ LIST_ONLY=false
 CHANGED_ONLY=false
 COVERAGE=false
 FAIL_FAST=false
+PARALLEL=false
+PARALLEL_JOBS=0
 declare -a NAME_FILTER=()
 
 while [[ $# -gt 0 ]]; do
@@ -45,6 +49,8 @@ while [[ $# -gt 0 ]]; do
         --changed)  CHANGED_ONLY=true; shift ;;
         --coverage) COVERAGE=true; shift ;;
         --fail-fast) FAIL_FAST=true; shift ;;
+        --parallel) PARALLEL=true; shift ;;
+        -j) shift; PARALLEL=true; PARALLEL_JOBS="$1"; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -323,22 +329,141 @@ run_pytest() {
 echo -e "${BOLD}=== test_all.sh ===${NC}"
 echo ""
 
-# C tests
-for t in "${TARGETS[@]:-}"; do
-    [[ -z "$t" ]] && continue
-    IFS='|' read -r name src_dir type <<< "$t"
-    run_c_test "$name" "$src_dir" "$type"
-    $FAIL_FAST && [[ $FAILED -gt 0 ]] && break
-done
+if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
+    MAX_J=${PARALLEL_JOBS:-$(nproc 2>/dev/null || echo 4)}
+    PAR_DIR=$(mktemp -d)
+    trap "rm -rf '$PAR_DIR'" EXIT
 
-# pytest
-if ! { $FAIL_FAST && [[ $FAILED -gt 0 ]]; }; then
+    run_c_test_isolated() {
+        local name="$1" src_dir="$2" type="$3"
+        local rf="$PAR_DIR/${name}.result"
+        local of="$PAR_DIR/${name}.output"
+
+        if is_vsf_dependent "$src_dir"; then
+            if [[ -z "${VSF_PATH:-}" && ! -d "$REPO/vsf" ]]; then
+                echo "SKIP|$name|VSF sim, VSF_PATH not set" > "$rf"; return 0
+            fi
+            if ! is_linux; then
+                echo "SKIP|$name|VSF linux64 sim requires Linux" > "$rf"; return 0
+            fi
+        fi
+
+        local build_dir="$src_dir/$BUILD_DIR_NAME"
+        if ! cmake -GNinja -S "$src_dir" -B "$build_dir" > "$of" 2>&1; then
+            echo "FAIL|$name|cmake configure failed" > "$rf"; return 0
+        fi
+        if ! cmake --build "$build_dir" >> "$of" 2>&1; then
+            echo "FAIL|$name|build failed" > "$rf"; return 0
+        fi
+
+        local exe=""
+        for candidate in "$build_dir/test_${name}" "$build_dir/${name}_test" "$build_dir/test_main"; do
+            [[ -x "$candidate" ]] && exe="$candidate" && break
+        done
+        if [[ -z "$exe" ]]; then
+            exe="$(find "$build_dir" -maxdepth 1 -type f -executable 2>/dev/null | head -1 || true)"
+        fi
+        if [[ -z "$exe" ]]; then
+            echo "FAIL|$name|no test executable found" > "$rf"; return 0
+        fi
+
+        local test_output
+        if test_output=$("$exe" 2>&1); then
+            local summary
+            summary=$(echo "$test_output" | grep -E '[0-9]+ tests?,\s*[0-9]+ (passed|failures?)' | tail -1 || true)
+            echo "PASS|$name|${summary:-ok}" > "$rf"
+        else
+            echo "$test_output" >> "$of"
+            echo "FAIL|$name|test execution failed" > "$rf"
+        fi
+    }
+
+    run_pytest_isolated() {
+        local name="$1" pyf="$2"
+        local rf="$PAR_DIR/${name}_py.result"
+        local of="$PAR_DIR/${name}_py.output"
+
+        local py; py="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
+        if [[ -z "$py" ]] || ! "$py" -m pytest --version &>/dev/null 2>&1; then
+            echo "SKIP|${name}(py)|pytest not available" > "$rf"; return 0
+        fi
+
+        local dir; dir="$(dirname "$pyf")"
+        local wheel_build="$dir/build"
+        if [[ -d "$wheel_build" ]] && grep -q 'CMAKE_C_COMPILER.*\.exe' "$wheel_build/CMakeCache.txt" 2>/dev/null; then
+            rm -rf "$wheel_build"
+        fi
+
+        if "$py" -m pytest "$pyf" -v --tb=short > "$of" 2>&1; then
+            local count; count=$(grep -oE '[0-9]+ passed' "$of" | grep -oE '[0-9]+' | tail -1 || true)
+            echo "PASS|${name}(py)|${count:-?} pytest cases" > "$rf"
+        else
+            echo "FAIL|${name}(py)|pytest failed" > "$rf"
+        fi
+    }
+
+    RUNNING=0
+    for t in "${TARGETS[@]:-}"; do
+        [[ -z "$t" ]] && continue
+        IFS='|' read -r name src_dir type <<< "$t"
+        run_c_test_isolated "$name" "$src_dir" "$type" &
+        RUNNING=$((RUNNING + 1))
+        if [[ $RUNNING -ge $MAX_J ]]; then
+            wait -n 2>/dev/null || wait
+            RUNNING=$((RUNNING - 1))
+        fi
+    done
     for p in "${PYTEST[@]:-}"; do
         [[ -z "$p" ]] && continue
         IFS='|' read -r name pyf <<< "$p"
-        run_pytest "$name" "$pyf"
+        run_pytest_isolated "$name" "$pyf" &
+        RUNNING=$((RUNNING + 1))
+        if [[ $RUNNING -ge $MAX_J ]]; then
+            wait -n 2>/dev/null || wait
+            RUNNING=$((RUNNING - 1))
+        fi
+    done
+    wait
+
+    for rf in "$PAR_DIR"/*.result; do
+        [[ -f "$rf" ]] || continue
+        IFS='|' read -r status name msg < "$rf"
+        TOTAL=$((TOTAL + 1))
+        case "$status" in
+            PASS)
+                PASSED=$((PASSED + 1))
+                echo -e "  ${GREEN}PASS${NC}  $name  (${msg})"
+                ;;
+            FAIL)
+                FAILED=$((FAILED + 1))
+                FAIL_NAMES+=("$name")
+                echo -e "  ${RED}FAIL${NC}  $name  (${msg})"
+                base="${rf%.result}"
+                [[ -f "${base}.output" ]] && tail -10 "${base}.output"
+                ;;
+            SKIP)
+                SKIPPED=$((SKIPPED + 1))
+                echo -e "  ${YELLOW}SKIP${NC}  $name  (${msg})"
+                ;;
+        esac
+    done
+else
+    # Sequential mode (default)
+    for t in "${TARGETS[@]:-}"; do
+        [[ -z "$t" ]] && continue
+        IFS='|' read -r name src_dir type <<< "$t"
+        run_c_test "$name" "$src_dir" "$type"
         $FAIL_FAST && [[ $FAILED -gt 0 ]] && break
     done
+
+    if ! { $FAIL_FAST && [[ $FAILED -gt 0 ]]; }; then
+        for p in "${PYTEST[@]:-}"; do
+            [[ -z "$p" ]] && continue
+            IFS='|' read -r name pyf <<< "$p"
+            run_pytest "$name" "$pyf"
+            $FAIL_FAST && [[ $FAILED -gt 0 ]] && break
+        done
+    fi
 fi
 
 # --- Summary ------------------------------------------------------------------

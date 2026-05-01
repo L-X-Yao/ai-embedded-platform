@@ -34,6 +34,7 @@ Exit 0 if all checks pass; 1 if any failure.
 """
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -460,9 +461,13 @@ def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     return undoc == 0
 
 
-def main(quiet: bool = False) -> int:
+def main(quiet: bool = False, json_mode: bool = False) -> int:
     def qprint(msg: str):
-        if not quiet:
+        if not quiet and not json_mode:
+            print(msg)
+
+    def tprint(msg: str):
+        if not json_mode:
             print(msg)
 
     if not WHEELS.is_dir():
@@ -474,6 +479,17 @@ def main(quiet: bool = False) -> int:
 
     failures = []
     warnings = []
+    results = []
+
+    def record(check, wheel_path, level, msg, fix_cmd=None):
+        entry = {"check": check, "wheel": wheel_path, "level": level, "message": msg}
+        if fix_cmd:
+            entry["fix"] = fix_cmd
+        results.append(entry)
+        if level == "FAIL":
+            failures.append(f"{wheel_path}: {msg}")
+        elif level == "WARN":
+            warnings.append(f"{wheel_path}: {msg}")
 
     qprint(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
     for layer, name, path in wheels:
@@ -485,33 +501,30 @@ def main(quiet: bool = False) -> int:
 
         if not ci_ok:
             icon = "FAIL"
-            failures.append(
-                f"{path}: missing CI job — no mention of '{path}' in "
-                f"{CI_YAML.relative_to(REPO)}"
-            )
+            record("ci_job", path, "FAIL",
+                   f"missing CI job — no mention of '{path}' in {CI_YAML.relative_to(REPO)}")
         elif consumer_required and not consumers:
             icon = "WARN"
             reason = "extracted from project" if origin else "proactively built"
-            warnings.append(
-                f"{path}: no consumer yet ({reason}, acceptable)"
-            )
+            record("consumer", path, "WARN", f"no consumer yet ({reason}, acceptable)")
         elif not consumers:
             icon = "WARN"
-            warnings.append(f"{path}: no consumer yet (acceptable for {layer})")
+            record("consumer", path, "WARN", f"no consumer yet (acceptable for {layer})")
         else:
             icon = " ok "
 
         ci_label = "yes" if ci_ok else "MISSING"
         cons_label = ", ".join(consumers) if consumers else "(none)"
-        print(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
+        tprint(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
 
     # --- "Why not VSF native?" section check (ADR-006) ---
     qprint("\n=== README: 'Why not VSF native?' (ADR-006) ===\n")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_vsf_native_section(wheel_dir):
-            failures.append(f"{path}: README missing '## Why not VSF native?' section")
-            print(f"  [FAIL]  {path}")
+            record("vsf_native_section", path, "FAIL",
+                   "README missing '## Why not VSF native?' section")
+            tprint(f"  [FAIL]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -524,8 +537,8 @@ def main(quiet: bool = False) -> int:
             continue
         vendor_found = True
         if not has_vendor_md(wheel_dir):
-            failures.append(f"{path}: has vendor/ but no VENDOR.md")
-            print(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
+            record("vendor_md", path, "FAIL", "has vendor/ but no VENDOR.md")
+            tprint(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
         else:
             qprint(f"  [ ok ]  {path}")
     if not vendor_found:
@@ -541,10 +554,9 @@ def main(quiet: bool = False) -> int:
             continue
         deps_found = True
         if not has_dependencies_section(wheel_dir):
-            warnings.append(
-                f"{path}: depends on {', '.join(deps)} but README has no Dependencies section"
-            )
-            print(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
+            record("cross_wheel_deps", path, "WARN",
+                   f"depends on {', '.join(deps)} but README has no Dependencies section")
+            tprint(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
         else:
             qprint(f"  [ ok ]  {path} → {', '.join(deps)}")
     if not deps_found:
@@ -557,8 +569,8 @@ def main(quiet: bool = False) -> int:
             continue
         wheel_dir = WHEELS / layer / name
         if not has_api_review(wheel_dir):
-            warnings.append(f"{path}: README missing API review section")
-            print(f"  [WARN]  {path}")
+            record("api_review", path, "WARN", "README missing API review section")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -567,8 +579,9 @@ def main(quiet: bool = False) -> int:
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_ctest_registration(wheel_dir):
-            warnings.append(f"{path}: test CMakeLists.txt missing enable_testing()/add_test()")
-            print(f"  [WARN]  {path}")
+            record("ctest_registration", path, "WARN",
+                   "test CMakeLists.txt missing enable_testing()/add_test()")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -577,8 +590,9 @@ def main(quiet: bool = False) -> int:
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_c99_standard(wheel_dir):
-            warnings.append(f"{path}: test CMakeLists.txt missing CMAKE_C_STANDARD 99")
-            print(f"  [WARN]  {path}")
+            record("c99_standard", path, "WARN",
+                   "test CMakeLists.txt missing CMAKE_C_STANDARD 99")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -590,10 +604,9 @@ def main(quiet: bool = False) -> int:
         wheel_dir = WHEELS / layer / name
         missing = has_candidate_sections(wheel_dir)
         if missing:
-            warnings.append(
-                f"{path}: README missing candidate sections: {', '.join(missing)}"
-            )
-            print(f"  [WARN]  {path}: missing {', '.join(missing)}")
+            record("candidate_sections", path, "WARN",
+                   f"README missing candidate sections: {', '.join(missing)}")
+            tprint(f"  [WARN]  {path}: missing {', '.join(missing)}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -605,8 +618,9 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_file_header(wheel_dir, name):
-            warnings.append(f"{path}: .h/.c missing Layer/Status/Deps file header")
-            print(f"  [WARN]  {path}")
+            record("file_header", path, "WARN",
+                   ".h/.c missing Layer/Status/Deps file header")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -618,8 +632,8 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_extern_c_guard(wheel_dir, name):
-            warnings.append(f"{path}: .h missing extern \"C\" guard")
-            print(f"  [WARN]  {path}")
+            record("extern_c_guard", path, "WARN", ".h missing extern \"C\" guard")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -631,8 +645,8 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_thread_safe_annotations(wheel_dir, name):
-            warnings.append(f"{path}: .h missing @thread_safe annotations")
-            print(f"  [WARN]  {path}")
+            record("thread_safe", path, "WARN", ".h missing @thread_safe annotations")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -644,8 +658,9 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_test_exit_code(wheel_dir):
-            warnings.append(f"{path}: test harness may not return non-zero on failure")
-            print(f"  [WARN]  {path}")
+            record("test_exit_code", path, "WARN",
+                   "test harness may not return non-zero on failure")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -658,8 +673,9 @@ def main(quiet: bool = False) -> int:
             continue
         ok, tc, rc = has_balanced_test_run(wheel_dir)
         if not ok:
-            warnings.append(f"{path}: {tc} TEST() but only {rc} RUN() — orphan test functions")
-            print(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
+            record("test_run_balance", path, "WARN",
+                   f"{tc} TEST() but only {rc} RUN() — orphan test functions")
+            tprint(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -671,8 +687,8 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_werror(wheel_dir):
-            warnings.append(f"{path}: test CMakeLists.txt missing -Werror")
-            print(f"  [WARN]  {path}")
+            record("werror", path, "WARN", "test CMakeLists.txt missing -Werror")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -683,8 +699,9 @@ def main(quiet: bool = False) -> int:
             continue
         wheel_dir = WHEELS / layer / name
         if not has_responsible_human(wheel_dir):
-            warnings.append(f"{path}: README missing '## Responsible human' section")
-            print(f"  [WARN]  {path}")
+            record("responsible_human", path, "WARN",
+                   "README missing '## Responsible human' section")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -693,10 +710,9 @@ def main(quiet: bool = False) -> int:
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         if not has_standard_deviation_heading(wheel_dir):
-            warnings.append(
-                f"{path}: use '## API convention deviations' not '## Convention Deviations'"
-            )
-            print(f"  [WARN]  {path}")
+            record("deviation_heading", path, "WARN",
+                   "use '## API convention deviations' not '## Convention Deviations'")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -706,11 +722,9 @@ def main(quiet: bool = False) -> int:
     stale = [n for n in wishlist_names if n in wheel_names]
     if stale:
         for n in stale:
-            failures.append(
-                f"WISHLIST: '{n}' is listed but already exists as a wheel — "
-                f"remove the row from {WISHLIST.relative_to(REPO)}"
-            )
-            print(f"  [FAIL]  {n} listed in WISHLIST but already exists")
+            record("wishlist_stale", f"WISHLIST/{n}", "FAIL",
+                   f"'{n}' listed but already exists as a wheel")
+            tprint(f"  [FAIL]  {n} listed in WISHLIST but already exists")
     else:
         qprint("  [ ok ]  no stale entries")
 
@@ -718,10 +732,12 @@ def main(quiet: bool = False) -> int:
     qprint("\n=== Projects directory hygiene ===\n")
     proj_issues = audit_projects()
     for msg in proj_issues:
-        warnings.append(msg)
-        print(f"  [WARN]  {msg}")
+        record("project_hygiene", "projects/", "WARN", msg)
     if not proj_issues:
         qprint("  [ ok ]  no stray files detected")
+    else:
+        for msg in proj_issues:
+            tprint(f"  [WARN]  {msg}")
 
     # --- Error code sign convention (Q4 audit) ---
     qprint("\n=== Error code sign convention (Q4) ===\n")
@@ -731,8 +747,10 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_negative_error_codes(wheel_dir, name):
-            warnings.append(f"{path}: error enum uses auto-increment (should be explicit negative)")
-            print(f"  [WARN]  {path}")
+            record("error_code_sign", path, "WARN",
+                   "error enum uses auto-increment (should be explicit negative)",
+                   fix_cmd="python3 tooling/scripts/audit_fix.py --apply")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -746,8 +764,10 @@ def main(quiet: bool = False) -> int:
             qprint(f"  [skip]  {path} (vendor)")
             continue
         if not has_function_doc_all(wheel_dir, name):
-            warnings.append(f"{path}: some functions lack doc comment before declaration")
-            print(f"  [WARN]  {path}")
+            record("function_doc", path, "WARN",
+                   "some functions lack doc comment before declaration",
+                   fix_cmd="python3 tooling/scripts/audit_fix.py --apply")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -760,10 +780,9 @@ def main(quiet: bool = False) -> int:
             continue
         uncovered = has_error_code_test_coverage(wheel_dir, name)
         if uncovered:
-            warnings.append(
-                f"{path}: untested error codes: {', '.join(uncovered)}"
-            )
-            print(f"  [WARN]  {path}: {', '.join(uncovered)}")
+            record("error_code_coverage", path, "WARN",
+                   f"untested error codes: {', '.join(uncovered)}")
+            tprint(f"  [WARN]  {path}: {', '.join(uncovered)}")
         else:
             qprint(f"  [ ok ]  {path}")
 
@@ -788,21 +807,33 @@ def main(quiet: bool = False) -> int:
             qprint(f"  {wpath:36s} ← {', '.join(sorted(projs))}")
     qprint(f"\n  consumed: {len(consumed)}/{len(wheels)}  |  unconsumed: {len(unconsumed)}")
 
-    print("\n=== Summary ===")
-    print(f"  wheels:   {len(wheels)}")
-    print(f"  failures: {len(failures)}")
-    print(f"  warnings: {len(warnings)}")
+    if json_mode:
+        output = {
+            "wheels": len(wheels),
+            "failures": len(failures),
+            "warnings": len(warnings),
+            "results": [r for r in results if r["level"] != "OK"],
+            "consumed": len(consumed),
+            "unconsumed": len(unconsumed),
+        }
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+        return 1 if failures else 0
+
+    tprint("\n=== Summary ===")
+    tprint(f"  wheels:   {len(wheels)}")
+    tprint(f"  failures: {len(failures)}")
+    tprint(f"  warnings: {len(warnings)}")
 
     if failures:
-        print("\nFailures:")
+        tprint("\nFailures:")
         for f in failures:
-            print(f"  - {f}")
+            tprint(f"  - {f}")
         return 1
 
     if warnings:
-        print("\nWarnings (non-blocking):")
+        tprint("\nWarnings (non-blocking):")
         for w in warnings:
-            print(f"  - {w}")
+            tprint(f"  - {w}")
 
     return 0
 
@@ -842,9 +873,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Wheel audit")
     parser.add_argument("--graph", action="store_true", help="Print Mermaid dependency graph")
     parser.add_argument("--quiet", "-q", action="store_true", help="Only show WARN/FAIL and summary")
+    parser.add_argument("--json", action="store_true", help="Output results as JSON (machine-readable)")
     args = parser.parse_args()
     if args.graph:
         wheels = find_wheels()
         print_dep_graph(wheels)
         sys.exit(0)
-    sys.exit(main(quiet=args.quiet))
+    sys.exit(main(quiet=args.quiet, json_mode=args.json))
