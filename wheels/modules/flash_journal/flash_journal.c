@@ -374,7 +374,7 @@ flash_journal_err_t flash_journal_read_nth(const flash_journal_t *jrnl,
                 uint32_t entry_len = (uint32_t)len;
                 flash_journal_err_t rc = read_entry(jrnl, sector, offset,
                                                      &seq, &len,
-                                                     buf, entry_len);
+                                                     buf, *size);
                 if (rc == FLASH_JOURNAL_OK) {
                     *size = entry_len;
                 }
