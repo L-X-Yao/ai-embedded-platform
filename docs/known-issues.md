@@ -150,6 +150,30 @@ Register addresses, conversion formulas, SPI opcodes, and CRC polynomials confir
 
 **Not cross-validated** (pure logic, no chip registers): stepper, keypad_matrix, drv8833, tca9548a, mcp23017 (verified register map matches datasheet comments).
 
+## Fixed in super audit 2026-05-02 (85 new wheels)
+
+### CRITICAL (8, all fixed)
+- `protobuf_lite`: length-delimited field >UINT16_MAX silently truncated
+- `mqtt5_packet`: remaining length uint32→uint16 truncation in 3 build functions
+- `lorawan_packet`: unsigned subtraction underflow with large fopts_len
+- `canbus`: signal extract start_bit+length overflow past 64 bits
+- `modbus_tcp`: get_u16_be operator precedence (cosmetic but inconsistent)
+- `mcp2515`: extended ID SIDL register bit-field encode/decode incorrect
+- `mlx90614`: EEPROM write missing mandatory 5ms erase-write delay
+- `lora_sx1276`: SNR signed integer division truncation
+
+### MODERATE (28, all fixed)
+- L0: base64 trailing bits, cobs/slip/hex_codec size overflow, endian NULL guards, fixed_point add/sub saturation + FP_MIN UB, printf_tiny size=0 underflow, rate_limiter token overflow, string_utils INT32_MIN parse
+- L1: bme680 heater float truncation, enc28j60 register classification (verified correct), at24cxx batch page write, stepper sqrt overflow, vl53l0x polling delay, nrf24l01 receive max_len, keypad_matrix get_event state, apds9960 chip ID variant
+- L2: cbor_lite length overflow, dns_packet name max 64→253, ymodem file_size overflow, i2c_scan count cap, syslog_packet facility/severity validation
+- L3: telemetry snprintf overflow, sensor_hub float drift (documented), config_store load range validation, flash_journal read_nth size ordering
+
+## Accepted design decisions (new wheels)
+
+- `sensor_hub`: float sum accumulator drift over millions of polls (documented, use reset_stats periodically)
+- `timer_wheel`: O(max_timers) tick scan, not O(1) as originally intended (documented)
+- `moving_window`: running sum/sum_sq float drift (same class as sensor_hub)
+
 ## Remaining test gaps (low priority)
 
 (none — all previously listed gaps resolved in R10)
