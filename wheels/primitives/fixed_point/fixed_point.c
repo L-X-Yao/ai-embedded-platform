@@ -21,7 +21,10 @@ fp_t fp_from_float(float val)
 {
     /* reject NaN — cast of NaN to integer is undefined behavior */
     if (val != val) return 0;
-    return (fp_t)(val * (float)FP_ONE);
+    float scaled = val * (float)FP_ONE;
+    if (scaled >= (float)INT32_MAX) return FP_MAX;
+    if (scaled <= (float)INT32_MIN) return FP_MIN;
+    return (fp_t)scaled;
 }
 
 int16_t fp_to_int(fp_t val)
@@ -30,15 +33,19 @@ int16_t fp_to_int(fp_t val)
     if (val >= 0) {
         return (int16_t)(val >> FP_FRAC_BITS);
     }
-    return (int16_t)(-(-val >> FP_FRAC_BITS));
+    /* use int64_t to avoid UB when val == INT32_MIN */
+    return (int16_t)(-(int16_t)((-((int64_t)val)) >> FP_FRAC_BITS));
 }
 
 int16_t fp_to_int_rounded(fp_t val)
 {
     if (val >= 0) {
-        return (int16_t)((val + FP_HALF) >> FP_FRAC_BITS);
+        int64_t r = (int64_t)val + FP_HALF;
+        return (int16_t)(r >> FP_FRAC_BITS);
     }
-    return (int16_t)(-((-val + FP_HALF) >> FP_FRAC_BITS));
+    /* guard -INT32_MIN which would overflow */
+    int64_t neg = -(int64_t)val;
+    return (int16_t)(-((neg + FP_HALF) >> FP_FRAC_BITS));
 }
 
 float fp_to_float(fp_t val)
@@ -67,7 +74,10 @@ fp_t fp_sub(fp_t a, fp_t b)
 fp_t fp_mul(fp_t a, fp_t b)
 {
     int64_t result = (int64_t)a * (int64_t)b;
-    return (fp_t)(result >> FP_FRAC_BITS);
+    int64_t shifted = result >> FP_FRAC_BITS;
+    if (shifted > INT32_MAX) return FP_MAX;
+    if (shifted < INT32_MIN) return FP_MIN;
+    return (fp_t)shifted;
 }
 
 fp_t fp_div(fp_t a, fp_t b)
@@ -76,7 +86,10 @@ fp_t fp_div(fp_t a, fp_t b)
         return (a >= 0) ? FP_MAX : FP_MIN;
     }
     int64_t numerator = (int64_t)a << FP_FRAC_BITS;
-    return (fp_t)(numerator / (int64_t)b);
+    int64_t result = numerator / (int64_t)b;
+    if (result > INT32_MAX) return FP_MAX;
+    if (result < INT32_MIN) return FP_MIN;
+    return (fp_t)result;
 }
 
 /* ── Comparison ───────────────────────────────────────────────── */
