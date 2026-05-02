@@ -707,6 +707,14 @@ TEST(test_zero_init_safety)
     /* Primary read function on zero-init struct must not crash (no UB) */
 }
 
+/* TODO: add float NaN tests if _data_t has float fields:
+ *   #include <math.h>
+ *   TEST(test_nan_rejected) {
+ *       // Any API accepting float must reject NaN:
+ *       // Use !(val >= lo && val <= hi) pattern, NOT val < lo || val > hi
+ *   }
+ */
+
 /* TODO: add more tests */
 
 TEST_MAIN("${NAME_LOWER}")
@@ -1095,6 +1103,47 @@ TEST(test_build_overflow)
     ASSERT_EQ(${NAME_LOWER}_build(buf, 1, &msg), -1);
 }
 
+TEST(test_parse_adversarial)
+{
+    ${NAME_LOWER}_msg_t msg;
+    /* All zeros */
+    uint8_t zeros[64];
+    memset(zeros, 0, sizeof(zeros));
+    ${NAME_LOWER}_parse(zeros, sizeof(zeros), &msg);
+
+    /* All 0xFF */
+    uint8_t ones[64];
+    memset(ones, 0xFF, sizeof(ones));
+    ${NAME_LOWER}_parse(ones, sizeof(ones), &msg);
+
+    /* Boundary lengths: 0, 1, 255, 256 */
+    uint8_t big[256];
+    memset(big, 0xAA, sizeof(big));
+    ${NAME_LOWER}_parse(big, 0, &msg);
+    ${NAME_LOWER}_parse(big, 1, &msg);
+    ${NAME_LOWER}_parse(big, 255, &msg);
+    ${NAME_LOWER}_parse(big, 256, &msg);
+
+    /* Must not crash on any input — return value irrelevant */
+}
+
+TEST(test_parse_mini_fuzz)
+{
+    ${NAME_LOWER}_msg_t msg;
+    unsigned seed = 42;
+    for (int i = 0; i < 1000; i++) {
+        uint8_t buf[128];
+        int len = (int)(seed % 129);
+        for (int j = 0; j < len; j++) {
+            seed = seed * 1103515245u + 12345u;
+            buf[j] = (uint8_t)(seed >> 16);
+        }
+        seed = seed * 1103515245u + 12345u;
+        ${NAME_LOWER}_parse(buf, (size_t)len, &msg);
+    }
+    /* 1000 random inputs — must not crash */
+}
+
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_parse_ok);
     RUN(test_parse_null);
@@ -1102,6 +1151,8 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_build_ok);
     RUN(test_build_null);
     RUN(test_build_overflow);
+    RUN(test_parse_adversarial);
+    RUN(test_parse_mini_fuzz);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1551,11 +1602,39 @@ TEST(test_register_overflow)
     ASSERT_EQ(${NAME_LOWER}_register(&mod), ${NAME_UPPER}_ERR_FULL);
 }
 
+TEST(test_process_adversarial)
+{
+    ${NAME_LOWER}_t mod;
+    ${NAME_LOWER}_init(&mod, &mock_io);
+
+    /* All zeros */
+    uint8_t zeros[64];
+    memset(zeros, 0, sizeof(zeros));
+    ${NAME_LOWER}_process(&mod, zeros, sizeof(zeros));
+
+    /* All 0xFF */
+    uint8_t ones[64];
+    memset(ones, 0xFF, sizeof(ones));
+    ${NAME_LOWER}_process(&mod, ones, sizeof(ones));
+
+    /* Boundary lengths */
+    ${NAME_LOWER}_process(&mod, ones, 0);
+    ${NAME_LOWER}_process(&mod, ones, 1);
+
+    /* Must not crash on any input */
+}
+
+/* TODO: add float NaN tests if any API accepts float parameters.
+ * Use !(val >= lo && val <= hi) pattern, NOT val < lo || val > hi.
+ * NaN bypasses < and > comparisons (both return false per IEEE 754).
+ */
+
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_null);
     RUN(test_process_null);
     RUN(test_register_overflow);
+    RUN(test_process_adversarial);
 TEST_MAIN_END()
 TEST_EOF
 }

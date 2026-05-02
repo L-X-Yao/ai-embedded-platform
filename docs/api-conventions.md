@@ -218,12 +218,27 @@ w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi, ...) {
 }
 ```
 
-### 2.5 断言 vs 返回错误
+### 2.5 Float NaN 守卫（强制）
+
+接受 `float` 参数的公开 API 函数**必须**拒绝 NaN。IEEE 754 的 NaN 使所有 `<` `>` 比较返回 false，能绕过任何 `val < min || val > max` 范围检查。
+
+```c
+// ❌ NaN 绕过（NaN < 0 是 false，NaN > 100 也是 false）
+if (duty < 0.0f || duty > 100.0f) return ERR_PARAM;
+
+// ✅ 正确写法：取反正向判断（NaN >= 0 也是 false，所以 !false = true → 拒绝）
+if (!(duty >= 0.0f && duty <= 100.0f)) return ERR_PARAM;
+
+// ✅ 或者前置 NaN 检查
+if (val != val) return ERR_PARAM;  /* C 中 NaN != NaN 恒为 true */
+```
+
+### 2.6 断言 vs 返回错误
 
 - **运行时错误**（硬件无响应、buffer 满等可恢复情况）→ 返回错误码
 - **内部不变量**（只有代码 bug 才能触发）→ `VSF_ASSERT()`（不在公开 API 边界使用）
 
-### 2.6 L2 协议 build/encode 返回值
+### 2.7 L2 协议 build/encode 返回值
 
 L2 协议的 `_build()` / `_encode()` 函数统一返回 `int`：
 
