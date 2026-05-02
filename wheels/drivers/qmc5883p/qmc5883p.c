@@ -81,9 +81,9 @@ qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out)
     int16_t raw_y = (int16_t)((uint16_t)buf[3] << 8 | buf[2]);
     int16_t raw_z = (int16_t)((uint16_t)buf[5] << 8 | buf[4]);
 
-    out->mx = (float)raw_x / SENSITIVITY_2G;
-    out->my = (float)raw_y / SENSITIVITY_2G;
-    out->mz = (float)raw_z / SENSITIVITY_2G;
+    out->mx_gauss = (float)raw_x / SENSITIVITY_2G;
+    out->my_gauss = (float)raw_y / SENSITIVITY_2G;
+    out->mz_gauss = (float)raw_z / SENSITIVITY_2G;
 
     return QMC5883P_OK;
 }

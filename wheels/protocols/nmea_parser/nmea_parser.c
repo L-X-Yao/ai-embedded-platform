@@ -119,12 +119,12 @@ static void parse_rmc(const char *line, nmea_parser_data_t *d)
     const char *lat_f = get_field(line, 3);
     char ns = field_char(line, 4);
     if (*lat_f && *lat_f != ',')
-        d->latitude = parse_lat(lat_f, ns);
+        d->latitude_deg = parse_lat(lat_f, ns);
 
     const char *lon_f = get_field(line, 5);
     char ew = field_char(line, 6);
     if (*lon_f && *lon_f != ',')
-        d->longitude = parse_lon(lon_f, ew);
+        d->longitude_deg = parse_lon(lon_f, ew);
 
     float knots = field_float(line, 7);
     d->speed_kmh = knots * 1.852f;
@@ -173,7 +173,9 @@ bool nmea_parser_verify_checksum(const char *sentence)
     if (*p != '*') return false;
     p++;
 
+    if (*p == '\0') return false;
     int hi = hex_digit(*p++);
+    if (*p == '\0') return false;
     int lo = hex_digit(*p);
     if (hi < 0 || lo < 0) return false;
 

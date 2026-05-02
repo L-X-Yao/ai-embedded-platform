@@ -33,7 +33,7 @@ if (nmea_parser_verify_checksum(line)) {
 
 if (data.fix_valid && data.fix_mode == 2) {
     printf("3D fix: %.6f, %.6f, alt=%.1fm\n",
-           data.latitude, data.longitude, data.altitude_m);
+           data.latitude_deg, data.longitude_deg, data.altitude_m);
 }
 ```
 

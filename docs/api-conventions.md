@@ -111,6 +111,13 @@ New wheels should use the full directory name as prefix. Abbreviation requires a
 | `_lux` | 勒克斯 | `illuminance_lux` |
 | `_ppm` | ppm | `concentration_ppm` |
 | `_raw` | 原始 ADC / 寄存器值 | `temperature_raw` |
+| `_pct` | 百分比 | `humidity_pct` |
+| `_g` | 重力加速度（G） | `ax_g` |
+| `_gauss` | 高斯（磁通量密度） | `mx_gauss` |
+| `_ohm` | 欧姆（电阻） | `gas_resistance_ohm` |
+| `_m` | 米 | `altitude_m` |
+| `_mm` | 毫米 | `distance_mm` |
+| `_kmh` | 千米/小时 | `speed_kmh` |
 
 - ✅ `bmp280_data_t { float temperature_c; float pressure_pa; }`
 - ❌ `bmp280_data_t { float temperature; float pressure; }`（单位不明）

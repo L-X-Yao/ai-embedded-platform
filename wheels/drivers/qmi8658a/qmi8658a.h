@@ -78,8 +78,8 @@ typedef struct {
 /* ---------- sensor data ---------- */
 
 typedef struct {
-    float ax, ay, az;   /* acceleration (G) */
-    float gx, gy, gz;   /* angular rate  (deg/s) */
+    float ax_g, ay_g, az_g;     /* acceleration (G) */
+    float gx_dps, gy_dps, gz_dps; /* angular rate  (deg/s) */
 } qmi8658a_data_t;
 
 /* ---------- device instance ---------- */

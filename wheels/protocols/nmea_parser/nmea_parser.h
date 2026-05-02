@@ -39,8 +39,8 @@ typedef enum {
 /* ---------- parsed data ---------- */
 
 typedef struct {
-    float    latitude;
-    float    longitude;
+    float    latitude_deg;
+    float    longitude_deg;
     float    altitude_m;
     float    speed_kmh;
     float    course_deg;

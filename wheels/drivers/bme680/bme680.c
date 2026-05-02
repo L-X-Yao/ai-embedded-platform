@@ -319,11 +319,11 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
     if (gas_valid)
     {
         uint32_t gas_comp = compensate_gas(dev, adc_gas, gas_range);
-        data->gas_resistance = (float)gas_comp;
+        data->gas_resistance_ohm = (float)gas_comp;
     }
     else
     {
-        data->gas_resistance = 0.0f;
+        data->gas_resistance_ohm = 0.0f;
     }
 
     return BME680_OK;

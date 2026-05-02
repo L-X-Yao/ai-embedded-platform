@@ -113,9 +113,9 @@ TEST(test_read_ok)
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
     ASSERT_EQ(e, QMC5883P_OK);
-    ASSERT_NEAR(d.mx, 1500.0f / 15000.0f, 0.001f);
-    ASSERT_NEAR(d.my, -1500.0f / 15000.0f, 0.001f);
-    ASSERT_NEAR(d.mz, 3000.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mx_gauss, 1500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my_gauss, -1500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mz_gauss, 3000.0f / 15000.0f, 0.001f);
 }
 
 TEST(test_read_not_ready)
@@ -154,9 +154,9 @@ TEST(test_read_negative)
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
     ASSERT_EQ(e, QMC5883P_OK);
-    ASSERT_NEAR(d.mx, -7500.0f / 15000.0f, 0.001f);
-    ASSERT_NEAR(d.my, -15000.0f / 15000.0f, 0.001f);
-    ASSERT_NEAR(d.mz, -1.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mx_gauss, -7500.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my_gauss, -15000.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mz_gauss, -1.0f / 15000.0f, 0.001f);
 }
 
 TEST(test_read_int16_extremes)
@@ -172,8 +172,8 @@ TEST(test_read_int16_extremes)
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
     ASSERT_EQ(e, QMC5883P_OK);
-    ASSERT_NEAR(d.mx, 32767.0f / 15000.0f, 0.001f);
-    ASSERT_NEAR(d.my, -32768.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.mx_gauss, 32767.0f / 15000.0f, 0.001f);
+    ASSERT_NEAR(d.my_gauss, -32768.0f / 15000.0f, 0.001f);
 }
 
 TEST(test_read_zero)
@@ -189,9 +189,9 @@ TEST(test_read_zero)
     qmc5883p_data_t d;
     qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
     ASSERT_EQ(e, QMC5883P_OK);
-    ASSERT_NEAR(d.mx, 0.0f, 0.001f);
-    ASSERT_NEAR(d.my, 0.0f, 0.001f);
-    ASSERT_NEAR(d.mz, 0.0f, 0.001f);
+    ASSERT_NEAR(d.mx_gauss, 0.0f, 0.001f);
+    ASSERT_NEAR(d.my_gauss, 0.0f, 0.001f);
+    ASSERT_NEAR(d.mz_gauss, 0.0f, 0.001f);
 }
 
 TEST(test_init_write_order)

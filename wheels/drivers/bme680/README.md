@@ -35,12 +35,12 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
 bme680_err_t bme680_reset(bme680_t *dev);
 ```
 
-Output: `bme680_data_t { float temperature; float humidity; float pressure; float gas_resistance; }`
+Output: `bme680_data_t { float temperature_c; float humidity_pct; float pressure_pa; float gas_resistance_ohm; }`
 
-- `temperature`: degrees Celsius
-- `humidity`: percent RH (0..100)
-- `pressure`: Pascals
-- `gas_resistance`: Ohms (0 if gas measurement invalid/disabled)
+- `temperature_c`: degrees Celsius
+- `humidity_pct`: percent RH (0..100)
+- `pressure_pa`: Pascals
+- `gas_resistance_ohm`: Ohms (0 if gas measurement invalid/disabled)
 
 ## Configuration (compile-time)
 

@@ -45,7 +45,7 @@ typedef struct {
     float temperature_c;
     float humidity_pct;
     float pressure_pa;
-    float gas_resistance;
+    float gas_resistance_ohm;
 } bme680_data_t;
 
 typedef struct {

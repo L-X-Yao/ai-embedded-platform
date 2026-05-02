@@ -108,9 +108,9 @@ lis3dh_err_t lis3dh_read_accel(const lis3dh_t *dev, lis3dh_accel_t *out)
     int16_t ry = (int16_t)((uint16_t)buf[3] << 8 | buf[2]);
     int16_t rz = (int16_t)((uint16_t)buf[5] << 8 | buf[4]);
 
-    out->x = (float)rx / dev->scale;
-    out->y = (float)ry / dev->scale;
-    out->z = (float)rz / dev->scale;
+    out->x_g = (float)rx / dev->scale;
+    out->y_g = (float)ry / dev->scale;
+    out->z_g = (float)rz / dev->scale;
     return LIS3DH_OK;
 }
 

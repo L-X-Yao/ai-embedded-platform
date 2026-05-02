@@ -90,7 +90,7 @@ cfg.acc_range = QMI8658A_ACC_RANGE_8G;
 if (qmi8658a_init(&dev, &i2c, &cfg) == QMI8658A_OK) {
     qmi8658a_data_t data;
     qmi8658a_read(&dev, &data);
-    /* data.ax/ay/az in G, data.gx/gy/gz in deg/s */
+    /* data.ax_g/ay_g/az_g in G, data.gx_dps/gy_dps/gz_dps in deg/s */
 }
 ```
 
