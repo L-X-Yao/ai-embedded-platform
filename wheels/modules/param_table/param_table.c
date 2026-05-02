@@ -108,7 +108,8 @@ param_err_t param_table_get(const param_table_t *pt, const char *key,
         return PARAM_ERR_OVERFLOW;
     }
 
-    memcpy(value, pt->entries[idx].value, len + 1);
+    /* len < size guaranteed above, so len + 1 <= size */
+    memcpy(value, pt->entries[idx].value, len + 1U);
     return PARAM_OK;
 }
 
@@ -162,7 +163,12 @@ int param_table_list(const param_table_t *pt, char *buf, uint16_t size)
         /* Calculate required space: key + '=' + value + '\n' + NUL */
         size_t key_len = strlen(e->key);
         size_t val_len = strlen(e->value);
-        size_t line_len = key_len + 1 + val_len + 1; /* key=value\n */
+        /* Guard against size_t overflow in addition */
+        if (key_len > SIZE_MAX - val_len - 2U) {
+            buf[written] = '\0';
+            return -1;
+        }
+        size_t line_len = key_len + 1U + val_len + 1U; /* key=value\n */
 
         if ((size_t)written + line_len >= size) {
             /* Not enough room — NUL-terminate what we have and stop. */

@@ -117,7 +117,8 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line)
     char buf[CLI_LINE_BUFSIZE];
     size_t len = strlen(line);
     if (len >= CLI_LINE_BUFSIZE) return CLI_ERR_OVERFLOW;
-    memcpy(buf, line, len + 1);
+    /* len < CLI_LINE_BUFSIZE guaranteed above, so len + 1 cannot overflow */
+    memcpy(buf, line, len + 1U);
 
     const char *argv[CLI_MAX_ARGS];
     int argc = cli_tokenize(buf, argv, CLI_MAX_ARGS);

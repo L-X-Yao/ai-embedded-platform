@@ -104,7 +104,7 @@ log_dedup_flush(&g_dedup);
 
 ## Known issues
 
-None.
+None. (lines_equal prefix-only false match fixed 2026-05-02)
 
 ## How to test
 

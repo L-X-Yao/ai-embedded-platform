@@ -5,7 +5,7 @@
  * Layer:   L0
  * Status:  candidate
  * Deps:      none
- * Instances: single
+ * Instances: multi
  */
 
 #ifndef LOG_UART_H

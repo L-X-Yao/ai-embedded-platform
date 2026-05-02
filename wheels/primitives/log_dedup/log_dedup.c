@@ -53,8 +53,7 @@ static int lines_equal(const char *a, size_t a_len, const char *b, size_t b_len)
         }
     }
 
-    size_t cmp = la < lb ? la : lb;
-    return (cmp > 0) && (memcmp(sa, sb, cmp) == 0);
+    return (la == lb) && (la > 0) && (memcmp(sa, sb, la) == 0);
 }
 
 void log_dedup_sink(void *ctx, const char *line, size_t len) {

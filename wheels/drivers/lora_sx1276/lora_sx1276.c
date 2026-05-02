@@ -80,9 +80,12 @@ static void reg_write(const lora_spi_t *spi, uint8_t addr, uint8_t val)
     spi->cs_high(spi->ctx);
 }
 
-static void set_mode(const lora_spi_t *spi, uint8_t mode)
+static lora_err_t set_mode(const lora_spi_t *spi, uint8_t mode)
 {
     reg_write(spi, REG_OP_MODE, OPMODE_LORA | mode);
+    /* Read back to verify mode switch took effect */
+    uint8_t actual = reg_read(spi, REG_OP_MODE) & 0x07;
+    return (actual == mode) ? LORA_OK : LORA_ERR_SPI;
 }
 
 /* ---------- public API ---------- */
@@ -106,7 +109,8 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     spi->delay_ms(spi->ctx, 10);
 
     /* enter sleep to switch to LoRa mode */
-    set_mode(spi, MODE_SLEEP);
+    lora_err_t err = set_mode(spi, MODE_SLEEP);
+    if (err != LORA_OK) return err;
     spi->delay_ms(spi->ctx, 10);
 
     /* verify chip version */
@@ -116,7 +120,7 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     }
 
     /* set frequency */
-    lora_err_t err = lora_set_frequency(dev, freq_hz);
+    err = lora_set_frequency(dev, freq_hz);
     if (err != LORA_OK) return err;
 
     /* FIFO base addresses: TX=0x00, RX=0x00 (use full 256-byte FIFO) */
@@ -131,7 +135,8 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     if (err != LORA_OK) return err;
 
     /* standby mode */
-    set_mode(spi, MODE_STANDBY);
+    err = set_mode(spi, MODE_STANDBY);
+    if (err != LORA_OK) return err;
 
     return LORA_OK;
 }
@@ -227,7 +232,8 @@ lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len)
     const lora_spi_t *spi = dev->spi;
 
     /* standby for FIFO access */
-    set_mode(spi, MODE_STANDBY);
+    lora_err_t merr = set_mode(spi, MODE_STANDBY);
+    if (merr != LORA_OK) return merr;
 
     /* set FIFO pointer to TX base */
     reg_write(spi, REG_FIFO_ADDR_PTR, 0x00);
@@ -247,7 +253,8 @@ lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len)
     reg_write(spi, REG_IRQ_FLAGS, 0xFF);
 
     /* switch to TX */
-    set_mode(spi, MODE_TX);
+    merr = set_mode(spi, MODE_TX);
+    if (merr != LORA_OK) return merr;
 
     /* poll for TxDone */
     for (int i = 0; i < POLL_MAX; i++) {
@@ -255,12 +262,12 @@ lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len)
         uint8_t flags = reg_read(spi, REG_IRQ_FLAGS);
         if (flags & IRQ_TX_DONE) {
             reg_write(spi, REG_IRQ_FLAGS, IRQ_TX_DONE);
-            set_mode(spi, MODE_STANDBY);
+            (void)set_mode(spi, MODE_STANDBY);
             return LORA_OK;
         }
     }
 
-    set_mode(spi, MODE_STANDBY);
+    (void)set_mode(spi, MODE_STANDBY);
     return LORA_ERR_TIMEOUT;
 }
 
@@ -279,7 +286,8 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
     reg_write(spi, REG_FIFO_ADDR_PTR, 0x00);
 
     /* RX single mode */
-    set_mode(spi, MODE_RX_SINGLE);
+    lora_err_t merr = set_mode(spi, MODE_RX_SINGLE);
+    if (merr != LORA_OK) return merr;
 
     /* poll for RxDone */
     for (int i = 0; i < POLL_MAX; i++) {
@@ -289,7 +297,7 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
             /* check CRC error */
             if (flags & IRQ_PAYLOAD_CRC_ERR) {
                 reg_write(spi, REG_IRQ_FLAGS, 0xFF);
-                set_mode(spi, MODE_STANDBY);
+                (void)set_mode(spi, MODE_STANDBY);
                 return LORA_ERR_CRC;
             }
 
@@ -311,12 +319,12 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
 
             *len = nb;
             reg_write(spi, REG_IRQ_FLAGS, 0xFF);
-            set_mode(spi, MODE_STANDBY);
+            (void)set_mode(spi, MODE_STANDBY);
             return LORA_OK;
         }
     }
 
-    set_mode(spi, MODE_STANDBY);
+    (void)set_mode(spi, MODE_STANDBY);
     return LORA_ERR_TIMEOUT;
 }
 
@@ -354,13 +362,11 @@ int8_t lora_get_snr(lora_t *dev)
 lora_err_t lora_sleep(lora_t *dev)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    set_mode(dev->spi, MODE_SLEEP);
-    return LORA_OK;
+    return set_mode(dev->spi, MODE_SLEEP);
 }
 
 lora_err_t lora_standby(lora_t *dev)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    set_mode(dev->spi, MODE_STANDBY);
-    return LORA_OK;
+    return set_mode(dev->spi, MODE_STANDBY);
 }

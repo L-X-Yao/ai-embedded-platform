@@ -329,6 +329,10 @@ mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg)
     /* request to send */
     bit_modify(dev->spi, REG_TXB0CTRL, TXB_TXREQ, TXB_TXREQ);
 
+    /* verify TX request was accepted */
+    ctrl = reg_read(dev->spi, REG_TXB0CTRL);
+    if (!(ctrl & TXB_TXREQ)) return MCP2515_ERR_SPI;
+
     return MCP2515_OK;
 }
 
@@ -371,6 +375,10 @@ mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg)
 
     /* clear RX flag */
     bit_modify(dev->spi, REG_CANINTF, rx_flag, 0x00);
+
+    /* verify flag was cleared -- SPI failure would leave it set */
+    uint8_t post_intf = reg_read(dev->spi, REG_CANINTF);
+    if (post_intf & rx_flag) return MCP2515_ERR_SPI;
 
     return MCP2515_OK;
 }

@@ -148,7 +148,9 @@ static void dispatch_urc(at_command_t *at, const char *line)
 static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *evt)
 {
     const char *line = at->line_buf;
-    uint16_t len = (uint16_t)strlen(line);
+    size_t slen = strlen(line);
+    if (slen > UINT16_MAX) slen = UINT16_MAX;
+    uint16_t len = (uint16_t)slen;
 
     if (len == 0U) {
         return AT_COMMAND_EVT_NONE;
