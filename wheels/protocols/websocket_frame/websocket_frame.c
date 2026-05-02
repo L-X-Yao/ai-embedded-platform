@@ -52,6 +52,8 @@ websocket_frame_err_t websocket_frame_parse(const uint8_t *data, size_t len, web
         hdr_len = 4;
     } else {
         if (len < 10) return WEBSOCKET_FRAME_ERR_INCOMPLETE;
+        /* RFC 6455 s5.2: most significant bit of 64-bit length MUST be 0 */
+        if (data[2] & 0x80) return WEBSOCKET_FRAME_ERR_PROTOCOL;
         payload_len = 0;
         for (int i = 0; i < 8; i++)
             payload_len = (payload_len << 8) | data[2 + i];
