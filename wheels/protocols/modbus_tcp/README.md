@@ -15,8 +15,7 @@ Companion to the existing `modbus_rtu` wheel.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced debevv/nanoMODBUS (MIT). Same library covers TCP variant. Self-written for unified error handling and zero-allocation guarantee; implementation verified against Modbus TCP/IP spec (MBAP header, protocol ID, unit ID framing).
 
 ## Dependencies
 

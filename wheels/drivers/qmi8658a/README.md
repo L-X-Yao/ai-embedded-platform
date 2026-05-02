@@ -11,8 +11,7 @@ Extracted from `projects/flybox/src/drivers/imu/imu_driver.c`.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. Niche QST chip; no pure C driver exists. Self-written with HAL injection per platform conventions.
 
 ## Dependencies
 

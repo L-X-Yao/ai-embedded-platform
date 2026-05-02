@@ -14,8 +14,7 @@ relay boards) on I2C-constrained MCUs.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. All C impls HAL-specific. Self-written with HAL injection per platform conventions.
 
 ## Dependencies
 

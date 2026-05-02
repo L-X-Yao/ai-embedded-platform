@@ -11,8 +11,7 @@ Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox reta
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found libdriver/w25qxx, pellepl/spiflash_driver (MIT). Solid alternatives; our impl covers our subset. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 

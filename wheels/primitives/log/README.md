@@ -12,8 +12,7 @@ First wheel built for the platform (Sprint 0). Not extracted from a project — 
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced rxi/log.c (1k stars, MIT) for design comparison. rxi/log.c uses global state and FILE*; our composable multi-sink design with function pointer injection is deliberately different and better suited to embedded targets. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

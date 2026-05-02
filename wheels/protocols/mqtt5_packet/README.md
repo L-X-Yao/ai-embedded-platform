@@ -17,8 +17,7 @@ expiry, message expiry, enhanced reason codes).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced 1byt3/m5 (unclear license). Niche MQTT 5.0 library with unclear licensing. Self-written for platform convention consistency; implementation verified against MQTT 5.0 OASIS spec (variable byte integers, property encoding, reason codes).
 
 ## Dependencies
 

@@ -13,8 +13,7 @@ Proactive build for embedded telemetry/config parsing (MQTT payloads, AT command
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced zserge/jsmn (3.8k stars, MIT) for algorithm verification. jsmn is the gold standard embedded JSON parser; our SAX callback API is a deliberate design choice for streaming over jsmn's token-array approach. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

@@ -13,8 +13,7 @@ Proactive build for industrial temperature sensing (RTD applications).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced polymurph/MAX31865 (unclear license) for register sequences and compensation algorithms. Polynomial RTD approximation reference. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

@@ -12,8 +12,7 @@ Decoupled: I2C hardware handling stays in the project, parser is pure byte-strea
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No suitable lightweight zero-dependency C99 implementation found. Trivial single-byte command format specific to the ArduPilot NCP5623 subset. Self-written per platform conventions.
 
 ## Dependencies
 

@@ -16,8 +16,7 @@ paths for their specific algorithms; `crc_any` covers everything else.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced madler/crcany (MIT) by Mark Adler. Code generator approach is overkill; our parameterized Rocksoft-model calculator is ideal for embedded use. Self-written for platform convention consistency; implementation verified against CRC catalogue check values.
 
 ## Dependencies
 

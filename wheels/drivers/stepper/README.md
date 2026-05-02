@@ -13,8 +13,7 @@ Proactive build for motor control use cases (CNC, 3D printer, turntable, camera 
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found adrielluiz/drv8825_c (MIT). Simple GPIO+timing. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 

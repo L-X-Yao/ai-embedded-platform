@@ -13,8 +13,7 @@ Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetr
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found lammertb/libcrc (MIT). Standard textbook CRC16-MODBUS algorithm. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

@@ -14,8 +14,7 @@ pure min/max algorithm moves to this wheel.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced michal34512/Magnetometer-calibration (unclear license) for algorithm comparison. That library uses least-squares ellipsoid fitting; our simpler min/max hard-iron + scale approach is adequate for consumer-grade magnetometers. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

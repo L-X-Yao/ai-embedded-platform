@@ -15,8 +15,7 @@ embedded applications (weather stations, HVAC, indoor air quality, drones).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced boschsensortec/BME280_SensorAPI (BSD-3) for register sequences and compensation algorithms. Official Bosch driver; compensation formulas from datasheet BST-BME280-DS002-15, verified. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

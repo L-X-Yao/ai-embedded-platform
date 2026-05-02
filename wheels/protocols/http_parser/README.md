@@ -13,8 +13,7 @@ Proactive build for common embedded components (2026-04-29 batch).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced h2o/picohttpparser (MIT). Industry standard for high-performance HTTP parsing. Self-written for platform convention consistency; implementation verified against HTTP/1.1 spec (RFC 7230/7231).
 
 ## Dependencies
 

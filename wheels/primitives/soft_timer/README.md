@@ -14,8 +14,7 @@ periodic sensor sampling, communication timeouts, debounce delays.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found bradschl/embedded-c-soft-timer (MIT). bradschl uses heap at init; our static-only design fits the zero-allocation wheel contract. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

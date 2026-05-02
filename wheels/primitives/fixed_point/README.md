@@ -15,8 +15,7 @@ without hardware floating-point.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced PetteriAimonen/libfixmath (600 stars, MIT) for algorithm verification. libfixmath is the canonical Q16.16 library; our subset covers platform needs with int64_t overflow-safe intermediates. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

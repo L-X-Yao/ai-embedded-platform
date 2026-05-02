@@ -14,8 +14,7 @@ commands, and all hardware UART/DMA code.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced marcinbor85/cAT (MIT). Embedded-focused; our 229-line impl is minimal and fits contract. Self-written for platform convention consistency; implementation verified against AT command set conventions.
 
 ## Dependencies
 

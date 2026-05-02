@@ -15,8 +15,7 @@ remote-control packet routing, multi-source command arbitration).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No suitable alternative found. Priority-sorted command dispatcher; generic queues don't replace. Self-written as architecture-specific passive module per platform conventions.
 
 ## Dependencies
 

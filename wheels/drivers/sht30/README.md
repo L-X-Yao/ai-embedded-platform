@@ -14,8 +14,7 @@ in embedded applications (HVAC, weather stations, indoor air quality, IoT).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced Sensirion/embedded-sht (BSD-3) for register sequences and compensation algorithms. Official Sensirion driver; CRC-8 polynomial 0x31 verification referenced and confirmed in our implementation. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

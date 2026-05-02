@@ -14,8 +14,7 @@ UDP in IoT devices).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced spc476/SPCDNS (LGPL-3.0). Excellent implementation but LGPL is problematic for static linking in embedded firmware. Self-written for platform convention consistency; implementation verified against RFC 1035.
 
 ## Dependencies
 

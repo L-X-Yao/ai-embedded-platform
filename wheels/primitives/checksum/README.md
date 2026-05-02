@@ -12,8 +12,7 @@ Proactive build for common embedded components (2026-04-29 batch).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found lammertb/libcrc (MIT). Covers fletcher/adler checksums; 69 lines barely justifies vendoring a dependency. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

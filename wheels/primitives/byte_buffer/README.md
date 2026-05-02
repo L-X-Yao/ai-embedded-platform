@@ -16,8 +16,7 @@ for packet assembly (write header → write payload → send) and parsing
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. Ali-Mirghasemi/Stream is over-engineered for this use case; this wheel is 133 lines trivial. Self-written to match platform conventions.
 
 ## Dependencies
 

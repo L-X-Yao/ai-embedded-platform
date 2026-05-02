@@ -14,8 +14,7 @@ Proactive build for common embedded components (2026-04-29 batch).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. 48-line deadline checker; too trivial to vendor. Self-written to match platform conventions.
 
 ## Dependencies
 

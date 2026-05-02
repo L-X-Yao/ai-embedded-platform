@@ -13,8 +13,7 @@ Proactive build for embedded debug shells. Not extracted from a specific project
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced funbiscuit/embedded-cli (MIT) for design patterns. embedded-cli includes history and autocomplete; our wheel is a simpler argument parser matching platform needs. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

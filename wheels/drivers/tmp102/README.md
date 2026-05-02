@@ -13,8 +13,7 @@ Proactive build for common I2C temperature sensing use case.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. 2-register I2C sensor, trivially simple. Self-written with HAL injection per platform conventions.
 
 ## Dependencies
 

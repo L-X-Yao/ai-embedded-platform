@@ -15,8 +15,7 @@ multiple projects (flybox, future serial-based protocols).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found AndersKaloer/Ring-Buffer (MIT). Dozens of similar implementations exist; textbook data structure. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

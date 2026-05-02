@@ -15,8 +15,7 @@ the Modbus Application Protocol Specification V1.1b3.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced debevv/nanoMODBUS (MIT). No malloc, ~2000 lines, solid alternative. Self-written for unified error handling and zero-allocation guarantee; implementation verified against Modbus Application Protocol Specification V1.1b3 (CRC-16 polynomial, function codes, exception responses).
 
 ## Dependencies
 

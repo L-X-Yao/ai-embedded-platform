@@ -14,8 +14,7 @@ prototyping and products (debug output, status display, simple UI).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced lexus2k/ssd1306 (MIT) for register sequences and compensation algorithms. Feature-rich but large; good reference for display primitives. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

@@ -14,8 +14,7 @@ Proactive build for wireless communication use cases (remote control, telemetry,
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found ebrezadev/nRF24L01-C-Driver (permissive). Minimal; our impl covers needs. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 
