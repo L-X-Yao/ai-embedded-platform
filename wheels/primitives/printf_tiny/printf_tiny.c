@@ -23,7 +23,7 @@ static void out_char(out_t *o, char c)
 {
     if (o->putc) {
         o->putc(o->ctx, c);
-    } else if (o->buf) {
+    } else if (o->buf && o->size > 0u) {
         if (o->pos < (int)(o->size - 1u)) {
             o->buf[o->pos] = c;
         }

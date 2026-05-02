@@ -23,6 +23,9 @@ static hex_err_t hex_encode_impl(const uint8_t *data, uint16_t data_len,
     if (data_len > 0 && data == NULL) { return HEX_ERR_PARAMS; }
     if (out == NULL)                  { return HEX_ERR_PARAMS; }
 
+    /* Guard uint16_t overflow: data_len * 2 + 1 must fit in uint16_t */
+    if (data_len > 32767u)            { return HEX_ERR_OVERFLOW; }
+
     uint16_t needed = (uint16_t)(data_len * 2u + 1u);
     if (out_size < needed)            { return HEX_ERR_OVERFLOW; }
 

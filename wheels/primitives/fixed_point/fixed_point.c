@@ -46,12 +46,18 @@ float fp_to_float(fp_t val)
 
 fp_t fp_add(fp_t a, fp_t b)
 {
-    return a + b;
+    int64_t r = (int64_t)a + (int64_t)b;
+    if (r > INT32_MAX) return FP_MAX;
+    if (r < INT32_MIN) return FP_MIN;
+    return (fp_t)r;
 }
 
 fp_t fp_sub(fp_t a, fp_t b)
 {
-    return a - b;
+    int64_t r = (int64_t)a - (int64_t)b;
+    if (r > INT32_MAX) return FP_MAX;
+    if (r < INT32_MIN) return FP_MIN;
+    return (fp_t)r;
 }
 
 fp_t fp_mul(fp_t a, fp_t b)
@@ -118,12 +124,16 @@ int fp_to_string(fp_t val, char *buf, uint16_t buf_size, uint8_t decimal_places)
     uint16_t remaining = buf_size;
     fp_t work = val;
 
-    /* Sign */
+    /* Sign — handle FP_MIN (INT32_MIN) specially to avoid -INT32_MIN UB */
     if (work < 0) {
         if (remaining < 2) { buf[0] = '\0'; return -1; }
         buf[pos++] = '-';
         remaining--;
-        work = -work;
+        if (work == (fp_t)INT32_MIN) {
+            work = INT32_MAX; /* off by 1 LSB, acceptable for formatting */
+        } else {
+            work = -work;
+        }
     }
 
     /* Integer part */
