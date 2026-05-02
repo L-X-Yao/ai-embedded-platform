@@ -49,6 +49,430 @@ LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
 CONSUMER_REQUIRED = {"drivers", "protocols", "modules"}
 SKIP_DIRS = {"test", "build", "__pycache__", ".pytest_cache"}
 
+# --- File cache: eliminate ~6000 redundant IO reads ---
+
+_file_cache: dict[str, str] = {}
+
+
+def _cached_read(path: Path) -> str:
+    """Read file contents with caching. Returns '' for missing/unreadable files."""
+    key = str(path)
+    if key not in _file_cache:
+        if not path.exists():
+            _file_cache[key] = ""
+        else:
+            try:
+                _file_cache[key] = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                _file_cache[key] = ""
+    return _file_cache[key]
+
+
+class WheelCtx:
+    """Pre-loaded file contents for a single wheel."""
+    __slots__ = ("layer", "name", "path", "dir", "readme", "header", "source",
+                 "test_cmake", "is_vendor", "is_draft", "headings", "header_lines")
+
+    def __init__(self, layer: str, name: str, wheel_dir: Path):
+        self.layer = layer
+        self.name = name
+        self.path = f"wheels/{layer}/{name}"
+        self.dir = wheel_dir
+        self.readme = _cached_read(wheel_dir / "README.md")
+        self.header = _cached_read(wheel_dir / f"{name}.h")
+        self.source = _cached_read(wheel_dir / f"{name}.c")
+        self.test_cmake = _cached_read(wheel_dir / "test" / "CMakeLists.txt")
+        if not self.test_cmake:
+            self.test_cmake = _cached_read(wheel_dir / "CMakeLists.txt")
+        self.is_vendor = (wheel_dir / "vendor").is_dir()
+        self.is_draft = layer == "_draft"
+        self.headings = re.findall(r'^## (.+)$', self.readme, re.MULTILINE)
+        self.header_lines = self.header.split("\n") if self.header else []
+
+
+# --- Unified check functions (accept WheelCtx, return result or None) ---
+# Each returns None (pass) or (message, fix_cmd) tuple.
+
+def chk_ci_job(ctx, *, ci_text, **_):
+    if ctx.path in ci_text:
+        return None
+    if "wheels/*/*/test/CMakeLists.txt" in ci_text and (ctx.dir / "test" / "CMakeLists.txt").exists():
+        return None
+    return (f"missing CI job — no mention of '{ctx.path}' in ci.yml",
+            f"add '{ctx.path}' to .github/workflows/ci.yml wheel-test matrix")
+
+
+def chk_vendor_md(ctx, **_):
+    if not ctx.is_vendor:
+        return None
+    if (ctx.dir / "VENDOR.md").exists():
+        return None
+    return ("has vendor/ but no VENDOR.md",
+            f"create {ctx.path}/VENDOR.md documenting upstream origin (ADR-010)")
+
+
+def chk_cross_wheel_deps(ctx, **_):
+    deps = []
+    pat = re.compile(r"\.\./\.\./\.\./(primitives|drivers|protocols|modules)/([a-z0-9_]+)/")
+    deps = list({m[1] for m in pat.findall(ctx.test_cmake)})
+    if not deps:
+        return None
+    if "## Dependencies" in ctx.readme:
+        return None
+    return (f"depends on {', '.join(deps)} but README has no Dependencies section",
+            f"add '## Dependencies' section to {ctx.path}/README.md")
+
+
+def chk_api_review(ctx, **_):
+    if "## API Review" in ctx.readme or "## API review" in ctx.readme:
+        return None
+    return ("README missing API review section",
+            f"add '## API Review' section to {ctx.path}/README.md")
+
+
+def chk_ctest_registration(ctx, **_):
+    if not ctx.test_cmake:
+        return None
+    if "enable_testing()" in ctx.test_cmake and "add_test(" in ctx.test_cmake:
+        return None
+    return ("test CMakeLists.txt missing enable_testing()/add_test()",
+            f"add enable_testing() + add_test() to {ctx.path}/test/CMakeLists.txt")
+
+
+def chk_c99_standard(ctx, **_):
+    if not ctx.test_cmake or "vsf.cmake" in ctx.test_cmake:
+        return None
+    if "CMAKE_C_STANDARD" in ctx.test_cmake:
+        return None
+    return ("test CMakeLists.txt missing CMAKE_C_STANDARD 99",
+            f"add set(CMAKE_C_STANDARD 99) to {ctx.path}/test/CMakeLists.txt")
+
+
+def chk_candidate_sections(ctx, **_):
+    required = [
+        ("Supported platforms", "支持的平台"),
+        ("Test status", "测试状态"),
+        ("Dependencies", "依赖"),
+        ("How to test", "如何测试"),
+        ("Known issues", "已知坑", "已知问题"),
+        ("Origin", "来源"),
+    ]
+    missing = []
+    for names in required:
+        if not any(f"## {n}" in ctx.readme for n in names):
+            missing.append(names[0])
+    if not missing:
+        return None
+    return (f"README missing candidate sections: {', '.join(missing)}",
+            f"add sections to {ctx.path}/README.md: {', '.join(missing)}")
+
+
+def chk_file_header(ctx, **_):
+    for text in (ctx.header, ctx.source):
+        if not text:
+            continue
+        top = "\n".join(text.split("\n")[:10])
+        if "Layer:" not in top or "Status:" not in top:
+            return (".h/.c missing Layer/Status/Deps file header",
+                    f"add header to {ctx.path}/{ctx.name}.h/.c (api-conventions §8)")
+    return None
+
+
+def chk_extern_c_guard(ctx, **_):
+    if not ctx.header or 'extern "C"' in ctx.header:
+        return None
+    return ('.h missing extern "C" guard',
+            f'add extern "C" guard to {ctx.path}/{ctx.name}.h')
+
+
+def chk_thread_safe(ctx, **_):
+    if not ctx.header or "@thread_safe" in ctx.header:
+        return None
+    return (".h missing @thread_safe annotations",
+            "make audit-fix-apply --only doc_comments")
+
+
+def chk_test_exit_code(ctx, **_):
+    for glob_pat in ["test/test_*.c", "test_*.c"]:
+        for src in ctx.dir.glob(glob_pat):
+            text = _cached_read(src)
+            if 'test_harness.h' in text:
+                return None
+            if "return" in text and any(p in text for p in ["tests_fail", "g_failures", "failures", "TEST_MAIN_END"]):
+                return None
+    if list(ctx.dir.glob("test_*.py")) or list(ctx.dir.glob("test/test_*.py")):
+        return None
+    return ("test harness may not return non-zero on failure",
+            f'#include "test_harness.h" and use TEST_MAIN_BEGIN/END in {ctx.path}/test/')
+
+
+def chk_balanced_test_run(ctx, **_):
+    for glob_pat in ["test/test_*.c", "test_*.c"]:
+        for src in ctx.dir.glob(glob_pat):
+            text = _cached_read(src)
+            if "test_harness.h" not in text:
+                continue
+            tests = set(re.findall(r'^TEST\((\w+)\)', text, re.MULTILINE))
+            runs = set(re.findall(r'RUN\((\w+)\)', text))
+            unrun = tests - runs
+            if unrun:
+                return (f"{len(tests)} TEST() but only {len(runs)} RUN() — orphan test functions",
+                        f"add missing RUN() calls in {ctx.path}/test/")
+    return None
+
+
+def chk_werror(ctx, **_):
+    if not ctx.test_cmake or "-Wall" not in ctx.test_cmake:
+        return None
+    if "-Werror" in ctx.test_cmake:
+        return None
+    return ("test CMakeLists.txt missing -Werror",
+            f"add -Werror to {ctx.path}/test/CMakeLists.txt")
+
+
+def chk_wconversion(ctx, **_):
+    if not ctx.test_cmake or "-Wall" not in ctx.test_cmake:
+        return None
+    if "-Wconversion" in ctx.test_cmake:
+        return None
+    return ("test CMakeLists.txt missing -Wconversion",
+            f"add -Wconversion to {ctx.path}/test/CMakeLists.txt")
+
+
+def chk_responsible_human(ctx, **_):
+    if "## Responsible human" in ctx.readme:
+        return None
+    return ("README missing '## Responsible human' section",
+            f"add '## Responsible human' to {ctx.path}/README.md")
+
+
+def chk_deviation_heading(ctx, **_):
+    if "## Convention Deviations" not in ctx.readme:
+        return None
+    return ("use '## API convention deviations' not '## Convention Deviations'",
+            f"rename heading in {ctx.path}/README.md")
+
+
+def chk_error_code_sign(ctx, **_):
+    if not has_negative_error_codes(ctx.dir, ctx.name):
+        return ("error enum uses auto-increment (should be explicit negative)",
+                "python3 tooling/audit/audit_fix.py --apply")
+    return None
+
+
+def chk_function_doc(ctx, **_):
+    if not has_function_doc_all(ctx.dir, ctx.name):
+        return ("some functions lack doc comment before declaration",
+                "python3 tooling/audit/audit_fix.py --apply")
+    return None
+
+
+def chk_error_code_coverage(ctx, **_):
+    uncovered = has_error_code_test_coverage(ctx.dir, ctx.name)
+    if not uncovered:
+        return None
+    return (f"untested error codes: {', '.join(uncovered)}",
+            f"add test cases covering {', '.join(uncovered)} in {ctx.path}/test/")
+
+
+def chk_naming_convention(ctx, **_):
+    if not has_naming_convention(ctx.dir, ctx.name):
+        return (f"public functions not following {ctx.name}_<verb> naming pattern",
+                f"rename public functions in {ctx.path}/{ctx.name}.h")
+    return None
+
+
+def chk_hal_injection(ctx, **_):
+    if not has_consistent_hal_pattern(ctx.dir, ctx.name):
+        return ("L1 driver missing HAL struct with function pointers",
+                f"add HAL struct to {ctx.path}/{ctx.name}.h")
+    return None
+
+
+def chk_busy_wait_timeout(ctx, **_):
+    unguarded = has_busy_wait_timeout(ctx.dir)
+    if not unguarded:
+        return None
+    locs = "; ".join(f"{f}:{ln}" for f, ln, _ in unguarded)
+    return (f"busy-wait without timeout guard at {locs}",
+            f"add timeout counter in {ctx.path}")
+
+
+def chk_dev_t_naming(ctx, **_):
+    if f"{ctx.name}_dev_t" not in ctx.header:
+        return None
+    return (f"uses {ctx.name}_dev_t — should be {ctx.name}_t (api-conventions §1.3)",
+            f"rename in {ctx.path}/{ctx.name}.h/.c")
+
+
+def chk_err_plural(ctx, **_):
+    if "ERR_PARAMS" not in ctx.header:
+        return None
+    return ("uses ERR_PARAMS (plural) — should be ERR_PARAM",
+            f"rename in {ctx.path}/{ctx.name}.h/.c")
+
+
+def chk_pragma_once(ctx, **_):
+    if "#pragma once" not in ctx.header:
+        return None
+    return ("uses #pragma once — should use #ifndef guard (api-conventions §9.2)",
+            f"replace in {ctx.path}/{ctx.name}.h")
+
+
+def chk_spdx_header(ctx, **_):
+    if not ctx.header or "SPDX-License-Identifier" in ctx.header:
+        return None
+    return (".h missing SPDX-License-Identifier line",
+            f"add to {ctx.path}/{ctx.name}.h")
+
+
+def chk_vsf_native_residual(ctx, **_):
+    if "why not vsf native" not in ctx.readme.lower():
+        return None
+    return ("README still has 'Why not VSF native?' — ADR-006 superseded by ADR-011",
+            f"remove from {ctx.path}/README.md")
+
+
+def chk_init_caller_must_lock(ctx, **_):
+    if has_init_caller_must_lock(ctx.dir, ctx.name):
+        return ("init/deinit/reset tagged caller_must_lock — should be 'no'",
+                f"change in {ctx.path}/{ctx.name}.h")
+    return None
+
+
+def chk_deps_format(ctx, **_):
+    issue = has_deps_format_issue(ctx.dir, ctx.name)
+    if not issue:
+        return None
+    return (f"file header {issue}",
+            f"fix Deps: line in {ctx.path}/{ctx.name}.h/.c")
+
+
+def chk_why_self_written(ctx, **_):
+    if ctx.is_vendor:
+        return None
+    text_l = ctx.readme.lower()
+    if ("why self-written" in text_l or "why not an open-source" in text_l or
+            "why not open-source" in text_l or "why this upstream" in text_l):
+        return None
+    return ("README missing 'Why self-written?' section (ADR-010)",
+            f"add to {ctx.path}/README.md")
+
+
+def chk_status_format(ctx, **_):
+    if "**STATUS:" not in ctx.readme:
+        return None
+    return ("README uses **STATUS:** — should be **Status:** (title case)",
+            f"change in {ctx.path}/README.md")
+
+
+def chk_instances_field(ctx, **_):
+    if not has_instances_field(ctx.dir, ctx.name):
+        return ("file header missing Instances: multi|single field",
+                f"add to {ctx.path}/{ctx.name}.h")
+    return None
+
+
+def chk_isr_safe(ctx, **_):
+    if not ctx.header or "@isr_safe" in ctx.header:
+        return None
+    return (".h missing @isr_safe annotation (api-conventions §4.1)",
+            f"add @isr_safe to {ctx.path}/{ctx.name}.h")
+
+
+def chk_config_h_placement(ctx, **_):
+    issue = has_config_h_placement(ctx.dir, ctx.name)
+    if not issue:
+        return None
+    return (issue, f"move config.h include from .h to .c in {ctx.path}/")
+
+
+def chk_nan_guard(ctx, **_):
+    violations = has_nan_guard_in_float_api(ctx.dir, ctx.name)
+    if not violations:
+        return None
+    locs = "; ".join(f"L{ln}" for ln, _ in violations[:3])
+    return (f"vulnerable float range check at {locs}",
+            f"use !(val >= min && val <= max) in {ctx.path}/{ctx.name}.c")
+
+
+def chk_deinit_safety(ctx, **_):
+    if has_deinit_null_check(ctx.dir, ctx.name):
+        return None
+    return ("deinit function may not check for NULL pointer",
+            f"add NULL check to {ctx.name}_deinit in {ctx.path}/{ctx.name}.c")
+
+
+def chk_readme_section_order(ctx, **_):
+    violations = has_readme_section_order(ctx.dir)
+    if not violations:
+        return None
+    return (f"README sections out of order: {', '.join(violations)}",
+            f"reorder in {ctx.path}/README.md per wheel-contract §3.2")
+
+
+def chk_readme_section_names(ctx, **_):
+    violations = has_readme_section_names(ctx.dir)
+    if not violations:
+        return None
+    return (f"non-standard section names: {'; '.join(violations)}",
+            f"rename sections in {ctx.path}/README.md")
+
+
+def chk_unit_suffix(ctx, **_):
+    violations = has_unit_suffix_on_physical(ctx.dir, ctx.name)
+    if not violations:
+        return None
+    fields = ", ".join(violations[:5])
+    return (f"physical fields without unit suffix: {fields}",
+            f"add unit suffix to fields in {ctx.path}/{ctx.name}.h")
+
+
+# --- Check table: metadata for each check ---
+
+CHECK_TABLE = [
+    # (name, heading, func, level, layers, skip_vendor, skip_draft)
+    ("ci_job",              "CI job",                             chk_ci_job,              "FAIL", None,                      False, False),
+    ("vendor_md",           "Vendor VENDOR.md (ADR-010)",         chk_vendor_md,           "FAIL", None,                      False, False),
+    ("cross_wheel_deps",    "Cross-wheel deps (ADR-009)",         chk_cross_wheel_deps,    "WARN", None,                      False, False),
+    ("api_review",          "API review metadata",                chk_api_review,          "WARN", None,                      True,  True),
+    ("ctest_registration",  "ctest registration",                 chk_ctest_registration,  "WARN", None,                      False, False),
+    ("c99_standard",        "CMAKE_C_STANDARD 99",               chk_c99_standard,        "WARN", None,                      False, False),
+    ("candidate_sections",  "Candidate README sections",          chk_candidate_sections,  "WARN", None,                      True,  True),
+    ("file_header",         "File header (api-conventions §8)",   chk_file_header,         "WARN", None,                      True,  False),
+    ("extern_c_guard",      'extern "C" guard',                   chk_extern_c_guard,      "WARN", None,                      True,  False),
+    ("thread_safe",         "@thread_safe annotations",           chk_thread_safe,         "WARN", None,                      True,  False),
+    ("test_exit_code",      "Test exit code",                     chk_test_exit_code,      "WARN", None,                      True,  False),
+    ("test_run_balance",    "TEST/RUN balance",                   chk_balanced_test_run,   "WARN", None,                      True,  False),
+    ("werror",              "-Werror flag",                       chk_werror,              "WARN", None,                      True,  False),
+    ("wconversion",         "-Wconversion flag",                  chk_wconversion,         "WARN", None,                      True,  False),
+    ("responsible_human",   "Responsible human",                  chk_responsible_human,   "WARN", None,                      True,  True),
+    ("deviation_heading",   "API convention deviations heading",  chk_deviation_heading,   "WARN", None,                      False, False),
+    ("error_code_sign",     "Error code sign convention (Q4)",    chk_error_code_sign,     "WARN", None,                      True,  False),
+    ("function_doc",        "Function doc completeness (Q29)",    chk_function_doc,        "WARN", None,                      True,  True),
+    ("error_code_coverage", "Error code test coverage",           chk_error_code_coverage, "WARN", None,                      True,  False),
+    ("naming_convention",   "Naming convention",                  chk_naming_convention,   "WARN", None,                      True,  False),
+    ("hal_injection",       "HAL injection pattern (L1)",         chk_hal_injection,       "WARN", {"drivers"},               True,  False),
+    ("busy_wait_timeout",   "Busy-wait timeout guard",            chk_busy_wait_timeout,   "WARN", None,                      True,  False),
+    ("dev_t_naming",        "Context type naming (_t not _dev_t)", chk_dev_t_naming,       "WARN", None,                      True,  False),
+    ("err_plural",          "Error code singular (ERR_PARAM)",    chk_err_plural,          "WARN", None,                      True,  False),
+    ("pragma_once",         "Include guard style",                chk_pragma_once,         "WARN", None,                      True,  False),
+    ("spdx_header",         "SPDX license identifier",            chk_spdx_header,        "WARN", None,                      True,  False),
+    ("vsf_native_residual", "'Why not VSF native?' residual",    chk_vsf_native_residual, "WARN", None,                      False, False),
+    ("init_thread_safe",    "@thread_safe on init/deinit/reset", chk_init_caller_must_lock, "WARN", None,                    True,  False),
+    ("deps_format",         "Deps format (api-conventions §8)",  chk_deps_format,         "WARN", None,                      True,  False),
+    ("why_self_written",    "'Why self-written?' section",        chk_why_self_written,    "WARN", None,                      False, True),
+    ("status_format",       "Status format",                     chk_status_format,       "WARN", None,                      False, False),
+    ("instances_field",     "Instances field",                   chk_instances_field,     "WARN", None,                      True,  False),
+    ("isr_safe",            "@isr_safe annotation",              chk_isr_safe,            "WARN", {"primitives", "drivers"}, True,  False),
+    ("config_h_placement",  "config.h placement (§6.3)",         chk_config_h_placement,  "WARN", None,                      True,  False),
+    ("nan_guard",           "NaN guard pattern (§2.5)",          chk_nan_guard,           "WARN", None,                      True,  False),
+    ("deinit_safety",       "deinit safety (§3.4)",              chk_deinit_safety,       "WARN", None,                      True,  False),
+    ("readme_section_order", "README section order",             chk_readme_section_order, "WARN", None,                     False, True),
+    ("readme_section_names", "README section names",             chk_readme_section_names, "WARN", None,                     False, False),
+    ("unit_suffix",         "Physical unit suffixes (§1.6)",     chk_unit_suffix,         "WARN", {"drivers"},               True,  False),
+]
+
 
 def find_wheels():
     """Return list of (layer, name, rel_path) for each wheel directory."""
@@ -1022,6 +1446,11 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
     ci_text = CI_YAML.read_text(encoding="utf-8") if CI_YAML.exists() else ""
     wheels = find_wheels()
 
+    # Pre-load all wheel files into cache (one-time IO, ~143 wheels × 4 files)
+    contexts = {}
+    for layer, name, path in wheels:
+        contexts[path] = WheelCtx(layer, name, WHEELS / layer / name)
+
     failures = []
     warnings = []
     results = []
@@ -1036,251 +1465,44 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
         elif level == "WARN":
             warnings.append(f"{wheel_path}: {msg}")
 
-    qprint(f"=== Wheel audit ({len(wheels)} wheels) ===\n")
+    qprint(f"=== Wheel audit ({len(wheels)} wheels, {len(CHECK_TABLE)} checks) ===\n")
+
+    # --- Table-driven check dispatch ---
+    for chk_name, heading, chk_fn, level, layers, skip_vendor, skip_draft in CHECK_TABLE:
+        qprint(f"\n=== {heading} ===\n")
+        for layer, name, path in wheels:
+            ctx = contexts[path]
+            if skip_vendor and ctx.is_vendor:
+                qprint(f"  [skip]  {path} (vendor)")
+                continue
+            if skip_draft and ctx.is_draft:
+                continue
+            if layers and layer not in layers:
+                continue
+            result = chk_fn(ctx, ci_text=ci_text)
+            if result:
+                msg, fix_cmd = result
+                record(chk_name, path, level, msg, fix_cmd)
+                tprint(f"  [{level}]  {path}: {msg}")
+            else:
+                qprint(f"  [ ok ]  {path}")
+
+    # --- Consumer check (special: INFO level, needs consumer scan) ---
     for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        ci_ok = has_ci_job(path, ci_text, wheel_dir)
+        ctx = contexts[path]
         consumers = [] if fast else find_consumers(path, name)
         consumer_required = layer in CONSUMER_REQUIRED
-        origin = has_project_origin(wheel_dir)
+        origin = "Extracted from" in ctx.readme and "projects/" in ctx.readme
 
-        if not ci_ok:
-            icon = "FAIL"
-            record("ci_job", path, "FAIL",
-                   f"missing CI job — no mention of '{path}' in {CI_YAML.relative_to(REPO)}",
-                   fix_cmd=f"add '{path}' to .github/workflows/ci.yml wheel-test matrix")
-        elif consumer_required and not consumers:
-            icon = "info"
+        if consumer_required and not consumers:
             reason = "extracted from project" if origin else "proactively built"
             record("consumer", path, "INFO", f"no consumer yet ({reason}, acceptable)",
-                   fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
+                   fix_cmd=f"#include <{name}.h> in a project")
         elif not consumers:
-            icon = "info"
             record("consumer", path, "INFO", f"no consumer yet (acceptable for {layer})",
-                   fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
-        else:
-            icon = " ok "
+                   fix_cmd=f"#include <{name}.h> in a project")
 
-        ci_label = "yes" if ci_ok else "MISSING"
-        cons_label = ", ".join(consumers) if consumers else "(none)"
-        qprint(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
-
-    # --- Vendor wheel VENDOR.md check (ADR-010) ---
-    qprint("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
-    vendor_found = False
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if not is_vendor_wheel(wheel_dir):
-            continue
-        vendor_found = True
-        if not has_vendor_md(wheel_dir):
-            record("vendor_md", path, "FAIL", "has vendor/ but no VENDOR.md",
-                   fix_cmd=f"create {path}/VENDOR.md documenting upstream origin (ADR-010)")
-            tprint(f"  [FAIL]  {path}: vendor/ present, VENDOR.md missing")
-        else:
-            qprint(f"  [ ok ]  {path}")
-    if not vendor_found:
-        qprint("  (no vendor wheels found)")
-
-    # --- Cross-wheel dependency documentation (ADR-009) ---
-    qprint("\n=== Cross-wheel deps documented (ADR-009) ===\n")
-    deps_found = False
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        deps = detect_cross_wheel_deps(wheel_dir)
-        if not deps:
-            continue
-        deps_found = True
-        if not has_dependencies_section(wheel_dir):
-            record("cross_wheel_deps", path, "WARN",
-                   f"depends on {', '.join(deps)} but README has no Dependencies section",
-                   fix_cmd=f"add '## Dependencies' section listing {', '.join(deps)} to {path}/README.md")
-            tprint(f"  [WARN]  {path} → {', '.join(deps)} (undocumented)")
-        else:
-            qprint(f"  [ ok ]  {path} → {', '.join(deps)}")
-    if not deps_found:
-        qprint("  (no cross-wheel dependencies detected)")
-
-    # --- API review section (wheel-contract §7) ---
-    qprint("\n=== API review metadata (wheel-contract §7) ===\n")
-    for layer, name, path in wheels:
-        if layer == "_draft":
-            continue
-        wheel_dir = WHEELS / layer / name
-        if not has_api_review(wheel_dir):
-            record("api_review", path, "WARN", "README missing API review section",
-                   fix_cmd=f"add '## API Review' section to {path}/README.md (see wheel-contract §7)")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- ctest registration check ---
-    qprint("\n=== ctest registration (enable_testing + add_test) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if not has_ctest_registration(wheel_dir):
-            record("ctest_registration", path, "WARN",
-                   "test CMakeLists.txt missing enable_testing()/add_test()",
-                   fix_cmd=f"add enable_testing() + add_test(NAME ... COMMAND ...) to {path}/test/CMakeLists.txt")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- CMAKE_C_STANDARD 99 check ---
-    qprint("\n=== CMAKE_C_STANDARD 99 ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if not has_c99_standard(wheel_dir):
-            record("c99_standard", path, "WARN",
-                   "test CMakeLists.txt missing CMAKE_C_STANDARD 99",
-                   fix_cmd=f"add set(CMAKE_C_STANDARD 99) to {path}/test/CMakeLists.txt")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- Candidate README sections (wheel-contract §3.2) ---
-    qprint("\n=== Candidate README sections (wheel-contract §3.2) ===\n")
-    for layer, name, path in wheels:
-        if layer == "_draft":
-            continue
-        wheel_dir = WHEELS / layer / name
-        missing = has_candidate_sections(wheel_dir)
-        if missing:
-            record("candidate_sections", path, "WARN",
-                   f"README missing candidate sections: {', '.join(missing)}",
-                   fix_cmd=f"add sections to {path}/README.md: {', '.join(missing)}")
-            tprint(f"  [WARN]  {path}: missing {', '.join(missing)}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- File header (Layer/Status/Deps) check (api-conventions §8) ---
-    qprint("\n=== File header (api-conventions §8) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_file_header(wheel_dir, name):
-            record("file_header", path, "WARN",
-                   ".h/.c missing Layer/Status/Deps file header",
-                   fix_cmd=f"add Layer:/Status:/Deps: header to {path}/{name}.h/.c first lines (api-conventions §8)")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- extern "C" guard check (api-conventions §9) ---
-    qprint("\n=== extern \"C\" guard (api-conventions §9) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_extern_c_guard(wheel_dir, name):
-            record("extern_c_guard", path, "WARN", ".h missing extern \"C\" guard",
-                   fix_cmd=f"add extern \"C\" {{ }} guard to {path}/{name}.h")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- @thread_safe annotation check (api-conventions §4) ---
-    qprint("\n=== @thread_safe annotations (api-conventions §4) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_thread_safe_annotations(wheel_dir, name):
-            record("thread_safe", path, "WARN", ".h missing @thread_safe annotations",
-                   fix_cmd="make audit-fix-apply --only doc_comments")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- Test exit code check ---
-    qprint("\n=== Test exit code (return tests_fail) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_test_exit_code(wheel_dir):
-            record("test_exit_code", path, "WARN",
-                   "test harness may not return non-zero on failure",
-                   fix_cmd=f"#include \"test_harness.h\" and use TEST_MAIN_BEGIN/TEST_MAIN_END in {path}/test/")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- TEST/RUN balance check ---
-    qprint("\n=== TEST/RUN balance (no orphan tests) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        ok, tc, rc = has_balanced_test_run(wheel_dir)
-        if not ok:
-            record("test_run_balance", path, "WARN",
-                   f"{tc} TEST() but only {rc} RUN() — orphan test functions",
-                   fix_cmd=f"add missing RUN() calls inside TEST_MAIN_BEGIN/END in {path}/test/")
-            tprint(f"  [WARN]  {path}: {tc} TEST() vs {rc} RUN()")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- -Werror check ---
-    qprint("\n=== -Werror flag (warnings as errors) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_werror(wheel_dir):
-            record("werror", path, "WARN", "test CMakeLists.txt missing -Werror",
-                   fix_cmd=f"add -Werror to target_compile_options in {path}/test/CMakeLists.txt")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- -Wconversion check ---
-    qprint("\n=== -Wconversion (implicit conversion warnings) ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if is_vendor_wheel(wheel_dir):
-            qprint(f"  [skip]  {path} (vendor)")
-            continue
-        if not has_wconversion(wheel_dir):
-            record("wconversion", path, "WARN",
-                   "test CMakeLists.txt missing -Wconversion",
-                   fix_cmd=f"add -Wconversion to target_compile_options in {path}/test/CMakeLists.txt")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- Responsible human section (wheel-contract template) ---
-    qprint("\n=== Responsible human (wheel-contract template) ===\n")
-    for layer, name, path in wheels:
-        if layer == "_draft":
-            continue
-        wheel_dir = WHEELS / layer / name
-        if not has_responsible_human(wheel_dir):
-            record("responsible_human", path, "WARN",
-                   "README missing '## Responsible human' section",
-                   fix_cmd=f"add '## Responsible human' section to {path}/README.md")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
-
-    # --- API convention deviations heading consistency ---
-    qprint("\n=== API convention deviations heading ===\n")
-    for layer, name, path in wheels:
-        wheel_dir = WHEELS / layer / name
-        if not has_standard_deviation_heading(wheel_dir):
-            record("deviation_heading", path, "WARN",
-                   "use '## API convention deviations' not '## Convention Deviations'",
-                   fix_cmd=f"rename heading in {path}/README.md to '## API convention deviations'")
-            tprint(f"  [WARN]  {path}")
-        else:
-            qprint(f"  [ ok ]  {path}")
+    # --- WISHLIST staleness ---
 
     qprint("\n=== WISHLIST staleness ===\n")
     wishlist_names = parse_wishlist_names()
