@@ -477,11 +477,12 @@ def chk_float_to_int_cast(ctx, **_):
     """Detect float-to-int cast without range check.
 
     Only flags casts where the variable is declared as float/double
-    in the preceding 20 lines.
+    in the preceding 20 lines and no ternary/clamp guard is present.
     """
     if not ctx.source:
         return None
     cast_pat = re.compile(r'\(u?int(?:8|16|32)_t\)\s*(\w+)')
+    clamp_pat = re.compile(r'<=\s*0|>=\s*\d|<\s*0|>\s*\d|\?\s*0\b|\?\s*\d')
     lines = ctx.source.splitlines()
     hits = []
     for i, line in enumerate(lines):
@@ -493,8 +494,12 @@ def chk_float_to_int_cast(ctx, **_):
             continue
         var_name = m.group(1)
         context = "\n".join(lines[max(0, i - 20):i + 1])
-        if re.search(rf'\b(?:float|double)\b[^;]*\b{re.escape(var_name)}\b', context):
-            hits.append(i + 1)
+        if not re.search(rf'\b(?:float|double)\b[^;]*\b{re.escape(var_name)}\b', context):
+            continue
+        nearby = "\n".join(lines[max(0, i - 3):i + 1])
+        if clamp_pat.search(nearby):
+            continue
+        hits.append(i + 1)
     if not hits:
         return None
     locs = ", ".join(f"L{n}" for n in hits[:3])
