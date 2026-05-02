@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 #ifndef DNS_NAME_MAX
-#define DNS_NAME_MAX 64
+#define DNS_NAME_MAX 253
 #endif
 
 #define DNS_HEADER_SIZE 12

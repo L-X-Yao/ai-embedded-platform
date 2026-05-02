@@ -45,15 +45,18 @@ static i2c_scan_err_t scan_range_impl(i2c_scan_probe_fn probe,
                                        i2c_scan_result_t *result)
 {
     result->count = 0;
+    uint8_t total_found = 0;
 
     for (unsigned a = start; a <= end; a++) {
         if (probe(probe_ctx, (uint8_t)a)) {
             if (result->count < I2C_SCAN_MAX_DEVICES) {
                 result->addresses[result->count] = (uint8_t)a;
+                result->count++;
             }
-            result->count++;
+            total_found++;
         }
     }
+    result->count = total_found;
     return I2C_SCAN_OK;
 }
 

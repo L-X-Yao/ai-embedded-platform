@@ -156,6 +156,8 @@ int syslog_format(const syslog_msg_t *msg, char *buf, uint16_t buf_size)
 {
     if (!msg || !buf || buf_size == 0)
         return (int)SYSLOG_ERR_PARAMS;
+    if ((uint8_t)msg->facility > 23 || (uint8_t)msg->severity > 7)
+        return (int)SYSLOG_ERR_PARAMS;
 
     /* Reserve 1 byte for NUL terminator. */
     uint16_t cap = (uint16_t)(buf_size - 1);

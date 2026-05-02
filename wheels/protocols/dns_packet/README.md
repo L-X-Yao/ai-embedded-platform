@@ -62,7 +62,7 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `DNS_NAME_MAX` | 64 | Max decoded domain name length (bytes) |
+| `DNS_NAME_MAX` | 253 | Max decoded domain name length (RFC 1035 max) |
 
 ## Supported platforms
 

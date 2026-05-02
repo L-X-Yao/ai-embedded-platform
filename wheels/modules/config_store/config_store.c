@@ -424,7 +424,33 @@ config_store_err_t config_store_load_all(config_store_t *cs)
         if (err != CONFIG_STORE_OK) {
             return CONFIG_STORE_ERR_STORAGE;
         }
-        e->current = loaded;
+        /* validate loaded value against range; revert to default if OOB */
+        bool in_range = true;
+        switch (e->type) {
+        case CONFIG_TYPE_INT32:
+            if (loaded.i32 < e->min_val.i32 || loaded.i32 > e->max_val.i32)
+                in_range = false;
+            break;
+        case CONFIG_TYPE_UINT32:
+            if (loaded.u32 < e->min_val.u32 || loaded.u32 > e->max_val.u32)
+                in_range = false;
+            break;
+        case CONFIG_TYPE_FLOAT:
+            if (loaded.f32 < e->min_val.f32 || loaded.f32 > e->max_val.f32)
+                in_range = false;
+            break;
+        case CONFIG_TYPE_BOOL:
+            break;  /* no range constraint for booleans */
+        case CONFIG_TYPE_STRING:
+            if (strlen(loaded.str) >= CONFIG_STORE_STRING_SIZE)
+                in_range = false;
+            break;
+        }
+
+        if (in_range) {
+            e->current = loaded;
+        }
+        /* else: keep default value */
 
         /* update modified flag based on type */
         switch (e->type) {
