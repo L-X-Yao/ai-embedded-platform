@@ -33,7 +33,7 @@ static const qmi8658a_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
-static qmi8658a_dev_t g_dev;
+static qmi8658a_t g_dev;
 
 /* ---------- tests ---------- */
 
@@ -307,7 +307,7 @@ TEST(test_all_six_axes)
 TEST(test_multi_instance)
 {
     mock_reset();
-    qmi8658a_dev_t dev1, dev2;
+    qmi8658a_t dev1, dev2;
     qmi8658a_cfg_t c1 = qmi8658a_default_cfg();
     c1.acc_range = QMI8658A_ACC_RANGE_2G;
     qmi8658a_init(&dev1, &mock_i2c, &c1);

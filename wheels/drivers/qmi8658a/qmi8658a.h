@@ -86,7 +86,7 @@ typedef struct {
     const qmi8658a_i2c_t *i2c;
     float acc_div;
     float gyr_div;
-} qmi8658a_dev_t;
+} qmi8658a_t;
 
 /* ---------- API ---------- */
 
@@ -94,16 +94,16 @@ typedef struct {
 qmi8658a_cfg_t  qmi8658a_default_cfg(void);
 
 /** Configure and verify chip ID. @thread_safe: no */
-qmi8658a_err_t  qmi8658a_init(qmi8658a_dev_t *dev,
+qmi8658a_err_t  qmi8658a_init(qmi8658a_t *dev,
                                const qmi8658a_i2c_t *i2c,
                                const qmi8658a_cfg_t *cfg);
 
 /** Read accel + gyro sample. @thread_safe: caller_must_lock */
-qmi8658a_err_t  qmi8658a_read(const qmi8658a_dev_t *dev,
+qmi8658a_err_t  qmi8658a_read(const qmi8658a_t *dev,
                                qmi8658a_data_t *out);
 
 /** Soft-reset the device. @thread_safe: no */
-qmi8658a_err_t  qmi8658a_reset(const qmi8658a_dev_t *dev);
+qmi8658a_err_t  qmi8658a_reset(const qmi8658a_t *dev);
 
 #ifdef __cplusplus
 }

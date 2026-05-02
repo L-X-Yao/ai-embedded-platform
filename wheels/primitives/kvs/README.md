@@ -5,13 +5,6 @@
 Production-grade KV database over flash. Wear leveling, power-fail safe,
 near-zero RAM. Vendored from armink's FlashDB v2.1.0.
 
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`kv`, `key_value`, `kvstore`, `flashdb` — zero results.
-
-VSF has filesystem components but no dedicated KV storage.
-
 ## Why this upstream?
 
 FlashDB is the most widely used embedded KV library in Chinese embedded
