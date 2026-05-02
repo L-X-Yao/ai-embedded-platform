@@ -11,8 +11,7 @@ Proactive build for serial framing. SLIP is the standard framing protocol for se
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced marcinbor85/slip (MIT) for algorithm verification. marcinbor85/slip adds CRC-CCITT on top of framing; our implementation is RFC-1055-only for minimal scope. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

@@ -12,8 +12,7 @@ Proactive build for IoT protocol stacks (CoAP payload encoding, sensor telemetry
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced quartzjer/cb0r (Unlicense) and laurencelundblade/QCBOR (BSD). Battle-tested alternatives exist. Self-written for platform convention consistency; implementation verified against RFC 8949.
 
 ## Dependencies
 

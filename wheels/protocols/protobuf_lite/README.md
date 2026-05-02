@@ -13,8 +13,7 @@ Proactive build for IoT telemetry use cases (cloud gateways, MQTT payloads).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced nanopb/nanopb (Zlib). Nanopb requires .proto codegen toolchain; our manual wire-format encoder is adequate for simple messages without build-time code generation. Self-written for platform convention consistency; implementation verified against Protocol Buffers wire format spec (varint encoding, ZigZag signed integers, wire types).
 
 ## Dependencies
 

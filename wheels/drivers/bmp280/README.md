@@ -14,8 +14,7 @@ in embedded applications (drones, weather stations, altimeters, HVAC).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced boschsensortec/BMP2_SensorAPI (BSD-3) for register sequences and compensation algorithms. Official Bosch driver; compensation formulas from BST-BMP280-DS001-26, cross-validated. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

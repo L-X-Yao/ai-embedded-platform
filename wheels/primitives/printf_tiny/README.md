@@ -15,8 +15,7 @@ without libc printf overhead.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced mpaland/printf (3k stars, MIT) and nanoprintf for algorithm verification. Both are industry standard implementations; our 257-line subset covers platform needs without float support. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

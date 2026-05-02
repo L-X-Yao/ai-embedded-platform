@@ -16,8 +16,7 @@ Created 2026-05-01 for high-level button UI patterns in embedded projects.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced 0x1abin/MultiButton (2.1k stars) (MIT). Uses global linked-list; our passive tick-driven design cleaner. Self-written for platform convention consistency.
 
 ## Dependencies
 

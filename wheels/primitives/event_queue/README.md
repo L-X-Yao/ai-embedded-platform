@@ -14,8 +14,7 @@ firmware: ISR detects event → push to queue → main loop pops and handles.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. No standout embedded-C event queue with static allocation exists. Self-written to match platform conventions.
 
 ## Dependencies
 

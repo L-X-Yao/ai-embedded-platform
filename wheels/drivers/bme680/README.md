@@ -17,8 +17,7 @@ Extends the existing bmp280 wheel with humidity and gas resistance channels.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced boschsensortec/BME68x_SensorAPI (BSD-3) for register sequences and compensation algorithms. Official Bosch driver; gas resistance algorithm referenced from datasheet BST-BME680-DS001-00. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

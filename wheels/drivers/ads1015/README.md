@@ -16,8 +16,7 @@ existing ads1115 wheel (shared register layout, 12-bit vs 16-bit).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found ElliottWaterman/ADS1015 (unclear license). HAL injection pattern; no license for vendoring. Self-written for unified HAL injection pattern, error codes, and test framework; cross-validated against reference.
 
 ## Dependencies
 

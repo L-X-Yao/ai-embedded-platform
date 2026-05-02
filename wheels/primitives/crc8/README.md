@@ -15,8 +15,7 @@ CRC-8 is used by many I2C sensors (SI7021, SHT30) and protocols (1-Wire, SMBus P
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found lammertb/libcrc (MIT). Standard textbook CRC-8 algorithm. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

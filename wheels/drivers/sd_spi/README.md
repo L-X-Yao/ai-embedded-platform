@@ -11,8 +11,7 @@ Proactive build for SD card data logging use cases (flight recorders, sensor log
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced 1nv1/ulibSD (MIT) for register sequences and compensation algorithms. SD/SPI protocol complex; compare for correctness. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

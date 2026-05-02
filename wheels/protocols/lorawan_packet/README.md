@@ -13,8 +13,7 @@ Proactive build for LoRa/LoRaWAN gateway and node projects.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced lobaro/util-lorawan-packets (MIT). Uses malloc; our zero-alloc impl is a better fit for constrained devices. Self-written for platform convention consistency; implementation verified against LoRaWAN L2 1.0.3 spec.
 
 ## Dependencies
 

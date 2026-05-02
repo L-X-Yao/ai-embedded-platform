@@ -13,8 +13,7 @@ Proactive build for embedded debug/bringup workflows.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No suitable lightweight zero-dependency C99 implementation found. I2C scanning is inherently HAL-dependent; our function-pointer abstraction is the right approach. Self-written per platform conventions.
 
 ## Dependencies
 

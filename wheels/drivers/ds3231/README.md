@@ -15,8 +15,7 @@ high accuracy (+-2 ppm, +-3.5 min/year).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found ebrezadev/DS3231 (MIT). Straightforward I2C RTC. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 

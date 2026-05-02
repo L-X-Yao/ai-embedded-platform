@@ -14,8 +14,7 @@ Proactive build for firmware update over serial (common in embedded bootloaders)
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced AndreRenaud/async_xmodem (Unlicense). Well-designed non-blocking implementation. Self-written for platform convention consistency; implementation verified against XMODEM spec (SOH/EOT/ACK/NAK framing, CRC-16 CCITT polynomial 0x1021, block sequence numbering).
 
 ## Dependencies
 

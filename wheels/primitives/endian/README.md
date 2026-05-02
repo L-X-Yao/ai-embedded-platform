@@ -14,8 +14,7 @@ use big-endian wire format on little-endian MCUs.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found hisahi/nadine (MIT). Swap macros are trivial. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

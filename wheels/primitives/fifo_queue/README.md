@@ -15,8 +15,7 @@ command pipelines where items are fixed-size structs rather than raw bytes.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found geekfactory/FIFO (MIT). Trivial data structure; dozens of similar implementations exist. Self-written for platform convention consistency (unified error codes, HAL injection, test harness).
 
 ## Dependencies
 

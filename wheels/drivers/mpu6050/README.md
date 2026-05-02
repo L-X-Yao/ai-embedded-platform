@@ -14,8 +14,7 @@ embedded applications (drones, robots, wearables, motion controllers).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced aler9/sensor-imu (MIT) for register sequences and compensation algorithms. Useful for DMP patterns; MPU6050 legacy. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

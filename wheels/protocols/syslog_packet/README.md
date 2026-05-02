@@ -14,8 +14,7 @@ Proactive build for remote logging in embedded systems (2026-05-01).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No suitable lightweight zero-dependency C99 implementation found. No vendorable embedded C syslog formatter exists. Self-written per platform conventions.
 
 ## Dependencies
 

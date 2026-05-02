@@ -11,8 +11,7 @@ Proactive build as companion sink for `wheels/primitives/log/`. Log flood is a r
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. Rate-limited token bucket sink is platform-specific to the composable log ecosystem. Self-written to match platform conventions.
 
 ## Dependencies
 

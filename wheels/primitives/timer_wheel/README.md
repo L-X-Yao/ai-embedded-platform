@@ -18,8 +18,7 @@ protocol state machines, connection keepalives, sensor polling schedules).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced wahern/timeout (MIT) for algorithm verification. wahern/timeout is a hierarchical timing wheel; our simple single-level version is a deliberate simplification for typical embedded timer counts. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

@@ -13,8 +13,7 @@ Proactive build for custom embedded protocol framing (telemetry, config, NFC NDE
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found Carrigan/stlv (varies license). TLV is a trivial format with converging implementations. Self-written for unified error handling and zero-allocation guarantee.
 
 ## Dependencies
 

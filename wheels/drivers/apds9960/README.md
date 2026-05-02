@@ -14,8 +14,7 @@ UI, ambient light adaptation).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found libdriver/apds9960 (MIT). Not clearly better; most options Arduino C++. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 

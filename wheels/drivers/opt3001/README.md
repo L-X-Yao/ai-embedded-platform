@@ -15,8 +15,7 @@ environmental monitoring).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. Only OS-tied impls (Linux/RIOT). Self-written with HAL injection per platform conventions.
 
 ## Dependencies
 

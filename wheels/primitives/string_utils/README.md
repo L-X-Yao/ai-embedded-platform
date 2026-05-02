@@ -14,8 +14,7 @@ key-value processing across multiple projects.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. No single-file embedded string-utils library matches this scope (trim, split, join, parse). Self-written to match platform conventions.
 
 ## Dependencies
 

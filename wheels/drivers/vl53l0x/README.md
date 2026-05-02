@@ -16,8 +16,7 @@ proximity sensing). Range up to 2 m with mm resolution.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced ST STSW-IMG005 API (proprietary) for register sequences and compensation algorithms. Complex init sequence; must reference official calibration tables. Self-written for platform convention consistency; cross-validated against reference.
 
 ## Dependencies
 

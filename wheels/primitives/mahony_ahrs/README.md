@@ -14,8 +14,7 @@ Decoupled: task scheduling, sensor drivers, motion detection stay in the project
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced x-io MahonyAHRS.c (GPL, canonical implementation). The original is GPL-licensed; our MIT reimplementation of the published Mahony algorithm is justified for licensing reasons. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

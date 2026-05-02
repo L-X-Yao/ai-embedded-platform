@@ -15,8 +15,7 @@ simulation and testing.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). No lightweight zero-dependency C99 implementation found. 36-line FILE*-based sink adapter; trivial and platform-specific. Self-written to match platform conventions.
 
 ## Dependencies
 

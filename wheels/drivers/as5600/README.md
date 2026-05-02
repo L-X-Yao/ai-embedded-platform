@@ -13,8 +13,7 @@ Proactive build for rotary position sensing applications (knobs, motor feedback,
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found raulgotor/ams_as5600 (MIT). Simple chip, implementations converge. Self-written for unified HAL injection pattern, error codes, and test framework.
 
 ## Dependencies
 

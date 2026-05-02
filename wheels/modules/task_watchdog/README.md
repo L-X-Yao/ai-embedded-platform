@@ -15,8 +15,7 @@ monitoring without hardware watchdog coupling.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found MaJerle/lwwdg (MIT). Similar concept; our tick-based OS-agnostic approach. Self-written for passive-library architecture consistency (no malloc, no globals, callback-injected I/O).
 
 ## Dependencies
 

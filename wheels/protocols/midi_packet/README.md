@@ -16,8 +16,7 @@ encoding/decoding at the byte level.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Found abique/midi-parser (varies license). MIDI protocol is simple and implementations converge. Self-written for unified error handling and zero-allocation guarantee.
 
 ## Dependencies
 

@@ -16,8 +16,7 @@ Created 2026-05-01 for cooperative task scheduling in bare-metal main loops.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced bradschl/embedded-c-scheduler (MIT). Uses heap at init; our zero-malloc fits contract. Self-written for platform convention consistency.
 
 ## Dependencies
 

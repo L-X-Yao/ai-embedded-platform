@@ -11,8 +11,7 @@ Proactive build for serial framing (UART, RS-485, etc.). COBS is the standard by
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced charlesnicholson/nanocobs (Public domain) for algorithm verification. nanocobs is well-tested; our implementation verified against the COBS RFC. Self-written for platform convention consistency; algorithm cross-validated against reference.
 
 ## Dependencies
 

@@ -17,8 +17,7 @@ embedded bootloaders). Extends the existing `xmodem` wheel with metadata and
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced Dinamiet/YModem (varies license). Decent but less proven alternative. Self-written for platform convention consistency; implementation verified against YMODEM spec (block 0 filename/size metadata, SOH/STX dual block sizes, CRC-16 mandatory).
 
 ## Dependencies
 

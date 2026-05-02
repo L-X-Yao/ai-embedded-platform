@@ -13,8 +13,7 @@ Decoupled: modem interaction, quality gating, filtering stay in the project; pur
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
+Searched GitHub (2026-05-02). Referenced kosma/minmea (WTFPL). De facto standard embedded NMEA parser. Self-written for platform convention consistency; implementation verified against NMEA 0183 spec (checksum XOR, GGA/RMC/GSA field positions, talker ID handling).
 
 ## Dependencies
 
