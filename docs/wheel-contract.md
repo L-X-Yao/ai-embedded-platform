@@ -114,14 +114,35 @@ python3 -m pytest test_*.py -v
 
 ### 3.2 candidate 级完整要求
 
-在 draft 基础上补：
+在 draft 基础上补。**章节顺序固定**（审计脚本检查）：
 
 ```markdown
+# <wheel-name>
+
+**Status: candidate**
+**Layer: L1 (drivers)**
+
+2-3 句功能描述。
+
 ## Origin
+
 （来源说明：从哪个项目提取 / 主动构建用于什么场景）
 
-## 功能
-- 要点列表
+## Why self-written?
+
+Searched GitHub/embedded ecosystem (2026-xx-xx):
+
+- **<lib1>** — <不适合原因>
+- No suitable zero-dependency C99 implementation found.
+
+Reference: <参考了哪个实现的算法>
+
+（ADR-010 合规证据。vendor wheel 用 `## Why this upstream?` 代替此节）
+
+## Dependencies
+
+- I2C HAL (injected)
+- 其他轮子：crc16（若有）
 
 ## API
 
@@ -130,32 +151,55 @@ python3 -m pytest test_*.py -v
 int xxx_init(xxx_t *x, const xxx_cfg_t *cfg);
 \`\`\`
 
-## 支持的平台
-- [x] VSF linux host (sim) — 测试通过 2026-xx-xx
-- [ ] VSF + STM32F4 — 未验证
-- [ ] VSF + ESP32 — 未验证
+## Configuration (compile-time)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| XXX_MAX_SIZE | 64 | ... |
+
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-xx-xx
+- [ ] ARM Cortex-M — not yet verified
 （L1+ 必须至少有 1 个真机打勾）
 
-## 依赖
-- VSF kernel
-- 其他轮子：wheel-xxx（若有）
+## Known issues
 
-## 已知坑
 - 坑 1：xxx → 解决 yyy
 
-## 测试状态
-- 单元测试：PASS
-- 硬件在环：N/A / PASS on <板子>, 日期
+## How to test
 
-## 用法示例
-（或 link 到 examples/）
+\`\`\`bash
+cd wheels/<layer>/<name>/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_<name>
+\`\`\`
 
-## API 约定偏离
-（如有不遵守 api-conventions.md 的地方，列出 + 理由）
+## Test status
+
+- Unit tests (sim): PASS (N tests, M assertions)
+- HIL: N/A
+
+## API convention deviations
+
+None.
+
+## API review
+
+- **Date**: 2026-xx-xx
+- **Key decisions**: ...
 
 ## Responsible human
+
 @user
 ```
+
+**注意**：
+- `**Status:**` 用首字母大写（不是全大写 `STATUS`）
+- 章节名用英文（不是中文"功能"/"依赖"/"已知坑"）
+- `Configuration (compile-time)` 不缩写为 `Configuration macros` / `Configuration`
+- self-written wheel 必须有 `Why self-written?`，vendor wheel 用 `Why this upstream?`
+- 额外章节（`Features`、`Usage example`、`Design tradeoffs`）允许添加，但必须放在标准章节之后
 
 ### 3.3 stable 级额外要求
 

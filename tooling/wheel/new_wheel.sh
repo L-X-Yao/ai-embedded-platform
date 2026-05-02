@@ -1150,6 +1150,15 @@ TODO: 2-3 sentence description.
 
 TODO: "Extracted from \`projects/<proj>/src/...\`" or "Proactive build for <use case>".
 
+## Why self-written?
+
+Searched GitHub/embedded ecosystem ($(date +%Y-%m-%d)):
+
+- TODO: list evaluated alternatives and why they were not suitable.
+- No suitable zero-dependency C99 implementation found.
+
+Reference: TODO (or "None").
+
 ## Dependencies
 
 TODO: list wheel dependencies (or "None.").
