@@ -88,9 +88,9 @@ hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out)
     if (err != HMC5883L_OK)
         return err;
 
-    out->x = (float)raw.x * dev->scale;
-    out->y = (float)raw.y * dev->scale;
-    out->z = (float)raw.z * dev->scale;
+    out->x_gauss = (float)raw.x * dev->scale;
+    out->y_gauss = (float)raw.y * dev->scale;
+    out->z_gauss = (float)raw.z * dev->scale;
     return HMC5883L_OK;
 }
 

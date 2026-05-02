@@ -84,7 +84,7 @@ qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ct
 if (qmc5883p_init(&i2c) == QMC5883P_OK) {
     qmc5883p_data_t data;
     if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
-        /* data.mx/my/mz in Gauss (range +-2G) */
+        /* data.mx_gauss/my_gauss/mz_gauss in Gauss (range +-2G) */
     }
 }
 ```

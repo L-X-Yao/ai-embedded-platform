@@ -30,8 +30,8 @@ mpu6050_err_t mpu6050_read_gyro(mpu6050_t *dev, mpu6050_gyro_t *out);
 mpu6050_err_t mpu6050_reset(mpu6050_t *dev);
 ```
 
-Output: `mpu6050_accel_t { float ax, ay, az; }` in g units,
-`mpu6050_gyro_t { float gx, gy, gz; }` in dps.
+Output: `mpu6050_accel_t { float ax_g, ay_g, az_g; }` in g units,
+`mpu6050_gyro_t { float gx_dps, gy_dps, gz_dps; }` in dps.
 
 ## Configuration (compile-time)
 

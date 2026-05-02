@@ -94,9 +94,9 @@ TEST(test_read_accel_1g_z)
 
     mpu6050_accel_t a;
     ASSERT_EQ(mpu6050_read_accel(&dev, &a), MPU6050_OK);
-    ASSERT_NEAR(a.ax, 0.0f, 0.01f);
-    ASSERT_NEAR(a.ay, 0.0f, 0.01f);
-    ASSERT_NEAR(a.az, 1.0f, 0.01f);
+    ASSERT_NEAR(a.ax_g, 0.0f, 0.01f);
+    ASSERT_NEAR(a.ay_g, 0.0f, 0.01f);
+    ASSERT_NEAR(a.az_g, 1.0f, 0.01f);
 }
 
 TEST(test_read_accel_negative)
@@ -106,7 +106,7 @@ TEST(test_read_accel_negative)
 
     mpu6050_accel_t a;
     mpu6050_read_accel(&dev, &a);
-    ASSERT_NEAR(a.ax, -1.0f, 0.01f);
+    ASSERT_NEAR(a.ax_g, -1.0f, 0.01f);
 }
 
 TEST(test_read_gyro_250dps)
@@ -116,9 +116,9 @@ TEST(test_read_gyro_250dps)
 
     mpu6050_gyro_t g;
     ASSERT_EQ(mpu6050_read_gyro(&dev, &g), MPU6050_OK);
-    ASSERT_NEAR(g.gx, 1.0f, 0.01f);
-    ASSERT_NEAR(g.gy, 0.0f, 0.01f);
-    ASSERT_NEAR(g.gz, 0.0f, 0.01f);
+    ASSERT_NEAR(g.gx_dps, 1.0f, 0.01f);
+    ASSERT_NEAR(g.gy_dps, 0.0f, 0.01f);
+    ASSERT_NEAR(g.gz_dps, 0.0f, 0.01f);
 }
 
 TEST(test_accel_range_16g)
@@ -133,7 +133,7 @@ TEST(test_accel_range_16g)
 
     mpu6050_accel_t a;
     mpu6050_read_accel(&d, &a);
-    ASSERT_NEAR(a.ax, 1.0f, 0.01f);
+    ASSERT_NEAR(a.ax_g, 1.0f, 0.01f);
 }
 
 TEST(test_gyro_range_2000dps)
@@ -148,7 +148,7 @@ TEST(test_gyro_range_2000dps)
 
     mpu6050_gyro_t g;
     mpu6050_read_gyro(&d, &g);
-    ASSERT_NEAR(g.gx, 10.0f, 0.1f);
+    ASSERT_NEAR(g.gx_dps, 10.0f, 0.1f);
 }
 
 TEST(test_read_accel_i2c_fail)

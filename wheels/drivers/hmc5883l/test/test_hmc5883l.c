@@ -81,9 +81,9 @@ TEST(test_read_gauss)
 
     hmc5883l_data_t data;
     ASSERT_EQ(hmc5883l_read_gauss(&dev, &data), HMC5883L_OK);
-    ASSERT_NEAR(data.x, 1.0f, 0.01f);
-    ASSERT_NEAR(data.y, -1.0f, 0.01f);
-    ASSERT_NEAR(data.z, 0.0f, 0.01f);
+    ASSERT_NEAR(data.x_gauss, 1.0f, 0.01f);
+    ASSERT_NEAR(data.y_gauss, -1.0f, 0.01f);
+    ASSERT_NEAR(data.z_gauss, 0.0f, 0.01f);
 }
 
 TEST(test_different_gain)
@@ -96,7 +96,7 @@ TEST(test_different_gain)
 
     hmc5883l_data_t data;
     ASSERT_EQ(hmc5883l_read_gauss(&dev, &data), HMC5883L_OK);
-    ASSERT_NEAR(data.x, 1.0f, 0.01f);
+    ASSERT_NEAR(data.x_gauss, 1.0f, 0.01f);
 }
 
 TEST(test_i2c_failure)

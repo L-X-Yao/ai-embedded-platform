@@ -75,7 +75,7 @@ typedef struct {
 } hmc5883l_raw_t;
 
 typedef struct {
-    float x, y, z; /* magnetic field (Gauss) */
+    float x_gauss, y_gauss, z_gauss; /* magnetic field (Gauss) */
 } hmc5883l_data_t;
 
 #define HMC5883L_ADDR 0x1E

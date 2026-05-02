@@ -106,9 +106,9 @@ TEST(test_read_accel_1g_z)
 
     lis3dh_accel_t a;
     ASSERT_EQ(lis3dh_read_accel(&dev, &a), LIS3DH_OK);
-    ASSERT_NEAR(a.x, 0.0f, 0.01f);
-    ASSERT_NEAR(a.y, 0.0f, 0.01f);
-    ASSERT_NEAR(a.z, 1.0f, 0.01f);
+    ASSERT_NEAR(a.x_g, 0.0f, 0.01f);
+    ASSERT_NEAR(a.y_g, 0.0f, 0.01f);
+    ASSERT_NEAR(a.z_g, 1.0f, 0.01f);
 }
 
 TEST(test_read_accel_negative)
@@ -118,7 +118,7 @@ TEST(test_read_accel_negative)
 
     lis3dh_accel_t a;
     lis3dh_read_accel(&dev, &a);
-    ASSERT_NEAR(a.x, -1.0f, 0.01f);
+    ASSERT_NEAR(a.x_g, -1.0f, 0.01f);
 }
 
 TEST(test_read_raw)
@@ -147,7 +147,7 @@ TEST(test_range_4g)
 
     lis3dh_accel_t a;
     lis3dh_read_accel(&d, &a);
-    ASSERT_NEAR(a.x, 1.0f, 0.01f);
+    ASSERT_NEAR(a.x_g, 1.0f, 0.01f);
 }
 
 TEST(test_range_16g)
@@ -164,7 +164,7 @@ TEST(test_range_16g)
 
     lis3dh_accel_t a;
     lis3dh_read_accel(&d, &a);
-    ASSERT_NEAR(a.x, 1.0f, 0.01f);
+    ASSERT_NEAR(a.x_g, 1.0f, 0.01f);
 }
 
 TEST(test_set_range_runtime)
@@ -178,7 +178,7 @@ TEST(test_set_range_runtime)
     plant_accel(4000, 0, 0);
     lis3dh_accel_t a;
     lis3dh_read_accel(&dev, &a);
-    ASSERT_NEAR(a.x, 1.0f, 0.01f);
+    ASSERT_NEAR(a.x_g, 1.0f, 0.01f);
 }
 
 TEST(test_set_odr_runtime)

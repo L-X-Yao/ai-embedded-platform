@@ -257,7 +257,7 @@ TEST(test_read_gas_valid)
     bme680_data_t data;
     bme680_err_t e = bme680_read(&dev, &data);
     ASSERT_EQ(e, BME680_OK);
-    ASSERT_TRUE(data.gas_resistance > 0.0f);
+    ASSERT_TRUE(data.gas_resistance_ohm > 0.0f);
 }
 
 TEST(test_read_gas_invalid)
@@ -268,7 +268,7 @@ TEST(test_read_gas_invalid)
     bme680_data_t data;
     bme680_err_t e = bme680_read(&dev, &data);
     ASSERT_EQ(e, BME680_OK);
-    ASSERT_TRUE(data.gas_resistance == 0.0f);
+    ASSERT_TRUE(data.gas_resistance_ohm == 0.0f);
 }
 
 TEST(test_read_i2c_fail)

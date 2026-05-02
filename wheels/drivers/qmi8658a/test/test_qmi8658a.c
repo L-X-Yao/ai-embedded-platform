@@ -87,9 +87,9 @@ TEST(test_read_data)
     qmi8658a_data_t d;
     qmi8658a_err_t e = qmi8658a_read(&g_dev, &d);
     ASSERT_EQ(e, QMI8658A_OK);
-    ASSERT_NEAR(d.ax, 1.0f, 0.01f);
-    ASSERT_NEAR(d.ay, 0.0f, 0.01f);
-    ASSERT_NEAR(d.gy, 10.0f, 0.01f);
+    ASSERT_NEAR(d.ax_g, 1.0f, 0.01f);
+    ASSERT_NEAR(d.ay_g, 0.0f, 0.01f);
+    ASSERT_NEAR(d.gy_dps, 10.0f, 0.01f);
 }
 
 TEST(test_read_i2c_fail)
@@ -125,7 +125,7 @@ TEST(test_config_range)
 
     qmi8658a_data_t d;
     qmi8658a_read(&g_dev, &d);
-    ASSERT_NEAR(d.ax, 1.0f, 0.01f);
+    ASSERT_NEAR(d.ax_g, 1.0f, 0.01f);
 }
 
 TEST(test_reset)
@@ -154,7 +154,7 @@ TEST(test_read_negative)
     qmi8658a_data_t d;
     qmi8658a_err_t e = qmi8658a_read(&g_dev, &d);
     ASSERT_EQ(e, QMI8658A_OK);
-    ASSERT_NEAR(d.ax, -1.0f, 0.01f);
+    ASSERT_NEAR(d.ax_g, -1.0f, 0.01f);
 }
 
 TEST(test_read_int16_extremes)
@@ -172,8 +172,8 @@ TEST(test_read_int16_extremes)
 
     qmi8658a_data_t d;
     qmi8658a_read(&g_dev, &d);
-    ASSERT_NEAR(d.ax, 32767.0f / 4096.0f, 0.01f);
-    ASSERT_NEAR(d.ay, -32768.0f / 4096.0f, 0.01f);
+    ASSERT_NEAR(d.ax_g, 32767.0f / 4096.0f, 0.01f);
+    ASSERT_NEAR(d.ay_g, -32768.0f / 4096.0f, 0.01f);
 }
 
 TEST(test_null_safety)
@@ -249,7 +249,7 @@ TEST(test_all_acc_ranges)
 
         qmi8658a_data_t d;
         qmi8658a_read(&g_dev, &d);
-        ASSERT_NEAR(d.ax, 1000.0f / divs[r], 0.01f);
+        ASSERT_NEAR(d.ax_g, 1000.0f / divs[r], 0.01f);
     }
 }
 
@@ -269,7 +269,7 @@ TEST(test_gyro_range_scaling)
 
     qmi8658a_data_t d;
     qmi8658a_read(&g_dev, &d);
-    ASSERT_NEAR(d.gx, 128.0f / 128.0f, 0.01f);
+    ASSERT_NEAR(d.gx_dps, 128.0f / 128.0f, 0.01f);
 }
 
 TEST(test_reset_i2c_fail)
@@ -296,12 +296,12 @@ TEST(test_all_six_axes)
 
     qmi8658a_data_t d;
     qmi8658a_read(&g_dev, &d);
-    ASSERT_NEAR(d.ax,  4096.0f / 4096.0f, 0.01f);
-    ASSERT_NEAR(d.ay, -2048.0f / 4096.0f, 0.01f);
-    ASSERT_NEAR(d.az,  1024.0f / 4096.0f, 0.01f);
-    ASSERT_NEAR(d.gx,    16.0f / 16.0f,   0.01f);
-    ASSERT_NEAR(d.gy,   -32.0f / 16.0f,   0.01f);
-    ASSERT_NEAR(d.gz,     8.0f / 16.0f,   0.01f);
+    ASSERT_NEAR(d.ax_g,  4096.0f / 4096.0f, 0.01f);
+    ASSERT_NEAR(d.ay_g, -2048.0f / 4096.0f, 0.01f);
+    ASSERT_NEAR(d.az_g,  1024.0f / 4096.0f, 0.01f);
+    ASSERT_NEAR(d.gx_dps,    16.0f / 16.0f,   0.01f);
+    ASSERT_NEAR(d.gy_dps,   -32.0f / 16.0f,   0.01f);
+    ASSERT_NEAR(d.gz_dps,     8.0f / 16.0f,   0.01f);
 }
 
 TEST(test_multi_instance)

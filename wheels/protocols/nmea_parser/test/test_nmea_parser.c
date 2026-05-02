@@ -68,8 +68,8 @@ TEST(test_parse_rmc)
         &d);
     ASSERT_EQ(e, NMEA_PARSER_OK);
     ASSERT_EQ(d.fix_valid, 1);
-    ASSERT_NEAR(d.latitude, 48.1173f, 0.001f);
-    ASSERT_NEAR(d.longitude, 11.5167f, 0.001f);
+    ASSERT_NEAR(d.latitude_deg, 48.1173f, 0.001f);
+    ASSERT_NEAR(d.longitude_deg, 11.5167f, 0.001f);
     ASSERT_NEAR(d.speed_kmh, 22.4f * 1.852f, 0.1f);
     ASSERT_NEAR(d.course_deg, 84.4f, 0.1f);
     ASSERT_EQ(d.course_valid, 1);
@@ -149,8 +149,8 @@ TEST(test_data_init)
     nmea_parser_data_init(&d);
     ASSERT_EQ(d.fix_valid, 0);
     ASSERT_EQ(d.satellites, 0);
-    ASSERT_NEAR(d.latitude, 0.0f, 0.001f);
-    ASSERT_NEAR(d.longitude, 0.0f, 0.001f);
+    ASSERT_NEAR(d.latitude_deg, 0.0f, 0.001f);
+    ASSERT_NEAR(d.longitude_deg, 0.0f, 0.001f);
     nmea_parser_data_init(NULL);
     ASSERT_TRUE(1);
 }
@@ -168,8 +168,8 @@ TEST(test_south_west_coordinates)
     nmea_parser_data_t d;
     nmea_parser_data_init(&d);
     nmea_parser_parse("$GPRMC,000000,A,3349.500,S,15051.000,W,0.0,0.0,010126,,,A*73", &d);
-    ASSERT_TRUE(d.latitude < 0.0f);
-    ASSERT_TRUE(d.longitude < 0.0f);
+    ASSERT_TRUE(d.latitude_deg < 0.0f);
+    ASSERT_TRUE(d.longitude_deg < 0.0f);
 }
 
 TEST(test_equator_prime_meridian)
@@ -177,8 +177,8 @@ TEST(test_equator_prime_meridian)
     nmea_parser_data_t d;
     nmea_parser_data_init(&d);
     nmea_parser_parse("$GPRMC,120000,A,0000.000,N,00000.000,E,0.0,0.0,010126,,,A*77", &d);
-    ASSERT_NEAR(d.latitude, 0.0f, 0.001f);
-    ASSERT_NEAR(d.longitude, 0.0f, 0.001f);
+    ASSERT_NEAR(d.latitude_deg, 0.0f, 0.001f);
+    ASSERT_NEAR(d.longitude_deg, 0.0f, 0.001f);
     ASSERT_EQ(d.fix_valid, 1);
 }
 
@@ -236,8 +236,8 @@ TEST(test_max_latitude_longitude)
     nmea_parser_data_t d;
     nmea_parser_data_init(&d);
     nmea_parser_parse("$GPRMC,120000,A,9000.000,N,18000.000,E,0.0,0.0,010126,,,A*77", &d);
-    ASSERT_NEAR(d.latitude, 90.0f, 0.01f);
-    ASSERT_NEAR(d.longitude, 180.0f, 0.01f);
+    ASSERT_NEAR(d.latitude_deg, 90.0f, 0.01f);
+    ASSERT_NEAR(d.longitude_deg, 180.0f, 0.01f);
 }
 
 TEST(test_year_boundary)

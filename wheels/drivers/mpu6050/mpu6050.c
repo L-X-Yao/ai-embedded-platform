@@ -104,9 +104,9 @@ mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out)
     int16_t raw_y = (int16_t)((uint16_t)buf[2] << 8 | buf[3]);
     int16_t raw_z = (int16_t)((uint16_t)buf[4] << 8 | buf[5]);
 
-    out->ax = (float)raw_x / dev->accel_scale;
-    out->ay = (float)raw_y / dev->accel_scale;
-    out->az = (float)raw_z / dev->accel_scale;
+    out->ax_g = (float)raw_x / dev->accel_scale;
+    out->ay_g = (float)raw_y / dev->accel_scale;
+    out->az_g = (float)raw_z / dev->accel_scale;
 
     return MPU6050_OK;
 }
@@ -128,9 +128,9 @@ mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out)
     int16_t raw_y = (int16_t)((uint16_t)buf[2] << 8 | buf[3]);
     int16_t raw_z = (int16_t)((uint16_t)buf[4] << 8 | buf[5]);
 
-    out->gx = (float)raw_x / dev->gyro_scale;
-    out->gy = (float)raw_y / dev->gyro_scale;
-    out->gz = (float)raw_z / dev->gyro_scale;
+    out->gx_dps = (float)raw_x / dev->gyro_scale;
+    out->gy_dps = (float)raw_y / dev->gyro_scale;
+    out->gz_dps = (float)raw_z / dev->gyro_scale;
 
     return MPU6050_OK;
 }

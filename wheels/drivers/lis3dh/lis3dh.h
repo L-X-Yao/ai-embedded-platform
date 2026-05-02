@@ -65,7 +65,7 @@ typedef struct {
 } lis3dh_cfg_t;
 
 typedef struct {
-    float x, y, z;  /* acceleration (G) */
+    float x_g, y_g, z_g;  /* acceleration (G) */
 } lis3dh_accel_t;
 
 typedef struct {
