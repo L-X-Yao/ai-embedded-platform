@@ -497,7 +497,7 @@ TEST(test_receive)
 
     uint8_t buf[32] = {0};
     uint8_t len = 0;
-    nrf24_err_t e = nrf24_receive(&dev, buf, &len);
+    nrf24_err_t e = nrf24_receive(&dev, buf, 32, &len);
     ASSERT_EQ(e, NRF24_OK);
     ASSERT_EQ(len, 4);
     ASSERT_EQ(buf[0], 0xCA);
@@ -647,7 +647,7 @@ TEST(test_null_safety)
     ASSERT_EQ(nrf24_set_data_rate(NULL, NRF24_RATE_1MBPS), NRF24_ERR_SPI);
     ASSERT_EQ(nrf24_set_power(NULL, NRF24_POWER_0DBM), NRF24_ERR_SPI);
     ASSERT_EQ(nrf24_send(NULL, buf, 1), NRF24_ERR_SPI);
-    ASSERT_EQ(nrf24_receive(NULL, buf, &len), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_receive(NULL, buf, 32, &len), NRF24_ERR_SPI);
     ASSERT_FALSE(nrf24_data_ready(NULL));
     ASSERT_EQ(nrf24_flush_tx(NULL), NRF24_ERR_SPI);
     ASSERT_EQ(nrf24_flush_rx(NULL), NRF24_ERR_SPI);
@@ -657,8 +657,8 @@ TEST(test_null_safety)
     ASSERT_EQ(nrf24_set_tx_addr(&dev, NULL, 5), NRF24_ERR_SPI);
     ASSERT_EQ(nrf24_set_rx_addr(&dev, 0, NULL, 5), NRF24_ERR_SPI);
     ASSERT_EQ(nrf24_send(&dev, NULL, 1), NRF24_ERR_SPI);
-    ASSERT_EQ(nrf24_receive(&dev, NULL, &len), NRF24_ERR_SPI);
-    ASSERT_EQ(nrf24_receive(&dev, buf, NULL), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_receive(&dev, NULL, 32, &len), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_receive(&dev, buf, 32, NULL), NRF24_ERR_SPI);
 }
 
 /* 20. Send payload length validation */
@@ -701,7 +701,7 @@ TEST(test_receive_no_data)
 
     uint8_t buf[32];
     uint8_t len = 99;
-    nrf24_err_t e = nrf24_receive(&dev, buf, &len);
+    nrf24_err_t e = nrf24_receive(&dev, buf, 32, &len);
     ASSERT_EQ(e, NRF24_OK);
     ASSERT_EQ(len, 0);
 }

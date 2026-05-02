@@ -78,11 +78,13 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
      * Integer approx: c0 = 676 * isqrt(2000000 / accel)
      */
 
-    /* Integer square root */
+    /* Integer square root (guard: 46340^2 = 2147395600 < INT32_MAX) */
     uint32_t val = 2000000UL / s->accel;
     uint32_t root = 1;
-    while (root * root <= val)
+    while (root * root <= val) {
+        if (root > 46340) break;  /* prevent uint32 overflow in root*root */
         root++;
+    }
     root--;
     if (root == 0) root = 1;
 

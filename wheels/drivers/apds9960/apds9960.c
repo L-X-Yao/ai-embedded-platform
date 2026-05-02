@@ -46,8 +46,9 @@
 #define ENABLE_PEN   (1u << 2)
 #define ENABLE_GEN   (1u << 6)
 
-/* Expected chip ID */
-#define CHIP_ID      0xABu
+/* Expected chip IDs (0xAB = original, 0xA8 = common variant) */
+#define CHIP_ID_AB   0xABu
+#define CHIP_ID_A8   0xA8u
 
 /* Gesture FIFO threshold for detection */
 #define GESTURE_THRESHOLD  20
@@ -85,7 +86,7 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
     uint8_t id = 0;
     apds9960_err_t err = read_reg(dev, REG_ID, &id);
     if (err != APDS9960_OK) return err;
-    if (id != CHIP_ID) return APDS9960_ERR_ID;
+    if (id != CHIP_ID_AB && id != CHIP_ID_A8) return APDS9960_ERR_ID;
 
     /* Power on, all features off */
     err = write_reg(dev, REG_ENABLE, ENABLE_PON);

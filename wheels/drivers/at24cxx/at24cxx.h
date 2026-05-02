@@ -57,6 +57,14 @@ typedef struct {
                       uint8_t *buf, uint16_t len);
 
     /**
+     * Write len bytes with 8-bit register address (single I2C transaction).
+     * Optional for 8-bit address chips -- enables page writes.
+     * If NULL, write falls back to byte-by-byte via write_reg.
+     */
+    bool (*write_regs8)(void *ctx, uint8_t dev_addr, uint8_t reg,
+                        const uint8_t *data, uint16_t len);
+
+    /**
      * Write len bytes: dev_addr, then 2-byte reg, then data.
      * Required for AT24C32 and above (16-bit memory address).
      * May be NULL if only 8-bit address chips are used.

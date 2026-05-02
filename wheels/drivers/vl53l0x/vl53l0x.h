@@ -32,6 +32,8 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
+    /** Optional: delay in ms; used to pace polling loops. May be NULL. */
+    void (*delay_ms)(void *ctx, uint32_t ms);
     void *ctx;
 } vl53l0x_i2c_t;
 

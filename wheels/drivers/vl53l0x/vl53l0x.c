@@ -176,7 +176,14 @@ vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm)
         {
             return err;
         }
-        if (ready)
+        if (!ready)
+        {
+            if (dev->i2c.delay_ms)
+            {
+                dev->i2c.delay_ms(dev->i2c.ctx, 1);
+            }
+            continue;
+        }
         {
             /* read 16-bit range from RESULT_RANGE_STATUS+10 and +11
              * (registers 0x1E and 0x1F per datasheet) */

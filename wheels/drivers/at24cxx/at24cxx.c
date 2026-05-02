@@ -63,12 +63,18 @@ static at24cxx_err_t write_page(const at24cxx_t *dev, uint16_t addr,
         if (!i2c->write_regs(i2c->ctx, daddr, addr, data, len))
             return AT24CXX_ERR_I2C;
     } else {
-        /* 8-bit addressing: write byte-by-byte via write_reg */
+        /* 8-bit addressing: batch via write_regs8 if available,
+         * otherwise fall back to byte-by-byte via write_reg */
         uint8_t reg = (uint8_t)(addr & 0xFFu);
-        for (uint16_t i = 0; i < len; i++) {
-            if (!i2c->write_reg(i2c->ctx, daddr, (uint8_t)(reg + i),
-                                data[i]))
+        if (i2c->write_regs8) {
+            if (!i2c->write_regs8(i2c->ctx, daddr, reg, data, len))
                 return AT24CXX_ERR_I2C;
+        } else {
+            for (uint16_t i = 0; i < len; i++) {
+                if (!i2c->write_reg(i2c->ctx, daddr, (uint8_t)(reg + i),
+                                    data[i]))
+                    return AT24CXX_ERR_I2C;
+            }
         }
     }
 

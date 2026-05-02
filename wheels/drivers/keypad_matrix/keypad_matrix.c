@@ -89,6 +89,9 @@ keypad_event_t keypad_matrix_get_event(keypad_matrix_t *kp, char *key)
                 if (key) {
                     *key = kp->keymap[(uint8_t)(r * kp->cols + c)];
                 }
+                /* Mark this key as consumed so the same event is not
+                 * returned on the next call to get_event. */
+                kp->prev_state[r] ^= (uint8_t)(1U << c);
                 if (kp->state[r] & (1U << c)) {
                     return KEYPAD_EVENT_PRESS;
                 } else {

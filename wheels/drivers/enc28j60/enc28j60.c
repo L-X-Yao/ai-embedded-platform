@@ -313,7 +313,9 @@ enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
     if (!dev || !dev->spi) return ENC28J60_ERR_PARAMS;
     if (!frame || !frame_len) return ENC28J60_ERR_PARAMS;
 
-    /* Check packet count */
+    /* Check packet count.
+     * EPKTCNT (bank1:0x19) is an ETH register per datasheet table 3-1,
+     * not MAC/MII -- no dummy byte required. */
     uint8_t pktcnt = read_reg(dev, 1, EPKTCNT, false);
     if (pktcnt == 0) return ENC28J60_ERR_NO_PACKET;
 
@@ -372,12 +374,15 @@ enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
 bool enc28j60_has_packet(enc28j60_t *dev)
 {
     if (!dev || !dev->spi) return false;
+    /* EPKTCNT is an ETH register -- no dummy byte (see enc28j60_receive) */
     return read_reg(dev, 1, EPKTCNT, false) > 0;
 }
 
 uint8_t enc28j60_get_revision(enc28j60_t *dev)
 {
     if (!dev || !dev->spi) return 0;
+    /* EREVID (bank3:0x12) is an ETH register per datasheet table 3-1,
+     * not MAC/MII -- no dummy byte required. */
     return read_reg(dev, 3, EREVID, false);
 }
 
