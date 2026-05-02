@@ -129,7 +129,7 @@ static bme680_err_t read_calibration(bme680_t *dev)
 
 static int32_t compensate_temperature(bme680_t *dev, uint32_t adc_t)
 {
-    int64_t var1 = ((int32_t)adc_t >> 3) - ((int32_t)dev->par_t1 << 1);
+    int64_t var1 = ((int32_t)adc_t >> 3) - (int32_t)((uint32_t)dev->par_t1 << 1);
     int64_t var2 = (var1 * (int32_t)dev->par_t2) >> 11;
     int64_t var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
     var3 = (var3 * ((int32_t)dev->par_t3 << 4)) >> 14;
@@ -177,7 +177,7 @@ static uint32_t compensate_pressure(const bme680_t *dev, uint32_t adc_p)
 static uint32_t compensate_humidity(const bme680_t *dev, uint16_t adc_h)
 {
     int32_t temp_scaled = (int32_t)((dev->t_fine * 5 + 128) >> 8);
-    int32_t var1 = (int32_t)adc_h - (int32_t)((int32_t)dev->par_h1 << 4) -
+    int32_t var1 = (int32_t)adc_h - (int32_t)((uint32_t)dev->par_h1 << 4) -
                    (((temp_scaled * (int32_t)dev->par_h3) / 100) >> 1);
     int32_t var2 = ((int32_t)dev->par_h2 *
                     (((temp_scaled * (int32_t)dev->par_h4) / 100) +
@@ -186,7 +186,7 @@ static uint32_t compensate_humidity(const bme680_t *dev, uint16_t adc_h)
                       100) +
                      (1 << 14))) >> 10;
     int32_t var3 = var1 * var2;
-    int32_t var4 = (int32_t)dev->par_h6 << 7;
+    int32_t var4 = (int32_t)((uint32_t)dev->par_h6 << 7);
     var4 = (var4 + ((temp_scaled * (int32_t)dev->par_h7) / 100)) >> 4;
     int32_t var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
     int32_t var6 = (var4 * var5) >> 1;
@@ -364,7 +364,8 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
     int32_t var2 = (var1 / 32768) + 1;
     int32_t var3 = (int32_t)temp_c * var2 / 2;
     int32_t var4 = var3 + (dev->res_heat_val * 16);
-    uint8_t res_heat = (uint8_t)((var4 + 50) / 100);
+    int32_t res_raw = (var4 + 50) / 100;
+    uint8_t res_heat = (res_raw <= 0) ? 0u : (res_raw >= 255) ? 255u : (uint8_t)res_raw;
 
     /* calculate gas wait register value */
     /* duration_ms mapped to multiplication factor encoding */

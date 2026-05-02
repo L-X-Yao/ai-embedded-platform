@@ -85,7 +85,7 @@ fp_t fp_div(fp_t a, fp_t b)
     if (b == 0) {
         return (a >= 0) ? FP_MAX : FP_MIN;
     }
-    int64_t numerator = (int64_t)a << FP_FRAC_BITS;
+    int64_t numerator = (int64_t)((uint64_t)a << FP_FRAC_BITS);
     int64_t result = numerator / (int64_t)b;
     if (result > INT32_MAX) return FP_MAX;
     if (result < INT32_MIN) return FP_MIN;
