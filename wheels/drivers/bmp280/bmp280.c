@@ -101,7 +101,7 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
 
 static int32_t compensate_temperature(bmp280_t *dev, int32_t adc_t)
 {
-    int32_t var1 = ((((adc_t >> 3) - ((int32_t)dev->calib.dig_t1 << 1)))
+    int32_t var1 = ((((adc_t >> 3) - (int32_t)((uint32_t)dev->calib.dig_t1 << 1)))
                     * ((int32_t)dev->calib.dig_t2)) >> 11;
     int32_t var2 = (((((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))
                       * ((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))) >> 12)
@@ -178,8 +178,8 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
         return BMP280_ERR_I2C;
     }
 
-    int32_t adc_p = ((int32_t)buf[0] << 12) | ((int32_t)buf[1] << 4) | (buf[2] >> 4);
-    int32_t adc_t = ((int32_t)buf[3] << 12) | ((int32_t)buf[4] << 4) | (buf[5] >> 4);
+    int32_t adc_p = (int32_t)((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | (buf[2] >> 4);
+    int32_t adc_t = (int32_t)((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | (buf[5] >> 4);
 
     int32_t temp_raw = compensate_temperature(dev, adc_t);
     out->temperature_c = (float)temp_raw / 100.0f;
