@@ -308,27 +308,43 @@ def has_ci_job(wheel_path: str, ci_text: str, wheel_dir: Path) -> bool:
     return False
 
 
-def find_consumers(wheel_path: str, wheel_name: str) -> list:
-    """Find project files referencing this wheel (CMakeLists.txt or #include)."""
-    consumers = []
+_consumer_cache = None
+
+def _load_consumer_cache():
+    """Load all project files once into memory to avoid repeated rglob on slow FS."""
+    global _consumer_cache
+    if _consumer_cache is not None:
+        return _consumer_cache
+    _consumer_cache = {"cmake": [], "sources": []}
     if not PROJECTS.is_dir():
-        return consumers
+        return _consumer_cache
     for cm in PROJECTS.rglob("CMakeLists.txt"):
         try:
             text = cm.read_text(encoding="utf-8")
+            _consumer_cache["cmake"].append((str(cm.relative_to(REPO)).replace("\\", "/"), text))
         except OSError:
-            continue
+            pass
+    for src in PROJECTS.rglob("*.[ch]"):
+        try:
+            text = src.read_text(encoding="utf-8", errors="ignore")
+            _consumer_cache["sources"].append((str(src.relative_to(REPO)).replace("\\", "/"), text))
+        except OSError:
+            pass
+    return _consumer_cache
+
+
+def find_consumers(wheel_path: str, wheel_name: str) -> list:
+    """Find project files referencing this wheel (CMakeLists.txt or #include)."""
+    cache = _load_consumer_cache()
+    consumers = []
+    for rel_path, text in cache["cmake"]:
         if wheel_path in text:
-            consumers.append(str(cm.relative_to(REPO)).replace("\\", "/"))
+            consumers.append(rel_path)
     if not consumers:
         header = f"{wheel_name}.h"
-        for src in PROJECTS.rglob("*.[ch]"):
-            try:
-                text = src.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
+        for rel_path, text in cache["sources"]:
             if f'#include "{header}"' in text or f"#include <{header}>" in text:
-                consumers.append(str(src.relative_to(REPO)).replace("\\", "/"))
+                consumers.append(rel_path)
     return consumers
 
 
@@ -584,7 +600,7 @@ def has_busy_wait_timeout(wheel_dir: Path) -> list:
     return unguarded
 
 
-def main(quiet: bool = False, json_mode: bool = False) -> int:
+def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> int:
     def qprint(msg: str):
         if not quiet and not json_mode:
             print(msg)
@@ -618,7 +634,7 @@ def main(quiet: bool = False, json_mode: bool = False) -> int:
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         ci_ok = has_ci_job(path, ci_text, wheel_dir)
-        consumers = find_consumers(path, name)
+        consumers = [] if fast else find_consumers(path, name)
         consumer_required = layer in CONSUMER_REQUIRED
         origin = has_project_origin(wheel_dir)
 
@@ -1076,9 +1092,10 @@ if __name__ == "__main__":
     parser.add_argument("--graph", action="store_true", help="Print Mermaid dependency graph")
     parser.add_argument("--quiet", "-q", action="store_true", help="Only show WARN/FAIL and summary")
     parser.add_argument("--json", action="store_true", help="Output results as JSON (machine-readable)")
+    parser.add_argument("--fast", action="store_true", help="Skip consumer scan (fast mode for slow FS)")
     args = parser.parse_args()
     if args.graph:
         wheels = find_wheels()
         print_dep_graph(wheels)
         sys.exit(0)
-    sys.exit(main(quiet=args.quiet, json_mode=args.json))
+    sys.exit(main(quiet=args.quiet, json_mode=args.json, fast=args.fast))
