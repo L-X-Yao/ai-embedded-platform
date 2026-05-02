@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "hex_codec.h"
@@ -88,17 +89,17 @@ TEST(test_null_params)
     uint16_t len = sizeof(bbuf);
 
     /* encode: NULL data with len > 0 */
-    ASSERT_EQ(hex_encode(NULL, 1, cbuf, sizeof(cbuf)), HEX_ERR_PARAMS);
+    ASSERT_EQ(hex_encode(NULL, 1, cbuf, sizeof(cbuf)), HEX_ERR_PARAM);
     /* encode: NULL out */
     const uint8_t d = 0;
-    ASSERT_EQ(hex_encode(&d, 1, NULL, 4), HEX_ERR_PARAMS);
+    ASSERT_EQ(hex_encode(&d, 1, NULL, 4), HEX_ERR_PARAM);
     /* decode: NULL out_len */
-    ASSERT_EQ(hex_decode("aa", 2, bbuf, NULL), HEX_ERR_PARAMS);
+    ASSERT_EQ(hex_decode("aa", 2, bbuf, NULL), HEX_ERR_PARAM);
     /* decode: NULL hex with len > 0 */
-    ASSERT_EQ(hex_decode(NULL, 2, bbuf, &len), HEX_ERR_PARAMS);
+    ASSERT_EQ(hex_decode(NULL, 2, bbuf, &len), HEX_ERR_PARAM);
     /* decode: NULL out with len > 0 */
     len = 4;
-    ASSERT_EQ(hex_decode("aa", 2, NULL, &len), HEX_ERR_PARAMS);
+    ASSERT_EQ(hex_decode("aa", 2, NULL, &len), HEX_ERR_PARAM);
 }
 
 TEST(test_buffer_overflow)

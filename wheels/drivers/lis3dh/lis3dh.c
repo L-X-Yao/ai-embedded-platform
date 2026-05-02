@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lis3dh — ST LIS3DH I2C 3-axis accelerometer driver
  *

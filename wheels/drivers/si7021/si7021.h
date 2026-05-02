@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * si7021 — Si7021/HTU21D/SHT21 I2C temperature and humidity sensor driver
  *
@@ -23,7 +24,7 @@ extern "C" {
 typedef enum {
     SI7021_OK         =  0,
     SI7021_ERR_I2C    = -1,
-    SI7021_ERR_PARAMS = -2,
+    SI7021_ERR_PARAM = -2,
     SI7021_ERR_CRC    = -3,
 } si7021_err_t;
 

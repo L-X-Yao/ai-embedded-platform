@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "sensor_hub.h"
 #include <string.h>
@@ -69,7 +70,7 @@ TEST(test_init_valid)
 TEST(test_init_null)
 {
     sensor_hub_err_t err = sensor_hub_init(NULL);
-    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAMS);
+    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAM);
 }
 
 TEST(test_register_and_poll)
@@ -210,10 +211,10 @@ TEST(test_multiple_sensors_polled)
 
 TEST(test_null_hub_params)
 {
-    ASSERT_EQ(sensor_hub_poll(NULL), SENSOR_HUB_ERR_PARAMS);
-    ASSERT_EQ(sensor_hub_get(NULL, 0, NULL, NULL), SENSOR_HUB_ERR_PARAMS);
+    ASSERT_EQ(sensor_hub_poll(NULL), SENSOR_HUB_ERR_PARAM);
+    ASSERT_EQ(sensor_hub_get(NULL, 0, NULL, NULL), SENSOR_HUB_ERR_PARAM);
     ASSERT_EQ(sensor_hub_get_stats(NULL, 0, NULL, NULL, NULL),
-              SENSOR_HUB_ERR_PARAMS);
+              SENSOR_HUB_ERR_PARAM);
     ASSERT_EQ(sensor_hub_count(NULL), 0);
 
     /* reset_stats with NULL should not crash */
@@ -229,10 +230,10 @@ TEST(test_get_invalid_index)
     float val;
     sensor_hub_status_t st;
     sensor_hub_err_t err = sensor_hub_get(&hub, 5, &val, &st);
-    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAMS);
+    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAM);
 
     err = sensor_hub_get_stats(&hub, 5, NULL, NULL, NULL);
-    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAMS);
+    ASSERT_EQ(err, SENSOR_HUB_ERR_PARAM);
 }
 
 TEST(test_varying_values_stats)
@@ -287,11 +288,11 @@ TEST(test_register_null_params)
 {
     setup();
     ASSERT_EQ(sensor_hub_register(NULL, "x", "", mock_temp_read, NULL),
-              SENSOR_HUB_ERR_PARAMS);
+              SENSOR_HUB_ERR_PARAM);
     ASSERT_EQ(sensor_hub_register(&hub, NULL, "", mock_temp_read, NULL),
-              SENSOR_HUB_ERR_PARAMS);
+              SENSOR_HUB_ERR_PARAM);
     ASSERT_EQ(sensor_hub_register(&hub, "x", "", NULL, NULL),
-              SENSOR_HUB_ERR_PARAMS);
+              SENSOR_HUB_ERR_PARAM);
 }
 
 TEST(test_initial_status_stale)

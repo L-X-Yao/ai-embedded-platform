@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * event_queue — fixed-size circular event queue
  *

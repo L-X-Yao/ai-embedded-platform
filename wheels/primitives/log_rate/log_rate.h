@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_rate — rate-limiting sink for log wheel (token bucket).
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * max31855 — MAX31855 SPI thermocouple-to-digital converter driver
  *
@@ -25,7 +26,7 @@ extern "C" {
 typedef enum {
     MAX31855_OK            =  0,
     MAX31855_ERR_SPI       = -1,
-    MAX31855_ERR_PARAMS    = -2,
+    MAX31855_ERR_PARAM    = -2,
     MAX31855_ERR_OPEN      = -3,
     MAX31855_ERR_SHORT_GND = -4,
     MAX31855_ERR_SHORT_VCC = -5,
@@ -48,7 +49,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Initialize device context. @thread_safe: caller_must_lock */
+/** Initialize device context. @thread_safe: no */
 max31855_err_t max31855_init(max31855_t *dev, const max31855_spi_t *spi);
 
 /** Read thermocouple and internal temperatures in Celsius.

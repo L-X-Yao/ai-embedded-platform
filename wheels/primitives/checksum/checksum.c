@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * checksum — common checksum algorithms collection
  *

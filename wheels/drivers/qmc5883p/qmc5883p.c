@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * qmc5883p — QMC5883P 3-axis magnetometer driver (I2C)
  *

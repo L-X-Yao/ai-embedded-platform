@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "lora_sx1276.h"
@@ -238,8 +239,8 @@ TEST(test_set_frequency_out_of_range)
     memset(&dev, 0, sizeof(dev));
     lora_init(&dev, &mock_spi, 433000000UL);
 
-    ASSERT_EQ(lora_set_frequency(&dev, 50000000UL), LORA_ERR_PARAMS);
-    ASSERT_EQ(lora_set_frequency(&dev, 1100000000UL), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_frequency(&dev, 50000000UL), LORA_ERR_PARAM);
+    ASSERT_EQ(lora_set_frequency(&dev, 1100000000UL), LORA_ERR_PARAM);
 }
 
 TEST(test_set_bandwidth)
@@ -256,7 +257,7 @@ TEST(test_set_bandwidth)
     ASSERT_EQ(mock_regs[0x1D] & 0xF0, 0x70);
 
     /* BW=10 out of range */
-    ASSERT_EQ(lora_set_bandwidth(&dev, 10), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_bandwidth(&dev, 10), LORA_ERR_PARAM);
 }
 
 TEST(test_set_spreading_factor)
@@ -272,9 +273,9 @@ TEST(test_set_spreading_factor)
     ASSERT_EQ(mock_regs[0x1E] & 0xF0, 0xC0);
 
     /* SF=5 out of range */
-    ASSERT_EQ(lora_set_spreading_factor(&dev, 5), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_spreading_factor(&dev, 5), LORA_ERR_PARAM);
     /* SF=13 out of range */
-    ASSERT_EQ(lora_set_spreading_factor(&dev, 13), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_spreading_factor(&dev, 13), LORA_ERR_PARAM);
 }
 
 TEST(test_set_coding_rate)
@@ -290,9 +291,9 @@ TEST(test_set_coding_rate)
     ASSERT_EQ(mock_regs[0x1D] & 0x0E, 0x08);
 
     /* CR=0 out of range */
-    ASSERT_EQ(lora_set_coding_rate(&dev, 0), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_coding_rate(&dev, 0), LORA_ERR_PARAM);
     /* CR=5 out of range */
-    ASSERT_EQ(lora_set_coding_rate(&dev, 5), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_coding_rate(&dev, 5), LORA_ERR_PARAM);
 }
 
 TEST(test_set_tx_power)
@@ -316,8 +317,8 @@ TEST(test_set_tx_power)
     ASSERT_EQ(mock_regs[0x09], (uint8_t)(0x80 | 15)); /* 20-5=15 */
 
     /* Out of range */
-    ASSERT_EQ(lora_set_tx_power(&dev, 1), LORA_ERR_PARAMS);
-    ASSERT_EQ(lora_set_tx_power(&dev, 21), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_set_tx_power(&dev, 1), LORA_ERR_PARAM);
+    ASSERT_EQ(lora_set_tx_power(&dev, 21), LORA_ERR_PARAM);
 }
 
 TEST(test_send_fifo_write)
@@ -354,7 +355,7 @@ TEST(test_send_null_data)
     memset(&dev, 0, sizeof(dev));
     lora_init(&dev, &mock_spi, 433000000UL);
 
-    ASSERT_EQ(lora_send(&dev, NULL, 5), LORA_ERR_PARAMS);
+    ASSERT_EQ(lora_send(&dev, NULL, 5), LORA_ERR_PARAM);
 }
 
 TEST(test_send_timeout)

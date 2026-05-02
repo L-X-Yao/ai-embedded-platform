@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * telemetry -- periodic telemetry data formatter and publisher
  *
@@ -35,7 +36,7 @@ extern "C" {
 
 typedef enum {
     TELEMETRY_OK            =  0,
-    TELEMETRY_ERR_PARAMS    = -1,
+    TELEMETRY_ERR_PARAM    = -1,
     TELEMETRY_ERR_FULL      = -2,
     TELEMETRY_ERR_SEND      = -3,
     TELEMETRY_ERR_OVERFLOW  = -4,
@@ -89,7 +90,7 @@ telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
 telemetry_err_t telemetry_register(telemetry_t *t, const char *name);
 
 /**
- * Update a field's value by name. Returns ERR_PARAMS if not found.
+ * Update a field's value by name. Returns ERR_PARAM if not found.
  * @thread_safe: no
  */
 telemetry_err_t telemetry_update(telemetry_t *t, const char *name,

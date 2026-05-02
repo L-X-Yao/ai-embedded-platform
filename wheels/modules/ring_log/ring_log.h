@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ring_log — ring buffer structured log storage with read-back
  *
@@ -19,7 +20,7 @@ extern "C" {
 /* ---- Error codes ---- */
 typedef enum {
     RING_LOG_OK           =  0,
-    RING_LOG_ERR_PARAMS   = -1,
+    RING_LOG_ERR_PARAM   = -1,
     RING_LOG_ERR_FULL     = -2,   /* (reserved — current impl overwrites) */
     RING_LOG_ERR_EMPTY    = -3,
     RING_LOG_ERR_FILTERED = -4,   /* entry below min_level, not stored   */

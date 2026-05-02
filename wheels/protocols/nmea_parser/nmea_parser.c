@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * nmea_parser — NMEA 0183 sentence parser (GGA, RMC, GSA)
  *

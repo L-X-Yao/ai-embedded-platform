@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bmp280 — Bosch BMP280 temperature and pressure sensor driver
  *

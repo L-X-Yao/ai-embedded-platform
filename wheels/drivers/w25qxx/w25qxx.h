@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * w25qxx — W25Q series SPI NOR flash driver
  *
@@ -42,7 +43,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Read JEDEC ID and verify chip. @thread_safe: caller_must_lock */
+/** Read JEDEC ID and verify chip. @thread_safe: no */
 w25qxx_err_t w25qxx_init(const w25qxx_spi_t *spi, uint32_t *jedec_id_out);
 
 /** Read data from flash. @thread_safe: caller_must_lock */

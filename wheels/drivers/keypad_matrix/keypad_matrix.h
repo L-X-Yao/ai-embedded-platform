@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * keypad_matrix — GPIO matrix keypad scanner
  *
@@ -21,7 +22,7 @@ extern "C" {
 
 typedef enum {
     KEYPAD_OK         =  0,
-    KEYPAD_ERR_PARAMS = -1,
+    KEYPAD_ERR_PARAM = -1,
 } keypad_err_t;
 
 /* ---------- event types ---------- */

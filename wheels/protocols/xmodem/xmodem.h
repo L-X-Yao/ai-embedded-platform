@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * xmodem — XMODEM/XMODEM-CRC receiver (passive, byte-fed)
  *
@@ -32,7 +33,7 @@ extern "C" {
 
 typedef enum {
     XMODEM_OK           =  0,
-    XMODEM_ERR_PARAMS   = -1,
+    XMODEM_ERR_PARAM   = -1,
     XMODEM_ERR_TIMEOUT  = -2,
     XMODEM_ERR_CRC      = -3,
     XMODEM_ERR_SEQUENCE = -4,

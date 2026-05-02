@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hx711 — GPIO-based 24-bit ADC driver for load cells
  *
@@ -19,7 +20,7 @@ extern "C" {
 
 typedef enum {
     HX711_OK            =  0,
-    HX711_ERR_PARAMS    = -1,
+    HX711_ERR_PARAM    = -1,
     HX711_ERR_TIMEOUT   = -2,
     HX711_ERR_NOT_READY = -3,
 } hx711_err_t;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * debounce — software button debouncing
  *

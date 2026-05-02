@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * fifo_queue — typed fixed-size FIFO queue with caller-provided storage
  *
@@ -14,7 +15,7 @@ fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
 {
     if (!q || !storage || capacity == 0 || elem_size == 0)
     {
-        return FIFO_QUEUE_ERR_PARAMS;
+        return FIFO_QUEUE_ERR_PARAM;
     }
     q->buf       = (uint8_t *)storage;
     q->capacity  = capacity;
@@ -29,7 +30,7 @@ fifo_queue_err_t fifo_queue_push(fifo_queue_t *q, const void *item)
 {
     if (!q || !item || !q->buf)
     {
-        return FIFO_QUEUE_ERR_PARAMS;
+        return FIFO_QUEUE_ERR_PARAM;
     }
     if (q->count >= q->capacity)
     {
@@ -45,7 +46,7 @@ fifo_queue_err_t fifo_queue_pop(fifo_queue_t *q, void *item)
 {
     if (!q || !item || !q->buf)
     {
-        return FIFO_QUEUE_ERR_PARAMS;
+        return FIFO_QUEUE_ERR_PARAM;
     }
     if (q->count == 0)
     {
@@ -61,7 +62,7 @@ fifo_queue_err_t fifo_queue_peek(const fifo_queue_t *q, void *item)
 {
     if (!q || !item || !q->buf)
     {
-        return FIFO_QUEUE_ERR_PARAMS;
+        return FIFO_QUEUE_ERR_PARAM;
     }
     if (q->count == 0)
     {

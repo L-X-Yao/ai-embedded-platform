@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "protobuf_lite.h"
 #include <string.h>
@@ -420,12 +421,12 @@ TEST(test_sint64)
 
 TEST(test_null_params)
 {
-    ASSERT_EQ(pb_encode_varint(NULL, 1, 1), PB_ERR_PARAMS);
-    ASSERT_EQ(pb_encode_fixed32(NULL, 1, 1), PB_ERR_PARAMS);
-    ASSERT_EQ(pb_encode_fixed64(NULL, 1, 1), PB_ERR_PARAMS);
-    ASSERT_EQ(pb_encode_string(NULL, 1, "x"), PB_ERR_PARAMS);
-    ASSERT_EQ(pb_encode_bytes(NULL, 1, NULL, 0), PB_ERR_PARAMS);
-    ASSERT_EQ(pb_decode_field(NULL, NULL), PB_ERR_PARAMS);
+    ASSERT_EQ(pb_encode_varint(NULL, 1, 1), PB_ERR_PARAM);
+    ASSERT_EQ(pb_encode_fixed32(NULL, 1, 1), PB_ERR_PARAM);
+    ASSERT_EQ(pb_encode_fixed64(NULL, 1, 1), PB_ERR_PARAM);
+    ASSERT_EQ(pb_encode_string(NULL, 1, "x"), PB_ERR_PARAM);
+    ASSERT_EQ(pb_encode_bytes(NULL, 1, NULL, 0), PB_ERR_PARAM);
+    ASSERT_EQ(pb_decode_field(NULL, NULL), PB_ERR_PARAM);
     ASSERT_EQ(pb_encoder_len(NULL), 0);
     ASSERT_TRUE(pb_decoder_done(NULL));
 }

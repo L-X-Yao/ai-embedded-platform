@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cli_shell -- command-line shell module for embedded debug/configuration
  *
@@ -43,7 +44,7 @@ extern "C" {
 
 typedef enum {
     CLI_SHELL_OK          =  0,
-    CLI_SHELL_ERR_PARAMS  = -1,
+    CLI_SHELL_ERR_PARAM  = -1,
     CLI_SHELL_ERR_FULL    = -2,
 } cli_shell_err_t;
 

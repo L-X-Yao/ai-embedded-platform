@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "opt3001.h"
@@ -111,21 +112,21 @@ TEST(test_init_all_addrs)
 TEST(test_init_null_dev)
 {
     mock_reset();
-    ASSERT_EQ(opt3001_init(NULL, &mock_i2c, 0x44), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_init(NULL, &mock_i2c, 0x44), OPT3001_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     mock_reset();
-    ASSERT_EQ(opt3001_init(&dev, NULL, 0x44), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_init(&dev, NULL, 0x44), OPT3001_ERR_PARAM);
 }
 
 TEST(test_init_bad_addr)
 {
     mock_reset();
-    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x43), OPT3001_ERR_PARAMS);
-    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x48), OPT3001_ERR_PARAMS);
-    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x00), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x43), OPT3001_ERR_PARAM);
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x48), OPT3001_ERR_PARAM);
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x00), OPT3001_ERR_PARAM);
 }
 
 TEST(test_init_wrong_manufacturer_id)
@@ -208,8 +209,8 @@ TEST(test_read_lux_null)
     mock_reset();
     ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x44), OPT3001_OK);
     float lux;
-    ASSERT_EQ(opt3001_read_lux(NULL, &lux), OPT3001_ERR_PARAMS);
-    ASSERT_EQ(opt3001_read_lux(&dev, NULL), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_read_lux(NULL, &lux), OPT3001_ERR_PARAM);
+    ASSERT_EQ(opt3001_read_lux(&dev, NULL), OPT3001_ERR_PARAM);
 }
 
 TEST(test_read_lux_i2c_fail)
@@ -245,12 +246,12 @@ TEST(test_set_continuous)
 
 TEST(test_start_single_null)
 {
-    ASSERT_EQ(opt3001_start_single(NULL), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_start_single(NULL), OPT3001_ERR_PARAM);
 }
 
 TEST(test_set_continuous_null)
 {
-    ASSERT_EQ(opt3001_set_continuous(NULL), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_set_continuous(NULL), OPT3001_ERR_PARAM);
 }
 
 TEST(test_mode_preserves_other_bits)
@@ -309,7 +310,7 @@ TEST(test_init_null_write_regs)
         .read_regs  = opt_mock_read_regs,
         .ctx        = NULL,
     };
-    ASSERT_EQ(opt3001_init(&dev, &bad_i2c, 0x44), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_init(&dev, &bad_i2c, 0x44), OPT3001_ERR_PARAM);
 }
 
 TEST(test_init_null_read_regs)
@@ -320,7 +321,7 @@ TEST(test_init_null_read_regs)
         .read_regs  = NULL,
         .ctx        = NULL,
     };
-    ASSERT_EQ(opt3001_init(&dev, &bad_i2c, 0x44), OPT3001_ERR_PARAMS);
+    ASSERT_EQ(opt3001_init(&dev, &bad_i2c, 0x44), OPT3001_ERR_PARAM);
 }
 
 TEST_MAIN("opt3001")

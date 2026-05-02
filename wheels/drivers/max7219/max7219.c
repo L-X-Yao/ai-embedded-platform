@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * max7219 — Maxim MAX7219 LED matrix/7-segment display driver
  *

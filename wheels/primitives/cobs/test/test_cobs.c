@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "cobs.h"
@@ -161,11 +162,11 @@ TEST(test_null_params_encode)
     uint16_t len = (uint16_t)sizeof(buf);
     uint8_t data = 0x42;
 
-    ASSERT_EQ(cobs_encode(&data, 1, NULL, &len), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_encode(&data, 1, NULL, &len), COBS_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(cobs_encode(&data, 1, buf, NULL), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_encode(&data, 1, buf, NULL), COBS_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(cobs_encode(NULL, 5, buf, &len), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_encode(NULL, 5, buf, &len), COBS_ERR_PARAM);
 }
 
 TEST(test_null_params_decode)
@@ -174,11 +175,11 @@ TEST(test_null_params_decode)
     uint16_t len = (uint16_t)sizeof(buf);
     uint8_t enc = 0x01;
 
-    ASSERT_EQ(cobs_decode(&enc, 1, NULL, &len), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_decode(&enc, 1, NULL, &len), COBS_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(cobs_decode(&enc, 1, buf, NULL), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_decode(&enc, 1, buf, NULL), COBS_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(cobs_decode(NULL, 5, buf, &len), COBS_ERR_PARAMS);
+    ASSERT_EQ(cobs_decode(NULL, 5, buf, &len), COBS_ERR_PARAM);
 }
 
 TEST(test_encode_buffer_too_small)

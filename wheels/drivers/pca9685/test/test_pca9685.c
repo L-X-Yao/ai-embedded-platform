@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "pca9685.h"
@@ -56,32 +57,32 @@ TEST(test_init_ok)
 TEST(test_init_null_dev)
 {
     mock_reset();
-    ASSERT_EQ(pca9685_init(NULL, &mock_i2c, 0x40, 50), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_init(NULL, &mock_i2c, 0x40, 50), PCA9685_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     mock_reset();
-    ASSERT_EQ(pca9685_init(&dev, NULL, 0x40, 50), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_init(&dev, NULL, 0x40, 50), PCA9685_ERR_PARAM);
 }
 
 TEST(test_init_null_callbacks)
 {
     mock_reset();
     pca9685_i2c_t bad = { .write_reg = NULL, .read_regs = NULL, .ctx = NULL };
-    ASSERT_EQ(pca9685_init(&dev, &bad, 0x40, 50), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_init(&dev, &bad, 0x40, 50), PCA9685_ERR_PARAM);
 }
 
 TEST(test_init_freq_too_low)
 {
     mock_reset();
-    ASSERT_EQ(pca9685_init(&dev, &mock_i2c, 0x40, 10), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_init(&dev, &mock_i2c, 0x40, 10), PCA9685_ERR_PARAM);
 }
 
 TEST(test_init_freq_too_high)
 {
     mock_reset();
-    ASSERT_EQ(pca9685_init(&dev, &mock_i2c, 0x40, 2000), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_init(&dev, &mock_i2c, 0x40, 2000), PCA9685_ERR_PARAM);
 }
 
 TEST(test_set_pwm_channel0)
@@ -117,8 +118,8 @@ TEST(test_set_pwm_channel_out_of_range)
     mock_reset();
     pca9685_init(&dev, &mock_i2c, 0x40, 50);
 
-    ASSERT_EQ(pca9685_set_pwm(&dev, 16, 0, 1000), PCA9685_ERR_PARAMS);
-    ASSERT_EQ(pca9685_set_pwm(&dev, 255, 0, 1000), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_set_pwm(&dev, 16, 0, 1000), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_pwm(&dev, 255, 0, 1000), PCA9685_ERR_PARAM);
 }
 
 TEST(test_set_duty_50_percent)
@@ -195,8 +196,8 @@ TEST(test_set_freq_range_validation)
     mock_reset();
     pca9685_init(&dev, &mock_i2c, 0x40, 50);
 
-    ASSERT_EQ(pca9685_set_freq(&dev, 23), PCA9685_ERR_PARAMS);
-    ASSERT_EQ(pca9685_set_freq(&dev, 1527), PCA9685_ERR_PARAMS);
+    ASSERT_EQ(pca9685_set_freq(&dev, 23), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_freq(&dev, 1527), PCA9685_ERR_PARAM);
     /* Boundary values should work */
     ASSERT_EQ(pca9685_set_freq(&dev, 24), PCA9685_OK);
     ASSERT_EQ(pca9685_set_freq(&dev, 1526), PCA9685_OK);

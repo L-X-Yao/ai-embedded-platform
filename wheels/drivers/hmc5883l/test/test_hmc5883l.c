@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #define MOCK_I2C_REG_COUNT 16
 #include "mock_i2c.h"

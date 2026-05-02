@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mcp2515 -- SPI CAN bus controller driver for Microchip MCP2515
  *
@@ -254,7 +255,7 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
     if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
         return MCP2515_ERR_SPI;
     if (speed > MCP2515_SPEED_1MBPS)
-        return MCP2515_ERR_PARAMS;
+        return MCP2515_ERR_PARAM;
 
     dev->spi = spi;
 
@@ -306,7 +307,7 @@ mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode)
 mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg)
 {
     if (!dev || !dev->spi || !msg) return MCP2515_ERR_SPI;
-    if (msg->dlc > 8) return MCP2515_ERR_PARAMS;
+    if (msg->dlc > 8) return MCP2515_ERR_PARAM;
 
     /* check if TX buffer 0 is free */
     uint8_t ctrl = reg_read(dev->spi, REG_TXB0CTRL);
@@ -384,8 +385,8 @@ mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num,
                                   uint32_t id, bool extended)
 {
     if (!dev || !dev->spi) return MCP2515_ERR_SPI;
-    if (filter_num > 5) return MCP2515_ERR_PARAMS;
-    if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAMS;
+    if (filter_num > 5) return MCP2515_ERR_PARAM;
+    if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAM;
 
     static const uint8_t filter_base[] = {
         REG_RXF0SIDH, REG_RXF1SIDH, REG_RXF2SIDH,
@@ -399,8 +400,8 @@ mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num,
                                 uint32_t mask)
 {
     if (!dev || !dev->spi) return MCP2515_ERR_SPI;
-    if (mask_num > 1) return MCP2515_ERR_PARAMS;
-    if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAMS;
+    if (mask_num > 1) return MCP2515_ERR_PARAM;
+    if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAM;
 
     uint8_t base = (mask_num == 0) ? REG_RXM0SIDH : REG_RXM1SIDH;
     reg_write(dev->spi, base, (uint8_t)(mask >> 3));

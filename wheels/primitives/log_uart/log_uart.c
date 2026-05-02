@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_uart — UART output sink for log wheel via HAL injection.
  *

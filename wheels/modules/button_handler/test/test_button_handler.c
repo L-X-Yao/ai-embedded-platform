@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "button_handler.h"
 
@@ -109,14 +110,14 @@ TEST(test_init_null_handler)
 {
     btn_handler_err_t err = btn_handler_init(NULL, test_callback, NULL,
                                              3, 100, 30, 20);
-    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAM);
 }
 
 TEST(test_init_null_callback)
 {
     btn_handler_t bh;
     btn_handler_err_t err = btn_handler_init(&bh, NULL, NULL, 3, 100, 30, 20);
-    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAM);
 }
 
 TEST(test_register_button)
@@ -132,7 +133,7 @@ TEST(test_register_button)
 TEST(test_register_null_handler)
 {
     btn_handler_err_t err = btn_handler_register(NULL, 1, mock_read_0, NULL);
-    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAM);
 }
 
 TEST(test_register_null_read)
@@ -140,7 +141,7 @@ TEST(test_register_null_read)
     btn_handler_t bh;
     init_default(&bh);
     btn_handler_err_t err = btn_handler_register(&bh, 1, NULL, NULL);
-    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, BTN_HANDLER_ERR_PARAM);
 }
 
 TEST(test_register_max_buttons)

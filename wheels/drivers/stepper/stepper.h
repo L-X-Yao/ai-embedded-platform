@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * stepper — step/dir motor driver with trapezoidal acceleration
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     STEPPER_OK         =  0,
-    STEPPER_ERR_PARAMS = -1,
+    STEPPER_ERR_PARAM = -1,
     STEPPER_ERR_BUSY   = -2,
 } stepper_err_t;
 

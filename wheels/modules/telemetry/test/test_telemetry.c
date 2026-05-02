@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "telemetry.h"
 #include <string.h>
@@ -62,14 +63,14 @@ TEST(test_init_null_telemetry)
 {
     telemetry_err_t err = telemetry_init(NULL, mock_send, NULL,
                                          TELEMETRY_FMT_JSON);
-    ASSERT_EQ(err, TELEMETRY_ERR_PARAMS);
+    ASSERT_EQ(err, TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_init_null_send)
 {
     telemetry_err_t err = telemetry_init(&telem, NULL, NULL,
                                          TELEMETRY_FMT_JSON);
-    ASSERT_EQ(err, TELEMETRY_ERR_PARAMS);
+    ASSERT_EQ(err, TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_register_fields)
@@ -85,8 +86,8 @@ TEST(test_register_fields)
 TEST(test_register_null_params)
 {
     setup(TELEMETRY_FMT_JSON);
-    ASSERT_EQ(telemetry_register(NULL, "temp"), TELEMETRY_ERR_PARAMS);
-    ASSERT_EQ(telemetry_register(&telem, NULL), TELEMETRY_ERR_PARAMS);
+    ASSERT_EQ(telemetry_register(NULL, "temp"), TELEMETRY_ERR_PARAM);
+    ASSERT_EQ(telemetry_register(&telem, NULL), TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_register_max_fields)
@@ -121,15 +122,15 @@ TEST(test_update_unknown_field)
     setup(TELEMETRY_FMT_JSON);
     telemetry_register(&telem, "temp");
     ASSERT_EQ(telemetry_update(&telem, "nosuch", 1.0f),
-              TELEMETRY_ERR_PARAMS);
+              TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_update_null_params)
 {
     setup(TELEMETRY_FMT_JSON);
     telemetry_register(&telem, "temp");
-    ASSERT_EQ(telemetry_update(NULL, "temp", 1.0f), TELEMETRY_ERR_PARAMS);
-    ASSERT_EQ(telemetry_update(&telem, NULL, 1.0f), TELEMETRY_ERR_PARAMS);
+    ASSERT_EQ(telemetry_update(NULL, "temp", 1.0f), TELEMETRY_ERR_PARAM);
+    ASSERT_EQ(telemetry_update(&telem, NULL, 1.0f), TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_update_by_index)
@@ -151,9 +152,9 @@ TEST(test_update_by_index_out_of_range)
     setup(TELEMETRY_FMT_JSON);
     telemetry_register(&telem, "temp");
     ASSERT_EQ(telemetry_update_by_index(&telem, 5, 1.0f),
-              TELEMETRY_ERR_PARAMS);
+              TELEMETRY_ERR_PARAM);
     ASSERT_EQ(telemetry_update_by_index(NULL, 0, 1.0f),
-              TELEMETRY_ERR_PARAMS);
+              TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_publish_json)
@@ -290,7 +291,7 @@ TEST(test_reset_null)
 
 TEST(test_publish_null)
 {
-    ASSERT_EQ(telemetry_publish(NULL, 0), TELEMETRY_ERR_PARAMS);
+    ASSERT_EQ(telemetry_publish(NULL, 0), TELEMETRY_ERR_PARAM);
 }
 
 TEST(test_updated_flag_tracking)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * data_logger -- record-based data logger for embedded systems
  *
@@ -45,16 +46,16 @@ static data_logger_err_t check_add(const data_logger_t *dl,
                                    data_logger_field_type_t expected)
 {
     if (!dl) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (!dl->active) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (dl->field_idx >= dl->field_count) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (dl->fields[dl->field_idx].type != expected) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     return DATA_LOGGER_OK;
 }
@@ -67,13 +68,13 @@ data_logger_err_t data_logger_init(data_logger_t *dl,
                                    uint8_t field_count)
 {
     if (!dl || !storage || !storage->write) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (field_count > 0 && !fields) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (field_count > DATA_LOGGER_MAX_FIELDS) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
 
     memset(dl, 0, sizeof(*dl));
@@ -86,7 +87,7 @@ data_logger_err_t data_logger_init(data_logger_t *dl,
 data_logger_err_t data_logger_begin(data_logger_t *dl, uint32_t timestamp)
 {
     if (!dl) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
 
     dl->buf_pos   = 0;
@@ -185,7 +186,7 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
         return err;
     }
     if (!value) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
 
     err = buf_comma(dl);
@@ -204,10 +205,10 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
 data_logger_err_t data_logger_commit(data_logger_t *dl)
 {
     if (!dl) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (!dl->active) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
 
     /* Append newline to complete the record */
@@ -231,7 +232,7 @@ data_logger_err_t data_logger_commit(data_logger_t *dl)
 data_logger_err_t data_logger_flush(data_logger_t *dl)
 {
     if (!dl || !dl->storage) {
-        return DATA_LOGGER_ERR_PARAMS;
+        return DATA_LOGGER_ERR_PARAM;
     }
     if (!dl->storage->flush) {
         return DATA_LOGGER_OK;  /* no flush callback -- nothing to do */

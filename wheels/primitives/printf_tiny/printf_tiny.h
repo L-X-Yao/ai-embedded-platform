@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * printf_tiny — minimal printf for resource-constrained embedded systems
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * pcf8574 — I2C 8-bit GPIO expander driver
  *
@@ -24,7 +25,7 @@ extern "C" {
 typedef enum {
     PCF8574_OK         =  0,
     PCF8574_ERR_I2C    = -1,
-    PCF8574_ERR_PARAMS = -2,
+    PCF8574_ERR_PARAM = -2,
 } pcf8574_err_t;
 
 /*

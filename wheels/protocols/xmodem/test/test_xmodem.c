@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "xmodem.h"
 #include <string.h>
@@ -106,8 +107,8 @@ static void feed_bytes(xmodem_t *xm, const uint8_t *data, int len)
 TEST(test_init_null_params)
 {
     xmodem_t xm;
-    ASSERT_EQ(xmodem_init(NULL, &g_io, false), XMODEM_ERR_PARAMS);
-    ASSERT_EQ(xmodem_init(&xm, NULL, false), XMODEM_ERR_PARAMS);
+    ASSERT_EQ(xmodem_init(NULL, &g_io, false), XMODEM_ERR_PARAM);
+    ASSERT_EQ(xmodem_init(&xm, NULL, false), XMODEM_ERR_PARAM);
 }
 
 TEST(test_init_ok)
@@ -147,7 +148,7 @@ TEST(test_start_double_call_rejected)
     mock_reset();
     xmodem_init(&xm, &g_io, false);
     ASSERT_EQ(xmodem_start(&xm), XMODEM_OK);
-    ASSERT_EQ(xmodem_start(&xm), XMODEM_ERR_PARAMS);
+    ASSERT_EQ(xmodem_start(&xm), XMODEM_ERR_PARAM);
 }
 
 TEST(test_single_block_checksum)
@@ -355,7 +356,7 @@ TEST(test_feed_in_wrong_state)
     xmodem_init(&xm, &g_io, false);
 
     /* feed before start — should reject */
-    ASSERT_EQ(xmodem_feed(&xm, 0x01), XMODEM_ERR_PARAMS);
+    ASSERT_EQ(xmodem_feed(&xm, 0x01), XMODEM_ERR_PARAM);
 
     /* feed after complete — should reject */
     xmodem_start(&xm);
@@ -364,7 +365,7 @@ TEST(test_feed_in_wrong_state)
     feed_bytes(&xm, frame, 132);
     xmodem_feed(&xm, XMODEM_EOT);
     ASSERT_EQ(xmodem_get_state(&xm), XMODEM_STATE_COMPLETE);
-    ASSERT_EQ(xmodem_feed(&xm, 0x01), XMODEM_ERR_PARAMS);
+    ASSERT_EQ(xmodem_feed(&xm, 0x01), XMODEM_ERR_PARAM);
 }
 
 TEST(test_write_callback_error)

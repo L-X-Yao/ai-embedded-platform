@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "sd_spi.h"
@@ -358,12 +359,12 @@ TEST(test_init_acmd41_slow)
 TEST(test_null_params)
 {
     sd_spi_t sd;
-    ASSERT_EQ(sd_spi_init(NULL, &mock_hal), SD_SPI_ERR_PARAMS);
-    ASSERT_EQ(sd_spi_init(&sd, NULL), SD_SPI_ERR_PARAMS);
+    ASSERT_EQ(sd_spi_init(NULL, &mock_hal), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_init(&sd, NULL), SD_SPI_ERR_PARAM);
 
     uint8_t buf[512];
-    ASSERT_EQ(sd_spi_read_block(NULL, 0, buf), SD_SPI_ERR_PARAMS);
-    ASSERT_EQ(sd_spi_write_block(NULL, 0, buf), SD_SPI_ERR_PARAMS);
+    ASSERT_EQ(sd_spi_read_block(NULL, 0, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_write_block(NULL, 0, buf), SD_SPI_ERR_PARAM);
 
     ASSERT_EQ(sd_spi_get_type(NULL), SD_SPI_TYPE_UNKNOWN);
     ASSERT_EQ(sd_spi_get_block_count(NULL), 0);
@@ -374,7 +375,7 @@ TEST(test_null_buf_read)
     mock_reset();
     sd_spi_t sd;
     sd_spi_init(&sd, &mock_hal);
-    ASSERT_EQ(sd_spi_read_block(&sd, 0, NULL), SD_SPI_ERR_PARAMS);
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, NULL), SD_SPI_ERR_PARAM);
 }
 
 TEST(test_null_buf_write)
@@ -382,7 +383,7 @@ TEST(test_null_buf_write)
     mock_reset();
     sd_spi_t sd;
     sd_spi_init(&sd, &mock_hal);
-    ASSERT_EQ(sd_spi_write_block(&sd, 0, NULL), SD_SPI_ERR_PARAMS);
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, NULL), SD_SPI_ERR_PARAM);
 }
 
 TEST(test_read_block)

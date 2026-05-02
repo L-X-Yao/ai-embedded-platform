@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * state_machine — table-driven finite state machine
  *

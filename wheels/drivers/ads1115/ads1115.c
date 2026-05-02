@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ads1115 — TI ADS1115 16-bit 4-channel ADC driver
  *

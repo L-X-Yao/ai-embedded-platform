@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ws2812 — WS2812 addressable RGB LED driver (bit-bang)
  *

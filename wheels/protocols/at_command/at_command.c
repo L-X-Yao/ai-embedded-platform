@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * at_command — AT command parser with URC, timeout, multi-match
  *

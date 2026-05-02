@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * param_table — runtime parameter table with CLI-friendly get/set/list.
  *
@@ -22,7 +23,7 @@ extern "C" {
 
 typedef enum {
     PARAM_OK             =  0,
-    PARAM_ERR_PARAMS     = -1,   /* NULL pointer or invalid argument      */
+    PARAM_ERR_PARAM     = -1,   /* NULL pointer or invalid argument      */
     PARAM_ERR_FULL       = -2,   /* table has no free slots                */
     PARAM_ERR_NOT_FOUND  = -3,   /* key does not exist in table            */
     PARAM_ERR_READONLY   = -4,   /* attempted write to readonly parameter  */

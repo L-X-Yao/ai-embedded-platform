@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * uuid — UUID v4 generation and parsing for embedded systems
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     UUID_OK         =  0,
-    UUID_ERR_PARAMS = -1,
+    UUID_ERR_PARAM = -1,
     UUID_ERR_FORMAT = -2,
 } uuid_err_t;
 
@@ -55,7 +56,7 @@ typedef void (*uuid_rng_t)(void *ctx, uint8_t *buf, uint16_t len);
  * @param uuid  Output UUID. Must not be NULL.
  * @param rng   Random byte source callback. Must not be NULL.
  * @param ctx   Opaque context passed to rng. May be NULL.
- * @return      UUID_OK on success, UUID_ERR_PARAMS if uuid or rng is NULL.
+ * @return      UUID_OK on success, UUID_ERR_PARAM if uuid or rng is NULL.
  * @thread_safe: yes if the provided rng callback is thread-safe
  */
 uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx);
@@ -66,7 +67,7 @@ uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx);
  * @param uuid      Input UUID. Must not be NULL.
  * @param buf       Output buffer. Must not be NULL.
  * @param buf_size  Size of buf in bytes. Must be >= 37 (36 chars + NUL).
- * @return          UUID_OK on success, UUID_ERR_PARAMS on invalid args.
+ * @return          UUID_OK on success, UUID_ERR_PARAM on invalid args.
  * @thread_safe: yes (pure function, no state)
  */
 uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size);
@@ -78,7 +79,7 @@ uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size);
  *
  * @param uuid  Output UUID. Must not be NULL.
  * @param str   Input string. Must not be NULL. Must be exactly 36 chars.
- * @return      UUID_OK on success, UUID_ERR_PARAMS if NULL,
+ * @return      UUID_OK on success, UUID_ERR_PARAM if NULL,
  *              UUID_ERR_FORMAT if string is malformed.
  * @thread_safe: yes (pure function, no state)
  */

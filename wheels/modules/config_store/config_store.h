@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * config_store -- configuration management with defaults, validation,
  *                 and storage callbacks
@@ -37,7 +38,7 @@ extern "C" {
 
 typedef enum {
     CONFIG_STORE_OK             =  0,
-    CONFIG_STORE_ERR_PARAMS     = -1,
+    CONFIG_STORE_ERR_PARAM     = -1,
     CONFIG_STORE_ERR_FULL       = -2,
     CONFIG_STORE_ERR_NOT_FOUND  = -3,
     CONFIG_STORE_ERR_TYPE       = -4,

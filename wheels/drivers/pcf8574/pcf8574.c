@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * pcf8574 — I2C 8-bit GPIO expander driver
  *
@@ -15,7 +16,7 @@ pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
                            uint8_t dev_addr)
 {
     if (!dev || !i2c || !i2c->write || !i2c->read)
-        return PCF8574_ERR_PARAMS;
+        return PCF8574_ERR_PARAM;
 
     dev->i2c          = i2c;
     dev->dev_addr     = dev_addr;
@@ -30,7 +31,7 @@ pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
 
 pcf8574_err_t pcf8574_write(pcf8574_t *dev, uint8_t value)
 {
-    if (!dev || !dev->i2c) return PCF8574_ERR_PARAMS;
+    if (!dev || !dev->i2c) return PCF8574_ERR_PARAM;
 
     if (!dev->i2c->write(dev->i2c->ctx, dev->dev_addr, &value, 1))
         return PCF8574_ERR_I2C;
@@ -41,7 +42,7 @@ pcf8574_err_t pcf8574_write(pcf8574_t *dev, uint8_t value)
 
 pcf8574_err_t pcf8574_read(pcf8574_t *dev, uint8_t *value)
 {
-    if (!dev || !dev->i2c || !value) return PCF8574_ERR_PARAMS;
+    if (!dev || !dev->i2c || !value) return PCF8574_ERR_PARAM;
 
     if (!dev->i2c->read(dev->i2c->ctx, dev->dev_addr, value, 1))
         return PCF8574_ERR_I2C;
@@ -51,8 +52,8 @@ pcf8574_err_t pcf8574_read(pcf8574_t *dev, uint8_t *value)
 
 pcf8574_err_t pcf8574_write_pin(pcf8574_t *dev, uint8_t pin, bool level)
 {
-    if (!dev || !dev->i2c) return PCF8574_ERR_PARAMS;
-    if (pin > 7) return PCF8574_ERR_PARAMS;
+    if (!dev || !dev->i2c) return PCF8574_ERR_PARAM;
+    if (pin > 7) return PCF8574_ERR_PARAM;
 
     uint8_t mask = (uint8_t)(1u << pin);
     uint8_t val  = dev->output_state;
@@ -67,8 +68,8 @@ pcf8574_err_t pcf8574_write_pin(pcf8574_t *dev, uint8_t pin, bool level)
 
 pcf8574_err_t pcf8574_read_pin(pcf8574_t *dev, uint8_t pin, bool *level)
 {
-    if (!dev || !dev->i2c || !level) return PCF8574_ERR_PARAMS;
-    if (pin > 7) return PCF8574_ERR_PARAMS;
+    if (!dev || !dev->i2c || !level) return PCF8574_ERR_PARAM;
+    if (pin > 7) return PCF8574_ERR_PARAM;
 
     uint8_t port = 0;
     pcf8574_err_t err = pcf8574_read(dev, &port);
@@ -80,8 +81,8 @@ pcf8574_err_t pcf8574_read_pin(pcf8574_t *dev, uint8_t pin, bool *level)
 
 pcf8574_err_t pcf8574_toggle_pin(pcf8574_t *dev, uint8_t pin)
 {
-    if (!dev || !dev->i2c) return PCF8574_ERR_PARAMS;
-    if (pin > 7) return PCF8574_ERR_PARAMS;
+    if (!dev || !dev->i2c) return PCF8574_ERR_PARAM;
+    if (pin > 7) return PCF8574_ERR_PARAM;
 
     uint8_t val = (uint8_t)(dev->output_state ^ (uint8_t)(1u << pin));
     return pcf8574_write(dev, val);

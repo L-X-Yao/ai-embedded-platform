@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lorawan_packet — LoRaWAN MAC layer packet encoder/decoder
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     LORAWAN_OK           =  0,
-    LORAWAN_ERR_PARAMS   = -1,
+    LORAWAN_ERR_PARAM   = -1,
     LORAWAN_ERR_SIZE     = -2,
     LORAWAN_ERR_MIC      = -3,
     LORAWAN_ERR_OVERFLOW = -4,

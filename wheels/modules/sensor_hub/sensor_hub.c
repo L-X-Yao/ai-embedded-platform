@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * sensor_hub -- multi-sensor polling and aggregation module
  *
@@ -12,7 +13,7 @@
 sensor_hub_err_t sensor_hub_init(sensor_hub_t *hub)
 {
     if (!hub) {
-        return SENSOR_HUB_ERR_PARAMS;
+        return SENSOR_HUB_ERR_PARAM;
     }
     memset(hub, 0, sizeof(*hub));
     return SENSOR_HUB_OK;
@@ -23,7 +24,7 @@ sensor_hub_err_t sensor_hub_register(sensor_hub_t *hub, const char *name,
                                      sensor_hub_read_fn read, void *ctx)
 {
     if (!hub || !name || !read) {
-        return SENSOR_HUB_ERR_PARAMS;
+        return SENSOR_HUB_ERR_PARAM;
     }
     if (hub->sensor_count >= SENSOR_HUB_MAX_SENSORS) {
         return SENSOR_HUB_ERR_FULL;
@@ -43,7 +44,7 @@ sensor_hub_err_t sensor_hub_register(sensor_hub_t *hub, const char *name,
 sensor_hub_err_t sensor_hub_poll(sensor_hub_t *hub)
 {
     if (!hub) {
-        return SENSOR_HUB_ERR_PARAMS;
+        return SENSOR_HUB_ERR_PARAM;
     }
 
     sensor_hub_err_t result = SENSOR_HUB_OK;
@@ -81,7 +82,7 @@ sensor_hub_err_t sensor_hub_get(const sensor_hub_t *hub, uint8_t index,
                                 float *value, sensor_hub_status_t *status)
 {
     if (!hub || index >= hub->sensor_count) {
-        return SENSOR_HUB_ERR_PARAMS;
+        return SENSOR_HUB_ERR_PARAM;
     }
 
     const sensor_hub_entry_t *e = &hub->sensors[index];
@@ -94,7 +95,7 @@ sensor_hub_err_t sensor_hub_get_stats(const sensor_hub_t *hub, uint8_t index,
                                       float *min, float *max, float *avg)
 {
     if (!hub || index >= hub->sensor_count) {
-        return SENSOR_HUB_ERR_PARAMS;
+        return SENSOR_HUB_ERR_PARAM;
     }
 
     const sensor_hub_entry_t *e = &hub->sensors[index];

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * max31855 — MAX31855 SPI thermocouple-to-digital converter driver
  *
@@ -56,7 +57,7 @@ static float decode_internal(uint32_t raw)
 
 max31855_err_t max31855_init(max31855_t *dev, const max31855_spi_t *spi)
 {
-    if (!dev || !spi)           return MAX31855_ERR_PARAMS;
+    if (!dev || !spi)           return MAX31855_ERR_PARAM;
     if (!spi->cs_low ||
         !spi->cs_high ||
         !spi->xfer)            return MAX31855_ERR_SPI;
@@ -67,7 +68,7 @@ max31855_err_t max31855_init(max31855_t *dev, const max31855_spi_t *spi)
 max31855_err_t max31855_read(max31855_t *dev,
                              float *thermocouple_c, float *internal_c)
 {
-    if (!dev || !dev->spi)     return MAX31855_ERR_PARAMS;
+    if (!dev || !dev->spi)     return MAX31855_ERR_PARAM;
 
     uint32_t raw = spi_read32(dev->spi);
 
@@ -82,7 +83,7 @@ max31855_err_t max31855_read(max31855_t *dev,
 
 max31855_err_t max31855_read_raw(max31855_t *dev, uint32_t *raw)
 {
-    if (!dev || !dev->spi || !raw) return MAX31855_ERR_PARAMS;
+    if (!dev || !dev->spi || !raw) return MAX31855_ERR_PARAM;
     *raw = spi_read32(dev->spi);
     return MAX31855_OK;
 }

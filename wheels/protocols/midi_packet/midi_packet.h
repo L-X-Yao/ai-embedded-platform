@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * midi_packet — MIDI message encoder/decoder
  *

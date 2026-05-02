@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "cli_shell.h"
 #include <string.h>
@@ -96,7 +97,7 @@ TEST(test_init_valid)
 TEST(test_init_null_shell)
 {
     cli_shell_err_t err = cli_shell_init(NULL, &test_io, "> ");
-    ASSERT_EQ(err, CLI_SHELL_ERR_PARAMS);
+    ASSERT_EQ(err, CLI_SHELL_ERR_PARAM);
 }
 
 TEST(test_init_prints_prompt)
@@ -287,11 +288,11 @@ TEST(test_register_null_params)
     setup(NULL);
     cli_shell_err_t err;
     err = cli_shell_register(NULL, "x", NULL, cmd_test, NULL);
-    ASSERT_EQ(err, CLI_SHELL_ERR_PARAMS);
+    ASSERT_EQ(err, CLI_SHELL_ERR_PARAM);
     err = cli_shell_register(&shell, NULL, NULL, cmd_test, NULL);
-    ASSERT_EQ(err, CLI_SHELL_ERR_PARAMS);
+    ASSERT_EQ(err, CLI_SHELL_ERR_PARAM);
     err = cli_shell_register(&shell, "x", NULL, NULL, NULL);
-    ASSERT_EQ(err, CLI_SHELL_ERR_PARAMS);
+    ASSERT_EQ(err, CLI_SHELL_ERR_PARAM);
 }
 
 TEST(test_feed_null_shell)

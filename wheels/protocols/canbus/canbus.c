@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * canbus — CAN 2.0A/B frame encoder/decoder with signal extraction
  *
@@ -21,7 +22,7 @@ bool canbus_is_extended_id(uint32_t id)
 
 canbus_err_t canbus_frame_validate(const canbus_frame_t *frame)
 {
-    if (!frame) return CANBUS_ERR_PARAMS;
+    if (!frame) return CANBUS_ERR_PARAM;
 
     if (frame->dlc > CANBUS_DLC_MAX) return CANBUS_ERR_DLC;
 
@@ -37,7 +38,7 @@ canbus_err_t canbus_frame_validate(const canbus_frame_t *frame)
 int canbus_frame_pack(const canbus_frame_t *frame,
                       uint8_t *buf, uint16_t buf_size)
 {
-    if (!frame || !buf) return CANBUS_ERR_PARAMS;
+    if (!frame || !buf) return CANBUS_ERR_PARAM;
 
     canbus_err_t err = canbus_frame_validate(frame);
     if (err != CANBUS_OK) return (int)err;
@@ -81,7 +82,7 @@ int canbus_frame_pack(const canbus_frame_t *frame,
 canbus_err_t canbus_frame_unpack(const uint8_t *buf, uint16_t len,
                                  canbus_frame_t *frame)
 {
-    if (!buf || !frame) return CANBUS_ERR_PARAMS;
+    if (!buf || !frame) return CANBUS_ERR_PARAM;
 
     /* Need at least FLAGS_DLC byte */
     if (len < 1) return CANBUS_ERR_SIZE;

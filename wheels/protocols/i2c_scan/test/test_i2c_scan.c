@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "i2c_scan.h"
 #include <string.h>
@@ -39,12 +40,12 @@ static void mock_found(void *ctx, uint8_t addr)
 TEST(test_scan_null_probe)
 {
     i2c_scan_result_t r;
-    ASSERT_EQ(i2c_scan(NULL, NULL, &r), I2C_SCAN_ERR_PARAMS);
+    ASSERT_EQ(i2c_scan(NULL, NULL, &r), I2C_SCAN_ERR_PARAM);
 }
 
 TEST(test_scan_null_result)
 {
-    ASSERT_EQ(i2c_scan(mock_probe, NULL, NULL), I2C_SCAN_ERR_PARAMS);
+    ASSERT_EQ(i2c_scan(mock_probe, NULL, NULL), I2C_SCAN_ERR_PARAM);
 }
 
 TEST(test_scan_empty_bus)
@@ -89,14 +90,14 @@ TEST(test_scan_skips_reserved)
 TEST(test_range_null)
 {
     ASSERT_EQ(i2c_scan_range(NULL, NULL, 0x10, 0x20, NULL),
-              I2C_SCAN_ERR_PARAMS);
+              I2C_SCAN_ERR_PARAM);
 }
 
 TEST(test_range_inverted)
 {
     i2c_scan_result_t r;
     ASSERT_EQ(i2c_scan_range(mock_probe, NULL, 0x50, 0x10, &r),
-              I2C_SCAN_ERR_PARAMS);
+              I2C_SCAN_ERR_PARAM);
 }
 
 TEST(test_range_subset)
@@ -149,9 +150,9 @@ TEST(test_scan_overflow_count)
 TEST(test_callback_null)
 {
     ASSERT_EQ(i2c_scan_callback(NULL, NULL, mock_found, NULL),
-              I2C_SCAN_ERR_PARAMS);
+              I2C_SCAN_ERR_PARAM);
     ASSERT_EQ(i2c_scan_callback(mock_probe, NULL, NULL, NULL),
-              I2C_SCAN_ERR_PARAMS);
+              I2C_SCAN_ERR_PARAM);
 }
 
 TEST(test_callback_finds)

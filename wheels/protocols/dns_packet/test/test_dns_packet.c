@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "dns_packet.h"
 #include <string.h>
@@ -46,8 +47,8 @@ TEST(test_build_query_buffer_too_small)
 TEST(test_build_query_null_params)
 {
     uint8_t buf[128];
-    ASSERT_EQ(dns_build_query(NULL, 128, 1, "x.com", DNS_TYPE_A), DNS_ERR_PARAMS);
-    ASSERT_EQ(dns_build_query(buf, 128, 1, NULL, DNS_TYPE_A), DNS_ERR_PARAMS);
+    ASSERT_EQ(dns_build_query(NULL, 128, 1, "x.com", DNS_TYPE_A), DNS_ERR_PARAM);
+    ASSERT_EQ(dns_build_query(buf, 128, 1, NULL, DNS_TYPE_A), DNS_ERR_PARAM);
 }
 
 /* ---------- dns_encode_name ---------- */

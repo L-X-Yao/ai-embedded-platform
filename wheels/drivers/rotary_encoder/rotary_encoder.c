@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * rotary_encoder — quadrature rotary encoder decoder
  *

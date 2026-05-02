@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bitmap — fixed-size bitmap (bit array) for resource tracking
  *

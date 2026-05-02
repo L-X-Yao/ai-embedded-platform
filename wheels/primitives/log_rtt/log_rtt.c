@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_rtt — RTT-style output sink for log wheel via HAL injection.
  *

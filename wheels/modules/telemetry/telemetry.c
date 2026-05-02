@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * telemetry -- periodic telemetry data formatter and publisher
  *
@@ -150,7 +151,7 @@ telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
                                void *ctx, telemetry_format_t fmt)
 {
     if (!t || !send) {
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
 
     memset(t, 0, sizeof(*t));
@@ -163,7 +164,7 @@ telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
 telemetry_err_t telemetry_register(telemetry_t *t, const char *name)
 {
     if (!t || !name) {
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
     if (t->field_count >= TELEMETRY_MAX_FIELDS) {
         return TELEMETRY_ERR_FULL;
@@ -181,7 +182,7 @@ telemetry_err_t telemetry_update(telemetry_t *t, const char *name,
                                  float value)
 {
     if (!t || !name) {
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
 
     for (uint8_t i = 0; i < t->field_count; i++) {
@@ -191,14 +192,14 @@ telemetry_err_t telemetry_update(telemetry_t *t, const char *name,
             return TELEMETRY_OK;
         }
     }
-    return TELEMETRY_ERR_PARAMS;
+    return TELEMETRY_ERR_PARAM;
 }
 
 telemetry_err_t telemetry_update_by_index(telemetry_t *t, uint8_t index,
                                           float value)
 {
     if (!t || index >= t->field_count) {
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
 
     t->fields[index].value   = value;
@@ -209,7 +210,7 @@ telemetry_err_t telemetry_update_by_index(telemetry_t *t, uint8_t index,
 telemetry_err_t telemetry_publish(telemetry_t *t, uint32_t timestamp)
 {
     if (!t) {
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
 
     int len;
@@ -225,7 +226,7 @@ telemetry_err_t telemetry_publish(telemetry_t *t, uint32_t timestamp)
         len = fmt_key_value(t, timestamp);
         break;
     default:
-        return TELEMETRY_ERR_PARAMS;
+        return TELEMETRY_ERR_PARAM;
     }
 
     if (len < 0) {

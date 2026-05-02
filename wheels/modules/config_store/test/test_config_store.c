@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "config_store.h"
 #include <string.h>
@@ -99,7 +100,7 @@ TEST(test_init_valid)
 TEST(test_init_null_store)
 {
     config_store_err_t err = config_store_init(NULL, NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_define_int_and_get_default)
@@ -430,16 +431,16 @@ TEST(test_null_params_define)
     config_store_err_t err;
 
     err = config_store_define_int(NULL, "x", 0, 0, 10);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_define_int(&cs, NULL, 0, 0, 10);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_define_string(&cs, NULL, "x");
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_define_string(&cs, "x", NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_null_params_get_set)
@@ -449,20 +450,20 @@ TEST(test_null_params_get_set)
     config_store_err_t err;
 
     err = config_store_set_int(NULL, "volume", 50);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_set_int(&cs, NULL, 50);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_get_int(NULL, "volume", NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     int32_t val = 0;
     err = config_store_get_int(&cs, NULL, &val);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 
     err = config_store_get_int(&cs, "volume", NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_string_set_too_long)
@@ -501,19 +502,19 @@ TEST(test_count_null)
 TEST(test_reset_null)
 {
     config_store_err_t err = config_store_reset_defaults(NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_save_null)
 {
     config_store_err_t err = config_store_save_all(NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_load_null)
 {
     config_store_err_t err = config_store_load_all(NULL);
-    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAMS);
+    ASSERT_EQ(err, CONFIG_STORE_ERR_PARAM);
 }
 
 TEST(test_load_updates_modified_flag)

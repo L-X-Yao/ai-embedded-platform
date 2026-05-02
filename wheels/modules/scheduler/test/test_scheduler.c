@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "scheduler.h"
 
@@ -44,7 +45,7 @@ TEST(test_init)
 
 TEST(test_init_null)
 {
-    ASSERT_EQ(scheduler_init(NULL), SCHED_ERR_PARAMS);
+    ASSERT_EQ(scheduler_init(NULL), SCHED_ERR_PARAM);
 }
 
 TEST(test_add_task)
@@ -62,9 +63,9 @@ TEST(test_add_null_params)
     scheduler_t s;
     scheduler_init(&s);
 
-    ASSERT_EQ(scheduler_add(NULL, "t1", task_counter, NULL, 10), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_add(&s, NULL, task_counter, NULL, 10), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_add(&s, "t1", NULL, NULL, 10), SCHED_ERR_PARAMS);
+    ASSERT_EQ(scheduler_add(NULL, "t1", task_counter, NULL, 10), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_add(&s, NULL, task_counter, NULL, 10), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_add(&s, "t1", NULL, NULL, 10), SCHED_ERR_PARAM);
     ASSERT_EQ(scheduler_count(&s), 0);
 }
 
@@ -143,10 +144,10 @@ TEST(test_enable_disable_not_found)
     scheduler_t s;
     scheduler_init(&s);
 
-    ASSERT_EQ(scheduler_enable(&s, "nope"), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_disable(&s, "nope"), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_enable(NULL, "x"), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_disable(NULL, "x"), SCHED_ERR_PARAMS);
+    ASSERT_EQ(scheduler_enable(&s, "nope"), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_disable(&s, "nope"), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_enable(NULL, "x"), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_disable(NULL, "x"), SCHED_ERR_PARAM);
 }
 
 TEST(test_remove)
@@ -172,8 +173,8 @@ TEST(test_remove_not_found)
     scheduler_t s;
     scheduler_init(&s);
 
-    ASSERT_EQ(scheduler_remove(&s, "nope"), SCHED_ERR_PARAMS);
-    ASSERT_EQ(scheduler_remove(NULL, "x"), SCHED_ERR_PARAMS);
+    ASSERT_EQ(scheduler_remove(&s, "nope"), SCHED_ERR_PARAM);
+    ASSERT_EQ(scheduler_remove(NULL, "x"), SCHED_ERR_PARAM);
 }
 
 TEST(test_max_tasks)

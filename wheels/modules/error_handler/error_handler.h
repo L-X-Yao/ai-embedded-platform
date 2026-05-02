@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * error_handler -- fault logging and recovery module for embedded systems
  *
@@ -31,7 +32,7 @@ extern "C" {
 
 typedef enum {
     ERROR_HANDLER_OK          =  0,
-    ERROR_HANDLER_ERR_PARAMS  = -1,
+    ERROR_HANDLER_ERR_PARAM  = -1,
     ERROR_HANDLER_ERR_FULL    = -2,
     ERROR_HANDLER_ERR_STORAGE = -3,
 } error_handler_err_t;

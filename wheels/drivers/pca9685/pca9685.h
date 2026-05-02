@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * pca9685 — I2C 16-channel 12-bit PWM driver (NXP PCA9685)
  *
@@ -24,7 +25,7 @@ extern "C" {
 typedef enum {
     PCA9685_OK         =  0,
     PCA9685_ERR_I2C    = -1,
-    PCA9685_ERR_PARAMS = -2,
+    PCA9685_ERR_PARAM = -2,
 } pca9685_err_t;
 
 typedef struct {

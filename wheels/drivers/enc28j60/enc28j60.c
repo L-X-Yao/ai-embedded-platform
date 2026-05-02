@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * enc28j60 -- SPI Ethernet controller driver for Microchip ENC28J60
  *
@@ -215,9 +216,9 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr)
 {
     if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
-        return ENC28J60_ERR_PARAMS;
+        return ENC28J60_ERR_PARAM;
     if (!mac_addr)
-        return ENC28J60_ERR_PARAMS;
+        return ENC28J60_ERR_PARAM;
 
     dev->spi  = spi;
     dev->bank = 0;
@@ -270,8 +271,8 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
 enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
                               uint16_t len)
 {
-    if (!dev || !dev->spi) return ENC28J60_ERR_PARAMS;
-    if (!frame)            return ENC28J60_ERR_PARAMS;
+    if (!dev || !dev->spi) return ENC28J60_ERR_PARAM;
+    if (!frame)            return ENC28J60_ERR_PARAM;
     if (len == 0)          return ENC28J60_ERR_SIZE;
     if (len > ENC28J60_MAX_FRAME) return ENC28J60_ERR_SIZE;
 
@@ -310,8 +311,8 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
 enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
                                  uint16_t buf_size, uint16_t *frame_len)
 {
-    if (!dev || !dev->spi) return ENC28J60_ERR_PARAMS;
-    if (!frame || !frame_len) return ENC28J60_ERR_PARAMS;
+    if (!dev || !dev->spi) return ENC28J60_ERR_PARAM;
+    if (!frame || !frame_len) return ENC28J60_ERR_PARAM;
 
     /* Check packet count.
      * EPKTCNT (bank1:0x19) is an ETH register per datasheet table 3-1,
@@ -388,8 +389,8 @@ uint8_t enc28j60_get_revision(enc28j60_t *dev)
 
 enc28j60_err_t enc28j60_set_mac(enc28j60_t *dev, const uint8_t *mac_addr)
 {
-    if (!dev || !dev->spi) return ENC28J60_ERR_PARAMS;
-    if (!mac_addr)         return ENC28J60_ERR_PARAMS;
+    if (!dev || !dev->spi) return ENC28J60_ERR_PARAM;
+    if (!mac_addr)         return ENC28J60_ERR_PARAM;
     memcpy(dev->mac_addr, mac_addr, 6);
     write_mac_regs(dev);
     return ENC28J60_OK;

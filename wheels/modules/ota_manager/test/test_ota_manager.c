@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "ota_manager.h"
 #include <string.h>
@@ -146,19 +147,19 @@ TEST(test_init_valid)
 TEST(test_init_null_mgr)
 {
     mock_reset();
-    ASSERT_EQ(ota_manager_init(NULL, &test_ops, "1.0.0"), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_init(NULL, &test_ops, "1.0.0"), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_init_null_ops)
 {
     mock_reset();
-    ASSERT_EQ(ota_manager_init(&mgr, NULL, "1.0.0"), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_init(&mgr, NULL, "1.0.0"), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_init_null_version)
 {
     mock_reset();
-    ASSERT_EQ(ota_manager_init(&mgr, &test_ops, NULL), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_init(&mgr, &test_ops, NULL), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_init_missing_callback)
@@ -166,7 +167,7 @@ TEST(test_init_missing_callback)
     mock_reset();
     ota_mgr_ops_t bad = test_ops;
     bad.write_chunk = NULL;
-    ASSERT_EQ(ota_manager_init(&mgr, &bad, "1.0.0"), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_init(&mgr, &bad, "1.0.0"), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_check_update_available)
@@ -465,7 +466,7 @@ TEST(test_reset_null)
 
 TEST(test_check_null)
 {
-    ASSERT_EQ(ota_manager_check(NULL), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_check(NULL), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_download_step_null_buf)
@@ -475,7 +476,7 @@ TEST(test_download_step_null_buf)
     ota_manager_init(&mgr, &test_ops, "1.0.0");
     ota_manager_check(&mgr);
 
-    ASSERT_EQ(ota_manager_download_step(&mgr, NULL, 256), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_download_step(&mgr, NULL, 256), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_download_step_zero_size)
@@ -486,7 +487,7 @@ TEST(test_download_step_zero_size)
     ota_manager_check(&mgr);
 
     uint8_t buf[1];
-    ASSERT_EQ(ota_manager_download_step(&mgr, buf, 0), OTA_MGR_ERR_PARAMS);
+    ASSERT_EQ(ota_manager_download_step(&mgr, buf, 0), OTA_MGR_ERR_PARAM);
 }
 
 TEST(test_full_flow)

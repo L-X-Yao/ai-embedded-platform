@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * coap_packet — CoAP message encoder/decoder (RFC 7252)
  *

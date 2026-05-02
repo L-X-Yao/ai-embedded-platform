@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * sensor_hub -- multi-sensor polling and aggregation module
  *
@@ -30,7 +31,7 @@ extern "C" {
 
 typedef enum {
     SENSOR_HUB_OK         =  0,
-    SENSOR_HUB_ERR_PARAMS = -1,
+    SENSOR_HUB_ERR_PARAM = -1,
     SENSOR_HUB_ERR_FULL   = -2,
     SENSOR_HUB_ERR_READ   = -3,
 } sensor_hub_err_t;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * drv2605 -- TI DRV2605L I2C haptic motor driver
  *

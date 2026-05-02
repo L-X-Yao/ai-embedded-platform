@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cli_parser — minimal CLI parser for embedded debug shells
  *

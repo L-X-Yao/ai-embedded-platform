@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mpu6050 — InvenSense MPU-6050 6-axis IMU driver
  *

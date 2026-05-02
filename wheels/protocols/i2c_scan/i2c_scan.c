@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * i2c_scan — I2C bus scanner and device identifier
  *
@@ -65,7 +66,7 @@ static i2c_scan_err_t scan_range_impl(i2c_scan_probe_fn probe,
 i2c_scan_err_t i2c_scan(i2c_scan_probe_fn probe, void *probe_ctx,
                          i2c_scan_result_t *result)
 {
-    if (!probe || !result) return I2C_SCAN_ERR_PARAMS;
+    if (!probe || !result) return I2C_SCAN_ERR_PARAM;
     return scan_range_impl(probe, probe_ctx,
                            I2C_SCAN_ADDR_MIN, I2C_SCAN_ADDR_MAX, result);
 }
@@ -74,15 +75,15 @@ i2c_scan_err_t i2c_scan_range(i2c_scan_probe_fn probe, void *probe_ctx,
                                uint8_t start, uint8_t end,
                                i2c_scan_result_t *result)
 {
-    if (!probe || !result) return I2C_SCAN_ERR_PARAMS;
-    if (start > end)       return I2C_SCAN_ERR_PARAMS;
+    if (!probe || !result) return I2C_SCAN_ERR_PARAM;
+    if (start > end)       return I2C_SCAN_ERR_PARAM;
     return scan_range_impl(probe, probe_ctx, start, end, result);
 }
 
 i2c_scan_err_t i2c_scan_callback(i2c_scan_probe_fn probe, void *probe_ctx,
                                   i2c_scan_found_fn found, void *found_ctx)
 {
-    if (!probe || !found) return I2C_SCAN_ERR_PARAMS;
+    if (!probe || !found) return I2C_SCAN_ERR_PARAM;
 
     for (unsigned a = I2C_SCAN_ADDR_MIN; a <= I2C_SCAN_ADDR_MAX; a++) {
         if (probe(probe_ctx, (uint8_t)a)) {

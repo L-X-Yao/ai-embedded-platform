@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mag_cal — min/max magnetometer calibration (hard-iron + scale)
  *

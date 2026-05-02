@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * keypad_matrix — GPIO matrix keypad scanner
  *
@@ -21,13 +22,13 @@ keypad_err_t keypad_matrix_init(keypad_matrix_t *kp, const keypad_hal_t *hal,
                                 uint8_t rows, uint8_t cols, const char *keymap)
 {
     if (!kp || !hal || !keymap)
-        return KEYPAD_ERR_PARAMS;
+        return KEYPAD_ERR_PARAM;
     if (rows == 0 || cols == 0)
-        return KEYPAD_ERR_PARAMS;
+        return KEYPAD_ERR_PARAM;
     if (rows > KEYPAD_MAX_ROWS || cols > KEYPAD_MAX_COLS)
-        return KEYPAD_ERR_PARAMS;
+        return KEYPAD_ERR_PARAM;
     if (!hal->set_row_low || !hal->set_row_high || !hal->read_col)
-        return KEYPAD_ERR_PARAMS;
+        return KEYPAD_ERR_PARAM;
 
     kp->hal    = hal;
     kp->keymap = keymap;

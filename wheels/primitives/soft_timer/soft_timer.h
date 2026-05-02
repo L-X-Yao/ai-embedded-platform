@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * soft_timer — tick-driven software timer manager
  *

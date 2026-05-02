@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mcp23017 — I2C 16-bit GPIO expander driver
  *
@@ -56,10 +57,10 @@ mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
                              uint8_t dev_addr)
 {
     if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     if (dev_addr < 0x20 || dev_addr > 0x27)
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     dev->i2c      = i2c;
     dev->dev_addr = dev_addr;
@@ -80,7 +81,7 @@ mcp23017_err_t mcp23017_set_direction(mcp23017_t *dev, mcp23017_port_t port,
                                       uint8_t mask)
 {
     if (!dev || !dev->i2c || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_IODIRA : REG_IODIRB;
     if (!write_reg(dev, reg, mask))
@@ -93,7 +94,7 @@ mcp23017_err_t mcp23017_set_pullup(mcp23017_t *dev, mcp23017_port_t port,
                                    uint8_t mask)
 {
     if (!dev || !dev->i2c || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_GPPUA : REG_GPPUB;
     if (!write_reg(dev, reg, mask))
@@ -106,7 +107,7 @@ mcp23017_err_t mcp23017_write_port(mcp23017_t *dev, mcp23017_port_t port,
                                    uint8_t value)
 {
     if (!dev || !dev->i2c || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_GPIOA : REG_GPIOB;
     if (!write_reg(dev, reg, value))
@@ -119,7 +120,7 @@ mcp23017_err_t mcp23017_read_port(mcp23017_t *dev, mcp23017_port_t port,
                                   uint8_t *value)
 {
     if (!dev || !dev->i2c || !value || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_GPIOA : REG_GPIOB;
     if (!read_reg(dev, reg, value))
@@ -132,9 +133,9 @@ mcp23017_err_t mcp23017_write_pin(mcp23017_t *dev, mcp23017_port_t port,
                                   uint8_t pin, bool level)
 {
     if (!dev || !dev->i2c || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
     if (pin > 7)
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_OLATA : REG_OLATB;
     uint8_t cur;
@@ -156,9 +157,9 @@ mcp23017_err_t mcp23017_read_pin(mcp23017_t *dev, mcp23017_port_t port,
                                  uint8_t pin, bool *level)
 {
     if (!dev || !dev->i2c || !level || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
     if (pin > 7)
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_GPIOA : REG_GPIOB;
     uint8_t val;
@@ -173,7 +174,7 @@ mcp23017_err_t mcp23017_set_interrupt(mcp23017_t *dev, mcp23017_port_t port,
                                       uint8_t mask)
 {
     if (!dev || !dev->i2c || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_GPINTENA : REG_GPINTENB;
     if (!write_reg(dev, reg, mask))
@@ -187,7 +188,7 @@ mcp23017_err_t mcp23017_read_interrupt_flag(mcp23017_t *dev,
                                             uint8_t *flags)
 {
     if (!dev || !dev->i2c || !flags || !valid_port(port))
-        return MCP23017_ERR_PARAMS;
+        return MCP23017_ERR_PARAM;
 
     uint8_t reg = (port == MCP23017_PORT_A) ? REG_INTFA : REG_INTFB;
     if (!read_reg(dev, reg, flags))

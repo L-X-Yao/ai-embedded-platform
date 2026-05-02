@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "param_table.h"
@@ -146,12 +147,12 @@ TEST(test_null_params)
     param_table_t pt;
     param_table_init(&pt);
 
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_init(NULL));
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_define(NULL, "k", "v", false));
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_define(&pt, NULL, "v", false));
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_set(NULL, "k", "v"));
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_set(&pt, NULL, "v"));
-    ASSERT_EQ(PARAM_ERR_PARAMS, param_table_get(NULL, "k", NULL, 32));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_init(NULL));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_define(NULL, "k", "v", false));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_define(&pt, NULL, "v", false));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_set(NULL, "k", "v"));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_set(&pt, NULL, "v"));
+    ASSERT_EQ(PARAM_ERR_PARAM, param_table_get(NULL, "k", NULL, 32));
     ASSERT_EQ(-1, param_table_find(NULL, "k"));
     ASSERT_EQ(0, param_table_count(NULL));
     ASSERT_EQ(-1, param_table_list(NULL, NULL, 0));

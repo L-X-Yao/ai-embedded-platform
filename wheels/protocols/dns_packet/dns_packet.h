@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * dns_packet — DNS query/response encoder/decoder
  *
@@ -29,7 +30,7 @@ extern "C" {
 
 typedef enum {
     DNS_OK           =  0,
-    DNS_ERR_PARAMS   = -1,
+    DNS_ERR_PARAM   = -1,
     DNS_ERR_SIZE     = -2,
     DNS_ERR_FORMAT   = -3,
     DNS_ERR_OVERFLOW = -4,

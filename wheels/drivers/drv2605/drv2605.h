@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * drv2605 -- TI DRV2605L I2C haptic motor driver
  *
@@ -77,7 +78,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Reset, verify device ID, enter standby. @thread_safe: caller_must_lock */
+/** Reset, verify device ID, enter standby. @thread_safe: no */
 drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c);
 
 /** Set actuator type (ERM or LRA) in feedback control register. @thread_safe: caller_must_lock */

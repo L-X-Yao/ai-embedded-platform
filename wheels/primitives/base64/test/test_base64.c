@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "base64.h"
@@ -166,22 +167,22 @@ TEST(test_null_pointers)
 
     /* Encode: NULL out */
     ASSERT_EQ(base64_encode((const uint8_t *)"x", 1, NULL, &len),
-              BASE64_ERR_PARAMS);
+              BASE64_ERR_PARAM);
     /* Encode: NULL out_len */
     ASSERT_EQ(base64_encode((const uint8_t *)"x", 1, cbuf, NULL),
-              BASE64_ERR_PARAMS);
+              BASE64_ERR_PARAM);
     /* Encode: NULL data with non-zero len */
     len = sizeof(cbuf);
-    ASSERT_EQ(base64_encode(NULL, 5, cbuf, &len), BASE64_ERR_PARAMS);
+    ASSERT_EQ(base64_encode(NULL, 5, cbuf, &len), BASE64_ERR_PARAM);
 
     /* Decode: NULL out */
     len = sizeof(ubuf);
-    ASSERT_EQ(base64_decode("Zg==", 4, NULL, &len), BASE64_ERR_PARAMS);
+    ASSERT_EQ(base64_decode("Zg==", 4, NULL, &len), BASE64_ERR_PARAM);
     /* Decode: NULL out_len */
-    ASSERT_EQ(base64_decode("Zg==", 4, ubuf, NULL), BASE64_ERR_PARAMS);
+    ASSERT_EQ(base64_decode("Zg==", 4, ubuf, NULL), BASE64_ERR_PARAM);
     /* Decode: NULL b64 with non-zero len */
     len = sizeof(ubuf);
-    ASSERT_EQ(base64_decode(NULL, 4, ubuf, &len), BASE64_ERR_PARAMS);
+    ASSERT_EQ(base64_decode(NULL, 4, ubuf, &len), BASE64_ERR_PARAM);
 }
 
 /* ---- Size calculation ------------------------------------------------- */

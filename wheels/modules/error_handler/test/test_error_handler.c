@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "error_handler.h"
 #include <string.h>
@@ -112,7 +113,7 @@ TEST(test_init_valid)
 TEST(test_init_null_handler)
 {
     error_handler_err_t err = error_handler_init(NULL, NULL);
-    ASSERT_EQ(err, ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_init_with_storage)
@@ -145,7 +146,7 @@ TEST(test_report_null_handler)
     error_handler_err_t err = error_handler_report(NULL, 1,
                                                     ERROR_SEVERITY_ERROR,
                                                     0, 0);
-    ASSERT_EQ(err, ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(err, ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_ring_buffer_wraparound)
@@ -340,8 +341,8 @@ TEST(test_get_null_params)
     error_handler_report(&eh, 1, ERROR_SEVERITY_INFO, 100, 0);
 
     error_record_t rec;
-    ASSERT_EQ(error_handler_get(NULL, 0, &rec), ERROR_HANDLER_ERR_PARAMS);
-    ASSERT_EQ(error_handler_get(&eh, 0, NULL), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_get(NULL, 0, &rec), ERROR_HANDLER_ERR_PARAM);
+    ASSERT_EQ(error_handler_get(&eh, 0, NULL), ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_get_invalid_index)
@@ -351,16 +352,16 @@ TEST(test_get_invalid_index)
 
     error_record_t rec;
     /* Only 1 record, index 1 is out of range */
-    ASSERT_EQ(error_handler_get(&eh, 1, &rec), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_get(&eh, 1, &rec), ERROR_HANDLER_ERR_PARAM);
     /* Index 255 out of range */
-    ASSERT_EQ(error_handler_get(&eh, 255, &rec), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_get(&eh, 255, &rec), ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_get_empty_buffer)
 {
     setup(NULL);
     error_record_t rec;
-    ASSERT_EQ(error_handler_get(&eh, 0, &rec), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_get(&eh, 0, &rec), ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_max_records_fill)
@@ -498,12 +499,12 @@ TEST(test_report_after_load)
 
 TEST(test_save_null_handler)
 {
-    ASSERT_EQ(error_handler_save(NULL), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_save(NULL), ERROR_HANDLER_ERR_PARAM);
 }
 
 TEST(test_load_null_handler)
 {
-    ASSERT_EQ(error_handler_load(NULL), ERROR_HANDLER_ERR_PARAMS);
+    ASSERT_EQ(error_handler_load(NULL), ERROR_HANDLER_ERR_PARAM);
 }
 
 /* ================================================================ */

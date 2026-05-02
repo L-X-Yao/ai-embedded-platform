@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "fifo_queue.h"
@@ -27,10 +28,10 @@ TEST(test_init_null_params)
 {
     fifo_queue_t q;
     uint32_t storage[4];
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_init(NULL, storage, 4, sizeof(uint32_t)));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_init(&q, NULL, 4, sizeof(uint32_t)));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_init(&q, storage, 0, sizeof(uint32_t)));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_init(&q, storage, 4, 0));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_init(NULL, storage, 4, sizeof(uint32_t)));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_init(&q, NULL, 4, sizeof(uint32_t)));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_init(&q, storage, 0, sizeof(uint32_t)));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_init(&q, storage, 4, 0));
 }
 
 TEST(test_push_pop_int)
@@ -173,12 +174,12 @@ TEST(test_push_pop_null_params)
     int storage[2], v = 0;
     fifo_queue_init(&q, storage, 2, sizeof(int));
 
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_push(NULL, &v));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_push(&q, NULL));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_pop(NULL, &v));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_pop(&q, NULL));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_peek(NULL, &v));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_peek(&q, NULL));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_push(NULL, &v));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_push(&q, NULL));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_pop(NULL, &v));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_pop(&q, NULL));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_peek(NULL, &v));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_peek(&q, NULL));
 }
 
 TEST(test_capacity_one)
@@ -255,8 +256,8 @@ TEST(test_zero_init_safety)
     ASSERT_FALSE(fifo_queue_is_full(&q));
 
     int out;
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_pop(&q, &out));
-    ASSERT_EQ(FIFO_QUEUE_ERR_PARAMS, fifo_queue_peek(&q, &out));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_pop(&q, &out));
+    ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_peek(&q, &out));
 }
 
 TEST_MAIN("fifo_queue")

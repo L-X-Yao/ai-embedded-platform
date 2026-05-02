@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * dns_packet — DNS query/response encoder/decoder
  *
@@ -32,7 +33,7 @@ static uint32_t get_u32(const uint8_t *buf)
 
 int dns_encode_name(const char *name, uint8_t *buf, uint16_t buf_size)
 {
-    if (!name || !buf) return DNS_ERR_PARAMS;
+    if (!name || !buf) return DNS_ERR_PARAM;
 
     size_t nlen = strlen(name);
     if (nlen == 0 || nlen > 253) return DNS_ERR_FORMAT;
@@ -75,7 +76,7 @@ int dns_encode_name(const char *name, uint8_t *buf, uint16_t buf_size)
 int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
                     uint16_t offset, char *name, uint16_t name_size)
 {
-    if (!pkt || !name || name_size == 0) return DNS_ERR_PARAMS;
+    if (!pkt || !name || name_size == 0) return DNS_ERR_PARAM;
 
     uint16_t pos = offset;
     uint16_t out = 0;
@@ -142,7 +143,7 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
 int dns_build_query(uint8_t *buf, uint16_t buf_size,
                     uint16_t id, const char *name, dns_type_t type)
 {
-    if (!buf || !name) return DNS_ERR_PARAMS;
+    if (!buf || !name) return DNS_ERR_PARAM;
     if (buf_size < DNS_HEADER_SIZE) return DNS_ERR_SIZE;
 
     /* encode name into temp area to measure length */
@@ -179,7 +180,7 @@ int dns_build_query(uint8_t *buf, uint16_t buf_size,
 dns_err_t dns_parse_header(const uint8_t *buf, uint16_t len,
                            dns_header_t *hdr)
 {
-    if (!buf || !hdr) return DNS_ERR_PARAMS;
+    if (!buf || !hdr) return DNS_ERR_PARAM;
     if (len < DNS_HEADER_SIZE) return DNS_ERR_SIZE;
 
     hdr->id          = get_u16(buf + 0);
@@ -196,7 +197,7 @@ dns_err_t dns_parse_header(const uint8_t *buf, uint16_t len,
 int dns_parse_record(const uint8_t *buf, uint16_t len, uint16_t offset,
                      dns_record_t *record, bool is_answer)
 {
-    if (!buf || !record) return DNS_ERR_PARAMS;
+    if (!buf || !record) return DNS_ERR_PARAM;
     if (offset >= len) return DNS_ERR_FORMAT;
 
     memset(record, 0, sizeof(*record));
@@ -239,7 +240,7 @@ int dns_parse_record(const uint8_t *buf, uint16_t len, uint16_t offset,
 
 dns_err_t dns_get_ipv4(const dns_record_t *record, uint8_t ip[4])
 {
-    if (!record || !ip) return DNS_ERR_PARAMS;
+    if (!record || !ip) return DNS_ERR_PARAM;
     if (record->type != DNS_TYPE_A) return DNS_ERR_FORMAT;
     if (record->rdlength != 4 || !record->rdata) return DNS_ERR_FORMAT;
 

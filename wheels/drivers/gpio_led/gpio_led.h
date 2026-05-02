@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * gpio_led — GPIO LED control (on/off, blink, breathe, pattern)
  *

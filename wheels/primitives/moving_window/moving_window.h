@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * moving_window — sliding window statistics (min/max/mean/variance)
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_file — FILE* output sink for log wheel.
  *

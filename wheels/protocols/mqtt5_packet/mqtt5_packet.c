@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mqtt5_packet — MQTT 5.0 packet encoder/decoder
  *
@@ -57,7 +58,7 @@ static int put_str(uint8_t *buf, const char *s)
 
 int mqtt5_encode_vbi(uint8_t *buf, uint32_t value)
 {
-    if (!buf) return MQTT5_ERR_PARAMS;
+    if (!buf) return MQTT5_ERR_PARAM;
     if (value > 268435455u) return MQTT5_ERR_OVERFLOW;
 
     int i = 0;
@@ -73,7 +74,7 @@ int mqtt5_encode_vbi(uint8_t *buf, uint32_t value)
 mqtt5_err_t mqtt5_decode_vbi(const uint8_t *buf, uint16_t len,
                              uint32_t *value, uint8_t *bytes_used)
 {
-    if (!buf || !value || !bytes_used) return MQTT5_ERR_PARAMS;
+    if (!buf || !value || !bytes_used) return MQTT5_ERR_PARAM;
     if (len == 0) return MQTT5_ERR_SIZE;
 
     uint32_t result = 0;
@@ -99,8 +100,8 @@ mqtt5_err_t mqtt5_decode_vbi(const uint8_t *buf, uint16_t len,
 int mqtt5_build_connect(uint8_t *buf, uint16_t size,
                         const mqtt5_connect_t *cfg)
 {
-    if (!buf || !cfg || !cfg->client_id) return MQTT5_ERR_PARAMS;
-    if (cfg->password && !cfg->username) return MQTT5_ERR_PARAMS;
+    if (!buf || !cfg || !cfg->client_id) return MQTT5_ERR_PARAM;
+    if (cfg->password && !cfg->username) return MQTT5_ERR_PARAM;
 
     /* compute properties length */
     uint16_t props_len = 0;
@@ -170,8 +171,8 @@ int mqtt5_build_connect(uint8_t *buf, uint16_t size,
 int mqtt5_build_publish(uint8_t *buf, uint16_t size,
                         const mqtt5_publish_t *pub)
 {
-    if (!buf || !pub || !pub->topic) return MQTT5_ERR_PARAMS;
-    if (pub->qos > 2) return MQTT5_ERR_PARAMS;
+    if (!buf || !pub || !pub->topic) return MQTT5_ERR_PARAM;
+    if (pub->qos > 2) return MQTT5_ERR_PARAM;
 
     size_t topic_raw = strlen(pub->topic);
     if (topic_raw > UINT16_MAX) return MQTT5_ERR_SIZE;
@@ -229,8 +230,8 @@ int mqtt5_build_subscribe(uint8_t *buf, uint16_t size,
                           uint16_t packet_id, const char *topic,
                           uint8_t qos)
 {
-    if (!buf || !topic) return MQTT5_ERR_PARAMS;
-    if (qos > 2) return MQTT5_ERR_PARAMS;
+    if (!buf || !topic) return MQTT5_ERR_PARAM;
+    if (qos > 2) return MQTT5_ERR_PARAM;
 
     size_t topic_raw = strlen(topic);
     if (topic_raw > UINT16_MAX) return MQTT5_ERR_SIZE;
@@ -266,7 +267,7 @@ int mqtt5_build_subscribe(uint8_t *buf, uint16_t size,
 int mqtt5_build_disconnect(uint8_t *buf, uint16_t size,
                            uint8_t reason_code)
 {
-    if (!buf) return MQTT5_ERR_PARAMS;
+    if (!buf) return MQTT5_ERR_PARAM;
 
     /* DISCONNECT with reason code 0x00 and no properties can be 2 bytes */
     if (reason_code == 0x00) {
@@ -290,7 +291,7 @@ int mqtt5_build_disconnect(uint8_t *buf, uint16_t size,
 mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
                                 mqtt5_connack_t *ack)
 {
-    if (!buf || !ack) return MQTT5_ERR_PARAMS;
+    if (!buf || !ack) return MQTT5_ERR_PARAM;
     if (len < 5) return MQTT5_ERR_SIZE;
     if ((buf[0] >> 4) != 2) return MQTT5_ERR_PROTOCOL; /* not CONNACK */
 
@@ -357,7 +358,7 @@ mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
 mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
                                 mqtt5_publish_t *pub)
 {
-    if (!buf || !pub) return MQTT5_ERR_PARAMS;
+    if (!buf || !pub) return MQTT5_ERR_PARAM;
     if (len < 5) return MQTT5_ERR_SIZE;
     if ((buf[0] >> 4) != 3) return MQTT5_ERR_PROTOCOL; /* not PUBLISH */
 

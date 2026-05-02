@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * fixed_point — Q16.16 fixed-point math library
  *

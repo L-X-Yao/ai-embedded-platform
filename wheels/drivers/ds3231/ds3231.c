@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ds3231 — DS3231 high-precision I2C RTC driver
  *
@@ -65,7 +66,7 @@ ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c)
 {
     if (!dev || !i2c)
     {
-        return DS3231_ERR_PARAMS;
+        return DS3231_ERR_PARAM;
     }
     dev->i2c = i2c;
 
@@ -97,7 +98,7 @@ ds3231_err_t ds3231_get_time(const ds3231_t *dev, ds3231_time_t *time)
 {
     if (!dev || !time || !dev->i2c)
     {
-        return DS3231_ERR_PARAMS;
+        return DS3231_ERR_PARAM;
     }
 
     uint8_t buf[7];
@@ -121,11 +122,11 @@ ds3231_err_t ds3231_set_time(const ds3231_t *dev, const ds3231_time_t *time)
 {
     if (!dev || !time || !dev->i2c)
     {
-        return DS3231_ERR_PARAMS;
+        return DS3231_ERR_PARAM;
     }
     if (!time_valid(time))
     {
-        return DS3231_ERR_PARAMS;
+        return DS3231_ERR_PARAM;
     }
 
     if (!write_reg(dev, REG_SECONDS, bin_to_bcd(time->second)))
@@ -150,7 +151,7 @@ ds3231_err_t ds3231_get_temperature(const ds3231_t *dev, float *temp_c)
 {
     if (!dev || !temp_c || !dev->i2c)
     {
-        return DS3231_ERR_PARAMS;
+        return DS3231_ERR_PARAM;
     }
 
     uint8_t buf[2];

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "task_watchdog.h"
@@ -47,7 +48,7 @@ TEST(test_init)
 
 TEST(test_init_null)
 {
-    ASSERT_EQ(task_watchdog_init(NULL), TASK_WD_ERR_PARAMS);
+    ASSERT_EQ(task_watchdog_init(NULL), TASK_WD_ERR_PARAM);
 }
 
 TEST(test_register_feed_check_ok)
@@ -287,10 +288,10 @@ TEST(test_null_params)
 
     ASSERT_EQ(task_watchdog_count(NULL), 0);
     ASSERT_EQ(task_watchdog_expired_count(NULL), 0);
-    ASSERT_EQ(task_watchdog_feed(NULL, "x"), TASK_WD_ERR_PARAMS);
-    ASSERT_EQ(task_watchdog_register(NULL, "x", 5), TASK_WD_ERR_PARAMS);
-    ASSERT_EQ(task_watchdog_enable(NULL, "x"), TASK_WD_ERR_PARAMS);
-    ASSERT_EQ(task_watchdog_disable(NULL, "x"), TASK_WD_ERR_PARAMS);
+    ASSERT_EQ(task_watchdog_feed(NULL, "x"), TASK_WD_ERR_PARAM);
+    ASSERT_EQ(task_watchdog_register(NULL, "x", 5), TASK_WD_ERR_PARAM);
+    ASSERT_EQ(task_watchdog_enable(NULL, "x"), TASK_WD_ERR_PARAM);
+    ASSERT_EQ(task_watchdog_disable(NULL, "x"), TASK_WD_ERR_PARAM);
     ASSERT_EQ(task_watchdog_status(NULL, "x"), TASK_WD_STATUS_DISABLED);
 }
 
@@ -345,8 +346,8 @@ TEST(test_register_bad_params)
     task_watchdog_t wd;
     task_watchdog_init(&wd);
 
-    ASSERT_EQ(task_watchdog_register(&wd, NULL, 5), TASK_WD_ERR_PARAMS);
-    ASSERT_EQ(task_watchdog_register(&wd, "x", 0), TASK_WD_ERR_PARAMS);
+    ASSERT_EQ(task_watchdog_register(&wd, NULL, 5), TASK_WD_ERR_PARAM);
+    ASSERT_EQ(task_watchdog_register(&wd, "x", 0), TASK_WD_ERR_PARAM);
 }
 
 TEST_MAIN("task_watchdog")

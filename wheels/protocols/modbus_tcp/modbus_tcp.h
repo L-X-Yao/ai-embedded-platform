@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * modbus_tcp --- Modbus TCP/IP frame encoder/decoder (MBAP + PDU)
  *
@@ -21,7 +22,7 @@ extern "C" {
 
 typedef enum {
     MODBUS_TCP_OK           =  0,
-    MODBUS_TCP_ERR_PARAMS   = -1,
+    MODBUS_TCP_ERR_PARAM   = -1,
     MODBUS_TCP_ERR_SHORT    = -2,
     MODBUS_TCP_ERR_PROTOCOL = -3,
     MODBUS_TCP_ERR_OVERFLOW = -4,

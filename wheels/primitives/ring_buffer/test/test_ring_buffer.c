@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "ring_buffer.h"
@@ -18,20 +19,20 @@ TEST(test_init_valid)
 TEST(test_init_null_rb)
 {
     uint8_t storage[16];
-    ASSERT_EQ(ring_buffer_init(NULL, storage, 16), RING_BUFFER_ERR_PARAMS);
+    ASSERT_EQ(ring_buffer_init(NULL, storage, 16), RING_BUFFER_ERR_PARAM);
 }
 
 TEST(test_init_null_buf)
 {
     ring_buffer_t rb;
-    ASSERT_EQ(ring_buffer_init(&rb, NULL, 16), RING_BUFFER_ERR_PARAMS);
+    ASSERT_EQ(ring_buffer_init(&rb, NULL, 16), RING_BUFFER_ERR_PARAM);
 }
 
 TEST(test_init_zero_capacity)
 {
     uint8_t storage[1];
     ring_buffer_t rb;
-    ASSERT_EQ(ring_buffer_init(&rb, storage, 0), RING_BUFFER_ERR_PARAMS);
+    ASSERT_EQ(ring_buffer_init(&rb, storage, 0), RING_BUFFER_ERR_PARAM);
 }
 
 /* ── single byte write/read ─────────────────────────────────────── */

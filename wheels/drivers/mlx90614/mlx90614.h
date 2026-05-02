@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mlx90614 — Melexis MLX90614 non-contact infrared temperature sensor driver
  *

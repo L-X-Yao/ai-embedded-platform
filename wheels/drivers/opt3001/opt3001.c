@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * opt3001 — TI OPT3001 I2C digital ambient light sensor driver
  *
@@ -51,11 +52,11 @@ opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,
                            uint8_t addr)
 {
     if (!dev || !i2c)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
     if (addr < 0x44 || addr > 0x47)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
 
     dev->i2c = i2c;
     dev->addr = addr;
@@ -82,7 +83,7 @@ opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,
 opt3001_err_t opt3001_read_lux(opt3001_t *dev, float *lux)
 {
     if (!dev || !lux)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
 
     uint16_t raw;
     opt3001_err_t err = read_reg16(dev, REG_RESULT, &raw);
@@ -100,7 +101,7 @@ opt3001_err_t opt3001_read_lux(opt3001_t *dev, float *lux)
 opt3001_err_t opt3001_start_single(opt3001_t *dev)
 {
     if (!dev)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
 
     uint16_t cfg;
     opt3001_err_t err = read_reg16(dev, REG_CONFIG, &cfg);
@@ -114,7 +115,7 @@ opt3001_err_t opt3001_start_single(opt3001_t *dev)
 opt3001_err_t opt3001_set_continuous(opt3001_t *dev)
 {
     if (!dev)
-        return OPT3001_ERR_PARAMS;
+        return OPT3001_ERR_PARAM;
 
     uint16_t cfg;
     opt3001_err_t err = read_reg16(dev, REG_CONFIG, &cfg);

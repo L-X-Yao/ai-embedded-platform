@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * enc28j60 -- SPI Ethernet controller driver for Microchip ENC28J60
  *
@@ -21,7 +22,7 @@ extern "C" {
 typedef enum {
     ENC28J60_OK            =  0,
     ENC28J60_ERR_SPI       = -1,
-    ENC28J60_ERR_PARAMS    = -2,
+    ENC28J60_ERR_PARAM    = -2,
     ENC28J60_ERR_TIMEOUT   = -3,
     ENC28J60_ERR_SIZE      = -4,
     ENC28J60_ERR_NO_PACKET = -5,
@@ -54,7 +55,7 @@ typedef struct {
 
 /**
  * Soft-reset, configure buffers, set MAC, enable RX.
- * @thread_safe: caller_must_lock
+ * @thread_safe: no
  */
 enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr);

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * scheduler -- cooperative task scheduler for bare-metal / single-threaded
  *
@@ -28,7 +29,7 @@ extern "C" {
 
 typedef enum {
     SCHED_OK         =  0,
-    SCHED_ERR_PARAMS = -1,
+    SCHED_ERR_PARAM = -1,
     SCHED_ERR_FULL   = -2,
 } sched_err_t;
 

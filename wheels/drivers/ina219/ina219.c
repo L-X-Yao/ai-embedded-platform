@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ina219 — TI INA219 I2C current/voltage/power monitor driver
  *
@@ -59,13 +60,13 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
                          ina219_bus_range_t range, ina219_gain_t gain)
 {
     if (!dev || !i2c)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
     if (shunt_ohms <= 0.0f)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
     if ((unsigned)range > 1 || (unsigned)gain > 3)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
     dev->i2c       = i2c;
@@ -105,7 +106,7 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
 ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v)
 {
     if (!dev || !voltage_v)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     uint16_t raw;
     ina219_err_t err = read_reg16(dev, REG_BUS_V, &raw);
@@ -121,7 +122,7 @@ ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v)
 ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv)
 {
     if (!dev || !voltage_mv)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     uint16_t raw;
     ina219_err_t err = read_reg16(dev, REG_SHUNT_V, &raw);
@@ -137,7 +138,7 @@ ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv)
 ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma)
 {
     if (!dev || !current_ma)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     uint16_t raw;
     ina219_err_t err = read_reg16(dev, REG_CURRENT, &raw);
@@ -153,7 +154,7 @@ ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma)
 ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw)
 {
     if (!dev || !power_mw)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     uint16_t raw;
     ina219_err_t err = read_reg16(dev, REG_POWER, &raw);
@@ -168,7 +169,7 @@ ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw)
 ina219_err_t ina219_reset(ina219_t *dev)
 {
     if (!dev)
-        return INA219_ERR_PARAMS;
+        return INA219_ERR_PARAM;
 
     return write_reg16(dev, REG_CONFIG, CFG_RST);
 }

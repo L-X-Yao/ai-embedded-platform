@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log — leveled + module-tagged logging, pure C99.
  *

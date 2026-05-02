@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * canbus — CAN 2.0A/B frame encoder/decoder with signal extraction
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     CANBUS_OK           =  0,
-    CANBUS_ERR_PARAMS   = -1,
+    CANBUS_ERR_PARAM   = -1,
     CANBUS_ERR_SIZE     = -2,
     CANBUS_ERR_ID       = -3,
     CANBUS_ERR_DLC      = -4,

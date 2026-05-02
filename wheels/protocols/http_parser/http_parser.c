@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * http_parser — lightweight HTTP/1.1 request/response parser
  *

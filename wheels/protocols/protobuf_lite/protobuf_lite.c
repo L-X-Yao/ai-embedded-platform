@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * protobuf_lite — lightweight Protocol Buffers wire format encoder/decoder
  *
@@ -74,7 +75,7 @@ void pb_encoder_init(pb_encoder_t *enc, uint8_t *buf, uint16_t capacity)
 
 pb_err_t pb_encode_varint(pb_encoder_t *enc, uint8_t field_num, uint64_t value)
 {
-    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAMS;
+    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAM;
     pb_err_t err = pb_put_tag(enc, field_num, PB_WIRE_VARINT);
     if (err != PB_OK) return err;
     return pb_put_varint(enc, value);
@@ -96,7 +97,7 @@ pb_err_t pb_encode_sint64(pb_encoder_t *enc, uint8_t field_num, int64_t value)
 
 pb_err_t pb_encode_fixed32(pb_encoder_t *enc, uint8_t field_num, uint32_t value)
 {
-    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAMS;
+    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAM;
     pb_err_t err = pb_put_tag(enc, field_num, PB_WIRE_32BIT);
     if (err != PB_OK) return err;
     if ((uint16_t)(enc->capacity - enc->pos) < 4) return PB_ERR_OVERFLOW;
@@ -109,7 +110,7 @@ pb_err_t pb_encode_fixed32(pb_encoder_t *enc, uint8_t field_num, uint32_t value)
 
 pb_err_t pb_encode_fixed64(pb_encoder_t *enc, uint8_t field_num, uint64_t value)
 {
-    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAMS;
+    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAM;
     pb_err_t err = pb_put_tag(enc, field_num, PB_WIRE_64BIT);
     if (err != PB_OK) return err;
     if ((uint16_t)(enc->capacity - enc->pos) < 8) return PB_ERR_OVERFLOW;
@@ -129,8 +130,8 @@ pb_err_t pb_encode_float(pb_encoder_t *enc, uint8_t field_num, float value)
 pb_err_t pb_encode_bytes(pb_encoder_t *enc, uint8_t field_num,
                          const uint8_t *data, uint16_t len)
 {
-    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAMS;
-    if (!data && len > 0) return PB_ERR_PARAMS;
+    if (!enc || !enc->buf || field_num == 0) return PB_ERR_PARAM;
+    if (!data && len > 0) return PB_ERR_PARAM;
     pb_err_t err = pb_put_tag(enc, field_num, PB_WIRE_LENGTH);
     if (err != PB_OK) return err;
     err = pb_put_varint(enc, len);
@@ -145,7 +146,7 @@ pb_err_t pb_encode_bytes(pb_encoder_t *enc, uint8_t field_num,
 
 pb_err_t pb_encode_string(pb_encoder_t *enc, uint8_t field_num, const char *str)
 {
-    if (!str) return PB_ERR_PARAMS;
+    if (!str) return PB_ERR_PARAM;
     size_t slen = strlen(str);
     if (slen > UINT16_MAX) return PB_ERR_OVERFLOW;
     return pb_encode_bytes(enc, field_num, (const uint8_t *)str, (uint16_t)slen);
@@ -169,7 +170,7 @@ void pb_decoder_init(pb_decoder_t *dec, const uint8_t *buf, uint16_t len)
 
 pb_err_t pb_decode_field(pb_decoder_t *dec, pb_field_t *field)
 {
-    if (!dec || !dec->buf || !field) return PB_ERR_PARAMS;
+    if (!dec || !dec->buf || !field) return PB_ERR_PARAM;
     if (dec->pos >= dec->len) return PB_ERR_TRUNCATED;
 
     /* Decode tag */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ring_buffer — byte-level circular buffer for embedded systems
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     RING_BUFFER_OK         =  0,
-    RING_BUFFER_ERR_PARAMS = -1,
+    RING_BUFFER_ERR_PARAM = -1,
     RING_BUFFER_ERR_FULL   = -2,
     RING_BUFFER_ERR_EMPTY  = -3,
 } ring_buffer_err_t;

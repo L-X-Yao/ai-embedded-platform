@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bitfield — bit-level pack/unpack from byte arrays
  *

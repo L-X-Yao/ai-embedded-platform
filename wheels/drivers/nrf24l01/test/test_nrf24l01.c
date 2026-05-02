@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "nrf24l01.h"
@@ -555,9 +556,9 @@ TEST(test_channel_range)
     mock_reset();
     ASSERT_EQ(nrf24_init(&dev, &mock_spi, 125, 16), NRF24_OK);
 
-    /* Channel 126: ERR_PARAMS */
+    /* Channel 126: ERR_PARAM */
     mock_reset();
-    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 126, 16), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 126, 16), NRF24_ERR_PARAM);
 }
 
 /* 15. Payload size validation (1-32) */
@@ -566,8 +567,8 @@ TEST(test_payload_size_range)
     mock_reset();
     nrf24_t dev;
 
-    /* Size 0: ERR_PARAMS */
-    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 76, 0), NRF24_ERR_PARAMS);
+    /* Size 0: ERR_PARAM */
+    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 76, 0), NRF24_ERR_PARAM);
 
     /* Size 1: OK */
     mock_reset();
@@ -577,9 +578,9 @@ TEST(test_payload_size_range)
     mock_reset();
     ASSERT_EQ(nrf24_init(&dev, &mock_spi, 76, 32), NRF24_OK);
 
-    /* Size 33: ERR_PARAMS */
+    /* Size 33: ERR_PARAM */
     mock_reset();
-    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 76, 33), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_init(&dev, &mock_spi, 76, 33), NRF24_ERR_PARAM);
 }
 
 /* 16. TX address length validation */
@@ -592,13 +593,13 @@ TEST(test_tx_addr_len_validation)
     uint8_t addr[5] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
 
     /* addr_len 2: too short */
-    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 2), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 2), NRF24_ERR_PARAM);
 
     /* addr_len 3: OK */
     ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 3), NRF24_OK);
 
     /* addr_len 6: too long */
-    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 6), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 6), NRF24_ERR_PARAM);
 }
 
 /* 17. RX pipe 2-5 single-byte address */
@@ -613,9 +614,9 @@ TEST(test_rx_addr_pipe2_single_byte)
     ASSERT_EQ(e, NRF24_OK);
     ASSERT_EQ(mock_regs[REG_RX_ADDR_P2], 0xC3);
 
-    /* Pipe 2 with multi-byte addr: ERR_PARAMS */
+    /* Pipe 2 with multi-byte addr: ERR_PARAM */
     uint8_t multi[3] = {0xC3, 0xC4, 0xC5};
-    ASSERT_EQ(nrf24_set_rx_addr(&dev, 2, multi, 3), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 2, multi, 3), NRF24_ERR_PARAM);
 }
 
 /* 18. Pipe validation */
@@ -626,7 +627,7 @@ TEST(test_rx_addr_invalid_pipe)
     nrf24_init(&dev, &mock_spi, 76, 16);
 
     uint8_t addr = 0xC3;
-    ASSERT_EQ(nrf24_set_rx_addr(&dev, 6, &addr, 1), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 6, &addr, 1), NRF24_ERR_PARAM);
 }
 
 /* 19. Null safety for all API functions */
@@ -671,11 +672,11 @@ TEST(test_send_len_validation)
     uint8_t data[33];
     memset(data, 0x55, sizeof(data));
 
-    /* len 0: ERR_PARAMS */
-    ASSERT_EQ(nrf24_send(&dev, data, 0), NRF24_ERR_PARAMS);
+    /* len 0: ERR_PARAM */
+    ASSERT_EQ(nrf24_send(&dev, data, 0), NRF24_ERR_PARAM);
 
-    /* len 33: ERR_PARAMS */
-    ASSERT_EQ(nrf24_send(&dev, data, 33), NRF24_ERR_PARAMS);
+    /* len 33: ERR_PARAM */
+    ASSERT_EQ(nrf24_send(&dev, data, 33), NRF24_ERR_PARAM);
 }
 
 /* 21. Read status */
@@ -730,7 +731,7 @@ TEST(test_invalid_data_rate)
     nrf24_t dev;
     nrf24_init(&dev, &mock_spi, 76, 16);
 
-    ASSERT_EQ(nrf24_set_data_rate(&dev, (nrf24_data_rate_t)99), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_data_rate(&dev, (nrf24_data_rate_t)99), NRF24_ERR_PARAM);
 }
 
 /* 25. Invalid power level */
@@ -740,7 +741,7 @@ TEST(test_invalid_power)
     nrf24_t dev;
     nrf24_init(&dev, &mock_spi, 76, 16);
 
-    ASSERT_EQ(nrf24_set_power(&dev, (nrf24_power_t)99), NRF24_ERR_PARAMS);
+    ASSERT_EQ(nrf24_set_power(&dev, (nrf24_power_t)99), NRF24_ERR_PARAM);
 }
 
 /* ---------- main ---------- */

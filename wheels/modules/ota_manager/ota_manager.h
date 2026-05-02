@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ota_manager -- firmware update orchestration module
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     OTA_MGR_OK           =  0,
-    OTA_MGR_ERR_PARAMS   = -1,
+    OTA_MGR_ERR_PARAM   = -1,
     OTA_MGR_ERR_VERSION  = -2,
     OTA_MGR_ERR_DOWNLOAD = -3,
     OTA_MGR_ERR_WRITE    = -4,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * pid_controller — discrete PID controller with anti-windup
  *

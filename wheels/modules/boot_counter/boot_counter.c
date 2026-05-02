@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * boot_counter -- persistent boot count and reset reason tracker
  *

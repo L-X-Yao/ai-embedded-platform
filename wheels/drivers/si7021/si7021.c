@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * si7021 — Si7021/HTU21D/SHT21 I2C temperature and humidity sensor driver
  *
@@ -94,11 +95,11 @@ si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c)
 {
     if (!dev || !i2c)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
     if (!i2c->write || !i2c->read)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     dev->i2c = i2c;
@@ -109,7 +110,7 @@ si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh)
 {
     if (!dev || !rh)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     uint16_t raw;
@@ -127,7 +128,7 @@ si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c)
 {
     if (!dev || !temp_c)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     uint16_t raw;
@@ -145,7 +146,7 @@ si7021_err_t si7021_read_both(si7021_t *dev, float *rh, float *temp_c)
 {
     if (!dev || !rh || !temp_c)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     /* Measure humidity (this also triggers an internal temp measurement) */
@@ -178,11 +179,11 @@ si7021_err_t si7021_set_resolution(si7021_t *dev, si7021_resolution_t res)
 {
     if (!dev)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
     if ((unsigned)res > 3u)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     /* Read current user register */
@@ -221,7 +222,7 @@ si7021_err_t si7021_reset(si7021_t *dev)
 {
     if (!dev)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
     if (!send_cmd(dev, CMD_RESET))
     {
@@ -235,7 +236,7 @@ si7021_err_t si7021_read_serial(si7021_t *dev, uint32_t *serial_a,
 {
     if (!dev || !serial_a || !serial_b)
     {
-        return SI7021_ERR_PARAMS;
+        return SI7021_ERR_PARAM;
     }
 
     /* First access: send 0xFA 0x0F, read 8 bytes (SNA3, CRC, SNA2, CRC, SNA1, CRC, SNA0, CRC) */

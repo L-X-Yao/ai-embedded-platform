@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * stepper — step/dir motor driver with trapezoidal acceleration
  *
@@ -32,11 +33,11 @@ stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
                            uint16_t max_speed, uint16_t accel)
 {
     if (!s || !hal)
-        return STEPPER_ERR_PARAMS;
+        return STEPPER_ERR_PARAM;
     if (!hal->step_pin || !hal->dir_pin || !hal->delay_us)
-        return STEPPER_ERR_PARAMS;
+        return STEPPER_ERR_PARAM;
     if (max_speed == 0 || accel == 0)
-        return STEPPER_ERR_PARAMS;
+        return STEPPER_ERR_PARAM;
 
     s->hal = hal;
     s->max_speed = max_speed;
@@ -54,7 +55,7 @@ stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
 stepper_err_t stepper_move(stepper_t *s, int32_t steps)
 {
     if (!s)
-        return STEPPER_ERR_PARAMS;
+        return STEPPER_ERR_PARAM;
     if (steps == 0)
         return STEPPER_OK;
 
@@ -161,7 +162,7 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
 stepper_err_t stepper_move_to(stepper_t *s, int32_t target)
 {
     if (!s)
-        return STEPPER_ERR_PARAMS;
+        return STEPPER_ERR_PARAM;
     return stepper_move(s, target - s->position);
 }
 

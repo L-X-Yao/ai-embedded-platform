@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * param_table — runtime parameter table with CLI-friendly get/set/list.
  *
@@ -14,7 +15,7 @@
 param_err_t param_table_init(param_table_t *pt)
 {
     if (!pt) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
     memset(pt, 0, sizeof(*pt));
     return PARAM_OK;
@@ -24,11 +25,11 @@ param_err_t param_table_define(param_table_t *pt, const char *key,
                                const char *default_val, bool readonly)
 {
     if (!pt || !key) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
     /* Reject if key already exists. */
     if (param_table_find(pt, key) >= 0) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
     if (pt->count >= PARAM_MAX_ENTRIES) {
         return PARAM_ERR_FULL;
@@ -58,7 +59,7 @@ param_err_t param_table_set(param_table_t *pt, const char *key,
                             const char *value)
 {
     if (!pt || !key || !value) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
 
     int idx = param_table_find(pt, key);
@@ -93,7 +94,7 @@ param_err_t param_table_get(const param_table_t *pt, const char *key,
                             char *value, uint16_t size)
 {
     if (!pt || !key || !value || size == 0) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
 
     int idx = param_table_find(pt, key);
@@ -114,7 +115,7 @@ param_err_t param_table_set_callback(param_table_t *pt, const char *key,
                                      param_change_fn fn, void *ctx)
 {
     if (!pt || !key) {
-        return PARAM_ERR_PARAMS;
+        return PARAM_ERR_PARAM;
     }
 
     int idx = param_table_find(pt, key);

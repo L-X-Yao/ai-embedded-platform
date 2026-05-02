@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hmc5883l — Honeywell HMC5883L 3-axis digital magnetometer driver
  *

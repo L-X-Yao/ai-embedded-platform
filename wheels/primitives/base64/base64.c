@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * base64 — Base64 encoder/decoder for embedded systems
  *
@@ -59,10 +60,10 @@ base64_err_t base64_encode(const uint8_t *data, uint16_t data_len,
                            char *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return BASE64_ERR_PARAMS;
+        return BASE64_ERR_PARAM;
     }
     if (data == NULL && data_len != 0u) {
-        return BASE64_ERR_PARAMS;
+        return BASE64_ERR_PARAM;
     }
 
     uint16_t needed = base64_encoded_size(data_len);
@@ -116,10 +117,10 @@ base64_err_t base64_decode(const char *b64, uint16_t b64_len,
                            uint8_t *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return BASE64_ERR_PARAMS;
+        return BASE64_ERR_PARAM;
     }
     if (b64 == NULL && b64_len != 0u) {
-        return BASE64_ERR_PARAMS;
+        return BASE64_ERR_PARAM;
     }
     if (b64_len == 0u) {
         *out_len = 0;

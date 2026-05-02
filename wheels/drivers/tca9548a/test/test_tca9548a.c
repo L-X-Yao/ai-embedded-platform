@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "tca9548a.h"
@@ -31,25 +32,25 @@ TEST(test_init_ok)
 TEST(test_init_null_dev)
 {
     mock_reset();
-    ASSERT_EQ(tca9548a_init(NULL, &mock_i2c, 0x70), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_init(NULL, &mock_i2c, 0x70), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     mock_reset();
-    ASSERT_EQ(tca9548a_init(&dev, NULL, 0x70), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_init(&dev, NULL, 0x70), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_init_addr_too_low)
 {
     mock_reset();
-    ASSERT_EQ(tca9548a_init(&dev, &mock_i2c, 0x6F), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_init(&dev, &mock_i2c, 0x6F), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_init_addr_too_high)
 {
     mock_reset();
-    ASSERT_EQ(tca9548a_init(&dev, &mock_i2c, 0x78), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_init(&dev, &mock_i2c, 0x78), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_init_all_valid_addrs)
@@ -92,14 +93,14 @@ TEST(test_select_channel_invalid)
 {
     mock_reset();
     tca9548a_init(&dev, &mock_i2c, 0x70);
-    ASSERT_EQ(tca9548a_select(&dev, 8), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_select(&dev, 8), TCA9548A_ERR_PARAM);
     /* Channel should remain at 0 from init */
     ASSERT_EQ(dev.current_channel, 0x00);
 }
 
 TEST(test_select_null_dev)
 {
-    ASSERT_EQ(tca9548a_select(NULL, 0), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_select(NULL, 0), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_select_cached_skip)
@@ -155,7 +156,7 @@ TEST(test_select_multi_cached_skip)
 
 TEST(test_select_multi_null)
 {
-    ASSERT_EQ(tca9548a_select_multi(NULL, 0x01), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_select_multi(NULL, 0x01), TCA9548A_ERR_PARAM);
 }
 
 /* ---------- disable_all tests ---------- */
@@ -182,7 +183,7 @@ TEST(test_disable_all_already_disabled)
 
 TEST(test_disable_all_null)
 {
-    ASSERT_EQ(tca9548a_disable_all(NULL), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_disable_all(NULL), TCA9548A_ERR_PARAM);
 }
 
 /* ---------- get_channel tests ---------- */
@@ -228,14 +229,14 @@ TEST(test_get_channel_i2c_fail)
 TEST(test_get_channel_null_dev)
 {
     uint8_t mask = 0;
-    ASSERT_EQ(tca9548a_get_channel(NULL, &mask), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_get_channel(NULL, &mask), TCA9548A_ERR_PARAM);
 }
 
 TEST(test_get_channel_null_mask)
 {
     mock_reset();
     tca9548a_init(&dev, &mock_i2c, 0x70);
-    ASSERT_EQ(tca9548a_get_channel(&dev, NULL), TCA9548A_ERR_PARAMS);
+    ASSERT_EQ(tca9548a_get_channel(&dev, NULL), TCA9548A_ERR_PARAM);
 }
 
 /* ---------- combined workflow ---------- */

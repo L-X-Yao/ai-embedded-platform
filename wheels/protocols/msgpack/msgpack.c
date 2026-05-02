@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * msgpack — MessagePack binary serialization encoder/decoder
  *

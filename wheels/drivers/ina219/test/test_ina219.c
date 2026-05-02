@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "ina219.h"
 #include <string.h>
@@ -81,14 +82,14 @@ TEST(test_init_ok)
 TEST(test_init_null_dev)
 {
     ASSERT_EQ(ina219_init(NULL, &mock_i2c, 0x40, 0.1f,
-                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     ina219_t dev;
     ASSERT_EQ(ina219_init(&dev, NULL, 0x40, 0.1f,
-                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAM);
 }
 
 TEST(test_init_bad_shunt)
@@ -96,9 +97,9 @@ TEST(test_init_bad_shunt)
     mock_reset();
     ina219_t dev;
     ASSERT_EQ(ina219_init(&dev, &mock_i2c, 0x40, 0.0f,
-                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAM);
     ASSERT_EQ(ina219_init(&dev, &mock_i2c, 0x40, -0.1f,
-                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAM);
 }
 
 TEST(test_init_bad_range)
@@ -106,7 +107,7 @@ TEST(test_init_bad_range)
     mock_reset();
     ina219_t dev;
     ASSERT_EQ(ina219_init(&dev, &mock_i2c, 0x40, 0.1f,
-                           (ina219_bus_range_t)2, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           (ina219_bus_range_t)2, INA219_GAIN_320MV), INA219_ERR_PARAM);
 }
 
 TEST(test_init_bad_gain)
@@ -114,7 +115,7 @@ TEST(test_init_bad_gain)
     mock_reset();
     ina219_t dev;
     ASSERT_EQ(ina219_init(&dev, &mock_i2c, 0x40, 0.1f,
-                           INA219_RANGE_32V, (ina219_gain_t)4), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, (ina219_gain_t)4), INA219_ERR_PARAM);
 }
 
 TEST(test_init_missing_write_regs)
@@ -126,7 +127,7 @@ TEST(test_init_missing_write_regs)
     };
     ina219_t dev;
     ASSERT_EQ(ina219_init(&dev, &incomplete, 0x40, 0.1f,
-                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAMS);
+                           INA219_RANGE_32V, INA219_GAIN_320MV), INA219_ERR_PARAM);
 }
 
 TEST(test_read_bus_voltage)
@@ -304,7 +305,7 @@ TEST(test_reset)
 
 TEST(test_reset_null)
 {
-    ASSERT_EQ(ina219_reset(NULL), INA219_ERR_PARAMS);
+    ASSERT_EQ(ina219_reset(NULL), INA219_ERR_PARAM);
 }
 
 TEST(test_read_null_output)
@@ -314,10 +315,10 @@ TEST(test_read_null_output)
     ASSERT_EQ(ina219_init(&dev, &mock_i2c, 0x40, 0.1f,
                            INA219_RANGE_32V, INA219_GAIN_320MV), INA219_OK);
 
-    ASSERT_EQ(ina219_read_bus_voltage(&dev, NULL), INA219_ERR_PARAMS);
-    ASSERT_EQ(ina219_read_shunt_voltage(&dev, NULL), INA219_ERR_PARAMS);
-    ASSERT_EQ(ina219_read_current(&dev, NULL), INA219_ERR_PARAMS);
-    ASSERT_EQ(ina219_read_power(&dev, NULL), INA219_ERR_PARAMS);
+    ASSERT_EQ(ina219_read_bus_voltage(&dev, NULL), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_shunt_voltage(&dev, NULL), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_current(&dev, NULL), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_power(&dev, NULL), INA219_ERR_PARAM);
 }
 
 TEST(test_different_shunt_calibration)

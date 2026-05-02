@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cbor_lite — lightweight CBOR encoder/decoder (RFC 7049)
  *

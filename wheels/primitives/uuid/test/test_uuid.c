@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "uuid.h"
@@ -100,7 +101,7 @@ TEST(test_to_string_buffer_too_small)
     uuid_t uuid = {0};
     char buf[36]; /* one byte too small */
     uuid_err_t err = uuid_to_string(&uuid, buf, 36);
-    ASSERT_EQ(err, UUID_ERR_PARAMS);
+    ASSERT_EQ(err, UUID_ERR_PARAM);
 }
 
 TEST(test_from_string_valid)
@@ -202,17 +203,17 @@ TEST(test_null_params)
     char buf[37];
 
     /* generate: null uuid */
-    ASSERT_EQ(uuid_v4_generate(NULL, rng_deterministic, NULL), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_v4_generate(NULL, rng_deterministic, NULL), UUID_ERR_PARAM);
     /* generate: null rng */
-    ASSERT_EQ(uuid_v4_generate(&uuid, NULL, NULL), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_v4_generate(&uuid, NULL, NULL), UUID_ERR_PARAM);
     /* to_string: null uuid */
-    ASSERT_EQ(uuid_to_string(NULL, buf, 37), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_to_string(NULL, buf, 37), UUID_ERR_PARAM);
     /* to_string: null buf */
-    ASSERT_EQ(uuid_to_string(&uuid, NULL, 37), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_to_string(&uuid, NULL, 37), UUID_ERR_PARAM);
     /* from_string: null uuid */
-    ASSERT_EQ(uuid_from_string(NULL, "550e8400-e29b-41d4-a716-446655440000"), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_from_string(NULL, "550e8400-e29b-41d4-a716-446655440000"), UUID_ERR_PARAM);
     /* from_string: null str */
-    ASSERT_EQ(uuid_from_string(&uuid, NULL), UUID_ERR_PARAMS);
+    ASSERT_EQ(uuid_from_string(&uuid, NULL), UUID_ERR_PARAM);
     /* equal: null */
     ASSERT_TRUE(!uuid_equal(NULL, &uuid));
     ASSERT_TRUE(!uuid_equal(&uuid, NULL));

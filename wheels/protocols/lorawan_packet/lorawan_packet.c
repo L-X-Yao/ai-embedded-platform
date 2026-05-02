@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lorawan_packet — LoRaWAN MAC layer packet encoder/decoder
  *
@@ -51,8 +52,8 @@ lorawan_mtype_t lorawan_get_mtype(uint8_t mhdr)
 int lorawan_build_data(uint8_t *buf, uint16_t buf_size,
                        const lorawan_frame_t *frame)
 {
-    if (!buf || !frame) return LORAWAN_ERR_PARAMS;
-    if (frame->payload_len > 0 && !frame->payload) return LORAWAN_ERR_PARAMS;
+    if (!buf || !frame) return LORAWAN_ERR_PARAM;
+    if (frame->payload_len > 0 && !frame->payload) return LORAWAN_ERR_PARAM;
 
     /*
      * Frame layout:
@@ -106,7 +107,7 @@ int lorawan_build_data(uint8_t *buf, uint16_t buf_size,
 lorawan_err_t lorawan_parse_data(const uint8_t *buf, uint16_t len,
                                  lorawan_frame_t *frame)
 {
-    if (!buf || !frame) return LORAWAN_ERR_PARAMS;
+    if (!buf || !frame) return LORAWAN_ERR_PARAM;
 
     /* Minimum: MHDR(1) + DevAddr(4) + FCtrl(1) + FCnt(2) + MIC(4) = 12 */
     if (len < 12) return LORAWAN_ERR_SIZE;
@@ -163,7 +164,7 @@ int lorawan_build_join_request(uint8_t *buf, uint16_t buf_size,
                                const uint8_t *dev_eui,
                                const uint8_t *dev_nonce)
 {
-    if (!buf || !app_eui || !dev_eui || !dev_nonce) return LORAWAN_ERR_PARAMS;
+    if (!buf || !app_eui || !dev_eui || !dev_nonce) return LORAWAN_ERR_PARAM;
 
     /* Join request: MHDR(1) + AppEUI(8) + DevEUI(8) + DevNonce(2) = 19 */
     if (buf_size < 19) return LORAWAN_ERR_OVERFLOW;
@@ -192,13 +193,13 @@ lorawan_err_t lorawan_parse_join_request(const uint8_t *buf, uint16_t len,
                                          uint8_t *app_eui, uint8_t *dev_eui,
                                          uint8_t *dev_nonce)
 {
-    if (!buf || !app_eui || !dev_eui || !dev_nonce) return LORAWAN_ERR_PARAMS;
+    if (!buf || !app_eui || !dev_eui || !dev_nonce) return LORAWAN_ERR_PARAM;
 
     /* Minimum 19 bytes: MHDR(1) + AppEUI(8) + DevEUI(8) + DevNonce(2) */
     if (len < 19) return LORAWAN_ERR_SIZE;
 
     /* Verify MType */
-    if (lorawan_get_mtype(buf[0]) != LORAWAN_JOIN_REQUEST) return LORAWAN_ERR_PARAMS;
+    if (lorawan_get_mtype(buf[0]) != LORAWAN_JOIN_REQUEST) return LORAWAN_ERR_PARAM;
 
     int pos = 1;
 

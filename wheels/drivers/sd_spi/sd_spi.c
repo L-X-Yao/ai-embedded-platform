@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * sd_spi -- SPI-mode SD card block read/write driver
  *
@@ -91,7 +92,7 @@ sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
 {
     if (!sd || !hal || !hal->cs_low || !hal->cs_high ||
         !hal->xfer || !hal->delay_ms)
-        return SD_SPI_ERR_PARAMS;
+        return SD_SPI_ERR_PARAM;
 
     memset(sd, 0, sizeof(*sd));
     sd->hal = hal;
@@ -165,7 +166,7 @@ sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
                                 uint8_t *buf)
 {
     if (!sd || !sd->hal || !buf)
-        return SD_SPI_ERR_PARAMS;
+        return SD_SPI_ERR_PARAM;
 
     const sd_spi_hal_t *h = sd->hal;
 
@@ -201,7 +202,7 @@ sd_spi_err_t sd_spi_write_block(sd_spi_t *sd, uint32_t block_addr,
                                  const uint8_t *buf)
 {
     if (!sd || !sd->hal || !buf)
-        return SD_SPI_ERR_PARAMS;
+        return SD_SPI_ERR_PARAM;
 
     const sd_spi_hal_t *h = sd->hal;
 

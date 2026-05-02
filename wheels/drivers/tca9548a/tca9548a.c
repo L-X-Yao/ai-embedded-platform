@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tca9548a — TCA9548A 8-channel I2C multiplexer driver
  *
@@ -20,9 +21,9 @@ tca9548a_err_t tca9548a_init(tca9548a_t *dev,
                              uint8_t dev_addr)
 {
     if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
-        return TCA9548A_ERR_PARAMS;
+        return TCA9548A_ERR_PARAM;
     if (dev_addr < TCA9548A_ADDR_BASE || dev_addr > TCA9548A_ADDR_MAX)
-        return TCA9548A_ERR_PARAMS;
+        return TCA9548A_ERR_PARAM;
 
     dev->i2c      = i2c;
     dev->dev_addr = dev_addr;
@@ -39,8 +40,8 @@ tca9548a_err_t tca9548a_init(tca9548a_t *dev,
 
 tca9548a_err_t tca9548a_select(tca9548a_t *dev, uint8_t channel)
 {
-    if (!dev) return TCA9548A_ERR_PARAMS;
-    if (channel > TCA9548A_MAX_CHANNEL) return TCA9548A_ERR_PARAMS;
+    if (!dev) return TCA9548A_ERR_PARAM;
+    if (channel > TCA9548A_MAX_CHANNEL) return TCA9548A_ERR_PARAM;
 
     uint8_t mask = (uint8_t)(1u << channel);
 
@@ -58,7 +59,7 @@ tca9548a_err_t tca9548a_select(tca9548a_t *dev, uint8_t channel)
 
 tca9548a_err_t tca9548a_select_multi(tca9548a_t *dev, uint8_t mask)
 {
-    if (!dev) return TCA9548A_ERR_PARAMS;
+    if (!dev) return TCA9548A_ERR_PARAM;
 
     if (dev->current_channel == mask) return TCA9548A_OK;
 
@@ -73,7 +74,7 @@ tca9548a_err_t tca9548a_select_multi(tca9548a_t *dev, uint8_t mask)
 
 tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev)
 {
-    if (!dev) return TCA9548A_ERR_PARAMS;
+    if (!dev) return TCA9548A_ERR_PARAM;
 
     if (dev->current_channel == 0x00) return TCA9548A_OK;
 
@@ -88,7 +89,7 @@ tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev)
 
 tca9548a_err_t tca9548a_get_channel(tca9548a_t *dev, uint8_t *mask)
 {
-    if (!dev || !mask) return TCA9548A_ERR_PARAMS;
+    if (!dev || !mask) return TCA9548A_ERR_PARAM;
 
     uint8_t val = 0;
     if (!dev->i2c->read_regs(dev->i2c->ctx, dev->dev_addr, REG_CTRL, &val, 1))

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * nrf24l01 -- SPI driver for Nordic nRF24L01+ 2.4 GHz radio transceiver
  *
@@ -120,7 +121,7 @@ nrf24_err_t nrf24_init(nrf24_t *dev, const nrf24_spi_t *spi,
         return NRF24_ERR_SPI;
     }
     if (channel > 125 || payload_size < 1 || payload_size > 32) {
-        return NRF24_ERR_PARAMS;
+        return NRF24_ERR_PARAM;
     }
 
     dev->spi          = spi;
@@ -168,7 +169,7 @@ nrf24_err_t nrf24_set_tx_addr(nrf24_t *dev, const uint8_t *addr,
                               uint8_t addr_len)
 {
     if (!dev || !dev->spi || !addr) return NRF24_ERR_SPI;
-    if (addr_len < 3 || addr_len > 5) return NRF24_ERR_PARAMS;
+    if (addr_len < 3 || addr_len > 5) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
 
@@ -188,12 +189,12 @@ nrf24_err_t nrf24_set_rx_addr(nrf24_t *dev, uint8_t pipe,
                               const uint8_t *addr, uint8_t addr_len)
 {
     if (!dev || !dev->spi || !addr) return NRF24_ERR_SPI;
-    if (pipe > 5) return NRF24_ERR_PARAMS;
-    if (addr_len < 1 || addr_len > 5) return NRF24_ERR_PARAMS;
+    if (pipe > 5) return NRF24_ERR_PARAM;
+    if (addr_len < 1 || addr_len > 5) return NRF24_ERR_PARAM;
     /* Pipes 2-5 use single-byte addresses */
-    if (pipe >= 2 && addr_len != 1) return NRF24_ERR_PARAMS;
+    if (pipe >= 2 && addr_len != 1) return NRF24_ERR_PARAM;
     /* Pipes 0-1 need 3-5 byte addresses */
-    if (pipe <= 1 && addr_len < 3) return NRF24_ERR_PARAMS;
+    if (pipe <= 1 && addr_len < 3) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
     uint8_t reg = (uint8_t)(REG_RX_ADDR_P0 + pipe);
@@ -240,7 +241,7 @@ nrf24_err_t nrf24_set_mode(nrf24_t *dev, nrf24_mode_t mode)
 nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
 {
     if (!dev || !dev->spi) return NRF24_ERR_SPI;
-    if (rate > NRF24_RATE_2MBPS) return NRF24_ERR_PARAMS;
+    if (rate > NRF24_RATE_2MBPS) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
     uint8_t setup = read_reg(s, REG_RF_SETUP);
@@ -267,7 +268,7 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
 nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power)
 {
     if (!dev || !dev->spi) return NRF24_ERR_SPI;
-    if (power > NRF24_POWER_0DBM) return NRF24_ERR_PARAMS;
+    if (power > NRF24_POWER_0DBM) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
     uint8_t setup = read_reg(s, REG_RF_SETUP);
@@ -283,7 +284,7 @@ nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power)
 nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len)
 {
     if (!dev || !dev->spi || !data) return NRF24_ERR_SPI;
-    if (len < 1 || len > 32) return NRF24_ERR_PARAMS;
+    if (len < 1 || len > 32) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
 
@@ -338,7 +339,7 @@ nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len,
 
     /* Ensure caller buffer can hold the payload */
     uint8_t count = dev->payload_size;
-    if (count > max_len) return NRF24_ERR_PARAMS;
+    if (count > max_len) return NRF24_ERR_PARAM;
 
     /* Read RX payload */
     s->cs_low(s->ctx);

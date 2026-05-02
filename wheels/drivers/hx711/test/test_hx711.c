@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hx711.h"
 
@@ -90,16 +91,16 @@ TEST(test_init_null_params)
 {
     hx711_t dev;
     mock_reset();
-    ASSERT_EQ(hx711_init(NULL, &mock_hal, HX711_GAIN_128), HX711_ERR_PARAMS);
-    ASSERT_EQ(hx711_init(&dev, NULL, HX711_GAIN_128), HX711_ERR_PARAMS);
+    ASSERT_EQ(hx711_init(NULL, &mock_hal, HX711_GAIN_128), HX711_ERR_PARAM);
+    ASSERT_EQ(hx711_init(&dev, NULL, HX711_GAIN_128), HX711_ERR_PARAM);
 }
 
 TEST(test_init_invalid_gain)
 {
     hx711_t dev;
     mock_reset();
-    ASSERT_EQ(hx711_init(&dev, &mock_hal, (hx711_gain_t)0), HX711_ERR_PARAMS);
-    ASSERT_EQ(hx711_init(&dev, &mock_hal, (hx711_gain_t)4), HX711_ERR_PARAMS);
+    ASSERT_EQ(hx711_init(&dev, &mock_hal, (hx711_gain_t)0), HX711_ERR_PARAM);
+    ASSERT_EQ(hx711_init(&dev, &mock_hal, (hx711_gain_t)4), HX711_ERR_PARAM);
 }
 
 TEST(test_is_ready_true)
@@ -289,8 +290,8 @@ TEST(test_read_raw_null_params)
     mock_reset();
     hx711_init(&dev, &mock_hal, HX711_GAIN_128);
 
-    ASSERT_EQ(hx711_read_raw(NULL, &val), HX711_ERR_PARAMS);
-    ASSERT_EQ(hx711_read_raw(&dev, NULL), HX711_ERR_PARAMS);
+    ASSERT_EQ(hx711_read_raw(NULL, &val), HX711_ERR_PARAM);
+    ASSERT_EQ(hx711_read_raw(&dev, NULL), HX711_ERR_PARAM);
 }
 
 TEST(test_tare_zero_samples)
@@ -298,7 +299,7 @@ TEST(test_tare_zero_samples)
     hx711_t dev;
     mock_reset();
     hx711_init(&dev, &mock_hal, HX711_GAIN_128);
-    ASSERT_EQ(hx711_tare(&dev, 0), HX711_ERR_PARAMS);
+    ASSERT_EQ(hx711_tare(&dev, 0), HX711_ERR_PARAM);
 }
 
 TEST_MAIN("hx711")

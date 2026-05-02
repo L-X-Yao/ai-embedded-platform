@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cobs — Consistent Overhead Byte Stuffing encoder/decoder
  *
@@ -23,10 +24,10 @@ cobs_err_t cobs_encode(const uint8_t *data, uint16_t data_len,
                        uint8_t *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return COBS_ERR_PARAMS;
+        return COBS_ERR_PARAM;
     }
     if (data == NULL && data_len != 0u) {
-        return COBS_ERR_PARAMS;
+        return COBS_ERR_PARAM;
     }
 
     uint16_t capacity = *out_len;
@@ -75,10 +76,10 @@ cobs_err_t cobs_decode(const uint8_t *encoded, uint16_t enc_len,
                        uint8_t *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return COBS_ERR_PARAMS;
+        return COBS_ERR_PARAM;
     }
     if (encoded == NULL && enc_len != 0u) {
-        return COBS_ERR_PARAMS;
+        return COBS_ERR_PARAM;
     }
 
     uint16_t capacity = *out_len;

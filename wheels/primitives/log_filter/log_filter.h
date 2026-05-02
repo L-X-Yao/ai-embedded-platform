@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_filter — module-based runtime filter sink for log wheel.
  *

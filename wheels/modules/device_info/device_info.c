@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * device_info -- device identity and runtime information module
  *
@@ -31,7 +32,7 @@ static device_info_err_t set_str(char *dst, size_t dst_size, const char *src)
 device_info_err_t device_info_init(device_info_t *info)
 {
     if (!info) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
 
     memset(info, 0, sizeof(*info));
@@ -42,7 +43,7 @@ device_info_err_t device_info_set_firmware_version(device_info_t *info,
                                                    const char *version)
 {
     if (!info || !version) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
     return set_str(info->firmware_version, DEVICE_INFO_STR_SIZE, version);
 }
@@ -51,7 +52,7 @@ device_info_err_t device_info_set_hardware_version(device_info_t *info,
                                                    const char *version)
 {
     if (!info || !version) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
     return set_str(info->hardware_version, DEVICE_INFO_STR_SIZE, version);
 }
@@ -60,7 +61,7 @@ device_info_err_t device_info_set_serial_number(device_info_t *info,
                                                 const char *serial)
 {
     if (!info || !serial) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
     return set_str(info->serial_number, DEVICE_INFO_STR_SIZE, serial);
 }
@@ -69,7 +70,7 @@ device_info_err_t device_info_set_build_date(device_info_t *info,
                                              const char *date)
 {
     if (!info || !date) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
     return set_str(info->build_date, DEVICE_INFO_STR_SIZE, date);
 }
@@ -78,7 +79,7 @@ device_info_err_t device_info_set_device_name(device_info_t *info,
                                               const char *name)
 {
     if (!info || !name) {
-        return DEVICE_INFO_ERR_PARAMS;
+        return DEVICE_INFO_ERR_PARAM;
     }
     return set_str(info->device_name, DEVICE_INFO_STR_SIZE, name);
 }

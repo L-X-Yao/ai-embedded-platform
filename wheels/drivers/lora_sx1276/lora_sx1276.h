@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lora_sx1276 — SPI LoRa radio transceiver driver for SX1276/SX1278
  *
@@ -21,7 +22,7 @@ extern "C" {
 typedef enum {
     LORA_OK          =  0,
     LORA_ERR_SPI     = -1,
-    LORA_ERR_PARAMS  = -2,
+    LORA_ERR_PARAM  = -2,
     LORA_ERR_TIMEOUT = -3,
     LORA_ERR_CRC     = -4,
     LORA_ERR_VERSION = -5,

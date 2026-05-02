@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "device_info.h"
 #include <string.h>
@@ -21,7 +22,7 @@ TEST(test_init_valid)
 TEST(test_init_null)
 {
     device_info_err_t err = device_info_init(NULL);
-    ASSERT_EQ(err, DEVICE_INFO_ERR_PARAMS);
+    ASSERT_EQ(err, DEVICE_INFO_ERR_PARAM);
 }
 
 TEST(test_set_firmware_version)
@@ -136,16 +137,16 @@ TEST(test_null_params_setters)
     device_info_t info;
     device_info_init(&info);
 
-    ASSERT_EQ(device_info_set_firmware_version(NULL, "v"), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_firmware_version(&info, NULL), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_hardware_version(NULL, "v"), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_hardware_version(&info, NULL), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_serial_number(NULL, "s"), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_serial_number(&info, NULL), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_build_date(NULL, "d"), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_build_date(&info, NULL), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_device_name(NULL, "n"), DEVICE_INFO_ERR_PARAMS);
-    ASSERT_EQ(device_info_set_device_name(&info, NULL), DEVICE_INFO_ERR_PARAMS);
+    ASSERT_EQ(device_info_set_firmware_version(NULL, "v"), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_firmware_version(&info, NULL), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_hardware_version(NULL, "v"), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_hardware_version(&info, NULL), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_serial_number(NULL, "s"), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_serial_number(&info, NULL), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_build_date(NULL, "d"), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_build_date(&info, NULL), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_device_name(NULL, "n"), DEVICE_INFO_ERR_PARAM);
+    ASSERT_EQ(device_info_set_device_name(&info, NULL), DEVICE_INFO_ERR_PARAM);
 }
 
 TEST(test_boot_count)

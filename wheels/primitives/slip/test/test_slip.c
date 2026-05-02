@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "slip.h"
@@ -160,11 +161,11 @@ TEST(test_null_params_encode)
     uint16_t len = (uint16_t)sizeof(buf);
     uint8_t data = 0x42;
 
-    ASSERT_EQ(slip_encode(&data, 1, NULL, &len), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_encode(&data, 1, NULL, &len), SLIP_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(slip_encode(&data, 1, buf, NULL), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_encode(&data, 1, buf, NULL), SLIP_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(slip_encode(NULL, 5, buf, &len), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_encode(NULL, 5, buf, &len), SLIP_ERR_PARAM);
 }
 
 TEST(test_null_params_decode)
@@ -173,11 +174,11 @@ TEST(test_null_params_decode)
     uint16_t len = (uint16_t)sizeof(buf);
     uint8_t enc[] = {0xC0, 0x11, 0xC0};
 
-    ASSERT_EQ(slip_decode(enc, 3, NULL, &len), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_decode(enc, 3, NULL, &len), SLIP_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(slip_decode(enc, 3, buf, NULL), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_decode(enc, 3, buf, NULL), SLIP_ERR_PARAM);
     len = (uint16_t)sizeof(buf);
-    ASSERT_EQ(slip_decode(NULL, 5, buf, &len), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_decode(NULL, 5, buf, &len), SLIP_ERR_PARAM);
 }
 
 TEST(test_decode_buffer_overflow)
@@ -387,10 +388,10 @@ TEST(test_stream_overflow)
 TEST(test_stream_init_null)
 {
     uint8_t buf[8];
-    ASSERT_EQ(slip_decoder_init(NULL, buf, 8), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_decoder_init(NULL, buf, 8), SLIP_ERR_PARAM);
 
     slip_decoder_t dec;
-    ASSERT_EQ(slip_decoder_init(&dec, NULL, 8), SLIP_ERR_PARAMS);
+    ASSERT_EQ(slip_decoder_init(&dec, NULL, 8), SLIP_ERR_PARAM);
 }
 
 TEST(test_zero_init_safety)

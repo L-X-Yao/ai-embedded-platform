@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * rate_limiter — generic token bucket rate limiter.
  *

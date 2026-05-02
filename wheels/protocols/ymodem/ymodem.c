@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ymodem -- YMODEM batch file transfer receiver with CRC-16 (passive, byte-fed)
  *
@@ -29,7 +30,7 @@ static uint16_t ymodem_crc16(const uint8_t *data, uint16_t len)
 
 static ymodem_err_t send_byte(const ymodem_t *ym, uint8_t byte)
 {
-    if (!ym->io || !ym->io->send_byte) return YMODEM_ERR_PARAMS;
+    if (!ym->io || !ym->io->send_byte) return YMODEM_ERR_PARAM;
     return ym->io->send_byte(ym->io->ctx, byte);
 }
 
@@ -158,7 +159,7 @@ static ymodem_err_t process_block(ymodem_t *ym)
 
 ymodem_err_t ymodem_init(ymodem_t *ym, const ymodem_io_t *io)
 {
-    if (!ym || !io) return YMODEM_ERR_PARAMS;
+    if (!ym || !io) return YMODEM_ERR_PARAM;
 
     memset(ym, 0, sizeof(*ym));
     ym->io    = io;
@@ -170,8 +171,8 @@ ymodem_err_t ymodem_init(ymodem_t *ym, const ymodem_io_t *io)
 
 ymodem_err_t ymodem_start(ymodem_t *ym)
 {
-    if (!ym) return YMODEM_ERR_PARAMS;
-    if (ym->state != YMODEM_STATE_IDLE) return YMODEM_ERR_PARAMS;
+    if (!ym) return YMODEM_ERR_PARAM;
+    if (ym->state != YMODEM_STATE_IDLE) return YMODEM_ERR_PARAM;
 
     ym->state = YMODEM_STATE_HEADER;
 
@@ -181,11 +182,11 @@ ymodem_err_t ymodem_start(ymodem_t *ym)
 
 ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
 {
-    if (!ym) return YMODEM_ERR_PARAMS;
+    if (!ym) return YMODEM_ERR_PARAM;
 
     if (ym->state != YMODEM_STATE_HEADER &&
         ym->state != YMODEM_STATE_DATA) {
-        return YMODEM_ERR_PARAMS;
+        return YMODEM_ERR_PARAM;
     }
 
     /* CAN detection — only at frame boundary */
