@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * xmodem — XMODEM/XMODEM-CRC receiver (passive, byte-fed)
  *
@@ -38,7 +39,7 @@ static uint16_t xmodem_crc16(const uint8_t *data, uint16_t len)
 
 static xmodem_err_t send_byte(const xmodem_t *xm, uint8_t byte)
 {
-    if (!xm->io || !xm->io->send_byte) return XMODEM_ERR_PARAMS;
+    if (!xm->io || !xm->io->send_byte) return XMODEM_ERR_PARAM;
     return xm->io->send_byte(xm->io->ctx, byte);
 }
 
@@ -110,7 +111,7 @@ static xmodem_err_t process_block(xmodem_t *xm)
 
 xmodem_err_t xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc)
 {
-    if (!xm || !io) return XMODEM_ERR_PARAMS;
+    if (!xm || !io) return XMODEM_ERR_PARAM;
 
     memset(xm, 0, sizeof(*xm));
     xm->io       = io;
@@ -123,8 +124,8 @@ xmodem_err_t xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc)
 
 xmodem_err_t xmodem_start(xmodem_t *xm)
 {
-    if (!xm) return XMODEM_ERR_PARAMS;
-    if (xm->state != XMODEM_STATE_IDLE) return XMODEM_ERR_PARAMS;
+    if (!xm) return XMODEM_ERR_PARAM;
+    if (xm->state != XMODEM_STATE_IDLE) return XMODEM_ERR_PARAM;
 
     xm->state = XMODEM_STATE_WAIT_HEADER;
 
@@ -134,11 +135,11 @@ xmodem_err_t xmodem_start(xmodem_t *xm)
 
 xmodem_err_t xmodem_feed(xmodem_t *xm, uint8_t byte)
 {
-    if (!xm) return XMODEM_ERR_PARAMS;
+    if (!xm) return XMODEM_ERR_PARAM;
 
     if (xm->state != XMODEM_STATE_WAIT_HEADER &&
         xm->state != XMODEM_STATE_RECEIVING) {
-        return XMODEM_ERR_PARAMS;
+        return XMODEM_ERR_PARAM;
     }
 
     /* CAN detection — spec requires 2 consecutive CAN to cancel */

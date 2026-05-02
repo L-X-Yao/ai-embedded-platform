@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * task_watchdog — passive tick-driven task health monitor
  *
@@ -42,7 +43,7 @@ task_wd_err_t task_watchdog_init(task_watchdog_t *wd)
 {
     if (!wd)
     {
-        return TASK_WD_ERR_PARAMS;
+        return TASK_WD_ERR_PARAM;
     }
     memset(wd, 0, sizeof(*wd));
     return TASK_WD_OK;
@@ -53,7 +54,7 @@ task_wd_err_t task_watchdog_register(task_watchdog_t *wd, const char *name,
 {
     if (!wd || !name || timeout_ticks == 0)
     {
-        return TASK_WD_ERR_PARAMS;
+        return TASK_WD_ERR_PARAM;
     }
     if (wd->count >= TASK_WD_MAX_TASKS)
     {
@@ -75,7 +76,7 @@ task_wd_err_t task_watchdog_feed(task_watchdog_t *wd, const char *name)
 {
     if (!wd || !name)
     {
-        return TASK_WD_ERR_PARAMS;
+        return TASK_WD_ERR_PARAM;
     }
 
     task_wd_entry_t *e = find_task(wd, name);
@@ -145,7 +146,7 @@ task_wd_err_t task_watchdog_enable(task_watchdog_t *wd, const char *name)
 {
     if (!wd || !name)
     {
-        return TASK_WD_ERR_PARAMS;
+        return TASK_WD_ERR_PARAM;
     }
 
     task_wd_entry_t *e = find_task(wd, name);
@@ -164,7 +165,7 @@ task_wd_err_t task_watchdog_disable(task_watchdog_t *wd, const char *name)
 {
     if (!wd || !name)
     {
-        return TASK_WD_ERR_PARAMS;
+        return TASK_WD_ERR_PARAM;
     }
 
     task_wd_entry_t *e = find_task(wd, name);

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * qmc5883p — QMC5883P 3-axis magnetometer driver (I2C)
  *
@@ -37,7 +38,7 @@ typedef struct {
     float mx, my, mz; /* magnetic field (Gauss) */
 } qmc5883p_data_t;
 
-/** Configure and verify chip ID. @thread_safe: caller_must_lock */
+/** Configure and verify chip ID. @thread_safe: no */
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c);
 
 /** Read magnetometer sample (Gauss). @thread_safe: caller_must_lock */

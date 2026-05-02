@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mahony_ahrs — Mahony AHRS complementary filter (6/9-axis)
  *

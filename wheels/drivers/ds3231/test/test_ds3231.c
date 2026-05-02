@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "ds3231.h"
@@ -64,13 +65,13 @@ TEST(test_init_ok)
 TEST(test_init_null_dev)
 {
     mock_reset();
-    ASSERT_EQ(ds3231_init(NULL, &mock_i2c), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_init(NULL, &mock_i2c), DS3231_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     mock_reset();
-    ASSERT_EQ(ds3231_init(&dev, NULL), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_init(&dev, NULL), DS3231_ERR_PARAM);
 }
 
 TEST(test_init_i2c_fail)
@@ -317,7 +318,7 @@ TEST(test_invalid_month_zero)
         .year = 25, .month = 0, .day = 15,
         .weekday = 1, .hour = 12, .minute = 30, .second = 0
     };
-    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_invalid_month_13)
@@ -329,7 +330,7 @@ TEST(test_invalid_month_13)
         .year = 25, .month = 13, .day = 15,
         .weekday = 1, .hour = 12, .minute = 30, .second = 0
     };
-    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_invalid_hour_24)
@@ -341,7 +342,7 @@ TEST(test_invalid_hour_24)
         .year = 25, .month = 6, .day = 15,
         .weekday = 1, .hour = 24, .minute = 30, .second = 0
     };
-    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_invalid_second_60)
@@ -353,7 +354,7 @@ TEST(test_invalid_second_60)
         .year = 25, .month = 6, .day = 15,
         .weekday = 1, .hour = 12, .minute = 30, .second = 60
     };
-    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_invalid_day_zero)
@@ -365,20 +366,20 @@ TEST(test_invalid_day_zero)
         .year = 25, .month = 6, .day = 0,
         .weekday = 1, .hour = 12, .minute = 30, .second = 0
     };
-    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_get_time_null_dev)
 {
     ds3231_time_t t;
-    ASSERT_EQ(ds3231_get_time(NULL, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_get_time(NULL, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_get_time_null_out)
 {
     mock_reset();
     ds3231_init(&dev, &mock_i2c);
-    ASSERT_EQ(ds3231_get_time(&dev, NULL), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_get_time(&dev, NULL), DS3231_ERR_PARAM);
 }
 
 TEST(test_set_time_null_dev)
@@ -387,20 +388,20 @@ TEST(test_set_time_null_dev)
         .year = 25, .month = 6, .day = 15,
         .weekday = 1, .hour = 12, .minute = 0, .second = 0
     };
-    ASSERT_EQ(ds3231_set_time(NULL, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_set_time(NULL, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_get_temp_null_dev)
 {
     float t;
-    ASSERT_EQ(ds3231_get_temperature(NULL, &t), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_get_temperature(NULL, &t), DS3231_ERR_PARAM);
 }
 
 TEST(test_get_temp_null_out)
 {
     mock_reset();
     ds3231_init(&dev, &mock_i2c);
-    ASSERT_EQ(ds3231_get_temperature(&dev, NULL), DS3231_ERR_PARAMS);
+    ASSERT_EQ(ds3231_get_temperature(&dev, NULL), DS3231_ERR_PARAM);
 }
 
 TEST_MAIN("ds3231")

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * at24cxx --- I2C EEPROM driver for AT24C01 through AT24C256
  *
@@ -107,7 +108,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Initialise device handle.  @thread_safe: caller_must_lock */
+/** Initialise device handle.  @thread_safe: no */
 at24cxx_err_t at24cxx_init(at24cxx_t *dev, const at24cxx_i2c_t *i2c,
                            uint8_t dev_addr, at24cxx_model_t model);
 

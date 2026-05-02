@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "checksum.h"
 #include <string.h>

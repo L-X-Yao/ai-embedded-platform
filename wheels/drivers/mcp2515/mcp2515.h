@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mcp2515 — SPI CAN bus controller driver
  *
@@ -21,7 +22,7 @@ extern "C" {
 typedef enum {
     MCP2515_OK          =  0,
     MCP2515_ERR_SPI     = -1,
-    MCP2515_ERR_PARAMS  = -2,
+    MCP2515_ERR_PARAM  = -2,
     MCP2515_ERR_TIMEOUT = -3,
     MCP2515_ERR_NO_MSG  = -4,
     MCP2515_ERR_TX_BUSY = -5,

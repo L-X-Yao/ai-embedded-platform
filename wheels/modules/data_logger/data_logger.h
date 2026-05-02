@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * data_logger -- record-based data logger for embedded systems
  *
@@ -34,7 +35,7 @@ extern "C" {
 
 typedef enum {
     DATA_LOGGER_OK           =  0,
-    DATA_LOGGER_ERR_PARAMS   = -1,
+    DATA_LOGGER_ERR_PARAM   = -1,
     DATA_LOGGER_ERR_OVERFLOW = -2,
     DATA_LOGGER_ERR_WRITE    = -3,
 } data_logger_err_t;

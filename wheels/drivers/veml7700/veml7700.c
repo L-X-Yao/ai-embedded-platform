@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * veml7700 — Vishay VEML7700 I2C ambient light sensor driver
  *
@@ -110,7 +111,7 @@ veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c,
                              veml7700_gain_t gain, veml7700_it_t it)
 {
     if (!dev || !i2c || !i2c->write_regs || !i2c->read_regs)
-        return VEML7700_ERR_PARAMS;
+        return VEML7700_ERR_PARAM;
 
     dev->i2c  = i2c;
     dev->gain = gain;
@@ -121,19 +122,19 @@ veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c,
 
 veml7700_err_t veml7700_read_als(veml7700_t *dev, uint16_t *raw)
 {
-    if (!dev || !raw) return VEML7700_ERR_PARAMS;
+    if (!dev || !raw) return VEML7700_ERR_PARAM;
     return read_reg16(dev, REG_ALS_DATA, raw);
 }
 
 veml7700_err_t veml7700_read_white(veml7700_t *dev, uint16_t *raw)
 {
-    if (!dev || !raw) return VEML7700_ERR_PARAMS;
+    if (!dev || !raw) return VEML7700_ERR_PARAM;
     return read_reg16(dev, REG_WHITE_DATA, raw);
 }
 
 veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux)
 {
-    if (!dev || !lux) return VEML7700_ERR_PARAMS;
+    if (!dev || !lux) return VEML7700_ERR_PARAM;
 
     uint16_t raw;
     veml7700_err_t err = read_reg16(dev, REG_ALS_DATA, &raw);
@@ -145,7 +146,7 @@ veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux)
 
 veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain)
 {
-    if (!dev) return VEML7700_ERR_PARAMS;
+    if (!dev) return VEML7700_ERR_PARAM;
     dev->gain = gain;
     return write_conf(dev, false);
 }
@@ -153,19 +154,19 @@ veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain)
 veml7700_err_t veml7700_set_integration_time(veml7700_t *dev,
                                               veml7700_it_t it)
 {
-    if (!dev) return VEML7700_ERR_PARAMS;
+    if (!dev) return VEML7700_ERR_PARAM;
     dev->it = it;
     return write_conf(dev, false);
 }
 
 veml7700_err_t veml7700_power_on(veml7700_t *dev)
 {
-    if (!dev) return VEML7700_ERR_PARAMS;
+    if (!dev) return VEML7700_ERR_PARAM;
     return write_conf(dev, false);
 }
 
 veml7700_err_t veml7700_shutdown(veml7700_t *dev)
 {
-    if (!dev) return VEML7700_ERR_PARAMS;
+    if (!dev) return VEML7700_ERR_PARAM;
     return write_conf(dev, true);
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * w25qxx — W25Q series SPI NOR flash driver
  *

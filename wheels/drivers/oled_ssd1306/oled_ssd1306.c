@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * oled_ssd1306 — SSD1306 128x64 OLED display driver
  *

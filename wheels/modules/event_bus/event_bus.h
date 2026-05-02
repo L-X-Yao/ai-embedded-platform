@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * event_bus -- publish/subscribe event dispatcher
  *

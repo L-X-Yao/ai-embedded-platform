@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "ncp5623_parser.h"

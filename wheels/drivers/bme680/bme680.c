@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bme680 — Bosch BME680 environmental sensor driver (temp/hum/pres/gas)
  *
@@ -216,9 +217,9 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
                          uint8_t addr)
 {
     if (!dev || !i2c)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
     if (!i2c->write_reg || !i2c->read_regs)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
     dev->i2c  = i2c;
@@ -248,7 +249,7 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
 bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
 {
     if (!dev || !data)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
 
     /* read current oversampling settings */
     uint8_t ctrl_hum = 0;
@@ -331,9 +332,9 @@ bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
                                      uint8_t os_hum, uint8_t os_pres)
 {
     if (!dev)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
     if (os_temp > 5 || os_hum > 5 || os_pres > 5)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
 
     if (!write_reg(dev, REG_CTRL_HUM, os_hum & 0x07))
         return BME680_ERR_I2C;
@@ -349,7 +350,7 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
                                    uint16_t duration_ms)
 {
     if (!dev)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
 
     /* calculate heater resistance register value */
     /* formula from Bosch BME680 reference code; keep float intermediates
@@ -397,7 +398,7 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
 bme680_err_t bme680_reset(bme680_t *dev)
 {
     if (!dev)
-        return BME680_ERR_PARAMS;
+        return BME680_ERR_PARAM;
     if (!write_reg(dev, REG_RESET, RESET_CMD))
         return BME680_ERR_I2C;
     return BME680_OK;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * veml7700 — Vishay VEML7700 I2C ambient light sensor driver
  *
@@ -25,7 +26,7 @@ extern "C" {
 typedef enum {
     VEML7700_OK         =  0,
     VEML7700_ERR_I2C    = -1,
-    VEML7700_ERR_PARAMS = -2,
+    VEML7700_ERR_PARAM = -2,
 } veml7700_err_t;
 
 typedef enum {
@@ -60,7 +61,7 @@ typedef struct {
     veml7700_it_t         it;
 } veml7700_t;
 
-/** Configure sensor with gain and integration time. @thread_safe: caller_must_lock */
+/** Configure sensor with gain and integration time. @thread_safe: no */
 veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c,
                              veml7700_gain_t gain, veml7700_it_t it);
 

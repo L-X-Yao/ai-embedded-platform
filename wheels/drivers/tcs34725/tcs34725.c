@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tcs34725 — AMS TCS34725 I2C RGB color sensor driver
  *

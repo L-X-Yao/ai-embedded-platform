@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * drv8833 — dual H-bridge DC motor driver (DRV8833/DRV8835)
  *

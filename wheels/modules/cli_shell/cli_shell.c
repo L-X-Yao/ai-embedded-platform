@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cli_shell -- command-line shell module for embedded debug/configuration
  *
@@ -129,7 +130,7 @@ cli_shell_err_t cli_shell_init(cli_shell_t *sh, const cli_shell_io_t *io,
                                const char *prompt)
 {
     if (!sh) {
-        return CLI_SHELL_ERR_PARAMS;
+        return CLI_SHELL_ERR_PARAM;
     }
 
     memset(sh, 0, sizeof(*sh));
@@ -152,7 +153,7 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
                                    cli_shell_handler_t handler, void *ctx)
 {
     if (!sh || !name || !handler) {
-        return CLI_SHELL_ERR_PARAMS;
+        return CLI_SHELL_ERR_PARAM;
     }
     if (sh->cmd_count >= CLI_SHELL_MAX_CMDS) {
         return CLI_SHELL_ERR_FULL;

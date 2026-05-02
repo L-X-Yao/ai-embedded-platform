@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * base64 — Base64 encoder/decoder for embedded systems
  *
@@ -21,7 +22,7 @@ extern "C" {
 
 typedef enum {
     BASE64_OK           =  0,
-    BASE64_ERR_PARAMS   = -1,   /* NULL pointer or invalid argument */
+    BASE64_ERR_PARAM   = -1,   /* NULL pointer or invalid argument */
     BASE64_ERR_OVERFLOW = -2,   /* output buffer too small          */
     BASE64_ERR_INVALID  = -3,   /* invalid Base64 character         */
 } base64_err_t;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * string_utils — embedded-friendly string utilities (no stdlib beyond string.h)
  *

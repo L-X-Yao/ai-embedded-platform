@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tlv_codec — Tag-Length-Value encoder/decoder for embedded protocols
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     TLV_OK            =  0,
-    TLV_ERR_PARAMS    = -1,
+    TLV_ERR_PARAM    = -1,
     TLV_ERR_OVERFLOW  = -2,
     TLV_ERR_TRUNCATED = -3,
     TLV_ERR_INVALID   = -4,

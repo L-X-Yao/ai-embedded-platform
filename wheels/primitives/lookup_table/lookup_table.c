@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lookup_table — interpolated lookup table for sensor linearization
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hash_fnv — FNV-1a hash function (32-bit and 64-bit)
  *

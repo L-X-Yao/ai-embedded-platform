@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "enc28j60.h"
@@ -284,19 +285,19 @@ TEST(test_init_configures_rx_buffer)
 
 TEST(test_init_null_dev)
 {
-    ASSERT_EQ(enc28j60_init(NULL, &mock_spi, test_mac), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_init(NULL, &mock_spi, test_mac), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_init_null_spi)
 {
     enc28j60_t d;
-    ASSERT_EQ(enc28j60_init(&d, NULL, test_mac), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_init(&d, NULL, test_mac), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_init_null_mac)
 {
     enc28j60_t d;
-    ASSERT_EQ(enc28j60_init(&d, &mock_spi, NULL), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_init(&d, &mock_spi, NULL), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_get_revision)
@@ -344,7 +345,7 @@ TEST(test_send_null_frame)
 {
     init_dev();
     enc28j60_err_t e = enc28j60_send(&dev, NULL, 64);
-    ASSERT_EQ(e, ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(e, ENC28J60_ERR_PARAM);
 }
 
 TEST(test_receive_packet)
@@ -442,7 +443,7 @@ TEST(test_set_mac)
 TEST(test_set_mac_null)
 {
     init_dev();
-    ASSERT_EQ(enc28j60_set_mac(&dev, NULL), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_set_mac(&dev, NULL), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_enable_reception)
@@ -460,14 +461,14 @@ TEST(test_receive_null_frame)
 {
     init_dev();
     uint16_t len;
-    ASSERT_EQ(enc28j60_receive(&dev, NULL, 64, &len), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_receive(&dev, NULL, 64, &len), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_receive_null_len_out)
 {
     init_dev();
     uint8_t buf[64];
-    ASSERT_EQ(enc28j60_receive(&dev, buf, 64, NULL), ENC28J60_ERR_PARAMS);
+    ASSERT_EQ(enc28j60_receive(&dev, buf, 64, NULL), ENC28J60_ERR_PARAM);
 }
 
 TEST(test_has_packet_null_dev)

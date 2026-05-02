@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * gpio_button — GPIO button with debounce, long-press, multi-click
  *

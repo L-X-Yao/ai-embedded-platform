@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * dht11 — DHT11 temperature and humidity sensor driver
  *

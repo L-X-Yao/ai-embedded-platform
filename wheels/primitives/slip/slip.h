@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * slip — SLIP (Serial Line Internet Protocol) framing encoder/decoder
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     SLIP_OK           =  0,
-    SLIP_ERR_PARAMS   = -1,
+    SLIP_ERR_PARAM   = -1,
     SLIP_ERR_OVERFLOW = -2,
     SLIP_ERR_INVALID  = -3,
 } slip_err_t;
@@ -92,7 +93,7 @@ typedef struct {
  * @param dec       Decoder instance.
  * @param buf       Buffer for decoded frame data.
  * @param capacity  Buffer size in bytes.
- * @return          SLIP_OK on success, SLIP_ERR_PARAMS if NULL.
+ * @return          SLIP_OK on success, SLIP_ERR_PARAM if NULL.
  * @thread_safe: no (call once before use)
  */
 slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacity);

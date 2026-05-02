@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tlv_codec — Tag-Length-Value encoder/decoder for embedded protocols
  *
@@ -25,8 +26,8 @@ void tlv_encoder_init(tlv_encoder_t *enc, uint8_t *buf, uint16_t capacity)
 tlv_err_t tlv_encode(tlv_encoder_t *enc, uint16_t tag,
                      const uint8_t *value, uint16_t length)
 {
-    if (!enc || !enc->buf)               return TLV_ERR_PARAMS;
-    if (length > 0u && value == NULL)    return TLV_ERR_PARAMS;
+    if (!enc || !enc->buf)               return TLV_ERR_PARAM;
+    if (length > 0u && value == NULL)    return TLV_ERR_PARAM;
 
     uint32_t need = (uint32_t)TLV_HEADER_SIZE + (uint32_t)length;
     if ((uint32_t)enc->pos + need > (uint32_t)enc->capacity)
@@ -76,7 +77,7 @@ tlv_err_t tlv_encode_u32(tlv_encoder_t *enc, uint16_t tag, uint32_t value)
 
 tlv_err_t tlv_encode_string(tlv_encoder_t *enc, uint16_t tag, const char *str)
 {
-    if (!str) return TLV_ERR_PARAMS;
+    if (!str) return TLV_ERR_PARAM;
 
     size_t slen = strlen(str);
     if (slen > UINT16_MAX) return TLV_ERR_OVERFLOW;
@@ -101,8 +102,8 @@ void tlv_decoder_init(tlv_decoder_t *dec, const uint8_t *buf, uint16_t len)
 
 tlv_err_t tlv_decode_next(tlv_decoder_t *dec, tlv_t *tlv)
 {
-    if (!dec || !tlv)      return TLV_ERR_PARAMS;
-    if (!dec->buf)         return TLV_ERR_PARAMS;
+    if (!dec || !tlv)      return TLV_ERR_PARAM;
+    if (!dec->buf)         return TLV_ERR_PARAM;
 
     /* need at least a full header */
     if ((uint32_t)dec->pos + TLV_HEADER_SIZE > (uint32_t)dec->len)

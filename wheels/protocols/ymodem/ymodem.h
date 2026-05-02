@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ymodem — YMODEM batch file transfer receiver (passive, byte-fed)
  *
@@ -34,7 +35,7 @@ extern "C" {
 
 typedef enum {
     YMODEM_OK           =  0,
-    YMODEM_ERR_PARAMS   = -1,
+    YMODEM_ERR_PARAM   = -1,
     YMODEM_ERR_CRC      = -2,
     YMODEM_ERR_SEQ      = -3,
     YMODEM_ERR_CANCEL   = -4,

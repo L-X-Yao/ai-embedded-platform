@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ina219 — TI INA219 I2C current/voltage/power monitor driver
  *
@@ -23,7 +24,7 @@ extern "C" {
 typedef enum {
     INA219_OK         =  0,
     INA219_ERR_I2C    = -1,
-    INA219_ERR_PARAMS = -2,
+    INA219_ERR_PARAM = -2,
 } ina219_err_t;
 
 typedef enum {

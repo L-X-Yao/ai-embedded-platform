@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "tlv_codec.h"
 #include <string.h>
@@ -105,18 +106,18 @@ TEST(test_encoder_overflow)
 
 TEST(test_encode_null_params)
 {
-    ASSERT_EQ(tlv_encode(NULL, 0x0001, NULL, 0), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_encode(NULL, 0x0001, NULL, 0), TLV_ERR_PARAM);
 
     tlv_encoder_t enc;
     tlv_encoder_init(&enc, NULL, 0);
-    ASSERT_EQ(tlv_encode(&enc, 0x0001, NULL, 0), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_encode(&enc, 0x0001, NULL, 0), TLV_ERR_PARAM);
 
-    ASSERT_EQ(tlv_encode_string(&enc, 0x0001, NULL), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_encode_string(&enc, 0x0001, NULL), TLV_ERR_PARAM);
 
     /* non-zero length with NULL value */
     uint8_t buf[32];
     tlv_encoder_init(&enc, buf, sizeof(buf));
-    ASSERT_EQ(tlv_encode(&enc, 0x0001, NULL, 5), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_encode(&enc, 0x0001, NULL, 5), TLV_ERR_PARAM);
 }
 
 /* ── Decoder tests ───────────────────────────────────────────────── */
@@ -319,12 +320,12 @@ TEST(test_encode_then_decode_sequence)
 
 TEST(test_decode_null_params)
 {
-    ASSERT_EQ(tlv_decode_next(NULL, NULL), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_decode_next(NULL, NULL), TLV_ERR_PARAM);
 
     tlv_decoder_t dec;
     tlv_decoder_init(&dec, NULL, 0);
     tlv_t tlv;
-    ASSERT_EQ(tlv_decode_next(&dec, &tlv), TLV_ERR_PARAMS);
+    ASSERT_EQ(tlv_decode_next(&dec, &tlv), TLV_ERR_PARAM);
 }
 
 TEST_MAIN("tlv_codec")

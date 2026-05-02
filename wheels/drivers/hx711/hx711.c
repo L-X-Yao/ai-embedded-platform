@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hx711 — GPIO-based 24-bit ADC driver for load cells
  *
@@ -12,11 +13,11 @@
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
 {
     if (!dev || !hal)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
     if (!hal->read_dout || !hal->set_sck || !hal->delay_us)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
     if (gain < HX711_GAIN_128 || gain > HX711_GAIN_64)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
 
     dev->hal    = hal;
     dev->gain   = gain;
@@ -43,7 +44,7 @@ hx711_err_t hx711_read_raw(hx711_t *dev, int32_t *value)
     uint8_t  i;
 
     if (!dev || !value || !dev->hal)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
 
     /* DOUT must be low to indicate data ready */
     if (dev->hal->read_dout(dev->hal->ctx))
@@ -89,9 +90,9 @@ hx711_err_t hx711_read(hx711_t *dev, float *value)
     hx711_err_t err;
 
     if (!dev || !value)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
     if (dev->scale == 0.0f)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
 
     err = hx711_read_raw(dev, &raw);
     if (err != HX711_OK)
@@ -109,7 +110,7 @@ hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples)
     hx711_err_t err;
 
     if (!dev || samples == 0)
-        return HX711_ERR_PARAMS;
+        return HX711_ERR_PARAM;
 
     /* Clamp to avoid int32 sum overflow (24-bit values * 100 fits) */
     if (samples > 100)

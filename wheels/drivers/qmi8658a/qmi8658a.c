@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * qmi8658a — QMI8658A 6-axis IMU driver (I2C)
  *

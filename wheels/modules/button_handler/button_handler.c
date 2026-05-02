@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * button_handler -- high-level button event processor
  *
@@ -14,7 +15,7 @@ btn_handler_err_t btn_handler_init(btn_handler_t *bh, btn_callback_fn cb, void *
                                    uint16_t double_click_ticks, uint16_t repeat_ticks)
 {
     if (bh == NULL || cb == NULL) {
-        return BTN_HANDLER_ERR_PARAMS;
+        return BTN_HANDLER_ERR_PARAM;
     }
 
     memset(bh, 0, sizeof(*bh));
@@ -34,7 +35,7 @@ btn_handler_err_t btn_handler_register(btn_handler_t *bh, uint8_t id,
                                        btn_read_fn read, void *ctx)
 {
     if (bh == NULL || read == NULL) {
-        return BTN_HANDLER_ERR_PARAMS;
+        return BTN_HANDLER_ERR_PARAM;
     }
     if (bh->count >= BTN_HANDLER_MAX_BUTTONS) {
         return BTN_HANDLER_ERR_FULL;

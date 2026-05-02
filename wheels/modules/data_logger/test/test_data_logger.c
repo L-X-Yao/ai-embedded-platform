@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "data_logger.h"
 #include <string.h>
@@ -81,27 +82,27 @@ TEST(test_init_null_dl)
 {
     data_logger_err_t err = data_logger_init(NULL, &test_storage,
                                              fields_int, 1);
-    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_init_null_storage)
 {
     data_logger_err_t err = data_logger_init(&dl, NULL, fields_int, 1);
-    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_init_null_write_fn)
 {
     static const data_logger_storage_t bad = { NULL, NULL, NULL };
     data_logger_err_t err = data_logger_init(&dl, &bad, fields_int, 1);
-    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_init_null_fields_nonzero_count)
 {
     mock_reset();
     data_logger_err_t err = data_logger_init(&dl, &test_storage, NULL, 3);
-    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_init_zero_fields)
@@ -304,7 +305,7 @@ TEST(test_too_many_fields)
     data_logger_begin(&dl, 0);
     ASSERT_EQ(data_logger_add_int(&dl, 1), DATA_LOGGER_OK);
     /* second add exceeds field_count=1 */
-    ASSERT_EQ(data_logger_add_int(&dl, 2), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_add_int(&dl, 2), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_wrong_field_type)
@@ -314,7 +315,7 @@ TEST(test_wrong_field_type)
 
     data_logger_begin(&dl, 0);
     /* fields_int[0] is INT32, but we try to add UINT32 */
-    ASSERT_EQ(data_logger_add_uint(&dl, 1), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_add_uint(&dl, 1), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_storage_write_failure)
@@ -334,7 +335,7 @@ TEST(test_storage_write_failure)
 
 TEST(test_begin_null)
 {
-    ASSERT_EQ(data_logger_begin(NULL, 0), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_begin(NULL, 0), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_commit_without_begin)
@@ -342,7 +343,7 @@ TEST(test_commit_without_begin)
     mock_reset();
     data_logger_init(&dl, &test_storage, fields_int, 1);
     /* commit without begin should fail */
-    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_add_without_begin)
@@ -350,7 +351,7 @@ TEST(test_add_without_begin)
     mock_reset();
     data_logger_init(&dl, &test_storage, fields_int, 1);
     /* add without begin should fail */
-    ASSERT_EQ(data_logger_add_int(&dl, 1), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_add_int(&dl, 1), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_get_count_null)
@@ -360,7 +361,7 @@ TEST(test_get_count_null)
 
 TEST(test_flush_null)
 {
-    ASSERT_EQ(data_logger_flush(NULL), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_flush(NULL), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_add_string_null_value)
@@ -371,7 +372,7 @@ TEST(test_add_string_null_value)
     };
     data_logger_init(&dl, &test_storage, f, 1);
     data_logger_begin(&dl, 0);
-    ASSERT_EQ(data_logger_add_string(&dl, NULL), DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(data_logger_add_string(&dl, NULL), DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_max_fields_exceeded_at_init)
@@ -384,7 +385,7 @@ TEST(test_max_fields_exceeded_at_init)
         many[i].type = DATA_LOGGER_FIELD_INT32;
     }
     data_logger_err_t err = data_logger_init(&dl, &test_storage, many, 9);
-    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAMS);
+    ASSERT_EQ(err, DATA_LOGGER_ERR_PARAM);
 }
 
 TEST(test_zero_fields_timestamp_only)

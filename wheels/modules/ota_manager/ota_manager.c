@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ota_manager.c -- firmware update orchestration
  *
@@ -36,11 +37,11 @@ ota_mgr_err_t ota_manager_init(ota_manager_t *mgr,
                                const char *current_version)
 {
     if (!mgr || !ops || !current_version) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
     if (!ops->check_version || !ops->download_chunk ||
         !ops->write_chunk || !ops->verify || !ops->activate) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
 
     memset(mgr, 0, sizeof(*mgr));
@@ -60,7 +61,7 @@ ota_mgr_err_t ota_manager_init(ota_manager_t *mgr,
 ota_mgr_err_t ota_manager_check(ota_manager_t *mgr)
 {
     if (!mgr) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
     if (mgr->state != OTA_MGR_STATE_IDLE) {
         return OTA_MGR_ERR_STATE;
@@ -96,7 +97,7 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
                                         uint16_t buf_size)
 {
     if (!mgr || !chunk_buf || buf_size == 0) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
     if (mgr->state != OTA_MGR_STATE_DOWNLOADING) {
         return OTA_MGR_ERR_STATE;
@@ -135,7 +136,7 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
 ota_mgr_err_t ota_manager_verify(ota_manager_t *mgr)
 {
     if (!mgr) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
     if (mgr->state != OTA_MGR_STATE_VERIFYING) {
         return OTA_MGR_ERR_STATE;
@@ -155,7 +156,7 @@ ota_mgr_err_t ota_manager_verify(ota_manager_t *mgr)
 ota_mgr_err_t ota_manager_activate(ota_manager_t *mgr)
 {
     if (!mgr) {
-        return OTA_MGR_ERR_PARAMS;
+        return OTA_MGR_ERR_PARAM;
     }
     if (mgr->state != OTA_MGR_STATE_READY) {
         return OTA_MGR_ERR_STATE;

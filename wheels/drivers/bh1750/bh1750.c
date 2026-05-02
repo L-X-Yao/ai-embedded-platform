@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bh1750 — ROHM BH1750FVI ambient light sensor driver
  *

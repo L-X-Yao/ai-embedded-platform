@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_at24cxx.c --- unit tests for at24cxx I2C EEPROM driver
  *

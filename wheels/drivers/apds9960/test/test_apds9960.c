@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "apds9960.h"
@@ -71,15 +72,15 @@ TEST(test_init_i2c_fail)
 
 TEST(test_null_safety)
 {
-    ASSERT_EQ(apds9960_init(NULL, &mock_i2c), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_init(&dev, NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_read_proximity(NULL, NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_read_color(NULL, NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_read_gesture(NULL, NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_enable_proximity(NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_enable_color(NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_enable_gesture(NULL), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_disable_all(NULL), APDS9960_ERR_PARAMS);
+    ASSERT_EQ(apds9960_init(NULL, &mock_i2c), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_init(&dev, NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_proximity(NULL, NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_color(NULL, NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_gesture(NULL, NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_enable_proximity(NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_enable_color(NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_enable_gesture(NULL), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_disable_all(NULL), APDS9960_ERR_PARAM);
 }
 
 /* ---------- proximity tests ---------- */
@@ -296,8 +297,8 @@ TEST(test_zero_init_safety)
     apds9960_t zero_dev;
     memset(&zero_dev, 0, sizeof(zero_dev));
     /* Zero-init struct must not crash on NULL i2c check */
-    ASSERT_EQ(apds9960_enable_proximity(&zero_dev), APDS9960_ERR_PARAMS);
-    ASSERT_EQ(apds9960_disable_all(&zero_dev), APDS9960_ERR_PARAMS);
+    ASSERT_EQ(apds9960_enable_proximity(&zero_dev), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_disable_all(&zero_dev), APDS9960_ERR_PARAM);
 }
 
 TEST_MAIN("apds9960")

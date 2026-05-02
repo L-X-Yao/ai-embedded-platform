@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * led_pattern — LED blink pattern engine
  *

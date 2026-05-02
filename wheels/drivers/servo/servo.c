@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * servo — PWM servo motor driver
  *

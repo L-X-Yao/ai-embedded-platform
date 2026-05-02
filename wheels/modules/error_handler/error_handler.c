@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * error_handler -- fault logging and recovery module for embedded systems
  *
@@ -15,7 +16,7 @@ error_handler_err_t error_handler_init(error_handler_t *eh,
                                        const error_handler_storage_t *storage)
 {
     if (!eh) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
 
     memset(eh, 0, sizeof(*eh));
@@ -28,7 +29,7 @@ error_handler_err_t error_handler_report(error_handler_t *eh, uint16_t code,
                                           uint32_t timestamp, uint32_t context)
 {
     if (!eh) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
 
     /* Write record at head position (ring buffer) */
@@ -80,10 +81,10 @@ error_handler_err_t error_handler_get(const error_handler_t *eh, uint8_t index,
                                        error_record_t *record)
 {
     if (!eh || !record) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
     if (index >= eh->count) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
 
     /*
@@ -106,7 +107,7 @@ error_handler_err_t error_handler_get(const error_handler_t *eh, uint8_t index,
 error_handler_err_t error_handler_save(error_handler_t *eh)
 {
     if (!eh) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
     if (!eh->storage || !eh->storage->save) {
         return ERROR_HANDLER_ERR_STORAGE;
@@ -133,7 +134,7 @@ error_handler_err_t error_handler_save(error_handler_t *eh)
 error_handler_err_t error_handler_load(error_handler_t *eh)
 {
     if (!eh) {
-        return ERROR_HANDLER_ERR_PARAMS;
+        return ERROR_HANDLER_ERR_PARAM;
     }
     if (!eh->storage || !eh->storage->load) {
         return ERROR_HANDLER_ERR_STORAGE;

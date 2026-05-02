@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * median_filter — sliding window median filter
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * xgzp6816d — XGZP6816D barometric pressure sensor driver (I2C)
  *

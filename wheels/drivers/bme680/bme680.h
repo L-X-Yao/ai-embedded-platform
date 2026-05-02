@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bme680 — Bosch BME680 environmental sensor driver (temp/hum/pres/gas)
  *
@@ -23,7 +24,7 @@ extern "C" {
 typedef enum {
     BME680_OK         =  0,
     BME680_ERR_I2C    = -1,
-    BME680_ERR_PARAMS = -2,
+    BME680_ERR_PARAM = -2,
     BME680_ERR_ID     = -3,
 } bme680_err_t;
 

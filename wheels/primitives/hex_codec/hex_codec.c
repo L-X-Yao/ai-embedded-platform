@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hex_codec — hex string encoder/decoder
  *
@@ -20,8 +21,8 @@ static hex_err_t hex_encode_impl(const uint8_t *data, uint16_t data_len,
                                  char *out, uint16_t out_size,
                                  const char *lut)
 {
-    if (data_len > 0 && data == NULL) { return HEX_ERR_PARAMS; }
-    if (out == NULL)                  { return HEX_ERR_PARAMS; }
+    if (data_len > 0 && data == NULL) { return HEX_ERR_PARAM; }
+    if (out == NULL)                  { return HEX_ERR_PARAM; }
 
     /* Guard uint16_t overflow: data_len * 2 + 1 must fit in uint16_t */
     if (data_len > 32767u)            { return HEX_ERR_OVERFLOW; }
@@ -56,9 +57,9 @@ hex_err_t hex_encode_upper(const uint8_t *data, uint16_t data_len,
 hex_err_t hex_decode(const char *hex, uint16_t hex_len,
                      uint8_t *out, uint16_t *out_len)
 {
-    if (out_len == NULL)                      { return HEX_ERR_PARAMS; }
-    if (hex_len > 0 && hex == NULL)           { return HEX_ERR_PARAMS; }
-    if (hex_len > 0 && out == NULL)           { return HEX_ERR_PARAMS; }
+    if (out_len == NULL)                      { return HEX_ERR_PARAM; }
+    if (hex_len > 0 && hex == NULL)           { return HEX_ERR_PARAM; }
+    if (hex_len > 0 && out == NULL)           { return HEX_ERR_PARAM; }
     if (hex_len % 2u != 0)                    { return HEX_ERR_ODD_LENGTH; }
 
     uint16_t decoded = (uint16_t)(hex_len / 2u);

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * slip — SLIP (Serial Line Internet Protocol) framing encoder/decoder
  *
@@ -24,10 +25,10 @@ slip_err_t slip_encode(const uint8_t *data, uint16_t data_len,
                        uint8_t *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
     if (data == NULL && data_len != 0u) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
 
     uint16_t capacity = *out_len;
@@ -66,10 +67,10 @@ slip_err_t slip_decode(const uint8_t *encoded, uint16_t enc_len,
                        uint8_t *out, uint16_t *out_len)
 {
     if (out == NULL || out_len == NULL) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
     if (encoded == NULL && enc_len != 0u) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
 
     uint16_t capacity = *out_len;
@@ -125,7 +126,7 @@ slip_err_t slip_decode(const uint8_t *encoded, uint16_t enc_len,
 slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacity)
 {
     if (dec == NULL || buf == NULL) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
 
     dec->buf         = buf;
@@ -140,7 +141,7 @@ slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacit
 slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte)
 {
     if (dec == NULL) {
-        return SLIP_ERR_PARAMS;
+        return SLIP_ERR_PARAM;
     }
 
     /* if a frame is already ready, ignore until reset */

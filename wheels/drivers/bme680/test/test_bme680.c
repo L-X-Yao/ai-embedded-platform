@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "bme680.h"
@@ -181,15 +182,15 @@ TEST(test_init_i2c_fail)
 
 TEST(test_null_safety)
 {
-    ASSERT_EQ(bme680_init(NULL, &mock_i2c, 0x76), BME680_ERR_PARAMS);
+    ASSERT_EQ(bme680_init(NULL, &mock_i2c, 0x76), BME680_ERR_PARAM);
     bme680_t d;
-    ASSERT_EQ(bme680_init(&d, NULL, 0x76), BME680_ERR_PARAMS);
+    ASSERT_EQ(bme680_init(&d, NULL, 0x76), BME680_ERR_PARAM);
     bme680_data_t data;
-    ASSERT_EQ(bme680_read(NULL, &data), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_read(&d, NULL), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_set_oversampling(NULL, 1, 1, 1), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_set_gas_heater(NULL, 300, 100), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_reset(NULL), BME680_ERR_PARAMS);
+    ASSERT_EQ(bme680_read(NULL, &data), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_read(&d, NULL), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_oversampling(NULL, 1, 1, 1), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_gas_heater(NULL, 300, 100), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_reset(NULL), BME680_ERR_PARAM);
 }
 
 TEST(test_calibration_loading)
@@ -292,9 +293,9 @@ TEST(test_oversampling_config)
 TEST(test_oversampling_invalid)
 {
     setup();
-    ASSERT_EQ(bme680_set_oversampling(&dev, 6, 1, 1), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_set_oversampling(&dev, 1, 6, 1), BME680_ERR_PARAMS);
-    ASSERT_EQ(bme680_set_oversampling(&dev, 1, 1, 6), BME680_ERR_PARAMS);
+    ASSERT_EQ(bme680_set_oversampling(&dev, 6, 1, 1), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_oversampling(&dev, 1, 6, 1), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_oversampling(&dev, 1, 1, 6), BME680_ERR_PARAM);
 }
 
 TEST(test_gas_heater_config)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * crc16 — CRC16-MODBUS implementation (256-entry table)
  *

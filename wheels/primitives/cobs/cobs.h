@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * cobs — Consistent Overhead Byte Stuffing encoder/decoder
  *
@@ -21,7 +22,7 @@ extern "C" {
 
 typedef enum {
     COBS_OK           =  0,
-    COBS_ERR_PARAMS   = -1,
+    COBS_ERR_PARAM   = -1,
     COBS_ERR_OVERFLOW = -2,
     COBS_ERR_INVALID  = -3,
 } cobs_err_t;

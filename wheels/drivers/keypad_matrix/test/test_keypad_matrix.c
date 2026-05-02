@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "keypad_matrix.h"
 
@@ -73,20 +74,20 @@ TEST(test_init_valid_4x4)
 TEST(test_init_null_params)
 {
     keypad_matrix_t kp;
-    ASSERT_EQ(keypad_matrix_init(NULL, &mock_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
-    ASSERT_EQ(keypad_matrix_init(&kp, NULL, 4, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
-    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 4, 4, NULL), KEYPAD_ERR_PARAMS);
+    ASSERT_EQ(keypad_matrix_init(NULL, &mock_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
+    ASSERT_EQ(keypad_matrix_init(&kp, NULL, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
+    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 4, 4, NULL), KEYPAD_ERR_PARAM);
 }
 
 TEST(test_init_rows_cols_exceed_max)
 {
     keypad_matrix_t kp;
     ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, KEYPAD_MAX_ROWS + 1, 4, keymap_4x4),
-              KEYPAD_ERR_PARAMS);
+              KEYPAD_ERR_PARAM);
     ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 4, KEYPAD_MAX_COLS + 1, keymap_4x4),
-              KEYPAD_ERR_PARAMS);
-    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 0, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
-    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 4, 0, keymap_4x4), KEYPAD_ERR_PARAMS);
+              KEYPAD_ERR_PARAM);
+    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 0, 4, keymap_4x4), KEYPAD_ERR_PARAM);
+    ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 4, 0, keymap_4x4), KEYPAD_ERR_PARAM);
 }
 
 TEST(test_no_key_pressed)
@@ -310,14 +311,14 @@ TEST(test_init_missing_hal_functions)
     keypad_matrix_t kp;
     keypad_hal_t bad_hal = { .set_row_low = NULL, .set_row_high = NULL,
                              .read_col = NULL, .ctx = NULL };
-    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
+    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
 
     /* Partially filled HAL. */
     bad_hal.set_row_low = mock_set_row_low;
-    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
+    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
 
     bad_hal.set_row_high = mock_set_row_high;
-    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAMS);
+    ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
 }
 
 TEST_MAIN("keypad_matrix")

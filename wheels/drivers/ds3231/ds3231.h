@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ds3231 — DS3231 high-precision I2C RTC driver
  *
@@ -23,7 +24,7 @@ extern "C" {
 typedef enum {
     DS3231_OK         =  0,
     DS3231_ERR_I2C    = -1,
-    DS3231_ERR_PARAMS = -2,
+    DS3231_ERR_PARAM = -2,
 } ds3231_err_t;
 
 typedef struct {

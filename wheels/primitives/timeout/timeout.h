@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * timeout — deadline-based timeout tracking
  *

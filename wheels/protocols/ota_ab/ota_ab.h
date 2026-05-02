@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ota_ab — A/B firmware slot manager with rollback
  *
@@ -23,7 +24,7 @@ typedef enum {
     OTA_AB_ERR_NULL   = -1,
     OTA_AB_ERR_FLASH  = -2,
     OTA_AB_ERR_CRC    = -3,
-    OTA_AB_ERR_PARAMS = -4,
+    OTA_AB_ERR_PARAM = -4,
     OTA_AB_ERR_SIZE   = -5,
 } ota_ab_err_t;
 

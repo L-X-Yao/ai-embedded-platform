@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * uuid — UUID v4 generation and parsing for embedded systems
  *
@@ -28,7 +29,7 @@ static int hex_val(char c)
 uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx)
 {
     if (!uuid || !rng) {
-        return UUID_ERR_PARAMS;
+        return UUID_ERR_PARAM;
     }
 
     rng(ctx, uuid->bytes, 16);
@@ -45,10 +46,10 @@ uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx)
 uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size)
 {
     if (!uuid || !buf) {
-        return UUID_ERR_PARAMS;
+        return UUID_ERR_PARAM;
     }
     if (buf_size < 37) {
-        return UUID_ERR_PARAMS;
+        return UUID_ERR_PARAM;
     }
 
     /*
@@ -77,7 +78,7 @@ uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size)
 uuid_err_t uuid_from_string(uuid_t *uuid, const char *str)
 {
     if (!uuid || !str) {
-        return UUID_ERR_PARAMS;
+        return UUID_ERR_PARAM;
     }
 
     /* Validate length == 36 */

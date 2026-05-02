@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * apds9960 — I2C proximity, ambient light, RGB color, and gesture sensor
  *
@@ -79,7 +80,7 @@ static apds9960_err_t read_reg(const apds9960_t *dev, uint8_t reg, uint8_t *val)
 
 apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
 {
-    if (!dev || !i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !i2c) return APDS9960_ERR_PARAM;
     dev->i2c = i2c;
 
     /* Verify chip ID */
@@ -109,7 +110,7 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
 
 apds9960_err_t apds9960_enable_proximity(apds9960_t *dev)
 {
-    if (!dev || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
 
     uint8_t en = 0;
     apds9960_err_t err = read_reg(dev, REG_ENABLE, &en);
@@ -121,13 +122,13 @@ apds9960_err_t apds9960_enable_proximity(apds9960_t *dev)
 
 apds9960_err_t apds9960_read_proximity(apds9960_t *dev, uint8_t *prox)
 {
-    if (!dev || !prox || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !prox || !dev->i2c) return APDS9960_ERR_PARAM;
     return read_reg(dev, REG_PDATA, prox);
 }
 
 apds9960_err_t apds9960_enable_color(apds9960_t *dev)
 {
-    if (!dev || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
 
     uint8_t en = 0;
     apds9960_err_t err = read_reg(dev, REG_ENABLE, &en);
@@ -139,7 +140,7 @@ apds9960_err_t apds9960_enable_color(apds9960_t *dev)
 
 apds9960_err_t apds9960_read_color(apds9960_t *dev, apds9960_color_t *color)
 {
-    if (!dev || !color || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !color || !dev->i2c) return APDS9960_ERR_PARAM;
 
     uint8_t buf[8];
     apds9960_err_t err = read_regs(dev, REG_CDATAL, buf, 8);
@@ -154,7 +155,7 @@ apds9960_err_t apds9960_read_color(apds9960_t *dev, apds9960_color_t *color)
 
 apds9960_err_t apds9960_enable_gesture(apds9960_t *dev)
 {
-    if (!dev || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
 
     /* Set gesture entry/exit thresholds */
     apds9960_err_t err = write_reg(dev, REG_GPENTH, 40);
@@ -185,7 +186,7 @@ apds9960_err_t apds9960_enable_gesture(apds9960_t *dev)
 
 apds9960_err_t apds9960_read_gesture(apds9960_t *dev, apds9960_gesture_t *gesture)
 {
-    if (!dev || !gesture || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !gesture || !dev->i2c) return APDS9960_ERR_PARAM;
     *gesture = APDS9960_GESTURE_NONE;
 
     /* Check FIFO level */
@@ -229,6 +230,6 @@ apds9960_err_t apds9960_read_gesture(apds9960_t *dev, apds9960_gesture_t *gestur
 
 apds9960_err_t apds9960_disable_all(apds9960_t *dev)
 {
-    if (!dev || !dev->i2c) return APDS9960_ERR_PARAMS;
+    if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
     return write_reg(dev, REG_ENABLE, 0x00u);
 }

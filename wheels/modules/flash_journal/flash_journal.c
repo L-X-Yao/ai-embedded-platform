@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * flash_journal -- append-only log journal for flash storage with wear leveling
  *

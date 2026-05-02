@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "stepper.h"
 
@@ -68,15 +69,15 @@ TEST(test_init_valid)
 TEST(test_init_null)
 {
     stepper_t s;
-    ASSERT_EQ(stepper_init(NULL, &mock_hal, 1000, 500), STEPPER_ERR_PARAMS);
-    ASSERT_EQ(stepper_init(&s, NULL, 1000, 500), STEPPER_ERR_PARAMS);
+    ASSERT_EQ(stepper_init(NULL, &mock_hal, 1000, 500), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_init(&s, NULL, 1000, 500), STEPPER_ERR_PARAM);
 }
 
 TEST(test_init_zero_speed)
 {
     stepper_t s;
-    ASSERT_EQ(stepper_init(&s, &mock_hal, 0, 500), STEPPER_ERR_PARAMS);
-    ASSERT_EQ(stepper_init(&s, &mock_hal, 1000, 0), STEPPER_ERR_PARAMS);
+    ASSERT_EQ(stepper_init(&s, &mock_hal, 0, 500), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_init(&s, &mock_hal, 1000, 0), STEPPER_ERR_PARAM);
 }
 
 TEST(test_step_once_cw)

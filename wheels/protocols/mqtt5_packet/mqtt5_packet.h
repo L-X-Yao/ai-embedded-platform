@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mqtt5_packet — MQTT 5.0 packet encoder/decoder
  *
@@ -25,7 +26,7 @@ extern "C" {
 
 typedef enum {
     MQTT5_OK            =  0,
-    MQTT5_ERR_PARAMS    = -1,
+    MQTT5_ERR_PARAM    = -1,
     MQTT5_ERR_SIZE      = -2,
     MQTT5_ERR_PROTOCOL  = -3,
     MQTT5_ERR_OVERFLOW  = -4,

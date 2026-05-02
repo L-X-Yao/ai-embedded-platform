@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bh1750 — ROHM BH1750FVI ambient light sensor driver
  *
@@ -70,7 +71,7 @@ bh1750_err_t bh1750_power_on(const bh1750_t *dev);
 /** Send power-down command to enter low-power mode. @thread_safe: caller_must_lock */
 bh1750_err_t bh1750_power_off(const bh1750_t *dev);
 
-/** Reset data register value; sensor must be powered on first. @thread_safe: caller_must_lock */
+/** Reset data register value; sensor must be powered on first. @thread_safe: no */
 bh1750_err_t bh1750_reset(const bh1750_t *dev);
 
 #ifdef __cplusplus

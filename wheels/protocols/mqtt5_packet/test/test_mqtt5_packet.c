@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mqtt5_packet.h"
 #include <string.h>
@@ -36,7 +37,7 @@ TEST(test_vbi_encode_overflow)
 
 TEST(test_vbi_encode_null)
 {
-    ASSERT_EQ(mqtt5_encode_vbi(NULL, 0), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_encode_vbi(NULL, 0), MQTT5_ERR_PARAM);
 }
 
 TEST(test_vbi_decode_single_byte)
@@ -64,9 +65,9 @@ TEST(test_vbi_decode_null_params)
     uint8_t data[] = {0x00};
     uint32_t value;
     uint8_t used;
-    ASSERT_EQ(mqtt5_decode_vbi(NULL, 1, &value, &used), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_decode_vbi(data, 1, NULL, &used), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_decode_vbi(data, 1, &value, NULL), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_decode_vbi(NULL, 1, &value, &used), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_decode_vbi(data, 1, NULL, &used), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_decode_vbi(data, 1, &value, NULL), MQTT5_ERR_PARAM);
 }
 
 TEST(test_vbi_decode_short_buf)
@@ -180,11 +181,11 @@ TEST(test_build_connect_null_params)
 {
     uint8_t buf[128];
     mqtt5_connect_t cfg = { .client_id = "c" };
-    ASSERT_EQ(mqtt5_build_connect(NULL, 128, &cfg), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_build_connect(buf, 128, NULL), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_connect(NULL, 128, &cfg), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_build_connect(buf, 128, NULL), MQTT5_ERR_PARAM);
 
     mqtt5_connect_t bad = { .client_id = NULL };
-    ASSERT_EQ(mqtt5_build_connect(buf, 128, &bad), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_connect(buf, 128, &bad), MQTT5_ERR_PARAM);
 }
 
 TEST(test_build_connect_buffer_overflow)
@@ -248,8 +249,8 @@ TEST(test_parse_connack_null_params)
 {
     uint8_t pkt[] = {0x20, 0x03, 0x00, 0x00, 0x00};
     mqtt5_connack_t ack;
-    ASSERT_EQ(mqtt5_parse_connack(NULL, 5, &ack), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_parse_connack(pkt, 5, NULL), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_parse_connack(NULL, 5, &ack), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_parse_connack(pkt, 5, NULL), MQTT5_ERR_PARAM);
 }
 
 /* ---- PUBLISH build + parse roundtrip ----------------------------------- */
@@ -323,18 +324,18 @@ TEST(test_build_publish_null_params)
 {
     uint8_t buf[64];
     mqtt5_publish_t pub = { .topic = "t" };
-    ASSERT_EQ(mqtt5_build_publish(NULL, 64, &pub), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_build_publish(buf, 64, NULL), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_publish(NULL, 64, &pub), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_build_publish(buf, 64, NULL), MQTT5_ERR_PARAM);
 
     mqtt5_publish_t bad = { .topic = NULL };
-    ASSERT_EQ(mqtt5_build_publish(buf, 64, &bad), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_publish(buf, 64, &bad), MQTT5_ERR_PARAM);
 }
 
 TEST(test_build_publish_qos_invalid)
 {
     uint8_t buf[64];
     mqtt5_publish_t pub = { .topic = "t", .qos = 3 };
-    ASSERT_EQ(mqtt5_build_publish(buf, sizeof(buf), &pub), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_publish(buf, sizeof(buf), &pub), MQTT5_ERR_PARAM);
 }
 
 TEST(test_build_publish_buffer_overflow)
@@ -375,8 +376,8 @@ TEST(test_build_subscribe_qos_levels)
 TEST(test_build_subscribe_null_params)
 {
     uint8_t buf[64];
-    ASSERT_EQ(mqtt5_build_subscribe(NULL, 64, 1, "t", 0), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_build_subscribe(buf, 64, 1, NULL, 0), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_subscribe(NULL, 64, 1, "t", 0), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_build_subscribe(buf, 64, 1, NULL, 0), MQTT5_ERR_PARAM);
 }
 
 TEST(test_build_subscribe_overflow)
@@ -409,7 +410,7 @@ TEST(test_build_disconnect_with_reason)
 
 TEST(test_build_disconnect_null)
 {
-    ASSERT_EQ(mqtt5_build_disconnect(NULL, 16, 0), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_build_disconnect(NULL, 16, 0), MQTT5_ERR_PARAM);
 }
 
 TEST(test_build_disconnect_overflow)
@@ -424,8 +425,8 @@ TEST(test_parse_publish_null)
 {
     uint8_t data[] = {0x30, 0x03, 0x00, 0x01, 0x74};
     mqtt5_publish_t pub;
-    ASSERT_EQ(mqtt5_parse_publish(NULL, 5, &pub), MQTT5_ERR_PARAMS);
-    ASSERT_EQ(mqtt5_parse_publish(data, 5, NULL), MQTT5_ERR_PARAMS);
+    ASSERT_EQ(mqtt5_parse_publish(NULL, 5, &pub), MQTT5_ERR_PARAM);
+    ASSERT_EQ(mqtt5_parse_publish(data, 5, NULL), MQTT5_ERR_PARAM);
 }
 
 TEST(test_parse_publish_short)

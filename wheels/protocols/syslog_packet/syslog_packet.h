@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * syslog_packet — RFC 5424 syslog message formatter
  *
@@ -24,7 +25,7 @@ extern "C" {
 
 typedef enum {
     SYSLOG_OK           =  0,
-    SYSLOG_ERR_PARAMS   = -1,
+    SYSLOG_ERR_PARAM   = -1,
     SYSLOG_ERR_OVERFLOW = -2,
 } syslog_err_t;
 

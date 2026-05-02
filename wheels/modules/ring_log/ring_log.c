@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ring_log — ring buffer structured log storage with read-back
  *
@@ -14,7 +15,7 @@
 ring_log_err_t ring_log_init(ring_log_t *rl, ring_log_level_t min_level)
 {
     if (!rl) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     memset(rl, 0, sizeof(*rl));
     rl->min_level = min_level;
@@ -25,7 +26,7 @@ ring_log_err_t ring_log_write(ring_log_t *rl, ring_log_level_t level,
                               uint32_t timestamp, const char *fmt, ...)
 {
     if (!rl || !fmt) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     if (level < rl->min_level) {
         rl->dropped++;
@@ -53,13 +54,13 @@ ring_log_err_t ring_log_read(const ring_log_t *rl, uint16_t index,
                              ring_log_entry_t *entry)
 {
     if (!rl || !entry) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     if (rl->count == 0) {
         return RING_LOG_ERR_EMPTY;
     }
     if (index >= rl->count) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     /* index 0 = newest (most recently written) */
     uint16_t pos = (uint16_t)((rl->head + RING_LOG_MAX_ENTRIES - 1u - index)
@@ -72,13 +73,13 @@ ring_log_err_t ring_log_read_oldest(const ring_log_t *rl, uint16_t nth,
                                     ring_log_entry_t *entry)
 {
     if (!rl || !entry) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     if (rl->count == 0) {
         return RING_LOG_ERR_EMPTY;
     }
     if (nth >= rl->count) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     /* oldest entry is at (head - count) mod MAX */
     uint16_t oldest = (uint16_t)((rl->head + RING_LOG_MAX_ENTRIES - rl->count)
@@ -116,7 +117,7 @@ void ring_log_clear(ring_log_t *rl)
 ring_log_err_t ring_log_set_level(ring_log_t *rl, ring_log_level_t level)
 {
     if (!rl) {
-        return RING_LOG_ERR_PARAMS;
+        return RING_LOG_ERR_PARAM;
     }
     rl->min_level = level;
     return RING_LOG_OK;

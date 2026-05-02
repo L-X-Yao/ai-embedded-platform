@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * crc_any — configurable CRC calculator supporting any width 1-32 bit
  *

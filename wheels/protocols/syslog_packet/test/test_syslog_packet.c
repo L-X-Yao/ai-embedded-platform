@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "syslog_packet.h"
 #include <string.h>
@@ -148,9 +149,9 @@ TEST(test_format_null_params)
     char buf[64];
     syslog_msg_t msg = {0};
 
-    ASSERT_EQ(syslog_format(NULL, buf, sizeof(buf)), (int)SYSLOG_ERR_PARAMS);
-    ASSERT_EQ(syslog_format(&msg, NULL, sizeof(buf)), (int)SYSLOG_ERR_PARAMS);
-    ASSERT_EQ(syslog_format(&msg, buf, 0), (int)SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_format(NULL, buf, sizeof(buf)), (int)SYSLOG_ERR_PARAM);
+    ASSERT_EQ(syslog_format(&msg, NULL, sizeof(buf)), (int)SYSLOG_ERR_PARAM);
+    ASSERT_EQ(syslog_format(&msg, buf, 0), (int)SYSLOG_ERR_PARAM);
 }
 
 TEST(test_format_long_message_truncation)
@@ -231,7 +232,7 @@ TEST(test_parse_pri_overflow)
     uint8_t pri = 0;
     uint16_t offset = 0;
     /* 192 exceeds max PRI */
-    ASSERT_EQ(syslog_parse_pri("<192>", 5, &pri, &offset), SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_parse_pri("<192>", 5, &pri, &offset), SYSLOG_ERR_PARAM);
 }
 
 TEST(test_parse_pri_malformed)
@@ -239,13 +240,13 @@ TEST(test_parse_pri_malformed)
     uint8_t pri = 0;
     uint16_t offset = 0;
     /* Missing '<' */
-    ASSERT_EQ(syslog_parse_pri("134>", 4, &pri, &offset), SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_parse_pri("134>", 4, &pri, &offset), SYSLOG_ERR_PARAM);
     /* Empty angle brackets */
-    ASSERT_EQ(syslog_parse_pri("<>", 2, &pri, &offset), SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_parse_pri("<>", 2, &pri, &offset), SYSLOG_ERR_PARAM);
     /* Non-digit */
-    ASSERT_EQ(syslog_parse_pri("<ab>", 4, &pri, &offset), SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_parse_pri("<ab>", 4, &pri, &offset), SYSLOG_ERR_PARAM);
     /* NULL input */
-    ASSERT_EQ(syslog_parse_pri(NULL, 5, &pri, &offset), SYSLOG_ERR_PARAMS);
+    ASSERT_EQ(syslog_parse_pri(NULL, 5, &pri, &offset), SYSLOG_ERR_PARAM);
 }
 
 TEST(test_parse_pri_with_trailing_data)

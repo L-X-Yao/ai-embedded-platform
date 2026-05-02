@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "veml7700.h"
@@ -73,13 +74,13 @@ TEST(test_init_i2c_fail)
 TEST(test_null_dev)
 {
     ASSERT_EQ(veml7700_init(NULL, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
-              VEML7700_ERR_PARAMS);
+              VEML7700_ERR_PARAM);
 }
 
 TEST(test_null_i2c)
 {
     ASSERT_EQ(veml7700_init(&dev, NULL, VEML7700_GAIN_1, VEML7700_IT_100MS),
-              VEML7700_ERR_PARAMS);
+              VEML7700_ERR_PARAM);
 }
 
 TEST(test_read_als_raw)
@@ -99,7 +100,7 @@ TEST(test_read_als_null_out)
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
               VEML7700_OK);
-    ASSERT_EQ(veml7700_read_als(&dev, NULL), VEML7700_ERR_PARAMS);
+    ASSERT_EQ(veml7700_read_als(&dev, NULL), VEML7700_ERR_PARAM);
 }
 
 TEST(test_read_white_raw)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * sd_spi -- SPI-mode SD card block read/write driver
  *
@@ -21,7 +22,7 @@ extern "C" {
 typedef enum {
     SD_SPI_OK          =  0,
     SD_SPI_ERR_SPI     = -1,
-    SD_SPI_ERR_PARAMS  = -2,
+    SD_SPI_ERR_PARAM  = -2,
     SD_SPI_ERR_TIMEOUT = -3,
     SD_SPI_ERR_CRC     = -4,
     SD_SPI_ERR_CMD     = -5,
@@ -62,7 +63,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Initialize card (CMD0->CMD8->ACMD41->CMD58). @thread_safe: caller_must_lock */
+/** Initialize card (CMD0->CMD8->ACMD41->CMD58). @thread_safe: no */
 sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal);
 
 /** Read single 512-byte block. @thread_safe: caller_must_lock */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * apds9960 — I2C proximity, ambient light, RGB color, and gesture sensor
  *
@@ -24,7 +25,7 @@ extern "C" {
 typedef enum {
     APDS9960_OK          =  0,
     APDS9960_ERR_I2C     = -1,
-    APDS9960_ERR_PARAMS  = -2,
+    APDS9960_ERR_PARAM  = -2,
     APDS9960_ERR_ID      = -3,
 } apds9960_err_t;
 
@@ -53,7 +54,7 @@ typedef struct {
 
 #define APDS9960_DEV_ADDR  0x39u
 
-/** Verify chip ID and power on. @thread_safe: caller_must_lock */
+/** Verify chip ID and power on. @thread_safe: no */
 apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c);
 
 /** Enable proximity sensing. @thread_safe: caller_must_lock */

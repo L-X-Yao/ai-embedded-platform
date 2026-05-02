@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * syslog_packet — RFC 5424 syslog message formatter
  *
@@ -126,26 +127,26 @@ syslog_err_t syslog_parse_pri(const char *buf, uint16_t len,
                                uint8_t *pri, uint16_t *offset)
 {
     if (!buf || !pri || !offset)
-        return SYSLOG_ERR_PARAMS;
+        return SYSLOG_ERR_PARAM;
     if (len < 3)  /* minimum: "<N>" */
-        return SYSLOG_ERR_PARAMS;
+        return SYSLOG_ERR_PARAM;
     if (buf[0] != '<')
-        return SYSLOG_ERR_PARAMS;
+        return SYSLOG_ERR_PARAM;
 
     uint16_t val = 0;
     uint16_t i = 1;
     while (i < len && buf[i] != '>') {
         if (buf[i] < '0' || buf[i] > '9')
-            return SYSLOG_ERR_PARAMS;
+            return SYSLOG_ERR_PARAM;
         val = (uint16_t)(val * 10u + (uint16_t)(buf[i] - '0'));
         if (val > 191)  /* max PRI = 23*8+7 = 191 */
-            return SYSLOG_ERR_PARAMS;
+            return SYSLOG_ERR_PARAM;
         i++;
     }
     if (i >= len || buf[i] != '>')
-        return SYSLOG_ERR_PARAMS;
+        return SYSLOG_ERR_PARAM;
     if (i == 1)  /* empty: "<>" */
-        return SYSLOG_ERR_PARAMS;
+        return SYSLOG_ERR_PARAM;
 
     *pri = (uint8_t)val;
     *offset = (uint16_t)(i + 1);
@@ -155,9 +156,9 @@ syslog_err_t syslog_parse_pri(const char *buf, uint16_t len,
 int syslog_format(const syslog_msg_t *msg, char *buf, uint16_t buf_size)
 {
     if (!msg || !buf || buf_size == 0)
-        return (int)SYSLOG_ERR_PARAMS;
+        return (int)SYSLOG_ERR_PARAM;
     if ((uint8_t)msg->facility > 23 || (uint8_t)msg->severity > 7)
-        return (int)SYSLOG_ERR_PARAMS;
+        return (int)SYSLOG_ERR_PARAM;
 
     /* Reserve 1 byte for NUL terminator. */
     uint16_t cap = (uint16_t)(buf_size - 1);

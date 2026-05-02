@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "ymodem.h"
 #include <string.h>
@@ -201,8 +202,8 @@ static void feed_bytes(ymodem_t *ym, const uint8_t *data, int len)
 TEST(test_init_null_params)
 {
     ymodem_t ym;
-    ASSERT_EQ(ymodem_init(NULL, &g_io), YMODEM_ERR_PARAMS);
-    ASSERT_EQ(ymodem_init(&ym, NULL), YMODEM_ERR_PARAMS);
+    ASSERT_EQ(ymodem_init(NULL, &g_io), YMODEM_ERR_PARAM);
+    ASSERT_EQ(ymodem_init(&ym, NULL), YMODEM_ERR_PARAM);
 }
 
 TEST(test_init_ok)
@@ -232,7 +233,7 @@ TEST(test_start_double_call_rejected)
     mock_reset();
     ymodem_init(&ym, &g_io);
     ASSERT_EQ(ymodem_start(&ym), YMODEM_OK);
-    ASSERT_EQ(ymodem_start(&ym), YMODEM_ERR_PARAMS);
+    ASSERT_EQ(ymodem_start(&ym), YMODEM_ERR_PARAM);
 }
 
 TEST(test_block0_filename_parse)
@@ -490,7 +491,7 @@ TEST(test_feed_in_wrong_state)
     ymodem_init(&ym, &g_io);
 
     /* feed before start */
-    ASSERT_EQ(ymodem_feed(&ym, 0x01), YMODEM_ERR_PARAMS);
+    ASSERT_EQ(ymodem_feed(&ym, 0x01), YMODEM_ERR_PARAM);
 
     /* feed after complete */
     ymodem_start(&ym);
@@ -498,7 +499,7 @@ TEST(test_feed_in_wrong_state)
     build_empty_block0(end);
     feed_bytes(&ym, end, 133);
     ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_COMPLETE);
-    ASSERT_EQ(ymodem_feed(&ym, 0x01), YMODEM_ERR_PARAMS);
+    ASSERT_EQ(ymodem_feed(&ym, 0x01), YMODEM_ERR_PARAM);
 }
 
 TEST(test_file_size_tracking)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * nrf24l01 -- SPI driver for nRF24L01+ 2.4GHz radio transceiver
  *
@@ -21,7 +22,7 @@ extern "C" {
 typedef enum {
     NRF24_OK          =  0,
     NRF24_ERR_SPI     = -1,
-    NRF24_ERR_PARAMS  = -2,
+    NRF24_ERR_PARAM  = -2,
     NRF24_ERR_TIMEOUT = -3,
     NRF24_ERR_MAX_RT  = -4,     /* max retransmits reached */
     NRF24_ERR_FULL    = -5,     /* TX FIFO full */

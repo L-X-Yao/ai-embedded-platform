@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * modbus_rtu — Modbus RTU frame codec with master/slave helpers
  *

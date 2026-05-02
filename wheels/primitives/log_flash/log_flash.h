@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_flash — persistent flash log sink with sector-ring management.
  *

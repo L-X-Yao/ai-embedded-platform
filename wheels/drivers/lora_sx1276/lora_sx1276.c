@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * lora_sx1276 -- SPI LoRa radio transceiver driver for Semtech SX1276/SX1278
  *
@@ -138,7 +139,7 @@ lora_err_t lora_set_frequency(lora_t *dev, uint32_t freq_hz)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
     if (freq_hz < 137000000UL || freq_hz > 1020000000UL) {
-        return LORA_ERR_PARAMS;
+        return LORA_ERR_PARAM;
     }
 
     /* Frf = freq * 2^19 / Fxosc */
@@ -156,7 +157,7 @@ lora_err_t lora_set_frequency(lora_t *dev, uint32_t freq_hz)
 lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (bw > 9) return LORA_ERR_PARAMS;
+    if (bw > 9) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
     uint8_t cfg1 = reg_read(spi, REG_MODEM_CONFIG_1);
@@ -170,7 +171,7 @@ lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw)
 lora_err_t lora_set_spreading_factor(lora_t *dev, uint8_t sf)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (sf < 6 || sf > 12) return LORA_ERR_PARAMS;
+    if (sf < 6 || sf > 12) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
     uint8_t cfg2 = reg_read(spi, REG_MODEM_CONFIG_2);
@@ -184,7 +185,7 @@ lora_err_t lora_set_spreading_factor(lora_t *dev, uint8_t sf)
 lora_err_t lora_set_coding_rate(lora_t *dev, uint8_t cr)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (cr < 1 || cr > 4) return LORA_ERR_PARAMS;
+    if (cr < 1 || cr > 4) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
     uint8_t cfg1 = reg_read(spi, REG_MODEM_CONFIG_1);
@@ -198,7 +199,7 @@ lora_err_t lora_set_coding_rate(lora_t *dev, uint8_t cr)
 lora_err_t lora_set_tx_power(lora_t *dev, int8_t dbm)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (dbm < 2 || dbm > 20) return LORA_ERR_PARAMS;
+    if (dbm < 2 || dbm > 20) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
 
@@ -220,7 +221,7 @@ lora_err_t lora_set_tx_power(lora_t *dev, int8_t dbm)
 lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (!data || len == 0)  return LORA_ERR_PARAMS;
+    if (!data || len == 0)  return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
 
@@ -266,7 +267,7 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
                         uint8_t max_len)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (!data || !len)      return LORA_ERR_PARAMS;
+    if (!data || !len)      return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
 

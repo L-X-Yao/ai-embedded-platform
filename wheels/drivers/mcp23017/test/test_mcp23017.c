@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "mcp23017.h"
@@ -51,24 +52,24 @@ TEST(test_init_ok)
 
 TEST(test_init_null_dev)
 {
-    ASSERT_EQ(mcp23017_init(NULL, &mock_i2c, TEST_ADDR), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_init(NULL, &mock_i2c, TEST_ADDR), MCP23017_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
-    ASSERT_EQ(mcp23017_init(&dev, NULL, TEST_ADDR), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_init(&dev, NULL, TEST_ADDR), MCP23017_ERR_PARAM);
 }
 
 TEST(test_init_addr_range_low)
 {
     mock_reset();
-    ASSERT_EQ(mcp23017_init(&dev, &mock_i2c, 0x1F), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_init(&dev, &mock_i2c, 0x1F), MCP23017_ERR_PARAM);
 }
 
 TEST(test_init_addr_range_high)
 {
     mock_reset();
-    ASSERT_EQ(mcp23017_init(&dev, &mock_i2c, 0x28), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_init(&dev, &mock_i2c, 0x28), MCP23017_ERR_PARAM);
 }
 
 TEST(test_init_addr_range_valid_boundary)
@@ -163,9 +164,9 @@ TEST(test_pin_out_of_range)
 {
     ASSERT_EQ(init_ok(), MCP23017_OK);
     bool level;
-    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 8, true), MCP23017_ERR_PARAMS);
-    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 8, &level), MCP23017_ERR_PARAMS);
-    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 255, true), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 8, true), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 8, &level), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 255, true), MCP23017_ERR_PARAM);
 }
 
 /* ---------- pullup tests ---------- */
@@ -222,10 +223,10 @@ TEST(test_null_params)
     uint8_t val;
     bool level;
 
-    ASSERT_EQ(mcp23017_set_direction(NULL, MCP23017_PORT_A, 0), MCP23017_ERR_PARAMS);
-    ASSERT_EQ(mcp23017_read_port(&dev, MCP23017_PORT_A, NULL), MCP23017_ERR_PARAMS);
-    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 0, NULL), MCP23017_ERR_PARAMS);
-    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, NULL), MCP23017_ERR_PARAMS);
+    ASSERT_EQ(mcp23017_set_direction(NULL, MCP23017_PORT_A, 0), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_port(&dev, MCP23017_PORT_A, NULL), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 0, NULL), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, NULL), MCP23017_ERR_PARAM);
 
     /* suppress unused-variable warnings */
     (void)val;

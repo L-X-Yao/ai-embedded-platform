@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ds18b20 — Dallas/Maxim DS18B20 1-Wire temperature sensor driver
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * websocket_frame — WebSocket frame encoder/decoder (RFC 6455)
  *

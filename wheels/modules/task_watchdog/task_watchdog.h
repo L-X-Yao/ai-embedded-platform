@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * task_watchdog — passive tick-driven task health monitor
  *
@@ -27,7 +28,7 @@ extern "C" {
 
 typedef enum {
     TASK_WD_OK            =  0,
-    TASK_WD_ERR_PARAMS    = -1,
+    TASK_WD_ERR_PARAM    = -1,
     TASK_WD_ERR_FULL      = -2,
     TASK_WD_ERR_NOT_FOUND = -3,
 } task_wd_err_t;
@@ -61,7 +62,7 @@ typedef struct {
     void             *expired_ctx;
 } task_watchdog_t;
 
-/** @thread_safe: caller_must_lock */
+/** @thread_safe: no */
 task_wd_err_t task_watchdog_init(task_watchdog_t *wd);
 
 /** @thread_safe: caller_must_lock */

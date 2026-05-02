@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * fifo_queue — typed fixed-size FIFO queue with caller-provided storage
  *
@@ -23,7 +24,7 @@ extern "C" {
 
 typedef enum {
     FIFO_QUEUE_OK         =  0,
-    FIFO_QUEUE_ERR_PARAMS = -1,
+    FIFO_QUEUE_ERR_PARAM = -1,
     FIFO_QUEUE_ERR_FULL   = -2,
     FIFO_QUEUE_ERR_EMPTY  = -3,
 } fifo_queue_err_t;

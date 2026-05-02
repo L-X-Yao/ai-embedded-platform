@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * as5600 — ams AS5600 I2C 12-bit magnetic rotary position sensor driver
  *

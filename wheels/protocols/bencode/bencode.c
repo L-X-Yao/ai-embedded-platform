@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bencode — Bencode encoder/decoder (BitTorrent encoding format)
  *

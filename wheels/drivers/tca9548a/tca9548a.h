@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tca9548a — TCA9548A 8-channel I2C multiplexer driver
  *
@@ -29,7 +30,7 @@ extern "C" {
 typedef enum {
     TCA9548A_OK         =  0,
     TCA9548A_ERR_I2C    = -1,
-    TCA9548A_ERR_PARAMS = -2,
+    TCA9548A_ERR_PARAM = -2,
 } tca9548a_err_t;
 
 typedef struct {

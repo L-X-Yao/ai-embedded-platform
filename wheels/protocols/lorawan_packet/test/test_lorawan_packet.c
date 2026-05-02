@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "lorawan_packet.h"
 #include <string.h>
@@ -143,8 +144,8 @@ TEST(test_build_null_params)
     memset(&frame, 0, sizeof(frame));
     uint8_t buf[64];
 
-    ASSERT_EQ(lorawan_build_data(NULL, 64, &frame), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_build_data(buf, 64, NULL), LORAWAN_ERR_PARAMS);
+    ASSERT_EQ(lorawan_build_data(NULL, 64, &frame), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_build_data(buf, 64, NULL), LORAWAN_ERR_PARAM);
 }
 
 /* ---------- parse_data tests ---------- */
@@ -194,8 +195,8 @@ TEST(test_parse_null_params)
 {
     uint8_t buf[16];
     lorawan_frame_t frame;
-    ASSERT_EQ(lorawan_parse_data(NULL, 16, &frame), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_parse_data(buf, 16, NULL), LORAWAN_ERR_PARAMS);
+    ASSERT_EQ(lorawan_parse_data(NULL, 16, &frame), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_parse_data(buf, 16, NULL), LORAWAN_ERR_PARAM);
 }
 
 TEST(test_parse_with_fopts)
@@ -300,13 +301,13 @@ TEST(test_join_request_roundtrip)
 TEST(test_join_request_null_params)
 {
     uint8_t buf[32], eui[8] = {0}, nonce[2] = {0};
-    ASSERT_EQ(lorawan_build_join_request(NULL, 32, eui, eui, nonce), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_build_join_request(buf, 32, NULL, eui, nonce), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_build_join_request(buf, 32, eui, NULL, nonce), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_build_join_request(buf, 32, eui, eui, NULL), LORAWAN_ERR_PARAMS);
+    ASSERT_EQ(lorawan_build_join_request(NULL, 32, eui, eui, nonce), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_build_join_request(buf, 32, NULL, eui, nonce), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_build_join_request(buf, 32, eui, NULL, nonce), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_build_join_request(buf, 32, eui, eui, NULL), LORAWAN_ERR_PARAM);
 
-    ASSERT_EQ(lorawan_parse_join_request(NULL, 19, eui, eui, nonce), LORAWAN_ERR_PARAMS);
-    ASSERT_EQ(lorawan_parse_join_request(buf, 19, NULL, eui, nonce), LORAWAN_ERR_PARAMS);
+    ASSERT_EQ(lorawan_parse_join_request(NULL, 19, eui, eui, nonce), LORAWAN_ERR_PARAM);
+    ASSERT_EQ(lorawan_parse_join_request(buf, 19, NULL, eui, nonce), LORAWAN_ERR_PARAM);
 }
 
 TEST(test_join_request_buffer_too_small)

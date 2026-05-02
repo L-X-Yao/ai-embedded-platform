@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * protobuf_lite — lightweight Protocol Buffers wire format encoder/decoder
  *
@@ -23,7 +24,7 @@ extern "C" {
 
 typedef enum {
     PB_OK           =  0,
-    PB_ERR_PARAMS   = -1,
+    PB_ERR_PARAM   = -1,
     PB_ERR_OVERFLOW = -2,
     PB_ERR_MALFORMED = -3,
     PB_ERR_TRUNCATED = -4,

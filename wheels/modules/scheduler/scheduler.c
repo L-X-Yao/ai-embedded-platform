@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * scheduler -- cooperative task scheduler for bare-metal / single-threaded
  *
@@ -23,7 +24,7 @@ static int find_task(const scheduler_t *s, const char *name)
 
 sched_err_t scheduler_init(scheduler_t *s)
 {
-    if (!s) return SCHED_ERR_PARAMS;
+    if (!s) return SCHED_ERR_PARAM;
     memset(s, 0, sizeof(*s));
     return SCHED_OK;
 }
@@ -32,7 +33,7 @@ sched_err_t scheduler_add(scheduler_t *s, const char *name,
                           sched_task_fn fn, void *ctx,
                           uint32_t interval_ticks)
 {
-    if (!s || !name || !fn) return SCHED_ERR_PARAMS;
+    if (!s || !name || !fn) return SCHED_ERR_PARAM;
     if (s->count >= SCHED_MAX_TASKS) return SCHED_ERR_FULL;
 
     sched_task_t *t = &s->tasks[s->count];
@@ -77,27 +78,27 @@ void scheduler_run(scheduler_t *s)
 
 sched_err_t scheduler_enable(scheduler_t *s, const char *name)
 {
-    if (!s || !name) return SCHED_ERR_PARAMS;
+    if (!s || !name) return SCHED_ERR_PARAM;
     int idx = find_task(s, name);
-    if (idx < 0) return SCHED_ERR_PARAMS;
+    if (idx < 0) return SCHED_ERR_PARAM;
     s->tasks[idx].enabled = true;
     return SCHED_OK;
 }
 
 sched_err_t scheduler_disable(scheduler_t *s, const char *name)
 {
-    if (!s || !name) return SCHED_ERR_PARAMS;
+    if (!s || !name) return SCHED_ERR_PARAM;
     int idx = find_task(s, name);
-    if (idx < 0) return SCHED_ERR_PARAMS;
+    if (idx < 0) return SCHED_ERR_PARAM;
     s->tasks[idx].enabled = false;
     return SCHED_OK;
 }
 
 sched_err_t scheduler_remove(scheduler_t *s, const char *name)
 {
-    if (!s || !name) return SCHED_ERR_PARAMS;
+    if (!s || !name) return SCHED_ERR_PARAM;
     int idx = find_task(s, name);
-    if (idx < 0) return SCHED_ERR_PARAMS;
+    if (idx < 0) return SCHED_ERR_PARAM;
 
     /* shift remaining tasks down */
     for (uint8_t i = (uint8_t)idx; i < s->count - 1; i++) {

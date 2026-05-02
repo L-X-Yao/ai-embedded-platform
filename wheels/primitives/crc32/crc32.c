@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * crc32 — CRC32 (IEEE 802.3 / Ethernet / zlib-compatible), table-based
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "modbus_tcp.h"
 #include <string.h>
@@ -281,22 +282,22 @@ TEST(test_null_params)
     uint16_t v = 1;
 
     ASSERT_EQ(modbus_tcp_build_read_regs(NULL, 32, 1, 1, 0, 1),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
     ASSERT_EQ(modbus_tcp_build_write_reg(NULL, 32, 1, 1, 0, 0),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
     ASSERT_EQ(modbus_tcp_build_write_regs(NULL, 32, 1, 1, 0, &v, 1),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
     ASSERT_EQ(modbus_tcp_build_write_regs(buf, 32, 1, 1, 0, NULL, 1),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
 
-    ASSERT_EQ(modbus_tcp_parse(NULL, 12, &frame), MODBUS_TCP_ERR_PARAMS);
-    ASSERT_EQ(modbus_tcp_parse(buf, 12, NULL), MODBUS_TCP_ERR_PARAMS);
+    ASSERT_EQ(modbus_tcp_parse(NULL, 12, &frame), MODBUS_TCP_ERR_PARAM);
+    ASSERT_EQ(modbus_tcp_parse(buf, 12, NULL), MODBUS_TCP_ERR_PARAM);
 
     uint16_t vals[2];
     uint16_t actual;
-    ASSERT_EQ(modbus_tcp_get_regs(NULL, vals, 2, &actual), MODBUS_TCP_ERR_PARAMS);
-    ASSERT_EQ(modbus_tcp_get_regs(&frame, NULL, 2, &actual), MODBUS_TCP_ERR_PARAMS);
-    ASSERT_EQ(modbus_tcp_get_regs(&frame, vals, 0, &actual), MODBUS_TCP_ERR_PARAMS);
+    ASSERT_EQ(modbus_tcp_get_regs(NULL, vals, 2, &actual), MODBUS_TCP_ERR_PARAM);
+    ASSERT_EQ(modbus_tcp_get_regs(&frame, NULL, 2, &actual), MODBUS_TCP_ERR_PARAM);
+    ASSERT_EQ(modbus_tcp_get_regs(&frame, vals, 0, &actual), MODBUS_TCP_ERR_PARAM);
 }
 
 /* ============================================================ */
@@ -435,7 +436,7 @@ TEST(test_build_read_regs_zero_count)
 {
     uint8_t buf[32];
     ASSERT_EQ(modbus_tcp_build_read_regs(buf, sizeof(buf), 1, 1, 0, 0),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
 }
 
 TEST(test_build_write_regs_zero_count)
@@ -443,7 +444,7 @@ TEST(test_build_write_regs_zero_count)
     uint8_t buf[32];
     uint16_t v = 1;
     ASSERT_EQ(modbus_tcp_build_write_regs(buf, sizeof(buf), 1, 1, 0, &v, 0),
-              MODBUS_TCP_ERR_PARAMS);
+              MODBUS_TCP_ERR_PARAM);
 }
 
 TEST(test_parse_length_exceeds_buffer)

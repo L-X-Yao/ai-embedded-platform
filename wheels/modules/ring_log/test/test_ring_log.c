@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "ring_log.h"
@@ -135,8 +136,8 @@ TEST(test_read_out_of_range)
     ring_log_write(&rl, RING_LOG_INFO, 1, "one");
 
     ring_log_entry_t e;
-    ASSERT_EQ(ring_log_read(&rl, 1, &e), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_read_oldest(&rl, 1, &e), RING_LOG_ERR_PARAMS);
+    ASSERT_EQ(ring_log_read(&rl, 1, &e), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_read_oldest(&rl, 1, &e), RING_LOG_ERR_PARAM);
 }
 
 /* ---- 10. NULL params ---- */
@@ -144,14 +145,14 @@ TEST(test_null_params)
 {
     ring_log_t rl;
     ring_log_entry_t e;
-    ASSERT_EQ(ring_log_init(NULL, RING_LOG_DEBUG), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_write(NULL, RING_LOG_INFO, 0, "x"), RING_LOG_ERR_PARAMS);
+    ASSERT_EQ(ring_log_init(NULL, RING_LOG_DEBUG), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_write(NULL, RING_LOG_INFO, 0, "x"), RING_LOG_ERR_PARAM);
     ring_log_init(&rl, RING_LOG_DEBUG);
-    ASSERT_EQ(ring_log_write(&rl, RING_LOG_INFO, 0, NULL), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_read(NULL, 0, &e), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_read(&rl, 0, NULL), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_read_oldest(NULL, 0, &e), RING_LOG_ERR_PARAMS);
-    ASSERT_EQ(ring_log_set_level(NULL, RING_LOG_DEBUG), RING_LOG_ERR_PARAMS);
+    ASSERT_EQ(ring_log_write(&rl, RING_LOG_INFO, 0, NULL), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_read(NULL, 0, &e), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_read(&rl, 0, NULL), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_read_oldest(NULL, 0, &e), RING_LOG_ERR_PARAM);
+    ASSERT_EQ(ring_log_set_level(NULL, RING_LOG_DEBUG), RING_LOG_ERR_PARAM);
     ASSERT_EQ(ring_log_count(NULL), 0);
     ASSERT_EQ(ring_log_total(NULL), 0);
     ASSERT_EQ(ring_log_dropped(NULL), 0);

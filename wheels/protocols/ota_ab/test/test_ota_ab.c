@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "ota_ab.h"
@@ -440,7 +441,7 @@ TEST(test_init_err_params_max_boot_zero)
     mock_reset();
     ota_ab_layout_t bad_layout = test_layout;
     bad_layout.max_boot_count = 0;
-    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAMS);
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAM);
 }
 
 TEST(test_init_err_params_size_too_small)
@@ -449,7 +450,7 @@ TEST(test_init_err_params_size_too_small)
     mock_reset();
     ota_ab_layout_t bad_layout = test_layout;
     bad_layout.params_size = sizeof(ota_ab_params_t) - 1;
-    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAMS);
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAM);
 }
 
 TEST_MAIN("ota_ab")

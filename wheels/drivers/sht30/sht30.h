@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * sht30 — Sensirion SHT30 temperature and humidity sensor driver
  *

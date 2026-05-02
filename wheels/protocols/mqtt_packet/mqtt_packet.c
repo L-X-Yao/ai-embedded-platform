@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mqtt_packet — MQTT 3.1.1 packet serializer/deserializer
  *

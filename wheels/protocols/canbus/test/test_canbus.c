@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "canbus.h"
 #include <string.h>
@@ -24,7 +25,7 @@ TEST(test_validate_rtr_ok)
 
 TEST(test_validate_null)
 {
-    ASSERT_EQ(canbus_frame_validate(NULL), CANBUS_ERR_PARAMS);
+    ASSERT_EQ(canbus_frame_validate(NULL), CANBUS_ERR_PARAM);
 }
 
 TEST(test_validate_standard_id_too_large)
@@ -132,8 +133,8 @@ TEST(test_pack_null_params)
 {
     canbus_frame_t f = { .id = 0x100, .dlc = 0 };
     uint8_t buf[16];
-    ASSERT_EQ(canbus_frame_pack(NULL, buf, sizeof(buf)), CANBUS_ERR_PARAMS);
-    ASSERT_EQ(canbus_frame_pack(&f, NULL, sizeof(buf)), CANBUS_ERR_PARAMS);
+    ASSERT_EQ(canbus_frame_pack(NULL, buf, sizeof(buf)), CANBUS_ERR_PARAM);
+    ASSERT_EQ(canbus_frame_pack(&f, NULL, sizeof(buf)), CANBUS_ERR_PARAM);
 }
 
 TEST(test_pack_overflow)
@@ -149,8 +150,8 @@ TEST(test_unpack_null_params)
 {
     uint8_t buf[8] = {0};
     canbus_frame_t f;
-    ASSERT_EQ(canbus_frame_unpack(NULL, 8, &f), CANBUS_ERR_PARAMS);
-    ASSERT_EQ(canbus_frame_unpack(buf, 8, NULL), CANBUS_ERR_PARAMS);
+    ASSERT_EQ(canbus_frame_unpack(NULL, 8, &f), CANBUS_ERR_PARAM);
+    ASSERT_EQ(canbus_frame_unpack(buf, 8, NULL), CANBUS_ERR_PARAM);
 }
 
 TEST(test_unpack_too_short)

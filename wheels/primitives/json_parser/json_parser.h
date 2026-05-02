@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * json_parser — minimal SAX-style JSON parser for embedded systems
  *

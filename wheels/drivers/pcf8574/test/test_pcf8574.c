@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "pcf8574.h"
 
@@ -74,8 +75,8 @@ TEST(test_init_i2c_fail)
 TEST(test_init_null_params)
 {
     mock_reset();
-    ASSERT_EQ(pcf8574_init(NULL, &mock_i2c, 0x20), PCF8574_ERR_PARAMS);
-    ASSERT_EQ(pcf8574_init(&dev, NULL, 0x20), PCF8574_ERR_PARAMS);
+    ASSERT_EQ(pcf8574_init(NULL, &mock_i2c, 0x20), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_init(&dev, NULL, 0x20), PCF8574_ERR_PARAM);
 }
 
 TEST(test_write_port)
@@ -144,10 +145,10 @@ TEST(test_pin_out_of_range)
     mock_reset();
     pcf8574_init(&dev, &mock_i2c, 0x20);
     bool level = false;
-    ASSERT_EQ(pcf8574_write_pin(&dev, 8, true), PCF8574_ERR_PARAMS);
-    ASSERT_EQ(pcf8574_read_pin(&dev, 8, &level), PCF8574_ERR_PARAMS);
-    ASSERT_EQ(pcf8574_toggle_pin(&dev, 8), PCF8574_ERR_PARAMS);
-    ASSERT_EQ(pcf8574_write_pin(&dev, 255, true), PCF8574_ERR_PARAMS);
+    ASSERT_EQ(pcf8574_write_pin(&dev, 8, true), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_read_pin(&dev, 8, &level), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_toggle_pin(&dev, 8), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_write_pin(&dev, 255, true), PCF8574_ERR_PARAM);
 }
 
 TEST(test_i2c_write_fail)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hex_codec — hex string encoder/decoder
  *
@@ -25,7 +26,7 @@ extern "C" {
 
 typedef enum {
     HEX_OK             =  0,
-    HEX_ERR_PARAMS     = -1,
+    HEX_ERR_PARAM     = -1,
     HEX_ERR_OVERFLOW   = -2,
     HEX_ERR_INVALID    = -3,
     HEX_ERR_ODD_LENGTH = -4,
@@ -38,7 +39,7 @@ typedef enum {
  * @param data_len  Number of bytes to encode.
  * @param out       Output buffer for NUL-terminated hex string.
  * @param out_size  Size of output buffer (must be >= data_len*2 + 1).
- * @return          HEX_OK on success, HEX_ERR_PARAMS or HEX_ERR_OVERFLOW.
+ * @return          HEX_OK on success, HEX_ERR_PARAM or HEX_ERR_OVERFLOW.
  * @thread_safe: yes (pure function, no state)
  */
 hex_err_t hex_encode(const uint8_t *data, uint16_t data_len,
@@ -51,7 +52,7 @@ hex_err_t hex_encode(const uint8_t *data, uint16_t data_len,
  * @param data_len  Number of bytes to encode.
  * @param out       Output buffer for NUL-terminated hex string.
  * @param out_size  Size of output buffer (must be >= data_len*2 + 1).
- * @return          HEX_OK on success, HEX_ERR_PARAMS or HEX_ERR_OVERFLOW.
+ * @return          HEX_OK on success, HEX_ERR_PARAM or HEX_ERR_OVERFLOW.
  * @thread_safe: yes (pure function, no state)
  */
 hex_err_t hex_encode_upper(const uint8_t *data, uint16_t data_len,
@@ -66,7 +67,7 @@ hex_err_t hex_encode_upper(const uint8_t *data, uint16_t data_len,
  * @param hex_len   Number of hex characters to decode.
  * @param out       Output buffer for decoded bytes.
  * @param out_len   On input: buffer size.  On output: bytes written.
- * @return          HEX_OK, HEX_ERR_PARAMS, HEX_ERR_ODD_LENGTH,
+ * @return          HEX_OK, HEX_ERR_PARAM, HEX_ERR_ODD_LENGTH,
  *                  HEX_ERR_OVERFLOW, or HEX_ERR_INVALID.
  * @thread_safe: yes (pure function, no state)
  */

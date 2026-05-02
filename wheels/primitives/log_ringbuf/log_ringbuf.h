@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_ringbuf — RAM circular log buffer with line-oriented retrieval.
  *

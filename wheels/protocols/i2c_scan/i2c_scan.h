@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * i2c_scan — I2C bus scanner and device identifier
  *
@@ -32,7 +33,7 @@ extern "C" {
 
 typedef enum {
     I2C_SCAN_OK          =  0,
-    I2C_SCAN_ERR_PARAMS  = -1,
+    I2C_SCAN_ERR_PARAM  = -1,
 } i2c_scan_err_t;
 
 /* ── Callbacks ─────────────────────────────────────────────────── */

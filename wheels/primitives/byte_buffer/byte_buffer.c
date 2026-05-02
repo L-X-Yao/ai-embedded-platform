@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * byte_buffer — linear read/write byte buffer for protocol framing
  *

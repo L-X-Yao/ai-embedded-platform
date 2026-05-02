@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include <math.h>
@@ -55,13 +56,13 @@ TEST(test_init_ok)
 
 TEST(test_init_null_dev)
 {
-    ASSERT_EQ(max31855_init(NULL, &mock_spi), MAX31855_ERR_PARAMS);
+    ASSERT_EQ(max31855_init(NULL, &mock_spi), MAX31855_ERR_PARAM);
 }
 
 TEST(test_init_null_spi)
 {
     max31855_t dev;
-    ASSERT_EQ(max31855_init(&dev, NULL), MAX31855_ERR_PARAMS);
+    ASSERT_EQ(max31855_init(&dev, NULL), MAX31855_ERR_PARAM);
 }
 
 TEST(test_init_incomplete_spi)
@@ -198,13 +199,13 @@ TEST(test_read_raw_null_out)
     max31855_t dev;
     max31855_init(&dev, &mock_spi);
 
-    ASSERT_EQ(max31855_read_raw(&dev, NULL), MAX31855_ERR_PARAMS);
+    ASSERT_EQ(max31855_read_raw(&dev, NULL), MAX31855_ERR_PARAM);
 }
 
 TEST(test_read_null_dev)
 {
     float tc = 0.0f, ic = 0.0f;
-    ASSERT_EQ(max31855_read(NULL, &tc, &ic), MAX31855_ERR_PARAMS);
+    ASSERT_EQ(max31855_read(NULL, &tc, &ic), MAX31855_ERR_PARAM);
 }
 
 TEST(test_read_zero_temp)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ncp5623_parser — NCP5623 I2C LED driver command parser
  *

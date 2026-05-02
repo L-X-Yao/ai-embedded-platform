@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * version_info — semantic version comparison and compatibility
  *

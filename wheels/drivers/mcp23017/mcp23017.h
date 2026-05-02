@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mcp23017 — I2C 16-bit GPIO expander driver
  *
@@ -23,7 +24,7 @@ extern "C" {
 typedef enum {
     MCP23017_OK         =  0,
     MCP23017_ERR_I2C    = -1,
-    MCP23017_ERR_PARAMS = -2,
+    MCP23017_ERR_PARAM = -2,
 } mcp23017_err_t;
 
 typedef enum {

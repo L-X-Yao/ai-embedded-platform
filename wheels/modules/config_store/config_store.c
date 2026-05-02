@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * config_store -- configuration management with defaults, validation,
  *                 and storage callbacks
@@ -39,7 +40,7 @@ config_store_err_t config_store_init(config_store_t *cs,
                                      const config_store_storage_t *storage)
 {
     if (!cs) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     memset(cs, 0, sizeof(*cs));
@@ -55,7 +56,7 @@ config_store_err_t config_store_define_int(config_store_t *cs,
                                            int32_t min, int32_t max)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (cs->count >= CONFIG_STORE_MAX_ENTRIES) {
         return CONFIG_STORE_ERR_FULL;
@@ -79,7 +80,7 @@ config_store_err_t config_store_define_uint(config_store_t *cs,
                                             uint32_t min, uint32_t max)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (cs->count >= CONFIG_STORE_MAX_ENTRIES) {
         return CONFIG_STORE_ERR_FULL;
@@ -103,7 +104,7 @@ config_store_err_t config_store_define_float(config_store_t *cs,
                                              float min, float max)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (cs->count >= CONFIG_STORE_MAX_ENTRIES) {
         return CONFIG_STORE_ERR_FULL;
@@ -126,7 +127,7 @@ config_store_err_t config_store_define_bool(config_store_t *cs,
                                             bool default_val)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (cs->count >= CONFIG_STORE_MAX_ENTRIES) {
         return CONFIG_STORE_ERR_FULL;
@@ -147,7 +148,7 @@ config_store_err_t config_store_define_string(config_store_t *cs,
                                               const char *default_val)
 {
     if (!cs || !key || !default_val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (cs->count >= CONFIG_STORE_MAX_ENTRIES) {
         return CONFIG_STORE_ERR_FULL;
@@ -174,7 +175,7 @@ config_store_err_t config_store_set_int(config_store_t *cs,
                                         const char *key, int32_t val)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     config_entry_t *e = cs_find(cs, key);
@@ -197,7 +198,7 @@ config_store_err_t config_store_set_uint(config_store_t *cs,
                                          const char *key, uint32_t val)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     config_entry_t *e = cs_find(cs, key);
@@ -220,7 +221,7 @@ config_store_err_t config_store_set_float(config_store_t *cs,
                                           const char *key, float val)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     config_entry_t *e = cs_find(cs, key);
@@ -243,7 +244,7 @@ config_store_err_t config_store_set_bool(config_store_t *cs,
                                          const char *key, bool val)
 {
     if (!cs || !key) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     config_entry_t *e = cs_find(cs, key);
@@ -263,7 +264,7 @@ config_store_err_t config_store_set_string(config_store_t *cs,
                                            const char *key, const char *val)
 {
     if (!cs || !key || !val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     config_entry_t *e = cs_find(cs, key);
@@ -289,7 +290,7 @@ config_store_err_t config_store_get_int(const config_store_t *cs,
                                         const char *key, int32_t *val)
 {
     if (!cs || !key || !val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     const config_entry_t *e = cs_find_const(cs, key);
@@ -308,7 +309,7 @@ config_store_err_t config_store_get_uint(const config_store_t *cs,
                                          const char *key, uint32_t *val)
 {
     if (!cs || !key || !val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     const config_entry_t *e = cs_find_const(cs, key);
@@ -327,7 +328,7 @@ config_store_err_t config_store_get_float(const config_store_t *cs,
                                           const char *key, float *val)
 {
     if (!cs || !key || !val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     const config_entry_t *e = cs_find_const(cs, key);
@@ -346,7 +347,7 @@ config_store_err_t config_store_get_bool(const config_store_t *cs,
                                          const char *key, bool *val)
 {
     if (!cs || !key || !val) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     const config_entry_t *e = cs_find_const(cs, key);
@@ -366,7 +367,7 @@ config_store_err_t config_store_get_string(const config_store_t *cs,
                                            uint16_t size)
 {
     if (!cs || !key || !val || size == 0) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     const config_entry_t *e = cs_find_const(cs, key);
@@ -387,7 +388,7 @@ config_store_err_t config_store_get_string(const config_store_t *cs,
 config_store_err_t config_store_save_all(config_store_t *cs)
 {
     if (!cs) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (!cs->storage || !cs->storage->save) {
         return CONFIG_STORE_ERR_STORAGE;
@@ -408,7 +409,7 @@ config_store_err_t config_store_save_all(config_store_t *cs)
 config_store_err_t config_store_load_all(config_store_t *cs)
 {
     if (!cs) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
     if (!cs->storage || !cs->storage->load) {
         return CONFIG_STORE_ERR_STORAGE;
@@ -478,7 +479,7 @@ config_store_err_t config_store_load_all(config_store_t *cs)
 config_store_err_t config_store_reset_defaults(config_store_t *cs)
 {
     if (!cs) {
-        return CONFIG_STORE_ERR_PARAMS;
+        return CONFIG_STORE_ERR_PARAM;
     }
 
     for (uint8_t i = 0; i < cs->count; i++) {

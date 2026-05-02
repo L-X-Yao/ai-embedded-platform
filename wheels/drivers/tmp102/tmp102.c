@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * tmp102 — TI TMP102 I2C digital temperature sensor driver
  *

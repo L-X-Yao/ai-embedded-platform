@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * timer_wheel — hashed timing wheel for efficient timeout management
  *

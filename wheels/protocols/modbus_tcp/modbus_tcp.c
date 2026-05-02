@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * modbus_tcp --- Modbus TCP/IP frame encoder/decoder (MBAP + PDU)
  *
@@ -40,9 +41,9 @@ int modbus_tcp_build_read_regs(uint8_t *buf, uint16_t buf_size,
                                uint16_t start_addr, uint16_t count)
 {
     if (!buf)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
     if (count == 0 || count > MODBUS_TCP_MAX_READ_REGS)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
 
     /* MBAP(7) + FC(1) + start(2) + count(2) = 12 */
     uint16_t frame_len = 12;
@@ -62,7 +63,7 @@ int modbus_tcp_build_write_reg(uint8_t *buf, uint16_t buf_size,
                                uint16_t addr, uint16_t value)
 {
     if (!buf)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
 
     /* MBAP(7) + FC(1) + addr(2) + value(2) = 12 */
     uint16_t frame_len = 12;
@@ -83,9 +84,9 @@ int modbus_tcp_build_write_regs(uint8_t *buf, uint16_t buf_size,
                                 uint16_t count)
 {
     if (!buf || !values)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
     if (count == 0 || count > MODBUS_TCP_MAX_WRITE_REGS)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
 
     /* MBAP(7) + FC(1) + start(2) + count(2) + byte_count(1) + data(count*2) */
     uint16_t pdu_len   = (uint16_t)(6 + count * 2);
@@ -111,7 +112,7 @@ modbus_tcp_err_t modbus_tcp_parse(const uint8_t *buf, uint16_t len,
                                   modbus_tcp_frame_t *frame)
 {
     if (!buf || !frame)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
 
     /* Need at least MBAP(7) + FC(1) = 8 bytes */
     if (len < MODBUS_TCP_MBAP_SIZE + 1)
@@ -152,7 +153,7 @@ modbus_tcp_err_t modbus_tcp_get_regs(const modbus_tcp_frame_t *frame,
                                      uint16_t *actual_count)
 {
     if (!frame || !values || max_count == 0)
-        return MODBUS_TCP_ERR_PARAMS;
+        return MODBUS_TCP_ERR_PARAM;
     if (!frame->data || frame->data_len < 1)
         return MODBUS_TCP_ERR_SHORT;
 

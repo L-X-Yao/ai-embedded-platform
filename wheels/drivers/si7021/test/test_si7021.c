@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include <math.h>
@@ -109,20 +110,20 @@ TEST(test_init_ok)
 
 TEST(test_init_null_dev)
 {
-    ASSERT_EQ(si7021_init(NULL, &mock_i2c), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_init(NULL, &mock_i2c), SI7021_ERR_PARAM);
 }
 
 TEST(test_init_null_i2c)
 {
     si7021_t d;
-    ASSERT_EQ(si7021_init(&d, NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_init(&d, NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_init_null_callbacks)
 {
     si7021_i2c_t bad = { .write = NULL, .read = NULL, .ctx = NULL };
     si7021_t d;
-    ASSERT_EQ(si7021_init(&d, &bad), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_init(&d, &bad), SI7021_ERR_PARAM);
 }
 
 TEST(test_read_humidity_25pct)
@@ -290,25 +291,25 @@ TEST(test_null_params_read_humidity)
 {
     setup();
     float rh;
-    ASSERT_EQ(si7021_read_humidity(NULL, &rh), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_humidity(&dev, NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_read_humidity(NULL, &rh), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_humidity(&dev, NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_null_params_read_temperature)
 {
     setup();
     float temp;
-    ASSERT_EQ(si7021_read_temperature(NULL, &temp), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_temperature(&dev, NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_read_temperature(NULL, &temp), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_temperature(&dev, NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_null_params_read_both)
 {
     setup();
     float rh, temp;
-    ASSERT_EQ(si7021_read_both(NULL, &rh, &temp), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_both(&dev, NULL, &temp), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_both(&dev, &rh, NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_read_both(NULL, &rh, &temp), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_both(&dev, NULL, &temp), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_both(&dev, &rh, NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_set_resolution)
@@ -328,8 +329,8 @@ TEST(test_set_resolution)
 TEST(test_set_resolution_invalid)
 {
     setup();
-    ASSERT_EQ(si7021_set_resolution(&dev, (si7021_resolution_t)4), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_set_resolution(NULL, SI7021_RES_14BIT_12BIT), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_set_resolution(&dev, (si7021_resolution_t)4), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_set_resolution(NULL, SI7021_RES_14BIT_12BIT), SI7021_ERR_PARAM);
 }
 
 TEST(test_reset)
@@ -351,7 +352,7 @@ TEST(test_reset_i2c_fail)
 
 TEST(test_reset_null)
 {
-    ASSERT_EQ(si7021_reset(NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_reset(NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_read_serial)
@@ -385,9 +386,9 @@ TEST(test_read_serial_null)
 {
     setup();
     uint32_t a, b;
-    ASSERT_EQ(si7021_read_serial(NULL, &a, &b), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_serial(&dev, NULL, &b), SI7021_ERR_PARAMS);
-    ASSERT_EQ(si7021_read_serial(&dev, &a, NULL), SI7021_ERR_PARAMS);
+    ASSERT_EQ(si7021_read_serial(NULL, &a, &b), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_serial(&dev, NULL, &b), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_serial(&dev, &a, NULL), SI7021_ERR_PARAM);
 }
 
 TEST(test_read_serial_i2c_fail)

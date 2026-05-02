@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * moving_average — sliding window and exponential moving average filters
  *

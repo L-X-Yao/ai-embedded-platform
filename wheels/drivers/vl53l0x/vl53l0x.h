@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * vl53l0x — ST VL53L0X I2C time-of-flight distance sensor driver
  *

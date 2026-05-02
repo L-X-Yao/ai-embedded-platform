@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * max31865 — SPI RTD-to-digital converter for PT100/PT1000
  *

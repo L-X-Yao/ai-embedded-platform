@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <string.h>
 #include "mcp2515.h"
@@ -360,12 +361,12 @@ TEST(test_set_filter)
 
     /* filter_num out of range */
     e = mcp2515_set_filter(&dev, 6, 0x123, false);
-    ASSERT_EQ(e, MCP2515_ERR_PARAMS);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
 
     /* not in config mode */
     mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL);
     e = mcp2515_set_filter(&dev, 0, 0x123, false);
-    ASSERT_EQ(e, MCP2515_ERR_PARAMS);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
 }
 
 TEST(test_set_mask)
@@ -387,12 +388,12 @@ TEST(test_set_mask)
 
     /* mask_num out of range */
     e = mcp2515_set_mask(&dev, 2, 0x7FF);
-    ASSERT_EQ(e, MCP2515_ERR_PARAMS);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
 
     /* not in config mode */
     mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL);
     e = mcp2515_set_mask(&dev, 0, 0x7FF);
-    ASSERT_EQ(e, MCP2515_ERR_PARAMS);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
 }
 
 TEST(test_read_status)
@@ -485,7 +486,7 @@ TEST(test_send_dlc_too_large)
         .rtr = false,
     };
     mcp2515_err_t e = mcp2515_send(&dev, &msg);
-    ASSERT_EQ(e, MCP2515_ERR_PARAMS);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
 }
 
 TEST(test_receive_extended_frame)

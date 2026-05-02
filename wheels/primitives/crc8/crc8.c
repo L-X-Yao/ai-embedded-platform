@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * crc8 — CRC-8 calculator with multiple polynomial support (bit-by-bit)
  *

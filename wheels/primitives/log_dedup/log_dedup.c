@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_dedup — deduplication sink for log wheel.
  *

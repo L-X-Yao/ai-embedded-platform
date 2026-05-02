@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * button_handler -- high-level button event processor
  *
@@ -26,7 +27,7 @@ extern "C" {
 
 typedef enum {
     BTN_HANDLER_OK         =  0,
-    BTN_HANDLER_ERR_PARAMS = -1,
+    BTN_HANDLER_ERR_PARAM = -1,
     BTN_HANDLER_ERR_FULL   = -2,
 } btn_handler_err_t;
 

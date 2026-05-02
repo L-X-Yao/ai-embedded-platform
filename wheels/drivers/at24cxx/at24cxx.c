@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * at24cxx --- I2C EEPROM driver for AT24CXX_C01 through AT24CXX_C256
  *

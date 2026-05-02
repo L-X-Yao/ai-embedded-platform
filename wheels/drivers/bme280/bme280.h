@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * bme280 — Bosch BME280 temperature, humidity, and pressure sensor driver
  *

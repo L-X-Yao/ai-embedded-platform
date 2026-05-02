@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * device_info -- device identity and runtime information module
  *
@@ -30,7 +31,7 @@ extern "C" {
 
 typedef enum {
     DEVICE_INFO_OK           =  0,
-    DEVICE_INFO_ERR_PARAMS   = -1,
+    DEVICE_INFO_ERR_PARAM   = -1,
     DEVICE_INFO_ERR_OVERFLOW = -2,
 } device_info_err_t;
 
@@ -117,7 +118,7 @@ uint32_t device_info_get_uptime(const device_info_t *info);
 /**
  * Format all info as key=value lines into buf.
  * Returns number of bytes written (excluding NUL), or negative on error
- * (DEVICE_INFO_ERR_PARAMS or DEVICE_INFO_ERR_OVERFLOW).
+ * (DEVICE_INFO_ERR_PARAM or DEVICE_INFO_ERR_OVERFLOW).
  * If buf is too small, returns DEVICE_INFO_ERR_OVERFLOW (-2) and buf
  * contains a truncated but NUL-terminated string.
  * @thread_safe: no

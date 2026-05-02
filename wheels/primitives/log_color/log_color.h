@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * log_color — ANSI color wrapper sink for log wheel.
  *

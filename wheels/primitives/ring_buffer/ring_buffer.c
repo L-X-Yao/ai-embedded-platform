@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * ring_buffer — byte-level circular buffer for embedded systems
  *
@@ -12,7 +13,7 @@
 ring_buffer_err_t ring_buffer_init(ring_buffer_t *rb, uint8_t *buf, uint16_t capacity)
 {
     if (!rb || !buf || capacity == 0) {
-        return RING_BUFFER_ERR_PARAMS;
+        return RING_BUFFER_ERR_PARAM;
     }
     rb->buf      = buf;
     rb->capacity = capacity;

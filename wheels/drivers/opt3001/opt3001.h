@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * opt3001 — TI OPT3001 I2C digital ambient light sensor driver
  *
@@ -25,7 +26,7 @@ extern "C" {
 typedef enum {
     OPT3001_OK            =  0,
     OPT3001_ERR_I2C       = -1,
-    OPT3001_ERR_PARAMS    = -2,
+    OPT3001_ERR_PARAM    = -2,
     OPT3001_ERR_ID        = -3,
     OPT3001_ERR_NOT_READY = -4,
 } opt3001_err_t;
