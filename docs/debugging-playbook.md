@@ -10,7 +10,7 @@ make test-wheels    # 仅 wheel 测试
 make test-projects  # 仅项目测试
 make test-changed   # 仅受未提交变更影响的测试
 make test-fast      # wheel 测试 + 首个失败即停
-make audit          # 46 项 wheel 审计
+make audit          # 53 项 wheel 审计
 make coverage       # 测试 + gcov 覆盖率报告
 make bootstrap      # 打印 session 上下文（wheel 表 + CI + git）
 make graph          # 依赖关系图（Mermaid）
