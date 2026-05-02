@@ -333,6 +333,48 @@ TEST(test_nested_arrays)
     ASSERT_EQ(g_events[8].event, JSON_EVENT_ARRAY_END);
 }
 
+TEST(test_error_syntax_trailing_garbage)
+{
+    /* Trailing non-whitespace after a complete value */
+    json_parser_err_t err = parse_full("42 xyz");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_error_syntax_invalid_literal)
+{
+    /* Misspelled literal: "tru" followed by non-alpha triggers syntax error */
+    json_parser_err_t err = parse_full("{\"k\": tru}");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_error_syntax_bad_escape)
+{
+    /* Invalid escape sequence \q inside a string */
+    json_parser_err_t err = parse_full("\"hello\\qworld\"");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_error_syntax_mismatched_bracket)
+{
+    /* Close with } when [ was opened */
+    json_parser_err_t err = parse_full("[1, 2}");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_error_syntax_missing_colon)
+{
+    /* Object key not followed by colon */
+    json_parser_err_t err = parse_full("{\"key\" \"value\"}");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_error_syntax_bare_comma)
+{
+    /* Leading comma in array */
+    json_parser_err_t err = parse_full("[,1]");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
 TEST(test_chunked_number)
 {
     /* Split a number across two feed() calls */
@@ -371,5 +413,11 @@ TEST_MAIN("json_parser")
     RUN(test_whitespace_handling);
     RUN(test_zero_number);
     RUN(test_nested_arrays);
+    RUN(test_error_syntax_trailing_garbage);
+    RUN(test_error_syntax_invalid_literal);
+    RUN(test_error_syntax_bad_escape);
+    RUN(test_error_syntax_mismatched_bracket);
+    RUN(test_error_syntax_missing_colon);
+    RUN(test_error_syntax_bare_comma);
     RUN(test_chunked_number);
 TEST_MAIN_END()

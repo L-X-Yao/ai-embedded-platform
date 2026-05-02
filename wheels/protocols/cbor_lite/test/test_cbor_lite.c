@@ -290,6 +290,28 @@ TEST(test_dec_null_param)
     ASSERT_EQ(cbor_lite_dec_next(&dec, NULL), CBOR_LITE_ERR_PARAM);
 }
 
+TEST(test_dec_malformed_reserved_ai)
+{
+    /* Additional info 28 (0x1C) is reserved in CBOR — decoder must reject.
+     * Byte layout: major 0 (uint) | ai 28 => 0x1C */
+    const uint8_t data[] = {0x1C};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+}
+
+TEST(test_dec_malformed_indefinite_length)
+{
+    /* Additional info 31 (0x1F) = indefinite length — not supported.
+     * Byte layout: major 2 (bstr) | ai 31 => 0x5F */
+    const uint8_t data[] = {0x5F};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+}
+
 TEST_MAIN("cbor_lite")
     RUN(test_enc_uint_small);
     RUN(test_enc_uint_onebyte);
@@ -310,4 +332,6 @@ TEST_MAIN("cbor_lite")
     RUN(test_roundtrip);
     RUN(test_dec_short_input);
     RUN(test_dec_null_param);
+    RUN(test_dec_malformed_reserved_ai);
+    RUN(test_dec_malformed_indefinite_length);
 TEST_MAIN_END()

@@ -324,6 +324,68 @@ TEST(test_init_null_read_regs)
     ASSERT_EQ(opt3001_init(&dev, &bad_i2c, 0x44), OPT3001_ERR_PARAM);
 }
 
+/* ---------- OPT3001_ERR_NOT_READY: read_lux when conversion not done -----
+ * The current API does not return ERR_NOT_READY (read_lux reads the
+ * result register unconditionally; the caller should check data_ready()
+ * first).  However, the error code is defined for future use.
+ *
+ * These tests verify the expected workflow: data_ready() returns false
+ * when CRF is clear, and the result register holds stale data. */
+
+TEST(test_read_lux_before_conversion_done)
+{
+    mock_reset();
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x44), OPT3001_OK);
+
+    /* Start single-shot measurement */
+    ASSERT_EQ(opt3001_start_single(&dev), OPT3001_OK);
+
+    /* CRF bit is clear (conversion not done) */
+    uint16_t cfg = get_reg16(REG_CONFIG);
+    set_reg16(REG_CONFIG, (uint16_t)(cfg & (uint16_t)~(1u << 7)));
+
+    /* data_ready should report false */
+    ASSERT_FALSE(opt3001_data_ready(&dev));
+
+    /* read_lux still succeeds (reads stale result) — this is by design:
+     * the driver does not gate read_lux on CRF.  Callers must poll
+     * data_ready() themselves. */
+    set_reg16(REG_RESULT, 0x0000);
+    float lux;
+    ASSERT_EQ(opt3001_read_lux(&dev, &lux), OPT3001_OK);
+    ASSERT_NEAR(lux, 0.0f, 0.001f);
+}
+
+/* ABI stability: verify the not-ready enum value */
+TEST(test_err_not_ready_value)
+{
+    ASSERT_EQ((int)OPT3001_ERR_NOT_READY, -4);
+}
+
+/* Exercise full single-shot cycle: start → poll → read */
+TEST(test_single_shot_cycle)
+{
+    mock_reset();
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x44), OPT3001_OK);
+    ASSERT_EQ(opt3001_start_single(&dev), OPT3001_OK);
+
+    /* Not ready yet */
+    uint16_t cfg = get_reg16(REG_CONFIG);
+    set_reg16(REG_CONFIG, (uint16_t)(cfg & (uint16_t)~(1u << 7)));
+    ASSERT_FALSE(opt3001_data_ready(&dev));
+
+    /* Now conversion completes: set CRF bit */
+    cfg = get_reg16(REG_CONFIG);
+    set_reg16(REG_CONFIG, cfg | (1u << 7));
+    ASSERT_TRUE(opt3001_data_ready(&dev));
+
+    /* Result: E=2, R=500 → lux = 0.01 * 4 * 500 = 20.0 */
+    set_reg16(REG_RESULT, (2u << 12) | 500u);
+    float lux;
+    ASSERT_EQ(opt3001_read_lux(&dev, &lux), OPT3001_OK);
+    ASSERT_NEAR(lux, 20.0f, 0.1f);
+}
+
 TEST_MAIN("opt3001")
     RUN(test_init_ok);
     RUN(test_init_all_addrs);
@@ -351,4 +413,7 @@ TEST_MAIN("opt3001")
     RUN(test_data_ready_i2c_fail);
     RUN(test_init_null_write_regs);
     RUN(test_init_null_read_regs);
+    RUN(test_read_lux_before_conversion_done);
+    RUN(test_err_not_ready_value);
+    RUN(test_single_shot_cycle);
 TEST_MAIN_END()

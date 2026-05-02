@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 /*
- * ota_manager.c -- firmware update orchestration
+ * ota_manager -- firmware update orchestration module
  *
- * State machine driven by application calls:
- *   init -> check -> download_step (loop) -> verify -> activate
- *
- * All I/O through ota_mgr_ops_t callbacks. No OS, no malloc, no globals.
+ * Layer:     L3
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #include "ota_manager.h"

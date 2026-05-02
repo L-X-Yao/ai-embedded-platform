@@ -268,6 +268,39 @@ TEST(test_non_aligned_13bits)
     ASSERT_EQ(-1, bitmap_alloc(&bm));
 }
 
+/* ---- bitmap full error ---- */
+
+TEST(test_bitmap_err_full)
+{
+    uint8_t buf[1];
+    bitmap_t bm;
+    bitmap_init(&bm, buf, 8);
+
+    /* Verify BITMAP_ERR_FULL enum value exists and equals -3 */
+    ASSERT_EQ(BITMAP_ERR_FULL, -3);
+
+    /* Fill all bits via set */
+    for (uint16_t i = 0; i < 8; i++) {
+        ASSERT_EQ(BITMAP_OK, bitmap_set(&bm, i));
+    }
+
+    /* Bitmap is full: no clear bits, alloc fails */
+    ASSERT_EQ(bitmap_count_clear(&bm), 0);
+    ASSERT_EQ(bitmap_count_set(&bm), 8);
+    ASSERT_EQ(bitmap_find_first_clear(&bm), -1);
+    ASSERT_EQ(bitmap_alloc(&bm), -1);
+
+    /* Free one slot, verify no longer full */
+    ASSERT_EQ(BITMAP_OK, bitmap_free(&bm, 4));
+    ASSERT_EQ(bitmap_count_clear(&bm), 1);
+    ASSERT_EQ(bitmap_find_first_clear(&bm), 4);
+    ASSERT_EQ(bitmap_alloc(&bm), 4);
+
+    /* Full again after re-alloc */
+    ASSERT_EQ(bitmap_alloc(&bm), -1);
+    ASSERT_EQ(bitmap_count_clear(&bm), 0);
+}
+
 /* ---- null bitmap to other APIs ---- */
 
 TEST(test_null_bitmap_apis)
@@ -305,5 +338,6 @@ TEST_MAIN("bitmap")
     RUN(test_1bit_bitmap);
     RUN(test_8bit_boundary);
     RUN(test_non_aligned_13bits);
+    RUN(test_bitmap_err_full);
     RUN(test_null_bitmap_apis);
 TEST_MAIN_END()

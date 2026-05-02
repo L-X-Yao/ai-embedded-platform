@@ -12,6 +12,11 @@ flash details, or slot layout. Application drives the pace by calling
 Pairs naturally with `ota_ab` (L2) for A/B slot management, but does
 not depend on it. The application wires them together via callbacks.
 
+## Origin
+
+Proactive build. OTA capability is required in virtually all connected
+embedded products (IoT, fleet management, consumer devices).
+
 ## Why not an open-source library?
 
 Checked common embedded OTA libraries (2026-05-01):

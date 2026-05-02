@@ -12,6 +12,11 @@ This is the second L3 wheel. It composes concepts from L0 (byte_buffer
 pattern: staged buffer writes) but is self-contained with no `#include`
 dependencies on other wheels.
 
+## Origin
+
+Proactive build. Structured data logging is needed in nearly every
+sensor/telemetry project (drones, weather stations, industrial monitors).
+
 ## Why not an open-source library?
 
 Checked common embedded data logging libraries (2026-05-01):

@@ -610,6 +610,41 @@ TEST(test_bad_complement_sends_nak)
     ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_NAK);
 }
 
+TEST(test_err_crc_constant_and_recovery)
+{
+    /* YMODEM_ERR_CRC is defined for caller-level CRC error reporting.
+     * The receiver treats CRC mismatch as recoverable (NAK + retry).
+     * Verify: (1) constant value, (2) bad CRC triggers NAK + allows retry. */
+    ASSERT_EQ(YMODEM_ERR_CRC, -2);
+
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    /* block 0 header */
+    uint8_t hdr[133];
+    build_block0(hdr, "crc.bin", 128);
+    feed_bytes(&ym, hdr, 133);
+
+    /* Send data block with corrupted CRC */
+    uint8_t frame[133];
+    build_soh_data_frame(frame, 1, 0x55);
+    frame[131] ^= 0xFF;  /* corrupt CRC high byte */
+    feed_bytes(&ym, frame, 133);
+
+    ASSERT_EQ(g_written.count, 0);  /* block rejected */
+    ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_NAK);
+    /* Receiver stays in DATA state — can accept a retransmitted block */
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+
+    /* Retransmit correct block — should succeed */
+    build_soh_data_frame(frame, 1, 0x55);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(g_written.count, 1);
+    ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_ACK);
+}
+
 TEST_MAIN("ymodem")
     RUN(test_init_null_params);
     RUN(test_init_ok);
@@ -631,4 +666,5 @@ TEST_MAIN("ymodem")
     RUN(test_bad_sequence_error);
     RUN(test_write_callback_error);
     RUN(test_bad_complement_sends_nak);
+    RUN(test_err_crc_constant_and_recovery);
 TEST_MAIN_END()

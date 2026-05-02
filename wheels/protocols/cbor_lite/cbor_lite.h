@@ -73,15 +73,23 @@ void cbor_lite_enc_init(cbor_lite_encoder_t *enc, uint8_t *buf, size_t cap);
 /** Return bytes written so far (0 if overflow occurred). */
 size_t cbor_lite_enc_len(const cbor_lite_encoder_t *enc);
 
-/** @thread_safe: yes (operates only on *enc) */
+/** Encode unsigned integer. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_uint(cbor_lite_encoder_t *enc, uint64_t val);
+/** Encode negative integer. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_nint(cbor_lite_encoder_t *enc, uint64_t val);
+/** Encode byte string. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_bstr(cbor_lite_encoder_t *enc, const uint8_t *data, size_t len);
+/** Encode text string. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_tstr(cbor_lite_encoder_t *enc, const char *str, size_t len);
+/** Encode array header (count items follow). @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_array(cbor_lite_encoder_t *enc, size_t count);
+/** Encode map header (count key-value pairs follow). @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_map(cbor_lite_encoder_t *enc, size_t count);
+/** Encode boolean. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_bool(cbor_lite_encoder_t *enc, bool val);
+/** Encode null. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_null(cbor_lite_encoder_t *enc);
+/** Encode float32. @thread_safe: yes */
 cbor_lite_err_t cbor_lite_enc_float(cbor_lite_encoder_t *enc, float val);
 
 /* ------------------------------------------------------------------ */

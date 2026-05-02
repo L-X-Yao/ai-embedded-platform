@@ -507,6 +507,39 @@ TEST(test_load_null_handler)
     ASSERT_EQ(error_handler_load(NULL), ERROR_HANDLER_ERR_PARAM);
 }
 
+TEST(test_err_full_constant_and_overwrite_behavior)
+{
+    /* ERROR_HANDLER_ERR_FULL is reserved for configurations that may
+     * reject writes when the buffer is full (instead of overwriting).
+     * Current implementation overwrites oldest.
+     * Verify: (1) constant value, (2) report succeeds when buffer full,
+     * (3) oldest is correctly overwritten. */
+    ASSERT_EQ(ERROR_HANDLER_ERR_FULL, -2);
+
+    setup(NULL);
+
+    /* Fill buffer to capacity */
+    for (uint16_t i = 0; i < ERROR_HANDLER_MAX_RECORDS; i++) {
+        ASSERT_EQ(error_handler_report(&eh, (uint16_t)(i + 1),
+                                       ERROR_SEVERITY_INFO, i * 10, 0),
+                  ERROR_HANDLER_OK);
+    }
+    ASSERT_EQ(error_handler_get_count(&eh), ERROR_HANDLER_MAX_RECORDS);
+
+    /* Report one more — should succeed (overwrite, not ERR_FULL) */
+    ASSERT_EQ(error_handler_report(&eh, 0xFFFF, ERROR_SEVERITY_ERROR, 9999, 0x42),
+              ERROR_HANDLER_OK);
+    ASSERT_EQ(error_handler_get_count(&eh), ERROR_HANDLER_MAX_RECORDS);
+
+    /* The overwritten record (code=1) should be gone; newest is code=0xFFFF */
+    error_record_t rec;
+    error_handler_get(&eh, 0, &rec);
+    ASSERT_EQ(rec.code, 2);  /* oldest is now code=2 (code=1 was overwritten) */
+    error_handler_get(&eh, (uint8_t)(ERROR_HANDLER_MAX_RECORDS - 1), &rec);
+    ASSERT_EQ(rec.code, 0xFFFF);
+    ASSERT_EQ_HEX(rec.context, 0x42);
+}
+
 /* ================================================================ */
 
 TEST_MAIN("error_handler")
@@ -541,4 +574,5 @@ TEST_MAIN("error_handler")
     RUN(test_report_after_load);
     RUN(test_save_null_handler);
     RUN(test_load_null_handler);
+    RUN(test_err_full_constant_and_overwrite_behavior);
 TEST_MAIN_END()

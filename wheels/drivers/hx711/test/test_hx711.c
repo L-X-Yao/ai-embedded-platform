@@ -302,6 +302,44 @@ TEST(test_tare_zero_samples)
     ASSERT_EQ(hx711_tare(&dev, 0), HX711_ERR_PARAM);
 }
 
+/* ---------- HX711_ERR_TIMEOUT: tare propagates not-ready from read_raw --
+ * The driver does not use a polling timeout loop (caller handles retry
+ * policy), so HX711_ERR_TIMEOUT is defined but never returned.  However,
+ * calling tare while the device is not ready exercises the closest
+ * error-propagation path. */
+
+TEST(test_tare_not_ready_propagates)
+{
+    hx711_t dev;
+    mock_reset();
+    hx711_init(&dev, &mock_hal, HX711_GAIN_128);
+
+    mock_dout_ready = false;  /* DOUT high = not ready */
+    hx711_err_t e = hx711_tare(&dev, 5);
+    /* tare calls read_raw which returns ERR_NOT_READY, tare propagates it */
+    ASSERT_EQ(e, HX711_ERR_NOT_READY);
+}
+
+TEST(test_read_not_ready_propagates_through_read)
+{
+    hx711_t dev;
+    float fval = 0.0f;
+    mock_reset();
+    hx711_init(&dev, &mock_hal, HX711_GAIN_128);
+    hx711_set_scale(&dev, 2.0f);
+
+    mock_dout_ready = false;
+    hx711_err_t e = hx711_read(&dev, &fval);
+    /* hx711_read delegates to read_raw → ERR_NOT_READY propagates */
+    ASSERT_EQ(e, HX711_ERR_NOT_READY);
+}
+
+/* ABI stability: verify the timeout enum value exists at the expected slot */
+TEST(test_err_timeout_value)
+{
+    ASSERT_EQ((int)HX711_ERR_TIMEOUT, -2);
+}
+
 TEST_MAIN("hx711")
     RUN(test_init_ok);
     RUN(test_init_null_params);
@@ -321,4 +359,7 @@ TEST_MAIN("hx711")
     RUN(test_power_down_up);
     RUN(test_read_raw_null_params);
     RUN(test_tare_zero_samples);
+    RUN(test_tare_not_ready_propagates);
+    RUN(test_read_not_ready_propagates_through_read);
+    RUN(test_err_timeout_value);
 TEST_MAIN_END()

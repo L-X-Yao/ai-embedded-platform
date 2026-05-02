@@ -411,6 +411,45 @@ TEST(test_bad_complement_sends_nak)
     ASSERT_EQ(g_sent.bytes[g_sent.count - 1], XMODEM_NAK);
 }
 
+TEST(test_err_crc_constant_and_recovery)
+{
+    /* XMODEM_ERR_CRC is defined for caller-level CRC error reporting.
+     * The receiver treats CRC mismatch as recoverable (NAK + retry).
+     * Verify: (1) constant value, (2) CRC-mode bad frame triggers NAK + allows retry. */
+    ASSERT_EQ(XMODEM_ERR_CRC, -3);
+
+    xmodem_t xm;
+    mock_reset();
+    xmodem_init(&xm, &g_io, true);  /* CRC mode */
+    xmodem_start(&xm);
+
+    /* Send frame with corrupted CRC */
+    uint8_t frame[133];
+    build_crc_frame(frame, 1, 0x77);
+    frame[131] ^= 0xFF;  /* corrupt CRC high byte */
+    feed_bytes(&xm, frame, 133);
+
+    ASSERT_EQ(g_written.count, 0);  /* block rejected */
+    ASSERT_EQ(g_sent.bytes[g_sent.count - 1], XMODEM_NAK);
+    /* Receiver stays in RECEIVING state — can accept a retransmitted block */
+    ASSERT_TRUE(xmodem_get_state(&xm) == XMODEM_STATE_RECEIVING ||
+                xmodem_get_state(&xm) == XMODEM_STATE_WAIT_HEADER);
+
+    /* Retransmit correct block — should succeed */
+    build_crc_frame(frame, 1, 0x77);
+    feed_bytes(&xm, frame, 133);
+    ASSERT_EQ(g_written.count, 1);
+    ASSERT_EQ(g_sent.bytes[g_sent.count - 1], XMODEM_ACK);
+}
+
+TEST(test_err_timeout_constant)
+{
+    /* XMODEM_ERR_TIMEOUT is for the caller's timeout detection layer
+     * (no bytes received within deadline). The protocol engine itself
+     * does not track time — verify the constant value is correct. */
+    ASSERT_EQ(XMODEM_ERR_TIMEOUT, -2);
+}
+
 TEST_MAIN("xmodem")
     RUN(test_init_null_params);
     RUN(test_init_ok);
@@ -431,4 +470,6 @@ TEST_MAIN("xmodem")
     RUN(test_write_callback_error);
     RUN(test_get_state_null);
     RUN(test_bad_complement_sends_nak);
+    RUN(test_err_crc_constant_and_recovery);
+    RUN(test_err_timeout_constant);
 TEST_MAIN_END()

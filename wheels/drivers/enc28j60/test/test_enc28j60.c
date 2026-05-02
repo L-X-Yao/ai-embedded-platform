@@ -481,6 +481,37 @@ TEST(test_get_revision_null_dev)
     ASSERT_EQ(enc28j60_get_revision(NULL), 0);
 }
 
+/* ---------- ENC28J60_ERR_TIMEOUT: TXRTS never clears ---------- */
+
+TEST(test_send_timeout)
+{
+    init_dev();
+    uint8_t frame[64];
+    memset(frame, 0xBB, sizeof(frame));
+
+    /* TXRTS never clears → driver polls ENC28J60_TX_TIMEOUT times then
+     * returns ENC28J60_ERR_TIMEOUT.  Set mock_tx_complete_after to a
+     * value larger than ENC28J60_TX_TIMEOUT (50 000) so the bit stays
+     * set throughout the polling loop. */
+    mock_tx_complete_after = 999999;
+    mock_tx_read_count = 0;
+    /* Pre-set TXRTS in ECON1 so BFS during send keeps it set */
+    mock_common[ECON1] |= ECON1_TXRTS;
+
+    enc28j60_err_t e = enc28j60_send(&dev, frame, 64);
+    ASSERT_EQ(e, ENC28J60_ERR_TIMEOUT);
+}
+
+/* ---------- ENC28J60_ERR_SPI: defined but currently unreachable --------
+ * The enum value exists for future SPI-level error detection.  No current
+ * API path returns it, so no behavioral test is possible.  This smoke
+ * test simply verifies the constant's numeric value for ABI stability. */
+
+TEST(test_err_spi_value)
+{
+    ASSERT_EQ((int)ENC28J60_ERR_SPI, -1);
+}
+
 TEST_MAIN("enc28j60")
     RUN(test_init_ok);
     RUN(test_init_sets_mac);
@@ -504,4 +535,6 @@ TEST_MAIN("enc28j60")
     RUN(test_receive_null_len_out);
     RUN(test_has_packet_null_dev);
     RUN(test_get_revision_null_dev);
+    RUN(test_send_timeout);
+    RUN(test_err_spi_value);
 TEST_MAIN_END()

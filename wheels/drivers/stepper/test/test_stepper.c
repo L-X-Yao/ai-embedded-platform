@@ -220,6 +220,48 @@ TEST(test_move_zero)
     ASSERT_EQ(stepper_get_position(&s), 0);
 }
 
+/* ---------- STEPPER_ERR_BUSY: defined for future non-blocking API --------
+ * The current stepper_move() is blocking (runs full ramp before returning),
+ * so there is no concurrent-busy path.  ERR_BUSY is reserved for a future
+ * non-blocking / ISR-driven variant.
+ *
+ * These tests verify ABI stability and exercise the state field that
+ * a non-blocking caller would check before issuing a move. */
+
+TEST(test_err_busy_value)
+{
+    ASSERT_EQ((int)STEPPER_ERR_BUSY, -2);
+}
+
+TEST(test_state_idle_after_move)
+{
+    /* After a blocking move completes, state must be IDLE so that a
+     * future non-blocking implementation can use state != IDLE to
+     * return ERR_BUSY. */
+    stepper_t s;
+    stepper_init(&s, &mock_hal, 1000, 500);
+    mock_reset();
+    stepper_move(&s, 50);
+    ASSERT_EQ(stepper_get_state(&s), STEPPER_STATE_IDLE);
+}
+
+TEST(test_state_idle_after_move_to)
+{
+    stepper_t s;
+    stepper_init(&s, &mock_hal, 1000, 500);
+    mock_reset();
+    stepper_move_to(&s, 100);
+    ASSERT_EQ(stepper_get_state(&s), STEPPER_STATE_IDLE);
+    ASSERT_EQ(stepper_get_position(&s), 100);
+}
+
+TEST(test_move_null_returns_param)
+{
+    /* Verify that NULL stepper returns PARAM, not BUSY */
+    ASSERT_EQ(stepper_move(NULL, 10), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_move_to(NULL, 10), STEPPER_ERR_PARAM);
+}
+
 TEST_MAIN("stepper")
     RUN(test_init_valid);
     RUN(test_init_null);
@@ -235,4 +277,8 @@ TEST_MAIN("stepper")
     RUN(test_short_move_symmetric);
     RUN(test_set_position_no_movement);
     RUN(test_move_zero);
+    RUN(test_err_busy_value);
+    RUN(test_state_idle_after_move);
+    RUN(test_state_idle_after_move_to);
+    RUN(test_move_null_returns_param);
 TEST_MAIN_END()
