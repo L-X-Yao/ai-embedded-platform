@@ -60,11 +60,11 @@ def count_audit_check_functions():
     if not audit.exists():
         return 0
     text = audit.read_text(encoding="utf-8")
-    # Count section headings that represent actual checks, excluding
-    # summary/info sections (Wheel audit count, Consumer mapping)
-    exclude = {"Wheel audit", "Consumer mapping"}
-    matches = re.findall(r'qprint.*=== (.+?) ===', text)
-    return len([m for m in matches if not any(e in m for e in exclude)])
+    # Count entries in CHECK_TABLE (table-driven checks) plus special checks
+    table_entries = len(re.findall(r'^\s+\("[\w_]+"', text, re.MULTILINE))
+    # Special checks not in table: WISHLIST, projects hygiene, consumer
+    special = len(re.findall(r'record\("(?:wishlist_stale|project_hygiene|consumer)"', text))
+    return table_entries + special
 
 
 def count_tooling_scripts():
