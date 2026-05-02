@@ -5,24 +5,21 @@
 
 Magnetometer calibration using min/max ellipsoid fitting. Computes hard-iron offset and soft-iron scale correction from raw 3-axis samples.
 Zero hardware dependency — feed samples in, get calibration parameters out.
+
 ## Origin
 
 Extracted from `projects/flybox/src/app/mag_cal.c` (QMC5883P magnetometer calibration).
 Decoupled: FreeRTOS timing, flash persistence, LED indicators stay in the project;
 pure min/max algorithm moves to this wheel.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
 
-## Algorithm
+## Dependencies
 
-1. Collect N samples while user rotates sensor in all orientations
-2. Find min/max per axis → compute center (hard-iron offset) and radius
-3. Normalize radii to average → compute scale factors (soft-iron correction)
-4. Validate spread ≥ threshold per axis (reject stationary data)
+None. Pure C99 + libm.
 
 ## API
 
@@ -45,10 +42,6 @@ if (mag_cal_compute(&cal) == MAG_CAL_DONE_OK) {
     mag_cal_apply(r, raw_mx, raw_my, raw_mz, &cx, &cy, &cz);
 }
 ```
-
-## Dependencies
-
-None. Pure C99 + libm.
 
 ## Configuration (compile-time)
 
@@ -94,4 +87,12 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Stateful collection (feed → compute two-phase) decouples timing from algorithm; result struct by pointer for caller-managed persistence; apply() is pure and separate from compute() for use after loading saved calibration; no RTOS dependency (caller manages timing/scheduling).
 
 ## Responsible human
+
 @user
+
+## Algorithm
+
+1. Collect N samples while user rotates sensor in all orientations
+2. Find min/max per axis → compute center (hard-iron offset) and radius
+3. Normalize radii to average → compute scale factors (soft-iron correction)
+4. Validate spread ≥ threshold per axis (reject stationary data)

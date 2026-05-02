@@ -7,11 +7,11 @@ Persistent flash log sink with sector-ring management. Stores log entries
 in a circular ring of flash sectors, automatically erasing the oldest
 sector when full. HAL injection via function pointers — no dependency
 on any specific flash chip or driver.
+
 ## Origin
 
 Proactive build — common pattern for embedded crash logging, flight
 recorders, and diagnostic log persistence across power cycles.
-
 
 ## Why self-written?
 
@@ -58,24 +58,6 @@ log_flash_dropped(&f);  /* entries dropped (too large or write error) */
 int rc = log_flash_erase_all(&f); /* wipe and reset; returns 0 or -1 */
 ```
 
-## Entry format
-
-Each entry stored as: `[magic:1][len_lo:1][len_hi:1][data:len]`
-
-- Magic byte `0xA5` marks valid entry start
-- 16-bit little-endian length (max 65535 bytes per entry)
-- Entries are packed sequentially within each sector
-
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Ring topology | Sector-level ring | Matches flash erase granularity |
-| Eviction | Erase oldest sector on wrap | Simple, deterministic |
-| Entry header | 3 bytes (magic + len16) | Minimal overhead, supports recovery scan |
-| HAL injection | Function pointers | No compile-time dependency on flash driver |
-| Thread safety | None built-in | Caller adds mutex if needed |
-
 ## Supported platforms
 
 - [x] Windows host (TDM-GCC, RAM-backed mock) — passed 2026-04-30
@@ -114,3 +96,21 @@ None. Naming follows `log_flash_<verb>` per api-conventions §1.1.
 ## Responsible human
 
 @user
+
+## Entry format
+
+Each entry stored as: `[magic:1][len_lo:1][len_hi:1][data:len]`
+
+- Magic byte `0xA5` marks valid entry start
+- 16-bit little-endian length (max 65535 bytes per entry)
+- Entries are packed sequentially within each sector
+
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Ring topology | Sector-level ring | Matches flash erase granularity |
+| Eviction | Erase oldest sector on wrap | Simple, deterministic |
+| Entry header | 3 bytes (magic + len16) | Minimal overhead, supports recovery scan |
+| HAL injection | Function pointers | No compile-time dependency on flash driver |
+| Thread safety | None built-in | Caller adds mutex if needed |

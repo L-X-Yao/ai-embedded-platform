@@ -7,6 +7,20 @@ TCA9548A 8-channel I2C multiplexer driver. Single control register where
 each bit enables one downstream I2C bus (bit 0 = ch0, ..., bit 7 = ch7).
 Used to resolve address conflicts when multiple identical I2C devices
 share the same bus.
+
+## Origin
+
+Proactive build for I2C address conflict resolution (2026-05-01).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+I2C HAL (injected via callbacks, register-based pattern).
+
 ## API
 
 ```c
@@ -23,6 +37,18 @@ tca9548a_err_t tca9548a_get_channel(tca9548a_t *dev, uint8_t *mask);
 HAL: register-based I2C (write_reg / read_regs with reg=0x00 dummy address).
 Caches current channel mask to skip redundant I2C writes.
 
+## Configuration (compile-time)
+
+None.
+
+## Supported platforms
+
+- [x] Linux host (sim) -- passed 2026-05-01
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -38,40 +64,14 @@ ctest --test-dir build --output-on-failure
   select_multi (ok, all, cached skip, null), disable_all (ok, already disabled, null),
   get_channel (ok, resync cache, i2c fail, null dev, null mask), workflow
 
-## Dependencies
-
-I2C HAL (injected via callbacks, register-based pattern).
-
-## Configuration (compile-time)
+## API convention deviations
 
 None.
-
-## Origin
-
-Proactive build for I2C address conflict resolution (2026-05-01).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) -- passed 2026-05-01
 
 ## API review
 
 - Date: 2026-05-01
 - Key decisions: register-based HAL with reg=0x00 dummy; channel mask caching
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

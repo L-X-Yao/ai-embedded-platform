@@ -8,11 +8,11 @@
 0.256V to 6.144V, and configurable data rates (128-3300 SPS). Same
 register layout as ADS1115 but 12-bit resolution (left-justified in
 16-bit conversion register).
+
 ## Origin
 
 Proactive build for general-purpose analog sensing. Sibling of the
 existing ads1115 wheel (shared register layout, 12-bit vs 16-bit).
-
 
 ## Why self-written?
 
@@ -39,15 +39,6 @@ ads1015_err_t ads1015_set_rate(ads1015_t *dev, ads1015_rate_t rate);
 ## Configuration (compile-time)
 
 No compile-time defines required. All configuration via `ads1015_cfg_t`.
-
-## I2C addresses
-
-| ADDR pin | Address |
-|----------|---------|
-| GND      | 0x48    |
-| VDD      | 0x49    |
-| SDA      | 0x4A    |
-| SCL      | 0x4B    |
 
 ## Supported platforms
 
@@ -85,3 +76,12 @@ None.
 ## Responsible human
 
 @user
+
+## I2C addresses
+
+| ADDR pin | Address |
+|----------|---------|
+| GND      | 0x48    |
+| VDD      | 0x49    |
+| SDA      | 0x4A    |
+| SCL      | 0x4B    |

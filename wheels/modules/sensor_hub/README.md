@@ -8,6 +8,12 @@ callbacks, then calls `sensor_hub_poll()` periodically. The hub iterates
 all registered sensors, reads each via its callback, and automatically
 tracks min/max/avg statistics per sensor.
 
+## Origin
+
+Proactive build for embedded sensor data acquisition. Common pattern
+across projects: multiple sensors polled in a main loop, with aggregated
+statistics for logging/display/telemetry.
+
 ## Why not an open-source library?
 
 Checked common embedded sensor frameworks (2026-05-01):
@@ -23,12 +29,6 @@ conventions exactly.
 
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
-
-## Origin
-
-Proactive build for embedded sensor data acquisition. Common pattern
-across projects: multiple sensors polled in a main loop, with aggregated
-statistics for logging/display/telemetry.
 
 ## Dependencies
 
@@ -108,6 +108,19 @@ cmake -GNinja -S . -B build && cmake --build build
   error-then-recovery, empty hub poll, partial NULL output pointers,
   unit string storage
 
+## API convention deviations
+
+None.
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: pending first review
+
+## Responsible human
+
+@user
+
 ## Usage example
 
 ```c
@@ -161,16 +174,3 @@ void sensors_poll(void) {
 | Error handling | Per-sensor status | One failing sensor does not block others |
 | Thread safety | Not thread-safe | Caller serializes (typical: single loop context) |
 | Max sensors | Compile-time array | No malloc, predictable memory footprint |
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: pending first review
-
-## Responsible human
-
-@user

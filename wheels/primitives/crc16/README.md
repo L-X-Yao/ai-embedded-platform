@@ -6,16 +6,19 @@
 CRC16-MODBUS computation (table-based, ~1 KB ROM). Drop-in for Modbus RTU
 frame check, custom telemetry frames using the same polynomial, and any
 other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
-## How to test
 
-```bash
-cd wheels/primitives/crc16
-cmake -GNinja -S test -B test/build
-cmake --build test/build
-python3 -m pytest test/test_crc16.py -v
-```
+## Origin
 
-预期：**1 个 C 测试 harness（12 个内嵌 case） + 9 个 pytest 用例全绿。**
+Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
 
 ## API
 
@@ -31,6 +34,62 @@ uint16_t crc16_modbus(const uint8_t *data, size_t len);
 uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 ```
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-26
+- [x] WSL Ubuntu 24.04 — passed 2026-04-26
+- [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified
+
+## Known issues
+
+None. Pure stateless computation, alignment/endianness irrelevant (byte-level).
+
+## How to test
+
+```bash
+cd wheels/primitives/crc16
+cmake -GNinja -S test -B test/build
+cmake --build test/build
+python3 -m pytest test/test_crc16.py -v
+```
+
+预期：**1 个 C 测试 harness（12 个内嵌 case） + 9 个 pytest 用例全绿。**
+
+## Test status
+
+- Unit tests: **PASS** (12 C cases + 9 pytest cases, 17 assertions)
+- Test vectors:
+  - Empty buffer (NULL + len=0) → 0xFFFF
+  - "123456789" standard MODBUS test vector → 0x4B37
+  - Modbus RTU frame (read 10 registers) → 0xCDC5
+  - Single byte 0x00 / 0xFF
+  - Step API equivalent to bulk API
+  - Segmented step (3+4+3) equivalent to one-shot
+  - flybox 34-byte deterministic frame (regression guard)
+  - 256-byte all-zeros / all-ones buffers (step vs bulk consistency)
+  - Single-byte uniqueness (all 256 CRCs distinct — proves table collision-free)
+  - CRC residue self-check (append CRC little-endian → residue is 0x0000)
+  - 1024-byte buffer step vs bulk equivalence
+- HIL: N/A (pure compute); flybox integration verified
+
+## API convention deviations
+
+无。函数命名 `crc16_<verb>` 符合 api-conventions.md §1.1。
+
+## API review
+
+- 提案日期：2026-04-26
+- 审批人：@user
+- 关键决策：
+  - 第一版只装 MODBUS variant（不做 CCITT-FALSE / KERMIT 等其他多项式）
+  - 接受 "crc16" wheel 名（不叫 crc16_modbus），明确 README 写"目前只 MODBUS"
+  - 提供 step API（streaming）+ bulk API 两种
+  - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
+
+## Responsible human
+
+@user
+
 ## Features
 
 - CRC16-MODBUS (poly 0xA001 reflected, init 0xFFFF, no final XOR)
@@ -38,30 +97,6 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 - 256-entry lookup table (~512 bytes ROM)
 - Pure C99, zero dependencies (no VSF / no RTOS / no syscall)
 - Fully reentrant, no global state
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-26
-- [x] WSL Ubuntu 24.04 — passed 2026-04-26
-- [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified
-
-## Origin
-
-Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Dependencies
-
-None.
-
-## Known issues
-
-None. Pure stateless computation, alignment/endianness irrelevant (byte-level).
 
 ## Usage example
 
@@ -86,44 +121,9 @@ while (rx_byte_available()) {
 /* crc now equals crc16_modbus(<all bytes received>, total_len) */
 ```
 
-## Test status
-
-- Unit tests: **PASS** (12 C cases + 9 pytest cases, 17 assertions)
-- Test vectors:
-  - Empty buffer (NULL + len=0) → 0xFFFF
-  - "123456789" standard MODBUS test vector → 0x4B37
-  - Modbus RTU frame (read 10 registers) → 0xCDC5
-  - Single byte 0x00 / 0xFF
-  - Step API equivalent to bulk API
-  - Segmented step (3+4+3) equivalent to one-shot
-  - flybox 34-byte deterministic frame (regression guard)
-  - 256-byte all-zeros / all-ones buffers (step vs bulk consistency)
-  - Single-byte uniqueness (all 256 CRCs distinct — proves table collision-free)
-  - CRC residue self-check (append CRC little-endian → residue is 0x0000)
-  - 1024-byte buffer step vs bulk equivalence
-- HIL: N/A (pure compute); flybox integration verified
-
 ## Performance reference
 
 - Time complexity: O(n), 1 table lookup + 1 XOR per byte
 - ROM footprint: ~512 bytes (256-entry × 2-byte table) + ~50 bytes code
 - Stack usage: < 16 bytes (GCC -fstack-usage verified)
 - ~8x faster than vsf_crc bit-by-bit implementation
-
-## API review
-
-- 提案日期：2026-04-26
-- 审批人：@user
-- 关键决策：
-  - 第一版只装 MODBUS variant（不做 CCITT-FALSE / KERMIT 等其他多项式）
-  - 接受 "crc16" wheel 名（不叫 crc16_modbus），明确 README 写"目前只 MODBUS"
-  - 提供 step API（streaming）+ bulk API 两种
-  - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
-
-## API convention deviations
-
-无。函数命名 `crc16_<verb>` 符合 api-conventions.md §1.1。
-
-## Responsible human
-
-@user

@@ -9,6 +9,20 @@ Round-robin periodic task execution, tick-driven. Application calls
 
 Passive design: no OS, no malloc, no timers, no interrupts. All timing
 expressed in tick counts -- the caller decides the tick rate.
+
+## Origin
+
+Created 2026-05-01 for cooperative task scheduling in bare-metal main loops.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -45,16 +59,11 @@ Each task tracks `overrun_count` -- incremented when `scheduler_run()` finds
 that more than one full interval has elapsed since the last execution. Useful
 for detecting tasks that are starved or main loops that are too slow.
 
-## Test status
+## Supported platforms
 
-- Unit tests: **20 C cases** -- init, init null, add task, add null params,
-  run at interval, run before interval (skip), multiple tasks different
-  intervals, enable/disable, enable/disable not found, remove, remove not
-  found, max tasks, run count, run count not found, task context, zero
-  interval (every tick), overrun detection, find by name, tick/run null
-  safety, remove middle preserves order
+- [x] Linux host (sim)
 
-## Dependencies
+## Known issues
 
 None.
 
@@ -66,32 +75,23 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Created 2026-05-01 for cooperative task scheduling in bare-metal main loops.
+- Unit tests: **20 C cases** -- init, init null, add task, add null params,
+  run at interval, run before interval (skip), multiple tasks different
+  intervals, enable/disable, enable/disable not found, remove, remove not
+  found, max tasks, run count, run count not found, task context, zero
+  interval (every tick), overrun detection, find by name, tick/run null
+  safety, remove middle preserves order
 
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
+## API convention deviations
 
 None.
-
-## Supported platforms
-
-- [x] Linux host (sim)
 
 ## API review
 
 - Proposal date: 2026-05-01
 - Reviewer: @user (pending review)
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

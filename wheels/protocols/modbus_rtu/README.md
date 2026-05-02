@@ -6,12 +6,12 @@ Stateless frame encoder/decoder for Modbus RTU (register operations).
 Master builds requests and parses responses; slave dispatches to register
 callbacks. Zero OS dependency — consumer handles UART framing (3.5 char gap)
 and timeout externally.
+
 ## Origin
 
 Written for the platform's industrial project pipeline (Modbus RTU is the
 dominant protocol in Chinese industrial automation). API shape derived from
 the Modbus Application Protocol Specification V1.1b3.
-
 
 ## Why self-written?
 
@@ -21,21 +21,6 @@ No suitable zero-dependency C99 library found for this use case.
 ## Dependencies
 
 - `crc16` (L0, concrete) — CRC16-MODBUS frame check per ADR-009
-
-## Supported platforms
-
-- [x] Host (sim) — passed 2026-04-28
-- [ ] Real hardware — not yet verified (no project consumer)
-
-## Features
-
-- **Frame layer**: build/parse/validate any Modbus RTU ADU with CRC16
-- **Master helpers**: FC 03 (Read Holding), FC 04 (Read Input), FC 06 (Write Single), FC 10 (Write Multiple)
-- **Slave dispatcher**: request parsing, register callback dispatch, exception response generation
-- **Broadcast**: slave executes writes silently on addr 0, skips reads
-- **Exception handling**: ILLEGAL_FUNCTION, ILLEGAL_DATA_ADDR, ILLEGAL_DATA_VALUE, SLAVE_FAILURE
-- **Compile-time selection**: `MODBUS_RTU_MASTER` / `MODBUS_RTU_SLAVE` (both on by default)
-- **Zero-copy parse**: `modbus_rtu_frame_t.data` points into original buffer
 
 ## API
 
@@ -73,6 +58,11 @@ if (resp_len > 0) uart_send(resp, resp_len);
 | `MODBUS_MAX_READ_REGS` | 125 | Max registers per read (Modbus spec) |
 | `MODBUS_MAX_WRITE_REGS` | 123 | Max registers per write (Modbus spec) |
 
+## Supported platforms
+
+- [x] Host (sim) — passed 2026-04-28
+- [ ] Real hardware — not yet verified (no project consumer)
+
 ## Known issues
 
 - No coil/discrete operations (FC 01/02/05/0F) — register operations only. Add when a project needs them.
@@ -101,4 +91,15 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Stateless frame layer (pure functions on buffers); master/slave in one wheel with compile-time selection; concrete dependency on crc16 per ADR-009; register-only (no coils in v1); slave uses per-register callbacks (not block read/write); broadcast per Modbus spec (writes execute, no response).
 
 ## Responsible human
+
 @user
+
+## Features
+
+- **Frame layer**: build/parse/validate any Modbus RTU ADU with CRC16
+- **Master helpers**: FC 03 (Read Holding), FC 04 (Read Input), FC 06 (Write Single), FC 10 (Write Multiple)
+- **Slave dispatcher**: request parsing, register callback dispatch, exception response generation
+- **Broadcast**: slave executes writes silently on addr 0, skips reads
+- **Exception handling**: ILLEGAL_FUNCTION, ILLEGAL_DATA_ADDR, ILLEGAL_DATA_VALUE, SLAVE_FAILURE
+- **Compile-time selection**: `MODBUS_RTU_MASTER` / `MODBUS_RTU_SLAVE` (both on by default)
+- **Zero-copy parse**: `modbus_rtu_frame_t.data` points into original buffer

@@ -6,6 +6,20 @@
 Software quadrature rotary encoder decoder. Feed A/B pin states on each
 edge interrupt. Uses lookup table for state transitions. Tracks absolute
 position (int32_t) and last direction.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None (pure software decoder).
+
 ## API
 
 ```c
@@ -16,14 +30,14 @@ encoder_dir_t encoder_get_direction(const rotary_encoder_t *enc);
 void          encoder_reset(rotary_encoder_t *enc);
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests: **8 C cases** — init, CW/CCW full cycle, mixed direction, same state,
-  reset, NULL safety, 100-step endurance
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
 
-## Dependencies
+## Known issues
 
-None (pure software decoder).
+None.
 
 ## How to test
 
@@ -33,33 +47,19 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Proactive build for common embedded components (2026-04-29 batch).
+- Unit tests: **8 C cases** — init, CW/CCW full cycle, mixed direction, same state,
+  reset, NULL safety, 100-step endurance
 
+## API convention deviations
 
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+- **`encoder_` prefix instead of `rotary_encoder_`** (api-conventions §1.1): Shortened for readability. All public API uses `encoder_` consistently.
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-- **`encoder_` prefix instead of `rotary_encoder_`** (api-conventions §1.1): Shortened for readability. All public API uses `encoder_` consistently.
 
 ## Responsible human
 

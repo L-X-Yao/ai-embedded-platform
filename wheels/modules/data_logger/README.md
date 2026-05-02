@@ -34,17 +34,9 @@ platform conventions exactly.
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Passive design**: application drives begin/add/commit cycle
-- **Typed fields**: INT32, UINT32, FLOAT, STRING with schema validation
-- **CSV output**: `timestamp,field1,field2,...\n` format
-- **Storage abstraction**: write + flush callbacks, application chooses backend
-- **Field count validation**: rejects extra fields or wrong types
-- **Buffer overflow protection**: returns ERR_OVERFLOW, record discarded
-- **Record counting**: track total committed records
-- **Configurable** via compile-time macros (buffer size, max fields)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
 
 ## API summary
 
@@ -88,18 +80,6 @@ uint32_t data_logger_get_count(const data_logger_t *dl);
 | `DATA_LOGGER_BUF_SIZE` | 256 | Max record buffer size (bytes) |
 | `DATA_LOGGER_MAX_FIELDS` | 8 | Max fields per record |
 
-## Dependencies
-
-None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/data_logger/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) -- passed 2026-05-01
@@ -108,6 +88,14 @@ ctest --test-dir build --output-on-failure
 ## Known issues
 
 None.
+
+## How to test
+
+```bash
+cd wheels/modules/data_logger/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
 ## Test status
 
@@ -120,6 +108,28 @@ None.
   wrong field type, storage write failure, begin-null, commit-without-begin,
   add-without-begin, get-count-null, flush-null, add-string-null,
   max-fields-exceeded, zero-fields-timestamp-only, large timestamp
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Passive design**: application drives begin/add/commit cycle
+- **Typed fields**: INT32, UINT32, FLOAT, STRING with schema validation
+- **CSV output**: `timestamp,field1,field2,...\n` format
+- **Storage abstraction**: write + flush callbacks, application chooses backend
+- **Field count validation**: rejects extra fields or wrong types
+- **Buffer overflow protection**: returns ERR_OVERFLOW, record discarded
+- **Record counting**: track total committed records
+- **Configurable** via compile-time macros (buffer size, max fields)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
 ## Usage example
 
@@ -182,18 +192,9 @@ void logger_sample(uint32_t tick_ms) {
 | Timestamp | Caller-provided | No OS clock dependency; application owns time source |
 | Max fields | Compile-time limit | No malloc, predictable memory footprint |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Evaluate binary record format option
 - [ ] Evaluate header row output (field names)
 - [ ] Real hardware flash/SD test
-
-## Responsible human
-@user

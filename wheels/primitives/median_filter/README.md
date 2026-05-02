@@ -6,6 +6,20 @@
 Sliding window median filter. Excellent for rejecting impulse noise (spikes)
 in sensor readings while preserving edge response. Uses insertion sort on each
 update for O(N) per sample. Window sizes 3-31.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -15,12 +29,18 @@ int32_t median_filter_get(const median_filter_t *f);
 void    median_filter_reset(median_filter_t *f);
 ```
 
-## Test status
+## Configuration macros
 
-- Unit tests: **9 C cases** — init valid/invalid, window 3, spike rejection,
-  constant signal, descending, negative values, reset, get
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `MEDIAN_FILTER_MAX_SIZE` | 31 | Maximum window size (odd recommended) |
 
-## Dependencies
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
 
 None.
 
@@ -32,39 +52,19 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Proactive build for common embedded components (2026-04-29 batch).
+- Unit tests: **9 C cases** — init valid/invalid, window 3, spike rejection,
+  constant signal, descending, negative values, reset, get
 
+## API convention deviations
 
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Configuration macros
-
-| Macro | Default | Description |
-|-------|---------|-------------|
-| `MEDIAN_FILTER_MAX_SIZE` | 31 | Maximum window size (odd recommended) |
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

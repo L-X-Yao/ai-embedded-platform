@@ -4,28 +4,20 @@
 
 Pure-software parser for the NCP5623-compatible LED color protocol used by ArduPilot flight controllers.
 Zero hardware dependency — feed raw I2C bytes in, get structured color/enable events out.
+
 ## Origin
 
 Extracted from `projects/drone_light/Src/i2c_slave.c` (NCP5623 protocol state machine).
 Decoupled: I2C hardware handling stays in the project, parser is pure byte-stream logic.
-
 
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
 
-## Protocol
+## Dependencies
 
-NCP5623-compatible subset used by ArduPilot (`AP_Notify/NCP5623.cpp`):
-
-| Command | I2C data (after address) | Description |
-|---------|--------------------------|-------------|
-| ENABLE  | `[0x04] [0x03]`          | Enable LED output |
-| DISABLE | `[0x04] [0x00]`          | Disable LED output |
-| COLOR   | `[0x01] [B] [G] [R]`    | Set color (4-bit per channel, 0x00-0x0F) |
-
-Color commands are ignored when parser is in disabled state.
+- None (pure software, no external dependency)
 
 ## API
 
@@ -47,10 +39,6 @@ if (r == NCP5623_EVT_COLOR) {
 /* In I2C stop-condition ISR: */
 ncp5623_parser_stop(&parser);
 ```
-
-## Dependencies
-
-- None (pure software, no external dependency)
 
 ## Supported platforms
 
@@ -84,4 +72,17 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Parser is stateful (tracks `enabled` across transactions); output is raw 4-bit values (consumer decides brightness mapping); feed-byte API for ISR-safe operation (no buffering, immediate event emission); transaction boundaries via `start`/`stop` calls.
 
 ## Responsible human
+
 @user
+
+## Protocol
+
+NCP5623-compatible subset used by ArduPilot (`AP_Notify/NCP5623.cpp`):
+
+| Command | I2C data (after address) | Description |
+|---------|--------------------------|-------------|
+| ENABLE  | `[0x04] [0x03]`          | Enable LED output |
+| DISABLE | `[0x04] [0x00]`          | Disable LED output |
+| COLOR   | `[0x01] [B] [G] [R]`    | Set color (4-bit per channel, 0x00-0x0F) |
+
+Color commands are ignored when parser is in disabled state.

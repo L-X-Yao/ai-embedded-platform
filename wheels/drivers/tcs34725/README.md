@@ -6,6 +6,20 @@
 AMS TCS34725 I2C RGB color sensor driver. Register-based I2C with command
 register protocol (0x80 | reg). Fixed address 0x29, chip ID 0x44 or 0x4D.
 Provides RGBC raw data, estimated color temperature (CCT), and lux output.
+
+## Origin
+
+Proactive build for common embedded components (2026-05-01).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+I2C HAL (injected via callbacks, register-based pattern).
+
 ## API
 
 ```c
@@ -30,6 +44,15 @@ handled internally (driver ORs 0x80 with register address).
 No compile-time configuration needed. Integration time and gain are set at
 runtime via init or setter functions.
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-05-01
+- [ ] Real hardware target — not yet verified
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -44,38 +67,15 @@ ctest --test-dir build --output-on-failure
   I2C failure, bad gain, read RGBC, read null, set integration time, set gain,
   enable/disable, color temp, lux, lux negative clamp
 
-## Dependencies
-
-I2C HAL (injected via callbacks, register-based pattern).
-
-## Origin
-
-Proactive build for common embedded components (2026-05-01).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
+## API convention deviations
 
 None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-05-01
-- [ ] Real hardware target — not yet verified
 
 ## API review
 
 - Date: 2026-05-01
 - Key decisions: command register protocol (0x80|reg) handled internally;
   DN40 empirical formulas for CCT and lux
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

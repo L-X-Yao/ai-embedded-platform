@@ -12,6 +12,13 @@ callback. The application decides when to publish and where to send
 Passive design: no OS, no tasks, no malloc, no globals. The application
 drives the timing.
 
+## Origin
+
+Proactive build for embedded telemetry systems. Common pattern across
+projects: periodic sensor data collection formatted for transmission
+over UART/MQTT/HTTP. Decouples data collection (driver layer) from
+formatting and transport.
+
 ## Why not an open-source library?
 
 Checked common embedded telemetry/data formatting libraries (2026-05-01):
@@ -28,18 +35,9 @@ named field registration and pluggable send callback is straightforward
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Three output formats**: JSON, CSV, key-value (selectable at init)
-- **Named field registration**: `telemetry_register()` at runtime
-- **Update by name or index**: name lookup for clarity, index for speed
-- **Send callback**: application injects transport (UART, MQTT, etc.)
-- **Updated flag tracking**: fields track whether they changed since last publish
-- **Error counting**: tracks send failures separately from send successes
-- **Float formatting**: trailing zeros trimmed (25.50 -> "25.5", 60.00 -> "60")
-- **Buffer overflow protection**: returns ERR_OVERFLOW if output exceeds buffer
-- **Reset**: clears values and counters without losing field registrations
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<string.h>` only.
 
 ## API summary
 
@@ -90,41 +88,12 @@ uint32_t telemetry_get_error_count(const telemetry_t *t);
 void telemetry_reset(telemetry_t *t);
 ```
 
-## Output format examples
-
-Given fields "temp" = 25.5 and "hum" = 60, timestamp = 1000:
-
-| Format | Output |
-|--------|--------|
-| JSON | `{"ts":1000,"temp":25.5,"hum":60}` |
-| CSV | `1000,25.5,60` |
-| Key-value | `ts=1000 temp=25.5 hum=60` |
-
 ## Configuration macros
 
 | Macro | Default | Description |
 |-------|---------|-------------|
 | `TELEMETRY_MAX_FIELDS` | 16 | Max registered fields |
 | `TELEMETRY_BUF_SIZE` | 512 | Internal format buffer size (bytes) |
-
-## Origin
-
-Proactive build for embedded telemetry systems. Common pattern across
-projects: periodic sensor data collection formatted for transmission
-over UART/MQTT/HTTP. Decouples data collection (driver layer) from
-formatting and transport.
-
-## Dependencies
-
-None. Pure C99 with `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<string.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/telemetry/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
 
 ## Supported platforms
 
@@ -135,6 +104,14 @@ ctest --test-dir build --output-on-failure
 
 None.
 
+## How to test
+
+```bash
+cd wheels/modules/telemetry/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Test status
 
 - Unit tests: **PASS** (27 test cases, 0 failures)
@@ -144,6 +121,39 @@ None.
   send failure error counting, multiple publishes, reset (valid/null),
   publish null, updated flag tracking, buffer overflow, get count null,
   publish no fields, send context passing, float integer formatting
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Three output formats**: JSON, CSV, key-value (selectable at init)
+- **Named field registration**: `telemetry_register()` at runtime
+- **Update by name or index**: name lookup for clarity, index for speed
+- **Send callback**: application injects transport (UART, MQTT, etc.)
+- **Updated flag tracking**: fields track whether they changed since last publish
+- **Error counting**: tracks send failures separately from send successes
+- **Float formatting**: trailing zeros trimmed (25.50 -> "25.5", 60.00 -> "60")
+- **Buffer overflow protection**: returns ERR_OVERFLOW if output exceeds buffer
+- **Reset**: clears values and counters without losing field registrations
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
+
+## Output format examples
+
+Given fields "temp" = 25.5 and "hum" = 60, timestamp = 1000:
+
+| Format | Output |
+|--------|--------|
+| JSON | `{"ts":1000,"temp":25.5,"hum":60}` |
+| CSV | `1000,25.5,60` |
+| Key-value | `ts=1000 temp=25.5 hum=60` |
 
 ## Usage example
 
@@ -191,17 +201,8 @@ void telemetry_tick(uint32_t now_ms)
 | Updated flags | Auto-clear on publish | Track stale vs fresh data per cycle |
 | Thread safety | Not thread-safe | Caller serializes (typical: single publish context) |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Evaluate binary format support (CBOR/MessagePack)
 - [ ] Real hardware UART/MQTT test
-
-## Responsible human
-@user

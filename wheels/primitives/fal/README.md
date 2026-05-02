@@ -6,6 +6,10 @@ Flash partition management layer. Registers flash devices, defines partition
 table (name/offset/size), provides unified read/write/erase API on partitions
 with boundary protection. Vendored from armink's FAL (v0.5.99).
 
+## Origin
+
+Vendor: see VENDOR.md.
+
 ## Why this upstream?
 
 - FAL is the de facto flash abstraction in Chinese embedded (RT-Thread ecosystem)
@@ -19,15 +23,6 @@ See ADR-010.
 ## Dependencies
 
 - None (interface dependency: flash device ops provided by project at compile time)
-
-## Origin
-
-Vendor: see VENDOR.md.
-
-## Supported platforms
-
-- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
-- [ ] GD32F405 (flybox) — FAL used via kvs in project, wheel not separately HIL tested
 
 ## API
 
@@ -46,6 +41,53 @@ fal_partition_erase_all(p);
 
 const struct fal_flash_dev *d = fal_flash_device_find("onchip");
 ```
+
+## Configuration (compile-time)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| `FAL_PART_HAS_TABLE_CFG` | (must define) | Use static partition table from fal_cfg.h |
+| `FAL_DEV_NAME_MAX` | 24 | Max device/partition name length |
+| `FAL_DEBUG` | 0 | Enable debug logging |
+| `FAL_PRINTF` | printf | Override print function |
+
+## Supported platforms
+
+- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
+- [ ] GD32F405 (flybox) — FAL used via kvs in project, wheel not separately HIL tested
+
+## Known issues
+
+- Dynamic partition table loading (scan flash at boot) removed — only static config mode supported
+- RT-Thread block device layer excluded — not applicable outside RT-Thread
+
+## How to test
+
+```bash
+cd wheels/primitives/fal/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_fal
+```
+
+27 assertions across 13 test cases: init, partition find (existing/missing), flash device find, partition table query, write-read round-trip, offset write-read, erase, erase-all, boundary checks (read/write/erase out of bounds), partition isolation, flash write semantics (AND-only), show_part_table.
+
+## Test status
+
+- Unit tests (sim): PASS (13 C tests, 27 assertions)
+- HIL: N/A
+
+## API convention deviations
+
+- **No `fal_` wrapper**: Uses upstream FAL API directly (`fal_partition_read` not `fal_wheel_read`). Wrapping a well-known API adds confusion for anyone familiar with FAL.
+
+## API review
+
+- **Date**: 2026-04-28
+- **Key decisions**: Vendor FAL as-is, no wrapper (upstream API is already clean). Static partition table only. FAL is independently useful (OTA, bootloader, crash dump, not just FlashDB). First vendor wheel per ADR-010.
+
+## Responsible human
+
+@user
 
 ## Porting (per-project fal_cfg.h)
 
@@ -77,44 +119,3 @@ const struct fal_flash_dev onchip_flash = {
     .write_gran = 8,
 };
 ```
-
-## API convention deviations
-
-- **No `fal_` wrapper**: Uses upstream FAL API directly (`fal_partition_read` not `fal_wheel_read`). Wrapping a well-known API adds confusion for anyone familiar with FAL.
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| `FAL_PART_HAS_TABLE_CFG` | (must define) | Use static partition table from fal_cfg.h |
-| `FAL_DEV_NAME_MAX` | 24 | Max device/partition name length |
-| `FAL_DEBUG` | 0 | Enable debug logging |
-| `FAL_PRINTF` | printf | Override print function |
-
-## Known issues
-
-- Dynamic partition table loading (scan flash at boot) removed — only static config mode supported
-- RT-Thread block device layer excluded — not applicable outside RT-Thread
-
-## How to test
-
-```bash
-cd wheels/primitives/fal/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_fal
-```
-
-27 assertions across 13 test cases: init, partition find (existing/missing), flash device find, partition table query, write-read round-trip, offset write-read, erase, erase-all, boundary checks (read/write/erase out of bounds), partition isolation, flash write semantics (AND-only), show_part_table.
-
-## Test status
-
-- Unit tests (sim): PASS (13 C tests, 27 assertions)
-- HIL: N/A
-
-## API review
-
-- **Date**: 2026-04-28
-- **Key decisions**: Vendor FAL as-is, no wrapper (upstream API is already clean). Static partition table only. FAL is independently useful (OTA, bootloader, crash dump, not just FlashDB). First vendor wheel per ADR-010.
-
-## Responsible human
-@user

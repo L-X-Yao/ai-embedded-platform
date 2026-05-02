@@ -5,28 +5,20 @@
 
 Pure-software parser for NMEA 0183 GPS/GNSS sentences. Supports GGA, RMC, and GSA.
 Zero hardware dependency — feed null-terminated sentence strings, get structured position/time/quality data out.
+
 ## Origin
 
 Extracted from `projects/flybox/src/app/gnss_task.c` (Air780EG GNSS NMEA handling).
 Decoupled: modem interaction, quality gating, filtering stay in the project; pure sentence parsing moves to this wheel.
-
 
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
 
-## Protocol
+## Dependencies
 
-NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
-
-| Sentence | Fields extracted |
-|----------|----------------|
-| GGA | fix_quality, satellites, hdop, altitude |
-| RMC | time, date, fix_valid, lat/lon, speed, course |
-| GSA | fix_mode (2D/3D), pdop, hdop, vdop |
-
-Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.
+None. Pure C99, no external dependency.
 
 ## API
 
@@ -45,10 +37,6 @@ if (data.fix_valid && data.fix_mode == 2) {
            data.latitude, data.longitude, data.altitude_m);
 }
 ```
-
-## Dependencies
-
-None. Pure C99, no external dependency.
 
 ## Configuration (compile-time)
 
@@ -91,4 +79,17 @@ None.
 - **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); checksum verification is separate from parsing (caller decides); single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
 
 ## Responsible human
+
 @user
+
+## Protocol
+
+NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
+
+| Sentence | Fields extracted |
+|----------|----------------|
+| GGA | fix_quality, satellites, hdop, altitude |
+| RMC | time, date, fix_valid, lat/lon, speed, course |
+| GSA | fix_mode (2D/3D), pdop, hdop, vdop |
+
+Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.

@@ -4,16 +4,20 @@
 
 Tick-driven LED state machine with blink, breathe (PWM), and pulse patterns.
 Single HAL callback, zero hardware dependency, no dynamic allocation.
+
 ## Origin
 
 Extracted from common patterns in `projects/flybox/` (LED task) and `projects/drone_light/` (WS2812 control loop).
 Generalized into a reusable state machine with HAL callback injection.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+- None (interface dependency: `gpio_led_hal_t` set callback provided by caller)
 
 ## API
 
@@ -50,24 +54,6 @@ gpio_led_tick(&led, 10);  /* 10ms elapsed */
 led.brightness = 128;
 gpio_led_on(&led);  /* outputs 128 */
 ```
-
-## Modes
-
-| Mode | Behavior | HAL output |
-|------|----------|------------|
-| `OFF` | Static off | `0` |
-| `ON` | Static on | `brightness` (default 255) |
-| `BLINK` | Periodic on/off | `brightness` / `0` |
-| `BREATHE` | Triangle ramp (continuous) | `0` → `brightness` → `0` |
-| `PULSE` | Single flash, auto-off | `brightness` → `0` |
-
-## Integration
-
-For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes duty cycle (0-255). The `emit` deduplication avoids redundant HAL calls.
-
-## Dependencies
-
-- None (interface dependency: `gpio_led_hal_t` set callback provided by caller)
 
 ## Supported platforms
 
@@ -106,4 +92,19 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Single `set(ctx, level)` HAL callback covers both GPIO and PWM; `tick(dt_ms)` avoids timer dependency; `brightness` field allows per-LED dimming; `emit` deduplication prevents redundant HAL calls; `repeat=0` means infinite, `repeat=N` means N cycles then auto-off.
 
 ## Responsible human
+
 @user
+
+## Modes
+
+| Mode | Behavior | HAL output |
+|------|----------|------------|
+| `OFF` | Static off | `0` |
+| `ON` | Static on | `brightness` (default 255) |
+| `BLINK` | Periodic on/off | `brightness` / `0` |
+| `BREATHE` | Triangle ramp (continuous) | `0` → `brightness` → `0` |
+| `PULSE` | Single flash, auto-off | `brightness` → `0` |
+
+## Integration
+
+For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes duty cycle (0-255). The `emit` deduplication avoids redundant HAL calls.

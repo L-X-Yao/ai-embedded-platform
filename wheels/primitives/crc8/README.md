@@ -7,11 +7,11 @@ CRC-8 calculator with multiple polynomial support. Bit-by-bit computation
 (no lookup table, saves 256 bytes Flash on MCU). Supports reflected I/O for
 Dallas/Maxim 1-Wire and ROHC. Pre-defined configs for CRC-8, CRC-8/MAXIM,
 CRC-8/SENSIRION, CRC-8/SMBUS, and CRC-8/ROHC.
+
 ## Origin
 
 Proactive build to complete the CRC family (alongside crc16 and crc32).
 CRC-8 is used by many I2C sensors (SI7021, SHT30) and protocols (1-Wire, SMBus PEC).
-
 
 ## Why self-written?
 
@@ -53,15 +53,6 @@ uint8_t crc8_update(const crc8_config_t *cfg, uint8_t crc,
 bool crc8_verify(const crc8_config_t *cfg, const uint8_t *data,
                  size_t len, uint8_t expected);
 ```
-
-## Features
-
-- Bit-by-bit computation (no 256-byte table, minimal Flash)
-- Configurable polynomial, init, reflect, XOR-out
-- 5 pre-defined configs for common embedded CRC-8 variants
-- Streaming API via update() for chunked data
-- Pure C99, zero dependencies (no VSF / no RTOS / no malloc)
-- Fully reentrant, no global state
 
 ## Configuration (compile-time)
 
@@ -107,6 +98,32 @@ Expected: **17 C test cases + 18 pytest cases all green.**
   - All-zeros vs all-ones difference
 - HIL: N/A (pure compute)
 
+## API convention deviations
+
+None. Function naming `crc8_<verb>` follows api-conventions.md.
+
+## API review
+
+- Date: 2026-05-01
+- Key decisions:
+  - Bit-by-bit (no table) to minimize Flash on small MCUs
+  - Config struct instead of separate functions per variant
+  - Pre-defined configs for 5 most common embedded CRC-8 variants
+  - update() exposes raw accumulator for non-reflected streaming
+
+## Responsible human
+
+@user
+
+## Features
+
+- Bit-by-bit computation (no 256-byte table, minimal Flash)
+- Configurable polynomial, init, reflect, XOR-out
+- 5 pre-defined configs for common embedded CRC-8 variants
+- Streaming API via update() for chunked data
+- Pure C99, zero dependencies (no VSF / no RTOS / no malloc)
+- Fully reentrant, no global state
+
 ## Performance reference
 
 - Time complexity: O(n), 8 bit-shifts per byte (no table lookup)
@@ -144,20 +161,3 @@ crc = crc8_update(&CRC8_DEFAULT, crc, chunk1, len1);
 crc = crc8_update(&CRC8_DEFAULT, crc, chunk2, len2);
 /* For non-reflected configs, crc is the final value. */
 ```
-
-## API review
-
-- Date: 2026-05-01
-- Key decisions:
-  - Bit-by-bit (no table) to minimize Flash on small MCUs
-  - Config struct instead of separate functions per variant
-  - Pre-defined configs for 5 most common embedded CRC-8 variants
-  - update() exposes raw accumulator for non-reflected streaming
-
-## API convention deviations
-
-None. Function naming `crc8_<verb>` follows api-conventions.md.
-
-## Responsible human
-
-@user

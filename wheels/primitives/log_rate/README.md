@@ -4,10 +4,10 @@
 **Layer: L0 (primitives)**
 
 Token bucket rate limiter sink for the `log` wheel. Prevents log flood from overwhelming output bandwidth (UART, RTT, flash). Configurable: max N lines per interval, time source injected via function pointer. Pure C99, zero dependencies, no OS requirement.
+
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Log flood is a recurring embedded problem: a sensor error loop or protocol retry storm can saturate UART and mask other output. This wheel intercepts at the sink level rather than requiring every call site to self-throttle.
-
 
 ## Why self-written?
 
@@ -102,16 +102,6 @@ if (log_rate_dropped(&g_rate) > 0) {
 }
 ```
 
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Algorithm | Token bucket | Simple, bounded memory, well-understood; refill is one comparison per call |
-| Time source | Injected `time_fn` | No OS/HAL dependency; testable with fake clock |
-| Granularity | Line-level (not byte-level) | Matches log semantics; a single `LOG_ERROR(...)` is one token |
-| Dropped counter | Monotonic `uint32_t` | Diagnostic: callers can periodically report dropped count |
-| Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-04-30
@@ -152,3 +142,13 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
+
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Algorithm | Token bucket | Simple, bounded memory, well-understood; refill is one comparison per call |
+| Time source | Injected `time_fn` | No OS/HAL dependency; testable with fake clock |
+| Granularity | Line-level (not byte-level) | Matches log semantics; a single `LOG_ERROR(...)` is one token |
+| Dropped counter | Monotonic `uint32_t` | Diagnostic: callers can periodically report dropped count |
+| Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |

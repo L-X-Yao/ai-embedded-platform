@@ -7,6 +7,20 @@ RFC 5424 syslog message formatter. Produces
 `<PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG`
 with NILVALUE "-" for missing fields. Timestamp as ISO 8601 UTC if provided,
 "-" if zero. Formatter only -- application handles UDP/TCP transport.
+
+## Origin
+
+Proactive build for remote logging in embedded systems (2026-05-01).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -17,6 +31,18 @@ uint8_t  syslog_pri(syslog_facility_t facility, syslog_severity_t severity);
 syslog_err_t syslog_parse_pri(const char *buf, uint16_t len,
                                uint8_t *pri, uint16_t *offset);
 ```
+
+## Configuration macros
+
+None.
+
+## Supported platforms
+
+- [x] Linux host (sim) -- passed 2026-05-01
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -34,41 +60,15 @@ ctest --test-dir build --output-on-failure
   boundary, PRI parse (basic/zero/max/overflow/malformed/trailing), PRI
   roundtrip, different facilities
 
-## Dependencies
+## API convention deviations
 
 None.
-
-## Origin
-
-Proactive build for remote logging in embedded systems (2026-05-01).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Configuration macros
-
-None.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) -- passed 2026-05-01
 
 ## API review
 
 - Date: 2026-05-01
 - Key decisions: formatter only (no transport), NILVALUE for missing fields,
   ISO 8601 UTC timestamps, STRUCTURED-DATA always NILVALUE
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

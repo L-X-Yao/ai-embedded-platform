@@ -6,12 +6,12 @@
 Stateless frame encoder/decoder for Modbus TCP/IP (MBAP header + PDU).
 Builds request frames and parses responses for register operations.
 Zero OS dependency --- consumer handles TCP connections externally.
+
 ## Origin
 
 Proactive build for industrial Ethernet projects. Modbus TCP is the TCP/IP
 variant of Modbus RTU --- same PDU but with MBAP header instead of CRC.
 Companion to the existing `modbus_rtu` wheel.
-
 
 ## Why self-written?
 
@@ -56,15 +56,6 @@ uint8_t modbus_tcp_exception_code(&frame);
 - [x] Host (sim) --- passed 2026-05-01
 - [ ] Real hardware --- not yet verified (no project consumer)
 
-## Features
-
-- **MBAP header**: transaction_id (2B) + protocol_id (2B, always 0) + length (2B) + unit_id (1B)
-- **Function codes**: FC 03 (Read Holding), FC 06 (Write Single), FC 16 (Write Multiple)
-- **Zero-copy parse**: `modbus_tcp_frame_t.data` points into original buffer
-- **Exception detection**: `modbus_tcp_is_exception()` / `modbus_tcp_exception_code()`
-- **No CRC**: TCP provides reliability (unlike RTU)
-- **Codec only**: application handles TCP socket lifecycle
-
 ## Known issues
 
 - No coil/discrete operations (FC 01/02/05/0F) --- register operations only. Add when a project needs them.
@@ -99,3 +90,12 @@ None.
 ## Responsible human
 
 @user
+
+## Features
+
+- **MBAP header**: transaction_id (2B) + protocol_id (2B, always 0) + length (2B) + unit_id (1B)
+- **Function codes**: FC 03 (Read Holding), FC 06 (Write Single), FC 16 (Write Multiple)
+- **Zero-copy parse**: `modbus_tcp_frame_t.data` points into original buffer
+- **Exception detection**: `modbus_tcp_is_exception()` / `modbus_tcp_exception_code()`
+- **No CRC**: TCP provides reliability (unlike RTU)
+- **Codec only**: application handles TCP socket lifecycle

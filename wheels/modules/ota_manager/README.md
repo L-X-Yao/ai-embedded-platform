@@ -34,16 +34,9 @@ matches our platform conventions exactly.
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **State machine**: idle -> checking -> downloading -> verifying -> ready
-- **Chunked download**: application calls `download_step()` in a loop
-- **Progress tracking**: 0-100% via `get_progress()`
-- **All I/O via callbacks**: check_version, download_chunk, write_chunk, verify, activate
-- **State guards**: operations rejected if called in wrong state
-- **Reset**: return to idle from any state (error recovery, abort)
-- **Configurable** chunk size via compile-time macro
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<string.h>` only.
 
 ## API summary
 
@@ -88,18 +81,6 @@ void ota_manager_reset(ota_manager_t *mgr);
 | `OTA_MGR_CHUNK_SIZE` | 256 | Default chunk size hint (bytes) |
 | `OTA_MGR_VERSION_MAX` | 32 | Max version string length |
 
-## Dependencies
-
-None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<string.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/ota_manager/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) -- passed 2026-05-01
@@ -108,6 +89,14 @@ ctest --test-dir build --output-on-failure
 ## Known issues
 
 None.
+
+## How to test
+
+```bash
+cd wheels/modules/ota_manager/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
 ## Test status
 
@@ -120,6 +109,27 @@ None.
   clears-progress/then-restart), null safety (state/progress/reset/check/
   download-buf/download-size), full end-to-end flow, version truncation,
   chunk-smaller-than-buf
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **State machine**: idle -> checking -> downloading -> verifying -> ready
+- **Chunked download**: application calls `download_step()` in a loop
+- **Progress tracking**: 0-100% via `get_progress()`
+- **All I/O via callbacks**: check_version, download_chunk, write_chunk, verify, activate
+- **State guards**: operations rejected if called in wrong state
+- **Reset**: return to idle from any state (error recovery, abort)
+- **Configurable** chunk size via compile-time macro
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
 ## Usage example
 
@@ -209,12 +219,6 @@ void ota_poll(void) {
 | Reset | Unconditional to IDLE | Simple error recovery; no partial cleanup needed |
 | Thread safety | Not thread-safe | Caller serializes (typical: single OTA context) |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
@@ -222,6 +226,3 @@ void ota_poll(void) {
 - [ ] Real hardware test (flash write + reboot + rollback)
 - [ ] Evaluate resume-on-reboot (persist download offset)
 - [ ] Evaluate retry policy (auto-retry on transient errors)
-
-## Responsible human
-@user

@@ -52,17 +52,6 @@ uint16_t  tlv_get_u16(const tlv_t *tlv);
 uint32_t  tlv_get_u32(const tlv_t *tlv);
 ```
 
-## Wire format
-
-```
-+-------+-------+--------+--------+--- ... ---+
-| tag_h | tag_l | len_h  | len_l  |   value   |
-+-------+-------+--------+--------+--- ... ---+
-   1B      1B      1B       1B      len bytes
-```
-
-All multi-byte fields are big-endian. Empty value (length=0) is valid.
-
 ## Configuration (compile-time)
 
 No compile-time configuration needed.
@@ -101,3 +90,14 @@ None.
 ## Responsible human
 
 @user
+
+## Wire format
+
+```
++-------+-------+--------+--------+--- ... ---+
+| tag_h | tag_l | len_h  | len_l  |   value   |
++-------+-------+--------+--------+--- ... ---+
+   1B      1B      1B       1B      len bytes
+```
+
+All multi-byte fields are big-endian. Empty value (length=0) is valid.

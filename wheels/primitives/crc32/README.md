@@ -6,6 +6,20 @@
 CRC32 (IEEE 802.3 / Ethernet / zlib-compatible) table-based computation. Drop-in
 for OTA image checksums, file integrity, Ethernet FCS, and any CRC32 with
 poly 0xEDB88320 / init 0xFFFFFFFF / final XOR 0xFFFFFFFF.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -17,6 +31,15 @@ uint32_t crc32_compute(const uint8_t *data, size_t len);
 uint32_t crc32_update(uint32_t crc, const uint8_t *data, size_t len);
 uint32_t crc32_finalize(uint32_t crc);
 ```
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -34,37 +57,14 @@ ctest --test-dir build --output-on-failure
 - Standard test vector: "123456789" → 0xCBF43926 (IEEE 802.3)
 - CRC residue: append CRC LE → compute over frame → magic 0x2144DF1C
 
-## Dependencies
+## API convention deviations
 
-None.
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

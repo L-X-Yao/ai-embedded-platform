@@ -4,15 +4,19 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for Winbond W25Q series (W25Q32/W25Q64/W25Q128 etc).
-## Features
 
-- JEDEC ID read + validation
-- Page program (up to 256 bytes)
-- Sector erase (4 KB) and chip erase
-- Continuous read (arbitrary length)
-- Status register read (busy/WEL polling)
-- Bounded busy-wait (500k iteration limit) — dead chip returns `W25QXX_ERR_TIMEOUT` instead of hanging
-- SPI HAL injection via callback struct — zero RTOS / platform dependency
+## Origin
+
+Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox retains GD32F4xx SPI1 bring-up + `flash_ring_*` application-layer ring buffer; platform-agnostic command logic moved to this wheel.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None. Pure C99 with injected SPI HAL callbacks.
 
 ## API
 
@@ -26,6 +30,59 @@ w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1);
 ```
 
 Caller provides SPI HAL via `w25qxx_spi_t` callbacks (CS control + byte transfer).
+
+## Configuration
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `W25QXX_BUSY_TIMEOUT` | `500000U` | Iteration limit for busy-wait polling; tune for SPI clock speed |
+
+## Supported platforms
+
+- [x] Host C99 (mock SPI) — 21 tests, 55 assertions, 2026-04-29
+- [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26
+
+## Known issues
+
+- Page program `len` must be <= 256 and must not cross a 256-byte page boundary; caller is responsible for splitting
+- Busy-wait upper bound (500k iterations) is tuned for typical SPI clocks; extremely slow bit-bang SPI may need adjustment
+
+## How to test
+
+```bash
+cd wheels/drivers/w25qxx/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Test status
+
+- Host mock tests: PASS (21 tests, 55 assertions — init, JEDEC ID validation (valid/0xFF/0x00), read, program, full-page, page boundary, oversized, erase (aligned/non-aligned), chip erase, status, timeout, NOR semantics, NULL safety, re-init, end-of-page write)
+- HIL: PASS on GD32F405 + W25Q64 (SPI1 PB12-15), 2026-04-26
+
+## API convention deviations
+
+None.
+
+## API review
+
+- Date: 2026-04-25
+- Reviewer: @user
+- Key decisions: generalized name from w25q64 to w25qxx (covers W25Q32/64/128 family); SPI HAL uses cs_low/cs_high/xfer callback triple
+
+## Responsible human
+
+@user
+
+## Features
+
+- JEDEC ID read + validation
+- Page program (up to 256 bytes)
+- Sector erase (4 KB) and chip erase
+- Continuous read (arbitrary length)
+- Status register read (busy/WEL polling)
+- Bounded busy-wait (500k iteration limit) — dead chip returns `W25QXX_ERR_TIMEOUT` instead of hanging
+- SPI HAL injection via callback struct — zero RTOS / platform dependency
 
 ## Usage
 
@@ -42,63 +99,6 @@ if (w25qxx_init(&spi, &id) == W25QXX_OK) {
     w25qxx_read(&spi, 0x1000, buf, 64);
 }
 ```
-
-## How to test
-
-```bash
-cd wheels/drivers/w25qxx/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-## Supported platforms
-
-- [x] Host C99 (mock SPI) — 21 tests, 55 assertions, 2026-04-29
-- [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26
-
-## Dependencies
-
-None. Pure C99 with injected SPI HAL callbacks.
-
-## Configuration
-
-| Macro | Default | Description |
-|-------|---------|-------------|
-| `W25QXX_BUSY_TIMEOUT` | `500000U` | Iteration limit for busy-wait polling; tune for SPI clock speed |
-
-## Known issues
-
-- Page program `len` must be <= 256 and must not cross a 256-byte page boundary; caller is responsible for splitting
-- Busy-wait upper bound (500k iterations) is tuned for typical SPI clocks; extremely slow bit-bang SPI may need adjustment
-
-## Test status
-
-- Host mock tests: PASS (21 tests, 55 assertions — init, JEDEC ID validation (valid/0xFF/0x00), read, program, full-page, page boundary, oversized, erase (aligned/non-aligned), chip erase, status, timeout, NOR semantics, NULL safety, re-init, end-of-page write)
-- HIL: PASS on GD32F405 + W25Q64 (SPI1 PB12-15), 2026-04-26
-
-## API convention deviations
-
-None.
-
-## Responsible human
-
-@user
-
-## Origin
-
-Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox retains GD32F4xx SPI1 bring-up + `flash_ring_*` application-layer ring buffer; platform-agnostic command logic moved to this wheel.
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## API review
-
-- Date: 2026-04-25
-- Reviewer: @user
-- Key decisions: generalized name from w25q64 to w25qxx (covers W25Q32/64/128 family); SPI HAL uses cs_low/cs_high/xfer callback triple
 
 ## Upgrade to stable
 

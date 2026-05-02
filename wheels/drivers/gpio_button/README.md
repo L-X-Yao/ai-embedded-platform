@@ -4,15 +4,19 @@
 
 Tick-driven button state machine with debounce, click, double-click, and long-press detection.
 Single HAL callback, zero hardware dependency, no dynamic allocation.
+
 ## Origin
 
 Extracted from common embedded button patterns. Proactive build for `projects/flybox/` and `projects/drone_light/` platform.
-
 
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+- None (interface dependency: `gpio_button_hal_t` read callback provided by caller)
 
 ## API
 
@@ -45,22 +49,6 @@ default: break;
 /* Query current state */
 if (gpio_button_is_pressed(&btn)) { /* ... */ }
 ```
-
-## Event priority
-
-| Gesture | Condition | When emitted |
-|---------|-----------|--------------|
-| PRESS | Debounced press edge | Immediately |
-| RELEASE | Debounced release edge | Immediately |
-| LONG_PRESS | Held ≥ `long_press_ms` | During hold |
-| CLICK | Short press + release | After `double_click_ms` idle |
-| DOUBLE_CLICK | Two presses within `double_click_ms` | On second release |
-
-LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.
-
-## Dependencies
-
-- None (interface dependency: `gpio_button_hal_t` read callback provided by caller)
 
 ## Supported platforms
 
@@ -99,4 +87,17 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_button_cfg_t`.
 
 ## Responsible human
+
 @user
+
+## Event priority
+
+| Gesture | Condition | When emitted |
+|---------|-----------|--------------|
+| PRESS | Debounced press edge | Immediately |
+| RELEASE | Debounced release edge | Immediately |
+| LONG_PRESS | Held ≥ `long_press_ms` | During hold |
+| CLICK | Short press + release | After `double_click_ms` idle |
+| DOUBLE_CLICK | Two presses within `double_click_ms` | On second release |
+
+LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.

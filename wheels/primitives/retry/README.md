@@ -6,6 +6,20 @@
 Configurable retry strategy with three backoff modes: fixed, linear, exponential.
 Pure computation — calculates next delay, caller provides the actual wait
 mechanism (RTOS delay / busy-wait / timer callback).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -20,6 +34,15 @@ uint8_t  retry_get_attempt(const retry_ctx_t *ctx);
 void     retry_reset(retry_ctx_t *ctx);
 ```
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -33,37 +56,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **8 C cases** — fixed/linear/exponential strategies, max delay cap,
   linear cap, reset, zero attempts, NULL safety
 
-## Dependencies
+## API convention deviations
 
-None.
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 
