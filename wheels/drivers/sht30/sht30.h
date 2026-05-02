@@ -53,14 +53,14 @@ typedef struct {
 #define SHT30_ADDR_A  0x44
 #define SHT30_ADDR_B  0x45
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
                        const sht30_cfg_t *cfg);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 sht30_err_t sht30_reset(sht30_t *dev);
 
 /** CRC-8 used by Sensirion sensors (poly 0x31, init 0xFF). */

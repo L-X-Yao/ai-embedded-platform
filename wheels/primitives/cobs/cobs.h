@@ -37,7 +37,7 @@ typedef enum {
  * @param out       Output buffer. Must be at least cobs_max_encoded_size(data_len).
  * @param out_len   On input: buffer capacity. On output: bytes written.
  * @return          COBS_OK on success, error code otherwise.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 cobs_err_t cobs_encode(const uint8_t *data, uint16_t data_len,
                        uint8_t *out, uint16_t *out_len);
@@ -50,7 +50,7 @@ cobs_err_t cobs_encode(const uint8_t *data, uint16_t data_len,
  * @param out       Output buffer for decoded data.
  * @param out_len   On input: buffer capacity. On output: bytes written.
  * @return          COBS_OK on success, error code otherwise.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 cobs_err_t cobs_decode(const uint8_t *encoded, uint16_t enc_len,
                        uint8_t *out, uint16_t *out_len);
@@ -61,7 +61,7 @@ cobs_err_t cobs_decode(const uint8_t *encoded, uint16_t enc_len,
  *
  * @param data_len  Input length in bytes.
  * @return          Maximum encoded output size.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint16_t cobs_max_encoded_size(uint16_t data_len);
 

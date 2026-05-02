@@ -85,7 +85,7 @@ typedef struct {
  * @return TIMER_WHEEL_OK on success, TIMER_WHEEL_ERR_PARAM if any pointer
  *         is NULL or sizes are zero.
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 timer_wheel_err_t timer_wheel_init(timer_wheel_t *tw,
                                    timer_wheel_slot_t *slots,
@@ -105,7 +105,7 @@ timer_wheel_err_t timer_wheel_init(timer_wheel_t *tw,
  * @return TIMER_WHEEL_OK on success, TIMER_WHEEL_ERR_PARAM on bad args,
  *         TIMER_WHEEL_ERR_FULL if id is already active.
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 timer_wheel_err_t timer_wheel_add(timer_wheel_t *tw,
                                   uint32_t id,
@@ -121,7 +121,7 @@ timer_wheel_err_t timer_wheel_add(timer_wheel_t *tw,
  * @return TIMER_WHEEL_OK on success, TIMER_WHEEL_ERR_PARAM if id is out
  *         of range or not active.
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 timer_wheel_err_t timer_wheel_cancel(timer_wheel_t *tw, uint32_t id);
 
@@ -133,7 +133,7 @@ timer_wheel_err_t timer_wheel_cancel(timer_wheel_t *tw, uint32_t id);
  *
  * @param tw   Initialised wheel (silently returns if NULL).
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 void timer_wheel_tick(timer_wheel_t *tw);
 

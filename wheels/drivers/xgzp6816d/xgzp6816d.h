@@ -70,13 +70,13 @@ typedef struct {
  * loop, even queueing the read in a different task).
  */
 
-/** Probe device on bus. @thread_safe: caller_must_lock */
+/** Probe device on bus. @thread_safe: caller_must_lock @isr_safe: no */
 xgzp6816d_err_t xgzp6816d_probe(const xgzp6816d_i2c_t *i2c);
 
-/** Start one P+T conversion. @thread_safe: caller_must_lock */
+/** Start one P+T conversion. @thread_safe: caller_must_lock @isr_safe: no */
 xgzp6816d_err_t xgzp6816d_trigger(const xgzp6816d_i2c_t *i2c);
 
-/** Read last conversion result. @thread_safe: caller_must_lock */
+/** Read last conversion result. @thread_safe: caller_must_lock @isr_safe: no */
 xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
                                 xgzp6816d_data_t *out);
 

@@ -93,20 +93,20 @@ typedef struct {
 #define BME280_ADDR_HIGH  0x77
 #define BME280_CHIP_ID    0x60
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
                          const bme280_cfg_t *cfg);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bme280_err_t bme280_set_oversampling(bme280_t *dev,
                                      bme280_oversampling_t osrs_t,
                                      bme280_oversampling_t osrs_p,
                                      bme280_oversampling_t osrs_h);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_reset(bme280_t *dev);
 
 #ifdef __cplusplus

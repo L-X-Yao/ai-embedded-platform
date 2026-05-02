@@ -31,7 +31,7 @@ extern "C" {
  * @param data  Input buffer pointer. May be NULL only when len == 0.
  * @param len   Number of bytes to absorb. 0 returns CRC16_MODBUS_INIT.
  * @return      16-bit CRC value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint16_t crc16_modbus(const uint8_t *data, size_t len);
 
@@ -41,7 +41,7 @@ uint16_t crc16_modbus(const uint8_t *data, size_t len);
  * @param crc   Current CRC accumulator (CRC16_MODBUS_INIT on first call).
  * @param byte  Next byte to absorb.
  * @return      Updated CRC accumulator.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 

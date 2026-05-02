@@ -25,12 +25,12 @@ typedef struct {
     void             *ctx;
 } log_uart_t;
 
-/* @thread_safe: no — call during init */
+/* @thread_safe: no — call during init @isr_safe: no */
 void log_uart_init(log_uart_t *u, log_uart_write_fn write, void *ctx);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_uart_t* as ctx when registering via log_add_sink().
- * @thread_safe: yes (delegates to user-provided write) */
+ * @thread_safe: yes (delegates to user-provided write) @isr_safe: no */
 void log_uart_sink(void *ctx, const char *line, size_t len);
 
 #ifdef __cplusplus

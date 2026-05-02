@@ -80,7 +80,7 @@ typedef struct {
 #define MCP2515_MODE_TIMEOUT 100000U
 #endif
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
 /** Reset chip, configure speed, enter normal mode. */
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,

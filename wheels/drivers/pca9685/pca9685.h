@@ -49,31 +49,31 @@ typedef struct {
 #define PCA9685_FREQ_MIN      24u
 #define PCA9685_FREQ_MAX      1526u
 
-/** Initialize and configure PCA9685. @thread_safe: no */
+/** Initialize and configure PCA9685. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
                            uint8_t dev_addr, uint16_t freq_hz);
 
-/** Set raw PWM on/off counts (0-4095) for a channel (0-15). @thread_safe: no */
+/** Set raw PWM on/off counts (0-4095) for a channel (0-15). @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
                               uint16_t on, uint16_t off);
 
-/** Set duty cycle (0.0-100.0%) for a channel. @thread_safe: no */
+/** Set duty cycle (0.0-100.0%) for a channel. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct);
 
-/** Set servo pulse width in microseconds for a channel. @thread_safe: no */
+/** Set servo pulse width in microseconds for a channel. @thread_safe: no @isr_safe: yes */
 pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
                                    uint16_t pulse_us);
 
-/** Turn all channels off. @thread_safe: no */
+/** Turn all channels off. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_all_off(pca9685_t *dev);
 
-/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode. @thread_safe: no */
+/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode. @thread_safe: no @isr_safe: yes */
 pca9685_err_t pca9685_set_freq(pca9685_t *dev, uint16_t freq_hz);
 
-/** Enter low-power sleep mode (outputs off). @thread_safe: no */
+/** Enter low-power sleep mode (outputs off). @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_sleep(pca9685_t *dev);
 
-/** Wake from sleep mode. @thread_safe: no */
+/** Wake from sleep mode. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_wake(pca9685_t *dev);
 
 #ifdef __cplusplus

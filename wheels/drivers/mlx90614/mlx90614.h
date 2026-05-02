@@ -47,21 +47,21 @@ typedef struct {
 
 #define MLX90614_ADDR_DEFAULT  0x5Au
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 mlx90614_err_t mlx90614_init(mlx90614_t *dev, const mlx90614_i2c_t *i2c,
                              const mlx90614_cfg_t *cfg);
 
-/** Read object (IR target) temperature in Celsius. @thread_safe: no */
+/** Read object (IR target) temperature in Celsius. @thread_safe: no @isr_safe: yes */
 mlx90614_err_t mlx90614_read_object_temp(mlx90614_t *dev, float *temp_c);
 
-/** Read ambient (sensor die) temperature in Celsius. @thread_safe: no */
+/** Read ambient (sensor die) temperature in Celsius. @thread_safe: no @isr_safe: yes */
 mlx90614_err_t mlx90614_read_ambient_temp(mlx90614_t *dev, float *temp_c);
 
-/** Read emissivity setting (0.1 .. 1.0). @thread_safe: no */
+/** Read emissivity setting (0.1 .. 1.0). @thread_safe: no @isr_safe: no */
 mlx90614_err_t mlx90614_read_emissivity(mlx90614_t *dev, float *emissivity);
 
 /** Set emissivity (0.1 .. 1.0). Writes to EEPROM — limit write cycles.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: no */
 mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity);
 
 #ifdef __cplusplus

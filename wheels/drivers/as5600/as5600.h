@@ -49,22 +49,22 @@ typedef struct {
     const as5600_i2c_t *i2c;
 } as5600_t;
 
-/** Initialise driver context. @thread_safe: no */
+/** Initialise driver context. @thread_safe: no @isr_safe: no */
 as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c);
 
-/** Read 12-bit raw angle (0-4095). @thread_safe: caller_must_lock */
+/** Read 12-bit raw angle (0-4095). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_read_raw_angle(const as5600_t *dev, uint16_t *raw);
 
-/** Read angle in degrees (0.0-360.0). @thread_safe: caller_must_lock */
+/** Read angle in degrees (0.0-360.0). @thread_safe: caller_must_lock @isr_safe: yes */
 as5600_err_t as5600_read_degrees(const as5600_t *dev, float *degrees);
 
-/** Read STATUS register (use AS5600_STATUS_* masks). @thread_safe: caller_must_lock */
+/** Read STATUS register (use AS5600_STATUS_* masks). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_read_status(const as5600_t *dev, uint8_t *status);
 
-/** Set start position (ZPOS, 12-bit). @thread_safe: caller_must_lock */
+/** Set start position (ZPOS, 12-bit). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_set_start_position(const as5600_t *dev, uint16_t pos);
 
-/** Set maximum angle (MANG, 12-bit). @thread_safe: caller_must_lock */
+/** Set maximum angle (MANG, 12-bit). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle);
 
 #ifdef __cplusplus

@@ -27,22 +27,22 @@ typedef struct {
     uint32_t duration;
 } timeout_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 void timeout_set(timeout_t *t, uint32_t now, uint32_t duration);
 
-/** Return true if the deadline has passed (handles tick wraparound). @thread_safe: no */
+/** Return true if the deadline has passed (handles tick wraparound). @thread_safe: no @isr_safe: yes */
 bool timeout_expired(const timeout_t *t, uint32_t now);
 
-/** Return ticks remaining until deadline (0 if expired). @thread_safe: no */
+/** Return ticks remaining until deadline (0 if expired). @thread_safe: no @isr_safe: yes */
 uint32_t timeout_remaining(const timeout_t *t, uint32_t now);
 
-/** Return ticks elapsed since the timeout was set. @thread_safe: no */
+/** Return ticks elapsed since the timeout was set. @thread_safe: no @isr_safe: yes */
 uint32_t timeout_elapsed(const timeout_t *t, uint32_t now);
 
-/** Restart the timeout from now with the same duration. @thread_safe: no */
+/** Restart the timeout from now with the same duration. @thread_safe: no @isr_safe: yes */
 void timeout_restart(timeout_t *t, uint32_t now);
 
-/** Add extra ticks to the current deadline. @thread_safe: no */
+/** Add extra ticks to the current deadline. @thread_safe: no @isr_safe: yes */
 void timeout_extend(timeout_t *t, uint32_t extra);
 
 #ifdef __cplusplus

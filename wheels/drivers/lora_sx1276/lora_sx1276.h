@@ -51,7 +51,7 @@ typedef struct {
     int8_t   tx_power;         /* dBm (2-17 for PA_BOOST, max 20)           */
 } lora_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
 /** Reset chip, verify version, configure LoRa mode + frequency. */
 lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz);

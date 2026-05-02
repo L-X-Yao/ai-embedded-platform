@@ -52,20 +52,20 @@ typedef struct {
 #define VL53L0X_ADDR_DEFAULT  0x29u
 #define VL53L0X_MODEL_ID      0xEEu
 
-/** Initialize and verify model ID. @thread_safe: no */
+/** Initialize and verify model ID. @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
                             const vl53l0x_cfg_t *cfg);
 
-/** Read range in millimeters (blocking single-shot). @thread_safe: no */
+/** Read range in millimeters (blocking single-shot). @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm);
 
-/** Start a single-shot measurement (non-blocking). @thread_safe: no */
+/** Start a single-shot measurement (non-blocking). @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_start_single(vl53l0x_t *dev);
 
-/** Check if measurement result is ready. @thread_safe: no */
+/** Check if measurement result is ready. @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_is_ready(vl53l0x_t *dev, bool *ready);
 
-/** Set measurement timing budget in microseconds. @thread_safe: no */
+/** Set measurement timing budget in microseconds. @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_set_measurement_timing_budget(vl53l0x_t *dev,
                                                      uint32_t budget_us);
 

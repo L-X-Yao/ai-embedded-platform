@@ -53,33 +53,33 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize calibration state. @thread_safe: no */
+/** Initialize calibration state. @thread_safe: no @isr_safe: no */
 void mag_cal_init(mag_cal_t *cal);
 
-/** Start collecting samples. @thread_safe: caller_must_lock */
+/** Start collecting samples. @thread_safe: caller_must_lock @isr_safe: yes */
 void mag_cal_start(mag_cal_t *cal);
 
-/** Abort calibration and return to IDLE. @thread_safe: caller_must_lock */
+/** Abort calibration and return to IDLE. @thread_safe: caller_must_lock @isr_safe: yes */
 void mag_cal_abort(mag_cal_t *cal);
 
-/** Feed one magnetometer sample. @thread_safe: caller_must_lock */
+/** Feed one magnetometer sample. @thread_safe: caller_must_lock @isr_safe: yes */
 bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz);
 
-/** Compute calibration from collected samples. @thread_safe: caller_must_lock */
+/** Compute calibration from collected samples. @thread_safe: caller_must_lock @isr_safe: yes */
 mag_cal_state_t mag_cal_compute(mag_cal_t *cal);
 
-/** Get current state. @thread_safe: caller_must_lock */
+/** Get current state. @thread_safe: caller_must_lock @isr_safe: yes */
 mag_cal_state_t mag_cal_get_state(const mag_cal_t *cal);
 
-/** Get result (valid only when state == DONE_OK). @thread_safe: caller_must_lock */
+/** Get result (valid only when state == DONE_OK). @thread_safe: caller_must_lock @isr_safe: yes */
 const mag_cal_result_t *mag_cal_get_result(const mag_cal_t *cal);
 
-/** Apply calibration to raw reading. @thread_safe: yes (pure) */
+/** Apply calibration to raw reading. @thread_safe: yes (pure) @isr_safe: yes */
 void mag_cal_apply(const mag_cal_result_t *cal,
                    float raw_x, float raw_y, float raw_z,
                    float *out_x, float *out_y, float *out_z);
 
-/** Get number of collected samples. @thread_safe: caller_must_lock */
+/** Get number of collected samples. @thread_safe: caller_must_lock @isr_safe: yes */
 uint16_t mag_cal_sample_count(const mag_cal_t *cal);
 
 #ifdef __cplusplus

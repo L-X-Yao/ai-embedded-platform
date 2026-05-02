@@ -45,13 +45,13 @@ typedef struct {
 } pid_controller_t;
 
 /**
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 pid_controller_err_t pid_controller_init(pid_controller_t *ctx,
                                          const pid_controller_cfg_t *cfg);
 
 /**
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 pid_controller_err_t pid_controller_reset(pid_controller_t *ctx);
 
@@ -63,19 +63,19 @@ pid_controller_err_t pid_controller_reset(pid_controller_t *ctx);
  * @param measured  Current measurement.
  * @param dt        Time step in seconds (must be > 0).
  * @return          Clamped output value, or 0.0f on error.
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 float pid_controller_update(pid_controller_t *ctx, float setpoint,
                             float measured, float dt);
 
 /**
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 pid_controller_err_t pid_controller_set_tunings(pid_controller_t *ctx,
                                                 float kp, float ki, float kd);
 
 /**
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 pid_controller_err_t pid_controller_set_output_limits(pid_controller_t *ctx,
                                                       float min, float max);

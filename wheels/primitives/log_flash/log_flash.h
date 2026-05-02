@@ -42,7 +42,7 @@ typedef struct {
  *   base_offset: starting address in flash
  *   sector_size: bytes per erase sector (e.g. 4096)
  *   sector_count: number of sectors to use as ring
- * @thread_safe: no — call during init */
+ * @thread_safe: no — call during init @isr_safe: no */
 int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
                    uint32_t base_offset, uint32_t sector_size,
                    uint32_t sector_count);
@@ -50,25 +50,25 @@ int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_flash_t* as ctx when registering via log_add_sink().
  * Each entry stored as: [magic:1][len:2][data:len]
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: no */
 void log_flash_sink(void *ctx, const char *line, size_t len);
 
 /* Read all stored entries into dst, oldest first.
  * Returns bytes written to dst.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: no */
 size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size);
 
 /* Erase all sectors and reset state.
  * Returns 0 on success, -1 if any erase failed (state not reset).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 int log_flash_erase_all(log_flash_t *f);
 
 /* Return total entries written since init.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t log_flash_total(const log_flash_t *f);
 
 /* Return entries dropped (too large for sector or write error).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t log_flash_dropped(const log_flash_t *f);
 
 #ifdef __cplusplus

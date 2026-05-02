@@ -48,18 +48,18 @@ typedef struct {
     const max31855_spi_t *spi;
 } max31855_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Initialize device context. @thread_safe: no */
+/** Initialize device context. @thread_safe: no @isr_safe: no */
 max31855_err_t max31855_init(max31855_t *dev, const max31855_spi_t *spi);
 
 /** Read thermocouple and internal temperatures in Celsius.
  *  Either output pointer may be NULL if not needed.
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 max31855_err_t max31855_read(max31855_t *dev,
                              float *thermocouple_c, float *internal_c);
 
-/** Read raw 32-bit SPI frame. @thread_safe: caller_must_lock */
+/** Read raw 32-bit SPI frame. @thread_safe: caller_must_lock @isr_safe: no */
 max31855_err_t max31855_read_raw(max31855_t *dev, uint32_t *raw);
 
 #ifdef __cplusplus

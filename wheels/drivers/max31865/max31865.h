@@ -74,7 +74,7 @@ typedef struct {
 #define MAX31865_FAULT_RTDLOW       0x08
 #define MAX31865_FAULT_OVUV         0x04
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
 /** Configure chip and start automatic conversion. */
 max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,

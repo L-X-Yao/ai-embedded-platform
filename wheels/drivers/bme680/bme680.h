@@ -85,22 +85,22 @@ typedef struct {
     int32_t  t_fine;
 } bme680_t;
 
-/** Configure and verify chip ID. @thread_safe: no */
+/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
                          uint8_t addr);
 
-/** Trigger forced-mode measurement and read all channels. @thread_safe: no */
+/** Trigger forced-mode measurement and read all channels. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data);
 
-/** Set oversampling for temp, humidity, pressure (0=skip, 1..5 = 1x..16x). @thread_safe: no */
+/** Set oversampling for temp, humidity, pressure (0=skip, 1..5 = 1x..16x). @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
                                      uint8_t os_hum, uint8_t os_pres);
 
-/** Configure gas heater target temperature (deg C) and duration (ms). @thread_safe: no */
+/** Configure gas heater target temperature (deg C) and duration (ms). @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
                                    uint16_t duration_ms);
 
-/** Soft reset. @thread_safe: no */
+/** Soft reset. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_reset(bme680_t *dev);
 
 #ifdef __cplusplus

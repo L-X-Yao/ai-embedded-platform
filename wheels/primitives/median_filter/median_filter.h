@@ -35,16 +35,16 @@ typedef struct {
     uint8_t  index;
 } median_filter_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 int median_filter_init(median_filter_t *f, uint8_t size);
 
-/** Feed a sample and return the current median value. @thread_safe: no */
+/** Feed a sample and return the current median value. @thread_safe: no @isr_safe: yes */
 int32_t median_filter_update(median_filter_t *f, int32_t sample);
 
-/** Return the current median without adding a new sample. @thread_safe: no */
+/** Return the current median without adding a new sample. @thread_safe: no @isr_safe: yes */
 int32_t median_filter_get(const median_filter_t *f);
 
-/** Clear all samples and reset to empty state. @thread_safe: no */
+/** Clear all samples and reset to empty state. @thread_safe: no @isr_safe: no */
 void median_filter_reset(median_filter_t *f);
 
 #ifdef __cplusplus

@@ -86,22 +86,22 @@ typedef struct {
 #define ADS1015_ADDR_SDA  0x4Au
 #define ADS1015_ADDR_SCL  0x4Bu
 
-/** Initialise device handle. @thread_safe: no */
+/** Initialise device handle. @thread_safe: no @isr_safe: no */
 ads1015_err_t ads1015_init(ads1015_t *dev, const ads1015_i2c_t *i2c,
                            const ads1015_cfg_t *cfg);
 
-/** Single-shot read on a channel, result in millivolts. @thread_safe: caller_must_lock */
+/** Single-shot read on a channel, result in millivolts. @thread_safe: caller_must_lock @isr_safe: yes */
 ads1015_err_t ads1015_read_single(ads1015_t *dev, ads1015_mux_t channel,
                                   float *voltage_mv);
 
-/** Read raw 12-bit ADC value (sign-extended). @thread_safe: caller_must_lock */
+/** Read raw 12-bit ADC value (sign-extended). @thread_safe: caller_must_lock @isr_safe: no */
 ads1015_err_t ads1015_read_raw(ads1015_t *dev, ads1015_mux_t channel,
                                int16_t *raw);
 
-/** Change PGA gain for subsequent reads. @thread_safe: caller_must_lock */
+/** Change PGA gain for subsequent reads. @thread_safe: caller_must_lock @isr_safe: yes */
 ads1015_err_t ads1015_set_pga(ads1015_t *dev, ads1015_pga_t pga);
 
-/** Change data rate for subsequent reads. @thread_safe: caller_must_lock */
+/** Change data rate for subsequent reads. @thread_safe: caller_must_lock @isr_safe: yes */
 ads1015_err_t ads1015_set_rate(ads1015_t *dev, ads1015_rate_t rate);
 
 #ifdef __cplusplus

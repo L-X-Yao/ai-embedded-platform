@@ -41,39 +41,39 @@ typedef struct {
  *   max_tokens:      bucket capacity (unscaled — e.g. 10 means 10 tokens)
  *   tokens_per_tick: refill rate per tick (unscaled — e.g. 1 means 1 token/tick)
  * Both are zero-guarded: returns ERR_PARAM if rl is NULL or either is 0.
- * @thread_safe: no — call during init */
+ * @thread_safe: no — call during init @isr_safe: no */
 rate_limiter_err_t rate_limiter_init(rate_limiter_t *rl, uint32_t max_tokens,
                                      uint32_t tokens_per_tick);
 
 /* Try to consume one token.
  * Returns OK if allowed, DENIED if bucket empty.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 rate_limiter_err_t rate_limiter_try(rate_limiter_t *rl, uint32_t current_tick);
 
 /* Try to consume N tokens at once.
  * Returns OK if N tokens available, DENIED otherwise (no partial consume).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 rate_limiter_err_t rate_limiter_try_n(rate_limiter_t *rl, uint32_t current_tick,
                                       uint32_t n);
 
 /* Check if at least one token is available, without consuming.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 bool rate_limiter_can_proceed(const rate_limiter_t *rl, uint32_t current_tick);
 
 /* Reset bucket to full and clear stats.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: no */
 void rate_limiter_reset(rate_limiter_t *rl);
 
 /* Return lifetime allowed count.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t rate_limiter_allowed(const rate_limiter_t *rl);
 
 /* Return lifetime denied count.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t rate_limiter_denied(const rate_limiter_t *rl);
 
 /* Return current available tokens (unscaled, truncated).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t rate_limiter_available(const rate_limiter_t *rl);
 
 #ifdef __cplusplus

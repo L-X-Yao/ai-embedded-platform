@@ -42,27 +42,27 @@ typedef struct {
 #define W25QXX_PAGE_SIZE    256U
 #define W25QXX_SECTOR_SIZE  4096U
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Read JEDEC ID and verify chip. @thread_safe: no */
+/** Read JEDEC ID and verify chip. @thread_safe: no @isr_safe: no */
 w25qxx_err_t w25qxx_init(const w25qxx_spi_t *spi, uint32_t *jedec_id_out);
 
-/** Read data from flash. @thread_safe: caller_must_lock */
+/** Read data from flash. @thread_safe: caller_must_lock @isr_safe: no */
 w25qxx_err_t w25qxx_read(const w25qxx_spi_t *spi,
                           uint32_t addr, uint8_t *buf, uint32_t len);
 
-/** Program up to one page (256 B). @thread_safe: caller_must_lock */
+/** Program up to one page (256 B). @thread_safe: caller_must_lock @isr_safe: no */
 w25qxx_err_t w25qxx_page_program(const w25qxx_spi_t *spi,
                                   uint32_t addr, const uint8_t *data,
                                   uint16_t len);
 
-/** Erase one 4 KB sector. @thread_safe: caller_must_lock */
+/** Erase one 4 KB sector. @thread_safe: caller_must_lock @isr_safe: no */
 w25qxx_err_t w25qxx_sector_erase(const w25qxx_spi_t *spi, uint32_t addr);
 
-/** Erase entire chip. @thread_safe: caller_must_lock */
+/** Erase entire chip. @thread_safe: caller_must_lock @isr_safe: no */
 w25qxx_err_t w25qxx_chip_erase(const w25qxx_spi_t *spi);
 
-/** Read status register 1. @thread_safe: caller_must_lock */
+/** Read status register 1. @thread_safe: caller_must_lock @isr_safe: no */
 w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1);
 
 #ifdef __cplusplus

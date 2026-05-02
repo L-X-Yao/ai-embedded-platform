@@ -49,23 +49,23 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize encoder with HAL callbacks. @thread_safe: no */
+/** Initialize encoder with HAL callbacks. @thread_safe: no @isr_safe: no */
 void rotary_encoder_init(rotary_encoder_t *enc,
                          const rotary_encoder_hal_t *hal);
 
-/** Feed current A/B pin states to update position and direction. @thread_safe: no */
+/** Feed current A/B pin states to update position and direction. @thread_safe: no @isr_safe: yes */
 void rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b);
 
-/** Poll HAL pins and update state. @thread_safe: no */
+/** Poll HAL pins and update state. @thread_safe: no @isr_safe: no */
 void rotary_encoder_poll(rotary_encoder_t *enc);
 
-/** Return accumulated position count. @thread_safe: no */
+/** Return accumulated position count. @thread_safe: no @isr_safe: yes */
 int32_t rotary_encoder_get_position(const rotary_encoder_t *enc);
 
-/** Return last detected rotation direction. @thread_safe: no */
+/** Return last detected rotation direction. @thread_safe: no @isr_safe: yes */
 rotary_encoder_dir_t rotary_encoder_get_direction(const rotary_encoder_t *enc);
 
-/** Reset position to zero and clear direction. @thread_safe: no */
+/** Reset position to zero and clear direction. @thread_safe: no @isr_safe: no */
 void rotary_encoder_reset(rotary_encoder_t *enc);
 
 #ifdef __cplusplus

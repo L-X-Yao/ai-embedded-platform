@@ -84,14 +84,14 @@ typedef struct {
 #define BMP280_ADDR_HIGH  0x77
 #define BMP280_CHIP_ID    0x58
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
                          const bmp280_cfg_t *cfg);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_reset(bmp280_t *dev);
 
 #ifdef __cplusplus

@@ -28,13 +28,13 @@ typedef struct {
     unsigned         channel;
 } log_rtt_t;
 
-/* @thread_safe: no — call during init */
+/* @thread_safe: no — call during init @isr_safe: no */
 void log_rtt_init(log_rtt_t *r, log_rtt_write_fn write, void *ctx,
                   unsigned channel);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_rtt_t* as ctx when registering via log_add_sink().
- * @thread_safe: yes (delegates to user-provided write) */
+ * @thread_safe: yes (delegates to user-provided write) @isr_safe: yes */
 void log_rtt_sink(void *ctx, const char *line, size_t len);
 
 #ifdef __cplusplus

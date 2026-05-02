@@ -57,13 +57,13 @@ typedef struct {
     uint8_t     last_was_cr;
 } cli_parser_t;
 
-/** Initialize parser. @thread_safe: no */
+/** Initialize parser. @thread_safe: no @isr_safe: no */
 void      cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg);
 
-/** Feed one byte (from UART ISR or poll). @thread_safe: caller_must_lock */
+/** Feed one byte (from UART ISR or poll). @thread_safe: caller_must_lock @isr_safe: yes */
 void      cli_parser_feed(cli_parser_t *ctx, uint8_t byte);
 
-/** Parse and execute a complete line. @thread_safe: caller_must_lock */
+/** Parse and execute a complete line. @thread_safe: caller_must_lock @isr_safe: yes */
 cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 
 #ifdef __cplusplus

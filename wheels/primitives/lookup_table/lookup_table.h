@@ -49,7 +49,7 @@ typedef struct {
  *         LOOKUP_TABLE_ERR_PARAM if any pointer is NULL or count == 0,
  *         LOOKUP_TABLE_ERR_NOT_SORTED if x is not strictly ascending
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 lookup_table_err_t lut_init(lookup_table_t *table,
                             const float *x, const float *y,
@@ -67,7 +67,7 @@ lookup_table_err_t lut_init(lookup_table_t *table,
  * @param x       input value
  * @return interpolated y, or 0.0f if table is NULL or uninitialised
  *
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 float lut_interpolate(const lookup_table_t *table, float x);
 

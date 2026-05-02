@@ -71,41 +71,41 @@ typedef struct {
 } tcs34725_t;
 
 /** Init, verify chip ID (0x44 or 0x4D), configure integration time and gain.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: no */
 tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ,
                              tcs34725_gain_t gain);
 
 /** Read RGBC data (clear, red, green, blue — 16-bit each).
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
                                   tcs34725_rgbc_t *out);
 
-/** Set integration time. @thread_safe: caller_must_lock */
+/** Set integration time. @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
                                              tcs34725_integ_t integ);
 
-/** Set gain. @thread_safe: caller_must_lock */
+/** Set gain. @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
                                  tcs34725_gain_t gain);
 
 /** Enable RGBC measurement (power on + ADC enable).
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_enable(tcs34725_t *dev);
 
 /** Disable RGBC measurement (power off).
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_disable(tcs34725_t *dev);
 
 /** Estimate correlated color temperature (CCT) in Kelvin from RGBC data.
  *  Uses the DN40 application note formula.
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: yes */
 tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc,
                                        uint16_t *cct_k);
 
 /** Estimate illuminance (lux) from RGBC data.
- *  @thread_safe: caller_must_lock */
+ *  @thread_safe: caller_must_lock @isr_safe: yes */
 tcs34725_err_t tcs34725_get_lux(const tcs34725_rgbc_t *rgbc,
                                 float *lux);
 

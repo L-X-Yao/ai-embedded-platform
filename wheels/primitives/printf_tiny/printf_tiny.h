@@ -38,7 +38,7 @@ typedef void (*printf_tiny_putc_t)(void *ctx, char c);
  * @param fmt   Format string. If NULL, returns 0.
  * @param ...   Format arguments.
  * @return      Number of characters written.
- * @thread_safe: yes (no global state, reentrant)
+ * @thread_safe: yes (no global state, reentrant) @isr_safe: yes
  */
 int printf_tiny(printf_tiny_putc_t putc, void *ctx,
                 const char *fmt, ...);
@@ -52,7 +52,7 @@ int printf_tiny(printf_tiny_putc_t putc, void *ctx,
  * @param ...   Format arguments.
  * @return      Total characters that would be written (excluding NUL),
  *              even if truncated.
- * @thread_safe: yes (no global state, reentrant)
+ * @thread_safe: yes (no global state, reentrant) @isr_safe: yes
  */
 int snprintf_tiny(char *buf, uint16_t size, const char *fmt, ...);
 
@@ -64,7 +64,7 @@ int snprintf_tiny(char *buf, uint16_t size, const char *fmt, ...);
  * @param fmt   Format string. If NULL, returns 0.
  * @param ap    Argument list.
  * @return      Number of characters written.
- * @thread_safe: yes (no global state, reentrant)
+ * @thread_safe: yes (no global state, reentrant) @isr_safe: yes
  */
 int vprintf_tiny(printf_tiny_putc_t putc, void *ctx,
                  const char *fmt, va_list ap);
@@ -78,7 +78,7 @@ int vprintf_tiny(printf_tiny_putc_t putc, void *ctx,
  * @param ap    Argument list.
  * @return      Total characters that would be written (excluding NUL),
  *              even if truncated.
- * @thread_safe: yes (no global state, reentrant)
+ * @thread_safe: yes (no global state, reentrant) @isr_safe: yes
  */
 int vsnprintf_tiny(char *buf, uint16_t size, const char *fmt, va_list ap);
 

@@ -39,34 +39,34 @@ typedef struct {
     uint16_t  count;    /* bytes currently stored           */
 } ring_buffer_t;
 
-/** Initialize ring buffer with caller-provided storage. @thread_safe: no */
+/** Initialize ring buffer with caller-provided storage. @thread_safe: no @isr_safe: no */
 ring_buffer_err_t ring_buffer_init(ring_buffer_t *rb, uint8_t *buf, uint16_t capacity);
 
-/** Write up to len bytes. Returns bytes actually written. @thread_safe: no */
+/** Write up to len bytes. Returns bytes actually written. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_write(ring_buffer_t *rb, const uint8_t *data, uint16_t len);
 
-/** Read up to len bytes (consuming). Returns bytes actually read. @thread_safe: no */
+/** Read up to len bytes (consuming). Returns bytes actually read. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_read(ring_buffer_t *rb, uint8_t *data, uint16_t len);
 
-/** Read up to len bytes without consuming. Returns bytes peeked. @thread_safe: no */
+/** Read up to len bytes without consuming. Returns bytes peeked. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_peek(const ring_buffer_t *rb, uint8_t *data, uint16_t len);
 
-/** Discard up to len bytes. Returns bytes actually skipped. @thread_safe: no */
+/** Discard up to len bytes. Returns bytes actually skipped. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_skip(ring_buffer_t *rb, uint16_t len);
 
-/** Return number of bytes currently stored. @thread_safe: no */
+/** Return number of bytes currently stored. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_count(const ring_buffer_t *rb);
 
-/** Return number of free bytes. @thread_safe: no */
+/** Return number of free bytes. @thread_safe: no @isr_safe: yes */
 uint16_t ring_buffer_free(const ring_buffer_t *rb);
 
-/** Return true if buffer is empty. @thread_safe: no */
+/** Return true if buffer is empty. @thread_safe: no @isr_safe: yes */
 bool ring_buffer_is_empty(const ring_buffer_t *rb);
 
-/** Return true if buffer is full. @thread_safe: no */
+/** Return true if buffer is full. @thread_safe: no @isr_safe: yes */
 bool ring_buffer_is_full(const ring_buffer_t *rb);
 
-/** Reset buffer to empty state. @thread_safe: no */
+/** Reset buffer to empty state. @thread_safe: no @isr_safe: no */
 void ring_buffer_reset(ring_buffer_t *rb);
 
 #ifdef __cplusplus

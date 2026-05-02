@@ -80,17 +80,17 @@ typedef struct {
 
 #define HMC5883L_ADDR 0x1E
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
                              const hmc5883l_cfg_t *cfg);
 
-/** Read raw 16-bit magnetometer values for X, Y, Z axes. @thread_safe: caller_must_lock */
+/** Read raw 16-bit magnetometer values for X, Y, Z axes. @thread_safe: caller_must_lock @isr_safe: no */
 hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw);
 
-/** Read magnetometer values scaled to gauss. @thread_safe: caller_must_lock */
+/** Read magnetometer values scaled to gauss. @thread_safe: caller_must_lock @isr_safe: yes */
 hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out);
 
-/** Enter idle mode (stop continuous measurement). @thread_safe: caller_must_lock */
+/** Enter idle mode (stop continuous measurement). @thread_safe: caller_must_lock @isr_safe: no */
 hmc5883l_err_t hmc5883l_idle(const hmc5883l_t *dev);
 
 #ifdef __cplusplus

@@ -57,6 +57,17 @@ fdb_kv_get_blob(&db, "counter", fdb_blob_make(&blob, &read_val, sizeof(read_val)
 fdb_kv_del(&db, "temp_key");
 ```
 
+## Configuration (compile-time, in fdb_cfg.h)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| `FDB_USING_FAL_MODE` | (must define) | Use FAL for flash access |
+| `FDB_USING_KVDB` | (must define) | Enable KV database |
+| `FDB_USING_TSDB` | (optional) | Enable time-series database |
+| `FDB_KV_NAME_MAX` | 64 | Max key name length |
+| `FDB_WRITE_GRAN` | 1 | Flash write granularity (bits) |
+| `FDB_KV_CACHE_TABLE_SIZE` | 64 | KV lookup cache entries |
+
 ## Supported platforms
 
 - [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
@@ -94,10 +105,6 @@ re-init, nonexistent key, 20-key batch, KV iterator.
 - **Date**: 2026-04-28
 - **Key decisions**: Vendor FlashDB v2.1.0 (user's production copy) per ADR-010. Use upstream API directly (no wrapper). Concrete dependency on fal wheel per ADR-009. FAL mode only (no file mode). Both KVDB and TSDB vendored, TSDB optional via compile flag.
 
-## Responsible human
-
-@user
-
 ## Porting (per-project fdb_cfg.h)
 
 Each project must provide `fdb_cfg.h` on the include path:
@@ -111,13 +118,6 @@ Each project must provide `fdb_cfg.h` on the include path:
 
 Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
 
-## Configuration (compile-time, in fdb_cfg.h)
+## Responsible human
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| `FDB_USING_FAL_MODE` | (must define) | Use FAL for flash access |
-| `FDB_USING_KVDB` | (must define) | Enable KV database |
-| `FDB_USING_TSDB` | (optional) | Enable time-series database |
-| `FDB_KV_NAME_MAX` | 64 | Max key name length |
-| `FDB_WRITE_GRAN` | 1 | Flash write granularity (bits) |
-| `FDB_KV_CACHE_TABLE_SIZE` | 64 | KV lookup cache entries |
+@user

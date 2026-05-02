@@ -62,23 +62,23 @@ typedef struct {
 
 #define SD_SPI_BLOCK_SIZE  512U
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: yes */
 
-/** Initialize card (CMD0->CMD8->ACMD41->CMD58). @thread_safe: no */
+/** Initialize card (CMD0->CMD8->ACMD41->CMD58). @thread_safe: no @isr_safe: no */
 sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal);
 
-/** Read single 512-byte block. @thread_safe: caller_must_lock */
+/** Read single 512-byte block. @thread_safe: caller_must_lock @isr_safe: no */
 sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
                                 uint8_t *buf);
 
-/** Write single 512-byte block. @thread_safe: caller_must_lock */
+/** Write single 512-byte block. @thread_safe: caller_must_lock @isr_safe: no */
 sd_spi_err_t sd_spi_write_block(sd_spi_t *sd, uint32_t block_addr,
                                  const uint8_t *buf);
 
-/** Get card type. @thread_safe: caller_must_lock */
+/** Get card type. @thread_safe: caller_must_lock @isr_safe: no */
 sd_spi_card_type_t sd_spi_get_type(const sd_spi_t *sd);
 
-/** Get capacity in blocks (each 512 bytes). @thread_safe: caller_must_lock */
+/** Get capacity in blocks (each 512 bytes). @thread_safe: caller_must_lock @isr_safe: yes */
 uint32_t sd_spi_get_block_count(const sd_spi_t *sd);
 
 #ifdef __cplusplus

@@ -45,7 +45,7 @@ typedef enum {
  * @param out       Output buffer. Must be at least slip_max_encoded_size(data_len).
  * @param out_len   On input: buffer capacity. On output: bytes written.
  * @return          SLIP_OK on success, error code otherwise.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 slip_err_t slip_encode(const uint8_t *data, uint16_t data_len,
                        uint8_t *out, uint16_t *out_len);
@@ -59,7 +59,7 @@ slip_err_t slip_encode(const uint8_t *data, uint16_t data_len,
  * @param out       Output buffer for decoded data.
  * @param out_len   On input: buffer capacity. On output: bytes written.
  * @return          SLIP_OK on success, error code otherwise.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 slip_err_t slip_decode(const uint8_t *encoded, uint16_t enc_len,
                        uint8_t *out, uint16_t *out_len);
@@ -70,7 +70,7 @@ slip_err_t slip_decode(const uint8_t *encoded, uint16_t enc_len,
  *
  * @param data_len  Input length in bytes.
  * @return          Maximum encoded output size.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint16_t slip_max_encoded_size(uint16_t data_len);
 
@@ -95,7 +95,7 @@ typedef struct {
  * @param buf       Buffer for decoded frame data.
  * @param capacity  Buffer size in bytes.
  * @return          SLIP_OK on success, SLIP_ERR_PARAM if NULL.
- * @thread_safe: no (call once before use)
+ * @thread_safe: no (call once before use) @isr_safe: no
  */
 slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacity);
 
@@ -107,7 +107,7 @@ slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacit
  * @param byte  Received byte.
  * @return      SLIP_OK normally, SLIP_ERR_OVERFLOW if frame exceeds buffer,
  *              SLIP_ERR_INVALID if bad escape sequence.
- * @thread_safe: no (use external lock if fed from ISR + task)
+ * @thread_safe: no (use external lock if fed from ISR + task) @isr_safe: yes
  */
 slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte);
 
@@ -116,7 +116,7 @@ slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte);
  *
  * @param dec   Decoder instance.
  * @return      true if a frame is ready for retrieval.
- * @thread_safe: no (read-only, but pairs with feed)
+ * @thread_safe: no (read-only, but pairs with feed) @isr_safe: yes
  */
 bool slip_decoder_ready(const slip_decoder_t *dec);
 
@@ -127,7 +127,7 @@ bool slip_decoder_ready(const slip_decoder_t *dec);
  * @param dec   Decoder instance.
  * @param data  Set to point at the frame data (internal buffer).
  * @return      Frame length in bytes, 0 if no frame ready.
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: yes
  */
 uint16_t slip_decoder_frame(const slip_decoder_t *dec, const uint8_t **data);
 
@@ -135,7 +135,7 @@ uint16_t slip_decoder_frame(const slip_decoder_t *dec, const uint8_t **data);
  * Reset decoder for the next frame.
  *
  * @param dec   Decoder instance.
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 void slip_decoder_reset(slip_decoder_t *dec);
 

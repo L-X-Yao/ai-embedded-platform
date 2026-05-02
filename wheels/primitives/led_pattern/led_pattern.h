@@ -42,19 +42,19 @@ typedef struct {
     bool              finished;
 } led_pattern_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void led_pattern_init(led_pattern_t *p, const led_pattern_cfg_t *cfg);
 
-/** Advance pattern by one tick and return current on/off state. @thread_safe: no */
+/** Advance pattern by one tick and return current on/off state. @thread_safe: no @isr_safe: yes */
 bool led_pattern_tick(led_pattern_t *p);
 
-/** Return true if the LED is currently on. @thread_safe: no */
+/** Return true if the LED is currently on. @thread_safe: no @isr_safe: yes */
 bool led_pattern_is_on(const led_pattern_t *p);
 
-/** Return true if a one-shot pattern has completed. @thread_safe: no */
+/** Return true if a one-shot pattern has completed. @thread_safe: no @isr_safe: yes */
 bool led_pattern_finished(const led_pattern_t *p);
 
-/** Reset pattern to the beginning. @thread_safe: no */
+/** Reset pattern to the beginning. @thread_safe: no @isr_safe: yes */
 void led_pattern_restart(led_pattern_t *p);
 
 #ifdef __cplusplus

@@ -53,21 +53,21 @@ typedef struct {
     uint8_t current_channel;   /* cached mask for optimization */
 } tca9548a_t;
 
-/** Initialize device handle. @thread_safe: no */
+/** Initialize device handle. @thread_safe: no @isr_safe: no */
 tca9548a_err_t tca9548a_init(tca9548a_t *dev,
                              const tca9548a_i2c_t *i2c,
                              uint8_t dev_addr);
 
-/** Select a single channel (0-7). @thread_safe: no */
+/** Select a single channel (0-7). @thread_safe: no @isr_safe: no */
 tca9548a_err_t tca9548a_select(tca9548a_t *dev, uint8_t channel);
 
-/** Select multiple channels via bitmask. @thread_safe: no */
+/** Select multiple channels via bitmask. @thread_safe: no @isr_safe: no */
 tca9548a_err_t tca9548a_select_multi(tca9548a_t *dev, uint8_t mask);
 
-/** Disable all channels (write 0x00). @thread_safe: no */
+/** Disable all channels (write 0x00). @thread_safe: no @isr_safe: no */
 tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev);
 
-/** Read the current channel mask from the device. @thread_safe: no */
+/** Read the current channel mask from the device. @thread_safe: no @isr_safe: no */
 tca9548a_err_t tca9548a_get_channel(tca9548a_t *dev, uint8_t *mask);
 
 #ifdef __cplusplus

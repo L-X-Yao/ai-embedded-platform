@@ -76,13 +76,13 @@ typedef enum {
 
 /* ======================================================================
  * Runtime level control
- * @thread_safe: yes on 32-bit MCUs (single word write). On 8-bit MCUs
+ * @thread_safe: yes on 32-bit MCUs (single word write). On 8-bit MCUs @isr_safe: yes
  *               callers should disable interrupts around set/get.
  * ====================================================================== */
 
-/** Set the runtime log level. @thread_safe: yes (single word write) */
+/** Set the runtime log level. @thread_safe: yes (single word write) @isr_safe: yes */
 void log_set_level(log_level_t level);
-/** Return the current runtime log level. @thread_safe: yes */
+/** Return the current runtime log level. @thread_safe: yes @isr_safe: yes */
 log_level_t log_get_level(void);
 
 /* ======================================================================
@@ -91,19 +91,19 @@ log_level_t log_get_level(void);
  * A sink is a byte-destination for formatted log lines.
  * log_emit() calls each registered sink in order.
  *
- * @thread_safe: log_add_sink / log_remove_sink are NOT thread-safe.
+ * @thread_safe: log_add_sink / log_remove_sink are NOT thread-safe. @isr_safe: yes
  *               Call them during init, not from concurrent contexts.
  * ====================================================================== */
 
 typedef void (*log_sink_fn)(void *ctx, const char *line, size_t len);
 
-/** Register a sink; return sink id (>=0) or -1 on no slots. @thread_safe: no */
+/** Register a sink; return sink id (>=0) or -1 on no slots. @thread_safe: no @isr_safe: yes */
 int log_add_sink(log_sink_fn fn, void *ctx);
 
-/** Remove a sink by id; return 0 on success, -1 on invalid id. @thread_safe: no */
+/** Remove a sink by id; return 0 on success, -1 on invalid id. @thread_safe: no @isr_safe: yes */
 int log_remove_sink(int sink_id);
 
-/** Add preset stdout sink for host testing. @thread_safe: no */
+/** Add preset stdout sink for host testing. @thread_safe: no @isr_safe: yes */
 int log_add_stdout_sink(void);
 
 /* ======================================================================
@@ -114,7 +114,7 @@ int log_add_stdout_sink(void);
  * disable again.
  * ====================================================================== */
 
-/** Set timestamp source; pass NULL to disable timestamps. @thread_safe: no */
+/** Set timestamp source; pass NULL to disable timestamps. @thread_safe: no @isr_safe: yes */
 void log_set_time_fn(uint32_t (*fn)(void));
 
 /* ======================================================================
@@ -125,12 +125,12 @@ void log_set_time_fn(uint32_t (*fn)(void));
  *   - L is one char: E/W/I/D
  *   - module is whatever LOG_MODULE expands to
  *
- * @thread_safe: yes after init (format uses stack buffer; sink dispatch
+ * @thread_safe: yes after init (format uses stack buffer; sink dispatch @isr_safe: no
  *               reads g_sinks without lock — safe if sinks not modified
  *               after init)
  * ====================================================================== */
 
-/** Format and dispatch a log line to all sinks. @thread_safe: yes (after init) */
+/** Format and dispatch a log line to all sinks. @thread_safe: yes (after init) @isr_safe: yes */
 void log_emit(log_level_t level, const char *module, const char *fmt, ...);
 
 #ifdef __cplusplus

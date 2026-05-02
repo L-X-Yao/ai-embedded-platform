@@ -58,24 +58,24 @@ typedef struct {
 } ina219_t;
 
 /** Configure device: writes config register (range, gain, 12-bit, continuous)
- *  and calibration register. @thread_safe: no */
+ *  and calibration register. @thread_safe: no @isr_safe: no */
 ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
                          uint8_t dev_addr, float shunt_ohms,
                          ina219_bus_range_t range, ina219_gain_t gain);
 
-/** Read bus voltage in volts. @thread_safe: caller_must_lock */
+/** Read bus voltage in volts. @thread_safe: caller_must_lock @isr_safe: no */
 ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v);
 
-/** Read shunt voltage in millivolts. @thread_safe: caller_must_lock */
+/** Read shunt voltage in millivolts. @thread_safe: caller_must_lock @isr_safe: no */
 ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv);
 
-/** Read current in milliamps (via calibration register). @thread_safe: caller_must_lock */
+/** Read current in milliamps (via calibration register). @thread_safe: caller_must_lock @isr_safe: no */
 ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma);
 
-/** Read power in milliwatts (via calibration register). @thread_safe: caller_must_lock */
+/** Read power in milliwatts (via calibration register). @thread_safe: caller_must_lock @isr_safe: no */
 ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw);
 
-/** Software reset (writes 0x8000 to config register). @thread_safe: no */
+/** Software reset (writes 0x8000 to config register). @thread_safe: no @isr_safe: no */
 ina219_err_t ina219_reset(ina219_t *dev);
 
 #ifdef __cplusplus

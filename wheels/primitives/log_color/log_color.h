@@ -24,13 +24,13 @@ typedef struct {
     void               *inner_ctx;
 } log_color_t;
 
-/* @thread_safe: no — call during init */
+/* @thread_safe: no — call during init @isr_safe: no */
 void log_color_init(log_color_t *lc, log_color_output_fn inner_fn, void *inner_ctx);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_color_t* as ctx when registering via log_add_sink().
  * Parses level char from log line, wraps with ANSI color, forwards to inner.
- * @thread_safe: yes (no shared state modified) */
+ * @thread_safe: yes (no shared state modified) @isr_safe: yes */
 void log_color_sink(void *ctx, const char *line, size_t len);
 
 #ifdef __cplusplus

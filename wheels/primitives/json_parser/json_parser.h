@@ -103,7 +103,7 @@ typedef struct {
 /**
  * Initialize the parser.
  * @param max_depth  maximum nesting depth (capped at 128)
- * @thread_safe: no (instance not shared)
+ * @thread_safe: no (instance not shared) @isr_safe: no
  */
 json_parser_err_t json_parser_init(json_parser_t *p, json_parser_cb_t cb,
                                     void *ctx, uint8_t max_depth);
@@ -111,20 +111,20 @@ json_parser_err_t json_parser_init(json_parser_t *p, json_parser_cb_t cb,
 /**
  * Feed a chunk of JSON data.
  * May invoke the callback zero or more times.
- * @thread_safe: no (instance not shared)
+ * @thread_safe: no (instance not shared) @isr_safe: yes
  */
 json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
                                     uint16_t len);
 
 /**
  * Finalize parsing. Returns ERR_INCOMPLETE if JSON is unfinished.
- * @thread_safe: no (instance not shared)
+ * @thread_safe: no (instance not shared) @isr_safe: yes
  */
 json_parser_err_t json_parser_finish(json_parser_t *p);
 
 /**
  * Reset the parser to initial state (same callback/ctx/max_depth).
- * @thread_safe: no (instance not shared)
+ * @thread_safe: no (instance not shared) @isr_safe: no
  */
 void json_parser_reset(json_parser_t *p);
 
