@@ -130,7 +130,7 @@ hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples)
 
 void hx711_set_scale(hx711_t *dev, float scale)
 {
-    if (dev)
+    if (dev && scale == scale)
         dev->scale = scale;
 }
 

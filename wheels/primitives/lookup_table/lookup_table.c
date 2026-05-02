@@ -39,6 +39,11 @@ float lut_interpolate(const lookup_table_t *table, float x)
         return 0.0f;
     }
 
+    /* reject NaN — would fall through clamp and corrupt interpolation */
+    if (x != x) {
+        return 0.0f;
+    }
+
     size_t n = table->count;
 
     /* Clamp below range */

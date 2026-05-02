@@ -100,7 +100,7 @@ max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,
     if (!spi->cs_low || !spi->cs_high || !spi->xfer)
         return MAX31865_ERR_SPI;
 
-    if (cfg->r_ref <= 0.0f || cfg->r_nom <= 0.0f)
+    if (!(cfg->r_ref > 0.0f) || !(cfg->r_nom > 0.0f))
         return MAX31865_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));

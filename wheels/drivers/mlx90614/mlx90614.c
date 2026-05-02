@@ -115,7 +115,7 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
 {
     if (!dev)
         return MLX90614_ERR_PARAM;
-    if (emissivity < 0.1f || emissivity > 1.0f)
+    if (!(emissivity >= 0.1f && emissivity <= 1.0f))
         return MLX90614_ERR_PARAM;
 
     uint16_t raw = (uint16_t)(emissivity * 65535.0f + 0.5f);
