@@ -600,6 +600,94 @@ def has_busy_wait_timeout(wheel_dir: Path) -> list:
     return unguarded
 
 
+def has_dev_t_naming(wheel_dir: Path, name: str) -> bool:
+    """Return True if wheel uses _dev_t for its main context (violation)."""
+    h_file = wheel_dir / f"{name}.h"
+    if not h_file.exists():
+        return False
+    text = h_file.read_text(encoding="utf-8", errors="replace")
+    return f"{name}_dev_t" in text
+
+
+def has_plural_err_param(wheel_dir: Path, name: str) -> bool:
+    """Return True if wheel uses ERR_PARAMS (plural, violation)."""
+    h_file = wheel_dir / f"{name}.h"
+    if not h_file.exists():
+        return False
+    text = h_file.read_text(encoding="utf-8", errors="replace")
+    return "ERR_PARAMS" in text
+
+
+def has_pragma_once(wheel_dir: Path, name: str) -> bool:
+    """Return True if wheel .h uses #pragma once (violation)."""
+    h_file = wheel_dir / f"{name}.h"
+    if not h_file.exists():
+        return False
+    text = h_file.read_text(encoding="utf-8", errors="replace")
+    return "#pragma once" in text
+
+
+def has_spdx_header(wheel_dir: Path, name: str) -> bool:
+    """Return True if .h file has SPDX license identifier."""
+    h_file = wheel_dir / f"{name}.h"
+    if not h_file.exists():
+        return False
+    text = h_file.read_text(encoding="utf-8", errors="replace")
+    return "SPDX-License-Identifier" in text
+
+
+def has_vsf_native_residual(wheel_dir: Path) -> bool:
+    """Return True if README still has 'Why not VSF native?' section."""
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return False
+    text = readme.read_text(encoding="utf-8", errors="replace")
+    return "why not vsf native" in text.lower()
+
+
+def has_init_caller_must_lock(wheel_dir: Path, name: str) -> bool:
+    """Return True if init/deinit/reset is tagged caller_must_lock (should be 'no')."""
+    h_file = wheel_dir / f"{name}.h"
+    if not h_file.exists():
+        return False
+    text = h_file.read_text(encoding="utf-8", errors="replace")
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        ll = line.lower()
+        if "caller_must_lock" in ll:
+            for j in range(i, min(i + 3, len(lines))):
+                fn_line = lines[j].lower()
+                if f"{name}_init" in fn_line or f"{name}_deinit" in fn_line or f"{name}_reset" in fn_line:
+                    return True
+    return False
+
+
+def has_deps_format_issue(wheel_dir: Path, name: str) -> str:
+    """Return description of Deps format issue, or '' if OK."""
+    for ext in (".h", ".c"):
+        f = wheel_dir / f"{name}{ext}"
+        if not f.exists():
+            continue
+        text = f.read_text(encoding="utf-8", errors="replace")
+        for line in text.split("\n")[:15]:
+            stripped = line.strip().lstrip("* ")
+            if stripped.startswith("Deps:"):
+                val = stripped[5:].strip()
+                if not val:
+                    return "Deps: line is empty"
+                if val == "(none)" or val == "none":
+                    return ""
+                # Check format: should be comma-separated, each is either 'name' or 'name_hal (injected)'
+                for part in val.split(","):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if part == "(injected)" or part == "injected":
+                        return f"Deps: '{part}' missing hal name — use '<name>_hal (injected)'"
+                return ""
+    return ""
+
+
 def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> int:
     def qprint(msg: str):
         if not quiet and not json_mode:
@@ -995,6 +1083,91 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
                    fix_cmd=f"add timeout counter to busy-wait loops in {path}")
             for f, ln, text in unguarded:
                 tprint(f"  [WARN]  {path}/{f}:{ln}: {text}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- V2 convention checks (api-conventions v2) ---
+
+    # Context type _dev_t → should be _t
+    qprint("\n=== Context type naming (_t not _dev_t) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            continue
+        if has_dev_t_naming(wheel_dir, name):
+            record("dev_t_naming", path, "WARN",
+                   f"uses {name}_dev_t — should be {name}_t (api-conventions §1.3)",
+                   fix_cmd=f"rename {name}_dev_t to {name}_t in {path}/{name}.h/.c")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # Error code plural → should be singular
+    qprint("\n=== Error code singular (ERR_PARAM not ERR_PARAMS) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            continue
+        if has_plural_err_param(wheel_dir, name):
+            record("err_plural", path, "WARN",
+                   "uses ERR_PARAMS (plural) — should be ERR_PARAM (api-conventions §2.2)",
+                   fix_cmd=f"rename ERR_PARAMS to ERR_PARAM in {path}/{name}.h/.c")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # #pragma once check
+    qprint("\n=== Include guard style (no #pragma once) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            continue
+        if has_pragma_once(wheel_dir, name):
+            record("pragma_once", path, "WARN",
+                   "uses #pragma once — should use #ifndef guard (api-conventions §9.2)",
+                   fix_cmd=f"replace #pragma once with #ifndef {name.upper()}_H guard in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # SPDX license header
+    qprint("\n=== SPDX license identifier (api-conventions §8.3) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_spdx_header(wheel_dir, name):
+            record("spdx_header", path, "WARN",
+                   ".h missing SPDX-License-Identifier line",
+                   fix_cmd=f"add '// SPDX-License-Identifier: MIT' as first line of {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # "Why not VSF native?" residual
+    qprint("\n=== 'Why not VSF native?' residual (ADR-006 superseded) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if has_vsf_native_residual(wheel_dir):
+            record("vsf_native_residual", path, "WARN",
+                   "README still has 'Why not VSF native?' — ADR-006 superseded by ADR-011",
+                   fix_cmd=f"remove 'Why not VSF native?' section from {path}/README.md")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # @thread_safe on init should be 'no' not 'caller_must_lock'
+    qprint("\n=== @thread_safe on init/deinit/reset (should be 'no') ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            continue
+        if has_init_caller_must_lock(wheel_dir, name):
+            record("init_thread_safe", path, "WARN",
+                   "init/deinit/reset tagged @thread_safe: caller_must_lock — should be 'no' (api-conventions §4)",
+                   fix_cmd=f"change @thread_safe: caller_must_lock to @thread_safe: no on init/deinit/reset in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
 

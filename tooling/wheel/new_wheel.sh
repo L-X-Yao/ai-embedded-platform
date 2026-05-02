@@ -15,7 +15,7 @@
 #   wheels/<layer>/<name>/<name>.c       — implementation skeleton
 #   wheels/<layer>/<name>/test/CMakeLists.txt
 #   wheels/<layer>/<name>/test/test_<name>.c — mock HAL + test harness + 2 starter tests
-#   wheels/<layer>/<name>/README.md      — with "Why not VSF native?" section
+#   wheels/<layer>/<name>/README.md      — candidate-level README
 #
 # Generated files (--vendor, ADR-010):
 #   wheels/<layer>/<name>/vendor/inc/    — place upstream headers here
@@ -92,12 +92,14 @@ mkdir -p "$WHEEL_DIR/test"
 
 generate_header_i2c() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    i2c_hal
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -110,6 +112,8 @@ generate_header_i2c() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
     ${NAME_UPPER}_OK        =  0,
     ${NAME_UPPER}_ERR_I2C   = -1,
@@ -117,30 +121,40 @@ typedef enum {
     ${NAME_UPPER}_ERR_PARAM = -3,
 } ${NAME_LOWER}_err_t;
 
+/* ---------- I2C HAL (caller provides) ---------- */
+
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } ${NAME_LOWER}_i2c_t;
 
+/* ---------- constants ---------- */
+
 #define ${NAME_UPPER}_DEV_ADDR  ${ADDR:-0x00u}
 
+/* ---------- data types ---------- */
+
 typedef struct {
-    float x, y, z;
+    float x, y, z;  /* TODO: use unit suffixes (_c, _pa, _mg, ...) */
 } ${NAME_LOWER}_data_t;
+
+/* ---------- device context ---------- */
 
 typedef struct {
     const ${NAME_LOWER}_i2c_t *i2c;
-    float scale;  /* internal — set by init */
-} ${NAME_LOWER}_dev_t;
+} ${NAME_LOWER}_t;
 
-/** Configure and verify chip ID. @thread_safe: caller_must_lock */
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_dev_t *dev,
+/* ---------- API ---------- */
+
+/** Configure and verify chip ID. @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_i2c_t *i2c);
 
 /** Read sensor data. @thread_safe: caller_must_lock */
-${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_dev_t *dev,
+${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_t *dev,
                                ${NAME_LOWER}_data_t *out);
 
 #ifdef __cplusplus
@@ -153,12 +167,14 @@ HEADER_EOF
 
 generate_header_spi() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    spi_hal
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -171,12 +187,16 @@ generate_header_spi() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
     ${NAME_UPPER}_OK          =  0,
     ${NAME_UPPER}_ERR_SPI     = -1,
     ${NAME_UPPER}_ERR_ID      = -2,
     ${NAME_UPPER}_ERR_TIMEOUT = -3,
 } ${NAME_LOWER}_err_t;
+
+/* ---------- SPI HAL (caller provides) ---------- */
 
 typedef struct {
     void    (*cs_low)(void *ctx);
@@ -185,8 +205,17 @@ typedef struct {
     void    *ctx;
 } ${NAME_LOWER}_spi_t;
 
-/** Initialize and verify chip identity. @thread_safe: caller_must_lock */
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi);
+/* ---------- device context ---------- */
+
+typedef struct {
+    const ${NAME_LOWER}_spi_t *spi;
+} ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
+
+/** Initialize and verify chip identity. @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
+                               const ${NAME_LOWER}_spi_t *spi);
 
 #ifdef __cplusplus
 }
@@ -198,13 +227,14 @@ HEADER_EOF
 
 generate_header_gpio() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    gpio_hal (injected)
- * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -217,11 +247,15 @@ generate_header_gpio() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
     ${NAME_UPPER}_OK          =  0,
     ${NAME_UPPER}_ERR_PARAM   = -1,
     ${NAME_UPPER}_ERR_TIMEOUT = -2,
 } ${NAME_LOWER}_err_t;
+
+/* ---------- GPIO HAL (caller provides) ---------- */
 
 typedef struct {
     void (*set_output)(void *ctx);
@@ -232,10 +266,13 @@ typedef struct {
     void *ctx;
 } ${NAME_LOWER}_gpio_t;
 
+/* ---------- device context ---------- */
+
 typedef struct {
-    ${NAME_LOWER}_gpio_t gpio;  /* caller-provided HAL */
-    /* internal state below — do not access directly */
+    const ${NAME_LOWER}_gpio_t *gpio;  /* caller-owned, must outlive dev */
 } ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
 
 /** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_gpio_t *gpio);
@@ -250,13 +287,14 @@ HEADER_EOF
 
 generate_header_onewire() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    onewire_hal (injected)
- * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      onewire_hal (injected)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -269,12 +307,16 @@ generate_header_onewire() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
     ${NAME_UPPER}_OK            =  0,
     ${NAME_UPPER}_ERR_PARAM     = -1,
     ${NAME_UPPER}_ERR_NO_DEVICE = -2,
     ${NAME_UPPER}_ERR_CRC       = -3,
 } ${NAME_LOWER}_err_t;
+
+/* ---------- 1-Wire HAL (caller provides) ---------- */
 
 typedef struct {
     bool    (*reset)(void *ctx);
@@ -283,12 +325,15 @@ typedef struct {
     void    *ctx;
 } ${NAME_LOWER}_ow_t;
 
+/* ---------- device context ---------- */
+
 typedef struct {
-    ${NAME_LOWER}_ow_t ow;     /* caller-provided HAL */
-    /* internal state below — do not access directly */
+    const ${NAME_LOWER}_ow_t *ow;  /* caller-owned, must outlive dev */
     uint8_t rom[8];
     bool    use_rom;
 } ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
 
 /** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_ow_t *ow);
@@ -303,13 +348,14 @@ HEADER_EOF
 
 generate_header_pwm() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    pwm_hal (injected)
- * Thread safety: caller owns the ${NAME_LOWER}_t struct.
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -322,21 +368,28 @@ generate_header_pwm() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
     ${NAME_UPPER}_OK        =  0,
     ${NAME_UPPER}_ERR_PARAM = -1,
     ${NAME_UPPER}_ERR_HAL   = -2,
 } ${NAME_LOWER}_err_t;
 
+/* ---------- PWM HAL (caller provides) ---------- */
+
 typedef struct {
     bool (*set_pulse_us)(void *ctx, uint32_t pulse_us);
     void *ctx;
 } ${NAME_LOWER}_pwm_t;
 
+/* ---------- device context ---------- */
+
 typedef struct {
-    ${NAME_LOWER}_pwm_t pwm;  /* caller-provided HAL */
-    /* internal state below — do not access directly */
+    const ${NAME_LOWER}_pwm_t *pwm;  /* caller-owned, must outlive dev */
 } ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
 
 /** Initialize device. @thread_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_pwm_t *pwm);
@@ -351,12 +404,14 @@ HEADER_EOF
 
 generate_header_none() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    (none)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -368,6 +423,8 @@ generate_header_none() {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* ---------- error codes ---------- */
 
 typedef enum {
     ${NAME_UPPER}_OK        =  0,
@@ -390,12 +447,14 @@ HEADER_EOF
 
 generate_c_i2c() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    i2c_hal
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -403,7 +462,7 @@ generate_c_i2c() {
 /* TODO: register defines */
 #define REG_CHIP_ID     0x00u
 
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_dev_t *dev,
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_i2c_t *i2c)
 {
     if (!dev || !i2c) return ${NAME_UPPER}_ERR_PARAM;
@@ -419,7 +478,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_dev_t *dev,
     return ${NAME_UPPER}_OK;
 }
 
-${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_dev_t *dev,
+${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_t *dev,
                                ${NAME_LOWER}_data_t *out)
 {
     if (!dev || !out) return ${NAME_UPPER}_ERR_PARAM;
@@ -432,12 +491,14 @@ C_EOF
 
 generate_c_spi() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    spi_hal
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -452,9 +513,11 @@ static uint8_t spi_cmd(const ${NAME_LOWER}_spi_t *spi, uint8_t cmd)
     return r;
 }
 
-${NAME_LOWER}_err_t ${NAME_LOWER}_init(const ${NAME_LOWER}_spi_t *spi)
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
+                               const ${NAME_LOWER}_spi_t *spi)
 {
-    if (!spi) return ${NAME_UPPER}_ERR_SPI;
+    if (!dev || !spi) return ${NAME_UPPER}_ERR_PARAM;
+    dev->spi = spi;
     /* TODO: read JEDEC ID — e.g. spi_cmd(spi, 0x9F) */
     (void)spi_cmd;
     return ${NAME_UPPER}_OK;
@@ -464,12 +527,14 @@ C_EOF
 
 generate_c_gpio() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -481,7 +546,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}
     if (!gpio->set_output || !gpio->set_input || !gpio->write_pin ||
         !gpio->read_pin || !gpio->delay_us)
         return ${NAME_UPPER}_ERR_PARAM;
-    dev->gpio = *gpio;
+    dev->gpio = gpio;
     return ${NAME_UPPER}_OK;
 }
 
@@ -491,12 +556,14 @@ C_EOF
 
 generate_c_onewire() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    onewire_hal (injected)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      onewire_hal (injected)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -508,7 +575,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}
         return ${NAME_UPPER}_ERR_PARAM;
     if (!ow->reset || !ow->write_byte || !ow->read_byte)
         return ${NAME_UPPER}_ERR_PARAM;
-    dev->ow = *ow;
+    dev->ow = ow;
     memset(dev->rom, 0, 8);
     dev->use_rom = false;
     return ${NAME_UPPER}_OK;
@@ -520,12 +587,14 @@ C_EOF
 
 generate_c_pwm() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    pwm_hal (injected)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -536,7 +605,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}
         return ${NAME_UPPER}_ERR_PARAM;
     if (!pwm->set_pulse_us)
         return ${NAME_UPPER}_ERR_PARAM;
-    dev->pwm = *pwm;
+    dev->pwm = pwm;
     return ${NAME_UPPER}_OK;
 }
 
@@ -546,12 +615,14 @@ C_EOF
 
 generate_c_none() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    (none)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -606,7 +677,7 @@ static const ${NAME_LOWER}_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
-static ${NAME_LOWER}_dev_t dev;
+static ${NAME_LOWER}_t dev;
 
 /* ---------- tests ---------- */
 
@@ -631,7 +702,7 @@ TEST(test_null_safety)
 
 TEST(test_zero_init_safety)
 {
-    ${NAME_LOWER}_dev_t zero_dev;
+    ${NAME_LOWER}_t zero_dev;
     memset(&zero_dev, 0, sizeof(zero_dev));
     /* Primary read function on zero-init struct must not crash (no UB) */
 }
@@ -696,21 +767,24 @@ static const ${NAME_LOWER}_spi_t mock_spi = {
 TEST(test_init_ok)
 {
     mock_reset();
-    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
+    ${NAME_LOWER}_t dev;
+    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&dev, &mock_spi);
     ASSERT_EQ(e, ${NAME_UPPER}_OK);
-    ASSERT_TRUE(xfer_log_idx > 0);
 }
 
 TEST(test_null_safety)
 {
-    ASSERT_EQ(${NAME_LOWER}_init(NULL), ${NAME_UPPER}_ERR_SPI);
+    ${NAME_LOWER}_t dev;
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_spi), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
 TEST(test_init_spi_fail)
 {
     mock_reset();
     mock_fail_at = 0;
-    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&mock_spi);
+    ${NAME_LOWER}_t dev;
+    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&dev, &mock_spi);
     ASSERT_TRUE(e != ${NAME_UPPER}_OK);
 }
 
@@ -872,12 +946,14 @@ TEST_EOF
 
 generate_header_protocol() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    (none)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #ifndef ${NAME_UPPER}_H
@@ -891,13 +967,17 @@ generate_header_protocol() {
 extern "C" {
 #endif
 
+/* ---------- error codes ---------- */
+
 typedef enum {
-    ${NAME_UPPER}_OK          =  0,
-    ${NAME_UPPER}_ERR_PARAM   = -1,
-    ${NAME_UPPER}_ERR_FORMAT  = -2,
-    ${NAME_UPPER}_ERR_SHORT   = -3,
+    ${NAME_UPPER}_OK           =  0,
+    ${NAME_UPPER}_ERR_PARAM    = -1,
+    ${NAME_UPPER}_ERR_FORMAT   = -2,
+    ${NAME_UPPER}_ERR_SHORT    = -3,
     ${NAME_UPPER}_ERR_OVERFLOW = -4,
 } ${NAME_LOWER}_err_t;
+
+/* ---------- data types ---------- */
 
 typedef struct {
     /* TODO: parsed fields */
@@ -905,11 +985,13 @@ typedef struct {
     uint16_t length;
 } ${NAME_LOWER}_msg_t;
 
-/** Parse a message from raw bytes. @thread_safe: yes (pure function) */
+/* ---------- API ---------- */
+
+/** Parse a message from raw bytes. @thread_safe: yes */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_parse(const uint8_t *data, size_t len,
                                ${NAME_LOWER}_msg_t *out);
 
-/** Build a message into a buffer. @thread_safe: yes (pure function) */
+/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes */
 int ${NAME_LOWER}_build(uint8_t *buf, size_t cap,
                         const ${NAME_LOWER}_msg_t *msg);
 
@@ -923,12 +1005,14 @@ HEADER_EOF
 
 generate_c_protocol() {
     cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:   ${LAYER_LABEL%% (*}
- * Status:  candidate
- * Deps:    (none)
+ * Layer:     ${LAYER_LABEL%% (*}
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #include "${NAME_LOWER}.h"
@@ -1176,7 +1260,7 @@ add_executable(test_${NAME_LOWER}
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
     \${CMAKE_CURRENT_SOURCE_DIR}
-    # TODO: add per-project config header dir if needed
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 # Note: -Wall -Wextra -Wpedantic omitted for vendor wheels (upstream code triggers warnings)
 
@@ -1187,31 +1271,22 @@ CMAKE_EOF
 
 generate_vendor_test() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
-#include <stdio.h>
+#include "test_harness.h"
 #include <string.h>
 
 /* TODO: #include upstream header */
 
-static int tests_run, tests_fail;
-
-#define ASSERT(cond, msg) do { \\
-    tests_run++; \\
-    if (!(cond)) { \\
-        printf("  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \\
-        tests_fail++; \\
-    } \\
-} while(0)
-
-#define ASSERT_EQ(a, b, msg)   ASSERT((a) == (b), msg)
-
-/* TODO: add tests */
-
-int main(void)
+TEST(test_placeholder)
 {
-    printf("\n%d tests, %d passed, %d failed\n",
-           tests_run, tests_run - tests_fail, tests_fail);
-    return tests_fail ? 1 : 0;
+    /* TODO: add real tests for vendor API */
+    ASSERT_TRUE(1);
 }
+
+/* TODO: add more tests */
+
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_placeholder);
+TEST_MAIN_END()
 TEST_EOF
 }
 
@@ -1291,6 +1366,191 @@ TODO: document any deviations from api-conventions.md.
 README_EOF
 }
 
+generate_header_module() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.h" << HEADER_EOF
+// SPDX-License-Identifier: MIT
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:     L3 (modules)
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
+
+#ifndef ${NAME_UPPER}_H
+#define ${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* ---------- configuration macros ---------- */
+
+#ifndef ${NAME_UPPER}_MAX_ENTRIES
+#define ${NAME_UPPER}_MAX_ENTRIES  16
+#endif
+
+/* ---------- error codes ---------- */
+
+typedef enum {
+    ${NAME_UPPER}_OK        =  0,
+    ${NAME_UPPER}_ERR_PARAM = -1,
+    ${NAME_UPPER}_ERR_FULL  = -2,
+} ${NAME_LOWER}_err_t;
+
+/* ---------- I/O abstraction (caller provides) ---------- */
+
+typedef struct {
+    void (*write)(void *ctx, const uint8_t *data, uint16_t len);
+    void  *ctx;
+} ${NAME_LOWER}_io_t;
+
+/* ---------- module context ---------- */
+
+typedef struct {
+    const ${NAME_LOWER}_io_t *io;
+    uint8_t entry_count;
+} ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
+
+/** Initialize module. @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *mod, const ${NAME_LOWER}_io_t *io);
+
+/** Register an entry. Returns ERR_FULL if table is full. @thread_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_register(${NAME_LOWER}_t *mod /* TODO: entry params */);
+
+/** Process incoming data. @thread_safe: caller_must_lock */
+${NAME_LOWER}_err_t ${NAME_LOWER}_process(${NAME_LOWER}_t *mod, const uint8_t *data, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ${NAME_UPPER}_H */
+HEADER_EOF
+}
+
+generate_c_module() {
+    cat > "$WHEEL_DIR/${NAME_LOWER}.c" << C_EOF
+// SPDX-License-Identifier: MIT
+/*
+ * ${NAME_LOWER} — TODO: one-line description
+ *
+ * Layer:     L3 (modules)
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
+
+#include "${NAME_LOWER}.h"
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *mod, const ${NAME_LOWER}_io_t *io)
+{
+    if (!mod || !io) return ${NAME_UPPER}_ERR_PARAM;
+    mod->io = io;
+    mod->entry_count = 0;
+    return ${NAME_UPPER}_OK;
+}
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_register(${NAME_LOWER}_t *mod /* TODO: entry params */)
+{
+    if (!mod) return ${NAME_UPPER}_ERR_PARAM;
+    if (mod->entry_count >= ${NAME_UPPER}_MAX_ENTRIES)
+        return ${NAME_UPPER}_ERR_FULL;
+    /* TODO: store entry */
+    mod->entry_count++;
+    return ${NAME_UPPER}_OK;
+}
+
+${NAME_LOWER}_err_t ${NAME_LOWER}_process(${NAME_LOWER}_t *mod, const uint8_t *data, size_t len)
+{
+    if (!mod || !data) return ${NAME_UPPER}_ERR_PARAM;
+    (void)len;
+    /* TODO: implement processing */
+    return ${NAME_UPPER}_OK;
+}
+C_EOF
+}
+
+generate_test_module() {
+    cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
+#include "test_harness.h"
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+/* ---------- mock I/O ---------- */
+
+static uint8_t write_buf[256];
+static uint16_t write_len;
+
+static void mock_write(void *ctx, const uint8_t *data, uint16_t len)
+{
+    (void)ctx;
+    if (len <= sizeof(write_buf)) {
+        memcpy(write_buf, data, len);
+        write_len = len;
+    }
+}
+
+static const ${NAME_LOWER}_io_t mock_io = {
+    .write = mock_write,
+    .ctx   = NULL,
+};
+
+static void mock_reset(void)
+{
+    memset(write_buf, 0, sizeof(write_buf));
+    write_len = 0;
+}
+
+/* ---------- tests ---------- */
+
+TEST(test_init_ok)
+{
+    mock_reset();
+    ${NAME_LOWER}_t mod;
+    ASSERT_EQ(${NAME_LOWER}_init(&mod, &mock_io), ${NAME_UPPER}_OK);
+}
+
+TEST(test_init_null)
+{
+    ${NAME_LOWER}_t mod;
+    ASSERT_EQ(${NAME_LOWER}_init(NULL, &mock_io), ${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(${NAME_LOWER}_init(&mod, NULL), ${NAME_UPPER}_ERR_PARAM);
+}
+
+TEST(test_process_null)
+{
+    ${NAME_LOWER}_t mod;
+    ${NAME_LOWER}_init(&mod, &mock_io);
+    ASSERT_EQ(${NAME_LOWER}_process(&mod, NULL, 0), ${NAME_UPPER}_ERR_PARAM);
+}
+
+TEST(test_register_overflow)
+{
+    ${NAME_LOWER}_t mod;
+    ${NAME_LOWER}_init(&mod, &mock_io);
+    for (int i = 0; i < ${NAME_UPPER}_MAX_ENTRIES; i++) {
+        ASSERT_EQ(${NAME_LOWER}_register(&mod), ${NAME_UPPER}_OK);
+    }
+    ASSERT_EQ(${NAME_LOWER}_register(&mod), ${NAME_UPPER}_ERR_FULL);
+}
+
+TEST_MAIN("${NAME_LOWER}")
+    RUN(test_init_ok);
+    RUN(test_init_null);
+    RUN(test_process_null);
+    RUN(test_register_overflow);
+TEST_MAIN_END()
+TEST_EOF
+}
+
 # ---- Dispatch generation -----------------------------------------------------
 
 if [[ "$VENDOR" -eq 1 ]]; then
@@ -1300,10 +1560,13 @@ if [[ "$VENDOR" -eq 1 ]]; then
     generate_vendor_test
     generate_vendor_readme
 else
-    # Auto-select protocol template for protocols layer
+    # Auto-select template for protocols and modules layers
     EFFECTIVE_HAL="${HAL:-none}"
     if [[ "$LAYER" == "protocols" && "$EFFECTIVE_HAL" == "none" ]]; then
         EFFECTIVE_HAL="protocol"
+    fi
+    if [[ "$LAYER" == "modules" && "$EFFECTIVE_HAL" == "none" ]]; then
+        EFFECTIVE_HAL="module"
     fi
 
     case "$EFFECTIVE_HAL" in
@@ -1313,6 +1576,7 @@ else
         onewire)  generate_header_onewire;  generate_c_onewire;  generate_test_onewire  ;;
         pwm)      generate_header_pwm;      generate_c_pwm;      generate_test_pwm      ;;
         protocol) generate_header_protocol; generate_c_protocol; generate_test_protocol ;;
+        module)   generate_header_module;   generate_c_module;   generate_test_module   ;;
         *)        generate_header_none;     generate_c_none;     generate_test_none     ;;
     esac
 fi
