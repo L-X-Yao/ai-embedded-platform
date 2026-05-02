@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * I2C interface injected via callbacks. Implements the Bosch compensation
  * algorithm from the BME680 datasheet (BST-BME680-DS001-00).
@@ -41,9 +42,9 @@ typedef struct {
 #define BME680_CHIP_ID    0x61u
 
 typedef struct {
-    float temperature;
-    float humidity;
-    float pressure;
+    float temperature_c;
+    float humidity_pct;
+    float pressure_pa;
     float gas_resistance;
 } bme680_data_t;
 

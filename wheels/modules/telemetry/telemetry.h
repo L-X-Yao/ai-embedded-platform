@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained)
+ * Deps:      (none -- self-contained)
+ * Instances: multi
  *
  * Passive design: application registers named fields, updates values,
  * and calls telemetry_publish() when ready.  Publish formats all fields

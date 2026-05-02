@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Feed raw pin state at fixed intervals. Output stable state after
  * N consecutive identical readings. Pure C99, no heap, no timer HW.

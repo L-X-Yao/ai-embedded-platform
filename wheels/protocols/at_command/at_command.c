@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    uart_hal
+ * Deps:      uart_hal
+ * Instances: multi
  */
 
 #include "at_command.h"

@@ -5,7 +5,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained)
+ * Deps:      (none -- self-contained)
+ * Instances: multi
  *
  * Passive design: application defines typed config entries with defaults
  * and validation ranges at init time, then gets/sets values with

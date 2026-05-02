@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  */
 
 #include "w25qxx.h"

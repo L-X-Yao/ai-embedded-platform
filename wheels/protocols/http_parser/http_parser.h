@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Zero-copy: parsed fields point into the caller's input buffer.
  * Supports chunked parsing (feed partial data).

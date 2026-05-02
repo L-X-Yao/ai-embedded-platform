@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Caller provides storage. Set/clear/test/toggle individual bits,
  * find-first-set/clear, alloc/free for slot management.

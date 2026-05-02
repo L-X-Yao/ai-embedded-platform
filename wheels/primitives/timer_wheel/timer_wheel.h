@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Classic hashed timing wheel: timers are placed into slots based on
  * (current_pos + ticks) % num_slots. Each tick advances the cursor and

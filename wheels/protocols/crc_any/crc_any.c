@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Bit-by-bit implementation. No lookup tables — trades speed for
  * flexibility and minimal ROM/RAM footprint.

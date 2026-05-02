@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Table-driven FSM with optional entry/exit actions per state and
  * guard conditions on transitions. Caller defines states, events,

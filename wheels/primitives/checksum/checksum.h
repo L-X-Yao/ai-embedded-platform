@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Provides XOR, BSD, Fletcher-16, and Internet (IP/TCP/UDP) checksums.
  * All pure / reentrant.

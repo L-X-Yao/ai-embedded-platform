@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  * Thread safety: caller owns the hx711_t struct.
  */
 

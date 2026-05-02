@@ -224,7 +224,7 @@ TEST(test_read_temperature)
     bme680_data_t data;
     bme680_err_t e = bme680_read(&dev, &data);
     ASSERT_EQ(e, BME680_OK);
-    ASSERT_TRUE(data.temperature > 0.0f && data.temperature < 60.0f);
+    ASSERT_TRUE(data.temperature_c > 0.0f && data.temperature_c < 60.0f);
 }
 
 TEST(test_read_humidity)
@@ -235,7 +235,7 @@ TEST(test_read_humidity)
     bme680_data_t data;
     bme680_err_t e = bme680_read(&dev, &data);
     ASSERT_EQ(e, BME680_OK);
-    ASSERT_TRUE(data.humidity >= 0.0f && data.humidity <= 100.0f);
+    ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
 }
 
 TEST(test_read_pressure)
@@ -246,7 +246,7 @@ TEST(test_read_pressure)
     bme680_data_t data;
     bme680_err_t e = bme680_read(&dev, &data);
     ASSERT_EQ(e, BME680_OK);
-    ASSERT_TRUE(data.pressure > 30000.0f && data.pressure < 130000.0f);
+    ASSERT_TRUE(data.pressure_pa > 30000.0f && data.pressure_pa < 130000.0f);
 }
 
 TEST(test_read_gas_valid)

@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless frame building and parsing for LoRaWAN Class A
  * uplink/downlink data frames and join requests.

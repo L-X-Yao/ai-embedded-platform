@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * RFC 4122 UUID v4 (random-based): 122 random bits + version/variant.
  * RNG callback injection — caller provides the random source.

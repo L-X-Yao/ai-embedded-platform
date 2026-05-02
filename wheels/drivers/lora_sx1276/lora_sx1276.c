@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  */
 
 #include "lora_sx1276.h"

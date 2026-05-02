@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Maintains min, max, mean, and variance over a fixed-size sliding window.
  * Caller provides float storage array. Pure C99, no heap, fully reentrant.

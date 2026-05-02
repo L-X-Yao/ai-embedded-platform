@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless frame packing, unpacking, ID filtering, and bit-level
  * signal extract/pack for DBC-style decoding. Handles both standard

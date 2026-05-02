@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Supports configurable bus voltage range (16V/32V), PGA gain (40-320mV),
  * and shunt resistor calibration. All registers are 16-bit big-endian.
@@ -44,6 +45,7 @@ typedef struct {
                       uint8_t *buf, uint16_t len);
     bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                        const uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } ina219_i2c_t;
 

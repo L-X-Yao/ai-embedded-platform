@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    flash_hal
+ * Deps:      flash_hal
+ * Instances: multi
  */
 
 #ifndef OTA_AB_H

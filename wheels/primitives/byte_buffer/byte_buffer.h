@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Linear buffer with separate read and write cursors. Useful for
  * protocol packet assembly, UART RX accumulation, and serialization.

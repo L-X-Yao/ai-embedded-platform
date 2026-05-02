@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    pwm_hal (injected)
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  */
 #include "servo.h"
 
@@ -17,7 +18,7 @@ servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
         return SERVO_ERR_PARAM;
     if (cfg->min_pulse_us >= cfg->max_pulse_us || cfg->max_angle == 0)
         return SERVO_ERR_PARAM;
-    dev->pwm = *pwm;
+    dev->pwm = pwm;
     dev->cfg = *cfg;
     dev->current_angle = 0;
     return SERVO_OK;
@@ -34,7 +35,7 @@ servo_err_t servo_set_angle(servo_t *dev, uint16_t angle)
     uint32_t pulse = dev->cfg.min_pulse_us +
                      (range * (uint32_t)angle) / dev->cfg.max_angle;
 
-    if (!dev->pwm.set_pulse_us(dev->pwm.ctx, pulse))
+    if (!dev->pwm->set_pulse_us(dev->pwm->ctx, pulse))
         return SERVO_ERR_HAL;
 
     dev->current_angle = angle;
@@ -47,7 +48,7 @@ servo_err_t servo_set_pulse(servo_t *dev, uint32_t pulse_us)
         return SERVO_ERR_PARAM;
     if (pulse_us < dev->cfg.min_pulse_us || pulse_us > dev->cfg.max_pulse_us)
         return SERVO_ERR_PARAM;
-    if (!dev->pwm.set_pulse_us(dev->pwm.ctx, pulse_us))
+    if (!dev->pwm->set_pulse_us(dev->pwm->ctx, pulse_us))
         return SERVO_ERR_HAL;
     return SERVO_OK;
 }

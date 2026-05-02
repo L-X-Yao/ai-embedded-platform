@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Simple, fast, no-table hash for hash maps, checksums, string hashing.
  * Thread safety: all functions are pure / reentrant.

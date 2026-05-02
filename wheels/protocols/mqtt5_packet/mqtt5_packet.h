@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless packet building and parsing for MQTT 5.0. Handles CONNECT,
  * PUBLISH, SUBSCRIBE, DISCONNECT encoding and CONNACK, PUBLISH decoding.

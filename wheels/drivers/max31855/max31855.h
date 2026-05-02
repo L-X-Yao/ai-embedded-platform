@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal (injected)
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  *
  * SPI interface injected via callbacks. Reads 32-bit frames containing
  * 14-bit thermocouple temperature and 12-bit internal reference temperature.

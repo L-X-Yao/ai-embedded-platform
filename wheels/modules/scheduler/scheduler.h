@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    none
+ * Deps:      none
+ * Instances: multi
  *
  * Round-robin periodic task execution, tick-driven. Application calls
  * scheduler_tick() + scheduler_run() in main loop. Passive: no OS,

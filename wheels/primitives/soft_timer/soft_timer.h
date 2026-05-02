@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Manages a static array of software timers driven by a periodic tick
  * (e.g., SysTick ISR). Supports one-shot and repeating modes with

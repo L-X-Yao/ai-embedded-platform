@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Uses caller-provided tick value (no HAL dependency).
  * Handles 32-bit tick wraparound correctly.

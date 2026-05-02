@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Host/big/little-endian conversion, unaligned buffer read/write,
  * byte swap.  All shift-based for portability across architectures.

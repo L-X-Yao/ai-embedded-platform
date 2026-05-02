@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Register map (all 16-bit little-endian):
  *   0x00  ALS_CONF — gain[12:11], IT[9:6], SD[0]

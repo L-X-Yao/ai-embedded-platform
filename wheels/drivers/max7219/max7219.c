@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal (injected)
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  */
 #include "max7219.h"
 #include <stddef.h>

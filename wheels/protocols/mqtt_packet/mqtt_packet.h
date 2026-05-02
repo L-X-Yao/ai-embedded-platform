@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless packet building and parsing. Handles CONNECT, PUBLISH,
  * SUBSCRIBE, PINGREQ, DISCONNECT encoding and CONNACK, PUBACK,

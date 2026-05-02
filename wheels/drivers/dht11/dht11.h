@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  *
  * Single-wire protocol: host pulls low 18ms, sensor responds with 40 bits.
  * HAL callbacks provide pin control and microsecond timing.
@@ -39,7 +40,7 @@ typedef struct {
 } dht11_gpio_t;
 
 typedef struct {
-    dht11_gpio_t gpio;
+    const dht11_gpio_t *gpio;
 } dht11_t;
 
 typedef struct {

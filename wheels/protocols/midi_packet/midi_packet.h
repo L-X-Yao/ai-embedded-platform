@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Streaming byte-at-a-time parser with running status support.
  * Builder functions for Note On, Note Off, Control Change,

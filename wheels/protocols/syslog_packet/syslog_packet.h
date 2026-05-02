@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless formatter for RFC 5424 syslog messages.
  * Produces "<PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID MSG".

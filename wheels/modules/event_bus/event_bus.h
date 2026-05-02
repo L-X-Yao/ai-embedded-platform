@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Passive pub/sub: application calls event_bus_publish(), all matching
  * subscribers are called synchronously in registration order.

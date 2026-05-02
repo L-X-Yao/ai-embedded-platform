@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    none
+ * Deps:      none
+ * Instances: single
  */
 
 #ifndef LOG_FILE_H

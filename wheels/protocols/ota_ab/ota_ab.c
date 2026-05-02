@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    flash_hal
+ * Deps:      flash_hal
+ * Instances: multi
  */
 
 #include "ota_ab.h"

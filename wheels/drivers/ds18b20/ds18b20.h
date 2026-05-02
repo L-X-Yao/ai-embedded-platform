@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    onewire_hal (injected)
+ * Deps:      onewire_hal (injected)
+ * Instances: multi
  *
  * 1-Wire protocol: reset pulse, ROM commands, function commands.
  * Supports single-device bus (skip ROM) and multi-device (match ROM).
@@ -47,7 +48,7 @@ typedef enum {
 } ds18b20_resolution_t;
 
 typedef struct {
-    ds18b20_ow_t ow;
+    const ds18b20_ow_t *ow;
     uint8_t      rom[8];
     bool         use_rom;
 } ds18b20_t;

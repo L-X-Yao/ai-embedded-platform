@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * RFC 4648 compliant. Standard alphabet + '=' padding.
  * Zero allocation: caller provides all buffers.

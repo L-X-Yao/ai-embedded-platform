@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * I2C register-based interface. 16-bit big-endian registers.
  * Supports single-shot and continuous measurement modes.
@@ -36,6 +37,7 @@ typedef struct {
                        const uint8_t *buf, uint16_t len);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } opt3001_i2c_t;
 

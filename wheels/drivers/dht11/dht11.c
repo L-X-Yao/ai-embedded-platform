@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  */
 #include "dht11.h"
 #include <string.h>
@@ -16,16 +17,16 @@ dht11_err_t dht11_init(dht11_t *dev, const dht11_gpio_t *gpio)
     if (!gpio->set_output || !gpio->set_input || !gpio->write_pin ||
         !gpio->read_pin || !gpio->delay_us)
         return DHT11_ERR_PARAM;
-    dev->gpio = *gpio;
+    dev->gpio = gpio;
     return DHT11_OK;
 }
 
 static dht11_err_t wait_pin(dht11_t *dev, bool level, uint32_t timeout_us)
 {
     while (timeout_us > 0) {
-        if (dev->gpio.read_pin(dev->gpio.ctx) == level)
+        if (dev->gpio->read_pin(dev->gpio->ctx) == level)
             return DHT11_OK;
-        dev->gpio.delay_us(dev->gpio.ctx, 1);
+        dev->gpio->delay_us(dev->gpio->ctx, 1);
         timeout_us--;
     }
     return DHT11_ERR_TIMEOUT;
@@ -38,13 +39,13 @@ dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out)
 
     uint8_t bytes[5] = {0};
 
-    dev->gpio.set_output(dev->gpio.ctx);
-    dev->gpio.write_pin(dev->gpio.ctx, false);
-    dev->gpio.delay_us(dev->gpio.ctx, 18000);
-    dev->gpio.write_pin(dev->gpio.ctx, true);
-    dev->gpio.delay_us(dev->gpio.ctx, 30);
+    dev->gpio->set_output(dev->gpio->ctx);
+    dev->gpio->write_pin(dev->gpio->ctx, false);
+    dev->gpio->delay_us(dev->gpio->ctx, 18000);
+    dev->gpio->write_pin(dev->gpio->ctx, true);
+    dev->gpio->delay_us(dev->gpio->ctx, 30);
 
-    dev->gpio.set_input(dev->gpio.ctx);
+    dev->gpio->set_input(dev->gpio->ctx);
 
     if (wait_pin(dev, false, 100) != DHT11_OK)
         return DHT11_ERR_TIMEOUT;
@@ -57,9 +58,9 @@ dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out)
         if (wait_pin(dev, true, 80) != DHT11_OK)
             return DHT11_ERR_TIMEOUT;
 
-        dev->gpio.delay_us(dev->gpio.ctx, 40);
+        dev->gpio->delay_us(dev->gpio->ctx, 40);
 
-        if (dev->gpio.read_pin(dev->gpio.ctx)) {
+        if (dev->gpio->read_pin(dev->gpio->ctx)) {
             bytes[i / 8] |= (uint8_t)(1 << (7 - (i % 8)));
             if (wait_pin(dev, false, 50) != DHT11_OK)
                 return DHT11_ERR_TIMEOUT;

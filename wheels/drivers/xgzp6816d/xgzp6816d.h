@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  */
 
 #ifndef XGZP6816D_H

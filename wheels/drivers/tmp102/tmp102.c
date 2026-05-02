@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * TMP102 register layout (12-bit mode, default after POR):
  *   0x00 — Temperature  (2 bytes, big-endian, bits[15:4] = raw, 0.0625 C/LSB)

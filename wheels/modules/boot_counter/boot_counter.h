@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- storage via read/write callbacks)
+ * Deps:      (none -- storage via read/write callbacks)
+ * Instances: multi
  *
  * Passive design: application provides storage callbacks (can wire to
  * kvs/flash/eeprom). Tracks boot count, reset reason, and uptime.

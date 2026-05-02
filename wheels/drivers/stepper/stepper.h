@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  *
  * Drives step/dir stepper drivers (A4988, DRV8825, TMC2209, etc.).
  * Trapezoidal acceleration profile with integer math, no float.

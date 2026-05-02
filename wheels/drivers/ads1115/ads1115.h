@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * I2C register-based interface. Supports single-shot mode, configurable
  * gain (PGA), and mux channel selection. Pure C99, no heap.
@@ -34,6 +35,7 @@ typedef struct {
                       uint8_t *buf, uint16_t len);
     bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                        const uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } ads1115_i2c_t;
 

@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * The PCF8574 has no register map. A single I2C write sets all 8 output
  * latches; a single I2C read returns the actual pin levels.

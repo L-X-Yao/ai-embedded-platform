@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  *
  * Supports MAX31865 RTD-to-digital converter with Callendar-Van Dusen
  * linearization. Config via SPI; reads 15-bit RTD ratio from registers

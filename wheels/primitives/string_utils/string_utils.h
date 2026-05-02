@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * All functions operate on caller-owned buffers — no heap allocation.
  * Thread safety: all functions are pure / reentrant.

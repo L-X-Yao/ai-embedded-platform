@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Command-based I2C: write command byte, read 2 bytes.
  * NOT register-based (no register address in reads).
@@ -33,6 +34,7 @@ typedef struct {
                   const uint8_t *data, uint16_t len);
     bool (*read)(void *ctx, uint8_t dev_addr,
                  uint8_t *data, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } bh1750_i2c_t;
 

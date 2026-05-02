@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    pwm_hal (injected)
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  *
  * Controls two DC motors via 4 PWM pins (AIN1, AIN2, BIN1, BIN2).
  * Forward/reverse/brake/coast per channel.

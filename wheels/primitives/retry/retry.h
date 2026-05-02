@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Pure computation: calculates next delay, caller provides the actual
  * wait mechanism (RTOS delay / busy-wait / timer).

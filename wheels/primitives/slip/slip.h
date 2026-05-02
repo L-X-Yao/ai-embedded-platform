@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * RFC 1055 byte stuffing with END/ESC framing. Supports block and
  * streaming modes. Streaming decoder enables byte-at-a-time UART

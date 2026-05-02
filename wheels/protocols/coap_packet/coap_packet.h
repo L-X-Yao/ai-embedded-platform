@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless packet-level codec for CoAP over UDP.
  * Supports CON/NON/ACK/RST types, options, payload marker.
