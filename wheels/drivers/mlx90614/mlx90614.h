@@ -41,7 +41,7 @@ typedef struct {
 } mlx90614_cfg_t;
 
 typedef struct {
-    mlx90614_i2c_t i2c;
+    const mlx90614_i2c_t *i2c;
     mlx90614_cfg_t cfg;
 } mlx90614_t;
 

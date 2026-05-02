@@ -13,7 +13,7 @@
 
 static bool cmd(const oled_ssd1306_t *dev, uint8_t c)
 {
-    return dev->i2c.write_cmd(dev->i2c.ctx, dev->cfg.addr, c);
+    return dev->i2c->write_cmd(dev->i2c->ctx, dev->cfg.addr, c);
 }
 
 oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
@@ -35,7 +35,7 @@ oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
     }
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
     dev->buf = framebuf;
     dev->buf_size = (size_t)cfg->width * (cfg->height / 8);
@@ -84,7 +84,7 @@ oled_ssd1306_err_t oled_ssd1306_flush(oled_ssd1306_t *dev)
     if (!cmd(dev, 0x00)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, (uint8_t)(dev->cfg.height / 8 - 1))) return OLED_SSD1306_ERR_I2C;
 
-    if (!dev->i2c.write_data(dev->i2c.ctx, dev->cfg.addr,
+    if (!dev->i2c->write_data(dev->i2c->ctx, dev->cfg.addr,
                              dev->buf, (uint16_t)dev->buf_size))
     {
         return OLED_SSD1306_ERR_I2C;

@@ -65,7 +65,7 @@ typedef struct {
 } tcs34725_rgbc_t;
 
 typedef struct {
-    tcs34725_i2c_t   i2c;
+    const tcs34725_i2c_t   *i2c;
     tcs34725_integ_t integ;
     tcs34725_gain_t  gain;
 } tcs34725_t;

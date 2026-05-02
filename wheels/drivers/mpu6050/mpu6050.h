@@ -66,7 +66,7 @@ typedef struct {
 } mpu6050_gyro_t;
 
 typedef struct {
-    mpu6050_i2c_t  i2c;
+    const mpu6050_i2c_t  *i2c;
     mpu6050_cfg_t  cfg;
     float          accel_scale;
     float          gyro_scale;

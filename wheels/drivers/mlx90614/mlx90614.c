@@ -28,11 +28,11 @@ static bool smbus_read_word(const mlx90614_t *dev, uint8_t cmd,
                             uint16_t *out)
 {
     uint8_t tx = cmd;
-    if (!dev->i2c.write(dev->i2c.ctx, dev->cfg.addr, &tx, 1))
+    if (!dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &tx, 1))
         return false;
 
     uint8_t rx[3]; /* LSB, MSB, PEC (PEC ignored in sim) */
-    if (!dev->i2c.read(dev->i2c.ctx, dev->cfg.addr, rx, 3))
+    if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, rx, 3))
         return false;
 
     *out = (uint16_t)((uint16_t)rx[1] << 8 | rx[0]);
@@ -47,7 +47,7 @@ static bool smbus_write_word(const mlx90614_t *dev, uint8_t cmd,
     tx[1] = (uint8_t)(val & 0xFFu);
     tx[2] = (uint8_t)(val >> 8);
     tx[3] = 0; /* PEC placeholder */
-    return dev->i2c.write(dev->i2c.ctx, dev->cfg.addr, tx, 4);
+    return dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, tx, 4);
 }
 
 static mlx90614_err_t read_temp_reg(mlx90614_t *dev, uint8_t reg,
@@ -73,7 +73,7 @@ mlx90614_err_t mlx90614_init(mlx90614_t *dev, const mlx90614_i2c_t *i2c,
         return MLX90614_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     /* Verify communication by reading ambient temp register */
@@ -125,8 +125,8 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
      * Datasheet mandates >= 5 ms between erase and write; use 10 ms for margin. */
     if (!smbus_write_word(dev, REG_EMISSIVITY, 0x0000))
         return MLX90614_ERR_I2C;
-    if (dev->i2c.delay_ms)
-        dev->i2c.delay_ms(dev->i2c.ctx, 10);
+    if (dev->i2c->delay_ms)
+        dev->i2c->delay_ms(dev->i2c->ctx, 10);
     if (!smbus_write_word(dev, REG_EMISSIVITY, raw))
         return MLX90614_ERR_I2C;
 

@@ -31,12 +31,12 @@
 
 static bool write_reg(const bme280_t *dev, uint8_t reg, uint8_t val)
 {
-    return dev->i2c.write_reg(dev->i2c.ctx, dev->cfg.addr, reg, val);
+    return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, reg, val);
 }
 
 static bool read_regs(const bme280_t *dev, uint8_t reg, uint8_t *buf, uint16_t len)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, reg, buf, len);
+    return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
 static bme280_err_t read_calibration(bme280_t *dev)
@@ -95,7 +95,7 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
     }
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     uint8_t id = 0;

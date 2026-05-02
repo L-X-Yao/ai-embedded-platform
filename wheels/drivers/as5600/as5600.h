@@ -46,7 +46,7 @@ typedef struct {
 #define AS5600_STATUS_MD  0x20u  /* magnet detected   */
 
 typedef struct {
-    as5600_i2c_t i2c;
+    const as5600_i2c_t *i2c;
 } as5600_t;
 
 /** Initialise driver context. @thread_safe: no */

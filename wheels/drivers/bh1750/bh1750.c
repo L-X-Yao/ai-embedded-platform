@@ -15,7 +15,7 @@
 
 static bh1750_err_t send_cmd(const bh1750_t *dev, uint8_t cmd)
 {
-    if (!dev->i2c.write(dev->i2c.ctx, dev->cfg.addr, &cmd, 1))
+    if (!dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &cmd, 1))
         return BH1750_ERR_I2C;
     return BH1750_OK;
 }
@@ -27,7 +27,7 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
         return BH1750_ERR_PARAM;
     if (!i2c->write || !i2c->read)
         return BH1750_ERR_PARAM;
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     switch (dev->cfg.mode) {
@@ -51,7 +51,7 @@ bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
         return BH1750_ERR_PARAM;
 
     uint8_t buf[2] = {0};
-    if (!dev->i2c.read(dev->i2c.ctx, dev->cfg.addr, buf, 2))
+    if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, buf, 2))
         return BH1750_ERR_I2C;
 
     uint16_t raw = ((uint16_t)buf[0] << 8) | buf[1];

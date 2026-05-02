@@ -41,7 +41,7 @@ typedef struct {
 } sht30_cfg_t;
 
 typedef struct {
-    sht30_i2c_t i2c;
+    const sht30_i2c_t *i2c;
     sht30_cfg_t cfg;
 } sht30_t;
 

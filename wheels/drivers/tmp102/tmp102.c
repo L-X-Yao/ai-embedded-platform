@@ -29,14 +29,14 @@
 
 static bool read16(const tmp102_t *dev, uint8_t reg, uint8_t *buf)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, reg, buf, 2);
+    return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, 2);
 }
 
 static bool write16(const tmp102_t *dev, uint8_t reg,
                     uint8_t msb, uint8_t lsb)
 {
     uint8_t buf[2] = { msb, lsb };
-    return dev->i2c.write_regs(dev->i2c.ctx, dev->cfg.addr, reg, buf, 2);
+    return dev->i2c->write_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, 2);
 }
 
 /* Convert 12-bit raw (bits[15:4] of big-endian pair) to Celsius. */
@@ -63,7 +63,7 @@ tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
         return TMP102_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     /* Read config register to verify communication. */

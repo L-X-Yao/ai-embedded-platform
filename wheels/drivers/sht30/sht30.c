@@ -19,7 +19,7 @@
 static bool send_cmd(const sht30_t *dev, uint8_t msb, uint8_t lsb)
 {
     uint8_t cmd[2] = { msb, lsb };
-    return dev->i2c.write(dev->i2c.ctx, dev->cfg.addr, cmd, 2);
+    return dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, cmd, 2);
 }
 
 uint8_t sht30_crc8(const uint8_t *data, uint16_t len)
@@ -56,7 +56,7 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
     }
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     if (!send_cmd(dev, CMD_SOFT_RESET_MSB, CMD_SOFT_RESET_LSB))
@@ -79,13 +79,13 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
         return SHT30_ERR_I2C;
     }
 
-    if (dev->i2c.delay_ms)
+    if (dev->i2c->delay_ms)
     {
-        dev->i2c.delay_ms(dev->i2c.ctx, 16);
+        dev->i2c->delay_ms(dev->i2c->ctx, 16);
     }
 
     uint8_t buf[6];
-    if (!dev->i2c.read(dev->i2c.ctx, dev->cfg.addr, buf, 6))
+    if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, buf, 6))
     {
         return SHT30_ERR_I2C;
     }

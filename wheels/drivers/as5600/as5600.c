@@ -27,13 +27,13 @@
 
 static bool write_reg(const as5600_t *dev, uint8_t reg, uint8_t val)
 {
-    return dev->i2c.write_reg(dev->i2c.ctx, AS5600_ADDR, reg, val);
+    return dev->i2c->write_reg(dev->i2c->ctx, AS5600_ADDR, reg, val);
 }
 
 static bool read_regs(const as5600_t *dev, uint8_t reg,
                       uint8_t *buf, uint16_t len)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, AS5600_ADDR, reg, buf, len);
+    return dev->i2c->read_regs(dev->i2c->ctx, AS5600_ADDR, reg, buf, len);
 }
 
 as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c)
@@ -43,7 +43,7 @@ as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c)
     if (!i2c->write_reg || !i2c->read_regs)
         return AS5600_ERR_PARAM;
 
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
 
     /* Verify communication by reading status register */
     uint8_t status = 0;

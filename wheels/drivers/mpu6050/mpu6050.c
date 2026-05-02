@@ -28,12 +28,12 @@ static const float gyro_scales[]  = { 131.0f, 65.5f, 32.8f, 16.4f };
 
 static bool write_reg(const mpu6050_t *dev, uint8_t reg, uint8_t val)
 {
-    return dev->i2c.write_reg(dev->i2c.ctx, dev->cfg.addr, reg, val);
+    return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, reg, val);
 }
 
 static bool read_regs(const mpu6050_t *dev, uint8_t reg, uint8_t *buf, uint16_t len)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, reg, buf, len);
+    return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
 mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
@@ -45,7 +45,7 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     }
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     if (!write_reg(dev, REG_PWR_MGMT_1, PWR_RESET))

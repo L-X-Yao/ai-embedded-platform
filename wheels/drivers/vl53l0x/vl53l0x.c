@@ -30,13 +30,13 @@
 
 static bool write_reg(const vl53l0x_t *dev, uint8_t reg, uint8_t val)
 {
-    return dev->i2c.write_reg(dev->i2c.ctx, dev->cfg.addr, reg, val);
+    return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, reg, val);
 }
 
 static bool read_regs(const vl53l0x_t *dev, uint8_t reg,
                       uint8_t *buf, uint16_t len)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, reg, buf, len);
+    return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
 static bool read_reg(const vl53l0x_t *dev, uint8_t reg, uint8_t *val)
@@ -73,7 +73,7 @@ vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
     }
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
     dev->timing_budget_us = 30000u; /* 30 ms default */
 
@@ -180,9 +180,9 @@ vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm)
         }
         if (!ready)
         {
-            if (dev->i2c.delay_ms)
+            if (dev->i2c->delay_ms)
             {
-                dev->i2c.delay_ms(dev->i2c.ctx, 1);
+                dev->i2c->delay_ms(dev->i2c->ctx, 1);
             }
             continue;
         }

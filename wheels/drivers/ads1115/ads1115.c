@@ -37,7 +37,7 @@ static uint16_t build_config(const ads1115_cfg_t *cfg, bool start)
 static ads1115_err_t write_config(ads1115_t *dev, uint16_t config)
 {
     uint8_t buf[2] = {(uint8_t)(config >> 8), (uint8_t)(config & 0xFF)};
-    if (!dev->i2c.write_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONFIG, buf, 2))
+    if (!dev->i2c->write_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG, buf, 2))
         return ADS1115_ERR_I2C;
     return ADS1115_OK;
 }
@@ -51,7 +51,7 @@ ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
         return ADS1115_ERR_PARAM;
     if ((unsigned)cfg->mux > 7 || (unsigned)cfg->pga > 5 || (unsigned)cfg->rate > 7)
         return ADS1115_ERR_PARAM;
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
     return ADS1115_OK;
 }
@@ -69,14 +69,14 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
     /* Poll for conversion complete (bit 15 of config register = 1) */
     uint8_t cfg_buf[2];
     for (int retry = 0; retry < 200; retry++) {
-        if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONFIG, cfg_buf, 2))
+        if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG, cfg_buf, 2))
             return ADS1115_ERR_I2C;
         if (cfg_buf[0] & 0x80) break;
         if (retry == 199) return ADS1115_ERR_BUSY;
     }
 
     uint8_t buf[2] = {0};
-    if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONVERSION, buf, 2))
+    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONVERSION, buf, 2))
         return ADS1115_ERR_I2C;
 
     *raw = (int16_t)((uint16_t)buf[0] << 8 | buf[1]);
