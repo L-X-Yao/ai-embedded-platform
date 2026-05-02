@@ -154,9 +154,10 @@ bencode_err_t bencode_decoder_init(bencode_decoder_t *dec,
 {
     if (!dec || !data)
         return BENCODE_ERR_PARAM;
-    dec->data = data;
-    dec->len  = len;
-    dec->pos  = 0;
+    dec->data  = data;
+    dec->len   = len;
+    dec->pos   = 0;
+    dec->depth = 0;
     return BENCODE_OK;
 }
 
@@ -235,6 +236,9 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
     /* List begin */
     if (ch == 'l') {
         dec->pos++;
+        if (dec->depth < BENCODE_MAX_DEPTH)
+            dec->nesting[dec->depth] = 'l';
+        dec->depth++;
         token->type = BENCODE_TOKEN_LIST_BEGIN;
         return BENCODE_OK;
     }
@@ -242,17 +246,27 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
     /* Dict begin */
     if (ch == 'd') {
         dec->pos++;
+        if (dec->depth < BENCODE_MAX_DEPTH)
+            dec->nesting[dec->depth] = 'd';
+        dec->depth++;
         token->type = BENCODE_TOKEN_DICT_BEGIN;
         return BENCODE_OK;
     }
 
-    /* End marker (list or dict) */
+    /* End marker (list or dict) — use nesting stack to distinguish */
     if (ch == 'e') {
-        /* Determine context: we don't track nesting depth here,
-         * caller is responsible for matching begin/end.
-         * Use generic list_end; caller can reinterpret. */
         dec->pos++;
-        token->type = BENCODE_TOKEN_LIST_END;
+        if (dec->depth > 0) {
+            dec->depth--;
+            if (dec->depth < BENCODE_MAX_DEPTH &&
+                dec->nesting[dec->depth] == 'd') {
+                token->type = BENCODE_TOKEN_DICT_END;
+            } else {
+                token->type = BENCODE_TOKEN_LIST_END;
+            }
+        } else {
+            token->type = BENCODE_TOKEN_LIST_END;
+        }
         return BENCODE_OK;
     }
 

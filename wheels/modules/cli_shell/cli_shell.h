@@ -22,6 +22,11 @@ extern "C" {
 
 /* ---------- Configuration macros (override before #include) ---------- */
 
+/*
+ * Warning: CLI_SHELL_LINE_SIZE is allocated on the cli_shell_t struct
+ * (stack or static). Large values (e.g. 512+) increase stack usage
+ * significantly. Keep <=256 on memory-constrained MCUs.
+ */
 #ifndef CLI_SHELL_LINE_SIZE
 #define CLI_SHELL_LINE_SIZE     128
 #endif

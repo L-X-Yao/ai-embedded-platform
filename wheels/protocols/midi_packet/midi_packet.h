@@ -79,6 +79,7 @@ typedef struct {
     uint8_t  buf_pos;              /* bytes collected so far */
     uint8_t  expected;             /* data bytes expected for current status */
     bool     in_sysex;             /* inside SysEx message */
+    bool     sysex_overflow;       /* true if SysEx exceeded MIDI_SYSEX_MAX */
     uint8_t  sysex_buf[MIDI_SYSEX_MAX];
     size_t   sysex_len;
 } midi_parser_t;

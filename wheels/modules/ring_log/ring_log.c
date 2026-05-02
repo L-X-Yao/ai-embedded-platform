@@ -29,7 +29,7 @@ ring_log_err_t ring_log_write(ring_log_t *rl, ring_log_level_t level,
     }
     if (level < rl->min_level) {
         rl->dropped++;
-        return RING_LOG_ERR_FULL;
+        return RING_LOG_ERR_FILTERED;
     }
 
     ring_log_entry_t *slot = &rl->entries[rl->head];

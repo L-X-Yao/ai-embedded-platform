@@ -1,5 +1,5 @@
 /*
- * timer_wheel — hashed timing wheel for O(1) timeout management
+ * timer_wheel — hashed timing wheel for efficient timeout management
  *
  * Layer:   L0
  * Status:  candidate

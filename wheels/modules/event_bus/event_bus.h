@@ -57,9 +57,23 @@ typedef struct {
     event_bus_sub_t  subs[EVENT_BUS_MAX_SUBS_PER_EVENT];
 } event_bus_slot_t;
 
+/* Deferred unsubscribe entry (used when unsubscribe called during publish) */
+#ifndef EVENT_BUS_MAX_DEFERRED
+#define EVENT_BUS_MAX_DEFERRED 4
+#endif
+
 typedef struct {
-    event_bus_slot_t slots[EVENT_BUS_MAX_EVENTS];
-    uint8_t          slot_count;
+    uint16_t       event_id;
+    event_bus_cb_t cb;
+    void          *ctx;
+} event_bus_deferred_unsub_t;
+
+typedef struct {
+    event_bus_slot_t           slots[EVENT_BUS_MAX_EVENTS];
+    uint8_t                    slot_count;
+    uint8_t                    iterating;       /* >0 while inside publish */
+    uint8_t                    deferred_count;
+    event_bus_deferred_unsub_t deferred[EVENT_BUS_MAX_DEFERRED];
 } event_bus_t;
 
 /* ---------- API ---------- */

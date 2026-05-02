@@ -89,11 +89,12 @@ bool midi_parse(midi_parser_t *p, uint8_t byte, midi_msg_t *out)
 
     /* SysEx handling */
     if (byte == MIDI_SYSEX_START) {
-        p->in_sysex  = true;
-        p->sysex_len = 0;
-        p->running_status = 0;
-        p->buf_pos   = 0;
-        p->expected  = 0;
+        p->in_sysex        = true;
+        p->sysex_len       = 0;
+        p->sysex_overflow  = false;
+        p->running_status  = 0;
+        p->buf_pos         = 0;
+        p->expected        = 0;
         return false;
     }
 
@@ -107,8 +108,12 @@ bool midi_parse(midi_parser_t *p, uint8_t byte, midi_msg_t *out)
             return true;
         }
         /* Accumulate SysEx data bytes (7-bit) */
-        if (!is_status_byte(byte) && p->sysex_len < MIDI_SYSEX_MAX) {
-            p->sysex_buf[p->sysex_len++] = byte;
+        if (!is_status_byte(byte)) {
+            if (p->sysex_len < MIDI_SYSEX_MAX) {
+                p->sysex_buf[p->sysex_len++] = byte;
+            } else {
+                p->sysex_overflow = true;
+            }
         }
         return false;
     }

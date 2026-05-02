@@ -90,6 +90,8 @@ hx711_err_t hx711_read(hx711_t *dev, float *value)
 
     if (!dev || !value)
         return HX711_ERR_PARAMS;
+    if (dev->scale == 0.0f)
+        return HX711_ERR_PARAMS;
 
     err = hx711_read_raw(dev, &raw);
     if (err != HX711_OK)
@@ -108,6 +110,10 @@ hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples)
 
     if (!dev || samples == 0)
         return HX711_ERR_PARAMS;
+
+    /* Clamp to avoid int32 sum overflow (24-bit values * 100 fits) */
+    if (samples > 100)
+        samples = 100;
 
     for (i = 0; i < samples; i++) {
         err = hx711_read_raw(dev, &raw);

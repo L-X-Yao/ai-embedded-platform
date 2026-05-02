@@ -58,11 +58,34 @@ event_bus_err_t event_bus_subscribe(event_bus_t *bus, uint16_t event_id,
     return EVENT_BUS_OK;
 }
 
+/* Process deferred unsubscribes queued during publish. */
+static void flush_deferred(event_bus_t *bus)
+{
+    for (uint8_t d = 0; d < bus->deferred_count; d++) {
+        event_bus_unsubscribe(bus,
+                              bus->deferred[d].event_id,
+                              bus->deferred[d].cb,
+                              bus->deferred[d].ctx);
+    }
+    bus->deferred_count = 0;
+}
+
 event_bus_err_t event_bus_unsubscribe(event_bus_t *bus, uint16_t event_id,
                                       event_bus_cb_t cb, void *ctx)
 {
     if (!bus || !cb) {
         return EVENT_BUS_ERR_PARAM;
+    }
+
+    /* If we're inside a publish, defer to avoid corrupting iteration */
+    if (bus->iterating > 0) {
+        if (bus->deferred_count < EVENT_BUS_MAX_DEFERRED) {
+            bus->deferred[bus->deferred_count].event_id = event_id;
+            bus->deferred[bus->deferred_count].cb       = cb;
+            bus->deferred[bus->deferred_count].ctx      = ctx;
+            bus->deferred_count++;
+        }
+        return EVENT_BUS_OK;
     }
 
     event_bus_slot_t *slot = find_slot(bus, event_id);
@@ -96,8 +119,15 @@ event_bus_err_t event_bus_publish(event_bus_t *bus, uint16_t event_id,
         return EVENT_BUS_OK;
     }
 
+    bus->iterating++;
     for (uint8_t i = 0; i < slot->count; i++) {
         slot->subs[i].cb(event_id, data, data_len, slot->subs[i].ctx);
+    }
+    bus->iterating--;
+
+    /* Process any unsubscribes that were deferred during callbacks */
+    if (bus->iterating == 0 && bus->deferred_count > 0) {
+        flush_deferred(bus);
     }
 
     return EVENT_BUS_OK;

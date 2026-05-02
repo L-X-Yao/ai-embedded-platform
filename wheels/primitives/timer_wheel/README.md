@@ -3,10 +3,11 @@
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-Hashed timing wheel for O(1) timeout management. Timers are hashed into
+Hashed timing wheel for efficient timeout management. Timers are hashed into
 wheel slots by `(current_pos + ticks) % num_slots`; each `tick()` advances
-the cursor and fires expired entries. add / cancel / tick are all O(1)
-amortised. Passive tick-driven design with zero heap allocation.
+the cursor and fires expired entries. add / cancel are O(1); tick is
+O(max_timers) due to linear scan over the timer array.
+Passive tick-driven design with zero heap allocation.
 
 ## Origin
 
@@ -79,7 +80,7 @@ None.
 ## API review
 
 - **Date**: 2026-05-01
-- **Key decisions**: Caller provides slot and timer storage arrays (no heap); timer IDs are caller-chosen (0..max_timers-1) for direct indexing; timers are one-shot only (repeating can be implemented by re-adding in the callback); tick scans entries for the current slot (linear over max_timers, fast for typical embedded sizes); add/cancel from within expiry callbacks is allowed.
+- **Key decisions**: Caller provides slot and timer storage arrays (no heap); timer IDs are caller-chosen (0..max_timers-1) for direct indexing; timers are one-shot only (repeating can be implemented by re-adding in the callback); tick is O(max_timers) — scans all entries each tick (linear, fast for typical embedded sizes up to a few hundred); add/cancel are O(1); add/cancel from within expiry callbacks is allowed.
 
 ## Responsible human
 

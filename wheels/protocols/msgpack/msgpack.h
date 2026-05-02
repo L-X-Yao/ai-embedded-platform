@@ -31,6 +31,17 @@ typedef enum {
     MSGPACK_ERR_OVERFLOW = -2,   /* buffer too small for encode       */
     MSGPACK_ERR_SHORT    = -3,   /* input truncated during decode     */
     MSGPACK_ERR_FORMAT   = -4,   /* unsupported/reserved format byte  */
+    /*
+     * Decoder returns ERR_FORMAT for these MessagePack types:
+     *   - float64   (0xcb)  — 64-bit float, rarely needed on MCU
+     *   - uint64    (0xcf)  — 64-bit unsigned integer
+     *   - int64     (0xd3)  — 64-bit signed integer
+     *   - fixext*   (0xd4-0xd8) — fixed-length extension types
+     *   - ext8/16/32 (0xc7-0xc9) — variable-length extension types
+     *   - timestamp (0xd6/0xd7 with type -1) — extension timestamp
+     * These are intentionally omitted to keep code size small for
+     * embedded use. Encoder likewise only supports up to 32-bit values.
+     */
 } msgpack_err_t;
 
 /* ------------------------------------------------------------------ */

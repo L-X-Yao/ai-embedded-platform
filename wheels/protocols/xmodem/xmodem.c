@@ -1,5 +1,5 @@
 /*
- * xmodem -- XMODEM/XMODEM-CRC file transfer receiver (passive, byte-fed)
+ * xmodem — XMODEM/XMODEM-CRC receiver (passive, byte-fed)
  *
  * Layer:   L2
  * Status:  candidate
@@ -141,11 +141,16 @@ xmodem_err_t xmodem_feed(xmodem_t *xm, uint8_t byte)
         return XMODEM_ERR_PARAMS;
     }
 
-    /* CAN detection */
+    /* CAN detection — spec requires 2 consecutive CAN to cancel */
     if (byte == XMODEM_CAN && xm->buf_pos == 0) {
-        xm->state = XMODEM_STATE_ERROR;
-        return XMODEM_ERR_CANCEL;
+        xm->can_count++;
+        if (xm->can_count >= 2) {
+            xm->state = XMODEM_STATE_ERROR;
+            return XMODEM_ERR_CANCEL;
+        }
+        return XMODEM_OK;
     }
+    xm->can_count = 0;
 
     /* EOT — transfer complete */
     if (byte == XMODEM_EOT && xm->buf_pos == 0) {
