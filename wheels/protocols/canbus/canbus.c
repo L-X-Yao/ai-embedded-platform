@@ -141,6 +141,7 @@ uint64_t canbus_signal_extract(const uint8_t *data, uint8_t start_bit,
                                uint8_t length, bool big_endian)
 {
     if (!data || length == 0 || length > 64) return 0;
+    if ((uint16_t)start_bit + length > 64) return 0;
 
     uint64_t result = 0;
 
@@ -187,6 +188,7 @@ void canbus_signal_pack(uint8_t *data, uint8_t start_bit,
                         uint8_t length, bool big_endian, uint64_t value)
 {
     if (!data || length == 0 || length > 64) return;
+    if ((uint16_t)start_bit + length > 64) return;
 
     if (!big_endian) {
         /* Intel (little-endian) */

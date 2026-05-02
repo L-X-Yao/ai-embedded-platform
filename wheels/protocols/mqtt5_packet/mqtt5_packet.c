@@ -125,7 +125,7 @@ int mqtt5_build_connect(uint8_t *buf, uint16_t size,
     int rl_len = mqtt5_encode_vbi(rl_buf, remaining);
     if (rl_len < 0) return MQTT5_ERR_OVERFLOW;
 
-    uint16_t total = (uint16_t)(1 + (uint16_t)rl_len + remaining);
+    uint32_t total = 1 + (uint32_t)rl_len + remaining;
     if (total > size) return MQTT5_ERR_SIZE;
 
     int pos = 0;
@@ -193,7 +193,7 @@ int mqtt5_build_publish(uint8_t *buf, uint16_t size,
     int rl_len = mqtt5_encode_vbi(rl_buf, remaining);
     if (rl_len < 0) return MQTT5_ERR_OVERFLOW;
 
-    uint16_t total = (uint16_t)(1 + (uint16_t)rl_len + remaining);
+    uint32_t total = 1 + (uint32_t)rl_len + remaining;
     if (total > size) return MQTT5_ERR_SIZE;
 
     uint8_t byte0 = 0x30; /* PUBLISH = 3 << 4 */
@@ -243,7 +243,7 @@ int mqtt5_build_subscribe(uint8_t *buf, uint16_t size,
     int rl_len = mqtt5_encode_vbi(rl_buf, remaining);
     if (rl_len < 0) return MQTT5_ERR_OVERFLOW;
 
-    uint16_t total = (uint16_t)(1 + (uint16_t)rl_len + remaining);
+    uint32_t total = 1 + (uint32_t)rl_len + remaining;
     if (total > size) return MQTT5_ERR_SIZE;
 
     int pos = 0;

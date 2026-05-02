@@ -139,6 +139,7 @@ lorawan_err_t lorawan_parse_data(const uint8_t *buf, uint16_t len,
     memcpy(frame->mic, buf + len - 4, 4);
 
     /* FPort + FRMPayload: everything between FOpts and MIC */
+    if ((uint16_t)pos + 4 > len) return LORAWAN_ERR_SIZE;
     uint16_t remaining = (uint16_t)(len - 4 - (uint16_t)pos);
     if (remaining > 0)
     {

@@ -206,6 +206,7 @@ pb_err_t pb_decode_field(pb_decoder_t *dec, pb_field_t *field)
         uint64_t length;
         err = pb_get_varint(dec, &length);
         if (err != PB_OK) return err;
+        if (length > UINT16_MAX) return PB_ERR_MALFORMED;
         if (length > (uint64_t)(dec->len - dec->pos)) return PB_ERR_TRUNCATED;
         field->value.bytes.data = &dec->buf[dec->pos];
         field->value.bytes.len = (uint16_t)length;
