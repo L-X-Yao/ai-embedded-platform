@@ -446,16 +446,26 @@ def chk_instances_accuracy(ctx, **_):
 
 
 def chk_signed_left_shift(ctx, **_):
-    """Detect signed integer left shift (C99 UB for negative values)."""
+    """Detect signed integer left shift (C99 UB for negative values).
+
+    Excludes lines where the shift operand is already cast to unsigned.
+    """
     if not ctx.source:
         return None
-    pat = re.compile(r'\bint(?:8|16|32|64)_t\s+\w+.*<<')
+    decl_pat = re.compile(r'\bint(?:8|16|32|64)_t\s+\w+.*<<')
     hits = []
     for i, line in enumerate(ctx.source.splitlines()):
-        if line.strip().startswith("//"):
+        stripped = line.strip()
+        if stripped.startswith("//"):
             continue
-        if pat.search(line):
-            hits.append(i + 1)
+        if not decl_pat.search(line):
+            continue
+        before_shift = line[:line.index("<<")]
+        if re.search(r'\(uint\d+_t\)\s*$', before_shift.rstrip()):
+            continue
+        if "(uint" in before_shift and "<<" not in before_shift.split("(uint")[0]:
+            continue
+        hits.append(i + 1)
     if not hits:
         return None
     locs = ", ".join(f"L{n}" for n in hits[:3])
@@ -464,15 +474,26 @@ def chk_signed_left_shift(ctx, **_):
 
 
 def chk_float_to_int_cast(ctx, **_):
-    """Detect float-to-int cast without range check."""
+    """Detect float-to-int cast without range check.
+
+    Only flags casts where the variable is declared as float/double
+    in the preceding 20 lines.
+    """
     if not ctx.source:
         return None
-    pat = re.compile(r'\(u?int(?:8|16|32)_t\)\s*(?:val|duty|temp|pct|factor|alpha|gain|scale|freq)')
+    cast_pat = re.compile(r'\(u?int(?:8|16|32)_t\)\s*(\w+)')
+    lines = ctx.source.splitlines()
     hits = []
-    for i, line in enumerate(ctx.source.splitlines()):
-        if line.strip().startswith("//"):
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("//"):
             continue
-        if pat.search(line):
+        m = cast_pat.search(stripped)
+        if not m:
+            continue
+        var_name = m.group(1)
+        context = "\n".join(lines[max(0, i - 20):i + 1])
+        if re.search(rf'\b(?:float|double)\b[^;]*\b{re.escape(var_name)}\b', context):
             hits.append(i + 1)
     if not hits:
         return None
@@ -506,18 +527,28 @@ def chk_memcpy_overflow(ctx, **_):
 
 
 def chk_unchecked_return(ctx, **_):
-    """Detect function calls whose error return is discarded."""
+    """Detect function calls whose error return is discarded.
+
+    Only flags calls to the wheel's own public API prefix (not static helpers).
+    """
     if not ctx.source:
         return None
-    pat = re.compile(r'\b\w+_(?:init|write|send|recv)\s*\([^)]*\)\s*;')
+    prefix = ctx.name + "_"
+    static_funcs = set(re.findall(r'static\s+\w+\s+(\w+)\s*\(', ctx.source))
+    pat = re.compile(rf'\b({re.escape(prefix)}\w+)\s*\([^)]*\)\s*;')
     hits = []
     for i, line in enumerate(ctx.source.splitlines()):
         stripped = line.strip()
         if stripped.startswith("//") or stripped.startswith("return"):
             continue
-        if pat.search(stripped):
-            if "=" not in stripped.split("(")[0]:
-                hits.append(i + 1)
+        m = pat.search(stripped)
+        if not m:
+            continue
+        func = m.group(1)
+        if func in static_funcs:
+            continue
+        if "=" not in stripped.split("(")[0]:
+            hits.append(i + 1)
     if not hits:
         return None
     locs = ", ".join(f"L{n}" for n in hits[:3])
