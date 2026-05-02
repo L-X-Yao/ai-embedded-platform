@@ -9,6 +9,7 @@
  */
 
 #include "telemetry.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,6 +35,13 @@ static int buf_append(char *buf, int pos, int cap, const char *s)
  */
 static int fmt_float(char *out, int size, float val)
 {
+    /* Guard against NaN / Inf which would produce non-numeric strings
+     * ("nan", "inf", "-inf") that break JSON/CSV parsers. */
+    if (isnan(val) || isinf(val)) {
+        int n = snprintf(out, (size_t)size, "0");
+        return (n >= 0 && n < size) ? n : -1;
+    }
+
     int n = snprintf(out, (size_t)size, "%.2f", (double)val);
     if (n <= 0 || n >= size) {
         return n;
@@ -185,6 +193,10 @@ telemetry_err_t telemetry_update(telemetry_t *t, const char *name,
     if (!t || !name) {
         return TELEMETRY_ERR_PARAM;
     }
+    /* Reject NaN / Inf to prevent non-numeric output in JSON/CSV */
+    if (isnan(value) || isinf(value)) {
+        return TELEMETRY_ERR_PARAM;
+    }
 
     for (uint8_t i = 0; i < t->field_count; i++) {
         if (strcmp(t->fields[i].name, name) == 0) {
@@ -200,6 +212,10 @@ telemetry_err_t telemetry_update_by_index(telemetry_t *t, uint8_t index,
                                           float value)
 {
     if (!t || index >= t->field_count) {
+        return TELEMETRY_ERR_PARAM;
+    }
+    /* Reject NaN / Inf to prevent non-numeric output in JSON/CSV */
+    if (isnan(value) || isinf(value)) {
         return TELEMETRY_ERR_PARAM;
     }
 
