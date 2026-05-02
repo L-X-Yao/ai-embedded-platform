@@ -6,11 +6,6 @@
 Maxim MAX7219 LED matrix / 7-segment display driver. SPI interface with
 16-bit shift register (register address + data). Supports 8 digits/rows,
 16-level intensity, BCD and raw decode modes.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no MAX7219 driver in VSF.
-
 ## API
 
 ```c

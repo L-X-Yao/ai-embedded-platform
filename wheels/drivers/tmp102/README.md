@@ -6,12 +6,6 @@
 12-bit digital temperature sensor (0.0625 C/LSB) with I2C interface.
 Supports four selectable addresses (0x48-0x4B), programmable alert
 thresholds, and shutdown/wake for low-power operation.
-
-## Why not VSF native?
-
-VSF has no TMP102 driver. Grep results (2026-05-01):
-- `grep -rn "tmp102\|TMP102" vsf/source/` — no matches
-
 ## Origin
 
 Proactive build for common I2C temperature sensing use case.

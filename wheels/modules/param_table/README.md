@@ -4,11 +4,6 @@
 **Layer: L3 (modules)**
 
 Simple string key-value parameter table for embedded systems. All values are strings, readonly flag protects hardware constants, on_change callback enables reactive parameters. No persistence — application saves if needed.
-
-## Why not VSF native?
-
-VSF has no lightweight string key-value table for CLI integration. Its configuration mechanisms target typed compile-time settings, not runtime string parameters.
-
 ## Origin
 
 Proactive build for CLI-integrated parameter management across embedded projects.

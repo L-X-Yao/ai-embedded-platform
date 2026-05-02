@@ -7,13 +7,6 @@ Persistent flash log sink with sector-ring management. Stores log entries
 in a circular ring of flash sectors, automatically erasing the oldest
 sector when full. HAL injection via function pointers — no dependency
 on any specific flash chip or driver.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`:
-- `easyflash` component exists but is a key-value store, not a log ring.
-- No sector-ring log facility found.
-
 ## Origin
 
 Proactive build — common pattern for embedded crash logging, flight

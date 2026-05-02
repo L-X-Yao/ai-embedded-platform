@@ -8,12 +8,6 @@ humidity, pressure, and gas resistance (air quality). I2C interface injected
 via callbacks. Implements the Bosch integer compensation algorithm from
 datasheet BST-BME680-DS001-00. Gas resistance uses lookup tables from the
 Bosch reference driver.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`bme680`, `bme6`, `bosch`, `environmental`, `gas_sensor` — zero results.
-
 ## Origin
 
 Proactive build. BME680 is the standard environmental sensor for air quality

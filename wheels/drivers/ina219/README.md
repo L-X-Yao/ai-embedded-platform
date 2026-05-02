@@ -7,11 +7,6 @@ TI INA219 I2C current/voltage/power monitor driver. Supports configurable
 bus voltage range (16V/32V), PGA gain (40-320mV shunt voltage), and
 automatic calibration from shunt resistor value. All registers are 16-bit
 big-endian.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): no INA219/INA2xx driver in VSF.
-
 ## API
 
 ```c

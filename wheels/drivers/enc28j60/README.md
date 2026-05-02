@@ -10,13 +10,6 @@ Ethernet frames up to 1518 bytes. HAL-injected SPI for mock-testable host builds
 ## Origin
 
 Proactive build for embedded Ethernet connectivity (IoT / telemetry / industrial).
-
-## Why not VSF native?
-
-VSF has no dedicated ENC28J60 driver. The `vsf_netdrv_t` interface handles
-higher-level networking but does not provide chip-level register access or
-SPI framing for this specific controller.
-
 ## Dependencies
 
 None (SPI HAL injected by caller).

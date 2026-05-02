@@ -11,12 +11,6 @@ alignment assumptions. Pure C99, no OS, no malloc.
 
 Proactive build for protocol implementations (MQTT, Modbus, CoAP, etc.) that
 use big-endian wire format on little-endian MCUs.
-
-## Why not VSF native?
-
-VSF does not provide a portable endian conversion API. `<endian.h>` is
-POSIX/glibc-specific and unavailable on bare-metal toolchains.
-
 ## Dependencies
 
 None.

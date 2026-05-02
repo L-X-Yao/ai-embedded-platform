@@ -6,13 +6,6 @@
 Publish/subscribe event dispatcher for decoupled module communication.
 Passive -- application calls `event_bus_publish()`, all matching subscribers
 are called synchronously in registration order. No heap, no OS.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): VSF has vsf_eda (event-driven architecture)
-which is tightly coupled to the VSF kernel scheduler. This wheel provides a
-zero-dependency synchronous pub/sub that works on bare metal or any RTOS.
-
 ## API
 
 ```c

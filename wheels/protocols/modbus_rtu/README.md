@@ -6,14 +6,6 @@ Stateless frame encoder/decoder for Modbus RTU (register operations).
 Master builds requests and parses responses; slave dispatches to register
 callbacks. Zero OS dependency — consumer handles UART framing (3.5 char gap)
 and timeout externally.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`modbus`, `modbus_rtu`, `modbus_master`, `modbus_slave` — zero results.
-
-VSF has no Modbus implementation.
-
 ## Origin
 
 Written for the platform's industrial project pipeline (Modbus RTU is the

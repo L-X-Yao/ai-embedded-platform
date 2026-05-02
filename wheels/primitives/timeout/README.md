@@ -7,13 +7,6 @@ Deadline-based timeout tracking with 32-bit tick wraparound handling. Uses
 caller-provided tick value — no HAL dependency, no timer hardware required.
 Suitable for cooperative polling loops, communication timeouts, and watchdog
 feeding intervals.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no standalone timeout utility in service/
-utilities/component. Various drivers have inline timeout checks but no reusable
-deadline tracker with wraparound safety.
-
 ## API
 
 ```c

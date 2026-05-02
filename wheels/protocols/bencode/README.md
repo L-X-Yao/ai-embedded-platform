@@ -13,12 +13,6 @@ SAX-style token parser (zero-copy for strings).
 
 Proactive build for embedded IoT/P2P use cases requiring compact
 structured data serialization.
-
-## Why not VSF native?
-
-VSF has no Bencode codec. The format is trivial and well-specified,
-making a standalone wheel the right approach.
-
 ## Dependencies
 
 None.

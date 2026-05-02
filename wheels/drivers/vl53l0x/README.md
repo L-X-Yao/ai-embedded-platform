@@ -7,12 +7,6 @@ Platform-agnostic driver for the ST VL53L0X time-of-flight laser ranging
 sensor. I2C interface injected via callbacks. Simplified init sequence
 (not the full ST API) with single-shot ranging returning 16-bit millimeter
 distance. Pure C99, no heap, fully reentrant per-context.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`vl53l0x`, `tof`, `time_of_flight`, `ranging`, `laser` — zero results.
-
 ## Origin
 
 Proactive build. VL53L0X is the most common I2C time-of-flight distance

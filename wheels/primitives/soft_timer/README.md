@@ -6,14 +6,6 @@
 Tick-driven software timer manager. Supports one-shot and repeating timers
 with per-timer callbacks. Driven by a single `soft_timer_tick()` call from
 SysTick or any periodic source. No heap, no framework dependency.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`callback_timer`, `timer`, `soft_timer` — VSF has `vsf_callback_timer_t` in the
-kernel, but it requires the full VSF kernel and `vsf_eda_t` task infrastructure.
-This wheel is framework-independent and works on bare-metal or any RTOS.
-
 ## Origin
 
 Proactive build. Software timers are used in every embedded project: LED blink,

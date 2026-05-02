@@ -7,14 +7,6 @@ Lightweight printf implementation supporting `%d %u %x %X %o %c %s %p %%` with
 width, zero-pad, left-align, and long modifier. No float, no malloc, no static
 buffers. Output via putc callback (streaming to UART, display, etc.) or to a
 sized buffer (snprintf-style).
-
-## Why not VSF native?
-
-VSF does not provide a minimal printf variant. The standard `vsf_trace` relies
-on the full libc printf, which pulls in float formatting and adds significant
-code size. This wheel targets sub-200-line implementations for MCUs where every
-byte of Flash matters.
-
 ## Origin
 
 Proactive build for resource-constrained MCU projects needing formatted output

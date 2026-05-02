@@ -7,15 +7,6 @@ RAM circular log buffer with line-oriented storage and retrieval. Designed
 as a companion sink for the `log` wheel — stores recent log lines in a
 fixed-size RAM buffer for crash dump analysis, CLI "show log", or
 debugger inspection.
-
-## Why not VSF native?
-
-Searched `vsf/source/utilities/template/vsf_queue.h`:
-- `vsf_rng_buf` is a typed-item ring queue (push/pop fixed-size elements).
-  Not suitable for variable-length log lines with byte-stream retrieval.
-
-No equivalent found in `vsf/source/service/` or `vsf/source/component/`.
-
 ## Origin
 
 Proactive build — common pattern for embedded crash dump and CLI log retrieval.

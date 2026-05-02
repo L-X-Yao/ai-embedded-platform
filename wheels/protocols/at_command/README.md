@@ -4,14 +4,6 @@
 
 Byte-feed AT command parser with response matching, URC dispatch, and data-mode prompt detection.
 Zero OS dependency — consumer feeds bytes from any UART source, engine emits events.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`at_command`, `at_parser`, `at_engine`, `modem` — zero results.
-
-VSF has no AT command framework.
-
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/air780eg/air780eg_driver.c` — line buffering,

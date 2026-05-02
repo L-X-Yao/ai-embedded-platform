@@ -6,13 +6,6 @@
 Sliding window (SMA) and exponential (EMA) moving average filters for signal
 smoothing. Pure C99, no heap, fully reentrant. Caller provides the SMA window
 buffer; EMA needs no buffer.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`moving_avg`, `moving_average`, `low_pass`, `filter` — zero results (only unrelated
-hardware filter register definitions in CMSIS headers).
-
 ## Origin
 
 Proactive build. Moving average is the most common signal filter in embedded:

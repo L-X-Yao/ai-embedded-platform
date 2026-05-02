@@ -4,11 +4,6 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for QST QMI8658A accelerometer + gyroscope.
-
-## Why not VSF native?
-
-VSF has no IMU/motion-sensor component. Searched `vsf/source/{component,service,hal}/` — zero hits for `qmi8658`, `imu`, `accel.*gyro`, `6axis`, `motion_sensor`.
-
 ## Features
 
 - WHOAMI register check (0x05)

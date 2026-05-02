@@ -6,14 +6,6 @@
 Stateless frame encoder/decoder for Modbus TCP/IP (MBAP header + PDU).
 Builds request frames and parses responses for register operations.
 Zero OS dependency --- consumer handles TCP connections externally.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`modbus`, `modbus_tcp`, `mbap` --- zero results.
-
-VSF has no Modbus TCP implementation.
-
 ## Origin
 
 Proactive build for industrial Ethernet projects. Modbus TCP is the TCP/IP

@@ -6,12 +6,6 @@
 Software quadrature rotary encoder decoder. Feed A/B pin states on each
 edge interrupt. Uses lookup table for state transitions. Tracks absolute
 position (int32_t) and last direction.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no rotary encoder decoder in VSF. Only
-STM32 HAL timer encoder mode in PLOOC template (hardware-specific).
-
 ## API
 
 ```c

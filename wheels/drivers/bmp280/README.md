@@ -6,12 +6,6 @@
 Platform-agnostic driver for Bosch BMP280 digital temperature and pressure
 sensor. I2C interface injected via callbacks. Implements the official Bosch
 32-bit integer compensation algorithm from datasheet BST-BMP280-DS001-26.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`bmp280`, `bmp2`, `bosch`, `barometer`, `pressure` — zero results.
-
 ## Origin
 
 Proactive build. BMP280 is the most widely used barometric pressure sensor

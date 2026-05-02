@@ -10,11 +10,6 @@ Common in custom embedded protocols, smart cards, NFC.
 ## Origin
 
 Proactive build for custom embedded protocol framing (telemetry, config, NFC NDEF-like payloads).
-
-## Why not VSF native?
-
-VSF has no TLV codec. Its protocol stack (USB, BLE, etc.) uses format-specific parsers, not a generic TLV primitive.
-
 ## Dependencies
 
 None.

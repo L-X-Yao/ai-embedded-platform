@@ -5,14 +5,6 @@
 
 Magnetometer calibration using min/max ellipsoid fitting. Computes hard-iron offset and soft-iron scale correction from raw 3-axis samples.
 Zero hardware dependency — feed samples in, get calibration parameters out.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`calibrat`, `mag_cal`, `hard_iron`, `ellipsoid` — zero results.
-
-VSF has no sensor calibration capability.
-
 ## Origin
 
 Extracted from `projects/flybox/src/app/mag_cal.c` (QMC5883P magnetometer calibration).

@@ -6,11 +6,6 @@
 TI ADS1115 16-bit 4-channel delta-sigma ADC driver. I2C register-based
 interface. Supports single-shot mode, configurable PGA gain (6.144V to
 0.256V FSR), mux channel selection (4 single-ended or 2 differential).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no ADS1115/ADS1015 driver in VSF.
-
 ## API
 
 ```c

@@ -6,11 +6,6 @@
 CoAP message encoder/decoder (RFC 7252). Stateless packet-level codec for
 CoAP over UDP. Supports CON/NON/ACK/RST message types, delta-encoded options,
 payload marker, and token up to 8 bytes.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no CoAP implementation in VSF.
-
 ## API
 
 ```c

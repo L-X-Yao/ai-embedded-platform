@@ -13,12 +13,6 @@ No lookup tables — trades speed for flexibility and minimal ROM/RAM.
 Proactive build to generalize CRC computation across protocols. Complements
 the existing `crc16` and `crc32` L0 wheels — those use table-based fast
 paths for their specific algorithms; `crc_any` covers everything else.
-
-## Why not VSF native?
-
-VSF does not provide a configurable multi-width CRC calculator. The
-`vsf_crc` utilities are limited to specific fixed algorithms.
-
 ## Dependencies
 
 None.

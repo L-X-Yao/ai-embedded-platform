@@ -4,17 +4,6 @@
 **Layer: L0 (primitives)**
 
 UART output sink for the `log` wheel via HAL function pointer injection. The most common embedded log output path -- wraps a user-provided `write(ctx, data, len)` function into a `log_sink_fn`-compatible adapter. Pure C99, zero dependencies.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`trace`, `uart`, `sink`, `serial` (2026-04-30).
-
-- **`vsf_trace`** outputs to `vsf_stream`, not a raw UART write function pointer. There is no adapter that takes an arbitrary `write(ctx, data, len)` callback and bridges it to the trace subsystem.
-- VSF's stream-based UART path (`vsf_usart_stream`) requires the full VSF HAL + stream infrastructure -- overkill for a bare-metal or non-VSF project that just wants log lines on a serial port.
-
-**Conclusion**: independent sink wheel. Thin wrapper -- the value is standardization (same HAL injection pattern as all L1 drivers), not logic complexity.
-
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Same HAL injection pattern used by all L1 drivers in the platform.

@@ -9,12 +9,6 @@ properties (session expiry, message expiry, receive max, max QoS), and
 reason codes. Handles CONNECT, PUBLISH, SUBSCRIBE, DISCONNECT encoding
 and CONNACK, PUBLISH decoding. No transport -- caller handles TCP/TLS.
 Pure C99, no heap, all buffers caller-provided.
-
-## Why not VSF native?
-
-VSF has no MQTT 5.0 packet codec. `vsf/source/component/3rd-party/` has
-no MQTT library. The existing mqtt_packet wheel covers v3.1.1 only.
-
 ## Origin
 
 Proactive build for IoT projects requiring MQTT 5.0 features (session

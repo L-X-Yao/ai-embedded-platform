@@ -66,12 +66,6 @@ None.
 
 - **Date**: 2026-05-01
 - **Key decisions**: clamp (not extrapolate) beyond endpoints; strictly ascending x required; binary search for O(log n) lookup
-
-## Why not VSF native?
-
-VSF has no generic interpolated lookup table utility. The closest are
-hard-coded calibration routines in specific drivers, which are not reusable.
-
 ## Responsible human
 
 @user

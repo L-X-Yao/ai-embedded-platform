@@ -6,12 +6,6 @@
 Broadcom/Avago APDS-9960 driver. Supports proximity detection (8-bit), RGBC
 color sensing (16-bit per channel), and simple 4-directional gesture recognition
 (UP/DOWN/LEFT/RIGHT) via FIFO photodiode data. Fixed I2C address 0x39.
-
-## Why not VSF native?
-
-No APDS-9960 driver in `vsf/source/component/` or `vsf/source/hal/driver/`.
-Grepped `apds` across entire VSF tree with zero hits.
-
 ## Origin
 
 Proactive build for proximity/gesture/color sensing use cases (e.g., touchless

@@ -11,12 +11,6 @@ token if available. Passive — caller supplies `current_tick` from any time sou
 
 Proactive build for API throttling, retry backoff, resource guarding. Generic counterpart to
 `log_rate` (which is log-sink-specific).
-
-## Why not VSF native?
-
-VSF has no generic rate limiter primitive. `log_rate` exists in this repo but is coupled to the
-log sink interface. This wheel is standalone, zero-dependency, usable anywhere.
-
 ## Dependencies
 
 None.

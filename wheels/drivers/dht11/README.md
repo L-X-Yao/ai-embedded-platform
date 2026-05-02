@@ -6,11 +6,6 @@
 DHT11 temperature and humidity sensor driver. Single-wire protocol:
 host pulls low 18ms, sensor responds with 40 bits (2 bytes humidity +
 2 bytes temperature + 1 byte checksum).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no DHT11/DHT22 driver in service/utilities/component.
-
 ## API
 
 ```c

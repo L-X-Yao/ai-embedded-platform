@@ -6,11 +6,6 @@
 LED blink pattern engine. Drive on/off sequences from a descriptor array.
 Caller ticks at fixed interval, engine returns current on/off state.
 Supports one-shot and looping patterns, multi-step sequences (e.g. SOS).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no LED pattern engine in VSF.
-
 ## API
 
 ```c

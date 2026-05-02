@@ -12,14 +12,6 @@ byte streams.
 
 Proactive build for UART RX buffering and protocol framing across
 multiple projects (flybox, future serial-based protocols).
-
-## Why not VSF native?
-
-VSF provides `vsf_stream_t` and related stream abstractions, but those
-are tightly coupled to VSF's task/event model and require VSF kernel.
-This wheel is a passive data structure with zero OS dependency, usable
-in bare-metal and any RTOS context.
-
 ## Dependencies
 
 None.

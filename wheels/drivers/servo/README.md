@@ -5,11 +5,6 @@
 
 PWM servo motor driver. Maps angle (0-180° or configurable) to pulse width
 (typically 500-2500µs). Caller provides PWM callback, no timer HW dependency.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no servo driver in VSF.
-
 ## API
 
 ```c

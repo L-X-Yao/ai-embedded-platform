@@ -4,11 +4,6 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for Winbond W25Q series (W25Q32/W25Q64/W25Q128 etc).
-
-## Why not VSF native?
-
-VSF has no SPI NOR flash component. Searched `vsf/source/{component,service,hal}/` — zero hits for `w25q`, `spi.*flash`, `nor.*flash`, `jedec.*flash`.
-
 ## Features
 
 - JEDEC ID read + validation

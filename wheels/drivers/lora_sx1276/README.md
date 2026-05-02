@@ -7,12 +7,6 @@ PHY-layer driver for Semtech SX1276/SX1278 LoRa radio transceivers. Handles
 frequency/bandwidth/spreading-factor/coding-rate/power configuration, packet
 send/receive, RSSI/SNR readout, and sleep/standby power modes. All SPI and
 reset-pin access is HAL-injected.
-
-## Why not VSF native?
-
-VSF has no SX1276/SX1278 LoRa radio driver. The closest is USB/BLE radio
-support which is unrelated to SPI LoRa PHY.
-
 ## Origin
 
 Proactive build for LoRa-based IoT projects. Pairs with `lorawan_packet` (L2)

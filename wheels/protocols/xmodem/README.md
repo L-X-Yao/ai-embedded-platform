@@ -11,12 +11,6 @@ serial access — purely event-driven.
 ## Origin
 
 Proactive build for firmware update over serial (common in embedded bootloaders).
-
-## Why not VSF native?
-
-VSF has no XMODEM implementation. The protocol is simple enough (< 200 lines)
-that a standalone wheel is the right approach.
-
 ## Dependencies
 
 None.

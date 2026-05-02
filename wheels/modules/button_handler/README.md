@@ -9,13 +9,6 @@ callback; call `btn_handler_tick()` at a fixed interval (e.g. every 10ms).
 
 Passive design: no OS, no malloc, no timer HW. All timing expressed in tick
 counts -- the caller decides the tick rate.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): `vsf_input_on_evt` and input subsystem exist
-but are tightly coupled to VSF's HID/input framework. No standalone tick-driven
-button pattern detector usable as a passive library.
-
 ## API
 
 ```c

@@ -7,11 +7,6 @@ TCA9548A 8-channel I2C multiplexer driver. Single control register where
 each bit enables one downstream I2C bus (bit 0 = ch0, ..., bit 7 = ch7).
 Used to resolve address conflicts when multiple identical I2C devices
 share the same bus.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): no TCA9548A or I2C mux driver in VSF.
-
 ## API
 
 ```c

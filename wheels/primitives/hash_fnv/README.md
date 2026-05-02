@@ -6,20 +6,6 @@
 Simple, fast, no-table FNV-1a hash for hash maps, checksums, and string
 hashing. Provides both 32-bit and 64-bit variants with one-shot, string,
 and incremental (streaming) APIs.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01):
-
-```bash
-grep -rn "fnv\|hash_func\|hash_map" vsf/source/
-```
-
-VSF has no general-purpose hash function. `vsf_crc` provides CRC (different
-use case: error detection vs. hash distribution). FNV-1a is the standard
-choice for hash maps and fast fingerprinting where cryptographic strength
-is not needed.
-
 ## Origin
 
 Proactive build for hash map key hashing, string deduplication, and fast

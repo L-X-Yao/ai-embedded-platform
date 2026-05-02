@@ -4,11 +4,6 @@
 **Layer: L0 (primitives)**
 
 RFC 4122 UUID v4 (random-based) implementation. Generates, formats, parses, and compares 128-bit UUIDs. RNG callback injection lets the caller provide any random source (hardware RNG, PRNG, etc.). No malloc, no global state.
-
-## Why not VSF native?
-
-VSF has no UUID generation or parsing utility. Grepped `vsf/source/` for `uuid`, `guid`, `rfc4122` — no results.
-
 ## Origin
 
 Proactive build for device identification, session tokens, and message correlation in embedded protocols.

@@ -4,14 +4,6 @@
 
 Tick-driven LED state machine with blink, breathe (PWM), and pulse patterns.
 Single HAL callback, zero hardware dependency, no dynamic allocation.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`led`, `blink`, `breathe`, `indicator` — zero results.
-
-VSF provides GPIO HAL primitives but no LED pattern state machine.
-
 ## Origin
 
 Extracted from common patterns in `projects/flybox/` (LED task) and `projects/drone_light/` (WS2812 control loop).

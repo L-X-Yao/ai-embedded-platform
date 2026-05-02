@@ -6,15 +6,6 @@
 Fixed-size circular FIFO event queue for bare-metal event-driven architectures.
 Each event carries a type (uint16) and data payload (uint32). Single-producer
 single-consumer safe (ISR push, main loop pop). No heap, caller provides buffer.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/utilities/` for:
-`event_queue`, `evt_queue`, `msg_queue`, `mailbox` — zero results.
-
-VSF has `vsf_eda_t` event-driven architecture in the kernel, but it requires
-the full VSF kernel. This wheel is framework-independent.
-
 ## Origin
 
 Proactive build. Event queues are the backbone of bare-metal event-driven

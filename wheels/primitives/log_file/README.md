@@ -7,13 +7,6 @@ FILE* output sink for the `log` wheel. Opens files in append mode for
 persistent log capture, or attaches to an existing FILE* (e.g. stderr).
 Supports auto-flush for crash-safe logging. Intended for host simulation
 and test log capture rather than bare-metal targets.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/trace/`, `vsf/source/component/`, `vsf/source/utilities/`
-for `file`, `fwrite`, `trace_file` — `vsf_trace` outputs to `vsf_stream`,
-not to stdio FILE*. No file-based sink exists.
-
 ## Origin
 
 Proactive build — common companion pattern for host-side log capture during

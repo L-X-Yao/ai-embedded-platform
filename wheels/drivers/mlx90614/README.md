@@ -7,12 +7,6 @@ Platform-agnostic driver for Melexis MLX90614 non-contact infrared temperature
 sensor. Uses SMBus protocol via command-based I2C (write+read, not register-based).
 Default address 0x5A. Supports object temperature, ambient temperature, and
 emissivity read/write.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`mlx90614`, `melexis`, `infrared`, `ir_temp`, `thermopile` — zero results.
-
 ## Origin
 
 Proactive build. MLX90614 is the most common non-contact IR temperature sensor

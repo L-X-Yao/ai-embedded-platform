@@ -10,12 +10,6 @@ Common for debug output, MAC addresses, register dumps.
 ## Origin
 
 Proactive build for debug/diagnostic use cases across projects.
-
-## Why not VSF native?
-
-VSF has no hex encode/decode utility. `grep -rn` across `vsf/source/service/`,
-`vsf/source/utilities/`, `vsf/source/component/` found no hex codec.
-
 ## Dependencies
 
 None.

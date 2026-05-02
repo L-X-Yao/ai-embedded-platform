@@ -4,11 +4,6 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for QST QMC5883P digital magnetometer.
-
-## Why not VSF native?
-
-VSF has no magnetometer/compass component. Searched `vsf/source/{component,service,hal}/` — zero hits for `qmc5883`, `mag`, `compass`, `magnetometer`.
-
 ## Features
 
 - WHOAMI register check (0x80 @ reg 0x00)

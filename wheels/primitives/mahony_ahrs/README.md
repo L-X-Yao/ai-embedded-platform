@@ -6,14 +6,6 @@
 Attitude and heading reference system using Mahony complementary filter.
 Fuses accelerometer + gyroscope (6-axis) and optionally magnetometer (9-axis).
 Outputs quaternion and Euler angles. Zero hardware dependency — pure math.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`ahrs`, `mahony`, `quaternion`, `imu.*filter`, `attitude` — zero results.
-
-VSF has no attitude estimation or sensor fusion.
-
 ## Origin
 
 Extracted from `projects/flybox/src/app/imu_task.c` (Mahony filter for QMI8658A + QMC5883P).

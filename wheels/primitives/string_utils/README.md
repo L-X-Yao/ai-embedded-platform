@@ -6,13 +6,6 @@
 Common string operations for embedded systems: trim, split, join, prefix/suffix
 checks, and numeric parsing. No heap allocation, no stdlib dependency beyond
 `string.h`. All functions operate on caller-owned buffers.
-
-## Why not VSF native?
-
-VSF does not provide a string utility module. `vsf/source/utilities/` has no
-trim/split/join/parse helpers. Standard `<string.h>` covers only memcpy/strcmp
-level primitives.
-
 ## Origin
 
 Proactive build for AT command parsing, CLI input handling, and config

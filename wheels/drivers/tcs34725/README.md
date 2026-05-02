@@ -6,11 +6,6 @@
 AMS TCS34725 I2C RGB color sensor driver. Register-based I2C with command
 register protocol (0x80 | reg). Fixed address 0x29, chip ID 0x44 or 0x4D.
 Provides RGBC raw data, estimated color temperature (CCT), and lux output.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): no TCS34725 driver in VSF.
-
 ## API
 
 ```c

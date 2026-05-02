@@ -7,15 +7,6 @@ Linear read/write byte buffer with separate cursors for protocol packet
 assembly, UART accumulation, and serialization. Supports u8/u16/u32
 big-endian put/get, bulk byte operations, read pointer access, and
 compaction. Caller provides backing storage. No heap, fully reentrant.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/utilities/` for:
-`byte_buf`, `byte_buffer`, `dynbuf`, `membuf` — zero results.
-
-VSF has `vsf_fifo` (circular) but no linear read/write buffer for
-protocol framing.
-
 ## Origin
 
 Proactive build. Linear byte buffers are used in every protocol stack
