@@ -73,6 +73,7 @@ typedef struct {
     uint8_t            buf_pos;
     bool               use_crc;         /* true = XMODEM-CRC (CRC-16), false = checksum */
     uint32_t           total_bytes;
+    uint8_t            can_count;       /* consecutive CAN bytes received */
 } xmodem_t;
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */

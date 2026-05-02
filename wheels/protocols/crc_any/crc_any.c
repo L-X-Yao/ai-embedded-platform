@@ -70,7 +70,11 @@ static uint32_t finalize(const crc_any_config_t *cfg, uint32_t crc)
 uint32_t crc_any_update(const crc_any_config_t *cfg, uint32_t crc,
                         const uint8_t *data, size_t len)
 {
-    if (!cfg || !data)
+    if (!cfg)
+        return crc;
+    if (len == 0)
+        return crc;
+    if (!data)
         return crc;
     for (size_t i = 0; i < len; i++)
         crc = process_byte(cfg, crc, data[i]);

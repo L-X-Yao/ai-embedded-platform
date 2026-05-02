@@ -1,5 +1,5 @@
 /*
- * timer_wheel — hashed timing wheel for O(1) timeout management
+ * timer_wheel — hashed timing wheel for efficient timeout management
  *
  * Layer:   L0
  * Status:  candidate
@@ -7,7 +7,8 @@
  *
  * Classic hashed timing wheel: timers are placed into slots based on
  * (current_pos + ticks) % num_slots. Each tick advances the cursor and
- * fires expired entries. add/cancel/tick are all O(1). Passive design:
+ * fires expired entries. add/cancel are O(1); tick is O(max_timers)
+ * due to linear scan. Passive design:
  * caller drives via timer_wheel_tick(). No heap, no OS dependency.
  * Thread safety: not thread-safe. Call tick from one context only.
  */

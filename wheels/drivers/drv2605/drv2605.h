@@ -81,7 +81,7 @@ typedef struct {
 drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c);
 
 /** Set actuator type (ERM or LRA) in feedback control register. @thread_safe: caller_must_lock */
-drv2605_err_t drv2605_set_mode(drv2605_t *dev, drv2605_actuator_t type);
+drv2605_err_t drv2605_set_actuator(drv2605_t *dev, drv2605_actuator_t type);
 
 /** Load an effect into a waveform slot (0-7). effect_id 1-123, 0 = stop. @thread_safe: caller_must_lock */
 drv2605_err_t drv2605_set_waveform(drv2605_t *dev, uint8_t slot,

@@ -104,10 +104,16 @@ typedef struct {
     } value;
 } bencode_token_t;
 
+#ifndef BENCODE_MAX_DEPTH
+#define BENCODE_MAX_DEPTH 16
+#endif
+
 typedef struct {
     const uint8_t *data;
     size_t         len;
     size_t         pos;
+    uint8_t        nesting[BENCODE_MAX_DEPTH]; /* 'l' or 'd' per level */
+    uint8_t        depth;
 } bencode_decoder_t;
 
 /** Initialize decoder over input data.

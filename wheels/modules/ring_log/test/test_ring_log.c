@@ -33,9 +33,9 @@ TEST(test_level_filter)
     ring_log_t rl;
     ring_log_init(&rl, RING_LOG_WARN);
     /* DEBUG < WARN => rejected */
-    ASSERT_EQ(ring_log_write(&rl, RING_LOG_DEBUG, 1, "dbg"), RING_LOG_ERR_FULL);
+    ASSERT_EQ(ring_log_write(&rl, RING_LOG_DEBUG, 1, "dbg"), RING_LOG_ERR_FILTERED);
     /* INFO < WARN => rejected */
-    ASSERT_EQ(ring_log_write(&rl, RING_LOG_INFO, 2, "inf"), RING_LOG_ERR_FULL);
+    ASSERT_EQ(ring_log_write(&rl, RING_LOG_INFO, 2, "inf"), RING_LOG_ERR_FILTERED);
     ASSERT_EQ(ring_log_count(&rl), 0);
     ASSERT_EQ(ring_log_dropped(&rl), 2);
 
@@ -104,7 +104,7 @@ TEST(test_clear)
     ASSERT_EQ(ring_log_dropped(&rl), 0);
     /* min_level preserved after clear */
     ASSERT_EQ(ring_log_write(&rl, RING_LOG_DEBUG, 3, "nope"),
-              RING_LOG_ERR_FULL);
+              RING_LOG_ERR_FILTERED);
 }
 
 /* ---- 8. read oldest order ---- */
@@ -195,7 +195,7 @@ TEST(test_set_level)
     ring_log_t rl;
     ring_log_init(&rl, RING_LOG_ERROR);
     /* DEBUG rejected at ERROR level */
-    ASSERT_EQ(ring_log_write(&rl, RING_LOG_DEBUG, 1, "no"), RING_LOG_ERR_FULL);
+    ASSERT_EQ(ring_log_write(&rl, RING_LOG_DEBUG, 1, "no"), RING_LOG_ERR_FILTERED);
 
     /* lower threshold to DEBUG */
     ASSERT_EQ(ring_log_set_level(&rl, RING_LOG_DEBUG), RING_LOG_OK);

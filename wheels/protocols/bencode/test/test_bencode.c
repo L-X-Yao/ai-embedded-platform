@@ -252,7 +252,7 @@ TEST(test_roundtrip)
     ASSERT_TRUE(memcmp(tok.value.string.data, "bob", 3) == 0);
 
     ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
-    ASSERT_EQ(tok.type, BENCODE_TOKEN_LIST_END); /* dict end = 'e' */
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_DICT_END); /* dict end = 'e' */
 
     ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_END);
 }

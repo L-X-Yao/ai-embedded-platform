@@ -74,7 +74,7 @@ TEST(test_null_safety)
     ASSERT_EQ(drv2605_init(NULL, &mock_i2c), DRV2605_ERR_PARAM);
     drv2605_t d;
     ASSERT_EQ(drv2605_init(&d, NULL), DRV2605_ERR_PARAM);
-    ASSERT_EQ(drv2605_set_mode(NULL, DRV2605_ACTUATOR_ERM), DRV2605_ERR_PARAM);
+    ASSERT_EQ(drv2605_set_actuator(NULL, DRV2605_ACTUATOR_ERM), DRV2605_ERR_PARAM);
     ASSERT_EQ(drv2605_set_waveform(NULL, 0, 1), DRV2605_ERR_PARAM);
     ASSERT_EQ(drv2605_go(NULL), DRV2605_ERR_PARAM);
     ASSERT_EQ(drv2605_stop(NULL), DRV2605_ERR_PARAM);
@@ -83,30 +83,30 @@ TEST(test_null_safety)
 
 /* ---------- set_mode tests ---------- */
 
-TEST(test_set_mode_erm)
+TEST(test_set_actuator_erm)
 {
     setup();
     /* Pre-set LRA bit to verify it gets cleared */
     mock_regs[0x1A] = 0xB6; /* bit 7 set = LRA */
-    drv2605_err_t e = drv2605_set_mode(&dev, DRV2605_ACTUATOR_ERM);
+    drv2605_err_t e = drv2605_set_actuator(&dev, DRV2605_ACTUATOR_ERM);
     ASSERT_EQ(e, DRV2605_OK);
     ASSERT_EQ(mock_regs[0x1A] & 0x80, 0x00); /* LRA bit cleared */
 }
 
-TEST(test_set_mode_lra)
+TEST(test_set_actuator_lra)
 {
     setup();
     mock_regs[0x1A] = 0x36; /* bit 7 clear = ERM */
-    drv2605_err_t e = drv2605_set_mode(&dev, DRV2605_ACTUATOR_LRA);
+    drv2605_err_t e = drv2605_set_actuator(&dev, DRV2605_ACTUATOR_LRA);
     ASSERT_EQ(e, DRV2605_OK);
     ASSERT_EQ(mock_regs[0x1A] & 0x80, 0x80); /* LRA bit set */
 }
 
-TEST(test_set_mode_i2c_fail)
+TEST(test_set_actuator_i2c_fail)
 {
     setup();
     mock_fail_next = 1;
-    drv2605_err_t e = drv2605_set_mode(&dev, DRV2605_ACTUATOR_ERM);
+    drv2605_err_t e = drv2605_set_actuator(&dev, DRV2605_ACTUATOR_ERM);
     ASSERT_EQ(e, DRV2605_ERR_I2C);
 }
 
@@ -172,9 +172,9 @@ TEST_MAIN("drv2605")
     RUN(test_init_wrong_id);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
-    RUN(test_set_mode_erm);
-    RUN(test_set_mode_lra);
-    RUN(test_set_mode_i2c_fail);
+    RUN(test_set_actuator_erm);
+    RUN(test_set_actuator_lra);
+    RUN(test_set_actuator_i2c_fail);
     RUN(test_set_waveform);
     RUN(test_set_waveform_slot_out_of_range);
     RUN(test_go_and_stop);

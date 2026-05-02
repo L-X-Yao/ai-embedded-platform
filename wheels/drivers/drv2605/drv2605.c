@@ -72,7 +72,7 @@ drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_set_mode(drv2605_t *dev, drv2605_actuator_t type)
+drv2605_err_t drv2605_set_actuator(drv2605_t *dev, drv2605_actuator_t type)
 {
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;

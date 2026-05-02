@@ -75,7 +75,9 @@ typedef struct {
  *  @thread_safe: no */
 sched_err_t scheduler_init(scheduler_t *s);
 
-/** Register a periodic task. @thread_safe: no */
+/** Register a periodic task.
+ *  @param interval_ticks  Tick interval between runs. 0 = run every tick.
+ *  @thread_safe: no */
 sched_err_t scheduler_add(scheduler_t *s, const char *name,
                           sched_task_fn fn, void *ctx,
                           uint32_t interval_ticks);

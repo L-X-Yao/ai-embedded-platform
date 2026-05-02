@@ -275,8 +275,11 @@ TEST(test_can_cancels)
     xmodem_init(&xm, &g_io, false);
     xmodem_start(&xm);
 
+    /* Per spec, 2 consecutive CAN bytes required to cancel */
     xmodem_err_t err = xmodem_feed(&xm, XMODEM_CAN);
-    ASSERT_EQ(err, XMODEM_ERR_CANCEL);
+    ASSERT_EQ(err, XMODEM_OK);  /* first CAN: not yet cancelled */
+    err = xmodem_feed(&xm, XMODEM_CAN);
+    ASSERT_EQ(err, XMODEM_ERR_CANCEL);  /* second CAN: cancelled */
     ASSERT_EQ(xmodem_get_state(&xm), XMODEM_STATE_ERROR);
 }
 

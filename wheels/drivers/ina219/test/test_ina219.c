@@ -16,13 +16,6 @@ static void mock_reset(void)
     mock_write_count = 0;
 }
 
-static bool mock_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
-{
-    (void)ctx; (void)dev_addr; (void)reg; (void)val;
-    if (mock_i2c_fail) return false;
-    return true;
-}
-
 static bool mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
                            uint8_t *buf, uint16_t len)
 {
@@ -50,7 +43,6 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
 }
 
 static const ina219_i2c_t mock_i2c = {
-    .write_reg  = mock_write_reg,
     .read_regs  = mock_read_regs,
     .write_regs = mock_write_regs,
     .ctx        = NULL,
@@ -128,7 +120,6 @@ TEST(test_init_bad_gain)
 TEST(test_init_missing_write_regs)
 {
     ina219_i2c_t incomplete = {
-        .write_reg  = mock_write_reg,
         .read_regs  = mock_read_regs,
         .write_regs = NULL,
         .ctx        = NULL,

@@ -60,6 +60,9 @@ boot_counter_err_t boot_counter_increment(boot_counter_t *ctx)
     if (!ctx) {
         return BOOT_COUNTER_ERR_PARAM;
     }
+    if (!ctx->loaded) {
+        return BOOT_COUNTER_ERR_PARAM;
+    }
 
     ctx->record.boot_count++;
     return save_record(ctx);
@@ -85,6 +88,9 @@ boot_counter_err_t boot_counter_set_reset_reason(boot_counter_t *ctx,
                                                   uint32_t reason)
 {
     if (!ctx) {
+        return BOOT_COUNTER_ERR_PARAM;
+    }
+    if (!ctx->loaded) {
         return BOOT_COUNTER_ERR_PARAM;
     }
 

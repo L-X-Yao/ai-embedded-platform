@@ -98,6 +98,7 @@ TEST(test_load_save_roundtrip)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     /* Increment to set count=1, then save to mock storage */
     ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_OK);
@@ -116,6 +117,7 @@ TEST(test_increment)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_OK);
     ASSERT_EQ(boot_counter_get_count(&ctx), 1);
@@ -127,6 +129,7 @@ TEST(test_multiple_increments)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     for (int i = 0; i < 10; i++) {
         ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_OK);
@@ -146,6 +149,7 @@ TEST(test_reset_reason)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     ASSERT_EQ(boot_counter_set_reset_reason(&ctx, 0x04), BOOT_COUNTER_OK);
     ASSERT_EQ(boot_counter_get_reset_reason(&ctx), 0x04);
@@ -196,6 +200,7 @@ TEST(test_storage_write_failure)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     g_fail_write = true;
     ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_ERR_STORAGE);
@@ -209,6 +214,7 @@ TEST(test_set_reset_reason_write_failure)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     g_fail_write = true;
     ASSERT_EQ(boot_counter_set_reset_reason(&ctx, 7), BOOT_COUNTER_ERR_STORAGE);
@@ -239,6 +245,7 @@ TEST(test_increment_persists_each_call)
     boot_counter_t ctx;
     boot_counter_storage_t stor = make_storage();
     boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
 
     g_write_count = 0;
     boot_counter_increment(&ctx);
@@ -249,6 +256,18 @@ TEST(test_increment_persists_each_call)
 }
 
 /* ================================================================ */
+
+TEST(test_increment_without_load)
+{
+    mock_reset();
+    boot_counter_t ctx;
+    boot_counter_storage_t stor = make_storage();
+    boot_counter_init(&ctx, &stor);
+
+    /* Must call load() before increment/set_reset_reason */
+    ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_ERR_PARAM);
+    ASSERT_EQ(boot_counter_set_reset_reason(&ctx, 1), BOOT_COUNTER_ERR_PARAM);
+}
 
 TEST_MAIN("boot_counter")
     RUN(test_init_valid);
@@ -267,4 +286,5 @@ TEST_MAIN("boot_counter")
     RUN(test_null_ctx_getters);
     RUN(test_null_ctx_mutators);
     RUN(test_increment_persists_each_call);
+    RUN(test_increment_without_load);
 TEST_MAIN_END()

@@ -39,7 +39,6 @@ typedef enum {
 } ina219_gain_t;
 
 typedef struct {
-    bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
