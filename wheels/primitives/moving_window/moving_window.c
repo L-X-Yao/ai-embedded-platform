@@ -37,6 +37,11 @@ moving_window_err_t moving_window_push(moving_window_t *ctx, float value)
     {
         return MOVING_WINDOW_ERR_PARAM;
     }
+    /* reject NaN — would poison sum/sum_sq and corrupt all derived stats */
+    if (value != value)
+    {
+        return MOVING_WINDOW_ERR_PARAM;
+    }
 
     if (ctx->count >= ctx->capacity)
     {
