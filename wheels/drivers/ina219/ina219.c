@@ -64,7 +64,7 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
         return INA219_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return INA219_ERR_PARAM;
-    if (shunt_ohms <= 0.0f)
+    if (!(shunt_ohms > 0.0f))
         return INA219_ERR_PARAM;
     if ((unsigned)range > 1 || (unsigned)gain > 3)
         return INA219_ERR_PARAM;

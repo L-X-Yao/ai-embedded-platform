@@ -19,6 +19,8 @@ fp_t fp_from_int(int16_t val)
 
 fp_t fp_from_float(float val)
 {
+    /* reject NaN — cast of NaN to integer is undefined behavior */
+    if (val != val) return 0;
     return (fp_t)(val * (float)FP_ONE);
 }
 

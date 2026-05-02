@@ -51,6 +51,11 @@ float moving_average_sma_feed(moving_average_sma_t *ctx, float sample)
     {
         return 0.0f;
     }
+    /* reject NaN — would poison running sum and corrupt all averages */
+    if (sample != sample)
+    {
+        return ctx->count > 0 ? ctx->sum / (float)ctx->count : 0.0f;
+    }
 
     if (ctx->count >= ctx->window)
     {
@@ -91,7 +96,7 @@ bool moving_average_sma_is_full(const moving_average_sma_t *ctx)
 
 moving_average_err_t moving_average_ema_init(moving_average_ema_t *ctx, float alpha)
 {
-    if (!ctx || alpha <= 0.0f || alpha > 1.0f)
+    if (!ctx || !(alpha > 0.0f && alpha <= 1.0f))
     {
         return MOVING_AVERAGE_ERR_PARAM;
     }
@@ -117,6 +122,11 @@ float moving_average_ema_feed(moving_average_ema_t *ctx, float sample)
     if (!ctx)
     {
         return 0.0f;
+    }
+    /* reject NaN — would poison EMA state permanently */
+    if (sample != sample)
+    {
+        return ctx->value;
     }
     if (!ctx->primed)
     {

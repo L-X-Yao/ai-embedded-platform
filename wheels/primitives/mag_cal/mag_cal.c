@@ -40,6 +40,9 @@ bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz)
         return false;
     if (cal->count >= MAG_CAL_MAX_SAMPLES)
         return false;
+    /* reject NaN — would corrupt min/max calibration and produce invalid offsets */
+    if (mx != mx || my != my || mz != mz)
+        return false;
 
     cal->samples[cal->count][0] = mx;
     cal->samples[cal->count][1] = my;
