@@ -69,7 +69,7 @@ typedef struct {
 } bmp280_calib_t;
 
 typedef struct {
-    bmp280_i2c_t   i2c;
+    const bmp280_i2c_t   *i2c;
     bmp280_cfg_t   cfg;
     bmp280_calib_t calib;
     int32_t        t_fine;

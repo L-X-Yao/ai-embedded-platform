@@ -44,7 +44,7 @@ typedef struct {
 #define OLED_SSD1306_BUF_SIZE(w, h)  ((w) * ((h) / 8))
 
 typedef struct {
-    oled_ssd1306_i2c_t i2c;
+    const oled_ssd1306_i2c_t *i2c;
     oled_ssd1306_cfg_t cfg;
     uint8_t           *buf;
     size_t             buf_size;

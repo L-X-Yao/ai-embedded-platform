@@ -53,7 +53,7 @@ typedef struct {
 } bh1750_cfg_t;
 
 typedef struct {
-    bh1750_i2c_t i2c;
+    const bh1750_i2c_t *i2c;
     bh1750_cfg_t cfg;
 } bh1750_t;
 

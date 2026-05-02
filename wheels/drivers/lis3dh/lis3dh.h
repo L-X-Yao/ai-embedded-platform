@@ -73,7 +73,7 @@ typedef struct {
 } lis3dh_raw_t;
 
 typedef struct {
-    lis3dh_i2c_t  i2c;
+    const lis3dh_i2c_t  *i2c;
     lis3dh_cfg_t  cfg;
     float         scale;  /* internal: raw-to-g divisor */
 } lis3dh_t;

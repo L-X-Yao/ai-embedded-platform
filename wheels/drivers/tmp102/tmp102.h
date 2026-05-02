@@ -43,7 +43,7 @@ typedef struct {
 } tmp102_cfg_t;
 
 typedef struct {
-    tmp102_i2c_t i2c;
+    const tmp102_i2c_t *i2c;
     tmp102_cfg_t cfg;
 } tmp102_t;
 

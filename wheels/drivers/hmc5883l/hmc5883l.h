@@ -65,7 +65,7 @@ typedef struct {
 } hmc5883l_cfg_t;
 
 typedef struct {
-    hmc5883l_i2c_t i2c;
+    const hmc5883l_i2c_t *i2c;
     hmc5883l_cfg_t cfg;
     float          scale;
 } hmc5883l_t;

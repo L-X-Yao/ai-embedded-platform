@@ -77,7 +77,7 @@ typedef struct {
 } ads1015_cfg_t;
 
 typedef struct {
-    ads1015_i2c_t  i2c;
+    const ads1015_i2c_t  *i2c;
     ads1015_cfg_t  cfg;
 } ads1015_t;
 

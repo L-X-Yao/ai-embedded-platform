@@ -44,7 +44,7 @@ typedef struct {
 } vl53l0x_cfg_t;
 
 typedef struct {
-    vl53l0x_i2c_t  i2c;
+    const vl53l0x_i2c_t  *i2c;
     vl53l0x_cfg_t  cfg;
     uint32_t       timing_budget_us;
 } vl53l0x_t;

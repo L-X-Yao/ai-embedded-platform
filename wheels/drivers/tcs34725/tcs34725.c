@@ -29,7 +29,7 @@
 static tcs34725_err_t write_reg(const tcs34725_t *dev,
                                 uint8_t reg, uint8_t val)
 {
-    if (!dev->i2c.write_reg(dev->i2c.ctx, TCS34725_ADDR, CMD(reg), val))
+    if (!dev->i2c->write_reg(dev->i2c->ctx, TCS34725_ADDR, CMD(reg), val))
         return TCS34725_ERR_I2C;
     return TCS34725_OK;
 }
@@ -37,7 +37,7 @@ static tcs34725_err_t write_reg(const tcs34725_t *dev,
 static tcs34725_err_t read_regs(const tcs34725_t *dev,
                                 uint8_t reg, uint8_t *buf, uint16_t len)
 {
-    if (!dev->i2c.read_regs(dev->i2c.ctx, TCS34725_ADDR, CMD(reg), buf, len))
+    if (!dev->i2c->read_regs(dev->i2c->ctx, TCS34725_ADDR, CMD(reg), buf, len))
         return TCS34725_ERR_I2C;
     return TCS34725_OK;
 }
@@ -54,7 +54,7 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
     if ((unsigned)gain > TCS34725_GAIN_60X)
         return TCS34725_ERR_PARAM;
 
-    dev->i2c   = *i2c;
+    dev->i2c   = i2c;
     dev->integ = integ;
     dev->gain  = gain;
 

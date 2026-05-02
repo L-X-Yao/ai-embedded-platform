@@ -49,13 +49,13 @@ static const float range_scale[] = {
 
 static bool write_reg(const lis3dh_t *dev, uint8_t reg, uint8_t val)
 {
-    return dev->i2c.write_reg(dev->i2c.ctx, dev->cfg.addr, reg, val);
+    return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, reg, val);
 }
 
 static bool read_regs(const lis3dh_t *dev, uint8_t reg,
                       uint8_t *buf, uint16_t len)
 {
-    return dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr,
+    return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr,
                               reg | AUTO_INC, buf, len);
 }
 
@@ -70,12 +70,12 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
         return LIS3DH_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
 
     /* Verify chip identity */
     uint8_t id = 0;
-    if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr,
+    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr,
                             REG_WHO_AM_I, &id, 1))
         return LIS3DH_ERR_I2C;
     if (id != LIS3DH_WHO_AM_I)

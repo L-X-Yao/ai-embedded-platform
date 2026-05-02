@@ -54,7 +54,7 @@ static uint16_t build_config(const ads1015_cfg_t *cfg, ads1015_mux_t mux,
 static ads1015_err_t write_config(ads1015_t *dev, uint16_t config)
 {
     uint8_t buf[2] = {(uint8_t)(config >> 8), (uint8_t)(config & 0xFFu)};
-    if (!dev->i2c.write_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONFIG,
+    if (!dev->i2c->write_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG,
                              buf, 2))
         return ADS1015_ERR_I2C;
     return ADS1015_OK;
@@ -64,7 +64,7 @@ static ads1015_err_t poll_ready(ads1015_t *dev)
 {
     uint8_t cfg_buf[2];
     for (int retry = 0; retry < 200; retry++) {
-        if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONFIG,
+        if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG,
                                 cfg_buf, 2))
             return ADS1015_ERR_I2C;
         if (cfg_buf[0] & 0x80u)
@@ -84,7 +84,7 @@ ads1015_err_t ads1015_init(ads1015_t *dev, const ads1015_i2c_t *i2c,
         return ADS1015_ERR_PARAM;
     if ((unsigned)cfg->pga > 5u || (unsigned)cfg->rate > 6u)
         return ADS1015_ERR_PARAM;
-    dev->i2c = *i2c;
+    dev->i2c = i2c;
     dev->cfg = *cfg;
     return ADS1015_OK;
 }
@@ -107,7 +107,7 @@ ads1015_err_t ads1015_read_raw(ads1015_t *dev, ads1015_mux_t channel,
         return err;
 
     uint8_t buf[2] = {0, 0};
-    if (!dev->i2c.read_regs(dev->i2c.ctx, dev->cfg.addr, REG_CONVERSION,
+    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONVERSION,
                             buf, 2))
         return ADS1015_ERR_I2C;
 
