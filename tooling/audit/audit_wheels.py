@@ -419,6 +419,112 @@ def chk_readme_section_names(ctx, **_):
             f"rename sections in {ctx.path}/README.md")
 
 
+def chk_readme_todo_mismatch(ctx, **_):
+    """Detect README claiming 'no known issues' while code has TODO/FIXME."""
+    readme_l = ctx.readme.lower()
+    if "known issues" not in readme_l:
+        return None
+    claims_none = "none" in readme_l.split("known issues")[1][:100] or \
+                  "no known" in readme_l
+    if not claims_none:
+        return None
+    if any(tag in ctx.source for tag in ("TODO", "FIXME", "HACK", "XXX")):
+        return ("README says no known issues but code has TODO/FIXME",
+                f"update Known issues in {ctx.path}/README.md or remove TODO from code")
+    return None
+
+
+def chk_instances_accuracy(ctx, **_):
+    """Detect Instances: single without static/global state in .c."""
+    top = "\n".join(ctx.header.split("\n")[:15])
+    if "Instances: single" not in top:
+        return None
+    if "static " in ctx.source or "global" in ctx.source.lower():
+        return None
+    return ("Instances: single but no static/global state found in .c",
+            f"verify Instances field in {ctx.path}/{ctx.name}.h (should it be multi?)")
+
+
+def chk_signed_left_shift(ctx, **_):
+    """Detect signed integer left shift (C99 UB for negative values)."""
+    if not ctx.source:
+        return None
+    pat = re.compile(r'\bint(?:8|16|32|64)_t\s+\w+.*<<')
+    hits = []
+    for i, line in enumerate(ctx.source.splitlines()):
+        if line.strip().startswith("//"):
+            continue
+        if pat.search(line):
+            hits.append(i + 1)
+    if not hits:
+        return None
+    locs = ", ".join(f"L{n}" for n in hits[:3])
+    return (f"signed left shift (C99 UB) at {locs}",
+            f"cast to unsigned before shift in {ctx.path}/{ctx.name}.c")
+
+
+def chk_float_to_int_cast(ctx, **_):
+    """Detect float-to-int cast without range check."""
+    if not ctx.source:
+        return None
+    pat = re.compile(r'\(u?int(?:8|16|32)_t\)\s*(?:val|duty|temp|pct|factor|alpha|gain|scale|freq)')
+    hits = []
+    for i, line in enumerate(ctx.source.splitlines()):
+        if line.strip().startswith("//"):
+            continue
+        if pat.search(line):
+            hits.append(i + 1)
+    if not hits:
+        return None
+    locs = ", ".join(f"L{n}" for n in hits[:3])
+    return (f"float-to-int cast without range check at {locs}",
+            f"add range check before cast in {ctx.path}/{ctx.name}.c")
+
+
+def chk_strlen_truncation(ctx, **_):
+    """Detect strlen result truncated to narrow type."""
+    if not ctx.source:
+        return None
+    pat = re.compile(r'\(uint(?:8|16)_t\)\s*strlen')
+    for i, line in enumerate(ctx.source.splitlines()):
+        if pat.search(line):
+            return (f"strlen truncated to narrow type at L{i+1}",
+                    f"use size_t or add length check in {ctx.path}/{ctx.name}.c")
+    return None
+
+
+def chk_memcpy_overflow(ctx, **_):
+    """Detect potential size_t addition overflow before memcpy."""
+    if not ctx.source:
+        return None
+    pat = re.compile(r'memcpy\([^,]+,\s*[^,]+,\s*\w+\s*\+\s*\w+\)')
+    for i, line in enumerate(ctx.source.splitlines()):
+        if pat.search(line):
+            return (f"potential size_t add overflow before memcpy at L{i+1}",
+                    f"validate sum before memcpy in {ctx.path}/{ctx.name}.c")
+    return None
+
+
+def chk_unchecked_return(ctx, **_):
+    """Detect function calls whose error return is discarded."""
+    if not ctx.source:
+        return None
+    pat = re.compile(r'\b\w+_(?:init|write|send|recv)\s*\([^)]*\)\s*;')
+    hits = []
+    for i, line in enumerate(ctx.source.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith("//") or stripped.startswith("return"):
+            continue
+        if pat.search(stripped):
+            if "=" not in stripped.split("(")[0]:
+                hits.append(i + 1)
+    if not hits:
+        return None
+    locs = ", ".join(f"L{n}" for n in hits[:3])
+    return (f"unchecked error return at {locs}",
+            f"check return value in {ctx.path}/{ctx.name}.c")
+
+
 def chk_unit_suffix(ctx, **_):
     violations = has_unit_suffix_on_physical(ctx.dir, ctx.name)
     if not violations:
@@ -471,6 +577,13 @@ CHECK_TABLE = [
     ("readme_section_order", "README section order",             chk_readme_section_order, "WARN", None,                     False, True),
     ("readme_section_names", "README section names",             chk_readme_section_names, "WARN", None,                     False, False),
     ("unit_suffix",         "Physical unit suffixes (§1.6)",     chk_unit_suffix,         "WARN", {"drivers"},               True,  False),
+    ("readme_todo_mismatch", "README vs code TODO consistency",   chk_readme_todo_mismatch, "WARN", None,                     True,  True),
+    ("instances_accuracy",  "Instances field accuracy",           chk_instances_accuracy,  "WARN", None,                      True,  False),
+    ("signed_left_shift",   "Signed left shift (C99 UB)",        chk_signed_left_shift,   "WARN", None,                      True,  False),
+    ("float_to_int_cast",   "Float-to-int cast without check",   chk_float_to_int_cast,   "WARN", None,                      True,  False),
+    ("strlen_truncation",   "strlen truncation to narrow type",   chk_strlen_truncation,   "WARN", None,                      True,  False),
+    ("memcpy_overflow",     "memcpy size_t overflow risk",        chk_memcpy_overflow,     "WARN", None,                      True,  False),
+    ("unchecked_return",    "Unchecked error return",             chk_unchecked_return,    "WARN", None,                      True,  False),
 ]
 
 
@@ -1723,6 +1836,11 @@ def save_snapshot(results, wheels_count, failures, warnings):
     path = SNAPSHOT_DIR / f"audit_{ts}.json"
     path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Snapshot saved: {path.relative_to(REPO)}")
+    # Auto-cleanup: keep only the latest 20 snapshots
+    all_snaps = sorted(SNAPSHOT_DIR.glob("audit_*.json"))
+    for old in all_snaps[:-20]:
+        old.unlink()
+        print(f"  Cleaned up old snapshot: {old.name}")
     return path
 
 
