@@ -22,12 +22,14 @@ NC='\033[0m'
 
 LAYER_FILTER=""
 QUICK=false
+JSON_OUT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --layer)  LAYER_FILTER="$2"; shift 2 ;;
         --quick)  QUICK=true; shift ;;
-        -h|--help) echo "Usage: audit_deep.sh [--layer N] [--quick]"; exit 0 ;;
+        --json)   JSON_OUT="$REPO/tooling/audit/snapshots/deep_$(date +%Y%m%d_%H%M%S).json"; shift ;;
+        -h|--help) echo "Usage: audit_deep.sh [--layer N] [--quick] [--json]"; exit 0 ;;
         *)        echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
@@ -96,6 +98,10 @@ if run_layer 1 "Pattern grep (static)"; then
     # size_t addition overflow before memcpy/read
     scan_pattern "Potential size_t add overflow before memcpy" \
         'memcpy\([^,]+,\s*[^,]+,\s*\w+\s*\+\s*\w+\)' "*.c"
+
+    # Unchecked return value: err_t result assigned but never checked
+    scan_pattern "Unchecked error return (result ignored)" \
+        '\b\w+_(?:init|read|write|send|recv|parse|decode|encode)\s*\([^)]*\)\s*;' "*.c"
 
     echo ""
     if [[ $layer1_issues -gt 0 ]]; then
@@ -277,6 +283,45 @@ if run_layer 5 "Cross-wheel API consistency"; then
 fi
 
 # ============================================================
+# Layer 6: Static analysis (cppcheck)
+# ============================================================
+
+if run_layer 6 "Static analysis (cppcheck)"; then
+    if command -v cppcheck > /dev/null 2>&1; then
+        layer6_issues=0
+        for h in wheels/*/*/*.h; do
+            [[ -f "$h" ]] || continue
+            dir="$(dirname "$h")"
+            name="$(basename "$h" .h)"
+            c_file="$dir/$name.c"
+            [[ -f "$c_file" ]] || continue
+            [[ -d "$dir/vendor" ]] && continue
+
+            out=$(cppcheck --enable=warning,performance --suppress=missingIncludeSystem \
+                  --quiet --error-exitcode=1 \
+                  "$c_file" 2>&1)
+            if [[ $? -ne 0 ]]; then
+                echo -e "  ${YELLOW}WARN${NC}  $name"
+                echo "$out" | head -5 | while read -r line; do
+                    echo "         $line"
+                done
+                layer6_issues=$((layer6_issues + 1))
+            fi
+        done
+
+        echo ""
+        if [[ $layer6_issues -gt 0 ]]; then
+            echo -e "  ${YELLOW}Layer 6: $layer6_issues cppcheck warnings${NC}"
+        else
+            echo -e "  ${GREEN}Layer 6: all clean${NC}"
+        fi
+        TOTAL_ISSUES=$((TOTAL_ISSUES + layer6_issues))
+    else
+        echo -e "  ${YELLOW}SKIP${NC}  cppcheck not installed (apt install cppcheck)"
+    fi
+fi
+
+# ============================================================
 # Summary
 # ============================================================
 
@@ -287,4 +332,24 @@ if [[ $TOTAL_ISSUES -eq 0 ]]; then
 else
     echo -e "  ${RED}Review issues above.${NC}"
 fi
+
+# Save JSON snapshot if requested
+if [[ -n "$JSON_OUT" ]]; then
+    mkdir -p "$(dirname "$JSON_OUT")"
+    cat > "$JSON_OUT" <<JSONEOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "total_issues": $TOTAL_ISSUES,
+  "layers": {
+    "pattern_grep": ${layer1_issues:-0},
+    "sanitizer": ${layer2_fail:-0},
+    "stress": ${layer4_fail:-0},
+    "consistency": ${layer5_issues:-0},
+    "cppcheck": ${layer6_issues:-0}
+  }
+}
+JSONEOF
+    echo -e "  Snapshot saved: $JSON_OUT"
+fi
+
 exit $TOTAL_ISSUES
