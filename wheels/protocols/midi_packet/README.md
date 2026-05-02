@@ -13,6 +13,12 @@ control, stage lighting, and audio equipment. Embedded controllers
 driving synthesizers, LED rigs, or show-control systems need MIDI
 encoding/decoding at the byte level.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`, `<string.h>`.

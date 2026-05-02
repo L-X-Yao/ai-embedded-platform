@@ -1,6 +1,6 @@
 # QMI8658A — 6-axis IMU Driver
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for QST QMI8658A accelerometer + gyroscope.
@@ -82,6 +82,12 @@ None.
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/imu/imu_driver.c`.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## API review
 

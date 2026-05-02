@@ -1,6 +1,6 @@
 # cli_shell
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Command-line shell module for embedded debug and configuration. Passive

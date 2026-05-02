@@ -8,6 +8,12 @@ Simple string key-value parameter table for embedded systems. All values are str
 
 Proactive build for CLI-integrated parameter management across embedded projects.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

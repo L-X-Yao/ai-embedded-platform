@@ -10,6 +10,12 @@ Includes 2-scan debounce and press/release edge detection.
 ## Origin
 
 Proactive build for generic matrix keypad input on MCU projects.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (HAL callbacks injected by caller).

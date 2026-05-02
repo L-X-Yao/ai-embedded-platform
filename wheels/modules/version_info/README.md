@@ -11,6 +11,12 @@ firmware compatibility checks, and protocol negotiation.
 
 Proactive build for firmware version management (OTA, boot compatibility checks).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

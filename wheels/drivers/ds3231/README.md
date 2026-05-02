@@ -12,6 +12,12 @@ HAL-injected I2C, zero allocation, pure C99.
 Proactive build for embedded projects needing battery-backed RTC with
 high accuracy (+-2 ppm, +-3.5 min/year).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

@@ -1,6 +1,6 @@
 # http_parser
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L2 (protocols)**
 
 Lightweight HTTP/1.1 request and response parser. Zero-copy: parsed fields
@@ -38,6 +38,12 @@ None.
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Configuration macros
 

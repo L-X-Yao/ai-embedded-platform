@@ -8,6 +8,12 @@ Deduplication sink for the `log` wheel. Suppresses consecutive identical log lin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Sensor error loops and periodic status messages commonly produce long runs of identical lines that obscure useful output. This wheel intercepts at the sink level, keeping call sites clean.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stddef.h>`, `<stdint.h>`, and `<string.h>`.

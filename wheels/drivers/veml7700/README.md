@@ -8,6 +8,12 @@
 ## Origin
 
 Proactive build for ambient light sensing with wider dynamic range than BH1750.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via function pointers).

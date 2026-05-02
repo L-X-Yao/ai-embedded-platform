@@ -1,6 +1,6 @@
 # device_info
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Device identity and runtime information module. Stores firmware/hardware

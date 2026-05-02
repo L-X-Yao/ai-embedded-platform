@@ -52,6 +52,12 @@ I2C HAL (injected via callbacks, register-based pattern).
 
 Proactive build for common embedded components (2026-05-01).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Known issues
 
 None.

@@ -11,6 +11,12 @@ Proactive build. Table-driven FSMs are used in protocol parsers, UI flows,
 device lifecycle management, and communication state tracking across
 virtually all embedded projects.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`.

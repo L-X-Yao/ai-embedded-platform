@@ -9,6 +9,12 @@ all output buffers. Handles both padded and unpadded input on decode.
 ## Origin
 
 Proactive build for embedded protocols (MQTT auth, HTTP headers, OTA payloads).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

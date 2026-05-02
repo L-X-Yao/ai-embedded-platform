@@ -13,6 +13,12 @@ in `at24cxx_write()`, with caller-provided delay for write cycles.
 Proactive build for common I2C EEPROM storage use case (parameter
 storage, calibration data, configuration persistence).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

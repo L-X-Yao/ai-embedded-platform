@@ -9,6 +9,12 @@ Encodes 8-bit RGB into GRB PWM bit-stream, sends via caller-provided timer HAL.
 Extracted from `projects/drone_light/Src/ws2812.c` (N32G003, TIM1 PWM bit-bang).
 Generalized: removed MCU-specific registers, added HAL callback injection and multi-LED support.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## API
 
 ```c

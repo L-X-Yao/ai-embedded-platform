@@ -1,6 +1,6 @@
 # config_store
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Configuration management module with typed entries, defaults, range

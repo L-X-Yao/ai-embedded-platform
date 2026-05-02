@@ -8,6 +8,12 @@ Token bucket rate limiter sink for the `log` wheel. Prevents log flood from over
 
 Proactive build as companion sink for `wheels/primitives/log/`. Log flood is a recurring embedded problem: a sensor error loop or protocol retry storm can saturate UART and mask other output. This wheel intercepts at the sink level rather than requiring every call site to self-throttle.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stddef.h>` and `<stdint.h>`.

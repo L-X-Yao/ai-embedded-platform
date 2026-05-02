@@ -10,6 +10,12 @@ Blocking move via caller-provided `delay_us` callback, position tracking.
 
 Proactive build for motor control use cases (CNC, 3D printer, turntable, camera slider).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. HAL callbacks (step_pin, dir_pin, delay_us) injected by caller.

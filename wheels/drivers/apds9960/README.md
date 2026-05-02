@@ -11,6 +11,12 @@ color sensing (16-bit per channel), and simple 4-directional gesture recognition
 Proactive build for proximity/gesture/color sensing use cases (e.g., touchless
 UI, ambient light adaptation).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

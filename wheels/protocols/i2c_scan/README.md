@@ -10,6 +10,12 @@ common sensor/peripheral addresses.
 
 Proactive build for embedded debug/bringup workflows.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

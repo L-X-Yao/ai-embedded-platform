@@ -1,6 +1,6 @@
 # W25Qxx — SPI NOR Flash Driver
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for Winbond W25Q series (W25Q32/W25Q64/W25Q128 etc).
@@ -87,6 +87,12 @@ None.
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox retains GD32F4xx SPI1 bring-up + `flash_ring_*` application-layer ring buffer; platform-agnostic command logic moved to this wheel.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## API review
 

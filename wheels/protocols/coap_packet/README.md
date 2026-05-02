@@ -1,6 +1,6 @@
 # coap_packet
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L2 (protocols)**
 
 CoAP message encoder/decoder (RFC 7252). Stateless packet-level codec for
@@ -39,6 +39,12 @@ None.
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Configuration macros
 

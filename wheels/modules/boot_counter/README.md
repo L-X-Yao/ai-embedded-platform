@@ -12,6 +12,12 @@ EEPROM, or any persistent backend. Passive design -- no OS calls, no heap.
 Proactive build for embedded device lifecycle tracking (boot counting,
 reset-reason logging, uptime monitoring).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Storage injected via callbacks.

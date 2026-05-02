@@ -12,6 +12,12 @@ range. Result decoding uses the hardware exponent+mantissa format
 Proactive build for ambient light sensing use cases (display auto-brightness,
 environmental monitoring).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 - `i2c_hal` (injected via `opt3001_i2c_t` struct)

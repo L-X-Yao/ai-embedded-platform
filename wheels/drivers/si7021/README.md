@@ -10,6 +10,12 @@ CRC-8 validation, configurable resolution (14/12/13/11-bit temperature,
 ## Origin
 
 Proactive build for common I2C environmental sensor use cases.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

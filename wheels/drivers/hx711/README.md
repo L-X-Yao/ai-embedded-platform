@@ -10,6 +10,12 @@ Pure C99, no OS, no malloc. HAL-injected GPIO + delay callbacks.
 ## Origin
 
 Proactive build for weight/force measurement applications using load cells.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (GPIO HAL injected by caller).

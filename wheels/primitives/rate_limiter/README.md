@@ -11,6 +11,12 @@ token if available. Passive — caller supplies `current_tick` from any time sou
 
 Proactive build for API throttling, retry backoff, resource guarding. Generic counterpart to
 `log_rate` (which is log-sink-specific).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

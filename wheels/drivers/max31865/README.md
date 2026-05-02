@@ -10,6 +10,12 @@ registers, converts to temperature using Callendar-Van Dusen linearization
 ## Origin
 
 Proactive build for industrial temperature sensing (RTD applications).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (SPI HAL injected via callbacks).

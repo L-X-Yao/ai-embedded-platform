@@ -8,6 +8,12 @@ RFC 4122 UUID v4 (random-based) implementation. Generates, formats, parses, and 
 
 Proactive build for device identification, session tokens, and message correlation in embedded protocols.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

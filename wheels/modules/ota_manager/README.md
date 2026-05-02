@@ -1,6 +1,6 @@
 # ota_manager
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Firmware update orchestration module. State machine drives the full OTA

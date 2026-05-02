@@ -1,6 +1,6 @@
 # websocket_frame
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L2 (protocols)**
 
 WebSocket frame encoder/decoder (RFC 6455). Stateless frame-level codec —
@@ -39,6 +39,12 @@ None.
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

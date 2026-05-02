@@ -12,6 +12,12 @@ for open circuit, short-to-GND, and short-to-VCC.
 Proactive build for thermocouple sensing use cases (ovens, industrial temp
 monitoring, 3D printer hotends).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (SPI HAL injected via callbacks).

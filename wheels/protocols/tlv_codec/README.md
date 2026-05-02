@@ -10,6 +10,12 @@ Common in custom embedded protocols, smart cards, NFC.
 ## Origin
 
 Proactive build for custom embedded protocol framing (telemetry, config, NFC NDEF-like payloads).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

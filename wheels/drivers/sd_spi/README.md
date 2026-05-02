@@ -8,6 +8,12 @@ Platform-agnostic SPI-mode SD card driver for single-block read/write. Supports 
 
 Proactive build for SD card data logging use cases (flight recorders, sensor loggers). Common in embedded projects where SDIO is unavailable and SPI is the only interface option.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Features
 
 - SDv1/SDv2/SDHC card type detection via CMD0/CMD8/ACMD41/CMD58 sequence

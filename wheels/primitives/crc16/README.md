@@ -1,6 +1,6 @@
 # crc16
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 CRC16-MODBUS computation (table-based, ~1 KB ROM). Drop-in for Modbus RTU
@@ -48,6 +48,12 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 ## Origin
 
 Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Dependencies
 

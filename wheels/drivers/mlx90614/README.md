@@ -12,6 +12,12 @@ emissivity read/write.
 Proactive build. MLX90614 is the most common non-contact IR temperature sensor
 in embedded applications (fever detection, industrial monitoring, HVAC, food safety).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `mlx90614_i2c_t` callbacks — command-based write/read). No other dependencies.

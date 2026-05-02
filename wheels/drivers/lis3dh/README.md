@@ -10,6 +10,12 @@ and both scaled (G) and raw 16-bit reads. 12-bit resolution, left-justified.
 
 Proactive build for common low-cost 3-axis accelerometer use case.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 - `i2c_hal` (injected via callbacks, no link dependency)

@@ -11,6 +11,12 @@ debugger inspection.
 
 Proactive build — common pattern for embedded crash dump and CLI log retrieval.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with libc `memcpy`.

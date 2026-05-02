@@ -11,6 +11,12 @@ sensor. I2C interface injected via callbacks. Implements the official Bosch
 Proactive build. BMP280 is the most widely used barometric pressure sensor
 in embedded applications (drones, weather stations, altimeters, HVAC).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `bmp280_i2c_t` callbacks). No other dependencies.

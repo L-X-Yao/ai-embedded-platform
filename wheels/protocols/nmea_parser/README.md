@@ -10,6 +10,12 @@ Zero hardware dependency — feed null-terminated sentence strings, get structur
 Extracted from `projects/flybox/src/app/gnss_task.c` (Air780EG GNSS NMEA handling).
 Decoupled: modem interaction, quality gating, filtering stay in the project; pure sentence parsing moves to this wheel.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Protocol
 
 NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`

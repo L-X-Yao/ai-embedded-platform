@@ -11,6 +11,12 @@ match a DENY list. Lines with no parseable module tag are always forwarded.
 Proactive build — common companion pattern for leveled logging sinks in
 multi-module embedded systems.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with libc `strncmp` / `strlen`.

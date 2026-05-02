@@ -13,6 +13,12 @@ Proactive build. VL53L0X is the most common I2C time-of-flight distance
 sensor in embedded applications (robotics, drones, gesture detection,
 proximity sensing). Range up to 2 m with mm resolution.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `vl53l0x_i2c_t` callbacks). No other dependencies.

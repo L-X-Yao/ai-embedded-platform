@@ -11,6 +11,12 @@ Extracted from `projects/flybox/src/app/mag_cal.c` (QMC5883P magnetometer calibr
 Decoupled: FreeRTOS timing, flash persistence, LED indicators stay in the project;
 pure min/max algorithm moves to this wheel.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Algorithm
 
 1. Collect N samples while user rotates sensor in all orientations

@@ -12,6 +12,12 @@ Extracted from `projects/flybox/src/app/ota_task.c` + `projects/flybox/src/bsp/i
 Decoupled: HTTP download, modem interaction, FreeRTOS task scheduling stay in the project;
 pure slot management logic moves to this wheel.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Protocol (A/B boot state machine)
 
 ```

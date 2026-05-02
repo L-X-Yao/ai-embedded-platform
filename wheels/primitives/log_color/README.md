@@ -11,6 +11,12 @@ level char are passed through unchanged.
 
 Proactive build — common companion pattern for leveled logging sinks.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with libc `memcpy` / `strlen`.

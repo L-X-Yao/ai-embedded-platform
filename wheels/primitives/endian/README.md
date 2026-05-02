@@ -11,6 +11,12 @@ alignment assumptions. Pure C99, no OS, no malloc.
 
 Proactive build for protocol implementations (MQTT, Modbus, CoAP, etc.) that
 use big-endian wire format on little-endian MCUs.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

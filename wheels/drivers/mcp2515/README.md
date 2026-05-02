@@ -1,6 +1,6 @@
 # MCP2515 — SPI CAN Bus Controller Driver
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for Microchip MCP2515 stand-alone CAN controller. Assumes 8 MHz crystal (standard module configuration).
@@ -92,6 +92,12 @@ None. Pure C99 with injected SPI HAL callbacks.
 ## Origin
 
 Proactive build for CAN bus communication in embedded systems.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## API convention deviations
 

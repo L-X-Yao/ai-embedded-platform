@@ -1,6 +1,6 @@
 # ina219
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 TI INA219 I2C current/voltage/power monitor driver. Supports configurable
@@ -44,6 +44,12 @@ I2C HAL (injected via callbacks). Requires `write_regs` for 16-bit register writ
 ## Origin
 
 Proactive build for current/power monitoring (2026-05-01).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

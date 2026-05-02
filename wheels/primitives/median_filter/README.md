@@ -1,6 +1,6 @@
 # median_filter
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 Sliding window median filter. Excellent for rejecting impulse noise (spikes)
@@ -35,6 +35,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Configuration macros
 

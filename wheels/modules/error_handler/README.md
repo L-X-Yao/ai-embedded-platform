@@ -1,6 +1,6 @@
 # error_handler
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Fault logging and recovery module for embedded systems. Ring buffer of

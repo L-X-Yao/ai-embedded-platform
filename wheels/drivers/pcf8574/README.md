@@ -11,6 +11,12 @@ Pin-level operations use read-modify-write on a cached output state.
 Proactive build for I2C GPIO expansion use cases (LCD backpacks, keypad matrices,
 relay boards).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C transport injected via callbacks).

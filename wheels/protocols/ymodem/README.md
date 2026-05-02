@@ -14,6 +14,12 @@ callback. No OS, no malloc, no serial access — purely event-driven.
 Proactive build for firmware update over serial (YMODEM batch mode, common in
 embedded bootloaders). Extends the existing `xmodem` wheel with metadata and
 1024-byte block support.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

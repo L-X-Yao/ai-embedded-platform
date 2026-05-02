@@ -9,6 +9,12 @@ Minimal CBOR codec for embedded systems. Covers major types 0-7 (unsigned int, n
 
 Proactive build for IoT protocol stacks (CoAP payload encoding, sensor telemetry serialization).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

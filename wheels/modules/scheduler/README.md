@@ -1,6 +1,6 @@
 # scheduler
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Cooperative task scheduler for bare-metal and single-threaded environments.
@@ -69,6 +69,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Created 2026-05-01 for cooperative task scheduling in bare-metal main loops.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

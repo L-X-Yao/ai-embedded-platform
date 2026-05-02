@@ -12,6 +12,12 @@ byte streams.
 
 Proactive build for UART RX buffering and protocol framing across
 multiple projects (flybox, future serial-based protocols).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

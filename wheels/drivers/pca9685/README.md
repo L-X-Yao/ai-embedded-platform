@@ -10,6 +10,12 @@ PWM frequency 24-1526 Hz with sleep/wake power management.
 ## Origin
 
 Proactive build for robotics (servo control) and LED dimming applications.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

@@ -12,6 +12,12 @@ Caller provides the backing array — no heap, fully reentrant per-context.
 
 Proactive build for embedded task dispatching patterns (command handlers,
 remote-control packet routing, multi-source command arbitration).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.
