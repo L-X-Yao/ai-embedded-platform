@@ -161,6 +161,51 @@ TEST(test_build_null_payload_nonzero_len)
                              NULL, NULL, 0), WEBSOCKET_FRAME_OK);
 }
 
+TEST(test_parse_64bit_length_msb_set_rejected)
+{
+    /* RFC 6455 s5.2: MSB of 64-bit payload length MUST be 0 */
+    uint8_t data[10] = {0x82, 127,
+                         0x80, 0x00, 0x00, 0x00,
+                         0x00, 0x00, 0x00, 0x01};
+    websocket_frame_t f;
+    ASSERT_EQ(websocket_frame_parse(data, sizeof(data), &f),
+              WEBSOCKET_FRAME_ERR_PROTOCOL);
+}
+
+TEST(test_parse_fragmented_continuation)
+{
+    /* Non-FIN text frame followed by FIN continuation */
+    uint8_t frag1[] = {0x01, 0x03, 'H', 'e', 'l'};
+    websocket_frame_t f1;
+    ASSERT_EQ(websocket_frame_parse(frag1, sizeof(frag1), &f1), WEBSOCKET_FRAME_OK);
+    ASSERT_FALSE(f1.fin);
+    ASSERT_EQ(f1.opcode, WEBSOCKET_FRAME_OPCODE_TEXT);
+
+    uint8_t frag2[] = {0x80, 0x02, 'l', 'o'};
+    websocket_frame_t f2;
+    ASSERT_EQ(websocket_frame_parse(frag2, sizeof(frag2), &f2), WEBSOCKET_FRAME_OK);
+    ASSERT_TRUE(f2.fin);
+    ASSERT_EQ(f2.opcode, WEBSOCKET_FRAME_OPCODE_CONT);
+}
+
+TEST(test_parse_rsv_bits_rejected)
+{
+    /* RSV1 set (0x40) is a protocol error */
+    uint8_t data[] = {0xC1, 0x00};  /* FIN=1, RSV1=1, opcode=text */
+    websocket_frame_t f;
+    ASSERT_EQ(websocket_frame_parse(data, sizeof(data), &f),
+              WEBSOCKET_FRAME_ERR_PROTOCOL);
+}
+
+TEST(test_parse_control_frame_fragmented_rejected)
+{
+    /* Control frames (opcode >= 0x08) MUST NOT be fragmented (FIN must be 1) */
+    uint8_t data[] = {0x09, 0x00};  /* FIN=0, opcode=ping */
+    websocket_frame_t f;
+    ASSERT_EQ(websocket_frame_parse(data, sizeof(data), &f),
+              WEBSOCKET_FRAME_ERR_PROTOCOL);
+}
+
 TEST_MAIN("websocket_frame")
     RUN(test_parse_unmasked_text);
     RUN(test_parse_masked_text);
@@ -175,4 +220,8 @@ TEST_MAIN("websocket_frame")
     RUN(test_null_safety);
     RUN(test_parse_reserved_opcode);
     RUN(test_build_null_payload_nonzero_len);
+    RUN(test_parse_64bit_length_msb_set_rejected);
+    RUN(test_parse_fragmented_continuation);
+    RUN(test_parse_rsv_bits_rejected);
+    RUN(test_parse_control_frame_fragmented_rejected);
 TEST_MAIN_END()
