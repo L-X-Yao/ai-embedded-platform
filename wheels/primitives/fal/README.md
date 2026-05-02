@@ -6,13 +6,6 @@ Flash partition management layer. Registers flash devices, defines partition
 table (name/offset/size), provides unified read/write/erase API on partitions
 with boundary protection. Vendored from armink's FAL (v0.5.99).
 
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`fal`, `flash_partition`, `flash_abstraction`, `partition_table` — zero results.
-
-VSF has no flash partition abstraction layer.
-
 ## Why this upstream?
 
 - FAL is the de facto flash abstraction in Chinese embedded (RT-Thread ecosystem)

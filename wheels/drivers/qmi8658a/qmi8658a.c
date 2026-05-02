@@ -61,7 +61,7 @@ qmi8658a_cfg_t qmi8658a_default_cfg(void)
     return c;
 }
 
-qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
+qmi8658a_err_t qmi8658a_init(qmi8658a_t *dev,
                               const qmi8658a_i2c_t *i2c,
                               const qmi8658a_cfg_t *cfg)
 {
@@ -97,7 +97,7 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_dev_t *dev,
     return QMI8658A_OK;
 }
 
-qmi8658a_err_t qmi8658a_read(const qmi8658a_dev_t *dev,
+qmi8658a_err_t qmi8658a_read(const qmi8658a_t *dev,
                               qmi8658a_data_t *out)
 {
     if (!dev || !dev->i2c || !out) return QMI8658A_ERR_I2C;
@@ -115,7 +115,7 @@ qmi8658a_err_t qmi8658a_read(const qmi8658a_dev_t *dev,
     return QMI8658A_OK;
 }
 
-qmi8658a_err_t qmi8658a_reset(const qmi8658a_dev_t *dev)
+qmi8658a_err_t qmi8658a_reset(const qmi8658a_t *dev)
 {
     if (!dev || !dev->i2c) return QMI8658A_ERR_I2C;
     return wr(dev->i2c, REG_RESET, 0xB0);
