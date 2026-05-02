@@ -142,7 +142,8 @@ pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
 pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
 {
     if (!dev) return PCA9685_ERR_PARAM;
-    if (duty_pct < 0.0f || duty_pct > 100.0f)
+    /* NaN fails both < and > comparisons, so check with negated in-range test */
+    if (!(duty_pct >= 0.0f && duty_pct <= 100.0f))
         return PCA9685_ERR_PARAM;
 
     if (duty_pct <= 0.0f) {
