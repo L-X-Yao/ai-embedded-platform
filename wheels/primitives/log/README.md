@@ -18,7 +18,7 @@ Searched GitHub (2026-05-02). Referenced rxi/log.c (1k stars, MIT) for design co
 
 None. Pure C99 with libc `snprintf` / `vsnprintf`.
 
-## API summary
+## API
 
 ```c
 /* Declare module name at top of each .c file */
@@ -42,7 +42,7 @@ log_remove_sink(sink_id);            /* remove registered sink */
 log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

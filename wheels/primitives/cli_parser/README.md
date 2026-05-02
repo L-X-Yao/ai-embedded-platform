@@ -19,7 +19,7 @@ Searched GitHub (2026-05-02). Referenced funbiscuit/embedded-cli (MIT) for desig
 
 None. Pure C99 with `<string.h>` and `<stddef.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Command handler signature */
@@ -50,7 +50,7 @@ void      cli_parser_feed(cli_parser_t *ctx, uint8_t byte);
 cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

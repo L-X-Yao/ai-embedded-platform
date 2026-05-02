@@ -38,7 +38,7 @@ wheel with zero dependencies.
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<string.h>` only.
 
-## API summary
+## API
 
 ```c
 /* I/O callbacks -- application provides all transport/storage logic */
@@ -74,7 +74,7 @@ uint32_t ota_manager_get_progress(const ota_manager_t *mgr);
 void ota_manager_reset(ota_manager_t *mgr);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

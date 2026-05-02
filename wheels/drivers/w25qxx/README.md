@@ -30,7 +30,7 @@ w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1);
 
 Caller provides SPI HAL via `w25qxx_spi_t` callbacks (CS control + byte transfer).
 
-## Configuration
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

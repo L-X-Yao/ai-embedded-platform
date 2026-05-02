@@ -32,7 +32,7 @@ coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_le
                       const uint8_t *payload, size_t payload_len);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

@@ -31,7 +31,7 @@ event_bus_err_t event_bus_publish(event_bus_t *bus, uint16_t event_id,
                                   const void *data, size_t data_len);
 ```
 
-## Compile-time config
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

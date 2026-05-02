@@ -38,7 +38,7 @@ wheel with zero dependencies.
 
 None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Storage abstraction -- application provides write/flush callbacks */
@@ -73,7 +73,7 @@ data_logger_err_t data_logger_flush(data_logger_t *dl);
 uint32_t data_logger_get_count(const data_logger_t *dl);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|
