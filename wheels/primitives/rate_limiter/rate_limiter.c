@@ -41,6 +41,12 @@ rate_limiter_err_t rate_limiter_init(rate_limiter_t *rl, uint32_t max_tokens,
         return RATE_LIMITER_ERR_PARAM;
     }
 
+    /* Guard against overflow when scaling to fixed-point representation */
+    if (max_tokens > UINT32_MAX / RATE_LIMITER_SCALE ||
+        tokens_per_tick > UINT32_MAX / RATE_LIMITER_SCALE) {
+        return RATE_LIMITER_ERR_PARAM;
+    }
+
     rl->max_tokens   = max_tokens * RATE_LIMITER_SCALE;
     rl->refill_rate  = tokens_per_tick * RATE_LIMITER_SCALE;
     rl->tokens       = rl->max_tokens;

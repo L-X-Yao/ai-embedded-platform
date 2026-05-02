@@ -14,7 +14,9 @@
 uint16_t slip_max_encoded_size(uint16_t data_len)
 {
     /* worst case: every byte is END or ESC (each expands to 2 bytes)
-     * plus 2 delimiter ENDs (leading + trailing) */
+     * plus 2 delimiter ENDs (leading + trailing).
+     * Guard against uint16_t overflow for large data_len values. */
+    if (data_len > 32766u) { return UINT16_MAX; }
     return (uint16_t)(data_len * 2u + 2u);
 }
 

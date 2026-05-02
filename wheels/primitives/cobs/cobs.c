@@ -13,7 +13,9 @@
 
 uint16_t cobs_max_encoded_size(uint16_t data_len)
 {
-    /* overhead = 1 leading code byte + 1 extra byte per 254 input bytes */
+    /* overhead = 1 leading code byte + 1 extra byte per 254 input bytes.
+     * Guard against uint16_t overflow for large data_len values. */
+    if (data_len > 65279u) { return UINT16_MAX; }
     return (uint16_t)(data_len + (data_len / 254u) + 1u);
 }
 

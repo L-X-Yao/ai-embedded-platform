@@ -37,8 +37,10 @@ uint16_t base64_encoded_size(uint16_t data_len);
 
 /**
  * Calculate maximum decoded size (upper bound; ignores padding).
+ * May over-estimate by up to 2 bytes. Exact size is known only
+ * after inspecting padding characters.
  *
- * @param b64_len   Number of Base64 characters.
+ * @param b64_len   Number of Base64 characters (including padding).
  * @return          Maximum number of decoded bytes.
  * @thread_safe: yes (pure function, no state)
  */

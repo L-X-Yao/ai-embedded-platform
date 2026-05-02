@@ -106,17 +106,20 @@ string_utils_err_t str_to_int(const char *str, int32_t *val)
 
     if (*p == '\0') return STRING_UTILS_ERR_FMT;
 
+    /* Accumulate as negative to handle INT32_MIN without overflow.
+     * INT32_MIN (-2147483648) has no positive int32_t counterpart. */
     int32_t result = 0;
+    int32_t limit  = neg ? INT32_MIN : -INT32_MAX;
     while (*p) {
         if (*p < '0' || *p > '9') return STRING_UTILS_ERR_FMT;
         int digit = *p - '0';
-        /* overflow guard */
-        if (result > (INT32_MAX - digit) / 10) return STRING_UTILS_ERR_RANGE;
-        result = result * 10 + digit;
+        /* overflow guard (working in negative domain) */
+        if (result < (limit + digit) / 10) return STRING_UTILS_ERR_RANGE;
+        result = result * 10 - digit;
         p++;
     }
 
-    *val = neg ? -result : result;
+    *val = neg ? result : -result;
     return STRING_UTILS_OK;
 }
 

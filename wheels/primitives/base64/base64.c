@@ -49,8 +49,8 @@ uint16_t base64_encoded_size(uint16_t data_len)
 
 uint16_t base64_decoded_size(uint16_t b64_len)
 {
-    /* Upper bound: 3 bytes per 4 chars */
-    return (uint16_t)((uint32_t)b64_len / 4u * 3u + 3u);
+    /* Upper bound: 3 bytes per 4 chars (may over-estimate by up to 2) */
+    return (uint16_t)((uint32_t)b64_len / 4u * 3u);
 }
 
 /* ---- Encode ----------------------------------------------------------- */
@@ -179,6 +179,13 @@ base64_err_t base64_decode(const char *b64, uint16_t b64_len,
             uint8_t v = dec_table[ch];
             if (v >= 0xFEu) { return BASE64_ERR_INVALID; }
             accum = (accum << 6) | v;
+        }
+        /* RFC 4648 ss3.5: reject non-zero trailing bits in partial groups.
+         * tail=2 → 12 data bits, 8 useful → 4 unused.
+         * tail=3 → 18 data bits, 16 useful → 2 unused. */
+        uint32_t unused_bits = (tail == 2u) ? 4u : 2u;
+        if (accum & ((1u << unused_bits) - 1u)) {
+            return BASE64_ERR_INVALID;
         }
         /* Left-align remaining bits */
         accum <<= (4u - tail) * 6u;
