@@ -75,31 +75,55 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize telemetry context with send callback and output format. */
+/**
+ * Initialize telemetry context with send callback and output format.
+ * @thread_safe: no
+ */
 telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
                                void *ctx, telemetry_format_t fmt);
 
-/** Register a named field. Returns ERR_FULL if table is full. */
+/**
+ * Register a named field. Returns ERR_FULL if table is full.
+ * @thread_safe: no
+ */
 telemetry_err_t telemetry_register(telemetry_t *t, const char *name);
 
-/** Update a field's value by name. Returns ERR_PARAMS if not found. */
+/**
+ * Update a field's value by name. Returns ERR_PARAMS if not found.
+ * @thread_safe: no
+ */
 telemetry_err_t telemetry_update(telemetry_t *t, const char *name,
                                  float value);
 
-/** Update a field's value by index (faster, no name lookup). */
+/**
+ * Update a field's value by index (faster, no name lookup).
+ * @thread_safe: no
+ */
 telemetry_err_t telemetry_update_by_index(telemetry_t *t, uint8_t index,
                                           float value);
 
-/** Format all fields and call send callback. */
+/**
+ * Format all fields and call send callback.
+ * @thread_safe: no
+ */
 telemetry_err_t telemetry_publish(telemetry_t *t, uint32_t timestamp);
 
-/** Get total successful send count. */
+/**
+ * Get total successful send count.
+ * @thread_safe: no
+ */
 uint32_t telemetry_get_send_count(const telemetry_t *t);
 
-/** Get total error count. */
+/**
+ * Get total error count.
+ * @thread_safe: no
+ */
 uint32_t telemetry_get_error_count(const telemetry_t *t);
 
-/** Reset all field values and counters. */
+/**
+ * Reset all field values and counters.
+ * @thread_safe: no
+ */
 void telemetry_reset(telemetry_t *t);
 
 #ifdef __cplusplus

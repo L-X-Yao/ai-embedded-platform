@@ -95,83 +95,113 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize store.  storage may be NULL (no persistence). */
+/**
+ * Initialize store.  storage may be NULL (no persistence).
+ * @thread_safe: no
+ */
 config_store_err_t config_store_init(config_store_t *cs,
                                      const config_store_storage_t *storage);
 
 /* --- Define entries (call at startup) --- */
 
+/** @thread_safe: no */
 config_store_err_t config_store_define_int(config_store_t *cs,
                                            const char *key,
                                            int32_t default_val,
                                            int32_t min, int32_t max);
 
+/** @thread_safe: no */
 config_store_err_t config_store_define_uint(config_store_t *cs,
                                             const char *key,
                                             uint32_t default_val,
                                             uint32_t min, uint32_t max);
 
+/** @thread_safe: no */
 config_store_err_t config_store_define_float(config_store_t *cs,
                                              const char *key,
                                              float default_val,
                                              float min, float max);
 
+/** @thread_safe: no */
 config_store_err_t config_store_define_bool(config_store_t *cs,
                                             const char *key,
                                             bool default_val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_define_string(config_store_t *cs,
                                               const char *key,
                                               const char *default_val);
 
 /* --- Set values (with type + range validation) --- */
 
+/** @thread_safe: no */
 config_store_err_t config_store_set_int(config_store_t *cs,
                                         const char *key, int32_t val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_set_uint(config_store_t *cs,
                                          const char *key, uint32_t val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_set_float(config_store_t *cs,
                                           const char *key, float val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_set_bool(config_store_t *cs,
                                          const char *key, bool val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_set_string(config_store_t *cs,
                                            const char *key,
                                            const char *val);
 
 /* --- Get values --- */
 
+/** @thread_safe: no */
 config_store_err_t config_store_get_int(const config_store_t *cs,
                                         const char *key, int32_t *val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_get_uint(const config_store_t *cs,
                                          const char *key, uint32_t *val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_get_float(const config_store_t *cs,
                                           const char *key, float *val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_get_bool(const config_store_t *cs,
                                          const char *key, bool *val);
 
+/** @thread_safe: no */
 config_store_err_t config_store_get_string(const config_store_t *cs,
                                            const char *key, char *val,
                                            uint16_t size);
 
 /* --- Persistence --- */
 
-/** Save all modified entries via storage callbacks. */
+/**
+ * Save all modified entries via storage callbacks.
+ * @thread_safe: no
+ */
 config_store_err_t config_store_save_all(config_store_t *cs);
 
-/** Load all entries via storage callbacks. */
+/**
+ * Load all entries via storage callbacks.
+ * @thread_safe: no
+ */
 config_store_err_t config_store_load_all(config_store_t *cs);
 
-/** Reset all entries to their default values. */
+/**
+ * Reset all entries to their default values.
+ * @thread_safe: no
+ */
 config_store_err_t config_store_reset_defaults(config_store_t *cs);
 
-/** Return number of defined entries. */
+/**
+ * Return number of defined entries.
+ * @thread_safe: no
+ */
 uint8_t config_store_count(const config_store_t *cs);
 
 #ifdef __cplusplus

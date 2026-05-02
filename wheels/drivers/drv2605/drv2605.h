@@ -80,20 +80,35 @@ typedef struct {
 /** Reset, verify device ID, enter standby. @thread_safe: caller_must_lock */
 drv2605_err_t drv2605_init(drv2605_dev_t *dev, const drv2605_i2c_t *i2c);
 
-/** Set actuator type (ERM or LRA) in feedback control register. */
+/**
+ * Set actuator type (ERM or LRA) in feedback control register.
+ * @thread_safe: caller_must_lock
+ */
 drv2605_err_t drv2605_set_mode(drv2605_dev_t *dev, drv2605_actuator_t type);
 
-/** Load an effect into a waveform slot (0-7). effect_id 1-123, 0 = stop. */
+/**
+ * Load an effect into a waveform slot (0-7). effect_id 1-123, 0 = stop.
+ * @thread_safe: caller_must_lock
+ */
 drv2605_err_t drv2605_set_waveform(drv2605_dev_t *dev, uint8_t slot,
                                    uint8_t effect_id);
 
-/** Trigger waveform sequencer playback (set GO bit). */
+/**
+ * Trigger waveform sequencer playback (set GO bit).
+ * @thread_safe: caller_must_lock
+ */
 drv2605_err_t drv2605_go(drv2605_dev_t *dev);
 
-/** Stop playback (clear GO bit). */
+/**
+ * Stop playback (clear GO bit).
+ * @thread_safe: caller_must_lock
+ */
 drv2605_err_t drv2605_stop(drv2605_dev_t *dev);
 
-/** Set real-time playback value (signed, for RTP mode). */
+/**
+ * Set real-time playback value (signed, for RTP mode).
+ * @thread_safe: caller_must_lock
+ */
 drv2605_err_t drv2605_set_realtime_value(drv2605_dev_t *dev, uint8_t value);
 
 #ifdef __cplusplus

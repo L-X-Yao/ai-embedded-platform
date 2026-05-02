@@ -1,5 +1,5 @@
 /*
- * nrf24l01 -- SPI driver for nRF24L01+ 2.4GHz radio transceiver
+ * nrf24l01 -- SPI driver for Nordic nRF24L01+ 2.4 GHz radio transceiver
  *
  * Layer:   L1
  * Status:  candidate

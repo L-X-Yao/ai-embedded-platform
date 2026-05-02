@@ -84,39 +84,69 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize handler. storage may be NULL (no persistence). */
+/**
+ * Initialize handler. storage may be NULL (no persistence).
+ * @thread_safe: no
+ */
 error_handler_err_t error_handler_init(error_handler_t *eh,
                                        const error_handler_storage_t *storage);
 
-/** Report an error. Overwrites oldest record when buffer is full. */
+/**
+ * Report an error. Overwrites oldest record when buffer is full.
+ * @thread_safe: no
+ */
 error_handler_err_t error_handler_report(error_handler_t *eh, uint16_t code,
                                           error_severity_t severity,
                                           uint32_t timestamp, uint32_t context);
 
-/** Set callback invoked on FATAL errors. */
+/**
+ * Set callback invoked on FATAL errors.
+ * @thread_safe: no
+ */
 void error_handler_set_fatal_callback(error_handler_t *eh,
                                        error_handler_callback_t cb, void *ctx);
 
-/** Return number of records currently stored. */
+/**
+ * Return number of records currently stored.
+ * @thread_safe: no
+ */
 uint8_t error_handler_get_count(const error_handler_t *eh);
 
-/** Get record by index (0 = oldest). */
+/**
+ * Get record by index (0 = oldest).
+ * @thread_safe: no
+ */
 error_handler_err_t error_handler_get(const error_handler_t *eh, uint8_t index,
                                        error_record_t *record);
 
-/** Persist current records via storage callbacks. */
+/**
+ * Persist current records via storage callbacks.
+ * @thread_safe: no
+ */
 error_handler_err_t error_handler_save(error_handler_t *eh);
 
-/** Load records from storage, replacing current buffer. */
+/**
+ * Load records from storage, replacing current buffer.
+ * @thread_safe: no
+ */
 error_handler_err_t error_handler_load(error_handler_t *eh);
 
-/** Clear all records and reset counters. */
+/**
+ * Clear all records and reset counters.
+ * @thread_safe: no
+ */
 void error_handler_clear(error_handler_t *eh);
 
-/** Return lifetime count of all reported errors. */
+/**
+ * Return lifetime count of all reported errors.
+ * @thread_safe: no
+ */
 uint32_t error_handler_total_errors(const error_handler_t *eh);
 
-/** Return lifetime count of FATAL errors. */
+/**
+ * Return lifetime count of FATAL errors.
+ * @thread_safe: no
+ */
 uint32_t error_handler_total_fatals(const error_handler_t *eh);
 
 #ifdef __cplusplus

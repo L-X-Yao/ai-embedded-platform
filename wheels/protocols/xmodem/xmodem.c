@@ -1,5 +1,5 @@
 /*
- * xmodem — XMODEM/XMODEM-CRC receiver (passive, byte-fed)
+ * xmodem -- XMODEM/XMODEM-CRC file transfer receiver (passive, byte-fed)
  *
  * Layer:   L2
  * Status:  candidate

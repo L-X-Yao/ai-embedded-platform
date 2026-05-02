@@ -49,39 +49,69 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Zero-initialize all fields. */
+/**
+ * Zero-initialize all fields.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_init(device_info_t *info);
 
-/** Set firmware version string. Truncates if longer than STR_SIZE-1. */
+/**
+ * Set firmware version string. Truncates if longer than STR_SIZE-1.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_set_firmware_version(device_info_t *info,
                                                    const char *version);
 
-/** Set hardware version string. */
+/**
+ * Set hardware version string.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_set_hardware_version(device_info_t *info,
                                                    const char *version);
 
-/** Set serial number string. */
+/**
+ * Set serial number string.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_set_serial_number(device_info_t *info,
                                                 const char *serial);
 
-/** Set build date string. */
+/**
+ * Set build date string.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_set_build_date(device_info_t *info,
                                              const char *date);
 
-/** Set device name string. */
+/**
+ * Set device name string.
+ * @thread_safe: no
+ */
 device_info_err_t device_info_set_device_name(device_info_t *info,
                                               const char *name);
 
-/** Set boot count (caller loads from persistent storage). */
+/**
+ * Set boot count (caller loads from persistent storage).
+ * @thread_safe: no
+ */
 void device_info_set_boot_count(device_info_t *info, uint32_t count);
 
-/** Set reset reason code (MCU-specific). */
+/**
+ * Set reset reason code (MCU-specific).
+ * @thread_safe: no
+ */
 void device_info_set_reset_reason(device_info_t *info, uint32_t reason);
 
-/** Call once per second to increment uptime counter. */
+/**
+ * Call once per second to increment uptime counter.
+ * @thread_safe: no
+ */
 void device_info_tick(device_info_t *info);
 
-/** Get current uptime in seconds. */
+/**
+ * Get current uptime in seconds.
+ * @thread_safe: no
+ */
 uint32_t device_info_get_uptime(const device_info_t *info);
 
 /**
@@ -89,6 +119,7 @@ uint32_t device_info_get_uptime(const device_info_t *info);
  * Returns number of bytes written (excluding NUL), or -1 on error.
  * If buf is too small, returns DEVICE_INFO_ERR_OVERFLOW and buf
  * contains a truncated but NUL-terminated string.
+ * @thread_safe: no
  */
 int device_info_format(const device_info_t *info, char *buf, uint16_t buf_size);
 

@@ -81,32 +81,56 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize manager with callbacks and current firmware version. */
+/**
+ * Initialize manager with callbacks and current firmware version.
+ * @thread_safe: no
+ */
 ota_mgr_err_t ota_manager_init(ota_manager_t *mgr,
                                const ota_mgr_ops_t *ops,
                                const char *current_version);
 
-/** Check for update via check_version callback. */
+/**
+ * Check for update via check_version callback.
+ * @thread_safe: no
+ */
 ota_mgr_err_t ota_manager_check(ota_manager_t *mgr);
 
-/** Download one chunk. Call in a loop until state leaves DOWNLOADING. */
+/**
+ * Download one chunk. Call in a loop until state leaves DOWNLOADING.
+ * @thread_safe: no
+ */
 ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
                                         uint8_t *chunk_buf,
                                         uint16_t buf_size);
 
-/** Verify downloaded firmware via verify callback. */
+/**
+ * Verify downloaded firmware via verify callback.
+ * @thread_safe: no
+ */
 ota_mgr_err_t ota_manager_verify(ota_manager_t *mgr);
 
-/** Activate new firmware (switch slot) via activate callback. */
+/**
+ * Activate new firmware (switch slot) via activate callback.
+ * @thread_safe: no
+ */
 ota_mgr_err_t ota_manager_activate(ota_manager_t *mgr);
 
-/** Get current state. */
+/**
+ * Get current state.
+ * @thread_safe: no
+ */
 ota_mgr_state_t ota_manager_get_state(const ota_manager_t *mgr);
 
-/** Get download progress (0-100). */
+/**
+ * Get download progress (0-100).
+ * @thread_safe: no
+ */
 uint32_t ota_manager_get_progress(const ota_manager_t *mgr);
 
-/** Reset manager to IDLE state (e.g., after error or abort). */
+/**
+ * Reset manager to IDLE state (e.g., after error or abort).
+ * @thread_safe: no
+ */
 void ota_manager_reset(ota_manager_t *mgr);
 
 #ifdef __cplusplus

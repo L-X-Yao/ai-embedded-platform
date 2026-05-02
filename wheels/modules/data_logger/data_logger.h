@@ -76,34 +76,61 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize logger with storage backend and field schema. */
+/**
+ * Initialize logger with storage backend and field schema.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_init(data_logger_t *dl,
                                    const data_logger_storage_t *storage,
                                    const data_logger_field_t *fields,
                                    uint8_t field_count);
 
-/** Begin a new record. Writes timestamp to buffer. */
+/**
+ * Begin a new record. Writes timestamp to buffer.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_begin(data_logger_t *dl, uint32_t timestamp);
 
-/** Add a signed 32-bit integer field. */
+/**
+ * Add a signed 32-bit integer field.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_add_int(data_logger_t *dl, int32_t value);
 
-/** Add an unsigned 32-bit integer field. */
+/**
+ * Add an unsigned 32-bit integer field.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_add_uint(data_logger_t *dl, uint32_t value);
 
-/** Add a floating-point field (2 decimal places). */
+/**
+ * Add a floating-point field (2 decimal places).
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_add_float(data_logger_t *dl, float value);
 
-/** Add a string field. */
+/**
+ * Add a string field.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value);
 
-/** Commit record: calls storage->write() with complete CSV line. */
+/**
+ * Commit record: calls storage->write() with complete CSV line.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_commit(data_logger_t *dl);
 
-/** Flush storage backend. */
+/**
+ * Flush storage backend.
+ * @thread_safe: no
+ */
 data_logger_err_t data_logger_flush(data_logger_t *dl);
 
-/** Get total committed record count. */
+/**
+ * Get total committed record count.
+ * @thread_safe: no
+ */
 uint32_t data_logger_get_count(const data_logger_t *dl);
 
 #ifdef __cplusplus

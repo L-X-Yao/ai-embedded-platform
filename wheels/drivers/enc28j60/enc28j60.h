@@ -1,5 +1,5 @@
 /*
- * enc28j60 — SPI Ethernet controller driver
+ * enc28j60 -- SPI Ethernet controller driver for Microchip ENC28J60
  *
  * Layer:   L1
  * Status:  candidate
@@ -52,28 +52,49 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
-/** Soft-reset, configure buffers, set MAC, enable RX. */
+/**
+ * Soft-reset, configure buffers, set MAC, enable RX.
+ * @thread_safe: caller_must_lock
+ */
 enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr);
 
-/** Transmit a single Ethernet frame. */
+/**
+ * Transmit a single Ethernet frame.
+ * @thread_safe: caller_must_lock
+ */
 enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
                               uint16_t len);
 
-/** Receive one Ethernet frame from RX buffer. */
+/**
+ * Receive one Ethernet frame from RX buffer.
+ * @thread_safe: caller_must_lock
+ */
 enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
                                  uint16_t buf_size, uint16_t *frame_len);
 
-/** Check if at least one packet is pending. */
+/**
+ * Check if at least one packet is pending.
+ * @thread_safe: caller_must_lock
+ */
 bool enc28j60_has_packet(enc28j60_t *dev);
 
-/** Read silicon revision (EREVID register). */
+/**
+ * Read silicon revision (EREVID register).
+ * @thread_safe: caller_must_lock
+ */
 uint8_t enc28j60_get_revision(enc28j60_t *dev);
 
-/** Update MAC address registers. */
+/**
+ * Update MAC address registers.
+ * @thread_safe: caller_must_lock
+ */
 enc28j60_err_t enc28j60_set_mac(enc28j60_t *dev, const uint8_t *mac_addr);
 
-/** Set ECON1.RXEN to start reception. */
+/**
+ * Set ECON1.RXEN to start reception.
+ * @thread_safe: caller_must_lock
+ */
 void enc28j60_enable_reception(enc28j60_t *dev);
 
 #ifdef __cplusplus
