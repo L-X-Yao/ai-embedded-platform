@@ -22,11 +22,11 @@ extern "C" {
 #endif
 
 typedef enum {
-    FIFO_OK         =  0,
-    FIFO_ERR_PARAMS = -1,
-    FIFO_ERR_FULL   = -2,
-    FIFO_ERR_EMPTY  = -3,
-} fifo_err_t;
+    FIFO_QUEUE_OK         =  0,
+    FIFO_QUEUE_ERR_PARAMS = -1,
+    FIFO_QUEUE_ERR_FULL   = -2,
+    FIFO_QUEUE_ERR_EMPTY  = -3,
+} fifo_queue_err_t;
 
 typedef struct {
     uint8_t *buf;       /* backing storage (caller-owned) */
@@ -38,17 +38,17 @@ typedef struct {
 } fifo_queue_t;
 
 /** @thread_safe: no */
-fifo_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
+fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
                            uint16_t capacity, uint16_t elem_size);
 
 /** @thread_safe: no */
-fifo_err_t fifo_queue_push(fifo_queue_t *q, const void *item);
+fifo_queue_err_t fifo_queue_push(fifo_queue_t *q, const void *item);
 
 /** @thread_safe: no */
-fifo_err_t fifo_queue_pop(fifo_queue_t *q, void *item);
+fifo_queue_err_t fifo_queue_pop(fifo_queue_t *q, void *item);
 
 /** @thread_safe: no */
-fifo_err_t fifo_queue_peek(const fifo_queue_t *q, void *item);
+fifo_queue_err_t fifo_queue_peek(const fifo_queue_t *q, void *item);
 
 /** @thread_safe: no */
 uint16_t fifo_queue_count(const fifo_queue_t *q);

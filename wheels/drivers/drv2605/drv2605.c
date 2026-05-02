@@ -31,19 +31,19 @@
 
 /* ---------- helpers ---------- */
 
-static bool write_reg(const drv2605_dev_t *dev, uint8_t reg, uint8_t val)
+static bool write_reg(const drv2605_t *dev, uint8_t reg, uint8_t val)
 {
     return dev->i2c->write_reg(dev->i2c->ctx, DRV2605_ADDR, reg, val);
 }
 
-static bool read_reg(const drv2605_dev_t *dev, uint8_t reg, uint8_t *val)
+static bool read_reg(const drv2605_t *dev, uint8_t reg, uint8_t *val)
 {
     return dev->i2c->read_regs(dev->i2c->ctx, DRV2605_ADDR, reg, val, 1);
 }
 
 /* ---------- API ---------- */
 
-drv2605_err_t drv2605_init(drv2605_dev_t *dev, const drv2605_i2c_t *i2c)
+drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
 {
     if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
         return DRV2605_ERR_PARAM;
@@ -72,7 +72,7 @@ drv2605_err_t drv2605_init(drv2605_dev_t *dev, const drv2605_i2c_t *i2c)
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_set_mode(drv2605_dev_t *dev, drv2605_actuator_t type)
+drv2605_err_t drv2605_set_mode(drv2605_t *dev, drv2605_actuator_t type)
 {
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;
@@ -95,7 +95,7 @@ drv2605_err_t drv2605_set_mode(drv2605_dev_t *dev, drv2605_actuator_t type)
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_set_waveform(drv2605_dev_t *dev, uint8_t slot,
+drv2605_err_t drv2605_set_waveform(drv2605_t *dev, uint8_t slot,
                                    uint8_t effect_id)
 {
     if (!dev || !dev->i2c)
@@ -109,7 +109,7 @@ drv2605_err_t drv2605_set_waveform(drv2605_dev_t *dev, uint8_t slot,
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_go(drv2605_dev_t *dev)
+drv2605_err_t drv2605_go(drv2605_t *dev)
 {
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;
@@ -120,7 +120,7 @@ drv2605_err_t drv2605_go(drv2605_dev_t *dev)
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_stop(drv2605_dev_t *dev)
+drv2605_err_t drv2605_stop(drv2605_t *dev)
 {
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;
@@ -131,7 +131,7 @@ drv2605_err_t drv2605_stop(drv2605_dev_t *dev)
     return DRV2605_OK;
 }
 
-drv2605_err_t drv2605_set_realtime_value(drv2605_dev_t *dev, uint8_t value)
+drv2605_err_t drv2605_set_realtime_value(drv2605_t *dev, uint8_t value)
 {
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;

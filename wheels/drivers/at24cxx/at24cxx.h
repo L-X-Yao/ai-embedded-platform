@@ -35,15 +35,15 @@ typedef enum {
 /* ---------- chip models (value = total bytes) ---------- */
 
 typedef enum {
-    AT24C01  =    128,   /*  1 Kbit */
-    AT24C02  =    256,   /*  2 Kbit */
-    AT24C04  =    512,   /*  4 Kbit */
-    AT24C08  =   1024,   /*  8 Kbit */
-    AT24C16  =   2048,   /* 16 Kbit */
-    AT24C32  =   4096,   /* 32 Kbit */
-    AT24C64  =   8192,   /* 64 Kbit */
-    AT24C128 =  16384,   /* 128 Kbit */
-    AT24C256 =  32768,   /* 256 Kbit */
+    AT24CXX_C01  =    128,   /*  1 Kbit */
+    AT24CXX_C02  =    256,   /*  2 Kbit */
+    AT24CXX_C04  =    512,   /*  4 Kbit */
+    AT24CXX_C08  =   1024,   /*  8 Kbit */
+    AT24CXX_C16  =   2048,   /* 16 Kbit */
+    AT24CXX_C32  =   4096,   /* 32 Kbit */
+    AT24CXX_C64  =   8192,   /* 64 Kbit */
+    AT24CXX_C128 =  16384,   /* 128 Kbit */
+    AT24CXX_C256 =  32768,   /* 256 Kbit */
 } at24cxx_model_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */

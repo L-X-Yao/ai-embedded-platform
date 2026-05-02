@@ -9,7 +9,7 @@
  * Addr 0x29, ID register 0x12 returns 0x44 or 0x4D.
  * RGBC data in registers 0x14-0x1B (16-bit little-endian).
  * Pure C99, no heap, fully reentrant per-context.
- * Thread safety: caller owns the tcs34725_dev_t struct.
+ * Thread safety: caller owns the tcs34725_t struct.
  */
 
 #ifndef TCS34725_H
@@ -65,35 +65,35 @@ typedef struct {
     tcs34725_i2c_t   i2c;
     tcs34725_integ_t integ;
     tcs34725_gain_t  gain;
-} tcs34725_dev_t;
+} tcs34725_t;
 
 /** Init, verify chip ID (0x44 or 0x4D), configure integration time and gain.
  *  @thread_safe: no */
-tcs34725_err_t tcs34725_init(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ,
                              tcs34725_gain_t gain);
 
 /** Read RGBC data (clear, red, green, blue — 16-bit each).
  *  @thread_safe: caller_must_lock */
-tcs34725_err_t tcs34725_read_rgbc(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
                                   tcs34725_rgbc_t *out);
 
 /** Set integration time. @thread_safe: caller_must_lock */
-tcs34725_err_t tcs34725_set_integration_time(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
                                              tcs34725_integ_t integ);
 
 /** Set gain. @thread_safe: caller_must_lock */
-tcs34725_err_t tcs34725_set_gain(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
                                  tcs34725_gain_t gain);
 
 /** Enable RGBC measurement (power on + ADC enable).
  *  @thread_safe: caller_must_lock */
-tcs34725_err_t tcs34725_enable(tcs34725_dev_t *dev);
+tcs34725_err_t tcs34725_enable(tcs34725_t *dev);
 
 /** Disable RGBC measurement (power off).
  *  @thread_safe: caller_must_lock */
-tcs34725_err_t tcs34725_disable(tcs34725_dev_t *dev);
+tcs34725_err_t tcs34725_disable(tcs34725_t *dev);
 
 /** Estimate correlated color temperature (CCT) in Kelvin from RGBC data.
  *  Uses the DN40 application note formula.
