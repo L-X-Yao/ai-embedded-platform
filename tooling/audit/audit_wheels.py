@@ -678,6 +678,31 @@ def has_vsf_native_residual(wheel_dir: Path) -> bool:
     return "why not vsf native" in text.lower()
 
 
+def has_why_self_written(wheel_dir: Path) -> bool:
+    """Return True if self-written wheel has 'Why self-written?' or equivalent section."""
+    if is_vendor_wheel(wheel_dir):
+        return True  # vendor wheels use "Why this upstream?" instead
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return False
+    text = readme.read_text(encoding="utf-8", errors="replace").lower()
+    return ("why self-written" in text or
+            "why not an open-source" in text or
+            "why not open-source" in text or
+            "why this upstream" in text)
+
+
+def has_status_format(wheel_dir: Path) -> bool:
+    """Return True if README uses '**Status:' (not '**STATUS:')."""
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return True
+    text = readme.read_text(encoding="utf-8", errors="replace")
+    if "**STATUS:" in text:
+        return False
+    return True
+
+
 def has_init_caller_must_lock(wheel_dir: Path, name: str) -> bool:
     """Return True if init/deinit/reset is tagged caller_must_lock (should be 'no')."""
     h_file = wheel_dir / f"{name}.h"
@@ -1200,6 +1225,32 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
             record("init_thread_safe", path, "WARN",
                    "init/deinit/reset tagged @thread_safe: caller_must_lock — should be 'no' (api-conventions §4)",
                    fix_cmd=f"change @thread_safe: caller_must_lock to @thread_safe: no on init/deinit/reset in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- "Why self-written?" section (ADR-010) ---
+    qprint("\n=== 'Why self-written?' section (ADR-010) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if not has_why_self_written(wheel_dir):
+            record("why_self_written", path, "WARN",
+                   "self-written wheel README missing 'Why self-written?' section (ADR-010)",
+                   fix_cmd=f"add '## Why self-written?' section to {path}/README.md")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- Status format check ---
+    qprint("\n=== Status format (**Status:** not **STATUS:**) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if not has_status_format(wheel_dir):
+            record("status_format", path, "WARN",
+                   "README uses **STATUS:** — should be **Status:** (title case)",
+                   fix_cmd=f"change **STATUS:** to **Status:** in {path}/README.md")
             tprint(f"  [WARN]  {path}")
         else:
             qprint(f"  [ ok ]  {path}")
