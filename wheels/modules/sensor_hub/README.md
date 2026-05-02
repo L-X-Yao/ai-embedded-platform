@@ -82,7 +82,12 @@ int sensor_hub_find(const sensor_hub_t *hub, const char *name);
 
 ## Known issues
 
-None.
+- **Float sum drift**: Statistics `avg` is computed as `sum / count` where
+  `sum` accumulates incrementally. Over very long poll runs (>10k samples)
+  with large absolute values, floating-point precision loss may cause the
+  average to drift. Workaround: call `sensor_hub_reset_stats()` periodically
+  (e.g. every 1000 polls) if sub-percent accuracy in long-running averages
+  is required.
 
 ## How to test
 

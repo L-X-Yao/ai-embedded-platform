@@ -57,6 +57,10 @@ static void parse_block0(ymodem_t *ym, const uint8_t *data, uint16_t len)
     if (i < len) {
         i++; /* skip null terminator after filename */
         while (i < len && data[i] >= '0' && data[i] <= '9') {
+            if (ym->file_size > UINT32_MAX / 10) {
+                ym->file_size = UINT32_MAX;
+                break;
+            }
             ym->file_size = ym->file_size * 10 + (uint32_t)(data[i] - '0');
             i++;
         }

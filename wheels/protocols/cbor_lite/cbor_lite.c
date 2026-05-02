@@ -283,13 +283,13 @@ cbor_lite_err_t cbor_lite_dec_next(cbor_lite_decoder_t *dec,
     case CBOR_MAJOR_NINT:
         break;
     case CBOR_MAJOR_BSTR:
-        if (dec->pos + val > dec->len) return CBOR_LITE_ERR_SHORT;
+        if (val > (uint64_t)(dec->len - dec->pos)) return CBOR_LITE_ERR_SHORT;
         item->str = &dec->buf[dec->pos];
         item->str_len = (size_t)val;
         dec->pos += (size_t)val;
         break;
     case CBOR_MAJOR_TSTR:
-        if (dec->pos + val > dec->len) return CBOR_LITE_ERR_SHORT;
+        if (val > (uint64_t)(dec->len - dec->pos)) return CBOR_LITE_ERR_SHORT;
         item->str = &dec->buf[dec->pos];
         item->str_len = (size_t)val;
         dec->pos += (size_t)val;

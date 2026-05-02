@@ -109,6 +109,7 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `xgzp6816d`: EOC status byte ignored (caller must honor XGZP6816D_CONV_MS)
 - `sht30`: no post-reset delay in init (delay_ms only called in read)
 - `moving_average`: SMA float drift (known limitation of incremental sum)
+- `sensor_hub`: float sum drift in avg statistics over long poll runs (>10k samples); workaround: periodic reset_stats
 - `log_flash`: init only erases sector 0 (caller should call erase_all for clean slate)
 - `log_dedup`: same-length lines >LOG_DEDUP_LINE_MAX differing only past truncation point may false-dedup (architectural limit of truncated storage)
 - `log_ringbuf`: read output not NUL-terminated (returns byte count; documented contract)

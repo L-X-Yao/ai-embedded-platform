@@ -369,9 +369,14 @@ flash_journal_err_t flash_journal_read_nth(const flash_journal_t *jrnl,
             if (err != FLASH_JOURNAL_OK) break;
 
             if (count == n) {
-                *size = (uint32_t)len;
-                return read_entry(jrnl, sector, offset, &seq, &len,
-                                  buf, *size);
+                uint32_t entry_len = (uint32_t)len;
+                flash_journal_err_t rc = read_entry(jrnl, sector, offset,
+                                                     &seq, &len,
+                                                     buf, entry_len);
+                if (rc == FLASH_JOURNAL_OK) {
+                    *size = entry_len;
+                }
+                return rc;
             }
             offset += FLASH_JOURNAL_OVERHEAD + (uint32_t)len;
             count++;
