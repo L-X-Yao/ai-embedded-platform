@@ -18,7 +18,14 @@ from pathlib import Path
 
 
 def find_memory_dir():
-    """Find the memory directory by searching standard Claude Code paths."""
+    """Find the memory directory matching the current repo.
+
+    Derives the expected project slug from the repo root path (e.g.
+    D:\\temp\\project\\ai-embedded-platform -> D--temp-project-ai-embedded-platform)
+    and looks for that specific directory first.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    slug = str(repo_root).replace(":", "-").replace("\\", "-").replace("/", "-")
     candidates = [Path.home() / ".claude" / "projects"]
     win_user = os.environ.get("USERPROFILE") or os.environ.get("HOME_WINDOWS")
     if win_user:
@@ -27,10 +34,18 @@ def find_memory_dir():
     if wsl_mnt.is_dir():
         for u in wsl_mnt.iterdir():
             candidates.append(u / ".claude" / "projects")
+    # First pass: exact match by repo slug
     for base in candidates:
         if not base.is_dir():
             continue
-        for d in base.iterdir():
+        exact = base / slug / "memory"
+        if exact.is_dir() and (exact / "MEMORY.md").exists():
+            return exact
+    # Fallback: first directory containing MEMORY.md
+    for base in candidates:
+        if not base.is_dir():
+            continue
+        for d in sorted(base.iterdir()):
             if not d.is_dir():
                 continue
             candidate = d / "memory"
