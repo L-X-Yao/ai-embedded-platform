@@ -14,6 +14,7 @@ target_include_directories(test_telemetry PRIVATE
 )
 
 target_compile_options(test_telemetry PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_telemetry PRIVATE m)
 
 enable_testing()
 add_test(NAME telemetry_tests COMMAND test_telemetry)

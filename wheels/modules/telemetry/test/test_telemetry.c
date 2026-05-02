@@ -399,6 +399,32 @@ TEST(test_float_formatting_integers)
     ASSERT_TRUE(strstr(sent_buf, "42.00") == NULL);
 }
 
+TEST(test_update_nan_rejected)
+{
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, "v");
+    ASSERT_EQ(telemetry_update(&telem, "v", NAN), TELEMETRY_ERR_PARAM);
+    /* value should remain at default 0 */
+    ASSERT_NEAR(telem.fields[0].value, 0.0f, 0.01f);
+    ASSERT_FALSE(telem.fields[0].updated);
+}
+
+TEST(test_update_inf_rejected)
+{
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, "v");
+    ASSERT_EQ(telemetry_update(&telem, "v", INFINITY), TELEMETRY_ERR_PARAM);
+    ASSERT_EQ(telemetry_update(&telem, "v", -INFINITY), TELEMETRY_ERR_PARAM);
+}
+
+TEST(test_update_by_index_nan_rejected)
+{
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, "v");
+    ASSERT_EQ(telemetry_update_by_index(&telem, 0, NAN), TELEMETRY_ERR_PARAM);
+    ASSERT_EQ(telemetry_update_by_index(&telem, 0, INFINITY), TELEMETRY_ERR_PARAM);
+}
+
 /* ================================================================ */
 
 TEST_MAIN("telemetry")
@@ -429,4 +455,7 @@ TEST_MAIN("telemetry")
     RUN(test_publish_no_fields);
     RUN(test_send_ctx_passed);
     RUN(test_float_formatting_integers);
+    RUN(test_update_nan_rejected);
+    RUN(test_update_inf_rejected);
+    RUN(test_update_by_index_nan_rejected);
 TEST_MAIN_END()
