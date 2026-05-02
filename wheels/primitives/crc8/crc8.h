@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Supports: CRC8, CRC8/MAXIM (1-Wire), CRC8/SENSIRION (SHT30),
  *           CRC8/SMBUS (PEC), CRC8/ROHC.

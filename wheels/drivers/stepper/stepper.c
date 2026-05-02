@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal (injected)
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  *
  * Trapezoidal ramp uses David Austin's algorithm:
  *   delay_n = delay_{n-1} * (1 - 2 / (4n + 1))

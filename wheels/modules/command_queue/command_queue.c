@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Insertion-sorted array: index 0 is always the highest-priority item
  * (lowest numeric priority value).  Equal priorities preserve FIFO order

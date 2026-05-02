@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Register map and prescaler formula from NXP PCA9685 datasheet (rev 4).
  * 25 MHz internal oscillator, 12-bit resolution (4096 counts per cycle).

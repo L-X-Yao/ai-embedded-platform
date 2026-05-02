@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * NXP PCF8574 / PCF8574A: command-based I2C (no registers).
  * Read or write a single byte representing 8 quasi-bidirectional I/O pins.
@@ -38,6 +39,7 @@ typedef struct {
                   const uint8_t *data, uint16_t len);
     bool (*read)(void *ctx, uint8_t dev_addr,
                  uint8_t *data, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } pcf8574_i2c_t;
 

@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Register map (all 16-bit big-endian):
  *   0x00 Config, 0x01 Shunt Voltage, 0x02 Bus Voltage,

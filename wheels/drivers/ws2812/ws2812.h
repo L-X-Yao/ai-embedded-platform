@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  */
 
 #ifndef WS2812_H

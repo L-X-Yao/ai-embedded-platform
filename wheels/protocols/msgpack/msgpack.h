@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Compact binary JSON alternative for IoT telemetry and configuration.
  * Supports fixint/fixstr/fixarray/fixmap + 8/16/32 variants.

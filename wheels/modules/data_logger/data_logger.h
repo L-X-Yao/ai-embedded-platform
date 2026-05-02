@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained)
+ * Deps:      (none -- self-contained)
+ * Instances: multi
  *
  * Passive design: application calls begin/add/commit to build records,
  * logger formats CSV and calls storage callback. Application decides

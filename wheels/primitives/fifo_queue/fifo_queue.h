@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Circular queue for fixed-size elements (structs, ints, etc.).
  * Complements byte_buffer (linear bytes) and ring_buffer (byte-level

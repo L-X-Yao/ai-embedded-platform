@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Supports %d %u %x %X %o %c %s %p %% with width, zero-pad, left-align,
  * and long modifier. No float, no malloc, no static buffers.

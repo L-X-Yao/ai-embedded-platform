@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Standard positional PID with configurable output and integral clamping.
  * Pure C99, no heap, fully reentrant per-context.

@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * SMBus protocol via command-based I2C (write+read, not register-based).
  * Temperature conversion: raw * 0.02 - 273.15 (Kelvin to Celsius).

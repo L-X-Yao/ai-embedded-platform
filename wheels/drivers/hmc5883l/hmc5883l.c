@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  */
 #include "hmc5883l.h"
 

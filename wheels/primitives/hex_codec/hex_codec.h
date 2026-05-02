@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Encodes binary data to hex strings (lower/uppercase) and decodes
  * hex strings back to binary.  Complement to base64 for human-readable

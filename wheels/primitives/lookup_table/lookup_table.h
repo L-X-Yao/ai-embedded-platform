@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Caller provides sorted x/y arrays; lut_interpolate performs linear
  * interpolation between nearest points.  Out-of-range inputs are clamped

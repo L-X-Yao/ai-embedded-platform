@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Fixed-size priority queue for dispatching commands.  Commands are
  * insertion-sorted by priority (lower numeric value = higher priority).

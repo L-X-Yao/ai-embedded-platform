@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * I2C interface injected via callbacks. Implements the Bosch compensation
  * algorithm from the BMP280 datasheet (BST-BMP280-DS001-26).
@@ -33,6 +34,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } bmp280_i2c_t;
 

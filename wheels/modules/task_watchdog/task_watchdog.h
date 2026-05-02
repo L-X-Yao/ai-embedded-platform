@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Registers tasks with a timeout. Each task calls feed() periodically.
  * Application calls tick() to advance time and check() to detect

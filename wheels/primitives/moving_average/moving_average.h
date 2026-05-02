@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Two filter types:
  *   - SMA (Simple Moving Average): exact window average, uses caller-provided buffer

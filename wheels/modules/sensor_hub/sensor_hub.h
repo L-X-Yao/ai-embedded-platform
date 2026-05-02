@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Passive design: application calls sensor_hub_poll() periodically,
  * hub reads all registered sensors via callbacks.  Auto min/max/avg

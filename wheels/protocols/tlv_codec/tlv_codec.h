@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Fixed-width TLV format: tag (2 bytes, big-endian) + length (2 bytes,
  * big-endian) + value (N bytes). Iterative decoder with zero-copy value

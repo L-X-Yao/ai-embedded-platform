@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal (injected)
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  *
  * Datasheet: Maxim MAX31855 — 32-bit read-only SPI frame.
  *   Bits [31:18] = thermocouple temp (14-bit signed, 0.25 C/LSB)

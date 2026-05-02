@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Controls 16 independent PWM channels via I2C. Supports raw on/off
  * counts, duty-cycle percentage, and servo pulse widths. Configurable

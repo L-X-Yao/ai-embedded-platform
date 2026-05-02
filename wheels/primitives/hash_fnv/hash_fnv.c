@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Algorithm: for each byte, hash ^= byte; hash *= prime.
  * Reference: http://www.isthe.com/chongo/tech/comp/fnv/

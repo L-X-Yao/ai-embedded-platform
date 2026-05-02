@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Compensation algorithm from Bosch BME280 datasheet (BST-BME280-DS002-15),
  * Section 8.1 (integer 32-bit) for temp/pressure, Section 4.2.3 for humidity.

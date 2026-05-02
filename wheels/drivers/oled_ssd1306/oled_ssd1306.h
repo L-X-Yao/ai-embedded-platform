@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Framebuffer-based: caller draws into a 128x64 buffer (1024 bytes),
  * then flushes to display. Includes basic pixel, line, and text drawing.

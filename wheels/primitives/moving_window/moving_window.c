@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Min/max are recomputed on demand by scanning the buffer (O(n) per query).
  * Mean and variance use running sums (O(1) push, O(1) query).

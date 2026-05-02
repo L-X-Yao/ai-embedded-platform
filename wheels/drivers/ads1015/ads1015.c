@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Register layout identical to ADS1115: config at 0x01, conversion at
  * 0x00.  12-bit result is left-justified in the 16-bit conversion

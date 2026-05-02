@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    pwm_hal (injected)
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  */
 
 #include "drv8833.h"

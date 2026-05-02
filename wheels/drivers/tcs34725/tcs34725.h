@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Register-based I2C with command register protocol (0x80 | reg).
  * Addr 0x29, ID register 0x12 returns 0x44 or 0x4D.
@@ -34,6 +35,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
 } tcs34725_i2c_t;
 

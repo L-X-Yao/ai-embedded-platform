@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained)
+ * Deps:      (none -- self-contained)
+ * Instances: multi
  *
  * Passive design: application provides read/write/erase sector callbacks.
  * Journal appends entries sequentially across sectors, wrapping around

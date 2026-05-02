@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Supports 8-bit address chips (AT24C01-AT24C16) and 16-bit address
  * chips (AT24C32-AT24C256).  Page-boundary splitting is handled

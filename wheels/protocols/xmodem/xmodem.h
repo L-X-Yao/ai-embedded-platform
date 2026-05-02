@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  */
 
 #ifndef XMODEM_H

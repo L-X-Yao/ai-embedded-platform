@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- all I/O via callbacks)
+ * Deps:      (none -- all I/O via callbacks)
+ * Instances: multi
  *
  * State machine: idle -> checking -> downloading -> verifying -> ready.
  * Application drives the pace by calling download_step() in a loop.

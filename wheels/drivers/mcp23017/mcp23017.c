@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Bank=0 register addressing (default after POR).
  * See Microchip MCP23017 datasheet DS20001952C.

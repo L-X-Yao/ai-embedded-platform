@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Circular buffer with head/tail pointers and explicit count.
  * Supports partial write/read, peek, and skip. Suitable for

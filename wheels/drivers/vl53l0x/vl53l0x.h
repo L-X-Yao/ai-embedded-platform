@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Simplified init sequence (not the full ST API). Single-shot ranging
  * with 16-bit millimeter output. Pure C99, no heap, fully reentrant.

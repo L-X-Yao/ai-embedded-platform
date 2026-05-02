@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * I2C interface injected via callbacks. SHT30 uses 16-bit command words
  * (not register-based) with CRC-8 protected responses.

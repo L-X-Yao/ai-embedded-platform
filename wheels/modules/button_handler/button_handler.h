@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- takes a read callback, no direct wheel dependency)
+ * Deps:      (none -- takes a read callback, no direct wheel dependency)
+ * Instances: multi
  *
  * Tick-driven pattern detector: click, double-click, long-press, repeat.
  * Register buttons with a read callback; call btn_handler_tick() periodically.

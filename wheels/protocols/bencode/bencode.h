@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless encoder/decoder for Bencode format: integers "i42e",
  * strings "3:foo", lists "l...e", dicts "d...e".

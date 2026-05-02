@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained, does not #include cli_parser)
+ * Deps:      (none -- self-contained, does not #include cli_parser)
+ * Instances: multi
  *
  * Passive design: application feeds bytes via cli_shell_feed(),
  * shell parses and dispatches to registered command handlers.

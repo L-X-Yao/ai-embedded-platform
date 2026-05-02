@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Caller provides the window buffer. Uses insertion sort on each sample
  * for O(N) update. Window sizes 3-31 (odd recommended for true median).

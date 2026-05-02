@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  *
  * Register map: config 0x00, RTD MSB 0x01, RTD LSB 0x02, fault 0x07.
  * Read address = reg, write address = reg | 0x80.

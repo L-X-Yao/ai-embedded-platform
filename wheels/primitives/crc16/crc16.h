@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Polynomial: 0xA001 (reflected form of 0x8005)
  * Initial value: 0xFFFF, no final XOR.

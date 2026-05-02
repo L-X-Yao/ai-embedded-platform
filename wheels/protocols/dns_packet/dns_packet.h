@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless DNS packet building and parsing. Handles query construction,
  * header/record parsing, domain name encoding with pointer compression.

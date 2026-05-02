@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Eliminates 0x00 from payload, enabling reliable frame delimiting
  * on serial links. Overhead: 1 byte per 254 bytes of input (worst case).

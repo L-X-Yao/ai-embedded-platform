@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    crc16
+ * Deps:      crc16
+ * Instances: multi
  */
 
 #ifndef MODBUS_RTU_H

@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Big-endian bit numbering (MSB-first): bit 0 is the MSB of byte 0.
  * Thread safety: all functions are pure / reentrant.

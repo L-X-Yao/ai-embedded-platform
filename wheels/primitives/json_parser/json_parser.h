@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Zero-allocation streaming parser with callback-per-token design.
  * Feed chunks of data (streaming-friendly for UART/network).

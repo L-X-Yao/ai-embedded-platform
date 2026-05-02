@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Minimal CBOR codec for embedded use. Covers major types 0-7:
  * unsigned int, negative int, byte string, text string, array,

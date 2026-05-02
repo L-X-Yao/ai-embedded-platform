@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    gpio_hal
+ * Deps:      gpio_hal (injected)
+ * Instances: multi
  *
  * Software quadrature decoder. Poll or feed A/B pin states on each edge.
  * Tracks position (int32_t) and direction. Pure C99, no heap.

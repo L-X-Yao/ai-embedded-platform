@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Manual varint/zigzag/length-delimited encoding without .proto compiler.
  * No schema, no code generation — caller knows field numbers.

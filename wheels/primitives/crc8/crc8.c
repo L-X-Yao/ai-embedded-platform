@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Bit-by-bit computation: no lookup table, saves 256 bytes Flash on MCU.
  */

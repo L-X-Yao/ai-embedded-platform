@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Compensation algorithm from Bosch BMP280 datasheet (BST-BMP280-DS001-26),
  * Section 8.1 (integer 32-bit).

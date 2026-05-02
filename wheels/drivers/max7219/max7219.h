@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    spi_hal (injected)
+ * Deps:      spi_hal (injected)
+ * Instances: multi
  *
  * SPI interface: 16-bit shift register (address + data).
  * Supports 8 digits/rows, intensity control, BCD/raw mode.

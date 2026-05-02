@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Format: signed 32-bit, 16 bits integer + 16 bits fraction.
  * Range:  -32768.0 to +32767.99998 (approx).

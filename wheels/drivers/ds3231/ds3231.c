@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * DS3231 registers 0x00-0x06: time in BCD (sec/min/hr/day/date/mon/yr).
  * Registers 0x11-0x12: temperature (MSB + upper 2 bits of LSB, 0.25C).

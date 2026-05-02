@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * All conversions use arithmetic shifts — no pointer casts, no
  * alignment assumptions, portable across all C99 targets.

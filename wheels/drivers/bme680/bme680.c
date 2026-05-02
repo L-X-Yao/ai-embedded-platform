@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Compensation algorithms from Bosch BME680 datasheet (BST-BME680-DS001-00).
  * Integer arithmetic for temperature/pressure/humidity, simplified gas
@@ -307,13 +308,13 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
 
     /* compensate -- temperature must be first (sets t_fine) */
     int32_t temp_comp = compensate_temperature(dev, adc_temp);
-    data->temperature = (float)temp_comp / 100.0f;
+    data->temperature_c = (float)temp_comp / 100.0f;
 
     uint32_t pres_comp = compensate_pressure(dev, adc_pres);
-    data->pressure = (float)pres_comp;
+    data->pressure_pa = (float)pres_comp;
 
     uint32_t hum_comp = compensate_humidity(dev, adc_hum);
-    data->humidity = (float)hum_comp / 1000.0f;
+    data->humidity_pct = (float)hum_comp / 1000.0f;
 
     if (gas_valid)
     {

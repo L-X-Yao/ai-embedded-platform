@@ -4,7 +4,8 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:    (none -- self-contained)
+ * Deps:      (none -- self-contained)
+ * Instances: multi
  *
  * Passive design: application sets fields, calls tick() once per second
  * to increment uptime. format() serializes all info to key=value text

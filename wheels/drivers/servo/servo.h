@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    pwm_hal (injected)
+ * Deps:      pwm_hal (injected)
+ * Instances: multi
  *
  * Maps angle (0-180°) to pulse width (typically 500-2500µs).
  * Caller provides PWM set-pulse-width callback.
@@ -40,7 +41,7 @@ typedef struct {
 } servo_cfg_t;
 
 typedef struct {
-    servo_pwm_t pwm;
+    const servo_pwm_t *pwm;
     servo_cfg_t cfg;
     uint16_t    current_angle;
 } servo_t;

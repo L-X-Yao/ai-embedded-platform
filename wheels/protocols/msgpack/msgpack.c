@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Implements the MessagePack spec (fixint/fixstr/fixarray/fixmap + 8/16/32).
  * 64-bit integers and float64 intentionally omitted — MCU payloads rarely

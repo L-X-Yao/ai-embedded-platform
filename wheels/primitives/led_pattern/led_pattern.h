@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Drives LED on/off patterns from a simple descriptor array.
  * Caller ticks at fixed interval, engine returns on/off state.

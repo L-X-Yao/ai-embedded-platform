@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * Simplified init sequence derived from ST VL53L0X datasheet and
  * application notes. Not the full ST API — covers single-shot ranging

@@ -4,7 +4,8 @@
  *
  * Layer:   L1
  * Status:  candidate
- * Deps:    i2c_hal (injected)
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
  *
  * SMBus protocol: write command byte, then read 3 bytes (LSB, MSB, PEC).
  * Temperature = raw * 0.02 - 273.15 (Kelvin to Celsius).

@@ -4,7 +4,8 @@
  *
  * Layer:   L0
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Circular FIFO queue for typed events with optional data payload.
  * Suitable for ISR-to-mainloop communication and bare-metal event-driven

@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Stateless frame-level codec. Does NOT handle handshake (use http_parser
  * for that). Supports masking, fragmentation, control frames.

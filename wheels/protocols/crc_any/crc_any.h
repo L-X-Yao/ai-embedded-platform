@@ -4,7 +4,8 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:    (none)
+ * Deps:      (none)
+ * Instances: multi
  *
  * Bit-by-bit implementation (~100 lines). No lookup tables, minimal RAM.
  * Supports reflected/non-reflected input and output, arbitrary polynomial,
