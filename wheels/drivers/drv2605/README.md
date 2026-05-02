@@ -11,6 +11,12 @@ address 0x5A. Supports ERM and LRA actuators, waveform sequencer with 8 slots
 Proactive build. DRV2605L is the most common I2C haptic driver in embedded
 products (wearables, game controllers, touchscreen feedback, IoT devices).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `drv2605_i2c_t` callbacks). No other dependencies.

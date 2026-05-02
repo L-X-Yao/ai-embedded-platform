@@ -12,6 +12,12 @@ Written for the platform's industrial project pipeline (Modbus RTU is the
 dominant protocol in Chinese industrial automation). API shape derived from
 the Modbus Application Protocol Specification V1.1b3.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 - `crc16` (L0, concrete) — CRC16-MODBUS frame check per ADR-009

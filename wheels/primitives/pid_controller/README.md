@@ -11,6 +11,12 @@ temperature regulation, position servo, and any closed-loop control application.
 Proactive build for embedded control applications. Common pattern across motor
 drivers, thermal controllers, and position servos.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>` and `<stdbool.h>` only.

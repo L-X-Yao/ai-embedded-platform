@@ -1,6 +1,6 @@
 # event_bus
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Publish/subscribe event dispatcher for decoupled module communication.
@@ -48,6 +48,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Proactive build for decoupled module communication (2026-05-01).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

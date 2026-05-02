@@ -14,6 +14,12 @@ Pure C99, no heap, all buffers caller-provided.
 Proactive build for IoT projects requiring MQTT 5.0 features (session
 expiry, message expiry, enhanced reason codes).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

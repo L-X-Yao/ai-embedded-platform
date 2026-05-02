@@ -1,6 +1,6 @@
 # log
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 Leveled logging with module tags, multi-sink output, and compile-time filtering.
@@ -105,6 +105,12 @@ log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
 ## Origin
 
 First wheel built for the platform (Sprint 0). Not extracted from a project — designed as canonical example for wheel structure, testing, and CI patterns. Consumed by drone_light BSP log adapter.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Dependencies
 

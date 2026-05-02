@@ -1,6 +1,6 @@
 # dht11
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 DHT11 temperature and humidity sensor driver. Single-wire protocol:
@@ -37,6 +37,12 @@ GPIO HAL (injected via callbacks).
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

@@ -9,6 +9,12 @@ Single HAL callback, zero hardware dependency, no dynamic allocation.
 Extracted from common patterns in `projects/flybox/` (LED task) and `projects/drone_light/` (WS2812 control loop).
 Generalized into a reusable state machine with HAL callback injection.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## API
 
 ```c

@@ -11,6 +11,12 @@ responses per Sensirion protocol specification.
 Proactive build. SHT3x is the most widely used digital humidity sensor family
 in embedded applications (HVAC, weather stations, indoor air quality, IoT).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `sht30_i2c_t` callbacks). No other dependencies.

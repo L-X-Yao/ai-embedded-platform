@@ -1,6 +1,6 @@
 # crc8
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 CRC-8 calculator with multiple polynomial support. Bit-by-bit computation
@@ -11,6 +11,12 @@ CRC-8/SENSIRION, CRC-8/SMBUS, and CRC-8/ROHC.
 
 Proactive build to complete the CRC family (alongside crc16 and crc32).
 CRC-8 is used by many I2C sensors (SI7021, SHT30) and protocols (1-Wire, SMBus PEC).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Dependencies
 

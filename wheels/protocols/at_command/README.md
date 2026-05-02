@@ -11,6 +11,12 @@ substring response matching, URC dispatch, `>` prompt detection, and prev-line c
 Stripped all FreeRTOS/RTOS synchronization (consumer handles that), all Air780EG-specific
 commands, and all hardware UART/DMA code.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## API
 
 ```c

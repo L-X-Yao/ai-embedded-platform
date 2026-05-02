@@ -12,6 +12,12 @@ Proactive build. MQTT is the standard IoT messaging protocol. Every connected
 embedded device that talks to a cloud broker (AWS IoT, Azure IoT, Mosquitto)
 needs MQTT packet encoding/decoding.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`, `<string.h>`.

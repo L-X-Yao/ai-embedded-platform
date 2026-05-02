@@ -11,6 +11,12 @@ configuration. Bank=0 register addressing. Pure C99, no heap, reentrant.
 Proactive build for GPIO expansion use cases (button matrices, LED banks,
 relay boards) on I2C-constrained MCUs.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 - i2c_hal (injected via callbacks, no compile-time dependency)

@@ -11,6 +11,12 @@ and incremental (streaming) APIs.
 Proactive build for hash map key hashing, string deduplication, and fast
 non-cryptographic checksums across wheels and projects.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

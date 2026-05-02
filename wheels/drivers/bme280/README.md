@@ -12,6 +12,12 @@ Extends BMP280 with humidity measurement (registers 0xFD-0xFE).
 Proactive build. BME280 is the most widely used environmental sensor in
 embedded applications (weather stations, HVAC, indoor air quality, drones).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `bme280_i2c_t` callbacks). No other dependencies.

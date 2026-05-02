@@ -13,6 +13,12 @@ No lookup tables — trades speed for flexibility and minimal ROM/RAM.
 Proactive build to generalize CRC computation across protocols. Complements
 the existing `crc16` and `crc32` L0 wheels — those use table-based fast
 paths for their specific algorithms; `crc_any` covers everything else.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

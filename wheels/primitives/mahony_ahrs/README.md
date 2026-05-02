@@ -11,6 +11,12 @@ Outputs quaternion and Euler angles. Zero hardware dependency — pure math.
 Extracted from `projects/flybox/src/app/imu_task.c` (Mahony filter for QMI8658A + QMC5883P).
 Decoupled: task scheduling, sensor drivers, motion detection stay in the project; pure filter algorithm moves to this wheel.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## API
 
 ```c

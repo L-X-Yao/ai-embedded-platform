@@ -11,6 +11,12 @@ output power (-18dBm to 0dBm), multi-pipe addressing, and auto-acknowledgment.
 
 Proactive build for wireless communication use cases (remote control, telemetry, sensor networks).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (HAL callbacks injected via `nrf24_spi_t`).

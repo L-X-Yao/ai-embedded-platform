@@ -9,6 +9,12 @@ Zero hardware dependency — feed raw I2C bytes in, get structured color/enable 
 Extracted from `projects/drone_light/Src/i2c_slave.c` (NCP5623 protocol state machine).
 Decoupled: I2C hardware handling stays in the project, parser is pure byte-stream logic.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Protocol
 
 NCP5623-compatible subset used by ArduPilot (`AP_Notify/NCP5623.cpp`):

@@ -11,6 +11,12 @@ checks, and numeric parsing. No heap allocation, no stdlib dependency beyond
 Proactive build for AT command parsing, CLI input handling, and config
 key-value processing across multiple projects.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

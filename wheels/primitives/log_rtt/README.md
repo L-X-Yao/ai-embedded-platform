@@ -8,6 +8,12 @@ Segger RTT-style output sink for the `log` wheel via HAL injection. Supports cha
 
 Proactive build as companion sink for `wheels/primitives/log/`. RTT is the second most common embedded debug output after UART, especially during development with J-Link probes.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stddef.h>` and `<stdint.h>`.

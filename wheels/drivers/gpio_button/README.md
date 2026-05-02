@@ -8,6 +8,12 @@ Single HAL callback, zero hardware dependency, no dynamic allocation.
 
 Extracted from common embedded button patterns. Proactive build for `projects/flybox/` and `projects/drone_light/` platform.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## API
 
 ```c

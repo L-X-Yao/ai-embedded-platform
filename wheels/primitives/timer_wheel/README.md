@@ -15,6 +15,12 @@ Proactive build. Timing wheels are the standard data structure for managing
 large numbers of concurrent timeouts efficiently (network retransmits,
 protocol state machines, connection keepalives, sensor polling schedules).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`, `<string.h>`.

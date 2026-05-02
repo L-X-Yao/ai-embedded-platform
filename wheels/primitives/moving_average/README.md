@@ -11,6 +11,12 @@ buffer; EMA needs no buffer.
 Proactive build. Moving average is the most common signal filter in embedded:
 ADC smoothing, sensor noise rejection, PID input conditioning.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`, `<string.h>`.

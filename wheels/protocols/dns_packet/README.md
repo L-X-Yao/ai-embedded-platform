@@ -11,6 +11,12 @@ Pure C99, no heap. All buffers caller-provided.
 
 Proactive build for embedded DNS clients (e.g. hostname resolution over
 UDP in IoT devices).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

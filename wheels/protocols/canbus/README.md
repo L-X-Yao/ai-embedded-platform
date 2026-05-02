@@ -12,6 +12,12 @@ extended (29-bit) CAN identifiers. Pure codec — no hardware interaction.
 Proactive build for automotive/industrial CAN bus protocol handling.
 Common pattern across SPI CAN controllers (MCP2515, SJA1000) and
 on-chip CAN peripherals.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

@@ -1,6 +1,6 @@
 # telemetry
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Periodic telemetry data formatter and publisher. Register named fields,

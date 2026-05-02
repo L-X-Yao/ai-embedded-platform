@@ -1,6 +1,6 @@
 # button_handler
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 High-level button event processor. Detects click, double-click, long-press,
@@ -72,6 +72,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Created 2026-05-01 for high-level button UI patterns in embedded projects.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

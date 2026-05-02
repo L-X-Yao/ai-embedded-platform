@@ -11,6 +11,12 @@ No heap, no OS, pure C99.
 
 Proactive build for memory pool tracking, slot allocation, and peripheral
 resource management in embedded systems.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

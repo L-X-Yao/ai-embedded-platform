@@ -1,6 +1,6 @@
 # data_logger
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L3 (modules)**
 
 Record-based data logger for embedded systems. Passive design:

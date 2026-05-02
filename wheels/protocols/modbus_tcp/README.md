@@ -12,6 +12,12 @@ Proactive build for industrial Ethernet projects. Modbus TCP is the TCP/IP
 variant of Modbus RTU --- same PDU but with MBAP header instead of CRC.
 Companion to the existing `modbus_rtu` wheel.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

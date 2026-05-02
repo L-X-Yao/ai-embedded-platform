@@ -13,6 +13,12 @@ pure (no side effects, no global state, no malloc).
 Proactive build for embedded math on Cortex-M0/M3 and other cores
 without hardware floating-point.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

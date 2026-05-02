@@ -1,6 +1,6 @@
 # ds18b20
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Dallas/Maxim DS18B20 1-Wire digital temperature sensor driver. 12-bit
@@ -41,6 +41,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

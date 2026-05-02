@@ -1,6 +1,6 @@
 # XGZP6816D — Barometric Pressure Sensor Driver
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for the CFSensor XGZP6816D barometric pressure sensor
@@ -101,6 +101,12 @@ I2C HAL uses generic `write(addr, buf, len)` / `read(addr, buf, len)` instead of
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/baro/baro_driver.c` 2026-04-27.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## API review
 

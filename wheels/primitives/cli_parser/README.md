@@ -1,6 +1,6 @@
 # cli_parser
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 Minimal CLI parser for embedded debug shells. Character-at-a-time feed
@@ -59,6 +59,12 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 ## Origin
 
 Proactive build for embedded debug shells. Not extracted from a specific project — common pattern across flybox (USART0 debug) and drone_light (development diagnostics).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Dependencies
 

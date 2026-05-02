@@ -10,6 +10,12 @@ raw angle, degrees, magnet status, and configuring start position / max angle.
 
 Proactive build for rotary position sensing applications (knobs, motor feedback, wind vanes).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

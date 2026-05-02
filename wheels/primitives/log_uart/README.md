@@ -8,6 +8,12 @@ UART output sink for the `log` wheel via HAL function pointer injection. The mos
 
 Proactive build as companion sink for `wheels/primitives/log/`. Same HAL injection pattern used by all L1 drivers in the platform.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stddef.h>` and `<stdint.h>`.

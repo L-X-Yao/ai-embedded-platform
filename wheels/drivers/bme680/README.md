@@ -14,6 +14,12 @@ Proactive build. BME680 is the standard environmental sensor for air quality
 monitoring, weather stations, indoor navigation, and IoT applications.
 Extends the existing bmp280 wheel with humidity and gas resistance channels.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `bme680_i2c_t` callbacks). No other dependencies.

@@ -12,6 +12,12 @@ No heap, fully reentrant.
 
 Proactive build for embedded task queues, sensor sample buffers, and
 command pipelines where items are fixed-size structs rather than raw bytes.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

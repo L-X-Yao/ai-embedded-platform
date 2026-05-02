@@ -1,6 +1,6 @@
 # retry
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L0 (primitives)**
 
 Configurable retry strategy with three backoff modes: fixed, linear, exponential.
@@ -40,6 +40,12 @@ None.
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

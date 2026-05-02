@@ -13,6 +13,12 @@ sector is erased and reused, providing basic wear leveling.
 Proactive build for embedded data logging use cases (flight logs, sensor
 history, error journals) where a simple append-only journal over raw flash
 sectors is needed without a full filesystem.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (self-contained, includes internal CRC32 implementation).

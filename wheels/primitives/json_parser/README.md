@@ -10,6 +10,12 @@ No malloc, no OS dependencies — pure C99.
 ## Origin
 
 Proactive build for embedded telemetry/config parsing (MQTT payloads, AT command responses, REST API bodies).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

@@ -12,6 +12,12 @@ and test log capture rather than bare-metal targets.
 Proactive build — common companion pattern for host-side log capture during
 simulation and testing.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with libc stdio (`fopen` / `fwrite` / `fflush` / `fclose`).

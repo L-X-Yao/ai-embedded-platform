@@ -1,6 +1,6 @@
 # syslog_packet
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L2 (protocols)**
 
 RFC 5424 syslog message formatter. Produces
@@ -41,6 +41,12 @@ None.
 ## Origin
 
 Proactive build for remote logging in embedded systems (2026-05-01).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Configuration macros
 

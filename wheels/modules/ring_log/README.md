@@ -11,6 +11,12 @@ no malloc, no I/O.
 
 Proactive build for post-crash log analysis and CLI diagnostic commands.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

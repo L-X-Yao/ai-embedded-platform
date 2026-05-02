@@ -10,6 +10,12 @@ plus 8/16/32-bit variants. Pure C99, no heap, all buffers caller-provided.
 
 Proactive build for IoT telemetry serialization (sensor data, config exchange).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

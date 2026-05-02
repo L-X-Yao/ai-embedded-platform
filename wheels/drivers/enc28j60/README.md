@@ -10,6 +10,12 @@ Ethernet frames up to 1518 bytes. HAL-injected SPI for mock-testable host builds
 ## Origin
 
 Proactive build for embedded Ethernet connectivity (IoT / telemetry / industrial).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (SPI HAL injected by caller).

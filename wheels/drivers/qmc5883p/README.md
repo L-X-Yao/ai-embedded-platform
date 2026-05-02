@@ -1,6 +1,6 @@
 # QMC5883P — 3-axis Magnetometer Driver
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for QST QMC5883P digital magnetometer.
@@ -77,6 +77,12 @@ None.
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/mag/mag_driver.c`. Flybox retains soft I2C bit-bang (PA11/PA12 open-drain) + bus recovery + 3x retry wrapper.
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## API review
 

@@ -13,6 +13,12 @@ register layout as ADS1115 but 12-bit resolution (left-justified in
 Proactive build for general-purpose analog sensing. Sibling of the
 existing ads1115 wheel (shared register layout, 12-bit vs 16-bit).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None (I2C HAL injected at init).

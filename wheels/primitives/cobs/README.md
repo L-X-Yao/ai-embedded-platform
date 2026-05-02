@@ -8,6 +8,12 @@ Zero-allocation byte stuffing that eliminates 0x00 from payload, enabling reliab
 ## Origin
 
 Proactive build for serial framing (UART, RS-485, etc.). COBS is the standard byte-stuffing algorithm for packet-based serial protocols.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

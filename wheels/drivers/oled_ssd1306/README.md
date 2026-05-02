@@ -11,6 +11,12 @@ then flushes to display. I2C interface injected via callbacks.
 Proactive build. SSD1306 is the most common small OLED display in embedded
 prototyping and products (debug output, status display, simple UI).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `oled_ssd1306_i2c_t` callbacks). No other dependencies.

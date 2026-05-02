@@ -11,6 +11,12 @@ Configurable full-scale ranges for both accel and gyro.
 Proactive build. MPU-6050 is the most widely used low-cost 6-axis IMU in
 embedded applications (drones, robots, wearables, motion controllers).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 I2C HAL (injected via `mpu6050_i2c_t` callbacks). No other dependencies.

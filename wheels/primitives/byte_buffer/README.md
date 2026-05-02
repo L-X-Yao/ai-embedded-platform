@@ -13,6 +13,12 @@ Proactive build. Linear byte buffers are used in every protocol stack
 for packet assembly (write header → write payload → send) and parsing
 (receive → read header → read payload).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99 with `<stdint.h>`, `<stdbool.h>`, `<stddef.h>`, `<string.h>`.

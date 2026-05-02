@@ -12,6 +12,12 @@ on any specific flash chip or driver.
 Proactive build — common pattern for embedded crash logging, flight
 recorders, and diagnostic log persistence across power cycles.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None. Pure C99. Flash hardware access injected via `log_flash_hal_t`

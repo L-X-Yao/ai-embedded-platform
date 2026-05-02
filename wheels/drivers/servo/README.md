@@ -1,6 +1,6 @@
 # servo
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 PWM servo motor driver. Maps angle (0-180° or configurable) to pulse width
@@ -33,6 +33,12 @@ ctest --test-dir build --output-on-failure
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 

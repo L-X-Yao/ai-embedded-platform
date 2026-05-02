@@ -17,6 +17,12 @@ detection, and sensor health monitoring.
 
 Proactive build for sensor data analysis use cases (signal quality, jitter monitoring).
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

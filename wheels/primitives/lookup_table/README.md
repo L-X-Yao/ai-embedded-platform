@@ -11,6 +11,12 @@ mapping. Out-of-range inputs are clamped to endpoint y values.
 
 Proactive build for sensor linearization and calibration curve use cases.
 
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
 ## Dependencies
 
 None.

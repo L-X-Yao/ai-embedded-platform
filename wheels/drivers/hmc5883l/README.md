@@ -1,6 +1,6 @@
 # hmc5883l
 
-**STATUS: candidate**
+**Status: candidate**
 **Layer: L1 (drivers)**
 
 Honeywell HMC5883L 3-axis digital magnetometer driver. I2C register-based
@@ -41,6 +41,12 @@ I2C HAL (injected via callbacks, register-based pattern).
 ## Origin
 
 Proactive build for common embedded components (2026-04-29 batch).
+
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
 
 ## Known issues
 
