@@ -55,6 +55,11 @@ float pid_controller_update(pid_controller_t *ctx, float setpoint,
     {
         return 0.0f;
     }
+    /* reject NaN inputs — would bypass clampf and propagate silently */
+    if (setpoint != setpoint || measured != measured || dt != dt)
+    {
+        return 0.0f;
+    }
 
     float error = setpoint - measured;
 

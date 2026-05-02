@@ -62,6 +62,14 @@ sensor_hub_err_t sensor_hub_poll(sensor_hub_t *hub)
             continue;
         }
 
+        /* reject NaN — treat as read error to avoid poisoning stats */
+        if (val != val) {
+            e->status = SENSOR_HUB_STATUS_ERROR;
+            e->error_count++;
+            result = SENSOR_HUB_ERR_READ;
+            continue;
+        }
+
         e->value  = val;
         e->status = SENSOR_HUB_STATUS_OK;
 
