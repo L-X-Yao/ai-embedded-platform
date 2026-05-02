@@ -112,7 +112,7 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh && python3 tooling/audit/audit_wheels.py --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
 ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
