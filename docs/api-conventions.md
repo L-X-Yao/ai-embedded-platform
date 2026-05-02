@@ -70,6 +70,25 @@
 - ✅ `MPU6050_RANGE_2G`, `MPU6050_MAX_SAMPLE_RATE`
 - ❌ `RANGE_2G`（无 wheel 前缀）
 
+### 1.5 Accepted prefix abbreviations
+
+The following wheels use shortened prefixes for API usability. These are documented deviations, not violations:
+
+| Wheel directory | Prefix used | Reason |
+|----------------|-------------|--------|
+| `fixed_point` | `fp_` | Standard mathematical convention |
+| `protobuf_lite` | `pb_` | Universal protobuf abbreviation |
+| `hash_fnv` | `fnv1a_` | Algorithm name is the prefix |
+| `lookup_table` | `lut_` | Standard abbreviation |
+| `lora_sx1276` | `lora_` | Chip model is implementation detail |
+| `nrf24l01` | `nrf24_` | Chip model is implementation detail |
+| `button_handler` | `btn_handler_` | Reasonable shortening |
+| `version_info` | `version_` | Info is redundant in API names |
+| `keypad_matrix` | `keypad_` | Matrix is redundant in API names |
+| `cbor_lite` | `cbor_lite_enc_`/`cbor_lite_dec_` | Encoder/decoder distinction |
+
+New wheels should use the full directory name as prefix. Abbreviation requires a note in the wheel's README "Convention Deviations" section.
+
 ## 2. 错误处理
 
 ### 2.1 返回值约定

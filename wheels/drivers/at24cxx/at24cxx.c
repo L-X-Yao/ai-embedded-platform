@@ -1,5 +1,5 @@
 /*
- * at24cxx --- I2C EEPROM driver for AT24C01 through AT24C256
+ * at24cxx --- I2C EEPROM driver for AT24CXX_C01 through AT24CXX_C256
  *
  * Layer:   L1
  * Status:  candidate
@@ -13,28 +13,28 @@
 /** Return true if model uses 16-bit memory addressing. */
 static bool needs_addr16(at24cxx_model_t model)
 {
-    return (int)model >= (int)AT24C32;
+    return (int)model >= (int)AT24CXX_C32;
 }
 
 /** Page size lookup by model. */
 static uint8_t page_size_for(at24cxx_model_t model)
 {
     switch (model) {
-    case AT24C01:  return 8;
-    case AT24C02:  return 8;
-    case AT24C04:  return 16;
-    case AT24C08:  return 16;
-    case AT24C16:  return 16;
-    case AT24C32:  return 32;
-    case AT24C64:  return 32;
-    case AT24C128: return 64;
-    case AT24C256: return 64;
+    case AT24CXX_C01:  return 8;
+    case AT24CXX_C02:  return 8;
+    case AT24CXX_C04:  return 16;
+    case AT24CXX_C08:  return 16;
+    case AT24CXX_C16:  return 16;
+    case AT24CXX_C32:  return 32;
+    case AT24CXX_C64:  return 32;
+    case AT24CXX_C128: return 64;
+    case AT24CXX_C256: return 64;
     default:       return 8;
     }
 }
 
 /**
- * For AT24C04/08/16 the upper address bits are encoded in the I2C
+ * For AT24CXX_C04/08/16 the upper address bits are encoded in the I2C
  * device address (using the A0-A2 pin positions).  Return the
  * effective device address for a given memory address.
  */
@@ -43,9 +43,9 @@ static uint8_t effective_dev_addr(const at24cxx_t *dev, uint16_t mem_addr)
     if (needs_addr16(dev->model)) {
         return dev->dev_addr;
     }
-    /* AT24C04: bit 8 of address goes into dev_addr bit 0
-     * AT24C08: bits 8-9 go into dev_addr bits 0-1
-     * AT24C16: bits 8-10 go into dev_addr bits 0-2 */
+    /* AT24CXX_C04: bit 8 of address goes into dev_addr bit 0
+     * AT24CXX_C08: bits 8-9 go into dev_addr bits 0-1
+     * AT24CXX_C16: bits 8-10 go into dev_addr bits 0-2 */
     uint8_t page_bits = 0;
     if ((int)dev->model > 256)  page_bits = (uint8_t)(mem_addr >> 8);
     return (uint8_t)(dev->dev_addr | (page_bits & 0x07u));
@@ -94,9 +94,9 @@ at24cxx_err_t at24cxx_init(at24cxx_t *dev, const at24cxx_i2c_t *i2c,
 
     /* Validate model */
     switch (model) {
-    case AT24C01: case AT24C02: case AT24C04: case AT24C08:
-    case AT24C16: case AT24C32: case AT24C64: case AT24C128:
-    case AT24C256:
+    case AT24CXX_C01: case AT24CXX_C02: case AT24CXX_C04: case AT24CXX_C08:
+    case AT24CXX_C16: case AT24CXX_C32: case AT24CXX_C64: case AT24CXX_C128:
+    case AT24CXX_C256:
         break;
     default:
         return AT24CXX_ERR_PARAM;

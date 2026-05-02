@@ -16,7 +16,7 @@
 #define REG_ID      0x12u
 #define REG_CDATAL  0x14u
 
-static tcs34725_dev_t dev;
+static tcs34725_t dev;
 
 static const tcs34725_i2c_t mock_i2c = {
     .write_reg = mock_i2c_write_reg,

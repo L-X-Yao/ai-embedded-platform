@@ -24,7 +24,7 @@
 #define CHIP_ID_44  0x44u
 #define CHIP_ID_4D  0x4Du
 
-static tcs34725_err_t write_reg(const tcs34725_dev_t *dev,
+static tcs34725_err_t write_reg(const tcs34725_t *dev,
                                 uint8_t reg, uint8_t val)
 {
     if (!dev->i2c.write_reg(dev->i2c.ctx, TCS34725_ADDR, CMD(reg), val))
@@ -32,7 +32,7 @@ static tcs34725_err_t write_reg(const tcs34725_dev_t *dev,
     return TCS34725_OK;
 }
 
-static tcs34725_err_t read_regs(const tcs34725_dev_t *dev,
+static tcs34725_err_t read_regs(const tcs34725_t *dev,
                                 uint8_t reg, uint8_t *buf, uint16_t len)
 {
     if (!dev->i2c.read_regs(dev->i2c.ctx, TCS34725_ADDR, CMD(reg), buf, len))
@@ -40,7 +40,7 @@ static tcs34725_err_t read_regs(const tcs34725_dev_t *dev,
     return TCS34725_OK;
 }
 
-tcs34725_err_t tcs34725_init(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ,
                              tcs34725_gain_t gain)
@@ -78,7 +78,7 @@ tcs34725_err_t tcs34725_init(tcs34725_dev_t *dev,
     return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
 }
 
-tcs34725_err_t tcs34725_read_rgbc(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
                                   tcs34725_rgbc_t *out)
 {
     if (!dev || !out)
@@ -97,7 +97,7 @@ tcs34725_err_t tcs34725_read_rgbc(tcs34725_dev_t *dev,
     return TCS34725_OK;
 }
 
-tcs34725_err_t tcs34725_set_integration_time(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
                                              tcs34725_integ_t integ)
 {
     if (!dev)
@@ -109,7 +109,7 @@ tcs34725_err_t tcs34725_set_integration_time(tcs34725_dev_t *dev,
     return TCS34725_OK;
 }
 
-tcs34725_err_t tcs34725_set_gain(tcs34725_dev_t *dev,
+tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
                                  tcs34725_gain_t gain)
 {
     if (!dev)
@@ -123,14 +123,14 @@ tcs34725_err_t tcs34725_set_gain(tcs34725_dev_t *dev,
     return TCS34725_OK;
 }
 
-tcs34725_err_t tcs34725_enable(tcs34725_dev_t *dev)
+tcs34725_err_t tcs34725_enable(tcs34725_t *dev)
 {
     if (!dev)
         return TCS34725_ERR_PARAM;
     return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
 }
 
-tcs34725_err_t tcs34725_disable(tcs34725_dev_t *dev)
+tcs34725_err_t tcs34725_disable(tcs34725_t *dev)
 {
     if (!dev)
         return TCS34725_ERR_PARAM;

@@ -21,7 +21,7 @@ static const drv2605_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
-static drv2605_dev_t dev;
+static drv2605_t dev;
 
 static void setup(void)
 {
@@ -34,7 +34,7 @@ static void setup(void)
 TEST(test_init_ok)
 {
     mock_reset();
-    drv2605_dev_t d;
+    drv2605_t d;
     drv2605_err_t e = drv2605_init(&d, &mock_i2c);
     ASSERT_EQ(e, DRV2605_OK);
     /* Mode register should be set to internal trigger (0x00) */
@@ -46,7 +46,7 @@ TEST(test_init_drv2605_non_l)
     mock_reset();
     /* DRV2605 (non-L) has device ID = 3 */
     mock_regs[0x00] = (3u << 5);
-    drv2605_dev_t d;
+    drv2605_t d;
     drv2605_err_t e = drv2605_init(&d, &mock_i2c);
     ASSERT_EQ(e, DRV2605_OK);
 }
@@ -55,7 +55,7 @@ TEST(test_init_wrong_id)
 {
     mock_reset();
     mock_regs[0x00] = (1u << 5); /* invalid device ID */
-    drv2605_dev_t d;
+    drv2605_t d;
     drv2605_err_t e = drv2605_init(&d, &mock_i2c);
     ASSERT_EQ(e, DRV2605_ERR_ID);
 }
@@ -64,7 +64,7 @@ TEST(test_init_i2c_fail)
 {
     mock_reset();
     mock_fail_at = 0;
-    drv2605_dev_t d;
+    drv2605_t d;
     drv2605_err_t e = drv2605_init(&d, &mock_i2c);
     ASSERT_EQ(e, DRV2605_ERR_I2C);
 }
@@ -72,7 +72,7 @@ TEST(test_init_i2c_fail)
 TEST(test_null_safety)
 {
     ASSERT_EQ(drv2605_init(NULL, &mock_i2c), DRV2605_ERR_PARAM);
-    drv2605_dev_t d;
+    drv2605_t d;
     ASSERT_EQ(drv2605_init(&d, NULL), DRV2605_ERR_PARAM);
     ASSERT_EQ(drv2605_set_mode(NULL, DRV2605_ACTUATOR_ERM), DRV2605_ERR_PARAM);
     ASSERT_EQ(drv2605_set_waveform(NULL, 0, 1), DRV2605_ERR_PARAM);
