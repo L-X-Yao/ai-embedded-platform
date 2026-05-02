@@ -148,7 +148,7 @@ lorawan_err_t lorawan_parse_data(const uint8_t *buf, uint16_t len,
         frame->fport = buf[pos++];
         remaining--;
         frame->payload = (remaining > 0) ? (buf + pos) : NULL;
-        frame->payload_len = (uint8_t)remaining;
+        frame->payload_len = remaining;
     }
     else
     {
