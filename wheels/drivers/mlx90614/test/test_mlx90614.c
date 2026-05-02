@@ -8,6 +8,7 @@
 static int     mock_fail_next;
 static int     mock_op_count;
 static int     mock_fail_at;
+static int     mock_delay_total;
 
 /* Simulated SMBus register file: cmd -> {LSB, MSB} */
 static uint8_t mock_mem[256][2];
@@ -20,6 +21,7 @@ static void mock_reset(void)
     mock_fail_next  = 0;
     mock_op_count   = 0;
     mock_fail_at    = -1;
+    mock_delay_total = 0;
     mock_last_cmd   = 0;
     mock_last_write_len = 0;
     memset(mock_mem, 0, sizeof(mock_mem));
@@ -67,10 +69,17 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     return true;
 }
 
+static void mock_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    mock_delay_total += (int)ms;
+}
+
 static const mlx90614_i2c_t mock_i2c = {
-    .write = mock_write,
-    .read  = mock_read,
-    .ctx   = NULL,
+    .write    = mock_write,
+    .read     = mock_read,
+    .delay_ms = mock_delay,
+    .ctx      = NULL,
 };
 
 /* ---------- helpers ---------- */
@@ -255,6 +264,18 @@ TEST(test_high_temp)
     ASSERT_NEAR(temp, 300.0f, 0.1f);
 }
 
+TEST(test_set_emissivity_eeprom_delay)
+{
+    setup();
+    mock_delay_total = 0;
+
+    mlx90614_err_t e = mlx90614_set_emissivity(&dev, 0.90f);
+    ASSERT_EQ(e, MLX90614_OK);
+
+    /* Mandatory EEPROM write-cycle delay between erase and write (>= 5 ms) */
+    ASSERT_TRUE(mock_delay_total >= 5);
+}
+
 TEST_MAIN("mlx90614")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -270,4 +291,5 @@ TEST_MAIN("mlx90614")
     RUN(test_set_emissivity_range);
     RUN(test_set_emissivity_i2c_fail);
     RUN(test_high_temp);
+    RUN(test_set_emissivity_eeprom_delay);
 TEST_MAIN_END()

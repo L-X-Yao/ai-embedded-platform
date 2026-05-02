@@ -176,16 +176,44 @@ static mcp2515_err_t wait_mode(const mcp2515_spi_t *s, uint8_t expected)
 
 /* ---------- ID encoding helpers ---------- */
 
+/*
+ * Extended CAN ID (29-bit) layout in MCP2515 registers:
+ *   SID[10:0]  = id[28:18]   (11 bits — standard identifier part)
+ *   EID[17:0]  = id[17:0]    (18 bits — extended identifier part)
+ *
+ * TXBnSIDH / RXBnSIDH (base+0):
+ *   [7:0] = SID[10:3]
+ *
+ * TXBnSIDL / RXBnSIDL (base+1):
+ *   [7:5] = SID[2:0]
+ *   [3]   = EXIDE (extended identifier enable)
+ *   [1:0] = EID[17:16]
+ *
+ * TXBnEID8 / RXBnEID8 (base+2):
+ *   [7:0] = EID[15:8]
+ *
+ * TXBnEID0 / RXBnEID0 (base+3):
+ *   [7:0] = EID[7:0]
+ */
+
 static void encode_id(const mcp2515_spi_t *s, uint8_t base,
                        uint32_t id, bool extended)
 {
     if (extended) {
-        reg_write(s, base, (uint8_t)(id >> 21));
-        reg_write(s, (uint8_t)(base + 1),
-                  (uint8_t)(((id >> 13) & 0xE0) | TXB_EXIDE |
-                            ((id >> 16) & 0x03)));
-        reg_write(s, (uint8_t)(base + 2), (uint8_t)(id >> 8));
-        reg_write(s, (uint8_t)(base + 3), (uint8_t)(id));
+        uint16_t sid = (uint16_t)(id >> 18);       /* SID[10:0] */
+        uint32_t eid = id & 0x3FFFFu;              /* EID[17:0] */
+
+        uint8_t sidh = (uint8_t)(sid >> 3);        /* SID[10:3] */
+        uint8_t sidl = (uint8_t)(((sid & 0x07u) << 5) |   /* SID[2:0] → bits[7:5] */
+                                 TXB_EXIDE |                /* EXIDE → bit[3]       */
+                                 ((eid >> 16) & 0x03u));    /* EID[17:16] → bits[1:0] */
+        uint8_t eid8 = (uint8_t)(eid >> 8);        /* EID[15:8] */
+        uint8_t eid0 = (uint8_t)(eid);             /* EID[7:0]  */
+
+        reg_write(s, base,                    sidh);
+        reg_write(s, (uint8_t)(base + 1),     sidl);
+        reg_write(s, (uint8_t)(base + 2),     eid8);
+        reg_write(s, (uint8_t)(base + 3),     eid0);
     } else {
         reg_write(s, base, (uint8_t)(id >> 3));
         reg_write(s, (uint8_t)(base + 1), (uint8_t)((id << 5) & 0xE0));
@@ -204,11 +232,14 @@ static void decode_id(const mcp2515_spi_t *s, uint8_t base,
         uint8_t eid8 = reg_read(s, (uint8_t)(base + 2));
         uint8_t eid0 = reg_read(s, (uint8_t)(base + 3));
         *extended = true;
-        *id = ((uint32_t)sidh << 21) |
-              ((uint32_t)(sidl & 0xE0) << 13) |
-              ((uint32_t)(sidl & 0x03) << 16) |
-              ((uint32_t)eid8 << 8) |
-              (uint32_t)eid0;
+
+        uint16_t sid = (uint16_t)((uint16_t)sidh << 3) |
+                       (uint16_t)((sidl >> 5) & 0x07u);     /* SID[10:0] */
+        uint32_t eid = ((uint32_t)(sidl & 0x03u) << 16) |   /* EID[17:16] */
+                       ((uint32_t)eid8 << 8) |               /* EID[15:8]  */
+                       (uint32_t)eid0;                       /* EID[7:0]   */
+
+        *id = ((uint32_t)sid << 18) | eid;
     } else {
         *extended = false;
         *id = ((uint32_t)sidh << 3) | ((uint32_t)(sidl >> 5) & 0x07);

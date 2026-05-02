@@ -148,12 +148,15 @@ static void inject_rx_std(uint32_t id, const uint8_t *data, uint8_t dlc)
 
 static void inject_rx_ext(uint32_t id, const uint8_t *data, uint8_t dlc)
 {
-    /* RXB0: extended frame */
-    mock_regs[0x61] = (uint8_t)(id >> 21);
-    mock_regs[0x62] = (uint8_t)(((id >> 13) & 0xE0) | 0x08 |
-                                 ((id >> 16) & 0x03));
-    mock_regs[0x63] = (uint8_t)(id >> 8);
-    mock_regs[0x64] = (uint8_t)(id);
+    /* RXB0: extended frame — uses explicit SID/EID decomposition per datasheet */
+    uint16_t sid = (uint16_t)(id >> 18);       /* SID[10:0] */
+    uint32_t eid = id & 0x3FFFFu;              /* EID[17:0] */
+
+    mock_regs[0x61] = (uint8_t)(sid >> 3);                      /* SIDH: SID[10:3] */
+    mock_regs[0x62] = (uint8_t)(((sid & 0x07u) << 5) | 0x08 |  /* SIDL: SID[2:0] + IDE */
+                                 ((eid >> 16) & 0x03u));         /*       EID[17:16]     */
+    mock_regs[0x63] = (uint8_t)(eid >> 8);                      /* EID8: EID[15:8] */
+    mock_regs[0x64] = (uint8_t)(eid);                           /* EID0: EID[7:0]  */
     mock_regs[0x65] = dlc;
     for (uint8_t i = 0; i < dlc && i < 8; i++)
         mock_regs[0x66 + i] = data[i];
@@ -506,6 +509,63 @@ TEST(test_receive_extended_frame)
     ASSERT_EQ(msg.data[1], 0xFE);
 }
 
+TEST(test_extended_id_register_bytes)
+{
+    /*
+     * Verify exact register byte layout for extended ID 0x1ABCDEF per
+     * MCP2515 datasheet TXBnSIDH/SIDL/EID8/EID0 format.
+     *
+     * id = 0x1ABCDEF = 0b 0001 1010 1011 1100 1101 1110 1111 (29 bits)
+     * SID[10:0] = id >> 18 = 0x06A = 0b 000 0110 1010
+     * EID[17:0] = id & 0x3FFFF = 0x3CDEF = 0b 11 1100 1101 1110 1111
+     *
+     * SIDH = SID[10:3]  = 0x0D
+     * SIDL = SID[2:0]<<5 | EXIDE | EID[17:16]
+     *      = (0b010 << 5) | 0x08 | 0b11
+     *      = 0x40 | 0x08 | 0x03 = 0x4B
+     * EID8 = EID[15:8]  = 0xCD
+     * EID0 = EID[7:0]   = 0xEF
+     */
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    /* --- TX: encode and verify register bytes --- */
+    mcp2515_msg_t msg = {
+        .id = 0x1ABCDEF,
+        .dlc = 1,
+        .data = {0x42},
+        .extended = true,
+        .rtr = false,
+    };
+    mcp2515_err_t e = mcp2515_send(&dev, &msg);
+    ASSERT_EQ(e, MCP2515_OK);
+
+    ASSERT_EQ(mock_regs[0x31], 0x0D);  /* SIDH: SID[10:3] */
+    ASSERT_EQ(mock_regs[0x32], 0x4B);  /* SIDL: SID[2:0]<<5 | EXIDE | EID[17:16] */
+    ASSERT_EQ(mock_regs[0x33], 0xCD);  /* EID8: EID[15:8] */
+    ASSERT_EQ(mock_regs[0x34], 0xEF);  /* EID0: EID[7:0] */
+
+    /* --- RX: inject same bytes and verify decode roundtrip --- */
+    mock_regs[0x61] = 0x0D;
+    mock_regs[0x62] = 0x4B;
+    mock_regs[0x63] = 0xCD;
+    mock_regs[0x64] = 0xEF;
+    mock_regs[0x65] = 1;
+    mock_regs[0x66] = 0x42;
+    mock_regs[0x2C] |= 0x01;
+
+    mcp2515_msg_t rx;
+    memset(&rx, 0, sizeof(rx));
+    e = mcp2515_receive(&dev, &rx);
+    ASSERT_EQ(e, MCP2515_OK);
+    ASSERT_TRUE(rx.extended);
+    ASSERT_EQ(rx.id, 0x1ABCDEFU);
+    ASSERT_EQ(rx.dlc, 1);
+    ASSERT_EQ(rx.data[0], 0x42);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("mcp2515")
@@ -526,4 +586,5 @@ TEST_MAIN("mcp2515")
     RUN(test_tx_busy);
     RUN(test_send_dlc_too_large);
     RUN(test_receive_extended_frame);
+    RUN(test_extended_id_register_bytes);
 TEST_MAIN_END()
