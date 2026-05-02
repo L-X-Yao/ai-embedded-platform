@@ -152,6 +152,9 @@ promote-wheel:
 release:
 	bash tooling/wheel/release.sh
 
+audit-deep:
+	bash tooling/audit/audit_deep.sh
+
 arm-size-audit:
 	bash tooling/audit/arm_size_audit.sh
 
