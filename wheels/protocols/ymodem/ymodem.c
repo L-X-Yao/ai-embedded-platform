@@ -132,11 +132,16 @@ static ymodem_err_t process_block(ymodem_t *ym)
     uint16_t write_len = ym->block_size;
 
     /* trim padding if we know file size and this is the last data */
-    if (ym->file_size > 0) {
+    if (ym->file_size > 0 && ym->total_received < ym->file_size) {
         uint32_t remaining = ym->file_size - ym->total_received;
         if (remaining < write_len) {
             write_len = (uint16_t)remaining;
         }
+    } else if (ym->file_size > 0 && ym->total_received >= ym->file_size) {
+        /* Already received all expected data — skip write */
+        ym->block_num = (uint8_t)(ym->block_num + 1);
+        (void)send_byte(ym, YMODEM_ACK);
+        return YMODEM_OK;
     }
 
     if (ym->io && ym->io->write_block) {
