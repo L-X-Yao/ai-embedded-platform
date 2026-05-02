@@ -235,3 +235,6 @@ tooling/session/dispatch_agent.sh --merge-all --push
 | 2026-04-30 | 超级审计六轮（全 40 维度） | 1C+12M | 13 | fletcher-16 mod255/mqtt QoS>2/coap bare marker/ws reserved opcodes/log_dedup R4 regression |
 | 2026-04-30 | 超级审计七轮（专项角度） | 0C+5M+4T | 9 | mqtt password-without-user/RL max/ota_ab params_size/log_flash write order/ncp5623 stale/4 tests |
 | 2026-04-30 | 超级审计八轮（专项角度） | 0C+4M+3T | 7 | cli_parser CRLF/http OWS tab/event_queue mod0/release.sh tag order/3 negative tests |
+| 2026-05-01 | R16 -Wconversion 全量部署 | 0C+0M | 52 | 54/58 wheels 加 -Wconversion，仅 2 处测试代码修复 |
+| 2026-05-02 | 超级审计：85 新 wheel（6 路并行） | 8C+28M+22m | 36+22 | 协议层 5C（整数溢出）、L1 3C（位域/延迟/截断）、28M（overflow/API/性能） |
+| 2026-05-02 | 代码规范审计（85 wheel vs api-conventions） | 14+9+6 | 进行中 | 14 命名前缀（10 接受偏离+4 修复）、9 @thread_safe 缺失、6 文件头不完整 |

@@ -474,10 +474,10 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
 - ✅ **开发效率工具链**（`tooling/` 各子目录 + `tooling/test/`）——test_harness.h（统一测试框架）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板）/ session_bootstrap.sh / wheel_promote.sh / audit_wheels.py（23 项自动检查 + TEST/RUN 平衡检测 + --graph + --quiet + --json）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（34 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）
 <<<<<<< HEAD
-- ✅ **143 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
+- ✅ **144 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (49): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
   - L1 (51): w25qxx / qmi8658a / xgzp6816d / qmc5883p / ws2812 / gpio_led / gpio_button / bmp280 / sht30 / mpu6050 / oled_ssd1306 / dht11 / ads1115 / bh1750 / ds18b20 / max7219 / hmc5883l / servo / rotary_encoder
-  - L2 (25): ncp5623_parser / at_command / modbus_rtu / nmea_parser / ota_ab / mqtt_packet / http_parser / websocket_frame / coap_packet
+  - L2 (26): ncp5623_parser / at_command / modbus_rtu / nmea_parser / ota_ab / mqtt_packet / http_parser / websocket_frame / coap_packet
 =======
 - ✅ **98 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
   - L0 (40): log / log_ringbuf / log_color / log_file / log_filter / log_uart / log_rtt / log_rate / log_dedup / log_flash / crc16 / fal(vendor) / kvs(vendor) / cli_parser / mahony_ahrs / mag_cal / pid_controller / moving_average / state_machine / soft_timer / byte_buffer / event_queue / crc32 / bitfield / retry / timeout / median_filter / checksum / debounce / led_pattern
