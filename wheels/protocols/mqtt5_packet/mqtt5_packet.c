@@ -85,7 +85,7 @@ mqtt5_err_t mqtt5_decode_vbi(const uint8_t *buf, uint16_t len,
     do {
         if (i >= len) return MQTT5_ERR_SIZE;
         result += (uint32_t)(buf[i] & 0x7F) * multiplier;
-        if (multiplier > 128u * 128u * 128u && (buf[i] & 0x80)) {
+        if (multiplier >= 128u * 128u * 128u && (buf[i] & 0x80)) {
             return MQTT5_ERR_OVERFLOW;
         }
         multiplier *= 128u;
@@ -326,8 +326,8 @@ mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
     if (err != MQTT5_OK) return err;
     pos += props_vbi_bytes;
 
+    if (props_len > (uint32_t)(len - pos)) return MQTT5_ERR_SIZE;
     uint16_t props_end = (uint16_t)(pos + props_len);
-    if (props_end > len) return MQTT5_ERR_SIZE;
 
     while (pos < props_end) {
         uint8_t prop_id = buf[pos++];
@@ -374,8 +374,8 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
     if (err != MQTT5_OK) return err;
 
     uint16_t pos = (uint16_t)(1 + rl_bytes);
+    if (remaining > (uint32_t)(len - pos)) return MQTT5_ERR_SIZE;
     uint16_t packet_end = (uint16_t)(pos + remaining);
-    if (packet_end > len) return MQTT5_ERR_SIZE;
 
     /* topic */
     if (pos + 2 > packet_end) return MQTT5_ERR_PROTOCOL;
@@ -404,8 +404,8 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
         if (err != MQTT5_OK) return err;
         pos += props_vbi_bytes;
 
+        if (props_len > (uint32_t)(packet_end - pos)) return MQTT5_ERR_PROTOCOL;
         uint16_t props_end = (uint16_t)(pos + props_len);
-        if (props_end > packet_end) return MQTT5_ERR_PROTOCOL;
 
         while (pos < props_end) {
             uint8_t prop_id = buf[pos++];
