@@ -125,6 +125,30 @@ Anything listed here has been evaluated and either fixed or documented as accept
 - `log_uart`/`log_rtt`/`log_file`: fire-and-forget sinks discard HAL/stdio return values (architectural: log sinks must not fail the caller)
 - `mqtt_packet`: `put_u16` return value unused in `put_str` (infallible helper, always returns 2)
 
+## Cross-validation (2026-05-02): new L1 drivers vs GitHub references
+
+All 12 new L1 drivers cross-validated against GitHub reference implementations.
+Register addresses, conversion formulas, SPI opcodes, and CRC polynomials confirmed matching.
+
+| Driver | Verified against | Result |
+|--------|-----------------|--------|
+| ina219 | LPC1343CodeBase, Linux kernel ina2xx.c | PASS |
+| pca9685 | Linux kernel pwm-pca9685.c, stm32-hal-pca9685 | PASS |
+| lora_sx1276 | LoRaMac-node (Semtech official) | PASS |
+| mcp2515 | arduino-mcp2515, avr-can-lib | PASS |
+| ds3231 | ebrezadev/DS3231, libdriver/ds3231 | PASS |
+| nrf24l01 | nRF24/RF24, betaflight | PASS |
+| enc28j60 | Linux kernel, RT-Thread | PASS |
+| si7021 | TEConnectivity HTU21D Generic C | PASS |
+| veml7700 | Adafruit_VEML7700, tedyapo/arduino-VEML7700 | PASS |
+| hx711 | bogde/HX711, jonas-hagen/hx711 | PASS |
+| at24cxx | N/A (simple protocol, no complex registers) | SKIP |
+| pcf8574 | N/A (single-byte protocol) | SKIP |
+
+**Note:** MCP2515 CNF timing values (8MHz crystal) vary across implementations. Our values need HIL verification for exact baud rate accuracy.
+
+**Not cross-validated** (pure logic, no chip registers): stepper, keypad_matrix, drv8833, tca9548a, mcp23017 (verified register map matches datasheet comments).
+
 ## Remaining test gaps (low priority)
 
 (none — all previously listed gaps resolved in R10)
