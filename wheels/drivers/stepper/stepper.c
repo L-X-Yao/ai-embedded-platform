@@ -64,7 +64,8 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
     stepper_dir_t dir = (steps > 0) ? STEPPER_DIR_CW : STEPPER_DIR_CCW;
     set_direction(s->hal, dir);
 
-    uint32_t total = (steps > 0) ? (uint32_t)steps : (uint32_t)(-steps);
+    uint32_t total = (steps > 0) ? (uint32_t)steps
+                                      : (uint32_t)0 - (uint32_t)steps;
     int32_t  sign  = (steps > 0) ? 1 : -1;
 
     /* initial delay from acceleration:
