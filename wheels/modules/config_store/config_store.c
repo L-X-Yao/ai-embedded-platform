@@ -232,6 +232,7 @@ config_store_err_t config_store_set_float(config_store_t *cs,
     if (e->type != CONFIG_TYPE_FLOAT) {
         return CONFIG_STORE_ERR_TYPE;
     }
+    if (val != val) return CONFIG_STORE_ERR_RANGE;  /* reject NaN */
     if (val < e->min_val.f32 || val > e->max_val.f32) {
         return CONFIG_STORE_ERR_RANGE;
     }
@@ -438,7 +439,9 @@ config_store_err_t config_store_load_all(config_store_t *cs)
                 in_range = false;
             break;
         case CONFIG_TYPE_FLOAT:
-            if (loaded.f32 < e->min_val.f32 || loaded.f32 > e->max_val.f32)
+            if (loaded.f32 != loaded.f32)  /* reject NaN */
+                in_range = false;
+            else if (loaded.f32 < e->min_val.f32 || loaded.f32 > e->max_val.f32)
                 in_range = false;
             break;
         case CONFIG_TYPE_BOOL:
