@@ -304,6 +304,79 @@ TEST(test_large_block_wrap)
     }
 }
 
+/* ── RING_BUFFER_ERR_FULL: write to full buffer returns 0 ───────── */
+
+TEST(test_err_full_write_returns_zero)
+{
+    uint8_t storage[4];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 4);
+
+    /* Verify RING_BUFFER_ERR_FULL enum value exists */
+    ASSERT_EQ(RING_BUFFER_ERR_FULL, -2);
+
+    /* Fill completely */
+    uint8_t data[] = {0xAA, 0xBB, 0xCC, 0xDD};
+    ASSERT_EQ(ring_buffer_write(&rb, data, 4), 4);
+    ASSERT_TRUE(ring_buffer_is_full(&rb));
+    ASSERT_EQ(ring_buffer_free(&rb), 0);
+
+    /* Single byte write to full buffer returns 0 */
+    uint8_t extra = 0xFF;
+    ASSERT_EQ(ring_buffer_write(&rb, &extra, 1), 0);
+
+    /* Multi-byte write to full buffer returns 0 */
+    uint8_t more[] = {1, 2, 3};
+    ASSERT_EQ(ring_buffer_write(&rb, more, 3), 0);
+
+    /* Buffer contents unchanged */
+    ASSERT_TRUE(ring_buffer_is_full(&rb));
+    ASSERT_EQ(ring_buffer_count(&rb), 4);
+    uint8_t out[4];
+    ring_buffer_peek(&rb, out, 4);
+    ASSERT_EQ(out[0], 0xAA);
+    ASSERT_EQ(out[3], 0xDD);
+}
+
+/* ── RING_BUFFER_ERR_EMPTY: read from empty buffer returns 0 ───── */
+
+TEST(test_err_empty_read_returns_zero)
+{
+    uint8_t storage[4];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 4);
+
+    /* Verify RING_BUFFER_ERR_EMPTY enum value exists */
+    ASSERT_EQ(RING_BUFFER_ERR_EMPTY, -3);
+
+    /* Buffer starts empty */
+    ASSERT_TRUE(ring_buffer_is_empty(&rb));
+    ASSERT_EQ(ring_buffer_count(&rb), 0);
+
+    /* Single byte read from empty buffer returns 0 */
+    uint8_t out = 0xAA;
+    ASSERT_EQ(ring_buffer_read(&rb, &out, 1), 0);
+    ASSERT_EQ(out, 0xAA);  /* unchanged */
+
+    /* Multi-byte read from empty buffer returns 0 */
+    uint8_t buf[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    ASSERT_EQ(ring_buffer_read(&rb, buf, 4), 0);
+    ASSERT_EQ(buf[0], 0xFF);  /* unchanged */
+
+    /* Peek from empty buffer also returns 0 */
+    ASSERT_EQ(ring_buffer_peek(&rb, buf, 4), 0);
+
+    /* Skip from empty buffer returns 0 */
+    ASSERT_EQ(ring_buffer_skip(&rb, 1), 0);
+
+    /* Write then read all, then read again (empty after drain) */
+    uint8_t data[] = {1, 2};
+    ring_buffer_write(&rb, data, 2);
+    ring_buffer_read(&rb, buf, 2);
+    ASSERT_TRUE(ring_buffer_is_empty(&rb));
+    ASSERT_EQ(ring_buffer_read(&rb, buf, 1), 0);
+}
+
 /* ── zero-init safety ───────────────────────────────────────────── */
 
 TEST(test_zero_init_safety)
@@ -335,5 +408,7 @@ TEST_MAIN("ring_buffer")
     RUN(test_multiple_cycles);
     RUN(test_interleaved_producer_consumer);
     RUN(test_large_block_wrap);
+    RUN(test_err_full_write_returns_zero);
+    RUN(test_err_empty_read_returns_zero);
     RUN(test_zero_init_safety);
 TEST_MAIN_END()

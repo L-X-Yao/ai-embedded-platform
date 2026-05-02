@@ -55,6 +55,8 @@ static int         mock_fail_init;      /* CMD0 no response */
 static int         mock_fail_read;      /* no 0xFE token for CMD17 */
 static int         mock_fail_write;     /* write response = rejected */
 static int         mock_fail_spi;       /* all xfer return 0xFF */
+static int         mock_fail_cmd17;    /* CMD17 returns error R1 */
+static int         mock_fail_cmd24;    /* CMD24 returns error R1 */
 static int         mock_cmd55_seen;
 
 /* block storage */
@@ -81,6 +83,8 @@ static void mock_reset(void)
     mock_fail_read = 0;
     mock_fail_write = 0;
     mock_fail_spi = 0;
+    mock_fail_cmd17 = 0;
+    mock_fail_cmd24 = 0;
     mock_cmd55_seen = 0;
     mock_last_addr = 0;
 
@@ -164,13 +168,13 @@ static void prepare_response(void)
     }
     if (mock_cmd == 17) {
         mock_last_addr = mock_arg;
-        mock_r1 = 0x00;
+        mock_r1 = mock_fail_cmd17 ? 0x04U : 0x00U;
         mock_phase = PH_R1;
         return;
     }
     if (mock_cmd == 24) {
         mock_last_addr = mock_arg;
-        mock_r1 = 0x00;
+        mock_r1 = mock_fail_cmd24 ? 0x04U : 0x00U;
         mock_phase = PH_R1;
         return;
     }
@@ -523,6 +527,86 @@ TEST(test_spi_failure_during_cmd)
     ASSERT_TRUE(e != SD_SPI_OK);
 }
 
+/* ---------- SD_SPI_ERR_CMD: command rejected by card ---------- */
+
+TEST(test_read_cmd_rejected)
+{
+    mock_reset();
+    sd_spi_t sd;
+    sd_spi_init(&sd, &mock_hal);
+
+    /* CMD17 returns error R1 (0x04 = illegal command) */
+    mock_fail_cmd17 = 1;
+
+    uint8_t buf[512];
+    sd_spi_err_t e = sd_spi_read_block(&sd, 0, buf);
+    ASSERT_EQ(e, SD_SPI_ERR_CMD);
+}
+
+TEST(test_write_cmd_rejected)
+{
+    mock_reset();
+    sd_spi_t sd;
+    sd_spi_init(&sd, &mock_hal);
+
+    /* CMD24 returns error R1 */
+    mock_fail_cmd24 = 1;
+
+    uint8_t data[512];
+    memset(data, 0x55, sizeof(data));
+    sd_spi_err_t e = sd_spi_write_block(&sd, 0, data);
+    ASSERT_EQ(e, SD_SPI_ERR_CMD);
+}
+
+/* ---------- SD_SPI_ERR_SPI: SPI bus failure during read ---------- */
+
+TEST(test_spi_failure_during_read_returns_timeout)
+{
+    /* When SPI bus fails (all 0xFF), CMD17 R1 response is 0xFF (bit7 set),
+     * which means no valid response was received.  The send_cmd loop
+     * exhausts retries and returns 0xFF.  Since 0xFF != 0x00, the driver
+     * returns SD_SPI_ERR_CMD.  This proves that SPI-level failures are
+     * surfaced as command errors. */
+    mock_reset();
+    sd_spi_t sd;
+    sd_spi_init(&sd, &mock_hal);
+
+    mock_fail_spi = 1;
+    uint8_t buf[512];
+    sd_spi_err_t e = sd_spi_read_block(&sd, 0, buf);
+    /* With all-0xFF bus, send_cmd returns 0xFF which is checked as
+     * r1 != 0x00 → ERR_CMD (line 180 of sd_spi.c) */
+    ASSERT_TRUE(e == SD_SPI_ERR_CMD || e == SD_SPI_ERR_TIMEOUT);
+}
+
+TEST(test_spi_failure_during_write)
+{
+    mock_reset();
+    sd_spi_t sd;
+    sd_spi_init(&sd, &mock_hal);
+
+    mock_fail_spi = 1;
+    uint8_t data[512];
+    memset(data, 0xCC, sizeof(data));
+    sd_spi_err_t e = sd_spi_write_block(&sd, 0, data);
+    ASSERT_TRUE(e != SD_SPI_OK);
+}
+
+/* ---------- SD_SPI_ERR_CRC: defined but not returned by current API ----
+ * CRC checking is left to the SD card hardware; the driver discards the
+ * 2-byte CRC after reads and sends dummy CRC on writes.  No code path
+ * currently returns ERR_CRC.  This test verifies ABI stability. */
+
+TEST(test_err_crc_value)
+{
+    ASSERT_EQ((int)SD_SPI_ERR_CRC, -4);
+}
+
+TEST(test_err_spi_value)
+{
+    ASSERT_EQ((int)SD_SPI_ERR_SPI, -1);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("sd_spi")
@@ -544,4 +628,10 @@ TEST_MAIN("sd_spi")
     RUN(test_sdsc_byte_addressing);
     RUN(test_read_write_cycle);
     RUN(test_spi_failure_during_cmd);
+    RUN(test_read_cmd_rejected);
+    RUN(test_write_cmd_rejected);
+    RUN(test_spi_failure_during_read_returns_timeout);
+    RUN(test_spi_failure_during_write);
+    RUN(test_err_crc_value);
+    RUN(test_err_spi_value);
 TEST_MAIN_END()

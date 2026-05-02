@@ -122,6 +122,40 @@ TEST(test_to_float)
     ASSERT_EQ(str_to_float(NULL, &f), STRING_UTILS_ERR_PARAM);
 }
 
+/* ── range error tests ──────────────────────────────────────────────── */
+
+TEST(test_to_int_overflow_positive)
+{
+    int32_t v = 0;
+    /* 99999999999 overflows INT32_MAX (2147483647) */
+    ASSERT_EQ(str_to_int("99999999999", &v), STRING_UTILS_ERR_RANGE);
+}
+
+TEST(test_to_int_overflow_negative)
+{
+    int32_t v = 0;
+    /* -99999999999 overflows INT32_MIN (-2147483648) */
+    ASSERT_EQ(str_to_int("-99999999999", &v), STRING_UTILS_ERR_RANGE);
+}
+
+TEST(test_to_int_overflow_boundary)
+{
+    int32_t v = 0;
+    /* 2147483648 is INT32_MAX + 1, should overflow */
+    ASSERT_EQ(str_to_int("2147483648", &v), STRING_UTILS_ERR_RANGE);
+
+    /* INT32_MAX itself should succeed */
+    ASSERT_EQ(str_to_int("2147483647", &v), STRING_UTILS_OK);
+    ASSERT_EQ(v, 2147483647);
+
+    /* INT32_MIN should succeed */
+    ASSERT_EQ(str_to_int("-2147483648", &v), STRING_UTILS_OK);
+    ASSERT_EQ(v, -2147483647 - 1);  /* avoid literal warning */
+
+    /* INT32_MIN - 1 should overflow */
+    ASSERT_EQ(str_to_int("-2147483649", &v), STRING_UTILS_ERR_RANGE);
+}
+
 /* ── join tests ─────────────────────────────────────────────────────── */
 
 TEST(test_join_basic)
@@ -170,6 +204,9 @@ TEST_MAIN("string_utils")
     RUN(test_ends_with);
     RUN(test_to_int);
     RUN(test_to_float);
+    RUN(test_to_int_overflow_positive);
+    RUN(test_to_int_overflow_negative);
+    RUN(test_to_int_overflow_boundary);
     RUN(test_join_basic);
     RUN(test_join_overflow);
     RUN(test_join_null_param);

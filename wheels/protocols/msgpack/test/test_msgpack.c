@@ -309,6 +309,29 @@ TEST(test_int_positive_via_signed)
     ASSERT_EQ((long long)tok.val.u32, 42);
 }
 
+/* ---- unsupported format byte triggers ERR_FORMAT ---- */
+
+TEST(test_dec_format_float64)
+{
+    /* 0xcb = float64 — intentionally unsupported on MCU */
+    const uint8_t data[] = {0xcb, 0x40, 0x09, 0x21, 0xfb,
+                            0x54, 0x44, 0x2d, 0x18};
+    msgpack_dec_t dec;
+    msgpack_token_t tok;
+    msgpack_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(msgpack_dec_next(&dec, &tok), MSGPACK_ERR_FORMAT);
+}
+
+TEST(test_dec_format_fixext1)
+{
+    /* 0xd4 = fixext1 — extension types unsupported */
+    const uint8_t data[] = {0xd4, 0x01, 0x00};
+    msgpack_dec_t dec;
+    msgpack_token_t tok;
+    msgpack_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(msgpack_dec_next(&dec, &tok), MSGPACK_ERR_FORMAT);
+}
+
 TEST_MAIN("msgpack")
     RUN(test_enc_init_null);
     RUN(test_enc_init_ok);
@@ -330,4 +353,6 @@ TEST_MAIN("msgpack")
     RUN(test_dec_null_param);
     RUN(test_uint_zero);
     RUN(test_int_positive_via_signed);
+    RUN(test_dec_format_float64);
+    RUN(test_dec_format_fixext1);
 TEST_MAIN_END()

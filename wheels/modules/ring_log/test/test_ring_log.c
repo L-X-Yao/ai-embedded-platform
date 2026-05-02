@@ -241,6 +241,42 @@ TEST(test_read_oldest_after_wrap)
     ASSERT_EQ(e.timestamp, RING_LOG_MAX_ENTRIES + 2u);
 }
 
+/* ---- 17. ERR_FULL constant and overwrite behavior ---- */
+TEST(test_err_full_constant_and_overwrite)
+{
+    /* RING_LOG_ERR_FULL is reserved for a future "reject when full" mode.
+     * Current implementation overwrites the oldest entry.
+     * Verify: (1) constant value, (2) write succeeds at capacity,
+     * (3) oldest entry is correctly overwritten. */
+    ASSERT_EQ(RING_LOG_ERR_FULL, -2);
+
+    ring_log_t rl;
+    ring_log_init(&rl, RING_LOG_DEBUG);
+
+    /* Fill to exact capacity */
+    for (uint32_t i = 0; i < RING_LOG_MAX_ENTRIES; i++) {
+        ASSERT_EQ(ring_log_write(&rl, RING_LOG_INFO, i, "m%u", i), RING_LOG_OK);
+    }
+    ASSERT_EQ(ring_log_count(&rl), RING_LOG_MAX_ENTRIES);
+
+    /* Write one more — should succeed (overwrite, not ERR_FULL) */
+    ASSERT_EQ(ring_log_write(&rl, RING_LOG_ERROR, 9999, "overflow"),
+              RING_LOG_OK);
+    ASSERT_EQ(ring_log_count(&rl), RING_LOG_MAX_ENTRIES);
+    ASSERT_EQ(ring_log_total(&rl), RING_LOG_MAX_ENTRIES + 1);
+
+    /* Newest (index 0) should be the overflow entry */
+    ring_log_entry_t e;
+    ring_log_read(&rl, 0, &e);
+    ASSERT_EQ(e.timestamp, 9999);
+    ASSERT_EQ(e.level, RING_LOG_ERROR);
+    ASSERT_EQ(strcmp(e.message, "overflow"), 0);
+
+    /* Oldest entry (timestamp=0) should be gone, oldest now is timestamp=1 */
+    ring_log_read_oldest(&rl, 0, &e);
+    ASSERT_EQ(e.timestamp, 1);
+}
+
 TEST_MAIN("ring_log")
     RUN(test_init);
     RUN(test_write_read);
@@ -258,4 +294,5 @@ TEST_MAIN("ring_log")
     RUN(test_empty_log_read);
     RUN(test_zero_init_safety);
     RUN(test_read_oldest_after_wrap);
+    RUN(test_err_full_constant_and_overwrite);
 TEST_MAIN_END()

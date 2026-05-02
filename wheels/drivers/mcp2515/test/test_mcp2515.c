@@ -510,6 +510,86 @@ TEST(test_receive_extended_frame)
     ASSERT_EQ(msg.data[1], 0xFE);
 }
 
+/* ---------- MCP2515_ERR_TIMEOUT: mode change never confirms ---------- */
+
+static int mock_freeze_canstat;   /* when true, CANSTAT ignores CANCTRL writes */
+
+/*
+ * We need a custom mock_xfer that can optionally freeze CANSTAT so
+ * mode-change verification times out.  Wrap the existing mock by
+ * intercepting CANCTRL writes when freeze is active.
+ */
+static uint8_t mock_xfer_freeze(void *ctx, uint8_t tx)
+{
+    uint8_t result = mock_xfer(ctx, tx);
+
+    /* After a write or bit-modify to CANCTRL (0x0F), normally the mock
+     * mirrors bits to CANSTAT (0x0E).  If freezing, revert CANSTAT to
+     * its previous value so wait_mode() never sees the expected mode. */
+    if (mock_freeze_canstat && mock_spi_addr == 0x0F &&
+        (mock_spi_cmd == 0x02 || mock_spi_cmd == 0x05)) {
+        /* Keep CANSTAT stuck in its current mode — set to config (0x80)
+         * regardless of what was written to CANCTRL */
+        mock_regs[0x0E] = 0x80;
+    }
+    return result;
+}
+
+static const mcp2515_spi_t mock_spi_freeze = {
+    .cs_low  = mock_cs_low,
+    .cs_high = mock_cs_high,
+    .xfer    = mock_xfer_freeze,
+    .ctx     = NULL,
+};
+
+TEST(test_set_mode_timeout)
+{
+    mock_reset();
+    mock_freeze_canstat = 0;
+
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    /* Normal init first (freeze off) */
+    mcp2515_err_t e = mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+    ASSERT_EQ(e, MCP2515_OK);
+
+    /* Now rewire to the freezing SPI and try to switch to loopback.
+     * CANSTAT will stay stuck at normal (0x00), never showing loopback. */
+    dev.spi = &mock_spi_freeze;
+    mock_freeze_canstat = 1;
+    /* Force CANSTAT to normal-mode bits so it never matches loopback (0x40) */
+    mock_regs[0x0E] = 0x00;
+
+    e = mcp2515_set_mode(&dev, MCP2515_MODE_LOOPBACK);
+    ASSERT_EQ(e, MCP2515_ERR_TIMEOUT);
+    /* mode should NOT have been updated since the switch failed */
+    ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
+
+    mock_freeze_canstat = 0;
+}
+
+TEST(test_init_mode_timeout)
+{
+    mock_reset();
+    mock_freeze_canstat = 0;
+
+    /* init calls wait_mode twice: once after reset (expect config), once
+     * for normal mode.  If CANSTAT is frozen to 0xFF (no valid mode),
+     * the first wait_mode after reset will time out. */
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+
+    /* Freeze CANSTAT to 0xFF so config mode (0x80) is never confirmed */
+    dev.spi = &mock_spi_freeze;
+    mock_freeze_canstat = 1;
+    mock_regs[0x0E] = 0xFF;
+
+    mcp2515_err_t e = mcp2515_init(&dev, &mock_spi_freeze, MCP2515_SPEED_500KBPS);
+    ASSERT_EQ(e, MCP2515_ERR_TIMEOUT);
+
+    mock_freeze_canstat = 0;
+}
+
 TEST(test_extended_id_register_bytes)
 {
     /*
@@ -588,4 +668,6 @@ TEST_MAIN("mcp2515")
     RUN(test_send_dlc_too_large);
     RUN(test_receive_extended_frame);
     RUN(test_extended_id_register_bytes);
+    RUN(test_set_mode_timeout);
+    RUN(test_init_mode_timeout);
 TEST_MAIN_END()

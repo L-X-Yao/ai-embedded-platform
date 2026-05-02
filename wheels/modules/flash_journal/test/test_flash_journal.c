@@ -367,6 +367,66 @@ TEST(test_variable_size_entries)
     ASSERT_TRUE(memcmp(buf, long_data, 46) == 0);
 }
 
+TEST(test_corrupt_magic_on_init)
+{
+    /* Write a valid entry, then corrupt the magic bytes in flash.
+     * Re-init should find 0 entries (corrupt entry skipped). */
+    fresh_journal();
+    const uint8_t data[] = "valid";
+    ASSERT_EQ(flash_journal_append(&jrnl, data, 5), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 1);
+
+    /* Corrupt the magic bytes at sector 0, offset 0 */
+    sim_flash[0] = 0xFF;
+    sim_flash[1] = 0xFF;
+    sim_flash[2] = 0xFF;
+    sim_flash[3] = 0xFF;
+
+    /* Re-init — scan should skip the corrupted entry */
+    flash_journal_t j2;
+    ASSERT_EQ(flash_journal_init(&j2, &sim_storage, SIM_SECTOR_COUNT,
+              SIM_SECTOR_SIZE), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&j2), 0);
+}
+
+TEST(test_corrupt_crc_on_read)
+{
+    /* Write a valid entry, then corrupt the CRC bytes in flash.
+     * read_latest should return ERR_CORRUPT. */
+    fresh_journal();
+    const uint8_t data[] = "payload";
+    ASSERT_EQ(flash_journal_append(&jrnl, data, 7), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 1);
+
+    /* Corrupt the CRC footer: entry is at offset 0, CRC is at
+     * offset = HDR_SIZE(10) + payload_len(7) = 17 */
+    uint32_t crc_pos = FLASH_JOURNAL_HDR_SIZE + 7;
+    sim_flash[crc_pos] ^= 0xFF;
+
+    /* read_latest scans from flash — should detect CRC mismatch */
+    uint8_t buf[32];
+    uint32_t size = sizeof(buf);
+    flash_journal_err_t err = flash_journal_read_latest(&jrnl, buf, &size);
+    /* After corruption, the entry is no longer valid */
+    ASSERT_TRUE(err == FLASH_JOURNAL_ERR_CORRUPT || err == FLASH_JOURNAL_ERR_EMPTY);
+}
+
+TEST(test_err_size_output_buffer_too_small)
+{
+    /* Append a 20-byte payload, then read with a buffer smaller than 20.
+     * read_entry should return ERR_SIZE. */
+    fresh_journal();
+    uint8_t data[20];
+    memset(data, 0xAB, sizeof(data));
+    ASSERT_EQ(flash_journal_append(&jrnl, data, 20), FLASH_JOURNAL_OK);
+
+    /* Try to read with a 5-byte buffer — too small for 20-byte payload */
+    uint8_t small_buf[5];
+    uint32_t size = sizeof(small_buf);
+    ASSERT_EQ(flash_journal_read_latest(&jrnl, small_buf, &size),
+              FLASH_JOURNAL_ERR_SIZE);
+}
+
 TEST_MAIN("flash_journal")
     RUN(test_zero_init_safety);
     RUN(test_init_null_params);
@@ -386,4 +446,7 @@ TEST_MAIN("flash_journal")
     RUN(test_count_null);
     RUN(test_erase_all_null);
     RUN(test_variable_size_entries);
+    RUN(test_corrupt_magic_on_init);
+    RUN(test_corrupt_crc_on_read);
+    RUN(test_err_size_output_buffer_too_small);
 TEST_MAIN_END()

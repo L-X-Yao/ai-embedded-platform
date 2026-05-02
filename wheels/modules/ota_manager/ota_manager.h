@@ -4,7 +4,7 @@
  *
  * Layer:   L3
  * Status:  candidate
- * Deps:      (none -- all I/O via callbacks)
+ * Deps:      (none)
  * Instances: multi
  *
  * State machine: idle -> checking -> downloading -> verifying -> ready.

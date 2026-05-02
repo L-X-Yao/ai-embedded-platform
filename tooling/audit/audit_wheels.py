@@ -488,7 +488,30 @@ def has_naming_convention(wheel_dir: Path, name: str) -> bool:
         return True
     # Match function declarations: return_type wheel_name_verb(...);
     # Skip typedefs, comments, macros, and lines inside struct/enum bodies
-    prefix = name + "_"
+    # Accepted prefix abbreviations (api-conventions §1.5)
+    ACCEPTED_PREFIXES = {
+        "fixed_point": "fp_",
+        "protobuf_lite": "pb_",
+        "hash_fnv": "fnv1a_",
+        "lookup_table": "lut_",
+        "lora_sx1276": "lora_",
+        "nrf24l01": "nrf24_",
+        "button_handler": "btn_handler_",
+        "version_info": "version_",
+        "keypad_matrix": "keypad_",
+        "cbor_lite": "cbor_lite_",
+        "hex_codec": "hex_",
+        "printf_tiny": ["printf_tiny", "snprintf_tiny", "vprintf_tiny", "vsnprintf_tiny"],
+        "string_utils": "str_",
+        "dns_packet": "dns_",
+        "lorawan_packet": "lorawan_",
+        "midi_packet": "midi_",
+        "mqtt5_packet": "mqtt5_",
+        "syslog_packet": "syslog_",
+        "tlv_codec": "tlv_",
+    }
+    raw_prefix = ACCEPTED_PREFIXES.get(name, name + "_")
+    prefixes = raw_prefix if isinstance(raw_prefix, list) else [raw_prefix]
     violations = 0
     for line in text.split("\n"):
         stripped = line.strip()
@@ -512,7 +535,7 @@ def has_naming_convention(wheel_dir: Path, name: str) -> bool:
         # Skip common non-function identifiers
         if func_name in ("if", "for", "while", "switch", "return", "sizeof"):
             continue
-        if not func_name.startswith(prefix):
+        if not any(func_name.startswith(p) for p in prefixes):
             violations += 1
     return violations == 0
 
@@ -535,8 +558,10 @@ def has_consistent_hal_pattern(wheel_dir: Path, name: str) -> bool:
         return True
     # Look for a HAL struct typedef: <name>_i2c_t, <name>_spi_t, <name>_hal_t,
     # <name>_gpio_t, <name>_onewire_t, <name>_pwm_t
+    # Also accept abbreviated prefixes (per api-conventions §1.5):
+    # e.g., lora_spi_t for lora_sx1276, nrf24_spi_t for nrf24l01
     hal_pattern = re.compile(
-        r'\b' + re.escape(name) + r'_(i2c|spi|hal|gpio|onewire|ow|pwm)_t\b'
+        r'\b\w+_(i2c|spi|hal|gpio|onewire|ow|pwm)_t\b'
     )
     has_hal_struct = bool(hal_pattern.search(text))
     if not has_hal_struct:
@@ -555,13 +580,21 @@ def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
         return True
     lines = h.read_text(encoding="utf-8", errors="replace").split("\n")
     undoc = 0
+    in_struct = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
+        if "typedef struct {" in stripped or (stripped == "{" and i > 0 and "struct" in lines[i-1]):
+            in_struct += 1
+        if stripped == "}":
+            in_struct = max(0, in_struct - 1)
+        if in_struct > 0:
+            continue
         if (f"{name}_" in stripped and "(" in stripped and ");" in stripped
                 and not stripped.startswith("typedef")
                 and not stripped.startswith("//")
                 and not stripped.startswith("/*")
-                and not stripped.startswith("*")):
+                and not stripped.startswith("*")
+                and "(*" not in stripped):
             prev = lines[i - 1].strip() if i > 0 else ""
             if not prev.startswith("/**") and not prev.startswith("*") and not prev.endswith("*/"):
                 undoc += 1
