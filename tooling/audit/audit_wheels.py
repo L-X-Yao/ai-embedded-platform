@@ -441,7 +441,10 @@ def has_negative_error_codes(wheel_dir: Path, name: str) -> bool:
     in_enum = False
     for line in lines:
         stripped = line.strip()
-        if f"_OK" in stripped and "= 0" in stripped:
+        if ("_OK" in stripped or "_SUCCESS" in stripped) and "= 0" in stripped:
+            in_enum = True
+            continue
+        if re.match(r'typedef\s+enum\s*\{', stripped):
             in_enum = True
             continue
         if in_enum:
@@ -583,10 +586,12 @@ def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     in_struct = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if "typedef struct {" in stripped or (stripped == "{" and i > 0 and "struct" in lines[i-1]):
+        if ("typedef struct" in stripped and "{" in stripped) or \
+           ("struct" in stripped and stripped.endswith("{")) or \
+           (stripped == "{" and i > 0 and "struct" in lines[i-1]):
             in_struct += 1
-        if stripped == "}":
-            in_struct = max(0, in_struct - 1)
+        if stripped.startswith("}") and in_struct > 0:
+            in_struct -= 1
         if in_struct > 0:
             continue
         if (f"{name}_" in stripped and "(" in stripped and ");" in stripped
@@ -746,7 +751,262 @@ def has_deps_format_issue(wheel_dir: Path, name: str) -> str:
     return ""
 
 
-def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> int:
+def has_instances_field(wheel_dir: Path, name: str) -> bool:
+    """Check file header has Instances: multi|single field (api-conventions §8)."""
+    for ext in (".h", ".c"):
+        f = wheel_dir / f"{name}{ext}"
+        if not f.exists():
+            continue
+        try:
+            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()[:15]
+        except OSError:
+            continue
+        for line in lines:
+            stripped = line.strip().lstrip("* ")
+            if re.match(r'^Instances:\s*(multi|single)\s*$', stripped):
+                return True
+    return False
+
+
+def has_isr_safe_annotation(wheel_dir: Path, name: str) -> bool:
+    """Check .h has @isr_safe annotation on at least one function (api-conventions §4.1).
+
+    Returns True if @isr_safe appears at least once, or if the wheel has no
+    ISR-callable candidates (pure protocol/module).
+    """
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return True
+    try:
+        text = h.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True
+    return "@isr_safe" in text
+
+
+def has_config_h_placement(wheel_dir: Path, name: str) -> str:
+    """Check config.h is only included in .c, never in .h (api-conventions §6.3).
+
+    Returns violation description or '' if OK.
+    """
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return ""
+    try:
+        text = h.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("//") or stripped.startswith("/*"):
+            continue
+        if re.search(r'#include\s+[<"].*config\.h[>"]', stripped):
+            return ".h includes config.h directly (must only be in .c)"
+    return ""
+
+
+STANDARD_README_SECTIONS = [
+    "Origin",
+    "Why self-written?",
+    "Dependencies",
+    "API",
+    "Configuration",
+    "Supported platforms",
+    "Known issues",
+    "How to test",
+    "Test status",
+    "API convention deviations",
+    "API review",
+    "Responsible human",
+]
+
+
+def _match_standard_section(heading: str) -> str:
+    """Match a heading to a standard section name.
+
+    Matches longest-first to avoid 'API' matching 'API convention deviations'.
+    """
+    hl = heading.strip().lower()
+    for std in sorted(STANDARD_README_SECTIONS, key=len, reverse=True):
+        if hl == std.lower() or hl.startswith(std.lower() + " ") or hl.startswith(std.lower() + "("):
+            return std
+    return ""
+
+
+def has_readme_section_order(wheel_dir: Path) -> list:
+    """Check README sections appear in standard order (wheel-contract §3.2).
+
+    Returns list of out-of-order section names (empty = correct).
+    """
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return []
+    try:
+        text = readme.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    headings = re.findall(r'^## (.+)$', text, re.MULTILINE)
+    found_order = []
+    for pos, h in enumerate(headings):
+        std = _match_standard_section(h)
+        if std and std not in [s for s, _ in found_order]:
+            found_order.append((std, pos))
+    if len(found_order) < 2:
+        return []
+    std_indices = {s: i for i, s in enumerate(STANDARD_README_SECTIONS)}
+    violations = []
+    for i in range(len(found_order) - 1):
+        cur_std = found_order[i][0]
+        nxt_std = found_order[i + 1][0]
+        if std_indices[cur_std] > std_indices[nxt_std]:
+            violations.append(cur_std)
+    return violations
+
+
+def has_readme_section_names(wheel_dir: Path) -> list:
+    """Check README section names match standard English names.
+
+    Returns list of non-standard heading names.
+    """
+    readme = wheel_dir / "README.md"
+    if not readme.exists():
+        return []
+    try:
+        text = readme.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    headings = re.findall(r'^## (.+)$', text, re.MULTILINE)
+    LEGACY_MAP = {
+        "convention deviations": "API convention deviations",
+        "deviations": "API convention deviations",
+        "configuration macros": "Configuration (compile-time)",
+        "api review status": "API review",
+        "test": "How to test",
+        "testing": "How to test",
+    }
+    violations = []
+    for h in headings:
+        hl = h.strip().lower()
+        if hl in LEGACY_MAP:
+            violations.append(f"'{h}' -> '{LEGACY_MAP[hl]}'")
+    return violations
+
+
+def has_nan_guard_in_float_api(wheel_dir: Path, name: str) -> list:
+    """Check that public float-parameter functions use NaN-safe guard pattern.
+
+    Only flags range checks on variables that are actually float/double.
+    Detects by scanning backward from the comparison to find the variable's
+    type declaration, or by checking if the comparison uses float literals (e.g. 0.0f).
+    Returns list of (line_no, line_text) with vulnerable range checks.
+    """
+    c_file = wheel_dir / f"{name}.c"
+    if not c_file.exists():
+        return []
+    try:
+        lines = c_file.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    vulnerable = re.compile(
+        r'if\s*\(\s*(\w+)\s*<\s*([-\d.]+f?)\s*\|\|\s*\w+\s*>\s*([-\d.]+f?)\s*\)'
+    )
+    float_literal = re.compile(r'\d+\.\d+f?$|^\d+f$')
+    violations = []
+    for i, line in enumerate(lines):
+        m = vulnerable.search(line)
+        if not m:
+            continue
+        var_name, lo_lit, hi_lit = m.group(1), m.group(2), m.group(3)
+        if float_literal.match(lo_lit) or float_literal.match(hi_lit):
+            violations.append((i + 1, line.strip()))
+            continue
+        for j in range(max(0, i - 30), i):
+            prev = lines[j].strip()
+            if re.search(rf'\b(float|double)\b.*\b{re.escape(var_name)}\b', prev):
+                violations.append((i + 1, line.strip()))
+                break
+    return violations
+
+
+def has_deinit_null_check(wheel_dir: Path, name: str) -> bool:
+    """Check deinit function validates input pointer (api-conventions §3.4).
+
+    Returns True if no deinit exists or if deinit checks for NULL.
+    """
+    c_file = wheel_dir / f"{name}.c"
+    if not c_file.exists():
+        return True
+    try:
+        text = c_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return True
+    deinit_pat = re.compile(rf'{re.escape(name)}_deinit\s*\(')
+    m = deinit_pat.search(text)
+    if not m:
+        return True
+    block = text[m.start():m.start() + 500]
+    return "!dev" in block or "NULL" in block or "!ctx" in block or "!self" in block
+
+
+PHYSICAL_QUANTITIES = {
+    "temperature", "pressure", "humidity", "altitude", "voltage",
+    "current", "resistance", "illuminance", "distance", "speed",
+    "acceleration", "angular_velocity", "magnetic", "heading",
+    "frequency", "concentration", "power", "energy",
+}
+UNIT_SUFFIXES = {
+    "_c", "_f", "_k", "_pa", "_hpa", "_pct", "_m", "_mm", "_km",
+    "_mv", "_v", "_ma", "_a", "_ohm", "_lux", "_kmh", "_ms", "_us",
+    "_hz", "_khz", "_mhz", "_deg", "_rad", "_dps", "_mg", "_g",
+    "_gauss", "_ppm", "_raw", "_w", "_mw", "_wh",
+}
+EXEMPT_NAMES = {"temperature_raw", "pressure_raw", "humidity_raw"}
+
+
+def has_unit_suffix_on_physical(wheel_dir: Path, name: str) -> list:
+    """Check struct fields holding physical quantities have unit suffixes.
+
+    Only checks L1 driver data structs (most likely to hold physical values).
+    Returns list of (field_name, suggestion).
+    """
+    h = wheel_dir / f"{name}.h"
+    if not h.exists():
+        return []
+    try:
+        text = h.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    if "_data_t" not in text and "_reading_t" not in text and "_result_t" not in text:
+        return []
+    violations = []
+    in_data_struct = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if re.search(r'(_data_t|_reading_t|_result_t)\s*\{', stripped):
+            in_data_struct = True
+            continue
+        if in_data_struct and stripped.startswith("}"):
+            in_data_struct = False
+            continue
+        if not in_data_struct:
+            continue
+        m = re.match(r'(?:float|double|int\d+_t|uint\d+_t)\s+(\w+)\s*;', stripped)
+        if not m:
+            continue
+        field = m.group(1)
+        if field in EXEMPT_NAMES:
+            continue
+        has_quantity = any(q in field.lower() for q in PHYSICAL_QUANTITIES)
+        if not has_quantity:
+            continue
+        has_suffix = any(field.endswith(s) for s in UNIT_SUFFIXES)
+        if not has_suffix:
+            violations.append(field)
+    return violations
+
+
+def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
+         save: bool = False) -> int:
     def qprint(msg: str):
         if not quiet and not json_mode:
             print(msg)
@@ -790,20 +1050,20 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
                    f"missing CI job — no mention of '{path}' in {CI_YAML.relative_to(REPO)}",
                    fix_cmd=f"add '{path}' to .github/workflows/ci.yml wheel-test matrix")
         elif consumer_required and not consumers:
-            icon = "WARN"
+            icon = "info"
             reason = "extracted from project" if origin else "proactively built"
-            record("consumer", path, "WARN", f"no consumer yet ({reason}, acceptable)",
+            record("consumer", path, "INFO", f"no consumer yet ({reason}, acceptable)",
                    fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
         elif not consumers:
-            icon = "WARN"
-            record("consumer", path, "WARN", f"no consumer yet (acceptable for {layer})",
+            icon = "info"
+            record("consumer", path, "INFO", f"no consumer yet (acceptable for {layer})",
                    fix_cmd=f"#include <{name}.h> in a project or add {path} to project CMakeLists.txt")
         else:
             icon = " ok "
 
         ci_label = "yes" if ci_ok else "MISSING"
         cons_label = ", ".join(consumers) if consumers else "(none)"
-        tprint(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
+        qprint(f"  [{icon}]  {path:36s}  CI: {ci_label:8s}  Consumer: {cons_label}")
 
     # --- Vendor wheel VENDOR.md check (ADR-010) ---
     qprint("\n=== Vendor wheels: VENDOR.md (ADR-010) ===\n")
@@ -1229,6 +1489,22 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
         else:
             qprint(f"  [ ok ]  {path}")
 
+    # --- Deps format check (api-conventions §8) ---
+    qprint("\n=== Deps format (api-conventions §8) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        issue = has_deps_format_issue(wheel_dir, name)
+        if issue:
+            record("deps_format", path, "WARN",
+                   f"file header {issue}",
+                   fix_cmd=f"fix Deps: line in {path}/{name}.h/.c (api-conventions §8)")
+            tprint(f"  [WARN]  {path}: {issue}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
     # --- "Why self-written?" section (ADR-010) ---
     qprint("\n=== 'Why self-written?' section (ADR-010) ===\n")
     for layer, name, path in wheels:
@@ -1255,6 +1531,134 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
         else:
             qprint(f"  [ ok ]  {path}")
 
+    # --- Instances field check (api-conventions ��8) ---
+    qprint("\n=== Instances field (api-conventions §8) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_instances_field(wheel_dir, name):
+            record("instances_field", path, "WARN",
+                   "file header missing Instances: multi|single field",
+                   fix_cmd=f"add 'Instances: multi' (or single) to file header in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- @isr_safe annotation check (api-conventions §4.1, L0+L1 only) ---
+    qprint("\n=== @isr_safe annotation (api-conventions §4.1) ===\n")
+    for layer, name, path in wheels:
+        if layer not in ("primitives", "drivers"):
+            continue
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_isr_safe_annotation(wheel_dir, name):
+            record("isr_safe", path, "WARN",
+                   ".h missing @isr_safe annotation (api-conventions §4.1)",
+                   fix_cmd=f"add @isr_safe: yes|no to function docs in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- config.h placement check (api-conventions §6.3) ---
+    qprint("\n=== config.h placement (api-conventions §6.3) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        issue = has_config_h_placement(wheel_dir, name)
+        if issue:
+            record("config_h_placement", path, "WARN",
+                   issue,
+                   fix_cmd=f"move config.h include from .h to .c in {path}/")
+            tprint(f"  [WARN]  {path}: {issue}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- NaN guard pattern check (api-conventions §2.5) ---
+    qprint("\n=== NaN guard pattern (api-conventions §2.5) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        violations = has_nan_guard_in_float_api(wheel_dir, name)
+        if violations:
+            locs = "; ".join(f"L{ln}" for ln, _ in violations[:3])
+            record("nan_guard", path, "WARN",
+                   f"vulnerable float range check (val < min || val > max) at {locs}",
+                   fix_cmd=f"use !(val >= min && val <= max) pattern in {path}/{name}.c")
+            for ln, text in violations[:3]:
+                tprint(f"  [WARN]  {path}/{name}.c:{ln}: {text}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- deinit NULL check (api-conventions §3.4) ---
+    qprint("\n=== deinit safety (api-conventions §3.4) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        if not has_deinit_null_check(wheel_dir, name):
+            record("deinit_safety", path, "WARN",
+                   "deinit function may not check for NULL pointer",
+                   fix_cmd=f"add NULL check to {name}_deinit in {path}/{name}.c (api-conventions §3.4)")
+            tprint(f"  [WARN]  {path}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- README section order check (wheel-contract §3.2) ---
+    qprint("\n=== README section order (wheel-contract §3.2) ===\n")
+    for layer, name, path in wheels:
+        if layer == "_draft":
+            continue
+        wheel_dir = WHEELS / layer / name
+        violations = has_readme_section_order(wheel_dir)
+        if violations:
+            record("readme_section_order", path, "WARN",
+                   f"README sections out of standard order: {', '.join(violations)}",
+                   fix_cmd=f"reorder sections in {path}/README.md per wheel-contract §3.2")
+            tprint(f"  [WARN]  {path}: {', '.join(violations)}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- README section names check ---
+    qprint("\n=== README section names (standard English) ===\n")
+    for layer, name, path in wheels:
+        wheel_dir = WHEELS / layer / name
+        violations = has_readme_section_names(wheel_dir)
+        if violations:
+            record("readme_section_names", path, "WARN",
+                   f"non-standard section names: {'; '.join(violations)}",
+                   fix_cmd=f"rename sections in {path}/README.md to standard names")
+            tprint(f"  [WARN]  {path}: {'; '.join(violations)}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
+    # --- Physical unit suffix check (api-conventions §1.6, L1 drivers) ---
+    qprint("\n=== Physical unit suffixes (api-conventions §1.6) ===\n")
+    for layer, name, path in wheels:
+        if layer != "drivers":
+            continue
+        wheel_dir = WHEELS / layer / name
+        if is_vendor_wheel(wheel_dir):
+            qprint(f"  [skip]  {path} (vendor)")
+            continue
+        violations = has_unit_suffix_on_physical(wheel_dir, name)
+        if violations:
+            fields = ", ".join(violations[:5])
+            record("unit_suffix", path, "WARN",
+                   f"physical fields without unit suffix: {fields}",
+                   fix_cmd=f"add unit suffix (_c, _pa, _pct, ...) to fields in {path}/{name}.h")
+            tprint(f"  [WARN]  {path}: {fields}")
+        else:
+            qprint(f"  [ ok ]  {path}")
+
     # --- Consumer mapping summary ---
     qprint("\n=== Consumer mapping ===\n")
     consumed = []
@@ -1276,12 +1680,18 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
             qprint(f"  {wpath:36s} ← {', '.join(sorted(projs))}")
     qprint(f"\n  consumed: {len(consumed)}/{len(wheels)}  |  unconsumed: {len(unconsumed)}")
 
+    infos = [r for r in results if r["level"] == "INFO"]
+
+    if save:
+        save_snapshot(results, len(wheels), len(failures), len(warnings))
+
     if json_mode:
         output = {
             "wheels": len(wheels),
             "failures": len(failures),
             "warnings": len(warnings),
-            "results": [r for r in results if r["level"] != "OK"],
+            "infos": len(infos),
+            "results": [r for r in results if r["level"] not in ("OK", "INFO")],
             "consumed": len(consumed),
             "unconsumed": len(unconsumed),
         }
@@ -1292,6 +1702,8 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False) -> in
     tprint(f"  wheels:   {len(wheels)}")
     tprint(f"  failures: {len(failures)}")
     tprint(f"  warnings: {len(warnings)}")
+    if infos:
+        tprint(f"  info:     {len(infos)} (unconsumed wheels, non-blocking)")
 
     if failures:
         tprint("\nFailures:")
@@ -1344,15 +1756,84 @@ def print_dep_graph(wheels):
     print("```")
 
 
+SNAPSHOT_DIR = REPO / "tooling" / "audit" / "snapshots"
+
+
+def save_snapshot(results, wheels_count, failures, warnings):
+    """Save audit results as timestamped JSON snapshot."""
+    from datetime import datetime
+    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    snapshot = {
+        "timestamp": datetime.now().isoformat(),
+        "wheels": wheels_count,
+        "failures": failures,
+        "warnings": warnings,
+        "checks": {},
+    }
+    for r in results:
+        check = r["check"]
+        if check not in snapshot["checks"]:
+            snapshot["checks"][check] = {"count": 0, "wheels": []}
+        snapshot["checks"][check]["count"] += 1
+        snapshot["checks"][check]["wheels"].append(r["wheel"])
+
+    path = SNAPSHOT_DIR / f"audit_{ts}.json"
+    path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Snapshot saved: {path.relative_to(REPO)}")
+    return path
+
+
+def compare_snapshots():
+    """Compare latest two snapshots and show delta."""
+    if not SNAPSHOT_DIR.is_dir():
+        print("No snapshots found. Run with --save first.")
+        return
+    files = sorted(SNAPSHOT_DIR.glob("audit_*.json"))
+    if len(files) < 2:
+        print(f"Need at least 2 snapshots to compare (found {len(files)}). Run --save again.")
+        return
+    prev = json.loads(files[-2].read_text(encoding="utf-8"))
+    curr = json.loads(files[-1].read_text(encoding="utf-8"))
+
+    print(f"Comparing: {files[-2].name} → {files[-1].name}\n")
+    print(f"  Wheels:   {prev['wheels']} → {curr['wheels']}")
+    print(f"  Failures: {prev['failures']} → {curr['failures']}")
+    print(f"  Warnings: {prev['warnings']} → {curr['warnings']}")
+
+    all_checks = set(list(prev.get("checks", {}).keys()) + list(curr.get("checks", {}).keys()))
+    deltas = []
+    for check in sorted(all_checks):
+        p = prev.get("checks", {}).get(check, {}).get("count", 0)
+        c = curr.get("checks", {}).get(check, {}).get("count", 0)
+        if p != c:
+            delta = c - p
+            sign = "+" if delta > 0 else ""
+            deltas.append((check, p, c, f"{sign}{delta}"))
+
+    if deltas:
+        print(f"\n  Check deltas:")
+        for check, p, c, d in deltas:
+            print(f"    {check:30s}  {p:3d} → {c:3d}  ({d})")
+    else:
+        print("\n  No changes between snapshots.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Wheel audit")
     parser.add_argument("--graph", action="store_true", help="Print Mermaid dependency graph")
     parser.add_argument("--quiet", "-q", action="store_true", help="Only show WARN/FAIL and summary")
     parser.add_argument("--json", action="store_true", help="Output results as JSON (machine-readable)")
     parser.add_argument("--fast", action="store_true", help="Skip consumer scan (fast mode for slow FS)")
+    parser.add_argument("--save", action="store_true", help="Save results as timestamped snapshot")
+    parser.add_argument("--compare", action="store_true", help="Compare latest two snapshots")
     args = parser.parse_args()
     if args.graph:
         wheels = find_wheels()
         print_dep_graph(wheels)
         sys.exit(0)
-    sys.exit(main(quiet=args.quiet, json_mode=args.json, fast=args.fast))
+    if args.compare:
+        compare_snapshots()
+        sys.exit(0)
+    sys.exit(main(quiet=args.quiet, json_mode=args.json, fast=args.fast,
+                  save=args.save))

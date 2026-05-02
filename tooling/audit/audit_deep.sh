@@ -38,10 +38,10 @@ LAYER_ISSUES=()
 run_layer() {
     local num="$1" name="$2"
     if [[ -n "$LAYER_FILTER" && "$LAYER_FILTER" != "$num" ]]; then
-        return 0
+        return 1
     fi
     if $QUICK && [[ "$num" -gt 2 ]]; then
-        return 0
+        return 1
     fi
     echo -e "\n${BOLD}=== Layer $num: $name ===${NC}\n"
 }
@@ -209,6 +209,71 @@ if run_layer 4 "Stress tests (accumulation, overflow, saturation)"; then
         echo -e "  Passed: $layer4_pass  Failed: $layer4_fail"
     fi
     TOTAL_ISSUES=$((TOTAL_ISSUES + layer4_fail))
+fi
+
+# ============================================================
+# Layer 5: Cross-wheel API consistency
+# ============================================================
+
+if run_layer 5 "Cross-wheel API consistency"; then
+    layer5_issues=0
+
+    # Check 1: init/deinit symmetry — every _init must have a _deinit
+    echo "  --- init/deinit symmetry ---"
+    for h in wheels/*/*/*.h; do
+        [[ -f "$h" ]] || continue
+        name="$(basename "$h" .h)"
+        dir="$(dirname "$h")"
+        [[ -d "$dir/vendor" ]] && continue
+        has_init=$(grep -c "${name}_init\b" "$h" 2>/dev/null || echo 0)
+        has_deinit=$(grep -c "${name}_deinit\b" "$h" 2>/dev/null || echo 0)
+        if [[ "$has_init" -gt 0 && "$has_deinit" -eq 0 ]]; then
+            echo -e "  ${YELLOW}WARN${NC}  $name: has _init but no _deinit"
+            layer5_issues=$((layer5_issues + 1))
+        fi
+    done
+
+    # Check 2: error type naming — _err_t must be typedef'd enum
+    echo "  --- error type naming ---"
+    for h in wheels/*/*/*.h; do
+        [[ -f "$h" ]] || continue
+        name="$(basename "$h" .h)"
+        dir="$(dirname "$h")"
+        [[ -d "$dir/vendor" ]] && continue
+        has_err_t=$(grep -c "${name}_err_t" "$h" 2>/dev/null || echo 0)
+        if [[ "$has_err_t" -gt 0 ]]; then
+            has_typedef=$(grep -c "typedef enum.*${name}_err_t\|} ${name}_err_t" "$h" 2>/dev/null || echo 0)
+            if [[ "$has_typedef" -eq 0 ]]; then
+                echo -e "  ${YELLOW}WARN${NC}  $name: _err_t not a typedef'd enum"
+                layer5_issues=$((layer5_issues + 1))
+            fi
+        fi
+    done
+
+    # Check 3: include guard vs filename
+    echo "  --- include guard naming ---"
+    for h in wheels/*/*/*.h; do
+        [[ -f "$h" ]] || continue
+        name="$(basename "$h" .h)"
+        dir="$(dirname "$h")"
+        [[ -d "$dir/vendor" ]] && continue
+        expected=$(echo "${name}_H" | tr '[:lower:]' '[:upper:]')
+        if ! grep -q "#ifndef ${expected}\b\|#ifndef ${expected}_$" "$h" 2>/dev/null; then
+            alt=$(head -5 "$h" | grep -oP '#ifndef \K\w+' 2>/dev/null)
+            if [[ -n "$alt" && "$alt" != "$expected" ]]; then
+                echo -e "  ${YELLOW}WARN${NC}  $name: guard is $alt, expected $expected"
+                layer5_issues=$((layer5_issues + 1))
+            fi
+        fi
+    done
+
+    echo ""
+    if [[ $layer5_issues -gt 0 ]]; then
+        echo -e "  ${YELLOW}Layer 5: $layer5_issues consistency issues${NC}"
+    else
+        echo -e "  ${GREEN}Layer 5: all consistent${NC}"
+    fi
+    TOTAL_ISSUES=$((TOTAL_ISSUES + layer5_issues))
 fi
 
 # ============================================================
