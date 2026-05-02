@@ -1,5 +1,5 @@
 /*
- * mcp2515 — SPI CAN bus controller driver
+ * mcp2515 -- SPI CAN bus controller driver for Microchip MCP2515
  *
  * Layer:   L1
  * Status:  candidate

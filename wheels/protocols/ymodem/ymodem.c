@@ -1,5 +1,5 @@
 /*
- * ymodem — YMODEM batch file transfer receiver (passive, byte-fed)
+ * ymodem -- YMODEM batch file transfer receiver with CRC-16 (passive, byte-fed)
  *
  * Layer:   L2
  * Status:  candidate

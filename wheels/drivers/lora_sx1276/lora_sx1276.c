@@ -1,5 +1,5 @@
 /*
- * lora_sx1276 — SPI LoRa radio transceiver driver for SX1276/SX1278
+ * lora_sx1276 -- SPI LoRa radio transceiver driver for Semtech SX1276/SX1278
  *
  * Layer:   L1
  * Status:  candidate

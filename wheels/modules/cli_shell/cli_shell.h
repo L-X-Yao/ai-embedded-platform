@@ -75,16 +75,25 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize shell context. Prints prompt if io is set. */
+/**
+ * Initialize shell context. Prints prompt if io is set.
+ * @thread_safe: no
+ */
 cli_shell_err_t cli_shell_init(cli_shell_t *sh, const cli_shell_io_t *io,
                                const char *prompt);
 
-/** Register a command. Returns ERR_FULL if table is full. */
+/**
+ * Register a command. Returns ERR_FULL if table is full.
+ * @thread_safe: no
+ */
 cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
                                    const char *help,
                                    cli_shell_handler_t handler, void *ctx);
 
-/** Feed one byte (from UART RX ISR or polling loop). */
+/**
+ * Feed one byte (from UART RX ISR or polling loop).
+ * @thread_safe: no
+ */
 void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 
 #ifdef __cplusplus

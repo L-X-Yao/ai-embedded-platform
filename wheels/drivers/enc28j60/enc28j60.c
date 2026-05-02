@@ -1,5 +1,5 @@
 /*
- * enc28j60 — SPI Ethernet controller driver
+ * enc28j60 -- SPI Ethernet controller driver for Microchip ENC28J60
  *
  * Layer:   L1
  * Status:  candidate
