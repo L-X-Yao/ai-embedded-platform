@@ -6,6 +6,20 @@
 Bit-level pack/unpack from byte arrays. MSB-first (big-endian bit numbering):
 bit 0 is the MSB of byte 0. Useful for protocol parsing (CAN, Modbus register
 bit masks, custom telemetry frames) and hardware register manipulation.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -20,6 +34,15 @@ void bitfield_set_bit(uint8_t *data, size_t data_len, size_t bit_index);
 void bitfield_clear_bit(uint8_t *data, size_t data_len, size_t bit_index);
 ```
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -33,37 +56,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **12 C cases** — aligned/unaligned get, 16/32-bit get, aligned/unaligned
   set, roundtrip, single-bit ops, NULL safety, range check, width check, OOB bit ops
 
-## Dependencies
+## API convention deviations
 
-None.
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

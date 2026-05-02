@@ -9,6 +9,25 @@ callback; call `btn_handler_tick()` at a fixed interval (e.g. every 10ms).
 
 Passive design: no OS, no malloc, no timer HW. All timing expressed in tick
 counts -- the caller decides the tick rate.
+
+## Origin
+
+Created 2026-05-01 for high-level button UI patterns in embedded projects.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None (takes a `btn_read_fn` callback, no direct wheel dependency).
+
+Relationship to `gpio_button` (L1): `gpio_button` is a single-button driver with
+built-in debounce and HAL coupling. `button_handler` is a multi-button pattern
+detector that takes any bool-returning read callback -- it can wrap `gpio_button`,
+raw GPIO reads, or anything else.
+
 ## API
 
 ```c
@@ -45,21 +64,13 @@ All timing in tick counts. Example at 10ms tick rate:
 
 Set `repeat_ticks = 0` to disable repeat events.
 
-## Test status
+## Supported platforms
 
-- Unit tests: **24 C cases** -- init, null safety, register, max buttons, press/release,
-  click, double-click, long-press, repeat, debounce rejection, long-press suppresses
-  click, multiple buttons, correct id/event, idle, no buttons, triple click, repeat
-  disabled, timing configuration, callback context passthrough
+- [x] Linux host (sim) -- passed 2026-05-01
 
-## Dependencies
+## Known issues
 
-None (takes a `btn_read_fn` callback, no direct wheel dependency).
-
-Relationship to `gpio_button` (L1): `gpio_button` is a single-button driver with
-built-in debounce and HAL coupling. `button_handler` is a multi-button pattern
-detector that takes any bool-returning read callback -- it can wrap `gpio_button`,
-raw GPIO reads, or anything else.
+None.
 
 ## How to test
 
@@ -69,32 +80,21 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Created 2026-05-01 for high-level button UI patterns in embedded projects.
+- Unit tests: **24 C cases** -- init, null safety, register, max buttons, press/release,
+  click, double-click, long-press, repeat, debounce rejection, long-press suppresses
+  click, multiple buttons, correct id/event, idle, no buttons, triple click, repeat
+  disabled, timing configuration, callback context passthrough
 
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
+## API convention deviations
 
 None.
-
-## Supported platforms
-
-- [x] Linux host (sim) -- passed 2026-05-01
 
 ## API review
 
 - Proposal date: 2026-05-01
 - Reviewer: @user (pending review)
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

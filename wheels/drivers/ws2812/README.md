@@ -4,16 +4,20 @@
 
 Platform-portable WS2812B single-wire LED driver.
 Encodes 8-bit RGB into GRB PWM bit-stream, sends via caller-provided timer HAL.
+
 ## Origin
 
 Extracted from `projects/drone_light/Src/ws2812.c` (N32G003, TIM1 PWM bit-bang).
 Generalized: removed MCU-specific registers, added HAL callback injection and multi-LED support.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+- None (interface dependency: `ws2812_hal_t` timer callbacks provided by caller)
 
 ## API
 
@@ -42,18 +46,6 @@ ws2812_send(&hal, &timing, colors, 3);
 /* Utility: 5-bit to 8-bit brightness scaling (from NCP5623 range) */
 uint8_t r8 = ws2812_scale5to8(15);  /* → 123 */
 ```
-
-## Timing reference
-
-| Clock | period_ticks | t0h_ticks | t1h_ticks |
-|-------|-------------|-----------|-----------|
-| 48 MHz | 59 | 16 | 31 |
-| 72 MHz | 89 | 24 | 47 |
-| 168 MHz | 209 | 56 | 109 |
-
-## Dependencies
-
-- None (interface dependency: `ws2812_hal_t` timer callbacks provided by caller)
 
 ## Supported platforms
 
@@ -91,4 +83,13 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: HAL is `set_compare` + `wait_period` (maps 1:1 to timer register ops); timing is caller-configured (not hardcoded to any clock); color input is 8-bit (not 5-bit — the 5→8 conversion is a utility, not the main path); multi-LED via color array.
 
 ## Responsible human
+
 @user
+
+## Timing reference
+
+| Clock | period_ticks | t0h_ticks | t1h_ticks |
+|-------|-------------|-----------|-----------|
+| 48 MHz | 59 | 16 | 31 |
+| 72 MHz | 89 | 24 | 47 |
+| 168 MHz | 209 | 56 | 109 |

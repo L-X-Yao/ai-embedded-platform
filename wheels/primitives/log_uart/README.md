@@ -4,10 +4,10 @@
 **Layer: L0 (primitives)**
 
 UART output sink for the `log` wheel via HAL function pointer injection. The most common embedded log output path -- wraps a user-provided `write(ctx, data, len)` function into a `log_sink_fn`-compatible adapter. Pure C99, zero dependencies.
+
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Same HAL injection pattern used by all L1 drivers in the platform.
-
 
 ## Why self-written?
 
@@ -64,14 +64,6 @@ int main(void) {
 }
 ```
 
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| HAL binding | Function pointer injection | Same pattern as all L1 drivers; no link-time extern, no platform `#ifdef` |
-| Write signature | `(void *ctx, const uint8_t *data, size_t len)` | Matches typical MCU UART HAL APIs (STM32 HAL, GD32, etc.) |
-| Complexity | Thin wrapper, ~10 lines of logic | Value is standardization and testability, not algorithm |
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-04-30
@@ -110,3 +102,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
+
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| HAL binding | Function pointer injection | Same pattern as all L1 drivers; no link-time extern, no platform `#ifdef` |
+| Write signature | `(void *ctx, const uint8_t *data, size_t len)` | Matches typical MCU UART HAL APIs (STM32 HAL, GD32, etc.) |
+| Complexity | Thin wrapper, ~10 lines of logic | Value is standardization and testability, not algorithm |

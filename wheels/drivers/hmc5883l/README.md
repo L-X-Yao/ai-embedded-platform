@@ -8,6 +8,20 @@ interface, fixed address 0x1E. Configurable gain (0.88-8.1 Ga range) and
 data rate (0.75-75 Hz). Outputs raw counts or Gauss.
 
 Note: data register order is X, Z, Y (not X, Y, Z).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+I2C HAL (injected via callbacks, register-based pattern).
+
 ## API
 
 ```c
@@ -20,6 +34,15 @@ hmc5883l_err_t hmc5883l_read_gauss(hmc5883l_t *dev, hmc5883l_data_t *out);
 ```
 
 HAL: I2C register-based (write_reg/read_regs).
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -34,37 +57,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **8 C cases** — init null, ID check, bad ID, raw read, Gauss
   conversion, different gain, I2C failure, read null
 
-## Dependencies
+## API convention deviations
 
-I2C HAL (injected via callbacks, register-based pattern).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

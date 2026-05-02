@@ -6,16 +6,20 @@
 Attitude and heading reference system using Mahony complementary filter.
 Fuses accelerometer + gyroscope (6-axis) and optionally magnetometer (9-axis).
 Outputs quaternion and Euler angles. Zero hardware dependency — pure math.
+
 ## Origin
 
 Extracted from `projects/flybox/src/app/imu_task.c` (Mahony filter for QMI8658A + QMC5883P).
 Decoupled: task scheduling, sensor drivers, motion detection stay in the project; pure filter algorithm moves to this wheel.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None. Pure C99 + libm (`sqrtf`, `atan2f`, `asinf`, `fabsf`, `copysignf`).
 
 ## API
 
@@ -34,10 +38,6 @@ mahony_ahrs_get_euler(&f, &euler);
 printf("roll=%.1f pitch=%.1f yaw=%.1f\n",
        euler.roll_deg, euler.pitch_deg, euler.yaw_deg);
 ```
-
-## Dependencies
-
-None. Pure C99 + libm (`sqrtf`, `atan2f`, `asinf`, `fabsf`, `copysignf`).
 
 ## Configuration
 
@@ -87,4 +87,5 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: State in struct (not globals) for multi-instance; gyro input in deg/s (matches typical IMU output); mag input optional (zeros = 6-axis fallback); Kp/Ki/freq as config struct; Euler extraction separate from update for callers who only need quaternion.
 
 ## Responsible human
+
 @user

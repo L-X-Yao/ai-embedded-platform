@@ -6,6 +6,20 @@
 ROHM BH1750FVI ambient light sensor driver. **Command-based I2C** (not
 register-based): write command byte, read 2 data bytes. Supports continuous
 and one-time measurement modes at high/low resolution (1 lx / 0.5 lx / 4 lx).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+I2C HAL (injected via callbacks, command-based pattern).
+
 ## API
 
 ```c
@@ -21,6 +35,15 @@ bh1750_err_t bh1750_reset(bh1750_t *dev);
 
 HAL: command-based I2C (write raw bytes, read raw bytes — no register address).
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -34,37 +57,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **8 C cases** — init null, init cmd verification, H-res lux,
   H-res2 lux (0.5x), zero lux, I2C failure, power off/on, read null
 
-## Dependencies
+## API convention deviations
 
-I2C HAL (injected via callbacks, command-based pattern).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

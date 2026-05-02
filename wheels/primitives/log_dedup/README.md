@@ -4,10 +4,10 @@
 **Layer: L0 (primitives)**
 
 Deduplication sink for the `log` wheel. Suppresses consecutive identical log lines (ignoring timestamp differences). When a different line arrives after N repeats, emits `[repeated N times]` summary before forwarding the new line. Pure C99, zero dependencies.
+
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Sensor error loops and periodic status messages commonly produce long runs of identical lines that obscure useful output. This wheel intercepts at the sink level, keeping call sites clean.
-
 
 ## Why self-written?
 
@@ -98,17 +98,6 @@ log_dedup_flush(&g_dedup);
 |--------|---------|---------|
 | `LOG_DEDUP_LINE_MAX` | 256 | Maximum line length for comparison buffer. Lines longer than this are truncated for comparison purposes. |
 
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Comparison | Timestamp-aware: strips `[XXXXXXXX] ` prefix (10 chars) before comparing | Same message at different times should still deduplicate |
-| Buffer | 256-byte fixed line buffer in `log_dedup_t` | Matches `LOG_LINE_BUFSIZE` default in `log` wheel; no heap allocation |
-| Summary format | `[repeated N times]\n` | Matches Linux kernel `dmesg` convention |
-| Flush | Explicit `log_dedup_flush()` before shutdown | Ensures pending repeat count is not lost on system halt |
-| Scope | Consecutive only | Non-consecutive duplicates are not tracked (would require hash table / heap) |
-| Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-04-30
@@ -151,3 +140,14 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
+
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Comparison | Timestamp-aware: strips `[XXXXXXXX] ` prefix (10 chars) before comparing | Same message at different times should still deduplicate |
+| Buffer | 256-byte fixed line buffer in `log_dedup_t` | Matches `LOG_LINE_BUFSIZE` default in `log` wheel; no heap allocation |
+| Summary format | `[repeated N times]\n` | Matches Linux kernel `dmesg` convention |
+| Flush | Explicit `log_dedup_flush()` before shutdown | Ensures pending repeat count is not lost on system halt |
+| Scope | Consecutive only | Non-consecutive duplicates are not tracked (would require hash table / heap) |
+| Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |

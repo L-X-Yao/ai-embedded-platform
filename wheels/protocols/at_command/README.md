@@ -4,6 +4,7 @@
 
 Byte-feed AT command parser with response matching, URC dispatch, and data-mode prompt detection.
 Zero OS dependency — consumer feeds bytes from any UART source, engine emits events.
+
 ## Origin
 
 Extracted from `projects/flybox/src/drivers/air780eg/air780eg_driver.c` — line buffering,
@@ -11,11 +12,14 @@ substring response matching, URC dispatch, `>` prompt detection, and prev-line c
 Stripped all FreeRTOS/RTOS synchronization (consumer handles that), all Air780EG-specific
 commands, and all hardware UART/DMA code.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+- None (interface dependency: `at_command_hal_t` send callback provided by caller)
 
 ## API
 
@@ -59,15 +63,6 @@ at_command_expect(&at, "OK");
 const char *imei = at_command_get_prev_line(&at);
 ```
 
-## Features
-
-- **Response matching**: substring search (matches `+CSQ:` in `+CSQ: 18,0`)
-- **ERROR detection**: any line containing `ERROR` (covers `ERROR`, `+CME ERROR:`, `+CMS ERROR:`)
-- **URC dispatch**: prefix-based callback table (up to `AT_COMMAND_MAX_URCS`, default 16)
-- **Prompt detection**: `>` character for data-mode commands
-- **Prev-line capture**: for commands where response data precedes `OK`
-- **CR stripping**: handles `\r\n` and bare `\n` line endings
-
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
@@ -75,10 +70,6 @@ const char *imei = at_command_get_prev_line(&at);
 | `AT_COMMAND_LINE_SIZE` | 256 | Max line buffer |
 | `AT_COMMAND_MATCH_SIZE` | 256 | Matched/prev-line buffer |
 | `AT_COMMAND_MAX_URCS` | 16 | Max URC handler slots |
-
-## Dependencies
-
-- None (interface dependency: `at_command_hal_t` send callback provided by caller)
 
 ## Supported platforms
 
@@ -117,4 +108,14 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Key decisions**: Byte-feed API (no UART dependency); events instead of semaphores (portable); URC table with prefix matching (not regex); single `expected` register (matches flybox pattern); `prev_line` for multi-line responses; `send_raw` for data-mode payloads.
 
 ## Responsible human
+
 @user
+
+## Features
+
+- **Response matching**: substring search (matches `+CSQ:` in `+CSQ: 18,0`)
+- **ERROR detection**: any line containing `ERROR` (covers `ERROR`, `+CME ERROR:`, `+CMS ERROR:`)
+- **URC dispatch**: prefix-based callback table (up to `AT_COMMAND_MAX_URCS`, default 16)
+- **Prompt detection**: `>` character for data-mode commands
+- **Prev-line capture**: for commands where response data precedes `OK`
+- **CR stripping**: handles `\r\n` and bare `\n` line endings

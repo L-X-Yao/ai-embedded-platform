@@ -7,16 +7,9 @@ Maintains min, max, mean, and population variance over a fixed-size sliding wind
 Caller provides the float storage array. Pure C99, no heap, fully reentrant per-context.
 Different from `moving_average` which only tracks mean (SMA/EMA).
 
-## Why not moving_average?
-
-`moving_average` provides SMA (mean only) and EMA. This wheel adds min, max, and variance
-tracking over the same window, which is needed for signal quality assessment, outlier
-detection, and sensor health monitoring.
-
 ## Origin
 
 Proactive build for sensor data analysis use cases (signal quality, jitter monitoring).
-
 
 ## Why self-written?
 
@@ -82,3 +75,9 @@ None.
 ## Responsible human
 
 @user
+
+## Why not moving_average?
+
+`moving_average` provides SMA (mean only) and EMA. This wheel adds min, max, and variance
+tracking over the same window, which is needed for signal quality assessment, outlier
+detection, and sensor health monitoring.

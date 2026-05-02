@@ -37,15 +37,6 @@ max31865_err_t max31865_clear_fault(max31865_t *dev);
 |--------|---------|---------|
 | (none) | — | All config via `max31865_cfg_t` at runtime |
 
-## Runtime configuration
-
-| Field | Example | Purpose |
-|-------|---------|---------|
-| `r_ref` | 430.0 | Reference resistor value (ohm) |
-| `r_nom` | 100.0 | Nominal RTD resistance at 0C |
-| `wire` | `MAX31865_WIRE_3` | 2/3/4-wire RTD |
-| `filter_50hz` | true | 50Hz vs 60Hz mains rejection |
-
 ## Supported platforms
 
 - [x] Host (sim) — 2026-05-01
@@ -80,3 +71,12 @@ None.
 ## Responsible human
 
 @user
+
+## Runtime configuration
+
+| Field | Example | Purpose |
+|-------|---------|---------|
+| `r_ref` | 430.0 | Reference resistor value (ohm) |
+| `r_nom` | 100.0 | Nominal RTD resistance at 0C |
+| `wire` | `MAX31865_WIRE_3` | 2/3/4-wire RTD |
+| `filter_50hz` | true | 50Hz vs 60Hz mains rejection |

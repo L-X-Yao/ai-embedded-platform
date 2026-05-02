@@ -13,7 +13,6 @@ pure (no side effects, no global state, no malloc).
 Proactive build for embedded math on Cortex-M0/M3 and other cores
 without hardware floating-point.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
@@ -58,16 +57,6 @@ int fp_to_string(fp_t val, char *buf, uint16_t buf_size,
                  uint8_t decimal_places);
 ```
 
-## Constants
-
-| Define     | Value          | Description     |
-|------------|----------------|-----------------|
-| `FP_ONE`   | `0x00010000`   | 1.0 in Q16.16   |
-| `FP_HALF`  | `0x00008000`   | 0.5 in Q16.16   |
-| `FP_PI`    | `205887`       | 3.14159 approx  |
-| `FP_MAX`   | `INT32_MAX`    | Saturated max   |
-| `FP_MIN`   | `INT32_MIN`    | Saturated min   |
-
 ## Supported platforms
 
 - [x] Host (sim) — passed 2026-05-01
@@ -110,3 +99,13 @@ None. Prefix `fp_` follows api-conventions.md naming rules.
 ## Responsible human
 
 @user
+
+## Constants
+
+| Define     | Value          | Description     |
+|------------|----------------|-----------------|
+| `FP_ONE`   | `0x00010000`   | 1.0 in Q16.16   |
+| `FP_HALF`  | `0x00008000`   | 0.5 in Q16.16   |
+| `FP_PI`    | `205887`       | 3.14159 approx  |
+| `FP_MAX`   | `INT32_MAX`    | Saturated max   |
+| `FP_MIN`   | `INT32_MIN`    | Saturated min   |

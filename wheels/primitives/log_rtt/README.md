@@ -4,10 +4,10 @@
 **Layer: L0 (primitives)**
 
 Segger RTT-style output sink for the `log` wheel via HAL injection. Supports channel selection. Does NOT depend on the SEGGER_RTT library -- takes a `write(ctx, channel, data, len)` function pointer that matches `SEGGER_RTT_Write()` semantics. Pure C99, zero dependencies.
+
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. RTT is the second most common embedded debug output after UART, especially during development with J-Link probes.
-
 
 ## Why self-written?
 
@@ -81,15 +81,6 @@ log_rtt_init(&g_rtt_info, rtt_write, NULL, 0);
 log_rtt_init(&g_rtt_perf, rtt_write, NULL, 1);
 ```
 
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| HAL binding | Function pointer injection | No SEGGER_RTT library dependency; testable on host without J-Link |
-| Write signature | `(void *ctx, unsigned channel, const void *data, unsigned len)` | Mirrors `SEGGER_RTT_Write()` for zero-friction integration |
-| Channel | Stored in `log_rtt_t`, set at init | Multiple sinks can target different RTT channels |
-| Return value | `unsigned` (bytes written) | Matches SEGGER convention; sink adapter ignores it |
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-04-30
@@ -128,3 +119,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
+
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| HAL binding | Function pointer injection | No SEGGER_RTT library dependency; testable on host without J-Link |
+| Write signature | `(void *ctx, unsigned channel, const void *data, unsigned len)` | Mirrors `SEGGER_RTT_Write()` for zero-friction integration |
+| Channel | Stored in `log_rtt_t`, set at init | Multiple sinks can target different RTT channels |
+| Return value | `unsigned` (bytes written) | Matches SEGGER convention; sink adapter ignores it |

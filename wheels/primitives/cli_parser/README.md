@@ -6,17 +6,19 @@
 Minimal CLI parser for embedded debug shells. Character-at-a-time feed
 from UART, command table dispatch, built-in help, line editing (backspace).
 Pure C99, zero dependencies, no heap allocation.
-## Features
 
-- Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR
-- Command table: static array of `{name, handler, help}` entries
-- Built-in `help` command lists all registered commands
-- Argument splitting (whitespace-delimited, argc/argv style)
-- Backspace / DEL handling with echo
-- Configurable prompt string
-- Line buffer overflow protection
-- Pure C99, no heap, fully reentrant per-context
-- Output via callback (works with any transport: UART, RTT, USB CDC)
+## Origin
+
+Proactive build for embedded debug shells. Not extracted from a specific project — common pattern across flybox (USART0 debug) and drone_light (development diagnostics).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None. Pure C99 with `<string.h>` and `<stddef.h>` only.
 
 ## API summary
 
@@ -56,28 +58,6 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 | `CLI_LINE_BUFSIZE` | 128 | Max input line length |
 | `CLI_MAX_ARGS` | 8 | Max number of arguments per command |
 
-## Origin
-
-Proactive build for embedded debug shells. Not extracted from a specific project — common pattern across flybox (USART0 debug) and drone_light (development diagnostics).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Dependencies
-
-None. Pure C99 with `<string.h>` and `<stddef.h>` only.
-
-## How to test
-
-```bash
-cd wheels/primitives/cli_parser/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) — passed 2026-04-28
@@ -87,6 +67,14 @@ ctest --test-dir build --output-on-failure
 
 None.
 
+## How to test
+
+```bash
+cd wheels/primitives/cli_parser/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## Test status
 
 - Unit tests: **PASS** (53 assertions across 25 test cases)
@@ -95,6 +83,28 @@ None.
   max args truncation, null safety, feed+enter, backspace, DEL, feed overflow,
   backspace on empty, null commands, CR-only line ending, CRLF sequence,
   control characters ignored
+
+## API review
+
+- Date: 2026-04-28
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR
+- Command table: static array of `{name, handler, help}` entries
+- Built-in `help` command lists all registered commands
+- Argument splitting (whitespace-delimited, argc/argv style)
+- Backspace / DEL handling with echo
+- Configurable prompt string
+- Line buffer overflow protection
+- Pure C99, no heap, fully reentrant per-context
+- Output via callback (works with any transport: UART, RTT, USB CDC)
 
 ## Usage example
 
@@ -149,18 +159,9 @@ void debug_shell_rx(uint8_t byte) {
 | Echo | Enabled by default | Expected for interactive UART; disable by setting write_fn=NULL |
 | Thread safety | Not thread-safe | Callers serialize access (typical: single UART RX context) |
 
-## API review
-
-- Date: 2026-04-28
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 2 real projects use it
 - [ ] Evaluate history support (ring buffer, up/down arrow)
 - [ ] Evaluate tab completion
 - [ ] Real hardware UART test
-
-## Responsible human
-@user

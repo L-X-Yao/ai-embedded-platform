@@ -69,17 +69,6 @@ flash_journal_err_t flash_journal_erase_all(flash_journal_t *jrnl);
 | `FLASH_JOURNAL_MAX_SECTORS` | 64 | Maximum number of sectors supported |
 | `FLASH_JOURNAL_MAX_ENTRY_SIZE` | 256 | Maximum payload size hint (not enforced, sector_size is the real limit) |
 
-## On-flash format
-
-Each entry:
-```
-[magic:4 "JRNL"][seq:4][len:2][payload:len][crc32:4]
-```
-- Header: 10 bytes (magic + sequence number + payload length)
-- Footer: 4 bytes (CRC32 over header + payload)
-- Overhead per entry: 14 bytes
-- All multi-byte fields are little-endian
-
 ## Supported platforms
 
 - [x] Host (sim) -- 2026-05-01
@@ -114,3 +103,14 @@ None.
 ## Responsible human
 
 @user
+
+## On-flash format
+
+Each entry:
+```
+[magic:4 "JRNL"][seq:4][len:2][payload:len][crc32:4]
+```
+- Header: 10 bytes (magic + sequence number + payload length)
+- Footer: 4 bytes (CRC32 over header + payload)
+- Overhead per entry: 14 bytes
+- All multi-byte fields are little-endian

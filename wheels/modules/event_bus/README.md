@@ -6,6 +6,20 @@
 Publish/subscribe event dispatcher for decoupled module communication.
 Passive -- application calls `event_bus_publish()`, all matching subscribers
 are called synchronously in registration order. No heap, no OS.
+
+## Origin
+
+Proactive build for decoupled module communication (2026-05-01).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -25,15 +39,12 @@ event_bus_err_t event_bus_publish(event_bus_t *bus, uint16_t event_id,
 | `EVENT_BUS_MAX_EVENTS` | 16 | Max distinct event types |
 | `EVENT_BUS_MAX_SUBS_PER_EVENT` | 8 | Max subscribers per event |
 
-## Test status
+## Supported platforms
 
-- Unit tests: **15 C cases** -- init, init null, subscribe+publish, multiple
-  subscribers, unsubscribe, no subscribers (silent), max event types, max
-  subscribers per event, data passthrough, NULL params, publish to unregistered
-  event, subscriber context, unsubscribe preserves others, multiple events
-  isolation, null data with zero len
+- [ ] Linux host (sim)
+- [ ] Windows (TDM-GCC)
 
-## Dependencies
+## Known issues
 
 None.
 
@@ -45,33 +56,22 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Proactive build for decoupled module communication (2026-05-01).
+- Unit tests: **15 C cases** -- init, init null, subscribe+publish, multiple
+  subscribers, unsubscribe, no subscribers (silent), max event types, max
+  subscribers per event, data passthrough, NULL params, publish to unregistered
+  event, subscriber context, unsubscribe preserves others, multiple events
+  isolation, null data with zero len
 
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
+## API convention deviations
 
 None.
-
-## Supported platforms
-
-- [ ] Linux host (sim)
-- [ ] Windows (TDM-GCC)
 
 ## API review
 
 - Proposal date: 2026-05-01
 - Reviewer: @user (pending)
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

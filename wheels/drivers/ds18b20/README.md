@@ -6,6 +6,20 @@
 Dallas/Maxim DS18B20 1-Wire digital temperature sensor driver. 12-bit
 resolution (0.0625°C), configurable 9-12 bits. Supports single-device
 (skip ROM) and multi-device (match ROM) buses.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+1-Wire HAL (injected via callbacks).
+
 ## API
 
 ```c
@@ -21,6 +35,15 @@ uint8_t       ds18b20_crc8(const uint8_t *data, size_t len);
 
 HAL: 1-Wire (reset + write_byte + read_byte).
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -34,37 +57,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **9 C cases** — init null, 25°C read, negative temp, 85°C power-on
   default, no device, CRC failure, read ROM, CRC8 known vector, start conversion
 
-## Dependencies
+## API convention deviations
 
-1-Wire HAL (injected via callbacks).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

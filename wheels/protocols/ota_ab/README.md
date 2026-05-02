@@ -6,26 +6,21 @@
 Platform-agnostic A/B firmware slot management for OTA upgrades. Handles slot selection,
 parameter persistence with CRC32 protection, and automatic rollback after N failed boots.
 Flash operations injected via HAL callbacks — no hardware dependency.
+
 ## Origin
 
 Extracted from `projects/flybox/src/app/ota_task.c` + `projects/flybox/src/bsp/internal_flash.c`.
 Decoupled: HTTP download, modem interaction, FreeRTOS task scheduling stay in the project;
 pure slot management logic moves to this wheel.
 
-
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem for existing implementations.
 No suitable zero-dependency C99 library found for this use case.
 
-## Protocol (A/B boot state machine)
+## Dependencies
 
-```
-IDLE ──[mark_pending]──→ PENDING ──[boot_event]──→ SUCCESS (trial)
-                                                       │
-                                          [confirm]────┘──→ IDLE (new active)
-                                          [N boots]────┘──→ IDLE (rollback to old)
-```
+None. Pure C99 with injected flash HAL callbacks.
 
 ## API
 
@@ -56,10 +51,6 @@ jump_to(ota_ab_slot_addr(&m, ota_ab_active_slot(&m)));
 /* App: after confirming new firmware works */
 ota_ab_confirm(&m);
 ```
-
-## Dependencies
-
-None. Pure C99 with injected flash HAL callbacks.
 
 ## Supported platforms
 
@@ -98,4 +89,14 @@ None.
 - **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
 
 ## Responsible human
+
 @user
+
+## Protocol (A/B boot state machine)
+
+```
+IDLE ──[mark_pending]──→ PENDING ──[boot_event]──→ SUCCESS (trial)
+                                                       │
+                                          [confirm]────┘──→ IDLE (new active)
+                                          [N boots]────┘──→ IDLE (rollback to old)
+```

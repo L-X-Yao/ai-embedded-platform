@@ -5,6 +5,20 @@
 
 Common checksum algorithms collection: XOR, 8-bit sum, Fletcher-16, LRC
 (Longitudinal Redundancy Check), and Internet checksum (IP/TCP/UDP).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -15,12 +29,12 @@ uint8_t  checksum_lrc(const uint8_t *data, size_t len);
 uint16_t checksum_internet(const uint8_t *data, size_t len);
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests: **9 C cases** — XOR basic/null, sum8, Fletcher-16 basic/consistent,
-  LRC verify, Internet checksum RFC 1071, odd length, null
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
 
-## Dependencies
+## Known issues
 
 None.
 
@@ -32,33 +46,19 @@ cmake -GNinja -S . -B build && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-## Origin
+## Test status
 
-Proactive build for common embedded components (2026-04-29 batch).
+- Unit tests: **9 C cases** — XOR basic/null, sum8, Fletcher-16 basic/consistent,
+  LRC verify, Internet checksum RFC 1071, odd length, null
 
+## API convention deviations
 
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

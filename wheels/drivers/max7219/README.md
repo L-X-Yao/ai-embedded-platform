@@ -6,6 +6,20 @@
 Maxim MAX7219 LED matrix / 7-segment display driver. SPI interface with
 16-bit shift register (register address + data). Supports 8 digits/rows,
 16-level intensity, BCD and raw decode modes.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+SPI HAL (injected via callbacks).
+
 ## API
 
 ```c
@@ -23,6 +37,15 @@ max7219_err_t max7219_display_test(max7219_t *dev, bool enable);
 
 HAL: SPI (transfer + CS control).
 
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
@@ -36,37 +59,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **10 C cases** — init null, init sequence verification, set digit,
   digit OOB, intensity, intensity clamp, shutdown, clear, SPI failure, scan limit
 
-## Dependencies
+## API convention deviations
 
-SPI HAL (injected via callbacks).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

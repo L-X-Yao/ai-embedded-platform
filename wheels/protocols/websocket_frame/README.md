@@ -6,6 +6,20 @@
 WebSocket frame encoder/decoder (RFC 6455). Stateless frame-level codec —
 does NOT handle HTTP upgrade handshake (use http_parser for that). Supports
 masking, FIN/opcode control, 7/16/64-bit payload lengths.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -18,6 +32,15 @@ websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t
                         const uint8_t *payload, size_t payload_len);
 void     websocket_frame_mask_payload(uint8_t *data, size_t len, const uint8_t mask_key[4]);
 ```
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -32,37 +55,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **11 C cases** — unmasked/masked text parse, ping, close, 16-bit length,
   incomplete, build unmasked/masked, overflow, roundtrip, NULL safety
 
-## Dependencies
+## API convention deviations
 
 None.
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-None.
 
 ## Responsible human
 

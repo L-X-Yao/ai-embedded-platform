@@ -11,6 +11,12 @@ Storage callbacks enable persistence across reboots.
 Passive design: application calls `error_handler_report()` when errors
 occur. No OS, no tasks, no malloc.
 
+## Origin
+
+Proactive build for embedded fault management. Common pattern across
+projects: log errors with severity, trigger recovery on fatal faults,
+persist error history across reboots for post-mortem diagnostics.
+
 ## Why not an open-source library?
 
 Checked common embedded error/fault handling libraries (2026-05-01):
@@ -29,17 +35,9 @@ straightforward (~130 lines) and matches platform conventions exactly.
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Ring buffer storage**: fixed-size circular buffer, oldest records
-  overwritten when full
-- **Severity levels**: INFO, WARNING, ERROR, FATAL
-- **Fatal callback**: application-defined handler invoked on FATAL errors
-- **Persistence**: save/load via pluggable storage callbacks (Flash, EEPROM, etc.)
-- **Lifetime counters**: total errors and total fatals tracked across clears
-- **Context field**: 32-bit arbitrary data per record (register value, address, etc.)
-- **Configurable** via compile-time macro (`ERROR_HANDLER_MAX_RECORDS`)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
 
 ## API summary
 
@@ -84,24 +82,6 @@ uint32_t error_handler_total_fatals(const error_handler_t *eh);
 |-------|---------|-------------|
 | `ERROR_HANDLER_MAX_RECORDS` | 16 | Max error records in ring buffer |
 
-## Origin
-
-Proactive build for embedded fault management. Common pattern across
-projects: log errors with severity, trigger recovery on fatal faults,
-persist error history across reboots for post-mortem diagnostics.
-
-## Dependencies
-
-None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/error_handler/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) -- passed 2026-05-01
@@ -110,6 +90,14 @@ ctest --test-dir build --output-on-failure
 ## Known issues
 
 None.
+
+## How to test
+
+```bash
+cd wheels/modules/error_handler/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
 ## Test status
 
@@ -121,6 +109,28 @@ None.
   index, empty buffer get, max records fill, multiple errors sequence,
   load-on-init, save empty buffer, save after wraparound, report after
   load, save/load null handler
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Ring buffer storage**: fixed-size circular buffer, oldest records
+  overwritten when full
+- **Severity levels**: INFO, WARNING, ERROR, FATAL
+- **Fatal callback**: application-defined handler invoked on FATAL errors
+- **Persistence**: save/load via pluggable storage callbacks (Flash, EEPROM, etc.)
+- **Lifetime counters**: total errors and total fatals tracked across clears
+- **Context field**: 32-bit arbitrary data per record (register value, address, etc.)
+- **Configurable** via compile-time macro (`ERROR_HANDLER_MAX_RECORDS`)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
 ## Usage example
 
@@ -183,18 +193,9 @@ void report_sensor_failure(uint16_t sensor_id) {
 | Thread safety | Not thread-safe | Caller serializes (typical: single error context) |
 | Save format | Linearized array | Simple, portable, no endianness issues at storage level |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Evaluate per-module error filtering
 - [ ] Evaluate error rate limiting
 - [ ] Real hardware persistence test
-
-## Responsible human
-@user

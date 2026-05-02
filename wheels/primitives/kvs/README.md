@@ -5,6 +5,10 @@
 Production-grade KV database over flash. Wear leveling, power-fail safe,
 near-zero RAM. Vendored from armink's FlashDB v2.1.0.
 
+## Origin
+
+Vendor: see VENDOR.md.
+
 ## Why this upstream?
 
 FlashDB is the most widely used embedded KV library in Chinese embedded
@@ -18,15 +22,6 @@ See ADR-010.
 ## Dependencies
 
 - `fal` (L0, concrete, ADR-009) — flash partition management
-
-## Origin
-
-Vendor: see VENDOR.md.
-
-## Supported platforms
-
-- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
-- [ ] GD32F405 (flybox) — FlashDB used in project, wheel not separately HIL tested
 
 ## API
 
@@ -62,33 +57,10 @@ fdb_kv_get_blob(&db, "counter", fdb_blob_make(&blob, &read_val, sizeof(read_val)
 fdb_kv_del(&db, "temp_key");
 ```
 
-## Porting (per-project fdb_cfg.h)
+## Supported platforms
 
-Each project must provide `fdb_cfg.h` on the include path:
-
-```c
-#define FDB_USING_FAL_MODE
-#define FDB_USING_KVDB
-/* #define FDB_USING_TSDB */  /* enable if needed */
-#define FDB_PRINT(...)  printf(__VA_ARGS__)
-```
-
-Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
-
-## API convention deviations
-
-- **No `kvs_` wrapper**: Uses upstream FlashDB API directly (`fdb_kv_set` not `kvs_set`). Wrapping a production-grade API adds confusion for anyone familiar with FlashDB.
-
-## Configuration (compile-time, in fdb_cfg.h)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| `FDB_USING_FAL_MODE` | (must define) | Use FAL for flash access |
-| `FDB_USING_KVDB` | (must define) | Enable KV database |
-| `FDB_USING_TSDB` | (optional) | Enable time-series database |
-| `FDB_KV_NAME_MAX` | 64 | Max key name length |
-| `FDB_WRITE_GRAN` | 1 | Flash write granularity (bits) |
-| `FDB_KV_CACHE_TABLE_SIZE` | 64 | KV lookup cache entries |
+- [x] Host (sim, RAM-backed flash mock) — passed 2026-04-28
+- [ ] GD32F405 (flybox) — FlashDB used in project, wheel not separately HIL tested
 
 ## Known issues
 
@@ -113,10 +85,39 @@ re-init, nonexistent key, 20-key batch, KV iterator.
 - Unit tests (sim): PASS (11 C tests, 42 assertions)
 - HIL: N/A
 
+## API convention deviations
+
+- **No `kvs_` wrapper**: Uses upstream FlashDB API directly (`fdb_kv_set` not `kvs_set`). Wrapping a production-grade API adds confusion for anyone familiar with FlashDB.
+
 ## API review
 
 - **Date**: 2026-04-28
 - **Key decisions**: Vendor FlashDB v2.1.0 (user's production copy) per ADR-010. Use upstream API directly (no wrapper). Concrete dependency on fal wheel per ADR-009. FAL mode only (no file mode). Both KVDB and TSDB vendored, TSDB optional via compile flag.
 
 ## Responsible human
+
 @user
+
+## Porting (per-project fdb_cfg.h)
+
+Each project must provide `fdb_cfg.h` on the include path:
+
+```c
+#define FDB_USING_FAL_MODE
+#define FDB_USING_KVDB
+/* #define FDB_USING_TSDB */  /* enable if needed */
+#define FDB_PRINT(...)  printf(__VA_ARGS__)
+```
+
+Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
+
+## Configuration (compile-time, in fdb_cfg.h)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| `FDB_USING_FAL_MODE` | (must define) | Use FAL for flash access |
+| `FDB_USING_KVDB` | (must define) | Enable KV database |
+| `FDB_USING_TSDB` | (optional) | Enable time-series database |
+| `FDB_KV_NAME_MAX` | 64 | Max key name length |
+| `FDB_WRITE_GRAN` | 1 | Flash write granularity (bits) |
+| `FDB_KV_CACHE_TABLE_SIZE` | 64 | KV lookup cache entries |

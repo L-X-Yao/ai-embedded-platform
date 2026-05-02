@@ -6,11 +6,11 @@
 Simple, fast, no-table FNV-1a hash for hash maps, checksums, and string
 hashing. Provides both 32-bit and 64-bit variants with one-shot, string,
 and incremental (streaming) APIs.
+
 ## Origin
 
 Proactive build for hash map key hashing, string deduplication, and fast
 non-cryptographic checksums across wheels and projects.
-
 
 ## Why self-written?
 
@@ -73,14 +73,6 @@ cmake -GNinja -S . -B build && cmake --build build
 - Streaming equivalence: segmented input matches one-shot
 - HIL: N/A (pure compute)
 
-## Performance reference
-
-- Time complexity: O(n), 1 XOR + 1 multiply per byte
-- ROM footprint: ~120 bytes code (no lookup table)
-- Stack usage: < 16 bytes
-- Suitable for MCUs with no hardware multiplier (multiply is software but
-  still fast for typical key lengths)
-
 ## API convention deviations
 
 None. Function naming `fnv1a_<width>[_verb]` follows api-conventions.md.
@@ -94,3 +86,11 @@ None. Function naming `fnv1a_<width>[_verb]` follows api-conventions.md.
 ## Responsible human
 
 @user
+
+## Performance reference
+
+- Time complexity: O(n), 1 XOR + 1 multiply per byte
+- ROM footprint: ~120 bytes code (no lookup table)
+- Stack usage: < 16 bytes
+- Suitable for MCUs with no hardware multiplier (multiply is software but
+  still fast for typical key lengths)

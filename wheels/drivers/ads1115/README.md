@@ -6,6 +6,20 @@
 TI ADS1115 16-bit 4-channel delta-sigma ADC driver. I2C register-based
 interface. Supports single-shot mode, configurable PGA gain (6.144V to
 0.256V FSR), mux channel selection (4 single-ended or 2 differential).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+I2C HAL (injected via callbacks).
+
 ## API
 
 ```c
@@ -17,6 +31,15 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw);
 ads1115_err_t ads1115_read_voltage(ads1115_t *dev, float *voltage_mv);
 ads1115_err_t ads1115_set_channel(ads1115_t *dev, ads1115_mux_t mux);
 ```
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -31,37 +54,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **8 C cases** — init null, raw read positive/negative, voltage conversion,
   half-scale, I2C failure, set channel, config bit verification
 
-## Dependencies
+## API convention deviations
 
-I2C HAL (injected via callbacks).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

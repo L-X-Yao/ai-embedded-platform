@@ -8,6 +8,12 @@ validation, and storage callbacks. Passive design: application defines
 config entries at startup, gets/sets values with automatic type and
 range checking, and decides when to persist via save/load.
 
+## Origin
+
+Common pattern across embedded projects: device configuration with
+typed parameters, factory defaults, runtime validation, and persistent
+storage. Extracted as a reusable module to avoid per-project reimplementation.
+
 ## Why not an open-source library?
 
 Checked common embedded config/settings libraries (2026-05-01):
@@ -25,19 +31,10 @@ validation, and callback-injected persistence is straightforward
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Typed entries**: int32, uint32, float, bool, string
-- **Defaults**: each entry has a compile-time default value
-- **Range validation**: numeric types checked on set (min/max)
-- **Type safety**: set/get with wrong type returns ERR_TYPE
-- **Modified flag**: tracks whether current differs from default
-- **Storage callbacks**: save/load via injected function pointers
-  (wire to kvs, flash, EEPROM, or any backend)
-- **Passive**: no auto-save, caller decides when to persist
-- **Reset to defaults**: one call restores all entries
-- **Configurable** via compile-time macros (max entries, string size)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<stdbool.h>`, `<stddef.h>`, `<stdint.h>`,
+`<string.h>` only.
 
 ## API summary
 
@@ -84,37 +81,6 @@ uint8_t config_store_count(cs);
 | `CONFIG_STORE_MAX_ENTRIES` | 16 | Max config entries per store |
 | `CONFIG_STORE_STRING_SIZE` | 32 | Max string value length (bytes) |
 
-## Error codes
-
-| Code | Value | Meaning |
-|------|-------|---------|
-| `CONFIG_STORE_OK` | 0 | Success |
-| `CONFIG_STORE_ERR_PARAMS` | -1 | NULL pointer or invalid argument |
-| `CONFIG_STORE_ERR_FULL` | -2 | Max entries reached |
-| `CONFIG_STORE_ERR_NOT_FOUND` | -3 | Key not defined |
-| `CONFIG_STORE_ERR_TYPE` | -4 | Type mismatch (e.g., set_int on float key) |
-| `CONFIG_STORE_ERR_RANGE` | -5 | Value outside min/max range |
-| `CONFIG_STORE_ERR_STORAGE` | -6 | Storage callback failed or not set |
-
-## Origin
-
-Common pattern across embedded projects: device configuration with
-typed parameters, factory defaults, runtime validation, and persistent
-storage. Extracted as a reusable module to avoid per-project reimplementation.
-
-## Dependencies
-
-None. Pure C99 with `<stdbool.h>`, `<stddef.h>`, `<stdint.h>`,
-`<string.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/config_store/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Windows host (sim) -- passed 2026-05-01
@@ -123,6 +89,14 @@ ctest --test-dir build --output-on-failure
 ## Known issues
 
 None.
+
+## How to test
+
+```bash
+cd wheels/modules/config_store/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
 ## Test status
 
@@ -135,6 +109,42 @@ None.
   reset defaults, NULL parameter validation (define/get/set),
   string length overflow (define/set), count null, reset/save/load null,
   load updates modified flag, multiple entries independence
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Typed entries**: int32, uint32, float, bool, string
+- **Defaults**: each entry has a compile-time default value
+- **Range validation**: numeric types checked on set (min/max)
+- **Type safety**: set/get with wrong type returns ERR_TYPE
+- **Modified flag**: tracks whether current differs from default
+- **Storage callbacks**: save/load via injected function pointers
+  (wire to kvs, flash, EEPROM, or any backend)
+- **Passive**: no auto-save, caller decides when to persist
+- **Reset to defaults**: one call restores all entries
+- **Configurable** via compile-time macros (max entries, string size)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
+
+## Error codes
+
+| Code | Value | Meaning |
+|------|-------|---------|
+| `CONFIG_STORE_OK` | 0 | Success |
+| `CONFIG_STORE_ERR_PARAMS` | -1 | NULL pointer or invalid argument |
+| `CONFIG_STORE_ERR_FULL` | -2 | Max entries reached |
+| `CONFIG_STORE_ERR_NOT_FOUND` | -3 | Key not defined |
+| `CONFIG_STORE_ERR_TYPE` | -4 | Type mismatch (e.g., set_int on float key) |
+| `CONFIG_STORE_ERR_RANGE` | -5 | Value outside min/max range |
+| `CONFIG_STORE_ERR_STORAGE` | -6 | Storage callback failed or not set |
 
 ## Usage example
 
@@ -195,18 +205,9 @@ void config_factory_reset(void) {
 | Key lookup | Linear scan | Simple, O(n) is fine for <= 16 entries |
 | Thread safety | Not thread-safe | Caller serializes (typical: single config context) |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Wire to kvs wheel for flash persistence
 - [ ] Evaluate iterator/foreach API
 - [ ] Real hardware test
-
-## Responsible human
-@user

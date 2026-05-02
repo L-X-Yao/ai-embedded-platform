@@ -13,6 +13,13 @@ This is the first L3 wheel. It composes concepts from L0 (cli_parser
 pattern: tokenization, line editing) but is self-contained with no
 `#include` dependencies on other wheels.
 
+## Origin
+
+Proactive build for embedded debug shells. Common pattern across
+projects: UART-connected debug console with modular command registration.
+cli_parser provided the L0 foundation; this L3 module adds dynamic
+registration and quoted argument support.
+
 ## Why not an open-source library?
 
 Checked common embedded CLI libraries (2026-05-01):
@@ -29,19 +36,9 @@ platform conventions exactly.
 **Conclusion**: no suitable open-source implementation. Self-contained
 wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Passive design**: `cli_shell_feed()` processes one byte at a time
-- **Dynamic command registration**: `cli_shell_register()` at runtime
-- **Built-in help**: auto-registered, lists all commands with descriptions
-- **Quoted arguments**: `log "hello world"` parses as argc=2
-- **Backspace / DEL handling** with terminal echo
-- **Echo**: input bytes echoed back for interactive terminal use
-- **CRLF handling**: `\r\n`, `\r`, `\n` all treated as single newline
-- **Unknown command feedback**: prints error + suggests "help"
-- **Line overflow protection**: silently drops chars beyond buffer limit
-- **Configurable** via compile-time macros (line size, max args, max cmds)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
 
 ## API summary
 
@@ -77,6 +74,58 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 | `CLI_SHELL_MAX_ARGS` | 8 | Max arguments per command |
 | `CLI_SHELL_MAX_CMDS` | 16 | Max registered commands (including help) |
 
+## Supported platforms
+
+- [x] Linux / Windows host (sim) -- passed 2026-05-01
+- [ ] ARM Cortex-M -- not yet verified (no hardware dependency expected)
+
+## Known issues
+
+None.
+
+## How to test
+
+```bash
+cd wheels/modules/cli_shell/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Test status
+
+- Unit tests: **PASS** (26 test cases, 0 failures)
+- Coverage: init (valid/null/prompt), register+call, argc/argv correctness,
+  multi-arg commands, built-in help, unknown command feedback, empty line,
+  backspace, line overflow, sequential commands, max commands (ERR_FULL),
+  echo, quoted arguments, CRLF/CR/LF handling, re-init reset,
+  null parameter validation, control char filtering, DEL key,
+  handler I/O write, whitespace-only input, handler context passing,
+  multiple quoted arguments
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Passive design**: `cli_shell_feed()` processes one byte at a time
+- **Dynamic command registration**: `cli_shell_register()` at runtime
+- **Built-in help**: auto-registered, lists all commands with descriptions
+- **Quoted arguments**: `log "hello world"` parses as argc=2
+- **Backspace / DEL handling** with terminal echo
+- **Echo**: input bytes echoed back for interactive terminal use
+- **CRLF handling**: `\r\n`, `\r`, `\n` all treated as single newline
+- **Unknown command feedback**: prints error + suggests "help"
+- **Line overflow protection**: silently drops chars beyond buffer limit
+- **Configurable** via compile-time macros (line size, max args, max cmds)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
+
 ## Differences from cli_parser (L0)
 
 | Aspect | cli_parser (L0) | cli_shell (L3) |
@@ -91,45 +140,6 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 cli_shell is designed for applications that need runtime command
 registration (e.g., each module registers its own debug commands at
 startup). cli_parser is for simpler cases with a fixed command table.
-
-## Origin
-
-Proactive build for embedded debug shells. Common pattern across
-projects: UART-connected debug console with modular command registration.
-cli_parser provided the L0 foundation; this L3 module adds dynamic
-registration and quoted argument support.
-
-## Dependencies
-
-None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/cli_shell/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-## Supported platforms
-
-- [x] Linux / Windows host (sim) -- passed 2026-05-01
-- [ ] ARM Cortex-M -- not yet verified (no hardware dependency expected)
-
-## Known issues
-
-None.
-
-## Test status
-
-- Unit tests: **PASS** (26 test cases, 0 failures)
-- Coverage: init (valid/null/prompt), register+call, argc/argv correctness,
-  multi-arg commands, built-in help, unknown command feedback, empty line,
-  backspace, line overflow, sequential commands, max commands (ERR_FULL),
-  echo, quoted arguments, CRLF/CR/LF handling, re-init reset,
-  null parameter validation, control char filtering, DEL key,
-  handler I/O write, whitespace-only input, handler context passing,
-  multiple quoted arguments
 
 ## Usage example
 
@@ -191,18 +201,9 @@ void debug_shell_rx(uint8_t byte) {
 | Thread safety | Not thread-safe | Caller serializes (typical: single RX context) |
 | Max commands | Compile-time array | No malloc, predictable memory footprint |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Evaluate history support (up/down arrow)
 - [ ] Evaluate tab completion
 - [ ] Real hardware UART test
-
-## Responsible human
-@user

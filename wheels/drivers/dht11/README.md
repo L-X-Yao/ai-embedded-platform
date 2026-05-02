@@ -6,6 +6,20 @@
 DHT11 temperature and humidity sensor driver. Single-wire protocol:
 host pulls low 18ms, sensor responds with 40 bits (2 bytes humidity +
 2 bytes temperature + 1 byte checksum).
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+GPIO HAL (injected via callbacks).
+
 ## API
 
 ```c
@@ -16,6 +30,15 @@ dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out);
 ```
 
 HAL: GPIO direction control + pin read/write + microsecond delay.
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -30,37 +53,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **7 C cases** — init null/missing callback, normal read, high humidity,
   zero values, checksum failure, read null
 
-## Dependencies
+## API convention deviations
 
-GPIO HAL (injected via callbacks).
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 

@@ -12,6 +12,12 @@ display or telemetry payloads.
 
 No persistence -- caller saves/loads boot_count via kvs or similar.
 
+## Origin
+
+Proactive build for embedded device telemetry and debug. Common pattern
+across projects: report firmware version, serial number, uptime, and
+boot count via CLI or telemetry channel. Extracted as reusable module.
+
 ## Why not an open-source library?
 
 No existing embedded "device info" library found that meets our wheel
@@ -21,16 +27,9 @@ simple and platform-specific to warrant a dependency. ~110 lines of C.
 
 **Conclusion**: self-contained wheel with zero dependencies.
 
-## Features
+## Dependencies
 
-- **Passive design**: no tasks, no timers, no malloc
-- **String fields**: firmware version, hardware version, serial number, build date, device name
-- **Runtime counters**: uptime (tick-based), boot count, reset reason
-- **Overflow protection**: long strings truncated with ERR_OVERFLOW return
-- **Format output**: `device_info_format()` produces key=value text for CLI/telemetry
-- **NULL safety**: all API functions guard against NULL pointers
-- **Configurable**: `DEVICE_INFO_STR_SIZE` compile-time macro (default 32)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
 
 ## API summary
 
@@ -65,24 +64,6 @@ int device_info_format(const device_info_t *info, char *buf, uint16_t buf_size);
 |-------|---------|-------------|
 | `DEVICE_INFO_STR_SIZE` | 32 | Max length of each string field (including NUL) |
 
-## Origin
-
-Proactive build for embedded device telemetry and debug. Common pattern
-across projects: report firmware version, serial number, uptime, and
-boot count via CLI or telemetry channel. Extracted as reusable module.
-
-## Dependencies
-
-None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
-
-## How to test
-
-```bash
-cd wheels/modules/device_info/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
 ## Supported platforms
 
 - [x] Linux / Windows host (sim) -- passed 2026-05-01
@@ -91,6 +72,14 @@ ctest --test-dir build --output-on-failure
 ## Known issues
 
 None.
+
+## How to test
+
+```bash
+cd wheels/modules/device_info/test
+cmake -GNinja -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
 ## Test status
 
@@ -102,6 +91,27 @@ None.
   format NULL params, empty fields format, set same field twice, tick/
   get_uptime/set_boot_count/set_reset_reason NULL safety, exact-fit
   string, format byte count matches strlen
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user
+
+## Features
+
+- **Passive design**: no tasks, no timers, no malloc
+- **String fields**: firmware version, hardware version, serial number, build date, device name
+- **Runtime counters**: uptime (tick-based), boot count, reset reason
+- **Overflow protection**: long strings truncated with ERR_OVERFLOW return
+- **Format output**: `device_info_format()` produces key=value text for CLI/telemetry
+- **NULL safety**: all API functions guard against NULL pointers
+- **Configurable**: `DEVICE_INFO_STR_SIZE` compile-time macro (default 32)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
 ## Usage example
 
@@ -145,17 +155,8 @@ void cmd_info(void) {
 | Overflow | Truncate + return ERR | Caller can detect and handle or ignore |
 | Thread safety | Not thread-safe | Caller serializes (typical: single init + periodic tick) |
 
-## API review
-
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
-
 ## Before promoting to stable
 
 - [ ] At least 1 real project uses it
 - [ ] Evaluate adding custom field support
 - [ ] Real hardware test
-
-## Responsible human
-@user

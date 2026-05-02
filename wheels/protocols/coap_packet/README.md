@@ -6,6 +6,20 @@
 CoAP message encoder/decoder (RFC 7252). Stateless packet-level codec for
 CoAP over UDP. Supports CON/NON/ACK/RST message types, delta-encoded options,
 payload marker, and token up to 8 bytes.
+
+## Origin
+
+Proactive build for common embedded components (2026-04-29 batch).
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem for existing implementations.
+No suitable zero-dependency C99 library found for this use case.
+
+## Dependencies
+
+None.
+
 ## API
 
 ```c
@@ -18,6 +32,21 @@ coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_le
                       const coap_packet_option_t *options, int option_count,
                       const uint8_t *payload, size_t payload_len);
 ```
+
+## Configuration macros
+
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `COAP_MAX_OPTIONS` | 8 | Maximum number of CoAP options per packet |
+
+## Supported platforms
+
+- [x] Linux host (sim) — passed 2026-04-29
+- [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -32,43 +61,14 @@ ctest --test-dir build --output-on-failure
 - Unit tests: **10 C cases** — CON GET parse, payload parse, ACK empty, bad version,
   incomplete, build GET, build with payload, overflow, multi-option roundtrip, NULL safety
 
-## Dependencies
+## API convention deviations
 
-None.
-
-## Origin
-
-Proactive build for common embedded components (2026-04-29 batch).
-
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem for existing implementations.
-No suitable zero-dependency C99 library found for this use case.
-
-## Configuration macros
-
-| Macro | Default | Description |
-|-------|---------|-------------|
-| `COAP_MAX_OPTIONS` | 8 | Maximum number of CoAP options per packet |
-
-## Known issues
-
-None.
-
-## Supported platforms
-
-- [x] Linux host (sim) — passed 2026-04-29
-- [x] Windows (TDM-GCC) — passed 2026-04-29
+无。
 
 ## API review
 
 - 提案日期：2026-04-29
 - 审批人：@user（批量生成，待审）
-
-## API convention deviations
-
-无。
 
 ## Responsible human
 
