@@ -84,15 +84,20 @@ pb_err_t pb_encode_varint(pb_encoder_t *enc, uint8_t field_num, uint64_t value)
 
 pb_err_t pb_encode_sint32(pb_encoder_t *enc, uint8_t field_num, int32_t value)
 {
-    /* ZigZag: (n << 1) ^ (n >> 31) */
-    uint32_t zz = (uint32_t)((value << 1) ^ (value >> 31));
+    /* ZigZag encoding: cast to unsigned first to avoid UB on left-shift of
+     * negative signed integers (C99 6.5.7p4). Arithmetic right-shift of signed
+     * int is implementation-defined but universally sign-extends on all targets
+     * we care about; the cast-then-shift approach is fully defined. */
+    uint32_t uv = (uint32_t)value;
+    uint32_t zz = (uv << 1) ^ (uint32_t)(value >> 31);
     return pb_encode_varint(enc, field_num, zz);
 }
 
 pb_err_t pb_encode_sint64(pb_encoder_t *enc, uint8_t field_num, int64_t value)
 {
-    /* ZigZag: (n << 1) ^ (n >> 63) */
-    uint64_t zz = (uint64_t)((value << 1) ^ (value >> 63));
+    /* ZigZag: cast to unsigned for left-shift to avoid UB. */
+    uint64_t uv = (uint64_t)value;
+    uint64_t zz = (uv << 1) ^ (uint64_t)(value >> 63);
     return pb_encode_varint(enc, field_num, zz);
 }
 
