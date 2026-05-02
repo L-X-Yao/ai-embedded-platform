@@ -41,7 +41,7 @@ typedef enum {
  * @param out       Output buffer for NUL-terminated hex string.
  * @param out_size  Size of output buffer (must be >= data_len*2 + 1).
  * @return          HEX_OK on success, HEX_ERR_PARAM or HEX_ERR_OVERFLOW.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 hex_err_t hex_encode(const uint8_t *data, uint16_t data_len,
                      char *out, uint16_t out_size);
@@ -54,7 +54,7 @@ hex_err_t hex_encode(const uint8_t *data, uint16_t data_len,
  * @param out       Output buffer for NUL-terminated hex string.
  * @param out_size  Size of output buffer (must be >= data_len*2 + 1).
  * @return          HEX_OK on success, HEX_ERR_PARAM or HEX_ERR_OVERFLOW.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 hex_err_t hex_encode_upper(const uint8_t *data, uint16_t data_len,
                            char *out, uint16_t out_size);
@@ -70,20 +70,20 @@ hex_err_t hex_encode_upper(const uint8_t *data, uint16_t data_len,
  * @param out_len   On input: buffer size.  On output: bytes written.
  * @return          HEX_OK, HEX_ERR_PARAM, HEX_ERR_ODD_LENGTH,
  *                  HEX_ERR_OVERFLOW, or HEX_ERR_INVALID.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 hex_err_t hex_decode(const char *hex, uint16_t hex_len,
                      uint8_t *out, uint16_t *out_len);
 
 /**
  * Calculate encoded hex string length (excluding NUL terminator).
- * @thread_safe: yes (pure function)
+ * @thread_safe: yes (pure function) @isr_safe: yes
  */
 uint16_t hex_encoded_size(uint16_t data_len);
 
 /**
  * Calculate decoded binary length from hex string length.
- * @thread_safe: yes (pure function)
+ * @thread_safe: yes (pure function) @isr_safe: yes
  */
 uint16_t hex_decoded_size(uint16_t hex_len);
 
@@ -93,7 +93,7 @@ uint16_t hex_decoded_size(uint16_t hex_len);
  * @param nibble     Value 0-15.  Values >15 are masked to low 4 bits.
  * @param uppercase  true for 'A'-'F', false for 'a'-'f'.
  * @return           Hex character.
- * @thread_safe: yes (pure function)
+ * @thread_safe: yes (pure function) @isr_safe: yes
  */
 char hex_nibble_to_char(uint8_t nibble, bool uppercase);
 
@@ -102,7 +102,7 @@ char hex_nibble_to_char(uint8_t nibble, bool uppercase);
  *
  * @param c  Hex character ('0'-'9', 'a'-'f', 'A'-'F').
  * @return   0-15 on success, -1 on invalid character.
- * @thread_safe: yes (pure function)
+ * @thread_safe: yes (pure function) @isr_safe: yes
  */
 int hex_char_to_nibble(char c);
 

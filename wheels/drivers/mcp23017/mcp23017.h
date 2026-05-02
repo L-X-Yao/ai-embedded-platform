@@ -47,39 +47,39 @@ typedef struct {
 } mcp23017_t;
 
 /** Initialize device and reset all registers to defaults.
- *  dev_addr must be in range 0x20..0x27. @thread_safe: no */
+ *  dev_addr must be in range 0x20..0x27. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
                              uint8_t dev_addr);
 
-/** Set I/O direction for a port. 1=input, 0=output. @thread_safe: no */
+/** Set I/O direction for a port. 1=input, 0=output. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_set_direction(mcp23017_t *dev, mcp23017_port_t port,
                                       uint8_t mask);
 
-/** Enable/disable internal 100k pullups. 1=enabled. @thread_safe: no */
+/** Enable/disable internal 100k pullups. 1=enabled. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_set_pullup(mcp23017_t *dev, mcp23017_port_t port,
                                    uint8_t mask);
 
-/** Write all 8 pins of a port at once. @thread_safe: no */
+/** Write all 8 pins of a port at once. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_write_port(mcp23017_t *dev, mcp23017_port_t port,
                                    uint8_t value);
 
-/** Read all 8 pins of a port at once. @thread_safe: no */
+/** Read all 8 pins of a port at once. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_read_port(mcp23017_t *dev, mcp23017_port_t port,
                                   uint8_t *value);
 
-/** Write a single pin (0-7) via read-modify-write on OLAT. @thread_safe: no */
+/** Write a single pin (0-7) via read-modify-write on OLAT. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_write_pin(mcp23017_t *dev, mcp23017_port_t port,
                                   uint8_t pin, bool level);
 
-/** Read a single pin (0-7). @thread_safe: no */
+/** Read a single pin (0-7). @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_read_pin(mcp23017_t *dev, mcp23017_port_t port,
                                  uint8_t pin, bool *level);
 
-/** Set interrupt-on-change enable mask (GPINTEN). @thread_safe: no */
+/** Set interrupt-on-change enable mask (GPINTEN). @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_set_interrupt(mcp23017_t *dev, mcp23017_port_t port,
                                       uint8_t mask);
 
-/** Read interrupt flag register (INTF). @thread_safe: no */
+/** Read interrupt flag register (INTF). @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_read_interrupt_flag(mcp23017_t *dev,
                                             mcp23017_port_t port,
                                             uint8_t *flags);

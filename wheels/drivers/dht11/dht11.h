@@ -50,10 +50,10 @@ typedef struct {
     uint8_t temperature_dec;  /* temperature decimal part */
 } dht11_data_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 dht11_err_t dht11_init(dht11_t *dev, const dht11_gpio_t *gpio);
 
-/** Read temperature and humidity from sensor. @thread_safe: no */
+/** Read temperature and humidity from sensor. @thread_safe: no @isr_safe: no */
 dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out);
 
 #ifdef __cplusplus

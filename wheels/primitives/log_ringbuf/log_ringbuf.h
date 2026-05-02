@@ -27,36 +27,36 @@ typedef struct {
     uint32_t dropped_lines;
 } log_ringbuf_t;
 
-/* @thread_safe: no — call from single context or protect externally */
+/* @thread_safe: no — call from single context or protect externally @isr_safe: no */
 void log_ringbuf_init(log_ringbuf_t *rb, uint8_t *buf, size_t capacity);
 
-/* @thread_safe: no */
+/* @thread_safe: no @isr_safe: yes */
 void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len);
 
 /* Sink adapter: compatible with log_sink_fn signature.
  * Pass log_ringbuf_t* as ctx when registering via log_add_sink().
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 void log_ringbuf_sink(void *ctx, const char *line, size_t len);
 
 /* Read the entire buffer content into dst. Returns bytes written.
  * Output is oldest-first, newline-separated.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 size_t log_ringbuf_read(const log_ringbuf_t *rb, char *dst, size_t dst_size);
 
 /* Return number of bytes currently stored.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 size_t log_ringbuf_used(const log_ringbuf_t *rb);
 
 /* Return total lines ever written (including dropped).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t log_ringbuf_total(const log_ringbuf_t *rb);
 
 /* Return lines dropped due to buffer full.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t log_ringbuf_dropped(const log_ringbuf_t *rb);
 
 /* Clear all stored data. Counters (total/dropped) are preserved.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 void log_ringbuf_clear(log_ringbuf_t *rb);
 
 #ifdef __cplusplus

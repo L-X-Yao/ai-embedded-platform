@@ -45,28 +45,28 @@ typedef struct {
     volatile size_t tail;
 } event_queue_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 event_queue_err_t event_queue_init(event_queue_t *q, event_t *buf, size_t capacity);
 
-/** @thread_safe: single-producer safe (can call from ISR) */
+/** @thread_safe: single-producer safe (can call from ISR) @isr_safe: yes */
 event_queue_err_t event_queue_push(event_queue_t *q, uint16_t type, uint32_t data);
 
-/** @thread_safe: single-consumer safe (call from main loop) */
+/** @thread_safe: single-consumer safe (call from main loop) @isr_safe: yes */
 event_queue_err_t event_queue_pop(event_queue_t *q, event_t *out);
 
-/** @thread_safe: yes (read only) */
+/** @thread_safe: yes (read only) @isr_safe: yes */
 event_queue_err_t event_queue_peek(const event_queue_t *q, event_t *out);
 
-/** @thread_safe: yes (read only) */
+/** @thread_safe: yes (read only) @isr_safe: yes */
 size_t event_queue_count(const event_queue_t *q);
 
-/** @thread_safe: yes (read only) */
+/** @thread_safe: yes (read only) @isr_safe: yes */
 bool event_queue_is_empty(const event_queue_t *q);
 
-/** @thread_safe: yes (read only) */
+/** @thread_safe: yes (read only) @isr_safe: yes */
 bool event_queue_is_full(const event_queue_t *q);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 event_queue_err_t event_queue_clear(event_queue_t *q);
 
 #ifdef __cplusplus

@@ -39,32 +39,32 @@ typedef struct {
     uint16_t count;     /* current number of elements       */
 } fifo_queue_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
                            uint16_t capacity, uint16_t elem_size);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 fifo_queue_err_t fifo_queue_push(fifo_queue_t *q, const void *item);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 fifo_queue_err_t fifo_queue_pop(fifo_queue_t *q, void *item);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 fifo_queue_err_t fifo_queue_peek(const fifo_queue_t *q, void *item);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 uint16_t fifo_queue_count(const fifo_queue_t *q);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 uint16_t fifo_queue_free(const fifo_queue_t *q);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bool fifo_queue_is_empty(const fifo_queue_t *q);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bool fifo_queue_is_full(const fifo_queue_t *q);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 void fifo_queue_clear(fifo_queue_t *q);
 
 #ifdef __cplusplus

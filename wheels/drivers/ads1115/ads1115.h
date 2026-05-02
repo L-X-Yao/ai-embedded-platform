@@ -87,17 +87,17 @@ typedef struct {
 #define ADS1115_ADDR_SDA  0x4A
 #define ADS1115_ADDR_SCL  0x4B
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
                            const ads1115_cfg_t *cfg);
 
-/** Read raw 16-bit ADC value from configured channel. @thread_safe: caller_must_lock */
+/** Read raw 16-bit ADC value from configured channel. @thread_safe: caller_must_lock @isr_safe: no */
 ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw);
 
-/** Read ADC value converted to millivolts using PGA setting. @thread_safe: caller_must_lock */
+/** Read ADC value converted to millivolts using PGA setting. @thread_safe: caller_must_lock @isr_safe: yes */
 ads1115_err_t ads1115_read_voltage(ads1115_t *dev, float *voltage_mv);
 
-/** Set input mux channel for next conversion. @thread_safe: caller_must_lock */
+/** Set input mux channel for next conversion. @thread_safe: caller_must_lock @isr_safe: yes */
 ads1115_err_t ads1115_set_channel(ads1115_t *dev, ads1115_mux_t mux);
 
 #ifdef __cplusplus

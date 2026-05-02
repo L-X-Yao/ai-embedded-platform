@@ -34,25 +34,25 @@ typedef struct {
     uint32_t            total_suppressed;
 } log_dedup_t;
 
-/* @thread_safe: no — call during init */
+/* @thread_safe: no — call during init @isr_safe: no */
 void log_dedup_init(log_dedup_t *d, log_dedup_output_fn inner_fn, void *inner_ctx);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Suppresses consecutive identical lines. When a new different line
  * arrives after N repeats, emits "[repeated N times]" before the new line.
- * @thread_safe: no (modifies last_line state) */
+ * @thread_safe: no (modifies last_line state) @isr_safe: yes */
 void log_dedup_sink(void *ctx, const char *line, size_t len);
 
 /* Flush pending repeat count (call before shutdown).
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 void log_dedup_flush(log_dedup_t *d);
 
 /* Teardown: flush pending repeats and clear state.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: no */
 void log_dedup_deinit(log_dedup_t *d);
 
 /* Return total lines suppressed since init.
- * @thread_safe: no */
+ * @thread_safe: no @isr_safe: yes */
 uint32_t log_dedup_suppressed(const log_dedup_t *d);
 
 #ifdef __cplusplus

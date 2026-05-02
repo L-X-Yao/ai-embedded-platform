@@ -53,28 +53,28 @@ typedef struct {
 #define TMP102_ADDR_SCL  0x4Bu
 
 /** Initialise and configure for continuous conversion (12-bit).
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
                          const tmp102_cfg_t *cfg);
 
 /** Read temperature in degrees Celsius (0.0625 C resolution).
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c);
 
 /** Set high alert threshold in degrees Celsius.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_set_alert_high(tmp102_t *dev, float temp_c);
 
 /** Set low alert threshold in degrees Celsius.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_set_alert_low(tmp102_t *dev, float temp_c);
 
 /** Enter shutdown (low-power) mode.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_shutdown(tmp102_t *dev);
 
 /** Wake from shutdown to continuous conversion.
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_wake(tmp102_t *dev);
 
 #ifdef __cplusplus

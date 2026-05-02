@@ -49,24 +49,24 @@ typedef struct {
     uint8_t  last_level;
 } gpio_led_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Initialize LED instance. @thread_safe: no */
+/** Initialize LED instance. @thread_safe: no @isr_safe: no */
 void            gpio_led_init(gpio_led_t *led, const gpio_led_hal_t *hal);
-/** Turn LED on (steady). @thread_safe: caller_must_lock */
+/** Turn LED on (steady). @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_on(gpio_led_t *led);
-/** Turn LED off. @thread_safe: caller_must_lock */
+/** Turn LED off. @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_off(gpio_led_t *led);
-/** Start blink pattern. @thread_safe: caller_must_lock */
+/** Start blink pattern. @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_blink(gpio_led_t *led, uint16_t on_ms,
                                uint16_t off_ms, uint8_t repeat);
-/** Start breathing effect. @thread_safe: caller_must_lock */
+/** Start breathing effect. @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_breathe(gpio_led_t *led, uint16_t period_ms);
-/** Single pulse then off. @thread_safe: caller_must_lock */
+/** Single pulse then off. @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_pulse(gpio_led_t *led, uint16_t on_ms);
-/** Advance state machine by dt_ms. @thread_safe: caller_must_lock */
+/** Advance state machine by dt_ms. @thread_safe: caller_must_lock @isr_safe: no */
 void            gpio_led_tick(gpio_led_t *led, uint16_t dt_ms);
-/** Query current mode. @thread_safe: caller_must_lock */
+/** Query current mode. @thread_safe: caller_must_lock @isr_safe: no */
 gpio_led_mode_t gpio_led_get_mode(const gpio_led_t *led);
 
 #ifdef __cplusplus

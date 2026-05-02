@@ -58,7 +58,7 @@ typedef void (*uuid_rng_t)(void *ctx, uint8_t *buf, uint16_t len);
  * @param rng   Random byte source callback. Must not be NULL.
  * @param ctx   Opaque context passed to rng. May be NULL.
  * @return      UUID_OK on success, UUID_ERR_PARAM if uuid or rng is NULL.
- * @thread_safe: yes if the provided rng callback is thread-safe
+ * @thread_safe: yes if the provided rng callback is thread-safe @isr_safe: yes
  */
 uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx);
 
@@ -69,7 +69,7 @@ uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx);
  * @param buf       Output buffer. Must not be NULL.
  * @param buf_size  Size of buf in bytes. Must be >= 37 (36 chars + NUL).
  * @return          UUID_OK on success, UUID_ERR_PARAM on invalid args.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size);
 
@@ -82,7 +82,7 @@ uuid_err_t uuid_to_string(const uuid_t *uuid, char *buf, uint16_t buf_size);
  * @param str   Input string. Must not be NULL. Must be exactly 36 chars.
  * @return      UUID_OK on success, UUID_ERR_PARAM if NULL,
  *              UUID_ERR_FORMAT if string is malformed.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uuid_err_t uuid_from_string(uuid_t *uuid, const char *str);
 
@@ -92,7 +92,7 @@ uuid_err_t uuid_from_string(uuid_t *uuid, const char *str);
  * @param a  First UUID. Must not be NULL.
  * @param b  Second UUID. Must not be NULL.
  * @return   true if equal, false otherwise (including if either is NULL).
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 bool uuid_equal(const uuid_t *a, const uuid_t *b);
 
@@ -101,7 +101,7 @@ bool uuid_equal(const uuid_t *a, const uuid_t *b);
  *
  * @param uuid  UUID to check. Must not be NULL.
  * @return      true if nil, false otherwise (including if NULL).
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 bool uuid_is_nil(const uuid_t *uuid);
 

@@ -53,31 +53,31 @@ typedef struct {
 #define OLED_SSD1306_ADDR_A  0x3C
 #define OLED_SSD1306_ADDR_B  0x3D
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
                                      const oled_ssd1306_i2c_t *i2c,
                                      const oled_ssd1306_cfg_t *cfg,
                                      uint8_t *framebuf);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 oled_ssd1306_err_t oled_ssd1306_flush(oled_ssd1306_t *dev);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 void oled_ssd1306_clear(oled_ssd1306_t *dev);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 void oled_ssd1306_set_pixel(oled_ssd1306_t *dev, uint8_t x, uint8_t y, bool on);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bool oled_ssd1306_get_pixel(const oled_ssd1306_t *dev, uint8_t x, uint8_t y);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 void oled_ssd1306_fill(oled_ssd1306_t *dev, bool on);
 
-/** Turn display on (0xAF). @thread_safe: no */
+/** Turn display on (0xAF). @thread_safe: no @isr_safe: no */
 oled_ssd1306_err_t oled_ssd1306_display_on(const oled_ssd1306_t *dev);
 
-/** Turn display off / enter sleep (0xAE). @thread_safe: no */
+/** Turn display off / enter sleep (0xAE). @thread_safe: no @isr_safe: no */
 oled_ssd1306_err_t oled_ssd1306_display_off(const oled_ssd1306_t *dev);
 
 #ifdef __cplusplus

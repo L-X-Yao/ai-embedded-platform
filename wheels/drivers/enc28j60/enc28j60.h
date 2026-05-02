@@ -52,50 +52,50 @@ typedef struct {
     uint8_t  bank;
 } enc28j60_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
 /**
  * Soft-reset, configure buffers, set MAC, enable RX.
- * @thread_safe: no
+ * @thread_safe: no @isr_safe: no
  */
 enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr);
 
 /**
  * Transmit a single Ethernet frame.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
                               uint16_t len);
 
 /**
  * Receive one Ethernet frame from RX buffer.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
                                  uint16_t buf_size, uint16_t *frame_len);
 
 /**
  * Check if at least one packet is pending.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 bool enc28j60_has_packet(enc28j60_t *dev);
 
 /**
  * Read silicon revision (EREVID register).
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 uint8_t enc28j60_get_revision(enc28j60_t *dev);
 
 /**
  * Update MAC address registers.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_set_mac(enc28j60_t *dev, const uint8_t *mac_addr);
 
 /**
  * Set ECON1.RXEN to start reception.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 void enc28j60_enable_reception(enc28j60_t *dev);
 

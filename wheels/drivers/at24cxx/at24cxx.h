@@ -107,25 +107,25 @@ typedef struct {
 #define AT24CXX_WRITE_CYCLE_MS  5u
 #endif
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Initialise device handle.  @thread_safe: no */
+/** Initialise device handle.  @thread_safe: no @isr_safe: no */
 at24cxx_err_t at24cxx_init(at24cxx_t *dev, const at24cxx_i2c_t *i2c,
                            uint8_t dev_addr, at24cxx_model_t model);
 
-/** Read len bytes from EEPROM address addr.  @thread_safe: caller_must_lock */
+/** Read len bytes from EEPROM address addr.  @thread_safe: caller_must_lock @isr_safe: no */
 at24cxx_err_t at24cxx_read(const at24cxx_t *dev, uint16_t addr,
                            uint8_t *buf, uint16_t len);
 
 /**
  * Write len bytes to EEPROM.  Automatically splits across page
  * boundaries and inserts write-cycle delays.
- * @thread_safe: caller_must_lock
+ * @thread_safe: caller_must_lock @isr_safe: no
  */
 at24cxx_err_t at24cxx_write(const at24cxx_t *dev, uint16_t addr,
                             const uint8_t *data, uint16_t len);
 
-/** Write a single byte.  @thread_safe: caller_must_lock */
+/** Write a single byte.  @thread_safe: caller_must_lock @isr_safe: yes */
 at24cxx_err_t at24cxx_write_byte(const at24cxx_t *dev, uint16_t addr,
                                  uint8_t val);
 

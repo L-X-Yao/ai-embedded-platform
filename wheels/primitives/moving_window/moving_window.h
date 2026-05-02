@@ -37,7 +37,7 @@ typedef struct {
     float    sum_sq;    /* running sum of squares for variance */
 } moving_window_t;
 
-/** @thread_safe: no
+/** @thread_safe: no @isr_safe: yes
  *  Initialize context with caller-provided storage.
  *  @param ctx      pointer to context
  *  @param buf      float array of at least @p capacity elements
@@ -46,30 +46,30 @@ typedef struct {
 moving_window_err_t moving_window_init(moving_window_t *ctx,
                                        float *buf, size_t capacity);
 
-/** @thread_safe: no
+/** @thread_safe: no @isr_safe: yes
  *  Push a new sample into the window. Oldest sample is evicted when full.
  */
 moving_window_err_t moving_window_push(moving_window_t *ctx, float value);
 
-/** @thread_safe: no  — Returns arithmetic mean, or 0.0f if empty. */
+/** @thread_safe: no  — Returns arithmetic mean, or 0.0f if empty. @isr_safe: yes */
 float moving_window_get_mean(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Returns minimum value, or 0.0f if empty. */
+/** @thread_safe: no  — Returns minimum value, or 0.0f if empty. @isr_safe: yes */
 float moving_window_get_min(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Returns maximum value, or 0.0f if empty. */
+/** @thread_safe: no  — Returns maximum value, or 0.0f if empty. @isr_safe: yes */
 float moving_window_get_max(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Returns population variance, or 0.0f if empty. */
+/** @thread_safe: no  — Returns population variance, or 0.0f if empty. @isr_safe: yes */
 float moving_window_get_variance(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Returns number of samples currently in window. */
+/** @thread_safe: no  — Returns number of samples currently in window. @isr_safe: yes */
 size_t moving_window_get_count(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Returns true when window has reached capacity. */
+/** @thread_safe: no  — Returns true when window has reached capacity. @isr_safe: yes */
 bool moving_window_is_full(const moving_window_t *ctx);
 
-/** @thread_safe: no  — Reset to empty state (keeps buf and capacity). */
+/** @thread_safe: no  — Reset to empty state (keeps buf and capacity). @isr_safe: no */
 moving_window_err_t moving_window_reset(moving_window_t *ctx);
 
 #ifdef __cplusplus

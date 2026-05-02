@@ -61,14 +61,14 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Return sensible default configuration. @thread_safe: yes (pure) */
+/** Return sensible default configuration. @thread_safe: yes (pure) @isr_safe: no */
 gpio_button_cfg_t gpio_button_default_cfg(void);
-/** Initialize button instance. @thread_safe: no */
+/** Initialize button instance. @thread_safe: no @isr_safe: no */
 void           gpio_button_init(gpio_button_t *btn, const gpio_button_hal_t *hal,
                               const gpio_button_cfg_t *cfg);
-/** Advance debounce/click state machine. @thread_safe: caller_must_lock */
+/** Advance debounce/click state machine. @thread_safe: caller_must_lock @isr_safe: no */
 gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms);
-/** Query current stable press state. @thread_safe: caller_must_lock */
+/** Query current stable press state. @thread_safe: caller_must_lock @isr_safe: yes */
 uint8_t        gpio_button_is_pressed(const gpio_button_t *btn);
 
 #ifdef __cplusplus

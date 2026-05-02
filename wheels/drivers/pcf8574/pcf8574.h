@@ -51,23 +51,23 @@ typedef struct {
 
 /** Initialize device context. Writes 0xFF (all high / input) on success.
  *  @param dev_addr 7-bit I2C address (0x20-0x27 PCF8574, 0x38-0x3F PCF8574A)
- *  @thread_safe: no */
+ *  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
                            uint8_t dev_addr);
 
-/** Write all 8 pins at once.  @thread_safe: no */
+/** Write all 8 pins at once.  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_write(pcf8574_t *dev, uint8_t value);
 
-/** Read current pin levels (actual bus state).  @thread_safe: no */
+/** Read current pin levels (actual bus state).  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_read(pcf8574_t *dev, uint8_t *value);
 
-/** Write a single pin (0-7) using cached output_state.  @thread_safe: no */
+/** Write a single pin (0-7) using cached output_state.  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_write_pin(pcf8574_t *dev, uint8_t pin, bool level);
 
-/** Read a single pin (0-7) from actual bus state.  @thread_safe: no */
+/** Read a single pin (0-7) from actual bus state.  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_read_pin(pcf8574_t *dev, uint8_t pin, bool *level);
 
-/** Toggle a single pin (0-7) using cached output_state.  @thread_safe: no */
+/** Toggle a single pin (0-7) using cached output_state.  @thread_safe: no @isr_safe: no */
 pcf8574_err_t pcf8574_toggle_pin(pcf8574_t *dev, uint8_t pin);
 
 #ifdef __cplusplus

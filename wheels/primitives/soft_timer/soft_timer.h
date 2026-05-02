@@ -56,33 +56,33 @@ typedef struct {
     uint32_t           tick_count;
 } soft_timer_mgr_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_timer_err_t soft_timer_init(soft_timer_mgr_t *mgr);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
                       soft_timer_mode_t mode, soft_timer_cb_t cb,
                       void *user_ctx);
 
-/** Release a timer slot for reuse. @thread_safe: no */
+/** Release a timer slot for reuse. @thread_safe: no @isr_safe: no */
 soft_timer_err_t soft_timer_destroy(soft_timer_mgr_t *mgr, int id);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 soft_timer_err_t soft_timer_stop(soft_timer_mgr_t *mgr, int id);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_timer_err_t soft_timer_reset(soft_timer_mgr_t *mgr, int id);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bool soft_timer_is_active(const soft_timer_mgr_t *mgr, int id);
 
-/** Call from SysTick or periodic ISR. @thread_safe: no */
+/** Call from SysTick or periodic ISR. @thread_safe: no @isr_safe: yes */
 void soft_timer_tick(soft_timer_mgr_t *mgr);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 uint32_t soft_timer_get_tick(const soft_timer_mgr_t *mgr);
 
 #ifdef __cplusplus

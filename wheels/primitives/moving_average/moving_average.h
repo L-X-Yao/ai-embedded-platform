@@ -41,20 +41,20 @@ typedef struct {
     float    sum;
 } moving_average_sma_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_sma_init(moving_average_sma_t *ctx,
                                              float *buf, size_t window);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_sma_reset(moving_average_sma_t *ctx);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 float moving_average_sma_feed(moving_average_sma_t *ctx, float sample);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 float moving_average_sma_get(const moving_average_sma_t *ctx);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 bool moving_average_sma_is_full(const moving_average_sma_t *ctx);
 
 /* --- Exponential Moving Average (EMA) --- */
@@ -65,16 +65,16 @@ typedef struct {
     bool  primed;
 } moving_average_ema_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_ema_init(moving_average_ema_t *ctx, float alpha);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_ema_reset(moving_average_ema_t *ctx);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 float moving_average_ema_feed(moving_average_ema_t *ctx, float sample);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 float moving_average_ema_get(const moving_average_ema_t *ctx);
 
 #ifdef __cplusplus

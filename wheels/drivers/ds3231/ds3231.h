@@ -52,16 +52,16 @@ typedef struct {
 
 #define DS3231_ADDR  0x68u
 
-/** Initialize driver context. @thread_safe: no */
+/** Initialize driver context. @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c);
 
-/** Read current time from RTC. @thread_safe: no */
+/** Read current time from RTC. @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_get_time(const ds3231_t *dev, ds3231_time_t *time);
 
-/** Write time to RTC. @thread_safe: no */
+/** Write time to RTC. @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_set_time(const ds3231_t *dev, const ds3231_time_t *time);
 
-/** Read on-chip temperature (0.25C resolution). @thread_safe: no */
+/** Read on-chip temperature (0.25C resolution). @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_get_temperature(const ds3231_t *dev, float *temp_c);
 
 #ifdef __cplusplus

@@ -35,7 +35,7 @@ extern "C" {
  * @param data  Input buffer. May be NULL only when len == 0.
  * @param len   Number of bytes. 0 returns FNV1A_32_OFFSET_BASIS.
  * @return      32-bit hash value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint32_t fnv1a_32(const uint8_t *data, size_t len);
 
@@ -45,7 +45,7 @@ uint32_t fnv1a_32(const uint8_t *data, size_t len);
  * @param data  Input buffer. May be NULL only when len == 0.
  * @param len   Number of bytes. 0 returns FNV1A_64_OFFSET_BASIS.
  * @return      64-bit hash value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint64_t fnv1a_64(const uint8_t *data, size_t len);
 
@@ -54,7 +54,7 @@ uint64_t fnv1a_64(const uint8_t *data, size_t len);
  *
  * @param str   Input string. NULL returns FNV1A_32_OFFSET_BASIS.
  * @return      32-bit hash value (NUL terminator not included).
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint32_t fnv1a_32_string(const char *str);
 
@@ -63,7 +63,7 @@ uint32_t fnv1a_32_string(const char *str);
  *
  * @param str   Input string. NULL returns FNV1A_64_OFFSET_BASIS.
  * @return      64-bit hash value (NUL terminator not included).
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint64_t fnv1a_64_string(const char *str);
 
@@ -74,7 +74,7 @@ uint64_t fnv1a_64_string(const char *str);
  * @param data  Input buffer. May be NULL only when len == 0.
  * @param len   Number of bytes to absorb.
  * @return      Updated hash value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint32_t fnv1a_32_update(uint32_t hash, const uint8_t *data, size_t len);
 
@@ -85,7 +85,7 @@ uint32_t fnv1a_32_update(uint32_t hash, const uint8_t *data, size_t len);
  * @param data  Input buffer. May be NULL only when len == 0.
  * @param len   Number of bytes to absorb.
  * @return      Updated hash value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint64_t fnv1a_64_update(uint64_t hash, const uint8_t *data, size_t len);
 

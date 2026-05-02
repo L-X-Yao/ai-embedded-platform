@@ -63,26 +63,26 @@ typedef struct {
     uint32_t current_delay_us;
 } stepper_t;
 
-/** Initialize stepper driver. @thread_safe: no */
+/** Initialize stepper driver. @thread_safe: no @isr_safe: no */
 stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
                            uint16_t max_speed, uint16_t accel);
 
-/** Move relative (blocking, uses delay_us callback). @thread_safe: no */
+/** Move relative (blocking, uses delay_us callback). @thread_safe: no @isr_safe: no */
 stepper_err_t stepper_move(stepper_t *s, int32_t steps);
 
-/** Move to absolute position (blocking). @thread_safe: no */
+/** Move to absolute position (blocking). @thread_safe: no @isr_safe: yes */
 stepper_err_t stepper_move_to(stepper_t *s, int32_t target);
 
-/** Single step for manual control. @thread_safe: no */
+/** Single step for manual control. @thread_safe: no @isr_safe: no */
 void stepper_step_once(stepper_t *s, stepper_dir_t dir);
 
-/** Get current position. @thread_safe: no */
+/** Get current position. @thread_safe: no @isr_safe: yes */
 int32_t stepper_get_position(const stepper_t *s);
 
-/** Set position without moving (home/calibrate). @thread_safe: no */
+/** Set position without moving (home/calibrate). @thread_safe: no @isr_safe: yes */
 void stepper_set_position(stepper_t *s, int32_t pos);
 
-/** Get current state. @thread_safe: no */
+/** Get current state. @thread_safe: no @isr_safe: yes */
 stepper_state_t stepper_get_state(const stepper_t *s);
 
 #ifdef __cplusplus

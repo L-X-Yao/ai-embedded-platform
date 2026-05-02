@@ -49,25 +49,25 @@ typedef struct {
 
 #define SI7021_DEV_ADDR  0x40u
 
-/** Initialize device context. @thread_safe: no */
+/** Initialize device context. @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c);
 
-/** Read relative humidity (%). @thread_safe: no */
+/** Read relative humidity (%). @thread_safe: no @isr_safe: yes */
 si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh);
 
-/** Read temperature (deg C). @thread_safe: no */
+/** Read temperature (deg C). @thread_safe: no @isr_safe: yes */
 si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c);
 
-/** Read both: humidity first, then temperature from previous RH measurement. @thread_safe: no */
+/** Read both: humidity first, then temperature from previous RH measurement. @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_read_both(si7021_t *dev, float *rh, float *temp_c);
 
-/** Set measurement resolution. @thread_safe: no */
+/** Set measurement resolution. @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_set_resolution(si7021_t *dev, si7021_resolution_t res);
 
-/** Software reset. @thread_safe: no */
+/** Software reset. @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_reset(si7021_t *dev);
 
-/** Read 64-bit electronic serial number (two 32-bit halves). @thread_safe: no */
+/** Read 64-bit electronic serial number (two 32-bit halves). @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_read_serial(si7021_t *dev, uint32_t *serial_a, uint32_t *serial_b);
 
 /** CRC-8 used by Si7021 (poly 0x131, init 0x00). */

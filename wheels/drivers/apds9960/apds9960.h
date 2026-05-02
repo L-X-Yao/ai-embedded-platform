@@ -56,28 +56,28 @@ typedef struct {
 
 #define APDS9960_DEV_ADDR  0x39u
 
-/** Verify chip ID and power on. @thread_safe: no */
+/** Verify chip ID and power on. @thread_safe: no @isr_safe: no */
 apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c);
 
-/** Enable proximity sensing. @thread_safe: caller_must_lock */
+/** Enable proximity sensing. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_enable_proximity(apds9960_t *dev);
 
-/** Read 8-bit proximity value (0=far, 255=near). @thread_safe: caller_must_lock */
+/** Read 8-bit proximity value (0=far, 255=near). @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_read_proximity(apds9960_t *dev, uint8_t *prox);
 
-/** Enable RGBC color sensing. @thread_safe: caller_must_lock */
+/** Enable RGBC color sensing. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_enable_color(apds9960_t *dev);
 
-/** Read 16-bit RGBC color data. @thread_safe: caller_must_lock */
+/** Read 16-bit RGBC color data. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_read_color(apds9960_t *dev, apds9960_color_t *color);
 
-/** Enable gesture engine. @thread_safe: caller_must_lock */
+/** Enable gesture engine. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_enable_gesture(apds9960_t *dev);
 
-/** Read gesture from FIFO. Returns GESTURE_NONE if no gesture. @thread_safe: caller_must_lock */
+/** Read gesture from FIFO. Returns GESTURE_NONE if no gesture. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_read_gesture(apds9960_t *dev, apds9960_gesture_t *gesture);
 
-/** Disable all features (power down). @thread_safe: caller_must_lock */
+/** Disable all features (power down). @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_disable_all(apds9960_t *dev);
 
 #ifdef __cplusplus

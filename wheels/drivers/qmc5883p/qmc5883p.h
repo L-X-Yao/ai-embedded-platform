@@ -40,10 +40,10 @@ typedef struct {
     float mx_gauss, my_gauss, mz_gauss; /* magnetic field (Gauss) */
 } qmc5883p_data_t;
 
-/** Configure and verify chip ID. @thread_safe: no */
+/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
 qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c);
 
-/** Read magnetometer sample (Gauss). @thread_safe: caller_must_lock */
+/** Read magnetometer sample (Gauss). @thread_safe: caller_must_lock @isr_safe: no */
 qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 
 #ifdef __cplusplus

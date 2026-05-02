@@ -66,20 +66,20 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize keypad instance. @thread_safe: no */
+/** Initialize keypad instance. @thread_safe: no @isr_safe: no */
 keypad_err_t keypad_matrix_init(keypad_matrix_t *kp, const keypad_hal_t *hal,
                                 uint8_t rows, uint8_t cols, const char *keymap);
 
-/** Scan all keys. Call periodically (e.g. every 10-20 ms). @thread_safe: caller_must_lock */
+/** Scan all keys. Call periodically (e.g. every 10-20 ms). @thread_safe: caller_must_lock @isr_safe: no */
 void keypad_matrix_scan(keypad_matrix_t *kp);
 
-/** Get event since last scan. Fills *key with keymap character. @thread_safe: caller_must_lock */
+/** Get event since last scan. Fills *key with keymap character. @thread_safe: caller_must_lock @isr_safe: yes */
 keypad_event_t keypad_matrix_get_event(keypad_matrix_t *kp, char *key);
 
-/** Get currently pressed key character (0 if none). @thread_safe: caller_must_lock */
+/** Get currently pressed key character (0 if none). @thread_safe: caller_must_lock @isr_safe: yes */
 char keypad_matrix_get_pressed(const keypad_matrix_t *kp);
 
-/** Check if a specific key is currently pressed. @thread_safe: caller_must_lock */
+/** Check if a specific key is currently pressed. @thread_safe: caller_must_lock @isr_safe: yes */
 bool keypad_matrix_is_pressed(const keypad_matrix_t *kp, char key);
 
 #ifdef __cplusplus

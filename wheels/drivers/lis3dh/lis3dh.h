@@ -82,20 +82,20 @@ typedef struct {
 #define LIS3DH_ADDR_HIGH  0x19u  /* SA0 = 1 */
 #define LIS3DH_WHO_AM_I   0x33u
 
-/** Initialize and verify WHO_AM_I. @thread_safe: no */
+/** Initialize and verify WHO_AM_I. @thread_safe: no @isr_safe: no */
 lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
                          const lis3dh_cfg_t *cfg);
 
-/** Read acceleration in G. @thread_safe: no */
+/** Read acceleration in G. @thread_safe: no @isr_safe: no */
 lis3dh_err_t lis3dh_read_accel(const lis3dh_t *dev, lis3dh_accel_t *out);
 
-/** Read raw 16-bit left-justified values. @thread_safe: no */
+/** Read raw 16-bit left-justified values. @thread_safe: no @isr_safe: no */
 lis3dh_err_t lis3dh_read_raw(const lis3dh_t *dev, lis3dh_raw_t *out);
 
-/** Change full-scale range at runtime. @thread_safe: no */
+/** Change full-scale range at runtime. @thread_safe: no @isr_safe: no */
 lis3dh_err_t lis3dh_set_range(lis3dh_t *dev, lis3dh_range_t range);
 
-/** Change output data rate at runtime. @thread_safe: no */
+/** Change output data rate at runtime. @thread_safe: no @isr_safe: no */
 lis3dh_err_t lis3dh_set_odr(lis3dh_t *dev, lis3dh_odr_t odr);
 
 #ifdef __cplusplus

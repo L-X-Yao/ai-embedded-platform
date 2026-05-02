@@ -36,62 +36,62 @@ typedef int32_t fp_t;
 
 /* ── Conversion ───────────────────────────────────────────────── */
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t    fp_from_int(int16_t val);
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t    fp_from_float(float val);
 
-/** Truncate toward zero. @thread_safe: yes */
+/** Truncate toward zero. @thread_safe: yes @isr_safe: yes */
 int16_t fp_to_int(fp_t val);
 
-/** Round to nearest integer. @thread_safe: yes */
+/** Round to nearest integer. @thread_safe: yes @isr_safe: no */
 int16_t fp_to_int_rounded(fp_t val);
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 float   fp_to_float(fp_t val);
 
 /* ── Arithmetic (overflow-safe via int64_t intermediates) ──── */
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t fp_add(fp_t a, fp_t b);
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t fp_sub(fp_t a, fp_t b);
 
-/** @thread_safe: yes (pure function, no state) */
+/** @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t fp_mul(fp_t a, fp_t b);
 
 /** Division. b==0 returns FP_MAX or FP_MIN based on sign of a.
- *  @thread_safe: yes (pure function, no state) */
+ *  @thread_safe: yes (pure function, no state) @isr_safe: yes */
 fp_t fp_div(fp_t a, fp_t b);
 
 /* ── Comparison ───────────────────────────────────────────────── */
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 bool fp_gt(fp_t a, fp_t b);
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 bool fp_lt(fp_t a, fp_t b);
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 bool fp_eq(fp_t a, fp_t b);
 
 /* ── Math functions ───────────────────────────────────────────── */
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 fp_t fp_abs(fp_t val);
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 fp_t fp_min(fp_t a, fp_t b);
 
-/** @thread_safe: yes */
+/** @thread_safe: yes @isr_safe: yes */
 fp_t fp_max(fp_t a, fp_t b);
 
-/** Clamp val to [lo, hi]. @thread_safe: yes */
+/** Clamp val to [lo, hi]. @thread_safe: yes @isr_safe: yes */
 fp_t fp_clamp(fp_t val, fp_t lo, fp_t hi);
 
-/** Linear interpolation: a + t*(b-a), t in [0, FP_ONE]. @thread_safe: yes */
+/** Linear interpolation: a + t*(b-a), t in [0, FP_ONE]. @thread_safe: yes @isr_safe: yes */
 fp_t fp_lerp(fp_t a, fp_t b, fp_t t);
 
 /* ── String formatting ────────────────────────────────────────── */
@@ -104,7 +104,7 @@ fp_t fp_lerp(fp_t a, fp_t b, fp_t t);
  * @param buf_size        Size of buf in bytes.
  * @param decimal_places  Number of fractional digits (0-5).
  * @return chars written (excluding NUL), or -1 on error.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 int fp_to_string(fp_t val, char *buf, uint16_t buf_size, uint8_t decimal_places);
 

@@ -64,20 +64,20 @@ typedef struct {
     uint32_t    transition_count;
 } state_machine_t;
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 state_machine_err_t state_machine_init(state_machine_t *ctx, const sm_cfg_t *cfg,
                                        sm_state_t initial_state);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 sm_state_t state_machine_current(const state_machine_t *ctx);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: yes */
 uint32_t state_machine_transition_count(const state_machine_t *ctx);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 state_machine_err_t state_machine_reset(state_machine_t *ctx, sm_state_t state);
 
 #ifdef __cplusplus

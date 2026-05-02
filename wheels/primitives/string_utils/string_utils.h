@@ -36,19 +36,19 @@ typedef enum {
  * @param out  Output buffer (may alias in for in-place trim).
  * @param size Size of out buffer including NUL terminator.
  * @return STRING_UTILS_OK on success, STRING_UTILS_ERR_PARAM on NULL.
- * @thread_safe: yes (pure function, caller-owned buffers)
+ * @thread_safe: yes (pure function, caller-owned buffers) @isr_safe: yes
  */
 string_utils_err_t str_trim(const char *in, char *out, size_t size);
 
 /**
  * Trim leading whitespace only.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 string_utils_err_t str_ltrim(const char *in, char *out, size_t size);
 
 /**
  * Trim trailing whitespace only.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 string_utils_err_t str_rtrim(const char *in, char *out, size_t size);
 
@@ -62,21 +62,21 @@ string_utils_err_t str_rtrim(const char *in, char *out, size_t size);
  * @param tokens     Output array of char* pointers.
  * @param max_tokens Capacity of tokens array.
  * @return Number of tokens found (0 on NULL input, capped at max_tokens).
- * @thread_safe: yes (caller-owned buffers)
+ * @thread_safe: yes (caller-owned buffers) @isr_safe: yes
  */
 int str_split(char *str, char delim, char **tokens, int max_tokens);
 
 /**
  * Check if string starts with the given prefix.
  * @return true if str starts with prefix; false on NULL or mismatch.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 bool str_starts_with(const char *str, const char *prefix);
 
 /**
  * Check if string ends with the given suffix.
  * @return true if str ends with suffix; false on NULL or mismatch.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 bool str_ends_with(const char *str, const char *suffix);
 
@@ -86,7 +86,7 @@ bool str_ends_with(const char *str, const char *suffix);
  * @param val  Output value.
  * @return STRING_UTILS_OK on success, STRING_UTILS_ERR_FMT if not a valid
  *         integer, STRING_UTILS_ERR_PARAM on NULL.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 string_utils_err_t str_to_int(const char *str, int32_t *val);
 
@@ -97,7 +97,7 @@ string_utils_err_t str_to_int(const char *str, int32_t *val);
  * @param val  Output value.
  * @return STRING_UTILS_OK on success, STRING_UTILS_ERR_FMT if not valid,
  *         STRING_UTILS_ERR_PARAM on NULL.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 string_utils_err_t str_to_float(const char *str, float *val);
 
@@ -110,7 +110,7 @@ string_utils_err_t str_to_float(const char *str, float *val);
  * @param size   Size of output buffer including NUL.
  * @return STRING_UTILS_OK on success, STRING_UTILS_ERR_OVERFLOW if buffer
  *         too small (output truncated with NUL), STRING_UTILS_ERR_PARAM on NULL.
- * @thread_safe: yes
+ * @thread_safe: yes @isr_safe: yes
  */
 string_utils_err_t str_join(const char **tokens, int count, const char *delim,
                             char *buf, size_t size);

@@ -61,7 +61,7 @@ extern const crc8_config_t CRC8_ROHC;
  * @param data  Input buffer pointer. May be NULL only when len == 0.
  * @param len   Number of bytes to process.
  * @return      Computed 8-bit CRC value.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint8_t crc8_compute(const crc8_config_t *cfg,
                      const uint8_t *data, size_t len);
@@ -82,7 +82,7 @@ uint8_t crc8_compute(const crc8_config_t *cfg,
  * @param data  Next chunk of data. May be NULL only when len == 0.
  * @param len   Number of bytes in this chunk.
  * @return      Updated CRC accumulator (without finalization).
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 uint8_t crc8_update(const crc8_config_t *cfg,
                     uint8_t crc, const uint8_t *data, size_t len);
@@ -97,7 +97,7 @@ uint8_t crc8_update(const crc8_config_t *cfg,
  * @param len       Number of bytes.
  * @param expected  Expected CRC value.
  * @return          true if CRC matches, false otherwise.
- * @thread_safe: yes (pure function, no state)
+ * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 bool crc8_verify(const crc8_config_t *cfg,
                  const uint8_t *data, size_t len, uint8_t expected);
