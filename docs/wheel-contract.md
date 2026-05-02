@@ -31,9 +31,16 @@
 - 非 `_draft/` 层的 wheel **应该**在 README 有 `## API review` 节（wheel-contract §7，WARN）
 - 每个 wheel 的 test CMakeLists.txt **应该**有 `enable_testing()` + `add_test()`（ctest 兼容，WARN）
 - 每个 wheel 的 test CMakeLists.txt **应该**设置 `CMAKE_C_STANDARD 99`（构建一致性，WARN）
-- 非 vendor 的 wheel `.h`/`.c` **应该**有 `Layer:`/`Status:`/`Deps:` 文件头（api-conventions §8，WARN）
+- 非 vendor 的 wheel `.h`/`.c` **应该**有 `Layer:`/`Status:`/`Deps:`/`Instances:` 文件头（api-conventions §8，WARN）
 - 非 vendor 的 wheel `.h` **应该**有 `extern "C"` 守卫（api-conventions §9，WARN）
+- 非 vendor 的 wheel `.h` **不应**使用 `#pragma once`（api-conventions §9.2，WARN）
 - 非 `_draft/` 层的 wheel README **应该**有 `## Supported platforms` + `## Test status` + `## Dependencies` 节（wheel-contract §3.2 候选级，WARN）
+- 非 vendor 的 wheel `.h`/`.c` **应该**有 SPDX 许可证标识（api-conventions §8.3，WARN）
+- `@thread_safe` 标注：`init`/`deinit`/`reset` 不应标 `caller_must_lock`（api-conventions §4，WARN）
+- 主 context 类型命名应为 `<name>_t`，不应为 `<name>_dev_t`（api-conventions §1.3，WARN）
+- 错误码命名应为单数 `ERR_PARAM`，不应为复数 `ERR_PARAMS`（api-conventions §2.2，WARN）
+- Deps 格式：接口依赖用 `<name>_hal (injected)`，具体依赖用 `<name>`，无依赖用 `(none)`（api-conventions §8.1，WARN）
+- "Why not VSF native?" 残留检测：ADR-006 已废弃，不应再出现（WARN）
 
 历史教训：2026-04-25/26 曾出现 2 个 orphan wheel（commit 进 repo 但既没 CI 也没 consumer，持续 1-2 天才被发现），audit 工具就是为消除这类 systemic 漂移而生。
 
