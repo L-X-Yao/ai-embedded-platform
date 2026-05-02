@@ -7,19 +7,6 @@ CRC-8 calculator with multiple polynomial support. Bit-by-bit computation
 (no lookup table, saves 256 bytes Flash on MCU). Supports reflected I/O for
 Dallas/Maxim 1-Wire and ROHC. Pre-defined configs for CRC-8, CRC-8/MAXIM,
 CRC-8/SENSIRION, CRC-8/SMBUS, and CRC-8/ROHC.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01):
-
-- `vsf_crc8_ccitt` in `vsf/source/component/crypto/hash/crc/` provides only
-  the CCITT variant (poly 0x07, init 0x00, no reflect support).
-- No support for reflected I/O (needed by 1-Wire/MAXIM, ROHC).
-- No support for alternate polynomials (0x31 for Sensirion/MAXIM).
-- No configurable init/xor-out values.
-
-This wheel provides a generic CRC-8 engine with full parametrization.
-
 ## Origin
 
 Proactive build to complete the CRC family (alongside crc16 and crc32).

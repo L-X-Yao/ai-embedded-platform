@@ -12,12 +12,6 @@ no OS dependency.
 
 Proactive build for embedded systems needing software task-level health
 monitoring without hardware watchdog coupling.
-
-## Why not VSF native?
-
-VSF has no built-in passive software task watchdog mechanism. Its watchdog
-support is hardware-level (`vsf_wdt`), not a software task health monitor.
-
 ## Dependencies
 
 None.

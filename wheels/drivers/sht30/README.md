@@ -6,12 +6,6 @@
 Platform-agnostic driver for Sensirion SHT30/SHT31/SHT35 digital temperature
 and humidity sensors. I2C interface injected via callbacks. CRC-8 verified
 responses per Sensirion protocol specification.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`sht3`, `sensirion`, `humidity` — zero results.
-
 ## Origin
 
 Proactive build. SHT3x is the most widely used digital humidity sensor family

@@ -6,14 +6,6 @@
 Platform-agnostic A/B firmware slot management for OTA upgrades. Handles slot selection,
 parameter persistence with CRC32 protection, and automatic rollback after N failed boots.
 Flash operations injected via HAL callbacks — no hardware dependency.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`ota`, `firmware`, `bootloader`, `a_b_slot`, `rollback` — zero results.
-
-VSF has no OTA or firmware management capability.
-
 ## Origin
 
 Extracted from `projects/flybox/src/app/ota_task.c` + `projects/flybox/src/bsp/internal_flash.c`.

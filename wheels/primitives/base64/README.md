@@ -9,12 +9,6 @@ all output buffers. Handles both padded and unpadded input on decode.
 ## Origin
 
 Proactive build for embedded protocols (MQTT auth, HTTP headers, OTA payloads).
-
-## Why not VSF native?
-
-No Base64 utility in `vsf/source/service/`, `vsf/source/utilities/`, or
-`vsf/source/component/`.
-
 ## Dependencies
 
 None.

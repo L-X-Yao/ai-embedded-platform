@@ -7,11 +7,6 @@ Register-based I2C driver for the TI OPT3001 digital ambient light sensor.
 Supports single-shot and continuous measurement modes with automatic full-scale
 range. Result decoding uses the hardware exponent+mantissa format
 (lux = 0.01 x 2^E x R). Pure C99, no heap, no OS dependency.
-
-## Why not VSF native?
-
-`grep -rn "opt3001\|OPT3001" vsf/` — no existing driver in VSF upstream.
-
 ## Origin
 
 Proactive build for ambient light sensing use cases (display auto-brightness,

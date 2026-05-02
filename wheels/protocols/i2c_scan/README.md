@@ -6,13 +6,6 @@
 Debug utility that scans all 128 7-bit I2C addresses to find connected devices.
 Probe callback is user-supplied (hardware-agnostic). Includes a lookup table for
 common sensor/peripheral addresses.
-
-## Why not VSF native?
-
-VSF provides `vsf_i2c_master_request` for raw I2C transactions but no bus-scan
-or device-enumeration utility. This wheel adds scan logic + address identification
-on top of any I2C probe mechanism.
-
 ## Origin
 
 Proactive build for embedded debug/bringup workflows.

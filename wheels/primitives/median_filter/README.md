@@ -6,11 +6,6 @@
 Sliding window median filter. Excellent for rejecting impulse noise (spikes)
 in sensor readings while preserving edge response. Uses insertion sort on each
 update for O(N) per sample. Window sizes 3-31.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no median filter in VSF.
-
 ## API
 
 ```c

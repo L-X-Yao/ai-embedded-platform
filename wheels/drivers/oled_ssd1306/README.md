@@ -6,12 +6,6 @@
 Framebuffer-based driver for SSD1306 128x64/128x32 OLED displays over I2C.
 Caller provides a framebuffer, draws into it with pixel/clear/fill operations,
 then flushes to display. I2C interface injected via callbacks.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`ssd1306`, `oled`, `display` — found LVGL port but no SSD1306 driver.
-
 ## Origin
 
 Proactive build. SSD1306 is the most common small OLED display in embedded

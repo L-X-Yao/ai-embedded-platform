@@ -5,13 +5,6 @@
 
 Common checksum algorithms collection: XOR, 8-bit sum, Fletcher-16, LRC
 (Longitudinal Redundancy Check), and Internet checksum (IP/TCP/UDP).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): `vsfip` has an internal `__vsfip_checksum`
-for Internet checksum, but it's static (not exported) and tied to the IP stack.
-No standalone checksum utility.
-
 ## API
 
 ```c

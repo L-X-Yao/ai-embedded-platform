@@ -4,17 +4,6 @@
 **Layer: L0 (primitives)**
 
 Token bucket rate limiter sink for the `log` wheel. Prevents log flood from overwhelming output bandwidth (UART, RTT, flash). Configurable: max N lines per interval, time source injected via function pointer. Pure C99, zero dependencies, no OS requirement.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`rate`, `limit`, `throttle`, `token`, `bucket`, `flood` (2026-04-30).
-
-- **No rate limiting in VSF trace or stream subsystem.** `vsf_trace` has no built-in flood protection -- if a driver emits 10,000 lines/sec, all 10,000 go to the output stream.
-- `vsf_stream` has flow control at the byte level (stream full -> block/drop), but no line-level rate limiting with dropped-count diagnostics.
-
-**Conclusion**: independent sink wheel. Token bucket is the standard algorithm for this use case (simple, bounded memory, predictable behavior).
-
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Log flood is a recurring embedded problem: a sensor error loop or protocol retry storm can saturate UART and mask other output. This wheel intercepts at the sink level rather than requiring every call site to self-throttle.

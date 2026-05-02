@@ -6,13 +6,6 @@
 Compact binary JSON alternative for IoT telemetry and configuration payloads.
 Streaming encoder and token-based decoder. Supports fixint/fixstr/fixarray/fixmap
 plus 8/16/32-bit variants. Pure C99, no heap, all buffers caller-provided.
-
-## Why not VSF native?
-
-No MessagePack implementation in VSF (`grep -rn "msgpack\|message.pack" vsf/`
-returns nothing). The spec is simple enough that a ~180-line wheel is cheaper
-than pulling an external dependency.
-
 ## Origin
 
 Proactive build for IoT telemetry serialization (sensor data, config exchange).

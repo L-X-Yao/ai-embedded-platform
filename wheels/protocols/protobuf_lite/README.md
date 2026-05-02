@@ -6,13 +6,6 @@
 Manual varint/zigzag/length-delimited encoding and decoding without .proto compiler
 or code generation. Caller provides field numbers directly. Zero allocation, streaming
 decoder, suitable for IoT telemetry payloads.
-
-## Why not VSF native?
-
-VSF has no Protocol Buffers support. nanopb/protobuf-c require .proto compilation and
-dynamic memory. This wheel provides raw wire format access with no schema tooling,
-ideal for embedded devices that need to speak protobuf with a known message layout.
-
 ## Origin
 
 Proactive build for IoT telemetry use cases (cloud gateways, MQTT payloads).

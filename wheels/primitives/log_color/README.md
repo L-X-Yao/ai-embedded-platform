@@ -7,13 +7,6 @@ ANSI color wrapper sink for the `log` wheel. Wraps any existing sink and
 prepends/appends terminal color codes based on the log level character
 (ERROR=red, WARN=yellow, INFO=green, DEBUG=gray). Lines with no recognized
 level char are passed through unchanged.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/trace/`, `vsf/source/component/`, `vsf/source/utilities/`
-for `color`, `ansi`, `trace_color` — `vsf_trace` has no color output support.
-Color formatting is left to the consumer.
-
 ## Origin
 
 Proactive build — common companion pattern for leveled logging sinks.

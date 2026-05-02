@@ -12,14 +12,6 @@ No heap, fully reentrant.
 
 Proactive build for embedded task queues, sensor sample buffers, and
 command pipelines where items are fixed-size structs rather than raw bytes.
-
-## Why not VSF native?
-
-VSF provides `vsf_fifo_t` in `vsf/source/utilities/` but it is
-tightly coupled to the VSF kernel scheduler and memory pool subsystem.
-This wheel is a standalone, zero-dependency FIFO usable in bare-metal
-and non-VSF contexts without pulling in the VSF utility layer.
-
 ## Dependencies
 
 None.

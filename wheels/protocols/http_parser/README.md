@@ -6,11 +6,6 @@
 Lightweight HTTP/1.1 request and response parser. Zero-copy: parsed fields
 point into the caller's input buffer. Supports Content-Length-based body
 extraction and case-insensitive header lookup.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no HTTP parser in service/utilities/component.
-
 ## API
 
 ```c

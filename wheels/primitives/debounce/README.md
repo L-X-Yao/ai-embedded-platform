@@ -6,12 +6,6 @@
 Software button debouncing. Feed raw pin state at fixed intervals; output
 transitions to new stable state after N consecutive identical readings.
 Provides rising/falling edge detection.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): only USB OTG debounce timer, no generic
-software debounce utility.
-
 ## API
 
 ```c

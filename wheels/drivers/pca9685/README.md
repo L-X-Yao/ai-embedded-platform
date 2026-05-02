@@ -10,13 +10,6 @@ PWM frequency 24-1526 Hz with sleep/wake power management.
 ## Origin
 
 Proactive build for robotics (servo control) and LED dimming applications.
-
-## Why not VSF native?
-
-VSF has no PCA9685 driver. The chip requires I2C register-level control
-with prescaler calculation and per-channel PWM register writes that are
-specific to the PCA9685 hardware.
-
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

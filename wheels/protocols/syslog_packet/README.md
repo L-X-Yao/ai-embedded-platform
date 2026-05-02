@@ -7,11 +7,6 @@ RFC 5424 syslog message formatter. Produces
 `<PRI>VERSION TIMESTAMP HOSTNAME APP-NAME PROCID MSGID STRUCTURED-DATA MSG`
 with NILVALUE "-" for missing fields. Timestamp as ISO 8601 UTC if provided,
 "-" if zero. Formatter only -- application handles UDP/TCP transport.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): no syslog implementation in VSF.
-
 ## API
 
 ```c

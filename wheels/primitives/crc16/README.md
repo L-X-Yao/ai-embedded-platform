@@ -6,34 +6,6 @@
 CRC16-MODBUS computation (table-based, ~1 KB ROM). Drop-in for Modbus RTU
 frame check, custom telemetry frames using the same polynomial, and any
 other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
-
-## Why not VSF native?
-
-已检查 VSF 模块（2026-04-26）：
-
-- **`vsf_crc()`**（`vsf/source/component/crypto/hash/crc/vsf_crc.{h,c}`）：✓ 提供 generic
-  CRC engine，支持任意 poly + bitlen。**但 ships 只有 CCITT variants**：
-  `vsf_crc8_ccitt` (poly 0x07), `vsf_crc16_ccitt` (poly 0x1021)。
-- **算法不是 drop-in for MODBUS**：vsf_crc 引擎是 **left-shift non-reflected**
-  （byte XOR 进高字节，向左移）；MODBUS 是 **right-shift reflected**（byte XOR 进
-  低字节，向右移）。直接喂 `{bitlen=16, poly=0xA001}` 会得到错的结果——poly
-  reverse 不是。
-
-**两种修法：**
-
-1. 给 VSF 加 `reflect` 标志位 → 上游 PR 工作（ADR-005 patches workflow）
-2. 独立 wheel，专门做 MODBUS variant
-
-**选 #2** 因为：
-- MODBUS variant 单独存在的需求很高（Modbus RTU 是工业总线主流，flybox 自定义
-  遥测帧也用 0xA001）
-- Table-based 比 vsf_crc 的 bit-by-bit 快 ~8x（每字节 1 次查表 vs 8 次循环）
-  ——对 flash ring frame check 这种高频 CRC 用例 ROI 明显
-- ~1 KB ROM 在嵌入式可接受
-
-**不替换 vsf_crc**——本 wheel 不提供 CCITT、CCITT-FALSE 等其他 variant；那些
-继续用 vsf_crc 即可。本 wheel 是 MODBUS 专家。
-
 ## How to test
 
 ```bash

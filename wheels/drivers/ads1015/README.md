@@ -8,11 +8,6 @@
 0.256V to 6.144V, and configurable data rates (128-3300 SPS). Same
 register layout as ADS1115 but 12-bit resolution (left-justified in
 16-bit conversion register).
-
-## Why not VSF native?
-
-No ADS1015 driver in `vsf/source/component/` or `vsf/source/hal/driver/`.
-
 ## Origin
 
 Proactive build for general-purpose analog sensing. Sibling of the

@@ -13,13 +13,6 @@ sector is erased and reused, providing basic wear leveling.
 Proactive build for embedded data logging use cases (flight logs, sensor
 history, error journals) where a simple append-only journal over raw flash
 sectors is needed without a full filesystem.
-
-## Why not VSF native?
-
-VSF provides no built-in append-only journal abstraction. Its FAL/KVS layers
-target key-value storage, not sequential log journals with wraparound and
-wear leveling.
-
 ## Dependencies
 
 None (self-contained, includes internal CRC32 implementation).

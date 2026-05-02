@@ -6,11 +6,6 @@
 Drives step/dir stepper motor drivers (A4988, DRV8825, TMC2209, etc.).
 Trapezoidal acceleration profile with integer-only math (no float).
 Blocking move via caller-provided `delay_us` callback, position tracking.
-
-## Why not VSF native?
-
-VSF has no stepper motor driver. Step/dir control with acceleration ramp is application-specific and not covered by VSF HAL.
-
 ## Origin
 
 Proactive build for motor control use cases (CNC, 3D printer, turntable, camera slider).

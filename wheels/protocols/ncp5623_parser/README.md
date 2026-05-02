@@ -4,14 +4,6 @@
 
 Pure-software parser for the NCP5623-compatible LED color protocol used by ArduPilot flight controllers.
 Zero hardware dependency — feed raw I2C bytes in, get structured color/enable events out.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`ncp5623`, `i2c_slave_parse`, `led_protocol`, `i2c.*color` — zero results.
-
-VSF has no application-layer I2C protocol parsers.
-
 ## Origin
 
 Extracted from `projects/drone_light/Src/i2c_slave.c` (NCP5623 protocol state machine).

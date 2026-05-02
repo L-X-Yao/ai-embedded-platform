@@ -6,12 +6,6 @@
 MQTT 3.1.1 packet serializer/deserializer. Stateless building and parsing
 of CONNECT, PUBLISH, SUBSCRIBE, PINGREQ, DISCONNECT and their responses.
 No transport — caller handles TCP/TLS. Pure C99, no heap.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`mqtt` — zero results.
-
 ## Origin
 
 Proactive build. MQTT is the standard IoT messaging protocol. Every connected

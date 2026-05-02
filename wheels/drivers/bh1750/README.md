@@ -6,11 +6,6 @@
 ROHM BH1750FVI ambient light sensor driver. **Command-based I2C** (not
 register-based): write command byte, read 2 data bytes. Supports continuous
 and one-time measurement modes at high/low resolution (1 lx / 0.5 lx / 4 lx).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no BH1750 driver in VSF.
-
 ## API
 
 ```c

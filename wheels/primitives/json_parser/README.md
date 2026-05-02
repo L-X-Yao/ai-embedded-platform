@@ -10,11 +10,6 @@ No malloc, no OS dependencies — pure C99.
 ## Origin
 
 Proactive build for embedded telemetry/config parsing (MQTT payloads, AT command responses, REST API bodies).
-
-## Why not VSF native?
-
-VSF does not provide a SAX-style streaming JSON parser. `cJSON` (available via VSF components) is DOM-based and requires malloc, making it unsuitable for constrained devices or streaming UART/network data.
-
 ## Dependencies
 
 None.

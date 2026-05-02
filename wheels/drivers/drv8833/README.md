@@ -6,12 +6,6 @@
 Controls two DC motors via 4 PWM pins. Supports forward, reverse, brake (slow
 decay), and coast (fast decay) per channel. Optional nSLEEP pin control.
 Compatible with DRV8833 and DRV8835 (IN/IN mode).
-
-## Why not VSF native?
-
-VSF has no motor driver abstraction. This is chip-specific H-bridge control
-logic that belongs in a wheel.
-
 ## Origin
 
 Proactive build for robotics / mechatronics projects needing DC motor control.

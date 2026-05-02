@@ -56,12 +56,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - Unit tests (sim): 26 tests, all passing
 - HIL: N/A
-
-## Why not VSF native?
-
-VSF has no semantic version parsing/comparison utility. `vsf_version.h` only defines
-the framework's own version as macros, with no runtime parsing or comparison API.
-
 ## API convention deviations
 
 None.

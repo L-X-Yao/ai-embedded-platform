@@ -11,13 +11,6 @@ Pure C99, no heap. All buffers caller-provided.
 
 Proactive build for embedded DNS clients (e.g. hostname resolution over
 UDP in IoT devices).
-
-## Why not VSF native?
-
-VSF provides `vsf_netdrv` and TCP/IP stacks, but no standalone DNS wire-format
-codec that works without the full networking stack. This wheel is transport-
-agnostic — caller sends/receives UDP, this wheel only serializes/deserializes.
-
 ## Dependencies
 
 None.

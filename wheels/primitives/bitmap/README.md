@@ -11,13 +11,6 @@ No heap, no OS, pure C99.
 
 Proactive build for memory pool tracking, slot allocation, and peripheral
 resource management in embedded systems.
-
-## Why not VSF native?
-
-VSF has no general-purpose bitmap/bit-array primitive. `vsf_bitmap` in the kernel
-is tightly coupled to the scheduler internals and not exposed as a standalone
-utility API.
-
 ## Dependencies
 
 None.

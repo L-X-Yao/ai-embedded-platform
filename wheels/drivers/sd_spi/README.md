@@ -4,11 +4,6 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic SPI-mode SD card driver for single-block read/write. Supports SDv1, SDv2 SDSC, and SDHC/SDXC cards.
-
-## Why not VSF native?
-
-VSF has no SPI-mode SD card component. The existing `vsf_sdio` is for native SDIO interface, not SPI mode. Searched `vsf/source/{component,service,hal}/` -- zero hits for `sd_spi`, `sd.*spi`, `spi.*sd`.
-
 ## Origin
 
 Proactive build for SD card data logging use cases (flight recorders, sensor loggers). Common in embedded projects where SDIO is unavailable and SPI is the only interface option.

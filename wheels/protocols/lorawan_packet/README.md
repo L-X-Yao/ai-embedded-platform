@@ -6,11 +6,6 @@
 Stateless frame building and parsing for LoRaWAN Class A uplink/downlink
 data frames and join requests. Codec only — no AES encryption, no MIC
 computation (caller handles crypto separately).
-
-## Why not VSF native?
-
-No LoRaWAN MAC layer codec found in VSF. `grep -rn "lorawan\|LoRaWAN" vsf/source/` returns nothing.
-
 ## Origin
 
 Proactive build for LoRa/LoRaWAN gateway and node projects.

@@ -6,13 +6,6 @@
 Bit-level pack/unpack from byte arrays. MSB-first (big-endian bit numbering):
 bit 0 is the MSB of byte 0. Useful for protocol parsing (CAN, Modbus register
 bit masks, custom telemetry frames) and hardware register manipulation.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no standalone bitfield utility in service/
-utilities/component. CMSIS core has register-level macros but not a portable
-byte-array bit accessor.
-
 ## API
 
 ```c

@@ -10,11 +10,6 @@ CRC-8 validation, configurable resolution (14/12/13/11-bit temperature,
 ## Origin
 
 Proactive build for common I2C environmental sensor use cases.
-
-## Why not VSF native?
-
-No Si7021/HTU21D driver in `vsf/source/` — grep confirmed (2026-05-01).
-
 ## Dependencies
 
 None (I2C HAL injected via callbacks).

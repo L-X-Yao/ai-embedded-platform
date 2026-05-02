@@ -7,12 +7,6 @@ Platform-agnostic driver for Bosch BME280 digital temperature, humidity, and
 pressure sensor. I2C interface injected via callbacks. Implements the official
 Bosch 32-bit integer compensation algorithm from datasheet BST-BME280-DS002-15.
 Extends BMP280 with humidity measurement (registers 0xFD-0xFE).
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`bme280`, `bme2`, `bosch`, `humidity` — zero results.
-
 ## Origin
 
 Proactive build. BME280 is the most widely used environmental sensor in

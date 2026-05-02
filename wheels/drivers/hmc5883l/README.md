@@ -8,11 +8,6 @@ interface, fixed address 0x1E. Configurable gain (0.88-8.1 Ga range) and
 data rate (0.75-75 Hz). Outputs raw counts or Gauss.
 
 Note: data register order is X, Z, Y (not X, Y, Z).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no HMC5883L driver in VSF.
-
 ## API
 
 ```c

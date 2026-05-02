@@ -10,12 +10,6 @@ registers, converts to temperature using Callendar-Van Dusen linearization
 ## Origin
 
 Proactive build for industrial temperature sensing (RTD applications).
-
-## Why not VSF native?
-
-No MAX31865 driver exists in VSF `source/service/`, `source/utilities/`, or
-`source/component/`. Verified via grep 2026-05-01.
-
 ## Dependencies
 
 None (SPI HAL injected via callbacks).

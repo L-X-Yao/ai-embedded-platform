@@ -6,22 +6,6 @@
 Minimal CLI parser for embedded debug shells. Character-at-a-time feed
 from UART, command table dispatch, built-in help, line editing (backspace).
 Pure C99, zero dependencies, no heap allocation.
-
-## Why not VSF native?
-
-Checked VSF modules (2026-04-28):
-
-- `vsf/source/component/` — no CLI / command parser utility found
-- `vsf/source/service/` — no shell / command dispatch found
-- `vsf/source/utilities/` — no readline / line editor found
-
-VSF has no native CLI parsing. Closest is the linux shell component which
-requires the full POSIX skin — far too heavy for a debug UART shell on
-small MCUs.
-
-**Conclusion**: no VSF equivalent. This wheel fills the gap as a pure L0
-primitive with zero framework dependency.
-
 ## Features
 
 - Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR

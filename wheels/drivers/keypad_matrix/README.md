@@ -10,12 +10,6 @@ Includes 2-scan debounce and press/release edge detection.
 ## Origin
 
 Proactive build for generic matrix keypad input on MCU projects.
-
-## Why not VSF native?
-
-VSF has no built-in matrix keypad scanner. The `input` subsystem covers
-HID/gamepad but not raw GPIO matrix scanning with debounce.
-
 ## Dependencies
 
 None (HAL callbacks injected by caller).

@@ -8,11 +8,6 @@ Zero-allocation byte stuffing that eliminates 0x00 from payload, enabling reliab
 ## Origin
 
 Proactive build for serial framing (UART, RS-485, etc.). COBS is the standard byte-stuffing algorithm for packet-based serial protocols.
-
-## Why not VSF native?
-
-VSF does not provide a COBS codec. `vsf/source/service/` and `vsf/source/utilities/` have no byte-stuffing or COBS implementation.
-
 ## Dependencies
 
 None.

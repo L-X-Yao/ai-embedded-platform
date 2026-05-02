@@ -6,17 +6,6 @@
 CRC32 (IEEE 802.3 / Ethernet / zlib-compatible) table-based computation. Drop-in
 for OTA image checksums, file integrity, Ethernet FCS, and any CRC32 with
 poly 0xEDB88320 / init 0xFFFFFFFF / final XOR 0xFFFFFFFF.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29):
-
-- `vsf/source/component/3rd-party/zlib/` contains `crc32.c` but it's part of the
-  zlib compression library — pulling zlib for a standalone CRC32 adds ~40 KB bloat.
-- No standalone CRC32 utility in `vsf/source/service/` or `vsf/source/utilities/`.
-
-This wheel provides a minimal 1 KB ROM footprint CRC32 with streaming API.
-
 ## API
 
 ```c

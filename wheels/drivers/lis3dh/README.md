@@ -6,11 +6,6 @@
 I2C driver for the ST LIS3DH 3-axis accelerometer. Supports configurable
 full-scale range (+/-2/4/8/16g), output data rate (1 Hz to 5376 Hz),
 and both scaled (G) and raw 16-bit reads. 12-bit resolution, left-justified.
-
-## Why not VSF native?
-
-No LIS3DH driver in `vsf/source/component/` or `vsf/source/service/`.
-
 ## Origin
 
 Proactive build for common low-cost 3-axis accelerometer use case.

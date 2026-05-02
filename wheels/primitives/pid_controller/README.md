@@ -6,14 +6,6 @@
 Discrete PID controller with output clamping and integral anti-windup.
 Pure C99, no heap, fully reentrant per-context. Suitable for motor control,
 temperature regulation, position servo, and any closed-loop control application.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`pid`, `controller`, `control_loop` — zero results.
-
-VSF has `fsm_rt_t` return value types but no generic PID or control-loop utility.
-
 ## Origin
 
 Proactive build for embedded control applications. Common pattern across motor

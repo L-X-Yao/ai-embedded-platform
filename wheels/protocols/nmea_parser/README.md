@@ -5,14 +5,6 @@
 
 Pure-software parser for NMEA 0183 GPS/GNSS sentences. Supports GGA, RMC, and GSA.
 Zero hardware dependency — feed null-terminated sentence strings, get structured position/time/quality data out.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`nmea`, `gps`, `gnss`, `gga`, `rmc` — zero results.
-
-VSF has no NMEA parsing capability.
-
 ## Origin
 
 Extracted from `projects/flybox/src/app/gnss_task.c` (Air780EG GNSS NMEA handling).

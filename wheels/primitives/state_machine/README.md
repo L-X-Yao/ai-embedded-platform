@@ -5,14 +5,6 @@
 
 Table-driven finite state machine with optional entry/exit actions per state
 and guard conditions on transitions. Pure C99, no heap, fully reentrant.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`state_machine`, `fsm`, `hsm` — found `fsm_rt_t` return type enum in `__type.h`
-(on_going/complete/error), but no generic state machine framework or table-driven
-FSM engine.
-
 ## Origin
 
 Proactive build. Table-driven FSMs are used in protocol parsers, UI flows,

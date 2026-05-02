@@ -6,12 +6,6 @@
 Configurable retry strategy with three backoff modes: fixed, linear, exponential.
 Pure computation — calculates next delay, caller provides the actual wait
 mechanism (RTOS delay / busy-wait / timer callback).
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): `vsfip_netif.c` has an internal `retry` counter
-for ARP, but no reusable retry strategy utility in service/utilities/component.
-
 ## API
 
 ```c

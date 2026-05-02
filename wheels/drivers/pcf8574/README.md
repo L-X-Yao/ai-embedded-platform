@@ -6,13 +6,6 @@
 NXP PCF8574 / PCF8574A I2C 8-bit quasi-bidirectional I/O expander.
 Command-based I2C (no registers) — read or write a single byte for all 8 pins.
 Pin-level operations use read-modify-write on a cached output state.
-
-## Why not VSF native?
-
-No PCF8574 driver found in `vsf/source/component/` or `vsf/source/hal/driver/`.
-The device is too simple for a generic GPIO expander HAL — it is a one-byte
-command-based I2C device with no registers.
-
 ## Origin
 
 Proactive build for I2C GPIO expansion use cases (LCD backpacks, keypad matrices,

@@ -6,11 +6,6 @@
 12-bit contactless magnetic rotary position sensor. Fixed I2C address 0x36.
 Raw angle register returns 0-4095 mapping to 0-360 degrees. Supports reading
 raw angle, degrees, magnet status, and configuring start position / max angle.
-
-## Why not VSF native?
-
-No AS5600 driver in VSF source tree (`grep -rn "as5600\|AS5600" vsf/` = 0 hits).
-
 ## Origin
 
 Proactive build for rotary position sensing applications (knobs, motor feedback, wind vanes).

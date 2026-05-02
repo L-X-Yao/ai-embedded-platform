@@ -9,15 +9,6 @@ Round-robin periodic task execution, tick-driven. Application calls
 
 Passive design: no OS, no malloc, no timers, no interrupts. All timing
 expressed in tick counts -- the caller decides the tick rate.
-
-## Why not VSF native?
-
-Checked VSF source (2026-05-01): VSF has `vsf_eda_t` and `vsf_teda_t`
-(timed event-driven architecture) which provide cooperative scheduling, but
-they require the full VSF kernel and event infrastructure. No standalone
-tick-driven round-robin scheduler usable as a passive library without OS
-dependencies.
-
 ## API
 
 ```c

@@ -7,14 +7,6 @@ Fixed-size ring buffer of structured log entries for post-crash analysis, CLI
 "show log" commands, or any scenario needing offline read-back. Oldest entries
 are silently overwritten when the buffer is full. Passive library — no OS,
 no malloc, no I/O.
-
-## Why not VSF native?
-
-VSF has streaming log sinks (`vsf_trace`) but no ring-buffered structured
-storage with random-access read-back. The existing L0 `log` wheel ecosystem
-covers streaming output; `ring_log` covers the complementary "store and
-retrieve later" use case.
-
 ## Origin
 
 Proactive build for post-crash log analysis and CLI diagnostic commands.

@@ -8,11 +8,6 @@
 ## Origin
 
 Proactive build for ambient light sensing with wider dynamic range than BH1750.
-
-## Why not VSF native?
-
-No VEML7700 driver exists in VSF upstream (`vsf/source/hal/driver/`, `vsf/source/component/`).
-
 ## Dependencies
 
 None (I2C HAL injected via function pointers).

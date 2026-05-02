@@ -5,24 +5,6 @@
 
 Leveled logging with module tags, multi-sink output, and compile-time filtering.
 Pure C99, zero dependencies.
-
-## Why not VSF native?
-
-Checked VSF modules:
-
-- `vsf_trace` (`service/trace/`): provides levels (NONE/ERROR/WARNING/INFO/DEBUG), printf-style, color, stream output, buffer hex dump. **Covers ~60% of requirements.**
-- `vsf_bgtrace` (same file): typed background ring buffer trace for high-frequency tracing. Non-competing with this wheel.
-
-**4 capabilities VSF native lacks** (common in embedded products):
-1. **Module tagging** — cannot distinguish BLE / driver / app origin in logs
-2. **Multi-sink output** — vsf_trace binds to a single stream, cannot UART + flash + remote in parallel
-3. **Compile-time level filtering** — vsf_trace is runtime-only, DEBUG strings still compiled into release binary
-4. **Timestamps** — vsf_trace does not auto-prepend time
-
-**Conclusion**: independent wheel. Output via function-pointer sink injection
-(`log_add_sink`), not tied to any framework. Projects using VSF can bridge to
-`vsf_trace` by registering a custom sink that calls `__vsf_trace_output()`.
-
 ## How to test
 
 ```bash

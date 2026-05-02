@@ -6,12 +6,6 @@
 MIDI message encoder/decoder. Streaming byte-at-a-time parser with running
 status support. Builder functions for Note On, Note Off, Control Change,
 Program Change, Pitch Bend, and SysEx. Pure C99, no heap.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`midi` — zero results.
-
 ## Origin
 
 Proactive build. MIDI is the standard protocol for musical instrument

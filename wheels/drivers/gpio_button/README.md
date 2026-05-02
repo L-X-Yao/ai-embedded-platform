@@ -4,14 +4,6 @@
 
 Tick-driven button state machine with debounce, click, double-click, and long-press detection.
 Single HAL callback, zero hardware dependency, no dynamic allocation.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`button`, `debounce`, `key`, `input_event` — zero results.
-
-VSF provides GPIO HAL primitives but no button debounce or gesture detection.
-
 ## Origin
 
 Extracted from common embedded button patterns. Proactive build for `projects/flybox/` and `projects/drone_light/` platform.

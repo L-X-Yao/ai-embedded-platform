@@ -4,16 +4,6 @@
 **Layer: L0 (primitives)**
 
 Deduplication sink for the `log` wheel. Suppresses consecutive identical log lines (ignoring timestamp differences). When a different line arrives after N repeats, emits `[repeated N times]` summary before forwarding the new line. Pure C99, zero dependencies.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`dedup`, `duplicate`, `suppress`, `repeat`, `identical` (2026-04-30).
-
-- **No deduplication in VSF trace or stream subsystem.** `vsf_trace` forwards every line unconditionally. No built-in mechanism to detect or suppress repeated output.
-
-**Conclusion**: independent sink wheel. Consecutive-duplicate suppression is a well-known pattern in syslog/dmesg; this wheel brings it to embedded log output.
-
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. Sensor error loops and periodic status messages commonly produce long runs of identical lines that obscure useful output. This wheel intercepts at the sink level, keeping call sites clean.

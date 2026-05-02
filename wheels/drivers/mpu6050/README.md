@@ -6,12 +6,6 @@
 Platform-agnostic driver for InvenSense MPU-6050 6-axis IMU (3-axis
 accelerometer + 3-axis gyroscope). I2C interface injected via callbacks.
 Configurable full-scale ranges for both accel and gyro.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`mpu6050`, `invensense`, `accel`, `gyro` — zero results.
-
 ## Origin
 
 Proactive build. MPU-6050 is the most widely used low-cost 6-axis IMU in

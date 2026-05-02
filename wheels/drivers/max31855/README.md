@@ -7,11 +7,6 @@ Read K/J/N/T-type thermocouple temperature via SPI. The MAX31855 outputs a
 32-bit read-only frame containing 14-bit thermocouple temperature (0.25 C/LSB)
 and 12-bit internal cold-junction reference (0.0625 C/LSB), plus fault flags
 for open circuit, short-to-GND, and short-to-VCC.
-
-## Why not VSF native?
-
-No VSF driver exists for MAX31855. Grepped `vsf/source/` — zero hits.
-
 ## Origin
 
 Proactive build for thermocouple sensing use cases (ovens, industrial temp

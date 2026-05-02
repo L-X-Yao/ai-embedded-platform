@@ -14,12 +14,6 @@ callback. No OS, no malloc, no serial access — purely event-driven.
 Proactive build for firmware update over serial (YMODEM batch mode, common in
 embedded bootloaders). Extends the existing `xmodem` wheel with metadata and
 1024-byte block support.
-
-## Why not VSF native?
-
-VSF has no YMODEM implementation. The protocol is well-specified and compact
-(< 200 lines) — a standalone wheel is the right approach.
-
 ## Dependencies
 
 None.

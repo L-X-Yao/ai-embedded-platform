@@ -6,12 +6,6 @@
 Platform-agnostic driver for TI DRV2605L haptic motor driver IC. Fixed I2C
 address 0x5A. Supports ERM and LRA actuators, waveform sequencer with 8 slots
 (internal effect library 1-123), and real-time playback mode.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`drv2605`, `haptic`, `vibration`, `motor_driver` -- zero results.
-
 ## Origin
 
 Proactive build. DRV2605L is the most common I2C haptic driver in embedded

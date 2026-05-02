@@ -6,11 +6,6 @@
 Dallas/Maxim DS18B20 1-Wire digital temperature sensor driver. 12-bit
 resolution (0.0625°C), configurable 9-12 bits. Supports single-device
 (skip ROM) and multi-device (match ROM) buses.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): no DS18B20 or 1-Wire driver in VSF.
-
 ## API
 
 ```c

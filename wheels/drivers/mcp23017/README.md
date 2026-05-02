@@ -6,12 +6,6 @@
 MCP23017 I2C GPIO expander with two independent 8-bit ports (A/B).
 Supports direction, pullup, pin/port read/write, and interrupt-on-change
 configuration. Bank=0 register addressing. Pure C99, no heap, reentrant.
-
-## Why not VSF native?
-
-VSF has no MCP23017 driver. The chip is a Microchip I2C GPIO expander,
-not a standard peripheral that VSF would abstract.
-
 ## Origin
 
 Proactive build for GPIO expansion use cases (button matrices, LED banks,

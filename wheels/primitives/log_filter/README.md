@@ -6,13 +6,6 @@
 Module-based runtime filter sink for the `log` wheel. Wraps any existing sink
 and forwards only lines whose `[module]` tag matches an ALLOW list or does not
 match a DENY list. Lines with no parseable module tag are always forwarded.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/trace/`, `vsf/source/component/`, `vsf/source/utilities/`
-for `filter`, `trace_filter`, `module` — `vsf_trace` has no per-module
-filtering capability.
-
 ## Origin
 
 Proactive build — common companion pattern for leveled logging sinks in

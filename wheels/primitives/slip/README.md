@@ -8,11 +8,6 @@ RFC 1055 byte stuffing with END/ESC framing. Supports block encode/decode and a 
 ## Origin
 
 Proactive build for serial framing. SLIP is the standard framing protocol for serial links (RFC 1055), complementing the existing `cobs` wheel (COBS is block-oriented; SLIP offers a streaming decoder for ISR/DMA byte-at-a-time reception).
-
-## Why not VSF native?
-
-VSF does not provide a SLIP codec. `vsf/source/service/` and `vsf/source/utilities/` have no SLIP framing implementation.
-
 ## Dependencies
 
 None.

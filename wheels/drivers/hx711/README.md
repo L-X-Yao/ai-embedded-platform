@@ -10,12 +10,6 @@ Pure C99, no OS, no malloc. HAL-injected GPIO + delay callbacks.
 ## Origin
 
 Proactive build for weight/force measurement applications using load cells.
-
-## Why not VSF native?
-
-VSF has no HX711 driver. The HX711 uses a proprietary single-wire serial protocol
-(not I2C/SPI), requiring bit-bang GPIO timing. No standard HAL covers this.
-
 ## Dependencies
 
 None (GPIO HAL injected by caller).

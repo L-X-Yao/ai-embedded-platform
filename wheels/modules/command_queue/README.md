@@ -12,14 +12,6 @@ Caller provides the backing array — no heap, fully reentrant per-context.
 
 Proactive build for embedded task dispatching patterns (command handlers,
 remote-control packet routing, multi-source command arbitration).
-
-## Why not VSF native?
-
-VSF provides `vsf_eda_post_msg` / `vsf_eda_post_evt` for event passing,
-but these are tied to the VSF scheduler and lack explicit priority ordering
-with FIFO-within-priority semantics. This wheel is OS-independent and
-usable in bare-metal or any RTOS context.
-
 ## Dependencies
 
 None.

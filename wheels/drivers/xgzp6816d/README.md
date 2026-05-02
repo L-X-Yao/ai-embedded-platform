@@ -5,13 +5,6 @@
 
 Platform-agnostic driver for the CFSensor XGZP6816D barometric pressure sensor
 (30-110 kPa, 24-bit pressure + 16-bit temperature, I2C interface @ 0x78).
-
-## Why not VSF native?
-
-Searched `vsf/source/{component,service,hal/}` for `baro`, `pressure`,
-`barometer`, `xgzp`, `bmp280`, `bmp388`, `spl06`, `ms5611`, `pressure_sens`
-on 2026-04-27 — zero hits. VSF has no barometric / pressure sensor driver.
-
 ## Features
 
 - Probe (bus connectivity check)

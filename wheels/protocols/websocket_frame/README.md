@@ -6,12 +6,6 @@
 WebSocket frame encoder/decoder (RFC 6455). Stateless frame-level codec —
 does NOT handle HTTP upgrade handshake (use http_parser for that). Supports
 masking, FIN/opcode control, 7/16/64-bit payload lengths.
-
-## Why not VSF native?
-
-Checked VSF source (2026-04-29): websocket only exists in MicroPython module,
-not as a standalone C component.
-
 ## API
 
 ```c

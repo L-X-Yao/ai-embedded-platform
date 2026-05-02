@@ -4,17 +4,6 @@
 **Layer: L0 (primitives)**
 
 Segger RTT-style output sink for the `log` wheel via HAL injection. Supports channel selection. Does NOT depend on the SEGGER_RTT library -- takes a `write(ctx, channel, data, len)` function pointer that matches `SEGGER_RTT_Write()` semantics. Pure C99, zero dependencies.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`rtt`, `segger`, `realtime`, `trace_channel` (2026-04-30).
-
-- **No RTT support in VSF**. `vsf_trace` outputs to `vsf_stream` with no concept of RTT channels or memory-mapped control blocks.
-- SEGGER_RTT is a vendor library with its own license (closed-source commercial use requires license). This wheel avoids the dependency entirely by injecting the write function.
-
-**Conclusion**: independent sink wheel. Channel-aware write signature matches SEGGER_RTT_Write() semantics without vendor coupling.
-
 ## Origin
 
 Proactive build as companion sink for `wheels/primitives/log/`. RTT is the second most common embedded debug output after UART, especially during development with J-Link probes.

@@ -4,14 +4,6 @@
 
 Platform-portable WS2812B single-wire LED driver.
 Encodes 8-bit RGB into GRB PWM bit-stream, sends via caller-provided timer HAL.
-
-## Why not VSF native?
-
-Searched `vsf/source/service/`, `vsf/source/component/`, `vsf/source/utilities/` for:
-`ws2812`, `neopixel`, `led_strip`, `rgb_led` — zero results.
-
-VSF provides GPIO and timer HAL primitives but no WS2812 protocol driver.
-
 ## Origin
 
 Extracted from `projects/drone_light/Src/ws2812.c` (N32G003, TIM1 PWM bit-bang).
