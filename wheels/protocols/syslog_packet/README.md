@@ -31,7 +31,7 @@ syslog_err_t syslog_parse_pri(const char *buf, uint16_t len,
                                uint8_t *pri, uint16_t *offset);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 None.
 

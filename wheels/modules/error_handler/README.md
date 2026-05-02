@@ -39,7 +39,7 @@ wheel with zero dependencies.
 
 None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Initialize handler. storage may be NULL (no persistence). */
@@ -76,7 +76,7 @@ uint32_t error_handler_total_errors(const error_handler_t *eh);
 uint32_t error_handler_total_fatals(const error_handler_t *eh);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

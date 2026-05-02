@@ -28,7 +28,7 @@ int32_t median_filter_get(const median_filter_t *f);
 void    median_filter_reset(median_filter_t *f);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

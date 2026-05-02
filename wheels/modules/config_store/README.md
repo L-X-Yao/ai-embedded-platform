@@ -36,7 +36,7 @@ wheel with zero dependencies.
 None. Pure C99 with `<stdbool.h>`, `<stddef.h>`, `<stdint.h>`,
 `<string.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Storage abstraction -- application provides save/load callbacks */
@@ -74,7 +74,7 @@ config_store_err_t config_store_reset_defaults(cs);
 uint8_t config_store_count(cs);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

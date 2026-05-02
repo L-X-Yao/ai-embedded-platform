@@ -33,7 +33,7 @@ uint8_t       mcp2515_read_errors(mcp2515_t *dev);
 
 Caller provides SPI HAL via `mcp2515_spi_t` callbacks (CS control + byte transfer).
 
-## Configuration
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

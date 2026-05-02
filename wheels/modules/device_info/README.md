@@ -31,7 +31,7 @@ simple and platform-specific to warrant a dependency. ~110 lines of C.
 
 None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>`, `<stdio.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Zero-initialize all fields */
@@ -58,7 +58,7 @@ uint32_t device_info_get_uptime(const device_info_t *info);
 int device_info_format(const device_info_t *info, char *buf, uint16_t buf_size);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

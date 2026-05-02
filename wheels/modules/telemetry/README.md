@@ -39,7 +39,7 @@ wheel with zero dependencies.
 
 None. Pure C99 with `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<string.h>` only.
 
-## API summary
+## API
 
 ```c
 /* Error codes */
@@ -88,7 +88,7 @@ uint32_t telemetry_get_error_count(const telemetry_t *t);
 void telemetry_reset(telemetry_t *t);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

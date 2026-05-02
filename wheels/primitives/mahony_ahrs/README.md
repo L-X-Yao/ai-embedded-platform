@@ -38,7 +38,7 @@ printf("roll=%.1f pitch=%.1f yaw=%.1f\n",
        euler.roll_deg, euler.pitch_deg, euler.yaw_deg);
 ```
 
-## Configuration
+## Configuration (compile-time)
 
 Tuning via `mahony_ahrs_cfg_t`:
 

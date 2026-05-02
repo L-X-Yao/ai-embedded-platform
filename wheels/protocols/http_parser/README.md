@@ -31,7 +31,7 @@ http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, i
 int        http_parser_get_content_length(const http_parser_header_t *headers, int count);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|

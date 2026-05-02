@@ -40,7 +40,7 @@ wheel with zero dependencies.
 
 None. Pure C99 with `<string.h>`, `<stddef.h>`, `<stdint.h>` only.
 
-## API summary
+## API
 
 ```c
 /* I/O abstraction -- application provides write callback */
@@ -66,7 +66,7 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
 void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 ```
 
-## Configuration macros
+## Configuration (compile-time)
 
 | Macro | Default | Description |
 |-------|---------|-------------|
