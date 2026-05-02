@@ -95,7 +95,7 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
 
     /* Calibration register = trunc(0.04096 / (current_lsb * shunt_ohms)) */
     float cal_f = 0.04096f / (dev->current_lsb * shunt_ohms);
-    uint16_t cal = (uint16_t)cal_f;
+    uint16_t cal = (cal_f <= 0.0f) ? 0u : (cal_f >= 65535.0f) ? 65535u : (uint16_t)cal_f;
 
     err = write_reg16(dev, REG_CALIBRATION, cal);
     if (err != INA219_OK)

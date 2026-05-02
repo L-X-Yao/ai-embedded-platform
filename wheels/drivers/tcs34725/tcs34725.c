@@ -158,7 +158,7 @@ tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc,
 
     if (cct < 0.0f)
         cct = 0.0f;
-    *cct_k = (uint16_t)cct;
+    *cct_k = (cct >= 65535.0f) ? 65535u : (uint16_t)cct;
     return TCS34725_OK;
 }
 
