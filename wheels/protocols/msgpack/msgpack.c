@@ -156,19 +156,30 @@ msgpack_err_t msgpack_enc_str(msgpack_enc_t *enc,
                               const char *str, size_t len)
 {
     if (!enc || (!str && len > 0)) return MSGPACK_ERR_PARAM;
+    size_t hdr;
     if (len <= 31) {
-        if (!enc_has(enc, 1 + len)) return MSGPACK_ERR_OVERFLOW;
-        enc_u8(enc, (uint8_t)(0xa0u | len));   /* fixstr */
+        hdr = 1;
     } else if (len <= 0xff) {
-        if (!enc_has(enc, 2 + len)) return MSGPACK_ERR_OVERFLOW;
+        hdr = 2;
+    } else if (len <= 0xffff) {
+        hdr = 3;
+    } else {
+        hdr = 5;
+    }
+    /* check header + payload with overflow-safe arithmetic */
+    if (len > enc->cap || hdr > enc->cap - len ||
+        !enc_has(enc, hdr + len)) {
+        return MSGPACK_ERR_OVERFLOW;
+    }
+    if (hdr == 1) {
+        enc_u8(enc, (uint8_t)(0xa0u | len));   /* fixstr */
+    } else if (hdr == 2) {
         enc_u8(enc, FMT_STR8);
         enc_u8(enc, (uint8_t)len);
-    } else if (len <= 0xffff) {
-        if (!enc_has(enc, 3 + len)) return MSGPACK_ERR_OVERFLOW;
+    } else if (hdr == 3) {
         enc_u8(enc, FMT_STR16);
         enc_u16(enc, (uint16_t)len);
     } else {
-        if (!enc_has(enc, 5 + len)) return MSGPACK_ERR_OVERFLOW;
         enc_u8(enc, FMT_STR32);
         enc_u32(enc, (uint32_t)len);
     }
@@ -181,16 +192,26 @@ msgpack_err_t msgpack_enc_bin(msgpack_enc_t *enc,
                               const uint8_t *data, size_t len)
 {
     if (!enc || (!data && len > 0)) return MSGPACK_ERR_PARAM;
+    size_t hdr;
     if (len <= 0xff) {
-        if (!enc_has(enc, 2 + len)) return MSGPACK_ERR_OVERFLOW;
+        hdr = 2;
+    } else if (len <= 0xffff) {
+        hdr = 3;
+    } else {
+        hdr = 5;
+    }
+    /* check header + payload with overflow-safe arithmetic */
+    if (len > enc->cap || hdr > enc->cap - len ||
+        !enc_has(enc, hdr + len)) {
+        return MSGPACK_ERR_OVERFLOW;
+    }
+    if (hdr == 2) {
         enc_u8(enc, FMT_BIN8);
         enc_u8(enc, (uint8_t)len);
-    } else if (len <= 0xffff) {
-        if (!enc_has(enc, 3 + len)) return MSGPACK_ERR_OVERFLOW;
+    } else if (hdr == 3) {
         enc_u8(enc, FMT_BIN16);
         enc_u16(enc, (uint16_t)len);
     } else {
-        if (!enc_has(enc, 5 + len)) return MSGPACK_ERR_OVERFLOW;
         enc_u8(enc, FMT_BIN32);
         enc_u32(enc, (uint32_t)len);
     }
