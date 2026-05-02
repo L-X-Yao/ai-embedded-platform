@@ -492,223 +492,12 @@ def find_wheels():
 
 def read_readme(wheel_dir: Path) -> str:
     """Return README.md text or empty string."""
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return ""
-    try:
-        return readme.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def has_project_origin(wheel_dir: Path) -> bool:
-    """Check if README documents extraction from a real project."""
-    text = read_readme(wheel_dir)
-    return "Extracted from" in text and "projects/" in text
-
-
-def has_vsf_native_section(wheel_dir: Path) -> bool:
-    """Check README has 'Why not VSF native?' heading (ADR-006)."""
-    text = read_readme(wheel_dir)
-    return "## Why not VSF native?" in text
-
-
-def has_api_review(wheel_dir: Path) -> bool:
-    """Check README has an API review section (wheel-contract §7)."""
-    text = read_readme(wheel_dir)
-    return "## API Review" in text or "## API review" in text
-
-
-def has_responsible_human(wheel_dir: Path) -> bool:
-    """Check README has 'Responsible human' section (wheel-contract template)."""
-    text = read_readme(wheel_dir)
-    return "## Responsible human" in text
-
-
-def has_standard_deviation_heading(wheel_dir: Path) -> bool:
-    """Check that deviation heading is 'API convention deviations', not legacy."""
-    text = read_readme(wheel_dir)
-    if "## Convention Deviations" in text:
-        return False
-    return True
+    return _cached_read(wheel_dir / "README.md")
 
 
 def is_vendor_wheel(wheel_dir: Path) -> bool:
     """A vendor wheel has a vendor/ subdirectory."""
     return (wheel_dir / "vendor").is_dir()
-
-
-def has_vendor_md(wheel_dir: Path) -> bool:
-    return (wheel_dir / "VENDOR.md").exists()
-
-
-def has_dependencies_section(wheel_dir: Path) -> bool:
-    text = read_readme(wheel_dir)
-    return "## Dependencies" in text or "## 依赖" in text
-
-
-def has_ctest_registration(wheel_dir: Path) -> bool:
-    """Check that test CMakeLists.txt has enable_testing() + add_test()."""
-    cmake = wheel_dir / "test" / "CMakeLists.txt"
-    if not cmake.exists():
-        cmake = wheel_dir / "CMakeLists.txt"
-    if not cmake.exists():
-        return True
-    try:
-        text = cmake.read_text(encoding="utf-8")
-    except OSError:
-        return True
-    return "enable_testing()" in text and "add_test(" in text
-
-
-def has_c99_standard(wheel_dir: Path) -> bool:
-    """Check that test CMakeLists.txt sets CMAKE_C_STANDARD 99."""
-    cmake = wheel_dir / "test" / "CMakeLists.txt"
-    if not cmake.exists():
-        cmake = wheel_dir / "CMakeLists.txt"
-    if not cmake.exists():
-        return True  # no cmake = nothing to check
-    try:
-        text = cmake.read_text(encoding="utf-8")
-    except OSError:
-        return True
-    if "vsf.cmake" in text:
-        return True  # VSF cmake sets standard internally
-    return "CMAKE_C_STANDARD" in text
-
-
-def has_candidate_sections(wheel_dir: Path) -> list:
-    """Check README has candidate-level sections (wheel-contract §3.2).
-
-    Returns list of missing section names (empty = all present).
-    """
-    text = read_readme(wheel_dir)
-    missing = []
-    if "## Supported platforms" not in text and "## 支持的平台" not in text:
-        missing.append("Supported platforms")
-    if "## Test status" not in text and "## 测试状态" not in text:
-        missing.append("Test status")
-    if "## Dependencies" not in text and "## 依赖" not in text:
-        missing.append("Dependencies")
-    if "## How to test" not in text and "## 如何测试" not in text:
-        missing.append("How to test")
-    if "## Known issues" not in text and "## 已知坑" not in text and "## 已知问题" not in text:
-        missing.append("Known issues")
-    if "## Origin" not in text and "## 来源" not in text:
-        missing.append("Origin")
-    return missing
-
-
-def has_file_header(wheel_dir: Path, name: str) -> bool:
-    """Check .h and .c have api-conventions §8 file header in first 10 lines."""
-    for ext in (".h", ".c"):
-        src = wheel_dir / f"{name}{ext}"
-        if not src.exists():
-            continue
-        try:
-            lines = src.read_text(encoding="utf-8", errors="ignore").splitlines()[:10]
-            top = "\n".join(lines)
-        except OSError:
-            continue
-        if "Layer:" not in top or "Status:" not in top:
-            return False
-    return True
-
-
-def has_extern_c_guard(wheel_dir: Path, name: str) -> bool:
-    """Check .h has extern 'C' guards (api-conventions §9)."""
-    header = wheel_dir / f"{name}.h"
-    if not header.exists():
-        return True
-    try:
-        text = header.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return True
-    return 'extern "C"' in text or "extern \"C\"" in text
-
-
-def has_thread_safe_annotations(wheel_dir: Path, name: str) -> bool:
-    """Check .h has at least one @thread_safe annotation (api-conventions §4)."""
-    header = wheel_dir / f"{name}.h"
-    if not header.exists():
-        return True
-    try:
-        text = header.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return True
-    return "@thread_safe" in text
-
-
-def has_werror(wheel_dir: Path) -> bool:
-    """Check that test CMakeLists.txt includes -Werror (non-vendor only)."""
-    cmake = wheel_dir / "test" / "CMakeLists.txt"
-    if not cmake.exists():
-        cmake = wheel_dir / "CMakeLists.txt"
-    if not cmake.exists():
-        return True
-    try:
-        text = cmake.read_text(encoding="utf-8")
-    except OSError:
-        return True
-    if "-Wall" not in text:
-        return True  # no warning flags at all — different problem
-    return "-Werror" in text
-
-
-def has_wconversion(wheel_dir: Path) -> bool:
-    """Check that test CMakeLists.txt includes -Wconversion."""
-    cmake = wheel_dir / "test" / "CMakeLists.txt"
-    if not cmake.exists():
-        cmake = wheel_dir / "CMakeLists.txt"
-    if not cmake.exists():
-        return True
-    try:
-        text = cmake.read_text(encoding="utf-8")
-    except OSError:
-        return True
-    if "-Wall" not in text:
-        return True
-    return "-Wconversion" in text
-
-
-def has_test_exit_code(wheel_dir: Path) -> bool:
-    """Check test main() returns non-zero on failure."""
-    patterns = ["tests_fail", "g_failures", "failures", "TEST_MAIN_END"]
-    for glob_pat in ["test/test_*.c", "test_*.c"]:
-        for src in wheel_dir.glob(glob_pat):
-            try:
-                text = src.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            if 'test_harness.h' in text:
-                return True
-            if "return" in text and any(p in text for p in patterns):
-                return True
-    if list(wheel_dir.glob("test_*.py")) or list(wheel_dir.glob("test/test_*.py")):
-        return True
-    return False
-
-
-def has_balanced_test_run(wheel_dir: Path) -> tuple:
-    """Check that every TEST() function has a matching RUN() call.
-
-    Returns (ok: bool, test_count: int, run_count: int).
-    """
-    import re
-    for glob_pat in ["test/test_*.c", "test_*.c"]:
-        for src in wheel_dir.glob(glob_pat):
-            try:
-                text = src.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            if "test_harness.h" not in text:
-                continue
-            tests = set(re.findall(r'^TEST\((\w+)\)', text, re.MULTILINE))
-            runs = set(re.findall(r'RUN\((\w+)\)', text))
-            unrun = tests - runs
-            if unrun:
-                return (False, len(tests), len(runs))
-    return (True, 0, 0)
 
 
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
@@ -722,14 +511,6 @@ def detect_cross_wheel_deps(wheel_dir: Path) -> list:
         return []
     pattern = re.compile(r"\.\./\.\./\.\./(primitives|drivers|protocols|modules)/([a-z0-9_]+)/")
     return list({m[1] for m in pattern.findall(text)})
-
-
-def has_ci_job(wheel_path: str, ci_text: str, wheel_dir: Path) -> bool:
-    if wheel_path in ci_text:
-        return True
-    if "wheels/*/*/test/CMakeLists.txt" in ci_text and (wheel_dir / "test" / "CMakeLists.txt").exists():
-        return True
-    return False
 
 
 _consumer_cache = None
@@ -855,11 +636,8 @@ def audit_projects() -> list:
 
 def has_negative_error_codes(wheel_dir: Path, name: str) -> bool:
     """Check that error enum uses explicit negative values (Q4 audit)."""
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return True
-    text = h.read_text(encoding="utf-8", errors="replace")
-    if f"{name}_err_t" not in text:
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text or f"{name}_err_t" not in text:
         return True
     lines = text.split("\n")
     in_enum = False
@@ -882,10 +660,9 @@ def has_negative_error_codes(wheel_dir: Path, name: str) -> bool:
 def has_error_code_test_coverage(wheel_dir: Path, name: str) -> list:
     """Check that every error enum value has at least one test triggering it.
     Returns list of uncovered error code names (empty = all covered)."""
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return []
-    text = h.read_text(encoding="utf-8", errors="replace")
     err_pattern = re.compile(r'\b(' + re.escape(name.upper()) + r'_ERR_\w+)\b')
     err_codes = set(err_pattern.findall(text))
     if not err_codes:
@@ -895,7 +672,7 @@ def has_error_code_test_coverage(wheel_dir: Path, name: str) -> list:
         return sorted(err_codes)
     test_text = ""
     for tf in test_dir.glob("*.c"):
-        test_text += tf.read_text(encoding="utf-8", errors="replace")
+        test_text += _cached_read(tf)
     uncovered = [e for e in sorted(err_codes) if e not in test_text]
     return uncovered
 
@@ -906,12 +683,8 @@ def has_naming_convention(wheel_dir: Path, name: str) -> bool:
     Scans the wheel's .h file for function declarations and verifies they are
     prefixed with the wheel name (api-conventions S1.1).
     """
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return True
-    try:
-        text = h.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return True
     # Match function declarations: return_type wheel_name_verb(...);
     # Skip typedefs, comments, macros, and lines inside struct/enum bodies
@@ -976,12 +749,8 @@ def has_consistent_hal_pattern(wheel_dir: Path, name: str) -> bool:
       containing at least one function pointer field.
     - The init function accepts a pointer to this HAL struct.
     """
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return True
-    try:
-        text = h.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return True
     # Look for a HAL struct typedef: <name>_i2c_t, <name>_spi_t, <name>_hal_t,
     # <name>_gpio_t, <name>_onewire_t, <name>_pwm_t
@@ -1002,10 +771,10 @@ def has_consistent_hal_pattern(wheel_dir: Path, name: str) -> bool:
 
 def has_function_doc_all(wheel_dir: Path, name: str) -> bool:
     """Check that every function declaration in .h has a doc comment (Q29)."""
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return True
-    lines = h.read_text(encoding="utf-8", errors="replace").split("\n")
+    lines = text.split("\n")
     undoc = 0
     in_struct = 0
     for i, line in enumerate(lines):
@@ -1046,10 +815,10 @@ def has_busy_wait_timeout(wheel_dir: Path) -> list:
     )
     unguarded = []
     for src in wheel_dir.glob("*.c"):
-        try:
-            lines = src.read_text(encoding="utf-8", errors="ignore").splitlines()
-        except OSError:
+        text = _cached_read(src)
+        if not text:
             continue
+        lines = text.splitlines()
         for i, line in enumerate(lines):
             if not hw_while.search(line):
                 continue
@@ -1064,46 +833,33 @@ def has_busy_wait_timeout(wheel_dir: Path) -> list:
 
 def has_dev_t_naming(wheel_dir: Path, name: str) -> bool:
     """Return True if wheel uses _dev_t for its main context (violation)."""
-    h_file = wheel_dir / f"{name}.h"
-    if not h_file.exists():
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return False
-    text = h_file.read_text(encoding="utf-8", errors="replace")
     return f"{name}_dev_t" in text
 
 
 def has_plural_err_param(wheel_dir: Path, name: str) -> bool:
     """Return True if wheel uses ERR_PARAMS (plural, violation)."""
-    h_file = wheel_dir / f"{name}.h"
-    if not h_file.exists():
-        return False
-    text = h_file.read_text(encoding="utf-8", errors="replace")
-    return "ERR_PARAMS" in text
+    text = _cached_read(wheel_dir / f"{name}.h")
+    return bool(text) and "ERR_PARAMS" in text
 
 
 def has_pragma_once(wheel_dir: Path, name: str) -> bool:
     """Return True if wheel .h uses #pragma once (violation)."""
-    h_file = wheel_dir / f"{name}.h"
-    if not h_file.exists():
-        return False
-    text = h_file.read_text(encoding="utf-8", errors="replace")
-    return "#pragma once" in text
+    text = _cached_read(wheel_dir / f"{name}.h")
+    return bool(text) and "#pragma once" in text
 
 
 def has_spdx_header(wheel_dir: Path, name: str) -> bool:
     """Return True if .h file has SPDX license identifier."""
-    h_file = wheel_dir / f"{name}.h"
-    if not h_file.exists():
-        return False
-    text = h_file.read_text(encoding="utf-8", errors="replace")
-    return "SPDX-License-Identifier" in text
+    text = _cached_read(wheel_dir / f"{name}.h")
+    return bool(text) and "SPDX-License-Identifier" in text
 
 
 def has_vsf_native_residual(wheel_dir: Path) -> bool:
     """Return True if README still has 'Why not VSF native?' section."""
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return False
-    text = readme.read_text(encoding="utf-8", errors="replace")
+    text = _cached_read(wheel_dir / "README.md")
     return "why not vsf native" in text.lower()
 
 
@@ -1111,10 +867,7 @@ def has_why_self_written(wheel_dir: Path) -> bool:
     """Return True if self-written wheel has 'Why self-written?' or equivalent section."""
     if is_vendor_wheel(wheel_dir):
         return True  # vendor wheels use "Why this upstream?" instead
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return False
-    text = readme.read_text(encoding="utf-8", errors="replace").lower()
+    text = _cached_read(wheel_dir / "README.md").lower()
     return ("why self-written" in text or
             "why not an open-source" in text or
             "why not open-source" in text or
@@ -1123,10 +876,7 @@ def has_why_self_written(wheel_dir: Path) -> bool:
 
 def has_status_format(wheel_dir: Path) -> bool:
     """Return True if README uses '**Status:' (not '**STATUS:')."""
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return True
-    text = readme.read_text(encoding="utf-8", errors="replace")
+    text = _cached_read(wheel_dir / "README.md")
     if "**STATUS:" in text:
         return False
     return True
@@ -1134,10 +884,9 @@ def has_status_format(wheel_dir: Path) -> bool:
 
 def has_init_caller_must_lock(wheel_dir: Path, name: str) -> bool:
     """Return True if init/deinit/reset is tagged caller_must_lock (should be 'no')."""
-    h_file = wheel_dir / f"{name}.h"
-    if not h_file.exists():
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return False
-    text = h_file.read_text(encoding="utf-8", errors="replace")
     lines = text.split("\n")
     for i, line in enumerate(lines):
         ll = line.lower()
@@ -1152,10 +901,9 @@ def has_init_caller_must_lock(wheel_dir: Path, name: str) -> bool:
 def has_deps_format_issue(wheel_dir: Path, name: str) -> str:
     """Return description of Deps format issue, or '' if OK."""
     for ext in (".h", ".c"):
-        f = wheel_dir / f"{name}{ext}"
-        if not f.exists():
+        text = _cached_read(wheel_dir / f"{name}{ext}")
+        if not text:
             continue
-        text = f.read_text(encoding="utf-8", errors="replace")
         for line in text.split("\n")[:15]:
             stripped = line.strip().lstrip("* ")
             if stripped.startswith("Deps:"):
@@ -1178,13 +926,10 @@ def has_deps_format_issue(wheel_dir: Path, name: str) -> str:
 def has_instances_field(wheel_dir: Path, name: str) -> bool:
     """Check file header has Instances: multi|single field (api-conventions §8)."""
     for ext in (".h", ".c"):
-        f = wheel_dir / f"{name}{ext}"
-        if not f.exists():
+        text = _cached_read(wheel_dir / f"{name}{ext}")
+        if not text:
             continue
-        try:
-            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()[:15]
-        except OSError:
-            continue
+        lines = text.splitlines()[:15]
         for line in lines:
             stripped = line.strip().lstrip("* ")
             if re.match(r'^Instances:\s*(multi|single)\s*$', stripped):
@@ -1198,14 +943,8 @@ def has_isr_safe_annotation(wheel_dir: Path, name: str) -> bool:
     Returns True if @isr_safe appears at least once, or if the wheel has no
     ISR-callable candidates (pure protocol/module).
     """
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return True
-    try:
-        text = h.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return True
-    return "@isr_safe" in text
+    text = _cached_read(wheel_dir / f"{name}.h")
+    return not text or "@isr_safe" in text
 
 
 def has_config_h_placement(wheel_dir: Path, name: str) -> str:
@@ -1213,12 +952,8 @@ def has_config_h_placement(wheel_dir: Path, name: str) -> str:
 
     Returns violation description or '' if OK.
     """
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return ""
-    try:
-        text = h.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return ""
     for line in text.splitlines():
         stripped = line.strip()
@@ -1262,12 +997,8 @@ def has_readme_section_order(wheel_dir: Path) -> list:
 
     Returns list of out-of-order section names (empty = correct).
     """
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return []
-    try:
-        text = readme.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / "README.md")
+    if not text:
         return []
     headings = re.findall(r'^## (.+)$', text, re.MULTILINE)
     found_order = []
@@ -1292,12 +1023,8 @@ def has_readme_section_names(wheel_dir: Path) -> list:
 
     Returns list of non-standard heading names.
     """
-    readme = wheel_dir / "README.md"
-    if not readme.exists():
-        return []
-    try:
-        text = readme.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / "README.md")
+    if not text:
         return []
     headings = re.findall(r'^## (.+)$', text, re.MULTILINE)
     LEGACY_MAP = {
@@ -1324,13 +1051,10 @@ def has_nan_guard_in_float_api(wheel_dir: Path, name: str) -> list:
     type declaration, or by checking if the comparison uses float literals (e.g. 0.0f).
     Returns list of (line_no, line_text) with vulnerable range checks.
     """
-    c_file = wheel_dir / f"{name}.c"
-    if not c_file.exists():
+    text = _cached_read(wheel_dir / f"{name}.c")
+    if not text:
         return []
-    try:
-        lines = c_file.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return []
+    lines = text.splitlines()
     vulnerable = re.compile(
         r'if\s*\(\s*(\w+)\s*<\s*([-\d.]+f?)\s*\|\|\s*\w+\s*>\s*([-\d.]+f?)\s*\)'
     )
@@ -1357,12 +1081,8 @@ def has_deinit_null_check(wheel_dir: Path, name: str) -> bool:
 
     Returns True if no deinit exists or if deinit checks for NULL.
     """
-    c_file = wheel_dir / f"{name}.c"
-    if not c_file.exists():
-        return True
-    try:
-        text = c_file.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / f"{name}.c")
+    if not text:
         return True
     deinit_pat = re.compile(rf'{re.escape(name)}_deinit\s*\(')
     m = deinit_pat.search(text)
@@ -1393,12 +1113,8 @@ def has_unit_suffix_on_physical(wheel_dir: Path, name: str) -> list:
     Only checks L1 driver data structs (most likely to hold physical values).
     Returns list of (field_name, suggestion).
     """
-    h = wheel_dir / f"{name}.h"
-    if not h.exists():
-        return []
-    try:
-        text = h.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    text = _cached_read(wheel_dir / f"{name}.h")
+    if not text:
         return []
     if "_data_t" not in text and "_reading_t" not in text and "_result_t" not in text:
         return []
@@ -1986,19 +1702,23 @@ def save_snapshot(results, wheels_count, failures, warnings):
     from datetime import datetime
     SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    all_check_names = [name for name, *_ in CHECK_TABLE]
+    all_check_names.extend(["consumer", "wishlist_stale", "project_hygiene"])
     snapshot = {
         "timestamp": datetime.now().isoformat(),
         "wheels": wheels_count,
         "failures": failures,
         "warnings": warnings,
-        "checks": {},
+        "total_checks": len(all_check_names),
+        "check_list": all_check_names,
+        "findings": {},
     }
     for r in results:
         check = r["check"]
-        if check not in snapshot["checks"]:
-            snapshot["checks"][check] = {"count": 0, "wheels": []}
-        snapshot["checks"][check]["count"] += 1
-        snapshot["checks"][check]["wheels"].append(r["wheel"])
+        if check not in snapshot["findings"]:
+            snapshot["findings"][check] = {"count": 0, "wheels": []}
+        snapshot["findings"][check]["count"] += 1
+        snapshot["findings"][check]["wheels"].append(r["wheel"])
 
     path = SNAPSHOT_DIR / f"audit_{ts}.json"
     path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -2023,11 +1743,11 @@ def compare_snapshots():
     print(f"  Failures: {prev['failures']} → {curr['failures']}")
     print(f"  Warnings: {prev['warnings']} → {curr['warnings']}")
 
-    all_checks = set(list(prev.get("checks", {}).keys()) + list(curr.get("checks", {}).keys()))
+    all_checks = set(list(prev.get("findings", prev.get("checks", {})).keys()) + list(curr.get("findings", curr.get("checks", {})).keys()))
     deltas = []
     for check in sorted(all_checks):
-        p = prev.get("checks", {}).get(check, {}).get("count", 0)
-        c = curr.get("checks", {}).get(check, {}).get("count", 0)
+        p = prev.get("findings", prev.get("checks", {})).get(check, {}).get("count", 0)
+        c = curr.get("findings", curr.get("checks", {})).get(check, {}).get("count", 0)
         if p != c:
             delta = c - p
             sign = "+" if delta > 0 else ""
