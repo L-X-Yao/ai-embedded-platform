@@ -234,6 +234,25 @@ TEST(test_i2c_failure)
     ASSERT_EQ(pca9685_sleep(&dev), PCA9685_ERR_I2C);
 }
 
+TEST(test_set_duty_nan_rejected)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    /* NaN must be rejected -- previously bypassed the < 0 / > 100 guard */
+    float nan_val = 0.0f / 0.0f;
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, nan_val), PCA9685_ERR_PARAM);
+}
+
+TEST(test_set_duty_negative_rejected)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, -1.0f), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, -0.001f), PCA9685_ERR_PARAM);
+}
+
 TEST_MAIN("pca9685")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -247,6 +266,8 @@ TEST_MAIN("pca9685")
     RUN(test_set_duty_50_percent);
     RUN(test_set_duty_0_percent);
     RUN(test_set_duty_100_percent);
+    RUN(test_set_duty_nan_rejected);
+    RUN(test_set_duty_negative_rejected);
     RUN(test_set_servo_us);
     RUN(test_all_off);
     RUN(test_set_freq_prescaler_calc);
