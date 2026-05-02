@@ -23,7 +23,9 @@ static void sh_write(const cli_shell_t *sh, const char *s, uint16_t len)
 static void sh_puts(const cli_shell_t *sh, const char *s)
 {
     if (s) {
-        sh_write(sh, s, (uint16_t)strlen(s));
+        size_t slen = strlen(s);
+        if (slen > UINT16_MAX) slen = UINT16_MAX;
+        sh_write(sh, s, (uint16_t)slen);
     }
 }
 

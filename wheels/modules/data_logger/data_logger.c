@@ -195,8 +195,11 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
         return err;
     }
 
-    uint16_t len = (uint16_t)strlen(value);
-    err = buf_append(dl, value, len);
+    size_t slen = strlen(value);
+    if (slen > DATA_LOGGER_BUF_SIZE) {
+        return DATA_LOGGER_ERR_OVERFLOW;
+    }
+    err = buf_append(dl, value, (uint16_t)slen);
     if (err == DATA_LOGGER_OK) {
         dl->field_idx++;
     }
