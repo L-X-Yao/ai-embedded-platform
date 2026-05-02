@@ -16,6 +16,7 @@
 
 static device_info_err_t set_str(char *dst, size_t dst_size, const char *src)
 {
+    if (dst_size == 0) return DEVICE_INFO_ERR_OVERFLOW;
     size_t len = strlen(src);
 
     if (len >= dst_size) {
@@ -24,7 +25,8 @@ static device_info_err_t set_str(char *dst, size_t dst_size, const char *src)
         return DEVICE_INFO_ERR_OVERFLOW;
     }
 
-    memcpy(dst, src, len + 1);
+    /* len < dst_size guaranteed above, so len + 1 <= dst_size */
+    memcpy(dst, src, len + 1U);
     return DEVICE_INFO_OK;
 }
 

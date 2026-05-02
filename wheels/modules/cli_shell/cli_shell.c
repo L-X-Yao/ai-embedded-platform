@@ -211,9 +211,11 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte)
     if (byte >= 0x20 && byte < 0x7F) {
         if (sh->line_pos < CLI_SHELL_LINE_SIZE - 1) {
             sh->line[sh->line_pos++] = (char)byte;
-            /* echo */
-            char c = (char)byte;
-            sh_write(sh, &c, 1);
+            /* echo -- write failure is non-fatal (output-only) */
+            if (sh->io && sh->io->write) {
+                char c = (char)byte;
+                sh->io->write(sh->io->ctx, &c, 1);
+            }
         }
         /* line full: silently drop extra chars */
         return;
