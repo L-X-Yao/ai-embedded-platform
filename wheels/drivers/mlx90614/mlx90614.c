@@ -119,9 +119,12 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
     uint16_t raw = (uint16_t)(emissivity * 65535.0f + 0.5f);
     if (raw == 0) raw = 1;
 
-    /* Erase first (write 0x0000), then write new value */
+    /* Erase first (write 0x0000), wait for EEPROM write cycle, then write new value.
+     * Datasheet mandates >= 5 ms between erase and write; use 10 ms for margin. */
     if (!smbus_write_word(dev, REG_EMISSIVITY, 0x0000))
         return MLX90614_ERR_I2C;
+    if (dev->i2c.delay_ms)
+        dev->i2c.delay_ms(dev->i2c.ctx, 10);
     if (!smbus_write_word(dev, REG_EMISSIVITY, raw))
         return MLX90614_ERR_I2C;
 

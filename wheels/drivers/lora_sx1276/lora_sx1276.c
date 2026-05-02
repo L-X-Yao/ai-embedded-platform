@@ -339,8 +339,14 @@ int8_t lora_get_snr(lora_t *dev)
 {
     if (!dev || !dev->spi) return 0;
     uint8_t raw = reg_read(dev->spi, REG_PKT_SNR);
-    /* SNR is signed, in units of 0.25 dB. Return integer dB. */
-    return (int8_t)raw / 4;
+    /*
+     * SNR register is signed two's-complement in units of 0.25 dB.
+     * Cast to int8_t first to get the signed value, then divide.
+     * Use explicit signed variable to avoid C integer promotion pitfalls.
+     * Returns integer dB (truncated toward zero; e.g. -3 raw → 0 dB).
+     */
+    int8_t signed_raw = (int8_t)raw;
+    return (int8_t)(signed_raw / 4);
 }
 
 lora_err_t lora_sleep(lora_t *dev)

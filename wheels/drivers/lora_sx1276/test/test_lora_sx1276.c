@@ -454,6 +454,14 @@ TEST(test_rssi_snr)
     /* PKT_SNR = 40 (signed) → 40/4 = 10 dB */
     mock_regs[0x19] = 40;
     ASSERT_EQ(lora_get_snr(&dev), 10);
+
+    /* Negative SNR: 0xE0 = -32 as int8_t → -32/4 = -8 dB */
+    mock_regs[0x19] = 0xE0;
+    ASSERT_EQ(lora_get_snr(&dev), -8);
+
+    /* Negative SNR: 0xFC = -4 as int8_t → -4/4 = -1 dB */
+    mock_regs[0x19] = 0xFC;
+    ASSERT_EQ(lora_get_snr(&dev), -1);
 }
 
 TEST(test_sleep_standby)

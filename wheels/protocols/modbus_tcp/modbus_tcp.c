@@ -19,7 +19,7 @@ static void put_u16_be(uint8_t *buf, uint16_t val)
 
 static uint16_t get_u16_be(const uint8_t *buf)
 {
-    return (uint16_t)((uint16_t)buf[0] << 8) | buf[1];
+    return (uint16_t)((uint16_t)buf[0] << 8 | (uint16_t)buf[1]);
 }
 
 /* ---------- internal: write MBAP header ---------- */
