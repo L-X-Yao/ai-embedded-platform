@@ -323,7 +323,8 @@ nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len)
     return NRF24_ERR_TIMEOUT;
 }
 
-nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t *len)
+nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len,
+                          uint8_t *len)
 {
     if (!dev || !dev->spi || !data || !len) return NRF24_ERR_SPI;
 
@@ -335,8 +336,11 @@ nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t *len)
         return NRF24_OK;
     }
 
-    /* Read RX payload */
+    /* Ensure caller buffer can hold the payload */
     uint8_t count = dev->payload_size;
+    if (count > max_len) return NRF24_ERR_PARAMS;
+
+    /* Read RX payload */
     s->cs_low(s->ctx);
     s->xfer(s->ctx, CMD_R_RX_PAYLOAD);
     for (uint8_t i = 0; i < count; i++) {

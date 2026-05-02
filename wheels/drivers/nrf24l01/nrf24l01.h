@@ -100,8 +100,10 @@ nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power);
 nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len);
 
 /** Read received payload. Sets *len to actual bytes read.
+ *  @param max_len size of data buffer (must be >= payload_size).
  *  @thread_safe: caller_must_lock */
-nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t *len);
+nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len,
+                          uint8_t *len);
 
 /** Check if data is available in RX FIFO. */
 bool nrf24_data_ready(nrf24_t *dev);
