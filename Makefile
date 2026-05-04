@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
 
 help:
 	@echo "Usage: make <target>"
@@ -25,6 +25,7 @@ help:
 	@echo "  audit-save        save audit snapshot for trend tracking"
 	@echo "  audit-compare     compare latest two audit snapshots"
 	@echo "  audit-report      unified report across all audit tools"
+	@echo "  audit-quick       deep audit L1+L2 (pattern grep + sanitizer)"
 	@echo "  arm-size-audit    ARM cross-compile size report"
 	@echo ""
 	@echo "Workflow:"
@@ -166,6 +167,9 @@ release:
 
 audit-deep:
 	bash tooling/audit/audit_deep.sh
+
+audit-quick:
+	bash tooling/audit/audit_deep.sh --quick
 
 arm-size-audit:
 	bash tooling/audit/arm_size_audit.sh

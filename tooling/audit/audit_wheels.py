@@ -570,6 +570,136 @@ def chk_unit_suffix(ctx, **_):
             f"add unit suffix to fields in {ctx.path}/{ctx.name}.h")
 
 
+LAYER_ORDER = {"primitives": 0, "drivers": 1, "protocols": 2, "modules": 3, "_draft": 99}
+
+_SELF_CONTAINED_RULES = [
+    (re.compile(r'\bu?int(?:8|16|32|64)_t\b'), ['stdint.h']),
+    (re.compile(r'\bbool\b'), ['stdbool.h']),
+    (re.compile(r'\bsize_t\b'), ['stddef.h', 'stdlib.h', 'string.h', 'stdio.h']),
+    (re.compile(r'\bNULL\b'), ['stddef.h', 'stdlib.h', 'string.h', 'stdio.h']),
+]
+
+
+def _get_header_includes(text):
+    return set(re.findall(r'#include\s*[<"]([^>"]+)[>"]', text))
+
+
+def _strip_c_comments(text):
+    text = re.sub(r'//[^\n]*', '', text)
+    return re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+
+
+def chk_header_self_contained(ctx, **_):
+    """Check that .h includes standard headers for types it uses (Q10)."""
+    if not ctx.header:
+        return None
+    includes = _get_header_includes(ctx.header)
+    code = _strip_c_comments(ctx.header)
+    missing = []
+    for usage_re, providers in _SELF_CONTAINED_RULES:
+        if usage_re.search(code):
+            if not any(p in includes for p in providers):
+                missing.append(providers[0])
+    missing = list(dict.fromkeys(missing))
+    if missing:
+        return (f".h uses types requiring {', '.join(missing)} but missing include",
+                f"add #include <{missing[0]}> to {ctx.path}/{ctx.name}.h")
+    return None
+
+
+_STATIC_FUNC_RE = re.compile(
+    r'^\s*static\s+(?:inline\s+)?(?:const\s+)?'
+    r'\w[\w\s*]*\b(\w+)\s*\('
+)
+
+
+def chk_dead_static_function(ctx, **_):
+    """Detect static functions in .c that are defined but never referenced (Q13)."""
+    if not ctx.source:
+        return None
+    lines = ctx.source.split('\n')
+    static_funcs = {}
+    for i, line in enumerate(lines):
+        m = _STATIC_FUNC_RE.match(line)
+        if m and '=' not in line[:m.start(1)]:
+            static_funcs.setdefault(m.group(1), set()).add(i)
+    if not static_funcs:
+        return None
+    dead = []
+    for func, def_lines in sorted(static_funcs.items()):
+        func_re = re.compile(r'\b' + re.escape(func) + r'\b')
+        found_use = False
+        for i, line in enumerate(lines):
+            if i in def_lines:
+                continue
+            if func_re.search(line):
+                if re.match(r'^\s*static\s+', line) and func + '(' in line:
+                    continue
+                found_use = True
+                break
+        if not found_use:
+            dead.append(func)
+    if dead:
+        return (f"dead static function(s): {', '.join(dead[:5])}", None)
+    return None
+
+
+def chk_switch_default(ctx, **_):
+    """Flag switch statements in .c without a default case (Q8)."""
+    if not ctx.source:
+        return None
+    lines = ctx.source.split('\n')
+    violations = []
+    i = 0
+    while i < len(lines):
+        if re.search(r'\bswitch\s*\(', lines[i]):
+            brace_depth = 0
+            has_default = False
+            j = i
+            found_open = False
+            while j < len(lines):
+                for ch in lines[j]:
+                    if ch == '{':
+                        brace_depth += 1
+                        found_open = True
+                    elif ch == '}':
+                        brace_depth -= 1
+                if re.search(r'\bdefault\s*:', lines[j]):
+                    has_default = True
+                if found_open and brace_depth == 0:
+                    break
+                j += 1
+            if found_open and not has_default:
+                violations.append(i + 1)
+            i = j + 1
+        else:
+            i += 1
+    if violations:
+        locs = ", ".join(f"L{ln}" for ln in violations[:3])
+        return (f"switch without default at {locs}", None)
+    return None
+
+
+def chk_dep_direction(ctx, **_):
+    """Verify wheel dependencies only go downward per layer hierarchy (ADR-009)."""
+    if not ctx.test_cmake:
+        return None
+    my_level = LAYER_ORDER.get(ctx.layer, 99)
+    if my_level == 99:
+        return None
+    dep_pattern = re.compile(
+        r'\.\./\.\./\.\./(primitives|drivers|protocols|modules)/([a-z0-9_]+)/')
+    deps = dep_pattern.findall(ctx.test_cmake)
+    violations = []
+    for dep_layer, dep_name in deps:
+        dep_level = LAYER_ORDER.get(dep_layer, 99)
+        if dep_level > my_level:
+            violations.append(f"{dep_name} ({dep_layer})")
+    if violations:
+        return (f"depends on higher layer: {', '.join(violations)} (ADR-009)", None)
+    return None
+
+
 # --- Check table: metadata for each check ---
 
 CHECK_TABLE = [
@@ -620,6 +750,10 @@ CHECK_TABLE = [
     ("strlen_truncation",   "strlen truncation to narrow type",   chk_strlen_truncation,   "WARN", None,                      True,  False),
     ("memcpy_overflow",     "memcpy size_t overflow risk",        chk_memcpy_overflow,     "WARN", None,                      True,  False),
     ("unchecked_return",    "Unchecked error return",             chk_unchecked_return,    "WARN", None,                      True,  False),
+    ("header_self_contained", "Header self-contained (Q10)",      chk_header_self_contained, "WARN", None,                    True,  False),
+    ("dead_static_func",  "Dead static functions (Q13)",          chk_dead_static_function, "WARN", None,                     True,  False),
+    ("switch_default",    "Switch default case (Q8)",             chk_switch_default,       "WARN", None,                     True,  False),
+    ("dep_direction",     "Dependency direction (ADR-009)",       chk_dep_direction,        "WARN", None,                     False, True),
 ]
 
 

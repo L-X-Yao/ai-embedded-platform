@@ -372,6 +372,131 @@ def test_chk_readme_section_order_fail():
 
 
 @test
+def test_chk_header_self_contained_pass():
+    w = TmpWheel()
+    w.write_h("#include <stdint.h>\n#include <stdbool.h>\ntypedef struct { uint8_t x; bool y; } test_wheel_t;\n")
+    assert aw.chk_header_self_contained(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_header_self_contained_fail():
+    w = TmpWheel()
+    w.write_h("typedef struct { uint8_t x; } test_wheel_t;\n")
+    result = aw.chk_header_self_contained(w.ctx())
+    assert result is not None
+    assert "stdint.h" in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_header_self_contained_null_in_comment():
+    w = TmpWheel()
+    w.write_h("#include <stdint.h>\n/** @param ptr May be NULL. */\nvoid test_wheel_init(uint8_t x);\n")
+    assert aw.chk_header_self_contained(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_header_self_contained_no_header():
+    w = TmpWheel()
+    assert aw.chk_header_self_contained(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dead_static_function_pass():
+    w = TmpWheel()
+    w.write_c("static int helper(int x) { return x + 1; }\nint test_wheel_init(void) { return helper(0); }\n")
+    assert aw.chk_dead_static_function(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dead_static_function_fail():
+    w = TmpWheel()
+    w.write_c("static int dead_func(void) { return 42; }\nint test_wheel_init(void) { return 0; }\n")
+    result = aw.chk_dead_static_function(w.ctx())
+    assert result is not None
+    assert "dead_func" in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_dead_static_function_no_source():
+    w = TmpWheel()
+    assert aw.chk_dead_static_function(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dead_static_function_callback_use():
+    w = TmpWheel()
+    w.write_c("static void handler(void) { }\nvoid (*cb)(void) = handler;\n")
+    assert aw.chk_dead_static_function(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_switch_default_pass():
+    w = TmpWheel()
+    w.write_c("void f(int x) { switch(x) { case 0: break; default: break; } }\n")
+    assert aw.chk_switch_default(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_switch_default_fail():
+    w = TmpWheel()
+    w.write_c("void f(int x) {\n  switch(x) {\n  case 0: break;\n  case 1: break;\n  }\n}\n")
+    result = aw.chk_switch_default(w.ctx())
+    assert result is not None
+    assert "switch without default" in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_switch_default_no_source():
+    w = TmpWheel()
+    assert aw.chk_switch_default(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dep_direction_pass():
+    w = TmpWheel(layer="drivers")
+    w.write_test_cmake("add_subdirectory(../../../primitives/log/ build_log)\n")
+    assert aw.chk_dep_direction(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dep_direction_fail():
+    w = TmpWheel(layer="primitives")
+    w.write_test_cmake("add_subdirectory(../../../protocols/mqtt_packet/ build_mqtt)\n")
+    result = aw.chk_dep_direction(w.ctx())
+    assert result is not None
+    assert "mqtt_packet" in result[0]
+    assert "ADR-009" in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_dep_direction_same_layer():
+    w = TmpWheel(layer="primitives")
+    w.write_test_cmake("add_subdirectory(../../../primitives/ring_buffer/ build_rb)\n")
+    assert aw.chk_dep_direction(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_dep_direction_no_cmake():
+    w = TmpWheel()
+    assert aw.chk_dep_direction(w.ctx()) is None
+    w.cleanup()
+
+
+@test
 def test_main_returns_zero_on_clean():
     """Smoke test: main() runs without crashing on real repo."""
     rc = aw.main(quiet=True, json_mode=False, fast=True, save=False)
