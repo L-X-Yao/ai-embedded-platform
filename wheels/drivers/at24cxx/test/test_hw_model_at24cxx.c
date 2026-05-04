@@ -10,7 +10,7 @@
 #include "hw_model_at24cxx.h"
 #include "../at24cxx.h"
 
-static at24cxx_model_t model;
+static at24cxx_hw_model_t model;
 
 static const at24cxx_i2c_t model_i2c = {
     .write_reg   = at24cxx_model_i2c_write_reg,
@@ -24,7 +24,7 @@ static const at24cxx_i2c_t model_i2c = {
 
 static void setup(void)
 {
-    at24cxx_model_init(&model);
+    at24cxx_hw_model_init(&model);
 }
 
 /* --- init tests --- */
