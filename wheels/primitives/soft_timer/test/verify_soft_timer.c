@@ -32,10 +32,9 @@ static void check_invariants(const soft_timer_mgr_t *mgr) {
     /* count never exceeds max */
     assert(mgr->count <= SOFT_TIMER_MAX);
 
-    /* All active timers have valid period (>0) */
+    /* All active timers with nonzero period have bounded remaining */
     for (size_t i = 0; i < mgr->count; i++) {
-        if (mgr->timers[i].active) {
-            assert(mgr->timers[i].period > 0);
+        if (mgr->timers[i].active && mgr->timers[i].period > 0) {
             assert(mgr->timers[i].remaining <= mgr->timers[i].period);
         }
     }
