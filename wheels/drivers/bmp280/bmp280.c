@@ -151,6 +151,9 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
         return BMP280_ERR_PARAM;
     }
 
+    /* 0x07 mask is wider than the 3-bit osrs fields strictly require (max valid
+     * value is 5), but safe: extra bits are silently ignored by the BMP280 and
+     * the shift/OR cannot overflow a uint8_t. */
     uint8_t ctrl = (uint8_t)(((dev->cfg.osrs_t & 0x07) << 5) | ((dev->cfg.osrs_p & 0x07) << 2) | MODE_FORCED);
     if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
     {

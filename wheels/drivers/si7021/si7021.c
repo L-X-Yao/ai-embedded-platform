@@ -44,6 +44,7 @@ static bool send_cmd2(const si7021_t *dev, uint8_t a, uint8_t b)
     return dev->i2c->write(dev->i2c->ctx, SI7021_DEV_ADDR, buf, 2);
 }
 
+/* CRC-8: poly 0x31 (0x131 full), init 0x00 — per Si7021 datasheet */
 uint8_t si7021_crc8(const uint8_t *data, uint16_t len)
 {
     uint8_t crc = 0x00;
