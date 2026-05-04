@@ -377,6 +377,92 @@ TEST(test_err_empty_read_returns_zero)
     ASSERT_EQ(ring_buffer_read(&rb, buf, 1), 0);
 }
 
+/* ── NULL parameter handling (mutation: return 0 → return -1) ──── */
+
+TEST(test_write_null_rb)
+{
+    uint8_t data = 0;
+    ASSERT_EQ(ring_buffer_write(NULL, &data, 1), 0);
+}
+
+TEST(test_write_null_data)
+{
+    uint8_t storage[4];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 4);
+    ASSERT_EQ(ring_buffer_write(&rb, NULL, 5), 0);
+    ASSERT_EQ(ring_buffer_count(&rb), 0);
+}
+
+TEST(test_read_null_rb)
+{
+    uint8_t buf;
+    ASSERT_EQ(ring_buffer_read(NULL, &buf, 1), 0);
+}
+
+TEST(test_read_null_data)
+{
+    uint8_t storage[4];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 4);
+    uint8_t w = 1;
+    ring_buffer_write(&rb, &w, 1);
+    ASSERT_EQ(ring_buffer_read(&rb, NULL, 1), 0);
+    ASSERT_EQ(ring_buffer_count(&rb), 1);
+}
+
+TEST(test_peek_null_rb)
+{
+    uint8_t buf;
+    ASSERT_EQ(ring_buffer_peek(NULL, &buf, 1), 0);
+}
+
+TEST(test_peek_null_data)
+{
+    uint8_t storage[4];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 4);
+    uint8_t w = 1;
+    ring_buffer_write(&rb, &w, 1);
+    ASSERT_EQ(ring_buffer_peek(&rb, NULL, 1), 0);
+}
+
+TEST(test_skip_null_rb)
+{
+    ASSERT_EQ(ring_buffer_skip(NULL, 1), 0);
+}
+
+TEST(test_count_null_rb)
+{
+    ASSERT_EQ(ring_buffer_count(NULL), 0);
+}
+
+TEST(test_free_null_rb)
+{
+    ASSERT_EQ(ring_buffer_free(NULL), 0);
+}
+
+/* ── peek exact byte count (mutation: i < len → i <= len) ──────── */
+
+TEST(test_peek_exact_bytes)
+{
+    uint8_t storage[8];
+    ring_buffer_t rb;
+    ring_buffer_init(&rb, storage, 8);
+
+    uint8_t data[] = {0xAA, 0xBB, 0xCC};
+    ring_buffer_write(&rb, data, 3);
+
+    uint8_t out[8];
+    memset(out, 0xFF, sizeof(out));
+    uint16_t peeked = ring_buffer_peek(&rb, out, 3);
+    ASSERT_EQ(peeked, 3);
+    ASSERT_EQ(out[0], 0xAA);
+    ASSERT_EQ(out[1], 0xBB);
+    ASSERT_EQ(out[2], 0xCC);
+    ASSERT_EQ(out[3], 0xFF);  /* sentinel: must NOT be overwritten */
+}
+
 /* ── zero-init safety ───────────────────────────────────────────── */
 
 TEST(test_zero_init_safety)
@@ -410,5 +496,15 @@ TEST_MAIN("ring_buffer")
     RUN(test_large_block_wrap);
     RUN(test_err_full_write_returns_zero);
     RUN(test_err_empty_read_returns_zero);
+    RUN(test_write_null_rb);
+    RUN(test_write_null_data);
+    RUN(test_read_null_rb);
+    RUN(test_read_null_data);
+    RUN(test_peek_null_rb);
+    RUN(test_peek_null_data);
+    RUN(test_skip_null_rb);
+    RUN(test_count_null_rb);
+    RUN(test_free_null_rb);
+    RUN(test_peek_exact_bytes);
     RUN(test_zero_init_safety);
 TEST_MAIN_END()
