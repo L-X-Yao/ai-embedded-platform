@@ -50,7 +50,7 @@ run_fuzz() {
     # Compile with sanitizers — use array to avoid eval injection
     local -a cmd=(gcc -std=c99 -O1 -g -Wall -Wextra
         -fsanitize=address,undefined -fno-sanitize-recover=all
-        "-I$dir")
+        "-I$dir" "-I$REPO_ROOT/tooling/test")
     if [ -n "$extra_inc" ]; then cmd+=($extra_inc); fi
     cmd+=("$fuzz_src" "$wheel_src")
     if [ -n "$extra_src" ]; then cmd+=("$extra_src"); fi
