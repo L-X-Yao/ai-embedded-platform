@@ -150,11 +150,13 @@ def cmake_build(
         "cmake",
         "-G", "Ninja",
         f"-DCMAKE_C_FLAGS={extra_cmake_flags}",
+    ]
+    if extra_linker_flags:
+        cmake_cmd.append(f"-DCMAKE_EXE_LINKER_FLAGS={extra_linker_flags}")
+    cmake_cmd += [
         "-S", str(test_dir.resolve()),
         "-B", str(build_dir.resolve()),
     ]
-    if extra_linker_flags:
-        cmake_cmd.insert(-2, f"-DCMAKE_EXE_LINKER_FLAGS={extra_linker_flags}")
 
     try:
         result = subprocess.run(

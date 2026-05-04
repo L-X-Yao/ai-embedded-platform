@@ -13,7 +13,6 @@ Skips warnings originating from system headers.
 Exit 0 if no warnings found; 1 if any wheel has warnings.
 """
 
-import argparse
 import json
 import os
 import re
@@ -23,10 +22,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-WHEELS = REPO / "wheels"
-LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
-SKIP_DIRS = {"test", "build", "build_audit", "__pycache__", ".pytest_cache"}
+from _audit_build_base import (
+    REPO,
+    WHEELS,
+    find_wheels as _find_wheels_base,
+    get_changed_wheels,
+    parse_args_common,
+)
 
 # Extra warning flags injected on top of whatever the wheel already uses.
 # Deliberately excludes -fanalyzer (too slow for daily runs).
@@ -55,70 +57,60 @@ EXCEPTIONS_PATH = REPO / "tooling" / "audit" / "known_exceptions.json"
 
 
 # ---------------------------------------------------------------------------
-# Discovery
+# Discovery (wraps base module into dict format used by this tool)
 # ---------------------------------------------------------------------------
 
 def find_wheels() -> list[dict]:
     """Return list of wheel info dicts for wheels with test/CMakeLists.txt."""
     wheels = []
-    for layer in LAYERS:
-        layer_dir = WHEELS / layer
-        if not layer_dir.is_dir():
-            continue
-        for entry in sorted(layer_dir.iterdir()):
-            if not entry.is_dir() or entry.name in SKIP_DIRS or entry.name.startswith("."):
-                continue
-            test_cmake = entry / "test" / "CMakeLists.txt"
-            if not test_cmake.exists():
-                continue
-            # Skip vendor wheels
-            if (entry / "vendor").is_dir():
-                continue
-            wheels.append({
-                "layer": layer,
-                "name": entry.name,
-                "path": f"wheels/{layer}/{entry.name}",
-                "dir": entry,
-                "test_dir": entry / "test",
-            })
+    for layer, name, wheel_dir in _find_wheels_base():
+        wheels.append({
+            "layer": layer,
+            "name": name,
+            "path": f"wheels/{layer}/{name}",
+            "dir": wheel_dir,
+            "test_dir": wheel_dir / "test",
+        })
     return wheels
 
 
 def detect_changed_wheels(wheels: list[dict]) -> list[dict]:
     """Filter wheels to only those with files changed vs HEAD."""
-    try:
-        result = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
-            capture_output=True, text=True, cwd=str(REPO),
-            timeout=30,
-        )
-        changed = result.stdout.strip().splitlines()
-    except (OSError, subprocess.TimeoutExpired):
-        # If git fails, compile everything
-        return wheels
-
+    changed = get_changed_wheels()
     if not changed:
-        # Also check untracked files
+        # get_changed_wheels returns empty on git failure -- compile all;
+        # but also empty when nothing changed -- return empty list.
+        # Distinguish by trying a quick git status.
         try:
             result = subprocess.run(
-                ["git", "ls-files", "--others", "--exclude-standard"],
+                ["git", "diff", "--name-only", "HEAD"],
                 capture_output=True, text=True, cwd=str(REPO),
                 timeout=30,
             )
-            changed = result.stdout.strip().splitlines()
+            head_changed = result.stdout.strip().splitlines()
         except (OSError, subprocess.TimeoutExpired):
-            return wheels
+            return wheels  # git broken, compile everything
 
-    if not changed:
-        return []
+        if not head_changed:
+            # Also check untracked files
+            try:
+                result = subprocess.run(
+                    ["git", "ls-files", "--others", "--exclude-standard"],
+                    capture_output=True, text=True, cwd=str(REPO),
+                    timeout=30,
+                )
+                head_changed = result.stdout.strip().splitlines()
+            except (OSError, subprocess.TimeoutExpired):
+                return wheels
 
-    changed_set = set(changed)
-    filtered = []
-    for w in wheels:
-        prefix = w["path"] + "/"
-        if any(f.startswith(prefix) for f in changed_set):
-            filtered.append(w)
-    return filtered
+        if not head_changed:
+            return []
+
+        changed_set = set(head_changed)
+        return [w for w in wheels
+                if any(f.startswith(w["path"] + "/") for f in changed_set)]
+
+    return [w for w in wheels if (w["layer"], w["name"]) in changed]
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +137,7 @@ def is_excepted(wheel_path: str, flag: str, exceptions: list[dict]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Compilation
+# Compilation (uses tempdir -- distinct from cmake_build in base module)
 # ---------------------------------------------------------------------------
 
 def compile_wheel(wheel: dict) -> tuple[bool, str, str]:
@@ -352,21 +344,9 @@ def check_tools() -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Compile-audit: build each wheel's test with strict warnings "
-                    "and report findings.",
-    )
-    parser.add_argument(
-        "--changed", action="store_true",
-        help="Only compile wheels whose files differ from HEAD",
-    )
-    parser.add_argument(
-        "--json", action="store_true",
-        help="Output results as JSON (machine-readable)",
-    )
-    parser.add_argument(
-        "--quiet", "-q", action="store_true",
-        help="Only show warnings, not PASS lines",
+    parser = parse_args_common(
+        "Compile-audit: build each wheel's test with strict warnings "
+        "and report findings.",
     )
     args = parser.parse_args()
 
