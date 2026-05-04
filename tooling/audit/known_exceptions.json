@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "description": "Suppressed audit warnings with documented justification. Each exception must have a reviewer.",
+  "exceptions": [
+    {
+      "wheel": "wheels/drivers/nrf24l01",
+      "check": "switch_default",
+      "reason": "enum switch on nrf24_rate_t covers all 3 values; default would suppress -Wswitch-enum",
+      "added": "2026-05-04",
+      "reviewer": "human"
+    },
+    {
+      "wheel": "wheels/modules/config_store",
+      "check": "switch_default",
+      "reason": "enum switch on config_type_t covers all 5 values exhaustively",
+      "added": "2026-05-04",
+      "reviewer": "human"
+    }
+  ]
+}
