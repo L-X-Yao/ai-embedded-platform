@@ -339,12 +339,12 @@ CHECK_TABLE = [
 
 第 8 层：硬件寄存器模型（hw_model_*.h）
   → "驱动操作的寄存器序列对不对（vs datasheet）？"
-  → 1 个范例（bmp280，14 tests 全绿）
+  → 44 个驱动模型（~500 tests 全绿）
   → 框架：hw_model.h（256 寄存器 + reset/readonly/mask/callback）
 
 第 9 层：CBMC 形式化验证（verify_*.c）
   → "对所有可能输入，不变式是否数学上成立？"
-  → 2 个范例（ring_buffer 4 证明 + state_machine 4 证明）
+  → 15 个 L0 核心（12 verified，3 CBMC 超时限制）
   → 需要安装 cbmc
 ```
 
@@ -474,16 +474,33 @@ make test-mutate               # 目标 ≥ 85% 杀死率
 
 ```
 audit_wheels.py:   0 failures, 0 warnings (3 known exceptions)
-audit_compile.py:  111/141 pass, 0 warnings
-audit_sanitizer:   117/141 pass, 0 failures (WSL)
-属性测试:          135/137 pass
-NULL 测试:         140/141 pass
-Sentinel 测试:     26/27 pass
-变异测试基线:      ~77% 平均杀死率（去等价变异 ~85-90%）
+audit_compile.py:  102/141 pass, 0 warnings
+audit_sanitizer:   119/141 pass, 0 failures (WSL)
+audit_coverage:    141/141 pass (WSL)
+属性测试:          143/143 (2 跨依赖需额外 -I)
+NULL 测试:         141/141 pass
+Sentinel 测试:     27/27 pass
+契约测试:          139/139 pass (-DCONTRACT_ENABLED)
+硬件模型测试:      44/44 pass
+CBMC 验证:         12/15 verified (3 CBMC 超时限制)
+变异测试:          40 wheel 基线，平均 ~58%（去等价变异 ~75-80%）
 
-全量审计发现并修复的 bug：
+全量审计 + 超级审计发现并修复的 bug（共 52 项）：
+自动化工具发现（4）：
 1. i2c_scan count 溢出（越界读）—— 属性测试发现
 2. fixed_point 签名左移 UB —— sanitizer 发现
 3. bme680 5 处 UB（签名左移 + 整数溢出）—— sanitizer 发现
 4. fault_inject.h off-by-one —— meta-audit 发现
+
+超级审计九轮发现（48 = 9C + 26M + 13m）：
+5. soft_timer slot 复用 bug —— create/destroy 后 FULL
+6. mqtt5_packet uint16_t 截断 —— props_end 溢出
+7. http_parser 4+ 位数状态码 —— RFC 违规
+8. bme680 测量超时返回陈旧数据
+9. mcp2515 扩展帧 mask 只写 SID
+10. CI drift-fix push 无限循环
+11. merge_agents.sh 变量作用域
+12. run_fuzz_protocols.sh eval 注入
+13. build_flash_check.sh source 无验证
+14-52. 26 MODERATE（counter 饱和/参数验证/delay/精度）+ 13 MINOR（注释/风格）
 ```
