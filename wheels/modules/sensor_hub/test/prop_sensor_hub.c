@@ -119,6 +119,7 @@ PROPERTY(stats_consistent, 5000)
 
 PROPERTY(register_full_returns_error, 5000)
 {
+    (void)seed;
     mock_reset();
     sensor_hub_t hub;
     sensor_hub_init(&hub);

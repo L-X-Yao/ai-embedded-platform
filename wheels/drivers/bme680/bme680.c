@@ -354,12 +354,12 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
         return BME680_ERR_PARAM;
 
     /* calculate heater resistance register value */
-    /* formula from Bosch BME680 reference code; keep float intermediates
+    /* formula from Bosch BME680 reference code; keep FP intermediates
      * to avoid truncation-to-zero when par_gh2 < 32768 */
+    int32_t rhr = (int32_t)dev->res_heat_range * 16384;
+    int32_t pgh = (int32_t)dev->par_gh1 / 16;
     float var1f = ((float)dev->par_gh2 / 32768.0f) *
-                  ((float)((int32_t)dev->res_heat_range * 16384) +
-                   (float)((int32_t)dev->par_gh1 / 16) +
-                   49152.0f);
+                  ((float)rhr + (float)pgh + 49152.0f);
     int32_t var1 = (var1f <= -2147483648.0f) ? (int32_t)-2147483647 - 1
                  : (var1f >=  2147483647.0f) ? (int32_t) 2147483647
                  : (int32_t)var1f;
