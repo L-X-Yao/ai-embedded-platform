@@ -25,6 +25,8 @@ extern "C" {
 /** Initial accumulator value for CRC16-MODBUS streaming. */
 #define CRC16_MODBUS_INIT  0xFFFFu
 
+/* ---------- ACSL formal specifications (Frama-C WP) ---------- */
+
 /**
  * Compute CRC16-MODBUS over a byte buffer.
  *
@@ -33,6 +35,10 @@ extern "C" {
  * @return      16-bit CRC value.
  * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+    ensures \result <= 0xFFFF;
+*/
 uint16_t crc16_modbus(const uint8_t *data, size_t len);
 
 /**
@@ -43,6 +49,9 @@ uint16_t crc16_modbus(const uint8_t *data, size_t len);
  * @return      Updated CRC accumulator.
  * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
+/*@ assigns \nothing;
+    ensures \result <= 0xFFFF;
+*/
 uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 
 #ifdef __cplusplus

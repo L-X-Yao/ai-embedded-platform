@@ -58,6 +58,11 @@ uint16_t crc16_modbus(const uint8_t *data, size_t len)
 {
     if (!data) return CRC16_MODBUS_INIT;
     uint16_t crc = CRC16_MODBUS_INIT;
+    /*@ loop invariant 0 <= i <= len;
+        loop invariant crc <= 0xFFFF;
+        loop assigns i, crc;
+        loop variant len - i;
+    */
     for (size_t i = 0; i < len; i++) {
         crc = (uint16_t)((crc >> 8) ^ crc16_modbus_table[(crc ^ data[i]) & 0xFF]);
     }
