@@ -15,6 +15,13 @@
       "reason": "enum switch on config_type_t covers all 5 values exhaustively",
       "added": "2026-05-04",
       "reviewer": "human"
+    },
+    {
+      "wheel": "wheels/primitives/json_parser",
+      "check": "switch_default",
+      "reason": "switch HAS default: at L340; FP because '{' '}' in char literals confuse brace counter",
+      "added": "2026-05-04",
+      "reviewer": "AI-verified"
     }
   ]
 }

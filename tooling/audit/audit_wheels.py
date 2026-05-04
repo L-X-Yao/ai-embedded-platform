@@ -509,7 +509,11 @@ def chk_float_to_int_cast(ctx, **_):
             continue
         var_name = m.group(1)
         context = "\n".join(lines[max(0, i - 20):i + 1])
-        if not re.search(rf'\b(?:float|double)\b[^;]*\b{re.escape(var_name)}\b', context):
+        is_float_var = re.search(
+            rf'\b(?:float|double)\s+\*?\s*{re.escape(var_name)}\b', context)
+        is_float_literal = re.search(
+            rf'\b{re.escape(var_name)}\s*[=]\s*.*\d+\.\d+f?\b', context)
+        if not is_float_var and not is_float_literal:
             continue
         nearby = "\n".join(lines[max(0, i - 3):i + 1])
         if clamp_pat.search(nearby):
@@ -560,6 +564,8 @@ def chk_unchecked_return(ctx, **_):
     for i, line in enumerate(ctx.source.splitlines()):
         stripped = line.strip()
         if stripped.startswith("//") or stripped.startswith("return"):
+            continue
+        if stripped.startswith("(void)"):
             continue
         m = pat.search(stripped)
         if not m:
