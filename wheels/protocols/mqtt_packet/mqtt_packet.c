@@ -153,7 +153,7 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
 
     uint8_t byte0 = (uint8_t)(MQTT_PUBLISH << 4);
     if (pub->dup)    byte0 |= 0x08;
-    byte0 |= (uint8_t)((pub->qos & 0x03) << 1);
+    byte0 = (uint8_t)(byte0 | (uint8_t)((pub->qos & 0x03u) << 1));
     if (pub->retain) byte0 |= 0x01;
 
     int pos = 0;
