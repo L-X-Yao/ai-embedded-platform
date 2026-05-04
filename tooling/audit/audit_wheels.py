@@ -1482,6 +1482,7 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
             failures.append(f"{wheel_path}: {msg}")
         elif level == "WARN":
             warnings.append(f"{wheel_path}: {msg}")
+        return level
 
     qprint(f"=== Wheel audit ({len(wheels)} wheels, {len(CHECK_TABLE)} checks) ===\n")
 
@@ -1500,8 +1501,8 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
             result = chk_fn(ctx, ci_text=ci_text)
             if result:
                 msg, fix_cmd = result
-                record(chk_name, path, level, msg, fix_cmd)
-                tprint(f"  [{level}]  {path}: {msg}")
+                actual_level = record(chk_name, path, level, msg, fix_cmd)
+                tprint(f"  [{actual_level}]  {path}: {msg}")
             else:
                 qprint(f"  [ ok ]  {path}")
 
