@@ -45,7 +45,7 @@ static bool at24cxx_model_i2c_write_reg(void *ctx, uint8_t dev_addr,
                                         uint8_t reg, uint8_t val)
 {
     (void)dev_addr;
-    at24cxx_model_t *m = (at24cxx_model_t *)ctx;
+    at24cxx_hw_model_t *m = (at24cxx_hw_model_t *)ctx;
     m->hw.regs[reg] = val;
     m->write_count++;
     return true;
@@ -60,7 +60,7 @@ static bool at24cxx_model_i2c_write_regs8(void *ctx, uint8_t dev_addr,
                                           const uint8_t *data, uint16_t len)
 {
     (void)dev_addr;
-    at24cxx_model_t *m = (at24cxx_model_t *)ctx;
+    at24cxx_hw_model_t *m = (at24cxx_hw_model_t *)ctx;
     for (uint16_t i = 0; i < len; i++) {
         uint8_t addr = (uint8_t)((uint16_t)reg + i);
         m->hw.regs[addr] = data[i];
@@ -78,7 +78,7 @@ static bool at24cxx_model_i2c_read_regs(void *ctx, uint8_t dev_addr,
                                         uint8_t *buf, uint16_t len)
 {
     (void)dev_addr;
-    at24cxx_model_t *m = (at24cxx_model_t *)ctx;
+    at24cxx_hw_model_t *m = (at24cxx_hw_model_t *)ctx;
     for (uint16_t i = 0; i < len; i++) {
         unsigned idx = (unsigned)reg + i;
         buf[i] = (idx < AT24CXX_MODEL_SIZE) ? m->hw.regs[idx] : 0xFF;
@@ -91,12 +91,12 @@ __attribute__((unused))
 static void at24cxx_model_delay(void *ctx, uint32_t ms)
 {
     (void)ms;
-    at24cxx_model_t *m = (at24cxx_model_t *)ctx;
+    at24cxx_hw_model_t *m = (at24cxx_hw_model_t *)ctx;
     m->delay_count++;
 }
 
 /* Helper: pre-fill EEPROM contents */
-static void at24cxx_model_fill(at24cxx_model_t *m, uint8_t addr,
+static void at24cxx_model_fill(at24cxx_hw_model_t *m, uint8_t addr,
                                 const uint8_t *data, uint16_t len)
 {
     for (uint16_t i = 0; i < len && ((uint16_t)addr + i) < AT24CXX_MODEL_SIZE; i++) {
