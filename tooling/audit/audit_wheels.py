@@ -48,6 +48,21 @@ PROJECTS = REPO / "projects"
 LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
 CONSUMER_REQUIRED = {"drivers", "protocols", "modules"}
 SKIP_DIRS = {"test", "build", "__pycache__", ".pytest_cache"}
+KNOWN_EXCEPTIONS_FILE = REPO / "tooling" / "audit" / "known_exceptions.json"
+
+
+def _load_known_exceptions() -> dict:
+    if not KNOWN_EXCEPTIONS_FILE.exists():
+        return {}
+    try:
+        data = json.loads(KNOWN_EXCEPTIONS_FILE.read_text(encoding="utf-8"))
+        idx = {}
+        for exc in data.get("exceptions", []):
+            key = (exc.get("wheel", ""), exc.get("check", ""))
+            idx[key] = exc.get("reason", "")
+        return idx
+    except (json.JSONDecodeError, OSError):
+        return {}
 
 # --- File cache: eliminate ~6000 redundant IO reads ---
 
@@ -1453,8 +1468,12 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
     failures = []
     warnings = []
     results = []
+    known_exc = _load_known_exceptions()
 
     def record(check, wheel_path, level, msg, fix_cmd=None):
+        if level == "WARN" and (wheel_path, check) in known_exc:
+            level = "INFO"
+            msg += f" [known exception: {known_exc[(wheel_path, check)]}]"
         entry = {"check": check, "wheel": wheel_path, "level": level, "message": msg}
         if fix_cmd:
             entry["fix"] = fix_cmd
