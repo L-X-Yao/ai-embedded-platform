@@ -9,6 +9,7 @@
  */
 
 #include "param_table.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------------------------------------------------------------------- */
@@ -19,6 +20,7 @@ param_err_t param_table_init(param_table_t *pt)
         return PARAM_ERR_PARAM;
     }
     memset(pt, 0, sizeof(*pt));
+    ENSURE(pt->count == 0);
     return PARAM_OK;
 }
 
@@ -53,6 +55,7 @@ param_err_t param_table_define(param_table_t *pt, const char *key,
     }
 
     pt->count++;
+    INVARIANT(pt->count <= PARAM_MAX_ENTRIES);
     return PARAM_OK;
 }
 

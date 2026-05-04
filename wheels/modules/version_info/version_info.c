@@ -9,6 +9,7 @@
  */
 
 #include "version_info.h"
+#include "contract.h"
 #include <stdio.h>
 
 /* --------------- helpers --------------- */
