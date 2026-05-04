@@ -44,7 +44,7 @@
 | D1 | **文档漂移 + 仓库卫生** | ⚡ | docs/ vs 实际代码交叉验证、CLAUDE.md 准确性（WISHLIST staleness 已自动化） | `docs/` + `CLAUDE.md` + `_eval/` + `templates/` |
 | H1 | **HAL port** | 👁️ | 寄存器 RMW、busy-wait、中断安全、时钟配置 | `vsf-addon/` |
 | S1 | **安全 + 测试覆盖** | ⚡ | 密钥泄露、硬编码凭据（pre-commit 已拦截 .env/.pem）+ 公开函数 vs 测试覆盖盲区 | 全仓库 |
-| B1 | **构建系统 + 依赖图** | ⚡ | CMakeLists 标志一致性（C99/-Werror 已自动化）+ ADR-009 方向/循环 | 全部 `test/CMakeLists.txt` |
+| B1 | **构建系统 + 依赖图** | ⚡ | CMakeLists 标志一致性（C99/-Werror 已自动化）+ ADR-009 方向（`chk_dep_direction` 已自动化）/ 循环 | 全部 `test/CMakeLists.txt` |
 
 ### 批次 4 — 深度质量
 
@@ -62,9 +62,9 @@
 | ID | 维度 | 自动化 | 检查内容 | 范围 |
 |----|------|:------:|----------|------|
 | Q7 | **MISRA-C 子集合规** | 👁️ | Rule 10.x 隐式转换、14.x 控制流、17.x 函数、21.x 禁用函数 | 全部 wheel .c |
-| Q8 | **防御性编程完整性** | 👁️ | switch default、除法检零、移位 < 位宽、循环有上界 | 全部 wheel .c |
+| Q8 | **防御性编程完整性** | ⚡ | switch default（`chk_switch_default` 已自动化）、除法检零、移位 < 位宽、循环有上界 | 全部 wheel .c |
 | Q9 | **数值精度** | 👁️ | float == 比较、累积误差、整数截断、有符号/无符号混用 | 全部 wheel .c |
-| Q10 | **头文件自包含** | 👁️ | 每个 .h 是否包含自身需要的全部 #include | 全部 wheel .h |
+| Q10 | **头文件自包含** | 🤖 | `chk_header_self_contained` 检查 stdint/stdbool/stddef 包含完整性 | 全部 wheel .h |
 | Q11 | **宏卫生** | 👁️ | 多次求值风险、缺少外层括号、命名空间污染 | 全部 wheel .h/.c |
 | Q12 | **测试质量** | ⚡ | happy path only、边界缺失、assert 密度（TEST/RUN 平衡已自动化） | 全部 wheel test/*.c |
 
@@ -72,7 +72,7 @@
 
 | ID | 维度 | 自动化 | 检查内容 | 范围 |
 |----|------|:------:|----------|------|
-| Q13 | **死代码检测** | 👁️ | 无引用的 static 函数、未走到的 else/case | 全部 wheel .c |
+| Q13 | **死代码检测** | ⚡ | `chk_dead_static_function` 检查无引用 static 函数；未走到的 else/case 需人工 | 全部 wheel .c |
 | Q14 | **圈复杂度** | 👁️ | 每函数 cyclomatic complexity，标记 >15 的 | 全部 wheel .c |
 | Q15 | **测试隔离性** | 👁️ | 共享全局变量在每个 TEST 前是否重置 | 全部 wheel test/*.c |
 | Q16 | **编译器警告实扫** | ⚡ | `-Wconversion -Wsign-conversion` 实际编译。ARM 交叉编译已有 `arm_size_audit.sh` | 全部 wheel |
@@ -127,7 +127,7 @@ make check                    # test_all.sh + audit_wheels.py --quiet
 wsl bash tooling/audit/arm_size_audit.sh   # Q21
 ```
 
-如果 FAIL → 先修再继续。Phase 0 覆盖：Q4, Q21, Q29, 以及 C1/B1/D1/S1/Q12/Q27 的自动化子集。
+如果 FAIL → 先修再继续。Phase 0 覆盖：Q4, Q8(switch), Q10, Q13(static), Q21, Q29, 以及 C1/B1/D1/S1/Q12/Q27 的自动化子集。
 
 ### Phase 1 — `dispatch_agent.sh` 派发（按批次并行）
 
