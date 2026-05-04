@@ -25,6 +25,7 @@ target_include_directories(prop_max31865 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_max31865 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_max31865 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
+target_link_libraries(prop_max31865 PRIVATE m)
 
 add_test(NAME max31865_prop_tests COMMAND prop_max31865)

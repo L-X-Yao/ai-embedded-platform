@@ -25,6 +25,6 @@ target_include_directories(prop_vl53l0x PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME vl53l0x_prop_tests COMMAND prop_vl53l0x)

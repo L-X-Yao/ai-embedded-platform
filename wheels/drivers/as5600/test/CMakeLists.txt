@@ -25,6 +25,6 @@ target_include_directories(prop_as5600 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME as5600_prop_tests COMMAND prop_as5600)

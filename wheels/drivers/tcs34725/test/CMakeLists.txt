@@ -26,7 +26,7 @@ target_include_directories(prop_tcs34725 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_tcs34725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_tcs34725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_tcs34725 PRIVATE m)
 
 add_test(NAME tcs34725_prop_tests COMMAND prop_tcs34725)

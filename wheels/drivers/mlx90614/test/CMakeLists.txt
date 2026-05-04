@@ -25,6 +25,7 @@ target_include_directories(prop_mlx90614 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
+target_link_libraries(prop_mlx90614 PRIVATE m)
 
 add_test(NAME mlx90614_prop_tests COMMAND prop_mlx90614)

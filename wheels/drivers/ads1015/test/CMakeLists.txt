@@ -26,7 +26,7 @@ target_include_directories(prop_ads1015 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_ads1015 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_ads1015 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_ads1015 PRIVATE m)
 
 add_test(NAME ads1015_prop_tests COMMAND prop_ads1015)

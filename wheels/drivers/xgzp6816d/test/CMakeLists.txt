@@ -27,7 +27,7 @@ target_include_directories(prop_xgzp6816d PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_xgzp6816d PRIVATE m)
 
 add_test(NAME xgzp6816d_prop_tests COMMAND prop_xgzp6816d)
