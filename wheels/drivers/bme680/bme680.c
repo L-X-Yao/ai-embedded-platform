@@ -360,7 +360,9 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
                   ((float)((int32_t)dev->res_heat_range * 16384) +
                    (float)((int32_t)dev->par_gh1 / 16) +
                    49152.0f);
-    int32_t var1 = (int32_t)var1f;
+    int32_t var1 = (var1f <= -2147483648.0f) ? (int32_t)-2147483647 - 1
+                 : (var1f >=  2147483647.0f) ? (int32_t) 2147483647
+                 : (int32_t)var1f;
     int32_t var2 = (var1 / 32768) + 1;
     int32_t var3 = (int32_t)temp_c * var2 / 2;
     int32_t var4 = var3 + (dev->res_heat_val * 16);
