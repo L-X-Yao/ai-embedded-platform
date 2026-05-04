@@ -275,6 +275,10 @@ def main() -> int:
         print(f"ERROR: wheels/ not found at {WHEELS}", file=sys.stderr)
         return 2
 
+    if sys.platform == "win32":
+        print("NOTE: gcov --coverage requires Linux gcc. Run in WSL: wsl python3 tooling/audit/audit_coverage.py")
+        print("      Windows MinGW gcov output format may differ. Skipping.\n")
+
     wheels = find_wheels()
     if not wheels:
         if not args.json:

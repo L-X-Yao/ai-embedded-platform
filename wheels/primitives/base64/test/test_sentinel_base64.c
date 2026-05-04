@@ -13,8 +13,8 @@ TEST(test_base64_encode_sentinel) {
     uint16_t out_len = sizeof(out);
     uint8_t input[] = {0x41, 0x42, 0x43};
     base64_encode(input, 3, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: byte after NUL terminator (encode NUL-terminates) */
+    ASSERT_EQ((uint8_t)out[out_len + 1], 0xFF);
 }
 
 
