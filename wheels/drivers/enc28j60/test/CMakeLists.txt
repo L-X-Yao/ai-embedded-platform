@@ -28,3 +28,15 @@ target_include_directories(prop_enc28j60 PRIVATE
 target_compile_options(prop_enc28j60 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME enc28j60_prop_tests COMMAND prop_enc28j60)
+
+add_executable(test_hw_model_enc28j60
+    test_hw_model_enc28j60.c
+    ../enc28j60.c
+)
+target_include_directories(test_hw_model_enc28j60 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_enc28j60 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
+add_test(NAME enc28j60_hw_model_tests COMMAND test_hw_model_enc28j60)
