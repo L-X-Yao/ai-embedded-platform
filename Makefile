@@ -175,7 +175,7 @@ test-property:
 	done
 
 test-mutate:
-	bash tooling/test/mutation_test.sh
+	bash tooling/test/test_mutation.sh
 
 verify:
 	@echo "CBMC verification (requires cbmc in PATH)..."

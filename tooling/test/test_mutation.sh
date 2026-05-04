@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# mutation_test.sh — mutation testing for wheel host tests.
+# test_mutation.sh — mutation testing for wheel host tests.
 #
 # Applies small source-level mutations one at a time, rebuilds, and checks
 # whether the existing tests catch the change.  Survived mutations expose
 # test gaps; killed mutations confirm coverage.
 #
 # Usage:
-#   mutation_test.sh                     # all non-vendor wheels
-#   mutation_test.sh --wheel crc16       # single wheel
-#   mutation_test.sh --quick             # first 3 operators only
-#   mutation_test.sh --verbose           # print each mutation attempt
-#   mutation_test.sh --limit 30          # max 30 mutations per wheel
-#   mutation_test.sh --wheel log --verbose --limit 20
+#   test_mutation.sh                     # all non-vendor wheels
+#   test_mutation.sh --wheel crc16       # single wheel
+#   test_mutation.sh --quick             # first 3 operators only
+#   test_mutation.sh --verbose           # print each mutation attempt
+#   test_mutation.sh --limit 30          # max 30 mutations per wheel
+#   test_mutation.sh --wheel log --verbose --limit 20
 #
 # Exit 0 if every wheel achieves >= 85% kill rate; 1 otherwise.
 
@@ -267,7 +267,7 @@ fi
 # Main loop
 # ---------------------------------------------------------------------------
 
-echo -e "${BOLD}=== mutation_test.sh ===${NC}"
+echo -e "${BOLD}=== test_mutation.sh ===${NC}"
 echo -e "  Operators: ${OP_COUNT}/${#MUTATION_OPS[@]}  Limit: ${LIMIT}/wheel  Threshold: ${KILL_THRESHOLD}%"
 echo ""
 
