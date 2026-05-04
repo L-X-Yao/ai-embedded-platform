@@ -10,6 +10,7 @@
 
 #include "log_filter.h"
 #include <string.h>
+#include "contract.h"
 
 void log_filter_init(log_filter_t *f, log_filter_output_fn inner_fn,
                      void *inner_ctx, log_filter_mode_t mode) {
@@ -25,6 +26,7 @@ int log_filter_add(log_filter_t *f, const char *module) {
     if (!f || !module) return -1;
     if (f->module_count >= LOG_FILTER_MAX_MODULES) return -1;
     f->modules[f->module_count++] = module;
+    INVARIANT(f->module_count <= LOG_FILTER_MAX_MODULES);
     return 0;
 }
 

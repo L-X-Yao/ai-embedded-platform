@@ -9,6 +9,7 @@
  */
 
 #include "log_uart.h"
+#include "contract.h"
 
 void log_uart_init(log_uart_t *u, log_uart_write_fn write, void *ctx) {
     if (!u) return;

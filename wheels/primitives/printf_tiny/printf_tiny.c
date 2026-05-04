@@ -10,6 +10,7 @@
 
 #include "printf_tiny.h"
 #include <stddef.h>
+#include "contract.h"
 
 /* --- internal output abstraction ----------------------------------- */
 

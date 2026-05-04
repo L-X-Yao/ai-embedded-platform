@@ -9,6 +9,7 @@
  */
 
 #include "string_utils.h"
+#include "contract.h"
 #include <string.h>
 
 /* ── helpers ────────────────────────────────────────────────────────── */
@@ -24,6 +25,7 @@ static size_t safe_copy(const char *src, size_t src_len, char *dst, size_t size)
     size_t n = src_len < size - 1 ? src_len : size - 1;
     if (n > 0) memmove(dst, src, n);  /* memmove for possible overlap */
     dst[n] = '\0';
+    ENSURE(dst[n] == '\0');
     return n;
 }
 
@@ -199,5 +201,6 @@ string_utils_err_t str_join(const char **tokens, int count, const char *delim,
     }
     /* NUL-terminate at actual end or buffer limit */
     buf[pos < size ? pos : size - 1] = '\0';
+    ENSURE(buf[pos < size ? pos : size - 1] == '\0');
     return overflow ? STRING_UTILS_ERR_OVERFLOW : STRING_UTILS_OK;
 }

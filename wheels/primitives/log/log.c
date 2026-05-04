@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "contract.h"
 
 /* ======================================================================
  * Config
@@ -155,6 +156,7 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     buf[pos] = '\0';
 
     /* Dispatch */
+    INVARIANT(pos > 0 && pos < (int)sizeof(buf));
     for (int i = 0; i < LOG_MAX_SINKS; i++) {
         if (g_sinks[i].in_use && g_sinks[i].fn) {
             g_sinks[i].fn(g_sinks[i].ctx, buf, (size_t)pos);

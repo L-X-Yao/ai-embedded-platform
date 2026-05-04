@@ -10,6 +10,7 @@
 
 #include "hex_codec.h"
 #include <stddef.h>
+#include "contract.h"
 
 /* ------------------------------------------------------------------ */
 /* Internal helpers                                                    */
@@ -36,6 +37,7 @@ static hex_err_t hex_encode_impl(const uint8_t *data, uint16_t data_len,
         out[i * 2u + 1u] = lut[data[i] & 0x0Fu];
     }
     out[data_len * 2u] = '\0';
+    ENSURE(out[data_len * 2u] == '\0');
     return HEX_OK;
 }
 
@@ -73,6 +75,7 @@ hex_err_t hex_decode(const char *hex, uint16_t hex_len,
         out[i] = (uint8_t)((hi << 4) | lo);
     }
     *out_len = decoded;
+    ENSURE(*out_len == hex_len / 2u);
     return HEX_OK;
 }
 
