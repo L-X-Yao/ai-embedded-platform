@@ -9,6 +9,7 @@
  */
 
 #include "device_info.h"
+#include "contract.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -40,6 +41,7 @@ device_info_err_t device_info_init(device_info_t *info)
     }
 
     memset(info, 0, sizeof(*info));
+    ENSURE(info->uptime_seconds == 0 && info->boot_count == 0);
     return DEVICE_INFO_OK;
 }
 

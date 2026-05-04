@@ -9,6 +9,7 @@
  */
 
 #include "ota_manager.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- helpers ---------- */
@@ -47,6 +48,7 @@ ota_mgr_err_t ota_manager_init(ota_manager_t *mgr,
     memset(mgr, 0, sizeof(*mgr));
     mgr->ops = ops;
     mgr->state = OTA_MGR_STATE_IDLE;
+    ENSURE(mgr->downloaded == 0 && mgr->progress_pct == 0);
 
     size_t len = strlen(current_version);
     if (len >= OTA_MGR_VERSION_MAX) {
@@ -123,6 +125,7 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
 
     mgr->downloaded += bytes_read;
     update_progress(mgr);
+    INVARIANT(mgr->progress_pct <= 100);
 
     /* check if download is complete */
     if (mgr->downloaded >= mgr->total_size) {

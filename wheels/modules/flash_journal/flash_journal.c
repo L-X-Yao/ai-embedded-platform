@@ -9,6 +9,7 @@
  */
 
 #include "flash_journal.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- Internal CRC32 (self-contained, no cross-wheel include) -------- */
@@ -303,6 +304,8 @@ flash_journal_err_t flash_journal_append(flash_journal_t *jrnl,
     jrnl->write_offset += entry_size;
     jrnl->next_seq++;
     jrnl->entry_count++;
+    INVARIANT(jrnl->write_offset <= jrnl->sector_size);
+    INVARIANT(jrnl->write_sector < jrnl->sector_count);
 
     /* If this is the first entry, it's also the oldest */
     if (jrnl->entry_count == 1) {

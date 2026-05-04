@@ -9,6 +9,7 @@
  */
 
 #include "error_handler.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- Public API ---------- */
@@ -22,6 +23,7 @@ error_handler_err_t error_handler_init(error_handler_t *eh,
 
     memset(eh, 0, sizeof(*eh));
     eh->storage = storage;
+    ENSURE(eh->count == 0 && eh->head == 0);
     return ERROR_HANDLER_OK;
 }
 
@@ -47,6 +49,8 @@ error_handler_err_t error_handler_report(error_handler_t *eh, uint16_t code,
     if (eh->count < ERROR_HANDLER_MAX_RECORDS) {
         eh->count++;
     }
+    INVARIANT(eh->head < ERROR_HANDLER_MAX_RECORDS);
+    INVARIANT(eh->count <= ERROR_HANDLER_MAX_RECORDS);
 
     /* Lifetime counters */
     eh->total_errors++;
