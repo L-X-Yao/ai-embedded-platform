@@ -14,8 +14,19 @@ target_include_directories(test_pca9685 PRIVATE
 )
 target_compile_options(test_pca9685 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_hw_model_pca9685
+    test_hw_model_pca9685.c
+    ../pca9685.c
+)
+target_include_directories(test_hw_model_pca9685 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_pca9685 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME pca9685_tests COMMAND test_pca9685)
+add_test(NAME pca9685_hw_model_tests COMMAND test_hw_model_pca9685)
 
 add_executable(prop_pca9685
     prop_pca9685.c
