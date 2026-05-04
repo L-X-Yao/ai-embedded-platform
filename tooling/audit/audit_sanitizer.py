@@ -115,20 +115,19 @@ def build_wheel(wheel_dir: Path, target_name: str) -> tuple:
 
     san_flags = "-fsanitize=address,undefined -fno-sanitize-recover=all -O1"
 
-    # Configure
+    # Configure — use absolute paths, no cwd override
     cmake_cmd = [
         "cmake",
         "-G", "Ninja",
         f"-DCMAKE_C_FLAGS={san_flags}",
-        f"-DCMAKE_EXE_LINKER_FLAGS={san_flags}",
-        "-S", str(test_dir),
-        "-B", str(build_dir),
+        f"-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined",
+        "-S", str(test_dir.resolve()),
+        "-B", str(build_dir.resolve()),
     ]
     try:
         result = subprocess.run(
             cmake_cmd,
             capture_output=True, text=True, timeout=60,
-            cwd=str(test_dir)
         )
         if result.returncode != 0:
             return False, result.stderr
@@ -136,7 +135,7 @@ def build_wheel(wheel_dir: Path, target_name: str) -> tuple:
         return False, str(e)
 
     # Build
-    build_cmd = ["cmake", "--build", str(build_dir), "--", "-j"]
+    build_cmd = ["cmake", "--build", str(build_dir.resolve())]
     try:
         result = subprocess.run(
             build_cmd,
