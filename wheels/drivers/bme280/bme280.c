@@ -12,6 +12,7 @@
  */
 
 #include "bme280.h"
+#include "contract.h"
 #include <string.h>
 
 #define REG_CALIB00     0x88
@@ -252,6 +253,7 @@ bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
     uint32_t hum_raw = compensate_humidity(dev, adc_h);
     out->humidity_pct = (float)hum_raw / 1024.0f;
 
+    INVARIANT(dev->i2c != NULL);
     return BME280_OK;
 }
 

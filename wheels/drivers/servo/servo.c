@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "servo.h"
+#include "contract.h"
 
 servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
                        const servo_cfg_t *cfg)
@@ -21,6 +22,7 @@ servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
     dev->pwm = pwm;
     dev->cfg = *cfg;
     dev->current_angle = 0;
+    INVARIANT(dev->pwm != NULL);
     return SERVO_OK;
 }
 

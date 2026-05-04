@@ -11,6 +11,7 @@
  */
 
 #include "drv2605.h"
+#include "contract.h"
 
 /* ---------- register addresses ---------- */
 
@@ -71,6 +72,7 @@ drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
             return DRV2605_ERR_I2C;
     }
 
+    INVARIANT(dev->i2c != NULL);
     return DRV2605_OK;
 }
 

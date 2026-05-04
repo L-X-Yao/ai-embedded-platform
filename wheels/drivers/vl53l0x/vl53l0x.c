@@ -13,6 +13,7 @@
  */
 
 #include "vl53l0x.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- register map (subset) ---- */
@@ -204,6 +205,7 @@ vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm)
             }
 
             *range_mm = range;
+            ENSURE(range < 8190u);
             return VL53L0X_OK;
         }
     }

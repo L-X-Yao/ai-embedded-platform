@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "ds18b20.h"
+#include "contract.h"
 #include <string.h>
 
 #define CMD_SKIP_ROM         0xCC
@@ -122,6 +123,8 @@ ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c)
 
     int16_t raw = (int16_t)((uint16_t)sp[1] << 8 | sp[0]);
     *temp_c = (float)raw / 16.0f;
+    ENSURE(*temp_c == *temp_c);  /* not NaN */
+    ENSURE(*temp_c >= -55.0f && *temp_c <= 125.0f);
     return DS18B20_OK;
 }
 

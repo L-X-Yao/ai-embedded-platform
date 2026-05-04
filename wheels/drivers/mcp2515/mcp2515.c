@@ -9,6 +9,7 @@
  */
 
 #include "mcp2515.h"
+#include "contract.h"
 
 /* ---------- SPI instructions ---------- */
 

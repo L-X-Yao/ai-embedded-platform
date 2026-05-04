@@ -9,6 +9,7 @@
  */
 
 #include "enc28j60.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- SPI opcodes ---------- */

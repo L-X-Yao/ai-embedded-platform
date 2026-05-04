@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "bh1750.h"
+#include "contract.h"
 
 #define CMD_POWER_ON  0x01
 #define CMD_POWER_OFF 0x00
@@ -62,6 +63,8 @@ bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
     else
         *lux = (float)raw / 1.2f;
 
+    ENSURE(*lux == *lux);  /* not NaN */
+    ENSURE(*lux >= 0.0f);
     return BH1750_OK;
 }
 

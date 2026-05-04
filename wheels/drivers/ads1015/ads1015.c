@@ -13,6 +13,7 @@
  * 12-bit code (-2048 .. +2047).
  */
 #include "ads1015.h"
+#include "contract.h"
 
 #define REG_CONVERSION 0x00u
 #define REG_CONFIG     0x01u
@@ -130,6 +131,7 @@ ads1015_err_t ads1015_read_single(ads1015_t *dev, ads1015_mux_t channel,
     unsigned idx = (unsigned)dev->cfg.pga;
     if (idx > 5u) idx = 5u;
     *voltage_mv = (float)raw * pga_scale_mv[idx];
+    ENSURE(*voltage_mv == *voltage_mv);  /* not NaN */
     return ADS1015_OK;
 }
 

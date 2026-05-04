@@ -12,6 +12,7 @@
  */
 
 #include "pca9685.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- Register addresses ---- */

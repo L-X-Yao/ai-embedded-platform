@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "opt3001.h"
+#include "contract.h"
 
 /* Register addresses */
 #define REG_RESULT          0x00
@@ -96,6 +97,8 @@ opt3001_err_t opt3001_read_lux(opt3001_t *dev, float *lux)
 
     /* lux = 0.01 * 2^E * R */
     *lux = 0.01f * (float)(1u << exponent) * (float)mantissa;
+    ENSURE(*lux == *lux);  /* not NaN */
+    ENSURE(*lux >= 0.0f);
     return OPT3001_OK;
 }
 

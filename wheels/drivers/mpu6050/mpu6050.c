@@ -9,6 +9,7 @@
  */
 
 #include "mpu6050.h"
+#include "contract.h"
 #include <string.h>
 
 #define REG_SMPLRT_DIV    0x19
@@ -84,6 +85,7 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     dev->accel_scale = accel_scales[cfg->accel_range & 0x03];
     dev->gyro_scale  = gyro_scales[cfg->gyro_range & 0x03];
 
+    INVARIANT(dev->i2c != NULL);
     return MPU6050_OK;
 }
 
@@ -108,6 +110,9 @@ mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out)
     out->ay_g = (float)raw_y / dev->accel_scale;
     out->az_g = (float)raw_z / dev->accel_scale;
 
+    ENSURE(out->ax_g == out->ax_g);  /* not NaN */
+    ENSURE(out->ay_g == out->ay_g);
+    ENSURE(out->az_g == out->az_g);
     return MPU6050_OK;
 }
 
@@ -132,6 +137,9 @@ mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out)
     out->gy_dps = (float)raw_y / dev->gyro_scale;
     out->gz_dps = (float)raw_z / dev->gyro_scale;
 
+    ENSURE(out->gx_dps == out->gx_dps);  /* not NaN */
+    ENSURE(out->gy_dps == out->gy_dps);
+    ENSURE(out->gz_dps == out->gz_dps);
     return MPU6050_OK;
 }
 

@@ -12,6 +12,7 @@
  */
 
 #include "bmp280.h"
+#include "contract.h"
 #include <string.h>
 
 #define REG_CALIB00    0x88
@@ -96,6 +97,7 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
         return BMP280_ERR_I2C;
     }
 
+    INVARIANT(dev->i2c != NULL);
     return BMP280_OK;
 }
 
@@ -187,6 +189,10 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
     uint32_t press_raw = compensate_pressure(dev, adc_p);
     out->pressure_pa = (float)press_raw;
 
+    ENSURE(out->temperature_c == out->temperature_c);  /* not NaN */
+    ENSURE(out->pressure_pa == out->pressure_pa);        /* not NaN */
+    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 85.0f);
+    ENSURE(out->pressure_pa >= 30000.0f && out->pressure_pa <= 110000.0f);
     return BMP280_OK;
 }
 

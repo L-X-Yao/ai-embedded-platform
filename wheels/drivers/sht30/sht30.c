@@ -9,6 +9,7 @@
  */
 
 #include "sht30.h"
+#include "contract.h"
 #include <string.h>
 
 #define CMD_SINGLE_HIGH_MSB   0x24
@@ -105,6 +106,10 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
     out->temperature_c = -45.0f + 175.0f * (float)raw_t / 65535.0f;
     out->humidity_pct   = 100.0f * (float)raw_h / 65535.0f;
 
+    ENSURE(out->temperature_c == out->temperature_c);  /* not NaN */
+    ENSURE(out->humidity_pct == out->humidity_pct);      /* not NaN */
+    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 125.0f);
+    ENSURE(out->humidity_pct >= 0.0f && out->humidity_pct <= 100.0f);
     return SHT30_OK;
 }
 

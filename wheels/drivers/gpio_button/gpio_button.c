@@ -9,6 +9,7 @@
  */
 
 #include "gpio_button.h"
+#include "contract.h"
 #include <stddef.h>
 
 gpio_button_cfg_t gpio_button_default_cfg(void)

@@ -9,6 +9,7 @@
  */
 
 #include "si7021.h"
+#include "contract.h"
 
 /* --- SI7021 commands --- */
 #define CMD_MEASURE_RH_NOHOLD    0xF5u
@@ -122,6 +123,7 @@ si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh)
     }
 
     *rh = 125.0f * (float)raw / 65536.0f - 6.0f;
+    ENSURE(*rh == *rh);  /* not NaN */
     return SI7021_OK;
 }
 
@@ -140,6 +142,7 @@ si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c)
     }
 
     *temp_c = 175.72f * (float)raw / 65536.0f - 46.85f;
+    ENSURE(*temp_c == *temp_c);  /* not NaN */
     return SI7021_OK;
 }
 

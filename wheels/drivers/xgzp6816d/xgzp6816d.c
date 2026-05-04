@@ -9,6 +9,7 @@
  */
 
 #include "xgzp6816d.h"
+#include "contract.h"
 #include <stddef.h>
 
 /* ---------- protocol constants ---------- */
@@ -82,5 +83,9 @@ xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
     out->pressure_pa = p_kpa * 1000.0f;
     out->temperature_c = (float)t_raw / 65536.0f * 190.0f - 40.0f;
 
+    ENSURE(out->pressure_pa == out->pressure_pa);        /* not NaN */
+    ENSURE(out->temperature_c == out->temperature_c);    /* not NaN */
+    ENSURE(out->pressure_pa >= 30000.0f && out->pressure_pa <= 110000.0f);
+    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 150.0f);
     return XGZP6816D_OK;
 }

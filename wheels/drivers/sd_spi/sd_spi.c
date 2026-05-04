@@ -9,6 +9,7 @@
  */
 
 #include "sd_spi.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- SD SPI commands ---------- */

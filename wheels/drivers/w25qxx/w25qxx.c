@@ -9,6 +9,7 @@
  */
 
 #include "w25qxx.h"
+#include "contract.h"
 
 /* ---------- SPI flash commands ---------- */
 

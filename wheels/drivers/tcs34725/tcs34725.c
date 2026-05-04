@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "tcs34725.h"
+#include "contract.h"
 
 /* --- Register addresses (raw, without command bit) --- */
 #define REG_ENABLE  0x00u
@@ -175,5 +176,7 @@ tcs34725_err_t tcs34725_get_lux(const tcs34725_rgbc_t *rgbc,
     if (l < 0.0f)
         l = 0.0f;
     *lux = l;
+    ENSURE(*lux == *lux);  /* not NaN */
+    ENSURE(*lux >= 0.0f);
     return TCS34725_OK;
 }

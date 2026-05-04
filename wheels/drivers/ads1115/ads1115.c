@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "ads1115.h"
+#include "contract.h"
 
 #define REG_CONVERSION 0x00
 #define REG_CONFIG     0x01
@@ -97,6 +98,7 @@ ads1115_err_t ads1115_read_voltage(ads1115_t *dev, float *voltage_mv)
     if (pga_idx < 0) pga_idx = 0;
     if (pga_idx > 5) pga_idx = 5;
     *voltage_mv = (float)raw * pga_scale_mv[pga_idx];
+    ENSURE(*voltage_mv == *voltage_mv);  /* not NaN */
     return ADS1115_OK;
 }
 

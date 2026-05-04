@@ -17,6 +17,7 @@
  */
 
 #include "keypad_matrix.h"
+#include "contract.h"
 #include <string.h>
 
 keypad_err_t keypad_matrix_init(keypad_matrix_t *kp, const keypad_hal_t *hal,

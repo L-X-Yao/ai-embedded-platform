@@ -13,6 +13,7 @@
  */
 
 #include "stepper.h"
+#include "contract.h"
 
 /* ---- helpers ---- */
 
@@ -50,6 +51,7 @@ stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
     s->decel_start = 0;
     s->total_steps = 0;
     s->current_delay_us = 0;
+    INVARIANT(s->hal != NULL);
     return STEPPER_OK;
 }
 

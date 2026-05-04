@@ -17,6 +17,7 @@
  */
 
 #include "max31855.h"
+#include "contract.h"
 
 /* ---------- internal helpers ---------- */
 
@@ -77,8 +78,14 @@ max31855_err_t max31855_read(max31855_t *dev,
         return check_faults(raw);
     }
 
-    if (thermocouple_c) *thermocouple_c = decode_thermocouple(raw);
-    if (internal_c)     *internal_c     = decode_internal(raw);
+    if (thermocouple_c) {
+        *thermocouple_c = decode_thermocouple(raw);
+        ENSURE(*thermocouple_c == *thermocouple_c);  /* not NaN */
+    }
+    if (internal_c) {
+        *internal_c = decode_internal(raw);
+        ENSURE(*internal_c == *internal_c);  /* not NaN */
+    }
     return MAX31855_OK;
 }
 

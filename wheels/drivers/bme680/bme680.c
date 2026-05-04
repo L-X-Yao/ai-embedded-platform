@@ -13,6 +13,7 @@
  */
 
 #include "bme680.h"
+#include "contract.h"
 #include <string.h>
 
 /* --- register addresses --- */
@@ -244,6 +245,7 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
     if (!write_reg(dev, REG_CTRL_MEAS, (0x01 << 5) | (0x01 << 2)))
         return BME680_ERR_I2C;
 
+    INVARIANT(dev->i2c != NULL);
     return BME680_OK;
 }
 
@@ -326,6 +328,12 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
         data->gas_resistance_ohm = 0.0f;
     }
 
+    ENSURE(data->temperature_c == data->temperature_c);  /* not NaN */
+    ENSURE(data->pressure_pa == data->pressure_pa);        /* not NaN */
+    ENSURE(data->humidity_pct == data->humidity_pct);      /* not NaN */
+    ENSURE(data->temperature_c >= -40.0f && data->temperature_c <= 85.0f);
+    ENSURE(data->pressure_pa >= 30000.0f && data->pressure_pa <= 110000.0f);
+    ENSURE(data->humidity_pct >= 0.0f && data->humidity_pct <= 100.0f);
     return BME680_OK;
 }
 

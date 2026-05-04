@@ -12,6 +12,7 @@
  */
 
 #include "mlx90614.h"
+#include "contract.h"
 #include <string.h>
 
 /* RAM registers */
@@ -61,6 +62,7 @@ static mlx90614_err_t read_temp_reg(mlx90614_t *dev, uint8_t reg,
         return MLX90614_ERR_RANGE;
 
     *temp_c = (float)raw * 0.02f - 273.15f;
+    ENSURE(*temp_c == *temp_c);  /* not NaN */
     return MLX90614_OK;
 }
 
@@ -108,6 +110,8 @@ mlx90614_err_t mlx90614_read_emissivity(mlx90614_t *dev, float *emissivity)
         return MLX90614_ERR_I2C;
 
     *emissivity = (float)raw / 65535.0f;
+    ENSURE(*emissivity == *emissivity);  /* not NaN */
+    ENSURE(*emissivity >= 0.0f && *emissivity <= 1.0f);
     return MLX90614_OK;
 }
 

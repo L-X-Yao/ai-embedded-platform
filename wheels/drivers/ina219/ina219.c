@@ -13,6 +13,7 @@
  */
 
 #include "ina219.h"
+#include "contract.h"
 #include <string.h>
 #include <math.h>
 
@@ -117,6 +118,7 @@ ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v)
     /* Bus voltage: bits [15:3], LSB = 4 mV */
     int16_t shifted = (int16_t)(raw >> 3);
     *voltage_v = (float)shifted * 0.004f;
+    ENSURE(*voltage_v == *voltage_v);  /* not NaN */
     return INA219_OK;
 }
 
@@ -133,6 +135,7 @@ ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv)
     /* Shunt voltage register is signed 16-bit, LSB = 10 uV = 0.01 mV */
     int16_t signed_raw = (int16_t)raw;
     *voltage_mv = (float)signed_raw * 0.01f;
+    ENSURE(*voltage_mv == *voltage_mv);  /* not NaN */
     return INA219_OK;
 }
 
@@ -149,6 +152,7 @@ ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma)
     /* Current register is signed 16-bit, LSB = current_lsb (A) */
     int16_t signed_raw = (int16_t)raw;
     *current_ma = (float)signed_raw * dev->current_lsb * 1000.0f;
+    ENSURE(*current_ma == *current_ma);  /* not NaN */
     return INA219_OK;
 }
 
@@ -164,6 +168,7 @@ ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw)
 
     /* Power register LSB = 20 * current_lsb (W), convert to mW */
     *power_mw = (float)raw * 20.0f * dev->current_lsb * 1000.0f;
+    ENSURE(*power_mw == *power_mw);  /* not NaN */
     return INA219_OK;
 }
 

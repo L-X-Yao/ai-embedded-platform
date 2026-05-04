@@ -9,6 +9,7 @@
  */
 
 #include "lora_sx1276.h"
+#include "contract.h"
 
 /* ---------- SX1276 register map ---------- */
 
