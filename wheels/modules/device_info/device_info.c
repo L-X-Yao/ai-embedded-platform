@@ -107,7 +107,7 @@ void device_info_set_reset_reason(device_info_t *info, uint32_t reason)
 void device_info_tick(device_info_t *info)
 {
     if (info) {
-        info->uptime_seconds++;
+        if (info->uptime_seconds < UINT32_MAX) info->uptime_seconds++;
     }
 }
 

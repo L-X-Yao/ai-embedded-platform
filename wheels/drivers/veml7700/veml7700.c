@@ -109,10 +109,25 @@ static veml7700_err_t write_conf(veml7700_t *dev, bool shutdown)
 
 /* ---- public API ---- */
 
+static bool valid_gain(veml7700_gain_t g)
+{
+    return g == VEML7700_GAIN_1 || g == VEML7700_GAIN_2 ||
+           g == VEML7700_GAIN_1_8 || g == VEML7700_GAIN_1_4;
+}
+
+static bool valid_it(veml7700_it_t it)
+{
+    return it == VEML7700_IT_25MS  || it == VEML7700_IT_50MS  ||
+           it == VEML7700_IT_100MS || it == VEML7700_IT_200MS ||
+           it == VEML7700_IT_400MS || it == VEML7700_IT_800MS;
+}
+
 veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c,
                              veml7700_gain_t gain, veml7700_it_t it)
 {
     if (!dev || !i2c || !i2c->write_regs || !i2c->read_regs)
+        return VEML7700_ERR_PARAM;
+    if (!valid_gain(gain) || !valid_it(it))
         return VEML7700_ERR_PARAM;
 
     dev->i2c  = i2c;

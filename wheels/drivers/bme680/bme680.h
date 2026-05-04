@@ -23,10 +23,11 @@ extern "C" {
 #endif
 
 typedef enum {
-    BME680_OK         =  0,
-    BME680_ERR_I2C    = -1,
-    BME680_ERR_PARAM = -2,
-    BME680_ERR_ID     = -3,
+    BME680_OK          =  0,
+    BME680_ERR_I2C     = -1,
+    BME680_ERR_PARAM   = -2,
+    BME680_ERR_ID      = -3,
+    BME680_ERR_TIMEOUT = -4,
 } bme680_err_t;
 
 typedef struct {

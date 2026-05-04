@@ -239,7 +239,9 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
     if (err != BME680_OK)
         return err;
 
-    /* default oversampling: 1x all, humidity must be written before ctrl_meas */
+    /* Default oversampling: 1x all, humidity must be written before ctrl_meas.
+     * ctrl_meas bits [1:0] = 0b00 leaves mode as sleep — intentional so the
+     * caller triggers a forced-mode measurement via bme680_read(). */
     if (!write_reg(dev, REG_CTRL_HUM, 0x01))
         return BME680_ERR_I2C;
     if (!write_reg(dev, REG_CTRL_MEAS, (0x01 << 5) | (0x01 << 2)))
@@ -272,20 +274,21 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
     delay_ms(dev, 50);
 
     /* poll for new_data bit */
+    bool data_ready = false;
     for (int tries = 0; tries < 100; tries++)
     {
         uint8_t status = 0;
         if (!read_regs(dev, REG_MEAS_STATUS, &status, 1))
             return BME680_ERR_I2C;
         if (status & 0x80)
-            break;
-        if (tries == 99)
         {
-            /* timeout -- data still not ready, proceed with stale data */
+            data_ready = true;
             break;
         }
         delay_ms(dev, 10);
     }
+    if (!data_ready)
+        return BME680_ERR_TIMEOUT;
 
     /* read data registers 0x1F..0x2B
      * buf[0..2] = press (0x1F..0x21), buf[3..5] = temp (0x22..0x24),

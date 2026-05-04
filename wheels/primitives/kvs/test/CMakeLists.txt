@@ -22,6 +22,7 @@ target_include_directories(test_kvs PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../primitives/fal/vendor/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
+target_compile_options(test_kvs PRIVATE -Wall -Wextra -Wpedantic)
 
 enable_testing()
 add_test(NAME kvs_tests COMMAND test_kvs)

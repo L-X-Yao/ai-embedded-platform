@@ -52,10 +52,10 @@ error_handler_err_t error_handler_report(error_handler_t *eh, uint16_t code,
     INVARIANT(eh->head < ERROR_HANDLER_MAX_RECORDS);
     INVARIANT(eh->count <= ERROR_HANDLER_MAX_RECORDS);
 
-    /* Lifetime counters */
-    eh->total_errors++;
+    /* Lifetime counters (saturate at UINT32_MAX) */
+    if (eh->total_errors < UINT32_MAX) eh->total_errors++;
     if (severity == ERROR_SEVERITY_FATAL) {
-        eh->total_fatals++;
+        if (eh->total_fatals < UINT32_MAX) eh->total_fatals++;
         if (eh->on_fatal) {
             eh->on_fatal(eh->fatal_ctx, rec);
         }

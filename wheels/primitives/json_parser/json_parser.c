@@ -367,9 +367,6 @@ json_parser_err_t json_parser_finish(json_parser_t *p)
 
     if (p->state == JSON_STATE_DONE) return JSON_PARSER_OK;
 
-    /* Bare value (number/literal) completed and depth==0 */
-    if (p->state == JSON_STATE_DONE) return JSON_PARSER_OK;
-
     if (!p->got_value) return JSON_PARSER_ERR_INCOMPLETE;
     if (p->depth > 0)  return JSON_PARSER_ERR_INCOMPLETE;
 

@@ -91,6 +91,18 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONF_DIR="$(cd "$(dirname "$CONF")" && pwd)"
 SERIAL_CAPTURE_SCRIPT="$SCRIPT_DIR/../../debug/gd32f4xx/serial_capture.ps1"
 
+# Validate CONF is within the repo to prevent sourcing arbitrary files
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+CONF_REAL="$(realpath "$CONF")"
+case "$CONF_REAL" in
+    "$REPO_ROOT"/*)
+        ;;
+    *)
+        echo "[ERR] conf file must be within repo: $CONF_REAL" >&2
+        exit 1
+        ;;
+esac
+
 # shellcheck disable=SC1090
 . "$CONF"
 
@@ -106,9 +118,9 @@ do_build() {
         return 0
     fi
     echo "=== BUILD ==="
-    eval "$BUILD_CMD"
+    $BUILD_CMD
     if [[ -n "$COPY_CMD" ]]; then
-        eval "$COPY_CMD"
+        $COPY_CMD
     fi
 
     # Optional size check (needs ELF_PATH or BIN_PATH→.elf)

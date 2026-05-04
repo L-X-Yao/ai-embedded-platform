@@ -68,7 +68,7 @@ boot_counter_err_t boot_counter_increment(boot_counter_t *ctx)
         return BOOT_COUNTER_ERR_PARAM;
     }
 
-    ctx->record.boot_count++;
+    if (ctx->record.boot_count < UINT32_MAX) ctx->record.boot_count++;
     return save_record(ctx);
 }
 
@@ -113,6 +113,6 @@ uint32_t boot_counter_get_uptime_seconds(const boot_counter_t *ctx)
 void boot_counter_tick_second(boot_counter_t *ctx)
 {
     if (ctx) {
-        ctx->uptime_seconds++;
+        if (ctx->uptime_seconds < UINT32_MAX) ctx->uptime_seconds++;
     }
 }

@@ -71,11 +71,11 @@ void scheduler_run(scheduler_t *s)
         if (elapsed >= t->interval_ticks) {
             /* detect overrun: missed more than one full interval */
             if (t->interval_ticks > 0 && elapsed > t->interval_ticks) {
-                t->overrun_count++;
+                if (t->overrun_count < UINT32_MAX) t->overrun_count++;
             }
             t->last_run = s->tick;
             t->fn(t->ctx);
-            t->run_count++;
+            if (t->run_count < UINT32_MAX) t->run_count++;
         }
     }
 }

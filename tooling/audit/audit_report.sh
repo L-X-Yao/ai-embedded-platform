@@ -32,7 +32,7 @@ run_tool() {
     local name="$1" cmd="$2"
     echo -e "${BOLD}--- $name ---${NC}"
     local rc=0
-    eval "$cmd" 2>&1 || rc=$?
+    $cmd 2>&1 || rc=$?
     echo ""
     return $rc
 }

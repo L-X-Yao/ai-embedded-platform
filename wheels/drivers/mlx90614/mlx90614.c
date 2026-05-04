@@ -133,6 +133,9 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
         dev->i2c->delay_ms(dev->i2c->ctx, 10);
     if (!smbus_write_word(dev, REG_EMISSIVITY, raw))
         return MLX90614_ERR_I2C;
+    /* Second EEPROM write also needs a write-cycle delay per datasheet */
+    if (dev->i2c->delay_ms)
+        dev->i2c->delay_ms(dev->i2c->ctx, 10);
 
     return MLX90614_OK;
 }

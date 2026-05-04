@@ -198,7 +198,7 @@ TEST(test_null_params)
 
     /* set_filter/set_mask with NULL dev */
     ASSERT_EQ(mcp2515_set_filter(NULL, 0, 0, false), MCP2515_ERR_SPI);
-    ASSERT_EQ(mcp2515_set_mask(NULL, 0, 0), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_set_mask(NULL, 0, 0, false), MCP2515_ERR_SPI);
 
     /* has_message with NULL */
     ASSERT_FALSE(mcp2515_has_message(NULL));
@@ -378,7 +378,7 @@ TEST(test_set_mask)
 
     mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
 
-    mcp2515_err_t e = mcp2515_set_mask(&dev, 0, 0x7FF);
+    mcp2515_err_t e = mcp2515_set_mask(&dev, 0, 0x7FF, false);
     ASSERT_EQ(e, MCP2515_OK);
 
     /* verify mask register: 0x7FF >> 3 = 0xFF */
@@ -387,12 +387,12 @@ TEST(test_set_mask)
     ASSERT_EQ(mock_regs[0x21], 0xE0);
 
     /* mask_num out of range */
-    e = mcp2515_set_mask(&dev, 2, 0x7FF);
+    e = mcp2515_set_mask(&dev, 2, 0x7FF, false);
     ASSERT_EQ(e, MCP2515_ERR_PARAM);
 
     /* not in config mode */
     mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL);
-    e = mcp2515_set_mask(&dev, 0, 0x7FF);
+    e = mcp2515_set_mask(&dev, 0, 0x7FF, false);
     ASSERT_EQ(e, MCP2515_ERR_PARAM);
 }
 

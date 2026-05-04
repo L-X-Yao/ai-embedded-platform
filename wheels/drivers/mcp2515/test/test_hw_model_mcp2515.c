@@ -277,12 +277,12 @@ TEST(test_mask_requires_config_mode)
     mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
 
     /* In normal mode: mask set should fail */
-    mcp2515_err_t err = mcp2515_set_mask(&dev, 0, 0x7FF);
+    mcp2515_err_t err = mcp2515_set_mask(&dev, 0, 0x7FF, false);
     ASSERT_EQ(err, MCP2515_ERR_PARAM);
 
     /* Switch to config mode: mask set should succeed */
     mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
-    err = mcp2515_set_mask(&dev, 0, 0x7FF);
+    err = mcp2515_set_mask(&dev, 0, 0x7FF, false);
     ASSERT_EQ(err, MCP2515_OK);
 
     /* Verify mask register: 0x7FF >> 3 = 0xFF */

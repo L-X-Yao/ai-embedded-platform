@@ -142,7 +142,9 @@ lorawan_err_t lorawan_parse_data(const uint8_t *buf, uint16_t len,
     /* MIC is the last 4 bytes */
     memcpy(frame->mic, buf + len - 4, 4);
 
-    /* FPort + FRMPayload: everything between FOpts and MIC */
+    /* FPort + FRMPayload: everything between FOpts and MIC.
+     * Cast to uint16_t is safe: len <= UINT16_MAX (input is uint16_t),
+     * pos <= len-4 (checked above), so subtraction cannot underflow. */
     if ((uint16_t)pos + 4 > len) return LORAWAN_ERR_SIZE;
     uint16_t remaining = (uint16_t)(len - 4 - (uint16_t)pos);
     if (remaining > 0)

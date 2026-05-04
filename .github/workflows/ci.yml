@@ -9,9 +9,6 @@ on:
   schedule:
     - cron: "0 3 * * *"
 
-permissions:
-  contents: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,6 +20,8 @@ jobs:
     name: wheel audit (orphan + WISHLIST drift)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
 
@@ -43,7 +42,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md
-            git commit -m "docs: auto-fix documentation number drift"
+            git commit -m "docs: auto-fix documentation number drift [skip ci]"
             git push
             echo "::notice::Documentation drift auto-fixed and pushed"
           fi
@@ -77,9 +76,12 @@ jobs:
             BASE="${{ github.event.before }}"
           fi
 
-          # Fallback for first push or force-push
-          if [ -n "$BASE" ] && ! git cat-file -e "$BASE" 2>/dev/null; then
+          # Fallback for first push or force-push (before sha may be 0000...0 or absent)
+          if [ -n "$BASE" ] && [ "$BASE" != "0000000000000000000000000000000000000000" ] && ! git cat-file -e "$BASE" 2>/dev/null; then
             BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
+          elif [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            # Brand-new branch — no valid parent; treat as full run
+            BASE=""
           fi
 
           CHANGED=""
@@ -302,8 +304,9 @@ jobs:
     if: needs.detect-changes.outputs.flybox-changed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # vendor headers (GD32F4xx SDK) are gitignored — build will fail until
-    # a CI-accessible source is set up. Non-blocking until then.
+    # TODO(temporary): vendor headers (GD32F4xx SDK) are gitignored — build
+    # will fail until a CI-accessible source is set up.  Remove
+    # continue-on-error once the SDK is available in CI.
     continue-on-error: true
     env:
       GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"

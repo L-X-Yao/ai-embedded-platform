@@ -15,6 +15,7 @@ target_include_directories(test_fal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
+target_compile_options(test_fal PRIVATE -Wall -Wextra -Wpedantic)
 
 enable_testing()
 add_test(NAME fal_tests COMMAND test_fal)
