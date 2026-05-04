@@ -74,34 +74,12 @@ scan_pattern() {
 }
 
 if run_layer 1 "Pattern grep (static)"; then
-    # NaN bypass: float < min || float > max (without negated-positive guard)
-    # This catches the explicit < || > pattern but may have false positives
-    scan_pattern "NaN bypass: < || > on float" \
-        '\b\w+\s*<\s*[-\d.]+f?\s*\|\|\s*\w+\s*>\s*[-\d.]+f' "*.c"
-
     # INT_MIN negation: (uint32_t)(-var) is safe, but bare (-var) on int32_t is UB
+    # (Other patterns — NaN bypass, signed left shift, float→int cast, strlen
+    #  truncation, memcpy overflow, unchecked error return — are covered by
+    #  audit_wheels.py with better precision and false-positive filtering.)
     scan_pattern "INT_MIN negation: bare -(int var)" \
         '(?<!\(uint32_t\))\(-\w+\)' "*.c"
-
-    # Signed left shift (C99 UB for negative values)
-    scan_pattern "Signed left shift" \
-        '\bint(?:8|16|32|64)_t\s+\w+.*<<' "*.c"
-
-    # float-to-int cast without range check
-    scan_pattern "float→int cast: (uint16_t)float" \
-        '\(u?int(?:8|16|32)_t\)\s*(?:val|duty|temp|pct|factor|alpha|gain|scale|freq)' "*.c"
-
-    # strlen truncation to narrow type
-    scan_pattern "strlen truncation: (uint16_t)strlen" \
-        '\(uint(?:8|16)_t\)\s*strlen' "*.c"
-
-    # size_t addition overflow before memcpy/read
-    scan_pattern "Potential size_t add overflow before memcpy" \
-        'memcpy\([^,]+,\s*[^,]+,\s*\w+\s*\+\s*\w+\)' "*.c"
-
-    # Unchecked return value: err_t result assigned but never checked
-    scan_pattern "Unchecked error return (result ignored)" \
-        '\b\w+_(?:init|read|write|send|recv|parse|decode|encode)\s*\([^)]*\)\s*;' "*.c"
 
     echo ""
     if [[ $layer1_issues -gt 0 ]]; then
