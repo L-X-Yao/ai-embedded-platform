@@ -9,6 +9,7 @@
  */
 
 #include "button_handler.h"
+#include "contract.h"
 #include <string.h>
 
 btn_handler_err_t btn_handler_init(btn_handler_t *bh, btn_callback_fn cb, void *ctx,
@@ -28,6 +29,7 @@ btn_handler_err_t btn_handler_init(btn_handler_t *bh, btn_callback_fn cb, void *
     bh->double_click_ticks = double_click_ticks;
     bh->repeat_ticks       = repeat_ticks;
     bh->count              = 0;
+    ENSURE(bh->count == 0 && bh->tick == 0);
 
     return BTN_HANDLER_OK;
 }
@@ -55,6 +57,7 @@ btn_handler_err_t btn_handler_register(btn_handler_t *bh, uint8_t id,
     e->repeat_tick    = 0;
 
     bh->count++;
+    INVARIANT(bh->count <= BTN_HANDLER_MAX_BUTTONS);
     return BTN_HANDLER_OK;
 }
 

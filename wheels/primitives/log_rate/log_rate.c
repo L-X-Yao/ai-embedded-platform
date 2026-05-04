@@ -9,6 +9,7 @@
  */
 
 #include "log_rate.h"
+#include "contract.h"
 #include <limits.h>
 
 void log_rate_init(log_rate_t *r, log_rate_output_fn inner_fn, void *inner_ctx,

@@ -9,6 +9,7 @@
  */
 
 #include "cobs.h"
+#include "contract.h"
 #include <stddef.h>
 
 #define COBS_BLOCK_MAX 0xFFu  /* 255: max distance code value */
@@ -70,6 +71,7 @@ cobs_err_t cobs_encode(const uint8_t *data, uint16_t data_len,
     out[code_i] = code;
     *out_len = write;
 
+    ENSURE(write <= max_size);
     return COBS_OK;
 }
 

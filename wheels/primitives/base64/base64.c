@@ -11,6 +11,7 @@
  */
 
 #include "base64.h"
+#include "contract.h"
 #include <stddef.h>
 
 /* ---- Lookup tables ---------------------------------------------------- */
@@ -109,6 +110,7 @@ base64_err_t base64_encode(const uint8_t *data, uint16_t data_len,
 
     out[o] = '\0';
     *out_len = o;
+    ENSURE(o == needed);
     return BASE64_OK;
 }
 
@@ -198,5 +200,6 @@ base64_err_t base64_decode(const char *b64, uint16_t b64_len,
     }
 
     *out_len = out_bytes;
+    ENSURE(*out_len <= b64_len);
     return BASE64_OK;
 }

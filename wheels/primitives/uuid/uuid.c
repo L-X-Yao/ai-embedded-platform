@@ -9,6 +9,7 @@
  */
 
 #include "uuid.h"
+#include "contract.h"
 #include <string.h>
 
 const uuid_t UUID_NIL = { .bytes = {0} };
@@ -41,6 +42,8 @@ uuid_err_t uuid_v4_generate(uuid_t *uuid, uuid_rng_t rng, void *ctx)
     /* Variant RFC 4122: byte[8] high 2 bits = 10 */
     uuid->bytes[8] = (uint8_t)(0x80u | (uuid->bytes[8] & 0x3Fu));
 
+    ENSURE((uuid->bytes[6] & 0xF0u) == 0x40u);
+    ENSURE((uuid->bytes[8] & 0xC0u) == 0x80u);
     return UUID_OK;
 }
 

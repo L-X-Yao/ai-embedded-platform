@@ -9,6 +9,7 @@
  */
 
 #include "boot_counter.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- Internal helpers ---------- */
@@ -35,6 +36,7 @@ boot_counter_err_t boot_counter_init(boot_counter_t *ctx,
 
     memset(ctx, 0, sizeof(*ctx));
     ctx->storage = *storage;
+    ENSURE(ctx->record.boot_count == 0 && ctx->uptime_seconds == 0);
     return BOOT_COUNTER_OK;
 }
 

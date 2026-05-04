@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "scheduler.h"
+#include "contract.h"
 #include <string.h>
 
 /* ----- internal: find task index by name ----- */
@@ -27,6 +28,7 @@ sched_err_t scheduler_init(scheduler_t *s)
 {
     if (!s) return SCHED_ERR_PARAM;
     memset(s, 0, sizeof(*s));
+    ENSURE(s->count == 0 && s->tick == 0);
     return SCHED_OK;
 }
 
@@ -47,6 +49,7 @@ sched_err_t scheduler_add(scheduler_t *s, const char *name,
     t->run_count      = 0;
     t->overrun_count  = 0;
     s->count++;
+    INVARIANT(s->count <= SCHED_MAX_TASKS);
     return SCHED_OK;
 }
 

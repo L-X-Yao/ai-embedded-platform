@@ -9,6 +9,7 @@
  */
 
 #include "fixed_point.h"
+#include "contract.h"
 
 /* ── Conversion ───────────────────────────────────────────────── */
 
@@ -114,6 +115,7 @@ fp_t fp_clamp(fp_t val, fp_t lo, fp_t hi)
 {
     if (val < lo) return lo;
     if (val > hi) return hi;
+    ENSURE(val >= lo && val <= hi);
     return val;
 }
 

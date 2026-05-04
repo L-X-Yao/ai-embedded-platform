@@ -9,6 +9,7 @@
  */
 
 #include "mahony_ahrs.h"
+#include "contract.h"
 #include <math.h>
 #include <string.h>
 
@@ -34,6 +35,8 @@ void mahony_ahrs_init(mahony_ahrs_t *f, const mahony_ahrs_cfg_t *cfg)
     float freq = (cfg->sample_freq_hz > 0.0f) ? cfg->sample_freq_hz : 1.0f;
     f->half_t = 0.5f / freq;
     f->inv_freq = 1.0f / freq;
+    ENSURE(f->q0 == 1.0f);
+    ENSURE(f->half_t > 0.0f);
 }
 
 void mahony_ahrs_update(mahony_ahrs_t *f,
