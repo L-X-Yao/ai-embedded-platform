@@ -52,7 +52,7 @@ void rotary_encoder_poll(rotary_encoder_t *enc)
     if (!enc || !enc->hal) return;
     bool a = enc->hal->read_a(enc->hal->ctx);
     bool b = enc->hal->read_b(enc->hal->ctx);
-    rotary_encoder_update(enc, a, b);
+    (void)rotary_encoder_update(enc, a, b);
 }
 
 int32_t rotary_encoder_get_position(const rotary_encoder_t *enc)

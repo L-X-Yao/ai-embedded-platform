@@ -88,7 +88,7 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
     hal->enter_critical(hal->ctx);
 
     for (led = 0U; led < num_leds; led++) {
-        ws2812_encode_grb(&colors[led], timing, slots);
+        (void)ws2812_encode_grb(&colors[led], timing, slots);
 
         hal->wait_period(hal->ctx);
         if (!hal->set_compare(hal->ctx, slots[0])) {

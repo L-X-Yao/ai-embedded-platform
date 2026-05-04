@@ -88,9 +88,20 @@ uint64_t endian_htobe64(uint64_t val)
     return endian_is_little() ? endian_swap64(val) : val;
 }
 
-uint16_t endian_be16toh(uint16_t val) { return endian_htobe16(val); }
-uint32_t endian_be32toh(uint32_t val) { return endian_htobe32(val); }
-uint64_t endian_be64toh(uint64_t val) { return endian_htobe64(val); }
+uint16_t endian_be16toh(uint16_t val)
+{
+    return endian_htobe16(val);
+}
+
+uint32_t endian_be32toh(uint32_t val)
+{
+    return endian_htobe32(val);
+}
+
+uint64_t endian_be64toh(uint64_t val)
+{
+    return endian_htobe64(val);
+}
 
 /* ── Host ↔ little-endian ──────────────────────────────────────── */
 
@@ -109,9 +120,20 @@ uint64_t endian_htole64(uint64_t val)
     return endian_is_little() ? val : endian_swap64(val);
 }
 
-uint16_t endian_le16toh(uint16_t val) { return endian_htole16(val); }
-uint32_t endian_le32toh(uint32_t val) { return endian_htole32(val); }
-uint64_t endian_le64toh(uint64_t val) { return endian_htole64(val); }
+uint16_t endian_le16toh(uint16_t val)
+{
+    return endian_htole16(val);
+}
+
+uint32_t endian_le32toh(uint32_t val)
+{
+    return endian_htole32(val);
+}
+
+uint64_t endian_le64toh(uint64_t val)
+{
+    return endian_htole64(val);
+}
 
 /* ── Unaligned buffer read ─────────────────────────────────────── */
 

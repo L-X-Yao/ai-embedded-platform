@@ -108,8 +108,9 @@ param_err_t param_table_get(const param_table_t *pt, const char *key,
         return PARAM_ERR_OVERFLOW;
     }
 
-    /* len < size guaranteed above, so len + 1 <= size */
-    memcpy(value, pt->entries[idx].value, len + 1U);
+    /* len < size guaranteed above, so copy_sz fits */
+    size_t copy_sz = len + 1U;
+    memcpy(value, pt->entries[idx].value, copy_sz);
     return PARAM_OK;
 }
 

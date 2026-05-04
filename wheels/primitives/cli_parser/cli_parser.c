@@ -82,7 +82,7 @@ void cli_parser_feed(cli_parser_t *ctx, uint8_t byte)
         if (ctx->line_len > 0) {
             cli_puts(ctx, "\r\n");
             ctx->line_buf[ctx->line_len] = '\0';
-            cli_parser_run(ctx, ctx->line_buf);
+            (void)cli_parser_run(ctx, ctx->line_buf);
             ctx->line_len = 0;
         }
         cli_prompt(ctx);
@@ -117,8 +117,9 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line)
     char buf[CLI_LINE_BUFSIZE];
     size_t len = strlen(line);
     if (len >= CLI_LINE_BUFSIZE) return CLI_ERR_OVERFLOW;
-    /* len < CLI_LINE_BUFSIZE guaranteed above, so len + 1 cannot overflow */
-    memcpy(buf, line, len + 1U);
+    /* len < CLI_LINE_BUFSIZE guaranteed above, so copy_sz fits */
+    size_t copy_sz = len + 1U;
+    memcpy(buf, line, copy_sz);
 
     const char *argv[CLI_MAX_ARGS];
     int argc = cli_tokenize(buf, argv, CLI_MAX_ARGS);
