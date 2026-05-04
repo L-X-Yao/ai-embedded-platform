@@ -110,8 +110,7 @@ static uint8_t max31865_model_xfer(void *ctx, uint8_t tx)
         return 0xFF;
     } else {
         /* Read from register */
-        uint8_t val = (m->spi_addr < HW_MODEL_REG_COUNT)
-                    ? m->hw.regs[m->spi_addr] : 0xFF;
+        uint8_t val = m->hw.regs[m->spi_addr];
         m->spi_addr++;
         return val;
     }
