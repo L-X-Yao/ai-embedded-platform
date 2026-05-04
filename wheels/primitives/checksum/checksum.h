@@ -22,19 +22,38 @@
 extern "C" {
 #endif
 
+/* ---------- ACSL formal specifications (Frama-C WP) ---------- */
+
 /** @thread_safe: yes (pure function, no state) @isr_safe: yes */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+*/
 uint8_t checksum_xor(const uint8_t *data, size_t len);
 
 /** Compute 8-bit arithmetic sum of data bytes. @thread_safe: yes @isr_safe: yes */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+*/
 uint8_t checksum_sum8(const uint8_t *data, size_t len);
 
 /** Compute Fletcher-16 checksum. @thread_safe: yes @isr_safe: yes */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+    ensures \result <= 0xFFFF;
+*/
 uint16_t checksum_fletcher16(const uint8_t *data, size_t len);
 
 /** Compute longitudinal redundancy check (two's complement of sum). @thread_safe: yes @isr_safe: yes */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+*/
 uint8_t checksum_lrc(const uint8_t *data, size_t len);
 
 /** Compute RFC 1071 Internet checksum (IP/TCP/UDP). @thread_safe: yes @isr_safe: yes */
+/*@ requires len == 0 || \valid_read(data + (0 .. len - 1));
+    assigns \nothing;
+    ensures \result <= 0xFFFF;
+*/
 uint16_t checksum_internet(const uint8_t *data, size_t len);
 
 #ifdef __cplusplus

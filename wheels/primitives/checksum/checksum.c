@@ -14,6 +14,10 @@ uint8_t checksum_xor(const uint8_t *data, size_t len)
 {
     uint8_t cs = 0;
     if (!data) return 0;
+    /*@ loop invariant 0 <= i <= len;
+        loop assigns i, cs;
+        loop variant len - i;
+    */
     for (size_t i = 0; i < len; i++)
         cs ^= data[i];
     return cs;
@@ -23,6 +27,10 @@ uint8_t checksum_sum8(const uint8_t *data, size_t len)
 {
     uint8_t cs = 0;
     if (!data) return 0;
+    /*@ loop invariant 0 <= i <= len;
+        loop assigns i, cs;
+        loop variant len - i;
+    */
     for (size_t i = 0; i < len; i++)
         cs = (uint8_t)(cs + data[i]);
     return cs;
@@ -53,6 +61,10 @@ uint8_t checksum_lrc(const uint8_t *data, size_t len)
 {
     uint8_t lrc = 0;
     if (!data) return 0;
+    /*@ loop invariant 0 <= i <= len;
+        loop assigns i, lrc;
+        loop variant len - i;
+    */
     for (size_t i = 0; i < len; i++)
         lrc = (uint8_t)(lrc + data[i]);
     return (uint8_t)(~lrc + 1);
