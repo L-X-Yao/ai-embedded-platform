@@ -26,6 +26,18 @@ target_include_directories(prop_sht30 PRIVATE
 target_compile_options(prop_sht30 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(prop_sht30 PRIVATE m)
 
+add_executable(test_hw_model_sht30
+    test_hw_model_sht30.c
+    ../sht30.c
+)
+target_include_directories(test_hw_model_sht30 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_sht30 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_sht30 PRIVATE m)
+
 enable_testing()
 add_test(NAME sht30_tests COMMAND test_sht30)
+add_test(NAME sht30_hw_model_tests COMMAND test_hw_model_sht30)
 add_test(NAME sht30_prop_tests COMMAND prop_sht30)

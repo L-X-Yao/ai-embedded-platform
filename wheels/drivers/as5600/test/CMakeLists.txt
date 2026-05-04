@@ -14,8 +14,19 @@ target_include_directories(test_as5600 PRIVATE
 )
 target_compile_options(test_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_hw_model_as5600
+    test_hw_model_as5600.c
+    ../as5600.c
+)
+target_include_directories(test_hw_model_as5600 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME as5600_tests COMMAND test_as5600)
+add_test(NAME as5600_hw_model_tests COMMAND test_hw_model_as5600)
 
 add_executable(prop_as5600
     prop_as5600.c

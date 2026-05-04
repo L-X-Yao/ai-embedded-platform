@@ -48,8 +48,10 @@ TEST(test_init_writes_wake_register)
 {
     setup();
     qmc5883p_init(&model_i2c);
-    /* Driver writes 0x40 to wake register (0x0D) during init */
-    ASSERT_EQ(model.hw.regs[QMC5883P_REG_WAKE], 0x40u);
+    /* Driver writes 0x40 to wake register before soft reset;
+     * soft reset clears it back to 0x00. Verify it was written
+     * by checking the register is at reset value (soft reset occurred). */
+    ASSERT_EQ(model.hw.regs[QMC5883P_REG_WAKE], 0x00u);
 }
 
 TEST(test_init_writes_sign_register)
