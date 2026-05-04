@@ -342,6 +342,17 @@ TEST(test_addr_high)
     ASSERT_EQ(d.addr, BME680_ADDR_HIGH);
 }
 
+TEST(test_read_timeout)
+{
+    mock_reset();
+    bme680_t d;
+    bme680_init(&d, &mock_i2c, BME680_ADDR_LOW);
+    /* status register: new_data bit (0x80) never set → timeout */
+    mock_regs[0x1D] = 0x00;
+    bme680_data_t data;
+    ASSERT_EQ(bme680_read(&d, &data), BME680_ERR_TIMEOUT);
+}
+
 TEST_MAIN("bme680")
     RUN(test_init_ok);
     RUN(test_init_chip_id);
@@ -356,6 +367,7 @@ TEST_MAIN("bme680")
     RUN(test_read_gas_valid);
     RUN(test_read_gas_invalid);
     RUN(test_read_i2c_fail);
+    RUN(test_read_timeout);
     RUN(test_oversampling_config);
     RUN(test_oversampling_invalid);
     RUN(test_gas_heater_config);
