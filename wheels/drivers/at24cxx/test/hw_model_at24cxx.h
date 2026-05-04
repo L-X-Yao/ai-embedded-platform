@@ -23,9 +23,9 @@ typedef struct {
     hw_reg_model_t hw;         /* regs[0..255] = EEPROM contents */
     int            write_count;
     int            delay_count;
-} at24cxx_model_t;
+} at24cxx_hw_model_t;
 
-static void at24cxx_model_init(at24cxx_model_t *m)
+static void at24cxx_hw_model_init(at24cxx_hw_model_t *m)
 {
     memset(m, 0, sizeof(*m));
     hw_model_init(&m->hw);
