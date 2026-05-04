@@ -105,9 +105,10 @@ def run_gcov(build_dir, source_file):
     gcda = gcda_files[0]
     gcda_dir = gcda.parent
 
+    gcno_name = gcda.name.replace('.gcda', '.gcno')
     try:
         result = subprocess.run(
-            ["gcov", str(source_file)],
+            ["gcov", gcno_name],
             capture_output=True, text=True,
             timeout=30,
             cwd=str(gcda_dir),
