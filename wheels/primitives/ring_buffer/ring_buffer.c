@@ -9,7 +9,14 @@
  */
 
 #include "ring_buffer.h"
+#include "contract.h"
 #include <string.h>
+
+#define RB_INVARIANT(rb) do { \
+    INVARIANT((rb)->head < (rb)->capacity); \
+    INVARIANT((rb)->tail < (rb)->capacity); \
+    INVARIANT((rb)->count <= (rb)->capacity); \
+} while(0)
 
 ring_buffer_err_t ring_buffer_init(ring_buffer_t *rb, uint8_t *buf, uint16_t capacity)
 {
@@ -21,12 +28,15 @@ ring_buffer_err_t ring_buffer_init(ring_buffer_t *rb, uint8_t *buf, uint16_t cap
     rb->head     = 0;
     rb->tail     = 0;
     rb->count    = 0;
+    ENSURE(rb->count == 0);
+    ENSURE(rb->head == 0 && rb->tail == 0);
     return RING_BUFFER_OK;
 }
 
 uint16_t ring_buffer_write(ring_buffer_t *rb, const uint8_t *data, uint16_t len)
 {
     if (!rb || !data) { return 0; }
+    RB_INVARIANT(rb);
 
     uint16_t avail = (uint16_t)(rb->capacity - rb->count);
     if (len > avail) { len = avail; }
@@ -36,12 +46,15 @@ uint16_t ring_buffer_write(ring_buffer_t *rb, const uint8_t *data, uint16_t len)
         rb->head = (uint16_t)((rb->head + 1U) % rb->capacity);
     }
     rb->count = (uint16_t)(rb->count + len);
+    RB_INVARIANT(rb);
+    ENSURE(rb->count <= rb->capacity);
     return len;
 }
 
 uint16_t ring_buffer_read(ring_buffer_t *rb, uint8_t *data, uint16_t len)
 {
     if (!rb || !data) { return 0; }
+    RB_INVARIANT(rb);
 
     if (len > rb->count) { len = rb->count; }
 
@@ -50,6 +63,7 @@ uint16_t ring_buffer_read(ring_buffer_t *rb, uint8_t *data, uint16_t len)
         rb->tail = (uint16_t)((rb->tail + 1U) % rb->capacity);
     }
     rb->count = (uint16_t)(rb->count - len);
+    RB_INVARIANT(rb);
     return len;
 }
 
