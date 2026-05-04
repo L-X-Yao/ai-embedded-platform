@@ -35,7 +35,8 @@ TEST(test_param_table_define_null_default_val) {
     char _key[64];
     memset(_key, 0, sizeof(_key));
     param_err_t err = param_table_define(&_pt, _key, NULL, false);
-    ASSERT_TRUE(err < 0);
+    /* NULL default_val is explicitly allowed (empty value) */
+    ASSERT_TRUE(err == 0);
 }
 
 TEST(test_param_table_set_null_pt) {

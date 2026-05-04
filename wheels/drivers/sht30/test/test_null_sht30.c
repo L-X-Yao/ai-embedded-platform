@@ -54,7 +54,8 @@ TEST(test_sht30_reset_null_dev) {
 
 TEST(test_sht30_crc8_null_data) {
     uint8_t ret = sht30_crc8(NULL, 0);
-    ASSERT_EQ(ret, 0);
+    /* NULL + len=0 iterates zero times, returns init value 0xFF */
+    ASSERT_EQ(ret, 0xFF);
 }
 
 TEST_MAIN("null_param_sht30") {
