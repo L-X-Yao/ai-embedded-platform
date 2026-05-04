@@ -170,7 +170,7 @@ TEST(test_wake_clears_sleep_bit)
 }
 
 TEST_MAIN("pca9685 hardware model")
-    RUN(test_init_wakes_device);
+    RUN(test_init_succeeds);
     RUN(test_init_sets_prescaler);
     RUN(test_init_sleep_before_prescale);
     RUN(test_set_freq_updates_prescaler);
