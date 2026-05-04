@@ -26,7 +26,8 @@ static void check_invariants(const event_queue_t *q) {
     size_t count = event_queue_count(q);
     assert(count <= q->capacity);
     assert(event_queue_is_empty(q) == (count == 0));
-    assert(event_queue_is_full(q) == (count == q->capacity));
+    /* sentinel-slot design: usable capacity = N-1 */
+    assert(event_queue_is_full(q) == (count == q->capacity - 1));
 }
 
 /* Proof 1: invariants hold after any sequence of push/pop/clear */
@@ -111,8 +112,8 @@ void verify_boundary_conditions(void) {
     event_queue_t q;
     event_queue_init(&q, storage, Q_CAP);
 
-    /* Fill to capacity */
-    for (int i = 0; i < Q_CAP; i++) {
+    /* Fill to usable capacity (N-1 due to sentinel slot) */
+    for (int i = 0; i < Q_CAP - 1; i++) {
         event_queue_err_t err = event_queue_push(&q, (uint16_t)i, (uint32_t)i);
         assert(err == EVENT_QUEUE_OK);
     }
@@ -123,7 +124,7 @@ void verify_boundary_conditions(void) {
     assert(err == EVENT_QUEUE_ERR_FULL);
 
     /* Drain */
-    for (int i = 0; i < Q_CAP; i++) {
+    for (int i = 0; i < Q_CAP - 1; i++) {
         event_t out;
         err = event_queue_pop(&q, &out);
         assert(err == EVENT_QUEUE_OK);
