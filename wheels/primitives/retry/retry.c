@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "retry.h"
+#include "contract.h"
 
 void retry_init(retry_ctx_t *ctx, const retry_config_t *config)
 {
@@ -16,6 +17,7 @@ void retry_init(retry_ctx_t *ctx, const retry_config_t *config)
     ctx->config = *config;
     ctx->attempt = 0;
     ctx->next_delay_ms = 0;
+    ENSURE(ctx->attempt == 0);
 }
 
 static uint32_t calc_delay(const retry_ctx_t *ctx)
@@ -63,6 +65,8 @@ bool retry_should_retry(retry_ctx_t *ctx)
         return false;
     ctx->next_delay_ms = calc_delay(ctx);
     ctx->attempt++;
+    ENSURE(ctx->attempt <= ctx->config.max_attempts);
+    ENSURE(ctx->next_delay_ms <= ctx->config.max_delay_ms);
     return true;
 }
 

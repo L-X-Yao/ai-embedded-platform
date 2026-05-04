@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "http_parser.h"
+#include "contract.h"
 #include <string.h>
 
 static const char *find_crlf(const char *s, size_t len)
@@ -132,6 +133,7 @@ http_parser_err_t http_parser_parse_request(const char *data, size_t len,
         req->total_consumed = header_end;
     }
 
+    ENSURE(req->total_consumed <= len);
     return HTTP_PARSER_OK;
 }
 
@@ -192,6 +194,7 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
         resp->total_consumed = header_end;
     }
 
+    ENSURE(resp->total_consumed <= len);
     return HTTP_PARSER_OK;
 }
 

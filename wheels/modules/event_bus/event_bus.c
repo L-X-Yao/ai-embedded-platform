@@ -9,6 +9,7 @@
  */
 
 #include "event_bus.h"
+#include "contract.h"
 #include <string.h>
 
 /* Find slot for event_id; return NULL if not found. */
@@ -28,6 +29,7 @@ event_bus_err_t event_bus_init(event_bus_t *bus)
         return EVENT_BUS_ERR_PARAM;
     }
     memset(bus, 0, sizeof(*bus));
+    ENSURE(bus->slot_count == 0);
     return EVENT_BUS_OK;
 }
 
@@ -56,6 +58,8 @@ event_bus_err_t event_bus_subscribe(event_bus_t *bus, uint16_t event_id,
     slot->subs[slot->count].cb = cb;
     slot->subs[slot->count].ctx = ctx;
     slot->count++;
+    INVARIANT(slot->count <= EVENT_BUS_MAX_SUBS_PER_EVENT);
+    INVARIANT(bus->slot_count <= EVENT_BUS_MAX_EVENTS);
 
     return EVENT_BUS_OK;
 }

@@ -9,6 +9,7 @@
  */
 
 #include "ota_ab.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- CRC32 (IEEE 802.3, no lookup table) ---------- */
@@ -82,6 +83,7 @@ ota_ab_err_t ota_ab_init(ota_ab_t *m, const ota_ab_flash_t *flash,
     if (layout->params_size < sizeof(ota_ab_params_t)) return OTA_AB_ERR_PARAM;
     m->flash = flash;
     m->layout = *layout;
+    ENSURE(m->params.active_slot <= 1);
     return params_read(m);
 }
 

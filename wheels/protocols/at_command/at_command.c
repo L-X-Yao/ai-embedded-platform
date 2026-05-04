@@ -9,8 +9,14 @@
  */
 
 #include "at_command.h"
+#include "contract.h"
 #include <stddef.h>
 #include <string.h>
+
+#define AT_INVARIANT(at) do { \
+    INVARIANT((at)->line_idx < AT_COMMAND_LINE_SIZE); \
+    INVARIANT((at)->urc_count <= AT_COMMAND_MAX_URCS); \
+} while(0)
 
 void at_command_init(at_command_t *at, const at_command_hal_t *hal)
 {
@@ -25,6 +31,8 @@ void at_command_init(at_command_t *at, const at_command_hal_t *hal)
     at->prev_line[0] = '\0';
     at->urc_count    = 0U;
     at->waiting      = 0U;
+    ENSURE(at->line_idx == 0U);
+    ENSURE(at->urc_count == 0U);
 }
 
 void at_command_send(at_command_t *at, const char *cmd)
@@ -86,6 +94,7 @@ int at_command_register_urc(at_command_t *at, const char *prefix,
     at->urcs[at->urc_count].cb     = cb;
     at->urcs[at->urc_count].ctx    = ctx;
     at->urc_count++;
+    INVARIANT(at->urc_count <= AT_COMMAND_MAX_URCS);
     return 0;
 }
 
@@ -226,6 +235,7 @@ at_command_evt_type_t at_command_feed(at_command_t *at, uint8_t byte, at_command
     if (at->line_idx < AT_COMMAND_LINE_SIZE - 1U) {
         at->line_buf[at->line_idx++] = (char)byte;
     }
+    INVARIANT(at->line_idx < AT_COMMAND_LINE_SIZE);
 
     return AT_COMMAND_EVT_NONE;
 }

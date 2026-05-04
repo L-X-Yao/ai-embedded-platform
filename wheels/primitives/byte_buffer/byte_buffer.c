@@ -9,7 +9,13 @@
  */
 
 #include "byte_buffer.h"
+#include "contract.h"
 #include <string.h>
+
+#define BB_INVARIANT(buf) do { \
+    INVARIANT((buf)->read_pos <= (buf)->write_pos); \
+    INVARIANT((buf)->write_pos <= (buf)->capacity); \
+} while(0)
 
 byte_buffer_err_t byte_buffer_init(byte_buffer_t *buf, uint8_t *storage, size_t capacity)
 {
@@ -21,6 +27,7 @@ byte_buffer_err_t byte_buffer_init(byte_buffer_t *buf, uint8_t *storage, size_t 
     buf->capacity = capacity;
     buf->write_pos = 0;
     buf->read_pos = 0;
+    ENSURE(buf->write_pos == 0 && buf->read_pos == 0);
     return BYTE_BUFFER_OK;
 }
 
@@ -40,6 +47,7 @@ byte_buffer_err_t byte_buffer_put_u8(byte_buffer_t *buf, uint8_t val)
     if (!buf) return BYTE_BUFFER_ERR_PARAM;
     if (buf->write_pos >= buf->capacity) return BYTE_BUFFER_ERR_FULL;
     buf->data[buf->write_pos++] = val;
+    BB_INVARIANT(buf);
     return BYTE_BUFFER_OK;
 }
 
@@ -69,6 +77,7 @@ byte_buffer_err_t byte_buffer_put_bytes(byte_buffer_t *buf, const uint8_t *src, 
     if (buf->capacity - buf->write_pos < len) return BYTE_BUFFER_ERR_FULL;
     memcpy(buf->data + buf->write_pos, src, len);
     buf->write_pos += len;
+    BB_INVARIANT(buf);
     return BYTE_BUFFER_OK;
 }
 
@@ -77,6 +86,7 @@ byte_buffer_err_t byte_buffer_get_u8(byte_buffer_t *buf, uint8_t *val)
     if (!buf || !val) return BYTE_BUFFER_ERR_PARAM;
     if (buf->read_pos >= buf->write_pos) return BYTE_BUFFER_ERR_EMPTY;
     *val = buf->data[buf->read_pos++];
+    BB_INVARIANT(buf);
     return BYTE_BUFFER_OK;
 }
 
@@ -145,5 +155,7 @@ byte_buffer_err_t byte_buffer_compact(byte_buffer_t *buf)
     }
     buf->read_pos = 0;
     buf->write_pos = unread;
+    BB_INVARIANT(buf);
+    ENSURE(buf->read_pos == 0);
     return BYTE_BUFFER_OK;
 }

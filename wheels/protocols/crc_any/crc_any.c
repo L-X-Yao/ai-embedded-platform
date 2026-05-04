@@ -12,6 +12,7 @@
  */
 
 #include "crc_any.h"
+#include "contract.h"
 
 /* ── Internal helpers ─────────────────────────────────────────────── */
 

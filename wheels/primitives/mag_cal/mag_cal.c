@@ -9,6 +9,7 @@
  */
 
 #include "mag_cal.h"
+#include "contract.h"
 #include <string.h>
 
 void mag_cal_init(mag_cal_t *cal)
@@ -48,6 +49,7 @@ bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz)
     cal->samples[cal->count][1] = my;
     cal->samples[cal->count][2] = mz;
     cal->count++;
+    INVARIANT(cal->count <= MAG_CAL_MAX_SAMPLES);
     return true;
 }
 

@@ -9,6 +9,7 @@
  */
 
 #include "dns_packet.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- helpers: big-endian wire encoding ---------- */
@@ -173,6 +174,7 @@ int dns_build_query(uint8_t *buf, uint16_t buf_size,
     put_u16(buf + pos, (uint16_t)DNS_CLASS_IN);
     pos += 2;
 
+    ENSURE((int)pos <= (int)buf_size);
     return (int)pos;
 }
 

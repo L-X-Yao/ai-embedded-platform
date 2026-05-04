@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "led_pattern.h"
+#include "contract.h"
 
 void led_pattern_init(led_pattern_t *p, const led_pattern_cfg_t *cfg)
 {
@@ -17,6 +18,8 @@ void led_pattern_init(led_pattern_t *p, const led_pattern_cfg_t *cfg)
     p->tick_in_step = 0;
     p->is_on = (cfg->step_count > 0 && cfg->steps && cfg->steps[0].on_ticks > 0);
     p->finished = (cfg->step_count == 0);
+    ENSURE(p->current_step == 0);
+    ENSURE(p->tick_in_step == 0);
 }
 
 static void advance_step(led_pattern_t *p)

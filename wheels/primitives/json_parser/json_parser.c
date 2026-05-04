@@ -9,6 +9,7 @@
  */
 
 #include "json_parser.h"
+#include "contract.h"
 #include <string.h>
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -89,6 +90,8 @@ json_parser_err_t json_parser_init(json_parser_t *p, json_parser_cb_t cb,
     p->ctx       = ctx;
     p->max_depth = max_depth;
     p->state     = JSON_STATE_VALUE;
+    ENSURE(p->depth == 0);
+    ENSURE(p->max_depth > 0 && p->max_depth <= 128);
     return JSON_PARSER_OK;
 }
 

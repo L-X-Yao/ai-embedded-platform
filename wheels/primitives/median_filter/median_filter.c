@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "median_filter.h"
+#include "contract.h"
 #include <string.h>
 
 int median_filter_init(median_filter_t *f, uint8_t size)
@@ -16,6 +17,8 @@ int median_filter_init(median_filter_t *f, uint8_t size)
         return -1;
     memset(f, 0, sizeof(*f));
     f->size = size;
+    ENSURE(f->count == 0 && f->index == 0);
+    ENSURE(f->size > 0 && f->size <= MEDIAN_FILTER_MAX_SIZE);
     return 0;
 }
 
@@ -44,6 +47,8 @@ int32_t median_filter_update(median_filter_t *f, int32_t sample)
     if (f->count < f->size)
         f->count++;
 
+    INVARIANT(f->index < f->size);
+    INVARIANT(f->count <= f->size);
     rebuild_sorted(f);
     return f->sorted[f->count / 2];
 }

@@ -9,6 +9,7 @@
  */
 
 #include "log_flash.h"
+#include "contract.h"
 #include <string.h>
 #include <limits.h>
 
@@ -48,6 +49,8 @@ int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
     f->total_entries = 0;
     f->dropped = 0;
     if (erase_sector(f, 0) != 0) return -1;
+    ENSURE(f->write_sector < f->sector_count);
+    ENSURE(f->write_pos <= f->sector_size);
     return 0;
 }
 
@@ -89,6 +92,8 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
 
     f->write_pos += needed;
     if (f->total_entries < UINT32_MAX) f->total_entries++;
+    INVARIANT(f->write_sector < f->sector_count);
+    INVARIANT(f->write_pos <= f->sector_size);
 }
 
 size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size) {

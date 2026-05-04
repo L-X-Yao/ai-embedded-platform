@@ -9,6 +9,7 @@
  */
 
 #include "soft_timer.h"
+#include "contract.h"
 #include <string.h>
 
 soft_timer_err_t soft_timer_init(soft_timer_mgr_t *mgr)
@@ -57,6 +58,8 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
     t->mode = mode;
     t->active = false;
 
+    ENSURE(id >= 0 && (size_t)id < SOFT_TIMER_MAX);
+    INVARIANT(mgr->count <= SOFT_TIMER_MAX);
     return id;
 }
 

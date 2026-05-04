@@ -9,6 +9,7 @@
  */
 
 #include "i2c_scan.h"
+#include "contract.h"
 
 /* ── Known-address table ───────────────────────────────────────── */
 
@@ -59,6 +60,7 @@ static i2c_scan_err_t scan_range_impl(i2c_scan_probe_fn probe,
         }
     }
     (void)total_found;
+    ENSURE(result->count <= I2C_SCAN_MAX_DEVICES);
     return I2C_SCAN_OK;
 }
 

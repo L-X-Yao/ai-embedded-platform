@@ -9,6 +9,7 @@
  */
 
 #include "ring_log.h"
+#include "contract.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,6 +21,7 @@ ring_log_err_t ring_log_init(ring_log_t *rl, ring_log_level_t min_level)
     }
     memset(rl, 0, sizeof(*rl));
     rl->min_level = min_level;
+    ENSURE(rl->head == 0 && rl->count == 0);
     return RING_LOG_OK;
 }
 
@@ -48,6 +50,8 @@ ring_log_err_t ring_log_write(ring_log_t *rl, ring_log_level_t level,
         rl->count++;
     }
     rl->total_logged++;
+    INVARIANT(rl->head < RING_LOG_MAX_ENTRIES);
+    INVARIANT(rl->count <= RING_LOG_MAX_ENTRIES);
     return RING_LOG_OK;
 }
 

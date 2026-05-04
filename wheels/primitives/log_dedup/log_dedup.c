@@ -9,6 +9,7 @@
  */
 
 #include "log_dedup.h"
+#include "contract.h"
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>

@@ -9,6 +9,7 @@
  */
 
 #include "pid_controller.h"
+#include "contract.h"
 
 static float clampf(float val, float lo, float hi)
 {
@@ -33,6 +34,8 @@ pid_controller_err_t pid_controller_init(pid_controller_t *ctx,
     ctx->integral = 0.0f;
     ctx->prev_error = 0.0f;
     ctx->first_run = true;
+    ENSURE(ctx->cfg.output_min <= ctx->cfg.output_max);
+    ENSURE(ctx->cfg.integral_min <= ctx->cfg.integral_max);
     return PID_CONTROLLER_OK;
 }
 

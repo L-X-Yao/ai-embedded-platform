@@ -9,6 +9,7 @@
  */
 
 #include "ncp5623_parser.h"
+#include "contract.h"
 #include <stddef.h>
 
 #define REG_COLOR   0x01U
@@ -26,6 +27,7 @@ void ncp5623_parser_init(ncp5623_parser_t *p)
     p->buf[2]   = 0U;
     p->idx      = 0U;
     p->enabled  = 0U;
+    ENSURE(p->idx == 0U);
 }
 
 void ncp5623_parser_start(ncp5623_parser_t *p)

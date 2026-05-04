@@ -9,6 +9,7 @@
  */
 
 #include "bencode.h"
+#include "contract.h"
 #include <string.h>
 
 /* ------------------------------------------------------------------ */
@@ -67,6 +68,7 @@ bencode_err_t bencode_encoder_init(bencode_encoder_t *enc,
     enc->buf = buf;
     enc->cap = cap;
     enc->pos = 0;
+    ENSURE(enc->pos == 0);
     return BENCODE_OK;
 }
 
@@ -160,6 +162,7 @@ bencode_err_t bencode_decoder_init(bencode_decoder_t *dec,
     dec->len   = len;
     dec->pos   = 0;
     dec->depth = 0;
+    ENSURE(dec->pos == 0 && dec->depth == 0);
     return BENCODE_OK;
 }
 
@@ -298,6 +301,7 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
         token->value.string.data = &dec->data[dec->pos];
         token->value.string.len  = (size_t)slen;
         dec->pos += (size_t)slen;
+        ENSURE(dec->pos <= dec->len);
         return BENCODE_OK;
     }
 

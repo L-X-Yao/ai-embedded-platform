@@ -9,6 +9,7 @@
  */
 
 #include "slip.h"
+#include "contract.h"
 #include <stddef.h>
 
 /* ── block API ──────────────────────────────────────────────────────── */
@@ -136,6 +137,7 @@ slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacit
     dec->escaped     = false;
     dec->frame_ready = false;
 
+    ENSURE(dec->pos == 0 && !dec->escaped && !dec->frame_ready);
     return SLIP_OK;
 }
 

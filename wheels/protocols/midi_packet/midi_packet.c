@@ -9,6 +9,7 @@
  */
 
 #include "midi_packet.h"
+#include "contract.h"
 #include <string.h>
 
 /* --- Helpers --- */
@@ -77,6 +78,7 @@ void midi_parser_init(midi_parser_t *p)
 {
     if (!p) return;
     memset(p, 0, sizeof(*p));
+    ENSURE(p->running_status == 0 && p->buf_pos == 0);
 }
 
 bool midi_parse(midi_parser_t *p, uint8_t byte, midi_msg_t *out)
@@ -166,6 +168,7 @@ int midi_build_note_on(uint8_t *buf, size_t cap,
     buf[0] = (uint8_t)(MIDI_NOTE_ON | channel);
     buf[1] = note;
     buf[2] = velocity;
+    ENSURE(3 <= (int)cap);
     return 3;
 }
 

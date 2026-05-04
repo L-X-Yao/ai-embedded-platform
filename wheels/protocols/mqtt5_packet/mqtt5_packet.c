@@ -9,6 +9,7 @@
  */
 
 #include "mqtt5_packet.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- internal helpers -------------------------------------------------- */
@@ -166,6 +167,7 @@ int mqtt5_build_connect(uint8_t *buf, uint16_t size,
         pos += n;
     }
 
+    ENSURE((uint32_t)pos <= size);
     return pos;
 }
 

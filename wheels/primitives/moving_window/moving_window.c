@@ -12,6 +12,7 @@
  */
 
 #include "moving_window.h"
+#include "contract.h"
 #include <string.h>
 
 moving_window_err_t moving_window_init(moving_window_t *ctx,
@@ -28,6 +29,7 @@ moving_window_err_t moving_window_init(moving_window_t *ctx,
     ctx->sum      = 0.0f;
     ctx->sum_sq   = 0.0f;
     memset(buf, 0, capacity * sizeof(float));
+    ENSURE(ctx->count == 0 && ctx->head == 0);
     return MOVING_WINDOW_OK;
 }
 
@@ -61,6 +63,8 @@ moving_window_err_t moving_window_push(moving_window_t *ctx, float value)
         ctx->count++;
     }
 
+    INVARIANT(ctx->count <= ctx->capacity);
+    INVARIANT(ctx->head < ctx->capacity);
     return MOVING_WINDOW_OK;
 }
 

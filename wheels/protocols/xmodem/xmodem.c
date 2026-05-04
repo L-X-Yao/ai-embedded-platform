@@ -9,6 +9,7 @@
  */
 
 #include "xmodem.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -119,6 +120,7 @@ xmodem_err_t xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc)
     xm->use_crc  = use_crc;
     xm->state    = XMODEM_STATE_IDLE;
     xm->block_num = 1;  /* XMODEM blocks start at 1 */
+    ENSURE(xm->buf_pos == 0 && xm->total_bytes == 0);
 
     return XMODEM_OK;
 }

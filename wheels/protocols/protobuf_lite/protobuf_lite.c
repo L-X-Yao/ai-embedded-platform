@@ -9,6 +9,7 @@
  */
 
 #include "protobuf_lite.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- Internal helpers ---- */
@@ -72,6 +73,7 @@ void pb_encoder_init(pb_encoder_t *enc, uint8_t *buf, uint16_t capacity)
     enc->buf = buf;
     enc->capacity = capacity;
     enc->pos = 0;
+    ENSURE(enc->pos == 0);
 }
 
 pb_err_t pb_encode_varint(pb_encoder_t *enc, uint8_t field_num, uint64_t value)
@@ -172,6 +174,7 @@ void pb_decoder_init(pb_decoder_t *dec, const uint8_t *buf, uint16_t len)
     dec->buf = buf;
     dec->len = len;
     dec->pos = 0;
+    ENSURE(dec->pos == 0);
 }
 
 pb_err_t pb_decode_field(pb_decoder_t *dec, pb_field_t *field)

@@ -9,6 +9,7 @@
  */
 
 #include "lorawan_packet.h"
+#include "contract.h"
 #include <string.h>
 
 /* LoRaWAN wire format is little-endian for DevAddr and FCnt */
@@ -102,6 +103,7 @@ int lorawan_build_data(uint8_t *buf, uint16_t buf_size,
     memcpy(buf + pos, frame->mic, 4);
     pos += 4;
 
+    ENSURE(pos <= (int)buf_size);
     return pos;
 }
 

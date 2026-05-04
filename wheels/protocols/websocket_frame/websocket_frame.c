@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "websocket_frame.h"
+#include "contract.h"
 #include <string.h>
 
 void websocket_frame_mask_payload(uint8_t *data, size_t len, const uint8_t mask_key[4])
@@ -76,6 +77,7 @@ websocket_frame_err_t websocket_frame_parse(const uint8_t *data, size_t len, web
     frame->payload = &data[hdr_len];
     frame->payload_len = (size_t)payload_len;
     frame->frame_len = hdr_len + (size_t)payload_len;
+    ENSURE(frame->frame_len <= len);
     return WEBSOCKET_FRAME_OK;
 }
 
@@ -136,5 +138,6 @@ websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t
     }
 
     *out_len = total;
+    ENSURE(total <= buf_len);
     return WEBSOCKET_FRAME_OK;
 }

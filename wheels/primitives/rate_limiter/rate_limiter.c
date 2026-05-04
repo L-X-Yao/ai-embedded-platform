@@ -9,6 +9,7 @@
  */
 
 #include "rate_limiter.h"
+#include "contract.h"
 
 /* Refill tokens based on elapsed ticks. Overflow-safe: uses unsigned
  * wraparound for tick delta, and clamps accumulated tokens to max. */
@@ -56,6 +57,8 @@ rate_limiter_err_t rate_limiter_init(rate_limiter_t *rl, uint32_t max_tokens,
     rl->allowed_count = 0;
     rl->denied_count  = 0;
 
+    ENSURE(rl->tokens == rl->max_tokens);
+    ENSURE(rl->tokens <= rl->max_tokens);
     return RATE_LIMITER_OK;
 }
 

@@ -9,6 +9,7 @@
  */
 
 #include "log_ringbuf.h"
+#include "contract.h"
 #include <string.h>
 #include <limits.h>
 
@@ -20,6 +21,7 @@ void log_ringbuf_init(log_ringbuf_t *rb, uint8_t *buf, size_t capacity) {
     rb->count = 0;
     rb->total_lines = 0;
     rb->dropped_lines = 0;
+    ENSURE(rb->count == 0 && rb->head == 0);
 }
 
 void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
@@ -59,6 +61,8 @@ void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
         memcpy(rb->buf, line + first, len - first);
     }
     rb->count += len;
+    INVARIANT(rb->count <= rb->capacity);
+    INVARIANT(rb->head < rb->capacity);
 }
 
 void log_ringbuf_sink(void *ctx, const char *line, size_t len) {

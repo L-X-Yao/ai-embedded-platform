@@ -9,6 +9,7 @@
  */
 
 #include "nmea_parser.h"
+#include "contract.h"
 #include <string.h>
 #include <stdlib.h>
 
