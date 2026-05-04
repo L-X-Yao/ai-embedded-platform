@@ -37,11 +37,15 @@ else
     echo -e "  Remote: ${GREEN}up to date${NC}"
 fi
 
-dirty=$(git -C "$REPO" status --porcelain 2>/dev/null | head -20)
+dirty_all=$(git -C "$REPO" status --porcelain 2>/dev/null)
+dirty=$(echo "$dirty_all" | head -20)
 if [[ -n "$dirty" ]]; then
-    count=$(echo "$dirty" | wc -l)
+    count=$(echo "$dirty_all" | wc -l)
     echo -e "  Dirty files: ${YELLOW}${count}${NC}"
     echo "$dirty" | sed 's/^/    /'
+    if [[ "$count" -gt 20 ]]; then
+        echo -e "    ${YELLOW}... and $((count - 20)) more${NC}"
+    fi
 else
     echo -e "  Working tree: ${GREEN}clean${NC}"
 fi
@@ -88,9 +92,9 @@ for wheel_dir in "$REPO"/wheels/*/*/ ; do
 
     # Consumer? (project CMakeLists.txt or #include in .c files)
     consumer="--"
-    if grep -rqE "wheels/${ci_layer}/${name}|wheels/[a-z_]*/${name}" "$REPO"/projects/*/CMakeLists.txt "$REPO"/projects/*/vsf_build/CMakeLists.txt 2>/dev/null; then
+    if grep -rqE --include="*.c" --include="*.h" --include="*.txt" "wheels/${ci_layer}/${name}|wheels/[a-z_]*/${name}" "$REPO"/projects/*/CMakeLists.txt "$REPO"/projects/*/vsf_build/CMakeLists.txt 2>/dev/null; then
         consumer="yes"
-    elif grep -rq "#include.*[\"<]${name}\.h[\">]" "$REPO"/projects/ 2>/dev/null; then
+    elif grep -rq --include="*.c" --include="*.h" "#include.*[\"<]${name}\.h[\">]" "$REPO"/projects/ 2>/dev/null; then
         consumer="yes"
     fi
 

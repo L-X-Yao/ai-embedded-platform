@@ -84,6 +84,16 @@ if [[ -d "$WHEEL_DIR" ]]; then
     exit 1
 fi
 
+# Map layer to level label (used in header/source file comments)
+case "$LAYER" in
+    primitives) LAYER_LABEL="L0 (primitives)" ;;
+    drivers)    LAYER_LABEL="L1 (drivers)" ;;
+    protocols)  LAYER_LABEL="L2 (protocols)" ;;
+    modules)    LAYER_LABEL="L3 (modules)" ;;
+    _draft)     LAYER_LABEL="draft" ;;
+    *)          LAYER_LABEL="$LAYER" ;;
+esac
+
 # --- Generate -----------------------------------------------------------------
 
 mkdir -p "$WHEEL_DIR/test"
@@ -636,6 +646,10 @@ C_EOF
 cat > "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_EOF
 cmake_minimum_required(VERSION 3.13)
 project(test_${NAME_LOWER} C)
+
+# CMAKE_C_STANDARD set as a variable (not target property) intentionally:
+# standalone wheel test projects own the entire build, so a top-level variable
+# is simpler and consistent across all 140+ wheels.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -646,6 +660,8 @@ add_executable(test_${NAME_LOWER}
 
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
+    # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
+    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
     \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -1178,15 +1194,7 @@ TEST_EOF
 
 # ---- README ------------------------------------------------------------------
 
-# Map layer to level label
-case "$LAYER" in
-    primitives) LAYER_LABEL="L0 (primitives)" ;;
-    drivers)    LAYER_LABEL="L1 (drivers)" ;;
-    protocols)  LAYER_LABEL="L2 (protocols)" ;;
-    modules)    LAYER_LABEL="L3 (modules)" ;;
-    _draft)     LAYER_LABEL="draft" ;;
-    *)          LAYER_LABEL="$LAYER" ;;
-esac
+# (LAYER_LABEL is defined before generate_header calls, near top of script)
 
 generate_standard_readme() {
     cat > "$WHEEL_DIR/README.md" << README_EOF
@@ -1308,6 +1316,10 @@ generate_vendor_test_cmake() {
     cat > "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_EOF
 cmake_minimum_required(VERSION 3.13)
 project(test_${NAME_LOWER} C)
+
+# CMAKE_C_STANDARD set as a variable (not target property) intentionally:
+# standalone wheel test projects own the entire build, so a top-level variable
+# is simpler and consistent across all 140+ wheels.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -1320,6 +1332,8 @@ add_executable(test_${NAME_LOWER}
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
     \${CMAKE_CURRENT_SOURCE_DIR}
+    # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
+    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
     \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 # Note: -Wall -Wextra -Wpedantic omitted for vendor wheels (upstream code triggers warnings)

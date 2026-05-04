@@ -275,10 +275,11 @@ if run_layer 6 "Static analysis (cppcheck)"; then
             [[ -f "$c_file" ]] || continue
             [[ -d "$dir/vendor" ]] && continue
 
+            cppcheck_rc=0
             out=$(cppcheck --enable=warning,performance --suppress=missingIncludeSystem \
                   --quiet --error-exitcode=1 \
-                  "$c_file" 2>&1)
-            if [[ $? -ne 0 ]]; then
+                  "$c_file" 2>&1) || cppcheck_rc=$?
+            if [[ $cppcheck_rc -ne 0 ]]; then
                 echo -e "  ${YELLOW}WARN${NC}  $name"
                 echo "$out" | head -5 | while read -r line; do
                     echo "         $line"

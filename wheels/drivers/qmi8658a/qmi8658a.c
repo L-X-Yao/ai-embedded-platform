@@ -67,6 +67,9 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_t *dev,
                               const qmi8658a_i2c_t *i2c,
                               const qmi8658a_cfg_t *cfg)
 {
+    /* ERR_I2C is reused for param errors — no dedicated ERR_PARAM code in this
+     * driver's enum, and adding one would break API.  Callers see "init failed"
+     * which is the correct recovery path regardless of root cause. */
     if (!dev || !i2c || !cfg) return QMI8658A_ERR_I2C;
     if ((unsigned)cfg->acc_range > 3 || (unsigned)cfg->gyr_range > 7
         || (unsigned)cfg->acc_odr > 8 || (unsigned)cfg->gyr_odr > 8)
