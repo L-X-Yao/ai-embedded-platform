@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
 
 help:
 	@echo "Usage: make <target>"
@@ -17,6 +17,7 @@ help:
 	@echo "  test-scaffold     verify new_wheel.sh templates compile"
 	@echo "  test-property     property-based tests (all prop_*.c)"
 	@echo "  test-mutate       mutation testing (kill rate per wheel)"
+	@echo "  fuzz              LibFuzzer coverage-guided protocol fuzzing"
 	@echo "  coverage          tests with gcov coverage report"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
 	@echo ""
@@ -186,6 +187,9 @@ verify:
 		echo "  verifying $$name..."; \
 		cbmc "$$f" "$$wheel_dir/$$name.c" --unwind 51 --bounds-check --pointer-check 2>&1 | tail -1; \
 	done
+
+fuzz:
+	bash tooling/test/run_libfuzzer.sh
 
 new-wheel:
 	bash tooling/wheel/new_wheel.sh
