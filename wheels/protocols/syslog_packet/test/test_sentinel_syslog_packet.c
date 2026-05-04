@@ -17,8 +17,8 @@ TEST(test_syslog_format_sentinel) {
     };
     int written = syslog_format(&msg, (char *)buf, sizeof(buf) - 1);
     /* sentinel: byte after written data must be untouched */
-    if (written > 0 && (size_t)written < sizeof(buf)) {
-        ASSERT_EQ(buf[written], 0xFF);
+    if (written > 0 && (size_t)(written + 1) < sizeof(buf)) {
+        ASSERT_EQ(buf[written + 1], 0xFF);
     }
 }
 

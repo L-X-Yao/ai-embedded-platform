@@ -58,7 +58,7 @@ static i2c_scan_err_t scan_range_impl(i2c_scan_probe_fn probe,
             total_found++;
         }
     }
-    result->count = total_found;
+    (void)total_found;
     return I2C_SCAN_OK;
 }
 
