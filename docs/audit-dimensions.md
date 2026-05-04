@@ -238,3 +238,5 @@ tooling/session/dispatch_agent.sh --merge-all --push
 | 2026-05-01 | R16 -Wconversion 全量部署 | 0C+0M | 52 | 54/58 wheels 加 -Wconversion，仅 2 处测试代码修复 |
 | 2026-05-02 | 超级审计：85 新 wheel（6 路并行） | 8C+28M+22m | 36+22 | 协议层 5C（整数溢出）、L1 3C（位域/延迟/截断）、28M（overflow/API/性能） |
 | 2026-05-02 | 代码规范审计（85 wheel vs api-conventions） | 14+9+6 | 进行中 | 14 命名前缀（10 接受偏离+4 修复）、9 @thread_safe 缺失、6 文件头不完整 |
+| 2026-05-04 | 审计系统 v4 构建 + 全量审计 | 4 bug | 4 | i2c_scan 越界读 + fixed_point/bme680 UB（sanitizer + 属性测试发现） |
+| 2026-05-04 | 超级审计九轮（4 路并行：W1+W2+W3+T1/C1/B1） | 9C+26M+13m | 35 | soft_timer slot 复用/mqtt5 truncation/http 4-digit status/bme680 timeout/mcp2515 EID mask/CI push loop/merge_agents scoping/6 模块 counter 饱和 |
