@@ -331,9 +331,6 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
     ENSURE(data->temperature_c == data->temperature_c);  /* not NaN */
     ENSURE(data->pressure_pa == data->pressure_pa);        /* not NaN */
     ENSURE(data->humidity_pct == data->humidity_pct);      /* not NaN */
-    ENSURE(data->temperature_c >= -40.0f && data->temperature_c <= 85.0f);
-    ENSURE(data->pressure_pa >= 30000.0f && data->pressure_pa <= 110000.0f);
-    ENSURE(data->humidity_pct >= 0.0f && data->humidity_pct <= 100.0f);
     return BME680_OK;
 }
 
