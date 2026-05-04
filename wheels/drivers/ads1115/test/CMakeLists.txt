@@ -14,5 +14,17 @@ target_include_directories(test_ads1115 PRIVATE
 target_compile_options(test_ads1115 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_ads1115 PRIVATE m)
 
+add_executable(prop_ads1115
+    prop_ads1115.c
+    ../ads1115.c
+)
+target_include_directories(prop_ads1115 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_ads1115 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(prop_ads1115 PRIVATE m)
+
 enable_testing()
 add_test(NAME ads1115_tests COMMAND test_ads1115)
+add_test(NAME ads1115_prop_tests COMMAND prop_ads1115)

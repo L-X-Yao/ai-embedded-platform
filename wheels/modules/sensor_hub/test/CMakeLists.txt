@@ -14,5 +14,16 @@ target_include_directories(test_sensor_hub PRIVATE
 )
 target_compile_options(test_sensor_hub PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_sensor_hub
+    prop_sensor_hub.c
+    ../sensor_hub.c
+)
+target_include_directories(prop_sensor_hub PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_sensor_hub PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME sensor_hub_tests COMMAND test_sensor_hub)
+add_test(NAME sensor_hub_prop_tests COMMAND prop_sensor_hub)

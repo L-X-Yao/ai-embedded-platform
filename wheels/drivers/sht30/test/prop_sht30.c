@@ -72,6 +72,7 @@ static void plant_valid(uint16_t raw_t, uint16_t raw_h)
 
 PROPERTY(read_no_crash, 10000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_reset();
 
     /* Fill response with arbitrary bytes (CRC likely wrong) */

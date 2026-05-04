@@ -41,6 +41,7 @@ PROPERTY(send_ok_roundtrip, 10000) {
 
     g_sent_len = 0;
     at_command_send(&at, cmd);
+    at_command_expect(&at, "OK");
 
     /* sent buffer should contain cmd + \r\n */
     size_t expected_len = strlen(cmd) + 2;
@@ -58,6 +59,7 @@ PROPERTY(send_ok_roundtrip, 10000) {
 
 /* Property: feed arbitrary bytes never crashes */
 PROPERTY(feed_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     at_command_t at;
     at_command_init(&at, &mock_hal);
 

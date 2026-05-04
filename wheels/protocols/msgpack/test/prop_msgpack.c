@@ -121,6 +121,7 @@ PROPERTY(encode_determinism, 5000) {
 
 /* Property: decode of arbitrary bytes never crashes */
 PROPERTY(decode_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     uint8_t garbage[256];
     size_t len = ARBI_SIZE(seed, 256);
     ARBI_FILL(seed, garbage, len);

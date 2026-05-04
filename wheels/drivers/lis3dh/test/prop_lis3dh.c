@@ -25,6 +25,7 @@ static const lis3dh_i2c_t prop_i2c = {
 
 PROPERTY(read_no_crash, 10000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_i2c_reset();
     for (int i = 0; i < 256; i++)
         mock_regs[i] = ARBI_UINT8(seed);
@@ -109,6 +110,7 @@ PROPERTY(accel_all_ranges_bounded, 5000)
 
 PROPERTY(raw_read_no_crash, 5000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_i2c_reset();
     for (int i = 0; i < 256; i++)
         mock_regs[i] = ARBI_UINT8(seed);
