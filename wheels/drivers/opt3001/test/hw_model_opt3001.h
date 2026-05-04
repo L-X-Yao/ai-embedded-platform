@@ -143,6 +143,11 @@ static void opt3001_model_init(opt3001_model_t *m)
     uint8_t cfg_base = OPT_BYTE_ADDR(OPT_REG_CONFIG);
     hw_model_set_on_write(&m->hw, cfg_base, opt3001_model_on_config_hi);
 
+    /* CRF bit (bit 7 of config low byte) is read-only hardware flag.
+     * Mask out bit 7 so driver writes cannot clear it — only the
+     * measurement engine (our callback) sets/clears it. */
+    hw_model_set_writable_mask(&m->hw, (uint8_t)(cfg_base + 1), 0x7Fu);
+
     /* Default config: 0xC010 (auto range, 100ms, shutdown) */
     m->hw.reset_values[cfg_base]     = 0xC0u;
     m->hw.reset_values[cfg_base + 1] = 0x10u;
