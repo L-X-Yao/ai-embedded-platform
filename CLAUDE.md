@@ -130,6 +130,7 @@ ai-embedded-platform/
 │   └── _draft/                     孵化区
 ├── templates/                      项目起步模板
 ├── projects/                       真实项目
+├── examples/                       集成食谱（wheel 组合示例）
 ├── tooling/
 │   ├── audit/                      审计脚本
 │   ├── test/                       test_harness.h + 测试脚本
