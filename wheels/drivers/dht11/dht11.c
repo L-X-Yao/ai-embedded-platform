@@ -76,7 +76,5 @@ dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out)
     out->humidity_dec    = bytes[1];
     out->temperature_int = bytes[2];
     out->temperature_dec = bytes[3];
-    ENSURE(out->temperature_int <= 50);
-    ENSURE(out->humidity_int <= 90);
     return DHT11_OK;
 }

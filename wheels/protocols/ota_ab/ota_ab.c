@@ -83,8 +83,11 @@ ota_ab_err_t ota_ab_init(ota_ab_t *m, const ota_ab_flash_t *flash,
     if (layout->params_size < sizeof(ota_ab_params_t)) return OTA_AB_ERR_PARAM;
     m->flash = flash;
     m->layout = *layout;
-    ENSURE(m->params.active_slot <= 1);
-    return params_read(m);
+    ota_ab_err_t err = params_read(m);
+    if (err == OTA_AB_OK) {
+        ENSURE(m->params.active_slot <= 1);
+    }
+    return err;
 }
 
 uint8_t ota_ab_active_slot(const ota_ab_t *m)

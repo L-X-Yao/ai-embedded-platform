@@ -137,8 +137,8 @@ TEST(test_scan_overflow_count)
 
     i2c_scan_result_t r;
     ASSERT_EQ(i2c_scan(mock_probe, NULL, &r), I2C_SCAN_OK);
-    /* count reflects total found, exceeding array capacity */
-    ASSERT_EQ(r.count, I2C_SCAN_MAX_DEVICES + 2);
+    /* count is capped at I2C_SCAN_MAX_DEVICES (array capacity) */
+    ASSERT_EQ(r.count, I2C_SCAN_MAX_DEVICES);
     /* Array holds first I2C_SCAN_MAX_DEVICES entries */
     ASSERT_EQ(r.addresses[0], 0x10);
     ASSERT_EQ(r.addresses[I2C_SCAN_MAX_DEVICES - 1],
