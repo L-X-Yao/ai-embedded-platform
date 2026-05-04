@@ -21,19 +21,28 @@ Flags:
 Exit 0 if all above threshold, 1 if any below.
 """
 
-import argparse
 import json
-import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-WHEELS = REPO / "wheels"
-LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
-SKIP_DIRS = {"test", "build", "__pycache__", ".pytest_cache"}
+from _audit_build_base import (
+    BOLD,
+    GREEN,
+    RED,
+    RESET,
+    WHEELS,
+    YELLOW,
+    cleanup_build,
+    cmake_build,
+    color,
+    extract_test_target,
+    find_test_binary,
+    find_wheels,
+    parse_args_common,
+)
+
 BUILD_DIR_NAME = "build_cov"
 TIMEOUT_SEC = 30
 
@@ -46,50 +55,8 @@ DEFAULT_THRESHOLDS = {
     "_draft": 0,  # No threshold for drafts
 }
 
-# ANSI colors
-GREEN = "\033[32m"
-RED = "\033[31m"
-YELLOW = "\033[33m"
-RESET = "\033[0m"
-BOLD = "\033[1m"
 
-
-def color(text: str, code: str) -> str:
-    if not sys.stdout.isatty():
-        return text
-    return f"{code}{text}{RESET}"
-
-
-def find_wheels() -> list:
-    """Return list of (layer, name, wheel_dir) for wheels with test/CMakeLists.txt."""
-    wheels = []
-    for layer in LAYERS:
-        layer_dir = WHEELS / layer
-        if not layer_dir.is_dir():
-            continue
-        for entry in sorted(layer_dir.iterdir()):
-            if not entry.is_dir() or entry.name in SKIP_DIRS or entry.name.startswith("."):
-                continue
-            # Skip vendor wheels
-            if (entry / "vendor").is_dir():
-                continue
-            cmake = entry / "test" / "CMakeLists.txt"
-            if cmake.is_file():
-                wheels.append((layer, entry.name, entry))
-    return wheels
-
-
-def extract_test_target(cmake_path: Path) -> str:
-    """Extract the test executable target name from CMakeLists.txt."""
-    try:
-        text = cmake_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    m = re.search(r'add_executable\(\s*(\w+)', text)
-    return m.group(1) if m else ""
-
-
-def find_source_files(wheel_dir: Path, name: str) -> list:
+def find_source_files(wheel_dir, name):
     """Find the wheel's .c source files (not test files)."""
     sources = []
     main_src = wheel_dir / f"{name}.c"
@@ -104,71 +71,7 @@ def find_source_files(wheel_dir: Path, name: str) -> list:
     return sources
 
 
-def build_wheel(wheel_dir: Path, target_name: str) -> tuple:
-    """Build wheel test with coverage flags. Returns (success: bool, stderr: str)."""
-    test_dir = wheel_dir / "test"
-    build_dir = test_dir / BUILD_DIR_NAME
-
-    # Clean previous build
-    if build_dir.exists():
-        shutil.rmtree(build_dir, ignore_errors=True)
-    build_dir.mkdir(parents=True, exist_ok=True)
-
-    cov_flags = "--coverage"
-
-    # Configure
-    cmake_cmd = [
-        "cmake",
-        "-G", "Ninja",
-        f"-DCMAKE_C_FLAGS={cov_flags}",
-        f"-DCMAKE_EXE_LINKER_FLAGS={cov_flags}",
-        "-S", str(test_dir),
-        "-B", str(build_dir),
-    ]
-    try:
-        result = subprocess.run(
-            cmake_cmd,
-            capture_output=True, text=True, timeout=60,
-            cwd=str(test_dir)
-        )
-        if result.returncode != 0:
-            return False, result.stderr
-    except (subprocess.TimeoutExpired, OSError) as e:
-        return False, str(e)
-
-    # Build
-    build_cmd = ["cmake", "--build", str(build_dir), "--", "-j"]
-    try:
-        result = subprocess.run(
-            build_cmd,
-            capture_output=True, text=True, timeout=120,
-            cwd=str(build_dir)
-        )
-        if result.returncode != 0:
-            return False, result.stderr
-    except (subprocess.TimeoutExpired, OSError) as e:
-        return False, str(e)
-
-    return True, ""
-
-
-def find_test_binary(build_dir: Path, target_name: str) -> Path | None:
-    """Locate the built test binary."""
-    candidates = [
-        build_dir / target_name,
-        build_dir / f"{target_name}.exe",
-    ]
-    for c in candidates:
-        if c.is_file():
-            return c
-    # Search recursively
-    for f in build_dir.rglob(target_name + "*"):
-        if f.is_file() and f.suffix in ("", ".exe"):
-            return f
-    return None
-
-
-def run_test(binary: Path) -> tuple:
+def run_test(binary):
     """Run the test binary. Returns (success: bool, output: str)."""
     try:
         result = subprocess.run(
@@ -184,12 +87,7 @@ def run_test(binary: Path) -> tuple:
         return False, str(e)
 
 
-def find_gcda_files(build_dir: Path) -> list:
-    """Find all .gcda files produced by the test run."""
-    return list(build_dir.rglob("*.gcda"))
-
-
-def run_gcov(build_dir: Path, source_file: Path) -> float | None:
+def run_gcov(build_dir, source_file):
     """Run gcov on a source file and return line coverage percentage.
 
     Searches the build directory for the .gcno/.gcda pair corresponding to
@@ -246,27 +144,10 @@ def run_gcov(build_dir: Path, source_file: Path) -> float | None:
     return coverage
 
 
-def cleanup(wheel_dir: Path):
-    """Remove the coverage build directory and stray gcov artifacts."""
-    build_dir = wheel_dir / "test" / BUILD_DIR_NAME
-    if build_dir.exists():
-        shutil.rmtree(build_dir, ignore_errors=True)
-    # Clean up any .gcov files that gcov may have left around
-    for gcov_file in wheel_dir.rglob("*.gcov"):
-        try:
-            gcov_file.unlink()
-        except OSError:
-            pass
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Measure line coverage for wheel tests via gcc/gcov"
+def main():
+    parser = parse_args_common(
+        "Measure line coverage for wheel tests via gcc/gcov"
     )
-    parser.add_argument("--quiet", "-q", action="store_true",
-                        help="Only show below-threshold and summary")
-    parser.add_argument("--json", action="store_true",
-                        help="Output results as JSON")
     parser.add_argument("--threshold", type=int, default=None,
                         help="Override default threshold for all layers (0-100)")
     args = parser.parse_args()
@@ -299,8 +180,7 @@ def main() -> int:
 
     for layer, name, wheel_dir in wheels:
         path = f"wheels/{layer}/{name}"
-        cmake_path = wheel_dir / "test" / "CMakeLists.txt"
-        target = extract_test_target(cmake_path)
+        target = extract_test_target(wheel_dir)
 
         # Determine threshold
         if args.threshold is not None:
@@ -319,7 +199,8 @@ def main() -> int:
             continue
 
         # Build with coverage
-        ok, err = build_wheel(wheel_dir, target)
+        cov_flags = "--coverage"
+        ok, err = cmake_build(wheel_dir, target, BUILD_DIR_NAME, cov_flags, cov_flags)
         if not ok:
             entry = {"wheel": path, "layer": layer, "status": "SKIP",
                      "coverage": None, "threshold": threshold,
@@ -328,7 +209,6 @@ def main() -> int:
             skip_count += 1
             if not args.quiet and not args.json:
                 print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
-            cleanup(wheel_dir)
             continue
 
         # Find and run binary
@@ -342,7 +222,7 @@ def main() -> int:
             skip_count += 1
             if not args.quiet and not args.json:
                 print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
-            cleanup(wheel_dir)
+            cleanup_build(build_dir)
             continue
 
         test_ok, _ = run_test(binary)
@@ -354,7 +234,7 @@ def main() -> int:
             skip_count += 1
             if not args.quiet and not args.json:
                 print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
-            cleanup(wheel_dir)
+            cleanup_build(build_dir)
             continue
 
         # Run gcov on each source file, take the main one
@@ -375,7 +255,7 @@ def main() -> int:
             skip_count += 1
             if not args.quiet and not args.json:
                 print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
-            cleanup(wheel_dir)
+            cleanup_build(build_dir)
             continue
 
         # Evaluate against threshold
@@ -394,7 +274,7 @@ def main() -> int:
             if not args.json:
                 print(f"  {path:<40s}  {coverage:>7.1f}%  {threshold:>8d}%  {color('FAIL', RED)}")
 
-        cleanup(wheel_dir)
+        cleanup_build(build_dir)
 
     # Summary
     if args.json:
