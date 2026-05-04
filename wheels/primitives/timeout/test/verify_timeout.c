@@ -119,8 +119,6 @@ void verify_restart_extend(void) {
     __CPROVER_assume(extra >= 1 && extra <= 1000);
     timeout_extend(&t, extra);
 
-    /* Original deadline no longer triggers (if extra > 0) */
-    uint32_t old_deadline = start + duration;
     /* New deadline is start + duration + extra */
     uint32_t new_deadline = start + duration + extra;
     assert(timeout_expired(&t, new_deadline) == true);

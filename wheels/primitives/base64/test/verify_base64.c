@@ -9,6 +9,7 @@
 
 #include "../base64.h"
 #include <stdint.h>
+#include <stddef.h>
 #include <assert.h>
 
 #ifndef UNWIND_BOUND
