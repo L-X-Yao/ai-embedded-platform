@@ -108,6 +108,7 @@ PROPERTY(build_determinism, 5000) {
 
 /* Property: parse of arbitrary bytes never crashes */
 PROPERTY(parse_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     uint8_t garbage[300];
     uint16_t len = (uint16_t)ARBI_RANGE(seed, 0, 256);
     ARBI_FILL(seed, garbage, len);

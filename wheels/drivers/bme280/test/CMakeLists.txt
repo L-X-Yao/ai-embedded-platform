@@ -15,5 +15,17 @@ target_include_directories(test_bme280 PRIVATE
 target_compile_options(test_bme280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_bme280 PRIVATE m)
 
+add_executable(prop_bme280
+    prop_bme280.c
+    ../bme280.c
+)
+target_include_directories(prop_bme280 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_bme280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(prop_bme280 PRIVATE m)
+
 enable_testing()
 add_test(NAME bme280_tests COMMAND test_bme280)
+add_test(NAME bme280_prop_tests COMMAND prop_bme280)

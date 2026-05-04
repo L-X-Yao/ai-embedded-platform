@@ -86,24 +86,33 @@ PROPERTY(parse_determinism, 5000) {
 
 /* Property: Content-Length extraction agrees with header */
 PROPERTY(content_length_consistency, 5000) {
-    uint16_t cl = ARBI_UINT16(seed) % 1000u;
+    /* Keep body small enough for the buffer; include actual body bytes
+       so the parser does not return INCOMPLETE */
+    uint16_t cl = (uint16_t)(ARBI_UINT16(seed) % 128u);
     char req[512];
-    int len = snprintf(req, sizeof(req),
-                       "POST /data HTTP/1.1\r\nContent-Length: %u\r\n\r\n",
-                       (unsigned)cl);
-    PROP_ASSERT(len > 0);
+    int hdr_len = snprintf(req, sizeof(req),
+                           "POST /data HTTP/1.1\r\nContent-Length: %u\r\n\r\n",
+                           (unsigned)cl);
+    PROP_ASSERT(hdr_len > 0 && hdr_len + cl < (int)sizeof(req));
+    /* Append cl bytes of body (arbitrary) */
+    ARBI_FILL(seed, (uint8_t *)(req + hdr_len), cl);
+    int total_len = hdr_len + (int)cl;
 
     http_parser_request_t parsed;
     memset(&parsed, 0, sizeof(parsed));
-    http_parser_err_t err = http_parser_parse_request(req, (size_t)len, &parsed);
+    http_parser_err_t err = http_parser_parse_request(req, (size_t)total_len, &parsed);
     PROP_ASSERT_EQ(err, HTTP_PARSER_OK);
 
     int got_cl = http_parser_get_content_length(parsed.headers, parsed.header_count);
     PROP_ASSERT_EQ(got_cl, (int)cl);
+
+    /* Body length must match Content-Length */
+    PROP_ASSERT_EQ(parsed.body_len, cl);
 }
 
 /* Property: parse of arbitrary bytes never crashes */
 PROPERTY(parse_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     char garbage[512];
     size_t len = ARBI_SIZE(seed, 512);
     ARBI_FILL(seed, (uint8_t *)garbage, len);

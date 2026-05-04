@@ -14,5 +14,16 @@ target_include_directories(test_at24cxx PRIVATE
 )
 target_compile_options(test_at24cxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_at24cxx
+    prop_at24cxx.c
+    ../at24cxx.c
+)
+target_include_directories(prop_at24cxx PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_at24cxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME at24cxx_tests COMMAND test_at24cxx)
+add_test(NAME at24cxx_prop_tests COMMAND prop_at24cxx)

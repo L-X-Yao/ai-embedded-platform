@@ -45,11 +45,9 @@ PROPERTY(publish_roundtrip, 10000) {
     mqtt_packet_err_t err = mqtt_packet_parse_publish(buf, (size_t)built, &parsed);
     PROP_ASSERT_EQ(err, MQTT_PACKET_OK);
 
-    /* Topic must match */
+    /* Topic must match (zero-copy pointer, not NUL-terminated) */
     PROP_ASSERT(parsed.topic != NULL);
-    size_t parsed_topic_len = strlen(parsed.topic);
-    PROP_ASSERT_EQ(parsed_topic_len, topic_len);
-    PROP_ASSERT_MEM_EQ(parsed.topic, topic, topic_len);
+    PROP_ASSERT(memcmp(parsed.topic, topic, topic_len) == 0);
 
     /* Payload must match */
     PROP_ASSERT_EQ(parsed.payload_len, payload_len);
@@ -111,6 +109,7 @@ PROPERTY(subscribe_length_consistency, 5000) {
 
 /* Property: parse of arbitrary bytes never crashes */
 PROPERTY(parse_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     uint8_t garbage[300];
     size_t len = ARBI_SIZE(seed, 300);
     ARBI_FILL(seed, garbage, len);
@@ -136,6 +135,7 @@ PROPERTY(parse_no_crash, 50000) {
 
 /* Property: PINGREQ and DISCONNECT build produce fixed small packets */
 PROPERTY(fixed_packets_stable, 1000) {
+    (void)seed; (void)prop__seed_orig; (void)prop__iter;
     uint8_t ping1[8], ping2[8], disc1[8], disc2[8];
     int p1 = mqtt_packet_build_pingreq(ping1, sizeof(ping1));
     int p2 = mqtt_packet_build_pingreq(ping2, sizeof(ping2));

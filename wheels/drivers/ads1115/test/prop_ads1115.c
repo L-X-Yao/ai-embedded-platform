@@ -34,6 +34,7 @@ static const ads1115_i2c_t prop_i2c = {
 
 PROPERTY(read_no_crash, 10000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_i2c_reset();
     for (int i = 0; i < 256; i++)
         mock_regs[i] = ARBI_UINT8(seed);
@@ -77,8 +78,11 @@ PROPERTY(raw_in_int16_range, 5000)
     err = ads1115_read_raw(&dev, &raw);
     if (err != ADS1115_OK) return;
 
-    /* int16_t is always in [-32768, 32767] by definition */
-    PROP_ASSERT(raw >= -32768 && raw <= 32767);
+    /* Verify read succeeded and raw was actually written (not left at init) */
+    uint8_t expected_hi = mock_regs[REG_CONVERSION];
+    uint8_t expected_lo = mock_regs[REG_CONVERSION + 1];
+    int16_t expected = (int16_t)((uint16_t)expected_hi << 8 | expected_lo);
+    PROP_ASSERT_EQ(raw, expected);
 }
 
 PROPERTY(voltage_bounded_by_pga, 5000)
@@ -115,6 +119,7 @@ PROPERTY(voltage_bounded_by_pga, 5000)
 
 PROPERTY(channel_switch_no_crash, 5000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_i2c_reset();
     mock_regs[REG_CONFIG] = 0x80;
 

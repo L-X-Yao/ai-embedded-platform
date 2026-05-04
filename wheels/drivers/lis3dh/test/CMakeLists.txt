@@ -14,5 +14,16 @@ target_include_directories(test_lis3dh PRIVATE
 )
 target_compile_options(test_lis3dh PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_lis3dh
+    prop_lis3dh.c
+    ../lis3dh.c
+)
+target_include_directories(prop_lis3dh PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_lis3dh PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME lis3dh_tests COMMAND test_lis3dh)
+add_test(NAME lis3dh_prop_tests COMMAND prop_lis3dh)

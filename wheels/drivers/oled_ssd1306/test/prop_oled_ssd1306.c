@@ -63,6 +63,7 @@ static uint8_t framebuf[128 * 64 / 8];
 
 PROPERTY(draw_no_crash, 10000)
 {
+    (void)prop__seed_orig; (void)prop__iter;
     mock_reset();
 
     oled_ssd1306_t dev;

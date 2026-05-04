@@ -122,6 +122,7 @@ PROPERTY(mask_unmask_identity, 10000) {
 
 /* Property: parse of arbitrary bytes never crashes */
 PROPERTY(parse_no_crash, 50000) {
+    (void)prop__seed_orig; (void)prop__iter;
     uint8_t garbage[300];
     size_t len = ARBI_SIZE(seed, 300);
     ARBI_FILL(seed, garbage, len);
