@@ -14,8 +14,20 @@ target_include_directories(test_mlx90614 PRIVATE
 )
 target_compile_options(test_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_hw_model_mlx90614
+    test_hw_model_mlx90614.c
+    ../mlx90614.c
+)
+target_include_directories(test_hw_model_mlx90614 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_mlx90614 PRIVATE m)
+
 enable_testing()
 add_test(NAME mlx90614_tests COMMAND test_mlx90614)
+add_test(NAME mlx90614_hw_model_tests COMMAND test_hw_model_mlx90614)
 
 add_executable(prop_mlx90614
     prop_mlx90614.c
