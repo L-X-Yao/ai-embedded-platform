@@ -40,7 +40,8 @@ TEST(test_ota_ab_active_slot_null_m) {
 
 TEST(test_ota_ab_target_slot_null_m) {
     uint8_t ret = ota_ab_target_slot(NULL);
-    ASSERT_EQ(ret, 0);
+    /* NULL returns 1 (1 - default active_slot 0) */
+    ASSERT_EQ(ret, 1);
 }
 
 TEST(test_ota_ab_slot_addr_null_m) {

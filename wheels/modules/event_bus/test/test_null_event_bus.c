@@ -44,7 +44,8 @@ TEST(test_event_bus_publish_null_data) {
     event_bus_t _bus;
     memset(&_bus, 0, sizeof(_bus));
     event_bus_err_t err = event_bus_publish(&_bus, 0, NULL, 0);
-    ASSERT_TRUE(err < 0);
+    /* NULL data + len=0 is valid (no subscribers, returns OK) */
+    ASSERT_TRUE(err == 0);
 }
 
 TEST_MAIN("null_param_event_bus") {

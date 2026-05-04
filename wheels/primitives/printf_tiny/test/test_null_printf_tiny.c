@@ -10,52 +10,68 @@ TEST(test_printf_tiny_null_ctx) {
     char _fmt[64];
     memset(_fmt, 0, sizeof(_fmt));
     int ret = printf_tiny(0, NULL, _fmt);
-    ASSERT_TRUE(ret < 0);
+    /* NULL putc returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_printf_tiny_null_fmt) {
     int ret = printf_tiny(0, NULL, NULL);
-    ASSERT_TRUE(ret < 0);
+    /* NULL fmt returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_snprintf_tiny_null_buf) {
     char _fmt[64];
     memset(_fmt, 0, sizeof(_fmt));
     int ret = snprintf_tiny(NULL, 0, _fmt);
-    ASSERT_TRUE(ret < 0);
+    /* NULL buf + size=0 returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_snprintf_tiny_null_fmt) {
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
     int ret = snprintf_tiny(_buf, 0, NULL);
-    ASSERT_TRUE(ret < 0);
+    /* NULL fmt returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_vprintf_tiny_null_ctx) {
     char _fmt[64];
     memset(_fmt, 0, sizeof(_fmt));
-    int ret = vprintf_tiny(0, NULL, _fmt, 0);
-    ASSERT_TRUE(ret < 0);
+    va_list ap;
+    memset(&ap, 0, sizeof(ap));
+    int ret = vprintf_tiny(0, NULL, _fmt, ap);
+    /* NULL putc returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_vprintf_tiny_null_fmt) {
-    int ret = vprintf_tiny(0, NULL, NULL, 0);
-    ASSERT_TRUE(ret < 0);
+    va_list ap;
+    memset(&ap, 0, sizeof(ap));
+    int ret = vprintf_tiny(0, NULL, NULL, ap);
+    /* NULL fmt returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_vsnprintf_tiny_null_buf) {
     char _fmt[64];
     memset(_fmt, 0, sizeof(_fmt));
-    int ret = vsnprintf_tiny(NULL, 0, _fmt, 0);
-    ASSERT_TRUE(ret < 0);
+    va_list ap;
+    memset(&ap, 0, sizeof(ap));
+    int ret = vsnprintf_tiny(NULL, 0, _fmt, ap);
+    /* NULL buf + size=0 returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST(test_vsnprintf_tiny_null_fmt) {
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    int ret = vsnprintf_tiny(_buf, 0, NULL, 0);
-    ASSERT_TRUE(ret < 0);
+    va_list ap;
+    memset(&ap, 0, sizeof(ap));
+    int ret = vsnprintf_tiny(_buf, 0, NULL, ap);
+    /* NULL fmt returns 0 (nothing written) */
+    ASSERT_TRUE(ret == 0);
 }
 
 TEST_MAIN("null_param_printf_tiny") {

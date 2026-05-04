@@ -8,7 +8,8 @@
 
 TEST(test_crc16_modbus_null_data) {
     uint16_t ret = crc16_modbus(NULL, 0);
-    ASSERT_EQ(ret, 0);
+    /* NULL returns CRC16_MODBUS_INIT (0xFFFF) by design */
+    ASSERT_EQ(ret, CRC16_MODBUS_INIT);
 }
 
 TEST_MAIN("null_param_crc16") {

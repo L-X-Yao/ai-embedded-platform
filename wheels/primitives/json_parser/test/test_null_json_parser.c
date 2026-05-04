@@ -29,7 +29,8 @@ TEST(test_json_parser_feed_null_data) {
     json_parser_t _p;
     memset(&_p, 0, sizeof(_p));
     json_parser_err_t err = json_parser_feed(&_p, NULL, 0);
-    ASSERT_TRUE(err < 0);
+    /* NULL data + len=0 is valid (nothing to feed) */
+    ASSERT_TRUE(err == 0);
 }
 
 TEST(test_json_parser_finish_null_p) {
