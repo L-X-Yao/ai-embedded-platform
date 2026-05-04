@@ -24,3 +24,15 @@ target_include_directories(prop_servo PRIVATE
 target_compile_options(prop_servo PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME servo_prop_tests COMMAND prop_servo)
+
+add_executable(test_hw_model_servo
+    test_hw_model_servo.c
+    ../servo.c
+)
+target_include_directories(test_hw_model_servo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_servo PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME servo_hw_model_tests COMMAND test_hw_model_servo)

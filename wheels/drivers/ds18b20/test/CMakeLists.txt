@@ -27,3 +27,15 @@ target_include_directories(prop_ds18b20 PRIVATE
 target_compile_options(prop_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME ds18b20_prop_tests COMMAND prop_ds18b20)
+
+add_executable(test_hw_model_ds18b20
+    test_hw_model_ds18b20.c
+    ../ds18b20.c
+)
+target_include_directories(test_hw_model_ds18b20 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME ds18b20_hw_model_tests COMMAND test_hw_model_ds18b20)
