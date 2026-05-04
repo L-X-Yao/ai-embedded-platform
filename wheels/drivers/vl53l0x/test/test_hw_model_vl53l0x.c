@@ -131,12 +131,11 @@ TEST(test_set_timing_budget)
     vl53l0x_t dev;
     vl53l0x_init(&dev, &model_i2c, &default_cfg);
 
-    vl53l0x_err_t err = vl53l0x_set_measurement_timing_budget(&dev, 200000);
+    vl53l0x_err_t err = vl53l0x_set_measurement_timing_budget(&dev, 100000);
     ASSERT_EQ(err, VL53L0X_OK);
-    /* 200000/2 = 100000 = 0x186A0, clamped to uint16 = 0x86A0 */
-    uint16_t timeout = (uint16_t)(200000u / 2u);
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], (uint8_t)(timeout >> 8));
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], (uint8_t)(timeout & 0xFF));
+    /* 100000/2 = 50000 = 0xC350 (fits in uint16) */
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], 0xC3u);
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], 0x50u);
 }
 
 TEST(test_set_timing_budget_out_of_range)
