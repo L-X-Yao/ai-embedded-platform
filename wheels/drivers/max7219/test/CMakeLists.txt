@@ -15,3 +15,15 @@ target_compile_options(test_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME max7219_tests COMMAND test_max7219)
+
+add_executable(prop_max7219
+    prop_max7219.c
+    ../max7219.c
+)
+target_include_directories(prop_max7219 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME max7219_prop_tests COMMAND prop_max7219)

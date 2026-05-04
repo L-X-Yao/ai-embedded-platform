@@ -16,3 +16,15 @@ target_compile_options(test_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror
 
 enable_testing()
 add_test(NAME lora_sx1276_tests COMMAND test_lora_sx1276)
+
+add_executable(prop_lora_sx1276
+    prop_lora_sx1276.c
+    ../lora_sx1276.c
+)
+target_include_directories(prop_lora_sx1276 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME lora_sx1276_prop_tests COMMAND prop_lora_sx1276)

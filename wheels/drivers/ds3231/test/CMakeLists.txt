@@ -16,3 +16,15 @@ target_compile_options(test_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 enable_testing()
 add_test(NAME ds3231_tests COMMAND test_ds3231)
+
+add_executable(prop_ds3231
+    prop_ds3231.c
+    ../ds3231.c
+)
+target_include_directories(prop_ds3231 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME ds3231_prop_tests COMMAND prop_ds3231)

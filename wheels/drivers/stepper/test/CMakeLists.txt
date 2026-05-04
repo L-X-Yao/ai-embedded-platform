@@ -16,3 +16,15 @@ target_compile_options(test_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME stepper_tests COMMAND test_stepper)
+
+add_executable(prop_stepper
+    prop_stepper.c
+    ../stepper.c
+)
+target_include_directories(prop_stepper PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME stepper_prop_tests COMMAND prop_stepper)

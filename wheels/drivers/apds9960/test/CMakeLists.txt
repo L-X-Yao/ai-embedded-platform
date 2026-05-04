@@ -16,3 +16,15 @@ target_compile_options(test_apds9960 PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 
 enable_testing()
 add_test(NAME apds9960_tests COMMAND test_apds9960)
+
+add_executable(prop_apds9960
+    prop_apds9960.c
+    ../apds9960.c
+)
+target_include_directories(prop_apds9960 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_apds9960 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME apds9960_prop_tests COMMAND prop_apds9960)

@@ -16,3 +16,15 @@ target_compile_options(test_bme680 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 enable_testing()
 add_test(NAME bme680_tests COMMAND test_bme680)
+
+add_executable(prop_bme680
+    prop_bme680.c
+    ../bme680.c
+)
+target_include_directories(prop_bme680 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_bme680 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME bme680_prop_tests COMMAND prop_bme680)

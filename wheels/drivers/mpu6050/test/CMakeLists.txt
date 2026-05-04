@@ -17,3 +17,16 @@ target_link_libraries(test_mpu6050 PRIVATE m)
 
 enable_testing()
 add_test(NAME mpu6050_tests COMMAND test_mpu6050)
+
+add_executable(prop_mpu6050
+    prop_mpu6050.c
+    ../mpu6050.c
+)
+target_include_directories(prop_mpu6050 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_mpu6050 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(prop_mpu6050 PRIVATE m)
+
+add_test(NAME mpu6050_prop_tests COMMAND prop_mpu6050)

@@ -12,3 +12,15 @@ target_compile_options(test_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Wer
 
 enable_testing()
 add_test(NAME rotary_encoder_tests COMMAND test_rotary_encoder)
+
+add_executable(prop_rotary_encoder
+    prop_rotary_encoder.c
+    ../rotary_encoder.c
+)
+target_include_directories(prop_rotary_encoder PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME rotary_encoder_prop_tests COMMAND prop_rotary_encoder)

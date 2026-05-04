@@ -17,3 +17,16 @@ target_link_libraries(test_max31855 PRIVATE m)
 
 enable_testing()
 add_test(NAME max31855_tests COMMAND test_max31855)
+
+add_executable(prop_max31855
+    prop_max31855.c
+    ../max31855.c
+)
+target_include_directories(prop_max31855 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_max31855 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(prop_max31855 PRIVATE m)
+
+add_test(NAME max31855_prop_tests COMMAND prop_max31855)
