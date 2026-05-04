@@ -11,6 +11,7 @@
  */
 
 #include "crc8.h"
+#include "contract.h"
 
 /* --- Pre-defined configurations ----------------------------------------- */
 

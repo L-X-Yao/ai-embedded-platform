@@ -9,6 +9,7 @@
  */
 
 #include "crc16.h"
+#include "contract.h"
 
 /* Pre-computed 256-entry CRC16-MODBUS table.
  * For byte b: entry[b] = result of XOR b with crc-low and shifting right 8x.

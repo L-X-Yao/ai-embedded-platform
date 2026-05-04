@@ -12,6 +12,7 @@
  */
 
 #include "hash_fnv.h"
+#include "contract.h"
 
 uint32_t fnv1a_32_update(uint32_t hash, const uint8_t *data, size_t len)
 {

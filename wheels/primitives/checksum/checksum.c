@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "checksum.h"
+#include "contract.h"
 
 uint8_t checksum_xor(const uint8_t *data, size_t len)
 {

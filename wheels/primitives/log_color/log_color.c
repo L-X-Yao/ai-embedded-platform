@@ -10,6 +10,7 @@
 
 #include "log_color.h"
 #include <string.h>
+#include "contract.h"
 
 #ifndef LOG_COLOR_BUFSIZE
 #define LOG_COLOR_BUFSIZE  512
@@ -75,5 +76,6 @@ void log_color_sink(void *ctx, const char *line, size_t len) {
     memcpy(buf + pos, ANSI_RESET, reset_len); pos += reset_len;
     if (has_newline) buf[pos++] = '\n';
 
+    INVARIANT(pos <= sizeof(buf));
     lc->inner_fn(lc->inner_ctx, buf, pos);
 }

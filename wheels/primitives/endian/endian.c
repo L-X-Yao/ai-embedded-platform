@@ -12,6 +12,7 @@
  */
 
 #include "endian.h"
+#include "contract.h"
 
 /* ── Compile-time endianness detection ─────────────────────────── */
 

@@ -10,6 +10,7 @@
 
 #include "log_rtt.h"
 #include <limits.h>
+#include "contract.h"
 
 void log_rtt_init(log_rtt_t *r, log_rtt_write_fn write, void *ctx,
                   unsigned channel) {

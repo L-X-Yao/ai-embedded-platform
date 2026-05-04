@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "timeout.h"
+#include "contract.h"
 
 void timeout_set(timeout_t *t, uint32_t now, uint32_t duration)
 {
@@ -28,7 +29,9 @@ uint32_t timeout_remaining(const timeout_t *t, uint32_t now)
     uint32_t elapsed = now - t->start;
     if (elapsed >= t->duration)
         return 0;
-    return t->duration - elapsed;
+    uint32_t rem = t->duration - elapsed;
+    ENSURE(rem <= t->duration);
+    return rem;
 }
 
 uint32_t timeout_elapsed(const timeout_t *t, uint32_t now)
