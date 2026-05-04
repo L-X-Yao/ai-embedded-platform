@@ -336,6 +336,9 @@ json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
         case JSON_STATE_DONE:
             if (is_ws(c)) break;
             return JSON_PARSER_ERR_SYNTAX;  /* trailing non-ws */
+
+        default:
+            return JSON_PARSER_ERR_PARAM;  /* invalid state */
         }
 
 next_char:;
