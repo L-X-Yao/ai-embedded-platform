@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch verify help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify help
 
 help:
 	@echo "Usage: make <target>"
@@ -32,6 +32,7 @@ help:
 	@echo "  audit-sanitizer   ASan+UBSan build and run"
 	@echo "  audit-coverage    gcov line coverage per wheel"
 	@echo "  arm-size-audit    ARM cross-compile size report"
+	@echo "  arm-stack-audit   ARM per-function stack usage report"
 	@echo ""
 	@echo "Workflow:"
 	@echo "  check             test + audit + doc drift (pre-push)"
@@ -212,6 +213,9 @@ audit-coverage:
 
 arm-size-audit:
 	bash tooling/audit/arm_size_audit.sh
+
+arm-stack-audit:
+	bash tooling/audit/arm_stack_audit.sh
 
 find-refs:
 	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
