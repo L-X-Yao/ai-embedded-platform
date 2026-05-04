@@ -9,6 +9,7 @@
  */
 
 #include "bitmap.h"
+#include "contract.h"
 #include <string.h>
 
 /* ------- helpers ------- */
@@ -37,6 +38,7 @@ bitmap_err_t bitmap_init(bitmap_t *bm, uint8_t *storage, uint16_t bits)
     bm->data = storage;
     bm->bits = bits;
     memset(storage, 0, byte_count(bits));
+    ENSURE(bm->bits > 0);
     return BITMAP_OK;
 }
 
@@ -134,6 +136,7 @@ uint16_t bitmap_count_set(const bitmap_t *bm)
         }
     }
     /* Tail bits are always zero (sanitize_tail), so count is exact. */
+    ENSURE(count <= bm->bits);
     return count;
 }
 
@@ -154,6 +157,7 @@ int bitmap_alloc(bitmap_t *bm)
     int idx = bitmap_find_first_clear(bm);
     if (idx < 0) { return -1; }
     bm->data[(uint16_t)idx / 8u] |= (uint8_t)(1u << ((uint16_t)idx & 7u));
+    ENSURE(idx >= 0 && (uint16_t)idx < bm->bits);
     return idx;
 }
 

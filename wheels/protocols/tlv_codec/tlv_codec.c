@@ -9,6 +9,7 @@
  */
 
 #include "tlv_codec.h"
+#include "contract.h"
 #include <string.h>
 
 /* TLV header: 2 bytes tag + 2 bytes length */
@@ -22,6 +23,7 @@ void tlv_encoder_init(tlv_encoder_t *enc, uint8_t *buf, uint16_t capacity)
     enc->buf      = buf;
     enc->capacity = (buf != NULL) ? capacity : 0u;
     enc->pos      = 0;
+    ENSURE(enc->pos == 0);
 }
 
 tlv_err_t tlv_encode(tlv_encoder_t *enc, uint16_t tag,
@@ -50,6 +52,7 @@ tlv_err_t tlv_encode(tlv_encoder_t *enc, uint16_t tag,
     }
 
     enc->pos = (uint16_t)(enc->pos + (uint16_t)need);
+    ENSURE(enc->pos <= enc->capacity);
     return TLV_OK;
 }
 
@@ -99,6 +102,7 @@ void tlv_decoder_init(tlv_decoder_t *dec, const uint8_t *buf, uint16_t len)
     dec->buf = buf;
     dec->len = (buf != NULL) ? len : 0u;
     dec->pos = 0;
+    ENSURE(dec->pos == 0);
 }
 
 tlv_err_t tlv_decode_next(tlv_decoder_t *dec, tlv_t *tlv)
@@ -124,6 +128,7 @@ tlv_err_t tlv_decode_next(tlv_decoder_t *dec, tlv_t *tlv)
     tlv->value  = (length > 0u) ? &p[TLV_HEADER_SIZE] : NULL;
 
     dec->pos = (uint16_t)(dec->pos + TLV_HEADER_SIZE + length);
+    ENSURE(dec->pos <= dec->len);
     return TLV_OK;
 }
 

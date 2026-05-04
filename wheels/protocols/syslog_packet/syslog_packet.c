@@ -9,6 +9,7 @@
  */
 
 #include "syslog_packet.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- helpers --------------------------------------------------- */
@@ -208,5 +209,6 @@ int syslog_format(const syslog_msg_t *msg, char *buf, uint16_t buf_size)
     }
 
     buf[pos] = '\0';
+    ENSURE(pos < buf_size);
     return (int)pos;
 }

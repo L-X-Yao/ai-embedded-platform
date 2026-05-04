@@ -9,6 +9,7 @@
  */
 
 #include "timer_wheel.h"
+#include "contract.h"
 #include <string.h>
 
 /* Sentinel value for "no entry" in slot chains. */
@@ -42,6 +43,8 @@ timer_wheel_err_t timer_wheel_init(timer_wheel_t *tw,
 
     memset(timers, 0, sizeof(timer_wheel_entry_t) * max_timers);
 
+    ENSURE(tw->count == 0);
+    ENSURE(tw->current_pos == 0);
     return TIMER_WHEEL_OK;
 }
 
@@ -75,6 +78,8 @@ timer_wheel_err_t timer_wheel_add(timer_wheel_t *tw,
 
     tw->count++;
 
+    INVARIANT(tw->count <= tw->max_timers);
+    INVARIANT(tw->current_pos < tw->num_slots);
     return TIMER_WHEEL_OK;
 }
 

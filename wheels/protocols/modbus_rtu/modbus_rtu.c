@@ -9,6 +9,7 @@
  */
 
 #include "modbus_rtu.h"
+#include "contract.h"
 #include "crc16.h"
 #include <string.h>
 
@@ -47,6 +48,7 @@ int modbus_rtu_parse(const uint8_t *buf, uint16_t len,
     frame->func     = buf[1];
     frame->data     = (len > MODBUS_RTU_MIN_FRAME) ? &buf[2] : NULL;
     frame->data_len = len - MODBUS_RTU_MIN_FRAME;
+    ENSURE(frame->data_len <= len);
     return 0;
 }
 
@@ -66,6 +68,7 @@ int modbus_rtu_build(uint8_t *buf, uint16_t buf_size,
     uint16_t crc = crc16_modbus(buf, 2 + data_len);
     buf[2 + data_len]     = (uint8_t)(crc & 0xFF);
     buf[2 + data_len + 1] = (uint8_t)(crc >> 8);
+    ENSURE(frame_len <= buf_size);
     return (int)frame_len;
 }
 

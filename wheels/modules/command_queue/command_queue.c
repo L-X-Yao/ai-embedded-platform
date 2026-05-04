@@ -14,6 +14,7 @@
  */
 
 #include "command_queue.h"
+#include "contract.h"
 #include <string.h>
 
 command_queue_err_t command_queue_init(command_queue_t *q,
@@ -26,6 +27,7 @@ command_queue_err_t command_queue_init(command_queue_t *q,
     q->buf      = buf;
     q->capacity = capacity;
     q->count    = 0;
+    ENSURE(q->count == 0);
     return COMMAND_QUEUE_OK;
 }
 
@@ -73,6 +75,7 @@ command_queue_err_t command_queue_push(command_queue_t *q,
     }
 
     q->count++;
+    INVARIANT(q->count <= q->capacity);
     return COMMAND_QUEUE_OK;
 }
 

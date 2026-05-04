@@ -9,6 +9,7 @@
  */
 
 #include "canbus.h"
+#include "contract.h"
 #include <string.h>
 
 bool canbus_is_standard_id(uint32_t id)
@@ -77,6 +78,7 @@ int canbus_frame_pack(const canbus_frame_t *frame,
         pos += frame->dlc;
     }
 
+    ENSURE(pos <= (int)buf_size);
     return pos;
 }
 

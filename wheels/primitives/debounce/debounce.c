@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "debounce.h"
+#include "contract.h"
 
 void debounce_init(debounce_t *d, uint8_t threshold, bool initial_state)
 {
@@ -17,6 +18,8 @@ void debounce_init(debounce_t *d, uint8_t threshold, bool initial_state)
     d->raw = initial_state;
     d->stable = initial_state;
     d->changed = false;
+    ENSURE(d->threshold > 0);
+    ENSURE(d->counter == 0);
 }
 
 bool debounce_update(debounce_t *d, bool raw)
@@ -40,6 +43,7 @@ bool debounce_update(debounce_t *d, bool raw)
         d->counter = 0;
     }
 
+    INVARIANT(d->counter < d->threshold || d->counter == 0);
     return d->stable;
 }
 

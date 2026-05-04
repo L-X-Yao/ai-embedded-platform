@@ -9,6 +9,7 @@
  */
 
 #include "mqtt_packet.h"
+#include "contract.h"
 #include <string.h>
 
 static int put_u16(uint8_t *buf, uint16_t val)
@@ -126,6 +127,7 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
         pos += n;
     }
 
+    ENSURE((size_t)pos <= buf_size);
     return pos;
 }
 

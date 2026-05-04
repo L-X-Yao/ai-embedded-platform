@@ -9,6 +9,7 @@
  */
 
 #include "state_machine.h"
+#include "contract.h"
 #include <stddef.h>
 #include <limits.h>
 
@@ -103,6 +104,7 @@ state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event
             }
         }
 
+        ENSURE(ctx->current == new_state);
         return STATE_MACHINE_OK;
     }
 

@@ -9,6 +9,7 @@
  */
 
 #include "cli_parser.h"
+#include "contract.h"
 #include <string.h>
 
 static void cli_puts(cli_parser_t *ctx, const char *s)
@@ -66,6 +67,7 @@ void cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg)
     ctx->line_len = 0;
     ctx->line_buf[0] = '\0';
     ctx->last_was_cr = 0;
+    ENSURE(ctx->line_len == 0);
     cli_prompt(ctx);
 }
 

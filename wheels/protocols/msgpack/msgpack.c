@@ -13,6 +13,7 @@
  */
 
 #include "msgpack.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- format byte constants (from MessagePack spec) ---- */
@@ -72,6 +73,7 @@ msgpack_err_t msgpack_enc_init(msgpack_enc_t *enc,
     enc->buf = buf;
     enc->cap = cap;
     enc->pos = 0;
+    ENSURE(enc->pos == 0);
     return MSGPACK_OK;
 }
 
@@ -295,6 +297,7 @@ msgpack_err_t msgpack_dec_init(msgpack_dec_t *dec,
     dec->buf = buf;
     dec->len = len;
     dec->pos = 0;
+    ENSURE(dec->pos == 0);
     return MSGPACK_OK;
 }
 

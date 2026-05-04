@@ -9,6 +9,7 @@
  */
 
 #include "lookup_table.h"
+#include "contract.h"
 
 #include <stddef.h>
 
@@ -30,6 +31,7 @@ lookup_table_err_t lut_init(lookup_table_t *table,
     table->x     = x;
     table->y     = y;
     table->count = count;
+    ENSURE(table->count > 0);
     return LOOKUP_TABLE_OK;
 }
 

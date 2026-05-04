@@ -9,6 +9,12 @@
  */
 
 #include "event_queue.h"
+#include "contract.h"
+
+#define EQ_INVARIANT(q) do { \
+    INVARIANT((q)->head < (q)->capacity); \
+    INVARIANT((q)->tail < (q)->capacity); \
+} while(0)
 
 event_queue_err_t event_queue_init(event_queue_t *q, event_t *buf, size_t capacity)
 {
@@ -20,6 +26,7 @@ event_queue_err_t event_queue_init(event_queue_t *q, event_t *buf, size_t capaci
     q->capacity = capacity;
     q->head = 0;
     q->tail = 0;
+    ENSURE(q->head == 0 && q->tail == 0);
     return EVENT_QUEUE_OK;
 }
 
@@ -40,6 +47,7 @@ event_queue_err_t event_queue_push(event_queue_t *q, uint16_t type, uint32_t dat
     q->buf[q->head].len = 0;
     q->buf[q->head].data = data;
     q->head = next;
+    EQ_INVARIANT(q);
 
     return EVENT_QUEUE_OK;
 }
@@ -57,6 +65,7 @@ event_queue_err_t event_queue_pop(event_queue_t *q, event_t *out)
 
     *out = q->buf[q->tail];
     q->tail = (q->tail + 1) % q->capacity;
+    EQ_INVARIANT(q);
 
     return EVENT_QUEUE_OK;
 }

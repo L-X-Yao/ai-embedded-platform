@@ -9,6 +9,7 @@
  */
 
 #include "moving_average.h"
+#include "contract.h"
 #include <string.h>
 
 /* --- SMA --- */
@@ -26,6 +27,7 @@ moving_average_err_t moving_average_sma_init(moving_average_sma_t *ctx,
     ctx->head = 0;
     ctx->sum = 0.0f;
     memset(buf, 0, window * sizeof(float));
+    ENSURE(ctx->count == 0 && ctx->head == 0);
     return MOVING_AVERAGE_OK;
 }
 
@@ -71,6 +73,8 @@ float moving_average_sma_feed(moving_average_sma_t *ctx, float sample)
         ctx->count++;
     }
 
+    INVARIANT(ctx->count <= ctx->window);
+    INVARIANT(ctx->head < ctx->window);
     return ctx->sum / (float)ctx->count;
 }
 

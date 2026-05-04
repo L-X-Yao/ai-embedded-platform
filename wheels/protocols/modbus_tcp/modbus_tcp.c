@@ -9,6 +9,7 @@
  */
 
 #include "modbus_tcp.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- byte-order helpers (big-endian wire format) ---------- */
@@ -143,6 +144,7 @@ modbus_tcp_err_t modbus_tcp_parse(const uint8_t *buf, uint16_t len,
     uint16_t pdu_data_len = (uint16_t)(frame->header.length - 2);  /* minus unit_id and FC */
     frame->data     = (pdu_data_len > 0) ? &buf[8] : NULL;
     frame->data_len = pdu_data_len;
+    ENSURE(frame->data_len <= len);
 
     return MODBUS_TCP_OK;
 }

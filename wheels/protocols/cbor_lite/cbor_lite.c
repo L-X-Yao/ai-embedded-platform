@@ -9,6 +9,7 @@
  */
 
 #include "cbor_lite.h"
+#include "contract.h"
 #include <string.h>
 
 /* ================================================================== */
@@ -65,6 +66,7 @@ void cbor_lite_enc_init(cbor_lite_encoder_t *enc, uint8_t *buf, size_t cap)
     enc->cap = cap;
     enc->pos = 0;
     enc->overflow = false;
+    ENSURE(enc->pos == 0 && !enc->overflow);
 }
 
 size_t cbor_lite_enc_len(const cbor_lite_encoder_t *enc)
@@ -234,6 +236,7 @@ void cbor_lite_dec_init(cbor_lite_decoder_t *dec,
     dec->buf = buf;
     dec->len = len;
     dec->pos = 0;
+    ENSURE(dec->pos == 0);
 }
 
 size_t cbor_lite_dec_offset(const cbor_lite_decoder_t *dec)

@@ -9,7 +9,14 @@
  */
 
 #include "fifo_queue.h"
+#include "contract.h"
 #include <string.h>
+
+#define FQ_INVARIANT(q) do { \
+    INVARIANT((q)->head < (q)->capacity); \
+    INVARIANT((q)->tail < (q)->capacity); \
+    INVARIANT((q)->count <= (q)->capacity); \
+} while(0)
 
 fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
                            uint16_t capacity, uint16_t elem_size)
@@ -24,6 +31,7 @@ fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
     q->head      = 0;
     q->tail      = 0;
     q->count     = 0;
+    ENSURE(q->count == 0 && q->head == 0 && q->tail == 0);
     return FIFO_QUEUE_OK;
 }
 
@@ -40,6 +48,7 @@ fifo_queue_err_t fifo_queue_push(fifo_queue_t *q, const void *item)
     memcpy(q->buf + (uint32_t)q->tail * q->elem_size, item, q->elem_size);
     q->tail = (uint16_t)((q->tail + 1U) % q->capacity);
     q->count++;
+    FQ_INVARIANT(q);
     return FIFO_QUEUE_OK;
 }
 
@@ -56,6 +65,7 @@ fifo_queue_err_t fifo_queue_pop(fifo_queue_t *q, void *item)
     memcpy(item, q->buf + (uint32_t)q->head * q->elem_size, q->elem_size);
     q->head = (uint16_t)((q->head + 1U) % q->capacity);
     q->count--;
+    FQ_INVARIANT(q);
     return FIFO_QUEUE_OK;
 }
 

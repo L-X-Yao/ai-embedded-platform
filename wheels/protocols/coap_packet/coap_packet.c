@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "coap_packet.h"
+#include "contract.h"
 #include <string.h>
 
 coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet_t *pkt)
@@ -102,6 +103,7 @@ coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet
     }
 
     pkt->total_len = pos;
+    ENSURE(pkt->total_len <= len);
     return COAP_PACKET_OK;
 }
 
@@ -194,5 +196,6 @@ coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_le
     }
 
     *out_len = pos;
+    ENSURE(pos <= buf_len);
     return COAP_PACKET_OK;
 }

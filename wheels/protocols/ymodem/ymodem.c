@@ -9,6 +9,7 @@
  */
 
 #include "ymodem.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -171,6 +172,7 @@ ymodem_err_t ymodem_init(ymodem_t *ym, const ymodem_io_t *io)
     ym->io    = io;
     ym->state = YMODEM_STATE_IDLE;
     /* YMODEM block 0 is the header — block numbering starts at 0 */
+    ENSURE(ym->buf_pos == 0 && ym->total_received == 0);
 
     return YMODEM_OK;
 }
