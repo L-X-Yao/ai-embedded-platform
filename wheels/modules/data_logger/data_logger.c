@@ -9,6 +9,7 @@
  */
 
 #include "data_logger.h"
+#include "contract.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -82,6 +83,7 @@ data_logger_err_t data_logger_init(data_logger_t *dl,
     dl->storage     = storage;
     dl->fields      = fields;
     dl->field_count = field_count;
+    ENSURE(dl->record_count == 0 && dl->buf_pos == 0);
     return DATA_LOGGER_OK;
 }
 

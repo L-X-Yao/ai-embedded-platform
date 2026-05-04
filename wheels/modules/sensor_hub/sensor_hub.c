@@ -9,6 +9,7 @@
  */
 
 #include "sensor_hub.h"
+#include "contract.h"
 #include <string.h>
 
 sensor_hub_err_t sensor_hub_init(sensor_hub_t *hub)
@@ -17,6 +18,7 @@ sensor_hub_err_t sensor_hub_init(sensor_hub_t *hub)
         return SENSOR_HUB_ERR_PARAM;
     }
     memset(hub, 0, sizeof(*hub));
+    ENSURE(hub->sensor_count == 0);
     return SENSOR_HUB_OK;
 }
 
@@ -39,6 +41,7 @@ sensor_hub_err_t sensor_hub_register(sensor_hub_t *hub, const char *name,
     e->ctx    = ctx;
     e->status = SENSOR_HUB_STATUS_STALE;
     hub->sensor_count++;
+    INVARIANT(hub->sensor_count <= SENSOR_HUB_MAX_SENSORS);
     return SENSOR_HUB_OK;
 }
 

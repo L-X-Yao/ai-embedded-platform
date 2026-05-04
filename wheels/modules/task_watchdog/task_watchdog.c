@@ -9,6 +9,7 @@
  */
 
 #include "task_watchdog.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- internal helper --------------------------------------------------- */
@@ -47,6 +48,7 @@ task_wd_err_t task_watchdog_init(task_watchdog_t *wd)
         return TASK_WD_ERR_PARAM;
     }
     memset(wd, 0, sizeof(*wd));
+    ENSURE(wd->count == 0 && wd->tick_count == 0);
     return TASK_WD_OK;
 }
 
@@ -69,6 +71,7 @@ task_wd_err_t task_watchdog_register(task_watchdog_t *wd, const char *name,
     e->status    = TASK_WD_STATUS_OK;
     e->enabled   = true;
     wd->count++;
+    INVARIANT(wd->count <= TASK_WD_MAX_TASKS);
 
     return TASK_WD_OK;
 }

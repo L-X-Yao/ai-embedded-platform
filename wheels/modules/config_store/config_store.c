@@ -10,6 +10,7 @@
  */
 
 #include "config_store.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- Internal helpers ---------- */
@@ -46,6 +47,7 @@ config_store_err_t config_store_init(config_store_t *cs,
 
     memset(cs, 0, sizeof(*cs));
     cs->storage = storage;
+    ENSURE(cs->count == 0);
     return CONFIG_STORE_OK;
 }
 
