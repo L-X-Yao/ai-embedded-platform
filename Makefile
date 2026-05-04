@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit find-refs dispatch verify help
 
 help:
 	@echo "Usage: make <target>"
@@ -15,6 +15,8 @@ help:
 	@echo "  test-fast         stop on first failure"
 	@echo "  test-parallel     run all tests in parallel (fastest)"
 	@echo "  test-scaffold     verify new_wheel.sh templates compile"
+	@echo "  test-property     property-based tests (all prop_*.c)"
+	@echo "  test-mutate       mutation testing (kill rate per wheel)"
 	@echo "  coverage          tests with gcov coverage report"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
 	@echo ""
@@ -26,10 +28,14 @@ help:
 	@echo "  audit-compare     compare latest two audit snapshots"
 	@echo "  audit-report      unified report across all audit tools"
 	@echo "  audit-quick       deep audit L1+L2 (pattern grep + sanitizer)"
+	@echo "  audit-compile     compiler warning analysis (all -W flags)"
+	@echo "  audit-sanitizer   ASan+UBSan build and run"
+	@echo "  audit-coverage    gcov line coverage per wheel"
 	@echo "  arm-size-audit    ARM cross-compile size report"
 	@echo ""
 	@echo "Workflow:"
 	@echo "  check             test + audit + doc drift (pre-push)"
+	@echo "  check-full        check + compile analysis + sanitizer"
 	@echo "  ship M=\"msg\"      check + commit + push"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
@@ -127,6 +133,9 @@ clean-worktrees:
 check:
 	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
+check-full:
+	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+
 ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
 	bash tooling/test/test_all.sh
@@ -156,6 +165,27 @@ handoff:
 test-scaffold:
 	bash tooling/test/test_scaffold.sh
 
+test-property:
+	@echo "Running property-based tests (prop_*.c)..."
+	@for f in $$(find wheels/ -name 'prop_*.c' 2>/dev/null); do \
+		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
+		echo "  $$name..."; \
+		gcc -std=c99 -Wall -Wextra -I"$$wheel_dir" -I"tooling/test" "$$f" "$$wheel_dir/$$name.c" -o "/tmp/$$name_prop" -lm 2>/dev/null && \
+		"/tmp/$$name_prop" || echo "  FAIL $$name"; \
+	done
+
+test-mutate:
+	bash tooling/test/mutation_test.sh
+
+verify:
+	@echo "CBMC verification (requires cbmc in PATH)..."
+	@if ! command -v cbmc >/dev/null 2>&1; then echo "cbmc not installed — skipping"; exit 0; fi
+	@for f in $$(find wheels/ -name 'verify_*.c' 2>/dev/null); do \
+		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
+		echo "  verifying $$name..."; \
+		cbmc "$$f" "$$wheel_dir/$$name.c" --unwind 51 --bounds-check --pointer-check 2>&1 | tail -1; \
+	done
+
 new-wheel:
 	bash tooling/wheel/new_wheel.sh
 
@@ -170,6 +200,15 @@ audit-deep:
 
 audit-quick:
 	bash tooling/audit/audit_deep.sh --quick
+
+audit-compile:
+	python3 tooling/audit/audit_compile.py
+
+audit-sanitizer:
+	python3 tooling/audit/audit_sanitizer.py
+
+audit-coverage:
+	python3 tooling/audit/audit_coverage.py
 
 arm-size-audit:
 	bash tooling/audit/arm_size_audit.sh
