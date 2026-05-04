@@ -9,6 +9,7 @@
  */
 
 #include "ws2812.h"
+#include "contract.h"
 #include <stddef.h>
 
 #define WS2812_BITS_PER_LED  24U

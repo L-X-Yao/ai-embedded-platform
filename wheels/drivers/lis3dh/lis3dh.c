@@ -9,6 +9,7 @@
  */
 
 #include "lis3dh.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- register map ---------- */
@@ -92,6 +93,7 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
         return LIS3DH_ERR_I2C;
 
     dev->scale = range_scale[cfg->range & 0x03];
+    INVARIANT(dev->i2c != NULL);
     return LIS3DH_OK;
 }
 
@@ -111,6 +113,9 @@ lis3dh_err_t lis3dh_read_accel(const lis3dh_t *dev, lis3dh_accel_t *out)
     out->x_g = (float)rx / dev->scale;
     out->y_g = (float)ry / dev->scale;
     out->z_g = (float)rz / dev->scale;
+    ENSURE(out->x_g == out->x_g);  /* not NaN */
+    ENSURE(out->y_g == out->y_g);
+    ENSURE(out->z_g == out->z_g);
     return LIS3DH_OK;
 }
 

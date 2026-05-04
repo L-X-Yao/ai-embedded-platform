@@ -9,6 +9,7 @@
  */
 
 #include "drv8833.h"
+#include "contract.h"
 
 /* ---------- helpers ---------- */
 
@@ -43,6 +44,7 @@ drv8833_err_t drv8833_init(drv8833_t *dev, const drv8833_hal_t *hal,
 
     dev->hal      = hal;
     dev->max_duty = max_duty;
+    INVARIANT(dev->hal != NULL);
     return DRV8833_OK;
 }
 

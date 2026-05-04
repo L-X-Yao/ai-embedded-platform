@@ -17,6 +17,7 @@
  */
 
 #include "veml7700.h"
+#include "contract.h"
 
 /* --- register addresses --- */
 #define REG_ALS_CONF   0x00u
@@ -142,6 +143,8 @@ veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux)
     if (err != VEML7700_OK) return err;
 
     *lux = (float)raw * resolution(dev->gain, dev->it);
+    ENSURE(*lux == *lux);  /* not NaN */
+    ENSURE(*lux >= 0.0f);
     return VEML7700_OK;
 }
 

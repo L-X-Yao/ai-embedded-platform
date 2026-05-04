@@ -9,6 +9,7 @@
  */
 
 #include "at24cxx.h"
+#include "contract.h"
 
 /* ---- helpers ---- */
 
@@ -117,6 +118,7 @@ at24cxx_err_t at24cxx_init(at24cxx_t *dev, const at24cxx_i2c_t *i2c,
     dev->dev_addr  = dev_addr;
     dev->model     = model;
     dev->page_size = page_size_for(model);
+    INVARIANT(dev->i2c != NULL);
     return AT24CXX_OK;
 }
 

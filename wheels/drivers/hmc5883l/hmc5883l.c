@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "hmc5883l.h"
+#include "contract.h"
 
 #define REG_CONFIG_A 0x00
 #define REG_CONFIG_B 0x01
@@ -91,6 +92,9 @@ hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out)
     out->x_gauss = (float)raw.x * dev->scale;
     out->y_gauss = (float)raw.y * dev->scale;
     out->z_gauss = (float)raw.z * dev->scale;
+    ENSURE(out->x_gauss == out->x_gauss);  /* not NaN */
+    ENSURE(out->y_gauss == out->y_gauss);
+    ENSURE(out->z_gauss == out->z_gauss);
     return HMC5883L_OK;
 }
 

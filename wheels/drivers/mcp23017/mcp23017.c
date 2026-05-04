@@ -12,6 +12,7 @@
  */
 
 #include "mcp23017.h"
+#include "contract.h"
 
 /* ---- Bank=0 register addresses ---- */
 #define REG_IODIRA      0x00

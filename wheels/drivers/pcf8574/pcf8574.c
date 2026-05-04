@@ -12,6 +12,7 @@
  */
 
 #include "pcf8574.h"
+#include "contract.h"
 
 pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
                            uint8_t dev_addr)

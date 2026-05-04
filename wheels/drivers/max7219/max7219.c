@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "max7219.h"
+#include "contract.h"
 #include <stddef.h>
 
 #define REG_NOOP         0x00

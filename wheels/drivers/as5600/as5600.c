@@ -9,6 +9,7 @@
  */
 
 #include "as5600.h"
+#include "contract.h"
 
 /* Register addresses */
 #define REG_ZPOS_H    0x01u  /* start position high byte */
@@ -77,6 +78,8 @@ as5600_err_t as5600_read_degrees(const as5600_t *dev, float *degrees)
         return err;
 
     *degrees = (float)raw * (FULL_TURN_DEG / FULL_TURN_CNT);
+    ENSURE(*degrees == *degrees);  /* not NaN */
+    ENSURE(*degrees >= 0.0f && *degrees < 360.0f);
     return AS5600_OK;
 }
 

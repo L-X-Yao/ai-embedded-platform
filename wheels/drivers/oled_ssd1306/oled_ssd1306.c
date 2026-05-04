@@ -9,6 +9,7 @@
  */
 
 #include "oled_ssd1306.h"
+#include "contract.h"
 #include <string.h>
 
 static bool cmd(const oled_ssd1306_t *dev, uint8_t c)

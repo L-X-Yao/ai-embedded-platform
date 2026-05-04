@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "rotary_encoder.h"
+#include "contract.h"
 #include <stddef.h>
 
 /* Quadrature state transition table:

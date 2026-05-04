@@ -15,6 +15,7 @@
  */
 
 #include "tmp102.h"
+#include "contract.h"
 #include <string.h>
 
 #define REG_TEMP    0x00u
@@ -96,6 +97,8 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
         return TMP102_ERR_I2C;
 
     *temp_c = raw_to_c(buf[0], buf[1]);
+    ENSURE(*temp_c == *temp_c);  /* not NaN */
+    ENSURE(*temp_c >= -55.0f && *temp_c <= 150.0f);
     return TMP102_OK;
 }
 

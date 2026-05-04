@@ -9,6 +9,7 @@
  */
 
 #include "gpio_led.h"
+#include "contract.h"
 #include <stddef.h>
 
 static void emit(gpio_led_t *led, uint8_t level)

@@ -9,6 +9,7 @@
  */
 
 #include "qmc5883p.h"
+#include "contract.h"
 
 #define REG_CHIP_ID     0x00u
 #define REG_DATA_X_LSB  0x01u
@@ -85,5 +86,8 @@ qmc5883p_err_t qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out)
     out->my_gauss = (float)raw_y / SENSITIVITY_2G;
     out->mz_gauss = (float)raw_z / SENSITIVITY_2G;
 
+    ENSURE(out->mx_gauss == out->mx_gauss);  /* not NaN */
+    ENSURE(out->my_gauss == out->my_gauss);
+    ENSURE(out->mz_gauss == out->mz_gauss);
     return QMC5883P_OK;
 }

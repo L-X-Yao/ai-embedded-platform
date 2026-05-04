@@ -9,6 +9,7 @@
  */
 
 #include "nrf24l01.h"
+#include "contract.h"
 
 /* ---------- nRF24L01+ SPI commands ---------- */
 

@@ -9,6 +9,7 @@
  */
 
 #include "apds9960.h"
+#include "contract.h"
 
 /* --- Register map (APDS-9960 datasheet) --- */
 #define REG_ENABLE      0x80u
@@ -106,6 +107,7 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
     err = write_reg(dev, REG_CONTROL, 0x00u);
     if (err != APDS9960_OK) return err;
 
+    INVARIANT(dev->i2c != NULL);
     return APDS9960_OK;
 }
 

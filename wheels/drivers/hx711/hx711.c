@@ -9,6 +9,7 @@
  */
 
 #include "hx711.h"
+#include "contract.h"
 #include <stddef.h>
 
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
@@ -100,6 +101,7 @@ hx711_err_t hx711_read(hx711_t *dev, float *value)
         return err;
 
     *value = (float)(raw - dev->offset) / dev->scale;
+    ENSURE(*value == *value);  /* not NaN */
     return HX711_OK;
 }
 

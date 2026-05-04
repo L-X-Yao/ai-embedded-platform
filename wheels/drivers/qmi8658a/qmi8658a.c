@@ -9,6 +9,7 @@
  */
 
 #include "qmi8658a.h"
+#include "contract.h"
 
 /* ---------- register map ---------- */
 
@@ -95,6 +96,7 @@ qmi8658a_err_t qmi8658a_init(qmi8658a_t *dev,
     dev->acc_div = acc_scale[cfg->acc_range & 0x03];
     dev->gyr_div = gyr_scale[cfg->gyr_range & 0x07];
 
+    INVARIANT(dev->i2c != NULL);
     return QMI8658A_OK;
 }
 
@@ -121,6 +123,12 @@ qmi8658a_err_t qmi8658a_read(const qmi8658a_t *dev,
     out->gy_dps = (float)gy / dev->gyr_div;
     out->gz_dps = (float)gz / dev->gyr_div;
 
+    ENSURE(out->ax_g == out->ax_g);      /* not NaN */
+    ENSURE(out->ay_g == out->ay_g);
+    ENSURE(out->az_g == out->az_g);
+    ENSURE(out->gx_dps == out->gx_dps);
+    ENSURE(out->gy_dps == out->gy_dps);
+    ENSURE(out->gz_dps == out->gz_dps);
     return QMI8658A_OK;
 }
 

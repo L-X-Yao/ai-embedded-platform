@@ -9,6 +9,7 @@
  */
 
 #include "tca9548a.h"
+#include "contract.h"
 
 /* Dummy register address — TCA9548A has no register map, but we use
  * the write_reg HAL callback which sends (addr, reg, val).  The chip
