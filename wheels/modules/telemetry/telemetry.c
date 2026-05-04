@@ -9,6 +9,7 @@
  */
 
 #include "telemetry.h"
+#include "contract.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -167,6 +168,7 @@ telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
     t->send     = send;
     t->send_ctx = ctx;
     t->format   = fmt;
+    ENSURE(t->field_count == 0 && t->send_count == 0);
     return TELEMETRY_OK;
 }
 
@@ -184,6 +186,7 @@ telemetry_err_t telemetry_register(telemetry_t *t, const char *name)
     f->value   = 0.0f;
     f->updated = false;
     t->field_count++;
+    INVARIANT(t->field_count <= TELEMETRY_MAX_FIELDS);
     return TELEMETRY_OK;
 }
 

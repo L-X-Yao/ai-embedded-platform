@@ -9,6 +9,7 @@
  */
 
 #include "cli_shell.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- Internal helpers ---------- */
@@ -146,6 +147,7 @@ cli_shell_err_t cli_shell_init(cli_shell_t *sh, const cli_shell_io_t *io,
     sh->cmds[0].handler = sh_builtin_help;
     sh->cmds[0].ctx     = sh;
     sh->cmd_count        = 1;
+    ENSURE(sh->line_pos == 0);
 
     sh_prompt(sh);
     return CLI_SHELL_OK;
@@ -168,6 +170,7 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
     cmd->handler = handler;
     cmd->ctx     = ctx;
     sh->cmd_count++;
+    INVARIANT(sh->cmd_count <= CLI_SHELL_MAX_CMDS);
     return CLI_SHELL_OK;
 }
 
