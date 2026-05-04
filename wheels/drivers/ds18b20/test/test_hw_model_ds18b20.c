@@ -84,6 +84,13 @@ TEST(test_reset_presence_pulse)
     ASSERT_EQ(ds18b20_start_conversion(&dev), DS18B20_OK);
     ASSERT_EQ(ds18b20_model_get_reset_count(&model), 1);
     ASSERT_EQ(ds18b20_model_get_convert_count(&model), 1);
+
+    /* read_temperature does another reset + skip_rom + read_scratchpad */
+    ds18b20_model_set_temperature(&model, 25.0f);
+    float temp;
+    ds18b20_read_temperature(&dev, &temp);
+    ASSERT_EQ(ds18b20_model_get_reset_count(&model), 2);
+    ASSERT_EQ(ds18b20_model_get_read_scratchpad_count(&model), 1);
 }
 
 TEST(test_no_device_on_bus)

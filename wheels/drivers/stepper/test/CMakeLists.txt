@@ -28,3 +28,15 @@ target_include_directories(prop_stepper PRIVATE
 target_compile_options(prop_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME stepper_prop_tests COMMAND prop_stepper)
+
+add_executable(test_hw_model_stepper
+    test_hw_model_stepper.c
+    ../stepper.c
+)
+target_include_directories(test_hw_model_stepper PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME stepper_hw_model_tests COMMAND test_hw_model_stepper)
