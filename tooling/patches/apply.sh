@@ -7,7 +7,7 @@
 #   bash tooling/patches/apply.sh --check   # dry run, check if all apply
 #   bash tooling/patches/apply.sh --revert  # revert all patches
 
-set -e
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PATCH_DIR="$ROOT/tooling/patches"

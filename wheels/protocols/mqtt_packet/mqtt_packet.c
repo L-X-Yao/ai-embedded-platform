@@ -11,6 +11,7 @@
 #include "mqtt_packet.h"
 #include "contract.h"
 #include <string.h>
+#include <limits.h>
 
 static int put_u16(uint8_t *buf, uint16_t val)
 {
@@ -163,6 +164,7 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
     if (pub->qos > 0) { pos += put_u16(buf + pos, pub->packet_id); }
     if (pub->payload && pub->payload_len > 0)
     {
+        if (pub->payload_len > (size_t)INT_MAX) return MQTT_PACKET_ERR_SIZE;
         memcpy(buf + pos, pub->payload, pub->payload_len);
         pos += (int)pub->payload_len;
     }

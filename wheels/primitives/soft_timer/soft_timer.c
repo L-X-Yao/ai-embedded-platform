@@ -30,11 +30,10 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
     {
         return SOFT_TIMER_ERR_PARAM;
     }
-    if (mgr->count >= SOFT_TIMER_MAX)
-    {
-        return SOFT_TIMER_ERR_FULL;
-    }
 
+    /* Search freed slots (callback==NULL) first, before checking count.
+     * count is a high-water mark that never decrements, so we must look
+     * for reusable gaps before concluding the pool is full. */
     int id = -1;
     for (size_t i = 0; i < mgr->count; i++)
     {
@@ -46,6 +45,10 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
     }
     if (id < 0)
     {
+        if (mgr->count >= SOFT_TIMER_MAX)
+        {
+            return SOFT_TIMER_ERR_FULL;
+        }
         id = (int)mgr->count;
         mgr->count++;
     }

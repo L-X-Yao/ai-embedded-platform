@@ -297,7 +297,7 @@ if $WAIT; then
         --dangerously-skip-permissions \
         --max-budget-usd "$BUDGET" \
         2>&1 | tee "$LOG_FILE"
-    EXIT_CODE=${PIPESTATUS[0]}
+    EXIT_CODE=${PIPESTATUS[0]}  # PIPESTATUS requires bash (not POSIX sh)
     echo -e "${GREEN}Agent ${NAME} finished (exit ${EXIT_CODE}).${NC}"
     exit "$EXIT_CODE"
 else

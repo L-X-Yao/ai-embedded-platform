@@ -47,14 +47,16 @@ run_fuzz() {
     local extra_src="${EXTRA_SRCS[$name]:-}"
     local extra_inc="${EXTRA_INCS[$name]:-}"
 
-    # Compile with sanitizers
-    local cmd="gcc -std=c99 -O1 -g -Wall -Wextra"
-    cmd+=" -fsanitize=address,undefined -fno-sanitize-recover=all"
-    cmd+=" -I$dir $extra_inc"
-    cmd+=" $fuzz_src $wheel_src $extra_src"
-    cmd+=" -o $out -lm"
+    # Compile with sanitizers — use array to avoid eval injection
+    local -a cmd=(gcc -std=c99 -O1 -g -Wall -Wextra
+        -fsanitize=address,undefined -fno-sanitize-recover=all
+        "-I$dir")
+    if [ -n "$extra_inc" ]; then cmd+=($extra_inc); fi
+    cmd+=("$fuzz_src" "$wheel_src")
+    if [ -n "$extra_src" ]; then cmd+=("$extra_src"); fi
+    cmd+=(-o "$out" -lm)
 
-    if ! eval $cmd 2>"$BUILD_DIR/compile_${name}.log"; then
+    if ! "${cmd[@]}" 2>"$BUILD_DIR/compile_${name}.log"; then
         echo -e "${RED}FAIL${NC}: $name (compile error)"
         cat "$BUILD_DIR/compile_${name}.log"
         ((FAIL++)) || true

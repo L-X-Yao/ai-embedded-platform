@@ -82,7 +82,10 @@ static float rtd_to_temperature(float r_rtd, float r_nom)
 
     float temp = (-CVD_A + g) / (2.0f * CVD_B);
 
-    /* For T < 0C the quadratic overestimates; apply linear correction */
+    /* For T < 0C the quadratic overestimates.  Use linear approximation
+     * T ~ (R/R0 - 1) / A.  Accuracy is ~+/-0.3C down to -50C; below that
+     * the cubic Callendar-Van Dusen term (C coefficient) would be needed,
+     * but a full cubic solver exceeds the scope of this lightweight driver. */
     if (temp < 0.0f) {
         temp = (ratio - 1.0f) / CVD_A;
     }

@@ -64,7 +64,7 @@ TEST(test_mcp2515_set_filter_null_dev) {
 }
 
 TEST(test_mcp2515_set_mask_null_dev) {
-    mcp2515_err_t err = mcp2515_set_mask(NULL, 0, 0);
+    mcp2515_err_t err = mcp2515_set_mask(NULL, 0, 0, false);
     ASSERT_TRUE(err < 0);
 }
 

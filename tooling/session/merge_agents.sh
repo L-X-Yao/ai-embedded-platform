@@ -84,8 +84,9 @@ for b in $BRANCHES; do
         # Merge failed — likely untracked files (scaffold residual)
         git reset HEAD >/dev/null 2>&1 || true
 
-        # Find new wheel directories
+        # Find new wheel directories — collect all dirs to add after loop
         commit=$(git log --oneline -1 "$b" --format="%H")
+        restored_dirs=()
         for new_dir in $(git diff-tree --no-commit-id --name-only -r "$commit" 2>/dev/null | sed 's|/[^/]*$||' | sort -u | grep "^wheels/"); do
             [[ -d "$new_dir" ]] || continue
             main_c=$(find "$new_dir" -maxdepth 1 -name "*.c" ! -path "*/test/*" 2>/dev/null | head -1)
@@ -100,9 +101,12 @@ for b in $BRANCHES; do
                     RESTORED=$((RESTORED + 1))
                 fi
             fi
+            restored_dirs+=("$new_dir")
         done
 
-        git add "$new_dir" 2>/dev/null || true
+        for d in "${restored_dirs[@]}"; do
+            git add "$d" 2>/dev/null || true
+        done
         git commit -m "$msg" >/dev/null 2>&1 || true
         echo -e "  ${GREEN}OK${NC}    $b (with restore)"
         MERGED=$((MERGED + 1))

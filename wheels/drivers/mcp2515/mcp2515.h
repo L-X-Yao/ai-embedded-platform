@@ -102,9 +102,10 @@ bool mcp2515_has_message(mcp2515_t *dev);
 mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num,
                                   uint32_t id, bool extended);
 
-/** Configure one of 2 acceptance masks (0-1). Must be in config mode. */
+/** Configure one of 2 acceptance masks (0-1). Must be in config mode.
+ *  Set extended=true to write all 29 mask bits (SID+EID), false for 11-bit only. */
 mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num,
-                                uint32_t mask);
+                                uint32_t mask, bool extended);
 
 /** Read status register (quick poll: TX/RX flags). */
 uint8_t mcp2515_read_status(mcp2515_t *dev);

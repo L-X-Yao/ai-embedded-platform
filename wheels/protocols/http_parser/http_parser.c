@@ -166,6 +166,8 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
         digits++;
     }
     if (digits != 3) return HTTP_PARSER_ERR_MALFORMED;
+    /* Reject 4+ digit status codes (e.g. "1234") */
+    if (p < crlf && *p >= '0' && *p <= '9') return HTTP_PARSER_ERR_MALFORMED;
     if (p < crlf && *p == ' ') p++;
     resp->reason = p;
     resp->reason_len = (size_t)(crlf - p);

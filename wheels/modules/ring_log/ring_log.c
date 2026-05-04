@@ -32,7 +32,7 @@ ring_log_err_t ring_log_write(ring_log_t *rl, ring_log_level_t level,
         return RING_LOG_ERR_PARAM;
     }
     if (level < rl->min_level) {
-        rl->dropped++;
+        if (rl->dropped < UINT32_MAX) rl->dropped++;
         return RING_LOG_ERR_FILTERED;
     }
 
@@ -49,7 +49,7 @@ ring_log_err_t ring_log_write(ring_log_t *rl, ring_log_level_t level,
     if (rl->count < RING_LOG_MAX_ENTRIES) {
         rl->count++;
     }
-    rl->total_logged++;
+    if (rl->total_logged < UINT32_MAX) rl->total_logged++;
     INVARIANT(rl->head < RING_LOG_MAX_ENTRIES);
     INVARIANT(rl->count <= RING_LOG_MAX_ENTRIES);
     return RING_LOG_OK;

@@ -329,23 +329,24 @@ mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
     pos += props_vbi_bytes;
 
     if (props_len > (uint32_t)(len - pos)) return MQTT5_ERR_SIZE;
-    uint16_t props_end = (uint16_t)(pos + props_len);
+    /* Use uint32_t to avoid truncation when pos + props_len > 65535 */
+    uint32_t props_end = (uint32_t)pos + props_len;
 
-    while (pos < props_end) {
+    while ((uint32_t)pos < props_end) {
         uint8_t prop_id = buf[pos++];
         switch (prop_id) {
         case MQTT5_PROP_SESSION_EXPIRY:
-            if (pos + 4 > props_end) return MQTT5_ERR_PROTOCOL;
+            if ((uint32_t)pos + 4 > props_end) return MQTT5_ERR_PROTOCOL;
             ack->session_expiry = get_u32(buf + pos);
             pos += 4;
             break;
         case MQTT5_PROP_RECEIVE_MAX:
-            if (pos + 2 > props_end) return MQTT5_ERR_PROTOCOL;
+            if ((uint32_t)pos + 2 > props_end) return MQTT5_ERR_PROTOCOL;
             ack->receive_max = get_u16(buf + pos);
             pos += 2;
             break;
         case MQTT5_PROP_MAX_QOS:
-            if (pos + 1 > props_end) return MQTT5_ERR_PROTOCOL;
+            if ((uint32_t)pos + 1 > props_end) return MQTT5_ERR_PROTOCOL;
             ack->max_qos = buf[pos++];
             break;
         default:
@@ -407,13 +408,14 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
         pos += props_vbi_bytes;
 
         if (props_len > (uint32_t)(packet_end - pos)) return MQTT5_ERR_PROTOCOL;
-        uint16_t props_end = (uint16_t)(pos + props_len);
+        /* Use uint32_t to avoid truncation when pos + props_len > 65535 */
+        uint32_t props_end = (uint32_t)pos + props_len;
 
-        while (pos < props_end) {
+        while ((uint32_t)pos < props_end) {
             uint8_t prop_id = buf[pos++];
             switch (prop_id) {
             case MQTT5_PROP_MESSAGE_EXPIRY:
-                if (pos + 4 > props_end) return MQTT5_ERR_PROTOCOL;
+                if ((uint32_t)pos + 4 > props_end) return MQTT5_ERR_PROTOCOL;
                 pub->message_expiry = get_u32(buf + pos);
                 pos += 4;
                 break;

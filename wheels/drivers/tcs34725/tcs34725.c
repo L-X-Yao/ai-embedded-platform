@@ -154,7 +154,11 @@ tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc,
 
     /* Simplified CCT via empirical formula from DN40 */
     float x = -0.14282f * r_ratio + 1.54924f * b_ratio - 0.95641f;
-    float n = (x - 0.3320f) / (0.1858f - x);
+    /* Guard against division by zero when x == 0.1858 */
+    float denom = 0.1858f - x;
+    if (!(denom > 1e-6f || denom < -1e-6f))
+        return TCS34725_ERR_PARAM;
+    float n = (x - 0.3320f) / denom;
     float cct = 449.0f * n * n * n + 3525.0f * n * n + 6823.3f * n + 5520.33f;
 
     if (cct < 0.0f)

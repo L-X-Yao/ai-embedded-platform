@@ -407,17 +407,15 @@ mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num,
 }
 
 mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num,
-                                uint32_t mask)
+                                uint32_t mask, bool extended)
 {
     if (!dev || !dev->spi) return MCP2515_ERR_SPI;
     if (mask_num > 1) return MCP2515_ERR_PARAM;
     if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAM;
 
     uint8_t base = (mask_num == 0) ? REG_RXM0SIDH : REG_RXM1SIDH;
-    reg_write(dev->spi, base, (uint8_t)(mask >> 3));
-    reg_write(dev->spi, (uint8_t)(base + 1), (uint8_t)((mask << 5) & 0xE0));
-    reg_write(dev->spi, (uint8_t)(base + 2), 0);
-    reg_write(dev->spi, (uint8_t)(base + 3), 0);
+    /* Reuse encode_id to write SID+EID mask bits consistently with set_filter */
+    encode_id(dev->spi, base, mask, extended);
     return MCP2515_OK;
 }
 

@@ -139,4 +139,4 @@ if $DO_COMMIT; then
     echo "(auto-commit disabled — review message first, then commit manually)"
 fi
 
-echo "To use: git commit -m '$MESSAGE'"
+echo "To use: git commit -m \"$MESSAGE\""
