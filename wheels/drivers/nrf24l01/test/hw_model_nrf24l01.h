@@ -169,7 +169,7 @@ static uint8_t nrf24_model_xfer(void *ctx, uint8_t tx)
     /* R_REGISTER: read from model register */
     {
         uint8_t reg = (uint8_t)(m->spi_reg + (uint8_t)(m->spi_byte_idx - 1));
-        result = (reg < HW_MODEL_REG_COUNT) ? m->hw.regs[reg] : 0xFF;
+        result = m->hw.regs[reg];
         m->spi_byte_idx++;
     }
     return result;
