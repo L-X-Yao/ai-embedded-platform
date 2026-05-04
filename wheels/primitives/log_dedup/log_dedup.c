@@ -38,7 +38,7 @@ static void emit_repeat(log_dedup_t *d) {
 }
 
 static int lines_equal(const char *a, size_t a_len, const char *b, size_t b_len) {
-    /* Compare ignoring leading timestamp: skip "[XXXXXXXX] " prefix if present */
+    /* Compare ignoring leading timestamp: skip "[12345678] " prefix if present */
     const char *sa = a, *sb = b;
     size_t la = a_len, lb = b_len;
 
@@ -88,7 +88,7 @@ void log_dedup_flush(log_dedup_t *d) {
 
 void log_dedup_deinit(log_dedup_t *d) {
     if (!d) return;
-    log_dedup_flush(d);
+    (void)log_dedup_flush(d);
     d->inner_fn = NULL;
     d->inner_ctx = NULL;
     d->last_len = 0;

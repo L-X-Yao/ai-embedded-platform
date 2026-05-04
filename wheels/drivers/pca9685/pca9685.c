@@ -184,8 +184,9 @@ pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
     uint32_t period_us = 1000000UL / (uint32_t)dev->freq_hz;
     uint32_t off = (uint32_t)pulse_us * COUNT_FULL / period_us;
     if (off > PCA9685_COUNT_MAX) off = PCA9685_COUNT_MAX;
+    uint16_t off16 = (off <= 0xFFFFU) ? (uint16_t)off : 0xFFFFU;
 
-    return pca9685_set_pwm(dev, channel, 0, (uint16_t)off);
+    return pca9685_set_pwm(dev, channel, 0, off16);
 }
 
 pca9685_err_t pca9685_all_off(pca9685_t *dev)

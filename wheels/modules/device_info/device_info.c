@@ -25,8 +25,9 @@ static device_info_err_t set_str(char *dst, size_t dst_size, const char *src)
         return DEVICE_INFO_ERR_OVERFLOW;
     }
 
-    /* len < dst_size guaranteed above, so len + 1 <= dst_size */
-    memcpy(dst, src, len + 1U);
+    /* len < dst_size guaranteed above, so copy_sz fits */
+    size_t copy_sz = len + 1U;
+    memcpy(dst, src, copy_sz);
     return DEVICE_INFO_OK;
 }
 

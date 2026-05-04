@@ -106,12 +106,20 @@ qmi8658a_err_t qmi8658a_read(const qmi8658a_t *dev,
     qmi8658a_err_t e = rd(dev->i2c, REG_AX_L, raw, 12);
     if (e != QMI8658A_OK) return e;
 
-    out->ax_g = (float)((int16_t)((uint16_t)raw[1]  << 8 | raw[0]))  / dev->acc_div;
-    out->ay_g = (float)((int16_t)((uint16_t)raw[3]  << 8 | raw[2]))  / dev->acc_div;
-    out->az_g = (float)((int16_t)((uint16_t)raw[5]  << 8 | raw[4]))  / dev->acc_div;
-    out->gx_dps = (float)((int16_t)((uint16_t)raw[7]  << 8 | raw[6]))  / dev->gyr_div;
-    out->gy_dps = (float)((int16_t)((uint16_t)raw[9]  << 8 | raw[8]))  / dev->gyr_div;
-    out->gz_dps = (float)((int16_t)((uint16_t)raw[11] << 8 | raw[10])) / dev->gyr_div;
+    /* Assemble big-endian pairs into signed 16-bit, then scale. */
+    int16_t ax = (int16_t)((uint16_t)raw[1]  << 8 | raw[0]);
+    int16_t ay = (int16_t)((uint16_t)raw[3]  << 8 | raw[2]);
+    int16_t az = (int16_t)((uint16_t)raw[5]  << 8 | raw[4]);
+    int16_t gx = (int16_t)((uint16_t)raw[7]  << 8 | raw[6]);
+    int16_t gy = (int16_t)((uint16_t)raw[9]  << 8 | raw[8]);
+    int16_t gz = (int16_t)((uint16_t)raw[11] << 8 | raw[10]);
+
+    out->ax_g   = (float)ax / dev->acc_div;
+    out->ay_g   = (float)ay / dev->acc_div;
+    out->az_g   = (float)az / dev->acc_div;
+    out->gx_dps = (float)gx / dev->gyr_div;
+    out->gy_dps = (float)gy / dev->gyr_div;
+    out->gz_dps = (float)gz / dev->gyr_div;
 
     return QMI8658A_OK;
 }

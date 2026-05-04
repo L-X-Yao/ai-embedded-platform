@@ -125,7 +125,7 @@ error_handler_err_t error_handler_save(error_handler_t *eh)
     error_record_t linear[ERROR_HANDLER_MAX_RECORDS];
     for (uint8_t i = 0; i < eh->count; i++) {
         error_record_t rec;
-        error_handler_get(eh, i, &rec);
+        (void)error_handler_get(eh, i, &rec);  /* index bounded by count */
         linear[i] = rec;
     }
 

@@ -132,7 +132,7 @@ websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t
     if (payload && payload_len > 0) {
         memcpy(&buf[idx], payload, payload_len);
         if (mask_key)
-            websocket_frame_mask_payload(&buf[idx], payload_len, mask_key);
+            (void)websocket_frame_mask_payload(&buf[idx], payload_len, mask_key);
     }
 
     *out_len = total;

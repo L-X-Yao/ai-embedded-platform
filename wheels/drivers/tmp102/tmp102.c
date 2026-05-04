@@ -39,12 +39,19 @@ static bool write16(const tmp102_t *dev, uint8_t reg,
     return dev->i2c->write_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, 2);
 }
 
-/* Convert 12-bit raw (bits[15:4] of big-endian pair) to Celsius. */
+/* Assemble big-endian pair into 12-bit signed raw (bits[15:4]). */
+static int16_t assemble_raw12(uint8_t msb, uint8_t lsb)
+{
+    uint16_t u16 = (uint16_t)msb << 8 | lsb;
+    int16_t raw = (int16_t)u16;
+    raw >>= 4;  /* sign-extending arithmetic shift */
+    return raw;
+}
+
+/* Convert 12-bit raw to Celsius. */
 static float raw_to_c(uint8_t msb, uint8_t lsb)
 {
-    int16_t raw = (int16_t)((uint16_t)msb << 8 | lsb);
-    raw >>= 4;  /* sign-extending arithmetic shift */
-    return (float)raw * LSB_C;
+    return (float)assemble_raw12(msb, lsb) * LSB_C;
 }
 
 /* Convert Celsius to 12-bit register value (bits[15:4]). */
