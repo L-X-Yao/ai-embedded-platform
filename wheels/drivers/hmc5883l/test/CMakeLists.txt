@@ -25,7 +25,7 @@ target_include_directories(prop_hmc5883l PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_hmc5883l PRIVATE m)
 
 add_test(NAME hmc5883l_prop_tests COMMAND prop_hmc5883l)

@@ -25,6 +25,7 @@ target_include_directories(prop_opt3001 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
+target_link_libraries(prop_opt3001 PRIVATE m)
 
 add_test(NAME opt3001_prop_tests COMMAND prop_opt3001)

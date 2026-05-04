@@ -74,9 +74,14 @@ PROPERTY(scale5to8_bounded, 5000)
 {
     uint8_t v5 = ARBI_UINT8(seed) % 32;
     uint8_t v8 = ws2812_scale5to8(v5);
-    PROP_ASSERT(v8 <= 255);
+    /* v8 is uint8_t, so always 0-255 by type — check monotonicity instead */
     if (v5 == 0)  PROP_ASSERT(v8 == 0);
     if (v5 == 31) PROP_ASSERT(v8 == 255);
+    /* Monotonicity: higher input should give >= output */
+    if (v5 > 0) {
+        uint8_t prev = ws2812_scale5to8((uint8_t)(v5 - 1));
+        PROP_ASSERT(v8 >= prev);
+    }
 }
 
 TEST_MAIN("prop_ws2812")

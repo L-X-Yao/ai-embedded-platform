@@ -25,6 +25,7 @@ target_include_directories(prop_veml7700 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_veml7700 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(prop_veml7700 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
+target_link_libraries(prop_veml7700 PRIVATE m)
 
 add_test(NAME veml7700_prop_tests COMMAND prop_veml7700)
