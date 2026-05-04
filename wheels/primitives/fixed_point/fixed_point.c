@@ -14,7 +14,7 @@
 
 fp_t fp_from_int(int16_t val)
 {
-    return (fp_t)val << FP_FRAC_BITS;
+    return (fp_t)((uint32_t)(int32_t)val << FP_FRAC_BITS);
 }
 
 fp_t fp_from_float(float val)

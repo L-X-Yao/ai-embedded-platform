@@ -132,7 +132,7 @@ static int32_t compensate_temperature(bme680_t *dev, uint32_t adc_t)
     int64_t var1 = ((int32_t)adc_t >> 3) - (int32_t)((uint32_t)dev->par_t1 << 1);
     int64_t var2 = (var1 * (int32_t)dev->par_t2) >> 11;
     int64_t var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
-    var3 = (var3 * ((int32_t)dev->par_t3 << 4)) >> 14;
+    var3 = (var3 * (int32_t)((uint32_t)(int32_t)dev->par_t3 << 4)) >> 14;
     dev->t_fine = (int32_t)(var2 + var3);
     return (int32_t)((dev->t_fine * 5 + 128) >> 8);
 }
@@ -142,10 +142,10 @@ static uint32_t compensate_pressure(const bme680_t *dev, uint32_t adc_p)
     int32_t var1 = ((int32_t)dev->t_fine >> 1) - 64000;
     int32_t var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
                     (int32_t)dev->par_p6) >> 2;
-    var2 = var2 + ((var1 * (int32_t)dev->par_p5) << 1);
-    var2 = (var2 >> 2) + ((int32_t)dev->par_p4 << 16);
+    var2 = var2 + (int32_t)((uint32_t)(var1 * (int32_t)dev->par_p5) << 1);
+    var2 = (var2 >> 2) + (int32_t)((uint32_t)(int32_t)dev->par_p4 << 16);
     var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13) *
-             ((int32_t)dev->par_p3 << 5)) >> 3) +
+             (int32_t)((uint32_t)(int32_t)dev->par_p3 << 5)) >> 3) +
            (((int32_t)dev->par_p2 * var1) >> 1);
     var1 = var1 >> 18;
     var1 = ((32768 + var1) * (int32_t)dev->par_p1) >> 15;
@@ -155,7 +155,7 @@ static uint32_t compensate_pressure(const bme680_t *dev, uint32_t adc_p)
 
     uint32_t press = (uint32_t)(((int32_t)1048576 - (int32_t)adc_p) -
                                 (var2 >> 12));
-    press = (uint32_t)((int32_t)press * 3125);
+    press = press * 3125u;
 
     if (press >= (uint32_t)0x40000000u)
         press = (press / (uint32_t)var1) << 1;
@@ -165,12 +165,12 @@ static uint32_t compensate_pressure(const bme680_t *dev, uint32_t adc_p)
     var1 = ((int32_t)dev->par_p9 *
             (int32_t)(((press >> 3) * (press >> 3)) >> 13)) >> 12;
     var2 = ((int32_t)(press >> 2) * (int32_t)dev->par_p8) >> 13;
-    int32_t var3 = ((int32_t)(press >> 8) * (int32_t)(press >> 8) *
-                    (int32_t)(press >> 8) * (int32_t)dev->par_p10) >> 17;
+    int64_t p8 = (int64_t)(press >> 8);
+    int32_t var3 = (int32_t)((p8 * p8 * p8 * (int64_t)dev->par_p10) >> 17);
 
     press = (uint32_t)((int32_t)press +
                        ((var1 + var2 + var3 +
-                         ((int32_t)dev->par_p7 << 7)) >> 4));
+                         (int32_t)((uint32_t)(int32_t)dev->par_p7 << 7)) >> 4));
     return press;
 }
 
