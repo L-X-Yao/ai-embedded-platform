@@ -108,7 +108,7 @@ static bool fault__check(fault_ctx_t *ctx)
 
     switch (ctx->mode) {
     case FAULT_MODE_AFTER:
-        return n > ctx->trigger;
+        return n >= ctx->trigger;
     case FAULT_MODE_AT:
         return n == ctx->trigger;
     case FAULT_MODE_NEXT:

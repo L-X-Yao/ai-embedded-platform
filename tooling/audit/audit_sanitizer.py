@@ -222,6 +222,10 @@ def main() -> int:
         print(f"ERROR: wheels/ not found at {WHEELS}", file=sys.stderr)
         return 2
 
+    if sys.platform == "win32":
+        print("NOTE: ASan/UBSan require Linux gcc. Run in WSL: wsl python3 tooling/audit/audit_sanitizer.py")
+        print("      Windows MinGW lacks -lasan/-lubsan. Skipping.\n")
+
     all_wheels = find_wheels()
 
     if args.changed:
