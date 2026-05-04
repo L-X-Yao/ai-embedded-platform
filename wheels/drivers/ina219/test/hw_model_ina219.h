@@ -60,6 +60,14 @@ static bool ina219_model_i2c_write_regs(void *ctx, uint8_t dev_addr,
     (void)dev_addr;
     hw_reg_model_t *m = (hw_reg_model_t *)ctx;
     uint8_t base = (uint8_t)(reg * 2);
+
+    /* If writing to config register with RST bit set, just do the reset
+     * and ignore the rest of the write data (real hardware behavior). */
+    if (reg == 0x00 && len >= 1 && (buf[0] & 0x80)) {
+        hw_model__write_reg(m, base, buf[0]);
+        return true;
+    }
+
     for (uint16_t i = 0; i < len && (base + i) < HW_MODEL_REG_COUNT; i++) {
         hw_model__write_reg(m, (uint8_t)(base + i), buf[i]);
     }
