@@ -16,3 +16,15 @@ target_compile_options(test_drv8833 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME drv8833_tests COMMAND test_drv8833)
+
+add_executable(prop_drv8833
+    prop_drv8833.c
+    ../drv8833.c
+)
+target_include_directories(prop_drv8833 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_drv8833 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME drv8833_prop_tests COMMAND prop_drv8833)

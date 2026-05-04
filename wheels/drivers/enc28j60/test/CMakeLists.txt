@@ -16,3 +16,15 @@ target_compile_options(test_enc28j60 PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 
 enable_testing()
 add_test(NAME enc28j60_tests COMMAND test_enc28j60)
+
+add_executable(prop_enc28j60
+    prop_enc28j60.c
+    ../enc28j60.c
+)
+target_include_directories(prop_enc28j60 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_enc28j60 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME enc28j60_prop_tests COMMAND prop_enc28j60)

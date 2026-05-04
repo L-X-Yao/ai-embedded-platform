@@ -17,3 +17,16 @@ target_link_libraries(test_ina219 PRIVATE m)
 
 enable_testing()
 add_test(NAME ina219_tests COMMAND test_ina219)
+
+add_executable(prop_ina219
+    prop_ina219.c
+    ../ina219.c
+)
+target_include_directories(prop_ina219 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_ina219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(prop_ina219 PRIVATE m)
+
+add_test(NAME ina219_prop_tests COMMAND prop_ina219)

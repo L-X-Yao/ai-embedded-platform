@@ -18,3 +18,16 @@ target_compile_options(test_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -
 
 enable_testing()
 add_test(NAME xgzp6816d_tests COMMAND test_xgzp6816d)
+
+add_executable(prop_xgzp6816d
+    prop_xgzp6816d.c
+    ../xgzp6816d.c
+)
+target_include_directories(prop_xgzp6816d PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(prop_xgzp6816d PRIVATE m)
+
+add_test(NAME xgzp6816d_prop_tests COMMAND prop_xgzp6816d)

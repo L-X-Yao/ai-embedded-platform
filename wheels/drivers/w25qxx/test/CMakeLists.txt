@@ -17,3 +17,15 @@ target_compile_options(test_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 enable_testing()
 add_test(NAME w25qxx_tests COMMAND test_w25qxx)
+
+add_executable(prop_w25qxx
+    prop_w25qxx.c
+    ../w25qxx.c
+)
+target_include_directories(prop_w25qxx PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME w25qxx_prop_tests COMMAND prop_w25qxx)

@@ -15,3 +15,15 @@ target_compile_options(test_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME ds18b20_tests COMMAND test_ds18b20)
+
+add_executable(prop_ds18b20
+    prop_ds18b20.c
+    ../ds18b20.c
+)
+target_include_directories(prop_ds18b20 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME ds18b20_prop_tests COMMAND prop_ds18b20)

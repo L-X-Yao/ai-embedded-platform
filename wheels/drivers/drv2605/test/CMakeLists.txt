@@ -16,3 +16,15 @@ target_compile_options(test_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME drv2605_tests COMMAND test_drv2605)
+
+add_executable(prop_drv2605
+    prop_drv2605.c
+    ../drv2605.c
+)
+target_include_directories(prop_drv2605 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME drv2605_prop_tests COMMAND prop_drv2605)

@@ -16,3 +16,15 @@ target_compile_options(test_nrf24l01 PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 
 enable_testing()
 add_test(NAME nrf24l01_tests COMMAND test_nrf24l01)
+
+add_executable(prop_nrf24l01
+    prop_nrf24l01.c
+    ../nrf24l01.c
+)
+target_include_directories(prop_nrf24l01 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_nrf24l01 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME nrf24l01_prop_tests COMMAND prop_nrf24l01)

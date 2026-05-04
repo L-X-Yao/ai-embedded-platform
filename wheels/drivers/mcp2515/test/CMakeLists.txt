@@ -16,3 +16,15 @@ target_compile_options(test_mcp2515 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 
 enable_testing()
 add_test(NAME mcp2515_tests COMMAND test_mcp2515)
+
+add_executable(prop_mcp2515
+    prop_mcp2515.c
+    ../mcp2515.c
+)
+target_include_directories(prop_mcp2515 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_mcp2515 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME mcp2515_prop_tests COMMAND prop_mcp2515)

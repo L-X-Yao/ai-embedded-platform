@@ -16,3 +16,15 @@ target_compile_options(test_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 enable_testing()
 add_test(NAME tmp102_tests COMMAND test_tmp102)
+
+add_executable(prop_tmp102
+    prop_tmp102.c
+    ../tmp102.c
+)
+target_include_directories(prop_tmp102 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME tmp102_prop_tests COMMAND prop_tmp102)

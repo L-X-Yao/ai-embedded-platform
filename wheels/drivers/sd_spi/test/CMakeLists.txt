@@ -16,3 +16,15 @@ target_compile_options(test_sd_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 enable_testing()
 add_test(NAME sd_spi_tests COMMAND test_sd_spi)
+
+add_executable(prop_sd_spi
+    prop_sd_spi.c
+    ../sd_spi.c
+)
+target_include_directories(prop_sd_spi PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_sd_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME sd_spi_prop_tests COMMAND prop_sd_spi)

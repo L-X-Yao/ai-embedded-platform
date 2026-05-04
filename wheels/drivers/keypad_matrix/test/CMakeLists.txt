@@ -16,3 +16,15 @@ target_compile_options(test_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werr
 
 enable_testing()
 add_test(NAME keypad_matrix_tests COMMAND test_keypad_matrix)
+
+add_executable(prop_keypad_matrix
+    prop_keypad_matrix.c
+    ../keypad_matrix.c
+)
+target_include_directories(prop_keypad_matrix PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME keypad_matrix_prop_tests COMMAND prop_keypad_matrix)
