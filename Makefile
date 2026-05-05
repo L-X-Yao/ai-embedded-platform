@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
 
 help:
 	@echo "Usage: make <target>"
@@ -16,6 +16,8 @@ help:
 	@echo "  test-parallel     run all tests in parallel (fastest)"
 	@echo "  test-scaffold     verify new_wheel.sh templates compile"
 	@echo "  test-property     property-based tests (all prop_*.c)"
+	@echo "  test-null         NULL parameter rejection tests (all test_null_*.c)"
+	@echo "  test-sentinel     sentinel boundary tests (all test_sentinel_*.c)"
 	@echo "  test-mutate       mutation testing (kill rate per wheel)"
 	@echo "  fuzz              LibFuzzer coverage-guided protocol fuzzing"
 	@echo "  coverage          tests with gcov coverage report"
@@ -133,7 +135,7 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
 check-full:
 	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
@@ -169,12 +171,75 @@ test-scaffold:
 
 test-property:
 	@echo "Running property-based tests (prop_*.c)..."
-	@for f in $$(find wheels/ -name 'prop_*.c' 2>/dev/null); do \
+	@fail=0; total=0; \
+	for f in $$(find wheels/ -name 'prop_*.c' 2>/dev/null); do \
 		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		echo "  $$name..."; \
-		gcc -std=c99 -Wall -Wextra -I"$$wheel_dir" -I"tooling/test" "$$f" "$$wheel_dir/$$name.c" -o "/tmp/$$name_prop" -lm 2>/dev/null && \
-		"/tmp/$$name_prop" || echo "  FAIL $$name"; \
-	done
+		total=$$((total + 1)); \
+		dep_srcs=""; dep_incs=""; \
+		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
+			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
+			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
+		done; \
+		if gcc -std=c99 -Wall -Wextra -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/$${name}_prop" -lm 2>/dev/null; then \
+			if "/tmp/$${name}_prop" >/dev/null 2>&1; then \
+				printf "  PASS %s\n" "$$name"; \
+			else \
+				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+			fi; \
+		else \
+			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "$$total wheels, $$fail failures"; \
+	[ $$fail -eq 0 ]
+
+test-null:
+	@echo "Running NULL parameter tests (test_null_*.c)..."
+	@fail=0; total=0; \
+	for f in $$(find wheels/ -name 'test_null_*.c' 2>/dev/null | sort); do \
+		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
+		total=$$((total + 1)); \
+		dep_srcs=""; dep_incs=""; \
+		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
+			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
+			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
+		done; \
+		if gcc -std=c99 -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/test_null_$$name" -lm 2>/dev/null; then \
+			if "/tmp/test_null_$$name" >/dev/null 2>&1; then \
+				printf "  PASS %s\n" "$$name"; \
+			else \
+				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+			fi; \
+		else \
+			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "$$total wheels, $$fail failures"; \
+	[ $$fail -eq 0 ]
+
+test-sentinel:
+	@echo "Running sentinel boundary tests (test_sentinel_*.c)..."
+	@fail=0; total=0; \
+	for f in $$(find wheels/ -name 'test_sentinel_*.c' 2>/dev/null | sort); do \
+		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
+		total=$$((total + 1)); \
+		dep_srcs=""; dep_incs=""; \
+		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
+			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
+			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
+		done; \
+		if gcc -std=c99 -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/test_sentinel_$$name" -lm 2>/dev/null; then \
+			if "/tmp/test_sentinel_$$name" >/dev/null 2>&1; then \
+				printf "  PASS %s\n" "$$name"; \
+			else \
+				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+			fi; \
+		else \
+			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "$$total wheels, $$fail failures"; \
+	[ $$fail -eq 0 ]
 
 test-mutate:
 	bash tooling/test/test_mutation.sh
