@@ -721,6 +721,35 @@ def chk_dep_direction(ctx, **_):
     return None
 
 
+def chk_missing_null_tests(ctx, **_):
+    """Every wheel should have auto-generated NULL parameter tests."""
+    test_dir = ctx.dir / "test"
+    if not test_dir.is_dir():
+        return None
+    null_file = test_dir / f"test_null_{ctx.name}.c"
+    if null_file.exists():
+        return None
+    return ("missing test_null_*.c (auto-generated NULL parameter tests)",
+            f"run: python3 tooling/test/gen_null_tests.py {ctx.path}/{ctx.name}.h")
+
+
+def chk_missing_hw_model(ctx, **_):
+    """L1 drivers with I2C/SPI HAL should have a hardware register model."""
+    if not ctx.header:
+        return None
+    if f"{ctx.name}_i2c_t" not in ctx.header and \
+       f"{ctx.name}_spi_t" not in ctx.header:
+        return None
+    test_dir = ctx.dir / "test"
+    if not test_dir.is_dir():
+        return None
+    hw_model = test_dir / f"hw_model_{ctx.name}.h"
+    if hw_model.exists():
+        return None
+    return ("L1 driver with I2C/SPI HAL missing hw_model (datasheet test)",
+            f"add {ctx.path}/test/hw_model_{ctx.name}.h")
+
+
 # --- Check table: metadata for each check ---
 
 CHECK_TABLE = [
@@ -775,6 +804,8 @@ CHECK_TABLE = [
     ("dead_static_func",  "Dead static functions (Q13)",          chk_dead_static_function, "WARN", None,                     True,  False),
     ("switch_default",    "Switch default case (Q8)",             chk_switch_default,       "WARN", None,                     True,  False),
     ("dep_direction",     "Dependency direction (ADR-009)",       chk_dep_direction,        "WARN", None,                     False, True),
+    ("missing_null_tests", "NULL parameter tests",                chk_missing_null_tests,   "WARN", None,                     True,  True),
+    ("missing_hw_model",   "Hardware model tests (L1 I2C/SPI)",   chk_missing_hw_model,     "WARN", {"drivers"},              True,  False),
 ]
 
 
