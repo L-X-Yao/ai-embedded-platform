@@ -1,0 +1,78 @@
+# mcp4725 — MCP4725 12-bit I2C DAC
+
+**Status: candidate**
+**Layer: L1 (drivers)**
+
+Drives the Microchip MCP4725 single-channel 12-bit DAC over I2C.
+Supports fast-mode write (volatile), DAC register write with power-down
+control, and EEPROM write for persistent output across power cycles.
+
+## Origin
+
+Proactive build for analog output (ecosystem-driven, ADR-011). Fills the
+DAC category gap — no existing DAC wheel in the platform.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem (2026-05-05):
+
+- Adafruit_MCP4725: C++/Arduino, heap allocation, not suitable.
+- Various Arduino libs: all tied to Wire.h, not portable C99.
+- No suitable zero-dependency C99 implementation found.
+
+Reference: Microchip DS22039D.
+
+## Dependencies
+
+None (I2C HAL injected via callbacks).
+
+## API
+
+```c
+mcp4725_err_t mcp4725_init(mcp4725_t *dev, const mcp4725_i2c_t *i2c, uint8_t addr);
+mcp4725_err_t mcp4725_write_fast(mcp4725_t *dev, uint16_t value);
+mcp4725_err_t mcp4725_write_dac(mcp4725_t *dev, uint16_t value, mcp4725_pd_t pd);
+mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value, mcp4725_pd_t pd);
+mcp4725_err_t mcp4725_read_status(mcp4725_t *dev, mcp4725_status_t *out);
+```
+
+## Configuration (compile-time)
+
+None. Address passed at runtime via `mcp4725_init()`.
+
+## Supported platforms
+
+- [x] Host (sim) — 2026-05-05
+- [ ] Real hardware — not yet verified
+
+## Known issues
+
+None.
+
+## How to test
+
+```bash
+cd wheels/drivers/mcp4725/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_mcp4725
+```
+
+## Test status
+
+- Unit tests (sim): 25/25 pass
+- HIL: N/A
+
+## API convention deviations
+
+Uses raw write/read HAL instead of register-based write_reg/read_regs.
+MCP4725 is command-based, not register-addressed.
+
+## API review
+
+- **Date**: 2026-05-05
+- **Key decisions**: Raw I2C HAL (write/read) instead of register HAL
+  because MCP4725 uses command bytes, not register addresses.
+
+## Responsible human
+
+@user
