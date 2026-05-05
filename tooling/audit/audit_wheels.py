@@ -1488,7 +1488,7 @@ def has_unit_suffix_on_physical(wheel_dir: Path, name: str) -> list:
 
 
 def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
-         save: bool = False) -> int:
+         save: bool = False, wheel_filter: str = None) -> int:
     def qprint(msg: str):
         if not quiet and not json_mode:
             print(msg)
@@ -1502,7 +1502,22 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
         return 2
 
     ci_text = CI_YAML.read_text(encoding="utf-8") if CI_YAML.exists() else ""
-    wheels = find_wheels()
+    if wheel_filter:
+        wf = wheel_filter.rstrip("/")
+        if not wf.startswith("wheels/"):
+            wf = "wheels/" + wf
+        parts = wf.split("/")
+        if len(parts) < 3:
+            print(f"ERROR: expected wheels/<layer>/<name>, got '{wf}'", file=sys.stderr)
+            return 2
+        layer, name = parts[1], parts[2]
+        wheel_dir = WHEELS / layer / name
+        if not wheel_dir.is_dir():
+            print(f"ERROR: {wheel_dir} not found", file=sys.stderr)
+            return 2
+        wheels = [(layer, name, wf)]
+    else:
+        wheels = find_wheels()
 
     # Pre-load all wheel files into cache (one-time IO, ~143 wheels × 4 files)
     contexts = {}
@@ -1768,6 +1783,8 @@ if __name__ == "__main__":
     parser.add_argument("--fast", action="store_true", help="Skip consumer scan (fast mode for slow FS)")
     parser.add_argument("--save", action="store_true", help="Save results as timestamped snapshot")
     parser.add_argument("--compare", action="store_true", help="Compare latest two snapshots")
+    parser.add_argument("--wheel", type=str, default=None,
+                        help="Audit a single wheel (e.g. drivers/mcp4725)")
     args = parser.parse_args()
     if args.graph:
         wheels = find_wheels()
@@ -1777,4 +1794,4 @@ if __name__ == "__main__":
         compare_snapshots()
         sys.exit(0)
     sys.exit(main(quiet=args.quiet, json_mode=args.json, fast=args.fast,
-                  save=args.save))
+                  save=args.save, wheel_filter=args.wheel))
