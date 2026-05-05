@@ -1017,8 +1017,15 @@ def has_naming_convention(wheel_dir: Path, name: str) -> bool:
     raw_prefix = ACCEPTED_PREFIXES.get(name, name + "_")
     prefixes = raw_prefix if isinstance(raw_prefix, list) else [raw_prefix]
     violations = 0
+    in_acsl = False
     for line in text.split("\n"):
         stripped = line.strip()
+        if "/*@" in stripped:
+            in_acsl = True
+        if in_acsl:
+            if "*/" in stripped:
+                in_acsl = False
+            continue
         # Skip non-declaration lines
         if not ("(" in stripped and ");" in stripped):
             continue
