@@ -23,6 +23,17 @@ target_include_directories(prop_aes128 PRIVATE
 )
 target_compile_options(prop_aes128 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_null_aes128
+    test_null_aes128.c
+    ../aes128.c
+)
+target_include_directories(test_null_aes128 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_aes128 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME aes128_tests COMMAND test_aes128)
 add_test(NAME aes128_prop  COMMAND prop_aes128)
+add_test(NAME aes128_null  COMMAND test_null_aes128)
