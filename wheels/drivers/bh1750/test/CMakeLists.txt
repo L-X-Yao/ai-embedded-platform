@@ -29,3 +29,16 @@ target_compile_options(prop_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 target_link_libraries(prop_bh1750 PRIVATE m)
 
 add_test(NAME bh1750_prop_tests COMMAND prop_bh1750)
+
+add_executable(test_hw_model_bh1750
+    test_hw_model_bh1750.c
+    ../bh1750.c
+)
+target_include_directories(test_hw_model_bh1750 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_bh1750 PRIVATE m)
+
+add_test(NAME bh1750_hw_model_tests COMMAND test_hw_model_bh1750)

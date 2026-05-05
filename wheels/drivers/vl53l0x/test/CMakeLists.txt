@@ -28,3 +28,16 @@ target_include_directories(prop_vl53l0x PRIVATE
 target_compile_options(prop_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME vl53l0x_prop_tests COMMAND prop_vl53l0x)
+
+add_executable(test_hw_model_vl53l0x
+    test_hw_model_vl53l0x.c
+    ../vl53l0x.c
+)
+target_include_directories(test_hw_model_vl53l0x PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_vl53l0x PRIVATE m)
+
+add_test(NAME vl53l0x_hw_model_tests COMMAND test_hw_model_vl53l0x)

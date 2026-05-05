@@ -29,3 +29,16 @@ target_include_directories(prop_w25qxx PRIVATE
 target_compile_options(prop_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME w25qxx_prop_tests COMMAND prop_w25qxx)
+
+add_executable(test_hw_model_w25qxx
+    test_hw_model_w25qxx.c
+    ../w25qxx.c
+)
+target_include_directories(test_hw_model_w25qxx PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_w25qxx PRIVATE m)
+
+add_test(NAME w25qxx_hw_model_tests COMMAND test_hw_model_w25qxx)

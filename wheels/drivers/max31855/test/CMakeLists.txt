@@ -30,3 +30,16 @@ target_compile_options(prop_max31855 PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 target_link_libraries(prop_max31855 PRIVATE m)
 
 add_test(NAME max31855_prop_tests COMMAND prop_max31855)
+
+add_executable(test_hw_model_max31855
+    test_hw_model_max31855.c
+    ../max31855.c
+)
+target_include_directories(test_hw_model_max31855 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_max31855 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_max31855 PRIVATE m)
+
+add_test(NAME max31855_hw_model_tests COMMAND test_hw_model_max31855)

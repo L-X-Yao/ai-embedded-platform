@@ -29,3 +29,16 @@ target_compile_options(prop_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 target_link_libraries(prop_tmp102 PRIVATE m)
 
 add_test(NAME tmp102_prop_tests COMMAND prop_tmp102)
+
+add_executable(test_hw_model_tmp102
+    test_hw_model_tmp102.c
+    ../tmp102.c
+)
+target_include_directories(test_hw_model_tmp102 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_tmp102 PRIVATE m)
+
+add_test(NAME tmp102_hw_model_tests COMMAND test_hw_model_tmp102)

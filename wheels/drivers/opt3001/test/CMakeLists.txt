@@ -29,3 +29,16 @@ target_compile_options(prop_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wc
 target_link_libraries(prop_opt3001 PRIVATE m)
 
 add_test(NAME opt3001_prop_tests COMMAND prop_opt3001)
+
+add_executable(test_hw_model_opt3001
+    test_hw_model_opt3001.c
+    ../opt3001.c
+)
+target_include_directories(test_hw_model_opt3001 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_opt3001 PRIVATE m)
+
+add_test(NAME opt3001_hw_model_tests COMMAND test_hw_model_opt3001)
