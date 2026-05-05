@@ -174,127 +174,19 @@ test-scaffold:
 	bash tooling/test/test_scaffold.sh
 
 test-property:
-	@echo "Running property-based tests (prop_*.c)..."
-	@fail=0; total=0; \
-	for f in $$(find wheels/ -name 'prop_*.c' 2>/dev/null); do \
-		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		total=$$((total + 1)); \
-		dep_srcs=""; dep_incs=""; \
-		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
-			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
-			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
-		done; \
-		if gcc -std=c99 -Wall -Wextra -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/$${name}_prop" -lm 2>/dev/null; then \
-			if "/tmp/$${name}_prop" >/dev/null 2>&1; then \
-				printf "  PASS %s\n" "$$name"; \
-			else \
-				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-			fi; \
-		else \
-			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "$$total wheels, $$fail failures"; \
-	[ $$fail -eq 0 ]
+	bash tooling/test/run_generated_tests.sh "prop_*.c" "property" --extra-cflags="-Wextra"
 
 test-null:
-	@echo "Running NULL parameter tests (test_null_*.c)..."
-	@fail=0; total=0; \
-	for f in $$(find wheels/ -name 'test_null_*.c' 2>/dev/null | sort); do \
-		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		total=$$((total + 1)); \
-		dep_srcs=""; dep_incs=""; \
-		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
-			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
-			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
-		done; \
-		if gcc -std=c99 -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/test_null_$$name" -lm 2>/dev/null; then \
-			if "/tmp/test_null_$$name" >/dev/null 2>&1; then \
-				printf "  PASS %s\n" "$$name"; \
-			else \
-				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-			fi; \
-		else \
-			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "$$total wheels, $$fail failures"; \
-	[ $$fail -eq 0 ]
+	bash tooling/test/run_generated_tests.sh "test_null_*.c" "NULL parameter"
 
 test-sentinel:
-	@echo "Running sentinel boundary tests (test_sentinel_*.c)..."
-	@fail=0; total=0; \
-	for f in $$(find wheels/ -name 'test_sentinel_*.c' 2>/dev/null | sort); do \
-		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		total=$$((total + 1)); \
-		dep_srcs=""; dep_incs=""; \
-		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math"); do \
-			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
-			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
-		done; \
-		if gcc -std=c99 -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/test_sentinel_$$name" -lm 2>/dev/null; then \
-			if "/tmp/test_sentinel_$$name" >/dev/null 2>&1; then \
-				printf "  PASS %s\n" "$$name"; \
-			else \
-				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-			fi; \
-		else \
-			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "$$total wheels, $$fail failures"; \
-	[ $$fail -eq 0 ]
+	bash tooling/test/run_generated_tests.sh "test_sentinel_*.c" "sentinel boundary"
 
 test-boundary:
-	@echo "Running type-boundary value tests (test_boundary_*.c)..."
-	@fail=0; total=0; \
-	for f in $$(find wheels/ -name 'test_boundary_*.c' 2>/dev/null | sort); do \
-		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		total=$$((total + 1)); \
-		dep_srcs=""; dep_incs=""; \
-		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$wheel_dir/$$name.c" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math\|limits"); do \
-			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
-			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
-		done; \
-		if gcc -std=c99 -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$wheel_dir/$$name.c" $$dep_srcs -o "/tmp/test_boundary_$$name" -lm 2>/dev/null; then \
-			if "/tmp/test_boundary_$$name" >/dev/null 2>&1; then \
-				printf "  PASS %s\n" "$$name"; \
-			else \
-				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-			fi; \
-		else \
-			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "$$total wheels, $$fail failures"; \
-	[ $$fail -eq 0 ]
+	bash tooling/test/run_generated_tests.sh "test_boundary_*.c" "type-boundary"
 
 test-contract:
-	@echo "Running tests with contract assertions enabled..."
-	@fail=0; total=0; \
-	for f in $$(find wheels/ -path "*/test/test_*.c" -not -name "test_null_*" -not -name "test_sentinel_*" -not -name "test_boundary_*" -not -name "test_hw_model_*" 2>/dev/null | sort); do \
-		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
-		src="$$wheel_dir/$$name.c"; \
-		[ -f "$$src" ] || continue; \
-		grep -q "contract.h" "$$src" 2>/dev/null || continue; \
-		total=$$((total + 1)); \
-		dep_srcs=""; dep_incs=""; \
-		for inc in $$(grep -oP '(?<=#include ")[^"]+(?=\.h")' "$$src" 2>/dev/null | grep -v "$$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math\|limits"); do \
-			dep_c=$$(find wheels/ -name "$$inc.c" -not -path "*/test/*" 2>/dev/null | head -1); \
-			if [ -n "$$dep_c" ]; then dep_srcs="$$dep_srcs $$dep_c"; dep_incs="$$dep_incs -I$$(dirname $$dep_c)"; fi; \
-		done; \
-		if gcc -std=c99 -DCONTRACT_ENABLED -Wall -I"$$wheel_dir" -I"tooling/test" $$dep_incs "$$f" "$$src" $$dep_srcs -o "/tmp/test_contract_$$name" -lm 2>/dev/null; then \
-			if "/tmp/test_contract_$$name" >/dev/null 2>&1; then \
-				printf "  PASS %s\n" "$$name"; \
-			else \
-				printf "  FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-			fi; \
-		else \
-			printf "  BUILD_FAIL %s\n" "$$name"; fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "$$total wheels, $$fail failures"; \
-	[ $$fail -eq 0 ]
+	bash tooling/test/run_generated_tests.sh "test_*.c" "contract" --define=CONTRACT_ENABLED --filter-contract --use-main-test
 
 test-differential:
 	bash tooling/test/test_differential.sh
