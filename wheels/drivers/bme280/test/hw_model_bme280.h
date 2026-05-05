@@ -57,7 +57,7 @@ static void bme280_model_set_reference_calib(bme280_model_t *m)
         0xF8, 0xC6,   /* dig_P8 = -14600 */
         0x70, 0x17,   /* dig_P9 = 6000 */
     };
-    for (int i = 0; i < 24; i++) {
+    for (unsigned i = 0; i < 24; i++) {
         m->hw.regs[BME280_REG_CALIB00 + i] = calib_tp[i];
         m->hw.reset_values[BME280_REG_CALIB00 + i] = calib_tp[i];
     }
@@ -76,7 +76,7 @@ static void bme280_model_set_reference_calib(bme280_model_t *m)
         0x00,         /* dig_H5 high byte => dig_H5 = (0x00 << 4) | (0x34 >> 4) = 0x3 = 3 */
         0x1E,         /* dig_H6 = 30 */
     };
-    for (int i = 0; i < 7; i++) {
+    for (unsigned i = 0; i < 7; i++) {
         m->hw.regs[BME280_REG_CALIB_H2 + i] = calib_h[i];
         m->hw.reset_values[BME280_REG_CALIB_H2 + i] = calib_h[i];
     }
@@ -113,7 +113,7 @@ static void bme280_model_on_ctrl_meas(void *user, uint8_t reg,
     if (mode == 0x01 || mode == 0x03) {
         m->hw.regs[BME280_REG_STATUS] |= 0x08;
         bme280_model_set_adc_output(m);
-        m->hw.regs[BME280_REG_STATUS] &= ~0x08u;
+        m->hw.regs[BME280_REG_STATUS] = (uint8_t)(m->hw.regs[BME280_REG_STATUS] & ~0x08u);
         if (mode == 0x01) {
             m->hw.regs[BME280_REG_CTRL_MEAS] &= 0xFC;
         }

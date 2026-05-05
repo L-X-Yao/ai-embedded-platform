@@ -83,7 +83,7 @@ static void qmc5883p_model_init(qmc5883p_model_t *m)
     hw_model_set_readonly(&m->hw, QMC5883P_REG_CHIP_ID);
 
     /* Data registers 0x01..0x06 (read-only, written by measurement) */
-    for (int i = 0; i < 6; i++) {
+    for (unsigned i = 0; i < 6; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(QMC5883P_REG_DATA_X_LSB + i));
     }
 

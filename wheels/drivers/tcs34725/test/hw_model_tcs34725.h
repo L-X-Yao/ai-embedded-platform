@@ -66,7 +66,7 @@ static void tcs34725_model_init(tcs34725_model_t *m)
     hw_model_set_readonly(&m->hw, TCS_REG_ID);
 
     /* RGBC data registers (read-only, written by measurement engine) */
-    for (int i = 0; i < 8; i++) {
+    for (unsigned i = 0; i < 8; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(TCS_REG_CDATAL + i));
     }
 
