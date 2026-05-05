@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
 
 help:
 	@echo "Usage: make <target>"
@@ -22,6 +22,7 @@ help:
 	@echo "  test-contract     unit tests with -DCONTRACT_ENABLED (runtime assertions)"
 	@echo "  test-differential compare wheel output against reference implementations"
 	@echo "  test-mutate       mutation testing (kill rate per wheel)"
+	@echo "  frama-c           Frama-C WP formal verification (5 annotated wheels)"
 	@echo "  fuzz              LibFuzzer coverage-guided protocol fuzzing"
 	@echo "  coverage          tests with gcov coverage report"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
@@ -315,6 +316,17 @@ verify:
 	done; \
 	echo ""; echo "$$total wheels, $$fail failures"; \
 	[ $$fail -eq 0 ]
+
+frama-c:
+	@echo "Frama-C WP verification (requires frama-c in PATH or opam)..."
+	@if command -v frama-c >/dev/null 2>&1; then \
+		bash tooling/audit/run_frama_c.sh; \
+	elif [ -x "$$HOME/.opam/default/bin/frama-c" ]; then \
+		export PATH="$$HOME/.opam/default/bin:$$PATH"; \
+		bash tooling/audit/run_frama_c.sh; \
+	else \
+		echo "frama-c not found — install via opam or add to PATH"; exit 1; \
+	fi
 
 fuzz:
 	bash tooling/test/run_libfuzzer.sh
