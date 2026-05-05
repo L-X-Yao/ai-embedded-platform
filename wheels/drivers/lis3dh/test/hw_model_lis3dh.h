@@ -75,7 +75,7 @@ static void lis3dh_model_init(lis3dh_model_t *m)
     hw_model_set_readonly(&m->hw, LIS3DH_REG_WHO_AM_I);
 
     /* Data registers (read-only) at both normal and auto-increment mirrors */
-    for (int i = 0; i < 6; i++) {
+    for (unsigned i = 0; i < 6; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(LIS3DH_REG_OUT_X_L + i));
         hw_model_set_readonly(&m->hw, (uint8_t)(LIS3DH_REG_OUT_X_L + LIS3DH_AUTO_INC + i));
     }

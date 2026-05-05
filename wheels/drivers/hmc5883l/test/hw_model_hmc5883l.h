@@ -71,7 +71,7 @@ static void hmc5883l_model_init(hmc5883l_model_t *m)
     hw_model_set_readonly(&m->hw, HMC5883L_REG_ID_C);
 
     /* Data registers 0x03..0x08 (read-only, written by measurement engine) */
-    for (int i = 0; i < 6; i++) {
+    for (unsigned i = 0; i < 6; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(HMC5883L_REG_DATA_X_H + i));
     }
 

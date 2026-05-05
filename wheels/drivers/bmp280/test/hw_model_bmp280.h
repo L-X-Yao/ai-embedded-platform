@@ -50,7 +50,7 @@ static void bmp280_model_set_reference_calib(bmp280_model_t *m)
         0xF8, 0xC6,   /* dig_P8 = -14600 */
         0x70, 0x17,   /* dig_P9 = 6000 */
     };
-    for (int i = 0; i < 24; i++) {
+    for (unsigned i = 0; i < 24; i++) {
         m->hw.regs[BMP280_REG_CALIB00 + i] = calib[i];
         m->hw.reset_values[BMP280_REG_CALIB00 + i] = calib[i];
     }
@@ -84,7 +84,7 @@ static void bmp280_model_on_ctrl_meas(void *user, uint8_t reg,
         m->hw.regs[BMP280_REG_STATUS] |= 0x08; /* measuring = 1 */
         /* simulate instant completion: write ADC, clear measuring */
         bmp280_model_set_adc_output(m);
-        m->hw.regs[BMP280_REG_STATUS] &= ~0x08u; /* measuring = 0 */
+        m->hw.regs[BMP280_REG_STATUS] = (uint8_t)(m->hw.regs[BMP280_REG_STATUS] & ~0x08u);
         if (mode == 0x01) {
             /* forced mode: revert to sleep after measurement */
             m->hw.regs[BMP280_REG_CTRL_MEAS] &= 0xFC;

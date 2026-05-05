@@ -71,7 +71,7 @@ static void bme680_model_set_reference_calib(bme680_model_t *m)
     c1[21] = 0x30; c1[22] = 0xF8;
     /* par_p10 at c1[23] = 30 */
     c1[23] = 30;
-    for (int i = 0; i < 25; i++) {
+    for (unsigned i = 0; i < 25; i++) {
         m->hw.regs[BME680_REG_COEFF1 + i] = c1[i];
         m->hw.reset_values[BME680_REG_COEFF1 + i] = c1[i];
     }
@@ -101,7 +101,7 @@ static void bme680_model_set_reference_calib(bme680_model_t *m)
     c2[12] = 0xE2;
     /* par_gh3 at c2[13] = -2 */
     c2[13] = 0xFE;
-    for (int i = 0; i < 16; i++) {
+    for (unsigned i = 0; i < 16; i++) {
         m->hw.regs[BME680_REG_COEFF2 + i] = c2[i];
         m->hw.reset_values[BME680_REG_COEFF2 + i] = c2[i];
     }
@@ -181,11 +181,11 @@ static void bme680_model_init(bme680_model_t *m)
     hw_model_set_readonly(&m->hw, BME680_REG_CHIP_ID);
 
     /* Calibration coeff1 0x89..0xA1 (read-only) */
-    for (int i = 0; i < 25; i++) {
+    for (unsigned i = 0; i < 25; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(BME680_REG_COEFF1 + i));
     }
     /* Calibration coeff2 0xE1..0xF0 (read-only) */
-    for (int i = 0; i < 16; i++) {
+    for (unsigned i = 0; i < 16; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(BME680_REG_COEFF2 + i));
     }
     /* Extra gas calib regs (read-only) */
@@ -197,7 +197,7 @@ static void bme680_model_init(bme680_model_t *m)
     hw_model_set_readonly(&m->hw, BME680_REG_MEAS_STATUS);
 
     /* Data registers 0x1F..0x2B (read-only, written by measurement) */
-    for (int i = 0; i < 13; i++) {
+    for (unsigned i = 0; i < 13; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(BME680_REG_DATA_START + i));
     }
 

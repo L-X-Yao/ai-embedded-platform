@@ -117,7 +117,7 @@ static void apds9960_model_init(apds9960_model_t *m)
     hw_model_set_readonly(&m->hw, APDS_REG_STATUS);
 
     /* RGBC data registers (read-only) */
-    for (int i = 0; i < 8; i++) {
+    for (unsigned i = 0; i < 8; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(APDS_REG_CDATAL + i));
     }
 
