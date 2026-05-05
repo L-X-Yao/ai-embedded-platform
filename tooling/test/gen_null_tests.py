@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen_null_tests.py -- generate NULL-parameter rejection tests for all wheels.
+"""gen_null_tests.py -- generate NULL-parameter rejection tests for wheels.
 
 For each wheel with a public .h file, parses function declarations that accept
 pointer parameters and generates a test_null_<name>.c that passes NULL for each
@@ -8,6 +8,8 @@ error code or at least does not crash.
 
 Usage:
     python tooling/test/gen_null_tests.py [--dry-run]
+    python tooling/test/gen_null_tests.py --wheel wheels/drivers/mcp4725
+    python tooling/test/gen_null_tests.py --wheel wheels/drivers/mcp4725/mcp4725.h
 """
 
 import os
@@ -575,11 +577,38 @@ def discover_wheels() -> list:
 # Main
 # ---------------------------------------------------------------------------
 
+def resolve_single_wheel(path_arg: str) -> list:
+    """Resolve a --wheel argument to a single-element WheelInfo list."""
+    p = Path(path_arg).resolve()
+    if p.suffix == '.h':
+        p = p.parent
+    if not p.is_dir():
+        print(f"Error: {path_arg} is not a valid wheel directory", file=sys.stderr)
+        sys.exit(1)
+    header = p / f"{p.name}.h"
+    if not header.is_file():
+        print(f"Error: no {p.name}.h found in {p}", file=sys.stderr)
+        sys.exit(1)
+    rel = p.relative_to(WHEELS_DIR)
+    layer = rel.parts[0]
+    return [WheelInfo(name=p.name, layer=layer, path=p, header_path=header)]
+
+
 def main():
     dry_run = '--dry-run' in sys.argv
 
-    wheels = discover_wheels()
-    print(f"Discovered {len(wheels)} wheels with public headers")
+    single = None
+    for i, arg in enumerate(sys.argv[1:], 1):
+        if arg == '--wheel' and i < len(sys.argv) - 1:
+            single = sys.argv[i + 1]
+            break
+
+    if single:
+        wheels = resolve_single_wheel(single)
+        print(f"Single-wheel mode: {wheels[0].layer}/{wheels[0].name}")
+    else:
+        wheels = discover_wheels()
+        print(f"Discovered {len(wheels)} wheels with public headers")
 
     generated = 0
     skipped_no_ptrs = 0
