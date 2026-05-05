@@ -28,3 +28,16 @@ target_include_directories(prop_pcf8574 PRIVATE
 target_compile_options(prop_pcf8574 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME pcf8574_prop_tests COMMAND prop_pcf8574)
+
+add_executable(test_hw_model_pcf8574
+    test_hw_model_pcf8574.c
+    ../pcf8574.c
+)
+target_include_directories(test_hw_model_pcf8574 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_pcf8574 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_pcf8574 PRIVATE m)
+
+add_test(NAME pcf8574_hw_model_tests COMMAND test_hw_model_pcf8574)

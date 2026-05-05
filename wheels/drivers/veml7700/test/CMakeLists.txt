@@ -29,3 +29,16 @@ target_compile_options(prop_veml7700 PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 target_link_libraries(prop_veml7700 PRIVATE m)
 
 add_test(NAME veml7700_prop_tests COMMAND prop_veml7700)
+
+add_executable(test_hw_model_veml7700
+    test_hw_model_veml7700.c
+    ../veml7700.c
+)
+target_include_directories(test_hw_model_veml7700 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_veml7700 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_veml7700 PRIVATE m)
+
+add_test(NAME veml7700_hw_model_tests COMMAND test_hw_model_veml7700)
