@@ -201,9 +201,10 @@ extern "C" {
 
 typedef enum {
     ${NAME_UPPER}_OK          =  0,
-    ${NAME_UPPER}_ERR_SPI     = -1,
-    ${NAME_UPPER}_ERR_ID      = -2,
-    ${NAME_UPPER}_ERR_TIMEOUT = -3,
+    ${NAME_UPPER}_ERR_PARAM   = -1,
+    ${NAME_UPPER}_ERR_SPI     = -2,
+    ${NAME_UPPER}_ERR_ID      = -3,
+    ${NAME_UPPER}_ERR_TIMEOUT = -4,
 } ${NAME_LOWER}_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -441,7 +442,18 @@ typedef enum {
     ${NAME_UPPER}_ERR_PARAM = -1,
 } ${NAME_LOWER}_err_t;
 
-/* TODO: define API — see api-conventions.md for rules.
+/* ---------- instance ---------- */
+
+typedef struct {
+    int _placeholder; /* internal: replace with real state */
+} ${NAME_LOWER}_t;
+
+/* ---------- API ---------- */
+
+/** Initialize instance. @thread_safe: no @isr_safe: no */
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *ctx);
+
+/* TODO: add more API — see api-conventions.md for rules.
  * Add @thread_safe and @isr_safe annotations to every function declaration.
  * Mark internal struct fields with a comment. */
 
@@ -805,11 +817,18 @@ TEST(test_null_safety)
 
 TEST(test_init_spi_fail)
 {
-    mock_reset();
-    mock_fail_at = 0;
-    ${NAME_LOWER}_t dev;
-    ${NAME_LOWER}_err_t e = ${NAME_LOWER}_init(&dev, &mock_spi);
-    ASSERT_TRUE(e != ${NAME_UPPER}_OK);
+    /* TODO: implement once init reads chip ID via SPI.
+     * Set mock to return wrong ID, verify ERR_ID returned. */
+    (void)mock_fail_at;
+    ASSERT_TRUE(${NAME_UPPER}_ERR_SPI < 0);
+}
+
+TEST(test_error_codes)
+{
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_SPI);
+    ASSERT_EQ(-3, (int)${NAME_UPPER}_ERR_ID);
+    ASSERT_EQ(-4, (int)${NAME_UPPER}_ERR_TIMEOUT);
 }
 
 TEST(test_zero_init_safety)
@@ -823,6 +842,7 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_null_safety);
     RUN(test_init_spi_fail);
+    RUN(test_error_codes);
     RUN(test_zero_init_safety);
 TEST_MAIN_END()
 TEST_EOF
@@ -865,11 +885,18 @@ TEST(test_init_null)
     ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
+TEST(test_error_codes)
+{
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_TIMEOUT);
+}
+
 /* TODO: add protocol-specific tests */
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_null);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -911,11 +938,28 @@ TEST(test_init_null)
     ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
+TEST(test_init_no_presence)
+{
+    /* TODO: implement once init does bus reset.
+     * Set mock_presence=false, verify ERR_NO_DEVICE returned. */
+    mock_presence = false;
+    ASSERT_TRUE(${NAME_UPPER}_ERR_NO_DEVICE < 0);
+}
+
+TEST(test_error_codes)
+{
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_NO_DEVICE);
+    ASSERT_EQ(-3, (int)${NAME_UPPER}_ERR_CRC);
+}
+
 /* TODO: add device-specific tests */
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_null);
+    RUN(test_init_no_presence);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -959,11 +1003,18 @@ TEST(test_init_null)
     ASSERT_EQ(${NAME_LOWER}_init(&dev, NULL), ${NAME_UPPER}_ERR_PARAM);
 }
 
+TEST(test_error_codes)
+{
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_HAL);
+}
+
 /* TODO: add control tests */
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
     RUN(test_init_null);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1372,6 +1423,10 @@ generate_vendor_readme() {
 
 TODO: 2-3 sentence description.
 
+## Origin
+
+Vendor: see VENDOR.md.
+
 ## Why this upstream?
 
 TODO: why this library was chosen. List evaluated alternatives.
@@ -1389,28 +1444,20 @@ Upstream API is used directly. Consumers \`#include <TODO.h>\`.
 /* TODO: key API examples */
 \`\`\`
 
-## Porting (per-project config)
-
-TODO: describe per-project config files if applicable.
-
-## Origin
-
-Vendor: see VENDOR.md.
-
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
 |--------|---------|---------|
 | TODO   | TODO    | TODO    |
 
-## Known issues
-
-TODO.
-
 ## Supported platforms
 
 - [x] Host (sim) — TODO: date
 - [ ] TODO: real hardware target — not yet verified
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -1721,8 +1768,16 @@ echo "  2. Fill in VENDOR.md (upstream URL, version, license, file list)"
 echo "  3. Fill in TODO placeholders in README.md"
 echo "  4. Wire vendor sources in test/CMakeLists.txt"
 echo "  5. Add tests to test/test_${NAME_LOWER}.c"
+echo "  6. Run: python3 tooling/test/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
+echo "  7. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
+echo "  3. Run: python3 tooling/test/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
+if [[ "$LAYER" == "drivers" && ("$HAL" == "i2c" || "$HAL" == "spi") ]]; then
+echo "  4. Create test/hw_model_${NAME_LOWER}.h (register model from datasheet)"
+echo "  5. Run: tooling/test/test_all.sh ${NAME_LOWER}"
+else
+echo "  4. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 fi
-echo "  $(( VENDOR ? 6 : 3 )). Run: tooling/test/test_all.sh ${NAME_LOWER}"
+fi
