@@ -24,16 +24,14 @@ TEST(test_version_compare_null_a) {
     version_t _b;
     memset(&_b, 0, sizeof(_b));
     int ret = version_compare(NULL, &_b);
-    /* NULL treated as equal (returns 0) */
-    ASSERT_TRUE(ret == 0);
+    ASSERT_TRUE(ret < 0);
 }
 
 TEST(test_version_compare_null_b) {
     version_t _a;
     memset(&_a, 0, sizeof(_a));
     int ret = version_compare(&_a, NULL);
-    /* NULL treated as equal (returns 0) */
-    ASSERT_TRUE(ret == 0);
+    ASSERT_TRUE(ret < 0);
 }
 
 TEST(test_version_compatible_null_required) {

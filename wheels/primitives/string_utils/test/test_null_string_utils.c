@@ -51,17 +51,15 @@ TEST(test_str_rtrim_null_out) {
 TEST(test_str_split_null_str) {
     char _tokens[64];
     memset(_tokens, 0, sizeof(_tokens));
-    int ret = str_split(NULL, 0, (char **)_tokens, 0);
-    /* NULL str returns 0 (no tokens) */
-    ASSERT_TRUE(ret == 0);
+    int ret = str_split(NULL, 0, _tokens, 0);
+    ASSERT_TRUE(ret < 0);
 }
 
 TEST(test_str_split_null_tokens) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
     int ret = str_split(_str, 0, NULL, 0);
-    /* NULL tokens + max_tokens=0 returns 0 (no tokens) */
-    ASSERT_TRUE(ret == 0);
+    ASSERT_TRUE(ret < 0);
 }
 
 TEST(test_str_starts_with_null_str) {

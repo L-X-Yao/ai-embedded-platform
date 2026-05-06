@@ -99,8 +99,7 @@ TEST(test_msgpack_dec_init_null_buf) {
     msgpack_dec_t _dec;
     memset(&_dec, 0, sizeof(_dec));
     msgpack_err_t err = msgpack_dec_init(&_dec, NULL, 0);
-    /* NULL buf + len=0 is valid empty input */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_msgpack_dec_next_null_dec) {
