@@ -57,7 +57,11 @@ None. Alpha is a runtime parameter.
 
 ## Known issues
 
-None.
+- `iir_lowpass_feed`: NaN input is not guarded. If the sample `x` is NaN,
+  the output becomes NaN and remains NaN until `iir_lowpass_reset()` is
+  called. This is intentional — filtering NaN requires knowledge of the
+  "correct" substitute value, which is application-specific. Callers must
+  sanitize upstream sensor faults before feeding.
 
 ## How to test
 
@@ -65,16 +69,21 @@ None.
 cd wheels/primitives/iir_lowpass/test
 cmake -GNinja -S . -B build && cmake --build build
 ./build/test_iir_lowpass
+./build/test_null_iir_lowpass
 ```
 
-19 test cases: init validation (NULL ptr, alpha range, NaN), first-sample
+20 test cases: init validation (NULL ptr, alpha range, NaN), first-sample
 passthrough, step-response smoothing, alpha=1 full passthrough, small-alpha
-slow response, 100-sample convergence, reset, runtime alpha change, NULL
-guards on all pointer-taking functions, RC-to-alpha helper.
+slow response, 100-sample convergence, reset, runtime alpha change, NaN
+rejection in set_alpha, NaN feed propagation and reset recovery, NULL guards
+on all pointer-taking functions, RC-to-alpha helper (including NaN inputs).
+
+6 null-parameter tests auto-generated for all pointer-taking public API
+functions.
 
 ## Test status
 
-- Unit tests (sim): PASS (19 C tests)
+- Unit tests (sim): PASS (20 C tests + 6 null tests)
 - HIL: N/A
 
 ## API convention deviations
