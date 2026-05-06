@@ -42,7 +42,7 @@ static bool gain_valid(tsl2591_gain_t g)
 
 static bool itime_valid(tsl2591_itime_t t)
 {
-    return t >= TSL2591_ITIME_100MS && t <= TSL2591_ITIME_600MS;
+    return (unsigned)t <= (unsigned)TSL2591_ITIME_600MS;
 }
 
 static float gain_factor(tsl2591_gain_t g)
