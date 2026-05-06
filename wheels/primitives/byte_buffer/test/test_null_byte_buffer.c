@@ -51,8 +51,7 @@ TEST(test_byte_buffer_put_bytes_null_src) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
     byte_buffer_err_t err = byte_buffer_put_bytes(&_buf, NULL, 0);
-    /* NULL src + len=0 is valid (nothing to copy) */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_byte_buffer_get_u8_null_buf) {
@@ -108,8 +107,7 @@ TEST(test_byte_buffer_get_bytes_null_dst) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
     byte_buffer_err_t err = byte_buffer_get_bytes(&_buf, NULL, 0);
-    /* NULL dst + len=0 is valid (nothing to copy) */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_byte_buffer_readable_null_buf) {

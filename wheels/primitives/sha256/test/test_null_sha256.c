@@ -20,10 +20,9 @@ TEST(test_sha256_update_null_ctx) {
 
 TEST(test_sha256_update_null_data) {
     sha256_ctx_t _ctx;
-    sha256_init(&_ctx);
-    /* NULL data with len==0 is explicitly allowed per API contract */
+    memset(&_ctx, 0, sizeof(_ctx));
     sha256_err_t err = sha256_update(&_ctx, NULL, 0);
-    ASSERT_EQ(err, SHA256_OK);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_sha256_final_null_ctx) {

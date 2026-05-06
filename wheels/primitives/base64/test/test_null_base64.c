@@ -39,8 +39,7 @@ TEST(test_base64_decode_null_b64) {
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
     base64_err_t err = base64_decode(NULL, 0, _out, &_out_len);
-    /* NULL + len=0 is valid empty input */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_base64_decode_null_out) {

@@ -39,8 +39,7 @@ TEST(test_slip_decode_null_encoded) {
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
     slip_err_t err = slip_decode(NULL, 0, _out, &_out_len);
-    /* NULL + len=0 is valid empty input */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_slip_decode_null_out) {

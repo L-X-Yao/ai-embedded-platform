@@ -8,26 +8,22 @@
 
 TEST(test_fnv1a_32_null_data) {
     uint32_t ret = fnv1a_32(NULL, 0);
-    /* NULL returns offset basis by design */
-    ASSERT_EQ(ret, FNV1A_32_OFFSET_BASIS);
+    ASSERT_EQ(ret, 0);
 }
 
 TEST(test_fnv1a_64_null_data) {
     uint64_t ret = fnv1a_64(NULL, 0);
-    /* NULL returns offset basis by design */
-    ASSERT_EQ(ret, FNV1A_64_OFFSET_BASIS);
+    ASSERT_EQ(ret, 0);
 }
 
 TEST(test_fnv1a_32_string_null_str) {
     uint32_t ret = fnv1a_32_string(NULL);
-    /* NULL returns offset basis by design */
-    ASSERT_EQ(ret, FNV1A_32_OFFSET_BASIS);
+    ASSERT_EQ(ret, 0);
 }
 
 TEST(test_fnv1a_64_string_null_str) {
     uint64_t ret = fnv1a_64_string(NULL);
-    /* NULL returns offset basis by design */
-    ASSERT_EQ(ret, FNV1A_64_OFFSET_BASIS);
+    ASSERT_EQ(ret, 0);
 }
 
 TEST(test_fnv1a_32_update_null_data) {

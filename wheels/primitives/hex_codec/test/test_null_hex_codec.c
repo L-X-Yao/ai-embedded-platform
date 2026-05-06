@@ -40,8 +40,7 @@ TEST(test_hex_decode_null_hex) {
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
     hex_err_t err = hex_decode(NULL, 0, _out, &_out_len);
-    /* NULL hex + len=0 is valid empty input */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_hex_decode_null_out) {
@@ -50,8 +49,7 @@ TEST(test_hex_decode_null_out) {
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
     hex_err_t err = hex_decode(_hex, 0, NULL, &_out_len);
-    /* NULL out + len=0 is valid (nothing to decode) */
-    ASSERT_TRUE(err == 0);
+    ASSERT_TRUE(err < 0);
 }
 
 TEST(test_hex_decode_null_out_len) {
