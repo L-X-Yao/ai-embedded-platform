@@ -4,10 +4,11 @@
 # Install: git config core.hooksPath .githooks
 #
 # Checks:
-#   1. No compiled binaries (.o, .obj, .a, .lib, .so, .dll, .exe, .elf)
-#   2. No firmware images (.bin, .hex) outside expected locations
-#   3. No secrets (.env, credentials, private keys)
-#   4. No large files (>1MB)
+#   1. No control characters in filenames (Claude Code runtime artifacts)
+#   2. No compiled binaries (.o, .obj, .a, .lib, .so, .dll, .exe, .elf)
+#   3. No firmware images (.bin, .hex) outside expected locations
+#   4. No secrets (.env, credentials, private keys)
+#   5. No large files (>1MB)
 
 BLOCKED_EXTS='\.o|\.obj|\.a|\.lib|\.so|\.dll|\.exe|\.elf|\.bin|\.hex|\.map|\.gcno|\.gcda'
 SECRET_PATTERNS='\.env$|credentials\.json|\.pem$|\.key$|id_rsa|\.p12$|\.pfx$'
@@ -16,8 +17,15 @@ blocked=()
 secrets=()
 large=()
 
+ctrl_chars=()
+
 while IFS= read -r file; do
     [[ -z "$file" ]] && continue
+
+    # Control characters in filename (Claude Code runtime artifact)
+    if echo "$file" | grep -qP '[\x00-\x08\x0e-\x1f\x7f]'; then
+        ctrl_chars+=("$file")
+    fi
 
     # Binary artifacts
     if echo "$file" | grep -qE "($BLOCKED_EXTS)$"; then
@@ -39,6 +47,13 @@ while IFS= read -r file; do
 done < <(git diff --cached --name-only --diff-filter=ACR)
 
 EXIT=0
+
+if [[ ${#ctrl_chars[@]} -gt 0 ]]; then
+    echo "ERROR: files with control characters in name (runtime artifact, delete them):"
+    for f in "${ctrl_chars[@]}"; do echo "  $f"; done
+    echo ""
+    EXIT=1
+fi
 
 if [[ ${#blocked[@]} -gt 0 ]]; then
     echo "ERROR: binary/build artifacts staged for commit:"
