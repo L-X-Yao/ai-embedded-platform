@@ -20,5 +20,16 @@ target_include_directories(test_flash_ring PRIVATE
 )
 target_compile_options(test_flash_ring PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_flash_ring
+    prop_flash_ring.c
+    ../flash_ring.c
+)
+target_include_directories(prop_flash_ring PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_flash_ring PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME flash_ring_tests COMMAND test_flash_ring)
+add_test(NAME flash_ring_props COMMAND prop_flash_ring)

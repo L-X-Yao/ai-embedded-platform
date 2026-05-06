@@ -20,5 +20,16 @@ target_include_directories(test_air780eg PRIVATE
 )
 target_compile_options(test_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_air780eg
+    prop_air780eg.c
+    ../air780eg.c
+)
+target_include_directories(prop_air780eg PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(prop_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME air780eg_tests COMMAND test_air780eg)
+add_test(NAME air780eg_props COMMAND prop_air780eg)
