@@ -3,13 +3,11 @@
  *
  * Requires: property_test.h from tooling/test/
  * Build (from test/ directory):
- *   gcc -std=c99 -I. -I../vendor/inc -I../../../primitives/fal/vendor/inc \
+ *   gcc -std=c99 -I. -I../vendor/inc -I../../../primitives/fal \
  *       -I../../../../tooling/test \
  *       prop_kvs.c ../vendor/src/fdb.c ../vendor/src/fdb_kvdb.c \
  *       ../vendor/src/fdb_tsdb.c ../vendor/src/fdb_utils.c \
- *       ../../../primitives/fal/vendor/src/fal.c \
- *       ../../../primitives/fal/vendor/src/fal_flash.c \
- *       ../../../primitives/fal/vendor/src/fal_partition.c \
+ *       ../../../primitives/fal/fal.c \
  *       -o prop_kvs
  *
  * Note: must compile from test/ directory so fal_cfg.h and fdb_cfg.h are found.

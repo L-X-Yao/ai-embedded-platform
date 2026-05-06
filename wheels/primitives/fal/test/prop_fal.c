@@ -3,9 +3,8 @@
  *
  * Requires: property_test.h from tooling/test/
  * Build:
- *   gcc -std=c99 -I. -I../vendor/inc -I../../../../tooling/test \
- *       prop_fal.c ../vendor/src/fal.c ../vendor/src/fal_flash.c \
- *       ../vendor/src/fal_partition.c -o prop_fal
+ *   gcc -std=c99 -I. -I.. -I../../../../tooling/test \
+ *       prop_fal.c ../fal.c -o prop_fal
  *
  * Note: must compile from test/ directory so fal_cfg.h is found.
  */

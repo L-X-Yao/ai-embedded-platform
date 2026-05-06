@@ -30,7 +30,7 @@
 | `debounce` | 信号去抖 | candidate |
 | `endian` | 字节序转换 | candidate |
 | `event_queue` | 事件队列（SPSC） | candidate |
-| `fal` | Flash 抽象层（vendor） | candidate |
+| `fal` | Flash 抽象层（自写） | candidate |
 | `fifo_queue` | 类型化 FIFO 队列 | candidate |
 | `fixed_point` | 定点数运算 | candidate |
 | `hash_fnv` | FNV-1a 哈希 | candidate |

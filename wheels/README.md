@@ -38,7 +38,7 @@
 - `debounce/` — 软件按键消抖（上升/下降沿检测）
 - `endian/` — 字节序转换工具
 - `event_queue/` — SPSC 事件队列（无锁 volatile head/tail）
-- `fal/` — Flash 抽象层（vendor: RT-Thread FAL）
+- `fal/` — Flash 抽象层（自写，API 兼容 FAL）
 - `fifo_queue/` — 类型化 FIFO 队列
 - `fixed_point/` — 定点数运算（Q16.16）
 - `hash_fnv/` — FNV-1a 哈希
