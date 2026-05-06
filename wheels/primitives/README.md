@@ -35,7 +35,9 @@
 | `fixed_point` | 定点数运算 | candidate |
 | `hash_fnv` | FNV-1a 哈希 | candidate |
 | `hex_codec` | 十六进制编解码 | candidate |
+| `iir_lowpass` | 一阶 IIR 低通滤波器 | candidate |
 | `json_parser` | JSON 解析器（零分配） | candidate |
+| `kalman_1d` | 1D 标量卡尔曼滤波器 | candidate |
 | `kvs` | 键值存储（vendor FlashDB） | candidate |
 | `led_pattern` | LED 闪烁模式引擎 | candidate |
 | `log` | 带等级+模块+多 sink 的日志 | candidate |
