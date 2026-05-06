@@ -9,14 +9,14 @@
 TEST(test_led_pattern_init_null_p) {
     led_pattern_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    led_pattern_init(NULL, &_cfg);
+    (void)led_pattern_init(NULL, &_cfg);
     /* must not crash */
 }
 
 TEST(test_led_pattern_init_null_cfg) {
     led_pattern_t _p;
     memset(&_p, 0, sizeof(_p));
-    led_pattern_init(&_p, NULL);
+    (void)led_pattern_init(&_p, NULL);
     /* must not crash */
 }
 
@@ -36,7 +36,7 @@ TEST(test_led_pattern_finished_null_p) {
 }
 
 TEST(test_led_pattern_restart_null_p) {
-    led_pattern_restart(NULL);
+    (void)led_pattern_restart(NULL);
     /* must not crash */
 }
 

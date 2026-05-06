@@ -7,26 +7,26 @@
 #include <stddef.h>
 
 TEST(test_log_rtt_init_null_r) {
-    log_rtt_init(NULL, NULL, NULL, 0);
+    (void)log_rtt_init(NULL, NULL, NULL, 0);
     /* must not crash */
 }
 
 TEST(test_log_rtt_init_null_ctx) {
     log_rtt_t _r;
     memset(&_r, 0, sizeof(_r));
-    log_rtt_init(&_r, NULL, NULL, 0);
+    (void)log_rtt_init(&_r, NULL, NULL, 0);
     /* must not crash */
 }
 
 TEST(test_log_rtt_sink_null_ctx) {
     char _line[64];
     memset(_line, 0, sizeof(_line));
-    log_rtt_sink(NULL, _line, 0);
+    (void)log_rtt_sink(NULL, _line, 0);
     /* must not crash */
 }
 
 TEST(test_log_rtt_sink_null_line) {
-    log_rtt_sink(NULL, NULL, 0);
+    (void)log_rtt_sink(NULL, NULL, 0);
     /* must not crash */
 }
 

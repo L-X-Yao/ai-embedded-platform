@@ -9,33 +9,33 @@
 TEST(test_mahony_ahrs_init_null_f) {
     mahony_ahrs_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    mahony_ahrs_init(NULL, &_cfg);
+    (void)mahony_ahrs_init(NULL, &_cfg);
     /* must not crash */
 }
 
 TEST(test_mahony_ahrs_init_null_cfg) {
     mahony_ahrs_t _f;
     memset(&_f, 0, sizeof(_f));
-    mahony_ahrs_init(&_f, NULL);
+    (void)mahony_ahrs_init(&_f, NULL);
     /* must not crash */
 }
 
 TEST(test_mahony_ahrs_update_null_f) {
-    mahony_ahrs_update(NULL, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    (void)mahony_ahrs_update(NULL, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_mahony_ahrs_get_euler_null_f) {
     mahony_ahrs_euler_t _out;
     memset(&_out, 0, sizeof(_out));
-    mahony_ahrs_get_euler(NULL, &_out);
+    (void)mahony_ahrs_get_euler(NULL, &_out);
     /* must not crash */
 }
 
 TEST(test_mahony_ahrs_get_euler_null_out) {
     mahony_ahrs_t _f;
     memset(&_f, 0, sizeof(_f));
-    mahony_ahrs_get_euler(&_f, NULL);
+    (void)mahony_ahrs_get_euler(&_f, NULL);
     /* must not crash */
 }
 
@@ -48,7 +48,7 @@ TEST(test_mahony_ahrs_get_quaternion_null_f) {
     memset(&_q2, 0, sizeof(_q2));
     float _q3;
     memset(&_q3, 0, sizeof(_q3));
-    mahony_ahrs_get_quaternion(NULL, &_q0, &_q1, &_q2, &_q3);
+    (void)mahony_ahrs_get_quaternion(NULL, &_q0, &_q1, &_q2, &_q3);
     /* must not crash */
 }
 
@@ -61,7 +61,7 @@ TEST(test_mahony_ahrs_get_quaternion_null_q0) {
     memset(&_q2, 0, sizeof(_q2));
     float _q3;
     memset(&_q3, 0, sizeof(_q3));
-    mahony_ahrs_get_quaternion(&_f, NULL, &_q1, &_q2, &_q3);
+    (void)mahony_ahrs_get_quaternion(&_f, NULL, &_q1, &_q2, &_q3);
     /* must not crash */
 }
 
@@ -74,7 +74,7 @@ TEST(test_mahony_ahrs_get_quaternion_null_q1) {
     memset(&_q2, 0, sizeof(_q2));
     float _q3;
     memset(&_q3, 0, sizeof(_q3));
-    mahony_ahrs_get_quaternion(&_f, &_q0, NULL, &_q2, &_q3);
+    (void)mahony_ahrs_get_quaternion(&_f, &_q0, NULL, &_q2, &_q3);
     /* must not crash */
 }
 
@@ -87,7 +87,7 @@ TEST(test_mahony_ahrs_get_quaternion_null_q2) {
     memset(&_q1, 0, sizeof(_q1));
     float _q3;
     memset(&_q3, 0, sizeof(_q3));
-    mahony_ahrs_get_quaternion(&_f, &_q0, &_q1, NULL, &_q3);
+    (void)mahony_ahrs_get_quaternion(&_f, &_q0, &_q1, NULL, &_q3);
     /* must not crash */
 }
 
@@ -100,7 +100,7 @@ TEST(test_mahony_ahrs_get_quaternion_null_q3) {
     memset(&_q1, 0, sizeof(_q1));
     float _q2;
     memset(&_q2, 0, sizeof(_q2));
-    mahony_ahrs_get_quaternion(&_f, &_q0, &_q1, &_q2, NULL);
+    (void)mahony_ahrs_get_quaternion(&_f, &_q0, &_q1, &_q2, NULL);
     /* must not crash */
 }
 

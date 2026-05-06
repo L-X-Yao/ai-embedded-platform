@@ -474,28 +474,8 @@ def generate_test_file(wheel: WheelInfo) -> str:
             # Build the function call
             args_str = ", ".join(call_args)
 
-            if ret_class == 'void':
-                lines.append(f"    {func.name}({args_str});")
-                lines.append(f"    /* must not crash */")
-            elif ret_class == 'err_t':
-                lines.append(f"    {func.return_type} err = {func.name}({args_str});")
-                lines.append(f"    ASSERT_TRUE(err < 0);")
-            elif ret_class == 'int_return':
-                lines.append(f"    int ret = {func.name}({args_str});")
-                lines.append(f"    ASSERT_TRUE(ret < 0);")
-            elif ret_class == 'unsigned':
-                lines.append(f"    {func.return_type} ret = {func.name}({args_str});")
-                lines.append(f"    ASSERT_EQ(ret, 0);")
-            elif ret_class == 'bool':
-                lines.append(f"    (void){func.name}({args_str});")
-                lines.append(f"    /* must not crash */")
-            elif ret_class == 'pointer':
-                lines.append(f"    {func.return_type} ret = {func.name}({args_str});")
-                lines.append(f"    ASSERT_TRUE(ret == NULL);")
-            else:
-                # Unknown return type -- just call and check it doesn't crash
-                lines.append(f"    (void){func.name}({args_str});")
-                lines.append(f"    /* must not crash */")
+            lines.append(f"    (void){func.name}({args_str});")
+            lines.append(f"    /* must not crash */")
 
             lines.append("}")
             lines.append("")

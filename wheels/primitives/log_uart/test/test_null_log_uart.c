@@ -7,26 +7,26 @@
 #include <stddef.h>
 
 TEST(test_log_uart_init_null_u) {
-    log_uart_init(NULL, NULL, NULL);
+    (void)log_uart_init(NULL, NULL, NULL);
     /* must not crash */
 }
 
 TEST(test_log_uart_init_null_ctx) {
     log_uart_t _u;
     memset(&_u, 0, sizeof(_u));
-    log_uart_init(&_u, NULL, NULL);
+    (void)log_uart_init(&_u, NULL, NULL);
     /* must not crash */
 }
 
 TEST(test_log_uart_sink_null_ctx) {
     char _line[64];
     memset(_line, 0, sizeof(_line));
-    log_uart_sink(NULL, _line, 0);
+    (void)log_uart_sink(NULL, _line, 0);
     /* must not crash */
 }
 
 TEST(test_log_uart_sink_null_line) {
-    log_uart_sink(NULL, NULL, 0);
+    (void)log_uart_sink(NULL, NULL, 0);
     /* must not crash */
 }
 
