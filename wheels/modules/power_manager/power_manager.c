@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * power_manager — cooperative sleep/wake orchestrator (no OS)
+ *
+ * Layer:     L3 (modules)
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "power_manager.h"
 #include <string.h>
 

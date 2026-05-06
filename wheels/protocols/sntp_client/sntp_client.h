@@ -106,13 +106,13 @@ sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
  * Convert Unix timestamp (seconds + ms) to NTP timestamp.
  * @thread_safe: yes (pure) @isr_safe: yes
  */
-sntp_timestamp_t sntp_unix_to_ntp(uint32_t unix_sec, uint16_t ms);
+sntp_timestamp_t sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms);
 
 /**
  * Convert NTP timestamp to Unix seconds + milliseconds.
  * @thread_safe: yes (pure) @isr_safe: yes
  */
-void sntp_ntp_to_unix(const sntp_timestamp_t *ntp,
+void sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,
                       uint32_t *unix_sec, uint16_t *ms);
 
 #ifdef __cplusplus

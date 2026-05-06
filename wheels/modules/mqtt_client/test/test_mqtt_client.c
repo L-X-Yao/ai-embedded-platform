@@ -402,6 +402,46 @@ TEST(test_next_id_null)
     ASSERT_EQ(mqtt_client_next_id(NULL), 0);
 }
 
+/* ─── error code coverage ─────────────────────────────────────── */
+
+static int mock_send_fail(void *ctx, const uint8_t *data, uint16_t len)
+{
+    (void)ctx; (void)data; (void)len;
+    return -1;
+}
+
+TEST(test_connect_send_fail_returns_err_io)
+{
+    reset_mocks();
+    mqtt_client_io_t fail_io = { .send = mock_send_fail, .get_tick_ms = mock_tick, .ctx = NULL };
+    mqtt_client_cfg_t cfg = { .client_id = "t", .keepalive_s = 60, .clean_session = true };
+    mqtt_client_init(&g_c, &fail_io, &cfg);
+    ASSERT_EQ(mqtt_client_connect(&g_c), MQTT_CLIENT_ERR_IO);
+}
+
+TEST(test_publish_send_fail_returns_err_io)
+{
+    setup_connected();
+    mqtt_client_io_t fail_io = { .send = mock_send_fail, .get_tick_ms = mock_tick, .ctx = NULL };
+    g_c.io = &fail_io;
+    ASSERT_EQ(mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 0), MQTT_CLIENT_ERR_IO);
+}
+
+TEST(test_feed_bad_remaining_length_returns_err_protocol)
+{
+    setup_connected();
+    uint8_t bad[] = { 0x30, 0x80, 0x80, 0x80, 0x80 };
+    ASSERT_EQ(mqtt_client_feed(&g_c, bad, sizeof(bad)), MQTT_CLIENT_ERR_PROTOCOL);
+}
+
+TEST(test_feed_overflow_returns_err_size)
+{
+    setup_connected();
+    g_c.rx_len = MQTT_CLIENT_RX_BUF_SIZE;
+    uint8_t one = 0x00;
+    ASSERT_EQ(mqtt_client_feed(&g_c, &one, 1), MQTT_CLIENT_ERR_SIZE);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -432,4 +472,8 @@ TEST_MAIN("mqtt_client")
     RUN(test_get_state_null);
     RUN(test_pub_inflight_null);
     RUN(test_next_id_null);
+    RUN(test_connect_send_fail_returns_err_io);
+    RUN(test_publish_send_fail_returns_err_io);
+    RUN(test_feed_bad_remaining_length_returns_err_protocol);
+    RUN(test_feed_overflow_returns_err_size);
 TEST_MAIN_END()
