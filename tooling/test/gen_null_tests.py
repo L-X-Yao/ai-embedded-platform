@@ -602,6 +602,9 @@ def main():
         if arg == '--wheel' and i < len(sys.argv) - 1:
             single = sys.argv[i + 1]
             break
+        if arg.endswith('.h') and not arg.startswith('-'):
+            single = arg
+            break
 
     if single:
         wheels = resolve_single_wheel(single)

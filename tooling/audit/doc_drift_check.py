@@ -104,24 +104,28 @@ def check_claude_md():
     drifts = []
     wheels = count_wheels()
 
-    # Wheel total count: "58 个 wheels" or "**58 个 wheels**"
-    m = re.search(r'\*\*(\d+) 个 wheels\*\*', text)
+    # Wheel total count: "**150 wheels**" or "**150 个 wheels**"
+    m = re.search(r'\*\*(\d+)\s*(?:个\s*)?wheels\*\*', text)
     if m:
         claimed = int(m.group(1))
         actual = wheels["total"]
         if claimed != actual:
             drifts.append(("CLAUDE.md", f"wheel count: says {claimed}, actual {actual}",
-                           f"**{claimed} 个 wheels**", f"**{actual} 个 wheels**"))
+                           m.group(0), m.group(0).replace(str(claimed), str(actual))))
 
-    # Per-layer counts: "L0 (30):"
-    for layer, key in [("L0", "primitives"), ("L1", "drivers"), ("L2", "protocols"), ("L3", "modules")]:
-        m = re.search(rf'{layer} \((\d+)\)', text)
+    # Per-layer counts: "L0 原语 55：" or "L0 (55):" — Chinese and English formats
+    layer_map = [("L0", "primitives"), ("L1", "drivers"), ("L2", "protocols"), ("L3", "modules")]
+    for layer, key in layer_map:
+        # Match "L0 原语 55" or "L0 (55)"
+        m = re.search(rf'{layer}\s+\S+\s+(\d+)[：:]', text)
+        if not m:
+            m = re.search(rf'{layer}\s*\((\d+)\)', text)
         if m:
             claimed = int(m.group(1))
             actual = wheels[key]
             if claimed != actual:
                 drifts.append(("CLAUDE.md", f"{layer} count: says {claimed}, actual {actual}",
-                               f"{layer} ({claimed})", f"{layer} ({actual})"))
+                               m.group(0), m.group(0).replace(str(claimed), str(actual))))
 
     # Makefile target count: "Makefile（N 目标）"
     m = re.search(r'Makefile（(\d+) .?目标）', text)
