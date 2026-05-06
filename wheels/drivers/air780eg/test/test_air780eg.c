@@ -541,6 +541,226 @@ TEST(test_deregister_callback_null)
     ASSERT_EQ(0, g_mqtt_rx_count);
 }
 
+TEST(test_urc_nmea_gnrmc)
+{
+    /* $GNRMC NMEA sentence triggers nmea callback */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_nmea(&dev, on_nmea, NULL);
+    feed_line(&dev, "$GNRMC,123456.00,A,3000.0000,N,12000.0000,E,0.00,0.00,010101,,,A*XX");
+    ASSERT_EQ(1, g_nmea_count);
+    ASSERT_TRUE(starts_with(g_nmea_line, "$GNRMC"));
+}
+
+TEST(test_urc_nmea_gngsa)
+{
+    /* $GNGSA NMEA sentence triggers nmea callback */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_nmea(&dev, on_nmea, NULL);
+    feed_line(&dev, "$GNGSA,A,3,01,02,03,,,,,,,,,1.5,0.9,1.2*XX");
+    ASSERT_EQ(1, g_nmea_count);
+    ASSERT_TRUE(starts_with(g_nmea_line, "$GNGSA"));
+}
+
+TEST(test_urc_nmea_gpgga)
+{
+    /* $GPGGA NMEA sentence triggers nmea callback */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_nmea(&dev, on_nmea, NULL);
+    feed_line(&dev, "$GPGGA,123456.00,3000.0000,N,12000.0000,E,1,08,0.9,10.0,M,,M,,*XX");
+    ASSERT_EQ(1, g_nmea_count);
+    ASSERT_TRUE(starts_with(g_nmea_line, "$GPGGA"));
+}
+
+TEST(test_urc_nmea_gprmc)
+{
+    /* $GPRMC NMEA sentence triggers nmea callback */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_nmea(&dev, on_nmea, NULL);
+    feed_line(&dev, "$GPRMC,123456.00,A,3000.0000,N,12000.0000,E,0.00,0.00,010101,,,A*XX");
+    ASSERT_EQ(1, g_nmea_count);
+    ASSERT_TRUE(starts_with(g_nmea_line, "$GPRMC"));
+}
+
+TEST(test_urc_nmea_no_cb)
+{
+    /* NMEA URC without registered callback must not crash */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    /* No callback registered */
+    feed_line(&dev, "$GNGGA,123456.00,3000.0000,N,12000.0000,E,1,12,0.8,100.0,M,,M,,*XX");
+    ASSERT_EQ(0, g_nmea_count);
+}
+
+TEST(test_msub_no_opening_quote)
+{
+    /* +MSUB: where payload area starts without '"' — should return early */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    /* No '"' after the space — dispatch_urc returns early, cb not fired */
+    feed_line(&dev, "+MSUB: no_quote_here");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+}
+
+TEST(test_msub_no_closing_topic_quote)
+{
+    /* +MSUB: "unclosed_topic — strchr for closing '"' returns NULL */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"unclosed_topic");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+}
+
+TEST(test_msub_quoted_payload_no_closing_quote)
+{
+    /* Quoted payload with no closing '"': +MSUB: "t",3,"payload_no_end
+     * strrchr returns NULL so end = p + strlen(p), still fires callback */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"t\",7,\"noquote");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "t") == 0);
+    /* payload is "noquote" — 7 bytes */
+    ASSERT_EQ(7, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "noquote", 7) == 0);
+}
+
+TEST(test_init_missing_get_tick)
+{
+    /* io with NULL get_tick_ms must be rejected */
+    air780eg_t dev;
+    air780eg_io_t bad = g_mock_io;
+    bad.get_tick_ms = NULL;
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_init(&dev, &bad));
+}
+
+TEST(test_poll_no_op_when_idle)
+{
+    /* poll when not pending must not change status */
+    air780eg_t dev;
+    mock_reset();
+    g_tick_ms = 0;
+    air780eg_init(&dev, &g_mock_io);
+    ASSERT_EQ(AIR780EG_CMD_IDLE, air780eg_cmd_status(&dev));
+    g_tick_ms = 99999;
+    air780eg_poll(&dev);
+    ASSERT_EQ(AIR780EG_CMD_IDLE, air780eg_cmd_status(&dev));
+}
+
+TEST(test_send_cmd_null_expect_clears_expect)
+{
+    /* send_cmd with expect=NULL must clear the expect field and still OK */
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_cmd(&dev, "AT", NULL, 1000));
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    /* With empty expect, only "OK" terminates the command */
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+TEST(test_urc_disconnect_no_cb)
+{
+    /* IPCLOSE URC with no disconnect callback registered must not crash */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    /* No disconnect_cb registered */
+    feed_line(&dev, "+IPCLOSE: 0,1");
+    ASSERT_EQ(0, g_disconnect_count);
+}
+
+TEST(test_urc_pdp_deact_no_cb)
+{
+    /* PDP: DEACT URC with no pdp_deact callback registered must not crash */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    feed_line(&dev, "PDP: DEACT");
+    ASSERT_EQ(0, g_pdp_deact_count);
+}
+
+TEST(test_urc_rdy_no_cb)
+{
+    /* RDY URC without restart callback: counter increments, no crash */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    /* No restart callback */
+    feed_line(&dev, "RDY");
+    ASSERT_EQ(0, g_restart_count);
+    ASSERT_EQ(1u, air780eg_get_rdy_count(&dev));
+}
+
+TEST(test_urc_csq_no_cb)
+{
+    /* +CSQ URC without csq callback: last_csq updated, no crash */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    /* No csq callback */
+    feed_line(&dev, "+CSQ: 15,99");
+    ASSERT_EQ(15, air780eg_get_last_csq(&dev));
+}
+
+TEST(test_matched_line_null_dev)
+{
+    /* get_matched_line and get_prev_line with NULL dev return empty string */
+    const char *ml = air780eg_get_matched_line(NULL);
+    const char *pl = air780eg_get_prev_line(NULL);
+    ASSERT_TRUE(ml != NULL);
+    ASSERT_TRUE(pl != NULL);
+    ASSERT_EQ('\0', (int)ml[0]);
+    ASSERT_EQ('\0', (int)pl[0]);
+}
+
+TEST(test_send_cmd_null_dev)
+{
+    /* send_cmd with NULL dev returns ERR_PARAM */
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_send_cmd(NULL, "AT", "OK", 1000));
+}
+
+TEST(test_feed_cr_lf_sequence)
+{
+    /* Feed data as raw bytes with \r then \n — cr is stored then stripped.
+     * The standard UART sequence where \r arrives as data char then \n fires
+     * the line. Use the feed helper to drive the normal path. */
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT", "OK", 1000);
+    /* feed_line uses \r\n — verify this produces CMD_OK (covers normal path) */
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
 TEST_MAIN("air780eg")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -577,4 +797,22 @@ TEST_MAIN("air780eg")
     RUN(test_csq_99);
     RUN(test_cms_error);
     RUN(test_deregister_callback_null);
+    RUN(test_urc_nmea_gnrmc);
+    RUN(test_urc_nmea_gngsa);
+    RUN(test_urc_nmea_gpgga);
+    RUN(test_urc_nmea_gprmc);
+    RUN(test_urc_nmea_no_cb);
+    RUN(test_msub_no_opening_quote);
+    RUN(test_msub_no_closing_topic_quote);
+    RUN(test_msub_quoted_payload_no_closing_quote);
+    RUN(test_init_missing_get_tick);
+    RUN(test_poll_no_op_when_idle);
+    RUN(test_send_cmd_null_expect_clears_expect);
+    RUN(test_urc_disconnect_no_cb);
+    RUN(test_urc_pdp_deact_no_cb);
+    RUN(test_urc_rdy_no_cb);
+    RUN(test_urc_csq_no_cb);
+    RUN(test_matched_line_null_dev);
+    RUN(test_send_cmd_null_dev);
+    RUN(test_feed_cr_lf_sequence);
 TEST_MAIN_END()
