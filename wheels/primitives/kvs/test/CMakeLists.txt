@@ -11,15 +11,13 @@ add_executable(test_kvs
     ../vendor/src/fdb_tsdb.c
     ../vendor/src/fdb_utils.c
     # FAL dependency (concrete, ADR-009)
-    ../../../primitives/fal/vendor/src/fal.c
-    ../../../primitives/fal/vendor/src/fal_flash.c
-    ../../../primitives/fal/vendor/src/fal_partition.c
+    ../../../primitives/fal/fal.c
 )
 
 target_include_directories(test_kvs PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../primitives/fal/vendor/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../primitives/fal
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
 target_compile_options(test_kvs PRIVATE -Wall -Wextra -Wpedantic)
