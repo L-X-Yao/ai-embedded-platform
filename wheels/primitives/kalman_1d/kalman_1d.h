@@ -29,7 +29,7 @@ int kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg);
 
 /* Feed measurement, return updated state estimate.
  * First call sets x=measurement, P=1.0 (bootstrap).
- * Returns 0.0f on NULL.
+ * Returns 0.0f on NULL; returns current estimate unchanged if z is NaN.
  * @thread_safe: no  @isr_safe: yes (if instance not shared) */
 float kalman_1d_update(kalman_1d_t *kf, float z);
 

@@ -79,20 +79,24 @@ cd wheels/primitives/kalman_1d/test
 cmake -GNinja -S . -B build && cmake --build build && ./build/test_kalman_1d
 ```
 
-20 test cases covering: init (ok + null + invalid params + NaN guard),
-bootstrap first-sample behaviour, convergence to constant value, noise
-rejection with deterministic noise, step response tracking, gain
-decrease over time, Q/R parameter effect on response speed, reset,
-set_noise (valid + invalid), and NULL-safe accessors.
+23 test cases covering: init (ok + null + invalid params + NaN guard on
+both q and r), bootstrap first-sample behaviour, convergence to constant
+value, noise rejection with deterministic noise, step response tracking,
+gain decrease over time, Q/R parameter effect on response speed, reset,
+set_noise (valid + invalid + NaN), NULL-safe accessors, and NaN
+measurement rejection in update.
 
 ## Test status
 
-- Unit tests (sim): PASS (20 tests, 0 failures)
+- Unit tests (sim): PASS (23 tests, 0 failures)
 - HIL: N/A
 
 ## API convention deviations
 
-None.
+- Error codes are plain `#define` integers (`KALMAN_1D_OK`, `KALMAN_1D_ERR_PARAM`)
+  rather than a `typedef enum`.  Consistent with the approach used in
+  `iir_lowpass`, `bitfield`, and the crc family; both values fit on one line
+  and a named enum would add no semantic value for a two-state return.
 
 ## API review
 
