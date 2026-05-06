@@ -8,6 +8,7 @@
 #   new_wheel.sh --layer drivers --name ds18b20 --hal onewire
 #   new_wheel.sh --layer drivers --name servo --hal pwm
 #   new_wheel.sh --layer primitives --name ringbuf
+#   new_wheel.sh --layer modules --name mqtt_client --deps mqtt_packet
 #   new_wheel.sh --layer primitives --name kvs --vendor   # ADR-010 vendor mode
 #
 # Generated files (standard):
@@ -39,6 +40,7 @@ HAL=""
 ADDR=""
 VENDOR=0
 NO_AUDIT=0
+DEPS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,6 +48,7 @@ while [[ $# -gt 0 ]]; do
         --name)     NAME="$2";   shift 2 ;;
         --hal)      HAL="$2";    shift 2 ;;
         --addr)     ADDR="$2";   shift 2 ;;
+        --deps)     DEPS+=("$2"); shift 2 ;;
         --vendor)   VENDOR=1;    shift   ;;
         --no-audit) NO_AUDIT=1;  shift   ;;
         -h|--help)
@@ -93,6 +96,25 @@ case "$LAYER" in
     _draft)     LAYER_LABEL="draft" ;;
     *)          LAYER_LABEL="$LAYER" ;;
 esac
+
+# --- Resolve --deps paths -----------------------------------------------------
+# Each dep is a wheel name (e.g. "mqtt_packet"). We find its directory and
+# generate CMakeLists source + include entries.
+DEPS_SOURCES=""    # extra .c files for CMakeLists add_executable
+DEPS_INCLUDES=""   # extra include_directories entries
+
+for dep in "${DEPS[@]}"; do
+    dep_dir=$(find "$REPO/wheels" -maxdepth 3 -name "${dep}.h" -printf '%h\n' 2>/dev/null | head -1)
+    if [[ -z "$dep_dir" ]]; then
+        echo "Error: --deps ${dep}: cannot find wheels/**/${dep}/${dep}.h"
+        exit 1
+    fi
+    dep_rel="\${CMAKE_CURRENT_SOURCE_DIR}/../../../../${dep_dir#$REPO/}"
+    DEPS_SOURCES="${DEPS_SOURCES}    ${dep_rel}/${dep}.c
+"
+    DEPS_INCLUDES="${DEPS_INCLUDES}    ${dep_rel}
+"
+done
 
 # --- Generate -----------------------------------------------------------------
 
@@ -668,14 +690,14 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_executable(test_${NAME_LOWER}
     test_${NAME_LOWER}.c
     ../${NAME_LOWER}.c
-)
+${DEPS_SOURCES})
 
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
     # so ../../../../tooling/test always resolves to the repo-root tooling dir.
     \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
-)
+${DEPS_INCLUDES})
 target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
