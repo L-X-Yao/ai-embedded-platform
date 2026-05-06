@@ -373,7 +373,7 @@ def chk_my_check(ctx, **_):
 
 3. 在 `test_audit_wheels.py` 加测试（pass + fail 至少各一个）
 
-4. 在真实 143 wheels 上跑一遍验证误报率（**< 30% 才上线**，见 memory: feedback_new_check_fp_validation.md）
+4. 在全部 wheels 上跑一遍验证误报率（**< 30% 才上线**，见 memory: feedback_new_check_fp_validation.md）
 
 ### 给新 wheel 加属性测试
 
