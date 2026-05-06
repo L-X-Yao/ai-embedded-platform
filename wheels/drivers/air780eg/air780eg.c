@@ -52,7 +52,8 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
             plen = (uint16_t)(end - p);
             payload = (const uint8_t *)p;
         } else {
-            plen = (uint16_t)strlen(p);
+            size_t slen = strlen(p);
+            plen = (slen > UINT16_MAX) ? UINT16_MAX : (uint16_t)slen;
             payload = (const uint8_t *)p;
         }
         dev->mqtt_rx_cb(dev->mqtt_rx_user, topic, payload, plen);
@@ -220,7 +221,8 @@ air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
     dev->prev_line[0] = '\0';
 
     /* Send command + CRLF */
-    uint16_t len = (uint16_t)strlen(cmd);
+    size_t cmd_len = strlen(cmd);
+    uint16_t len = (cmd_len > UINT16_MAX) ? UINT16_MAX : (uint16_t)cmd_len;
     dev->io->send(dev->io->ctx, (const uint8_t *)cmd, len);
     dev->io->send(dev->io->ctx, (const uint8_t *)"\r\n", 2);
 

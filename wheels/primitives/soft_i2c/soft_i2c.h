@@ -48,26 +48,26 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** @thread_safe: no (caller must serialize) */
+/** @thread_safe: no (caller must serialize) @isr_safe: no */
 soft_i2c_err_t soft_i2c_init(soft_i2c_t *bus, const soft_i2c_gpio_t *gpio);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_i2c_err_t soft_i2c_write(soft_i2c_t *bus, uint8_t addr,
                               const uint8_t *data, uint16_t len);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_i2c_err_t soft_i2c_read(soft_i2c_t *bus, uint8_t addr,
                              uint8_t *buf, uint16_t len);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_i2c_err_t soft_i2c_write_reg(soft_i2c_t *bus, uint8_t addr,
                                   uint8_t reg, uint8_t val);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
                                   uint8_t reg, uint8_t *buf, uint16_t len);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 soft_i2c_err_t soft_i2c_bus_recover(soft_i2c_t *bus);
 
 #ifdef __cplusplus
