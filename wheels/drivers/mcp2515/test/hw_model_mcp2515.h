@@ -302,4 +302,25 @@ static void mcp2515_model_inject_rx_ext(mcp2515_model_t *m, uint32_t id,
     m->hw.regs[MCP_REG_CANINTF] |= MCP_CANINTF_RX0IF;
 }
 
+/* --- Helper: inject a standard CAN frame into RXB1 --- */
+
+__attribute__((unused))
+static void mcp2515_model_inject_rx1_std(mcp2515_model_t *m, uint32_t id,
+                                         const uint8_t *data, uint8_t dlc)
+{
+    /* RXB1 base registers: 0x71-0x76 */
+    m->hw.regs[0x71] = (uint8_t)(id >> 3);
+    m->hw.regs[0x72] = (uint8_t)((id << 5) & 0xE0);  /* IDE=0 */
+    m->hw.regs[0x73] = 0;
+    m->hw.regs[0x74] = 0;
+    m->hw.regs[0x75] = dlc;
+    for (uint8_t i = 0; i < dlc && i < 8; i++) {
+        m->hw.regs[(uint8_t)(0x76u + i)] = data[i];
+    }
+    /* Set RX1IF (bit 1), clear RX0IF */
+    m->hw.regs[MCP_REG_CANINTF] =
+        (uint8_t)((m->hw.regs[MCP_REG_CANINTF] & ~MCP_CANINTF_RX0IF) |
+                  MCP_CANINTF_RX1IF);
+}
+
 #endif /* HW_MODEL_MCP2515_H */
