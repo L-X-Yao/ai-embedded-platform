@@ -81,14 +81,16 @@ Generated: 2026-04-30 by `tooling/audit/arm_size_audit.sh`.
 
 ## Summary
 
-| Layer | Count | .text range | Median |
+| Layer | Count (measured) | .text range | Median |
 |-------|------:|-------------|-------:|
 | L0 | 28 | 32 — 2192 B | 305 B |
 | L1 | 19 | 98 — 710 B | 332 B |
 | L2 | 9 | 150 — 1050 B | 593 B |
-| **All** | **56** | **32 — 2192 B** | **310 B** |
+| **Measured** | **56** | **32 — 2192 B** | **310 B** |
 
-**Total footprint if all 56 wheels are linked: 24.4 KB .text + 53 B .data/.bss** (before --gc-sections).
+> **Note**: This snapshot covers 56 wheels measured on 2026-04-30. The platform now has 146 wheels — re-run `tooling/audit/arm_size_audit.sh` for full coverage.
+
+**Total footprint of 56 measured wheels: 24.4 KB .text + 53 B .data/.bss** (before --gc-sections).
 
 ### MCU fit guide
 
@@ -96,5 +98,5 @@ Generated: 2026-04-30 by `tooling/audit/arm_size_audit.sh`.
 |-----------|---------------|
 | 16 KB | Any single wheel + app overhead |
 | 32 KB | 10-15 wheels comfortably |
-| 64 KB | All 56 wheels + headroom |
+| 64 KB | 56 measured wheels + headroom |
 | 256 KB+ | All wheels + VSF + app |

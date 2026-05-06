@@ -60,10 +60,16 @@ def count_audit_check_functions():
     if not audit.exists():
         return 0
     text = audit.read_text(encoding="utf-8")
-    # Count entries in CHECK_TABLE (table-driven checks) plus special checks
-    table_entries = len(re.findall(r'^\s+\("[\w_]+"', text, re.MULTILINE))
-    # Special checks not in table: WISHLIST, projects hygiene, consumer
-    special = len(re.findall(r'record\("(?:wishlist_stale|project_hygiene|consumer)"', text))
+    # Count entries in CHECK_TABLE only (between "CHECK_TABLE = [" and closing "]")
+    m = re.search(r'^CHECK_TABLE\s*=\s*\[(.+?)^\]', text, re.MULTILINE | re.DOTALL)
+    if not m:
+        return 0
+    table_text = m.group(1)
+    table_entries = len(re.findall(r'^\s+\("[\w_]+"', table_text, re.MULTILINE))
+    # Unique special checks not in table: consumer, wishlist_stale, project_hygiene
+    special_names = set(re.findall(r'record\("([\w_]+)"', text))
+    table_names = set(re.findall(r'^\s+\("([\w_]+)"', table_text, re.MULTILINE))
+    special = len(special_names - table_names)
     return table_entries + special
 
 
