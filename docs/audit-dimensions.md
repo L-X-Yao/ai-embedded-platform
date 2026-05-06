@@ -25,9 +25,10 @@
 | W2 | **Wheel 代码 (L1)** | 👁️ | 同上 + 寄存器/位掩码 vs datasheet、HAL 注入正确性 | `wheels/drivers/` 全部 |
 | W3 | **Wheel 代码 (L2)** | 👁️ | 同上 + 协议合规性、恶意输入安全性 | `wheels/protocols/` 全部 |
 
-**W1 拆分规则**：L0 有 30 个 wheel，单 agent 放不下。按字母拆分：
-- W1a: bitfield → kvs（前 15）
-- W1b: led_pattern → timeout（后 15）
+**W1 拆分规则**：L0 有 51 个 wheel，单 agent 放不下。按字母拆分为 3 组：
+- W1a: aes128 → fifo_queue（前 17）
+- W1b: fixed_point → moving_window（中 17）
+- W1c: pid_controller → uuid（后 17）
 
 ### 批次 2 — 基础设施
 
@@ -138,9 +139,11 @@ wsl bash tooling/audit/arm_size_audit.sh   # Q21
 ```bash
 # 轮次 1: 代码审阅（4 agent 并行）
 tooling/session/dispatch_agent.sh --name audit-w1a --budget 1.00 --scope "wheels/primitives/" \
-  --prompt "审计 W1a: bitfield→kvs，L0 前 15 个 wheel"
+  --prompt "审计 W1a: aes128→fifo_queue，L0 前 17 个 wheel"
 tooling/session/dispatch_agent.sh --name audit-w1b --budget 1.00 --scope "wheels/primitives/" \
-  --prompt "审计 W1b: led_pattern→timeout，L0 后 15 个 wheel"
+  --prompt "审计 W1b: fixed_point→moving_window，L0 中 17 个 wheel"
+tooling/session/dispatch_agent.sh --name audit-w1c --budget 1.00 --scope "wheels/primitives/" \
+  --prompt "审计 W1c: pid_controller→uuid��L0 后 17 个 wheel"
 tooling/session/dispatch_agent.sh --name audit-w2  --budget 1.00 --scope "wheels/drivers/" \
   --prompt "审计 W2: L1 驱动层全部 wheel"
 tooling/session/dispatch_agent.sh --name audit-w3  --budget 1.00 --scope "wheels/protocols/" \
