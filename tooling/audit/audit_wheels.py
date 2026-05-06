@@ -1099,7 +1099,7 @@ def has_consistent_hal_pattern(wheel_dir: Path, name: str) -> bool:
     # Also accept abbreviated prefixes (per api-conventions §1.5):
     # e.g., lora_spi_t for lora_sx1276, nrf24_spi_t for nrf24l01
     hal_pattern = re.compile(
-        r'\b\w+_(i2c|spi|hal|gpio|onewire|ow|pwm)_t\b'
+        r'\b\w+_(i2c|spi|hal|gpio|onewire|ow|pwm|io|uart|bus)_t\b'
     )
     has_hal_struct = bool(hal_pattern.search(text))
     if not has_hal_struct:
