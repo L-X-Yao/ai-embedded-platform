@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stddef.h>
 
+/* ---- NULL / error-param guards ---- */
+
 TEST(test_sha256_init_null_ctx) {
     sha256_err_t err = sha256_init(NULL);
     ASSERT_TRUE(err < 0);
@@ -19,20 +21,138 @@ TEST(test_sha256_update_null_ctx) {
 }
 
 TEST(test_sha256_update_null_data) {
+    /* NULL data with len==0 is explicitly allowed; must return OK, not error */
     sha256_ctx_t _ctx;
-    memset(&_ctx, 0, sizeof(_ctx));
+    sha256_init(&_ctx);
     sha256_err_t err = sha256_update(&_ctx, NULL, 0);
-    ASSERT_TRUE(err < 0);
+    ASSERT_EQ(err, SHA256_OK);
 }
 
 TEST(test_sha256_final_null_ctx) {
-    sha256_err_t err = sha256_final(NULL, 0);
+    uint8_t buf[32];
+    sha256_err_t err = sha256_final(NULL, buf);
+    ASSERT_TRUE(err < 0);
+}
+
+TEST(test_sha256_final_null_hash) {
+    sha256_ctx_t _ctx;
+    sha256_init(&_ctx);
+    sha256_err_t err = sha256_final(&_ctx, NULL);
     ASSERT_TRUE(err < 0);
 }
 
 TEST(test_sha256_hash_null_data) {
-    sha256_hash(NULL, 0, 0);
-    /* must not crash */
+    uint8_t out[32];
+    sha256_hash(NULL, 0, out);
+    /* must not crash; result is the empty-string digest */
+    static const uint8_t empty_hash[32] = {
+        0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC, 0x1C, 0x14,
+        0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
+        0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C,
+        0xA4, 0x95, 0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55,
+    };
+    ASSERT_TRUE(memcmp(out, empty_hash, 32) == 0);
+}
+
+/* ---- Actual hash tests to exercise compress / be32_load / be32_store ---- */
+
+/* NIST vector: "abc" */
+TEST(test_sha256_abc_hash) {
+    static const uint8_t expected[32] = {
+        0xBA, 0x78, 0x16, 0xBF, 0x8F, 0x01, 0xCF, 0xEA,
+        0x41, 0x41, 0x40, 0xDE, 0x5D, 0xAE, 0x22, 0x23,
+        0xB0, 0x03, 0x61, 0xA3, 0x96, 0x17, 0x7A, 0x9C,
+        0xB4, 0x10, 0xFF, 0x61, 0xF2, 0x00, 0x15, 0xAD,
+    };
+    uint8_t hash[32];
+    sha256_hash((const uint8_t *)"abc", 3, hash);
+    ASSERT_TRUE(memcmp(hash, expected, 32) == 0);
+}
+
+/* streaming: init + update + final exercises all internal branches */
+TEST(test_sha256_streaming_short) {
+    static const uint8_t expected[32] = {
+        0xBA, 0x78, 0x16, 0xBF, 0x8F, 0x01, 0xCF, 0xEA,
+        0x41, 0x41, 0x40, 0xDE, 0x5D, 0xAE, 0x22, 0x23,
+        0xB0, 0x03, 0x61, 0xA3, 0x96, 0x17, 0x7A, 0x9C,
+        0xB4, 0x10, 0xFF, 0x61, 0xF2, 0x00, 0x15, 0xAD,
+    };
+    sha256_ctx_t ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, (const uint8_t *)"a", 1);
+    sha256_update(&ctx, (const uint8_t *)"bc", 2);
+    uint8_t hash[32];
+    sha256_final(&ctx, hash);
+    ASSERT_TRUE(memcmp(hash, expected, 32) == 0);
+}
+
+/* 55-byte input: buffered < 56 after 0x80, no extra compression block */
+TEST(test_sha256_55byte_no_extra_block) {
+    /* 55 'a' bytes; buffered after 0x80 = 56, exactly fits */
+    uint8_t msg[55];
+    memset(msg, 'a', sizeof(msg));
+    uint8_t h1[32], h2[32];
+    sha256_hash(msg, 55, h1);
+    /* verify determinism */
+    sha256_hash(msg, 55, h2);
+    ASSERT_TRUE(memcmp(h1, h2, 32) == 0);
+}
+
+/* 56-byte input: buffered+1 = 57 > 56, triggers extra compression block */
+TEST(test_sha256_56byte_extra_block) {
+    uint8_t msg[56];
+    memset(msg, 'b', sizeof(msg));
+    uint8_t h1[32], h2[32];
+    sha256_hash(msg, 56, h1);
+    sha256_hash(msg, 56, h2);
+    ASSERT_TRUE(memcmp(h1, h2, 32) == 0);
+}
+
+/* 64-byte input: direct block processing in sha256_update (len >= 64 path) */
+TEST(test_sha256_64byte_direct_block) {
+    uint8_t msg[64];
+    memset(msg, 'c', sizeof(msg));
+    uint8_t h1[32], h2[32];
+    sha256_hash(msg, 64, h1);
+    sha256_hash(msg, 64, h2);
+    ASSERT_TRUE(memcmp(h1, h2, 32) == 0);
+}
+
+/* Streaming that forces partial-block fill branch in sha256_update:
+ * first update fills part of the buffer, second fills the rest so
+ * buffered==64 triggers sha256_compress inside update. */
+TEST(test_sha256_partial_block_fill) {
+    uint8_t msg[128];
+    memset(msg, 'd', sizeof(msg));
+
+    uint8_t oneshot[32];
+    sha256_hash(msg, 128, oneshot);
+
+    sha256_ctx_t ctx;
+    sha256_init(&ctx);
+    /* Feed 32 bytes to partially fill buffer */
+    sha256_update(&ctx, msg, 32);
+    /* Feed 32 more bytes to reach exactly 64 — triggers compress inside update */
+    sha256_update(&ctx, msg + 32, 32);
+    /* Feed the rest */
+    sha256_update(&ctx, msg + 64, 64);
+    uint8_t streaming[32];
+    sha256_final(&ctx, streaming);
+    ASSERT_TRUE(memcmp(oneshot, streaming, 32) == 0);
+}
+
+/* Zero-length update is a no-op */
+TEST(test_sha256_zero_len_update_noop) {
+    uint8_t h_plain[32], h_with_zero[32];
+    sha256_hash((const uint8_t *)"abc", 3, h_plain);
+
+    sha256_ctx_t ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, (const uint8_t *)"abc", 3);
+    sha256_update(&ctx, (const uint8_t *)"x", 0); /* zero-len: no-op */
+    sha256_final(&ctx, h_with_zero);
+
+    ASSERT_TRUE(memcmp(h_plain, h_with_zero, 32) == 0);
 }
 
 TEST_MAIN("null_param_sha256") {
@@ -40,6 +160,14 @@ TEST_MAIN("null_param_sha256") {
     RUN(test_sha256_update_null_ctx);
     RUN(test_sha256_update_null_data);
     RUN(test_sha256_final_null_ctx);
+    RUN(test_sha256_final_null_hash);
     RUN(test_sha256_hash_null_data);
+    RUN(test_sha256_abc_hash);
+    RUN(test_sha256_streaming_short);
+    RUN(test_sha256_55byte_no_extra_block);
+    RUN(test_sha256_56byte_extra_block);
+    RUN(test_sha256_64byte_direct_block);
+    RUN(test_sha256_partial_block_fill);
+    RUN(test_sha256_zero_len_update_noop);
 }
 TEST_MAIN_END()
