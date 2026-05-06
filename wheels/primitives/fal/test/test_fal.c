@@ -18,22 +18,22 @@ static int mock_init(void)
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, mock_flash_buf + offset, size);
     return (int)size;
 }
 
 static int mock_write(long offset, const uint8_t *buf, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     for (size_t i = 0; i < size; i++)
-        mock_flash_buf[offset + i] &= buf[i];
+        mock_flash_buf[(size_t)offset + i] &= buf[i];
     return (int)size;
 }
 
 static int mock_erase(long offset, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memset(mock_flash_buf + offset, 0xFF, size);
     return (int)size;
 }
@@ -153,13 +153,13 @@ TEST(test_erase_all)
 
     uint8_t data = 0x42;
     fal_partition_write(p, 0, &data, 1);
-    fal_partition_write(p, p->len - 1, &data, 1);
+    fal_partition_write(p, (uint32_t)(p->len - 1u), &data, 1);
 
     fal_partition_erase_all(p);
 
     uint8_t r1, r2;
     fal_partition_read(p, 0, &r1, 1);
-    fal_partition_read(p, p->len - 1, &r2, 1);
+    fal_partition_read(p, (uint32_t)(p->len - 1u), &r2, 1);
     ASSERT_TRUE(r1 == 0xFF && r2 == 0xFF);
 }
 
@@ -168,13 +168,13 @@ TEST(test_out_of_bounds)
     const struct fal_partition *p = fal_partition_find("config");
     uint8_t buf[8];
 
-    int ret = fal_partition_read(p, p->len - 2, buf, 8);
+    int ret = fal_partition_read(p, (uint32_t)(p->len - 2u), buf, 8);
     ASSERT_TRUE(ret == -1);
 
-    ret = fal_partition_write(p, p->len, buf, 1);
+    ret = fal_partition_write(p, (uint32_t)p->len, buf, 1);
     ASSERT_TRUE(ret == -1);
 
-    ret = fal_partition_erase(p, p->len - 10, 20);
+    ret = fal_partition_erase(p, (uint32_t)(p->len - 10u), 20);
     ASSERT_TRUE(ret == -1);
 }
 
@@ -187,7 +187,7 @@ TEST(test_partition_isolation)
     fal_partition_erase_all(kvdb);
 
     uint8_t data = 0xAB;
-    fal_partition_write(config, config->len - 1, &data, 1);
+    fal_partition_write(config, (uint32_t)(config->len - 1u), &data, 1);
 
     uint8_t rbuf;
     fal_partition_read(kvdb, 0, &rbuf, 1);

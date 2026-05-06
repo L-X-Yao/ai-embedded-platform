@@ -30,22 +30,22 @@ static int mock_init(void)
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, mock_flash_buf + offset, size);
     return (int)size;
 }
 
 static int mock_write(long offset, const uint8_t *buf, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     for (size_t i = 0; i < size; i++)
-        mock_flash_buf[offset + i] &= buf[i];
+        mock_flash_buf[(size_t)offset + i] &= buf[i];
     return (int)size;
 }
 
 static int mock_erase(long offset, size_t size)
 {
-    if (offset < 0 || (size_t)(offset + size) > MOCK_FLASH_SIZE) return -1;
+    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memset(mock_flash_buf + offset, 0xFF, size);
     return (int)size;
 }
@@ -151,12 +151,13 @@ PROPERTY(erase_fills_ff, 5000) {
 
 /* Property: out-of-bounds read/write returns -1 */
 PROPERTY(oob_returns_error, 50000) {
+    (void)seed;  /* property uses fixed offsets; seed unused */
     ensure_init();
     const struct fal_partition *p = fal_partition_find("config");
     PROP_ASSERT(p != NULL);
 
     uint8_t buf[8];
-    uint32_t bad_off = (uint32_t)(p->len - 2);
+    uint32_t bad_off = (uint32_t)(p->len - 2u);
     int ret = fal_partition_read(p, bad_off, buf, 8);
     PROP_ASSERT_EQ(ret, -1);
 

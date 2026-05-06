@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: MIT
+/*
+ * fal — Flash Abstraction Layer implementation
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ * Instances: single
+ */
+
 #include "fal.h"
 #include <string.h>
 
@@ -87,7 +97,7 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
         return -1;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
-    if (!dev) {
+    if (!dev || !dev->ops.read) {
         return -1;
     }
     return dev->ops.read(part->offset + (long)addr, buf, size);
@@ -103,7 +113,7 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
         return -1;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
-    if (!dev) {
+    if (!dev || !dev->ops.write) {
         return -1;
     }
     return dev->ops.write(part->offset + (long)addr, buf, size);
@@ -119,7 +129,7 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
         return -1;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
-    if (!dev) {
+    if (!dev || !dev->ops.erase) {
         return -1;
     }
     return dev->ops.erase(part->offset + (long)addr, size);
@@ -137,9 +147,10 @@ void fal_show_part_table(void)
 {
 #ifdef FAL_PRINTF
     for (size_t i = 0; i < s_part_count; i++) {
-        FAL_PRINTF("| %-16s | %-16s | 0x%08lx | 0x%08x |\n",
+        FAL_PRINTF("| %-16s | %-16s | 0x%08lx | 0x%08lx |\n",
                    s_parts[i].name, s_parts[i].flash_name,
-                   s_parts[i].offset, (unsigned)s_parts[i].len);
+                   (unsigned long)s_parts[i].offset,
+                   (unsigned long)s_parts[i].len);
     }
 #endif
 }
