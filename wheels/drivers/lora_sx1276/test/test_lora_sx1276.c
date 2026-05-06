@@ -465,6 +465,171 @@ TEST(test_rssi_snr)
     ASSERT_EQ(lora_get_snr(&dev), -1);
 }
 
+TEST(test_receive_timeout)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* IRQ flags stay 0 → RxDone never fires */
+    mock_regs[0x12] = 0x00;
+
+    uint8_t buf[16];
+    uint8_t len = 0;
+    lora_err_t e = lora_receive(&dev, buf, &len, 16);
+    ASSERT_EQ(e, LORA_ERR_TIMEOUT);
+}
+
+TEST(test_send_zero_len)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    uint8_t payload[] = {0x01};
+    ASSERT_EQ(lora_send(&dev, payload, 0), LORA_ERR_PARAM);
+}
+
+TEST(test_set_tx_power_high_power_boundary)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* Boundary: 18 dBm is > 17 → high power path */
+    lora_err_t e = lora_set_tx_power(&dev, 18);
+    ASSERT_EQ(e, LORA_OK);
+    ASSERT_EQ(mock_regs[0x4D], 0x87); /* PA_DAC high power */
+    ASSERT_EQ(mock_regs[0x09], (uint8_t)(0x80 | 13)); /* 18-5=13 */
+
+    /* Boundary: 17 dBm is the highest normal power path value */
+    e = lora_set_tx_power(&dev, 17);
+    ASSERT_EQ(e, LORA_OK);
+    ASSERT_EQ(mock_regs[0x4D], 0x84); /* PA_DAC default */
+    ASSERT_EQ(mock_regs[0x09], (uint8_t)(0x80 | 15)); /* 17-2=15 */
+}
+
+TEST(test_receive_truncates_to_max_len)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* Inject 8 bytes but only accept 4 (max_len=4) */
+    fifo_read_data[0] = 0x11;
+    fifo_read_data[1] = 0x22;
+    fifo_read_data[2] = 0x33;
+    fifo_read_data[3] = 0x44;
+    fifo_read_data[4] = 0x55;
+    fifo_read_data[5] = 0x66;
+    fifo_read_data[6] = 0x77;
+    fifo_read_data[7] = 0x88;
+    fifo_read_len = 8;
+
+    mock_regs[0x13] = 8;   /* RX_NB_BYTES = 8 */
+    mock_regs[0x10] = 0;   /* FIFO_RX_CURRENT */
+
+    mock_delay_count = 0;
+    mock_irq_after_delays = 1;
+    mock_irq_value = 0x40; /* IRQ_RX_DONE */
+
+    uint8_t buf[16];
+    uint8_t len = 0;
+    lora_err_t e = lora_receive(&dev, buf, &len, 4);
+    ASSERT_EQ(e, LORA_OK);
+    ASSERT_EQ(len, 4);  /* truncated to max_len */
+    ASSERT_EQ(buf[0], 0x11);
+    ASSERT_EQ(buf[3], 0x44);
+}
+
+TEST(test_rssi_hf_boundary)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    /* 868 MHz exactly is the HF boundary */
+    lora_init(&dev, &mock_spi, 868000000UL);
+
+    mock_regs[0x1A] = 157;
+    /* HF: -157 + 157 = 0 dBm */
+    ASSERT_EQ(lora_get_rssi(&dev), 0);
+}
+
+TEST(test_snr_truncation)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* SNR raw = 3 → 3/4 = 0 dB (truncates toward zero) */
+    mock_regs[0x19] = 3;
+    ASSERT_EQ(lora_get_snr(&dev), 0);
+
+    /* SNR raw = -3 (0xFD) → -3/4 = 0 dB (truncates toward zero) */
+    mock_regs[0x19] = 0xFD;
+    ASSERT_EQ(lora_get_snr(&dev), 0);
+
+    /* SNR raw = -12 (0xF4) → -12/4 = -3 dB */
+    mock_regs[0x19] = 0xF4;
+    ASSERT_EQ(lora_get_snr(&dev), -3);
+}
+
+TEST(test_set_bandwidth_all_valid)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* All valid bandwidth values 0-9 */
+    uint8_t bw;
+    for (bw = 0; bw <= 9; bw++) {
+        lora_err_t e = lora_set_bandwidth(&dev, bw);
+        ASSERT_EQ(e, LORA_OK);
+        ASSERT_EQ(dev.bandwidth, bw);
+        ASSERT_EQ(mock_regs[0x1D] & 0xF0, (uint8_t)(bw << 4));
+    }
+}
+
+TEST(test_set_spreading_factor_all_valid)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* All valid SF values 6-12 */
+    uint8_t sf;
+    for (sf = 6; sf <= 12; sf++) {
+        lora_err_t e = lora_set_spreading_factor(&dev, sf);
+        ASSERT_EQ(e, LORA_OK);
+        ASSERT_EQ(dev.spreading_factor, sf);
+        ASSERT_EQ(mock_regs[0x1E] & 0xF0, (uint8_t)(sf << 4));
+    }
+}
+
+TEST(test_set_coding_rate_all_valid)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* All valid CR values 1-4 */
+    uint8_t cr;
+    for (cr = 1; cr <= 4; cr++) {
+        lora_err_t e = lora_set_coding_rate(&dev, cr);
+        ASSERT_EQ(e, LORA_OK);
+        ASSERT_EQ(dev.coding_rate, cr);
+        ASSERT_EQ(mock_regs[0x1D] & 0x0E, (uint8_t)(cr << 1));
+    }
+}
+
 TEST(test_sleep_standby)
 {
     mock_reset_all();
@@ -501,7 +666,16 @@ TEST_MAIN("lora_sx1276")
     RUN(test_send_timeout);
     RUN(test_receive_ok);
     RUN(test_receive_crc_error);
+    RUN(test_receive_timeout);
     RUN(test_packet_available);
     RUN(test_rssi_snr);
     RUN(test_sleep_standby);
+    RUN(test_send_zero_len);
+    RUN(test_set_tx_power_high_power_boundary);
+    RUN(test_receive_truncates_to_max_len);
+    RUN(test_rssi_hf_boundary);
+    RUN(test_snr_truncation);
+    RUN(test_set_bandwidth_all_valid);
+    RUN(test_set_spreading_factor_all_valid);
+    RUN(test_set_coding_rate_all_valid);
 TEST_MAIN_END()
