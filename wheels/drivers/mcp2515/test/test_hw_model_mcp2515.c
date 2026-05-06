@@ -304,6 +304,188 @@ TEST(test_no_message_pending)
     ASSERT_EQ(err, MCP2515_ERR_NO_MSG);
 }
 
+/* --- 13. read_status returns the pre-set status byte --- */
+
+TEST(test_read_status_byte)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    model.status_byte = 0x55;
+    uint8_t st = mcp2515_read_status(&dev);
+    ASSERT_EQ(st, 0x55);
+}
+
+/* --- 14. read_errors returns EFLG register --- */
+
+TEST(test_read_errors_register)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    model.hw.regs[MCP_REG_EFLG] = 0xA3;
+    uint8_t ef = mcp2515_read_errors(&dev);
+    ASSERT_EQ(ef, 0xA3);
+}
+
+/* --- 15. Extended TX frame encodes all four ID registers --- */
+
+TEST(test_tx_extended_frame)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_msg_t msg = {
+        .id = 0x12345,
+        .dlc = 2,
+        .data = {0xDE, 0xAD, 0, 0, 0, 0, 0, 0},
+        .extended = true,
+        .rtr = false,
+    };
+    mcp2515_err_t err = mcp2515_send(&dev, &msg);
+    ASSERT_EQ(err, MCP2515_OK);
+
+    /* SIDL must have EXIDE bit (0x08) set */
+    ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0SIDL] & 0x08);
+    /* DLC */
+    ASSERT_EQ(model.hw.regs[MCP_REG_TXB0DLC], 2);
+    /* Data */
+    ASSERT_EQ(model.hw.regs[MCP_REG_TXB0D0], 0xDE);
+    ASSERT_EQ(model.hw.regs[(uint8_t)(MCP_REG_TXB0D0 + 1)], 0xAD);
+}
+
+/* --- 16. Mode transitions: sleep and listen --- */
+
+TEST(test_mode_to_sleep)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_err_t err = mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP);
+    ASSERT_EQ(err, MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_SLEEP);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+              MCP_OPMOD_SLEEP);
+}
+
+TEST(test_mode_to_listen)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_err_t err = mcp2515_set_mode(&dev, MCP2515_MODE_LISTEN);
+    ASSERT_EQ(err, MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_LISTEN);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+              MCP_OPMOD_LISTEN);
+}
+
+/* --- 17. Init with invalid speed returns ERR_PARAM --- */
+
+TEST(test_init_invalid_speed_hw)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_err_t err = mcp2515_init(&dev, &model_spi, (mcp2515_speed_t)99);
+    ASSERT_EQ(err, MCP2515_ERR_PARAM);
+}
+
+/* --- 18. Receive from RXB1 --- */
+
+TEST(test_rx_from_rxb1)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    uint8_t data[] = {0x11, 0x22};
+    mcp2515_model_inject_rx1_std(&model, 0x3FF, data, 2);
+
+    ASSERT_TRUE(mcp2515_has_message(&dev));
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    mcp2515_err_t err = mcp2515_receive(&dev, &msg);
+    ASSERT_EQ(err, MCP2515_OK);
+    ASSERT_EQ(msg.id, 0x3FFU);
+    ASSERT_EQ(msg.dlc, 2);
+    ASSERT_FALSE(msg.extended);
+    ASSERT_EQ(msg.data[0], 0x11);
+    ASSERT_EQ(msg.data[1], 0x22);
+
+    /* RX1IF should be cleared */
+    ASSERT_FALSE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_RX1IF);
+}
+
+/* --- 19. Extended filter encoding via set_filter --- */
+
+TEST(test_filter_extended_encoding)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
+
+    mcp2515_err_t err = mcp2515_set_filter(&dev, 2, 0x12345, true);
+    ASSERT_EQ(err, MCP2515_OK);
+    /* Filter 2 base = 0x08; SIDL (0x09) must have EXIDE bit */
+    ASSERT_TRUE(model.hw.regs[0x09] & 0x08);
+}
+
+/* --- 20. Extended mask encoding via set_mask --- */
+
+TEST(test_mask_extended_encoding)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
+
+    mcp2515_err_t err = mcp2515_set_mask(&dev, 0, 0x1FFFFFFF, true);
+    ASSERT_EQ(err, MCP2515_OK);
+    /* Mask 0 base = 0x20; SIDL (0x21) must have EXIDE bit */
+    ASSERT_TRUE(model.hw.regs[0x21] & 0x08);
+}
+
+/* --- 21. RTR frame TX sets DLC bit 6 --- */
+
+TEST(test_tx_rtr_frame)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_msg_t msg = {
+        .id = 0x100,
+        .dlc = 0,
+        .data = {0, 0, 0, 0, 0, 0, 0, 0},
+        .extended = false,
+        .rtr = true,
+    };
+    mcp2515_err_t err = mcp2515_send(&dev, &msg);
+    ASSERT_EQ(err, MCP2515_OK);
+    /* DLC register bit 6 = RTR */
+    ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0DLC] & 0x40);
+}
+
+/* --- 22. 250 kbps CNF register values --- */
+
+TEST(test_cnf_250kbps)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_250KBPS);
+
+    ASSERT_EQ(model.hw.regs[MCP_REG_CNF1], 0x01);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CNF2], 0x90);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CNF3], 0x02);
+}
+
 TEST_MAIN("mcp2515 hardware model")
     RUN(test_init_config_mode);
     RUN(test_mode_to_loopback);
@@ -319,4 +501,15 @@ TEST_MAIN("mcp2515 hardware model")
     RUN(test_filter_requires_config_mode);
     RUN(test_mask_requires_config_mode);
     RUN(test_no_message_pending);
+    RUN(test_read_status_byte);
+    RUN(test_read_errors_register);
+    RUN(test_tx_extended_frame);
+    RUN(test_mode_to_sleep);
+    RUN(test_mode_to_listen);
+    RUN(test_init_invalid_speed_hw);
+    RUN(test_rx_from_rxb1);
+    RUN(test_filter_extended_encoding);
+    RUN(test_mask_extended_encoding);
+    RUN(test_tx_rtr_frame);
+    RUN(test_cnf_250kbps);
 TEST_MAIN_END()

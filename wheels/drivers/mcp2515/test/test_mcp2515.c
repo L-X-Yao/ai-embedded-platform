@@ -164,6 +164,20 @@ static void inject_rx_ext(uint32_t id, const uint8_t *data, uint8_t dlc)
     mock_regs[0x2C] |= 0x01;
 }
 
+static void inject_rx1_std(uint32_t id, const uint8_t *data, uint8_t dlc)
+{
+    /* RXB1: standard frame (registers 0x71-0x76) */
+    mock_regs[0x71] = (uint8_t)(id >> 3);          /* RXB1SIDH */
+    mock_regs[0x72] = (uint8_t)((id << 5) & 0xE0); /* RXB1SIDL, IDE=0 */
+    mock_regs[0x73] = 0;
+    mock_regs[0x74] = 0;
+    mock_regs[0x75] = dlc;
+    for (uint8_t i = 0; i < dlc && i < 8; i++)
+        mock_regs[0x76 + i] = data[i];
+    /* set RX1IF (bit 1) only — not RX0IF */
+    mock_regs[0x2C] = (uint8_t)((mock_regs[0x2C] & ~0x01u) | 0x02u);
+}
+
 /* ---------- tests ---------- */
 
 TEST(test_init_ok)
@@ -647,6 +661,191 @@ TEST(test_extended_id_register_bytes)
     ASSERT_EQ(rx.data[0], 0x42);
 }
 
+TEST(test_set_mode_sleep)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_err_t e = mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP);
+    ASSERT_EQ(e, MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_SLEEP);
+    /* CANSTAT bits[7:5] should be 0x20 (sleep) */
+    ASSERT_EQ(mock_regs[0x0E] & 0xE0, 0x20);
+}
+
+TEST(test_set_mode_listen)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_err_t e = mcp2515_set_mode(&dev, MCP2515_MODE_LISTEN);
+    ASSERT_EQ(e, MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_LISTEN);
+    /* CANSTAT bits[7:5] should be 0x60 (listen-only) */
+    ASSERT_EQ(mock_regs[0x0E] & 0xE0, 0x60);
+}
+
+TEST(test_init_invalid_speed)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    /* Speed 4 is out of the valid enum range (0-3) */
+    mcp2515_err_t e = mcp2515_init(&dev, &mock_spi, (mcp2515_speed_t)4);
+    ASSERT_EQ(e, MCP2515_ERR_PARAM);
+}
+
+TEST(test_receive_from_rxb1)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    /* Inject a frame into RXB1 (RX1IF set, RX0IF clear) */
+    uint8_t data[] = {0xAB, 0xCD, 0xEF};
+    inject_rx1_std(0x55A, data, 3);
+
+    /* has_message should be true (RX1IF is set) */
+    ASSERT_TRUE(mcp2515_has_message(&dev));
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    mcp2515_err_t e = mcp2515_receive(&dev, &msg);
+    ASSERT_EQ(e, MCP2515_OK);
+    ASSERT_EQ(msg.id, 0x55AU);
+    ASSERT_EQ(msg.dlc, 3);
+    ASSERT_FALSE(msg.extended);
+    ASSERT_EQ(msg.data[0], 0xAB);
+    ASSERT_EQ(msg.data[1], 0xCD);
+    ASSERT_EQ(msg.data[2], 0xEF);
+
+    /* RX1IF should be cleared */
+    ASSERT_FALSE(mock_regs[0x2C] & 0x02);
+}
+
+TEST(test_send_rtr_frame)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    mcp2515_msg_t msg = {
+        .id = 0x100,
+        .dlc = 0,
+        .data = {0},
+        .extended = false,
+        .rtr = true,
+    };
+    mcp2515_err_t e = mcp2515_send(&dev, &msg);
+    ASSERT_EQ(e, MCP2515_OK);
+    /* DLC register should have RTR bit set (bit 6) */
+    ASSERT_TRUE(mock_regs[0x35] & 0x40);
+}
+
+TEST(test_receive_rtr_frame)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    /* Inject a frame with RTR bit set in DLC register */
+    uint8_t data[1] = {0};
+    inject_rx_std(0x200, data, 0);
+    mock_regs[0x65] = 0x40;  /* RTR=1, DLC=0 */
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    mcp2515_err_t e = mcp2515_receive(&dev, &msg);
+    ASSERT_EQ(e, MCP2515_OK);
+    ASSERT_TRUE(msg.rtr);
+    ASSERT_EQ(msg.dlc, 0);
+}
+
+TEST(test_receive_dlc_clamped)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    /* Inject a frame with DLC > 8 (should be clamped to 8) */
+    uint8_t data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    inject_rx_std(0x300, data, 9);  /* DLC=9 in register */
+    mock_regs[0x65] = 0x0F;         /* raw DLC = 15 */
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    mcp2515_err_t e = mcp2515_receive(&dev, &msg);
+    ASSERT_EQ(e, MCP2515_OK);
+    /* DLC must be clamped to 8 */
+    ASSERT_EQ(msg.dlc, 8);
+}
+
+TEST(test_set_filter_all_six)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
+
+    /* All 6 filter numbers (0-5) must succeed */
+    static const uint8_t filter_bases[] = {0x00, 0x04, 0x08, 0x10, 0x14, 0x18};
+    for (uint8_t f = 0; f <= 5; f++) {
+        mcp2515_err_t e = mcp2515_set_filter(&dev, f, 0x7FF, false);
+        ASSERT_EQ(e, MCP2515_OK);
+        /* SIDH for filter f: 0x7FF >> 3 = 0xFF */
+        ASSERT_EQ(mock_regs[filter_bases[f]], 0xFF);
+    }
+}
+
+TEST(test_set_filter_extended)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
+
+    /* Extended filter: 29-bit ID encodes into 4 registers */
+    mcp2515_err_t e = mcp2515_set_filter(&dev, 0, 0x12345, true);
+    ASSERT_EQ(e, MCP2515_OK);
+    /* SIDL should have EXIDE bit (0x08) set */
+    ASSERT_TRUE(mock_regs[0x01] & 0x08);
+}
+
+TEST(test_set_mask_extended)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
+
+    /* Extended mask: 29-bit mask via encode_id (should set EXIDE bit) */
+    mcp2515_err_t e = mcp2515_set_mask(&dev, 1, 0x1FFFFFFF, true);
+    ASSERT_EQ(e, MCP2515_OK);
+    /* Mask 1 base is 0x24 — SIDL (0x25) should have EXIDE */
+    ASSERT_TRUE(mock_regs[0x25] & 0x08);
+}
+
+TEST(test_set_mode_null_spi)
+{
+    /* set_mode with dev->spi == NULL returns ERR_SPI */
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    dev.spi = NULL;
+    mcp2515_err_t e = mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL);
+    ASSERT_EQ(e, MCP2515_ERR_SPI);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("mcp2515")
@@ -670,4 +869,15 @@ TEST_MAIN("mcp2515")
     RUN(test_extended_id_register_bytes);
     RUN(test_set_mode_timeout);
     RUN(test_init_mode_timeout);
+    RUN(test_set_mode_sleep);
+    RUN(test_set_mode_listen);
+    RUN(test_init_invalid_speed);
+    RUN(test_receive_from_rxb1);
+    RUN(test_send_rtr_frame);
+    RUN(test_receive_rtr_frame);
+    RUN(test_receive_dlc_clamped);
+    RUN(test_set_filter_all_six);
+    RUN(test_set_filter_extended);
+    RUN(test_set_mask_extended);
+    RUN(test_set_mode_null_spi);
 TEST_MAIN_END()
