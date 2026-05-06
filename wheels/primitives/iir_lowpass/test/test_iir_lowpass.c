@@ -174,9 +174,10 @@ TEST(test_set_alpha_invalid)
     iir_lowpass_t f;
     iir_lowpass_cfg_t cfg = {0.5f};
     iir_lowpass_init(&f, &cfg);
-    ASSERT_EQ(iir_lowpass_set_alpha(&f, 0.0f),  IIR_LOWPASS_ERR_PARAM);
-    ASSERT_EQ(iir_lowpass_set_alpha(&f, -1.0f), IIR_LOWPASS_ERR_PARAM);
-    ASSERT_EQ(iir_lowpass_set_alpha(&f, 1.5f),  IIR_LOWPASS_ERR_PARAM);
+    ASSERT_EQ(iir_lowpass_set_alpha(&f, 0.0f),       IIR_LOWPASS_ERR_PARAM);
+    ASSERT_EQ(iir_lowpass_set_alpha(&f, -1.0f),      IIR_LOWPASS_ERR_PARAM);
+    ASSERT_EQ(iir_lowpass_set_alpha(&f, 1.5f),       IIR_LOWPASS_ERR_PARAM);
+    ASSERT_EQ(iir_lowpass_set_alpha(&f, (float)NAN), IIR_LOWPASS_ERR_PARAM);
     /* alpha unchanged after failed set */
     ASSERT_TRUE(near(f.alpha, 0.5f, 1e-9f));
 }
@@ -200,10 +201,30 @@ TEST(test_alpha_from_rc)
 
 TEST(test_alpha_from_rc_invalid)
 {
-    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.0f, 0.1f),  0.0f, 1e-9f));
-    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.01f, 0.0f), 0.0f, 1e-9f));
-    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(-1.0f, 0.1f), 0.0f, 1e-9f));
-    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.01f, -1.0f),0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.0f,       0.1f),  0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.01f,      0.0f),  0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(-1.0f,      0.1f),  0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.01f,     -1.0f),  0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc((float)NAN, 0.1f),  0.0f, 1e-9f));
+    ASSERT_TRUE(near(iir_lowpass_alpha_from_rc(0.01f, (float)NAN), 0.0f, 1e-9f));
+}
+
+TEST(test_feed_nan_propagates)
+{
+    /* Feeding NaN is not guarded — output becomes NaN and stays NaN.
+     * Caller is responsible for filtering upstream sensor faults.
+     * Reset clears the NaN state. */
+    iir_lowpass_t f;
+    iir_lowpass_cfg_t cfg = {0.5f};
+    iir_lowpass_init(&f, &cfg);
+    iir_lowpass_feed(&f, 10.0f);          /* prime with valid sample */
+    iir_lowpass_feed(&f, (float)NAN);     /* inject NaN */
+    float out = iir_lowpass_get(&f);
+    ASSERT_TRUE(out != out);              /* NaN != NaN by IEEE 754 */
+    /* Reset clears the NaN state */
+    iir_lowpass_reset(&f);
+    out = iir_lowpass_feed(&f, 5.0f);
+    ASSERT_TRUE(near(out, 5.0f, 1e-6f));
 }
 
 /* ------------------------------------------------------------------ */
@@ -230,4 +251,5 @@ TEST_MAIN("iir_lowpass")
     RUN(test_feed_null);
     RUN(test_alpha_from_rc);
     RUN(test_alpha_from_rc_invalid);
+    RUN(test_feed_nan_propagates);
 TEST_MAIN_END()

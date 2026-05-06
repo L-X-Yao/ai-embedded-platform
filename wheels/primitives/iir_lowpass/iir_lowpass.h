@@ -39,6 +39,9 @@ int iir_lowpass_init(iir_lowpass_t *f, const iir_lowpass_cfg_t *cfg);
 /* Feed a new sample, return filtered output.
  * First sample sets output directly (no lag on startup).
  * Returns 0.0f on NULL pointer.
+ * NaN input is not guarded: if x is NaN the output becomes NaN and
+ * remains NaN until iir_lowpass_reset() is called. Callers must
+ * sanitize upstream sensor faults before feeding.
  * @thread_safe: no  @isr_safe: yes (if instance not shared) */
 float iir_lowpass_feed(iir_lowpass_t *f, float x);
 
@@ -57,7 +60,8 @@ int iir_lowpass_set_alpha(iir_lowpass_t *f, float alpha);
 
 /* Compute alpha from RC time constant: alpha = dt / (rc + dt).
  * dt = sample period (s), rc = time constant (s).
- * Both must be > 0. Returns 0.0f on invalid input. */
+ * Both must be > 0. Returns 0.0f on invalid input.
+ * @thread_safe: yes (pure function, no state)  @isr_safe: yes */
 float iir_lowpass_alpha_from_rc(float dt, float rc);
 
 #ifdef __cplusplus
