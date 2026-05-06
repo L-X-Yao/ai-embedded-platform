@@ -26,7 +26,7 @@
 
 | 候选 | 功能 | VSF 原生检查 | 触发项目 | 信号次数 |
 |------|------|-------------|---------|---------|
-| `mqtt_client` | MQTT 3.1.1 客户端（IoT 场景必备） | VSF 无；选型 paho / mongoose / mqttnet | flybox（AT+MPUBEX 临时方案） | 1 |
+| ~~`mqtt_client`~~ | ~~MQTT 3.1.1 客户端（IoT 场景必备）~~ | **已实现**：`wheels/modules/mqtt_client/`（candidate, 2026-05-06） | flybox（AT+MPUBEX 临时方案） | 1 |
 
 ## L3 · 功能模块
 
