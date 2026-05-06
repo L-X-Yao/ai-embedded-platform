@@ -280,6 +280,44 @@ TEST(test_update_null)
     ASSERT_NEAR(kalman_1d_update(NULL, 42.0f), 0.0f, 1e-9f);
 }
 
+TEST(test_init_r_nan)
+{
+    /* r NaN must be rejected the same way q NaN is */
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.1f, (float)NAN};
+    ASSERT_EQ(kalman_1d_init(&kf, &cfg), KALMAN_1D_ERR_PARAM);
+}
+
+TEST(test_set_noise_nan)
+{
+    /* set_noise uses !(q > 0.0f) which rejects NaN via NaN-safe guard */
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.1f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    ASSERT_EQ(kalman_1d_set_noise(&kf, (float)NAN, 1.0f), KALMAN_1D_ERR_PARAM);
+    ASSERT_EQ(kalman_1d_set_noise(&kf, 0.1f, (float)NAN), KALMAN_1D_ERR_PARAM);
+}
+
+TEST(test_update_nan)
+{
+    /* NaN measurement must not corrupt state; current estimate returned */
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.1f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    float known = 10.0f;
+    kalman_1d_update(&kf, known);
+
+    float before = kalman_1d_get(&kf);
+    float result = kalman_1d_update(&kf, (float)NAN);
+
+    /* returned value equals current estimate (NaN not injected) */
+    ASSERT_NEAR(result, before, 1e-6f);
+    /* internal state must not be NaN */
+    ASSERT_TRUE(kalman_1d_get(&kf) == kalman_1d_get(&kf));
+}
+
 /* ------------------------------------------------------------------ */
 /* Main                                                                 */
 /* ------------------------------------------------------------------ */
@@ -292,6 +330,7 @@ TEST_MAIN("kalman_1d")
     RUN(test_init_r_zero);
     RUN(test_init_q_negative);
     RUN(test_init_q_nan);
+    RUN(test_init_r_nan);
     RUN(test_bootstrap);
     RUN(test_convergence);
     RUN(test_noise_rejection);
@@ -302,7 +341,9 @@ TEST_MAIN("kalman_1d")
     RUN(test_reset);
     RUN(test_set_noise);
     RUN(test_set_noise_invalid);
+    RUN(test_set_noise_nan);
     RUN(test_get_null);
     RUN(test_get_gain_null);
     RUN(test_update_null);
+    RUN(test_update_nan);
 TEST_MAIN_END()

@@ -55,6 +55,12 @@ float kalman_1d_update(kalman_1d_t *kf, float z)
     {
         return 0.0f;
     }
+    /* NaN-safe guard: reject NaN measurement (api-conventions §2.5).
+     * A NaN z would propagate into kf->x, permanently corrupting state. */
+    if (!(z == z))
+    {
+        return kf->x;
+    }
 
     /* Bootstrap on first call: trust measurement fully */
     if (kf->p == 0.0f)
