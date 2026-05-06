@@ -16,7 +16,7 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 
 ## 平台现状
 
-- **146 个 candidate wheels**（L0 原语 51 / L1 驱动 52 / L2 协议 25 / L3 模块 18）
+- **150 个 candidate wheels**（L0 原语 55 / L1 驱动 53 / L2 协议 25 / L3 模块 18）
 - **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
 - **CI 增量检测** + 55 项 wheel 审计全绿
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
@@ -28,8 +28,8 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 ├── vsf/                  VSF 上游源码（不直接改）
 ├── vsf-addon/            新增代码（MCU port / 组件）
 ├── wheels/               可复用轮子（L0 原语 → L3 模块）
-│   ├── primitives/       L0 (51)：log 生态, crc 族, 数据结构, 编解码, 数学, ...
-│   ├── drivers/          L1 (52)：传感器, IMU, 显示, 存储, 通信, IO 扩展, ...
+│   ├── primitives/       L0 (55)：log 生态, crc 族, 数据结构, 编解码, 数学, ...
+│   ├── drivers/          L1 (53)：传感器, IMU, 显示, 存储, 通信, IO 扩展, ...
 │   ├── protocols/        L2 (25)：mqtt, modbus, coap, http, lorawan, canbus, ...
 │   ├── modules/          L3 (18)：cli_shell, data_logger, ota_manager, ...
 │   └── _draft/           （暂无）
