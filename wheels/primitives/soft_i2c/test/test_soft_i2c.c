@@ -331,6 +331,149 @@ TEST(test_multiple_instances)
     ASSERT_TRUE(bus1.gpio == bus2.gpio);
 }
 
+/* ---------- new tests ---------- */
+
+/*
+ * Test that every individual GPIO function pointer being NULL causes ERR_PARAM.
+ * The existing test_init_missing_callback only covers scl_set=NULL.
+ */
+TEST(test_init_each_null_callback)
+{
+    soft_i2c_t bus;
+    soft_i2c_gpio_t bad;
+
+    bad = g_mock_gpio; bad.sda_set = NULL;
+    ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_init(&bus, &bad));
+
+    bad = g_mock_gpio; bad.sda_dir_out = NULL;
+    ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_init(&bus, &bad));
+
+    bad = g_mock_gpio; bad.sda_dir_in = NULL;
+    ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_init(&bus, &bad));
+
+    bad = g_mock_gpio; bad.sda_get = NULL;
+    ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_init(&bus, &bad));
+
+    bad = g_mock_gpio; bad.delay = NULL;
+    ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_init(&bus, &bad));
+}
+
+/*
+ * write_reg sends addr (ACK[0]), reg (ACK[1]), val (ACK[2]).
+ * NACK on the 3rd byte (value) must return ERR_NACK.
+ */
+TEST(test_write_reg_data_nack)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr ACK */
+    g_slave_response[1] = 0; /* reg ACK  */
+    g_slave_response[2] = 1; /* val NACK */
+    g_slave_resp_len = 3;
+    ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_write_reg(&bus, 0x68, 0x1A, 0x55));
+}
+
+/*
+ * read_regs protocol:
+ *   write-addr (ACK[0]), reg byte (ACK[1]),
+ *   repeated-start read-addr (ACK[2]), then 8 data bits.
+ * NACK on the repeated-start read-address byte must return ERR_NACK.
+ */
+TEST(test_read_regs_repeated_start_nack)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr-write ACK */
+    g_slave_response[1] = 0; /* reg ACK         */
+    g_slave_response[2] = 1; /* addr-read NACK  */
+    g_slave_resp_len = 3;
+    uint8_t buf[1] = {0};
+    ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 1));
+}
+
+/*
+ * NACK on the register byte (2nd byte of write phase) must return ERR_NACK.
+ */
+TEST(test_read_regs_reg_nack)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr-write ACK */
+    g_slave_response[1] = 1; /* reg NACK       */
+    g_slave_resp_len = 2;
+    uint8_t buf[1] = {0};
+    ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 1));
+}
+
+/*
+ * bus_recover always returns OK regardless of slave response.
+ * Drive SDA low for all 18 read slots so the loop never breaks early,
+ * then verify the function still returns SOFT_I2C_OK.
+ */
+TEST(test_bus_recover_all_18_pulses)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    /* All slave reads return 0 (SDA stuck low for all 18 pulses) */
+    memset(g_slave_response, 0, sizeof(g_slave_response));
+    g_slave_resp_len = 32;
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_bus_recover(&bus));
+}
+
+/*
+ * Zero-length write where the slave NACKs the address byte.
+ * Even with len=0 the address byte is still transmitted and checked.
+ */
+TEST(test_write_zero_len_addr_nack)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 1; /* addr NACK */
+    g_slave_resp_len = 1;
+    ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_write(&bus, 0x50, NULL, 0));
+}
+
+/*
+ * Read 1 byte where all 8 data bits are 0 → result must be 0x00.
+ * ACK response[0], then 8 × 0 data bits.
+ */
+TEST(test_read_byte_zero)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr ACK */
+    for (int i = 1; i <= 8; i++) {
+        g_slave_response[i] = 0; /* bit = 0 */
+    }
+    g_slave_resp_len = 9;
+    uint8_t buf[1] = {0xFF};
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_read(&bus, 0x50, buf, 1));
+    ASSERT_EQ(0x00, buf[0]);
+}
+
+/*
+ * Calling init a second time on the same bus variable with a different
+ * gpio struct must make the second struct take effect.
+ */
+TEST(test_reinit_same_bus)
+{
+    soft_i2c_t bus;
+    soft_i2c_gpio_t gpio2 = g_mock_gpio;
+
+    mock_reset();
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_init(&bus, &g_mock_gpio));
+    ASSERT_TRUE(bus.gpio == &g_mock_gpio);
+
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_init(&bus, &gpio2));
+    ASSERT_TRUE(bus.gpio == &gpio2);
+}
+
 TEST_MAIN("soft_i2c")
     RUN(test_init_null_bus);
     RUN(test_init_null_gpio);
@@ -354,4 +497,12 @@ TEST_MAIN("soft_i2c")
     RUN(test_bus_recover_ok);
     RUN(test_write_zero_len);
     RUN(test_multiple_instances);
+    RUN(test_init_each_null_callback);
+    RUN(test_write_reg_data_nack);
+    RUN(test_read_regs_repeated_start_nack);
+    RUN(test_read_regs_reg_nack);
+    RUN(test_bus_recover_all_18_pulses);
+    RUN(test_write_zero_len_addr_nack);
+    RUN(test_read_byte_zero);
+    RUN(test_reinit_same_bus);
 TEST_MAIN_END()

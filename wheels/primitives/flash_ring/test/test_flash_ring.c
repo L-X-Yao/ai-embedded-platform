@@ -294,6 +294,161 @@ TEST(test_init_read_fail)
     ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
 }
 
+/* ---------- new tests ---------- */
+
+/* io.erase_sector=NULL must return ERR_PARAM */
+TEST(test_init_null_erase)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_io_t bad = g_mock_io;
+    bad.erase_sector = NULL;
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &bad, &g_mock_cfg));
+}
+
+/* io.write=NULL must return ERR_PARAM */
+TEST(test_init_null_write)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_io_t bad = g_mock_io;
+    bad.write = NULL;
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &bad, &g_mock_cfg));
+}
+
+/* io.read=NULL must return ERR_PARAM */
+TEST(test_init_null_read)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_io_t bad = g_mock_io;
+    bad.read = NULL;
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &bad, &g_mock_cfg));
+}
+
+/*
+ * The very first push always hits a sector boundary (write_idx=0,
+ * 0 % slots_per_sector == 0). Setting g_fail_erase=true must yield ERR_IO.
+ */
+TEST(test_push_erase_fail)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    g_fail_erase = true;
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x11};
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+}
+
+/*
+ * Fresh flash (no magic) causes init to call flush_header.
+ * If erase fails during that flush, init must return ERR_IO.
+ */
+TEST(test_init_fresh_flash_erase_fail)
+{
+    flash_ring_t ring;
+    mock_flash_reset();          /* all 0xFF → no valid magic */
+    g_fail_erase = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+}
+
+/*
+ * persist_interval=4: flush fires every 4th write/pop (since_flush counts
+ * both push and pop operations). After init (fresh), since_flush=0.
+ * Push 4 frames — 4th push triggers flush (extra erase).
+ * Pop 3 frames — since_flush resets to 0 on the 4th push, then increments
+ * for each pop. Pop 3 more won't cross the threshold.
+ * Pop a 4th time — since_flush reaches 4 → flush triggered (erase count rises).
+ */
+TEST(test_pop_persist_interval)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 4;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0xEE};
+
+    /* Push 4 frames; the 4th flush resets since_flush to 0 */
+    flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+    flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+    flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+    int erases_before_4th_push = g_erase_count;
+    flash_ring_push(&ring, frame, MOCK_SLOT_SIZE); /* triggers flush */
+    ASSERT_TRUE(g_erase_count > erases_before_4th_push);
+
+    /* since_flush is now 0; pop 3 — no flush yet */
+    int erases_before_pops = g_erase_count;
+    flash_ring_pop(&ring);
+    flash_ring_pop(&ring);
+    flash_ring_pop(&ring);
+    ASSERT_EQ(erases_before_pops, g_erase_count);
+
+    /* 4th pop reaches threshold → flush */
+    flash_ring_pop(&ring);
+    ASSERT_TRUE(g_erase_count > erases_before_pops);
+}
+
+/*
+ * Push (total_slots + 5) frames without popping. write_idx wraps to 5,
+ * read_idx stays at 0. count formula: write(5) >= read(0) → 5 - 0 = 5.
+ */
+TEST(test_count_after_wrap)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    uint32_t total = MOCK_TOTAL_SLOTS;
+    for (uint32_t i = 0; i < total + 5u; i++) {
+        memset(frame, (uint8_t)(i & 0xFF), sizeof(frame));
+        flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+    }
+
+    ASSERT_EQ(5u, ring.write_idx);
+    ASSERT_EQ(0u, ring.read_idx);
+    /* write >= read → count = write - read = 5 */
+    ASSERT_EQ(5u, flash_ring_count(&ring));
+}
+
+/*
+ * discard_all calls flush_header internally. If erase fails during that
+ * flush, it must propagate ERR_IO.
+ */
+TEST(test_discard_io_fail)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x77};
+    flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+
+    g_fail_erase = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_discard_all(&ring));
+}
+
+/*
+ * Minimum-length frame (1 byte). Peek must return that exact byte.
+ */
+TEST(test_push_min_len)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[1] = {0xA7};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, 1));
+    ASSERT_EQ(1u, flash_ring_count(&ring));
+
+    uint8_t buf[1] = {0x00};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, ring.read_idx, buf, 1));
+    ASSERT_EQ(0xA7, buf[0]);
+}
+
 TEST_MAIN("flash_ring")
     RUN(test_init_null);
     RUN(test_init_bad_cfg);
@@ -312,4 +467,13 @@ TEST_MAIN("flash_ring")
     RUN(test_count_null);
     RUN(test_multiple_push_pop_sequence);
     RUN(test_init_read_fail);
+    RUN(test_init_null_erase);
+    RUN(test_init_null_write);
+    RUN(test_init_null_read);
+    RUN(test_push_erase_fail);
+    RUN(test_init_fresh_flash_erase_fail);
+    RUN(test_pop_persist_interval);
+    RUN(test_count_after_wrap);
+    RUN(test_discard_io_fail);
+    RUN(test_push_min_len);
 TEST_MAIN_END()
