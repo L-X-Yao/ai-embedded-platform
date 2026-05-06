@@ -12,21 +12,42 @@
 ## 典型 wheel 候选
 
 **升级**：
-- `ota_updater` — OTA 固件更新（支持断点续传、回滚）
+- `ota_manager` — OTA 固件更新（支持断点续传、回滚）[已实现]
 - `bootloader_base` — 通用 bootloader 骨架
 
 **数据**：
-- `data_logger` — 采集 → 存储 → 上传
-- `event_recorder` — 环形事件日志
+- `data_logger` — 采集 -> 存储 -> 上传 [已实现]
+- `ring_log` — 环形事件日志 [已实现]
+- `flash_journal` — Flash 日志（追加写 + 磨损均衡）[已实现]
 
 **管理**：
-- `config_manager` — 配置持久化（依赖 `kvs`）
-- `cli_shell` — 完整的命令行 shell（包装 `cli_parser` + 命令注册）
+- `config_store` — 配置持久化 [已实现]
+- `cli_shell` — 完整命令行 shell（命令注册 + 历史）[已实现]
+- `param_table` — 运行时可调参数 [已实现]
 
 **网络应用**：
-- `network_manager` — WiFi/BLE/以太网切换管理
-- `mqtt_device_client` — MQTT + 设备影子 + OTA 触发
+- `telemetry` — 遥测数据打包上报 [已实现]
+- `event_bus` — 事件总线（发布/订阅）[已实现]
 
-## 目录清单
+## 目录清单（18 wheels）
 
-（待添加）
+| Wheel | 功能 | 状态 |
+|-------|------|------|
+| `boot_counter` | 启动计数器（Flash 持久化） | candidate |
+| `button_handler` | 按键事件处理（多按键/组合键） | candidate |
+| `cli_shell` | 完整命令行 shell（命令注册+历史） | candidate |
+| `command_queue` | 命令队列（异步命令调度） | candidate |
+| `config_store` | 配置持久化存储 | candidate |
+| `data_logger` | 数据采集/存储/上传 | candidate |
+| `device_info` | 设备信息查询（型号/版本/序列号） | candidate |
+| `error_handler` | 错误处理框架（错误码+回调） | candidate |
+| `event_bus` | 事件总线（发布/订阅） | candidate |
+| `flash_journal` | Flash 日志（追加写+磨损均衡） | candidate |
+| `ota_manager` | OTA 固件更新管理 | candidate |
+| `param_table` | 参数表（运行时可调参数） | candidate |
+| `ring_log` | 环形日志（固定大小 RAM 缓冲） | candidate |
+| `scheduler` | 任务调度器（协作式） | candidate |
+| `sensor_hub` | 传感器集线器（多传感器统一采集） | candidate |
+| `task_watchdog` | 任务看门狗（多任务喂狗监控） | candidate |
+| `telemetry` | 遥测数据打包上报 | candidate |
+| `version_info` | 版本信息管理（编译时注入） | candidate |
