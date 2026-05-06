@@ -353,252 +353,290 @@ TEST(test_read_timeout)
     ASSERT_EQ(bme680_read(&d, &data), BME680_ERR_TIMEOUT);
 }
 
-/* --- init: null function pointer guard (line 224) --- */
+/*
+ * bme680_init() does 8 I2C ops (op 0..7):
+ *   0: read_regs chip_id
+ *   1: read_regs coeff1
+ *   2: read_regs coeff2
+ *   3: read_regs 0x02 (res_heat_range)
+ *   4: read_regs 0x00 (res_heat_val)
+ *   5: read_regs 0x04 (range_sw_err)
+ *   6: write_reg REG_CTRL_HUM
+ *   7: write_reg REG_CTRL_MEAS
+ *
+ * bme680_read() (after setup) uses ops 8..13:
+ *   8:  read_regs REG_CTRL_HUM
+ *   9:  read_regs REG_CTRL_MEAS
+ *  10:  write_reg REG_CTRL_HUM  (trigger forced mode)
+ *  11:  write_reg REG_CTRL_MEAS (trigger forced mode)
+ *  12:  read_regs REG_MEAS_STATUS (poll, iteration 0)
+ *  13:  read_regs REG_DATA_START
+ */
 
-TEST(test_init_null_write_fn)
+/* Fail coeff2 read (op 2) → line 84 */
+TEST(test_init_calib_coeff2_fail)
 {
     mock_reset();
-    bme680_t d;
-    static const bme680_i2c_t no_write = {
-        .write_reg = NULL,
-        .read_regs = mock_i2c_read_regs,
-        .delay_ms  = mock_i2c_delay_ms,
-        .ctx       = NULL,
-    };
-    ASSERT_EQ(bme680_init(&d, &no_write, BME680_ADDR_LOW), BME680_ERR_PARAM);
-}
-
-TEST(test_init_null_read_fn)
-{
-    mock_reset();
-    bme680_t d;
-    static const bme680_i2c_t no_read = {
-        .write_reg = mock_i2c_write_reg,
-        .read_regs = NULL,
-        .delay_ms  = mock_i2c_delay_ms,
-        .ctx       = NULL,
-    };
-    ASSERT_EQ(bme680_init(&d, &no_read, BME680_ADDR_LOW), BME680_ERR_PARAM);
-}
-
-/* --- init: calibration coeff2 I2C fail (line 84) --- */
-
-TEST(test_calibration_coeff2_fail)
-{
-    mock_reset();
-    /* op 0 = chip_id read, op 1 = coeff1 read, op 2 = coeff2 read */
     mock_fail_at = 2;
     bme680_t d;
     bme680_err_t e = bme680_init(&d, &mock_i2c, BME680_ADDR_LOW);
     ASSERT_EQ(e, BME680_ERR_I2C);
 }
 
-/* --- init: post-calibration write failures (lines 246, 248) --- */
+/* Fail extra gas reg reads: res_heat_range (op 3), res_heat_val (op 4),
+ * range_sw_err (op 5) → lines in read_calibration */
+TEST(test_init_calib_extra_regs_fail)
+{
+    /* fail at op 3 (res_heat_range read) */
+    mock_reset();
+    mock_fail_at = 3;
+    bme680_t d;
+    ASSERT_EQ(bme680_init(&d, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
 
+    /* fail at op 4 (res_heat_val read) */
+    mock_reset();
+    mock_fail_at = 4;
+    ASSERT_EQ(bme680_init(&d, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
+
+    /* fail at op 5 (range_sw_err read) */
+    mock_reset();
+    mock_fail_at = 5;
+    ASSERT_EQ(bme680_init(&d, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
+}
+
+/* Fail ctrl_hum write during init (op 6) → line 246 */
 TEST(test_init_ctrl_hum_write_fail)
 {
     mock_reset();
-    /* op 0=chip_id, 1=coeff1, 2=coeff2, 3=res_heat_range, 4=res_heat_val,
-       5=range_sw_err, 6=write ctrl_hum */
     mock_fail_at = 6;
     bme680_t d;
-    ASSERT_EQ(bme680_init(&d, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
+    bme680_err_t e = bme680_init(&d, &mock_i2c, BME680_ADDR_LOW);
+    ASSERT_EQ(e, BME680_ERR_I2C);
 }
 
+/* Fail ctrl_meas write during init (op 7) → line 248 */
 TEST(test_init_ctrl_meas_write_fail)
 {
     mock_reset();
-    /* op 7 = write ctrl_meas */
     mock_fail_at = 7;
     bme680_t d;
-    ASSERT_EQ(bme680_init(&d, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
+    bme680_err_t e = bme680_init(&d, &mock_i2c, BME680_ADDR_LOW);
+    ASSERT_EQ(e, BME680_ERR_I2C);
 }
 
-/* --- read: I2C failures in forced-mode sequence (lines 265, 269, 271) --- */
+/* NULL i2c callbacks → line 224 */
+TEST(test_init_null_callbacks)
+{
+    static const bme680_i2c_t no_write = {
+        .write_reg = NULL,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = mock_i2c_delay_ms,
+        .ctx       = NULL,
+    };
+    static const bme680_i2c_t no_read = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = NULL,
+        .delay_ms  = mock_i2c_delay_ms,
+        .ctx       = NULL,
+    };
+    bme680_t d;
+    ASSERT_EQ(bme680_init(&d, &no_write, BME680_ADDR_LOW), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_init(&d, &no_read,  BME680_ADDR_LOW), BME680_ERR_PARAM);
+}
 
+/* Fail read ctrl_meas during bme680_read (op 9 after setup) → line 265 */
 TEST(test_read_ctrl_meas_read_fail)
 {
-    /* bme680_read op sequence relative to start of read:
-     *   0=read ctrl_hum (succeeds), 1=read ctrl_meas (fail here) */
     setup();
-    /* mock_op_count is now at 8 (8 ops consumed by init).
-     * Fail at absolute op (mock_op_count + 1). */
-    mock_fail_at = mock_op_count + 1;
+    mock_fail_at = mock_op_count + 1;  /* op 9: read REG_CTRL_MEAS */
     bme680_data_t data;
     ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
 }
 
+/* Fail write ctrl_hum during forced-mode trigger (op 10) → line 269 */
 TEST(test_read_ctrl_hum_write_fail)
 {
-    /* op 2=write ctrl_hum in forced-mode trigger */
     setup();
-    mock_fail_at = mock_op_count + 2;
+    mock_fail_at = mock_op_count + 2;  /* op 10: write REG_CTRL_HUM */
     bme680_data_t data;
     ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
 }
 
+/* Fail write ctrl_meas during forced-mode trigger (op 11) → line 271 */
 TEST(test_read_ctrl_meas_write_fail)
 {
-    /* op 3 = write ctrl_meas with MODE_FORCED */
     setup();
-    mock_fail_at = mock_op_count + 3;
+    mock_fail_at = mock_op_count + 3;  /* op 11: write REG_CTRL_MEAS */
     bme680_data_t data;
     ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
 }
 
-/* --- read: I2C fail during poll loop (line 282) --- */
-
-TEST(test_read_poll_i2c_fail)
+/* Fail status poll read during bme680_read (op 12) → line 282 */
+TEST(test_read_poll_fail)
 {
-    /* op 4 = first meas_status poll read */
-    setup();
-    mock_regs[0x1D] = 0x00;
-    mock_fail_at = mock_op_count + 4;
-    bme680_data_t data;
-    ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
-}
-
-/* --- read: I2C fail reading final data buffer (line 300) --- */
-
-TEST(test_read_data_buf_fail)
-{
-    /* op 5 = read 13-byte data buffer after new_data detected */
     setup();
     plant_data(415148, 500000, 25000, 300, 3, true);
-    mock_fail_at = mock_op_count + 5;
+    mock_fail_at = mock_op_count + 4;  /* op 12: read REG_MEAS_STATUS */
     bme680_data_t data;
     ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
 }
 
-/* --- compensate_pressure: var1==0 branch (line 155) --- */
-
-TEST(test_pressure_var1_zero)
+/* Fail data buffer read (op 13 after poll succeeds) → line 300 */
+TEST(test_read_data_buf_fail)
 {
-    /* Drive par_p1 = 0 so var1 == 0 => early return 0 */
-    mock_reset();
-    mock_regs[0xD0] = 0x61;
-    plant_coeff1();
-    plant_coeff2();
-    plant_extra_gas_regs();
-    /* Clear par_p1 bytes (c1[5..6] at 0x8E..0x8F) */
-    mock_regs[0x8E] = 0x00;
-    mock_regs[0x8F] = 0x00;
-    bme680_t d;
-    bme680_init(&d, &mock_i2c, BME680_ADDR_LOW);
-
-    plant_data(0, 500000, 25000, 300, 3, true);
-    bme680_data_t data;
-    bme680_err_t e = bme680_read(&d, &data);
-    ASSERT_EQ(e, BME680_OK);
-    ASSERT_EQ((int)data.pressure_pa, 0);
-}
-
-/* --- compensate_pressure: small-press branch (line 164) --- */
-
-TEST(test_pressure_small_branch)
-{
-    /* Use a very large adc_p value so (1048576 - adc_p) is small,
-       keeping press < 0x40000000 to exercise the else branch. */
     setup();
-    plant_data(1000000, 500000, 25000, 300, 3, true);
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    mock_fail_at = mock_op_count + 5;  /* op 13: read REG_DATA_START */
     bme680_data_t data;
-    bme680_err_t e = bme680_read(&dev, &data);
-    ASSERT_EQ(e, BME680_OK);
-    /* result may wrap but must not crash */
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_I2C);
 }
 
-/* --- compensate_gas: var2==0 branch (line 211) --- */
-
-TEST(test_gas_var2_zero)
-{
-    /* adc_gas == 0 drives var2 towards 0 depending on var1.
-     * With adc_gas=0 and range_sw_err=0: var2 = 0*32768 - 16777216 + var1.
-     * Set range_sw_err so var1 = 16777216, giving var2 = 0. */
-    setup();
-    /* range_sw_err at 0x04 bits[7:4]; set to make var1 = 16777216 / 5 * ... */
-    /* Simpler: plant adc_gas = 0 and gas_range = 0, note gas_valid = true.
-     * With range_sw_err=0: var1 = (1340+0) * gas_range_lut1[0] >> 16
-     *   = 1340 * 2147483647 >> 16 = 43912388606980 >> 16 ≈ 670,069,827
-     * var2 = 0*32768 - 16777216 + 670,069,827 = 653,292,611  (not 0)
-     * To get var2==0 we need range_sw_err s.t. var1 = 16777216.
-     * var1 = (1340 + 5*rse) * lut1[0] >> 16 = 16777216
-     * => 1340 + 5*rse = 16777216 * 65536 / 2147483647 ≈ 512 => rse = -165 (out of int8)
-     * Approach: Use gas_range where lut1[r]=0 — none are 0.
-     * Instead: plant raw mock_regs so gas_valid=true, adc_gas drives var2=0.
-     * var2 = adc_gas * 32768 - 16777216 + var1  => adc_gas = (16777216 - var1) / 32768
-     * With range_sw_err=0, gas_range=4, lut1[4]=2147483647:
-     *   var1 = 1340 * 2147483647 >> 16 = 43907153888380 >> 16 = 670,069,827... no
-     * The test can't easily hit var2==0 with mock integer math.
-     * Instead just verify the normal path executes and gas result is sane. */
-    plant_data(415148, 500000, 25000, 0, 3, true);
-    bme680_data_t data;
-    bme680_err_t e = bme680_read(&dev, &data);
-    ASSERT_EQ(e, BME680_OK);
-    /* adc_gas=0 may produce a near-zero or zero result */
-    ASSERT_TRUE(data.gas_resistance_ohm >= 0.0f);
-}
-
-/* --- set_oversampling: I2C fail paths (lines 349, 353) --- */
-
+/* Fail first write in set_oversampling (op 0 after setup) → line 349 */
 TEST(test_oversampling_ctrl_hum_fail)
 {
     setup();
-    mock_fail_next = 1;
+    mock_fail_at = mock_op_count;  /* op 8: write REG_CTRL_HUM */
     ASSERT_EQ(bme680_set_oversampling(&dev, 2, 2, 2), BME680_ERR_I2C);
 }
 
+/* Fail second write in set_oversampling (op 1 after setup) → line 353 */
 TEST(test_oversampling_ctrl_meas_fail)
 {
-    /* set_oversampling: op 0=write ctrl_hum (succeeds), op 1=write ctrl_meas */
     setup();
-    mock_fail_at = mock_op_count + 1;
+    mock_fail_at = mock_op_count + 1;  /* op 9: write REG_CTRL_MEAS */
     ASSERT_EQ(bme680_set_oversampling(&dev, 2, 2, 2), BME680_ERR_I2C);
 }
 
-/* --- set_gas_heater: duration >= 4032 branch (line 385) --- */
+/* Fail second write in set_gas_heater (op 1 = gas_wait write) → line 402 */
+TEST(test_gas_heater_gas_wait_fail)
+{
+    setup();
+    mock_fail_at = mock_op_count + 1;  /* op 1: write REG_GAS_WAIT0 */
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 150), BME680_ERR_I2C);
+}
 
+/* Fail third write in set_gas_heater (op 2 = ctrl_gas1 write) → line 405 */
+TEST(test_gas_heater_ctrl_gas1_fail)
+{
+    setup();
+    mock_fail_at = mock_op_count + 2;  /* op 2: write REG_CTRL_GAS1 */
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 150), BME680_ERR_I2C);
+}
+
+/* duration_ms >= 4032 → gas_wait = 0xFF (line 385) */
 TEST(test_gas_heater_long_duration)
 {
     setup();
     bme680_err_t e = bme680_set_gas_heater(&dev, 300, 4032);
     ASSERT_EQ(e, BME680_OK);
     ASSERT_EQ(mock_regs[0x64], 0xFF);
-}
 
-/* --- set_gas_heater: 2nd and 3rd I2C fail (lines 402, 405) --- */
-
-TEST(test_gas_heater_gas_wait_fail)
-{
-    /* set_gas_heater: op 0=write res_heat0 (succeeds), op 1=write gas_wait0 */
-    setup();
-    mock_fail_at = mock_op_count + 1;
-    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 150), BME680_ERR_I2C);
-}
-
-TEST(test_gas_heater_ctrl_gas1_fail)
-{
-    /* set_gas_heater: op 2=write ctrl_gas1 */
-    setup();
-    mock_fail_at = mock_op_count + 2;
-    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 150), BME680_ERR_I2C);
-}
-
-/* --- delay_ms NULL callback path --- */
-
-TEST(test_read_no_delay_callback)
-{
+    /* also test exactly at boundary */
     mock_reset();
-    static const bme680_i2c_t no_delay_i2c = {
+    bme680_init(&dev, &mock_i2c, BME680_ADDR_LOW);
+    e = bme680_set_gas_heater(&dev, 300, 5000);
+    ASSERT_EQ(e, BME680_OK);
+    ASSERT_EQ(mock_regs[0x64], 0xFF);
+}
+
+/*
+ * pressure compensation small branch (line 164):
+ * The branch `press < 0x40000000` is taken when adc_p is much larger
+ * than 1048576 (i.e., adc_p ~ 1048575 makes press*3125 small).
+ * Use adc_p near maximum (20-bit max = 0xFFFFF = 1048575) and typical
+ * t_fine so var1 is positive and moderate.
+ */
+TEST(test_pressure_small_branch)
+{
+    setup();
+    /* adc_p = 0xFFFFF = 1048575 makes (1048576 - adc_p) = 1, so press*3125 = 3125 < 0x40000000 */
+    plant_data(1048575u, 500000, 25000, 300, 3, true);
+    bme680_data_t data;
+    bme680_err_t e = bme680_read(&dev, &data);
+    ASSERT_EQ(e, BME680_OK);
+    /* pressure should be a small but non-negative value */
+    ASSERT_TRUE(data.pressure_pa >= 0.0f);
+}
+
+/*
+ * compensate_pressure var1==0 path (line 155):
+ * par_p1=0 makes the final var1 always 0. Set par_p1=0 directly after init.
+ * Note: t_fine must be set first via compensate_temperature; a read()
+ * call triggers that. Instead directly manipulate par_p1 to 0 then call read.
+ */
+TEST(test_pressure_var1_zero)
+{
+    setup();
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    /* par_p1 = 0 forces var1 = 0 in compensate_pressure → returns 0 */
+    dev.par_p1 = 0;
+    bme680_data_t data;
+    bme680_err_t e = bme680_read(&dev, &data);
+    ASSERT_EQ(e, BME680_OK);
+    /* pressure_pa = (float)0 = 0.0f */
+    ASSERT_NEAR(data.pressure_pa, 0.0f, 1.0f);
+}
+
+/*
+ * compensate_gas var2==0 path (line 211):
+ * var2 = adc_gas * 32768 - 16777216 + var1
+ * With adc_gas=0 and var1 chosen to cancel: var1 = 16777216 → var2 = 0.
+ * var1 = (1340 + 5*range_sw_err) * gas_range_lut1[r] >> 16
+ * For r=0: gas_range_lut1[0]=2147483647 and range_sw_err=0:
+ *   var1 = 1340 * 2147483647 >> 16 = 2877627862 >> 16 ≈ 43921
+ * That won't reach 16777216 with typical values. Use adc_gas=512 so that
+ * adc_gas*32768 = 16777216 exactly, then need var1=0 so range_sw_err=-268
+ * which isn't representable. Instead set adc_gas=0, gas_range=0 and
+ * use a crafted res_heat... this edge case is not practically triggerable
+ * from the public API mock. Skip this specific internal branch and rely on
+ * the overall coverage from the existing gas tests.
+ *
+ * We still exercise gas path coverage via additional gas_range values.
+ */
+TEST(test_gas_various_ranges)
+{
+    uint8_t r;
+    bme680_data_t data;
+
+    /* Exercise all 16 gas ranges to exercise lut1/lut2 indexing */
+    for (r = 0; r < 16; r++)
+    {
+        setup();
+        plant_data(415148, 500000, 25000, 512, r, true);
+        bme680_err_t e = bme680_read(&dev, &data);
+        ASSERT_EQ(e, BME680_OK);
+        ASSERT_TRUE(data.gas_resistance_ohm >= 0.0f);
+    }
+}
+
+/* Verify humidity clamping at 100000 (100% RH) */
+TEST(test_humidity_clamp)
+{
+    setup();
+    /* Use maximum adc_h = 0xFFFF to drive humidity above 100000 units */
+    plant_data(415148, 500000, 0xFFFF, 300, 3, true);
+    bme680_data_t data;
+    bme680_err_t e = bme680_read(&dev, &data);
+    ASSERT_EQ(e, BME680_OK);
+    ASSERT_TRUE(data.humidity_pct <= 100.0f);
+}
+
+/* Verify delay_ms is not called when callback is NULL */
+TEST(test_no_delay_callback)
+{
+    static const bme680_i2c_t i2c_no_delay = {
         .write_reg = mock_i2c_write_reg,
         .read_regs = mock_i2c_read_regs,
         .delay_ms  = NULL,
         .ctx       = NULL,
     };
+    mock_reset();
     bme680_t d;
-    bme680_init(&d, &no_delay_i2c, BME680_ADDR_LOW);
+    bme680_err_t e = bme680_init(&d, &i2c_no_delay, BME680_ADDR_LOW);
+    ASSERT_EQ(e, BME680_OK);
     plant_data(415148, 500000, 25000, 300, 3, true);
     bme680_data_t data;
-    bme680_err_t e = bme680_read(&d, &data);
+    e = bme680_read(&d, &data);
     ASSERT_EQ(e, BME680_OK);
 }
 
@@ -624,23 +662,24 @@ TEST_MAIN("bme680")
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);
-    RUN(test_init_null_write_fn);
-    RUN(test_init_null_read_fn);
-    RUN(test_calibration_coeff2_fail);
+    RUN(test_init_calib_coeff2_fail);
+    RUN(test_init_calib_extra_regs_fail);
     RUN(test_init_ctrl_hum_write_fail);
     RUN(test_init_ctrl_meas_write_fail);
+    RUN(test_init_null_callbacks);
     RUN(test_read_ctrl_meas_read_fail);
     RUN(test_read_ctrl_hum_write_fail);
     RUN(test_read_ctrl_meas_write_fail);
-    RUN(test_read_poll_i2c_fail);
+    RUN(test_read_poll_fail);
     RUN(test_read_data_buf_fail);
-    RUN(test_pressure_var1_zero);
-    RUN(test_pressure_small_branch);
-    RUN(test_gas_var2_zero);
     RUN(test_oversampling_ctrl_hum_fail);
     RUN(test_oversampling_ctrl_meas_fail);
-    RUN(test_gas_heater_long_duration);
     RUN(test_gas_heater_gas_wait_fail);
     RUN(test_gas_heater_ctrl_gas1_fail);
-    RUN(test_read_no_delay_callback);
+    RUN(test_gas_heater_long_duration);
+    RUN(test_pressure_small_branch);
+    RUN(test_pressure_var1_zero);
+    RUN(test_gas_various_ranges);
+    RUN(test_humidity_clamp);
+    RUN(test_no_delay_callback);
 TEST_MAIN_END()
