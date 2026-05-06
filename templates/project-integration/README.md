@@ -36,7 +36,7 @@ cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md
 # 4. Sync wheel candidates to WISHLIST
 # For each candidate in CLAUDE.md's wheel table, ensure it appears in
 # wheels/WISHLIST.md with trigger count incremented.
-# See: memory/feedback_project_import_wishlist_sync.md
+# See: wheels/WISHLIST.md for format and ADR-011 for strategy
 
 # 5. Add CI job if project supports cross-compile
 # See .github/workflows/ci.yml for flybox-build as reference.
