@@ -21,9 +21,9 @@
 
 见 [`docs/wheel-contract.md`](../docs/wheel-contract.md) 了解升级标准。
 
-## 目录（146 wheels）
+## 目录（167 wheels）
 
-### L0 Primitives（`primitives/` — 51 个）
+### L0 Primitives（`primitives/` — 56 个）
 - `aes128/` — AES-128 对称加密
 - `base64/` — Base64 编解码
 - `bitfield/` — 位域读写工具（MSB-first pack/unpack）
@@ -43,7 +43,9 @@
 - `fixed_point/` — 定点数运算（Q16.16）
 - `hash_fnv/` — FNV-1a 哈希
 - `hex_codec/` — 十六进制编解码
+- `iir_lowpass/` — 一阶 IIR 低通滤波器（EMA）
 - `json_parser/` — JSON 解析器（零分配）
+- `kalman_1d/` — 1D 标量卡尔曼滤波器
 - `kvs/` — 键值存储（vendor: FlashDB KVDB）
 - `led_pattern/` — LED 闪烁模式引擎（单次/循环）
 - `log/` — 带等级 + 模块标签 + 多 sink + 编译期过滤的日志
