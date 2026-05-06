@@ -70,7 +70,8 @@ typedef struct {
     /* command state */
     air780eg_cmd_status_t cmd_status;           /* internal */
     char     expect[64];                        /* internal: expected response token */
-    uint32_t cmd_deadline_ms;                   /* internal */
+    uint32_t cmd_start_ms;                      /* internal */
+    uint32_t cmd_timeout_ms;                    /* internal */
     char     matched_line[AIR780EG_LINE_MAX];   /* internal */
     char     prev_line[AIR780EG_LINE_MAX];      /* internal */
     /* callbacks */
