@@ -36,6 +36,26 @@ fi
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
+# Generate config stubs for wheels that need compile-time config headers
+mkdir -p "$TMPDIR/stubs"
+cat > "$TMPDIR/stubs/fal_cfg.h" <<'STUB'
+#ifndef FAL_CFG_H
+#define FAL_CFG_H
+#include "fal_def.h"
+extern const struct fal_flash_dev _stub_flash;
+#define FAL_FLASH_DEV_TABLE { &_stub_flash }
+#define FAL_PART_TABLE { {"stub", "stub", 0, 4096} }
+#endif
+STUB
+cat > "$TMPDIR/stubs/fdb_cfg.h" <<'STUB'
+#ifndef _FDB_CFG_H_
+#define _FDB_CFG_H_
+#define FDB_USING_FAL_MODE
+#define FDB_USING_KVDB
+#define FDB_PRINT(...)
+#endif
+STUB
+
 # Header
 case "$FORMAT" in
     csv)      echo "wheel,layer,text,data,bss,total" ;;
@@ -74,27 +94,36 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     fi
 
     # Determine include paths
-    INCLUDES="-I$wheel_dir -I$TOOLING_TEST"
+    INCLUDES="-I$wheel_dir -I$TOOLING_TEST -I$TMPDIR/stubs"
     if [[ -d "$wheel_dir/vendor/inc" ]]; then
         INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
     fi
-    # Cross-wheel dependencies: add include paths for known deps
-    root_c_files=$(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null || true)
-    if [[ -n "$root_c_files" ]]; then
-        if echo "$root_c_files" | xargs grep -lq '#include "crc16.h"' 2>/dev/null; then
-            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/crc16"
+    # Cross-wheel dependencies: scan includes and add paths
+    all_src_text=""
+    for src in "${sources[@]}"; do
+        all_src_text="$all_src_text $(head -30 "$src" 2>/dev/null)"
+    done
+    for dep_name in crc16 crc32 crc8 fal mqtt_packet at_command ring_buffer log; do
+        if echo "$all_src_text" | grep -q "#include \"${dep_name}.h\""; then
+            dep_dir=$(find "$REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
+            [[ -n "$dep_dir" ]] && INCLUDES="$INCLUDES -I$dep_dir"
         fi
-        if echo "$root_c_files" | xargs grep -lq '#include "fal.h"' 2>/dev/null; then
-            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal/vendor/inc"
-        fi
+    done
+    # Vendor sub-deps: kvs needs fal headers
+    if [[ -d "$wheel_dir/vendor/inc" ]] && grep -rq '#include.*fal\.h' "$wheel_dir/vendor" 2>/dev/null; then
+        INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal"
     fi
 
-    # Compile each source
+    # Compile each source (vendor sources get -Wno-error)
     obj_files=()
     build_ok=true
     for src in "${sources[@]}"; do
         obj="$TMPDIR/$(basename "$src" .c).o"
-        if $CC $CFLAGS $INCLUDES -o "$obj" "$src" 2>/dev/null; then
+        src_flags="$CFLAGS"
+        if [[ "$src" == *"/vendor/"* ]]; then
+            src_flags="${src_flags/-Werror/}"
+        fi
+        if $CC $src_flags $INCLUDES -o "$obj" "$src" 2>/dev/null; then
             obj_files+=("$obj")
         else
             build_ok=false
