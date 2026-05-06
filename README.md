@@ -6,26 +6,26 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 
 ## 平台现状
 
-- **49 个 candidate wheels**（L0 原语 21 / L1 驱动 19 / L2 协议 9），audit 全绿
+- **146 个 candidate wheels**（L0 原语 51 / L1 驱动 52 / L2 协议 25 / L3 模块 18），55 项审计全绿
 - **2 个真实项目**：flybox（无人机遥测盒子）/ drone_light（无人机 LED 灯控）
-- **CI 增量检测**（push 只测改动的 wheel，harness 变更时全量回归），audit 全绿
+- **CI 增量检测**（push 只测改动的 wheel，harness 变更时全量回归）
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
 
 ```
-├── docs/                 核心文档 + 10 个 ADR
+├── docs/                 核心文档 + 11 个 ADR
 ├── vsf/                  VSF 上游源码（不直接改）
 ├── vsf-addon/            新增代码（MCU port / 组件）
 ├── wheels/               可复用轮子（L0 原语 → L3 模块）
-│   ├── primitives/       L0 (21)：log, crc16, crc32, fal, kvs, cli_parser, ...
-│   ├── drivers/          L1 (19)：bmp280, sht30, mpu6050, dht11, ads1115, ...
-│   ├── protocols/        L2 (9)：mqtt_packet, http_parser, coap_packet, modbus_rtu, ...
-│   ├── modules/          L3：（暂无）
+│   ├── primitives/       L0 (51)：log 生态, crc 族, 数据结构, 编解码, 数学, ...
+│   ├── drivers/          L1 (52)：传感器, IMU, 显示, 存储, 通信, IO 扩展, ...
+│   ├── protocols/        L2 (25)：mqtt, modbus, coap, http, lorawan, canbus, ...
+│   ├── modules/          L3 (18)：cli_shell, data_logger, ota_manager, ...
 │   └── _draft/           （暂无）
 ├── templates/            项目起步模板
 ├── projects/             真实项目（flybox, drone_light）
-└── tooling/              patches / HIL / 脚本 / 实验
+└── tooling/              audit / test / session / ci / hil / debug / metrics
 ```
 
 ## 快速开始
@@ -72,7 +72,7 @@ cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md
 | `docs/wheel-contract.md` | 轮子合格定义 + 升级流程 |
 | `docs/api-conventions.md` | 跨 wheel API 命名/错误/线程/内存约定 |
 | `docs/integrating-wheels.md` | 项目中接入 wheel 的 CMakeLists 示例 |
-| `docs/ai-workflow.md` | 11 类任务标准路径 |
+| `docs/ai-workflow.md` | 12 类任务标准路径 |
 | `docs/debugging-playbook.md` | 踩坑指南 + mps2 checklist |
-| `docs/adr/` | 10 个架构决策记录 |
+| `docs/adr/` | 11 个架构决策记录 |
 | `wheels/README.md` | Wheel 完整目录 + registry 表格 |
