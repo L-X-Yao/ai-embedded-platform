@@ -363,13 +363,9 @@ TEST(test_urc_during_pending_cmd)
 
 TEST(test_timeout_tick_overflow)
 {
-    /* This test documents current behaviour of air780eg_poll() which uses
-     * a plain "now >= deadline" comparison with no wraparound handling.
-     *
-     * Setup: g_tick_ms = 0xFFFFFFF0, timeout = 100 ms.
-     * deadline = 0xFFFFFFF0 + 100 = 0x00000054 (wraps to 84).
-     * poll() at g_tick_ms = 0xFFFFFFF5: now (4294967285) >= deadline (84) → true.
-     * Current behaviour: CMD_TIMEOUT fires before real deadline elapses. */
+    /* Verify timeout works correctly across uint32 wrap-around.
+     * start=0xFFFFFFF0, timeout=100. At tick 0xFFFFFFF5 (elapsed=5) → still pending.
+     * At tick 0x00000054 (elapsed=100) → timeout fires. */
     air780eg_t dev;
     mock_reset();
     g_tick_ms = 0xFFFFFFF0u;
@@ -377,11 +373,19 @@ TEST(test_timeout_tick_overflow)
     air780eg_send_cmd(&dev, "AT", "OK", 100);
     ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
 
-    /* Move tick forward by 5 ms — not yet 100 ms, but deadline wrapped */
+    /* 5 ms elapsed — should NOT timeout */
     g_tick_ms = 0xFFFFFFF5u;
     air780eg_poll(&dev);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
 
-    /* Document current (buggy) behaviour: immediate timeout due to wrap */
+    /* 99 ms elapsed — still pending */
+    g_tick_ms = 0xFFFFFFF0u + 99u;
+    air780eg_poll(&dev);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+
+    /* 100 ms elapsed (wraps to 0x00000054) — now timeout */
+    g_tick_ms = 0xFFFFFFF0u + 100u;
+    air780eg_poll(&dev);
     ASSERT_EQ(AIR780EG_CMD_TIMEOUT, air780eg_cmd_status(&dev));
 }
 

@@ -189,7 +189,7 @@ void air780eg_poll(air780eg_t *dev)
 
     if (dev->cmd_status == AIR780EG_CMD_PENDING) {
         uint32_t now = dev->io->get_tick_ms(dev->io->ctx);
-        if (now >= dev->cmd_deadline_ms) {
+        if ((now - dev->cmd_start_ms) >= dev->cmd_timeout_ms) {
             dev->cmd_status = AIR780EG_CMD_TIMEOUT;
         }
     }
@@ -213,9 +213,9 @@ air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
         dev->expect[0] = '\0';
     }
 
-    /* Set deadline */
-    uint32_t now = dev->io->get_tick_ms(dev->io->ctx);
-    dev->cmd_deadline_ms = now + timeout_ms;
+    /* Record start time + timeout (unsigned subtraction in poll is wrap-safe) */
+    dev->cmd_start_ms = dev->io->get_tick_ms(dev->io->ctx);
+    dev->cmd_timeout_ms = timeout_ms;
     dev->cmd_status = AIR780EG_CMD_PENDING;
     dev->matched_line[0] = '\0';
     dev->prev_line[0] = '\0';
