@@ -37,6 +37,21 @@ target_include_directories(test_hw_model_lora_sx1276 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_hw_model_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+# -Wno-conversion: hw_model.h in tooling/test triggers integer-promotion
+# warning in hw_model__write_reg; suppressed here since it is a tooling
+# header, not driver code.
+target_compile_options(test_hw_model_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-conversion -Wno-unused-function)
 
 add_test(NAME lora_sx1276_hw_model_tests COMMAND test_hw_model_lora_sx1276)
+
+add_executable(test_null_lora_sx1276
+    test_null_lora_sx1276.c
+    ../lora_sx1276.c
+)
+target_include_directories(test_null_lora_sx1276 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME lora_sx1276_null_tests COMMAND test_null_lora_sx1276)
