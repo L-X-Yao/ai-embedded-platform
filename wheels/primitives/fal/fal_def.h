@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: MIT
+/*
+ * fal_def — type definitions for the Flash Abstraction Layer
+ *
+ * Layer:   L0
+ * Status:  candidate
+ * Deps:    (none)
+ * Instances: single
+ */
+
 #ifndef FAL_DEF_H
 #define FAL_DEF_H
 

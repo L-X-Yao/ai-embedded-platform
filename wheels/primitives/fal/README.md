@@ -8,7 +8,17 @@ with boundary protection.
 
 ## Origin
 
-Self-written. API-compatible with armink's FAL for downstream consumers (kvs/FlashDB).
+Self-written (ADR-010). API-compatible with armink/FAL for downstream consumers
+(kvs/FlashDB).
+
+## Why self-written?
+
+The original implementation vendored armink/FAL from RT-Thread. That upstream
+carries RT-Thread headers, a logging subsystem, and build infrastructure that
+conflict with our zero-dependency wheel contract. The self-written replacement
+preserves the external API (`fal_partition_read/write/erase`, device and
+partition structs) so that FlashDB/kvs consumers compile unchanged, while
+removing all RT-Thread coupling. Total implementation: ~150 lines of pure C99.
 
 ## Dependencies
 
@@ -21,7 +31,7 @@ Consumers `#include <fal.h>`.
 ```c
 /* Project provides fal_cfg.h with device table + partition table */
 
-fal_init();
+int n = fal_init();   /* returns partition count on success */
 
 const struct fal_partition *p = fal_partition_find("config");
 fal_partition_read(p, 0, buf, sizeof(buf));
@@ -44,18 +54,28 @@ const struct fal_flash_dev *d = fal_flash_device_find("onchip");
 - [x] Host (sim, RAM-backed flash mock)
 - [ ] GD32F405 (flybox) — FAL used via kvs in project
 
+## Known issues
+
+None.
+
 ## How to test
 
 ```bash
 cd wheels/primitives/fal/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_fal
+cmake -GNinja -S . -B build && cmake --build build && ctest --test-dir build
 ```
 
 ## Test status
 
-- Unit tests (sim): PASS (13 C tests + 5 property tests)
+- Unit tests (sim): PASS (13 C tests + 6 null parameter tests + 5 property tests)
 - HIL: N/A
+
+## API convention deviations
+
+- `fal_init()` returns the partition count (>= 0) on success rather than 0.
+  This matches armink/FAL's contract, which FlashDB and kvs rely on. The
+  function is documented as "returns partition count on success, -1 on
+  failure". Negative return still signals error per api-conventions §2.1(b).
 
 ## API review
 
@@ -94,3 +114,6 @@ const struct fal_flash_dev onchip_flash = {
     .write_gran = 8,
 };
 ```
+
+All ops (`.read`, `.write`, `.erase`) must be non-NULL. `.init` is optional
+(NULL is accepted and silently skipped during `fal_init()`).
