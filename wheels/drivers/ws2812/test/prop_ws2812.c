@@ -84,8 +84,132 @@ PROPERTY(scale5to8_bounded, 5000)
     }
 }
 
+/* --- additional mocks for failure injection --- */
+
+static bool mock_fail_set_compare_count_g;
+static int  mock_fail_set_compare_at_g;
+static int  mock_set_compare_count_g;
+
+static bool mock_set_compare_fail(void *ctx, uint16_t value)
+{
+    (void)ctx; (void)value;
+    mock_set_compare_count_g++;
+    if (mock_fail_set_compare_count_g &&
+        mock_set_compare_count_g >= mock_fail_set_compare_at_g)
+        return false;
+    return true;
+}
+
+static void mock_wait_noop(void *ctx) { (void)ctx; }
+static void mock_enter_noop(void *ctx) { (void)ctx; }
+static void mock_exit_noop(void *ctx)  { (void)ctx; }
+
+static const ws2812_hal_t hal_fail_first = {
+    .set_compare    = mock_set_compare_fail,
+    .wait_period    = mock_wait_noop,
+    .enter_critical = mock_enter_noop,
+    .exit_critical  = mock_exit_noop,
+    .ctx            = NULL,
+};
+
+/* HAL with NULL callbacks — triggers the incomplete-HAL guard */
+static const ws2812_hal_t hal_null_callbacks = {
+    .set_compare    = NULL,
+    .wait_period    = NULL,
+    .enter_critical = NULL,
+    .exit_critical  = NULL,
+    .ctx            = NULL,
+};
+
+TEST(test_null_hal_callbacks_rejected)
+{
+    ws2812_color_t c = {0, 0, 0};
+    ASSERT_EQ(ws2812_send(&hal_null_callbacks, &prop_timing, &c, 1),
+              WS2812_ERR_NULL);
+}
+
+TEST(test_null_arg_guards)
+{
+    ws2812_color_t c = {0, 0, 0};
+    ASSERT_EQ(ws2812_send(NULL,       &prop_timing, &c, 1), WS2812_ERR_NULL);
+    ASSERT_EQ(ws2812_send(&prop_hal, NULL,          &c, 1), WS2812_ERR_NULL);
+    ASSERT_EQ(ws2812_send(&prop_hal, &prop_timing, NULL, 1), WS2812_ERR_NULL);
+    ASSERT_EQ(ws2812_send(&prop_hal, &prop_timing, &c,  0), WS2812_ERR_NULL);
+}
+
+TEST(test_scale5to8_clamp)
+{
+    /* v5 > 31 must clamp to LUT[31] = 255 */
+    ASSERT_EQ(ws2812_scale5to8(32),  255);
+    ASSERT_EQ(ws2812_scale5to8(100), 255);
+    ASSERT_EQ(ws2812_scale5to8(255), 255);
+}
+
+TEST(test_encode_grb_null_guards)
+{
+    ws2812_color_t c = {0, 0, 0};
+    uint16_t slots[24];
+    /* All null-guards should return without crashing */
+    ws2812_encode_grb(NULL, &prop_timing, slots);
+    ws2812_encode_grb(&c, NULL, slots);
+    ws2812_encode_grb(&c, &prop_timing, NULL);
+    /* No assertion needed — just exercising the guard paths */
+}
+
+TEST(test_reset_latch_fail)
+{
+    ws2812_color_t c = {255, 0, 0};
+    mock_fail_set_compare_count_g = true;
+    mock_fail_set_compare_at_g = 1;
+    mock_set_compare_count_g = 0;
+    ASSERT_EQ(ws2812_send(&hal_fail_first, &prop_timing, &c, 1),
+              WS2812_ERR_HAL);
+}
+
+TEST(test_hal_fail_first_data_bit)
+{
+    ws2812_color_t c = {255, 0, 0};
+    /* reset latch uses 1 set_compare; first data bit uses the 2nd call */
+    mock_fail_set_compare_count_g = true;
+    mock_fail_set_compare_at_g = 2;
+    mock_set_compare_count_g = 0;
+    ASSERT_EQ(ws2812_send(&hal_fail_first, &prop_timing, &c, 1),
+              WS2812_ERR_HAL);
+}
+
+TEST(test_hal_fail_mid_data)
+{
+    ws2812_color_t c = {255, 0, 0};
+    /* Fail at bit 15 (well inside the inner loop) */
+    mock_fail_set_compare_count_g = true;
+    mock_fail_set_compare_at_g = 15;
+    mock_set_compare_count_g = 0;
+    ASSERT_EQ(ws2812_send(&hal_fail_first, &prop_timing, &c, 1),
+              WS2812_ERR_HAL);
+}
+
+TEST(test_hal_fail_trailing_zero)
+{
+    ws2812_color_t c = {0, 0, 0};
+    /* reset latch=1 call, then 25 data calls (24 bits + trailing 0)
+     * fail on the very last one: call 26 */
+    mock_fail_set_compare_count_g = true;
+    mock_fail_set_compare_at_g = 26;
+    mock_set_compare_count_g = 0;
+    ASSERT_EQ(ws2812_send(&hal_fail_first, &prop_timing, &c, 1),
+              WS2812_ERR_HAL);
+}
+
 TEST_MAIN("prop_ws2812")
     RUN(send_no_crash);
     RUN(encode_grb_no_crash);
     RUN(scale5to8_bounded);
+    RUN(test_null_hal_callbacks_rejected);
+    RUN(test_null_arg_guards);
+    RUN(test_scale5to8_clamp);
+    RUN(test_encode_grb_null_guards);
+    RUN(test_reset_latch_fail);
+    RUN(test_hal_fail_first_data_bit);
+    RUN(test_hal_fail_mid_data);
+    RUN(test_hal_fail_trailing_zero);
 TEST_MAIN_END()
