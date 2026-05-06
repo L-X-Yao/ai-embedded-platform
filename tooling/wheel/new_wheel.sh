@@ -159,11 +159,11 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify chip ID. @thread_safe: no */
+/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_i2c_t *i2c);
 
-/** Read sensor data. @thread_safe: caller_must_lock */
+/** Read sensor data. @thread_safe: caller_must_lock @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_t *dev,
                                ${NAME_LOWER}_data_t *out);
 
@@ -223,7 +223,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize and verify chip identity. @thread_safe: no */
+/** Initialize and verify chip identity. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_spi_t *spi);
 
@@ -284,7 +284,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize device. @thread_safe: no */
+/** Initialize device. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_gpio_t *gpio);
 
 #ifdef __cplusplus
@@ -345,7 +345,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize device. @thread_safe: no */
+/** Initialize device. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_ow_t *ow);
 
 #ifdef __cplusplus
@@ -401,7 +401,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize device. @thread_safe: no */
+/** Initialize device. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev, const ${NAME_LOWER}_pwm_t *pwm);
 
 #ifdef __cplusplus
@@ -442,7 +442,7 @@ typedef enum {
 } ${NAME_LOWER}_err_t;
 
 /* TODO: define API — see api-conventions.md for rules.
- * Add @thread_safe annotation to every function declaration.
+ * Add @thread_safe and @isr_safe annotations to every function declaration.
  * Mark internal struct fields with a comment. */
 
 #ifdef __cplusplus
@@ -1011,11 +1011,11 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Parse a message from raw bytes. @thread_safe: yes */
+/** Parse a message from raw bytes. @thread_safe: yes @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_parse(const uint8_t *data, size_t len,
                                ${NAME_LOWER}_msg_t *out);
 
-/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes */
+/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes @isr_safe: no */
 int ${NAME_LOWER}_build(uint8_t *buf, size_t cap,
                         const ${NAME_LOWER}_msg_t *msg);
 
@@ -1493,13 +1493,13 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize module. @thread_safe: no */
+/** Initialize module. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *mod, const ${NAME_LOWER}_io_t *io);
 
-/** Register an entry. Returns ERR_FULL if table is full. @thread_safe: no */
+/** Register an entry. Returns ERR_FULL if table is full. @thread_safe: no @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_register(${NAME_LOWER}_t *mod /* TODO: entry params */);
 
-/** Process incoming data. @thread_safe: caller_must_lock */
+/** Process incoming data. @thread_safe: caller_must_lock @isr_safe: no */
 ${NAME_LOWER}_err_t ${NAME_LOWER}_process(${NAME_LOWER}_t *mod, const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
