@@ -7,26 +7,26 @@
 #include <stddef.h>
 
 TEST(test_log_color_init_null_lc) {
-    log_color_init(NULL, NULL, NULL);
+    (void)log_color_init(NULL, NULL, NULL);
     /* must not crash */
 }
 
 TEST(test_log_color_init_null_inner_ctx) {
     log_color_t _lc;
     memset(&_lc, 0, sizeof(_lc));
-    log_color_init(&_lc, NULL, NULL);
+    (void)log_color_init(&_lc, NULL, NULL);
     /* must not crash */
 }
 
 TEST(test_log_color_sink_null_ctx) {
     char _line[64];
     memset(_line, 0, sizeof(_line));
-    log_color_sink(NULL, _line, 0);
+    (void)log_color_sink(NULL, _line, 0);
     /* must not crash */
 }
 
 TEST(test_log_color_sink_null_line) {
-    log_color_sink(NULL, NULL, 0);
+    (void)log_color_sink(NULL, NULL, 0);
     /* must not crash */
 }
 

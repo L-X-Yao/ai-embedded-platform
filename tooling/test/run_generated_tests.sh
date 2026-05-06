@@ -83,12 +83,18 @@ for f in $(find wheels/ -name "$PATTERN" 2>/dev/null | sort); do
         fi
     done
 
+    # Include test-local mock/helper files (mock_*.c)
+    mock_srcs=""
+    for mc in "$dir"/mock_*.c; do
+        [ -f "$mc" ] && mock_srcs="$mock_srcs $mc"
+    done
+
     # Compile
     out="/tmp/gentest_${name}_$$"
     # shellcheck disable=SC2086
     if gcc -std=c99 -Wall $EXTRA_CFLAGS $DEFINES \
-           -I"$wheel_dir" -I"tooling/test" $dep_incs \
-           "$f" "$src" $dep_srcs \
+           -I"$wheel_dir" -I"$dir" -I"tooling/test" $dep_incs \
+           "$f" "$src" $dep_srcs $mock_srcs \
            -o "$out" -lm 2>/dev/null; then
         # Run
         if "$out" >/dev/null 2>&1; then

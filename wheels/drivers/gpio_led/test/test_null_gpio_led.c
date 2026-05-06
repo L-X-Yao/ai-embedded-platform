@@ -9,44 +9,44 @@
 TEST(test_gpio_led_init_null_led) {
     gpio_led_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    gpio_led_init(NULL, &_hal);
+    (void)gpio_led_init(NULL, &_hal);
     /* must not crash */
 }
 
 TEST(test_gpio_led_init_null_hal) {
     gpio_led_t _led;
     memset(&_led, 0, sizeof(_led));
-    gpio_led_init(&_led, NULL);
+    (void)gpio_led_init(&_led, NULL);
     /* must not crash */
 }
 
 TEST(test_gpio_led_on_null_led) {
-    gpio_led_on(NULL);
+    (void)gpio_led_on(NULL);
     /* must not crash */
 }
 
 TEST(test_gpio_led_off_null_led) {
-    gpio_led_off(NULL);
+    (void)gpio_led_off(NULL);
     /* must not crash */
 }
 
 TEST(test_gpio_led_blink_null_led) {
-    gpio_led_blink(NULL, 0, 0, 0);
+    (void)gpio_led_blink(NULL, 0, 0, 0);
     /* must not crash */
 }
 
 TEST(test_gpio_led_breathe_null_led) {
-    gpio_led_breathe(NULL, 0);
+    (void)gpio_led_breathe(NULL, 0);
     /* must not crash */
 }
 
 TEST(test_gpio_led_pulse_null_led) {
-    gpio_led_pulse(NULL, 0);
+    (void)gpio_led_pulse(NULL, 0);
     /* must not crash */
 }
 
 TEST(test_gpio_led_tick_null_led) {
-    gpio_led_tick(NULL, 0);
+    (void)gpio_led_tick(NULL, 0);
     /* must not crash */
 }
 

@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 TEST(test_debounce_init_null_d) {
-    debounce_init(NULL, 0, false);
+    (void)debounce_init(NULL, 0, false);
     /* must not crash */
 }
 

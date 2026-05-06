@@ -7,12 +7,12 @@
 #include <stddef.h>
 
 TEST(test_ncp5623_parser_init_null_p) {
-    ncp5623_parser_init(NULL);
+    (void)ncp5623_parser_init(NULL);
     /* must not crash */
 }
 
 TEST(test_ncp5623_parser_start_null_p) {
-    ncp5623_parser_start(NULL);
+    (void)ncp5623_parser_start(NULL);
     /* must not crash */
 }
 
@@ -31,7 +31,7 @@ TEST(test_ncp5623_parser_feed_null_evt) {
 }
 
 TEST(test_ncp5623_parser_stop_null_p) {
-    ncp5623_parser_stop(NULL);
+    (void)ncp5623_parser_stop(NULL);
     /* must not crash */
 }
 
