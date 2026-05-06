@@ -20,5 +20,16 @@ target_include_directories(test_lcd_st7789 PRIVATE
 )
 target_compile_options(test_lcd_st7789 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_hw_model_lcd_st7789
+    test_hw_model_lcd_st7789.c
+    ../lcd_st7789.c
+)
+target_include_directories(test_hw_model_lcd_st7789 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_lcd_st7789 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME lcd_st7789_tests COMMAND test_lcd_st7789)
+add_test(NAME lcd_st7789_hw_model_tests COMMAND test_hw_model_lcd_st7789)

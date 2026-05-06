@@ -191,9 +191,9 @@ TEST(test_compute_null)
 
 TEST(test_unix_to_ntp_roundtrip)
 {
-    sntp_timestamp_t ntp = sntp_unix_to_ntp(1700000000UL, 500);
+    sntp_timestamp_t ntp = sntp_client_unix_to_ntp(1700000000UL, 500);
     uint32_t sec; uint16_t ms;
-    sntp_ntp_to_unix(&ntp, &sec, &ms);
+    sntp_client_ntp_to_unix(&ntp, &sec, &ms);
     ASSERT_EQ(sec, 1700000000UL);
     ASSERT_TRUE(ms >= 499 && ms <= 500);
 }
@@ -202,20 +202,20 @@ TEST(test_ntp_to_unix_pre_epoch)
 {
     sntp_timestamp_t ntp = { .seconds = 100, .fraction = 0 }; /* before 1970 */
     uint32_t sec; uint16_t ms;
-    sntp_ntp_to_unix(&ntp, &sec, &ms);
+    sntp_client_ntp_to_unix(&ntp, &sec, &ms);
     ASSERT_EQ(sec, 0);
 }
 
 TEST(test_ntp_to_unix_null)
 {
     uint32_t sec; uint16_t ms;
-    sntp_ntp_to_unix(NULL, &sec, &ms);
+    sntp_client_ntp_to_unix(NULL, &sec, &ms);
     /* should not crash */
 }
 
 TEST(test_unix_to_ntp_zero)
 {
-    sntp_timestamp_t ntp = sntp_unix_to_ntp(0, 0);
+    sntp_timestamp_t ntp = sntp_client_unix_to_ntp(0, 0);
     ASSERT_EQ(ntp.seconds, (uint32_t)SNTP_UNIX_OFFSET);
     ASSERT_EQ(ntp.fraction, 0);
 }

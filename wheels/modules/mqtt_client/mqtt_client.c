@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * mqtt_client — stateful MQTT 3.1.1 client (feed/poll, no OS)
+ *
+ * Layer:     L3 (modules)
+ * Status:    candidate
+ * Deps:      mqtt_packet (L2)
+ * Instances: multi
+ */
 #include "mqtt_client.h"
 #include "mqtt_packet.h"
 #include <string.h>

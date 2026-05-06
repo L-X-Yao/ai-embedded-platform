@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * max17048 — MAX17048/MAX17049 1-cell LiPo fuel gauge (I2C)
+ *
+ * Layer:     L1
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
+ */
 #include "max17048.h"
 
 /* ─── register map ───────────────────────────────────────────── */

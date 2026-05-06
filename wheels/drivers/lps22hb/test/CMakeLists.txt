@@ -31,6 +31,18 @@ target_include_directories(test_null_lps22hb PRIVATE
 )
 target_compile_options(test_null_lps22hb PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+# Hardware model tests
+add_executable(test_hw_model_lps22hb
+    test_hw_model_lps22hb.c
+    ../lps22hb.c
+)
+target_include_directories(test_hw_model_lps22hb PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_lps22hb PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME lps22hb_tests COMMAND test_lps22hb)
 add_test(NAME lps22hb_null_tests COMMAND test_null_lps22hb)
+add_test(NAME lps22hb_hw_model_tests COMMAND test_hw_model_lps22hb)

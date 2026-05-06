@@ -20,5 +20,17 @@ target_include_directories(test_max17048 PRIVATE
 )
 target_compile_options(test_max17048 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(test_hw_model_max17048
+    test_hw_model_max17048.c
+    ../max17048.c
+)
+
+target_include_directories(test_hw_model_max17048 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_max17048 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME max17048_tests COMMAND test_max17048)
+add_test(NAME max17048_hw_model_tests COMMAND test_hw_model_max17048)

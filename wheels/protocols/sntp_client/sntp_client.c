@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * sntp_client — SNTP v4 packet codec + clock offset calculation
+ *
+ * Layer:   L2
+ * Status:  candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "sntp_client.h"
 #include <string.h>
 
@@ -114,7 +122,7 @@ sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
     return SNTP_CLIENT_OK;
 }
 
-sntp_timestamp_t sntp_unix_to_ntp(uint32_t unix_sec, uint16_t ms)
+sntp_timestamp_t sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms)
 {
     sntp_timestamp_t ts;
     ts.seconds  = unix_sec + (uint32_t)SNTP_UNIX_OFFSET;
@@ -122,7 +130,7 @@ sntp_timestamp_t sntp_unix_to_ntp(uint32_t unix_sec, uint16_t ms)
     return ts;
 }
 
-void sntp_ntp_to_unix(const sntp_timestamp_t *ntp,
+void sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,
                       uint32_t *unix_sec, uint16_t *ms)
 {
     if (!ntp || !unix_sec || !ms) return;
