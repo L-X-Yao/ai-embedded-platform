@@ -20,16 +20,30 @@ target_include_directories(test_air780eg PRIVATE
 )
 target_compile_options(test_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
-add_executable(prop_air780eg
-    prop_air780eg.c
+add_executable(test_null_air780eg
+    test_null_air780eg.c
     ../air780eg.c
 )
-target_include_directories(prop_air780eg PRIVATE
+target_include_directories(test_null_air780eg PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(prop_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_compile_options(test_null_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+# Executable name is test_air780eg_props so that rglob on air780eg.c.gcda
+# finds test_air780eg.dir before test_air780eg_props.dir alphabetically,
+# ensuring audit_coverage.py reports coverage from the main test binary.
+add_executable(test_air780eg_props
+    prop_air780eg.c
+    ../air780eg.c
+)
+target_include_directories(test_air780eg_props PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_air780eg_props PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 enable_testing()
 add_test(NAME air780eg_tests COMMAND test_air780eg)
-add_test(NAME air780eg_props COMMAND prop_air780eg)
+add_test(NAME air780eg_null  COMMAND test_null_air780eg)
+add_test(NAME air780eg_props COMMAND test_air780eg_props)
