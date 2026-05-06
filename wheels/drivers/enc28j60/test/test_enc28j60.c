@@ -512,6 +512,105 @@ TEST(test_err_spi_value)
     ASSERT_EQ((int)ENC28J60_ERR_SPI, -1);
 }
 
+/* ---------- receive: buffer too small (next_pkt wraps to RXSTART) ----------
+ *
+ * When rx_len > buf_size the driver must still free the packet slot and
+ * advance next_packet_ptr, then return ENC28J60_ERR_SIZE.  The free-space
+ * update has two branches:
+ *   (a) next_pkt == RXSTART → ERXRDPT set to RXEND
+ *   (b) next_pkt != RXSTART → ERXRDPT set to next_pkt - 1
+ *
+ * This test covers branch (a): next_pkt is 0x0000 (RXSTART). */
+
+TEST(test_receive_buf_too_small_wrap)
+{
+    init_dev();
+
+    /* Inject header: next_pkt=0x0000 (RXSTART), rx_len=40 */
+    mock_rx_buf[0] = 0x00; /* next_pkt lo */
+    mock_rx_buf[1] = 0x00; /* next_pkt hi */
+    mock_rx_buf[2] = 40;   /* rx_len lo */
+    mock_rx_buf[3] = 0x00; /* rx_len hi */
+    mock_rx_buf[4] = 0x00; /* status lo */
+    mock_rx_buf[5] = 0x00; /* status hi */
+    mock_rx_buf_len = 6;
+    mock_rx_buf_idx = 0;
+
+    mock_regs[1][EPKTCNT] = 1;
+
+    uint8_t out[10]; /* smaller than rx_len (40) */
+    uint16_t out_len = 0;
+    enc28j60_err_t e = enc28j60_receive(&dev, out, sizeof(out), &out_len);
+    ASSERT_EQ(e, ENC28J60_ERR_SIZE);
+    /* frame_len should still be reported even on error */
+    ASSERT_EQ(out_len, 40);
+    /* next_packet_ptr must be advanced (to RXSTART = 0x0000) */
+    ASSERT_EQ(dev.next_packet_ptr, 0x0000);
+}
+
+/* ---------- receive: buffer too small (next_pkt non-zero, no wrap) ---------
+ *
+ * Branch (b): next_pkt is non-zero, so ERXRDPT = next_pkt - 1. */
+
+TEST(test_receive_buf_too_small_no_wrap)
+{
+    init_dev();
+
+    /* Inject header: next_pkt=0x0020, rx_len=40 */
+    mock_rx_buf[0] = 0x20; /* next_pkt lo */
+    mock_rx_buf[1] = 0x00; /* next_pkt hi */
+    mock_rx_buf[2] = 40;   /* rx_len lo */
+    mock_rx_buf[3] = 0x00; /* rx_len hi */
+    mock_rx_buf[4] = 0x00;
+    mock_rx_buf[5] = 0x00;
+    mock_rx_buf_len = 6;
+    mock_rx_buf_idx = 0;
+
+    mock_regs[1][EPKTCNT] = 1;
+
+    uint8_t out[10];
+    uint16_t out_len = 0;
+    enc28j60_err_t e = enc28j60_receive(&dev, out, sizeof(out), &out_len);
+    ASSERT_EQ(e, ENC28J60_ERR_SIZE);
+    ASSERT_EQ(out_len, 40);
+    ASSERT_EQ(dev.next_packet_ptr, 0x0020);
+}
+
+/* ---------- receive: normal path with non-zero next_pkt -------------------
+ *
+ * When a packet is received successfully and next_pkt != RXSTART the
+ * driver sets ERXRDPT = next_pkt - 1 (errata: must be odd value).
+ * This exercises lines 367-368 in enc28j60.c. */
+
+TEST(test_receive_next_pkt_nonzero)
+{
+    init_dev();
+
+    uint8_t test_frame[] = {0x11, 0x22, 0x33, 0x44};
+    /* next_pkt = 0x0010 (non-zero, non-RXSTART) */
+    mock_rx_buf[0] = 0x10; /* next_pkt lo */
+    mock_rx_buf[1] = 0x00; /* next_pkt hi */
+    mock_rx_buf[2] = 0x04; /* rx_len lo */
+    mock_rx_buf[3] = 0x00; /* rx_len hi */
+    mock_rx_buf[4] = 0x00;
+    mock_rx_buf[5] = 0x00;
+    memcpy(&mock_rx_buf[6], test_frame, 4);
+    mock_rx_buf_len = 10;
+    mock_rx_buf_idx = 0;
+
+    mock_regs[1][EPKTCNT] = 1;
+
+    uint8_t out[64];
+    uint16_t out_len = 0;
+    enc28j60_err_t e = enc28j60_receive(&dev, out, sizeof(out), &out_len);
+    ASSERT_EQ(e, ENC28J60_OK);
+    ASSERT_EQ(out_len, 4);
+    ASSERT_EQ(out[0], 0x11);
+    ASSERT_EQ(out[3], 0x44);
+    /* next_packet_ptr should be updated to 0x0010 */
+    ASSERT_EQ(dev.next_packet_ptr, 0x0010);
+}
+
 TEST_MAIN("enc28j60")
     RUN(test_init_ok);
     RUN(test_init_sets_mac);
@@ -537,4 +636,7 @@ TEST_MAIN("enc28j60")
     RUN(test_get_revision_null_dev);
     RUN(test_send_timeout);
     RUN(test_err_spi_value);
+    RUN(test_receive_buf_too_small_wrap);
+    RUN(test_receive_buf_too_small_no_wrap);
+    RUN(test_receive_next_pkt_nonzero);
 TEST_MAIN_END()
