@@ -65,29 +65,29 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** @thread_safe: no (caller must serialize) */
+/** @thread_safe: no (caller must serialize) @isr_safe: no */
 flash_ring_err_t flash_ring_init(flash_ring_t *ring,
                                  const flash_ring_io_t *io,
                                  const flash_ring_cfg_t *cfg);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 flash_ring_err_t flash_ring_push(flash_ring_t *ring,
                                  const uint8_t *frame, uint16_t len);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
                                  uint8_t *buf, uint16_t len);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 flash_ring_err_t flash_ring_pop(flash_ring_t *ring);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 uint32_t flash_ring_count(const flash_ring_t *ring);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 flash_ring_err_t flash_ring_discard_all(flash_ring_t *ring);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
 
 #ifdef __cplusplus

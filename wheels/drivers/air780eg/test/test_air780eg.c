@@ -298,6 +298,13 @@ TEST(test_diagnostics_null)
     ASSERT_EQ(-1, air780eg_get_last_csq(NULL));
 }
 
+TEST(test_error_codes_visible)
+{
+    /* Ensure ERR_NACK and ERR_TIMEOUT constants are reachable */
+    ASSERT_EQ(-3, (int)AIR780EG_ERR_NACK);
+    ASSERT_EQ(-2, (int)AIR780EG_ERR_TIMEOUT);
+}
+
 TEST(test_matched_line_content)
 {
     air780eg_t dev;
@@ -329,5 +336,6 @@ TEST_MAIN("air780eg")
     RUN(test_feed_null_safe);
     RUN(test_poll_null_safe);
     RUN(test_diagnostics_null);
+    RUN(test_error_codes_visible);
     RUN(test_matched_line_content);
 TEST_MAIN_END()

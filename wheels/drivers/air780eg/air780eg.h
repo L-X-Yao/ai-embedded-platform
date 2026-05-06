@@ -93,54 +93,54 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 air780eg_err_t air780eg_init(air780eg_t *dev, const air780eg_io_t *io);
 
-/** @thread_safe: no — call from UART RX ISR or polling loop */
+/** @thread_safe: no @isr_safe: yes (feed from ISR OK) — call from UART RX ISR or polling loop */
 void air780eg_feed(air780eg_t *dev, uint8_t byte);
 
-/** @thread_safe: no — call periodically to check timeouts */
+/** @thread_safe: no @isr_safe: no — call periodically to check timeouts */
 void air780eg_poll(air780eg_t *dev);
 
-/** @thread_safe: no — send raw AT command, set expected response */
+/** @thread_safe: no @isr_safe: no — send raw AT command, set expected response */
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
                                  const char *expect, uint32_t timeout_ms);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 air780eg_cmd_status_t air780eg_cmd_status(const air780eg_t *dev);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 const char *air780eg_get_matched_line(const air780eg_t *dev);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 const char *air780eg_get_prev_line(const air780eg_t *dev);
 
 /* --- callback registration --- */
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_mqtt_rx(air780eg_t *dev, air780eg_mqtt_rx_cb_t cb, void *user);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_disconnect(air780eg_t *dev, air780eg_event_cb_t cb, void *user);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_pdp_deact(air780eg_t *dev, air780eg_event_cb_t cb, void *user);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_restart(air780eg_t *dev, air780eg_event_cb_t cb, void *user);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_nmea(air780eg_t *dev, air780eg_nmea_cb_t cb, void *user);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 void air780eg_on_csq(air780eg_t *dev, air780eg_csq_cb_t cb, void *user);
 
 /* --- diagnostics --- */
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 uint32_t air780eg_get_rdy_count(const air780eg_t *dev);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 int air780eg_get_last_csq(const air780eg_t *dev);
 
 #ifdef __cplusplus

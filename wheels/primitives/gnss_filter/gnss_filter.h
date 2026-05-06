@@ -70,23 +70,26 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** @thread_safe: no (caller must serialize) */
+/** @thread_safe: no (caller must serialize) @isr_safe: no */
 gnss_filter_err_t gnss_filter_init(gnss_filter_t *flt,
                                    const gnss_filter_cfg_t *cfg);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
                                      const gnss_filter_input_t *input,
                                      uint16_t imu_motion_mg,
                                      uint32_t now_ms);
 
-/** @thread_safe: no */
+/** @thread_safe: no @isr_safe: no */
 gnss_filter_err_t gnss_filter_reset(gnss_filter_t *flt);
 
-/** @thread_safe: no */
+/** Return true when quality gate passed and position valid. @thread_safe: no @isr_safe: no */
 bool  gnss_filter_is_ready(const gnss_filter_t *flt);
+/** Return filtered latitude (0 if not ready). @thread_safe: no @isr_safe: no */
 float gnss_filter_lat(const gnss_filter_t *flt);
+/** Return filtered longitude (0 if not ready). @thread_safe: no @isr_safe: no */
 float gnss_filter_lon(const gnss_filter_t *flt);
+/** Return filtered altitude (0 if not ready). @thread_safe: no @isr_safe: no */
 float gnss_filter_alt(const gnss_filter_t *flt);
 
 /* ---------- utility ---------- */
