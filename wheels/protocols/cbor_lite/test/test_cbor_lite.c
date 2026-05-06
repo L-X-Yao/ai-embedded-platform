@@ -312,6 +312,193 @@ TEST(test_dec_malformed_indefinite_length)
     ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
 }
 
+/* ------------------------------------------------------------------ */
+/*  enc_head 4-byte path: values in 0x10000..0xFFFFFFFF              */
+/* ------------------------------------------------------------------ */
+
+TEST(test_enc_uint_fourbyte)
+{
+    uint8_t buf[16];
+    cbor_lite_encoder_t enc;
+    cbor_lite_enc_init(&enc, buf, sizeof(buf));
+    /* 0x00010000 = 65536 — first value requiring 4-byte argument */
+    ASSERT_EQ(cbor_lite_enc_uint(&enc, 65536U), CBOR_LITE_OK);
+    ASSERT_EQ(cbor_lite_enc_len(&enc), 5);
+    ASSERT_EQ_HEX(buf[0], 0x1A);           /* major 0, ai 26 */
+    ASSERT_EQ_HEX(buf[1], 0x00);
+    ASSERT_EQ_HEX(buf[2], 0x01);
+    ASSERT_EQ_HEX(buf[3], 0x00);
+    ASSERT_EQ_HEX(buf[4], 0x00);
+}
+
+TEST(test_enc_uint_fourbyte_max)
+{
+    uint8_t buf[16];
+    cbor_lite_encoder_t enc;
+    cbor_lite_enc_init(&enc, buf, sizeof(buf));
+    ASSERT_EQ(cbor_lite_enc_uint(&enc, 0xFFFFFFFFULL), CBOR_LITE_OK);
+    ASSERT_EQ(cbor_lite_enc_len(&enc), 5);
+    ASSERT_EQ_HEX(buf[0], 0x1A);
+    ASSERT_EQ_HEX(buf[1], 0xFF);
+    ASSERT_EQ_HEX(buf[2], 0xFF);
+    ASSERT_EQ_HEX(buf[3], 0xFF);
+    ASSERT_EQ_HEX(buf[4], 0xFF);
+}
+
+TEST(test_enc_overflow_fourbyte)
+{
+    /* Buffer of 4 bytes — too small for 5-byte encoding */
+    uint8_t buf[4];
+    cbor_lite_encoder_t enc;
+    cbor_lite_enc_init(&enc, buf, sizeof(buf));
+    ASSERT_EQ(cbor_lite_enc_uint(&enc, 65536U), CBOR_LITE_ERR_OVERFLOW);
+    ASSERT_EQ(cbor_lite_enc_len(&enc), 0);
+}
+
+/* ------------------------------------------------------------------ */
+/*  enc_head 8-byte path: values > 0xFFFFFFFF                        */
+/* ------------------------------------------------------------------ */
+
+TEST(test_enc_uint_eightbyte)
+{
+    uint8_t buf[16];
+    cbor_lite_encoder_t enc;
+    cbor_lite_enc_init(&enc, buf, sizeof(buf));
+    /* 0x100000000 = 2^32 — first value requiring 8-byte argument */
+    ASSERT_EQ(cbor_lite_enc_uint(&enc, 0x100000000ULL), CBOR_LITE_OK);
+    ASSERT_EQ(cbor_lite_enc_len(&enc), 9);
+    ASSERT_EQ_HEX(buf[0], 0x1B);           /* major 0, ai 27 */
+    ASSERT_EQ_HEX(buf[1], 0x00);
+    ASSERT_EQ_HEX(buf[2], 0x00);
+    ASSERT_EQ_HEX(buf[3], 0x00);
+    ASSERT_EQ_HEX(buf[4], 0x01);
+    ASSERT_EQ_HEX(buf[5], 0x00);
+    ASSERT_EQ_HEX(buf[6], 0x00);
+    ASSERT_EQ_HEX(buf[7], 0x00);
+    ASSERT_EQ_HEX(buf[8], 0x00);
+}
+
+TEST(test_enc_overflow_eightbyte)
+{
+    /* Buffer of 8 bytes — too small for 9-byte encoding */
+    uint8_t buf[8];
+    cbor_lite_encoder_t enc;
+    cbor_lite_enc_init(&enc, buf, sizeof(buf));
+    ASSERT_EQ(cbor_lite_enc_uint(&enc, 0x100000000ULL), CBOR_LITE_ERR_OVERFLOW);
+    ASSERT_EQ(cbor_lite_enc_len(&enc), 0);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Decoder: 4-byte argument (ai == 26)                               */
+/* ------------------------------------------------------------------ */
+
+TEST(test_dec_uint_fourbyte)
+{
+    /* 0x1A 0x00 0x01 0x00 0x00 = uint(65536) */
+    const uint8_t data[] = {0x1A, 0x00, 0x01, 0x00, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.major, CBOR_MAJOR_UINT);
+    ASSERT_EQ(item.uval, 65536U);
+    ASSERT_EQ(cbor_lite_dec_offset(&dec), 5);
+}
+
+TEST(test_dec_short_fourbyte)
+{
+    /* Truncated 4-byte argument: only 3 bytes available */
+    const uint8_t data[] = {0x1A, 0x00, 0x01, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_SHORT);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Decoder: 8-byte argument (ai == 27)                               */
+/* ------------------------------------------------------------------ */
+
+TEST(test_dec_uint_eightbyte)
+{
+    /* 0x1B followed by 8 bytes = uint(0x100000000) */
+    const uint8_t data[] = {0x1B, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.major, CBOR_MAJOR_UINT);
+    ASSERT_EQ(item.uval, 0x100000000ULL);
+    ASSERT_EQ(cbor_lite_dec_offset(&dec), 9);
+}
+
+TEST(test_dec_short_eightbyte)
+{
+    /* Truncated 8-byte argument: only 7 bytes available */
+    const uint8_t data[] = {0x1B, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_SHORT);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Decoder: bstr (major type 2)                                      */
+/* ------------------------------------------------------------------ */
+
+TEST(test_dec_bstr)
+{
+    /* 0x44 0xDE 0xAD 0xBE 0xEF = bstr(h'DEADBEEF') */
+    const uint8_t data[] = {0x44, 0xDE, 0xAD, 0xBE, 0xEF};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.major, CBOR_MAJOR_BSTR);
+    ASSERT_EQ(item.str_len, 4);
+    ASSERT_EQ_HEX(item.str[0], 0xDE);
+    ASSERT_EQ_HEX(item.str[3], 0xEF);
+    ASSERT_EQ(cbor_lite_dec_offset(&dec), 5);
+}
+
+TEST(test_dec_bstr_empty)
+{
+    /* 0x40 = bstr(h'') — zero-length byte string */
+    const uint8_t data[] = {0x40};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.major, CBOR_MAJOR_BSTR);
+    ASSERT_EQ(item.str_len, 0);
+}
+
+TEST(test_dec_bstr_short)
+{
+    /* Header says 4 bytes but only 2 bytes available */
+    const uint8_t data[] = {0x44, 0xDE, 0xAD};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_SHORT);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Decoder: tag (major type 6)                                       */
+/* ------------------------------------------------------------------ */
+
+TEST(test_dec_tag)
+{
+    /* 0xC1 = tag(1) — Unix timestamp tag; the tagged value follows */
+    const uint8_t data[] = {0xC1, 0x1A, 0x5F, 0x4D, 0x1A, 0x02};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.major, CBOR_MAJOR_TAG);
+    ASSERT_EQ(item.uval, 1U);    /* tag number 1 */
+}
+
 TEST_MAIN("cbor_lite")
     RUN(test_enc_uint_small);
     RUN(test_enc_uint_onebyte);
@@ -334,4 +521,17 @@ TEST_MAIN("cbor_lite")
     RUN(test_dec_null_param);
     RUN(test_dec_malformed_reserved_ai);
     RUN(test_dec_malformed_indefinite_length);
+    RUN(test_enc_uint_fourbyte);
+    RUN(test_enc_uint_fourbyte_max);
+    RUN(test_enc_overflow_fourbyte);
+    RUN(test_enc_uint_eightbyte);
+    RUN(test_enc_overflow_eightbyte);
+    RUN(test_dec_uint_fourbyte);
+    RUN(test_dec_short_fourbyte);
+    RUN(test_dec_uint_eightbyte);
+    RUN(test_dec_short_eightbyte);
+    RUN(test_dec_bstr);
+    RUN(test_dec_bstr_empty);
+    RUN(test_dec_bstr_short);
+    RUN(test_dec_tag);
 TEST_MAIN_END()
