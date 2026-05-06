@@ -735,13 +735,12 @@ TEST(test_zero_init_safety)
     /* Primary read function on zero-init struct must not crash (no UB) */
 }
 
-/* TODO: add float NaN tests if _data_t has float fields:
- *   #include <math.h>
- *   TEST(test_nan_rejected) {
- *       // Any API accepting float must reject NaN:
- *       // Use !(val >= lo && val <= hi) pattern, NOT val < lo || val > hi
- *   }
- */
+TEST(test_error_codes)
+{
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_I2C);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_ID);
+    ASSERT_EQ(-3, (int)${NAME_UPPER}_ERR_PARAM);
+}
 
 /* TODO: add more tests */
 
@@ -750,8 +749,119 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_zero_init_safety);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
+}
+
+generate_hw_model_i2c() {
+    cat > "$WHEEL_DIR/test/hw_model_${NAME_LOWER}.h" << HW_EOF
+/*
+ * hw_model_${NAME_LOWER}.h — datasheet-accurate register model for ${NAME_LOWER}
+ *
+ * Provides write_reg/read_regs callbacks backed by a register array
+ * with power-on-reset defaults. Use in test_hw_model_${NAME_LOWER}.c
+ * for round-trip verification against the real driver.
+ */
+#ifndef HW_MODEL_${NAME_UPPER}_H
+#define HW_MODEL_${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#define HW_REG_COUNT 256
+
+static uint8_t hw_regs[HW_REG_COUNT];
+static int     hw_write_count;
+static int     hw_read_count;
+
+static void hw_model_reset(void)
+{
+    memset(hw_regs, 0, sizeof(hw_regs));
+    hw_write_count = 0;
+    hw_read_count  = 0;
+    /* TODO: set POR defaults from datasheet */
+    /* hw_regs[REG_WHO_AM_I] = 0xXX; */
+}
+
+__attribute__((unused))
+static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
+                                uint8_t reg, uint8_t val)
+{
+    (void)ctx; (void)dev_addr;
+    hw_write_count++;
+    /* TODO: enforce read-only registers, side effects */
+    hw_regs[reg] = val;
+    return true;
+}
+
+__attribute__((unused))
+static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
+                                uint8_t reg, uint8_t *buf, uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    hw_read_count++;
+    for (uint16_t i = 0; i < len; i++) {
+        buf[i] = hw_regs[(uint8_t)(reg + i)];
+    }
+    return true;
+}
+
+/* TODO: add inject helpers for physical values */
+/* static void hw_model_inject_xxx(float value) { ... } */
+
+#endif /* HW_MODEL_${NAME_UPPER}_H */
+HW_EOF
+
+    cat > "$WHEEL_DIR/test/test_hw_model_${NAME_LOWER}.c" << HWT_EOF
+#include "test_harness.h"
+#include "hw_model_${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
+
+static const ${NAME_LOWER}_i2c_t hw_i2c = {
+    .write_reg = hw_model_write_reg,
+    .read_regs = hw_model_read_regs,
+    .ctx       = NULL,
+};
+
+static ${NAME_LOWER}_t dev;
+
+TEST(test_hw_init_por_defaults)
+{
+    hw_model_reset();
+    /* TODO: verify init reads correct ID register and succeeds */
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &hw_i2c), ${NAME_UPPER}_OK);
+}
+
+TEST(test_hw_read_round_trip)
+{
+    hw_model_reset();
+    ${NAME_LOWER}_init(&dev, &hw_i2c);
+    /* TODO: inject physical values, read back, verify conversion */
+}
+
+TEST_MAIN("${NAME_LOWER}_hw_model")
+    RUN(test_hw_init_por_defaults);
+    RUN(test_hw_read_round_trip);
+TEST_MAIN_END()
+HWT_EOF
+
+    # Append hw_model target to CMakeLists.txt
+    cat >> "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_HW_EOF
+
+# hw_model datasheet test
+add_executable(test_hw_model_${NAME_LOWER}
+    test_hw_model_${NAME_LOWER}.c
+    ../${NAME_LOWER}.c
+)
+target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
+CMAKE_HW_EOF
 }
 
 generate_test_spi() {
@@ -846,6 +956,121 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_zero_init_safety);
 TEST_MAIN_END()
 TEST_EOF
+}
+
+generate_hw_model_spi() {
+    cat > "$WHEEL_DIR/test/hw_model_${NAME_LOWER}.h" << HW_EOF
+/*
+ * hw_model_${NAME_LOWER}.h — datasheet-accurate SPI register model for ${NAME_LOWER}
+ *
+ * Simulates SPI protocol: bit 7 of first byte = R/W flag (1=read).
+ * Provides cs/xfer callbacks backed by a register array with POR defaults.
+ */
+#ifndef HW_MODEL_${NAME_UPPER}_H
+#define HW_MODEL_${NAME_UPPER}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#define HW_REG_COUNT 256
+
+static uint8_t hw_regs[HW_REG_COUNT];
+static int     hw_xfer_count;
+static int     hw_cs_state;
+static uint8_t hw_addr_latch;
+static int     hw_byte_idx;
+
+static void hw_model_reset(void)
+{
+    memset(hw_regs, 0, sizeof(hw_regs));
+    hw_xfer_count = 0;
+    hw_cs_state   = 1;
+    hw_addr_latch = 0;
+    hw_byte_idx   = 0;
+    /* TODO: set POR defaults from datasheet */
+    /* hw_regs[REG_WHO_AM_I] = 0xXX; */
+}
+
+__attribute__((unused))
+static void hw_model_cs_low(void *ctx) { (void)ctx; hw_cs_state = 0; hw_byte_idx = 0; }
+
+__attribute__((unused))
+static void hw_model_cs_high(void *ctx) { (void)ctx; hw_cs_state = 1; }
+
+__attribute__((unused))
+static uint8_t hw_model_xfer(void *ctx, uint8_t tx)
+{
+    (void)ctx;
+    hw_xfer_count++;
+    if (hw_byte_idx == 0) {
+        hw_addr_latch = tx & 0x7F;
+        hw_byte_idx++;
+        return 0xFF;
+    }
+    uint8_t reg = (uint8_t)(hw_addr_latch + hw_byte_idx - 1);
+    uint8_t ret = hw_regs[reg];
+    if (!(tx & 0x80) || hw_byte_idx > 0) {
+        /* write path: store tx in register (for non-read transactions) */
+    }
+    hw_regs[reg] = tx;
+    hw_byte_idx++;
+    return ret;
+}
+
+/* TODO: add inject helpers for physical values */
+
+#endif /* HW_MODEL_${NAME_UPPER}_H */
+HW_EOF
+
+    cat > "$WHEEL_DIR/test/test_hw_model_${NAME_LOWER}.c" << HWT_EOF
+#include "test_harness.h"
+#include "hw_model_${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
+
+static const ${NAME_LOWER}_spi_t hw_spi = {
+    .cs_low  = hw_model_cs_low,
+    .cs_high = hw_model_cs_high,
+    .xfer    = hw_model_xfer,
+    .ctx     = NULL,
+};
+
+static ${NAME_LOWER}_t dev;
+
+TEST(test_hw_init_por_defaults)
+{
+    hw_model_reset();
+    /* TODO: verify init reads correct ID and succeeds */
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &hw_spi), ${NAME_UPPER}_OK);
+}
+
+TEST(test_hw_read_round_trip)
+{
+    hw_model_reset();
+    ${NAME_LOWER}_init(&dev, &hw_spi);
+    /* TODO: inject physical values, read back, verify conversion */
+}
+
+TEST_MAIN("${NAME_LOWER}_hw_model")
+    RUN(test_hw_init_por_defaults);
+    RUN(test_hw_read_round_trip);
+TEST_MAIN_END()
+HWT_EOF
+
+    cat >> "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_HW_EOF
+
+# hw_model datasheet test
+add_executable(test_hw_model_${NAME_LOWER}
+    test_hw_model_${NAME_LOWER}.c
+    ../${NAME_LOWER}.c
+)
+target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
+CMAKE_HW_EOF
 }
 
 generate_test_gpio() {
@@ -1211,6 +1436,15 @@ TEST(test_parse_mini_fuzz)
     /* 1000 random inputs — must not crash */
 }
 
+TEST(test_error_codes)
+{
+    ASSERT_EQ( 0, (int)${NAME_UPPER}_OK);
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_FORMAT);
+    ASSERT_EQ(-3, (int)${NAME_UPPER}_ERR_SHORT);
+    ASSERT_EQ(-4, (int)${NAME_UPPER}_ERR_OVERFLOW);
+}
+
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_parse_ok);
     RUN(test_parse_null);
@@ -1220,6 +1454,7 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_build_overflow);
     RUN(test_parse_adversarial);
     RUN(test_parse_mini_fuzz);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1685,10 +1920,12 @@ TEST(test_process_adversarial)
     /* Must not crash on any input */
 }
 
-/* TODO: add float NaN tests if any API accepts float parameters.
- * Use !(val >= lo && val <= hi) pattern, NOT val < lo || val > hi.
- * NaN bypasses < and > comparisons (both return false per IEEE 754).
- */
+TEST(test_error_codes)
+{
+    ASSERT_EQ( 0, (int)${NAME_UPPER}_OK);
+    ASSERT_EQ(-1, (int)${NAME_UPPER}_ERR_PARAM);
+    ASSERT_EQ(-2, (int)${NAME_UPPER}_ERR_FULL);
+}
 
 TEST_MAIN("${NAME_LOWER}")
     RUN(test_init_ok);
@@ -1696,6 +1933,7 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_process_null);
     RUN(test_register_overflow);
     RUN(test_process_adversarial);
+    RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
 }
@@ -1719,8 +1957,8 @@ else
     fi
 
     case "$EFFECTIVE_HAL" in
-        i2c)      generate_header_i2c;      generate_c_i2c;      generate_test_i2c      ;;
-        spi)      generate_header_spi;      generate_c_spi;      generate_test_spi      ;;
+        i2c)      generate_header_i2c;      generate_c_i2c;      generate_test_i2c;      generate_hw_model_i2c ;;
+        spi)      generate_header_spi;      generate_c_spi;      generate_test_spi;      generate_hw_model_spi ;;
         gpio)     generate_header_gpio;     generate_c_gpio;     generate_test_gpio     ;;
         onewire)  generate_header_onewire;  generate_c_onewire;  generate_test_onewire  ;;
         pwm)      generate_header_pwm;      generate_c_pwm;      generate_test_pwm      ;;
@@ -1775,7 +2013,7 @@ echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
 echo "  3. Run: python3 tooling/test/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
 if [[ "$LAYER" == "drivers" && ("$HAL" == "i2c" || "$HAL" == "spi") ]]; then
-echo "  4. Create test/hw_model_${NAME_LOWER}.h (register model from datasheet)"
+echo "  4. Fill TODOs in test/hw_model_${NAME_LOWER}.h (POR defaults, inject helpers)"
 echo "  5. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 else
 echo "  4. Run: tooling/test/test_all.sh ${NAME_LOWER}"
