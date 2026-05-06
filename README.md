@@ -4,11 +4,21 @@
 
 AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/架构/终审（10%），AI 做实现/测试/文档/配置（90%）。
 
+## 核心理念
+
+所有 wheel（可复用组件）遵循三条铁律：
+
+1. **不碰 OS** — 不创建任务、不加锁、不 sleep、不分配堆内存
+2. **依赖注入** — 硬件/OS 能力通过函数指针传入，wheel 之间零耦合
+3. **Host 可测** — `gcc + cmake` 直接编译运行，无需 RTOS 或硬件
+
+结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。55 项自动审计保证一致性。
+
 ## 平台现状
 
-- **146 个 candidate wheels**（L0 原语 51 / L1 驱动 52 / L2 协议 25 / L3 模块 18），55 项审计全绿
-- **2 个真实项目**：flybox（无人机遥测盒子）/ drone_light（无人机 LED 灯控）
-- **CI 增量检测**（push 只测改动的 wheel，harness 变更时全量回归）
+- **146 个 candidate wheels**（L0 原语 51 / L1 驱动 52 / L2 协议 25 / L3 模块 18）
+- **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
+- **CI 增量检测** + 55 项 wheel 审计全绿
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
@@ -31,20 +41,21 @@ AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/
 ## 快速开始
 
 ```bash
-# 跑全部 wheel 测试（Windows Git Bash 或 WSL）
-bash tooling/test/test_all.sh --wheel
+# 浏览可用 wheel
+cat wheels/README.md            # 完整目录 + 分类
+ls wheels/drivers/              # 按层级浏览
 
-# 跑单个 wheel 测试
-cd wheels/drivers/w25qxx/test
-cmake -GNinja -S . -B build && cmake --build build
-ctest --test-dir build --output-on-failure
+# 在项目中使用 wheel（CMakeLists.txt 加一行）
+add_subdirectory(${WHEELS_DIR}/drivers/bmp280 bmp280)
+target_link_libraries(my_app PRIVATE bmp280)
 
-# 审计所有 wheel 合规性
-python tooling/audit/audit_wheels.py
+# 跑测试
+make test-wheels                # 全部 wheel 测试
+make test-changed               # 仅受改动影响的测试
 
-# 或用 Makefile 快捷命令
-make test-wheels
-make audit
+# 跑审计
+make audit                      # 55 项合规检查
+python tooling/audit/audit_wheels.py --wheel drivers/bmp280  # 单个 wheel
 ```
 
 ## 新项目启动
