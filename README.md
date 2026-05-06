@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml)
 
-AI 驱动的嵌入式开发母仓库。2-3 人团队 + AI 协作，人管需求/架构/终审（10%），AI 做实现/测试/文档/配置（90%）。
+AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审，AI 负责实现、测试、文档和工具链维护。
 
 ## 核心理念
 
@@ -79,7 +79,7 @@ cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md
 | 文档 | 内容 |
 |------|------|
 | `CLAUDE.md` | AI 工作指令（零号铁律、commit 规范、任务流程） |
-| `docs/philosophy.md` | 10/90 人-AI 分工愿景 |
+| `docs/philosophy.md` | 人-AI 分工愿景 |
 | `docs/wheel-contract.md` | 轮子合格定义 + 升级流程 |
 | `docs/api-conventions.md` | 跨 wheel API 命名/错误/线程/内存约定 |
 | `docs/integrating-wheels.md` | 项目中接入 wheel 的 CMakeLists 示例 |
