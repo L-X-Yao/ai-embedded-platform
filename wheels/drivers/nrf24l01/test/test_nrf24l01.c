@@ -744,6 +744,100 @@ TEST(test_invalid_power)
     ASSERT_EQ(nrf24_set_power(&dev, (nrf24_power_t)99), NRF24_ERR_PARAM);
 }
 
+/* 26. Send timeout — neither TX_DS nor MAX_RT ever fires.
+ * NRF24_TX_TIMEOUT_US defaults to 10000; mock_delay_us accumulates
+ * delay_total but never sets any status bit. */
+TEST(test_send_timeout)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 8);
+
+    /* Do NOT set mock_force_tx_ds or mock_force_max_rt — status stays
+     * clear, so the poll loop runs until elapsed >= NRF24_TX_TIMEOUT_US. */
+    uint8_t data[] = {0x01, 0x02, 0x03};
+    nrf24_err_t e = nrf24_send(&dev, data, 3);
+    ASSERT_EQ(e, NRF24_ERR_TIMEOUT);
+}
+
+/* 27. set_rx_addr pipe 1 (multi-byte, exercises write_reg_multi for P1) */
+TEST(test_set_rx_addr_pipe1)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    uint8_t addr[] = {0xC2, 0xC3, 0xC4, 0xC5, 0xC6};
+    nrf24_err_t e = nrf24_set_rx_addr(&dev, 1, addr, 5);
+    ASSERT_EQ(e, NRF24_OK);
+
+    /* Pipe 1 address should be in mock_rx_addr_p1 */
+    ASSERT_TRUE(memcmp(mock_rx_addr_p1, addr, 5) == 0);
+
+    /* Pipe 1 should be enabled in EN_RXADDR */
+    ASSERT_TRUE(mock_regs[REG_EN_RXADDR] & 0x02);
+}
+
+/* 28. set_rx_addr pipe 0/1 with too-short address (addr_len < 3) */
+TEST(test_rx_addr_pipe0_short_addr)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    uint8_t addr[2] = {0xAA, 0xBB};
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 0, addr, 2), NRF24_ERR_PARAM);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 1, addr, 2), NRF24_ERR_PARAM);
+}
+
+/* 29. set_rx_addr pipe 3, 4, 5 (single byte, different register offsets) */
+TEST(test_set_rx_addr_pipes_3_to_5)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    uint8_t a3 = 0xD3;
+    uint8_t a4 = 0xD4;
+    uint8_t a5 = 0xD5;
+
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 3, &a3, 1), NRF24_OK);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 4, &a4, 1), NRF24_OK);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 5, &a5, 1), NRF24_OK);
+
+    /* Verify register values */
+    ASSERT_EQ(mock_regs[0x0D], 0xD3); /* REG_RX_ADDR_P3 */
+    ASSERT_EQ(mock_regs[0x0E], 0xD4); /* REG_RX_ADDR_P4 */
+    ASSERT_EQ(mock_regs[0x0F], 0xD5); /* REG_RX_ADDR_P5 */
+}
+
+/* 30. receive — payload too large for caller buffer (ERR_PARAM path) */
+TEST(test_receive_buf_too_small)
+{
+    mock_reset();
+    nrf24_t dev;
+    /* payload_size = 16, but we call receive with max_len = 4 */
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    mock_force_rx_dr = 1;
+    uint8_t buf[4];
+    uint8_t len = 0;
+    nrf24_err_t e = nrf24_receive(&dev, buf, 4, &len);
+    ASSERT_EQ(e, NRF24_ERR_PARAM);
+}
+
+/* 31. set_power -12dBm (missing power level from existing test) */
+TEST(test_set_power_n12dbm)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    nrf24_err_t e = nrf24_set_power(&dev, NRF24_POWER_N12DBM);
+    ASSERT_EQ(e, NRF24_OK);
+    ASSERT_EQ(mock_regs[REG_RF_SETUP] & RF_SETUP_RF_PWR_MASK, 0x02);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("nrf24l01")
@@ -777,4 +871,10 @@ TEST_MAIN("nrf24l01")
     RUN(test_tx_addr_3byte);
     RUN(test_invalid_data_rate);
     RUN(test_invalid_power);
+    RUN(test_send_timeout);
+    RUN(test_set_rx_addr_pipe1);
+    RUN(test_rx_addr_pipe0_short_addr);
+    RUN(test_set_rx_addr_pipes_3_to_5);
+    RUN(test_receive_buf_too_small);
+    RUN(test_set_power_n12dbm);
 TEST_MAIN_END()

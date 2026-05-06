@@ -250,6 +250,121 @@ TEST(test_ports_independent)
     ASSERT_EQ(b, 0x55);
 }
 
+/* ---------- invalid port (line 99 / 112 / 138 / 179) ---------- */
+
+TEST(test_invalid_port_all_funcs)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    mcp23017_port_t bad = (mcp23017_port_t)2;
+    uint8_t val;
+    bool level;
+
+    ASSERT_EQ(mcp23017_set_direction(&dev, bad, 0xFF), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_set_pullup(&dev, bad, 0xFF), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_write_port(&dev, bad, 0xFF), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_port(&dev, bad, &val), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_write_pin(&dev, bad, 0, true), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_pin(&dev, bad, 0, &level), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_set_interrupt(&dev, bad, 0xFF), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, bad, &val), MCP23017_ERR_PARAM);
+}
+
+/* ---------- I2C failure on set_pullup (line 103) ---------- */
+
+TEST(test_i2c_fail_set_pullup)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_set_pullup(&dev, MCP23017_PORT_A, 0xFF), MCP23017_ERR_I2C);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_set_pullup(&dev, MCP23017_PORT_B, 0xFF), MCP23017_ERR_I2C);
+}
+
+/* ---------- I2C failure on write_pin: read step and write step (lines 145, 153) ---------- */
+
+TEST(test_i2c_fail_write_pin_read_step)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    /* The first I2C operation inside write_pin is a read of OLAT */
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 0, true), MCP23017_ERR_I2C);
+}
+
+TEST(test_i2c_fail_write_pin_write_step)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    /* Let the read succeed, then fail on write */
+    mock_fail_at = mock_op_count + 1;
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_B, 0, true), MCP23017_ERR_I2C);
+    mock_fail_at = -1;
+}
+
+/* ---------- I2C failure on read_pin (line 169) ---------- */
+
+TEST(test_i2c_fail_read_pin)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    bool level;
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 0, &level), MCP23017_ERR_I2C);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_B, 0, &level), MCP23017_ERR_I2C);
+}
+
+/* ---------- I2C failure on set_interrupt (line 183) ---------- */
+
+TEST(test_i2c_fail_set_interrupt)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_set_interrupt(&dev, MCP23017_PORT_A, 0xFF), MCP23017_ERR_I2C);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_set_interrupt(&dev, MCP23017_PORT_B, 0xFF), MCP23017_ERR_I2C);
+}
+
+/* ---------- I2C failure on read_interrupt_flag (line 197) ---------- */
+
+TEST(test_i2c_fail_read_interrupt_flag)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    uint8_t flags;
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, &flags), MCP23017_ERR_I2C);
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_B, &flags), MCP23017_ERR_I2C);
+}
+
+/* ---------- port B variants for read_port (line 127 branch), write_pin port B read step ---------- */
+
+TEST(test_read_port_a)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    mock_regs[REG_GPIOA] = 0xC3;
+    uint8_t val = 0;
+    ASSERT_EQ(mcp23017_read_port(&dev, MCP23017_PORT_A, &val), MCP23017_OK);
+    ASSERT_EQ(val, 0xC3);
+}
+
+/* ---------- interrupt flag port A read (line 195 branch) ---------- */
+
+TEST(test_interrupt_flag_port_a)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    mock_regs[REG_INTFA] = 0x11;
+    uint8_t flags = 0;
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, &flags), MCP23017_OK);
+    ASSERT_EQ(flags, 0x11);
+}
+
+/* ---------- set_interrupt port B (line 181 branch) ---------- */
+
+TEST(test_interrupt_mask_port_b)
+{
+    ASSERT_EQ(init_ok(), MCP23017_OK);
+    ASSERT_EQ(mcp23017_set_interrupt(&dev, MCP23017_PORT_B, 0x42), MCP23017_OK);
+    ASSERT_EQ(mock_regs[REG_GPINTENB], 0x42);
+}
+
 TEST_MAIN("mcp23017")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -273,4 +388,14 @@ TEST_MAIN("mcp23017")
     RUN(test_i2c_failure_propagation);
     RUN(test_null_params);
     RUN(test_ports_independent);
+    RUN(test_invalid_port_all_funcs);
+    RUN(test_i2c_fail_set_pullup);
+    RUN(test_i2c_fail_write_pin_read_step);
+    RUN(test_i2c_fail_write_pin_write_step);
+    RUN(test_i2c_fail_read_pin);
+    RUN(test_i2c_fail_set_interrupt);
+    RUN(test_i2c_fail_read_interrupt_flag);
+    RUN(test_read_port_a);
+    RUN(test_interrupt_flag_port_a);
+    RUN(test_interrupt_mask_port_b);
 TEST_MAIN_END()
