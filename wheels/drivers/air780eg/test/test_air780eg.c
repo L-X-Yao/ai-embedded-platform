@@ -316,6 +316,227 @@ TEST(test_matched_line_content)
     ASSERT_TRUE(strstr(air780eg_get_matched_line(&dev), "+CGREG: 0,1") != NULL);
 }
 
+TEST(test_send_cmd_null_cmd)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_send_cmd(&dev, NULL, "OK", 1000));
+}
+
+TEST(test_cmd_reissue_after_ok)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT", "OK", 1000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    /* cmd_status is now CMD_OK (not PENDING), so a new send is allowed */
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_cmd(&dev, "AT+CSQ", "+CSQ:", 1000));
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+}
+
+TEST(test_urc_during_pending_cmd)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+
+    /* Start a command that expects +CSQ: */
+    air780eg_send_cmd(&dev, "AT+CSQ", "+CSQ:", 5000);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+
+    /* Feed an +MSUB URC while command is pending.
+     * process_line stores line in prev_line then calls dispatch_urc,
+     * so mqtt_rx fires but cmd_status stays PENDING. */
+    feed_line(&dev, "+MSUB: \"/t\",3,\"abc\"");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+
+    /* Now complete the command */
+    feed_line(&dev, "+CSQ: 15,99");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+TEST(test_timeout_tick_overflow)
+{
+    /* This test documents current behaviour of air780eg_poll() which uses
+     * a plain "now >= deadline" comparison with no wraparound handling.
+     *
+     * Setup: g_tick_ms = 0xFFFFFFF0, timeout = 100 ms.
+     * deadline = 0xFFFFFFF0 + 100 = 0x00000054 (wraps to 84).
+     * poll() at g_tick_ms = 0xFFFFFFF5: now (4294967285) >= deadline (84) → true.
+     * Current behaviour: CMD_TIMEOUT fires before real deadline elapses. */
+    air780eg_t dev;
+    mock_reset();
+    g_tick_ms = 0xFFFFFFF0u;
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT", "OK", 100);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+
+    /* Move tick forward by 5 ms — not yet 100 ms, but deadline wrapped */
+    g_tick_ms = 0xFFFFFFF5u;
+    air780eg_poll(&dev);
+
+    /* Document current (buggy) behaviour: immediate timeout due to wrap */
+    ASSERT_EQ(AIR780EG_CMD_TIMEOUT, air780eg_cmd_status(&dev));
+}
+
+TEST(test_msub_unquoted_payload)
+{
+    /* Payload without surrounding quotes: +MSUB: "topic",5,hello */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"topic\",5,hello");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(5, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "hello", 5) == 0);
+}
+
+TEST(test_msub_malformed_no_comma)
+{
+    /* +MSUB without a comma after the topic — second strchr returns NULL,
+     * dispatch_urc returns early, callback must NOT fire. */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"topic\"");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+}
+
+TEST(test_msub_long_topic_truncation)
+{
+    /* Topic of 200 'A' chars — exceeds AIR780EG_TOPIC_MAX (128).
+     * Implementation clamps tlen to sizeof(topic)-1 = 127, NUL-terminates,
+     * and still fires the callback. */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+
+    /* Build the line: +MSUB: "<200 As>",3,abc */
+    char line[300];
+    strcpy(line, "+MSUB: \"");
+    int base = (int)strlen(line);
+    int i;
+    for (i = 0; i < 200; i++) {
+        line[base + i] = 'A';
+    }
+    line[base + i] = '\0';
+    strcat(line, "\",3,abc");
+    feed_line(&dev, line);
+
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    /* Topic must be exactly 127 chars and NUL-terminated */
+    ASSERT_EQ(127, (int)strlen(g_mqtt_rx_topic));
+    ASSERT_EQ('A', (int)(unsigned char)g_mqtt_rx_topic[0]);
+    ASSERT_EQ('A', (int)(unsigned char)g_mqtt_rx_topic[126]);
+    ASSERT_EQ('\0', (int)(unsigned char)g_mqtt_rx_topic[127]);
+}
+
+TEST(test_urc_closed_bare)
+{
+    /* Bare "CLOSED" line triggers disconnect callback via starts_with check */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_disconnect(&dev, on_disconnect, NULL);
+    feed_line(&dev, "CLOSED");
+    ASSERT_EQ(1, g_disconnect_count);
+}
+
+TEST(test_urc_pdp_deact_bare)
+{
+    /* "PDP: DEACT" triggers pdp_deact callback via strstr check */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_pdp_deact(&dev, on_pdp_deact, NULL);
+    feed_line(&dev, "PDP: DEACT");
+    ASSERT_EQ(1, g_pdp_deact_count);
+}
+
+TEST(test_feed_overflow_protection)
+{
+    /* Feed 600 bytes without a newline — buffer holds AIR780EG_LINE_MAX-1=511
+     * chars then stops accumulating. Feeding \r\n afterward processes the
+     * truncated line without crash. */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+
+    int j;
+    for (j = 0; j < 600; j++) {
+        air780eg_feed(&dev, (uint8_t)'X');
+    }
+    /* Terminate the line — must not crash */
+    air780eg_feed(&dev, '\r');
+    air780eg_feed(&dev, '\n');
+    /* No specific output assertion; the goal is no crash and continued operation */
+    ASSERT_EQ(AIR780EG_CMD_IDLE, air780eg_cmd_status(&dev));
+}
+
+TEST(test_csq_zero)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_csq(&dev, on_csq, NULL);
+    feed_line(&dev, "+CSQ: 0,99");
+    ASSERT_EQ(0, air780eg_get_last_csq(&dev));
+    ASSERT_EQ(0, g_csq_value);
+}
+
+TEST(test_csq_99)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_csq(&dev, on_csq, NULL);
+    feed_line(&dev, "+CSQ: 99,99");
+    ASSERT_EQ(99, air780eg_get_last_csq(&dev));
+    ASSERT_EQ(99, g_csq_value);
+}
+
+TEST(test_cms_error)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CMGS", "OK", 1000);
+    feed_line(&dev, "+CMS ERROR: 500");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+}
+
+TEST(test_deregister_callback_null)
+{
+    /* Register then clear the mqtt_rx callback by passing NULL.
+     * Feeding +MSUB afterwards must not invoke any callback. */
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    /* Deregister */
+    air780eg_on_mqtt_rx(&dev, NULL, NULL);
+    feed_line(&dev, "+MSUB: \"/t\",3,\"abc\"");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+}
+
 TEST_MAIN("air780eg")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -338,4 +559,18 @@ TEST_MAIN("air780eg")
     RUN(test_diagnostics_null);
     RUN(test_error_codes_visible);
     RUN(test_matched_line_content);
+    RUN(test_send_cmd_null_cmd);
+    RUN(test_cmd_reissue_after_ok);
+    RUN(test_urc_during_pending_cmd);
+    RUN(test_timeout_tick_overflow);
+    RUN(test_msub_unquoted_payload);
+    RUN(test_msub_malformed_no_comma);
+    RUN(test_msub_long_topic_truncation);
+    RUN(test_urc_closed_bare);
+    RUN(test_urc_pdp_deact_bare);
+    RUN(test_feed_overflow_protection);
+    RUN(test_csq_zero);
+    RUN(test_csq_99);
+    RUN(test_cms_error);
+    RUN(test_deregister_callback_null);
 TEST_MAIN_END()

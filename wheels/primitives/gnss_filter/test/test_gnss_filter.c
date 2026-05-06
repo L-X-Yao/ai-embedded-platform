@@ -257,6 +257,158 @@ TEST(test_vdop_zero_ignored)
     ASSERT_TRUE(gnss_filter_is_ready(&flt));
 }
 
+TEST(test_fix_valid_false_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.fix_valid = false;
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_fix_mode_zero_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.fix_mode = 0;
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_fix_mode_one_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.fix_mode = 1; /* 2D only — quality gate requires fix_mode == 2 */
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_fix_quality_zero_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.fix_quality = 0;
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_stable_ms_zero)
+{
+    gnss_filter_t flt;
+    gnss_filter_cfg_t cfg = g_default_cfg;
+    cfg.stable_ms = 0;
+    gnss_filter_init(&flt, &cfg);
+    gnss_filter_input_t in = good_fix();
+
+    /* Single update: elapsed=0 on first call (not yet started),
+     * quality_ok_ms = 0 >= stable_ms = 0 → quality_ready = true,
+     * filter seeds immediately → is_ready() returns true. */
+    gnss_filter_update(&flt, &in, 0, 0);
+    ASSERT_TRUE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_datetime_leap_year_feb29)
+{
+    /* 2024-02-29 00:00:00 UTC — 2024 is a leap year */
+    int64_t ts = gnss_datetime_to_unix(2024, 2, 29, 0, 0, 0);
+    ASSERT_EQ(1709164800LL, ts);
+}
+
+TEST(test_datetime_year2000_leap)
+{
+    /* 2000 is divisible by 400 → leap year.
+     * 2000-03-01 00:00:00 UTC = 951868800 */
+    int64_t ts = gnss_datetime_to_unix(2000, 3, 1, 0, 0, 0);
+    ASSERT_EQ(951868800LL, ts);
+}
+
+TEST(test_tick_wraparound)
+{
+    /* Unsigned subtraction (uint32_t) wraps correctly:
+     * e.g. now_ms=0x00000200, last_tick=0xFFFFF000
+     * elapsed = 0x00000200 - 0xFFFFF000 = 0x00001200 = 4608 ms (correct) */
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+
+    /* Seed the filter near the top of the uint32 range */
+    uint32_t start = 0xFFFFF000u;
+    for (uint32_t i = 0; i < 30; i++) {
+        uint32_t t = start + i * 200u;  /* wraps past 0 after a few steps */
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    /* 30 steps * 200 ms = 6000 ms of (wrapped) elapsed time, not enough */
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+
+    /* Continue wrapping into low tick values — accumulate past stable_ms */
+    for (uint32_t i = 30; i <= 60; i++) {
+        uint32_t t = start + i * 200u;
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    /* 60 steps * 200 ms = 12000 ms > stable_ms (10000) — should be ready */
+    ASSERT_TRUE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_hdop_zero_blocks)
+{
+    /* hdop <= 0.0f fails the quality gate regardless of other fields */
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.hdop = 0.0f;
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_vdop_exceeds_max)
+{
+    /* vdop=4.0f > max_vdop=3.0f → quality gate rejects */
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.vdop = 4.0f;
+
+    for (uint32_t t = 0; t <= 12000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_getters_before_ready)
+{
+    /* Filter initialised and one update fed — not enough for stability.
+     * lat/lon/alt must all return 0 because filter_valid is false. */
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+
+    gnss_filter_update(&flt, &in, 0, 0);
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+    ASSERT_TRUE(fabsf(gnss_filter_lat(&flt)) < 0.0001f);
+    ASSERT_TRUE(fabsf(gnss_filter_lon(&flt)) < 0.0001f);
+    ASSERT_TRUE(fabsf(gnss_filter_alt(&flt)) < 0.0001f);
+}
+
 TEST_MAIN("gnss_filter")
     RUN(test_init_null);
     RUN(test_init_ok);
@@ -275,4 +427,15 @@ TEST_MAIN("gnss_filter")
     RUN(test_datetime_to_unix_known);
     RUN(test_datetime_to_unix_with_time);
     RUN(test_vdop_zero_ignored);
+    RUN(test_fix_valid_false_blocks);
+    RUN(test_fix_mode_zero_blocks);
+    RUN(test_fix_mode_one_blocks);
+    RUN(test_fix_quality_zero_blocks);
+    RUN(test_stable_ms_zero);
+    RUN(test_datetime_leap_year_feb29);
+    RUN(test_datetime_year2000_leap);
+    RUN(test_tick_wraparound);
+    RUN(test_hdop_zero_blocks);
+    RUN(test_vdop_exceeds_max);
+    RUN(test_getters_before_ready);
 TEST_MAIN_END()
