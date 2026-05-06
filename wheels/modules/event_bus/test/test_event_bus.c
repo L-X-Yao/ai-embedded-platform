@@ -250,6 +250,76 @@ TEST(test_publish_null_data_with_zero_len)
     ASSERT_EQ((int)last_data_len, 0);
 }
 
+/* Cover unsubscribe when event_id is not registered at all (line 99). */
+TEST(test_unsubscribe_event_not_found)
+{
+    event_bus_t bus;
+    event_bus_init(&bus);
+
+    /* Never subscribed to event 55 — unsubscribe should return OK silently. */
+    ASSERT_EQ(event_bus_unsubscribe(&bus, 55, tracker_cb, NULL), EVENT_BUS_OK);
+}
+
+/* Cover unsubscribe when (cb, ctx) is not in the slot (line 113). */
+TEST(test_unsubscribe_no_cb_ctx_match)
+{
+    event_bus_t bus;
+    event_bus_init(&bus);
+    reset_tracker();
+
+    int ctx_a = 1;
+    int ctx_b = 2;
+    /* Subscribe with ctx_a, then try to unsubscribe with ctx_b — no match. */
+    ASSERT_EQ(event_bus_subscribe(&bus, 10, tracker_cb, &ctx_a), EVENT_BUS_OK);
+    ASSERT_EQ(event_bus_unsubscribe(&bus, 10, tracker_cb, &ctx_b), EVENT_BUS_OK);
+
+    /* tracker_cb with ctx_a must still fire. */
+    ASSERT_EQ(event_bus_publish(&bus, 10, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 1);
+}
+
+/* Shared state for deferred-unsubscribe test. */
+static event_bus_t *g_deferred_bus;
+static int deferred_unsub_cb_count;
+
+static void self_unsubscribing_cb(uint16_t event_id, const void *data,
+                                  size_t data_len, void *ctx)
+{
+    (void)data;
+    (void)data_len;
+    deferred_unsub_cb_count++;
+    /* Unsubscribe self while bus->iterating > 0 — must be deferred. */
+    event_bus_unsubscribe(g_deferred_bus, event_id,
+                          self_unsubscribing_cb, ctx);
+}
+
+/*
+ * Cover deferred-unsubscribe path (lines 87-94) and flush_deferred
+ * (lines 68-77, triggered at line 135-136).
+ *
+ * Strategy: subscribe self_unsubscribing_cb, publish once (it fires and
+ * queues a deferred unsub), then publish again — it must NOT fire the
+ * second time because flush_deferred removed it after the first publish.
+ */
+TEST(test_deferred_unsubscribe_during_publish)
+{
+    event_bus_t bus;
+    event_bus_init(&bus);
+    g_deferred_bus = &bus;
+    deferred_unsub_cb_count = 0;
+
+    ASSERT_EQ(event_bus_subscribe(&bus, 20, self_unsubscribing_cb, NULL),
+              EVENT_BUS_OK);
+
+    /* First publish: callback fires and defers its own unsubscribe. */
+    ASSERT_EQ(event_bus_publish(&bus, 20, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(deferred_unsub_cb_count, 1);
+
+    /* Second publish: deferred unsub ran after first publish, so no fire. */
+    ASSERT_EQ(event_bus_publish(&bus, 20, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(deferred_unsub_cb_count, 1);
+}
+
 TEST_MAIN("event_bus")
     RUN(test_init);
     RUN(test_init_null);
@@ -266,4 +336,7 @@ TEST_MAIN("event_bus")
     RUN(test_unsubscribe_preserves_others);
     RUN(test_multiple_events_isolation);
     RUN(test_publish_null_data_with_zero_len);
+    RUN(test_unsubscribe_event_not_found);
+    RUN(test_unsubscribe_no_cb_ctx_match);
+    RUN(test_deferred_unsubscribe_during_publish);
 TEST_MAIN_END()
