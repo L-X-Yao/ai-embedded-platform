@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage coverage-wheel bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
 
 help:
 	@echo "Usage: make <target>"
@@ -24,7 +24,8 @@ help:
 	@echo "  test-mutate       mutation testing (kill rate per wheel)"
 	@echo "  frama-c           Frama-C WP formal verification (5 annotated wheels)"
 	@echo "  fuzz              LibFuzzer coverage-guided protocol fuzzing"
-	@echo "  coverage          tests with gcov coverage report"
+	@echo "  coverage          tests with gcov coverage report (all wheels)"
+	@echo "  coverage-wheel W=x per-wheel coverage with branch detail"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
 	@echo ""
 	@echo "Audit:"
@@ -108,6 +109,10 @@ audit-report:
 
 coverage:
 	bash tooling/test/test_all.sh --wheel --coverage
+
+coverage-wheel:
+	@test -n "$(W)" || { echo "Usage: make coverage-wheel W=<wheel-name>"; exit 1; }
+	bash tooling/test/coverage_wheel.sh "$(W)"
 
 bootstrap:
 	bash tooling/session/bootstrap.sh
