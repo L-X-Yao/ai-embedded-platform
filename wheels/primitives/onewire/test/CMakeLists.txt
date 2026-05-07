@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_onewire C)
+
+# CMAKE_C_STANDARD set as a variable (not target property) intentionally:
+# standalone wheel test projects own the entire build, so a top-level variable
+# is simpler and consistent across all 140+ wheels.
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(test_onewire
+    test_onewire.c
+    ../onewire.c
+)
+
+target_include_directories(test_onewire PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
+    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_onewire PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_null_onewire
+    test_null_onewire.c
+    ../onewire.c
+)
+target_include_directories(test_null_onewire PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_onewire PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+enable_testing()
+add_test(NAME onewire_tests COMMAND test_onewire)
+add_test(NAME onewire_null_tests COMMAND test_null_onewire)
