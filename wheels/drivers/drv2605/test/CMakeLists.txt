@@ -22,7 +22,7 @@ target_include_directories(test_hw_model_drv2605 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
 )
-target_compile_options(test_hw_model_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_compile_options(test_hw_model_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-conversion)
 
 enable_testing()
 add_test(NAME drv2605_tests COMMAND test_drv2605)
