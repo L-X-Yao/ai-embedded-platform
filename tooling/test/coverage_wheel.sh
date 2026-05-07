@@ -8,6 +8,9 @@
 #
 # Output: line coverage %, branch coverage %, list of uncovered lines.
 # Exit code: 0 always (informational tool, not a gate).
+#
+# Performance: on WSL with /mnt/ sources, builds in /tmp/ (native ext4)
+# for ~5-10x speedup over cross-filesystem builds.
 
 set -euo pipefail
 
@@ -46,7 +49,14 @@ if [[ ! -d "$TEST_DIR" ]]; then
     exit 1
 fi
 
-BUILD_DIR="$TEST_DIR/build_cov"
+# On WSL with /mnt/ paths, put build dir on native ext4 for ~5x speedup.
+# Source stays on /mnt/ (read once); build artifacts go to /tmp/ (heavy I/O).
+if [[ "$REPO" == /mnt/* ]] && [[ -d /tmp ]]; then
+    BUILD_DIR="/tmp/cov_$$_${NAME}"
+    trap 'rm -rf "$BUILD_DIR" 2>/dev/null || true' EXIT
+else
+    BUILD_DIR="$TEST_DIR/build_cov"
+fi
 
 [[ $MACHINE -eq 0 ]] && echo "=== Coverage: $NAME ===" && echo ""
 
