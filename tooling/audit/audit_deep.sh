@@ -1,5 +1,5 @@
 #!/bin/bash
-# audit_deep.sh — 5-layer automated deep code audit
+# audit_deep.sh — 6-layer automated deep code audit
 #
 # Usage:
 #   audit_deep.sh              # run all layers
