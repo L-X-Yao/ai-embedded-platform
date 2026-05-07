@@ -32,9 +32,7 @@
 
 | 候选 | 功能 | VSF 原生检查 | 触发项目 | 信号次数 |
 |------|------|-------------|---------|---------|
-| `ota_updater` | 固件升级（版本检查 / 断点续传 / 回滚 / 签名） | VSF 有 bootloader 素材但无集成 OTA | flybox（A/B slot 自实现） | 1 |
-
-> **注**：A/B slot 核心已实现为 `wheels/protocols/ota_ab/`（candidate）。本条目剩余部分：HTTP 断点续传 + 签名验证。
+| ~~`ota_updater`~~ | ~~固件升级（版本检查 / 断点续传 / 回滚 / 签名）~~ | **已拆解实现**：`ota_ab`（A/B slot）+ `ota_manager`（编排）+ `http_request`（Range GET）+ `hmac_sha256`（签名验证）。2026-05-07 完成所有子组件。 | flybox | 1 |
 
 ---
 
