@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage coverage-wheel bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift help
 
 help:
 	@echo "Usage: make <target>"
@@ -38,7 +38,9 @@ help:
 	@echo "  audit-save        save audit snapshot for trend tracking"
 	@echo "  audit-compare     compare latest two audit snapshots"
 	@echo "  audit-report      unified report across all audit tools"
+	@echo "  audit-deep        full deep audit (pattern grep + sanitizer + all layers)"
 	@echo "  audit-quick       deep audit L1+L2 (pattern grep + sanitizer)"
+	@echo "  verify            CBMC bounded model checking (verify_*.c wheels)"
 	@echo "  audit-compile     compiler warning analysis (all -W flags)"
 	@echo "  audit-sanitizer   ASan+UBSan build and run"
 	@echo "  audit-coverage    gcov line coverage per wheel"
@@ -46,7 +48,7 @@ help:
 	@echo "  arm-stack-audit   ARM per-function stack usage report"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  check             test + audit + coverage gate + doc drift (pre-push)"
+	@echo "  check             test + null/sentinel/boundary + audit + coverage gate + doc drift + memory audit (pre-push)"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
 	@echo "  ship M=\"msg\"      check + commit + push"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
@@ -56,6 +58,8 @@ help:
 	@echo "  dispatch          dispatch Claude agent in isolated worktree"
 	@echo "  batch-scaffold    scaffold + commit multiple wheels at once"
 	@echo "                    SPECS=\"name:layer[:hal[:addr]] ...\" (space-separated)"
+	@echo "  memory-audit      check memory/MEMORY.md consistency"
+	@echo "  doc-drift         check and fix doc/code drift"
 	@echo ""
 	@echo "Session:"
 	@echo "  bootstrap         print session context"
@@ -253,6 +257,12 @@ release:
 
 audit-deep:
 	bash tooling/audit/audit_deep.sh
+
+memory-audit:
+	python3 tooling/audit/memory_audit.py
+
+doc-drift:
+	python3 tooling/audit/doc_drift_check.py --fix
 
 audit-quick:
 	bash tooling/audit/audit_deep.sh --quick
