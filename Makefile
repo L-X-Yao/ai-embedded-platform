@@ -28,6 +28,7 @@ help:
 	@echo "  coverage-wheel W=x per-wheel coverage with branch detail"
 	@echo "  coverage-scan     scan all wheels, show sub-80% (gcov-tool merge)"
 	@echo "  coverage-scan-all show all wheels sorted by coverage"
+	@echo "  check-coverage    gate: fail if any wheel < 80% (sprint boundary)"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
 	@echo ""
 	@echo "Audit:"
@@ -121,6 +122,9 @@ coverage-scan:
 
 coverage-scan-all:
 	bash tooling/test/coverage_scan.sh --all
+
+check-coverage:
+	bash tooling/test/coverage_scan.sh --gate
 
 bootstrap:
 	bash tooling/session/bootstrap.sh
