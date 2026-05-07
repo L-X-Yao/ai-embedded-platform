@@ -405,6 +405,103 @@ TEST(test_hal_error_during_data)
     ASSERT_TRUE(err == WS2812_ERR_HAL);
 }
 
+/* A separate always-failing set_compare for testing the reset_latch failure
+ * path. The main mock's fail_after logic requires fail_after > 0 which
+ * prevents triggering on the very first call, so we use a dedicated stub. */
+static bool mock_set_compare_always_fail(void *ctx, uint16_t value)
+{
+    (void)ctx;
+    (void)value;
+    return false;
+}
+
+/* Fail the very first set_compare(0) call inside reset_latch.
+ * This exercises reset_latch() "return false" (line 63) and ws2812_send's
+ * "!reset_latch → return WS2812_ERR_HAL" branch (line 87). */
+TEST(test_hal_error_in_reset_latch_first_call)
+{
+    ws2812_color_t c = {0, 128, 0};
+    ws2812_hal_t hal_fail = {
+        .set_compare    = mock_set_compare_always_fail,
+        .wait_period    = mock_wait_period,
+        .enter_critical = mock_enter_critical,
+        .exit_critical  = mock_exit_critical,
+        .ctx            = NULL,
+    };
+    mock_reset();
+    ws2812_err_t err = ws2812_send(&hal_fail, &timing_48mhz, &c, 1);
+    ASSERT_EQ(err, WS2812_ERR_HAL);
+    /* Critical section must NOT have been entered since we failed before it */
+    ASSERT_EQ(count_events(EVT_ENTER_CRIT), 0);
+}
+
+/* Fail the trailing set_compare(0) that follows the last bit of the last LED.
+ * For 1 LED: calls = 1 (reset) + 1 (slot[0]) + 23 (slots[1..23]) + 1 (trailing) = 26.
+ * fail_after=25 → call 26 fails → exercises lines 111-112 of ws2812_send. */
+TEST(test_hal_error_trailing_zero)
+{
+    ws2812_color_t c = {255, 255, 255};
+    mock_reset();
+    mock_set_compare_fail_after = 25;  /* fail on the 26th call (trailing zero) */
+    mock_set_compare_count = 0;
+    ws2812_err_t err = ws2812_send(&mock_hal, &timing_48mhz, &c, 1);
+    ASSERT_EQ(err, WS2812_ERR_HAL);
+    /* Critical section must have been entered and then exited on error */
+    ASSERT_EQ(count_events(EVT_ENTER_CRIT), 1);
+    ASSERT_EQ(count_events(EVT_EXIT_CRIT),  1);
+}
+
+/* Pass a HAL with a NULL function pointer — exercises the second NULL guard
+ * (line 82-83 in ws2812_send) that checks individual function pointers. */
+TEST(test_null_hal_function_pointer)
+{
+    ws2812_color_t c = {0, 0, 0};
+    ws2812_hal_t hal_missing_fn = {
+        .set_compare    = NULL,          /* missing */
+        .wait_period    = mock_wait_period,
+        .enter_critical = mock_enter_critical,
+        .exit_critical  = mock_exit_critical,
+        .ctx            = NULL,
+    };
+    mock_reset();
+    ws2812_err_t err = ws2812_send(&hal_missing_fn, &timing_48mhz, &c, 1);
+    ASSERT_EQ(err, WS2812_ERR_NULL);
+
+    /* Verify other combinations of missing pointers also return ERR_NULL */
+    ws2812_hal_t hal_no_wait = {
+        .set_compare    = mock_set_compare,
+        .wait_period    = NULL,
+        .enter_critical = mock_enter_critical,
+        .exit_critical  = mock_exit_critical,
+        .ctx            = NULL,
+    };
+    err = ws2812_send(&hal_no_wait, &timing_48mhz, &c, 1);
+    ASSERT_EQ(err, WS2812_ERR_NULL);
+
+    ws2812_hal_t hal_no_crit = {
+        .set_compare    = mock_set_compare,
+        .wait_period    = mock_wait_period,
+        .enter_critical = NULL,
+        .exit_critical  = mock_exit_critical,
+        .ctx            = NULL,
+    };
+    err = ws2812_send(&hal_no_crit, &timing_48mhz, &c, 1);
+    ASSERT_EQ(err, WS2812_ERR_NULL);
+}
+
+/* ws2812_encode_grb with NULL arguments must return without crashing.
+ * Exercises the three individual null branches in encode_grb (line 51). */
+TEST(test_encode_grb_null_args)
+{
+    ws2812_color_t c = {1, 2, 3};
+    uint16_t slots[24];
+    /* Each argument null independently — none should crash */
+    ws2812_encode_grb(NULL, &timing_48mhz, slots);
+    ws2812_encode_grb(&c, NULL, slots);
+    ws2812_encode_grb(&c, &timing_48mhz, NULL);
+    ASSERT_TRUE(1);  /* reaching here means no crash */
+}
+
 TEST_MAIN("ws2812")
     RUN(test_null_params);
     RUN(test_single_led_black);
@@ -422,5 +519,9 @@ TEST_MAIN("ws2812")
     RUN(test_data_inside_critical_section);
     RUN(test_hal_error_during_reset_latch);
     RUN(test_hal_error_during_data);
+    RUN(test_hal_error_in_reset_latch_first_call);
+    RUN(test_hal_error_trailing_zero);
+    RUN(test_null_hal_function_pointer);
+    RUN(test_encode_grb_null_args);
 TEST_MAIN_END()
 
