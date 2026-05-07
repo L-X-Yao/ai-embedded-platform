@@ -674,7 +674,11 @@ generate_c_none() {
 
 #include "${NAME_LOWER}.h"
 
-/* TODO: implement */
+int ${NAME_LOWER}_init(void)
+{
+    /* TODO: implement */
+    return 0;
+}
 C_EOF
 }
 
@@ -1492,7 +1496,9 @@ generate_test_none() {
 
 TEST(test_zero_init_safety)
 {
-    /* Zero-init struct must not crash when passed to API */
+    /* init must succeed on a clean call */
+    int rc = ${NAME_LOWER}_init();
+    ASSERT_EQ(rc, 0);
 }
 
 /* TODO: add tests */
@@ -2049,7 +2055,7 @@ fi
 if [[ $COMMIT -eq 1 ]]; then
     cd "$REPO"
     git add "wheels/${LAYER}/${NAME_LOWER}/"
-    git commit -m "wheel(${LAYER}/${NAME_LOWER}): scaffold ${NAME_LOWER}" --no-verify
+    git commit -m "wheel(${LAYER}/${NAME_LOWER}): scaffold ${NAME_LOWER}"
     echo ""
     echo "Scaffold committed to git."
 fi

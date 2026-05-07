@@ -64,6 +64,7 @@ if ! $DOCS_ONLY; then
         --include="*.c" --include="*.h" \
         --exclude-dir=build --exclude-dir=build_* --exclude-dir=.git \
         --exclude-dir=__pycache__ --exclude-dir=node_modules \
+        --exclude-dir=vsf --exclude-dir=_eval \
         2>/dev/null || true)
     [[ $COUNT -eq 0 ]] && echo "  (none)"
     TOTAL=$((TOTAL + COUNT))
@@ -79,6 +80,7 @@ if ! $DOCS_ONLY; then
     done < <(grep -rlF "$NAME" "$REPO" \
         --include="CMakeLists.txt" --include="*.cmake" \
         --exclude-dir=build --exclude-dir=build_* --exclude-dir=.git \
+        --exclude-dir=vsf --exclude-dir=_eval \
         2>/dev/null | grep -vF "${SELF_DIR:-__NOMATCH__}" || true)
     [[ $COUNT -eq 0 ]] && echo "  (none)"
     TOTAL=$((TOTAL + COUNT))

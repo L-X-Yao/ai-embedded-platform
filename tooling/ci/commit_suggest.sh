@@ -93,6 +93,7 @@ fi
 
 # Generate verb + description
 REMAINING=$((68 - ${#HEADER}))
+[[ $REMAINING -lt 10 ]] && REMAINING=10
 if [[ $FILE_COUNT -eq 1 ]]; then
     FNAME=$(echo "$FILES" | head -1 | xargs basename)
     DESC="update ${FNAME}"
