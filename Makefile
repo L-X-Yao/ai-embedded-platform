@@ -26,6 +26,8 @@ help:
 	@echo "  fuzz              LibFuzzer coverage-guided protocol fuzzing"
 	@echo "  coverage          tests with gcov coverage report (all wheels)"
 	@echo "  coverage-wheel W=x per-wheel coverage with branch detail"
+	@echo "  coverage-scan     scan all wheels, show sub-80% (gcov-tool merge)"
+	@echo "  coverage-scan-all show all wheels sorted by coverage"
 	@echo "  downstream W=x    test downstream consumers of wheel x"
 	@echo ""
 	@echo "Audit:"
@@ -113,6 +115,12 @@ coverage:
 coverage-wheel:
 	@test -n "$(W)" || { echo "Usage: make coverage-wheel W=<wheel-name>"; exit 1; }
 	bash tooling/test/coverage_wheel.sh "$(W)"
+
+coverage-scan:
+	bash tooling/test/coverage_scan.sh
+
+coverage-scan-all:
+	bash tooling/test/coverage_scan.sh --all
 
 bootstrap:
 	bash tooling/session/bootstrap.sh

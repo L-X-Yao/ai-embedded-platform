@@ -1,13 +1,31 @@
 #!/bin/bash
-# coverage_scan.sh — scan all wheels and report coverage, sorted lowest-first.
-# Usage: coverage_scan.sh [--top N]
+# coverage_scan.sh — batch coverage scan using coverage_wheel.sh
+#
+# Usage:
+#   coverage_scan.sh                  # scan all, show sub-80%
+#   coverage_scan.sh --threshold 90   # custom threshold
+#   coverage_scan.sh --all            # show all wheels sorted
+#
+# Depends on coverage_wheel.sh --machine (gcov-tool merge for accuracy).
 
 set -uo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-TOP="${1:-0}"  # 0 = show all
+SCRIPT="$REPO/tooling/test/coverage_wheel.sh"
+THRESHOLD=80
+SHOW_ALL=0
 
-results=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --threshold) THRESHOLD="$2"; shift 2 ;;
+        --all)       SHOW_ALL=1; shift ;;
+        *)           echo "Unknown arg: $1"; exit 1 ;;
+    esac
+done
+
+declare -a results=()
+total=0
+below=0
 
 for layer in primitives drivers protocols modules; do
     layer_dir="$REPO/wheels/$layer"
@@ -15,64 +33,41 @@ for layer in primitives drivers protocols modules; do
     for wheel_dir in "$layer_dir"/*/; do
         [ -d "$wheel_dir" ] || continue
         name=$(basename "$wheel_dir")
-        src="$wheel_dir/${name}.c"
-        test_dir="$wheel_dir/test"
-        [ -f "$src" ] && [ -d "$test_dir" ] || continue
+        [ -f "$wheel_dir/${name}.c" ] || continue
+        [ -d "$wheel_dir/test" ] || continue
 
-        # Build with coverage
-        build_dir="$test_dir/build_cov"
-        rm -rf "$build_dir"
-        mkdir -p "$build_dir"
+        total=$((total + 1))
+        out=$(bash "$SCRIPT" --machine "$layer/$name" 2>/dev/null)
 
-        if ! cmake -GNinja -S "$test_dir" -B "$build_dir" \
-            -DCMAKE_C_FLAGS="--coverage -O0 -g" \
-            -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
-            > "$build_dir/cmake.log" 2>&1; then
-            results+=("  0.0  FAIL(cmake)  $layer/$name")
-            continue
-        fi
-
-        if ! cmake --build "$build_dir" > "$build_dir/build.log" 2>&1; then
-            results+=("  0.0  FAIL(build)  $layer/$name")
-            continue
-        fi
-
-        # Run tests
-        for exe in "$build_dir"/test_*; do
-            [ -x "$exe" ] && "$exe" > /dev/null 2>&1 || true
-        done
-
-        # Get coverage
-        gcda=$(find "$build_dir" -name "${name}.c.gcda" 2>/dev/null | head -1)
-        if [ -z "$gcda" ]; then
-            results+=("  0.0  NO_GCDA     $layer/$name")
-            continue
-        fi
-
-        gcda_dir=$(dirname "$gcda")
-        gcov_out=$(cd "$gcda_dir" && gcov -b "${name}.c.gcda" 2>&1)
-        line_pct=$(echo "$gcov_out" | grep -A1 "File.*${name}.c'" | grep "Lines executed" | head -1 | grep -oP '[0-9.]+' | head -1)
-        branch_pct=$(echo "$gcov_out" | grep -A2 "File.*${name}.c'" | grep "Branches executed" | head -1 | grep -oP '[0-9.]+' | head -1)
-
-        [ -z "$line_pct" ] && line_pct="?"
-        [ -z "$branch_pct" ] && branch_pct="?"
-
-        results+=("$(printf '%6s  %6s  %s/%s' "${line_pct}%" "${branch_pct}%" "$layer" "$name")")
-
-        # Cleanup
-        rm -rf "$build_dir"
+        case "$out" in
+            BUILD_FAIL|NO_EXES|NO_GCDA)
+                results+=("$(printf '%7s  %7s  %s/%s' "$out" "-" "$layer" "$name")")
+                below=$((below + 1))
+                ;;
+            *)
+                line_pct=$(echo "$out" | awk '{print $1}')
+                branch_pct=$(echo "$out" | awk '{print $2}')
+                int_pct=${line_pct%%.*}
+                if [[ $SHOW_ALL -eq 1 ]] || [[ "$int_pct" -lt "$THRESHOLD" ]] 2>/dev/null; then
+                    results+=("$(printf '%6s%%  %6s%%  %s/%s' "$line_pct" "$branch_pct" "$layer" "$name")")
+                fi
+                if [[ "$int_pct" -lt "$THRESHOLD" ]] 2>/dev/null; then
+                    below=$((below + 1))
+                fi
+                ;;
+        esac
     done
 done
 
-echo "=== Coverage Scan: $(echo "${#results[@]}") wheels ==="
+echo "=== Coverage Scan ==="
+echo "  Scanned: $total wheels"
+echo "  Below ${THRESHOLD}%: $below"
 echo ""
-printf "  %6s  %6s  %s\n" "Lines" "Branch" "Wheel"
-printf "  %6s  %6s  %s\n" "-----" "------" "-----"
 
-# Sort by first field (line coverage percentage)
-printf '%s\n' "${results[@]}" | sort -t'%' -k1 -n
-
-if [ "$TOP" -gt 0 ]; then
-    echo ""
-    echo "(showing all; use head to limit)"
+if [[ ${#results[@]} -gt 0 ]]; then
+    printf "  %7s  %7s  %s\n" "Lines" "Branch" "Wheel"
+    printf "  %7s  %7s  %s\n" "-------" "-------" "-----"
+    printf '%s\n' "${results[@]}" | sort -n
+else
+    echo "  All wheels at or above ${THRESHOLD}% coverage."
 fi
