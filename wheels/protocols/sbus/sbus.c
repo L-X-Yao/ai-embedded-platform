@@ -9,7 +9,6 @@
  */
 
 #include "sbus.h"
-#include "contract.h"
 #include <string.h>
 
 /* ---------- parser ---------- */
@@ -17,7 +16,6 @@
 sbus_err_t sbus_parser_init(sbus_parser_t *parser)
 {
     if (!parser) return SBUS_ERR_PARAM;
-    REQUIRE(parser != NULL);
 
     memset(parser, 0, sizeof(*parser));
     parser->state = SBUS_PARSE_SEEKING;
@@ -90,8 +88,6 @@ sbus_parse_state_t sbus_parse_byte(sbus_parser_t *parser, uint8_t byte)
 sbus_err_t sbus_decode(const uint8_t frame[SBUS_FRAME_LEN], sbus_frame_t *out)
 {
     if (!frame || !out) return SBUS_ERR_PARAM;
-    REQUIRE(frame != NULL);
-    REQUIRE(out != NULL);
 
     if (frame[0] != SBUS_HEADER) return SBUS_ERR_FORMAT;
     if (frame[SBUS_FRAME_LEN - 1] != SBUS_FOOTER) return SBUS_ERR_FORMAT;
@@ -143,8 +139,6 @@ sbus_err_t sbus_decode(const uint8_t frame[SBUS_FRAME_LEN], sbus_frame_t *out)
 sbus_err_t sbus_encode(const sbus_frame_t *frame, uint8_t buf[SBUS_FRAME_LEN])
 {
     if (!frame || !buf) return SBUS_ERR_PARAM;
-    REQUIRE(frame != NULL);
-    REQUIRE(buf != NULL);
 
     memset(buf, 0, SBUS_FRAME_LEN);
 

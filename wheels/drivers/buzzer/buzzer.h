@@ -28,7 +28,6 @@ extern "C" {
 typedef enum {
     BUZZER_OK        =  0,
     BUZZER_ERR_PARAM = -1,
-    BUZZER_ERR_HAL   = -2,
 } buzzer_err_t;
 
 /*

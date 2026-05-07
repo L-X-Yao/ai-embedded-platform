@@ -87,7 +87,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize parser to idle state. @thread_safe: yes @isr_safe: no */
+/** Initialize parser to idle state. @thread_safe: no @isr_safe: no */
 mavlink_err_t mavlink_parser_init(mavlink_parser_t *parser);
 
 /** Feed one byte to the parser. Returns current parse state.
