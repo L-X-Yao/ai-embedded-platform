@@ -458,6 +458,17 @@ TEST(test_read_byte_zero)
 }
 
 /*
+ * SOFT_I2C_ERR_BUS (-3) is defined in the error enum as a reserved code for
+ * future bus-level error detection (e.g. arbitration loss, line stuck).
+ * No current implementation path returns it, but verify its enum value is
+ * correct so that any future caller who branches on it gets the right constant.
+ */
+TEST(test_err_bus_enum_value)
+{
+    ASSERT_EQ(-3, SOFT_I2C_ERR_BUS);
+}
+
+/*
  * Calling init a second time on the same bus variable with a different
  * gpio struct must make the second struct take effect.
  */
@@ -504,5 +515,6 @@ TEST_MAIN("soft_i2c")
     RUN(test_bus_recover_all_18_pulses);
     RUN(test_write_zero_len_addr_nack);
     RUN(test_read_byte_zero);
+    RUN(test_err_bus_enum_value);
     RUN(test_reinit_same_bus);
 TEST_MAIN_END()
