@@ -26,7 +26,11 @@ test_template() {
     local dir="$REPO/wheels/$layer/$name"
     CLEANUP+=("$dir")
 
-    bash "$REPO/tooling/wheel/new_wheel.sh" --layer "$layer" --name "$name" "${extra[@]}" --no-audit > /dev/null 2>&1
+    if ! bash "$REPO/tooling/wheel/new_wheel.sh" --layer "$layer" --name "$name" "${extra[@]}" --no-audit > /dev/null 2>&1; then
+        echo -e "  ${RED}FAIL${NC}  $layer/$name (scaffold creation failed)"
+        FAIL=$((FAIL + 1))
+        return
+    fi
 
     local test_dir="$dir/test"
     local build_dir="$test_dir/build_scaffold_test"

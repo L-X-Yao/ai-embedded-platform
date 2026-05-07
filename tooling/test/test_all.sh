@@ -271,7 +271,7 @@ run_c_test() {
     local output
     if output=$("$exe" 2>&1); then
         local summary_line
-        summary_line=$(echo "$output" | grep -E '[0-9]+ tests?,\s*[0-9]+ (passed|failures?)' | tail -1 || true)
+        summary_line=$(echo "$output" | grep -E '[0-9]+ passed' | tail -1 || true)
         if [[ -n "$summary_line" ]]; then
             echo -e "  ${GREEN}PASS${NC}  $name  (${summary_line})"
         else
@@ -370,7 +370,7 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
         local test_output
         if test_output=$("$exe" 2>&1); then
             local summary
-            summary=$(echo "$test_output" | grep -E '[0-9]+ tests?,\s*[0-9]+ (passed|failures?)' | tail -1 || true)
+            summary=$(echo "$test_output" | grep -E '[0-9]+ passed' | tail -1 || true)
             echo "PASS|$name|${summary:-ok}" > "$rf"
         else
             echo "$test_output" >> "$of"
@@ -491,17 +491,16 @@ if $COVERAGE; then
     echo -e "${BOLD}--- Coverage ---${NC}"
     gcov_files=$(find "$REPO/wheels" -name "*.gcda" 2>/dev/null)
     if [[ -n "$gcov_files" ]]; then
-        total_lines=0 hit_lines=0
         while IFS= read -r gcda; do
             dir=$(dirname "$gcda")
-            gcov -n "$gcda" -o "$dir" 2>/dev/null | while IFS= read -r line; do
+            while IFS= read -r line; do
                 if [[ "$line" =~ Lines\ executed:([0-9.]+)%\ of\ ([0-9]+) ]]; then
                     pct="${BASH_REMATCH[1]}"
                     lines="${BASH_REMATCH[2]}"
                     src=$(echo "$line" | grep -oE "File '.*'" || true)
                     printf "  %6s%%  (%3d lines)  %s\n" "$pct" "$lines" "$src"
                 fi
-            done
+            done < <(gcov -n "$gcda" -o "$dir" 2>/dev/null)
         done <<< "$gcov_files"
     else
         echo "  No .gcda files found. Ensure tests ran with --coverage."

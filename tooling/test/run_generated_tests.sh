@@ -47,7 +47,10 @@ echo "Running $LABEL tests ($PATTERN)..."
 fail=0
 total=0
 
-for f in $(find wheels/ -name "$PATTERN" 2>/dev/null | sort); do
+# Cleanup temp executables on exit
+trap 'rm -f /tmp/gentest_*_$$' EXIT
+
+while IFS= read -r f; do
     dir=$(dirname "$f")
     wheel_dir=$(dirname "$dir")
     name=$(basename "$wheel_dir")
@@ -108,7 +111,7 @@ for f in $(find wheels/ -name "$PATTERN" 2>/dev/null | sort); do
         printf "  BUILD_FAIL %s\n" "$name"
         fail=$((fail + 1))
     fi
-done
+done < <(find wheels/ -name "$PATTERN" 2>/dev/null | sort)
 
 echo ""
 echo "$total wheels, $fail failures"
