@@ -127,6 +127,7 @@ mavlink_parse_state_t mavlink_parse_byte(mavlink_parser_t *parser, uint8_t byte)
         case 6: parser->msg.msgid          = (uint32_t)byte;        break;
         case 7: parser->msg.msgid         |= (uint32_t)byte << 8;  break;
         case 8: parser->msg.msgid         |= (uint32_t)byte << 16; break;
+        default: break;
         }
 
         parser->rx_count++;
