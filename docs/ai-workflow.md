@@ -475,3 +475,9 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 | 并行派发多个 agent | `tooling/session/dispatch_agent.sh --name X --budget N --prompt "..."` |
 | 查看派发 agent 状态 | `tooling/session/dispatch_agent.sh --status` |
 | 合并所有 agent 结果 | `tooling/session/dispatch_agent.sh --merge-all [--push]` |
+
+---
+
+## 端到端项目交付
+
+以上 12 类任务是原子操作。当接到外部客户的完整项目时，走 **[外包项目交付流程](outsource-workflow.md)**（五阶段流水线），它编排上述任务类型完成从定义到交付的全过程。
