@@ -160,12 +160,25 @@ fi
 # --- Write changelog (atomic: write tmp then rename) ---
 TMP_CL="${CHANGELOG}.tmp"
 if [[ -f "$CHANGELOG" ]]; then
-    {
-        head -2 "$CHANGELOG"
-        echo ""
-        echo "$ENTRY"
-        tail -n +3 "$CHANGELOG"
-    } > "$TMP_CL"
+    # Find the line number of the first '## ' section heading
+    insert_line=$(grep -n '^## ' "$CHANGELOG" | head -1 | cut -d: -f1)
+    if [[ -z "$insert_line" ]]; then
+        # No existing sections — append after whatever header exists
+        {
+            cat "$CHANGELOG"
+            echo ""
+            echo "$ENTRY"
+        } > "$TMP_CL"
+    else
+        # Insert the new section before the first existing section
+        {
+            head -n "$((insert_line - 1))" "$CHANGELOG"
+            echo ""
+            echo "$ENTRY"
+            echo ""
+            tail -n "+${insert_line}" "$CHANGELOG"
+        } > "$TMP_CL"
+    fi
 else
     cat > "$TMP_CL" << HEADER
 # Changelog

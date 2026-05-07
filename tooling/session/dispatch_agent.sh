@@ -200,8 +200,7 @@ if $MERGE_ALL; then
         merge_rc=$?
         if [[ $merge_rc -ne 0 ]] && echo "$merge_output" | grep -q "untracked working tree files would be overwritten"; then
             # Scaffold files on main block the merge — remove them and retry
-            untracked=$(echo "$merge_output" | grep $'^\t' | sed 's/^\t//')
-            for f in $untracked; do
+            echo "$merge_output" | grep $'^\t' | sed 's/^\t//' | while IFS= read -r f; do
                 [[ -f "$f" ]] && rm -f "$f"
             done
             echo -e "  ${YELLOW}  RETRY${NC}  removed untracked scaffold files blocking merge"
@@ -215,7 +214,7 @@ if $MERGE_ALL; then
             MERGED=$((MERGED + 1))
         else
             echo -e "  ${RED}FAIL${NC}  $b  (merge conflict — resolve manually)"
-            git merge --abort 2>/dev/null || git reset --hard HEAD 2>/dev/null
+            git merge --abort 2>/dev/null || echo -e "  ${YELLOW}  merge --abort also failed — resolve working tree manually${NC}"
             FAILED=$((FAILED + 1))
         fi
     done

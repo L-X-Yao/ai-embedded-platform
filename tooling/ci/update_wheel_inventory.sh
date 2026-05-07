@@ -71,7 +71,7 @@ if ! $APPLY; then
 fi
 
 # Build replacement block
-BLOCK="- ✅ **${total} 个 wheels**（全部 candidate，audit 0 non-consumer WARN）：
+BLOCK="- ✅ **${total} 个 wheels**（全部 candidate）：
   - L0 (${count_l0}): ${l0_list}
   - L1 (${count_l1}): ${l1_list}
   - L2 (${count_l2}): ${l2_list}"
