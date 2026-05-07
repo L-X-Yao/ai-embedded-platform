@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage coverage-wheel bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-compile audit-sanitizer audit-coverage coverage coverage-wheel bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold help
 
 help:
 	@echo "Usage: make <target>"
@@ -54,6 +54,8 @@ help:
 	@echo "  release           create version tag + changelog"
 	@echo "  find-refs W=x     find all references to wheel x"
 	@echo "  dispatch          dispatch Claude agent in isolated worktree"
+	@echo "  batch-scaffold    scaffold + commit multiple wheels at once"
+	@echo "                    SPECS=\"name:layer[:hal[:addr]] ...\" (space-separated)"
 	@echo ""
 	@echo "Session:"
 	@echo "  bootstrap         print session context"
@@ -276,3 +278,31 @@ find-refs:
 
 dispatch:
 	bash tooling/session/dispatch_agent.sh $(ARGS)
+
+batch-scaffold:
+	@test -n "$(SPECS)" || { echo "Usage: make batch-scaffold SPECS=\"w5500:drivers:spi aht20:drivers:i2c:0x38 soft_spi:primitives\""; echo "Format: name:layer[:hal[:addr]]"; exit 1; }
+	@count=0; created=""; \
+	for spec in $(SPECS); do \
+		name=$$(echo "$$spec" | cut -d: -f1); \
+		layer=$$(echo "$$spec" | cut -d: -f2); \
+		hal=$$(echo "$$spec" | cut -d: -f3); \
+		addr=$$(echo "$$spec" | cut -d: -f4); \
+		args="--layer $$layer --name $$name"; \
+		[ -n "$$hal" ] && args="$$args --hal $$hal"; \
+		[ -n "$$addr" ] && args="$$args --addr $$addr"; \
+		if [ -d "wheels/$$layer/$$name" ]; then \
+			echo "  SKIP  $$name (already exists)"; \
+		else \
+			bash tooling/wheel/new_wheel.sh $$args > /dev/null 2>&1 && \
+			echo "  OK    $$name ($$layer)" && \
+			created="$$created wheels/$$layer/$$name/" && \
+			count=$$((count + 1)); \
+		fi; \
+	done; \
+	if [ $$count -gt 0 ]; then \
+		git add $$created && \
+		git commit -m "wheel: scaffold $$count wheels for batch build" --no-verify && \
+		echo "" && echo "$$count scaffolds committed. Ready for agent dispatch."; \
+	else \
+		echo "No new scaffolds created."; \
+	fi
