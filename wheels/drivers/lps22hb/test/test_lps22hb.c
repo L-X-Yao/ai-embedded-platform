@@ -178,6 +178,23 @@ TEST(test_read_negative_temperature)
     ASSERT_NEAR(data.temperature_c, -10.50f, 0.01f);
 }
 
+TEST(test_read_negative_pressure)
+{
+    mock_reset();
+    lps22hb_init(&dev, &mock_i2c);
+
+    /* Negative 24-bit pressure to exercise sign-extension in lps22hb_read().
+     * raw = -4096 => pressure_hpa = -4096 / 4096.0 = -1.0 hPa.
+     * This covers the branch: if (raw_p & 0x00800000) raw_p |= 0xFF000000 */
+    mock_set_pressure_raw(-4096);
+    mock_set_temperature_raw(0);
+
+    lps22hb_data_t data;
+    ASSERT_EQ(lps22hb_read(&dev, &data), LPS22HB_OK);
+    ASSERT_NEAR(data.pressure_hpa, -1.0f, 0.01f);
+    ASSERT_NEAR(data.temperature_c, 0.0f, 0.001f);
+}
+
 TEST(test_read_i2c_fail)
 {
     mock_reset();
@@ -374,6 +391,7 @@ TEST_MAIN("lps22hb")
     RUN(test_read_1013_25_hpa);
     RUN(test_read_zero_pressure);
     RUN(test_read_negative_temperature);
+    RUN(test_read_negative_pressure);
     RUN(test_read_i2c_fail);
     RUN(test_set_odr_all_values);
     RUN(test_set_odr_invalid);
