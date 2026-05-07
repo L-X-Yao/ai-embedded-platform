@@ -330,6 +330,23 @@ jobs:
           cmake -GNinja -S . -B build
           cmake --build build
 
+  # ---- Nightly: coverage gate ----
+
+  coverage-gate:
+    name: coverage gate (>=80% all wheels)
+    if: github.event_name == 'schedule' || (github.event_name != 'schedule' && needs.detect-changes.outputs.harness-changed == 'true')
+    needs: detect-changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+
+      - name: Coverage scan (parallel, gate)
+        run: bash tooling/test/coverage_scan.sh --gate --jobs 4
+
   # ---- Nightly: ARM size audit ----
 
   arm-size-audit:
