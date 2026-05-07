@@ -1,0 +1,115 @@
+# gc9a01 — GC9A01 240x240 round TFT LCD SPI driver
+
+**Status: candidate**
+**Layer: L1 (drivers)**
+
+RGB565 TFT LCD driver for the GC9A01 round display controller (common on 1.28" smartwatch
+and gauge displays). Supports hardware reset, rotation (0/90/180/270), sleep mode,
+display on/off, window addressing, pixel streaming, full-screen fill, and RGB565 color
+conversion. Pure C99, no heap, no OS.
+
+## Origin
+
+Proactive build for smartwatch/gauge display-equipped embedded projects.
+
+## Why self-written?
+
+Searched GitHub/embedded ecosystem (2026-05-07):
+
+- Adafruit/Arduino GC9A01 libs: C++ / Arduino-coupled, not portable C99.
+- TFT_eSPI: ESP-specific, heavy C++ dependency.
+- LVGL drivers: tied to LVGL framework, not standalone.
+- No suitable zero-dependency C99 implementation found that fits our wheel contract (no OS, DI via function pointers, multi-instance).
+
+Reference: GalaxyCore GC9A01 datasheet.
+
+## Dependencies
+
+None. SPI HAL injected via function pointers.
+
+## API
+
+```c
+gc9a01_err_t gc9a01_init(gc9a01_t *dev, const gc9a01_spi_t *spi);
+
+gc9a01_err_t gc9a01_set_window(gc9a01_t *dev,
+                               uint16_t x0, uint16_t y0,
+                               uint16_t x1, uint16_t y1);
+
+gc9a01_err_t gc9a01_write_pixels(gc9a01_t *dev,
+                                 const uint16_t *pixels, uint32_t count);
+
+gc9a01_err_t gc9a01_fill(gc9a01_t *dev, uint16_t color);
+
+gc9a01_err_t gc9a01_set_rotation(gc9a01_t *dev, uint8_t rotation);
+
+gc9a01_err_t gc9a01_sleep(gc9a01_t *dev, bool enable);
+
+gc9a01_err_t gc9a01_display(gc9a01_t *dev, bool on);
+
+uint16_t gc9a01_rgb565(uint8_t r, uint8_t g, uint8_t b);
+```
+
+## SPI HAL
+
+```c
+typedef struct {
+    void    (*cs_low)(void *ctx);
+    void    (*cs_high)(void *ctx);
+    uint8_t (*xfer)(void *ctx, uint8_t tx);
+    void    (*dc_cmd)(void *ctx);    /* DC pin low  (command) */
+    void    (*dc_data)(void *ctx);   /* DC pin high (data)    */
+    void    (*rst_low)(void *ctx);   /* RST pin low  (reset)  */
+    void    (*rst_high)(void *ctx);  /* RST pin high (normal) */
+    void    (*delay_ms)(void *ctx, uint16_t ms);
+    void    *ctx;
+} gc9a01_spi_t;
+```
+
+## Configuration (compile-time)
+
+| Define | Default | Purpose |
+|--------|---------|---------|
+| (none) | N/A     | All configuration is runtime via API calls |
+
+Display is fixed at 240x240 (GC9A01 is a round LCD controller).
+
+## Supported platforms
+
+- [x] Host (sim) -- 2026-05-07
+- [ ] Real hardware target -- not yet verified
+
+## Known issues
+
+- `fill` and `write_pixels` send pixels one-by-one via `xfer()`. For performance on real hardware, consider a bulk SPI DMA transfer in the HAL layer.
+- GC9A01 INVON is sent during init (required for correct colors on most round LCD panels).
+
+## How to test
+
+```bash
+cd wheels/drivers/gc9a01/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_gc9a01
+./build/test_hw_model_gc9a01
+./build/test_null_gc9a01
+```
+
+## Test status
+
+- Unit tests (sim): 58 pass, 0 fail
+- HW model tests (sim): 18 pass, 0 fail
+- Null tests (auto-generated): 9 pass, 0 fail
+- HIL: N/A
+
+## API convention deviations
+
+None.
+
+## API review
+
+- **Date**: 2026-05-07
+- **Key decisions**: RGB565 only (most common for embedded TFT), rotation via MADCTL, dc_cmd/dc_data separate callbacks (matches 4-wire SPI wiring), fixed 240x240 (no configurable size since GC9A01 is always 240x240 round)
+
+## Responsible human
+
+@user
