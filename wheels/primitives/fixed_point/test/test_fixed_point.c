@@ -242,6 +242,308 @@ TEST(test_fp_constants)
     ASSERT_NEAR(fp_to_float(FP_PI), 3.14159f, 0.001f);
 }
 
+/* ── Mutation-hardening tests ─────────────────────────────────── */
+
+/*
+ * fp_from_int: verify exact bit layout — catches shift-by-wrong-amount mutations.
+ * Q16.16 means val=1 must produce 0x00010000.
+ */
+TEST(test_from_int_exact_bits)
+{
+    ASSERT_EQ(fp_from_int(1),    (fp_t)0x00010000);
+    ASSERT_EQ(fp_from_int(2),    (fp_t)0x00020000);
+    ASSERT_EQ(fp_from_int(-1),   (fp_t)0xFFFF0000);
+    ASSERT_EQ(fp_from_int(0),    (fp_t)0x00000000);
+    ASSERT_EQ(fp_from_int(256),  (fp_t)0x01000000);
+}
+
+/*
+ * fp_to_int: verify direction of truncation with fractional parts just below
+ * the integer boundary — catches <= vs < mutations in the shift logic.
+ */
+TEST(test_to_int_exact_truncation)
+{
+    /* Positive fractions truncate DOWN (toward zero) */
+    ASSERT_EQ(fp_to_int((fp_t)(FP_ONE + FP_ONE - 1)), 1);   /* 1.9999.. → 1 */
+    ASSERT_EQ(fp_to_int((fp_t)(FP_ONE + 1)),           1);   /* 1.000015.. → 1 */
+    /* Negative fractions truncate UP (toward zero) */
+    ASSERT_EQ(fp_to_int((fp_t)(-(FP_ONE + FP_ONE - 1))), -1); /* -1.9999.. → -1 */
+    ASSERT_EQ(fp_to_int((fp_t)(-(FP_ONE + 1))),           -1); /* -1.0000.. → -1 */
+    /* Exact integer is not affected */
+    ASSERT_EQ(fp_to_int((fp_t)(3 * FP_ONE)), 3);
+    ASSERT_EQ(fp_to_int((fp_t)(-3 * FP_ONE)), -3);
+}
+
+/*
+ * fp_to_int_rounded: verify rounding boundary at exactly 0.5 —
+ * catches off-by-one in the FP_HALF addition.
+ */
+TEST(test_to_int_rounded_exact_half)
+{
+    /* Exactly 0.5 rounds to 1, exactly -0.5 rounds to -1 */
+    ASSERT_EQ(fp_to_int_rounded(FP_HALF), 1);
+    ASSERT_EQ(fp_to_int_rounded(-FP_HALF), -1);
+    /* One below 0.5 rounds to 0 */
+    ASSERT_EQ(fp_to_int_rounded(FP_HALF - 1), 0);
+    ASSERT_EQ(fp_to_int_rounded(-(FP_HALF - 1)), 0);
+    /* 2.5 rounds to 3 */
+    ASSERT_EQ(fp_to_int_rounded(fp_from_int(2) + FP_HALF), 3);
+    ASSERT_EQ(fp_to_int_rounded(-(fp_from_int(2) + FP_HALF)), -3);
+}
+
+/*
+ * fp_add overflow clamping: verify exact saturation values —
+ * catches > vs >= and + vs - mutations in the overflow guards.
+ */
+TEST(test_add_saturation_exact)
+{
+    /* FP_MAX + 1 must saturate to FP_MAX, not wrap */
+    ASSERT_EQ(fp_add(FP_MAX, 1), FP_MAX);
+    /* FP_MIN - 1 must saturate to FP_MIN */
+    ASSERT_EQ(fp_add(FP_MIN, -1), FP_MIN);
+    /* Values that do NOT overflow must be exact */
+    ASSERT_EQ(fp_add(fp_from_int(1), fp_from_int(2)), fp_from_int(3));
+    ASSERT_EQ(fp_add(fp_from_int(-1), fp_from_int(-2)), fp_from_int(-3));
+}
+
+/*
+ * fp_sub saturation: symmetric partner to add saturation.
+ */
+TEST(test_sub_saturation_exact)
+{
+    ASSERT_EQ(fp_sub(FP_MIN, 1), FP_MIN);
+    ASSERT_EQ(fp_sub(FP_MAX, -1), FP_MAX);
+    ASSERT_EQ(fp_sub(fp_from_int(5), fp_from_int(3)), fp_from_int(2));
+    ASSERT_EQ(fp_sub(fp_from_int(3), fp_from_int(5)), fp_from_int(-2));
+}
+
+/*
+ * fp_mul exact values: integer × integer must be precise —
+ * catches shift-by-wrong-amount mutations in the result >> FRAC_BITS step.
+ */
+TEST(test_mul_exact_integer_results)
+{
+    ASSERT_EQ(fp_mul(fp_from_int(3), fp_from_int(4)), fp_from_int(12));
+    ASSERT_EQ(fp_mul(fp_from_int(-3), fp_from_int(4)), fp_from_int(-12));
+    ASSERT_EQ(fp_mul(fp_from_int(-3), fp_from_int(-4)), fp_from_int(12));
+    ASSERT_EQ(fp_mul(fp_from_int(1), fp_from_int(1)), fp_from_int(1));
+    /* 0.5 * 0.5 = 0.25 */
+    ASSERT_EQ(fp_mul(FP_HALF, FP_HALF), FP_HALF / 2);
+}
+
+/*
+ * fp_mul saturation: large × large must clamp.
+ */
+TEST(test_mul_saturation)
+{
+    ASSERT_EQ(fp_mul(FP_MAX, fp_from_int(2)), FP_MAX);
+    ASSERT_EQ(fp_mul(FP_MIN, fp_from_int(2)), FP_MIN);
+}
+
+/*
+ * fp_div exact: verify numerator scaling — catches *= vs /=, >> vs << mutations.
+ */
+TEST(test_div_exact_integer_results)
+{
+    ASSERT_EQ(fp_div(fp_from_int(12), fp_from_int(4)), fp_from_int(3));
+    ASSERT_EQ(fp_div(fp_from_int(-12), fp_from_int(4)), fp_from_int(-3));
+    ASSERT_EQ(fp_div(fp_from_int(12), fp_from_int(-4)), fp_from_int(-3));
+    ASSERT_EQ(fp_div(fp_from_int(0), fp_from_int(7)), fp_from_int(0));
+    /* 1 / 2 = 0.5 exactly */
+    ASSERT_EQ(fp_div(fp_from_int(1), fp_from_int(2)), FP_HALF);
+    /* 1 / 4 = 0.25 exactly */
+    ASSERT_EQ(fp_div(fp_from_int(1), fp_from_int(4)), FP_HALF / 2);
+}
+
+/*
+ * fp_abs boundary: INT32_MIN must return FP_MAX, not hang or return wrong value —
+ * catches val == FP_MIN guard condition mutations.
+ */
+TEST(test_abs_boundaries)
+{
+    ASSERT_EQ(fp_abs(FP_MIN), FP_MAX);
+    ASSERT_EQ(fp_abs(FP_MAX), FP_MAX);
+    ASSERT_EQ(fp_abs(fp_from_int(0)), fp_from_int(0));
+    ASSERT_EQ(fp_abs(fp_from_int(-7)), fp_from_int(7));
+    ASSERT_EQ(fp_abs(fp_from_int(7)), fp_from_int(7));
+    /* value just above FP_MIN must negate correctly */
+    ASSERT_EQ(fp_abs(FP_MIN + 1), -(FP_MIN + 1));
+}
+
+/*
+ * fp_min/fp_max: both arguments equal must return that value —
+ * catches < vs <= mutations.
+ */
+TEST(test_min_max_equal)
+{
+    fp_t v = fp_from_float(5.5f);
+    ASSERT_EQ(fp_min(v, v), v);
+    ASSERT_EQ(fp_max(v, v), v);
+    /* adjacent values */
+    fp_t a = fp_from_int(3);
+    fp_t b = fp_from_int(3) + 1; /* 3 + 1 LSB */
+    ASSERT_EQ(fp_min(a, b), a);
+    ASSERT_EQ(fp_min(b, a), a);
+    ASSERT_EQ(fp_max(a, b), b);
+    ASSERT_EQ(fp_max(b, a), b);
+}
+
+/*
+ * fp_clamp boundaries: value exactly at lo or hi must not be clamped —
+ * catches < vs <= mutations in the boundary checks.
+ */
+TEST(test_clamp_at_boundaries)
+{
+    fp_t lo = fp_from_int(2);
+    fp_t hi = fp_from_int(8);
+
+    /* Exactly at lo: must return lo unchanged */
+    ASSERT_EQ(fp_clamp(lo, lo, hi), lo);
+    /* Exactly at hi: must return hi unchanged */
+    ASSERT_EQ(fp_clamp(hi, lo, hi), hi);
+    /* One below lo: must clamp to lo */
+    ASSERT_EQ(fp_clamp(lo - 1, lo, hi), lo);
+    /* One above hi: must clamp to hi */
+    ASSERT_EQ(fp_clamp(hi + 1, lo, hi), hi);
+}
+
+/*
+ * fp_lerp: exact values at t=0 and t=FP_ONE, plus midpoint at t=FP_HALF.
+ * Catches sign errors in diff computation and shift-by-wrong-amount.
+ */
+TEST(test_lerp_exact_values)
+{
+    fp_t a = fp_from_int(10);
+    fp_t b = fp_from_int(20);
+
+    ASSERT_EQ(fp_lerp(a, b, 0), a);
+    ASSERT_EQ(fp_lerp(a, b, FP_ONE), b);
+    /* t=FP_HALF → exactly 15.0 */
+    ASSERT_EQ(fp_lerp(a, b, FP_HALF), fp_from_int(15));
+
+    /* Reversed: b < a */
+    fp_t c = fp_from_int(20);
+    fp_t d = fp_from_int(10);
+    ASSERT_EQ(fp_lerp(c, d, 0), c);
+    ASSERT_EQ(fp_lerp(c, d, FP_ONE), d);
+    ASSERT_EQ(fp_lerp(c, d, FP_HALF), fp_from_int(15));
+}
+
+/*
+ * fp_comparison: verify strict inequality (not >=, not <=) —
+ * catches > vs >= and < vs <= mutations.
+ */
+TEST(test_comparison_strict)
+{
+    fp_t a = fp_from_int(5);
+    fp_t b = fp_from_int(5);
+
+    /* Equal values: neither gt nor lt */
+    ASSERT_FALSE(fp_gt(a, b));
+    ASSERT_FALSE(fp_lt(a, b));
+    ASSERT_TRUE(fp_eq(a, b));
+
+    /* Adjacent by 1 LSB */
+    fp_t c = a + 1;
+    ASSERT_TRUE(fp_gt(c, a));
+    ASSERT_FALSE(fp_gt(a, c));
+    ASSERT_TRUE(fp_lt(a, c));
+    ASSERT_FALSE(fp_lt(c, a));
+    ASSERT_FALSE(fp_eq(a, c));
+}
+
+/*
+ * fp_to_string: verify exact return value (char count) and string content —
+ * catches off-by-one in pos tracking and decimal place logic.
+ */
+TEST(test_to_string_exact_return_value)
+{
+    char buf[32];
+    int len;
+
+    /* "0" → 1 char */
+    len = fp_to_string(fp_from_int(0), buf, sizeof(buf), 0);
+    ASSERT_EQ(len, 1);
+
+    /* "1" → 1 char */
+    len = fp_to_string(fp_from_int(1), buf, sizeof(buf), 0);
+    ASSERT_EQ(len, 1);
+
+    /* "42" → 2 chars */
+    len = fp_to_string(fp_from_int(42), buf, sizeof(buf), 0);
+    ASSERT_EQ(len, 2);
+
+    /* "-1" → 2 chars */
+    len = fp_to_string(fp_from_int(-1), buf, sizeof(buf), 0);
+    ASSERT_EQ(len, 2);
+
+    /* "1.5" with 1 decimal → 3 chars */
+    len = fp_to_string(fp_from_float(1.5f), buf, sizeof(buf), 1);
+    ASSERT_EQ(len, 3);
+    ASSERT_TRUE(buf[0] == '1' && buf[1] == '.' && buf[2] == '5');
+
+    /* "0.50" with 2 decimals → 4 chars */
+    len = fp_to_string(fp_from_float(0.5f), buf, sizeof(buf), 2);
+    ASSERT_EQ(len, 4);
+    ASSERT_TRUE(buf[0] == '0' && buf[1] == '.' && buf[2] == '5' && buf[3] == '0');
+}
+
+/*
+ * fp_to_string decimal places clamped at 5: verify 6+ decimal_places are
+ * silently capped (not a buffer overrun), and 5 is accepted.
+ */
+TEST(test_to_string_decimal_places_clamped)
+{
+    char buf[32];
+    int len;
+
+    /* 5 decimal places is the max */
+    len = fp_to_string(fp_from_float(1.0f), buf, sizeof(buf), 5);
+    ASSERT_TRUE(len > 0);
+    ASSERT_EQ(buf[0], '1');
+    ASSERT_EQ(buf[1], '.');
+    ASSERT_EQ(len, 7); /* "1.00000" = 7 chars */
+
+    /* 6 decimal places is capped to 5 → same result */
+    int len2 = fp_to_string(fp_from_float(1.0f), buf, sizeof(buf), 6);
+    ASSERT_EQ(len2, 7);
+}
+
+/*
+ * fp_to_string: NUL termination is always written (regression guard).
+ */
+TEST(test_to_string_nul_termination)
+{
+    char buf[16];
+    buf[0] = (char)0xFF; /* poison */
+    int len = fp_to_string(fp_from_int(7), buf, sizeof(buf), 2);
+    ASSERT_TRUE(len > 0);
+    ASSERT_EQ(buf[len], '\0');
+}
+
+/*
+ * fp_from_float NaN: must return 0 without UB.
+ */
+TEST(test_from_float_nan)
+{
+    float nan_val = 0.0f / 0.0f; /* produce NaN */
+    fp_t result = fp_from_float(nan_val);
+    ASSERT_EQ(result, 0);
+}
+
+/*
+ * fp_to_float: verify the division by FP_ONE is exact for known values.
+ * Catches * vs / mutations.
+ */
+TEST(test_to_float_exact)
+{
+    ASSERT_NEAR(fp_to_float(FP_ONE), 1.0f, 0.000001f);
+    ASSERT_NEAR(fp_to_float(FP_HALF), 0.5f, 0.000001f);
+    ASSERT_NEAR(fp_to_float(fp_from_int(0)), 0.0f, 0.000001f);
+    ASSERT_NEAR(fp_to_float(fp_from_int(-1)), -1.0f, 0.000001f);
+    ASSERT_NEAR(fp_to_float(fp_from_int(100)), 100.0f, 0.001f);
+}
+
 TEST_MAIN("fixed_point")
     RUN(test_from_int_to_int_roundtrip);
     RUN(test_from_float_to_float_roundtrip);
@@ -261,4 +563,22 @@ TEST_MAIN("fixed_point")
     RUN(test_to_string_buffer_too_small);
     RUN(test_to_string_null_buf);
     RUN(test_fp_constants);
+    RUN(test_from_int_exact_bits);
+    RUN(test_to_int_exact_truncation);
+    RUN(test_to_int_rounded_exact_half);
+    RUN(test_add_saturation_exact);
+    RUN(test_sub_saturation_exact);
+    RUN(test_mul_exact_integer_results);
+    RUN(test_mul_saturation);
+    RUN(test_div_exact_integer_results);
+    RUN(test_abs_boundaries);
+    RUN(test_min_max_equal);
+    RUN(test_clamp_at_boundaries);
+    RUN(test_lerp_exact_values);
+    RUN(test_comparison_strict);
+    RUN(test_to_string_exact_return_value);
+    RUN(test_to_string_decimal_places_clamped);
+    RUN(test_to_string_nul_termination);
+    RUN(test_from_float_nan);
+    RUN(test_to_float_exact);
 TEST_MAIN_END()
