@@ -85,7 +85,37 @@
 
 {{描述构建方式：Keil 工程文件 / CMake 命令 / ...}}
 
-### 测试变体
+### Host 测试
+
+测试目录约定（`test_all.sh --project` 自动发现）：
+
+```
+projects/{{name}}/
+└── test/
+    └── {{test_suite_name}}/     ← 每个测试套件一个子目录
+        ├── CMakeLists.txt
+        └── test_{{name}}.c
+```
+
+**注意**：CMakeLists.txt 必须放在 `test/<suite>/` 子目录下（不能直接放 `test/`），否则 `test_all.sh` 不会发现。
+
+CMakeLists.txt 中引用 wheel：
+
+```cmake
+set(PLATFORM_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../..)
+
+target_include_directories(my_test PRIVATE
+    ${PLATFORM_ROOT}/wheels/drivers/{{wheel_name}}
+    ${PLATFORM_ROOT}/tooling/test              # test_harness.h
+)
+target_sources(my_test PRIVATE
+    ${PLATFORM_ROOT}/wheels/drivers/{{wheel_name}}/{{wheel_name}}.c
+)
+```
+
+**API 发现**：不要猜 API 名称。先读 wheel 的 `.h` 头文件确认 struct 字段名、函数签名和枚举值。
+
+### 测试变体（固件级）
 
 {{列出可切换的测试/验证构建。}}
 
@@ -94,7 +124,6 @@
 - `main.c` — 正式固件
 - `main_test_gpio.c` — GPIO 引脚验证（Keil: 右键切换）
 - `main_test_sensor.c` — 传感器通信验证
-- `pytest tests/` — host sim 测试
 -->
 
 ### 构建验证

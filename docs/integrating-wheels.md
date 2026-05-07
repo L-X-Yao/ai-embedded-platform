@@ -89,6 +89,67 @@ python3 tooling/audit/audit_wheels.py  # 查看完整清单 + 状态
 
 每个 wheel 的 README 有 API 示例和使用说明。
 
+## API 发现流程
+
+**不要猜 API 名称**——wheel 的函数签名、struct 字段、枚举值各不相同。写代码前：
+
+1. 读 `.h` 头文件（权威来源）：确认 `_init` 参数、cfg struct 字段、错误码枚举
+2. 读 `test/test_*.c`（用法示例）：看 mock 写法和典型调用序列
+3. 读 `README.md`（概览）：了解 wheel 用途、依赖和线程安全性
+
+常见陷阱：
+- 谓词函数用 `_is_` 前缀（`ring_buffer_is_empty`，不是 `ring_buffer_empty`）
+- 驱动 cfg struct 字段名跟 datasheet 缩写对齐（`osrs_t` 不是 `oversampling_t`）
+- 复杂 wheel（如 `state_machine`）是表驱动的，不是简单状态计数器
+
+## 项目 host 测试
+
+项目可以编写 host 测试来验证 wheel 集成。`test_all.sh --project` 自动发现。
+
+### 目录约定
+
+```
+projects/<proj>/
+└── test/
+    └── <suite_name>/           # 每个测试套件一个子目录
+        ├── CMakeLists.txt
+        └── test_<name>.c
+```
+
+**关键**：CMakeLists.txt 必须在 `test/<suite>/` 子目录下，不能直接放 `test/`。`test_all.sh` 查找模式是 `projects/*/test/*/CMakeLists.txt`。
+
+### CMakeLists.txt 模板
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+project(test_<proj>_<suite> C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# 从 test/<suite>/ 到 repo root = 4 层
+set(PLATFORM_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../..)
+
+add_executable(test_<suite>
+    test_<suite>.c
+    ${PLATFORM_ROOT}/wheels/<layer>/<wheel>/<wheel>.c
+)
+
+target_include_directories(test_<suite> PRIVATE
+    ${PLATFORM_ROOT}/wheels/<layer>/<wheel>
+    ${PLATFORM_ROOT}/tooling/test              # test_harness.h
+)
+
+target_compile_options(test_<suite> PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(test_<suite> PRIVATE m)
+
+enable_testing()
+add_test(NAME <proj>_<suite> COMMAND test_<suite>)
+```
+
+### 跨平台注意
+
+如果在 WSL 和 Windows 之间切换编译，cmake 缓存会冲突（`/mnt/d/` vs `D:/`）。删除 `build_*` 目录即可：`make clean`。
+
 ## 相关文档
 
 - [wheel-contract.md](wheel-contract.md) — wheel 分级标准 + 各阶段验收清单
