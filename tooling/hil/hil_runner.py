@@ -12,9 +12,10 @@ from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CONF_DIR = REPO_ROOT / "tooling" / "scripts" / "build_flash"
+CONF_DIR = REPO_ROOT / "tooling" / "hil" / "build_flash"
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 BFC_SCRIPT = CONF_DIR / "build_flash_check.sh"
+HIL_TMP_DIR = Path(__file__).resolve().parent / ".tmp"
 
 DEFAULT_TIERS = {"quick": 30, "standard": 600, "stress": 1800}
 
@@ -92,8 +93,11 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
     result_dir.mkdir(parents=True, exist_ok=True)
 
     # temp conf that sources the real one then overrides CHECK_DURATION
+    # Must live inside the repo so build_flash_check.sh accepts it.
+    HIL_TMP_DIR.mkdir(parents=True, exist_ok=True)
     tmp = tempfile.NamedTemporaryFile(
         mode="w", suffix=".conf", delete=False, encoding="utf-8",
+        dir=str(HIL_TMP_DIR),
     )
     try:
         conf_posix = conf_path.as_posix()

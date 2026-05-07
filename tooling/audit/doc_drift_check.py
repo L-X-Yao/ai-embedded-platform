@@ -41,18 +41,11 @@ def count_makefile_targets():
     if not mk.exists():
         return 0
     text = mk.read_text(encoding="utf-8")
-    phony = re.search(r'^\.PHONY:\s*(.+)$', text, re.MULTILINE)
-    if not phony:
-        return 0
-    return len(phony.group(1).split())
-
-
-def count_audit_checks():
-    audit = REPO / "tooling" / "audit" / "audit_wheels.py"
-    if not audit.exists():
-        return 0
-    text = audit.read_text(encoding="utf-8")
-    return len(re.findall(r'^\s+# ---.*check|^\s+# ---.*section|^def has_', text, re.MULTILINE))
+    targets = set()
+    for line in text.splitlines():
+        if line.startswith('.PHONY'):
+            targets.update(line.split(':', 1)[1].split())
+    return len(targets)
 
 
 def count_audit_check_functions():
@@ -110,8 +103,9 @@ def check_claude_md():
         claimed = int(m.group(1))
         actual = wheels["total"]
         if claimed != actual:
+            fixed_match = re.sub(r'\b' + str(claimed) + r'\b', str(actual), m.group(0))
             drifts.append(("CLAUDE.md", f"wheel count: says {claimed}, actual {actual}",
-                           m.group(0), m.group(0).replace(str(claimed), str(actual))))
+                           m.group(0), fixed_match))
 
     # Per-layer counts: "L0 原语 55：" or "L0 (55):" — Chinese and English formats
     layer_map = [("L0", "primitives"), ("L1", "drivers"), ("L2", "protocols"), ("L3", "modules")]
@@ -124,8 +118,9 @@ def check_claude_md():
             claimed = int(m.group(1))
             actual = wheels[key]
             if claimed != actual:
+                fixed_match = re.sub(r'\b' + str(claimed) + r'\b', str(actual), m.group(0))
                 drifts.append(("CLAUDE.md", f"{layer} count: says {claimed}, actual {actual}",
-                               m.group(0), m.group(0).replace(str(claimed), str(actual))))
+                               m.group(0), fixed_match))
 
     # Makefile target count: "Makefile（N 目标）"
     m = re.search(r'Makefile（(\d+) .?目标）', text)
