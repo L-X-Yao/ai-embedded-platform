@@ -145,7 +145,7 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
 
 max30102_err_t max30102_set_mode(max30102_t *dev, max30102_mode_t mode)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
     if (mode != MAX30102_MODE_HR && mode != MAX30102_MODE_SPO2)
         return MAX30102_ERR_PARAM;
@@ -167,7 +167,7 @@ max30102_err_t max30102_set_led_current(max30102_t *dev,
                                         uint8_t red_ma_x10,
                                         uint8_t ir_ma_x10)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
 
     /* Each register step = 0.2 mA.  Input is in 0.1 mA units.
@@ -187,7 +187,7 @@ max30102_err_t max30102_set_led_current(max30102_t *dev,
 
 max30102_err_t max30102_set_sample_rate(max30102_t *dev, uint16_t rate)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
 
     uint8_t sr = rate_to_sr_bits(rate);
@@ -211,7 +211,7 @@ max30102_err_t max30102_read_fifo(max30102_t *dev,
                                   uint8_t max_count,
                                   uint8_t *out_count)
 {
-    if (!dev || !samples || !out_count)
+    if (!dev || !dev->i2c || !samples || !out_count)
         return MAX30102_ERR_PARAM;
     if (max_count == 0)
         return MAX30102_ERR_PARAM;
@@ -267,7 +267,7 @@ max30102_err_t max30102_read_fifo(max30102_t *dev,
 
 max30102_err_t max30102_read_temp(max30102_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
         return MAX30102_ERR_PARAM;
 
     /* trigger one-shot temperature measurement */
@@ -292,7 +292,7 @@ max30102_err_t max30102_read_temp(max30102_t *dev, float *temp_c)
 
 max30102_err_t max30102_shutdown(max30102_t *dev, bool enable)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
 
     uint8_t reg = 0;
@@ -312,7 +312,7 @@ max30102_err_t max30102_shutdown(max30102_t *dev, bool enable)
 
 max30102_err_t max30102_reset(max30102_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
 
     if (!write_reg(dev, REG_MODE_CONFIG, (uint8_t)(1u << MODE_RESET_BIT)))
