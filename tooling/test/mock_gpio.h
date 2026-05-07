@@ -26,15 +26,35 @@
 #define MOCK_GPIO_PIN_COUNT 16
 #endif
 
-static bool     mock_gpio_pins[MOCK_GPIO_PIN_COUNT];
-static int      mock_gpio_write_count;
-static int      mock_gpio_read_count;
-static int      mock_gpio_fail_next;
-static uint32_t mock_gpio_delay_count;
+/* pin direction: 0 = input, 1 = output */
+typedef enum { MOCK_GPIO_DIR_INPUT = 0, MOCK_GPIO_DIR_OUTPUT = 1 } mock_gpio_dir_t;
+
+static bool           mock_gpio_pins[MOCK_GPIO_PIN_COUNT];
+static mock_gpio_dir_t mock_gpio_dir[MOCK_GPIO_PIN_COUNT];
+static int            mock_gpio_write_count;
+static int            mock_gpio_read_count;
+static int            mock_gpio_fail_next;
+static uint32_t       mock_gpio_delay_count;
+
+/* Build a ctx value that encodes pin index. */
+__attribute__((unused))
+static void *mock_gpio_make_ctx(uint8_t pin)
+{
+    return (void *)(uintptr_t)pin;
+}
+
+/* Extract pin index from ctx; NULL → pin 0 for backward compatibility. */
+static uint8_t mock_gpio_pin_from_ctx(void *ctx)
+{
+    if (ctx == NULL) return 0;
+    uint8_t pin = (uint8_t)(uintptr_t)ctx;
+    return (uint8_t)(pin % MOCK_GPIO_PIN_COUNT);
+}
 
 static void mock_gpio_reset(void)
 {
     memset(mock_gpio_pins, 0, sizeof(mock_gpio_pins));
+    memset(mock_gpio_dir,  0, sizeof(mock_gpio_dir));
     mock_gpio_write_count = 0;
     mock_gpio_read_count  = 0;
     mock_gpio_fail_next   = 0;
@@ -44,29 +64,31 @@ static void mock_gpio_reset(void)
 __attribute__((unused))
 static void mock_gpio_write_pin(void *ctx, bool level)
 {
-    (void)ctx;
+    uint8_t pin = mock_gpio_pin_from_ctx(ctx);
     mock_gpio_write_count++;
-    mock_gpio_pins[0] = level;
+    mock_gpio_pins[pin] = level;
 }
 
 __attribute__((unused))
 static bool mock_gpio_read_pin(void *ctx)
 {
-    (void)ctx;
+    uint8_t pin = mock_gpio_pin_from_ctx(ctx);
     mock_gpio_read_count++;
-    return mock_gpio_pins[0];
+    return mock_gpio_pins[pin];
 }
 
 __attribute__((unused))
 static void mock_gpio_set_output(void *ctx)
 {
-    (void)ctx;
+    uint8_t pin = mock_gpio_pin_from_ctx(ctx);
+    mock_gpio_dir[pin] = MOCK_GPIO_DIR_OUTPUT;
 }
 
 __attribute__((unused))
 static void mock_gpio_set_input(void *ctx)
 {
-    (void)ctx;
+    uint8_t pin = mock_gpio_pin_from_ctx(ctx);
+    mock_gpio_dir[pin] = MOCK_GPIO_DIR_INPUT;
 }
 
 __attribute__((unused))
