@@ -212,6 +212,33 @@ TEST(test_addr_variants)
     ASSERT_EQ(tmp102_init(&d, &mock_i2c, &cfg), TMP102_OK);
 }
 
+TEST(test_init_write_config_fail)
+{
+    /* read16(REG_CONFIG) succeeds (op 0), write16(REG_CONFIG) fails (op 1). */
+    mock_reset();
+    mock_fail_at = 1;
+    tmp102_t d;
+    tmp102_cfg_t cfg = { .addr = TMP102_ADDR_GND };
+    ASSERT_EQ(tmp102_init(&d, &mock_i2c, &cfg), TMP102_ERR_I2C);
+}
+
+TEST(test_shutdown_write_fail)
+{
+    /* After init (2 ops: read16=0, write16=1), shutdown reads config (op 2 ok)
+     * then writes config (op 3) — make that write fail. */
+    setup();
+    mock_fail_at = 3;
+    ASSERT_EQ(tmp102_shutdown(&dev), TMP102_ERR_I2C);
+}
+
+TEST(test_wake_write_fail)
+{
+    /* After init (2 ops), wake reads config (op 2 ok) then writes (op 3) — fail. */
+    setup();
+    mock_fail_at = 3;
+    ASSERT_EQ(tmp102_wake(&dev), TMP102_ERR_I2C);
+}
+
 TEST_MAIN("tmp102")
     RUN(test_init_ok);
     RUN(test_init_clears_shutdown);
@@ -229,4 +256,7 @@ TEST_MAIN("tmp102")
     RUN(test_wake_clears_bit);
     RUN(test_shutdown_i2c_fail);
     RUN(test_addr_variants);
+    RUN(test_init_write_config_fail);
+    RUN(test_shutdown_write_fail);
+    RUN(test_wake_write_fail);
 TEST_MAIN_END()
