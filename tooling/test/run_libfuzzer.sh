@@ -34,9 +34,9 @@ echo "Using: $CLANG_VER"
 
 # ── Colors ───────────────────────────────────────────────────────────
 RED='\033[0;31m'
-GRN='\033[0;32m'
-YEL='\033[0;33m'
-CYN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 PASS=0
@@ -76,12 +76,12 @@ run_libfuzzer() {
     local corpus="$CORPUS_DIR/$name"
 
     if [ ! -f "$full_harness" ]; then
-        echo -e "${YEL}SKIP${NC}: $name (no LibFuzzer harness)"
+        echo -e "${YELLOW}SKIP${NC}: $name (no LibFuzzer harness)"
         ((SKIP++)) || true
         return
     fi
     if [ ! -f "$full_src" ]; then
-        echo -e "${YEL}SKIP${NC}: $name (no source)"
+        echo -e "${YELLOW}SKIP${NC}: $name (no source)"
         ((SKIP++)) || true
         return
     fi
@@ -122,7 +122,7 @@ run_libfuzzer() {
     fi
 
     # ── Run LibFuzzer ────────────────────────────────────────────────
-    echo -ne "${CYN}FUZZ${NC}: $name (${MAX_TIME}s)... "
+    echo -ne "${CYAN}FUZZ${NC}: $name (${MAX_TIME}s)... "
 
     if "$out" "$corpus" \
         -max_total_time="$MAX_TIME" \
@@ -134,7 +134,7 @@ run_libfuzzer() {
         local execs=$(grep "stat::number_of_executed_units:" "$BUILD_DIR/fuzz_${name}.log" | sed 's/.*: //' || echo "?")
         local corpus_size=$(ls "$corpus" 2>/dev/null | wc -l)
 
-        echo -e "${GRN}PASS${NC} (cov: $cov, execs: $execs, corpus: $corpus_size)"
+        echo -e "${GREEN}PASS${NC} (cov: $cov, execs: $execs, corpus: $corpus_size)"
         ((PASS++)) || true
     else
         local exit_code=$?
@@ -168,7 +168,7 @@ done
 
 echo ""
 echo "=== Summary ==="
-echo -e "${GRN}PASS${NC}: $PASS  ${RED}FAIL${NC}: $FAIL  ${YEL}SKIP${NC}: $SKIP"
+echo -e "${GREEN}PASS${NC}: $PASS  ${RED}FAIL${NC}: $FAIL  ${YELLOW}SKIP${NC}: $SKIP"
 echo "Corpus saved in: $CORPUS_DIR"
 echo ""
 

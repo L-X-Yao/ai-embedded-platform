@@ -15,8 +15,8 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 RED='\033[0;31m'
-GRN='\033[0;32m'
-YEL='\033[0;33m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 declare -A EXTRA_SRCS
@@ -34,12 +34,12 @@ run_fuzz() {
     local out="$BUILD_DIR/fuzz_${name}"
 
     if [ ! -f "$fuzz_src" ]; then
-        echo -e "${YEL}SKIP${NC}: $name (no fuzz harness)"
+        echo -e "${YELLOW}SKIP${NC}: $name (no fuzz harness)"
         ((SKIP++)) || true
         return
     fi
     if [ ! -f "$wheel_src" ]; then
-        echo -e "${YEL}SKIP${NC}: $name (no source file)"
+        echo -e "${YELLOW}SKIP${NC}: $name (no source file)"
         ((SKIP++)) || true
         return
     fi
@@ -65,7 +65,7 @@ run_fuzz() {
 
     # Run with timeout
     if timeout "$TIMEOUT_SEC" "$out" > "$BUILD_DIR/run_${name}.log" 2>&1; then
-        echo -e "${GRN}PASS${NC}: $name — $(tail -1 "$BUILD_DIR/run_${name}.log")"
+        echo -e "${GREEN}PASS${NC}: $name — $(tail -1 "$BUILD_DIR/run_${name}.log")"
         ((PASS++)) || true
     else
         local exit_code=$?
@@ -113,7 +113,7 @@ done
 
 echo ""
 echo "=== Summary ==="
-echo -e "${GRN}PASS${NC}: $PASS  ${RED}FAIL${NC}: $FAIL  ${YEL}SKIP${NC}: $SKIP"
+echo -e "${GREEN}PASS${NC}: $PASS  ${RED}FAIL${NC}: $FAIL  ${YELLOW}SKIP${NC}: $SKIP"
 echo ""
 
 if [ "$FAIL" -gt 0 ]; then
