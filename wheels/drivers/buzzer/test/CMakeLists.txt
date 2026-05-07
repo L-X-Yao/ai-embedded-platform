@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_buzzer C)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(test_buzzer test_buzzer.c ../buzzer.c)
+target_include_directories(test_buzzer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_buzzer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+enable_testing()
+add_test(NAME buzzer_tests COMMAND test_buzzer)
+
+add_executable(test_null_buzzer test_null_buzzer.c ../buzzer.c)
+target_include_directories(test_null_buzzer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_buzzer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME buzzer_null_tests COMMAND test_null_buzzer)
