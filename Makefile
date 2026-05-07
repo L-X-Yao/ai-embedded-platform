@@ -46,7 +46,7 @@ help:
 	@echo "  arm-stack-audit   ARM per-function stack usage report"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  check             test + audit + doc drift (pre-push)"
+	@echo "  check             test + audit + coverage gate + doc drift (pre-push)"
 	@echo "  check-full        check + compile analysis + sanitizer"
 	@echo "  ship M=\"msg\"      check + commit + push"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
@@ -156,7 +156,7 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
 check-full:
 	bash tooling/test/test_all.sh --parallel && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
