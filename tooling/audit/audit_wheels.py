@@ -127,7 +127,6 @@ def chk_vendor_md(ctx, **_):
 
 
 def chk_cross_wheel_deps(ctx, **_):
-    deps = []
     pat = re.compile(r"\.\./\.\./\.\./(primitives|drivers|protocols|modules)/([a-z0-9_]+)/")
     deps = list({m[1] for m in pat.findall(ctx.test_cmake)})
     if not deps:
@@ -439,8 +438,10 @@ def chk_readme_todo_mismatch(ctx, **_):
     readme_l = ctx.readme.lower()
     if "known issues" not in readme_l:
         return None
-    claims_none = "none" in readme_l.split("known issues")[1][:100] or \
-                  "no known" in readme_l
+    section_start = readme_l.find("known issues")
+    next_section = readme_l.find("\n##", section_start + 1)
+    section_text = readme_l[section_start:next_section if next_section > 0 else section_start + 500]
+    claims_none = "none" in section_text or "no known" in readme_l
     if not claims_none:
         return None
     if any(tag in ctx.source for tag in ("TODO", "FIXME", "HACK", "XXX")):
@@ -825,16 +826,6 @@ def find_wheels():
     return wheels
 
 
-def read_readme(wheel_dir: Path) -> str:
-    """Return README.md text or empty string."""
-    return _cached_read(wheel_dir / "README.md")
-
-
-def is_vendor_wheel(wheel_dir: Path) -> bool:
-    """A vendor wheel has a vendor/ subdirectory."""
-    return (wheel_dir / "vendor").is_dir()
-
-
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
     """Detect cross-wheel deps from test/CMakeLists.txt paths like ../../<layer>/<name>/."""
     cmake = wheel_dir / "test" / "CMakeLists.txt"
@@ -1173,57 +1164,6 @@ def has_busy_wait_timeout(wheel_dir: Path) -> list:
     return unguarded
 
 
-def has_dev_t_naming(wheel_dir: Path, name: str) -> bool:
-    """Return True if wheel uses _dev_t for its main context (violation)."""
-    text = _cached_read(wheel_dir / f"{name}.h")
-    if not text:
-        return False
-    return f"{name}_dev_t" in text
-
-
-def has_plural_err_param(wheel_dir: Path, name: str) -> bool:
-    """Return True if wheel uses ERR_PARAMS (plural, violation)."""
-    text = _cached_read(wheel_dir / f"{name}.h")
-    return bool(text) and "ERR_PARAMS" in text
-
-
-def has_pragma_once(wheel_dir: Path, name: str) -> bool:
-    """Return True if wheel .h uses #pragma once (violation)."""
-    text = _cached_read(wheel_dir / f"{name}.h")
-    return bool(text) and "#pragma once" in text
-
-
-def has_spdx_header(wheel_dir: Path, name: str) -> bool:
-    """Return True if .h file has SPDX license identifier."""
-    text = _cached_read(wheel_dir / f"{name}.h")
-    return bool(text) and "SPDX-License-Identifier" in text
-
-
-def has_vsf_native_residual(wheel_dir: Path) -> bool:
-    """Return True if README still has 'Why not VSF native?' section."""
-    text = _cached_read(wheel_dir / "README.md")
-    return "why not vsf native" in text.lower()
-
-
-def has_why_self_written(wheel_dir: Path) -> bool:
-    """Return True if self-written wheel has 'Why self-written?' or equivalent section."""
-    if is_vendor_wheel(wheel_dir):
-        return True  # vendor wheels use "Why this upstream?" instead
-    text = _cached_read(wheel_dir / "README.md").lower()
-    return ("why self-written" in text or
-            "why not an open-source" in text or
-            "why not open-source" in text or
-            "why this upstream" in text)
-
-
-def has_status_format(wheel_dir: Path) -> bool:
-    """Return True if README uses '**Status:' (not '**STATUS:')."""
-    text = _cached_read(wheel_dir / "README.md")
-    if "**STATUS:" in text:
-        return False
-    return True
-
-
 def has_init_caller_must_lock(wheel_dir: Path, name: str) -> bool:
     """Return True if init/deinit/reset is tagged caller_must_lock (should be 'no')."""
     text = _cached_read(wheel_dir / f"{name}.h")
@@ -1277,16 +1217,6 @@ def has_instances_field(wheel_dir: Path, name: str) -> bool:
             if re.match(r'^Instances:\s*(multi|single)\s*$', stripped):
                 return True
     return False
-
-
-def has_isr_safe_annotation(wheel_dir: Path, name: str) -> bool:
-    """Check .h has @isr_safe annotation on at least one function (api-conventions §4.1).
-
-    Returns True if @isr_safe appears at least once, or if the wheel has no
-    ISR-callable candidates (pure protocol/module).
-    """
-    text = _cached_read(wheel_dir / f"{name}.h")
-    return not text or "@isr_safe" in text
 
 
 def has_config_h_placement(wheel_dir: Path, name: str) -> str:
@@ -1676,12 +1606,8 @@ def print_dep_graph(wheels):
     """Print wheel dependency graph in Mermaid format."""
     print("```mermaid")
     print("graph TD")
-    layer_style = {"primitives": ":::prim", "drivers": ":::drv",
-                   "protocols": ":::proto", "modules": ":::mod", "_draft": ":::draft"}
     for layer, name, path in wheels:
-        label = f"{name}"
-        style = layer_style.get(layer, "")
-        print(f"    {name}[\"{label} ({layer[0].upper()}{layer[1:3]})\"]")
+        print(f"    {name}[\"{name} ({layer[0].upper()}{layer[1:3]})\"]")
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
         deps = detect_cross_wheel_deps(wheel_dir)

@@ -87,6 +87,7 @@ def get_changed_wheels() -> set[tuple[str, str]]:
             capture_output=True, text=True, cwd=str(REPO),
         )
         if result.returncode != 0:
+            print("  NOTE: origin/main not available, using HEAD~1 (only last commit scanned)")
             result = subprocess.run(
                 ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
                 capture_output=True, text=True, cwd=str(REPO),

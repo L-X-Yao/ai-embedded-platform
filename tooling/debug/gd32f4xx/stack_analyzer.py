@@ -75,7 +75,7 @@ def parse_callgraph(elf: Path, objdump: str) -> dict[str, set[str]]:
     callgraph: dict[str, set[str]] = defaultdict(set)
     current: str | None = None
     func_hdr = re.compile(r"^[0-9a-fA-F]+\s+<([^>]+)>:\s*$")
-    call_re = re.compile(r"\b(?:bl|b)\s+[0-9a-fA-F]+\s+<([^>+]+)(?:\+0x[0-9a-fA-F]+)?>")
+    call_re = re.compile(r"\b(?:blx?|bx?)\s+[0-9a-fA-F]+\s+<([^>+]+)(?:\+0x[0-9a-fA-F]+)?>")
 
     for line in out.splitlines():
         m = func_hdr.match(line)

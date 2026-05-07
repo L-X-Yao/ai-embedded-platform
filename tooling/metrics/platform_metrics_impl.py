@@ -54,9 +54,14 @@ def collect(repo: Path) -> dict:
     make_targets = 0
     if makefile.exists():
         mk_text = makefile.read_text(encoding="utf-8")
-        phony = re.search(r'^\.PHONY:\s*(.+)$', mk_text, re.MULTILINE)
-        if phony:
-            make_targets = len(phony.group(1).split())
+        targets = set()
+        for line in mk_text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith('.PHONY'):
+                parts = stripped.split(':', 1)
+                if len(parts) > 1:
+                    targets.update(parts[1].split())
+        make_targets = len(targets)
 
     claude_lines = 0
     claude_md = repo / "CLAUDE.md"
