@@ -10,6 +10,52 @@
 #include "hw_model_ina219.h"
 #include "../ina219.h"
 #include <math.h>
+#include <string.h>
+
+/* ---------- fail-injectable mock for error-path tests ---------- */
+
+static bool fail_mock_enabled;
+static int  fail_mock_op_count;
+static int  fail_mock_fail_at;  /* -1 = never, else fail on this op index */
+
+static void fail_mock_reset(void)
+{
+    fail_mock_enabled  = false;
+    fail_mock_op_count = 0;
+    fail_mock_fail_at  = -1;
+}
+
+static bool fail_mock_should_fail(void)
+{
+    int n = fail_mock_op_count++;
+    if (fail_mock_fail_at >= 0 && n == fail_mock_fail_at) return true;
+    return false;
+}
+
+static bool fail_mock_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                  const uint8_t *buf, uint16_t len)
+{
+    (void)ctx; (void)dev_addr; (void)reg; (void)buf; (void)len;
+    if (fail_mock_should_fail()) return false;
+    return true;
+}
+
+static bool fail_mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                 uint8_t *buf, uint16_t len)
+{
+    (void)ctx; (void)dev_addr; (void)reg; (void)len;
+    if (fail_mock_should_fail()) return false;
+    /* Return zeros so the driver doesn't get garbage */
+    for (uint16_t i = 0; i < len; i++) buf[i] = 0;
+    return true;
+}
+
+static const ina219_i2c_t fail_i2c = {
+    .read_regs  = fail_mock_read_regs,
+    .write_regs = fail_mock_write_regs,
+    .delay_ms   = NULL,
+    .ctx        = NULL,
+};
 
 static ina219_model_t model;
 
@@ -184,6 +230,234 @@ TEST(test_shunt_registers_readonly)
     ASSERT_EQ(model.hw.regs[INA219_REG_SHUNT_V_H], orig_h);
 }
 
+/* --- current read tests --- */
+
+TEST(test_read_current)
+{
+    setup();
+    ina219_t dev;
+    ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                INA219_RANGE_32V, INA219_GAIN_320MV);
+
+    /* Set shunt to 10mV (1000 * 10uV) -> model computes current register */
+    ina219_model_set_shunt(&model, 1000);
+
+    float current_ma = 0.0f;
+    ina219_err_t err = ina219_read_current(&dev, &current_ma);
+    ASSERT_EQ(err, INA219_OK);
+    /* With 10mV shunt and 0.1 ohm -> 100 mA expected */
+    ASSERT_TRUE(current_ma > 0.0f);
+}
+
+TEST(test_read_current_null_dev)
+{
+    float ma;
+    ASSERT_EQ(ina219_read_current(NULL, &ma), INA219_ERR_PARAM);
+}
+
+TEST(test_read_current_null_out)
+{
+    setup();
+    ina219_t dev;
+    ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                INA219_RANGE_32V, INA219_GAIN_320MV);
+    ASSERT_EQ(ina219_read_current(&dev, NULL), INA219_ERR_PARAM);
+}
+
+/* --- power read tests --- */
+
+TEST(test_read_power)
+{
+    setup();
+    ina219_t dev;
+    ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                INA219_RANGE_32V, INA219_GAIN_320MV);
+
+    /* Set bus voltage 12V, shunt 10mV -> power register populated */
+    ina219_model_set_bus(&model, 3000);
+    ina219_model_set_shunt(&model, 1000);
+
+    float power_mw = 0.0f;
+    ina219_err_t err = ina219_read_power(&dev, &power_mw);
+    ASSERT_EQ(err, INA219_OK);
+    /* Power should be positive */
+    ASSERT_TRUE(power_mw >= 0.0f);
+}
+
+TEST(test_read_power_null_dev)
+{
+    float mw;
+    ASSERT_EQ(ina219_read_power(NULL, &mw), INA219_ERR_PARAM);
+}
+
+TEST(test_read_power_null_out)
+{
+    setup();
+    ina219_t dev;
+    ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                INA219_RANGE_32V, INA219_GAIN_320MV);
+    ASSERT_EQ(ina219_read_power(&dev, NULL), INA219_ERR_PARAM);
+}
+
+/* --- init parameter guard tests --- */
+
+TEST(test_init_null_dev)
+{
+    ASSERT_EQ(ina219_init(NULL, &model_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+}
+
+TEST(test_init_null_i2c)
+{
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, NULL, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+}
+
+TEST(test_init_missing_read_regs)
+{
+    /* write_regs present but read_regs NULL — must reject */
+    ina219_i2c_t no_read = {
+        .read_regs  = NULL,
+        .write_regs = fail_mock_write_regs,
+        .delay_ms   = NULL,
+        .ctx        = NULL,
+    };
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &no_read, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+}
+
+TEST(test_init_bad_shunt)
+{
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &model_i2c, 0x40, 0.0f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_init(&dev, &model_i2c, 0x40, -1.0f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+}
+
+TEST(test_init_bad_range)
+{
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                           (ina219_bus_range_t)2, INA219_GAIN_320MV),
+              INA219_ERR_PARAM);
+}
+
+TEST(test_init_bad_gain)
+{
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &model_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, (ina219_gain_t)4),
+              INA219_ERR_PARAM);
+}
+
+/* --- reset null guard --- */
+
+TEST(test_reset_null_dev)
+{
+    ASSERT_EQ(ina219_reset(NULL), INA219_ERR_PARAM);
+}
+
+/* --- I2C error injection using fail mock --- */
+
+TEST(test_init_config_write_fail)
+{
+    /* First write_regs call (config register) fails */
+    fail_mock_reset();
+    fail_mock_fail_at = 0;
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_I2C);
+}
+
+TEST(test_init_cal_write_fail)
+{
+    /* Second write_regs call (calibration register) fails */
+    fail_mock_reset();
+    fail_mock_fail_at = 1;
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_ERR_I2C);
+}
+
+TEST(test_read_bus_voltage_i2c_fail)
+{
+    /* Init succeeds, then read fails */
+    fail_mock_reset();
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_OK);
+
+    fail_mock_reset();
+    fail_mock_fail_at = 0;
+    float v;
+    ASSERT_EQ(ina219_read_bus_voltage(&dev, &v), INA219_ERR_I2C);
+}
+
+TEST(test_read_shunt_voltage_i2c_fail)
+{
+    fail_mock_reset();
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_OK);
+
+    fail_mock_reset();
+    fail_mock_fail_at = 0;
+    float mv;
+    ASSERT_EQ(ina219_read_shunt_voltage(&dev, &mv), INA219_ERR_I2C);
+}
+
+TEST(test_read_current_i2c_fail)
+{
+    fail_mock_reset();
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_OK);
+
+    fail_mock_reset();
+    fail_mock_fail_at = 0;
+    float ma;
+    ASSERT_EQ(ina219_read_current(&dev, &ma), INA219_ERR_I2C);
+}
+
+TEST(test_read_power_i2c_fail)
+{
+    fail_mock_reset();
+    ina219_t dev;
+    ASSERT_EQ(ina219_init(&dev, &fail_i2c, 0x40, 0.1f,
+                           INA219_RANGE_32V, INA219_GAIN_320MV),
+              INA219_OK);
+
+    fail_mock_reset();
+    fail_mock_fail_at = 0;
+    float mw;
+    ASSERT_EQ(ina219_read_power(&dev, &mw), INA219_ERR_I2C);
+}
+
+TEST(test_read_bus_voltage_null_dev)
+{
+    float v;
+    ASSERT_EQ(ina219_read_bus_voltage(NULL, &v), INA219_ERR_PARAM);
+}
+
+TEST(test_read_shunt_voltage_null_dev)
+{
+    float v;
+    ASSERT_EQ(ina219_read_shunt_voltage(NULL, &v), INA219_ERR_PARAM);
+}
+
 TEST_MAIN("ina219 hardware model")
     RUN(test_init_success);
     RUN(test_init_writes_config);
@@ -195,4 +469,25 @@ TEST_MAIN("ina219 hardware model")
     RUN(test_read_shunt_voltage_negative);
     RUN(test_software_reset);
     RUN(test_shunt_registers_readonly);
+    RUN(test_read_current);
+    RUN(test_read_current_null_dev);
+    RUN(test_read_current_null_out);
+    RUN(test_read_power);
+    RUN(test_read_power_null_dev);
+    RUN(test_read_power_null_out);
+    RUN(test_init_null_dev);
+    RUN(test_init_null_i2c);
+    RUN(test_init_missing_read_regs);
+    RUN(test_init_bad_shunt);
+    RUN(test_init_bad_range);
+    RUN(test_init_bad_gain);
+    RUN(test_reset_null_dev);
+    RUN(test_init_config_write_fail);
+    RUN(test_init_cal_write_fail);
+    RUN(test_read_bus_voltage_i2c_fail);
+    RUN(test_read_shunt_voltage_i2c_fail);
+    RUN(test_read_current_i2c_fail);
+    RUN(test_read_power_i2c_fail);
+    RUN(test_read_bus_voltage_null_dev);
+    RUN(test_read_shunt_voltage_null_dev);
 TEST_MAIN_END()
