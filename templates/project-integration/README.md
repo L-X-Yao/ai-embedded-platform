@@ -31,7 +31,10 @@ cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md
 #   │   └── common/             shared utilities
 #   ├── docs/                   project-specific docs (optional)
 #   ├── third_party/            vendor SDK headers if needed
-#   └── test/                   host-side unit tests (optional)
+#   └── test/
+#       └── <suite_name>/       each test suite in its own subdir
+#           ├── CMakeLists.txt  (test_all.sh discovers this pattern)
+#           └── test_<name>.c
 
 # 4. Sync wheel candidates to WISHLIST
 # For each candidate in CLAUDE.md's wheel table, ensure it appears in
