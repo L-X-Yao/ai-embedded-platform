@@ -61,6 +61,40 @@ static int tests_fail = 0;
         tests_fail++; return; \
     } } while(0)
 
+#define ASSERT_NEAR_D(a, b, eps) do { \
+    double _a = (double)(a), _b = (double)(b), _e = (double)(eps); \
+    if ((_a - _b) > _e || (_b - _a) > _e) { \
+        printf("  FAIL %s:%d: %g not near %g (eps=%g)\n", \
+               __func__, __LINE__, _a, _b, _e); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_MEMEQ_N(p, q, n) do { \
+    const unsigned char *_p = (const unsigned char *)(p); \
+    const unsigned char *_q = (const unsigned char *)(q); \
+    size_t _n = (size_t)(n); \
+    size_t _i; \
+    for (_i = 0; _i < _n; _i++) { \
+        if (_p[_i] != _q[_i]) { \
+            printf("  FAIL %s:%d: byte[%zu] 0x%02x != 0x%02x\n", \
+                   __func__, __LINE__, _i, _p[_i], _q[_i]); \
+            tests_fail++; return; \
+        } \
+    } } while(0)
+
+#define ASSERT_NOT_NULL(ptr) do { \
+    if ((ptr) == NULL) { \
+        printf("  FAIL %s:%d: expected non-NULL\n", __func__, __LINE__); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_STR_EQ(a, b) do { \
+    const char *_a = (const char *)(a), *_b = (const char *)(b); \
+    if (strcmp(_a, _b) != 0) { \
+        printf("  FAIL %s:%d: \"%s\" != \"%s\"\n", __func__, __LINE__, _a, _b); \
+        tests_fail++; return; \
+    } } while(0)
+
 #define RUN(fn) do { \
     int _pf = tests_fail; \
     fn(); \
