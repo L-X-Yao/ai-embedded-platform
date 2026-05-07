@@ -281,6 +281,94 @@ TEST(test_humidity_calib_i2c_fail)
     ASSERT_EQ(e, BME280_ERR_I2C);
 }
 
+TEST(test_init_config_write_fail)
+{
+    /* init sequence: read_regs(ID)=op0, read_regs(CALIB00)=op1,
+     * read_regs(CALIB_H2)=op2, write_reg(CONFIG)=op3 → fail. */
+    mock_reset();
+    mock_fail_at = 3;
+    bme280_t d;
+    bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
+TEST(test_init_ctrl_hum_write_fail)
+{
+    /* init sequence: op0..op3 pass, write_reg(CTRL_HUM)=op4 → fail. */
+    mock_reset();
+    mock_fail_at = 4;
+    bme280_t d;
+    bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
+TEST(test_read_ctrl_meas_write_fail)
+{
+    /* After init (5 ops: op0-op4), in bme280_read:
+     * write(CTRL_HUM)=op5(ok), write(CTRL_MEAS)=op6 → fail. */
+    setup();
+    mock_fail_at = 6;
+    bme280_data_t data;
+    bme280_err_t e = bme280_read(&dev, &data);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
+TEST(test_read_status_i2c_fail)
+{
+    /* After init (op0-op4), in read: write(CTRL_HUM)=op5(ok),
+     * write(CTRL_MEAS)=op6(ok), read(STATUS)=op7 → fail. */
+    setup();
+    mock_fail_at = 7;
+    bme280_data_t data;
+    bme280_err_t e = bme280_read(&dev, &data);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
+TEST(test_read_data_i2c_fail)
+{
+    /* After init (op0-op4), in read: write(CTRL_HUM)=op5(ok),
+     * write(CTRL_MEAS)=op6(ok), read(STATUS)=op7(returns 0x00 so loop breaks),
+     * read(PRESS_MSB x8)=op8 → fail. */
+    setup();
+    mock_regs[0xF3] = 0x00; /* STATUS: not measuring → break immediately */
+    mock_fail_at = 8;
+    bme280_data_t data;
+    bme280_err_t e = bme280_read(&dev, &data);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
+TEST(test_pressure_var1_zero)
+{
+    /* dig_p1=0 forces var1==0 in compensate_pressure → returns 0 (pressure=0).
+     * Zero out dig_p1 bytes (mock_regs[0x8E..0x8F] = 0) before init. */
+    mock_reset();
+    mock_regs[0x8E] = 0x00;
+    mock_regs[0x8F] = 0x00; /* dig_p1 = 0 */
+    bme280_t d;
+    bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
+    ASSERT_EQ(e, BME280_OK);
+    ASSERT_EQ(d.calib.dig_p1, 0);
+
+    plant_adc(415148, 519888, 28000);
+    bme280_data_t data;
+    e = bme280_read(&d, &data);
+    ASSERT_EQ(e, BME280_OK);
+    ASSERT_NEAR(data.pressure_pa, 0.0f, 1.0f); /* var1==0 → returns 0 */
+}
+
+TEST(test_pressure_large_path)
+{
+    /* adc_p=0 forces p >= 0x80000000, triggering the large-p branch (p/var1)*2.
+     * Verified by calculation: with default calib and adc_p=0, p=0xBACDAA31. */
+    setup();
+    plant_adc(0, 519888, 28000);
+    bme280_data_t data;
+    bme280_err_t e = bme280_read(&dev, &data);
+    ASSERT_EQ(e, BME280_OK);
+    /* pressure will be some large value — just verify no crash and not NaN */
+    ASSERT_TRUE(data.pressure_pa == data.pressure_pa);
+}
+
 TEST_MAIN("bme280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -301,4 +389,11 @@ TEST_MAIN("bme280")
     RUN(test_set_oversampling_invalid);
     RUN(test_init_invalid_oversampling);
     RUN(test_humidity_calib_i2c_fail);
+    RUN(test_init_config_write_fail);
+    RUN(test_init_ctrl_hum_write_fail);
+    RUN(test_read_ctrl_meas_write_fail);
+    RUN(test_read_status_i2c_fail);
+    RUN(test_read_data_i2c_fail);
+    RUN(test_pressure_var1_zero);
+    RUN(test_pressure_large_path);
 TEST_MAIN_END()

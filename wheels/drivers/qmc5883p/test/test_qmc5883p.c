@@ -270,6 +270,21 @@ TEST(test_reinit)
     ASSERT_EQ(mock_regs[0x0A], 0x0F);
 }
 
+TEST(test_read_data_i2c_fail)
+{
+    /* STATUS read succeeds (DRDY set), bulk XYZ read fails. */
+    mock_reset();
+    qmc5883p_init(&mock_i2c);
+    /* init consumed 6 ops (write_reg x5, read_regs x1).
+     * In read: op[6]=STATUS(ok), op[7]=XYZ read → fail. */
+    mock_fail_at = 7;
+    mock_regs[0x09] = 0x01; /* DRDY set so STATUS read passes the check */
+
+    qmc5883p_data_t d;
+    qmc5883p_err_t e = qmc5883p_read(&mock_i2c, &d);
+    ASSERT_EQ(e, QMC5883P_ERR_I2C);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("qmc5883p")
@@ -293,4 +308,5 @@ TEST_MAIN("qmc5883p")
     RUN(test_read_zero);
     RUN(test_null_safety);
     RUN(test_reinit);
+    RUN(test_read_data_i2c_fail);
 TEST_MAIN_END()
