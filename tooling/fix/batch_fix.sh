@@ -146,8 +146,11 @@ for wd in "${WHEEL_DIRS[@]}"; do
         changed=false
         for f in "${files[@]}"; do
             if $DRY_RUN; then
-                if sed -n "${SED_EXPR}p" "$f" | grep -q .; then
+                if diff <(cat "$f") <(sed "$SED_EXPR" "$f") > /dev/null 2>&1; then
+                    : # no change
+                else
                     echo "  [would fix] $(basename "$f") in $name"
+                    diff <(cat "$f") <(sed "$SED_EXPR" "$f") || true
                     changed=true
                 fi
             else

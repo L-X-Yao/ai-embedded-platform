@@ -20,6 +20,16 @@
 
 set -euo pipefail
 
+# Escape a string for embedding in a JSON string literal.
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"    # backslash first
+    s="${s//\"/\\\"}"    # double-quote
+    s="${s//$'\n'/\\n}"  # newline
+    s="${s//$'\t'/\\t}"  # tab
+    printf '%s' "$s"
+}
+
 usage() {
     cat <<EOF
 Usage: $0 --conf <path> [build|flash|check [sec]|all]
@@ -118,9 +128,9 @@ do_build() {
         return 0
     fi
     echo "=== BUILD ==="
-    $BUILD_CMD
+    eval "$BUILD_CMD"
     if [[ -n "$COPY_CMD" ]]; then
-        $COPY_CMD
+        eval "$COPY_CMD"
     fi
 
     # Optional size check (needs ELF_PATH or BIN_PATH→.elf)
@@ -239,9 +249,23 @@ do_verdict() {
     rdy_count=$(echo "$log" | grep -ciE 'Air RDY|RDY detected' || true)
     online_count=$(echo "$log" | grep -ciE '"online"' || true)
 
-    local fault_count hardfault_lines
+    local fault_count hardfault_lines fault_lines_json
     fault_count=$(echo "$log" | grep -ciE 'HardFault|BusFault|MemManage|UsageFault' || true)
     hardfault_lines=$(echo "$log" | grep -iE 'HardFault|BusFault|MemManage|UsageFault' | head -3 || true)
+
+    # Build fault_lines JSON array with proper escaping before the heredoc
+    if [[ -z "$hardfault_lines" ]]; then
+        fault_lines_json="[]"
+    else
+        fault_lines_json="["
+        first=1
+        while IFS= read -r fl; do
+            [[ $first -eq 0 ]] && fault_lines_json+=","
+            fault_lines_json+="\"$(json_escape "$fl")\""
+            first=0
+        done <<< "$hardfault_lines"
+        fault_lines_json+="]"
+    fi
 
     cat > "$json_file" << JSONEOF
 {
@@ -258,7 +282,7 @@ do_verdict() {
     "air_rdy": $rdy_count,
     "online_msg": $online_count
   },
-  "fault_lines": $(if [[ -z "$hardfault_lines" ]]; then echo '[]'; else echo '["'"$(echo "$hardfault_lines" | sed 's/"/\\"/g' | paste -sd'","' -)"'"]'; fi)
+  "fault_lines": $fault_lines_json
 }
 JSONEOF
     echo ""
