@@ -113,23 +113,26 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Cleanup trap — always restore originals
+# Cleanup trap — always restore originals and remove all temp dirs
 # ---------------------------------------------------------------------------
+
+# Single parent temp dir for ALL mutation work (backups + build dirs).
+# Cleaned up by the trap regardless of how the script exits.
+MUT_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/mutation_XXXXXX")
 
 BACKUP_FILE=""
 ORIGINAL_FILE=""
 TMP_BUILD_DIR=""
 
 cleanup() {
+    # Restore the source file if we were interrupted mid-mutation
     if [[ -n "$BACKUP_FILE" && -f "$BACKUP_FILE" && -n "$ORIGINAL_FILE" ]]; then
         cp "$BACKUP_FILE" "$ORIGINAL_FILE"
-        rm -f "$BACKUP_FILE"
     fi
-    if [[ -n "$TMP_BUILD_DIR" && -d "$TMP_BUILD_DIR" ]]; then
-        rm -rf "$TMP_BUILD_DIR"
-    fi
+    # Remove the entire parent temp dir (covers all build dirs and backups)
+    rm -rf "$MUT_TMPDIR"
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -286,7 +289,7 @@ for entry in "${WHEELS[@]}"; do
     fi
 
     # Verify baseline: the test must pass unmutated
-    TMP_BUILD_DIR=$(mktemp -d "/tmp/mutation_${name}_XXXXXX")
+    TMP_BUILD_DIR=$(mktemp -d "$MUT_TMPDIR/build_${name}_XXXXXX")
     if ! build_test "$test_dir" "$TMP_BUILD_DIR"; then
         echo -e "  ${YELLOW}SKIP${NC}  ${layer}/${name}  (baseline build failed)"
         RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "SKIP (build fail)")")
@@ -307,7 +310,7 @@ for entry in "${WHEELS[@]}"; do
     echo -e "  ${CYAN}TEST${NC}  ${layer}/${name}"
 
     # Back up the original source
-    BACKUP_FILE=$(mktemp "/tmp/${name}_backup_XXXXXX.c")
+    BACKUP_FILE=$(mktemp "$MUT_TMPDIR/${name}_backup_XXXXXX.c")
     ORIGINAL_FILE="$src_file"
     cp "$src_file" "$BACKUP_FILE"
 
@@ -362,7 +365,7 @@ for entry in "${WHEELS[@]}"; do
                 continue
             fi
 
-            TMP_BUILD_DIR=$(mktemp -d "/tmp/mutation_${name}_XXXXXX")
+            TMP_BUILD_DIR=$(mktemp -d "$MUT_TMPDIR/build_${name}_XXXXXX")
 
             if ! build_test "$test_dir" "$TMP_BUILD_DIR"; then
                 build_fail=$((build_fail + 1))
