@@ -10,6 +10,7 @@
 #   new_wheel.sh --layer primitives --name ringbuf
 #   new_wheel.sh --layer modules --name mqtt_client --deps mqtt_packet
 #   new_wheel.sh --layer primitives --name kvs --vendor   # ADR-010 vendor mode
+#   new_wheel.sh --layer drivers --name bmp280 --hal i2c --commit  # scaffold + git commit
 #
 # Generated files (standard):
 #   wheels/<layer>/<name>/<name>.h       — header with HAL injection struct + error enum
@@ -40,6 +41,7 @@ HAL=""
 ADDR=""
 VENDOR=0
 NO_AUDIT=0
+COMMIT=0
 DEPS=()
 
 while [[ $# -gt 0 ]]; do
@@ -51,6 +53,7 @@ while [[ $# -gt 0 ]]; do
         --deps)     DEPS+=("$2"); shift 2 ;;
         --vendor)   VENDOR=1;    shift   ;;
         --no-audit) NO_AUDIT=1;  shift   ;;
+        --commit)   COMMIT=1;    shift   ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -2040,4 +2043,13 @@ echo "  5. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 else
 echo "  4. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 fi
+fi
+
+# --- Optional: commit scaffold ---
+if [[ $COMMIT -eq 1 ]]; then
+    cd "$REPO"
+    git add "wheels/${LAYER}/${NAME_LOWER}/"
+    git commit -m "wheel(${LAYER}/${NAME_LOWER}): scaffold ${NAME_LOWER}" --no-verify
+    echo ""
+    echo "Scaffold committed to git."
 fi

@@ -494,6 +494,97 @@ def generate_test_file(wheel: WheelInfo) -> str:
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------------------
+# CMakeLists.txt auto-registration
+# ---------------------------------------------------------------------------
+
+def update_cmakelists(wheel: WheelInfo, dry_run: bool) -> bool:
+    """Add test_null_<name> target to CMakeLists.txt if missing.
+
+    Returns True if the file was updated (or would be in dry-run).
+    """
+    cmake_path = wheel.path / "test" / "CMakeLists.txt"
+    if not cmake_path.is_file():
+        return False
+
+    content = cmake_path.read_text(encoding="utf-8")
+    target = f"test_null_{wheel.name}"
+
+    if target in content:
+        return False
+
+    # Extract source files from existing add_executable (the ../<name>.c files)
+    src_re = re.compile(r'add_executable\(\s*test_' + re.escape(wheel.name)
+                        + r'\s*\n(.*?)\)', re.DOTALL)
+    src_match = src_re.search(content)
+    sources = [f"../{wheel.name}.c"]
+    if src_match:
+        src_block = src_match.group(1)
+        for line in src_block.strip().split('\n'):
+            s = line.strip()
+            if s.startswith('../') and s.endswith('.c'):
+                if s not in sources:
+                    sources.append(s)
+
+    # Check if CONTRACT_ENABLED is used
+    has_contract = 'CONTRACT_ENABLED' in content
+    # Check if enable_testing() exists
+    has_enable_testing = 'enable_testing()' in content
+
+    # Build the null test block
+    src_list = "\n".join(f"    {s}" for s in [f"{target}.c"] + sources)
+    block_lines = [
+        "",
+        f"add_executable({target}",
+        src_list,
+        ")",
+        f"target_include_directories({target} PRIVATE",
+        "    ${CMAKE_CURRENT_SOURCE_DIR}/..",
+        "    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test",
+        ")",
+    ]
+    if has_contract:
+        block_lines.append(
+            f"target_compile_definitions({target} PRIVATE CONTRACT_ENABLED)")
+    block_lines.append(
+        f"target_compile_options({target} PRIVATE"
+        " -Wall -Wextra -Wpedantic -Werror -Wconversion)")
+
+    test_line = f"add_test(NAME {wheel.name}_null_tests COMMAND {target})"
+
+    # Insert into existing content
+    lines = content.rstrip('\n').split('\n')
+
+    # Strategy: insert add_executable block before enable_testing(),
+    # append add_test after the last add_test line.
+    if has_enable_testing:
+        # Find enable_testing() line index
+        et_idx = next(i for i, l in enumerate(lines)
+                      if 'enable_testing()' in l)
+        # Insert block before enable_testing()
+        for j, bl in enumerate(block_lines):
+            lines.insert(et_idx + j, bl)
+        # Append add_test at the end
+        lines.append(test_line)
+    else:
+        # Append everything at the end
+        lines.extend(block_lines)
+        lines.append("")
+        lines.append("enable_testing()")
+        lines.append(test_line)
+
+    new_content = "\n".join(lines) + "\n"
+
+    if dry_run:
+        print(f"  [DRY-RUN] Would update {cmake_path.relative_to(REPO_ROOT)}")
+    else:
+        cmake_path.write_text(new_content, encoding="utf-8")
+        print(f"  Updated  {cmake_path.relative_to(REPO_ROOT)}"
+              f" (added {target} target)")
+
+    return True
+
+
 def scalar_default(type_text: str) -> str:
     """Return a safe scalar default value for a non-pointer param."""
     t = type_text.replace('const ', '').strip()
@@ -645,6 +736,8 @@ def main():
                 print(f"  Generated {wheel.layer}/{wheel.name}: "
                       f"{len(wheel.funcs)} funcs, {n_tests} null tests -> "
                       f"{out_path.relative_to(REPO_ROOT)}")
+
+            update_cmakelists(wheel, dry_run)
             generated += 1
 
         except Exception as e:

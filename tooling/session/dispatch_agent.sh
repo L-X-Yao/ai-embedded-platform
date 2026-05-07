@@ -196,7 +196,19 @@ if $MERGE_ALL; then
         fi
 
         echo -e "  ${CYAN}MERGE${NC} $b  ($commits commits)"
-        if git merge --squash "$b" > /dev/null 2>&1; then
+        merge_output=$(git merge --squash "$b" 2>&1)
+        merge_rc=$?
+        if [[ $merge_rc -ne 0 ]] && echo "$merge_output" | grep -q "untracked working tree files would be overwritten"; then
+            # Scaffold files on main block the merge — remove them and retry
+            untracked=$(echo "$merge_output" | grep $'^\t' | sed 's/^\t//')
+            for f in $untracked; do
+                [[ -f "$f" ]] && rm -f "$f"
+            done
+            echo -e "  ${YELLOW}  RETRY${NC}  removed untracked scaffold files blocking merge"
+            merge_output=$(git merge --squash "$b" 2>&1)
+            merge_rc=$?
+        fi
+        if [[ $merge_rc -eq 0 ]]; then
             summary=$(git log main.."$b" --oneline | head -1 | sed 's/^[a-f0-9]* //')
             git commit -m "$summary" > /dev/null 2>&1
             echo -e "  ${GREEN}  OK${NC}  → $summary"
