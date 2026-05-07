@@ -5,6 +5,7 @@
 #   coverage_scan.sh                  # scan all, show sub-80%
 #   coverage_scan.sh --threshold 90   # custom threshold
 #   coverage_scan.sh --all            # show all wheels sorted
+#   coverage_scan.sh --gate           # exit 1 if any wheel < threshold (for CI)
 #
 # Depends on coverage_wheel.sh --machine (gcov-tool merge for accuracy).
 
@@ -14,11 +15,13 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 SCRIPT="$REPO/tooling/test/coverage_wheel.sh"
 THRESHOLD=80
 SHOW_ALL=0
+GATE=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --threshold) THRESHOLD="$2"; shift 2 ;;
         --all)       SHOW_ALL=1; shift ;;
+        --gate)      GATE=1; shift ;;
         *)           echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
@@ -70,4 +73,10 @@ if [[ ${#results[@]} -gt 0 ]]; then
     printf '%s\n' "${results[@]}" | sort -n
 else
     echo "  All wheels at or above ${THRESHOLD}% coverage."
+fi
+
+if [[ $GATE -eq 1 && $below -gt 0 ]]; then
+    echo ""
+    echo "FAIL: $below wheel(s) below ${THRESHOLD}% coverage threshold."
+    exit 1
 fi
