@@ -167,6 +167,72 @@ TEST(test_realtime_value)
     ASSERT_EQ(mock_regs[0x02], 0x00);
 }
 
+/* ---------- additional I2C failure paths ---------- */
+
+/* drv2605_init: write to MODE register fails (op 1, after status read) */
+TEST(test_init_mode_write_fail)
+{
+    mock_reset();
+    mock_fail_at = 1; /* op 0 = read STATUS (ok), op 1 = write MODE (fail) */
+    drv2605_t d;
+    drv2605_err_t e = drv2605_init(&d, &mock_i2c);
+    ASSERT_EQ(e, DRV2605_ERR_I2C);
+}
+
+/* drv2605_init: write to a waveform slot fails during clear loop */
+TEST(test_init_waveform_clear_fail)
+{
+    mock_reset();
+    mock_fail_at = 2; /* op 2 = first waveform slot clear write */
+    drv2605_t d;
+    drv2605_err_t e = drv2605_init(&d, &mock_i2c);
+    ASSERT_EQ(e, DRV2605_ERR_I2C);
+}
+
+/* drv2605_set_actuator: invalid type value rejected */
+TEST(test_set_actuator_invalid_type)
+{
+    setup();
+    drv2605_err_t e = drv2605_set_actuator(&dev, (drv2605_actuator_t)2);
+    ASSERT_EQ(e, DRV2605_ERR_PARAM);
+}
+
+/* drv2605_set_actuator: write to FEEDBACK register fails (read succeeds) */
+TEST(test_set_actuator_write_fail)
+{
+    setup();
+    /* After setup(): mock_op_count == 10 (1 read + 1 write_mode + 8 waveform writes).
+     * set_actuator does: op 10 = read FEEDBACK (ok), op 11 = write FEEDBACK (fail). */
+    mock_fail_at = 11;
+    drv2605_err_t e = drv2605_set_actuator(&dev, DRV2605_ACTUATOR_LRA);
+    ASSERT_EQ(e, DRV2605_ERR_I2C);
+}
+
+/* drv2605_set_waveform: I2C write fails */
+TEST(test_set_waveform_i2c_fail)
+{
+    setup();
+    mock_fail_next = 1;
+    drv2605_err_t e = drv2605_set_waveform(&dev, 0, 47);
+    ASSERT_EQ(e, DRV2605_ERR_I2C);
+}
+
+/* drv2605_stop: I2C write fails */
+TEST(test_stop_i2c_fail)
+{
+    setup();
+    mock_fail_next = 1;
+    ASSERT_EQ(drv2605_stop(&dev), DRV2605_ERR_I2C);
+}
+
+/* drv2605_set_realtime_value: I2C write fails */
+TEST(test_realtime_value_i2c_fail)
+{
+    setup();
+    mock_fail_next = 1;
+    ASSERT_EQ(drv2605_set_realtime_value(&dev, 0x40), DRV2605_ERR_I2C);
+}
+
 TEST_MAIN("drv2605")
     RUN(test_init_ok);
     RUN(test_init_drv2605_non_l);
@@ -181,4 +247,11 @@ TEST_MAIN("drv2605")
     RUN(test_go_and_stop);
     RUN(test_go_i2c_fail);
     RUN(test_realtime_value);
+    RUN(test_init_mode_write_fail);
+    RUN(test_init_waveform_clear_fail);
+    RUN(test_set_actuator_invalid_type);
+    RUN(test_set_actuator_write_fail);
+    RUN(test_set_waveform_i2c_fail);
+    RUN(test_stop_i2c_fail);
+    RUN(test_realtime_value_i2c_fail);
 TEST_MAIN_END()
