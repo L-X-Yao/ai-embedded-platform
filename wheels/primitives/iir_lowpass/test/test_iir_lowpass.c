@@ -192,6 +192,18 @@ TEST(test_feed_null)
     ASSERT_TRUE(near(iir_lowpass_feed(NULL, 1.0f), 0.0f, 1e-9f));
 }
 
+TEST(test_reset_null)
+{
+    /* iir_lowpass_reset(NULL) must not crash and return silently */
+    iir_lowpass_reset(NULL);
+    ASSERT_TRUE(1); /* reached here without crash */
+}
+
+TEST(test_set_alpha_null)
+{
+    ASSERT_EQ(iir_lowpass_set_alpha(NULL, 0.5f), IIR_LOWPASS_ERR_PARAM);
+}
+
 TEST(test_alpha_from_rc)
 {
     /* dt=0.01s, rc=0.1s → alpha = 0.01/0.11 ≈ 0.09090... */
@@ -249,6 +261,8 @@ TEST_MAIN("iir_lowpass")
     RUN(test_set_alpha_invalid);
     RUN(test_get_null);
     RUN(test_feed_null);
+    RUN(test_reset_null);
+    RUN(test_set_alpha_null);
     RUN(test_alpha_from_rc);
     RUN(test_alpha_from_rc_invalid);
     RUN(test_feed_nan_propagates);
