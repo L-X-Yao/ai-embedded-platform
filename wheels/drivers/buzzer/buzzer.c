@@ -65,7 +65,7 @@ buzzer_err_t buzzer_init(buzzer_t *dev, const buzzer_pwm_t *pwm)
 buzzer_err_t buzzer_tone(buzzer_t *dev, uint16_t freq_hz,
                          uint16_t duration_ms)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return BUZZER_ERR_PARAM;
 
     if (freq_hz == 0) {
@@ -90,7 +90,7 @@ buzzer_err_t buzzer_tone(buzzer_t *dev, uint16_t freq_hz,
 
 buzzer_err_t buzzer_off(buzzer_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return BUZZER_ERR_PARAM;
 
     dev->pwm->set_freq(dev->pwm->ctx, 0);
@@ -102,7 +102,7 @@ buzzer_err_t buzzer_off(buzzer_t *dev)
 buzzer_err_t buzzer_play(buzzer_t *dev, const buzzer_note_t *melody,
                          uint16_t count)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return BUZZER_ERR_PARAM;
     if (!melody || count == 0)
         return BUZZER_ERR_PARAM;
@@ -133,7 +133,7 @@ buzzer_err_t buzzer_play(buzzer_t *dev, const buzzer_note_t *melody,
 buzzer_err_t buzzer_beep(buzzer_t *dev, uint16_t count,
                          uint16_t on_ms, uint16_t off_ms)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return BUZZER_ERR_PARAM;
     if (count == 0)
         return BUZZER_ERR_PARAM;

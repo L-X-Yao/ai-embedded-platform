@@ -143,7 +143,7 @@ aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c)
 
 aht20_err_t aht20_read(aht20_t *dev, aht20_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return AHT20_ERR_PARAM;
     }
@@ -203,7 +203,7 @@ aht20_err_t aht20_read(aht20_t *dev, aht20_data_t *out)
 
 aht20_err_t aht20_reset(aht20_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return AHT20_ERR_PARAM;
     }
