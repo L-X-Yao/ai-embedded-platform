@@ -57,7 +57,7 @@ audit_wheels.py 的 57 项检查用正则匹配，适合结构/规范类检查�
 |------|------|------|
 | 自动生成 | NULL 参数、sentinel 边界 | gen_null_tests.py / gen_sentinel_tests.py |
 | 手写 | 单元测试、属性测试、CBMC 验证 | 人/AI 针对 wheel 语义编写 |
-| 框架辅助 | 属性测试随机输入、故障注入 | property_test.h / fault_inject.h |
+| 框架辅助 | 属性测试随机输入 | property_test.h |
 
 自动生成覆盖**机械性**检查（每个指针参数传 NULL、每个输出缓冲区检查边界），手写覆盖**语义性**检查（编解码对称性、状态机不变式）。
 
@@ -174,7 +174,6 @@ tooling/
 │   ├── test_harness.h              统一测试宏（TEST / RUN / ASSERT_*）
 │   ├── property_test.h             属性测试（PROPERTY / ARBI_* / PROP_ASSERT_*）
 │   ├── contract.h                  契约宏（REQUIRE / ENSURE / INVARIANT）
-│   ├── fault_inject.h              故障注入（FAULT_CHECK / fail_after/at/next）
 │   ├── hw_model.h                  硬件寄存器模型框架（256 寄存器 + I2C/SPI）
 │   ├── mock_i2c.h                  I2C 简单 mock（寄存器数组 + 失败注入）
 │   ├── mock_spi.h                  SPI 简单 mock
