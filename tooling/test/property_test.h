@@ -48,9 +48,14 @@ static uint32_t prop__xorshift32(uint32_t *state)
 #define ARBI_UINT32(s)      prop__xorshift32(&(s))
 #define ARBI_UINT16(s)      ((uint16_t)(prop__xorshift32(&(s)) & 0xFFFFu))
 #define ARBI_UINT8(s)       ((uint8_t)(prop__xorshift32(&(s)) & 0xFFu))
-#define ARBI_SIZE(s, max)   ((size_t)(prop__xorshift32(&(s)) % ((uint32_t)(max) + 1u)))
+#define ARBI_SIZE(s, max) \
+    ((uint32_t)(max) == UINT32_MAX \
+        ? (size_t)prop__xorshift32(&(s)) \
+        : (size_t)(prop__xorshift32(&(s)) % ((uint32_t)(max) + 1u)))
 #define ARBI_RANGE(s, lo, hi) \
-    ((int)(lo) + (int)(prop__xorshift32(&(s)) % ((uint32_t)((hi) - (lo)) + 1u)))
+    ((uint32_t)(hi) - (uint32_t)(lo) == UINT32_MAX \
+        ? (int)((uint32_t)(lo) + prop__xorshift32(&(s))) \
+        : (int)((uint32_t)(lo) + prop__xorshift32(&(s)) % ((uint32_t)(hi) - (uint32_t)(lo) + 1u)))
 
 static void prop__arbi_fill(uint32_t *state, uint8_t *buf, size_t len)
 {

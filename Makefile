@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift help
+.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift help
 
 help:
 	@echo "Usage: make <target>"
@@ -171,7 +171,7 @@ ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
 	bash tooling/test/test_all.sh
 	python3 tooling/audit/audit_wheels.py --quiet
-	git add -A
+	git add -u
 	git commit -m "$(M)"
 	git push
 
@@ -311,7 +311,7 @@ batch-scaffold:
 	done; \
 	if [ $$count -gt 0 ]; then \
 		git add $$created && \
-		git commit -m "wheel: scaffold $$count wheels for batch build" --no-verify && \
+		git commit -m "wheel: scaffold $$count wheels for batch build" && \
 		echo "" && echo "$$count scaffolds committed. Ready for agent dispatch."; \
 	else \
 		echo "No new scaffolds created."; \
