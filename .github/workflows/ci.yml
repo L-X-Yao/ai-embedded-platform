@@ -334,17 +334,33 @@ jobs:
 
   coverage-gate:
     name: coverage gate (>=80% all wheels)
-    if: github.event_name == 'schedule' || (github.event_name != 'schedule' && needs.detect-changes.outputs.harness-changed == 'true')
-    needs: detect-changes
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Check if coverage-relevant files changed
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+            if echo "$CHANGED" | grep -qE "^tooling/test/|^tooling/audit/"; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
 
       - name: Install dependencies
+        if: steps.check.outputs.run == 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
       - name: Coverage scan (parallel, gate)
+        if: steps.check.outputs.run == 'true'
         run: bash tooling/test/coverage_scan.sh --gate --jobs 4
 
   # ---- Nightly: ARM size audit ----
