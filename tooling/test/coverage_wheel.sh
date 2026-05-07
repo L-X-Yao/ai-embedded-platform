@@ -130,10 +130,8 @@ else
     GCDA_DIR=$(dirname "${GCDA_FILES[0]}")
 fi
 
-# Run gcov with branch coverage
-cd "$GCDA_DIR"
-GCOV_OUT=$(gcov -b "${NAME}.c.gcda" 2>&1 || true)
-cd "$BUILD_DIR"
+# Run gcov with branch coverage (subshell keeps cwd stable)
+GCOV_OUT=$(cd "$GCDA_DIR" && gcov -b "${NAME}.c.gcda" 2>&1 || true)
 
 # Extract summary
 LINE_INFO=$(echo "$GCOV_OUT" | grep -A1 "File.*${NAME}.c'" | grep "Lines executed" | head -1)
