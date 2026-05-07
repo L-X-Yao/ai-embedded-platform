@@ -389,6 +389,339 @@ TEST(test_chunked_number)
     ASSERT_MEMEQ(g_events[0].value, "1234");
 }
 
+/* ── Mutation-hardening tests ─────────────────────────────────── */
+
+/*
+ * json_parser_init max_depth clamping:
+ * - max_depth=0 must be treated as 16 (default), not left as 0.
+ * - max_depth=129 must be clamped to 128.
+ * Catches > 128 vs >= 128 and == 0 vs < 0 mutations.
+ */
+TEST(test_init_max_depth_clamping)
+{
+    json_parser_t p;
+    json_parser_err_t err;
+
+    /* max_depth=0 → clamped to 16; a depth-1 object must succeed */
+    err = json_parser_init(&p, record_cb, NULL, 0);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    reset_events();
+    err = json_parser_feed(&p, "{}", 2);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+
+    /* max_depth=129 → clamped to 128; should accept 128 levels but not 129 */
+    err = json_parser_init(&p, record_cb, NULL, 129);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    /* max_depth capped: p.max_depth == 128 → a 2-deep object must succeed */
+    reset_events();
+    err = json_parser_feed(&p, "{\"a\":{\"b\":1}}", 13);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+}
+
+/*
+ * Depth-exactly-at-limit: depth == max_depth must reject; depth == max_depth-1 must accept.
+ * Catches >= vs > mutations in the depth check.
+ */
+TEST(test_depth_exactly_at_limit)
+{
+    json_parser_t p;
+    json_parser_err_t err;
+
+    /* max_depth=1: depth 1 (a single object) is allowed, depth 2 is not */
+    err = json_parser_init(&p, record_cb, NULL, 1);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    reset_events();
+    err = json_parser_feed(&p, "{}", 2);
+    ASSERT_EQ(err, JSON_PARSER_OK); /* exactly 1 level — must succeed */
+
+    err = json_parser_init(&p, record_cb, NULL, 1);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    reset_events();
+    err = json_parser_feed(&p, "{\"a\":{}}", 8);
+    ASSERT_EQ(err, JSON_PARSER_ERR_DEPTH); /* 2 levels — must fail */
+
+    /* max_depth=2: depth 2 is allowed, depth 3 is not */
+    err = json_parser_init(&p, record_cb, NULL, 2);
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    reset_events();
+    err = json_parser_feed(&p, "{\"a\":{}}", 8);
+    ASSERT_EQ(err, JSON_PARSER_OK); /* exactly 2 levels — must succeed */
+}
+
+/*
+ * Event counts must be exact — existing tests use ASSERT_EQ on g_event_count
+ * but don't verify the exact value content. These tests pin the precise
+ * string content of each event value, catching strlen vs value_len mutations.
+ */
+TEST(test_event_value_lengths_exact)
+{
+    json_parser_err_t err = parse_full("{\"hello\": \"world\"}");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 4);
+    /* KEY "hello" has value_len=5 */
+    ASSERT_EQ(g_events[1].event, JSON_EVENT_KEY);
+    ASSERT_EQ(g_events[1].value_len, 5);
+    ASSERT_MEMEQ(g_events[1].value, "hello");
+    /* STRING "world" has value_len=5 */
+    ASSERT_EQ(g_events[2].event, JSON_EVENT_STRING);
+    ASSERT_EQ(g_events[2].value_len, 5);
+    ASSERT_MEMEQ(g_events[2].value, "world");
+}
+
+/*
+ * True/false/null events: verify they fire exactly once with correct vlen —
+ * catches vlen==4 vs vlen==5 in flush_literal length checks.
+ */
+TEST(test_literal_events_exact)
+{
+    json_parser_err_t err;
+
+    err = parse_full("true");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 1);
+    ASSERT_EQ(g_events[0].event, JSON_EVENT_TRUE);
+    ASSERT_EQ(g_events[0].value_len, 4);
+
+    err = parse_full("false");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 1);
+    ASSERT_EQ(g_events[0].event, JSON_EVENT_FALSE);
+    ASSERT_EQ(g_events[0].value_len, 5);
+
+    err = parse_full("null");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 1);
+    ASSERT_EQ(g_events[0].event, JSON_EVENT_NULL);
+    ASSERT_EQ(g_events[0].value_len, 4);
+}
+
+/*
+ * "trul" and "nult" are not valid literals — verify they produce a syntax error
+ * instead of silently emitting a partial event. Catches memcmp length guards.
+ */
+TEST(test_bad_literal_rejected)
+{
+    json_parser_err_t err;
+
+    /* "trul" — not "true", not "null" */
+    err = parse_full("trul");
+    ASSERT_TRUE(err != JSON_PARSER_OK);
+
+    /* "nul" — incomplete null */
+    err = parse_full("nul");
+    ASSERT_TRUE(err != JSON_PARSER_OK);
+
+    /* "truu" — not "true" */
+    err = parse_full("{\"k\": truu}");
+    ASSERT_TRUE(err != JSON_PARSER_OK);
+}
+
+/*
+ * json_parser_feed with data=NULL and len=0 must succeed (empty feed) —
+ * catches NULL && len > 0 vs NULL && len != 0 mutations.
+ */
+TEST(test_feed_null_data_zero_len)
+{
+    json_parser_t p;
+    reset_events();
+    json_parser_init(&p, record_cb, NULL, 16);
+    json_parser_err_t err = json_parser_feed(&p, NULL, 0);
+    ASSERT_EQ(err, JSON_PARSER_OK); /* null data with zero length is fine */
+}
+
+/*
+ * json_parser_feed with data=NULL and len>0 must return ERR_PARAM —
+ * catches the null-data guard condition.
+ */
+TEST(test_feed_null_data_nonzero_len)
+{
+    json_parser_t p;
+    reset_events();
+    json_parser_init(&p, record_cb, NULL, 16);
+    json_parser_err_t err = json_parser_feed(&p, NULL, 1);
+    ASSERT_EQ(err, JSON_PARSER_ERR_PARAM);
+}
+
+/*
+ * After a top-level value completes, non-whitespace trailing chars are ERR_SYNTAX —
+ * verify the exact error code (not just != OK).
+ */
+TEST(test_done_state_trailing_char_exact_error)
+{
+    json_parser_err_t err = parse_full("1 x");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+
+    err = parse_full("\"a\" \"b\"");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+/*
+ * Object key must be followed by ':', not some other character.
+ * Catches the is_ws check and c == ':' check mutations.
+ */
+TEST(test_after_key_state_exact)
+{
+    /* Valid: key followed by colon */
+    json_parser_err_t err = parse_full("{\"k\":1}");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+
+    /* Invalid: key followed by comma instead of colon */
+    err = parse_full("{\"k\",1}");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+
+    /* Invalid: key followed by nothing */
+    json_parser_t p;
+    reset_events();
+    json_parser_init(&p, record_cb, NULL, 16);
+    json_parser_feed(&p, "{\"k\"}", 5);
+    /* '}' in AFTER_KEY state is a syntax error */
+    err = json_parser_finish(&p);
+    ASSERT_TRUE(err != JSON_PARSER_OK);
+}
+
+/*
+ * Mismatched container close: } used to close [ is ERR_SYNTAX, not a no-op.
+ * Catches peek_container comparison mutations.
+ */
+TEST(test_mismatched_close_exact_error)
+{
+    json_parser_err_t err = parse_full("[}");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+
+    err = parse_full("{]");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+/*
+ * Number flushing boundary: a number terminated by whitespace vs by a
+ * structural character — both must flush exactly once.
+ */
+TEST(test_number_flushed_exactly_once)
+{
+    /* Number in array, comma-terminated */
+    json_parser_err_t err = parse_full("[1,2]");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 4);
+    ASSERT_EQ(g_events[1].event, JSON_EVENT_NUMBER);
+    ASSERT_MEMEQ(g_events[1].value, "1");
+    ASSERT_EQ(g_events[1].value_len, 1);
+    ASSERT_EQ(g_events[2].event, JSON_EVENT_NUMBER);
+    ASSERT_MEMEQ(g_events[2].value, "2");
+    ASSERT_EQ(g_events[2].value_len, 1);
+
+    /* Number terminated by ] */
+    err = parse_full("[42]");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_event_count, 3);
+    ASSERT_EQ(g_events[1].event, JSON_EVENT_NUMBER);
+    ASSERT_MEMEQ(g_events[1].value, "42");
+    ASSERT_EQ(g_events[1].value_len, 2);
+}
+
+/*
+ * json_parser_finish on a completely empty feed (no data) must return
+ * ERR_INCOMPLETE (no value received), not OK.
+ */
+TEST(test_finish_no_data_is_incomplete)
+{
+    json_parser_t p;
+    reset_events();
+    json_parser_init(&p, record_cb, NULL, 16);
+    json_parser_err_t err = json_parser_finish(&p);
+    ASSERT_EQ(err, JSON_PARSER_ERR_INCOMPLETE);
+}
+
+/*
+ * json_parser_finish with unclosed object must return ERR_INCOMPLETE —
+ * catches depth > 0 check mutation.
+ */
+TEST(test_finish_unclosed_object_is_incomplete)
+{
+    json_parser_t p;
+    reset_events();
+    json_parser_init(&p, record_cb, NULL, 16);
+    json_parser_feed(&p, "{\"k\":1", 6);
+    json_parser_err_t err = json_parser_finish(&p);
+    ASSERT_EQ(err, JSON_PARSER_ERR_INCOMPLETE);
+}
+
+/*
+ * json_parser_reset: verify that state resets correctly — the callback
+ * and max_depth are preserved, but parser state starts fresh.
+ */
+TEST(test_reset_preserves_config)
+{
+    json_parser_t p;
+    json_parser_init(&p, record_cb, NULL, 5);
+
+    reset_events();
+    json_parser_feed(&p, "1", 1);
+    json_parser_finish(&p);
+    ASSERT_EQ(g_event_count, 1);
+
+    json_parser_reset(&p);
+    reset_events();
+    json_parser_feed(&p, "2", 1);
+    json_parser_finish(&p);
+    ASSERT_EQ(g_event_count, 1);
+    ASSERT_EQ(g_events[0].event, JSON_EVENT_NUMBER);
+    ASSERT_MEMEQ(g_events[0].value, "2");
+}
+
+/*
+ * Unicode escape: exactly 4 hex digits are consumed, no more, no less.
+ * A \u followed by only 3 hex digits and end-of-input is incomplete.
+ */
+TEST(test_unicode_escape_exact_four_digits)
+{
+    /* Valid: exactly 4 hex digits */
+    json_parser_err_t err = parse_full("\"\\u004F\"");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    ASSERT_EQ(g_events[0].value_len, 4);
+
+    /* Invalid: \u followed by non-hex char */
+    err = parse_full("\"\\uGGGG\"");
+    ASSERT_EQ(err, JSON_PARSER_ERR_SYNTAX);
+}
+
+/*
+ * Struct token events fire with NULL value pointer — verify value_len is 0
+ * for OBJECT_START, OBJECT_END, ARRAY_START, ARRAY_END events.
+ */
+TEST(test_structural_events_have_no_value)
+{
+    json_parser_err_t err = parse_full("[{}]");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    /* ARRAY_START, OBJECT_START, OBJECT_END, ARRAY_END = 4 events */
+    ASSERT_EQ(g_event_count, 4);
+    ASSERT_EQ(g_events[0].event, JSON_EVENT_ARRAY_START);
+    ASSERT_EQ(g_events[0].value_len, 0);
+    ASSERT_EQ(g_events[1].event, JSON_EVENT_OBJECT_START);
+    ASSERT_EQ(g_events[1].value_len, 0);
+    ASSERT_EQ(g_events[2].event, JSON_EVENT_OBJECT_END);
+    ASSERT_EQ(g_events[2].value_len, 0);
+    ASSERT_EQ(g_events[3].event, JSON_EVENT_ARRAY_END);
+    ASSERT_EQ(g_events[3].value_len, 0);
+}
+
+/*
+ * Object with multiple keys: verify expect_key flag is set after each comma
+ * inside an object, so subsequent strings become KEY events, not STRING events.
+ */
+TEST(test_multiple_keys_are_key_events)
+{
+    json_parser_err_t err = parse_full("{\"a\":1,\"b\":2,\"c\":3}");
+    ASSERT_EQ(err, JSON_PARSER_OK);
+    /* OBJ_START + 3*(KEY+NUM) + OBJ_END = 8 events */
+    ASSERT_EQ(g_event_count, 8);
+    ASSERT_EQ(g_events[1].event, JSON_EVENT_KEY);
+    ASSERT_MEMEQ(g_events[1].value, "a");
+    ASSERT_EQ(g_events[3].event, JSON_EVENT_KEY);
+    ASSERT_MEMEQ(g_events[3].value, "b");
+    ASSERT_EQ(g_events[5].event, JSON_EVENT_KEY);
+    ASSERT_MEMEQ(g_events[5].value, "c");
+}
+
 TEST_MAIN("json_parser")
     RUN(test_init_null_params);
     RUN(test_simple_object);
@@ -420,4 +753,21 @@ TEST_MAIN("json_parser")
     RUN(test_error_syntax_missing_colon);
     RUN(test_error_syntax_bare_comma);
     RUN(test_chunked_number);
+    RUN(test_init_max_depth_clamping);
+    RUN(test_depth_exactly_at_limit);
+    RUN(test_event_value_lengths_exact);
+    RUN(test_literal_events_exact);
+    RUN(test_bad_literal_rejected);
+    RUN(test_feed_null_data_zero_len);
+    RUN(test_feed_null_data_nonzero_len);
+    RUN(test_done_state_trailing_char_exact_error);
+    RUN(test_after_key_state_exact);
+    RUN(test_mismatched_close_exact_error);
+    RUN(test_number_flushed_exactly_once);
+    RUN(test_finish_no_data_is_incomplete);
+    RUN(test_finish_unclosed_object_is_incomplete);
+    RUN(test_reset_preserves_config);
+    RUN(test_unicode_escape_exact_four_digits);
+    RUN(test_structural_events_have_no_value);
+    RUN(test_multiple_keys_are_key_events);
 TEST_MAIN_END()
