@@ -131,11 +131,21 @@ def check_claude_md():
             drifts.append(("CLAUDE.md", f"Makefile targets: says {claimed}, actual {actual}",
                            f"Makefile（{claimed}", f"Makefile（{actual}"))
 
-    # Audit check count: "audit_wheels.py（N 项"
-    m = re.search(r'audit_wheels\.py（(\d+) 项', text)
-    if m:
-        claimed = int(m.group(1))
-        actual = count_audit_check_functions()
+    # Audit check count: handles both "52 项 CHECK_TABLE + 3 特殊检查" breakdown
+    # and simple "N 项" total. Validate the SUM matches actual.
+    actual = count_audit_check_functions()
+    m_detail = re.search(r'(\d+)\s*项?\s*CHECK_TABLE\s*\+\s*(\d+)\s*特殊', text)
+    m_simple = re.search(r'audit_wheels\.py（(\d+) 项', text)
+    if m_detail:
+        table_claimed = int(m_detail.group(1))
+        special_claimed = int(m_detail.group(2))
+        if table_claimed + special_claimed != actual:
+            drifts.append(("CLAUDE.md",
+                           f"audit check count: says {table_claimed}+{special_claimed}={table_claimed+special_claimed}, actual {actual}",
+                           m_detail.group(0),
+                           f"{actual} 项"))
+    elif m_simple:
+        claimed = int(m_simple.group(1))
         if claimed != actual:
             drifts.append(("CLAUDE.md", f"audit check count: says {claimed}, actual {actual}",
                            f"audit_wheels.py（{claimed} 项", f"audit_wheels.py（{actual} 项"))
