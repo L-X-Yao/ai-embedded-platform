@@ -198,6 +198,9 @@ git -C "$CACHE_DIR" checkout --quiet "$target_hash" 2>/dev/null || \
 # 5. Sync vsf/ contents
 log_info "Syncing vsf/ contents..."
 
+# Sanity check: VSF_DIR must end with /vsf
+[[ "$VSF_DIR" == *"/vsf" ]] || { log_err "VSF_DIR sanity check failed: $VSF_DIR"; exit 1; }
+
 # Delete everything in vsf/ except .git (there shouldn't be one, but safe)
 find "$VSF_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
