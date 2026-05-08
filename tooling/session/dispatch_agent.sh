@@ -49,7 +49,7 @@ STATUS=false
 CLEANUP=false
 
 usage() {
-    sed -n '2,/^$/{ s/^# //; s/^#$//; p }' "$0"
+    sed -n '2,/^set -/{ /^set -/d; s/^# //; s/^#$//; p }' "$0"
     exit "${1:-0}"
 }
 
