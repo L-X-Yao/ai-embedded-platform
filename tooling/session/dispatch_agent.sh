@@ -213,9 +213,13 @@ if $MERGE_ALL; then
         fi
         if [[ $merge_rc -eq 0 ]]; then
             summary=$(git log main.."$b" --oneline | head -1 | sed 's/^[a-f0-9]* //')
-            git commit -m "$summary" > /dev/null 2>&1
-            echo -e "  ${GREEN}  OK${NC}  → $summary"
-            MERGED=$((MERGED + 1))
+            if git commit -m "$summary" > /dev/null 2>&1; then
+                echo -e "  ${GREEN}  OK${NC}  → $summary"
+                MERGED=$((MERGED + 1))
+            else
+                echo -e "  ${RED}FAIL${NC}  $b  (commit failed after merge)"
+                FAILED=$((FAILED + 1))
+            fi
         else
             echo -e "  ${RED}FAIL${NC}  $b  (merge conflict — resolve manually)"
             git merge --abort 2>/dev/null || echo -e "  ${YELLOW}  merge --abort also failed — resolve working tree manually${NC}"
@@ -228,13 +232,16 @@ if $MERGE_ALL; then
     echo -e "  Merged: $MERGED  Failed: $FAILED"
 
     if [[ $FAILED -gt 0 ]]; then
-        echo -e "${YELLOW}Some branches failed to merge. Resolve manually.${NC}"
+        echo -e "${YELLOW}Some branches failed to merge. Resolve manually before cleaning up.${NC}"
+        echo -e "${YELLOW}When done: bash $0 --cleanup${NC}"
     fi
 
-    # Clean up all worktrees (merged + skipped + orphaned)
-    echo ""
-    echo -e "${CYAN}Cleaning up worktrees...${NC}"
-    cleanup_worktrees
+    # Only clean up if all merges succeeded — preserve failed branches for manual resolution
+    if [[ $FAILED -eq 0 ]]; then
+        echo ""
+        echo -e "${CYAN}Cleaning up worktrees...${NC}"
+        cleanup_worktrees
+    fi
 
     if [[ $MERGED -gt 0 ]]; then
         echo ""
