@@ -70,12 +70,19 @@ read_current_version() {
 # --- Cache management --------------------------------------------------------
 
 ensure_cache() {
+    local git_rc=0
     if [[ -d "$CACHE_DIR/.git" ]]; then
         log_info "Fetching upstream into cache..."
-        git -C "$CACHE_DIR" fetch origin --prune --tags 2>&1 | sed 's/^/  /'
+        git_out=$(git -C "$CACHE_DIR" fetch origin --prune --tags 2>&1) || git_rc=$?
+        echo "$git_out" | sed 's/^/  /'
     else
         log_info "Cloning upstream into cache (first time, may take a while)..."
-        git clone "$UPSTREAM_URL" "$CACHE_DIR" 2>&1 | sed 's/^/  /'
+        git_out=$(git clone "$UPSTREAM_URL" "$CACHE_DIR" 2>&1) || git_rc=$?
+        echo "$git_out" | sed 's/^/  /'
+    fi
+    if [[ $git_rc -ne 0 ]]; then
+        log_err "Git operation failed (exit $git_rc)"
+        exit 1
     fi
 }
 
@@ -137,6 +144,15 @@ if ! git -C "$REPO" diff --quiet -- vsf/; then
     exit 1
 fi
 
+# Check for untracked files in vsf/ (would be silently deleted during sync)
+untracked_vsf=$(git -C "$REPO" ls-files --others --exclude-standard -- vsf/ 2>/dev/null || true)
+if [[ -n "$untracked_vsf" ]]; then
+    log_err "vsf/ has untracked files that would be lost during sync:"
+    echo "$untracked_vsf" | head -5 | sed 's/^/  /'
+    log_err "Commit or remove them first."
+    exit 1
+fi
+
 # --- Main flow ---------------------------------------------------------------
 
 echo -e "${BOLD}=== VSF upstream sync ===${NC}"
@@ -192,7 +208,13 @@ if [[ -x "$PATCH_SCRIPT" ]]; then
     patch_count=${#_patches[@]}
     if [[ "$patch_count" -gt 0 ]]; then
         log_info "Reverting $patch_count patches before sync..."
-        bash "$PATCH_SCRIPT" --revert 2>&1 | sed 's/^/  /'
+        revert_rc=0
+        revert_out=$(bash "$PATCH_SCRIPT" --revert 2>&1) || revert_rc=$?
+        echo "$revert_out" | sed 's/^/  /'
+        if [[ $revert_rc -ne 0 ]]; then
+            log_err "Patch revert failed (exit $revert_rc) — aborting sync"
+            exit 1
+        fi
     fi
 fi
 
@@ -244,7 +266,10 @@ if [[ -x "$PATCH_SCRIPT" ]]; then
     if [[ "$patch_count" -gt 0 ]]; then
         echo ""
         log_info "Re-applying $patch_count patches..."
-        if bash "$PATCH_SCRIPT" 2>&1 | sed 's/^/  /'; then
+        apply_rc=0
+        apply_out=$(bash "$PATCH_SCRIPT" 2>&1) || apply_rc=$?
+        echo "$apply_out" | sed 's/^/  /'
+        if [[ $apply_rc -eq 0 ]]; then
             log_ok "All patches applied cleanly"
         else
             log_warn "Some patches failed — manual resolution needed"

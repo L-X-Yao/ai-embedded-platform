@@ -26,9 +26,6 @@ fi
 # --- Quality snapshot ---
 quality=$(python3 "$REPO/tooling/metrics/platform_metrics_impl.py" "$REPO" "$REPO/.metrics" --quality 2>/dev/null | grep -v "===" || echo "  (unavailable)")
 
-# --- Known issues count ---
-known_total=$(grep -c "^- " "$REPO/docs/known-issues.md" 2>/dev/null || echo "0")
-
 # --- Pending items from known-issues.md ---
 pending_tests=$(grep "untested" "$REPO/docs/known-issues.md" 2>/dev/null | head -5 || echo "  (none)")
 
