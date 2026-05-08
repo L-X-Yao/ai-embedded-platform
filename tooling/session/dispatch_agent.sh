@@ -281,7 +281,7 @@ WORKTREE_BRANCH="worktree-${NAME}"
 WORKTREE_DIR="${REPO_ROOT}/.claude/worktrees/${NAME}"
 LOG_DIR="${REPO_ROOT}/tooling/logs"
 mkdir -p "$LOG_DIR"
-LOG_FILE="${LOG_DIR}/dispatch-${NAME}-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${LOG_DIR}/dispatch-${NAME}-$(date -u +%Y%m%d-%H%M%SZ).log"
 
 SCOPE_SUFFIX=""
 if [[ -n "$SCOPE" ]]; then

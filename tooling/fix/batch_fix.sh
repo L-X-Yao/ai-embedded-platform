@@ -161,11 +161,10 @@ for wd in "${WHEEL_DIRS[@]}"; do
         changed=false
         for f in "${files[@]}"; do
             if $DRY_RUN; then
-                if diff <(cat "$f") <(sed "$SED_EXPR" "$f") > /dev/null 2>&1; then
-                    : # no change
-                else
+                diff_out=$(diff <(cat "$f") <(sed "$SED_EXPR" "$f") 2>&1) || true
+                if [[ -n "$diff_out" ]]; then
                     echo "  [would fix] $(basename "$f") in $name"
-                    diff <(cat "$f") <(sed "$SED_EXPR" "$f") || true
+                    echo "$diff_out"
                     changed=true
                 fi
             else
