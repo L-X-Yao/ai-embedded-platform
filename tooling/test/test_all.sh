@@ -38,7 +38,7 @@ CHANGED_ONLY=false
 COVERAGE=false
 FAIL_FAST=false
 PARALLEL=false
-PARALLEL_JOBS=0
+PARALLEL_JOBS=""
 declare -a NAME_FILTER=()
 
 while [[ $# -gt 0 ]]; do
@@ -335,6 +335,9 @@ echo ""
 
 if $PARALLEL && $COVERAGE; then
     echo -e "${YELLOW}NOTE: --parallel ignored when --coverage is set (gcov requires serial execution)${NC}"
+fi
+if $PARALLEL && $FAIL_FAST; then
+    echo -e "${YELLOW}NOTE: --parallel ignored when --fail-fast is set${NC}"
 fi
 if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     MAX_J=${PARALLEL_JOBS:-$(nproc 2>/dev/null || echo 4)}
