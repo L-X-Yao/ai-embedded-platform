@@ -165,16 +165,19 @@ echo -e "${BOLD}=== Audit Triggers ===${NC}"
 last_audit_commit=$(git -C "$REPO" log --oneline --grep="audit history" -1 --format=%H 2>/dev/null || echo "")
 if [ -n "$last_audit_commit" ]; then
     wheel_c_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "\.c$" | wc -l | xargs)
+    wheel_c_changed=${wheel_c_changed:-0}; [[ "$wheel_c_changed" =~ ^[0-9]+$ ]] || wheel_c_changed=0
     new_wheels=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "README.md" | wc -l | xargs)
+    new_wheels=${new_wheels:-0}; [[ "$new_wheels" =~ ^[0-9]+$ ]] || new_wheels=0
     days_since=$(( ($(date +%s) - $(git -C "$REPO" log -1 --format=%ct "$last_audit_commit" 2>/dev/null || echo "$(date +%s)")) / 86400 ))
+    days_since=${days_since:-0}; [[ "$days_since" =~ ^[0-9]+$ ]] || days_since=0
     triggers=""
-    if [ "$wheel_c_changed" -gt 10 ] 2>/dev/null; then
+    if [ "$wheel_c_changed" -gt 10 ]; then
         triggers="${triggers}\n  ${YELLOW}▶ $wheel_c_changed wheel .c files changed since last audit${NC}"
     fi
-    if [ "$new_wheels" -gt 0 ] 2>/dev/null; then
+    if [ "$new_wheels" -gt 0 ]; then
         triggers="${triggers}\n  ${YELLOW}▶ $new_wheels new wheel(s) added since last audit${NC}"
     fi
-    if [ "$days_since" -gt 7 ] 2>/dev/null; then
+    if [ "$days_since" -gt 7 ]; then
         triggers="${triggers}\n  ${YELLOW}▶ $days_since days since last audit${NC}"
     fi
     if [ -n "$triggers" ]; then

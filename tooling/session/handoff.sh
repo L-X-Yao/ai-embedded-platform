@@ -12,7 +12,8 @@ OUT="$REPO/docs/session-state.md"
 # --- Last audit round ---
 last_audit=$(grep -c "超级审计" "$REPO/docs/audit-dimensions.md" 2>/dev/null || echo "0")
 last_audit_line=$(grep "超级审计" "$REPO/docs/audit-dimensions.md" 2>/dev/null | tail -1 || echo "none")
-last_audit_date=$(echo "$last_audit_line" | awk -F'|' '{print $2}' | xargs 2>/dev/null || echo "unknown")
+last_audit_date=$(echo "$last_audit_line" | awk -F'|' '{print $2}' | xargs 2>/dev/null) || true
+last_audit_date=${last_audit_date:-unknown}
 
 # --- Wheels changed since last audit ---
 last_audit_commit=$(git -C "$REPO" log --oneline --grep="audit history" -1 --format=%H 2>/dev/null || echo "")

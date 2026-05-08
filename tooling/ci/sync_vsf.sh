@@ -115,7 +115,10 @@ if $STATUS_ONLY; then
         echo -e "  ${YELLOW}No local cache yet. Run sync_vsf.sh once to populate.${NC}"
     fi
 
-    patch_count=$(ls "$REPO/tooling/patches/"[0-9]*-*.patch 2>/dev/null | wc -l || echo 0)
+    shopt -s nullglob
+    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    shopt -u nullglob
+    patch_count=${#_patches[@]}
     echo -e "  ${BOLD}Local patches:${NC}   $patch_count"
     exit 0
 fi
@@ -183,7 +186,10 @@ fi
 
 # 3. Revert patches (if any applied)
 if [[ -x "$PATCH_SCRIPT" ]]; then
-    patch_count=$(ls "$REPO/tooling/patches/"[0-9]*-*.patch 2>/dev/null | wc -l || echo 0)
+    shopt -s nullglob
+    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    shopt -u nullglob
+    patch_count=${#_patches[@]}
     if [[ "$patch_count" -gt 0 ]]; then
         log_info "Reverting $patch_count patches before sync..."
         bash "$PATCH_SCRIPT" --revert 2>&1 | sed 's/^/  /'
@@ -231,7 +237,10 @@ echo -e "  Deleted files: $deleted_files"
 # 8. Re-apply patches
 patch_conflict=false
 if [[ -x "$PATCH_SCRIPT" ]]; then
-    patch_count=$(ls "$REPO/tooling/patches/"[0-9]*-*.patch 2>/dev/null | wc -l || echo 0)
+    shopt -s nullglob
+    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    shopt -u nullglob
+    patch_count=${#_patches[@]}
     if [[ "$patch_count" -gt 0 ]]; then
         echo ""
         log_info "Re-applying $patch_count patches..."

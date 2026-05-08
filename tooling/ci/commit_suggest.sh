@@ -3,7 +3,6 @@
 #
 # Usage:
 #   commit_suggest.sh              # print suggested message
-#   commit_suggest.sh --commit     # commit with the suggested message
 #
 # Analyzes git diff --cached to determine:
 #   - type (wheel/tool/docs/ci/project/port) from file paths
@@ -15,8 +14,6 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-DO_COMMIT=false
-[[ "${1:-}" == "--commit" ]] && DO_COMMIT=true
 
 # Check for staged changes
 STAT=$(git -C "$REPO" diff --cached --stat 2>/dev/null)
@@ -96,7 +93,7 @@ fi
 REMAINING=$((68 - ${#HEADER}))
 [[ $REMAINING -lt 10 ]] && REMAINING=10
 if [[ $FILE_COUNT -eq 1 ]]; then
-    FNAME=$(echo "$FILES" | head -1 | xargs basename)
+    FNAME=$(basename -- "$(echo "$FILES" | head -1)")
     DESC="update ${FNAME}"
 else
     case "$MAX_TYPE" in
@@ -135,10 +132,6 @@ if [[ ${#TYPE_COUNTS[@]} -gt 1 ]]; then
         echo "    $t: ${TYPE_COUNTS[$t]} files"
     done
     echo ""
-fi
-
-if $DO_COMMIT; then
-    echo "(auto-commit disabled — review message first, then commit manually)"
 fi
 
 echo "To use: git commit -m \"$MESSAGE\""
