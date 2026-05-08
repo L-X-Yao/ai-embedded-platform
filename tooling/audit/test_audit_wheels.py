@@ -83,7 +83,7 @@ def run_all():
             # Clean up any TmpWheel instances left by failed tests
             import gc
             for obj in gc.get_objects():
-                if isinstance(obj, TmpWheel) and obj.path.exists():
+                if isinstance(obj, TmpWheel) and hasattr(obj, 'root') and obj.root.exists():
                     obj.cleanup()
     print(f"\n{_pass + _fail} tests: {_pass} passed, {_fail} failed")
     return _fail
