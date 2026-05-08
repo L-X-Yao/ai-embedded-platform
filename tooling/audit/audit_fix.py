@@ -22,25 +22,16 @@ import re
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-WHEELS = REPO / "wheels"
-LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
-SKIP_DIRS = {"test", "build", "__pycache__", ".pytest_cache", "vendor"}
+from _audit_build_base import find_wheels as _find_wheels_base
 
 
 def find_wheels(filter_names=None):
-    wheels = []
-    for layer in LAYERS:
-        layer_dir = WHEELS / layer
-        if not layer_dir.is_dir():
-            continue
-        for entry in sorted(layer_dir.iterdir()):
-            if not entry.is_dir() or entry.name in SKIP_DIRS:
-                continue
-            if filter_names and entry.name not in filter_names:
-                continue
-            wheels.append((layer, entry.name, entry))
-    return wheels
+    """Return wheels suitable for fix operations: skip vendor, no test-dir requirement."""
+    return _find_wheels_base(
+        skip_vendor=True,
+        require_test_dir=False,
+        filter_names=filter_names,
+    )
 
 
 def _read_lines(path):

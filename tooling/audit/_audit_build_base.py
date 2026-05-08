@@ -48,12 +48,23 @@ def color(text: str, code: str) -> str:
 # Wheel discovery
 # ---------------------------------------------------------------------------
 
-def find_wheels(skip_vendor: bool = True) -> list[tuple[str, str, Path]]:
-    """Return ``[(layer, name, wheel_dir), ...]`` for every wheel that has
-    ``test/CMakeLists.txt``.
+def find_wheels(
+    skip_vendor: bool = True,
+    require_test_dir: bool = True,
+    filter_names=None,
+) -> list[tuple[str, str, Path]]:
+    """Return ``[(layer, name, wheel_dir), ...]`` for discovered wheels.
 
-    When *skip_vendor* is True (default), wheels containing a ``vendor/``
-    subdirectory are excluded.
+    Parameters
+    ----------
+    skip_vendor : bool, default True
+        Exclude wheels that contain a ``vendor/`` subdirectory.
+    require_test_dir : bool, default True
+        Only include wheels that have a ``test/CMakeLists.txt`` file.
+        Set to False for structural audits that scan all wheel directories.
+    filter_names : collection or None
+        When provided, only wheels whose name is in *filter_names* are
+        returned.  Used by audit_fix.py ``--wheel`` filtering.
     """
     wheels: list[tuple[str, str, Path]] = []
     for layer in LAYERS:
@@ -65,9 +76,13 @@ def find_wheels(skip_vendor: bool = True) -> list[tuple[str, str, Path]]:
                 continue
             if skip_vendor and (entry / "vendor").is_dir():
                 continue
-            cmake = entry / "test" / "CMakeLists.txt"
-            if cmake.is_file():
-                wheels.append((layer, entry.name, entry))
+            if filter_names and entry.name not in filter_names:
+                continue
+            if require_test_dir:
+                cmake = entry / "test" / "CMakeLists.txt"
+                if not cmake.is_file():
+                    continue
+            wheels.append((layer, entry.name, entry))
     return wheels
 
 
