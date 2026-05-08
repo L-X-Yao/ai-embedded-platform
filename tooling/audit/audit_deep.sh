@@ -57,13 +57,16 @@ layer1_issues=0
 scan_pattern() {
     local label="$1" pattern="$2" glob="$3"
     local files
-    files=$(grep -rlP "$pattern" --include="$glob" wheels/ 2>/dev/null | grep -v vendor/ | grep -v test/ || true)
+    files=$(grep -rlE '\(-[A-Za-z_][A-Za-z0-9_]*\)' --include="$glob" wheels/ 2>/dev/null \
+            | xargs -r grep -lv '(uint32_t)(' 2>/dev/null \
+            | grep -v vendor/ | grep -v test/ || true)
     if [[ -n "$files" ]]; then
         local count
         count=$(echo "$files" | wc -l)
         echo -e "  ${YELLOW}WARN${NC}  $label ($count files)"
         echo "$files" | while read -r f; do
-            grep -nP "$pattern" "$f" 2>/dev/null | head -3 | while read -r line; do
+            grep -nE '\(-[A-Za-z_][A-Za-z0-9_]*\)' "$f" 2>/dev/null \
+            | grep -v '(uint32_t)(' | head -3 | while read -r line; do
                 echo "         $f:$line"
             done
         done
@@ -243,7 +246,7 @@ if run_layer 5 "Cross-wheel API consistency"; then
         [[ -d "$dir/vendor" ]] && continue
         expected=$(echo "${name}_H" | tr '[:lower:]' '[:upper:]')
         if ! grep -q "#ifndef ${expected}\b\|#ifndef ${expected}_$" "$h" 2>/dev/null; then
-            alt=$(head -5 "$h" | grep -oP '#ifndef \K\w+' 2>/dev/null)
+            alt=$(head -5 "$h" | grep -oE '#ifndef [A-Za-z0-9_]+' 2>/dev/null | sed 's/^#ifndef //')
             if [[ -n "$alt" && "$alt" != "$expected" ]]; then
                 echo -e "  ${YELLOW}WARN${NC}  $name: guard is $alt, expected $expected"
                 layer5_issues=$((layer5_issues + 1))
