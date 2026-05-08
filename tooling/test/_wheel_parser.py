@@ -95,6 +95,8 @@ def read_header(header_path: Path) -> str:
     text = re.sub(r'/\*.*?\*/', ' ', text, flags=re.DOTALL)
     # Remove line comments
     text = re.sub(r'//[^\n]*', '', text)
+    # Strip __attribute__((...)) so FUNC_RE can match decorated declarations
+    text = re.sub(r'__attribute__\s*\(\([^)]*\)\)', '', text)
     return text
 
 
