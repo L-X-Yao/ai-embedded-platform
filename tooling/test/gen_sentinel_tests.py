@@ -341,7 +341,7 @@ def generate_generic_sentinel_test(wheel_name: str, func: FuncSig) -> Optional[S
                                    'out_size', 'buf_cap') for p in params)
 
     # Determine return value handling
-    ret_is_err = '_err_t' in ret or ret.endswith('_t') and 'err' in ret.lower()
+    ret_is_err = ('_err_t' in ret) or (ret.endswith('_t') and 'err' in ret.lower())
     ret_is_int = ret in ('int', 'int16_t', 'int32_t')
     ret_is_uint = ret in ('uint16_t', 'uint32_t', 'size_t')
 

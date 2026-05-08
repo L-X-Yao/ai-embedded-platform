@@ -57,7 +57,7 @@ MUTATION_OPS=(
     # Return value
     's/return 0/return -1/'
     's/return -1/return 0/'
-    # Constant
+    # Constant — NOTE: \b is GNU sed word boundary (not POSIX); requires GNU sed
     's/\b1\b/0/'
     's/\b0\b/1/'
 )

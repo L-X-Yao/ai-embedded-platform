@@ -50,7 +50,11 @@ while [[ $# -gt 0 ]]; do
         --coverage) COVERAGE=true; shift ;;
         --fail-fast) FAIL_FAST=true; shift ;;
         --parallel) PARALLEL=true; shift ;;
-        -j) shift; PARALLEL=true; PARALLEL_JOBS="$1"; shift ;;
+        -j) shift
+            if [[ -z "${1:-}" ]]; then
+                echo "Error: -j requires a number" >&2; exit 1
+            fi
+            PARALLEL=true; PARALLEL_JOBS="$1"; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0

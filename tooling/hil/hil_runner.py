@@ -86,7 +86,7 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
         return None
 
     serial_log_path = Path(serial_log)
-    verdict_json_path = Path(serial_log.replace(".log", "_verdict.json"))
+    verdict_json_path = serial_log_path.with_name(serial_log_path.stem + "_verdict.json")
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     result_dir = RESULTS_DIR / project / ts
