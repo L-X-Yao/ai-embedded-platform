@@ -205,7 +205,7 @@ if $MERGE_ALL; then
         if [[ $merge_rc -ne 0 ]] && echo "$merge_output" | grep -q "untracked working tree files would be overwritten"; then
             # Scaffold files on main block the merge — remove them and retry
             echo "$merge_output" | grep $'^\t' | sed 's/^\t//' | while IFS= read -r f; do
-                [[ -f "$f" ]] && rm -f "$f"
+                [[ -f "$REPO_ROOT/$f" ]] && rm -f "$REPO_ROOT/$f"
             done
             echo -e "  ${YELLOW}  RETRY${NC}  removed untracked scaffold files blocking merge"
             merge_output=$(git merge --squash "$b" 2>&1)
@@ -236,22 +236,22 @@ if $MERGE_ALL; then
         echo -e "${YELLOW}When done: bash $0 --cleanup${NC}"
     fi
 
-    # Only clean up if all merges succeeded — preserve failed branches for manual resolution
-    if [[ $FAILED -eq 0 ]]; then
-        echo ""
-        echo -e "${CYAN}Cleaning up worktrees...${NC}"
-        cleanup_worktrees
-    fi
-
     if [[ $MERGED -gt 0 ]]; then
         echo ""
         echo -e "${BOLD}=== Running make check ===${NC}"
         if make -C "$REPO_ROOT" check; then
             echo -e "  ${GREEN}make check passed${NC}"
         else
-            echo -e "  ${RED}make check FAILED — review before pushing${NC}"
+            echo -e "  ${RED}make check FAILED — review before pushing. Worktrees preserved.${NC}"
             FAILED=$((FAILED + 1))
         fi
+    fi
+
+    # Only clean up if all merges succeeded AND make check passed
+    if [[ $FAILED -eq 0 ]]; then
+        echo ""
+        echo -e "${CYAN}Cleaning up worktrees...${NC}"
+        cleanup_worktrees
     fi
 
     if $PUSH && [[ $MERGED -gt 0 && $FAILED -eq 0 ]]; then
