@@ -172,7 +172,7 @@ ship:
 	bash tooling/test/test_all.sh
 	python3 tooling/audit/audit_wheels.py --quiet
 	git add -u
-	git commit -m "$(M)"
+	@printf '%s\n' '$(subst ','\'',$(M))' | git commit -F -
 	git push
 
 inventory:

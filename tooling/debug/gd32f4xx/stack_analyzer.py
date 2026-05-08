@@ -67,10 +67,14 @@ def parse_su_files(build_dir: Path) -> dict[str, tuple[int, str]]:
 
 def parse_callgraph(elf: Path, objdump: str) -> dict[str, set[str]]:
     """Return {caller: {callees}} from disassembly. Misses indirect calls."""
-    out = subprocess.run(
-        [objdump, "-d", "--no-show-raw-insn", str(elf)],
-        capture_output=True, text=True, check=True,
-    ).stdout
+    try:
+        out = subprocess.run(
+            [objdump, "-d", "--no-show-raw-insn", str(elf)],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: objdump failed on {elf}: {e}", file=sys.stderr)
+        return {}
 
     callgraph: dict[str, set[str]] = defaultdict(set)
     current: str | None = None
