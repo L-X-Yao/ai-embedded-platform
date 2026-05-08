@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift help
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift
 
 help:
 	@echo "Usage: make <target>"
@@ -50,7 +50,7 @@ help:
 	@echo "Workflow:"
 	@echo "  check             test + null/sentinel/boundary + audit + coverage gate + doc drift + memory audit (pre-push)"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
-	@echo "  ship M=\"msg\"      check + commit + push"
+	@echo "  ship M=\"msg\"      test + audit + commit + push"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
 	@echo "  release           create version tag + changelog"
