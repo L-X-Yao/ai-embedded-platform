@@ -117,10 +117,8 @@ if ! $DRY_RUN && [[ ${#AFFECTED_FILES[@]} -gt 0 || -n "$PY_SCRIPT" ]]; then
     done
 fi
 
-# Trap: clean up the backup dir on INT/TERM (interrupted before success).
-# On normal exit the explicit rm-rf at the end of the script runs first;
-# on interrupt we just remove the temp dir without rolling back changes
-# because the rollback() function is reserved for verification failure.
+# Trap: on interrupt, restore files from backup then remove the temp dir.
+# On normal exit the explicit rm-rf at the end of the script runs first.
 _SCRIPT_DONE=false
 cleanup_on_interrupt() {
     if [[ "$_SCRIPT_DONE" = false && -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then

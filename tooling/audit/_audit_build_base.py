@@ -7,7 +7,7 @@ Private module (underscore prefix) consumed by:
   - audit_sanitizer.py (ASan + UBSan)
   - audit_coverage.py  (gcov line coverage)
 
-NOT used by audit_wheels.py (structural audit -- independent, no build step).
+Also used by audit_wheels.py for shared wheel discovery (find_wheels).
 """
 
 import argparse
