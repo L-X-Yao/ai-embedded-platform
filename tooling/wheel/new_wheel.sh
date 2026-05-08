@@ -84,6 +84,11 @@ if [[ "$LAYER" == "drivers" && -z "$HAL" ]]; then
     exit 1
 fi
 
+if [[ -n "$HAL" ]] && ! echo "$HAL" | grep -qE '^(i2c|spi|gpio|onewire|pwm)$'; then
+    echo "Error: --hal must be i2c|spi|gpio|onewire|pwm (got: $HAL)"
+    exit 1
+fi
+
 WHEEL_DIR="$REPO/wheels/$LAYER/$NAME_LOWER"
 if [[ -d "$WHEEL_DIR" ]]; then
     echo "Error: $WHEEL_DIR already exists"
