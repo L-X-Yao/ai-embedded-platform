@@ -25,7 +25,8 @@ def collect(repo: Path) -> dict:
     assertions = 0
     for tc in wheels.rglob("test/test_*.c"):
         try:
-            assertions += tc.read_text(encoding="utf-8", errors="ignore").count("ASSERT")
+            assertions += sum(1 for line in tc.read_text(encoding="utf-8", errors="ignore").splitlines()
+                              if re.search(r'\bASSERT', line))
         except OSError:
             pass
 
@@ -135,7 +136,8 @@ def collect_quality(repo: Path) -> dict:
         if "/test/" in rel:
             total_test_lines += len(text.splitlines())
             total_test_funcs += text.count("TEST(")
-            total_asserts += text.count("ASSERT")
+            total_asserts += sum(1 for line in text.splitlines()
+                                    if re.search(r'\bASSERT', line))
         else:
             total_code_lines += len(text.splitlines())
 

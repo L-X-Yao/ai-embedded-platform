@@ -24,7 +24,7 @@
    ```bash
    cd <root>   # 即 ai-embedded-platform/
    git diff vsf/ > tooling/patches/NNNN-<slug>.patch
-   git checkout vsf/   # 撤回原始改动，保持 vsf/ 干净
+   git restore vsf/   # 撤回原始改动，保持 vsf/ 干净
    ```
 3. 更新本 README 的清单表
 4. 验证 patch 可应用：

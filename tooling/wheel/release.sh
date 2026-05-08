@@ -119,12 +119,12 @@ TOTAL_WHEELS=$((L0 + L1 + L2 + L3))
 TEST_COUNT=$(find "$REPO/wheels" -name 'test_*.c' -o -name 'test_*.py' 2>/dev/null | wc -l)
 
 # Categorize commits
-WHEEL_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* wheel' || true)
-TOOL_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* tool' || true)
-DOC_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* docs' || true)
-CI_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* ci' || true)
-PROJECT_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* project' || true)
-PORT_COMMITS=$(echo "$LOG" | grep -c '^[a-f0-9]* port' || true)
+WHEEL_COMMITS=$(echo "$LOG" | grep -cE '^\w+ wheel' || true)
+TOOL_COMMITS=$(echo "$LOG" | grep -cE '^\w+ tool' || true)
+DOC_COMMITS=$(echo "$LOG" | grep -cE '^\w+ docs' || true)
+CI_COMMITS=$(echo "$LOG" | grep -cE '^\w+ ci' || true)
+PROJECT_COMMITS=$(echo "$LOG" | grep -cE '^\w+ project' || true)
+PORT_COMMITS=$(echo "$LOG" | grep -cE '^\w+ port' || true)
 
 DATE=$(date +%Y-%m-%d)
 

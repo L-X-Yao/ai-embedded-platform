@@ -20,10 +20,10 @@ import sys
 
 
 def parse_hex(s: str) -> int:
-    s = s.strip().lower()
-    if s.startswith("0x"):
+    s = s.strip()
+    if s.lower().startswith("0x"):
         return int(s, 16)
-    return int(s, 16) if all(c in "0123456789abcdef" for c in s) else int(s)
+    return int(s, 0)
 
 
 # ---------- CFSR bit decode ---------------------------------------------------
