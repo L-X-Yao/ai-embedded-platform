@@ -19,7 +19,7 @@ from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 WHEELS_DIR = REPO_ROOT / "wheels"
-LAYERS = ["primitives", "drivers", "protocols", "modules"]
+LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
 
 # ---------------------------------------------------------------------------
 # Data types

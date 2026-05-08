@@ -17,6 +17,12 @@
 
 set -euo pipefail
 
+# Require GNU sed for \b word-boundary support
+if ! sed --version 2>/dev/null | grep -q 'GNU'; then
+    echo "WARNING: GNU sed required for mutation testing (\\b word boundary)." >&2
+    echo "  On macOS: brew install gnu-sed && export PATH=\"\$(brew --prefix)/opt/gnu-sed/libexec/gnubin:\$PATH\"" >&2
+fi
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -57,7 +63,7 @@ MUTATION_OPS=(
     # Return value
     's/return 0/return -1/'
     's/return -1/return 0/'
-    # Constant — NOTE: \b is GNU sed word boundary (not POSIX); requires GNU sed
+    # Constant — NOTE: \b is GNU sed word boundary (not POSIX)
     's/\b1\b/0/'
     's/\b0\b/1/'
 )

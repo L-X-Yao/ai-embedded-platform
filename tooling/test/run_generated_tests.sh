@@ -78,7 +78,7 @@ while IFS= read -r f; do
     dep_srcs=""
     dep_incs=""
     for inc in $(grep -oE '#include "[^"]+\.h"' "$src" 2>/dev/null | sed 's/^#include "//;s/\.h"$//' \
-                 | grep -v "$name\|contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math\|limits"); do
+                 | grep -vw "contract\|string\|stdint\|stdbool\|stddef\|stdlib\|stdio\|math\|limits" | grep -v "^$name$"); do
         dep_c=$(find wheels/ -name "$inc.c" -not -path "*/test/*" 2>/dev/null | head -1)
         if [ -n "$dep_c" ]; then
             dep_srcs="$dep_srcs $dep_c"
