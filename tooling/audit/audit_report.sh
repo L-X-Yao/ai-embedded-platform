@@ -42,9 +42,12 @@ echo -e "${BOLD}[1/5] Wheel audit (audit_wheels.py)${NC}"
 SAVE_FLAG=""
 $SAVE && SAVE_FLAG="--save"
 wheel_out=$(python3 tooling/audit/audit_wheels.py --fast --quiet $SAVE_FLAG 2>&1) || true
-wheel_f=$(echo "$wheel_out" | sed -n 's/.*failures:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo 0)
-wheel_w=$(echo "$wheel_out" | sed -n 's/.*warnings:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo 0)
-wheel_i=$(echo "$wheel_out" | sed -n 's/.*info:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo 0)
+wheel_f=$(echo "$wheel_out" | sed -n 's/.*failures:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+wheel_f=${wheel_f:-0}
+wheel_w=$(echo "$wheel_out" | sed -n 's/.*warnings:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+wheel_w=${wheel_w:-0}
+wheel_i=$(echo "$wheel_out" | sed -n 's/.*info:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+wheel_i=${wheel_i:-0}
 echo -e "  Failures: $wheel_f  Warnings: $wheel_w  Info: $wheel_i"
 TOTAL_FAIL=$((TOTAL_FAIL + wheel_f))
 TOTAL_WARN=$((TOTAL_WARN + wheel_w))
@@ -57,7 +60,8 @@ if echo "$drift_out" | grep -q "all assertions match"; then
     echo -e "  ${GREEN}Clean${NC}"
     TOTAL_PASS=$((TOTAL_PASS + 1))
 else
-    drift_count=$(echo "$drift_out" | grep -oE '[0-9]+ drift' | grep -oE '[0-9]+' | head -1 || echo 0)
+    drift_count=$(echo "$drift_out" | grep -oE '[0-9]+ drift' | grep -oE '[0-9]+' | head -1)
+    drift_count=${drift_count:-0}
     echo -e "  ${YELLOW}$drift_count drift(s)${NC}"
     TOTAL_WARN=$((TOTAL_WARN + drift_count))
 fi
@@ -70,8 +74,10 @@ if echo "$mem_out" | grep -q "clean"; then
     echo -e "  ${GREEN}Clean${NC}"
     TOTAL_PASS=$((TOTAL_PASS + 1))
 else
-    mem_errs=$(echo "$mem_out" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' | head -1 || echo 0)
-    mem_warns=$(echo "$mem_out" | grep -oE '[0-9]+ warning' | grep -oE '[0-9]+' | head -1 || echo 0)
+    mem_errs=$(echo "$mem_out" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' | head -1)
+    mem_errs=${mem_errs:-0}
+    mem_warns=$(echo "$mem_out" | grep -oE '[0-9]+ warning' | grep -oE '[0-9]+' | head -1)
+    mem_warns=${mem_warns:-0}
     echo -e "  Errors: $mem_errs  Warnings: $mem_warns"
     TOTAL_FAIL=$((TOTAL_FAIL + mem_errs))
     TOTAL_WARN=$((TOTAL_WARN + mem_warns))
@@ -81,8 +87,10 @@ echo ""
 # 4. Tests
 echo -e "${BOLD}[4/5] Test suite (test_all.sh)${NC}"
 test_out=$(bash tooling/test/test_all.sh --parallel 2>&1) || true
-test_pass=$(echo "$test_out" | sed -n 's/.*Passed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo 0)
-test_fail=$(echo "$test_out" | sed -n 's/.*Failed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo 0)
+test_pass=$(echo "$test_out" | sed -n 's/.*Passed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+test_pass=${test_pass:-0}
+test_fail=$(echo "$test_out" | sed -n 's/.*Failed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+test_fail=${test_fail:-0}
 echo -e "  Passed: $test_pass  Failed: $test_fail"
 TOTAL_FAIL=$((TOTAL_FAIL + test_fail))
 echo ""
@@ -90,8 +98,10 @@ echo ""
 # 5. Audit tool self-test
 echo -e "${BOLD}[5/5] Audit self-test (test_audit_wheels.py)${NC}"
 selftest_out=$(python3 tooling/audit/test_audit_wheels.py 2>&1) || true
-selftest_pass=$(echo "$selftest_out" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | head -1 || echo 0)
-selftest_fail=$(echo "$selftest_out" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' | head -1 || echo 0)
+selftest_pass=$(echo "$selftest_out" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | head -1)
+selftest_pass=${selftest_pass:-0}
+selftest_fail=$(echo "$selftest_out" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' | head -1)
+selftest_fail=${selftest_fail:-0}
 echo -e "  Passed: $selftest_pass  Failed: $selftest_fail"
 TOTAL_FAIL=$((TOTAL_FAIL + selftest_fail))
 echo ""
@@ -108,4 +118,4 @@ else
     echo -e "  ${RED}Failures found — review above.${NC}"
 fi
 
-exit $TOTAL_FAIL
+exit $(( TOTAL_FAIL > 0 ? 1 : 0 ))

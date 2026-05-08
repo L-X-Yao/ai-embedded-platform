@@ -57,16 +57,15 @@ layer1_issues=0
 scan_pattern() {
     local label="$1" pattern="$2" glob="$3"
     local files
-    files=$(grep -rlE '\(-[A-Za-z_][A-Za-z0-9_]*\)' --include="$glob" wheels/ 2>/dev/null \
-            | xargs -r grep -lv '(uint32_t)(' 2>/dev/null \
+    files=$(grep -rlE "$pattern" --include="$glob" wheels/ 2>/dev/null \
             | grep -v vendor/ | grep -v test/ || true)
     if [[ -n "$files" ]]; then
         local count
         count=$(echo "$files" | wc -l)
         echo -e "  ${YELLOW}WARN${NC}  $label ($count files)"
         echo "$files" | while read -r f; do
-            grep -nE '\(-[A-Za-z_][A-Za-z0-9_]*\)' "$f" 2>/dev/null \
-            | grep -v '(uint32_t)(' | head -3 | while read -r line; do
+            grep -nE "$pattern" "$f" 2>/dev/null \
+            | head -3 | while read -r line; do
                 echo "         $f:$line"
             done
         done
@@ -82,7 +81,7 @@ if run_layer 1 "Pattern grep (static)"; then
     #  truncation, memcpy overflow, unchecked error return — are covered by
     #  audit_wheels.py with better precision and false-positive filtering.)
     scan_pattern "INT_MIN negation: bare -(int var)" \
-        '(?<!\(uint32_t\))\(-\w+\)' "*.c"
+        '\(-[A-Za-z_][A-Za-z0-9_]*\)' "*.c"
 
     echo ""
     if [[ $layer1_issues -gt 0 ]]; then
@@ -120,8 +119,10 @@ if run_layer 2 "Sanitizer (-fsanitize=address,undefined -O2)"; then
             > /dev/null 2>&1 && \
            cmake --build "$build_dir" > /dev/null 2>&1; then
 
-            # Run with timeout
-            if timeout 30 "$build_dir/test_$name" > /dev/null 2>&1; then
+            # Find the actual test binary (may differ from test_$name)
+            test_bin=$(find "$build_dir" -maxdepth 1 -type f -executable ! -name '*.o' ! -name '*.a' 2>/dev/null | head -1)
+            [[ -z "$test_bin" ]] && test_bin="$build_dir/test_$name"
+            if timeout 30 "$test_bin" > /dev/null 2>&1; then
                 layer2_pass=$((layer2_pass + 1))
             else
                 echo -e "  ${RED}FAIL${NC}  $name (sanitizer error or timeout)"
@@ -171,7 +172,7 @@ if run_layer 4 "Stress tests (accumulation, overflow, saturation)"; then
         test_dir="$wheel_dir/test"
 
         # Build stress test standalone
-        out="/tmp/stress_$$_$name"
+        out=$(mktemp "/tmp/stress_XXXXXX")
         if gcc -std=c99 -O2 -Wall -Wextra \
             -I"$wheel_dir" -I"$REPO/tooling/test" \
             "$stress_file" "$wheel_dir/$(basename "$wheel_dir").c" \
@@ -325,6 +326,7 @@ if [[ -n "$JSON_OUT" ]]; then
   "layers": {
     "pattern_grep": ${layer1_issues:-0},
     "sanitizer": ${layer2_fail:-0},
+    "fuzz": 0,
     "stress": ${layer4_fail:-0},
     "consistency": ${layer5_issues:-0},
     "cppcheck": ${layer6_issues:-0}
@@ -334,4 +336,4 @@ JSONEOF
     echo -e "  Snapshot saved: $JSON_OUT"
 fi
 
-exit $TOTAL_ISSUES
+exit $(( TOTAL_ISSUES > 0 ? 1 : 0 ))
