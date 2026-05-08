@@ -196,6 +196,7 @@ ref_files=$(grep -rl "wheels/$FROM" "$REPO/projects" "$REPO/wheels" \
     2>/dev/null || true)
 if [[ -n "$ref_files" ]]; then
     while IFS= read -r ref_file; do
+        [[ -z "$ref_file" ]] && continue
         rel=${ref_file#$REPO/}
         echo "  $rel"
         if ! $DRY_RUN; then

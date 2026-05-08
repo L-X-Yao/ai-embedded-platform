@@ -905,8 +905,6 @@ generate_test_spi() {
 
 /* ---------- mock SPI ---------- */
 
-static int     mock_fail_next;
-static int     mock_op_count;
 static int     mock_fail_at;
 static uint8_t mock_cs_state;
 
@@ -915,8 +913,6 @@ static int     xfer_log_idx;
 
 static void mock_reset(void)
 {
-    mock_fail_next = 0;
-    mock_op_count  = 0;
     mock_fail_at   = -1;
     mock_cs_state  = 1;
     xfer_log_idx   = 0;

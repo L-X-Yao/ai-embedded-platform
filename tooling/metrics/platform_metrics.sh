@@ -18,6 +18,8 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 METRICS_DIR="$REPO/.metrics"
 
 mkdir -p "$METRICS_DIR"
-grep -q '^\.metrics/' "$REPO/.gitignore" 2>/dev/null || echo '.metrics/' >> "$REPO/.gitignore"
+if [[ -f "$REPO/.gitignore" ]]; then
+    grep -qF '.metrics/' "$REPO/.gitignore" 2>/dev/null || echo '.metrics/' >> "$REPO/.gitignore"
+fi
 
 exec python3 "$REPO/tooling/metrics/platform_metrics_impl.py" "$REPO" "$METRICS_DIR" "$@"
