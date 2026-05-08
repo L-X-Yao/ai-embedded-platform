@@ -23,6 +23,7 @@ from _wheel_parser import (
     parse_functions,
     classify_return_type,
     discover_wheels,
+    scalar_default,
 )
 
 # ---------------------------------------------------------------------------
@@ -59,19 +60,6 @@ SKIP_WHEELS_BOUNDARY = {
     "telemetry", "ota_manager", "task_watchdog", "scheduler",
     "cli_shell", "sensor_hub", "data_logger",
 }
-
-
-# ---------------------------------------------------------------------------
-# Scalar default (boundary-specific: simpler, no sm_state_t/sm_event_t needed)
-# ---------------------------------------------------------------------------
-
-def scalar_default(type_text: str) -> str:
-    t = type_text.replace('const ', '').strip()
-    if t == 'bool':
-        return 'false'
-    if t in ('float', 'double'):
-        return '0.0f' if t == 'float' else '0.0'
-    return '0'
 
 
 # ---------------------------------------------------------------------------

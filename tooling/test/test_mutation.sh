@@ -434,8 +434,6 @@ for entry in "${WHEELS[@]}"; do
     if [[ $kill_rate -lt $KILL_THRESHOLD ]]; then
         GLOBAL_PASS=false
     fi
-
-    unset survived_list
 done
 
 # ---------------------------------------------------------------------------

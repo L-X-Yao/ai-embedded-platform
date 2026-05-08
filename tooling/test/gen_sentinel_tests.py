@@ -105,7 +105,7 @@ class SentinelTest:
 
 
 @dataclass
-class WheelInfo:
+class SentinelWheelInfo:
     """Information about a wheel for test generation."""
     name: str
     layer: str           # "primitives" or "protocols"
@@ -1125,7 +1125,7 @@ def _gen_fallback_test(wheel_name: str, func: FuncSig, test_name: str) -> Option
 # File generation
 # ---------------------------------------------------------------------------
 
-def get_includes(wheel: WheelInfo) -> str:
+def get_includes(wheel: SentinelWheelInfo) -> str:
     """Generate #include lines for a wheel's sentinel test."""
     includes = ['#include "test_harness.h"']
     includes.append(f'#include "../{wheel.name}.h"')
@@ -1149,7 +1149,7 @@ def get_includes(wheel: WheelInfo) -> str:
     return '\n'.join(sorted(set(includes)))
 
 
-def generate_test_file(wheel: WheelInfo) -> str:
+def generate_test_file(wheel: SentinelWheelInfo) -> str:
     """Generate the complete test file content."""
     includes = get_includes(wheel)
 
@@ -1175,9 +1175,9 @@ TEST_MAIN_END()
 # Main
 # ---------------------------------------------------------------------------
 
-def scan_wheel_info(wi: _wheel_parser.WheelInfo) -> Optional[WheelInfo]:
+def scan_wheel_info(wi: _wheel_parser.WheelInfo) -> Optional[SentinelWheelInfo]:
     """Scan a discovered wheel and generate sentinel tests for it."""
-    wheel = WheelInfo(name=wi.name, layer=wi.layer, header_path=wi.header_path)
+    wheel = SentinelWheelInfo(name=wi.name, layer=wi.layer, header_path=wi.header_path)
 
     text = read_header(wi.header_path)
     decls = parse_functions(text, wi.name)
