@@ -455,7 +455,7 @@ def chk_instances_accuracy(ctx, **_):
     top = "\n".join(ctx.header.split("\n")[:15])
     if "Instances: single" not in top:
         return None
-    if re.search(r'\bstatic\s+(?!inline\b|const\b)\w+\s+\w+\s*[;=]', ctx.source, re.MULTILINE):
+    if re.search(r'\bstatic\s+(?!inline\b|const\b)\w+\s+\w+\s*[\[;=]', ctx.source, re.MULTILINE):
         return None
     if re.search(r'\bglobal\b', ctx.source.lower()):
         return None
@@ -476,9 +476,14 @@ def chk_signed_left_shift(ctx, **_):
         stripped = line.strip()
         if stripped.startswith("//"):
             continue
-        if not decl_pat.search(line):
+        # Strip trailing line comment before searching, to avoid false positives
+        # from patterns like: int32_t x = 1; // shift << is 2
+        code_part = re.sub(r'//.*$', '', line)
+        if not decl_pat.search(code_part):
             continue
-        before_shift = line[:line.index("<<")]
+        if "<<" not in code_part:
+            continue
+        before_shift = code_part[:code_part.index("<<")]
         if re.search(r'\(uint\d+_t\)\s*$', before_shift.rstrip()):
             continue
         if "(uint" in before_shift and "<<" not in before_shift.split("(uint")[0]:
@@ -1561,7 +1566,7 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
     unconsumed = []
     for layer, name, path in wheels:
         wheel_dir = WHEELS / layer / name
-        cons = find_consumers(path, name)
+        cons = [] if fast else find_consumers(path, name)
         if cons:
             consumed.append((path, cons))
         else:
