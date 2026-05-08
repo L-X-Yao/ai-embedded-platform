@@ -136,6 +136,8 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
 
         if need_separate_check:
             rc = subprocess.run(cmd_base + ["check"]).returncode
+            if rc != 0:
+                print(f"[WARN] check action exited with rc={rc}")
 
         # collect results
         if serial_log_path.exists():
