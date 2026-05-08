@@ -6,8 +6,8 @@ Platform development tools, organized by domain. Run `make help` to see all avai
 
 | Directory | Purpose | Key files |
 |-----------|---------|-----------|
-| `audit/` | Code quality checks (55 automated) | `audit_wheels.py`, `audit_fix.py`, `audit_compile.py`, `audit_sanitizer.py`, `audit_coverage.py`, `audit_deep.sh`, `audit_report.sh`, `memory_audit.py`, `arm_size_audit.sh`, `arm_stack_audit.sh`, `run_frama_c.sh`, `_audit_build_base.py`, `doc_drift_check.py` |
-| `test/` | Test infrastructure + runners | `test_harness.h`, `mock_i2c.h`, `mock_spi.h`, `mock_gpio.h`, `hw_model.h`, `contract.h`, `property_test.h`, `test_all.sh`, `test_downstream.sh`, `test_scaffold.sh`, `coverage_scan.sh`, `coverage_wheel.sh`, `run_generated_tests.sh`, `test_mutation.sh`, `test_differential.sh`, `gen_null_tests.py`, `gen_sentinel_tests.py`, `gen_boundary_tests.py` |
+| `audit/` | Code quality checks (55 automated) | `audit_wheels.py`, `audit_fix.py`, `audit_compile.py`, `audit_sanitizer.py`, `audit_coverage.py`, `audit_deep.sh`, `audit_report.sh`, `memory_audit.py`, `arm_size_audit.sh`, `arm_stack_audit.sh`, `run_frama_c.sh`, `_audit_build_base.py`, `doc_drift_check.py`, `known_exceptions.json`, `test_audit_wheels.py` |
+| `test/` | Test infrastructure + runners | `test_harness.h`, `mock_i2c.h`, `mock_spi.h`, `mock_gpio.h`, `hw_model.h`, `contract.h`, `property_test.h`, `test_all.sh`, `test_downstream.sh`, `test_scaffold.sh`, `coverage_scan.sh`, `coverage_wheel.sh`, `run_generated_tests.sh`, `test_mutation.sh`, `test_differential.sh`, `gen_null_tests.py`, `gen_sentinel_tests.py`, `gen_boundary_tests.py`, `_wheel_parser.py`, `test_wheel_parser.py`, `diff_base64.c`, `diff_crc16.c`, `diff_hex_codec.c`, `run_fuzz_protocols.sh`, `run_libfuzzer.sh` |
 | `wheel/` | Wheel lifecycle | `new_wheel.sh`, `wheel_promote.sh`, `find_all_refs.sh`, `release.sh` |
 | `session/` | Session management + dispatch | `bootstrap.sh`, `handoff.sh`, `dispatch_agent.sh` |
 | `metrics/` | Platform health tracking | `platform_metrics.sh`, `platform_metrics_impl.py` |

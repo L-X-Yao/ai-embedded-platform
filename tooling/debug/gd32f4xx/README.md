@@ -27,6 +27,8 @@ Cortex-M4 SWD target — see "Genericity" column).
 | `stack_tasks.example.json` | template | Clean schema reference — copy and edit per project |
 | `stack_tasks.flybox.json` | flybox | Real-project config (9 tasks, VSF POSIX scale=2) — used by CI |
 | `serial_capture.ps1` | **Any STM32-family / GD32 SWD + USB-UART** | PowerShell SerialPort capture with CH340 DTR/RTS fix + boot-burst-friendly buffer |
+| `parse_fault.py` | **Any Cortex-M** | Parse Cortex-M fault register dumps (CFSR/HFSR/MMFAR/BFAR) from text output |
+| `test_parse_fault.py` | test | Tests for parse_fault.py |
 
 ## Why each asset exists (real flybox lessons)
 
