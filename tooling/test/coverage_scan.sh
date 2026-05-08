@@ -22,10 +22,14 @@ JOBS=4
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --threshold) THRESHOLD="$2"; shift 2 ;;
+        --threshold)
+            [[ "$2" =~ ^[0-9]+$ ]] || { echo "ERROR: --threshold must be numeric"; exit 1; }
+            THRESHOLD="$2"; shift 2 ;;
         --all)       SHOW_ALL=1; shift ;;
         --gate)      GATE=1; shift ;;
-        --jobs)      JOBS="$2"; shift 2 ;;
+        --jobs)
+            [[ "$2" =~ ^[0-9]+$ ]] || { echo "ERROR: --jobs must be numeric"; exit 1; }
+            JOBS="$2"; shift 2 ;;
         *)           echo "Unknown arg: $1"; exit 1 ;;
     esac
 done

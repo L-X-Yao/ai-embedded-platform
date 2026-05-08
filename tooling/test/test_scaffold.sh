@@ -10,6 +10,10 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+
+CLEANUP=()
+cleanup() { for d in "${CLEANUP[@]}"; do rm -rf "$d" 2>/dev/null; done; }
+trap cleanup EXIT
 BOLD='\033[1m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -61,10 +65,7 @@ echo ""
 echo -e "${BOLD}--- Summary ---${NC}"
 echo -e "  Total: $((PASS + FAIL))  ${GREEN}Passed: $PASS${NC}  ${RED}Failed: $FAIL${NC}"
 
-# Cleanup
-for d in "${CLEANUP[@]}"; do
-    rm -rf "$d" 2>/dev/null
-done
+# Cleanup is handled by EXIT trap
 
 [[ $FAIL -gt 0 ]] && exit 1
 exit 0

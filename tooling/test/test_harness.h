@@ -54,6 +54,8 @@ static int tests_fail = 0;
         tests_fail++; return; \
     } } while(0)
 
+/* String-prefix comparison (uses strlen -- stops at NUL).
+   For binary data with embedded NUL, use ASSERT_MEMEQ_N instead. */
 #define ASSERT_MEMEQ(p, s) do { \
     const char *_s = (s); \
     if (memcmp((p), _s, strlen(_s)) != 0) { \

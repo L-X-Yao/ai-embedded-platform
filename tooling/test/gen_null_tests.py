@@ -55,8 +55,8 @@ def make_default_value(param, wheel_name: str, idx: int) -> tuple:
         init = f"    memset(&{var}, 0, sizeof({var}));"
         return ([decl, init], f"&{var}")
 
-    # Non-pointer: just use a literal
-    return ([], "0")
+    # Non-pointer: use type-appropriate default
+    return ([], scalar_default(param.type_text))
 
 
 def make_dummy_for_type(type_text: str, var_name: str) -> list:
