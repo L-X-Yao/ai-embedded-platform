@@ -27,15 +27,17 @@ if [ ! -d "$VSF_DIR" ]; then
 fi
 
 # Find all numbered patches in lex order (0001-xxx.patch < 0002-yyy.patch < ...)
-patches=$(ls "$PATCH_DIR"/[0-9]*-*.patch 2>/dev/null | sort || true)
+shopt -s nullglob
+patch_files=("$PATCH_DIR"/[0-9]*-*.patch)
+shopt -u nullglob
 
-if [ -z "$patches" ]; then
+if [ ${#patch_files[@]} -eq 0 ]; then
     echo "No patches found in $PATCH_DIR"
     exit 0
 fi
 
 count=0
-for p in $patches; do
+for p in "${patch_files[@]}"; do
     name=$(basename "$p")
     count=$((count + 1))
     case $mode in

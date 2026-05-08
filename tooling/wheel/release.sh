@@ -8,8 +8,8 @@
 #   release.sh --current              # show latest release tag
 #   release.sh --dry-run v0.1.0       # preview without tagging
 #
-# The tag is a lightweight git tag on HEAD. The changelog is appended
-# to CHANGELOG.md at repo root.
+# The changelog is appended to CHANGELOG.md at repo root.
+# The script does NOT create the tag -- the user must run `git tag` manually.
 #
 # Version format: vMAJOR.MINOR.PATCH
 #   MAJOR: breaking wheel API change or architecture shift
