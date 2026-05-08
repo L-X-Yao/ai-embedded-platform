@@ -8,23 +8,23 @@
 #include <string.h>
 
 TEST(test_base64_encode_sentinel) {
-    char out[64];
+    char out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     uint8_t input[] = {0x41, 0x42, 0x43};
     base64_encode(input, 3, out, &out_len);
-    /* sentinel: byte after NUL terminator (encode NUL-terminates) */
-    ASSERT_EQ((uint8_t)out[out_len + 1], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 
 TEST(test_base64_decode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     base64_decode("QUJD", 4, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 

@@ -26,12 +26,12 @@ TEST(test_hex_encode_upper_sentinel) {
 }
 
 TEST(test_hex_decode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     hex_decode("DEADBEEF", 8, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 

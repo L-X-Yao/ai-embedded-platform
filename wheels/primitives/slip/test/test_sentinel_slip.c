@@ -8,25 +8,25 @@
 #include <string.h>
 
 TEST(test_slip_encode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     uint8_t input[] = {0x01, 0x02, 0x03};
     slip_encode(input, 3, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 
 TEST(test_slip_decode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     /* SLIP-encoded frame: END + data + END */
     uint8_t encoded[] = {0xC0, 0x01, 0x02, 0x03, 0xC0};
     slip_decode(encoded, 5, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 

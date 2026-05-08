@@ -509,13 +509,17 @@ def _gen_build_pattern_test(wheel_name: str, func: FuncSig, test_name: str) -> O
     if not call:
         return None
 
+    # String-output functions null-terminate at buf[written]; sentinel is at written+1
+    str_output = "(char *)" in call
+    offset = "written + 1" if str_output else "written"
+    guard_sz = "(size_t)(written + 1)" if str_output else "(size_t)written"
     code = (f"TEST({test_name}) {{\n"
             f"    uint8_t buf[256];\n"
             f"    memset(buf, 0xFF, sizeof(buf));\n"
             f"    {call}\n"
             f"    /* sentinel: byte after written data must be untouched */\n"
-            f"    if (written > 0 && (size_t)written < sizeof(buf)) {{\n"
-            f"        ASSERT_EQ(buf[written], 0xFF);\n"
+            f"    if (written > 0 && {guard_sz} < sizeof(buf)) {{\n"
+            f"        ASSERT_EQ(buf[{offset}], 0xFF);\n"
             f"    }}\n"
             f"}}\n\n")
     return SentinelTest(fn, test_name, code)
