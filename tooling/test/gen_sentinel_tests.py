@@ -17,25 +17,30 @@ Usage:
     python tooling/test/gen_sentinel_tests.py [--dry-run]
 """
 
-import os
-import re
 import sys
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# Shared parsing layer used by all three test generators
+import _wheel_parser
+from _wheel_parser import (
+    WHEELS_DIR,
+    read_header,
+    parse_functions,
+    discover_wheels,
+    FuncDecl,
+    Param as _Param,
+)
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-WHEELS_DIR = REPO_ROOT / "wheels"
 TARGET_LAYERS = ["primitives", "protocols"]
-SKIP_LAYERS = ["drivers", "modules"]
-
-# Wheels known to be vendored or otherwise unsuitable
-VENDOR_WHEELS = set()
+SKIP_LAYERS = {"drivers", "modules"}
 
 # Wheels that are purely callback/streaming with no output buffers worth testing
 SKIP_WHEELS = {
@@ -74,17 +79,17 @@ SKIP_WHEELS = {
 
 @dataclass
 class FuncParam:
-    """A parsed function parameter."""
+    """A parsed function parameter with sentinel-specific annotations."""
     type_str: str        # e.g. "uint8_t *", "const char *", "uint16_t"
     name: str            # e.g. "out", "buf", "out_len"
     is_pointer: bool
     is_const: bool
-    is_output_buf: bool  # heuristic: non-const pointer to uint8_t/char/void
+    is_output_buf: bool  # heuristic: non-const pointer to uint8_t/char/void with output name
 
 
 @dataclass
 class FuncSig:
-    """A parsed function signature from a header."""
+    """A parsed function signature with sentinel-specific annotations."""
     return_type: str     # e.g. "base64_err_t", "int", "uint16_t"
     name: str            # e.g. "base64_encode"
     params: list         # list of FuncParam
@@ -110,171 +115,47 @@ class WheelInfo:
 
 
 # ---------------------------------------------------------------------------
-# Parsing
+# Conversion from shared Param -> sentinel FuncParam
 # ---------------------------------------------------------------------------
 
-def read_header(path: Path) -> str:
-    """Read header file, stripping comments."""
-    text = path.read_text(encoding="utf-8", errors="replace")
-    # Strip block comments
-    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-    # Strip line comments
-    text = re.sub(r'//[^\n]*', '', text)
-    return text
+def _is_output_buf(shared_param: _Param) -> bool:
+    """Heuristic: is this a non-const pointer that receives output bytes?"""
+    if not shared_param.is_pointer:
+        return False
+    type_text = shared_param.type_text
+    is_const = 'const' in type_text
+    if is_const:
+        return False
+    base_type = type_text.replace('const', '').replace('*', '').strip()
+    if base_type not in ('uint8_t', 'char', 'void', 'int8_t'):
+        return False
+    name = shared_param.name
+    output_names = {'out', 'buf', 'data', 'dst', 'resp', 'result', 'values',
+                    'regs', 'ip', 'name', 'item'}
+    return name in output_names or name.startswith('out') or name.startswith('buf')
 
 
-def extract_function_declarations(text: str) -> list:
-    """Extract function declarations from preprocessed header text.
-
-    Handles multi-line declarations. Returns list of (return_type, name, params_str).
-    """
-    # Join continuation lines
-    text = re.sub(r'\\\n', ' ', text)
-
-    results = []
-
-    # Match function declarations: return_type name(params);
-    # Must handle multi-line params.
-    # Strategy: find patterns like "type name(" then collect until ");"
-    pattern = re.compile(
-        r'^\s*'
-        r'((?:(?:static\s+inline|extern|const|unsigned|signed|struct|enum|volatile)\s+)*'
-        r'(?:\w+(?:\s*\*)*)\s+)'   # return type (possibly multi-word + pointer)
-        r'(\w+)'                      # function name
-        r'\s*\(',                     # opening paren
-        re.MULTILINE
-    )
-
-    for m in pattern.finditer(text):
-        ret_type = m.group(1).strip()
-        func_name = m.group(2)
-        start = m.end()
-
-        # Skip static inline helper bodies, typedefs, macros
-        if 'typedef' in ret_type:
-            continue
-
-        # Find matching closing paren + semicolon
-        depth = 1
-        pos = start
-        while pos < len(text) and depth > 0:
-            if text[pos] == '(':
-                depth += 1
-            elif text[pos] == ')':
-                depth -= 1
-            pos += 1
-
-        if depth != 0:
-            continue
-
-        params_str = text[start:pos - 1].strip()
-
-        # Check if this is a declaration (followed by ;) or definition (followed by {)
-        rest = text[pos:pos + 20].lstrip()
-        if rest and rest[0] == '{':
-            # This is a static inline definition - skip
-            continue
-
-        results.append((ret_type, func_name, params_str))
-
-    return results
-
-
-def parse_param(raw: str) -> Optional[FuncParam]:
-    """Parse a single parameter string into FuncParam."""
-    raw = raw.strip()
-    if not raw or raw == 'void':
-        return None
-
-    # Handle function pointer params: skip them
-    if '(' in raw and ')' in raw:
-        # Extract name from function pointer: void (*name)(...)
-        fp_match = re.search(r'\(\s*\*\s*(\w+)\s*\)', raw)
-        if fp_match:
-            return FuncParam(
-                type_str=raw, name=fp_match.group(1),
-                is_pointer=False, is_const=False, is_output_buf=False
-            )
-        return None
-
-    # Handle array params: uint8_t name[4]
-    arr_match = re.match(r'(.+?)\s+(\w+)\s*\[', raw)
-    if arr_match:
-        type_str = arr_match.group(1).strip()
-        name = arr_match.group(2)
-        is_const = 'const' in type_str
-        return FuncParam(
-            type_str=raw, name=name,
-            is_pointer=True, is_const=is_const, is_output_buf=False
-        )
-
-    # Split into type + name
-    # Pointer asterisks may be attached to type or name
-    parts = raw.rsplit(None, 1)
-    if len(parts) < 2:
-        return None
-
-    type_part = parts[0]
-    name_part = parts[1]
-
-    # Handle "*name" -> move * to type
-    while name_part.startswith('*'):
-        type_part += ' *'
-        name_part = name_part[1:]
-
-    is_pointer = '*' in type_part
-    is_const = 'const' in type_part
-
-    # Determine if this is an output buffer parameter
-    is_output_buf = False
-    if is_pointer and not is_const:
-        base_type = type_part.replace('const', '').replace('*', '').strip()
-        output_names = {'out', 'buf', 'data', 'dst', 'resp', 'result', 'values',
-                        'regs', 'ip', 'name', 'item'}
-        if base_type in ('uint8_t', 'char', 'void', 'int8_t'):
-            if name_part in output_names or name_part.startswith('out') or name_part.startswith('buf'):
-                is_output_buf = True
-
+def _shared_param_to_func_param(shared_param: _Param) -> FuncParam:
+    """Convert a shared Param to a sentinel-specific FuncParam."""
+    type_text = shared_param.type_text
+    is_const = 'const' in type_text
     return FuncParam(
-        type_str=type_part.strip(),
-        name=name_part,
-        is_pointer=is_pointer,
+        type_str=type_text,
+        name=shared_param.name,
+        is_pointer=shared_param.is_pointer,
         is_const=is_const,
-        is_output_buf=is_output_buf
+        is_output_buf=_is_output_buf(shared_param),
     )
 
 
-def parse_function(ret_type: str, name: str, params_str: str) -> FuncSig:
-    """Parse a function declaration into FuncSig."""
-    raw_params = []
-    depth = 0
-    current = ""
-    for ch in params_str:
-        if ch == '(':
-            depth += 1
-            current += ch
-        elif ch == ')':
-            depth -= 1
-            current += ch
-        elif ch == ',' and depth == 0:
-            raw_params.append(current.strip())
-            current = ""
-        else:
-            current += ch
-    if current.strip():
-        raw_params.append(current.strip())
-
-    params = []
-    for rp in raw_params:
-        p = parse_param(rp)
-        if p:
-            params.append(p)
-
+def _funcdecl_to_funcsig(decl: FuncDecl) -> FuncSig:
+    """Convert a shared FuncDecl to a sentinel-specific FuncSig."""
+    params = [_shared_param_to_func_param(p) for p in decl.params]
     return FuncSig(
-        return_type=ret_type,
-        name=name,
+        return_type=decl.return_type,
+        name=decl.name,
         params=params,
-        raw_line=f"{ret_type} {name}({params_str})"
+        raw_line=decl.raw_line,
     )
 
 
@@ -1336,28 +1217,19 @@ TEST_MAIN_END()
 # Main
 # ---------------------------------------------------------------------------
 
-def scan_wheel(layer: str, name: str) -> Optional[WheelInfo]:
-    """Scan a single wheel and generate sentinel tests for it."""
-    wheel_dir = WHEELS_DIR / layer / name
-    header_path = wheel_dir / f"{name}.h"
+def scan_wheel_info(wi: _wheel_parser.WheelInfo) -> Optional[WheelInfo]:
+    """Scan a discovered wheel and generate sentinel tests for it."""
+    wheel = WheelInfo(name=wi.name, layer=wi.layer, header_path=wi.header_path)
 
-    if not header_path.exists():
-        return None
+    text = read_header(wi.header_path)
+    decls = parse_functions(text, wi.name)
 
-    if name in SKIP_WHEELS or name in VENDOR_WHEELS:
-        return None
-
-    wheel = WheelInfo(name=name, layer=layer, header_path=header_path)
-
-    text = read_header(header_path)
-    decls = extract_function_declarations(text)
-
-    for ret_type, func_name, params_str in decls:
-        func = parse_function(ret_type, func_name, params_str)
+    for decl in decls:
+        func = _funcdecl_to_funcsig(decl)
         wheel.funcs.append(func)
 
-        if should_generate_test(func, name):
-            test = generate_generic_sentinel_test(name, func)
+        if should_generate_test(func, wi.name):
+            test = generate_generic_sentinel_test(wi.name, func)
             if test:
                 wheel.tests.append(test)
 
@@ -1369,49 +1241,39 @@ def main():
 
     print(f"Scanning wheels in {WHEELS_DIR}...")
     print(f"Target layers: {TARGET_LAYERS}")
-    print(f"Skip layers: {SKIP_LAYERS}")
+    print(f"Skip layers: {sorted(SKIP_LAYERS)}")
     print()
 
-    total_wheels = 0
     total_tests = 0
     generated_files = []
     skipped_no_tests = []
 
-    for layer in TARGET_LAYERS:
-        layer_dir = WHEELS_DIR / layer
-        if not layer_dir.exists():
+    # discover_wheels returns only target layers when skip_layers is set correctly
+    all_wheels = discover_wheels(skip_layers=SKIP_LAYERS, skip_wheels=SKIP_WHEELS)
+    total_wheels = len(all_wheels)
+
+    for wi in all_wheels:
+        wheel = scan_wheel_info(wi)
+
+        if not wheel:
+            skipped_no_tests.append(f"{wi.layer}/{wi.name}")
             continue
 
-        for entry in sorted(layer_dir.iterdir()):
-            if not entry.is_dir():
-                continue
-            name = entry.name
-            if name.startswith('_') or name.startswith('.'):
-                continue
+        # Generate test file
+        test_dir = WHEELS_DIR / wi.layer / wi.name / "test"
+        test_file = test_dir / f"test_sentinel_{wi.name}.c"
 
-            total_wheels += 1
-            wheel = scan_wheel(layer, name)
+        content = generate_test_file(wheel)
+        total_tests += len(wheel.tests)
 
-            if not wheel:
-                if name not in SKIP_WHEELS and name not in VENDOR_WHEELS:
-                    skipped_no_tests.append(f"{layer}/{name}")
-                continue
+        if dry_run:
+            print(f"  [DRY] {wi.layer}/{wi.name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
+        else:
+            test_dir.mkdir(parents=True, exist_ok=True)
+            test_file.write_text(content, encoding="utf-8")
+            print(f"  [GEN] {wi.layer}/{wi.name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
 
-            # Generate test file
-            test_dir = WHEELS_DIR / layer / name / "test"
-            test_file = test_dir / f"test_sentinel_{name}.c"
-
-            content = generate_test_file(wheel)
-            total_tests += len(wheel.tests)
-
-            if dry_run:
-                print(f"  [DRY] {layer}/{name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
-            else:
-                test_dir.mkdir(parents=True, exist_ok=True)
-                test_file.write_text(content, encoding="utf-8")
-                print(f"  [GEN] {layer}/{name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
-
-            generated_files.append((layer, name, len(wheel.tests), test_file))
+        generated_files.append((wi.layer, wi.name, len(wheel.tests), test_file))
 
     print()
     print("=" * 60)
