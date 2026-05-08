@@ -5,7 +5,7 @@
 #   update_wheel_inventory.sh          # print updated inventory
 #   update_wheel_inventory.sh --apply  # rewrite CLAUDE.md in place
 #
-# Scans wheels/ directories and updates the "58 个 wheels" section in CLAUDE.md.
+# Scans wheels/ directories and updates wheel counts and lists in CLAUDE.md.
 
 set -euo pipefail
 

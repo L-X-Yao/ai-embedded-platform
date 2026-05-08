@@ -41,7 +41,7 @@ STATUS_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --ref)    TARGET_REF="$2"; shift 2 ;;
+        --ref)    [[ $# -ge 2 ]] || { echo "ERROR: --ref requires a value"; exit 1; }; TARGET_REF="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
         --status) STATUS_ONLY=true; shift ;;
         -h|--help)
@@ -250,10 +250,12 @@ echo ""
 echo -e "${BOLD}=== Next steps ===${NC}"
 echo "  1. Review changes:  git diff --stat -- vsf/"
 echo "  2. Run wheel tests: make test-wheels"
+step=3
 if $patch_conflict; then
-    echo "  3. Fix patch conflicts in tooling/patches/"
+    echo "  $step. Fix patch conflicts in tooling/patches/"
+    step=$((step + 1))
 fi
-echo "  3. Commit:          git add vsf/ tooling/.vsf-version && git commit"
+echo "  $step. Commit:          git add vsf/ tooling/.vsf-version && git commit"
 echo ""
 echo -e "  Suggested commit message:"
 echo -e "    ${CYAN}wheel: sync vsf upstream to $target_short${NC}"

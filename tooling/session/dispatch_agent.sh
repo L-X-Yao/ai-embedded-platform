@@ -254,7 +254,7 @@ if $MERGE_ALL; then
         echo -e "${YELLOW}Skipping push due to failures.${NC}"
     fi
 
-    exit $FAILED
+    exit $(( FAILED > 0 ? 1 : 0 ))
 fi
 
 if [[ -z "$NAME" ]]; then
