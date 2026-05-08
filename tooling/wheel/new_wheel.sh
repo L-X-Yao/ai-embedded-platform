@@ -678,7 +678,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *ctx)
 {
     if (!ctx) return ${NAME_UPPER}_ERR_PARAM;
     /* TODO: implement */
-    return ${NAME_UPPER}_ERR_OK;
+    return ${NAME_UPPER}_OK;
 }
 C_EOF
 }
@@ -1501,9 +1501,9 @@ generate_test_none() {
 
 TEST(test_zero_init_safety)
 {
-    /* init must succeed on a clean call */
-    int rc = ${NAME_LOWER}_init();
-    ASSERT_EQ(rc, 0);
+    ${NAME_LOWER}_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    ASSERT_EQ(${NAME_LOWER}_init(&ctx), ${NAME_UPPER}_OK);
 }
 
 /* TODO: add tests */
