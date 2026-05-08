@@ -92,9 +92,9 @@ if [[ -z "$EXES" ]]; then
 fi
 
 [[ $MACHINE -eq 0 ]] && echo "Running tests..."
-for exe in $EXES; do
-    "$exe" > /dev/null 2>&1 || true
-done
+while IFS= read -r exe; do
+    [[ -n "$exe" ]] && "$exe" > /dev/null 2>&1 || true
+done <<< "$EXES"
 
 # Find ALL .gcda files for the wheel source (one per cmake target)
 mapfile -t GCDA_FILES < <(find "$BUILD_DIR" -name "${NAME}.c.gcda" 2>/dev/null)
