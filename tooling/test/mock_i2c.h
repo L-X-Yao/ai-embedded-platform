@@ -43,11 +43,12 @@ static int     mock_read_count;
 static void mock_i2c_reset(void)
 {
     memset(mock_regs, 0, sizeof(mock_regs));
-    mock_fail_next  = 0;
-    mock_op_count   = 0;
-    mock_fail_at    = -1;
+    mock_fail_next   = 0;
+    mock_op_count    = 0;
+    mock_fail_at     = -1;
     mock_write_count = 0;
     mock_read_count  = 0;
+    mock_delay_ms_count = 0;
 }
 
 static bool mock_i2c_should_fail(void)

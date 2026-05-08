@@ -251,36 +251,6 @@ def should_generate_test(func: FuncSig, wheel_name: str) -> bool:
 # Per-wheel test generators (wheel-specific knowledge)
 # ---------------------------------------------------------------------------
 
-def gen_test_base64_encode(wheel_name: str, func: FuncSig) -> Optional[SentinelTest]:
-    code = textwrap.dedent("""\
-        TEST(test_base64_encode_sentinel) {
-            uint8_t input[] = {0x41, 0x42, 0x43};  /* "ABC" */
-            char out[16];
-            memset(out, 0xFF, sizeof(out));
-            uint16_t out_len = sizeof(out);
-            base64_encode(input, 3, out, &out_len);
-            /* sentinel: byte after written data must be untouched */
-            ASSERT_EQ((uint8_t)out[out_len + 1], 0xFF);
-        }
-    """)
-    return SentinelTest("base64_encode", "test_base64_encode_sentinel", code)
-
-
-def gen_test_base64_decode(wheel_name: str, func: FuncSig) -> Optional[SentinelTest]:
-    code = textwrap.dedent("""\
-        TEST(test_base64_decode_sentinel) {
-            const char *b64 = "QUJD";  /* decodes to "ABC" = 3 bytes */
-            uint8_t out[16];
-            memset(out, 0xFF, sizeof(out));
-            uint16_t out_len = sizeof(out);
-            base64_decode(b64, 4, out, &out_len);
-            /* sentinel: byte after decoded data must be untouched */
-            ASSERT_EQ(out[out_len], 0xFF);
-        }
-    """)
-    return SentinelTest("base64_decode", "test_base64_decode_sentinel", code)
-
-
 # ---------------------------------------------------------------------------
 # Generic test generator
 # ---------------------------------------------------------------------------
@@ -709,18 +679,6 @@ def _gen_inout_pattern_test(wheel_name: str, func: FuncSig, test_name: str) -> O
     if not call:
         return None
 
-    code = textwrap.dedent(f"""\
-        TEST({test_name}) {{
-            {buf_type} out[64];
-            memset(out, 0xFF, sizeof(out));
-            uint16_t out_len = sizeof(out);
-            {call}
-            /* sentinel: byte after output data must be untouched */
-            ASSERT_EQ(({buf_type} == 'c' ? (uint8_t)out[out_len] : out[out_len]), 0xFF);
-        }}
-    """)
-    # Fix the type check to be compile-time
-    # Actually, just use uint8_t cast for char buffers
     code = (f"TEST({test_name}) {{\n"
             f"    {buf_type} out[64];\n"
             f"    memset(out, 0xFF, sizeof(out));\n"
