@@ -15,10 +15,11 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-TOOLING_TEST="$REPO/tooling/test"
+# shellcheck source=_arm_audit_common.sh
+source "$(dirname "$0")/_arm_audit_common.sh"
 
-CC="arm-none-eabi-gcc"
+REPO="$ARM_AUDIT_REPO"
+CC="$ARM_AUDIT_CC"
 SIZE="arm-none-eabi-size"
 CFLAGS="-Os -mcpu=cortex-m4 -mthumb -ffreestanding -std=c99 -c"
 CFLAGS="$CFLAGS -Wall -Wextra -Werror"
@@ -28,10 +29,7 @@ FORMAT="table"
 [[ "${1:-}" == "--csv" ]] && FORMAT="csv"
 [[ "${1:-}" == "--markdown" ]] && FORMAT="markdown"
 
-if ! command -v "$CC" &>/dev/null; then
-    echo "ERROR: $CC not found in PATH" >&2
-    exit 1
-fi
+arm_audit_check_toolchain
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -79,38 +77,15 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     [[ "$name" == "__pycache__" ]] && continue
     [[ "$name" == "README.md" ]] && continue
 
-    # Find source files
+    # Find source files (include all — size audit measures everything)
     sources=()
-    if [[ -d "$wheel_dir/vendor/src" ]]; then
-        while IFS= read -r f; do sources+=("$f"); done < <(find "$wheel_dir/vendor/src" -name '*.c' 2>/dev/null)
-    fi
-    while IFS= read -r f; do
-        sources+=("$f")
-    done < <(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null)
-
-    if [[ ${#sources[@]} -eq 0 ]]; then
+    if ! discover_wheel_sources "$wheel_dir" "all"; then
         SKIP_COUNT=$((SKIP_COUNT + 1))
         continue
     fi
 
-    # Determine include paths
-    INCLUDES="-I$wheel_dir -I$TOOLING_TEST -I$TMPDIR/stubs"
-    if [[ -d "$wheel_dir/vendor/inc" ]]; then
-        INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
-    fi
-    # Cross-wheel dependencies: auto-discover from CMakeLists.txt
-    if [[ -f "$wheel_dir/CMakeLists.txt" ]]; then
-        while IFS= read -r dep_name; do
-            [[ -z "$dep_name" ]] && continue
-            dep_dir=$(find "$REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
-            [[ -n "$dep_dir" ]] && INCLUDES="$INCLUDES -I$dep_dir"
-        done < <(grep -oE '\.\./\.\./[a-z_]+/[a-z_]+' "$wheel_dir/CMakeLists.txt" 2>/dev/null \
-            | sed 's|.*/||' | sort -u || true)
-    fi
-    # Vendor sub-deps: kvs needs fal headers
-    if [[ -d "$wheel_dir/vendor/inc" ]] && grep -rq '#include.*fal\.h' "$wheel_dir/vendor" 2>/dev/null; then
-        INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal"
-    fi
+    # Determine include paths (extra: config stubs dir)
+    INCLUDES=$(resolve_includes "$wheel_dir" "$TMPDIR/stubs")
 
     # Compile each source (vendor sources get -Wno-error)
     obj_files=()
