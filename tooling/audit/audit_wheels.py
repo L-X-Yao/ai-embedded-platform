@@ -45,10 +45,10 @@ CI_YAML = REPO / ".github" / "workflows" / "ci.yml"
 WISHLIST = WHEELS / "WISHLIST.md"
 PROJECTS = REPO / "projects"
 
-LAYERS = ["primitives", "drivers", "protocols", "modules", "_draft"]
 CONSUMER_REQUIRED = {"drivers", "protocols", "modules"}
-SKIP_DIRS = {"test", "build", "__pycache__", ".pytest_cache"}
 KNOWN_EXCEPTIONS_FILE = REPO / "tooling" / "audit" / "known_exceptions.json"
+
+from _audit_build_base import find_wheels as _find_wheels_base
 
 
 def _load_known_exceptions() -> dict:
@@ -611,6 +611,15 @@ def _strip_c_comments(text):
     return re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
 
 
+def _strip_literals(line):
+    """Remove string/char literals, block comments, and line comments so brace counting is accurate."""
+    line = re.sub(r'"(?:[^"\\]|\\.)*"', '""', line)   # string literals
+    line = re.sub(r"'(?:[^'\\]|\\.)'", "' '", line)    # char literals
+    line = re.sub(r'/\*.*?\*/', '', line)               # same-line block comments
+    line = re.sub(r'//.*', '', line)                     # line comments
+    return line
+
+
 def chk_header_self_contained(ctx, **_):
     """Check that .h includes standard headers for types it uses (Q10)."""
     if not ctx.header:
@@ -670,7 +679,9 @@ def chk_switch_default(ctx, **_):
     """Flag switch statements in .c without a default case (Q8)."""
     if not ctx.source:
         return None
-    lines = ctx.source.split('\n')
+    # Strip block comments first to prevent /* } */ from confusing brace counting.
+    source = re.sub(r'/\*.*?\*/', '', ctx.source, flags=re.DOTALL)
+    lines = source.split('\n')
     violations = []
     i = 0
     while i < len(lines):
@@ -680,7 +691,8 @@ def chk_switch_default(ctx, **_):
             j = i
             found_open = False
             while j < len(lines):
-                for ch in lines[j]:
+                stripped = _strip_literals(lines[j])
+                for ch in stripped:
                     if ch == '{':
                         brace_depth += 1
                         found_open = True
@@ -811,19 +823,19 @@ CHECK_TABLE = [
 
 
 def find_wheels():
-    """Return list of (layer, name, rel_path) for each wheel directory."""
-    wheels = []
-    for layer in LAYERS:
-        layer_dir = WHEELS / layer
-        if not layer_dir.is_dir():
-            continue
-        for entry in sorted(layer_dir.iterdir()):
-            if not entry.is_dir():
-                continue
-            if entry.name in SKIP_DIRS or entry.name.startswith("."):
-                continue
-            wheels.append((layer, entry.name, f"wheels/{layer}/{entry.name}"))
-    return wheels
+    """Return list of (layer, name, rel_path_str) for each wheel directory.
+
+    Delegates to the shared implementation in _audit_build_base; converts
+    the Path third element to the ``wheels/<layer>/<name>`` string form that
+    this module's callers expect.
+    """
+    return [
+        (layer, name, f"wheels/{layer}/{name}")
+        for layer, name, _dir in _find_wheels_base(
+            skip_vendor=False,
+            require_test_dir=False,
+        )
+    ]
 
 
 def detect_cross_wheel_deps(wheel_dir: Path) -> list:
