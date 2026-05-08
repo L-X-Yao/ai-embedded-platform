@@ -34,6 +34,8 @@ static mock_gpio_dir_t mock_gpio_dir[MOCK_GPIO_PIN_COUNT];
 static int            mock_gpio_write_count;
 static int            mock_gpio_read_count;
 static int            mock_gpio_fail_next;
+static int            mock_gpio_fail_at;
+static int            mock_gpio_op_count;
 static uint32_t       mock_gpio_delay_count;
 
 /* Build a ctx value that encodes pin index. */
@@ -58,7 +60,17 @@ static void mock_gpio_reset(void)
     mock_gpio_write_count = 0;
     mock_gpio_read_count  = 0;
     mock_gpio_fail_next   = 0;
+    mock_gpio_fail_at     = -1;
+    mock_gpio_op_count    = 0;
     mock_gpio_delay_count = 0;
+}
+
+static bool mock_gpio_should_fail(void)
+{
+    mock_gpio_op_count++;
+    if (mock_gpio_fail_next) { mock_gpio_fail_next = 0; return true; }
+    if (mock_gpio_fail_at >= 0 && mock_gpio_op_count > mock_gpio_fail_at) return true;
+    return false;
 }
 
 __attribute__((unused))
@@ -66,6 +78,7 @@ static void mock_gpio_write_pin(void *ctx, bool level)
 {
     uint8_t pin = mock_gpio_pin_from_ctx(ctx);
     mock_gpio_write_count++;
+    if (mock_gpio_should_fail()) return;
     mock_gpio_pins[pin] = level;
 }
 
@@ -74,6 +87,7 @@ static bool mock_gpio_read_pin(void *ctx)
 {
     uint8_t pin = mock_gpio_pin_from_ctx(ctx);
     mock_gpio_read_count++;
+    if (mock_gpio_should_fail()) return false;
     return mock_gpio_pins[pin];
 }
 

@@ -34,8 +34,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+SCAN_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$SCAN_TMPDIR"' EXIT
 
 # Discover all measurable wheels
 declare -a wheel_list=()
@@ -59,7 +59,7 @@ measure_wheel() {
     local idx="$2"
     local out
     out=$(bash "$SCRIPT" --machine "$wheel" 2>/dev/null)
-    echo "$wheel $out" > "$TMPDIR/result_${idx}"
+    echo "$wheel $out" > "$SCAN_TMPDIR/result_${idx}"
 }
 
 # Launch workers with concurrency limit
@@ -81,7 +81,7 @@ ok=0
 errors=0
 
 for i in "${!wheel_list[@]}"; do
-    result_file="$TMPDIR/result_${i}"
+    result_file="$SCAN_TMPDIR/result_${i}"
     [[ -f "$result_file" ]] || continue
     line=$(cat "$result_file")
     wheel=$(echo "$line" | awk '{print $1}')

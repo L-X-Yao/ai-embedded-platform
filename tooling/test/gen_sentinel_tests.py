@@ -680,12 +680,12 @@ def _gen_inout_pattern_test(wheel_name: str, func: FuncSig, test_name: str) -> O
         return None
 
     code = (f"TEST({test_name}) {{\n"
-            f"    {buf_type} out[64];\n"
+            f"    {buf_type} out[65];\n"
             f"    memset(out, 0xFF, sizeof(out));\n"
-            f"    uint16_t out_len = sizeof(out);\n"
+            f"    uint16_t out_len = sizeof(out) - 1;\n"
             f"    {call}\n"
-            f"    /* sentinel: byte after output data must be untouched */\n"
-            f"    ASSERT_EQ((uint8_t)out[out_len], 0xFF);\n"
+            f"    /* sentinel: last byte must be untouched regardless of out_len */\n"
+            f"    ASSERT_EQ((uint8_t)out[64], 0xFF);\n"
             f"}}\n\n")
     return SentinelTest(fn, test_name, code)
 

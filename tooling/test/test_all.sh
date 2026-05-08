@@ -54,6 +54,7 @@ while [[ $# -gt 0 ]]; do
             if [[ -z "${1:-}" ]]; then
                 echo "Error: -j requires a number" >&2; exit 1
             fi
+            [[ "$1" =~ ^[0-9]+$ ]] || { echo "Error: -j requires a positive integer" >&2; exit 1; }
             PARALLEL=true; PARALLEL_JOBS="$1"; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"

@@ -100,7 +100,7 @@ while [[ $# -gt 0 ]]; do
         --wheel)  shift; WHEEL_FILTER="$1"; shift ;;
         --quick)  QUICK=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
-        --limit)  shift; LIMIT="$1"; shift ;;
+        --limit)  shift; LIMIT="$1"; [[ "$LIMIT" =~ ^[0-9]+$ ]] || { echo "Error: --limit requires a positive integer" >&2; exit 1; }; shift ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0
@@ -332,11 +332,8 @@ for entry in "${WHEELS[@]}"; do
 
         # Extract the search pattern from the sed expression to find matching lines.
         # The operator format is 's/PATTERN/REPLACEMENT/' — extract PATTERN.
-        search_pattern=$(echo "$op" | sed -n 's|^s/\(.*\)/.*/$|\1|p')
-        if [[ -z "$search_pattern" ]]; then
-            # Fallback: try without trailing /
-            search_pattern=$(echo "$op" | sed -n 's|^s/\(.*\)/.*$|\1|p')
-        fi
+        # Use [^/]* (non-greedy on /) so operators containing / in REPLACEMENT parse correctly.
+        search_pattern=$(echo "$op" | sed -n 's|^s/\([^/]*\)/.*$|\1|p')
 
         if [[ -z "$search_pattern" ]]; then
             continue

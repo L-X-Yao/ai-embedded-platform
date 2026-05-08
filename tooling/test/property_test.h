@@ -87,8 +87,8 @@ static void prop__arbi_fill(uint32_t *state, uint8_t *buf, size_t len)
 
 #define PROP_ASSERT_MEM_EQ(a, b, n) do { \
     if (memcmp((a), (b), (n)) != 0) { \
-        printf("  FAIL %s:%d: mem mismatch (%d bytes)  [seed=0x%08X iter=%d]\n", \
-               __func__, __LINE__, (int)(n), \
+        printf("  FAIL %s:%d: mem mismatch (%u bytes)  [seed=0x%08X iter=%d]\n", \
+               __func__, __LINE__, (unsigned)(n), \
                (unsigned)prop__seed_orig, prop__iter); \
         tests_fail++; return; \
     } } while (0)
