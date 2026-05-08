@@ -91,6 +91,7 @@ def main():
     if sys.platform == "win32":
         print("NOTE: ASan/UBSan require Linux gcc. Run in WSL: wsl python3 tooling/audit/audit_sanitizer.py")
         print("      Windows MinGW lacks -lasan/-lubsan. Skipping.\n")
+        return 0
 
     all_wheels = find_wheels()
 

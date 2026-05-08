@@ -47,7 +47,7 @@
 
 **1. 正则 vs 编译器**
 
-audit_wheels.py 的 55 项检查用正则匹配，适合结构/规范类检查（"有没有这个节"、"命名对不对"）。代码安全类检查（"有没有签名左移 UB"）正则天花板低，由 audit_compile.py 和 audit_sanitizer.py 用编译器/运行时替代。
+audit_wheels.py 的 52 项检查用正则匹配，适合结构/规范类检查（"有没有这个节"、"命名对不对"）。代码安全类检查（"有没有签名左移 UB"）正则天花板低，由 audit_compile.py 和 audit_sanitizer.py 用编译器/运行时替代。
 
 两种工具并存：正则检查快（全量 178 wheels < 1 秒），编译器检查精确但慢（需 cmake 构建）。日常用正则守卫，发布前用编译器扫全量。
 
@@ -84,7 +84,7 @@ Warning 基线必须为 0。任何 warning 要么修复，要么经审查后加�
 
 | 维度 | 可信度 | 主要守卫 |
 |------|--------|---------|
-| 结构/规范合规 | ~99% | audit_wheels.py 55 项检查 |
+| 结构/规范合规 | ~99% | audit_wheels.py 52 项检查 |
 | 类型安全 | ~95% | audit_compile.py 11 个 -W 标志 |
 | 内存安全（已测路径） | ~95% | audit_sanitizer.py ASan+UBSan |
 | 输入鲁棒性 | ~90% | 属性测试 + NULL 测试 |
@@ -123,7 +123,7 @@ make audit-report
 
 | 命令 | 工具 | 作用 | 平台 |
 |------|------|------|------|
-| `make audit` | `audit_wheels.py` | 55 项结构/规范/代码检查 | 全平台 |
+| `make audit` | `audit_wheels.py` | 52 项结构/规范/代码检查 | 全平台 |
 | `make audit-compile` | `audit_compile.py` | gcc 11 个 -W 标志编译分析 | 全平台 |
 | `make audit-sanitizer` | `audit_sanitizer.py` | AddressSanitizer + UBSan 运行时检测 | WSL |
 | `make audit-coverage` | `audit_coverage.py` | gcov 行覆盖率（L0 ≥ 80%, L1-L3 ≥ 60%） | WSL |
@@ -155,7 +155,7 @@ make audit-report
 tooling/
 ├── audit/                          审计工具
 │   ├── _audit_build_base.py        共享构建模块（wheel 发现/cmake/清理）
-│   ├── audit_wheels.py             核心：55 项 CHECK_TABLE 检查
+│   ├── audit_wheels.py             核心：52 项 CHECK_TABLE 检查
 │   ├── audit_compile.py            编译器警告分析
 │   ├── audit_sanitizer.py          ASan + UBSan
 │   ├── audit_coverage.py           gcov 覆盖率
@@ -200,7 +200,7 @@ docs/
 
 ### CHECK_TABLE 表驱动
 
-所有 55 项检查注册在 `CHECK_TABLE` 列表中，每项是一个元组：
+所有 52 项检查注册在 `CHECK_TABLE` 列表中，每项是一个元组：
 
 ```python
 CHECK_TABLE = [
@@ -214,7 +214,7 @@ CHECK_TABLE = [
 
 ### WheelCtx 文件缓存
 
-每个 wheel 的 4 个关键文件（.h / .c / README.md / test/CMakeLists.txt）在审计开始时一次性读入 `WheelCtx` 对象，后续 55 项检查共享缓存，消除 ~6000 次重复 IO。全量 178 wheels 审计耗时 < 1 秒。
+每个 wheel 的 4 个关键文件（.h / .c / README.md / test/CMakeLists.txt）在审计开始时一次性读入 `WheelCtx` 对象，后续 52 项检查共享缓存，消除 ~6000 次重复 IO。全量 178 wheels 审计耗时 < 1 秒。
 
 ### 特殊检查（不在 CHECK_TABLE 中）
 
@@ -447,7 +447,7 @@ make test-mutate               # 目标 ≥ 85% 杀死率
 
 ### 已完成
 
-- ✅ 55 项 CHECK_TABLE 规范检查（v3，5 轮 meta-audit）
+- ✅ 52 项 CHECK_TABLE 规范检查（v3，5 轮 meta-audit）
 - ✅ 编译器分析 / Sanitizer / 覆盖率工具（v4）
 - ✅ 属性测试框架 + 137 个 wheel 覆盖（v4）
 - ✅ NULL / Sentinel 测试生成器（v4）
@@ -472,7 +472,7 @@ make test-mutate               # 目标 ≥ 85% 杀死率
 ## 当前审计状态
 
 ```
-audit_wheels.py:   0 failures, 0 warnings (3 known exceptions)
+audit_wheels.py:   0 failures, 0 warnings (2 known exceptions)
 audit_compile.py:  102/141 pass, 0 warnings
 audit_sanitizer:   119/141 pass, 0 failures (WSL)
 audit_coverage:    141/141 pass (WSL)
