@@ -124,6 +124,11 @@ fi
 _SCRIPT_DONE=false
 cleanup_on_interrupt() {
     if [[ "$_SCRIPT_DONE" = false && -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then
+        echo "  Interrupted — rolling back changes from backup..."
+        for f in $(find "$BACKUP_DIR" -type f 2>/dev/null); do
+            rel="${f#$BACKUP_DIR/}"
+            cp "$f" "$REPO/$rel" 2>/dev/null && echo "    restored: $rel"
+        done
         rm -rf "$BACKUP_DIR"
     fi
 }
