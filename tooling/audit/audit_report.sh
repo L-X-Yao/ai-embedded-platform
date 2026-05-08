@@ -41,16 +41,24 @@ run_tool() {
 echo -e "${BOLD}[1/5] Wheel audit (audit_wheels.py)${NC}"
 SAVE_FLAG=""
 $SAVE && SAVE_FLAG="--save"
-wheel_out=$(python3 tooling/audit/audit_wheels.py --fast --quiet $SAVE_FLAG 2>&1) || true
+wheel_rc=0
+wheel_out=$(python3 tooling/audit/audit_wheels.py --fast --quiet $SAVE_FLAG 2>&1) || wheel_rc=$?
 wheel_f=$(echo "$wheel_out" | sed -n 's/.*failures:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
 wheel_f=${wheel_f:-0}
 wheel_w=$(echo "$wheel_out" | sed -n 's/.*warnings:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
 wheel_w=${wheel_w:-0}
 wheel_i=$(echo "$wheel_out" | sed -n 's/.*info:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
 wheel_i=${wheel_i:-0}
-echo -e "  Failures: $wheel_f  Warnings: $wheel_w  Info: $wheel_i"
-TOTAL_FAIL=$((TOTAL_FAIL + wheel_f))
-TOTAL_WARN=$((TOTAL_WARN + wheel_w))
+# Detect tool crash: non-zero exit AND no parseable summary (Python traceback, etc.)
+if [[ $wheel_rc -ne 0 && $wheel_f -eq 0 && $wheel_w -eq 0 ]]; then
+    echo -e "  ${RED}ERROR: audit_wheels.py exited $wheel_rc (crash?)${NC}"
+    echo "$wheel_out" | tail -3 | while read -r line; do echo "    $line"; done
+    TOTAL_FAIL=$((TOTAL_FAIL + 1))
+else
+    echo -e "  Failures: $wheel_f  Warnings: $wheel_w  Info: $wheel_i"
+    TOTAL_FAIL=$((TOTAL_FAIL + wheel_f))
+    TOTAL_WARN=$((TOTAL_WARN + wheel_w))
+fi
 echo ""
 
 # 2. Doc drift

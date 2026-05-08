@@ -181,19 +181,30 @@ def fix_missing_stddef(wheel_dir, name, apply=False):
     text = c.read_text(encoding="utf-8", errors="replace")
     if "NULL" not in text:
         return []
-    if "#include <stddef.h>" in text or "#include <stdlib.h>" in text:
-        return []
-    if "#include <string.h>" in text:
+    # stdio.h, string.h, stdlib.h, and stddef.h all define NULL per C standard.
+    if any(hdr in text for hdr in (
+        "#include <stddef.h>",
+        "#include <stdlib.h>",
+        "#include <string.h>",
+        "#include <stdio.h>",
+        "#include <wchar.h>",
+    )):
         return []
 
     fixes = [f"{name}.c: uses NULL without #include <stddef.h>"]
     if apply:
         lines, nl = _read_lines(c)
+        inserted = False
         for i, line in enumerate(lines):
             if line.startswith(f'#include "{name}.h"'):
                 lines.insert(i + 1, "#include <stddef.h>")
+                inserted = True
                 break
-        c.write_text(nl.join(lines), encoding="utf-8")
+        if inserted:
+            c.write_text(nl.join(lines), encoding="utf-8")
+        else:
+            # Anchor include not found — cannot insert safely; report but do not claim fix.
+            fixes = []
 
     return fixes
 

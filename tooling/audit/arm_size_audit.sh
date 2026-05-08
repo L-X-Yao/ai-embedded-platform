@@ -31,12 +31,12 @@ FORMAT="table"
 
 arm_audit_check_toolchain
 
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+AUDIT_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$AUDIT_TMPDIR"' EXIT
 
 # Generate config stubs for wheels that need compile-time config headers
-mkdir -p "$TMPDIR/stubs"
-cat > "$TMPDIR/stubs/fal_cfg.h" <<'STUB'
+mkdir -p "$AUDIT_TMPDIR/stubs"
+cat > "$AUDIT_TMPDIR/stubs/fal_cfg.h" <<'STUB'
 #ifndef FAL_CFG_H
 #define FAL_CFG_H
 #include "fal_def.h"
@@ -45,7 +45,7 @@ extern const struct fal_flash_dev _stub_flash;
 #define FAL_PART_TABLE { {"stub", "stub", 0, 4096} }
 #endif
 STUB
-cat > "$TMPDIR/stubs/fdb_cfg.h" <<'STUB'
+cat > "$AUDIT_TMPDIR/stubs/fdb_cfg.h" <<'STUB'
 #ifndef _FDB_CFG_H_
 #define _FDB_CFG_H_
 #define FDB_USING_FAL_MODE
@@ -85,13 +85,13 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     fi
 
     # Determine include paths (extra: config stubs dir)
-    INCLUDES=$(resolve_includes "$wheel_dir" "$TMPDIR/stubs")
+    INCLUDES=$(resolve_includes "$wheel_dir" "$AUDIT_TMPDIR/stubs")
 
     # Compile each source (vendor sources get -Wno-error)
     obj_files=()
     build_ok=true
     for src in "${sources[@]}"; do
-        obj="$TMPDIR/$(basename "$src" .c).o"
+        obj="$AUDIT_TMPDIR/$(basename "$src" .c).o"
         src_flags="$CFLAGS"
         if [[ "$src" == *"/vendor/"* ]]; then
             src_flags="${src_flags/-Werror/}"
@@ -136,7 +136,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     esac
 
     # Clean up for next wheel
-    rm -f "$TMPDIR"/*.o
+    rm -f "$AUDIT_TMPDIR"/*.o
 done
 
 # Footer

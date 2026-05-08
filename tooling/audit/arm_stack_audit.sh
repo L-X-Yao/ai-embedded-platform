@@ -41,8 +41,8 @@ done
 
 arm_audit_check_toolchain
 
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+AUDIT_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$AUDIT_TMPDIR"' EXIT
 
 # Collect all rows into arrays for sorting warnings to the end
 declare -a ROW_WHEEL=()
@@ -80,9 +80,9 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     su_files=()
     for src in "${sources[@]}"; do
         stem=$(basename "$src" .c)
-        obj="$TMPDIR/${stem}.o"
+        obj="$AUDIT_TMPDIR/${stem}.o"
         if $CC $CFLAGS $INCLUDES -o "$obj" "$src" 2>/dev/null; then
-            su="$TMPDIR/${stem}.su"
+            su="$AUDIT_TMPDIR/${stem}.su"
             if [[ -f "$su" ]]; then
                 su_files+=("$su")
             fi
@@ -95,13 +95,13 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     if ! $build_ok; then
         FAIL_COUNT=$((FAIL_COUNT + 1))
         # Clean up for next wheel
-        rm -f "$TMPDIR"/*.o "$TMPDIR"/*.su
+        rm -f "$AUDIT_TMPDIR"/*.o "$AUDIT_TMPDIR"/*.su
         continue
     fi
 
     if [[ ${#su_files[@]} -eq 0 ]]; then
         SKIP_COUNT=$((SKIP_COUNT + 1))
-        rm -f "$TMPDIR"/*.o "$TMPDIR"/*.su
+        rm -f "$AUDIT_TMPDIR"/*.o "$AUDIT_TMPDIR"/*.su
         continue
     fi
 
