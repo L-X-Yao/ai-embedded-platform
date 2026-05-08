@@ -67,7 +67,7 @@ FUNC_RE = re.compile(
     r'\s+'
     r'(\w+)'                   # function name
     r'\s*\('
-    r'([^)]*)'                 # parameter list
+    r'((?:[^()]*|\([^()]*\))*)'  # parameter list (handles one level of nested parens for fn ptrs)
     r'\)\s*;',
     re.MULTILINE
 )

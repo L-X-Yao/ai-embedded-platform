@@ -21,7 +21,6 @@ NC='\033[0m'
 
 PASS=0
 FAIL=0
-CLEANUP=()
 
 test_template() {
     local layer="$1" name="$2"

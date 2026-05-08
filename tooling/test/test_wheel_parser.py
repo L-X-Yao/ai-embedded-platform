@@ -439,8 +439,8 @@ class TestParseFunctions:
     def test_real_wheel_parses_without_error(self):
         # Smoke test: parse the log wheel header
         log_header = WHEELS_DIR / "primitives" / "log" / "log.h"
-        if log_header.is_file():
-            from _wheel_parser import read_header
-            text = read_header(log_header)
-            funcs = parse_functions(text, "log")
-            assert len(funcs) >= 1
+        assert log_header.is_file(), "log wheel header missing — expected at wheels/primitives/log/log.h"
+        from _wheel_parser import read_header
+        text = read_header(log_header)
+        funcs = parse_functions(text, "log")
+        assert len(funcs) >= 1

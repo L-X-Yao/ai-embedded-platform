@@ -48,7 +48,7 @@ static int tests_fail = 0;
 
 #define ASSERT_NEAR(a, b, tol) do { \
     float _a = (float)(a), _b = (float)(b), _t = (float)(tol); \
-    if ((_a - _b) > _t || (_b - _a) > _t) { \
+    if (!(_a >= _b - _t && _a <= _b + _t)) { \
         printf("  FAIL %s:%d: %.6f not near %.6f (tol=%.6f)\n", \
                __func__, __LINE__, (double)_a, (double)_b, (double)_t); \
         tests_fail++; return; \
@@ -65,7 +65,7 @@ static int tests_fail = 0;
 
 #define ASSERT_NEAR_D(a, b, eps) do { \
     double _a = (double)(a), _b = (double)(b), _e = (double)(eps); \
-    if ((_a - _b) > _e || (_b - _a) > _e) { \
+    if (!(_a >= _b - _e && _a <= _b + _e)) { \
         printf("  FAIL %s:%d: %g not near %g (eps=%g)\n", \
                __func__, __LINE__, _a, _b, _e); \
         tests_fail++; return; \
