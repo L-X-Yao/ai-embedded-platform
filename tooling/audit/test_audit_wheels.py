@@ -68,6 +68,7 @@ def run_all():
     global _pass, _fail
     for fn in _tests:
         aw._file_cache.clear()
+        w = None
         try:
             fn()
             _pass += 1
@@ -78,6 +79,12 @@ def run_all():
         except Exception as e:
             _fail += 1
             print(f"  ERR   {fn.__name__}: {type(e).__name__}: {e}")
+        finally:
+            # Clean up any TmpWheel instances left by failed tests
+            import gc
+            for obj in gc.get_objects():
+                if isinstance(obj, TmpWheel) and obj.path.exists():
+                    obj.cleanup()
     print(f"\n{_pass + _fail} tests: {_pass} passed, {_fail} failed")
     return _fail
 

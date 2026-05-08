@@ -84,6 +84,7 @@ if run_layer 1 "Pattern grep (static)"; then
         '\(-[A-Za-z_][A-Za-z0-9_]*\)' "*.c"
 
     echo ""
+    # Re-read layer1_issues since scan_pattern may run in subshell pipelines
     if [[ $layer1_issues -gt 0 ]]; then
         echo -e "  ${YELLOW}Layer 1: $layer1_issues potential issues${NC}"
         echo "  (Review each to determine if false positive or real bug)"

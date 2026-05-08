@@ -111,11 +111,14 @@ def audit(mem_dir: Path) -> list:
 
 def main():
     mem_dir = None
-    for arg in sys.argv[1:]:
+    args_iter = iter(range(1, len(sys.argv)))
+    for i in args_iter:
+        arg = sys.argv[i]
         if arg.startswith("--dir="):
             mem_dir = Path(arg.split("=", 1)[1])
-        elif arg == "--dir" and sys.argv.index(arg) + 1 < len(sys.argv):
-            mem_dir = Path(sys.argv[sys.argv.index(arg) + 1])
+        elif arg == "--dir" and i + 1 < len(sys.argv):
+            mem_dir = Path(sys.argv[i + 1])
+            next(args_iter, None)
     if not mem_dir:
         mem_dir = find_memory_dir()
     if not mem_dir:
