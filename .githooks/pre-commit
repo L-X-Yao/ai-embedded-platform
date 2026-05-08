@@ -23,7 +23,7 @@ while IFS= read -r file; do
     [[ -z "$file" ]] && continue
 
     # Control characters in filename (Claude Code runtime artifact)
-    if echo "$file" | grep -qP '[\x00-\x08\x0e-\x1f\x7f]'; then
+    if printf '%s' "$file" | LC_ALL=C grep -q $'[\x01-\x08\x0e-\x1f\x7f]'; then
         ctrl_chars+=("$file")
     fi
 
@@ -83,18 +83,17 @@ fi
 
 # Auto-fix documentation drift and stage corrected files
 if command -v python3 &>/dev/null; then
-    if ! python3 tooling/audit/doc_drift_check.py --fix 2>/dev/null; then
-        drift_files=(CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md)
-        staged=()
-        for df in "${drift_files[@]}"; do
-            if [[ -f "$df" ]] && ! git diff --quiet "$df" 2>/dev/null; then
-                git add "$df"
-                staged+=("$df")
-            fi
-        done
-        if [[ ${#staged[@]} -gt 0 ]]; then
-            echo "NOTE: doc drift auto-fixed and staged: ${staged[*]}"
+    python3 tooling/audit/doc_drift_check.py --fix 2>/dev/null || true
+    drift_files=(CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md)
+    staged=()
+    for df in "${drift_files[@]}"; do
+        if [[ -f "$df" ]] && ! git diff --quiet "$df" 2>/dev/null; then
+            git add "$df"
+            staged+=("$df")
         fi
+    done
+    if [[ ${#staged[@]} -gt 0 ]]; then
+        echo "NOTE: doc drift auto-fixed and staged: ${staged[*]}"
     fi
 fi
 

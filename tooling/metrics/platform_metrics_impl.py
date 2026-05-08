@@ -45,10 +45,13 @@ def collect(repo: Path) -> dict:
 
     scripts_dir = repo / "tooling"
     tool_count = sum(
-        1 for subdir in scripts_dir.iterdir()
-        if subdir.is_dir() and subdir.name not in ("test", "experiments", "__pycache__")
-        for f in subdir.iterdir()
-        if f.is_file() and f.suffix in (".sh", ".py") and not f.name.startswith("__")
+        1 for f in scripts_dir.rglob("*")
+        if f.is_file()
+        and f.suffix in (".sh", ".py")
+        and not f.name.startswith("__")
+        and "test" not in f.relative_to(scripts_dir).parts[:1]
+        and "experiments" not in f.relative_to(scripts_dir).parts[:1]
+        and "__pycache__" not in f.parts
     ) if scripts_dir.is_dir() else 0
 
     makefile = repo / "Makefile"

@@ -48,12 +48,12 @@ while [[ $# -gt 0 ]]; do
             PY_SCRIPT="$2"
             [[ -f "$PY_SCRIPT" ]] || { echo "ERROR: script not found: $PY_SCRIPT"; exit 1; }
             shift 2 ;;
-        --file)      FILE_GLOB="$2"; shift 2 ;;
+        --file)      [[ $# -ge 2 ]] || { echo "ERROR: --file requires a value"; exit 1; }; FILE_GLOB="$2"; shift 2 ;;
         --dry-run)   DRY_RUN=true; shift ;;
         --verify)    VERIFY=true; shift ;;
         --no-verify) VERIFY=false; shift ;;
         --all)       ALL_MODE=true; shift ;;
-        --layer)     LAYER_FILTER="$2"; shift 2 ;;
+        --layer)     [[ $# -ge 2 ]] || { echo "ERROR: --layer requires a value"; exit 1; }; LAYER_FILTER="$2"; shift 2 ;;
         -h|--help)
             sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
             exit 0 ;;
@@ -123,10 +123,10 @@ _SCRIPT_DONE=false
 cleanup_on_interrupt() {
     if [[ "$_SCRIPT_DONE" = false && -n "$BACKUP_DIR" && -d "$BACKUP_DIR" ]]; then
         echo "  Interrupted — rolling back changes from backup..."
-        for f in $(find "$BACKUP_DIR" -type f 2>/dev/null); do
+        while IFS= read -r f; do
             rel="${f#$BACKUP_DIR/}"
             cp "$f" "$REPO/$rel" 2>/dev/null && echo "    restored: $rel"
-        done
+        done < <(find "$BACKUP_DIR" -type f 2>/dev/null)
         rm -rf "$BACKUP_DIR"
     fi
 }

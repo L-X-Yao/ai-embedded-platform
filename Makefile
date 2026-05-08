@@ -219,7 +219,7 @@ test-mutate:
 
 verify:
 	@echo "CBMC verification (requires cbmc in PATH)..."
-	@if ! command -v cbmc >/dev/null 2>&1; then echo "cbmc not installed — skipping"; exit 0; fi
+	@if ! command -v cbmc >/dev/null 2>&1; then echo "cbmc not installed -- skipping"; exit 0; fi
 	@fail=0; total=0; \
 	for f in $$(find wheels/ -name 'verify_*.c' 2>/dev/null); do \
 		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
@@ -311,7 +311,9 @@ batch-scaffold:
 	done; \
 	if [ $$count -gt 0 ]; then \
 		git add $$created && \
-		git commit -m "wheel: scaffold $$count wheels for batch build" && \
+		msg="wheel: scaffold $$count wheels for batch build"; \
+		[ $$count -eq 1 ] && msg="wheel: scaffold 1 wheel for batch build"; \
+		git commit -m "$$msg" && \
 		echo "" && echo "$$count scaffolds committed. Ready for agent dispatch."; \
 	else \
 		echo "No new scaffolds created."; \

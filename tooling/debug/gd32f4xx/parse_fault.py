@@ -103,7 +103,7 @@ def classify(cfsr, hfsr, mmfar, bfar, lr, pc):
             causes.append("Bus fault during stacking — stack pointer likely corrupt or overflowed into invalid memory")
             gdb.append("info reg msp psp  # check if stack pointer is in valid SRAM range")
         if bfsr & 0x02:
-            causes.append(f"Precise bus error at {'0x%08X' % bfar if bfar else 'BFAR'} — read/write to unmapped address")
+            causes.append(f"Precise bus error at {'0x%08X' % bfar if bfar is not None else 'BFAR'} — read/write to unmapped address")
             gdb.append("info symbol *(uint32_t*)($psp + 0x18)  # faulting PC")
         if bfsr & 0x04:
             causes.append("Imprecise bus error — happened 1-3 instructions before the fault was taken; BFAR unreliable")
@@ -117,7 +117,7 @@ def classify(cfsr, hfsr, mmfar, bfar, lr, pc):
             gdb.append("info reg msp psp sp  # check if SP is below _estack or thread stack base")
             gdb.append("# Compare with: python3 stack_analyzer.py build --task-config stack_tasks.flybox.json")
         if mmfsr & 0x02:
-            causes.append(f"Data access violation at {'0x%08X' % mmfar if mmfar else 'MMFAR'} — MPU or NULL deref")
+            causes.append(f"Data access violation at {'0x%08X' % mmfar if mmfar is not None else 'MMFAR'} — MPU or NULL deref")
         if mmfsr & 0x01:
             causes.append("Instruction access violation — executing from non-executable region")
 

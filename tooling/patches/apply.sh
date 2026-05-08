@@ -37,6 +37,7 @@ if [ ${#patch_files[@]} -eq 0 ]; then
 fi
 
 count=0
+check_failed=0
 for p in "${patch_files[@]}"; do
     name=$(basename "$p")
     count=$((count + 1))
@@ -63,6 +64,7 @@ for p in "${patch_files[@]}"; do
                 echo "[$count] $name: already applied"
             else
                 echo "[$count] $name: CONFLICT"
+                check_failed=1
             fi
             ;;
         revert)
@@ -77,3 +79,4 @@ for p in "${patch_files[@]}"; do
 done
 
 echo "Done ($count patches)."
+[[ "$check_failed" -eq 0 ]] || exit 1
