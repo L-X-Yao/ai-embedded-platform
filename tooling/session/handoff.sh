@@ -26,8 +26,7 @@ fi
 quality=$(python3 "$REPO/tooling/metrics/platform_metrics_impl.py" "$REPO" "$REPO/.metrics" --quality 2>/dev/null | grep -v "===" || echo "  (unavailable)")
 
 # --- Known issues count ---
-known_fixed=$(grep -c "^- " "$REPO/docs/known-issues.md" 2>/dev/null || echo "0")
-known_gaps=$(grep -c "^- " "$REPO/docs/known-issues.md" 2>/dev/null || echo "0")
+known_total=$(grep -c "^- " "$REPO/docs/known-issues.md" 2>/dev/null || echo "0")
 
 # --- Pending items from known-issues.md ---
 pending_tests=$(grep "untested" "$REPO/docs/known-issues.md" 2>/dev/null | head -5 || echo "  (none)")
@@ -59,7 +58,8 @@ EOF
 
 # --- Smart suggestions ---
 wheels_changed_num=$(echo "$wheels_changed" | tr -dc '0-9')
-if [ -n "$wheels_changed_num" ] && [ "$wheels_changed_num" -gt 10 ] 2>/dev/null; then
+wheels_changed_num=${wheels_changed_num:-0}
+if [ "$wheels_changed_num" -gt 10 ] 2>/dev/null; then
     echo "- **Run super audit**: $wheels_changed wheel files changed since last audit" >> "$OUT"
 fi
 if [ "$uncommitted" -gt 0 ]; then

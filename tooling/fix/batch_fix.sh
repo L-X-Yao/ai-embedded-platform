@@ -36,8 +36,18 @@ WHEELS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --sed)       SED_EXPR="$2"; shift 2 ;;
-        --py)        PY_SCRIPT="$2"; shift 2 ;;
+        --sed)
+            [[ $# -ge 2 ]] || { echo "ERROR: --sed requires a value"; exit 1; }
+            SED_EXPR="$2"
+            # Validate sed expression with a no-op test
+            echo "" | sed "$SED_EXPR" > /dev/null 2>&1 || \
+                { echo "ERROR: invalid sed expression: $SED_EXPR"; exit 1; }
+            shift 2 ;;
+        --py)
+            [[ $# -ge 2 ]] || { echo "ERROR: --py requires a value"; exit 1; }
+            PY_SCRIPT="$2"
+            [[ -f "$PY_SCRIPT" ]] || { echo "ERROR: script not found: $PY_SCRIPT"; exit 1; }
+            shift 2 ;;
         --file)      FILE_GLOB="$2"; shift 2 ;;
         --dry-run)   DRY_RUN=true; shift ;;
         --verify)    VERIFY=true; shift ;;

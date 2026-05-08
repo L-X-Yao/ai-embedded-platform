@@ -39,8 +39,8 @@ fi
 
 dirty_all=$(git -C "$REPO" status --porcelain 2>/dev/null)
 dirty=$(echo "$dirty_all" | head -20)
-if [[ -n "$dirty" ]]; then
-    count=$(echo "$dirty_all" | wc -l)
+if [[ -n "$dirty_all" ]]; then
+    count=$(echo "$dirty_all" | grep -c '^' || echo 0)
     echo -e "  Dirty files: ${YELLOW}${count}${NC}"
     echo "$dirty" | sed 's/^/    /'
     if [[ "$count" -gt 20 ]]; then

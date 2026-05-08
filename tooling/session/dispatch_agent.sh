@@ -4,6 +4,10 @@
 # Wraps `claude -p -w` with --dangerously-skip-permissions, launches in
 # background, and reports PID + worktree branch name.
 #
+# Security note: agents run with all permissions skipped. The --scope flag
+# is a prompt-level hint only -- it is NOT enforced at the filesystem level.
+# Do not pass untrusted user input as --prompt without sanitization.
+#
 # Usage:
 #   dispatch_agent.sh --name audit --budget 1.00 --prompt 'run full audit'
 #   dispatch_agent.sh --name fix  --budget 0.50 --prompt 'fix L0 findings' --wait
@@ -51,11 +55,11 @@ usage() {
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --name)      NAME="$2";   shift 2 ;;
-        --budget)    BUDGET="$2"; shift 2 ;;
-        --prompt)    PROMPT="$2"; shift 2 ;;
-        --prompt-file) PROMPT_FILE="$2"; shift 2 ;;
-        --scope)     SCOPE="$2";  shift 2 ;;
+        --name)      [[ $# -ge 2 ]] || { echo "ERROR: --name requires a value"; exit 1; }; NAME="$2";   shift 2 ;;
+        --budget)    [[ $# -ge 2 ]] || { echo "ERROR: --budget requires a value"; exit 1; }; BUDGET="$2"; shift 2 ;;
+        --prompt)    [[ $# -ge 2 ]] || { echo "ERROR: --prompt requires a value"; exit 1; }; PROMPT="$2"; shift 2 ;;
+        --prompt-file) [[ $# -ge 2 ]] || { echo "ERROR: --prompt-file requires a value"; exit 1; }; PROMPT_FILE="$2"; shift 2 ;;
+        --scope)     [[ $# -ge 2 ]] || { echo "ERROR: --scope requires a value"; exit 1; }; SCOPE="$2";  shift 2 ;;
         --wait)      WAIT=true;   shift   ;;
         --merge-all) MERGE_ALL=true; shift ;;
         --push)      PUSH=true;   shift   ;;

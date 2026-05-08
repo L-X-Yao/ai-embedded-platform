@@ -59,11 +59,12 @@ done
 
 # Detect scope
 SCOPE=""
+WHEEL_COUNT=0
 case "$MAX_TYPE" in
     wheel)
         # Find which wheels are affected
         WHEEL_NAMES=$(echo "$FILES" | grep '^wheels/' | sed -n 's|^wheels/[^/]*/\([^/]*\)/.*|\1|p' | sort -u)
-        WHEEL_COUNT=$(echo "$WHEEL_NAMES" | wc -l)
+        [[ -n "$WHEEL_NAMES" ]] && WHEEL_COUNT=$(echo "$WHEEL_NAMES" | grep -c '^') || WHEEL_COUNT=0
         if [[ $WHEEL_COUNT -eq 1 ]]; then
             WNAME=$(echo "$WHEEL_NAMES" | head -1)
             WLAYER=$(echo "$FILES" | grep "^wheels/" | head -1 | sed -n 's|^wheels/\([^/]*\)/.*|\1|p')
