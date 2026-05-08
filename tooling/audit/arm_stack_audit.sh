@@ -18,10 +18,11 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-TOOLING_TEST="$REPO/tooling/test"
+# shellcheck source=_arm_audit_common.sh
+source "$(dirname "$0")/_arm_audit_common.sh"
 
-CC="arm-none-eabi-gcc"
+REPO="$ARM_AUDIT_REPO"
+CC="$ARM_AUDIT_CC"
 CFLAGS="-fstack-usage -Os -mcpu=cortex-m4 -mthumb -ffreestanding -std=c99 -c"
 CFLAGS="$CFLAGS -Wall -Wextra"
 
@@ -38,16 +39,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if ! command -v "$CC" &>/dev/null; then
-    echo "ERROR: $CC not found in PATH." >&2
-    echo "" >&2
-    echo "Install the ARM embedded toolchain:" >&2
-    echo "  Ubuntu/Debian:  sudo apt install gcc-arm-none-eabi" >&2
-    echo "  macOS (brew):   brew install --cask gcc-arm-embedded" >&2
-    echo "  Windows:        https://developer.arm.com/downloads/-/gnu-rm" >&2
-    echo "  Manual:         https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads" >&2
-    exit 1
-fi
+arm_audit_check_toolchain
 
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -73,40 +65,15 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     [[ "$name" == "__pycache__" ]] && continue
     [[ "$name" == "README.md" ]] && continue
 
-    # Find source files (skip test/prop/verify files)
+    # Find source files (skip test/prop/verify files — stack audit measures production code only)
     sources=()
-    if [[ -d "$wheel_dir/vendor/src" ]]; then
-        while IFS= read -r f; do
-            base=$(basename "$f")
-            [[ "$base" == test_* || "$base" == prop_* || "$base" == verify_* ]] && continue
-            sources+=("$f")
-        done < <(find "$wheel_dir/vendor/src" -name '*.c' 2>/dev/null)
-    fi
-    while IFS= read -r f; do
-        base=$(basename "$f")
-        [[ "$base" == test_* || "$base" == prop_* || "$base" == verify_* ]] && continue
-        sources+=("$f")
-    done < <(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null)
-
-    if [[ ${#sources[@]} -eq 0 ]]; then
+    if ! discover_wheel_sources "$wheel_dir" "skip_tests"; then
         SKIP_COUNT=$((SKIP_COUNT + 1))
         continue
     fi
 
     # Determine include paths
-    INCLUDES="-I$wheel_dir -I$TOOLING_TEST"
-    if [[ -d "$wheel_dir/vendor/inc" ]]; then
-        INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
-    fi
-    # Cross-wheel dependencies: auto-discover from CMakeLists.txt
-    if [[ -f "$wheel_dir/CMakeLists.txt" ]]; then
-        while IFS= read -r dep_name; do
-            [[ -z "$dep_name" ]] && continue
-            dep_dir=$(find "$REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
-            [[ -n "$dep_dir" ]] && INCLUDES="$INCLUDES -I$dep_dir"
-        done < <(grep -oE '\.\./\.\./[a-z_]+/[a-z_]+' "$wheel_dir/CMakeLists.txt" 2>/dev/null \
-            | sed 's|.*/||' | sort -u || true)
-    fi
+    INCLUDES=$(resolve_includes "$wheel_dir")
 
     # Compile each source (generates .su files alongside .o)
     build_ok=true
