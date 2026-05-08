@@ -98,17 +98,15 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     if [[ -d "$wheel_dir/vendor/inc" ]]; then
         INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
     fi
-    # Cross-wheel dependencies: scan includes and add paths
-    all_src_text=""
-    for src in "${sources[@]}"; do
-        all_src_text="$all_src_text $(head -30 "$src" 2>/dev/null)"
-    done
-    for dep_name in crc16 crc32 crc8 fal mqtt_packet at_command ring_buffer log; do
-        if echo "$all_src_text" | grep -q "#include \"${dep_name}.h\""; then
+    # Cross-wheel dependencies: auto-discover from CMakeLists.txt
+    if [[ -f "$wheel_dir/CMakeLists.txt" ]]; then
+        while IFS= read -r dep_name; do
+            [[ -z "$dep_name" ]] && continue
             dep_dir=$(find "$REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
             [[ -n "$dep_dir" ]] && INCLUDES="$INCLUDES -I$dep_dir"
-        fi
-    done
+        done < <(grep -oE '\.\./\.\./[a-z_]+/[a-z_]+' "$wheel_dir/CMakeLists.txt" 2>/dev/null \
+            | sed 's|.*/||' | sort -u || true)
+    fi
     # Vendor sub-deps: kvs needs fal headers
     if [[ -d "$wheel_dir/vendor/inc" ]] && grep -rq '#include.*fal\.h' "$wheel_dir/vendor" 2>/dev/null; then
         INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal"

@@ -759,9 +759,12 @@ TEST(test_null_safety)
 
 TEST(test_zero_init_safety)
 {
+    /* Zero HAL struct has NULL function pointers — init must reject it */
+    ${NAME_LOWER}_i2c_t zero_hal;
+    memset(&zero_hal, 0, sizeof(zero_hal));
     ${NAME_LOWER}_t zero_dev;
     memset(&zero_dev, 0, sizeof(zero_dev));
-    /* Primary read function on zero-init struct must not crash (no UB) */
+    ASSERT_TRUE(${NAME_LOWER}_init(&zero_dev, &zero_hal) < 0);
 }
 
 TEST(test_error_codes)
@@ -972,7 +975,12 @@ TEST(test_error_codes)
 
 TEST(test_zero_init_safety)
 {
-    /* Zero-init struct must not crash when passed to API */
+    /* Zero HAL struct has NULL function pointers — init must reject it */
+    ${NAME_LOWER}_spi_t zero_hal;
+    memset(&zero_hal, 0, sizeof(zero_hal));
+    ${NAME_LOWER}_t zero_dev;
+    memset(&zero_dev, 0, sizeof(zero_dev));
+    ASSERT_TRUE(${NAME_LOWER}_init(&zero_dev, &zero_hal) < 0);
 }
 
 /* TODO: add more tests */

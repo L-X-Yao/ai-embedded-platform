@@ -131,7 +131,7 @@ def load_exceptions() -> list[dict]:
 def is_excepted(wheel_path: str, flag: str, exceptions: list[dict]) -> bool:
     """Check if a (wheel, flag) combination is in the exceptions list."""
     for exc in exceptions:
-        if exc.get("wheel") == wheel_path and exc.get("warning") == flag:
+        if exc.get("wheel") == wheel_path and exc.get("check") == flag:
             return True
     return False
 

@@ -98,15 +98,14 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     if [[ -d "$wheel_dir/vendor/inc" ]]; then
         INCLUDES="$INCLUDES -I$wheel_dir/vendor/inc"
     fi
-    # Cross-wheel dependencies: add include paths for known deps
-    root_c_files=$(find "$wheel_dir" -maxdepth 1 -name '*.c' 2>/dev/null || true)
-    if [[ -n "$root_c_files" ]]; then
-        if echo "$root_c_files" | xargs grep -lq '#include "crc16.h"' 2>/dev/null; then
-            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/crc16"
-        fi
-        if echo "$root_c_files" | xargs grep -lq '#include "fal.h"' 2>/dev/null; then
-            INCLUDES="$INCLUDES -I$REPO/wheels/primitives/fal/vendor/inc"
-        fi
+    # Cross-wheel dependencies: auto-discover from CMakeLists.txt
+    if [[ -f "$wheel_dir/CMakeLists.txt" ]]; then
+        while IFS= read -r dep_name; do
+            [[ -z "$dep_name" ]] && continue
+            dep_dir=$(find "$REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
+            [[ -n "$dep_dir" ]] && INCLUDES="$INCLUDES -I$dep_dir"
+        done < <(grep -oE '\.\./\.\./[a-z_]+/[a-z_]+' "$wheel_dir/CMakeLists.txt" 2>/dev/null \
+            | sed 's|.*/||' | sort -u || true)
     fi
 
     # Compile each source (generates .su files alongside .o)
