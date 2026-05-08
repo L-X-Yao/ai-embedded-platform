@@ -81,7 +81,8 @@ def fix_doc_comments(wheel_dir, name, apply=False):
                 else:
                     safety = "TODO"
 
-                verb = func_name.split("_")[-1] if "_" in func_name else "operate"
+                stripped_prefix = func_name.removeprefix(name + "_")
+                verb = stripped_prefix.split("_")[0] if stripped_prefix else "operate"
                 verb_map = {
                     "init": "Initialize device",
                     "read": "Read data",

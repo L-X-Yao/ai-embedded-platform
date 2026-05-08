@@ -248,7 +248,7 @@ if run_layer 5 "Cross-wheel API consistency"; then
         [[ -d "$dir/vendor" ]] && continue
         expected=$(echo "${name}_H" | tr '[:lower:]' '[:upper:]')
         if ! grep -q "#ifndef ${expected}\b\|#ifndef ${expected}_$" "$h" 2>/dev/null; then
-            alt=$(head -5 "$h" | grep -oE '#ifndef [A-Za-z0-9_]+' 2>/dev/null | sed 's/^#ifndef //')
+            alt=$(head -15 "$h" | grep -oE '#ifndef [A-Za-z0-9_]+' 2>/dev/null | sed 's/^#ifndef //')
             if [[ -n "$alt" && "$alt" != "$expected" ]]; then
                 echo -e "  ${YELLOW}WARN${NC}  $name: guard is $alt, expected $expected"
                 layer5_issues=$((layer5_issues + 1))

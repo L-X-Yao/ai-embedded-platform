@@ -83,7 +83,9 @@ run_wheel() {
     # Parse "Proved goals: X / Y" line
     local proved goals
     proved=$(echo "$output" | sed -n 's/.*Proved goals:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1 || echo "0")
+    proved=${proved:-0}
     goals=$(echo "$output" | sed -n 's/.*Proved goals:[[:space:]]*[0-9][0-9]* \/ \([0-9][0-9]*\).*/\1/p' | head -1 || echo "0")
+    goals=${goals:-0}
     local timeouts
     timeouts=$(echo "$output" | grep -c '\[Timeout\]' || true)
 
