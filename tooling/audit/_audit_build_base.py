@@ -218,7 +218,7 @@ def find_test_binary(build_dir: Path, target_name: str) -> Path | None:
             return c
     # Search recursively as a fallback
     for f in build_dir.rglob(target_name + "*"):
-        if f.is_file() and f.suffix in ("", ".exe"):
+        if f.is_file() and f.stem == target_name and f.suffix in ("", ".exe"):
             return f
     return None
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-audit_wheels.py — flag orphaned wheels and stale WISHLIST entries.
+audit_wheels.py — 52-check automated audit covering structure, API, code safety, and consistency.
 
 Codifies feedback_wheel_commit_not_sunk.md as a CI guardrail. The orphan
 problem we hit twice (w25qxx, qmi8658a both committed but never wired)
@@ -440,7 +440,7 @@ def chk_readme_todo_mismatch(ctx, **_):
         return None
     section_start = readme_l.find("known issues")
     next_section = readme_l.find("\n##", section_start + 1)
-    section_text = readme_l[section_start:next_section if next_section > 0 else section_start + 500]
+    section_text = readme_l[section_start:next_section if next_section != -1 else section_start + 500]
     claims_none = "none" in section_text or "no known" in readme_l
     if not claims_none:
         return None
@@ -455,7 +455,9 @@ def chk_instances_accuracy(ctx, **_):
     top = "\n".join(ctx.header.split("\n")[:15])
     if "Instances: single" not in top:
         return None
-    if "static " in ctx.source or "global" in ctx.source.lower():
+    if re.search(r'\bstatic\s+(?!inline\b|const\b)\w+\s+\w+\s*[;=]', ctx.source, re.MULTILINE):
+        return None
+    if re.search(r'\bglobal\b', ctx.source.lower()):
         return None
     return ("Instances: single but no static/global state found in .c",
             f"verify Instances field in {ctx.path}/{ctx.name}.h (should it be multi?)")
@@ -1466,7 +1468,7 @@ def main(quiet: bool = False, json_mode: bool = False, fast: bool = False,
     else:
         wheels = find_wheels()
 
-    # Pre-load all wheel files into cache (one-time IO, ~143 wheels × 4 files)
+    # Pre-load all wheel files into cache (one-time IO, all wheels × 4 files)
     contexts = {}
     for layer, name, path in wheels:
         contexts[path] = WheelCtx(layer, name, WHEELS / layer / name)

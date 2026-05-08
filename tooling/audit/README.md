@@ -226,7 +226,7 @@ CHECK_TABLE = [
 
 ### 检查分类详解
 
-**结构合规（16 项）**：
+**结构合规（18 项）**：
 
 | 检查 | 级别 | 说明 |
 |------|------|------|
@@ -246,6 +246,8 @@ CHECK_TABLE = [
 | responsible_human | WARN | README 需有 Responsible human 节 |
 | deviation_heading | WARN | 需有 API convention deviations 节 |
 | dep_direction | WARN | 依赖只能向下（L0←L1←L2←L3），ADR-009 |
+| missing_null_tests | WARN | wheel 需有自动生成的 NULL 参数测试 |
+| missing_hw_model | WARN | L1 I2C/SPI 驱动需有硬件寄存器模型 |
 
 **API 规范（15 项）**：
 
@@ -267,7 +269,7 @@ CHECK_TABLE = [
 | status_format | **Status:** 用 title case |
 | instances_field | 文件头需有 Instances: multi/single |
 
-**代码安全（16 项）**：
+**代码安全（15 项）**：
 
 | 检查 | 说明 |
 |------|------|
@@ -287,7 +289,7 @@ CHECK_TABLE = [
 | switch_default | switch 需有 default 分支 |
 | unit_suffix | L1 驱动物理量字段需有单位后缀 |
 
-**一致性（10 项）**：
+**一致性（4 项）**：
 
 | 检查 | 说明 |
 |------|------|
