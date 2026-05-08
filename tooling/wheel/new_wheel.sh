@@ -513,6 +513,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_i2c_t *i2c)
 {
     if (!dev || !i2c) return ${NAME_UPPER}_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_reg) return ${NAME_UPPER}_ERR_PARAM;
     dev->i2c = i2c;
 
     uint8_t id = 0;
@@ -564,6 +565,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
                                const ${NAME_LOWER}_spi_t *spi)
 {
     if (!dev || !spi) return ${NAME_UPPER}_ERR_PARAM;
+    if (!spi->cs_low || !spi->cs_high || !spi->xfer) return ${NAME_UPPER}_ERR_PARAM;
     dev->spi = spi;
     /* TODO: read JEDEC ID — e.g. spi_cmd(spi, 0x9F) */
     (void)spi_cmd;
@@ -1044,10 +1046,9 @@ static uint8_t hw_model_xfer(void *ctx, uint8_t tx)
     }
     uint8_t reg = (uint8_t)(hw_addr_latch + hw_byte_idx - 1);
     uint8_t ret = hw_regs[reg];
-    if (!(tx & 0x80) || hw_byte_idx > 0) {
-        /* write path: store tx in register (for non-read transactions) */
+    if (!(hw_addr_latch & 0x80)) {
+        hw_regs[reg] = tx;
     }
-    hw_regs[reg] = tx;
     hw_byte_idx++;
     return ret;
 }
@@ -1764,7 +1765,7 @@ generate_header_module() {
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:     L3 (modules)
+ * Layer:     ${LAYER_LABEL%% (*}
  * Status:    candidate
  * Deps:      (none)
  * Instances: multi
@@ -1834,7 +1835,7 @@ generate_c_module() {
 /*
  * ${NAME_LOWER} — TODO: one-line description
  *
- * Layer:     L3 (modules)
+ * Layer:     ${LAYER_LABEL%% (*}
  * Status:    candidate
  * Deps:      (none)
  * Instances: multi
