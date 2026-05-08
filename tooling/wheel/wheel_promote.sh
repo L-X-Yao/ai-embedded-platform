@@ -65,6 +65,10 @@ TO_DIR="$REPO/wheels/$TO"
 WHEEL_NAME=$(basename "$TO")
 FROM_NAME=$(basename "$FROM")
 
+# Validate wheel name (safe for use in sed/grep patterns)
+[[ "$WHEEL_NAME" =~ ^[a-z][a-z0-9_]*$ ]] || \
+    { echo -e "${RED}Error: invalid wheel name '$WHEEL_NAME' (must match [a-z][a-z0-9_]*)${NC}"; exit 1; }
+
 # Validate
 [[ -d "$FROM_DIR" ]] || { echo -e "${RED}Error: $FROM_DIR does not exist${NC}"; exit 1; }
 [[ -e "$TO_DIR" ]]   && { echo -e "${RED}Error: $TO_DIR already exists${NC}"; exit 1; }

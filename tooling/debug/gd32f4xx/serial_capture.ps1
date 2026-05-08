@@ -39,7 +39,10 @@ $sp.ReadTimeout    = 100
 $sp.DtrEnable      = $true
 $sp.RtsEnable      = $true
 $sp.Handshake      = 'None'
-$sp.Open()
+try { $sp.Open() } catch {
+    Write-Error "Failed to open $Port : $_"
+    exit 1
+}
 
 if (-not $NoReset) {
     # Trigger MCU reset with the port already streaming.
@@ -63,7 +66,7 @@ try {
                 $writer.Write($d)
                 $writer.Flush()
             }
-        } catch {}
+        } catch [System.TimeoutException] {}
         Start-Sleep -Milliseconds 25
     }
 } finally {

@@ -230,7 +230,7 @@ def main():
     if "--history" in args:
         print("\033[1m=== Metric Snapshots ===\033[0m")
         for f in sorted(metrics_dir.glob("*.json")):
-            d = json.loads(f.read_text())
+            d = json.loads(f.read_text(encoding="utf-8"))
             print(f"  {f.stem}  wheels={d.get('wheels_total','-')}  tests={d.get('test_suites','-')}  assertions={d.get('assertions','-')}")
         return
 
@@ -246,7 +246,7 @@ def main():
         if not snapshots:
             print("No saved snapshots. Run with --save first.")
             sys.exit(1)
-        prev = json.loads(snapshots[-1].read_text())
+        prev = json.loads(snapshots[-1].read_text(encoding="utf-8"))
         print_metrics(prev, f"Previous ({snapshots[-1].stem})")
         print()
         print_metrics(current, "Current")
@@ -259,7 +259,7 @@ def main():
     if "--save" in args:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         out = metrics_dir / f"{ts}.json"
-        out.write_text(json.dumps(current, indent=2))
+        out.write_text(json.dumps(current, indent=2), encoding="utf-8")
         print(f"\n\033[0;32mSaved: {out}\033[0m")
 
 

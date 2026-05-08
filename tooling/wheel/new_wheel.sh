@@ -107,7 +107,7 @@ DEPS_SOURCES=""    # extra .c files for CMakeLists add_executable
 DEPS_INCLUDES=""   # extra include_directories entries
 
 for dep in "${DEPS[@]}"; do
-    dep_dir=$(find "$REPO/wheels" -maxdepth 3 -name "${dep}.h" -printf '%h\n' 2>/dev/null | head -1)
+    dep_dir=$(find "$REPO/wheels" -maxdepth 3 -name "${dep}.h" 2>/dev/null | head -1 | xargs -r dirname)
     if [[ -z "$dep_dir" ]]; then
         echo "Error: --deps ${dep}: cannot find wheels/**/${dep}/${dep}.h"
         exit 1
@@ -674,10 +674,11 @@ generate_c_none() {
 
 #include "${NAME_LOWER}.h"
 
-int ${NAME_LOWER}_init(void)
+${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *ctx)
 {
+    if (!ctx) return ${NAME_UPPER}_ERR_PARAM;
     /* TODO: implement */
-    return 0;
+    return ${NAME_UPPER}_ERR_OK;
 }
 C_EOF
 }
@@ -690,7 +691,7 @@ project(test_${NAME_LOWER} C)
 
 # CMAKE_C_STANDARD set as a variable (not target property) intentionally:
 # standalone wheel test projects own the entire build, so a top-level variable
-# is simpler and consistent across all 140+ wheels.
+# is simpler and consistent across all wheels.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -1644,7 +1645,7 @@ project(test_${NAME_LOWER} C)
 
 # CMAKE_C_STANDARD set as a variable (not target property) intentionally:
 # standalone wheel test projects own the entire build, so a top-level variable
-# is simpler and consistent across all 140+ wheels.
+# is simpler and consistent across all wheels.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
