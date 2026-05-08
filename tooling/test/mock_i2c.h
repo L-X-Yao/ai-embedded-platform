@@ -39,6 +39,7 @@ static int     mock_op_count;
 static int     mock_fail_at;
 static int     mock_write_count;
 static int     mock_read_count;
+static uint32_t mock_delay_ms_count;
 
 static void mock_i2c_reset(void)
 {
@@ -102,7 +103,6 @@ static bool mock_i2c_write_regs(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-static uint32_t mock_delay_ms_count;
 __attribute__((unused))
 static void mock_i2c_delay_ms(void *ctx, uint32_t ms)
 {

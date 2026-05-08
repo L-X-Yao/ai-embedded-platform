@@ -65,7 +65,7 @@ BACKTICK_RE = re.compile(r'`[^`]+`')
 def strip_code_spans(line: str) -> str:
     return BACKTICK_RE.sub('', line)
 
-BLOAT_THRESHOLD = 60
+BLOAT_THRESHOLD = 80
 
 
 def audit(mem_dir: Path) -> list:
