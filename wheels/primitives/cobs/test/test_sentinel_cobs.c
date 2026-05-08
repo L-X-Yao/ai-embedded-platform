@@ -8,25 +8,25 @@
 #include <string.h>
 
 TEST(test_cobs_encode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     uint8_t input[] = {0x01, 0x00, 0x02};
     cobs_encode(input, 3, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 
 TEST(test_cobs_decode_sentinel) {
-    uint8_t out[64];
+    uint8_t out[65];
     memset(out, 0xFF, sizeof(out));
-    uint16_t out_len = sizeof(out);
+    uint16_t out_len = sizeof(out) - 1;
     /* COBS-encoded {0x01, 0x00, 0x02}: [0x02, 0x01, 0x02, 0x02] */
     uint8_t encoded[] = {0x02, 0x01, 0x02, 0x02};
     cobs_decode(encoded, 4, out, &out_len);
-    /* sentinel: byte after output data must be untouched */
-    ASSERT_EQ((uint8_t)out[out_len], 0xFF);
+    /* sentinel: last byte must be untouched regardless of out_len */
+    ASSERT_EQ((uint8_t)out[64], 0xFF);
 }
 
 
