@@ -78,6 +78,10 @@ def resolve_result_dir(project, name):
 
 
 def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
+    if not BFC_SCRIPT.exists():
+        print(f"[ERR] build_flash_check.sh not found: {BFC_SCRIPT}", file=sys.stderr)
+        return None
+
     tiers = parse_soak_tiers(conf_path)
     duration = tiers[soak_tier]
     serial_log = parse_conf_value(conf_path, "SERIAL_LOG")

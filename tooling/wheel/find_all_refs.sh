@@ -77,7 +77,7 @@ if ! $DOCS_ONLY; then
         [[ -n "$SELF_DIR" && "$rel" == "$SELF_DIR"/* ]] && continue
         echo "  $rel"
         COUNT=$((COUNT + 1))
-    done < <(grep -rlF "$NAME" "$REPO" \
+    done < <(grep -rlE "(/${NAME}/|${NAME}\.c|${NAME}\.h|\b${NAME}\b)" "$REPO" \
         --include="CMakeLists.txt" --include="*.cmake" \
         --exclude-dir=build --exclude-dir=build_* --exclude-dir=.git \
         --exclude-dir=vsf --exclude-dir=_eval \
