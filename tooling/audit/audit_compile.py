@@ -297,7 +297,8 @@ def print_text_report(results: list[dict], quiet: bool) -> None:
     # Summary
     print(f"\n--- Summary ---")
     print(f"  Wheels scanned: {total_wheels}")
-    print(f"  PASS:           {len(pass_wheels) - len(error_wheels)}")
+    pass_count = len([r for r in results if not r["findings"] and not r.get("build_error")])
+    print(f"  PASS:           {pass_count}")
     if error_wheels:
         print(f"  ERR (no build): {len(error_wheels)}")
     print(f"  WARN:           {len(warn_wheels)}")

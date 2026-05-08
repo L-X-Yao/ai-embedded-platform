@@ -1373,6 +1373,11 @@ def has_deinit_null_check(wheel_dir: Path, name: str) -> bool:
     if not m:
         return True
     block = text[m.start():m.start() + 500]
+    # Extract first param name from deinit signature
+    sig_m = re.search(rf'{re.escape(name)}_deinit\s*\(\s*\w[\w\s\*]*?(\w+)\s*\)', text)
+    param = sig_m.group(1) if sig_m else None
+    if param and (f"!{param}" in block or f"{param} == NULL" in block or f"{param} != NULL" in block):
+        return True
     return "!dev" in block or "NULL" in block or "!ctx" in block or "!self" in block
 
 
