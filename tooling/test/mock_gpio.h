@@ -67,9 +67,9 @@ static void mock_gpio_reset(void)
 
 static bool mock_gpio_should_fail(void)
 {
-    mock_gpio_op_count++;
+    int n = mock_gpio_op_count++;
     if (mock_gpio_fail_next) { mock_gpio_fail_next = 0; return true; }
-    if (mock_gpio_fail_at >= 0 && mock_gpio_op_count > mock_gpio_fail_at) return true;
+    if (mock_gpio_fail_at >= 0 && n == mock_gpio_fail_at) return true;
     return false;
 }
 
@@ -77,8 +77,8 @@ __attribute__((unused))
 static void mock_gpio_write_pin(void *ctx, bool level)
 {
     uint8_t pin = mock_gpio_pin_from_ctx(ctx);
-    mock_gpio_write_count++;
     if (mock_gpio_should_fail()) return;
+    mock_gpio_write_count++;
     mock_gpio_pins[pin] = level;
 }
 
@@ -86,8 +86,8 @@ __attribute__((unused))
 static bool mock_gpio_read_pin(void *ctx)
 {
     uint8_t pin = mock_gpio_pin_from_ctx(ctx);
-    mock_gpio_read_count++;
     if (mock_gpio_should_fail()) return false;
+    mock_gpio_read_count++;
     return mock_gpio_pins[pin];
 }
 

@@ -35,11 +35,13 @@ BOUNDARY_VALUES = {
     'uint8_t':  [('0', '0'), ('UINT8_MAX', '255')],
     'uint16_t': [('0', '0'), ('UINT16_MAX', '65535')],
     'uint32_t': [('0', '0'), ('UINT32_MAX', 'UINT32_MAX')],
+    'uint64_t': [('0', '0'), ('UINT64_MAX', '(uint64_t)0xFFFFFFFFFFFFFFFFull')],
     'size_t':   [('0', '0'), ('SIZE_MAX_TEST', '(size_t)65535')],
     'int':      [('0', '0'), ('NEG1', '-1'), ('INT32_MAX', 'INT32_MAX')],
     'int8_t':   [('0', '0'), ('INT8_MIN', 'INT8_MIN'), ('INT8_MAX', 'INT8_MAX')],
     'int16_t':  [('0', '0'), ('INT16_MIN', 'INT16_MIN'), ('INT16_MAX', 'INT16_MAX')],
     'int32_t':  [('0', '0'), ('INT32_MIN', 'INT32_MIN'), ('INT32_MAX', 'INT32_MAX')],
+    'int64_t':  [('0', '0'), ('INT64_MIN', '(int64_t)(-0x7FFFFFFFFFFFFFFFll - 1)'), ('INT64_MAX', '(int64_t)0x7FFFFFFFFFFFFFFFll')],
     'unsigned': [('0', '0'), ('UINT_MAX', 'UINT32_MAX')],
     'unsigned int': [('0', '0'), ('UINT_MAX', 'UINT32_MAX')],
 }
