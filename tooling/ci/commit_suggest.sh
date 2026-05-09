@@ -104,10 +104,13 @@ else
                 DESC="update implementation (+${INSERTIONS}/-${DELETIONS})"
             fi
             ;;
-        tool)   DESC="update tooling scripts" ;;
-        docs)   DESC="update documentation" ;;
-        ci)     DESC="update CI pipeline" ;;
-        *)      DESC="update ${FILE_COUNT} files" ;;
+        tool)    DESC="update tooling scripts" ;;
+        docs)    DESC="update documentation" ;;
+        ci)      DESC="update CI pipeline" ;;
+        project) DESC="update project code (+${INSERTIONS}/-${DELETIONS})" ;;
+        port)    DESC="update HAL port (+${INSERTIONS}/-${DELETIONS})" ;;
+        exp)     DESC="update experiment (+${INSERTIONS}/-${DELETIONS})" ;;
+        *)       DESC="update ${FILE_COUNT} files" ;;
     esac
 fi
 
