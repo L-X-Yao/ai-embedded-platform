@@ -22,6 +22,22 @@ NC='\033[0m'
 PASS=0
 FAIL=0
 
+# Pre-clean any stale scaffold directories from a previous interrupted run.
+# If the EXIT trap did not fire (SIGKILL, timeout), these linger and cause
+# new_wheel.sh to fail on "already exists" in the next invocation.
+PRE_CLEAN=(
+    "$REPO/wheels/drivers/sc_i2c"
+    "$REPO/wheels/drivers/sc_spi"
+    "$REPO/wheels/drivers/sc_gpio"
+    "$REPO/wheels/drivers/sc_ow"
+    "$REPO/wheels/drivers/sc_pwm"
+    "$REPO/wheels/protocols/sc_proto"
+    "$REPO/wheels/primitives/sc_prim"
+)
+for d in "${PRE_CLEAN[@]}"; do
+    rm -rf "$d" 2>/dev/null || true
+done
+
 test_template() {
     local layer="$1" name="$2"
     shift 2
