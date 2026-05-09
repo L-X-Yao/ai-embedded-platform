@@ -66,7 +66,7 @@ void log_ringbuf_write(log_ringbuf_t *rb, const char *line, size_t len) {
 }
 
 void log_ringbuf_sink(void *ctx, const char *line, size_t len) {
-    log_ringbuf_write((log_ringbuf_t *)ctx, line, len);
+    (void)log_ringbuf_write((log_ringbuf_t *)ctx, line, len);
 }
 
 size_t log_ringbuf_read(const log_ringbuf_t *rb, char *dst, size_t dst_size) {
