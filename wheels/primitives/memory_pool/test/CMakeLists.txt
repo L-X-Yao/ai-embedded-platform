@@ -20,5 +20,16 @@ target_include_directories(test_memory_pool PRIVATE
 )
 target_compile_options(test_memory_pool PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_memory_pool
+    test_null_memory_pool.c
+    ../memory_pool.c
+)
+target_include_directories(test_null_memory_pool PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_null_memory_pool PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME memory_pool_tests COMMAND test_memory_pool)
+add_test(NAME memory_pool_null_tests COMMAND test_null_memory_pool)
