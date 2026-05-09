@@ -12,14 +12,14 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 2. **依赖注入** — 硬件/OS 能力通过函数指针传入，wheel 之间零耦合
 3. **Host 可测** — `gcc + cmake` 直接编译运行，无需 RTOS 或硬件
 
-结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。52 项自动审计保证一致性。
+结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。55 项自动审计保证一致性。
 
 ## 平台现状
 
 - **186 个 candidate wheels**（L0 原语 61 / L1 驱动 74 / L2 协议 31 / L3 模块 20）
 - **3 个集成示例**：env_monitor / device_shell / remote_telemetry
 - **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
-- **CI 增量检测** + 52 项 wheel 审计全绿
+- **CI 增量检测** + 55 项 wheel 审计全绿
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
@@ -56,7 +56,7 @@ make test-wheels                # 全部 wheel 测试
 make test-changed               # 仅受改动影响的测试
 
 # 跑审计
-make audit                      # 52 项合规检查
+make audit                      # 55 项合规检查
 python tooling/audit/audit_wheels.py --wheel drivers/bmp280  # 单个 wheel
 ```
 
