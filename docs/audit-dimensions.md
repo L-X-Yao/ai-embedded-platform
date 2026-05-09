@@ -25,7 +25,7 @@
 | W2 | **Wheel 代码 (L1)** | 👁️ | 同上 + 寄存器/位掩码 vs datasheet、HAL 注入正确性 | `wheels/drivers/` 全部 |
 | W3 | **Wheel 代码 (L2)** | 👁️ | 同上 + 协议合规性、恶意输入安全性 | `wheels/protocols/` 全部 |
 
-**W1 拆分规则**：L0 有 51 个 wheel，单 agent 放不下。按字母拆分为 3 组：
+**W1 拆分规则**：L0 有 61 个 wheel，单 agent 放不下。按字母拆分为 3 组：
 - W1a: aes128 → fifo_queue（前 17）
 - W1b: fixed_point → moving_window（中 17）
 - W1c: pid_controller → uuid（后 17）
