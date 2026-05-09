@@ -12,13 +12,14 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 2. **依赖注入** — 硬件/OS 能力通过函数指针传入，wheel 之间零耦合
 3. **Host 可测** — `gcc + cmake` 直接编译运行，无需 RTOS 或硬件
 
-结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。55 项自动审计保证一致性。
+结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。52 项自动审计保证一致性。
 
 ## 平台现状
 
-- **150 个 candidate wheels**（L0 原语 55 / L1 驱动 53 / L2 协议 25 / L3 模块 18）
+- **186 个 candidate wheels**（L0 原语 61 / L1 驱动 74 / L2 协议 31 / L3 模块 20）
+- **3 个集成示例**：env_monitor / device_shell / remote_telemetry
 - **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
-- **CI 增量检测** + 55 项 wheel 审计全绿
+- **CI 增量检测** + 52 项 wheel 审计全绿
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
@@ -28,14 +29,15 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 ├── vsf/                  VSF 上游源码（不直接改）
 ├── vsf-addon/            新增代码（MCU port / 组件）
 ├── wheels/               可复用轮子（L0 原语 → L3 模块）
-│   ├── primitives/       L0 (55)：log 生态, crc 族, 数据结构, 编解码, 数学, ...
-│   ├── drivers/          L1 (53)：传感器, IMU, 显示, 存储, 通信, IO 扩展, ...
-│   ├── protocols/        L2 (25)：mqtt, modbus, coap, http, lorawan, canbus, ...
-│   ├── modules/          L3 (18)：cli_shell, data_logger, ota_manager, ...
+│   ├── primitives/       L0 (61)：log 生态, crc 族, 数据结构, 编解码, 数学, 内存, 字体, ...
+│   ├── drivers/          L1 (74)：传感器, IMU, 显示, 存储, 通信, RFID, RTC, IO 扩展, ...
+│   ├── protocols/        L2 (31)：mqtt, modbus, coap, http, lorawan, canbus, dhcp, tftp, ...
+│   ├── modules/          L3 (20)：cli_shell, data_logger, ota_manager, ...
 │   └── _draft/           （暂无）
 ├── templates/            项目起步模板
 ├── projects/             真实项目（flybox, drone_light）
-└── tooling/              audit / test / session / ci / hil / debug / metrics
+├── examples/             集成示例（wheel 组合食谱）
+└── tooling/              harness / codegen / test / audit / wheel / session / ci / debug / metrics / hil
 ```
 
 ## 快速开始
@@ -54,7 +56,7 @@ make test-wheels                # 全部 wheel 测试
 make test-changed               # 仅受改动影响的测试
 
 # 跑审计
-make audit                      # 55 项合规检查
+make audit                      # 52 项合规检查
 python tooling/audit/audit_wheels.py --wheel drivers/bmp280  # 单个 wheel
 ```
 
