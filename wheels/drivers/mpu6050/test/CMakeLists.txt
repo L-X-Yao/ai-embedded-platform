@@ -15,6 +15,16 @@ target_include_directories(test_mpu6050 PRIVATE
 target_compile_options(test_mpu6050 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_mpu6050 PRIVATE m)
 
+
+add_executable(test_null_mpu6050
+    test_null_mpu6050.c
+    ../mpu6050.c
+)
+target_include_directories(test_null_mpu6050 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_mpu6050 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mpu6050_tests COMMAND test_mpu6050)
 
@@ -43,3 +53,4 @@ target_compile_options(test_hw_model_mpu6050 PRIVATE -Wall -Wextra -Wpedantic -W
 target_link_libraries(test_hw_model_mpu6050 PRIVATE m)
 
 add_test(NAME mpu6050_hw_model_tests COMMAND test_hw_model_mpu6050)
+add_test(NAME mpu6050_null_tests COMMAND test_null_mpu6050)

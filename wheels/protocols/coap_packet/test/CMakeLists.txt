@@ -13,5 +13,16 @@ target_include_directories(test_coap_packet PRIVATE
 )
 target_compile_options(test_coap_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_coap_packet
+    test_null_coap_packet.c
+    ../coap_packet.c
+)
+target_include_directories(test_null_coap_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_coap_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME coap_packet_tests COMMAND test_coap_packet)
+add_test(NAME coap_packet_null_tests COMMAND test_null_coap_packet)

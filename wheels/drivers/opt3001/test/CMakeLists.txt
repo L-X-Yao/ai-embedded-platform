@@ -14,6 +14,16 @@ target_include_directories(test_opt3001 PRIVATE
 )
 target_compile_options(test_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_opt3001
+    test_null_opt3001.c
+    ../opt3001.c
+)
+target_include_directories(test_null_opt3001 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME opt3001_tests COMMAND test_opt3001)
 
@@ -42,3 +52,4 @@ target_compile_options(test_hw_model_opt3001 PRIVATE -Wall -Wextra -Wpedantic -W
 target_link_libraries(test_hw_model_opt3001 PRIVATE m)
 
 add_test(NAME opt3001_hw_model_tests COMMAND test_hw_model_opt3001)
+add_test(NAME opt3001_null_tests COMMAND test_null_opt3001)

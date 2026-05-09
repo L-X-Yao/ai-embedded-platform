@@ -14,5 +14,16 @@ target_include_directories(test_mqtt_packet PRIVATE
 )
 target_compile_options(test_mqtt_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_mqtt_packet
+    test_null_mqtt_packet.c
+    ../mqtt_packet.c
+)
+target_include_directories(test_null_mqtt_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_mqtt_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mqtt_packet_tests COMMAND test_mqtt_packet)
+add_test(NAME mqtt_packet_null_tests COMMAND test_null_mqtt_packet)

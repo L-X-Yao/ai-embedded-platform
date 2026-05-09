@@ -49,9 +49,8 @@ TEST(test_str_rtrim_null_out) {
 }
 
 TEST(test_str_split_null_str) {
-    char _tokens[64];
-    memset(_tokens, 0, sizeof(_tokens));
-    (void)str_split(NULL, 0, _tokens, 0);
+    char *_tokens = NULL;
+    (void)str_split(NULL, 0, &_tokens, 0);
     /* must not crash */
 }
 
@@ -128,20 +127,18 @@ TEST(test_str_join_null_tokens) {
 }
 
 TEST(test_str_join_null_delim) {
-    char _tokens[64];
-    memset(_tokens, 0, sizeof(_tokens));
+    const char *_tokens = NULL;
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)str_join(_tokens, 0, NULL, _buf, 0);
+    (void)str_join(&_tokens, 0, NULL, _buf, 0);
     /* must not crash */
 }
 
 TEST(test_str_join_null_buf) {
-    char _tokens[64];
-    memset(_tokens, 0, sizeof(_tokens));
+    const char *_tokens = NULL;
     char _delim[64];
     memset(_delim, 0, sizeof(_delim));
-    (void)str_join(_tokens, 0, _delim, NULL, 0);
+    (void)str_join(&_tokens, 0, _delim, NULL, 0);
     /* must not crash */
 }
 

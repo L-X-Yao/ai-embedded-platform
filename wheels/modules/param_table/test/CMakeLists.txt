@@ -14,5 +14,16 @@ target_include_directories(test_param_table PRIVATE
 )
 target_compile_options(test_param_table PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_param_table
+    test_null_param_table.c
+    ../param_table.c
+)
+target_include_directories(test_null_param_table PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_param_table PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME param_table_tests COMMAND test_param_table)
+add_test(NAME param_table_null_tests COMMAND test_null_param_table)

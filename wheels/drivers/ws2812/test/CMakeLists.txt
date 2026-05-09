@@ -15,6 +15,16 @@ target_include_directories(test_ws2812 PRIVATE
 
 target_compile_options(test_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_ws2812
+    test_null_ws2812.c
+    ../ws2812.c
+)
+target_include_directories(test_null_ws2812 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ws2812_tests COMMAND test_ws2812)
 
@@ -41,3 +51,4 @@ target_include_directories(test_hw_model_ws2812 PRIVATE
 target_compile_options(test_hw_model_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME ws2812_hw_model_tests COMMAND test_hw_model_ws2812)
+add_test(NAME ws2812_null_tests COMMAND test_null_ws2812)

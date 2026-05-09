@@ -14,5 +14,16 @@ target_include_directories(test_bencode PRIVATE
 )
 target_compile_options(test_bencode PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_bencode
+    test_null_bencode.c
+    ../bencode.c
+)
+target_include_directories(test_null_bencode PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_bencode PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bencode_tests COMMAND test_bencode)
+add_test(NAME bencode_null_tests COMMAND test_null_bencode)

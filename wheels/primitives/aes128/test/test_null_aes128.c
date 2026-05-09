@@ -7,23 +7,81 @@
 #include <stddef.h>
 
 TEST(test_aes128_init_null_ctx) {
-    (void)aes128_init(NULL, 0);
+    uint8_t _key[64];
+    memset(_key, 0, sizeof(_key));
+    (void)aes128_init(NULL, _key);
+    /* must not crash */
+}
+
+TEST(test_aes128_init_null_key) {
+    aes128_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    (void)aes128_init(&_ctx, NULL);
     /* must not crash */
 }
 
 TEST(test_aes128_encrypt_block_null_ctx) {
-    (void)aes128_encrypt_block(NULL, 0, 0);
+    uint8_t _in[64];
+    memset(_in, 0, sizeof(_in));
+    uint8_t _out[64];
+    memset(_out, 0, sizeof(_out));
+    (void)aes128_encrypt_block(NULL, _in, _out);
+    /* must not crash */
+}
+
+TEST(test_aes128_encrypt_block_null_in) {
+    aes128_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    uint8_t _out[64];
+    memset(_out, 0, sizeof(_out));
+    (void)aes128_encrypt_block(&_ctx, NULL, _out);
+    /* must not crash */
+}
+
+TEST(test_aes128_encrypt_block_null_out) {
+    aes128_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    uint8_t _in[64];
+    memset(_in, 0, sizeof(_in));
+    (void)aes128_encrypt_block(&_ctx, _in, NULL);
     /* must not crash */
 }
 
 TEST(test_aes128_decrypt_block_null_ctx) {
-    (void)aes128_decrypt_block(NULL, 0, 0);
+    uint8_t _in[64];
+    memset(_in, 0, sizeof(_in));
+    uint8_t _out[64];
+    memset(_out, 0, sizeof(_out));
+    (void)aes128_decrypt_block(NULL, _in, _out);
+    /* must not crash */
+}
+
+TEST(test_aes128_decrypt_block_null_in) {
+    aes128_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    uint8_t _out[64];
+    memset(_out, 0, sizeof(_out));
+    (void)aes128_decrypt_block(&_ctx, NULL, _out);
+    /* must not crash */
+}
+
+TEST(test_aes128_decrypt_block_null_out) {
+    aes128_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    uint8_t _in[64];
+    memset(_in, 0, sizeof(_in));
+    (void)aes128_decrypt_block(&_ctx, _in, NULL);
     /* must not crash */
 }
 
 TEST_MAIN("null_param_aes128") {
     RUN(test_aes128_init_null_ctx);
+    RUN(test_aes128_init_null_key);
     RUN(test_aes128_encrypt_block_null_ctx);
+    RUN(test_aes128_encrypt_block_null_in);
+    RUN(test_aes128_encrypt_block_null_out);
     RUN(test_aes128_decrypt_block_null_ctx);
+    RUN(test_aes128_decrypt_block_null_in);
+    RUN(test_aes128_decrypt_block_null_out);
 }
 TEST_MAIN_END()

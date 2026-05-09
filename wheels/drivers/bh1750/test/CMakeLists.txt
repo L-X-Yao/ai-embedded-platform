@@ -14,6 +14,16 @@ target_include_directories(test_bh1750 PRIVATE
 target_compile_options(test_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_bh1750 PRIVATE m)
 
+
+add_executable(test_null_bh1750
+    test_null_bh1750.c
+    ../bh1750.c
+)
+target_include_directories(test_null_bh1750 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bh1750_tests COMMAND test_bh1750)
 
@@ -42,3 +52,4 @@ target_compile_options(test_hw_model_bh1750 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_bh1750 PRIVATE m)
 
 add_test(NAME bh1750_hw_model_tests COMMAND test_hw_model_bh1750)
+add_test(NAME bh1750_null_tests COMMAND test_null_bh1750)

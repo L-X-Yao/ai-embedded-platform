@@ -14,6 +14,16 @@ target_include_directories(test_pcf8574 PRIVATE
 )
 target_compile_options(test_pcf8574 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_pcf8574
+    test_null_pcf8574.c
+    ../pcf8574.c
+)
+target_include_directories(test_null_pcf8574 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_pcf8574 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME pcf8574_tests COMMAND test_pcf8574)
 
@@ -41,3 +51,4 @@ target_compile_options(test_hw_model_pcf8574 PRIVATE -Wall -Wextra -Wpedantic -W
 target_link_libraries(test_hw_model_pcf8574 PRIVATE m)
 
 add_test(NAME pcf8574_hw_model_tests COMMAND test_hw_model_pcf8574)
+add_test(NAME pcf8574_null_tests COMMAND test_null_pcf8574)

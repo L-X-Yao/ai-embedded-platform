@@ -20,5 +20,16 @@ target_include_directories(test_bq27441 PRIVATE
 )
 target_compile_options(test_bq27441 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_bq27441
+    test_null_bq27441.c
+    ../bq27441.c
+)
+target_include_directories(test_null_bq27441 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_bq27441 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bq27441_tests COMMAND test_bq27441)
+add_test(NAME bq27441_null_tests COMMAND test_null_bq27441)

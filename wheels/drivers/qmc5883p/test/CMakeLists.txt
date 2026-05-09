@@ -16,6 +16,16 @@ target_include_directories(test_qmc5883p PRIVATE
 target_link_libraries(test_qmc5883p PRIVATE m)
 target_compile_options(test_qmc5883p PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_qmc5883p
+    test_null_qmc5883p.c
+    ../qmc5883p.c
+)
+target_include_directories(test_null_qmc5883p PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_qmc5883p PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME qmc5883p_tests COMMAND test_qmc5883p)
 
@@ -44,3 +54,4 @@ target_compile_options(test_hw_model_qmc5883p PRIVATE -Wall -Wextra -Wpedantic -
 target_link_libraries(test_hw_model_qmc5883p PRIVATE m)
 
 add_test(NAME qmc5883p_hw_model_tests COMMAND test_hw_model_qmc5883p)
+add_test(NAME qmc5883p_null_tests COMMAND test_null_qmc5883p)

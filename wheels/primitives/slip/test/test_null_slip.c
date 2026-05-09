@@ -85,9 +85,8 @@ TEST(test_slip_decoder_ready_null_dec) {
 }
 
 TEST(test_slip_decoder_frame_null_dec) {
-    uint8_t _data[64];
-    memset(_data, 0, sizeof(_data));
-    (void)slip_decoder_frame(NULL, _data);
+    const uint8_t *_data = NULL;
+    (void)slip_decoder_frame(NULL, &_data);
     /* must not crash */
 }
 

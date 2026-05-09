@@ -21,5 +21,16 @@ target_include_directories(test_pac1952 PRIVATE
 target_compile_options(test_pac1952 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_pac1952 PRIVATE m)
 
+
+add_executable(test_null_pac1952
+    test_null_pac1952.c
+    ../pac1952.c
+)
+target_include_directories(test_null_pac1952 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_pac1952 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME pac1952_tests COMMAND test_pac1952)
+add_test(NAME pac1952_null_tests COMMAND test_null_pac1952)

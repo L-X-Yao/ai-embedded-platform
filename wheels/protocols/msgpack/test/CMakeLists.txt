@@ -14,5 +14,16 @@ target_include_directories(test_msgpack PRIVATE
 )
 target_compile_options(test_msgpack PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_msgpack
+    test_null_msgpack.c
+    ../msgpack.c
+)
+target_include_directories(test_null_msgpack PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_msgpack PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME msgpack_tests COMMAND test_msgpack)
+add_test(NAME msgpack_null_tests COMMAND test_null_msgpack)

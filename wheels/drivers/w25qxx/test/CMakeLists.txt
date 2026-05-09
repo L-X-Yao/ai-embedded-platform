@@ -15,6 +15,16 @@ target_include_directories(test_w25qxx PRIVATE
 
 target_compile_options(test_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_w25qxx
+    test_null_w25qxx.c
+    ../w25qxx.c
+)
+target_include_directories(test_null_w25qxx PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME w25qxx_tests COMMAND test_w25qxx)
 
@@ -42,3 +52,4 @@ target_compile_options(test_hw_model_w25qxx PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_w25qxx PRIVATE m)
 
 add_test(NAME w25qxx_hw_model_tests COMMAND test_hw_model_w25qxx)
+add_test(NAME w25qxx_null_tests COMMAND test_null_w25qxx)

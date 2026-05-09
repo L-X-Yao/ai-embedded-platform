@@ -82,7 +82,16 @@ TEST(test_onewire_read_null_buf) {
 }
 
 TEST(test_onewire_select_null_bus) {
-    (void)onewire_select(NULL, 0);
+    uint8_t _rom[64];
+    memset(_rom, 0, sizeof(_rom));
+    (void)onewire_select(NULL, _rom);
+    /* must not crash */
+}
+
+TEST(test_onewire_select_null_rom) {
+    onewire_t _bus;
+    memset(&_bus, 0, sizeof(_bus));
+    (void)onewire_select(&_bus, NULL);
     /* must not crash */
 }
 
@@ -92,7 +101,16 @@ TEST(test_onewire_skip_null_bus) {
 }
 
 TEST(test_onewire_read_rom_null_bus) {
-    (void)onewire_read_rom(NULL, 0);
+    uint8_t _rom[64];
+    memset(_rom, 0, sizeof(_rom));
+    (void)onewire_read_rom(NULL, _rom);
+    /* must not crash */
+}
+
+TEST(test_onewire_read_rom_null_rom) {
+    onewire_t _bus;
+    memset(&_bus, 0, sizeof(_bus));
+    (void)onewire_read_rom(&_bus, NULL);
     /* must not crash */
 }
 
@@ -114,8 +132,10 @@ TEST_MAIN("null_param_onewire") {
     RUN(test_onewire_read_null_bus);
     RUN(test_onewire_read_null_buf);
     RUN(test_onewire_select_null_bus);
+    RUN(test_onewire_select_null_rom);
     RUN(test_onewire_skip_null_bus);
     RUN(test_onewire_read_rom_null_bus);
+    RUN(test_onewire_read_rom_null_rom);
     RUN(test_onewire_crc8_null_data);
 }
 TEST_MAIN_END()

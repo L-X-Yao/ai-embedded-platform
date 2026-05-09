@@ -25,6 +25,17 @@ target_include_directories(prop_data_logger PRIVATE
 )
 target_compile_options(prop_data_logger PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
+
+add_executable(test_null_data_logger
+    test_null_data_logger.c
+    ../data_logger.c
+)
+target_include_directories(test_null_data_logger PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_data_logger PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME data_logger_tests COMMAND test_data_logger)
 add_test(NAME data_logger_prop_tests COMMAND prop_data_logger)
+add_test(NAME data_logger_null_tests COMMAND test_null_data_logger)

@@ -14,6 +14,16 @@ target_include_directories(test_hmc5883l PRIVATE
 target_compile_options(test_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_hmc5883l PRIVATE m)
 
+
+add_executable(test_null_hmc5883l
+    test_null_hmc5883l.c
+    ../hmc5883l.c
+)
+target_include_directories(test_null_hmc5883l PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME hmc5883l_tests COMMAND test_hmc5883l)
 
@@ -42,3 +52,4 @@ target_compile_options(test_hw_model_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -
 target_link_libraries(test_hw_model_hmc5883l PRIVATE m)
 
 add_test(NAME hmc5883l_hw_model_tests COMMAND test_hw_model_hmc5883l)
+add_test(NAME hmc5883l_null_tests COMMAND test_null_hmc5883l)

@@ -65,7 +65,16 @@ TEST(test_websocket_frame_build_null_payload) {
 }
 
 TEST(test_websocket_frame_mask_payload_null_data) {
-    (void)websocket_frame_mask_payload(NULL, 0, 0);
+    uint8_t _mask_key[64];
+    memset(_mask_key, 0, sizeof(_mask_key));
+    (void)websocket_frame_mask_payload(NULL, 0, _mask_key);
+    /* must not crash */
+}
+
+TEST(test_websocket_frame_mask_payload_null_mask_key) {
+    uint8_t _data[64];
+    memset(_data, 0, sizeof(_data));
+    (void)websocket_frame_mask_payload(_data, 0, NULL);
     /* must not crash */
 }
 
@@ -77,5 +86,6 @@ TEST_MAIN("null_param_websocket_frame") {
     RUN(test_websocket_frame_build_null_mask_key);
     RUN(test_websocket_frame_build_null_payload);
     RUN(test_websocket_frame_mask_payload_null_data);
+    RUN(test_websocket_frame_mask_payload_null_mask_key);
 }
 TEST_MAIN_END()

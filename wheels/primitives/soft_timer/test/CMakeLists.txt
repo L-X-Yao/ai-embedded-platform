@@ -14,5 +14,16 @@ target_include_directories(test_soft_timer PRIVATE
 )
 target_compile_options(test_soft_timer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_soft_timer
+    test_null_soft_timer.c
+    ../soft_timer.c
+)
+target_include_directories(test_null_soft_timer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_soft_timer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME soft_timer_tests COMMAND test_soft_timer)
+add_test(NAME soft_timer_null_tests COMMAND test_null_soft_timer)

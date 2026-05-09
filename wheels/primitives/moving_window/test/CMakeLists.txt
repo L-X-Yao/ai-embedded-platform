@@ -14,5 +14,16 @@ target_include_directories(test_moving_window PRIVATE
 )
 target_compile_options(test_moving_window PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_moving_window
+    test_null_moving_window.c
+    ../moving_window.c
+)
+target_include_directories(test_null_moving_window PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_moving_window PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME moving_window_tests COMMAND test_moving_window)
+add_test(NAME moving_window_null_tests COMMAND test_null_moving_window)

@@ -10,5 +10,16 @@ target_include_directories(test_debounce PRIVATE
 )
 target_compile_options(test_debounce PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_debounce
+    test_null_debounce.c
+    ../debounce.c
+)
+target_include_directories(test_null_debounce PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_debounce PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME debounce_tests COMMAND test_debounce)
+add_test(NAME debounce_null_tests COMMAND test_null_debounce)

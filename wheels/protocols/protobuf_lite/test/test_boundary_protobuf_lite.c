@@ -14,6 +14,12 @@
 #define SIZE_MAX ((size_t)-1)
 #endif
 
+TEST(test_pb_encode_varint_value_uint64_max) {
+    pb_encoder_t _enc;
+    memset(&_enc, 0, sizeof(_enc));
+    (void)pb_encode_varint(&_enc, 16, (uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST(test_pb_encode_sint32_value_int32_min) {
     pb_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
@@ -26,20 +32,47 @@ TEST(test_pb_encode_sint32_value_int32_max) {
     (void)pb_encode_sint32(&_enc, 16, (int32_t)(INT32_MAX));
 }
 
+TEST(test_pb_encode_sint64_value_int64_min) {
+    pb_encoder_t _enc;
+    memset(&_enc, 0, sizeof(_enc));
+    (void)pb_encode_sint64(&_enc, 16, (int64_t)((int64_t)(-0x7FFFFFFFFFFFFFFFll - 1)));
+}
+
+TEST(test_pb_encode_sint64_value_int64_max) {
+    pb_encoder_t _enc;
+    memset(&_enc, 0, sizeof(_enc));
+    (void)pb_encode_sint64(&_enc, 16, (int64_t)((int64_t)0x7FFFFFFFFFFFFFFFll));
+}
+
 TEST(test_pb_encode_fixed32_value_uint32_max) {
     pb_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
     (void)pb_encode_fixed32(&_enc, 16, (uint32_t)(UINT32_MAX));
 }
 
+TEST(test_pb_encode_fixed64_value_uint64_max) {
+    pb_encoder_t _enc;
+    memset(&_enc, 0, sizeof(_enc));
+    (void)pb_encode_fixed64(&_enc, 16, (uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST(test_pb_zigzag_decode32_n_uint32_max) {
     (void)pb_zigzag_decode32((uint32_t)(UINT32_MAX));
 }
 
+TEST(test_pb_zigzag_decode64_n_uint64_max) {
+    (void)pb_zigzag_decode64((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST_MAIN("boundary_protobuf_lite") {
+    RUN(test_pb_encode_varint_value_uint64_max);
     RUN(test_pb_encode_sint32_value_int32_min);
     RUN(test_pb_encode_sint32_value_int32_max);
+    RUN(test_pb_encode_sint64_value_int64_min);
+    RUN(test_pb_encode_sint64_value_int64_max);
     RUN(test_pb_encode_fixed32_value_uint32_max);
+    RUN(test_pb_encode_fixed64_value_uint64_max);
     RUN(test_pb_zigzag_decode32_n_uint32_max);
+    RUN(test_pb_zigzag_decode64_n_uint64_max);
 }
 TEST_MAIN_END()

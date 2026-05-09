@@ -14,5 +14,16 @@ target_include_directories(test_syslog_packet PRIVATE
 )
 target_compile_options(test_syslog_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_syslog_packet
+    test_null_syslog_packet.c
+    ../syslog_packet.c
+)
+target_include_directories(test_null_syslog_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_syslog_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME syslog_packet_tests COMMAND test_syslog_packet)
+add_test(NAME syslog_packet_null_tests COMMAND test_null_syslog_packet)

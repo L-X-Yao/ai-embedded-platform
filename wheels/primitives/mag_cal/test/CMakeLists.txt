@@ -15,5 +15,16 @@ target_include_directories(test_mag_cal PRIVATE
 target_compile_options(test_mag_cal PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_mag_cal PRIVATE m)
 
+
+add_executable(test_null_mag_cal
+    test_null_mag_cal.c
+    ../mag_cal.c
+)
+target_include_directories(test_null_mag_cal PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_mag_cal PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mag_cal_tests COMMAND test_mag_cal)
+add_test(NAME mag_cal_null_tests COMMAND test_null_mag_cal)

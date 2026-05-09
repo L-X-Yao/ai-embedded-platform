@@ -23,6 +23,16 @@ target_include_directories(test_hw_model_max7219 PRIVATE
 )
 target_compile_options(test_hw_model_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
+
+add_executable(test_null_max7219
+    test_null_max7219.c
+    ../max7219.c
+)
+target_include_directories(test_null_max7219 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME max7219_tests COMMAND test_max7219)
 add_test(NAME max7219_hw_model_tests COMMAND test_hw_model_max7219)
@@ -38,3 +48,4 @@ target_include_directories(prop_max7219 PRIVATE
 target_compile_options(prop_max7219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME max7219_prop_tests COMMAND prop_max7219)
+add_test(NAME max7219_null_tests COMMAND test_null_max7219)

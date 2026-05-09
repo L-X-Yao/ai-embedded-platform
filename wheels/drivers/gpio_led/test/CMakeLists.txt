@@ -15,6 +15,16 @@ target_include_directories(test_gpio_led PRIVATE
 
 target_compile_options(test_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_gpio_led
+    test_null_gpio_led.c
+    ../gpio_led.c
+)
+target_include_directories(test_null_gpio_led PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME gpio_led_tests COMMAND test_gpio_led)
 
@@ -29,3 +39,4 @@ target_include_directories(prop_gpio_led PRIVATE
 target_compile_options(prop_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME gpio_led_prop_tests COMMAND prop_gpio_led)
+add_test(NAME gpio_led_null_tests COMMAND test_null_gpio_led)
