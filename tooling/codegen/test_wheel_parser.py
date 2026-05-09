@@ -1,7 +1,7 @@
 """test_wheel_parser.py -- pytest unit tests for _wheel_parser shared module.
 
 Run with:
-    cd tooling/test && python -m pytest test_wheel_parser.py -v
+    cd tooling/codegen && python -m pytest test_wheel_parser.py -v
 or via the Makefile:
     make test-wheel-parser
 """

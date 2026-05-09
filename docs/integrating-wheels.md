@@ -136,7 +136,7 @@ add_executable(test_<suite>
 
 target_include_directories(test_<suite> PRIVATE
     ${PLATFORM_ROOT}/wheels/<layer>/<wheel>
-    ${PLATFORM_ROOT}/tooling/test              # test_harness.h
+    ${PLATFORM_ROOT}/tooling/harness           # test_harness.h
 )
 
 target_compile_options(test_<suite> PRIVATE -Wall -Wextra -Wpedantic -Werror)
