@@ -19,7 +19,7 @@ AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审�
 - **186 个 candidate wheels**（L0 原语 61 / L1 驱动 74 / L2 协议 31 / L3 模块 20）
 - **3 个集成示例**：env_monitor / device_shell / remote_telemetry
 - **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
-- **CI 增量检测** + 55 项 wheel 审计全绿
+- **CI 增量检测** + 55 项 wheel 审计全绿 + ARM 交叉编译烟雾测试 + 集成示例验证
 - **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
 
 ## 目录结构
