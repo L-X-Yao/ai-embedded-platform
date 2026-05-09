@@ -119,6 +119,25 @@ TEST(test_dhcp_packet_build_request_null_server_ip) {
     /* must not crash */
 }
 
+TEST(test_dhcp_packet_option_u32_null_opt) {
+    (void)dhcp_packet_option_u32(NULL);
+    /* must not crash */
+}
+
+TEST(test_dhcp_packet_option_ip_null_opt) {
+    uint8_t _ip[64];
+    memset(_ip, 0, sizeof(_ip));
+    (void)dhcp_packet_option_ip(NULL, _ip);
+    /* must not crash */
+}
+
+TEST(test_dhcp_packet_option_ip_null_ip) {
+    dhcp_option_t _opt;
+    memset(&_opt, 0, sizeof(_opt));
+    (void)dhcp_packet_option_ip(&_opt, NULL);
+    /* must not crash */
+}
+
 TEST_MAIN("null_param_dhcp_packet") {
     RUN(test_dhcp_packet_parse_null_buf);
     RUN(test_dhcp_packet_parse_null_hdr);
@@ -133,5 +152,8 @@ TEST_MAIN("null_param_dhcp_packet") {
     RUN(test_dhcp_packet_build_request_null_mac);
     RUN(test_dhcp_packet_build_request_null_req_ip);
     RUN(test_dhcp_packet_build_request_null_server_ip);
+    RUN(test_dhcp_packet_option_u32_null_opt);
+    RUN(test_dhcp_packet_option_ip_null_opt);
+    RUN(test_dhcp_packet_option_ip_null_ip);
 }
 TEST_MAIN_END()
