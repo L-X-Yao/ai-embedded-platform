@@ -228,7 +228,7 @@ def update_cmakelists(wheel: WheelInfo, dry_run: bool) -> bool:
         ")",
         f"target_include_directories({target} PRIVATE",
         "    ${CMAKE_CURRENT_SOURCE_DIR}/..",
-        "    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test",
+        "    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness",
         ")",
     ]
     if has_contract:

@@ -5,7 +5,7 @@
 # the wheel-enumeration loop and CMakeLists.txt dependency parsing.
 #
 # Exports:
-#   Variables:  ARM_AUDIT_REPO, ARM_AUDIT_TOOLING_TEST, ARM_AUDIT_CC
+#   Variables:  ARM_AUDIT_REPO, ARM_AUDIT_TOOLING_HARNESS, ARM_AUDIT_CC
 #   Functions:  arm_audit_check_toolchain()
 #               discover_wheel_sources()
 #               resolve_includes()
@@ -15,7 +15,7 @@ set -euo pipefail
 # ── Common variables ──────────────────────────────────────────────────
 
 ARM_AUDIT_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ARM_AUDIT_TOOLING_TEST="$ARM_AUDIT_REPO/tooling/test"
+ARM_AUDIT_TOOLING_HARNESS="$ARM_AUDIT_REPO/tooling/harness"
 ARM_AUDIT_CC="arm-none-eabi-gcc"
 
 # ── arm_audit_check_toolchain ─────────────────────────────────────────
@@ -91,7 +91,7 @@ discover_wheel_sources() {
 resolve_includes() {
     local wheel_dir="$1"
     shift
-    local includes="-I$wheel_dir -I$ARM_AUDIT_TOOLING_TEST"
+    local includes="-I$wheel_dir -I$ARM_AUDIT_TOOLING_HARNESS"
 
     # Extra dirs passed by caller (e.g. config stubs)
     local extra
