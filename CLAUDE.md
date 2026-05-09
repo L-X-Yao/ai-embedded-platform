@@ -132,7 +132,7 @@ ai-embedded-platform/
 ├── projects/                       真实项目
 ├── examples/                       集成食谱（wheel 组合示例）
 ├── tooling/
-│   ├── harness/                    C 测试框架头文件（被 178 wheel #include）
+│   ├── harness/                    C 测试框架头文件（被 186 wheel #include）
 │   ├── codegen/                    Python 测试代码生成器 + 共享解析器
 │   ├── test/                       测试运行器（覆盖率/模糊/变异/差分）
 │   ├── audit/                      审计脚本
@@ -449,10 +449,10 @@ port(gd32f4xx): fix N HAL audit findings
 ## 当前状态
 
 Sprint 0 + Sprint 0.1（自审改进）已完成：
-- ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/patches）
+- ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/ci/patches）
 - ✅ 核心文档（philosophy / wheel-contract / api-conventions / ai-workflow / debugging-playbook）
 - ✅ 10 个 ADR（平台决策历史）
-- ✅ tooling/patches + apply.sh 骨架
+- ✅ tooling/ci/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
 - ✅ Claude Code 自动记忆（用户背景 + 战略决策 + feedback）
 - ✅ 历史评估归档 `_eval/`

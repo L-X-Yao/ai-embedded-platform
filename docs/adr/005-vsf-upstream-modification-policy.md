@@ -44,11 +44,11 @@
 2. 导出 patch：
    ```bash
    cd <root>
-   git diff vsf/ > tooling/patches/NNNN-<slug>.patch
+   git diff vsf/ > tooling/ci/patches/NNNN-<slug>.patch
    git checkout vsf/    # 撤回原改动
    ```
-3. 更新 `tooling/patches/README.md` 清单
-4. 构建前应用：`bash tooling/patches/apply.sh`
+3. 更新 `tooling/ci/patches/README.md` 清单
+4. 构建前应用：`bash tooling/ci/patches/apply.sh`
 
 ### 新增代码 → vsf-addon/
 
@@ -72,7 +72,7 @@ bash tooling/ci/sync_vsf.sh --status      # compare current vs upstream
 1. 获取上游最新到本地缓存 `tooling/.vsf-upstream/`
 2. 回退已应用的 patches（`apply.sh --revert`）
 3. 替换 `vsf/` 全部内容为上游目标版本
-4. 重新应用 `tooling/patches/*.patch`
+4. 重新应用 `tooling/ci/patches/*.patch`
 5. 冲突的 patch 要么改、要么丢弃（上游可能已自己修了）
 6. 更新 patches/README 每条状态
 7. `make test-wheels` 全平台回归测试
@@ -82,7 +82,7 @@ AI 可主导该流程，最终 merge 人审批。
 
 ### 回馈 upstream
 
-通用 bug fix → 整理成 upstream-friendly 版本（英文 commit msg、去公司特定代码）提交 PR 到 `vsfteam/vsf`。被合并后可从我们 `tooling/patches/` 删除。
+通用 bug fix → 整理成 upstream-friendly 版本（英文 commit msg、去公司特定代码）提交 PR 到 `vsfteam/vsf`。被合并后可从我们 `tooling/ci/patches/` 删除。
 
 ## 后果
 
@@ -111,5 +111,5 @@ AI 可主导该流程，最终 merge 人审批。
 ## 相关
 
 - ADR-004（Monorepo 结构）
-- `tooling/patches/README.md`
+- `tooling/ci/patches/README.md`
 - `vsf-addon/README.md`
