@@ -62,6 +62,8 @@ jobs:
       flybox-changed: ${{ steps.detect.outputs.flybox_changed }}
       log-changed: ${{ steps.detect.outputs.log_changed }}
       crc16-changed: ${{ steps.detect.outputs.crc16_changed }}
+      examples-changed: ${{ steps.detect.outputs.examples_changed }}
+      wheels-touched: ${{ steps.detect.outputs.wheels_touched }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -162,7 +164,21 @@ jobs:
           fi
           echo "crc16_changed=$CRC16" >> "$GITHUB_OUTPUT"
 
-          echo "::notice::Changed wheels: $(echo "$MATRIX" | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED"
+          # Examples trigger: examples/, wheels/, or harness changed
+          EXAMPLES="false"
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^examples/|^wheels/"; then
+            EXAMPLES="true"
+          fi
+          echo "examples_changed=$EXAMPLES" >> "$GITHUB_OUTPUT"
+
+          # ARM compile trigger: any wheel code changed
+          WHEELS_TOUCHED="false"
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^wheels/"; then
+            WHEELS_TOUCHED="true"
+          fi
+          echo "wheels_touched=$WHEELS_TOUCHED" >> "$GITHUB_OUTPUT"
+
+          echo "::notice::Changed wheels: $(echo "$MATRIX" | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED / examples=$EXAMPLES / arm=$WHEELS_TOUCHED"
 
   # ---- Standalone wheel jobs (special build requirements) ----
 
@@ -329,6 +345,77 @@ jobs:
         run: |
           cmake -GNinja -S . -B build
           cmake --build build
+
+  # ---- Integration examples ----
+
+  examples-test:
+    name: examples (build + run)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.examples-changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+
+      - name: Build and run examples
+        run: |
+          FAIL=0
+          for example in examples/*/; do
+            name=$(basename "$example")
+            echo "::group::$name"
+            if cmake -GNinja -S "$example" -B "$example/build" \
+                && ninja -C "$example/build" \
+                && "$example/build/$name"; then
+              echo "::notice::Example $name passed"
+            else
+              echo "::error::Example $name failed"
+              FAIL=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $FAIL
+
+  # ---- ARM cross-compile smoke (push-time, not just nightly) ----
+
+  arm-compile-check:
+    name: ARM cross-compile smoke
+    needs: detect-changes
+    if: needs.detect-changes.outputs.wheels-touched == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cache ARM toolchain
+        id: arm-cache
+        uses: actions/cache@v4
+        with:
+          path: /opt/gcc-arm
+          key: arm-gnu-toolchain-13.2.rel1
+
+      - name: Install arm-none-eabi-gcc
+        run: |
+          if [ ! -f /opt/gcc-arm/bin/arm-none-eabi-gcc ]; then
+            wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
+            sudo mkdir -p /opt/gcc-arm
+            sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
+          fi
+          echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+
+      - name: ARM compile all wheels
+        run: |
+          OUTPUT=$(bash tooling/audit/arm_size_audit.sh 2>&1) || true
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qE "Failed: [1-9]"; then
+            echo "::error::ARM cross-compile failures detected"
+            exit 1
+          fi
 
   # ---- Nightly: coverage gate ----
 
