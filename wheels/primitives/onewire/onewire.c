@@ -16,6 +16,7 @@
  */
 
 #include "onewire.h"
+#include "contract.h"
 
 /* ---------- timing constants (microseconds, standard speed) ---------- */
 
@@ -91,9 +92,15 @@ static bool read_bit(const onewire_gpio_t *g)
 
 onewire_err_t onewire_init(onewire_t *bus, const onewire_gpio_t *gpio)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(gpio != NULL);
     if (bus == NULL || gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
+    REQUIRE(gpio->pin_low != NULL);
+    REQUIRE(gpio->pin_release != NULL);
+    REQUIRE(gpio->pin_read != NULL);
+    REQUIRE(gpio->delay_us != NULL);
     if (gpio->pin_low == NULL || gpio->pin_release == NULL ||
         gpio->pin_read == NULL || gpio->delay_us == NULL) {
         return ONEWIRE_ERR_PARAM;
@@ -106,6 +113,7 @@ onewire_err_t onewire_init(onewire_t *bus, const onewire_gpio_t *gpio)
 
 onewire_err_t onewire_reset(onewire_t *bus, bool *presence)
 {
+    REQUIRE(bus != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -135,6 +143,7 @@ onewire_err_t onewire_reset(onewire_t *bus, bool *presence)
 
 onewire_err_t onewire_write_byte(onewire_t *bus, uint8_t byte)
 {
+    REQUIRE(bus != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -150,6 +159,8 @@ onewire_err_t onewire_write_byte(onewire_t *bus, uint8_t byte)
 
 onewire_err_t onewire_read_byte(onewire_t *bus, uint8_t *byte)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(byte != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -172,6 +183,8 @@ onewire_err_t onewire_read_byte(onewire_t *bus, uint8_t *byte)
 
 onewire_err_t onewire_write(onewire_t *bus, const uint8_t *data, uint16_t len)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(data != NULL || len == 0);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -190,6 +203,8 @@ onewire_err_t onewire_write(onewire_t *bus, const uint8_t *data, uint16_t len)
 
 onewire_err_t onewire_read(onewire_t *bus, uint8_t *buf, uint16_t len)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(buf != NULL || len == 0);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -208,6 +223,8 @@ onewire_err_t onewire_read(onewire_t *bus, uint8_t *buf, uint16_t len)
 
 onewire_err_t onewire_select(onewire_t *bus, const uint8_t rom[8])
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(rom != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -224,6 +241,7 @@ onewire_err_t onewire_select(onewire_t *bus, const uint8_t rom[8])
 
 onewire_err_t onewire_skip(onewire_t *bus)
 {
+    REQUIRE(bus != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -233,6 +251,8 @@ onewire_err_t onewire_skip(onewire_t *bus)
 
 onewire_err_t onewire_read_rom(onewire_t *bus, uint8_t rom[8])
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(rom != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return ONEWIRE_ERR_PARAM;
     }
@@ -261,6 +281,7 @@ onewire_err_t onewire_read_rom(onewire_t *bus, uint8_t rom[8])
 
 uint8_t onewire_crc8(const uint8_t *data, uint16_t len)
 {
+    REQUIRE(data != NULL);
     if (data == NULL) {
         return 0;
     }

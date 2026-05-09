@@ -9,6 +9,7 @@
  */
 
 #include "gnss_filter.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -37,6 +38,8 @@ static bool quality_raw_ok(const gnss_filter_t *flt,
 gnss_filter_err_t gnss_filter_init(gnss_filter_t *flt,
                                    const gnss_filter_cfg_t *cfg)
 {
+    REQUIRE(flt != NULL);
+    REQUIRE(cfg != NULL);
     if (flt == NULL || cfg == NULL) {
         return GNSS_FILTER_ERR_PARAM;
     }
@@ -50,6 +53,8 @@ gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
                                      uint16_t imu_motion_mg,
                                      uint32_t now_ms)
 {
+    REQUIRE(flt != NULL);
+    REQUIRE(input != NULL);
     if (flt == NULL || input == NULL) {
         return GNSS_FILTER_ERR_PARAM;
     }
@@ -104,6 +109,7 @@ gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
 
 gnss_filter_err_t gnss_filter_reset(gnss_filter_t *flt)
 {
+    REQUIRE(flt != NULL);
     if (flt == NULL) {
         return GNSS_FILTER_ERR_PARAM;
     }
@@ -115,24 +121,28 @@ gnss_filter_err_t gnss_filter_reset(gnss_filter_t *flt)
 
 bool gnss_filter_is_ready(const gnss_filter_t *flt)
 {
+    REQUIRE(flt != NULL);
     if (flt == NULL) return false;
     return flt->quality_ready && flt->filter_valid;
 }
 
 float gnss_filter_lat(const gnss_filter_t *flt)
 {
+    REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
     return flt->filtered_lat;
 }
 
 float gnss_filter_lon(const gnss_filter_t *flt)
 {
+    REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
     return flt->filtered_lon;
 }
 
 float gnss_filter_alt(const gnss_filter_t *flt)
 {
+    REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
     return flt->filtered_alt;
 }

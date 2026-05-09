@@ -9,6 +9,7 @@
  */
 
 #include "fal.h"
+#include "contract.h"
 #include <string.h>
 
 #ifndef FAL_FLASH_DEV_TABLE
@@ -48,6 +49,7 @@ int fal_init_check(void)
 
 const struct fal_flash_dev *fal_flash_device_find(const char *name)
 {
+    REQUIRE(name != NULL);
     if (!name) {
         return NULL;
     }
@@ -61,6 +63,7 @@ const struct fal_flash_dev *fal_flash_device_find(const char *name)
 
 const struct fal_partition *fal_partition_find(const char *name)
 {
+    REQUIRE(name != NULL);
     if (!name) {
         return NULL;
     }
@@ -74,6 +77,7 @@ const struct fal_partition *fal_partition_find(const char *name)
 
 const struct fal_partition *fal_get_partition_table(size_t *len)
 {
+    REQUIRE(len != NULL);
     if (!len) {
         return NULL;
     }
@@ -90,6 +94,8 @@ static const struct fal_flash_dev *find_dev_by_part(
 int fal_partition_read(const struct fal_partition *part, uint32_t addr,
                        uint8_t *buf, size_t size)
 {
+    REQUIRE(part != NULL);
+    REQUIRE(buf != NULL);
     if (!part || !buf) {
         return -1;
     }
@@ -106,6 +112,8 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
 int fal_partition_write(const struct fal_partition *part, uint32_t addr,
                         const uint8_t *buf, size_t size)
 {
+    REQUIRE(part != NULL);
+    REQUIRE(buf != NULL);
     if (!part || !buf) {
         return -1;
     }
@@ -122,6 +130,7 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
 int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
                         size_t size)
 {
+    REQUIRE(part != NULL);
     if (!part) {
         return -1;
     }
@@ -137,6 +146,7 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
 
 int fal_partition_erase_all(const struct fal_partition *part)
 {
+    REQUIRE(part != NULL);
     if (!part) {
         return -1;
     }

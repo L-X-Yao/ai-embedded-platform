@@ -9,6 +9,7 @@
  */
 
 #include "soft_spi.h"
+#include "contract.h"
 
 /* ---------- internal helpers ---------- */
 
@@ -121,14 +122,24 @@ soft_spi_err_t soft_spi_init(soft_spi_t *dev,
                              const soft_spi_gpio_t *gpio,
                              const soft_spi_cfg_t *cfg)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(gpio != NULL);
+    REQUIRE(cfg != NULL);
     if (dev == NULL || gpio == NULL || cfg == NULL) {
         return SOFT_SPI_ERR_PARAM;
     }
+    REQUIRE(gpio->sck_low != NULL);
+    REQUIRE(gpio->sck_high != NULL);
+    REQUIRE(gpio->mosi_low != NULL);
+    REQUIRE(gpio->mosi_high != NULL);
+    REQUIRE(gpio->miso_read != NULL);
+    REQUIRE(gpio->delay_us != NULL);
     if (gpio->sck_low == NULL || gpio->sck_high == NULL ||
         gpio->mosi_low == NULL || gpio->mosi_high == NULL ||
         gpio->miso_read == NULL || gpio->delay_us == NULL) {
         return SOFT_SPI_ERR_PARAM;
     }
+    REQUIRE(cfg->mode <= 3);
     if (cfg->mode > 3) {
         return SOFT_SPI_ERR_PARAM;
     }
@@ -146,6 +157,7 @@ soft_spi_err_t soft_spi_init(soft_spi_t *dev,
 
 uint8_t soft_spi_xfer(soft_spi_t *dev, uint8_t tx)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL || dev->gpio == NULL) {
         return 0;
     }
@@ -155,6 +167,8 @@ uint8_t soft_spi_xfer(soft_spi_t *dev, uint8_t tx)
 soft_spi_err_t soft_spi_write(soft_spi_t *dev,
                               const uint8_t *data, uint16_t len)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(data != NULL || len == 0);
     if (dev == NULL || dev->gpio == NULL) {
         return SOFT_SPI_ERR_PARAM;
     }
@@ -172,6 +186,8 @@ soft_spi_err_t soft_spi_write(soft_spi_t *dev,
 soft_spi_err_t soft_spi_read(soft_spi_t *dev,
                              uint8_t *buf, uint16_t len)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(buf != NULL || len == 0);
     if (dev == NULL || dev->gpio == NULL) {
         return SOFT_SPI_ERR_PARAM;
     }
@@ -190,6 +206,9 @@ soft_spi_err_t soft_spi_transfer(soft_spi_t *dev,
                                  const uint8_t *tx, uint8_t *rx,
                                  uint16_t len)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(tx != NULL || len == 0);
+    REQUIRE(rx != NULL || len == 0);
     if (dev == NULL || dev->gpio == NULL) {
         return SOFT_SPI_ERR_PARAM;
     }

@@ -9,6 +9,7 @@
  */
 
 #include "soft_i2c.h"
+#include "contract.h"
 
 /* ---------- internal helpers ---------- */
 
@@ -116,9 +117,17 @@ static uint8_t i2c_read_byte(const soft_i2c_gpio_t *g)
 
 soft_i2c_err_t soft_i2c_init(soft_i2c_t *bus, const soft_i2c_gpio_t *gpio)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(gpio != NULL);
     if (bus == NULL || gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
+    REQUIRE(gpio->scl_set != NULL);
+    REQUIRE(gpio->sda_set != NULL);
+    REQUIRE(gpio->sda_dir_out != NULL);
+    REQUIRE(gpio->sda_dir_in != NULL);
+    REQUIRE(gpio->sda_get != NULL);
+    REQUIRE(gpio->delay != NULL);
     if (gpio->scl_set == NULL || gpio->sda_set == NULL ||
         gpio->sda_dir_out == NULL || gpio->sda_dir_in == NULL ||
         gpio->sda_get == NULL || gpio->delay == NULL) {
@@ -134,6 +143,8 @@ soft_i2c_err_t soft_i2c_init(soft_i2c_t *bus, const soft_i2c_gpio_t *gpio)
 soft_i2c_err_t soft_i2c_write(soft_i2c_t *bus, uint8_t addr,
                               const uint8_t *data, uint16_t len)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(data != NULL || len == 0);
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
@@ -161,6 +172,9 @@ soft_i2c_err_t soft_i2c_write(soft_i2c_t *bus, uint8_t addr,
 soft_i2c_err_t soft_i2c_read(soft_i2c_t *bus, uint8_t addr,
                              uint8_t *buf, uint16_t len)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(buf != NULL);
+    REQUIRE(len > 0);
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
@@ -190,6 +204,7 @@ soft_i2c_err_t soft_i2c_read(soft_i2c_t *bus, uint8_t addr,
 soft_i2c_err_t soft_i2c_write_reg(soft_i2c_t *bus, uint8_t addr,
                                   uint8_t reg, uint8_t val)
 {
+    REQUIRE(bus != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
@@ -216,6 +231,9 @@ soft_i2c_err_t soft_i2c_write_reg(soft_i2c_t *bus, uint8_t addr,
 soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
                                   uint8_t reg, uint8_t *buf, uint16_t len)
 {
+    REQUIRE(bus != NULL);
+    REQUIRE(buf != NULL);
+    REQUIRE(len > 0);
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
@@ -256,6 +274,7 @@ soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
 
 soft_i2c_err_t soft_i2c_bus_recover(soft_i2c_t *bus)
 {
+    REQUIRE(bus != NULL);
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }

@@ -9,6 +9,7 @@
  */
 
 #include "hmac_sha256.h"
+#include "contract.h"
 #include "sha256.h"
 #include <string.h>
 #include <stdbool.h>
@@ -32,7 +33,9 @@ static void prepare_key(const uint8_t *key, size_t key_len,
 hmac_sha256_err_t hmac_sha256_init(hmac_sha256_t *ctx,
                                    const uint8_t *key, size_t key_len)
 {
+    REQUIRE(ctx != NULL);
     if (!ctx) { return HMAC_SHA256_ERR_PARAM; }
+    REQUIRE(key != NULL || key_len == 0);
     if (!key && key_len > 0) { return HMAC_SHA256_ERR_PARAM; }
 
     uint8_t k_block[HMAC_SHA256_BLOCK_SIZE];
@@ -56,7 +59,9 @@ hmac_sha256_err_t hmac_sha256_init(hmac_sha256_t *ctx,
 hmac_sha256_err_t hmac_sha256_update(hmac_sha256_t *ctx,
                                      const uint8_t *data, size_t len)
 {
+    REQUIRE(ctx != NULL);
     if (!ctx) { return HMAC_SHA256_ERR_PARAM; }
+    REQUIRE(data != NULL || len == 0);
     if (!data && len > 0) { return HMAC_SHA256_ERR_PARAM; }
 
     sha256_ctx_t *inner = (sha256_ctx_t *)ctx->i_ctx_buf;
@@ -66,6 +71,8 @@ hmac_sha256_err_t hmac_sha256_update(hmac_sha256_t *ctx,
 
 hmac_sha256_err_t hmac_sha256_final(hmac_sha256_t *ctx, uint8_t mac[32])
 {
+    REQUIRE(ctx != NULL);
+    REQUIRE(mac != NULL);
     if (!ctx || !mac) { return HMAC_SHA256_ERR_PARAM; }
 
     uint8_t inner_hash[SHA256_DIGEST_SIZE];
@@ -87,6 +94,7 @@ void hmac_sha256_compute(const uint8_t *key, size_t key_len,
                          const uint8_t *data, size_t data_len,
                          uint8_t mac[32])
 {
+    REQUIRE(mac != NULL);
     if (!mac) { return; }
 
     hmac_sha256_t ctx;
@@ -97,6 +105,8 @@ void hmac_sha256_compute(const uint8_t *key, size_t key_len,
 
 bool hmac_sha256_verify(const uint8_t a[32], const uint8_t b[32])
 {
+    REQUIRE(a != NULL);
+    REQUIRE(b != NULL);
     if (!a || !b) { return false; }
 
     volatile uint8_t diff = 0;

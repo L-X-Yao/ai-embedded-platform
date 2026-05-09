@@ -9,6 +9,7 @@
  */
 
 #include "flash_ring.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- on-flash header layout ---------- */
@@ -56,12 +57,21 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
                                  const flash_ring_io_t *io,
                                  const flash_ring_cfg_t *cfg)
 {
+    REQUIRE(ring != NULL);
+    REQUIRE(io != NULL);
+    REQUIRE(cfg != NULL);
     if (ring == NULL || io == NULL || cfg == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
+    REQUIRE(io->erase_sector != NULL);
+    REQUIRE(io->write != NULL);
+    REQUIRE(io->read != NULL);
     if (io->erase_sector == NULL || io->write == NULL || io->read == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
+    REQUIRE(cfg->slot_size > 0);
+    REQUIRE(cfg->total_slots > 0);
+    REQUIRE(cfg->sector_size > 0);
     if (cfg->slot_size == 0 || cfg->total_slots == 0 || cfg->sector_size == 0) {
         return FLASH_RING_ERR_PARAM;
     }
@@ -96,9 +106,14 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
 flash_ring_err_t flash_ring_push(flash_ring_t *ring,
                                  const uint8_t *frame, uint16_t len)
 {
+    REQUIRE(ring != NULL);
+    REQUIRE(ring == NULL || ring->io != NULL);
     if (ring == NULL || ring->io == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
+    REQUIRE(frame != NULL);
+    REQUIRE(len > 0);
+    REQUIRE(len <= ring->cfg.slot_size);
     if (frame == NULL || len == 0 || len > ring->cfg.slot_size) {
         return FLASH_RING_ERR_PARAM;
     }
@@ -134,9 +149,13 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
 flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
                                  uint8_t *buf, uint16_t len)
 {
+    REQUIRE(ring != NULL);
+    REQUIRE(buf != NULL);
+    REQUIRE(len > 0);
     if (ring == NULL || ring->io == NULL || buf == NULL || len == 0) {
         return FLASH_RING_ERR_PARAM;
     }
+    REQUIRE(idx < ring->cfg.total_slots);
     if (idx >= ring->cfg.total_slots) {
         return FLASH_RING_ERR_PARAM;
     }
@@ -150,6 +169,7 @@ flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
 
 flash_ring_err_t flash_ring_pop(flash_ring_t *ring)
 {
+    REQUIRE(ring != NULL);
     if (ring == NULL || ring->io == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
@@ -170,6 +190,7 @@ flash_ring_err_t flash_ring_pop(flash_ring_t *ring)
 
 uint32_t flash_ring_count(const flash_ring_t *ring)
 {
+    REQUIRE(ring != NULL);
     if (ring == NULL) {
         return 0;
     }
@@ -181,6 +202,7 @@ uint32_t flash_ring_count(const flash_ring_t *ring)
 
 flash_ring_err_t flash_ring_discard_all(flash_ring_t *ring)
 {
+    REQUIRE(ring != NULL);
     if (ring == NULL || ring->io == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
@@ -190,6 +212,7 @@ flash_ring_err_t flash_ring_discard_all(flash_ring_t *ring)
 
 flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring)
 {
+    REQUIRE(ring != NULL);
     if (ring == NULL || ring->io == NULL) {
         return FLASH_RING_ERR_PARAM;
     }
