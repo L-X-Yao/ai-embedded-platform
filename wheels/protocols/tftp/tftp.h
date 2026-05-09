@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 /*
- * tftp — TODO: one-line description
+ * tftp — TFTP protocol codec (RFC 1350)
  *
  * Layer:     L2
  * Status:    candidate
  * Deps:      (none)
  * Instances: multi
+ *
+ * Stateless TFTP packet building and parsing. Handles RRQ/WRQ/DATA/ACK/ERROR
+ * opcodes. Pure C99, no heap. All buffers caller-provided.
  */
 
 #ifndef TFTP_H
@@ -19,7 +22,12 @@
 extern "C" {
 #endif
 
-/* ---------- error codes ---------- */
+/* ---------- constants ---------- */
+
+#define TFTP_BLOCK_SIZE    512
+#define TFTP_MAX_FILENAME  128
+
+/* ---------- error codes (return values) ---------- */
 
 typedef enum {
     TFTP_OK           =  0,
@@ -29,23 +37,106 @@ typedef enum {
     TFTP_ERR_OVERFLOW = -4,
 } tftp_err_t;
 
-/* ---------- data types ---------- */
+/* ---------- TFTP opcodes ---------- */
+
+typedef enum {
+    TFTP_OP_RRQ   = 1,   /* Read request */
+    TFTP_OP_WRQ   = 2,   /* Write request */
+    TFTP_OP_DATA  = 3,   /* Data */
+    TFTP_OP_ACK   = 4,   /* Acknowledgment */
+    TFTP_OP_ERROR = 5,   /* Error */
+} tftp_op_t;
+
+/* ---------- TFTP error codes (in ERROR packets) ---------- */
+
+typedef enum {
+    TFTP_ERRC_UNDEFINED     = 0,
+    TFTP_ERRC_NOT_FOUND     = 1,
+    TFTP_ERRC_ACCESS        = 2,
+    TFTP_ERRC_DISK_FULL     = 3,
+    TFTP_ERRC_ILLEGAL_OP    = 4,
+    TFTP_ERRC_UNKNOWN_ID    = 5,
+    TFTP_ERRC_FILE_EXISTS   = 6,
+    TFTP_ERRC_NO_SUCH_USER  = 7,
+} tftp_error_code_t;
+
+/* ---------- parsed packet ---------- */
 
 typedef struct {
-    /* TODO: parsed fields */
-    uint8_t type;
-    uint16_t length;
-} tftp_msg_t;
+    uint16_t opcode;
+    union {
+        struct {
+            char filename[TFTP_MAX_FILENAME];
+            char mode[16];
+        } rq;                                        /* RRQ / WRQ */
+        struct {
+            uint16_t       block;
+            const uint8_t *data;
+            size_t         len;
+        } data;                                      /* DATA */
+        struct {
+            uint16_t block;
+        } ack;                                       /* ACK */
+        struct {
+            uint16_t code;
+            char     msg[128];
+        } error;                                     /* ERROR */
+    } u;
+} tftp_packet_t;
 
 /* ---------- API ---------- */
 
-/** Parse a message from raw bytes. @thread_safe: yes @isr_safe: no */
-tftp_err_t tftp_parse(const uint8_t *data, size_t len,
-                               tftp_msg_t *out);
+/**
+ * Parse a TFTP packet from raw bytes.
+ * Returns 0 on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt);
 
-/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes @isr_safe: no */
-int tftp_build(uint8_t *buf, size_t cap,
-                        const tftp_msg_t *msg);
+/**
+ * Build a RRQ (Read Request) packet.
+ * Returns bytes written on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_build_rrq(uint8_t *buf, size_t cap,
+                   const char *filename, const char *mode);
+
+/**
+ * Build a WRQ (Write Request) packet.
+ * Returns bytes written on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_build_wrq(uint8_t *buf, size_t cap,
+                   const char *filename, const char *mode);
+
+/**
+ * Build a DATA packet.
+ * Returns bytes written on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_build_data(uint8_t *buf, size_t cap,
+                    uint16_t block, const uint8_t *data, size_t len);
+
+/**
+ * Build an ACK packet.
+ * Returns bytes written on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_build_ack(uint8_t *buf, size_t cap, uint16_t block);
+
+/**
+ * Build an ERROR packet.
+ * Returns bytes written on success, negative tftp_err_t on failure.
+ * @thread_safe: yes (pure function)
+ */
+int tftp_build_error(uint8_t *buf, size_t cap,
+                     uint16_t code, const char *msg);
+
+/**
+ * Check if a parsed DATA packet is the last block (len < TFTP_BLOCK_SIZE).
+ * @thread_safe: yes (pure function)
+ */
+bool tftp_is_last_data(const tftp_packet_t *pkt);
 
 #ifdef __cplusplus
 }

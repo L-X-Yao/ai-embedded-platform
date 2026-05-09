@@ -20,5 +20,16 @@ target_include_directories(test_tftp PRIVATE
 )
 target_compile_options(test_tftp PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_tftp
+    test_null_tftp.c
+    ../tftp.c
+)
+target_include_directories(test_null_tftp PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_null_tftp PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tftp_tests COMMAND test_tftp)
+add_test(NAME tftp_null_tests COMMAND test_null_tftp)
