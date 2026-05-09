@@ -40,7 +40,7 @@ target_include_directories(env_monitor PRIVATE
     ${MOD}/data_logger
 
     # test_harness.h + contract.h
-    ${TOOLING}/test
+    ${TOOLING}/harness
 )
 
 target_compile_options(env_monitor PRIVATE

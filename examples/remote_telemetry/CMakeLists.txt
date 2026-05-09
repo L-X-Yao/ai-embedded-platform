@@ -31,7 +31,7 @@ target_include_directories(remote_telemetry PRIVATE
     ${WHEELS_DIR}/protocols/at_command
 
     # contract.h (used internally by wheels)
-    ${TOOLING_DIR}/test
+    ${TOOLING_DIR}/harness
 )
 
 target_compile_options(remote_telemetry PRIVATE
