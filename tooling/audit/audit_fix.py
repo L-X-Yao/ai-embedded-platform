@@ -115,7 +115,7 @@ def fix_doc_comments(wheel_dir, name, apply=False):
         i += 1
 
     if fixes and apply:
-        h.write_text(nl.join(new_lines), encoding="utf-8")
+        h.write_bytes(nl.join(new_lines).encode("utf-8"))
 
     return fixes
 
@@ -167,7 +167,7 @@ def fix_error_enum(wheel_dir, name, apply=False):
         new_lines.append(line)
 
     if fixes and apply:
-        h.write_text(nl.join(new_lines), encoding="utf-8")
+        h.write_bytes(nl.join(new_lines).encode("utf-8"))
 
     return fixes
 
@@ -201,7 +201,7 @@ def fix_missing_stddef(wheel_dir, name, apply=False):
                 inserted = True
                 break
         if inserted:
-            c.write_text(nl.join(lines), encoding="utf-8")
+            c.write_bytes(nl.join(lines).encode("utf-8"))
         else:
             # Anchor include not found — cannot insert safely; report but do not claim fix.
             fixes = []

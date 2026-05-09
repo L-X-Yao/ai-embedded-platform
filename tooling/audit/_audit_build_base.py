@@ -99,15 +99,15 @@ def get_changed_wheels() -> set[tuple[str, str]]:
     try:
         result = subprocess.run(
             ["git", "diff", "--name-only", "origin/main", "HEAD"],
-            capture_output=True, text=True, cwd=str(REPO),
+            capture_output=True, text=True, cwd=str(REPO), timeout=30,
         )
         if result.returncode != 0:
             print("  NOTE: origin/main not available, using HEAD~1 (only last commit scanned)")
             result = subprocess.run(
                 ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
-                capture_output=True, text=True, cwd=str(REPO),
+                capture_output=True, text=True, cwd=str(REPO), timeout=30,
             )
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
         return set()
 
     changed: set[tuple[str, str]] = set()

@@ -484,9 +484,10 @@ def chk_signed_left_shift(ctx, **_):
         if "<<" not in code_part:
             continue
         before_shift = code_part[:code_part.index("<<")]
-        if re.search(r'\(uint\d+_t\)\s*$', before_shift.rstrip()):
-            continue
-        if "(uint" in before_shift and "<<" not in before_shift.split("(uint")[0]:
+        # Exempt when the shift operand is directly cast to unsigned,
+        # i.e. the cast immediately precedes <<: "(uintN_t)expr <<"
+        # expr may include array subscripts like buf[0] or derefs like *p
+        if re.search(r'\(uint\d+_t\)\s*[\w\[\]*>.-]+\s*$', before_shift.rstrip()):
             continue
         hits.append(i + 1)
     if not hits:
@@ -562,12 +563,18 @@ def chk_unchecked_return(ctx, **_):
     """Detect function calls whose error return is discarded.
 
     Only flags calls to the wheel's own public API prefix (not static helpers).
+    Uses a simple approach: look for lines where the wheel prefix function is
+    called as a statement (no assignment), regardless of argument complexity.
     """
     if not ctx.source:
         return None
     prefix = ctx.name + "_"
-    static_funcs = set(re.findall(r'static\s+\w+\s+(\w+)\s*\(', ctx.source))
-    pat = re.compile(rf'\b({re.escape(prefix)}\w+)\s*\([^)]*\)\s*;')
+    # Match static functions including multi-word return types and inline modifier
+    static_funcs = set(re.findall(
+        r'static\s+(?:inline\s+)?(?:const\s+)?\w[\w\s*]*\b(\w+)\s*\(', ctx.source))
+    # Match the wheel prefix function name at start of a statement-like expression
+    # Uses a name-only pattern; nested parens handled by checking assignment separately
+    name_pat = re.compile(rf'\b({re.escape(prefix)}\w+)\s*\(')
     hits = []
     for i, line in enumerate(ctx.source.splitlines()):
         stripped = line.strip()
@@ -575,14 +582,27 @@ def chk_unchecked_return(ctx, **_):
             continue
         if stripped.startswith("(void)"):
             continue
-        m = pat.search(stripped)
+        m = name_pat.search(stripped)
         if not m:
             continue
         func = m.group(1)
         if func in static_funcs:
             continue
-        if "=" not in stripped.split("(")[0]:
-            hits.append(i + 1)
+        # Check that the call is a bare statement (return value discarded).
+        # Skip if there is an assignment, comparison, conditional, or the
+        # call is used as a function argument or in a control-flow expression.
+        before_func = stripped[:m.start()]
+        if "=" in before_func:
+            continue
+        if before_func.rstrip().endswith("return"):
+            continue
+        # Skip if the call appears inside a condition: if (...), while (...), !func()
+        if re.search(r'(?:if|while|for)\s*\(|!\s*$', before_func.rstrip()):
+            continue
+        # Must end with ; to be a statement (not an argument or condition)
+        if not stripped.endswith(";"):
+            continue
+        hits.append(i + 1)
     if not hits:
         return None
     locs = ", ".join(f"L{n}" for n in hits[:3])
@@ -919,10 +939,10 @@ def _git_tracked_files(directory: Path) -> set:
     try:
         result = subprocess.run(
             ["git", "ls-files", "--", f"{rel}/"],
-            capture_output=True, text=True, cwd=str(REPO)
+            capture_output=True, text=True, cwd=str(REPO), timeout=30,
         )
         return {line.strip() for line in result.stdout.splitlines() if line.strip()}
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
         return set()
 
 
