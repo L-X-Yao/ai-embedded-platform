@@ -5,7 +5,7 @@
  * Layer:   L0
  * Status:  candidate
  * Deps:      (none)
- * Instances: single (const data, reentrant)
+ * Instances: multi
  *
  * 5x7 pixel bitmap font covering ASCII 0x20..0x7E (95 printable chars).
  * Column-major encoding: 5 bytes per glyph, each byte is one column,

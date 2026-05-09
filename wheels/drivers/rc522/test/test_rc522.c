@@ -18,6 +18,14 @@ static uint8_t pending_resp[64];
 static uint8_t pending_resp_len;
 static bool    pending_resp_armed;
 
+/* Self-test simulation: fill FIFO when CalcCRC is commanded */
+static bool    mock_self_test_armed;
+static bool    mock_self_test_all_zero;  /* if true, fill with zeros (fail case) */
+
+/* Transceive error injection */
+static uint8_t mock_error_inject;  /* value to set in error register on transceive */
+static bool    mock_error_armed;
+
 /* FIFO simulation for mock */
 #define MOCK_FIFO_SIZE 64
 static uint8_t mock_fifo[MOCK_FIFO_SIZE];
@@ -56,6 +64,10 @@ static void mock_reset(void)
     memset(pending_resp, 0, sizeof(pending_resp));
     pending_resp_len = 0;
     pending_resp_armed = false;
+    mock_self_test_armed = false;
+    mock_self_test_all_zero = false;
+    mock_error_inject = 0;
+    mock_error_armed = false;
 
     /* Set version register to v2.0 */
     mock_regs[0x37] = 0x92;
@@ -106,8 +118,31 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                 mock_fifo_push(pending_resp[i]);
             }
             mock_regs[0x0A] = mock_fifo_count;
-            mock_regs[0x04] = 0x20;  /* RxIRq set */
+            if (mock_error_armed) {
+                mock_regs[0x06] = mock_error_inject;
+                mock_regs[0x04] = 0x20;  /* RxIRq set but error present */
+                mock_error_armed = false;
+            } else {
+                mock_regs[0x04] = 0x20;  /* RxIRq set */
+            }
             pending_resp_armed = false;
+            mock_regs[mock_addr_latch] = tx;
+        } else if (mock_addr_latch == 0x01 && tx == 0x0C && mock_error_armed) {
+            /* Transceive with error but no pending response */
+            mock_regs[0x06] = mock_error_inject;
+            mock_regs[0x04] = 0x20;  /* RxIRq set */
+            mock_error_armed = false;
+            mock_regs[mock_addr_latch] = tx;
+        } else if (mock_addr_latch == 0x01 && tx == 0x03 && mock_self_test_armed) {
+            /* CalcCRC command during self-test -- fill FIFO with 64 bytes */
+            mock_fifo_head = 0;
+            mock_fifo_count = 0;
+            uint8_t fill = mock_self_test_all_zero ? 0x00 : 0xA5;
+            for (uint8_t i = 0; i < 64; i++) {
+                mock_fifo_push(fill);
+            }
+            mock_regs[0x0A] = mock_fifo_count;
+            mock_self_test_armed = false;
             mock_regs[mock_addr_latch] = tx;
         } else if (mock_addr_latch == 0x09) {
             mock_fifo_push(tx);
@@ -309,6 +344,98 @@ TEST(test_self_test_null)
     ASSERT_EQ(rc522_self_test(NULL), RC522_ERR_PARAM);
 }
 
+TEST(test_self_test_ok)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Arm self-test: when CalcCRC is commanded, fill FIFO with non-zero data */
+    mock_self_test_armed = true;
+    mock_self_test_all_zero = false;
+
+    ASSERT_EQ(rc522_self_test(&dev), RC522_OK);
+}
+
+TEST(test_self_test_all_zero_fails)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Arm self-test: fill FIFO with all zeros (fail case) */
+    mock_self_test_armed = true;
+    mock_self_test_all_zero = true;
+
+    ASSERT_EQ(rc522_self_test(&dev), RC522_ERR_SPI);
+}
+
+TEST(test_self_test_timeout)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Do not arm self-test -- FIFO stays empty, poll times out */
+    mock_self_test_armed = false;
+
+    ASSERT_EQ(rc522_self_test(&dev), RC522_ERR_TIMEOUT);
+}
+
+TEST(test_self_test_uninit_dev)
+{
+    rc522_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(rc522_self_test(&dev), RC522_ERR_PARAM);
+}
+
+TEST(test_transceive_collision_error)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* CollErr is bit 3 (0x08). The error mask checks 0x13 first, so CollErr
+     * must be combined with at least one of those bits to enter the error
+     * handler. Set CollErr + ParityErr to exercise the collision path. */
+    uint8_t dummy[2] = {0x04, 0x00};
+    mock_arm_response(dummy, 2);
+    mock_error_inject = 0x0A;  /* CollErr (0x08) | ParityErr (0x02) */
+    mock_error_armed = true;
+
+    ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_COLL);
+}
+
+TEST(test_transceive_parity_error)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Arm a dummy response but inject parity error (bit 1 of ErrorReg) */
+    uint8_t dummy[2] = {0x04, 0x00};
+    mock_arm_response(dummy, 2);
+    mock_error_inject = 0x02;  /* ParityErr */
+    mock_error_armed = true;
+
+    ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_SPI);
+}
+
+TEST(test_transceive_buffer_overflow_error)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Arm a dummy response but inject buffer overflow (bit 4 of ErrorReg) */
+    uint8_t dummy[2] = {0x04, 0x00};
+    mock_arm_response(dummy, 2);
+    mock_error_inject = 0x10;  /* BufferOvfl */
+    mock_error_armed = true;
+
+    ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_SPI);
+}
+
 TEST_MAIN("rc522")
     RUN(test_init_ok);
     RUN(test_init_version_v1);
@@ -328,4 +455,11 @@ TEST_MAIN("rc522")
     RUN(test_halt);
     RUN(test_halt_null);
     RUN(test_self_test_null);
+    RUN(test_self_test_ok);
+    RUN(test_self_test_all_zero_fails);
+    RUN(test_self_test_timeout);
+    RUN(test_self_test_uninit_dev);
+    RUN(test_transceive_collision_error);
+    RUN(test_transceive_parity_error);
+    RUN(test_transceive_buffer_overflow_error);
 TEST_MAIN_END()

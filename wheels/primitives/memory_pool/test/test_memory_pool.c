@@ -103,6 +103,7 @@ TEST(test_alloc_when_full_returns_null)
     void *p = memory_pool_alloc(&pool);
     ASSERT_TRUE(p == NULL);
     ASSERT_EQ(memory_pool_used(&pool), BLOCK_COUNT);
+    ASSERT_EQ(memory_pool_available(&pool), 0);
 }
 
 TEST(test_alloc_null_pool)
@@ -242,6 +243,17 @@ TEST(test_used_null)
     ASSERT_EQ(memory_pool_used(NULL), 0);
 }
 
+/* --- error code definitions --- */
+
+TEST(test_error_codes)
+{
+    ASSERT_EQ( 0, (int)MEMORY_POOL_OK);
+    ASSERT_EQ(-1, (int)MEMORY_POOL_ERR_NULL);
+    ASSERT_EQ(-2, (int)MEMORY_POOL_ERR_SIZE);
+    ASSERT_EQ(-3, (int)MEMORY_POOL_ERR_FULL);
+    ASSERT_EQ(-4, (int)MEMORY_POOL_ERR_INVALID);
+}
+
 /* --- write data into allocated blocks --- */
 
 TEST(test_write_data_into_blocks)
@@ -304,6 +316,7 @@ TEST_MAIN("memory_pool")
     RUN(test_available_used_tracking);
     RUN(test_available_null);
     RUN(test_used_null);
+    RUN(test_error_codes);
     RUN(test_write_data_into_blocks);
     RUN(test_min_block_size);
 TEST_MAIN_END()
