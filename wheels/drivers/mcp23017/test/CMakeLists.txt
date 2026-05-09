@@ -24,6 +24,16 @@ target_include_directories(test_hw_model_mcp23017 PRIVATE
 )
 target_compile_options(test_hw_model_mcp23017 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
+
+add_executable(test_null_mcp23017
+    test_null_mcp23017.c
+    ../mcp23017.c
+)
+target_include_directories(test_null_mcp23017 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_mcp23017 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mcp23017_tests COMMAND test_mcp23017)
 add_test(NAME mcp23017_hw_model_tests COMMAND test_hw_model_mcp23017)
@@ -39,3 +49,4 @@ target_include_directories(prop_mcp23017 PRIVATE
 target_compile_options(prop_mcp23017 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME mcp23017_prop_tests COMMAND prop_mcp23017)
+add_test(NAME mcp23017_null_tests COMMAND test_null_mcp23017)

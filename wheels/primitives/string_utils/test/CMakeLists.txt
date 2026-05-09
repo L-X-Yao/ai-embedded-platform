@@ -14,5 +14,16 @@ target_include_directories(test_string_utils PRIVATE
 )
 target_compile_options(test_string_utils PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_string_utils
+    test_null_string_utils.c
+    ../string_utils.c
+)
+target_include_directories(test_null_string_utils PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_string_utils PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME string_utils_tests COMMAND test_string_utils)
+add_test(NAME string_utils_null_tests COMMAND test_null_string_utils)

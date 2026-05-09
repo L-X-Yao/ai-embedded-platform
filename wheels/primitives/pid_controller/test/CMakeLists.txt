@@ -15,5 +15,16 @@ target_include_directories(test_pid_controller PRIVATE
 target_compile_options(test_pid_controller PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_pid_controller PRIVATE m)
 
+
+add_executable(test_null_pid_controller
+    test_null_pid_controller.c
+    ../pid_controller.c
+)
+target_include_directories(test_null_pid_controller PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_pid_controller PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME pid_controller_tests COMMAND test_pid_controller)
+add_test(NAME pid_controller_null_tests COMMAND test_null_pid_controller)

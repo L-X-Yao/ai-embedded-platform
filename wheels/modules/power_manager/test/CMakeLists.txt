@@ -20,5 +20,16 @@ target_include_directories(test_power_manager PRIVATE
 )
 target_compile_options(test_power_manager PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_power_manager
+    test_null_power_manager.c
+    ../power_manager.c
+)
+target_include_directories(test_null_power_manager PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_power_manager PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME power_manager_tests COMMAND test_power_manager)
+add_test(NAME power_manager_null_tests COMMAND test_null_power_manager)

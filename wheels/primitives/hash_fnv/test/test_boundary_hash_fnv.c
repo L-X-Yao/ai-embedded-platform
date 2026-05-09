@@ -22,7 +22,16 @@ TEST(test_fnv1a_32_update_hash_uint32_max) {
     ASSERT_EQ(_data[16], (uint8_t)0xFF);
 }
 
+TEST(test_fnv1a_64_update_hash_uint64_max) {
+    uint8_t _data[17];
+    memset(_data, 0xAA, sizeof(_data));
+    _data[16] = ((uint8_t)0xFF);
+    (void)fnv1a_64_update((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull), _data, 16);
+    ASSERT_EQ(_data[16], (uint8_t)0xFF);
+}
+
 TEST_MAIN("boundary_hash_fnv") {
     RUN(test_fnv1a_32_update_hash_uint32_max);
+    RUN(test_fnv1a_64_update_hash_uint64_max);
 }
 TEST_MAIN_END()

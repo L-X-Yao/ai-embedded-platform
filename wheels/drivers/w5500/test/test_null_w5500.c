@@ -21,12 +21,60 @@ TEST(test_w5500_init_null_spi) {
 }
 
 TEST(test_w5500_set_mac_null_dev) {
-    (void)w5500_set_mac(NULL, 0);
+    uint8_t _mac[64];
+    memset(_mac, 0, sizeof(_mac));
+    (void)w5500_set_mac(NULL, _mac);
+    /* must not crash */
+}
+
+TEST(test_w5500_set_mac_null_mac) {
+    w5500_t _dev;
+    memset(&_dev, 0, sizeof(_dev));
+    (void)w5500_set_mac(&_dev, NULL);
     /* must not crash */
 }
 
 TEST(test_w5500_set_ip_null_dev) {
-    (void)w5500_set_ip(NULL, 0, 0, 0);
+    uint8_t _ip[64];
+    memset(_ip, 0, sizeof(_ip));
+    uint8_t _subnet[64];
+    memset(_subnet, 0, sizeof(_subnet));
+    uint8_t _gateway[64];
+    memset(_gateway, 0, sizeof(_gateway));
+    (void)w5500_set_ip(NULL, _ip, _subnet, _gateway);
+    /* must not crash */
+}
+
+TEST(test_w5500_set_ip_null_ip) {
+    w5500_t _dev;
+    memset(&_dev, 0, sizeof(_dev));
+    uint8_t _subnet[64];
+    memset(_subnet, 0, sizeof(_subnet));
+    uint8_t _gateway[64];
+    memset(_gateway, 0, sizeof(_gateway));
+    (void)w5500_set_ip(&_dev, NULL, _subnet, _gateway);
+    /* must not crash */
+}
+
+TEST(test_w5500_set_ip_null_subnet) {
+    w5500_t _dev;
+    memset(&_dev, 0, sizeof(_dev));
+    uint8_t _ip[64];
+    memset(_ip, 0, sizeof(_ip));
+    uint8_t _gateway[64];
+    memset(_gateway, 0, sizeof(_gateway));
+    (void)w5500_set_ip(&_dev, _ip, NULL, _gateway);
+    /* must not crash */
+}
+
+TEST(test_w5500_set_ip_null_gateway) {
+    w5500_t _dev;
+    memset(&_dev, 0, sizeof(_dev));
+    uint8_t _ip[64];
+    memset(_ip, 0, sizeof(_ip));
+    uint8_t _subnet[64];
+    memset(_subnet, 0, sizeof(_subnet));
+    (void)w5500_set_ip(&_dev, _ip, _subnet, NULL);
     /* must not crash */
 }
 
@@ -104,7 +152,11 @@ TEST_MAIN("null_param_w5500") {
     RUN(test_w5500_init_null_dev);
     RUN(test_w5500_init_null_spi);
     RUN(test_w5500_set_mac_null_dev);
+    RUN(test_w5500_set_mac_null_mac);
     RUN(test_w5500_set_ip_null_dev);
+    RUN(test_w5500_set_ip_null_ip);
+    RUN(test_w5500_set_ip_null_subnet);
+    RUN(test_w5500_set_ip_null_gateway);
     RUN(test_w5500_socket_open_null_dev);
     RUN(test_w5500_socket_close_null_dev);
     RUN(test_w5500_socket_send_null_dev);

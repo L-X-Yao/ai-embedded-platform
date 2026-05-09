@@ -20,5 +20,16 @@ target_include_directories(test_sntp_client PRIVATE
 )
 target_compile_options(test_sntp_client PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_sntp_client
+    test_null_sntp_client.c
+    ../sntp_client.c
+)
+target_include_directories(test_null_sntp_client PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_sntp_client PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sntp_client_tests COMMAND test_sntp_client)
+add_test(NAME sntp_client_null_tests COMMAND test_null_sntp_client)

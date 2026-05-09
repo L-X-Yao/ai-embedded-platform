@@ -10,5 +10,16 @@ target_include_directories(test_checksum PRIVATE
 )
 target_compile_options(test_checksum PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_checksum
+    test_null_checksum.c
+    ../checksum.c
+)
+target_include_directories(test_null_checksum PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_checksum PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME checksum_tests COMMAND test_checksum)
+add_test(NAME checksum_null_tests COMMAND test_null_checksum)

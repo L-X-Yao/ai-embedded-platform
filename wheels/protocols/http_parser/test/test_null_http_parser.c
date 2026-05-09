@@ -37,8 +37,7 @@ TEST(test_http_parser_parse_response_null_resp) {
 TEST(test_http_parser_find_header_null_headers) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    http_parser_header_t _out;
-    memset(&_out, 0, sizeof(_out));
+    const http_parser_header_t *_out = NULL;
     (void)http_parser_find_header(NULL, 0, _name, &_out);
     /* must not crash */
 }
@@ -46,8 +45,7 @@ TEST(test_http_parser_find_header_null_headers) {
 TEST(test_http_parser_find_header_null_name) {
     http_parser_header_t _headers;
     memset(&_headers, 0, sizeof(_headers));
-    http_parser_header_t _out;
-    memset(&_out, 0, sizeof(_out));
+    const http_parser_header_t *_out = NULL;
     (void)http_parser_find_header(&_headers, 0, NULL, &_out);
     /* must not crash */
 }

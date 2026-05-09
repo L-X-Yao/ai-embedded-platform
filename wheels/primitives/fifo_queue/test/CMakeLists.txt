@@ -14,5 +14,16 @@ target_include_directories(test_fifo_queue PRIVATE
 )
 target_compile_options(test_fifo_queue PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_fifo_queue
+    test_null_fifo_queue.c
+    ../fifo_queue.c
+)
+target_include_directories(test_null_fifo_queue PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_fifo_queue PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME fifo_queue_tests COMMAND test_fifo_queue)
+add_test(NAME fifo_queue_null_tests COMMAND test_null_fifo_queue)

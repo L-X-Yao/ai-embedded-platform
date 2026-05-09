@@ -31,6 +31,17 @@ target_include_directories(prop_gnss_filter PRIVATE
 target_compile_options(prop_gnss_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(prop_gnss_filter PRIVATE m)
 
+
+add_executable(test_null_gnss_filter
+    test_null_gnss_filter.c
+    ../gnss_filter.c
+)
+target_include_directories(test_null_gnss_filter PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_gnss_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME gnss_filter_tests COMMAND test_gnss_filter)
 add_test(NAME gnss_filter_props COMMAND prop_gnss_filter)
+add_test(NAME gnss_filter_null_tests COMMAND test_null_gnss_filter)

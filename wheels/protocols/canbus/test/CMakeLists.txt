@@ -14,5 +14,16 @@ target_include_directories(test_canbus PRIVATE
 )
 target_compile_options(test_canbus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_canbus
+    test_null_canbus.c
+    ../canbus.c
+)
+target_include_directories(test_null_canbus PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_canbus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME canbus_tests COMMAND test_canbus)
+add_test(NAME canbus_null_tests COMMAND test_null_canbus)

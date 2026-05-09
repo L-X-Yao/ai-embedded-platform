@@ -30,6 +30,14 @@ TEST(test_canbus_signal_pack_start_bit_uint8_max) {
     ASSERT_EQ(_data[16], (uint8_t)0xFF);
 }
 
+TEST(test_canbus_signal_pack_value_uint64_max) {
+    uint8_t _data[17];
+    memset(_data, 0xAA, sizeof(_data));
+    _data[16] = ((uint8_t)0xFF);
+    canbus_signal_pack(_data, 0, 16, false, (uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+    ASSERT_EQ(_data[16], (uint8_t)0xFF);
+}
+
 TEST(test_canbus_is_standard_id_id_uint32_max) {
     (void)canbus_is_standard_id((uint32_t)(UINT32_MAX));
 }
@@ -41,6 +49,7 @@ TEST(test_canbus_is_extended_id_id_uint32_max) {
 TEST_MAIN("boundary_canbus") {
     RUN(test_canbus_signal_extract_start_bit_uint8_max);
     RUN(test_canbus_signal_pack_start_bit_uint8_max);
+    RUN(test_canbus_signal_pack_value_uint64_max);
     RUN(test_canbus_is_standard_id_id_uint32_max);
     RUN(test_canbus_is_extended_id_id_uint32_max);
 }

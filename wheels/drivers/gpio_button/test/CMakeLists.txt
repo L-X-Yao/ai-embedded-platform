@@ -25,6 +25,17 @@ target_include_directories(prop_gpio_button PRIVATE
 )
 target_compile_options(prop_gpio_button PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
+
+add_executable(test_null_gpio_button
+    test_null_gpio_button.c
+    ../gpio_button.c
+)
+target_include_directories(test_null_gpio_button PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_gpio_button PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME gpio_button_tests COMMAND test_gpio_button)
 add_test(NAME gpio_button_prop_tests COMMAND prop_gpio_button)
+add_test(NAME gpio_button_null_tests COMMAND test_null_gpio_button)

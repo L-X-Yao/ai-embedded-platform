@@ -10,6 +10,16 @@ target_include_directories(test_servo PRIVATE
 )
 target_compile_options(test_servo PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_servo
+    test_null_servo.c
+    ../servo.c
+)
+target_include_directories(test_null_servo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_servo PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME servo_tests COMMAND test_servo)
 
@@ -36,3 +46,4 @@ target_include_directories(test_hw_model_servo PRIVATE
 target_compile_options(test_hw_model_servo PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME servo_hw_model_tests COMMAND test_hw_model_servo)
+add_test(NAME servo_null_tests COMMAND test_null_servo)

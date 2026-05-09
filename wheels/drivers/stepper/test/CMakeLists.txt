@@ -14,6 +14,16 @@ target_include_directories(test_stepper PRIVATE
 )
 target_compile_options(test_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_stepper
+    test_null_stepper.c
+    ../stepper.c
+)
+target_include_directories(test_null_stepper PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME stepper_tests COMMAND test_stepper)
 
@@ -40,3 +50,4 @@ target_include_directories(test_hw_model_stepper PRIVATE
 target_compile_options(test_hw_model_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME stepper_hw_model_tests COMMAND test_hw_model_stepper)
+add_test(NAME stepper_null_tests COMMAND test_null_stepper)

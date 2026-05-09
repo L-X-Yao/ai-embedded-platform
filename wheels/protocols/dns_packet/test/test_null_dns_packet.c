@@ -49,7 +49,16 @@ TEST(test_dns_parse_record_null_record) {
 }
 
 TEST(test_dns_get_ipv4_null_record) {
-    (void)dns_get_ipv4(NULL, 0);
+    uint8_t _ip[64];
+    memset(_ip, 0, sizeof(_ip));
+    (void)dns_get_ipv4(NULL, _ip);
+    /* must not crash */
+}
+
+TEST(test_dns_get_ipv4_null_ip) {
+    dns_record_t _record;
+    memset(&_record, 0, sizeof(_record));
+    (void)dns_get_ipv4(&_record, NULL);
     /* must not crash */
 }
 
@@ -89,6 +98,7 @@ TEST_MAIN("null_param_dns_packet") {
     RUN(test_dns_parse_record_null_buf);
     RUN(test_dns_parse_record_null_record);
     RUN(test_dns_get_ipv4_null_record);
+    RUN(test_dns_get_ipv4_null_ip);
     RUN(test_dns_encode_name_null_name);
     RUN(test_dns_encode_name_null_buf);
     RUN(test_dns_decode_name_null_pkt);

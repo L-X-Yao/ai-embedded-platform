@@ -35,21 +35,57 @@ TEST(test_hmac_sha256_update_null_data) {
 }
 
 TEST(test_hmac_sha256_final_null_ctx) {
-    (void)hmac_sha256_final(NULL, 0);
+    uint8_t _mac[64];
+    memset(_mac, 0, sizeof(_mac));
+    (void)hmac_sha256_final(NULL, _mac);
+    /* must not crash */
+}
+
+TEST(test_hmac_sha256_final_null_mac) {
+    hmac_sha256_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    (void)hmac_sha256_final(&_ctx, NULL);
     /* must not crash */
 }
 
 TEST(test_hmac_sha256_compute_null_key) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)hmac_sha256_compute(NULL, 0, _data, 0, 0);
+    uint8_t _mac[64];
+    memset(_mac, 0, sizeof(_mac));
+    (void)hmac_sha256_compute(NULL, 0, _data, 0, _mac);
     /* must not crash */
 }
 
 TEST(test_hmac_sha256_compute_null_data) {
     uint8_t _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)hmac_sha256_compute(_key, 0, NULL, 0, 0);
+    uint8_t _mac[64];
+    memset(_mac, 0, sizeof(_mac));
+    (void)hmac_sha256_compute(_key, 0, NULL, 0, _mac);
+    /* must not crash */
+}
+
+TEST(test_hmac_sha256_compute_null_mac) {
+    uint8_t _key[64];
+    memset(_key, 0, sizeof(_key));
+    uint8_t _data[64];
+    memset(_data, 0, sizeof(_data));
+    (void)hmac_sha256_compute(_key, 0, _data, 0, NULL);
+    /* must not crash */
+}
+
+TEST(test_hmac_sha256_verify_null_a) {
+    uint8_t _b[64];
+    memset(_b, 0, sizeof(_b));
+    (void)hmac_sha256_verify(NULL, _b);
+    /* must not crash */
+}
+
+TEST(test_hmac_sha256_verify_null_b) {
+    uint8_t _a[64];
+    memset(_a, 0, sizeof(_a));
+    (void)hmac_sha256_verify(_a, NULL);
     /* must not crash */
 }
 
@@ -59,7 +95,11 @@ TEST_MAIN("null_param_hmac_sha256") {
     RUN(test_hmac_sha256_update_null_ctx);
     RUN(test_hmac_sha256_update_null_data);
     RUN(test_hmac_sha256_final_null_ctx);
+    RUN(test_hmac_sha256_final_null_mac);
     RUN(test_hmac_sha256_compute_null_key);
     RUN(test_hmac_sha256_compute_null_data);
+    RUN(test_hmac_sha256_compute_null_mac);
+    RUN(test_hmac_sha256_verify_null_a);
+    RUN(test_hmac_sha256_verify_null_b);
 }
 TEST_MAIN_END()

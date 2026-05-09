@@ -26,12 +26,30 @@ TEST(test_sha256_update_null_data) {
 }
 
 TEST(test_sha256_final_null_ctx) {
-    (void)sha256_final(NULL, 0);
+    uint8_t _hash[64];
+    memset(_hash, 0, sizeof(_hash));
+    (void)sha256_final(NULL, _hash);
+    /* must not crash */
+}
+
+TEST(test_sha256_final_null_hash) {
+    sha256_ctx_t _ctx;
+    memset(&_ctx, 0, sizeof(_ctx));
+    (void)sha256_final(&_ctx, NULL);
     /* must not crash */
 }
 
 TEST(test_sha256_hash_null_data) {
-    (void)sha256_hash(NULL, 0, 0);
+    uint8_t _hash[64];
+    memset(_hash, 0, sizeof(_hash));
+    (void)sha256_hash(NULL, 0, _hash);
+    /* must not crash */
+}
+
+TEST(test_sha256_hash_null_hash) {
+    uint8_t _data[64];
+    memset(_data, 0, sizeof(_data));
+    (void)sha256_hash(_data, 0, NULL);
     /* must not crash */
 }
 
@@ -40,6 +58,8 @@ TEST_MAIN("null_param_sha256") {
     RUN(test_sha256_update_null_ctx);
     RUN(test_sha256_update_null_data);
     RUN(test_sha256_final_null_ctx);
+    RUN(test_sha256_final_null_hash);
     RUN(test_sha256_hash_null_data);
+    RUN(test_sha256_hash_null_hash);
 }
 TEST_MAIN_END()

@@ -26,6 +26,16 @@ target_include_directories(prop_bmp280 PRIVATE
 target_compile_options(prop_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(prop_bmp280 PRIVATE m)
 
+
+add_executable(test_null_bmp280
+    test_null_bmp280.c
+    ../bmp280.c
+)
+target_include_directories(test_null_bmp280 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bmp280_tests COMMAND test_bmp280)
 add_test(NAME bmp280_prop_tests COMMAND prop_bmp280)
@@ -42,3 +52,4 @@ target_compile_options(test_hw_model_bmp280 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_bmp280 PRIVATE m)
 
 add_test(NAME bmp280_hw_model_tests COMMAND test_hw_model_bmp280)
+add_test(NAME bmp280_null_tests COMMAND test_null_bmp280)

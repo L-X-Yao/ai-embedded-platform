@@ -24,6 +24,16 @@ target_include_directories(test_hw_model_drv2605 PRIVATE
 )
 target_compile_options(test_hw_model_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-conversion)
 
+
+add_executable(test_null_drv2605
+    test_null_drv2605.c
+    ../drv2605.c
+)
+target_include_directories(test_null_drv2605 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME drv2605_tests COMMAND test_drv2605)
 add_test(NAME drv2605_hw_model_tests COMMAND test_hw_model_drv2605)
@@ -39,3 +49,4 @@ target_include_directories(prop_drv2605 PRIVATE
 target_compile_options(prop_drv2605 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME drv2605_prop_tests COMMAND prop_drv2605)
+add_test(NAME drv2605_null_tests COMMAND test_null_drv2605)

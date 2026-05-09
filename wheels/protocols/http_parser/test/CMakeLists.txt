@@ -13,5 +13,16 @@ target_include_directories(test_http_parser PRIVATE
 )
 target_compile_options(test_http_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_http_parser
+    test_null_http_parser.c
+    ../http_parser.c
+)
+target_include_directories(test_null_http_parser PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_http_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME http_parser_tests COMMAND test_http_parser)
+add_test(NAME http_parser_null_tests COMMAND test_null_http_parser)

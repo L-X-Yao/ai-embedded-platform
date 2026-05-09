@@ -22,12 +22,20 @@ TEST(test_endian_swap32_val_uint32_max) {
     (void)endian_swap32((uint32_t)(UINT32_MAX));
 }
 
+TEST(test_endian_swap64_val_uint64_max) {
+    (void)endian_swap64((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST(test_endian_htobe16_val_uint16_max) {
     (void)endian_htobe16((uint16_t)(65535));
 }
 
 TEST(test_endian_htobe32_val_uint32_max) {
     (void)endian_htobe32((uint32_t)(UINT32_MAX));
+}
+
+TEST(test_endian_htobe64_val_uint64_max) {
+    (void)endian_htobe64((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
 }
 
 TEST(test_endian_be16toh_val_uint16_max) {
@@ -38,6 +46,10 @@ TEST(test_endian_be32toh_val_uint32_max) {
     (void)endian_be32toh((uint32_t)(UINT32_MAX));
 }
 
+TEST(test_endian_be64toh_val_uint64_max) {
+    (void)endian_be64toh((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST(test_endian_htole16_val_uint16_max) {
     (void)endian_htole16((uint16_t)(65535));
 }
@@ -46,12 +58,20 @@ TEST(test_endian_htole32_val_uint32_max) {
     (void)endian_htole32((uint32_t)(UINT32_MAX));
 }
 
+TEST(test_endian_htole64_val_uint64_max) {
+    (void)endian_htole64((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
+}
+
 TEST(test_endian_le16toh_val_uint16_max) {
     (void)endian_le16toh((uint16_t)(65535));
 }
 
 TEST(test_endian_le32toh_val_uint32_max) {
     (void)endian_le32toh((uint32_t)(UINT32_MAX));
+}
+
+TEST(test_endian_le64toh_val_uint64_max) {
+    (void)endian_le64toh((uint64_t)((uint64_t)0xFFFFFFFFFFFFFFFFull));
 }
 
 TEST(test_endian_write_be16_val_uint16_max) {
@@ -89,14 +109,19 @@ TEST(test_endian_write_le32_val_uint32_max) {
 TEST_MAIN("boundary_endian") {
     RUN(test_endian_swap16_val_uint16_max);
     RUN(test_endian_swap32_val_uint32_max);
+    RUN(test_endian_swap64_val_uint64_max);
     RUN(test_endian_htobe16_val_uint16_max);
     RUN(test_endian_htobe32_val_uint32_max);
+    RUN(test_endian_htobe64_val_uint64_max);
     RUN(test_endian_be16toh_val_uint16_max);
     RUN(test_endian_be32toh_val_uint32_max);
+    RUN(test_endian_be64toh_val_uint64_max);
     RUN(test_endian_htole16_val_uint16_max);
     RUN(test_endian_htole32_val_uint32_max);
+    RUN(test_endian_htole64_val_uint64_max);
     RUN(test_endian_le16toh_val_uint16_max);
     RUN(test_endian_le32toh_val_uint32_max);
+    RUN(test_endian_le64toh_val_uint64_max);
     RUN(test_endian_write_be16_val_uint16_max);
     RUN(test_endian_write_be32_val_uint32_max);
     RUN(test_endian_write_le16_val_uint16_max);

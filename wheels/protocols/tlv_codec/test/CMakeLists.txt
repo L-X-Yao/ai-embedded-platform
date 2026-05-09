@@ -14,5 +14,16 @@ target_include_directories(test_tlv_codec PRIVATE
 )
 target_compile_options(test_tlv_codec PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_tlv_codec
+    test_null_tlv_codec.c
+    ../tlv_codec.c
+)
+target_include_directories(test_null_tlv_codec PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_tlv_codec PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tlv_codec_tests COMMAND test_tlv_codec)
+add_test(NAME tlv_codec_null_tests COMMAND test_null_tlv_codec)

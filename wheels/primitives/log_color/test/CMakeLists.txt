@@ -14,5 +14,16 @@ target_include_directories(test_log_color PRIVATE
 )
 target_compile_options(test_log_color PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_log_color
+    test_null_log_color.c
+    ../log_color.c
+)
+target_include_directories(test_null_log_color PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_log_color PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME log_color_tests COMMAND test_log_color)
+add_test(NAME log_color_null_tests COMMAND test_null_log_color)

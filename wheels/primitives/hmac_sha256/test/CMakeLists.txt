@@ -22,5 +22,18 @@ target_include_directories(test_hmac_sha256 PRIVATE
 )
 target_compile_options(test_hmac_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_hmac_sha256
+    test_null_hmac_sha256.c
+    ../hmac_sha256.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/primitives/sha256/sha256.c
+)
+target_include_directories(test_null_hmac_sha256 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/primitives/sha256
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_hmac_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME hmac_sha256_tests COMMAND test_hmac_sha256)
+add_test(NAME hmac_sha256_null_tests COMMAND test_null_hmac_sha256)

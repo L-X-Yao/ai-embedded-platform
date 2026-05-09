@@ -27,6 +27,16 @@ target_include_directories(test_hw_model_xgzp6816d PRIVATE
 target_compile_options(test_hw_model_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(test_hw_model_xgzp6816d PRIVATE m)
 
+
+add_executable(test_null_xgzp6816d
+    test_null_xgzp6816d.c
+    ../xgzp6816d.c
+)
+target_include_directories(test_null_xgzp6816d PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME xgzp6816d_tests COMMAND test_xgzp6816d)
 add_test(NAME xgzp6816d_hw_model_tests COMMAND test_hw_model_xgzp6816d)
@@ -43,3 +53,4 @@ target_compile_options(prop_xgzp6816d PRIVATE -Wall -Wextra -Wpedantic -Werror -
 target_link_libraries(prop_xgzp6816d PRIVATE m)
 
 add_test(NAME xgzp6816d_prop_tests COMMAND prop_xgzp6816d)
+add_test(NAME xgzp6816d_null_tests COMMAND test_null_xgzp6816d)

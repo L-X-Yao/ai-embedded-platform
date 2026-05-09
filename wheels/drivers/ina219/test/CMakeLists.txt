@@ -15,6 +15,16 @@ target_include_directories(test_ina219 PRIVATE
 target_compile_options(test_ina219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_ina219 PRIVATE m)
 
+
+add_executable(test_null_ina219
+    test_null_ina219.c
+    ../ina219.c
+)
+target_include_directories(test_null_ina219 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_ina219 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ina219_tests COMMAND test_ina219)
 
@@ -43,3 +53,4 @@ target_compile_options(test_hw_model_ina219 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_ina219 PRIVATE m)
 
 add_test(NAME ina219_hw_model_tests COMMAND test_hw_model_ina219)
+add_test(NAME ina219_null_tests COMMAND test_null_ina219)

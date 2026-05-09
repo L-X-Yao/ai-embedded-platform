@@ -15,6 +15,16 @@ target_include_directories(test_max31855 PRIVATE
 target_compile_options(test_max31855 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_max31855 PRIVATE m)
 
+
+add_executable(test_null_max31855
+    test_null_max31855.c
+    ../max31855.c
+)
+target_include_directories(test_null_max31855 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_max31855 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME max31855_tests COMMAND test_max31855)
 
@@ -43,3 +53,4 @@ target_compile_options(test_hw_model_max31855 PRIVATE -Wall -Wextra -Wpedantic -
 target_link_libraries(test_hw_model_max31855 PRIVATE m)
 
 add_test(NAME max31855_hw_model_tests COMMAND test_hw_model_max31855)
+add_test(NAME max31855_null_tests COMMAND test_null_max31855)

@@ -14,5 +14,16 @@ target_include_directories(test_endian PRIVATE
 )
 target_compile_options(test_endian PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_endian
+    test_null_endian.c
+    ../endian.c
+)
+target_include_directories(test_null_endian PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+)
+target_compile_options(test_null_endian PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME endian_tests COMMAND test_endian)
+add_test(NAME endian_null_tests COMMAND test_null_endian)
