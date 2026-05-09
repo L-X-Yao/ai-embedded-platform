@@ -22,7 +22,7 @@ target_include_directories(device_shell PRIVATE
     ${WHEELS_DIR}/modules/param_table
     ${WHEELS_DIR}/modules/version_info
     ${WHEELS_DIR}/modules/error_handler
-    ${TOOLING_DIR}/test              # contract.h
+    ${TOOLING_DIR}/harness            # contract.h
 )
 
 target_compile_options(device_shell PRIVATE
