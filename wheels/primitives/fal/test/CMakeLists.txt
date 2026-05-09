@@ -36,6 +36,7 @@ target_compile_options(test_null_fal PRIVATE ${STRICT_FLAGS})
 
 add_executable(prop_fal
     prop_fal.c
+    mock_fal_dev.c
     ../fal.c
 )
 target_include_directories(prop_fal PRIVATE ${COMMON_INCLUDE})

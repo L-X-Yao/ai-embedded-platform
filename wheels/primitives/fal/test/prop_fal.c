@@ -1,75 +1,26 @@
 /*
  * prop_fal.c — property-based tests for fal (Flash Abstraction Layer)
  *
- * Requires: property_test.h from tooling/harness/
- * Build:
- *   gcc -std=c99 -I. -I.. -I../../../../tooling/harness \
- *       prop_fal.c ../fal.c -o prop_fal
- *
- * Note: must compile from test/ directory so fal_cfg.h is found.
+ * Build: gcc -std=c99 -I. -I.. -I../../../../tooling/harness
+ *        prop_fal.c ../fal.c mock_fal_dev.c -o prop_fal
  */
 
 #include "test_harness.h"
 #include "property_test.h"
 #include <fal.h>
 #include <string.h>
-#include <stdlib.h>
 
-/* --- mock flash device (same as test_fal.c) ----------------------------- */
+#define MOCK_FLASH_SIZE  (64u * 1024u)
+#define MOCK_BLOCK_SIZE  4096u
 
-#define MOCK_FLASH_SIZE  (64 * 1024)
-#define MOCK_BLOCK_SIZE  4096
-
-static uint8_t mock_flash_buf[MOCK_FLASH_SIZE];
-
-static int mock_init(void)
-{
-    memset(mock_flash_buf, 0xFF, sizeof(mock_flash_buf));
-    return 0;
-}
-
-static int mock_read(long offset, uint8_t *buf, size_t size)
-{
-    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
-    memcpy(buf, mock_flash_buf + offset, size);
-    return (int)size;
-}
-
-static int mock_write(long offset, const uint8_t *buf, size_t size)
-{
-    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
-    for (size_t i = 0; i < size; i++)
-        mock_flash_buf[(size_t)offset + i] &= buf[i];
-    return (int)size;
-}
-
-static int mock_erase(long offset, size_t size)
-{
-    if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
-    memset(mock_flash_buf + offset, 0xFF, size);
-    return (int)size;
-}
-
-const struct fal_flash_dev mock_flash_dev = {
-    .name      = "mock_flash",
-    .addr      = 0,
-    .len       = MOCK_FLASH_SIZE,
-    .blk_size  = MOCK_BLOCK_SIZE,
-    .ops       = {
-        .init  = mock_init,
-        .read  = mock_read,
-        .write = mock_write,
-        .erase = mock_erase,
-    },
-    .write_gran = 1,
-};
+extern uint8_t mock_flash_buf[];
 
 static int g_fal_inited = 0;
 
 static void ensure_init(void)
 {
     if (!g_fal_inited) {
-        memset(mock_flash_buf, 0xFF, sizeof(mock_flash_buf));
+        memset(mock_flash_buf, 0xFF, MOCK_FLASH_SIZE);
         fal_init();
         g_fal_inited = 1;
     }
