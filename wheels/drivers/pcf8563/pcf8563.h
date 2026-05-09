@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 /*
- * pcf8563 — TODO: one-line description
+ * pcf8563 — NXP PCF8563 I2C real-time clock driver
  *
  * Layer:     L1
  * Status:    candidate
  * Deps:      i2c_hal (injected)
  * Instances: multi
+ *
+ * BCD-encoded time/date registers. 24-hour mode.
+ * Alarm, timer, and CLKOUT support.
+ * Pure C99, no heap, fully reentrant per-context.
  */
 
 #ifndef PCF8563_H
@@ -41,11 +45,42 @@ typedef struct {
 
 #define PCF8563_DEV_ADDR  0x51
 
+/* ---------- CLKOUT frequencies ---------- */
+
+typedef enum {
+    PCF8563_CLKOUT_32768HZ = 0,
+    PCF8563_CLKOUT_1024HZ  = 1,
+    PCF8563_CLKOUT_32HZ    = 2,
+    PCF8563_CLKOUT_1HZ     = 3,
+} pcf8563_clkout_t;
+
+/* ---------- timer clock source ---------- */
+
+typedef enum {
+    PCF8563_TIMER_4096HZ = 0,   /* 244 us resolution */
+    PCF8563_TIMER_64HZ   = 1,   /* 15.625 ms resolution */
+    PCF8563_TIMER_1HZ    = 2,   /* 1 s resolution */
+    PCF8563_TIMER_1_60HZ = 3,   /* 1 min resolution */
+} pcf8563_timer_clk_t;
+
 /* ---------- data types ---------- */
 
 typedef struct {
-    float x, y, z;  /* TODO: use unit suffixes (_c, _pa, _mg, ...) */
-} pcf8563_data_t;
+    uint8_t year;     /* 0-99 (2000-2099) */
+    uint8_t month;    /* 1-12 */
+    uint8_t day;      /* 1-31 */
+    uint8_t weekday;  /* 0-6 (0=Sunday) */
+    uint8_t hour;     /* 0-23 */
+    uint8_t minute;   /* 0-59 */
+    uint8_t second;   /* 0-59 */
+} pcf8563_time_t;
+
+typedef struct {
+    uint8_t minute;   /* 0-59, or 0x80 = disabled */
+    uint8_t hour;     /* 0-23, or 0x80 = disabled */
+    uint8_t day;      /* 1-31, or 0x80 = disabled */
+    uint8_t weekday;  /* 0-6,  or 0x80 = disabled */
+} pcf8563_alarm_t;
 
 /* ---------- device context ---------- */
 
@@ -55,13 +90,38 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
+/** Initialize and clear control registers. @thread_safe: no @isr_safe: no */
 pcf8563_err_t pcf8563_init(pcf8563_t *dev,
                                const pcf8563_i2c_t *i2c);
 
-/** Read sensor data. @thread_safe: caller_must_lock @isr_safe: no */
-pcf8563_err_t pcf8563_read(pcf8563_t *dev,
-                               pcf8563_data_t *out);
+/** Read current time from RTC. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,
+                                    pcf8563_time_t *time);
+
+/** Write time to RTC. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_write_time(const pcf8563_t *dev,
+                                     const pcf8563_time_t *time);
+
+/** Read alarm settings. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_read_alarm(const pcf8563_t *dev,
+                                     pcf8563_alarm_t *alarm);
+
+/** Write alarm settings. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_write_alarm(const pcf8563_t *dev,
+                                      const pcf8563_alarm_t *alarm);
+
+/** Enable countdown timer. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_enable_timer(const pcf8563_t *dev,
+                                       pcf8563_timer_clk_t clk,
+                                       uint8_t countdown);
+
+/** Disable countdown timer. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_disable_timer(const pcf8563_t *dev);
+
+/** Configure CLKOUT pin frequency, or disable it. @thread_safe: no @isr_safe: no */
+pcf8563_err_t pcf8563_set_clkout(const pcf8563_t *dev,
+                                     bool enable,
+                                     pcf8563_clkout_t freq);
 
 #ifdef __cplusplus
 }
