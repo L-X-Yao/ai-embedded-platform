@@ -47,13 +47,26 @@ def make_default_value(param, wheel_name: str, idx: int) -> tuple:
 
     # Pointer to a struct: declare zero-initialized struct
     if '*' in base:
-        pointed_type = base.replace('*', '').strip()
-        if not pointed_type:
-            pointed_type = "uint8_t"
+        star_count = base.count('*')
         var = f"__{pname}_{idx}"
-        decl = f"    {pointed_type} {var};"
-        init = f"    memset(&{var}, 0, sizeof({var}));"
-        return ([decl, init], f"&{var}")
+        if star_count >= 2:
+            # Double (or higher) pointer: declare a single-pointer initialized
+            # to NULL and pass its address.  A flat array would give the wrong
+            # type (e.g. char[] instead of char **).
+            # Preserve 'const' on the inner type so that e.g. const char **
+            # gets const char *inner = NULL  (char * would not be compatible).
+            inner_base = base.replace('*', '').strip() or 'uint8_t'
+            has_const = 'const' in ptype
+            inner_type = ('const ' + inner_base) if has_const else inner_base
+            decl = f"    {inner_type} *{var} = NULL;"
+            return ([decl], f"&{var}")
+        else:
+            pointed_type = base.replace('*', '').strip()
+            if not pointed_type:
+                pointed_type = 'uint8_t'
+            decl = f"    {pointed_type} {var};"
+            init = f"    memset(&{var}, 0, sizeof({var}));"
+            return ([decl, init], f"&{var}")
 
     # Non-pointer: use type-appropriate default
     return ([], scalar_default(param.type_text))
@@ -113,7 +126,9 @@ def generate_test_file(wheel: WheelInfo) -> str:
                     continue
 
                 if param.is_pointer and not param.is_func_ptr:
-                    ptype_base = param.type_text.replace('const ', '').replace('*', '').strip()
+                    raw_base = param.type_text.replace('const ', '').strip()
+                    star_count = raw_base.count('*')
+                    ptype_base = raw_base.replace('*', '').strip()
                     local_name = param.name or f"arg{i}"
                     var = f"_{local_name}"
 
@@ -123,6 +138,17 @@ def generate_test_file(wheel: WheelInfo) -> str:
                     # void* params: pass NULL (can't stack-allocate void)
                     if ptype_base == 'void':
                         call_args.append("NULL")
+                    # Double (or higher) pointer: declare a single-pointer
+                    # initialized to NULL and take its address.  Allocating a
+                    # flat array would yield the wrong type (e.g. char[]
+                    # instead of char **).
+                    elif star_count >= 2:
+                        # Preserve const qualifier on the inner pointer so
+                        # types stay compatible (e.g. const char **).
+                        has_const = 'const' in param.type_text
+                        inner_qualified = ('const ' + ptype_base) if has_const else ptype_base
+                        decl_lines.append(f"    {inner_qualified} *{var} = NULL;")
+                        call_args.append(f"&{var}")
                     # Buffer params: allocate a small array
                     elif ptype_base in ('uint8_t', 'char', 'int8_t'):
                         decl_lines.append(f"    {ptype_base} {var}[64];")
