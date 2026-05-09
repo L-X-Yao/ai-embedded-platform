@@ -117,16 +117,21 @@ def collect_quality(repo: Path) -> dict:
     total_err_codes = 0
     covered_err_codes = 0
 
-    err_pattern_cache = {}
+    err_pattern_cache: dict = {}
     for h in wheels.rglob("*.h"):
         if "vendor" in str(h) or "test" in str(h):
             continue
         name = h.stem
-        text = h.read_text(encoding="utf-8", errors="ignore")
+        try:
+            text = h.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
         pat = re.compile(r'\b' + re.escape(name.upper()) + r'_ERR_\w+\b')
         codes = set(pat.findall(text))
         if codes:
-            err_pattern_cache[h.parent] = (name, codes)
+            # Merge codes across multiple .h files in the same wheel directory
+            existing_name, existing_codes = err_pattern_cache.get(h.parent, (name, set()))
+            err_pattern_cache[h.parent] = (existing_name, existing_codes | codes)
 
     for c_file in wheels.rglob("*.c"):
         rel = str(c_file).replace("\\", "/")
@@ -235,7 +240,11 @@ def main():
     if "--history" in args:
         print("\033[1m=== Metric Snapshots ===\033[0m")
         for f in sorted(metrics_dir.glob("*.json")):
-            d = json.loads(f.read_text(encoding="utf-8"))
+            try:
+                d = json.loads(f.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                print(f"  {f.stem}  [corrupt or unreadable]")
+                continue
             print(f"  {f.stem}  wheels={d.get('wheels_total','-')}  tests={d.get('test_suites','-')}  assertions={d.get('assertions','-')}")
         return
 
@@ -251,7 +260,11 @@ def main():
         if not snapshots:
             print("No saved snapshots. Run with --save first.")
             sys.exit(1)
-        prev = json.loads(snapshots[-1].read_text(encoding="utf-8"))
+        try:
+            prev = json.loads(snapshots[-1].read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[ERR] Cannot read snapshot {snapshots[-1]}: {e}", file=sys.stderr)
+            sys.exit(1)
         print_metrics(prev, f"Previous ({snapshots[-1].stem})")
         print()
         print_metrics(current, "Current")

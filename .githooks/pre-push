@@ -1,13 +1,42 @@
 #!/bin/bash
-# pre-push hook — run wheel audit before pushing.
+# pre-push hook — guard force-push to main and run wheel audit.
 #
 # Install: git config core.hooksPath .githooks
 #
-# Runs audit_wheels.py --quiet. Blocks push on FAIL only (WARN passes).
-# Skips if audit script is not found (e.g. shallow clone).
+# Checks:
+#   1. Warn (and block) force-push to main/master branch
+#   2. Run audit_wheels.py --quiet — blocks on FAIL, passes on WARN
+# Skips audit if script is not found (e.g. shallow clone).
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 AUDIT="$REPO/tooling/audit/audit_wheels.py"
+
+# git pre-push receives: <local_ref> <local_sha> <remote_ref> <remote_sha> on stdin
+# A zero remote_sha (0000...0) means the remote ref is being deleted/new branch.
+# If local_sha != what remote has, and it's a non-ff update to main/master, warn.
+PROTECTED_BRANCHES="main|master"
+while IFS= read -r line; do
+    local_ref=$(echo "$line" | awk '{print $1}')
+    local_sha=$(echo "$line" | awk '{print $2}')
+    remote_ref=$(echo "$line" | awk '{print $3}')
+    remote_sha=$(echo "$line" | awk '{print $4}')
+    branch=$(basename "$remote_ref")
+    zero_sha="0000000000000000000000000000000000000000"
+
+    if echo "$branch" | grep -qE "^($PROTECTED_BRANCHES)$"; then
+        if [[ "$remote_sha" != "$zero_sha" ]]; then
+            # Check if local_sha is a descendant of remote_sha (fast-forward)
+            if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+                echo "ERROR: force-push to '$branch' is not allowed."
+                echo "  Remote: $remote_sha"
+                echo "  Local:  $local_sha"
+                echo ""
+                echo "  If this is intentional, use: git push --no-verify"
+                exit 1
+            fi
+        fi
+    fi
+done
 
 if [[ ! -f "$AUDIT" ]]; then
     exit 0

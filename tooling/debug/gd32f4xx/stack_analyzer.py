@@ -70,8 +70,11 @@ def parse_callgraph(elf: Path, objdump: str) -> dict[str, set[str]]:
     try:
         out = subprocess.run(
             [objdump, "-d", "--no-show-raw-insn", str(elf)],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, check=True, timeout=120,
         ).stdout
+    except subprocess.TimeoutExpired:
+        print(f"ERROR: objdump timed out on {elf} (>120s)", file=sys.stderr)
+        return {}
     except subprocess.CalledProcessError as e:
         print(f"ERROR: objdump failed on {elf}: {e}", file=sys.stderr)
         return {}
