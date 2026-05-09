@@ -92,6 +92,11 @@ static int tests_fail = 0;
 
 #define ASSERT_STR_EQ(a, b) do { \
     const char *_a = (const char *)(a), *_b = (const char *)(b); \
+    if (_a == NULL || _b == NULL) { \
+        printf("  FAIL %s:%d: ASSERT_STR_EQ with NULL (%s=%s, %s=%s)\n", \
+               __func__, __LINE__, #a, _a ? _a : "<NULL>", #b, _b ? _b : "<NULL>"); \
+        tests_fail++; return; \
+    } \
     if (strcmp(_a, _b) != 0) { \
         printf("  FAIL %s:%d: \"%s\" != \"%s\"\n", __func__, __LINE__, _a, _b); \
         tests_fail++; return; \

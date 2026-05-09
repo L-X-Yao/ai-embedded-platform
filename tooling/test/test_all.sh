@@ -343,7 +343,7 @@ fi
 if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     MAX_J=${PARALLEL_JOBS:-$(nproc 2>/dev/null || echo 4)}
     PAR_DIR=$(mktemp -d)
-    trap "rm -rf '$PAR_DIR'" EXIT
+    trap "rm -rf '$PAR_DIR'" EXIT INT TERM
 
     run_c_test_isolated() {
         local name="$1" src_dir="$2" type="$3"

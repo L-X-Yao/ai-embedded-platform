@@ -84,6 +84,20 @@ class TestReadHeader:
         result = read_header(p)
         assert "real_fn" in result
 
+    def test_strips_simple_attribute(self, tmp_path):
+        p = _tmp_header(tmp_path, "__attribute__((unused))\nstatic int helper(void);\n")
+        result = read_header(p)
+        assert "__attribute__" not in result
+
+    def test_strips_nested_attribute_format(self, tmp_path):
+        # __attribute__((format(printf, 1, 2))) has nested parens — old [^)]* regex
+        # would leave ') void foo...' residue, breaking FUNC_RE.
+        p = _tmp_header(tmp_path, "__attribute__((format(printf, 1, 2))) void log_msg(const char *fmt, ...);\n")
+        result = read_header(p)
+        assert "__attribute__" not in result
+        # The residue from the broken regex would start with ')' before 'void'
+        assert result.lstrip().startswith(")") is False
+
 
 # ---------------------------------------------------------------------------
 # join_multiline_decls
