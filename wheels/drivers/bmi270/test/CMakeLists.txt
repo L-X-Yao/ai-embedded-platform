@@ -20,6 +20,16 @@ target_include_directories(test_bmi270 PRIVATE
 )
 target_compile_options(test_bmi270 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_bmi270
+    test_null_bmi270.c
+    ../bmi270.c
+)
+target_include_directories(test_null_bmi270 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_null_bmi270 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bmi270_tests COMMAND test_bmi270)
 
@@ -34,3 +44,4 @@ target_include_directories(test_hw_model_bmi270 PRIVATE
 )
 target_compile_options(test_hw_model_bmi270 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME bmi270_hw_model_tests COMMAND test_hw_model_bmi270)
+add_test(NAME bmi270_null_tests COMMAND test_null_bmi270)
