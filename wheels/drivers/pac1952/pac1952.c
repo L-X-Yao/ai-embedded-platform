@@ -18,6 +18,7 @@
  */
 
 #include "pac1952.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- register addresses ---- */
@@ -99,8 +100,13 @@ static void convert_channel(const pac1952_t *dev, uint8_t ch,
 pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
                            const pac1952_cfg_t *cfg)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(i2c != NULL);
+    REQUIRE(cfg != NULL);
     if (!dev || !i2c || !cfg)
         return PAC1952_ERR_PARAM;
+    REQUIRE(i2c->write_reg != NULL);
+    REQUIRE(i2c->read_regs != NULL);
     if (!i2c->write_reg || !i2c->read_regs)
         return PAC1952_ERR_PARAM;
 
@@ -125,6 +131,7 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
 
 pac1952_err_t pac1952_refresh(pac1952_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return PAC1952_ERR_PARAM;
 
@@ -140,6 +147,9 @@ pac1952_err_t pac1952_refresh(pac1952_t *dev)
 pac1952_err_t pac1952_read_channel(pac1952_t *dev, uint8_t ch,
                                    pac1952_channel_t *out)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(out != NULL);
+    REQUIRE(ch <= 1);
     if (!dev || !out)
         return PAC1952_ERR_PARAM;
     if (ch > 1)
@@ -159,6 +169,9 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
                                 pac1952_channel_t *ch1,
                                 pac1952_channel_t *ch2)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(ch1 != NULL);
+    REQUIRE(ch2 != NULL);
     if (!dev || !ch1 || !ch2)
         return PAC1952_ERR_PARAM;
 
@@ -182,6 +195,7 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
 
 pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return PAC1952_ERR_PARAM;
     if ((unsigned)rate > 3u)
@@ -213,6 +227,8 @@ pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate)
 
 pac1952_err_t pac1952_get_product_id(pac1952_t *dev, uint8_t *id)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(id != NULL);
     if (!dev || !id)
         return PAC1952_ERR_PARAM;
 

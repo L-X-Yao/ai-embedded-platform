@@ -9,6 +9,7 @@
  */
 
 #include "lcd_st7789.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -108,6 +109,9 @@ lcd_st7789_err_t lcd_st7789_init(lcd_st7789_t *dev,
                                  const lcd_st7789_spi_t *spi,
                                  const lcd_st7789_cfg_t *cfg)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(spi != NULL);
+    REQUIRE(cfg != NULL);
     if (!dev || !spi || !cfg) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -163,9 +167,12 @@ lcd_st7789_err_t lcd_st7789_set_window(lcd_st7789_t *dev,
                                        uint16_t x0, uint16_t y0,
                                        uint16_t x1, uint16_t y1)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
+    REQUIRE(x0 <= x1);
+    REQUIRE(y0 <= y1);
     if (x0 > x1 || y0 > y1) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -203,9 +210,12 @@ lcd_st7789_err_t lcd_st7789_write_pixels(lcd_st7789_t *dev,
                                          const uint8_t *data,
                                          size_t len)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
+    REQUIRE(data != NULL);
+    REQUIRE(len > 0);
     if (!data || len == 0) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -222,9 +232,12 @@ lcd_st7789_err_t lcd_st7789_fill_rect(lcd_st7789_t *dev,
                                       uint16_t w, uint16_t h,
                                       uint16_t color)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
+    REQUIRE(w > 0);
+    REQUIRE(h > 0);
     if (w == 0 || h == 0) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -259,6 +272,7 @@ lcd_st7789_err_t lcd_st7789_fill_rect(lcd_st7789_t *dev,
 
 lcd_st7789_err_t lcd_st7789_display_on(lcd_st7789_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -268,6 +282,7 @@ lcd_st7789_err_t lcd_st7789_display_on(lcd_st7789_t *dev)
 
 lcd_st7789_err_t lcd_st7789_display_off(lcd_st7789_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -278,6 +293,7 @@ lcd_st7789_err_t lcd_st7789_display_off(lcd_st7789_t *dev)
 lcd_st7789_err_t lcd_st7789_set_rotation(lcd_st7789_t *dev,
                                          lcd_st7789_rotation_t rot)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }
@@ -295,6 +311,7 @@ lcd_st7789_err_t lcd_st7789_set_rotation(lcd_st7789_t *dev,
 
 lcd_st7789_err_t lcd_st7789_invert(lcd_st7789_t *dev, bool on)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return LCD_ST7789_ERR_PARAM;
     }

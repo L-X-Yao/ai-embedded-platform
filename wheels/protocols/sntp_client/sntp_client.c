@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "sntp_client.h"
+#include "contract.h"
 #include <string.h>
 
 /* ─── byte helpers (big-endian) ──────────────────────────────── */
@@ -54,7 +55,9 @@ static int64_t ts_to_ms(const sntp_timestamp_t *ts)
 int sntp_client_build_request(uint8_t *buf, size_t buf_size,
                               const sntp_timestamp_t *tx_time)
 {
+    REQUIRE(buf != NULL);
     if (!buf) return (int)SNTP_CLIENT_ERR_PARAM;
+    REQUIRE(buf_size >= SNTP_PACKET_SIZE);
     if (buf_size < SNTP_PACKET_SIZE) return (int)SNTP_CLIENT_ERR_SIZE;
 
     memset(buf, 0, SNTP_PACKET_SIZE);
@@ -72,6 +75,8 @@ int sntp_client_build_request(uint8_t *buf, size_t buf_size,
 sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
                                              sntp_response_t *out)
 {
+    REQUIRE(data != NULL);
+    REQUIRE(out != NULL);
     if (!data || !out) return SNTP_CLIENT_ERR_PARAM;
     if (len < SNTP_PACKET_SIZE) return SNTP_CLIENT_ERR_SIZE;
 
@@ -97,6 +102,10 @@ sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
                                       const sntp_timestamp_t *t4,
                                       sntp_result_t *out)
 {
+    REQUIRE(resp != NULL);
+    REQUIRE(t1 != NULL);
+    REQUIRE(t4 != NULL);
+    REQUIRE(out != NULL);
     if (!resp || !t1 || !t4 || !out) return SNTP_CLIENT_ERR_PARAM;
 
     int64_t t1_ms = ts_to_ms(t1);
@@ -133,6 +142,9 @@ sntp_timestamp_t sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms)
 void sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,
                       uint32_t *unix_sec, uint16_t *ms)
 {
+    REQUIRE(ntp != NULL);
+    REQUIRE(unix_sec != NULL);
+    REQUIRE(ms != NULL);
     if (!ntp || !unix_sec || !ms) return;
     if (ntp->seconds >= (uint32_t)SNTP_UNIX_OFFSET) {
         *unix_sec = ntp->seconds - (uint32_t)SNTP_UNIX_OFFSET;

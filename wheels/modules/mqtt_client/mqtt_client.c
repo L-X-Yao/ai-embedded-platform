@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "mqtt_client.h"
+#include "contract.h"
 #include "mqtt_packet.h"
 #include <string.h>
 
@@ -124,7 +125,11 @@ mqtt_client_err_t mqtt_client_init(mqtt_client_t *c,
                                    const mqtt_client_io_t *io,
                                    const mqtt_client_cfg_t *cfg)
 {
+    REQUIRE(c != NULL);
+    REQUIRE(io != NULL);
+    REQUIRE(cfg != NULL);
     if (!c || !io || !io->send || !io->get_tick_ms || !cfg) return MQTT_CLIENT_ERR_PARAM;
+    REQUIRE(cfg->client_id != NULL);
     if (!cfg->client_id) return MQTT_CLIENT_ERR_PARAM;
 
     memset(c, 0, sizeof(*c));
@@ -141,6 +146,7 @@ mqtt_client_err_t mqtt_client_init(mqtt_client_t *c,
 
 mqtt_client_err_t mqtt_client_connect(mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return MQTT_CLIENT_ERR_PARAM;
     if (c->state != MQTT_CLIENT_DISCONNECTED) return MQTT_CLIENT_ERR_STATE;
 
@@ -167,6 +173,7 @@ mqtt_client_err_t mqtt_client_connect(mqtt_client_t *c)
 
 mqtt_client_err_t mqtt_client_disconnect(mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return MQTT_CLIENT_ERR_PARAM;
     if (c->state != MQTT_CLIENT_CONNECTED) return MQTT_CLIENT_ERR_STATE;
 
@@ -181,6 +188,8 @@ mqtt_client_err_t mqtt_client_publish(mqtt_client_t *c, const char *topic,
                                       const uint8_t *payload, uint16_t len,
                                       uint8_t qos)
 {
+    REQUIRE(c != NULL);
+    REQUIRE(topic != NULL);
     if (!c || !topic) return MQTT_CLIENT_ERR_PARAM;
     if (c->state != MQTT_CLIENT_CONNECTED) return MQTT_CLIENT_ERR_STATE;
     if (qos > 1) return MQTT_CLIENT_ERR_PARAM;
@@ -212,6 +221,8 @@ mqtt_client_err_t mqtt_client_publish(mqtt_client_t *c, const char *topic,
 mqtt_client_err_t mqtt_client_subscribe(mqtt_client_t *c,
                                         const char *topic, uint8_t qos)
 {
+    REQUIRE(c != NULL);
+    REQUIRE(topic != NULL);
     if (!c || !topic) return MQTT_CLIENT_ERR_PARAM;
     if (c->state != MQTT_CLIENT_CONNECTED) return MQTT_CLIENT_ERR_STATE;
     if (c->inflight_sub_id != 0) return MQTT_CLIENT_ERR_BUSY;
@@ -231,6 +242,8 @@ mqtt_client_err_t mqtt_client_subscribe(mqtt_client_t *c,
 mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
                                    const uint8_t *data, uint16_t len)
 {
+    REQUIRE(c != NULL);
+    REQUIRE(data != NULL);
     if (!c || !data) return MQTT_CLIENT_ERR_PARAM;
     if (c->state == MQTT_CLIENT_DISCONNECTED) return MQTT_CLIENT_ERR_STATE;
 
@@ -272,6 +285,7 @@ mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
 
 mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return MQTT_CLIENT_ERR_PARAM;
 
     uint32_t t = now_ms(c);
@@ -317,12 +331,14 @@ mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
 
 mqtt_client_state_t mqtt_client_get_state(const mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return MQTT_CLIENT_DISCONNECTED;
     return c->state;
 }
 
 void mqtt_client_on_message(mqtt_client_t *c, mqtt_client_msg_cb_t cb, void *ctx)
 {
+    REQUIRE(c != NULL);
     if (!c) return;
     c->on_message = cb;
     c->cb_ctx     = ctx;
@@ -330,6 +346,7 @@ void mqtt_client_on_message(mqtt_client_t *c, mqtt_client_msg_cb_t cb, void *ctx
 
 void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx)
 {
+    REQUIRE(c != NULL);
     if (!c) return;
     c->on_event = cb;
     c->cb_ctx   = ctx;
@@ -337,6 +354,7 @@ void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx)
 
 uint16_t mqtt_client_next_id(mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return 0;
     uint16_t id = c->next_packet_id;
     c->next_packet_id = (id >= 0xFFFF) ? 1 : (uint16_t)(id + 1);
@@ -345,6 +363,7 @@ uint16_t mqtt_client_next_id(mqtt_client_t *c)
 
 bool mqtt_client_pub_inflight(const mqtt_client_t *c)
 {
+    REQUIRE(c != NULL);
     if (!c) return false;
     return c->inflight_pub_id != 0;
 }

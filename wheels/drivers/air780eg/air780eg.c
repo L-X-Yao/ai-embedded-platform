@@ -9,6 +9,7 @@
  */
 
 #include "air780eg.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -149,9 +150,13 @@ static void process_line(air780eg_t *dev, const char *line)
 
 air780eg_err_t air780eg_init(air780eg_t *dev, const air780eg_io_t *io)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(io != NULL);
     if (dev == NULL || io == NULL) {
         return AIR780EG_ERR_PARAM;
     }
+    REQUIRE(io->send != NULL);
+    REQUIRE(io->get_tick_ms != NULL);
     if (io->send == NULL || io->get_tick_ms == NULL) {
         return AIR780EG_ERR_PARAM;
     }
@@ -164,6 +169,7 @@ air780eg_err_t air780eg_init(air780eg_t *dev, const air780eg_io_t *io)
 
 void air780eg_feed(air780eg_t *dev, uint8_t byte)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
 
     if (byte == '\n') {
@@ -185,6 +191,7 @@ void air780eg_feed(air780eg_t *dev, uint8_t byte)
 
 void air780eg_poll(air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL || dev->io == NULL) return;
 
     if (dev->cmd_status == AIR780EG_CMD_PENDING) {
@@ -198,6 +205,8 @@ void air780eg_poll(air780eg_t *dev)
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
                                  const char *expect, uint32_t timeout_ms)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(cmd != NULL);
     if (dev == NULL || dev->io == NULL || cmd == NULL) {
         return AIR780EG_ERR_PARAM;
     }
@@ -231,18 +240,21 @@ air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
 
 air780eg_cmd_status_t air780eg_cmd_status(const air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return AIR780EG_CMD_IDLE;
     return dev->cmd_status;
 }
 
 const char *air780eg_get_matched_line(const air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return "";
     return dev->matched_line;
 }
 
 const char *air780eg_get_prev_line(const air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return "";
     return dev->prev_line;
 }
@@ -251,6 +263,7 @@ const char *air780eg_get_prev_line(const air780eg_t *dev)
 
 void air780eg_on_mqtt_rx(air780eg_t *dev, air780eg_mqtt_rx_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->mqtt_rx_cb = cb;
     dev->mqtt_rx_user = user;
@@ -258,6 +271,7 @@ void air780eg_on_mqtt_rx(air780eg_t *dev, air780eg_mqtt_rx_cb_t cb, void *user)
 
 void air780eg_on_disconnect(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->disconnect_cb = cb;
     dev->disconnect_user = user;
@@ -265,6 +279,7 @@ void air780eg_on_disconnect(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 
 void air780eg_on_pdp_deact(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->pdp_deact_cb = cb;
     dev->pdp_deact_user = user;
@@ -272,6 +287,7 @@ void air780eg_on_pdp_deact(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 
 void air780eg_on_restart(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->restart_cb = cb;
     dev->restart_user = user;
@@ -279,6 +295,7 @@ void air780eg_on_restart(air780eg_t *dev, air780eg_event_cb_t cb, void *user)
 
 void air780eg_on_nmea(air780eg_t *dev, air780eg_nmea_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->nmea_cb = cb;
     dev->nmea_user = user;
@@ -286,6 +303,7 @@ void air780eg_on_nmea(air780eg_t *dev, air780eg_nmea_cb_t cb, void *user)
 
 void air780eg_on_csq(air780eg_t *dev, air780eg_csq_cb_t cb, void *user)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return;
     dev->csq_cb = cb;
     dev->csq_user = user;
@@ -295,12 +313,14 @@ void air780eg_on_csq(air780eg_t *dev, air780eg_csq_cb_t cb, void *user)
 
 uint32_t air780eg_get_rdy_count(const air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return 0;
     return dev->rdy_count;
 }
 
 int air780eg_get_last_csq(const air780eg_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (dev == NULL) return -1;
     return dev->last_csq;
 }

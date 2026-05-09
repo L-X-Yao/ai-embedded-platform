@@ -9,6 +9,7 @@
  */
 
 #include "gc9a01.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
@@ -70,6 +71,8 @@ static uint8_t madctl_for_rotation(uint8_t rot)
 
 gc9a01_err_t gc9a01_init(gc9a01_t *dev, const gc9a01_spi_t *spi)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(spi != NULL);
     if (!dev || !spi) {
         return GC9A01_ERR_PARAM;
     }
@@ -123,9 +126,12 @@ gc9a01_err_t gc9a01_set_window(gc9a01_t *dev,
                                uint16_t x0, uint16_t y0,
                                uint16_t x1, uint16_t y1)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
+    REQUIRE(x0 <= x1);
+    REQUIRE(y0 <= y1);
     if (x0 > x1 || y0 > y1) {
         return GC9A01_ERR_PARAM;
     }
@@ -157,9 +163,12 @@ gc9a01_err_t gc9a01_set_window(gc9a01_t *dev,
 gc9a01_err_t gc9a01_write_pixels(gc9a01_t *dev,
                                  const uint16_t *pixels, uint32_t count)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
+    REQUIRE(pixels != NULL);
+    REQUIRE(count > 0);
     if (!pixels || count == 0) {
         return GC9A01_ERR_PARAM;
     }
@@ -186,6 +195,7 @@ gc9a01_err_t gc9a01_write_pixels(gc9a01_t *dev,
 
 gc9a01_err_t gc9a01_fill(gc9a01_t *dev, uint16_t color)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
@@ -222,9 +232,11 @@ gc9a01_err_t gc9a01_fill(gc9a01_t *dev, uint16_t color)
 
 gc9a01_err_t gc9a01_set_rotation(gc9a01_t *dev, uint8_t rotation)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
+    REQUIRE(rotation <= 3);
     if (rotation > 3) {
         return GC9A01_ERR_PARAM;
     }
@@ -242,6 +254,7 @@ gc9a01_err_t gc9a01_set_rotation(gc9a01_t *dev, uint8_t rotation)
 
 gc9a01_err_t gc9a01_sleep(gc9a01_t *dev, bool enable)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
@@ -255,6 +268,7 @@ gc9a01_err_t gc9a01_sleep(gc9a01_t *dev, bool enable)
 
 gc9a01_err_t gc9a01_display(gc9a01_t *dev, bool on)
 {
+    REQUIRE(dev != NULL);
     if (!dev || !dev->spi) {
         return GC9A01_ERR_PARAM;
     }
