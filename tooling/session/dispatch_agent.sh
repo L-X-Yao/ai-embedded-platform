@@ -213,7 +213,11 @@ if $MERGE_ALL; then
         fi
         if [[ $merge_rc -eq 0 ]]; then
             summary=$(git log main.."$b" --oneline | head -1 | sed 's/^[a-f0-9]* //')
-            if git commit -m "$summary" > /dev/null 2>&1; then
+            # Check whether squash actually staged anything before committing
+            if git diff --cached --quiet 2>/dev/null; then
+                echo -e "  ${YELLOW}  SKIP${NC}  $b  (squash produced no staged changes — agent may not have committed)"
+                # Not a failure; the agent branch had no unique changes vs main
+            elif git commit -m "$summary" > /dev/null 2>&1; then
                 echo -e "  ${GREEN}  OK${NC}  → $summary"
                 MERGED=$((MERGED + 1))
             else

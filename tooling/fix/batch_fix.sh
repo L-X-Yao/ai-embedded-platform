@@ -102,6 +102,13 @@ for wd in "${WHEEL_DIRS[@]}"; do
         for f in "${files[@]}"; do
             AFFECTED_FILES+=("$f")
         done
+    elif [[ -n "$PY_SCRIPT" ]]; then
+        # For --py mode, back up all .c and .h files in the wheel dir so
+        # rollback on interrupt can restore them (python script may touch any of them).
+        mapfile -t files < <(find "$wd" -maxdepth 1 -name '*.[ch]' 2>/dev/null)
+        for f in "${files[@]}"; do
+            AFFECTED_FILES+=("$f")
+        done
     fi
 done
 
