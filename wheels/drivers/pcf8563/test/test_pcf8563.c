@@ -266,6 +266,32 @@ TEST(test_alarm_null)
     ASSERT_EQ(pcf8563_write_alarm(&dev, NULL), PCF8563_ERR_PARAM);
 }
 
+TEST(test_write_alarm_invalid)
+{
+    mock_reset();
+    pcf8563_init(&dev, &mock_i2c);
+
+    /* minute > 59 with AE bit clear = invalid */
+    pcf8563_alarm_t bad = {.minute = 60, .hour = 0x80, .day = 0x80, .weekday = 0x80};
+    ASSERT_EQ(pcf8563_write_alarm(&dev, &bad), PCF8563_ERR_PARAM);
+
+    /* hour > 23 with AE bit clear = invalid */
+    bad.minute = 0; bad.hour = 24;
+    ASSERT_EQ(pcf8563_write_alarm(&dev, &bad), PCF8563_ERR_PARAM);
+
+    /* day = 0 with AE bit clear = invalid (day must be 1-31) */
+    bad.hour = 0x80; bad.day = 0;
+    ASSERT_EQ(pcf8563_write_alarm(&dev, &bad), PCF8563_ERR_PARAM);
+
+    /* day > 31 with AE bit clear = invalid */
+    bad.day = 32;
+    ASSERT_EQ(pcf8563_write_alarm(&dev, &bad), PCF8563_ERR_PARAM);
+
+    /* weekday > 6 with AE bit clear = invalid */
+    bad.day = 0x80; bad.weekday = 7;
+    ASSERT_EQ(pcf8563_write_alarm(&dev, &bad), PCF8563_ERR_PARAM);
+}
+
 TEST(test_timer_enable)
 {
     mock_reset();
@@ -334,6 +360,7 @@ TEST_MAIN("pcf8563")
     RUN(test_alarm_write_read);
     RUN(test_alarm_all_disabled);
     RUN(test_alarm_null);
+    RUN(test_write_alarm_invalid);
     RUN(test_timer_enable);
     RUN(test_timer_disable);
     RUN(test_timer_null);

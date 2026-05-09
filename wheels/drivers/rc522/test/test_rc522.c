@@ -406,6 +406,23 @@ TEST(test_transceive_collision_error)
     ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_COLL);
 }
 
+TEST(test_transceive_pure_collision_error)
+{
+    mock_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    /* Pure CollErr (0x08 only, no other error bits).
+     * Before the fix, outer mask 0x13 missed CollErr, returning RC522_OK.
+     * After fix to mask 0x1B, this must return RC522_ERR_COLL. */
+    uint8_t dummy[2] = {0x04, 0x00};
+    mock_arm_response(dummy, 2);
+    mock_error_inject = 0x08;  /* CollErr only */
+    mock_error_armed = true;
+
+    ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_COLL);
+}
+
 TEST(test_transceive_parity_error)
 {
     mock_reset();
@@ -460,6 +477,7 @@ TEST_MAIN("rc522")
     RUN(test_self_test_timeout);
     RUN(test_self_test_uninit_dev);
     RUN(test_transceive_collision_error);
+    RUN(test_transceive_pure_collision_error);
     RUN(test_transceive_parity_error);
     RUN(test_transceive_buffer_overflow_error);
 TEST_MAIN_END()
