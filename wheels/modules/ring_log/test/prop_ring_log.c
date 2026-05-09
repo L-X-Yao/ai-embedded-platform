@@ -1,7 +1,7 @@
 /*
  * prop_ring_log.c — property-based tests for ring_log
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_ring_log.c ../ring_log.c -o prop_ring_log
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_ring_log.c ../ring_log.c -o prop_ring_log
  */
 
 #include "test_harness.h"

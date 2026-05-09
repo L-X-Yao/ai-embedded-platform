@@ -103,7 +103,7 @@ HIL 当前是人工（见 ADR-002）——AI 生成粘贴模板 → 用户手烧
 ### 6. 保守边界
 
 **不要自作主张**：
-- 改 `vsf/` 上游代码（必须走 patch + `tooling/patches/` 流程，见 ADR-005）
+- 改 `vsf/` 上游代码（必须走 patch + `tooling/ci/patches/` 流程，见 ADR-005）
 - 动 `projects/` 真实项目架构（只在明确任务范围内改）
 - 删代码 / 历史文件（先归档 `_eval/` 或问用户）
 - 沉淀阶段擅自决定 wheel API（必须等用户 15 分钟审批，见 `ai-workflow.md` 任务类型 9）
@@ -132,16 +132,16 @@ ai-embedded-platform/
 ├── projects/                       真实项目
 ├── examples/                       集成食谱（wheel 组合示例）
 ├── tooling/
+│   ├── harness/                    C 测试框架头文件（被 178 wheel #include）
+│   ├── codegen/                    Python 测试代码生成器 + 共享解析器
+│   ├── test/                       测试运行器（覆盖率/模糊/变异/差分）
 │   ├── audit/                      审计脚本
-│   ├── test/                       test_harness.h + 测试脚本
-│   ├── wheel/                      wheel 生命周期
+│   ├── wheel/                      wheel 生命周期 + 批量修复
 │   ├── session/                    会话管理 + 派发
 │   ├── metrics/                    平台度量
-│   ├── ci/                         CI + 仓库维护
-│   ├── fix/                        批量修复
-│   ├── debug/                      MCU 调试工具包
+│   ├── ci/                         CI + 仓库维护 + VSF patches
+│   ├── debug/                      MCU 调试（cortex_m/ + 芯片子目录）
 │   ├── hil/                        硬件在环自动化
-│   ├── patches/                    VSF 上游修改（patch 文件）
 │   └── experiments/                VSF tryout scaffolds
 └── _eval/                          评估历史遗留物
 ```
@@ -170,7 +170,7 @@ ai-embedded-platform/
 | 5. 技术选型 | 2-4 候选 + 对比表 + 推荐 → 人拍板 → 记 ADR |
 | 6. 移植（换 MCU） | 走 `vsf-addon/hal/driver/<vendor>/` |
 | 7. 客户代码抽取 | 按分类过滤 → 剥离 IP → API 审批 → 抽 wheel |
-| 8. VSF 上游修改 | patch 文件走 `tooling/patches/`，保持 vsf/ 干净 |
+| 8. VSF 上游修改 | patch 文件走 `tooling/ci/patches/`，保持 vsf/ 干净 |
 | 9. **沉淀**（项目结束后）🔑 | AI 扫 + API 提案 → 人 15 分钟审批 → AI 实现 |
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
 | 11. 平台自省 | 40 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
@@ -362,7 +362,7 @@ git branch -d session/wheels session/<project>
 - `exp` — 探索性代码（`tooling/experiments/` 下的 tryouts / sandboxes / probe scaffolds）。不是 wheel，不升级到 `wheels/` 之前保持此 type
 - `port` — `vsf-addon/` 下的 HAL 驱动 port（MCU 适配层）。scope 用芯片系列小写（如 `gd32f4xx`）
 - `project` — `projects/` 下真实项目的代码改动。scope 用项目名小写（如 `flybox`、`drone_light`）
-- `tool` — 跨项目可复用的工具脚本，落 `tooling/audit/`、`tooling/wheel/`、`tooling/session/`、`tooling/ci/`、`tooling/fix/`、`tooling/debug/`、`tooling/metrics/`、`tooling/hil/` 等子目录（如 `gd32f4xx`、未来的 HIL 自动化）。注意：`tooling/experiments/` 走 `exp`；`tooling/patches/` 通常归对应 `project`（patch 是为某个项目写的）
+- `tool` — 跨项目可复用的工具脚本，落 `tooling/harness/`、`tooling/codegen/`、`tooling/test/`、`tooling/audit/`、`tooling/wheel/`、`tooling/session/`、`tooling/ci/`、`tooling/debug/`、`tooling/metrics/`、`tooling/hil/` 等子目录。注意：`tooling/experiments/` 走 `exp`；`tooling/ci/patches/` 通常归对应 `project`（patch 是为某个项目写的）
 - `ci` — CI/CD 配置，落 `.github/workflows/` 与未来其他 CI 系统配置。scope 用 job 名小写（如 `flybox`、`log`），跨 job 结构改动省略
 
 ### scope（可选，与目录对齐）

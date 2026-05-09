@@ -1,9 +1,9 @@
 /*
  * prop_led_pattern.c — property-based tests for led_pattern
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_led_pattern.c ../led_pattern.c -o prop_led_pattern
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_led_pattern.c ../led_pattern.c -o prop_led_pattern
  */
 
 #include "test_harness.h"

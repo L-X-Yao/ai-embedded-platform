@@ -1,7 +1,7 @@
 /*
  * prop_at_command.c — property-based tests for at_command
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_at_command.c ../at_command.c -o prop_at_command
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_at_command.c ../at_command.c -o prop_at_command
  */
 
 #include "test_harness.h"

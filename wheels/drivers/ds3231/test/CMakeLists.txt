@@ -10,7 +10,7 @@ add_executable(test_ds3231
 
 target_include_directories(test_ds3231 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -21,7 +21,7 @@ add_executable(test_null_ds3231
 )
 target_include_directories(test_null_ds3231 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -33,7 +33,7 @@ add_executable(prop_ds3231
 )
 target_include_directories(prop_ds3231 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_ds3231 PRIVATE m)
@@ -46,7 +46,7 @@ add_executable(test_hw_model_ds3231
 )
 target_include_directories(test_hw_model_ds3231 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(test_hw_model_ds3231 PRIVATE m)

@@ -44,7 +44,7 @@ ai-embedded-platform/    (整个私有 monorepo)
 ├── wheels/              (L0-L3 可复用模块)
 ├── templates/           (项目模板)
 ├── projects/            (真实项目)
-├── tooling/patches/     (对 vsf/ 的修改以 patch 形式)
+├── tooling/ci/patches/     (对 vsf/ 的修改以 patch 形式)
 └── docs/                (平台文档)
 ```
 
@@ -55,7 +55,7 @@ ai-embedded-platform/    (整个私有 monorepo)
 4. **心智简单**：vsf/ 是 vendor 库，wheels 是我们的
 
 ### VSF 修改策略
-- 改 `vsf/` 既有文件 → 导出为 `tooling/patches/NNNN-*.patch`，撤回 vsf/ 原改
+- 改 `vsf/` 既有文件 → 导出为 `tooling/ci/patches/NNNN-*.patch`，撤回 vsf/ 原改
 - 新增独立代码 → 放 `vsf-addon/`
 - 见 ADR-005
 
@@ -94,4 +94,4 @@ ai-embedded-platform/    (整个私有 monorepo)
 ## 相关
 
 - ADR-005（VSF 上游修改策略）
-- `tooling/patches/README.md`
+- `tooling/ci/patches/README.md`

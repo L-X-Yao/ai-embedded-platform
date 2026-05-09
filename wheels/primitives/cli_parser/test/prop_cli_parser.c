@@ -1,9 +1,9 @@
 /*
  * prop_cli_parser.c — property-based tests for cli_parser
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_cli_parser.c ../cli_parser.c -o prop_cli_parser
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_cli_parser.c ../cli_parser.c -o prop_cli_parser
  */
 
 #include "test_harness.h"

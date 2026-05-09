@@ -1,7 +1,7 @@
 /*
  * prop_command_queue.c — property-based tests for command_queue
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_command_queue.c ../command_queue.c -o prop_command_queue
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_command_queue.c ../command_queue.c -o prop_command_queue
  */
 
 #include "test_harness.h"

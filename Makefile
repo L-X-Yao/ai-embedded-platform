@@ -225,7 +225,7 @@ verify:
 		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
 		total=$$((total + 1)); \
 		echo "  verifying $$name..."; \
-		result=$$(cbmc "$$f" "$$wheel_dir/$$name.c" -I "$$wheel_dir" -I "tooling/test" --unwind 51 --bounds-check --pointer-check 2>&1 | tail -1); \
+		result=$$(cbmc "$$f" "$$wheel_dir/$$name.c" -I "$$wheel_dir" -I "tooling/harness" --unwind 51 --bounds-check --pointer-check 2>&1 | tail -1); \
 		echo "    $$result"; \
 		echo "$$result" | grep -q "SUCCESSFUL" || fail=$$((fail + 1)); \
 	done; \

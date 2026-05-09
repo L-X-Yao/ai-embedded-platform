@@ -10,7 +10,7 @@ add_executable(test_data_logger
 
 target_include_directories(test_data_logger PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 
 target_compile_options(test_data_logger PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -21,7 +21,7 @@ add_executable(prop_data_logger
 )
 target_include_directories(prop_data_logger PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_data_logger PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
@@ -32,7 +32,7 @@ add_executable(test_null_data_logger
 )
 target_include_directories(test_null_data_logger PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_data_logger PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

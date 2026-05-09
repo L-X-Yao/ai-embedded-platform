@@ -770,7 +770,7 @@ def chk_missing_null_tests(ctx, **_):
     if null_file.exists():
         return None
     return ("missing test_null_*.c (auto-generated NULL parameter tests)",
-            f"run: python3 tooling/test/gen_null_tests.py {ctx.path}/{ctx.name}.h")
+            f"run: python3 tooling/codegen/gen_null_tests.py {ctx.path}/{ctx.name}.h")
 
 
 def chk_missing_hw_model(ctx, **_):

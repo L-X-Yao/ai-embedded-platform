@@ -1,7 +1,7 @@
 /*
  * prop_tlv_codec.c — property-based tests for tlv_codec
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_tlv_codec.c ../tlv_codec.c -o prop_tlv_codec
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_tlv_codec.c ../tlv_codec.c -o prop_tlv_codec
  */
 
 #include "test_harness.h"

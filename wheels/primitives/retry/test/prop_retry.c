@@ -1,7 +1,7 @@
 /*
  * prop_retry.c — property-based tests for retry
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_retry.c ../retry.c -o prop_retry
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_retry.c ../retry.c -o prop_retry
  */
 
 #include "test_harness.h"

@@ -10,7 +10,7 @@ add_executable(test_nmea_parser
 
 target_include_directories(test_nmea_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_nmea_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_nmea_parser PRIVATE m)
@@ -22,7 +22,7 @@ add_executable(test_null_nmea_parser
 )
 target_include_directories(test_null_nmea_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_nmea_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

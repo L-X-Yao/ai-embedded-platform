@@ -9,7 +9,7 @@
 #
 # Workflow:
 #   1. Fetches upstream into a local cache (tooling/.vsf-upstream/)
-#   2. Reverts any applied patches (tooling/patches/apply.sh --revert)
+#   2. Reverts any applied patches (tooling/ci/patches/apply.sh --revert)
 #   3. Replaces vsf/ contents with upstream at target ref
 #   4. Re-applies patches (reports conflicts if any)
 #   5. Prints diff summary for user review
@@ -24,7 +24,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 VSF_DIR="$REPO/vsf"
 CACHE_DIR="$REPO/tooling/.vsf-upstream"
-PATCH_SCRIPT="$REPO/tooling/patches/apply.sh"
+PATCH_SCRIPT="$REPO/tooling/ci/patches/apply.sh"
 UPSTREAM_URL="https://github.com/vsfteam/vsf.git"
 VERSION_FILE="$REPO/tooling/.vsf-version"
 
@@ -123,7 +123,7 @@ if $STATUS_ONLY; then
     fi
 
     shopt -s nullglob
-    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    _patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
     shopt -u nullglob
     patch_count=${#_patches[@]}
     echo -e "  ${BOLD}Local patches:${NC}   $patch_count"
@@ -203,7 +203,7 @@ fi
 # 3. Revert patches (if any applied)
 if [[ -x "$PATCH_SCRIPT" ]]; then
     shopt -s nullglob
-    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    _patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
     shopt -u nullglob
     patch_count=${#_patches[@]}
     if [[ "$patch_count" -gt 0 ]]; then
@@ -260,7 +260,7 @@ echo -e "  Deleted files: $deleted_files"
 patch_conflict=false
 if [[ -x "$PATCH_SCRIPT" ]]; then
     shopt -s nullglob
-    _patches=("$REPO/tooling/patches/"[0-9]*-*.patch)
+    _patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
     shopt -u nullglob
     patch_count=${#_patches[@]}
     if [[ "$patch_count" -gt 0 ]]; then
@@ -273,7 +273,7 @@ if [[ -x "$PATCH_SCRIPT" ]]; then
             log_ok "All patches applied cleanly"
         else
             log_warn "Some patches failed — manual resolution needed"
-            log_warn "Check tooling/patches/*.rej for conflicts"
+            log_warn "Check tooling/ci/patches/*.rej for conflicts"
             patch_conflict=true
         fi
     fi
@@ -286,7 +286,7 @@ echo "  1. Review changes:  git diff --stat -- vsf/"
 echo "  2. Run wheel tests: make test-wheels"
 step=3
 if $patch_conflict; then
-    echo "  $step. Fix patch conflicts in tooling/patches/"
+    echo "  $step. Fix patch conflicts in tooling/ci/patches/"
     step=$((step + 1))
 fi
 echo "  $step. Commit:          git add vsf/ tooling/.vsf-version && git commit"

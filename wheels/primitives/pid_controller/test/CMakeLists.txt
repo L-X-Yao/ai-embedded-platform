@@ -10,7 +10,7 @@ add_executable(test_pid_controller
 
 target_include_directories(test_pid_controller PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_pid_controller PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_pid_controller PRIVATE m)
@@ -22,7 +22,7 @@ add_executable(test_null_pid_controller
 )
 target_include_directories(test_null_pid_controller PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_pid_controller PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

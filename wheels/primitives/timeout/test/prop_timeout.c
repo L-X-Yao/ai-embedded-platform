@@ -1,7 +1,7 @@
 /*
  * prop_timeout.c — property-based tests for timeout
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_timeout.c ../timeout.c -o prop_timeout
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_timeout.c ../timeout.c -o prop_timeout
  */
 
 #include "test_harness.h"

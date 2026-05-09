@@ -2,7 +2,7 @@
  * prop_flash_ring.c — property-based tests for flash_ring
  *
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_flash_ring.c ../flash_ring.c -o prop_flash_ring
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_flash_ring.c ../flash_ring.c -o prop_flash_ring
  */
 
 #include "test_harness.h"

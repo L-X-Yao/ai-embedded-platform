@@ -7,7 +7,7 @@
 见 `docs/adr/005-vsf-upstream-modification-policy.md`。
 
 规则：
-- 修改 vsf/ 既有文件 → `tooling/patches/` 放 patch
+- 修改 vsf/ 既有文件 → `tooling/ci/patches/` 放 patch
 - **新增独立文件 / 目录 → 这里**（保持 vsf/ 干净）
 
 ## 目录结构

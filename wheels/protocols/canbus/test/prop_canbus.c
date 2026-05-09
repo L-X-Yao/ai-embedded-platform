@@ -1,7 +1,7 @@
 /*
  * prop_canbus.c — property-based tests for canbus
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_canbus.c ../canbus.c -o prop_canbus
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_canbus.c ../canbus.c -o prop_canbus
  */
 
 #include "test_harness.h"

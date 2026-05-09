@@ -2,7 +2,7 @@
  * prop_soft_spi.c --- property-based tests for soft_spi
  *
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_soft_spi.c ../soft_spi.c -o prop_soft_spi
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_soft_spi.c ../soft_spi.c -o prop_soft_spi
  */
 
 #include "test_harness.h"

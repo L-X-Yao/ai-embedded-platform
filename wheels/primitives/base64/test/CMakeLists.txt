@@ -10,7 +10,7 @@ add_executable(test_base64
 
 target_include_directories(test_base64 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_base64 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -21,7 +21,7 @@ add_executable(test_null_base64
 )
 target_include_directories(test_null_base64 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_base64 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

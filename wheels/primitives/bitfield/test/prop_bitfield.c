@@ -1,7 +1,7 @@
 /*
  * prop_bitfield.c — property-based tests for bitfield
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_bitfield.c ../bitfield.c -o prop_bitfield
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_bitfield.c ../bitfield.c -o prop_bitfield
  */
 
 #include "test_harness.h"

@@ -9,7 +9,7 @@ add_executable(test_hmc5883l
 )
 target_include_directories(test_hmc5883l PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_hmc5883l PRIVATE m)
@@ -21,7 +21,7 @@ add_executable(test_null_hmc5883l
 )
 target_include_directories(test_null_hmc5883l PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -33,7 +33,7 @@ add_executable(prop_hmc5883l
 )
 target_include_directories(prop_hmc5883l PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 target_link_libraries(prop_hmc5883l PRIVATE m)
@@ -46,7 +46,7 @@ add_executable(test_hw_model_hmc5883l
 )
 target_include_directories(test_hw_model_hmc5883l PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_hmc5883l PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(test_hw_model_hmc5883l PRIVATE m)

@@ -1,7 +1,7 @@
 /*
  * prop_lorawan_packet.c — property-based tests for lorawan_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_lorawan_packet.c ../lorawan_packet.c -o prop_lorawan_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_lorawan_packet.c ../lorawan_packet.c -o prop_lorawan_packet
  */
 
 #include "test_harness.h"

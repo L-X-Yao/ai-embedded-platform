@@ -2,7 +2,7 @@
  * prop_air780eg.c — property-based tests for air780eg
  *
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_air780eg.c ../air780eg.c -o prop_air780eg
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_air780eg.c ../air780eg.c -o prop_air780eg
  */
 
 #include "test_harness.h"

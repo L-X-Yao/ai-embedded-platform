@@ -1,7 +1,7 @@
 /*
  * prop_crc_any.c — property-based tests for crc_any
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_crc_any.c ../crc_any.c -o prop_crc_any
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_crc_any.c ../crc_any.c -o prop_crc_any
  */
 
 #include "test_harness.h"

@@ -9,7 +9,7 @@ add_executable(test_scheduler
 )
 target_include_directories(test_scheduler PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_scheduler PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -20,7 +20,7 @@ add_executable(test_null_scheduler
 )
 target_include_directories(test_null_scheduler PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_scheduler PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

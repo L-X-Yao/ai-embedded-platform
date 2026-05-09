@@ -1,7 +1,7 @@
 /*
  * prop_device_info.c — property-based tests for device_info
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_device_info.c ../device_info.c -o prop_device_info
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_device_info.c ../device_info.c -o prop_device_info
  */
 
 #include "test_harness.h"

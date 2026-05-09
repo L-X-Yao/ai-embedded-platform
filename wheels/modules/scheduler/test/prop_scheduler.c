@@ -1,7 +1,7 @@
 /*
  * prop_scheduler.c — property-based tests for scheduler
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_scheduler.c ../scheduler.c -o prop_scheduler
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_scheduler.c ../scheduler.c -o prop_scheduler
  */
 
 #include "test_harness.h"

@@ -94,7 +94,7 @@ run_libfuzzer() {
         -fsanitize=fuzzer,address,undefined
         -fno-sanitize-recover=all
         "-I$full_wheel_dir"
-        "-I$REPO_ROOT/tooling/test")
+        "-I$REPO_ROOT/tooling/harness")
 
     # Extra include paths (e.g., crc16 for modbus_rtu)
     if [ -n "$extra_incs" ]; then

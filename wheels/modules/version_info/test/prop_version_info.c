@@ -1,7 +1,7 @@
 /*
  * prop_version_info.c — property-based tests for version_info
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_version_info.c ../version_info.c -o prop_version_info
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_version_info.c ../version_info.c -o prop_version_info
  */
 
 #include "test_harness.h"

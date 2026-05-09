@@ -1,7 +1,7 @@
 /*
  * prop_lookup_table.c — property-based tests for lookup_table
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_lookup_table.c ../lookup_table.c -o prop_lookup_table
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_lookup_table.c ../lookup_table.c -o prop_lookup_table
  */
 
 #include "test_harness.h"

@@ -1,7 +1,7 @@
 /*
  * prop_ota_manager.c — property-based tests for ota_manager
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_ota_manager.c ../ota_manager.c -o prop_ota_manager
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_ota_manager.c ../ota_manager.c -o prop_ota_manager
  */
 
 #include "test_harness.h"

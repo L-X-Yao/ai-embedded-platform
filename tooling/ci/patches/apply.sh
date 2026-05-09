@@ -3,9 +3,9 @@
 # Idempotent-ish: existing patches will show "already applied" but won't error.
 #
 # Usage:
-#   bash tooling/patches/apply.sh           # apply all
-#   bash tooling/patches/apply.sh --check   # dry run, check if all apply
-#   bash tooling/patches/apply.sh --revert  # revert all patches
+#   bash tooling/ci/patches/apply.sh           # apply all
+#   bash tooling/ci/patches/apply.sh --check   # dry run, check if all apply
+#   bash tooling/ci/patches/apply.sh --revert  # revert all patches
 
 set -euo pipefail
 

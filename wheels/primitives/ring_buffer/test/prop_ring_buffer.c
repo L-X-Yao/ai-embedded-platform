@@ -1,9 +1,9 @@
 /*
  * prop_ring_buffer.c — property-based tests for ring_buffer
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_ring_buffer.c ../ring_buffer.c -o prop_ring_buffer
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_ring_buffer.c ../ring_buffer.c -o prop_ring_buffer
  */
 
 #include "test_harness.h"

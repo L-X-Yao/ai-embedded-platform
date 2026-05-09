@@ -1,9 +1,9 @@
 /*
  * prop_fal.c — property-based tests for fal (Flash Abstraction Layer)
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I. -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -I. -I.. -I../../../../tooling/harness \
  *       prop_fal.c ../fal.c -o prop_fal
  *
  * Note: must compile from test/ directory so fal_cfg.h is found.

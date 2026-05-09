@@ -1,7 +1,7 @@
 /*
  * prop_crc32.c — property-based tests for crc32
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_crc32.c ../crc32.c -o prop_crc32
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_crc32.c ../crc32.c -o prop_crc32
  */
 
 #include "test_harness.h"

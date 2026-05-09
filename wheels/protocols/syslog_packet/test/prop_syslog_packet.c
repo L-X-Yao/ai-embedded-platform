@@ -1,7 +1,7 @@
 /*
  * prop_syslog_packet.c — property-based tests for syslog_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_syslog_packet.c ../syslog_packet.c -o prop_syslog_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_syslog_packet.c ../syslog_packet.c -o prop_syslog_packet
  */
 
 #include "test_harness.h"

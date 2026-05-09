@@ -1,7 +1,7 @@
 /*
  * prop_json_parser.c — property-based tests for json_parser
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_json_parser.c ../json_parser.c -o prop_json_parser
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_json_parser.c ../json_parser.c -o prop_json_parser
  */
 
 #include "test_harness.h"

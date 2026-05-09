@@ -1,7 +1,7 @@
 /*
  * prop_bencode.c — property-based tests for bencode
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_bencode.c ../bencode.c -o prop_bencode
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_bencode.c ../bencode.c -o prop_bencode
  */
 
 #include "test_harness.h"

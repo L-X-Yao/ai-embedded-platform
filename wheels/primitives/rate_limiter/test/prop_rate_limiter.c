@@ -1,9 +1,9 @@
 /*
  * prop_rate_limiter.c — property-based tests for rate_limiter
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_rate_limiter.c ../rate_limiter.c -o prop_rate_limiter
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_rate_limiter.c ../rate_limiter.c -o prop_rate_limiter
  */
 
 #include "test_harness.h"

@@ -1,7 +1,7 @@
 /*
  * prop_slip.c — property-based tests for slip
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_slip.c ../slip.c -o prop_slip
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_slip.c ../slip.c -o prop_slip
  */
 
 #include "test_harness.h"

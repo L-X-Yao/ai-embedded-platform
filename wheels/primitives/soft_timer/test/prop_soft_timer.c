@@ -1,7 +1,7 @@
 /*
  * prop_soft_timer.c — property-based tests for soft_timer
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_soft_timer.c ../soft_timer.c -o prop_soft_timer
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_soft_timer.c ../soft_timer.c -o prop_soft_timer
  */
 
 #include "test_harness.h"

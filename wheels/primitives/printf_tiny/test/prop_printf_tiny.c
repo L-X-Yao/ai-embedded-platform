@@ -1,9 +1,9 @@
 /*
  * prop_printf_tiny.c — property-based tests for printf_tiny
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_printf_tiny.c ../printf_tiny.c -o prop_printf_tiny
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_printf_tiny.c ../printf_tiny.c -o prop_printf_tiny
  */
 
 #include "test_harness.h"

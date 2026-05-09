@@ -10,7 +10,7 @@ add_executable(test_keypad_matrix
 
 target_include_directories(test_keypad_matrix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -21,7 +21,7 @@ add_executable(test_null_keypad_matrix
 )
 target_include_directories(test_null_keypad_matrix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -33,7 +33,7 @@ add_executable(prop_keypad_matrix
 )
 target_include_directories(prop_keypad_matrix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 

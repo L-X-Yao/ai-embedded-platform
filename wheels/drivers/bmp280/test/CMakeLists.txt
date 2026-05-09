@@ -10,7 +10,7 @@ add_executable(test_bmp280
 
 target_include_directories(test_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_bmp280 PRIVATE m)
@@ -21,7 +21,7 @@ add_executable(prop_bmp280
 )
 target_include_directories(prop_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(prop_bmp280 PRIVATE m)
@@ -33,7 +33,7 @@ add_executable(test_null_bmp280
 )
 target_include_directories(test_null_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -46,7 +46,7 @@ add_executable(test_hw_model_bmp280
 )
 target_include_directories(test_hw_model_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(test_hw_model_bmp280 PRIVATE m)

@@ -15,7 +15,7 @@
 # Required keys: BIN_PATH, FLASH_ADDR, SERIAL_PORT (for check),
 #                FAIL_PATTERNS (array), PASS_PATTERNS (array), MIN_PASSED.
 #
-# Reuses tooling/debug/gd32f4xx/serial_capture.ps1 for serial capture
+# Reuses tooling/debug/cortex_m/gd32f4xx/serial_capture.ps1 for serial capture
 # (override SERIAL_CAPTURE_SCRIPT if you ship your own).
 
 set -euo pipefail

@@ -1,7 +1,7 @@
 /*
  * prop_dns_packet.c — property-based tests for dns_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_dns_packet.c ../dns_packet.c -o prop_dns_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_dns_packet.c ../dns_packet.c -o prop_dns_packet
  */
 
 #include "test_harness.h"

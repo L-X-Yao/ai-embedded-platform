@@ -10,7 +10,7 @@ add_executable(test_byte_buffer
 
 target_include_directories(test_byte_buffer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -21,7 +21,7 @@ add_executable(test_null_byte_buffer
 )
 target_include_directories(test_null_byte_buffer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

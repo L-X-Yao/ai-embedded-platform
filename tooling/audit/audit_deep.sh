@@ -174,7 +174,7 @@ if run_layer 4 "Stress tests (accumulation, overflow, saturation)"; then
         # Build stress test standalone
         out=$(mktemp "/tmp/stress_XXXXXX")
         if gcc -std=c99 -O2 -Wall -Wextra \
-            -I"$wheel_dir" -I"$REPO/tooling/test" \
+            -I"$wheel_dir" -I"$REPO/tooling/harness" \
             "$stress_file" "$wheel_dir/$(basename "$wheel_dir").c" \
             -lm -o "$out" 2>/dev/null; then
             if timeout 60 "$out" > /dev/null 2>&1; then

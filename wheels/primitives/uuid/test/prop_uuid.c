@@ -1,9 +1,9 @@
 /*
  * prop_uuid.c — property-based tests for uuid
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_uuid.c ../uuid.c -o prop_uuid
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_uuid.c ../uuid.c -o prop_uuid
  */
 
 #include "test_harness.h"

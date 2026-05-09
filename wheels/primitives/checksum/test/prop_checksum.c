@@ -1,7 +1,7 @@
 /*
  * prop_checksum.c — property-based tests for checksum
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_checksum.c ../checksum.c -o prop_checksum
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_checksum.c ../checksum.c -o prop_checksum
  */
 
 #include "test_harness.h"

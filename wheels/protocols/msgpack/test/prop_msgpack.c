@@ -1,7 +1,7 @@
 /*
  * prop_msgpack.c — property-based tests for msgpack
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_msgpack.c ../msgpack.c -o prop_msgpack
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_msgpack.c ../msgpack.c -o prop_msgpack
  */
 
 #include "test_harness.h"

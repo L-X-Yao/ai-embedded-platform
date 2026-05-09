@@ -3,7 +3,7 @@
  * stress_ring_buffer — 1M write/read cycle data integrity test
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_ring_buffer.c ../ring_buffer.c -lm -o /tmp/stress_ring_buffer
  *
  * Scenarios:

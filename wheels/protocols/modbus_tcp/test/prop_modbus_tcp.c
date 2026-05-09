@@ -1,7 +1,7 @@
 /*
  * prop_modbus_tcp.c — property-based tests for modbus_tcp
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_modbus_tcp.c ../modbus_tcp.c -o prop_modbus_tcp
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_modbus_tcp.c ../modbus_tcp.c -o prop_modbus_tcp
  */
 
 #include "test_harness.h"

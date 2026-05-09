@@ -1,7 +1,7 @@
 /*
  * prop_mqtt5_packet.c — property-based tests for mqtt5_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_mqtt5_packet.c ../mqtt5_packet.c -o prop_mqtt5_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_mqtt5_packet.c ../mqtt5_packet.c -o prop_mqtt5_packet
  */
 
 #include "test_harness.h"

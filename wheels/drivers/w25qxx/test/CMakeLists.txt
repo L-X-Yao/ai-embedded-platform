@@ -10,7 +10,7 @@ add_executable(test_w25qxx
 
 target_include_directories(test_w25qxx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 
 target_compile_options(test_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -22,7 +22,7 @@ add_executable(test_null_w25qxx
 )
 target_include_directories(test_null_w25qxx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -34,7 +34,7 @@ add_executable(prop_w25qxx
 )
 target_include_directories(prop_w25qxx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
@@ -46,7 +46,7 @@ add_executable(test_hw_model_w25qxx
 )
 target_include_directories(test_hw_model_w25qxx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_w25qxx PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 target_link_libraries(test_hw_model_w25qxx PRIVATE m)

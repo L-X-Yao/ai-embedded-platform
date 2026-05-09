@@ -1,7 +1,7 @@
 /*
  * prop_modbus_rtu.c — property-based tests for modbus_rtu
  *
- * Build: gcc -std=c99 -I.. -I../../../primitives/crc16 -I../../../../tooling/test \
+ * Build: gcc -std=c99 -I.. -I../../../primitives/crc16 -I../../../../tooling/harness \
  *        prop_modbus_rtu.c ../modbus_rtu.c ../../../primitives/crc16/crc16.c -o prop_modbus_rtu
  */
 

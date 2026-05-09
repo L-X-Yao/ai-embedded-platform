@@ -1,7 +1,7 @@
 /*
  * prop_ymodem.c — property-based tests for ymodem
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_ymodem.c ../ymodem.c -o prop_ymodem
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_ymodem.c ../ymodem.c -o prop_ymodem
  */
 
 #include "test_harness.h"

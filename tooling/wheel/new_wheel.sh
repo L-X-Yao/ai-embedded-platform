@@ -710,8 +710,8 @@ ${DEPS_SOURCES})
 target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
-    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
-    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 ${DEPS_INCLUDES})
 target_compile_options(test_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -897,7 +897,7 @@ add_executable(test_hw_model_${NAME_LOWER}
 )
 target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
-    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
@@ -1106,7 +1106,7 @@ add_executable(test_hw_model_${NAME_LOWER}
 )
 target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/..
-    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
@@ -1661,8 +1661,8 @@ target_include_directories(test_${NAME_LOWER} PRIVATE
     \${CMAKE_CURRENT_SOURCE_DIR}/../vendor/inc
     \${CMAKE_CURRENT_SOURCE_DIR}
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
-    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
-    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 # Note: -Wall -Wextra -Wpedantic omitted for vendor wheels (upstream code triggers warnings)
 
@@ -2048,12 +2048,12 @@ echo "  2. Fill in VENDOR.md (upstream URL, version, license, file list)"
 echo "  3. Fill in TODO placeholders in README.md"
 echo "  4. Wire vendor sources in test/CMakeLists.txt"
 echo "  5. Add tests to test/test_${NAME_LOWER}.c"
-echo "  6. Run: python3 tooling/test/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
+echo "  6. Run: python3 tooling/codegen/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
 echo "  7. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
-echo "  3. Run: python3 tooling/test/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
+echo "  3. Run: python3 tooling/codegen/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
 if [[ "$LAYER" == "drivers" && ("$HAL" == "i2c" || "$HAL" == "spi") ]]; then
 echo "  4. Fill TODOs in test/hw_model_${NAME_LOWER}.h (POR defaults, inject helpers)"
 echo "  5. Run: tooling/test/test_all.sh ${NAME_LOWER}"

@@ -1,7 +1,7 @@
 /*
  * prop_task_watchdog.c — property-based tests for task_watchdog
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_task_watchdog.c ../task_watchdog.c -o prop_task_watchdog
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_task_watchdog.c ../task_watchdog.c -o prop_task_watchdog
  */
 
 #include "test_harness.h"

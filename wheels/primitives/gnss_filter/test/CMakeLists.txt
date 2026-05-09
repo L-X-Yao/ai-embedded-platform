@@ -15,8 +15,8 @@ add_executable(test_gnss_filter
 target_include_directories(test_gnss_filter PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
-    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_gnss_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -26,7 +26,7 @@ add_executable(prop_gnss_filter
 )
 target_include_directories(prop_gnss_filter PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_gnss_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(prop_gnss_filter PRIVATE m)
@@ -38,7 +38,7 @@ add_executable(test_null_gnss_filter
 )
 target_include_directories(test_null_gnss_filter PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_gnss_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

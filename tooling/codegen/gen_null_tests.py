@@ -7,9 +7,9 @@ pointer param (one test per pointer param), asserting the function returns an
 error code or at least does not crash.
 
 Usage:
-    python tooling/test/gen_null_tests.py [--dry-run]
-    python tooling/test/gen_null_tests.py --wheel wheels/drivers/mcp4725
-    python tooling/test/gen_null_tests.py --wheel wheels/drivers/mcp4725/mcp4725.h
+    python tooling/codegen/gen_null_tests.py [--dry-run]
+    python tooling/codegen/gen_null_tests.py --wheel wheels/drivers/mcp4725
+    python tooling/codegen/gen_null_tests.py --wheel wheels/drivers/mcp4725/mcp4725.h
 """
 
 import re

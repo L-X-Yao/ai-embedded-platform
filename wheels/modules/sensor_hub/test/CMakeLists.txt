@@ -10,7 +10,7 @@ add_executable(test_sensor_hub
 
 target_include_directories(test_sensor_hub PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_sensor_hub PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -20,7 +20,7 @@ add_executable(prop_sensor_hub
 )
 target_include_directories(prop_sensor_hub PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_sensor_hub PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
@@ -31,7 +31,7 @@ add_executable(test_null_sensor_hub
 )
 target_include_directories(test_null_sensor_hub PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_sensor_hub PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

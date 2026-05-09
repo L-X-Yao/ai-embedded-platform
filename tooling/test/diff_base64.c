@@ -8,8 +8,8 @@
  * writes raw binary to stdout.
  *
  * Build (from repo root):
- *   gcc -O2 -I wheels/primitives/base64 -I tooling/test \
- *       tooling/test/diff_base64.c wheels/primitives/base64/base64.c \
+ *   gcc -O2 -I wheels/primitives/base64 -I tooling/harness \
+ *       tooling/harness/diff_base64.c wheels/primitives/base64/base64.c \
  *       -o diff_base64
  */
 

@@ -10,7 +10,7 @@ add_executable(test_cli_parser
 
 target_include_directories(test_cli_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 
 target_compile_options(test_cli_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -22,7 +22,7 @@ add_executable(test_null_cli_parser
 )
 target_include_directories(test_null_cli_parser PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_cli_parser PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

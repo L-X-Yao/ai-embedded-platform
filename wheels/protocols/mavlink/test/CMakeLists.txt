@@ -15,8 +15,8 @@ add_executable(test_mavlink
 target_include_directories(test_mavlink PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
-    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_mavlink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -28,8 +28,8 @@ add_executable(test_null_mavlink
 target_include_directories(test_null_mavlink PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
-    # so ../../../../tooling/test always resolves to the repo-root tooling dir.
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_mavlink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 

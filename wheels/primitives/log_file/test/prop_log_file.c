@@ -1,9 +1,9 @@
 /*
  * prop_log_file.c — property-based tests for log_file
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_file.c ../log_file.c -o prop_log_file
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_file.c ../log_file.c -o prop_log_file
  */
 
 #include "test_harness.h"

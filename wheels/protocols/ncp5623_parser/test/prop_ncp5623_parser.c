@@ -1,7 +1,7 @@
 /*
  * prop_ncp5623_parser.c — property-based tests for ncp5623_parser
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_ncp5623_parser.c ../ncp5623_parser.c -o prop_ncp5623_parser
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_ncp5623_parser.c ../ncp5623_parser.c -o prop_ncp5623_parser
  */
 
 #include "test_harness.h"
