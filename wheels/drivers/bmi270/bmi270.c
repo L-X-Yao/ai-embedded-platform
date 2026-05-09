@@ -168,11 +168,10 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
               (uint8_t)(0x20u | ((uint8_t)cfg->gyro_odr & 0x0Fu)));
     reg_write(spi, BMI270_REG_GYR_RANGE, (uint8_t)cfg->gyro_range);
 
-    /* Enable accel + gyro: PWR_CTRL bits 2 (gyro_en) | bit 1 (aux_en=0) | bit 0 (acc_en) */
-    reg_write(spi, BMI270_REG_PWR_CTRL, 0x0E);  /* bit3:temp_en | bit2:gyr_en | bit1:aux=0 -> 0x0C, +acc = 0x0D? */
-    /* Actually: bit 2 = gyr_en, bit 0 = acc_en. So 0x04|0x01 = 0x05 for acc+gyr */
-    /* Correct per datasheet: PWR_CTRL: bit 3 = temp_en, bit 2 = gyr_en, bit 1 = aux_en, bit 0 = acc_en */
-    reg_write(spi, BMI270_REG_PWR_CTRL, 0x0D);  /* temp + gyro + accel = 1101 */
+    /* Enable accel + gyro in normal mode.
+     * PWR_CTRL: bit3=temp_en, bit2=gyr_en, bit1=aux_en, bit0=acc_en
+     * 0x0D = 1101 = temp + gyro + accel enabled. */
+    reg_write(spi, BMI270_REG_PWR_CTRL, 0x0D);
 
     /* Store scale divisors */
     dev->acc_div  = acc_scale[cfg->acc_range & 0x03];

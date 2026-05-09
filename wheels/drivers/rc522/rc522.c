@@ -125,7 +125,7 @@ static rc522_err_t transceive(const rc522_t *dev,
 
     /* Check for errors */
     uint8_t err = reg_read(spi, RC522_REG_ERROR);
-    if (err & 0x13u) {  /* BufferOvfl, CollErr, ParityErr */
+    if (err & 0x1Bu) {  /* BufferOvfl(4), CollErr(3), ParityErr(1), ProtocolErr(0) */
         if (err & 0x08u) return RC522_ERR_COLL;
         return RC522_ERR_SPI;
     }

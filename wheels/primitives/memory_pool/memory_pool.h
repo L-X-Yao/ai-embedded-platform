@@ -59,6 +59,9 @@ void *memory_pool_alloc(memory_pool_t *pool);
 
 /** Free a previously allocated block.
  *  Validates pointer is within pool bounds and properly aligned.
+ *  Double-free is detected only when the pool is fully free (used==0).
+ *  When other blocks are allocated, double-free corrupts the free list;
+ *  callers must track ownership to avoid it.
  *  @thread_safe: no @isr_safe: yes (if caller serializes) */
 memory_pool_err_t memory_pool_free(memory_pool_t *pool, void *ptr);
 

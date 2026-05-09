@@ -144,19 +144,16 @@ static int build_rq(uint8_t *buf, size_t cap, uint16_t opcode,
 
     if (fn_len == 0) return TFTP_ERR_PARAM;
 
+    /* Truncate filename to TFTP_MAX_FILENAME - 1 (defensive) */
+    size_t copy_fn = fn_len;
+    if (copy_fn >= TFTP_MAX_FILENAME) copy_fn = TFTP_MAX_FILENAME - 1;
+
     /* total: opcode(2) + filename + NUL + mode + NUL */
-    size_t total = 2 + fn_len + 1 + mode_len + 1;
+    size_t total = 2 + copy_fn + 1 + mode_len + 1;
     if (total > cap) return TFTP_ERR_OVERFLOW;
 
     put_u16(buf, opcode);
     size_t pos = 2;
-
-    /* truncate filename if too long (defensive, caller should check) */
-    size_t copy_fn = fn_len;
-    if (copy_fn >= TFTP_MAX_FILENAME) copy_fn = TFTP_MAX_FILENAME - 1;
-    /* recalculate total with truncated filename */
-    total = 2 + copy_fn + 1 + mode_len + 1;
-    if (total > cap) return TFTP_ERR_OVERFLOW;
 
     memcpy(buf + pos, filename, copy_fn);
     pos += copy_fn;
