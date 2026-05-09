@@ -2,7 +2,7 @@
  * prop_soft_i2c.c — property-based tests for soft_i2c
  *
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_soft_i2c.c ../soft_i2c.c -o prop_soft_i2c
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_soft_i2c.c ../soft_i2c.c -o prop_soft_i2c
  */
 
 #include "test_harness.h"

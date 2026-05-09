@@ -10,7 +10,7 @@ add_executable(test_cli_shell
 
 target_include_directories(test_cli_shell PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 
 target_compile_options(test_cli_shell PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -21,7 +21,7 @@ add_executable(prop_cli_shell
 )
 target_include_directories(prop_cli_shell PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_cli_shell PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
@@ -32,7 +32,7 @@ add_executable(test_null_cli_shell
 )
 target_include_directories(test_null_cli_shell PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_cli_shell PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

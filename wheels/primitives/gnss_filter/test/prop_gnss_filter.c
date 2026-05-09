@@ -2,7 +2,7 @@
  * prop_gnss_filter.c — property-based tests for gnss_filter
  *
  * Build: add to test/CMakeLists.txt or compile standalone:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_gnss_filter.c ../gnss_filter.c -o prop_gnss_filter -lm
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_gnss_filter.c ../gnss_filter.c -o prop_gnss_filter -lm
  */
 
 #include "test_harness.h"

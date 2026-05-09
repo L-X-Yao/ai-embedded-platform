@@ -1,9 +1,9 @@
 /*
  * prop_log_uart.c — property-based tests for log_uart
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_uart.c ../log_uart.c -o prop_log_uart
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_uart.c ../log_uart.c -o prop_log_uart
  */
 
 #include "test_harness.h"

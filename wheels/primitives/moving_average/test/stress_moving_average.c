@@ -3,7 +3,7 @@
  * stress_moving_average — long-running accumulation / overflow tests
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_moving_average.c ../moving_average.c -lm -o /tmp/stress_moving_average
  *
  * Scenarios:

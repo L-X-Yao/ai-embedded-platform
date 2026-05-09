@@ -1,7 +1,7 @@
 /*
  * prop_state_machine.c — property-based tests for state_machine
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_state_machine.c ../state_machine.c -o prop_state_machine
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_state_machine.c ../state_machine.c -o prop_state_machine
  */
 
 #include "test_harness.h"

@@ -1,7 +1,7 @@
 /*
  * prop_boot_counter.c — property-based tests for boot_counter
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_boot_counter.c ../boot_counter.c -o prop_boot_counter
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_boot_counter.c ../boot_counter.c -o prop_boot_counter
  */
 
 #include "test_harness.h"

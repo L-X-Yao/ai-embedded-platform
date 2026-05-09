@@ -10,7 +10,7 @@ add_executable(test_lora_sx1276
 
 target_include_directories(test_lora_sx1276 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -23,7 +23,7 @@ add_executable(prop_lora_sx1276
 )
 target_include_directories(prop_lora_sx1276 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
@@ -35,9 +35,9 @@ add_executable(test_hw_model_lora_sx1276
 )
 target_include_directories(test_hw_model_lora_sx1276 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
-# -Wno-conversion: hw_model.h in tooling/test triggers integer-promotion
+# -Wno-conversion: hw_model.h in tooling/harness triggers integer-promotion
 # warning in hw_model__write_reg; suppressed here since it is a tooling
 # header, not driver code.
 target_compile_options(test_hw_model_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-conversion -Wno-unused-function)
@@ -50,7 +50,7 @@ add_executable(test_null_lora_sx1276
 )
 target_include_directories(test_null_lora_sx1276 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_lora_sx1276 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 

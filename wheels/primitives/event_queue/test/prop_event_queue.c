@@ -1,7 +1,7 @@
 /*
  * prop_event_queue.c — property-based tests for event_queue
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_event_queue.c ../event_queue.c -o prop_event_queue
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_event_queue.c ../event_queue.c -o prop_event_queue
  */
 
 #include "test_harness.h"

@@ -1,9 +1,9 @@
 /*
  * prop_log_ringbuf.c — property-based tests for log_ringbuf
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_ringbuf.c ../log_ringbuf.c -o prop_log_ringbuf
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_ringbuf.c ../log_ringbuf.c -o prop_log_ringbuf
  */
 
 #include "test_harness.h"

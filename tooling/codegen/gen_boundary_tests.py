@@ -9,7 +9,7 @@ Uses a small output buffer + sentinel byte to detect silent overflow writes.
 Functions are expected to either return an error or handle gracefully (no crash).
 
 Usage:
-    python tooling/test/gen_boundary_tests.py [--dry-run]
+    python tooling/codegen/gen_boundary_tests.py [--dry-run]
 """
 
 import re

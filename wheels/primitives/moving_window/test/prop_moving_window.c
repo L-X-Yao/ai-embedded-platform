@@ -1,9 +1,9 @@
 /*
  * prop_moving_window.c — property-based tests for moving_window
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_moving_window.c ../moving_window.c -o prop_moving_window -lm
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_moving_window.c ../moving_window.c -o prop_moving_window -lm
  */
 
 #include "test_harness.h"

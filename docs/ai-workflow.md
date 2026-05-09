@@ -113,14 +113,14 @@
 2. **导出 patch**：
    ```bash
    cd <root>
-   git diff vsf/ > tooling/patches/NNNN-<slug>.patch
+   git diff vsf/ > tooling/ci/patches/NNNN-<slug>.patch
    git checkout vsf/      # 撤回原改动，保持 vsf/ 干净
    ```
-3. **更新 `tooling/patches/README.md`**：
+3. **更新 `tooling/ci/patches/README.md`**：
    - Patch # / 文件 / 描述 / 发现于哪个项目 / 日期
    - 是否提交 upstream PR / upstream 状态
 4. **考虑提 upstream PR**：通用 bug fix 建议提，减少长期维护负担。
-5. **验证 patch 可重现**：`bash tooling/patches/apply.sh` 能干净应用。
+5. **验证 patch 可重现**：`bash tooling/ci/patches/apply.sh` 能干净应用。
 
 ### 新增独立代码（非 patch）
 
@@ -436,7 +436,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 | `tooling/ci/update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `tooling/wheel/release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
 | `tooling/audit/audit_fix.py` | 自动修复机械审计发现 | `--apply`, `--only <类别>`, `--wheel <name>` |
-| `tooling/fix/batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
+| `tooling/wheel/batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
 | `tooling/ci/commit_suggest.sh` | 从 staged diff 生成 commit message | 无 |
 | `tooling/audit/doc_drift_check.py` | 检查文档数字断言 vs 实际值 | `--fix` |
 | `tooling/wheel/find_all_refs.sh` | 搜索 wheel 在代码+文档的全部引用 | `--code-only`, `--docs-only` |
@@ -461,7 +461,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 | 看 commit message 该怎么写 | `bash tooling/ci/commit_suggest.sh` |
 | commit + push 一步到位 | `make ship M="message"` |
 | 审计发现了机械问题要批量修 | `make audit-fix-apply` |
-| 跨多个 wheel 做同类文本替换 | `tooling/fix/batch_fix.sh --sed 's/old/new/g' --all` |
+| 跨多个 wheel 做同类文本替换 | `tooling/wheel/batch_fix.sh --sed 's/old/new/g' --all` |
 | 改了 wheel 名想找所有引用 | `tooling/wheel/find_all_refs.sh <name>` |
 | 检查文档数字有没有过时 | `python3 tooling/audit/doc_drift_check.py`（或 `--fix`） |
 | 升级 wheel 从 draft 到 candidate | `tooling/wheel/wheel_promote.sh _draft/X primitives/X` |

@@ -9,7 +9,7 @@ add_executable(test_sha256
 )
 target_include_directories(test_sha256 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -19,7 +19,7 @@ add_executable(prop_sha256
 )
 target_include_directories(prop_sha256 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -29,7 +29,7 @@ add_executable(test_null_sha256
 )
 target_include_directories(test_null_sha256 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 

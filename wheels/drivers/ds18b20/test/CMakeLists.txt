@@ -9,7 +9,7 @@ add_executable(test_ds18b20
 )
 target_include_directories(test_ds18b20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -20,7 +20,7 @@ add_executable(test_null_ds18b20
 )
 target_include_directories(test_null_ds18b20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
@@ -32,7 +32,7 @@ add_executable(prop_ds18b20
 )
 target_include_directories(prop_ds18b20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
@@ -44,7 +44,7 @@ add_executable(test_hw_model_ds18b20
 )
 target_include_directories(test_hw_model_ds18b20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_ds18b20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 

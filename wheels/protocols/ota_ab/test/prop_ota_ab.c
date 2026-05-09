@@ -1,7 +1,7 @@
 /*
  * prop_ota_ab.c — property-based tests for ota_ab
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_ota_ab.c ../ota_ab.c -o prop_ota_ab
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_ota_ab.c ../ota_ab.c -o prop_ota_ab
  */
 
 #include "test_harness.h"

@@ -1,9 +1,9 @@
 /*
  * prop_hash_fnv.c — property-based tests for hash_fnv
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_hash_fnv.c ../hash_fnv.c -o prop_hash_fnv
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_hash_fnv.c ../hash_fnv.c -o prop_hash_fnv
  */
 
 #include "test_harness.h"

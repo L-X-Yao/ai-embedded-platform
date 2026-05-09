@@ -1,9 +1,9 @@
 /*
  * prop_mahony_ahrs.c — property-based tests for mahony_ahrs
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_mahony_ahrs.c ../mahony_ahrs.c -o prop_mahony_ahrs -lm
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_mahony_ahrs.c ../mahony_ahrs.c -o prop_mahony_ahrs -lm
  */
 
 #include "test_harness.h"

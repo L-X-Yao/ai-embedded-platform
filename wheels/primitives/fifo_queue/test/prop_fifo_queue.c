@@ -1,7 +1,7 @@
 /*
  * prop_fifo_queue.c — property-based tests for fifo_queue
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_fifo_queue.c ../fifo_queue.c -o prop_fifo_queue
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_fifo_queue.c ../fifo_queue.c -o prop_fifo_queue
  */
 
 #include "test_harness.h"

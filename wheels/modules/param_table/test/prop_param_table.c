@@ -1,7 +1,7 @@
 /*
  * prop_param_table.c — property-based tests for param_table
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_param_table.c ../param_table.c -o prop_param_table
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_param_table.c ../param_table.c -o prop_param_table
  */
 
 #include "test_harness.h"

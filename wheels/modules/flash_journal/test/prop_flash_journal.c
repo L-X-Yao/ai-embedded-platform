@@ -1,7 +1,7 @@
 /*
  * prop_flash_journal.c — property-based tests for flash_journal
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_flash_journal.c ../flash_journal.c -o prop_flash_journal
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_flash_journal.c ../flash_journal.c -o prop_flash_journal
  */
 
 #include "test_harness.h"

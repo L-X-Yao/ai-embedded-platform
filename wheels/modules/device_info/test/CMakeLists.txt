@@ -10,7 +10,7 @@ add_executable(test_device_info
 
 target_include_directories(test_device_info PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 
 target_compile_options(test_device_info PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -22,7 +22,7 @@ add_executable(test_null_device_info
 )
 target_include_directories(test_null_device_info PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_device_info PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

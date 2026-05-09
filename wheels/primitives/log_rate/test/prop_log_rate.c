@@ -1,9 +1,9 @@
 /*
  * prop_log_rate.c — property-based tests for log_rate
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_rate.c ../log_rate.c -o prop_log_rate
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_rate.c ../log_rate.c -o prop_log_rate
  */
 
 #include "test_harness.h"

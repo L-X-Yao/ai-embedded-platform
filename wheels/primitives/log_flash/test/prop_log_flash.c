@@ -1,9 +1,9 @@
 /*
  * prop_log_flash.c — property-based tests for log_flash
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_flash.c ../log_flash.c -o prop_log_flash
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_flash.c ../log_flash.c -o prop_log_flash
  */
 
 #include "test_harness.h"

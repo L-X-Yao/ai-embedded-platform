@@ -10,7 +10,7 @@ add_executable(test_oled_ssd1306
 
 target_include_directories(test_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
@@ -20,7 +20,7 @@ add_executable(prop_oled_ssd1306
 )
 target_include_directories(prop_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(prop_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
@@ -30,7 +30,7 @@ add_executable(test_hw_model_oled_ssd1306
 )
 target_include_directories(test_hw_model_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_hw_model_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 
@@ -41,7 +41,7 @@ add_executable(test_null_oled_ssd1306
 )
 target_include_directories(test_null_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/test
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()

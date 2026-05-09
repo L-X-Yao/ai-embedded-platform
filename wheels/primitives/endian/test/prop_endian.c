@@ -1,9 +1,9 @@
 /*
  * prop_endian.c — property-based tests for endian
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_endian.c ../endian.c -o prop_endian
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_endian.c ../endian.c -o prop_endian
  */
 
 #include "test_harness.h"

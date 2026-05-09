@@ -1,7 +1,7 @@
 /*
  * prop_midi_packet.c — property-based tests for midi_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_midi_packet.c ../midi_packet.c -o prop_midi_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_midi_packet.c ../midi_packet.c -o prop_midi_packet
  */
 
 #include "test_harness.h"

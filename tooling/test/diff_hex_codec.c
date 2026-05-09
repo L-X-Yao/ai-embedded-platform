@@ -8,8 +8,8 @@
  * our wheel, writes raw binary to stdout.
  *
  * Build (from repo root):
- *   gcc -O2 -I wheels/primitives/hex_codec -I tooling/test \
- *       tooling/test/diff_hex_codec.c wheels/primitives/hex_codec/hex_codec.c \
+ *   gcc -O2 -I wheels/primitives/hex_codec -I tooling/harness \
+ *       tooling/harness/diff_hex_codec.c wheels/primitives/hex_codec/hex_codec.c \
  *       -o diff_hex_codec
  */
 

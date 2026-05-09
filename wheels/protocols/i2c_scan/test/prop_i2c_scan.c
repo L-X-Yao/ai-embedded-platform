@@ -1,7 +1,7 @@
 /*
  * prop_i2c_scan.c — property-based tests for i2c_scan
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_i2c_scan.c ../i2c_scan.c -o prop_i2c_scan
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_i2c_scan.c ../i2c_scan.c -o prop_i2c_scan
  */
 
 #include "test_harness.h"

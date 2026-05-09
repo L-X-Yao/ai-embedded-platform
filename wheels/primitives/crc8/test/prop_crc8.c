@@ -1,7 +1,7 @@
 /*
  * prop_crc8.c — property-based tests for crc8
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_crc8.c ../crc8.c -o prop_crc8
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_crc8.c ../crc8.c -o prop_crc8
  */
 
 #include "test_harness.h"

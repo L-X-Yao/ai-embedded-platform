@@ -1,9 +1,9 @@
 /*
  * prop_log_color.c — property-based tests for log_color
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_log_color.c ../log_color.c -o prop_log_color
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_log_color.c ../log_color.c -o prop_log_color
  */
 
 #include "test_harness.h"

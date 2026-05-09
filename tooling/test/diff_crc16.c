@@ -6,8 +6,8 @@
  * (no trailing newline).
  *
  * Build (from repo root):
- *   gcc -O2 -I wheels/primitives/crc16 -I tooling/test \
- *       tooling/test/diff_crc16.c wheels/primitives/crc16/crc16.c \
+ *   gcc -O2 -I wheels/primitives/crc16 -I tooling/harness \
+ *       tooling/harness/diff_crc16.c wheels/primitives/crc16/crc16.c \
  *       -o diff_crc16
  */
 

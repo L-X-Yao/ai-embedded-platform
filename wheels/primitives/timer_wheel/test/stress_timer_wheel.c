@@ -3,7 +3,7 @@
  * stress_timer_wheel — 1M tick fire-count and re-arm tests
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_timer_wheel.c ../timer_wheel.c -lm -o /tmp/stress_timer_wheel
  *
  * Scenarios:

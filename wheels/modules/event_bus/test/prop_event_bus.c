@@ -1,7 +1,7 @@
 /*
  * prop_event_bus.c — property-based tests for event_bus
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_event_bus.c ../event_bus.c -o prop_event_bus
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_event_bus.c ../event_bus.c -o prop_event_bus
  */
 
 #include "test_harness.h"

@@ -1,9 +1,9 @@
 /*
  * prop_bitmap.c — property-based tests for bitmap
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_bitmap.c ../bitmap.c -o prop_bitmap
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_bitmap.c ../bitmap.c -o prop_bitmap
  */
 
 #include "test_harness.h"

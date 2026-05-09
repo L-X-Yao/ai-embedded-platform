@@ -1,9 +1,9 @@
 /*
  * prop_pid_controller.c — property-based tests for pid_controller
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_pid_controller.c ../pid_controller.c -o prop_pid_controller -lm
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_pid_controller.c ../pid_controller.c -o prop_pid_controller -lm
  */
 
 #include "test_harness.h"

@@ -15,7 +15,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # Frama-C settings
 TIMEOUT=10          # seconds per proof goal
 PROVER="alt-ergo"
-CPP_FLAGS="-Itooling/test/ -UCONTRACT_ENABLED"
+CPP_FLAGS="-Itooling/harness/ -UCONTRACT_ENABLED"
 
 VERBOSE=0
 SINGLE_WHEEL=""

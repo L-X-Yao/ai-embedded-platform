@@ -1,7 +1,7 @@
 /*
  * prop_websocket_frame.c — property-based tests for websocket_frame
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_websocket_frame.c ../websocket_frame.c -o prop_websocket_frame
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_websocket_frame.c ../websocket_frame.c -o prop_websocket_frame
  */
 
 #include "test_harness.h"

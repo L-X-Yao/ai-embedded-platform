@@ -1,7 +1,7 @@
 /*
  * prop_coap_packet.c — property-based tests for coap_packet
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_coap_packet.c ../coap_packet.c -o prop_coap_packet
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_coap_packet.c ../coap_packet.c -o prop_coap_packet
  */
 
 #include "test_harness.h"

@@ -1,7 +1,7 @@
 /*
  * prop_moving_average.c — property-based tests for moving_average
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_moving_average.c ../moving_average.c -o prop_moving_average -lm
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_moving_average.c ../moving_average.c -o prop_moving_average -lm
  */
 
 #include "test_harness.h"

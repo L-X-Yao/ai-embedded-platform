@@ -1,7 +1,7 @@
 /*
  * prop_string_utils.c — property-based tests for string_utils
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_string_utils.c ../string_utils.c -o prop_string_utils
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_string_utils.c ../string_utils.c -o prop_string_utils
  */
 
 #include "test_harness.h"

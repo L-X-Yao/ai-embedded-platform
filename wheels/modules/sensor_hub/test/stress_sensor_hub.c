@@ -3,7 +3,7 @@
  * stress_sensor_hub — long-running aggregation drift and overflow tests
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_sensor_hub.c ../sensor_hub.c -lm -o /tmp/stress_sensor_hub
  *
  * Scenarios:

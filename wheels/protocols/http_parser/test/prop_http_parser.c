@@ -1,7 +1,7 @@
 /*
  * prop_http_parser.c — property-based tests for http_parser
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_http_parser.c ../http_parser.c -o prop_http_parser
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_http_parser.c ../http_parser.c -o prop_http_parser
  */
 
 #include "test_harness.h"

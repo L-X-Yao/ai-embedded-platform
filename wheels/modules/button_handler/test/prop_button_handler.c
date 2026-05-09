@@ -1,7 +1,7 @@
 /*
  * prop_button_handler.c — property-based tests for button_handler
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_button_handler.c ../button_handler.c -o prop_button_handler
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_button_handler.c ../button_handler.c -o prop_button_handler
  */
 
 #include "test_harness.h"

@@ -3,7 +3,7 @@
  * stress_soft_timer — 32-bit tick wrap and long-running fire-count tests
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_soft_timer.c ../soft_timer.c -lm -o /tmp/stress_soft_timer
  *
  * Scenarios:

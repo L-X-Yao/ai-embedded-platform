@@ -96,7 +96,7 @@ while IFS= read -r f; do
     out="/tmp/gentest_${name}_$$"
     # shellcheck disable=SC2086
     if gcc -std=c99 -Wall $EXTRA_CFLAGS $DEFINES \
-           -I"$wheel_dir" -I"$dir" -I"tooling/test" $dep_incs \
+           -I"$wheel_dir" -I"$dir" -I"tooling/harness" $dep_incs \
            "$f" "$src" $dep_srcs $mock_srcs \
            -o "$out" -lm 2>/dev/null; then
         # Run

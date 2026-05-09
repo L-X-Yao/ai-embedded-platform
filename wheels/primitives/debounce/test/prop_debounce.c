@@ -1,7 +1,7 @@
 /*
  * prop_debounce.c — property-based tests for debounce
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_debounce.c ../debounce.c -o prop_debounce
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_debounce.c ../debounce.c -o prop_debounce
  */
 
 #include "test_harness.h"

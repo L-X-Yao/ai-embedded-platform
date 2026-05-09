@@ -1,7 +1,7 @@
 /*
  * prop_median_filter.c — property-based tests for median_filter
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_median_filter.c ../median_filter.c -o prop_median_filter
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_median_filter.c ../median_filter.c -o prop_median_filter
  */
 
 #include "test_harness.h"

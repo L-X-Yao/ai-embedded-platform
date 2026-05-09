@@ -1,7 +1,7 @@
 /*
  * prop_base64.c — property-based tests for base64
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_base64.c ../base64.c -o prop_base64
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_base64.c ../base64.c -o prop_base64
  */
 
 #include "test_harness.h"

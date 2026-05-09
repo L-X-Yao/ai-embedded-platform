@@ -1,9 +1,9 @@
 /*
  * prop_mag_cal.c — property-based tests for mag_cal
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_mag_cal.c ../mag_cal.c -o prop_mag_cal -lm
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_mag_cal.c ../mag_cal.c -o prop_mag_cal -lm
  */
 
 #include "test_harness.h"

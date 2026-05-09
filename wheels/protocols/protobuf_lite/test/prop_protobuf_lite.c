@@ -1,7 +1,7 @@
 /*
  * prop_protobuf_lite.c — property-based tests for protobuf_lite
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_protobuf_lite.c ../protobuf_lite.c -o prop_protobuf_lite
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_protobuf_lite.c ../protobuf_lite.c -o prop_protobuf_lite
  */
 
 #include "test_harness.h"

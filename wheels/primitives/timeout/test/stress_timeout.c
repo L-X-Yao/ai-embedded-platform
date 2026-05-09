@@ -3,7 +3,7 @@
  * stress_timeout — 32-bit tick wraparound and edge-case deadline tests
  *
  * Compile (standalone):
- *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/test \
+ *   gcc -std=c99 -O2 -Wall -I.. -I../../../../tooling/harness \
  *       stress_timeout.c ../timeout.c -lm -o /tmp/stress_timeout
  *
  * Scenarios:

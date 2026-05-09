@@ -1,7 +1,7 @@
 /*
  * prop_hex_codec.c — property-based tests for hex_codec
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_hex_codec.c ../hex_codec.c -o prop_hex_codec
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_hex_codec.c ../hex_codec.c -o prop_hex_codec
  */
 
 #include "test_harness.h"

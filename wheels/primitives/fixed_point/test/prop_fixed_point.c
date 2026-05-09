@@ -1,7 +1,7 @@
 /*
  * prop_fixed_point.c — property-based tests for fixed_point
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_fixed_point.c ../fixed_point.c -o prop_fixed_point
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_fixed_point.c ../fixed_point.c -o prop_fixed_point
  */
 
 #include "test_harness.h"

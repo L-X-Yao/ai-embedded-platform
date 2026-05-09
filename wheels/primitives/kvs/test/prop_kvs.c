@@ -1,10 +1,10 @@
 /*
  * prop_kvs.c — property-based tests for kvs (FlashDB key-value store)
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build (from test/ directory):
  *   gcc -std=c99 -I. -I../vendor/inc -I../../../primitives/fal \
- *       -I../../../../tooling/test \
+ *       -I../../../../tooling/harness \
  *       prop_kvs.c ../vendor/src/fdb.c ../vendor/src/fdb_kvdb.c \
  *       ../vendor/src/fdb_tsdb.c ../vendor/src/fdb_utils.c \
  *       ../../../primitives/fal/fal.c \

@@ -1,9 +1,9 @@
 /*
  * prop_timer_wheel.c — property-based tests for timer_wheel
  *
- * Requires: property_test.h from tooling/test/
+ * Requires: property_test.h from tooling/harness/
  * Build:
- *   gcc -std=c99 -I.. -I../../../../tooling/test prop_timer_wheel.c ../timer_wheel.c -o prop_timer_wheel
+ *   gcc -std=c99 -I.. -I../../../../tooling/harness prop_timer_wheel.c ../timer_wheel.c -o prop_timer_wheel
  */
 
 #include "test_harness.h"

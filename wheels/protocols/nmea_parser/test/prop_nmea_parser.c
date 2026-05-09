@@ -1,7 +1,7 @@
 /*
  * prop_nmea_parser.c — property-based tests for nmea_parser
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_nmea_parser.c ../nmea_parser.c -o prop_nmea_parser
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_nmea_parser.c ../nmea_parser.c -o prop_nmea_parser
  */
 
 #include "test_harness.h"

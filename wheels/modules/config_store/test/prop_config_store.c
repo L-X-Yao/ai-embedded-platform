@@ -1,7 +1,7 @@
 /*
  * prop_config_store.c — property-based tests for config_store
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_config_store.c ../config_store.c -o prop_config_store
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_config_store.c ../config_store.c -o prop_config_store
  */
 
 #include "test_harness.h"

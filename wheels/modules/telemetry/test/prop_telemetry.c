@@ -1,7 +1,7 @@
 /*
  * prop_telemetry.c — property-based tests for telemetry
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_telemetry.c ../telemetry.c -o prop_telemetry
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_telemetry.c ../telemetry.c -o prop_telemetry
  */
 
 #include "test_harness.h"

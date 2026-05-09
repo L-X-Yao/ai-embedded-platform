@@ -1,7 +1,7 @@
 /*
  * prop_xmodem.c — property-based tests for xmodem
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_xmodem.c ../xmodem.c -o prop_xmodem
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_xmodem.c ../xmodem.c -o prop_xmodem
  */
 
 #include "test_harness.h"

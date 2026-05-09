@@ -1,7 +1,7 @@
 /*
  * prop_cobs.c — property-based tests for cobs
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_cobs.c ../cobs.c -o prop_cobs
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_cobs.c ../cobs.c -o prop_cobs
  */
 
 #include "test_harness.h"

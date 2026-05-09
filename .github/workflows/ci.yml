@@ -145,7 +145,7 @@ jobs:
 
           # Standalone job triggers
           FLYBOX="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^projects/flybox/|^tooling/debug/gd32f4xx/"; then
+          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^projects/flybox/|^tooling/debug/cortex_m/gd32f4xx/"; then
             FLYBOX="true"
           fi
           echo "flybox_changed=$FLYBOX" >> "$GITHUB_OUTPUT"
@@ -299,7 +299,7 @@ jobs:
       - name: Install pytest
         run: pip install -r ${{ github.workspace }}/tooling/requirements-ci.txt
       - name: Test parse_fault.py
-        run: python3 -m pytest tooling/debug/gd32f4xx/test_parse_fault.py -v
+        run: python3 -m pytest tooling/debug/cortex_m/test_parse_fault.py -v
 
   flybox-build:
     name: flybox firmware (gd32f405 cross-compile)

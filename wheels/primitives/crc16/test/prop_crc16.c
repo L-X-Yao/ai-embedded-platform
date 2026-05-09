@@ -1,7 +1,7 @@
 /*
  * prop_crc16.c — property-based tests for crc16
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_crc16.c ../crc16.c -o prop_crc16
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_crc16.c ../crc16.c -o prop_crc16
  */
 
 #include "test_harness.h"

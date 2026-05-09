@@ -1,7 +1,7 @@
 /*
  * prop_byte_buffer.c — property-based tests for byte_buffer
  *
- * Build: gcc -std=c99 -I.. -I../../../../tooling/test prop_byte_buffer.c ../byte_buffer.c -o prop_byte_buffer
+ * Build: gcc -std=c99 -I.. -I../../../../tooling/harness prop_byte_buffer.c ../byte_buffer.c -o prop_byte_buffer
  */
 
 #include "test_harness.h"
