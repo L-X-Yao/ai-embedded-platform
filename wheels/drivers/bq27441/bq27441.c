@@ -18,6 +18,7 @@
  */
 
 #include "bq27441.h"
+#include "contract.h"
 #include <string.h>
 
 /* ---- standard register addresses ---- */
@@ -95,8 +96,12 @@ static void do_delay(const bq27441_t *dev, uint32_t ms)
 
 bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(i2c != NULL);
     if (!dev || !i2c)
         return BQ27441_ERR_PARAM;
+    REQUIRE(i2c->read_regs != NULL);
+    REQUIRE(i2c->write_regs != NULL);
     if (!i2c->read_regs || !i2c->write_regs)
         return BQ27441_ERR_PARAM;
 
@@ -121,6 +126,8 @@ bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
 
 bq27441_err_t bq27441_read(bq27441_t *dev, bq27441_data_t *out)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(out != NULL);
     if (!dev || !out)
         return BQ27441_ERR_PARAM;
 
@@ -167,6 +174,8 @@ bq27441_err_t bq27441_read(bq27441_t *dev, bq27441_data_t *out)
 
 bq27441_err_t bq27441_read_voltage(bq27441_t *dev, uint16_t *voltage_mv)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(voltage_mv != NULL);
     if (!dev || !voltage_mv)
         return BQ27441_ERR_PARAM;
     return read_reg16(dev, REG_VOLTAGE, voltage_mv);
@@ -174,6 +183,8 @@ bq27441_err_t bq27441_read_voltage(bq27441_t *dev, uint16_t *voltage_mv)
 
 bq27441_err_t bq27441_read_soc(bq27441_t *dev, uint16_t *soc_pct)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(soc_pct != NULL);
     if (!dev || !soc_pct)
         return BQ27441_ERR_PARAM;
     return read_reg16(dev, REG_SOC, soc_pct);
@@ -181,6 +192,8 @@ bq27441_err_t bq27441_read_soc(bq27441_t *dev, uint16_t *soc_pct)
 
 bq27441_err_t bq27441_read_current(bq27441_t *dev, int16_t *current_ma)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(current_ma != NULL);
     if (!dev || !current_ma)
         return BQ27441_ERR_PARAM;
 
@@ -193,6 +206,8 @@ bq27441_err_t bq27441_read_current(bq27441_t *dev, int16_t *current_ma)
 
 bq27441_err_t bq27441_read_temperature(bq27441_t *dev, int16_t *temperature_01c)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(temperature_01c != NULL);
     if (!dev || !temperature_01c)
         return BQ27441_ERR_PARAM;
 
@@ -206,6 +221,7 @@ bq27441_err_t bq27441_read_temperature(bq27441_t *dev, int16_t *temperature_01c)
 
 bq27441_err_t bq27441_enter_config_mode(bq27441_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return BQ27441_ERR_PARAM;
 
@@ -235,6 +251,7 @@ bq27441_err_t bq27441_enter_config_mode(bq27441_t *dev)
 
 bq27441_err_t bq27441_exit_config_mode(bq27441_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return BQ27441_ERR_PARAM;
 
@@ -261,6 +278,8 @@ bq27441_err_t bq27441_exit_config_mode(bq27441_t *dev)
 
 bq27441_err_t bq27441_set_design_capacity(bq27441_t *dev, uint16_t mah)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(mah > 0);
     if (!dev)
         return BQ27441_ERR_PARAM;
     if (mah == 0)
@@ -271,6 +290,7 @@ bq27441_err_t bq27441_set_design_capacity(bq27441_t *dev, uint16_t mah)
 
 bq27441_err_t bq27441_unseal(bq27441_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return BQ27441_ERR_PARAM;
 
@@ -283,6 +303,7 @@ bq27441_err_t bq27441_unseal(bq27441_t *dev)
 
 bq27441_err_t bq27441_seal(bq27441_t *dev)
 {
+    REQUIRE(dev != NULL);
     if (!dev)
         return BQ27441_ERR_PARAM;
 

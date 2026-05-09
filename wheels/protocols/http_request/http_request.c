@@ -9,6 +9,7 @@
  */
 
 #include "http_request.h"
+#include "contract.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -27,6 +28,9 @@ http_request_err_t http_request_build(uint8_t *buf, size_t cap,
                                       const http_request_cfg_t *cfg,
                                       size_t *out_len)
 {
+    REQUIRE(buf != NULL);
+    REQUIRE(cfg != NULL);
+    REQUIRE(out_len != NULL);
     if (!buf || !cfg || !out_len || !cfg->path) {
         return HTTP_REQUEST_ERR_PARAM;
     }
@@ -104,6 +108,10 @@ http_request_err_t http_request_build_range_get(uint8_t *buf, size_t cap,
                                                 size_t offset, size_t end,
                                                 size_t *out_len)
 {
+    REQUIRE(buf != NULL);
+    REQUIRE(host != NULL);
+    REQUIRE(path != NULL);
+    REQUIRE(out_len != NULL);
     if (!buf || !host || !path || !out_len) {
         return HTTP_REQUEST_ERR_PARAM;
     }

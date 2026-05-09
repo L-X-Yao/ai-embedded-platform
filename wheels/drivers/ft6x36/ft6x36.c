@@ -16,6 +16,7 @@
  */
 
 #include "ft6x36.h"
+#include "contract.h"
 
 /* Touch point data offsets within a 6-byte block */
 #define TP_XH_OFFSET  0u
@@ -40,6 +41,8 @@ static ft6x36_err_t read_reg8(const ft6x36_t *dev, uint8_t reg, uint8_t *val)
 
 ft6x36_err_t ft6x36_init(ft6x36_t *dev, const ft6x36_i2c_t *i2c)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(i2c != NULL);
     if (!dev || !i2c) return FT6X36_ERR_PARAM;
     dev->i2c = i2c;
     dev->chip_id = 0;
@@ -57,6 +60,8 @@ ft6x36_err_t ft6x36_init(ft6x36_t *dev, const ft6x36_i2c_t *i2c)
 
 ft6x36_err_t ft6x36_read_touch(ft6x36_t *dev, ft6x36_touch_t *out)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(out != NULL);
     if (!dev || !out) return FT6X36_ERR_PARAM;
 
     /* Read TD_STATUS (0x02) through P2_YL (0x0C) = 11 bytes */
@@ -101,6 +106,7 @@ ft6x36_err_t ft6x36_read_touch(ft6x36_t *dev, ft6x36_touch_t *out)
 
 ft6x36_err_t ft6x36_set_threshold(ft6x36_t *dev, uint8_t value)
 {
+    REQUIRE(dev != NULL);
     if (!dev) return FT6X36_ERR_PARAM;
 
     if (!dev->i2c->write_reg(dev->i2c->ctx, FT6X36_DEV_ADDR,
@@ -112,12 +118,16 @@ ft6x36_err_t ft6x36_set_threshold(ft6x36_t *dev, uint8_t value)
 
 ft6x36_err_t ft6x36_get_chip_id(ft6x36_t *dev, uint8_t *out)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(out != NULL);
     if (!dev || !out) return FT6X36_ERR_PARAM;
     return read_reg8(dev, FT6X36_REG_CHIP_ID, out);
 }
 
 ft6x36_err_t ft6x36_get_firmware_version(ft6x36_t *dev, uint8_t *out)
 {
+    REQUIRE(dev != NULL);
+    REQUIRE(out != NULL);
     if (!dev || !out) return FT6X36_ERR_PARAM;
     return read_reg8(dev, FT6X36_REG_FW_VER, out);
 }
