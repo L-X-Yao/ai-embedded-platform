@@ -48,11 +48,11 @@ def get_git_info():
     try:
         sha = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=10,
         ).stdout.strip()
         dirty = subprocess.run(
             ["git", "diff", "--quiet"],
-            capture_output=True, cwd=str(REPO_ROOT),
+            capture_output=True, cwd=str(REPO_ROOT), timeout=10,
         ).returncode != 0
         return sha, dirty
     except Exception:
@@ -127,15 +127,27 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
         print()
 
         cmd_base = ["bash", str(BFC_SCRIPT), "--conf", tmp.name]
+        # Timeout: soak duration + 5 min build/flash overhead.  Minimum 10 min.
+        bfc_timeout = max(600, duration + 300)
 
-        rc = subprocess.run(cmd_base + action).returncode
+        try:
+            rc = subprocess.run(cmd_base + action, timeout=bfc_timeout).returncode
+        except subprocess.TimeoutExpired:
+            print(f"[ERR] build_flash_check.sh timed out after {bfc_timeout}s")
+            _save_meta(result_dir, project, soak_tier, duration, conf_path, "TIMEOUT")
+            return result_dir
         if rc != 0 and action[0] in ("build", "flash"):
             print(f"[ERR] {action[0]} failed (rc={rc})")
             _save_meta(result_dir, project, soak_tier, duration, conf_path, "ERROR")
             return result_dir
 
         if need_separate_check:
-            rc = subprocess.run(cmd_base + ["check"]).returncode
+            try:
+                rc = subprocess.run(cmd_base + ["check"], timeout=bfc_timeout).returncode
+            except subprocess.TimeoutExpired:
+                print(f"[ERR] check timed out after {bfc_timeout}s")
+                _save_meta(result_dir, project, soak_tier, duration, conf_path, "TIMEOUT")
+                return result_dir
             if rc != 0:
                 print(f"[WARN] check action exited with rc={rc}")
 

@@ -33,6 +33,7 @@ MMFSR_BITS = [
     (0x02, "DACCVIOL", "Data access violation (MPU or unprivileged access)"),
     (0x08, "MUNSTKERR", "Fault during exception return (unstacking)"),
     (0x10, "MSTKERR", "Fault during exception entry (stacking — stack overflow?)"),
+    (0x20, "MLSPERR", "FPU lazy state push MemManage fault (check FPCCR.LSPEN)"),
     (0x80, "MMARVALID", "MMFAR holds the faulting address"),
 ]
 
@@ -42,6 +43,7 @@ BFSR_BITS = [
     (0x04, "IMPRECISERR", "Imprecise data bus error — BFAR may not be valid"),
     (0x08, "UNSTKERR", "Bus fault during unstacking"),
     (0x10, "STKERR", "Bus fault during stacking (stack pointer corrupt?)"),
+    (0x20, "LSPERR", "FPU lazy state push bus fault (check FPCCR, CPACR)"),
     (0x80, "BFARVALID", "BFAR holds the faulting address"),
 ]
 
@@ -102,6 +104,10 @@ def classify(cfsr, hfsr, mmfar, bfar, lr, pc):
         if bfsr & 0x10:
             causes.append("Bus fault during stacking — stack pointer likely corrupt or overflowed into invalid memory")
             gdb.append("info reg msp psp  # check if stack pointer is in valid SRAM range")
+        if bfsr & 0x20:
+            causes.append("FPU lazy state push bus fault — check FPCCR.LSPEN and CPACR[23:20]")
+            gdb.append("x/x 0xE000EF34  # FPCCR — bit LSPEN enables lazy stacking")
+            gdb.append("x/x 0xE000ED88  # CPACR — bits [23:20] must be 0xF for full FPU access")
         if bfsr & 0x02:
             causes.append(f"Precise bus error at {'0x%08X' % bfar if bfar is not None else 'BFAR'} — read/write to unmapped address")
             gdb.append("info symbol *(uint32_t*)($psp + 0x18)  # faulting PC")
@@ -116,6 +122,10 @@ def classify(cfsr, hfsr, mmfar, bfar, lr, pc):
             causes.append("MemManage stacking fault — STACK OVERFLOW (SP crossed MPU boundary)")
             gdb.append("info reg msp psp sp  # check if SP is below _estack or thread stack base")
             gdb.append("# Compare with: python3 stack_analyzer.py build --task-config stack_tasks.flybox.json")
+        if mmfsr & 0x20:
+            causes.append("FPU lazy state push MemManage fault — check FPCCR.LSPEN and CPACR[23:20]")
+            gdb.append("x/x 0xE000EF34  # FPCCR — bit LSPEN enables lazy stacking")
+            gdb.append("x/x 0xE000ED88  # CPACR — bits [23:20] must be 0xF for full FPU access")
         if mmfsr & 0x02:
             causes.append(f"Data access violation at {'0x%08X' % mmfar if mmfar is not None else 'MMFAR'} — MPU or NULL deref")
         if mmfsr & 0x01:

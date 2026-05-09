@@ -59,6 +59,20 @@ def test_bus_fault_stacking():
     assert "STKERR" in out
     assert "stack" in out.lower()
 
+def test_mmfsr_fpu_lazy_stacking():
+    # CFSR[5] = MLSPERR: FPU lazy state push MemManage fault
+    out, _, rc = run(["--cfsr", "0x00000020"])
+    assert rc == 0
+    assert "MLSPERR" in out
+    assert "FPU" in out or "lazy" in out.lower()
+
+def test_bfsr_fpu_lazy_stacking():
+    # CFSR[13] = LSPERR: FPU lazy state push bus fault (BFSR bit 5 = 0x20 = CFSR bit 13)
+    out, _, rc = run(["--cfsr", "0x00002000"])
+    assert rc == 0
+    assert "LSPERR" in out
+    assert "FPU" in out or "lazy" in out.lower()
+
 def test_hardfault_escalated():
     out, _, rc = run(["--cfsr", "0x00020000", "--hfsr", "0x40000000"])
     assert rc == 0
