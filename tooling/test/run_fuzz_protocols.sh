@@ -91,6 +91,7 @@ WHEELS=(
     dns_packet
     http_parser
     lorawan_packet
+    mavlink
     midi_packet
     modbus_rtu
     modbus_tcp
@@ -100,6 +101,7 @@ WHEELS=(
     ncp5623_parser
     nmea_parser
     protobuf_lite
+    sbus
     syslog_packet
     tlv_codec
     websocket_frame
