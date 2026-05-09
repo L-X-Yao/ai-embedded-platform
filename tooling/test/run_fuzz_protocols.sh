@@ -88,6 +88,7 @@ WHEELS=(
     canbus
     cbor_lite
     coap_packet
+    dhcp_packet
     dns_packet
     http_parser
     lorawan_packet
@@ -103,6 +104,7 @@ WHEELS=(
     protobuf_lite
     sbus
     syslog_packet
+    tftp
     tlv_codec
     websocket_frame
     xmodem
