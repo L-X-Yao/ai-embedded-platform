@@ -132,7 +132,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     done
 
     # Clean up for next wheel
-    rm -f "$TMPDIR"/*.o "$TMPDIR"/*.su
+    rm -f "$AUDIT_TMPDIR"/*.o "$AUDIT_TMPDIR"/*.su
 done
 
 # Print header
