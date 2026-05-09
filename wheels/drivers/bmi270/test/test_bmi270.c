@@ -2,39 +2,114 @@
 #include <string.h>
 #include "bmi270.h"
 
-/* ---------- mock SPI ---------- */
+/* ---------- mock SPI with BMI270 register model ---------- */
 
+#define MOCK_REG_COUNT 256
+static uint8_t mock_regs[MOCK_REG_COUNT];
 static int     mock_fail_at;
+static int     mock_op_count;
 static uint8_t mock_cs_state;
-
-static uint8_t xfer_log[256];
-static int     xfer_log_idx;
+static int     mock_byte_idx;
+static bool    mock_is_read;
+static uint8_t mock_addr_latch;
 
 static void mock_reset(void)
 {
+    memset(mock_regs, 0, sizeof(mock_regs));
     mock_fail_at   = -1;
+    mock_op_count  = 0;
     mock_cs_state  = 1;
-    xfer_log_idx   = 0;
-    memset(xfer_log, 0, sizeof(xfer_log));
+    mock_byte_idx  = 0;
+    mock_is_read   = false;
+    mock_addr_latch = 0;
+
+    /* POR defaults */
+    mock_regs[0x00] = 0x24;  /* CHIP_ID */
+    mock_regs[0x21] = 0x01;  /* INTERNAL_STATUS: init OK */
+    mock_regs[0x40] = 0x28;  /* ACC_CONF */
+    mock_regs[0x42] = 0x29;  /* GYR_CONF */
 }
 
-static void mock_cs_low(void *ctx)  { (void)ctx; mock_cs_state = 0; }
+static void mock_cs_low(void *ctx)
+{
+    (void)ctx;
+    mock_cs_state = 0;
+    mock_byte_idx = 0;
+}
+
 static void mock_cs_high(void *ctx) { (void)ctx; mock_cs_state = 1; }
 
 static uint8_t mock_xfer(void *ctx, uint8_t tx)
 {
     (void)ctx;
-    if (xfer_log_idx < (int)sizeof(xfer_log))
-        xfer_log[xfer_log_idx++] = tx;
-    return 0xFF; /* override for device-specific responses */
+    mock_op_count++;
+
+    if (mock_byte_idx == 0) {
+        mock_is_read = (tx & 0x80u) != 0;
+        mock_addr_latch = (uint8_t)(tx & 0x7Fu);
+        mock_byte_idx++;
+        return 0x00;
+    }
+
+    if (mock_is_read) {
+        if (mock_byte_idx == 1) {
+            /* Dummy byte */
+            mock_byte_idx++;
+            return 0x00;
+        }
+        uint8_t offset = (uint8_t)(mock_byte_idx - 2);
+        uint8_t reg = (uint8_t)(mock_addr_latch + offset);
+        mock_byte_idx++;
+        return mock_regs[reg];
+    } else {
+        if (mock_byte_idx == 1) {
+            mock_regs[mock_addr_latch] = tx;
+        } else {
+            uint8_t offset = (uint8_t)(mock_byte_idx - 1);
+            uint8_t reg = (uint8_t)(mock_addr_latch + offset);
+            mock_regs[reg] = tx;
+        }
+        mock_byte_idx++;
+        return 0x00;
+    }
+}
+
+static void mock_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
 }
 
 static const bmi270_spi_t mock_spi = {
-    .cs_low  = mock_cs_low,
-    .cs_high = mock_cs_high,
-    .xfer    = mock_xfer,
-    .ctx     = NULL,
+    .cs_low   = mock_cs_low,
+    .cs_high  = mock_cs_high,
+    .xfer     = mock_xfer,
+    .delay_ms = mock_delay_ms,
+    .ctx      = NULL,
 };
+
+/* Helper: inject raw accel+gyro data into mock registers */
+static void inject_accel_gyro(int16_t ax, int16_t ay, int16_t az,
+                               int16_t gx, int16_t gy, int16_t gz)
+{
+    mock_regs[0x0C] = (uint8_t)(ax & 0xFFu);
+    mock_regs[0x0D] = (uint8_t)((uint16_t)ax >> 8);
+    mock_regs[0x0E] = (uint8_t)(ay & 0xFFu);
+    mock_regs[0x0F] = (uint8_t)((uint16_t)ay >> 8);
+    mock_regs[0x10] = (uint8_t)(az & 0xFFu);
+    mock_regs[0x11] = (uint8_t)((uint16_t)az >> 8);
+    mock_regs[0x12] = (uint8_t)(gx & 0xFFu);
+    mock_regs[0x13] = (uint8_t)((uint16_t)gx >> 8);
+    mock_regs[0x14] = (uint8_t)(gy & 0xFFu);
+    mock_regs[0x15] = (uint8_t)((uint16_t)gy >> 8);
+    mock_regs[0x16] = (uint8_t)(gz & 0xFFu);
+    mock_regs[0x17] = (uint8_t)((uint16_t)gz >> 8);
+}
+
+static void inject_temp(int16_t raw)
+{
+    mock_regs[0x22] = (uint8_t)(raw & 0xFFu);
+    mock_regs[0x23] = (uint8_t)((uint16_t)raw >> 8);
+}
 
 /* ---------- tests ---------- */
 
@@ -42,23 +117,45 @@ TEST(test_init_ok)
 {
     mock_reset();
     bmi270_t dev;
-    bmi270_err_t e = bmi270_init(&dev, &mock_spi);
-    ASSERT_EQ(e, BMI270_OK);
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_OK);
+}
+
+TEST(test_init_bad_id)
+{
+    mock_reset();
+    mock_regs[0x00] = 0x00;  /* wrong chip ID */
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_ERR_ID);
+}
+
+TEST(test_init_config_fail)
+{
+    mock_reset();
+    mock_regs[0x21] = 0x00;  /* INTERNAL_STATUS: init NOT ok */
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_ERR_CONFIG);
 }
 
 TEST(test_null_safety)
 {
     bmi270_t dev;
-    ASSERT_EQ(bmi270_init(NULL, &mock_spi), BMI270_ERR_PARAM);
-    ASSERT_EQ(bmi270_init(&dev, NULL), BMI270_ERR_PARAM);
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(NULL, &mock_spi, &cfg), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_init(&dev, NULL, &cfg), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, NULL), BMI270_ERR_PARAM);
 }
 
-TEST(test_init_spi_fail)
+TEST(test_zero_init_safety)
 {
-    /* TODO: implement once init reads chip ID via SPI.
-     * Set mock to return wrong ID, verify ERR_ID returned. */
-    (void)mock_fail_at;
-    ASSERT_TRUE(BMI270_ERR_SPI < 0);
+    bmi270_spi_t zero_hal;
+    memset(&zero_hal, 0, sizeof(zero_hal));
+    bmi270_t zero_dev;
+    memset(&zero_dev, 0, sizeof(zero_dev));
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_TRUE(bmi270_init(&zero_dev, &zero_hal, &cfg) < 0);
 }
 
 TEST(test_error_codes)
@@ -67,24 +164,235 @@ TEST(test_error_codes)
     ASSERT_EQ(-2, (int)BMI270_ERR_SPI);
     ASSERT_EQ(-3, (int)BMI270_ERR_ID);
     ASSERT_EQ(-4, (int)BMI270_ERR_TIMEOUT);
+    ASSERT_EQ(-5, (int)BMI270_ERR_CONFIG);
 }
 
-TEST(test_zero_init_safety)
+TEST(test_default_cfg)
 {
-    /* Zero HAL struct has NULL function pointers — init must reject it */
-    bmi270_spi_t zero_hal;
-    memset(&zero_hal, 0, sizeof(zero_hal));
-    bmi270_t zero_dev;
-    memset(&zero_dev, 0, sizeof(zero_dev));
-    ASSERT_TRUE(bmi270_init(&zero_dev, &zero_hal) < 0);
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(cfg.acc_range, BMI270_ACC_RANGE_8G);
+    ASSERT_EQ(cfg.gyro_range, BMI270_GYRO_RANGE_2000DPS);
+    ASSERT_EQ(cfg.acc_odr, BMI270_ODR_100HZ);
+    ASSERT_EQ(cfg.gyro_odr, BMI270_ODR_200HZ);
 }
 
-/* TODO: add more tests */
+TEST(test_read_accel_gyro)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    cfg.acc_range = BMI270_ACC_RANGE_2G;    /* 16384 LSB/g */
+    cfg.gyro_range = BMI270_GYRO_RANGE_2000DPS;  /* 16.4 LSB/dps */
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    /* Inject known raw values */
+    /* AX = 16384 (1g), AY = -16384 (-1g), AZ = 0 */
+    /* GX = 164 (~10 dps), GY = 0, GZ = -164 (~-10 dps) */
+    inject_accel_gyro(16384, -16384, 0, 164, 0, -164);
+
+    bmi270_accel_gyro_t data;
+    ASSERT_EQ(bmi270_read_accel_gyro(&dev, &data), BMI270_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
+    ASSERT_NEAR(data.ay_g, -1.0f, 0.01f);
+    ASSERT_NEAR(data.az_g, 0.0f, 0.01f);
+    ASSERT_NEAR(data.gx_dps, 10.0f, 0.1f);
+    ASSERT_NEAR(data.gy_dps, 0.0f, 0.01f);
+    ASSERT_NEAR(data.gz_dps, -10.0f, 0.1f);
+}
+
+TEST(test_read_accel_gyro_8g)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    cfg.acc_range = BMI270_ACC_RANGE_8G;  /* 4096 LSB/g */
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    /* AX = 4096 (1g at 8g range) */
+    inject_accel_gyro(4096, 0, 0, 0, 0, 0);
+
+    bmi270_accel_gyro_t data;
+    ASSERT_EQ(bmi270_read_accel_gyro(&dev, &data), BMI270_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
+}
+
+TEST(test_read_accel_null)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+    ASSERT_EQ(bmi270_read_accel_gyro(NULL, &(bmi270_accel_gyro_t){0}), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_read_accel_gyro(&dev, NULL), BMI270_ERR_PARAM);
+}
+
+TEST(test_read_temp)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    /* Temperature: raw / 512 + 23.
+     * raw = 5120 => 5120/512 + 23 = 33.0C */
+    inject_temp(5120);
+
+    float temp;
+    ASSERT_EQ(bmi270_read_temp(&dev, &temp), BMI270_OK);
+    ASSERT_NEAR(temp, 33.0f, 0.1f);
+}
+
+TEST(test_read_temp_negative)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    /* raw = -5120 => -5120/512 + 23 = 13.0C */
+    inject_temp(-5120);
+
+    float temp;
+    ASSERT_EQ(bmi270_read_temp(&dev, &temp), BMI270_OK);
+    ASSERT_NEAR(temp, 13.0f, 0.1f);
+}
+
+TEST(test_read_temp_null)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+    ASSERT_EQ(bmi270_read_temp(NULL, &(float){0}), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_read_temp(&dev, NULL), BMI270_ERR_PARAM);
+}
+
+TEST(test_read_temp_invalid)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    /* 0x8000 means invalid reading */
+    inject_temp((int16_t)0x8000);
+
+    float temp;
+    ASSERT_EQ(bmi270_read_temp(&dev, &temp), BMI270_ERR_SPI);
+}
+
+TEST(test_set_acc_odr)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_set_acc_odr(&dev, BMI270_ODR_400HZ), BMI270_OK);
+    /* ACC_CONF lower nibble should be 0x0A */
+    ASSERT_EQ(mock_regs[0x40] & 0x0Fu, 0x0A);
+}
+
+TEST(test_set_gyro_odr)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_set_gyro_odr(&dev, BMI270_ODR_800HZ), BMI270_OK);
+    /* GYR_CONF lower nibble should be 0x0B */
+    ASSERT_EQ(mock_regs[0x42] & 0x0Fu, 0x0B);
+}
+
+TEST(test_set_acc_range)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_set_acc_range(&dev, BMI270_ACC_RANGE_16G), BMI270_OK);
+    ASSERT_EQ(mock_regs[0x41], 3);
+    /* Verify divisor was updated */
+    inject_accel_gyro(2048, 0, 0, 0, 0, 0);
+    bmi270_accel_gyro_t data;
+    bmi270_read_accel_gyro(&dev, &data);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
+}
+
+TEST(test_set_gyro_range)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_set_gyro_range(&dev, BMI270_GYRO_RANGE_250DPS), BMI270_OK);
+    ASSERT_EQ(mock_regs[0x43], 3);
+}
+
+TEST(test_set_range_invalid)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_set_acc_range(&dev, (bmi270_acc_range_t)4), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_gyro_range(&dev, (bmi270_gyro_range_t)5), BMI270_ERR_PARAM);
+}
+
+TEST(test_set_odr_null)
+{
+    ASSERT_EQ(bmi270_set_acc_odr(NULL, BMI270_ODR_100HZ), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_gyro_odr(NULL, BMI270_ODR_100HZ), BMI270_ERR_PARAM);
+}
+
+TEST(test_set_range_null)
+{
+    ASSERT_EQ(bmi270_set_acc_range(NULL, BMI270_ACC_RANGE_2G), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_gyro_range(NULL, BMI270_GYRO_RANGE_250DPS), BMI270_ERR_PARAM);
+}
+
+TEST(test_soft_reset)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    bmi270_init(&dev, &mock_spi, &cfg);
+
+    ASSERT_EQ(bmi270_soft_reset(&dev), BMI270_OK);
+    ASSERT_EQ(mock_regs[0x7E], 0xB6);  /* CMD register */
+}
+
+TEST(test_soft_reset_null)
+{
+    ASSERT_EQ(bmi270_soft_reset(NULL), BMI270_ERR_PARAM);
+}
 
 TEST_MAIN("bmi270")
     RUN(test_init_ok);
+    RUN(test_init_bad_id);
+    RUN(test_init_config_fail);
     RUN(test_null_safety);
-    RUN(test_init_spi_fail);
-    RUN(test_error_codes);
     RUN(test_zero_init_safety);
+    RUN(test_error_codes);
+    RUN(test_default_cfg);
+    RUN(test_read_accel_gyro);
+    RUN(test_read_accel_gyro_8g);
+    RUN(test_read_accel_null);
+    RUN(test_read_temp);
+    RUN(test_read_temp_negative);
+    RUN(test_read_temp_null);
+    RUN(test_read_temp_invalid);
+    RUN(test_set_acc_odr);
+    RUN(test_set_gyro_odr);
+    RUN(test_set_acc_range);
+    RUN(test_set_gyro_range);
+    RUN(test_set_range_invalid);
+    RUN(test_set_odr_null);
+    RUN(test_set_range_null);
+    RUN(test_soft_reset);
+    RUN(test_soft_reset_null);
 TEST_MAIN_END()
