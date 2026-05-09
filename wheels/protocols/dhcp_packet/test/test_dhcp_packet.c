@@ -247,7 +247,7 @@ TEST(test_option_get_u32)
 
     dhcp_option_t opt;
     ASSERT_EQ(dhcp_packet_get_option(buf, (size_t)n, DHCP_OPT_LEASE_TIME, &opt), 0);
-    ASSERT_EQ(dhcp_option_get_u32(&opt), 3600U);
+    ASSERT_EQ(dhcp_packet_option_u32(&opt), 3600U);
 }
 
 TEST(test_option_get_ip)
@@ -263,7 +263,7 @@ TEST(test_option_get_ip)
     ASSERT_EQ(dhcp_packet_get_option(buf, (size_t)n, DHCP_OPT_SUBNET_MASK, &opt), 0);
 
     uint8_t ip[4];
-    dhcp_option_get_ip(&opt, ip);
+    dhcp_packet_option_ip(&opt, ip);
     ASSERT_EQ(ip[0], 255);
     ASSERT_EQ(ip[1], 255);
     ASSERT_EQ(ip[2], 255);
@@ -283,7 +283,7 @@ TEST(test_option_get_router_ip)
     ASSERT_EQ(dhcp_packet_get_option(buf, (size_t)n, DHCP_OPT_ROUTER, &opt), 0);
 
     uint8_t ip[4];
-    dhcp_option_get_ip(&opt, ip);
+    dhcp_packet_option_ip(&opt, ip);
     ASSERT_EQ(ip[0], 192);
     ASSERT_EQ(ip[1], 168);
     ASSERT_EQ(ip[2], 1);
@@ -344,18 +344,18 @@ TEST(test_build_request_null_params)
 
 TEST(test_option_get_u32_null)
 {
-    ASSERT_EQ(dhcp_option_get_u32(NULL), 0U);
+    ASSERT_EQ(dhcp_packet_option_u32(NULL), 0U);
 
     dhcp_option_t opt;
     opt.data = NULL;
     opt.len = 4;
-    ASSERT_EQ(dhcp_option_get_u32(&opt), 0U);
+    ASSERT_EQ(dhcp_packet_option_u32(&opt), 0U);
 }
 
 TEST(test_option_get_ip_null)
 {
     uint8_t ip[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-    dhcp_option_get_ip(NULL, ip);
+    dhcp_packet_option_ip(NULL, ip);
     /* ip should be zeroed when opt is NULL */
     ASSERT_EQ(ip[0], 0);
 
@@ -363,7 +363,7 @@ TEST(test_option_get_ip_null)
     dhcp_option_t opt;
     opt.data = ip;
     opt.len = 4;
-    dhcp_option_get_ip(&opt, NULL);
+    dhcp_packet_option_ip(&opt, NULL);
 }
 
 TEST(test_next_option_null)

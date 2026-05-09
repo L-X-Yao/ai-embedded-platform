@@ -287,13 +287,13 @@ int dhcp_packet_build_request(uint8_t *buf, size_t cap,
 
 /* ---------- option helpers ---------- */
 
-uint32_t dhcp_option_get_u32(const dhcp_option_t *opt)
+uint32_t dhcp_packet_option_u32(const dhcp_option_t *opt)
 {
     if (!opt || !opt->data || opt->len < 4) return 0;
     return get_u32(opt->data);
 }
 
-void dhcp_option_get_ip(const dhcp_option_t *opt, uint8_t ip[4])
+void dhcp_packet_option_ip(const dhcp_option_t *opt, uint8_t ip[4])
 {
     if (!opt || !opt->data || !ip || opt->len < 4)
     {
