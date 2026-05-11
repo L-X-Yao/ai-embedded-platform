@@ -1,47 +1,56 @@
-# rle_codec — TODO: one-line description
+# rle_codec — run-length encoding / decoding
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Simple RLE codec: encodes byte sequences as [count][value] pairs.
+Count is uint8_t (1..255). Runs longer than 255 are split into
+multiple pairs. Useful for compressing sensor data, bitmaps, or
+any data with long runs of repeated bytes.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for data compression in resource-constrained
+environments (sensor data logging, display bitmaps, flash storage).
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+Trivial algorithm. No established embedded RLE library worth vendoring
+for 60 lines of code. Self-written for platform convention consistency.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+None.
 
 ## API
 
 ```c
-/* TODO: document public API */
+rle_codec_err_t rle_codec_encode(const uint8_t *src, size_t src_len,
+                                 uint8_t *dst, size_t dst_cap, size_t *out_len);
+rle_codec_err_t rle_codec_decode(const uint8_t *src, size_t src_len,
+                                 uint8_t *dst, size_t dst_cap, size_t *out_len);
+size_t          rle_codec_encode_bound(size_t src_len);
+size_t          rle_codec_decode_bound(size_t src_len);
 ```
+
+- `encode()` / `decode()` return error codes; actual length via `*out_len`
+- `encode_bound()` / `decode_bound()` compute worst-case output sizes
+- Format: `[count][value]` pairs, count in 1..255
+- Runs > 255 automatically split into multiple pairs
+- No malloc -- pure stateless functions
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. No compile-time options.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim) -- 2026-05-11
+- [ ] Real hardware target -- not yet verified
 
 ## Known issues
 
-TODO.
+None.
 
 ## How to test
 
@@ -53,7 +62,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): 34 tests, all passing
 - HIL: N/A
 
 ## API convention deviations
@@ -62,8 +71,12 @@ None.
 
 ## API review
 
-- **Date**: TODO
-- **Key decisions**: TODO
+- **Date**: 2026-05-11
+- **Key decisions**: Stateless pure functions (no context struct needed).
+  [count][value] pair format for simplicity. uint8_t count limits
+  max run to 255 (auto-split for longer runs). ERR_OVERFLOW returned
+  when output buffer is too small. Odd-length encoded input rejected
+  as ERR_PARAM.
 
 ## Responsible human
 
