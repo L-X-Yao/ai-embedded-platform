@@ -53,18 +53,18 @@ config_store_err_t config_store_init(config_store_t *cs,
                                      const config_store_storage_t *storage);
 
 /* Define entries with defaults and ranges */
-config_store_err_t config_store_define_int(cs, key, default, min, max);
-config_store_err_t config_store_define_uint(cs, key, default, min, max);
-config_store_err_t config_store_define_float(cs, key, default, min, max);
-config_store_err_t config_store_define_bool(cs, key, default);
-config_store_err_t config_store_define_string(cs, key, default);
+config_store_err_t config_store_define_int(cs, key, default_val, min, max);
+config_store_err_t config_store_define_uint(cs, key, default_val, min, max);
+config_store_err_t config_store_define_float(cs, key, default_val, min, max);
+config_store_err_t config_store_define_bool(cs, key, default_val);
+config_store_err_t config_store_define_string(cs, key, default_val);
 
 /* Set values (validated) */
 config_store_err_t config_store_set_int(cs, key, val);
 /* ... similar for uint, float, bool, string */
 
 /* Get values */
-config_store_err_t config_store_get_int(cs, key, &val);
+config_store_err_t config_store_get_int(cs, key, val_ptr);
 /* ... similar for uint, float, bool, string */
 
 /* Persistence + reset */

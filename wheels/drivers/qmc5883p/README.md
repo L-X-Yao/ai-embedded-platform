@@ -76,15 +76,19 @@ None.
 ## Usage
 
 ```c
-static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val) { ... }
-static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) { ... }
+static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
+static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
+    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
 
-qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
+static void example(void) {
+    qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
 
-if (qmc5883p_init(&i2c) == QMC5883P_OK) {
-    qmc5883p_data_t data;
-    if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
-        /* data.mx_gauss/my_gauss/mz_gauss in Gauss (range +-2G) */
+    if (qmc5883p_init(&i2c) == QMC5883P_OK) {
+        qmc5883p_data_t data;
+        if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
+            /* data.mx_gauss/my_gauss/mz_gauss in Gauss (range +-2G) */
+        }
     }
 }
 ```

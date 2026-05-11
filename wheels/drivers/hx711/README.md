@@ -22,13 +22,13 @@ None (GPIO HAL injected by caller).
 ## API
 
 ```c
-/* Error codes */
-HX711_OK, HX711_ERR_PARAMS, HX711_ERR_TIMEOUT, HX711_ERR_NOT_READY
+/* Error codes: HX711_OK=0, HX711_ERR_PARAM=-1, HX711_ERR_TIMEOUT=-2,
+ *              HX711_ERR_NOT_READY=-3 */
 
-/* Gain selection (also sets channel) */
-HX711_GAIN_128  /* Ch A, 128x, 25 pulses */
-HX711_GAIN_32   /* Ch B,  32x, 26 pulses */
-HX711_GAIN_64   /* Ch A,  64x, 27 pulses */
+/* Gain selection (also sets channel):
+ *   HX711_GAIN_128  — Ch A, 128x, 25 pulses
+ *   HX711_GAIN_32   — Ch B,  32x, 26 pulses
+ *   HX711_GAIN_64   — Ch A,  64x, 27 pulses */
 
 /* HAL callbacks */
 typedef struct {

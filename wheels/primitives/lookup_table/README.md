@@ -23,10 +23,8 @@ None.
 ## API
 
 ```c
-/* Error codes */
-LOOKUP_TABLE_OK            =  0
-LOOKUP_TABLE_ERR_PARAM     = -1
-LOOKUP_TABLE_ERR_NOT_SORTED = -2
+/* Error codes: LOOKUP_TABLE_OK=0, LOOKUP_TABLE_ERR_PARAM=-1,
+ *              LOOKUP_TABLE_ERR_NOT_SORTED=-2 */
 
 /* Initialise with caller-owned sorted x/y arrays */
 lookup_table_err_t lut_init(lookup_table_t *table,

@@ -26,24 +26,28 @@ None.
 ## API
 
 ```c
-typedef enum {
-    MQTT5_OK, MQTT5_ERR_PARAMS, MQTT5_ERR_SIZE,
-    MQTT5_ERR_PROTOCOL, MQTT5_ERR_OVERFLOW
-} mqtt5_err_t;
+/* Error codes: MQTT5_OK=0, MQTT5_ERR_PARAM=-1, MQTT5_ERR_SIZE=-2,
+ *              MQTT5_ERR_PROTOCOL=-3, MQTT5_ERR_OVERFLOW=-4 */
 
 /* Builders — return bytes written (>0) or negative mqtt5_err_t */
-int mqtt5_build_connect(buf, size, &cfg);
-int mqtt5_build_publish(buf, size, &pub);
-int mqtt5_build_subscribe(buf, size, packet_id, topic, qos);
-int mqtt5_build_disconnect(buf, size, reason_code);
+int mqtt5_build_connect(uint8_t *buf, uint16_t size,
+                        const mqtt5_connect_t *cfg);
+int mqtt5_build_publish(uint8_t *buf, uint16_t size,
+                        const mqtt5_publish_t *pub);
+int mqtt5_build_subscribe(uint8_t *buf, uint16_t size,
+                          uint16_t packet_id, const char *topic, uint8_t qos);
+int mqtt5_build_disconnect(uint8_t *buf, uint16_t size, uint8_t reason_code);
 
 /* Parsers */
-mqtt5_err_t mqtt5_parse_connack(buf, len, &ack);
-mqtt5_err_t mqtt5_parse_publish(buf, len, &pub);
+mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
+                                mqtt5_connack_t *ack);
+mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
+                                mqtt5_publish_t *pub);
 
 /* Variable byte integer helpers */
-int         mqtt5_encode_vbi(buf, value);
-mqtt5_err_t mqtt5_decode_vbi(buf, len, &value, &bytes_used);
+int         mqtt5_encode_vbi(uint8_t *buf, uint32_t value);
+mqtt5_err_t mqtt5_decode_vbi(const uint8_t *buf, uint16_t len,
+                             uint32_t *value, uint8_t *bytes_used);
 ```
 
 ## Configuration (compile-time)

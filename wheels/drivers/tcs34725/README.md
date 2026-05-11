@@ -24,13 +24,13 @@ I2C HAL (injected via callbacks, register-based pattern).
 ```c
 #include "tcs34725.h"
 
-tcs34725_err_t tcs34725_init(tcs34725_dev_t *dev, const tcs34725_i2c_t *i2c,
+tcs34725_err_t tcs34725_init(tcs34725_t *dev, const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ, tcs34725_gain_t gain);
-tcs34725_err_t tcs34725_read_rgbc(tcs34725_dev_t *dev, tcs34725_rgbc_t *out);
-tcs34725_err_t tcs34725_set_integration_time(tcs34725_dev_t *dev, tcs34725_integ_t integ);
-tcs34725_err_t tcs34725_set_gain(tcs34725_dev_t *dev, tcs34725_gain_t gain);
-tcs34725_err_t tcs34725_enable(tcs34725_dev_t *dev);
-tcs34725_err_t tcs34725_disable(tcs34725_dev_t *dev);
+tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev, tcs34725_rgbc_t *out);
+tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev, tcs34725_integ_t integ);
+tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev, tcs34725_gain_t gain);
+tcs34725_err_t tcs34725_enable(tcs34725_t *dev);
+tcs34725_err_t tcs34725_disable(tcs34725_t *dev);
 tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc, uint16_t *cct_k);
 tcs34725_err_t tcs34725_get_lux(const tcs34725_rgbc_t *rgbc, float *lux);
 ```

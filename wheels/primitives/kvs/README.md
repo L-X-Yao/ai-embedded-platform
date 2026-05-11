@@ -28,33 +28,38 @@ See ADR-010.
 FlashDB's upstream API is used directly. Consumers `#include <flashdb.h>`.
 
 ```c
-/* Project provides fdb_cfg.h + fal_cfg.h */
+/* Project provides fdb_cfg.h + fal_cfg.h on the include path.
+ * See wheels/primitives/kvs/test/fdb_cfg.h for a minimal example. */
+#include "flashdb.h"
 
-struct fdb_kvdb db;
-struct fdb_default_kv_node defaults[] = {
-    { "boot_count", "0",   0 },
-    { "device_id",  "A01", 0 },
-};
-struct fdb_default_kv default_kv = { .kvs = defaults, .num = 2 };
+static void kvs_example(void) {
+    struct fdb_kvdb db;
+    struct fdb_default_kv_node defaults[] = {
+        { "boot_count", "0",   0 },
+        { "device_id",  "A01", 0 },
+    };
+    struct fdb_default_kv default_kv = { .kvs = defaults, .num = 2 };
 
-uint32_t sec_size = 4096;
-fdb_kvdb_control(&db, FDB_KVDB_CTRL_SET_SEC_SIZE, &sec_size);
-fdb_kvdb_init(&db, "app", "kvdb", &default_kv, NULL);
+    uint32_t sec_size = 4096;
+    fdb_kvdb_control(&db, FDB_KVDB_CTRL_SET_SEC_SIZE, &sec_size);
+    fdb_kvdb_init(&db, "app", "kvdb", &default_kv, NULL);
 
-/* String API */
-fdb_kv_set(&db, "wifi_ssid", "MyNetwork");
-char *ssid = fdb_kv_get(&db, "wifi_ssid");
+    /* String API */
+    fdb_kv_set(&db, "wifi_ssid", "MyNetwork");
+    char *ssid = fdb_kv_get(&db, "wifi_ssid");
+    (void)ssid;
 
-/* Binary blob API */
-struct fdb_blob blob;
-uint32_t val = 42;
-fdb_kv_set_blob(&db, "counter", fdb_blob_make(&blob, &val, sizeof(val)));
+    /* Binary blob API */
+    struct fdb_blob blob;
+    uint32_t val = 42;
+    fdb_kv_set_blob(&db, "counter", fdb_blob_make(&blob, &val, sizeof(val)));
 
-uint32_t read_val;
-fdb_kv_get_blob(&db, "counter", fdb_blob_make(&blob, &read_val, sizeof(read_val)));
+    uint32_t read_val;
+    fdb_kv_get_blob(&db, "counter", fdb_blob_make(&blob, &read_val, sizeof(read_val)));
 
-/* Delete */
-fdb_kv_del(&db, "temp_key");
+    /* Delete */
+    fdb_kv_del(&db, "temp_key");
+}
 ```
 
 ## Configuration (compile-time, in fdb_cfg.h)

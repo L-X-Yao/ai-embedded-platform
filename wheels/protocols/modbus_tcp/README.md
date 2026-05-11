@@ -24,23 +24,30 @@ None.
 ## API
 
 ```c
-/* Build request frames (return frame length or negative error) */
-int modbus_tcp_build_read_regs(buf, buf_size, transaction_id, unit_id,
-                               start_addr, count);
-int modbus_tcp_build_write_reg(buf, buf_size, transaction_id, unit_id,
-                               addr, value);
-int modbus_tcp_build_write_regs(buf, buf_size, transaction_id, unit_id,
-                                start_addr, values, count);
+/* Build request frames — return frame length (>0) or negative error */
+int modbus_tcp_build_read_regs(uint8_t *buf, uint16_t buf_size,
+                               uint16_t transaction_id, uint8_t unit_id,
+                               uint16_t start_addr, uint16_t count);
+int modbus_tcp_build_write_reg(uint8_t *buf, uint16_t buf_size,
+                               uint16_t transaction_id, uint8_t unit_id,
+                               uint16_t addr, uint16_t value);
+int modbus_tcp_build_write_regs(uint8_t *buf, uint16_t buf_size,
+                                uint16_t transaction_id, uint8_t unit_id,
+                                uint16_t start_addr,
+                                const uint16_t *values, uint16_t count);
 
 /* Parse response from raw bytes (zero-copy) */
-modbus_tcp_err_t modbus_tcp_parse(buf, len, &frame);
+modbus_tcp_err_t modbus_tcp_parse(const uint8_t *buf, uint16_t len,
+                                  modbus_tcp_frame_t *frame);
 
 /* Extract registers from parsed read response */
-modbus_tcp_err_t modbus_tcp_get_regs(&frame, values, max_count, &actual_count);
+modbus_tcp_err_t modbus_tcp_get_regs(const modbus_tcp_frame_t *frame,
+                                     uint16_t *values, uint16_t max_count,
+                                     uint16_t *actual_count);
 
 /* Inline helpers */
-bool    modbus_tcp_is_exception(&frame);
-uint8_t modbus_tcp_exception_code(&frame);
+bool    modbus_tcp_is_exception(const modbus_tcp_frame_t *frame);
+uint8_t modbus_tcp_exception_code(const modbus_tcp_frame_t *frame);
 ```
 
 ## Configuration (compile-time)

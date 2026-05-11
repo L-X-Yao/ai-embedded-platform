@@ -22,11 +22,12 @@ None (pure software decoder).
 ## API
 
 ```c
-void          encoder_init(rotary_encoder_t *enc);
-void          encoder_update(rotary_encoder_t *enc, bool a, bool b);
-int32_t       encoder_get_position(const rotary_encoder_t *enc);
-encoder_dir_t encoder_get_direction(const rotary_encoder_t *enc);
-void          encoder_reset(rotary_encoder_t *enc);
+void                 rotary_encoder_init(rotary_encoder_t *enc, const rotary_encoder_hal_t *hal);
+void                 rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b);
+void                 rotary_encoder_poll(rotary_encoder_t *enc);
+int32_t              rotary_encoder_get_position(const rotary_encoder_t *enc);
+rotary_encoder_dir_t rotary_encoder_get_direction(const rotary_encoder_t *enc);
+void                 rotary_encoder_reset(rotary_encoder_t *enc);
 ```
 
 ## Supported platforms

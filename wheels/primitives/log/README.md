@@ -183,9 +183,14 @@ void ble_init(void) {
 ```c
 static void vsf_trace_sink(void *ctx, const char *line, size_t len) {
     (void)ctx;
-    __vsf_trace_output(line, (uint_fast32_t)len);
+    (void)line;
+    (void)len;
+    /* __vsf_trace_output(line, (uint_fast32_t)len); */
 }
-log_add_sink(vsf_trace_sink, NULL);
+
+static void vsf_log_init(void) {
+    log_add_sink(vsf_trace_sink, NULL);
+}
 ```
 
 ## Before promoting to stable

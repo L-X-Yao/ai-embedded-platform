@@ -93,19 +93,21 @@ None.
 ## Usage
 
 ```c
-static void my_cs_low(void *ctx)  { gpio_bit_reset(GPIOB, GPIO_PIN_12); }
-static void my_cs_high(void *ctx) { gpio_bit_set(GPIOB, GPIO_PIN_12); }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { /* SPI full-duplex byte */ }
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
 
-mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
-mcp2515_t can;
-if (mcp2515_init(&can, &spi, MCP2515_SPEED_500KBPS) == MCP2515_OK) {
-    mcp2515_msg_t msg = { .id = 0x123, .dlc = 3, .data = {0xAA, 0xBB, 0xCC} };
-    mcp2515_send(&can, &msg);
+static void example(void) {
+    mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
+    mcp2515_t can;
+    if (mcp2515_init(&can, &spi, MCP2515_SPEED_500KBPS) == MCP2515_OK) {
+        mcp2515_msg_t msg = { .id = 0x123, .dlc = 3, .data = {0xAA, 0xBB, 0xCC} };
+        mcp2515_send(&can, &msg);
 
-    if (mcp2515_has_message(&can)) {
-        mcp2515_msg_t rx;
-        mcp2515_receive(&can, &rx);
+        if (mcp2515_has_message(&can)) {
+            mcp2515_msg_t rx;
+            mcp2515_receive(&can, &rx);
+        }
     }
 }
 ```

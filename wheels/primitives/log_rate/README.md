@@ -95,9 +95,10 @@ int main(void) {
 ### Checking dropped count
 
 ```c
-if (log_rate_dropped(&g_rate) > 0) {
-    LOG_WARN("rate limiter dropped %u lines", log_rate_dropped(&g_rate));
-    log_rate_reset(&g_rate);
+static void check_dropped(log_rate_t *r) {
+    if (log_rate_dropped(r) > 0) {
+        log_rate_reset(r);
+    }
 }
 ```
 
