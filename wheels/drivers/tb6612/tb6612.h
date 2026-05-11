@@ -7,10 +7,8 @@
  * Deps:      gpio_hal + pwm_hal (injected)
  * Instances: multi
  *
- * Two motor channels (A and B), each with IN1/IN2 direction pins and
- * a PWM speed pin.  STBY pin controls standby mode.
- * Truth table: IN1=H,IN2=L -> CW; IN1=L,IN2=H -> CCW;
- *              IN1=L,IN2=L -> stop; IN1=H,IN2=H -> brake.
+ * Two channels (A, B), each with IN1/IN2 direction GPIOs and PWM speed.
+ * STBY pin must be HIGH for operation.
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: caller owns the tb6612_t struct.
  */
@@ -37,9 +35,9 @@ typedef enum {
 typedef enum {
     TB6612_MOTOR_A = 0,
     TB6612_MOTOR_B = 1,
-} tb6612_channel_t;
+} tb6612_motor_t;
 
-/* ---------- pin identifiers in config ---------- */
+/* ---------- pin IDs ---------- */
 
 typedef struct {
     uint8_t ain1;
@@ -47,15 +45,15 @@ typedef struct {
     uint8_t bin1;
     uint8_t bin2;
     uint8_t stby;
-    uint8_t pwma;
-    uint8_t pwmb;
-} tb6612_pins_t;
+    uint8_t pwm_ch_a;
+    uint8_t pwm_ch_b;
+} tb6612_cfg_t;
 
 /* ---------- HAL (caller provides) ---------- */
 
 typedef struct {
     void (*write_pin)(void *ctx, uint8_t pin_id, bool level);
-    void (*set_pwm_duty)(void *ctx, uint8_t channel, uint16_t duty);
+    void (*set_pwm_duty)(void *ctx, uint8_t channel, uint16_t duty_permille);
     void *ctx;
 } tb6612_hal_t;
 
@@ -63,29 +61,29 @@ typedef struct {
 
 typedef struct {
     const tb6612_hal_t *hal;
-    tb6612_pins_t       pins;
-    uint16_t            max_duty;
+    tb6612_cfg_t cfg;
+    bool standby;
 } tb6612_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
+/* ---------- API (all @thread_safe: caller_must_lock) @isr_safe: no ---------- */
 
-/** Initialize driver, pull STBY low (disabled). */
+/** Initialize driver. Puts device in standby (STBY=LOW). */
 tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_hal_t *hal,
-                         const tb6612_pins_t *pins, uint16_t max_duty);
+                         const tb6612_cfg_t *cfg);
 
 /**
- * Set motor speed.  speed_permille: -1000..+1000.
- * Positive = CW (IN1=H, IN2=L), negative = CCW (IN1=L, IN2=H).
- * Zero = stop (IN1=L, IN2=L, PWM=0).
+ * Set motor speed.
+ * speed: -1000 to +1000 (permille). Positive = forward, negative = reverse.
+ * Clamped to [-1000, +1000].
  */
-tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_channel_t channel,
+tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_motor_t motor,
                               int16_t speed_permille);
 
-/** Brake motor (IN1=H, IN2=H). */
-tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_channel_t channel);
+/** Brake: both IN pins HIGH, PWM=0. */
+tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_motor_t motor);
 
-/** Set standby mode. on=true -> STBY LOW (disabled), on=false -> STBY HIGH (active). */
-tb6612_err_t tb6612_standby(tb6612_t *dev, bool on);
+/** Enter or exit standby. enable=true → STBY LOW (disabled). */
+tb6612_err_t tb6612_standby(tb6612_t *dev, bool enable);
 
 #ifdef __cplusplus
 }

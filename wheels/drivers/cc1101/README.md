@@ -1,25 +1,52 @@
-# cc1101 -- TI CC1101 Sub-GHz transceiver driver
+# cc1101 — TI CC1101 Sub-GHz transceiver driver (SPI)
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-Register-based SPI driver for the TI CC1101 Sub-GHz transceiver. Supports
-frequency configuration (300-928 MHz), variable-length packet TX/RX, RSSI
-readout, and power control. Header byte protocol with R/W and burst bits.
+Register-based SPI driver for Texas Instruments CC1101 Sub-GHz transceiver.
+Handles frequency/power configuration, variable-length packet TX/RX,
+RSSI readout, and command strobes.
 
 ## Origin
 
-Proactive build for Sub-GHz ISM band projects. CC1101 is widely used for
-433/868/915 MHz applications.
+Proactive build for Sub-GHz IoT projects (433/868/915 MHz ISM bands).
+CC1101 is widely used in low-cost wireless sensor networks.
 
 ## Why self-written?
 
-Self-written for platform convention consistency. Referenced TI CC1101
-datasheet (SWRS061I) for register map and SPI protocol.
+Searched GitHub (2026-05). Referenced TI CC1101 datasheet (SWRS061I) and
+LSatan/SmartRC-CC1101-Driver-Lib (LGPL). Self-written for platform convention
+consistency (zero-dependency, MIT, DI pattern).
 
 ## Dependencies
 
 - `spi_hal` (callback injection, no concrete dependency)
+
+## API
+
+```c
+cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal);
+cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz);
+cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value);
+cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data, uint8_t len);
+cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap, uint8_t *out_len);
+int16_t      cc1101_get_rssi(cc1101_t *dev);
+cc1101_err_t cc1101_idle(cc1101_t *dev);
+```
+
+## Configuration (compile-time)
+
+None. All parameters set at runtime via API calls.
+
+## Supported platforms
+
+- [x] Host (sim) -- 2026-05-11
+- [ ] Real hardware (CC1101 module) -- not yet verified
+
+## Known issues
+
+- TX/RX uses polling, not interrupt-driven.
+- FIFO limited to 61 bytes payload (64 FIFO - length byte - 2 status).
 
 ## How to test
 
@@ -29,10 +56,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_cc1101
 ```
 
-## Supported platforms
+## Test status
 
-- [x] Host (sim)
-- [ ] Real hardware -- not yet verified
+- Unit tests (sim): 29 pass
+- Null tests: 11 pass
+- HIL: N/A
+
+## API convention deviations
+
+None.
 
 ## Responsible human
 
