@@ -1,47 +1,24 @@
-# a4988 — TODO: one-line description
+# a4988 -- Allegro A4988 stepper motor driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+GPIO driver for the A4988 stepper motor driver. Step/Dir interface with
+microstepping control (full/half/quarter/eighth/sixteenth) via MS1/MS2/MS3
+pins. ENABLE pin for power management. Blocking step_n for multi-step moves.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for stepper motor projects. A4988 is the most common
+step/dir stepper driver for 3D printers and CNC machines.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+Trivial GPIO logic. Self-written for platform convention consistency.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
-
-## API
-
-```c
-/* TODO: document public API */
-```
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
-
-## Supported platforms
-
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
+- `gpio_hal` (callback injection, no concrete dependency)
 
 ## How to test
 
@@ -51,19 +28,10 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_a4988
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests (sim): TODO
-- HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
+- [x] Host (sim)
+- [ ] Real hardware -- not yet verified
 
 ## Responsible human
 
