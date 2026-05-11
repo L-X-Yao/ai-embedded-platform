@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 /*
- * adxl345 — Analog Devices ADXL345 3-axis digital accelerometer driver
+ * adxl345 — Analog Devices ADXL345 3-axis accelerometer driver
  *
- * Layer:     L1
- * Status:    candidate
+ * Layer:   L1
+ * Status:  candidate
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * I2C interface injected via callbacks. Data output in gravitational units.
- * Supports +/-2g, 4g, 8g, 16g range selection.
+ * I2C interface injected via callbacks. Reads 3-axis acceleration in
+ * full-resolution mode (3.9 mg/LSB). Configurable range (2/4/8/16g).
  * Pure C99, no heap, fully reentrant per-context.
  */
 
@@ -22,8 +22,6 @@
 extern "C" {
 #endif
 
-/* ---------- error codes ---------- */
-
 typedef enum {
     ADXL345_OK        =  0,
     ADXL345_ERR_I2C   = -1,
@@ -31,17 +29,13 @@ typedef enum {
     ADXL345_ERR_PARAM = -3,
 } adxl345_err_t;
 
-/* ---------- I2C HAL (caller provides) ---------- */
-
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);
     void *ctx;
 } adxl345_i2c_t;
-
-/* ---------- range selection ---------- */
 
 typedef enum {
     ADXL345_RANGE_2G  = 0,
@@ -50,42 +44,55 @@ typedef enum {
     ADXL345_RANGE_16G = 3,
 } adxl345_range_t;
 
-/* ---------- constants ---------- */
-
-#define ADXL345_DEV_ADDR   0x53
-#define ADXL345_CHIP_ID    0xE5
-
-/* ---------- configuration ---------- */
+typedef enum {
+    ADXL345_RATE_0_10HZ  = 0,
+    ADXL345_RATE_0_20HZ  = 1,
+    ADXL345_RATE_0_39HZ  = 2,
+    ADXL345_RATE_0_78HZ  = 3,
+    ADXL345_RATE_1_56HZ  = 4,
+    ADXL345_RATE_3_13HZ  = 5,
+    ADXL345_RATE_6_25HZ  = 6,
+    ADXL345_RATE_12_5HZ  = 7,
+    ADXL345_RATE_25HZ    = 8,
+    ADXL345_RATE_50HZ    = 9,
+    ADXL345_RATE_100HZ   = 10,
+    ADXL345_RATE_200HZ   = 11,
+    ADXL345_RATE_400HZ   = 12,
+    ADXL345_RATE_800HZ   = 13,
+    ADXL345_RATE_1600HZ  = 14,
+    ADXL345_RATE_3200HZ  = 15,
+} adxl345_data_rate_t;
 
 typedef struct {
-    uint8_t         addr;     /* I2C address (0x53 or 0x1D) */
-    adxl345_range_t range;    /* measurement range */
+    uint8_t            addr;
+    adxl345_range_t    range;
+    adxl345_data_rate_t data_rate;
 } adxl345_cfg_t;
 
-/* ---------- data types ---------- */
-
 typedef struct {
-    float x_g;   /* acceleration in g (gravitational) */
+    float x_g;
     float y_g;
     float z_g;
 } adxl345_data_t;
 
-/* ---------- device context ---------- */
-
 typedef struct {
     const adxl345_i2c_t *i2c;
-    adxl345_cfg_t        cfg;
-    float                scale;  /* LSB to g conversion factor */
+    adxl345_cfg_t  cfg;
 } adxl345_t;
 
-/* ---------- API ---------- */
+#define ADXL345_ADDR_PRIMARY   0x53
+#define ADXL345_ADDR_ALT       0x1D
+#define ADXL345_CHIP_ID        0xE5
 
-/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
+/** @thread_safe: no @isr_safe: no */
 adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
                            const adxl345_cfg_t *cfg);
 
-/** Read acceleration data. @thread_safe: caller_must_lock @isr_safe: no */
-adxl345_err_t adxl345_read(adxl345_t *dev, adxl345_data_t *out);
+/** @thread_safe: no @isr_safe: no */
+adxl345_err_t adxl345_read(const adxl345_t *dev, adxl345_data_t *out);
+
+/** @thread_safe: no @isr_safe: no */
+adxl345_err_t adxl345_set_range(adxl345_t *dev, adxl345_range_t range);
 
 #ifdef __cplusplus
 }

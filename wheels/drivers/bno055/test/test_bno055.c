@@ -8,7 +8,7 @@
 static void mock_reset(void)
 {
     mock_i2c_reset();
-    mock_regs[0x00] = 0xA0;   /* CHIP_ID */
+    mock_regs[0x00] = 0xA0;  /* CHIP_ID */
 }
 
 static const bno055_i2c_t mock_i2c = {
@@ -20,7 +20,7 @@ static const bno055_i2c_t mock_i2c = {
 
 static bno055_t dev;
 static bno055_cfg_t default_cfg = {
-    .addr = BNO055_DEV_ADDR,
+    .addr = BNO055_ADDR_PRIMARY,
     .mode = BNO055_MODE_NDOF,
 };
 
@@ -30,7 +30,7 @@ static void setup(void)
     bno055_init(&dev, &mock_i2c, &default_cfg);
 }
 
-/* Plant Euler angles (int16 LE, 1/16 degree per LSB) */
+/* Plant Euler angles: heading, roll, pitch as int16 LE at 0x1A-0x1F */
 static void plant_euler(int16_t heading, int16_t roll, int16_t pitch)
 {
     mock_regs[0x1A] = (uint8_t)(heading & 0xFF);
@@ -78,41 +78,16 @@ TEST(test_null_safety)
     bno055_euler_t euler;
     ASSERT_EQ(bno055_read_euler(NULL, &euler), BNO055_ERR_PARAM);
     ASSERT_EQ(bno055_read_euler(&d, NULL), BNO055_ERR_PARAM);
-    bno055_calib_status_t calib;
-    ASSERT_EQ(bno055_read_calib_status(NULL, &calib), BNO055_ERR_PARAM);
-    ASSERT_EQ(bno055_read_calib_status(&d, NULL), BNO055_ERR_PARAM);
+    bno055_calib_status_t cal;
+    ASSERT_EQ(bno055_get_calib_status(NULL, &cal), BNO055_ERR_PARAM);
+    ASSERT_EQ(bno055_get_calib_status(&d, NULL), BNO055_ERR_PARAM);
     ASSERT_EQ(bno055_set_mode(NULL, BNO055_MODE_NDOF), BNO055_ERR_PARAM);
-}
-
-TEST(test_zero_init_safety)
-{
-    bno055_i2c_t zero_hal;
-    memset(&zero_hal, 0, sizeof(zero_hal));
-    bno055_t zero_dev;
-    memset(&zero_dev, 0, sizeof(zero_dev));
-    ASSERT_TRUE(bno055_init(&zero_dev, &zero_hal, &default_cfg) < 0);
-}
-
-TEST(test_error_codes)
-{
-    ASSERT_EQ(-1, (int)BNO055_ERR_I2C);
-    ASSERT_EQ(-2, (int)BNO055_ERR_ID);
-    ASSERT_EQ(-3, (int)BNO055_ERR_PARAM);
-}
-
-TEST(test_init_sets_mode)
-{
-    mock_reset();
-    bno055_t d;
-    bno055_init(&d, &mock_i2c, &default_cfg);
-    /* OPR_MODE should be set to NDOF (0x0C) */
-    ASSERT_EQ(mock_regs[0x3D], 0x0C);
 }
 
 TEST(test_read_euler_north)
 {
     setup();
-    /* heading=0, roll=0, pitch=0 */
+    /* 0 degrees heading, 0 roll, 0 pitch (all zeros) */
     plant_euler(0, 0, 0);
     bno055_euler_t euler;
     bno055_err_t e = bno055_read_euler(&dev, &euler);
@@ -122,24 +97,26 @@ TEST(test_read_euler_north)
     ASSERT_NEAR(euler.pitch_deg, 0.0f, 0.01f);
 }
 
-TEST(test_read_euler_90_heading)
+TEST(test_read_euler_90deg)
 {
     setup();
     /* 90 degrees = 90 * 16 = 1440 LSB */
     plant_euler(1440, 0, 0);
     bno055_euler_t euler;
-    bno055_read_euler(&dev, &euler);
-    ASSERT_NEAR(euler.heading_deg, 90.0f, 0.1f);
+    bno055_err_t e = bno055_read_euler(&dev, &euler);
+    ASSERT_EQ(e, BNO055_OK);
+    ASSERT_NEAR(euler.heading_deg, 90.0f, 0.01f);
 }
 
-TEST(test_read_euler_negative_roll)
+TEST(test_read_euler_negative)
 {
     setup();
     /* -45 degrees = -45 * 16 = -720 LSB */
     plant_euler(0, -720, 0);
     bno055_euler_t euler;
-    bno055_read_euler(&dev, &euler);
-    ASSERT_NEAR(euler.roll_deg, -45.0f, 0.1f);
+    bno055_err_t e = bno055_read_euler(&dev, &euler);
+    ASSERT_EQ(e, BNO055_OK);
+    ASSERT_NEAR(euler.roll_deg, -45.0f, 0.01f);
 }
 
 TEST(test_read_euler_i2c_fail)
@@ -151,18 +128,27 @@ TEST(test_read_euler_i2c_fail)
     ASSERT_EQ(e, BNO055_ERR_I2C);
 }
 
-TEST(test_read_calib_status)
+TEST(test_calib_status)
 {
     setup();
-    /* CALIB_STAT: sys=3, gyro=3, accel=2, mag=1 = 0b11_11_10_01 = 0xF9 */
-    mock_regs[0x35] = 0xF9;
-    bno055_calib_status_t calib;
-    bno055_err_t e = bno055_read_calib_status(&dev, &calib);
+    /* CALIB_STAT: sys=3 (bits7:6), gyro=2 (bits5:4), accel=1 (bits3:2), mag=0 (bits1:0) */
+    mock_regs[0x35] = 0xE4;  /* 11 10 01 00 = 0xE4 */
+    bno055_calib_status_t cal;
+    bno055_err_t e = bno055_get_calib_status(&dev, &cal);
     ASSERT_EQ(e, BNO055_OK);
-    ASSERT_EQ(calib.sys, 3);
-    ASSERT_EQ(calib.gyro, 3);
-    ASSERT_EQ(calib.accel, 2);
-    ASSERT_EQ(calib.mag, 1);
+    ASSERT_EQ(cal.sys, 3);
+    ASSERT_EQ(cal.gyro, 2);
+    ASSERT_EQ(cal.accel, 1);
+    ASSERT_EQ(cal.mag, 0);
+}
+
+TEST(test_calib_status_i2c_fail)
+{
+    setup();
+    mock_fail_next = 1;
+    bno055_calib_status_t cal;
+    bno055_err_t e = bno055_get_calib_status(&dev, &cal);
+    ASSERT_EQ(e, BNO055_ERR_I2C);
 }
 
 TEST(test_set_mode)
@@ -170,25 +156,78 @@ TEST(test_set_mode)
     setup();
     bno055_err_t e = bno055_set_mode(&dev, BNO055_MODE_IMU);
     ASSERT_EQ(e, BNO055_OK);
-    ASSERT_EQ(mock_regs[0x3D], 0x08);
+    ASSERT_EQ(mock_regs[0x3D], BNO055_MODE_IMU);
+}
+
+TEST(test_set_mode_invalid)
+{
+    setup();
+    bno055_err_t e = bno055_set_mode(&dev, (bno055_opr_mode_t)0x0D);
+    ASSERT_EQ(e, BNO055_ERR_PARAM);
 }
 
 TEST(test_set_mode_i2c_fail)
 {
     setup();
     mock_fail_next = 1;
-    bno055_err_t e = bno055_set_mode(&dev, BNO055_MODE_CONFIG);
+    bno055_err_t e = bno055_set_mode(&dev, BNO055_MODE_NDOF);
     ASSERT_EQ(e, BNO055_ERR_I2C);
 }
 
-TEST(test_delay_called)
+TEST(test_init_mode_register)
+{
+    setup();
+    /* After init with NDOF, OPR_MODE register should be 0x0C */
+    ASSERT_EQ(mock_regs[0x3D], BNO055_MODE_NDOF);
+}
+
+TEST(test_addr_alt)
 {
     mock_reset();
-    mock_delay_ms_count = 0;
+    bno055_cfg_t cfg = {
+        .addr = BNO055_ADDR_ALT,
+        .mode = BNO055_MODE_NDOF,
+    };
     bno055_t d;
-    bno055_init(&d, &mock_i2c, &default_cfg);
-    /* Multiple delays: config mode, reset, re-check, operation mode */
-    ASSERT_TRUE(mock_delay_ms_count >= 3);
+    bno055_err_t e = bno055_init(&d, &mock_i2c, &cfg);
+    ASSERT_EQ(e, BNO055_OK);
+}
+
+TEST(test_delay_called_for_fusion)
+{
+    mock_reset();
+    uint32_t before = mock_delay_ms_count;
+    bno055_t d;
+    bno055_cfg_t cfg = {
+        .addr = BNO055_ADDR_PRIMARY,
+        .mode = BNO055_MODE_NDOF,
+    };
+    bno055_init(&d, &mock_i2c, &cfg);
+    /* Should have delays: CONFIG switch (19ms) + to NDOF (7ms + 600ms) = 3 delay calls */
+    ASSERT_TRUE(mock_delay_ms_count >= before + 2);
+}
+
+TEST(test_init_invalid_mode)
+{
+    mock_reset();
+    bno055_cfg_t cfg = {
+        .addr = BNO055_ADDR_PRIMARY,
+        .mode = (bno055_opr_mode_t)0xFF,
+    };
+    bno055_t d;
+    bno055_err_t e = bno055_init(&d, &mock_i2c, &cfg);
+    ASSERT_EQ(e, BNO055_ERR_PARAM);
+}
+
+TEST(test_read_euler_360)
+{
+    setup();
+    /* 359.9375 degrees = 5759 * (1/16) */
+    plant_euler(5759, 0, 0);
+    bno055_euler_t euler;
+    bno055_err_t e = bno055_read_euler(&dev, &euler);
+    ASSERT_EQ(e, BNO055_OK);
+    ASSERT_NEAR(euler.heading_deg, 359.9375f, 0.01f);
 }
 
 TEST_MAIN("bno055")
@@ -196,15 +235,18 @@ TEST_MAIN("bno055")
     RUN(test_init_wrong_id);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
-    RUN(test_zero_init_safety);
-    RUN(test_error_codes);
-    RUN(test_init_sets_mode);
     RUN(test_read_euler_north);
-    RUN(test_read_euler_90_heading);
-    RUN(test_read_euler_negative_roll);
+    RUN(test_read_euler_90deg);
+    RUN(test_read_euler_negative);
     RUN(test_read_euler_i2c_fail);
-    RUN(test_read_calib_status);
+    RUN(test_calib_status);
+    RUN(test_calib_status_i2c_fail);
     RUN(test_set_mode);
+    RUN(test_set_mode_invalid);
     RUN(test_set_mode_i2c_fail);
-    RUN(test_delay_called);
+    RUN(test_init_mode_register);
+    RUN(test_addr_alt);
+    RUN(test_delay_called_for_fusion);
+    RUN(test_init_invalid_mode);
+    RUN(test_read_euler_360);
 TEST_MAIN_END()

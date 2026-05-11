@@ -4,27 +4,24 @@
 **Layer: L1 (drivers)**
 
 Platform-agnostic driver for TE Connectivity MS5611 precision barometric
-pressure sensor. I2C command-based protocol injected via callbacks.
-Implements full 2nd-order temperature compensation from the datasheet.
+pressure sensor. I2C interface injected via callbacks. Implements the
+factory-calibrated compensation algorithm from the MS5611-01BA03 datasheet
+including 2nd-order correction for low temperatures.
 
 ## Origin
 
-Proactive build. MS5611 is the standard barometric sensor for drones,
-altimeters, and weather stations (24-bit ADC, 10 cm altitude resolution).
+Proactive build (ADR-011). MS5611 is a precision barometer widely used in
+drones, altimeters, and weather stations for its 10 cm altitude resolution.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- Most MS5611 libraries are Arduino/platform-specific or use blocking delays.
-- No suitable zero-dependency C99 implementation found matching wheel contract.
-
-Reference: TE Connectivity MS5611-01BA03 datasheet (DA5611-01BA03_011).
+Searched GitHub (2026-05-11). No single-file zero-dependency C99 driver
+matching our wheel contract. Self-written; compensation formulas from
+MS5611-01BA03 datasheet.
 
 ## Dependencies
 
-I2C HAL (injected via `ms5611_i2c_t` callbacks). delay_ms required for
-conversion wait. No other dependencies.
+I2C HAL (injected via `ms5611_i2c_t` callbacks). No other dependencies.
 
 ## API
 
@@ -32,6 +29,7 @@ conversion wait. No other dependencies.
 ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
                          const ms5611_cfg_t *cfg);
 ms5611_err_t ms5611_read(ms5611_t *dev, ms5611_data_t *out);
+ms5611_err_t ms5611_reset(ms5611_t *dev);
 ```
 
 Output: `ms5611_data_t { float temperature_c; float pressure_pa; }`
@@ -47,9 +45,9 @@ None. OSR and I2C address are runtime-configurable via `ms5611_cfg_t`.
 
 ## Known issues
 
-- Command-based protocol adapted to write_reg/read_regs HAL (reg byte used as
-  command byte, val=0 for commands).
-- No CRC-4 check on PROM data (datasheet optional).
+- Command-based protocol uses write_reg/read_regs as transport; actual
+  MS5611 protocol is different from standard register I2C.
+- Only I2C is implemented (MS5611 also supports SPI).
 
 ## How to test
 
@@ -59,22 +57,14 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ms5611
 ```
 
-23 assertions across 11 test cases + 7 hardware model tests + 5 null tests.
-
 ## Test status
 
-- Unit tests (sim): PASS (11 C tests, 7 hw_model tests, 5 null tests)
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
 
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: PROM read at init; blocking conversion with delay_ms callback; 2nd-order compensation for accuracy below 20C; OSR configurable (256..4096).
-
 ## Responsible human
-
 @user
