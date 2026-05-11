@@ -294,9 +294,6 @@ check-readme-examples:
 check-complexity:
 	python3 tooling/audit/check_complexity.py
 
-check-clones:
-	python3 tooling/audit/check_clones.py
-
 find-refs:
 	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
 	bash tooling/wheel/find_all_refs.sh "$(W)"
