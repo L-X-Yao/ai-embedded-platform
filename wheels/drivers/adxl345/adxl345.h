@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 /*
- * adxl345 — TODO: one-line description
+ * adxl345 — Analog Devices ADXL345 3-axis digital accelerometer driver
  *
  * Layer:     L1
  * Status:    candidate
  * Deps:      i2c_hal (injected)
  * Instances: multi
+ *
+ * I2C interface injected via callbacks. Data output in gravitational units.
+ * Supports +/-2g, 4g, 8g, 16g range selection.
+ * Pure C99, no heap, fully reentrant per-context.
  */
 
 #ifndef ADXL345_H
@@ -37,31 +41,51 @@ typedef struct {
     void *ctx;
 } adxl345_i2c_t;
 
+/* ---------- range selection ---------- */
+
+typedef enum {
+    ADXL345_RANGE_2G  = 0,
+    ADXL345_RANGE_4G  = 1,
+    ADXL345_RANGE_8G  = 2,
+    ADXL345_RANGE_16G = 3,
+} adxl345_range_t;
+
 /* ---------- constants ---------- */
 
-#define ADXL345_DEV_ADDR  0x53
+#define ADXL345_DEV_ADDR   0x53
+#define ADXL345_CHIP_ID    0xE5
+
+/* ---------- configuration ---------- */
+
+typedef struct {
+    uint8_t         addr;     /* I2C address (0x53 or 0x1D) */
+    adxl345_range_t range;    /* measurement range */
+} adxl345_cfg_t;
 
 /* ---------- data types ---------- */
 
 typedef struct {
-    float x, y, z;  /* TODO: use unit suffixes (_c, _pa, _mg, ...) */
+    float x_g;   /* acceleration in g (gravitational) */
+    float y_g;
+    float z_g;
 } adxl345_data_t;
 
 /* ---------- device context ---------- */
 
 typedef struct {
     const adxl345_i2c_t *i2c;
+    adxl345_cfg_t        cfg;
+    float                scale;  /* LSB to g conversion factor */
 } adxl345_t;
 
 /* ---------- API ---------- */
 
 /** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
-adxl345_err_t adxl345_init(adxl345_t *dev,
-                               const adxl345_i2c_t *i2c);
+adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
+                           const adxl345_cfg_t *cfg);
 
-/** Read sensor data. @thread_safe: caller_must_lock @isr_safe: no */
-adxl345_err_t adxl345_read(adxl345_t *dev,
-                               adxl345_data_t *out);
+/** Read acceleration data. @thread_safe: caller_must_lock @isr_safe: no */
+adxl345_err_t adxl345_read(adxl345_t *dev, adxl345_data_t *out);
 
 #ifdef __cplusplus
 }
