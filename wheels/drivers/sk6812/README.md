@@ -1,47 +1,24 @@
-# sk6812 — TODO: one-line description
+# sk6812 -- WorldSemi SK6812 RGBW addressable LED driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+RGBW LED driver for SK6812 addressable LEDs. 4 bytes per pixel in GRB+W wire
+order. Timing-critical data transmission delegated to platform-specific HAL
+callback. Provides pixel buffer manipulation (set/fill/clear) and show.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for LED lighting projects. SK6812 is the RGBW variant of
+the popular WS2812 protocol family.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+Self-written following ws2812 wheel pattern. Adds white channel support.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
-
-## API
-
-```c
-/* TODO: document public API */
-```
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
-
-## Supported platforms
-
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
+- `gpio_hal` (callback injection, no concrete dependency)
 
 ## How to test
 
@@ -51,19 +28,10 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_sk6812
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests (sim): TODO
-- HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
+- [x] Host (sim)
+- [ ] Real hardware -- not yet verified
 
 ## Responsible human
 
