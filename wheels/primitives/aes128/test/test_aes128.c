@@ -184,6 +184,30 @@ TEST(test_different_keys)
     ASSERT_TRUE(memcmp(ct1, ct2, 16) != 0);
 }
 
+/* ---- aes128_clear erases round-key schedule ---- */
+
+TEST(test_clear)
+{
+    uint8_t key[16] = {0x2B,0x7E,0x15,0x16,0x28,0xAE,0xD2,0xA6,
+                       0xAB,0xF7,0x15,0x88,0x09,0xCF,0x4F,0x3C};
+    aes128_ctx_t ctx;
+    uint8_t zeroed[sizeof(aes128_ctx_t)];
+    memset(zeroed, 0, sizeof(zeroed));
+
+    ASSERT_EQ(aes128_init(&ctx, key), AES128_OK);
+
+    /* Round keys must not be all-zero after init. */
+    ASSERT_TRUE(memcmp(&ctx, zeroed, sizeof(ctx)) != 0);
+
+    ASSERT_EQ(aes128_clear(&ctx), AES128_OK);
+
+    /* All bytes of the context must be zero after clear. */
+    ASSERT_TRUE(memcmp(&ctx, zeroed, sizeof(ctx)) == 0);
+
+    /* NULL guard. */
+    ASSERT_EQ(aes128_clear(NULL), AES128_ERR_PARAM);
+}
+
 TEST_MAIN("aes128")
     RUN(test_fips197_encrypt);
     RUN(test_fips197_decrypt);
@@ -195,4 +219,5 @@ TEST_MAIN("aes128")
     RUN(test_null_params);
     RUN(test_in_place);
     RUN(test_different_keys);
+    RUN(test_clear);
 TEST_MAIN_END()

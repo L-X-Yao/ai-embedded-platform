@@ -55,7 +55,12 @@ None.  AES-128 is fixed at 10 rounds / 128-bit key.
 
 ## Known issues
 
-None.  ECB mode is deterministic and stateless per block.
+- **S-Box timing characteristic**: The SubBytes step uses a 256-byte lookup table
+  (`sbox[]`).  On targets with data-dependent cache behaviour (e.g., Cortex-M7
+  with D-cache enabled), cache-timing side-channel attacks are theoretically
+  possible.  For threat models requiring full timing isolation, use a bitsliced
+  or T-table AES implementation.  Accepted for this wheel (embedded targets
+  typically run without OS-level shared-cache adversaries).
 
 ## How to test
 
