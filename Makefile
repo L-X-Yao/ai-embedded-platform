@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones
 
 help:
 	@echo "Usage: make <target>"
@@ -47,6 +47,8 @@ help:
 	@echo "  arm-size-audit    ARM cross-compile size report"
 	@echo "  arm-stack-audit   ARM per-function stack usage report"
 	@echo "  check-readme-examples  compile C blocks from all wheel README files"
+	@echo "  check-complexity  cyclomatic complexity audit (Q14, threshold 15)"
+	@echo "  check-clones      detect duplicate code blocks across wheels (Q26)"
 	@echo ""
 	@echo "Workflow:"
 	@echo "  check             test + null/sentinel/boundary + scaffold + audit + coverage gate + doc drift + memory audit (pre-push)"
@@ -285,6 +287,12 @@ arm-stack-audit:
 
 check-readme-examples:
 	bash tooling/audit/check_readme_examples.sh
+
+check-complexity:
+	python3 tooling/audit/check_complexity.py
+
+check-clones:
+	python3 tooling/audit/check_clones.py
 
 find-refs:
 	@test -n "$(W)" || { echo "Usage: make find-refs W=<wheel-name>"; exit 1; }
