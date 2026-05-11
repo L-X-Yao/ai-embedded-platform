@@ -1,10 +1,12 @@
 /*
- * hw_model_sgp40.h — datasheet-accurate register model for sgp40
+ * hw_model_sgp40.h — SGP40 hardware model from datasheet
  *
- * Provides write_reg/read_regs callbacks backed by a register array
- * with power-on-reset defaults. Use in test_hw_model_sgp40.c
- * for round-trip verification against the real driver.
+ * Models Sensirion SGP40 command-based protocol:
+ * - Self-test (0x280E) returns 0xD400 + CRC
+ * - Measure raw (0x260F) returns SRAW + CRC
+ * - CRC-8: poly 0x31, init 0xFF
  */
+
 #ifndef HW_MODEL_SGP40_H
 #define HW_MODEL_SGP40_H
 
@@ -12,45 +14,70 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define HW_REG_COUNT 256
+/* Forward declaration — uses sgp40_crc8 from the driver */
+extern uint8_t sgp40_crc8(const uint8_t *data, uint16_t len);
 
-static uint8_t hw_regs[HW_REG_COUNT];
-static int     hw_write_count;
-static int     hw_read_count;
+typedef struct {
+    uint16_t sraw_value;
+    bool     self_test_pass;
+    uint8_t  last_cmd_msb;
+    uint8_t  last_cmd_lsb;
+    int      measure_count;
+    int      self_test_count;
+} sgp40_model_t;
 
-static void hw_model_reset(void)
+static void sgp40_model_init(sgp40_model_t *m)
 {
-    memset(hw_regs, 0, sizeof(hw_regs));
-    hw_write_count = 0;
-    hw_read_count  = 0;
-    /* TODO: set POR defaults from datasheet */
-    /* hw_regs[REG_WHO_AM_I] = 0xXX; */
+    memset(m, 0, sizeof(*m));
+    m->sraw_value     = 26000;
+    m->self_test_pass = true;
 }
 
 __attribute__((unused))
-static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
-                                uint8_t reg, uint8_t val)
+static bool sgp40_model_write(void *ctx, uint8_t dev_addr,
+                              uint8_t reg, uint8_t val)
 {
-    (void)ctx; (void)dev_addr;
-    hw_write_count++;
-    /* TODO: enforce read-only registers, side effects */
-    hw_regs[reg] = val;
-    return true;
-}
+    (void)dev_addr;
+    sgp40_model_t *m = (sgp40_model_t *)ctx;
+    m->last_cmd_msb = reg;
+    m->last_cmd_lsb = val;
 
-__attribute__((unused))
-static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
-                                uint8_t reg, uint8_t *buf, uint16_t len)
-{
-    (void)ctx; (void)dev_addr;
-    hw_read_count++;
-    for (uint16_t i = 0; i < len; i++) {
-        buf[i] = hw_regs[(uint8_t)(reg + i)];
+    if (reg == 0x28 && val == 0x0E) {
+        m->self_test_count++;
+    } else if (reg == 0x26 && val == 0x0F) {
+        m->measure_count++;
     }
     return true;
 }
 
-/* TODO: add inject helpers for physical values */
-/* static void hw_model_inject_xxx(float value) { ... } */
+__attribute__((unused))
+static bool sgp40_model_read(void *ctx, uint8_t dev_addr,
+                             uint8_t reg, uint8_t *buf, uint16_t len)
+{
+    (void)dev_addr; (void)reg;
+    sgp40_model_t *m = (sgp40_model_t *)ctx;
+
+    uint16_t word;
+    if (m->last_cmd_msb == 0x28 && m->last_cmd_lsb == 0x0E) {
+        /* Self-test response */
+        word = m->self_test_pass ? 0xD400 : 0x0000;
+    } else {
+        /* Measurement response */
+        word = m->sraw_value;
+    }
+
+    if (len >= 3) {
+        buf[0] = (uint8_t)(word >> 8);
+        buf[1] = (uint8_t)(word & 0xFF);
+        buf[2] = sgp40_crc8(buf, 2);
+    }
+    return true;
+}
+
+__attribute__((unused))
+static void sgp40_model_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+}
 
 #endif /* HW_MODEL_SGP40_H */
