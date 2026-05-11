@@ -70,5 +70,9 @@ cmake -GNinja -S . -B build && cmake --build build
 Uses raw write/read I2C HAL instead of register-based write_reg/read_regs,
 matching SGP40's command-based protocol (same pattern as sgp30 wheel).
 
+## API Review
+
+Pending.
+
 ## Responsible human
 @user

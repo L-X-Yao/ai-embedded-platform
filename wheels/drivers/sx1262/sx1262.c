@@ -86,6 +86,10 @@ static sx1262_err_t send_command(const sx1262_hal_t *hal,
     hal->transfer(hal->ctx, buf, NULL, param_len + 1);
     hal->cs_deselect(hal->ctx);
 
+    if (hal->get_spi_error && hal->get_spi_error(hal->ctx)) {
+        return SX1262_ERR_SPI;
+    }
+
     return SX1262_OK;
 }
 

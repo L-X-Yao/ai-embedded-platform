@@ -41,6 +41,9 @@ typedef struct {
     void    (*cs_deselect)(void *ctx);
     uint8_t (*xfer)(void *ctx, uint8_t tx);
     void    (*delay_ms)(void *ctx, uint32_t ms);
+    /** Optional: return true if the last SPI transfer had an error.
+     *  Set to NULL if the platform cannot detect SPI errors. */
+    bool    (*get_spi_error)(void *ctx);
     void    *ctx;
 } cc1101_hal_t;
 

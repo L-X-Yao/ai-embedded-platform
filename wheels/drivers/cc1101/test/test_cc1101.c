@@ -32,6 +32,9 @@ static int     spi_is_status;
 static int     mock_delay_count;
 static int     mock_idle_after_delays;
 
+/* SPI error injection */
+static bool    mock_spi_error;
+
 static void mock_reset_all(void)
 {
     memset(mock_regs, 0, sizeof(mock_regs));
@@ -50,6 +53,7 @@ static void mock_reset_all(void)
     spi_is_status = 0;
     mock_delay_count = 0;
     mock_idle_after_delays = 0;
+    mock_spi_error = false;
 
     /* Set expected chip ID */
     mock_status_regs[0x00] = 0x00; /* PARTNUM */
@@ -187,12 +191,19 @@ static void mock_delay_ms(void *ctx, uint32_t ms)
     }
 }
 
+static bool mock_get_spi_error(void *ctx)
+{
+    (void)ctx;
+    return mock_spi_error;
+}
+
 static const cc1101_hal_t mock_hal = {
-    .cs_select   = mock_cs_select,
-    .cs_deselect = mock_cs_deselect,
-    .xfer        = mock_xfer,
-    .delay_ms    = mock_delay_ms,
-    .ctx         = NULL,
+    .cs_select      = mock_cs_select,
+    .cs_deselect    = mock_cs_deselect,
+    .xfer           = mock_xfer,
+    .delay_ms       = mock_delay_ms,
+    .get_spi_error  = mock_get_spi_error,
+    .ctx            = NULL,
 };
 
 /* ---------- tests ---------- */
@@ -532,6 +543,15 @@ TEST(test_receive_null_dev)
     ASSERT_EQ(cc1101_receive(NULL, buf, 16, &len), CC1101_ERR_PARAM);
 }
 
+TEST(test_init_spi_error)
+{
+    mock_reset_all();
+    mock_spi_error = true; /* SPI bus failure after reset strobe */
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(cc1101_init(&dev, &mock_hal), CC1101_ERR_SPI);
+}
+
 TEST(test_transmit_max_valid_len)
 {
     mock_reset_all();
@@ -552,6 +572,7 @@ TEST_MAIN("cc1101")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
     RUN(test_init_null_hal);
+    RUN(test_init_spi_error);
     RUN(test_init_null_callbacks);
     RUN(test_init_bad_version);
     RUN(test_init_bad_partnum);

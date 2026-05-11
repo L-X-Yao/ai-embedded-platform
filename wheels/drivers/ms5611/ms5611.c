@@ -46,20 +46,70 @@ static void delay(const ms5611_t *dev, uint32_t ms)
     }
 }
 
+/* CRC-4 verification per MS5611 datasheet AN520 */
+static uint8_t prom_crc4(const uint16_t prom[8])
+{
+    uint32_t rem = 0;
+    uint16_t data[8];
+    uint8_t i, bit;
+
+    for (i = 0; i < 8; i++) {
+        data[i] = prom[i];
+    }
+
+    /* Save original CRC nibble, then zero it for calculation */
+    data[7] = (uint16_t)(data[7] & 0x0FFF);
+
+    for (i = 0; i < 16; i++) {
+        if (i % 2 == 1) {
+            rem ^= (uint32_t)(data[i >> 1] & 0x00FF);
+        } else {
+            rem ^= (uint32_t)(data[i >> 1] >> 8);
+        }
+        for (bit = 8; bit > 0; bit--) {
+            if (rem & 0x8000U) {
+                rem = (rem << 1) ^ 0x3000U;
+            } else {
+                rem <<= 1;
+            }
+        }
+    }
+    return (uint8_t)((rem >> 12) & 0x000F);
+}
+
 static ms5611_err_t read_prom(ms5611_t *dev)
 {
-    uint16_t *c = &dev->calib.c1;
-    for (int i = 0; i < 6; i++)
+    uint16_t prom[8];
+    uint8_t buf[2];
+    int i;
+
+    /* Read all 8 PROM words (0xA0..0xAE) for CRC validation */
+    for (i = 0; i < 8; i++)
     {
-        uint8_t buf[2];
-        /* PROM address: C1 at 0xA2, C2 at 0xA4, ... C6 at 0xAC */
-        uint8_t cmd = (uint8_t)(CMD_PROM_BASE + (uint8_t)((i + 1) * 2));
+        uint8_t cmd = (uint8_t)(CMD_PROM_BASE + (uint8_t)(i * 2));
         if (!read_bytes(dev, cmd, buf, 2))
         {
             return MS5611_ERR_I2C;
         }
-        c[i] = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+        prom[i] = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
     }
+
+    /* Verify CRC-4 (stored in MSN of word 7) */
+    uint8_t crc_read = (uint8_t)((prom[7] >> 12) & 0x000F);
+    uint8_t crc_calc = prom_crc4(prom);
+    if (crc_read != crc_calc)
+    {
+        return MS5611_ERR_CRC;
+    }
+
+    /* Extract calibration coefficients (C1-C6 = words 1-6) */
+    dev->calib.c1 = prom[1];
+    dev->calib.c2 = prom[2];
+    dev->calib.c3 = prom[3];
+    dev->calib.c4 = prom[4];
+    dev->calib.c5 = prom[5];
+    dev->calib.c6 = prom[6];
+
     return MS5611_OK;
 }
 

@@ -116,7 +116,7 @@ ubx_feed_status_t ubx_parser_feed(ubx_parser_ctx_t *ctx, uint8_t byte)
             /* Verify checksum: over class+id+length+payload (buf[2..2+4+payload_len-1]) */
             uint8_t ck_a, ck_b;
             size_t ck_len = (size_t)(4 + ctx->payload_len); /* class+id+len(2)+payload */
-            ubx_parser_checksum(&ctx->buf[2], ck_len, &ck_a, &ck_b);
+            (void)ubx_parser_checksum(&ctx->buf[2], ck_len, &ck_a, &ck_b);
             if (ck_a == ctx->buf[expected_total - 2] &&
                 ck_b == ctx->buf[expected_total - 1]) {
                 ctx->state = UBX_FEED_COMPLETE;
@@ -131,6 +131,9 @@ ubx_feed_status_t ubx_parser_feed(ubx_parser_ctx_t *ctx, uint8_t byte)
     case UBX_FEED_ERROR:
         /* Must call reset() before feeding more data */
         return ctx->state;
+
+    default:
+        break;
     }
 
     return UBX_FEED_ERROR;
@@ -178,7 +181,7 @@ int ubx_parser_build(uint8_t *buf, size_t cap,
 
     uint8_t ck_a, ck_b;
     size_t ck_len = (size_t)(4 + payload_len);
-    ubx_parser_checksum(&buf[2], ck_len, &ck_a, &ck_b);
+    (void)ubx_parser_checksum(&buf[2], ck_len, &ck_a, &ck_b);
     buf[UBX_HEADER_LEN + payload_len]     = ck_a;
     buf[UBX_HEADER_LEN + payload_len + 1] = ck_b;
 

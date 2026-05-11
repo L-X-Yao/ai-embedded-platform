@@ -5,7 +5,7 @@
  * Layer:   L0
  * Status:  candidate
  * Deps:      (none)
- * Instances: stateless
+ * Instances: multi
  *
  * Simple RLE codec: encodes byte sequences as [count][value] pairs.
  * Count is uint8_t (1..255). Runs longer than 255 are split into
