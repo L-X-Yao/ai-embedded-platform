@@ -1,9 +1,9 @@
+// SPDX-License-Identifier: MIT
 /*
- * hw_model_hd44780.h — datasheet-accurate register model for hd44780
+ * hw_model_hd44780.h — PCF8574 + HD44780 hardware model
  *
- * Provides write_reg/read_regs callbacks backed by a register array
- * with power-on-reset defaults. Use in test_hw_model_hd44780.c
- * for round-trip verification against the real driver.
+ * Tracks the byte sequence sent through the I2C expander for
+ * verification of the 4-bit LCD protocol.
  */
 #ifndef HW_MODEL_HD44780_H
 #define HW_MODEL_HD44780_H
@@ -12,45 +12,43 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define HW_REG_COUNT 256
+#define HW_WRITE_LOG_SIZE 512
 
-static uint8_t hw_regs[HW_REG_COUNT];
+static uint8_t hw_write_log[HW_WRITE_LOG_SIZE];
 static int     hw_write_count;
-static int     hw_read_count;
+static uint32_t hw_delay_count;
 
 static void hw_model_reset(void)
 {
-    memset(hw_regs, 0, sizeof(hw_regs));
+    memset(hw_write_log, 0, sizeof(hw_write_log));
     hw_write_count = 0;
-    hw_read_count  = 0;
-    /* TODO: set POR defaults from datasheet */
-    /* hw_regs[REG_WHO_AM_I] = 0xXX; */
+    hw_delay_count = 0;
 }
 
 __attribute__((unused))
 static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
-                                uint8_t reg, uint8_t val)
+                               uint8_t reg, uint8_t val)
 {
-    (void)ctx; (void)dev_addr;
-    hw_write_count++;
-    /* TODO: enforce read-only registers, side effects */
-    hw_regs[reg] = val;
+    (void)ctx; (void)dev_addr; (void)val;
+    if (hw_write_count < HW_WRITE_LOG_SIZE)
+        hw_write_log[hw_write_count++] = reg;
     return true;
 }
 
 __attribute__((unused))
 static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
-                                uint8_t reg, uint8_t *buf, uint16_t len)
+                               uint8_t reg, uint8_t *buf, uint16_t len)
 {
-    (void)ctx; (void)dev_addr;
-    hw_read_count++;
-    for (uint16_t i = 0; i < len; i++) {
-        buf[i] = hw_regs[(uint8_t)(reg + i)];
-    }
+    (void)ctx; (void)dev_addr; (void)reg;
+    memset(buf, 0, len);
     return true;
 }
 
-/* TODO: add inject helpers for physical values */
-/* static void hw_model_inject_xxx(float value) { ... } */
+__attribute__((unused))
+static void hw_model_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+    hw_delay_count++;
+}
 
 #endif /* HW_MODEL_HD44780_H */
