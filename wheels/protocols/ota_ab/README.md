@@ -24,31 +24,39 @@ None. Pure C99 with injected flash HAL callbacks.
 ## API
 
 ```c
-ota_ab_t m;
-ota_ab_layout_t layout = {
-    .slot_a_addr   = 0x08010000,
-    .slot_b_addr   = 0x08080000,
-    .slot_max_size = 0x70000,
-    .params_addr   = 0x080E0000,
-    .params_size   = 4096,
-    .max_boot_count = 3,
-};
-static bool my_erase(void *ctx, uint32_t addr, uint32_t size) { (void)ctx; /* ... */ return true; }
-static bool my_write(void *ctx, uint32_t addr, const uint8_t *data, uint32_t len) { (void)ctx; /* ... */ return true; }
-static bool my_read(void *ctx, uint32_t addr, uint8_t *buf, uint32_t len) { (void)ctx; /* ... */ return true; }
-const ota_ab_flash_t flash_hal = { .erase = my_erase, .write = my_write, .read = my_read, .ctx = NULL };
-ota_ab_init(&m, &flash_hal, &layout);
+static bool my_erase(void *ctx, uint32_t addr, uint32_t size)
+    { (void)ctx; (void)addr; (void)size; return true; }
+static bool my_write(void *ctx, uint32_t addr, const uint8_t *data, uint32_t len)
+    { (void)ctx; (void)addr; (void)data; (void)len; return true; }
+static bool my_read(void *ctx, uint32_t addr, uint8_t *buf, uint32_t len)
+    { (void)ctx; (void)addr; (void)buf; (void)len; return true; }
 
-/* App: after downloading + CRC-verifying new firmware */
-ota_ab_mark_pending(&m, fw_size, fw_crc);
-reboot();
+static void app_example(void) {
+    ota_ab_t m;
+    ota_ab_layout_t layout = {
+        .slot_a_addr    = 0x08010000,
+        .slot_b_addr    = 0x08080000,
+        .slot_max_size  = 0x70000,
+        .params_addr    = 0x080E0000,
+        .params_size    = 4096,
+        .max_boot_count = 3,
+    };
+    const ota_ab_flash_t flash_hal = {
+        .erase = my_erase, .write = my_write, .read = my_read, .ctx = NULL
+    };
+    ota_ab_init(&m, &flash_hal, &layout);
 
-/* Bootloader: on every boot */
-ota_ab_boot_event(&m);
-jump_to(ota_ab_slot_addr(&m, ota_ab_active_slot(&m)));
+    /* App: after downloading + CRC-verifying new firmware */
+    uint32_t fw_size = 0x10000;
+    uint32_t fw_crc  = 0xDEADBEEF;
+    ota_ab_mark_pending(&m, fw_size, fw_crc);
 
-/* App: after confirming new firmware works */
-ota_ab_confirm(&m);
+    /* Bootloader: on every boot */
+    ota_ab_boot_event(&m);
+
+    /* App: after confirming new firmware works */
+    ota_ab_confirm(&m);
+}
 ```
 
 ## Supported platforms

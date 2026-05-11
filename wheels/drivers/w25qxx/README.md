@@ -86,16 +86,20 @@ None.
 ## Usage
 
 ```c
-static void my_cs_low(void *ctx)  { gpio_bit_reset(GPIOB, GPIO_PIN_12); }
-static void my_cs_high(void *ctx) { gpio_bit_set(GPIOB, GPIO_PIN_12); }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { /* SPI full-duplex byte */ }
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
 
-w25qxx_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
-uint32_t id;
-if (w25qxx_init(&spi, &id) == W25QXX_OK) {
-    w25qxx_sector_erase(&spi, 0x1000);
-    w25qxx_page_program(&spi, 0x1000, data, 64);
-    w25qxx_read(&spi, 0x1000, buf, 64);
+static void example(void) {
+    w25qxx_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
+    uint8_t data[64];
+    uint8_t buf[64];
+    uint32_t id;
+    if (w25qxx_init(&spi, &id) == W25QXX_OK) {
+        w25qxx_sector_erase(&spi, 0x1000);
+        w25qxx_page_program(&spi, 0x1000, data, 64);
+        w25qxx_read(&spi, 0x1000, buf, 64);
+    }
 }
 ```
 

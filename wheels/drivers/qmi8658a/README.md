@@ -79,18 +79,22 @@ None.
 ## Usage
 
 ```c
-static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val) { ... }
-static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len) { ... }
+static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
+static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
+    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
 
-qmi8658a_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
-qmi8658a_t dev;
-qmi8658a_cfg_t cfg = qmi8658a_default_cfg();
-cfg.acc_range = QMI8658A_ACC_RANGE_8G;
+static void example(void) {
+    qmi8658a_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
+    qmi8658a_t dev;
+    qmi8658a_cfg_t cfg = qmi8658a_default_cfg();
+    cfg.acc_range = QMI8658A_ACC_RANGE_8G;
 
-if (qmi8658a_init(&dev, &i2c, &cfg) == QMI8658A_OK) {
-    qmi8658a_data_t data;
-    qmi8658a_read(&dev, &data);
-    /* data.ax_g/ay_g/az_g in G, data.gx_dps/gy_dps/gz_dps in deg/s */
+    if (qmi8658a_init(&dev, &i2c, &cfg) == QMI8658A_OK) {
+        qmi8658a_data_t data;
+        qmi8658a_read(&dev, &data);
+        /* data.ax_g/ay_g/az_g in G, data.gx_dps/gy_dps/gz_dps in deg/s */
+    }
 }
 ```
 

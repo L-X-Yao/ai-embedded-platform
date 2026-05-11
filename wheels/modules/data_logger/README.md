@@ -136,45 +136,36 @@ ctest --test-dir build --output-on-failure
 ```c
 #include "data_logger.h"
 
-/* Storage callback: write to flash via W25QXX */
-static data_logger_err_t flash_write(void *ctx, const uint8_t *data,
-                                     uint16_t len) {
-    flash_ctx_t *fc = (flash_ctx_t *)ctx;
-    w25qxx_write(&fc->dev, fc->addr, data, len);
-    fc->addr += len;
+static data_logger_err_t noop_write(void *ctx, const uint8_t *d, uint16_t n)
+{
+    (void)ctx; (void)d; (void)n;
     return DATA_LOGGER_OK;
 }
 
-static data_logger_err_t flash_flush(void *ctx) {
+static data_logger_err_t noop_flush(void *ctx)
+{
     (void)ctx;
-    return DATA_LOGGER_OK;  /* flash writes are synchronous */
+    return DATA_LOGGER_OK;
 }
 
-/* Setup */
-static data_logger_t logger;
-static flash_ctx_t flash_ctx;
-static const data_logger_storage_t flash_storage = {
-    flash_write, flash_flush, &flash_ctx
-};
+static void logger_example(void)
+{
+    data_logger_t logger;
+    const data_logger_storage_t storage = { noop_write, noop_flush, NULL };
+    const data_logger_field_t fields[] = {
+        { "temperature", DATA_LOGGER_FIELD_INT32  },
+        { "pressure",    DATA_LOGGER_FIELD_UINT32 },
+        { "altitude",    DATA_LOGGER_FIELD_FLOAT  },
+        { "status",      DATA_LOGGER_FIELD_STRING },
+    };
 
-static const data_logger_field_t sensor_fields[] = {
-    { "temperature", DATA_LOGGER_FIELD_INT32  },
-    { "pressure",    DATA_LOGGER_FIELD_UINT32 },
-    { "altitude",    DATA_LOGGER_FIELD_FLOAT  },
-    { "status",      DATA_LOGGER_FIELD_STRING },
-};
+    data_logger_init(&logger, &storage, fields, 4);
 
-void logger_init(void) {
-    data_logger_init(&logger, &flash_storage, sensor_fields, 4);
-}
-
-/* Called periodically from main loop */
-void logger_sample(uint32_t tick_ms) {
-    data_logger_begin(&logger, tick_ms);
-    data_logger_add_int(&logger, read_temperature());
-    data_logger_add_uint(&logger, read_pressure());
-    data_logger_add_float(&logger, calc_altitude());
-    data_logger_add_string(&logger, system_ok() ? "OK" : "ERR");
+    data_logger_begin(&logger, 1000);
+    data_logger_add_int(&logger, 25);
+    data_logger_add_uint(&logger, 101325);
+    data_logger_add_float(&logger, 100.0f);
+    data_logger_add_string(&logger, "OK");
     data_logger_commit(&logger);
 }
 ```

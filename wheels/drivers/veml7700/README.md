@@ -20,9 +20,10 @@ None (I2C HAL injected via function pointers).
 ## API
 
 ```c
-typedef enum { VEML7700_OK=0, VEML7700_ERR_I2C=-1, VEML7700_ERR_PARAMS=-2 } veml7700_err_t;
-typedef enum { VEML7700_GAIN_1=0, VEML7700_GAIN_2=1, VEML7700_GAIN_1_8=2, VEML7700_GAIN_1_4=3 } veml7700_gain_t;
-typedef enum { VEML7700_IT_25MS=12, VEML7700_IT_50MS=8, VEML7700_IT_100MS=0, VEML7700_IT_200MS=1, VEML7700_IT_400MS=2, VEML7700_IT_800MS=3 } veml7700_it_t;
+/* Error codes: VEML7700_OK=0, VEML7700_ERR_I2C=-1, VEML7700_ERR_PARAM=-2 */
+/* Gain: VEML7700_GAIN_1=0, VEML7700_GAIN_2=1, VEML7700_GAIN_1_8=2, VEML7700_GAIN_1_4=3 */
+/* Integration time: VEML7700_IT_25MS=12, VEML7700_IT_50MS=8, VEML7700_IT_100MS=0,
+ *                   VEML7700_IT_200MS=1, VEML7700_IT_400MS=2, VEML7700_IT_800MS=3 */
 
 veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c, veml7700_gain_t gain, veml7700_it_t it);
 veml7700_err_t veml7700_read_als(veml7700_t *dev, uint16_t *raw);

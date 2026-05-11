@@ -85,19 +85,21 @@ None.
 ## Usage
 
 ```c
-static void my_cs_low(void *ctx)  { gpio_bit_reset(GPIOB, GPIO_PIN_12); }
-static void my_cs_high(void *ctx) { gpio_bit_set(GPIOB, GPIO_PIN_12); }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { /* SPI full-duplex byte */ }
-static void my_delay(void *ctx, uint32_t ms) { /* millisecond delay */ }
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+static void my_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
 
-sd_spi_hal_t hal = {
-    .cs_low = my_cs_low, .cs_high = my_cs_high,
-    .xfer = my_xfer, .delay_ms = my_delay
-};
-sd_spi_t sd;
-if (sd_spi_init(&sd, &hal) == SD_SPI_OK) {
-    uint8_t buf[512];
-    sd_spi_read_block(&sd, 0, buf);
-    sd_spi_write_block(&sd, 1, buf);
+static void example(void) {
+    sd_spi_hal_t hal = {
+        .cs_low = my_cs_low, .cs_high = my_cs_high,
+        .xfer = my_xfer, .delay_ms = my_delay
+    };
+    sd_spi_t sd;
+    if (sd_spi_init(&sd, &hal) == SD_SPI_OK) {
+        uint8_t buf[512];
+        sd_spi_read_block(&sd, 0, buf);
+        sd_spi_write_block(&sd, 1, buf);
+    }
 }
 ```

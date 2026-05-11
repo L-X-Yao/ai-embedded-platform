@@ -80,16 +80,18 @@ I2C HAL uses generic `write(addr, buf, len)` / `read(addr, buf, len)` instead of
 ```c
 #include "xgzp6816d.h"
 
-static bool plat_write(void *ctx, uint8_t addr, const uint8_t *buf, uint16_t n) { ... }
-static bool plat_read (void *ctx, uint8_t addr, uint8_t *buf, uint16_t n)       { ... }
+static bool plat_write(void *ctx, uint8_t addr, const uint8_t *buf, uint16_t n)
+    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
+static bool plat_read(void *ctx, uint8_t addr, uint8_t *buf, uint16_t n)
+    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
 
-xgzp6816d_i2c_t bus = { .write = plat_write, .read = plat_read, .ctx = NULL };
+static void example(void) {
+    xgzp6816d_i2c_t bus = { .write = plat_write, .read = plat_read, .ctx = NULL };
 
-xgzp6816d_probe(&bus);
+    xgzp6816d_probe(&bus);
 
-while (1) {
     xgzp6816d_trigger(&bus);
-    sleep_ms(XGZP6816D_CONV_MS);
+    /* sleep_ms(XGZP6816D_CONV_MS); -- caller provides delay */
     xgzp6816d_data_t d;
     xgzp6816d_read(&bus, &d);
     /* d.pressure_pa, d.temperature_c */
