@@ -267,6 +267,9 @@ memory-audit:
 doc-drift:
 	python3 tooling/audit/doc_drift_check.py --fix
 
+check-clones:
+	python3 tooling/audit/check_clones.py
+
 audit-quick:
 	bash tooling/audit/audit_deep.sh --quick
 
