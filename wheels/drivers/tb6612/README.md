@@ -1,24 +1,48 @@
-# tb6612 -- Toshiba TB6612FNG dual H-bridge motor driver
+# tb6612 — Toshiba TB6612FNG dual H-bridge motor driver (GPIO+PWM)
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-GPIO+PWM driver for the TB6612FNG dual H-bridge motor driver. Two independent
-motor channels (A/B) with direction control via IN1/IN2 pins, speed control
-via PWM, and standby mode via STBY pin. Speed range -1000..+1000 permille.
+Dual-channel H-bridge driver for Toshiba TB6612FNG. Controls two DC motors
+with direction (GPIO) and speed (PWM). Supports forward, reverse, coast,
+brake, and standby modes.
 
 ## Origin
 
-Proactive build for motor control projects. TB6612 is a common low-power
-dual H-bridge for small DC motors and robotics.
+Proactive build for robotics and motor-control projects. TB6612 is one of
+the most common small motor drivers in hobby/educational robotics.
 
 ## Why self-written?
 
-Trivial GPIO+PWM logic. Self-written for platform convention consistency.
+No meaningful open-source C99 embedded driver exists. TB6612 is simple
+enough that a vendor library would add unnecessary complexity vs. a
+clean HAL-injected implementation.
 
 ## Dependencies
 
 - `gpio_hal` + `pwm_hal` (callback injection, no concrete dependency)
+
+## API
+
+```c
+tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_hal_t *hal, const tb6612_cfg_t *cfg);
+tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_motor_t motor, int16_t speed_permille);
+tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_motor_t motor);
+tb6612_err_t tb6612_standby(tb6612_t *dev, bool enable);
+```
+
+## Configuration (compile-time)
+
+None. Pin assignments via `tb6612_cfg_t` at runtime.
+
+## Supported platforms
+
+- [x] Host (sim) -- 2026-05-11
+- [ ] Real hardware (TB6612FNG module) -- not yet verified
+
+## Known issues
+
+None.
 
 ## How to test
 
@@ -28,10 +52,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_tb6612
 ```
 
-## Supported platforms
+## Test status
 
-- [x] Host (sim)
-- [ ] Real hardware -- not yet verified
+- Unit tests (sim): 22 pass
+- Null tests: 6 pass
+- HIL: N/A
+
+## API convention deviations
+
+None.
 
 ## Responsible human
 

@@ -7,9 +7,8 @@
  * Deps:      spi_hal (injected)
  * Instances: multi
  *
- * Register-based SPI protocol with header byte encoding:
- *   bit 7 = R/W (1=read, 0=write), bit 6 = burst, bits 5:0 = address.
- * Command strobes at 0x30-0x3D. TX/RX FIFO at 0x3F.
+ * Register-based SPI. Header byte: bit7=R/W, bit6=burst, bits5:0=address.
+ * Status byte returned on every SPI header byte.
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: caller owns the cc1101_t struct.
  */
@@ -19,6 +18,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,59 +30,50 @@ typedef enum {
     CC1101_OK           =  0,
     CC1101_ERR_PARAM    = -1,
     CC1101_ERR_SPI      = -2,
-    CC1101_ERR_VERSION  = -3,
+    CC1101_ERR_ID       = -3,
     CC1101_ERR_TIMEOUT  = -4,
 } cc1101_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
 
 typedef struct {
-    void    (*cs_low)(void *ctx);
-    void    (*cs_high)(void *ctx);
+    void    (*cs_select)(void *ctx);
+    void    (*cs_deselect)(void *ctx);
     uint8_t (*xfer)(void *ctx, uint8_t tx);
     void    (*delay_ms)(void *ctx, uint32_t ms);
     void    *ctx;
-} cc1101_spi_t;
-
-/* ---------- configuration ---------- */
-
-typedef struct {
-    uint32_t frequency_hz;
-    uint8_t  data_rate;        /* MDMCFG4[3:0] exponent */
-    uint8_t  modulation;       /* 0=2-FSK, 1=GFSK, 3=OOK */
-} cc1101_cfg_t;
+} cc1101_hal_t;
 
 /* ---------- device handle ---------- */
 
 typedef struct {
-    const cc1101_spi_t *spi;
-    cc1101_cfg_t        cfg;
+    const cc1101_hal_t *hal;
+    uint32_t frequency;     /* Hz */
+    int8_t   tx_power;      /* dBm index into PATABLE */
 } cc1101_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
+/* ---------- API (all @thread_safe: caller_must_lock) @isr_safe: no ---------- */
 
-/** Reset chip, verify version, configure basic parameters. */
-cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_spi_t *spi,
-                         const cc1101_cfg_t *cfg);
+/** Reset chip, verify PARTNUM/VERSION, enter idle. */
+cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal);
 
-/** Set carrier frequency in Hz (300-928 MHz range). */
+/** Set carrier frequency in Hz. F_XOSC = 26 MHz. */
 cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz);
 
-/** Set TX output power (raw PA table byte). */
+/** Set TX power (raw PATABLE byte). */
 cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value);
 
-/** Transmit packet (up to 61 bytes). Blocks until done or timeout. */
-cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data,
-                             uint8_t len);
+/** Transmit packet. Writes to TX FIFO, strobes STX, polls for TX complete. */
+cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data, uint8_t len);
 
-/** Receive packet. Blocks until data available or timeout. */
-cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t capacity,
+/** Receive packet. Strobes SRX, polls for RX complete, reads RX FIFO. */
+cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len);
 
-/** Read last packet RSSI in dBm. */
-cc1101_err_t cc1101_get_rssi(cc1101_t *dev, int16_t *rssi);
+/** Read last packet RSSI in half-dBm raw value. */
+int16_t cc1101_get_rssi(cc1101_t *dev);
 
-/** Enter IDLE state. */
+/** Enter idle mode (SIDLE strobe). */
 cc1101_err_t cc1101_idle(cc1101_t *dev);
 
 #ifdef __cplusplus

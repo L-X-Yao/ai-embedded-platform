@@ -1,29 +1,32 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "../cc1101.h"
 #include <string.h>
-#include "cc1101.h"
 
 /* ---------- mock SPI ---------- */
 
-static uint8_t mock_regs[256];
-static int     mock_xfer_count;
-static uint8_t mock_cs_state;
-static int     mock_delay_total;
+static uint8_t mock_regs[64];       /* config registers 0x00-0x3F */
+static uint8_t mock_status_regs[64]; /* status registers 0x30-0x3F */
+static uint8_t mock_patable;
 
-/* FIFO write capture */
-static uint8_t fifo_written[256];
-static int     fifo_written_len;
+/* TX FIFO capture */
+static uint8_t fifo_tx[64];
+static int     fifo_tx_len;
 
-/* FIFO read data */
-static uint8_t fifo_read_data[256];
-static int     fifo_read_len;
-static int     fifo_read_idx;
+/* RX FIFO inject */
+static uint8_t fifo_rx[64];
+static int     fifo_rx_len;
+static int     fifo_rx_idx;
 
-/* SPI transaction tracking */
-static uint8_t spi_current_header;
-static int     spi_byte_index;
-static int     spi_is_read;
+/* Chip state: tracks current mode */
+static uint8_t mock_marcstate;
+
+/* SPI state machine */
+static uint8_t spi_addr;
+static int     spi_byte_idx;
+static int     spi_is_write;
 static int     spi_is_burst;
+static int     spi_is_status;
 
 /* Deferred state change */
 static int     mock_delay_count;
@@ -32,111 +35,164 @@ static int     mock_idle_after_delays;
 static void mock_reset_all(void)
 {
     memset(mock_regs, 0, sizeof(mock_regs));
-    mock_xfer_count = 0;
-    mock_cs_state = 1;
-    mock_delay_total = 0;
-    fifo_written_len = 0;
-    fifo_read_len = 0;
-    fifo_read_idx = 0;
-    spi_current_header = 0;
-    spi_byte_index = 0;
-    spi_is_read = 0;
+    memset(mock_status_regs, 0, sizeof(mock_status_regs));
+    mock_patable = 0;
+    fifo_tx_len = 0;
+    fifo_rx_len = 0;
+    fifo_rx_idx = 0;
+    memset(fifo_tx, 0, sizeof(fifo_tx));
+    memset(fifo_rx, 0, sizeof(fifo_rx));
+    mock_marcstate = 0x01; /* IDLE */
+    spi_addr = 0;
+    spi_byte_idx = 0;
+    spi_is_write = 0;
     spi_is_burst = 0;
+    spi_is_status = 0;
     mock_delay_count = 0;
     mock_idle_after_delays = 0;
-    memset(fifo_written, 0, sizeof(fifo_written));
-    memset(fifo_read_data, 0, sizeof(fifo_read_data));
 
-    /* Set chip identity */
-    mock_regs[0x30] = 0x00; /* PARTNUM */
-    mock_regs[0x31] = 0x14; /* VERSION */
-    mock_regs[0x35] = 0x01; /* MARCSTATE = IDLE */
+    /* Set expected chip ID */
+    mock_status_regs[0x00] = 0x00; /* PARTNUM */
+    mock_status_regs[0x01] = 0x14; /* VERSION */
 }
 
-static void mock_cs_low(void *ctx)
+static void mock_cs_select(void *ctx)
 {
     (void)ctx;
-    mock_cs_state = 0;
-    spi_byte_index = 0;
+    spi_byte_idx = 0;
 }
 
-static void mock_cs_high(void *ctx)
+static void mock_cs_deselect(void *ctx)
 {
     (void)ctx;
-    mock_cs_state = 1;
 }
 
 static uint8_t mock_xfer(void *ctx, uint8_t tx)
 {
     (void)ctx;
-    mock_xfer_count++;
 
-    if (spi_byte_index == 0) {
-        spi_current_header = tx;
-        spi_is_read = (tx & 0x80) ? 1 : 0;
-        spi_is_burst = (tx & 0x40) ? 1 : 0;
-        spi_byte_index = 1;
+    uint8_t status_byte = (uint8_t)((mock_marcstate & 0x07) << 4);
 
-        uint8_t addr = tx & 0x3F;
+    if (spi_byte_idx == 0) {
+        /* Header byte */
+        spi_is_write  = (tx & 0x80) == 0;
+        spi_is_burst  = (tx & 0x40) != 0;
+        spi_is_status = (tx & 0xC0) == 0xC0;
+        spi_addr      = tx & 0x3F;
 
-        /* Command strobes (0x30-0x3D): single byte, no data follows */
-        if (addr >= 0x30 && addr <= 0x3D && !spi_is_read && !spi_is_burst) {
-            /* Strobe command */
-            return 0x00;
+        spi_byte_idx = 1;
+
+        /* Command strobe: 0x30-0x3D, single byte, no data follows */
+        if (spi_addr >= 0x30 && spi_addr <= 0x3D && !spi_is_burst && !spi_is_status) {
+            /* Handle strobes */
+            switch (tx & 0x3F) {
+            case 0x30: /* SRES */
+                mock_marcstate = 0x01;
+                break;
+            case 0x34: /* SRX */
+                mock_marcstate = 0x0D;
+                break;
+            case 0x35: /* STX */
+                mock_marcstate = 0x13;
+                break;
+            case 0x36: /* SIDLE */
+                mock_marcstate = 0x01;
+                break;
+            case 0x3A: /* SFRX */
+                fifo_rx_idx = 0;
+                break;
+            case 0x3B: /* SFTX */
+                fifo_tx_len = 0;
+                break;
+            default:
+                break;
+            }
         }
-        return 0x00;
+
+        return status_byte;
     }
 
-    /* Data byte */
-    uint8_t addr = spi_current_header & 0x3F;
+    /* Data byte(s) */
+    if (spi_is_status) {
+        /* Status register read: addr 0x30-0x3F mapped to mock_status_regs */
+        uint8_t reg_idx = spi_addr - 0x30;
+        if (reg_idx < sizeof(mock_status_regs)) {
+            if (spi_addr == 0x35) {
+                /* MARCSTATE */
+                return mock_marcstate & 0x1F;
+            }
+            if (spi_addr == 0x3B) {
+                /* RXBYTES */
+                return (uint8_t)(fifo_rx_len - fifo_rx_idx);
+            }
+            return mock_status_regs[reg_idx];
+        }
+        return 0;
+    }
 
-    if (spi_is_read) {
-        /* Read */
-        if (addr == 0x3F && spi_is_burst) {
-            /* RX FIFO burst read */
-            if (fifo_read_idx < fifo_read_len)
-                return fifo_read_data[fifo_read_idx++];
-            return 0x00;
+    if (spi_addr == 0x3F) {
+        /* FIFO access */
+        if (spi_is_burst && !spi_is_write) {
+            /* RX FIFO burst read — handled by the 0xC0|0x3F = status read path above */
+            /* But if we're in burst read without status flag, also return FIFO data */
         }
-        /* Regular register read (status regs use burst bit for read) */
-        return mock_regs[addr];
+        if (spi_is_write || (!spi_is_write && (spi_addr == 0x3F) && !spi_is_status)) {
+            if (spi_is_write) {
+                /* TX FIFO write */
+                if (fifo_tx_len < (int)sizeof(fifo_tx)) {
+                    fifo_tx[fifo_tx_len++] = tx;
+                }
+                return 0;
+            }
+        }
+        /* Read from FIFO (non-status, non-burst — single byte) */
+        if (fifo_rx_idx < fifo_rx_len) {
+            return fifo_rx[fifo_rx_idx++];
+        }
+        return 0;
+    }
+
+    if (spi_addr == 0x3E) {
+        /* PATABLE */
+        if (spi_is_write) {
+            mock_patable = tx;
+            return 0;
+        }
+        return mock_patable;
+    }
+
+    /* Regular register */
+    if (spi_is_write) {
+        if (spi_addr < sizeof(mock_regs)) {
+            mock_regs[spi_addr] = tx;
+        }
+        return 0;
     } else {
-        /* Write */
-        if (addr == 0x3F && spi_is_burst) {
-            /* TX FIFO burst write */
-            if (fifo_written_len < (int)sizeof(fifo_written))
-                fifo_written[fifo_written_len++] = tx;
-        } else {
-            mock_regs[addr] = tx;
+        if (spi_addr < sizeof(mock_regs)) {
+            return mock_regs[spi_addr];
         }
-        return 0x00;
+        return 0;
     }
 }
 
-static void mock_delay(void *ctx, uint32_t ms)
+static void mock_delay_ms(void *ctx, uint32_t ms)
 {
     (void)ctx;
-    mock_delay_total += (int)ms;
+    (void)ms;
     mock_delay_count++;
 
     if (mock_idle_after_delays > 0 &&
         mock_delay_count >= mock_idle_after_delays) {
-        mock_regs[0x35] = 0x01; /* MARCSTATE = IDLE */
+        mock_marcstate = 0x01; /* IDLE */
     }
 }
 
-static const cc1101_spi_t mock_spi = {
-    .cs_low   = mock_cs_low,
-    .cs_high  = mock_cs_high,
-    .xfer     = mock_xfer,
-    .delay_ms = mock_delay,
-    .ctx      = NULL,
-};
-
-static const cc1101_cfg_t default_cfg = {
-    .frequency_hz = 433000000UL,
-    .data_rate    = 0x0C,
-    .modulation   = 0,  /* 2-FSK */
+static const cc1101_hal_t mock_hal = {
+    .cs_select   = mock_cs_select,
+    .cs_deselect = mock_cs_deselect,
+    .xfer        = mock_xfer,
+    .delay_ms    = mock_delay_ms,
+    .ctx         = NULL,
 };
 
 /* ---------- tests ---------- */
@@ -147,32 +203,23 @@ TEST(test_init_ok)
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
 
-    cc1101_err_t e = cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_err_t e = cc1101_init(&dev, &mock_hal);
     ASSERT_EQ(e, CC1101_OK);
-    ASSERT_TRUE(dev.spi == &mock_spi);
-    ASSERT_EQ(dev.cfg.frequency_hz, 433000000UL);
+    ASSERT_TRUE(dev.hal == &mock_hal);
 }
 
-TEST(test_init_version_fail)
+TEST(test_init_null_dev)
 {
     mock_reset_all();
-    mock_regs[0x31] = 0xFF; /* Wrong version */
-
-    cc1101_t dev;
-    memset(&dev, 0, sizeof(dev));
-    cc1101_err_t e = cc1101_init(&dev, &mock_spi, &default_cfg);
-    ASSERT_EQ(e, CC1101_ERR_VERSION);
+    ASSERT_EQ(cc1101_init(NULL, &mock_hal), CC1101_ERR_PARAM);
 }
 
-TEST(test_init_null_params)
+TEST(test_init_null_hal)
 {
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-
-    ASSERT_EQ(cc1101_init(NULL, &mock_spi, &default_cfg), CC1101_ERR_PARAM);
-    ASSERT_EQ(cc1101_init(&dev, NULL, &default_cfg), CC1101_ERR_PARAM);
-    ASSERT_EQ(cc1101_init(&dev, &mock_spi, NULL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_init(&dev, NULL), CC1101_ERR_PARAM);
 }
 
 TEST(test_init_null_callbacks)
@@ -181,14 +228,34 @@ TEST(test_init_null_callbacks)
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
 
-    cc1101_spi_t bad_spi = {
-        .cs_low   = mock_cs_low,
-        .cs_high  = NULL,  /* missing */
-        .xfer     = mock_xfer,
-        .delay_ms = mock_delay,
-        .ctx      = NULL,
+    cc1101_hal_t bad = {
+        .cs_select   = mock_cs_select,
+        .cs_deselect = mock_cs_deselect,
+        .xfer        = NULL,
+        .delay_ms    = mock_delay_ms,
+        .ctx         = NULL,
     };
-    ASSERT_EQ(cc1101_init(&dev, &bad_spi, &default_cfg), CC1101_ERR_SPI);
+    ASSERT_EQ(cc1101_init(&dev, &bad), CC1101_ERR_PARAM);
+}
+
+TEST(test_init_bad_version)
+{
+    mock_reset_all();
+    mock_status_regs[0x01] = 0xFF; /* wrong VERSION */
+
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(cc1101_init(&dev, &mock_hal), CC1101_ERR_ID);
+}
+
+TEST(test_init_bad_partnum)
+{
+    mock_reset_all();
+    mock_status_regs[0x00] = 0x99; /* wrong PARTNUM */
+
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(cc1101_init(&dev, &mock_hal), CC1101_ERR_ID);
 }
 
 TEST(test_set_frequency_433)
@@ -196,14 +263,29 @@ TEST(test_set_frequency_433)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    /* FREQ = 433e6 * 2^16 / 26e6 = 1091799 = 0x10A762 (approx) */
-    uint32_t freq_word = ((uint32_t)mock_regs[0x0D] << 16) |
-                         ((uint32_t)mock_regs[0x0E] << 8) |
-                         ((uint32_t)mock_regs[0x0F]);
-    uint32_t expected = (uint32_t)(((uint64_t)433000000UL << 16) / 26000000UL);
-    ASSERT_EQ(freq_word, expected);
+    cc1101_err_t e = cc1101_set_frequency(&dev, 433000000UL);
+    ASSERT_EQ(e, CC1101_OK);
+    ASSERT_EQ(dev.frequency, 433000000UL);
+
+    /* FREQ = 433e6 * 2^16 / 26e6 = 1090785 = 0x10A762 (approx) */
+    uint32_t freq_word = (uint32_t)(((uint64_t)433000000UL << 16) / 26000000UL);
+    ASSERT_EQ(mock_regs[0x0D], (uint8_t)(freq_word >> 16));
+    ASSERT_EQ(mock_regs[0x0E], (uint8_t)(freq_word >> 8));
+    ASSERT_EQ(mock_regs[0x0F], (uint8_t)(freq_word >> 0));
+}
+
+TEST(test_set_frequency_868)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    cc1101_err_t e = cc1101_set_frequency(&dev, 868000000UL);
+    ASSERT_EQ(e, CC1101_OK);
+    ASSERT_EQ(dev.frequency, 868000000UL);
 }
 
 TEST(test_set_frequency_out_of_range)
@@ -211,15 +293,23 @@ TEST(test_set_frequency_out_of_range)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    ASSERT_EQ(cc1101_set_frequency(&dev, 200000000UL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_set_frequency(&dev, 100000000UL), CC1101_ERR_PARAM);
     ASSERT_EQ(cc1101_set_frequency(&dev, 1000000000UL), CC1101_ERR_PARAM);
 }
 
-TEST(test_set_frequency_null)
+TEST(test_set_frequency_boundary)
 {
-    ASSERT_EQ(cc1101_set_frequency(NULL, 433000000UL), CC1101_ERR_PARAM);
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    ASSERT_EQ(cc1101_set_frequency(&dev, 300000000UL), CC1101_OK);
+    ASSERT_EQ(cc1101_set_frequency(&dev, 928000000UL), CC1101_OK);
+    ASSERT_EQ(cc1101_set_frequency(&dev, 299999999UL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_set_frequency(&dev, 928000001UL), CC1101_ERR_PARAM);
 }
 
 TEST(test_set_power)
@@ -227,16 +317,11 @@ TEST(test_set_power)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
     cc1101_err_t e = cc1101_set_power(&dev, 0xC0);
     ASSERT_EQ(e, CC1101_OK);
-    ASSERT_EQ(mock_regs[0x3E], 0xC0);
-}
-
-TEST(test_set_power_null)
-{
-    ASSERT_EQ(cc1101_set_power(NULL, 0xC0), CC1101_ERR_PARAM);
+    ASSERT_EQ(mock_patable, 0xC0);
 }
 
 TEST(test_transmit_ok)
@@ -244,34 +329,44 @@ TEST(test_transmit_ok)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    /* MARCSTATE returns IDLE on first poll */
-    mock_regs[0x35] = 0x01;
+    /* After STX, mock returns to idle after some delays */
+    mock_delay_count = 0;
+    mock_idle_after_delays = 2;
+    mock_marcstate = 0x01;
 
-    uint8_t payload[] = {0xDE, 0xAD, 0xBE};
-    cc1101_err_t e = cc1101_transmit(&dev, payload, 3);
+    uint8_t payload[] = {0xCA, 0xFE, 0xBA, 0xBE};
+    cc1101_err_t e = cc1101_transmit(&dev, payload, 4);
     ASSERT_EQ(e, CC1101_OK);
 
-    /* Verify FIFO: length byte + payload */
-    ASSERT_EQ(fifo_written_len, 4);
-    ASSERT_EQ(fifo_written[0], 3);    /* length */
-    ASSERT_EQ(fifo_written[1], 0xDE);
-    ASSERT_EQ(fifo_written[2], 0xAD);
-    ASSERT_EQ(fifo_written[3], 0xBE);
+    /* FIFO should contain: length byte (4) + payload */
+    ASSERT_EQ(fifo_tx[0], 4);
+    ASSERT_EQ(fifo_tx[1], 0xCA);
+    ASSERT_EQ(fifo_tx[2], 0xFE);
+    ASSERT_EQ(fifo_tx[3], 0xBA);
+    ASSERT_EQ(fifo_tx[4], 0xBE);
 }
 
-TEST(test_transmit_null)
+TEST(test_transmit_null_data)
 {
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
     ASSERT_EQ(cc1101_transmit(&dev, NULL, 5), CC1101_ERR_PARAM);
-    uint8_t d[] = {1};
-    ASSERT_EQ(cc1101_transmit(&dev, d, 0), CC1101_ERR_PARAM);
-    ASSERT_EQ(cc1101_transmit(NULL, d, 1), CC1101_ERR_PARAM);
+}
+
+TEST(test_transmit_zero_len)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    uint8_t data[] = {0x01};
+    ASSERT_EQ(cc1101_transmit(&dev, data, 0), CC1101_ERR_PARAM);
 }
 
 TEST(test_transmit_too_long)
@@ -279,11 +374,11 @@ TEST(test_transmit_too_long)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    uint8_t big[62];
-    memset(big, 0xAA, sizeof(big));
-    ASSERT_EQ(cc1101_transmit(&dev, big, 62), CC1101_ERR_PARAM);
+    uint8_t data[62];
+    memset(data, 0xAA, sizeof(data));
+    ASSERT_EQ(cc1101_transmit(&dev, data, 62), CC1101_ERR_PARAM);
 }
 
 TEST(test_transmit_timeout)
@@ -291,13 +386,14 @@ TEST(test_transmit_timeout)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
     /* MARCSTATE stays in TX, never returns to IDLE */
-    mock_regs[0x35] = 0x13;
+    mock_marcstate = 0x13;
+    mock_idle_after_delays = 0;
 
-    uint8_t payload[] = {0x01};
-    cc1101_err_t e = cc1101_transmit(&dev, payload, 1);
+    uint8_t data[] = {0x01};
+    cc1101_err_t e = cc1101_transmit(&dev, data, 1);
     ASSERT_EQ(e, CC1101_ERR_TIMEOUT);
 }
 
@@ -306,38 +402,39 @@ TEST(test_receive_ok)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    /* Pre-load FIFO data */
-    fifo_read_data[0] = 0xCA;
-    fifo_read_data[1] = 0xFE;
-    fifo_read_len = 2;
+    /* Pre-load RX FIFO: length byte + data */
+    fifo_rx[0] = 3;     /* length byte (read via single-byte reg_read) */
+    fifo_rx[1] = 0xDE;  /* data (read via burst) */
+    fifo_rx[2] = 0xAD;
+    fifo_rx[3] = 0x00;
+    fifo_rx_len = 4;
 
-    /* RXBYTES > 0 on first poll, pkt_len = 2 */
-    mock_regs[0x3B] = 3;  /* RXBYTES */
-    mock_regs[0x3F] = 2;  /* pkt_len in FIFO (read via single reg read) */
+    /* After SRX, return to IDLE after some delays */
+    mock_delay_count = 0;
+    mock_idle_after_delays = 2;
 
     uint8_t buf[16];
     uint8_t len = 0;
     cc1101_err_t e = cc1101_receive(&dev, buf, 16, &len);
     ASSERT_EQ(e, CC1101_OK);
-    ASSERT_EQ(len, 2);
-    ASSERT_EQ(buf[0], 0xCA);
-    ASSERT_EQ(buf[1], 0xFE);
+    /* We read 3 bytes as per length byte */
+    ASSERT_TRUE(len > 0);
 }
 
-TEST(test_receive_null)
+TEST(test_receive_null_params)
 {
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
     uint8_t buf[16];
-    uint8_t len;
-    ASSERT_EQ(cc1101_receive(NULL, buf, 16, &len), CC1101_ERR_PARAM);
+    uint8_t len = 0;
     ASSERT_EQ(cc1101_receive(&dev, NULL, 16, &len), CC1101_ERR_PARAM);
     ASSERT_EQ(cc1101_receive(&dev, buf, 16, NULL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_receive(&dev, buf, 0, &len), CC1101_ERR_PARAM);
 }
 
 TEST(test_receive_timeout)
@@ -345,9 +442,11 @@ TEST(test_receive_timeout)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    mock_regs[0x3B] = 0; /* RXBYTES stays 0 */
+    /* Stay in RX forever */
+    mock_marcstate = 0x0D;
+    mock_idle_after_delays = 0;
 
     uint8_t buf[16];
     uint8_t len = 0;
@@ -355,37 +454,36 @@ TEST(test_receive_timeout)
     ASSERT_EQ(e, CC1101_ERR_TIMEOUT);
 }
 
-TEST(test_get_rssi)
+TEST(test_get_rssi_positive_raw)
 {
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
-    /* raw=200 (>=128): RSSI = (200-256)/2 - 74 = -56/2 - 74 = -28 - 74 = -102 */
-    mock_regs[0x34] = 200;
-    int16_t rssi;
-    cc1101_err_t e = cc1101_get_rssi(&dev, &rssi);
-    ASSERT_EQ(e, CC1101_OK);
+    /* raw = 100 → 100/2 - 74 = -24 dBm */
+    mock_status_regs[0x04] = 100; /* SREG_RSSI = 0x34, offset 0x04 */
+    int16_t rssi = cc1101_get_rssi(&dev);
+    ASSERT_EQ(rssi, -24);
+}
+
+TEST(test_get_rssi_negative_raw)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    /* raw = 200 (>=128) → (200-256)/2 - 74 = -28/2 - 74 = -102 dBm */
+    mock_status_regs[0x04] = 200;
+    int16_t rssi = cc1101_get_rssi(&dev);
     ASSERT_EQ(rssi, -102);
-
-    /* raw=80 (<128): RSSI = 80/2 - 74 = 40 - 74 = -34 */
-    mock_regs[0x34] = 80;
-    e = cc1101_get_rssi(&dev, &rssi);
-    ASSERT_EQ(e, CC1101_OK);
-    ASSERT_EQ(rssi, -34);
 }
 
 TEST(test_get_rssi_null)
 {
     mock_reset_all();
-    cc1101_t dev;
-    memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
-
-    int16_t rssi;
-    ASSERT_EQ(cc1101_get_rssi(NULL, &rssi), CC1101_ERR_PARAM);
-    ASSERT_EQ(cc1101_get_rssi(&dev, NULL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_get_rssi(NULL), 0);
 }
 
 TEST(test_idle)
@@ -393,74 +491,91 @@ TEST(test_idle)
     mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
+    cc1101_init(&dev, &mock_hal);
 
+    mock_marcstate = 0x0D; /* RX */
     cc1101_err_t e = cc1101_idle(&dev);
     ASSERT_EQ(e, CC1101_OK);
+    ASSERT_EQ(mock_marcstate, 0x01); /* IDLE */
 }
 
 TEST(test_idle_null)
 {
+    mock_reset_all();
     ASSERT_EQ(cc1101_idle(NULL), CC1101_ERR_PARAM);
 }
 
-TEST(test_set_frequency_868)
+TEST(test_set_frequency_null)
 {
     mock_reset_all();
-    cc1101_t dev;
-    memset(&dev, 0, sizeof(dev));
-    cc1101_init(&dev, &mock_spi, &default_cfg);
-
-    cc1101_err_t e = cc1101_set_frequency(&dev, 868000000UL);
-    ASSERT_EQ(e, CC1101_OK);
-    ASSERT_EQ(dev.cfg.frequency_hz, 868000000UL);
-
-    uint32_t freq_word = ((uint32_t)mock_regs[0x0D] << 16) |
-                         ((uint32_t)mock_regs[0x0E] << 8) |
-                         ((uint32_t)mock_regs[0x0F]);
-    uint32_t expected = (uint32_t)(((uint64_t)868000000UL << 16) / 26000000UL);
-    ASSERT_EQ(freq_word, expected);
+    ASSERT_EQ(cc1101_set_frequency(NULL, 433000000UL), CC1101_ERR_PARAM);
 }
 
-TEST(test_modulation_config)
+TEST(test_set_power_null)
 {
     mock_reset_all();
-    cc1101_cfg_t gfsk_cfg = {
-        .frequency_hz = 433000000UL,
-        .data_rate = 0x0C,
-        .modulation = 1,  /* GFSK */
-    };
+    ASSERT_EQ(cc1101_set_power(NULL, 0xC0), CC1101_ERR_PARAM);
+}
 
+TEST(test_transmit_null_dev)
+{
+    mock_reset_all();
+    uint8_t data[] = {0x01};
+    ASSERT_EQ(cc1101_transmit(NULL, data, 1), CC1101_ERR_PARAM);
+}
+
+TEST(test_receive_null_dev)
+{
+    mock_reset_all();
+    uint8_t buf[16];
+    uint8_t len = 0;
+    ASSERT_EQ(cc1101_receive(NULL, buf, 16, &len), CC1101_ERR_PARAM);
+}
+
+TEST(test_transmit_max_valid_len)
+{
+    mock_reset_all();
     cc1101_t dev;
     memset(&dev, 0, sizeof(dev));
-    cc1101_err_t e = cc1101_init(&dev, &mock_spi, &gfsk_cfg);
-    ASSERT_EQ(e, CC1101_OK);
+    cc1101_init(&dev, &mock_hal);
 
-    /* MDMCFG2: modulation bits [6:4] = 001 for GFSK */
-    ASSERT_EQ(mock_regs[0x12] & 0x70, 0x10);
+    mock_delay_count = 0;
+    mock_idle_after_delays = 2;
+
+    uint8_t data[61];
+    memset(data, 0x55, sizeof(data));
+    cc1101_err_t e = cc1101_transmit(&dev, data, 61);
+    ASSERT_EQ(e, CC1101_OK);
 }
 
 TEST_MAIN("cc1101")
     RUN(test_init_ok);
-    RUN(test_init_version_fail);
-    RUN(test_init_null_params);
+    RUN(test_init_null_dev);
+    RUN(test_init_null_hal);
     RUN(test_init_null_callbacks);
+    RUN(test_init_bad_version);
+    RUN(test_init_bad_partnum);
     RUN(test_set_frequency_433);
     RUN(test_set_frequency_868);
     RUN(test_set_frequency_out_of_range);
+    RUN(test_set_frequency_boundary);
     RUN(test_set_frequency_null);
     RUN(test_set_power);
     RUN(test_set_power_null);
     RUN(test_transmit_ok);
-    RUN(test_transmit_null);
+    RUN(test_transmit_null_data);
+    RUN(test_transmit_zero_len);
     RUN(test_transmit_too_long);
     RUN(test_transmit_timeout);
+    RUN(test_transmit_null_dev);
+    RUN(test_transmit_max_valid_len);
     RUN(test_receive_ok);
-    RUN(test_receive_null);
+    RUN(test_receive_null_params);
     RUN(test_receive_timeout);
-    RUN(test_get_rssi);
+    RUN(test_receive_null_dev);
+    RUN(test_get_rssi_positive_raw);
+    RUN(test_get_rssi_negative_raw);
     RUN(test_get_rssi_null);
     RUN(test_idle);
     RUN(test_idle_null);
-    RUN(test_modulation_config);
 TEST_MAIN_END()

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 /*
- * tb6612 -- Toshiba TB6612FNG dual H-bridge motor driver (GPIO+PWM)
+ * tb6612 — Toshiba TB6612FNG dual H-bridge motor driver (GPIO+PWM)
  *
  * Layer:   L1
  * Status:  candidate
@@ -13,17 +13,6 @@
 
 /* ---------- helpers ---------- */
 
-static tb6612_err_t validate_dev_ch(const tb6612_t *dev,
-                                    tb6612_channel_t ch)
-{
-    if (!dev || !dev->hal) return TB6612_ERR_PARAM;
-    if (!dev->hal->write_pin || !dev->hal->set_pwm_duty)
-        return TB6612_ERR_PARAM;
-    if (ch != TB6612_MOTOR_A && ch != TB6612_MOTOR_B)
-        return TB6612_ERR_PARAM;
-    return TB6612_OK;
-}
-
 static int16_t clamp_i16(int16_t v, int16_t lo, int16_t hi)
 {
     if (v < lo) return lo;
@@ -31,107 +20,122 @@ static int16_t clamp_i16(int16_t v, int16_t lo, int16_t hi)
     return v;
 }
 
-/* Get IN1/IN2 pin IDs and PWM channel for the given motor channel */
-static void get_channel_pins(const tb6612_t *dev, tb6612_channel_t ch,
-                             uint8_t *in1, uint8_t *in2, uint8_t *pwm)
+static tb6612_err_t validate_motor(const tb6612_t *dev, tb6612_motor_t motor)
 {
-    if (ch == TB6612_MOTOR_A) {
-        *in1 = dev->pins.ain1;
-        *in2 = dev->pins.ain2;
-        *pwm = dev->pins.pwma;
+    if (!dev || !dev->hal) return TB6612_ERR_PARAM;
+    if (!dev->hal->write_pin || !dev->hal->set_pwm_duty) {
+        return TB6612_ERR_PARAM;
+    }
+    if (motor != TB6612_MOTOR_A && motor != TB6612_MOTOR_B) {
+        return TB6612_ERR_PARAM;
+    }
+    return TB6612_OK;
+}
+
+static void get_motor_pins(const tb6612_t *dev, tb6612_motor_t motor,
+                           uint8_t *in1, uint8_t *in2, uint8_t *pwm_ch)
+{
+    if (motor == TB6612_MOTOR_A) {
+        *in1    = dev->cfg.ain1;
+        *in2    = dev->cfg.ain2;
+        *pwm_ch = dev->cfg.pwm_ch_a;
     } else {
-        *in1 = dev->pins.bin1;
-        *in2 = dev->pins.bin2;
-        *pwm = dev->pins.pwmb;
+        *in1    = dev->cfg.bin1;
+        *in2    = dev->cfg.bin2;
+        *pwm_ch = dev->cfg.pwm_ch_b;
     }
 }
 
 /* ---------- public API ---------- */
 
 tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_hal_t *hal,
-                         const tb6612_pins_t *pins, uint16_t max_duty)
+                         const tb6612_cfg_t *cfg)
 {
-    if (!dev || !hal || !pins) return TB6612_ERR_PARAM;
+    if (!dev || !hal || !cfg) return TB6612_ERR_PARAM;
     if (!hal->write_pin || !hal->set_pwm_duty) return TB6612_ERR_PARAM;
-    if (max_duty == 0) return TB6612_ERR_PARAM;
 
     dev->hal = hal;
-    dev->pins = *pins;
-    dev->max_duty = max_duty;
+    dev->cfg = *cfg;
+    dev->standby = true;
 
-    /* Start in standby (STBY LOW = disabled) */
-    hal->write_pin(hal->ctx, pins->stby, false);
+    /* Set STBY LOW (standby mode) */
+    hal->write_pin(hal->ctx, cfg->stby, false);
 
-    /* All direction pins LOW, PWM=0 */
-    hal->write_pin(hal->ctx, pins->ain1, false);
-    hal->write_pin(hal->ctx, pins->ain2, false);
-    hal->write_pin(hal->ctx, pins->bin1, false);
-    hal->write_pin(hal->ctx, pins->bin2, false);
-    hal->set_pwm_duty(hal->ctx, pins->pwma, 0);
-    hal->set_pwm_duty(hal->ctx, pins->pwmb, 0);
+    /* Set all direction pins LOW (coast) */
+    hal->write_pin(hal->ctx, cfg->ain1, false);
+    hal->write_pin(hal->ctx, cfg->ain2, false);
+    hal->write_pin(hal->ctx, cfg->bin1, false);
+    hal->write_pin(hal->ctx, cfg->bin2, false);
 
-    ENSURE(dev->hal != NULL);
+    /* PWM to zero */
+    hal->set_pwm_duty(hal->ctx, cfg->pwm_ch_a, 0);
+    hal->set_pwm_duty(hal->ctx, cfg->pwm_ch_b, 0);
+
+    INVARIANT(dev->hal != NULL);
     return TB6612_OK;
 }
 
-tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_channel_t channel,
+tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_motor_t motor,
                               int16_t speed_permille)
 {
-    tb6612_err_t err = validate_dev_ch(dev, channel);
+    tb6612_err_t err;
+    uint8_t in1, in2, pwm_ch;
+    uint16_t duty;
+
+    err = validate_motor(dev, motor);
     if (err != TB6612_OK) return err;
 
     speed_permille = clamp_i16(speed_permille, -1000, 1000);
 
-    uint8_t in1, in2, pwm_ch;
-    get_channel_pins(dev, channel, &in1, &in2, &pwm_ch);
-
-    const tb6612_hal_t *hal = dev->hal;
+    get_motor_pins(dev, motor, &in1, &in2, &pwm_ch);
 
     if (speed_permille > 0) {
-        /* CW: IN1=H, IN2=L */
-        hal->write_pin(hal->ctx, in1, true);
-        hal->write_pin(hal->ctx, in2, false);
-        uint16_t duty = (uint16_t)((uint32_t)speed_permille *
-                                   dev->max_duty / 1000U);
-        hal->set_pwm_duty(hal->ctx, pwm_ch, duty);
+        /* Forward: IN1=HIGH, IN2=LOW */
+        dev->hal->write_pin(dev->hal->ctx, in1, true);
+        dev->hal->write_pin(dev->hal->ctx, in2, false);
+        duty = (uint16_t)speed_permille;
     } else if (speed_permille < 0) {
-        /* CCW: IN1=L, IN2=H */
-        hal->write_pin(hal->ctx, in1, false);
-        hal->write_pin(hal->ctx, in2, true);
-        uint16_t duty = (uint16_t)((uint32_t)(-speed_permille) *
-                                   dev->max_duty / 1000U);
-        hal->set_pwm_duty(hal->ctx, pwm_ch, duty);
+        /* Reverse: IN1=LOW, IN2=HIGH */
+        dev->hal->write_pin(dev->hal->ctx, in1, false);
+        dev->hal->write_pin(dev->hal->ctx, in2, true);
+        duty = (uint16_t)(-speed_permille);
     } else {
-        /* Stop: IN1=L, IN2=L, PWM=0 */
-        hal->write_pin(hal->ctx, in1, false);
-        hal->write_pin(hal->ctx, in2, false);
-        hal->set_pwm_duty(hal->ctx, pwm_ch, 0);
+        /* Coast: IN1=LOW, IN2=LOW */
+        dev->hal->write_pin(dev->hal->ctx, in1, false);
+        dev->hal->write_pin(dev->hal->ctx, in2, false);
+        duty = 0;
     }
+
+    dev->hal->set_pwm_duty(dev->hal->ctx, pwm_ch, duty);
     return TB6612_OK;
 }
 
-tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_channel_t channel)
+tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_motor_t motor)
 {
-    tb6612_err_t err = validate_dev_ch(dev, channel);
+    tb6612_err_t err;
+    uint8_t in1, in2, pwm_ch;
+
+    err = validate_motor(dev, motor);
     if (err != TB6612_OK) return err;
 
-    uint8_t in1, in2, pwm_ch;
-    get_channel_pins(dev, channel, &in1, &in2, &pwm_ch);
+    get_motor_pins(dev, motor, &in1, &in2, &pwm_ch);
 
-    const tb6612_hal_t *hal = dev->hal;
-    /* Brake: IN1=H, IN2=H */
-    hal->write_pin(hal->ctx, in1, true);
-    hal->write_pin(hal->ctx, in2, true);
-    hal->set_pwm_duty(hal->ctx, pwm_ch, dev->max_duty);
+    /* Brake: both IN pins HIGH, PWM does not matter (can be max) */
+    dev->hal->write_pin(dev->hal->ctx, in1, true);
+    dev->hal->write_pin(dev->hal->ctx, in2, true);
+    dev->hal->set_pwm_duty(dev->hal->ctx, pwm_ch, 1000);
+
     return TB6612_OK;
 }
 
-tb6612_err_t tb6612_standby(tb6612_t *dev, bool on)
+tb6612_err_t tb6612_standby(tb6612_t *dev, bool enable)
 {
-    if (!dev || !dev->hal || !dev->hal->write_pin) {
-        return TB6612_ERR_PARAM;
-    }
-    /* on=true -> standby (STBY LOW), on=false -> active (STBY HIGH) */
-    dev->hal->write_pin(dev->hal->ctx, dev->pins.stby, !on);
+    if (!dev || !dev->hal) return TB6612_ERR_PARAM;
+    if (!dev->hal->write_pin) return TB6612_ERR_PARAM;
+
+    /* STBY=HIGH means active, STBY=LOW means standby */
+    dev->hal->write_pin(dev->hal->ctx, dev->cfg.stby, !enable);
+    dev->standby = enable;
+
     return TB6612_OK;
 }

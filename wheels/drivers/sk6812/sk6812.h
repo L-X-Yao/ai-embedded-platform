@@ -7,9 +7,9 @@
  * Deps:      gpio_hal (injected)
  * Instances: multi
  *
- * 4 bytes per LED in GRB+W order.  Timing protocol similar to WS2812
- * but with an extra white channel.  The timing-critical send_data HAL
- * callback is platform-specific (bit-bang or DMA).
+ * Single-wire protocol, 4 bytes per LED in GRBW order.
+ * Timing is platform-specific; HAL provides send_data callback.
+ * Caller provides pixel buffer (sk6812_pixel_t array).
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: caller owns the sk6812_t struct.
  */
@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,7 @@ typedef enum {
     SK6812_ERR_HAL   = -2,
 } sk6812_err_t;
 
-/* ---------- pixel ---------- */
+/* ---------- pixel (GRBW wire order) ---------- */
 
 typedef struct {
     uint8_t g;
@@ -44,8 +45,8 @@ typedef struct {
 /* ---------- HAL (caller provides) ---------- */
 
 typedef struct {
-    /** Send raw byte stream with protocol timing.  Platform-specific. */
-    bool (*send_data)(void *ctx, const uint8_t *data, uint32_t len);
+    bool (*send_data)(void *ctx, const uint8_t *data, size_t len);
+    void (*delay_us)(void *ctx, uint32_t us);
     void *ctx;
 } sk6812_hal_t;
 
@@ -53,30 +54,29 @@ typedef struct {
 
 typedef struct {
     const sk6812_hal_t *hal;
-    uint16_t            num_leds;
+    uint16_t num_leds;
 } sk6812_t;
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
+/* ---------- API (all @thread_safe: caller_must_lock) @isr_safe: no ---------- */
 
-/** Initialize driver. */
+/** Initialize driver with HAL and number of LEDs. */
 sk6812_err_t sk6812_init(sk6812_t *dev, const sk6812_hal_t *hal,
                          uint16_t num_leds);
 
-/** Set one pixel in the buffer. Does NOT transmit. */
-sk6812_err_t sk6812_set_pixel(sk6812_pixel_t *buf, uint16_t num_leds,
-                              uint16_t index,
+/** Set a single pixel in the buffer. */
+sk6812_err_t sk6812_set_pixel(sk6812_t *dev, sk6812_pixel_t *buf,
+                              uint16_t idx,
                               uint8_t r, uint8_t g, uint8_t b, uint8_t w);
 
-/** Transmit pixel buffer to the LED strip. */
-sk6812_err_t sk6812_show(const sk6812_t *dev, const sk6812_pixel_t *buf,
-                         uint16_t count);
+/** Send pixel buffer to LED strip (send_data + reset delay). */
+sk6812_err_t sk6812_show(sk6812_t *dev, const sk6812_pixel_t *buf);
 
 /** Fill entire buffer with one color. */
-sk6812_err_t sk6812_fill(sk6812_pixel_t *buf, uint16_t num_leds,
+sk6812_err_t sk6812_fill(sk6812_t *dev, sk6812_pixel_t *buf,
                          uint8_t r, uint8_t g, uint8_t b, uint8_t w);
 
 /** Clear entire buffer (all off). */
-sk6812_err_t sk6812_clear(sk6812_pixel_t *buf, uint16_t num_leds);
+sk6812_err_t sk6812_clear(sk6812_t *dev, sk6812_pixel_t *buf);
 
 #ifdef __cplusplus
 }

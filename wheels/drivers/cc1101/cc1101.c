@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 /*
- * cc1101 -- TI CC1101 Sub-GHz transceiver driver (SPI)
+ * cc1101 — TI CC1101 Sub-GHz transceiver driver (SPI)
  *
  * Layer:   L1
  * Status:  candidate
@@ -10,286 +10,306 @@
 
 #include "cc1101.h"
 #include "contract.h"
-#include <string.h>
 
-/* ---------- CC1101 registers ---------- */
+/* ---------- CC1101 register addresses ---------- */
 
-#define REG_IOCFG2      0x00
-#define REG_FIFOTHR     0x03
-#define REG_PKTCTRL1    0x07
-#define REG_PKTCTRL0    0x08
-#define REG_ADDR        0x09
-#define REG_CHANNR      0x0A
-#define REG_FREQ2       0x0D
-#define REG_FREQ1       0x0E
-#define REG_FREQ0       0x0F
-#define REG_MDMCFG4     0x10
-#define REG_MDMCFG3     0x11
-#define REG_MDMCFG2     0x12
-#define REG_MDMCFG1     0x13
-#define REG_MDMCFG0     0x14
-#define REG_PATABLE     0x3E
-#define REG_RXFIFO      0x3F
-#define REG_TXFIFO      0x3F
+#define REG_IOCFG2          0x00U
+#define REG_IOCFG1          0x01U
+#define REG_IOCFG0          0x02U
+#define REG_PKTCTRL0        0x08U
+#define REG_FREQ2           0x0DU
+#define REG_FREQ1           0x0EU
+#define REG_FREQ0           0x0FU
+#define REG_MDMCFG4         0x10U
+#define REG_MDMCFG3         0x11U
+#define REG_MDMCFG2         0x12U
+#define REG_PKTLEN          0x06U
+#define REG_PATABLE         0x3EU
+#define REG_TX_FIFO         0x3FU
+#define REG_RX_FIFO         0x3FU
 
-/* Status registers (read with burst bit) */
-#define REG_PARTNUM     0x30
-#define REG_VERSION     0x31
-#define REG_RSSI        0x34
-#define REG_MARCSTATE   0x35
-#define REG_RXBYTES     0x3B
-#define REG_TXBYTES     0x3A
+/* Status registers (read with 0xC0 | addr) */
+#define SREG_PARTNUM        0x30U
+#define SREG_VERSION        0x31U
+#define SREG_RSSI           0x34U
+#define SREG_MARCSTATE      0x35U
+#define SREG_RXBYTES        0x3BU
+#define SREG_TXBYTES        0x3AU
 
 /* Command strobes */
-#define STROBE_SRES     0x30
-#define STROBE_SRX      0x34
-#define STROBE_STX      0x35
-#define STROBE_SIDLE    0x36
-#define STROBE_SFRX     0x3A
-#define STROBE_SFTX     0x3B
+#define STROBE_SRES         0x30U
+#define STROBE_SRX          0x34U
+#define STROBE_STX          0x35U
+#define STROBE_SIDLE        0x36U
+#define STROBE_SFRX         0x3AU
+#define STROBE_SFTX         0x3BU
+#define STROBE_SNOP         0x3DU
 
 /* SPI header bits */
-#define SPI_READ        0x80
-#define SPI_BURST       0x40
+#define SPI_READ            0x80U
+#define SPI_BURST           0x40U
+#define SPI_STATUS_READ     0xC0U  /* SPI_READ | SPI_BURST for status regs */
 
-/* Expected chip identity */
-#define CC1101_PARTNUM  0x00
-#define CC1101_VER      0x14
+/* Expected ID values */
+#define CC1101_PARTNUM      0x00U
+#define CC1101_VERSION      0x14U
 
-/* FIFO size */
-#define FIFO_SIZE       64
-#define MAX_PACKET_LEN  61   /* 64 - 1 (len byte) - 2 (status bytes) */
-
-/* Oscillator frequency */
-#define FXOSC           26000000UL
-
-/* Polling limits */
-#define POLL_MAX        200
+/* Crystal oscillator frequency */
+#define FXOSC               26000000UL
 
 /* MARCSTATE values */
-#define MARCSTATE_IDLE  0x01
-#define MARCSTATE_RX    0x0D
-#define MARCSTATE_TX    0x13
+#define MARCSTATE_IDLE      0x01U
+#define MARCSTATE_RX        0x0DU
+#define MARCSTATE_TX        0x13U
+
+/* Polling limits */
+#define POLL_MAX            200U
 
 /* ---------- internal helpers ---------- */
 
-static uint8_t reg_read(const cc1101_spi_t *spi, uint8_t addr)
+static uint8_t spi_strobe(const cc1101_hal_t *hal, uint8_t strobe)
 {
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, (uint8_t)(addr | SPI_READ | SPI_BURST));
-    uint8_t val = spi->xfer(spi->ctx, 0x00);
-    spi->cs_high(spi->ctx);
+    uint8_t status;
+    hal->cs_select(hal->ctx);
+    status = hal->xfer(hal->ctx, strobe);
+    hal->cs_deselect(hal->ctx);
+    return status;
+}
+
+static void reg_write(const cc1101_hal_t *hal, uint8_t addr, uint8_t val)
+{
+    hal->cs_select(hal->ctx);
+    (void)hal->xfer(hal->ctx, addr & 0x3FU);
+    (void)hal->xfer(hal->ctx, val);
+    hal->cs_deselect(hal->ctx);
+}
+
+static uint8_t reg_read(const cc1101_hal_t *hal, uint8_t addr)
+{
+    uint8_t val;
+    hal->cs_select(hal->ctx);
+    (void)hal->xfer(hal->ctx, (uint8_t)((addr & 0x3FU) | SPI_READ));
+    val = hal->xfer(hal->ctx, 0x00);
+    hal->cs_deselect(hal->ctx);
     return val;
 }
 
-static void reg_write(const cc1101_spi_t *spi, uint8_t addr, uint8_t val)
+static uint8_t status_reg_read(const cc1101_hal_t *hal, uint8_t addr)
 {
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, addr);
-    spi->xfer(spi->ctx, val);
-    spi->cs_high(spi->ctx);
-}
-
-static void strobe(const cc1101_spi_t *spi, uint8_t cmd)
-{
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, cmd);
-    spi->cs_high(spi->ctx);
-}
-
-static uint8_t fifo_read_single(const cc1101_spi_t *spi)
-{
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, REG_RXFIFO | SPI_READ);
-    uint8_t val = spi->xfer(spi->ctx, 0x00);
-    spi->cs_high(spi->ctx);
+    uint8_t val;
+    hal->cs_select(hal->ctx);
+    (void)hal->xfer(hal->ctx, (addr & 0x3FU) | SPI_STATUS_READ);
+    val = hal->xfer(hal->ctx, 0x00);
+    hal->cs_deselect(hal->ctx);
     return val;
 }
 
-static void fifo_read_burst(const cc1101_spi_t *spi,
+static void fifo_write_burst(const cc1101_hal_t *hal,
+                             const uint8_t *data, uint8_t len)
+{
+    uint8_t i;
+    hal->cs_select(hal->ctx);
+    (void)hal->xfer(hal->ctx, REG_TX_FIFO | SPI_BURST);
+    for (i = 0; i < len; i++) {
+        (void)hal->xfer(hal->ctx, data[i]);
+    }
+    hal->cs_deselect(hal->ctx);
+}
+
+static void fifo_read_burst(const cc1101_hal_t *hal,
                             uint8_t *data, uint8_t len)
 {
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, REG_RXFIFO | SPI_READ | SPI_BURST);
-    for (uint8_t i = 0; i < len; i++) {
-        data[i] = spi->xfer(spi->ctx, 0x00);
+    uint8_t i;
+    hal->cs_select(hal->ctx);
+    (void)hal->xfer(hal->ctx, REG_RX_FIFO | SPI_STATUS_READ);
+    for (i = 0; i < len; i++) {
+        data[i] = hal->xfer(hal->ctx, 0x00);
     }
-    spi->cs_high(spi->ctx);
+    hal->cs_deselect(hal->ctx);
+}
+
+static uint8_t get_marcstate(const cc1101_hal_t *hal)
+{
+    return status_reg_read(hal, SREG_MARCSTATE) & 0x1FU;
 }
 
 /* ---------- public API ---------- */
 
-cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_spi_t *spi,
-                         const cc1101_cfg_t *cfg)
+cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
 {
-    if (!dev || !spi || !cfg) return CC1101_ERR_PARAM;
-    if (!spi->cs_low || !spi->cs_high || !spi->xfer || !spi->delay_ms) {
-        return CC1101_ERR_SPI;
+    uint8_t partnum, version;
+
+    if (!dev || !hal) return CC1101_ERR_PARAM;
+    if (!hal->cs_select || !hal->cs_deselect || !hal->xfer || !hal->delay_ms) {
+        return CC1101_ERR_PARAM;
     }
 
-    dev->spi = spi;
-    dev->cfg = *cfg;
+    dev->hal = hal;
+    dev->frequency = 0;
+    dev->tx_power = 0;
 
-    /* SRES -- chip reset */
-    strobe(spi, STROBE_SRES);
-    spi->delay_ms(spi->ctx, 5);
+    /* Reset */
+    (void)spi_strobe(hal, STROBE_SRES);
+    hal->delay_ms(hal->ctx, 10);
 
-    /* Verify part number and version */
-    uint8_t partnum = reg_read(spi, REG_PARTNUM);
-    uint8_t version = reg_read(spi, REG_VERSION);
-    if (partnum != CC1101_PARTNUM || version != CC1101_VER) {
-        return CC1101_ERR_VERSION;
+    /* Verify chip ID */
+    partnum = status_reg_read(hal, SREG_PARTNUM);
+    version = status_reg_read(hal, SREG_VERSION);
+
+    if (partnum != CC1101_PARTNUM || version != CC1101_VERSION) {
+        return CC1101_ERR_ID;
     }
 
-    /* Set variable packet length mode, CRC autoflush, append status */
-    reg_write(spi, REG_PKTCTRL1, 0x0C); /* CRC_AUTOFLUSH + APPEND_STATUS */
-    reg_write(spi, REG_PKTCTRL0, 0x05); /* variable length, CRC enabled */
+    /* Configure: variable packet length, CRC enabled */
+    reg_write(hal, REG_PKTCTRL0, 0x45U); /* variable len + CRC + whitening */
+    reg_write(hal, REG_PKTLEN, 0xFF);    /* max packet length */
 
-    /* Set data rate exponent from config */
-    reg_write(spi, REG_MDMCFG4, (uint8_t)(0xC0 | (cfg->data_rate & 0x0F)));
-    reg_write(spi, REG_MDMCFG3, 0x83); /* data rate mantissa default */
+    /* Enter idle */
+    (void)spi_strobe(hal, STROBE_SIDLE);
 
-    /* Set modulation */
-    uint8_t mdmcfg2 = (uint8_t)(0x02 | ((cfg->modulation & 0x07) << 4));
-    reg_write(spi, REG_MDMCFG2, mdmcfg2);
-
-    /* Set frequency */
-    cc1101_err_t err = cc1101_set_frequency(dev, cfg->frequency_hz);
-    if (err != CC1101_OK) return err;
-
-    /* Go to IDLE */
-    strobe(spi, STROBE_SIDLE);
-
-    ENSURE(dev->spi != NULL);
     return CC1101_OK;
 }
 
 cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz)
 {
-    if (!dev || !dev->spi) return CC1101_ERR_PARAM;
+    uint32_t freq_word;
+
+    if (!dev || !dev->hal) return CC1101_ERR_PARAM;
     if (freq_hz < 300000000UL || freq_hz > 928000000UL) {
         return CC1101_ERR_PARAM;
     }
 
     /* FREQ = freq_hz * 2^16 / FXOSC */
-    uint32_t freq_word = (uint32_t)(((uint64_t)freq_hz << 16) / FXOSC);
+    freq_word = (uint32_t)(((uint64_t)freq_hz << 16) / FXOSC);
 
-    const cc1101_spi_t *spi = dev->spi;
-    reg_write(spi, REG_FREQ2, (uint8_t)(freq_word >> 16));
-    reg_write(spi, REG_FREQ1, (uint8_t)(freq_word >> 8));
-    reg_write(spi, REG_FREQ0, (uint8_t)(freq_word >> 0));
+    reg_write(dev->hal, REG_FREQ2, (uint8_t)(freq_word >> 16));
+    reg_write(dev->hal, REG_FREQ1, (uint8_t)(freq_word >>  8));
+    reg_write(dev->hal, REG_FREQ0, (uint8_t)(freq_word >>  0));
 
-    dev->cfg.frequency_hz = freq_hz;
+    dev->frequency = freq_hz;
     return CC1101_OK;
 }
 
 cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value)
 {
-    if (!dev || !dev->spi) return CC1101_ERR_PARAM;
-    reg_write(dev->spi, REG_PATABLE, pa_value);
+    if (!dev || !dev->hal) return CC1101_ERR_PARAM;
+
+    reg_write(dev->hal, REG_PATABLE, pa_value);
+    dev->tx_power = (int8_t)pa_value;
     return CC1101_OK;
 }
 
-cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data,
-                             uint8_t len)
+cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data, uint8_t len)
 {
-    if (!dev || !dev->spi) return CC1101_ERR_PARAM;
-    if (!data || len == 0 || len > MAX_PACKET_LEN) {
-        return CC1101_ERR_PARAM;
+    uint32_t i;
+    uint8_t marcstate;
+
+    if (!dev || !dev->hal) return CC1101_ERR_PARAM;
+    if (!data || len == 0 || len > 61) return CC1101_ERR_PARAM;
+
+    /* Ensure idle before TX */
+    (void)spi_strobe(dev->hal, STROBE_SIDLE);
+    (void)spi_strobe(dev->hal, STROBE_SFTX);
+
+    /* Write length byte + payload to TX FIFO */
+    {
+        uint8_t pkt[64];
+        pkt[0] = len;
+        uint8_t j;
+        for (j = 0; j < len; j++) {
+            pkt[j + 1] = data[j];
+        }
+        fifo_write_burst(dev->hal, pkt, (uint8_t)(len + 1));
     }
 
-    const cc1101_spi_t *spi = dev->spi;
+    /* Strobe TX */
+    (void)spi_strobe(dev->hal, STROBE_STX);
 
-    /* Flush TX FIFO */
-    strobe(spi, STROBE_SIDLE);
-    strobe(spi, STROBE_SFTX);
-
-    /* Write length byte + payload */
-    spi->cs_low(spi->ctx);
-    spi->xfer(spi->ctx, REG_TXFIFO | SPI_BURST);
-    spi->xfer(spi->ctx, len);
-    for (uint8_t i = 0; i < len; i++) {
-        spi->xfer(spi->ctx, data[i]);
-    }
-    spi->cs_high(spi->ctx);
-
-    /* Start TX */
-    strobe(spi, STROBE_STX);
-
-    /* Poll for return to IDLE (TX complete) */
-    for (int i = 0; i < POLL_MAX; i++) {
-        spi->delay_ms(spi->ctx, 5);
-        uint8_t state = reg_read(spi, REG_MARCSTATE) & 0x1F;
-        if (state == MARCSTATE_IDLE) {
+    /* Poll for TX completion (MARCSTATE returns to IDLE) */
+    for (i = 0; i < POLL_MAX; i++) {
+        dev->hal->delay_ms(dev->hal->ctx, 5);
+        marcstate = get_marcstate(dev->hal);
+        if (marcstate == MARCSTATE_IDLE) {
             return CC1101_OK;
         }
     }
 
-    strobe(spi, STROBE_SIDLE);
+    (void)spi_strobe(dev->hal, STROBE_SIDLE);
     return CC1101_ERR_TIMEOUT;
 }
 
-cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t capacity,
+cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len)
 {
-    if (!dev || !dev->spi) return CC1101_ERR_PARAM;
-    if (!buf || !out_len) return CC1101_ERR_PARAM;
+    uint32_t i;
+    uint8_t marcstate;
+    uint8_t rxbytes;
+    uint8_t pkt_len;
 
-    const cc1101_spi_t *spi = dev->spi;
+    if (!dev || !dev->hal) return CC1101_ERR_PARAM;
+    if (!buf || !out_len || cap == 0) return CC1101_ERR_PARAM;
 
     /* Flush RX FIFO and enter RX */
-    strobe(spi, STROBE_SIDLE);
-    strobe(spi, STROBE_SFRX);
-    strobe(spi, STROBE_SRX);
+    (void)spi_strobe(dev->hal, STROBE_SIDLE);
+    (void)spi_strobe(dev->hal, STROBE_SFRX);
+    (void)spi_strobe(dev->hal, STROBE_SRX);
 
-    /* Poll for data in FIFO */
-    for (int i = 0; i < POLL_MAX; i++) {
-        spi->delay_ms(spi->ctx, 5);
-        uint8_t rxbytes = reg_read(spi, REG_RXBYTES) & 0x7F;
-        if (rxbytes > 0) {
-            /* Read length byte (single read, not burst) */
-            uint8_t pkt_len = fifo_read_single(spi);
-            if (pkt_len > capacity) {
-                pkt_len = capacity;
+    /* Poll for RX completion */
+    for (i = 0; i < POLL_MAX; i++) {
+        dev->hal->delay_ms(dev->hal->ctx, 5);
+        marcstate = get_marcstate(dev->hal);
+        if (marcstate == MARCSTATE_IDLE) {
+            /* Packet received — RX auto-returns to idle */
+            rxbytes = status_reg_read(dev->hal, SREG_RXBYTES) & 0x7FU;
+            if (rxbytes == 0) {
+                return CC1101_ERR_TIMEOUT;
             }
 
-            /* Read payload */
-            fifo_read_burst(spi, buf, pkt_len);
-            *out_len = pkt_len;
+            /* Read length byte */
+            pkt_len = reg_read(dev->hal, REG_RX_FIFO | SPI_STATUS_READ);
+            /* Actually use burst read for FIFO */
+            {
+                /* We already read the length byte. Read payload data. */
+                uint8_t read_len = pkt_len;
+                if (read_len > cap) {
+                    read_len = cap;
+                }
+                fifo_read_burst(dev->hal, buf, read_len);
+                *out_len = read_len;
+            }
 
-            /* Flush remaining */
-            strobe(spi, STROBE_SIDLE);
-            strobe(spi, STROBE_SFRX);
             return CC1101_OK;
         }
     }
 
-    strobe(spi, STROBE_SIDLE);
+    (void)spi_strobe(dev->hal, STROBE_SIDLE);
     return CC1101_ERR_TIMEOUT;
 }
 
-cc1101_err_t cc1101_get_rssi(cc1101_t *dev, int16_t *rssi)
+int16_t cc1101_get_rssi(cc1101_t *dev)
 {
-    if (!dev || !dev->spi || !rssi) return CC1101_ERR_PARAM;
+    uint8_t raw;
+    int16_t rssi;
 
-    uint8_t raw = reg_read(dev->spi, REG_RSSI);
+    if (!dev || !dev->hal) return 0;
 
-    /* CC1101 RSSI formula: if raw >= 128: RSSI = (raw-256)/2 - 74
-     *                      else:          RSSI = raw/2 - 74         */
-    int16_t rssi_val;
+    raw = status_reg_read(dev->hal, SREG_RSSI);
+
+    /* RSSI conversion per CC1101 datasheet:
+     * If raw >= 128: rssi_dbm = (raw - 256) / 2 - 74
+     * If raw <  128: rssi_dbm = raw / 2 - 74 */
     if (raw >= 128) {
-        rssi_val = (int16_t)((int16_t)(raw - 256) / 2 - 74);
+        rssi = (int16_t)((int16_t)(raw - 256) / 2 - 74);
     } else {
-        rssi_val = (int16_t)((int16_t)raw / 2 - 74);
+        rssi = (int16_t)((int16_t)raw / 2 - 74);
     }
-
-    *rssi = rssi_val;
-    return CC1101_OK;
+    return rssi;
 }
 
 cc1101_err_t cc1101_idle(cc1101_t *dev)
 {
-    if (!dev || !dev->spi) return CC1101_ERR_PARAM;
-    strobe(dev->spi, STROBE_SIDLE);
+    if (!dev || !dev->hal) return CC1101_ERR_PARAM;
+
+    (void)spi_strobe(dev->hal, STROBE_SIDLE);
     return CC1101_OK;
 }
