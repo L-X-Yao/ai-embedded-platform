@@ -1,69 +1,65 @@
-# apa102 — TODO: one-line description
+# apa102 — APA102 (DotStar) SPI-based addressable RGB LED driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+APA102/DotStar SPI-based addressable RGB LED strip driver. Each LED has independent
+5-bit brightness control (0-31) plus 8-bit RGB. Pixel buffer is caller-provided.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for LED strip use cases (ADR-011).
 
 ## Why self-written?
 
 Searched GitHub/embedded ecosystem (2026-05-11):
 
-- TODO: list evaluated alternatives and why they were not suitable.
+- Adafruit DotStar library is Arduino/C++ dependent.
 - No suitable zero-dependency C99 implementation found.
 
-Reference: TODO (or "None").
+Reference: APA102 datasheet (Shenzhen LED Color Opto-Electronic).
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+None (SPI HAL injected via function pointers).
 
 ## API
 
 ```c
-/* TODO: document public API */
+apa102_err_t apa102_init(apa102_t *dev, const apa102_spi_t *spi,
+                         uint16_t num_leds);
+apa102_err_t apa102_set_pixel(apa102_pixel_t *buf, uint16_t num_leds,
+                              uint16_t index, uint8_t r, uint8_t g,
+                              uint8_t b, uint8_t brightness);
+apa102_err_t apa102_show(apa102_t *dev, const apa102_pixel_t *buf);
+void         apa102_clear(apa102_pixel_t *buf, uint16_t num_leds);
 ```
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim) — 2026-05-11
+- [ ] Real hardware — not yet verified
 
 ## Known issues
 
-TODO.
+None.
 
 ## How to test
 
 ```bash
 cd wheels/drivers/apa102/test
 cmake -GNinja -S . -B build && cmake --build build
-./build/test_apa102
+./build/test_apa102 && ./build/test_hw_model_apa102 && ./build/test_null_apa102
 ```
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): 26 passed (16 unit + 4 hw_model + 6 null)
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 
