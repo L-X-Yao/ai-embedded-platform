@@ -51,8 +51,15 @@ hmac_sha256_err_t hmac_sha256_init(hmac_sha256_t *ctx,
     sha256_init(inner);
     sha256_update(inner, i_key_pad, HMAC_SHA256_BLOCK_SIZE);
 
-    memset(k_block, 0, sizeof(k_block));
-    memset(i_key_pad, 0, sizeof(i_key_pad));
+    /* Wipe key material from stack (volatile to prevent optimization). */
+    {
+        volatile uint8_t *vp = (volatile uint8_t *)k_block;
+        for (size_t i = 0; i < sizeof(k_block); i++) { vp[i] = 0; }
+    }
+    {
+        volatile uint8_t *vp = (volatile uint8_t *)i_key_pad;
+        for (size_t i = 0; i < sizeof(i_key_pad); i++) { vp[i] = 0; }
+    }
     return HMAC_SHA256_OK;
 }
 
@@ -85,8 +92,15 @@ hmac_sha256_err_t hmac_sha256_final(hmac_sha256_t *ctx, uint8_t mac[32])
     sha256_update(&outer, inner_hash, SHA256_DIGEST_SIZE);
     sha256_final(&outer, mac);
 
-    memset(inner_hash, 0, sizeof(inner_hash));
-    memset(ctx, 0, sizeof(*ctx));
+    /* Wipe sensitive state (volatile to prevent optimization). */
+    {
+        volatile uint8_t *vp = (volatile uint8_t *)inner_hash;
+        for (size_t i = 0; i < sizeof(inner_hash); i++) { vp[i] = 0; }
+    }
+    {
+        volatile uint8_t *vp = (volatile uint8_t *)ctx;
+        for (size_t i = 0; i < sizeof(*ctx); i++) { vp[i] = 0; }
+    }
     return HMAC_SHA256_OK;
 }
 
