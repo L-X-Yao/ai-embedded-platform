@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: MIT
 /*
- * tb6612 — TODO: one-line description
+ * tb6612 — Toshiba TB6612FNG dual H-bridge motor driver (GPIO+PWM)
  *
- * Layer:     L1
- * Status:    candidate
- * Deps:      gpio_hal (injected)
+ * Layer:   L1
+ * Status:  candidate
+ * Deps:      gpio_hal + pwm_hal (injected)
  * Instances: multi
+ *
+ * Two motor channels (A and B), each with IN1/IN2 direction pins and
+ * a PWM speed pin.  STBY pin controls standby mode.
+ * Truth table: IN1=H,IN2=L -> CW; IN1=L,IN2=H -> CCW;
+ *              IN1=L,IN2=L -> stop; IN1=H,IN2=H -> brake.
+ * Pure C99, no heap, fully reentrant per-context.
+ * Thread safety: caller owns the tb6612_t struct.
  */
 
 #ifndef TB6612_H
@@ -21,32 +28,64 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    TB6612_OK          =  0,
-    TB6612_ERR_PARAM   = -1,
-    TB6612_ERR_TIMEOUT = -2,
+    TB6612_OK        =  0,
+    TB6612_ERR_PARAM = -1,
 } tb6612_err_t;
 
-/* ---------- GPIO HAL (caller provides) ---------- */
+/* ---------- motor channel ---------- */
+
+typedef enum {
+    TB6612_MOTOR_A = 0,
+    TB6612_MOTOR_B = 1,
+} tb6612_channel_t;
+
+/* ---------- pin identifiers in config ---------- */
 
 typedef struct {
-    void (*set_output)(void *ctx);
-    void (*set_input)(void *ctx);
-    void (*write_pin)(void *ctx, bool level);
-    bool (*read_pin)(void *ctx);
-    void (*delay_us)(void *ctx, uint32_t us);
+    uint8_t ain1;
+    uint8_t ain2;
+    uint8_t bin1;
+    uint8_t bin2;
+    uint8_t stby;
+    uint8_t pwma;
+    uint8_t pwmb;
+} tb6612_pins_t;
+
+/* ---------- HAL (caller provides) ---------- */
+
+typedef struct {
+    void (*write_pin)(void *ctx, uint8_t pin_id, bool level);
+    void (*set_pwm_duty)(void *ctx, uint8_t channel, uint16_t duty);
     void *ctx;
-} tb6612_gpio_t;
+} tb6612_hal_t;
 
-/* ---------- device context ---------- */
+/* ---------- device handle ---------- */
 
 typedef struct {
-    const tb6612_gpio_t *gpio;  /* caller-owned, must outlive dev */
+    const tb6612_hal_t *hal;
+    tb6612_pins_t       pins;
+    uint16_t            max_duty;
 } tb6612_t;
 
-/* ---------- API ---------- */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Initialize device. @thread_safe: no @isr_safe: no */
-tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_gpio_t *gpio);
+/** Initialize driver, pull STBY low (disabled). */
+tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_hal_t *hal,
+                         const tb6612_pins_t *pins, uint16_t max_duty);
+
+/**
+ * Set motor speed.  speed_permille: -1000..+1000.
+ * Positive = CW (IN1=H, IN2=L), negative = CCW (IN1=L, IN2=H).
+ * Zero = stop (IN1=L, IN2=L, PWM=0).
+ */
+tb6612_err_t tb6612_set_speed(tb6612_t *dev, tb6612_channel_t channel,
+                              int16_t speed_permille);
+
+/** Brake motor (IN1=H, IN2=H). */
+tb6612_err_t tb6612_brake(tb6612_t *dev, tb6612_channel_t channel);
+
+/** Set standby mode. on=true -> STBY LOW (disabled), on=false -> STBY HIGH (active). */
+tb6612_err_t tb6612_standby(tb6612_t *dev, bool on);
 
 #ifdef __cplusplus
 }

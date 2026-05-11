@@ -1,47 +1,24 @@
-# tb6612 — TODO: one-line description
+# tb6612 -- Toshiba TB6612FNG dual H-bridge motor driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+GPIO+PWM driver for the TB6612FNG dual H-bridge motor driver. Two independent
+motor channels (A/B) with direction control via IN1/IN2 pins, speed control
+via PWM, and standby mode via STBY pin. Speed range -1000..+1000 permille.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for motor control projects. TB6612 is a common low-power
+dual H-bridge for small DC motors and robotics.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+Trivial GPIO+PWM logic. Self-written for platform convention consistency.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
-
-## API
-
-```c
-/* TODO: document public API */
-```
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
-
-## Supported platforms
-
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
+- `gpio_hal` + `pwm_hal` (callback injection, no concrete dependency)
 
 ## How to test
 
@@ -51,19 +28,10 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_tb6612
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests (sim): TODO
-- HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
+- [x] Host (sim)
+- [ ] Real hardware -- not yet verified
 
 ## Responsible human
 
