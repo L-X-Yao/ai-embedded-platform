@@ -1,91 +1,165 @@
 # ai-embedded-platform
 
+206 production-grade C99 components for embedded systems.
+
 [![CI](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Components](https://img.shields.io/badge/components-206-green.svg)](wheels/README.md)
 
-AI 驱动的嵌入式开发母仓库。人负责需求、架构决策和终审，AI 负责实现、测试、文档和工具链维护。
+## Why this library
 
-## 核心理念
+- **Zero dependencies** -- no OS, no heap, no libc beyond `<stdint.h>`. Every component is a pure C99 static library.
+- **Any MCU** -- works on STM32, GD32, ESP32, nRF52, RISC-V, or anything with a C99 compiler. Hardware access is injected via function pointers, not `#ifdef` per platform.
+- **Host-testable** -- every component compiles and runs on your desktop with `gcc` and `cmake`. No dev board needed to start integrating.
+- **Battle-tested** -- 55-check automated audit, >=80% line coverage, AddressSanitizer in CI, property-based tests, fuzz harnesses.
 
-所有 wheel（可复用组件）遵循三条铁律：
+## Quick start
 
-1. **不碰 OS** — 不创建任务、不加锁、不 sleep、不分配堆内存
-2. **依赖注入** — 硬件/OS 能力通过函数指针传入，wheel 之间零耦合
-3. **Host 可测** — `gcc + cmake` 直接编译运行，无需 RTOS 或硬件
-
-结果：每个 wheel 在任意 MCU / 任意 RTOS / 纯 PC 上都能跑。AI 写一次，处处复用。55 项自动审计保证一致性。
-
-## 平台现状
-
-- **186 个 candidate wheels**（L0 原语 61 / L1 驱动 74 / L2 协议 31 / L3 模块 20）
-- **3 个集成示例**：env_monitor / device_shell / remote_telemetry
-- **2 个真实项目**：flybox（无人机遥测盒子，GD32F405）/ drone_light（LED 灯控，N32G003）
-- **CI 增量检测** + 55 项 wheel 审计全绿 + ARM 交叉编译烟雾测试 + 集成示例验证
-- **基座**：[VSF](https://github.com/vsfteam/vsf)（永久基座，vendored 在 `vsf/`）
-
-## 目录结构
-
-```
-├── docs/                 核心文档 + 11 个 ADR
-├── vsf/                  VSF 上游源码（不直接改）
-├── vsf-addon/            新增代码（MCU port / 组件）
-├── wheels/               可复用轮子（L0 原语 → L3 模块）
-│   ├── primitives/       L0 (61)：log 生态, crc 族, 数据结构, 编解码, 数学, 内存, 字体, ...
-│   ├── drivers/          L1 (74)：传感器, IMU, 显示, 存储, 通信, RFID, RTC, IO 扩展, ...
-│   ├── protocols/        L2 (31)：mqtt, modbus, coap, http, lorawan, canbus, dhcp, tftp, ...
-│   ├── modules/          L3 (20)：cli_shell, data_logger, ota_manager, ...
-│   └── _draft/           （暂无）
-├── templates/            项目起步模板
-├── projects/             真实项目（flybox, drone_light）
-├── examples/             集成示例（wheel 组合食谱）
-└── tooling/              harness / codegen / test / audit / wheel / session / ci / debug / metrics / hil
-```
-
-## 快速开始
+Each component is a self-contained folder. To use one in your project:
 
 ```bash
-# 浏览可用 wheel
-cat wheels/README.md            # 完整目录 + 分类
-ls wheels/drivers/              # 按层级浏览
+# 1. Copy the component into your source tree (or add as a git subtree)
+cp -r wheels/drivers/bmp280 your_project/lib/bmp280
 
-# 在项目中使用 wheel（CMakeLists.txt 加一行）
-add_subdirectory(${WHEELS_DIR}/drivers/bmp280 bmp280)
-target_link_libraries(my_app PRIVATE bmp280)
-
-# 跑测试
-make test-wheels                # 全部 wheel 测试
-make test-changed               # 仅受改动影响的测试
-
-# 跑审计
-make audit                      # 55 项合规检查
-python tooling/audit/audit_wheels.py --wheel drivers/bmp280  # 单个 wheel
+# 2. Add to your CMakeLists.txt
+add_subdirectory(lib/bmp280 bmp280)
+target_link_libraries(your_app PRIVATE bmp280)
 ```
 
-## 新项目启动
+That's it. Include the header, inject your HAL callbacks, and call the API:
+
+```c
+#include "bmp280.h"
+
+/* Provide your platform's I2C implementation */
+static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val) {
+    return hal_i2c_write(addr, reg, &val, 1);  /* your HAL here */
+}
+static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg,
+                         uint8_t *buf, uint16_t len) {
+    return hal_i2c_read(addr, reg, buf, len);
+}
+
+static const bmp280_i2c_t i2c = {
+    .write_reg = my_write_reg,
+    .read_regs = my_read_regs,
+    .delay_ms  = NULL,  /* optional */
+    .ctx       = NULL,
+};
+
+static const bmp280_cfg_t cfg = {
+    .addr   = BMP280_ADDR_LOW,
+    .osrs_t = BMP280_OVERSAMPLING_2,
+    .osrs_p = BMP280_OVERSAMPLING_16,
+};
+
+void app_main(void) {
+    bmp280_t sensor;
+    bmp280_data_t data;
+
+    if (bmp280_init(&sensor, &i2c, &cfg) != BMP280_OK) {
+        /* handle error */
+    }
+
+    if (bmp280_read(&sensor, &data) == BMP280_OK) {
+        printf("%.1f C, %.0f Pa\n", data.temperature_c, data.pressure_pa);
+    }
+}
+```
+
+Every component follows this same pattern: inject HAL via a struct of function pointers, call `_init`, then use the API.
+
+## Component catalog
+
+| Layer | Directory | Count | Examples |
+|-------|-----------|------:|----------|
+| L0 Primitives | `wheels/primitives/` | 63 | ring_buffer, crc32, state_machine, pid_controller, json_parser, aes128 |
+| L1 Drivers | `wheels/drivers/` | 88 | bmp280, sht40, mpu6050, oled_ssd1306, w25qxx, ws2812, lora_sx1276 |
+| L2 Protocols | `wheels/protocols/` | 35 | mqtt_packet, modbus_rtu, http_parser, nmea_parser, mavlink, coap_packet |
+| L3 Modules | `wheels/modules/` | 20 | cli_shell, data_logger, ota_manager, sensor_hub, mqtt_client |
+
+Full catalog with descriptions: [wheels/README.md](wheels/README.md)
+
+## Architecture: HAL injection
+
+Components never call hardware directly. Instead, you inject platform-specific functions at initialization:
+
+```
+ +-----------+     function pointers     +------------------+
+ | Component | <------------------------ | Your HAL / RTOS  |
+ | (pure C)  |  write_reg, read_regs,   | (STM32 HAL, ESP  |
+ |           |  delay_ms, gpio_write... |  IDF, bare metal) |
+ +-----------+                           +------------------+
+       |
+       | same component binary
+       v
+ +-----------+
+ | Host test |  mock functions injected
+ | (desktop) |  for simulation testing
+ +-----------+
+```
+
+This means:
+
+- Components have zero compile-time platform dependencies
+- The same source compiles for ARM Cortex-M, RISC-V, Xtensa, or x86 desktop
+- Tests run on your development machine with mock HAL implementations
+- No `#ifdef STM32` / `#ifdef ESP32` inside component code
+
+## Quality guarantees
+
+Every component passes a 55-check automated audit that enforces:
+
+- **Testing** -- host-simulation tests with >=80% line coverage
+- **Safety** -- NULL parameter checks, error code returns, AddressSanitizer clean
+- **Consistency** -- uniform API naming (`prefix_init`, `prefix_err_t`), SPDX headers, documentation
+- **CI** -- incremental testing on every push; ARM cross-compilation smoke tests
+- **Advanced** -- property-based tests, fuzz harnesses, and mutation testing where applicable
+
+## Project structure
+
+```
+ai-embedded-platform/
+├── wheels/
+│   ├── primitives/       L0: pure software (CRC, buffers, math, crypto)
+│   ├── drivers/          L1: sensor/peripheral drivers (I2C, SPI, GPIO)
+│   ├── protocols/        L2: protocol parsers (MQTT, Modbus, HTTP)
+│   └── modules/          L3: higher-level modules (CLI, OTA, logging)
+├── examples/             Integration examples combining multiple components
+├── tooling/
+│   ├── harness/          Test framework headers
+│   ├── codegen/          Test code generators
+│   ├── test/             Test runners (coverage, fuzz, mutation)
+│   └── audit/            Automated compliance checker
+├── docs/
+│   ├── wheel-contract.md Component specification
+│   ├── api-conventions.md  Naming and error handling conventions
+│   └── integrating-wheels.md  Build system integration guide
+└── templates/            Starter templates for new projects
+```
+
+## Running tests
 
 ```bash
-mkdir -p projects/<name>
-cp templates/project-integration/CLAUDE.md.template projects/<name>/CLAUDE.md
-# 编辑 CLAUDE.md，然后参考 docs/integrating-wheels.md 接入 wheel
+# Prerequisites: gcc, cmake, ninja, pytest
+
+# Test everything
+make test-parallel
+
+# Test a single component
+bash tooling/test/test_all.sh wheels/drivers/bmp280
+
+# Run the 55-check audit
+python tooling/audit/audit_wheels.py --quiet
+
+# Coverage for one component
+bash tooling/test/coverage_wheel.sh wheels/drivers/bmp280
 ```
 
-详细步骤见 `CLAUDE.md` 顶部的 7 步清单。
+## Contributing
 
-## 环境要求
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the quick-start guide, wheel contract, commit format, and testing requirements.
 
-- Windows 11 + WSL2 Ubuntu 24.04（或纯 Linux）
-- WSL 内：gcc 13、cmake、ninja、pytest、pexpect
-- QEMU（`qemu-system-arm`，用于 mps2-an500 bare-metal sim）
+## License
 
-## 关键文档
-
-| 文档 | 内容 |
-|------|------|
-| `CLAUDE.md` | AI 工作指令（零号铁律、commit 规范、任务流程） |
-| `docs/philosophy.md` | 人-AI 分工愿景 |
-| `docs/wheel-contract.md` | 轮子合格定义 + 升级流程 |
-| `docs/api-conventions.md` | 跨 wheel API 命名/错误/线程/内存约定 |
-| `docs/integrating-wheels.md` | 项目中接入 wheel 的 CMakeLists 示例 |
-| `docs/ai-workflow.md` | 12 类任务标准路径 |
-| `docs/debugging-playbook.md` | 踩坑指南 + mps2 checklist |
-| `docs/adr/` | 11 个架构决策记录 |
-| `wheels/README.md` | Wheel 完整目录 + registry 表格 |
+[MIT](LICENSE)
