@@ -36,6 +36,9 @@ static uint8_t mock_rssi_raw;
 /* Busy pin simulation */
 static bool mock_busy;
 
+/* SPI error injection */
+static bool mock_spi_error;
+
 /* Status byte */
 static uint8_t mock_status_byte;
 
@@ -57,6 +60,7 @@ static void mock_reset_all(void)
     mock_rx_offset = 0;
     mock_rssi_raw = 0;
     mock_busy = false;
+    mock_spi_error = false;
     mock_status_byte = 0x22; /* standby mode */
 }
 
@@ -153,6 +157,12 @@ static bool mock_is_busy(void *ctx)
     return mock_busy;
 }
 
+static bool mock_get_spi_error(void *ctx)
+{
+    (void)ctx;
+    return mock_spi_error;
+}
+
 static void mock_delay_ms(void *ctx, uint32_t ms)
 {
     (void)ctx;
@@ -166,12 +176,13 @@ static void mock_delay_ms(void *ctx, uint32_t ms)
 }
 
 static const sx1262_hal_t mock_hal = {
-    .cs_select   = mock_cs_select,
-    .cs_deselect = mock_cs_deselect,
-    .transfer    = mock_transfer,
-    .is_busy     = mock_is_busy,
-    .delay_ms    = mock_delay_ms,
-    .ctx         = NULL,
+    .cs_select      = mock_cs_select,
+    .cs_deselect    = mock_cs_deselect,
+    .transfer       = mock_transfer,
+    .is_busy        = mock_is_busy,
+    .delay_ms       = mock_delay_ms,
+    .get_spi_error  = mock_get_spi_error,
+    .ctx            = NULL,
 };
 
 /* ---------- tests ---------- */
@@ -597,6 +608,15 @@ TEST(test_busy_timeout)
     ASSERT_EQ(e, SX1262_ERR_BUSY);
 }
 
+TEST(test_init_spi_error)
+{
+    mock_reset_all();
+    mock_spi_error = true; /* SPI bus failure on first send_command */
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(sx1262_init(&dev, &mock_hal), SX1262_ERR_SPI);
+}
+
 TEST(test_set_frequency_boundary)
 {
     mock_reset_all();
@@ -615,6 +635,7 @@ TEST_MAIN("sx1262")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
     RUN(test_init_null_hal);
+    RUN(test_init_spi_error);
     RUN(test_init_null_callbacks);
     RUN(test_init_sends_standby_and_packet_type);
     RUN(test_set_frequency_433);

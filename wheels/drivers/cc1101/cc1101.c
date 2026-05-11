@@ -152,6 +152,11 @@ cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
     (void)spi_strobe(hal, STROBE_SRES);
     hal->delay_ms(hal->ctx, 10);
 
+    /* Check for SPI bus error after reset strobe */
+    if (hal->get_spi_error && hal->get_spi_error(hal->ctx)) {
+        return CC1101_ERR_SPI;
+    }
+
     /* Verify chip ID */
     partnum = status_reg_read(hal, SREG_PARTNUM);
     version = status_reg_read(hal, SREG_VERSION);

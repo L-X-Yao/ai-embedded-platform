@@ -14,20 +14,68 @@
  *   C1=40127, C2=36924, C3=23317, C4=23282, C5=33464, C6=28312
  */
 
+/*
+ * CRC-4 helper (mirrors ms5611.c internal prom_crc4) so we can compute the
+ * correct CRC word for the test PROM and plant it in mock registers.
+ */
+static uint8_t test_prom_crc4(const uint16_t prom[8])
+{
+    uint32_t rem = 0;
+    uint16_t data[8];
+    uint8_t i, bit;
+    for (i = 0; i < 8; i++) data[i] = prom[i];
+    data[7] = (uint16_t)(data[7] & 0x0FFF); /* zero CRC nibble */
+    for (i = 0; i < 16; i++) {
+        if (i % 2 == 1) rem ^= (uint32_t)(data[i >> 1] & 0x00FFU);
+        else             rem ^= (uint32_t)(data[i >> 1] >> 8);
+        for (bit = 8; bit > 0; bit--) {
+            if (rem & 0x8000U) rem = (rem << 1) ^ 0x3000U;
+            else               rem <<= 1;
+        }
+    }
+    return (uint8_t)((rem >> 12) & 0x000FU);
+}
+
 static void plant_prom(void)
 {
+    /* Datasheet example calibration: word[0]=0, C1-C6, word[7] with CRC */
+    uint16_t prom[8] = {
+        0x0000,  /* word 0 — factory data, unused */
+        40127,   /* C1 = 0x9CBF */
+        36924,   /* C2 = 0x903C */
+        23317,   /* C3 = 0x5B15 */
+        23282,   /* C4 = 0x5AF2 */
+        33464,   /* C5 = 0x82B8 */
+        28312,   /* C6 = 0x6E98 */
+        0x0000,  /* word 7 — CRC in MSN, initialise to 0 */
+    };
+    uint8_t crc = test_prom_crc4(prom);
+    prom[7] = (uint16_t)((uint16_t)crc << 12);
+
+    /* word 0 at 0xA0 */
+    mock_regs[0xA0] = (uint8_t)(prom[0] >> 8);
+    mock_regs[0xA1] = (uint8_t)(prom[0] & 0xFF);
     /* C1 at 0xA2 */
-    mock_regs[0xA2] = 0x9C; mock_regs[0xA3] = 0xBF; /* 40127 = 0x9CBF */
+    mock_regs[0xA2] = (uint8_t)(prom[1] >> 8);
+    mock_regs[0xA3] = (uint8_t)(prom[1] & 0xFF);
     /* C2 at 0xA4 */
-    mock_regs[0xA4] = 0x90; mock_regs[0xA5] = 0x3C; /* 36924 = 0x903C */
+    mock_regs[0xA4] = (uint8_t)(prom[2] >> 8);
+    mock_regs[0xA5] = (uint8_t)(prom[2] & 0xFF);
     /* C3 at 0xA6 */
-    mock_regs[0xA6] = 0x5B; mock_regs[0xA7] = 0x15; /* 23317 = 0x5B15 */
+    mock_regs[0xA6] = (uint8_t)(prom[3] >> 8);
+    mock_regs[0xA7] = (uint8_t)(prom[3] & 0xFF);
     /* C4 at 0xA8 */
-    mock_regs[0xA8] = 0x5A; mock_regs[0xA9] = 0xF2; /* 23282 = 0x5AF2 */
+    mock_regs[0xA8] = (uint8_t)(prom[4] >> 8);
+    mock_regs[0xA9] = (uint8_t)(prom[4] & 0xFF);
     /* C5 at 0xAA */
-    mock_regs[0xAA] = 0x82; mock_regs[0xAB] = 0xB8; /* 33464 = 0x82B8 */
+    mock_regs[0xAA] = (uint8_t)(prom[5] >> 8);
+    mock_regs[0xAB] = (uint8_t)(prom[5] & 0xFF);
     /* C6 at 0xAC */
-    mock_regs[0xAC] = 0x6E; mock_regs[0xAD] = 0x98; /* 28312 = 0x6E98 */
+    mock_regs[0xAC] = (uint8_t)(prom[6] >> 8);
+    mock_regs[0xAD] = (uint8_t)(prom[6] & 0xFF);
+    /* word 7 (CRC) at 0xAE */
+    mock_regs[0xAE] = (uint8_t)(prom[7] >> 8);
+    mock_regs[0xAF] = (uint8_t)(prom[7] & 0xFF);
 }
 
 static void plant_adc(uint32_t val)
@@ -212,6 +260,18 @@ TEST(test_delay_called)
     ASSERT_TRUE(mock_delay_ms_count > before + 1);
 }
 
+TEST(test_init_crc_fail)
+{
+    mock_reset();
+    /* Corrupt the CRC nibble in word 7 (0xAE byte 0 = MSB).
+     * XOR the high byte with 0x10 to flip one CRC bit while
+     * keeping lower 12 bits (factory data) intact. */
+    mock_regs[0xAE] ^= 0x10;
+    ms5611_t d;
+    ms5611_err_t e = ms5611_init(&d, &mock_i2c, &default_cfg);
+    ASSERT_EQ(e, MS5611_ERR_CRC);
+}
+
 TEST_MAIN("ms5611")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -226,4 +286,5 @@ TEST_MAIN("ms5611")
     RUN(test_prom_read_i2c_fail);
     RUN(test_osr_invalid);
     RUN(test_delay_called);
+    RUN(test_init_crc_fail);
 TEST_MAIN_END()

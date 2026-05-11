@@ -60,6 +60,10 @@ cmake -GNinja -S . -B build && cmake --build build
 Uses `write_regs`/`read_regs` (multi-byte) instead of `write_reg`/`read_regs` because
 all INA226 registers are 16-bit. Matches the INA219 wheel pattern.
 
+## API Review
+
+Pending.
+
 ## Responsible human
 
 @user
