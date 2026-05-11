@@ -1,47 +1,26 @@
-# sx1262 — TODO: one-line description
+# sx1262 -- SPI LoRa/FSK transceiver driver for Semtech SX1262
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Command-based SPI driver for the Semtech SX1262 LoRa transceiver. Supports
+LoRa modulation configuration (SF/BW/CR), packet TX/RX with polling, RSSI
+readout, and sleep/standby power modes. All SPI, busy-pin, and timing access
+is HAL-injected.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build for next-gen LoRa projects. SX1262 is the successor to
+SX1276 with better power efficiency and wider frequency range.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+SX1262 uses a command-based SPI protocol (not register-based like SX1276).
+Self-written for platform convention consistency and zero-dependency design.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
-
-## API
-
-```c
-/* TODO: document public API */
-```
-
-## Configuration (compile-time)
-
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
-
-## Supported platforms
-
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
+- `spi_hal` (callback injection, no concrete dependency)
 
 ## How to test
 
@@ -51,19 +30,10 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_sx1262
 ```
 
-## Test status
+## Supported platforms
 
-- Unit tests (sim): TODO
-- HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
+- [x] Host (sim)
+- [ ] Real hardware -- not yet verified
 
 ## Responsible human
 
