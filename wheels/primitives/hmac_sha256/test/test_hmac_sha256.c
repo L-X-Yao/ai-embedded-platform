@@ -83,6 +83,23 @@ TEST(test_rfc4231_case4)
     ASSERT_TRUE(hmac_sha256_verify(mac, expected));
 }
 
+/* Test Case 5: key = 20 bytes of 0x0c, data = "Test With Truncation" */
+TEST(test_rfc4231_case5)
+{
+    uint8_t key[20];
+    memset(key, 0x0c, sizeof(key));
+    const char *data = "Test With Truncation";
+    uint8_t mac[32];
+
+    hmac_sha256_compute(key, 20, (const uint8_t *)data, 20, mac);
+
+    uint8_t expected[32];
+    hex_to_bytes("a3b6167473100ee06e0c796c2955552b"
+                 "fa6f7c0a6a8aef8b93f860aab0cd20c5",
+                 expected, 32);
+    ASSERT_TRUE(hmac_sha256_verify(mac, expected));
+}
+
 /* Test Case 6: key = 131 bytes of 0xaa (> block size, hashed first) */
 TEST(test_rfc4231_case6_long_key)
 {
@@ -239,6 +256,7 @@ TEST_MAIN("hmac_sha256")
     RUN(test_rfc4231_case2);
     RUN(test_rfc4231_case3);
     RUN(test_rfc4231_case4);
+    RUN(test_rfc4231_case5);
     RUN(test_rfc4231_case6_long_key);
     RUN(test_rfc4231_case7_long_key_long_data);
     RUN(test_streaming_matches_oneshot);
