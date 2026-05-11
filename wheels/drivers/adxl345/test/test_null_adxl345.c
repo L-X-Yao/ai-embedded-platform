@@ -47,11 +47,17 @@ TEST(test_adxl345_read_null_out) {
     /* must not crash */
 }
 
+TEST(test_adxl345_set_range_null_dev) {
+    (void)adxl345_set_range(NULL, 0);
+    /* must not crash */
+}
+
 TEST_MAIN("null_param_adxl345") {
     RUN(test_adxl345_init_null_dev);
     RUN(test_adxl345_init_null_i2c);
     RUN(test_adxl345_init_null_cfg);
     RUN(test_adxl345_read_null_dev);
     RUN(test_adxl345_read_null_out);
+    RUN(test_adxl345_set_range_null_dev);
 }
 TEST_MAIN_END()

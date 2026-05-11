@@ -47,8 +47,13 @@ TEST(test_ccs811_read_null_out) {
     /* must not crash */
 }
 
+TEST(test_ccs811_set_mode_null_dev) {
+    (void)ccs811_set_mode(NULL, 0);
+    /* must not crash */
+}
+
 TEST(test_ccs811_set_env_data_null_dev) {
-    (void)ccs811_set_env_data(NULL, 0.0f, 0.0f);
+    (void)ccs811_set_env_data(NULL, 0, 0);
     /* must not crash */
 }
 
@@ -58,6 +63,7 @@ TEST_MAIN("null_param_ccs811") {
     RUN(test_ccs811_init_null_cfg);
     RUN(test_ccs811_read_null_dev);
     RUN(test_ccs811_read_null_out);
+    RUN(test_ccs811_set_mode_null_dev);
     RUN(test_ccs811_set_env_data_null_dev);
 }
 TEST_MAIN_END()

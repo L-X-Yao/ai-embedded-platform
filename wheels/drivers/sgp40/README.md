@@ -3,46 +3,42 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-Platform-agnostic driver for Sensirion SGP40 VOC raw signal sensor. Uses
-I2C command-based protocol with CRC-8 verification (poly 0x31, init 0xFF).
-Returns raw SRAW value (0-65535); VOC index calculation requires the
-Sensirion VOC Algorithm library (out of scope for this driver).
+Platform-agnostic driver for Sensirion SGP40 VOC raw signal sensor.
+Command-based I2C with CRC-8 protection (poly 0x31, init 0xFF).
+Outputs raw VOC signal (SRAW, 0-65535). Supports humidity/temperature
+compensation for improved accuracy.
 
 ## Origin
 
-Proactive build. SGP40 is the current-generation Sensirion VOC sensor for
-indoor air quality applications (HVAC, air purifiers, smart home).
+Proactive build (ADR-011). SGP40 is Sensirion's latest-generation VOC
+sensor, successor to SGP30, widely used in air quality monitoring.
 
 ## Why self-written?
 
-Searched GitHub/embedded ecosystem (2026-05-11):
-
-- Sensirion provides embedded-hal driver but with platform-specific I2C layer.
-- No suitable zero-dependency C99 implementation found matching wheel contract.
-
-Reference: Sensirion SGP40 datasheet (Version 1.1).
+Searched GitHub (2026-05-11). Sensirion provides an embedded-hal driver
+(BSD-3) but it depends on their HAL abstraction. Self-written for zero
+dependency; CRC and command protocol from SGP40 datasheet.
 
 ## Dependencies
 
-I2C HAL (injected via `sgp40_i2c_t` callbacks). delay_ms required for
-self-test and measurement timing. No other dependencies.
+I2C HAL (injected via `sgp40_i2c_t` raw write/read callbacks).
+No other dependencies.
 
 ## API
 
 ```c
 sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c);
-sgp40_err_t sgp40_measure_raw(sgp40_t *dev, uint16_t rh_ticks,
-                              uint16_t t_ticks, sgp40_data_t *out);
-uint8_t     sgp40_crc8(const uint8_t *data, uint16_t len);
+sgp40_err_t sgp40_measure_raw(sgp40_t *dev, sgp40_data_t *out);
+sgp40_err_t sgp40_measure_raw_comp(sgp40_t *dev, sgp40_data_t *out,
+                                   uint16_t humidity, uint16_t temperature);
+uint8_t sgp40_crc8(const uint8_t *data, uint16_t len);
 ```
 
-Output: `sgp40_data_t { uint16_t sraw; }` (raw VOC signal, 0-65535)
-
-Default compensation: rh_ticks=0x8000 (50% RH), t_ticks=0x6666 (25C).
+Output: `sgp40_data_t { uint16_t sraw_voc; }`
 
 ## Configuration (compile-time)
 
-None. I2C address is fixed at 0x59 (SGP40 has no configurable address).
+None. I2C address is fixed at 0x59.
 
 ## Supported platforms
 
@@ -51,10 +47,10 @@ None. I2C address is fixed at 0x59 (SGP40 has no configurable address).
 
 ## Known issues
 
-- Returns raw SRAW only. Full VOC index requires Sensirion's proprietary
-  algorithm (sensirion/gas-index-algorithm on GitHub, separate integration).
-- Command protocol adapted to write_reg/read_regs HAL (MSB as reg, LSB as val).
-- Self-test takes 320ms.
+- Uses raw write/read I2C HAL (different from register-based drivers).
+  Caller must provide raw byte-level I2C transport.
+- VOC Index algorithm (Sensirion proprietary) not included; output is raw
+  SRAW signal. Use Sensirion's VOC Index algorithm library if needed.
 
 ## How to test
 
@@ -64,22 +60,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_sgp40
 ```
 
-26 assertions across 14 test cases + 7 hardware model tests + 5 null tests.
-
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests, 7 hw_model tests, 5 null tests)
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
-None.
-
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: Self-test on init (0x280E, expect 0xD400); CRC-8 mandatory on all reads; raw SRAW output only (VOC index is a separate concern); humidity/temperature compensation passed as tick values per Sensirion convention.
+Uses raw write/read I2C HAL instead of register-based write_reg/read_regs,
+matching SGP40's command-based protocol (same pattern as sgp30 wheel).
 
 ## Responsible human
-
 @user

@@ -47,11 +47,17 @@ TEST(test_ms5611_read_null_out) {
     /* must not crash */
 }
 
+TEST(test_ms5611_reset_null_dev) {
+    (void)ms5611_reset(NULL);
+    /* must not crash */
+}
+
 TEST_MAIN("null_param_ms5611") {
     RUN(test_ms5611_init_null_dev);
     RUN(test_ms5611_init_null_i2c);
     RUN(test_ms5611_init_null_cfg);
     RUN(test_ms5611_read_null_dev);
     RUN(test_ms5611_read_null_out);
+    RUN(test_ms5611_reset_null_dev);
 }
 TEST_MAIN_END()

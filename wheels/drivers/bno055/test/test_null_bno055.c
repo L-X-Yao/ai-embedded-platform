@@ -47,17 +47,17 @@ TEST(test_bno055_read_euler_null_out) {
     /* must not crash */
 }
 
-TEST(test_bno055_read_calib_status_null_dev) {
+TEST(test_bno055_get_calib_status_null_dev) {
     bno055_calib_status_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bno055_read_calib_status(NULL, &_out);
+    (void)bno055_get_calib_status(NULL, &_out);
     /* must not crash */
 }
 
-TEST(test_bno055_read_calib_status_null_out) {
+TEST(test_bno055_get_calib_status_null_out) {
     bno055_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bno055_read_calib_status(&_dev, NULL);
+    (void)bno055_get_calib_status(&_dev, NULL);
     /* must not crash */
 }
 
@@ -72,8 +72,8 @@ TEST_MAIN("null_param_bno055") {
     RUN(test_bno055_init_null_cfg);
     RUN(test_bno055_read_euler_null_dev);
     RUN(test_bno055_read_euler_null_out);
-    RUN(test_bno055_read_calib_status_null_dev);
-    RUN(test_bno055_read_calib_status_null_out);
+    RUN(test_bno055_get_calib_status_null_dev);
+    RUN(test_bno055_get_calib_status_null_out);
     RUN(test_bno055_set_mode_null_dev);
 }
 TEST_MAIN_END()
