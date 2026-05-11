@@ -75,16 +75,9 @@ static uint8_t xtime(uint8_t x)
 static uint8_t gf_mul(uint8_t a, uint8_t b)
 {
     uint8_t result = 0;
-    uint8_t hi;
     for (int i = 0; i < 8; i++) {
-        if (b & 1u) {
-            result ^= a;
-        }
-        hi = (uint8_t)(a & 0x80u);
-        a = (uint8_t)(a << 1);
-        if (hi) {
-            a ^= 0x1Bu;
-        }
+        result ^= (uint8_t)(a & (uint8_t)(-(b & 1u)));
+        a = (uint8_t)((a << 1) ^ ((uint8_t)(-(a >> 7)) & 0x1Bu));
         b >>= 1;
     }
     return result;
@@ -303,5 +296,15 @@ aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
     add_round_key(state, ctx->round_keys);
 
     memcpy(out, state, 16);
+    return AES128_OK;
+}
+
+aes128_err_t aes128_clear(aes128_ctx_t *ctx)
+{
+    if (!ctx) return AES128_ERR_PARAM;
+    volatile uint8_t *vp = (volatile uint8_t *)ctx;
+    for (size_t i = 0; i < sizeof(*ctx); i++) {
+        vp[i] = 0;
+    }
     return AES128_OK;
 }

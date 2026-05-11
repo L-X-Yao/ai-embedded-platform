@@ -67,6 +67,18 @@ aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
                                   const uint8_t in[16],
                                   uint8_t out[16]);
 
+/**
+ * Zeroize the round-key schedule to erase key material from memory.
+ *
+ * Uses a volatile write loop so the compiler cannot optimize it away.
+ * Call this when the key is no longer needed.
+ *
+ * @param ctx  Context to clear.  Must not be NULL.
+ * @return     AES128_OK on success, AES128_ERR_PARAM on NULL input.
+ * @thread_safe: no
+ */
+aes128_err_t aes128_clear(aes128_ctx_t *ctx);
+
 #ifdef __cplusplus
 }
 #endif
