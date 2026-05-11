@@ -188,8 +188,13 @@ sha256_err_t sha256_final(sha256_ctx_t *ctx, uint8_t hash[32])
         be32_store(&hash[i * 4], ctx->state[i]);
     }
 
-    /* Wipe sensitive state. */
-    memset(ctx, 0, sizeof(*ctx));
+    /* Wipe sensitive state (volatile to prevent compiler optimization). */
+    {
+        volatile uint8_t *vp = (volatile uint8_t *)ctx;
+        for (size_t i = 0; i < sizeof(*ctx); i++) {
+            vp[i] = 0;
+        }
+    }
 
     return SHA256_OK;
 }
