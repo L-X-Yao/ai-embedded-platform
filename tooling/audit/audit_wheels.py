@@ -44,6 +44,7 @@ WHEELS = REPO / "wheels"
 CI_YAML = REPO / ".github" / "workflows" / "ci.yml"
 WISHLIST = WHEELS / "WISHLIST.md"
 PROJECTS = REPO / "projects"
+EXAMPLES = REPO / "examples"
 
 CONSUMER_REQUIRED = {"drivers", "protocols", "modules"}
 KNOWN_EXCEPTIONS_FILE = REPO / "tooling" / "audit" / "known_exceptions.json"
@@ -881,25 +882,26 @@ def detect_cross_wheel_deps(wheel_dir: Path) -> list:
 _consumer_cache = None
 
 def _load_consumer_cache():
-    """Load all project files once into memory to avoid repeated rglob on slow FS."""
+    """Load all project and example files once into memory to avoid repeated rglob on slow FS."""
     global _consumer_cache
     if _consumer_cache is not None:
         return _consumer_cache
     _consumer_cache = {"cmake": [], "sources": []}
-    if not PROJECTS.is_dir():
-        return _consumer_cache
-    for cm in PROJECTS.rglob("CMakeLists.txt"):
-        try:
-            text = cm.read_text(encoding="utf-8")
-            _consumer_cache["cmake"].append((str(cm.relative_to(REPO)).replace("\\", "/"), text))
-        except OSError:
-            pass
-    for src in PROJECTS.rglob("*.[ch]"):
-        try:
-            text = src.read_text(encoding="utf-8", errors="ignore")
-            _consumer_cache["sources"].append((str(src.relative_to(REPO)).replace("\\", "/"), text))
-        except OSError:
-            pass
+    for consumer_dir in (PROJECTS, EXAMPLES):
+        if not consumer_dir.is_dir():
+            continue
+        for cm in consumer_dir.rglob("CMakeLists.txt"):
+            try:
+                text = cm.read_text(encoding="utf-8")
+                _consumer_cache["cmake"].append((str(cm.relative_to(REPO)).replace("\\", "/"), text))
+            except OSError:
+                pass
+        for src in consumer_dir.rglob("*.[ch]"):
+            try:
+                text = src.read_text(encoding="utf-8", errors="ignore")
+                _consumer_cache["sources"].append((str(src.relative_to(REPO)).replace("\\", "/"), text))
+            except OSError:
+                pass
     return _consumer_cache
 
 
