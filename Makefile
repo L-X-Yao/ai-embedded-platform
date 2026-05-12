@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks
 
 help:
 	@echo "Usage: make <target>"
@@ -51,8 +51,11 @@ help:
 	@echo "  check-clones      detect duplicate code blocks across wheels (Q26)"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  check             test + null/sentinel/boundary + scaffold + audit + coverage gate + doc drift + memory audit (pre-push)"
+	@echo "  ci-local          local CI gate: tests + audit + scaffold + doc-drift (pre-push hook)"
+	@echo "  ci-local-full     ci-local + coverage gate + compile analysis + sanitizer"
+	@echo "  check             test + null/sentinel/boundary + scaffold + audit + coverage gate + doc drift + memory audit"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
+	@echo "  install-hooks     configure git to use .githooks/ directory"
 	@echo "  ship M=\"msg\"      test + audit + commit + push"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
@@ -169,6 +172,30 @@ check:
 
 check-full:
 	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+
+ci-local:
+	@echo "══════ ci-local: local CI gate ══════"
+	bash tooling/test/test_all.sh --parallel
+	$(MAKE) test-null
+	$(MAKE) test-sentinel
+	$(MAKE) test-boundary
+	$(MAKE) test-scaffold
+	python3 tooling/audit/audit_wheels.py --fast --quiet
+	python3 tooling/audit/doc_drift_check.py --fix
+	python3 tooling/audit/memory_audit.py
+	bash tooling/audit/check_readme_examples.sh
+	@echo "══════ ci-local: PASSED ══════"
+
+ci-local-full:
+	$(MAKE) ci-local
+	bash tooling/test/coverage_scan.sh --gate --jobs 4
+	python3 tooling/audit/audit_compile.py --changed --quiet
+	python3 tooling/audit/audit_sanitizer.py --changed --quiet
+	@echo "══════ ci-local-full: PASSED ══════"
+
+install-hooks:
+	git config core.hooksPath .githooks
+	@echo "Git hooks now read from .githooks/"
 
 ship:
 	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }

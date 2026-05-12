@@ -1,19 +1,17 @@
 #!/bin/bash
-# pre-push hook — guard force-push to main and run wheel audit.
+# pre-push hook — local CI gate before every push.
 #
-# Install: git config core.hooksPath .githooks
+# Install: make install-hooks   (or: git config core.hooksPath .githooks)
 #
 # Checks:
-#   1. Warn (and block) force-push to main/master branch
-#   2. Run audit_wheels.py --quiet — blocks on FAIL, passes on WARN
-# Skips audit if script is not found (e.g. shallow clone).
+#   1. Block force-push to main/master
+#   2. Run `make ci-local` — tests + audit + scaffold + doc-drift
+#
+# Skip: git push --no-verify
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-AUDIT="$REPO/tooling/audit/audit_wheels.py"
 
-# git pre-push receives: <local_ref> <local_sha> <remote_ref> <remote_sha> on stdin
-# A zero remote_sha (0000...0) means the remote ref is being deleted/new branch.
-# If local_sha != what remote has, and it's a non-ff update to main/master, warn.
+# ── Force-push guard ─────────────────────────────────────────────────
 PROTECTED_BRANCHES="main|master"
 while IFS= read -r line; do
     local_ref=$(echo "$line" | awk '{print $1}')
@@ -25,31 +23,26 @@ while IFS= read -r line; do
 
     if echo "$branch" | grep -qE "^($PROTECTED_BRANCHES)$"; then
         if [[ "$remote_sha" != "$zero_sha" ]]; then
-            # Check if local_sha is a descendant of remote_sha (fast-forward)
             if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
                 echo "ERROR: force-push to '$branch' is not allowed."
                 echo "  Remote: $remote_sha"
                 echo "  Local:  $local_sha"
                 echo ""
-                echo "  If this is intentional, use: git push --no-verify"
+                echo "  If intentional: git push --no-verify"
                 exit 1
             fi
         fi
     fi
 done
 
-if [[ ! -f "$AUDIT" ]]; then
-    exit 0
-fi
-
-echo "pre-push: running wheel audit..."
-if output=$(python3 "$AUDIT" --quiet 2>&1); then
-    echo "pre-push: audit passed"
+# ── Local CI gate ────────────────────────────────────────────────────
+echo "pre-push: running ci-local..."
+if make -C "$REPO" ci-local 2>&1; then
+    echo "pre-push: ci-local PASSED"
     exit 0
 else
-    echo "pre-push: audit FAILED — fix before pushing"
-    echo "$output"
     echo ""
-    echo "To skip: git push --no-verify"
+    echo "pre-push: ci-local FAILED — fix before pushing"
+    echo "  To skip: git push --no-verify"
     exit 1
 fi
