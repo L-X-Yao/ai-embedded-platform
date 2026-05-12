@@ -83,7 +83,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests)
+- Unit tests (sim): PASS (16 C tests)
 - NULL tests: generated
 - HIL: N/A
 
