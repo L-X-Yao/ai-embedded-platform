@@ -534,8 +534,7 @@ ${NAME_LOWER}_err_t ${NAME_LOWER}_init(${NAME_LOWER}_t *dev,
 ${NAME_LOWER}_err_t ${NAME_LOWER}_read(${NAME_LOWER}_t *dev,
                                ${NAME_LOWER}_data_t *out)
 {
-    if (!dev || !out) return ${NAME_UPPER}_ERR_PARAM;
-    (void)dev;
+    if (!dev || !dev->i2c || !out) return ${NAME_UPPER}_ERR_PARAM;
     /* TODO: implement */
     return ${NAME_UPPER}_ERR_I2C;
 }

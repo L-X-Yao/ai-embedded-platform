@@ -525,7 +525,7 @@ def chk_float_to_int_cast(ctx, **_):
             rf'\b{re.escape(var_name)}\s*[=]\s*.*\d+\.\d+f?\b', context)
         if not is_float_var and not is_float_literal:
             continue
-        nearby = "\n".join(lines[max(0, i - 3):i + 1])
+        nearby = "\n".join(lines[max(0, i - 6):i + 1])
         if clamp_pat.search(nearby):
             continue
         hits.append(i + 1)
@@ -791,6 +791,56 @@ def chk_missing_hw_model(ctx, **_):
             f"add {ctx.path}/test/hw_model_{ctx.name}.h")
 
 
+def chk_hw_model_orphan(ctx, **_):
+    """Detect test_hw_model_*.c files not registered in CMakeLists.txt."""
+    test_dir = ctx.dir / "test"
+    if not test_dir.is_dir():
+        return None
+    cmakelists = test_dir / "CMakeLists.txt"
+    if not cmakelists.exists():
+        return None
+    cmake_text = cmakelists.read_text(errors="replace")
+    orphans = []
+    for f in sorted(test_dir.glob("test_hw_model_*.c")):
+        if f.stem not in cmake_text:
+            orphans.append(f.name)
+    if not orphans:
+        return None
+    names = ", ".join(orphans)
+    return (f"hw_model test file(s) not in CMakeLists.txt: {names}",
+            f"register in {ctx.path}/test/CMakeLists.txt or delete")
+
+
+def chk_hal_guard_in_public(ctx, **_):
+    """Public functions dereferencing dev->hal should check it is not NULL."""
+    if not ctx.source:
+        return None
+    hal_fields = re.findall(
+        r'dev->(\w+)->(?:read|write|transfer|xfer|reset|ctx)\b', ctx.source)
+    if not hal_fields:
+        return None
+    hal_field = hal_fields[0]
+    func_pat = re.compile(
+        rf'^{re.escape(ctx.name)}_err_t\s+{re.escape(ctx.name)}_(\w+)\s*\(',
+        re.MULTILINE)
+    lines = ctx.source.splitlines()
+    hits = []
+    for m in func_pat.finditer(ctx.source):
+        fname = m.group(1)
+        if fname == "init":
+            continue
+        func_start = ctx.source[:m.start()].count('\n')
+        body_end = min(func_start + 8, len(lines))
+        body = "\n".join(lines[func_start:body_end])
+        if f"dev->{hal_field}" in body and f"!dev->{hal_field}" not in body:
+            hits.append(fname)
+    if not hits:
+        return None
+    names = ", ".join(hits[:3])
+    return (f"public function(s) dereference dev->{hal_field} without NULL guard: {names}",
+            f"add if (!dev->{hal_field}) return ERR_PARAM in {ctx.path}/{ctx.name}.c")
+
+
 # --- Check table: metadata for each check ---
 
 CHECK_TABLE = [
@@ -847,6 +897,8 @@ CHECK_TABLE = [
     ("dep_direction",     "Dependency direction (ADR-009)",       chk_dep_direction,        "WARN", None,                     False, True),
     ("missing_null_tests", "NULL parameter tests",                chk_missing_null_tests,   "WARN", None,                     True,  True),
     ("missing_hw_model",   "Hardware model tests (L1 I2C/SPI)",   chk_missing_hw_model,     "WARN", {"drivers"},              True,  False),
+    ("hw_model_orphan",    "hw_model test file orphan",            chk_hw_model_orphan,      "WARN", None,                      False, False),
+    ("hal_guard_public",   "HAL NULL guard in public functions",   chk_hal_guard_in_public,  "WARN", {"drivers"},               True,  False),
 ]
 
 
