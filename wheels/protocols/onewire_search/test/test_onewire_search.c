@@ -612,6 +612,161 @@ TEST(test_search_first_no_bus)
     ASSERT_EQ(onewire_search_first(&state, &rom), ONEWIRE_SEARCH_ERR_PARAM);
 }
 
+/* ---------- eight devices (MOCK_MAX_DEVICES capacity) ---------- */
+
+TEST(test_eight_devices)
+{
+    mock_bus_t mock;
+    memset(&mock, 0, sizeof(mock));
+    mock.presence = true;
+    mock.num_devices = 8;
+
+    /* Use distinct family codes to ensure unique ROMs across all 8 devices */
+    for (uint8_t d = 0; d < 8u; d++) {
+        mock.roms[d][0] = (uint8_t)(0x10u + d);  /* family codes 0x10..0x17 */
+        mock.roms[d][1] = d;
+        mock.roms[d][2] = (uint8_t)(d * 2u);
+        mock.roms[d][3] = (uint8_t)(d * 3u);
+        mock.roms[d][4] = (uint8_t)(d * 5u);
+        mock.roms[d][5] = (uint8_t)(d * 7u);
+        mock.roms[d][6] = (uint8_t)(d * 11u);
+        mock_set_rom_with_crc(mock.roms[d]);
+    }
+
+    onewire_search_bus_t bus = {
+        .ctx = &mock,
+        .reset = mock_reset,
+        .write_bit = mock_write_bit,
+        .read_bit = mock_read_bit
+    };
+
+    onewire_search_state_t state;
+    ASSERT_EQ(onewire_search_init(&state, &bus), ONEWIRE_SEARCH_OK);
+
+    onewire_search_rom_t found[8];
+    for (uint8_t i = 0; i < 8u; i++) {
+        if (i < 7u) {
+            ASSERT_EQ(onewire_search_next(&state, &found[i]), ONEWIRE_SEARCH_OK);
+            ASSERT_FALSE(onewire_search_done(&state));
+        } else {
+            ASSERT_EQ(onewire_search_next(&state, &found[i]), ONEWIRE_SEARCH_OK);
+            ASSERT_TRUE(onewire_search_done(&state));
+        }
+    }
+
+    /* Verify all 8 devices were discovered (order may vary) */
+    for (uint8_t d = 0; d < 8u; d++) {
+        bool matched = false;
+        for (uint8_t f = 0; f < 8u; f++) {
+            if (memcmp(mock.roms[d], found[f].rom, 8) == 0) {
+                matched = true;
+                break;
+            }
+        }
+        ASSERT_TRUE(matched);
+    }
+
+    /* After last, next returns NONE_FOUND */
+    onewire_search_rom_t extra;
+    ASSERT_EQ(onewire_search_next(&state, &extra), ONEWIRE_SEARCH_ERR_NONE_FOUND);
+}
+
+/* ---------- CRC error during search ---------- */
+
+/* A mock bus that returns a device with a bad CRC byte */
+static uint8_t bad_crc_rom[8] = {0x28, 0x01, 0x23, 0x45, 0x67, 0x89, 0x00, 0xFF};
+
+static mock_bus_t bad_crc_mock;
+
+static void bad_crc_reset_state(mock_bus_t *m)
+{
+    m->active[0] = true;
+    m->bit_pos = 0;
+    m->read_phase = 0;
+    m->cmd_bits_received = 0;
+    m->cmd_byte = 0;
+    m->in_command = true;
+}
+
+static bool bad_crc_reset(void *ctx)
+{
+    mock_bus_t *m = (mock_bus_t *)ctx;
+    bad_crc_reset_state(m);
+    return true;
+}
+
+static void bad_crc_write_bit(void *ctx, uint8_t bit)
+{
+    mock_bus_t *m = (mock_bus_t *)ctx;
+
+    if (m->in_command) {
+        m->cmd_bits_received++;
+        if (m->cmd_bits_received >= 8u) { m->in_command = false; }
+        return;
+    }
+
+    uint8_t byte_idx = (uint8_t)(m->bit_pos / 8u);
+    uint8_t bit_idx  = (uint8_t)(m->bit_pos % 8u);
+    uint8_t dev_bit  = (uint8_t)((bad_crc_rom[byte_idx] >> bit_idx) & 0x01u);
+    if (dev_bit != (bit & 0x01u)) { m->active[0] = false; }
+    m->bit_pos++;
+    m->read_phase = 0;
+}
+
+static uint8_t bad_crc_read_bit(void *ctx)
+{
+    mock_bus_t *m = (mock_bus_t *)ctx;
+
+    if (m->in_command || !m->active[0]) { return 1u; }
+
+    uint8_t byte_idx = (uint8_t)(m->bit_pos / 8u);
+    uint8_t bit_idx  = (uint8_t)(m->bit_pos % 8u);
+    uint8_t dev_bit  = (uint8_t)((bad_crc_rom[byte_idx] >> bit_idx) & 0x01u);
+
+    if (m->read_phase == 0) {
+        m->read_phase = 1;
+        return dev_bit;
+    } else {
+        m->read_phase = 0;
+        return (uint8_t)(dev_bit ^ 0x01u);  /* complement */
+    }
+}
+
+TEST(test_crc_error)
+{
+    /* bad_crc_rom has byte[7]=0xFF which is not the correct CRC of bytes[0..6] */
+    uint8_t check_crc = 0;
+    for (uint8_t i = 0; i < 7u; i++) {
+        uint8_t byte = bad_crc_rom[i];
+        for (uint8_t bit = 0; bit < 8u; bit++) {
+            uint8_t mix = (uint8_t)((check_crc ^ byte) & 0x01u);
+            check_crc >>= 1;
+            if (mix) { check_crc ^= 0x8Cu; }
+            byte >>= 1;
+        }
+    }
+    /* Confirm ROM's CRC byte does NOT match computed CRC */
+    ASSERT_TRUE(bad_crc_rom[7] != check_crc);
+
+    memset(&bad_crc_mock, 0, sizeof(bad_crc_mock));
+    bad_crc_mock.presence = true;
+    bad_crc_mock.num_devices = 1;
+    bad_crc_mock.active[0] = true;
+
+    onewire_search_bus_t bus = {
+        .ctx = &bad_crc_mock,
+        .reset = bad_crc_reset,
+        .write_bit = bad_crc_write_bit,
+        .read_bit = bad_crc_read_bit
+    };
+
+    onewire_search_state_t state;
+    ASSERT_EQ(onewire_search_init(&state, &bus), ONEWIRE_SEARCH_OK);
+
+    onewire_search_rom_t rom;
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_CRC);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("onewire_search")
@@ -629,4 +784,6 @@ TEST_MAIN("onewire_search")
     RUN(test_error_codes);
     RUN(test_constants);
     RUN(test_search_first_no_bus);
+    RUN(test_eight_devices);
+    RUN(test_crc_error);
 TEST_MAIN_END()

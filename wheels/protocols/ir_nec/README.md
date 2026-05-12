@@ -44,7 +44,7 @@ ir_nec_decode(pulses, count, &decoded);
 /* Repeat frame */
 ir_nec_pulse_t repeat[3];
 uint16_t rcount;
-ir_nec_encode_repeat(repeat, &rcount);  /* rcount = 2 */
+ir_nec_encode_repeat(repeat, &rcount);  /* rcount = 2 (leader + stop bit) */
 bool is_rep = ir_nec_is_repeat(pulses, count);
 
 /* Extended NEC (16-bit address) */

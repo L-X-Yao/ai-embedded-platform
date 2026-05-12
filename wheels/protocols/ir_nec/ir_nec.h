@@ -33,7 +33,7 @@ extern "C" {
 
 /* Pulse counts */
 #define IR_NEC_PULSE_COUNT          34u   /* leader + 32 data bits + stop */
-#define IR_NEC_REPEAT_PULSE_COUNT   3u    /* leader mark/space + stop */
+#define IR_NEC_REPEAT_PULSE_COUNT   2u    /* leader mark/space + stop */
 
 /* ---------- error codes ---------- */
 
@@ -71,8 +71,8 @@ ir_nec_err_t ir_nec_encode(const ir_nec_msg_t *msg, ir_nec_pulse_t *pulses,
 ir_nec_err_t ir_nec_decode(const ir_nec_pulse_t *pulses, uint16_t count,
                             ir_nec_msg_t *msg);
 
-/** Encode a NEC repeat frame (3 pulses: 9ms mark + 2.25ms space + stop).
- *  Sets *count = IR_NEC_REPEAT_PULSE_COUNT (3).
+/** Encode a NEC repeat frame (2 pulses: 9ms mark + 2.25ms space, then stop bit).
+ *  Sets *count = IR_NEC_REPEAT_PULSE_COUNT (2).
  *  @thread_safe: yes @isr_safe: yes */
 ir_nec_err_t ir_nec_encode_repeat(ir_nec_pulse_t *pulses, uint16_t *count);
 

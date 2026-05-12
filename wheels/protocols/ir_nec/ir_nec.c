@@ -146,11 +146,7 @@ ir_nec_err_t ir_nec_encode_repeat(ir_nec_pulse_t *pulses, uint16_t *count)
     pulses[1].mark_us  = IR_NEC_BIT_MARK_US;
     pulses[1].space_us = 0;
 
-    /* Third pulse slot unused but set for completeness */
-    pulses[2].mark_us  = 0;
-    pulses[2].space_us = 0;
-
-    *count = 2u;  /* effectively 2 meaningful pulses */
+    *count = 2u;
 
     return IR_NEC_OK;
 }
