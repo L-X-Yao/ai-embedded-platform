@@ -820,6 +820,16 @@ def chk_hal_guard_in_public(ctx, **_):
     if not hal_fields:
         return None
     hal_field = hal_fields[0]
+    hf_esc = re.escape(hal_field)
+    guard_pat = re.compile(
+        rf'!dev->{hf_esc}\b|dev->{hf_esc}\s*==\s*NULL|dev->{hf_esc}\s*!=\s*NULL')
+    static_helpers = {}
+    for sm in re.finditer(r'static\s+\w+\s+(\w+)\s*\(', ctx.source):
+        helper_name = sm.group(1)
+        helper_start = ctx.source[:sm.start()].count('\n')
+        helper_body = "\n".join(ctx.source.splitlines()[helper_start:helper_start + 12])
+        if guard_pat.search(helper_body):
+            static_helpers[helper_name] = True
     func_pat = re.compile(
         rf'^{re.escape(ctx.name)}_err_t\s+{re.escape(ctx.name)}_(\w+)\s*\(',
         re.MULTILINE)
@@ -830,10 +840,15 @@ def chk_hal_guard_in_public(ctx, **_):
         if fname == "init":
             continue
         func_start = ctx.source[:m.start()].count('\n')
-        body_end = min(func_start + 8, len(lines))
+        body_end = min(func_start + 10, len(lines))
         body = "\n".join(lines[func_start:body_end])
-        if f"dev->{hal_field}" in body and f"!dev->{hal_field}" not in body:
-            hits.append(fname)
+        if f"dev->{hal_field}" not in body:
+            continue
+        if guard_pat.search(body):
+            continue
+        if any(h in body for h in static_helpers):
+            continue
+        hits.append(fname)
     if not hits:
         return None
     names = ", ".join(hits[:3])
