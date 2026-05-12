@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.13)
+project(test_onewire_search C)
+
+# CMAKE_C_STANDARD set as a variable (not target property) intentionally:
+# standalone wheel test projects own the entire build, so a top-level variable
+# is simpler and consistent across all wheels.
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+add_executable(test_onewire_search
+    test_onewire_search.c
+    ../onewire_search.c
+)
+
+target_include_directories(test_onewire_search PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    # Convention: all wheel tests live at wheels/<layer>/<name>/test/,
+    # so ../../../../tooling/harness always resolves to the repo-root tooling dir.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_onewire_search PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_onewire_search PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+
+add_executable(test_null_onewire_search
+    test_null_onewire_search.c
+    ../onewire_search.c
+)
+target_include_directories(test_null_onewire_search PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_null_onewire_search PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_null_onewire_search PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+enable_testing()
+add_test(NAME onewire_search_tests COMMAND test_onewire_search)
+add_test(NAME onewire_search_null_tests COMMAND test_null_onewire_search)
