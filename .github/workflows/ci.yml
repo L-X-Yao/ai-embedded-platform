@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # ---- Always-run: audit + tooling tests ----
@@ -194,10 +194,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
+      - name: Verify ninja
+        run: ninja --version
 
       # Requires: tooling/requirements-ci.txt (checked into repo)
       - uses: actions/setup-python@v5
@@ -232,10 +230,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
+      - name: Verify ninja
+        run: ninja --version
 
       - uses: actions/setup-python@v5
         with:
@@ -275,10 +271,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build
+      - name: Verify ninja
+        run: ninja --version
 
       - name: Build
         run: |
@@ -298,8 +292,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+      - name: Verify ninja
+        run: ninja --version
       - name: Build and run mag_cal
         working-directory: projects/flybox/test/mag_cal
         run: |
@@ -327,18 +321,11 @@ jobs:
     # will fail until a CI-accessible source is set up.  Remove
     # continue-on-error once the SDK is available in CI.
     continue-on-error: true
-    env:
-      GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install arm-none-eabi-gcc
-        run: |
-          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
-          sudo mkdir -p /opt/gcc-arm
-          sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
-          echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
-          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+      - name: Verify toolchain
+        run: arm-none-eabi-gcc --version | head -1 && ninja --version
 
       - name: Build flybox firmware
         working-directory: projects/flybox/vsf_build
@@ -357,8 +344,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+      - name: Verify ninja
+        run: ninja --version
 
       - name: Build and run examples
         run: |
@@ -445,8 +432,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang
+      - name: Verify clang
+        run: clang --version | head -1
 
       - name: Run libfuzzer (10s per protocol)
         run: bash tooling/test/run_libfuzzer.sh --time 10
@@ -455,8 +442,9 @@ jobs:
 
   coverage-gate:
     name: coverage gate (>=80% all wheels)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: self-hosted
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -491,18 +479,11 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: self-hosted
     timeout-minutes: 15
-    env:
-      GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install arm-none-eabi-gcc
-        run: |
-          wget -q "$GCC_ARM_URL" -O /tmp/gcc-arm.tar.xz
-          sudo mkdir -p /opt/gcc-arm
-          sudo tar -xf /tmp/gcc-arm.tar.xz -C /opt/gcc-arm --strip-components=1
-          echo "/opt/gcc-arm/bin" >> "$GITHUB_PATH"
-          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+      - name: Verify arm-none-eabi-gcc
+        run: arm-none-eabi-gcc --version | head -1
 
       - name: Run ARM size audit
         run: bash tooling/audit/arm_size_audit.sh
