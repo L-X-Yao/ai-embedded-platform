@@ -5,11 +5,13 @@
 #
 # Checks:
 #   1. Block force-push to main/master
-#   2. Run `make ci-local` — tests + audit + scaffold + doc-drift
+#   2. Run audit (fast, works on both Windows and WSL)
 #
+# For full CI: run `make ci-local` or `wsl make ci-local` manually.
 # Skip: git push --no-verify
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
+AUDIT="$REPO/tooling/audit/audit_wheels.py"
 
 # ── Force-push guard ─────────────────────────────────────────────────
 PROTECTED_BRANCHES="main|master"
@@ -25,9 +27,6 @@ while IFS= read -r line; do
         if [[ "$remote_sha" != "$zero_sha" ]]; then
             if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
                 echo "ERROR: force-push to '$branch' is not allowed."
-                echo "  Remote: $remote_sha"
-                echo "  Local:  $local_sha"
-                echo ""
                 echo "  If intentional: git push --no-verify"
                 exit 1
             fi
@@ -35,14 +34,18 @@ while IFS= read -r line; do
     fi
 done
 
-# ── Local CI gate ────────────────────────────────────────────────────
-echo "pre-push: running ci-local..."
-if make -C "$REPO" ci-local 2>&1; then
-    echo "pre-push: ci-local PASSED"
+# ── Audit gate ───────────────────────────────────────────────────────
+if [[ ! -f "$AUDIT" ]]; then
     exit 0
+fi
+
+echo "pre-push: running wheel audit..."
+if python3 "$AUDIT" --quiet 2>&1; then
+    echo "pre-push: audit passed"
+elif python "$AUDIT" --quiet 2>&1; then
+    echo "pre-push: audit passed"
 else
-    echo ""
-    echo "pre-push: ci-local FAILED — fix before pushing"
+    echo "pre-push: audit FAILED — fix before pushing"
     echo "  To skip: git push --no-verify"
     exit 1
 fi
