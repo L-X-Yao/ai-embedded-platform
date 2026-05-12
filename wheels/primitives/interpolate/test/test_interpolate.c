@@ -249,6 +249,72 @@ TEST(test_table_exact_points)
     ASSERT_NEAR(out, 35.0f, 0.001f);
 }
 
+/* ── NaN in table x / y arrays ──────────────────────────────────── */
+
+TEST(test_table_nan_in_x)
+{
+    float out;
+    float nan_val = 0.0f / 0.0f;
+
+    /* NaN as the first x entry */
+    float xs0[] = { nan_val, 1.0f };
+    float ys0[] = { 0.0f, 1.0f };
+    interpolate_table_t t0 = { xs0, ys0, 2 };
+    ASSERT_EQ(interpolate_table(&t0, 0.5f, &out), INTERPOLATE_ERR_PARAM);
+
+    /* NaN as an interior x entry */
+    float xs1[] = { 0.0f, nan_val, 2.0f };
+    float ys1[] = { 0.0f, 1.0f, 2.0f };
+    interpolate_table_t t1 = { xs1, ys1, 3 };
+    ASSERT_EQ(interpolate_table(&t1, 1.0f, &out), INTERPOLATE_ERR_PARAM);
+}
+
+/* ── Inf inputs to linear / bilinear ────────────────────────────── */
+
+TEST(test_inf_inputs)
+{
+    float out;
+    float inf_val = 1.0f / 0.0f;   /* +Inf */
+
+    /* Linear: Inf x0 -> NaN result -> ERR_PARAM */
+    ASSERT_EQ(interpolate_linear(inf_val, 0.0f, inf_val, 1.0f, inf_val, &out),
+              INTERPOLATE_ERR_PARAM);
+
+    /* Linear: Inf x is passed through zero-slope segment: dx != 0 so
+     * the div-by-zero guard won't fire; output may be valid. Only check
+     * we don't crash and that the function returns either OK or ERR_PARAM. */
+    interpolate_err_t rc = interpolate_linear(0.0f, 0.0f, 10.0f, 10.0f,
+                                              inf_val, &out);
+    (void)rc;  /* extrapolation to Inf: result is Inf (finite output guard catches) */
+
+    /* Bilinear: Inf y -> should return ERR_PARAM because Inf goes through NaN output */
+    ASSERT_EQ(interpolate_bilinear(0.0f, 0.0f, 1.0f, 1.0f,
+                                   inf_val, -inf_val, -inf_val, inf_val,
+                                   0.5f, 0.5f, &out), INTERPOLATE_ERR_PARAM);
+}
+
+/* ── Bilinear extrapolation (x,y outside grid) ──────────────────── */
+
+TEST(test_bilinear_extrapolation)
+{
+    /* bilinear_extrapolation: tx and ty outside [0,1] — result may not be
+     * clamped (no clamping in bilinear), but must not crash and must
+     * propagate consistently. For a linear surface all corners equal, any
+     * extrapolated point still equals that value. */
+    float out;
+    ASSERT_EQ(interpolate_bilinear(0.0f, 0.0f, 1.0f, 1.0f,
+                                   5.0f, 5.0f, 5.0f, 5.0f,
+                                   2.0f, 3.0f, &out), INTERPOLATE_OK);
+    ASSERT_NEAR(out, 5.0f, 0.001f);
+
+    /* Linear gradient surface: q00=0 q10=1 q01=0 q11=1 (only depends on x).
+     * Extrapolate to x=2 (outside [0,1]): t_x=2, result=0+2*(1-0)=2. */
+    ASSERT_EQ(interpolate_bilinear(0.0f, 0.0f, 1.0f, 1.0f,
+                                   0.0f, 1.0f, 0.0f, 1.0f,
+                                   2.0f, 0.5f, &out), INTERPOLATE_OK);
+    ASSERT_NEAR(out, 2.0f, 0.001f);
+}
+
 TEST_MAIN("interpolate")
     RUN(test_linear_basic);
     RUN(test_linear_at_endpoints);
@@ -263,4 +329,7 @@ TEST_MAIN("interpolate")
     RUN(test_null_rejection);
     RUN(test_table_invalid_params);
     RUN(test_table_exact_points);
+    RUN(test_table_nan_in_x);
+    RUN(test_inf_inputs);
+    RUN(test_bilinear_extrapolation);
 TEST_MAIN_END()

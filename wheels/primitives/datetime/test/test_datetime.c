@@ -10,6 +10,7 @@
 
 #include "datetime.h"
 #include <string.h>
+#include <limits.h>
 
 /* ── Epoch round-trip ───────────────────────────────────────────── */
 
@@ -313,6 +314,31 @@ TEST(test_subtract_underflow)
     ASSERT_EQ(datetime_add_seconds(&dt, -1), DATETIME_ERR_PARAM);
 }
 
+/* ── INT32_MIN subtract (signed negation UB guard) ──────────────── */
+
+TEST(test_subtract_int32_min)
+{
+    /* INT32_MIN = -2147483648. Its magnitude (2147483648) exceeds epoch for
+     * dates before ~2068, so the underflow guard must fire. */
+    datetime_t dt;
+    memset(&dt, 0, sizeof(dt));
+    dt.year = 2026; dt.month = 1; dt.day = 1;
+    /* epoch ~= 820454400, much less than 2147483648 -> must return ERR */
+    ASSERT_EQ(datetime_add_seconds(&dt, INT32_MIN), DATETIME_ERR_PARAM);
+}
+
+/* ── Positive overflow guard ────────────────────────────────────── */
+
+TEST(test_add_seconds_positive_overflow)
+{
+    /* A date in 2069 + INT32_MAX seconds would overflow uint32_t.
+     * Epoch of 2069-01-01 ~= 2177539200. 2177539200 + 2147483647 > UINT32_MAX. */
+    datetime_t dt;
+    memset(&dt, 0, sizeof(dt));
+    dt.year = 2069; dt.month = 1; dt.day = 1;
+    ASSERT_EQ(datetime_add_seconds(&dt, INT32_MAX), DATETIME_ERR_PARAM);
+}
+
 TEST_MAIN("datetime")
     RUN(test_epoch_zero);
     RUN(test_round_trip_epoch_zero);
@@ -332,4 +358,6 @@ TEST_MAIN("datetime")
     RUN(test_days_in_month_invalid);
     RUN(test_large_epoch);
     RUN(test_subtract_underflow);
+    RUN(test_subtract_int32_min);
+    RUN(test_add_seconds_positive_overflow);
 TEST_MAIN_END()
