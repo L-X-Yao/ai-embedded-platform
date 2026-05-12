@@ -61,9 +61,14 @@ interpolate_err_t interpolate_table(const interpolate_table_t *table,
     /* NaN guard on query */
     if (is_nan(x)) return INTERPOLATE_ERR_PARAM;
 
-    /* Verify sorted ascending */
+    /* Verify sorted strictly ascending and no NaN in x[].
+     * NaN would pass a naive (x[i] <= x[i-1]) check (any comparison with NaN
+     * is false), silently corrupting the binary search. The is_nan check on
+     * x[0] is outside the loop; subsequent NaN entries are caught because
+     * NaN is never > any float, so x[i] > x[i-1] fails for NaN x[i]. */
+    if (is_nan(table->x[0])) return INTERPOLATE_ERR_PARAM;
     for (uint16_t i = 1U; i < table->len; i++) {
-        if (table->x[i] <= table->x[i - 1U]) {
+        if (is_nan(table->x[i]) || table->x[i] <= table->x[i - 1U]) {
             return INTERPOLATE_ERR_PARAM;
         }
     }

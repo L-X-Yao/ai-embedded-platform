@@ -168,17 +168,17 @@ datetime_err_t datetime_add_seconds(datetime_t *dt, int32_t seconds)
     datetime_err_t err = datetime_to_epoch(dt, &epoch);
     if (err != DATETIME_OK) return err;
 
-    /* Check for underflow */
-    if (seconds < 0 && (uint32_t)(-seconds) > epoch) {
-        return DATETIME_ERR_PARAM;
-    }
-
-    /* Apply offset. For negative seconds, the cast is safe because
-     * we verified above that the magnitude does not exceed epoch. */
-    if (seconds >= 0) {
-        epoch += (uint32_t)seconds;
+    if (seconds < 0) {
+        /* Use unsigned negation to avoid UB when seconds == INT32_MIN.
+         * (uint32_t)0 - (uint32_t)seconds is well-defined unsigned arithmetic
+         * and equals the correct magnitude for all int32_t negative values. */
+        uint32_t mag = (uint32_t)0 - (uint32_t)seconds;
+        if (mag > epoch) return DATETIME_ERR_PARAM;   /* underflow */
+        epoch -= mag;
     } else {
-        epoch -= (uint32_t)(-seconds);
+        /* Check for uint32_t overflow before adding. */
+        if ((uint32_t)seconds > UINT32_MAX - epoch) return DATETIME_ERR_PARAM;
+        epoch += (uint32_t)seconds;
     }
 
     return datetime_from_epoch(epoch, dt);
