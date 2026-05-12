@@ -104,14 +104,20 @@ resolve_includes() {
         includes="$includes -I$wheel_dir/vendor/inc"
     fi
 
-    # Cross-wheel dependencies: auto-discover from CMakeLists.txt
+    # Cross-wheel dependencies: auto-discover from CMakeLists.txt or test/CMakeLists.txt
+    local cmake_file=""
     if [[ -f "$wheel_dir/CMakeLists.txt" ]]; then
+        cmake_file="$wheel_dir/CMakeLists.txt"
+    elif [[ -f "$wheel_dir/test/CMakeLists.txt" ]]; then
+        cmake_file="$wheel_dir/test/CMakeLists.txt"
+    fi
+    if [[ -n "$cmake_file" ]]; then
         while IFS= read -r dep_name; do
             [[ -z "$dep_name" ]] && continue
             local dep_dir
             dep_dir=$(find "$ARM_AUDIT_REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
             [[ -n "$dep_dir" ]] && includes="$includes -I$dep_dir"
-        done < <(grep -oE '\.\./\.\./[a-z_]+/[a-z_]+' "$wheel_dir/CMakeLists.txt" 2>/dev/null \
+        done < <(grep -oE '(primitives|drivers|protocols|modules)/[a-z_0-9]+' "$cmake_file" 2>/dev/null \
             | sed 's|.*/||' | sort -u || true)
     fi
 
