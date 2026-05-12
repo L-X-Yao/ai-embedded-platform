@@ -61,7 +61,7 @@ apa102_err_t apa102_set_pixel(apa102_pixel_t *buf, uint16_t num_leds,
 
 apa102_err_t apa102_show(apa102_t *dev, const apa102_pixel_t *buf)
 {
-    if (!dev || !buf)
+    if (!dev || !dev->spi || !buf)
         return APA102_ERR_PARAM;
 
     dev->spi->cs_low(dev->spi->ctx);

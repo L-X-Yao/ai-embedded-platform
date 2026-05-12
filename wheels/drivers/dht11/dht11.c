@@ -35,7 +35,7 @@ static dht11_err_t wait_pin(dht11_t *dev, bool level, uint32_t timeout_us)
 
 dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->gpio || !out)
         return DHT11_ERR_PARAM;
 
     uint8_t bytes[5] = {0};
