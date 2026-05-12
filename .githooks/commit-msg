@@ -15,7 +15,7 @@
 MSG_FILE="$1"
 MSG=$(head -1 "$MSG_FILE")
 
-TYPES="docs|wheel|exp|port|project|tool|ci"
+TYPES="docs|wheel|exp|port|project|tool|example|ci"
 PATTERN="^($TYPES)(\([a-z0-9/_-]+\))?: [a-z]"
 
 if ! echo "$MSG" | grep -qE "$PATTERN"; then
