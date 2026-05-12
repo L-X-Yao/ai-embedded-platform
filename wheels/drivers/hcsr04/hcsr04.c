@@ -49,7 +49,7 @@ hcsr04_err_t hcsr04_init(hcsr04_t *dev, const hcsr04_hal_t *hal)
 
 hcsr04_err_t hcsr04_read_us(hcsr04_t *dev, uint32_t *echo_us)
 {
-    if (!dev || !echo_us)
+    if (!dev || !echo_us || !dev->hal)
     {
         return HCSR04_ERR_PARAM;
     }
@@ -92,7 +92,7 @@ hcsr04_err_t hcsr04_read_us(hcsr04_t *dev, uint32_t *echo_us)
 
 hcsr04_err_t hcsr04_read_cm(hcsr04_t *dev, float *distance_cm)
 {
-    if (!dev || !distance_cm)
+    if (!dev || !distance_cm || !dev->hal)
     {
         return HCSR04_ERR_PARAM;
     }

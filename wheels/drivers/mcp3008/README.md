@@ -60,7 +60,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (25 tests)
+- Unit tests (sim): PASS (26 tests + 7 hw_model tests)
 - HIL: N/A
 
 ## API convention deviations

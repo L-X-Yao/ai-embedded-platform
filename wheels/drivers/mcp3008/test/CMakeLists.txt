@@ -26,6 +26,19 @@ target_include_directories(test_null_mcp3008 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_mcp3008 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_hw_model_mcp3008
+    test_hw_model_mcp3008.c
+    ../mcp3008.c
+)
+target_include_directories(test_hw_model_mcp3008 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_compile_options(test_hw_model_mcp3008 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
 enable_testing()
 add_test(NAME mcp3008_tests COMMAND test_mcp3008)
 add_test(NAME mcp3008_null_tests COMMAND test_null_mcp3008)
+add_test(NAME mcp3008_hw_model_tests COMMAND test_hw_model_mcp3008)
