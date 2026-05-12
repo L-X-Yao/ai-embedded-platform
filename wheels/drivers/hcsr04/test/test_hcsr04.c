@@ -213,6 +213,35 @@ TEST(test_read_cm_below_min_range)
     ASSERT_EQ(e, HCSR04_ERR_RANGE);
 }
 
+TEST(test_read_cm_above_max_range)
+{
+    setup();
+    /* >400cm: echo too long, e.g. 23500us -> 403.0cm */
+    setup_echo(23500);
+
+    float dist;
+    hcsr04_err_t e = hcsr04_read_cm(&dev, &dist);
+    ASSERT_EQ(e, HCSR04_ERR_RANGE);
+}
+
+TEST(test_read_us_uninitialized_hal)
+{
+    /* Calling read on a zero-initialized dev (hal == NULL) must not crash */
+    hcsr04_t d;
+    memset(&d, 0, sizeof(d));
+    uint32_t us;
+    ASSERT_EQ(hcsr04_read_us(&d, &us), HCSR04_ERR_PARAM);
+}
+
+TEST(test_read_cm_uninitialized_hal)
+{
+    /* Calling read on a zero-initialized dev (hal == NULL) must not crash */
+    hcsr04_t d;
+    memset(&d, 0, sizeof(d));
+    float dist;
+    ASSERT_EQ(hcsr04_read_cm(&d, &dist), HCSR04_ERR_PARAM);
+}
+
 TEST(test_read_cm_timeout_no_echo)
 {
     setup();
@@ -282,6 +311,9 @@ TEST_MAIN("hcsr04")
     RUN(test_read_cm_max_range);
     RUN(test_read_cm_min_range);
     RUN(test_read_cm_below_min_range);
+    RUN(test_read_cm_above_max_range);
+    RUN(test_read_us_uninitialized_hal);
+    RUN(test_read_cm_uninitialized_hal);
     RUN(test_read_cm_timeout_no_echo);
     RUN(test_read_cm_timeout_echo_stuck_high);
     RUN(test_read_us_normal);

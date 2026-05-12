@@ -208,6 +208,14 @@ TEST(test_read_voltage_vref_negative)
     ASSERT_EQ(mcp3008_read_voltage(&dev, 0, -1.0f, &v), MCP3008_ERR_PARAM);
 }
 
+TEST(test_read_voltage_channel_out_of_range)
+{
+    setup();
+    float v;
+    ASSERT_EQ(mcp3008_read_voltage(&dev, 8,   3.3f, &v), MCP3008_ERR_PARAM);
+    ASSERT_EQ(mcp3008_read_voltage(&dev, 255, 3.3f, &v), MCP3008_ERR_PARAM);
+}
+
 /* ---------- SPI failure tests ---------- */
 
 TEST(test_spi_transfer_failure)
@@ -284,6 +292,7 @@ TEST_MAIN("mcp3008")
     RUN(test_read_voltage_fullscale);
     RUN(test_read_voltage_vref_zero);
     RUN(test_read_voltage_vref_negative);
+    RUN(test_read_voltage_channel_out_of_range);
     RUN(test_spi_transfer_failure);
     RUN(test_spi_cs_failure);
     RUN(test_read_single_null_dev);
