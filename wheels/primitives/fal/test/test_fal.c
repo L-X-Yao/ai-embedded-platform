@@ -169,13 +169,13 @@ TEST(test_out_of_bounds)
     uint8_t buf[8];
 
     int ret = fal_partition_read(p, (uint32_t)(p->len - 2u), buf, 8);
-    ASSERT_TRUE(ret == -1);
+    ASSERT_TRUE(ret == FAL_ERR_OVERFLOW);
 
     ret = fal_partition_write(p, (uint32_t)p->len, buf, 1);
-    ASSERT_TRUE(ret == -1);
+    ASSERT_TRUE(ret == FAL_ERR_OVERFLOW);
 
     ret = fal_partition_erase(p, (uint32_t)(p->len - 10u), 20);
-    ASSERT_TRUE(ret == -1);
+    ASSERT_TRUE(ret == FAL_ERR_OVERFLOW);
 }
 
 TEST(test_partition_isolation)
@@ -217,6 +217,47 @@ TEST(test_show_part_table)
     ASSERT_TRUE(1);
 }
 
+TEST(test_err_param)
+{
+    uint8_t buf[4] = {0};
+    /* NULL part triggers FAL_ERR_PARAM */
+    ASSERT_TRUE(fal_partition_read(NULL, 0, buf, 4)        == FAL_ERR_PARAM);
+    ASSERT_TRUE(fal_partition_write(NULL, 0, buf, 4)       == FAL_ERR_PARAM);
+    ASSERT_TRUE(fal_partition_erase(NULL, 0, 4)            == FAL_ERR_PARAM);
+    ASSERT_TRUE(fal_partition_erase_all(NULL)              == FAL_ERR_PARAM);
+
+    const struct fal_partition *p = fal_partition_find("config");
+    /* NULL buf triggers FAL_ERR_PARAM */
+    ASSERT_TRUE(fal_partition_read(p, 0, NULL, 4)          == FAL_ERR_PARAM);
+    ASSERT_TRUE(fal_partition_write(p, 0, NULL, 4)         == FAL_ERR_PARAM);
+}
+
+TEST(test_err_not_ready)
+{
+    /* Partition pointing at a flash device that does not exist. */
+    static const struct fal_partition orphan = {
+        .name       = "orphan",
+        .flash_name = "no_such_flash",
+        .offset     = 0,
+        .len        = 4096,
+    };
+    uint8_t buf[4] = {0};
+    ASSERT_TRUE(fal_partition_read(&orphan, 0, buf, 4)     == FAL_ERR_NOT_READY);
+    ASSERT_TRUE(fal_partition_write(&orphan, 0, buf, 4)    == FAL_ERR_NOT_READY);
+    ASSERT_TRUE(fal_partition_erase(&orphan, 0, 4)         == FAL_ERR_NOT_READY);
+}
+
+TEST(test_err_hal)
+{
+    /* Reference FAL_ERR_HAL to keep coverage explicit; the value
+     * propagates from the underlying device ops when those return < 0.
+     * Distinctness is asserted to lock the enum layout. */
+    ASSERT_TRUE(FAL_ERR_HAL != FAL_OK);
+    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_PARAM);
+    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_OVERFLOW);
+    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_NOT_READY);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("fal")
@@ -233,5 +274,8 @@ TEST_MAIN("fal")
     RUN(test_partition_isolation);
     RUN(test_flash_write_semantics);
     RUN(test_show_part_table);
+    RUN(test_err_param);
+    RUN(test_err_not_ready);
+    RUN(test_err_hal);
 TEST_MAIN_END()
 

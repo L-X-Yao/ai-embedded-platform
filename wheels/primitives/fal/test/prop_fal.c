@@ -100,7 +100,7 @@ PROPERTY(erase_fills_ff, 5000) {
     }
 }
 
-/* Property: out-of-bounds read/write returns -1 */
+/* Property: out-of-bounds read/write returns FAL_ERR_OVERFLOW */
 PROPERTY(oob_returns_error, 50000) {
     (void)seed;  /* property uses fixed offsets; seed unused */
     ensure_init();
@@ -110,10 +110,10 @@ PROPERTY(oob_returns_error, 50000) {
     uint8_t buf[8];
     uint32_t bad_off = (uint32_t)(p->len - 2u);
     int ret = fal_partition_read(p, bad_off, buf, 8);
-    PROP_ASSERT_EQ(ret, -1);
+    PROP_ASSERT_EQ(ret, FAL_ERR_OVERFLOW);
 
     ret = fal_partition_write(p, (uint32_t)p->len, buf, 1);
-    PROP_ASSERT_EQ(ret, -1);
+    PROP_ASSERT_EQ(ret, FAL_ERR_OVERFLOW);
 }
 
 /* Property: NOR flash write semantics — can only clear bits */

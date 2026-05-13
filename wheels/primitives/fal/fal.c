@@ -97,14 +97,14 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
     REQUIRE(part != NULL);
     REQUIRE(buf != NULL);
     if (!part || !buf) {
-        return -1;
+        return FAL_ERR_PARAM;
     }
     if ((size_t)addr + size > part->len) {
-        return -1;
+        return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
     if (!dev || !dev->ops.read) {
-        return -1;
+        return FAL_ERR_NOT_READY;
     }
     return dev->ops.read(part->offset + (long)addr, buf, size);
 }
@@ -115,14 +115,14 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
     REQUIRE(part != NULL);
     REQUIRE(buf != NULL);
     if (!part || !buf) {
-        return -1;
+        return FAL_ERR_PARAM;
     }
     if ((size_t)addr + size > part->len) {
-        return -1;
+        return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
     if (!dev || !dev->ops.write) {
-        return -1;
+        return FAL_ERR_NOT_READY;
     }
     return dev->ops.write(part->offset + (long)addr, buf, size);
 }
@@ -132,14 +132,14 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
 {
     REQUIRE(part != NULL);
     if (!part) {
-        return -1;
+        return FAL_ERR_PARAM;
     }
     if ((size_t)addr + size > part->len) {
-        return -1;
+        return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
     if (!dev || !dev->ops.erase) {
-        return -1;
+        return FAL_ERR_NOT_READY;
     }
     return dev->ops.erase(part->offset + (long)addr, size);
 }
@@ -148,7 +148,7 @@ int fal_partition_erase_all(const struct fal_partition *part)
 {
     REQUIRE(part != NULL);
     if (!part) {
-        return -1;
+        return FAL_ERR_PARAM;
     }
     return fal_partition_erase(part, 0, part->len);
 }
