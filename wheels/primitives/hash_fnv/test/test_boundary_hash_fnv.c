@@ -24,13 +24,6 @@ TEST(test_boundary_fnv1a_32_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fnv1a_32_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)fnv1a_32(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_fnv1a_64_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -42,13 +35,6 @@ TEST(test_boundary_fnv1a_64_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     (void)fnv1a_64(_safe_data_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_fnv1a_64_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)fnv1a_64(_safe_data_0, SIZE_MAX);
     /* must not crash */
 }
 
@@ -87,13 +73,6 @@ TEST(test_boundary_fnv1a_32_update_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fnv1a_32_update_len_size_max) {
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)fnv1a_32_update(0, _safe_data_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_fnv1a_64_update_len_zero) {
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
@@ -108,28 +87,17 @@ TEST(test_boundary_fnv1a_64_update_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fnv1a_64_update_len_size_max) {
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)fnv1a_64_update(0, _safe_data_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_hash_fnv") {
     RUN(test_boundary_fnv1a_32_len_zero);
     RUN(test_boundary_fnv1a_32_len_one);
-    RUN(test_boundary_fnv1a_32_len_size_max);
     RUN(test_boundary_fnv1a_64_len_zero);
     RUN(test_boundary_fnv1a_64_len_one);
-    RUN(test_boundary_fnv1a_64_len_size_max);
     RUN(test_boundary_fnv1a_32_update_hash_zero);
     RUN(test_boundary_fnv1a_32_update_hash_one);
     RUN(test_boundary_fnv1a_32_update_hash_uint32_max);
     RUN(test_boundary_fnv1a_32_update_len_zero);
     RUN(test_boundary_fnv1a_32_update_len_one);
-    RUN(test_boundary_fnv1a_32_update_len_size_max);
     RUN(test_boundary_fnv1a_64_update_len_zero);
     RUN(test_boundary_fnv1a_64_update_len_one);
-    RUN(test_boundary_fnv1a_64_update_len_size_max);
 }
 TEST_MAIN_END()

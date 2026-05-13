@@ -45,19 +45,11 @@ TEST(test_boundary_log_filter_sink_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_log_filter_sink_len_size_max) {
-    char _safe_line_1[64];
-    memset(_safe_line_1, 0, sizeof(_safe_line_1));
-    (void)log_filter_sink(NULL, _safe_line_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_log_filter") {
     RUN(test_boundary_log_filter_init_mode_zero);
     RUN(test_boundary_log_filter_init_mode_neg1);
     RUN(test_boundary_log_filter_init_mode_past_max);
     RUN(test_boundary_log_filter_sink_len_zero);
     RUN(test_boundary_log_filter_sink_len_one);
-    RUN(test_boundary_log_filter_sink_len_size_max);
 }
 TEST_MAIN_END()

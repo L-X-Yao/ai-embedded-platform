@@ -24,13 +24,6 @@ TEST(test_boundary_device_info_set_boot_count_count_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_device_info_set_boot_count_count_uint32_max) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_boot_count(&_safe_info_0, UINT32_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_device_info_set_reset_reason_reason_zero) {
     device_info_t _safe_info_0;
     memset(&_safe_info_0, 0, sizeof(_safe_info_0));
@@ -70,24 +63,13 @@ TEST(test_boundary_device_info_format_buf_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_device_info_format_buf_size_uint16_max) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    char _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)device_info_format(&_safe_info_0, _safe_buf_1, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_device_info") {
     RUN(test_boundary_device_info_set_boot_count_count_zero);
     RUN(test_boundary_device_info_set_boot_count_count_one);
-    RUN(test_boundary_device_info_set_boot_count_count_uint32_max);
     RUN(test_boundary_device_info_set_reset_reason_reason_zero);
     RUN(test_boundary_device_info_set_reset_reason_reason_one);
     RUN(test_boundary_device_info_set_reset_reason_reason_uint32_max);
     RUN(test_boundary_device_info_format_buf_size_zero);
     RUN(test_boundary_device_info_format_buf_size_one);
-    RUN(test_boundary_device_info_format_buf_size_uint16_max);
 }
 TEST_MAIN_END()

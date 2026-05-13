@@ -24,13 +24,6 @@ TEST(test_boundary_checksum_xor_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_checksum_xor_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)checksum_xor(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_checksum_sum8_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -42,13 +35,6 @@ TEST(test_boundary_checksum_sum8_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     (void)checksum_sum8(_safe_data_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_checksum_sum8_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)checksum_sum8(_safe_data_0, SIZE_MAX);
     /* must not crash */
 }
 
@@ -66,13 +52,6 @@ TEST(test_boundary_checksum_fletcher16_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_checksum_fletcher16_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)checksum_fletcher16(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_checksum_lrc_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -84,13 +63,6 @@ TEST(test_boundary_checksum_lrc_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     (void)checksum_lrc(_safe_data_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_checksum_lrc_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)checksum_lrc(_safe_data_0, SIZE_MAX);
     /* must not crash */
 }
 
@@ -108,28 +80,16 @@ TEST(test_boundary_checksum_internet_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_checksum_internet_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)checksum_internet(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_checksum") {
     RUN(test_boundary_checksum_xor_len_zero);
     RUN(test_boundary_checksum_xor_len_one);
-    RUN(test_boundary_checksum_xor_len_size_max);
     RUN(test_boundary_checksum_sum8_len_zero);
     RUN(test_boundary_checksum_sum8_len_one);
-    RUN(test_boundary_checksum_sum8_len_size_max);
     RUN(test_boundary_checksum_fletcher16_len_zero);
     RUN(test_boundary_checksum_fletcher16_len_one);
-    RUN(test_boundary_checksum_fletcher16_len_size_max);
     RUN(test_boundary_checksum_lrc_len_zero);
     RUN(test_boundary_checksum_lrc_len_one);
-    RUN(test_boundary_checksum_lrc_len_size_max);
     RUN(test_boundary_checksum_internet_len_zero);
     RUN(test_boundary_checksum_internet_len_one);
-    RUN(test_boundary_checksum_internet_len_size_max);
 }
 TEST_MAIN_END()

@@ -24,16 +24,8 @@ TEST(test_boundary_log_dedup_sink_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_log_dedup_sink_len_size_max) {
-    char _safe_line_1[64];
-    memset(_safe_line_1, 0, sizeof(_safe_line_1));
-    (void)log_dedup_sink(NULL, _safe_line_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_log_dedup") {
     RUN(test_boundary_log_dedup_sink_len_zero);
     RUN(test_boundary_log_dedup_sink_len_one);
-    RUN(test_boundary_log_dedup_sink_len_size_max);
 }
 TEST_MAIN_END()

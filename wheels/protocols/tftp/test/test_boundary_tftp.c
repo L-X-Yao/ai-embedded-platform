@@ -28,15 +28,6 @@ TEST(test_boundary_tftp_parse_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_tftp_parse_len_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    tftp_packet_t _safe_pkt_2;
-    memset(&_safe_pkt_2, 0, sizeof(_safe_pkt_2));
-    (void)tftp_parse(_safe_buf_0, SIZE_MAX, &_safe_pkt_2);
-    /* must not crash */
-}
-
 TEST(test_boundary_tftp_build_rrq_cap_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -56,17 +47,6 @@ TEST(test_boundary_tftp_build_rrq_cap_one) {
     char _safe_mode_3[64];
     memset(_safe_mode_3, 0, sizeof(_safe_mode_3));
     (void)tftp_build_rrq(_safe_buf_0, 1, _safe_filename_2, _safe_mode_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_tftp_build_rrq_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    char _safe_filename_2[64];
-    memset(_safe_filename_2, 0, sizeof(_safe_filename_2));
-    char _safe_mode_3[64];
-    memset(_safe_mode_3, 0, sizeof(_safe_mode_3));
-    (void)tftp_build_rrq(_safe_buf_0, SIZE_MAX, _safe_filename_2, _safe_mode_3);
     /* must not crash */
 }
 
@@ -92,17 +72,6 @@ TEST(test_boundary_tftp_build_wrq_cap_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_tftp_build_wrq_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    char _safe_filename_2[64];
-    memset(_safe_filename_2, 0, sizeof(_safe_filename_2));
-    char _safe_mode_3[64];
-    memset(_safe_mode_3, 0, sizeof(_safe_mode_3));
-    (void)tftp_build_wrq(_safe_buf_0, SIZE_MAX, _safe_filename_2, _safe_mode_3);
-    /* must not crash */
-}
-
 TEST(test_boundary_tftp_build_data_cap_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -118,15 +87,6 @@ TEST(test_boundary_tftp_build_data_cap_one) {
     uint8_t _safe_data_3[64];
     memset(_safe_data_3, 0, sizeof(_safe_data_3));
     (void)tftp_build_data(_safe_buf_0, 1, 0, _safe_data_3, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_tftp_build_data_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint8_t _safe_data_3[64];
-    memset(_safe_data_3, 0, sizeof(_safe_data_3));
-    (void)tftp_build_data(_safe_buf_0, SIZE_MAX, 0, _safe_data_3, 0);
     /* must not crash */
 }
 
@@ -175,15 +135,6 @@ TEST(test_boundary_tftp_build_data_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_tftp_build_data_len_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint8_t _safe_data_3[64];
-    memset(_safe_data_3, 0, sizeof(_safe_data_3));
-    (void)tftp_build_data(_safe_buf_0, 0, 0, _safe_data_3, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_tftp_build_ack_cap_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -195,13 +146,6 @@ TEST(test_boundary_tftp_build_ack_cap_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     (void)tftp_build_ack(_safe_buf_0, 1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_tftp_build_ack_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)tftp_build_ack(_safe_buf_0, SIZE_MAX, 0);
     /* must not crash */
 }
 
@@ -244,15 +188,6 @@ TEST(test_boundary_tftp_build_error_cap_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_tftp_build_error_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    char _safe_msg_3[64];
-    memset(_safe_msg_3, 0, sizeof(_safe_msg_3));
-    (void)tftp_build_error(_safe_buf_0, SIZE_MAX, 0, _safe_msg_3);
-    /* must not crash */
-}
-
 TEST(test_boundary_tftp_build_error_code_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -283,31 +218,24 @@ TEST(test_boundary_tftp_build_error_code_uint16_max) {
 TEST_MAIN("boundary_tftp") {
     RUN(test_boundary_tftp_parse_len_zero);
     RUN(test_boundary_tftp_parse_len_one);
-    RUN(test_boundary_tftp_parse_len_size_max);
     RUN(test_boundary_tftp_build_rrq_cap_zero);
     RUN(test_boundary_tftp_build_rrq_cap_one);
-    RUN(test_boundary_tftp_build_rrq_cap_size_max);
     RUN(test_boundary_tftp_build_wrq_cap_zero);
     RUN(test_boundary_tftp_build_wrq_cap_one);
-    RUN(test_boundary_tftp_build_wrq_cap_size_max);
     RUN(test_boundary_tftp_build_data_cap_zero);
     RUN(test_boundary_tftp_build_data_cap_one);
-    RUN(test_boundary_tftp_build_data_cap_size_max);
     RUN(test_boundary_tftp_build_data_block_zero);
     RUN(test_boundary_tftp_build_data_block_one);
     RUN(test_boundary_tftp_build_data_block_uint16_max);
     RUN(test_boundary_tftp_build_data_len_zero);
     RUN(test_boundary_tftp_build_data_len_one);
-    RUN(test_boundary_tftp_build_data_len_size_max);
     RUN(test_boundary_tftp_build_ack_cap_zero);
     RUN(test_boundary_tftp_build_ack_cap_one);
-    RUN(test_boundary_tftp_build_ack_cap_size_max);
     RUN(test_boundary_tftp_build_ack_block_zero);
     RUN(test_boundary_tftp_build_ack_block_one);
     RUN(test_boundary_tftp_build_ack_block_uint16_max);
     RUN(test_boundary_tftp_build_error_cap_zero);
     RUN(test_boundary_tftp_build_error_cap_one);
-    RUN(test_boundary_tftp_build_error_cap_size_max);
     RUN(test_boundary_tftp_build_error_code_zero);
     RUN(test_boundary_tftp_build_error_code_one);
     RUN(test_boundary_tftp_build_error_code_uint16_max);

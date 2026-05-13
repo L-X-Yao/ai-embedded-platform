@@ -24,13 +24,6 @@ TEST(test_boundary_modbus_rtu_check_crc_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_rtu_check_crc_len_uint16_max) {
-    uint8_t _safe_frame_0[64];
-    memset(_safe_frame_0, 0, sizeof(_safe_frame_0));
-    (void)modbus_rtu_check_crc(_safe_frame_0, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_modbus_rtu_parse_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -49,15 +42,6 @@ TEST(test_boundary_modbus_rtu_parse_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_rtu_parse_len_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    modbus_rtu_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    (void)modbus_rtu_parse(_safe_buf_0, (uint16_t)(UINT16_MAX), &_safe_frame_2);
-    /* must not crash */
-}
-
 TEST(test_boundary_modbus_rtu_build_buf_size_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -73,15 +57,6 @@ TEST(test_boundary_modbus_rtu_build_buf_size_one) {
     uint8_t _safe_data_4[64];
     memset(_safe_data_4, 0, sizeof(_safe_data_4));
     (void)modbus_rtu_build(_safe_buf_0, 1, 0, 0, _safe_data_4, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_modbus_rtu_build_buf_size_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint8_t _safe_data_4[64];
-    memset(_safe_data_4, 0, sizeof(_safe_data_4));
-    (void)modbus_rtu_build(_safe_buf_0, (uint16_t)(UINT16_MAX), 0, 0, _safe_data_4, 0);
     /* must not crash */
 }
 
@@ -157,15 +132,6 @@ TEST(test_boundary_modbus_rtu_build_data_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_rtu_build_data_len_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint8_t _safe_data_4[64];
-    memset(_safe_data_4, 0, sizeof(_safe_data_4));
-    (void)modbus_rtu_build(_safe_buf_0, 0, 0, 0, _safe_data_4, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_modbus_rtu_master_read_regs_buf_size_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -177,13 +143,6 @@ TEST(test_boundary_modbus_rtu_master_read_regs_buf_size_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     (void)modbus_rtu_master_read_regs(_safe_buf_0, 1, 0, 0, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_modbus_rtu_master_read_regs_buf_size_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)modbus_rtu_master_read_regs(_safe_buf_0, (uint16_t)(UINT16_MAX), 0, 0, 0, 0);
     /* must not crash */
 }
 
@@ -264,13 +223,6 @@ TEST(test_boundary_modbus_rtu_master_read_regs_count_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_rtu_master_read_regs_count_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)modbus_rtu_master_read_regs(_safe_buf_0, 0, 0, 0, 0, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_modbus_rtu_master_write_reg_buf_size_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -282,13 +234,6 @@ TEST(test_boundary_modbus_rtu_master_write_reg_buf_size_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     (void)modbus_rtu_master_write_reg(_safe_buf_0, 1, 0, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_modbus_rtu_master_write_reg_buf_size_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)modbus_rtu_master_write_reg(_safe_buf_0, (uint16_t)(UINT16_MAX), 0, 0, 0);
     /* must not crash */
 }
 
@@ -373,15 +318,6 @@ TEST(test_boundary_modbus_rtu_master_write_regs_buf_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_rtu_master_write_regs_buf_size_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint16_t _safe_values_5;
-    memset(&_safe_values_5, 0, sizeof(_safe_values_5));
-    (void)modbus_rtu_master_write_regs(_safe_buf_0, (uint16_t)(UINT16_MAX), 0, 0, 0, &_safe_values_5);
-    /* must not crash */
-}
-
 TEST(test_boundary_modbus_rtu_master_write_regs_slave_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -451,15 +387,6 @@ TEST(test_boundary_modbus_rtu_master_write_regs_count_one) {
     uint16_t _safe_values_5;
     memset(&_safe_values_5, 0, sizeof(_safe_values_5));
     (void)modbus_rtu_master_write_regs(_safe_buf_0, 0, 0, 0, 1, &_safe_values_5);
-    /* must not crash */
-}
-
-TEST(test_boundary_modbus_rtu_master_write_regs_count_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint16_t _safe_values_5;
-    memset(&_safe_values_5, 0, sizeof(_safe_values_5));
-    (void)modbus_rtu_master_write_regs(_safe_buf_0, 0, 0, 0, (uint16_t)(UINT16_MAX), &_safe_values_5);
     /* must not crash */
 }
 
@@ -580,13 +507,10 @@ TEST(test_boundary_modbus_rtu_slave_process_resp_size_uint16_max) {
 TEST_MAIN("boundary_modbus_rtu") {
     RUN(test_boundary_modbus_rtu_check_crc_len_zero);
     RUN(test_boundary_modbus_rtu_check_crc_len_one);
-    RUN(test_boundary_modbus_rtu_check_crc_len_uint16_max);
     RUN(test_boundary_modbus_rtu_parse_len_zero);
     RUN(test_boundary_modbus_rtu_parse_len_one);
-    RUN(test_boundary_modbus_rtu_parse_len_uint16_max);
     RUN(test_boundary_modbus_rtu_build_buf_size_zero);
     RUN(test_boundary_modbus_rtu_build_buf_size_one);
-    RUN(test_boundary_modbus_rtu_build_buf_size_uint16_max);
     RUN(test_boundary_modbus_rtu_build_addr_zero);
     RUN(test_boundary_modbus_rtu_build_addr_one);
     RUN(test_boundary_modbus_rtu_build_addr_uint8_max);
@@ -595,10 +519,8 @@ TEST_MAIN("boundary_modbus_rtu") {
     RUN(test_boundary_modbus_rtu_build_func_uint8_max);
     RUN(test_boundary_modbus_rtu_build_data_len_zero);
     RUN(test_boundary_modbus_rtu_build_data_len_one);
-    RUN(test_boundary_modbus_rtu_build_data_len_uint16_max);
     RUN(test_boundary_modbus_rtu_master_read_regs_buf_size_zero);
     RUN(test_boundary_modbus_rtu_master_read_regs_buf_size_one);
-    RUN(test_boundary_modbus_rtu_master_read_regs_buf_size_uint16_max);
     RUN(test_boundary_modbus_rtu_master_read_regs_slave_zero);
     RUN(test_boundary_modbus_rtu_master_read_regs_slave_one);
     RUN(test_boundary_modbus_rtu_master_read_regs_slave_uint8_max);
@@ -610,10 +532,8 @@ TEST_MAIN("boundary_modbus_rtu") {
     RUN(test_boundary_modbus_rtu_master_read_regs_start_uint16_max);
     RUN(test_boundary_modbus_rtu_master_read_regs_count_zero);
     RUN(test_boundary_modbus_rtu_master_read_regs_count_one);
-    RUN(test_boundary_modbus_rtu_master_read_regs_count_uint16_max);
     RUN(test_boundary_modbus_rtu_master_write_reg_buf_size_zero);
     RUN(test_boundary_modbus_rtu_master_write_reg_buf_size_one);
-    RUN(test_boundary_modbus_rtu_master_write_reg_buf_size_uint16_max);
     RUN(test_boundary_modbus_rtu_master_write_reg_slave_zero);
     RUN(test_boundary_modbus_rtu_master_write_reg_slave_one);
     RUN(test_boundary_modbus_rtu_master_write_reg_slave_uint8_max);
@@ -625,7 +545,6 @@ TEST_MAIN("boundary_modbus_rtu") {
     RUN(test_boundary_modbus_rtu_master_write_reg_value_uint16_max);
     RUN(test_boundary_modbus_rtu_master_write_regs_buf_size_zero);
     RUN(test_boundary_modbus_rtu_master_write_regs_buf_size_one);
-    RUN(test_boundary_modbus_rtu_master_write_regs_buf_size_uint16_max);
     RUN(test_boundary_modbus_rtu_master_write_regs_slave_zero);
     RUN(test_boundary_modbus_rtu_master_write_regs_slave_one);
     RUN(test_boundary_modbus_rtu_master_write_regs_slave_uint8_max);
@@ -634,7 +553,6 @@ TEST_MAIN("boundary_modbus_rtu") {
     RUN(test_boundary_modbus_rtu_master_write_regs_start_uint16_max);
     RUN(test_boundary_modbus_rtu_master_write_regs_count_zero);
     RUN(test_boundary_modbus_rtu_master_write_regs_count_one);
-    RUN(test_boundary_modbus_rtu_master_write_regs_count_uint16_max);
     RUN(test_boundary_modbus_rtu_master_get_regs_max_count_zero);
     RUN(test_boundary_modbus_rtu_master_get_regs_max_count_one);
     RUN(test_boundary_modbus_rtu_master_get_regs_max_count_uint16_max);

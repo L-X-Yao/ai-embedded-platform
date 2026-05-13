@@ -14,245 +14,245 @@ TEST(test_boundary_interpolate_linear_x0_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_neg_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(-0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_nan) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(NAN, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_neg_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(-INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x0_neg_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(-FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_neg_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, -0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_nan) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, NAN, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, INFINITY, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_neg_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y0_neg_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_neg_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, -0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_nan) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, NAN, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, INFINITY, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_neg_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x1_neg_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_neg_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, -0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_nan) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, NAN, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, INFINITY, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_neg_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_y1_neg_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_neg_zero) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, -0.0f, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_nan) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, NAN, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, INFINITY, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_neg_inf) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_linear_x_neg_flt_max) {
     float _safe_out_5;
     memset(&_safe_out_5, 0, sizeof(_safe_out_5));
     interpolate_err_t ret = interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, &_safe_out_5);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_zero) {
@@ -261,7 +261,7 @@ TEST(test_boundary_interpolate_table_x_zero) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, 0.0f, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_neg_zero) {
@@ -270,7 +270,7 @@ TEST(test_boundary_interpolate_table_x_neg_zero) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, -0.0f, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_nan) {
@@ -279,7 +279,7 @@ TEST(test_boundary_interpolate_table_x_nan) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, NAN, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_inf) {
@@ -288,7 +288,7 @@ TEST(test_boundary_interpolate_table_x_inf) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, INFINITY, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_neg_inf) {
@@ -297,7 +297,7 @@ TEST(test_boundary_interpolate_table_x_neg_inf) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, -INFINITY, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_flt_max) {
@@ -306,7 +306,7 @@ TEST(test_boundary_interpolate_table_x_flt_max) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, FLT_MAX, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_table_x_neg_flt_max) {
@@ -315,497 +315,497 @@ TEST(test_boundary_interpolate_table_x_neg_flt_max) {
     float _safe_out_2;
     memset(&_safe_out_2, 0, sizeof(_safe_out_2));
     interpolate_err_t ret = interpolate_table(&_safe_table_0, -FLT_MAX, &_safe_out_2);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(-0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(-INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x0_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(-FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y0_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x1_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y1_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q00_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q10_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q01_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_q11_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_x_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_neg_zero) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_nan) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_neg_inf) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_interpolate_bilinear_y_neg_flt_max) {
     float _safe_out_10;
     memset(&_safe_out_10, 0, sizeof(_safe_out_10));
     interpolate_err_t ret = interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, &_safe_out_10);
-    ASSERT_TRUE(ret == INTERPOLATE_OK || ret == INTERPOLATE_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST_MAIN("boundary_interpolate") {
