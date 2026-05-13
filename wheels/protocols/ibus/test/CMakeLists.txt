@@ -20,5 +20,16 @@ target_include_directories(test_ibus PRIVATE
 )
 target_compile_options(test_ibus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_ibus
+    test_null_ibus.c
+    ../ibus.c
+)
+target_include_directories(test_null_ibus PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_null_ibus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ibus_tests COMMAND test_ibus)
+add_test(NAME ibus_null_tests COMMAND test_null_ibus)

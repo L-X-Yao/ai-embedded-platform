@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * tmp117 — TI TMP117 high-accuracy digital temperature sensor
+ *
+ * Layer:     L1
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
+ */
 #include "tmp117.h"
 
 #define REG_TEMP_RESULT 0x00u
@@ -64,6 +72,8 @@ tmp117_err_t tmp117_read(tmp117_t *dev, float *temp_c)
 tmp117_err_t tmp117_reset(tmp117_t *dev)
 {
     if (!dev)
+        return TMP117_ERR_PARAM;
+    if (!dev->i2c)
         return TMP117_ERR_PARAM;
     if (!write_reg16(dev, REG_CONFIG, 0x0002))
         return TMP117_ERR_I2C;

@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * bmm150 — Bosch BMM150 3-axis geomagnetic sensor
+ *
+ * Layer:     L1
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
+ */
 #include "bmm150.h"
 
 #define REG_CHIP_ID    0x40u

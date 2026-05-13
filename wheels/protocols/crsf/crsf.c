@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * crsf — TBS Crossfire / ExpressLRS (CRSF) RC protocol
+ *
+ * Layer:     L2
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "crsf.h"
 #include <string.h>
 

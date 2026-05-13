@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * peak_detector — track signal peak and valley with configurable hold/decay
+ *
+ * Layer:     L0
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "peak_detector.h"
 
 peak_detector_err_t peak_detector_init(peak_detector_t *ctx, float decay_rate)

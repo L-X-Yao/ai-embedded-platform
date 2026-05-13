@@ -5,7 +5,7 @@
  * Layer:     L0
  * Status:    candidate
  * Deps:      (none)
- * Instances: stateless
+ * Instances: multi
  *
  * Each byte encodes two decimal digits (0-9) in its upper and lower nibble.
  * Common in DS3231, PCF8563, and other RTC register formats.

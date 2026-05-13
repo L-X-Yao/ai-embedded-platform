@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * lis2dh12 — ST LIS2DH12 3-axis accelerometer
+ *
+ * Layer:     L1
+ * Status:    candidate
+ * Deps:      i2c_hal (injected)
+ * Instances: multi
+ */
 #include "lis2dh12.h"
 
 #define REG_WHO_AM_I  0x0Fu

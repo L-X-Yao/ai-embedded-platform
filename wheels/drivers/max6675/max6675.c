@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * max6675 — Maxim MAX6675 K-type thermocouple-to-digital converter
+ *
+ * Layer:     L1
+ * Status:    candidate
+ * Deps:      spi_hal (injected)
+ * Instances: multi
+ */
 #include "max6675.h"
 
 #define MAX6675_OPEN_BIT  (1u << 2)

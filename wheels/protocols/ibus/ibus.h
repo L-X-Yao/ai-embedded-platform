@@ -5,7 +5,7 @@
  * Layer:     L2
  * Status:    candidate
  * Deps:      (none)
- * Instances: stateless
+ * Instances: multi
  *
  * 32-byte frame: length(0x20) + type(0x40) + 14 channels (16-bit LE) + checksum.
  * Channel range: 1000-2000 (center 1500, like standard RC PWM).
