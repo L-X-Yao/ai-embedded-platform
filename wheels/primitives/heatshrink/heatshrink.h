@@ -91,7 +91,8 @@ typedef struct {
  * @param window_size    Size in bytes (must be power-of-2, 256..2048).
  * @param lookahead_bits Lookahead size in bits (4..8).
  * @return HEATSHRINK_OK on success, HEATSHRINK_ERR_PARAM on bad args.
- * @thread_safe: no
+ * @thread_safe: no (mutates encoder context)
+ * @isr_safe: yes (no locking, no allocation; caller must own the context)
  */
 heatshrink_err_t heatshrink_encoder_init(heatshrink_encoder_t *enc,
                                          uint8_t *window_buf,
