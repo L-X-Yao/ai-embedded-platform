@@ -150,10 +150,10 @@ ai-embedded-platform/
 
 | 层 | 目录 | 举例 | 验证 |
 |----|------|------|------|
-| L0 原语 | `primitives/` | log / cli_parser / state_machine / crc | sim 100% + ≥80% 覆盖 |
-| L1 驱动 | `drivers/` | mpu6050 / w25qxx / bmp280 | sim mock + ≥1 真机 |
-| L2 协议 | `protocols/` | mqtt_packet / modbus_rtu / at_command | sim loopback + 一致性 |
-| L3 模块 | `modules/` | ota_updater / data_logger / cli_shell | 集成 sim + 真机 |
+| L0 原语 73| `primitives/` | log / cli_parser / state_machine / crc | sim 100% + ≥80% 覆盖 |
+| L1 驱动 107| `drivers/` | mpu6050 / w25qxx / bmp280 | sim mock + ≥1 真机 |
+| L2 协议 43| `protocols/` | mqtt_packet / modbus_rtu / at_command | sim loopback + 一致性 |
+| L3 模块 20| `modules/` | ota_updater / data_logger / cli_shell | 集成 sim + 真机 |
 
 详见 `docs/wheel-contract.md`。
 
@@ -482,7 +482,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
 - ✅ **开发效率工具链**（`tooling/harness/` + `tooling/codegen/` + `tooling/test/` + 其他子目录）——test_harness.h（统一测试框架 + 10 种断言含 ASSERT_NEAR_D/MEMEQ_N/NOT_NULL/STR_EQ/EQ_HEX/TRUE/FALSE）/ _wheel_parser.py（共享 C 头文件解析，gen_null/sentinel/boundary 三生成器统一使用 + 69 个单测）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板 + `--commit` + I2C read 自动 HAL 守护 + hw_model 骨架生成）/ gen_null_tests.py（自动生成 NULL 测试 + 自动注册 CMakeLists）/ gen_boundary_tests.py（自动生成边界测试：INT32 极值/NaN/Infinity/FLT_MAX/-0.0f/枚举越界）/ bootstrap.sh / wheel_promote.sh / audit_wheels.py（57 项 CHECK_TABLE + 3 特殊检查 + TEST/RUN 平衡 + --graph + --quiet + --json，含 hw_model 孤儿检测 + HAL NULL 守护 + 轮询延时 + 测试同源 + 规范向量检查）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并 + untracked 自动 retry）/ wheel_gate.sh（per-wheel test+audit 卡口，`make wheel-gate` / `make wheel-commit`）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（`batch-scaffold` 批量脚手架 + `memory-audit` + `doc-drift` 等 61 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）/ mock_gpio.h（多 pin 支持）/ 深度审计完成（96 文件逐行，6 轮 23 commit，0 CRITICAL 残留）/ _arm_audit_common.sh（arm size/stack 审计共享模块）
-- ✅ **243 wheels**（全部 candidate，超级审计 0 open findings）：
+- ✅ **250 wheels**（全部 candidate，超级审计 0 open findings）：
   - 完整列表：`ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/`
   - L0 原语 73：aes128 base64 bcd bitfield bitmap bitstream byte_buffer checksum cli_parser cobs crc16 crc32 crc8 datetime debounce double_buffer endian event_queue ewma fal fifo_queue fixed_point flash_ring font_5x7 framebuffer gnss_filter hash_fnv heatshrink hex_codec hmac_sha256 hysteresis iir_lowpass interpolate json_parser kalman_1d kvs led_pattern log log_color log_dedup log_file log_filter log_flash log_rate log_ringbuf log_rtt log_uart lookup_table mag_cal mahony_ahrs median_filter memory_pool moving_average moving_window onewire peak_detector pid_controller printf_tiny rate_limiter retry ring_buffer rle_codec sha256 signal_stats slip soft_i2c soft_spi soft_timer state_machine string_utils timeout timer_wheel uuid
   - L1 驱动 107：a4988 ads1015 ads1115 adxl345 aht20 air780eg apa102 apds9960 as5600 at24cxx aw9523 bh1750 bme280 bme680 bme688 bmi270 bmm150 bmp280 bmp388 bno055 bq27441 buzzer cc1101 ccs811 cst816s dht11 dps310 drv2605 drv8833 ds18b20 ds3231 enc28j60 ft6x36 gc9a01 gpio_button gpio_led hcsr04 hd44780 hmc5883l hx711 icm42688 ili9341 ina219 ina226 ina3221 is31fl3731 keypad_matrix lcd_st7789 lis2dh12 lis3dh lm75 lora_sx1276 lps22hb lsm6dso ltr390 max17048 max30102 max31855 max31865 max6675 max7219 mcp23017 mcp2515 mcp3008 mcp4725 mlx90614 mpu6050 ms5611 nrf24l01 oled_ssd1306 opt3001 pac1952 pca9685 pcf8563 pcf8574 qmc5883p qmi8658a rc522 rotary_encoder scd40 sd_spi servo sgp30 sgp40 sh1106 sht30 sht40 shtc3 si7021 sk6812 st7735 stepper sx1262 tb6612 tca9548a tcs34725 tm1637 tmp102 tmp117 tsl2591 veml7700 vl53l0x vl53l1x w25qxx w5500 ws2812 xgzp6816d
