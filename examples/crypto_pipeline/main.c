@@ -48,7 +48,7 @@ int main(void)
     printf("[HMAC]     %s\n", hex_buf);
 
     /* Step 3: AES-128 encrypt first 16 bytes of payload */
-    aes128_ctx_t aes;
+    aes128_t aes;
     aes128_init(&aes, aes_key);
 
     memset(block_in, 0, sizeof(block_in));
