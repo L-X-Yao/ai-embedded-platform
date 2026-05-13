@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include <math.h>
 #include "htu21d.h"
@@ -14,7 +15,6 @@ static uint8_t mock_read_buf[3];
 static uint8_t mock_last_cmd;
 static int     mock_cmd_count;
 static int     mock_read_count;
-static uint32_t mock_delay_total;
 
 static void mock_reset(void)
 {
@@ -25,7 +25,7 @@ static void mock_reset(void)
     mock_last_cmd   = 0;
     mock_cmd_count  = 0;
     mock_read_count = 0;
-    mock_delay_total = 0;
+    mock_time_reset();
 }
 
 static bool mock_should_fail(void)
@@ -56,12 +56,6 @@ static bool mock_read_data(void *ctx, uint8_t dev_addr,
         buf[i] = mock_read_buf[i];
     }
     return true;
-}
-
-static void mock_delay_ms(void *ctx, uint32_t ms)
-{
-    (void)ctx;
-    mock_delay_total += ms;
 }
 
 static const htu21d_i2c_t mock_i2c = {
@@ -282,11 +276,10 @@ TEST(test_reset_i2c_fail)
 TEST(test_init_delays_after_reset)
 {
     mock_reset();
-    mock_delay_total = 0;
     htu21d_t d;
     htu21d_init(&d, &mock_i2c);
     /* init should call delay_ms after soft reset (15 ms) */
-    ASSERT_TRUE(mock_delay_total > 0);
+    ASSERT_TRUE(mock_time_delay_total_ms > 0);
 }
 
 TEST(test_no_delay_hal_null)

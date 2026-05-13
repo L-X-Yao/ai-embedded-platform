@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include <math.h>
 #include "si7021.h"
@@ -15,7 +16,6 @@ static uint8_t mock_last_write[8];
 static int     mock_last_write_len;
 static int     mock_write_count;
 static int     mock_read_count;
-static uint32_t mock_delay_total;
 
 static void mock_reset(void)
 {
@@ -24,7 +24,7 @@ static void mock_reset(void)
     mock_fail_at       = -1;
     mock_write_count   = 0;
     mock_read_count    = 0;
-    mock_delay_total   = 0;
+    mock_time_reset();
     memset(mock_read_data, 0, sizeof(mock_read_data));
     memset(mock_last_write, 0, sizeof(mock_last_write));
     mock_last_write_len = 0;
@@ -63,16 +63,10 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     return true;
 }
 
-static void mock_delay(void *ctx, uint32_t ms)
-{
-    (void)ctx;
-    mock_delay_total += ms;
-}
-
 static const si7021_i2c_t mock_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 
@@ -95,7 +89,7 @@ static void setup(void)
     mock_op_count = 0;
     mock_write_count = 0;
     mock_read_count = 0;
-    mock_delay_total = 0;
+    mock_time_reset();
 }
 
 /* ---------- tests ---------- */
@@ -430,7 +424,7 @@ TEST(test_delay_called)
     float rh;
     si7021_read_humidity(&dev, &rh);
     /* delay_ms should have been called once with 25 ms */
-    ASSERT_TRUE(mock_delay_total >= 25);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 25);
 }
 
 TEST_MAIN("si7021")

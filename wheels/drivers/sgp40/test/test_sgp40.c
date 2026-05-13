@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "mock_time.h"
 #include "sgp40.h"
 #include <string.h>
 
@@ -15,7 +16,6 @@ static uint16_t mock_read_len;
 static int mock_fail_next;
 static int mock_op_count;
 static int mock_fail_at;
-static uint32_t mock_delay_total;
 
 static void mock_reset(void)
 {
@@ -26,7 +26,7 @@ static void mock_reset(void)
     mock_fail_next = 0;
     mock_op_count = 0;
     mock_fail_at = -1;
-    mock_delay_total = 0;
+    mock_time_reset();
 }
 
 static bool mock_should_fail(void)
@@ -62,16 +62,10 @@ static bool mock_read(void *ctx, uint8_t dev_addr, uint8_t *data,
     return true;
 }
 
-static void mock_delay(void *ctx, uint32_t ms)
-{
-    (void)ctx;
-    mock_delay_total += ms;
-}
-
 static const sgp40_i2c_t mock_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 
@@ -271,22 +265,22 @@ TEST(test_delay_during_selftest)
 {
     mock_reset();
     plant_selftest_ok();
-    mock_delay_total = 0;
+    mock_time_delay_total_ms = 0;
     sgp40_t d;
     sgp40_init(&d, &mock_i2c);
     /* Self-test requires 320ms delay */
-    ASSERT_TRUE(mock_delay_total >= 320);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 320);
 }
 
 TEST(test_delay_during_measure)
 {
     setup();
     plant_sraw(20000);
-    mock_delay_total = 0;
+    mock_time_delay_total_ms = 0;
     sgp40_data_t data;
     sgp40_measure_raw(&dev, &data);
     /* Measurement requires 30ms delay */
-    ASSERT_TRUE(mock_delay_total >= 30);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 30);
 }
 
 TEST(test_selftest_command_bytes)
