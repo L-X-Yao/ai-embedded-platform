@@ -85,7 +85,7 @@ static uint8_t gf_mul(uint8_t a, uint8_t b)
 
 /* ---- Key expansion (FIPS 197, Section 5.2) ---- */
 
-aes128_err_t aes128_init(aes128_ctx_t *ctx, const uint8_t key[16])
+aes128_err_t aes128_init(aes128_t *ctx, const uint8_t key[16])
 {
     if (!ctx || !key) return AES128_ERR_PARAM;
 
@@ -184,7 +184,7 @@ static void mix_columns(uint8_t state[16])
     }
 }
 
-aes128_err_t aes128_encrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_encrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16],
                                   uint8_t out[16])
 {
@@ -269,7 +269,7 @@ static void inv_mix_columns(uint8_t state[16])
     }
 }
 
-aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_decrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16],
                                   uint8_t out[16])
 {
@@ -299,7 +299,7 @@ aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
     return AES128_OK;
 }
 
-aes128_err_t aes128_clear(aes128_ctx_t *ctx)
+aes128_err_t aes128_clear(aes128_t *ctx)
 {
     if (!ctx) return AES128_ERR_PARAM;
     volatile uint8_t *vp = (volatile uint8_t *)ctx;
