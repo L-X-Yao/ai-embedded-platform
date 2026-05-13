@@ -8,8 +8,10 @@
 extern "C" {
 #endif
 
-#define KALMAN_1D_OK         0
-#define KALMAN_1D_ERR_PARAM -1
+typedef enum {
+    KALMAN_1D_OK         =  0,
+    KALMAN_1D_ERR_PARAM  = -1,
+} kalman_1d_err_t;
 
 typedef struct {
     float q;    /* process noise covariance (> 0) */
@@ -25,7 +27,7 @@ typedef struct {
 } kalman_1d_t;
 
 /* @thread_safe: no  @isr_safe: no */
-int kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg);
+kalman_1d_err_t kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg);
 
 /* Feed measurement, return updated state estimate.
  * First call sets x=measurement, P=1.0 (bootstrap).
@@ -44,7 +46,7 @@ void kalman_1d_reset(kalman_1d_t *kf);
 
 /* Change noise parameters at runtime. Both must be > 0.
  * @thread_safe: no  @isr_safe: no */
-int kalman_1d_set_noise(kalman_1d_t *kf, float q, float r);
+kalman_1d_err_t kalman_1d_set_noise(kalman_1d_t *kf, float q, float r);
 
 #ifdef __cplusplus
 }

@@ -28,7 +28,7 @@
 #include "contract.h"
 #include <string.h>
 
-int kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg)
+kalman_1d_err_t kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg)
 {
     if (!kf || !cfg)
     {
@@ -103,7 +103,7 @@ void kalman_1d_reset(kalman_1d_t *kf)
     memset(kf, 0, sizeof(*kf));
 }
 
-int kalman_1d_set_noise(kalman_1d_t *kf, float q, float r)
+kalman_1d_err_t kalman_1d_set_noise(kalman_1d_t *kf, float q, float r)
 {
     if (!kf)
     {
