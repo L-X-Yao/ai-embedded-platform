@@ -37,6 +37,7 @@ add_executable(test_boundary_modbus_rtu
 )
 target_include_directories(test_boundary_modbus_rtu PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../primitives/crc16
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_modbus_rtu PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)

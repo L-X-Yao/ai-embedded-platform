@@ -36,9 +36,11 @@ target_compile_options(test_null_mqtt_client PRIVATE -Wall -Wextra -Wpedantic -W
 add_executable(test_boundary_mqtt_client
     test_boundary_mqtt_client.c
     ../mqtt_client.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/protocols/mqtt_packet/mqtt_packet.c
 )
 target_include_directories(test_boundary_mqtt_client PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/protocols/mqtt_packet
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_mqtt_client PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
