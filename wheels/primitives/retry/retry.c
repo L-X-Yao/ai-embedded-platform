@@ -10,7 +10,7 @@
 #include "retry.h"
 #include "contract.h"
 
-void retry_init(retry_ctx_t *ctx, const retry_config_t *config)
+void retry_init(retry_t *ctx, const retry_config_t *config)
 {
     if (!ctx || !config)
         return;
@@ -20,7 +20,7 @@ void retry_init(retry_ctx_t *ctx, const retry_config_t *config)
     ENSURE(ctx->attempt == 0);
 }
 
-static uint32_t calc_delay(const retry_ctx_t *ctx)
+static uint32_t calc_delay(const retry_t *ctx)
 {
     uint32_t delay;
     uint8_t n = ctx->attempt;
@@ -57,7 +57,7 @@ static uint32_t calc_delay(const retry_ctx_t *ctx)
     return delay;
 }
 
-bool retry_should_retry(retry_ctx_t *ctx)
+bool retry_should_retry(retry_t *ctx)
 {
     if (!ctx)
         return false;
@@ -70,21 +70,21 @@ bool retry_should_retry(retry_ctx_t *ctx)
     return true;
 }
 
-uint32_t retry_get_delay(const retry_ctx_t *ctx)
+uint32_t retry_get_delay(const retry_t *ctx)
 {
     if (!ctx)
         return 0;
     return ctx->next_delay_ms;
 }
 
-uint8_t retry_get_attempt(const retry_ctx_t *ctx)
+uint8_t retry_get_attempt(const retry_t *ctx)
 {
     if (!ctx)
         return 0;
     return ctx->attempt;
 }
 
-void retry_reset(retry_ctx_t *ctx)
+void retry_reset(retry_t *ctx)
 {
     if (!ctx)
         return;
