@@ -35,12 +35,12 @@ None.
 ```c
 #include "aes128.h"
 
-typedef struct { uint8_t round_keys[176]; } aes128_ctx_t;
+typedef struct { uint8_t round_keys[176]; } aes128_t;
 
-aes128_err_t aes128_init(aes128_ctx_t *ctx, const uint8_t key[16]);
-aes128_err_t aes128_encrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_init(aes128_t *ctx, const uint8_t key[16]);
+aes128_err_t aes128_encrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16], uint8_t out[16]);
-aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_decrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16], uint8_t out[16]);
 ```
 

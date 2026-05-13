@@ -29,7 +29,7 @@ typedef enum {
 /** Expanded round-key schedule (176 bytes = 11 round keys x 16 bytes). */
 typedef struct {
     uint8_t round_keys[176];
-} aes128_ctx_t;
+} aes128_t;
 
 /**
  * Expand a 128-bit key into the round-key schedule.
@@ -39,7 +39,7 @@ typedef struct {
  * @return     AES128_OK on success, AES128_ERR_PARAM on NULL input.
  * @thread_safe: no
  */
-aes128_err_t aes128_init(aes128_ctx_t *ctx, const uint8_t key[16]);
+aes128_err_t aes128_init(aes128_t *ctx, const uint8_t key[16]);
 
 /**
  * Encrypt a single 128-bit block (ECB).
@@ -50,7 +50,7 @@ aes128_err_t aes128_init(aes128_ctx_t *ctx, const uint8_t key[16]);
  * @return     AES128_OK on success, AES128_ERR_PARAM on NULL input.
  * @thread_safe: yes (read-only access to ctx) @isr_safe: yes
  */
-aes128_err_t aes128_encrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_encrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16],
                                   uint8_t out[16]);
 
@@ -63,7 +63,7 @@ aes128_err_t aes128_encrypt_block(const aes128_ctx_t *ctx,
  * @return     AES128_OK on success, AES128_ERR_PARAM on NULL input.
  * @thread_safe: yes (read-only access to ctx) @isr_safe: yes
  */
-aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
+aes128_err_t aes128_decrypt_block(const aes128_t *ctx,
                                   const uint8_t in[16],
                                   uint8_t out[16]);
 
@@ -77,7 +77,7 @@ aes128_err_t aes128_decrypt_block(const aes128_ctx_t *ctx,
  * @return     AES128_OK on success, AES128_ERR_PARAM on NULL input.
  * @thread_safe: no
  */
-aes128_err_t aes128_clear(aes128_ctx_t *ctx);
+aes128_err_t aes128_clear(aes128_t *ctx);
 
 #ifdef __cplusplus
 }

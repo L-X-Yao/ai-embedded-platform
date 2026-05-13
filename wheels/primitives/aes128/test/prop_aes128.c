@@ -42,7 +42,7 @@ TEST(test_roundtrip_property)
         fill_random(key, 16);
         fill_random(pt, 16);
 
-        aes128_ctx_t ctx;
+        aes128_t ctx;
         aes128_init(&ctx, key);
         aes128_encrypt_block(&ctx, pt, ct);
         aes128_decrypt_block(&ctx, ct, recovered);
@@ -59,7 +59,7 @@ TEST(test_determinism_property)
         fill_random(key, 16);
         fill_random(pt, 16);
 
-        aes128_ctx_t ctx;
+        aes128_t ctx;
         aes128_init(&ctx, key);
         aes128_encrypt_block(&ctx, pt, ct1);
         aes128_encrypt_block(&ctx, pt, ct2);
@@ -80,7 +80,7 @@ TEST(test_avalanche_property)
         memcpy(pt2, pt1, 16);
         pt2[trial % 16] ^= 0x01;  /* flip one bit */
 
-        aes128_ctx_t ctx;
+        aes128_t ctx;
         aes128_init(&ctx, key);
         aes128_encrypt_block(&ctx, pt1, ct1);
         aes128_encrypt_block(&ctx, pt2, ct2);

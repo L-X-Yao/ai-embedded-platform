@@ -27,7 +27,7 @@ static const uint8_t fips197_ciphertext[16] = {
 
 TEST(test_fips197_encrypt)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, fips197_key), AES128_OK);
     ASSERT_EQ(aes128_encrypt_block(&ctx, fips197_plaintext, out), AES128_OK);
@@ -36,7 +36,7 @@ TEST(test_fips197_encrypt)
 
 TEST(test_fips197_decrypt)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, fips197_key), AES128_OK);
     ASSERT_EQ(aes128_decrypt_block(&ctx, fips197_ciphertext, out), AES128_OK);
@@ -70,7 +70,7 @@ static const uint8_t nist_ecb_ct2[16] = {
 
 TEST(test_nist_ecb_block1)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, nist_ecb_key), AES128_OK);
     ASSERT_EQ(aes128_encrypt_block(&ctx, nist_ecb_pt1, out), AES128_OK);
@@ -79,7 +79,7 @@ TEST(test_nist_ecb_block1)
 
 TEST(test_nist_ecb_block2)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, nist_ecb_key), AES128_OK);
     ASSERT_EQ(aes128_encrypt_block(&ctx, nist_ecb_pt2, out), AES128_OK);
@@ -88,7 +88,7 @@ TEST(test_nist_ecb_block2)
 
 TEST(test_nist_ecb_decrypt_block1)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, nist_ecb_key), AES128_OK);
     ASSERT_EQ(aes128_decrypt_block(&ctx, nist_ecb_ct1, out), AES128_OK);
@@ -97,7 +97,7 @@ TEST(test_nist_ecb_decrypt_block1)
 
 TEST(test_nist_ecb_decrypt_block2)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t out[16];
     ASSERT_EQ(aes128_init(&ctx, nist_ecb_key), AES128_OK);
     ASSERT_EQ(aes128_decrypt_block(&ctx, nist_ecb_ct2, out), AES128_OK);
@@ -117,7 +117,7 @@ TEST(test_zero_key_zero_plaintext)
     uint8_t pt[16] = {0};
     uint8_t out[16];
 
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     ASSERT_EQ(aes128_init(&ctx, key), AES128_OK);
     ASSERT_EQ(aes128_encrypt_block(&ctx, pt, out), AES128_OK);
     ASSERT_TRUE(memcmp(out, expected, 16) == 0);
@@ -127,7 +127,7 @@ TEST(test_zero_key_zero_plaintext)
 
 TEST(test_null_params)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t buf[16] = {0};
     uint8_t key[16] = {0};
 
@@ -148,7 +148,7 @@ TEST(test_null_params)
 
 TEST(test_in_place)
 {
-    aes128_ctx_t ctx;
+    aes128_t ctx;
     uint8_t buf[16];
     memcpy(buf, fips197_plaintext, 16);
 
@@ -173,7 +173,7 @@ TEST(test_different_keys)
 
     uint8_t pt[16] = {0};
     uint8_t ct1[16], ct2[16];
-    aes128_ctx_t ctx;
+    aes128_t ctx;
 
     aes128_init(&ctx, key1);
     aes128_encrypt_block(&ctx, pt, ct1);
@@ -190,8 +190,8 @@ TEST(test_clear)
 {
     uint8_t key[16] = {0x2B,0x7E,0x15,0x16,0x28,0xAE,0xD2,0xA6,
                        0xAB,0xF7,0x15,0x88,0x09,0xCF,0x4F,0x3C};
-    aes128_ctx_t ctx;
-    uint8_t zeroed[sizeof(aes128_ctx_t)];
+    aes128_t ctx;
+    uint8_t zeroed[sizeof(aes128_t)];
     memset(zeroed, 0, sizeof(zeroed));
 
     ASSERT_EQ(aes128_init(&ctx, key), AES128_OK);
