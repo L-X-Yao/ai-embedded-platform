@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt
 
 help:
 	@echo "Usage: make <target>"
@@ -60,6 +60,7 @@ help:
 	@echo "  wheel-gate        gate: test+audit per wheel (WHEELS=\"layer/name ...\")"
 	@echo "  wheel-commit      gate + commit (WHEELS=... M=\"msg\")"
 	@echo "  wheel-docs        update CLAUDE.md wheel counts + auto-commit"
+	@echo "  driver-prompt     generate agent prompt (NAME=x CHIP=x ADDR=x ...)"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
 	@echo "  release           create version tag + changelog"
@@ -394,7 +395,18 @@ wheel-docs:
 		sed -i "s/L1 驱动 [0-9]*/L1 驱动 $$l1/" CLAUDE.md && \
 		sed -i "s/L2 协议 [0-9]*/L2 协议 $$l2/" CLAUDE.md && \
 		sed -i "s/L3 模块 [0-9]*/L3 模块 $$l3/" CLAUDE.md && \
+		batch_old=$$(grep -oP '共 \K[0-9]+' CLAUDE.md | head -1 || echo "0"); \
+		batch_new=$$((new - 183)); \
+		if [ -n "$$batch_old" ] && [ "$$batch_new" -gt "$$batch_old" ]; then \
+			sed -i "s/共 $$batch_old 个/共 $$batch_new 个/" CLAUDE.md; \
+		fi; \
 		git add CLAUDE.md && \
 		git commit -m "docs: update wheel count $$old to $$new" && \
 		echo "Updated: $$old → $$new wheels"; \
 	fi
+
+driver-prompt:
+	@test -n "$(NAME)" || { echo "Usage: make driver-prompt NAME=bma400 CHIP=\"Bosch BMA400\" ADDR=0x14 ID_REG=0x00 ID_VAL=0x90 BRIEF=\"...\""; exit 1; }
+	@python3 tooling/session/gen_driver_prompt.py \
+		--name "$(NAME)" --chip "$(CHIP)" --addr "$(ADDR)" \
+		--id-reg "$(ID_REG)" --id-val "$(ID_VAL)" --brief "$(BRIEF)"
