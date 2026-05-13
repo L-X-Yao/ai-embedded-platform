@@ -113,15 +113,15 @@ TEST(test_parse_bad_crc)
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     buf[len - 1] ^= 0xFF;
-    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
+    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), MODBUS_RTU_ERR_PARAM);
 }
 
 TEST(test_parse_too_short)
 {
     uint8_t buf[] = {0x01, 0x03, 0x00};
     modbus_rtu_frame_t frame;
-    ASSERT_TRUE(modbus_rtu_parse(buf, 3, &frame) == -1);
-    ASSERT_TRUE(modbus_rtu_parse(buf, 0, &frame) == -1);
+    ASSERT_EQ(modbus_rtu_parse(buf, 3, &frame), MODBUS_RTU_ERR_PARAM);
+    ASSERT_EQ(modbus_rtu_parse(buf, 0, &frame), MODBUS_RTU_ERR_PARAM);
 }
 
 TEST(test_parse_null_safety)

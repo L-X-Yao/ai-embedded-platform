@@ -45,6 +45,14 @@ extern "C" {
 #define MODBUS_RTU_MAX_FRAME    256
 #define MODBUS_RTU_ADDR_BROADCAST 0
 
+/* Named return codes. Functions still return int because parse / build /
+ * master / slave APIs mix length (>=0) and error code (<0) — same pattern
+ * as fal partition I/O. */
+typedef enum {
+    MODBUS_RTU_OK         =  0,
+    MODBUS_RTU_ERR_PARAM  = -1, /* NULL buf, bad length, invalid arg, bad CRC */
+} modbus_rtu_err_t;
+
 #ifndef MODBUS_MAX_READ_REGS
 #define MODBUS_MAX_READ_REGS  125
 #endif
