@@ -145,8 +145,8 @@ TEST(test_init_configures_ctrl2_g)
     };
     lsm6dso_t d;
     lsm6dso_init(&d, &mock_i2c, &cfg);
-    /* CTRL2_G = ODR[7:4]=4 | FS_G[3:1]=8 -> 0x50 */
-    ASSERT_EQ(mock_regs[0x11], (uint8_t)((4 << 4) | (8 << 1)));
+    /* CTRL2_G = ODR[7:4]=4 | FS_G[3:0]=8 (1000DPS) -> 0x48 */
+    ASSERT_EQ(mock_regs[0x11], (uint8_t)((4 << 4) | 8));
 }
 
 /* ---------- accel read tests ---------- */
@@ -189,14 +189,14 @@ TEST(test_read_gyro_250dps)
     setup();
     /* At 250DPS range, sensitivity = 8.75 mdps/LSB
      * For 250 dps: 250000 mdps / 8.75 mdps/LSB ~ 28571 raw */
-    int16_t raw = (int16_t)(250.0f / 8.750f);
+    int16_t raw = 28571;
     plant_gyro(raw, 0, 0);
 
     lsm6dso_gyro_data_t g;
     ASSERT_EQ(lsm6dso_read_gyro(&dev, &g), LSM6DSO_OK);
-    ASSERT_NEAR(g.x_dps, 250.0f, 10.0f);
-    ASSERT_NEAR(g.y_dps, 0.0f, 0.1f);
-    ASSERT_NEAR(g.z_dps, 0.0f, 0.1f);
+    ASSERT_NEAR(g.x_dps, 250.0f, 1.0f);
+    ASSERT_NEAR(g.y_dps, 0.0f, 0.01f);
+    ASSERT_NEAR(g.z_dps, 0.0f, 0.01f);
 }
 
 TEST(test_read_gyro_i2c_fail)
@@ -281,12 +281,12 @@ TEST(test_gyro_range_2000dps)
                            .odr = LSM6DSO_ODR_104HZ };
     lsm6dso_t d;
     lsm6dso_init(&d, &mock_i2c, &cfg);
-    /* 100 dps / 70.0 mdps/LSB ~ 1429 raw = 100 dps */
-    int16_t raw = (int16_t)(100.0f / 70.0f);
+    /* 100 dps at 70.0 mdps/LSB: 100*1000/70 ~ 1429 raw */
+    int16_t raw = 1429;
     plant_gyro(raw, 0, 0);
     lsm6dso_gyro_data_t g;
     lsm6dso_read_gyro(&d, &g);
-    ASSERT_NEAR(g.x_dps, 100.0f, 70.0f);
+    ASSERT_NEAR(g.x_dps, 100.0f, 1.0f);
 }
 
 TEST(test_gyro_range_125dps)
@@ -298,12 +298,12 @@ TEST(test_gyro_range_125dps)
                            .odr = LSM6DSO_ODR_104HZ };
     lsm6dso_t d;
     lsm6dso_init(&d, &mock_i2c, &cfg);
-    /* 10 dps / 4.375 mdps/LSB ~ 2286 raw */
-    int16_t raw = (int16_t)(10.0f / 4.375f);
+    /* 10 dps at 4.375 mdps/LSB: 10*1000/4.375 ~ 2286 raw */
+    int16_t raw = 2286;
     plant_gyro(raw, 0, 0);
     lsm6dso_gyro_data_t g;
     lsm6dso_read_gyro(&d, &g);
-    ASSERT_NEAR(g.x_dps, 10.0f, 5.0f);
+    ASSERT_NEAR(g.x_dps, 10.0f, 0.1f);
 }
 
 /* ---------- address tests ---------- */

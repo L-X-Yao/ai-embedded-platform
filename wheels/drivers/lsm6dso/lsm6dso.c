@@ -44,8 +44,9 @@ static float accel_sensitivity_from_range(lsm6dso_accel_range_t range)
 }
 
 /*
- * Gyro sensitivity in dps/LSB indexed by FS_G[3:0] bits in CTRL2_G[3:1].
+ * Gyro sensitivity in mdps/LSB indexed by FS_G[3:0] bits in CTRL2_G[3:0].
  * Range enum values: 125=2, 250=0, 500=4, 1000=8, 2000=12
+ * Stored as mdps/LSB; driver divides by 1000 to produce dps output.
  */
 static float gyro_sensitivity_from_range(lsm6dso_gyro_range_t range)
 {
@@ -124,9 +125,16 @@ lsm6dso_err_t lsm6dso_init(lsm6dso_t *dev, const lsm6dso_i2c_t *i2c,
         return LSM6DSO_ERR_I2C;
     }
 
-    /* Configure CTRL2_G: ODR[7:4] | FS_G[3:1] */
+    /* Configure CTRL2_G: ODR[7:4] | FS_G[3:0]
+     * Enum values already encode the correct bit pattern for CTRL2_G[3:0]:
+     *   125dps  = 0b0010 (FS_125 flag in bit 1)
+     *   250dps  = 0b0000
+     *   500dps  = 0b0100
+     *   1000dps = 0b1000
+     *   2000dps = 0b1100
+     * No additional shift needed. */
     uint8_t ctrl2 = (uint8_t)((uint8_t)(cfg->odr << 4) |
-                               (uint8_t)(cfg->gyro_range << 1));
+                               (uint8_t)(cfg->gyro_range));
     if (!write_reg(dev, REG_CTRL2_G, ctrl2))
     {
         return LSM6DSO_ERR_I2C;
@@ -192,9 +200,10 @@ lsm6dso_err_t lsm6dso_read_gyro(const lsm6dso_t *dev,
     int16_t raw_y = (int16_t)((uint16_t)buf[3] << 8 | buf[2]);
     int16_t raw_z = (int16_t)((uint16_t)buf[5] << 8 | buf[4]);
 
-    out->x_dps = (float)raw_x * dev->gyro_sensitivity;
-    out->y_dps = (float)raw_y * dev->gyro_sensitivity;
-    out->z_dps = (float)raw_z * dev->gyro_sensitivity;
+    /* Sensitivity is in mdps/LSB; divide by 1000 for dps output */
+    out->x_dps = (float)raw_x * dev->gyro_sensitivity / 1000.0f;
+    out->y_dps = (float)raw_y * dev->gyro_sensitivity / 1000.0f;
+    out->z_dps = (float)raw_z * dev->gyro_sensitivity / 1000.0f;
 
     ENSURE(out->x_dps == out->x_dps);  /* not NaN */
     ENSURE(out->y_dps == out->y_dps);
