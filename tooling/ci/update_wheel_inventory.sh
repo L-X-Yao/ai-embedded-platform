@@ -71,15 +71,16 @@ if ! $APPLY; then
 fi
 
 # Build replacement block
-BLOCK="- ✅ **${total} 个 wheels**（全部 candidate）：
-  - L0 (${count_l0}): ${l0_list}
-  - L1 (${count_l1}): ${l1_list}
-  - L2 (${count_l2}): ${l2_list}"
+BLOCK="- ✅ **${total} wheels**（全部 candidate，超级审计 0 open findings）：
+  - 完整列表：\`ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/\`
+  - L0 原语 ${count_l0}：${l0_list}
+  - L1 驱动 ${count_l1}：${l1_list}
+  - L2 协议 ${count_l2}：${l2_list}"
 
 if [[ $count_l3 -gt 0 ]]; then
     l3_list=$(join_names "${names_l3[@]}")
     BLOCK="${BLOCK}
-  - L3 (${count_l3}): ${l3_list}"
+  - L3 模块 ${count_l3}：${l3_list}"
 fi
 
 # Replace in CLAUDE.md — pass data via env vars to avoid injection
@@ -94,7 +95,7 @@ total = os.environ["WHEEL_TOTAL"]
 
 text = open(claude_path, "r", encoding="utf-8").read()
 
-pattern = r"- ✅ \*\*\d+ 个 wheels\*\*.*?\n(?:  - L\d.*\n)+"
+pattern = r"- ✅ \*\*\d+ wheels\*\*.*?\n(?:  - .*\n)+"
 replacement = block + "\n"
 
 new_text, count = re.subn(pattern, replacement, text, count=1)

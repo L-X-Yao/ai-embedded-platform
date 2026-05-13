@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs
 
 help:
 	@echo "Usage: make <target>"
@@ -59,6 +59,7 @@ help:
 	@echo "  ship M=\"msg\"      test + audit + commit + push"
 	@echo "  wheel-gate        gate: test+audit per wheel (WHEELS=\"layer/name ...\")"
 	@echo "  wheel-commit      gate + commit (WHEELS=... M=\"msg\")"
+	@echo "  wheel-docs        update CLAUDE.md wheel counts + auto-commit"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
 	@echo "  release           create version tag + changelog"
@@ -375,4 +376,25 @@ wheel-commit:
 	@dirs=""; for w in $(WHEELS); do dirs="$$dirs wheels/$$w/"; done; \
 	git add $$dirs && \
 	printf '%s\n' '$(subst ','\'',$(M))' | git commit -F - && \
-	echo "" && echo "Committed: $(M)"
+	echo "" && echo "Committed: $(M)" && \
+	echo "TIP: run 'make wheel-docs' after last wheel to update CLAUDE.md counts"
+
+wheel-docs:
+	@l0=$$(find wheels/primitives/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
+	l1=$$(find wheels/drivers/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
+	l2=$$(find wheels/protocols/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
+	l3=$$(find wheels/modules/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
+	new=$$((l0 + l1 + l2 + l3)); \
+	old=$$(grep -oP '\*\*\K[0-9]+(?= wheels\*\*)' CLAUDE.md | head -1); \
+	if [ "$$old" = "$$new" ]; then \
+		echo "CLAUDE.md already shows $$new wheels."; \
+	else \
+		sed -i "s/\*\*$$old wheels\*\*/\*\*$$new wheels\*\*/" CLAUDE.md && \
+		sed -i "s/L0 原语 [0-9]*/L0 原语 $$l0/" CLAUDE.md && \
+		sed -i "s/L1 驱动 [0-9]*/L1 驱动 $$l1/" CLAUDE.md && \
+		sed -i "s/L2 协议 [0-9]*/L2 协议 $$l2/" CLAUDE.md && \
+		sed -i "s/L3 模块 [0-9]*/L3 模块 $$l3/" CLAUDE.md && \
+		git add CLAUDE.md && \
+		git commit -m "docs: update wheel count $$old to $$new" && \
+		echo "Updated: $$old → $$new wheels"; \
+	fi
