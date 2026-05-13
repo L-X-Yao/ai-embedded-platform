@@ -17,6 +17,7 @@ Usage:
     python tooling/codegen/gen_sentinel_tests.py [--dry-run]
 """
 
+import argparse
 import sys
 import textwrap
 from dataclasses import dataclass, field
@@ -1199,7 +1200,14 @@ def scan_wheel_info(wi: _wheel_parser.WheelInfo) -> Optional[SentinelWheelInfo]:
 
 
 def main():
-    dry_run = '--dry-run' in sys.argv
+    parser = argparse.ArgumentParser(
+        description="Generate sentinel-byte buffer-overflow tests for "
+                    "wheel output-buffer functions (L0 and L2 only)."
+    )
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print actions without writing files")
+    args = parser.parse_args()
+    dry_run = args.dry_run
 
     print(f"Scanning wheels in {WHEELS_DIR}...")
     print(f"Target layers: {TARGET_LAYERS}")

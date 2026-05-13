@@ -1,6 +1,7 @@
 # Build artifacts
 build/
 build_*/
+build-*/
 # Exception: tooling pipeline (not a CMake build output)
 !tooling/hil/build_flash/
 *.o

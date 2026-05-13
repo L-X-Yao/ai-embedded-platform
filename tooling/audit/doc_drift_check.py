@@ -12,6 +12,7 @@ Usage:
 Exit 0 if clean, 1 if drift found.
 """
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -201,7 +202,14 @@ def check_playbook_md():
 
 
 def main():
-    fix_mode = "--fix" in sys.argv
+    parser = argparse.ArgumentParser(
+        description="Verify documentation assertions match reality "
+                    "(CLAUDE.md, ai-workflow.md, debugging-playbook.md)."
+    )
+    parser.add_argument("--fix", action="store_true",
+                        help="auto-fix simple numeric drifts in CLAUDE.md")
+    args = parser.parse_args()
+    fix_mode = args.fix
 
     all_drifts = []
     all_drifts.extend(check_claude_md())

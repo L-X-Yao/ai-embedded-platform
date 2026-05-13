@@ -12,6 +12,7 @@ Usage:
     python tooling/codegen/gen_null_tests.py --wheel wheels/drivers/mcp4725/mcp4725.h
 """
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -288,16 +289,18 @@ def resolve_single_wheel(path_arg: str) -> list:
 
 
 def main():
-    dry_run = '--dry-run' in sys.argv
-
-    single = None
-    for i, arg in enumerate(sys.argv[1:], 1):
-        if arg == '--wheel' and i < len(sys.argv) - 1:
-            single = sys.argv[i + 1]
-            break
-        if arg.endswith('.h') and not arg.startswith('-'):
-            single = arg
-            break
+    parser = argparse.ArgumentParser(
+        description="Generate NULL-parameter rejection tests for wheels."
+    )
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print actions without writing files")
+    parser.add_argument("--wheel", default=None,
+                        help="single wheel path (e.g. wheels/drivers/mcp4725 or .h file)")
+    parser.add_argument("header", nargs="?", default=None,
+                        help="positional shortcut: path to a single .h file")
+    args = parser.parse_args()
+    dry_run = args.dry_run
+    single = args.wheel or args.header
 
     if single:
         wheels = resolve_single_wheel(single)

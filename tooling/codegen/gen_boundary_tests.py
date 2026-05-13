@@ -15,6 +15,7 @@ Usage:
     python tooling/codegen/gen_boundary_tests.py wheels/primitives/ewma/ewma.h
 """
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -499,16 +500,18 @@ def resolve_single_wheel(path_arg):
 
 
 def main():
-    dry_run = '--dry-run' in sys.argv
-
-    single = None
-    for i, arg in enumerate(sys.argv[1:], 1):
-        if arg == '--wheel' and i < len(sys.argv) - 1:
-            single = sys.argv[i + 1]
-            break
-        if arg.endswith('.h') and not arg.startswith('-'):
-            single = arg
-            break
+    parser = argparse.ArgumentParser(
+        description="Generate boundary/edge-case tests for wheel APIs."
+    )
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print actions without writing files")
+    parser.add_argument("--wheel", default=None,
+                        help="single wheel path (e.g. wheels/primitives/ewma or .h file)")
+    parser.add_argument("header", nargs="?", default=None,
+                        help="positional shortcut: path to a single .h file")
+    args = parser.parse_args()
+    dry_run = args.dry_run
+    single = args.wheel or args.header
 
     if single:
         wheels = resolve_single_wheel(single)

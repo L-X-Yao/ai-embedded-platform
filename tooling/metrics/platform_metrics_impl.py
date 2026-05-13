@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Platform metrics collection and comparison — implementation."""
 
+import argparse
 import json
 import os
 import re
@@ -233,9 +234,25 @@ def print_delta(prev: dict, curr: dict):
 
 
 def main():
-    repo = Path(sys.argv[1])
-    metrics_dir = Path(sys.argv[2])
-    args = sys.argv[3:]
+    parser = argparse.ArgumentParser(
+        description="Platform metrics collection and comparison."
+    )
+    parser.add_argument("repo", type=Path, help="repository root")
+    parser.add_argument("metrics_dir", type=Path, help="metrics output directory")
+    parser.add_argument("--history", action="store_true",
+                        help="list snapshot history with key metrics")
+    parser.add_argument("--quality", action="store_true",
+                        help="show code-quality metrics (test/code ratio, density)")
+    parser.add_argument("--compare", action="store_true",
+                        help="compare current metrics against most recent saved snapshot")
+    parser.add_argument("--save", action="store_true",
+                        help="save current metrics as a timestamped snapshot")
+    parsed = parser.parse_args()
+    repo = parsed.repo
+    metrics_dir = parsed.metrics_dir
+    # Build flag list to keep downstream logic minimal-diff
+    args = [f"--{flag}" for flag in ("history", "quality", "compare", "save")
+            if getattr(parsed, flag)]
 
     if "--history" in args:
         print("\033[1m=== Metric Snapshots ===\033[0m")
