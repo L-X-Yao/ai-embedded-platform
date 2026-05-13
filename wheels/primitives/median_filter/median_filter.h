@@ -27,6 +27,11 @@ extern "C" {
 #define MEDIAN_FILTER_MAX_SIZE 31
 #endif
 
+typedef enum {
+    MEDIAN_FILTER_OK         =  0,
+    MEDIAN_FILTER_ERR_PARAM  = -1,
+} median_filter_err_t;
+
 typedef struct {
     int32_t  window[MEDIAN_FILTER_MAX_SIZE];
     int32_t  sorted[MEDIAN_FILTER_MAX_SIZE];
@@ -36,7 +41,7 @@ typedef struct {
 } median_filter_t;
 
 /** @thread_safe: no @isr_safe: no */
-int median_filter_init(median_filter_t *f, uint8_t size);
+median_filter_err_t median_filter_init(median_filter_t *f, uint8_t size);
 
 /** Feed a sample and return the current median value. @thread_safe: no @isr_safe: yes */
 int32_t median_filter_update(median_filter_t *f, int32_t sample);
