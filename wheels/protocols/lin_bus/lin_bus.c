@@ -49,7 +49,11 @@ uint8_t lin_bus_calc_checksum(const lin_bus_frame_t *frame)
 
     uint16_t sum = 0;
 
-    if (frame->checksum_type == LIN_BUS_CHECKSUM_ENHANCED) {
+    /* Diagnostic frames (ID 60, 61) always use classic checksum per LIN spec,
+     * regardless of the checksum_type field. */
+    if (frame->checksum_type == LIN_BUS_CHECKSUM_ENHANCED &&
+        frame->id != LIN_BUS_ID_DIAG_REQ &&
+        frame->id != LIN_BUS_ID_DIAG_RESP) {
         sum = lin_bus_calc_pid(frame->id);
     }
 
@@ -133,7 +137,15 @@ lin_bus_err_t lin_bus_decode(const uint8_t *buf, size_t len,
 
     uint8_t rx_checksum = buf[len - 1];
 
-    /* Try enhanced first (LIN 2.0+), then classic */
+    /* Diagnostic frames (ID 60, 61) always use classic checksum per LIN spec */
+    if (id == LIN_BUS_ID_DIAG_REQ || id == LIN_BUS_ID_DIAG_RESP) {
+        frame->checksum_type = LIN_BUS_CHECKSUM_CLASSIC;
+        uint8_t expected = lin_bus_calc_checksum(frame);
+        if (expected == rx_checksum) return LIN_BUS_OK;
+        return LIN_BUS_ERR_CHECKSUM;
+    }
+
+    /* Non-diagnostic: try enhanced first (LIN 2.0+), then classic */
     frame->checksum_type = LIN_BUS_CHECKSUM_ENHANCED;
     uint8_t expected = lin_bus_calc_checksum(frame);
     if (expected == rx_checksum) return LIN_BUS_OK;

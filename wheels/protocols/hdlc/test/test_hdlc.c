@@ -535,6 +535,74 @@ TEST(test_parser_mini_fuzz)
     }
 }
 
+TEST(test_parser_escape_then_flag_aborts)
+{
+    /* Per RFC 1662: escape followed by flag is an abort.
+     * Parser should discard the partial frame and restart. */
+    uint8_t pbuf[64];
+    hdlc_parser_t parser;
+    hdlc_parser_init(&parser, pbuf, sizeof(pbuf));
+
+    /* Start a frame with some data */
+    hdlc_parser_feed(&parser, HDLC_FLAG);
+    hdlc_parser_feed(&parser, 0x01);
+    hdlc_parser_feed(&parser, 0x02);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ACTIVE);
+
+    /* Send escape */
+    hdlc_parser_feed(&parser, HDLC_ESCAPE);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ESCAPE);
+
+    /* Send flag -- should abort the partial frame and restart */
+    hdlc_parser_feed(&parser, HDLC_FLAG);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ACTIVE);
+    ASSERT_EQ(parser.idx, 0); /* Frame discarded */
+
+    /* Now feed a complete valid frame -- should work */
+    uint8_t data[] = {0xCC};
+    uint8_t encoded[64];
+    size_t elen = 0;
+    hdlc_encode(data, 1, encoded, sizeof(encoded), &elen);
+
+    /* Skip the opening flag since parser is already ACTIVE from the abort */
+    for (size_t i = 1; i < elen; i++) {
+        hdlc_parser_feed(&parser, encoded[i]);
+    }
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_COMPLETE);
+
+    uint8_t decoded[64];
+    size_t dlen = 0;
+    ASSERT_EQ(hdlc_parser_get_frame(&parser, decoded, sizeof(decoded), &dlen), HDLC_OK);
+    ASSERT_EQ(dlen, 1);
+    ASSERT_EQ_HEX(decoded[0], 0xCC);
+}
+
+TEST(test_parser_overflow_recovery)
+{
+    /* Parser buffer overflow should transition to ERROR,
+     * then recovery on next flag */
+    uint8_t pbuf[4]; /* tiny buffer */
+    hdlc_parser_t parser;
+    hdlc_parser_init(&parser, pbuf, sizeof(pbuf));
+
+    hdlc_parser_feed(&parser, HDLC_FLAG);
+    /* Feed more than 4 bytes to overflow */
+    hdlc_parser_feed(&parser, 0x01);
+    hdlc_parser_feed(&parser, 0x02);
+    hdlc_parser_feed(&parser, 0x03);
+    hdlc_parser_feed(&parser, 0x04);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ACTIVE);
+
+    /* This should overflow */
+    hdlc_parser_feed(&parser, 0x05);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ERROR);
+
+    /* Recover with a flag */
+    hdlc_parser_feed(&parser, HDLC_FLAG);
+    ASSERT_EQ((int)parser.state, (int)HDLC_STATE_ACTIVE);
+    ASSERT_EQ(parser.idx, 0);
+}
+
 TEST(test_parser_reset_null)
 {
     /* Must not crash */
@@ -568,5 +636,7 @@ TEST_MAIN("hdlc")
     RUN(test_error_codes);
     RUN(test_parser_consecutive_flags);
     RUN(test_parser_mini_fuzz);
+    RUN(test_parser_escape_then_flag_aborts);
+    RUN(test_parser_overflow_recovery);
     RUN(test_parser_reset_null);
 TEST_MAIN_END()
