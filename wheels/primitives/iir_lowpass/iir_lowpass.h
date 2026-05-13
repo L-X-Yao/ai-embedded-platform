@@ -19,8 +19,10 @@
 extern "C" {
 #endif
 
-#define IIR_LOWPASS_OK         0
-#define IIR_LOWPASS_ERR_PARAM -1
+typedef enum {
+    IIR_LOWPASS_OK         =  0,
+    IIR_LOWPASS_ERR_PARAM  = -1,
+} iir_lowpass_err_t;
 
 typedef struct {
     float alpha;
@@ -34,7 +36,7 @@ typedef struct {
 
 /* Initialize filter. alpha must be in (0, 1].
  * @thread_safe: no  @isr_safe: no */
-int iir_lowpass_init(iir_lowpass_t *f, const iir_lowpass_cfg_t *cfg);
+iir_lowpass_err_t iir_lowpass_init(iir_lowpass_t *f, const iir_lowpass_cfg_t *cfg);
 
 /* Feed a new sample, return filtered output.
  * First sample sets output directly (no lag on startup).
@@ -56,7 +58,7 @@ void iir_lowpass_reset(iir_lowpass_t *f);
 
 /* Change alpha at runtime. alpha must be in (0, 1].
  * @thread_safe: no  @isr_safe: no */
-int iir_lowpass_set_alpha(iir_lowpass_t *f, float alpha);
+iir_lowpass_err_t iir_lowpass_set_alpha(iir_lowpass_t *f, float alpha);
 
 /* Compute alpha from RC time constant: alpha = dt / (rc + dt).
  * dt = sample period (s), rc = time constant (s).

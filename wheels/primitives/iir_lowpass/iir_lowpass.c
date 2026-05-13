@@ -11,7 +11,7 @@
 #include "iir_lowpass.h"
 #include "contract.h"
 
-int iir_lowpass_init(iir_lowpass_t *f, const iir_lowpass_cfg_t *cfg)
+iir_lowpass_err_t iir_lowpass_init(iir_lowpass_t *f, const iir_lowpass_cfg_t *cfg)
 {
     REQUIRE(f != NULL);
     REQUIRE(cfg != NULL);
@@ -73,7 +73,7 @@ void iir_lowpass_reset(iir_lowpass_t *f)
     ENSURE(f->primed == 0U);
 }
 
-int iir_lowpass_set_alpha(iir_lowpass_t *f, float alpha)
+iir_lowpass_err_t iir_lowpass_set_alpha(iir_lowpass_t *f, float alpha)
 {
     REQUIRE(f != NULL);
     if (!f)
