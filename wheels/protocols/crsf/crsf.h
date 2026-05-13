@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 /*
- * crsf — TODO: one-line description
+ * crsf — TBS Crossfire / ExpressLRS (CRSF) RC protocol
  *
  * Layer:     L2
  * Status:    candidate
  * Deps:      (none)
- * Instances: multi
+ * Instances: stateless
+ *
+ * Frame: [addr] [len] [type] [payload...] [crc8]
+ * CRC-8 DVB-S2 (poly 0xD5) over type + payload.
+ * 16 channels, 11-bit packed (range 172-1811).
+ * Pure C99, no heap, no OS.
  */
 
 #ifndef CRSF_H
@@ -19,33 +24,50 @@
 extern "C" {
 #endif
 
-/* ---------- error codes ---------- */
+#define CRSF_NUM_CHANNELS   16
+#define CRSF_CHANNEL_BYTES  22
+#define CRSF_MAX_FRAME_SIZE 64
+#define CRSF_ADDR_FC        0xC8
+
+#define CRSF_TYPE_RC_CHANNELS 0x16
 
 typedef enum {
-    CRSF_OK           =  0,
-    CRSF_ERR_PARAM    = -1,
-    CRSF_ERR_FORMAT   = -2,
-    CRSF_ERR_SHORT    = -3,
-    CRSF_ERR_OVERFLOW = -4,
+    CRSF_OK            =  0,
+    CRSF_ERR_PARAM     = -1,
+    CRSF_ERR_SHORT     = -2,
+    CRSF_ERR_CRC       = -3,
+    CRSF_ERR_OVERFLOW  = -4,
 } crsf_err_t;
 
-/* ---------- data types ---------- */
+typedef struct {
+    uint8_t  addr;
+    uint8_t  type;
+    uint8_t  payload[CRSF_MAX_FRAME_SIZE];
+    uint8_t  payload_len;
+} crsf_frame_t;
 
 typedef struct {
-    /* TODO: parsed fields */
-    uint8_t type;
-    uint16_t length;
-} crsf_msg_t;
+    uint16_t channels[CRSF_NUM_CHANNELS];
+} crsf_channels_t;
 
-/* ---------- API ---------- */
+/** CRC-8 DVB-S2 (poly 0xD5). @thread_safe: yes @isr_safe: yes */
+uint8_t crsf_crc8(const uint8_t *data, size_t len);
 
-/** Parse a message from raw bytes. @thread_safe: yes @isr_safe: no */
-crsf_err_t crsf_parse(const uint8_t *data, size_t len,
-                               crsf_msg_t *out);
+/** Decode a raw CRSF frame. @thread_safe: yes @isr_safe: yes */
+crsf_err_t crsf_decode_frame(const uint8_t *data, size_t len,
+                              crsf_frame_t *out);
 
-/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes @isr_safe: no */
-int crsf_build(uint8_t *buf, size_t cap,
-                        const crsf_msg_t *msg);
+/** Encode a CRSF frame into buffer. Returns total bytes written. @thread_safe: yes @isr_safe: yes */
+crsf_err_t crsf_encode_frame(const crsf_frame_t *frame,
+                              uint8_t *buf, size_t cap, size_t *out_len);
+
+/** Unpack 22 bytes of 11-bit channel data into 16 channels. @thread_safe: yes @isr_safe: yes */
+crsf_err_t crsf_unpack_channels(const uint8_t *payload, size_t len,
+                                 crsf_channels_t *out);
+
+/** Pack 16 channels into 22 bytes. @thread_safe: yes @isr_safe: yes */
+crsf_err_t crsf_pack_channels(const crsf_channels_t *channels,
+                               uint8_t *payload, size_t cap);
 
 #ifdef __cplusplus
 }
