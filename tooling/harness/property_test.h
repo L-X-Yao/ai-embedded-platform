@@ -66,6 +66,14 @@ static void prop__arbi_fill(uint32_t *state, uint8_t *buf, size_t len)
 
 #define ARBI_FILL(s, buf, len) prop__arbi_fill(&(s), (uint8_t *)(buf), (len))
 
+#define ARBI_FLOAT(s, lo, hi) \
+    ((float)(lo) + ((float)(prop__xorshift32(&(s)) & 0xFFFFFFu) / 16777215.0f) \
+     * ((float)(hi) - (float)(lo)))
+
+#define ARBI_DOUBLE(s, lo, hi) \
+    ((double)(lo) + ((double)(prop__xorshift32(&(s)) & 0xFFFFFFu) / 16777215.0) \
+     * ((double)(hi) - (double)(lo)))
+
 /* --- property assertions (print seed on failure) ------------------------- */
 
 #define PROP_ASSERT(cond) do { \

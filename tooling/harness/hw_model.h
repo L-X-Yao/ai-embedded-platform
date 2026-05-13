@@ -41,12 +41,25 @@ typedef struct {
     uint8_t             writable_mask[HW_MODEL_REG_COUNT];
     hw_model_write_cb_t on_write[HW_MODEL_REG_COUNT];
     void               *user;
+    int                 fail_next;
+    int                 fail_at;
+    int                 op_count;
+    uint32_t            delay_ms_total;
 } hw_reg_model_t;
 
 static void hw_model_init(hw_reg_model_t *m)
 {
     memset(m, 0, sizeof(*m));
     memset(m->writable_mask, 0xFF, sizeof(m->writable_mask));
+    m->fail_at = -1;
+}
+
+static bool hw_model__should_fail(hw_reg_model_t *m)
+{
+    int n = m->op_count++;
+    if (m->fail_next) { m->fail_next = 0; return true; }
+    if (m->fail_at >= 0 && n == m->fail_at) return true;
+    return false;
 }
 
 static void hw_model_set_reset_value(hw_reg_model_t *m, uint8_t reg,
@@ -95,7 +108,9 @@ static bool hw_model_i2c_write_reg(void *ctx, uint8_t dev_addr,
                                    uint8_t reg, uint8_t val)
 {
     (void)dev_addr;
-    hw_model__write_reg((hw_reg_model_t *)ctx, reg, val);
+    hw_reg_model_t *m = (hw_reg_model_t *)ctx;
+    if (hw_model__should_fail(m)) return false;
+    hw_model__write_reg(m, reg, val);
     return true;
 }
 
@@ -105,6 +120,7 @@ static bool hw_model_i2c_read_regs(void *ctx, uint8_t dev_addr,
 {
     (void)dev_addr;
     hw_reg_model_t *m = (hw_reg_model_t *)ctx;
+    if (hw_model__should_fail(m)) return false;
     uint16_t i;
     for (i = 0; i < len; i++) {
         unsigned idx = (unsigned)reg + i;
@@ -118,7 +134,9 @@ static bool hw_model_i2c_read_regs(void *ctx, uint8_t dev_addr,
 __attribute__((unused))
 static bool hw_model_spi_write_reg(void *ctx, uint8_t reg, uint8_t val)
 {
-    hw_model__write_reg((hw_reg_model_t *)ctx, reg, val);
+    hw_reg_model_t *m = (hw_reg_model_t *)ctx;
+    if (hw_model__should_fail(m)) return false;
+    hw_model__write_reg(m, reg, val);
     return true;
 }
 
@@ -127,12 +145,26 @@ static bool hw_model_spi_read_regs(void *ctx, uint8_t reg,
                                    uint8_t *buf, uint16_t len)
 {
     hw_reg_model_t *m = (hw_reg_model_t *)ctx;
+    if (hw_model__should_fail(m)) return false;
     uint16_t i;
     for (i = 0; i < len; i++) {
         unsigned idx = (unsigned)reg + i;
         buf[i] = (idx < HW_MODEL_REG_COUNT) ? m->regs[idx] : 0xFF;
     }
     return true;
+}
+
+__attribute__((unused))
+static void hw_model_delay_ms(void *ctx, uint32_t ms)
+{
+    hw_reg_model_t *m = (hw_reg_model_t *)ctx;
+    m->delay_ms_total += ms;
+}
+
+__attribute__((unused))
+static void hw_model_delay_ms_u16(void *ctx, uint16_t ms)
+{
+    hw_model_delay_ms(ctx, (uint32_t)ms);
 }
 
 #endif /* HW_MODEL_H */
