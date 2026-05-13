@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit
 
 help:
 	@echo "Usage: make <target>"
@@ -57,6 +57,8 @@ help:
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
 	@echo "  install-hooks     configure git to use .githooks/ directory"
 	@echo "  ship M=\"msg\"      test + audit + commit + push"
+	@echo "  wheel-gate        gate: test+audit per wheel (WHEELS=\"layer/name ...\")"
+	@echo "  wheel-commit      gate + commit (WHEELS=... M=\"msg\")"
 	@echo "  new-wheel         scaffold a new wheel (interactive)"
 	@echo "  promote-wheel     promote wheel across layers"
 	@echo "  release           create version tag + changelog"
@@ -357,3 +359,16 @@ batch-scaffold:
 	else \
 		echo "No new scaffolds created."; \
 	fi
+
+wheel-gate:
+	@test -n "$(WHEELS)" || { echo "Usage: make wheel-gate WHEELS=\"primitives/ewma drivers/bmp388\""; exit 1; }
+	bash tooling/wheel/wheel_gate.sh $(WHEELS)
+
+wheel-commit:
+	@test -n "$(WHEELS)" || { echo "Usage: make wheel-commit WHEELS=\"primitives/ewma drivers/bmp388\" M=\"commit msg\""; exit 1; }
+	@test -n "$(M)" || { echo "Usage: make wheel-commit WHEELS=\"...\" M=\"commit message\""; exit 1; }
+	bash tooling/wheel/wheel_gate.sh $(WHEELS)
+	@dirs=""; for w in $(WHEELS); do dirs="$$dirs wheels/$$w/"; done; \
+	git add $$dirs && \
+	printf '%s\n' '$(subst ','\'',$(M))' | git commit -F - && \
+	echo "" && echo "Committed: $(M)"

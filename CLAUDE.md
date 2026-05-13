@@ -402,37 +402,41 @@ git branch -d session/wheels session/<project>
 
 ### 拆分
 
-- 一 commit = 一逻辑改动
+- **一 wheel = 一 commit**（新增 / 重写场景，scope 必填）
 - 跨 type 或跨 scope 必拆
+- 新增 wheel 的 commit 必须是审计通过的终态（通过 `make wheel-gate` 验证），不允许紧跟 fix commit
+
+### 提交流程（wheel 新增）
+
+```
+实现 → 测试绿 → make wheel-gate WHEELS="layer/name" → make wheel-commit WHEELS="layer/name" M="..."
+```
+
+**铁律**：不过 gate 不提交。gate 脚本自动执行 build + test + audit，任一不通过则阻断 commit。
 
 ### 批量改动的拆分策略（审计/重构/迁移等）
 
-大量改动（如超级审计产出 50+ 项修复）时，按 **type × 逻辑批次** 拆 commit，不需要每个文件或每个 fix 一个 commit：
+批量修复（如审计产出跨 wheel 的同类问题）时，按 **改动性质** 决定粒度：
 
 | 粒度 | 拆法 | 示例 |
 |------|------|------|
-| **同 type + 同体系** | 合并为 1 个 commit | log 生态 10 个 wheel 的 19 项修复 → 1 commit |
-| **同 type + 同层不同 wheel** | 合并为 1 个 commit | L1 driver 3 个 wheel 修复 → 1 commit |
+| **同一个 fix 的多处应用** | 可合并为 1 个 commit | 10 个 wheel 缺 polling delay → 1 commit |
 | **跨 type** | 必须拆 | wheel 修复和 CI 修复 → 2 个 commit |
-| **跨 scope 但强关联** | 可合并（body 说明） | qmi8658a API 重构 + flybox 消费者适配 → wheel commit 含 consumer 更新，或拆为 wheel + project 两个 |
+| **跨 scope 但强关联** | 可合并（body 说明） | qmi8658a API 重构 + flybox 消费者适配 → wheel + project 两个 |
 
 **实操原则**：
 - 每个 commit 能独立 revert 且 diff 可读（<300 行改动为佳）
-- summary 列出涉及的 wheel/文件数量和修复类别
-- body 按 CRITICAL / MODERATE / MINOR 分级列出修复内容
 - 不要为了拆而拆——5 个同类 typo 修复合成 1 个 commit 比 5 个微 commit 有意义
 
-**典型审计 commit 序列**（按 type 分组）：
+**典型 commit 序列**（新增 5 个 wheel + 审计修复）：
 ```
-wheel(primitives/log): fix N audit findings across log ecosystem
-wheel: fix L0 primitive audit findings
-wheel: fix L1 driver audit findings
-wheel: fix L2 protocol audit findings
-project(flybox): fix N audit findings across tasks and drivers
-tool: fix N tooling script audit findings
-ci: fix CI pipeline audit findings
-docs: fix documentation drift across N files
-port(gd32f4xx): fix N HAL audit findings
+wheel(primitives/ewma): add integer-only EWMA with bit-shift alpha
+wheel(primitives/hysteresis): add schmitt-trigger comparator
+wheel(drivers/bmp388): add barometric pressure sensor driver
+wheel(drivers/shtc3): add humidity and temperature sensor driver
+wheel(protocols/hdlc): add HDLC frame codec with byte stuffing
+wheel: fix polling delay in ads1015 and ads1115 DRDY loops
+docs: update wheel count 222 to 227
 ```
 
 ### AI 易踩的坑
@@ -443,6 +447,8 @@ port(gd32f4xx): fix N HAL audit findings
 - ❌ summary 名词短语无动词（反例 `first wheel — leveled logging`；正例 `add leveled logging wheel`）
 - ❌ body 只说 what（反例 `update log.c`；正例 `fix race in log_emit flush`）
 - ❌ 加 `Co-Authored-By: Claude ...` 行（Claude Code 默认行为——本仓禁用）
+- ❌ 多个 wheel 合一个 add commit（反例 `wheel: add ewma and hysteresis`；正例分两个 commit）
+- ❌ 先 add 再 fix（反例 add commit 后紧跟 fix commit；正例审计通过后才 commit）
 
 ### 新场景处理（escape hatch）
 
@@ -475,7 +481,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
 - ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
-- ✅ **开发效率工具链**（`tooling/harness/` + `tooling/codegen/` + `tooling/test/` + 其他子目录）——test_harness.h（统一测试框架 + 10 种断言含 ASSERT_NEAR_D/MEMEQ_N/NOT_NULL/STR_EQ/EQ_HEX/TRUE/FALSE）/ _wheel_parser.py（共享 C 头文件解析，gen_null/sentinel/boundary 三生成器统一使用 + 69 个单测）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板 + `--commit` + I2C read 自动 HAL 守护 + hw_model 骨架生成）/ gen_null_tests.py（自动生成 NULL 测试 + 自动注册 CMakeLists）/ gen_boundary_tests.py（自动生成边界测试：INT32 极值/NaN/Infinity/FLT_MAX/-0.0f/枚举越界）/ bootstrap.sh / wheel_promote.sh / audit_wheels.py（57 项 CHECK_TABLE + 3 特殊检查 + TEST/RUN 平衡 + --graph + --quiet + --json，含 hw_model 孤儿检测 + HAL NULL 守护 + 轮询延时 + 测试同源 + 规范向量检查）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并 + untracked 自动 retry）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（`batch-scaffold` 批量脚手架 + `memory-audit` + `doc-drift` 等 61 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）/ mock_gpio.h（多 pin 支持）/ 深度审计完成（96 文件逐行，6 轮 23 commit，0 CRITICAL 残留）/ _arm_audit_common.sh（arm size/stack 审计共享模块）
+- ✅ **开发效率工具链**（`tooling/harness/` + `tooling/codegen/` + `tooling/test/` + 其他子目录）——test_harness.h（统一测试框架 + 10 种断言含 ASSERT_NEAR_D/MEMEQ_N/NOT_NULL/STR_EQ/EQ_HEX/TRUE/FALSE）/ _wheel_parser.py（共享 C 头文件解析，gen_null/sentinel/boundary 三生成器统一使用 + 69 个单测）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板 + `--commit` + I2C read 自动 HAL 守护 + hw_model 骨架生成）/ gen_null_tests.py（自动生成 NULL 测试 + 自动注册 CMakeLists）/ gen_boundary_tests.py（自动生成边界测试：INT32 极值/NaN/Infinity/FLT_MAX/-0.0f/枚举越界）/ bootstrap.sh / wheel_promote.sh / audit_wheels.py（57 项 CHECK_TABLE + 3 特殊检查 + TEST/RUN 平衡 + --graph + --quiet + --json，含 hw_model 孤儿检测 + HAL NULL 守护 + 轮询延时 + 测试同源 + 规范向量检查）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并 + untracked 自动 retry）/ wheel_gate.sh（per-wheel test+audit 卡口，`make wheel-gate` / `make wheel-commit`）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（`batch-scaffold` 批量脚手架 + `memory-audit` + `doc-drift` 等 61 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）/ mock_gpio.h（多 pin 支持）/ 深度审计完成（96 文件逐行，6 轮 23 commit，0 CRITICAL 残留）/ _arm_audit_common.sh（arm size/stack 审计共享模块）
 - ✅ **227 wheels**（全部 candidate，超级审计 0 open findings）：
   - 完整列表：`ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/`
   - L0 原语 69：log 生态(10) / crc 族(crc8/crc16/crc32) / 数据结构(ring_buffer/fifo_queue/bitmap/byte_buffer/event_queue) / 数学(fixed_point/moving_average/moving_window/median_filter/pid_controller/mahony_ahrs/mag_cal/iir_lowpass/kalman_1d/interpolate) / 滤波(ewma/hysteresis) / 编解码(base64/hex_codec/json_parser/printf_tiny/cobs/slip/rle_codec) / 系统(state_machine/soft_timer/timeout/retry/debounce/led_pattern/timer_wheel/rate_limiter) / 安全(aes128/sha256/hmac_sha256) / 存储抽象(fal/kvs/flash_ring) / 通信原语(soft_i2c/soft_spi/onewire) / GNSS(gnss_filter) / 内存(memory_pool/double_buffer) / 字体(font_5x7) / 压缩(heatshrink) / 显示原语(framebuffer) / 时间(datetime) / 工具(uuid/endian/hash_fnv/string_utils/lookup_table/checksum/bitfield/cli_parser)
