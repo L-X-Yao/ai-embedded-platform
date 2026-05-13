@@ -20,9 +20,18 @@
 extern "C" {
 #endif
 
+typedef enum {
+    FAL_OK             =  0,
+    FAL_ERR_PARAM      = -1,  /* NULL pointer or invalid argument */
+    FAL_ERR_OVERFLOW   = -2,  /* addr + size exceeds partition size */
+    FAL_ERR_HAL        = -3,  /* underlying device read/write/erase failure */
+    FAL_ERR_NOT_READY  = -4,  /* device not found / not initialized */
+} fal_err_t;
+
 /**
  * Initialise FAL: call ops.init on every registered device.
- * Returns the number of partitions on success, -1 on failure.
+ * Returns the number of partitions on success (>= 0), or a negative
+ * fal_err_t value on failure.
  * Idempotent — subsequent calls return the partition count without
  * re-initialising devices.
  * @thread_safe: no
@@ -61,8 +70,9 @@ const struct fal_partition *fal_get_partition_table(size_t *len);
 
 /**
  * Read size bytes from a partition starting at addr (partition-relative).
- * Returns the number of bytes read on success, -1 on error (NULL pointer,
- * out-of-bounds, or device not found).
+ * Returns the number of bytes read on success (>= 0), or a negative
+ * fal_err_t value on error (FAL_ERR_PARAM / FAL_ERR_OVERFLOW /
+ * FAL_ERR_NOT_READY / FAL_ERR_HAL).
  * @thread_safe: caller_must_lock
  * @isr_safe: no
  */
@@ -72,7 +82,8 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
 /**
  * Write size bytes to a partition starting at addr (partition-relative).
  * NOR flash semantics apply: can only clear bits; erase before rewriting.
- * Returns the number of bytes written on success, -1 on error.
+ * Returns the number of bytes written on success (>= 0), or a negative
+ * fal_err_t value on error.
  * @thread_safe: caller_must_lock
  * @isr_safe: no
  */
@@ -82,7 +93,8 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
 /**
  * Erase size bytes in a partition starting at addr (partition-relative).
  * size must be a multiple of the device block size in practice.
- * Returns the number of bytes erased on success, -1 on error.
+ * Returns the number of bytes erased on success (>= 0), or a negative
+ * fal_err_t value on error.
  * @thread_safe: caller_must_lock
  * @isr_safe: no
  */
@@ -91,6 +103,7 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
 
 /**
  * Erase the entire partition.  Equivalent to fal_partition_erase(part, 0, part->len).
+ * Returns the number of bytes erased (>= 0), or a negative fal_err_t.
  * @thread_safe: caller_must_lock
  * @isr_safe: no
  */

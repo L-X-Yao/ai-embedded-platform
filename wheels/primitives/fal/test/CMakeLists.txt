@@ -45,9 +45,11 @@ target_compile_options(prop_fal PRIVATE ${STRICT_FLAGS})
 
 add_executable(test_boundary_fal
     test_boundary_fal.c
+    mock_fal_dev.c
     ../fal.c
 )
 target_include_directories(test_boundary_fal PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
