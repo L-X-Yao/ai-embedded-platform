@@ -68,7 +68,7 @@ void log_set_time_fn(uint32_t (*fn)(void)) {
  * ====================================================================== */
 
 int log_add_sink(log_sink_fn fn, void *ctx) {
-    if (!fn) return -1;
+    if (!fn) return LOG_ERR_NO_SLOTS;
     for (int i = 0; i < LOG_MAX_SINKS; i++) {
         if (!g_sinks[i].in_use) {
             g_sinks[i].fn = fn;
@@ -77,17 +77,17 @@ int log_add_sink(log_sink_fn fn, void *ctx) {
             return i;
         }
     }
-    return -1;  /* no slots */
+    return LOG_ERR_NO_SLOTS;
 }
 
 int log_remove_sink(int sink_id) {
     if (sink_id < 0 || sink_id >= LOG_MAX_SINKS || !g_sinks[sink_id].in_use) {
-        return -1;
+        return LOG_ERR_INVALID_ID;
     }
     g_sinks[sink_id].fn = NULL;
     g_sinks[sink_id].ctx = NULL;
     g_sinks[sink_id].in_use = 0;
-    return 0;
+    return LOG_OK;
 }
 
 static void sink_stdout(void *ctx, const char *line, size_t len) {
