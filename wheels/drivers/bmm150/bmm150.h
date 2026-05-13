@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 /*
- * bmm150 — TODO: one-line description
+ * bmm150 — Bosch BMM150 3-axis geomagnetic sensor
  *
  * Layer:     L1
  * Status:    candidate
  * Deps:      i2c_hal (injected)
  * Instances: multi
+ *
+ * Chip ID = 0x32. XY: 13-bit, Z: 15-bit. Output in microtesla (uT).
+ * Uses linear scaling without trim compensation (adequate for heading).
+ * Pure C99, no heap, fully reentrant per-context.
  */
 
 #ifndef BMM150_H
@@ -18,8 +22,6 @@
 extern "C" {
 #endif
 
-/* ---------- error codes ---------- */
-
 typedef enum {
     BMM150_OK        =  0,
     BMM150_ERR_I2C   = -1,
@@ -27,41 +29,41 @@ typedef enum {
     BMM150_ERR_PARAM = -3,
 } bmm150_err_t;
 
-/* ---------- I2C HAL (caller provides) ---------- */
-
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);
     void *ctx;
 } bmm150_i2c_t;
 
-/* ---------- constants ---------- */
-
-#define BMM150_DEV_ADDR  0x10
-
-/* ---------- data types ---------- */
-
 typedef struct {
-    float x, y, z;  /* TODO: use unit suffixes (_c, _pa, _mg, ...) */
-} bmm150_data_t;
-
-/* ---------- device context ---------- */
+    uint8_t addr;
+} bmm150_cfg_t;
 
 typedef struct {
     const bmm150_i2c_t *i2c;
+    bmm150_cfg_t cfg;
 } bmm150_t;
 
-/* ---------- API ---------- */
+typedef struct {
+    float x_ut;
+    float y_ut;
+    float z_ut;
+} bmm150_data_t;
 
-/** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
-bmm150_err_t bmm150_init(bmm150_t *dev,
-                               const bmm150_i2c_t *i2c);
+#define BMM150_ADDR_DEFAULT 0x10
+#define BMM150_CHIP_ID      0x32
 
-/** Read sensor data. @thread_safe: caller_must_lock @isr_safe: no */
-bmm150_err_t bmm150_read(bmm150_t *dev,
-                               bmm150_data_t *out);
+/** @thread_safe: no @isr_safe: no */
+bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
+                          const bmm150_cfg_t *cfg);
+
+/** @thread_safe: no @isr_safe: no */
+bmm150_err_t bmm150_read(bmm150_t *dev, bmm150_data_t *out);
+
+/** @thread_safe: no @isr_safe: no */
+bmm150_err_t bmm150_reset(bmm150_t *dev);
 
 #ifdef __cplusplus
 }
