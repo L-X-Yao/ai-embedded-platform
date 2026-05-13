@@ -5,16 +5,16 @@
 TEST(test_init_valid)
 {
     median_filter_t f;
-    ASSERT_EQ(median_filter_init(&f, 3), 0);
-    ASSERT_EQ(median_filter_init(&f, MEDIAN_FILTER_MAX_SIZE), 0);
+    ASSERT_EQ(median_filter_init(&f, 3), MEDIAN_FILTER_OK);
+    ASSERT_EQ(median_filter_init(&f, MEDIAN_FILTER_MAX_SIZE), MEDIAN_FILTER_OK);
 }
 
 TEST(test_init_invalid)
 {
     median_filter_t f;
-    ASSERT_EQ(median_filter_init(NULL, 3), -1);
-    ASSERT_EQ(median_filter_init(&f, 0), -1);
-    ASSERT_EQ(median_filter_init(&f, MEDIAN_FILTER_MAX_SIZE + 1), -1);
+    ASSERT_EQ(median_filter_init(NULL, 3), MEDIAN_FILTER_ERR_PARAM);
+    ASSERT_EQ(median_filter_init(&f, 0), MEDIAN_FILTER_ERR_PARAM);
+    ASSERT_EQ(median_filter_init(&f, MEDIAN_FILTER_MAX_SIZE + 1), MEDIAN_FILTER_ERR_PARAM);
 }
 
 TEST(test_window_3)

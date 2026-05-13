@@ -11,15 +11,15 @@
 #include "contract.h"
 #include <string.h>
 
-int median_filter_init(median_filter_t *f, uint8_t size)
+median_filter_err_t median_filter_init(median_filter_t *f, uint8_t size)
 {
     if (!f || size == 0 || size > MEDIAN_FILTER_MAX_SIZE)
-        return -1;
+        return MEDIAN_FILTER_ERR_PARAM;
     memset(f, 0, sizeof(*f));
     f->size = size;
     ENSURE(f->count == 0 && f->index == 0);
     ENSURE(f->size > 0 && f->size <= MEDIAN_FILTER_MAX_SIZE);
-    return 0;
+    return MEDIAN_FILTER_OK;
 }
 
 static void rebuild_sorted(median_filter_t *f)
