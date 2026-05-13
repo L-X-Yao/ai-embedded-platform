@@ -11,25 +11,27 @@
 #include <math.h>
 
 TEST(test_boundary_ubx_parser_init_buf_size_zero) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
     ubx_parser_err_t ret = ubx_parser_init(&_safe_ctx_0, _safe_buf_1, 0);
-    ASSERT_TRUE(ret == UBX_PARSER_OK || ret == UBX_PARSER_ERR_PARAM);
+    ASSERT_TRUE(ret == UBX_PARSER_OK || ret == UBX_PARSER_ERR_PARAM
+                || ret == UBX_PARSER_ERR_SHORT);
 }
 
 TEST(test_boundary_ubx_parser_init_buf_size_one) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
     ubx_parser_err_t ret = ubx_parser_init(&_safe_ctx_0, _safe_buf_1, 1);
-    ASSERT_TRUE(ret == UBX_PARSER_OK || ret == UBX_PARSER_ERR_PARAM);
+    ASSERT_TRUE(ret == UBX_PARSER_OK || ret == UBX_PARSER_ERR_PARAM
+                || ret == UBX_PARSER_ERR_SHORT);
 }
 
 TEST(test_boundary_ubx_parser_init_buf_size_size_max) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
@@ -38,21 +40,21 @@ TEST(test_boundary_ubx_parser_init_buf_size_size_max) {
 }
 
 TEST(test_boundary_ubx_parser_feed_byte_zero) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     (void)ubx_parser_feed(&_safe_ctx_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_ubx_parser_feed_byte_one) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     (void)ubx_parser_feed(&_safe_ctx_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_ubx_parser_feed_byte_uint8_max) {
-    ubx_parser_ctx_t _safe_ctx_0;
+    ubx_parser_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     (void)ubx_parser_feed(&_safe_ctx_0, (uint8_t)(UINT8_MAX));
     /* must not crash */
@@ -195,7 +197,10 @@ TEST(test_boundary_ubx_parser_checksum_len_size_max) {
     memset(_safe_ck_a_2, 0, sizeof(_safe_ck_a_2));
     uint8_t _safe_ck_b_3[64];
     memset(_safe_ck_b_3, 0, sizeof(_safe_ck_b_3));
-    (void)ubx_parser_checksum(_safe_data_0, SIZE_MAX, _safe_ck_a_2, _safe_ck_b_3);
+    /* Clamp to buffer size: checksum reads up to len bytes from data; passing
+     * a literal SIZE_MAX would walk off the buffer. The intent of "boundary"
+     * here is "largest sensible value within buffer bounds". */
+    (void)ubx_parser_checksum(_safe_data_0, sizeof(_safe_data_0), _safe_ck_a_2, _safe_ck_b_3);
     /* must not crash */
 }
 

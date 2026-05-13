@@ -14,7 +14,7 @@ TEST(test_ubx_parser_init_null_ctx) {
 }
 
 TEST(test_ubx_parser_init_null_buf) {
-    ubx_parser_ctx_t _ctx;
+    ubx_parser_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)ubx_parser_init(&_ctx, NULL, 0);
     /* must not crash */
@@ -33,7 +33,7 @@ TEST(test_ubx_parser_get_msg_null_ctx) {
 }
 
 TEST(test_ubx_parser_get_msg_null_out) {
-    ubx_parser_ctx_t _ctx;
+    ubx_parser_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)ubx_parser_get_msg(&_ctx, NULL);
     /* must not crash */

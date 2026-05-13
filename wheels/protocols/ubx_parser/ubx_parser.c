@@ -30,7 +30,7 @@ void ubx_parser_checksum(const uint8_t *data, size_t len,
 
 /* ---------- init / reset ---------- */
 
-ubx_parser_err_t ubx_parser_init(ubx_parser_ctx_t *ctx,
+ubx_parser_err_t ubx_parser_init(ubx_parser_t *ctx,
                                   uint8_t *buf, size_t buf_size)
 {
     if (!ctx || !buf) return UBX_PARSER_ERR_PARAM;
@@ -44,7 +44,7 @@ ubx_parser_err_t ubx_parser_init(ubx_parser_ctx_t *ctx,
     return UBX_PARSER_OK;
 }
 
-void ubx_parser_reset(ubx_parser_ctx_t *ctx)
+void ubx_parser_reset(ubx_parser_t *ctx)
 {
     if (!ctx) return;
     ctx->idx         = 0;
@@ -54,7 +54,7 @@ void ubx_parser_reset(ubx_parser_ctx_t *ctx)
 
 /* ---------- incremental feed ---------- */
 
-ubx_feed_status_t ubx_parser_feed(ubx_parser_ctx_t *ctx, uint8_t byte)
+ubx_feed_status_t ubx_parser_feed(ubx_parser_t *ctx, uint8_t byte)
 {
     if (!ctx || !ctx->buf) return UBX_FEED_ERROR;
 
@@ -141,7 +141,7 @@ ubx_feed_status_t ubx_parser_feed(ubx_parser_ctx_t *ctx, uint8_t byte)
 
 /* ---------- extract ---------- */
 
-ubx_parser_err_t ubx_parser_get_msg(const ubx_parser_ctx_t *ctx,
+ubx_parser_err_t ubx_parser_get_msg(const ubx_parser_t *ctx,
                                      ubx_msg_t *out)
 {
     if (!ctx || !out) return UBX_PARSER_ERR_PARAM;
