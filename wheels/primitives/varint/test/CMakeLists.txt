@@ -20,6 +20,15 @@ target_include_directories(test_varint PRIVATE
 )
 target_compile_options(test_varint PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_varint
+    prop_varint.c
+    ../varint.c
+)
+target_include_directories(prop_varint PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(prop_varint PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_executable(test_null_varint
     test_null_varint.c
@@ -42,5 +51,6 @@ target_include_directories(test_boundary_varint PRIVATE
 target_compile_options(test_boundary_varint PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME varint_tests COMMAND test_varint)
+add_test(NAME varint_prop  COMMAND prop_varint)
 add_test(NAME varint_null_tests COMMAND test_null_varint)
 add_test(NAME varint_boundary_tests COMMAND test_boundary_varint)
