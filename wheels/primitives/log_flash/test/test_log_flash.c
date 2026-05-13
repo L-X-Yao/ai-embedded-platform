@@ -132,7 +132,7 @@ TEST(test_erase_all) {
     log_flash_sink(&g_f, "more\n", 5);
     ASSERT_EQ(log_flash_total(&g_f), 2);
 
-    ASSERT_EQ(log_flash_erase_all(&g_f), 0);
+    ASSERT_EQ(log_flash_erase_all(&g_f), LOG_FLASH_OK);
     ASSERT_EQ(g_f.write_sector, 0);
     ASSERT_EQ(g_f.write_pos, 0);
 
@@ -147,7 +147,7 @@ TEST(test_erase_all_hal_failure) {
     ASSERT_EQ(log_flash_total(&g_f), 1);
 
     g_erase_fail_after = g_erase_call_count;
-    ASSERT_EQ(log_flash_erase_all(&g_f), -1);
+    ASSERT_EQ(log_flash_erase_all(&g_f), LOG_FLASH_ERR_HAL);
     ASSERT_EQ(log_flash_total(&g_f), 1);
 }
 
@@ -165,13 +165,13 @@ TEST(test_null_safety) {
     log_flash_sink(NULL, "x", 1);
     ASSERT_EQ(log_flash_total(NULL), 0);
     ASSERT_EQ(log_flash_dropped(NULL), 0);
-    ASSERT_EQ(log_flash_erase_all(NULL), -1);
-    ASSERT_EQ(log_flash_init(NULL, &g_hal, NULL, 0, 64, 4), -1);
+    ASSERT_EQ(log_flash_erase_all(NULL), LOG_FLASH_ERR_PARAM);
+    ASSERT_EQ(log_flash_init(NULL, &g_hal, NULL, 0, 64, 4), LOG_FLASH_ERR_PARAM);
 
     log_flash_t f;
-    ASSERT_EQ(log_flash_init(&f, NULL, NULL, 0, 64, 4), -1);
-    ASSERT_EQ(log_flash_init(&f, &g_hal, NULL, 0, 0, 4), -1);
-    ASSERT_EQ(log_flash_init(&f, &g_hal, NULL, 0, 64, 0), -1);
+    ASSERT_EQ(log_flash_init(&f, NULL, NULL, 0, 64, 4), LOG_FLASH_ERR_PARAM);
+    ASSERT_EQ(log_flash_init(&f, &g_hal, NULL, 0, 0, 4), LOG_FLASH_ERR_PARAM);
+    ASSERT_EQ(log_flash_init(&f, &g_hal, NULL, 0, 64, 0), LOG_FLASH_ERR_PARAM);
 }
 
 TEST_MAIN("log_flash")

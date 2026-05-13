@@ -20,6 +20,12 @@ extern "C" {
 
 #define LOG_FLASH_ENTRY_MAGIC  0xA5
 
+typedef enum {
+    LOG_FLASH_OK         =  0,
+    LOG_FLASH_ERR_PARAM  = -1,
+    LOG_FLASH_ERR_HAL    = -2,
+} log_flash_err_t;
+
 typedef struct {
     int (*read)(void *ctx, uint32_t offset, uint8_t *buf, size_t len);
     int (*write)(void *ctx, uint32_t offset, const uint8_t *data, size_t len);
@@ -43,9 +49,9 @@ typedef struct {
  *   sector_size: bytes per erase sector (e.g. 4096)
  *   sector_count: number of sectors to use as ring
  * @thread_safe: no — call during init @isr_safe: no */
-int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
-                   uint32_t base_offset, uint32_t sector_size,
-                   uint32_t sector_count);
+log_flash_err_t log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
+                               uint32_t base_offset, uint32_t sector_size,
+                               uint32_t sector_count);
 
 /* Sink adapter: compatible with log_sink_fn.
  * Pass log_flash_t* as ctx when registering via log_add_sink().
@@ -59,9 +65,10 @@ void log_flash_sink(void *ctx, const char *line, size_t len);
 size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size);
 
 /* Erase all sectors and reset state.
- * Returns 0 on success, -1 if any erase failed (state not reset).
+ * Returns LOG_FLASH_OK on success, LOG_FLASH_ERR_HAL if any erase failed
+ * (state not reset), LOG_FLASH_ERR_PARAM on NULL pointer.
  * @thread_safe: no @isr_safe: yes */
-int log_flash_erase_all(log_flash_t *f);
+log_flash_err_t log_flash_erase_all(log_flash_t *f);
 
 /* Return total entries written since init.
  * @thread_safe: no @isr_safe: yes */

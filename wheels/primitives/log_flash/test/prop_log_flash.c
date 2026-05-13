@@ -63,8 +63,8 @@ static void reset_flash(void)
 PROPERTY(no_crash_random_sink, 50000) {
     reset_flash();
     log_flash_t f;
-    int rc = log_flash_init(&f, &mock_hal, NULL, 0, MOCK_SECTOR_SIZE, MOCK_SECTOR_COUNT);
-    PROP_ASSERT_EQ(rc, 0);
+    log_flash_err_t rc = log_flash_init(&f, &mock_hal, NULL, 0, MOCK_SECTOR_SIZE, MOCK_SECTOR_COUNT);
+    PROP_ASSERT_EQ(rc, LOG_FLASH_OK);
 
     char line[128];
     unsigned len = (unsigned)ARBI_RANGE(seed, 0, 127);
@@ -160,8 +160,8 @@ PROPERTY(erase_all_resets, 5000) {
         log_flash_sink(&f, "data", 4);
     }
 
-    int rc = log_flash_erase_all(&f);
-    PROP_ASSERT_EQ(rc, 0);
+    log_flash_err_t rc = log_flash_erase_all(&f);
+    PROP_ASSERT_EQ(rc, LOG_FLASH_OK);
     PROP_ASSERT_EQ(log_flash_total(&f), 0);
     PROP_ASSERT_EQ(log_flash_dropped(&f), 0);
 

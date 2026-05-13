@@ -35,10 +35,10 @@ static int read_at(const log_flash_t *f, uint32_t offset, uint8_t *buf, size_t l
     return f->hal.read(f->hal_ctx, offset, buf, len);
 }
 
-int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
-                   uint32_t base_offset, uint32_t sector_size,
-                   uint32_t sector_count) {
-    if (!f || !hal || sector_size == 0 || sector_count == 0) return -1;
+log_flash_err_t log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
+                               uint32_t base_offset, uint32_t sector_size,
+                               uint32_t sector_count) {
+    if (!f || !hal || sector_size == 0 || sector_count == 0) return LOG_FLASH_ERR_PARAM;
     f->hal = *hal;
     f->hal_ctx = hal_ctx;
     f->base_offset = base_offset;
@@ -48,15 +48,18 @@ int log_flash_init(log_flash_t *f, const log_flash_hal_t *hal, void *hal_ctx,
     f->write_pos = 0;
     f->total_entries = 0;
     f->dropped = 0;
-    if (erase_sector(f, 0) != 0) return -1;
+    if (erase_sector(f, 0) != 0) return LOG_FLASH_ERR_HAL;
     ENSURE(f->write_sector < f->sector_count);
     ENSURE(f->write_pos <= f->sector_size);
-    return 0;
+    return LOG_FLASH_OK;
 }
 
 void log_flash_sink(void *ctx, const char *line, size_t len) {
     log_flash_t *f = (log_flash_t *)ctx;
     if (!f || !line || len == 0) return;
+    /* Guard against zero-init / uninitialized context: division/modulo by
+     * sector_count or sector_size below would trap.  Treat as dropped. */
+    if (f->sector_size == 0 || f->sector_count == 0) return;
 
     if (len > MAX_ENTRY_LEN || ENTRY_HEADER_SIZE + len > f->sector_size) {
         if (f->dropped < UINT32_MAX) f->dropped++;
@@ -98,6 +101,9 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
 
 size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size) {
     if (!f || !dst || dst_size == 0) return 0;
+    /* Guard against zero-init / uninitialized context: division/modulo by
+     * sector_count below would trap. */
+    if (f->sector_size == 0 || f->sector_count == 0) return 0;
 
     size_t out_pos = 0;
 
@@ -133,16 +139,16 @@ size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size) {
     return out_pos;
 }
 
-int log_flash_erase_all(log_flash_t *f) {
-    if (!f) return -1;
+log_flash_err_t log_flash_erase_all(log_flash_t *f) {
+    if (!f) return LOG_FLASH_ERR_PARAM;
     for (uint32_t i = 0; i < f->sector_count; i++) {
-        if (erase_sector(f, i) != 0) return -1;
+        if (erase_sector(f, i) != 0) return LOG_FLASH_ERR_HAL;
     }
     f->write_sector = 0;
     f->write_pos = 0;
     f->total_entries = 0;
     f->dropped = 0;
-    return 0;
+    return LOG_FLASH_OK;
 }
 
 uint32_t log_flash_total(const log_flash_t *f) {
