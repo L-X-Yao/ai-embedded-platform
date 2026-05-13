@@ -32,7 +32,7 @@ typedef enum {
 
 typedef struct {
     uint8_t o_key_pad[HMAC_SHA256_BLOCK_SIZE]; /* internal: outer padded key */
-    uint8_t i_ctx_buf[104];                    /* internal: inner sha256_ctx_t (opaque storage) */
+    uint8_t i_ctx_buf[104];                    /* internal: inner sha256_t (opaque storage) */
 } hmac_sha256_t;
 
 /**

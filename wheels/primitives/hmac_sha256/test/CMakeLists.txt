@@ -38,9 +38,11 @@ target_compile_options(test_null_hmac_sha256 PRIVATE -Wall -Wextra -Wpedantic -W
 add_executable(test_boundary_hmac_sha256
     test_boundary_hmac_sha256.c
     ../hmac_sha256.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/primitives/sha256/sha256.c
 )
 target_include_directories(test_boundary_hmac_sha256 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../wheels/primitives/sha256
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_hmac_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)

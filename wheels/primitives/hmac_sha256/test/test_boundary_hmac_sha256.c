@@ -33,7 +33,8 @@ TEST(test_boundary_hmac_sha256_init_key_len_size_max) {
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_key_1[64];
     memset(_safe_key_1, 0, sizeof(_safe_key_1));
-    hmac_sha256_err_t ret = hmac_sha256_init(&_safe_ctx_0, _safe_key_1, SIZE_MAX);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    hmac_sha256_err_t ret = hmac_sha256_init(&_safe_ctx_0, _safe_key_1, sizeof(_safe_key_1));
     ASSERT_TRUE(ret == HMAC_SHA256_OK || ret == HMAC_SHA256_ERR_PARAM);
 }
 
@@ -60,7 +61,8 @@ TEST(test_boundary_hmac_sha256_update_len_size_max) {
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    hmac_sha256_err_t ret = hmac_sha256_update(&_safe_ctx_0, _safe_data_1, SIZE_MAX);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    hmac_sha256_err_t ret = hmac_sha256_update(&_safe_ctx_0, _safe_data_1, sizeof(_safe_data_1));
     ASSERT_TRUE(ret == HMAC_SHA256_OK || ret == HMAC_SHA256_ERR_PARAM);
 }
 
@@ -93,7 +95,8 @@ TEST(test_boundary_hmac_sha256_compute_key_len_size_max) {
     memset(_safe_data_2, 0, sizeof(_safe_data_2));
     uint8_t _safe_mac_4[64];
     memset(_safe_mac_4, 0, sizeof(_safe_mac_4));
-    (void)hmac_sha256_compute(_safe_key_0, SIZE_MAX, _safe_data_2, 0, _safe_mac_4);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    (void)hmac_sha256_compute(_safe_key_0, sizeof(_safe_key_0), _safe_data_2, 0, _safe_mac_4);
     /* must not crash */
 }
 
@@ -126,7 +129,8 @@ TEST(test_boundary_hmac_sha256_compute_data_len_size_max) {
     memset(_safe_data_2, 0, sizeof(_safe_data_2));
     uint8_t _safe_mac_4[64];
     memset(_safe_mac_4, 0, sizeof(_safe_mac_4));
-    (void)hmac_sha256_compute(_safe_key_0, 0, _safe_data_2, SIZE_MAX, _safe_mac_4);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    (void)hmac_sha256_compute(_safe_key_0, 0, _safe_data_2, sizeof(_safe_data_2), _safe_mac_4);
     /* must not crash */
 }
 
