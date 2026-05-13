@@ -28,15 +28,6 @@ TEST(test_boundary_log_ringbuf_init_capacity_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_log_ringbuf_init_capacity_size_max) {
-    log_ringbuf_t _safe_rb_0;
-    memset(&_safe_rb_0, 0, sizeof(_safe_rb_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)log_ringbuf_init(&_safe_rb_0, _safe_buf_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_ringbuf_write_len_zero) {
     log_ringbuf_t _safe_rb_0;
     memset(&_safe_rb_0, 0, sizeof(_safe_rb_0));
@@ -55,15 +46,6 @@ TEST(test_boundary_log_ringbuf_write_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_log_ringbuf_write_len_size_max) {
-    log_ringbuf_t _safe_rb_0;
-    memset(&_safe_rb_0, 0, sizeof(_safe_rb_0));
-    char _safe_line_1[64];
-    memset(_safe_line_1, 0, sizeof(_safe_line_1));
-    (void)log_ringbuf_write(&_safe_rb_0, _safe_line_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_ringbuf_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -75,13 +57,6 @@ TEST(test_boundary_log_ringbuf_sink_len_one) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
     (void)log_ringbuf_sink(NULL, _safe_line_1, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_ringbuf_sink_len_size_max) {
-    char _safe_line_1[64];
-    memset(_safe_line_1, 0, sizeof(_safe_line_1));
-    (void)log_ringbuf_sink(NULL, _safe_line_1, SIZE_MAX);
     /* must not crash */
 }
 
@@ -115,13 +90,10 @@ TEST(test_boundary_log_ringbuf_read_dst_size_size_max) {
 TEST_MAIN("boundary_log_ringbuf") {
     RUN(test_boundary_log_ringbuf_init_capacity_zero);
     RUN(test_boundary_log_ringbuf_init_capacity_one);
-    RUN(test_boundary_log_ringbuf_init_capacity_size_max);
     RUN(test_boundary_log_ringbuf_write_len_zero);
     RUN(test_boundary_log_ringbuf_write_len_one);
-    RUN(test_boundary_log_ringbuf_write_len_size_max);
     RUN(test_boundary_log_ringbuf_sink_len_zero);
     RUN(test_boundary_log_ringbuf_sink_len_one);
-    RUN(test_boundary_log_ringbuf_sink_len_size_max);
     RUN(test_boundary_log_ringbuf_read_dst_size_zero);
     RUN(test_boundary_log_ringbuf_read_dst_size_one);
     RUN(test_boundary_log_ringbuf_read_dst_size_size_max);

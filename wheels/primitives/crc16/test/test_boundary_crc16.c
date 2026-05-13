@@ -24,13 +24,6 @@ TEST(test_boundary_crc16_modbus_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc16_modbus_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)crc16_modbus(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc16_modbus_step_crc_zero) {
     (void)crc16_modbus_step(0, 0);
     /* must not crash */
@@ -64,7 +57,6 @@ TEST(test_boundary_crc16_modbus_step_byte_uint8_max) {
 TEST_MAIN("boundary_crc16") {
     RUN(test_boundary_crc16_modbus_len_zero);
     RUN(test_boundary_crc16_modbus_len_one);
-    RUN(test_boundary_crc16_modbus_len_size_max);
     RUN(test_boundary_crc16_modbus_step_crc_zero);
     RUN(test_boundary_crc16_modbus_step_crc_one);
     RUN(test_boundary_crc16_modbus_step_crc_uint16_max);

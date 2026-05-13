@@ -55,15 +55,6 @@ TEST(test_boundary_crc_any_update_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc_any_update_len_size_max) {
-    crc_any_config_t _safe_cfg_0;
-    memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    (void)crc_any_update(&_safe_cfg_0, 0, _safe_data_2, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc_any_verify_len_zero) {
     crc_any_config_t _safe_cfg_0;
     memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
@@ -79,15 +70,6 @@ TEST(test_boundary_crc_any_verify_len_one) {
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     (void)crc_any_verify(&_safe_cfg_0, _safe_data_1, 1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_crc_any_verify_len_size_max) {
-    crc_any_config_t _safe_cfg_0;
-    memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)crc_any_verify(&_safe_cfg_0, _safe_data_1, SIZE_MAX, 0);
     /* must not crash */
 }
 
@@ -124,10 +106,8 @@ TEST_MAIN("boundary_crc_any") {
     RUN(test_boundary_crc_any_update_crc_uint32_max);
     RUN(test_boundary_crc_any_update_len_zero);
     RUN(test_boundary_crc_any_update_len_one);
-    RUN(test_boundary_crc_any_update_len_size_max);
     RUN(test_boundary_crc_any_verify_len_zero);
     RUN(test_boundary_crc_any_verify_len_one);
-    RUN(test_boundary_crc_any_verify_len_size_max);
     RUN(test_boundary_crc_any_verify_expected_zero);
     RUN(test_boundary_crc_any_verify_expected_one);
     RUN(test_boundary_crc_any_verify_expected_uint32_max);

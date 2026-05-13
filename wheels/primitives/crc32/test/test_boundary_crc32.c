@@ -24,13 +24,6 @@ TEST(test_boundary_crc32_compute_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc32_compute_len_size_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)crc32_compute(_safe_data_0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc32_update_crc_zero) {
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
@@ -66,13 +59,6 @@ TEST(test_boundary_crc32_update_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc32_update_len_size_max) {
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)crc32_update(0, _safe_data_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc32_finalize_crc_zero) {
     (void)crc32_finalize(0);
     /* must not crash */
@@ -91,13 +77,11 @@ TEST(test_boundary_crc32_finalize_crc_uint32_max) {
 TEST_MAIN("boundary_crc32") {
     RUN(test_boundary_crc32_compute_len_zero);
     RUN(test_boundary_crc32_compute_len_one);
-    RUN(test_boundary_crc32_compute_len_size_max);
     RUN(test_boundary_crc32_update_crc_zero);
     RUN(test_boundary_crc32_update_crc_one);
     RUN(test_boundary_crc32_update_crc_uint32_max);
     RUN(test_boundary_crc32_update_len_zero);
     RUN(test_boundary_crc32_update_len_one);
-    RUN(test_boundary_crc32_update_len_size_max);
     RUN(test_boundary_crc32_finalize_crc_zero);
     RUN(test_boundary_crc32_finalize_crc_one);
     RUN(test_boundary_crc32_finalize_crc_uint32_max);

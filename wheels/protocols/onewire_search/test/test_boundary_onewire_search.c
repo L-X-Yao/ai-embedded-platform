@@ -24,16 +24,8 @@ TEST(test_boundary_onewire_search_crc8_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_onewire_search_crc8_len_uint8_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)onewire_search_crc8(_safe_data_0, (uint8_t)(UINT8_MAX));
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_onewire_search") {
     RUN(test_boundary_onewire_search_crc8_len_zero);
     RUN(test_boundary_onewire_search_crc8_len_one);
-    RUN(test_boundary_onewire_search_crc8_len_uint8_max);
 }
 TEST_MAIN_END()

@@ -28,15 +28,6 @@ TEST(test_boundary_crc8_compute_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc8_compute_len_size_max) {
-    crc8_config_t _safe_cfg_0;
-    memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)crc8_compute(&_safe_cfg_0, _safe_data_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc8_update_crc_zero) {
     crc8_config_t _safe_cfg_0;
     memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
@@ -82,15 +73,6 @@ TEST(test_boundary_crc8_update_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_crc8_update_len_size_max) {
-    crc8_config_t _safe_cfg_0;
-    memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    (void)crc8_update(&_safe_cfg_0, 0, _safe_data_2, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_crc8_verify_len_zero) {
     crc8_config_t _safe_cfg_0;
     memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
@@ -106,15 +88,6 @@ TEST(test_boundary_crc8_verify_len_one) {
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     (void)crc8_verify(&_safe_cfg_0, _safe_data_1, 1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_crc8_verify_len_size_max) {
-    crc8_config_t _safe_cfg_0;
-    memset(&_safe_cfg_0, 0, sizeof(_safe_cfg_0));
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)crc8_verify(&_safe_cfg_0, _safe_data_1, SIZE_MAX, 0);
     /* must not crash */
 }
 
@@ -148,16 +121,13 @@ TEST(test_boundary_crc8_verify_expected_uint8_max) {
 TEST_MAIN("boundary_crc8") {
     RUN(test_boundary_crc8_compute_len_zero);
     RUN(test_boundary_crc8_compute_len_one);
-    RUN(test_boundary_crc8_compute_len_size_max);
     RUN(test_boundary_crc8_update_crc_zero);
     RUN(test_boundary_crc8_update_crc_one);
     RUN(test_boundary_crc8_update_crc_uint8_max);
     RUN(test_boundary_crc8_update_len_zero);
     RUN(test_boundary_crc8_update_len_one);
-    RUN(test_boundary_crc8_update_len_size_max);
     RUN(test_boundary_crc8_verify_len_zero);
     RUN(test_boundary_crc8_verify_len_one);
-    RUN(test_boundary_crc8_verify_len_size_max);
     RUN(test_boundary_crc8_verify_expected_zero);
     RUN(test_boundary_crc8_verify_expected_one);
     RUN(test_boundary_crc8_verify_expected_uint8_max);

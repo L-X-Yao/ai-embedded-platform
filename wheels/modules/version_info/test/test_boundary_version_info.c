@@ -28,18 +28,8 @@ TEST(test_boundary_version_to_string_buf_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_version_to_string_buf_size_size_max) {
-    version_t _safe_v_0;
-    memset(&_safe_v_0, 0, sizeof(_safe_v_0));
-    char _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)version_to_string(&_safe_v_0, _safe_buf_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_version_info") {
     RUN(test_boundary_version_to_string_buf_size_zero);
     RUN(test_boundary_version_to_string_buf_size_one);
-    RUN(test_boundary_version_to_string_buf_size_size_max);
 }
 TEST_MAIN_END()

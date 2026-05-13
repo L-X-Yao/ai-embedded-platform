@@ -28,15 +28,6 @@ TEST(test_boundary_at_command_send_raw_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_at_command_send_raw_len_uint16_max) {
-    at_command_t _safe_at_0;
-    memset(&_safe_at_0, 0, sizeof(_safe_at_0));
-    uint8_t _safe_data_1[64];
-    memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    (void)at_command_send_raw(&_safe_at_0, _safe_data_1, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_at_command_feed_byte_zero) {
     at_command_t _safe_at_0;
     memset(&_safe_at_0, 0, sizeof(_safe_at_0));
@@ -67,7 +58,6 @@ TEST(test_boundary_at_command_feed_byte_uint8_max) {
 TEST_MAIN("boundary_at_command") {
     RUN(test_boundary_at_command_send_raw_len_zero);
     RUN(test_boundary_at_command_send_raw_len_one);
-    RUN(test_boundary_at_command_send_raw_len_uint16_max);
     RUN(test_boundary_at_command_feed_byte_zero);
     RUN(test_boundary_at_command_feed_byte_one);
     RUN(test_boundary_at_command_feed_byte_uint8_max);

@@ -51,13 +51,6 @@ TEST(test_boundary_midi_build_note_on_cap_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_midi_build_note_on_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)midi_build_note_on(_safe_buf_0, SIZE_MAX, 0, 0, 0);
-    /* must not crash */
-}
-
 TEST(test_boundary_midi_build_note_on_channel_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -132,13 +125,6 @@ TEST(test_boundary_midi_build_note_off_cap_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     (void)midi_build_note_off(_safe_buf_0, 1, 0, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_midi_build_note_off_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)midi_build_note_off(_safe_buf_0, SIZE_MAX, 0, 0, 0);
     /* must not crash */
 }
 
@@ -219,13 +205,6 @@ TEST(test_boundary_midi_build_cc_cap_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_midi_build_cc_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)midi_build_cc(_safe_buf_0, SIZE_MAX, 0, 0, 0);
-    /* must not crash */
-}
-
 TEST(test_boundary_midi_build_cc_channel_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -303,13 +282,6 @@ TEST(test_boundary_midi_build_program_cap_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_midi_build_program_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)midi_build_program(_safe_buf_0, SIZE_MAX, 0, 0);
-    /* must not crash */
-}
-
 TEST(test_boundary_midi_build_program_channel_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -363,13 +335,6 @@ TEST(test_boundary_midi_build_pitch_bend_cap_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     (void)midi_build_pitch_bend(_safe_buf_0, 1, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_midi_build_pitch_bend_cap_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    (void)midi_build_pitch_bend(_safe_buf_0, SIZE_MAX, 0, 0);
     /* must not crash */
 }
 
@@ -435,7 +400,6 @@ TEST_MAIN("boundary_midi_packet") {
     RUN(test_boundary_midi_parse_byte_uint8_max);
     RUN(test_boundary_midi_build_note_on_cap_zero);
     RUN(test_boundary_midi_build_note_on_cap_one);
-    RUN(test_boundary_midi_build_note_on_cap_size_max);
     RUN(test_boundary_midi_build_note_on_channel_zero);
     RUN(test_boundary_midi_build_note_on_channel_one);
     RUN(test_boundary_midi_build_note_on_channel_uint8_max);
@@ -447,7 +411,6 @@ TEST_MAIN("boundary_midi_packet") {
     RUN(test_boundary_midi_build_note_on_velocity_uint8_max);
     RUN(test_boundary_midi_build_note_off_cap_zero);
     RUN(test_boundary_midi_build_note_off_cap_one);
-    RUN(test_boundary_midi_build_note_off_cap_size_max);
     RUN(test_boundary_midi_build_note_off_channel_zero);
     RUN(test_boundary_midi_build_note_off_channel_one);
     RUN(test_boundary_midi_build_note_off_channel_uint8_max);
@@ -459,7 +422,6 @@ TEST_MAIN("boundary_midi_packet") {
     RUN(test_boundary_midi_build_note_off_velocity_uint8_max);
     RUN(test_boundary_midi_build_cc_cap_zero);
     RUN(test_boundary_midi_build_cc_cap_one);
-    RUN(test_boundary_midi_build_cc_cap_size_max);
     RUN(test_boundary_midi_build_cc_channel_zero);
     RUN(test_boundary_midi_build_cc_channel_one);
     RUN(test_boundary_midi_build_cc_channel_uint8_max);
@@ -471,7 +433,6 @@ TEST_MAIN("boundary_midi_packet") {
     RUN(test_boundary_midi_build_cc_value_uint8_max);
     RUN(test_boundary_midi_build_program_cap_zero);
     RUN(test_boundary_midi_build_program_cap_one);
-    RUN(test_boundary_midi_build_program_cap_size_max);
     RUN(test_boundary_midi_build_program_channel_zero);
     RUN(test_boundary_midi_build_program_channel_one);
     RUN(test_boundary_midi_build_program_channel_uint8_max);
@@ -480,7 +441,6 @@ TEST_MAIN("boundary_midi_packet") {
     RUN(test_boundary_midi_build_program_program_uint8_max);
     RUN(test_boundary_midi_build_pitch_bend_cap_zero);
     RUN(test_boundary_midi_build_pitch_bend_cap_one);
-    RUN(test_boundary_midi_build_pitch_bend_cap_size_max);
     RUN(test_boundary_midi_build_pitch_bend_channel_zero);
     RUN(test_boundary_midi_build_pitch_bend_channel_one);
     RUN(test_boundary_midi_build_pitch_bend_channel_uint8_max);

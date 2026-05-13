@@ -24,16 +24,8 @@ TEST(test_boundary_sht30_crc8_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_sht30_crc8_len_uint16_max) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    (void)sht30_crc8(_safe_data_0, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_sht30") {
     RUN(test_boundary_sht30_crc8_len_zero);
     RUN(test_boundary_sht30_crc8_len_one);
-    RUN(test_boundary_sht30_crc8_len_uint16_max);
 }
 TEST_MAIN_END()

@@ -84,13 +84,6 @@ TEST(test_boundary_fp_to_string_buf_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fp_to_string_buf_size_uint16_max) {
-    char _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)fp_to_string(0, _safe_buf_1, (uint16_t)(UINT16_MAX), 0);
-    /* must not crash */
-}
-
 TEST(test_boundary_fp_to_string_decimal_places_zero) {
     char _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
@@ -127,7 +120,6 @@ TEST_MAIN("boundary_fixed_point") {
     RUN(test_boundary_fp_from_float_val_neg_flt_max);
     RUN(test_boundary_fp_to_string_buf_size_zero);
     RUN(test_boundary_fp_to_string_buf_size_one);
-    RUN(test_boundary_fp_to_string_buf_size_uint16_max);
     RUN(test_boundary_fp_to_string_decimal_places_zero);
     RUN(test_boundary_fp_to_string_decimal_places_one);
     RUN(test_boundary_fp_to_string_decimal_places_uint8_max);

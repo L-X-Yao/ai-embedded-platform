@@ -62,99 +62,99 @@ TEST(test_boundary_kalman_1d_update_z_neg_flt_max) {
 TEST(test_boundary_kalman_1d_set_noise_q_zero) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_neg_zero) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, -0.0f, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, -0.0f, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_nan) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, NAN, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, NAN, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_inf) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, INFINITY, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, INFINITY, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_neg_inf) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, -INFINITY, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, -INFINITY, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_flt_max) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, FLT_MAX, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, FLT_MAX, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_q_neg_flt_max) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, -FLT_MAX, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, -FLT_MAX, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_zero) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, 0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, 0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_neg_zero) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, -0.0f);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, -0.0f);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_nan) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, NAN);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, NAN);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_inf) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, INFINITY);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, INFINITY);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_neg_inf) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, -INFINITY);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, -INFINITY);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_flt_max) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, FLT_MAX);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, FLT_MAX);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_kalman_1d_set_noise_r_neg_flt_max) {
     kalman_1d_t _safe_kf_0;
     memset(&_safe_kf_0, 0, sizeof(_safe_kf_0));
-    (void)kalman_1d_set_noise(&_safe_kf_0, 0.0f, -FLT_MAX);
-    /* must not crash */
+    kalman_1d_err_t ret = kalman_1d_set_noise(&_safe_kf_0, 0.0f, -FLT_MAX);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST_MAIN("boundary_kalman_1d") {

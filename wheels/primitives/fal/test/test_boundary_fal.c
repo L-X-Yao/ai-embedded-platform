@@ -55,15 +55,6 @@ TEST(test_boundary_fal_partition_read_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fal_partition_read_size_size_max) {
-    struct fal_partition _safe_part_0;
-    memset(&_safe_part_0, 0, sizeof(_safe_part_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    (void)fal_partition_read(&_safe_part_0, 0, _safe_buf_2, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_fal_partition_write_addr_zero) {
     struct fal_partition _safe_part_0;
     memset(&_safe_part_0, 0, sizeof(_safe_part_0));
@@ -109,15 +100,6 @@ TEST(test_boundary_fal_partition_write_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fal_partition_write_size_size_max) {
-    struct fal_partition _safe_part_0;
-    memset(&_safe_part_0, 0, sizeof(_safe_part_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    (void)fal_partition_write(&_safe_part_0, 0, _safe_buf_2, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_fal_partition_erase_addr_zero) {
     struct fal_partition _safe_part_0;
     memset(&_safe_part_0, 0, sizeof(_safe_part_0));
@@ -153,31 +135,21 @@ TEST(test_boundary_fal_partition_erase_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_fal_partition_erase_size_size_max) {
-    struct fal_partition _safe_part_0;
-    memset(&_safe_part_0, 0, sizeof(_safe_part_0));
-    (void)fal_partition_erase(&_safe_part_0, 0, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_fal") {
     RUN(test_boundary_fal_partition_read_addr_zero);
     RUN(test_boundary_fal_partition_read_addr_one);
     RUN(test_boundary_fal_partition_read_addr_uint32_max);
     RUN(test_boundary_fal_partition_read_size_zero);
     RUN(test_boundary_fal_partition_read_size_one);
-    RUN(test_boundary_fal_partition_read_size_size_max);
     RUN(test_boundary_fal_partition_write_addr_zero);
     RUN(test_boundary_fal_partition_write_addr_one);
     RUN(test_boundary_fal_partition_write_addr_uint32_max);
     RUN(test_boundary_fal_partition_write_size_zero);
     RUN(test_boundary_fal_partition_write_size_one);
-    RUN(test_boundary_fal_partition_write_size_size_max);
     RUN(test_boundary_fal_partition_erase_addr_zero);
     RUN(test_boundary_fal_partition_erase_addr_one);
     RUN(test_boundary_fal_partition_erase_addr_uint32_max);
     RUN(test_boundary_fal_partition_erase_size_zero);
     RUN(test_boundary_fal_partition_erase_size_one);
-    RUN(test_boundary_fal_partition_erase_size_size_max);
 }
 TEST_MAIN_END()

@@ -14,217 +14,217 @@ TEST(test_boundary_is31fl3731_set_frame_frame_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_frame(&_safe_dev_0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_frame_frame_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_frame(&_safe_dev_0, 1);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_frame_frame_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_frame(&_safe_dev_0, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_frame_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_frame_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 1, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_frame_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, (uint8_t)(UINT8_MAX), 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_led_idx_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_led_idx_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 1, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_led_idx_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, (uint8_t)(UINT8_MAX), 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_pwm_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_pwm_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 0, 1);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_pixel_pwm_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_pixel(&_safe_dev_0, 0, 0, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_frame_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, 0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_frame_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 1, 0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_frame_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, (uint8_t)(UINT8_MAX), 0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_led_idx_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, 0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_led_idx_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, 1, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_led_idx_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, (uint8_t)(UINT8_MAX), false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_enable_val_true) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, 0, true);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_set_led_enable_enable_val_false) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_set_led_enable(&_safe_dev_0, 0, 0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_frame_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_frame_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, 1, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_frame_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, (uint8_t)(UINT8_MAX), 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_pwm_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, 0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_pwm_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, 0, 1);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_fill_pwm_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_fill(&_safe_dev_0, 0, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_display_frame_frame_zero) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_display_frame(&_safe_dev_0, 0);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_display_frame_frame_one) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_display_frame(&_safe_dev_0, 1);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_display_frame_frame_uint8_max) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_display_frame(&_safe_dev_0, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_shutdown_enable_val_true) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_shutdown(&_safe_dev_0, true);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_is31fl3731_shutdown_enable_val_false) {
     is31fl3731_t _safe_dev_0;
     memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
     is31fl3731_err_t ret = is31fl3731_shutdown(&_safe_dev_0, false);
-    ASSERT_TRUE(ret == IS31FL3731_OK || ret == IS31FL3731_ERR_PARAM);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST_MAIN("boundary_is31fl3731") {

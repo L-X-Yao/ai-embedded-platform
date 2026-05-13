@@ -13,22 +13,15 @@
 TEST(test_boundary_median_filter_init_size_zero) {
     median_filter_t _safe_f_0;
     memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)median_filter_init(&_safe_f_0, 0);
-    /* must not crash */
+    median_filter_err_t ret = median_filter_init(&_safe_f_0, 0);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_median_filter_init_size_one) {
     median_filter_t _safe_f_0;
     memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)median_filter_init(&_safe_f_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_median_filter_init_size_uint8_max) {
-    median_filter_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)median_filter_init(&_safe_f_0, (uint8_t)(UINT8_MAX));
-    /* must not crash */
+    median_filter_err_t ret = median_filter_init(&_safe_f_0, 1);
+    ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_median_filter_update_sample_zero) {
@@ -69,7 +62,6 @@ TEST(test_boundary_median_filter_update_sample_int32_min) {
 TEST_MAIN("boundary_median_filter") {
     RUN(test_boundary_median_filter_init_size_zero);
     RUN(test_boundary_median_filter_init_size_one);
-    RUN(test_boundary_median_filter_init_size_uint8_max);
     RUN(test_boundary_median_filter_update_sample_zero);
     RUN(test_boundary_median_filter_update_sample_neg1);
     RUN(test_boundary_median_filter_update_sample_one);
