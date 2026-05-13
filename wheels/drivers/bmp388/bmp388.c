@@ -30,7 +30,7 @@
 /* PWR_CTRL bits: press_en=bit0, temp_en=bit1, mode=bits[5:4] */
 #define PWR_CTRL_FORCED  0x13  /* press_en | temp_en | mode=forced(01) */
 
-/* STATUS bit3 = drdy_press, bit5 = drdy_temp */
+/* STATUS bit5 = drdy_press, bit6 = drdy_temp */
 #define STATUS_DRDY_PRESS  0x20
 #define STATUS_DRDY_TEMP   0x40
 
@@ -217,8 +217,8 @@ bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out)
         return BMP388_ERR_I2C;
     }
 
-    /* Wait for data ready (STATUS bit5=drdy_temp, bit6 is not used;
-     * we check bit5 for temp ready which also implies press ready) */
+    /* Wait for data ready (STATUS bit5 = drdy_press).
+     * In forced mode, drdy_press is set when both temp and press are ready. */
     for (int tries = 0; tries < 500; tries++)
     {
         uint8_t status;
@@ -233,6 +233,10 @@ bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out)
         if (tries == 499)
         {
             return BMP388_ERR_TIMEOUT;
+        }
+        if (dev->i2c->delay_ms)
+        {
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
         }
     }
 

@@ -291,6 +291,79 @@ TEST(test_first_feed_priming)
     ASSERT_TRUE(hysteresis_get_state(&ctx));
 }
 
+/* === NaN thresholds in set_thresholds === */
+
+TEST(test_set_thresholds_nan)
+{
+    hysteresis_t ctx;
+    hysteresis_init(&ctx, 10.0f, 20.0f);
+
+    float nan_val = NAN;
+    ASSERT_EQ(hysteresis_set_thresholds(&ctx, nan_val, 20.0f),
+              HYSTERESIS_ERR_PARAM);
+    ASSERT_EQ(hysteresis_set_thresholds(&ctx, 10.0f, nan_val),
+              HYSTERESIS_ERR_PARAM);
+    ASSERT_EQ(hysteresis_set_thresholds(&ctx, nan_val, nan_val),
+              HYSTERESIS_ERR_PARAM);
+
+    /* Verify thresholds unchanged after failed set */
+    hysteresis_feed(&ctx, 5.0f);
+    ASSERT_FALSE(hysteresis_get_state(&ctx));
+    hysteresis_feed(&ctx, 20.0f);
+    ASSERT_TRUE(hysteresis_get_state(&ctx));
+}
+
+/* === First feed is NaN — priming deferred === */
+
+TEST(test_first_feed_nan_defers_priming)
+{
+    hysteresis_t ctx;
+    hysteresis_init(&ctx, 10.0f, 20.0f);
+
+    /* First feed is NaN — should not prime, returns default false */
+    float nan_val = NAN;
+    bool state = hysteresis_feed(&ctx, nan_val);
+    ASSERT_FALSE(state);
+
+    /* Next valid feed should trigger priming normally */
+    state = hysteresis_feed(&ctx, 25.0f);
+    ASSERT_TRUE(state);
+}
+
+/* === Infinity input values === */
+
+TEST(test_infinity_input)
+{
+    hysteresis_t ctx;
+    hysteresis_init(&ctx, 10.0f, 20.0f);
+
+    /* +INFINITY should exceed thresh_high */
+    bool state = hysteresis_feed(&ctx, (float)(1.0 / 0.0));
+    ASSERT_TRUE(state);
+
+    /* -INFINITY should go below thresh_low */
+    state = hysteresis_feed(&ctx, (float)(-1.0 / 0.0));
+    ASSERT_FALSE(state);
+}
+
+/* === Priming in dead band === */
+
+TEST(test_priming_in_dead_band)
+{
+    hysteresis_t ctx;
+    hysteresis_init(&ctx, 10.0f, 20.0f);
+
+    /* Feed 12 — below midpoint (15), primes LOW, stays LOW (in dead band) */
+    bool state = hysteresis_feed(&ctx, 12.0f);
+    ASSERT_FALSE(state);
+
+    hysteresis_reset(&ctx);
+
+    /* Feed 18 — above midpoint (15), primes HIGH, stays HIGH (in dead band) */
+    state = hysteresis_feed(&ctx, 18.0f);
+    ASSERT_TRUE(state);
+}
+
 TEST_MAIN("hysteresis")
     RUN(test_init_null);
     RUN(test_init_low_ge_high);
@@ -312,4 +385,8 @@ TEST_MAIN("hysteresis")
     RUN(test_nan_input_no_change);
     RUN(test_get_state_before_feed);
     RUN(test_first_feed_priming);
+    RUN(test_set_thresholds_nan);
+    RUN(test_first_feed_nan_defers_priming);
+    RUN(test_infinity_input);
+    RUN(test_priming_in_dead_band);
 TEST_MAIN_END()
