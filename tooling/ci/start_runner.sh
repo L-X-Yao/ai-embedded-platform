@@ -9,6 +9,8 @@
 #
 # Prerequisites: ~/actions-runner must be configured.
 
+set -euo pipefail
+
 RUNNER_DIR="$HOME/actions-runner"
 PID_FILE="$RUNNER_DIR/.runner_pid"
 

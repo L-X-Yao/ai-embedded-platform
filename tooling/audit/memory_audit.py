@@ -11,6 +11,7 @@ Checks:
 Exit 0 if clean, 1 if issues found.
 """
 
+import argparse
 import os
 import re
 import sys
@@ -110,15 +111,13 @@ def audit(mem_dir: Path) -> list:
 
 
 def main():
-    mem_dir = None
-    args_iter = iter(range(1, len(sys.argv)))
-    for i in args_iter:
-        arg = sys.argv[i]
-        if arg.startswith("--dir="):
-            mem_dir = Path(arg.split("=", 1)[1])
-        elif arg == "--dir" and i + 1 < len(sys.argv):
-            mem_dir = Path(sys.argv[i + 1])
-            next(args_iter, None)
+    parser = argparse.ArgumentParser(
+        description="Detect stale, orphaned, and bloated memory files."
+    )
+    parser.add_argument("--dir", type=Path, default=None,
+                        help="memory directory to audit (default: auto-detect)")
+    args = parser.parse_args()
+    mem_dir = args.dir
     if not mem_dir:
         mem_dir = find_memory_dir()
     if not mem_dir:
