@@ -33,6 +33,19 @@ target_include_directories(test_null_hysteresis PRIVATE
 )
 target_compile_definitions(test_null_hysteresis PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_hysteresis PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_hysteresis
+    test_boundary_hysteresis.c
+    ../hysteresis.c
+)
+target_include_directories(test_boundary_hysteresis PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_hysteresis PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_hysteresis PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_hysteresis PRIVATE m)
 enable_testing()
 add_test(NAME hysteresis_tests COMMAND test_hysteresis)
 add_test(NAME hysteresis_null_tests COMMAND test_null_hysteresis)
+add_test(NAME hysteresis_boundary_tests COMMAND test_boundary_hysteresis)
