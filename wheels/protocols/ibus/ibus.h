@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 /*
- * ibus — TODO: one-line description
+ * ibus — FlySky iBUS serial protocol for RC receivers
  *
  * Layer:     L2
  * Status:    candidate
  * Deps:      (none)
- * Instances: multi
+ * Instances: stateless
+ *
+ * 32-byte frame: length(0x20) + type(0x40) + 14 channels (16-bit LE) + checksum.
+ * Channel range: 1000-2000 (center 1500, like standard RC PWM).
+ * Pure C99, no heap, no OS.
  */
 
 #ifndef IBUS_H
@@ -19,33 +23,29 @@
 extern "C" {
 #endif
 
-/* ---------- error codes ---------- */
+#define IBUS_FRAME_LEN    32
+#define IBUS_NUM_CHANNELS 14
 
 typedef enum {
-    IBUS_OK           =  0,
-    IBUS_ERR_PARAM    = -1,
-    IBUS_ERR_FORMAT   = -2,
-    IBUS_ERR_SHORT    = -3,
-    IBUS_ERR_OVERFLOW = -4,
+    IBUS_OK            =  0,
+    IBUS_ERR_PARAM     = -1,
+    IBUS_ERR_SHORT     = -2,
+    IBUS_ERR_HEADER    = -3,
+    IBUS_ERR_CHECKSUM  = -4,
 } ibus_err_t;
 
-/* ---------- data types ---------- */
-
 typedef struct {
-    /* TODO: parsed fields */
-    uint8_t type;
-    uint16_t length;
-} ibus_msg_t;
+    uint16_t channels[IBUS_NUM_CHANNELS];
+} ibus_frame_t;
 
-/* ---------- API ---------- */
+/** Decode a 32-byte iBUS frame. @thread_safe: yes @isr_safe: yes */
+ibus_err_t ibus_decode(const uint8_t *data, size_t len, ibus_frame_t *out);
 
-/** Parse a message from raw bytes. @thread_safe: yes @isr_safe: no */
-ibus_err_t ibus_parse(const uint8_t *data, size_t len,
-                               ibus_msg_t *out);
+/** Encode channel data into a 32-byte iBUS frame. @thread_safe: yes @isr_safe: yes */
+ibus_err_t ibus_encode(const ibus_frame_t *frame, uint8_t *buf, size_t cap);
 
-/** Build a message into a buffer. Returns >0 bytes written, -1 param error, -2 buffer too small. @thread_safe: yes @isr_safe: no */
-int ibus_build(uint8_t *buf, size_t cap,
-                        const ibus_msg_t *msg);
+/** Calculate iBUS checksum over len bytes. @thread_safe: yes @isr_safe: yes */
+uint16_t ibus_checksum(const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
 }
