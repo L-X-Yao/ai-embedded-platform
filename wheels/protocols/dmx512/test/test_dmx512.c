@@ -8,7 +8,7 @@
 TEST(test_init_basic)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_err_t err = dmx512_init(&ctx, buf, 512);
     ASSERT_EQ(err, DMX512_OK);
     /* Start code should be 0x00 */
@@ -21,7 +21,7 @@ TEST(test_init_basic)
 TEST(test_init_small_universe)
 {
     uint8_t buf[65]; /* 1 start code + 64 channels */
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_err_t err = dmx512_init(&ctx, buf, 64);
     ASSERT_EQ(err, DMX512_OK);
 }
@@ -29,7 +29,7 @@ TEST(test_init_small_universe)
 TEST(test_init_null)
 {
     uint8_t buf[16];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     ASSERT_EQ(dmx512_init(NULL, buf, 8), DMX512_ERR_PARAM);
     ASSERT_EQ(dmx512_init(&ctx, NULL, 8), DMX512_ERR_PARAM);
 }
@@ -37,14 +37,14 @@ TEST(test_init_null)
 TEST(test_init_zero_channels)
 {
     uint8_t buf[16];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     ASSERT_EQ(dmx512_init(&ctx, buf, 0), DMX512_ERR_RANGE);
 }
 
 TEST(test_init_too_many_channels)
 {
     uint8_t buf[1024];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     ASSERT_EQ(dmx512_init(&ctx, buf, 513), DMX512_ERR_RANGE);
 }
 
@@ -53,7 +53,7 @@ TEST(test_init_too_many_channels)
 TEST(test_set_get_channel)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     ASSERT_EQ(dmx512_set_channel(&ctx, 1, 255), DMX512_OK);
@@ -70,7 +70,7 @@ TEST(test_set_get_channel)
 TEST(test_set_channel_zero)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     /* Channel 0 is invalid (1-based) */
@@ -80,7 +80,7 @@ TEST(test_set_channel_zero)
 TEST(test_set_channel_out_of_range)
 {
     uint8_t buf[65];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 64);
 
     ASSERT_EQ(dmx512_set_channel(&ctx, 65, 100), DMX512_ERR_RANGE);
@@ -90,7 +90,7 @@ TEST(test_set_channel_out_of_range)
 TEST(test_get_channel_null)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t val;
@@ -101,7 +101,7 @@ TEST(test_get_channel_null)
 TEST(test_get_channel_out_of_range)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t val;
@@ -119,7 +119,7 @@ TEST(test_set_channel_null)
 TEST(test_set_range)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t values[] = {10, 20, 30, 40, 50};
@@ -135,7 +135,7 @@ TEST(test_set_range)
 TEST(test_set_range_at_end)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t values[] = {0xAA, 0xBB, 0xCC};
@@ -151,7 +151,7 @@ TEST(test_set_range_at_end)
 TEST(test_set_range_overflow)
 {
     uint8_t buf[65];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 64);
 
     uint8_t values[] = {1, 2, 3, 4, 5};
@@ -162,7 +162,7 @@ TEST(test_set_range_overflow)
 TEST(test_set_range_null)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     ASSERT_EQ(dmx512_set_range(NULL, 1, (const uint8_t[]){1}, 1), DMX512_ERR_PARAM);
@@ -172,7 +172,7 @@ TEST(test_set_range_null)
 TEST(test_set_range_zero_count)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t values[] = {1};
@@ -182,7 +182,7 @@ TEST(test_set_range_zero_count)
 TEST(test_set_range_channel_zero)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t values[] = {1};
@@ -194,7 +194,7 @@ TEST(test_set_range_channel_zero)
 TEST(test_get_packet)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     dmx512_set_channel(&ctx, 1, 0xFF);
@@ -213,7 +213,7 @@ TEST(test_get_packet)
 TEST(test_get_packet_small_universe)
 {
     uint8_t buf[11];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 10);
 
     const uint8_t *pkt;
@@ -225,7 +225,7 @@ TEST(test_get_packet_small_universe)
 TEST(test_get_packet_null)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     const uint8_t *pkt;
@@ -240,7 +240,7 @@ TEST(test_get_packet_null)
 TEST(test_parse_packet)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     /* Build a DMX packet */
@@ -263,7 +263,7 @@ TEST(test_parse_packet)
 TEST(test_parse_packet_short)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     /* Set some channels first */
@@ -288,7 +288,7 @@ TEST(test_parse_packet_short)
 TEST(test_parse_packet_bad_start_code)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t pkt[] = {0x01, 0xAA, 0xBB}; /* Start code 0x01 is not standard DMX */
@@ -298,7 +298,7 @@ TEST(test_parse_packet_bad_start_code)
 TEST(test_parse_packet_start_code_only)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     /* Set channel 1 first */
@@ -317,7 +317,7 @@ TEST(test_parse_packet_start_code_only)
 TEST(test_parse_packet_null)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     ASSERT_EQ(dmx512_parse_packet(NULL, buf, 10), DMX512_ERR_PARAM);
@@ -327,7 +327,7 @@ TEST(test_parse_packet_null)
 TEST(test_parse_packet_too_short)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     uint8_t pkt[] = {0x00};
@@ -340,7 +340,7 @@ TEST(test_roundtrip)
 {
     uint8_t buf1[DMX512_PACKET_SIZE];
     uint8_t buf2[DMX512_PACKET_SIZE];
-    dmx512_ctx_t tx, rx;
+    dmx512_t tx, rx;
     dmx512_init(&tx, buf1, 512);
     dmx512_init(&rx, buf2, 512);
 
@@ -368,7 +368,7 @@ TEST(test_roundtrip)
 TEST(test_all_channels_full_range)
 {
     uint8_t buf[DMX512_PACKET_SIZE];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 512);
 
     /* Set every channel to a different value */
@@ -398,7 +398,7 @@ TEST(test_parse_packet_excess_data)
 {
     /* Receiver has 64 channels, sender sends 512 -- only first 64 should be used */
     uint8_t buf[65];
-    dmx512_ctx_t ctx;
+    dmx512_t ctx;
     dmx512_init(&ctx, buf, 64);
 
     uint8_t pkt[DMX512_PACKET_SIZE];

@@ -14,7 +14,7 @@
 
 /* ---------- init ---------- */
 
-dmx512_err_t dmx512_init(dmx512_ctx_t *ctx, uint8_t *buf,
+dmx512_err_t dmx512_init(dmx512_t *ctx, uint8_t *buf,
                           uint16_t num_channels)
 {
     if (!ctx || !buf) return DMX512_ERR_PARAM;
@@ -33,7 +33,7 @@ dmx512_err_t dmx512_init(dmx512_ctx_t *ctx, uint8_t *buf,
 
 /* ---------- set/get ---------- */
 
-dmx512_err_t dmx512_set_channel(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_set_channel(dmx512_t *ctx,
                                  uint16_t channel, uint8_t value)
 {
     if (!ctx || !ctx->buf) return DMX512_ERR_PARAM;
@@ -44,7 +44,7 @@ dmx512_err_t dmx512_set_channel(dmx512_ctx_t *ctx,
     return DMX512_OK;
 }
 
-dmx512_err_t dmx512_get_channel(const dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_get_channel(const dmx512_t *ctx,
                                  uint16_t channel, uint8_t *value)
 {
     if (!ctx || !ctx->buf || !value) return DMX512_ERR_PARAM;
@@ -55,7 +55,7 @@ dmx512_err_t dmx512_get_channel(const dmx512_ctx_t *ctx,
     return DMX512_OK;
 }
 
-dmx512_err_t dmx512_set_range(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_set_range(dmx512_t *ctx,
                                uint16_t start_channel,
                                const uint8_t *values, uint16_t count)
 {
@@ -73,7 +73,7 @@ dmx512_err_t dmx512_set_range(dmx512_ctx_t *ctx,
 
 /* ---------- packet ---------- */
 
-dmx512_err_t dmx512_get_packet(const dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_get_packet(const dmx512_t *ctx,
                                 const uint8_t **buf, size_t *len)
 {
     if (!ctx || !ctx->buf || !buf || !len) return DMX512_ERR_PARAM;
@@ -83,7 +83,7 @@ dmx512_err_t dmx512_get_packet(const dmx512_ctx_t *ctx,
     return DMX512_OK;
 }
 
-dmx512_err_t dmx512_parse_packet(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_parse_packet(dmx512_t *ctx,
                                   const uint8_t *data, size_t len)
 {
     if (!ctx || !ctx->buf || !data) return DMX512_ERR_PARAM;

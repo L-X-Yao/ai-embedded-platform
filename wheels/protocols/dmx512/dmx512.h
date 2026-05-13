@@ -42,7 +42,7 @@ typedef enum {
 typedef struct {
     uint8_t  *buf;           /* 513-byte buffer: [start_code][ch1]..[ch512] */
     uint16_t  num_channels;  /* active channel count (1..512) */
-} dmx512_ctx_t;
+} dmx512_t;
 
 /* ---------- API ---------- */
 
@@ -50,22 +50,22 @@ typedef struct {
  *  @param buf  Must be at least (num_channels + 1) bytes.
  *  @param num_channels  Number of active channels (1..512).
  *  @thread_safe: no  @isr_safe: no */
-dmx512_err_t dmx512_init(dmx512_ctx_t *ctx, uint8_t *buf,
+dmx512_err_t dmx512_init(dmx512_t *ctx, uint8_t *buf,
                           uint16_t num_channels);
 
 /** Set a single channel value (1-based channel number, 0-255 value).
  *  @thread_safe: caller_must_lock  @isr_safe: no */
-dmx512_err_t dmx512_set_channel(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_set_channel(dmx512_t *ctx,
                                  uint16_t channel, uint8_t value);
 
 /** Get a single channel value (1-based channel number).
  *  @thread_safe: caller_must_lock  @isr_safe: no */
-dmx512_err_t dmx512_get_channel(const dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_get_channel(const dmx512_t *ctx,
                                  uint16_t channel, uint8_t *value);
 
 /** Set a range of channels starting at start_channel (1-based).
  *  @thread_safe: caller_must_lock  @isr_safe: no */
-dmx512_err_t dmx512_set_range(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_set_range(dmx512_t *ctx,
                                uint16_t start_channel,
                                const uint8_t *values, uint16_t count);
 
@@ -73,14 +73,14 @@ dmx512_err_t dmx512_set_range(dmx512_ctx_t *ctx,
  *  @param buf   Receives pointer to internal buffer (do not free).
  *  @param len   Receives packet length (1 + num_channels).
  *  @thread_safe: caller_must_lock  @isr_safe: no */
-dmx512_err_t dmx512_get_packet(const dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_get_packet(const dmx512_t *ctx,
                                 const uint8_t **buf, size_t *len);
 
 /** Parse received raw bytes into the universe buffer.
  *  @param data  Raw DMX packet (start code + channel data).
  *  @param len   Length of data (at least 1 for start code).
  *  @thread_safe: caller_must_lock  @isr_safe: no */
-dmx512_err_t dmx512_parse_packet(dmx512_ctx_t *ctx,
+dmx512_err_t dmx512_parse_packet(dmx512_t *ctx,
                                   const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
