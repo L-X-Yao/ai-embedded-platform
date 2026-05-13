@@ -83,7 +83,7 @@ int main(void)
         .max_delay_ms   = 5000,
         .max_attempts   = 5,
     };
-    retry_ctx_t retry;
+    retry_t retry;
     retry_init(&retry, &cfg);
 
     int success = 0;
