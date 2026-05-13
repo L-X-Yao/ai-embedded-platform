@@ -26,8 +26,38 @@
 
 static int tests_pass = 0;
 static int tests_fail = 0;
+static int tests_skip = 0;
+static int test__skipped_this;   /* set by SKIP(); checked by RUN() */
+static const char *test__skip_reason;
 
 #define TEST(name) static void name(void)
+
+/* --- fixture hooks (auto-run by RUN_F / RUN_BE) ------------------------- */
+/*
+ * Two ways to add per-test setup:
+ *
+ *  1. Manual: define a function and use RUN_F(test_fn, setup_fn).
+ *  2. Auto:   define a BEFORE_EACH block; use RUN() unchanged.
+ *
+ * BEFORE_EACH/AFTER_EACH expand to weak functions the runner calls if
+ * defined. Only one of each may exist per translation unit.
+ */
+static void (*test__before_each)(void);
+static void (*test__after_each)(void);
+
+#define BEFORE_EACH() \
+    static void test__before_each_impl(void); \
+    static void __attribute__((constructor)) test__register_before(void) { \
+        test__before_each = test__before_each_impl; \
+    } \
+    static void test__before_each_impl(void)
+
+#define AFTER_EACH() \
+    static void test__after_each_impl(void); \
+    static void __attribute__((constructor)) test__register_after(void) { \
+        test__after_each = test__after_each_impl; \
+    } \
+    static void test__after_each_impl(void)
 
 #define ASSERT_EQ(a, b) do { \
     long long _a = (long long)(a), _b = (long long)(b); \
@@ -136,10 +166,51 @@ static int tests_fail = 0;
         tests_fail++; return; \
     } } while(0)
 
+/* --- explicit failure / skip ------------------------------------------- */
+
+#define FAIL(msg) do { \
+    printf("  FAIL %s:%d: %s\n", __func__, __LINE__, (msg)); \
+    tests_fail++; return; \
+    } while(0)
+
+#define SKIP(reason) do { \
+    test__skipped_this = 1; \
+    test__skip_reason  = (reason); \
+    return; \
+    } while(0)
+
+/* --- runner ------------------------------------------------------------- */
+
 #define RUN(fn) do { \
     int _pf = tests_fail; \
+    test__skipped_this = 0; test__skip_reason = NULL; \
+    if (test__before_each) test__before_each(); \
     fn(); \
-    if (tests_fail == _pf) { printf("  PASS %s\n", #fn); tests_pass++; } \
+    if (test__after_each) test__after_each(); \
+    if (test__skipped_this) { \
+        printf("  SKIP %s (%s)\n", #fn, \
+               test__skip_reason ? test__skip_reason : ""); \
+        tests_skip++; \
+    } else if (tests_fail == _pf) { \
+        printf("  PASS %s\n", #fn); tests_pass++; \
+    } \
+    } while(0)
+
+/* RUN_F: run with explicit fixture (setup before, optional teardown). */
+#define RUN_F(fn, setup) do { \
+    int _pf = tests_fail; \
+    test__skipped_this = 0; test__skip_reason = NULL; \
+    setup(); \
+    if (test__before_each) test__before_each(); \
+    fn(); \
+    if (test__after_each) test__after_each(); \
+    if (test__skipped_this) { \
+        printf("  SKIP %s (%s)\n", #fn, \
+               test__skip_reason ? test__skip_reason : ""); \
+        tests_skip++; \
+    } else if (tests_fail == _pf) { \
+        printf("  PASS %s\n", #fn); tests_pass++; \
+    } \
     } while(0)
 
 #define TEST_MAIN(suite_name) \
@@ -147,7 +218,11 @@ static int tests_fail = 0;
     printf("%s tests:\n", suite_name);
 
 #define TEST_MAIN_END() \
-    printf("\n%d passed, %d failed\n", tests_pass, tests_fail); \
+    if (tests_skip) \
+        printf("\n%d passed, %d failed, %d skipped\n", \
+               tests_pass, tests_fail, tests_skip); \
+    else \
+        printf("\n%d passed, %d failed\n", tests_pass, tests_fail); \
     return tests_fail ? 1 : 0; \
     }
 
