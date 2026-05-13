@@ -37,7 +37,7 @@ typedef struct {
     uint32_t state[8];          /**< Intermediate hash (H0..H7). */
     uint8_t  buffer[64];        /**< Partial block accumulator. */
     uint64_t count;             /**< Total bytes hashed so far. */
-} sha256_ctx_t;
+} sha256_t;
 
 /**
  * Initialise a SHA-256 context to the standard IV.
@@ -46,7 +46,7 @@ typedef struct {
  * @return     SHA256_OK on success, SHA256_ERR_PARAM on NULL.
  * @thread_safe: no
  */
-sha256_err_t sha256_init(sha256_ctx_t *ctx);
+sha256_err_t sha256_init(sha256_t *ctx);
 
 /**
  * Feed arbitrary-length data into the hash.
@@ -59,7 +59,7 @@ sha256_err_t sha256_init(sha256_ctx_t *ctx);
  * @return      SHA256_OK on success, SHA256_ERR_PARAM on NULL ctx.
  * @thread_safe: caller_must_lock
  */
-sha256_err_t sha256_update(sha256_ctx_t *ctx, const uint8_t *data, size_t len);
+sha256_err_t sha256_update(sha256_t *ctx, const uint8_t *data, size_t len);
 
 /**
  * Finalise the hash and produce the 32-byte digest.
@@ -71,7 +71,7 @@ sha256_err_t sha256_update(sha256_ctx_t *ctx, const uint8_t *data, size_t len);
  * @return      SHA256_OK on success, SHA256_ERR_PARAM on NULL input.
  * @thread_safe: caller_must_lock
  */
-sha256_err_t sha256_final(sha256_ctx_t *ctx, uint8_t hash[32]);
+sha256_err_t sha256_final(sha256_t *ctx, uint8_t hash[32]);
 
 /**
  * One-shot convenience: hash a complete message.

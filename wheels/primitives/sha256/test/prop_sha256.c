@@ -103,7 +103,7 @@ TEST(test_streaming_chunking_property)
         uint8_t oneshot[32];
         sha256_hash(data, len, oneshot);
 
-        sha256_ctx_t ctx;
+        sha256_t ctx;
         sha256_init(&ctx);
         size_t offset = 0;
         while (offset < len) {
