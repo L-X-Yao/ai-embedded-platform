@@ -19,6 +19,10 @@
 #   wheels/<layer>/<name>/test/test_<name>.c — mock HAL + test harness + 2 starter tests
 #   wheels/<layer>/<name>/README.md      — candidate-level README
 #
+# Additional files for L1 drivers (--hal flag):
+#   wheels/<layer>/<name>/test/hw_model_<name>.h     — register/signal model skeleton
+#   wheels/<layer>/<name>/test/test_hw_model_<name>.c — hw_model test skeleton
+#
 # Generated files (--vendor, ADR-010):
 #   wheels/<layer>/<name>/vendor/inc/    — place upstream headers here
 #   wheels/<layer>/<name>/vendor/src/    — place upstream sources here
@@ -1165,6 +1169,186 @@ TEST_MAIN_END()
 TEST_EOF
 }
 
+generate_hw_model_gpio() {
+    cat > "$WHEEL_DIR/test/hw_model_${NAME_LOWER}.h" << HW_EOF
+/*
+ * hw_model_${NAME_LOWER}.h — signal-level GPIO model for ${NAME_LOWER}
+ *
+ * NOT a register model. Simulates GPIO pin states and timing for
+ * protocol-level verification. The model captures pin output sequences
+ * and can inject input responses.
+ */
+#ifndef HW_MODEL_${NAME_UPPER}_H
+#define HW_MODEL_${NAME_UPPER}_H
+
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+#define HW_PIN_LOG_SIZE 256
+
+typedef struct {
+    /* pin state */
+    bool     pin_level;
+    bool     pin_is_output;
+
+    /* capture log */
+    bool     pin_log[HW_PIN_LOG_SIZE];
+    int      pin_log_count;
+
+    /* injected read sequence */
+    bool     read_sequence[HW_PIN_LOG_SIZE];
+    int      read_sequence_len;
+    int      read_idx;
+
+    /* diagnostics */
+    int      write_count;
+    int      read_count;
+    int      dir_change_count;
+    uint32_t total_delay_us;
+} ${NAME_LOWER}_model_t;
+
+static void ${NAME_LOWER}_model_init(${NAME_LOWER}_model_t *m)
+{
+    memset(m, 0, sizeof(*m));
+    /* TODO: set initial pin state per device datasheet */
+    m->pin_level = true;  /* idle high (pull-up) is common */
+}
+
+/* Inject a sequence of pin reads the driver will see */
+__attribute__((unused))
+static void ${NAME_LOWER}_model_inject_reads(${NAME_LOWER}_model_t *m,
+                                              const bool *levels, int count)
+{
+    int n = count < HW_PIN_LOG_SIZE ? count : HW_PIN_LOG_SIZE;
+    memcpy(m->read_sequence, levels, (size_t)n * sizeof(bool));
+    m->read_sequence_len = n;
+    m->read_idx = 0;
+}
+
+/* --- HAL callbacks wired to model --- */
+
+__attribute__((unused))
+static void ${NAME_LOWER}_model_set_output(void *ctx)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->pin_is_output = true;
+    m->dir_change_count++;
+}
+
+__attribute__((unused))
+static void ${NAME_LOWER}_model_set_input(void *ctx)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->pin_is_output = false;
+    m->dir_change_count++;
+}
+
+__attribute__((unused))
+static void ${NAME_LOWER}_model_write_pin(void *ctx, bool level)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->pin_level = level;
+    m->write_count++;
+    if (m->pin_log_count < HW_PIN_LOG_SIZE) {
+        m->pin_log[m->pin_log_count++] = level;
+    }
+}
+
+__attribute__((unused))
+static bool ${NAME_LOWER}_model_read_pin(void *ctx)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->read_count++;
+    if (m->read_idx < m->read_sequence_len) {
+        return m->read_sequence[m->read_idx++];
+    }
+    return m->pin_level;  /* echo last written level */
+}
+
+__attribute__((unused))
+static void ${NAME_LOWER}_model_delay_us(void *ctx, uint32_t us)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->total_delay_us += us;
+}
+
+static ${NAME_LOWER}_gpio_t ${NAME_LOWER}_model_gpio(${NAME_LOWER}_model_t *m)
+{
+    ${NAME_LOWER}_gpio_t gpio;
+    gpio.set_output = ${NAME_LOWER}_model_set_output;
+    gpio.set_input  = ${NAME_LOWER}_model_set_input;
+    gpio.write_pin  = ${NAME_LOWER}_model_write_pin;
+    gpio.read_pin   = ${NAME_LOWER}_model_read_pin;
+    gpio.delay_us   = ${NAME_LOWER}_model_delay_us;
+    gpio.ctx        = m;
+    return gpio;
+}
+
+/* --- Query API --- */
+
+__attribute__((unused))
+static int ${NAME_LOWER}_model_get_write_count(const ${NAME_LOWER}_model_t *m)
+{
+    return m->write_count;
+}
+
+__attribute__((unused))
+static int ${NAME_LOWER}_model_get_read_count(const ${NAME_LOWER}_model_t *m)
+{
+    return m->read_count;
+}
+
+/* TODO: add inject helpers for device-specific responses */
+
+#endif /* HW_MODEL_${NAME_UPPER}_H */
+HW_EOF
+
+    cat > "$WHEEL_DIR/test/test_hw_model_${NAME_LOWER}.c" << HWT_EOF
+#include "test_harness.h"
+#include "hw_model_${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
+
+static ${NAME_LOWER}_model_t model;
+static ${NAME_LOWER}_t dev;
+
+TEST(test_hw_model_init)
+{
+    ${NAME_LOWER}_model_init(&model);
+    ${NAME_LOWER}_gpio_t gpio = ${NAME_LOWER}_model_gpio(&model);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &gpio), ${NAME_UPPER}_OK);
+}
+
+TEST(test_hw_model_pin_capture)
+{
+    ${NAME_LOWER}_model_init(&model);
+    ${NAME_LOWER}_gpio_t gpio = ${NAME_LOWER}_model_gpio(&model);
+    ${NAME_LOWER}_init(&dev, &gpio);
+    /* TODO: call driver functions, verify pin_log sequence */
+    ASSERT_TRUE(model.dir_change_count >= 0);
+}
+
+TEST_MAIN("${NAME_LOWER}_hw_model")
+    RUN(test_hw_model_init);
+    RUN(test_hw_model_pin_capture);
+TEST_MAIN_END()
+HWT_EOF
+
+    cat >> "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_HW_EOF
+
+# hw_model datasheet test
+add_executable(test_hw_model_${NAME_LOWER}
+    test_hw_model_${NAME_LOWER}.c
+    ../${NAME_LOWER}.c
+)
+target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
+CMAKE_HW_EOF
+}
+
 generate_test_onewire() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
 #include "test_harness.h"
@@ -1228,6 +1412,194 @@ TEST_MAIN_END()
 TEST_EOF
 }
 
+generate_hw_model_onewire() {
+    cat > "$WHEEL_DIR/test/hw_model_${NAME_LOWER}.h" << HW_EOF
+/*
+ * hw_model_${NAME_LOWER}.h — 1-Wire protocol model for ${NAME_LOWER}
+ *
+ * NOT a register model. Simulates a 1-Wire device on the bus.
+ * The driver calls HAL functions (reset, write_byte, read_byte) and
+ * the model responds based on the command sequence.
+ *
+ * Fill in device-specific commands and response data from the datasheet.
+ */
+#ifndef HW_MODEL_${NAME_UPPER}_H
+#define HW_MODEL_${NAME_UPPER}_H
+
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+typedef enum {
+    ${NAME_UPPER}_MODEL_STATE_IDLE,
+    ${NAME_UPPER}_MODEL_STATE_ADDRESSED,
+    ${NAME_UPPER}_MODEL_STATE_READING,
+} ${NAME_LOWER}_model_state_t;
+
+typedef struct {
+    /* simulated device state */
+    int       present;          /* device on bus? */
+    uint8_t   rom[8];           /* 64-bit ROM code */
+
+    /* response data buffer */
+    uint8_t   response[32];
+    int       response_len;
+    int       response_idx;
+
+    /* protocol state machine */
+    ${NAME_LOWER}_model_state_t state;
+    uint8_t   last_command;
+
+    /* diagnostics */
+    int       reset_count;
+    int       write_count;
+    int       read_count;
+} ${NAME_LOWER}_model_t;
+
+static void ${NAME_LOWER}_model_init(${NAME_LOWER}_model_t *m)
+{
+    memset(m, 0, sizeof(*m));
+    m->present = 1;
+    /* TODO: set device family code and ROM from datasheet */
+    m->rom[0] = 0x00;  /* family code */
+    m->rom[1] = 0x01;
+    m->rom[2] = 0x02;
+    m->rom[3] = 0x03;
+    m->rom[4] = 0x04;
+    m->rom[5] = 0x05;
+    m->rom[6] = 0x06;
+    m->rom[7] = 0x00;  /* TODO: CRC8 of rom[0..6] */
+}
+
+__attribute__((unused))
+static void ${NAME_LOWER}_model_set_present(${NAME_LOWER}_model_t *m, int present)
+{
+    m->present = present;
+}
+
+/* --- HAL callbacks wired to model --- */
+
+static bool ${NAME_LOWER}_model_reset(void *ctx)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->reset_count++;
+    m->state = ${NAME_UPPER}_MODEL_STATE_IDLE;
+    m->response_idx = 0;
+    return m->present ? true : false;
+}
+
+static void ${NAME_LOWER}_model_write_byte(void *ctx, uint8_t byte)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->write_count++;
+    m->last_command = byte;
+
+    switch (m->state) {
+    case ${NAME_UPPER}_MODEL_STATE_IDLE:
+        if (byte == 0xCC) {
+            /* Skip ROM */
+            m->state = ${NAME_UPPER}_MODEL_STATE_ADDRESSED;
+        } else if (byte == 0x33) {
+            /* Read ROM */
+            memcpy(m->response, m->rom, 8);
+            m->response_len = 8;
+            m->response_idx = 0;
+            m->state = ${NAME_UPPER}_MODEL_STATE_READING;
+        }
+        /* TODO: handle Match ROM (0x55) if needed */
+        break;
+
+    case ${NAME_UPPER}_MODEL_STATE_ADDRESSED:
+        /* TODO: handle device-specific function commands */
+        /* Example: if (byte == 0xXX) { prepare response data } */
+        m->state = ${NAME_UPPER}_MODEL_STATE_READING;
+        break;
+
+    default:
+        break;
+    }
+}
+
+static uint8_t ${NAME_LOWER}_model_read_byte(void *ctx)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    m->read_count++;
+
+    if (m->response_idx < m->response_len) {
+        return m->response[m->response_idx++];
+    }
+    return 0xFF;
+}
+
+static ${NAME_LOWER}_ow_t ${NAME_LOWER}_model_ow(${NAME_LOWER}_model_t *m)
+{
+    ${NAME_LOWER}_ow_t ow;
+    ow.reset      = ${NAME_LOWER}_model_reset;
+    ow.write_byte = ${NAME_LOWER}_model_write_byte;
+    ow.read_byte  = ${NAME_LOWER}_model_read_byte;
+    ow.ctx        = m;
+    return ow;
+}
+
+/* --- Query API --- */
+
+__attribute__((unused))
+static int ${NAME_LOWER}_model_get_reset_count(const ${NAME_LOWER}_model_t *m)
+{
+    return m->reset_count;
+}
+
+/* TODO: add inject helpers for device-specific data (temperature, etc.) */
+
+#endif /* HW_MODEL_${NAME_UPPER}_H */
+HW_EOF
+
+    cat > "$WHEEL_DIR/test/test_hw_model_${NAME_LOWER}.c" << HWT_EOF
+#include "test_harness.h"
+#include "hw_model_${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
+
+static ${NAME_LOWER}_model_t model;
+static ${NAME_LOWER}_t dev;
+
+TEST(test_hw_model_init)
+{
+    ${NAME_LOWER}_model_init(&model);
+    ${NAME_LOWER}_ow_t ow = ${NAME_LOWER}_model_ow(&model);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &ow), ${NAME_UPPER}_OK);
+}
+
+TEST(test_hw_model_no_presence)
+{
+    ${NAME_LOWER}_model_init(&model);
+    ${NAME_LOWER}_model_set_present(&model, 0);
+    ${NAME_LOWER}_ow_t ow = ${NAME_LOWER}_model_ow(&model);
+    /* TODO: verify init fails when device is not present */
+    (void)ow;
+    (void)dev;
+}
+
+TEST_MAIN("${NAME_LOWER}_hw_model")
+    RUN(test_hw_model_init);
+    RUN(test_hw_model_no_presence);
+TEST_MAIN_END()
+HWT_EOF
+
+    cat >> "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_HW_EOF
+
+# hw_model datasheet test
+add_executable(test_hw_model_${NAME_LOWER}
+    test_hw_model_${NAME_LOWER}.c
+    ../${NAME_LOWER}.c
+)
+target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
+CMAKE_HW_EOF
+}
+
 generate_test_pwm() {
     cat > "$WHEEL_DIR/test/test_${NAME_LOWER}.c" << TEST_EOF
 #include "test_harness.h"
@@ -1281,6 +1653,133 @@ TEST_MAIN("${NAME_LOWER}")
     RUN(test_error_codes);
 TEST_MAIN_END()
 TEST_EOF
+}
+
+generate_hw_model_pwm() {
+    cat > "$WHEEL_DIR/test/hw_model_${NAME_LOWER}.h" << HW_EOF
+/*
+ * hw_model_${NAME_LOWER}.h — Signal decoder model for ${NAME_LOWER} PWM driver
+ *
+ * NOT a register model. The driver outputs pulse widths via a HAL callback.
+ * This model captures those pulse values and provides helpers to verify
+ * the output matches expected behavior.
+ */
+#ifndef HW_MODEL_${NAME_UPPER}_H
+#define HW_MODEL_${NAME_UPPER}_H
+
+#include "${NAME_LOWER}.h"
+#include <string.h>
+
+#define ${NAME_UPPER}_MODEL_MAX_HISTORY  64
+
+typedef struct {
+    /* capture state */
+    uint32_t pulse_history[${NAME_UPPER}_MODEL_MAX_HISTORY];
+    uint32_t history_count;
+    uint32_t last_pulse_us;
+    int      hal_fail;
+} ${NAME_LOWER}_model_t;
+
+static void ${NAME_LOWER}_model_init(${NAME_LOWER}_model_t *m)
+{
+    memset(m, 0, sizeof(*m));
+}
+
+/* --- HAL callback wired to model --- */
+
+static bool ${NAME_LOWER}_model_set_pulse(void *ctx, uint32_t pulse_us)
+{
+    ${NAME_LOWER}_model_t *m = (${NAME_LOWER}_model_t *)ctx;
+    if (m->hal_fail) return false;
+    m->last_pulse_us = pulse_us;
+    if (m->history_count < ${NAME_UPPER}_MODEL_MAX_HISTORY) {
+        m->pulse_history[m->history_count++] = pulse_us;
+    }
+    return true;
+}
+
+static ${NAME_LOWER}_pwm_t ${NAME_LOWER}_model_pwm(${NAME_LOWER}_model_t *m)
+{
+    ${NAME_LOWER}_pwm_t pwm;
+    pwm.set_pulse_us = ${NAME_LOWER}_model_set_pulse;
+    pwm.ctx          = m;
+    return pwm;
+}
+
+/* --- Query API --- */
+
+__attribute__((unused))
+static uint32_t ${NAME_LOWER}_model_get_pulse_us(const ${NAME_LOWER}_model_t *m)
+{
+    return m->last_pulse_us;
+}
+
+__attribute__((unused))
+static uint32_t ${NAME_LOWER}_model_get_history_count(const ${NAME_LOWER}_model_t *m)
+{
+    return m->history_count;
+}
+
+__attribute__((unused))
+static uint32_t ${NAME_LOWER}_model_get_pulse_at(const ${NAME_LOWER}_model_t *m,
+                                                  uint32_t idx)
+{
+    if (idx < m->history_count) {
+        return m->pulse_history[idx];
+    }
+    return 0;
+}
+
+/* TODO: add device-specific verification helpers
+ * e.g. convert pulse width to angle, speed, etc. */
+
+#endif /* HW_MODEL_${NAME_UPPER}_H */
+HW_EOF
+
+    cat > "$WHEEL_DIR/test/test_hw_model_${NAME_LOWER}.c" << HWT_EOF
+#include "test_harness.h"
+#include "hw_model_${NAME_LOWER}.h"
+#include "${NAME_LOWER}.h"
+
+static ${NAME_LOWER}_model_t model;
+static ${NAME_LOWER}_t dev;
+
+TEST(test_hw_model_init)
+{
+    ${NAME_LOWER}_model_init(&model);
+    ${NAME_LOWER}_pwm_t pwm = ${NAME_LOWER}_model_pwm(&model);
+    ASSERT_EQ(${NAME_LOWER}_init(&dev, &pwm), ${NAME_UPPER}_OK);
+}
+
+TEST(test_hw_model_hal_fail)
+{
+    ${NAME_LOWER}_model_init(&model);
+    model.hal_fail = 1;
+    ${NAME_LOWER}_pwm_t pwm = ${NAME_LOWER}_model_pwm(&model);
+    ${NAME_LOWER}_init(&dev, &pwm);
+    /* TODO: call driver function that uses HAL, verify ERR_HAL */
+}
+
+TEST_MAIN("${NAME_LOWER}_hw_model")
+    RUN(test_hw_model_init);
+    RUN(test_hw_model_hal_fail);
+TEST_MAIN_END()
+HWT_EOF
+
+    cat >> "$WHEEL_DIR/test/CMakeLists.txt" << CMAKE_HW_EOF
+
+# hw_model datasheet test
+add_executable(test_hw_model_${NAME_LOWER}
+    test_hw_model_${NAME_LOWER}.c
+    ../${NAME_LOWER}.c
+)
+target_include_directories(test_hw_model_${NAME_LOWER} PRIVATE
+    \${CMAKE_CURRENT_SOURCE_DIR}/..
+    \${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_${NAME_LOWER} PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME ${NAME_LOWER}_hw_model_tests COMMAND test_hw_model_${NAME_LOWER})
+CMAKE_HW_EOF
 }
 
 generate_header_protocol() {
@@ -2000,9 +2499,9 @@ else
     case "$EFFECTIVE_HAL" in
         i2c)      generate_header_i2c;      generate_c_i2c;      generate_test_i2c;      generate_hw_model_i2c ;;
         spi)      generate_header_spi;      generate_c_spi;      generate_test_spi;      generate_hw_model_spi ;;
-        gpio)     generate_header_gpio;     generate_c_gpio;     generate_test_gpio     ;;
-        onewire)  generate_header_onewire;  generate_c_onewire;  generate_test_onewire  ;;
-        pwm)      generate_header_pwm;      generate_c_pwm;      generate_test_pwm      ;;
+        gpio)     generate_header_gpio;     generate_c_gpio;     generate_test_gpio;     generate_hw_model_gpio ;;
+        onewire)  generate_header_onewire;  generate_c_onewire;  generate_test_onewire;  generate_hw_model_onewire ;;
+        pwm)      generate_header_pwm;      generate_c_pwm;      generate_test_pwm;      generate_hw_model_pwm ;;
         protocol) generate_header_protocol; generate_c_protocol; generate_test_protocol ;;
         module)   generate_header_module;   generate_c_module;   generate_test_module   ;;
         *)        generate_header_none;     generate_c_none;     generate_test_none     ;;
@@ -2053,7 +2552,7 @@ else
 echo "  1. Fill in TODO placeholders in ${NAME_LOWER}.h / ${NAME_LOWER}.c"
 echo "  2. Add tests to test/test_${NAME_LOWER}.c"
 echo "  3. Run: python3 tooling/codegen/gen_null_tests.py wheels/${LAYER}/${NAME_LOWER}/${NAME_LOWER}.h"
-if [[ "$LAYER" == "drivers" && ("$HAL" == "i2c" || "$HAL" == "spi") ]]; then
+if [[ "$LAYER" == "drivers" && -n "$HAL" ]]; then
 echo "  4. Fill TODOs in test/hw_model_${NAME_LOWER}.h (POR defaults, inject helpers)"
 echo "  5. Run: tooling/test/test_all.sh ${NAME_LOWER}"
 else
