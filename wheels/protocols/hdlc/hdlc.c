@@ -142,6 +142,12 @@ hdlc_state_t hdlc_parser_feed(hdlc_parser_t *parser, uint8_t byte)
         return parser->state;
 
     case HDLC_STATE_ESCAPE:
+        /* Flag after escape is an abort per RFC 1662 -- discard frame */
+        if (byte == HDLC_FLAG) {
+            parser->idx   = 0;
+            parser->state = HDLC_STATE_ACTIVE;
+            return parser->state;
+        }
         /* The byte after escape is XOR'd to recover original */
         {
             uint8_t decoded = (uint8_t)(byte ^ HDLC_XOR_MASK);

@@ -424,6 +424,76 @@ TEST(test_encode_verify_sync_and_pid)
     ASSERT_EQ_HEX(buf[1], lin_bus_calc_pid(0x15));
 }
 
+TEST(test_diag_frame_forces_classic_checksum)
+{
+    /* Per LIN 2.0+ spec: diagnostic frames (ID 60, 61) MUST use classic
+     * checksum even if the user specifies enhanced. */
+    uint8_t diag_ids[] = {60, 61};
+    for (int idx = 0; idx < 2; idx++) {
+        /* Encode with enhanced -- should silently use classic */
+        lin_bus_frame_t tx = {
+            .id = diag_ids[idx],
+            .data = {0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07},
+            .data_len = 8,
+            .checksum_type = LIN_BUS_CHECKSUM_ENHANCED,
+        };
+        uint8_t buf_enh[16];
+        size_t len_enh = 0;
+        ASSERT_EQ(lin_bus_encode(&tx, buf_enh, sizeof(buf_enh), &len_enh), LIN_BUS_OK);
+
+        /* Encode with classic */
+        tx.checksum_type = LIN_BUS_CHECKSUM_CLASSIC;
+        uint8_t buf_cls[16];
+        size_t len_cls = 0;
+        ASSERT_EQ(lin_bus_encode(&tx, buf_cls, sizeof(buf_cls), &len_cls), LIN_BUS_OK);
+
+        /* Checksum bytes must be identical (both forced to classic) */
+        ASSERT_EQ(len_enh, len_cls);
+        ASSERT_EQ_HEX(buf_enh[len_enh - 1], buf_cls[len_cls - 1]);
+
+        /* Decode the enhanced-encoded frame -- must report classic */
+        lin_bus_frame_t rx;
+        ASSERT_EQ(lin_bus_decode(buf_enh, len_enh, &rx), LIN_BUS_OK);
+        ASSERT_EQ((int)rx.checksum_type, (int)LIN_BUS_CHECKSUM_CLASSIC);
+    }
+}
+
+TEST(test_diag_frame_decode_rejects_enhanced)
+{
+    /* Construct a diagnostic frame with a manually calculated enhanced
+     * checksum. Decoder should reject it because diagnostics require classic. */
+    uint8_t pid60 = lin_bus_calc_pid(60);
+
+    /* Build a frame manually with enhanced checksum */
+    uint8_t data[] = {0xAA, 0xBB, 0xCC, 0xDD};
+
+    /* Compute classic checksum */
+    uint16_t sum_cls = 0;
+    for (int i = 0; i < 4; i++) {
+        sum_cls += data[i];
+        if (sum_cls > 0xFF) sum_cls -= 0xFF;
+    }
+    uint8_t cs_classic = (uint8_t)(~sum_cls & 0xFF);
+
+    /* Compute enhanced checksum (includes PID) */
+    uint16_t sum_enh = pid60;
+    for (int i = 0; i < 4; i++) {
+        sum_enh += data[i];
+        if (sum_enh > 0xFF) sum_enh -= 0xFF;
+    }
+    uint8_t cs_enhanced = (uint8_t)(~sum_enh & 0xFF);
+
+    /* If they happen to be equal, this test is not useful -- skip */
+    if (cs_classic == cs_enhanced) return;
+
+    /* Build raw buffer with enhanced checksum */
+    uint8_t buf[] = {0x55, pid60, 0xAA, 0xBB, 0xCC, 0xDD, cs_enhanced};
+    lin_bus_frame_t rx;
+    lin_bus_err_t err = lin_bus_decode(buf, sizeof(buf), &rx);
+    /* Should fail because decoder only accepts classic for diagnostic frames */
+    ASSERT_EQ(err, LIN_BUS_ERR_CHECKSUM);
+}
+
 TEST_MAIN("lin_bus")
     RUN(test_pid_id_0x00);
     RUN(test_pid_id_0x3F);
@@ -454,4 +524,6 @@ TEST_MAIN("lin_bus")
     RUN(test_roundtrip_all_0xff);
     RUN(test_error_codes);
     RUN(test_encode_verify_sync_and_pid);
+    RUN(test_diag_frame_forces_classic_checksum);
+    RUN(test_diag_frame_decode_rejects_enhanced);
 TEST_MAIN_END()
