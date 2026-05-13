@@ -10,7 +10,7 @@
 
 /* Property: max retries respected — should_retry returns false after max_attempts */
 PROPERTY(max_retries_respected, 10000) {
-    retry_ctx_t ctx;
+    retry_t ctx;
     uint8_t max = (uint8_t)ARBI_RANGE(seed, 1, 20);
     uint32_t base = (uint32_t)ARBI_RANGE(seed, 10, 500);
     retry_config_t cfg = {
@@ -31,7 +31,7 @@ PROPERTY(max_retries_respected, 10000) {
 
 /* Property: reset clears state — after reset, full attempts available again */
 PROPERTY(reset_clears_state, 10000) {
-    retry_ctx_t ctx;
+    retry_t ctx;
     uint8_t max = (uint8_t)ARBI_RANGE(seed, 1, 10);
     retry_config_t cfg = {
         .strategy      = RETRY_EXPONENTIAL,
@@ -61,7 +61,7 @@ PROPERTY(reset_clears_state, 10000) {
 
 /* Property: delay never exceeds max_delay_ms */
 PROPERTY(delay_bounded, 10000) {
-    retry_ctx_t ctx;
+    retry_t ctx;
     uint8_t max = (uint8_t)ARBI_RANGE(seed, 1, 15);
     uint32_t base = (uint32_t)ARBI_RANGE(seed, 1, 100);
     uint32_t max_delay = (uint32_t)ARBI_RANGE(seed, (int)base, 10000);
@@ -82,7 +82,7 @@ PROPERTY(delay_bounded, 10000) {
 
 /* Property: attempt counter is monotonically increasing */
 PROPERTY(attempt_monotonic, 5000) {
-    retry_ctx_t ctx;
+    retry_t ctx;
     uint8_t max = (uint8_t)ARBI_RANGE(seed, 2, 20);
     retry_config_t cfg = {
         .strategy      = RETRY_LINEAR,
@@ -102,7 +102,7 @@ PROPERTY(attempt_monotonic, 5000) {
 
 /* Property: double reset is idempotent */
 PROPERTY(double_reset_idempotent, 5000) {
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_config_t cfg = {
         .strategy      = RETRY_FIXED,
         .base_delay_ms = 100,

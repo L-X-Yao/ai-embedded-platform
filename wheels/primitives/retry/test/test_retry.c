@@ -10,7 +10,7 @@ TEST(test_fixed_strategy)
         .max_delay_ms = 1000,
         .max_attempts = 3
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     ASSERT_TRUE(retry_should_retry(&ctx));
@@ -36,7 +36,7 @@ TEST(test_linear_strategy)
         .max_delay_ms = 500,
         .max_attempts = 5
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     ASSERT_TRUE(retry_should_retry(&ctx));
@@ -65,7 +65,7 @@ TEST(test_exponential_strategy)
         .max_delay_ms = 5000,
         .max_attempts = 5
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     ASSERT_TRUE(retry_should_retry(&ctx));
@@ -94,7 +94,7 @@ TEST(test_max_delay_cap)
         .max_delay_ms = 3000,
         .max_attempts = 10
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     retry_should_retry(&ctx);
@@ -115,7 +115,7 @@ TEST(test_linear_cap)
         .max_delay_ms = 500,
         .max_attempts = 5
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     retry_should_retry(&ctx);
@@ -134,7 +134,7 @@ TEST(test_reset)
         .max_delay_ms = 1000,
         .max_attempts = 2
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
 
     ASSERT_TRUE(retry_should_retry(&ctx));
@@ -155,7 +155,7 @@ TEST(test_zero_attempts)
         .max_delay_ms = 1000,
         .max_attempts = 0
     };
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, &cfg);
     ASSERT_FALSE(retry_should_retry(&ctx));
 }
@@ -169,7 +169,7 @@ TEST(test_null_safety)
         .max_attempts = 3
     };
     retry_init(NULL, &cfg);
-    retry_ctx_t ctx;
+    retry_t ctx;
     retry_init(&ctx, NULL);
     ASSERT_FALSE(retry_should_retry(NULL));
     ASSERT_EQ(retry_get_delay(NULL), 0);

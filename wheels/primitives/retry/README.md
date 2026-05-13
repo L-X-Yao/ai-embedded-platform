@@ -26,11 +26,11 @@ None.
 
 /* Strategies: RETRY_FIXED, RETRY_LINEAR, RETRY_EXPONENTIAL */
 
-void     retry_init(retry_ctx_t *ctx, const retry_config_t *config);
-bool     retry_should_retry(retry_ctx_t *ctx);
-uint32_t retry_get_delay(const retry_ctx_t *ctx);
-uint8_t  retry_get_attempt(const retry_ctx_t *ctx);
-void     retry_reset(retry_ctx_t *ctx);
+void     retry_init(retry_t *ctx, const retry_config_t *config);
+bool     retry_should_retry(retry_t *ctx);
+uint32_t retry_get_delay(const retry_t *ctx);
+uint8_t  retry_get_attempt(const retry_t *ctx);
+void     retry_reset(retry_t *ctx);
 ```
 
 ## Supported platforms

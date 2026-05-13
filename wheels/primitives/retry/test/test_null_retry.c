@@ -14,7 +14,7 @@ TEST(test_retry_init_null_ctx) {
 }
 
 TEST(test_retry_init_null_config) {
-    retry_ctx_t _ctx;
+    retry_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)retry_init(&_ctx, NULL);
     /* must not crash */
