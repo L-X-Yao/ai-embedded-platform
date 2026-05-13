@@ -65,10 +65,10 @@ TEST(test_add_remove_sink) {
 
     int extra = log_add_sink(second_sink, NULL);
     ASSERT_TRUE(extra >= 0);
-    ASSERT_EQ(log_remove_sink(extra), 0);
-    ASSERT_EQ(log_remove_sink(extra), -1);
-    ASSERT_EQ(log_remove_sink(-1), -1);
-    ASSERT_EQ(log_remove_sink(999), -1);
+    ASSERT_EQ(log_remove_sink(extra), LOG_OK);
+    ASSERT_EQ(log_remove_sink(extra), LOG_ERR_INVALID_ID);
+    ASSERT_EQ(log_remove_sink(-1), LOG_ERR_INVALID_ID);
+    ASSERT_EQ(log_remove_sink(999), LOG_ERR_INVALID_ID);
 }
 
 TEST(test_emit_basic) {
@@ -256,8 +256,8 @@ TEST(test_sink_slots_exhausted) {
     ASSERT_TRUE(ids[1] >= 0);
     ASSERT_TRUE(ids[2] >= 0);
     ASSERT_TRUE(ids[3] >= 0);
-    ASSERT_EQ(ids[4], -1);
-    ASSERT_EQ(ids[5], -1);
+    ASSERT_EQ(ids[4], LOG_ERR_NO_SLOTS);
+    ASSERT_EQ(ids[5], LOG_ERR_NO_SLOTS);
 
     for (int i = 0; i < 4; i++) log_remove_sink(ids[i]);
     capture_reset();
