@@ -90,6 +90,40 @@ static int tests_fail = 0;
         tests_fail++; return; \
     } } while(0)
 
+#define ASSERT_NULL(ptr) do { \
+    if ((ptr) != NULL) { \
+        printf("  FAIL %s:%d: expected NULL\n", __func__, __LINE__); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_GT(a, b) do { \
+    long long _a = (long long)(a), _b = (long long)(b); \
+    if (!(_a > _b)) { \
+        printf("  FAIL %s:%d: %lld not > %lld\n", __func__, __LINE__, _a, _b); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_GE(a, b) do { \
+    long long _a = (long long)(a), _b = (long long)(b); \
+    if (!(_a >= _b)) { \
+        printf("  FAIL %s:%d: %lld not >= %lld\n", __func__, __LINE__, _a, _b); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_LT(a, b) do { \
+    long long _a = (long long)(a), _b = (long long)(b); \
+    if (!(_a < _b)) { \
+        printf("  FAIL %s:%d: %lld not < %lld\n", __func__, __LINE__, _a, _b); \
+        tests_fail++; return; \
+    } } while(0)
+
+#define ASSERT_LE(a, b) do { \
+    long long _a = (long long)(a), _b = (long long)(b); \
+    if (!(_a <= _b)) { \
+        printf("  FAIL %s:%d: %lld not <= %lld\n", __func__, __LINE__, _a, _b); \
+        tests_fail++; return; \
+    } } while(0)
+
 #define ASSERT_STR_EQ(a, b) do { \
     const char *_a = (const char *)(a), *_b = (const char *)(b); \
     if (_a == NULL || _b == NULL) { \
