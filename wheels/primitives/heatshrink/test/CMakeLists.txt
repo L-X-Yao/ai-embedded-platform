@@ -21,6 +21,15 @@ target_include_directories(test_heatshrink PRIVATE
 )
 target_compile_options(test_heatshrink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+add_executable(prop_heatshrink
+    prop_heatshrink.c
+    ../heatshrink.c
+)
+target_include_directories(prop_heatshrink PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(prop_heatshrink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_executable(test_null_heatshrink
     test_null_heatshrink.c
@@ -31,6 +40,18 @@ target_include_directories(test_null_heatshrink PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_heatshrink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_heatshrink
+    test_boundary_heatshrink.c
+    ../heatshrink.c
+)
+target_include_directories(test_boundary_heatshrink PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_heatshrink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME heatshrink_tests COMMAND test_heatshrink)
+add_test(NAME heatshrink_prop  COMMAND prop_heatshrink)
 add_test(NAME heatshrink_null_tests COMMAND test_null_heatshrink)
+add_test(NAME heatshrink_boundary_tests COMMAND test_boundary_heatshrink)
