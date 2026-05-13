@@ -19,6 +19,7 @@ target_include_directories(test_peak_detector PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_peak_detector PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_peak_detector PRIVATE m)
 
 enable_testing()
 add_test(NAME peak_detector_tests COMMAND test_peak_detector)
