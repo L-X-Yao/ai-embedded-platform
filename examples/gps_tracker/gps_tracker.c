@@ -420,7 +420,7 @@ static uuid_t       session_id;
 
 /* UBX parser context */
 static uint8_t          ubx_buf[512];
-static ubx_parser_ctx_t ubx_ctx;
+static ubx_parser_t     ubx_ctx;
 
 /* ======================================================================
  * Tests
