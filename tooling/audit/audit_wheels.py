@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-audit_wheels.py — 52-check automated audit covering structure, API, code safety, and consistency.
+audit_wheels.py — 57-check automated audit covering structure, API, code safety, and consistency.
 
 Codifies feedback_wheel_commit_not_sunk.md as a CI guardrail. The orphan
 problem we hit twice (w25qxx, qmi8658a both committed but never wired)
@@ -856,6 +856,131 @@ def chk_hal_guard_in_public(ctx, **_):
             f"add if (!dev->{hal_field}) return ERR_PARAM in {ctx.path}/{ctx.name}.c")
 
 
+def chk_polling_without_delay(ctx, **_):
+    """Detect HAL register reads inside while/for loops without any delay.
+
+    On real hardware, tight-polling I2C/SPI register reads hammers the
+    bus and wastes CPU cycles.  A delay_ms / delay_us call anywhere in
+    the same loop body is enough to suppress.
+
+    Only checks ->read_reg / ->read_regs (register-level reads).  Does
+    NOT flag ->xfer() or ->read() which are typically byte-level bulk
+    SPI transfers, not polling.
+    """
+    if not ctx.source:
+        return None
+    hal_read_pat = re.compile(r'->read_reg\b|->read_regs\b')
+    delay_pat = re.compile(r'\bdelay_ms\b|\bdelay_us\b')
+    loop_start_pat = re.compile(r'\b(while|for)\s*\(')
+    lines = ctx.source.splitlines()
+    hits = []
+    i = 0
+    while i < len(lines):
+        if not loop_start_pat.search(lines[i]):
+            i += 1
+            continue
+        # Find the opening brace of the loop body
+        j = i
+        depth = 0
+        found_open = False
+        body_lines = []
+        while j < len(lines):
+            stripped = _strip_literals(lines[j])
+            for ch in stripped:
+                if ch == '{':
+                    depth += 1
+                    found_open = True
+                elif ch == '}':
+                    depth -= 1
+            if found_open:
+                body_lines.append(lines[j])
+            if found_open and depth == 0:
+                break
+            j += 1
+        body_text = "\n".join(body_lines)
+        if hal_read_pat.search(body_text) and not delay_pat.search(body_text):
+            hits.append(i + 1)
+        i = j + 1
+    if not hits:
+        return None
+    locs = ", ".join(f"L{n}" for n in hits[:3])
+    return (f"HAL read in loop without delay at {locs}",
+            f"add delay_ms/delay_us in polling loop in {ctx.path}/{ctx.name}.c")
+
+
+def chk_spec_vectors_exist(ctx, **_):
+    """L2 protocol wheels should have spec-derived test vectors.
+
+    Checks for dedicated spec_vectors* / test_vectors* files, or for
+    comments referencing RFC / spec / standard / datasheet near ASSERT
+    lines in test source files.
+    """
+    test_dir = ctx.dir / "test"
+    if not test_dir.is_dir():
+        return ("no test directory for protocol wheel",
+                f"add {ctx.path}/test/ with spec-derived vectors")
+    # Check for dedicated vector files
+    for f in test_dir.iterdir():
+        if f.is_file():
+            stem = f.stem.lower()
+            if stem.startswith("spec_vectors") or stem.startswith("test_vectors"):
+                return None
+    # Check for spec references in test .c files near ASSERT lines
+    spec_ref = re.compile(r'\bRFC\b|\bspec\b|\bstandard\b|\bdatasheet\b|\breference\b',
+                          re.IGNORECASE)
+    for src in sorted(test_dir.glob("test_*.c")):
+        text = _cached_read(src)
+        if not text:
+            continue
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            if "ASSERT" not in line:
+                continue
+            # Look at the surrounding 15 lines for spec references
+            # (spec comments often precede setup code before the ASSERT)
+            context = "\n".join(lines[max(0, i - 15):i + 1])
+            if spec_ref.search(context):
+                return None
+    return ("no spec-derived test vectors (RFC/datasheet reference or spec_vectors file)",
+            f"add spec_vectors.h or spec-referenced values in {ctx.path}/test/")
+
+
+def chk_test_tautology(ctx, **_):
+    """Detect tests computing raw sensor values from the driver's own formula.
+
+    When a test reverse-engineers the conversion formula to generate mock
+    register data, a bug in the formula passes both the driver and the
+    test.  Fixed datasheet values catch real conversion errors.
+    """
+    tautology_pat = re.compile(
+        r'\((?:u?int16_t|u?int8_t)\)\s*\(.*[/\*].*\d+\.\d+')
+    exempt_pat = re.compile(r'\bdatasheet\b|\bspec\b|\bknown\b', re.IGNORECASE)
+    hits = []
+    test_dir = ctx.dir / "test"
+    if not test_dir.is_dir():
+        return None
+    for src in sorted(test_dir.glob("test_*.c")):
+        if src.stem.startswith("test_null_") or src.stem.startswith("test_hw_model_"):
+            continue
+        text = _cached_read(src)
+        if not text:
+            continue
+        for i, line in enumerate(text.splitlines()):
+            stripped = line.strip()
+            if not tautology_pat.search(stripped):
+                continue
+            # Skip if the line or the previous line has a datasheet/spec comment
+            context = text.splitlines()[max(0, i - 1):i + 1]
+            if any(exempt_pat.search(cl) for cl in context):
+                continue
+            hits.append((src.name, i + 1))
+    if not hits:
+        return None
+    locs = "; ".join(f"{f}:L{ln}" for f, ln in hits[:3])
+    return (f"test computes raw from formula at {locs} — consider fixed datasheet values",
+            f"use fixed datasheet register values in {ctx.path}/test/")
+
+
 # --- Check table: metadata for each check ---
 
 CHECK_TABLE = [
@@ -914,6 +1039,9 @@ CHECK_TABLE = [
     ("missing_hw_model",   "Hardware model tests (L1 I2C/SPI)",   chk_missing_hw_model,     "WARN", {"drivers"},              True,  False),
     ("hw_model_orphan",    "hw_model test file orphan",            chk_hw_model_orphan,      "WARN", None,                      False, False),
     ("hal_guard_public",   "HAL NULL guard in public functions",   chk_hal_guard_in_public,  "WARN", {"drivers"},               True,  False),
+    ("polling_no_delay",   "HAL polling without delay",            chk_polling_without_delay, "WARN", {"drivers"},              True,  False),
+    ("spec_vectors",       "Spec-derived test vectors (L2)",        chk_spec_vectors_exist,   "INFO", {"protocols"},             True,  True),
+    ("test_tautology",     "Test tautology (formula echo)",         chk_test_tautology,       "INFO", {"drivers"},               True,  False),
 ]
 
 
