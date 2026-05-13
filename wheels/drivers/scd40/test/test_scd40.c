@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include <math.h>
 #include "scd40.h"
@@ -60,15 +61,10 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     return true;
 }
 
-static void mock_delay(void *ctx, uint32_t ms)
-{
-    (void)ctx; (void)ms;
-}
-
 static const scd40_i2c_t mock_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 

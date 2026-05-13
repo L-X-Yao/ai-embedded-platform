@@ -7,6 +7,7 @@
 
 #include "test_harness.h"
 #include "property_test.h"
+#include "mock_time.h"
 #include "mlx90614.h"
 
 /* --- command-based I2C mock --- */
@@ -32,12 +33,10 @@ static bool mock_read(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-static void mock_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
-
 static const mlx90614_i2c_t prop_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 

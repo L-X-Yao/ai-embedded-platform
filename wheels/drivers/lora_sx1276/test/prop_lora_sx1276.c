@@ -6,6 +6,7 @@
 #include "test_harness.h"
 #include "property_test.h"
 #include "mock_spi.h"
+#include "mock_time.h"
 #include "lora_sx1276.h"
 
 /* SX1276 SPI protocol: byte 0 = addr (MSB=1 for write), subsequent = data */
@@ -38,7 +39,6 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 }
 
 static void mock_reset_pin(void *ctx) { (void)ctx; }
-static void mock_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
 
 static void sx_cs_low(void *ctx)
 {
@@ -52,7 +52,7 @@ static const lora_spi_t prop_spi = {
     .cs_high  = mock_spi_cs_high,
     .xfer     = mock_xfer,
     .reset    = mock_reset_pin,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 

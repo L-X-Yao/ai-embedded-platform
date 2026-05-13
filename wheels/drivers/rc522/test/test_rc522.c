@@ -1,4 +1,5 @@
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include "rc522.h"
 
@@ -158,11 +159,6 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     mock_byte_idx++;
     return ret;
-}
-
-static void mock_delay_ms(void *ctx, uint32_t ms)
-{
-    (void)ctx; (void)ms;
 }
 
 static const rc522_spi_t mock_spi = {
