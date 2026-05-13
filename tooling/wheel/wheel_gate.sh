@@ -7,8 +7,9 @@
 #   wheel_gate.sh --staged   # auto-detect from git staged changes
 #
 # Runs for each wheel:
-#   1. CMake build + test (all test_* executables)
-#   2. Audit (--wheel --quiet, 0 WARN/FAIL required)
+#   1. Auto-generate null tests if missing (gen_null_tests.py)
+#   2. CMake build + test (all test_* executables)
+#   3. Audit (--wheel --quiet, 0 WARN/FAIL required)
 #
 # Exit 0 if all pass, 1 if any fail, 2 if no wheels given.
 
@@ -80,7 +81,18 @@ for wheel in "${WHEELS[@]}"; do
 
     echo -e "${BOLD}━━━━ ${wheel} ━━━━${NC}"
 
-    # --- 1. Build + test ---
+    # --- 1. Auto-generate null tests if missing ---
+    header_file="${wheel_dir}/${wheel_name}.h"
+    null_test="${wheel_dir}/test/test_null_${wheel_name}.c"
+    if [[ -f "$header_file" ]] && [[ ! -f "$null_test" ]]; then
+        if python3 "$REPO/tooling/codegen/gen_null_tests.py" "$header_file" > /dev/null 2>&1; then
+            echo -e "  ${GREEN}AUTO${NC} generated test_null_${wheel_name}.c"
+        else
+            echo -e "  ${YELLOW}SKIP${NC} gen_null_tests failed (non-blocking)"
+        fi
+    fi
+
+    # --- 2. Build + test ---
     test_dir="${wheel_dir}/test"
     if [[ -d "$test_dir" ]] && [[ -f "$test_dir/CMakeLists.txt" ]]; then
         build_dir="${test_dir}/${BUILD_DIR}"
@@ -125,12 +137,12 @@ for wheel in "${WHEELS[@]}"; do
         echo -e "  ${YELLOW}SKIP${NC} no test/CMakeLists.txt"
     fi
 
-    # --- 2. Audit ---
+    # --- 3. Audit ---
     audit_output=$(cd "$REPO" && python3 tooling/audit/audit_wheels.py --wheel "$wheel" --quiet 2>&1)
-    warn_count=$(echo "$audit_output" | grep -cE "^(WARN|FAIL)" || true)
+    warn_count=$(echo "$audit_output" | grep -cE "\[(WARN|FAIL)\]" || true)
     if [[ "$warn_count" -gt 0 ]]; then
         echo -e "  ${RED}FAIL${NC} audit: $warn_count findings"
-        echo "$audit_output" | grep -E "^(WARN|FAIL)" | sed 's/^/    /'
+        echo "$audit_output" | grep -E "\[(WARN|FAIL)\]" | sed 's/^/    /'
         FAIL=$((FAIL + 1))
         FAILED_WHEELS+=("$wheel")
         continue
