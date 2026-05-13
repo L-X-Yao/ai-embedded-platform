@@ -30,7 +30,7 @@ static uint16_t get_u16_be(const uint8_t *buf)
 
 bool modbus_rtu_check_crc(const uint8_t *frame, uint16_t len)
 {
-    if (!frame || len < MODBUS_RTU_MIN_FRAME)
+    if (!frame || len < MODBUS_RTU_MIN_FRAME || len > MODBUS_RTU_MAX_FRAME)
         return false;
     uint16_t crc = crc16_modbus(frame, len - 2);
     return frame[len - 2] == (uint8_t)(crc & 0xFF) &&
@@ -40,10 +40,10 @@ bool modbus_rtu_check_crc(const uint8_t *frame, uint16_t len)
 int modbus_rtu_parse(const uint8_t *buf, uint16_t len,
                      modbus_rtu_frame_t *frame)
 {
-    if (!buf || !frame || len < MODBUS_RTU_MIN_FRAME)
-        return -1;
+    if (!buf || !frame || len < MODBUS_RTU_MIN_FRAME || len > MODBUS_RTU_MAX_FRAME)
+        return MODBUS_RTU_ERR_PARAM;
     if (!modbus_rtu_check_crc(buf, len))
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     frame->addr     = buf[0];
     frame->func     = buf[1];
     frame->data     = (len > MODBUS_RTU_MIN_FRAME) ? &buf[2] : NULL;
@@ -57,10 +57,10 @@ int modbus_rtu_build(uint8_t *buf, uint16_t buf_size,
                      const uint8_t *data, uint16_t data_len)
 {
     if (!buf || data_len > MODBUS_RTU_MAX_FRAME - 4 || (data_len > 0 && !data))
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     uint16_t frame_len = 2 + data_len + 2;
     if (buf_size < frame_len)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     buf[0] = addr;
     buf[1] = func;
     if (data_len > 0 && data)
@@ -89,11 +89,11 @@ int modbus_rtu_master_read_regs(uint8_t *buf, uint16_t buf_size,
                                 uint8_t slave, uint8_t func,
                                 uint16_t start, uint16_t count)
 {
-    if (!buf) return -1;
+    if (!buf) return MODBUS_RTU_ERR_PARAM;
     if (count == 0 || count > MODBUS_MAX_READ_REGS)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     if (func != MODBUS_FC_READ_HOLDING_REGS && func != MODBUS_FC_READ_INPUT_REGS)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     uint8_t data[4];
     put_u16_be(&data[0], start);
     put_u16_be(&data[2], count);
@@ -104,7 +104,7 @@ int modbus_rtu_master_write_reg(uint8_t *buf, uint16_t buf_size,
                                 uint8_t slave,
                                 uint16_t reg, uint16_t value)
 {
-    if (!buf) return -1;
+    if (!buf) return MODBUS_RTU_ERR_PARAM;
     uint8_t data[4];
     put_u16_be(&data[0], reg);
     put_u16_be(&data[2], value);
@@ -118,7 +118,7 @@ int modbus_rtu_master_write_regs(uint8_t *buf, uint16_t buf_size,
                                  const uint16_t *values)
 {
     if (!values || count == 0 || count > MODBUS_MAX_WRITE_REGS)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     uint8_t data[5 + MODBUS_MAX_WRITE_REGS * 2];
     put_u16_be(&data[0], start);
     put_u16_be(&data[2], count);
@@ -133,11 +133,11 @@ int modbus_rtu_master_get_regs(const modbus_rtu_frame_t *frame,
                                uint16_t *regs, uint16_t max_count)
 {
     if (!frame || !regs || !frame->data || frame->data_len < 1)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     uint8_t byte_count = frame->data[0];
     if (byte_count == 0 || byte_count > 250 || byte_count % 2 != 0
         || (uint16_t)(byte_count + 1) > frame->data_len)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
     uint16_t reg_count = byte_count / 2;
     if (reg_count > max_count)
         reg_count = max_count;
@@ -260,11 +260,11 @@ int modbus_rtu_slave_process(modbus_rtu_slave_t *s,
                              uint8_t *resp, uint16_t resp_size)
 {
     if (!s || !req || !resp)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
 
     modbus_rtu_frame_t frame;
     if (modbus_rtu_parse(req, req_len, &frame) != 0)
-        return -1;
+        return MODBUS_RTU_ERR_PARAM;
 
     if (frame.addr != s->addr && frame.addr != MODBUS_RTU_ADDR_BROADCAST)
         return 0;
