@@ -19,7 +19,7 @@ TEST(test_sha256_update_null_ctx) {
 }
 
 TEST(test_sha256_update_null_data) {
-    sha256_ctx_t _ctx;
+    sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)sha256_update(&_ctx, NULL, 0);
     /* must not crash */
@@ -33,7 +33,7 @@ TEST(test_sha256_final_null_ctx) {
 }
 
 TEST(test_sha256_final_null_hash) {
-    sha256_ctx_t _ctx;
+    sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)sha256_final(&_ctx, NULL);
     /* must not crash */

@@ -40,11 +40,11 @@ typedef struct {
     uint32_t state[8];
     uint8_t  buffer[64];
     uint64_t count;
-} sha256_ctx_t;
+} sha256_t;
 
-sha256_err_t sha256_init(sha256_ctx_t *ctx);
-sha256_err_t sha256_update(sha256_ctx_t *ctx, const uint8_t *data, size_t len);
-sha256_err_t sha256_final(sha256_ctx_t *ctx, uint8_t hash[32]);
+sha256_err_t sha256_init(sha256_t *ctx);
+sha256_err_t sha256_update(sha256_t *ctx, const uint8_t *data, size_t len);
+sha256_err_t sha256_final(sha256_t *ctx, uint8_t hash[32]);
 void sha256_hash(const uint8_t *data, size_t len, uint8_t hash[32]);
 ```
 
@@ -121,4 +121,4 @@ None.
 
 - Compression: 64 rounds per 512-bit (64-byte) block
 - ROM footprint: ~1.3 KB (K table 256 bytes + code ~1 KB)
-- RAM: 108 bytes context (sha256_ctx_t) + ~320 bytes stack (W[64] schedule)
+- RAM: 108 bytes context (sha256_t) + ~320 bytes stack (W[64] schedule)

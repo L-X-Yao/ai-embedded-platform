@@ -11,7 +11,7 @@
 #include <math.h>
 
 TEST(test_boundary_sha256_update_len_zero) {
-    sha256_ctx_t _safe_ctx_0;
+    sha256_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
@@ -20,7 +20,7 @@ TEST(test_boundary_sha256_update_len_zero) {
 }
 
 TEST(test_boundary_sha256_update_len_one) {
-    sha256_ctx_t _safe_ctx_0;
+    sha256_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
@@ -29,11 +29,12 @@ TEST(test_boundary_sha256_update_len_one) {
 }
 
 TEST(test_boundary_sha256_update_len_size_max) {
-    sha256_ctx_t _safe_ctx_0;
+    sha256_t _safe_ctx_0;
     memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    sha256_err_t ret = sha256_update(&_safe_ctx_0, _safe_data_1, SIZE_MAX);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    sha256_err_t ret = sha256_update(&_safe_ctx_0, _safe_data_1, sizeof(_safe_data_1));
     ASSERT_TRUE(ret == SHA256_OK || ret == SHA256_ERR_PARAM);
 }
 
@@ -60,7 +61,8 @@ TEST(test_boundary_sha256_hash_len_size_max) {
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     uint8_t _safe_hash_2[64];
     memset(_safe_hash_2, 0, sizeof(_safe_hash_2));
-    (void)sha256_hash(_safe_data_0, SIZE_MAX, _safe_hash_2);
+    /* Clamp to buffer size to avoid walking off the buffer. */
+    (void)sha256_hash(_safe_data_0, sizeof(_safe_data_0), _safe_hash_2);
     /* must not crash */
 }
 

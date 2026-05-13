@@ -77,7 +77,7 @@ TEST(test_million_a)
         0x04, 0x6D, 0x39, 0xCC, 0xC7, 0x11, 0x2C, 0xD0,
     };
 
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     sha256_init(&ctx);
 
     /* Feed in chunks of 1000 bytes. */
@@ -103,7 +103,7 @@ TEST(test_streaming_equivalence)
     sha256_hash(msg, len, oneshot);
 
     /* Feed byte by byte. */
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     sha256_init(&ctx);
     for (size_t i = 0; i < len; i++) {
         sha256_update(&ctx, &msg[i], 1);
@@ -125,7 +125,7 @@ TEST(test_chunked_streaming)
     sha256_hash(msg, len, expected);
 
     /* Split at 7-byte chunks. */
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     sha256_init(&ctx);
     size_t offset = 0;
     while (offset < len) {
@@ -143,7 +143,7 @@ TEST(test_chunked_streaming)
 
 TEST(test_null_params)
 {
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     uint8_t hash[32];
 
     ASSERT_EQ(sha256_init(NULL), SHA256_ERR_PARAM);
@@ -161,7 +161,7 @@ TEST(test_zero_length_update)
     uint8_t expected[32];
     sha256_hash((const uint8_t *)"abc", 3, expected);
 
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     sha256_init(&ctx);
     sha256_update(&ctx, NULL, 0);
     sha256_update(&ctx, (const uint8_t *)"abc", 3);

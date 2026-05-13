@@ -96,7 +96,7 @@ static void sha256_compress(uint32_t state[8], const uint8_t block[64])
 
 /* ---- Public API ---- */
 
-sha256_err_t sha256_init(sha256_ctx_t *ctx)
+sha256_err_t sha256_init(sha256_t *ctx)
 {
     if (!ctx) return SHA256_ERR_PARAM;
 
@@ -115,7 +115,7 @@ sha256_err_t sha256_init(sha256_ctx_t *ctx)
     return SHA256_OK;
 }
 
-sha256_err_t sha256_update(sha256_ctx_t *ctx, const uint8_t *data, size_t len)
+sha256_err_t sha256_update(sha256_t *ctx, const uint8_t *data, size_t len)
 {
     if (!ctx) return SHA256_ERR_PARAM;
     if (len == 0 || !data) return SHA256_OK;
@@ -153,7 +153,7 @@ sha256_err_t sha256_update(sha256_ctx_t *ctx, const uint8_t *data, size_t len)
     return SHA256_OK;
 }
 
-sha256_err_t sha256_final(sha256_ctx_t *ctx, uint8_t hash[32])
+sha256_err_t sha256_final(sha256_t *ctx, uint8_t hash[32])
 {
     if (!ctx || !hash) return SHA256_ERR_PARAM;
 
@@ -201,7 +201,7 @@ sha256_err_t sha256_final(sha256_ctx_t *ctx, uint8_t hash[32])
 
 void sha256_hash(const uint8_t *data, size_t len, uint8_t hash[32])
 {
-    sha256_ctx_t ctx;
+    sha256_t ctx;
     (void)sha256_init(&ctx);
     (void)sha256_update(&ctx, data, len);
     (void)sha256_final(&ctx, hash);
