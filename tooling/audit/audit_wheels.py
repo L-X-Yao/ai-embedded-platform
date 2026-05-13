@@ -320,6 +320,34 @@ def chk_dev_t_naming(ctx, **_):
             f"rename in {ctx.path}/{ctx.name}.h/.c")
 
 
+def chk_ctx_t_naming(ctx, **_):
+    if f"{ctx.name}_ctx_t" not in ctx.header:
+        return None
+    return (f"uses {ctx.name}_ctx_t — should be {ctx.name}_t (api-conventions §1.3)",
+            f"rename in {ctx.path}/{ctx.name}.h/.c")
+
+
+def chk_err_t_defined(ctx, **_):
+    # WARN if header has >=3 int-returning public functions but no <name>_err_t
+    # type definition. Heuristic catches early-style wheels still using bare int.
+    # Exempt wheels that intentionally return byte counts or values document
+    # their <name>_err_t enum but keep int returns (e.g. fal partition I/O).
+    if not ctx.header:
+        return None
+    if f"{ctx.name}_err_t" in ctx.header:
+        return None
+    int_funcs = re.findall(
+        rf"^\s*int\s+{ctx.name}_\w+\s*\(", ctx.header, re.MULTILINE
+    )
+    if len(int_funcs) < 3:
+        return None
+    return (
+        f"missing {ctx.name}_err_t type — {len(int_funcs)} functions "
+        f"return bare int (api-conventions §4)",
+        f"add err_t enum in {ctx.path}/{ctx.name}.h",
+    )
+
+
 def chk_err_plural(ctx, **_):
     if "ERR_PARAMS" not in ctx.header:
         return None
@@ -1008,6 +1036,8 @@ CHECK_TABLE = [
     ("hal_injection",       "HAL injection pattern (L1)",         chk_hal_injection,       "WARN", {"drivers"},               True,  False),
     ("busy_wait_timeout",   "Busy-wait timeout guard",            chk_busy_wait_timeout,   "WARN", None,                      True,  False),
     ("dev_t_naming",        "Context type naming (_t not _dev_t)", chk_dev_t_naming,       "WARN", None,                      True,  False),
+    ("ctx_t_naming",        "Context type naming (_t not _ctx_t)", chk_ctx_t_naming,       "WARN", None,                      True,  False),
+    ("err_t_defined",       "Error enum defined (api-conventions §4)", chk_err_t_defined,  "WARN", None,                      True,  False),
     ("err_plural",          "Error code singular (ERR_PARAM)",    chk_err_plural,          "WARN", None,                      True,  False),
     ("pragma_once",         "Include guard style",                chk_pragma_once,         "WARN", None,                      True,  False),
     ("spdx_header",         "SPDX license identifier",            chk_spdx_header,        "WARN", None,                      True,  False),
