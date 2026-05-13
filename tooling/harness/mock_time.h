@@ -31,6 +31,7 @@ static uint32_t mock_time_delay_last_ms;
 static uint32_t mock_time_delay_us_calls;
 static uint32_t mock_time_delay_total_us;
 
+__attribute__((unused))
 static void mock_time_reset(void)
 {
     mock_time_ms             = 0;
@@ -41,11 +42,13 @@ static void mock_time_reset(void)
     mock_time_delay_total_us = 0;
 }
 
+__attribute__((unused))
 static void mock_time_advance(uint32_t ms)
 {
     mock_time_ms += ms;
 }
 
+__attribute__((unused))
 static uint32_t mock_time_get_ms(void)
 {
     return mock_time_ms;

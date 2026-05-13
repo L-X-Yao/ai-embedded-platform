@@ -56,6 +56,7 @@ static void mock_spi_reset(void)
     memset(mock_spi_tx_log, 0, sizeof(mock_spi_tx_log));
 }
 
+__attribute__((unused))
 static bool mock_spi_should_fail(void)
 {
     int n = mock_spi_op_count++;
@@ -85,6 +86,47 @@ static void mock_spi_log_byte(uint8_t tx)
 {
     if (mock_spi_tx_log_count < MOCK_SPI_LOG_SIZE)
         mock_spi_tx_log[mock_spi_tx_log_count++] = tx;
+}
+
+/* --- xfer sequence matchers --------------------------------------------- */
+/*
+ * Assert the captured TX log matches an expected byte sequence.
+ * Returns 1 on match, 0 on mismatch (caller chooses how to fail).
+ *
+ * mock_spi_log_starts_with: prefix match (extra trailing bytes ok)
+ * mock_spi_log_equals:      exact length + bytes
+ * mock_spi_log_contains:    expected sequence appears anywhere in log
+ */
+
+__attribute__((unused))
+static int mock_spi_log_starts_with(const uint8_t *expect, int len)
+{
+    if (mock_spi_tx_log_count < len) return 0;
+    int i;
+    for (i = 0; i < len; i++)
+        if (mock_spi_tx_log[i] != expect[i]) return 0;
+    return 1;
+}
+
+__attribute__((unused))
+static int mock_spi_log_equals(const uint8_t *expect, int len)
+{
+    if (mock_spi_tx_log_count != len) return 0;
+    return mock_spi_log_starts_with(expect, len);
+}
+
+__attribute__((unused))
+static int mock_spi_log_contains(const uint8_t *expect, int len)
+{
+    if (len <= 0 || mock_spi_tx_log_count < len) return 0;
+    int max = mock_spi_tx_log_count - len;
+    int i, j;
+    for (i = 0; i <= max; i++) {
+        for (j = 0; j < len; j++)
+            if (mock_spi_tx_log[i + j] != expect[j]) break;
+        if (j == len) return 1;
+    }
+    return 0;
 }
 
 #endif /* MOCK_SPI_H */

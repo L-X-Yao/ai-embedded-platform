@@ -23,6 +23,10 @@ build_*/
 # test_all.sh logs
 build_ta.*.log
 
+# harness smoke test binaries (no extension on Linux)
+tooling/harness/test/smoke_test
+tooling/harness/test/smoke_test_wrap
+
 # CMake
 CMakeCache.txt
 CMakeFiles/
