@@ -75,7 +75,7 @@ None.
 ## API review
 
 - **Date**: 2026-05-07
-- **Key decisions**: Opaque storage for inner sha256_ctx_t avoids exposing sha256.h in public header. Constant-time verify uses volatile accumulator.
+- **Key decisions**: Opaque storage for inner sha256_t avoids exposing sha256.h in public header. Constant-time verify uses volatile accumulator.
 
 ## Responsible human
 
