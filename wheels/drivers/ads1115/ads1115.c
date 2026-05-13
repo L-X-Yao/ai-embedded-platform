@@ -73,6 +73,8 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
         if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG, cfg_buf, 2))
             return ADS1115_ERR_I2C;
         if (cfg_buf[0] & 0x80) break;
+        if (dev->i2c->delay_ms)
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
         if (retry == 199) return ADS1115_ERR_BUSY;
     }
 

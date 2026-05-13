@@ -70,6 +70,8 @@ static ads1015_err_t poll_ready(ads1015_t *dev)
             return ADS1015_ERR_I2C;
         if (cfg_buf[0] & 0x80u)
             return ADS1015_OK;
+        if (dev->i2c->delay_ms)
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
     }
     return ADS1015_ERR_BUSY;
 }
