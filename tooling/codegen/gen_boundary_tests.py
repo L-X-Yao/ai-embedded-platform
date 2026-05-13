@@ -327,6 +327,27 @@ def generate_test_file(wheel, header_text):
 
             pname = target_param.name or f"arg{target_idx}"
 
+            # Length-like parameters (len, size, cap, count, n_*) drive
+            # buffer access in the function body. Boundary inputs at the
+            # numeric type max (SIZE_MAX, UINT16_MAX, ...) only exercise
+            # genuine wheel logic when matched with a similarly-large
+            # buffer — but make_safe_arg() always allocates 64-byte
+            # buffers. Passing UINT*_MAX as a length therefore violates
+            # the function's "len <= sizeof(buf)" contract and segfaults
+            # before any error code can be returned. Drop those entries
+            # for length-like params.
+            len_param_names = {
+                'len', 'length', 'size', 'cap', 'capacity', 'count',
+                'n', 'num', 'nbytes', 'nbits', 'src_len', 'dst_cap',
+                'dst_len', 'buf_len', 'buf_size', 'in_len', 'out_len',
+                'data_len', 'msg_len', 'cap_bytes', 'cap_bits',
+            }
+            if pname in len_param_names:
+                boundaries = [
+                    (lit, lab) for (lit, lab) in boundaries
+                    if 'max' not in lab.lower()
+                ]
+
             for literal, label in boundaries:
                 test_name = f"test_boundary_{func.name}_{pname}_{label}"
                 # Deduplicate if same name already exists
@@ -359,16 +380,19 @@ def generate_test_file(wheel, header_text):
                 args_str = ", ".join(call_args)
 
                 if has_err_return:
-                    prefix = name.upper()
-                    err_ok = f"{prefix}_OK"
-                    err_param = f"{prefix}_ERR_PARAM"
+                    # Per api-conventions §4: OK = 0, all error codes
+                    # are explicit negative values. Boundary inputs can
+                    # legitimately trigger any error variant
+                    # (ERR_OVERFLOW, ERR_INVALID, ERR_RANGE, …), not
+                    # only ERR_PARAM. Assert `ret <= 0` to reject
+                    # accidental positive returns / undefined behaviour
+                    # while accepting the full negative error space.
                     ret_var = f"ret"
                     lines.append(
                         f"    {func.return_type} {ret_var} = "
                         f"{func.name}({args_str});")
                     lines.append(
-                        f"    ASSERT_TRUE({ret_var} == {err_ok} || "
-                        f"{ret_var} == {err_param});")
+                        f"    ASSERT_TRUE((int){ret_var} <= 0);")
                 else:
                     lines.append(f"    (void){func.name}({args_str});")
                     lines.append("    /* must not crash */")
