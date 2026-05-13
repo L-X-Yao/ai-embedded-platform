@@ -65,7 +65,7 @@ help:
 	@echo "  find-refs W=x     find all references to wheel x"
 	@echo "  dispatch          dispatch Claude agent in isolated worktree"
 	@echo "  batch-scaffold    scaffold + commit multiple wheels at once"
-	@echo "                    SPECS=\"name:layer[:hal[:addr]] ...\" (space-separated)"
+	@echo "                    SPECS=\"name:layer[:hal[:addr]] ...\" NO_COMMIT=1 to skip commit"
 	@echo "  memory-audit      check memory/MEMORY.md consistency"
 	@echo "  doc-drift         check and fix doc/code drift"
 	@echo ""
@@ -351,11 +351,15 @@ batch-scaffold:
 		fi; \
 	done; \
 	if [ $$count -gt 0 ]; then \
-		git add $$created && \
-		msg="wheel: scaffold $$count wheels for batch build"; \
-		[ $$count -eq 1 ] && msg="wheel: scaffold 1 wheel for batch build"; \
-		git commit -m "$$msg" && \
-		echo "" && echo "$$count scaffolds committed. Ready for agent dispatch."; \
+		if [ "$(NO_COMMIT)" = "1" ]; then \
+			echo "" && echo "$$count scaffolds created (no commit)."; \
+		else \
+			git add $$created && \
+			msg="wheel: scaffold $$count wheels for batch build"; \
+			[ $$count -eq 1 ] && msg="wheel: scaffold 1 wheel for batch build"; \
+			git commit -m "$$msg" && \
+			echo "" && echo "$$count scaffolds committed. Ready for agent dispatch."; \
+		fi; \
 	else \
 		echo "No new scaffolds created."; \
 	fi
