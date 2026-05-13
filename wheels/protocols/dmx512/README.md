@@ -30,7 +30,7 @@ None. Pure C99, no external dependency.
 
 ```c
 uint8_t universe[DMX512_PACKET_SIZE]; /* 513 bytes */
-dmx512_ctx_t ctx;
+dmx512_t ctx;
 dmx512_init(&ctx, universe, 512);
 
 /* Set individual channels (1-based) */

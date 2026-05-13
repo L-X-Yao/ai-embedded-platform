@@ -14,7 +14,7 @@ TEST(test_dmx512_init_null_ctx) {
 }
 
 TEST(test_dmx512_init_null_buf) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)dmx512_init(&_ctx, NULL, 0);
     /* must not crash */
@@ -33,7 +33,7 @@ TEST(test_dmx512_get_channel_null_ctx) {
 }
 
 TEST(test_dmx512_get_channel_null_value) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)dmx512_get_channel(&_ctx, 0, NULL);
     /* must not crash */
@@ -47,7 +47,7 @@ TEST(test_dmx512_set_range_null_ctx) {
 }
 
 TEST(test_dmx512_set_range_null_values) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)dmx512_set_range(&_ctx, 0, NULL, 0);
     /* must not crash */
@@ -62,7 +62,7 @@ TEST(test_dmx512_get_packet_null_ctx) {
 }
 
 TEST(test_dmx512_get_packet_null_buf) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     size_t _len;
     memset(&_len, 0, sizeof(_len));
@@ -71,7 +71,7 @@ TEST(test_dmx512_get_packet_null_buf) {
 }
 
 TEST(test_dmx512_get_packet_null_len) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     const uint8_t *_buf = NULL;
     (void)dmx512_get_packet(&_ctx, &_buf, NULL);
@@ -86,7 +86,7 @@ TEST(test_dmx512_parse_packet_null_ctx) {
 }
 
 TEST(test_dmx512_parse_packet_null_data) {
-    dmx512_ctx_t _ctx;
+    dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     (void)dmx512_parse_packet(&_ctx, NULL, 0);
     /* must not crash */
