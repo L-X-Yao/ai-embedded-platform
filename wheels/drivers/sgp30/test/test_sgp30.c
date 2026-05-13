@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include "sgp30.h"
 
@@ -57,17 +58,10 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     return true;
 }
 
-static uint32_t mock_delay_ms_total;
-static void mock_delay(void *ctx, uint16_t ms)
-{
-    (void)ctx;
-    mock_delay_ms_total += ms;
-}
-
 static const sgp30_i2c_t mock_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms_u16,
     .ctx      = NULL,
 };
 
@@ -107,7 +101,7 @@ static void plant_serial_response(uint16_t w0, uint16_t w1, uint16_t w2)
 static void setup(void)
 {
     mock_reset();
-    mock_delay_ms_total = 0;
+    mock_time_reset();
     sgp30_init(&dev, &mock_i2c);
     mock_op_count = 0;  /* reset after init ops */
 }
@@ -117,7 +111,7 @@ static void setup(void)
 TEST(test_init_ok)
 {
     mock_reset();
-    mock_delay_ms_total = 0;
+    mock_time_reset();
     sgp30_t d;
     sgp30_err_t e = sgp30_init(&d, &mock_i2c);
     ASSERT_EQ(e, SGP30_OK);
@@ -453,22 +447,22 @@ TEST(test_crc8_ff)
 TEST(test_init_delay_called)
 {
     mock_reset();
-    mock_delay_ms_total = 0;
+    mock_time_reset();
     sgp30_t d;
     sgp30_init(&d, &mock_i2c);
     /* init should delay 10ms after iaq_init command */
-    ASSERT_TRUE(mock_delay_ms_total >= 10);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 10);
 }
 
 TEST(test_measure_delay_called)
 {
     setup();
-    mock_delay_ms_total = 0;
+    mock_time_reset();
     plant_iaq_response(400, 0);
     sgp30_data_t data;
     sgp30_measure_iaq(&dev, &data);
     /* measure should delay 12ms for conversion */
-    ASSERT_TRUE(mock_delay_ms_total >= 12);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 12);
 }
 
 TEST(test_zero_init_safety)
