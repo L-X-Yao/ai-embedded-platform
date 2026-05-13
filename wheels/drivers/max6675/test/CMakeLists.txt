@@ -20,6 +20,16 @@ target_include_directories(test_max6675 PRIVATE
 )
 target_compile_options(test_max6675 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_null_max6675
+    test_null_max6675.c
+    ../max6675.c
+)
+target_include_directories(test_null_max6675 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_null_max6675 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME max6675_tests COMMAND test_max6675)
 
@@ -34,3 +44,4 @@ target_include_directories(test_hw_model_max6675 PRIVATE
 )
 target_compile_options(test_hw_model_max6675 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME max6675_hw_model_tests COMMAND test_hw_model_max6675)
+add_test(NAME max6675_null_tests COMMAND test_null_max6675)

@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * ibus — FlySky iBUS serial protocol for RC receivers
+ *
+ * Layer:     L2
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "ibus.h"
 
 #define IBUS_HEADER_LEN  0x20

@@ -5,7 +5,7 @@
  * Layer:     L2
  * Status:    candidate
  * Deps:      (none)
- * Instances: stateless
+ * Instances: multi
  *
  * Frame: [addr] [len] [type] [payload...] [crc8]
  * CRC-8 DVB-S2 (poly 0xD5) over type + payload.

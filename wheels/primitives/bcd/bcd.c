@@ -1,4 +1,12 @@
 // SPDX-License-Identifier: MIT
+/*
+ * bcd — binary-coded decimal encode/decode for RTC chips and legacy protocols
+ *
+ * Layer:     L0
+ * Status:    candidate
+ * Deps:      (none)
+ * Instances: multi
+ */
 #include "bcd.h"
 
 bool bcd_is_valid(uint8_t bcd)
