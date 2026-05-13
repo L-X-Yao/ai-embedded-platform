@@ -1,9 +1,7 @@
 /*
- * hw_model_lis2dh12.h — datasheet-accurate register model for lis2dh12
+ * hw_model_lis2dh12.h — LIS2DH12 register model
  *
- * Provides write_reg/read_regs callbacks backed by a register array
- * with power-on-reset defaults. Use in test_hw_model_lis2dh12.c
- * for round-trip verification against the real driver.
+ * WHO_AM_I (0x0F) = 0x33. 10-bit normal mode, data left-justified in 16 bits.
  */
 #ifndef HW_MODEL_LIS2DH12_H
 #define HW_MODEL_LIS2DH12_H
@@ -23,8 +21,7 @@ static void hw_model_reset(void)
     memset(hw_regs, 0, sizeof(hw_regs));
     hw_write_count = 0;
     hw_read_count  = 0;
-    /* TODO: set POR defaults from datasheet */
-    /* hw_regs[REG_WHO_AM_I] = 0xXX; */
+    hw_regs[0x0F] = 0x33;  /* WHO_AM_I */
 }
 
 __attribute__((unused))
@@ -33,7 +30,6 @@ static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
 {
     (void)ctx; (void)dev_addr;
     hw_write_count++;
-    /* TODO: enforce read-only registers, side effects */
     hw_regs[reg] = val;
     return true;
 }
@@ -44,13 +40,28 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
 {
     (void)ctx; (void)dev_addr;
     hw_read_count++;
-    for (uint16_t i = 0; i < len; i++) {
-        buf[i] = hw_regs[(uint8_t)(reg + i)];
-    }
+    uint8_t base = reg & 0x7F;
+    for (uint16_t i = 0; i < len; i++)
+        buf[i] = hw_regs[(uint8_t)(base + i)];
     return true;
 }
 
-/* TODO: add inject helpers for physical values */
-/* static void hw_model_inject_xxx(float value) { ... } */
+static void hw_model_inject_accel(float x_mg, float y_mg, float z_mg,
+                                   float sensitivity)
+{
+    int16_t rx = (int16_t)(x_mg / sensitivity);
+    int16_t ry = (int16_t)(y_mg / sensitivity);
+    int16_t rz = (int16_t)(z_mg / sensitivity);
+    /* Left-justify 10-bit in 16-bit (shift left 6) */
+    uint16_t ux = (uint16_t)(rx << 6);
+    uint16_t uy = (uint16_t)(ry << 6);
+    uint16_t uz = (uint16_t)(rz << 6);
+    hw_regs[0x28] = (uint8_t)(ux & 0xFF);
+    hw_regs[0x29] = (uint8_t)(ux >> 8);
+    hw_regs[0x2A] = (uint8_t)(uy & 0xFF);
+    hw_regs[0x2B] = (uint8_t)(uy >> 8);
+    hw_regs[0x2C] = (uint8_t)(uz & 0xFF);
+    hw_regs[0x2D] = (uint8_t)(uz >> 8);
+}
 
 #endif /* HW_MODEL_LIS2DH12_H */
