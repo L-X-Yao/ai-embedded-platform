@@ -1,0 +1,133 @@
+#include "test_harness.h"
+#include "moving_rms.h"
+#include <math.h>
+
+static float win[8];
+static moving_rms_t rms;
+
+static void setup(void) { moving_rms_init(&rms, win, 8); }
+
+TEST(test_init_ok)
+{
+    float buf[4];
+    moving_rms_t r;
+    ASSERT_EQ(moving_rms_init(&r, buf, 4), MOVING_RMS_OK);
+}
+
+TEST(test_init_null)
+{
+    float buf[4];
+    ASSERT_EQ(moving_rms_init(NULL, buf, 4), MOVING_RMS_ERR_PARAM);
+    moving_rms_t r;
+    ASSERT_EQ(moving_rms_init(&r, NULL, 4), MOVING_RMS_ERR_PARAM);
+    ASSERT_EQ(moving_rms_init(&r, buf, 0), MOVING_RMS_ERR_PARAM);
+}
+
+TEST(test_get_empty)
+{
+    setup();
+    ASSERT_NEAR(moving_rms_get(&rms), 0.0f, 1e-6f);
+}
+
+TEST(test_dc_signal)
+{
+    setup();
+    for (int i = 0; i < 8; i++)
+        moving_rms_feed(&rms, 5.0f);
+    ASSERT_NEAR(moving_rms_get(&rms), 5.0f, 0.01f);
+}
+
+TEST(test_negative_dc)
+{
+    setup();
+    for (int i = 0; i < 8; i++)
+        moving_rms_feed(&rms, -3.0f);
+    ASSERT_NEAR(moving_rms_get(&rms), 3.0f, 0.01f);
+}
+
+TEST(test_sine_rms)
+{
+    float buf[100];
+    moving_rms_t r;
+    moving_rms_init(&r, buf, 100);
+    for (int i = 0; i < 200; i++)
+        moving_rms_feed(&r, sinf((float)i * 0.0628318f));
+    /* RMS of sine = 1/sqrt(2) ≈ 0.7071 */
+    ASSERT_NEAR(moving_rms_get(&r), 0.7071f, 0.02f);
+}
+
+TEST(test_single_sample)
+{
+    setup();
+    float v = moving_rms_feed(&rms, 4.0f);
+    ASSERT_NEAR(v, 4.0f, 1e-5f);
+}
+
+TEST(test_window_slides)
+{
+    float buf[2];
+    moving_rms_t r;
+    moving_rms_init(&r, buf, 2);
+    moving_rms_feed(&r, 3.0f);
+    moving_rms_feed(&r, 4.0f);
+    /* RMS of [3,4] = sqrt((9+16)/2) = sqrt(12.5) */
+    ASSERT_NEAR(moving_rms_get(&r), sqrtf(12.5f), 0.01f);
+    moving_rms_feed(&r, 0.0f);
+    /* RMS of [4,0] = sqrt(16/2) = sqrt(8) */
+    ASSERT_NEAR(moving_rms_get(&r), sqrtf(8.0f), 0.01f);
+}
+
+TEST(test_nan_rejected)
+{
+    setup();
+    moving_rms_feed(&rms, 5.0f);
+    float prev = moving_rms_get(&rms);
+    moving_rms_feed(&rms, (float)NAN);
+    ASSERT_NEAR(moving_rms_get(&rms), prev, 1e-6f);
+}
+
+TEST(test_reset)
+{
+    setup();
+    moving_rms_feed(&rms, 10.0f);
+    moving_rms_reset(&rms);
+    ASSERT_NEAR(moving_rms_get(&rms), 0.0f, 1e-6f);
+}
+
+TEST(test_reset_null)
+{
+    ASSERT_EQ(moving_rms_reset(NULL), MOVING_RMS_ERR_PARAM);
+}
+
+TEST(test_get_null)
+{
+    ASSERT_NEAR(moving_rms_get(NULL), 0.0f, 1e-6f);
+}
+
+TEST(test_feed_null)
+{
+    ASSERT_NEAR(moving_rms_feed(NULL, 1.0f), 0.0f, 1e-6f);
+}
+
+TEST(test_error_codes)
+{
+    ASSERT_EQ((int)MOVING_RMS_OK, 0);
+    ASSERT_EQ((int)MOVING_RMS_ERR_PARAM, -1);
+}
+
+TEST_MAIN("moving_rms")
+    RUN(test_init_ok);
+    RUN(test_init_null);
+    RUN(test_get_empty);
+    RUN(test_dc_signal);
+    RUN(test_negative_dc);
+    RUN(test_sine_rms);
+    RUN(test_single_sample);
+    RUN(test_window_slides);
+    RUN(test_nan_rejected);
+    RUN(test_reset);
+    RUN(test_reset_null);
+    RUN(test_get_null);
+    RUN(test_feed_null);
+    RUN(test_error_codes);
+TEST_MAIN_END()
