@@ -35,6 +35,17 @@ target_include_directories(test_null_mlx90614 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_mlx90614
+    test_boundary_mlx90614.c
+    ../mlx90614.c
+)
+target_include_directories(test_boundary_mlx90614 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mlx90614 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_mlx90614 PRIVATE m)
 enable_testing()
 add_test(NAME mlx90614_tests COMMAND test_mlx90614)
 add_test(NAME mlx90614_hw_model_tests COMMAND test_hw_model_mlx90614)
@@ -52,3 +63,4 @@ target_link_libraries(prop_mlx90614 PRIVATE m)
 
 add_test(NAME mlx90614_prop_tests COMMAND prop_mlx90614)
 add_test(NAME mlx90614_null_tests COMMAND test_null_mlx90614)
+add_test(NAME mlx90614_boundary_tests COMMAND test_boundary_mlx90614)

@@ -42,7 +42,18 @@ target_include_directories(test_hw_model_sht40 PRIVATE
 )
 target_compile_options(test_hw_model_sht40 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_sht40
+    test_boundary_sht40.c
+    ../sht40.c
+)
+target_include_directories(test_boundary_sht40 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sht40 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sht40_tests COMMAND test_sht40)
 add_test(NAME sht40_null_tests COMMAND test_null_sht40)
 add_test(NAME sht40_hw_model_tests COMMAND test_hw_model_sht40)
+add_test(NAME sht40_boundary_tests COMMAND test_boundary_sht40)

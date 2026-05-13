@@ -23,6 +23,17 @@ target_include_directories(test_null_scheduler PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_scheduler PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_scheduler
+    test_boundary_scheduler.c
+    ../scheduler.c
+)
+target_include_directories(test_boundary_scheduler PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_scheduler PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME scheduler_tests COMMAND test_scheduler)
 add_test(NAME scheduler_null_tests COMMAND test_null_scheduler)
+add_test(NAME scheduler_boundary_tests COMMAND test_boundary_scheduler)

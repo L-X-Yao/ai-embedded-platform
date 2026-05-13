@@ -30,6 +30,17 @@ target_include_directories(test_null_tsl2591 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_tsl2591 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_tsl2591
+    test_boundary_tsl2591.c
+    ../tsl2591.c
+)
+target_include_directories(test_boundary_tsl2591 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_tsl2591 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tsl2591_tests COMMAND test_tsl2591)
 add_test(NAME tsl2591_null_tests COMMAND test_null_tsl2591)
+add_test(NAME tsl2591_boundary_tests COMMAND test_boundary_tsl2591)

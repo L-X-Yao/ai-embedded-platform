@@ -20,6 +20,16 @@ target_include_directories(test_null_rotary_encoder PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_rotary_encoder
+    test_boundary_rotary_encoder.c
+    ../rotary_encoder.c
+)
+target_include_directories(test_boundary_rotary_encoder PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME rotary_encoder_tests COMMAND test_rotary_encoder)
 
@@ -35,3 +45,4 @@ target_compile_options(prop_rotary_encoder PRIVATE -Wall -Wextra -Wpedantic -Wer
 
 add_test(NAME rotary_encoder_prop_tests COMMAND prop_rotary_encoder)
 add_test(NAME rotary_encoder_null_tests COMMAND test_null_rotary_encoder)
+add_test(NAME rotary_encoder_boundary_tests COMMAND test_boundary_rotary_encoder)

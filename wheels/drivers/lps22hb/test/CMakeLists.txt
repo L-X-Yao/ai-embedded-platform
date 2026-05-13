@@ -42,7 +42,18 @@ target_include_directories(test_hw_model_lps22hb PRIVATE
 )
 target_compile_options(test_hw_model_lps22hb PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_lps22hb
+    test_boundary_lps22hb.c
+    ../lps22hb.c
+)
+target_include_directories(test_boundary_lps22hb PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_lps22hb PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME lps22hb_tests COMMAND test_lps22hb)
 add_test(NAME lps22hb_null_tests COMMAND test_null_lps22hb)
 add_test(NAME lps22hb_hw_model_tests COMMAND test_hw_model_lps22hb)
+add_test(NAME lps22hb_boundary_tests COMMAND test_boundary_lps22hb)

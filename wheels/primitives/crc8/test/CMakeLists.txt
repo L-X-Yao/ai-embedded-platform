@@ -24,6 +24,17 @@ target_include_directories(test_null_crc8 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_crc8 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_crc8
+    test_boundary_crc8.c
+    ../crc8.c
+)
+target_include_directories(test_boundary_crc8 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_crc8 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME crc8_tests COMMAND test_crc8)
 add_test(NAME crc8_null_tests COMMAND test_null_crc8)
+add_test(NAME crc8_boundary_tests COMMAND test_boundary_crc8)

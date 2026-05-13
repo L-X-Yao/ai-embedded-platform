@@ -24,6 +24,16 @@ target_include_directories(test_null_keypad_matrix PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_keypad_matrix
+    test_boundary_keypad_matrix.c
+    ../keypad_matrix.c
+)
+target_include_directories(test_boundary_keypad_matrix PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME keypad_matrix_tests COMMAND test_keypad_matrix)
 
@@ -39,3 +49,4 @@ target_compile_options(prop_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werr
 
 add_test(NAME keypad_matrix_prop_tests COMMAND prop_keypad_matrix)
 add_test(NAME keypad_matrix_null_tests COMMAND test_null_keypad_matrix)
+add_test(NAME keypad_matrix_boundary_tests COMMAND test_boundary_keypad_matrix)

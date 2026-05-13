@@ -34,6 +34,16 @@ target_include_directories(test_null_as5600 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_as5600
+    test_boundary_as5600.c
+    ../as5600.c
+)
+target_include_directories(test_boundary_as5600 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME as5600_tests COMMAND test_as5600)
 add_test(NAME as5600_hw_model_tests COMMAND test_hw_model_as5600)
@@ -50,3 +60,4 @@ target_compile_options(prop_as5600 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 
 add_test(NAME as5600_prop_tests COMMAND prop_as5600)
 add_test(NAME as5600_null_tests COMMAND test_null_as5600)
+add_test(NAME as5600_boundary_tests COMMAND test_boundary_as5600)

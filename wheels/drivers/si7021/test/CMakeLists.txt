@@ -36,6 +36,16 @@ target_include_directories(test_null_si7021 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_si7021 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_si7021
+    test_boundary_si7021.c
+    ../si7021.c
+)
+target_include_directories(test_boundary_si7021 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_si7021 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME si7021_tests COMMAND test_si7021)
 add_test(NAME si7021_hw_model_tests COMMAND test_hw_model_si7021)
@@ -53,3 +63,4 @@ target_link_libraries(prop_si7021 PRIVATE m)
 
 add_test(NAME si7021_prop_tests COMMAND prop_si7021)
 add_test(NAME si7021_null_tests COMMAND test_null_si7021)
+add_test(NAME si7021_boundary_tests COMMAND test_boundary_si7021)

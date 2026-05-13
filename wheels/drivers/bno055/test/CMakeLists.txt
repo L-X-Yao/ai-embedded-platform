@@ -25,6 +25,17 @@ target_include_directories(test_null_bno055 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bno055 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bno055
+    test_boundary_bno055.c
+    ../bno055.c
+)
+target_include_directories(test_boundary_bno055 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bno055 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bno055_tests COMMAND test_bno055)
 add_test(NAME bno055_null_tests COMMAND test_null_bno055)
+add_test(NAME bno055_boundary_tests COMMAND test_boundary_bno055)

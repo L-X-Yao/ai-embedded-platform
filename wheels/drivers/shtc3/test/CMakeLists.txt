@@ -32,6 +32,17 @@ target_include_directories(test_null_shtc3 PRIVATE
 )
 target_compile_definitions(test_null_shtc3 PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_shtc3 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_shtc3
+    test_boundary_shtc3.c
+    ../shtc3.c
+)
+target_include_directories(test_boundary_shtc3 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_shtc3 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_shtc3 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME shtc3_tests COMMAND test_shtc3)
 
@@ -49,3 +60,4 @@ target_compile_options(test_hw_model_shtc3 PRIVATE -Wall -Wextra -Wpedantic -Wer
 
 add_test(NAME shtc3_hw_model_tests COMMAND test_hw_model_shtc3)
 add_test(NAME shtc3_null_tests COMMAND test_null_shtc3)
+add_test(NAME shtc3_boundary_tests COMMAND test_boundary_shtc3)

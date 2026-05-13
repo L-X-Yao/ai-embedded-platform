@@ -30,6 +30,17 @@ target_include_directories(test_null_crsf PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_crsf PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_crsf
+    test_boundary_crsf.c
+    ../crsf.c
+)
+target_include_directories(test_boundary_crsf PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_crsf PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME crsf_tests COMMAND test_crsf)
 add_test(NAME crsf_null_tests COMMAND test_null_crsf)
+add_test(NAME crsf_boundary_tests COMMAND test_boundary_crsf)

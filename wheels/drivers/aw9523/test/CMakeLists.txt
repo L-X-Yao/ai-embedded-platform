@@ -30,6 +30,17 @@ target_include_directories(test_null_aw9523 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_aw9523 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_aw9523
+    test_boundary_aw9523.c
+    ../aw9523.c
+)
+target_include_directories(test_boundary_aw9523 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_aw9523 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME aw9523_tests COMMAND test_aw9523)
 add_test(NAME aw9523_null_tests COMMAND test_null_aw9523)
+add_test(NAME aw9523_boundary_tests COMMAND test_boundary_aw9523)

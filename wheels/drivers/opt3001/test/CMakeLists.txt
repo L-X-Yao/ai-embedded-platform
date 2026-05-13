@@ -24,6 +24,16 @@ target_include_directories(test_null_opt3001 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_opt3001
+    test_boundary_opt3001.c
+    ../opt3001.c
+)
+target_include_directories(test_boundary_opt3001 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_opt3001 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME opt3001_tests COMMAND test_opt3001)
 
@@ -53,3 +63,4 @@ target_link_libraries(test_hw_model_opt3001 PRIVATE m)
 
 add_test(NAME opt3001_hw_model_tests COMMAND test_hw_model_opt3001)
 add_test(NAME opt3001_null_tests COMMAND test_null_opt3001)
+add_test(NAME opt3001_boundary_tests COMMAND test_boundary_opt3001)

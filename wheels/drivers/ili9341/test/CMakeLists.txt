@@ -30,6 +30,16 @@ target_include_directories(test_null_ili9341 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ili9341 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ili9341
+    test_boundary_ili9341.c
+    ../ili9341.c
+)
+target_include_directories(test_boundary_ili9341 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ili9341 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ili9341_tests COMMAND test_ili9341)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_ili9341 PRIVATE
 target_compile_options(test_hw_model_ili9341 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME ili9341_hw_model_tests COMMAND test_hw_model_ili9341)
 add_test(NAME ili9341_null_tests COMMAND test_null_ili9341)
+add_test(NAME ili9341_boundary_tests COMMAND test_boundary_ili9341)

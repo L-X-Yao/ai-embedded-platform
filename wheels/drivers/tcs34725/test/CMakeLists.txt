@@ -25,6 +25,16 @@ target_include_directories(test_null_tcs34725 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_tcs34725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_tcs34725
+    test_boundary_tcs34725.c
+    ../tcs34725.c
+)
+target_include_directories(test_boundary_tcs34725 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_tcs34725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tcs34725_tests COMMAND test_tcs34725)
 
@@ -54,3 +64,4 @@ target_link_libraries(test_hw_model_tcs34725 PRIVATE m)
 
 add_test(NAME tcs34725_hw_model_tests COMMAND test_hw_model_tcs34725)
 add_test(NAME tcs34725_null_tests COMMAND test_null_tcs34725)
+add_test(NAME tcs34725_boundary_tests COMMAND test_boundary_tcs34725)

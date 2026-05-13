@@ -43,7 +43,18 @@ target_include_directories(test_null_htu21d PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_htu21d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_htu21d
+    test_boundary_htu21d.c
+    ../htu21d.c
+)
+target_include_directories(test_boundary_htu21d PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_htu21d PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME htu21d_tests COMMAND test_htu21d)
 add_test(NAME htu21d_hw_model_tests COMMAND test_hw_model_htu21d)
 add_test(NAME htu21d_null_tests COMMAND test_null_htu21d)
+add_test(NAME htu21d_boundary_tests COMMAND test_boundary_htu21d)

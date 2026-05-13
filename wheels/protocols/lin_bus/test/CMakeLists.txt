@@ -32,6 +32,18 @@ target_include_directories(test_null_lin_bus PRIVATE
 )
 target_compile_definitions(test_null_lin_bus PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_lin_bus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_lin_bus
+    test_boundary_lin_bus.c
+    ../lin_bus.c
+)
+target_include_directories(test_boundary_lin_bus PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_lin_bus PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_lin_bus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME lin_bus_tests COMMAND test_lin_bus)
 add_test(NAME lin_bus_null_tests COMMAND test_null_lin_bus)
+add_test(NAME lin_bus_boundary_tests COMMAND test_boundary_lin_bus)

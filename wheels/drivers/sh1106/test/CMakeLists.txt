@@ -25,6 +25,16 @@ target_include_directories(test_null_sh1106 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_sh1106 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_sh1106
+    test_boundary_sh1106.c
+    ../sh1106.c
+)
+target_include_directories(test_boundary_sh1106 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sh1106 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sh1106_tests COMMAND test_sh1106)
 
@@ -40,3 +50,4 @@ target_include_directories(test_hw_model_sh1106 PRIVATE
 target_compile_options(test_hw_model_sh1106 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 add_test(NAME sh1106_hw_model_tests COMMAND test_hw_model_sh1106)
 add_test(NAME sh1106_null_tests COMMAND test_null_sh1106)
+add_test(NAME sh1106_boundary_tests COMMAND test_boundary_sh1106)

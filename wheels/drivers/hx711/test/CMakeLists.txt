@@ -24,6 +24,17 @@ target_include_directories(test_null_hx711 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_hx711 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_hx711
+    test_boundary_hx711.c
+    ../hx711.c
+)
+target_include_directories(test_boundary_hx711 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_hx711 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_hx711 PRIVATE m)
 enable_testing()
 add_test(NAME hx711_tests COMMAND test_hx711)
 
@@ -40,3 +51,4 @@ target_link_libraries(prop_hx711 PRIVATE m)
 
 add_test(NAME hx711_prop_tests COMMAND prop_hx711)
 add_test(NAME hx711_null_tests COMMAND test_null_hx711)
+add_test(NAME hx711_boundary_tests COMMAND test_boundary_hx711)

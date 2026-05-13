@@ -50,8 +50,19 @@ target_include_directories(test_hw_model_mcp4725 PRIVATE
 )
 target_compile_options(test_hw_model_mcp4725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_mcp4725
+    test_boundary_mcp4725.c
+    ../mcp4725.c
+)
+target_include_directories(test_boundary_mcp4725 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mcp4725 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mcp4725_tests COMMAND test_mcp4725)
 add_test(NAME mcp4725_null_tests COMMAND test_null_mcp4725)
 add_test(NAME mcp4725_prop_tests COMMAND prop_mcp4725)
 add_test(NAME mcp4725_hw_model_tests COMMAND test_hw_model_mcp4725)
+add_test(NAME mcp4725_boundary_tests COMMAND test_boundary_mcp4725)

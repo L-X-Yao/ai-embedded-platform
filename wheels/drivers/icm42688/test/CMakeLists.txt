@@ -30,6 +30,17 @@ target_include_directories(test_null_icm42688 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_icm42688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_icm42688
+    test_boundary_icm42688.c
+    ../icm42688.c
+)
+target_include_directories(test_boundary_icm42688 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_icm42688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME icm42688_tests COMMAND test_icm42688)
 add_test(NAME icm42688_null_tests COMMAND test_null_icm42688)
+add_test(NAME icm42688_boundary_tests COMMAND test_boundary_icm42688)

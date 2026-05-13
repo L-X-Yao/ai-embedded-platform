@@ -25,6 +25,16 @@ target_include_directories(test_null_apa102 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_apa102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_apa102
+    test_boundary_apa102.c
+    ../apa102.c
+)
+target_include_directories(test_boundary_apa102 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_apa102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME apa102_tests COMMAND test_apa102)
 
@@ -40,3 +50,4 @@ target_include_directories(test_hw_model_apa102 PRIVATE
 target_compile_options(test_hw_model_apa102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 add_test(NAME apa102_hw_model_tests COMMAND test_hw_model_apa102)
 add_test(NAME apa102_null_tests COMMAND test_null_apa102)
+add_test(NAME apa102_boundary_tests COMMAND test_boundary_apa102)

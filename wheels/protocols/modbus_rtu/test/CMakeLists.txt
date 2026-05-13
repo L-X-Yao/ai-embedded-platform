@@ -29,6 +29,18 @@ target_include_directories(test_null_modbus_rtu PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_modbus_rtu PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_modbus_rtu
+    test_boundary_modbus_rtu.c
+    ../modbus_rtu.c
+    ../../../primitives/crc16/crc16.c
+)
+target_include_directories(test_boundary_modbus_rtu PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_modbus_rtu PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME modbus_rtu_tests COMMAND test_modbus_rtu)
 add_test(NAME modbus_rtu_null_tests COMMAND test_null_modbus_rtu)
+add_test(NAME modbus_rtu_boundary_tests COMMAND test_boundary_modbus_rtu)

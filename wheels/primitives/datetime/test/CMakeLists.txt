@@ -30,6 +30,17 @@ target_include_directories(test_null_datetime PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_datetime PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_datetime
+    test_boundary_datetime.c
+    ../datetime.c
+)
+target_include_directories(test_boundary_datetime PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_datetime PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME datetime_tests COMMAND test_datetime)
 add_test(NAME datetime_null_tests COMMAND test_null_datetime)
+add_test(NAME datetime_boundary_tests COMMAND test_boundary_datetime)

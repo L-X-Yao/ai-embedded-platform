@@ -24,6 +24,16 @@ target_include_directories(test_null_stepper PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_stepper
+    test_boundary_stepper.c
+    ../stepper.c
+)
+target_include_directories(test_boundary_stepper PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_stepper PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME stepper_tests COMMAND test_stepper)
 
@@ -51,3 +61,4 @@ target_compile_options(test_hw_model_stepper PRIVATE -Wall -Wextra -Wpedantic -W
 
 add_test(NAME stepper_hw_model_tests COMMAND test_hw_model_stepper)
 add_test(NAME stepper_null_tests COMMAND test_null_stepper)
+add_test(NAME stepper_boundary_tests COMMAND test_boundary_stepper)

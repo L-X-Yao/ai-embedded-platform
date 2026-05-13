@@ -35,6 +35,18 @@ target_include_directories(test_null_sbus PRIVATE
 target_compile_definitions(test_null_sbus PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_sbus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_sbus
+    test_boundary_sbus.c
+    ../sbus.c
+)
+target_include_directories(test_boundary_sbus PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_sbus PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_sbus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sbus_tests COMMAND test_sbus)
 add_test(NAME sbus_null_tests COMMAND test_null_sbus)
+add_test(NAME sbus_boundary_tests COMMAND test_boundary_sbus)

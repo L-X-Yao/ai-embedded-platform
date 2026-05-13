@@ -24,6 +24,17 @@ target_include_directories(test_null_log_ringbuf PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_log_ringbuf PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_log_ringbuf
+    test_boundary_log_ringbuf.c
+    ../log_ringbuf.c
+)
+target_include_directories(test_boundary_log_ringbuf PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_log_ringbuf PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME log_ringbuf_tests COMMAND test_log_ringbuf)
 add_test(NAME log_ringbuf_null_tests COMMAND test_null_log_ringbuf)
+add_test(NAME log_ringbuf_boundary_tests COMMAND test_boundary_log_ringbuf)

@@ -24,6 +24,17 @@ target_include_directories(test_null_byte_buffer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_byte_buffer
+    test_boundary_byte_buffer.c
+    ../byte_buffer.c
+)
+target_include_directories(test_boundary_byte_buffer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_byte_buffer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME byte_buffer_tests COMMAND test_byte_buffer)
 add_test(NAME byte_buffer_null_tests COMMAND test_null_byte_buffer)
+add_test(NAME byte_buffer_boundary_tests COMMAND test_boundary_byte_buffer)

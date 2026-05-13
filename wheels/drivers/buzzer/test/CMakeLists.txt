@@ -10,6 +10,16 @@ target_include_directories(test_buzzer PRIVATE
 )
 target_compile_options(test_buzzer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_buzzer
+    test_boundary_buzzer.c
+    ../buzzer.c
+)
+target_include_directories(test_boundary_buzzer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_buzzer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME buzzer_tests COMMAND test_buzzer)
 
@@ -21,3 +31,4 @@ target_include_directories(test_null_buzzer PRIVATE
 target_compile_options(test_null_buzzer PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME buzzer_null_tests COMMAND test_null_buzzer)
+add_test(NAME buzzer_boundary_tests COMMAND test_boundary_buzzer)

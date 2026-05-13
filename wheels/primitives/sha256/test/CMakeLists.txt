@@ -33,7 +33,18 @@ target_include_directories(test_null_sha256 PRIVATE
 )
 target_compile_options(test_null_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_sha256
+    test_boundary_sha256.c
+    ../sha256.c
+)
+target_include_directories(test_boundary_sha256 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sha256 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sha256_tests COMMAND test_sha256)
 add_test(NAME sha256_prop  COMMAND prop_sha256)
 add_test(NAME sha256_null  COMMAND test_null_sha256)
+add_test(NAME sha256_boundary_tests COMMAND test_boundary_sha256)

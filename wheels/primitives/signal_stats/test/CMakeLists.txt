@@ -30,6 +30,18 @@ target_include_directories(test_null_signal_stats PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_signal_stats PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_signal_stats
+    test_boundary_signal_stats.c
+    ../signal_stats.c
+)
+target_include_directories(test_boundary_signal_stats PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_signal_stats PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_signal_stats PRIVATE m)
 enable_testing()
 add_test(NAME signal_stats_tests COMMAND test_signal_stats)
 add_test(NAME signal_stats_null_tests COMMAND test_null_signal_stats)
+add_test(NAME signal_stats_boundary_tests COMMAND test_boundary_signal_stats)

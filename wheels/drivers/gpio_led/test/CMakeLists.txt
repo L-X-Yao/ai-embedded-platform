@@ -25,6 +25,16 @@ target_include_directories(test_null_gpio_led PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_gpio_led
+    test_boundary_gpio_led.c
+    ../gpio_led.c
+)
+target_include_directories(test_boundary_gpio_led PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME gpio_led_tests COMMAND test_gpio_led)
 
@@ -40,3 +50,4 @@ target_compile_options(prop_gpio_led PRIVATE -Wall -Wextra -Wpedantic -Werror -W
 
 add_test(NAME gpio_led_prop_tests COMMAND prop_gpio_led)
 add_test(NAME gpio_led_null_tests COMMAND test_null_gpio_led)
+add_test(NAME gpio_led_boundary_tests COMMAND test_boundary_gpio_led)

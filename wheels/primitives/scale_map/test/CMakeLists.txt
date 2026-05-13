@@ -29,6 +29,18 @@ target_include_directories(test_null_scale_map PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_scale_map PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_scale_map
+    test_boundary_scale_map.c
+    ../scale_map.c
+)
+target_include_directories(test_boundary_scale_map PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_scale_map PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_scale_map PRIVATE m)
 enable_testing()
 add_test(NAME scale_map_tests COMMAND test_scale_map)
 add_test(NAME scale_map_null_tests COMMAND test_null_scale_map)
+add_test(NAME scale_map_boundary_tests COMMAND test_boundary_scale_map)

@@ -24,6 +24,17 @@ target_include_directories(test_null_ring_log PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ring_log PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ring_log
+    test_boundary_ring_log.c
+    ../ring_log.c
+)
+target_include_directories(test_boundary_ring_log PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ring_log PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ring_log_tests COMMAND test_ring_log)
 add_test(NAME ring_log_null_tests COMMAND test_null_ring_log)
+add_test(NAME ring_log_boundary_tests COMMAND test_boundary_ring_log)

@@ -25,6 +25,17 @@ target_include_directories(test_null_ccs811 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ccs811 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ccs811
+    test_boundary_ccs811.c
+    ../ccs811.c
+)
+target_include_directories(test_boundary_ccs811 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ccs811 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ccs811_tests COMMAND test_ccs811)
 add_test(NAME ccs811_null_tests COMMAND test_null_ccs811)
+add_test(NAME ccs811_boundary_tests COMMAND test_boundary_ccs811)

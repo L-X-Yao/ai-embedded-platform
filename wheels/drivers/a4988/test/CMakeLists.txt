@@ -14,6 +14,16 @@ target_include_directories(test_a4988 PRIVATE
 )
 target_compile_options(test_a4988 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_a4988
+    test_boundary_a4988.c
+    ../a4988.c
+)
+target_include_directories(test_boundary_a4988 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_a4988 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME a4988_tests COMMAND test_a4988)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_a4988 PRIVATE
 target_compile_options(test_null_a4988 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME a4988_null_tests COMMAND test_null_a4988)
+add_test(NAME a4988_boundary_tests COMMAND test_boundary_a4988)

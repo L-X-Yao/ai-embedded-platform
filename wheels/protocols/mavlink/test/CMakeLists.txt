@@ -33,6 +33,17 @@ target_include_directories(test_null_mavlink PRIVATE
 )
 target_compile_options(test_null_mavlink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_mavlink
+    test_boundary_mavlink.c
+    ../mavlink.c
+)
+target_include_directories(test_boundary_mavlink PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mavlink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mavlink_tests COMMAND test_mavlink)
 add_test(NAME mavlink_null_tests COMMAND test_null_mavlink)
+add_test(NAME mavlink_boundary_tests COMMAND test_boundary_mavlink)

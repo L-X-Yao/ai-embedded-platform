@@ -14,6 +14,16 @@ target_include_directories(test_mcp2515 PRIVATE
 )
 target_compile_options(test_mcp2515 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_mcp2515
+    test_boundary_mcp2515.c
+    ../mcp2515.c
+)
+target_include_directories(test_boundary_mcp2515 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mcp2515 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mcp2515_tests COMMAND test_mcp2515)
 
@@ -52,3 +62,4 @@ target_include_directories(test_null_mcp2515 PRIVATE
 target_compile_options(test_null_mcp2515 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME mcp2515_null_tests COMMAND test_null_mcp2515)
+add_test(NAME mcp2515_boundary_tests COMMAND test_boundary_mcp2515)

@@ -40,7 +40,18 @@ target_include_directories(test_null_soft_spi PRIVATE
 )
 target_compile_options(test_null_soft_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_soft_spi
+    test_boundary_soft_spi.c
+    ../soft_spi.c
+)
+target_include_directories(test_boundary_soft_spi PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_soft_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME soft_spi_tests COMMAND test_soft_spi)
 add_test(NAME soft_spi_props COMMAND prop_soft_spi)
 add_test(NAME soft_spi_null  COMMAND test_null_soft_spi)
+add_test(NAME soft_spi_boundary_tests COMMAND test_boundary_soft_spi)

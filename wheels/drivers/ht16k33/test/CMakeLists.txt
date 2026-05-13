@@ -30,6 +30,16 @@ target_include_directories(test_null_ht16k33 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ht16k33 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ht16k33
+    test_boundary_ht16k33.c
+    ../ht16k33.c
+)
+target_include_directories(test_boundary_ht16k33 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ht16k33 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ht16k33_tests COMMAND test_ht16k33)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_ht16k33 PRIVATE
 target_compile_options(test_hw_model_ht16k33 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME ht16k33_hw_model_tests COMMAND test_hw_model_ht16k33)
 add_test(NAME ht16k33_null_tests COMMAND test_null_ht16k33)
+add_test(NAME ht16k33_boundary_tests COMMAND test_boundary_ht16k33)
