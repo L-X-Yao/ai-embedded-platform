@@ -24,6 +24,18 @@ target_include_directories(test_null_moving_window PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_moving_window PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_moving_window
+    test_boundary_moving_window.c
+    ../moving_window.c
+)
+target_include_directories(test_boundary_moving_window PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_moving_window PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_moving_window PRIVATE m)
 enable_testing()
 add_test(NAME moving_window_tests COMMAND test_moving_window)
 add_test(NAME moving_window_null_tests COMMAND test_null_moving_window)
+add_test(NAME moving_window_boundary_tests COMMAND test_boundary_moving_window)

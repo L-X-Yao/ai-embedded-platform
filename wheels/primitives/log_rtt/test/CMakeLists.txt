@@ -24,6 +24,17 @@ target_include_directories(test_null_log_rtt PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_log_rtt PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_log_rtt
+    test_boundary_log_rtt.c
+    ../log_rtt.c
+)
+target_include_directories(test_boundary_log_rtt PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_log_rtt PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME log_rtt_tests COMMAND test_log_rtt)
 add_test(NAME log_rtt_null_tests COMMAND test_null_log_rtt)
+add_test(NAME log_rtt_boundary_tests COMMAND test_boundary_log_rtt)

@@ -40,7 +40,18 @@ target_include_directories(test_null_soft_i2c PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_soft_i2c PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_soft_i2c
+    test_boundary_soft_i2c.c
+    ../soft_i2c.c
+)
+target_include_directories(test_boundary_soft_i2c PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_soft_i2c PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME soft_i2c_tests COMMAND test_soft_i2c)
 add_test(NAME soft_i2c_props COMMAND prop_soft_i2c)
 add_test(NAME soft_i2c_null_tests COMMAND test_null_soft_i2c)
+add_test(NAME soft_i2c_boundary_tests COMMAND test_boundary_soft_i2c)

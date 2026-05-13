@@ -20,6 +20,17 @@ target_include_directories(test_null_median_filter PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_median_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_median_filter
+    test_boundary_median_filter.c
+    ../median_filter.c
+)
+target_include_directories(test_boundary_median_filter PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_median_filter PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME median_filter_tests COMMAND test_median_filter)
 add_test(NAME median_filter_null_tests COMMAND test_null_median_filter)
+add_test(NAME median_filter_boundary_tests COMMAND test_boundary_median_filter)

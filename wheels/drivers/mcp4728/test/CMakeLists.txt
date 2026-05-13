@@ -41,7 +41,18 @@ target_include_directories(test_null_mcp4728 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_mcp4728 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_mcp4728
+    test_boundary_mcp4728.c
+    ../mcp4728.c
+)
+target_include_directories(test_boundary_mcp4728 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mcp4728 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mcp4728_tests COMMAND test_mcp4728)
 add_test(NAME mcp4728_hw_model_tests COMMAND test_hw_model_mcp4728)
 add_test(NAME mcp4728_null_tests COMMAND test_null_mcp4728)
+add_test(NAME mcp4728_boundary_tests COMMAND test_boundary_mcp4728)

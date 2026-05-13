@@ -14,6 +14,16 @@ target_include_directories(test_tb6612 PRIVATE
 )
 target_compile_options(test_tb6612 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_tb6612
+    test_boundary_tb6612.c
+    ../tb6612.c
+)
+target_include_directories(test_boundary_tb6612 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_tb6612 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tb6612_tests COMMAND test_tb6612)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_tb6612 PRIVATE
 target_compile_options(test_null_tb6612 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME tb6612_null_tests COMMAND test_null_tb6612)
+add_test(NAME tb6612_boundary_tests COMMAND test_boundary_tb6612)

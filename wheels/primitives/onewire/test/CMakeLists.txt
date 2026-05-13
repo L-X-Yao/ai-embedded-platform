@@ -30,6 +30,17 @@ target_include_directories(test_null_onewire PRIVATE
 )
 target_compile_options(test_null_onewire PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_onewire
+    test_boundary_onewire.c
+    ../onewire.c
+)
+target_include_directories(test_boundary_onewire PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_onewire PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME onewire_tests COMMAND test_onewire)
 add_test(NAME onewire_null_tests COMMAND test_null_onewire)
+add_test(NAME onewire_boundary_tests COMMAND test_boundary_onewire)

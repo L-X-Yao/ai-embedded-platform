@@ -30,6 +30,16 @@ target_include_directories(test_null_st7735 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_st7735 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_st7735
+    test_boundary_st7735.c
+    ../st7735.c
+)
+target_include_directories(test_boundary_st7735 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_st7735 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME st7735_tests COMMAND test_st7735)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_st7735 PRIVATE
 target_compile_options(test_hw_model_st7735 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 add_test(NAME st7735_hw_model_tests COMMAND test_hw_model_st7735)
 add_test(NAME st7735_null_tests COMMAND test_null_st7735)
+add_test(NAME st7735_boundary_tests COMMAND test_boundary_st7735)

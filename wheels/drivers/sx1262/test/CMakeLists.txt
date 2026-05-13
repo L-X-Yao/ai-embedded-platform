@@ -14,6 +14,16 @@ target_include_directories(test_sx1262 PRIVATE
 )
 target_compile_options(test_sx1262 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_sx1262
+    test_boundary_sx1262.c
+    ../sx1262.c
+)
+target_include_directories(test_boundary_sx1262 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sx1262 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sx1262_tests COMMAND test_sx1262)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_sx1262 PRIVATE
 target_compile_options(test_null_sx1262 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME sx1262_null_tests COMMAND test_null_sx1262)
+add_test(NAME sx1262_boundary_tests COMMAND test_boundary_sx1262)

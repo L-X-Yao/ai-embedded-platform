@@ -25,6 +25,16 @@ target_include_directories(test_null_ws2812 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ws2812
+    test_boundary_ws2812.c
+    ../ws2812.c
+)
+target_include_directories(test_boundary_ws2812 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ws2812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ws2812_tests COMMAND test_ws2812)
 
@@ -52,3 +62,4 @@ target_compile_options(test_hw_model_ws2812 PRIVATE -Wall -Wextra -Wpedantic -We
 
 add_test(NAME ws2812_hw_model_tests COMMAND test_hw_model_ws2812)
 add_test(NAME ws2812_null_tests COMMAND test_null_ws2812)
+add_test(NAME ws2812_boundary_tests COMMAND test_boundary_ws2812)

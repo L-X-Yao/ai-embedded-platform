@@ -42,7 +42,18 @@ add_executable(prop_fal
 target_include_directories(prop_fal PRIVATE ${COMMON_INCLUDE})
 target_compile_options(prop_fal PRIVATE ${STRICT_FLAGS})
 
+
+add_executable(test_boundary_fal
+    test_boundary_fal.c
+    ../fal.c
+)
+target_include_directories(test_boundary_fal PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_fal PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME fal_tests      COMMAND test_fal)
 add_test(NAME fal_null_tests COMMAND test_null_fal)
 add_test(NAME fal_prop_tests COMMAND prop_fal)
+add_test(NAME fal_boundary_tests COMMAND test_boundary_fal)

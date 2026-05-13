@@ -25,6 +25,18 @@ target_include_directories(test_null_config_store PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_config_store PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_config_store
+    test_boundary_config_store.c
+    ../config_store.c
+)
+target_include_directories(test_boundary_config_store PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_config_store PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_config_store PRIVATE m)
 enable_testing()
 add_test(NAME config_store_tests COMMAND test_config_store)
 add_test(NAME config_store_null_tests COMMAND test_null_config_store)
+add_test(NAME config_store_boundary_tests COMMAND test_boundary_config_store)

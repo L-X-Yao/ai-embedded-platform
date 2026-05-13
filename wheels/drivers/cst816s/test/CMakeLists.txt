@@ -30,6 +30,16 @@ target_include_directories(test_null_cst816s PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_cst816s PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_cst816s
+    test_boundary_cst816s.c
+    ../cst816s.c
+)
+target_include_directories(test_boundary_cst816s PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_cst816s PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME cst816s_tests COMMAND test_cst816s)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_cst816s PRIVATE
 target_compile_options(test_hw_model_cst816s PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
 add_test(NAME cst816s_hw_model_tests COMMAND test_hw_model_cst816s)
 add_test(NAME cst816s_null_tests COMMAND test_null_cst816s)
+add_test(NAME cst816s_boundary_tests COMMAND test_boundary_cst816s)

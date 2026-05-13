@@ -27,6 +27,17 @@ target_include_directories(test_null_max30102 PRIVATE
 target_compile_options(test_null_max30102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_null_max30102 PRIVATE m)
 
+
+add_executable(test_boundary_max30102
+    test_boundary_max30102.c
+    ../max30102.c
+)
+target_include_directories(test_boundary_max30102 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_max30102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME max30102_tests COMMAND test_max30102)
 add_test(NAME max30102_null_tests COMMAND test_null_max30102)
+add_test(NAME max30102_boundary_tests COMMAND test_boundary_max30102)

@@ -24,6 +24,16 @@ target_include_directories(test_null_vl53l0x PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_vl53l0x
+    test_boundary_vl53l0x.c
+    ../vl53l0x.c
+)
+target_include_directories(test_boundary_vl53l0x PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_vl53l0x PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME vl53l0x_tests COMMAND test_vl53l0x)
 
@@ -52,3 +62,4 @@ target_link_libraries(test_hw_model_vl53l0x PRIVATE m)
 
 add_test(NAME vl53l0x_hw_model_tests COMMAND test_hw_model_vl53l0x)
 add_test(NAME vl53l0x_null_tests COMMAND test_null_vl53l0x)
+add_test(NAME vl53l0x_boundary_tests COMMAND test_boundary_vl53l0x)

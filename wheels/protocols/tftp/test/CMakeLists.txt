@@ -30,6 +30,17 @@ target_include_directories(test_null_tftp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_tftp PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_tftp
+    test_boundary_tftp.c
+    ../tftp.c
+)
+target_include_directories(test_boundary_tftp PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_tftp PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME tftp_tests COMMAND test_tftp)
 add_test(NAME tftp_null_tests COMMAND test_null_tftp)
+add_test(NAME tftp_boundary_tests COMMAND test_boundary_tftp)

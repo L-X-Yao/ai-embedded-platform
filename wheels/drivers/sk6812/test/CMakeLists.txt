@@ -14,6 +14,16 @@ target_include_directories(test_sk6812 PRIVATE
 )
 target_compile_options(test_sk6812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_sk6812
+    test_boundary_sk6812.c
+    ../sk6812.c
+)
+target_include_directories(test_boundary_sk6812 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sk6812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sk6812_tests COMMAND test_sk6812)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_sk6812 PRIVATE
 target_compile_options(test_null_sk6812 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME sk6812_null_tests COMMAND test_null_sk6812)
+add_test(NAME sk6812_boundary_tests COMMAND test_boundary_sk6812)

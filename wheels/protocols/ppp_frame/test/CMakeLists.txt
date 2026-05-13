@@ -26,6 +26,17 @@ target_include_directories(test_null_ppp_frame PRIVATE
 )
 target_compile_options(test_null_ppp_frame PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_ppp_frame
+    test_boundary_ppp_frame.c
+    ../ppp_frame.c
+)
+target_include_directories(test_boundary_ppp_frame PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ppp_frame PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ppp_frame_tests COMMAND test_ppp_frame)
 add_test(NAME ppp_frame_null_tests COMMAND test_null_ppp_frame)
+add_test(NAME ppp_frame_boundary_tests COMMAND test_boundary_ppp_frame)

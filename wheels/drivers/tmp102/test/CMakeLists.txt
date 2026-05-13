@@ -24,6 +24,17 @@ target_include_directories(test_null_tmp102 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_tmp102
+    test_boundary_tmp102.c
+    ../tmp102.c
+)
+target_include_directories(test_boundary_tmp102 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_tmp102 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_tmp102 PRIVATE m)
 enable_testing()
 add_test(NAME tmp102_tests COMMAND test_tmp102)
 
@@ -53,3 +64,4 @@ target_link_libraries(test_hw_model_tmp102 PRIVATE m)
 
 add_test(NAME tmp102_hw_model_tests COMMAND test_hw_model_tmp102)
 add_test(NAME tmp102_null_tests COMMAND test_null_tmp102)
+add_test(NAME tmp102_boundary_tests COMMAND test_boundary_tmp102)

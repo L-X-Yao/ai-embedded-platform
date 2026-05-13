@@ -32,6 +32,18 @@ target_include_directories(test_null_onewire_search PRIVATE
 )
 target_compile_definitions(test_null_onewire_search PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_onewire_search PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_onewire_search
+    test_boundary_onewire_search.c
+    ../onewire_search.c
+)
+target_include_directories(test_boundary_onewire_search PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_onewire_search PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_onewire_search PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME onewire_search_tests COMMAND test_onewire_search)
 add_test(NAME onewire_search_null_tests COMMAND test_null_onewire_search)
+add_test(NAME onewire_search_boundary_tests COMMAND test_boundary_onewire_search)

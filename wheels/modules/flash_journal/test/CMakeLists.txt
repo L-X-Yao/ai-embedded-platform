@@ -24,6 +24,17 @@ target_include_directories(test_null_flash_journal PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_flash_journal PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_flash_journal
+    test_boundary_flash_journal.c
+    ../flash_journal.c
+)
+target_include_directories(test_boundary_flash_journal PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_flash_journal PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME flash_journal_tests COMMAND test_flash_journal)
 add_test(NAME flash_journal_null_tests COMMAND test_null_flash_journal)
+add_test(NAME flash_journal_boundary_tests COMMAND test_boundary_flash_journal)

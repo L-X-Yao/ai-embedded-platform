@@ -24,6 +24,17 @@ target_include_directories(test_null_mqtt5_packet PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_mqtt5_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_mqtt5_packet
+    test_boundary_mqtt5_packet.c
+    ../mqtt5_packet.c
+)
+target_include_directories(test_boundary_mqtt5_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_mqtt5_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mqtt5_packet_tests COMMAND test_mqtt5_packet)
 add_test(NAME mqtt5_packet_null_tests COMMAND test_null_mqtt5_packet)
+add_test(NAME mqtt5_packet_boundary_tests COMMAND test_boundary_mqtt5_packet)

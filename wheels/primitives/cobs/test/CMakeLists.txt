@@ -24,6 +24,17 @@ target_include_directories(test_null_cobs PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_cobs PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_cobs
+    test_boundary_cobs.c
+    ../cobs.c
+)
+target_include_directories(test_boundary_cobs PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_cobs PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME cobs_tests COMMAND test_cobs)
 add_test(NAME cobs_null_tests COMMAND test_null_cobs)
+add_test(NAME cobs_boundary_tests COMMAND test_boundary_cobs)

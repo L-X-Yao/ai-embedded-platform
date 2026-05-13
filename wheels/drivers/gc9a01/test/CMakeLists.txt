@@ -40,7 +40,18 @@ target_include_directories(test_null_gc9a01 PRIVATE
 )
 target_compile_options(test_null_gc9a01 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_gc9a01
+    test_boundary_gc9a01.c
+    ../gc9a01.c
+)
+target_include_directories(test_boundary_gc9a01 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_gc9a01 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME gc9a01_tests COMMAND test_gc9a01)
 add_test(NAME gc9a01_hw_model_tests COMMAND test_hw_model_gc9a01)
 add_test(NAME gc9a01_null_tests COMMAND test_null_gc9a01)
+add_test(NAME gc9a01_boundary_tests COMMAND test_boundary_gc9a01)

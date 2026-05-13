@@ -31,6 +31,16 @@ target_include_directories(test_null_bme688 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bme688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bme688
+    test_boundary_bme688.c
+    ../bme688.c
+)
+target_include_directories(test_boundary_bme688 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bme688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bme688_tests COMMAND test_bme688)
 
@@ -47,3 +57,4 @@ target_compile_options(test_hw_model_bme688 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_bme688 PRIVATE m)
 add_test(NAME bme688_hw_model_tests COMMAND test_hw_model_bme688)
 add_test(NAME bme688_null_tests COMMAND test_null_bme688)
+add_test(NAME bme688_boundary_tests COMMAND test_boundary_bme688)

@@ -24,6 +24,17 @@ target_include_directories(test_null_lorawan_packet PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_lorawan_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_lorawan_packet
+    test_boundary_lorawan_packet.c
+    ../lorawan_packet.c
+)
+target_include_directories(test_boundary_lorawan_packet PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_lorawan_packet PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME lorawan_packet_tests COMMAND test_lorawan_packet)
 add_test(NAME lorawan_packet_null_tests COMMAND test_null_lorawan_packet)
+add_test(NAME lorawan_packet_boundary_tests COMMAND test_boundary_lorawan_packet)

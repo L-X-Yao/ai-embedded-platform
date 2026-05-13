@@ -30,6 +30,17 @@ target_include_directories(test_null_intel_hex PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_intel_hex PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_intel_hex
+    test_boundary_intel_hex.c
+    ../intel_hex.c
+)
+target_include_directories(test_boundary_intel_hex PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_intel_hex PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME intel_hex_tests COMMAND test_intel_hex)
 add_test(NAME intel_hex_null_tests COMMAND test_null_intel_hex)
+add_test(NAME intel_hex_boundary_tests COMMAND test_boundary_intel_hex)

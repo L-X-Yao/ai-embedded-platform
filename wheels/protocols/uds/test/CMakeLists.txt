@@ -30,6 +30,17 @@ target_include_directories(test_null_uds PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_uds PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_uds
+    test_boundary_uds.c
+    ../uds.c
+)
+target_include_directories(test_boundary_uds PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_uds PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME uds_tests COMMAND test_uds)
 add_test(NAME uds_null_tests COMMAND test_null_uds)
+add_test(NAME uds_boundary_tests COMMAND test_boundary_uds)

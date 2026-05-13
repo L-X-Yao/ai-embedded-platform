@@ -32,6 +32,18 @@ target_include_directories(test_null_hdlc PRIVATE
 )
 target_compile_definitions(test_null_hdlc PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_hdlc PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_hdlc
+    test_boundary_hdlc.c
+    ../hdlc.c
+)
+target_include_directories(test_boundary_hdlc PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_hdlc PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_hdlc PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME hdlc_tests COMMAND test_hdlc)
 add_test(NAME hdlc_null_tests COMMAND test_null_hdlc)
+add_test(NAME hdlc_boundary_tests COMMAND test_boundary_hdlc)

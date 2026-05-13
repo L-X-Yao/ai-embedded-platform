@@ -41,7 +41,19 @@ target_include_directories(test_hw_model_mpr121 PRIVATE
 target_compile_options(test_hw_model_mpr121 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_compile_definitions(test_hw_model_mpr121 PRIVATE CONTRACT_ENABLED)
 
+
+add_executable(test_boundary_mpr121
+    test_boundary_mpr121.c
+    ../mpr121.c
+)
+target_include_directories(test_boundary_mpr121 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_mpr121 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_mpr121 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME mpr121_tests COMMAND test_mpr121)
 add_test(NAME mpr121_null_tests COMMAND test_null_mpr121)
 add_test(NAME mpr121_hw_model_tests COMMAND test_hw_model_mpr121)
+add_test(NAME mpr121_boundary_tests COMMAND test_boundary_mpr121)

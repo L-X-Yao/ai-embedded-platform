@@ -14,6 +14,16 @@ target_include_directories(test_cc1101 PRIVATE
 )
 target_compile_options(test_cc1101 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_cc1101
+    test_boundary_cc1101.c
+    ../cc1101.c
+)
+target_include_directories(test_boundary_cc1101 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_cc1101 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME cc1101_tests COMMAND test_cc1101)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_cc1101 PRIVATE
 target_compile_options(test_null_cc1101 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME cc1101_null_tests COMMAND test_null_cc1101)
+add_test(NAME cc1101_boundary_tests COMMAND test_boundary_cc1101)

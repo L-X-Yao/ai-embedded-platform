@@ -14,6 +14,16 @@ target_include_directories(test_w5500 PRIVATE
 )
 target_compile_options(test_w5500 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_w5500
+    test_boundary_w5500.c
+    ../w5500.c
+)
+target_include_directories(test_boundary_w5500 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_w5500 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME w5500_tests COMMAND test_w5500)
 
@@ -28,3 +38,4 @@ target_include_directories(test_null_w5500 PRIVATE
 target_compile_options(test_null_w5500 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
 add_test(NAME w5500_null_tests COMMAND test_null_w5500)
+add_test(NAME w5500_boundary_tests COMMAND test_boundary_w5500)

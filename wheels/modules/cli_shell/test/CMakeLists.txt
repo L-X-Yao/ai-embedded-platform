@@ -35,7 +35,18 @@ target_include_directories(test_null_cli_shell PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_cli_shell PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_cli_shell
+    test_boundary_cli_shell.c
+    ../cli_shell.c
+)
+target_include_directories(test_boundary_cli_shell PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_cli_shell PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME cli_shell_tests COMMAND test_cli_shell)
 add_test(NAME cli_shell_prop_tests COMMAND prop_cli_shell)
 add_test(NAME cli_shell_null_tests COMMAND test_null_cli_shell)
+add_test(NAME cli_shell_boundary_tests COMMAND test_boundary_cli_shell)

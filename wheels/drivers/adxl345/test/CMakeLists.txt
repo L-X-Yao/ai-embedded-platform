@@ -25,6 +25,17 @@ target_include_directories(test_null_adxl345 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_adxl345 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_adxl345
+    test_boundary_adxl345.c
+    ../adxl345.c
+)
+target_include_directories(test_boundary_adxl345 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_adxl345 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME adxl345_tests COMMAND test_adxl345)
 add_test(NAME adxl345_null_tests COMMAND test_null_adxl345)
+add_test(NAME adxl345_boundary_tests COMMAND test_boundary_adxl345)

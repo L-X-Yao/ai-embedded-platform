@@ -34,6 +34,17 @@ target_include_directories(test_null_pca9685 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_pca9685 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_pca9685
+    test_boundary_pca9685.c
+    ../pca9685.c
+)
+target_include_directories(test_boundary_pca9685 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_pca9685 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_pca9685 PRIVATE m)
 enable_testing()
 add_test(NAME pca9685_tests COMMAND test_pca9685)
 add_test(NAME pca9685_hw_model_tests COMMAND test_hw_model_pca9685)
@@ -51,3 +62,4 @@ target_link_libraries(prop_pca9685 PRIVATE m)
 
 add_test(NAME pca9685_prop_tests COMMAND prop_pca9685)
 add_test(NAME pca9685_null_tests COMMAND test_null_pca9685)
+add_test(NAME pca9685_boundary_tests COMMAND test_boundary_pca9685)

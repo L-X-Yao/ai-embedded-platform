@@ -30,6 +30,17 @@ target_include_directories(test_null_font_5x7 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_font_5x7 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_font_5x7
+    test_boundary_font_5x7.c
+    ../font_5x7.c
+)
+target_include_directories(test_boundary_font_5x7 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_font_5x7 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME font_5x7_tests COMMAND test_font_5x7)
 add_test(NAME font_5x7_null_tests COMMAND test_null_font_5x7)
+add_test(NAME font_5x7_boundary_tests COMMAND test_boundary_font_5x7)

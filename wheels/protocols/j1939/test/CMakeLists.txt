@@ -30,6 +30,17 @@ target_include_directories(test_null_j1939 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_j1939 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_j1939
+    test_boundary_j1939.c
+    ../j1939.c
+)
+target_include_directories(test_boundary_j1939 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_j1939 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME j1939_tests COMMAND test_j1939)
 add_test(NAME j1939_null_tests COMMAND test_null_j1939)
+add_test(NAME j1939_boundary_tests COMMAND test_boundary_j1939)

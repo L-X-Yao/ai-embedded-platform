@@ -31,6 +31,18 @@ target_include_directories(test_null_peak_detector PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_peak_detector PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_peak_detector
+    test_boundary_peak_detector.c
+    ../peak_detector.c
+)
+target_include_directories(test_boundary_peak_detector PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_peak_detector PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_boundary_peak_detector PRIVATE m)
 enable_testing()
 add_test(NAME peak_detector_tests COMMAND test_peak_detector)
 add_test(NAME peak_detector_null_tests COMMAND test_null_peak_detector)
+add_test(NAME peak_detector_boundary_tests COMMAND test_boundary_peak_detector)

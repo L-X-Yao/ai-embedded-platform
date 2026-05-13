@@ -44,8 +44,19 @@ target_include_directories(test_null_oled_ssd1306 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_oled_ssd1306
+    test_boundary_oled_ssd1306.c
+    ../oled_ssd1306.c
+)
+target_include_directories(test_boundary_oled_ssd1306 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_oled_ssd1306 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME oled_ssd1306_tests COMMAND test_oled_ssd1306)
 add_test(NAME oled_ssd1306_prop_tests COMMAND prop_oled_ssd1306)
 add_test(NAME oled_ssd1306_hw_model_tests COMMAND test_hw_model_oled_ssd1306)
 add_test(NAME oled_ssd1306_null_tests COMMAND test_null_oled_ssd1306)
+add_test(NAME oled_ssd1306_boundary_tests COMMAND test_boundary_oled_ssd1306)

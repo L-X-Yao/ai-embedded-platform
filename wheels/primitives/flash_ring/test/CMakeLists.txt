@@ -40,7 +40,18 @@ target_include_directories(test_null_flash_ring PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_flash_ring PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_flash_ring
+    test_boundary_flash_ring.c
+    ../flash_ring.c
+)
+target_include_directories(test_boundary_flash_ring PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_flash_ring PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME flash_ring_tests COMMAND test_flash_ring)
 add_test(NAME flash_ring_props COMMAND prop_flash_ring)
 add_test(NAME flash_ring_null_tests COMMAND test_null_flash_ring)
+add_test(NAME flash_ring_boundary_tests COMMAND test_boundary_flash_ring)

@@ -30,6 +30,17 @@ target_include_directories(test_null_ibus PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ibus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ibus
+    test_boundary_ibus.c
+    ../ibus.c
+)
+target_include_directories(test_boundary_ibus PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ibus PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ibus_tests COMMAND test_ibus)
 add_test(NAME ibus_null_tests COMMAND test_null_ibus)
+add_test(NAME ibus_boundary_tests COMMAND test_boundary_ibus)

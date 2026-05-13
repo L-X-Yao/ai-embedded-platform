@@ -24,6 +24,16 @@ target_include_directories(test_null_sd_spi PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_sd_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_sd_spi
+    test_boundary_sd_spi.c
+    ../sd_spi.c
+)
+target_include_directories(test_boundary_sd_spi PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_sd_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME sd_spi_tests COMMAND test_sd_spi)
 
@@ -51,3 +61,4 @@ target_compile_options(test_hw_model_sd_spi PRIVATE -Wall -Wextra -Wpedantic -We
 
 add_test(NAME sd_spi_hw_model_tests COMMAND test_hw_model_sd_spi)
 add_test(NAME sd_spi_null_tests COMMAND test_null_sd_spi)
+add_test(NAME sd_spi_boundary_tests COMMAND test_boundary_sd_spi)

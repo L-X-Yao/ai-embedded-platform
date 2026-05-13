@@ -31,6 +31,16 @@ target_include_directories(test_null_bma400 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bma400 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bma400
+    test_boundary_bma400.c
+    ../bma400.c
+)
+target_include_directories(test_boundary_bma400 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bma400 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bma400_tests COMMAND test_bma400)
 
@@ -47,3 +57,4 @@ target_compile_options(test_hw_model_bma400 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_bma400 PRIVATE m)
 add_test(NAME bma400_hw_model_tests COMMAND test_hw_model_bma400)
 add_test(NAME bma400_null_tests COMMAND test_null_bma400)
+add_test(NAME bma400_boundary_tests COMMAND test_boundary_bma400)

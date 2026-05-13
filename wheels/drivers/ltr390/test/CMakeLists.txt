@@ -33,6 +33,17 @@ target_include_directories(test_null_ltr390 PRIVATE
 )
 target_compile_definitions(test_null_ltr390 PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_ltr390 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ltr390
+    test_boundary_ltr390.c
+    ../ltr390.c
+)
+target_include_directories(test_boundary_ltr390 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_ltr390 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_ltr390 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ltr390_tests COMMAND test_ltr390)
 
@@ -50,3 +61,4 @@ target_compile_options(test_hw_model_ltr390 PRIVATE -Wall -Wextra -Wpedantic -We
 target_compile_definitions(test_hw_model_ltr390 PRIVATE CONTRACT_ENABLED)
 add_test(NAME ltr390_hw_model_tests COMMAND test_hw_model_ltr390)
 add_test(NAME ltr390_null_tests COMMAND test_null_ltr390)
+add_test(NAME ltr390_boundary_tests COMMAND test_boundary_ltr390)

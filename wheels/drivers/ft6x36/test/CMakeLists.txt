@@ -39,7 +39,18 @@ target_include_directories(test_hw_model_ft6x36 PRIVATE
 )
 target_compile_options(test_hw_model_ft6x36 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 
+
+add_executable(test_boundary_ft6x36
+    test_boundary_ft6x36.c
+    ../ft6x36.c
+)
+target_include_directories(test_boundary_ft6x36 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ft6x36 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ft6x36_tests COMMAND test_ft6x36)
 add_test(NAME ft6x36_null_tests COMMAND test_null_ft6x36)
 add_test(NAME ft6x36_hw_model_tests COMMAND test_hw_model_ft6x36)
+add_test(NAME ft6x36_boundary_tests COMMAND test_boundary_ft6x36)
