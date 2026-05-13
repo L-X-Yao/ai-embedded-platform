@@ -234,6 +234,77 @@ TEST(test_multi_feed_sequence)
     ASSERT_EQ(v, 175);
 }
 
+/* === INT32_MIN / INT32_MAX extremes === */
+
+TEST(test_int32_max_constant)
+{
+    ewma_t ctx;
+    ewma_init(&ctx, 4);
+    int32_t v = ewma_feed(&ctx, INT32_MAX);
+    ASSERT_EQ(v, INT32_MAX);  /* prime to exact value */
+
+    /* Feeding same value should not overflow.
+     * value - (value>>4) + (value>>4) stays at or near INT32_MAX. */
+    for (int i = 0; i < 50; i++)
+    {
+        v = ewma_feed(&ctx, INT32_MAX);
+    }
+    ASSERT_TRUE(v > INT32_MAX / 2);
+}
+
+TEST(test_int32_min_constant)
+{
+    ewma_t ctx;
+    ewma_init(&ctx, 4);
+    int32_t v = ewma_feed(&ctx, INT32_MIN);
+    ASSERT_EQ(v, INT32_MIN);  /* prime to exact value */
+
+    /* Feeding same value should not overflow. */
+    for (int i = 0; i < 50; i++)
+    {
+        v = ewma_feed(&ctx, INT32_MIN);
+    }
+    ASSERT_TRUE(v < INT32_MIN / 2);
+}
+
+TEST(test_negative_to_positive_step)
+{
+    ewma_t ctx;
+    ewma_init(&ctx, 2);
+
+    /* Prime and settle at -1000 */
+    for (int i = 0; i < 100; i++)
+    {
+        ewma_feed(&ctx, -1000);
+    }
+    int32_t v = ewma_get(&ctx);
+    ASSERT_TRUE(v < 0);
+
+    /* Step to +1000 */
+    for (int i = 0; i < 200; i++)
+    {
+        ewma_feed(&ctx, 1000);
+    }
+    v = ewma_get(&ctx);
+    /* Should converge close to 1000 */
+    ASSERT_TRUE(v > 900);
+}
+
+TEST(test_alternating_samples)
+{
+    ewma_t ctx;
+    ewma_init(&ctx, 2);
+    ewma_feed(&ctx, 0);  /* prime to 0 */
+
+    /* Feed alternating +100 / -100 — average should stay near 0 */
+    for (int i = 0; i < 200; i++)
+    {
+        ewma_feed(&ctx, (i % 2 == 0) ? 100 : -100);
+    }
+    int32_t v = ewma_get(&ctx);
+    ASSERT_TRUE(v > -50 && v < 50);
+}
+
 TEST_MAIN("ewma")
     RUN(test_init_null);
     RUN(test_init_shift_zero);
@@ -254,4 +325,8 @@ TEST_MAIN("ewma")
     RUN(test_large_values_no_overflow);
     RUN(test_get_before_feed);
     RUN(test_multi_feed_sequence);
+    RUN(test_int32_max_constant);
+    RUN(test_int32_min_constant);
+    RUN(test_negative_to_positive_step);
+    RUN(test_alternating_samples);
 TEST_MAIN_END()
