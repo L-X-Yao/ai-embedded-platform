@@ -13,6 +13,7 @@
 
 #include "test_harness.h"
 #include "property_test.h"
+#include "mock_time.h"
 #include "at24cxx.h"
 #include <string.h>
 
@@ -76,11 +77,6 @@ static bool mock_read_regs16(void *ctx, uint8_t dev_addr,
         buf[i] = (a < MOCK_MEM_SIZE) ? mock_mem[a] : 0xFF;
     }
     return true;
-}
-
-static void mock_delay_ms(void *ctx, uint32_t ms)
-{
-    (void)ctx; (void)ms;
 }
 
 static const at24cxx_i2c_t i2c_8bit = {

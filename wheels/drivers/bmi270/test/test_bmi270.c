@@ -1,4 +1,5 @@
 #include "test_harness.h"
+#include "mock_time.h"
 #include <string.h>
 #include "bmi270.h"
 
@@ -72,11 +73,6 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         mock_byte_idx++;
         return 0x00;
     }
-}
-
-static void mock_delay_ms(void *ctx, uint32_t ms)
-{
-    (void)ctx; (void)ms;
 }
 
 static const bmi270_spi_t mock_spi = {

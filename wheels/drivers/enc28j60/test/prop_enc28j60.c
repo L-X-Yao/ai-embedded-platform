@@ -6,6 +6,7 @@
 #include "test_harness.h"
 #include "property_test.h"
 #include "mock_spi.h"
+#include "mock_time.h"
 #include "enc28j60.h"
 
 static uint8_t mock_xfer(void *ctx, uint8_t tx)
@@ -16,13 +17,11 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
     return 0x00;
 }
 
-static void mock_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
-
 static const enc28j60_spi_t prop_spi = {
     .cs_low   = mock_spi_cs_low,
     .cs_high  = mock_spi_cs_high,
     .xfer     = mock_xfer,
-    .delay_ms = mock_delay,
+    .delay_ms = mock_delay_ms,
     .ctx      = NULL,
 };
 
