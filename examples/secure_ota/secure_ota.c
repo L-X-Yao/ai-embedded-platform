@@ -158,7 +158,7 @@ static const uint8_t hmac_key[16] = {
     0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
 };
 
-static aes128_ctx_t aes_ctx;
+static aes128_t aes_ctx;
 
 static void prepare_firmware(void)
 {
@@ -431,7 +431,7 @@ TEST(test_sha256_firmware_hash)
     ASSERT_MEMEQ_N(hash, fw_sha256, SHA256_DIGEST_SIZE);
 
     /* Also test streaming interface */
-    sha256_ctx_t sha_ctx;
+    sha256_t sha_ctx;
     sha256_err_t err = sha256_init(&sha_ctx);
     ASSERT_EQ(err, SHA256_OK);
 
