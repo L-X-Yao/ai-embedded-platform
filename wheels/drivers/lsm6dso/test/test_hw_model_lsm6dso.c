@@ -74,8 +74,8 @@ TEST(test_init_writes_ctrl2_g)
                            .gyro_range = LSM6DSO_GYRO_1000DPS,
                            .odr = LSM6DSO_ODR_104HZ };
     lsm6dso_init(&dev, &model_i2c, &cfg);
-    /* CTRL2_G: ODR=4(104Hz), FS_G=8(1000DPS) -> (4<<4)|(8<<1) = 0x50 */
-    ASSERT_EQ(model.regs[0x11], (uint8_t)((4 << 4) | (8 << 1)));
+    /* CTRL2_G: ODR=4(104Hz), FS_G[3:0]=8(1000DPS) -> (4<<4)|8 = 0x48 */
+    ASSERT_EQ(model.regs[0x11], (uint8_t)((4 << 4) | 8));
 }
 
 TEST(test_init_triggers_sw_reset)

@@ -103,7 +103,7 @@ typedef struct {
     const lsm6dso_i2c_t *i2c;
     lsm6dso_cfg_t         cfg;
     float                  accel_sensitivity;   /* mg/LSB */
-    float                  gyro_sensitivity;    /* dps/LSB */
+    float                  gyro_sensitivity;    /* mdps/LSB */
 } lsm6dso_t;
 
 /* ---------- API ---------- */
