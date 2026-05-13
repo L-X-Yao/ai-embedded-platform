@@ -30,7 +30,7 @@ None. Pure C99, no external dependency.
 
 ```c
 /* Incremental parser (byte-at-a-time) */
-ubx_parser_ctx_t ctx;
+ubx_parser_t ctx;
 uint8_t buf[300];
 ubx_parser_init(&ctx, buf, sizeof(buf));
 

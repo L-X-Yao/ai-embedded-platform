@@ -136,13 +136,13 @@ TEST(test_init_null)
     uint8_t buf[64];
     ASSERT_EQ(ubx_parser_init(NULL, buf, sizeof(buf)), UBX_PARSER_ERR_PARAM);
 
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ASSERT_EQ(ubx_parser_init(&ctx, NULL, 64), UBX_PARSER_ERR_PARAM);
 }
 
 TEST(test_init_too_small)
 {
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     uint8_t buf[4];
     ASSERT_EQ(ubx_parser_init(&ctx, buf, sizeof(buf)), UBX_PARSER_ERR_SHORT);
 }
@@ -150,7 +150,7 @@ TEST(test_init_too_small)
 TEST(test_feed_complete_no_payload)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ASSERT_EQ(ubx_parser_init(&ctx, fbuf, sizeof(fbuf)), UBX_PARSER_OK);
 
     /* Build a valid frame */
@@ -178,7 +178,7 @@ TEST(test_feed_complete_no_payload)
 TEST(test_feed_complete_with_payload)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     uint8_t payload[] = {0x11, 0x22, 0x33, 0x44, 0x55};
@@ -206,7 +206,7 @@ TEST(test_feed_complete_with_payload)
 TEST(test_feed_bad_checksum)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     uint8_t frame[64];
@@ -226,7 +226,7 @@ TEST(test_feed_bad_checksum)
 TEST(test_feed_garbage_before_sync)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     /* Feed some garbage */
@@ -248,7 +248,7 @@ TEST(test_feed_garbage_before_sync)
 TEST(test_feed_reset_and_reuse)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     uint8_t frame[64];
@@ -282,7 +282,7 @@ TEST(test_feed_null_ctx)
 TEST(test_get_msg_not_complete)
 {
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     ubx_msg_t msg;
@@ -306,7 +306,7 @@ TEST(test_build_feed_roundtrip)
     /* Build with various payload sizes */
     uint8_t frame_buf[300];
     uint8_t parse_buf[300];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, parse_buf, sizeof(parse_buf));
 
     uint8_t payload[128];
@@ -348,7 +348,7 @@ TEST(test_known_byte_sequence)
                           0xDE, 0xAD, 0xBE, 0xEF, ck_a, ck_b};
 
     uint8_t pbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, pbuf, sizeof(pbuf));
 
     ubx_feed_status_t st = UBX_FEED_IDLE;
@@ -369,7 +369,7 @@ TEST(test_feed_resync_on_double_sync1)
 {
     /* Feed sync1 twice -- second one should restart */
     uint8_t fbuf[64];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     ubx_parser_feed(&ctx, UBX_SYNC1);
@@ -389,7 +389,7 @@ TEST(test_feed_overflow_protection)
 {
     /* Use a very small buffer that cannot hold a large payload */
     uint8_t small_buf[12]; /* can hold 8 overhead + 4 payload max */
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, small_buf, sizeof(small_buf));
 
     /* Build a frame with payload too large for the buffer */
@@ -418,7 +418,7 @@ TEST(test_error_codes)
 TEST(test_mini_fuzz)
 {
     uint8_t fbuf[300];
-    ubx_parser_ctx_t ctx;
+    ubx_parser_t ctx;
     ubx_parser_init(&ctx, fbuf, sizeof(fbuf));
 
     unsigned seed = 42;

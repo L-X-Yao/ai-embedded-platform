@@ -81,28 +81,28 @@ typedef struct {
     size_t         idx;
     uint16_t       payload_len;
     ubx_feed_status_t state;
-} ubx_parser_ctx_t;
+} ubx_parser_t;
 
 /* ---------- API ---------- */
 
 /** Initialize parser context with caller-provided buffer.
  *  @thread_safe: no  @isr_safe: no */
-ubx_parser_err_t ubx_parser_init(ubx_parser_ctx_t *ctx,
+ubx_parser_err_t ubx_parser_init(ubx_parser_t *ctx,
                                   uint8_t *buf, size_t buf_size);
 
 /** Feed one byte into the incremental parser.
  *  Returns current state; UBX_FEED_COMPLETE when a full message is ready.
  *  @thread_safe: no  @isr_safe: yes (no blocking) */
-ubx_feed_status_t ubx_parser_feed(ubx_parser_ctx_t *ctx, uint8_t byte);
+ubx_feed_status_t ubx_parser_feed(ubx_parser_t *ctx, uint8_t byte);
 
 /** Extract the parsed message after feed() returns COMPLETE.
  *  @thread_safe: no  @isr_safe: no */
-ubx_parser_err_t ubx_parser_get_msg(const ubx_parser_ctx_t *ctx,
+ubx_parser_err_t ubx_parser_get_msg(const ubx_parser_t *ctx,
                                      ubx_msg_t *out);
 
 /** Reset parser to IDLE state for next message.
  *  @thread_safe: no  @isr_safe: no */
-void ubx_parser_reset(ubx_parser_ctx_t *ctx);
+void ubx_parser_reset(ubx_parser_t *ctx);
 
 /** Build a complete UBX frame into buf.
  *  Returns total bytes written, or negative error.
