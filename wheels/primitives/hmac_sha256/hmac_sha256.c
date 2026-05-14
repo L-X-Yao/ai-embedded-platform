@@ -25,7 +25,7 @@ static void prepare_key(const uint8_t *key, size_t key_len,
     memset(block, 0, HMAC_SHA256_BLOCK_SIZE);
     if (key_len > HMAC_SHA256_BLOCK_SIZE) {
         sha256_hash(key, key_len, block);
-    } else {
+    } else if (key_len > 0) {
         memcpy(block, key, key_len);
     }
 }
