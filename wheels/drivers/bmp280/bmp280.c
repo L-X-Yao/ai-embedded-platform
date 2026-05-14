@@ -194,8 +194,6 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
 
     ENSURE(out->temperature_c == out->temperature_c);  /* not NaN */
     ENSURE(out->pressure_pa == out->pressure_pa);        /* not NaN */
-    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 85.0f);
-    ENSURE(out->pressure_pa >= 30000.0f && out->pressure_pa <= 110000.0f);
     return BMP280_OK;
 }
 

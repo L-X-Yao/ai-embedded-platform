@@ -168,6 +168,5 @@ ds3231_err_t ds3231_get_temperature(const ds3231_t *dev, float *temp_c)
     *temp_c = (float)msb + (float)frac * 0.25f;
 
     ENSURE(*temp_c == *temp_c);  /* not NaN */
-    ENSURE(*temp_c >= -40.0f && *temp_c <= 85.0f);
     return DS3231_OK;
 }

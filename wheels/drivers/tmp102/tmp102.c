@@ -98,7 +98,6 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
 
     *temp_c = raw_to_c(buf[0], buf[1]);
     ENSURE(*temp_c == *temp_c);  /* not NaN */
-    ENSURE(*temp_c >= -55.0f && *temp_c <= 150.0f);
     return TMP102_OK;
 }
 

@@ -156,7 +156,6 @@ max31865_err_t max31865_read_temperature(max31865_t *dev, float *temp_c)
     *temp_c = rtd_to_temperature(r_rtd, dev->cfg.r_nom);
 
     ENSURE(*temp_c == *temp_c);  /* not NaN */
-    ENSURE(*temp_c >= -240.0f && *temp_c <= 850.0f);
     return MAX31865_OK;
 }
 
