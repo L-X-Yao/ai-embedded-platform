@@ -111,6 +111,9 @@ test-parallel:
 audit:
 	python3 tooling/audit/audit_wheels.py
 
+audit-perf:
+	python3 tooling/audit/audit_check_perf.py
+
 audit-fix:
 	python3 tooling/audit/audit_fix.py
 
