@@ -111,7 +111,7 @@ qmi8658a_err_t qmi8658a_read(const qmi8658a_t *dev,
     qmi8658a_err_t e = rd(dev->i2c, REG_AX_L, raw, 12);
     if (e != QMI8658A_OK) return e;
 
-    /* Assemble big-endian pairs into signed 16-bit, then scale. */
+    /* Assemble little-endian pairs into signed 16-bit, then scale. */
     int16_t ax = (int16_t)((uint16_t)raw[1]  << 8 | raw[0]);
     int16_t ay = (int16_t)((uint16_t)raw[3]  << 8 | raw[2]);
     int16_t az = (int16_t)((uint16_t)raw[5]  << 8 | raw[4]);
