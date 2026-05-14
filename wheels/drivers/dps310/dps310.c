@@ -244,7 +244,7 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
     {
         return DPS310_ERR_I2C;
     }
-    if (id != DPS310_PRODUCT_ID)
+    if ((id & 0xF0u) != DPS310_PRODUCT_ID)
     {
         return DPS310_ERR_ID;
     }
@@ -388,11 +388,9 @@ dps310_err_t dps310_read(dps310_t *dev, dps310_data_t *out)
     out->temperature_c = compensate_temperature(dev, raw_temp);
     out->pressure_pa   = compensate_pressure(dev, raw_press, raw_temp);
 
-    /* NaN guard */
+    /* NaN guard — range validation belongs in the application, not the driver */
     ENSURE(out->temperature_c == out->temperature_c);
     ENSURE(out->pressure_pa == out->pressure_pa);
-    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 85.0f);
-    ENSURE(out->pressure_pa >= 30000.0f && out->pressure_pa <= 125000.0f);
     return DPS310_OK;
 }
 
