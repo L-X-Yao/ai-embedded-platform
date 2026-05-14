@@ -1240,7 +1240,7 @@ def main():
             print(f"  [DRY] {wi.layer}/{wi.name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
         else:
             test_dir.mkdir(parents=True, exist_ok=True)
-            test_file.write_text(content, encoding="utf-8")
+            test_file.write_bytes(content.encode("utf-8"))
             print(f"  [GEN] {wi.layer}/{wi.name}: {len(wheel.tests)} tests -> {test_file.relative_to(REPO_ROOT)}")
 
         generated_files.append((wi.layer, wi.name, len(wheel.tests), test_file))
