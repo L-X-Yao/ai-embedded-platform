@@ -106,7 +106,8 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
     if (!dev || !dev->ops.read) {
         return FAL_ERR_NOT_READY;
     }
-    return dev->ops.read(part->offset + (long)addr, buf, size);
+    int rc = dev->ops.read(part->offset + (long)addr, buf, size);
+    return rc < 0 ? FAL_ERR_HAL : rc;
 }
 
 int fal_partition_write(const struct fal_partition *part, uint32_t addr,
@@ -124,7 +125,8 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
     if (!dev || !dev->ops.write) {
         return FAL_ERR_NOT_READY;
     }
-    return dev->ops.write(part->offset + (long)addr, buf, size);
+    int rc = dev->ops.write(part->offset + (long)addr, buf, size);
+    return rc < 0 ? FAL_ERR_HAL : rc;
 }
 
 int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
@@ -141,7 +143,8 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
     if (!dev || !dev->ops.erase) {
         return FAL_ERR_NOT_READY;
     }
-    return dev->ops.erase(part->offset + (long)addr, size);
+    int rc = dev->ops.erase(part->offset + (long)addr, size);
+    return rc < 0 ? FAL_ERR_HAL : rc;
 }
 
 int fal_partition_erase_all(const struct fal_partition *part)
