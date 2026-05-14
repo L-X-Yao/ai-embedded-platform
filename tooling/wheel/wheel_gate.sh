@@ -137,6 +137,41 @@ for wheel in "${WHEELS[@]}"; do
         echo -e "  ${YELLOW}SKIP${NC} no test/CMakeLists.txt"
     fi
 
+    # --- 2.5. UBSan build + run ---
+    if [[ -d "$test_dir" ]] && [[ -f "$test_dir/CMakeLists.txt" ]]; then
+        san_dir="${test_dir}/build_san_gate"
+        rm -rf "$san_dir"
+        san_log=$(mktemp)
+        san_cflags="-fsanitize=undefined -fno-sanitize-recover=all -w"
+        san_ldflags="-fsanitize=undefined"
+        if cmake -S "$test_dir" -B "$san_dir" -DCMAKE_BUILD_TYPE=Debug \
+                 -DCMAKE_C_FLAGS_DEBUG="$san_cflags" \
+                 -DCMAKE_EXE_LINKER_FLAGS="$san_ldflags" > "$san_log" 2>&1 && \
+           cmake --build "$san_dir" >> "$san_log" 2>&1; then
+
+            ubsan_ok=true
+            for exe in "$san_dir"/test_*; do
+                [[ -x "$exe" ]] || continue
+                if ! "$exe" > /dev/null 2>&1; then
+                    echo -e "  ${RED}FAIL${NC} UBSan: $(basename "$exe")"
+                    ubsan_ok=false
+                fi
+            done
+
+            if $ubsan_ok; then
+                echo -e "  ${GREEN}PASS${NC} UBSan"
+            else
+                FAIL=$((FAIL + 1))
+                FAILED_WHEELS+=("$wheel")
+                rm -rf "$san_dir" "$san_log"
+                continue
+            fi
+        else
+            echo -e "  ${YELLOW}SKIP${NC} UBSan build failed (non-blocking)"
+        fi
+        rm -rf "$san_dir" "$san_log"
+    fi
+
     # --- 3. Audit ---
     audit_output=$(cd "$REPO" && python3 tooling/audit/audit_wheels.py --wheel "$wheel" --quiet 2>&1)
     warn_count=$(echo "$audit_output" | grep -cE "\[(WARN|FAIL)\]" || true)
