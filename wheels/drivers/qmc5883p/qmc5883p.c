@@ -19,7 +19,7 @@
 #define REG_SIGN        0x29u
 
 #define CR1_ODR_200HZ   0x0Cu
-#define CR1_OSR_8X      0x00u
+#define CR1_OSR_512X      0x00u
 #define CR1_MODE_CONT   0x03u
 
 #define CR2_RANGE_2G    (0x03u << 2)
@@ -59,7 +59,7 @@ qmc5883p_err_t qmc5883p_init(const qmc5883p_i2c_t *i2c)
     if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_CR2, CR2_RANGE_2G))
         return QMC5883P_ERR_I2C;
     if (!i2c->write_reg(i2c->ctx, QMC5883P_DEV_ADDR, REG_CR1,
-                         CR1_OSR_8X | CR1_ODR_200HZ | CR1_MODE_CONT))
+                         CR1_OSR_512X | CR1_ODR_200HZ | CR1_MODE_CONT))
         return QMC5883P_ERR_I2C;
 
     return QMC5883P_OK;
