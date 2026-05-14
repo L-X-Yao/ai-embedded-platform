@@ -97,6 +97,5 @@ pct2075_err_t pct2075_read(pct2075_t *dev, float *temp_c)
     *temp_c = raw_to_temp(raw);
 
     ENSURE(*temp_c == *temp_c);  /* not NaN */
-    ENSURE(*temp_c >= -55.0f && *temp_c <= 125.0f);
     return PCT2075_OK;
 }

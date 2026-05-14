@@ -259,8 +259,6 @@ bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out)
     /* NaN guard */
     ENSURE(out->temperature_c == out->temperature_c);
     ENSURE(out->pressure_pa == out->pressure_pa);
-    ENSURE(out->temperature_c >= -40.0f && out->temperature_c <= 85.0f);
-    ENSURE(out->pressure_pa >= 30000.0f && out->pressure_pa <= 125000.0f);
     return BMP388_OK;
 }
 

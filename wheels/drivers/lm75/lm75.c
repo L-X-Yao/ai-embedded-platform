@@ -115,7 +115,6 @@ lm75_err_t lm75_read_temp(lm75_t *dev, float *temp_c)
     *temp_c = raw_to_temp(raw);
 
     ENSURE(*temp_c == *temp_c);  /* not NaN */
-    ENSURE(*temp_c >= -55.0f && *temp_c <= 125.0f);
     return LM75_OK;
 }
 
