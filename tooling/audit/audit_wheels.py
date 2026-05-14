@@ -1009,6 +1009,61 @@ def chk_test_tautology(ctx, **_):
             f"use fixed datasheet register values in {ctx.path}/test/")
 
 
+def chk_boundary_blind_spots(ctx, **_):
+    """Flag struct typedefs that boundary codegen may not handle safely.
+
+    Three patterns are known-but-not-yet-implemented in
+    gen_boundary_tests.py struct_has_callback_field detection:
+
+      1. union { ... } field containing pointer member — memset(0)
+         is safe only if the wheel's discriminator field steers
+         dispatch to a pointer-free arm.
+      2. Flexible array member (T data[];) — sizeof excludes it,
+         memset zeroes nothing, wheel writes past the struct.
+      3. Bit-field with enum semantics — 0 may not be a valid
+         enum value, wheel dispatches on it.
+
+    Currently (as of 2026-05-14, 259 wheels):
+      - 8 wheels use discriminated unions; all set type=0 to a
+        pointer-free arm so boundary tests pass.
+      - 0 wheels use flexible array members.
+      - 0 wheels use enum bit-fields.
+
+    This check fires INFO when a new wheel introduces such a
+    pattern, so the codegen detection can be extended proactively
+    rather than chasing a boundary FAIL later. See
+    feedback_codegen_callback_struct_detection.md.
+    """
+    hits = []
+    text = ctx.header
+
+    # 1. union with pointer field inside a typedef struct
+    for m in re.finditer(
+        r'typedef\s+struct\s+\w*\s*\{[^{}]*?union\s*\{([^{}]+(?:\{[^{}]*\}[^{}]*)*)\}',
+        text, re.DOTALL,
+    ):
+        body = m.group(1)
+        if re.search(r'\*\s*\w+\s*[;,]', body):
+            hits.append(f"union with pointer field at offset {m.start()}")
+            break
+
+    # 2. flexible array member
+    if re.search(r'\b\w+\s+\w+\s*\[\s*\]\s*;\s*\}\s*\w+_t\b', text):
+        hits.append("flexible array member (T name[];) in _t struct")
+
+    # 3. bit-field declaration
+    if re.search(r'\b(uint8_t|uint16_t|uint32_t|int)\s+\w+\s*:\s*\d+\s*;', text):
+        hits.append("bit-field declaration (potential enum)")
+
+    if not hits:
+        return None
+    return (
+        f"struct pattern not yet covered by boundary codegen: {'; '.join(hits)}",
+        f"verify gen_boundary_tests.py handles this; extend "
+        f"struct_has_callback_field if memset(0) breaks {ctx.name} boundary",
+    )
+
+
 # --- Check table: metadata for each check ---
 
 CHECK_TABLE = [
@@ -1072,6 +1127,7 @@ CHECK_TABLE = [
     ("polling_no_delay",   "HAL polling without delay",            chk_polling_without_delay, "WARN", {"drivers"},              True,  False),
     ("spec_vectors",       "Spec-derived test vectors (L2)",        chk_spec_vectors_exist,   "INFO", {"protocols"},             True,  True),
     ("test_tautology",     "Test tautology (formula echo)",         chk_test_tautology,       "INFO", {"drivers"},               True,  False),
+    ("boundary_blind_spots", "Boundary codegen blind-spot patterns", chk_boundary_blind_spots, "INFO", None,                      True,  True),
 ]
 
 
