@@ -186,6 +186,12 @@ def struct_has_callback_field(struct_name, header_text, _depth=0):
         beyond the zeroed end
       - bit field with enum where 0 is not a valid enum value and
         wheel dispatches on it
+
+    Repo-wide scan 2026-05-14 (259 wheels): no real risk — all 8
+    union users are discriminated unions with type=0 steering to a
+    pointer-free arm; 0 wheels use flexible array members; 0 use
+    enum bit fields. audit_wheels.py chk_boundary_blind_spots
+    fires INFO on future wheels that introduce these patterns.
     """
     if not struct_name or _depth > 3:
         return False
