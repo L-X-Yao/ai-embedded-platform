@@ -45,12 +45,11 @@ extern "C" {
 #define MODBUS_RTU_MAX_FRAME    256
 #define MODBUS_RTU_ADDR_BROADCAST 0
 
-/* Named return codes. Functions still return int because parse / build /
- * master / slave APIs mix length (>=0) and error code (<0) — same pattern
- * as fal partition I/O. */
 typedef enum {
-    MODBUS_RTU_OK         =  0,
-    MODBUS_RTU_ERR_PARAM  = -1, /* NULL buf, bad length, invalid arg, bad CRC */
+    MODBUS_RTU_OK           =  0,
+    MODBUS_RTU_ERR_PARAM    = -1, /* NULL pointer or invalid argument */
+    MODBUS_RTU_ERR_CRC      = -2, /* CRC validation failed (wire corruption) */
+    MODBUS_RTU_ERR_OVERFLOW = -3, /* frame exceeds MAX_FRAME or buffer too small */
 } modbus_rtu_err_t;
 
 #ifndef MODBUS_MAX_READ_REGS
@@ -86,7 +85,7 @@ bool modbus_rtu_check_crc(const uint8_t *frame, uint16_t len);
  * Validates minimum length and CRC. On success, frame->data points
  * into the original buffer.
  *
- * @return 0 on success, -1 on error (too short, bad CRC).
+ * @return 0 on success, MODBUS_RTU_ERR_OVERFLOW / MODBUS_RTU_ERR_CRC on error.
  * @thread_safe: yes
  */
 int modbus_rtu_parse(const uint8_t *buf, uint16_t len,
@@ -94,7 +93,7 @@ int modbus_rtu_parse(const uint8_t *buf, uint16_t len,
 
 /**
  * @brief Build a raw frame: [addr][func][data...][CRC_lo][CRC_hi].
- * @return Frame length on success, -1 if buffer too small.
+ * @return Frame length on success, negative modbus_rtu_err_t on error.
  * @thread_safe: yes
  */
 int modbus_rtu_build(uint8_t *buf, uint16_t buf_size,

@@ -80,8 +80,8 @@ TEST(test_build_with_data)
 TEST(test_build_buffer_too_small)
 {
     uint8_t buf[4];
-    ASSERT_TRUE(modbus_rtu_build(buf, 3, 1, 3, NULL, 0) == -1);
-    ASSERT_TRUE(modbus_rtu_build(NULL, 32, 1, 3, NULL, 0) == -1);
+    ASSERT_EQ(modbus_rtu_build(buf, 3, 1, 3, NULL, 0), MODBUS_RTU_ERR_OVERFLOW);
+    ASSERT_EQ(modbus_rtu_build(NULL, 32, 1, 3, NULL, 0), MODBUS_RTU_ERR_PARAM);
 }
 
 TEST(test_parse_valid)
@@ -113,15 +113,15 @@ TEST(test_parse_bad_crc)
     modbus_rtu_frame_t frame;
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, NULL, 0);
     buf[len - 1] ^= 0xFF;
-    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), MODBUS_RTU_ERR_PARAM);
+    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), MODBUS_RTU_ERR_CRC);
 }
 
 TEST(test_parse_too_short)
 {
     uint8_t buf[] = {0x01, 0x03, 0x00};
     modbus_rtu_frame_t frame;
-    ASSERT_EQ(modbus_rtu_parse(buf, 3, &frame), MODBUS_RTU_ERR_PARAM);
-    ASSERT_EQ(modbus_rtu_parse(buf, 0, &frame), MODBUS_RTU_ERR_PARAM);
+    ASSERT_EQ(modbus_rtu_parse(buf, 3, &frame), MODBUS_RTU_ERR_OVERFLOW);
+    ASSERT_EQ(modbus_rtu_parse(buf, 0, &frame), MODBUS_RTU_ERR_OVERFLOW);
 }
 
 TEST(test_parse_null_safety)
@@ -185,9 +185,9 @@ TEST(test_master_read_input)
 TEST(test_master_read_invalid)
 {
     uint8_t buf[32];
-    ASSERT_TRUE(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x01, 0, 1) == -1);
-    ASSERT_TRUE(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x03, 0, 0) == -1);
-    ASSERT_TRUE(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x03, 0, 126) == -1);
+    ASSERT_EQ(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x01, 0, 1), MODBUS_RTU_ERR_PARAM);
+    ASSERT_EQ(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x03, 0, 0), MODBUS_RTU_ERR_OVERFLOW);
+    ASSERT_EQ(modbus_rtu_master_read_regs(buf, sizeof(buf), 1, 0x03, 0, 126), MODBUS_RTU_ERR_OVERFLOW);
 }
 
 TEST(test_master_write_single)
@@ -222,10 +222,10 @@ TEST(test_master_write_multiple_invalid)
 {
     uint8_t buf[64];
     uint16_t v = 1;
-    ASSERT_TRUE(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0, 0, &v) == -1);
-    ASSERT_TRUE(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0, 1, NULL) == -1);
-    ASSERT_TRUE(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0,
-           MODBUS_MAX_WRITE_REGS + 1, &v) == -1);
+    ASSERT_EQ(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0, 0, &v), MODBUS_RTU_ERR_OVERFLOW);
+    ASSERT_EQ(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0, 1, NULL), MODBUS_RTU_ERR_PARAM);
+    ASSERT_EQ(modbus_rtu_master_write_regs(buf, sizeof(buf), 1, 0,
+           MODBUS_MAX_WRITE_REGS + 1, &v), MODBUS_RTU_ERR_OVERFLOW);
 }
 
 TEST(test_master_get_regs)
@@ -265,17 +265,17 @@ TEST(test_master_get_regs_invalid)
 {
     uint16_t regs[4];
 
-    ASSERT_TRUE(modbus_rtu_master_get_regs(NULL, regs, 4) == -1);
+    ASSERT_EQ(modbus_rtu_master_get_regs(NULL, regs, 4), MODBUS_RTU_ERR_PARAM);
 
     modbus_rtu_frame_t frame = {0};
-    ASSERT_TRUE(modbus_rtu_master_get_regs(&frame, regs, 4) == -1);
+    ASSERT_EQ(modbus_rtu_master_get_regs(&frame, regs, 4), MODBUS_RTU_ERR_PARAM);
 
     /* Odd byte count */
     uint8_t buf[32];
     uint8_t bad_data[] = {0x03, 0x00, 0x01, 0x00};
     int len = modbus_rtu_build(buf, sizeof(buf), 1, 3, bad_data, 4);
     modbus_rtu_parse(buf, (uint16_t)len, &frame);
-    ASSERT_TRUE(modbus_rtu_master_get_regs(&frame, regs, 4) == -1);
+    ASSERT_EQ(modbus_rtu_master_get_regs(&frame, regs, 4), MODBUS_RTU_ERR_OVERFLOW);
 }
 
 /* ============================================================ */
@@ -608,7 +608,7 @@ TEST(test_build_exceeds_max_frame)
     memset(data, 0xBB, sizeof(data));
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03,
                                data, MODBUS_RTU_MAX_FRAME - 3);
-    ASSERT_TRUE(len == -1);
+    ASSERT_EQ(len, MODBUS_RTU_ERR_OVERFLOW);
 }
 
 TEST(test_slave_reinit_address)
@@ -647,11 +647,11 @@ TEST(test_crc_corruption_middle_byte)
     ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == 0);
 
     buf[3] ^= 0xFF;
-    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
+    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), MODBUS_RTU_ERR_CRC);
 
     buf[3] ^= 0xFF;
     buf[0] ^= 0x01;
-    ASSERT_TRUE(modbus_rtu_parse(buf, (uint16_t)len, &frame) == -1);
+    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), MODBUS_RTU_ERR_CRC);
 }
 
 TEST(test_build_null_data_nonzero_len)
@@ -678,7 +678,7 @@ TEST(test_slave_resp_buffer_too_small)
                                                0x01, MODBUS_FC_READ_HOLDING_REGS,
                                                0, 1);
     int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
-    ASSERT_TRUE(resp_len == -1);
+    ASSERT_EQ(resp_len, MODBUS_RTU_ERR_OVERFLOW);
 }
 
 TEST(test_slave_write_multiple_mismatched_count)
@@ -739,10 +739,10 @@ TEST(test_build_data_len_overflow)
 {
     uint8_t buf[512] = {0};
     int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, 0xFFFF);
-    ASSERT_TRUE(len == -1);
+    ASSERT_EQ(len, MODBUS_RTU_ERR_OVERFLOW);
 
     len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 3);
-    ASSERT_TRUE(len == -1);
+    ASSERT_EQ(len, MODBUS_RTU_ERR_OVERFLOW);
 
     len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 4);
     ASSERT_TRUE(len == MODBUS_RTU_MAX_FRAME);
