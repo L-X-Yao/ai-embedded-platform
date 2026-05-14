@@ -48,7 +48,7 @@ static void setup(void)
  * bits[15:4]). raw is the signed 12-bit value. */
 static void plant_temp(int16_t raw)
 {
-    uint16_t val = (uint16_t)(raw << 4);
+    uint16_t val = (uint16_t)((uint16_t)raw << 4);
     mock_regs[0x00] = (uint8_t)(val >> 8);
     mock_regs[0x01] = (uint8_t)(val & 0xFFu);
 }

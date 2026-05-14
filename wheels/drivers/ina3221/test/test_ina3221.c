@@ -284,7 +284,7 @@ TEST(test_read_channel_negative_shunt)
 
     /* Negative shunt: -1000 uV -> -25 counts, shifted left 3 */
     int16_t neg_counts = -25;
-    mock16_set_reg(0x01, (uint16_t)(neg_counts << 3));
+    mock16_set_reg(0x01, (uint16_t)((uint16_t)neg_counts << 3));
     mock16_set_reg(0x02, (uint16_t)(1500 << 3));
 
     float shunt_uv, bus_mv;
@@ -457,7 +457,7 @@ TEST(test_current_negative)
 
     /* Negative shunt: -2000 uV = -50 counts */
     int16_t neg = -50;
-    mock16_set_reg(0x01, (uint16_t)(neg << 3));
+    mock16_set_reg(0x01, (uint16_t)((uint16_t)neg << 3));
     mock16_set_reg(0x02, (uint16_t)(1500 << 3));
     /* Zero out other channels */
     mock16_set_reg(0x03, 0);

@@ -49,9 +49,9 @@ static void hw_model_inject_mag(float x_ut, float y_ut, float z_ut)
     int16_t rx = (int16_t)(x_ut / 0.3f);
     int16_t ry = (int16_t)(y_ut / 0.3f);
     int16_t rz = (int16_t)(z_ut / 0.15f);
-    uint16_t ux = (uint16_t)(rx << 3);
-    uint16_t uy = (uint16_t)(ry << 3);
-    uint16_t uz = (uint16_t)(rz << 1);
+    uint16_t ux = (uint16_t)((uint16_t)rx << 3);
+    uint16_t uy = (uint16_t)((uint16_t)ry << 3);
+    uint16_t uz = (uint16_t)((uint16_t)rz << 1);
     hw_regs[0x42] = (uint8_t)(ux & 0xFF);
     hw_regs[0x43] = (uint8_t)(ux >> 8);
     hw_regs[0x44] = (uint8_t)(uy & 0xFF);

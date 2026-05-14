@@ -53,9 +53,9 @@ static void hw_model_inject_accel(float x_mg, float y_mg, float z_mg,
     int16_t ry = (int16_t)(y_mg / sensitivity);
     int16_t rz = (int16_t)(z_mg / sensitivity);
     /* Left-justify 10-bit in 16-bit (shift left 6) */
-    uint16_t ux = (uint16_t)(rx << 6);
-    uint16_t uy = (uint16_t)(ry << 6);
-    uint16_t uz = (uint16_t)(rz << 6);
+    uint16_t ux = (uint16_t)((uint16_t)rx << 6);
+    uint16_t uy = (uint16_t)((uint16_t)ry << 6);
+    uint16_t uz = (uint16_t)((uint16_t)rz << 6);
     hw_regs[0x28] = (uint8_t)(ux & 0xFF);
     hw_regs[0x29] = (uint8_t)(ux >> 8);
     hw_regs[0x2A] = (uint8_t)(uy & 0xFF);
