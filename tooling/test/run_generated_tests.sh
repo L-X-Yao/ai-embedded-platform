@@ -46,6 +46,8 @@ echo "Running $LABEL tests ($PATTERN)..."
 
 fail=0
 total=0
+fail_names=()
+build_fail_names=()
 
 # Cleanup temp executables on exit
 trap 'rm -f /tmp/gentest_*_$$' EXIT
@@ -105,14 +107,28 @@ while IFS= read -r f; do
         else
             printf "  FAIL %s\n" "$name"
             fail=$((fail + 1))
+            fail_names+=("$name")
         fi
         rm -f "$out"
     else
         printf "  BUILD_FAIL %s\n" "$name"
         fail=$((fail + 1))
+        build_fail_names+=("$name")
     fi
 done < <(find wheels/ -name "$PATTERN" 2>/dev/null | sort)
 
 echo ""
-echo "$total wheels, $fail failures"
+# Print FAIL roster at the tail so it survives `tail -N` invocations.
+# Counts derive from the same arrays so output and counter never drift.
+if [ ${#fail_names[@]} -gt 0 ] || [ ${#build_fail_names[@]} -gt 0 ]; then
+    echo "=== FAILS ==="
+    for n in "${fail_names[@]}"; do
+        printf "  RUN_FAIL    %s\n" "$n"
+    done
+    for n in "${build_fail_names[@]}"; do
+        printf "  BUILD_FAIL  %s\n" "$n"
+    done
+fi
+echo "=== SUMMARY ==="
+echo "$total wheels, $fail failures (${#fail_names[@]} run, ${#build_fail_names[@]} build)"
 [ $fail -eq 0 ]
