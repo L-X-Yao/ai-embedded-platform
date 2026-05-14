@@ -58,7 +58,7 @@ varint_err_t varint_decode_u64(const uint8_t *buf, size_t len,
 
 static uint64_t zigzag_encode(int64_t n)
 {
-    return (uint64_t)((n << 1) ^ (n >> 63));
+    return ((uint64_t)n << 1) ^ (uint64_t)(n >> 63);
 }
 
 static int64_t zigzag_decode(uint64_t n)
