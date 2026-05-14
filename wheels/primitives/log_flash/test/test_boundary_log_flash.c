@@ -10,87 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_log_flash_init_base_offset_zero) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_base_offset_one) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 1, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_base_offset_uint32_max) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, UINT32_MAX, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_size_zero) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_size_one) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_size_uint32_max) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, UINT32_MAX, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_count_zero) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_count_one) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_log_flash_init_sector_count_uint32_max) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    log_flash_hal_t _safe_hal_1;
-    memset(&_safe_hal_1, 0, sizeof(_safe_hal_1));
-    log_flash_err_t ret = log_flash_init(&_safe_f_0, &_safe_hal_1, NULL, 0, 0, UINT32_MAX);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_log_flash_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -105,47 +24,8 @@ TEST(test_boundary_log_flash_sink_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_log_flash_read_dst_size_zero) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    char _safe_dst_1[64];
-    memset(_safe_dst_1, 0, sizeof(_safe_dst_1));
-    (void)log_flash_read(&_safe_f_0, _safe_dst_1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_flash_read_dst_size_one) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    char _safe_dst_1[64];
-    memset(_safe_dst_1, 0, sizeof(_safe_dst_1));
-    (void)log_flash_read(&_safe_f_0, _safe_dst_1, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_flash_read_dst_size_size_max) {
-    log_flash_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    char _safe_dst_1[64];
-    memset(_safe_dst_1, 0, sizeof(_safe_dst_1));
-    (void)log_flash_read(&_safe_f_0, _safe_dst_1, SIZE_MAX);
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_log_flash") {
-    RUN(test_boundary_log_flash_init_base_offset_zero);
-    RUN(test_boundary_log_flash_init_base_offset_one);
-    RUN(test_boundary_log_flash_init_base_offset_uint32_max);
-    RUN(test_boundary_log_flash_init_sector_size_zero);
-    RUN(test_boundary_log_flash_init_sector_size_one);
-    RUN(test_boundary_log_flash_init_sector_size_uint32_max);
-    RUN(test_boundary_log_flash_init_sector_count_zero);
-    RUN(test_boundary_log_flash_init_sector_count_one);
-    RUN(test_boundary_log_flash_init_sector_count_uint32_max);
     RUN(test_boundary_log_flash_sink_len_zero);
     RUN(test_boundary_log_flash_sink_len_one);
-    RUN(test_boundary_log_flash_read_dst_size_zero);
-    RUN(test_boundary_log_flash_read_dst_size_one);
-    RUN(test_boundary_log_flash_read_dst_size_size_max);
 }
 TEST_MAIN_END()

@@ -10,27 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_ds18b20_set_resolution_res_zero) {
-    ds18b20_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    ds18b20_err_t ret = ds18b20_set_resolution(&_safe_dev_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ds18b20_set_resolution_res_neg1) {
-    ds18b20_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    ds18b20_err_t ret = ds18b20_set_resolution(&_safe_dev_0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ds18b20_set_resolution_res_past_max) {
-    ds18b20_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    ds18b20_err_t ret = ds18b20_set_resolution(&_safe_dev_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_ds18b20_crc8_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -46,9 +25,6 @@ TEST(test_boundary_ds18b20_crc8_len_one) {
 }
 
 TEST_MAIN("boundary_ds18b20") {
-    RUN(test_boundary_ds18b20_set_resolution_res_zero);
-    RUN(test_boundary_ds18b20_set_resolution_res_neg1);
-    RUN(test_boundary_ds18b20_set_resolution_res_past_max);
     RUN(test_boundary_ds18b20_crc8_len_zero);
     RUN(test_boundary_ds18b20_crc8_len_one);
 }

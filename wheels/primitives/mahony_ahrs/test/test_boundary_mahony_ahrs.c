@@ -11,443 +11,443 @@
 #include <math.h>
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gx_dps_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gy_dps_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_gz_dps_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ax_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_ay_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_az_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mx_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_my_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_neg_zero) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_nan) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_neg_inf) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_mahony_ahrs_update_mz_neg_flt_max) {
-    mahony_ahrs_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)mahony_ahrs_update(&_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX);
+    mahony_ahrs_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)mahony_ahrs_update(_safe_f_0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -FLT_MAX);
     /* must not crash */
 }
 

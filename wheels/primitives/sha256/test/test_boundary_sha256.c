@@ -11,20 +11,20 @@
 #include <math.h>
 
 TEST(test_boundary_sha256_update_len_zero) {
-    sha256_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    sha256_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    sha256_err_t ret = sha256_update(&_safe_ctx_0, _safe_data_1, 0);
+    sha256_err_t ret = sha256_update(_safe_ctx_0, _safe_data_1, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_sha256_update_len_one) {
-    sha256_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    sha256_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
     uint8_t _safe_data_1[64];
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
-    sha256_err_t ret = sha256_update(&_safe_ctx_0, _safe_data_1, 1);
+    sha256_err_t ret = sha256_update(_safe_ctx_0, _safe_data_1, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 

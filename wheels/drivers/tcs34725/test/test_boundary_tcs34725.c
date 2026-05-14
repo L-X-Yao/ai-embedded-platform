@@ -10,114 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_tcs34725_init_integ_zero) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
+/* No boundary tests generated: all 6 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_tcs34725_init_integ_neg1) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, -1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_init_integ_past_max) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, 1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_init_gain_zero) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_init_gain_neg1) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, 0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_init_gain_past_max) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    tcs34725_err_t ret = tcs34725_init(&_safe_dev_0, &_safe_i2c_1, 0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_integration_time_integ_zero) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_integration_time(&_safe_dev_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_integration_time_integ_neg1) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_integration_time(&_safe_dev_0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_integration_time_integ_past_max) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_integration_time(&_safe_dev_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_gain_gain_zero) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_gain(&_safe_dev_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_gain_gain_neg1) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_gain(&_safe_dev_0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_tcs34725_set_gain_gain_past_max) {
-    tcs34725_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    tcs34725_err_t ret = tcs34725_set_gain(&_safe_dev_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
+TEST(test_boundary_tcs34725_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_tcs34725") {
-    RUN(test_boundary_tcs34725_init_integ_zero);
-    RUN(test_boundary_tcs34725_init_integ_neg1);
-    RUN(test_boundary_tcs34725_init_integ_past_max);
-    RUN(test_boundary_tcs34725_init_gain_zero);
-    RUN(test_boundary_tcs34725_init_gain_neg1);
-    RUN(test_boundary_tcs34725_init_gain_past_max);
-    RUN(test_boundary_tcs34725_set_integration_time_integ_zero);
-    RUN(test_boundary_tcs34725_set_integration_time_integ_neg1);
-    RUN(test_boundary_tcs34725_set_integration_time_integ_past_max);
-    RUN(test_boundary_tcs34725_set_gain_gain_zero);
-    RUN(test_boundary_tcs34725_set_gain_gain_neg1);
-    RUN(test_boundary_tcs34725_set_gain_gain_past_max);
+    RUN(test_boundary_tcs34725_placeholder);
 }
 TEST_MAIN_END()

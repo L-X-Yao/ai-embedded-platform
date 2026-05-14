@@ -24,6 +24,16 @@ target_include_directories(test_null_bh1750 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bh1750
+    test_boundary_bh1750.c
+    ../bh1750.c
+)
+target_include_directories(test_boundary_bh1750 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bh1750 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bh1750_tests COMMAND test_bh1750)
 
@@ -53,3 +63,4 @@ target_link_libraries(test_hw_model_bh1750 PRIVATE m)
 
 add_test(NAME bh1750_hw_model_tests COMMAND test_hw_model_bh1750)
 add_test(NAME bh1750_null_tests COMMAND test_null_bh1750)
+add_test(NAME bh1750_boundary_tests COMMAND test_boundary_bh1750)

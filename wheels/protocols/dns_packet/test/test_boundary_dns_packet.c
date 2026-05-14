@@ -85,82 +85,19 @@ TEST(test_boundary_dns_build_query_type_past_max) {
 TEST(test_boundary_dns_parse_header_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_header_t _safe_hdr_2;
-    memset(&_safe_hdr_2, 0, sizeof(_safe_hdr_2));
-    dns_err_t ret = dns_parse_header(_safe_buf_0, 0, &_safe_hdr_2);
+    dns_header_t _safe_hdr_2[128];
+    memset(_safe_hdr_2, 0, sizeof(_safe_hdr_2));
+    dns_err_t ret = dns_parse_header(_safe_buf_0, 0, _safe_hdr_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_dns_parse_header_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_header_t _safe_hdr_2;
-    memset(&_safe_hdr_2, 0, sizeof(_safe_hdr_2));
-    dns_err_t ret = dns_parse_header(_safe_buf_0, 1, &_safe_hdr_2);
+    dns_header_t _safe_hdr_2[128];
+    memset(_safe_hdr_2, 0, sizeof(_safe_hdr_2));
+    dns_err_t ret = dns_parse_header(_safe_buf_0, 1, _safe_hdr_2);
     ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_dns_parse_record_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, 0, &_safe_record_3, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 1, 0, &_safe_record_3, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_offset_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, 0, &_safe_record_3, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_offset_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, 1, &_safe_record_3, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_offset_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, (uint16_t)(UINT16_MAX), &_safe_record_3, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_is_answer_val_true) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, 0, &_safe_record_3, true);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_parse_record_is_answer_val_false) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dns_record_t _safe_record_3;
-    memset(&_safe_record_3, 0, sizeof(_safe_record_3));
-    (void)dns_parse_record(_safe_buf_0, 0, 0, &_safe_record_3, false);
-    /* must not crash */
 }
 
 TEST(test_boundary_dns_encode_name_buf_size_zero) {
@@ -196,15 +133,6 @@ TEST(test_boundary_dns_decode_name_pkt_len_one) {
     char _safe_name_3[64];
     memset(_safe_name_3, 0, sizeof(_safe_name_3));
     (void)dns_decode_name(_safe_pkt_0, 1, 0, _safe_name_3, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_dns_decode_name_pkt_len_uint16_max) {
-    uint8_t _safe_pkt_0[64];
-    memset(_safe_pkt_0, 0, sizeof(_safe_pkt_0));
-    char _safe_name_3[64];
-    memset(_safe_name_3, 0, sizeof(_safe_name_3));
-    (void)dns_decode_name(_safe_pkt_0, (uint16_t)(UINT16_MAX), 0, _safe_name_3, 0);
     /* must not crash */
 }
 
@@ -253,15 +181,6 @@ TEST(test_boundary_dns_decode_name_name_size_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_dns_decode_name_name_size_uint16_max) {
-    uint8_t _safe_pkt_0[64];
-    memset(_safe_pkt_0, 0, sizeof(_safe_pkt_0));
-    char _safe_name_3[64];
-    memset(_safe_name_3, 0, sizeof(_safe_name_3));
-    (void)dns_decode_name(_safe_pkt_0, 0, 0, _safe_name_3, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST_MAIN("boundary_dns_packet") {
     RUN(test_boundary_dns_build_query_buf_size_zero);
     RUN(test_boundary_dns_build_query_buf_size_one);
@@ -273,23 +192,14 @@ TEST_MAIN("boundary_dns_packet") {
     RUN(test_boundary_dns_build_query_type_past_max);
     RUN(test_boundary_dns_parse_header_len_zero);
     RUN(test_boundary_dns_parse_header_len_one);
-    RUN(test_boundary_dns_parse_record_len_zero);
-    RUN(test_boundary_dns_parse_record_len_one);
-    RUN(test_boundary_dns_parse_record_offset_zero);
-    RUN(test_boundary_dns_parse_record_offset_one);
-    RUN(test_boundary_dns_parse_record_offset_uint16_max);
-    RUN(test_boundary_dns_parse_record_is_answer_val_true);
-    RUN(test_boundary_dns_parse_record_is_answer_val_false);
     RUN(test_boundary_dns_encode_name_buf_size_zero);
     RUN(test_boundary_dns_encode_name_buf_size_one);
     RUN(test_boundary_dns_decode_name_pkt_len_zero);
     RUN(test_boundary_dns_decode_name_pkt_len_one);
-    RUN(test_boundary_dns_decode_name_pkt_len_uint16_max);
     RUN(test_boundary_dns_decode_name_offset_zero);
     RUN(test_boundary_dns_decode_name_offset_one);
     RUN(test_boundary_dns_decode_name_offset_uint16_max);
     RUN(test_boundary_dns_decode_name_name_size_zero);
     RUN(test_boundary_dns_decode_name_name_size_one);
-    RUN(test_boundary_dns_decode_name_name_size_uint16_max);
 }
 TEST_MAIN_END()

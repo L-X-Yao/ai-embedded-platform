@@ -13,18 +13,18 @@
 TEST(test_boundary_ir_nec_decode_count_zero) {
     ir_nec_pulse_t _safe_pulses_0;
     memset(&_safe_pulses_0, 0, sizeof(_safe_pulses_0));
-    ir_nec_msg_t _safe_msg_2;
-    memset(&_safe_msg_2, 0, sizeof(_safe_msg_2));
-    ir_nec_err_t ret = ir_nec_decode(&_safe_pulses_0, 0, &_safe_msg_2);
+    ir_nec_msg_t _safe_msg_2[128];
+    memset(_safe_msg_2, 0, sizeof(_safe_msg_2));
+    ir_nec_err_t ret = ir_nec_decode(&_safe_pulses_0, 0, _safe_msg_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_decode_count_one) {
     ir_nec_pulse_t _safe_pulses_0;
     memset(&_safe_pulses_0, 0, sizeof(_safe_pulses_0));
-    ir_nec_msg_t _safe_msg_2;
-    memset(&_safe_msg_2, 0, sizeof(_safe_msg_2));
-    ir_nec_err_t ret = ir_nec_decode(&_safe_pulses_0, 1, &_safe_msg_2);
+    ir_nec_msg_t _safe_msg_2[128];
+    memset(_safe_msg_2, 0, sizeof(_safe_msg_2));
+    ir_nec_err_t ret = ir_nec_decode(&_safe_pulses_0, 1, _safe_msg_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -43,78 +43,78 @@ TEST(test_boundary_ir_nec_is_repeat_count_one) {
 }
 
 TEST(test_boundary_ir_nec_encode_extended_address_zero) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended(0, 0, &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended(0, 0, _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_encode_extended_address_one) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended(1, 0, &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended(1, 0, _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_encode_extended_address_uint16_max) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended((uint16_t)(UINT16_MAX), 0, &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended((uint16_t)(UINT16_MAX), 0, _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_encode_extended_command_zero) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended(0, 0, &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended(0, 0, _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_encode_extended_command_one) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended(0, 1, &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended(0, 1, _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_encode_extended_command_uint8_max) {
-    ir_nec_pulse_t _safe_pulses_2;
-    memset(&_safe_pulses_2, 0, sizeof(_safe_pulses_2));
-    uint16_t _safe_count_3;
-    memset(&_safe_count_3, 0, sizeof(_safe_count_3));
-    ir_nec_err_t ret = ir_nec_encode_extended(0, (uint8_t)(UINT8_MAX), &_safe_pulses_2, &_safe_count_3);
+    ir_nec_pulse_t _safe_pulses_2[128];
+    memset(_safe_pulses_2, 0, sizeof(_safe_pulses_2));
+    uint16_t _safe_count_3[128];
+    memset(_safe_count_3, 0, sizeof(_safe_count_3));
+    ir_nec_err_t ret = ir_nec_encode_extended(0, (uint8_t)(UINT8_MAX), _safe_pulses_2, _safe_count_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_decode_extended_count_zero) {
     ir_nec_pulse_t _safe_pulses_0;
     memset(&_safe_pulses_0, 0, sizeof(_safe_pulses_0));
-    uint16_t _safe_address_2;
-    memset(&_safe_address_2, 0, sizeof(_safe_address_2));
+    uint16_t _safe_address_2[128];
+    memset(_safe_address_2, 0, sizeof(_safe_address_2));
     uint8_t _safe_command_3[64];
     memset(_safe_command_3, 0, sizeof(_safe_command_3));
-    ir_nec_err_t ret = ir_nec_decode_extended(&_safe_pulses_0, 0, &_safe_address_2, _safe_command_3);
+    ir_nec_err_t ret = ir_nec_decode_extended(&_safe_pulses_0, 0, _safe_address_2, _safe_command_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ir_nec_decode_extended_count_one) {
     ir_nec_pulse_t _safe_pulses_0;
     memset(&_safe_pulses_0, 0, sizeof(_safe_pulses_0));
-    uint16_t _safe_address_2;
-    memset(&_safe_address_2, 0, sizeof(_safe_address_2));
+    uint16_t _safe_address_2[128];
+    memset(_safe_address_2, 0, sizeof(_safe_address_2));
     uint8_t _safe_command_3[64];
     memset(_safe_command_3, 0, sizeof(_safe_command_3));
-    ir_nec_err_t ret = ir_nec_decode_extended(&_safe_pulses_0, 1, &_safe_address_2, _safe_command_3);
+    ir_nec_err_t ret = ir_nec_decode_extended(&_safe_pulses_0, 1, _safe_address_2, _safe_command_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 

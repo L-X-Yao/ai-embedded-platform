@@ -11,44 +11,44 @@
 #include <math.h>
 
 TEST(test_boundary_i2c_scan_range_start_zero) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 0, &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 0, _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_i2c_scan_range_start_one) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 1, 0, &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 1, 0, _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_i2c_scan_range_start_uint8_max) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, (uint8_t)(UINT8_MAX), 0, &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, (uint8_t)(UINT8_MAX), 0, _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_i2c_scan_range_end_zero) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 0, &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 0, _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_i2c_scan_range_end_one) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 1, &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, 1, _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_i2c_scan_range_end_uint8_max) {
-    i2c_scan_result_t _safe_result_4;
-    memset(&_safe_result_4, 0, sizeof(_safe_result_4));
-    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, (uint8_t)(UINT8_MAX), &_safe_result_4);
+    i2c_scan_result_t _safe_result_4[128];
+    memset(_safe_result_4, 0, sizeof(_safe_result_4));
+    i2c_scan_err_t ret = i2c_scan_range(NULL, NULL, 0, (uint8_t)(UINT8_MAX), _safe_result_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 

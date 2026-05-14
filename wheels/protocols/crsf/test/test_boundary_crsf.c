@@ -27,18 +27,18 @@ TEST(test_boundary_crsf_crc8_len_one) {
 TEST(test_boundary_crsf_decode_frame_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    crsf_frame_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    crsf_err_t ret = crsf_decode_frame(_safe_data_0, 0, &_safe_out_2);
+    crsf_frame_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    crsf_err_t ret = crsf_decode_frame(_safe_data_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_crsf_decode_frame_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    crsf_frame_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    crsf_err_t ret = crsf_decode_frame(_safe_data_0, 1, &_safe_out_2);
+    crsf_frame_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    crsf_err_t ret = crsf_decode_frame(_safe_data_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -47,9 +47,9 @@ TEST(test_boundary_crsf_encode_frame_cap_zero) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    crsf_err_t ret = crsf_encode_frame(&_safe_frame_0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    crsf_err_t ret = crsf_encode_frame(&_safe_frame_0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -58,27 +58,27 @@ TEST(test_boundary_crsf_encode_frame_cap_one) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    crsf_err_t ret = crsf_encode_frame(&_safe_frame_0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    crsf_err_t ret = crsf_encode_frame(&_safe_frame_0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_crsf_unpack_channels_len_zero) {
     uint8_t _safe_payload_0[64];
     memset(_safe_payload_0, 0, sizeof(_safe_payload_0));
-    crsf_channels_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    crsf_err_t ret = crsf_unpack_channels(_safe_payload_0, 0, &_safe_out_2);
+    crsf_channels_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    crsf_err_t ret = crsf_unpack_channels(_safe_payload_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_crsf_unpack_channels_len_one) {
     uint8_t _safe_payload_0[64];
     memset(_safe_payload_0, 0, sizeof(_safe_payload_0));
-    crsf_channels_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    crsf_err_t ret = crsf_unpack_channels(_safe_payload_0, 1, &_safe_out_2);
+    crsf_channels_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    crsf_err_t ret = crsf_unpack_channels(_safe_payload_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 

@@ -36,6 +36,16 @@ target_include_directories(test_null_bmp280 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bmp280
+    test_boundary_bmp280.c
+    ../bmp280.c
+)
+target_include_directories(test_boundary_bmp280 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bmp280 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bmp280_tests COMMAND test_bmp280)
 add_test(NAME bmp280_prop_tests COMMAND prop_bmp280)
@@ -53,3 +63,4 @@ target_link_libraries(test_hw_model_bmp280 PRIVATE m)
 
 add_test(NAME bmp280_hw_model_tests COMMAND test_hw_model_bmp280)
 add_test(NAME bmp280_null_tests COMMAND test_null_bmp280)
+add_test(NAME bmp280_boundary_tests COMMAND test_boundary_bmp280)

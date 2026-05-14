@@ -13,80 +13,80 @@
 TEST(test_boundary_varint_encode_u64_cap_zero) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_encode_u64(0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_encode_u64(0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_encode_u64_cap_one) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_encode_u64(0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_encode_u64(0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_decode_u64_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint64_t _safe_value_2;
-    memset(&_safe_value_2, 0, sizeof(_safe_value_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_decode_u64(_safe_buf_0, 0, &_safe_value_2, &_safe_out_len_3);
+    uint64_t _safe_value_2[128];
+    memset(_safe_value_2, 0, sizeof(_safe_value_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_decode_u64(_safe_buf_0, 0, _safe_value_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_decode_u64_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint64_t _safe_value_2;
-    memset(&_safe_value_2, 0, sizeof(_safe_value_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_decode_u64(_safe_buf_0, 1, &_safe_value_2, &_safe_out_len_3);
+    uint64_t _safe_value_2[128];
+    memset(_safe_value_2, 0, sizeof(_safe_value_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_decode_u64(_safe_buf_0, 1, _safe_value_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_encode_s64_cap_zero) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_encode_s64(0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_encode_s64(0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_encode_s64_cap_one) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_encode_s64(0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_encode_s64(0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_decode_s64_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    int64_t _safe_value_2;
-    memset(&_safe_value_2, 0, sizeof(_safe_value_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_decode_s64(_safe_buf_0, 0, &_safe_value_2, &_safe_out_len_3);
+    int64_t _safe_value_2[128];
+    memset(_safe_value_2, 0, sizeof(_safe_value_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_decode_s64(_safe_buf_0, 0, _safe_value_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_varint_decode_s64_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    int64_t _safe_value_2;
-    memset(&_safe_value_2, 0, sizeof(_safe_value_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    varint_err_t ret = varint_decode_s64(_safe_buf_0, 1, &_safe_value_2, &_safe_out_len_3);
+    int64_t _safe_value_2[128];
+    memset(_safe_value_2, 0, sizeof(_safe_value_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    varint_err_t ret = varint_decode_s64(_safe_buf_0, 1, _safe_value_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 

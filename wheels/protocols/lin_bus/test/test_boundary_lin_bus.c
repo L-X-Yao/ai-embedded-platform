@@ -45,9 +45,9 @@ TEST(test_boundary_lin_bus_encode_cap_zero) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_len_3;
-    memset(&_safe_len_3, 0, sizeof(_safe_len_3));
-    lin_bus_err_t ret = lin_bus_encode(&_safe_frame_0, _safe_buf_1, 0, &_safe_len_3);
+    size_t _safe_len_3[128];
+    memset(_safe_len_3, 0, sizeof(_safe_len_3));
+    lin_bus_err_t ret = lin_bus_encode(&_safe_frame_0, _safe_buf_1, 0, _safe_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -56,27 +56,27 @@ TEST(test_boundary_lin_bus_encode_cap_one) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_len_3;
-    memset(&_safe_len_3, 0, sizeof(_safe_len_3));
-    lin_bus_err_t ret = lin_bus_encode(&_safe_frame_0, _safe_buf_1, 1, &_safe_len_3);
+    size_t _safe_len_3[128];
+    memset(_safe_len_3, 0, sizeof(_safe_len_3));
+    lin_bus_err_t ret = lin_bus_encode(&_safe_frame_0, _safe_buf_1, 1, _safe_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_lin_bus_decode_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lin_bus_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    lin_bus_err_t ret = lin_bus_decode(_safe_buf_0, 0, &_safe_frame_2);
+    lin_bus_frame_t _safe_frame_2[128];
+    memset(_safe_frame_2, 0, sizeof(_safe_frame_2));
+    lin_bus_err_t ret = lin_bus_decode(_safe_buf_0, 0, _safe_frame_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_lin_bus_decode_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lin_bus_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    lin_bus_err_t ret = lin_bus_decode(_safe_buf_0, 1, &_safe_frame_2);
+    lin_bus_frame_t _safe_frame_2[128];
+    memset(_safe_frame_2, 0, sizeof(_safe_frame_2));
+    lin_bus_err_t ret = lin_bus_decode(_safe_buf_0, 1, _safe_frame_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 

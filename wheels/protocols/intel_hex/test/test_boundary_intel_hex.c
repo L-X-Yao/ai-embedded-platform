@@ -13,18 +13,18 @@
 TEST(test_boundary_intel_hex_decode_len_zero) {
     char _safe_line_0[64];
     memset(_safe_line_0, 0, sizeof(_safe_line_0));
-    intel_hex_record_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    intel_hex_err_t ret = intel_hex_decode(_safe_line_0, 0, &_safe_out_2);
+    intel_hex_record_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    intel_hex_err_t ret = intel_hex_decode(_safe_line_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_intel_hex_decode_len_one) {
     char _safe_line_0[64];
     memset(_safe_line_0, 0, sizeof(_safe_line_0));
-    intel_hex_record_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    intel_hex_err_t ret = intel_hex_decode(_safe_line_0, 1, &_safe_out_2);
+    intel_hex_record_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    intel_hex_err_t ret = intel_hex_decode(_safe_line_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -33,9 +33,9 @@ TEST(test_boundary_intel_hex_encode_cap_zero) {
     memset(&_safe_rec_0, 0, sizeof(_safe_rec_0));
     char _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    intel_hex_err_t ret = intel_hex_encode(&_safe_rec_0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    intel_hex_err_t ret = intel_hex_encode(&_safe_rec_0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -44,9 +44,9 @@ TEST(test_boundary_intel_hex_encode_cap_one) {
     memset(&_safe_rec_0, 0, sizeof(_safe_rec_0));
     char _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    intel_hex_err_t ret = intel_hex_encode(&_safe_rec_0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    intel_hex_err_t ret = intel_hex_encode(&_safe_rec_0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 

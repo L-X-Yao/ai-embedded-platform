@@ -11,29 +11,29 @@
 #include <math.h>
 
 TEST(test_boundary_midi_parse_byte_zero) {
-    midi_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    midi_msg_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    (void)midi_parse(&_safe_p_0, 0, &_safe_out_2);
+    midi_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    midi_msg_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    (void)midi_parse(_safe_p_0, 0, _safe_out_2);
     /* must not crash */
 }
 
 TEST(test_boundary_midi_parse_byte_one) {
-    midi_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    midi_msg_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    (void)midi_parse(&_safe_p_0, 1, &_safe_out_2);
+    midi_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    midi_msg_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    (void)midi_parse(_safe_p_0, 1, _safe_out_2);
     /* must not crash */
 }
 
 TEST(test_boundary_midi_parse_byte_uint8_max) {
-    midi_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    midi_msg_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    (void)midi_parse(&_safe_p_0, (uint8_t)(UINT8_MAX), &_safe_out_2);
+    midi_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    midi_msg_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    (void)midi_parse(_safe_p_0, (uint8_t)(UINT8_MAX), _safe_out_2);
     /* must not crash */
 }
 

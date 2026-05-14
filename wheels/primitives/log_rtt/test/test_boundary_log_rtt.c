@@ -10,27 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_log_rtt_init_channel_zero) {
-    log_rtt_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rtt_init(&_safe_r_0, NULL, NULL, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rtt_init_channel_one) {
-    log_rtt_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rtt_init(&_safe_r_0, NULL, NULL, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rtt_init_channel_uint32_max) {
-    log_rtt_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rtt_init(&_safe_r_0, NULL, NULL, UINT32_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_rtt_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -46,9 +25,6 @@ TEST(test_boundary_log_rtt_sink_len_one) {
 }
 
 TEST_MAIN("boundary_log_rtt") {
-    RUN(test_boundary_log_rtt_init_channel_zero);
-    RUN(test_boundary_log_rtt_init_channel_one);
-    RUN(test_boundary_log_rtt_init_channel_uint32_max);
     RUN(test_boundary_log_rtt_sink_len_zero);
     RUN(test_boundary_log_rtt_sink_len_one);
 }

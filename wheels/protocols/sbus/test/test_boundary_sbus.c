@@ -11,23 +11,23 @@
 #include <math.h>
 
 TEST(test_boundary_sbus_parse_byte_byte_zero) {
-    sbus_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)sbus_parse_byte(&_safe_parser_0, 0);
+    sbus_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)sbus_parse_byte(_safe_parser_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_sbus_parse_byte_byte_one) {
-    sbus_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)sbus_parse_byte(&_safe_parser_0, 1);
+    sbus_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)sbus_parse_byte(_safe_parser_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_sbus_parse_byte_byte_uint8_max) {
-    sbus_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)sbus_parse_byte(&_safe_parser_0, (uint8_t)(UINT8_MAX));
+    sbus_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)sbus_parse_byte(_safe_parser_0, (uint8_t)(UINT8_MAX));
     /* must not crash */
 }
 

@@ -35,6 +35,17 @@ target_compile_definitions(test_null_dps310 PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_dps310 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_null_dps310 PRIVATE m)
 
+
+add_executable(test_boundary_dps310
+    test_boundary_dps310.c
+    ../dps310.c
+)
+target_include_directories(test_boundary_dps310 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_dps310 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_dps310 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME dps310_tests COMMAND test_dps310)
 
@@ -52,3 +63,4 @@ target_compile_options(test_hw_model_dps310 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_dps310 PRIVATE m)
 add_test(NAME dps310_hw_model_tests COMMAND test_hw_model_dps310)
 add_test(NAME dps310_null_tests COMMAND test_null_dps310)
+add_test(NAME dps310_boundary_tests COMMAND test_boundary_dps310)

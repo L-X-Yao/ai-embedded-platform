@@ -27,18 +27,18 @@ TEST(test_boundary_modbus_ascii_lrc_len_one) {
 TEST(test_boundary_modbus_ascii_decode_len_zero) {
     char _safe_ascii_0[64];
     memset(_safe_ascii_0, 0, sizeof(_safe_ascii_0));
-    modbus_ascii_frame_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    modbus_ascii_err_t ret = modbus_ascii_decode(_safe_ascii_0, 0, &_safe_out_2);
+    modbus_ascii_frame_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    modbus_ascii_err_t ret = modbus_ascii_decode(_safe_ascii_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_modbus_ascii_decode_len_one) {
     char _safe_ascii_0[64];
     memset(_safe_ascii_0, 0, sizeof(_safe_ascii_0));
-    modbus_ascii_frame_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    modbus_ascii_err_t ret = modbus_ascii_decode(_safe_ascii_0, 1, &_safe_out_2);
+    modbus_ascii_frame_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    modbus_ascii_err_t ret = modbus_ascii_decode(_safe_ascii_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -47,9 +47,9 @@ TEST(test_boundary_modbus_ascii_encode_cap_zero) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     char _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    modbus_ascii_err_t ret = modbus_ascii_encode(&_safe_frame_0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    modbus_ascii_err_t ret = modbus_ascii_encode(&_safe_frame_0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -58,9 +58,9 @@ TEST(test_boundary_modbus_ascii_encode_cap_one) {
     memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
     char _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    modbus_ascii_err_t ret = modbus_ascii_encode(&_safe_frame_0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    modbus_ascii_err_t ret = modbus_ascii_encode(&_safe_frame_0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 

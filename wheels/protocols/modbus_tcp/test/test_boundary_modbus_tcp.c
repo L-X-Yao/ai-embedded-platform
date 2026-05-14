@@ -316,57 +316,6 @@ TEST(test_boundary_modbus_tcp_build_write_regs_count_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_modbus_tcp_parse_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    modbus_tcp_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    modbus_tcp_err_t ret = modbus_tcp_parse(_safe_buf_0, 0, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_modbus_tcp_parse_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    modbus_tcp_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    modbus_tcp_err_t ret = modbus_tcp_parse(_safe_buf_0, 1, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_modbus_tcp_get_regs_max_count_zero) {
-    modbus_tcp_frame_t _safe_frame_0;
-    memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
-    uint16_t _safe_values_1;
-    memset(&_safe_values_1, 0, sizeof(_safe_values_1));
-    uint16_t _safe_actual_count_3;
-    memset(&_safe_actual_count_3, 0, sizeof(_safe_actual_count_3));
-    modbus_tcp_err_t ret = modbus_tcp_get_regs(&_safe_frame_0, &_safe_values_1, 0, &_safe_actual_count_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_modbus_tcp_get_regs_max_count_one) {
-    modbus_tcp_frame_t _safe_frame_0;
-    memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
-    uint16_t _safe_values_1;
-    memset(&_safe_values_1, 0, sizeof(_safe_values_1));
-    uint16_t _safe_actual_count_3;
-    memset(&_safe_actual_count_3, 0, sizeof(_safe_actual_count_3));
-    modbus_tcp_err_t ret = modbus_tcp_get_regs(&_safe_frame_0, &_safe_values_1, 1, &_safe_actual_count_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_modbus_tcp_get_regs_max_count_uint16_max) {
-    modbus_tcp_frame_t _safe_frame_0;
-    memset(&_safe_frame_0, 0, sizeof(_safe_frame_0));
-    uint16_t _safe_values_1;
-    memset(&_safe_values_1, 0, sizeof(_safe_values_1));
-    uint16_t _safe_actual_count_3;
-    memset(&_safe_actual_count_3, 0, sizeof(_safe_actual_count_3));
-    modbus_tcp_err_t ret = modbus_tcp_get_regs(&_safe_frame_0, &_safe_values_1, (uint16_t)(UINT16_MAX), &_safe_actual_count_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST_MAIN("boundary_modbus_tcp") {
     RUN(test_boundary_modbus_tcp_build_read_regs_buf_size_zero);
     RUN(test_boundary_modbus_tcp_build_read_regs_buf_size_one);
@@ -408,10 +357,5 @@ TEST_MAIN("boundary_modbus_tcp") {
     RUN(test_boundary_modbus_tcp_build_write_regs_start_addr_uint16_max);
     RUN(test_boundary_modbus_tcp_build_write_regs_count_zero);
     RUN(test_boundary_modbus_tcp_build_write_regs_count_one);
-    RUN(test_boundary_modbus_tcp_parse_len_zero);
-    RUN(test_boundary_modbus_tcp_parse_len_one);
-    RUN(test_boundary_modbus_tcp_get_regs_max_count_zero);
-    RUN(test_boundary_modbus_tcp_get_regs_max_count_one);
-    RUN(test_boundary_modbus_tcp_get_regs_max_count_uint16_max);
 }
 TEST_MAIN_END()

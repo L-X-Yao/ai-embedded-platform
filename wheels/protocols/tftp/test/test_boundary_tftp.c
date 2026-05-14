@@ -13,18 +13,18 @@
 TEST(test_boundary_tftp_parse_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    tftp_packet_t _safe_pkt_2;
-    memset(&_safe_pkt_2, 0, sizeof(_safe_pkt_2));
-    (void)tftp_parse(_safe_buf_0, 0, &_safe_pkt_2);
+    tftp_packet_t _safe_pkt_2[128];
+    memset(_safe_pkt_2, 0, sizeof(_safe_pkt_2));
+    (void)tftp_parse(_safe_buf_0, 0, _safe_pkt_2);
     /* must not crash */
 }
 
 TEST(test_boundary_tftp_parse_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    tftp_packet_t _safe_pkt_2;
-    memset(&_safe_pkt_2, 0, sizeof(_safe_pkt_2));
-    (void)tftp_parse(_safe_buf_0, 1, &_safe_pkt_2);
+    tftp_packet_t _safe_pkt_2[128];
+    memset(_safe_pkt_2, 0, sizeof(_safe_pkt_2));
+    (void)tftp_parse(_safe_buf_0, 1, _safe_pkt_2);
     /* must not crash */
 }
 

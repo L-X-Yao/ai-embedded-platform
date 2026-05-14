@@ -33,6 +33,17 @@ target_include_directories(test_null_pct2075 PRIVATE
 )
 target_compile_definitions(test_null_pct2075 PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_pct2075 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_pct2075
+    test_boundary_pct2075.c
+    ../pct2075.c
+)
+target_include_directories(test_boundary_pct2075 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_pct2075 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_pct2075 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME pct2075_tests COMMAND test_pct2075)
 
@@ -50,3 +61,4 @@ target_compile_definitions(test_hw_model_pct2075 PRIVATE CONTRACT_ENABLED)
 target_link_libraries(test_hw_model_pct2075 PRIVATE m)
 add_test(NAME pct2075_hw_model_tests COMMAND test_hw_model_pct2075)
 add_test(NAME pct2075_null_tests COMMAND test_null_pct2075)
+add_test(NAME pct2075_boundary_tests COMMAND test_boundary_pct2075)

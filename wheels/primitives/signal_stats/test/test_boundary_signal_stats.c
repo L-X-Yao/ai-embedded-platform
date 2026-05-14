@@ -11,51 +11,51 @@
 #include <math.h>
 
 TEST(test_boundary_signal_stats_feed_sample_zero) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, 0.0f);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_neg_zero) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, -0.0f);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_nan) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, NAN);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_inf) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, INFINITY);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_neg_inf) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, -INFINITY);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_flt_max) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, FLT_MAX);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_signal_stats_feed_sample_neg_flt_max) {
-    signal_stats_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    signal_stats_err_t ret = signal_stats_feed(&_safe_ctx_0, -FLT_MAX);
+    signal_stats_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    signal_stats_err_t ret = signal_stats_feed(_safe_ctx_0, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 

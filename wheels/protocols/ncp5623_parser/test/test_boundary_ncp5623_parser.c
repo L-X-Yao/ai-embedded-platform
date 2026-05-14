@@ -11,29 +11,29 @@
 #include <math.h>
 
 TEST(test_boundary_ncp5623_parser_feed_byte_zero) {
-    ncp5623_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    ncp5623_evt_t _safe_evt_2;
-    memset(&_safe_evt_2, 0, sizeof(_safe_evt_2));
-    (void)ncp5623_parser_feed(&_safe_p_0, 0, &_safe_evt_2);
+    ncp5623_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    ncp5623_evt_t _safe_evt_2[128];
+    memset(_safe_evt_2, 0, sizeof(_safe_evt_2));
+    (void)ncp5623_parser_feed(_safe_p_0, 0, _safe_evt_2);
     /* must not crash */
 }
 
 TEST(test_boundary_ncp5623_parser_feed_byte_one) {
-    ncp5623_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    ncp5623_evt_t _safe_evt_2;
-    memset(&_safe_evt_2, 0, sizeof(_safe_evt_2));
-    (void)ncp5623_parser_feed(&_safe_p_0, 1, &_safe_evt_2);
+    ncp5623_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    ncp5623_evt_t _safe_evt_2[128];
+    memset(_safe_evt_2, 0, sizeof(_safe_evt_2));
+    (void)ncp5623_parser_feed(_safe_p_0, 1, _safe_evt_2);
     /* must not crash */
 }
 
 TEST(test_boundary_ncp5623_parser_feed_byte_uint8_max) {
-    ncp5623_parser_t _safe_p_0;
-    memset(&_safe_p_0, 0, sizeof(_safe_p_0));
-    ncp5623_evt_t _safe_evt_2;
-    memset(&_safe_evt_2, 0, sizeof(_safe_evt_2));
-    (void)ncp5623_parser_feed(&_safe_p_0, (uint8_t)(UINT8_MAX), &_safe_evt_2);
+    ncp5623_parser_t _safe_p_0[128];
+    memset(_safe_p_0, 0, sizeof(_safe_p_0));
+    ncp5623_evt_t _safe_evt_2[128];
+    memset(_safe_evt_2, 0, sizeof(_safe_evt_2));
+    (void)ncp5623_parser_feed(_safe_p_0, (uint8_t)(UINT8_MAX), _safe_evt_2);
     /* must not crash */
 }
 

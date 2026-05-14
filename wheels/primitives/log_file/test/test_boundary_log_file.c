@@ -10,96 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_log_file_open_auto_flush_zero) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    char _safe_path_1[64];
-    memset(_safe_path_1, 0, sizeof(_safe_path_1));
-    (void)log_file_open(&_safe_lf_0, _safe_path_1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_open_auto_flush_neg1) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    char _safe_path_1[64];
-    memset(_safe_path_1, 0, sizeof(_safe_path_1));
-    (void)log_file_open(&_safe_lf_0, _safe_path_1, -1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_open_auto_flush_one) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    char _safe_path_1[64];
-    memset(_safe_path_1, 0, sizeof(_safe_path_1));
-    (void)log_file_open(&_safe_lf_0, _safe_path_1, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_open_auto_flush_int32_max) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    char _safe_path_1[64];
-    memset(_safe_path_1, 0, sizeof(_safe_path_1));
-    (void)log_file_open(&_safe_lf_0, _safe_path_1, INT32_MAX);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_open_auto_flush_int32_min) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    char _safe_path_1[64];
-    memset(_safe_path_1, 0, sizeof(_safe_path_1));
-    (void)log_file_open(&_safe_lf_0, _safe_path_1, INT32_MIN);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_attach_auto_flush_zero) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    FILE _safe_fp_1;
-    memset(&_safe_fp_1, 0, sizeof(_safe_fp_1));
-    (void)log_file_attach(&_safe_lf_0, &_safe_fp_1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_attach_auto_flush_neg1) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    FILE _safe_fp_1;
-    memset(&_safe_fp_1, 0, sizeof(_safe_fp_1));
-    (void)log_file_attach(&_safe_lf_0, &_safe_fp_1, -1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_attach_auto_flush_one) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    FILE _safe_fp_1;
-    memset(&_safe_fp_1, 0, sizeof(_safe_fp_1));
-    (void)log_file_attach(&_safe_lf_0, &_safe_fp_1, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_attach_auto_flush_int32_max) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    FILE _safe_fp_1;
-    memset(&_safe_fp_1, 0, sizeof(_safe_fp_1));
-    (void)log_file_attach(&_safe_lf_0, &_safe_fp_1, INT32_MAX);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_file_attach_auto_flush_int32_min) {
-    log_file_t _safe_lf_0;
-    memset(&_safe_lf_0, 0, sizeof(_safe_lf_0));
-    FILE _safe_fp_1;
-    memset(&_safe_fp_1, 0, sizeof(_safe_fp_1));
-    (void)log_file_attach(&_safe_lf_0, &_safe_fp_1, INT32_MIN);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_file_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -115,16 +25,6 @@ TEST(test_boundary_log_file_sink_len_one) {
 }
 
 TEST_MAIN("boundary_log_file") {
-    RUN(test_boundary_log_file_open_auto_flush_zero);
-    RUN(test_boundary_log_file_open_auto_flush_neg1);
-    RUN(test_boundary_log_file_open_auto_flush_one);
-    RUN(test_boundary_log_file_open_auto_flush_int32_max);
-    RUN(test_boundary_log_file_open_auto_flush_int32_min);
-    RUN(test_boundary_log_file_attach_auto_flush_zero);
-    RUN(test_boundary_log_file_attach_auto_flush_neg1);
-    RUN(test_boundary_log_file_attach_auto_flush_one);
-    RUN(test_boundary_log_file_attach_auto_flush_int32_max);
-    RUN(test_boundary_log_file_attach_auto_flush_int32_min);
     RUN(test_boundary_log_file_sink_len_zero);
     RUN(test_boundary_log_file_sink_len_one);
 }

@@ -30,6 +30,16 @@ target_include_directories(test_null_lis2dh12 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_lis2dh12 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_lis2dh12
+    test_boundary_lis2dh12.c
+    ../lis2dh12.c
+)
+target_include_directories(test_boundary_lis2dh12 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_lis2dh12 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME lis2dh12_tests COMMAND test_lis2dh12)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_lis2dh12 PRIVATE
 target_compile_options(test_hw_model_lis2dh12 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME lis2dh12_hw_model_tests COMMAND test_hw_model_lis2dh12)
 add_test(NAME lis2dh12_null_tests COMMAND test_null_lis2dh12)
+add_test(NAME lis2dh12_boundary_tests COMMAND test_boundary_lis2dh12)

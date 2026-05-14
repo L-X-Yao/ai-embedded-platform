@@ -11,23 +11,23 @@
 #include <math.h>
 
 TEST(test_boundary_mavlink_parse_byte_byte_zero) {
-    mavlink_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)mavlink_parse_byte(&_safe_parser_0, 0);
+    mavlink_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)mavlink_parse_byte(_safe_parser_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_mavlink_parse_byte_byte_one) {
-    mavlink_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)mavlink_parse_byte(&_safe_parser_0, 1);
+    mavlink_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)mavlink_parse_byte(_safe_parser_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_mavlink_parse_byte_byte_uint8_max) {
-    mavlink_parser_t _safe_parser_0;
-    memset(&_safe_parser_0, 0, sizeof(_safe_parser_0));
-    (void)mavlink_parse_byte(&_safe_parser_0, (uint8_t)(UINT8_MAX));
+    mavlink_parser_t _safe_parser_0[128];
+    memset(_safe_parser_0, 0, sizeof(_safe_parser_0));
+    (void)mavlink_parse_byte(_safe_parser_0, (uint8_t)(UINT8_MAX));
     /* must not crash */
 }
 
@@ -36,9 +36,9 @@ TEST(test_boundary_mavlink_serialize_buf_len_zero) {
     memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, &_safe_out_len_3, 0);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, _safe_out_len_3, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -47,9 +47,9 @@ TEST(test_boundary_mavlink_serialize_buf_len_one) {
     memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 1, &_safe_out_len_3, 0);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 1, _safe_out_len_3, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -58,9 +58,9 @@ TEST(test_boundary_mavlink_serialize_crc_extra_zero) {
     memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, &_safe_out_len_3, 0);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, _safe_out_len_3, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -69,9 +69,9 @@ TEST(test_boundary_mavlink_serialize_crc_extra_one) {
     memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, &_safe_out_len_3, 1);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, _safe_out_len_3, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -80,9 +80,9 @@ TEST(test_boundary_mavlink_serialize_crc_extra_uint8_max) {
     memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, &_safe_out_len_3, (uint8_t)(UINT8_MAX));
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    mavlink_err_t ret = mavlink_serialize(&_safe_msg_0, _safe_buf_1, 0, _safe_out_len_3, (uint8_t)(UINT8_MAX));
     ASSERT_TRUE((int)ret <= 0);
 }
 

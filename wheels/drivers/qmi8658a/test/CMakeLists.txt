@@ -26,6 +26,16 @@ target_include_directories(test_null_qmi8658a PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_qmi8658a PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_qmi8658a
+    test_boundary_qmi8658a.c
+    ../qmi8658a.c
+)
+target_include_directories(test_boundary_qmi8658a PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_qmi8658a PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME qmi8658a_tests COMMAND test_qmi8658a)
 
@@ -55,3 +65,4 @@ target_link_libraries(test_hw_model_qmi8658a PRIVATE m)
 
 add_test(NAME qmi8658a_hw_model_tests COMMAND test_hw_model_qmi8658a)
 add_test(NAME qmi8658a_null_tests COMMAND test_null_qmi8658a)
+add_test(NAME qmi8658a_boundary_tests COMMAND test_boundary_qmi8658a)

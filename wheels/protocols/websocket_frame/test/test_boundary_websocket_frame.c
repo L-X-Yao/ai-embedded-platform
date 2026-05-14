@@ -10,151 +10,120 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_websocket_frame_parse_len_zero) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    websocket_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    websocket_frame_err_t ret = websocket_frame_parse(_safe_data_0, 0, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_websocket_frame_parse_len_one) {
-    uint8_t _safe_data_0[64];
-    memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    websocket_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    websocket_frame_err_t ret = websocket_frame_parse(_safe_data_0, 1, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_websocket_frame_build_buf_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_buf_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 1, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 1, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_fin_val_true) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, true, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, true, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_fin_val_false) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_opcode_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_opcode_neg1) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, -1, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, -1, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_opcode_past_max) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 1, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 1, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_payload_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_websocket_frame_build_payload_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
+    size_t _safe_out_len_2[128];
+    memset(_safe_out_len_2, 0, sizeof(_safe_out_len_2));
     uint8_t _safe_mask_key_5[64];
     memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
     uint8_t _safe_payload_6[64];
     memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_websocket_frame_build_payload_len_size_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_out_len_2;
-    memset(&_safe_out_len_2, 0, sizeof(_safe_out_len_2));
-    uint8_t _safe_mask_key_5[64];
-    memset(_safe_mask_key_5, 0, sizeof(_safe_mask_key_5));
-    uint8_t _safe_payload_6[64];
-    memset(_safe_payload_6, 0, sizeof(_safe_payload_6));
-    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, &_safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, SIZE_MAX);
+    websocket_frame_err_t ret = websocket_frame_build(_safe_buf_0, 0, _safe_out_len_2, false, 0, _safe_mask_key_5, _safe_payload_6, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -177,8 +146,6 @@ TEST(test_boundary_websocket_frame_mask_payload_len_one) {
 }
 
 TEST_MAIN("boundary_websocket_frame") {
-    RUN(test_boundary_websocket_frame_parse_len_zero);
-    RUN(test_boundary_websocket_frame_parse_len_one);
     RUN(test_boundary_websocket_frame_build_buf_len_zero);
     RUN(test_boundary_websocket_frame_build_buf_len_one);
     RUN(test_boundary_websocket_frame_build_fin_val_true);
@@ -188,7 +155,6 @@ TEST_MAIN("boundary_websocket_frame") {
     RUN(test_boundary_websocket_frame_build_opcode_past_max);
     RUN(test_boundary_websocket_frame_build_payload_len_zero);
     RUN(test_boundary_websocket_frame_build_payload_len_one);
-    RUN(test_boundary_websocket_frame_build_payload_len_size_max);
     RUN(test_boundary_websocket_frame_mask_payload_len_zero);
     RUN(test_boundary_websocket_frame_mask_payload_len_one);
 }

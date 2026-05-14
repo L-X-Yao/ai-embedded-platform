@@ -11,37 +11,37 @@
 #include <math.h>
 
 TEST(test_boundary_device_info_set_boot_count_count_zero) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_boot_count(&_safe_info_0, 0);
+    device_info_t _safe_info_0[128];
+    memset(_safe_info_0, 0, sizeof(_safe_info_0));
+    (void)device_info_set_boot_count(_safe_info_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_device_info_set_boot_count_count_one) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_boot_count(&_safe_info_0, 1);
+    device_info_t _safe_info_0[128];
+    memset(_safe_info_0, 0, sizeof(_safe_info_0));
+    (void)device_info_set_boot_count(_safe_info_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_device_info_set_reset_reason_reason_zero) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_reset_reason(&_safe_info_0, 0);
+    device_info_t _safe_info_0[128];
+    memset(_safe_info_0, 0, sizeof(_safe_info_0));
+    (void)device_info_set_reset_reason(_safe_info_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_device_info_set_reset_reason_reason_one) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_reset_reason(&_safe_info_0, 1);
+    device_info_t _safe_info_0[128];
+    memset(_safe_info_0, 0, sizeof(_safe_info_0));
+    (void)device_info_set_reset_reason(_safe_info_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_device_info_set_reset_reason_reason_uint32_max) {
-    device_info_t _safe_info_0;
-    memset(&_safe_info_0, 0, sizeof(_safe_info_0));
-    (void)device_info_set_reset_reason(&_safe_info_0, UINT32_MAX);
+    device_info_t _safe_info_0[128];
+    memset(_safe_info_0, 0, sizeof(_safe_info_0));
+    (void)device_info_set_reset_reason(_safe_info_0, UINT32_MAX);
     /* must not crash */
 }
 

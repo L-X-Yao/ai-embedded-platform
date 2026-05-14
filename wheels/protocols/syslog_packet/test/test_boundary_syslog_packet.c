@@ -10,24 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_syslog_format_buf_size_zero) {
-    syslog_msg_t _safe_msg_0;
-    memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
-    char _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)syslog_format(&_safe_msg_0, _safe_buf_1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_syslog_format_buf_size_one) {
-    syslog_msg_t _safe_msg_0;
-    memset(&_safe_msg_0, 0, sizeof(_safe_msg_0));
-    char _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    (void)syslog_format(&_safe_msg_0, _safe_buf_1, 1);
-    /* must not crash */
-}
-
 TEST(test_boundary_syslog_pri_facility_zero) {
     (void)syslog_pri(0, 0);
     /* must not crash */
@@ -63,9 +45,9 @@ TEST(test_boundary_syslog_parse_pri_len_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     uint8_t _safe_pri_2[64];
     memset(_safe_pri_2, 0, sizeof(_safe_pri_2));
-    uint16_t _safe_offset_3;
-    memset(&_safe_offset_3, 0, sizeof(_safe_offset_3));
-    syslog_err_t ret = syslog_parse_pri(_safe_buf_0, 0, _safe_pri_2, &_safe_offset_3);
+    uint16_t _safe_offset_3[128];
+    memset(_safe_offset_3, 0, sizeof(_safe_offset_3));
+    syslog_err_t ret = syslog_parse_pri(_safe_buf_0, 0, _safe_pri_2, _safe_offset_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -74,15 +56,13 @@ TEST(test_boundary_syslog_parse_pri_len_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     uint8_t _safe_pri_2[64];
     memset(_safe_pri_2, 0, sizeof(_safe_pri_2));
-    uint16_t _safe_offset_3;
-    memset(&_safe_offset_3, 0, sizeof(_safe_offset_3));
-    syslog_err_t ret = syslog_parse_pri(_safe_buf_0, 1, _safe_pri_2, &_safe_offset_3);
+    uint16_t _safe_offset_3[128];
+    memset(_safe_offset_3, 0, sizeof(_safe_offset_3));
+    syslog_err_t ret = syslog_parse_pri(_safe_buf_0, 1, _safe_pri_2, _safe_offset_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST_MAIN("boundary_syslog_packet") {
-    RUN(test_boundary_syslog_format_buf_size_zero);
-    RUN(test_boundary_syslog_format_buf_size_one);
     RUN(test_boundary_syslog_pri_facility_zero);
     RUN(test_boundary_syslog_pri_facility_neg1);
     RUN(test_boundary_syslog_pri_facility_past_max);

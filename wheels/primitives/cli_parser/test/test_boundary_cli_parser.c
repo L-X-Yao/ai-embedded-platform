@@ -10,30 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_cli_parser_feed_byte_zero) {
-    cli_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)cli_parser_feed(&_safe_ctx_0, 0);
-    /* must not crash */
-}
+/* No boundary tests generated: all 3 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_cli_parser_feed_byte_one) {
-    cli_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)cli_parser_feed(&_safe_ctx_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_cli_parser_feed_byte_uint8_max) {
-    cli_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)cli_parser_feed(&_safe_ctx_0, (uint8_t)(UINT8_MAX));
-    /* must not crash */
+TEST(test_boundary_cli_parser_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_cli_parser") {
-    RUN(test_boundary_cli_parser_feed_byte_zero);
-    RUN(test_boundary_cli_parser_feed_byte_one);
-    RUN(test_boundary_cli_parser_feed_byte_uint8_max);
+    RUN(test_boundary_cli_parser_placeholder);
 }
 TEST_MAIN_END()

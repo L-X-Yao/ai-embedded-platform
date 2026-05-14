@@ -10,130 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_w25qxx_read_addr_zero) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    w25qxx_err_t ret = w25qxx_read(&_safe_spi_0, 0, _safe_buf_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
+/* No boundary tests generated: all 6 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_w25qxx_read_addr_one) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    w25qxx_err_t ret = w25qxx_read(&_safe_spi_0, 1, _safe_buf_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_read_addr_uint32_max) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    w25qxx_err_t ret = w25qxx_read(&_safe_spi_0, UINT32_MAX, _safe_buf_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_read_len_zero) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    w25qxx_err_t ret = w25qxx_read(&_safe_spi_0, 0, _safe_buf_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_read_len_one) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_buf_2[64];
-    memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    w25qxx_err_t ret = w25qxx_read(&_safe_spi_0, 0, _safe_buf_2, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_page_program_addr_zero) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    w25qxx_err_t ret = w25qxx_page_program(&_safe_spi_0, 0, _safe_data_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_page_program_addr_one) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    w25qxx_err_t ret = w25qxx_page_program(&_safe_spi_0, 1, _safe_data_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_page_program_addr_uint32_max) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    w25qxx_err_t ret = w25qxx_page_program(&_safe_spi_0, UINT32_MAX, _safe_data_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_page_program_len_zero) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    w25qxx_err_t ret = w25qxx_page_program(&_safe_spi_0, 0, _safe_data_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_page_program_len_one) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    uint8_t _safe_data_2[64];
-    memset(_safe_data_2, 0, sizeof(_safe_data_2));
-    w25qxx_err_t ret = w25qxx_page_program(&_safe_spi_0, 0, _safe_data_2, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_sector_erase_addr_zero) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    w25qxx_err_t ret = w25qxx_sector_erase(&_safe_spi_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_sector_erase_addr_one) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    w25qxx_err_t ret = w25qxx_sector_erase(&_safe_spi_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_w25qxx_sector_erase_addr_uint32_max) {
-    w25qxx_spi_t _safe_spi_0;
-    memset(&_safe_spi_0, 0, sizeof(_safe_spi_0));
-    w25qxx_err_t ret = w25qxx_sector_erase(&_safe_spi_0, UINT32_MAX);
-    ASSERT_TRUE((int)ret <= 0);
+TEST(test_boundary_w25qxx_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_w25qxx") {
-    RUN(test_boundary_w25qxx_read_addr_zero);
-    RUN(test_boundary_w25qxx_read_addr_one);
-    RUN(test_boundary_w25qxx_read_addr_uint32_max);
-    RUN(test_boundary_w25qxx_read_len_zero);
-    RUN(test_boundary_w25qxx_read_len_one);
-    RUN(test_boundary_w25qxx_page_program_addr_zero);
-    RUN(test_boundary_w25qxx_page_program_addr_one);
-    RUN(test_boundary_w25qxx_page_program_addr_uint32_max);
-    RUN(test_boundary_w25qxx_page_program_len_zero);
-    RUN(test_boundary_w25qxx_page_program_len_one);
-    RUN(test_boundary_w25qxx_sector_erase_addr_zero);
-    RUN(test_boundary_w25qxx_sector_erase_addr_one);
-    RUN(test_boundary_w25qxx_sector_erase_addr_uint32_max);
+    RUN(test_boundary_w25qxx_placeholder);
 }
 TEST_MAIN_END()

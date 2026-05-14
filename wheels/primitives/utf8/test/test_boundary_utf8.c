@@ -56,67 +56,67 @@ TEST(test_boundary_utf8_codepoint_count_len_one) {
 TEST(test_boundary_utf8_decode_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    uint32_t _safe_codepoint_2;
-    memset(&_safe_codepoint_2, 0, sizeof(_safe_codepoint_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_decode(_safe_data_0, 0, &_safe_codepoint_2, &_safe_out_len_3);
+    uint32_t _safe_codepoint_2[128];
+    memset(_safe_codepoint_2, 0, sizeof(_safe_codepoint_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_decode(_safe_data_0, 0, _safe_codepoint_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_decode_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    uint32_t _safe_codepoint_2;
-    memset(&_safe_codepoint_2, 0, sizeof(_safe_codepoint_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_decode(_safe_data_0, 1, &_safe_codepoint_2, &_safe_out_len_3);
+    uint32_t _safe_codepoint_2[128];
+    memset(_safe_codepoint_2, 0, sizeof(_safe_codepoint_2));
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_decode(_safe_data_0, 1, _safe_codepoint_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_encode_codepoint_zero) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_encode_codepoint_one) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_encode(1, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_encode(1, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_encode_codepoint_uint32_max) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_encode(UINT32_MAX, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_encode(UINT32_MAX, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_encode_cap_zero) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 0, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 0, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_utf8_encode_cap_one) {
     uint8_t _safe_buf_1[64];
     memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 1, &_safe_out_len_3);
+    size_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    utf8_err_t ret = utf8_encode(0, _safe_buf_1, 1, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 

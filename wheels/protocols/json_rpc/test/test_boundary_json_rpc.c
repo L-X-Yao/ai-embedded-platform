@@ -17,9 +17,9 @@ TEST(test_boundary_json_rpc_build_request_cap_zero) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -30,9 +30,9 @@ TEST(test_boundary_json_rpc_build_request_cap_one) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 1, _safe_method_2, _safe_params_json_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 1, _safe_method_2, _safe_params_json_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -43,9 +43,9 @@ TEST(test_boundary_json_rpc_build_request_id_zero) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -56,9 +56,9 @@ TEST(test_boundary_json_rpc_build_request_id_neg1) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, -1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, -1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -69,9 +69,9 @@ TEST(test_boundary_json_rpc_build_request_id_one) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, 1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -82,9 +82,9 @@ TEST(test_boundary_json_rpc_build_request_id_int32_max) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, INT32_MAX, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, INT32_MAX, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -95,9 +95,9 @@ TEST(test_boundary_json_rpc_build_request_id_int32_min) {
     memset(_safe_method_2, 0, sizeof(_safe_method_2));
     char _safe_params_json_3[64];
     memset(_safe_params_json_3, 0, sizeof(_safe_params_json_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, INT32_MIN, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_request(_safe_buf_0, 0, _safe_method_2, _safe_params_json_3, INT32_MIN, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -106,9 +106,9 @@ TEST(test_boundary_json_rpc_build_response_cap_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -117,9 +117,9 @@ TEST(test_boundary_json_rpc_build_response_cap_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 1, _safe_result_json_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 1, _safe_result_json_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -128,9 +128,9 @@ TEST(test_boundary_json_rpc_build_response_id_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -139,9 +139,9 @@ TEST(test_boundary_json_rpc_build_response_id_neg1) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, -1, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, -1, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -150,9 +150,9 @@ TEST(test_boundary_json_rpc_build_response_id_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 1, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, 1, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -161,9 +161,9 @@ TEST(test_boundary_json_rpc_build_response_id_int32_max) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, INT32_MAX, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, INT32_MAX, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -172,9 +172,9 @@ TEST(test_boundary_json_rpc_build_response_id_int32_min) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_result_json_2[64];
     memset(_safe_result_json_2, 0, sizeof(_safe_result_json_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, INT32_MIN, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    json_rpc_err_t ret = json_rpc_build_response(_safe_buf_0, 0, _safe_result_json_2, INT32_MIN, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -183,9 +183,9 @@ TEST(test_boundary_json_rpc_build_error_cap_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -194,9 +194,9 @@ TEST(test_boundary_json_rpc_build_error_cap_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 1, 0, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 1, 0, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -205,9 +205,9 @@ TEST(test_boundary_json_rpc_build_error_code_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -216,9 +216,9 @@ TEST(test_boundary_json_rpc_build_error_code_neg1) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, -1, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, -1, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -227,9 +227,9 @@ TEST(test_boundary_json_rpc_build_error_code_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 1, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 1, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -238,9 +238,9 @@ TEST(test_boundary_json_rpc_build_error_code_int32_max) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, INT32_MAX, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, INT32_MAX, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -249,9 +249,9 @@ TEST(test_boundary_json_rpc_build_error_code_int32_min) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, INT32_MIN, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, INT32_MIN, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -260,9 +260,9 @@ TEST(test_boundary_json_rpc_build_error_id_zero) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -271,9 +271,9 @@ TEST(test_boundary_json_rpc_build_error_id_neg1) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, -1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, -1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -282,9 +282,9 @@ TEST(test_boundary_json_rpc_build_error_id_one) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, 1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -293,9 +293,9 @@ TEST(test_boundary_json_rpc_build_error_id_int32_max) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, INT32_MAX, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, INT32_MAX, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -304,9 +304,9 @@ TEST(test_boundary_json_rpc_build_error_id_int32_min) {
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
     char _safe_message_3[64];
     memset(_safe_message_3, 0, sizeof(_safe_message_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, INT32_MIN, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    json_rpc_err_t ret = json_rpc_build_error(_safe_buf_0, 0, 0, _safe_message_3, INT32_MIN, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -327,40 +327,40 @@ TEST(test_boundary_json_rpc_validate_len_one) {
 TEST(test_boundary_json_rpc_extract_method_len_zero) {
     char _safe_json_0[64];
     memset(_safe_json_0, 0, sizeof(_safe_json_0));
-    size_t _safe_method_start_2;
-    memset(&_safe_method_start_2, 0, sizeof(_safe_method_start_2));
-    size_t _safe_method_len_3;
-    memset(&_safe_method_len_3, 0, sizeof(_safe_method_len_3));
-    json_rpc_err_t ret = json_rpc_extract_method(_safe_json_0, 0, &_safe_method_start_2, &_safe_method_len_3);
+    size_t _safe_method_start_2[128];
+    memset(_safe_method_start_2, 0, sizeof(_safe_method_start_2));
+    size_t _safe_method_len_3[128];
+    memset(_safe_method_len_3, 0, sizeof(_safe_method_len_3));
+    json_rpc_err_t ret = json_rpc_extract_method(_safe_json_0, 0, _safe_method_start_2, _safe_method_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_json_rpc_extract_method_len_one) {
     char _safe_json_0[64];
     memset(_safe_json_0, 0, sizeof(_safe_json_0));
-    size_t _safe_method_start_2;
-    memset(&_safe_method_start_2, 0, sizeof(_safe_method_start_2));
-    size_t _safe_method_len_3;
-    memset(&_safe_method_len_3, 0, sizeof(_safe_method_len_3));
-    json_rpc_err_t ret = json_rpc_extract_method(_safe_json_0, 1, &_safe_method_start_2, &_safe_method_len_3);
+    size_t _safe_method_start_2[128];
+    memset(_safe_method_start_2, 0, sizeof(_safe_method_start_2));
+    size_t _safe_method_len_3[128];
+    memset(_safe_method_len_3, 0, sizeof(_safe_method_len_3));
+    json_rpc_err_t ret = json_rpc_extract_method(_safe_json_0, 1, _safe_method_start_2, _safe_method_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_json_rpc_extract_id_len_zero) {
     char _safe_json_0[64];
     memset(_safe_json_0, 0, sizeof(_safe_json_0));
-    int32_t _safe_id_2;
-    memset(&_safe_id_2, 0, sizeof(_safe_id_2));
-    json_rpc_err_t ret = json_rpc_extract_id(_safe_json_0, 0, &_safe_id_2);
+    int32_t _safe_id_2[128];
+    memset(_safe_id_2, 0, sizeof(_safe_id_2));
+    json_rpc_err_t ret = json_rpc_extract_id(_safe_json_0, 0, _safe_id_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_json_rpc_extract_id_len_one) {
     char _safe_json_0[64];
     memset(_safe_json_0, 0, sizeof(_safe_json_0));
-    int32_t _safe_id_2;
-    memset(&_safe_id_2, 0, sizeof(_safe_id_2));
-    json_rpc_err_t ret = json_rpc_extract_id(_safe_json_0, 1, &_safe_id_2);
+    int32_t _safe_id_2[128];
+    memset(_safe_id_2, 0, sizeof(_safe_id_2));
+    json_rpc_err_t ret = json_rpc_extract_id(_safe_json_0, 1, _safe_id_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 

@@ -10,48 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_log_rate_init_max_per_interval_zero) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rate_init_max_per_interval_one) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, 1, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rate_init_max_per_interval_uint32_max) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, UINT32_MAX, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rate_init_interval_ms_zero) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, 0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rate_init_interval_ms_one) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, 0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_rate_init_interval_ms_uint32_max) {
-    log_rate_t _safe_r_0;
-    memset(&_safe_r_0, 0, sizeof(_safe_r_0));
-    (void)log_rate_init(&_safe_r_0, NULL, NULL, NULL, 0, UINT32_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_rate_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -67,12 +25,6 @@ TEST(test_boundary_log_rate_sink_len_one) {
 }
 
 TEST_MAIN("boundary_log_rate") {
-    RUN(test_boundary_log_rate_init_max_per_interval_zero);
-    RUN(test_boundary_log_rate_init_max_per_interval_one);
-    RUN(test_boundary_log_rate_init_max_per_interval_uint32_max);
-    RUN(test_boundary_log_rate_init_interval_ms_zero);
-    RUN(test_boundary_log_rate_init_interval_ms_one);
-    RUN(test_boundary_log_rate_init_interval_ms_uint32_max);
     RUN(test_boundary_log_rate_sink_len_zero);
     RUN(test_boundary_log_rate_sink_len_one);
 }

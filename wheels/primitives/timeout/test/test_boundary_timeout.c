@@ -11,44 +11,44 @@
 #include <math.h>
 
 TEST(test_boundary_timeout_set_now_zero) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, 0, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, 0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_set_now_one) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, 1, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, 1, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_set_now_uint32_max) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, UINT32_MAX, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, UINT32_MAX, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_set_duration_zero) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, 0, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, 0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_set_duration_one) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, 0, 1);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, 0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_set_duration_uint32_max) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_set(&_safe_t_0, 0, UINT32_MAX);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_set(_safe_t_0, 0, UINT32_MAX);
     /* must not crash */
 }
 
@@ -116,44 +116,44 @@ TEST(test_boundary_timeout_elapsed_now_uint32_max) {
 }
 
 TEST(test_boundary_timeout_restart_now_zero) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_restart(&_safe_t_0, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_restart(_safe_t_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_restart_now_one) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_restart(&_safe_t_0, 1);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_restart(_safe_t_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_restart_now_uint32_max) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_restart(&_safe_t_0, UINT32_MAX);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_restart(_safe_t_0, UINT32_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_extend_extra_zero) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_extend(&_safe_t_0, 0);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_extend(_safe_t_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_extend_extra_one) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_extend(&_safe_t_0, 1);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_extend(_safe_t_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_timeout_extend_extra_uint32_max) {
-    timeout_t _safe_t_0;
-    memset(&_safe_t_0, 0, sizeof(_safe_t_0));
-    (void)timeout_extend(&_safe_t_0, UINT32_MAX);
+    timeout_t _safe_t_0[128];
+    memset(_safe_t_0, 0, sizeof(_safe_t_0));
+    (void)timeout_extend(_safe_t_0, UINT32_MAX);
     /* must not crash */
 }
 

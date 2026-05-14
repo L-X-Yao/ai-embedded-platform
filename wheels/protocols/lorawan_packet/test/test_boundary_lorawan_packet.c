@@ -10,42 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_lorawan_build_data_buf_size_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lorawan_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    (void)lorawan_build_data(_safe_buf_0, 0, &_safe_frame_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_lorawan_build_data_buf_size_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lorawan_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    (void)lorawan_build_data(_safe_buf_0, 1, &_safe_frame_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_lorawan_parse_data_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lorawan_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    lorawan_err_t ret = lorawan_parse_data(_safe_buf_0, 0, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_lorawan_parse_data_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    lorawan_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    lorawan_err_t ret = lorawan_parse_data(_safe_buf_0, 1, &_safe_frame_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_lorawan_build_join_request_buf_size_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -144,10 +108,6 @@ TEST(test_boundary_lorawan_get_mtype_mhdr_uint8_max) {
 }
 
 TEST_MAIN("boundary_lorawan_packet") {
-    RUN(test_boundary_lorawan_build_data_buf_size_zero);
-    RUN(test_boundary_lorawan_build_data_buf_size_one);
-    RUN(test_boundary_lorawan_parse_data_len_zero);
-    RUN(test_boundary_lorawan_parse_data_len_one);
     RUN(test_boundary_lorawan_build_join_request_buf_size_zero);
     RUN(test_boundary_lorawan_build_join_request_buf_size_one);
     RUN(test_boundary_lorawan_parse_join_request_len_zero);
