@@ -68,7 +68,7 @@ void log_set_time_fn(uint32_t (*fn)(void)) {
  * ====================================================================== */
 
 int log_add_sink(log_sink_fn fn, void *ctx) {
-    if (!fn) return LOG_ERR_NO_SLOTS;
+    if (!fn) return LOG_ERR_PARAM;
     for (int i = 0; i < LOG_MAX_SINKS; i++) {
         if (!g_sinks[i].in_use) {
             g_sinks[i].fn = fn;

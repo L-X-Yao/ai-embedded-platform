@@ -97,15 +97,14 @@ log_level_t log_get_level(void);
 
 typedef void (*log_sink_fn)(void *ctx, const char *line, size_t len);
 
-/* Sink-API named return codes. Functions still return int because
- * log_add_sink mixes id (>=0) and error code (<0). */
 typedef enum {
     LOG_OK             =  0,
-    LOG_ERR_NO_SLOTS   = -1, /* sink table full or NULL fn (log_add_sink) */
-    LOG_ERR_INVALID_ID = -2, /* sink_id out of range or unused (log_remove_sink) */
+    LOG_ERR_PARAM      = -1, /* NULL function pointer */
+    LOG_ERR_NO_SLOTS   = -2, /* sink table full */
+    LOG_ERR_INVALID_ID = -3, /* sink_id out of range or unused */
 } log_err_t;
 
-/** Register a sink; return sink id (>=0) or LOG_ERR_NO_SLOTS. @thread_safe: no @isr_safe: yes */
+/** Register a sink; return sink id (>=0), LOG_ERR_PARAM, or LOG_ERR_NO_SLOTS. @thread_safe: no @isr_safe: yes */
 int log_add_sink(log_sink_fn fn, void *ctx);
 
 /** Remove a sink by id; return LOG_OK or LOG_ERR_INVALID_ID. @thread_safe: no @isr_safe: yes */
