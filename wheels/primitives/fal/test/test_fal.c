@@ -16,8 +16,11 @@ static int mock_init(void)
     return 0;
 }
 
+static int mock_fail_next;
+
 static int mock_read(long offset, uint8_t *buf, size_t size)
 {
+    if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, mock_flash_buf + offset, size);
     return (int)size;
@@ -25,6 +28,7 @@ static int mock_read(long offset, uint8_t *buf, size_t size)
 
 static int mock_write(long offset, const uint8_t *buf, size_t size)
 {
+    if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     for (size_t i = 0; i < size; i++)
         mock_flash_buf[(size_t)offset + i] &= buf[i];
@@ -33,6 +37,7 @@ static int mock_write(long offset, const uint8_t *buf, size_t size)
 
 static int mock_erase(long offset, size_t size)
 {
+    if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memset(mock_flash_buf + offset, 0xFF, size);
     return (int)size;
@@ -249,13 +254,18 @@ TEST(test_err_not_ready)
 
 TEST(test_err_hal)
 {
-    /* Reference FAL_ERR_HAL to keep coverage explicit; the value
-     * propagates from the underlying device ops when those return < 0.
-     * Distinctness is asserted to lock the enum layout. */
-    ASSERT_TRUE(FAL_ERR_HAL != FAL_OK);
-    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_PARAM);
-    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_OVERFLOW);
-    ASSERT_TRUE(FAL_ERR_HAL != FAL_ERR_NOT_READY);
+    const struct fal_partition *p = fal_partition_find("config");
+    ASSERT_NOT_NULL(p);
+    uint8_t buf[4] = {0};
+
+    mock_fail_next = 1;
+    ASSERT_EQ(fal_partition_read(p, 0, buf, 4), FAL_ERR_HAL);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(fal_partition_write(p, 0, buf, 4), FAL_ERR_HAL);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(fal_partition_erase(p, 0, 4096), FAL_ERR_HAL);
 }
 
 /* ---------- main ---------- */
