@@ -11,100 +11,100 @@
 #include <math.h>
 
 TEST(test_boundary_rate_limiter_init_max_tokens_zero) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, 0, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, 0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_init_max_tokens_one) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, 1, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, 1, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_init_max_tokens_uint32_max) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, UINT32_MAX, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, UINT32_MAX, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_init_tokens_per_tick_zero) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, 0, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, 0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_init_tokens_per_tick_one) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, 0, 1);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, 0, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_init_tokens_per_tick_uint32_max) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_init(&_safe_rl_0, 0, UINT32_MAX);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_init(_safe_rl_0, 0, UINT32_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_current_tick_zero) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try(&_safe_rl_0, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try(_safe_rl_0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_current_tick_one) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try(&_safe_rl_0, 1);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try(_safe_rl_0, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_current_tick_uint32_max) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try(&_safe_rl_0, UINT32_MAX);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try(_safe_rl_0, UINT32_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_n_current_tick_zero) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try_n(&_safe_rl_0, 0, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try_n(_safe_rl_0, 0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_n_current_tick_one) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try_n(&_safe_rl_0, 1, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try_n(_safe_rl_0, 1, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_n_current_tick_uint32_max) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try_n(&_safe_rl_0, UINT32_MAX, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try_n(_safe_rl_0, UINT32_MAX, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_n_n_zero) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try_n(&_safe_rl_0, 0, 0);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try_n(_safe_rl_0, 0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_rate_limiter_try_n_n_one) {
-    rate_limiter_t _safe_rl_0;
-    memset(&_safe_rl_0, 0, sizeof(_safe_rl_0));
-    rate_limiter_err_t ret = rate_limiter_try_n(&_safe_rl_0, 0, 1);
+    rate_limiter_t _safe_rl_0[128];
+    memset(_safe_rl_0, 0, sizeof(_safe_rl_0));
+    rate_limiter_err_t ret = rate_limiter_try_n(_safe_rl_0, 0, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 

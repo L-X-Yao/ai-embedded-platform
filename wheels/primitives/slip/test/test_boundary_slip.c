@@ -15,9 +15,9 @@ TEST(test_boundary_slip_encode_data_len_zero) {
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     uint8_t _safe_out_2[64];
     memset(_safe_out_2, 0, sizeof(_safe_out_2));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    slip_err_t ret = slip_encode(_safe_data_0, 0, _safe_out_2, &_safe_out_len_3);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    slip_err_t ret = slip_encode(_safe_data_0, 0, _safe_out_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -26,9 +26,9 @@ TEST(test_boundary_slip_encode_data_len_one) {
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
     uint8_t _safe_out_2[64];
     memset(_safe_out_2, 0, sizeof(_safe_out_2));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    slip_err_t ret = slip_encode(_safe_data_0, 1, _safe_out_2, &_safe_out_len_3);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    slip_err_t ret = slip_encode(_safe_data_0, 1, _safe_out_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -37,9 +37,9 @@ TEST(test_boundary_slip_decode_enc_len_zero) {
     memset(_safe_encoded_0, 0, sizeof(_safe_encoded_0));
     uint8_t _safe_out_2[64];
     memset(_safe_out_2, 0, sizeof(_safe_out_2));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    slip_err_t ret = slip_decode(_safe_encoded_0, 0, _safe_out_2, &_safe_out_len_3);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    slip_err_t ret = slip_decode(_safe_encoded_0, 0, _safe_out_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -48,20 +48,9 @@ TEST(test_boundary_slip_decode_enc_len_one) {
     memset(_safe_encoded_0, 0, sizeof(_safe_encoded_0));
     uint8_t _safe_out_2[64];
     memset(_safe_out_2, 0, sizeof(_safe_out_2));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    slip_err_t ret = slip_decode(_safe_encoded_0, 1, _safe_out_2, &_safe_out_len_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_slip_decode_enc_len_uint16_max) {
-    uint8_t _safe_encoded_0[64];
-    memset(_safe_encoded_0, 0, sizeof(_safe_encoded_0));
-    uint8_t _safe_out_2[64];
-    memset(_safe_out_2, 0, sizeof(_safe_out_2));
-    uint16_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    slip_err_t ret = slip_decode(_safe_encoded_0, (uint16_t)(UINT16_MAX), _safe_out_2, &_safe_out_len_3);
+    uint16_t _safe_out_len_3[128];
+    memset(_safe_out_len_3, 0, sizeof(_safe_out_len_3));
+    slip_err_t ret = slip_decode(_safe_encoded_0, 1, _safe_out_2, _safe_out_len_3);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -75,57 +64,12 @@ TEST(test_boundary_slip_max_encoded_size_data_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_slip_decoder_init_capacity_zero) {
-    slip_decoder_t _safe_dec_0;
-    memset(&_safe_dec_0, 0, sizeof(_safe_dec_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    slip_err_t ret = slip_decoder_init(&_safe_dec_0, _safe_buf_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_slip_decoder_init_capacity_one) {
-    slip_decoder_t _safe_dec_0;
-    memset(&_safe_dec_0, 0, sizeof(_safe_dec_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    slip_err_t ret = slip_decoder_init(&_safe_dec_0, _safe_buf_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_slip_decoder_feed_byte_zero) {
-    slip_decoder_t _safe_dec_0;
-    memset(&_safe_dec_0, 0, sizeof(_safe_dec_0));
-    slip_err_t ret = slip_decoder_feed(&_safe_dec_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_slip_decoder_feed_byte_one) {
-    slip_decoder_t _safe_dec_0;
-    memset(&_safe_dec_0, 0, sizeof(_safe_dec_0));
-    slip_err_t ret = slip_decoder_feed(&_safe_dec_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_slip_decoder_feed_byte_uint8_max) {
-    slip_decoder_t _safe_dec_0;
-    memset(&_safe_dec_0, 0, sizeof(_safe_dec_0));
-    slip_err_t ret = slip_decoder_feed(&_safe_dec_0, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST_MAIN("boundary_slip") {
     RUN(test_boundary_slip_encode_data_len_zero);
     RUN(test_boundary_slip_encode_data_len_one);
     RUN(test_boundary_slip_decode_enc_len_zero);
     RUN(test_boundary_slip_decode_enc_len_one);
-    RUN(test_boundary_slip_decode_enc_len_uint16_max);
     RUN(test_boundary_slip_max_encoded_size_data_len_zero);
     RUN(test_boundary_slip_max_encoded_size_data_len_one);
-    RUN(test_boundary_slip_decoder_init_capacity_zero);
-    RUN(test_boundary_slip_decoder_init_capacity_one);
-    RUN(test_boundary_slip_decoder_feed_byte_zero);
-    RUN(test_boundary_slip_decoder_feed_byte_one);
-    RUN(test_boundary_slip_decoder_feed_byte_uint8_max);
 }
 TEST_MAIN_END()

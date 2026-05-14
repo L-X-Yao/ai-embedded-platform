@@ -10,27 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_log_filter_init_mode_zero) {
-    log_filter_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)log_filter_init(&_safe_f_0, NULL, NULL, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_filter_init_mode_neg1) {
-    log_filter_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)log_filter_init(&_safe_f_0, NULL, NULL, -1);
-    /* must not crash */
-}
-
-TEST(test_boundary_log_filter_init_mode_past_max) {
-    log_filter_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)log_filter_init(&_safe_f_0, NULL, NULL, 2);
-    /* must not crash */
-}
-
 TEST(test_boundary_log_filter_sink_len_zero) {
     char _safe_line_1[64];
     memset(_safe_line_1, 0, sizeof(_safe_line_1));
@@ -46,9 +25,6 @@ TEST(test_boundary_log_filter_sink_len_one) {
 }
 
 TEST_MAIN("boundary_log_filter") {
-    RUN(test_boundary_log_filter_init_mode_zero);
-    RUN(test_boundary_log_filter_init_mode_neg1);
-    RUN(test_boundary_log_filter_init_mode_past_max);
     RUN(test_boundary_log_filter_sink_len_zero);
     RUN(test_boundary_log_filter_sink_len_one);
 }

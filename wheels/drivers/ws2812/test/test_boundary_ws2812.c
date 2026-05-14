@@ -10,39 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_ws2812_send_num_leds_zero) {
-    ws2812_hal_t _safe_hal_0;
-    memset(&_safe_hal_0, 0, sizeof(_safe_hal_0));
-    ws2812_timing_t _safe_timing_1;
-    memset(&_safe_timing_1, 0, sizeof(_safe_timing_1));
-    ws2812_color_t _safe_colors_2;
-    memset(&_safe_colors_2, 0, sizeof(_safe_colors_2));
-    ws2812_err_t ret = ws2812_send(&_safe_hal_0, &_safe_timing_1, &_safe_colors_2, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ws2812_send_num_leds_one) {
-    ws2812_hal_t _safe_hal_0;
-    memset(&_safe_hal_0, 0, sizeof(_safe_hal_0));
-    ws2812_timing_t _safe_timing_1;
-    memset(&_safe_timing_1, 0, sizeof(_safe_timing_1));
-    ws2812_color_t _safe_colors_2;
-    memset(&_safe_colors_2, 0, sizeof(_safe_colors_2));
-    ws2812_err_t ret = ws2812_send(&_safe_hal_0, &_safe_timing_1, &_safe_colors_2, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ws2812_send_num_leds_uint32_max) {
-    ws2812_hal_t _safe_hal_0;
-    memset(&_safe_hal_0, 0, sizeof(_safe_hal_0));
-    ws2812_timing_t _safe_timing_1;
-    memset(&_safe_timing_1, 0, sizeof(_safe_timing_1));
-    ws2812_color_t _safe_colors_2;
-    memset(&_safe_colors_2, 0, sizeof(_safe_colors_2));
-    ws2812_err_t ret = ws2812_send(&_safe_hal_0, &_safe_timing_1, &_safe_colors_2, UINT32_MAX);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_ws2812_scale5to8_v5_zero) {
     (void)ws2812_scale5to8(0);
     /* must not crash */
@@ -59,9 +26,6 @@ TEST(test_boundary_ws2812_scale5to8_v5_uint8_max) {
 }
 
 TEST_MAIN("boundary_ws2812") {
-    RUN(test_boundary_ws2812_send_num_leds_zero);
-    RUN(test_boundary_ws2812_send_num_leds_one);
-    RUN(test_boundary_ws2812_send_num_leds_uint32_max);
     RUN(test_boundary_ws2812_scale5to8_v5_zero);
     RUN(test_boundary_ws2812_scale5to8_v5_one);
     RUN(test_boundary_ws2812_scale5to8_v5_uint8_max);

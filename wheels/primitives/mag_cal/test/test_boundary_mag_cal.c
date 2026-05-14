@@ -11,422 +11,422 @@
 #include <math.h>
 
 TEST(test_boundary_mag_cal_feed_mx_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_neg_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, -0.0f, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, -0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_nan) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, NAN, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, NAN, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, INFINITY, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_neg_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, -INFINITY, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, -INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, FLT_MAX, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mx_neg_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, -FLT_MAX, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, -FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_neg_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, -0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, -0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_nan) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, NAN, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, NAN, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, INFINITY, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_neg_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, -INFINITY, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, -INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, FLT_MAX, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_my_neg_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, -FLT_MAX, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, -FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, 0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_neg_zero) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, -0.0f);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_nan) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, NAN);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, INFINITY);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_neg_inf) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, -INFINITY);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, FLT_MAX);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_feed_mz_neg_flt_max) {
-    mag_cal_t _safe_cal_0;
-    memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    (void)mag_cal_feed(&_safe_cal_0, 0.0f, 0.0f, -FLT_MAX);
+    mag_cal_t _safe_cal_0[128];
+    memset(_safe_cal_0, 0, sizeof(_safe_cal_0));
+    (void)mag_cal_feed(_safe_cal_0, 0.0f, 0.0f, -FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_neg_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, -0.0f, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, -0.0f, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_nan) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, NAN, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, NAN, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, INFINITY, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, INFINITY, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_neg_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, -INFINITY, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, -INFINITY, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, FLT_MAX, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, FLT_MAX, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_x_neg_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, -FLT_MAX, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, -FLT_MAX, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_neg_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_nan) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, NAN, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, NAN, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, INFINITY, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, INFINITY, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_neg_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -INFINITY, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -INFINITY, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, FLT_MAX, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, FLT_MAX, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_y_neg_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -FLT_MAX, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, -FLT_MAX, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, 0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_neg_zero) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -0.0f, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -0.0f, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_nan) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, NAN, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, NAN, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, INFINITY, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, INFINITY, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_neg_inf) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -INFINITY, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -INFINITY, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, FLT_MAX, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, FLT_MAX, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 
 TEST(test_boundary_mag_cal_apply_raw_z_neg_flt_max) {
     mag_cal_result_t _safe_cal_0;
     memset(&_safe_cal_0, 0, sizeof(_safe_cal_0));
-    float _safe_out_x_4;
-    memset(&_safe_out_x_4, 0, sizeof(_safe_out_x_4));
-    float _safe_out_y_5;
-    memset(&_safe_out_y_5, 0, sizeof(_safe_out_y_5));
-    float _safe_out_z_6;
-    memset(&_safe_out_z_6, 0, sizeof(_safe_out_z_6));
-    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -FLT_MAX, &_safe_out_x_4, &_safe_out_y_5, &_safe_out_z_6);
+    float _safe_out_x_4[128];
+    memset(_safe_out_x_4, 0, sizeof(_safe_out_x_4));
+    float _safe_out_y_5[128];
+    memset(_safe_out_y_5, 0, sizeof(_safe_out_y_5));
+    float _safe_out_z_6[128];
+    memset(_safe_out_z_6, 0, sizeof(_safe_out_z_6));
+    (void)mag_cal_apply(&_safe_cal_0, 0.0f, 0.0f, -FLT_MAX, _safe_out_x_4, _safe_out_y_5, _safe_out_z_6);
     /* must not crash */
 }
 

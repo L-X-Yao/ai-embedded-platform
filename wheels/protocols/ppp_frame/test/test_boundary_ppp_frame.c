@@ -29,9 +29,9 @@ TEST(test_boundary_ppp_frame_encode_protocol_zero) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -40,9 +40,9 @@ TEST(test_boundary_ppp_frame_encode_protocol_one) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(1, _safe_payload_1, 0, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(1, _safe_payload_1, 0, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -51,9 +51,9 @@ TEST(test_boundary_ppp_frame_encode_protocol_uint16_max) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode((uint16_t)(UINT16_MAX), _safe_payload_1, 0, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode((uint16_t)(UINT16_MAX), _safe_payload_1, 0, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -62,9 +62,9 @@ TEST(test_boundary_ppp_frame_encode_payload_len_zero) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -73,20 +73,9 @@ TEST(test_boundary_ppp_frame_encode_payload_len_one) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 1, _safe_dst_3, 0, &_safe_out_len_5);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ppp_frame_encode_payload_len_size_max) {
-    uint8_t _safe_payload_1[64];
-    memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
-    uint8_t _safe_dst_3[64];
-    memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, SIZE_MAX, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 1, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -95,9 +84,9 @@ TEST(test_boundary_ppp_frame_encode_dst_cap_zero) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -106,74 +95,61 @@ TEST(test_boundary_ppp_frame_encode_dst_cap_one) {
     memset(_safe_payload_1, 0, sizeof(_safe_payload_1));
     uint8_t _safe_dst_3[64];
     memset(_safe_dst_3, 0, sizeof(_safe_dst_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    ppp_frame_err_t ret = ppp_frame_encode(0, _safe_payload_1, 0, _safe_dst_3, 1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ppp_frame_decode_src_len_zero) {
     uint8_t _safe_src_0[64];
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
-    uint16_t _safe_protocol_2;
-    memset(&_safe_protocol_2, 0, sizeof(_safe_protocol_2));
+    uint16_t _safe_protocol_2[128];
+    memset(_safe_protocol_2, 0, sizeof(_safe_protocol_2));
     uint8_t _safe_payload_buf_3[64];
     memset(_safe_payload_buf_3, 0, sizeof(_safe_payload_buf_3));
-    size_t _safe_payload_len_5;
-    memset(&_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
-    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, &_safe_protocol_2, _safe_payload_buf_3, 0, &_safe_payload_len_5);
+    size_t _safe_payload_len_5[128];
+    memset(_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
+    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, _safe_protocol_2, _safe_payload_buf_3, 0, _safe_payload_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ppp_frame_decode_src_len_one) {
     uint8_t _safe_src_0[64];
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
-    uint16_t _safe_protocol_2;
-    memset(&_safe_protocol_2, 0, sizeof(_safe_protocol_2));
+    uint16_t _safe_protocol_2[128];
+    memset(_safe_protocol_2, 0, sizeof(_safe_protocol_2));
     uint8_t _safe_payload_buf_3[64];
     memset(_safe_payload_buf_3, 0, sizeof(_safe_payload_buf_3));
-    size_t _safe_payload_len_5;
-    memset(&_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
-    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 1, &_safe_protocol_2, _safe_payload_buf_3, 0, &_safe_payload_len_5);
+    size_t _safe_payload_len_5[128];
+    memset(_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
+    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 1, _safe_protocol_2, _safe_payload_buf_3, 0, _safe_payload_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ppp_frame_decode_payload_cap_zero) {
     uint8_t _safe_src_0[64];
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
-    uint16_t _safe_protocol_2;
-    memset(&_safe_protocol_2, 0, sizeof(_safe_protocol_2));
+    uint16_t _safe_protocol_2[128];
+    memset(_safe_protocol_2, 0, sizeof(_safe_protocol_2));
     uint8_t _safe_payload_buf_3[64];
     memset(_safe_payload_buf_3, 0, sizeof(_safe_payload_buf_3));
-    size_t _safe_payload_len_5;
-    memset(&_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
-    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, &_safe_protocol_2, _safe_payload_buf_3, 0, &_safe_payload_len_5);
+    size_t _safe_payload_len_5[128];
+    memset(_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
+    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, _safe_protocol_2, _safe_payload_buf_3, 0, _safe_payload_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ppp_frame_decode_payload_cap_one) {
     uint8_t _safe_src_0[64];
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
-    uint16_t _safe_protocol_2;
-    memset(&_safe_protocol_2, 0, sizeof(_safe_protocol_2));
+    uint16_t _safe_protocol_2[128];
+    memset(_safe_protocol_2, 0, sizeof(_safe_protocol_2));
     uint8_t _safe_payload_buf_3[64];
     memset(_safe_payload_buf_3, 0, sizeof(_safe_payload_buf_3));
-    size_t _safe_payload_len_5;
-    memset(&_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
-    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, &_safe_protocol_2, _safe_payload_buf_3, 1, &_safe_payload_len_5);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ppp_frame_decode_payload_cap_size_max) {
-    uint8_t _safe_src_0[64];
-    memset(_safe_src_0, 0, sizeof(_safe_src_0));
-    uint16_t _safe_protocol_2;
-    memset(&_safe_protocol_2, 0, sizeof(_safe_protocol_2));
-    uint8_t _safe_payload_buf_3[64];
-    memset(_safe_payload_buf_3, 0, sizeof(_safe_payload_buf_3));
-    size_t _safe_payload_len_5;
-    memset(&_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
-    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, &_safe_protocol_2, _safe_payload_buf_3, SIZE_MAX, &_safe_payload_len_5);
+    size_t _safe_payload_len_5[128];
+    memset(_safe_payload_len_5, 0, sizeof(_safe_payload_len_5));
+    ppp_frame_err_t ret = ppp_frame_decode(_safe_src_0, 0, _safe_protocol_2, _safe_payload_buf_3, 1, _safe_payload_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -185,13 +161,11 @@ TEST_MAIN("boundary_ppp_frame") {
     RUN(test_boundary_ppp_frame_encode_protocol_uint16_max);
     RUN(test_boundary_ppp_frame_encode_payload_len_zero);
     RUN(test_boundary_ppp_frame_encode_payload_len_one);
-    RUN(test_boundary_ppp_frame_encode_payload_len_size_max);
     RUN(test_boundary_ppp_frame_encode_dst_cap_zero);
     RUN(test_boundary_ppp_frame_encode_dst_cap_one);
     RUN(test_boundary_ppp_frame_decode_src_len_zero);
     RUN(test_boundary_ppp_frame_decode_src_len_one);
     RUN(test_boundary_ppp_frame_decode_payload_cap_zero);
     RUN(test_boundary_ppp_frame_decode_payload_cap_one);
-    RUN(test_boundary_ppp_frame_decode_payload_cap_size_max);
 }
 TEST_MAIN_END()

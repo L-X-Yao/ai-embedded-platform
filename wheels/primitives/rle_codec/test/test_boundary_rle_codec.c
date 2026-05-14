@@ -15,9 +15,9 @@ TEST(test_boundary_rle_codec_encode_src_len_zero) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -26,9 +26,9 @@ TEST(test_boundary_rle_codec_encode_src_len_one) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 1, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 1, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -37,9 +37,9 @@ TEST(test_boundary_rle_codec_encode_dst_cap_zero) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -48,9 +48,9 @@ TEST(test_boundary_rle_codec_encode_dst_cap_one) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 1, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_encode(_safe_src_0, 0, _safe_dst_2, 1, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -59,9 +59,9 @@ TEST(test_boundary_rle_codec_decode_src_len_zero) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -70,9 +70,9 @@ TEST(test_boundary_rle_codec_decode_src_len_one) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 1, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 1, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -81,9 +81,9 @@ TEST(test_boundary_rle_codec_decode_dst_cap_zero) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -92,9 +92,9 @@ TEST(test_boundary_rle_codec_decode_dst_cap_one) {
     memset(_safe_src_0, 0, sizeof(_safe_src_0));
     uint8_t _safe_dst_2[64];
     memset(_safe_dst_2, 0, sizeof(_safe_dst_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 1, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    rle_codec_err_t ret = rle_codec_decode(_safe_src_0, 0, _safe_dst_2, 1, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 

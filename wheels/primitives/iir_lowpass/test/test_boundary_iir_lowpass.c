@@ -11,100 +11,100 @@
 #include <math.h>
 
 TEST(test_boundary_iir_lowpass_feed_x_zero) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, 0.0f);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_neg_zero) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, -0.0f);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_nan) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, NAN);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_inf) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, INFINITY);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_neg_inf) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, -INFINITY);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_flt_max) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, FLT_MAX);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_feed_x_neg_flt_max) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    (void)iir_lowpass_feed(&_safe_f_0, -FLT_MAX);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    (void)iir_lowpass_feed(_safe_f_0, -FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_zero) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, 0.0f);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_neg_zero) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, -0.0f);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_nan) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, NAN);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_inf) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, INFINITY);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_neg_inf) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, -INFINITY);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_flt_max) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, FLT_MAX);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_iir_lowpass_set_alpha_alpha_neg_flt_max) {
-    iir_lowpass_t _safe_f_0;
-    memset(&_safe_f_0, 0, sizeof(_safe_f_0));
-    iir_lowpass_err_t ret = iir_lowpass_set_alpha(&_safe_f_0, -FLT_MAX);
+    iir_lowpass_t _safe_f_0[128];
+    memset(_safe_f_0, 0, sizeof(_safe_f_0));
+    iir_lowpass_err_t ret = iir_lowpass_set_alpha(_safe_f_0, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 

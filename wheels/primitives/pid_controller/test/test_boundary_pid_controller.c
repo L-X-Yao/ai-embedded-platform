@@ -11,394 +11,394 @@
 #include <math.h>
 
 TEST(test_boundary_pid_controller_update_setpoint_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, -0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, -0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, NAN, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, NAN, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, INFINITY, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, -INFINITY, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, -INFINITY, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, FLT_MAX, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_setpoint_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, -FLT_MAX, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, -FLT_MAX, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, -0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, -0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, NAN, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, NAN, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, -INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, -INFINITY, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_measured_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, -FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, -FLT_MAX, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, -0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, NAN);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, -INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_update_dt_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)pid_controller_update(&_safe_ctx_0, 0.0f, 0.0f, -FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)pid_controller_update(_safe_ctx_0, 0.0f, 0.0f, -FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, -0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, -0.0f, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, NAN, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, NAN, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, INFINITY, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, INFINITY, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, -INFINITY, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, -INFINITY, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, FLT_MAX, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, FLT_MAX, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kp_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, -FLT_MAX, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, -FLT_MAX, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, -0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, -0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, NAN, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, NAN, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, -INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, -INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_ki_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, -FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, -FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, -0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, NAN);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, -INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_tunings_kd_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_tunings(&_safe_ctx_0, 0.0f, 0.0f, -FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_tunings(_safe_ctx_0, 0.0f, 0.0f, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, -0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, -0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, NAN, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, NAN, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, -INFINITY, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, -INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_min_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, -FLT_MAX, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, -FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, 0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_neg_zero) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, -0.0f);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_nan) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, NAN);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_neg_inf) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, -INFINITY);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_pid_controller_set_output_limits_max_neg_flt_max) {
-    pid_controller_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    pid_controller_err_t ret = pid_controller_set_output_limits(&_safe_ctx_0, 0.0f, -FLT_MAX);
+    pid_controller_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    pid_controller_err_t ret = pid_controller_set_output_limits(_safe_ctx_0, 0.0f, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 

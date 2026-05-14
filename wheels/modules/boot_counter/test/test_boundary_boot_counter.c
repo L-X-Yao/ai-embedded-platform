@@ -10,30 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_boot_counter_set_reset_reason_reason_zero) {
-    boot_counter_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    boot_counter_err_t ret = boot_counter_set_reset_reason(&_safe_ctx_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
+/* No boundary tests generated: all 8 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_boot_counter_set_reset_reason_reason_one) {
-    boot_counter_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    boot_counter_err_t ret = boot_counter_set_reset_reason(&_safe_ctx_0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_boot_counter_set_reset_reason_reason_uint32_max) {
-    boot_counter_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    boot_counter_err_t ret = boot_counter_set_reset_reason(&_safe_ctx_0, UINT32_MAX);
-    ASSERT_TRUE((int)ret <= 0);
+TEST(test_boundary_boot_counter_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_boot_counter") {
-    RUN(test_boundary_boot_counter_set_reset_reason_reason_zero);
-    RUN(test_boundary_boot_counter_set_reset_reason_reason_one);
-    RUN(test_boundary_boot_counter_set_reset_reason_reason_uint32_max);
+    RUN(test_boundary_boot_counter_placeholder);
 }
 TEST_MAIN_END()

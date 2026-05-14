@@ -31,6 +31,16 @@ target_include_directories(test_null_bmi160 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_bmi160 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_bmi160
+    test_boundary_bmi160.c
+    ../bmi160.c
+)
+target_include_directories(test_boundary_bmi160 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_bmi160 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bmi160_tests COMMAND test_bmi160)
 
@@ -48,3 +58,4 @@ target_link_libraries(test_hw_model_bmi160 PRIVATE m)
 
 add_test(NAME bmi160_hw_model_tests COMMAND test_hw_model_bmi160)
 add_test(NAME bmi160_null_tests COMMAND test_null_bmi160)
+add_test(NAME bmi160_boundary_tests COMMAND test_boundary_bmi160)

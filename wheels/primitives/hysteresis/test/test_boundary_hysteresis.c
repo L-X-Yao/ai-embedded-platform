@@ -11,247 +11,247 @@
 #include <math.h>
 
 TEST(test_boundary_hysteresis_init_thresh_low_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_neg_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, -0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, -0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_nan) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, NAN, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, NAN, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, INFINITY, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_neg_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, -INFINITY, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, -INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, FLT_MAX, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_low_neg_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, -FLT_MAX, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, -FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_neg_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, -0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_nan) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, NAN);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_neg_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, -INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_init_thresh_high_neg_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_init(&_safe_ctx_0, 0.0f, -FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_init(_safe_ctx_0, 0.0f, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_feed_value_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_neg_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, -0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_nan) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, NAN);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_neg_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, -INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_feed_value_neg_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)hysteresis_feed(&_safe_ctx_0, -FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)hysteresis_feed(_safe_ctx_0, -FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_neg_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, -0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, -0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_nan) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, NAN, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, NAN, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, INFINITY, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_neg_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, -INFINITY, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, -INFINITY, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, FLT_MAX, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_low_neg_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, -FLT_MAX, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, -FLT_MAX, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, 0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_neg_zero) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, -0.0f);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_nan) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, NAN);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_neg_inf) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, -INFINITY);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_hysteresis_set_thresholds_thresh_high_neg_flt_max) {
-    hysteresis_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    hysteresis_err_t ret = hysteresis_set_thresholds(&_safe_ctx_0, 0.0f, -FLT_MAX);
+    hysteresis_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    hysteresis_err_t ret = hysteresis_set_thresholds(_safe_ctx_0, 0.0f, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 

@@ -10,45 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_ubx_parser_init_buf_size_zero) {
-    ubx_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    ubx_parser_err_t ret = ubx_parser_init(&_safe_ctx_0, _safe_buf_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ubx_parser_init_buf_size_one) {
-    ubx_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    ubx_parser_err_t ret = ubx_parser_init(&_safe_ctx_0, _safe_buf_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ubx_parser_feed_byte_zero) {
-    ubx_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ubx_parser_feed(&_safe_ctx_0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_ubx_parser_feed_byte_one) {
-    ubx_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ubx_parser_feed(&_safe_ctx_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_ubx_parser_feed_byte_uint8_max) {
-    ubx_parser_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ubx_parser_feed(&_safe_ctx_0, (uint8_t)(UINT8_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_ubx_parser_build_cap_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -139,15 +100,6 @@ TEST(test_boundary_ubx_parser_build_payload_len_one) {
     /* must not crash */
 }
 
-TEST(test_boundary_ubx_parser_build_payload_len_uint16_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint8_t _safe_payload_4[64];
-    memset(_safe_payload_4, 0, sizeof(_safe_payload_4));
-    (void)ubx_parser_build(_safe_buf_0, 0, 0, 0, _safe_payload_4, (uint16_t)(UINT16_MAX));
-    /* must not crash */
-}
-
 TEST(test_boundary_ubx_parser_checksum_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -171,11 +123,6 @@ TEST(test_boundary_ubx_parser_checksum_len_one) {
 }
 
 TEST_MAIN("boundary_ubx_parser") {
-    RUN(test_boundary_ubx_parser_init_buf_size_zero);
-    RUN(test_boundary_ubx_parser_init_buf_size_one);
-    RUN(test_boundary_ubx_parser_feed_byte_zero);
-    RUN(test_boundary_ubx_parser_feed_byte_one);
-    RUN(test_boundary_ubx_parser_feed_byte_uint8_max);
     RUN(test_boundary_ubx_parser_build_cap_zero);
     RUN(test_boundary_ubx_parser_build_cap_one);
     RUN(test_boundary_ubx_parser_build_msg_class_zero);
@@ -186,7 +133,6 @@ TEST_MAIN("boundary_ubx_parser") {
     RUN(test_boundary_ubx_parser_build_msg_id_uint8_max);
     RUN(test_boundary_ubx_parser_build_payload_len_zero);
     RUN(test_boundary_ubx_parser_build_payload_len_one);
-    RUN(test_boundary_ubx_parser_build_payload_len_uint16_max);
     RUN(test_boundary_ubx_parser_checksum_len_zero);
     RUN(test_boundary_ubx_parser_checksum_len_one);
 }

@@ -11,23 +11,23 @@
 #include <math.h>
 
 TEST(test_boundary_datetime_from_epoch_epoch_zero) {
-    datetime_t _safe_out_1;
-    memset(&_safe_out_1, 0, sizeof(_safe_out_1));
-    datetime_err_t ret = datetime_from_epoch(0, &_safe_out_1);
+    datetime_t _safe_out_1[128];
+    memset(_safe_out_1, 0, sizeof(_safe_out_1));
+    datetime_err_t ret = datetime_from_epoch(0, _safe_out_1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_from_epoch_epoch_one) {
-    datetime_t _safe_out_1;
-    memset(&_safe_out_1, 0, sizeof(_safe_out_1));
-    datetime_err_t ret = datetime_from_epoch(1, &_safe_out_1);
+    datetime_t _safe_out_1[128];
+    memset(_safe_out_1, 0, sizeof(_safe_out_1));
+    datetime_err_t ret = datetime_from_epoch(1, _safe_out_1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_from_epoch_epoch_uint32_max) {
-    datetime_t _safe_out_1;
-    memset(&_safe_out_1, 0, sizeof(_safe_out_1));
-    datetime_err_t ret = datetime_from_epoch(UINT32_MAX, &_safe_out_1);
+    datetime_t _safe_out_1[128];
+    memset(_safe_out_1, 0, sizeof(_safe_out_1));
+    datetime_err_t ret = datetime_from_epoch(UINT32_MAX, _safe_out_1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -77,37 +77,37 @@ TEST(test_boundary_datetime_days_in_month_month_uint8_max) {
 }
 
 TEST(test_boundary_datetime_add_seconds_seconds_zero) {
-    datetime_t _safe_dt_0;
-    memset(&_safe_dt_0, 0, sizeof(_safe_dt_0));
-    datetime_err_t ret = datetime_add_seconds(&_safe_dt_0, 0);
+    datetime_t _safe_dt_0[128];
+    memset(_safe_dt_0, 0, sizeof(_safe_dt_0));
+    datetime_err_t ret = datetime_add_seconds(_safe_dt_0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_add_seconds_seconds_neg1) {
-    datetime_t _safe_dt_0;
-    memset(&_safe_dt_0, 0, sizeof(_safe_dt_0));
-    datetime_err_t ret = datetime_add_seconds(&_safe_dt_0, -1);
+    datetime_t _safe_dt_0[128];
+    memset(_safe_dt_0, 0, sizeof(_safe_dt_0));
+    datetime_err_t ret = datetime_add_seconds(_safe_dt_0, -1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_add_seconds_seconds_one) {
-    datetime_t _safe_dt_0;
-    memset(&_safe_dt_0, 0, sizeof(_safe_dt_0));
-    datetime_err_t ret = datetime_add_seconds(&_safe_dt_0, 1);
+    datetime_t _safe_dt_0[128];
+    memset(_safe_dt_0, 0, sizeof(_safe_dt_0));
+    datetime_err_t ret = datetime_add_seconds(_safe_dt_0, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_add_seconds_seconds_int32_max) {
-    datetime_t _safe_dt_0;
-    memset(&_safe_dt_0, 0, sizeof(_safe_dt_0));
-    datetime_err_t ret = datetime_add_seconds(&_safe_dt_0, INT32_MAX);
+    datetime_t _safe_dt_0[128];
+    memset(_safe_dt_0, 0, sizeof(_safe_dt_0));
+    datetime_err_t ret = datetime_add_seconds(_safe_dt_0, INT32_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_datetime_add_seconds_seconds_int32_min) {
-    datetime_t _safe_dt_0;
-    memset(&_safe_dt_0, 0, sizeof(_safe_dt_0));
-    datetime_err_t ret = datetime_add_seconds(&_safe_dt_0, INT32_MIN);
+    datetime_t _safe_dt_0[128];
+    memset(_safe_dt_0, 0, sizeof(_safe_dt_0));
+    datetime_err_t ret = datetime_add_seconds(_safe_dt_0, INT32_MIN);
     ASSERT_TRUE((int)ret <= 0);
 }
 

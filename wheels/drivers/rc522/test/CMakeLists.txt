@@ -30,6 +30,16 @@ target_include_directories(test_null_rc522 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_rc522 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_rc522
+    test_boundary_rc522.c
+    ../rc522.c
+)
+target_include_directories(test_boundary_rc522 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_rc522 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME rc522_tests COMMAND test_rc522)
 
@@ -45,3 +55,4 @@ target_include_directories(test_hw_model_rc522 PRIVATE
 target_compile_options(test_hw_model_rc522 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 add_test(NAME rc522_hw_model_tests COMMAND test_hw_model_rc522)
 add_test(NAME rc522_null_tests COMMAND test_null_rc522)
+add_test(NAME rc522_boundary_tests COMMAND test_boundary_rc522)

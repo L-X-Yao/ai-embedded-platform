@@ -11,58 +11,58 @@
 #include <math.h>
 
 TEST(test_boundary_ewma_init_shift_zero) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    ewma_err_t ret = ewma_init(&_safe_ctx_0, 0);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    ewma_err_t ret = ewma_init(_safe_ctx_0, 0);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ewma_init_shift_one) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    ewma_err_t ret = ewma_init(&_safe_ctx_0, 1);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    ewma_err_t ret = ewma_init(_safe_ctx_0, 1);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ewma_init_shift_uint8_max) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    ewma_err_t ret = ewma_init(&_safe_ctx_0, (uint8_t)(UINT8_MAX));
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    ewma_err_t ret = ewma_init(_safe_ctx_0, (uint8_t)(UINT8_MAX));
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_ewma_feed_sample_zero) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ewma_feed(&_safe_ctx_0, 0);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)ewma_feed(_safe_ctx_0, 0);
     /* must not crash */
 }
 
 TEST(test_boundary_ewma_feed_sample_neg1) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ewma_feed(&_safe_ctx_0, -1);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)ewma_feed(_safe_ctx_0, -1);
     /* must not crash */
 }
 
 TEST(test_boundary_ewma_feed_sample_one) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ewma_feed(&_safe_ctx_0, 1);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)ewma_feed(_safe_ctx_0, 1);
     /* must not crash */
 }
 
 TEST(test_boundary_ewma_feed_sample_int32_max) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ewma_feed(&_safe_ctx_0, INT32_MAX);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)ewma_feed(_safe_ctx_0, INT32_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_ewma_feed_sample_int32_min) {
-    ewma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)ewma_feed(&_safe_ctx_0, INT32_MIN);
+    ewma_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)ewma_feed(_safe_ctx_0, INT32_MIN);
     /* must not crash */
 }
 

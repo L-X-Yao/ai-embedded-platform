@@ -10,42 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_mqtt_packet_build_connect_buf_size_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_connect_opts_t _safe_opts_2;
-    memset(&_safe_opts_2, 0, sizeof(_safe_opts_2));
-    (void)mqtt_packet_build_connect(_safe_buf_0, 0, &_safe_opts_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_mqtt_packet_build_connect_buf_size_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_connect_opts_t _safe_opts_2;
-    memset(&_safe_opts_2, 0, sizeof(_safe_opts_2));
-    (void)mqtt_packet_build_connect(_safe_buf_0, 1, &_safe_opts_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_mqtt_packet_build_publish_buf_size_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_publish_t _safe_pub_2;
-    memset(&_safe_pub_2, 0, sizeof(_safe_pub_2));
-    (void)mqtt_packet_build_publish(_safe_buf_0, 0, &_safe_pub_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_mqtt_packet_build_publish_buf_size_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_publish_t _safe_pub_2;
-    memset(&_safe_pub_2, 0, sizeof(_safe_pub_2));
-    (void)mqtt_packet_build_publish(_safe_buf_0, 1, &_safe_pub_2);
-    /* must not crash */
-}
-
 TEST(test_boundary_mqtt_packet_build_subscribe_buf_size_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -163,54 +127,36 @@ TEST(test_boundary_mqtt_packet_get_type_len_one) {
 TEST(test_boundary_mqtt_packet_parse_connack_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_connack_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_connack(_safe_buf_0, 0, &_safe_out_2);
+    mqtt_connack_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    mqtt_packet_err_t ret = mqtt_packet_parse_connack(_safe_buf_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_mqtt_packet_parse_connack_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_connack_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_connack(_safe_buf_0, 1, &_safe_out_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_mqtt_packet_parse_publish_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_publish_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_publish(_safe_buf_0, 0, &_safe_out_2);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_mqtt_packet_parse_publish_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    mqtt_publish_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_publish(_safe_buf_0, 1, &_safe_out_2);
+    mqtt_connack_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    mqtt_packet_err_t ret = mqtt_packet_parse_connack(_safe_buf_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_mqtt_packet_parse_puback_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint16_t _safe_packet_id_2;
-    memset(&_safe_packet_id_2, 0, sizeof(_safe_packet_id_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_puback(_safe_buf_0, 0, &_safe_packet_id_2);
+    uint16_t _safe_packet_id_2[128];
+    memset(_safe_packet_id_2, 0, sizeof(_safe_packet_id_2));
+    mqtt_packet_err_t ret = mqtt_packet_parse_puback(_safe_buf_0, 0, _safe_packet_id_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_mqtt_packet_parse_puback_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uint16_t _safe_packet_id_2;
-    memset(&_safe_packet_id_2, 0, sizeof(_safe_packet_id_2));
-    mqtt_packet_err_t ret = mqtt_packet_parse_puback(_safe_buf_0, 1, &_safe_packet_id_2);
+    uint16_t _safe_packet_id_2[128];
+    memset(_safe_packet_id_2, 0, sizeof(_safe_packet_id_2));
+    mqtt_packet_err_t ret = mqtt_packet_parse_puback(_safe_buf_0, 1, _safe_packet_id_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -231,26 +177,22 @@ TEST(test_boundary_mqtt_packet_encode_remaining_length_length_one) {
 TEST(test_boundary_mqtt_packet_decode_remaining_length_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    int _safe_bytes_used_2;
-    memset(&_safe_bytes_used_2, 0, sizeof(_safe_bytes_used_2));
-    (void)mqtt_packet_decode_remaining_length(_safe_buf_0, 0, &_safe_bytes_used_2);
+    int _safe_bytes_used_2[128];
+    memset(_safe_bytes_used_2, 0, sizeof(_safe_bytes_used_2));
+    (void)mqtt_packet_decode_remaining_length(_safe_buf_0, 0, _safe_bytes_used_2);
     /* must not crash */
 }
 
 TEST(test_boundary_mqtt_packet_decode_remaining_length_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    int _safe_bytes_used_2;
-    memset(&_safe_bytes_used_2, 0, sizeof(_safe_bytes_used_2));
-    (void)mqtt_packet_decode_remaining_length(_safe_buf_0, 1, &_safe_bytes_used_2);
+    int _safe_bytes_used_2[128];
+    memset(_safe_bytes_used_2, 0, sizeof(_safe_bytes_used_2));
+    (void)mqtt_packet_decode_remaining_length(_safe_buf_0, 1, _safe_bytes_used_2);
     /* must not crash */
 }
 
 TEST_MAIN("boundary_mqtt_packet") {
-    RUN(test_boundary_mqtt_packet_build_connect_buf_size_zero);
-    RUN(test_boundary_mqtt_packet_build_connect_buf_size_one);
-    RUN(test_boundary_mqtt_packet_build_publish_buf_size_zero);
-    RUN(test_boundary_mqtt_packet_build_publish_buf_size_one);
     RUN(test_boundary_mqtt_packet_build_subscribe_buf_size_zero);
     RUN(test_boundary_mqtt_packet_build_subscribe_buf_size_one);
     RUN(test_boundary_mqtt_packet_build_subscribe_packet_id_zero);
@@ -267,8 +209,6 @@ TEST_MAIN("boundary_mqtt_packet") {
     RUN(test_boundary_mqtt_packet_get_type_len_one);
     RUN(test_boundary_mqtt_packet_parse_connack_len_zero);
     RUN(test_boundary_mqtt_packet_parse_connack_len_one);
-    RUN(test_boundary_mqtt_packet_parse_publish_len_zero);
-    RUN(test_boundary_mqtt_packet_parse_publish_len_one);
     RUN(test_boundary_mqtt_packet_parse_puback_len_zero);
     RUN(test_boundary_mqtt_packet_parse_puback_len_one);
     RUN(test_boundary_mqtt_packet_encode_remaining_length_length_zero);

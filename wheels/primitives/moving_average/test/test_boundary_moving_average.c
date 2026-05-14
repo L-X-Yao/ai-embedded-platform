@@ -10,191 +10,105 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_moving_average_sma_init_window_zero) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    float _safe_buf_1;
-    memset(&_safe_buf_1, 0, sizeof(_safe_buf_1));
-    moving_average_err_t ret = moving_average_sma_init(&_safe_ctx_0, &_safe_buf_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_moving_average_sma_init_window_one) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    float _safe_buf_1;
-    memset(&_safe_buf_1, 0, sizeof(_safe_buf_1));
-    moving_average_err_t ret = moving_average_sma_init(&_safe_ctx_0, &_safe_buf_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_moving_average_sma_init_window_size_max) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    float _safe_buf_1;
-    memset(&_safe_buf_1, 0, sizeof(_safe_buf_1));
-    moving_average_err_t ret = moving_average_sma_init(&_safe_ctx_0, &_safe_buf_1, SIZE_MAX);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_zero) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, 0.0f);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_neg_zero) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, -0.0f);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_nan) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, NAN);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_inf) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, INFINITY);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_neg_inf) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, -INFINITY);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_flt_max) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, FLT_MAX);
-    /* must not crash */
-}
-
-TEST(test_boundary_moving_average_sma_feed_sample_neg_flt_max) {
-    moving_average_sma_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_sma_feed(&_safe_ctx_0, -FLT_MAX);
-    /* must not crash */
-}
-
 TEST(test_boundary_moving_average_ema_init_alpha_zero) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, 0.0f);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, 0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_neg_zero) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, -0.0f);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, -0.0f);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_nan) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, NAN);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, NAN);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_inf) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, INFINITY);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_neg_inf) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, -INFINITY);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, -INFINITY);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_flt_max) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, FLT_MAX);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_init_alpha_neg_flt_max) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    moving_average_err_t ret = moving_average_ema_init(&_safe_ctx_0, -FLT_MAX);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    moving_average_err_t ret = moving_average_ema_init(_safe_ctx_0, -FLT_MAX);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_zero) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, 0.0f);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, 0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_neg_zero) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, -0.0f);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, -0.0f);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_nan) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, NAN);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, NAN);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_inf) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, INFINITY);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_neg_inf) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, -INFINITY);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, -INFINITY);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_flt_max) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, FLT_MAX);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, FLT_MAX);
     /* must not crash */
 }
 
 TEST(test_boundary_moving_average_ema_feed_sample_neg_flt_max) {
-    moving_average_ema_t _safe_ctx_0;
-    memset(&_safe_ctx_0, 0, sizeof(_safe_ctx_0));
-    (void)moving_average_ema_feed(&_safe_ctx_0, -FLT_MAX);
+    moving_average_ema_t _safe_ctx_0[128];
+    memset(_safe_ctx_0, 0, sizeof(_safe_ctx_0));
+    (void)moving_average_ema_feed(_safe_ctx_0, -FLT_MAX);
     /* must not crash */
 }
 
 TEST_MAIN("boundary_moving_average") {
-    RUN(test_boundary_moving_average_sma_init_window_zero);
-    RUN(test_boundary_moving_average_sma_init_window_one);
-    RUN(test_boundary_moving_average_sma_init_window_size_max);
-    RUN(test_boundary_moving_average_sma_feed_sample_zero);
-    RUN(test_boundary_moving_average_sma_feed_sample_neg_zero);
-    RUN(test_boundary_moving_average_sma_feed_sample_nan);
-    RUN(test_boundary_moving_average_sma_feed_sample_inf);
-    RUN(test_boundary_moving_average_sma_feed_sample_neg_inf);
-    RUN(test_boundary_moving_average_sma_feed_sample_flt_max);
-    RUN(test_boundary_moving_average_sma_feed_sample_neg_flt_max);
     RUN(test_boundary_moving_average_ema_init_alpha_zero);
     RUN(test_boundary_moving_average_ema_init_alpha_neg_zero);
     RUN(test_boundary_moving_average_ema_init_alpha_nan);

@@ -31,18 +31,18 @@ TEST(test_boundary_canbus_frame_pack_buf_size_one) {
 TEST(test_boundary_canbus_frame_unpack_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    canbus_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    canbus_err_t ret = canbus_frame_unpack(_safe_buf_0, 0, &_safe_frame_2);
+    canbus_frame_t _safe_frame_2[128];
+    memset(_safe_frame_2, 0, sizeof(_safe_frame_2));
+    canbus_err_t ret = canbus_frame_unpack(_safe_buf_0, 0, _safe_frame_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_canbus_frame_unpack_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    canbus_frame_t _safe_frame_2;
-    memset(&_safe_frame_2, 0, sizeof(_safe_frame_2));
-    canbus_err_t ret = canbus_frame_unpack(_safe_buf_0, 1, &_safe_frame_2);
+    canbus_frame_t _safe_frame_2[128];
+    memset(_safe_frame_2, 0, sizeof(_safe_frame_2));
+    canbus_err_t ret = canbus_frame_unpack(_safe_buf_0, 1, _safe_frame_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 

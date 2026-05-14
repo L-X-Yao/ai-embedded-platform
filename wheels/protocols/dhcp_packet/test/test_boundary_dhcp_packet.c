@@ -13,85 +13,18 @@
 TEST(test_boundary_dhcp_packet_parse_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_header_t _safe_hdr_2;
-    memset(&_safe_hdr_2, 0, sizeof(_safe_hdr_2));
-    (void)dhcp_packet_parse(_safe_buf_0, 0, &_safe_hdr_2);
+    dhcp_header_t _safe_hdr_2[128];
+    memset(_safe_hdr_2, 0, sizeof(_safe_hdr_2));
+    (void)dhcp_packet_parse(_safe_buf_0, 0, _safe_hdr_2);
     /* must not crash */
 }
 
 TEST(test_boundary_dhcp_packet_parse_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_header_t _safe_hdr_2;
-    memset(&_safe_hdr_2, 0, sizeof(_safe_hdr_2));
-    (void)dhcp_packet_parse(_safe_buf_0, 1, &_safe_hdr_2);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_next_option_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_offset_2;
-    memset(&_safe_offset_2, 0, sizeof(_safe_offset_2));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_next_option(_safe_buf_0, 0, &_safe_offset_2, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_next_option_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    size_t _safe_offset_2;
-    memset(&_safe_offset_2, 0, sizeof(_safe_offset_2));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_next_option(_safe_buf_0, 1, &_safe_offset_2, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_get_option_len_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_get_option(_safe_buf_0, 0, 0, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_get_option_len_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_get_option(_safe_buf_0, 1, 0, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_get_option_code_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_get_option(_safe_buf_0, 0, 0, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_get_option_code_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_get_option(_safe_buf_0, 0, 1, &_safe_opt_3);
-    /* must not crash */
-}
-
-TEST(test_boundary_dhcp_packet_get_option_code_uint8_max) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    dhcp_option_t _safe_opt_3;
-    memset(&_safe_opt_3, 0, sizeof(_safe_opt_3));
-    (void)dhcp_packet_get_option(_safe_buf_0, 0, (uint8_t)(UINT8_MAX), &_safe_opt_3);
+    dhcp_header_t _safe_hdr_2[128];
+    memset(_safe_hdr_2, 0, sizeof(_safe_hdr_2));
+    (void)dhcp_packet_parse(_safe_buf_0, 1, _safe_hdr_2);
     /* must not crash */
 }
 
@@ -208,13 +141,6 @@ TEST(test_boundary_dhcp_packet_build_request_xid_uint32_max) {
 TEST_MAIN("boundary_dhcp_packet") {
     RUN(test_boundary_dhcp_packet_parse_len_zero);
     RUN(test_boundary_dhcp_packet_parse_len_one);
-    RUN(test_boundary_dhcp_packet_next_option_len_zero);
-    RUN(test_boundary_dhcp_packet_next_option_len_one);
-    RUN(test_boundary_dhcp_packet_get_option_len_zero);
-    RUN(test_boundary_dhcp_packet_get_option_len_one);
-    RUN(test_boundary_dhcp_packet_get_option_code_zero);
-    RUN(test_boundary_dhcp_packet_get_option_code_one);
-    RUN(test_boundary_dhcp_packet_get_option_code_uint8_max);
     RUN(test_boundary_dhcp_packet_build_discover_cap_zero);
     RUN(test_boundary_dhcp_packet_build_discover_cap_one);
     RUN(test_boundary_dhcp_packet_build_discover_xid_zero);

@@ -13,18 +13,18 @@
 TEST(test_boundary_uds_decode_len_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uds_msg_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    uds_err_t ret = uds_decode(_safe_buf_0, 0, &_safe_out_2);
+    uds_msg_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    uds_err_t ret = uds_decode(_safe_buf_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_decode_len_one) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    uds_msg_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    uds_err_t ret = uds_decode(_safe_buf_0, 1, &_safe_out_2);
+    uds_msg_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    uds_err_t ret = uds_decode(_safe_buf_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -33,9 +33,9 @@ TEST(test_boundary_uds_encode_request_sid_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -44,9 +44,9 @@ TEST(test_boundary_uds_encode_request_sid_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(1, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(1, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -55,9 +55,9 @@ TEST(test_boundary_uds_encode_request_sid_uint8_max) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request((uint8_t)(UINT8_MAX), _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request((uint8_t)(UINT8_MAX), _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -66,9 +66,9 @@ TEST(test_boundary_uds_encode_request_data_len_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -77,9 +77,9 @@ TEST(test_boundary_uds_encode_request_data_len_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(0, _safe_data_1, 1, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(0, _safe_data_1, 1, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -88,9 +88,9 @@ TEST(test_boundary_uds_encode_request_cap_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -99,9 +99,9 @@ TEST(test_boundary_uds_encode_request_cap_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_request(0, _safe_data_1, 0, _safe_buf_3, 1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -110,9 +110,9 @@ TEST(test_boundary_uds_encode_response_sid_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -121,9 +121,9 @@ TEST(test_boundary_uds_encode_response_sid_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(1, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(1, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -132,9 +132,9 @@ TEST(test_boundary_uds_encode_response_sid_uint8_max) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response((uint8_t)(UINT8_MAX), _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response((uint8_t)(UINT8_MAX), _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -143,9 +143,9 @@ TEST(test_boundary_uds_encode_response_data_len_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -154,9 +154,9 @@ TEST(test_boundary_uds_encode_response_data_len_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(0, _safe_data_1, 1, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(0, _safe_data_1, 1, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -165,9 +165,9 @@ TEST(test_boundary_uds_encode_response_cap_zero) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 0, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -176,81 +176,81 @@ TEST(test_boundary_uds_encode_response_cap_one) {
     memset(_safe_data_1, 0, sizeof(_safe_data_1));
     uint8_t _safe_buf_3[64];
     memset(_safe_buf_3, 0, sizeof(_safe_buf_3));
-    size_t _safe_out_len_5;
-    memset(&_safe_out_len_5, 0, sizeof(_safe_out_len_5));
-    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 1, &_safe_out_len_5);
+    size_t _safe_out_len_5[128];
+    memset(_safe_out_len_5, 0, sizeof(_safe_out_len_5));
+    uds_err_t ret = uds_encode_response(0, _safe_data_1, 0, _safe_buf_3, 1, _safe_out_len_5);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_rejected_sid_zero) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_rejected_sid_one) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(1, 0, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(1, 0, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_rejected_sid_uint8_max) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative((uint8_t)(UINT8_MAX), 0, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative((uint8_t)(UINT8_MAX), 0, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_nrc_zero) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_nrc_one) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, 1, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, 1, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_nrc_uint8_max) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, (uint8_t)(UINT8_MAX), _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, (uint8_t)(UINT8_MAX), _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_cap_zero) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 0, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_uds_encode_negative_cap_one) {
     uint8_t _safe_buf_2[64];
     memset(_safe_buf_2, 0, sizeof(_safe_buf_2));
-    size_t _safe_out_len_4;
-    memset(&_safe_out_len_4, 0, sizeof(_safe_out_len_4));
-    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 1, &_safe_out_len_4);
+    size_t _safe_out_len_4[128];
+    memset(_safe_out_len_4, 0, sizeof(_safe_out_len_4));
+    uds_err_t ret = uds_encode_negative(0, 0, _safe_buf_2, 1, _safe_out_len_4);
     ASSERT_TRUE((int)ret <= 0);
 }
 

@@ -34,6 +34,17 @@ target_include_directories(test_null_bmp388 PRIVATE
 target_compile_definitions(test_null_bmp388 PRIVATE CONTRACT_ENABLED)
 target_compile_options(test_null_bmp388 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 target_link_libraries(test_null_bmp388 PRIVATE m)
+
+add_executable(test_boundary_bmp388
+    test_boundary_bmp388.c
+    ../bmp388.c
+)
+target_include_directories(test_boundary_bmp388 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_boundary_bmp388 PRIVATE CONTRACT_ENABLED)
+target_compile_options(test_boundary_bmp388 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME bmp388_tests COMMAND test_bmp388)
 
@@ -51,3 +62,4 @@ target_compile_options(test_hw_model_bmp388 PRIVATE -Wall -Wextra -Wpedantic -We
 target_link_libraries(test_hw_model_bmp388 PRIVATE m)
 add_test(NAME bmp388_hw_model_tests COMMAND test_hw_model_bmp388)
 add_test(NAME bmp388_null_tests COMMAND test_null_bmp388)
+add_test(NAME bmp388_boundary_tests COMMAND test_boundary_bmp388)

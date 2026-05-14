@@ -31,18 +31,18 @@ TEST(test_boundary_sntp_client_build_request_buf_size_one) {
 TEST(test_boundary_sntp_client_parse_response_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    sntp_response_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    sntp_client_err_t ret = sntp_client_parse_response(_safe_data_0, 0, &_safe_out_2);
+    sntp_response_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    sntp_client_err_t ret = sntp_client_parse_response(_safe_data_0, 0, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST(test_boundary_sntp_client_parse_response_len_one) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
-    sntp_response_t _safe_out_2;
-    memset(&_safe_out_2, 0, sizeof(_safe_out_2));
-    sntp_client_err_t ret = sntp_client_parse_response(_safe_data_0, 1, &_safe_out_2);
+    sntp_response_t _safe_out_2[128];
+    memset(_safe_out_2, 0, sizeof(_safe_out_2));
+    sntp_client_err_t ret = sntp_client_parse_response(_safe_data_0, 1, _safe_out_2);
     ASSERT_TRUE((int)ret <= 0);
 }
 

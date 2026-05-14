@@ -11,51 +11,51 @@
 #include <math.h>
 
 TEST(test_boundary_debounce_init_threshold_zero) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_init(&_safe_d_0, 0, false);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_init(_safe_d_0, 0, false);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_init_threshold_one) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_init(&_safe_d_0, 1, false);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_init(_safe_d_0, 1, false);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_init_threshold_uint8_max) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_init(&_safe_d_0, (uint8_t)(UINT8_MAX), false);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_init(_safe_d_0, (uint8_t)(UINT8_MAX), false);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_init_initial_state_val_true) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_init(&_safe_d_0, 0, true);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_init(_safe_d_0, 0, true);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_init_initial_state_val_false) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_init(&_safe_d_0, 0, false);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_init(_safe_d_0, 0, false);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_update_raw_val_true) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_update(&_safe_d_0, true);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_update(_safe_d_0, true);
     /* must not crash */
 }
 
 TEST(test_boundary_debounce_update_raw_val_false) {
-    debounce_t _safe_d_0;
-    memset(&_safe_d_0, 0, sizeof(_safe_d_0));
-    (void)debounce_update(&_safe_d_0, false);
+    debounce_t _safe_d_0[128];
+    memset(_safe_d_0, 0, sizeof(_safe_d_0));
+    (void)debounce_update(_safe_d_0, false);
     /* must not crash */
 }
 

@@ -24,6 +24,17 @@ target_include_directories(test_null_state_machine PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_state_machine PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_state_machine
+    test_boundary_state_machine.c
+    ../state_machine.c
+)
+target_include_directories(test_boundary_state_machine PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_state_machine PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME state_machine_tests COMMAND test_state_machine)
 add_test(NAME state_machine_null_tests COMMAND test_null_state_machine)
+add_test(NAME state_machine_boundary_tests COMMAND test_boundary_state_machine)

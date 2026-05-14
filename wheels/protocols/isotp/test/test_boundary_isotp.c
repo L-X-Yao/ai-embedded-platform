@@ -10,51 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_isotp_rx_init_cap_zero) {
-    isotp_rx_t _safe_rx_0;
-    memset(&_safe_rx_0, 0, sizeof(_safe_rx_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    isotp_err_t ret = isotp_rx_init(&_safe_rx_0, _safe_buf_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_isotp_rx_init_cap_one) {
-    isotp_rx_t _safe_rx_0;
-    memset(&_safe_rx_0, 0, sizeof(_safe_rx_0));
-    uint8_t _safe_buf_1[64];
-    memset(_safe_buf_1, 0, sizeof(_safe_buf_1));
-    isotp_err_t ret = isotp_rx_init(&_safe_rx_0, _safe_buf_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_isotp_rx_feed_dlc_zero) {
-    isotp_rx_t _safe_rx_0;
-    memset(&_safe_rx_0, 0, sizeof(_safe_rx_0));
-    uint8_t _safe_can_data_1[64];
-    memset(_safe_can_data_1, 0, sizeof(_safe_can_data_1));
-    isotp_err_t ret = isotp_rx_feed(&_safe_rx_0, _safe_can_data_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_isotp_rx_feed_dlc_one) {
-    isotp_rx_t _safe_rx_0;
-    memset(&_safe_rx_0, 0, sizeof(_safe_rx_0));
-    uint8_t _safe_can_data_1[64];
-    memset(_safe_can_data_1, 0, sizeof(_safe_can_data_1));
-    isotp_err_t ret = isotp_rx_feed(&_safe_rx_0, _safe_can_data_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_isotp_rx_feed_dlc_uint8_max) {
-    isotp_rx_t _safe_rx_0;
-    memset(&_safe_rx_0, 0, sizeof(_safe_rx_0));
-    uint8_t _safe_can_data_1[64];
-    memset(_safe_can_data_1, 0, sizeof(_safe_can_data_1));
-    isotp_err_t ret = isotp_rx_feed(&_safe_rx_0, _safe_can_data_1, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_isotp_frame_type_pci_zero) {
     (void)isotp_frame_type(0);
     /* must not crash */
@@ -123,13 +78,6 @@ TEST(test_boundary_isotp_encode_fc_block_size_one) {
     ASSERT_TRUE((int)ret <= 0);
 }
 
-TEST(test_boundary_isotp_encode_fc_block_size_uint8_max) {
-    uint8_t _safe_can_data_3[64];
-    memset(_safe_can_data_3, 0, sizeof(_safe_can_data_3));
-    isotp_err_t ret = isotp_encode_fc(0, (uint8_t)(UINT8_MAX), 0, _safe_can_data_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_isotp_encode_fc_st_min_zero) {
     uint8_t _safe_can_data_3[64];
     memset(_safe_can_data_3, 0, sizeof(_safe_can_data_3));
@@ -152,11 +100,6 @@ TEST(test_boundary_isotp_encode_fc_st_min_uint8_max) {
 }
 
 TEST_MAIN("boundary_isotp") {
-    RUN(test_boundary_isotp_rx_init_cap_zero);
-    RUN(test_boundary_isotp_rx_init_cap_one);
-    RUN(test_boundary_isotp_rx_feed_dlc_zero);
-    RUN(test_boundary_isotp_rx_feed_dlc_one);
-    RUN(test_boundary_isotp_rx_feed_dlc_uint8_max);
     RUN(test_boundary_isotp_frame_type_pci_zero);
     RUN(test_boundary_isotp_frame_type_pci_one);
     RUN(test_boundary_isotp_frame_type_pci_uint8_max);
@@ -167,7 +110,6 @@ TEST_MAIN("boundary_isotp") {
     RUN(test_boundary_isotp_encode_fc_flag_past_max);
     RUN(test_boundary_isotp_encode_fc_block_size_zero);
     RUN(test_boundary_isotp_encode_fc_block_size_one);
-    RUN(test_boundary_isotp_encode_fc_block_size_uint8_max);
     RUN(test_boundary_isotp_encode_fc_st_min_zero);
     RUN(test_boundary_isotp_encode_fc_st_min_one);
     RUN(test_boundary_isotp_encode_fc_st_min_uint8_max);

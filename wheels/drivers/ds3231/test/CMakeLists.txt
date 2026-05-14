@@ -24,6 +24,16 @@ target_include_directories(test_null_ds3231 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_boundary_ds3231
+    test_boundary_ds3231.c
+    ../ds3231.c
+)
+target_include_directories(test_boundary_ds3231 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_boundary_ds3231 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME ds3231_tests COMMAND test_ds3231)
 
@@ -53,3 +63,4 @@ target_link_libraries(test_hw_model_ds3231 PRIVATE m)
 
 add_test(NAME ds3231_hw_model_tests COMMAND test_hw_model_ds3231)
 add_test(NAME ds3231_null_tests COMMAND test_null_ds3231)
+add_test(NAME ds3231_boundary_tests COMMAND test_boundary_ds3231)

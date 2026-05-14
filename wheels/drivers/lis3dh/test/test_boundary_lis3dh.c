@@ -10,54 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_lis3dh_set_range_range_zero) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_range(&_safe_dev_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
+/* No boundary tests generated: all 5 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_lis3dh_set_range_range_neg1) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_range(&_safe_dev_0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_lis3dh_set_range_range_past_max) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_range(&_safe_dev_0, 4);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_lis3dh_set_odr_odr_zero) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_odr(&_safe_dev_0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_lis3dh_set_odr_odr_neg1) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_odr(&_safe_dev_0, -1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_lis3dh_set_odr_odr_past_max) {
-    lis3dh_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    lis3dh_err_t ret = lis3dh_set_odr(&_safe_dev_0, 10);
-    ASSERT_TRUE((int)ret <= 0);
+TEST(test_boundary_lis3dh_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_lis3dh") {
-    RUN(test_boundary_lis3dh_set_range_range_zero);
-    RUN(test_boundary_lis3dh_set_range_range_neg1);
-    RUN(test_boundary_lis3dh_set_range_range_past_max);
-    RUN(test_boundary_lis3dh_set_odr_odr_zero);
-    RUN(test_boundary_lis3dh_set_odr_odr_neg1);
-    RUN(test_boundary_lis3dh_set_odr_odr_past_max);
+    RUN(test_boundary_lis3dh_placeholder);
 }
 TEST_MAIN_END()

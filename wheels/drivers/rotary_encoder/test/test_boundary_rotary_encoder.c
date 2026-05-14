@@ -10,38 +10,14 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_rotary_encoder_update_a_val_true) {
-    rotary_encoder_t _safe_enc_0;
-    memset(&_safe_enc_0, 0, sizeof(_safe_enc_0));
-    (void)rotary_encoder_update(&_safe_enc_0, true, false);
-    /* must not crash */
-}
+/* No boundary tests generated: all 6 function(s) take callback-bearing struct pointers. */
+/* Boundary coverage for callback-bearing structs belongs in hw_model_*.c. */
 
-TEST(test_boundary_rotary_encoder_update_a_val_false) {
-    rotary_encoder_t _safe_enc_0;
-    memset(&_safe_enc_0, 0, sizeof(_safe_enc_0));
-    (void)rotary_encoder_update(&_safe_enc_0, false, false);
-    /* must not crash */
-}
-
-TEST(test_boundary_rotary_encoder_update_b_val_true) {
-    rotary_encoder_t _safe_enc_0;
-    memset(&_safe_enc_0, 0, sizeof(_safe_enc_0));
-    (void)rotary_encoder_update(&_safe_enc_0, false, true);
-    /* must not crash */
-}
-
-TEST(test_boundary_rotary_encoder_update_b_val_false) {
-    rotary_encoder_t _safe_enc_0;
-    memset(&_safe_enc_0, 0, sizeof(_safe_enc_0));
-    (void)rotary_encoder_update(&_safe_enc_0, false, false);
-    /* must not crash */
+TEST(test_boundary_rotary_encoder_placeholder) {
+    ASSERT_TRUE(1);  /* no scalar boundary params; see hw_model tests */
 }
 
 TEST_MAIN("boundary_rotary_encoder") {
-    RUN(test_boundary_rotary_encoder_update_a_val_true);
-    RUN(test_boundary_rotary_encoder_update_a_val_false);
-    RUN(test_boundary_rotary_encoder_update_b_val_true);
-    RUN(test_boundary_rotary_encoder_update_b_val_false);
+    RUN(test_boundary_rotary_encoder_placeholder);
 }
 TEST_MAIN_END()

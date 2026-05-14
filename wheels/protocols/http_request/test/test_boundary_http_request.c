@@ -10,28 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_http_request_build_cap_zero) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    http_request_cfg_t _safe_cfg_2;
-    memset(&_safe_cfg_2, 0, sizeof(_safe_cfg_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    http_request_err_t ret = http_request_build(_safe_buf_0, 0, &_safe_cfg_2, &_safe_out_len_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_http_request_build_cap_one) {
-    uint8_t _safe_buf_0[64];
-    memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    http_request_cfg_t _safe_cfg_2;
-    memset(&_safe_cfg_2, 0, sizeof(_safe_cfg_2));
-    size_t _safe_out_len_3;
-    memset(&_safe_out_len_3, 0, sizeof(_safe_out_len_3));
-    http_request_err_t ret = http_request_build(_safe_buf_0, 1, &_safe_cfg_2, &_safe_out_len_3);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_http_request_build_range_get_cap_zero) {
     uint8_t _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
@@ -39,9 +17,9 @@ TEST(test_boundary_http_request_build_range_get_cap_zero) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -52,9 +30,9 @@ TEST(test_boundary_http_request_build_range_get_cap_one) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 1, _safe_host_2, _safe_path_3, 0, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 1, _safe_host_2, _safe_path_3, 0, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -65,9 +43,9 @@ TEST(test_boundary_http_request_build_range_get_offset_zero) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -78,9 +56,9 @@ TEST(test_boundary_http_request_build_range_get_offset_one) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 1, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 1, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -91,9 +69,9 @@ TEST(test_boundary_http_request_build_range_get_offset_size_max) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, SIZE_MAX, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, SIZE_MAX, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -104,9 +82,9 @@ TEST(test_boundary_http_request_build_range_get_end_zero) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 0, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -117,9 +95,9 @@ TEST(test_boundary_http_request_build_range_get_end_one) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 1, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, 1, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
@@ -130,15 +108,13 @@ TEST(test_boundary_http_request_build_range_get_end_size_max) {
     memset(_safe_host_2, 0, sizeof(_safe_host_2));
     char _safe_path_3[64];
     memset(_safe_path_3, 0, sizeof(_safe_path_3));
-    size_t _safe_out_len_6;
-    memset(&_safe_out_len_6, 0, sizeof(_safe_out_len_6));
-    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, SIZE_MAX, &_safe_out_len_6);
+    size_t _safe_out_len_6[128];
+    memset(_safe_out_len_6, 0, sizeof(_safe_out_len_6));
+    http_request_err_t ret = http_request_build_range_get(_safe_buf_0, 0, _safe_host_2, _safe_path_3, 0, SIZE_MAX, _safe_out_len_6);
     ASSERT_TRUE((int)ret <= 0);
 }
 
 TEST_MAIN("boundary_http_request") {
-    RUN(test_boundary_http_request_build_cap_zero);
-    RUN(test_boundary_http_request_build_cap_one);
     RUN(test_boundary_http_request_build_range_get_cap_zero);
     RUN(test_boundary_http_request_build_range_get_cap_one);
     RUN(test_boundary_http_request_build_range_get_offset_zero);

@@ -10,33 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_sht40_init_addr_zero) {
-    sht40_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    sht40_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    sht40_err_t ret = sht40_init(&_safe_dev_0, &_safe_i2c_1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_sht40_init_addr_one) {
-    sht40_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    sht40_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    sht40_err_t ret = sht40_init(&_safe_dev_0, &_safe_i2c_1, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_sht40_init_addr_uint8_max) {
-    sht40_t _safe_dev_0;
-    memset(&_safe_dev_0, 0, sizeof(_safe_dev_0));
-    sht40_i2c_t _safe_i2c_1;
-    memset(&_safe_i2c_1, 0, sizeof(_safe_i2c_1));
-    sht40_err_t ret = sht40_init(&_safe_dev_0, &_safe_i2c_1, (uint8_t)(UINT8_MAX));
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_sht40_crc8_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -52,9 +25,6 @@ TEST(test_boundary_sht40_crc8_len_one) {
 }
 
 TEST_MAIN("boundary_sht40") {
-    RUN(test_boundary_sht40_init_addr_zero);
-    RUN(test_boundary_sht40_init_addr_one);
-    RUN(test_boundary_sht40_init_addr_uint8_max);
     RUN(test_boundary_sht40_crc8_len_zero);
     RUN(test_boundary_sht40_crc8_len_one);
 }

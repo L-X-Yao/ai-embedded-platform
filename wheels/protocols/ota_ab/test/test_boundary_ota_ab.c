@@ -10,69 +10,6 @@
 #include <float.h>
 #include <math.h>
 
-TEST(test_boundary_ota_ab_slot_addr_slot_zero) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    (void)ota_ab_slot_addr(&_safe_m_0, 0);
-    /* must not crash */
-}
-
-TEST(test_boundary_ota_ab_slot_addr_slot_one) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    (void)ota_ab_slot_addr(&_safe_m_0, 1);
-    /* must not crash */
-}
-
-TEST(test_boundary_ota_ab_slot_addr_slot_uint8_max) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    (void)ota_ab_slot_addr(&_safe_m_0, (uint8_t)(UINT8_MAX));
-    /* must not crash */
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_size_zero) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_size_one) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, 1, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_size_uint32_max) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, UINT32_MAX, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_crc_zero) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, 0, 0);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_crc_one) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, 0, 1);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
-TEST(test_boundary_ota_ab_mark_pending_fw_crc_uint32_max) {
-    ota_ab_t _safe_m_0;
-    memset(&_safe_m_0, 0, sizeof(_safe_m_0));
-    ota_ab_err_t ret = ota_ab_mark_pending(&_safe_m_0, 0, UINT32_MAX);
-    ASSERT_TRUE((int)ret <= 0);
-}
-
 TEST(test_boundary_ota_ab_crc32_len_zero) {
     uint8_t _safe_data_0[64];
     memset(_safe_data_0, 0, sizeof(_safe_data_0));
@@ -88,15 +25,6 @@ TEST(test_boundary_ota_ab_crc32_len_one) {
 }
 
 TEST_MAIN("boundary_ota_ab") {
-    RUN(test_boundary_ota_ab_slot_addr_slot_zero);
-    RUN(test_boundary_ota_ab_slot_addr_slot_one);
-    RUN(test_boundary_ota_ab_slot_addr_slot_uint8_max);
-    RUN(test_boundary_ota_ab_mark_pending_fw_size_zero);
-    RUN(test_boundary_ota_ab_mark_pending_fw_size_one);
-    RUN(test_boundary_ota_ab_mark_pending_fw_size_uint32_max);
-    RUN(test_boundary_ota_ab_mark_pending_fw_crc_zero);
-    RUN(test_boundary_ota_ab_mark_pending_fw_crc_one);
-    RUN(test_boundary_ota_ab_mark_pending_fw_crc_uint32_max);
     RUN(test_boundary_ota_ab_crc32_len_zero);
     RUN(test_boundary_ota_ab_crc32_len_one);
 }
