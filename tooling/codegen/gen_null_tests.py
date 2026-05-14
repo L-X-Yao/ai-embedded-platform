@@ -260,7 +260,7 @@ def update_cmakelists(wheel: WheelInfo, dry_run: bool) -> bool:
     if dry_run:
         print(f"  [DRY-RUN] Would update {cmake_path.relative_to(REPO_ROOT)}")
     else:
-        cmake_path.write_text(new_content, encoding="utf-8")
+        cmake_path.write_bytes(new_content.encode("utf-8"))
         print(f"  Updated  {cmake_path.relative_to(REPO_ROOT)}"
               f" (added {target} target)")
 
@@ -348,7 +348,7 @@ def main():
                 out_path = test_dir / f"test_null_{wheel.name}.c"
                 if not dry_run:
                     test_dir.mkdir(parents=True, exist_ok=True)
-                    out_path.write_text(content, encoding="utf-8")
+                    out_path.write_bytes(content.encode("utf-8"))
                     print(f"  Placeholder {wheel.layer}/{wheel.name}: "
                           f"value-only API -> {out_path.relative_to(REPO_ROOT)}")
                 else:
@@ -374,7 +374,7 @@ def main():
                       f"{len(wheel.funcs)} funcs, {n_tests} null tests")
             else:
                 test_dir.mkdir(parents=True, exist_ok=True)
-                out_path.write_text(content, encoding="utf-8")
+                out_path.write_bytes(content.encode("utf-8"))
                 print(f"  Generated {wheel.layer}/{wheel.name}: "
                       f"{len(wheel.funcs)} funcs, {n_tests} null tests -> "
                       f"{out_path.relative_to(REPO_ROOT)}")

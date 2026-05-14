@@ -647,7 +647,7 @@ def update_cmakelists(wheel, needs_m, dry_run):
     if dry_run:
         print(f"  [DRY-RUN] Would update {cmake_path.relative_to(REPO_ROOT)}")
     else:
-        cmake_path.write_text(new_content, encoding="utf-8")
+        cmake_path.write_bytes(new_content.encode("utf-8"))
         print(f"  Updated  {cmake_path.relative_to(REPO_ROOT)}"
               f" (added {target} target)")
 
@@ -734,7 +734,7 @@ def main():
                       f"{len(wheel.funcs)} funcs, {n_tests} boundary tests")
             else:
                 test_dir.mkdir(parents=True, exist_ok=True)
-                out_path.write_text(content, encoding="utf-8")
+                out_path.write_bytes(content.encode("utf-8"))
                 print(f"  Generated {wheel.layer}/{wheel.name}: "
                       f"{len(wheel.funcs)} funcs, {n_tests} boundary tests"
                       f" -> {out_path.relative_to(REPO_ROOT)}")
