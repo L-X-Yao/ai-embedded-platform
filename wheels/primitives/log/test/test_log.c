@@ -244,6 +244,10 @@ TEST(test_stdout_sink) {
     capture_reset();
 }
 
+TEST(test_sink_null_fn) {
+    ASSERT_EQ(log_add_sink(NULL, NULL), LOG_ERR_PARAM);
+}
+
 TEST(test_sink_slots_exhausted) {
     for (int i = 0; i < 8; i++) log_remove_sink(i);
     g_cap_sink_id = -1;
@@ -278,5 +282,6 @@ TEST_MAIN("log")
     RUN(test_time_fn_disable);
     RUN(test_side_effect_at_default_level);
     RUN(test_stdout_sink);
+    RUN(test_sink_null_fn);
     RUN(test_sink_slots_exhausted);
 TEST_MAIN_END()
