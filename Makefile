@@ -53,7 +53,7 @@ help:
 	@echo "Workflow:"
 	@echo "  ci-local          local CI gate: tests + audit + scaffold + doc-drift (pre-push hook)"
 	@echo "  ci-local-full     ci-local + coverage gate + compile analysis + sanitizer"
-	@echo "  check             test + null/sentinel/boundary + scaffold + audit + coverage gate + doc drift + memory audit"
+	@echo "  check             test + null/sentinel/boundary + scaffold + audit + UBSan + coverage gate + doc drift + memory audit"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
 	@echo "  install-hooks     configure git to use .githooks/ directory"
 	@echo "  ship M=\"msg\"      test + audit + commit + push"
@@ -175,7 +175,7 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
 check-full:
 	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
