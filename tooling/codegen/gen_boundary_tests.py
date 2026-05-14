@@ -162,6 +162,96 @@ def is_struct_type(param):
     return False
 
 
+_callback_struct_cache: dict = {}
+
+def struct_has_callback_field(struct_name, header_text, _depth=0):
+    """Return True if the named struct typedef contains a "dangerous"
+    field that breaks boundary testing — i.e. memset(0) leaves the
+    struct in a state where the wheel will dereference NULL on first
+    call.
+
+    Detection evolution (each step added by a real FAIL):
+      1. Direct function-pointer field: (*name)( ... )
+      2. Pointer field to another _t struct that is itself dangerous
+      3. Raw pointer to primitive (uint8_t*, char*) — most stateful
+         wheels deref these (bitmap_t.data, ring_buffer_t.buf)
+      4. Embedded value struct (no '*'), where the inner struct holds
+         callbacks (max7219_t embeds max7219_spi_t by value)
+
+    Known-but-not-yet-implemented blind spots (next time a FAIL
+    appears here, extend detection rather than skip-list the wheel):
+      - union { ... } fields where the active branch's NULL-state
+        triggers a deref
+      - flexible array member (T data[]) where the wheel writes
+        beyond the zeroed end
+      - bit field with enum where 0 is not a valid enum value and
+        wheel dispatches on it
+    """
+    if not struct_name or _depth > 3:
+        return False
+    key = (struct_name, id(header_text))
+    if key in _callback_struct_cache:
+        return _callback_struct_cache[key]
+    # Match: typedef struct [<tag>] { <body> } <struct_name>;
+    pattern = re.compile(
+        r'typedef\s+struct\s+\w*\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}\s*'
+        + re.escape(struct_name) + r'\s*;',
+        re.DOTALL,
+    )
+    m = pattern.search(header_text)
+    if not m:
+        _callback_struct_cache[key] = False
+        return False
+    body = m.group(1)
+    # 1. Direct function pointer field: (*name)( ... )
+    if re.search(r'\(\s*\*\s*\w+\s*\)\s*\(', body):
+        _callback_struct_cache[key] = True
+        return True
+    # 2. Strip out any function-pointer field declarations so the next
+    # checks don't false-match on their inner argument types.
+    body_clean = re.sub(
+        r'\(\s*\*\s*\w+\s*\)\s*\([^)]*\)\s*;', '', body)
+    # 3. Transitive: any nested struct field — pointer OR embedded by
+    # value — to a struct that has callback fields. e.g. max7219_t
+    # embeds max7219_spi_t by value, and that inner struct holds
+    # function pointers; memset(0) of the outer struct still zeroes
+    # those pointers.
+    for ftype in re.findall(r'\b(\w+_t)\b', body_clean):
+        if ftype == struct_name:
+            continue
+        if struct_has_callback_field(ftype, header_text, _depth + 1):
+            _callback_struct_cache[key] = True
+            return True
+    # 4. Any raw pointer field (uint8_t*, char*, etc.). memset(0) of a
+    # struct with such fields leaves them NULL, and most stateful wheels
+    # dereference them in non-init APIs (e.g. bitmap_t.data,
+    # ring_buffer_t.buf).
+    if re.search(r'\b\w+\s*\*\s*\w+\s*[;,]', body_clean):
+        _callback_struct_cache[key] = True
+        return True
+    _callback_struct_cache[key] = False
+    return False
+
+
+def function_has_callback_struct_arg(func, header_text):
+    """Return True if any param is a pointer to a struct that owns
+    callback function pointer fields. Boundary tests for such functions
+    cannot safely use memset(0) initialisation."""
+    for param in func.params:
+        if not param.is_pointer:
+            continue
+        base = param.base_type
+        if not base or not base.endswith('_t'):
+            continue
+        if base in BOUNDARY_TABLE:
+            continue
+        if base.endswith(('_err_t', '_state_t', '_mode_t', '_level_t')):
+            continue
+        if struct_has_callback_field(base, header_text):
+            return True
+    return False
+
+
 def is_enum_type(base_type, header_text):
     """Check if a type looks like an enum defined in the header."""
     if not base_type.endswith('_t'):
@@ -259,10 +349,23 @@ def make_safe_arg(param, wheel_name, idx):
                 var,
             )
 
+        # Non-const struct pointer: allocate as a 128-element array.
+        # Many wheels (encode/pack/serialize style) write multiple
+        # struct elements through such a pointer, e.g. ir_nec_encode
+        # writes ~68 ir_nec_pulse_t entries. A single struct on the
+        # stack would smash. 128 covers typical encode patterns; for
+        # ir_nec_pulse_t (8B) that's 1KB stack.
+        has_const = 'const' in ptype
+        if has_const:
+            return (
+                [f"    {pointed} {var};",
+                 f"    memset(&{var}, 0, sizeof({var}));"],
+                f"&{var}",
+            )
         return (
-            [f"    {pointed} {var};",
-             f"    memset(&{var}, 0, sizeof({var}));"],
-            f"&{var}",
+            [f"    {pointed} {var}[128];",
+             f"    memset({var}, 0, sizeof({var}));"],
+            var,
         )
 
     return ([], scalar_default(ptype))
@@ -292,7 +395,16 @@ def generate_test_file(wheel, header_text):
     lines.append('#include <math.h>')
     lines.append("")
 
+    skipped_callback_structs = 0
     for func in wheel.funcs:
+        # Skip functions taking pointers to callback-bearing structs:
+        # memset(0) + call would segfault on first dispatch. Boundary
+        # coverage for these functions belongs in hw_model tests where
+        # the wheel's mock HAL is wired up.
+        if function_has_callback_struct_arg(func, header_text):
+            skipped_callback_structs += 1
+            continue
+
         ret_class = classify_return_type(func.return_type, name)
         has_err_return = (ret_class == 'err_t')
 
@@ -342,7 +454,18 @@ def generate_test_file(wheel, header_text):
                 'dst_len', 'buf_len', 'buf_size', 'in_len', 'out_len',
                 'data_len', 'msg_len', 'cap_bytes', 'cap_bits',
             }
-            if pname in len_param_names:
+            len_param_prefixes = ('num_', 'n_', 'cnt_', 'count_')
+            len_param_suffixes = (
+                '_len', '_length', '_size', '_cap', '_capacity',
+                '_count', '_n', '_bytes', '_bits', '_leds', '_pixels',
+                '_samples', '_items', '_entries', '_chunks',
+            )
+            is_len_like = (
+                pname in len_param_names
+                or pname.startswith(len_param_prefixes)
+                or pname.endswith(len_param_suffixes)
+            )
+            if is_len_like:
                 boundaries = [
                     (lit, lab) for (lit, lab) in boundaries
                     if 'max' not in lab.lower()
@@ -401,7 +524,33 @@ def generate_test_file(wheel, header_text):
                 lines.append("")
 
     if not test_names:
-        return ""
+        # All functions involve callback-bearing structs (or no testable
+        # params). Emit a placeholder test so the build / run pipeline
+        # remains uniform, harness static state vars are referenced (no
+        # -Wunused-variable), and the binary exits 0.
+        if skipped_callback_structs > 0:
+            reason = (f"all {skipped_callback_structs} function(s) take "
+                      f"callback-bearing struct pointers")
+        else:
+            reason = "no scalar boundary params"
+        lines.append(
+            f"/* No boundary tests generated: {reason}. */")
+        lines.append(
+            "/* Boundary coverage for callback-bearing structs belongs in "
+            "hw_model_*.c. */")
+        lines.append("")
+        lines.append(f"TEST(test_boundary_{name}_placeholder) {{")
+        lines.append(
+            "    ASSERT_TRUE(1);  /* no scalar boundary params; "
+            "see hw_model tests */")
+        lines.append("}")
+        lines.append("")
+        lines.append(f'TEST_MAIN("boundary_{name}") {{')
+        lines.append(f"    RUN(test_boundary_{name}_placeholder);")
+        lines.append("}")
+        lines.append("TEST_MAIN_END()")
+        lines.append("")
+        return "\n".join(lines), uses_float
 
     lines.append(f'TEST_MAIN("boundary_{name}") {{')
     for tn in test_names:
