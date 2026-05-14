@@ -4,8 +4,8 @@
  * Models LIS3MDL register behavior:
  * - WHO_AM_I at 0x0F: 0x3D (read-only)
  * - CTRL_REG1 at 0x20: ODR + XY performance mode
- * - CTRL_REG2 at 0x22: full-scale range [6:5]
- * - CTRL_REG3 at 0x24: operating mode [1:0]
+ * - CTRL_REG2 at 0x21: full-scale range [6:5]
+ * - CTRL_REG3 at 0x22: operating mode [1:0]
  * - Data registers 0x28..0x2D: XL,XH,YL,YH,ZL,ZH (read-only, little-endian)
  * - Auto-increment via bit 7 of sub-address
  */
@@ -18,8 +18,8 @@
 /* --- LIS3MDL register addresses --- */
 #define LIS3MDL_REG_WHO_AM_I  0x0Fu
 #define LIS3MDL_REG_CTRL_REG1 0x20u
-#define LIS3MDL_REG_CTRL_REG2 0x22u
-#define LIS3MDL_REG_CTRL_REG3 0x24u
+#define LIS3MDL_REG_CTRL_REG2 0x21u
+#define LIS3MDL_REG_CTRL_REG3 0x22u
 #define LIS3MDL_REG_OUT_X_L   0x28u
 #define LIS3MDL_REG_OUT_X_H   0x29u
 #define LIS3MDL_REG_OUT_Y_L   0x2Au
