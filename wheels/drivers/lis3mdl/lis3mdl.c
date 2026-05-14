@@ -15,8 +15,8 @@
 
 #define REG_WHO_AM_I   0x0Fu
 #define REG_CTRL_REG1  0x20u
-#define REG_CTRL_REG2  0x22u
-#define REG_CTRL_REG3  0x24u
+#define REG_CTRL_REG2  0x21u
+#define REG_CTRL_REG3  0x22u
 #define REG_OUT_X_L    0x28u   /* data block: 0x28..0x2D (XL,XH,YL,YH,ZL,ZH) */
 
 #define WHO_AM_I_VAL   0x3Du
