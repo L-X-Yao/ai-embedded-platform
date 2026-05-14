@@ -54,6 +54,35 @@ echo ""
 echo -e "${BOLD}Recent commits (5):${NC}"
 git -C "$REPO" log --oneline -5 | sed 's/^/  /'
 
+# --- Session jsonl size warning ----------------------------------------------
+# A 397 MB session on 2026-05-13 was hidden by Claude Code's resume UI
+# (oversized files are filtered out). Warn early so the user can /clear
+# or split sessions before reaching that point.
+session_dir=""
+for c in "$HOME/.claude/projects" "/mnt/c/Users/Administrator/.claude/projects"; do
+    if [ -d "$c" ]; then
+        match=$(find "$c" -maxdepth 1 -type d -name "*$(basename "$REPO")*" 2>/dev/null | head -1)
+        if [ -n "$match" ]; then
+            session_dir="$match"
+            break
+        fi
+    fi
+done
+if [ -n "$session_dir" ] && [ -d "$session_dir" ]; then
+    biggest_mb=$(find "$session_dir" -maxdepth 1 -name '*.jsonl' -printf '%s\n' 2>/dev/null \
+                | sort -nr | head -1 | awk '{ printf "%d", $1/1024/1024 }')
+    biggest_mb=${biggest_mb:-0}
+    if [ "$biggest_mb" -ge 200 ]; then
+        echo ""
+        echo -e "${RED}WARN: largest session jsonl is ${biggest_mb} MB${NC}"
+        echo -e "${RED}      Claude Code resume UI hides oversized sessions.${NC}"
+        echo -e "${RED}      Consider /clear or starting a fresh session.${NC}"
+    elif [ "$biggest_mb" -ge 50 ]; then
+        echo ""
+        echo -e "${YELLOW}Note: largest session jsonl is ${biggest_mb} MB (warn at 200 MB).${NC}"
+    fi
+fi
+
 $SHORT && { echo ""; echo "(use without --short for full wheel/project/audit dump)"; exit 0; }
 
 # --- Wheel inventory ----------------------------------------------------------
