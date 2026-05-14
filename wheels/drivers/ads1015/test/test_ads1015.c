@@ -40,7 +40,7 @@ static bool mock_read_regs(void *ctx, uint8_t dev, uint8_t reg,
     if (mock_i2c_fail) return false;
     if (reg == 0x00u && len == 2u) {
         /* Conversion register: 12-bit left-justified in 16 bits */
-        int16_t lj = (int16_t)(mock_conv_12bit << 4);
+        int16_t lj = (int16_t)((uint16_t)mock_conv_12bit << 4);
         buf[0] = (uint8_t)((uint16_t)lj >> 8);
         buf[1] = (uint8_t)((uint16_t)lj & 0xFFu);
     } else if (reg == 0x01u && len == 2u) {
