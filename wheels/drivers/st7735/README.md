@@ -37,7 +37,7 @@ st7735_err_t st7735_fill_rect(st7735_t *dev, uint16_t x, uint16_t y,
 st7735_err_t st7735_fill_screen(st7735_t *dev, uint16_t color);
 st7735_err_t st7735_draw_pixel(st7735_t *dev, uint16_t x, uint16_t y,
                                 uint16_t color);
-static inline uint16_t st7735_rgb565(uint8_t r, uint8_t g, uint8_t b);
+uint16_t st7735_rgb565(uint8_t r, uint8_t g, uint8_t b);  /* static inline in header */
 ```
 
 ## Configuration (compile-time)
