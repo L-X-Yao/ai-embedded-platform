@@ -134,7 +134,7 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
 
 static int32_t compensate_temperature(bme280_t *dev, int32_t adc_t)
 {
-    int32_t var1 = (int32_t)(((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 << 1))
+    int32_t var1 = (int32_t)(((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
                     * (int64_t)dev->calib.dig_t2 >> 11);
     int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
     int32_t var2 = (int32_t)(((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3 >> 14);
@@ -226,9 +226,9 @@ bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
         return BME280_ERR_I2C;
     }
 
-    int32_t adc_p = (int32_t)((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | (buf[2] >> 4);
-    int32_t adc_t = (int32_t)((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | (buf[5] >> 4);
-    int32_t adc_h = (int32_t)((uint32_t)buf[6] << 8) | (uint32_t)buf[7];
+    int32_t adc_p = (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
+    int32_t adc_t = (int32_t)(((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | ((uint32_t)buf[5] >> 4));
+    int32_t adc_h = (int32_t)(((uint32_t)buf[6] << 8) | (uint32_t)buf[7]);
 
     /* Temperature must be compensated first to set t_fine */
     int32_t temp_raw = compensate_temperature(dev, adc_t);
