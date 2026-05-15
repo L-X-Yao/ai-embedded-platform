@@ -63,7 +63,7 @@ oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
     if (!cmd(dev, 0xD9)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xF1)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xDB)) return OLED_SSD1306_ERR_I2C;
-    if (!cmd(dev, 0x40)) return OLED_SSD1306_ERR_I2C;
+    if (!cmd(dev, 0x30)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xA4)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xA6)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xAF)) return OLED_SSD1306_ERR_I2C;

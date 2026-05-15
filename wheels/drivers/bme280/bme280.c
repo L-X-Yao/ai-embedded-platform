@@ -74,8 +74,8 @@ static bme280_err_t read_calibration(bme280_t *dev)
 
     dev->calib.dig_h2 = (int16_t)((uint16_t)hbuf[1] << 8 | hbuf[0]);
     dev->calib.dig_h3 = hbuf[2];
-    dev->calib.dig_h4 = (int16_t)((int16_t)hbuf[3] << 4 | (hbuf[4] & 0x0F));
-    dev->calib.dig_h5 = (int16_t)((int16_t)hbuf[5] << 4 | (hbuf[4] >> 4));
+    dev->calib.dig_h4 = (int16_t)((int8_t)hbuf[3]) * 16 | (int16_t)(hbuf[4] & 0x0F);
+    dev->calib.dig_h5 = (int16_t)((int8_t)hbuf[5]) * 16 | (int16_t)(hbuf[4] >> 4);
     dev->calib.dig_h6 = (int8_t)hbuf[6];
 
     return BME280_OK;
@@ -134,62 +134,50 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
 
 static int32_t compensate_temperature(bme280_t *dev, int32_t adc_t)
 {
-    int32_t var1 = ((((adc_t >> 3) - (int32_t)((uint32_t)dev->calib.dig_t1 << 1)))
-                    * ((int32_t)dev->calib.dig_t2)) >> 11;
-    int32_t var2 = (((((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))
-                      * ((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))) >> 12)
-                    * ((int32_t)dev->calib.dig_t3)) >> 14;
+    int32_t var1 = (int32_t)(((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 << 1))
+                    * (int64_t)dev->calib.dig_t2 >> 11);
+    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
+    int32_t var2 = (int32_t)(((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3 >> 14);
     dev->t_fine = var1 + var2;
     return (dev->t_fine * 5 + 128) >> 8;
 }
 
-static uint32_t compensate_pressure(const bme280_t *dev, int32_t adc_p)
+static double compensate_pressure_f(const bme280_t *dev, int32_t adc_p)
 {
-    int32_t var1 = (((int32_t)dev->t_fine) >> 1) - 64000;
-    int32_t var2 = (((var1 >> 2) * (var1 >> 2)) >> 11) * ((int32_t)dev->calib.dig_p6);
-    var2 = var2 + ((var1 * ((int32_t)dev->calib.dig_p5)) << 1);
-    var2 = (var2 >> 2) + (((int32_t)dev->calib.dig_p4) << 16);
-    var1 = (((dev->calib.dig_p3 * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3)
-            + ((((int32_t)dev->calib.dig_p2) * var1) >> 1)) >> 18;
-    var1 = ((((32768 + var1)) * ((int32_t)dev->calib.dig_p1)) >> 15);
-
-    if (var1 == 0)
-    {
-        return 0;
-    }
-
-    uint32_t p = (((uint32_t)(((int32_t)1048576) - adc_p) - (uint32_t)(var2 >> 12))) * 3125;
-    if (p < 0x80000000u)
-    {
-        p = (p << 1) / ((uint32_t)var1);
-    }
-    else
-    {
-        p = (p / (uint32_t)var1) * 2;
-    }
-
-    var1 = (((int32_t)dev->calib.dig_p9) * ((int32_t)(((p >> 3) * (p >> 3)) >> 13))) >> 12;
-    var2 = (((int32_t)(p >> 2)) * ((int32_t)dev->calib.dig_p8)) >> 13;
-    p = (uint32_t)((int32_t)p + ((var1 + var2 + dev->calib.dig_p7) >> 4));
-
-    return p;
+    double var1 = ((double)dev->t_fine / 2.0) - 64000.0;
+    double var2 = var1 * var1 * (double)dev->calib.dig_p6 / 32768.0;
+    var2 = var2 + var1 * (double)dev->calib.dig_p5 * 2.0;
+    var2 = var2 / 4.0 + (double)dev->calib.dig_p4 * 65536.0;
+    var1 = ((double)dev->calib.dig_p3 * var1 * var1 / 524288.0
+            + (double)dev->calib.dig_p2 * var1) / 524288.0;
+    var1 = (1.0 + var1 / 32768.0) * (double)dev->calib.dig_p1;
+    if (var1 == 0.0) return 0.0;
+    double p = 1048576.0 - (double)adc_p;
+    p = (p - var2 / 4096.0) * 6250.0 / var1;
+    var1 = (double)dev->calib.dig_p9 * p * p / 2147483648.0;
+    var2 = p * (double)dev->calib.dig_p8 / 32768.0;
+    return p + (var1 + var2 + (double)dev->calib.dig_p7) / 16.0;
 }
 
 static uint32_t compensate_humidity(const bme280_t *dev, int32_t adc_h)
 {
-    int32_t v = dev->t_fine - 76800;
+    int64_t v1 = (int64_t)dev->t_fine - 76800;
 
-    v = (((((adc_h << 14) - (((int32_t)dev->calib.dig_h4) << 20)
-            - (((int32_t)dev->calib.dig_h5) * v)) + 16384) >> 15)
-         * (((((((v * ((int32_t)dev->calib.dig_h6)) >> 10)
-                * (((v * ((int32_t)dev->calib.dig_h3)) >> 11) + 32768)) >> 10)
-              + 2097152) * ((int32_t)dev->calib.dig_h2) + 8192) >> 14));
+    int64_t v2 = (int64_t)adc_h * 16384 - (int64_t)dev->calib.dig_h4 * 1048576
+                 - (int64_t)dev->calib.dig_h5 * v1;
+    v2 = (v2 + 16384) >> 15;
 
-    v = v - (((((v >> 15) * (v >> 15)) >> 7) * ((int32_t)dev->calib.dig_h1)) >> 4);
-    if (v < 0) v = 0;
-    if (v > 419430400) v = 419430400;
+    int64_t v3 = ((v1 * (int64_t)dev->calib.dig_h6) >> 10)
+                 * (((v1 * (int64_t)dev->calib.dig_h3) >> 11) + 32768);
+    v3 = ((v3 >> 10) + 2097152) * (int64_t)dev->calib.dig_h2 + 8192;
+    v3 >>= 14;
 
-    return (uint32_t)(v >> 12);
+    int64_t v4 = v2 * v3;
+    v4 -= ((((v4 >> 15) * (v4 >> 15)) >> 7) * (int64_t)dev->calib.dig_h1) >> 4;
+    if (v4 < 0) v4 = 0;
+    if (v4 > 419430400) v4 = 419430400;
+
+    return (uint32_t)(v4 >> 12);
 }
 
 bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
@@ -246,8 +234,7 @@ bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
     int32_t temp_raw = compensate_temperature(dev, adc_t);
     out->temperature_c = (float)temp_raw / 100.0f;
 
-    uint32_t press_raw = compensate_pressure(dev, adc_p);
-    out->pressure_pa = (float)press_raw;
+    out->pressure_pa = (float)compensate_pressure_f(dev, adc_p);
 
     /* Humidity: result is Q22.10 fixed point (value / 1024 = %RH) */
     uint32_t hum_raw = compensate_humidity(dev, adc_h);
