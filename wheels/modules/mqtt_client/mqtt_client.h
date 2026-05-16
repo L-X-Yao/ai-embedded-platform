@@ -76,6 +76,7 @@ typedef struct {
 /* ---------- callbacks ---------- */
 
 typedef void (*mqtt_client_msg_cb_t)(void *ctx, const char *topic,
+                                     uint16_t topic_len,
                                      const uint8_t *payload, uint16_t len,
                                      uint8_t qos);
 

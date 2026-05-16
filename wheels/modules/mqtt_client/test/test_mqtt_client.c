@@ -50,11 +50,13 @@ static uint16_t g_msg_len;
 static uint8_t  g_msg_qos;
 static int      g_msg_count;
 
-static void msg_cb(void *ctx, const char *topic,
+static void msg_cb(void *ctx, const char *topic, uint16_t topic_len,
                    const uint8_t *payload, uint16_t len, uint8_t qos)
 {
     (void)ctx;
-    strncpy(g_msg_topic, topic, sizeof(g_msg_topic) - 1);
+    uint16_t copy = (topic_len < sizeof(g_msg_topic) - 1) ? topic_len : (uint16_t)(sizeof(g_msg_topic) - 1);
+    memcpy(g_msg_topic, topic, copy);
+    g_msg_topic[copy] = '\0';
     memcpy(g_msg_payload, payload, len);
     g_msg_len = len;
     g_msg_qos = qos;
