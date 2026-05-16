@@ -15,18 +15,18 @@
 
 ## Quick start
 
-Each component is a self-contained folder. To use one in your project:
+Each component is a `.h` + `.c` pair in a self-contained folder. To use one:
 
 ```bash
-# 1. Copy the component into your source tree (or add as a git subtree)
-cp -r wheels/drivers/bmp280 your_project/lib/bmp280
+# 1. Copy the component files into your source tree
+cp wheels/drivers/bmp280/bmp280.{c,h} your_project/lib/bmp280/
 
-# 2. Add to your CMakeLists.txt
-add_subdirectory(lib/bmp280 bmp280)
-target_link_libraries(your_app PRIVATE bmp280)
+# 2. Add two lines to your CMakeLists.txt
+target_include_directories(your_app PRIVATE lib/bmp280)
+target_sources(your_app PRIVATE lib/bmp280/bmp280.c)
 ```
 
-That's it. Include the header, inject your HAL callbacks, and call the API:
+Also copy `tooling/harness/contract.h` (a single header with optional runtime assertions). Then include the component header, inject your HAL callbacks, and call the API:
 
 ```c
 #include "bmp280.h"
