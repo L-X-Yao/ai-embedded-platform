@@ -76,7 +76,7 @@ static void dispatch_publish(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
     if (mqtt_packet_parse_publish(pkt, len, &pub) != MQTT_PACKET_OK) return;
 
     if (c->on_message) {
-        c->on_message(c->cb_ctx, pub.topic,
+        c->on_message(c->cb_ctx, pub.topic, pub.topic_len,
                       pub.payload, (uint16_t)pub.payload_len, pub.qos);
     }
 

@@ -181,7 +181,7 @@ int mqtt_packet_build_subscribe(uint8_t *buf, size_t buf_size,
     size_t raw_topic_len = strlen(topic);
     if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
     uint16_t topic_len = (uint16_t)raw_topic_len;
-    uint32_t remaining = 2 + 2 + topic_len + 1;
+    uint32_t remaining = 2u + 2u + (uint32_t)topic_len + 1u;
 
     uint8_t rl_buf[4];
     int rl_len = mqtt_packet_encode_remaining_length(rl_buf, remaining);
@@ -253,6 +253,7 @@ mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
     if (pos + topic_len > len) return MQTT_PACKET_ERR_MALFORMED;
 
     out->topic = (const char *)(buf + pos);
+    out->topic_len = topic_len;
     pos += topic_len;
 
     if (out->qos > 0)

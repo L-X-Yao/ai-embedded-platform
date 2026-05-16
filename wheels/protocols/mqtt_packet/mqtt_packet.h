@@ -59,6 +59,7 @@ typedef struct {
 
 typedef struct {
     const char    *topic;
+    uint16_t       topic_len;
     const uint8_t *payload;
     size_t         payload_len;
     uint16_t       packet_id;
