@@ -1,23 +1,23 @@
 # Component Catalog
 
-**206** reusable C99 embedded components. Zero heap, zero OS dependencies,
+**264** reusable C99 embedded components. Zero heap, zero OS dependencies,
 dependency-injected via function pointers. Copy the source into your project,
 include the header, wire the HAL callbacks.
 
 | Layer | Directory | Count | Description |
 |-------|-----------|------:|-------------|
-| L0 Primitives | `primitives/` | 63 | Pure software utilities |
-| L1 Drivers | `drivers/` | 88 | Hardware peripheral drivers |
-| L2 Protocols | `protocols/` | 35 | Protocol parsers and builders |
-| L3 Modules | `modules/` | 20 | Higher-level application modules |
+| L0 Primitives | `primitives/` | 78 | Pure software utilities |
+| L1 Drivers | `drivers/` | 116 | Hardware peripheral drivers |
+| L2 Protocols | `protocols/` | 48 | Protocol parsers and builders |
+| L3 Modules | `modules/` | 21 | Higher-level application modules |
 
 All components are MIT-licensed, tested on host (gcc/clang), and
-verified by a 55-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
+verified by a 63-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
 for quality criteria.
 
 ---
 
-## L1 Drivers (88)
+## L1 Drivers (116)
 
 ### Temperature and Humidity
 
@@ -214,7 +214,7 @@ for quality criteria.
 
 ---
 
-## L0 Primitives (63)
+## L0 Primitives (78)
 
 ### Logging
 
@@ -351,7 +351,7 @@ for quality criteria.
 
 ---
 
-## L2 Protocols (35)
+## L2 Protocols (48)
 
 ### IoT
 
@@ -420,7 +420,7 @@ for quality criteria.
 
 ---
 
-## L3 Modules (20)
+## L3 Modules (21)
 
 | Component | Description |
 |-----------|-------------|
