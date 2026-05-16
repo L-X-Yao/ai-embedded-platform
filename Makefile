@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt flybox-demo
 
 help:
 	@echo "Usage: make <target>"
@@ -413,3 +413,12 @@ driver-prompt:
 	@python3 tooling/session/gen_driver_prompt.py \
 		--name "$(NAME)" --chip "$(CHIP)" --addr "$(ADDR)" \
 		--id-reg "$(ID_REG)" --id-val "$(ID_VAL)" --brief "$(BRIEF)"
+
+flybox-demo:
+	@echo "Building flybox E2E sim..."
+	@rm -rf projects/flybox/sim/build && \
+		mkdir -p projects/flybox/sim/build && \
+		cd projects/flybox/sim/build && \
+		cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug > /dev/null 2>&1 && \
+		make --no-print-directory 2>&1 && \
+		echo "" && ./flybox_sim
