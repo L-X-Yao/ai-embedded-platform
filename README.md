@@ -1,17 +1,17 @@
 # ai-embedded-platform
 
-206 production-grade C99 components for embedded systems.
+264 production-grade C99 components for embedded systems.
 
 [![CI](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Components](https://img.shields.io/badge/components-206-green.svg)](wheels/README.md)
+[![Components](https://img.shields.io/badge/components-264-green.svg)](wheels/README.md)
 
 ## Why this library
 
 - **Zero dependencies** -- no OS, no heap, no libc beyond `<stdint.h>`. Every component is a pure C99 static library.
 - **Any MCU** -- works on STM32, GD32, ESP32, nRF52, RISC-V, or anything with a C99 compiler. Hardware access is injected via function pointers, not `#ifdef` per platform.
 - **Host-testable** -- every component compiles and runs on your desktop with `gcc` and `cmake`. No dev board needed to start integrating.
-- **Battle-tested** -- 55-check automated audit, >=80% line coverage, AddressSanitizer in CI, property-based tests, fuzz harnesses.
+- **Battle-tested** -- 63-check automated audit, >=80% line coverage, UBSan + AddressSanitizer, property-based tests, fuzz harnesses.
 
 ## Quick start
 
@@ -73,10 +73,10 @@ Every component follows this same pattern: inject HAL via a struct of function p
 
 | Layer | Directory | Count | Examples |
 |-------|-----------|------:|----------|
-| L0 Primitives | `wheels/primitives/` | 63 | ring_buffer, crc32, state_machine, pid_controller, json_parser, aes128 |
-| L1 Drivers | `wheels/drivers/` | 88 | bmp280, sht40, mpu6050, oled_ssd1306, w25qxx, ws2812, lora_sx1276 |
-| L2 Protocols | `wheels/protocols/` | 35 | mqtt_packet, modbus_rtu, http_parser, nmea_parser, mavlink, coap_packet |
-| L3 Modules | `wheels/modules/` | 20 | cli_shell, data_logger, ota_manager, sensor_hub, mqtt_client |
+| L0 Primitives | `wheels/primitives/` | 78 | ring_buffer, crc32, state_machine, pid_controller, json_parser, aes128, kalman_1d |
+| L1 Drivers | `wheels/drivers/` | 116 | bme280, sht40, mpu6050, oled_ssd1306, w25qxx, ws2812, lora_sx1276, icm42688 |
+| L2 Protocols | `wheels/protocols/` | 48 | mqtt_packet, modbus_rtu, http_parser, nmea_parser, mavlink, coap_packet, crsf |
+| L3 Modules | `wheels/modules/` | 21 | cli_shell, data_logger, ota_manager, sensor_hub, mqtt_client, telemetry |
 
 Full catalog with descriptions: [wheels/README.md](wheels/README.md)
 
@@ -108,7 +108,7 @@ This means:
 
 ## Quality guarantees
 
-Every component passes a 55-check automated audit that enforces:
+Every component passes a 63-check automated audit that enforces:
 
 - **Testing** -- host-simulation tests with >=80% line coverage
 - **Safety** -- NULL parameter checks, error code returns, AddressSanitizer clean
@@ -138,6 +138,23 @@ ai-embedded-platform/
 └── templates/            Starter templates for new projects
 ```
 
+## See it in action
+
+Run the end-to-end telemetry demo -- builds and executes in ~3 seconds, no hardware needed:
+
+```bash
+make flybox-demo
+```
+
+This simulates a real drone telemetry device: sensor data generation → JSON formatting → MQTT publish (QoS 1 with PUBACK) → cloud command parsing → disconnect/reconnect with exponential backoff. Uses 3 wheels working together: `mqtt_client` + `json_parser` + `retry`.
+
+For a simpler example showing a single sensor → MQTT publish loop:
+
+```bash
+cd examples/mqtt_telemetry_demo
+cmake -S . -B build && cmake --build build && ./build/mqtt_telemetry_demo
+```
+
 ## Running tests
 
 ```bash
@@ -149,8 +166,8 @@ make test-parallel
 # Test a single component
 bash tooling/test/test_all.sh wheels/drivers/bmp280
 
-# Run the 55-check audit
-python tooling/audit/audit_wheels.py --quiet
+# Run the 63-check audit
+python3 tooling/audit/audit_wheels.py --quiet
 
 # Coverage for one component
 bash tooling/test/coverage_wheel.sh wheels/drivers/bmp280
