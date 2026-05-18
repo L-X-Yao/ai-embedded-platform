@@ -11,6 +11,7 @@
 #   new_wheel.sh --layer modules --name mqtt_client --deps mqtt_packet
 #   new_wheel.sh --layer primitives --name kvs --vendor   # ADR-010 vendor mode
 #   new_wheel.sh --layer drivers --name bmp280 --hal i2c --commit  # scaffold + git commit
+#   new_wheel.sh --layer drivers --name bmp280 --hal i2c --no-audit  # suppress post-scaffold audit
 #
 # Generated files (standard):
 #   wheels/<layer>/<name>/<name>.h       — header with HAL injection struct + error enum

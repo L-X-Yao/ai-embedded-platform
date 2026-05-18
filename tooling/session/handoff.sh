@@ -1,5 +1,5 @@
 #!/bin/bash
-# session_handoff.sh — generate docs/session-state.md for cross-session continuity.
+# handoff.sh — generate docs/session-state.md for cross-session continuity.
 #
 # Captures: last audit round, pending items, quality snapshot, suggested next action.
 # Run at session end: make handoff

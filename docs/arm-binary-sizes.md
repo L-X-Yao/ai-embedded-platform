@@ -88,7 +88,7 @@ Generated: 2026-04-30 by `tooling/audit/arm_size_audit.sh`.
 | L2 | 9 | 150 — 1050 B | 593 B |
 | **Measured** | **56** | **32 — 2192 B** | **310 B** |
 
-> **Note**: This snapshot covers 56 wheels measured on 2026-04-30. The platform now has 146 wheels — re-run `tooling/audit/arm_size_audit.sh` for full coverage.
+> **Note**: This snapshot covers 56 wheels measured on 2026-04-30. The platform now has 259 wheels — re-run `tooling/audit/arm_size_audit.sh` for full coverage.
 
 **Total footprint of 56 measured wheels: 24.4 KB .text + 53 B .data/.bss** (before --gc-sections).
 

@@ -13,6 +13,8 @@ git config core.hooksPath .githooks
 | Hook | Purpose |
 |------|---------|
 | `commit-msg` | Validates commit message format (type/scope/summary per CLAUDE.md) |
+| `pre-commit` | Blocks accidental binary commits (rejects files > 100KB non-text) |
+| `pre-push` | Runs `make ci-local` gate before push (tests + audit + doc-drift) |
 
 ## What it checks
 

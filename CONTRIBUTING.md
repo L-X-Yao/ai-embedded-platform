@@ -9,7 +9,7 @@ make check        # tests + audit + doc-drift
 
 ## Adding a wheel
 
-1. Check for existing open-source implementations first (see `docs/adr/010-prefer-open-source-implementations.md`)
+1. Check for existing open-source implementations first (see `docs/adr/010-adopt-opensource-before-reinvent.md`)
 2. Scaffold: `bash tooling/wheel/new_wheel.sh --layer <L> --name <name> [--hal i2c|spi|gpio|onewire|pwm]`
 3. Implement + write tests until `make check` passes
 4. Ensure coverage >= 80%: `bash tooling/test/coverage_wheel.sh wheels/<layer>/<name>`

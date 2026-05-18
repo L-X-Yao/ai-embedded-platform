@@ -185,9 +185,9 @@ Wheel 和 RTOS 组件（如 RT-Thread 的 freemodbus、FAL、FinSH）**不冲突
 
 | 该做（被动库） | 不该做（OS 职责） |
 |--------------|-----------------|
-| json_parser（解析字节流） | memory_pool（内存管理） |
+| json_parser（解析字节流） | task_manager（创建 RTOS 任务） |
 | base64（编解码） | thread_pool（任务管理） |
-| ring_buffer（纯数据结构） | mqtt_client（需要任务循环） |
+| ring_buffer（纯数据结构） | interrupt_dispatcher（注册/管理中断） |
 | cli_shell（feed/poll） | watchdog_mgr（需要中断） |
 | data_logger（write/flush 回调） | power_mgr（需要 OS sleep） |
 

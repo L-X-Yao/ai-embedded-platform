@@ -9,6 +9,8 @@
 # Runs for each wheel:
 #   1. Auto-generate null tests if missing (gen_null_tests.py)
 #   2. CMake build + test (all test_* executables)
+#   2.5. UBSan build + run (-fsanitize=undefined)
+#   2.7. -Wconversion strict compile (-Wconversion -Wsign-conversion)
 #   3. Audit (--wheel --quiet, 0 WARN/FAIL required)
 #
 # Exit 0 if all pass, 1 if any fail, 2 if no wheels given.

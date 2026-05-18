@@ -1,15 +1,15 @@
 # Component Catalog
 
-**264** reusable C99 embedded components. Zero heap, zero OS dependencies,
+**259** reusable C99 embedded components. Zero heap, zero OS dependencies,
 dependency-injected via function pointers. Copy the source into your project,
 include the header, wire the HAL callbacks.
 
 | Layer | Directory | Count | Description |
 |-------|-----------|------:|-------------|
-| L0 Primitives | `primitives/` | 78 | Pure software utilities |
-| L1 Drivers | `drivers/` | 116 | Hardware peripheral drivers |
-| L2 Protocols | `protocols/` | 48 | Protocol parsers and builders |
-| L3 Modules | `modules/` | 21 | Higher-level application modules |
+| L0 Primitives | `primitives/` | 77 | Pure software utilities |
+| L1 Drivers | `drivers/` | 115 | Hardware peripheral drivers |
+| L2 Protocols | `protocols/` | 47 | Protocol parsers and builders |
+| L3 Modules | `modules/` | 20 | Higher-level application modules |
 
 All components are MIT-licensed, tested on host (gcc/clang), and
 verified by a 63-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
@@ -17,7 +17,7 @@ for quality criteria.
 
 ---
 
-## L1 Drivers (116)
+## L1 Drivers (115)
 
 ### Temperature and Humidity
 
@@ -28,8 +28,13 @@ for quality criteria.
 | [si7021](drivers/si7021/) | Silicon Labs Si7021 temperature/humidity (I2C) |
 | [aht20](drivers/aht20/) | ASAIR AHT20 temperature/humidity (I2C) |
 | [dht11](drivers/dht11/) | DHT11 temperature/humidity (single-wire GPIO) |
-| [tmp102](drivers/tmp102/) | TI TMP102 temperature sensor (I2C) |
 | [ds18b20](drivers/ds18b20/) | Maxim DS18B20 temperature (1-Wire) |
+| [htu21d](drivers/htu21d/) | TE HTU21D temperature/humidity with CRC-8 (I2C) |
+| [lm75](drivers/lm75/) | LM75/LM75A/LM75B 9-bit temperature sensor (I2C) |
+| [pct2075](drivers/pct2075/) | NXP PCT2075 11-bit temperature sensor (I2C) |
+| [shtc3](drivers/shtc3/) | Sensirion SHTC3 low-power humidity/temperature (I2C) |
+| [tmp102](drivers/tmp102/) | TI TMP102 temperature sensor (I2C) |
+| [tmp117](drivers/tmp117/) | TI TMP117 high-accuracy temperature sensor (I2C) |
 
 ### Pressure and Altitude
 
@@ -38,6 +43,9 @@ for quality criteria.
 | [bmp280](drivers/bmp280/) | Bosch BMP280 barometric pressure/temperature (I2C) |
 | [bme280](drivers/bme280/) | Bosch BME280 temperature/humidity/pressure (I2C) |
 | [bme680](drivers/bme680/) | Bosch BME680 environmental sensor with gas (I2C) |
+| [bme688](drivers/bme688/) | Bosch BME688 environmental sensor with gas (I2C) |
+| [bmp388](drivers/bmp388/) | Bosch BMP388 barometric pressure/temperature (I2C) |
+| [dps310](drivers/dps310/) | Infineon DPS310 barometric pressure/temperature (I2C) |
 | [ms5611](drivers/ms5611/) | TE MS5611 precision barometer (I2C) |
 | [lps22hb](drivers/lps22hb/) | ST LPS22HB barometric pressure (I2C) |
 | [xgzp6816d](drivers/xgzp6816d/) | CFSensor XGZP6816D pressure sensor (I2C) |
@@ -50,6 +58,7 @@ for quality criteria.
 | [veml7700](drivers/veml7700/) | Vishay VEML7700 ambient light sensor (I2C) |
 | [opt3001](drivers/opt3001/) | TI OPT3001 ambient light sensor (I2C) |
 | [tsl2591](drivers/tsl2591/) | AMS TSL2591 high-dynamic-range light sensor (I2C) |
+| [ltr390](drivers/ltr390/) | Lite-On LTR-390UV UV and ambient light sensor (I2C) |
 | [tcs34725](drivers/tcs34725/) | ams TCS34725 color sensor (I2C) |
 | [apds9960](drivers/apds9960/) | Broadcom APDS-9960 gesture/color/proximity (I2C) |
 
@@ -60,25 +69,32 @@ for quality criteria.
 | [sgp30](drivers/sgp30/) | Sensirion SGP30 TVOC/eCO2 air quality (I2C) |
 | [sgp40](drivers/sgp40/) | Sensirion SGP40 VOC raw signal sensor (I2C) |
 | [ccs811](drivers/ccs811/) | AMS CCS811 eCO2/TVOC gas sensor (I2C) |
+| [scd40](drivers/scd40/) | Sensirion SCD40 NDIR CO2/temperature/humidity (I2C) |
 
 ### IMU and Accelerometer
 
 | Component | Description |
 |-----------|-------------|
+| [adxl345](drivers/adxl345/) | Analog Devices ADXL345 3-axis accelerometer (I2C) |
+| [bma400](drivers/bma400/) | Bosch BMA400 ultra-low-power 3-axis accelerometer (I2C) |
+| [bmi160](drivers/bmi160/) | Bosch BMI160 6-axis IMU (I2C) |
+| [bmi270](drivers/bmi270/) | Bosch BMI270 6-axis IMU (SPI) |
+| [bno055](drivers/bno055/) | Bosch BNO055 9-axis IMU with sensor fusion (I2C) |
+| [icm42688](drivers/icm42688/) | TDK ICM-42688-P 6-axis IMU (SPI) |
+| [lis2dh12](drivers/lis2dh12/) | ST LIS2DH12 ultra-low-power 3-axis accelerometer (I2C) |
+| [lis3dh](drivers/lis3dh/) | ST LIS3DH 3-axis accelerometer (I2C/SPI) |
+| [lsm6dso](drivers/lsm6dso/) | ST LSM6DSO 6-axis accelerometer + gyroscope (I2C) |
 | [mpu6050](drivers/mpu6050/) | InvenSense MPU-6050 6-axis IMU (I2C) |
 | [qmi8658a](drivers/qmi8658a/) | QST QMI8658A 6-axis IMU (I2C) |
-| [lis3dh](drivers/lis3dh/) | ST LIS3DH 3-axis accelerometer (I2C/SPI) |
-| [icm42688](drivers/icm42688/) | TDK ICM-42688-P 6-axis IMU (SPI) |
-| [bmi270](drivers/bmi270/) | Bosch BMI270 6-axis IMU (SPI) |
-| [adxl345](drivers/adxl345/) | Analog Devices ADXL345 3-axis accelerometer (I2C) |
-| [bno055](drivers/bno055/) | Bosch BNO055 9-axis IMU with sensor fusion (I2C) |
 
 ### Magnetometer
 
 | Component | Description |
 |-----------|-------------|
-| [qmc5883p](drivers/qmc5883p/) | QST QMC5883P 3-axis magnetometer (I2C) |
+| [bmm150](drivers/bmm150/) | Bosch BMM150 3-axis geomagnetic sensor (I2C) |
 | [hmc5883l](drivers/hmc5883l/) | Honeywell HMC5883L 3-axis magnetometer (I2C) |
+| [lis3mdl](drivers/lis3mdl/) | ST LIS3MDL 3-axis digital magnetometer (I2C) |
+| [qmc5883p](drivers/qmc5883p/) | QST QMC5883P 3-axis magnetometer (I2C) |
 
 ### Health
 
@@ -95,7 +111,10 @@ for quality criteria.
 | [lcd_st7789](drivers/lcd_st7789/) | ST7789 240x320 TFT LCD (SPI, RGB565) |
 | [gc9a01](drivers/gc9a01/) | GC9A01 240x240 round TFT LCD (SPI, RGB565) |
 | [ili9341](drivers/ili9341/) | ILI9341 240x320 TFT LCD (SPI, RGB565) |
+| [st7735](drivers/st7735/) | ST7735 128x160 TFT LCD (SPI, RGB565) |
 | [max7219](drivers/max7219/) | Maxim MAX7219 LED matrix/7-segment (SPI) |
+| [ht16k33](drivers/ht16k33/) | Holtek HT16K33 16x8 LED matrix controller (I2C) |
+| [is31fl3731](drivers/is31fl3731/) | ISSI IS31FL3731 144-LED matrix controller (I2C) |
 | [tm1637](drivers/tm1637/) | TM1637 4-digit 7-segment LED display (bit-bang) |
 | [hd44780](drivers/hd44780/) | HD44780 character LCD via PCF8574 I2C backpack |
 
@@ -128,7 +147,9 @@ for quality criteria.
 | [rotary_encoder](drivers/rotary_encoder/) | Quadrature rotary encoder (GPIO) |
 | [keypad_matrix](drivers/keypad_matrix/) | Matrix keypad scanner (GPIO) |
 | [as5600](drivers/as5600/) | ams AS5600 magnetic rotary encoder (I2C) |
+| [cst816s](drivers/cst816s/) | Hynitron CST816S capacitive touch controller (I2C) |
 | [ft6x36](drivers/ft6x36/) | FocalTech FT6236/FT6336 capacitive touch (I2C) |
+| [mpr121](drivers/mpr121/) | NXP MPR121 12-channel capacitive touch sensor (I2C) |
 
 ### Output
 
@@ -144,6 +165,7 @@ for quality criteria.
 | [drv8833](drivers/drv8833/) | TI DRV8833 dual H-bridge motor driver (GPIO+PWM) |
 | [drv2605](drivers/drv2605/) | TI DRV2605 haptic feedback driver (I2C) |
 | [mcp4725](drivers/mcp4725/) | Microchip MCP4725 12-bit DAC (I2C) |
+| [mcp4728](drivers/mcp4728/) | Microchip MCP4728 4-channel 12-bit DAC (I2C) |
 | [buzzer](drivers/buzzer/) | Passive buzzer with PWM frequency/melody playback |
 | [tb6612](drivers/tb6612/) | Toshiba TB6612FNG dual H-bridge motor driver (GPIO+PWM) |
 | [a4988](drivers/a4988/) | Allegro A4988 stepper motor driver (GPIO) |
@@ -163,6 +185,7 @@ for quality criteria.
 |-----------|-------------|
 | [ina219](drivers/ina219/) | TI INA219 current/power monitor (I2C) |
 | [ina226](drivers/ina226/) | TI INA226 precision current/power monitor (I2C) |
+| [ina3221](drivers/ina3221/) | TI INA3221 triple-channel current/power monitor (I2C) |
 | [max17048](drivers/max17048/) | MAX17048 LiPo fuel gauge (I2C) |
 | [bq27441](drivers/bq27441/) | TI BQ27441-G1 battery fuel gauge (I2C) |
 | [pac1952](drivers/pac1952/) | Microchip PAC1952 dual-channel power monitor (I2C) |
@@ -171,8 +194,9 @@ for quality criteria.
 
 | Component | Description |
 |-----------|-------------|
-| [ads1115](drivers/ads1115/) | TI ADS1115 16-bit 4-channel ADC (I2C) |
 | [ads1015](drivers/ads1015/) | TI ADS1015 12-bit 4-channel ADC (I2C) |
+| [ads1115](drivers/ads1115/) | TI ADS1115 16-bit 4-channel ADC (I2C) |
+| [mcp3008](drivers/mcp3008/) | Microchip MCP3008 10-bit 8-channel ADC (SPI) |
 
 ### RTC
 
@@ -191,7 +215,9 @@ for quality criteria.
 
 | Component | Description |
 |-----------|-------------|
+| [hcsr04](drivers/hcsr04/) | HC-SR04 ultrasonic distance sensor (GPIO) |
 | [vl53l0x](drivers/vl53l0x/) | ST VL53L0X time-of-flight distance sensor (I2C) |
+| [vl53l1x](drivers/vl53l1x/) | ST VL53L1X time-of-flight distance sensor (I2C) |
 
 ### IR Temperature
 
@@ -205,6 +231,7 @@ for quality criteria.
 |-----------|-------------|
 | [max31855](drivers/max31855/) | Maxim MAX31855 thermocouple-to-digital (SPI) |
 | [max31865](drivers/max31865/) | Maxim MAX31865 RTD-to-digital (SPI) |
+| [max6675](drivers/max6675/) | Maxim MAX6675 K-type thermocouple-to-digital (SPI) |
 
 ### Load Cell
 
@@ -214,7 +241,7 @@ for quality criteria.
 
 ---
 
-## L0 Primitives (78)
+## L0 Primitives (77)
 
 ### Logging
 
@@ -254,32 +281,43 @@ for quality criteria.
 
 | Component | Description |
 |-----------|-------------|
+| [ewma](primitives/ewma/) | Integer-only EWMA with bit-shift alpha |
 | [fixed_point](primitives/fixed_point/) | Fixed-point arithmetic (Q16.16) |
-| [moving_average](primitives/moving_average/) | SMA sliding average + EMA exponential average |
-| [moving_window](primitives/moving_window/) | Sliding window statistics (min/max/mean) |
-| [median_filter](primitives/median_filter/) | Sliding-window median filter (impulse rejection) |
-| [pid_controller](primitives/pid_controller/) | Discrete PID controller with anti-windup |
-| [mahony_ahrs](primitives/mahony_ahrs/) | Mahony AHRS attitude estimator (6/9-axis) |
-| [mag_cal](primitives/mag_cal/) | Magnetometer calibration (hard/soft iron) |
+| [hysteresis](primitives/hysteresis/) | Schmitt-trigger threshold comparator with dead band |
 | [iir_lowpass](primitives/iir_lowpass/) | First-order IIR low-pass filter (EMA) |
+| [interpolate](primitives/interpolate/) | Linear, table, and bilinear interpolation |
 | [kalman_1d](primitives/kalman_1d/) | 1D scalar Kalman filter |
+| [mag_cal](primitives/mag_cal/) | Magnetometer calibration (hard/soft iron) |
+| [mahony_ahrs](primitives/mahony_ahrs/) | Mahony AHRS attitude estimator (6/9-axis) |
+| [median_filter](primitives/median_filter/) | Sliding-window median filter (impulse rejection) |
+| [moving_average](primitives/moving_average/) | SMA sliding average + EMA exponential average |
+| [moving_rms](primitives/moving_rms/) | Running root-mean-square over a sliding window |
+| [moving_window](primitives/moving_window/) | Sliding window statistics (min/max/mean) |
+| [peak_detector](primitives/peak_detector/) | Signal peak/valley tracker with configurable decay |
+| [pid_controller](primitives/pid_controller/) | Discrete PID controller with anti-windup |
+| [scale_map](primitives/scale_map/) | Linear value mapping with optional clamping |
+| [signal_stats](primitives/signal_stats/) | Running statistics (mean/variance/min/max, Welford) |
 
 ### Encoding
 
 | Component | Description |
 |-----------|-------------|
 | [base64](primitives/base64/) | Base64 encode/decode |
+| [bcd](primitives/bcd/) | Binary-coded decimal encode/decode for RTC chips |
+| [bitstream](primitives/bitstream/) | Bit-level read/write over a byte buffer |
 | [hex_codec](primitives/hex_codec/) | Hexadecimal encode/decode |
 | [json_parser](primitives/json_parser/) | Zero-allocation JSON parser |
 | [printf_tiny](primitives/printf_tiny/) | Minimal printf (no float, no heap) |
 | [cobs](primitives/cobs/) | Consistent Overhead Byte Stuffing codec |
 | [slip](primitives/slip/) | SLIP serial line framing (RFC 1055) |
 | [rle_codec](primitives/rle_codec/) | Run-length encoding/decoding |
+| [varint](primitives/varint/) | Variable-length integer encoding (LEB128/ZigZag) |
 
 ### Timing
 
 | Component | Description |
 |-----------|-------------|
+| [datetime](primitives/datetime/) | Epoch/calendar conversion (base 2000-01-01) |
 | [soft_timer](primitives/soft_timer/) | Software timer manager (one-shot/repeat) |
 | [timeout](primitives/timeout/) | Deadline tracker (32-bit tick wraparound-safe) |
 | [retry](primitives/retry/) | Retry with fixed/linear/exponential backoff |
@@ -330,11 +368,18 @@ for quality criteria.
 |-----------|-------------|
 | [gnss_filter](primitives/gnss_filter/) | GNSS position EMA filter with quality gating + ZUPT |
 
-### Font
+### Graphics
 
 | Component | Description |
 |-----------|-------------|
 | [font_5x7](primitives/font_5x7/) | 5x7 pixel bitmap font (ASCII 0x20-0x7E) |
+| [framebuffer](primitives/framebuffer/) | Pixel buffer with drawing primitives (mono/RGB565) |
+
+### Compression
+
+| Component | Description |
+|-----------|-------------|
+| [heatshrink](primitives/heatshrink/) | Lightweight LZSS streaming compression/decompression |
 
 ### Utility
 
@@ -344,6 +389,7 @@ for quality criteria.
 | [endian](primitives/endian/) | Byte-order conversion utilities |
 | [hash_fnv](primitives/hash_fnv/) | FNV-1a hash |
 | [string_utils](primitives/string_utils/) | Embedded-safe string utility functions |
+| [utf8](primitives/utf8/) | UTF-8 validation, decoding, and length counting |
 | [lookup_table](primitives/lookup_table/) | Lookup table with linear interpolation |
 | [checksum](primitives/checksum/) | Checksum collection (XOR/sum8/Fletcher-16/LRC/Internet) |
 | [bitfield](primitives/bitfield/) | Bitfield pack/unpack (MSB-first) |
@@ -351,7 +397,7 @@ for quality criteria.
 
 ---
 
-## L2 Protocols (48)
+## L2 Protocols (47)
 
 ### IoT
 
@@ -368,15 +414,22 @@ for quality criteria.
 
 | Component | Description |
 |-----------|-------------|
+| [modbus_ascii](protocols/modbus_ascii/) | Modbus ASCII frame codec (LRC checksum) |
 | [modbus_rtu](protocols/modbus_rtu/) | Modbus RTU master/slave frame codec |
 | [modbus_tcp](protocols/modbus_tcp/) | Modbus TCP frame codec |
 | [canbus](protocols/canbus/) | CAN bus frame encode/decode |
+| [isotp](protocols/isotp/) | ISO-TP (ISO 15765-2) CAN multi-frame transport |
+| [j1939](protocols/j1939/) | SAE J1939 CAN identifier and PGN codec |
+| [lin_bus](protocols/lin_bus/) | LIN bus protocol frame codec |
+| [uds](protocols/uds/) | Unified Diagnostic Services (ISO 14229) message codec |
 
 ### Serial Transfer
 
 | Component | Description |
 |-----------|-------------|
 | [at_command](protocols/at_command/) | AT command parser (URC + timeout + multi-match) |
+| [hdlc](protocols/hdlc/) | HDLC frame codec with byte stuffing and FCS-16 |
+| [ir_nec](protocols/ir_nec/) | NEC infrared remote control protocol codec |
 | [nmea_parser](protocols/nmea_parser/) | NMEA 0183 GPS/GNSS sentence parser |
 | [ubx_parser](protocols/ubx_parser/) | u-blox UBX binary GNSS protocol parser/builder |
 | [xmodem](protocols/xmodem/) | XMODEM file transfer protocol |
@@ -401,14 +454,19 @@ for quality criteria.
 | [msgpack](protocols/msgpack/) | MessagePack encode/decode |
 | [tlv_codec](protocols/tlv_codec/) | TLV (Tag-Length-Value) codec |
 | [bencode](protocols/bencode/) | Bencode codec (BitTorrent format) |
+| [intel_hex](protocols/intel_hex/) | Intel HEX firmware format parser |
 | [json_rpc](protocols/json_rpc/) | JSON-RPC 2.0 frame builder/validator |
+| [s_record](protocols/s_record/) | Motorola S-Record (SREC) firmware format parser |
 
 ### Domain-Specific
 
 | Component | Description |
 |-----------|-------------|
+| [crsf](protocols/crsf/) | TBS Crossfire / ExpressLRS RC protocol codec |
+| [ibus](protocols/ibus/) | FlySky iBUS RC receiver protocol codec |
 | [lorawan_packet](protocols/lorawan_packet/) | LoRaWAN packet codec |
 | [mavlink](protocols/mavlink/) | MAVLink v2 frame parser/serializer |
+| [onewire_search](protocols/onewire_search/) | Dallas/Maxim 1-Wire ROM search algorithm |
 | [sbus](protocols/sbus/) | Futaba S.Bus RC receiver protocol codec |
 | [midi_packet](protocols/midi_packet/) | MIDI message codec |
 | [dmx512](protocols/dmx512/) | DMX512 lighting protocol data layer |
@@ -420,7 +478,7 @@ for quality criteria.
 
 ---
 
-## L3 Modules (21)
+## L3 Modules (20)
 
 | Component | Description |
 |-----------|-------------|
