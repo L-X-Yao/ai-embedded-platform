@@ -206,8 +206,8 @@ ppp_frame_err_t ppp_frame_decode(const uint8_t *src, size_t src_len,
     }
     fcs = (uint16_t)(fcs ^ 0xFFFF);
 
-    uint16_t rx_fcs = (uint16_t)((uint16_t)unstuffed[ulen - 1] << 8) |
-                      (uint16_t)unstuffed[ulen - 2];
+    uint16_t rx_fcs = (uint16_t)(((uint16_t)unstuffed[ulen - 1] << 8) |
+                      (uint16_t)unstuffed[ulen - 2]);
     if (fcs != rx_fcs) return PPP_FRAME_ERR_FCS;
 
     /* Verify address and control */
@@ -215,7 +215,7 @@ ppp_frame_err_t ppp_frame_decode(const uint8_t *src, size_t src_len,
         return PPP_FRAME_ERR_FORMAT;
 
     /* Extract protocol */
-    *protocol = (uint16_t)((uint16_t)unstuffed[2] << 8) | (uint16_t)unstuffed[3];
+    *protocol = (uint16_t)(((uint16_t)unstuffed[2] << 8) | (uint16_t)unstuffed[3]);
 
     /* Extract payload (between protocol and FCS) */
     size_t plen = ulen - 6; /* subtract addr+ctrl+proto+fcs */

@@ -112,7 +112,7 @@ static uint16_t pca9685_model_get_channel_off(const pca9685_model_t *m, uint8_t 
     uint8_t base = (uint8_t)(PCA9685_REG_LED0_ON_L + ch * 4u);
     uint16_t off_l = m->hw.regs[base + 2];
     uint16_t off_h = m->hw.regs[base + 3];
-    return off_l | (uint16_t)((off_h & 0x0F) << 8);
+    return (uint16_t)(off_l | (uint16_t)((off_h & 0x0F) << 8));
 }
 
 /* Helper: check if a channel's full-off bit is set */

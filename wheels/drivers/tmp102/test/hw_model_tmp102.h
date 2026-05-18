@@ -82,8 +82,8 @@ static bool tmp102_model_write_regs(void *ctx, uint8_t dev_addr,
     uint8_t slot = TMP_SLOT(reg);
     uint8_t mask0 = m->hw.writable_mask[slot];
     uint8_t mask1 = m->hw.writable_mask[slot + 1];
-    m->hw.regs[slot]     = (m->hw.regs[slot]     & ~mask0) | (buf[0] & mask0);
-    m->hw.regs[slot + 1] = (m->hw.regs[slot + 1] & ~mask1) | (buf[1] & mask1);
+    m->hw.regs[slot]     = (uint8_t)((m->hw.regs[slot]     & (uint8_t)~mask0) | (buf[0] & mask0));
+    m->hw.regs[slot + 1] = (uint8_t)((m->hw.regs[slot + 1] & (uint8_t)~mask1) | (buf[1] & mask1));
 
     return true;
 }

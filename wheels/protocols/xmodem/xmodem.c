@@ -65,7 +65,7 @@ static xmodem_err_t process_block(xmodem_t *xm)
 
     /* verify checksum or CRC */
     if (xm->use_crc) {
-        uint16_t expected = (uint16_t)((uint16_t)xm->buf[131] << 8) | xm->buf[132];
+        uint16_t expected = (uint16_t)(((uint16_t)xm->buf[131] << 8) | xm->buf[132]);
         uint16_t actual   = xmodem_crc16(data, XMODEM_BLOCK_SIZE);
         if (actual != expected) {
             (void)send_byte(xm, XMODEM_NAK);

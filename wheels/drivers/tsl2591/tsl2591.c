@@ -112,8 +112,8 @@ tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out)
     if (err != TSL2591_OK)
         return err;
 
-    out->ch0_raw  = (uint16_t)((uint16_t)buf[1] << 8) | buf[0];
-    out->ch1_raw  = (uint16_t)((uint16_t)buf[3] << 8) | buf[2];
+    out->ch0_raw  = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
+    out->ch1_raw  = (uint16_t)((uint16_t)buf[3] << 8 | buf[2]);
     out->infrared = out->ch1_raw;
 
     if (out->ch0_raw >= out->ch1_raw)
@@ -155,8 +155,8 @@ tsl2591_err_t tsl2591_read_raw(tsl2591_t *dev, uint16_t *ch0, uint16_t *ch1)
     if (err != TSL2591_OK)
         return err;
 
-    *ch0 = (uint16_t)((uint16_t)buf[1] << 8) | buf[0];
-    *ch1 = (uint16_t)((uint16_t)buf[3] << 8) | buf[2];
+    *ch0 = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
+    *ch1 = (uint16_t)((uint16_t)buf[3] << 8 | buf[2]);
     return TSL2591_OK;
 }
 

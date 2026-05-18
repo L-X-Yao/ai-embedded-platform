@@ -236,8 +236,8 @@ static void decode_id(const mcp2515_spi_t *s, uint8_t base,
         uint8_t eid0 = reg_read(s, (uint8_t)(base + 3));
         *extended = true;
 
-        uint16_t sid = (uint16_t)((uint16_t)sidh << 3) |
-                       (uint16_t)((sidl >> 5) & 0x07u);     /* SID[10:0] */
+        uint16_t sid = (uint16_t)((uint16_t)sidh << 3 |
+                       (uint16_t)((sidl >> 5) & 0x07u));     /* SID[10:0] */
         uint32_t eid = ((uint32_t)(sidl & 0x03u) << 16) |   /* EID[17:16] */
                        ((uint32_t)eid8 << 8) |               /* EID[15:8]  */
                        (uint32_t)eid0;                       /* EID[7:0]   */

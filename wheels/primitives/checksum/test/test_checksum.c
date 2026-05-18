@@ -54,7 +54,7 @@ TEST(test_internet_rfc1071)
     uint16_t cs = checksum_internet(data, 8);
     uint32_t sum = 0;
     for (int i = 0; i < 8; i += 2)
-        sum += ((uint16_t)data[i] << 8) | data[i + 1];
+        sum += (unsigned)(((uint16_t)data[i] << 8) | data[i + 1]);
     sum += cs;
     sum = (sum >> 16) + (sum & 0xFFFF);
     sum += (sum >> 16);

@@ -55,7 +55,7 @@ static veml7700_err_t read_reg16(const veml7700_t *dev, uint8_t reg,
     if (!dev->i2c->read_regs(dev->i2c->ctx, VEML7700_DEV_ADDR,
                              reg, buf, 2))
         return VEML7700_ERR_I2C;
-    *val = (uint16_t)((uint16_t)buf[1] << 8u) | (uint16_t)buf[0];
+    *val = (uint16_t)(((uint16_t)buf[1] << 8u) | (uint16_t)buf[0]);
     return VEML7700_OK;
 }
 
@@ -63,9 +63,9 @@ static uint16_t build_conf(veml7700_gain_t gain, veml7700_it_t it,
                             bool shutdown)
 {
     uint16_t conf = 0;
-    conf |= (uint16_t)((uint16_t)(gain & CONF_GAIN_MASK) << CONF_GAIN_SHIFT);
-    conf |= (uint16_t)((uint16_t)(it & CONF_IT_MASK) << CONF_IT_SHIFT);
-    if (shutdown) conf |= (uint16_t)(1u << CONF_SD_BIT);
+    conf = (uint16_t)(conf | ((uint16_t)(gain & CONF_GAIN_MASK) << CONF_GAIN_SHIFT));
+    conf = (uint16_t)(conf | ((uint16_t)(it & CONF_IT_MASK) << CONF_IT_SHIFT));
+    if (shutdown) conf = (uint16_t)(conf | (1u << CONF_SD_BIT));
     return conf;
 }
 

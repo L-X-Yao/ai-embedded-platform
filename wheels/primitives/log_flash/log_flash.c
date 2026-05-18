@@ -120,7 +120,7 @@ size_t log_flash_read(const log_flash_t *f, char *dst, size_t dst_size) {
             if (read_at(f, abs, hdr, ENTRY_HEADER_SIZE) != 0) break;
             if (hdr[0] != LOG_FLASH_ENTRY_MAGIC) break;
 
-            uint16_t entry_len = (uint16_t)hdr[1] | ((uint16_t)hdr[2] << 8);
+            uint16_t entry_len = (uint16_t)((uint16_t)hdr[1] | ((uint16_t)hdr[2] << 8));
             if (entry_len == 0 || pos + ENTRY_HEADER_SIZE + entry_len > f->sector_size)
                 break;
 

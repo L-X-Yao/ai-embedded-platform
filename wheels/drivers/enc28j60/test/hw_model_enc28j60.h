@@ -236,16 +236,16 @@ static void enc_update_bank(enc28j60_model_t *m)
 __attribute__((unused))
 static uint16_t enc_get_erdpt(enc28j60_model_t *m)
 {
-    return (uint16_t)((uint16_t)m->regs[0][ENC_ERDPTH] << 8) |
-           m->regs[0][ENC_ERDPTL];
+    return (uint16_t)(((uint16_t)m->regs[0][ENC_ERDPTH] << 8) |
+           m->regs[0][ENC_ERDPTL]);
 }
 
 /* Get the 16-bit buffer write pointer from EWRPTL/H */
 __attribute__((unused))
 static uint16_t enc_get_ewrpt(enc28j60_model_t *m)
 {
-    return (uint16_t)((uint16_t)m->regs[0][ENC_EWRPTH] << 8) |
-           m->regs[0][ENC_EWRPTL];
+    return (uint16_t)(((uint16_t)m->regs[0][ENC_EWRPTH] << 8) |
+           m->regs[0][ENC_EWRPTL]);
 }
 
 /* ================================================================

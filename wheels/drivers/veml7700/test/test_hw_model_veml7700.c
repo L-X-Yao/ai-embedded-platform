@@ -52,8 +52,8 @@ TEST(test_init_writes_config)
     veml7700_init(&dev, &model_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS);
     /* gain=0 (GAIN_1), IT=0 (IT_100MS), SD=0 (powered on) -> conf = 0x0000 */
     uint8_t conf_base = VEML_BYTE_ADDR(VEML_REG_ALS_CONF);
-    uint16_t conf = (uint16_t)model.hw.regs[conf_base] |
-                    ((uint16_t)model.hw.regs[conf_base + 1] << 8);
+    uint16_t conf = (uint16_t)((uint16_t)model.hw.regs[conf_base] |
+                    ((uint16_t)model.hw.regs[conf_base + 1] << 8));
     ASSERT_EQ(conf, 0x0000u);
 }
 
@@ -64,8 +64,8 @@ TEST(test_init_with_gain2_it400)
     veml7700_init(&dev, &model_i2c, VEML7700_GAIN_2, VEML7700_IT_400MS);
     /* gain=1 at bits[12:11], IT=2 at bits[9:6], SD=0 */
     uint8_t conf_base = VEML_BYTE_ADDR(VEML_REG_ALS_CONF);
-    uint16_t conf = (uint16_t)model.hw.regs[conf_base] |
-                    ((uint16_t)model.hw.regs[conf_base + 1] << 8);
+    uint16_t conf = (uint16_t)((uint16_t)model.hw.regs[conf_base] |
+                    ((uint16_t)model.hw.regs[conf_base + 1] << 8));
     /* gain=1 << 11 = 0x0800, IT=2 << 6 = 0x0080 */
     ASSERT_EQ(conf, 0x0880u);
 }

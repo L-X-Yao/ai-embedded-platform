@@ -86,7 +86,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             id_byte = (id_byte + 1) % 3;
             return r;
         }
-        if (mock_cmd == 0x05) return mock_status | (mock_stuck_busy ? SR1_BUSY : 0);
+        if (mock_cmd == 0x05) return (uint8_t)(mock_status | (mock_stuck_busy ? SR1_BUSY : 0));
         if (mock_cmd == 0x03) {
             uint8_t r = (mock_addr < MOCK_SIZE) ? mock_mem[mock_addr] : 0xFF;
             mock_addr++;

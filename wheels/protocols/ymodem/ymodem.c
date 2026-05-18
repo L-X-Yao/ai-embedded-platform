@@ -84,8 +84,8 @@ static ymodem_err_t process_block(ymodem_t *ym)
 
     /* verify CRC-16 (YMODEM always uses CRC mode) */
     uint16_t crc_offset = (uint16_t)(3 + ym->block_size);
-    uint16_t expected = (uint16_t)((uint16_t)ym->buf[crc_offset] << 8) |
-                        ym->buf[crc_offset + 1];
+    uint16_t expected = (uint16_t)(((uint16_t)ym->buf[crc_offset] << 8) |
+                        ym->buf[crc_offset + 1]);
     uint16_t actual = ymodem_crc16(data, ym->block_size);
     if (actual != expected) {
         (void)send_byte(ym, YMODEM_NAK);

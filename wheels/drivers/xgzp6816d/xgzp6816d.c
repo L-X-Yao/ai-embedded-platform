@@ -69,7 +69,7 @@ xgzp6816d_err_t xgzp6816d_read(const xgzp6816d_i2c_t *i2c,
     uint32_t p_raw = ((uint32_t)buf[1] << 16)
                    | ((uint32_t)buf[2] << 8)
                    |  (uint32_t)buf[3];
-    uint16_t t_raw = ((uint16_t)buf[4] << 8) | buf[5];
+    uint16_t t_raw = (uint16_t)(((uint16_t)buf[4] << 8) | buf[5]);
 
     float p_kpa;
     if ((float)p_raw <= P_RAW_MIN) {
