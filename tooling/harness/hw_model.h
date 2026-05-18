@@ -96,7 +96,7 @@ static void hw_model__write_reg(hw_reg_model_t *m, uint8_t reg, uint8_t val)
 {
     uint8_t mask = m->writable_mask[reg];
     uint8_t old  = m->regs[reg];
-    m->regs[reg] = (old & ~mask) | (val & mask);
+    m->regs[reg] = (uint8_t)((old & (uint8_t)~mask) | (val & mask));
     if (m->on_write[reg])
         m->on_write[reg](m->user, reg, old, m->regs[reg]);
 }
