@@ -11,6 +11,8 @@
 #   2. CMake build + test (all test_* executables)
 #   2.5. UBSan build + run (-fsanitize=undefined)
 #   2.7. -Wconversion strict compile (-Wconversion -Wsign-conversion)
+#   2.8. SPDX header check (all .c/.h must have SPDX-License-Identifier)
+#   2.9. README quality check (no TODO placeholders)
 #   3. Audit (--wheel --quiet, 0 WARN/FAIL required)
 #
 # Exit 0 if all pass, 1 if any fail, 2 if no wheels given.
@@ -197,6 +199,31 @@ for wheel in "${WHEELS[@]}"; do
             continue
         fi
         rm -rf "$conv_dir" "$conv_log"
+    fi
+
+    # --- 2.8. SPDX header check ---
+    spdx_missing=0
+    while IFS= read -r f; do
+        head -5 "$f" | grep -q "SPDX-License-Identifier" || spdx_missing=$((spdx_missing + 1))
+    done < <(find "$wheel_dir" \( -name "*.c" -o -name "*.h" \) -not -path "*/build_*" -not -path "*/vendor/*" 2>/dev/null)
+    if [[ "$spdx_missing" -gt 0 ]]; then
+        echo -e "  ${RED}FAIL${NC} SPDX: $spdx_missing files missing header"
+        FAIL=$((FAIL + 1))
+        FAILED_WHEELS+=("$wheel")
+        continue
+    else
+        echo -e "  ${GREEN}PASS${NC} SPDX"
+    fi
+
+    # --- 2.9. README quality check ---
+    readme_file="${wheel_dir}/README.md"
+    if [[ -f "$readme_file" ]] && grep -q "TODO" "$readme_file"; then
+        echo -e "  ${RED}FAIL${NC} README: contains TODO placeholders"
+        FAIL=$((FAIL + 1))
+        FAILED_WHEELS+=("$wheel")
+        continue
+    else
+        echo -e "  ${GREEN}PASS${NC} README"
     fi
 
     # --- 3. Audit ---

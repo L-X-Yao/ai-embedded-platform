@@ -359,11 +359,14 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
             fi
         fi
 
-        local build_dir="$src_dir/$BUILD_DIR_NAME"
+        local build_dir
+        build_dir=$(mktemp -d "$src_dir/.build_par_XXXXXX")
         if ! cmake -GNinja -S "$src_dir" -B "$build_dir" > "$of" 2>&1; then
+            rm -rf "$build_dir"
             echo "FAIL|$name|cmake configure failed" > "$rf"; return 0
         fi
         if ! cmake --build "$build_dir" >> "$of" 2>&1; then
+            rm -rf "$build_dir"
             echo "FAIL|$name|build failed" > "$rf"; return 0
         fi
 
@@ -375,6 +378,7 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
             exe="$(find "$build_dir" -maxdepth 1 -type f -executable 2>/dev/null | head -1 || true)"
         fi
         if [[ -z "$exe" ]]; then
+            rm -rf "$build_dir"
             echo "FAIL|$name|no test executable found" > "$rf"; return 0
         fi
 
@@ -387,6 +391,7 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
             echo "$test_output" >> "$of"
             echo "FAIL|$name|test execution failed" > "$rf"
         fi
+        rm -rf "$build_dir"
     }
 
     run_pytest_isolated() {
