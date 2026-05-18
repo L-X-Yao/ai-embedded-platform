@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_pct2075.h -- PCT2075 hardware register model from datasheet
  *

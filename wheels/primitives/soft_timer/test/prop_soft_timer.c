@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_soft_timer.c — property-based tests for soft_timer
  *

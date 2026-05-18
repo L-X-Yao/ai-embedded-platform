@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_device_info.c — property-based tests for device_info
  *

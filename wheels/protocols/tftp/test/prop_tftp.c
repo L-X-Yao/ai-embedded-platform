@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_tftp.c --- property-based tests for tftp
  *

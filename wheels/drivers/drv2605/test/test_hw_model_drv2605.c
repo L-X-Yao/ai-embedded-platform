@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_drv2605.c — tests using DRV2605L hardware register model
  *

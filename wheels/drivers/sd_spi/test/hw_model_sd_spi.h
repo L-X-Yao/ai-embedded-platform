@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_sd_spi.h -- SD card SPI protocol hardware model
  *

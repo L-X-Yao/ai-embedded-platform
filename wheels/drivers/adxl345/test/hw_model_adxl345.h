@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_adxl345.h — ADXL345 hardware register model from datasheet
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_bh1750.c -- tests using BH1750 hardware model
  *

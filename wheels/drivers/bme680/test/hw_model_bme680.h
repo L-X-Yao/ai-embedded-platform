@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bme680.h — BME680 hardware register model from datasheet
  *

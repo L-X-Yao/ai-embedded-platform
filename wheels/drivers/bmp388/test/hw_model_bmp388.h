@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bmp388.h — datasheet-accurate register model for BMP388
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lps22hb.h — LPS22HB hardware model from datasheet
  *

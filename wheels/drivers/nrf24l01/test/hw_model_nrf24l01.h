@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_nrf24l01.h -- nRF24L01+ hardware register model
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_gc9a01.h -- GC9A01 SPI display hardware model from datasheet
  *

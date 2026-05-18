@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_max30102.c -- property-based tests for max30102
  *

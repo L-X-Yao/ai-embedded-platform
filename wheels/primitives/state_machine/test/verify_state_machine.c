@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_state_machine.c — CBMC bounded model checking for state_machine
  *

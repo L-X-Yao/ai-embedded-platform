@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bmi160.h — BMI160 hardware register model from datasheet
  *

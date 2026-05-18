@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_led_pattern.c — property-based tests for led_pattern
  *

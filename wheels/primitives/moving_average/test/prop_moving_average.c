@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_moving_average.c — property-based tests for moving_average
  *

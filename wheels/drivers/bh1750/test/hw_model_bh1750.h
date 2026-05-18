@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bh1750.h -- BH1750FVI ambient light sensor hardware model
  *

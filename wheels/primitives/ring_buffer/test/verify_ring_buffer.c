@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_ring_buffer.c — CBMC bounded model checking for ring_buffer
  *

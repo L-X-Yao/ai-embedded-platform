@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bma400.h — datasheet-accurate register model for BMA400
  *

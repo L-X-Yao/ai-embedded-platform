@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_cobs.c — CBMC bounded model checking for cobs
  *

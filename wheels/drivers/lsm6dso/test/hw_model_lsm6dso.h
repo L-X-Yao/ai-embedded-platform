@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lsm6dso.h — datasheet-accurate register model for LSM6DSO
  *

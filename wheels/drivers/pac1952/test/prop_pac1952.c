@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_pac1952.c -- property-based tests for pac1952
  *

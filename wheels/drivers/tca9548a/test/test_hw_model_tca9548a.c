@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_tca9548a.c — tests using TCA9548A hardware register model
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_bmm150.h"
 #include "bmm150.h"

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_config_store.c — property-based tests for config_store
  *

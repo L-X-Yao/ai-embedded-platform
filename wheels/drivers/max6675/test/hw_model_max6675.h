@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_max6675.h — MAX6675 SPI model
  *

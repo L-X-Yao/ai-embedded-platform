@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_at_command.c — property-based tests for at_command
  *

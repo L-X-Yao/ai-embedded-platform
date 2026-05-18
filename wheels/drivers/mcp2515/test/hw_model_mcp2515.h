@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_mcp2515.h -- MCP2515 CAN bus controller hardware register model
  *

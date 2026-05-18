@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bme280.h — BME280 hardware register model from datasheet
  *

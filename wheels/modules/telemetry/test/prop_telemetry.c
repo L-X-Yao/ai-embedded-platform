@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_telemetry.c — property-based tests for telemetry
  *

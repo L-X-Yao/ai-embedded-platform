@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_midi_packet.c — property-based tests for midi_packet
  *

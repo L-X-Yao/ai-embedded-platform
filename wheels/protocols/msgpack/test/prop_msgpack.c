@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_msgpack.c — property-based tests for msgpack
  *

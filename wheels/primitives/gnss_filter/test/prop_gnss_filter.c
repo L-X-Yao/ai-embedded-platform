@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_gnss_filter.c — property-based tests for gnss_filter
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_timeout.c — CBMC bounded model checking for timeout
  *

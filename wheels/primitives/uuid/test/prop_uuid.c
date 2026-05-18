@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_uuid.c — property-based tests for uuid
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_w5500.h -- W5500 SPI Ethernet controller hardware model
  *

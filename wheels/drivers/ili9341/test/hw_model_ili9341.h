@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ili9341.h — datasheet-accurate model for ILI9341 display controller
  *

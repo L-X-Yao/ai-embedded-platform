@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_mpr121.h — datasheet-accurate register model for MPR121
  *

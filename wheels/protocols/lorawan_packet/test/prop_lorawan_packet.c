@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_lorawan_packet.c — property-based tests for lorawan_packet
  *

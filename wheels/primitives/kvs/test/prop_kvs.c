@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_kvs.c — property-based tests for kvs (FlashDB key-value store)
  *

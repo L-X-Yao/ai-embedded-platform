@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_event_queue.c — CBMC bounded model checking for event_queue
  *

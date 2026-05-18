@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_median_filter.c — property-based tests for median_filter
  *

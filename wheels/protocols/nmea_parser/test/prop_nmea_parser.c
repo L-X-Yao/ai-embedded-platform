@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_nmea_parser.c — property-based tests for nmea_parser
  *

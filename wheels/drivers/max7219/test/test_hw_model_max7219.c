@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_max7219.c — tests using MAX7219 hardware register model
  *

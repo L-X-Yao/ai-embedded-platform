@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_string_utils.c — property-based tests for string_utils
  *

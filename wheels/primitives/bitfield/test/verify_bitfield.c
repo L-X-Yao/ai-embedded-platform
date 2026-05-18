@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_bitfield.c — CBMC bounded model checking for bitfield
  *

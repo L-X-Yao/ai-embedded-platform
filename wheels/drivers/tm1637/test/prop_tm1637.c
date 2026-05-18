@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_tm1637.c -- property-based tests for tm1637
  *

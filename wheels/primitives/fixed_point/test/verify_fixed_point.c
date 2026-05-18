@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_fixed_point.c — CBMC bounded model checking for fixed_point
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bmm150.h — BMM150 register model
  * Chip ID at 0x40 = 0x32. XY: 13-bit, Z: 15-bit, left-justified.

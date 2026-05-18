@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_bencode.c — property-based tests for bencode
  *

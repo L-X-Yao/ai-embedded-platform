@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_fal.c — property-based tests for fal (Flash Abstraction Layer)
  *

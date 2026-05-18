@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_pac1952.h -- PAC1952 hardware register model from datasheet
  *

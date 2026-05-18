@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_power_manager.c -- property-based tests for power_manager
  *

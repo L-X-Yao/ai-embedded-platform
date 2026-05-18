@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_qmc5883p.c — tests using hardware register model
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_mcp2515.c -- tests using MCP2515 hardware register model
  *

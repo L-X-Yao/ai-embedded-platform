@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ft6x36.h — FT6x36 hardware model from datasheet
  *

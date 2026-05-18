@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_flash_ring.c — property-based tests for flash_ring
  *

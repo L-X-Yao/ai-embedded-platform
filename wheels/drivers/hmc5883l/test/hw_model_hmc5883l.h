@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_hmc5883l.h — HMC5883L hardware register model from datasheet
  *

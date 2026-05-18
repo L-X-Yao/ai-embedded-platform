@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bmi270.h — datasheet-accurate SPI register model for BMI270
  *

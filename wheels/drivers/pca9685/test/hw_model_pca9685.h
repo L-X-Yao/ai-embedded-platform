@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_pca9685.h — PCA9685 hardware register model
  *

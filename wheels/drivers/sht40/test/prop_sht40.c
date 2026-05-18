@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_sht40.c -- property-based tests for sht40
  *

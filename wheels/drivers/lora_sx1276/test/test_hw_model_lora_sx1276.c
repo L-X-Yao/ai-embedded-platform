@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_lora_sx1276.c -- tests using SX1276 hardware register model
  *

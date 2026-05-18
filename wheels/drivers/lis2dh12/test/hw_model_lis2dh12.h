@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lis2dh12.h — LIS2DH12 register model
  *

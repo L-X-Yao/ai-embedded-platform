@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_syslog_packet.c — property-based tests for syslog_packet
  *

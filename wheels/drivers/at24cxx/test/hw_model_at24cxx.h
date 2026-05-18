@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_at24cxx.h -- AT24CXX I2C EEPROM hardware model
  *

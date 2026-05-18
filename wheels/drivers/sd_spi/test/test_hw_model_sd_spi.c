@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_sd_spi.c -- tests using SD SPI card hardware model
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_veml7700.h — VEML7700 hardware register model from datasheet
  *

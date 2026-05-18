@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_tsl2591.h -- AMS TSL2591 ambient light sensor hardware model
  *

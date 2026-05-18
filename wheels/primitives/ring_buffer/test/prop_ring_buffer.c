@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_ring_buffer.c — property-based tests for ring_buffer
  *

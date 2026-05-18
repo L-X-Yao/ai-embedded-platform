@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_modbus_rtu.c — property-based tests for modbus_rtu
  *

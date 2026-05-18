@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_button_handler.c — property-based tests for button_handler
  *

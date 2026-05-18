@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_enc28j60.h -- ENC28J60 SPI Ethernet controller hardware model
  *

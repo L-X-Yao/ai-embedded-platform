@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_mqtt_packet.c — property-based tests for mqtt_packet
  *

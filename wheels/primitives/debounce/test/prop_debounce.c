@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_debounce.c — property-based tests for debounce
  *

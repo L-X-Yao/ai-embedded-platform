@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_is31fl3731.h — datasheet-accurate register model for IS31FL3731
  *

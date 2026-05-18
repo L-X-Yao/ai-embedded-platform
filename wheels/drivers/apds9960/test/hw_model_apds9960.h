@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_apds9960.h — APDS-9960 hardware register model from datasheet
  *

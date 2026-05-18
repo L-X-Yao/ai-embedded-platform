@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_ina219.c -- tests using INA219 hardware register model
  *

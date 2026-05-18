@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_font_5x7.c --- property-based tests for font_5x7
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_w25qxx.h -- W25QXX SPI NOR flash hardware model
  *

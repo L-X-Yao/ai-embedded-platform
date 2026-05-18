@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_checksum.c — property-based tests for checksum
  *

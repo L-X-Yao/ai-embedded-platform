@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_fifo_queue.c — CBMC bounded model checking for fifo_queue
  *

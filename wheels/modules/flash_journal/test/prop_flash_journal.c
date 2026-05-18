@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_flash_journal.c — property-based tests for flash_journal
  *

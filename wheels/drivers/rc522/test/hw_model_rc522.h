@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_rc522.h — datasheet-accurate SPI register model for MFRC522
  *

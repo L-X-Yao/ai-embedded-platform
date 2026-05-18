@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_mavlink.c -- property-based tests for mavlink
  *

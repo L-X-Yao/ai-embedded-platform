@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_soft_timer.c — CBMC bounded model checking for soft_timer
  *

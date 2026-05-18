@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_websocket_frame.c — property-based tests for websocket_frame
  *

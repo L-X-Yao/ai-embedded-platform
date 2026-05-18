@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_onewire.c -- property-based tests for onewire
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_mlx90614.h — MLX90614 hardware register model
  *

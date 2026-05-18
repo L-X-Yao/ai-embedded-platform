@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_endian.c — property-based tests for endian
  *

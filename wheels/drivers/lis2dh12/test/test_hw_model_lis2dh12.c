@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_lis2dh12.h"
 #include "lis2dh12.h"

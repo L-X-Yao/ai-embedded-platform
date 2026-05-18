@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_task_watchdog.c — property-based tests for task_watchdog
  *

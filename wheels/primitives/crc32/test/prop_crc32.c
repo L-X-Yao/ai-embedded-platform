@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_crc32.c — property-based tests for crc32
  *

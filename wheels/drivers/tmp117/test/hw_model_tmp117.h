@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_tmp117.h — datasheet-accurate 16-bit register model for TMP117
  *

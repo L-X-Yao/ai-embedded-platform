@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_rate_limiter.c — property-based tests for rate_limiter
  *

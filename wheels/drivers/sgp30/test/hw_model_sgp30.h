@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_sgp30.h -- SGP30 command-based hardware model
  *

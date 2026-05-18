@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * mock_fal_dev.c — shared RAM-backed flash mock for fal unit tests
  *

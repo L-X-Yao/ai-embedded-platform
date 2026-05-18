@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_boot_counter.c — property-based tests for boot_counter
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef _FDB_CFG_H_
 #define _FDB_CFG_H_
 
