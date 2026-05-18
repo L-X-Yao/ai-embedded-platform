@@ -6,10 +6,12 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_executable(test_ymodem
     test_ymodem.c
     ../ymodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 
 target_include_directories(test_ymodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_ymodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -18,9 +20,11 @@ target_compile_options(test_ymodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 add_executable(test_null_ymodem
     test_null_ymodem.c
     ../ymodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 target_include_directories(test_null_ymodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_ymodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -28,9 +32,11 @@ target_compile_options(test_null_ymodem PRIVATE -Wall -Wextra -Wpedantic -Werror
 add_executable(test_boundary_ymodem
     test_boundary_ymodem.c
     ../ymodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 target_include_directories(test_boundary_ymodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_ymodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
