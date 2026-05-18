@@ -1,47 +1,71 @@
-# bmi270 — TODO: one-line description
+# bmi270 -- Bosch BMI270 SPI 6-axis IMU driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the Bosch BMI270 6-axis inertial measurement
+unit (accelerometer + gyroscope). SPI interface injected via callbacks.
+Handles config file loading, chip ID verification, and per-axis scaling
+to G and deg/s units. Configurable ranges and output data rates.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. BMI270 is a widely used low-power IMU for drones,
+wearables, and robotics requiring 6-axis motion sensing.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-09):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for BMI270. Self-written for zero-dependency SPI HAL
+injection and platform convention consistency.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+SPI HAL (injected via `bmi270_spi_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+bmi270_cfg_t bmi270_default_cfg(void);
+bmi270_err_t bmi270_init(bmi270_t *dev, const bmi270_spi_t *spi,
+                         const bmi270_cfg_t *cfg);
+bmi270_err_t bmi270_read_accel_gyro(const bmi270_t *dev,
+                                    bmi270_accel_gyro_t *out);
+bmi270_err_t bmi270_read_temp(const bmi270_t *dev, float *temp_c);
+bmi270_err_t bmi270_set_acc_odr(const bmi270_t *dev, bmi270_odr_t odr);
+bmi270_err_t bmi270_set_gyro_odr(const bmi270_t *dev, bmi270_odr_t odr);
+bmi270_err_t bmi270_set_acc_range(bmi270_t *dev, bmi270_acc_range_t range);
+bmi270_err_t bmi270_set_gyro_range(bmi270_t *dev, bmi270_gyro_range_t range);
+bmi270_err_t bmi270_soft_reset(const bmi270_t *dev);
+```
+
+Output: `bmi270_accel_gyro_t { float ax_g, ay_g, az_g, gx_dps, gy_dps, gz_dps; }`
+
+## Usage
+
+```c
+bmi270_t imu;
+bmi270_cfg_t cfg = bmi270_default_cfg();
+bmi270_init(&imu, &spi_hal, &cfg);
+
+bmi270_accel_gyro_t data;
+bmi270_read_accel_gyro(&imu, &data);
+// data.ax_g, data.gx_dps, etc.
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. Ranges and ODR are runtime-configurable via `bmi270_cfg_t` and
+setter functions.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
 ## Known issues
 
-TODO.
+- SPI only; I2C not implemented.
+- Config file data embedded in driver (8 KB array from Bosch).
 
 ## How to test
 
@@ -53,17 +77,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

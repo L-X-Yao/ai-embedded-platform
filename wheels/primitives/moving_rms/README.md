@@ -1,70 +1,52 @@
-# moving_rms — TODO: one-line description
+# moving_rms
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Running root-mean-square over a sliding window with O(1) per-sample updates.
+Maintains a sum-of-squares in a circular buffer provided by the caller.
+Useful for vibration monitoring, AC signal measurement, and audio level
+detection. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no sliding-window RMS primitive. This fills a common need for
+real-time signal analysis on embedded targets without heap allocation.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "moving_rms.h"
+
+moving_rms_err_t moving_rms_init(moving_rms_t *ctx, float *buf, size_t window);
+float            moving_rms_feed(moving_rms_t *ctx, float sample);
+float            moving_rms_get(const moving_rms_t *ctx);
+moving_rms_err_t moving_rms_reset(moving_rms_t *ctx);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+float window_buf[64];
+moving_rms_t rms;
+moving_rms_init(&rms, window_buf, 64);
+
+/* Feed accelerometer samples in a loop */
+float rms_val = moving_rms_feed(&rms, accel_x);
+if (rms_val > VIBRATION_THRESHOLD) {
+    set_alarm();
+}
+```
+
+## Dependencies
+
+None. Pure C99 with `<math.h>` for `sqrtf`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/moving_rms/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_moving_rms
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

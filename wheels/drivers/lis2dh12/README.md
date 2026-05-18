@@ -1,47 +1,65 @@
-# lis2dh12 — TODO: one-line description
+# lis2dh12 -- ST LIS2DH12 3-axis accelerometer driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the ST LIS2DH12 ultra-low-power 3-axis
+accelerometer. I2C interface injected via callbacks. 10-bit normal mode
+with configurable full-scale range (2/4/8/16G) and output data rate.
+Output in milligravity (mg).
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. LIS2DH12 is one of the most popular ultra-low-power
+accelerometers for wearables, IoT, and motion detection applications.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for LIS2DH12. Self-written for zero-dependency I2C HAL
+injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+I2C HAL (injected via `lis2dh12_i2c_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+lis2dh12_err_t lis2dh12_init(lis2dh12_t *dev, const lis2dh12_i2c_t *i2c,
+                              const lis2dh12_cfg_t *cfg);
+lis2dh12_err_t lis2dh12_read(lis2dh12_t *dev, lis2dh12_data_t *out);
+```
+
+Output: `lis2dh12_data_t { float x_mg; float y_mg; float z_mg; }`
+
+## Usage
+
+```c
+lis2dh12_t accel;
+lis2dh12_cfg_t cfg = { .addr = LIS2DH12_ADDR_LOW,
+                       .range = LIS2DH12_RANGE_2G,
+                       .odr = LIS2DH12_ODR_100HZ };
+lis2dh12_init(&accel, &i2c_hal, &cfg);
+
+lis2dh12_data_t data;
+lis2dh12_read(&accel, &data);
+// data.x_mg, data.y_mg, data.z_mg
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. Range, ODR, and I2C address are runtime-configurable via
+`lis2dh12_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
 ## Known issues
 
-TODO.
+- Normal mode (10-bit) only; high-resolution (12-bit) and low-power
+  (8-bit) modes are not implemented.
 
 ## How to test
 
@@ -53,17 +71,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

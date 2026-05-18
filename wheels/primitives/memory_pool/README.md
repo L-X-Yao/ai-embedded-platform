@@ -1,70 +1,55 @@
-# memory_pool — TODO: one-line description
+# memory_pool
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Fixed-size block allocator with O(1) alloc and free via an intrusive free-list.
+Caller provides the backing buffer -- no heap, no OS. Suitable for ISR-safe
+allocation when wrapped with a critical section. Validates pointer bounds
+and alignment on free.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-09):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has its own pool allocator tied to the VSF kernel. This wheel is a
+standalone zero-dependency allocator usable in any RTOS or bare-metal context.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "memory_pool.h"
+
+memory_pool_err_t memory_pool_init(memory_pool_t *pool, uint8_t *buf,
+                                   size_t buf_size, size_t block_size);
+void             *memory_pool_alloc(memory_pool_t *pool);
+memory_pool_err_t memory_pool_free(memory_pool_t *pool, void *ptr);
+size_t            memory_pool_available(const memory_pool_t *pool);
+size_t            memory_pool_used(const memory_pool_t *pool);
+void              memory_pool_reset(memory_pool_t *pool);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+static uint8_t backing[64 * 32];  /* 64 blocks of 32 bytes */
+memory_pool_t pool;
+memory_pool_init(&pool, backing, sizeof(backing), 32);
+
+void *blk = memory_pool_alloc(&pool);  /* O(1) */
+if (blk) {
+    /* use block */
+    memory_pool_free(&pool, blk);      /* O(1) */
+}
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/memory_pool/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_memory_pool
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

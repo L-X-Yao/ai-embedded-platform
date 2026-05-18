@@ -1,70 +1,61 @@
-# tftp — TODO: one-line description
+# tftp
 
 **Status: candidate**
 **Layer: L2 (protocols)**
 
-TODO: 2-3 sentence description.
+Stateless TFTP (Trivial File Transfer Protocol) packet builder and parser
+per RFC 1350. Handles all five opcodes: RRQ, WRQ, DATA, ACK, and ERROR.
+All buffers are caller-provided. Useful for firmware update over UDP on
+bare-metal Ethernet stacks. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-09):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no TFTP codec. This wheel provides the packet-level primitives
+for bootloaders and OTA systems that transfer firmware images over TFTP.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "tftp.h"
+
+int  tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt);
+int  tftp_build_rrq(uint8_t *buf, size_t cap, const char *filename, const char *mode);
+int  tftp_build_wrq(uint8_t *buf, size_t cap, const char *filename, const char *mode);
+int  tftp_build_data(uint8_t *buf, size_t cap,
+                     uint16_t block, const uint8_t *data, size_t len);
+int  tftp_build_ack(uint8_t *buf, size_t cap, uint16_t block);
+int  tftp_build_error(uint8_t *buf, size_t cap, uint16_t code, const char *msg);
+bool tftp_is_last_data(const tftp_packet_t *pkt);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+/* Request a file */
+uint8_t pkt[256];
+int len = tftp_build_rrq(pkt, sizeof(pkt), "firmware.bin", "octet");
+udp_send(pkt, len);
+
+/* Receive data blocks */
+tftp_packet_t rx;
+tftp_parse(rx_buf, rx_len, &rx);
+if (rx.opcode == TFTP_OP_DATA) {
+    flash_write(offset, rx.u.data.data, rx.u.data.len);
+    len = tftp_build_ack(pkt, sizeof(pkt), rx.u.data.block);
+    udp_send(pkt, len);
+    if (tftp_is_last_data(&rx)) transfer_complete();
+}
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/protocols/tftp/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_tftp
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

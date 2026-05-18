@@ -1,70 +1,52 @@
-# scale_map — TODO: one-line description
+# scale_map
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Linear value mapping from one range to another, like Arduino's `map()`.
+Integer (int32) and float variants, each with an optional clamped version
+that constrains output to [out_min, out_max]. All functions are stateless,
+thread-safe, and ISR-safe. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no standalone range-mapping utility. This is a ubiquitous embedded
+primitive (ADC scaling, servo mapping, sensor calibration) worth standardizing.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "scale_map.h"
+
+int32_t scale_map_i32(int32_t x, int32_t in_min, int32_t in_max,
+                      int32_t out_min, int32_t out_max);
+int32_t scale_map_i32_clamp(int32_t x, int32_t in_min, int32_t in_max,
+                            int32_t out_min, int32_t out_max);
+float   scale_map_f(float x, float in_min, float in_max,
+                    float out_min, float out_max);
+float   scale_map_f_clamp(float x, float in_min, float in_max,
+                          float out_min, float out_max);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+/* Map 12-bit ADC (0-4095) to temperature (0-100 C) */
+int32_t temp = scale_map_i32(adc_val, 0, 4095, 0, 100);
+
+/* Map joystick to servo with clamping */
+int32_t servo_us = scale_map_i32_clamp(joy, -512, 511, 1000, 2000);
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/scale_map/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_scale_map
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

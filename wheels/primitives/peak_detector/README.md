@@ -1,70 +1,52 @@
-# peak_detector — TODO: one-line description
+# peak_detector
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Tracks running peak (max) and valley (min) of a signal stream with
+configurable hold/decay. Decay rate controls how quickly the held extremes
+relax toward the current value: 0 = infinite hold, 1 = no hold.
+Pure C99, no heap, no OS, fully reentrant.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no peak/valley tracking primitive. This is a common building block
+for audio level meters, vibration monitoring, and envelope detection.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "peak_detector.h"
+
+peak_detector_err_t peak_detector_init(peak_detector_t *ctx, float decay_rate);
+peak_detector_err_t peak_detector_feed(peak_detector_t *ctx, float sample);
+float               peak_detector_get_peak(const peak_detector_t *ctx);
+float               peak_detector_get_valley(const peak_detector_t *ctx);
+float               peak_detector_get_range(const peak_detector_t *ctx);
+peak_detector_err_t peak_detector_reset(peak_detector_t *ctx);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+peak_detector_t pd;
+peak_detector_init(&pd, 0.01f);  /* slow decay */
+
+for (int i = 0; i < n; i++) {
+    peak_detector_feed(&pd, adc_samples[i]);
+}
+float range = peak_detector_get_range(&pd);  /* peak - valley */
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/peak_detector/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_peak_detector
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

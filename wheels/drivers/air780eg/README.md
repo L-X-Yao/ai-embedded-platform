@@ -1,47 +1,61 @@
-# air780eg — TODO: one-line description
+# air780eg -- non-blocking AT modem driver for Air780EG (4G/GNSS)
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Non-blocking AT command driver for the Air780EG 4G LTE Cat.1 + GNSS module.
+Feed UART bytes one at a time, poll for timeouts, and issue AT commands
+with expected-response matching. URC dispatching for MQTT RX, PDP
+deactivation, module restart, NMEA sentences, and signal quality.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Extracted from `projects/flybox/` for reuse across cellular IoT projects.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-06):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+Air780EG is a niche module with custom AT extensions (MQTT built-in,
+GNSS control). No VSF component covers this modem. Self-written for
+zero-dependency non-blocking architecture matching our wheel contract.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+None (UART transport injected via `air780eg_io_t` callbacks).
 
 ## API
 
 ```c
-/* TODO: document public API */
+air780eg_err_t air780eg_init(air780eg_t *dev, const air780eg_io_t *io);
+void           air780eg_feed(air780eg_t *dev, uint8_t byte);
+void           air780eg_poll(air780eg_t *dev);
+air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
+                                 const char *expect, uint32_t timeout_ms);
+air780eg_cmd_status_t air780eg_cmd_status(const air780eg_t *dev);
+const char    *air780eg_get_matched_line(const air780eg_t *dev);
 ```
+
+- `feed()` -- ISR-safe, call from UART RX interrupt or polling loop
+- `poll()` -- call periodically to check command timeouts
+- `send_cmd()` -- send AT command with expected response token
+- Callback registration: `air780eg_on_mqtt_rx`, `air780eg_on_disconnect`,
+  `air780eg_on_pdp_deact`, `air780eg_on_restart`, `air780eg_on_nmea`,
+  `air780eg_on_csq`
 
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| TODO   | TODO    | TODO    |
+| `AIR780EG_LINE_MAX` | 512 | Maximum AT response line length |
+| `AIR780EG_TOPIC_MAX` | 128 | Maximum MQTT topic length |
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected UART HAL)
 
 ## Known issues
 
-TODO.
+None.
 
 ## How to test
 
@@ -53,17 +67,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

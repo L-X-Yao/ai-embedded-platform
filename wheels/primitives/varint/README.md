@@ -1,70 +1,53 @@
-# varint — TODO: one-line description
+# varint
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Variable-length integer encoding using LEB128 (protobuf-compatible).
+Unsigned uses standard LEB128 (7 data bits per byte, bit 7 = continuation).
+Signed uses ZigZag encoding: (n << 1) ^ (n >> 63). Supports uint64 and
+int64. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no varint codec. This wheel is a building block for protobuf_lite,
+msgpack, and other compact serialization protocols used in telemetry.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "varint.h"
+
+varint_err_t varint_encode_u64(uint64_t value, uint8_t *buf, size_t cap, size_t *out_len);
+varint_err_t varint_decode_u64(const uint8_t *buf, size_t len,
+                               uint64_t *value, size_t *out_len);
+varint_err_t varint_encode_s64(int64_t value, uint8_t *buf, size_t cap, size_t *out_len);
+varint_err_t varint_decode_s64(const uint8_t *buf, size_t len,
+                               int64_t *value, size_t *out_len);
+size_t       varint_encoded_size_u64(uint64_t value);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+uint8_t buf[10];
+size_t len;
+varint_encode_u64(300, buf, sizeof(buf), &len);  /* len == 2 */
+
+uint64_t val;
+size_t consumed;
+varint_decode_u64(buf, len, &val, &consumed);     /* val == 300 */
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/varint/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_varint
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user
