@@ -84,11 +84,11 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
 
     /* Build config register */
     uint16_t config = 0;
-    config |= ((uint16_t)range & 0x01u) << 13;
-    config |= ((uint16_t)gain  & 0x03u) << 11;
-    config |= CFG_BADC_12BIT;
-    config |= CFG_SADC_12BIT;
-    config |= CFG_MODE_CONT;
+    config = (uint16_t)(config | (((unsigned)range & 0x01u) << 13));
+    config = (uint16_t)(config | (((unsigned)gain  & 0x03u) << 11));
+    config = (uint16_t)(config | CFG_BADC_12BIT);
+    config = (uint16_t)(config | CFG_SADC_12BIT);
+    config = (uint16_t)(config | CFG_MODE_CONT);
 
     ina219_err_t err = write_reg16(dev, REG_CONFIG, config);
     if (err != INA219_OK)

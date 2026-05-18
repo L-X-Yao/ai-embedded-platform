@@ -55,7 +55,7 @@ bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
     if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, buf, 2))
         return BH1750_ERR_I2C;
 
-    uint16_t raw = ((uint16_t)buf[0] << 8) | buf[1];
+    uint16_t raw = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
 
     if (dev->cfg.mode == BH1750_CONT_H_RES2 ||
         dev->cfg.mode == BH1750_ONCE_H_RES2)

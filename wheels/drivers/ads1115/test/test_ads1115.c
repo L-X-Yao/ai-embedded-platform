@@ -170,7 +170,7 @@ TEST(test_config_bits)
     ASSERT_EQ(ads1115_init(&dev, &mock_i2c, &cfg), ADS1115_OK);
     int16_t raw;
     ads1115_read_raw(&dev, &raw);
-    uint16_t written = ((uint16_t)mock_config_written[0] << 8) | mock_config_written[1];
+    uint16_t written = (uint16_t)(((uint16_t)mock_config_written[0] << 8) | mock_config_written[1]);
     ASSERT_EQ((written >> 15) & 1, 1);
     ASSERT_EQ((written >> 12) & 7, ADS1115_MUX_AIN0_GND);
     ASSERT_EQ((written >> 9) & 7, ADS1115_PGA_2048);

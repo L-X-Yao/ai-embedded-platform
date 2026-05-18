@@ -89,8 +89,8 @@ ubx_feed_status_t ubx_parser_feed(ubx_parser_t *ctx, uint8_t byte)
         ctx->buf[ctx->idx++] = byte;
         if (ctx->idx == UBX_HEADER_LEN) {
             /* Parse payload length (little-endian at offset 4,5) */
-            ctx->payload_len = (uint16_t)((uint16_t)ctx->buf[5] << 8) |
-                               (uint16_t)ctx->buf[4];
+            ctx->payload_len = (uint16_t)(((uint16_t)ctx->buf[5] << 8) |
+                               (uint16_t)ctx->buf[4]);
             /* Check if payload + checksum fits in buffer */
             if ((size_t)(UBX_HEADER_LEN + ctx->payload_len + 2) > ctx->buf_size) {
                 ctx->state = UBX_FEED_ERROR;

@@ -26,12 +26,12 @@ static uint16_t build_config(const ads1115_cfg_t *cfg, bool start)
 {
     uint16_t config = 0;
     if (start)
-        config |= (1u << 15);
-    config |= ((uint16_t)cfg->mux & 0x07) << 12;
-    config |= ((uint16_t)cfg->pga & 0x07) << 9;
-    config |= (1u << 8);
-    config |= ((uint16_t)cfg->rate & 0x07) << 5;
-    config |= 0x0003;
+        config = (uint16_t)(config | (1u << 15));
+    config = (uint16_t)(config | (((unsigned)cfg->mux & 0x07u) << 12));
+    config = (uint16_t)(config | (((unsigned)cfg->pga & 0x07u) << 9));
+    config = (uint16_t)(config | (1u << 8));
+    config = (uint16_t)(config | (((unsigned)cfg->rate & 0x07u) << 5));
+    config = (uint16_t)(config | 0x0003u);
     return config;
 }
 

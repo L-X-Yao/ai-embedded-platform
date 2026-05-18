@@ -244,7 +244,7 @@ TEST(test_config_bits)
     ASSERT_EQ(ads1015_init(&dev, &mock_i2c, &cfg), ADS1015_OK);
     int16_t raw;
     ads1015_read_raw(&dev, ADS1015_MUX_AIN2_GND, &raw);
-    uint16_t written = ((uint16_t)mock_config[0] << 8) | mock_config[1];
+    uint16_t written = (uint16_t)(((uint16_t)mock_config[0] << 8) | mock_config[1]);
     /* bit 15: OS = 1 (start) */
     ASSERT_EQ((written >> 15) & 1u, 1u);
     /* bits 14:12: MUX = AIN2_GND = 6 */
