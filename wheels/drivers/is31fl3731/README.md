@@ -1,47 +1,66 @@
-# is31fl3731 — TODO: one-line description
+# is31fl3731 -- ISSI IS31FL3731 LED matrix controller driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the ISSI IS31FL3731 LED matrix controller.
+I2C interface injected via callbacks. Controls up to 144 LEDs (9x16 matrix)
+across 8 display frames with individual PWM brightness. Supports frame
+selection, per-LED enable/disable, fill, and shutdown mode.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. IS31FL3731 is used in Adafruit CharliePlex LED matrices
+and custom LED display panels for embedded HMI.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for IS31FL3731. Self-written for zero-dependency I2C
+HAL injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+I2C HAL (injected via `is31fl3731_i2c_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
+                                 const is31fl3731_i2c_t *i2c,
+                                 const is31fl3731_cfg_t *cfg);
+is31fl3731_err_t is31fl3731_set_frame(is31fl3731_t *dev, uint8_t frame);
+is31fl3731_err_t is31fl3731_set_pixel(is31fl3731_t *dev, uint8_t frame,
+                                      uint8_t led_idx, uint8_t pwm);
+is31fl3731_err_t is31fl3731_set_led_enable(is31fl3731_t *dev, uint8_t frame,
+                                           uint8_t led_idx, bool enable);
+is31fl3731_err_t is31fl3731_fill(is31fl3731_t *dev, uint8_t frame, uint8_t pwm);
+is31fl3731_err_t is31fl3731_display_frame(is31fl3731_t *dev, uint8_t frame);
+is31fl3731_err_t is31fl3731_shutdown(is31fl3731_t *dev, bool enable);
+```
+
+## Usage
+
+```c
+is31fl3731_t led;
+is31fl3731_cfg_t cfg = { .addr = IS31FL3731_ADDR_BASE };
+is31fl3731_init(&led, &i2c_hal, &cfg);
+
+is31fl3731_set_pixel(&led, 0, 42, 128);   /* LED 42 at half brightness */
+is31fl3731_display_frame(&led, 0);
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. I2C address is runtime-configurable via `is31fl3731_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
 ## Known issues
 
-TODO.
+None.
 
 ## How to test
 
@@ -53,17 +72,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

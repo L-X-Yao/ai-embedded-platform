@@ -1,47 +1,67 @@
-# max6675 — TODO: one-line description
+# max6675 -- MAX6675 K-type thermocouple-to-digital converter driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the Maxim MAX6675 K-type thermocouple
+interface IC. SPI interface injected via callbacks. Read-only 12-bit
+temperature output (0.25 deg C resolution, range 0 to +1023.75 deg C)
+with open-thermocouple detection.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. MAX6675 is a simple, low-cost thermocouple interface
+used in ovens, 3D printers, and industrial temperature monitoring.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for MAX6675. Self-written for zero-dependency SPI HAL
+injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+SPI HAL (injected via `max6675_spi_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+max6675_err_t max6675_init(max6675_t *dev, const max6675_spi_t *spi);
+max6675_err_t max6675_read(max6675_t *dev, float *temp_c);
+max6675_err_t max6675_read_raw(max6675_t *dev, uint16_t *raw);
+```
+
+- `read()` -- returns temperature in degrees Celsius; returns
+  `MAX6675_ERR_OPEN` if thermocouple is disconnected
+- `read_raw()` -- returns the raw 16-bit SPI frame for diagnostics
+
+## Usage
+
+```c
+max6675_t tc;
+max6675_init(&tc, &spi_hal);
+
+float temp;
+max6675_err_t err = max6675_read(&tc, &temp);
+if (err == MAX6675_OK) {
+    // temp is in degrees Celsius
+} else if (err == MAX6675_ERR_OPEN) {
+    // thermocouple disconnected
+}
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
 ## Known issues
 
-TODO.
+- K-type only (no cold-junction compensation in software).
+- Minimum conversion time is 220 ms between reads (hardware limitation).
 
 ## How to test
 
@@ -53,17 +73,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

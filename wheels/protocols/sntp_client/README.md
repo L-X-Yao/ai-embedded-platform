@@ -1,70 +1,66 @@
-# sntp_client — TODO: one-line description
+# sntp_client
 
 **Status: candidate**
 **Layer: L2 (protocols)**
 
-TODO: 2-3 sentence description.
+SNTP v4 packet codec and clock offset calculation per RFC 4330. Builds
+48-byte SNTP request packets, parses server responses, and computes clock
+offset and round-trip delay from NTP timestamps. No transport -- caller
+handles UDP send/receive. Includes NTP-to-Unix and Unix-to-NTP conversions.
+Pure C99, no heap, fully reentrant.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-06):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no standalone SNTP codec. This wheel provides the packet-level
+primitives needed to synchronize an RTC or soft clock without pulling in
+a full network stack.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "sntp_client.h"
+
+int               sntp_client_build_request(uint8_t *buf, size_t buf_size,
+                                            const sntp_timestamp_t *tx_time);
+sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
+                                             sntp_response_t *out);
+sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
+                                      const sntp_timestamp_t *t1,
+                                      const sntp_timestamp_t *t4,
+                                      sntp_result_t *out);
+sntp_timestamp_t  sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms);
+void              sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,
+                                          uint32_t *unix_sec, uint16_t *ms);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+/* Build and send request */
+uint8_t req[SNTP_PACKET_SIZE];
+sntp_timestamp_t t1 = sntp_client_unix_to_ntp(now_sec, now_ms);
+sntp_client_build_request(req, sizeof(req), &t1);
+udp_send(req, SNTP_PACKET_SIZE);
+
+/* Parse response and compute offset */
+sntp_response_t resp;
+sntp_client_parse_response(rx_buf, rx_len, &resp);
+
+sntp_timestamp_t t4 = sntp_client_unix_to_ntp(arrival_sec, arrival_ms);
+sntp_result_t result;
+sntp_client_compute(&resp, &t1, &t4, &result);
+/* result.offset_ms = local clock error, result.unix_sec = server time */
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/protocols/sntp_client/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_sntp_client
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

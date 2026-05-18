@@ -1,70 +1,51 @@
-# hysteresis — TODO: one-line description
+# hysteresis
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Schmitt-trigger-style threshold comparator with configurable hysteresis band.
+Switches HIGH when value >= thresh_high, LOW when value <= thresh_low.
+Values inside the dead band keep the previous state. NaN inputs are ignored.
+Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no software hysteresis comparator. This is a common signal-conditioning
+primitive needed by sensor drivers and alarm logic across projects.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "hysteresis.h"
+
+hysteresis_err_t hysteresis_init(hysteresis_t *ctx, float thresh_low, float thresh_high);
+bool             hysteresis_feed(hysteresis_t *ctx, float value);
+bool             hysteresis_get_state(const hysteresis_t *ctx);
+hysteresis_err_t hysteresis_reset(hysteresis_t *ctx);
+hysteresis_err_t hysteresis_set_thresholds(hysteresis_t *ctx,
+                                           float thresh_low, float thresh_high);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+hysteresis_t h;
+hysteresis_init(&h, 25.0f, 30.0f);  /* ON above 30, OFF below 25 */
+
+bool fan_on = hysteresis_feed(&h, temperature);
+if (fan_on) gpio_set(FAN_PIN);
+else        gpio_clear(FAN_PIN);
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/primitives/hysteresis/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_hysteresis
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

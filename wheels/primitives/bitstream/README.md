@@ -1,47 +1,70 @@
-# bitstream — TODO: one-line description
+# bitstream -- bit-level read/write over a byte buffer
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Bit-level reader/writer that packs and unpacks N-bit unsigned values
+from/to a byte buffer at arbitrary bit offsets. LSB-first packing.
+Useful for packed protocols (CRSF, SBUS, CAN signals) and binary
+serialization formats.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. Bit-level packing is needed by SBUS, CRSF, CAN signal
+extraction, and other packed binary protocols in the wheel ecosystem.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF equivalent. Textbook utility self-written for platform convention
+consistency and test harness integration.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+None.
 
 ## API
 
 ```c
-/* TODO: document public API */
+bitstream_err_t bitstream_init(bitstream_t *ctx, uint8_t *buf, size_t cap_bytes);
+bitstream_err_t bitstream_write(bitstream_t *ctx, uint32_t value, uint8_t nbits);
+bitstream_err_t bitstream_read(bitstream_t *ctx, uint8_t nbits, uint32_t *out);
+size_t          bitstream_tell(const bitstream_t *ctx);
+bitstream_err_t bitstream_seek(bitstream_t *ctx, size_t bit_pos);
+bitstream_err_t bitstream_reset(bitstream_t *ctx);
+```
+
+- `write()` -- write up to 32 bits (LSB first)
+- `read()` -- read up to 32 bits (LSB first)
+- `seek()` -- jump to arbitrary bit position
+- Returns `BITSTREAM_ERR_OVERFLOW` if read/write exceeds buffer capacity
+- Caller provides backing buffer; no heap allocation
+
+## Usage
+
+```c
+uint8_t buf[4] = {0};
+bitstream_t bs;
+bitstream_init(&bs, buf, sizeof(buf));
+
+bitstream_write(&bs, 0x1FF, 9);   /* write 9-bit value */
+bitstream_write(&bs, 3, 2);       /* write 2-bit value */
+
+bitstream_seek(&bs, 0);
+uint32_t val;
+bitstream_read(&bs, 9, &val);     /* val == 0x1FF */
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
 
 ## Known issues
 
-TODO.
+None.
 
 ## How to test
 
@@ -53,17 +76,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

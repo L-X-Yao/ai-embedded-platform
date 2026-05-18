@@ -1,70 +1,63 @@
-# dhcp_packet — TODO: one-line description
+# dhcp_packet
 
 **Status: candidate**
 **Layer: L2 (protocols)**
 
-TODO: 2-3 sentence description.
+Stateless DHCP message builder and parser per RFC 2131. Handles
+DISCOVER/OFFER/REQUEST/ACK message types, option iteration, and common
+option extraction (subnet, router, DNS, lease time). All buffers are
+caller-provided. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-09):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has DHCP integrated into its network stack. This wheel provides a
+standalone packet codec for bare-metal Ethernet stacks (e.g. W5500, ENC28J60)
+that do not use VSF's full TCP/IP.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "dhcp_packet.h"
+
+int      dhcp_packet_parse(const uint8_t *buf, size_t len, dhcp_header_t *hdr);
+int      dhcp_packet_next_option(const uint8_t *buf, size_t len,
+                                 size_t *offset, dhcp_option_t *opt);
+int      dhcp_packet_get_option(const uint8_t *buf, size_t len,
+                                uint8_t code, dhcp_option_t *opt);
+int      dhcp_packet_build_discover(uint8_t *buf, size_t cap,
+                                    uint32_t xid, const uint8_t mac[6]);
+int      dhcp_packet_build_request(uint8_t *buf, size_t cap,
+                                   uint32_t xid, const uint8_t mac[6],
+                                   const uint8_t req_ip[4],
+                                   const uint8_t server_ip[4]);
+uint32_t dhcp_packet_option_u32(const dhcp_option_t *opt);
+void     dhcp_packet_option_ip(const dhcp_option_t *opt, uint8_t ip[4]);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+uint8_t pkt[576];
+int len = dhcp_packet_build_discover(pkt, sizeof(pkt), xid, mac);
+udp_send(pkt, len);  /* send to 255.255.255.255:67 */
+
+/* On reply: */
+dhcp_header_t hdr;
+dhcp_packet_parse(rx_buf, rx_len, &hdr);
+if (hdr.msg_type == DHCP_MSG_OFFER) {
+    /* hdr.yiaddr contains offered IP */
+}
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/protocols/dhcp_packet/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_dhcp_packet
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

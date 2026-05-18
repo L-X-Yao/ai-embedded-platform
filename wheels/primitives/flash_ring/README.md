@@ -1,47 +1,84 @@
-# flash_ring — TODO: one-line description
+# flash_ring -- flash-backed circular FIFO with persistent header
 
 **Status: candidate**
 **Layer: L0 (primitives)**
 
-TODO: 2-3 sentence description.
+Flash-backed circular FIFO for storing fixed-size data frames across
+power cycles. Manages a persistent header sector that tracks write/read
+indices and frame count. Supports push, peek by index, pop, bulk discard,
+and configurable header flush interval to reduce flash wear.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. Flash-backed ring buffers are essential for data loggers,
+black-box recorders, and telemetry systems that must survive power loss.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-06):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF equivalent for a standalone flash ring buffer. Self-written for
+transport-agnostic flash HAL injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+None. Flash HAL injected via `flash_ring_io_t` callbacks (erase_sector,
+write, read).
 
 ## API
 
 ```c
-/* TODO: document public API */
+flash_ring_err_t flash_ring_init(flash_ring_t *ring,
+                                 const flash_ring_io_t *io,
+                                 const flash_ring_cfg_t *cfg);
+flash_ring_err_t flash_ring_push(flash_ring_t *ring,
+                                 const uint8_t *frame, uint16_t len);
+flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
+                                 uint8_t *buf, uint16_t len);
+flash_ring_err_t flash_ring_pop(flash_ring_t *ring);
+uint32_t         flash_ring_count(const flash_ring_t *ring);
+flash_ring_err_t flash_ring_discard_all(flash_ring_t *ring);
+flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
+```
+
+- `push()` -- append a frame (overwrites oldest when full)
+- `peek()` -- read frame by index without consuming
+- `pop()` -- discard the oldest frame
+- `flush_header()` -- force-write persistent header to flash
+
+## Usage
+
+```c
+flash_ring_t ring;
+flash_ring_cfg_t cfg = {
+    .slot_size = 64,
+    .total_slots = 256,
+    .sector_size = 4096,
+    .header_addr = 0x00000,
+    .data_start_addr = 0x01000,
+    .persist_interval = 16    /* flush header every 16 writes */
+};
+flash_ring_init(&ring, &flash_io, &cfg);
+
+uint8_t frame[64];
+flash_ring_push(&ring, frame, 64);
+
+uint8_t out[64];
+flash_ring_peek(&ring, 0, out, 64);
+flash_ring_pop(&ring);
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected flash HAL)
 
 ## Known issues
 
-TODO.
+- Slot size is fixed at init time; variable-length frames are not supported.
+- Header sector must be a dedicated flash sector (not shared with data).
 
 ## How to test
 
@@ -53,17 +90,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

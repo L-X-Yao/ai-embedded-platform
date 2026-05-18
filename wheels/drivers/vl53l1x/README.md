@@ -1,47 +1,68 @@
-# vl53l1x — TODO: one-line description
+# vl53l1x -- ST VL53L1X time-of-flight distance sensor driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the ST VL53L1X time-of-flight (ToF) laser
+distance sensor. I2C interface injected via callbacks (uses 16-bit register
+addresses, unlike most I2C sensors). Continuous ranging mode with 16-bit
+millimeter distance output, up to 4 meters range.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. VL53L1X is widely used for obstacle detection, gesture
+sensing, and proximity measurement in robotics and IoT.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for VL53L1X. Self-written for zero-dependency I2C HAL
+injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+I2C HAL with 16-bit register addressing (injected via `vl53l1x_i2c_t`
+callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+vl53l1x_err_t vl53l1x_init(vl53l1x_t *dev, const vl53l1x_i2c_t *i2c,
+                            const vl53l1x_cfg_t *cfg);
+vl53l1x_err_t vl53l1x_read_distance(vl53l1x_t *dev, uint16_t *dist_mm);
+vl53l1x_err_t vl53l1x_start_ranging(vl53l1x_t *dev);
+vl53l1x_err_t vl53l1x_stop_ranging(vl53l1x_t *dev);
+```
+
+## Usage
+
+```c
+vl53l1x_t tof;
+vl53l1x_cfg_t cfg = { .addr = VL53L1X_ADDR_DEFAULT };
+vl53l1x_init(&tof, &i2c_hal, &cfg);
+
+vl53l1x_start_ranging(&tof);
+
+uint16_t dist;
+vl53l1x_read_distance(&tof, &dist);
+// dist in millimeters
+
+vl53l1x_stop_ranging(&tof);
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. I2C address is runtime-configurable via `vl53l1x_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
 ## Known issues
 
-TODO.
+- I2C HAL must support 16-bit register addresses (different from standard
+  8-bit register HAL used by most other driver wheels).
+- Timing budget and distance mode configuration not exposed.
 
 ## How to test
 
@@ -53,17 +74,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

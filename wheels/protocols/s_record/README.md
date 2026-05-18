@@ -1,70 +1,51 @@
-# s_record — TODO: one-line description
+# s_record
 
 **Status: candidate**
 **Layer: L2 (protocols)**
 
-TODO: 2-3 sentence description.
+Motorola S-Record (SREC) firmware format parser and encoder. Handles all
+record types: S0 (header), S1/S2/S3 (data with 16/24/32-bit address),
+S5 (record count), and S7/S8/S9 (end-of-file). Checksum validation included.
+Complement to the intel_hex wheel. Useful for bootloaders and firmware update
+protocols. Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no S-Record parser. This wheel is needed by bootloaders that accept
+.srec/.s19 files over UART, USB, or OTA update channels.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "s_record.h"
+
+s_record_err_t s_record_decode(const char *line, size_t len, s_record_line_t *out);
+s_record_err_t s_record_encode(const s_record_line_t *rec,
+                                char *buf, size_t cap, size_t *out_len);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+/* Parse one line from a .srec file */
+const char *line = "S1130100214601360121470136007EFE09D21901A8";
+s_record_line_t rec;
+if (s_record_decode(line, strlen(line), &rec) == S_RECORD_OK) {
+    if (rec.type == S_RECORD_S1) {
+        flash_write(rec.address, rec.data, rec.data_len);
+    }
+}
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/protocols/s_record/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_s_record
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

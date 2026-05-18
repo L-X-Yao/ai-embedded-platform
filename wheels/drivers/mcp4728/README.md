@@ -1,47 +1,66 @@
-# mcp4728 — TODO: one-line description
+# mcp4728 -- Microchip MCP4728 4-channel 12-bit DAC driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the Microchip MCP4728 4-channel 12-bit
+digital-to-analog converter. I2C interface injected via callbacks.
+Supports single-channel and all-channel writes using the fast write
+command. 12-bit resolution (0-4095 values).
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. MCP4728 is a popular multi-channel DAC for analog
+signal generation in test equipment, audio, and control systems.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for MCP4728. Self-written for zero-dependency I2C HAL
+injection and platform conventions.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+I2C HAL (injected via `mcp4728_i2c_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+mcp4728_err_t mcp4728_init(mcp4728_t *dev, const mcp4728_i2c_t *i2c,
+                           const mcp4728_cfg_t *cfg);
+mcp4728_err_t mcp4728_write_channel(mcp4728_t *dev, uint8_t channel,
+                                    uint16_t value);
+mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4]);
+```
+
+- `write_channel()` -- write one channel (0-3), values > 4095 rejected
+- `write_all()` -- write all 4 channels in one I2C transaction
+
+## Usage
+
+```c
+mcp4728_t dac;
+mcp4728_cfg_t cfg = { .addr = MCP4728_ADDR_DEFAULT };
+mcp4728_init(&dac, &i2c_hal, &cfg);
+
+mcp4728_write_channel(&dac, 0, 2048);  /* channel 0 to mid-scale */
+
+uint16_t vals[4] = { 0, 1024, 2048, 4095 };
+mcp4728_write_all(&dac, vals);
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. I2C address is runtime-configurable via `mcp4728_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
 ## Known issues
 
-TODO.
+- EEPROM write (persistent output on power-up) not implemented.
+- Gain and voltage reference selection not implemented.
 
 ## How to test
 
@@ -53,17 +72,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 

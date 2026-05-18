@@ -1,70 +1,53 @@
-# j1939 — TODO: one-line description
+# j1939
 
 **Status: candidate**
 **Layer: L2 (protocols)**
 
-TODO: 2-3 sentence description.
+SAE J1939 CAN identifier and PGN (Parameter Group Number) codec. Encodes
+and decodes 29-bit extended CAN identifiers into priority, PGN, source
+address, and destination address fields. Distinguishes PDU1 (peer-to-peer,
+PF < 240) from PDU2 (broadcast, PF >= 240). Pure C99, no heap, no OS.
 
-## Origin
+## Why not VSF native?
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
-
-## Why self-written?
-
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
-
-## Dependencies
-
-TODO: list wheel dependencies (or "None.").
+VSF has no J1939 support. J1939 is the standard CAN application layer for
+heavy-duty vehicles, agricultural equipment, and industrial machinery.
 
 ## API
 
 ```c
-/* TODO: document public API */
+#include "j1939.h"
+
+j1939_err_t j1939_decode_id(uint32_t can_id, j1939_id_t *out);
+j1939_err_t j1939_encode_id(const j1939_id_t *fields, uint32_t *can_id);
+uint32_t    j1939_pgn_from_id(uint32_t can_id);
+bool        j1939_is_pdu1(uint32_t pgn);
 ```
 
-## Configuration (compile-time)
+## Usage
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+```c
+/* Decode a received CAN ID */
+j1939_id_t id;
+j1939_decode_id(0x18FEF200, &id);
+/* id.priority=6, id.pgn=0xFEF2 (Fuel Economy), id.source=0x00 */
+
+/* Encode a CAN ID for transmission */
+j1939_id_t tx = { .priority = 3, .pgn = 0xFF00, .source = 0x80 };
+uint32_t can_id;
+j1939_encode_id(&tx, &can_id);
+can_send(can_id, data, 8);
+```
+
+## Dependencies
+
+None. Pure C99.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
-
-## Known issues
-
-TODO.
-
-## How to test
-
-```bash
-cd wheels/protocols/j1939/test
-cmake -GNinja -S . -B build && cmake --build build
-./build/test_j1939
-```
+- [x] Host simulation (gcc/cmake)
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
-
-## API convention deviations
-
-None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
-
-## Responsible human
-
-@user

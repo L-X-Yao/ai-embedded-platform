@@ -1,47 +1,66 @@
-# dps310 — TODO: one-line description
+# dps310 -- Infineon DPS310 barometric pressure and temperature sensor driver
 
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-TODO: 2-3 sentence description.
+Platform-agnostic driver for the Infineon DPS310 barometric pressure and
+temperature sensor. I2C interface injected via callbacks. Implements the
+DPS310 compensation algorithm from the datasheet with float arithmetic.
+Reads calibration coefficients on init and applies scaling factors per
+oversampling setting.
 
 ## Origin
 
-TODO: "Extracted from `projects/<proj>/src/...`" or "Proactive build for <use case>".
+Proactive build. DPS310 is a popular high-precision barometric sensor
+used in drones, indoor navigation, and weather monitoring.
 
-## Why self-written?
+## Why not VSF native?
 
-Searched GitHub/embedded ecosystem (2026-05-13):
-
-- TODO: list evaluated alternatives and why they were not suitable.
-- No suitable zero-dependency C99 implementation found.
-
-Reference: TODO (or "None").
+No VSF component for DPS310. Self-written for zero-dependency I2C HAL
+injection and platform convention consistency.
 
 ## Dependencies
 
-TODO: list wheel dependencies (or "None.").
+I2C HAL (injected via `dps310_i2c_t` callbacks). No other dependencies.
 
 ## API
 
 ```c
-/* TODO: document public API */
+dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
+                         const dps310_cfg_t *cfg);
+dps310_err_t dps310_read(dps310_t *dev, dps310_data_t *out);
+dps310_err_t dps310_reset(dps310_t *dev);
+```
+
+Output: `dps310_data_t { float temperature_c; float pressure_pa; }`
+
+## Usage
+
+```c
+dps310_t sensor;
+dps310_cfg_t cfg = { .addr = DPS310_ADDR_HIGH,
+                     .osrs_t = DPS310_OVERSAMPLING_4,
+                     .osrs_p = DPS310_OVERSAMPLING_16 };
+dps310_init(&sensor, &i2c_hal, &cfg);
+
+dps310_data_t data;
+dps310_read(&sensor, &data);
+// data.temperature_c, data.pressure_pa
 ```
 
 ## Configuration (compile-time)
 
-| Define | Default | Purpose |
-|--------|---------|---------|
-| TODO   | TODO    | TODO    |
+None. Oversampling and I2C address are runtime-configurable via
+`dps310_cfg_t`.
 
 ## Supported platforms
 
-- [x] Host (sim) — TODO: date
-- [ ] TODO: real hardware target — not yet verified
+- [x] Host (sim)
+- [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
 ## Known issues
 
-TODO.
+- I2C only; SPI not implemented.
 
 ## How to test
 
@@ -53,17 +72,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): TODO
+- Unit tests (sim): PASS
 - HIL: N/A
 
 ## API convention deviations
 
 None.
-
-## API review
-
-- **Date**: TODO
-- **Key decisions**: TODO
 
 ## Responsible human
 
