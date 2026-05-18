@@ -20,7 +20,7 @@ uint16_t hdlc_fcs16(const uint8_t *data, size_t len)
 
     uint16_t fcs = HDLC_FCS_INIT;
     for (size_t i = 0; i < len; i++) {
-        fcs ^= (uint16_t)data[i];
+        fcs = (uint16_t)(fcs ^ (uint16_t)data[i]);
         for (int j = 0; j < 8; j++) {
             if (fcs & 1u) {
                 fcs = (uint16_t)((fcs >> 1) ^ 0x8408u);
@@ -200,8 +200,8 @@ hdlc_err_t hdlc_parser_get_frame(const hdlc_parser_t *parser,
     size_t payload_len = parser->idx - 2;
     uint16_t computed = hdlc_fcs16(parser->buf, payload_len);
 
-    uint16_t rx_fcs = (uint16_t)((uint16_t)parser->buf[parser->idx - 1] << 8) |
-                      (uint16_t)parser->buf[parser->idx - 2];
+    uint16_t rx_fcs = (uint16_t)(((uint16_t)parser->buf[parser->idx - 1] << 8) |
+                      (uint16_t)parser->buf[parser->idx - 2]);
 
     if (computed != rx_fcs) return HDLC_ERR_FCS;
 

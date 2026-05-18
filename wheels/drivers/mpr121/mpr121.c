@@ -149,7 +149,7 @@ mpr121_err_t mpr121_read_electrode(mpr121_t *dev, uint8_t channel,
     if (err != MPR121_OK) return err;
 
     /* Low byte first, high byte second; only 10 bits valid */
-    *value = (uint16_t)(((uint16_t)buf[1] << 8 | (uint16_t)buf[0])
+    *value = (uint16_t)((unsigned)((uint16_t)buf[1] << 8 | (uint16_t)buf[0])
                         & ELECTRODE_DATA_MASK);
 
     return MPR121_OK;

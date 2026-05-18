@@ -253,8 +253,8 @@ TEST(test_fcs_known_good_frame)
 
     /* Verify the FCS stored in parser matches computed FCS */
     ASSERT_TRUE(parser.idx >= 2);
-    uint16_t stored_fcs = (uint16_t)((uint16_t)parser.buf[parser.idx - 1] << 8) |
-                          (uint16_t)parser.buf[parser.idx - 2];
+    uint16_t stored_fcs = (uint16_t)(((uint16_t)parser.buf[parser.idx - 1] << 8) |
+                          (uint16_t)parser.buf[parser.idx - 2]);
     ASSERT_EQ_HEX(stored_fcs, fcs);
 
     /* Verify get_frame succeeds (FCS check passes) */

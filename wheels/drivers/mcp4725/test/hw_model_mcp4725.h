@@ -86,7 +86,7 @@ static bool mcp4725_model_read(void *ctx, uint8_t addr,
     if (len >= 5) {
         /* Byte 0: [RDY/BSY][POR][C1:C0][PD1:PD0][D11:D10] */
         uint8_t rdy = m->eeprom_busy ? 0x00u : 0x80u;
-        data[0] = (uint8_t)(rdy | (m->dac_pd << 2) |
+        data[0] = (uint8_t)(rdy | ((unsigned)m->dac_pd << 2) |
                             ((m->dac_value >> 10) & 0x03u));
         /* Byte 1: [D9:D2] */
         data[1] = (uint8_t)((m->dac_value >> 2) & 0xFFu);

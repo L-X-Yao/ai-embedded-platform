@@ -178,8 +178,8 @@ uint16_t framebuffer_get_pixel(const framebuffer_t *fb, uint16_t x,
     }
     case FB_FORMAT_RGB565: {
         uint32_t idx = ((uint32_t)y * fb->stride) + ((uint32_t)x * 2u);
-        return (uint16_t)((uint16_t)fb->buf[idx] << 8) |
-               (uint16_t)fb->buf[idx + 1u];
+        return (uint16_t)(((uint16_t)fb->buf[idx] << 8) |
+               (uint16_t)fb->buf[idx + 1u]);
     }
     default:
         return 0u;

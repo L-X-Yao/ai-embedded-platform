@@ -329,8 +329,8 @@ enc28j60_err_t enc28j60_receive(enc28j60_t *dev, uint8_t *frame,
     /* Read next packet pointer (2 bytes, little-endian) */
     uint8_t hdr[6];
     read_buffer(dev, hdr, 6);
-    uint16_t next_pkt = (uint16_t)((uint16_t)hdr[1] << 8) | hdr[0];
-    uint16_t rx_len   = (uint16_t)((uint16_t)hdr[3] << 8) | hdr[2];
+    uint16_t next_pkt = (uint16_t)((uint16_t)hdr[1] << 8 | hdr[0]);
+    uint16_t rx_len   = (uint16_t)((uint16_t)hdr[3] << 8 | hdr[2]);
     /* hdr[4..5] = status bits (ignored here) */
 
     /* Sanity: rx_len includes CRC (4 bytes). Frame length = rx_len - 4.

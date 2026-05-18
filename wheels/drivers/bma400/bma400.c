@@ -49,9 +49,9 @@ static int16_t sign_extend_12(uint8_t lo, uint8_t hi)
     /* BMA400: lower 4 bits of hi byte are data (bits 11:8).
      * raw 12-bit unsigned = (hi & 0x0F) << 8 | lo.
      * If bit 11 is set, sign-extend by OR-ing 0xF000. */
-    uint16_t raw = (uint16_t)((uint16_t)(hi & 0x0Fu) << 8) | (uint16_t)lo;
+    uint16_t raw = (uint16_t)((uint16_t)(hi & 0x0Fu) << 8 | (uint16_t)lo);
     if (raw & 0x0800u) {
-        raw |= 0xF000u;
+        raw = (uint16_t)(raw | 0xF000u);
     }
     return (int16_t)raw;
 }

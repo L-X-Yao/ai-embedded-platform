@@ -85,7 +85,7 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     mock_read_count++;
     if (len >= 5) {
         uint8_t rdy = mock_eeprom_busy ? 0x00u : 0x80u;
-        data[0] = (uint8_t)(rdy | (mock_dac_pd << 2) |
+        data[0] = (uint8_t)(rdy | ((unsigned)mock_dac_pd << 2) |
                              ((mock_dac_value >> 10) & 0x03u));
         data[1] = (uint8_t)((mock_dac_value >> 2) & 0xFFu);
         data[2] = (uint8_t)((mock_dac_value & 0x03u) << 6);

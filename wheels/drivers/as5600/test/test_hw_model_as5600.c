@@ -170,8 +170,8 @@ TEST(test_set_start_position)
     ASSERT_EQ(err, AS5600_OK);
 
     /* Verify ZPOS register updated */
-    uint16_t zpos = ((uint16_t)model.hw.regs[AS5600_REG_ZPOS_H] << 8)
-                  | model.hw.regs[AS5600_REG_ZPOS_L];
+    uint16_t zpos = (uint16_t)(((uint16_t)model.hw.regs[AS5600_REG_ZPOS_H] << 8)
+                  | model.hw.regs[AS5600_REG_ZPOS_L]);
     ASSERT_EQ(zpos, 1024);
 }
 
@@ -184,8 +184,8 @@ TEST(test_set_max_angle)
     as5600_err_t err = as5600_set_max_angle(&dev, 2048);
     ASSERT_EQ(err, AS5600_OK);
 
-    uint16_t mang = ((uint16_t)model.hw.regs[AS5600_REG_MANG_H] << 8)
-                  | model.hw.regs[AS5600_REG_MANG_L];
+    uint16_t mang = (uint16_t)(((uint16_t)model.hw.regs[AS5600_REG_MANG_H] << 8)
+                  | model.hw.regs[AS5600_REG_MANG_L]);
     ASSERT_EQ(mang, 2048);
 }
 

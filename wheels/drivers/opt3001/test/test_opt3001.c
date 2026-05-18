@@ -57,7 +57,7 @@ static bool opt_mock_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
     if (mock_i2c_should_fail()) return false;
     mock_write_count++;
     if (len == 2) {
-        uint16_t val = ((uint16_t)buf[0] << 8) | buf[1];
+        uint16_t val = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
         set_reg16(reg, val);
     }
     return true;

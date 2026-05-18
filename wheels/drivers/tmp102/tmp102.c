@@ -43,7 +43,7 @@ static bool write16(const tmp102_t *dev, uint8_t reg,
 /* Assemble big-endian pair into 12-bit signed raw (bits[15:4]). */
 static int16_t assemble_raw12(uint8_t msb, uint8_t lsb)
 {
-    uint16_t u16 = (uint16_t)msb << 8 | lsb;
+    uint16_t u16 = (uint16_t)((uint16_t)msb << 8 | lsb);
     int16_t raw = (int16_t)u16;
     raw >>= 4;  /* sign-extending arithmetic shift */
     return raw;

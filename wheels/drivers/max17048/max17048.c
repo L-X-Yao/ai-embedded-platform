@@ -113,7 +113,7 @@ max17048_err_t max17048_set_alert_threshold(max17048_t *dev, uint8_t threshold_p
 
     uint16_t cfg;
     if (!rd16(dev, REG_CONFIG, &cfg)) return MAX17048_ERR_I2C;
-    cfg = (cfg & 0xFFE0u) | (uint16_t)(32u - threshold_pct);
+    cfg = (uint16_t)((cfg & 0xFFE0u) | (32u - threshold_pct));
     return wr16(dev, REG_CONFIG, cfg) ? MAX17048_OK : MAX17048_ERR_I2C;
 }
 
@@ -133,7 +133,7 @@ max17048_err_t max17048_sleep(max17048_t *dev)
     if (!dev) return MAX17048_ERR_PARAM;
     uint16_t cfg;
     if (!rd16(dev, REG_CONFIG, &cfg)) return MAX17048_ERR_I2C;
-    cfg |= (1u << 7);
+    cfg = (uint16_t)(cfg | (1u << 7));
     return wr16(dev, REG_CONFIG, cfg) ? MAX17048_OK : MAX17048_ERR_I2C;
 }
 

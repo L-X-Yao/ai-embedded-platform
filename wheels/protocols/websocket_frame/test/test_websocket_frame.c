@@ -49,7 +49,7 @@ TEST(test_parse_close)
     ASSERT_EQ(websocket_frame_parse(data, sizeof(data), &f), WEBSOCKET_FRAME_OK);
     ASSERT_EQ(f.opcode, WEBSOCKET_FRAME_OPCODE_CLOSE);
     ASSERT_EQ(f.payload_len, 2);
-    uint16_t code = ((uint16_t)f.payload[0] << 8) | f.payload[1];
+    uint16_t code = (uint16_t)(((uint16_t)f.payload[0] << 8) | f.payload[1]);
     ASSERT_EQ(code, 1000);
 }
 

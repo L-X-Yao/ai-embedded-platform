@@ -29,8 +29,8 @@ static void mock_set_reg16(uint8_t reg, uint16_t val)
 
 static uint16_t mock_get_reg16(uint8_t reg)
 {
-    return (uint16_t)((uint16_t)mock_regs[reg + 1] << 8u) |
-           (uint16_t)mock_regs[reg];
+    return (uint16_t)((uint16_t)mock_regs[reg + 1] << 8u |
+           (uint16_t)mock_regs[reg]);
 }
 
 static const veml7700_i2c_t mock_i2c = {

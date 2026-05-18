@@ -145,7 +145,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         return 0x00U;
 
     case SPI_GOT_ADDR_HI:
-        mock_spi_addr |= tx;
+        mock_spi_addr = (uint16_t)(mock_spi_addr | tx);
         mock_spi_state = SPI_GOT_ADDR_LO;
         return 0x00U;
 

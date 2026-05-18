@@ -104,8 +104,8 @@ static void ds3231_model_set_12h_mode(ds3231_model_t *m, uint8_t hour12,
                                       bool pm)
 {
     uint8_t val = 0x40u;  /* bit 6 = 12-hour mode */
-    if (pm) val |= 0x20u; /* bit 5 = PM */
-    val |= ds3231_bin2bcd(hour12) & 0x1Fu;
+    if (pm) val = (uint8_t)(val | 0x20u); /* bit 5 = PM */
+    val = (uint8_t)(val | (ds3231_bin2bcd(hour12) & 0x1Fu));
     m->hw.regs[DS3231_REG_HOURS] = val;
 }
 

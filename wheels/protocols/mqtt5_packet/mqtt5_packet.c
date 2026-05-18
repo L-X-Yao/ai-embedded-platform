@@ -201,7 +201,7 @@ int mqtt5_build_publish(uint8_t *buf, uint16_t size,
     if (total > size) return MQTT5_ERR_SIZE;
 
     uint8_t byte0 = 0x30; /* PUBLISH = 3 << 4 */
-    byte0 |= (uint8_t)((pub->qos & 0x03) << 1);
+    byte0 = (uint8_t)(byte0 | (uint8_t)((pub->qos & 0x03) << 1));
     if (pub->retain) byte0 |= 0x01;
 
     int pos = 0;

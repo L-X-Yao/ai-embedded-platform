@@ -37,7 +37,7 @@ static opt3001_err_t read_reg16(const opt3001_t *dev, uint8_t reg,
     uint8_t buf[2];
     if (!dev->i2c->read_regs(dev->i2c->ctx, dev->addr, reg, buf, 2))
         return OPT3001_ERR_I2C;
-    *val = ((uint16_t)buf[0] << 8) | buf[1];
+    *val = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
     return OPT3001_OK;
 }
 

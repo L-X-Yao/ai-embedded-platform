@@ -93,10 +93,10 @@ tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
         return err;
 
     /* 16-bit little-endian: low byte first */
-    out->c = (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
-    out->r = (uint16_t)buf[2] | ((uint16_t)buf[3] << 8);
-    out->g = (uint16_t)buf[4] | ((uint16_t)buf[5] << 8);
-    out->b = (uint16_t)buf[6] | ((uint16_t)buf[7] << 8);
+    out->c = (uint16_t)((uint16_t)buf[0] | ((uint16_t)buf[1] << 8));
+    out->r = (uint16_t)((uint16_t)buf[2] | ((uint16_t)buf[3] << 8));
+    out->g = (uint16_t)((uint16_t)buf[4] | ((uint16_t)buf[5] << 8));
+    out->b = (uint16_t)((uint16_t)buf[6] | ((uint16_t)buf[7] << 8));
     return TCS34725_OK;
 }
 

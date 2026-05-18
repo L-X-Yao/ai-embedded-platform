@@ -27,7 +27,7 @@ coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet
     pkt->type = (coap_packet_type_t)((data[0] >> 4) & 0x03);
     pkt->token_len = data[0] & 0x0F;
     pkt->code = data[1];
-    pkt->message_id = ((uint16_t)data[2] << 8) | data[3];
+    pkt->message_id = (uint16_t)(((uint16_t)data[2] << 8) | data[3]);
 
     size_t pos = 4;
 

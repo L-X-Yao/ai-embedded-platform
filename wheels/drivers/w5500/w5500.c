@@ -152,7 +152,7 @@ static uint16_t read_sock_reg16(const w5500_spi_t *s, uint8_t sock,
 {
     uint8_t buf[2];
     spi_read(s, addr, BSB_SOCK_REG(sock), buf, 2);
-    return (uint16_t)((uint16_t)buf[0] << 8) | buf[1];
+    return (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
 }
 
 /* ---------- helpers: wait for command completion ---------- */
