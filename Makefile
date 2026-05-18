@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt flybox-demo test-examples
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage audit-perf coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt flybox-demo test-examples
 
 help:
 	@echo "Usage: make <target>"
@@ -51,9 +51,9 @@ help:
 	@echo "  check-clones      detect duplicate code blocks across wheels (Q26)"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  ci-local          local CI gate: tests + audit + scaffold + doc-drift (pre-push hook)"
+	@echo "  ci-local          local CI gate: tests + null/sentinel/boundary + scaffold + audit + readme-examples + doc-drift + memory-audit (pre-push hook)"
 	@echo "  ci-local-full     ci-local + coverage gate + compile analysis + sanitizer"
-	@echo "  check             test + null/sentinel/boundary + scaffold + audit + UBSan + coverage gate + doc drift + memory audit"
+	@echo "  check             test + null/sentinel/boundary + scaffold + audit + UBSan + coverage gate + readme-examples + doc-drift + memory-audit"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
 	@echo "  install-hooks     configure git to use .githooks/ directory"
 	@echo "  ship M=\"msg\"      test + audit + commit + push"

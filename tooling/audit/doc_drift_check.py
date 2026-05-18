@@ -70,7 +70,7 @@ def count_audit_check_functions():
 def count_tooling_scripts():
     tooling = REPO / "tooling"
     count = 0
-    for subdir in ("audit", "test", "wheel", "session", "metrics", "ci", "fix"):
+    for subdir in ("audit", "test", "wheel", "session", "metrics", "ci"):
         d = tooling / subdir
         if d.is_dir():
             count += len([f for f in d.iterdir()

@@ -1,22 +1,21 @@
 # MCU Compatibility Matrix
 
-All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 compiler**. This matrix shows which bus interface each driver requires, so you can quickly find components that work with your hardware.
+All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 compiler**. This matrix shows which bus interface each driver requires, so you can quickly find components that work with your hardware.
 
 ## Quick reference: what bus does my MCU need?
 
 | Bus | Typical MCU support | Driver count |
 |-----|-------------------|-------------|
-| I2C | All modern MCUs (STM32, GD32, ESP32, nRF52, RP2040, RISC-V) | 68 |
-| SPI | All modern MCUs | 18 |
-| GPIO | All MCUs | 18 |
-| PWM | Most MCUs (timer peripheral) | 3 |
-| OneWire | Any MCU with GPIO (bit-banged) | 2 |
+| I2C | All modern MCUs (STM32, GD32, ESP32, nRF52, RP2040, RISC-V) | 77 |
+| SPI | All modern MCUs | 20 |
+| GPIO | All MCUs | 16 |
+| OneWire | Any MCU with GPIO (bit-banged) | 1 |
 
 > **No `#ifdef` per platform.** You inject your HAL callbacks at init time. The same driver binary runs on Cortex-M0, Cortex-M7, Xtensa, RISC-V, or x86 desktop (mock HAL for testing).
 
 ---
 
-## I2C drivers (68)
+## I2C drivers (77)
 
 ### Sensors -- Environmental
 
@@ -35,6 +34,7 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `sht40` | Sensirion SHT40 | temperature, humidity | high precision |
 | `shtc3` | Sensirion SHTC3 | temperature, humidity | low-power sleep mode |
 | `si7021` | Silicon Labs Si7021 | temperature, humidity | no-hold mode |
+| `htu21d` | TE HTU21D | temperature, humidity | CRC-8 validation |
 | `xgzp6816d` | CFSensor XGZP6816D | differential pressure | |
 
 ### Sensors -- Motion / IMU
@@ -42,6 +42,8 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | Driver | Chip | Axes | Extras |
 |--------|------|------|--------|
 | `adxl345` | ADI ADXL345 | 3-axis accel | motion interrupt |
+| `bma400` | Bosch BMA400 | 3-axis accel | ultra-low-power |
+| `bmi160` | Bosch BMI160 | 6-axis (accel + gyro) | step counter |
 | `bmi270` | Bosch BMI270 | 6-axis (accel + gyro) | config file loading (SPI) |
 | `bno055` | Bosch BNO055 | 9-axis (accel + gyro + mag) | onboard sensor fusion |
 | `icm42688` | TDK ICM-42688 | 6-axis (accel + gyro) | high performance |
@@ -51,12 +53,14 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `mpu6050` | InvenSense MPU6050 | 6-axis (accel + gyro) | |
 | `qmi8658a` | QST QMI8658A | 6-axis (accel + gyro) | temperature compensation |
 
-### Sensors -- Magnetic
+### Sensors -- Magnetic / Position
 
 | Driver | Chip | Axes | Extras |
 |--------|------|------|--------|
+| `as5600` | ams AS5600 | 12-bit rotary | magnetic position sensor |
 | `bmm150` | Bosch BMM150 | 3-axis mag | compensation algorithm |
 | `hmc5883l` | Honeywell HMC5883L | 3-axis mag | offset correction |
+| `lis3mdl` | ST LIS3MDL | 3-axis mag | configurable range |
 | `qmc5883p` | QST QMC5883P | 3-axis mag | calibration support |
 
 ### Sensors -- Light / Color / UV
@@ -77,6 +81,7 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 |--------|------|-----------|--------|
 | `lm75` | NXP LM75 | 9-12 bit | |
 | `mlx90614` | Melexis MLX90614 | non-contact IR | SMBus |
+| `pct2075` | NXP PCT2075 | 11 bit | LM75 successor |
 | `tmp102` | TI TMP102 | 12 bit | |
 | `tmp117` | TI TMP117 | 16 bit | high accuracy |
 
@@ -126,6 +131,7 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 | Driver | Chip | Type |
 |--------|------|------|
+| `ht16k33` | Holtek HT16K33 | 16x8 LED matrix/segment |
 | `is31fl3731` | ISSI IS31FL3731 | 9x16 LED matrix |
 
 ### I/O Expanders / Mux
@@ -150,6 +156,7 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 |--------|------|--------|--------|
 | `cst816s` | Hynitron CST816S | single | gesture recognition |
 | `ft6x36` | FocalTech FT6X36 | 1-2 | |
+| `mpr121` | NXP MPR121 | 12-ch capacitive | per-channel thresholds |
 
 ### Actuators -- I2C
 
@@ -157,6 +164,7 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 |--------|------|------|
 | `drv2605` | TI DRV2605 | haptic motor driver |
 | `mcp4725` | Microchip MCP4725 | 12-bit DAC |
+| `mcp4728` | Microchip MCP4728 | 4-ch 12-bit DAC |
 | `pca9685` | NXP PCA9685 | 16-ch PWM servo driver |
 
 ### Sensors -- Pulse / Bio
@@ -165,15 +173,15 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 |--------|------|----------|
 | `max30102` | Maxim MAX30102 | SpO2, heart rate |
 
-### RFID / NFC (I2C variant)
+### Storage -- I2C
 
-| Driver | Chip | Protocol |
-|--------|------|---------|
-| `rc522` | NXP MFRC522 | MIFARE (SPI, listed here for reference) |
+| Driver | Chip | Type | Extras |
+|--------|------|------|--------|
+| `at24cxx` | Atmel AT24Cxx | I2C EEPROM | 1KB-256KB, page-boundary splitting |
 
 ---
 
-## SPI drivers (18)
+## SPI drivers (20)
 
 ### Displays -- SPI
 
@@ -219,9 +227,15 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 |--------|------|------|
 | `apa102` | APA102 | addressable RGB LED |
 
+### RFID / NFC -- SPI
+
+| Driver | Chip | Protocol | Extras |
+|--------|------|---------|--------|
+| `rc522` | NXP MFRC522 | MIFARE | ISO/IEC 14443-A |
+
 ---
 
-## GPIO drivers (18)
+## GPIO drivers (16)
 
 ### Input
 
@@ -264,15 +278,9 @@ All 116 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `ws2812` | WS2812 | RGB addressable LED | 800kHz protocol |
 | `tm1637` | Titan TM1637 | 4-digit 7-segment | 2-wire GPIO |
 
-### Display -- GPIO
-
-| Driver | Chip | Type |
-|--------|------|------|
-| `tm1637` | (listed above) | |
-
 ---
 
-## OneWire drivers (2)
+## OneWire drivers (1)
 
 | Driver | Chip | Measures | Extras |
 |--------|------|----------|--------|

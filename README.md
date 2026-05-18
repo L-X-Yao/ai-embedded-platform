@@ -1,10 +1,10 @@
 # ai-embedded-platform
 
-264 production-grade C99 components for embedded systems.
+259 production-grade C99 components for embedded systems.
 
 [![CI](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/L-X-Yao/ai-embedded-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Components](https://img.shields.io/badge/components-264-green.svg)](wheels/README.md)
+[![Components](https://img.shields.io/badge/components-259-green.svg)](wheels/README.md)
 
 ## Why this library
 
@@ -73,14 +73,14 @@ Every component follows this same pattern: inject HAL via a struct of function p
 
 | Layer | Directory | Count | Examples |
 |-------|-----------|------:|----------|
-| L0 Primitives | `wheels/primitives/` | 78 | ring_buffer, crc32, state_machine, pid_controller, json_parser, aes128, kalman_1d |
-| L1 Drivers | `wheels/drivers/` | 116 | bme280, sht40, mpu6050, oled_ssd1306, w25qxx, ws2812, lora_sx1276, icm42688 |
-| L2 Protocols | `wheels/protocols/` | 48 | mqtt_packet, modbus_rtu, http_parser, nmea_parser, mavlink, coap_packet, crsf |
-| L3 Modules | `wheels/modules/` | 21 | cli_shell, data_logger, ota_manager, sensor_hub, mqtt_client, telemetry |
+| L0 Primitives | `wheels/primitives/` | 77 | ring_buffer, crc32, state_machine, pid_controller, json_parser, aes128, kalman_1d |
+| L1 Drivers | `wheels/drivers/` | 115 | bme280, sht40, mpu6050, oled_ssd1306, w25qxx, ws2812, lora_sx1276, icm42688 |
+| L2 Protocols | `wheels/protocols/` | 47 | mqtt_packet, modbus_rtu, http_parser, nmea_parser, mavlink, coap_packet, crsf |
+| L3 Modules | `wheels/modules/` | 20 | cli_shell, data_logger, ota_manager, sensor_hub, mqtt_client, telemetry |
 
 Full catalog with descriptions: [wheels/README.md](wheels/README.md)
 
-**Find components for your hardware:** [MCU Compatibility Matrix](docs/mcu-compatibility.md) -- all 116 drivers organized by bus type (I2C/SPI/GPIO/PWM/OneWire) and use case.
+**Find components for your hardware:** [MCU Compatibility Matrix](docs/mcu-compatibility.md) -- all 115 drivers organized by bus type (I2C/SPI/GPIO/PWM/OneWire) and use case.
 
 ## Architecture: HAL injection
 
