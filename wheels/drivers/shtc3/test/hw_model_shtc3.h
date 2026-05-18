@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_shtc3.h — datasheet-accurate command model for SHTC3
  *

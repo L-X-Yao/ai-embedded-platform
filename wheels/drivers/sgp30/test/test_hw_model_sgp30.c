@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_sgp30.c -- tests using hardware model
  *

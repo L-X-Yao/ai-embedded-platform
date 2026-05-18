@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_hmac_sha256.c -- property-based tests for hmac_sha256
  *

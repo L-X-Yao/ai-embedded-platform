@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_xgzp6816d.h — XGZP6816D hardware model
  *

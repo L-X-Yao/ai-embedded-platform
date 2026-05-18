@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_aht20.h -- AHT20 command-based hardware model
  *

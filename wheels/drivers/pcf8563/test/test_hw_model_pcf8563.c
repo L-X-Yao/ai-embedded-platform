@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_pcf8563.h"
 #include "pcf8563.h"

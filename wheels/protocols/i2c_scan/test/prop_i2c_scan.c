@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_i2c_scan.c — property-based tests for i2c_scan
  *

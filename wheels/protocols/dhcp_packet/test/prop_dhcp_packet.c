@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_dhcp_packet.c --- property-based tests for dhcp_packet
  *

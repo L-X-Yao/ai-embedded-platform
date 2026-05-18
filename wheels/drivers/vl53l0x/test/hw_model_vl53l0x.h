@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_vl53l0x.h — VL53L0X hardware register model from datasheet
  *

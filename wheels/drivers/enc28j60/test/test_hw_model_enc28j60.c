@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_enc28j60.c -- tests using ENC28J60 hardware register model
  *

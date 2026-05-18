@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_oled_ssd1306.h — SSD1306 OLED hardware command model
  *

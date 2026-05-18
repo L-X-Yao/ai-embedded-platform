@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_timeout.c — property-based tests for timeout
  *

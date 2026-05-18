@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_ds3231.c -- tests using DS3231 hardware register model
  *

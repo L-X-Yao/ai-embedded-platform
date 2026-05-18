@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_pca9685.c — tests using PCA9685 hardware register model
  *

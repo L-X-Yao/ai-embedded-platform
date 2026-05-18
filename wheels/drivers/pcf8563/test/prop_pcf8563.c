@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_pcf8563.c --- property-based tests for pcf8563
  *

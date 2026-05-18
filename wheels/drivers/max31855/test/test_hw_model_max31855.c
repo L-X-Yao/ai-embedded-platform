@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_max31855.c -- tests using MAX31855 hardware model
  *

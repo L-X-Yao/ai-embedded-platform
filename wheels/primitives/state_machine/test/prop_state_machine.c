@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_state_machine.c — property-based tests for state_machine
  *

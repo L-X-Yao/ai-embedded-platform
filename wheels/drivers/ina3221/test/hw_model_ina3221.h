@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ina3221.h -- INA3221 hardware register model from datasheet
  *

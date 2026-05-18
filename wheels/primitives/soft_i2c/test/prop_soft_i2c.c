@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_soft_i2c.c — property-based tests for soft_i2c
  *

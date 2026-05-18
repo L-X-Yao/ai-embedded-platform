@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lm75.h -- LM75 hardware register model from datasheet
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_lcd_st7789.c -- tests using ST7789 SPI display model
  *

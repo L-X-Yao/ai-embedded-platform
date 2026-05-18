@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lis3dh.h — LIS3DH hardware register model from datasheet
  *

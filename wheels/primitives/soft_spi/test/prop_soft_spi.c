@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_soft_spi.c --- property-based tests for soft_spi
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_bitfield.c — property-based tests for bitfield
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ccs811.h — CCS811 hardware register model from datasheet
  *

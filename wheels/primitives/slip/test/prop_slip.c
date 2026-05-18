@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_slip.c — property-based tests for slip
  *

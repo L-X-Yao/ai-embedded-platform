@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_htu21d.c — tests using command-based hardware model
  *

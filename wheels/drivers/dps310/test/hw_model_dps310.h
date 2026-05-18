@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_dps310.h — datasheet-accurate register model for DPS310
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_ring_log.c — property-based tests for ring_log
  *

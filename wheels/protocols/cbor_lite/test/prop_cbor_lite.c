@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_cbor_lite.c — property-based tests for cbor_lite
  *

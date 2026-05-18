@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_mag_cal.c — property-based tests for mag_cal
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_cst816s.h — datasheet-accurate register model for CST816S
  *

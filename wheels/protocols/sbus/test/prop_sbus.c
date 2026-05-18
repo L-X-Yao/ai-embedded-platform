@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_sbus.c -- property-based tests for sbus
  *

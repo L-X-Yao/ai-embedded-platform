@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_checksum.c — CBMC bounded model checking for checksum
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_xgzp6816d.c — tests using hardware model
  *

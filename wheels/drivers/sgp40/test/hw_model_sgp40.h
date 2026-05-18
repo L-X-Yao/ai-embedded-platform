@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_sgp40.h — SGP40 hardware model from datasheet
  *

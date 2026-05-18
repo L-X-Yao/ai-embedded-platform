@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_event_queue.c — property-based tests for event_queue
  *

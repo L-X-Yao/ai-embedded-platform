@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_w25qxx.c -- tests using W25QXX hardware model
  *

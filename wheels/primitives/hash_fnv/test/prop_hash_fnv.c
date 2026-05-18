@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_hash_fnv.c — property-based tests for hash_fnv
  *

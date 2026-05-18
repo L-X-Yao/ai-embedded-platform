@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_cc1101.h — datasheet-accurate SPI register model for cc1101
  *

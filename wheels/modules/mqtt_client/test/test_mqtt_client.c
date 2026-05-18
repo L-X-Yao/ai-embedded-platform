@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "mqtt_client.h"
 #include "mqtt_packet.h"

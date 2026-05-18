@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ht16k33.h -- HT16K33 hardware register model from datasheet
  *

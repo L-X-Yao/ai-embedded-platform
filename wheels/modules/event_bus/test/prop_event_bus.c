@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_event_bus.c — property-based tests for event_bus
  *

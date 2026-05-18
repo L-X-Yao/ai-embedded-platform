@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_cli_parser.c — property-based tests for cli_parser
  *

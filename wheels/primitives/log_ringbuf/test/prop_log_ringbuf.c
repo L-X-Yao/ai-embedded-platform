@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_log_ringbuf.c — property-based tests for log_ringbuf
  *

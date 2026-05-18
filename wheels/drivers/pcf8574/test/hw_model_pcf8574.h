@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_pcf8574.h -- PCF8574 I/O expander hardware model
  *

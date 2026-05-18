@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_sx1262.h — datasheet-accurate SPI register model for sx1262
  *

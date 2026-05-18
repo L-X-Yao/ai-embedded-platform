@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_pcf8563.h — datasheet-accurate register model for PCF8563
  *

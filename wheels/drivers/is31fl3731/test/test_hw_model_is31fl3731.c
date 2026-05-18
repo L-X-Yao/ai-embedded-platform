@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_is31fl3731.c — tests using hardware register model
  *

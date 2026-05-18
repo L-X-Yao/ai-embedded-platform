@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_base64.c — CBMC bounded model checking for base64
  *

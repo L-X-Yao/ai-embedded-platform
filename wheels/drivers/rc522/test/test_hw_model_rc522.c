@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_rc522.h"
 #include "rc522.h"

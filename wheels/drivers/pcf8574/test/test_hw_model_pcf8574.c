@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_pcf8574.c -- tests using PCF8574 hardware model
  *

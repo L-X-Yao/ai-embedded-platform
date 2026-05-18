@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_qmi8658a.h — QMI8658A hardware register model
  *

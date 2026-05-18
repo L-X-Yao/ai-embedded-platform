@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_tsl2591.c -- property-based tests for tsl2591
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_moving_window.c — property-based tests for moving_window
  *

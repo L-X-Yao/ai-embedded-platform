@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bq27441.h — BQ27441-G1 hardware register model from datasheet
  *

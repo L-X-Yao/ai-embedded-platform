@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_cobs.c — property-based tests for cobs
  *

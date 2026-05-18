@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bno055.h — BNO055 hardware register model from datasheet
  *

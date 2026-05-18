@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_oled_ssd1306.c — tests using SSD1306 command model
  *

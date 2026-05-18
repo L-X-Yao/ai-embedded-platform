@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_hex_codec.c — property-based tests for hex_codec
  *

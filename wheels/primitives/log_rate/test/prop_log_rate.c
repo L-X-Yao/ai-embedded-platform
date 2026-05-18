@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_log_rate.c — property-based tests for log_rate
  *

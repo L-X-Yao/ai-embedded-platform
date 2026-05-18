@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_crc16.c — CBMC bounded model checking for crc16
  *

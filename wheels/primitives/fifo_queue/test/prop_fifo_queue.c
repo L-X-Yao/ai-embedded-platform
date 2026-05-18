@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_fifo_queue.c — property-based tests for fifo_queue
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_scheduler.c — property-based tests for scheduler
  *

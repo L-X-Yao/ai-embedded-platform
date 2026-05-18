@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_ili9341.h"
 #include "ili9341.h"

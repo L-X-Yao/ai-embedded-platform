@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_si7021.h — Si7021 command-based hardware model
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_protobuf_lite.c — property-based tests for protobuf_lite
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_mahony_ahrs.c — property-based tests for mahony_ahrs
  *

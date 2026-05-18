@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_ymodem.c — property-based tests for ymodem
  *

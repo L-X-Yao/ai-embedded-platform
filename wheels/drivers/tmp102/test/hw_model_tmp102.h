@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_tmp102.h — TMP102 hardware register model
  *

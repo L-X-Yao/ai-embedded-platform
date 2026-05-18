@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_debounce.c — CBMC bounded model checking for debounce
  *

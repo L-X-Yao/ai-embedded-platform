@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_lsm6dso.c — tests using hardware register model
  *

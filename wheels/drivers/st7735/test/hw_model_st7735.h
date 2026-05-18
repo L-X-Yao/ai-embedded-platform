@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_st7735.h -- ST7735 SPI display hardware model from datasheet
  *

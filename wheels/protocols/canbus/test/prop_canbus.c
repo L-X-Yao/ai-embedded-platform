@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_canbus.c — property-based tests for canbus
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * test_hw_model_gc9a01.c -- tests using GC9A01 SPI display model
  *

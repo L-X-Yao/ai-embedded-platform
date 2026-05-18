@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_printf_tiny.c — property-based tests for printf_tiny
  *

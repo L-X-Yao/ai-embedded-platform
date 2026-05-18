@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_ota_manager.c — property-based tests for ota_manager
  *

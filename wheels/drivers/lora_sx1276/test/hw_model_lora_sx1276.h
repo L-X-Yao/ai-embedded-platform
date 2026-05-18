@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lora_sx1276.h -- SX1276 LoRa transceiver hardware register model
  *

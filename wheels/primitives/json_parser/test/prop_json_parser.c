@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_json_parser.c — property-based tests for json_parser
  *

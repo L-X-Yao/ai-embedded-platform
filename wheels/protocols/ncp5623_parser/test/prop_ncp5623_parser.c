@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_ncp5623_parser.c — property-based tests for ncp5623_parser
  *

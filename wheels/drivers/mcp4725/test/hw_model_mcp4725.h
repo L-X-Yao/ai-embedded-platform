@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_mcp4725.h — MCP4725 hardware model from datasheet
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_sgp30.c -- property-based tests for sgp30
  *

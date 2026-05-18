@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_param_table.c — property-based tests for param_table
  *

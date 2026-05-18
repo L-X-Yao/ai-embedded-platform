@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_fixed_point.c — property-based tests for fixed_point
  *

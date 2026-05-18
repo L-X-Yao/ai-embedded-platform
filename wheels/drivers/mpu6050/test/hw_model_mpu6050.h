@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_mpu6050.h — MPU-6050 hardware register model from datasheet
  *

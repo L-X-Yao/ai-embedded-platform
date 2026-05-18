@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_aw9523.h — AW9523B hardware register model
  *

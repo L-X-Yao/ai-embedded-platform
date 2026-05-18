@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_max17048.c -- property-based tests for max17048
  *

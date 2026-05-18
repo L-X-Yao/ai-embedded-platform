@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_bmp280.h — BMP280 hardware register model from datasheet
  *

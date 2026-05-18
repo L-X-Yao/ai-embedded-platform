@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_icm42688.h -- ICM-42688-P hardware register model from datasheet
  *

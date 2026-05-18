@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_bitmap.c — property-based tests for bitmap
  *

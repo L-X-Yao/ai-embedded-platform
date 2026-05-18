@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef FAL_CFG_H
 #define FAL_CFG_H
 

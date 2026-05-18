@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_htu21d.h — HTU21D command-based hardware model
  *

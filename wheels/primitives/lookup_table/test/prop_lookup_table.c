@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_lookup_table.c — property-based tests for lookup_table
  *

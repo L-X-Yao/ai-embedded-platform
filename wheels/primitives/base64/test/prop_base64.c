@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_base64.c — property-based tests for base64
  *

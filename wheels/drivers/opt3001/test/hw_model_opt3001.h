@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_opt3001.h — OPT3001 hardware register model from datasheet
  *

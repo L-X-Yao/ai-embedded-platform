@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_bitmap.c — CBMC bounded model checking for bitmap
  *

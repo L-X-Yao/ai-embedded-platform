@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * verify_byte_buffer.c — CBMC bounded model checking for byte_buffer
  *

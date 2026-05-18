@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_sntp_client.c -- property-based tests for sntp_client
  *

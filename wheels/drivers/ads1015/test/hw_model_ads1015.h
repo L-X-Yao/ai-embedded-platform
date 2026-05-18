@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ads1015.h — ADS1015 hardware register model
  *

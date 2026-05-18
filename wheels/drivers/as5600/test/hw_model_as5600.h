@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_as5600.h — AS5600 hardware register model from datasheet
  *

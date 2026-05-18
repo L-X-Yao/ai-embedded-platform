@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_w5500.c -- property-based tests for w5500
  *

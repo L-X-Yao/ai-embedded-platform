@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_ltr390.h -- LTR-390UV hardware register model from datasheet
  *

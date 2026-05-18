@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_lcd_st7789.h -- ST7789 SPI display hardware model from datasheet
  *

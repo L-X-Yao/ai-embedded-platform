@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_coap_packet.c — property-based tests for coap_packet
  *

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_dns_packet.c — property-based tests for dns_packet
  *

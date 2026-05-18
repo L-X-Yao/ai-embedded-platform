@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "hw_model_max6675.h"
 #include "max6675.h"

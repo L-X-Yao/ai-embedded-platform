@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * prop_tlv_codec.c — property-based tests for tlv_codec
  *

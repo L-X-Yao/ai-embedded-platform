@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
  * hw_model_tcs34725.h — TCS34725 hardware register model from datasheet
  *
