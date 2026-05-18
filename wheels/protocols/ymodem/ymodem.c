@@ -4,30 +4,27 @@
  *
  * Layer:   L2
  * Status:  candidate
- * Deps:      (none)
+ * Deps:      crc_any
  * Instances: multi
  */
 
 #include "ymodem.h"
+#include "crc_any.h"
 #include "contract.h"
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
 
+static const crc_any_config_t ymodem_crc_cfg = {
+    .width = 16, .poly = 0x1021, .init = 0x0000,
+    .refin = false, .refout = false, .xorout = 0x0000,
+};
+
 static uint16_t ymodem_crc16(const uint8_t *data, uint16_t len)
 {
-    uint16_t crc = 0;
-    for (uint16_t i = 0; i < len; i++) {
-        crc = (uint16_t)(crc ^ ((uint16_t)data[i] << 8));
-        for (uint8_t j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (uint16_t)((uint16_t)(crc << 1) ^ 0x1021);
-            } else {
-                crc = (uint16_t)(crc << 1);
-            }
-        }
-    }
-    return crc;
+    uint32_t crc = 0;
+    crc_any_compute(&ymodem_crc_cfg, data, len, &crc);
+    return (uint16_t)crc;
 }
 
 static ymodem_err_t send_byte(const ymodem_t *ym, uint8_t byte)

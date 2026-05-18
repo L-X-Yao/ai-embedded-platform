@@ -6,10 +6,12 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_executable(test_xmodem
     test_xmodem.c
     ../xmodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 
 target_include_directories(test_xmodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_xmodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -18,9 +20,11 @@ target_compile_options(test_xmodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wco
 add_executable(test_null_xmodem
     test_null_xmodem.c
     ../xmodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 target_include_directories(test_null_xmodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_null_xmodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
@@ -28,9 +32,11 @@ target_compile_options(test_null_xmodem PRIVATE -Wall -Wextra -Wpedantic -Werror
 add_executable(test_boundary_xmodem
     test_boundary_xmodem.c
     ../xmodem.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any/crc_any.c
 )
 target_include_directories(test_boundary_xmodem PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../crc_any
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_xmodem PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
