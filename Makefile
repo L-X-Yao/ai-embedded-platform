@@ -2,7 +2,7 @@
 #
 # Run `make help` to see all available targets.
 
-.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage audit-perf coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs driver-prompt flybox-demo test-examples
+.PHONY: help test test-wheels test-projects test-changed test-fast test-parallel audit audit-fix audit-fix-apply audit-save audit-compare audit-report audit-quick audit-deep audit-compile audit-sanitizer audit-coverage audit-perf coverage coverage-wheel coverage-scan coverage-scan-all check-coverage bootstrap list graph downstream sync-vsf sync-vsf-status clean clean-worktrees check check-full ci-local ci-local-full ship inventory metrics metrics-save metrics-compare metrics-quality test-scaffold test-property test-null test-sentinel test-boundary test-contract test-differential test-mutate frama-c handoff new-wheel promote-wheel release arm-size-audit arm-stack-audit find-refs dispatch verify fuzz batch-scaffold memory-audit doc-drift check-eol check-readme-examples check-complexity check-clones install-hooks wheel-gate wheel-commit wheel-docs sync-catalog driver-prompt flybox-demo test-examples
 
 help:
 	@echo "Usage: make <target>"
@@ -49,11 +49,12 @@ help:
 	@echo "  check-readme-examples  compile C blocks from all wheel README files"
 	@echo "  check-complexity  cyclomatic complexity audit (Q14, threshold 15)"
 	@echo "  check-clones      detect duplicate code blocks across wheels (Q26)"
+	@echo "  check-eol         detect CRLF line endings in eol=lf tracked files"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  ci-local          local CI gate: tests + null/sentinel/boundary + scaffold + audit + readme-examples + doc-drift + memory-audit (pre-push hook)"
+	@echo "  ci-local          local CI gate: tests + null/sentinel/boundary + scaffold + audit + readme-examples + doc-drift + memory-audit + eol (pre-push hook)"
 	@echo "  ci-local-full     ci-local + coverage gate + compile analysis + sanitizer"
-	@echo "  check             test + null/sentinel/boundary + scaffold + audit + UBSan + coverage gate + readme-examples + doc-drift + memory-audit"
+	@echo "  check             test + null/sentinel/boundary + scaffold + audit + UBSan + coverage gate + readme-examples + doc-drift + memory-audit + eol"
 	@echo "  check-full        check + compile analysis + sanitizer (superset of check)"
 	@echo "  install-hooks     configure git to use .githooks/ directory"
 	@echo "  ship M=\"msg\"      test + audit + commit + push"
@@ -76,7 +77,8 @@ help:
 	@echo "  handoff           generate session state for handoff"
 	@echo "  list              list all discoverable test targets"
 	@echo "  graph             wheel dependency graph (Mermaid)"
-	@echo "  inventory         update CLAUDE.md wheel counts"
+	@echo "  inventory         update CLAUDE.md wheel counts + README catalog"
+	@echo "  sync-catalog      sync wheels/README.md catalog with disk"
 	@echo ""
 	@echo "Metrics:"
 	@echo "  metrics           show platform metrics"
@@ -175,7 +177,7 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py && bash tooling/audit/check_line_endings.sh --quiet
 
 check-full:
 	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-scaffold && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
@@ -191,6 +193,7 @@ ci-local:
 	python3 tooling/audit/doc_drift_check.py --fix
 	python3 tooling/audit/memory_audit.py
 	bash tooling/audit/check_readme_examples.sh
+	bash tooling/audit/check_line_endings.sh --quiet
 	@echo "══════ ci-local: PASSED ══════"
 
 ci-local-full:
@@ -214,6 +217,10 @@ ship:
 
 inventory:
 	bash tooling/ci/update_wheel_inventory.sh --apply
+	python3 tooling/wheel/sync_wheel_catalog.py --apply
+
+sync-catalog:
+	python3 tooling/wheel/sync_wheel_catalog.py --apply
 
 metrics:
 	bash tooling/metrics/platform_metrics.sh
@@ -304,6 +311,9 @@ doc-drift:
 check-clones:
 	python3 tooling/audit/check_clones.py
 
+check-eol:
+	bash tooling/audit/check_line_endings.sh
+
 audit-quick:
 	bash tooling/audit/audit_deep.sh --quick
 
@@ -384,6 +394,7 @@ wheel-commit:
 	echo "TIP: run 'make wheel-docs' after last wheel to update CLAUDE.md counts"
 
 wheel-docs:
+	@python3 tooling/wheel/sync_wheel_catalog.py --apply
 	@l0=$$(find wheels/primitives/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
 	l1=$$(find wheels/drivers/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
 	l2=$$(find wheels/protocols/ -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' '); \
@@ -403,7 +414,7 @@ wheel-docs:
 		if [ -n "$$batch_old" ] && [ "$$batch_new" -gt "$$batch_old" ]; then \
 			sed -i "s/共 $$batch_old 个/共 $$batch_new 个/" CLAUDE.md; \
 		fi; \
-		git add CLAUDE.md && \
+		git add CLAUDE.md wheels/README.md && \
 		git commit -m "docs: update wheel count $$old to $$new" && \
 		echo "Updated: $$old → $$new wheels"; \
 	fi

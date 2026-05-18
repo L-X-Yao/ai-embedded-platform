@@ -2,7 +2,7 @@
 """audit_check_perf.py -- benchmark every CHECK_TABLE entry on a
 representative wheel.
 
-audit_wheels.py runs 60+ checks across ~260 wheels in `make check`.
+audit_check_perf.py runs 60+ checks across ~260 wheels in `make check`.
 A single check that takes 1s per wheel adds 4 minutes to the loop.
 This script catches such regressions before they ship: it loads a
 representative wheel context, runs each check N times, and flags
