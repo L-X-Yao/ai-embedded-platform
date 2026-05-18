@@ -80,6 +80,8 @@ Every component follows this same pattern: inject HAL via a struct of function p
 
 Full catalog with descriptions: [wheels/README.md](wheels/README.md)
 
+**Find components for your hardware:** [MCU Compatibility Matrix](docs/mcu-compatibility.md) -- all 116 drivers organized by bus type (I2C/SPI/GPIO/PWM/OneWire) and use case.
+
 ## Architecture: HAL injection
 
 Components never call hardware directly. Instead, you inject platform-specific functions at initialization:
@@ -148,12 +150,24 @@ make flybox-demo
 
 This simulates a real drone telemetry device: sensor data generation → JSON formatting → MQTT publish (QoS 1 with PUBACK) → cloud command parsing → disconnect/reconnect with exponential backoff. Uses 3 wheels working together: `mqtt_client` + `json_parser` + `retry`.
 
-For a simpler example showing a single sensor → MQTT publish loop:
+### Flagship examples
+
+Five runnable integration examples that cover the most common embedded use cases. Each compiles and runs on your desktop with zero hardware:
 
 ```bash
-cd examples/mqtt_telemetry_demo
-cmake -S . -B build && cmake --build build && ./build/mqtt_telemetry_demo
+cd examples/<name>
+cmake -B build -G "MinGW Makefiles" && cmake --build build && ./build/<name>
 ```
+
+| Example | Wheels used | What it demonstrates |
+|---------|------------|---------------------|
+| **mqtt_telemetry_demo** | bmp280, sensor_hub, mqtt_packet, mqtt_client | IoT sensor → MQTT publish pipeline with state machine |
+| **industrial_monitor** | pid_controller, rate_limiter, fixed_point, ina219, ads1115, canbus, telemetry, task_watchdog | PID control loop + CAN bus + power monitoring + watchdog |
+| **gps_tracker** | kalman_1d, base64, uuid, ds3231, sd_spi, sntp_client, ubx_parser | GPS parsing → Kalman filtering → SD card logging → NTP sync |
+| **display_hub** | sh1106, hd44780, tm1637, max7219, lcd_st7789, ili9341 | 6 display types (OLED, LCD, 7-seg, LED matrix, TFT) via mock HAL |
+| **smart_home** | debounce, timer_wheel, led_pattern, bme280, bh1750, ws2812, cbor_lite, scheduler, event_bus | Event-driven IoT hub with sensor polling + CBOR encoding + LED effects |
+
+All 27 examples in `examples/` compile on host. The five above produce the most informative output.
 
 ## Running tests
 
