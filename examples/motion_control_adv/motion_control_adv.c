@@ -480,8 +480,8 @@ TEST(test_pca9685_set_pwm)
 
     /* Verify register writes: channel 0 base is 0x06
      * 50% of 4095 = ~2048 -> on=0, off=2048 */
-    uint16_t off_val = (uint16_t)pca_regs[0x08] |
-                       (uint16_t)((pca_regs[0x09] & 0x0F) << 8);
+    uint16_t off_val = (uint16_t)((uint16_t)pca_regs[0x08] |
+                       (uint16_t)((pca_regs[0x09] & 0x0F) << 8));
     ASSERT_NEAR((float)off_val, 2048.0f, 2.0f);
 
     /* Set channel 5 to servo pulse 1500us (50Hz: period=20000us)
@@ -490,8 +490,8 @@ TEST(test_pca9685_set_pwm)
     ASSERT_EQ(err, PCA9685_OK);
 
     /* Channel 5 base = 0x06 + 5*4 = 0x1A */
-    uint16_t servo_off = (uint16_t)pca_regs[0x1C] |
-                         (uint16_t)((pca_regs[0x1D] & 0x0F) << 8);
+    uint16_t servo_off = (uint16_t)((uint16_t)pca_regs[0x1C] |
+                         (uint16_t)((pca_regs[0x1D] & 0x0F) << 8));
     ASSERT_NEAR((float)servo_off, 307.0f, 5.0f);
 
     /* All off */
