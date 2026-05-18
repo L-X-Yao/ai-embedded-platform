@@ -14,7 +14,7 @@
 
 详细分类（按总线/用途）见 [MCU Compatibility Matrix](../../docs/mcu-compatibility.md)。
 
-## 目录清单（116 wheels）
+## 目录清单（115 wheels）
 
 | Wheel | 芯片 | 接口 | 状态 |
 |-------|------|------|------|
