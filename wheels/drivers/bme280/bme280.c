@@ -74,8 +74,8 @@ static bme280_err_t read_calibration(bme280_t *dev)
 
     dev->calib.dig_h2 = (int16_t)((uint16_t)hbuf[1] << 8 | hbuf[0]);
     dev->calib.dig_h3 = hbuf[2];
-    dev->calib.dig_h4 = (int16_t)((int8_t)hbuf[3]) * 16 | (int16_t)(hbuf[4] & 0x0F);
-    dev->calib.dig_h5 = (int16_t)((int8_t)hbuf[5]) * 16 | (int16_t)(hbuf[4] >> 4);
+    dev->calib.dig_h4 = (int16_t)(((int16_t)(int8_t)hbuf[3] << 4) | (int16_t)(hbuf[4] & 0x0F));
+    dev->calib.dig_h5 = (int16_t)(((int16_t)(int8_t)hbuf[5] << 4) | (int16_t)(hbuf[4] >> 4));
     dev->calib.dig_h6 = (int8_t)hbuf[6];
 
     return BME280_OK;

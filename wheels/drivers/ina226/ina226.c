@@ -105,10 +105,10 @@ ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
 
     /* Build config register */
     uint16_t config = 0;
-    config |= ((uint16_t)cfg->averaging     & 0x07u) << 9;
-    config |= ((uint16_t)cfg->bus_conv_time  & 0x07u) << 6;
-    config |= ((uint16_t)cfg->shunt_conv_time & 0x07u) << 3;
-    config |= CFG_MODE_CONT_SHUNT_BUS;
+    config = (uint16_t)(config | (((unsigned)cfg->averaging     & 0x07u) << 9));
+    config = (uint16_t)(config | (((unsigned)cfg->bus_conv_time  & 0x07u) << 6));
+    config = (uint16_t)(config | (((unsigned)cfg->shunt_conv_time & 0x07u) << 3));
+    config = (uint16_t)(config | CFG_MODE_CONT_SHUNT_BUS);
 
     err = write_reg16(dev, REG_CONFIG, config);
     if (err != INA226_OK)

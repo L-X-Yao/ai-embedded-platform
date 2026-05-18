@@ -43,12 +43,12 @@ static uint16_t build_config(const ads1015_cfg_t *cfg, ads1015_mux_t mux,
 {
     uint16_t c = 0;
     if (start)
-        c |= (1u << 15);
-    c |= ((uint16_t)mux & 0x07u) << 12;
-    c |= ((uint16_t)cfg->pga & 0x07u) << 9;
-    c |= (1u << 8);                        /* single-shot mode */
-    c |= ((uint16_t)cfg->rate & 0x07u) << 5;
-    c |= 0x0003u;                           /* disable comparator */
+        c = (uint16_t)(c | (1u << 15));
+    c = (uint16_t)(c | (((unsigned)mux & 0x07u) << 12));
+    c = (uint16_t)(c | (((unsigned)cfg->pga & 0x07u) << 9));
+    c = (uint16_t)(c | (1u << 8));                        /* single-shot mode */
+    c = (uint16_t)(c | (((unsigned)cfg->rate & 0x07u) << 5));
+    c = (uint16_t)(c | 0x0003u);                           /* disable comparator */
     return c;
 }
 
