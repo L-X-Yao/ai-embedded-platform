@@ -172,6 +172,31 @@ for wheel in "${WHEELS[@]}"; do
         rm -rf "$san_dir" "$san_log"
     fi
 
+    # --- 2.7. -Wconversion strict compile ---
+    if [[ -d "$test_dir" ]] && [[ -f "$test_dir/CMakeLists.txt" ]]; then
+        conv_dir="${test_dir}/build_conv_gate"
+        rm -rf "$conv_dir"
+        conv_log=$(mktemp)
+        conv_cflags="-Wall -Wextra -Wpedantic -Werror -Wconversion -Wsign-conversion"
+        conv_gen=()
+        if [[ "$(uname -o 2>/dev/null)" == "Msys" ]] || [[ "$(uname -s)" == MINGW* ]]; then
+            conv_gen=(-G "MinGW Makefiles" -DCMAKE_C_COMPILER=gcc)
+        fi
+        if cmake -S "$test_dir" -B "$conv_dir" "${conv_gen[@]}" \
+                 -DCMAKE_C_FLAGS="-O0 $conv_cflags" > "$conv_log" 2>&1 && \
+           cmake --build "$conv_dir" >> "$conv_log" 2>&1; then
+            echo -e "  ${GREEN}PASS${NC} -Wconversion"
+        else
+            echo -e "  ${RED}FAIL${NC} -Wconversion (strict integer promotion)"
+            grep "error:" "$conv_log" | head -5 | sed 's/^/    /'
+            FAIL=$((FAIL + 1))
+            FAILED_WHEELS+=("$wheel")
+            rm -rf "$conv_dir" "$conv_log"
+            continue
+        fi
+        rm -rf "$conv_dir" "$conv_log"
+    fi
+
     # --- 3. Audit ---
     audit_output=$(cd "$REPO" && python3 tooling/audit/audit_wheels.py --wheel "$wheel" --quiet 2>&1)
     warn_count=$(echo "$audit_output" | grep -cE "\[(WARN|FAIL)\]" || true)
