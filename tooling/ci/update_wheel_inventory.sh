@@ -83,15 +83,20 @@ if [[ $count_l3 -gt 0 ]]; then
   - L3 模块 ${count_l3}：${l3_list}"
 fi
 
+# Count Makefile targets
+makefile_targets=$(grep '^\.PHONY' "$REPO/Makefile" | tr ' ' '\n' | grep -v '\.PHONY:' | grep -v '^$' | sort -u | wc -l)
+
 # Replace in CLAUDE.md — pass data via env vars to avoid injection
 export WHEEL_BLOCK="$BLOCK"
 export WHEEL_TOTAL="$total"
+export MAKEFILE_TARGETS="$makefile_targets"
 python3 - "$CLAUDE_MD" << 'PYEOF'
 import os, re, sys
 
 claude_path = sys.argv[1]
 block = os.environ["WHEEL_BLOCK"]
 total = os.environ["WHEEL_TOTAL"]
+mk_targets = os.environ["MAKEFILE_TARGETS"]
 
 text = open(claude_path, "r", encoding="utf-8").read()
 
@@ -103,8 +108,10 @@ if count == 0:
     print("ERROR: could not find wheel inventory block in CLAUDE.md", file=sys.stderr)
     sys.exit(1)
 
+new_text = re.sub(r'Makefile（\d+ .?目标）', f'Makefile（{mk_targets} 目标）', new_text)
+
 tmp = claude_path + ".tmp"
 open(tmp, "w", encoding="utf-8").write(new_text)
 os.replace(tmp, claude_path)
-print(f"Updated CLAUDE.md: {total} wheels")
+print(f"Updated CLAUDE.md: {total} wheels, {mk_targets} Makefile targets")
 PYEOF
