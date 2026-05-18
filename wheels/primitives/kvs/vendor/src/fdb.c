@@ -66,7 +66,14 @@ fdb_err_t _fdb_init_ex(fdb_db_t db, const char *name, const char *path, fdb_db_t
             return FDB_PART_NOT_FOUND;
         }
 
-        block_size = fal_flash_device_find(db->storage.part->flash_name)->blk_size;
+        {
+            const struct fal_flash_dev *flash_dev = fal_flash_device_find(db->storage.part->flash_name);
+            if (flash_dev == NULL) {
+                FDB_INFO("Error: Flash device (%s) not found.\n", db->storage.part->flash_name);
+                return FDB_INIT_FAILED;
+            }
+            block_size = flash_dev->blk_size;
+        }
         if (db->sec_size == 0) {
             db->sec_size = block_size;
         } else {
