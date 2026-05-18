@@ -1,5 +1,5 @@
 #!/bin/bash
-# session_bootstrap.sh — dump project context for AI session start.
+# bootstrap.sh — dump project context for AI session start.
 #
 # One command replaces 5-8 tool calls. Run at conversation start or after
 # context compression to quickly orient.

@@ -89,6 +89,87 @@ def count_test_suites():
     return count
 
 
+def check_catalog_completeness():
+    readme = WHEELS / "README.md"
+    if not readme.exists():
+        return []
+    text = readme.read_text(encoding="utf-8")
+    drifts = []
+    for layer in ["primitives", "drivers", "protocols", "modules"]:
+        layer_dir = WHEELS / layer
+        if not layer_dir.is_dir():
+            continue
+        for d in sorted(layer_dir.iterdir()):
+            if not d.is_dir() or d.name == "__pycache__":
+                continue
+            if f"[{d.name}](" not in text and f"`{d.name}`" not in text:
+                drifts.append((
+                    "wheels/README.md",
+                    f"{layer}/{d.name} exists on disk but missing from catalog",
+                    None, None,
+                ))
+    return drifts
+
+
+def check_markdown_links():
+    md_files = []
+    for p in [REPO / "CLAUDE.md", REPO / "CONTRIBUTING.md", REPO / "README.md"]:
+        if p.exists():
+            md_files.append(p)
+    docs = REPO / "docs"
+    if docs.is_dir():
+        md_files.extend(sorted(docs.glob("*.md")))
+        adr = docs / "adr"
+        if adr.is_dir():
+            md_files.extend(sorted(adr.glob("*.md")))
+    drifts = []
+    link_re = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+    for md in md_files:
+        text = md.read_text(encoding="utf-8")
+        for m in link_re.finditer(text):
+            target = m.group(2)
+            if target.startswith(("http://", "https://", "#", "mailto:")):
+                continue
+            target_clean = target.split("#")[0]
+            if not target_clean:
+                continue
+            resolved = (md.parent / target_clean).resolve()
+            if not resolved.exists():
+                rel = md.relative_to(REPO).as_posix()
+                drifts.append((
+                    rel,
+                    f"broken link: [{m.group(1)}]({target}) -> {resolved.relative_to(REPO)}",
+                    None, None,
+                ))
+    return drifts
+
+
+def check_script_headers():
+    drifts = []
+    for pattern in ("**/*.sh", "**/*.py"):
+        for script in sorted((REPO / "tooling").glob(pattern)):
+            if ".vsf-upstream" in str(script) or "__pycache__" in str(script):
+                continue
+            try:
+                lines = script.read_text(encoding="utf-8").splitlines()[:5]
+            except (UnicodeDecodeError, PermissionError):
+                continue
+            actual_name = script.name
+            for line in lines:
+                m = re.match(r'^#\s+([\w._-]+\.(?:sh|py))\s+', line)
+                if not m:
+                    m = re.match(r'^["\']?\s*([\w._-]+\.(?:sh|py))\s+', line)
+                if m:
+                    claimed = m.group(1)
+                    if claimed != actual_name:
+                        rel = script.relative_to(REPO).as_posix()
+                        drifts.append((rel,
+                                       f"header says {claimed}, file is {actual_name}",
+                                       claimed, actual_name))
+                    break
+    return drifts
+
+
 def check_layer_readmes():
     """Check wheels/<layer>/README.md headline counts match actual."""
     drifts = []
@@ -242,6 +323,9 @@ def main():
     fix_mode = args.fix
 
     all_drifts = []
+    all_drifts.extend(check_catalog_completeness())
+    all_drifts.extend(check_markdown_links())
+    all_drifts.extend(check_script_headers())
     all_drifts.extend(check_layer_readmes())
     all_drifts.extend(check_claude_md())
     all_drifts.extend(check_workflow_md())
