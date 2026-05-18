@@ -9,7 +9,7 @@
 
 **"Why not VSF native?" 节必须写**——很多协议 VSF 已有（USB CDC、BLE、btstack 集成等）。
 
-## 目录清单（25 wheels）
+## 目录清单（47 wheels）
 
 | Wheel | 协议 | 状态 |
 |-------|------|------|
