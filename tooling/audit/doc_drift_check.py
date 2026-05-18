@@ -89,6 +89,36 @@ def count_test_suites():
     return count
 
 
+def check_layer_readmes():
+    """Check wheels/<layer>/README.md headline counts match actual."""
+    drifts = []
+    layer_map = {
+        "drivers": "L1",
+        "primitives": "L0",
+        "protocols": "L2",
+        "modules": "L3",
+    }
+    wheels = count_wheels()
+    for layer, label in layer_map.items():
+        readme = WHEELS / layer / "README.md"
+        if not readme.exists():
+            continue
+        text = readme.read_text(encoding="utf-8")
+        m = re.search(r'目录清单（(\d+)\s*wheels?）', text)
+        if not m:
+            m = re.search(r'清单.*?(\d+)\s*wheels?', text)
+        if m:
+            claimed = int(m.group(1))
+            actual = wheels[layer]
+            if claimed != actual:
+                drifts.append((
+                    f"wheels/{layer}/README.md",
+                    f"{label} count: says {claimed}, actual {actual}",
+                    f"{claimed} wheels", f"{actual} wheels",
+                ))
+    return drifts
+
+
 def check_claude_md():
     """Check CLAUDE.md numeric assertions."""
     claude = REPO / "CLAUDE.md"
@@ -212,6 +242,7 @@ def main():
     fix_mode = args.fix
 
     all_drifts = []
+    all_drifts.extend(check_layer_readmes())
     all_drifts.extend(check_claude_md())
     all_drifts.extend(check_workflow_md())
     all_drifts.extend(check_playbook_md())
