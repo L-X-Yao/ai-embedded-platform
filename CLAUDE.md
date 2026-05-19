@@ -159,7 +159,7 @@ ai-embedded-platform/
 
 ## 任务类型 → 做法
 
-见 `docs/ai-workflow.md`（12 类）：
+见 `docs/ai-workflow.md`（14 类）：
 
 | 类型 | 特别注意 |
 |------|---------|
@@ -175,6 +175,8 @@ ai-embedded-platform/
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
 | 11. 平台自省 | 40 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
 | 12. 发布 | `release.sh` 打版本标签 + 生成 CHANGELOG |
+| 13. 市场交付物 | 发文章 / 开源 repo / 闲鱼挂服务 |
+| 14. Datasheet 验证 | 逐寄存器对照 datasheet，冷门芯片优先 |
 
 ## 平台选择：VSF
 
