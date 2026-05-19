@@ -91,7 +91,7 @@ int bitmap_find_first_set(const bitmap_t *bm)
 {
     if (bm == NULL || bm->data == NULL) { return -1; }
     uint16_t bytes = byte_count(bm->bits);
-    for (uint16_t i = 0; i <= bytes; i++) {
+    for (uint16_t i = 0; i < bytes; i++) {
         if (bm->data[i] != 0u) {
             for (uint8_t b = 0; b < 8u; b++) {
                 uint16_t idx = (uint16_t)(i * 8u + b);
