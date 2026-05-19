@@ -64,18 +64,6 @@ No compile-time configuration needed. All constants are fixed by the S.Bus proto
 | `SBUS_NUM_CHANNELS` | 16 | Number of analog channels (protocol-fixed) |
 | `SBUS_FRAME_LEN` | 25 | Frame length in bytes (protocol-fixed) |
 
-## Protocol details
-
-- Serial: 100000 baud, 8 data bits, even parity, 2 stop bits, inverted signal
-- Frame: 25 bytes, sent every 14ms (analog) or 7ms (high-speed)
-- Format: `[0x0F] [22 bytes channel data] [flags] [0x00]`
-- Channels: 16 x 11-bit (0-2047), packed LSB-first little-endian
-- Typical RC range: 172-1811 (maps to 1000-2000 us servo pulses)
-- Flags byte 23: bit0=CH17, bit1=CH18, bit2=frame_lost, bit3=failsafe
-
-Signal inversion is a hardware concern (use an inverter IC or configure UART polarity).
-This wheel handles protocol parsing only.
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-05-07
@@ -105,6 +93,18 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## Protocol details
+
+- Serial: 100000 baud, 8 data bits, even parity, 2 stop bits, inverted signal
+- Frame: 25 bytes, sent every 14ms (analog) or 7ms (high-speed)
+- Format: `[0x0F] [22 bytes channel data] [flags] [0x00]`
+- Channels: 16 x 11-bit (0-2047), packed LSB-first little-endian
+- Typical RC range: 172-1811 (maps to 1000-2000 us servo pulses)
+- Flags byte 23: bit0=CH17, bit1=CH18, bit2=frame_lost, bit3=failsafe
+
+Signal inversion is a hardware concern (use an inverter IC or configure UART polarity).
+This wheel handles protocol parsing only.
 
 ## API review
 

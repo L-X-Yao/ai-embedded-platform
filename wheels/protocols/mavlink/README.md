@@ -50,16 +50,6 @@ uint8_t  mavlink_msg_crc_extra(uint32_t msgid);
 |--------|---------|---------|
 | `MAVLINK_MAX_PAYLOAD` | 255 | Max payload bytes per frame |
 
-## Known message CRC_EXTRA values
-
-| Message | ID | CRC_EXTRA |
-|---------|----|-----------|
-| HEARTBEAT | 0 | 50 |
-| SYS_STATUS | 1 | 124 |
-| GPS_RAW_INT | 24 | 24 |
-| ATTITUDE | 30 | 39 |
-| GLOBAL_POSITION_INT | 33 | 104 |
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-05-07
@@ -89,6 +79,16 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## Known message CRC_EXTRA values
+
+| Message | ID | CRC_EXTRA |
+|---------|----|-----------|
+| HEARTBEAT | 0 | 50 |
+| SYS_STATUS | 1 | 124 |
+| GPS_RAW_INT | 24 | 24 |
+| ATTITUDE | 30 | 39 |
+| GLOBAL_POSITION_INT | 33 | 104 |
 
 ## API review
 

@@ -9,6 +9,35 @@
 
 **"Why not VSF native?" 节必须写**——很多协议 VSF 已有（USB CDC、BLE、btstack 集成等）。
 
+## Origin
+
+Proactive build (ADR-011). w
+
+
+## Why self-written?
+
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
+
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_protocols
+```
+
+
+## API convention deviations
+
+None.
+
+
 ## 目录清单（47 wheels）
 
 | Wheel | 协议 | 状态 |
@@ -38,3 +67,13 @@
 | `websocket_frame` | WebSocket 帧编解码（RFC 6455） | candidate |
 | `xmodem` | XMODEM 文件传输协议 | candidate |
 | `ymodem` | YMODEM 文件传输协议 | candidate |
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

@@ -8,10 +8,22 @@ PID calculation with parity bits, classic (LIN 1.x) and enhanced (LIN 2.0+)
 checksums, and full frame encode/decode with sync byte and checksum validation.
 Break field is at UART level and not included. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no LIN bus protocol support. LIN is widely used for low-cost
+Proactive build (ADR-011). l
+
+
+## Why self-written?
+
+existing open-source has no LIN bus protocol support. LIN is widely used for low-cost
 automotive sub-networks (seat control, mirrors, climate, lighting).
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -46,15 +58,40 @@ lin_bus_frame_t rx;
 lin_bus_decode(uart_buf, uart_len, &rx);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\lin_bus/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_lin_bus
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

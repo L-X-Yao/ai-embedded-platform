@@ -85,14 +85,9 @@ cmake -GNinja -S . -B build && cmake --build build
 - **All API functions return void** instead of error codes. Reason: operations are pure state-machine transitions on a caller-allocated struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
 - **Internal state fields exposed** in `gpio_led_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly (except `brightness`, which is a user-settable field).
 
-## API review
+## Integration
 
-- **Date**: 2026-04-27
-- **Key decisions**: Single `set(ctx, level)` HAL callback covers both GPIO and PWM; `tick(dt_ms)` avoids timer dependency; `brightness` field allows per-LED dimming; `emit` deduplication prevents redundant HAL calls; `repeat=0` means infinite, `repeat=N` means N cycles then auto-off.
-
-## Responsible human
-
-@user
+For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes duty cycle (0-255). The `emit` deduplication avoids redundant HAL calls.
 
 ## Modes
 
@@ -104,6 +99,11 @@ cmake -GNinja -S . -B build && cmake --build build
 | `BREATHE` | Triangle ramp (continuous) | `0` → `brightness` → `0` |
 | `PULSE` | Single flash, auto-off | `brightness` → `0` |
 
-## Integration
+## API review
 
-For simple on/off LEDs, `set` writes GPIO (0 or 1). For PWM LEDs, `set` writes duty cycle (0-255). The `emit` deduplication avoids redundant HAL calls.
+- **Date**: 2026-04-27
+- **Key decisions**: Single `set(ctx, level)` HAL callback covers both GPIO and PWM; `tick(dt_ms)` avoids timer dependency; `brightness` field allows per-LED dimming; `emit` deduplication prevents redundant HAL calls; `repeat=0` means infinite, `repeat=N` means N cycles then auto-off.
+
+## Responsible human
+
+@user

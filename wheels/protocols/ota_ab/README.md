@@ -90,15 +90,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-04-28
-- **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
-
-## Responsible human
-
-@user
-
 ## Protocol (A/B boot state machine)
 
 ```
@@ -107,3 +98,12 @@ IDLE ──[mark_pending]──→ PENDING ──[boot_event]──→ SUCCESS (
                                           [confirm]────┘──→ IDLE (new active)
                                           [N boots]────┘──→ IDLE (rollback to old)
 ```
+
+## API review
+
+- **Date**: 2026-04-28
+- **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
+
+## Responsible human
+
+@user

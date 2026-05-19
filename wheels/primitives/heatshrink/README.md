@@ -136,6 +136,23 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
+## Performance reference
+
+- Compression ratio: ~8:1 on repeated data, ~1:0.9 on random data
+- Window = 256 bytes: encoder needs ~48 bytes struct + 256 bytes window
+- Window = 256 bytes: decoder needs ~48 bytes struct + 384 bytes buffer
+- ROM footprint: ~1.5KB code
+
+## Features
+
+- LZSS compression and decompression (streaming)
+- Configurable window size (256B-2KB) and lookahead (16-256 match length)
+- Zero heap allocation -- all buffers caller-provided
+- Pure C99, zero dependencies
+- Bit-level I/O for compact encoding
+- Reset support for buffer reuse
+- Handles literal, repeated, random, and mixed data patterns
+
 ## API review
 
 - **Date**: 2026-05-12
@@ -150,20 +167,3 @@ None.
 ## Responsible human
 
 @user
-
-## Features
-
-- LZSS compression and decompression (streaming)
-- Configurable window size (256B-2KB) and lookahead (16-256 match length)
-- Zero heap allocation -- all buffers caller-provided
-- Pure C99, zero dependencies
-- Bit-level I/O for compact encoding
-- Reset support for buffer reuse
-- Handles literal, repeated, random, and mixed data patterns
-
-## Performance reference
-
-- Compression ratio: ~8:1 on repeated data, ~1:0.9 on random data
-- Window = 256 bytes: encoder needs ~48 bytes struct + 256 bytes window
-- Window = 256 bytes: decoder needs ~48 bytes struct + 384 bytes buffer
-- ROM footprint: ~1.5KB code

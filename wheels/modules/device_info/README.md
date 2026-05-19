@@ -18,14 +18,10 @@ Proactive build for embedded device telemetry and debug. Common pattern
 across projects: report firmware version, serial number, uptime, and
 boot count via CLI or telemetry channel. Extracted as reusable module.
 
-## Why not an open-source library?
+## Why self-written?
 
-No existing embedded "device info" library found that meets our wheel
-contract (no OS, no malloc, no globals, no build-system coupling). This
-is a thin data container with string setters + snprintf formatter -- too
-simple and platform-specific to warrant a dependency. ~110 lines of C.
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-**Conclusion**: self-contained wheel with zero dependencies.
 
 ## Dependencies
 
@@ -92,26 +88,27 @@ ctest --test-dir build --output-on-failure
   get_uptime/set_boot_count/set_reset_reason NULL safety, exact-fit
   string, format byte count matches strlen
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Evaluate adding custom field support
+- [ ] Real hardware test
 
-- **Passive design**: no tasks, no timers, no malloc
-- **String fields**: firmware version, hardware version, serial number, build date, device name
-- **Runtime counters**: uptime (tick-based), boot count, reset reason
-- **Overflow protection**: long strings truncated with ERR_OVERFLOW return
-- **Format output**: `device_info_format()` produces key=value text for CLI/telemetry
-- **NULL safety**: all API functions guard against NULL pointers
-- **Configurable**: `DEVICE_INFO_STR_SIZE` compile-time macro (default 32)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Persistence | None (caller handles) | kvs/flash strategy varies per project |
+| Uptime | Tick-based counter | No OS timer dependency; caller calls from 1s tick |
+| Format | snprintf key=value | Human-readable, easy to parse, no JSON overhead |
+| String size | Fixed compile-time | No malloc, predictable memory footprint |
+| Overflow | Truncate + return ERR | Caller can detect and handle or ignore |
+| Thread safety | Not thread-safe | Caller serializes (typical: single init + periodic tick) |
 
 ## Usage example
 
@@ -144,19 +141,32 @@ void cmd_info(void) {
 }
 ```
 
-## Design tradeoffs
+## Features
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Persistence | None (caller handles) | kvs/flash strategy varies per project |
-| Uptime | Tick-based counter | No OS timer dependency; caller calls from 1s tick |
-| Format | snprintf key=value | Human-readable, easy to parse, no JSON overhead |
-| String size | Fixed compile-time | No malloc, predictable memory footprint |
-| Overflow | Truncate + return ERR | Caller can detect and handle or ignore |
-| Thread safety | Not thread-safe | Caller serializes (typical: single init + periodic tick) |
+- **Passive design**: no tasks, no timers, no malloc
+- **String fields**: firmware version, hardware version, serial number, build date, device name
+- **Runtime counters**: uptime (tick-based), boot count, reset reason
+- **Overflow protection**: long strings truncated with ERR_OVERFLOW return
+- **Format output**: `device_info_format()` produces key=value text for CLI/telemetry
+- **NULL safety**: all API functions guard against NULL pointers
+- **Configurable**: `DEVICE_INFO_STR_SIZE` compile-time macro (default 32)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
-## Before promoting to stable
+## Why not an open-source library?
 
-- [ ] At least 1 real project uses it
-- [ ] Evaluate adding custom field support
-- [ ] Real hardware test
+No existing embedded "device info" library found that meets our wheel
+contract (no OS, no malloc, no globals, no build-system coupling). This
+is a thin data container with string setters + snprintf formatter -- too
+simple and platform-specific to warrant a dependency. ~110 lines of C.
+
+**Conclusion**: self-contained wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

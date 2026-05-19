@@ -85,6 +85,16 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None. Prefix `fp_` follows api-conventions.md naming rules.
 
+## Constants
+
+| Define     | Value          | Description     |
+|------------|----------------|-----------------|
+| `FP_ONE`   | `0x00010000`   | 1.0 in Q16.16   |
+| `FP_HALF`  | `0x00008000`   | 0.5 in Q16.16   |
+| `FP_PI`    | `205887`       | 3.14159 approx  |
+| `FP_MAX`   | `INT32_MAX`    | Saturated max   |
+| `FP_MIN`   | `INT32_MIN`    | Saturated min   |
+
 ## API review
 
 - **Date**: 2026-05-01
@@ -98,13 +108,3 @@ None. Prefix `fp_` follows api-conventions.md naming rules.
 ## Responsible human
 
 @user
-
-## Constants
-
-| Define     | Value          | Description     |
-|------------|----------------|-----------------|
-| `FP_ONE`   | `0x00010000`   | 1.0 in Q16.16   |
-| `FP_HALF`  | `0x00008000`   | 0.5 in Q16.16   |
-| `FP_PI`    | `205887`       | 3.14159 approx  |
-| `FP_MAX`   | `INT32_MAX`    | Saturated max   |
-| `FP_MIN`   | `INT32_MIN`    | Saturated min   |

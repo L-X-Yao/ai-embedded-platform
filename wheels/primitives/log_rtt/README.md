@@ -110,15 +110,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **`log_rtt_write_fn` uses `_fn` suffix instead of `_t`** (api-conventions S1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Consistent with `log_sink_fn` in the parent `log` wheel.
 
-## API review
-
-- **Date**: 2026-04-30
-- **Key decisions**: Channel-aware write signature matches SEGGER_RTT_Write() semantics but without vendor dependency.
-
-## Responsible human
-
-@user
-
 ## Design decisions
 
 | Aspect | Choice | Rationale |
@@ -127,3 +118,12 @@ cmake -GNinja -S . -B build && cmake --build build
 | Write signature | `(void *ctx, unsigned channel, const void *data, unsigned len)` | Mirrors `SEGGER_RTT_Write()` for zero-friction integration |
 | Channel | Stored in `log_rtt_t`, set at init | Multiple sinks can target different RTT channels |
 | Return value | `unsigned` (bytes written) | Matches SEGGER convention; sink adapter ignores it |
+
+## API review
+
+- **Date**: 2026-04-30
+- **Key decisions**: Channel-aware write signature matches SEGGER_RTT_Write() semantics but without vendor dependency.
+
+## Responsible human
+
+@user

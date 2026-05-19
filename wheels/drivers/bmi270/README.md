@@ -13,10 +13,13 @@ to G and deg/s units. Configurable ranges and output data rates.
 Proactive build. BMI270 is a widely used low-power IMU for drones,
 wearables, and robotics requiring 6-axis motion sensing.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for BMI270. Self-written for zero-dependency SPI HAL
+No existing open-source component for BMI270. Self-written for zero-dependency SPI HAL
 injection and platform convention consistency.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -83,6 +86,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

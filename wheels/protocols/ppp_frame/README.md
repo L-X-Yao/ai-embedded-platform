@@ -88,15 +88,6 @@ cmake -B build -S . && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: Encode produces complete frame (with flags); decode expects complete frame (with flags); HDLC byte stuffing per RFC 1662 (escape 0x7E, 0x7D, and all < 0x20); FCS-16 with standard HDLC polynomial (0x8408); FCS appended little-endian.
-
-## Responsible human
-
-@user
-
 ## Protocol
 
 PPP HDLC-like frame format (RFC 1662):
@@ -112,3 +103,12 @@ PPP HDLC-like frame format (RFC 1662):
 | Flag | 1 | 0x7E |
 
 Byte stuffing: 0x7E -> 0x7D 0x5E, 0x7D -> 0x7D 0x5D, byte < 0x20 -> 0x7D (byte ^ 0x20).
+
+## API review
+
+- **Date**: 2026-05-11
+- **Key decisions**: Encode produces complete frame (with flags); decode expects complete frame (with flags); HDLC byte stuffing per RFC 1662 (escape 0x7E, 0x7D, and all < 0x20); FCS-16 with standard HDLC polynomial (0x8408); FCS appended little-endian.
+
+## Responsible human
+
+@user

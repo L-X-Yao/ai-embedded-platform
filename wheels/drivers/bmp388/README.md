@@ -13,10 +13,13 @@ the Bosch float compensation algorithm from datasheet BST-BMP388-DS001
 Proactive build. BMP388 is the successor to BMP280 with higher accuracy
 and lower noise, used in drones, weather stations, and altimeters.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for BMP388. Self-written with compensation formulas
+No existing open-source component for BMP388. Self-written with compensation formulas
 cross-validated against the Bosch datasheet.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -78,6 +81,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

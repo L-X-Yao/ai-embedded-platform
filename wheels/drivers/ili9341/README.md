@@ -13,11 +13,14 @@ fill, single pixel draw, and full screen clear.
 Proactive build. ILI9341 is the most common SPI TFT controller in
 hobby and industrial embedded displays (2.4" and 2.8" TFT modules).
 
-## Why not VSF native?
+## Why self-written?
 
-VSF has a GUI subsystem but no standalone ILI9341 SPI driver. Self-written
+existing open-source has a GUI subsystem but no standalone ILI9341 SPI driver. Self-written
 for lightweight projects that need direct display control without the
 full VSF GUI stack.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -79,6 +82,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

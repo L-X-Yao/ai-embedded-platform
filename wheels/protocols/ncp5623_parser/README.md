@@ -65,14 +65,10 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (20 C tests, 70 assertions)
 - HIL: N/A
 
-## API review
+## API convention deviations
 
-- **Date**: 2026-04-27
-- **Key decisions**: Parser is stateful (tracks `enabled` across transactions); output is raw 4-bit values (consumer decides brightness mapping); feed-byte API for ISR-safe operation (no buffering, immediate event emission); transaction boundaries via `start`/`stop` calls.
+None.
 
-## Responsible human
-
-@user
 
 ## Protocol
 
@@ -85,3 +81,12 @@ NCP5623-compatible subset used by ArduPilot (`AP_Notify/NCP5623.cpp`):
 | COLOR   | `[0x01] [B] [G] [R]`    | Set color (4-bit per channel, 0x00-0x0F) |
 
 Color commands are ignored when parser is in disabled state.
+
+## API review
+
+- **Date**: 2026-04-27
+- **Key decisions**: Parser is stateful (tracks `enabled` across transactions); output is raw 4-bit values (consumer decides brightness mapping); feed-byte API for ISR-safe operation (no buffering, immediate event emission); transaction boundaries via `start`/`stop` calls.
+
+## Responsible human
+
+@user

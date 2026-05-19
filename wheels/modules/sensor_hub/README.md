@@ -14,21 +14,10 @@ Proactive build for embedded sensor data acquisition. Common pattern
 across projects: multiple sensors polled in a main loop, with aggregated
 statistics for logging/display/telemetry.
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded sensor frameworks (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **SensorManager (Android)** -- Java/Kotlin, OS-coupled, not for bare-metal
-- **Zephyr sensor subsystem** -- deeply tied to Zephyr RTOS device model
-- **ESP-IDF sensor drivers** -- coupled to FreeRTOS + ESP-IDF HAL
-
-All violate our wheel contract: zero OS dependency, no malloc, no globals,
-callback-injected I/O. A passive poll-based hub with statistics is
-straightforward to implement (~120 lines) and matches our platform
-conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -112,14 +101,17 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
+## Design tradeoffs
 
-- **Date**: 2026-05-01
-- **Key decisions**: pending first review
-
-## Responsible human
-
-@user
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Polling | Application-driven | Passive design, no OS/timer dependency |
+| Statistics | Auto min/max/sum | Common need, negligible overhead |
+| Values | float | Covers temperature/pressure/humidity; integer sensors cast |
+| Registration | Dynamic (runtime) | Sensors register at startup, count varies per project |
+| Error handling | Per-sensor status | One failing sensor does not block others |
+| Thread safety | Not thread-safe | Caller serializes (typical: single loop context) |
+| Max sensors | Compile-time array | No malloc, predictable memory footprint |
 
 ## Usage example
 
@@ -163,14 +155,27 @@ void sensors_poll(void) {
 }
 ```
 
-## Design tradeoffs
+## Why not an open-source library?
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Polling | Application-driven | Passive design, no OS/timer dependency |
-| Statistics | Auto min/max/sum | Common need, negligible overhead |
-| Values | float | Covers temperature/pressure/humidity; integer sensors cast |
-| Registration | Dynamic (runtime) | Sensors register at startup, count varies per project |
-| Error handling | Per-sensor status | One failing sensor does not block others |
-| Thread safety | Not thread-safe | Caller serializes (typical: single loop context) |
-| Max sensors | Compile-time array | No malloc, predictable memory footprint |
+Checked common embedded sensor frameworks (2026-05-01):
+
+- **SensorManager (Android)** -- Java/Kotlin, OS-coupled, not for bare-metal
+- **Zephyr sensor subsystem** -- deeply tied to Zephyr RTOS device model
+- **ESP-IDF sensor drivers** -- coupled to FreeRTOS + ESP-IDF HAL
+
+All violate our wheel contract: zero OS dependency, no malloc, no globals,
+callback-injected I/O. A passive poll-based hub with statistics is
+straightforward to implement (~120 lines) and matches our platform
+conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: pending first review
+
+## Responsible human
+
+@user

@@ -84,14 +84,10 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (44 C tests, 143 assertions)
 - HIL: N/A
 
-## API review
+## API convention deviations
 
-- **Date**: 2026-04-28
-- **Key decisions**: Stateless frame layer (pure functions on buffers); master/slave in one wheel with compile-time selection; concrete dependency on crc16 per ADR-009; register-only (no coils in v1); slave uses per-register callbacks (not block read/write); broadcast per Modbus spec (writes execute, no response).
+None.
 
-## Responsible human
-
-@user
 
 ## Features
 
@@ -102,3 +98,12 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Exception handling**: ILLEGAL_FUNCTION, ILLEGAL_DATA_ADDR, ILLEGAL_DATA_VALUE, SLAVE_FAILURE
 - **Compile-time selection**: `MODBUS_RTU_MASTER` / `MODBUS_RTU_SLAVE` (both on by default)
 - **Zero-copy parse**: `modbus_rtu_frame_t.data` points into original buffer
+
+## API review
+
+- **Date**: 2026-04-28
+- **Key decisions**: Stateless frame layer (pure functions on buffers); master/slave in one wheel with compile-time selection; concrete dependency on crc16 per ADR-009; register-only (no coils in v1); slave uses per-register callbacks (not block read/write); broadcast per Modbus spec (writes execute, no response).
+
+## Responsible human
+
+@user

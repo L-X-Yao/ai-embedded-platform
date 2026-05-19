@@ -50,22 +50,6 @@ gc9a01_err_t gc9a01_display(gc9a01_t *dev, bool on);
 uint16_t gc9a01_rgb565(uint8_t r, uint8_t g, uint8_t b);
 ```
 
-## SPI HAL
-
-```c
-typedef struct {
-    void    (*cs_low)(void *ctx);
-    void    (*cs_high)(void *ctx);
-    uint8_t (*xfer)(void *ctx, uint8_t tx);
-    void    (*dc_cmd)(void *ctx);    /* DC pin low  (command) */
-    void    (*dc_data)(void *ctx);   /* DC pin high (data)    */
-    void    (*rst_low)(void *ctx);   /* RST pin low  (reset)  */
-    void    (*rst_high)(void *ctx);  /* RST pin high (normal) */
-    void    (*delay_ms)(void *ctx, uint16_t ms);
-    void    *ctx;
-} gc9a01_spi_t;
-```
-
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
@@ -104,6 +88,22 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## SPI HAL
+
+```c
+typedef struct {
+    void    (*cs_low)(void *ctx);
+    void    (*cs_high)(void *ctx);
+    uint8_t (*xfer)(void *ctx, uint8_t tx);
+    void    (*dc_cmd)(void *ctx);    /* DC pin low  (command) */
+    void    (*dc_data)(void *ctx);   /* DC pin high (data)    */
+    void    (*rst_low)(void *ctx);   /* RST pin low  (reset)  */
+    void    (*rst_high)(void *ctx);  /* RST pin high (normal) */
+    void    (*delay_ms)(void *ctx, uint16_t ms);
+    void    *ctx;
+} gc9a01_spi_t;
+```
 
 ## API review
 

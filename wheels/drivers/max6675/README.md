@@ -13,10 +13,13 @@ with open-thermocouple detection.
 Proactive build. MAX6675 is a simple, low-cost thermocouple interface
 used in ovens, 3D printers, and industrial temperature monitoring.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for MAX6675. Self-written for zero-dependency SPI HAL
+No existing open-source component for MAX6675. Self-written for zero-dependency SPI HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -79,6 +82,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

@@ -8,11 +8,23 @@ Single Frame (SF), First Frame (FF), Consecutive Frame (CF), and Flow
 Control (FC). Provides stateful reassembly for multi-frame messages up to
 4095 bytes over classic CAN (8-byte DLC). Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no ISO-TP implementation. This wheel is a prerequisite for UDS
+Proactive build (ADR-011). i
+
+
+## Why self-written?
+
+existing open-source has no ISO-TP implementation. This wheel is a prerequisite for UDS
 (Unified Diagnostic Services) over CAN, common in automotive and
 industrial embedded systems.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -55,15 +67,40 @@ isotp_encode_sf(payload, 5, can_buf);
 can_send(can_buf, 8);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\isotp/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_isotp
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

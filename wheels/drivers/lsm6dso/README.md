@@ -13,10 +13,13 @@ reading and software reset. Output in millig (accel) and deg/s (gyro).
 Proactive build. LSM6DSO is a popular automotive-grade 6-axis IMU used
 in robotics, drones, and industrial motion tracking.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for LSM6DSO. Self-written for zero-dependency I2C HAL
+No existing open-source component for LSM6DSO. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -80,6 +83,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

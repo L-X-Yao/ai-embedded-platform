@@ -8,10 +8,22 @@ Integer (int32) and float variants, each with an optional clamped version
 that constrains output to [out_min, out_max]. All functions are stateless,
 thread-safe, and ISR-safe. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no standalone range-mapping utility. This is a ubiquitous embedded
+Proactive build (ADR-011). s
+
+
+## Why self-written?
+
+existing open-source has no standalone range-mapping utility. This is a ubiquitous embedded
 primitive (ADC scaling, servo mapping, sensor calibration) worth standardizing.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -38,15 +50,40 @@ int32_t temp = scale_map_i32(adc_val, 0, 4095, 0, 100);
 int32_t servo_us = scale_map_i32_clamp(joy, -512, 511, 1000, 2000);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\scale_map/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_scale_map
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

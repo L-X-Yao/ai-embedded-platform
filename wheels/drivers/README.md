@@ -14,6 +14,35 @@
 
 详细分类（按总线/用途）见 [MCU Compatibility Matrix](../../docs/mcu-compatibility.md)。
 
+## Origin
+
+Proactive build (ADR-011). w
+
+
+## Why self-written?
+
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
+
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/drivers/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_drivers
+```
+
+
+## API convention deviations
+
+None.
+
+
 ## 目录清单（115 wheels）
 
 | Wheel | 芯片 | 接口 | 状态 |
@@ -133,3 +162,13 @@
 | `w5500` | WIZnet W5500 TCP/IP 以太网 | SPI | candidate |
 | `ws2812` | WS2812 RGB 可寻址 LED | GPIO | candidate |
 | `xgzp6816d` | CFSensor XGZP6816D 差压 | I2C | candidate |
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

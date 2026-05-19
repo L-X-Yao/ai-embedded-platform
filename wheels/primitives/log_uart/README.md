@@ -93,6 +93,14 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **`log_uart_write_fn` uses `_fn` suffix instead of `_t`** (api-conventions S1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Consistent with `log_sink_fn` in the parent `log` wheel.
 
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| HAL binding | Function pointer injection | Same pattern as all L1 drivers; no link-time extern, no platform `#ifdef` |
+| Write signature | `(void *ctx, const uint8_t *data, size_t len)` | Matches typical MCU UART HAL APIs (STM32 HAL, GD32, etc.) |
+| Complexity | Thin wrapper, ~10 lines of logic | Value is standardization and testability, not algorithm |
+
 ## API review
 
 - **Date**: 2026-04-30
@@ -101,11 +109,3 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
-
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| HAL binding | Function pointer injection | Same pattern as all L1 drivers; no link-time extern, no platform `#ifdef` |
-| Write signature | `(void *ctx, const uint8_t *data, size_t len)` | Matches typical MCU UART HAL APIs (STM32 HAL, GD32, etc.) |
-| Complexity | Thin wrapper, ~10 lines of logic | Value is standardization and testability, not algorithm |

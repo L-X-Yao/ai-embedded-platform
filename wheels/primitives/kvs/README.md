@@ -9,15 +9,9 @@ near-zero RAM. Vendored from armink's FlashDB v2.1.0.
 
 Vendor: see VENDOR.md.
 
-## Why this upstream?
+## Why self-written?
 
-FlashDB is the most widely used embedded KV library in Chinese embedded
-(~2.5k GitHub stars, actively maintained). Features: KV + time-series DB,
-wear leveling, power-fail safe, ~6KB Flash / near-zero RAM.
-
-Evaluated alternatives: TFDB (too minimal, one sector per variable), KVED
-(numeric keys only), Zephyr NVS (not extractable), ESP NVS (ESP32 only).
-See ADR-010.
+Not self-written. Vendored from armink's FlashDB v2.1.0 (BSD-3). See "Why this upstream?" below.
 
 ## Dependencies
 
@@ -105,11 +99,6 @@ re-init, nonexistent key, 20-key batch, KV iterator.
 
 - **No `kvs_` wrapper**: Uses upstream FlashDB API directly (`fdb_kv_set` not `kvs_set`). Wrapping a production-grade API adds confusion for anyone familiar with FlashDB.
 
-## API review
-
-- **Date**: 2026-04-28
-- **Key decisions**: Vendor FlashDB v2.1.0 (user's production copy) per ADR-010. Use upstream API directly (no wrapper). Concrete dependency on fal wheel per ADR-009. FAL mode only (no file mode). Both KVDB and TSDB vendored, TSDB optional via compile flag.
-
 ## Porting (per-project fdb_cfg.h)
 
 Each project must provide `fdb_cfg.h` on the include path:
@@ -122,6 +111,21 @@ Each project must provide `fdb_cfg.h` on the include path:
 ```
 
 Also requires `fal_cfg.h` for flash partition configuration (see fal wheel).
+
+## Why this upstream?
+
+FlashDB is the most widely used embedded KV library in Chinese embedded
+(~2.5k GitHub stars, actively maintained). Features: KV + time-series DB,
+wear leveling, power-fail safe, ~6KB Flash / near-zero RAM.
+
+Evaluated alternatives: TFDB (too minimal, one sector per variable), KVED
+(numeric keys only), Zephyr NVS (not extractable), ESP NVS (ESP32 only).
+See ADR-010.
+
+## API review
+
+- **Date**: 2026-04-28
+- **Key decisions**: Vendor FlashDB v2.1.0 (user's production copy) per ADR-010. Use upstream API directly (no wrapper). Concrete dependency on fal wheel per ADR-009. FAL mode only (no file mode). Both KVDB and TSDB vendored, TSDB optional via compile flag.
 
 ## Responsible human
 

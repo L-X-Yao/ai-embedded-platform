@@ -81,15 +81,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: Fixed 2+2 header (not BER variable-length); big-endian to match network byte order; zero-copy decode (value pointers into input buffer).
-
-## Responsible human
-
-@user
-
 ## Wire format
 
 ```
@@ -100,3 +91,12 @@ None.
 ```
 
 All multi-byte fields are big-endian. Empty value (length=0) is valid.
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: Fixed 2+2 header (not BER variable-length); big-endian to match network byte order; zero-copy decode (value pointers into input buffer).
+
+## Responsible human
+
+@user

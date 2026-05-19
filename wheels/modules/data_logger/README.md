@@ -17,22 +17,10 @@ dependencies on other wheels.
 Proactive build. Structured data logging is needed in nearly every
 sensor/telemetry project (drones, weather stations, industrial monitors).
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded data logging libraries (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **fatfs + csv** -- requires filesystem, malloc, OS integration
-- **ulog / EasyLogger** -- log-oriented (text messages), not structured records
-- **embedded-log** -- Arduino C++, not portable C99
-- **SD card libraries** -- hardware-coupled, not storage-agnostic
-
-All violate our wheel contract: zero OS dependency, no malloc, no globals,
-callback-injected storage. A passive, record-based logger with typed fields
-and CSV output is straightforward to implement (~160 lines) and matches our
-platform conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -109,27 +97,30 @@ ctest --test-dir build --output-on-failure
   add-without-begin, get-count-null, flush-null, add-string-null,
   max-fields-exceeded, zero-fields-timestamp-only, large timestamp
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Evaluate binary record format option
+- [ ] Evaluate header row output (field names)
+- [ ] Real hardware flash/SD test
 
-- **Passive design**: application drives begin/add/commit cycle
-- **Typed fields**: INT32, UINT32, FLOAT, STRING with schema validation
-- **CSV output**: `timestamp,field1,field2,...\n` format
-- **Storage abstraction**: write + flush callbacks, application chooses backend
-- **Field count validation**: rejects extra fields or wrong types
-- **Buffer overflow protection**: returns ERR_OVERFLOW, record discarded
-- **Record counting**: track total committed records
-- **Configurable** via compile-time macros (buffer size, max fields)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Format | CSV text | Human-readable, easy to parse, universally supported |
+| Float precision | 2 decimal places | Sufficient for most sensor data; configurable if needed |
+| Field validation | Type-checked at add | Catches schema mismatches early, prevents corrupt records |
+| Buffer | Per-record staging | Complete record or nothing; no partial writes |
+| Storage | Callback injection | Application decides backend; flash, SD, UART all work |
+| Thread safety | Not thread-safe | Caller serializes (typical: single logging context) |
+| Timestamp | Caller-provided | No OS clock dependency; application owns time source |
+| Max fields | Compile-time limit | No malloc, predictable memory footprint |
 
 ## Usage example
 
@@ -170,22 +161,41 @@ static void logger_example(void)
 }
 ```
 
-## Design tradeoffs
+## Features
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Format | CSV text | Human-readable, easy to parse, universally supported |
-| Float precision | 2 decimal places | Sufficient for most sensor data; configurable if needed |
-| Field validation | Type-checked at add | Catches schema mismatches early, prevents corrupt records |
-| Buffer | Per-record staging | Complete record or nothing; no partial writes |
-| Storage | Callback injection | Application decides backend; flash, SD, UART all work |
-| Thread safety | Not thread-safe | Caller serializes (typical: single logging context) |
-| Timestamp | Caller-provided | No OS clock dependency; application owns time source |
-| Max fields | Compile-time limit | No malloc, predictable memory footprint |
+- **Passive design**: application drives begin/add/commit cycle
+- **Typed fields**: INT32, UINT32, FLOAT, STRING with schema validation
+- **CSV output**: `timestamp,field1,field2,...\n` format
+- **Storage abstraction**: write + flush callbacks, application chooses backend
+- **Field count validation**: rejects extra fields or wrong types
+- **Buffer overflow protection**: returns ERR_OVERFLOW, record discarded
+- **Record counting**: track total committed records
+- **Configurable** via compile-time macros (buffer size, max fields)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
-## Before promoting to stable
+## Why not an open-source library?
 
-- [ ] At least 1 real project uses it
-- [ ] Evaluate binary record format option
-- [ ] Evaluate header row output (field names)
-- [ ] Real hardware flash/SD test
+Checked common embedded data logging libraries (2026-05-01):
+
+- **fatfs + csv** -- requires filesystem, malloc, OS integration
+- **ulog / EasyLogger** -- log-oriented (text messages), not structured records
+- **embedded-log** -- Arduino C++, not portable C99
+- **SD card libraries** -- hardware-coupled, not storage-agnostic
+
+All violate our wheel contract: zero OS dependency, no malloc, no globals,
+callback-injected storage. A passive, record-based logger with typed fields
+and CSV output is straightforward to implement (~160 lines) and matches our
+platform conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

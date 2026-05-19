@@ -29,6 +29,28 @@ uint32_t sd_spi_get_block_count(const sd_spi_t *sd);
 
 Caller provides SPI HAL via `sd_spi_hal_t` callbacks (CS control + byte transfer + delay).
 
+## Usage
+
+```c
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+static void my_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
+
+static void example(void) {
+    sd_spi_hal_t hal = {
+        .cs_low = my_cs_low, .cs_high = my_cs_high,
+        .xfer = my_xfer, .delay_ms = my_delay
+    };
+    sd_spi_t sd;
+    if (sd_spi_init(&sd, &hal) == SD_SPI_OK) {
+        uint8_t buf[512];
+        sd_spi_read_block(&sd, 0, buf);
+        sd_spi_write_block(&sd, 1, buf);
+    }
+}
+```
+
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
@@ -64,15 +86,6 @@ ctest --test-dir build --output-on-failure
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: HAL adds delay_ms callback (needed for SD init timing); device handle holds card_type and block_count; SDHC/SDSC addressing handled internally
-
-## Responsible human
-
-@user
-
 ## Features
 
 - SDv1/SDv2/SDHC card type detection via CMD0/CMD8/ACMD41/CMD58 sequence
@@ -82,24 +95,11 @@ None.
 - Bounded retry loops (8000 iterations) -- dead card returns error instead of hanging
 - SPI HAL injection via callback struct -- zero RTOS / platform dependency
 
-## Usage
+## API review
 
-```c
-static void my_cs_low(void *ctx)  { (void)ctx; }
-static void my_cs_high(void *ctx) { (void)ctx; }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
-static void my_delay(void *ctx, uint32_t ms) { (void)ctx; (void)ms; }
+- **Date**: 2026-05-01
+- **Key decisions**: HAL adds delay_ms callback (needed for SD init timing); device handle holds card_type and block_count; SDHC/SDSC addressing handled internally
 
-static void example(void) {
-    sd_spi_hal_t hal = {
-        .cs_low = my_cs_low, .cs_high = my_cs_high,
-        .xfer = my_xfer, .delay_ms = my_delay
-    };
-    sd_spi_t sd;
-    if (sd_spi_init(&sd, &hal) == SD_SPI_OK) {
-        uint8_t buf[512];
-        sd_spi_read_block(&sd, 0, buf);
-        sd_spi_write_block(&sd, 1, buf);
-    }
-}
-```
+## Responsible human
+
+@user

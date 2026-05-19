@@ -72,15 +72,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-04-28
-- **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); checksum verification is separate from parsing (caller decides); single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
-
-## Responsible human
-
-@user
-
 ## Protocol
 
 NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
@@ -92,3 +83,12 @@ NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
 | GSA | fix_mode (2D/3D), pdop, hdop, vdop |
 
 Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.
+
+## API review
+
+- **Date**: 2026-04-28
+- **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); checksum verification is separate from parsing (caller decides); single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
+
+## Responsible human
+
+@user

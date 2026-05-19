@@ -8,10 +8,22 @@ Caller provides the backing buffer -- no heap, no OS. Suitable for ISR-safe
 allocation when wrapped with a critical section. Validates pointer bounds
 and alignment on free.
 
-## Why not VSF native?
+## Origin
 
-VSF has its own pool allocator tied to the VSF kernel. This wheel is a
+Proactive build (ADR-011). m
+
+
+## Why self-written?
+
+existing open-source has its own pool allocator tied to the VSF kernel. This wheel is a
 standalone zero-dependency allocator usable in any RTOS or bare-metal context.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -41,15 +53,40 @@ if (blk) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\memory_pool/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_memory_pool
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

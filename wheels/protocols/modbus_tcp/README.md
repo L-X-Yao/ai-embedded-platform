@@ -88,15 +88,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: MBAP header struct exposed for consumer inspection; build functions return frame length (positive) or error code (negative); parse is zero-copy (data pointer into input buffer); no CRC (TCP layer handles reliability); separate from modbus_rtu (different framing, shared PDU concept but independent implementation to avoid coupling).
-
-## Responsible human
-
-@user
-
 ## Features
 
 - **MBAP header**: transaction_id (2B) + protocol_id (2B, always 0) + length (2B) + unit_id (1B)
@@ -105,3 +96,12 @@ None.
 - **Exception detection**: `modbus_tcp_is_exception()` / `modbus_tcp_exception_code()`
 - **No CRC**: TCP provides reliability (unlike RTU)
 - **Codec only**: application handles TCP socket lifecycle
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: MBAP header struct exposed for consumer inspection; build functions return frame length (positive) or error code (negative); parse is zero-copy (data pointer into input buffer); no CRC (TCP layer handles reliability); separate from modbus_rtu (different framing, shared PDU concept but independent implementation to avoid coupling).
+
+## Responsible human
+
+@user

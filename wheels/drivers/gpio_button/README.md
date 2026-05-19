@@ -80,15 +80,6 @@ cmake -GNinja -S . -B build && cmake --build build
 - **`gpio_button_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
 - **Internal state fields exposed** in `gpio_button_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly.
 
-## API review
-
-- **Date**: 2026-04-27
-- **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_button_cfg_t`.
-
-## Responsible human
-
-@user
-
 ## Event priority
 
 | Gesture | Condition | When emitted |
@@ -100,3 +91,12 @@ cmake -GNinja -S . -B build && cmake --build build
 | DOUBLE_CLICK | Two presses within `double_click_ms` | On second release |
 
 LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.
+
+## API review
+
+- **Date**: 2026-04-27
+- **Key decisions**: Single `read(ctx)` HAL callback; `tick(dt_ms)` avoids timer dependency; `active_level` supports both active-low and active-high; CLICK delayed by double-click window to allow gesture disambiguation; LONG_PRESS fires while still held (not on release); configurable timings via `gpio_button_cfg_t`.
+
+## Responsible human
+
+@user

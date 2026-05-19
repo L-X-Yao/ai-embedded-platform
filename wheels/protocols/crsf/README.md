@@ -7,10 +7,22 @@ TBS Crossfire / ExpressLRS (CRSF) RC protocol codec. Encodes and decodes
 CRSF frames with CRC-8 DVB-S2 (poly 0xD5) validation. Packs and unpacks
 16 channels of 11-bit RC data (range 172-1811). Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no RC protocol support. CRSF is the dominant protocol for
+Proactive build (ADR-011). c
+
+
+## Why self-written?
+
+existing open-source has no RC protocol support. CRSF is the dominant protocol for
 ExpressLRS receivers used in drone/UAV projects.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -40,15 +52,40 @@ if (crsf_decode_frame(uart_buf, uart_len, &frame) == CRSF_OK) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\crsf/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_crsf
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

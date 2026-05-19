@@ -83,27 +83,27 @@ ctest --test-dir build --output-on-failure
   backspace on empty, null commands, CR-only line ending, CRLF sequence,
   control characters ignored
 
-## API review
+## API convention deviations
 
-- Date: 2026-04-28
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 2 real projects use it
+- [ ] Evaluate history support (ring buffer, up/down arrow)
+- [ ] Evaluate tab completion
+- [ ] Real hardware UART test
 
-- Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR
-- Command table: static array of `{name, handler, help}` entries
-- Built-in `help` command lists all registered commands
-- Argument splitting (whitespace-delimited, argc/argv style)
-- Backspace / DEL handling with echo
-- Configurable prompt string
-- Line buffer overflow protection
-- Pure C99, no heap, fully reentrant per-context
-- Output via callback (works with any transport: UART, RTT, USB CDC)
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Tokenizer | In-place NUL insertion | Zero allocation, O(n) single pass |
+| Quoting | Not supported | Embedded debug shells rarely need quoted args |
+| History | Not implemented | Adds RAM cost (ring buffer); can add as opt-in later |
+| Echo | Enabled by default | Expected for interactive UART; disable by setting write_fn=NULL |
+| Thread safety | Not thread-safe | Callers serialize access (typical: single UART RX context) |
 
 ## Usage example
 
@@ -148,19 +148,24 @@ void debug_shell_rx(uint8_t byte) {
 }
 ```
 
-## Design tradeoffs
+## Features
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Tokenizer | In-place NUL insertion | Zero allocation, O(n) single pass |
-| Quoting | Not supported | Embedded debug shells rarely need quoted args |
-| History | Not implemented | Adds RAM cost (ring buffer); can add as opt-in later |
-| Echo | Enabled by default | Expected for interactive UART; disable by setting write_fn=NULL |
-| Thread safety | Not thread-safe | Callers serialize access (typical: single UART RX context) |
+- Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR
+- Command table: static array of `{name, handler, help}` entries
+- Built-in `help` command lists all registered commands
+- Argument splitting (whitespace-delimited, argc/argv style)
+- Backspace / DEL handling with echo
+- Configurable prompt string
+- Line buffer overflow protection
+- Pure C99, no heap, fully reentrant per-context
+- Output via callback (works with any transport: UART, RTT, USB CDC)
 
-## Before promoting to stable
+## API review
 
-- [ ] At least 2 real projects use it
-- [ ] Evaluate history support (ring buffer, up/down arrow)
-- [ ] Evaluate tab completion
-- [ ] Real hardware UART test
+- Date: 2026-04-28
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

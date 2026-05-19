@@ -14,10 +14,13 @@ plus batch conversion functions.
 Proactive build. BCD conversion is needed by every RTC driver wheel
 (ds3231, pcf8563) and some legacy serial protocols.
 
-## Why not VSF native?
+## Why self-written?
 
-Textbook utility with no VSF equivalent. Self-written for platform
+Textbook utility with no existing open-source equivalent. Self-written for platform
 convention consistency (unified error codes, test harness).
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -82,6 +85,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

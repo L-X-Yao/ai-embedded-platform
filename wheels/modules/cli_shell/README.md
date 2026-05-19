@@ -20,21 +20,10 @@ projects: UART-connected debug console with modular command registration.
 cli_parser provided the L0 foundation; this L3 module adds dynamic
 registration and quoted argument support.
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded CLI libraries (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **microrl** -- requires malloc or static global, couples to terminal I/O
-- **embedded-cli** -- Arduino-centric, C++ API, task-based design
-- **cli** -- most C implementations are POSIX-coupled (stdin/stdout)
-
-All violate our wheel contract: zero OS dependency, no malloc, no globals,
-callback-injected I/O. A passive, feed-based shell with dynamic command
-registration is straightforward to implement (~150 lines) and matches our
-platform conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -102,44 +91,30 @@ ctest --test-dir build --output-on-failure
   handler I/O write, whitespace-only input, handler context passing,
   multiple quoted arguments
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Evaluate history support (up/down arrow)
+- [ ] Evaluate tab completion
+- [ ] Real hardware UART test
 
-- **Passive design**: `cli_shell_feed()` processes one byte at a time
-- **Dynamic command registration**: `cli_shell_register()` at runtime
-- **Built-in help**: auto-registered, lists all commands with descriptions
-- **Quoted arguments**: `log "hello world"` parses as argc=2
-- **Backspace / DEL handling** with terminal echo
-- **Echo**: input bytes echoed back for interactive terminal use
-- **CRLF handling**: `\r\n`, `\r`, `\n` all treated as single newline
-- **Unknown command feedback**: prints error + suggests "help"
-- **Line overflow protection**: silently drops chars beyond buffer limit
-- **Configurable** via compile-time macros (line size, max args, max cmds)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
 
-## Differences from cli_parser (L0)
-
-| Aspect | cli_parser (L0) | cli_shell (L3) |
-|--------|-----------------|----------------|
-| Command table | Static array at init | Dynamic registration |
-| I/O callback | `(buf, len, ctx)` | `(ctx, buf, len)` via io struct |
-| Handler signature | Returns error code | Void, writes output via io |
-| Quoting | Not supported | Double-quote support |
-| Help | Built-in, lists static table | Built-in, lists dynamic table |
-| Dependencies | None | None (self-contained) |
-
-cli_shell is designed for applications that need runtime command
-registration (e.g., each module registers its own debug commands at
-startup). cli_parser is for simpler cases with a fixed command table.
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Registration | Dynamic (runtime) | Modules register own commands at startup |
+| Tokenizer | In-place NUL insertion | Zero allocation, O(n) single pass |
+| Quoting | Double quotes only | Covers common case (strings with spaces) |
+| History | Not implemented | RAM cost; add as opt-in wrapper later |
+| Tab completion | Not implemented | Complexity/ROM cost; separate wheel if needed |
+| Echo | Always on | Expected for interactive terminal |
+| Thread safety | Not thread-safe | Caller serializes (typical: single RX context) |
+| Max commands | Compile-time array | No malloc, predictable memory footprint |
 
 ## Usage example
 
@@ -188,22 +163,57 @@ void debug_shell_rx(uint8_t byte) {
 }
 ```
 
-## Design tradeoffs
+## Differences from cli_parser (L0)
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Registration | Dynamic (runtime) | Modules register own commands at startup |
-| Tokenizer | In-place NUL insertion | Zero allocation, O(n) single pass |
-| Quoting | Double quotes only | Covers common case (strings with spaces) |
-| History | Not implemented | RAM cost; add as opt-in wrapper later |
-| Tab completion | Not implemented | Complexity/ROM cost; separate wheel if needed |
-| Echo | Always on | Expected for interactive terminal |
-| Thread safety | Not thread-safe | Caller serializes (typical: single RX context) |
-| Max commands | Compile-time array | No malloc, predictable memory footprint |
+| Aspect | cli_parser (L0) | cli_shell (L3) |
+|--------|-----------------|----------------|
+| Command table | Static array at init | Dynamic registration |
+| I/O callback | `(buf, len, ctx)` | `(ctx, buf, len)` via io struct |
+| Handler signature | Returns error code | Void, writes output via io |
+| Quoting | Not supported | Double-quote support |
+| Help | Built-in, lists static table | Built-in, lists dynamic table |
+| Dependencies | None | None (self-contained) |
 
-## Before promoting to stable
+cli_shell is designed for applications that need runtime command
+registration (e.g., each module registers its own debug commands at
+startup). cli_parser is for simpler cases with a fixed command table.
 
-- [ ] At least 1 real project uses it
-- [ ] Evaluate history support (up/down arrow)
-- [ ] Evaluate tab completion
-- [ ] Real hardware UART test
+## Features
+
+- **Passive design**: `cli_shell_feed()` processes one byte at a time
+- **Dynamic command registration**: `cli_shell_register()` at runtime
+- **Built-in help**: auto-registered, lists all commands with descriptions
+- **Quoted arguments**: `log "hello world"` parses as argc=2
+- **Backspace / DEL handling** with terminal echo
+- **Echo**: input bytes echoed back for interactive terminal use
+- **CRLF handling**: `\r\n`, `\r`, `\n` all treated as single newline
+- **Unknown command feedback**: prints error + suggests "help"
+- **Line overflow protection**: silently drops chars beyond buffer limit
+- **Configurable** via compile-time macros (line size, max args, max cmds)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
+
+## Why not an open-source library?
+
+Checked common embedded CLI libraries (2026-05-01):
+
+- **microrl** -- requires malloc or static global, couples to terminal I/O
+- **embedded-cli** -- Arduino-centric, C++ API, task-based design
+- **cli** -- most C implementations are POSIX-coupled (stdin/stdout)
+
+All violate our wheel contract: zero OS dependency, no malloc, no globals,
+callback-injected I/O. A passive, feed-based shell with dynamic command
+registration is straightforward to implement (~150 lines) and matches our
+platform conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

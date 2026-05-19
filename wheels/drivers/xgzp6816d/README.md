@@ -30,6 +30,29 @@ xgzp6816d_err_t xgzp6816d_read   (const xgzp6816d_i2c_t *i2c,
 Caller provides I2C HAL via `xgzp6816d_i2c_t` callbacks (generic write/read
 transactions, not the register-paired protocol that BMP280-family parts use).
 
+## Usage
+
+```c
+#include "xgzp6816d.h"
+
+static bool plat_write(void *ctx, uint8_t addr, const uint8_t *buf, uint16_t n)
+    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
+static bool plat_read(void *ctx, uint8_t addr, uint8_t *buf, uint16_t n)
+    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
+
+static void example(void) {
+    xgzp6816d_i2c_t bus = { .write = plat_write, .read = plat_read, .ctx = NULL };
+
+    xgzp6816d_probe(&bus);
+
+    xgzp6816d_trigger(&bus);
+    /* sleep_ms(XGZP6816D_CONV_MS); -- caller provides delay */
+    xgzp6816d_data_t d;
+    xgzp6816d_read(&bus, &d);
+    /* d.pressure_pa, d.temperature_c */
+}
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 21 tests, 39 assertions, 2026-04-29
@@ -57,46 +80,11 @@ ctest --test-dir build --output-on-failure
 
 I2C HAL uses generic `write(addr, buf, len)` / `read(addr, buf, len)` instead of the standard `write_reg(addr, reg, val)` / `read_regs(addr, reg, buf, len)` pattern used by other driver wheels. Reason: XGZP6816D protocol is not register-addressed.
 
-## API review
+## Upgrade to stable
 
-- Date: 2026-04-27
-- Reviewer: @user
-- Key decisions: split trigger/read (no RTOS dep); generic I2C HAL instead of register-paired (matches hardware protocol); dual-rail pressure clamp
-
-## Responsible human
-
-@user
-
-## Features
-
-- Probe (bus connectivity check)
-- Split trigger/read cycle — caller picks own delay primitive (vTaskDelay, k_msleep, busy loop), wheel has zero RTOS dependency
-- 24-bit pressure with dual-rail clamp (30-110 kPa) — prevents garbage values from saturated readings
-- 16-bit temperature (-40 to 150 C)
-- Generic I2C transaction HAL (write/read, not register-paired — XGZP6816D uses command + stream protocol)
-
-## Usage
-
-```c
-#include "xgzp6816d.h"
-
-static bool plat_write(void *ctx, uint8_t addr, const uint8_t *buf, uint16_t n)
-    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
-static bool plat_read(void *ctx, uint8_t addr, uint8_t *buf, uint16_t n)
-    { (void)ctx; (void)addr; (void)buf; (void)n; return true; }
-
-static void example(void) {
-    xgzp6816d_i2c_t bus = { .write = plat_write, .read = plat_read, .ctx = NULL };
-
-    xgzp6816d_probe(&bus);
-
-    xgzp6816d_trigger(&bus);
-    /* sleep_ms(XGZP6816D_CONV_MS); -- caller provides delay */
-    xgzp6816d_data_t d;
-    xgzp6816d_read(&bus, &d);
-    /* d.pressure_pa, d.temperature_c */
-}
-```
+- [ ] 2nd project consumer (currently only flybox)
+- [ ] Performance reference (conversion time measurement, I2C transaction sizes)
+- [ ] Change history
 
 ## Pressure conversion
 
@@ -115,8 +103,20 @@ high-side clamp.
 
 Temperature: `(t_raw / 65536) * 190 - 40`, range -40 to ~150 C.
 
-## Upgrade to stable
+## Features
 
-- [ ] 2nd project consumer (currently only flybox)
-- [ ] Performance reference (conversion time measurement, I2C transaction sizes)
-- [ ] Change history
+- Probe (bus connectivity check)
+- Split trigger/read cycle — caller picks own delay primitive (vTaskDelay, k_msleep, busy loop), wheel has zero RTOS dependency
+- 24-bit pressure with dual-rail clamp (30-110 kPa) — prevents garbage values from saturated readings
+- 16-bit temperature (-40 to 150 C)
+- Generic I2C transaction HAL (write/read, not register-paired — XGZP6816D uses command + stream protocol)
+
+## API review
+
+- Date: 2026-04-27
+- Reviewer: @user
+- Key decisions: split trigger/read (no RTOS dep); generic I2C HAL instead of register-paired (matches hardware protocol); dual-rail pressure clamp
+
+## Responsible human
+
+@user

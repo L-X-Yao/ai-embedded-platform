@@ -54,20 +54,6 @@ lcd_st7789_err_t lcd_st7789_set_rotation(lcd_st7789_t *dev,
 lcd_st7789_err_t lcd_st7789_invert(lcd_st7789_t *dev, bool on);
 ```
 
-## SPI HAL
-
-```c
-typedef struct {
-    void    (*cs_low)(void *ctx);
-    void    (*cs_high)(void *ctx);
-    uint8_t (*xfer)(void *ctx, uint8_t tx);
-    void    (*dc_set)(void *ctx, bool level);   /* D/C pin: 0=cmd, 1=data */
-    void    (*rst_set)(void *ctx, bool level);  /* RST pin: 0=reset, 1=normal */
-    void    (*delay_ms)(void *ctx, uint32_t ms);
-    void    *ctx;
-} lcd_st7789_spi_t;
-```
-
 ## Configuration (compile-time)
 
 | Define | Default | Purpose |
@@ -105,6 +91,20 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## SPI HAL
+
+```c
+typedef struct {
+    void    (*cs_low)(void *ctx);
+    void    (*cs_high)(void *ctx);
+    uint8_t (*xfer)(void *ctx, uint8_t tx);
+    void    (*dc_set)(void *ctx, bool level);   /* D/C pin: 0=cmd, 1=data */
+    void    (*rst_set)(void *ctx, bool level);  /* RST pin: 0=reset, 1=normal */
+    void    (*delay_ms)(void *ctx, uint32_t ms);
+    void    *ctx;
+} lcd_st7789_spi_t;
+```
 
 ## API review
 

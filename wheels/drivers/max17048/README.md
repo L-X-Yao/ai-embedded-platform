@@ -14,10 +14,13 @@ quick-start recalibration, and sleep/wake power modes.
 Proactive build. MAX17048 is the go-to fuel gauge for single-cell LiPo
 battery monitoring in wearables, IoT devices, and portable electronics.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for MAX17048. Self-written for zero-dependency I2C HAL
+No existing open-source component for MAX17048. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -80,6 +83,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

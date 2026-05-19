@@ -134,15 +134,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **`log_rate_output_fn` and `log_rate_time_fn` use `_fn` suffix instead of `_t`** (api-conventions S1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Consistent with `log_sink_fn` in the parent `log` wheel.
 
-## API review
-
-- **Date**: 2026-04-30
-- **Key decisions**: Token bucket algorithm, time injection (no OS dependency), dropped counter for diagnostics.
-
-## Responsible human
-
-@user
-
 ## Design decisions
 
 | Aspect | Choice | Rationale |
@@ -152,3 +143,12 @@ cmake -GNinja -S . -B build && cmake --build build
 | Granularity | Line-level (not byte-level) | Matches log semantics; a single `LOG_ERROR(...)` is one token |
 | Dropped counter | Monotonic `uint32_t` | Diagnostic: callers can periodically report dropped count |
 | Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |
+
+## API review
+
+- **Date**: 2026-04-30
+- **Key decisions**: Token bucket algorithm, time injection (no OS dependency), dropped counter for diagnostics.
+
+## Responsible human
+
+@user

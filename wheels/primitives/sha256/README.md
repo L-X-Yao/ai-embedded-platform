@@ -95,6 +95,21 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
+## Performance reference
+
+- Compression: 64 rounds per 512-bit (64-byte) block
+- ROM footprint: ~1.3 KB (K table 256 bytes + code ~1 KB)
+- RAM: 108 bytes context (sha256_t) + ~320 bytes stack (W[64] schedule)
+
+## Features
+
+- SHA-256 hash (FIPS 180-4 compliant)
+- Streaming and one-shot API
+- Byte-oriented (no alignment assumptions, portable to 8/16/32-bit MCUs)
+- Pure C99, zero dependencies
+- Context wiped after sha256_final (basic side-channel hygiene)
+- Handles messages up to 2^64 - 1 bits
+
 ## API review
 
 - **Date**: 2026-05-04
@@ -107,18 +122,3 @@ None.
 ## Responsible human
 
 @user
-
-## Features
-
-- SHA-256 hash (FIPS 180-4 compliant)
-- Streaming and one-shot API
-- Byte-oriented (no alignment assumptions, portable to 8/16/32-bit MCUs)
-- Pure C99, zero dependencies
-- Context wiped after sha256_final (basic side-channel hygiene)
-- Handles messages up to 2^64 - 1 bits
-
-## Performance reference
-
-- Compression: 64 rounds per 512-bit (64-byte) block
-- ROM footprint: ~1.3 KB (K table 256 bytes + code ~1 KB)
-- RAM: 108 bytes context (sha256_t) + ~320 bytes stack (W[64] schedule)

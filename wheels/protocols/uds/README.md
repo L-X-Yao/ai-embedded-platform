@@ -9,10 +9,22 @@ ECUReset, ReadDataByIdentifier, WriteDataByIdentifier, TesterPresent, and
 NegativeResponse. Transport-independent -- pair with ISO-TP for CAN.
 Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no UDS support. UDS is the standard diagnostic protocol for
+Proactive build (ADR-011). u
+
+
+## Why self-written?
+
+existing open-source has no UDS support. UDS is the standard diagnostic protocol for
 automotive ECUs, required for production diagnostics and EOL testing.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99. Typically paired with the isotp wheel for CAN transport.
 
 ## API
 
@@ -49,15 +61,40 @@ if (msg.is_negative) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99. Typically paired with the isotp wheel for CAN transport.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\uds/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_uds
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user
