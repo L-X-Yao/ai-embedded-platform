@@ -29,6 +29,28 @@ qmi8658a_err_t  qmi8658a_reset(const qmi8658a_t *dev);
 
 Caller provides I2C HAL via `qmi8658a_i2c_t` callbacks (write_reg + read_regs).
 
+## Usage
+
+```c
+static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
+static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
+    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
+
+static void example(void) {
+    qmi8658a_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
+    qmi8658a_t dev;
+    qmi8658a_cfg_t cfg = qmi8658a_default_cfg();
+    cfg.acc_range = QMI8658A_ACC_RANGE_8G;
+
+    if (qmi8658a_init(&dev, &i2c, &cfg) == QMI8658A_OK) {
+        qmi8658a_data_t data;
+        qmi8658a_read(&dev, &data);
+        /* data.ax_g/ay_g/az_g in G, data.gx_dps/gy_dps/gz_dps in deg/s */
+    }
+}
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 20 tests, 2026-04-30
@@ -56,15 +78,11 @@ ctest --test-dir build --output-on-failure
 
 None.
 
-## API review
+## Upgrade to stable
 
-- Date: 2026-04-25
-- Reviewer: @user
-- Key decisions: expose `default_cfg()` for common defaults; output in physical units (G / deg/s) not raw counts; separate `reset()` from `init()`
-
-## Responsible human
-
-@user
+- [ ] 2nd project consumer (currently only flybox)
+- [ ] Performance reference (read latency, I2C transaction count per read)
+- [ ] Change history
 
 ## Features
 
@@ -76,30 +94,12 @@ None.
 - Soft reset command
 - I2C HAL injection via callback struct — zero RTOS dependency
 
-## Usage
+## API review
 
-```c
-static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
-static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
-    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
+- Date: 2026-04-25
+- Reviewer: @user
+- Key decisions: expose `default_cfg()` for common defaults; output in physical units (G / deg/s) not raw counts; separate `reset()` from `init()`
 
-static void example(void) {
-    qmi8658a_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
-    qmi8658a_t dev;
-    qmi8658a_cfg_t cfg = qmi8658a_default_cfg();
-    cfg.acc_range = QMI8658A_ACC_RANGE_8G;
+## Responsible human
 
-    if (qmi8658a_init(&dev, &i2c, &cfg) == QMI8658A_OK) {
-        qmi8658a_data_t data;
-        qmi8658a_read(&dev, &data);
-        /* data.ax_g/ay_g/az_g in G, data.gx_dps/gy_dps/gz_dps in deg/s */
-    }
-}
-```
-
-## Upgrade to stable
-
-- [ ] 2nd project consumer (currently only flybox)
-- [ ] Performance reference (read latency, I2C transaction count per read)
-- [ ] Change history
+@user

@@ -8,10 +8,22 @@ Maintains a sum-of-squares in a circular buffer provided by the caller.
 Useful for vibration monitoring, AC signal measurement, and audio level
 detection. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no sliding-window RMS primitive. This fills a common need for
+Proactive build (ADR-011). m
+
+
+## Why self-written?
+
+existing open-source has no sliding-window RMS primitive. This fills a common need for
 real-time signal analysis on embedded targets without heap allocation.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99 with `<math.h>` for `sqrtf`.
 
 ## API
 
@@ -38,15 +50,40 @@ if (rms_val > VIBRATION_THRESHOLD) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99 with `<math.h>` for `sqrtf`.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\moving_rms/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_moving_rms
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

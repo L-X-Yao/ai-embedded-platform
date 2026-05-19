@@ -93,15 +93,6 @@ cmake -B build -S . && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: Incremental byte-at-a-time feed (suitable for ISR/DMA byte streams); caller-provided buffer (no malloc); zero-copy payload pointer into buffer; separate checksum function exposed for building custom frames.
-
-## Responsible human
-
-@user
-
 ## Protocol
 
 UBX binary frame format:
@@ -118,3 +109,12 @@ UBX binary frame format:
 | CK_B | 1 | Fletcher-8 checksum byte B |
 
 Checksum computed over Class + ID + Length + Payload (not sync bytes).
+
+## API review
+
+- **Date**: 2026-05-11
+- **Key decisions**: Incremental byte-at-a-time feed (suitable for ISR/DMA byte streams); caller-provided buffer (no malloc); zero-copy payload pointer into buffer; separate checksum function exposed for building custom frames.
+
+## Responsible human
+
+@user

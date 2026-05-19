@@ -9,11 +9,23 @@ LRC is the two's complement of the sum of binary bytes. Complements the
 modbus_rtu (binary) and modbus_tcp (TCP wrapper) wheels.
 Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no Modbus protocol support. Modbus ASCII is used for serial
+Proactive build (ADR-011). m
+
+
+## Why self-written?
+
+existing open-source has no Modbus protocol support. Modbus ASCII is used for serial
 communication in industrial automation where human-readable frames are
 preferred over binary RTU encoding.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -44,15 +56,40 @@ modbus_ascii_encode(&resp, buf, sizeof(buf), &len);
 uart_send(buf, len);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\modbus_ascii/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_modbus_ascii
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

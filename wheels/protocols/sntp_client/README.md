@@ -9,11 +9,23 @@ offset and round-trip delay from NTP timestamps. No transport -- caller
 handles UDP send/receive. Includes NTP-to-Unix and Unix-to-NTP conversions.
 Pure C99, no heap, fully reentrant.
 
-## Why not VSF native?
+## Origin
 
-VSF has no standalone SNTP codec. This wheel provides the packet-level
+Proactive build (ADR-011). s
+
+
+## Why self-written?
+
+existing open-source has no standalone SNTP codec. This wheel provides the packet-level
 primitives needed to synchronize an RTC or soft clock without pulling in
 a full network stack.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -52,15 +64,40 @@ sntp_client_compute(&resp, &t1, &t4, &result);
 /* result.offset_ms = local clock error, result.unix_sec = server time */
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\sntp_client/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_sntp_client
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

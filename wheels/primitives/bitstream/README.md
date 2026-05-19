@@ -13,10 +13,13 @@ serialization formats.
 Proactive build. Bit-level packing is needed by SBUS, CRSF, CAN signal
 extraction, and other packed binary protocols in the wheel ecosystem.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF equivalent. Textbook utility self-written for platform convention
+No existing open-source equivalent. Textbook utility self-written for platform convention
 consistency and test harness integration.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -82,6 +85,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

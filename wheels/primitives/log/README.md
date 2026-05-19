@@ -82,68 +82,13 @@ Expected: **12 C tests + 3 pytest cases all green** (including release build com
 
 - **`log_sink_fn` uses `_fn` suffix instead of `_t`** (api-conventions §1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Common C idiom for readability. Not renamed to avoid breaking existing consumers.
 
-## API review
+## Before promoting to stable
 
-- Proposal date: 2026-04-21
-- Reviewer: @user
-- Key decisions: accepted all default recommendations (Q1-Q5 per AI suggestion)
-
-## Responsible human
-
-@user (2-3 person team)
-
-## Output format
-
-```
-[00012345] [I] [ble] connected to peer 0a:1b:2c
-[00012367] [W] [driver] i2c retry #1
-[00012389] [E] [app] config crc mismatch
-```
-
-- `[XXXXXXXX]` timestamp (ms, 8-digit padded), can be disabled
-- `[L]` level character `E/W/I/D`
-- `[module]` caller's `LOG_MODULE` value
-
-## Design tradeoffs
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Module tagging | `#define LOG_MODULE` per file | Simplest, no linker dependency, compile-time constant enables optimization |
-| Compile-time filter | `if ((level) <= LOG_LEVEL_MAX)` | Compiler eliminates dead branch + string literals |
-| Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
-| No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
-| Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
-| **Stack budget** | **log_emit=256B + each sink's own buffer** | **With log_color(512B): ~800B per LOG_* call. Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
-| Structured logging | Not implemented | Typical embedded products don't need JSON logs |
-
-## Companion sink wheels
-
-All sinks use the same `log_sink_fn` signature, composable via `log_add_sink()`.
-
-| Sink | Wheel | Type | Description |
-|------|-------|------|-------------|
-| stdout | **built-in** | output | `log_add_stdout_sink()` — fprintf to stdout |
-| UART | `log_uart` | output | HAL function pointer injection, any UART |
-| RTT | `log_rtt` | output | Segger RTT-style, channel-aware, HAL injected |
-| File | `log_file` | output | FILE* with append mode + auto-flush |
-| Ring buffer | `log_ringbuf` | output | RAM circular buffer for crash dump / CLI |
-| Flash | `log_flash` | output | Persistent sector-ring on SPI flash, HAL injected |
-| Color | `log_color` | transform | ANSI color wrapper (E=red W=yellow I=green D=gray) |
-| Filter | `log_filter` | transform | Module-based ALLOW/DENY runtime filter |
-| Rate limit | `log_rate` | transform | Token bucket, prevents log flood |
-| Dedup | `log_dedup` | transform | Suppress consecutive identical lines |
-
-**Composition example** (color UART + filtered flash + crash ringbuf):
-
-```c
-log_color_init(&color, uart_write_fn, NULL);
-log_filter_init(&filter, log_flash_sink, &flash, LOG_FILTER_ALLOW);
-log_filter_add(&filter, "imu");
-
-log_add_sink(log_color_sink, &color);      /* all levels → colored UART */
-log_add_sink(log_filter_sink, &filter);    /* imu only → flash */
-log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
-```
+- [ ] At least 1 real project uses it
+- [ ] Add "Performance reference" section (log_emit latency / RAM footprint)
+- [ ] Add "Changelog" section
+- [ ] Cross-platform tick (at least STM32/ESP32 verified on real hardware)
+- [ ] Evaluate rtdbg.h reference points (`_eval/rtthread_rtdbg/`): ANSI color (needs per-sink scheme) / `LOG_HERE` (function+line) / `LOG_RAW` (skip prefix). All are **new API** — go through wheel-contract §7 approval when triggered by a real project. Hex dump: use VSF `vsf_trace_dump_buff` (ADR-006), don't reinvent.
 
 ## Usage examples
 
@@ -193,10 +138,65 @@ static void vsf_log_init(void) {
 }
 ```
 
-## Before promoting to stable
+## Companion sink wheels
 
-- [ ] At least 1 real project uses it
-- [ ] Add "Performance reference" section (log_emit latency / RAM footprint)
-- [ ] Add "Changelog" section
-- [ ] Cross-platform tick (at least STM32/ESP32 verified on real hardware)
-- [ ] Evaluate rtdbg.h reference points (`_eval/rtthread_rtdbg/`): ANSI color (needs per-sink scheme) / `LOG_HERE` (function+line) / `LOG_RAW` (skip prefix). All are **new API** — go through wheel-contract §7 approval when triggered by a real project. Hex dump: use VSF `vsf_trace_dump_buff` (ADR-006), don't reinvent.
+All sinks use the same `log_sink_fn` signature, composable via `log_add_sink()`.
+
+| Sink | Wheel | Type | Description |
+|------|-------|------|-------------|
+| stdout | **built-in** | output | `log_add_stdout_sink()` — fprintf to stdout |
+| UART | `log_uart` | output | HAL function pointer injection, any UART |
+| RTT | `log_rtt` | output | Segger RTT-style, channel-aware, HAL injected |
+| File | `log_file` | output | FILE* with append mode + auto-flush |
+| Ring buffer | `log_ringbuf` | output | RAM circular buffer for crash dump / CLI |
+| Flash | `log_flash` | output | Persistent sector-ring on SPI flash, HAL injected |
+| Color | `log_color` | transform | ANSI color wrapper (E=red W=yellow I=green D=gray) |
+| Filter | `log_filter` | transform | Module-based ALLOW/DENY runtime filter |
+| Rate limit | `log_rate` | transform | Token bucket, prevents log flood |
+| Dedup | `log_dedup` | transform | Suppress consecutive identical lines |
+
+**Composition example** (color UART + filtered flash + crash ringbuf):
+
+```c
+log_color_init(&color, uart_write_fn, NULL);
+log_filter_init(&filter, log_flash_sink, &flash, LOG_FILTER_ALLOW);
+log_filter_add(&filter, "imu");
+
+log_add_sink(log_color_sink, &color);      /* all levels → colored UART */
+log_add_sink(log_filter_sink, &filter);    /* imu only → flash */
+log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
+```
+
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Module tagging | `#define LOG_MODULE` per file | Simplest, no linker dependency, compile-time constant enables optimization |
+| Compile-time filter | `if ((level) <= LOG_LEVEL_MAX)` | Compiler eliminates dead branch + string literals |
+| Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
+| No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
+| Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
+| **Stack budget** | **log_emit=256B + each sink's own buffer** | **With log_color(512B): ~800B per LOG_* call. Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
+| Structured logging | Not implemented | Typical embedded products don't need JSON logs |
+
+## Output format
+
+```
+[00012345] [I] [ble] connected to peer 0a:1b:2c
+[00012367] [W] [driver] i2c retry #1
+[00012389] [E] [app] config crc mismatch
+```
+
+- `[XXXXXXXX]` timestamp (ms, 8-digit padded), can be disabled
+- `[L]` level character `E/W/I/D`
+- `[module]` caller's `LOG_MODULE` value
+
+## API review
+
+- Proposal date: 2026-04-21
+- Reviewer: @user
+- Key decisions: accepted all default recommendations (Q1-Q5 per AI suggestion)
+
+## Responsible human
+
+@user (2-3 person team)

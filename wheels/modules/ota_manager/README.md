@@ -17,22 +17,10 @@ not depend on it. The application wires them together via callbacks.
 Proactive build. OTA capability is required in virtually all connected
 embedded products (IoT, fleet management, consumer devices).
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded OTA libraries (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **MCUboot** -- full bootloader, requires OS integration (Zephyr/mynewt)
-- **esp_ota_ops** -- ESP-IDF specific, not portable
-- **mbed-cloud-client** -- Mbed OS specific, heavy dependencies
-- **hawkBit DDI** -- server-side orchestration, client is OS-coupled
-- **SWUpdate** -- Linux userspace, not bare-metal
-
-All violate our wheel contract: zero OS dependency, no malloc, no globals,
-callback-injected I/O. A passive orchestration state machine (~150 lines)
-matches our platform conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -110,26 +98,31 @@ ctest --test-dir build --output-on-failure
   download-buf/download-size), full end-to-end flow, version truncation,
   chunk-smaller-than-buf
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Wire up with ota_ab for full A/B OTA flow
+- [ ] Real hardware test (flash write + reboot + rollback)
+- [ ] Evaluate resume-on-reboot (persist download offset)
+- [ ] Evaluate retry policy (auto-retry on transient errors)
 
-- **State machine**: idle -> checking -> downloading -> verifying -> ready
-- **Chunked download**: application calls `download_step()` in a loop
-- **Progress tracking**: 0-100% via `get_progress()`
-- **All I/O via callbacks**: check_version, download_chunk, write_chunk, verify, activate
-- **State guards**: operations rejected if called in wrong state
-- **Reset**: return to idle from any state (error recovery, abort)
-- **Configurable** chunk size via compile-time macro
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Architecture | Passive state machine | Application drives pace; no tasks, no timers |
+| Download | One chunk per call | Non-blocking; works in main loop or RTOS task |
+| I/O | All via callbacks | Transport/flash/slot agnostic |
+| Progress | Integer 0-100 | Simple, overflow-safe for large firmware |
+| Version | String (max 32) | Semantic versioning or any scheme; no parsing |
+| State guards | ERR_STATE on wrong order | Prevents misuse; caller can check state first |
+| Reset | Unconditional to IDLE | Simple error recovery; no partial cleanup needed |
+| Thread safety | Not thread-safe | Caller serializes (typical: single OTA context) |
 
 ## Usage example
 
@@ -206,23 +199,40 @@ void ota_poll(void) {
 }
 ```
 
-## Design tradeoffs
+## Features
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Architecture | Passive state machine | Application drives pace; no tasks, no timers |
-| Download | One chunk per call | Non-blocking; works in main loop or RTOS task |
-| I/O | All via callbacks | Transport/flash/slot agnostic |
-| Progress | Integer 0-100 | Simple, overflow-safe for large firmware |
-| Version | String (max 32) | Semantic versioning or any scheme; no parsing |
-| State guards | ERR_STATE on wrong order | Prevents misuse; caller can check state first |
-| Reset | Unconditional to IDLE | Simple error recovery; no partial cleanup needed |
-| Thread safety | Not thread-safe | Caller serializes (typical: single OTA context) |
+- **State machine**: idle -> checking -> downloading -> verifying -> ready
+- **Chunked download**: application calls `download_step()` in a loop
+- **Progress tracking**: 0-100% via `get_progress()`
+- **All I/O via callbacks**: check_version, download_chunk, write_chunk, verify, activate
+- **State guards**: operations rejected if called in wrong state
+- **Reset**: return to idle from any state (error recovery, abort)
+- **Configurable** chunk size via compile-time macro
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
-## Before promoting to stable
+## Why not an open-source library?
 
-- [ ] At least 1 real project uses it
-- [ ] Wire up with ota_ab for full A/B OTA flow
-- [ ] Real hardware test (flash write + reboot + rollback)
-- [ ] Evaluate resume-on-reboot (persist download offset)
-- [ ] Evaluate retry policy (auto-retry on transient errors)
+Checked common embedded OTA libraries (2026-05-01):
+
+- **MCUboot** -- full bootloader, requires OS integration (Zephyr/mynewt)
+- **esp_ota_ops** -- ESP-IDF specific, not portable
+- **mbed-cloud-client** -- Mbed OS specific, heavy dependencies
+- **hawkBit DDI** -- server-side orchestration, client is OS-coupled
+- **SWUpdate** -- Linux userspace, not bare-metal
+
+All violate our wheel contract: zero OS dependency, no malloc, no globals,
+callback-injected I/O. A passive orchestration state machine (~150 lines)
+matches our platform conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

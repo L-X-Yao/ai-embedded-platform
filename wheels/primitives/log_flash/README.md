@@ -83,6 +83,24 @@ ctest --test-dir build --output-on-failure
 
 None. Naming follows `log_flash_<verb>` per api-conventions §1.1.
 
+## Design decisions
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Ring topology | Sector-level ring | Matches flash erase granularity |
+| Eviction | Erase oldest sector on wrap | Simple, deterministic |
+| Entry header | 3 bytes (magic + len16) | Minimal overhead, supports recovery scan |
+| HAL injection | Function pointers | No compile-time dependency on flash driver |
+| Thread safety | None built-in | Caller adds mutex if needed |
+
+## Entry format
+
+Each entry stored as: `[magic:1][len_lo:1][len_hi:1][data:len]`
+
+- Magic byte `0xA5` marks valid entry start
+- 16-bit little-endian length (max 65535 bytes per entry)
+- Entries are packed sequentially within each sector
+
 ## API review
 
 - **Date**: 2026-04-30
@@ -95,21 +113,3 @@ None. Naming follows `log_flash_<verb>` per api-conventions §1.1.
 ## Responsible human
 
 @user
-
-## Entry format
-
-Each entry stored as: `[magic:1][len_lo:1][len_hi:1][data:len]`
-
-- Magic byte `0xA5` marks valid entry start
-- 16-bit little-endian length (max 65535 bytes per entry)
-- Entries are packed sequentially within each sector
-
-## Design decisions
-
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Ring topology | Sector-level ring | Matches flash erase granularity |
-| Eviction | Erase oldest sector on wrap | Simple, deterministic |
-| Entry header | 3 bytes (magic + len16) | Minimal overhead, supports recovery scan |
-| HAL injection | Function pointers | No compile-time dependency on flash driver |
-| Thread safety | None built-in | Caller adds mutex if needed |

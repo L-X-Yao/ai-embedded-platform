@@ -13,10 +13,13 @@ configuration.
 Proactive build. PCF8563 is a widely used low-power RTC for embedded
 systems needing battery-backed timekeeping (IoT, data loggers, alarms).
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for PCF8563. Self-written for zero-dependency I2C HAL
+No existing open-source component for PCF8563. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -84,6 +87,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

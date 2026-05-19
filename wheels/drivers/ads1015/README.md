@@ -65,6 +65,15 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
+## I2C addresses
+
+| ADDR pin | Address |
+|----------|---------|
+| GND      | 0x48    |
+| VDD      | 0x49    |
+| SDA      | 0x4A    |
+| SCL      | 0x4B    |
+
 ## API review
 
 - **Date**: 2026-05-01
@@ -75,12 +84,3 @@ None.
 ## Responsible human
 
 @user
-
-## I2C addresses
-
-| ADDR pin | Address |
-|----------|---------|
-| GND      | 0x48    |
-| VDD      | 0x49    |
-| SDA      | 0x4A    |
-| SCL      | 0x4B    |

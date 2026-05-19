@@ -89,15 +89,6 @@ cmake -B build -S . && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: 1-based channel numbering (matches DMX convention); caller-provided buffer (no malloc); configurable channel count (1-512); parse_packet zeros channels beyond received data; get_packet returns pointer to internal buffer (zero-copy).
-
-## Responsible human
-
-@user
-
 ## Protocol
 
 DMX512 packet format:
@@ -112,3 +103,12 @@ DMX512 packet format:
 
 Physical layer: break (>= 88us low) + MAB (>= 8us high) precede the start code.
 Electrical: RS-485, 250 kbaud, 8N2.
+
+## API review
+
+- **Date**: 2026-05-11
+- **Key decisions**: 1-based channel numbering (matches DMX convention); caller-provided buffer (no malloc); configurable channel count (1-512); parse_packet zeros channels beyond received data; get_packet returns pointer to internal buffer (zero-copy).
+
+## Responsible human
+
+@user

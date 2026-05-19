@@ -19,21 +19,10 @@ projects: periodic sensor data collection formatted for transmission
 over UART/MQTT/HTTP. Decouples data collection (driver layer) from
 formatting and transport.
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded telemetry/data formatting libraries (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **cJSON / jsmn** -- JSON-only, typically require malloc or large buffers
-- **printf-based ad-hoc** -- no structured field registration, no format switching
-- **IoT SDK formatters** -- coupled to specific cloud SDKs (AWS IoT, Azure)
-
-All violate our wheel contract: zero OS dependency, no malloc, no globals,
-callback-injected I/O, multi-format support. A passive formatter with
-named field registration and pluggable send callback is straightforward
-(~170 lines) and matches our platform conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -122,38 +111,28 @@ ctest --test-dir build --output-on-failure
   publish null, updated flag tracking, buffer overflow, get count null,
   publish no fields, send context passing, float integer formatting
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Evaluate binary format support (CBOR/MessagePack)
+- [ ] Real hardware UART/MQTT test
 
-- **Three output formats**: JSON, CSV, key-value (selectable at init)
-- **Named field registration**: `telemetry_register()` at runtime
-- **Update by name or index**: name lookup for clarity, index for speed
-- **Send callback**: application injects transport (UART, MQTT, etc.)
-- **Updated flag tracking**: fields track whether they changed since last publish
-- **Error counting**: tracks send failures separately from send successes
-- **Float formatting**: trailing zeros trimmed (25.50 -> "25.5", 60.00 -> "60")
-- **Buffer overflow protection**: returns ERR_OVERFLOW if output exceeds buffer
-- **Reset**: clears values and counters without losing field registrations
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
 
-## Output format examples
-
-Given fields "temp" = 25.5 and "hum" = 60, timestamp = 1000:
-
-| Format | Output |
-|--------|--------|
-| JSON | `{"ts":1000,"temp":25.5,"hum":60}` |
-| CSV | `1000,25.5,60` |
-| Key-value | `ts=1000 temp=25.5 hum=60` |
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Float format | snprintf %.2f + trim | Portable, readable, small code |
+| Field storage | Static array | No malloc, predictable memory footprint |
+| Name lookup | Linear scan | Simple, fast enough for <= 16 fields |
+| Timestamp | Caller-provided | No OS dependency, application controls time source |
+| Format selection | At init | One context = one format; create multiple for multi-format |
+| Updated flags | Auto-clear on publish | Track stale vs fresh data per cycle |
+| Thread safety | Not thread-safe | Caller serializes (typical: single publish context) |
 
 ## Usage example
 
@@ -189,20 +168,51 @@ void telemetry_tick(uint32_t now_ms)
 }
 ```
 
-## Design tradeoffs
+## Output format examples
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Float format | snprintf %.2f + trim | Portable, readable, small code |
-| Field storage | Static array | No malloc, predictable memory footprint |
-| Name lookup | Linear scan | Simple, fast enough for <= 16 fields |
-| Timestamp | Caller-provided | No OS dependency, application controls time source |
-| Format selection | At init | One context = one format; create multiple for multi-format |
-| Updated flags | Auto-clear on publish | Track stale vs fresh data per cycle |
-| Thread safety | Not thread-safe | Caller serializes (typical: single publish context) |
+Given fields "temp" = 25.5 and "hum" = 60, timestamp = 1000:
 
-## Before promoting to stable
+| Format | Output |
+|--------|--------|
+| JSON | `{"ts":1000,"temp":25.5,"hum":60}` |
+| CSV | `1000,25.5,60` |
+| Key-value | `ts=1000 temp=25.5 hum=60` |
 
-- [ ] At least 1 real project uses it
-- [ ] Evaluate binary format support (CBOR/MessagePack)
-- [ ] Real hardware UART/MQTT test
+## Features
+
+- **Three output formats**: JSON, CSV, key-value (selectable at init)
+- **Named field registration**: `telemetry_register()` at runtime
+- **Update by name or index**: name lookup for clarity, index for speed
+- **Send callback**: application injects transport (UART, MQTT, etc.)
+- **Updated flag tracking**: fields track whether they changed since last publish
+- **Error counting**: tracks send failures separately from send successes
+- **Float formatting**: trailing zeros trimmed (25.50 -> "25.5", 60.00 -> "60")
+- **Buffer overflow protection**: returns ERR_OVERFLOW if output exceeds buffer
+- **Reset**: clears values and counters without losing field registrations
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
+
+## Why not an open-source library?
+
+Checked common embedded telemetry/data formatting libraries (2026-05-01):
+
+- **cJSON / jsmn** -- JSON-only, typically require malloc or large buffers
+- **printf-based ad-hoc** -- no structured field registration, no format switching
+- **IoT SDK formatters** -- coupled to specific cloud SDKs (AWS IoT, Azure)
+
+All violate our wheel contract: zero OS dependency, no malloc, no globals,
+callback-injected I/O, multi-format support. A passive formatter with
+named field registration and pluggable send callback is straightforward
+(~170 lines) and matches our platform conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

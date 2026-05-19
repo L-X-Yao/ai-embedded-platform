@@ -80,6 +80,13 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - `mag_cal_t` contains a large sample buffer (6 KB). Caller must ensure sufficient stack/heap. This is inherent to the min/max algorithm needing all samples in memory.
 
+## Algorithm
+
+1. Collect N samples while user rotates sensor in all orientations
+2. Find min/max per axis → compute center (hard-iron offset) and radius
+3. Normalize radii to average → compute scale factors (soft-iron correction)
+4. Validate spread ≥ threshold per axis (reject stationary data)
+
 ## API review
 
 - **Date**: 2026-04-28
@@ -88,10 +95,3 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
-
-## Algorithm
-
-1. Collect N samples while user rotates sensor in all orientations
-2. Find min/max per axis → compute center (hard-iron offset) and radius
-3. Normalize radii to average → compute scale factors (soft-iron correction)
-4. Validate spread ≥ threshold per axis (reject stationary data)

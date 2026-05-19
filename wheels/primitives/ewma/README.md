@@ -13,10 +13,13 @@ Larger shift values produce slower tracking (more smoothing).
 Proactive build. Integer EWMA is essential for signal smoothing on
 Cortex-M0/M0+ and other FPU-less MCUs (ADC filtering, sensor fusion).
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF equivalent. Textbook DSP primitive self-written for zero-dependency
+No existing open-source equivalent. Textbook DSP primitive self-written for zero-dependency
 platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -76,6 +79,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

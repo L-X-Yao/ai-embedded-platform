@@ -8,10 +8,22 @@ FlySky iBUS serial protocol codec for RC receivers. Decodes and encodes
 center 1500). Frame format: `[0x20] [0x40] [ch1_lo ch1_hi ... ch14_lo ch14_hi] [cksum_lo cksum_hi]`.
 Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no RC receiver protocol support. iBUS is the standard protocol
+Proactive build (ADR-011). i
+
+
+## Why self-written?
+
+existing open-source has no RC receiver protocol support. iBUS is the standard protocol
 for FlySky receivers commonly used in hobby drones and RC vehicles.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -39,15 +51,40 @@ uint8_t buf[IBUS_FRAME_LEN];
 ibus_encode(&tx, buf, sizeof(buf));
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\ibus/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_ibus
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

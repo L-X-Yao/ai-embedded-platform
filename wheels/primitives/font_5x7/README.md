@@ -7,10 +7,22 @@
 Column-major encoding: 5 bytes per glyph, each byte is one column, bit 0 = top row.
 Font data is const (ROM-able). All functions are read-only and ISR-safe.
 
-## Why not VSF native?
+## Origin
 
-VSF has display components but no standalone minimal bitmap font primitive.
+Proactive build (ADR-011). f
+
+
+## Why self-written?
+
+existing open-source has display components but no standalone minimal bitmap font primitive.
 This wheel provides a zero-dependency glyph lookup usable with any framebuffer or display driver.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99 with `<stdint.h>` and `<stddef.h>`.
 
 ## API
 
@@ -49,15 +61,40 @@ for (int y = 0; y < 7; y++) {
 int w = font_5x7_text_width(f, "Hello", 1);  /* 5*5 + 1*4 = 29 px */
 ```
 
-## Dependencies
-
-None. Pure C99 with `<stdint.h>` and `<stddef.h>`.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\font_5x7/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_font_5x7
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

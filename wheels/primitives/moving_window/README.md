@@ -66,6 +66,12 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
+## Why not moving_average?
+
+`moving_average` provides SMA (mean only) and EMA. This wheel adds min, max, and variance
+tracking over the same window, which is needed for signal quality assessment, outlier
+detection, and sensor health monitoring.
+
 ## API review
 
 - **Date**: 2026-05-01
@@ -74,9 +80,3 @@ None.
 ## Responsible human
 
 @user
-
-## Why not moving_average?
-
-`moving_average` provides SMA (mean only) and EMA. This wheel adds min, max, and variance
-tracking over the same window, which is needed for signal quality assessment, outlier
-detection, and sensor health monitoring.

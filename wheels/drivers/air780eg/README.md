@@ -12,11 +12,14 @@ deactivation, module restart, NMEA sentences, and signal quality.
 
 Extracted from `projects/flybox/` for reuse across cellular IoT projects.
 
-## Why not VSF native?
+## Why self-written?
 
 Air780EG is a niche module with custom AT extensions (MQTT built-in,
-GNSS control). No VSF component covers this modem. Self-written for
+GNSS control). No existing open-source component covers this modem. Self-written for
 zero-dependency non-blocking architecture matching our wheel contract.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -73,6 +76,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

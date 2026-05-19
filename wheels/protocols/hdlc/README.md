@@ -8,10 +8,22 @@ reflected). Provides both one-shot encode and a byte-at-a-time streaming
 parser for interrupt-driven UART reception. Frame format:
 `[0x7E] [stuffed data + FCS16] [0x7E]`. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no HDLC framing component. HDLC byte stuffing is the foundation
+Proactive build (ADR-011). h
+
+
+## Why self-written?
+
+existing open-source has no HDLC framing component. HDLC byte stuffing is the foundation
 for PPP, many serial protocols, and custom point-to-point links.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -55,15 +67,40 @@ void uart_irq(uint8_t byte) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\hdlc/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_hdlc
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

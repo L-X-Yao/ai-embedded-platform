@@ -94,15 +94,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: Storage callbacks for read/write/erase sector; self-contained CRC32 (no cross-wheel include per api-conventions.md rule 0); little-endian on-flash format; sequence numbers for ordering.
-
-## Responsible human
-
-@user
-
 ## On-flash format
 
 Each entry:
@@ -113,3 +104,12 @@ Each entry:
 - Footer: 4 bytes (CRC32 over header + payload)
 - Overhead per entry: 14 bytes
 - All multi-byte fields are little-endian
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: Storage callbacks for read/write/erase sector; self-contained CRC32 (no cross-wheel include per api-conventions.md rule 0); little-endian on-flash format; sequence numbers for ordering.
+
+## Responsible human
+
+@user

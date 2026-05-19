@@ -8,11 +8,23 @@ injected function pointers (SCL/SDA set, SDA direction, SDA read, delay),
 making it portable to any MCU. Supports register read/write helpers and
 clock-stretching recovery. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF provides HAL I2C drivers tied to specific peripherals. This wheel
+Proactive build (ADR-011). s
+
+
+## Why self-written?
+
+existing open-source provides HAL I2C drivers tied to specific peripherals. This wheel
 provides a software I2C master for MCUs with no available hardware I2C
 or when extra I2C buses are needed on arbitrary GPIO pins.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. GPIO operations injected via function pointers.
 
 ## API
 
@@ -52,15 +64,40 @@ soft_i2c_init(&bus, &gpio);
 soft_i2c_write_reg(&bus, 0x68, 0x6B, 0x00);  /* wake MPU6050 */
 ```
 
-## Dependencies
-
-None. GPIO operations injected via function pointers.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\soft_i2c/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_soft_i2c
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

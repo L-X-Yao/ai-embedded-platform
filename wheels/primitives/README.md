@@ -12,6 +12,35 @@
 - FIFO（VSF 有 `vsf_fifo`）
 - 任何 VSF 已原生提供的
 
+## Origin
+
+Proactive build (ADR-011). w
+
+
+## Why self-written?
+
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
+
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_primitives
+```
+
+
+## API convention deviations
+
+None.
+
+
 ## 目录清单（77 wheels）
 
 | Wheel | 功能 | 状态 |
@@ -69,3 +98,13 @@
 | `timeout` | 超时检测 | candidate |
 | `timer_wheel` | 时间轮定时器 | candidate |
 | `uuid` | UUID 生成/格式化 | candidate |
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

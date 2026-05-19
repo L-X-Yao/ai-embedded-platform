@@ -13,10 +13,13 @@ antenna control, and HALT command.
 Proactive build. MFRC522 is the most common low-cost 13.56 MHz RFID
 reader used in access control, attendance, and inventory systems.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for MFRC522. Self-written for zero-dependency SPI HAL
+No existing open-source component for MFRC522. Self-written for zero-dependency SPI HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -83,6 +86,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

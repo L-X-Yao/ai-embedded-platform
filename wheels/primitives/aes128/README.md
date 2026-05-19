@@ -92,6 +92,21 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
+## Performance reference
+
+- Key expansion: 10 rounds, ~44 word operations
+- Encrypt/decrypt: 10 rounds per 16-byte block
+- ROM footprint: ~1.0 KB (S-Box 256 + inv S-Box 256 + code ~500 bytes)
+- RAM: 176 bytes for round keys + 16 bytes stack (state)
+
+## Features
+
+- AES-128 ECB encrypt and decrypt (FIPS 197 compliant)
+- Byte-oriented (no alignment assumptions, portable to 8/16/32-bit MCUs)
+- Pure C99, zero dependencies
+- Fully reentrant after init (encrypt/decrypt are read-only on ctx)
+- In-place operation supported (in == out)
+
 ## API review
 
 - **Date**: 2026-05-04
@@ -103,18 +118,3 @@ None.
 ## Responsible human
 
 @user
-
-## Features
-
-- AES-128 ECB encrypt and decrypt (FIPS 197 compliant)
-- Byte-oriented (no alignment assumptions, portable to 8/16/32-bit MCUs)
-- Pure C99, zero dependencies
-- Fully reentrant after init (encrypt/decrypt are read-only on ctx)
-- In-place operation supported (in == out)
-
-## Performance reference
-
-- Key expansion: 10 rounds, ~44 word operations
-- Encrypt/decrypt: 10 rounds per 16-byte block
-- ROM footprint: ~1.0 KB (S-Box 256 + inv S-Box 256 + code ~500 bytes)
-- RAM: 176 bytes for round keys + 16 bytes stack (state)

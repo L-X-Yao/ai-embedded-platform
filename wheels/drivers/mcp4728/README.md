@@ -13,10 +13,13 @@ command. 12-bit resolution (0-4095 values).
 Proactive build. MCP4728 is a popular multi-channel DAC for analog
 signal generation in test equipment, audio, and control systems.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for MCP4728. Self-written for zero-dependency I2C HAL
+No existing open-source component for MCP4728. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -78,6 +81,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

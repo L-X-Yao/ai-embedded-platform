@@ -68,6 +68,12 @@ None.
 
 Pending.
 
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
 ## Responsible human
 
 @user

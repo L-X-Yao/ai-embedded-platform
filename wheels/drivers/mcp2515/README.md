@@ -33,6 +33,28 @@ uint8_t       mcp2515_read_errors(mcp2515_t *dev);
 
 Caller provides SPI HAL via `mcp2515_spi_t` callbacks (CS control + byte transfer).
 
+## Usage
+
+```c
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+
+static void example(void) {
+    mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
+    mcp2515_t can;
+    if (mcp2515_init(&can, &spi, MCP2515_SPEED_500KBPS) == MCP2515_OK) {
+        mcp2515_msg_t msg = { .id = 0x123, .dlc = 3, .data = {0xAA, 0xBB, 0xCC} };
+        mcp2515_send(&can, &msg);
+
+        if (mcp2515_has_message(&can)) {
+            mcp2515_msg_t rx;
+            mcp2515_receive(&can, &rx);
+        }
+    }
+}
+```
+
 ## Configuration (compile-time)
 
 | Macro | Default | Description |
@@ -67,15 +89,6 @@ ctest --test-dir build --output-on-failure
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: device handle struct (mcp2515_t) holds SPI pointer and current mode; 8 MHz crystal assumed; single TX buffer for simplicity
-
-## Responsible human
-
-@user
-
 ## Features
 
 - Hardware reset + automatic config mode entry
@@ -90,24 +103,11 @@ None.
 - Bounded mode-switch polling (configurable iteration limit)
 - SPI HAL injection via callback struct — zero RTOS / platform dependency
 
-## Usage
+## API review
 
-```c
-static void my_cs_low(void *ctx)  { (void)ctx; }
-static void my_cs_high(void *ctx) { (void)ctx; }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+- **Date**: 2026-05-01
+- **Key decisions**: device handle struct (mcp2515_t) holds SPI pointer and current mode; 8 MHz crystal assumed; single TX buffer for simplicity
 
-static void example(void) {
-    mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
-    mcp2515_t can;
-    if (mcp2515_init(&can, &spi, MCP2515_SPEED_500KBPS) == MCP2515_OK) {
-        mcp2515_msg_t msg = { .id = 0x123, .dlc = 3, .data = {0xAA, 0xBB, 0xCC} };
-        mcp2515_send(&can, &msg);
+## Responsible human
 
-        if (mcp2515_has_message(&can)) {
-            mcp2515_msg_t rx;
-            mcp2515_receive(&can, &rx);
-        }
-    }
-}
-```
+@user

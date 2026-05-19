@@ -13,10 +13,13 @@ configured shunt resistor values.
 Proactive build. INA3221 is widely used for multi-rail power monitoring
 in battery-powered systems, server boards, and IoT gateways.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for INA3221. Self-written for zero-dependency I2C HAL
+No existing open-source component for INA3221. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -79,6 +82,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

@@ -76,6 +76,14 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None. Function naming `fnv1a_<width>[_verb]` follows api-conventions.md.
 
+## Performance reference
+
+- Time complexity: O(n), 1 XOR + 1 multiply per byte
+- ROM footprint: ~120 bytes code (no lookup table)
+- Stack usage: < 16 bytes
+- Suitable for MCUs with no hardware multiplier (multiply is software but
+  still fast for typical key lengths)
+
 ## API review
 
 - **Date**: 2026-05-01
@@ -85,11 +93,3 @@ None. Function naming `fnv1a_<width>[_verb]` follows api-conventions.md.
 ## Responsible human
 
 @user
-
-## Performance reference
-
-- Time complexity: O(n), 1 XOR + 1 multiply per byte
-- ROM footprint: ~120 bytes code (no lookup table)
-- Stack usage: < 16 bytes
-- Suitable for MCUs with no hardware multiplier (multiply is software but
-  still fast for typical key lengths)

@@ -62,15 +62,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-01
-- **Key decisions**: Context struct pattern (like bmp280); Callendar-Van Dusen for T>=0C, linear approximation for T<0C; fault bit in LSB triggers ERR_FAULT on read.
-
-## Responsible human
-
-@user
-
 ## Runtime configuration
 
 | Field | Example | Purpose |
@@ -79,3 +70,12 @@ None.
 | `r_nom` | 100.0 | Nominal RTD resistance at 0C |
 | `wire` | `MAX31865_WIRE_3` | 2/3/4-wire RTD |
 | `filter_50hz` | true | 50Hz vs 60Hz mains rejection |
+
+## API review
+
+- **Date**: 2026-05-01
+- **Key decisions**: Context struct pattern (like bmp280); Callendar-Van Dusen for T>=0C, linear approximation for T<0C; fault bit in LSB triggers ERR_FAULT on read.
+
+## Responsible human
+
+@user

@@ -101,15 +101,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **`at_command_urc_cb_t` parameter order** (api-conventions §5.1): Signature is `(const char *line, void *ctx)` instead of `(void *ctx, event, data)`. URC callbacks receive a raw line string, not a structured event — the three-parameter pattern adds no value here. Changing parameter order would break consumers for no functional benefit.
 
-## API review
-
-- **Date**: 2026-04-27
-- **Key decisions**: Byte-feed API (no UART dependency); events instead of semaphores (portable); URC table with prefix matching (not regex); single `expected` register (matches flybox pattern); `prev_line` for multi-line responses; `send_raw` for data-mode payloads.
-
-## Responsible human
-
-@user
-
 ## Features
 
 - **Response matching**: substring search (matches `+CSQ:` in `+CSQ: 18,0`)
@@ -118,3 +109,12 @@ cmake -GNinja -S . -B build && cmake --build build
 - **Prompt detection**: `>` character for data-mode commands
 - **Prev-line capture**: for commands where response data precedes `OK`
 - **CR stripping**: handles `\r\n` and bare `\n` line endings
+
+## API review
+
+- **Date**: 2026-04-27
+- **Key decisions**: Byte-feed API (no UART dependency); events instead of semaphores (portable); URC table with prefix matching (not regex); single `expected` register (matches flybox pattern); `prev_line` for multi-line responses; `send_raw` for data-mode payloads.
+
+## Responsible human
+
+@user

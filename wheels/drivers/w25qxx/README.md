@@ -30,6 +30,26 @@ w25qxx_err_t w25qxx_read_status(const w25qxx_spi_t *spi, uint8_t *sr1);
 
 Caller provides SPI HAL via `w25qxx_spi_t` callbacks (CS control + byte transfer).
 
+## Usage
+
+```c
+static void my_cs_low(void *ctx)  { (void)ctx; }
+static void my_cs_high(void *ctx) { (void)ctx; }
+static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+
+static void example(void) {
+    w25qxx_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
+    uint8_t data[64];
+    uint8_t buf[64];
+    uint32_t id;
+    if (w25qxx_init(&spi, &id) == W25QXX_OK) {
+        w25qxx_sector_erase(&spi, 0x1000);
+        w25qxx_page_program(&spi, 0x1000, data, 64);
+        w25qxx_read(&spi, 0x1000, buf, 64);
+    }
+}
+```
+
 ## Configuration (compile-time)
 
 | Macro | Default | Description |
@@ -63,15 +83,11 @@ ctest --test-dir build --output-on-failure
 
 None.
 
-## API review
+## Upgrade to stable
 
-- Date: 2026-04-25
-- Reviewer: @user
-- Key decisions: generalized name from w25q64 to w25qxx (covers W25Q32/64/128 family); SPI HAL uses cs_low/cs_high/xfer callback triple
-
-## Responsible human
-
-@user
+- [ ] 2nd project consumer (currently only flybox)
+- [ ] Performance reference (erase/program/read timing at typical clock)
+- [ ] Change history
 
 ## Features
 
@@ -83,28 +99,12 @@ None.
 - Bounded busy-wait (500k iteration limit) — dead chip returns `W25QXX_ERR_TIMEOUT` instead of hanging
 - SPI HAL injection via callback struct — zero RTOS / platform dependency
 
-## Usage
+## API review
 
-```c
-static void my_cs_low(void *ctx)  { (void)ctx; }
-static void my_cs_high(void *ctx) { (void)ctx; }
-static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+- Date: 2026-04-25
+- Reviewer: @user
+- Key decisions: generalized name from w25q64 to w25qxx (covers W25Q32/64/128 family); SPI HAL uses cs_low/cs_high/xfer callback triple
 
-static void example(void) {
-    w25qxx_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
-    uint8_t data[64];
-    uint8_t buf[64];
-    uint32_t id;
-    if (w25qxx_init(&spi, &id) == W25QXX_OK) {
-        w25qxx_sector_erase(&spi, 0x1000);
-        w25qxx_page_program(&spi, 0x1000, data, 64);
-        w25qxx_read(&spi, 0x1000, buf, 64);
-    }
-}
-```
+## Responsible human
 
-## Upgrade to stable
-
-- [ ] 2nd project consumer (currently only flybox)
-- [ ] Performance reference (erase/program/read timing at typical clock)
-- [ ] Change history
+@user

@@ -131,15 +131,6 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **`log_dedup_output_fn` uses `_fn` suffix instead of `_t`** (api-conventions S1.3): Function pointer typedefs use `_fn` to distinguish from struct/enum types. Consistent with `log_sink_fn` in the parent `log` wheel.
 
-## API review
-
-- **Date**: 2026-04-30
-- **Key decisions**: Timestamp-aware comparison (strips `[XXXXXXXX]` prefix). 256-byte line buffer. Flush before shutdown to emit pending repeat count.
-
-## Responsible human
-
-@user
-
 ## Design decisions
 
 | Aspect | Choice | Rationale |
@@ -150,3 +141,12 @@ cmake -GNinja -S . -B build && cmake --build build
 | Flush | Explicit `log_dedup_flush()` before shutdown | Ensures pending repeat count is not lost on system halt |
 | Scope | Consecutive only | Non-consecutive duplicates are not tracked (would require hash table / heap) |
 | Thread safety | Not thread-safe | Caller is responsible for locking if multi-threaded; keeps the wheel simple |
+
+## API review
+
+- **Date**: 2026-04-30
+- **Key decisions**: Timestamp-aware comparison (strips `[XXXXXXXX]` prefix). 256-byte line buffer. Flush before shutdown to emit pending repeat count.
+
+## Responsible human
+
+@user

@@ -15,11 +15,14 @@ from blocking sleep forever.
 Proactive build for battery-powered IoT devices that need coordinated
 power management across multiple subsystems (radio, sensor, UART).
 
-## Why not VSF native?
+## Why self-written?
 
-VSF has a kernel idle mechanism but no voter-based power orchestrator
+existing open-source has a kernel idle mechanism but no voter-based power orchestrator
 that works without the VSF scheduler. Self-written for bare-metal and
 RTOS-agnostic power coordination.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -99,6 +102,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

@@ -9,10 +9,22 @@ S5 (record count), and S7/S8/S9 (end-of-file). Checksum validation included.
 Complement to the intel_hex wheel. Useful for bootloaders and firmware update
 protocols. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no S-Record parser. This wheel is needed by bootloaders that accept
+Proactive build (ADR-011). s
+
+
+## Why self-written?
+
+existing open-source has no S-Record parser. This wheel is needed by bootloaders that accept
 .srec/.s19 files over UART, USB, or OTA update channels.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -37,15 +49,40 @@ if (s_record_decode(line, strlen(line), &rec) == S_RECORD_OK) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\s_record/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_s_record
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

@@ -94,15 +94,6 @@ cmake -B build -S . && cmake --build build
 
 None.
 
-## API review
-
-- **Date**: 2026-05-11
-- **Key decisions**: Builder-only approach (no JSON parser dependency); simple string search for validation and extraction (intentionally not full JSON parse); standard error code constants as macros; params_json passed as pre-formatted JSON string.
-
-## Responsible human
-
-@user
-
 ## Protocol
 
 JSON-RPC 2.0 message formats:
@@ -114,3 +105,12 @@ JSON-RPC 2.0 message formats:
 | Error | `jsonrpc`, `error` (with `code` and `message`), `id` |
 
 Standard error codes: -32700 (parse error), -32600 (invalid request), -32601 (method not found), -32602 (invalid params), -32603 (internal error).
+
+## API review
+
+- **Date**: 2026-05-11
+- **Key decisions**: Builder-only approach (no JSON parser dependency); simple string search for validation and extraction (intentionally not full JSON parse); standard error code constants as macros; params_json passed as pre-formatted JSON string.
+
+## Responsible human
+
+@user

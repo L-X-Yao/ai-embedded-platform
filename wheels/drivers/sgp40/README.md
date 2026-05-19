@@ -74,5 +74,12 @@ matching SGP40's command-based protocol (same pattern as sgp30 wheel).
 
 Pending.
 
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
 ## Responsible human
+
 @user

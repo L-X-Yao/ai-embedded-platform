@@ -8,10 +8,22 @@ and decodes 29-bit extended CAN identifiers into priority, PGN, source
 address, and destination address fields. Distinguishes PDU1 (peer-to-peer,
 PF < 240) from PDU2 (broadcast, PF >= 240). Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no J1939 support. J1939 is the standard CAN application layer for
+Proactive build (ADR-011). j
+
+
+## Why self-written?
+
+existing open-source has no J1939 support. J1939 is the standard CAN application layer for
 heavy-duty vehicles, agricultural equipment, and industrial machinery.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -39,15 +51,40 @@ j1939_encode_id(&tx, &can_id);
 can_send(can_id, data, 8);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\j1939/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_j1939
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

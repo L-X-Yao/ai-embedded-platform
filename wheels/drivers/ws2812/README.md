@@ -76,6 +76,14 @@ cmake -GNinja -S . -B build && cmake --build build
 
 - **Stateless API (no instance struct)**: `ws2812_send` takes HAL + timing + colors per call instead of storing HAL in an instance struct. Reason: the entire operation is a single atomic bit-bang burst — there is no persistent state between calls, so an instance struct would add overhead with no benefit.
 
+## Timing reference
+
+| Clock | period_ticks | t0h_ticks | t1h_ticks |
+|-------|-------------|-----------|-----------|
+| 48 MHz | 59 | 16 | 31 |
+| 72 MHz | 89 | 24 | 47 |
+| 168 MHz | 209 | 56 | 109 |
+
 ## API review
 
 - **Date**: 2026-04-27
@@ -84,11 +92,3 @@ cmake -GNinja -S . -B build && cmake --build build
 ## Responsible human
 
 @user
-
-## Timing reference
-
-| Clock | period_ticks | t0h_ticks | t1h_ticks |
-|-------|-------------|-----------|-----------|
-| 48 MHz | 59 | 16 | 31 |
-| 72 MHz | 89 | 24 | 47 |
-| 168 MHz | 209 | 56 | 109 |

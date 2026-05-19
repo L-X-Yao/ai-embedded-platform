@@ -8,10 +8,22 @@ Switches HIGH when value >= thresh_high, LOW when value <= thresh_low.
 Values inside the dead band keep the previous state. NaN inputs are ignored.
 Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no software hysteresis comparator. This is a common signal-conditioning
+Proactive build (ADR-011). h
+
+
+## Why self-written?
+
+existing open-source has no software hysteresis comparator. This is a common signal-conditioning
 primitive needed by sensor drivers and alarm logic across projects.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -37,15 +49,40 @@ if (fan_on) gpio_set(FAN_PIN);
 else        gpio_clear(FAN_PIN);
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\hysteresis/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_hysteresis
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

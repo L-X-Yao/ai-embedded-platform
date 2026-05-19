@@ -26,6 +26,26 @@ qmc5883p_err_t  qmc5883p_read(const qmc5883p_i2c_t *i2c, qmc5883p_data_t *out);
 
 Caller provides I2C HAL via `qmc5883p_i2c_t` callbacks (write_reg + read_regs).
 
+## Usage
+
+```c
+static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
+static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
+    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
+
+static void example(void) {
+    qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
+
+    if (qmc5883p_init(&i2c) == QMC5883P_OK) {
+        qmc5883p_data_t data;
+        if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
+            /* data.mx_gauss/my_gauss/mz_gauss in Gauss (range +-2G) */
+        }
+    }
+}
+```
+
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 20 tests, 45 assertions, 2026-04-29
@@ -54,15 +74,12 @@ ctest --test-dir build --output-on-failure
 
 None.
 
-## API review
+## Upgrade to stable
 
-- Date: 2026-04-27
-- Reviewer: @user
-- Key decisions: wake register (0x0D) hidden inside init (not exposed to caller); output in Gauss not raw counts; minimal 2-function API (init + read)
-
-## Responsible human
-
-@user
+- [ ] 2nd project consumer (currently only flybox)
+- [ ] Configurable ODR/range/oversampling if 2nd consumer needs different settings
+- [ ] Performance reference (read latency, I2C transaction count)
+- [ ] Change history
 
 ## Features
 
@@ -73,29 +90,12 @@ None.
 - Data ready flag check before read
 - I2C HAL injection via callback struct — zero RTOS dependency
 
-## Usage
+## API review
 
-```c
-static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
-    { (void)ctx; (void)addr; (void)reg; (void)val; return true; }
-static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
-    { (void)ctx; (void)addr; (void)reg; (void)buf; (void)len; return true; }
+- Date: 2026-04-27
+- Reviewer: @user
+- Key decisions: wake register (0x0D) hidden inside init (not exposed to caller); output in Gauss not raw counts; minimal 2-function API (init + read)
 
-static void example(void) {
-    qmc5883p_i2c_t i2c = { .write_reg = my_write_reg, .read_regs = my_read_regs, .ctx = NULL };
+## Responsible human
 
-    if (qmc5883p_init(&i2c) == QMC5883P_OK) {
-        qmc5883p_data_t data;
-        if (qmc5883p_read(&i2c, &data) == QMC5883P_OK) {
-            /* data.mx_gauss/my_gauss/mz_gauss in Gauss (range +-2G) */
-        }
-    }
-}
-```
-
-## Upgrade to stable
-
-- [ ] 2nd project consumer (currently only flybox)
-- [ ] Configurable ODR/range/oversampling if 2nd consumer needs different settings
-- [ ] Performance reference (read latency, I2C transaction count)
-- [ ] Change history
+@user

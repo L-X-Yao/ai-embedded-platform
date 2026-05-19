@@ -13,10 +13,13 @@ millimeter distance output, up to 4 meters range.
 Proactive build. VL53L1X is widely used for obstacle detection, gesture
 sensing, and proximity measurement in robotics and IoT.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for VL53L1X. Self-written for zero-dependency I2C HAL
+No existing open-source component for VL53L1X. Self-written for zero-dependency I2C HAL
 injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -80,6 +83,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

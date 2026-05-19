@@ -64,6 +64,12 @@ all INA226 registers are 16-bit. Matches the INA219 wheel pattern.
 
 Pending.
 
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
 ## Responsible human
 
 @user

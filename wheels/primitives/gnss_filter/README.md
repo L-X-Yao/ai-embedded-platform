@@ -8,10 +8,22 @@ Velocity Update). Smooths lat/lon/alt using exponential moving average,
 tightens filtering when IMU reports stationary, and gates output until
 quality thresholds hold for a configurable duration.
 
-## Why not VSF native?
+## Origin
 
-VSF has no GNSS position filtering primitive. This wheel provides a
+Proactive build (ADR-011). g
+
+
+## Why self-written?
+
+existing open-source has no GNSS position filtering primitive. This wheel provides a
 transport-independent filter usable with any NMEA parser or GNSS module driver.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -52,15 +64,40 @@ if (gnss_filter_is_ready(&flt)) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\gnss_filter/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_gnss_filter
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

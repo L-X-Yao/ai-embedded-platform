@@ -7,11 +7,23 @@ UTF-8 validation, decoding, encoding, and codepoint counting for embedded
 systems. Stateless utilities that work on raw byte buffers. Handles 1-4 byte
 sequences (full Unicode range). Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has no standalone UTF-8 utility. This wheel provides the minimal
+Proactive build (ADR-011). u
+
+
+## Why self-written?
+
+existing open-source has no standalone UTF-8 utility. This wheel provides the minimal
 primitives needed by display drivers, CLI shells, and protocol parsers
 that handle multi-byte text.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -41,15 +53,40 @@ size_t consumed;
 utf8_decode(text + 6, 3, &cp, &consumed);  /* cp = 0x4E16 */
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/primitives\utf8/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_utf8
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

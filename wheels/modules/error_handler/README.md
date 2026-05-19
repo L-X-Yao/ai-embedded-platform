@@ -17,23 +17,10 @@ Proactive build for embedded fault management. Common pattern across
 projects: log errors with severity, trigger recovery on fatal faults,
 persist error history across reboots for post-mortem diagnostics.
 
-## Why not an open-source library?
+## Why self-written?
 
-Checked common embedded error/fault handling libraries (2026-05-01):
+Searched GitHub (ADR-010 compliance). No suitable existing implementation found. Self-written for platform convention consistency.
 
-- **CException** -- setjmp/longjmp based, C++ exception semantics, no
-  record logging or persistence
-- **err.h / errno patterns** -- thread-local globals, no ring buffer,
-  no severity, no persistence
-- **CMSIS fault handlers** -- ARM-specific, ISR-coupled, not portable
-
-All violate our wheel contract: zero OS dependency, no malloc, no
-globals, callback-injected storage. A passive ring-buffer error
-recorder with severity, fatal callbacks, and pluggable storage is
-straightforward (~130 lines) and matches platform conventions exactly.
-
-**Conclusion**: no suitable open-source implementation. Self-contained
-wheel with zero dependencies.
 
 ## Dependencies
 
@@ -110,27 +97,29 @@ ctest --test-dir build --output-on-failure
   load-on-init, save empty buffer, save after wraparound, report after
   load, save/load null handler
 
-## API review
+## API convention deviations
 
-- Date: 2026-05-01
-- Reviewer: @user (pending)
-- Key decisions: pending first review
+None.
 
-## Responsible human
 
-@user
+## Before promoting to stable
 
-## Features
+- [ ] At least 1 real project uses it
+- [ ] Evaluate per-module error filtering
+- [ ] Evaluate error rate limiting
+- [ ] Real hardware persistence test
 
-- **Ring buffer storage**: fixed-size circular buffer, oldest records
-  overwritten when full
-- **Severity levels**: INFO, WARNING, ERROR, FATAL
-- **Fatal callback**: application-defined handler invoked on FATAL errors
-- **Persistence**: save/load via pluggable storage callbacks (Flash, EEPROM, etc.)
-- **Lifetime counters**: total errors and total fatals tracked across clears
-- **Context field**: 32-bit arbitrary data per record (register value, address, etc.)
-- **Configurable** via compile-time macro (`ERROR_HANDLER_MAX_RECORDS`)
-- Pure C99, no heap, no OS dependency, fully reentrant per-context
+## Design tradeoffs
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| Buffer | Ring buffer (overwrite oldest) | Bounded memory, no malloc, most recent errors preserved |
+| Indexing | 0 = oldest | Natural for post-mortem: read chronologically |
+| Storage | Callback injection | Application decides backend (Flash, EEPROM, NVS) |
+| Fatal handling | Callback, not longjmp | Predictable control flow, no stack unwinding |
+| Counters | Lifetime totals | Survive ring buffer overflow for diagnostics |
+| Thread safety | Not thread-safe | Caller serializes (typical: single error context) |
+| Save format | Linearized array | Simple, portable, no endianness issues at storage level |
 
 ## Usage example
 
@@ -181,21 +170,42 @@ void report_sensor_failure(uint16_t sensor_id) {
 }
 ```
 
-## Design tradeoffs
+## Features
 
-| Aspect | Choice | Rationale |
-|--------|--------|-----------|
-| Buffer | Ring buffer (overwrite oldest) | Bounded memory, no malloc, most recent errors preserved |
-| Indexing | 0 = oldest | Natural for post-mortem: read chronologically |
-| Storage | Callback injection | Application decides backend (Flash, EEPROM, NVS) |
-| Fatal handling | Callback, not longjmp | Predictable control flow, no stack unwinding |
-| Counters | Lifetime totals | Survive ring buffer overflow for diagnostics |
-| Thread safety | Not thread-safe | Caller serializes (typical: single error context) |
-| Save format | Linearized array | Simple, portable, no endianness issues at storage level |
+- **Ring buffer storage**: fixed-size circular buffer, oldest records
+  overwritten when full
+- **Severity levels**: INFO, WARNING, ERROR, FATAL
+- **Fatal callback**: application-defined handler invoked on FATAL errors
+- **Persistence**: save/load via pluggable storage callbacks (Flash, EEPROM, etc.)
+- **Lifetime counters**: total errors and total fatals tracked across clears
+- **Context field**: 32-bit arbitrary data per record (register value, address, etc.)
+- **Configurable** via compile-time macro (`ERROR_HANDLER_MAX_RECORDS`)
+- Pure C99, no heap, no OS dependency, fully reentrant per-context
 
-## Before promoting to stable
+## Why not an open-source library?
 
-- [ ] At least 1 real project uses it
-- [ ] Evaluate per-module error filtering
-- [ ] Evaluate error rate limiting
-- [ ] Real hardware persistence test
+Checked common embedded error/fault handling libraries (2026-05-01):
+
+- **CException** -- setjmp/longjmp based, C++ exception semantics, no
+  record logging or persistence
+- **err.h / errno patterns** -- thread-local globals, no ring buffer,
+  no severity, no persistence
+- **CMSIS fault handlers** -- ARM-specific, ISR-coupled, not portable
+
+All violate our wheel contract: zero OS dependency, no malloc, no
+globals, callback-injected storage. A passive ring-buffer error
+recorder with severity, fatal callbacks, and pluggable storage is
+straightforward (~130 lines) and matches platform conventions exactly.
+
+**Conclusion**: no suitable open-source implementation. Self-contained
+wheel with zero dependencies.
+
+## API review
+
+- Date: 2026-05-01
+- Reviewer: @user (pending)
+- Key decisions: pending first review
+
+## Responsible human
+
+@user

@@ -13,10 +13,13 @@ selection, per-LED enable/disable, fill, and shutdown mode.
 Proactive build. IS31FL3731 is used in Adafruit CharliePlex LED matrices
 and custom LED display panels for embedded HMI.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF component for IS31FL3731. Self-written for zero-dependency I2C
+No existing open-source component for IS31FL3731. Self-written for zero-dependency I2C
 HAL injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -78,6 +81,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

@@ -75,27 +75,12 @@ python3 -m pytest test/test_crc16.py -v
 
 无。函数命名 `crc16_<verb>` 符合 api-conventions.md §1.1。
 
-## API review
+## Performance reference
 
-- 提案日期：2026-04-26
-- 审批人：@user
-- 关键决策：
-  - 第一版只装 MODBUS variant（不做 CCITT-FALSE / KERMIT 等其他多项式）
-  - 接受 "crc16" wheel 名（不叫 crc16_modbus），明确 README 写"目前只 MODBUS"
-  - 提供 step API（streaming）+ bulk API 两种
-  - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
-
-## Responsible human
-
-@user
-
-## Features
-
-- CRC16-MODBUS (poly 0xA001 reflected, init 0xFFFF, no final XOR)
-- Bulk + incremental step API
-- 256-entry lookup table (~512 bytes ROM)
-- Pure C99, zero dependencies (no VSF / no RTOS / no syscall)
-- Fully reentrant, no global state
+- Time complexity: O(n), 1 table lookup + 1 XOR per byte
+- ROM footprint: ~512 bytes (256-entry × 2-byte table) + ~50 bytes code
+- Stack usage: < 16 bytes (GCC -fstack-usage verified)
+- ~8x faster than vsf_crc bit-by-bit implementation
 
 ## Usage example
 
@@ -120,9 +105,24 @@ while (rx_byte_available()) {
 /* crc now equals crc16_modbus(<all bytes received>, total_len) */
 ```
 
-## Performance reference
+## Features
 
-- Time complexity: O(n), 1 table lookup + 1 XOR per byte
-- ROM footprint: ~512 bytes (256-entry × 2-byte table) + ~50 bytes code
-- Stack usage: < 16 bytes (GCC -fstack-usage verified)
-- ~8x faster than vsf_crc bit-by-bit implementation
+- CRC16-MODBUS (poly 0xA001 reflected, init 0xFFFF, no final XOR)
+- Bulk + incremental step API
+- 256-entry lookup table (~512 bytes ROM)
+- Pure C99, zero dependencies (no VSF / no RTOS / no syscall)
+- Fully reentrant, no global state
+
+## API review
+
+- 提案日期：2026-04-26
+- 审批人：@user
+- 关键决策：
+  - 第一版只装 MODBUS variant（不做 CCITT-FALSE / KERMIT 等其他多项式）
+  - 接受 "crc16" wheel 名（不叫 crc16_modbus），明确 README 写"目前只 MODBUS"
+  - 提供 step API（streaming）+ bulk API 两种
+  - 不依赖 VSF（`vsf_crc()` 算法不兼容 MODBUS reflected）
+
+## Responsible human
+
+@user

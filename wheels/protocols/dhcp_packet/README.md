@@ -8,11 +8,23 @@ DISCOVER/OFFER/REQUEST/ACK message types, option iteration, and common
 option extraction (subnet, router, DNS, lease time). All buffers are
 caller-provided. Pure C99, no heap, no OS.
 
-## Why not VSF native?
+## Origin
 
-VSF has DHCP integrated into its network stack. This wheel provides a
+Proactive build (ADR-011). d
+
+
+## Why self-written?
+
+existing open-source has DHCP integrated into its network stack. This wheel provides a
 standalone packet codec for bare-metal Ethernet stacks (e.g. W5500, ENC28J60)
 that do not use VSF's full TCP/IP.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
+
+## Dependencies
+
+None. Pure C99.
 
 ## API
 
@@ -49,15 +61,40 @@ if (hdr.msg_type == DHCP_MSG_OFFER) {
 }
 ```
 
-## Dependencies
-
-None. Pure C99.
-
 ## Supported platforms
 
 - [x] Host simulation (gcc/cmake)
+
+## Known issues
+
+None.
+
+
+## How to test
+
+```bash
+cd wheels/protocols\dhcp_packet/test
+cmake -GNinja -S . -B build && cmake --build build
+./build/test_dhcp_packet
+```
+
 
 ## Test status
 
 - Unit tests (sim): PASS
 - HIL: N/A
+
+## API convention deviations
+
+None.
+
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
+
+## Responsible human
+
+@user

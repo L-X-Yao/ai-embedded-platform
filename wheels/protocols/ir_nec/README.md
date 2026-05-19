@@ -63,15 +63,6 @@ ir_nec_decode_extended(ext, ecount, &addr, &cmd);
 | `IR_NEC_TOLERANCE_PCT` | 20 | Decode timing tolerance percentage |
 | `IR_NEC_PULSE_COUNT` | 34 | Pulses per standard frame (protocol-fixed) |
 
-## Protocol details
-
-- Leader: 9ms mark + 4.5ms space (normal) or 9ms mark + 2.25ms space (repeat)
-- Data: 32 bits = address(8) + ~address(8) + command(8) + ~command(8)
-- Bit encoding: 562.5us mark, then 562.5us space (0) or 1687.5us space (1)
-- LSB first within each byte
-- Extended NEC: 16-bit address (low byte + high byte, no complement), command + complement
-- Carrier: 38kHz (not modeled -- HAL handles modulation)
-
 ## Supported platforms
 
 - [x] Host (sim) -- passed 2026-05-12
@@ -100,6 +91,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## Protocol details
+
+- Leader: 9ms mark + 4.5ms space (normal) or 9ms mark + 2.25ms space (repeat)
+- Data: 32 bits = address(8) + ~address(8) + command(8) + ~command(8)
+- Bit encoding: 562.5us mark, then 562.5us space (0) or 1687.5us space (1)
+- LSB first within each byte
+- Extended NEC: 16-bit address (low byte + high byte, no complement), command + complement
+- Carrier: 38kHz (not modeled -- HAL handles modulation)
 
 ## API review
 

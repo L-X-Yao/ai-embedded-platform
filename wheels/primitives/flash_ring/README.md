@@ -13,10 +13,13 @@ and configurable header flush interval to reduce flash wear.
 Proactive build. Flash-backed ring buffers are essential for data loggers,
 black-box recorders, and telemetry systems that must survive power loss.
 
-## Why not VSF native?
+## Why self-written?
 
-No VSF equivalent for a standalone flash ring buffer. Self-written for
+No existing open-source equivalent for a standalone flash ring buffer. Self-written for
 transport-agnostic flash HAL injection and platform conventions.
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -96,6 +99,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 

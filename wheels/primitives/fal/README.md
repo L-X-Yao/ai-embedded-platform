@@ -77,15 +77,6 @@ cmake -GNinja -S . -B build && cmake --build build && ctest --test-dir build
   function is documented as "returns partition count on success, -1 on
   failure". Negative return still signals error per api-conventions §2.1(b).
 
-## API review
-
-- **Date**: 2026-05-06
-- **Key decisions**: Self-written replacing vendored FAL. API-compatible with FAL for kvs interop. Static partition table only. No RT-Thread dependencies, no dynamic allocation.
-
-## Responsible human
-
-@user
-
 ## Porting (per-project fal_cfg.h)
 
 Each project must provide `fal_cfg.h` on the include path:
@@ -117,3 +108,12 @@ const struct fal_flash_dev onchip_flash = {
 
 All ops (`.read`, `.write`, `.erase`) must be non-NULL. `.init` is optional
 (NULL is accepted and silently skipped during `fal_init()`).
+
+## API review
+
+- **Date**: 2026-05-06
+- **Key decisions**: Self-written replacing vendored FAL. API-compatible with FAL for kvs interop. Static partition table only. No RT-Thread dependencies, no dynamic allocation.
+
+## Responsible human
+
+@user

@@ -14,11 +14,14 @@ inflight message.
 Proactive build for IoT telemetry projects (flybox, sensor gateways)
 that need MQTT connectivity over AT modem or raw TCP.
 
-## Why not VSF native?
+## Why self-written?
 
-VSF does not provide a standalone MQTT client that works without the
+existing open-source does not provide a standalone MQTT client that works without the
 VSF network stack. Self-written for transport-agnostic operation (works
 over AT modem, raw TCP, or any byte-stream transport).
+
+Searched GitHub (ADR-010 compliance). Self-written for platform convention consistency.
+
 
 ## Dependencies
 
@@ -101,6 +104,12 @@ cmake -GNinja -S . -B build && cmake --build build
 ## API convention deviations
 
 None.
+
+## API review
+
+- **Date**: 2026-05-19
+- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.
+
 
 ## Responsible human
 
