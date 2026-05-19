@@ -1,4 +1,4 @@
-# AI 工作流：各类任务的标准路径
+# AI 工作流：14 类任务的标准路径
 
 进入本平台的 AI，按任务类型走对应路径。**不要跳步**。
 
@@ -261,6 +261,41 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 - 不要一次报 30 项——分类 + 合并相似的
 - 不要报"可以考虑" / "看你喜好"——要有明确推荐（用户偏好：给具体建议，不要罗列选项让用户选）
 
+## 任务类型 13：市场交付物准备
+
+**触发**：用户说"发文章" / "开源"，或用户连续建设 >1 周没有任何市场动作（主动提醒，见 `memory/feedback_build_vs_sell.md`）。
+
+### 文章
+
+1. **采集数据**：wheel 数量、测试数量、覆盖率——跑实际命令，不用缓存值。
+2. **选一个 wheel 做 walkthrough**：优先选有 datasheet 验证过的驱动（如 BMP280）。
+3. **草稿放 `docs/article-draft-<topic>.md`**。
+4. **结构**：钩子 → 造了什么 → AI 代码为什么不可信 → 验证体系 → 具体示例 → 教训 → 联系方式。
+
+### 开源
+
+1. **创建 public GitHub repo**。
+2. **复制 `wheels/` + `tooling/harness/` + `tooling/audit/` + `tooling/codegen/`**。
+3. **写面向社区的 README**（中英双语）。
+4. **验证**：fresh clone → `make check` 独立通过。
+
+## 任务类型 14：Datasheet 验证
+
+**触发**：项目即将消费一个未验证的 L1 驱动，或用户说"验证 xxx 驱动"。
+
+**背景**：AI 生成的驱动缺陷率实测——常见芯片（BMP280、MPU6050）~16%，冷门芯片 ~60%。优先验证冷门芯片。
+
+1. **查验证状态**：`memory/project_platform_quality_ceiling_2026_05_07.md`。
+2. **获取 datasheet**：web search `"<chip> datasheet PDF"`，找到寄存器表。
+3. **逐寄存器对照**：
+   - 寄存器地址
+   - Chip ID / WHO_AM_I 掩码
+   - 校准数据符号扩展（特别注意 Bosch 系列的 `dig_H4` 等）
+   - 灵敏度常数 / 单位换算
+   - 补偿公式（int64 / double 精度）
+4. **跑 UBSan**：`wsl python3 tooling/audit/audit_sanitizer.py --changed`。
+5. **更新验证记录**：在 memory 文件中标记已验证芯片。
+
 ---
 
 ## 反模式（不要做）
@@ -480,4 +515,4 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 
 ## 端到端项目交付
 
-以上 12 类任务是原子操作。当接到外部客户的完整项目时，走 **[外包项目交付流程](outsource-workflow.md)**（五阶段流水线），它编排上述任务类型完成从定义到交付的全过程。
+以上 14 类任务是原子操作。当接到外部客户的完整项目时，走 **[外包项目交付流程](outsource-workflow.md)**（五阶段流水线），它编排上述任务类型完成从定义到交付的全过程。
