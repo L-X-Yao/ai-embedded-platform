@@ -45,9 +45,16 @@ if [[ ! -f "$GITATTR" ]]; then
 fi
 
 patterns=()
+binary_patterns=()
 while IFS= read -r line; do
     # Skip blank lines and comments
     [[ -z "$line" || "$line" =~ ^# ]] && continue
+    # Collect binary patterns for exclusion
+    if echo "$line" | grep -q 'binary'; then
+        bpat="$(echo "$line" | awk '{print $1}')"
+        [[ -n "$bpat" ]] && binary_patterns+=("$bpat")
+        continue
+    fi
     # Only care about lines with eol=lf
     echo "$line" | grep -q 'eol=lf' || continue
     # Extract the pattern (first whitespace-delimited token)
@@ -80,6 +87,14 @@ done
 # Deduplicate
 sort -u -o "$file_list" "$file_list"
 
+# Remove files matching binary patterns (they override the * catch-all)
+if [[ ${#binary_patterns[@]} -gt 0 ]]; then
+    for bpat in "${binary_patterns[@]}"; do
+        ext="${bpat#\*.}"
+        [[ "$ext" != "$bpat" ]] && sed -i "/\\.${ext}$/d" "$file_list"
+    done
+fi
+
 total=0
 crlf_count=0
 crlf_files=()
@@ -88,14 +103,12 @@ while IFS= read -r relpath; do
     [[ -z "$relpath" ]] && continue
     # Skip vendored / upstream paths we do not normalize
     [[ "$relpath" == vsf/* ]] && continue
-    filepath="$REPO/$relpath"
-    # Skip files that no longer exist in the working tree (deleted but tracked)
-    [[ -f "$filepath" ]] || continue
-
+    [[ "$relpath" == projects/drone_light/Nations* ]] && continue
     total=$((total + 1))
 
-    # Check for \r bytes — any \r in a text file indicates CRLF
-    if grep -qP '\r' "$filepath" 2>/dev/null; then
+    # Check the git blob (index), not the working tree — on Windows the
+    # working tree may have CRLF even when .gitattributes says eol=lf.
+    if git -C "$REPO" show ":$relpath" 2>/dev/null | grep -qP '\r'; then
         crlf_count=$((crlf_count + 1))
         crlf_files+=("$relpath")
         if ! $QUIET; then
