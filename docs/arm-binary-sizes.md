@@ -4,7 +4,7 @@ Cross-compiled with `arm-none-eabi-gcc 13.2.1`, flags: `-Os -mcpu=cortex-m4 -mth
 
 Sizes are per-wheel `.o` files (before linking). Actual linked size will be smaller with `--gc-sections`.
 
-Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers 257 of 259 wheels (xmodem/ymodem fail ARM cross-compile).
+Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers all 259 wheels.
 
 ## L0 — Primitives (77 wheels)
 
@@ -207,7 +207,7 @@ Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers 257 of 259 wh
 | bme680 | 1838 | 0 | 0 | 1838 |
 | bme688 | 1898 | 0 | 0 | 1898 |
 
-## L2 — Protocols (45 wheels, 2 failed)
+## L2 — Protocols (47 wheels)
 
 | Wheel | .text | .data | .bss | Total |
 |-------|------:|------:|-----:|------:|
@@ -225,6 +225,7 @@ Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers 257 of 259 wh
 | ubx_parser | 434 | 0 | 0 | 434 |
 | modbus_tcp | 440 | 0 | 0 | 440 |
 | lorawan_packet | 458 | 0 | 0 | 458 |
+| xmodem | 498 | 0 | 0 | 498 |
 | sbus | 506 | 0 | 0 | 506 |
 | modbus_ascii | 527 | 0 | 0 | 527 |
 | hdlc | 530 | 0 | 0 | 530 |
@@ -237,6 +238,7 @@ Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers 257 of 259 wh
 | s_record | 655 | 0 | 0 | 655 |
 | ota_ab | 650 | 0 | 0 | 650 |
 | tftp | 666 | 0 | 0 | 666 |
+| ymodem | 705 | 0 | 0 | 705 |
 | http_request | 720 | 0 | 0 | 720 |
 | at_command | 743 | 0 | 0 | 743 |
 | ir_nec | 766 | 0 | 0 | 766 |
@@ -256,8 +258,6 @@ Generated: 2026-05-20 by `tooling/audit/arm_size_audit.sh`. Covers 257 of 259 wh
 | syslog_packet | 1152 | 0 | 0 | 1152 |
 | mqtt5_packet | 1594 | 0 | 0 | 1594 |
 | msgpack | 1618 | 0 | 0 | 1618 |
-
-Failed: xmodem, ymodem (POSIX dependency, not ARM-portable).
 
 ## L3 — Modules (20 wheels)
 
@@ -290,13 +290,11 @@ Failed: xmodem, ymodem (POSIX dependency, not ARM-portable).
 |-------|------:|-------------|-------:|
 | L0 Primitives | 77 | 32 -- 6864 B | 320 B |
 | L1 Drivers | 115 | 142 -- 1898 B | 502 B |
-| L2 Protocols | 45 | 156 -- 1618 B | 586 B |
+| L2 Protocols | 47 | 156 -- 1618 B | 586 B |
 | L3 Modules | 20 | 210 -- 1660 B | 489 B |
-| **Total compiled** | **257** | **32 -- 6864 B** | **434 B** |
+| **Total compiled** | **259** | **32 -- 6864 B** | **434 B** |
 
-**Total footprint: 156.3 KB .text + 1 B .data + 183 B .bss = 156.5 KB** (before --gc-sections).
-
-2 wheels failed ARM cross-compile: xmodem, ymodem (POSIX `read`/`write` dependency).
+**Total footprint: 157.5 KB .text + 1 B .data + 183 B .bss = 157.7 KB** (before --gc-sections).
 
 ### MCU fit guide
 
@@ -305,5 +303,5 @@ Failed: xmodem, ymodem (POSIX dependency, not ARM-portable).
 | 16 KB | Any single wheel + app overhead |
 | 32 KB | 30+ typical wheels |
 | 64 KB | 100+ wheels comfortably |
-| 128 KB | All 257 wheels + app logic |
+| 128 KB | All 259 wheels + app logic |
 | 256 KB+ | All wheels + VSF kernel + app |
