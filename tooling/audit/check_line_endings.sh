@@ -17,6 +17,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+VENDOR_EXCLUDE="$REPO/tooling/vendor-exclude.conf"
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
@@ -101,9 +102,16 @@ crlf_files=()
 
 while IFS= read -r relpath; do
     [[ -z "$relpath" ]] && continue
-    # Skip vendored / upstream paths we do not normalize
-    [[ "$relpath" == vsf/* ]] && continue
-    [[ "$relpath" == projects/drone_light/Nations* ]] && continue
+    # Skip vendored / upstream paths (read from vendor-exclude.conf)
+    skip=false
+    if [[ -f "$VENDOR_EXCLUDE" ]]; then
+        while IFS= read -r vp; do
+            [[ -z "$vp" || "$vp" =~ ^# ]] && continue
+            # shellcheck disable=SC2254
+            [[ "$relpath" == $vp ]] && { skip=true; break; }
+        done < "$VENDOR_EXCLUDE"
+    fi
+    $skip && continue
     total=$((total + 1))
 
     # Check the git blob (index), not the working tree — on Windows the
