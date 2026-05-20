@@ -105,6 +105,7 @@ PROPERTY(bad_fix_blocks, 10000) {
         case 2: in.fix_quality = 0; break;
         case 3: in.satellites = 2; break;
         case 4: in.hdop = 10.0f; break;
+        default: break;
     }
 
     for (uint32_t t = 0; t <= 20000; t += 200) {

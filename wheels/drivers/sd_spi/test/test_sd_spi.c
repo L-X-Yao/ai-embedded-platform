@@ -297,6 +297,8 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         /* card busy for a few cycles then ready */
         mock_phase = PH_IDLE;
         return 0xFF;    /* not busy */
+    default:
+        return 0xFF;
     }
     return 0xFF;
 }

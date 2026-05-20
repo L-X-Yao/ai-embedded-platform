@@ -313,8 +313,8 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
             /* read FIFO */
             spi->cs_low(spi->ctx);
             spi->xfer(spi->ctx, REG_FIFO & 0x7F);
-            for (uint8_t i = 0; i < nb; i++) {
-                data[i] = spi->xfer(spi->ctx, 0x00);
+            for (uint8_t j = 0; j < nb; j++) {
+                data[j] = spi->xfer(spi->ctx, 0x00);
             }
             spi->cs_high(spi->ctx);
 

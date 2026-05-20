@@ -191,6 +191,8 @@ void gpio_led_tick(gpio_led_t *led, uint16_t dt_ms)
     case GPIO_LED_PULSE:
         tick_pulse(led, dt_ms);
         break;
+    case GPIO_LED_OFF:
+    case GPIO_LED_ON:
     default:
         break;
     }

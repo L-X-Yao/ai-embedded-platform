@@ -39,6 +39,7 @@ PROPERTY(tick_no_crash, 5000)
                            ARBI_UINT8(seed) % 10); break;
     case 3: gpio_led_breathe(&led, (uint16_t)(100 + ARBI_UINT16(seed) % 2000)); break;
     case 4: gpio_led_pulse(&led, (uint16_t)(10 + ARBI_UINT8(seed))); break;
+    default: break;
     }
 
     /* Tick random amounts */

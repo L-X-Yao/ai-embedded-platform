@@ -155,6 +155,9 @@ static bool ds18b20_model_write_byte(void *ctx, uint8_t byte)
         }
         break;
 
+    case DS18B20_MODEL_STATE_READ_ROM:
+    case DS18B20_MODEL_STATE_READ_SCRATCHPAD:
+    case DS18B20_MODEL_STATE_CONVERTING:
     default:
         break;
     }
@@ -183,6 +186,9 @@ static bool ds18b20_model_read_byte(void *ctx, uint8_t *byte)
         }
         break;
 
+    case DS18B20_MODEL_STATE_IDLE:
+    case DS18B20_MODEL_STATE_ADDRESSED:
+    case DS18B20_MODEL_STATE_CONVERTING:
     default:
         *byte = 0xFF;
         break;

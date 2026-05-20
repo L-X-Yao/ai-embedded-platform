@@ -452,6 +452,8 @@ config_store_err_t config_store_load_all(config_store_t *cs)
             if (strlen(loaded.str) >= CONFIG_STORE_STRING_SIZE)
                 in_range = false;
             break;
+        default:
+            break;
         }
 
         if (in_range) {
@@ -476,6 +478,8 @@ config_store_err_t config_store_load_all(config_store_t *cs)
         case CONFIG_TYPE_STRING:
             e->modified = (strcmp(e->current.str,
                                  e->default_val.str) != 0);
+            break;
+        default:
             break;
         }
     }

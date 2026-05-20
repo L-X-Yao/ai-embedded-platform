@@ -13,8 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-/* Forward-declare CRC function from shtc3.h */
-uint8_t shtc3_crc8(const uint8_t *data, uint16_t len);
+#include "../shtc3.h"
 
 static int     hw_write_count;
 static int     hw_read_count;

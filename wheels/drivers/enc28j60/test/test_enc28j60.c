@@ -205,6 +205,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         }
         return 0xFFU;
 
+    case SPI_READ_DUMMY:
     default:
         return 0xFFU;
     }

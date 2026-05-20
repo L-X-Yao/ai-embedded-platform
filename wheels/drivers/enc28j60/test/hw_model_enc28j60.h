@@ -429,6 +429,8 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         return 0xFFU;
     }
 
+    default:
+        break;
     } /* switch */
 
     return 0xFFU;

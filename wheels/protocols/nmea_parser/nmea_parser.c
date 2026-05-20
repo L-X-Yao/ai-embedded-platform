@@ -214,6 +214,7 @@ nmea_parser_err_t nmea_parser_parse(const char *sentence, nmea_parser_data_t *da
     case NMEA_PARSER_SENTENCE_GGA: parse_gga(body, data); break;
     case NMEA_PARSER_SENTENCE_RMC: parse_rmc(body, data); break;
     case NMEA_PARSER_SENTENCE_GSA: parse_gsa(body, data); break;
+    case NMEA_PARSER_SENTENCE_UNKNOWN:
     default: return NMEA_PARSER_ERR_UNKNOWN;
     }
 
