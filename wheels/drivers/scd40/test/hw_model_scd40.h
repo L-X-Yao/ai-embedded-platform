@@ -169,6 +169,9 @@ static bool scd40_model_read(void *ctx, uint8_t dev_addr,
     scd40_model_t *m = (scd40_model_t *)ctx;
 
     switch (m->pending_response) {
+    case SCD40_MODEL_RESP_NONE:
+        memset(data, 0xFF, len);
+        break;
     case SCD40_MODEL_RESP_MEASUREMENT: {
         if (len < 9) { memset(data, 0xFF, len); return true; }
         uint16_t t_raw = scd40_model_temp_to_raw(m->true_temp_c);

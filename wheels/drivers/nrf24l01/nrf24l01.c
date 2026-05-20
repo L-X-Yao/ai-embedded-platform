@@ -261,6 +261,8 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
     case NRF24_RATE_2MBPS:
         setup = (uint8_t)(setup | RF_SETUP_RF_DR_HIGH);
         break;
+    default:
+        break;
     }
 
     write_reg(s, REG_RF_SETUP, setup);

@@ -114,7 +114,11 @@ static void dispatch_packet(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
     case MQTT_PUBLISH:  dispatch_publish(c, pkt, len); break;
     case MQTT_PUBACK:   dispatch_puback(c, pkt, len);  break;
     case MQTT_SUBACK:   dispatch_suback(c, pkt, len);  break;
-    case MQTT_PINGRESP: break; /* last_rx_ms already updated */
+    case MQTT_PINGRESP: break;
+    case MQTT_CONNECT:
+    case MQTT_SUBSCRIBE:
+    case MQTT_PINGREQ:
+    case MQTT_DISCONNECT:
     default: break;
     }
 }

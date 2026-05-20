@@ -425,6 +425,8 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
         m->phase = SD_PH_IDLE;
         return 0xFFU;
 
+    default:
+        break;
     } /* switch */
 
     return 0xFFU;
