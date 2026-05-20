@@ -1,5 +1,7 @@
 # {{PROJECT_NAME}} — 项目级 AI 工作指令
 
+> **参考实现**：`projects/flybox/CLAUDE.md` 是本模板的 golden-path 示例（GD32F405 + 4G + 传感器融合，含完整硬件表 / 迁移决策 / 已知问题 / wheel 状态）。
+
 ## 项目概述
 
 {{一句话描述项目功能和用途。}}
