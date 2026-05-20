@@ -37,6 +37,10 @@ done
 SCAN_TMPDIR=$(mktemp -d)
 trap 'rm -rf "$SCAN_TMPDIR"' EXIT
 
+# Clean stale build_cov directories — they persist across runs and can
+# produce ghost 0% results when source files change underneath them.
+find "$REPO/wheels" -type d -name build_cov -exec rm -rf {} + 2>/dev/null || true
+
 # Discover all measurable wheels
 declare -a wheel_list=()
 for layer in primitives drivers protocols modules; do
