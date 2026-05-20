@@ -94,6 +94,8 @@
 
 **触发**：项目交付完，识别通用部分回流 wheels/。
 
+**与任务类型 9 的边界**：Task 7 用于项目活跃期间的定向抽取（抽完继续开发）；Task 9 是项目归档时的全面沉淀（包含 Task 7 的抽取步骤 + 文档/经验归档）。项目收尾时直接走 Task 9。
+
 1. **扫项目源码**找候选（可复用的函数/模块）。
 2. **分类**（按 `docs/adr/003`）：
    - 可回流：驱动封装 / 协议栈 / 通用算法 / 无业务的基础工具
@@ -179,7 +181,7 @@
 3. **AI 按依赖顺序实现**：先做被依赖的 wheel（如 crc16），再做依赖它的（如 w25qxx）
 4. **CI job 批量追加**：一次性加完所有 wheel 的 CI 条目，避免连续 push 触发 cancel-in-progress
 5. **消费者适配一次性做完**：项目代码改为引用所有新 wheel，一次构建验证
-6. **拆 commit 按 type × 批次**：全部 wheel 代码合 1-2 个 commit，CI 改动 1 个，项目适配 1 个
+6. **拆 commit 按提交规范**：新增 wheel 仍然一 wheel 一 commit（`wheel(<scope>): add ...`），CI 改动合 1 个，项目消费者适配合 1 个
 
 **不要**每个 wheel 走一遍完整的单 wheel 流程——那会产生 N×5 个 commit 和 N 轮 CI，效率极低。
 
@@ -261,6 +263,23 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 - 不要一次报 30 项——分类 + 合并相似的
 - 不要报"可以考虑" / "看你喜好"——要有明确推荐（用户偏好：给具体建议，不要罗列选项让用户选）
 
+## 任务类型 12：发布（打版本标签）
+
+**触发**：用户说"发布"或达到里程碑（新项目完成、大批 wheel 稳定等）。
+
+**版本规则**（vMAJOR.MINOR.PATCH）：
+- **MAJOR**：wheel API 有 breaking change 或架构大调整
+- **MINOR**：新增 wheel、新功能、重要修复
+- **PATCH**：bug 修复、文档更新、工具改进
+
+1. `make check` — 确保测试 + 审计干净
+2. `bash tooling/wheel/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
+3. 用户确认版本号
+4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
+5. `git add CHANGELOG.md && git commit` + `git push && git push --tags`
+
+项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
+
 ## 任务类型 13：市场交付物准备
 
 **触发**：用户说"发文章" / "开源" / "挂服务"，或用户连续建设 >1 周没有任何市场动作（主动提醒，见 `memory/feedback_build_vs_sell.md`）。
@@ -272,6 +291,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 3. **草稿放 `docs/article-draft-<topic>.md`**。
 4. **结构**：钩子 → 造了什么 → AI 代码为什么不可信 → 验证体系 → 具体示例 → 教训 → 联系方式。
 5. **不提 EmbedForge 或商业计划**——纯技术分享。
+6. **用户审稿**：草稿完成后交用户确认，拍板后再发布到知乎/CSDN。
 
 ### 开源
 
@@ -279,6 +299,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 2. **复制 `wheels/` + `tooling/harness/` + `tooling/audit/` + `tooling/codegen/`**。
 3. **写面向社区的 README**（中英双语）。
 4. **验证**：fresh clone → `make check` 独立通过。
+5. **用户确认后公开**：README + 目录结构交用户审阅，确认后再设为 public。
 
 ### 服务挂单
 
@@ -302,69 +323,6 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
    - 补偿公式（int64 / double 精度）
 4. **跑 UBSan**：`wsl python3 tooling/audit/audit_sanitizer.py --changed`。
 5. **更新验证记录**：在 memory 文件中标记已验证芯片。
-
----
-
-## 反模式（不要做）
-
-### 1. 静默越界
-
-任务是"加 A"，顺手重构了 B。**问，不要做**。
-
-### 2. 假"完成"
-
-"编译通过 = 完成" 不成立。**必须跑测试**。
-
-### 3. 猜测代替阅读
-
-"我觉得 VSF 的 xxx 应该是这样" → 不，**读源码或 canonical example**。
-
-### 4. 自造轮子
-
-先查 `wheels/` + `vsf/source/`。
-
-### 5. 跳过踩坑记录
-
-解决了 1 小时的问题没写进 playbook = 下次重花 1 小时。
-
-### 6. 自作主张改上游
-
-动 `vsf/source/*` → 走任务类型 8 流程，不要直接覆盖。
-
-### 7. 沉淀跳过 API 审批
-
-AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
-
-### 8. 盲信并行 agent 结论
-
-多 agent 并行审计的假阳性率约 **20-30%**。agent 报"发现问题"后，必须先 `grep` 验证关键 token 确实存在，再开始修。不验证就修 = 引入不必要的改动。
-
-### 9. 连续 push 触发 CI 全取消
-
-快速连续 push（如审计后 5 个 commit 连推）会被 `cancel-in-progress` 全部取消。**改完统一 push 一次**，或合并后空 commit 重触发。
-
-### 10. scaffold 缺陷传播
-
-`new_wheel.sh` 模板中的问题会传播到所有用它生成的 wheel。修 29 个 wheel 不如修 1 个模板。**发现 scaffold 缺陷优先修模板**，再决定是否回溯修已有 wheel。
-
----
-
-## 任务类型 12：发布（打版本标签）
-
-**触发**：用户说"发布"或达到里程碑（新项目完成、大批 wheel 稳定等）。
-
-**版本规则**（vMAJOR.MINOR.PATCH）：
-- **MAJOR**：wheel API 有 breaking change 或架构大调整
-- **MINOR**：新增 wheel、新功能、重要修复
-- **PATCH**：bug 修复、文档更新、工具改进
-
-1. `make check` — 确保测试 + 审计干净
-2. `bash tooling/wheel/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
-3. 用户确认版本号
-4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
-5. `git add CHANGELOG.md && git commit` + `git push && git push --tags`
-
-项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
 
 ---
 
@@ -447,6 +405,50 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ```
 
 使用 `--squash` 而非普通 merge，避免工作 agent 的中间 commit 进入主分支历史。
+
+---
+
+## 反模式（不要做）
+
+### 1. 静默越界
+
+任务是"加 A"，顺手重构了 B。**问，不要做**。
+
+### 2. 假"完成"
+
+"编译通过 = 完成" 不成立。**必须跑测试**。
+
+### 3. 猜测代替阅读
+
+"我觉得 VSF 的 xxx 应该是这样" → 不，**读源码或 canonical example**。
+
+### 4. 自造轮子
+
+先查 `wheels/` + `vsf/source/`。
+
+### 5. 跳过踩坑记录
+
+解决了 1 小时的问题没写进 playbook = 下次重花 1 小时。
+
+### 6. 自作主张改上游
+
+动 `vsf/source/*` → 走任务类型 8 流程，不要直接覆盖。
+
+### 7. 沉淀跳过 API 审批
+
+AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
+
+### 8. 盲信并行 agent 结论
+
+多 agent 并行审计的假阳性率约 **20-30%**。agent 报"发现问题"后，必须先 `grep` 验证关键 token 确实存在，再开始修。不验证就修 = 引入不必要的改动。
+
+### 9. 连续 push 触发 CI 全取消
+
+快速连续 push（如审计后 5 个 commit 连推）会被 `cancel-in-progress` 全部取消。**改完统一 push 一次**，或合并后空 commit 重触发。
+
+### 10. scaffold 缺陷传播
+
+`new_wheel.sh` 模板中的问题会传播到所有用它生成的 wheel。修 29 个 wheel 不如修 1 个模板。**发现 scaffold 缺陷优先修模板**，再决定是否回溯修已有 wheel。
 
 ---
 
