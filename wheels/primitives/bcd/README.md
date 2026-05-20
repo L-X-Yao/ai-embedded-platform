@@ -48,8 +48,8 @@ bcd_err_t bcd_buf_from_bin(const uint8_t *bin, uint8_t *bcd, uint16_t len);
 ## Usage
 
 ```c
-uint8_t bcd = bcd_from_bin(59);   /* 0x59 */
-uint8_t bin = bcd_to_bin(0x23);   /* 23   */
+uint8_t bcd = bcd_from_bin(59);   // 0x59
+uint8_t bin = bcd_to_bin(0x23);   // 23
 
 uint8_t out;
 if (bcd_to_bin_safe(0xAB, &out) != BCD_OK) {
