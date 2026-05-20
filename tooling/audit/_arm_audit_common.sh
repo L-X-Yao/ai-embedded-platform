@@ -117,9 +117,25 @@ resolve_includes() {
             local dep_dir
             dep_dir=$(find "$ARM_AUDIT_REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
             [[ -n "$dep_dir" ]] && includes="$includes -I$dep_dir"
-        done < <(grep -oE '(primitives|drivers|protocols|modules)/[a-z_0-9]+' "$cmake_file" 2>/dev/null \
-            | sed 's|.*/||' | sort -u || true)
+        done < <({ grep -oE '(primitives|drivers|protocols|modules)/[a-z_0-9]+' "$cmake_file" 2>/dev/null \
+            | sed 's|.*/||'; \
+            grep -oE '\.\./\.\./[a-z_0-9]+' "$cmake_file" 2>/dev/null \
+            | sed 's|.*/||'; } | sort -u || true)
     fi
+
+    # Fallback: scan source #include directives for cross-wheel deps not in CMakeLists
+    for _src_file in "$wheel_dir"/*.c; do
+        [[ ! -f "$_src_file" ]] && continue
+        while IFS= read -r dep_name; do
+            [[ -z "$dep_name" ]] && continue
+            local dep_dir
+            dep_dir=$(find "$ARM_AUDIT_REPO/wheels" -maxdepth 3 -type d -name "$dep_name" 2>/dev/null | head -1)
+            if [[ -n "$dep_dir" && "$includes" != *"-I$dep_dir"* ]]; then
+                includes="$includes -I$dep_dir"
+            fi
+        done < <(grep -oE '#include "[a-z_0-9]+\.h"' "$_src_file" 2>/dev/null \
+            | sed 's/#include "//;s/\.h"//' | sort -u || true)
+    done
 
     # Vendor sub-deps: kvs needs fal headers
     if [[ -d "$wheel_dir/vendor/inc" ]] && grep -rq '#include.*fal\.h' "$wheel_dir/vendor" 2>/dev/null; then
