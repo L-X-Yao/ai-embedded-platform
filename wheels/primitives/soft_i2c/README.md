@@ -46,8 +46,12 @@ soft_i2c_err_t soft_i2c_bus_recover(soft_i2c_t *bus);
 ## Usage
 
 ```c
-static void scl_set(void *ctx, bool high) { gpio_write(SCL_PIN, high); }
-static void sda_set(void *ctx, bool high) { gpio_write(SDA_PIN, high); }
+static void scl_set(void *ctx, bool high) {
+    gpio_write(SCL_PIN, high);
+}
+static void sda_set(void *ctx, bool high) {
+    gpio_write(SDA_PIN, high);
+}
 static void sda_out(void *ctx) { gpio_dir_output(SDA_PIN); }
 static void sda_in(void *ctx)  { gpio_dir_input(SDA_PIN); }
 static bool sda_get(void *ctx) { return gpio_read(SDA_PIN); }
@@ -58,10 +62,12 @@ static const soft_i2c_gpio_t gpio = {
     .sda_dir_out = sda_out, .sda_dir_in = sda_in,
     .sda_get = sda_get, .delay = delay,
 };
+```
 
+```c
 soft_i2c_t bus;
 soft_i2c_init(&bus, &gpio);
-soft_i2c_write_reg(&bus, 0x68, 0x6B, 0x00);  /* wake MPU6050 */
+soft_i2c_write_reg(&bus, 0x68, 0x6B, 0x00);  // wake MPU6050
 ```
 
 ## Supported platforms
