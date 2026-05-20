@@ -1,3 +1,4 @@
+* text=auto eol=lf
 *.c text eol=lf
 *.h text eol=lf
 *.py text eol=lf
@@ -10,3 +11,20 @@
 *.cmake text eol=lf
 CMakeLists.txt text eol=lf
 Makefile text eol=lf
+*.ld text eol=lf
+*.cfg text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.s text eol=lf
+*.S text eol=lf
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.bin binary
+*.elf binary
+*.hex binary
+*.axf binary
+
+# Vendor upstream — preserve original line endings
+vsf/** -text

@@ -86,6 +86,8 @@ crlf_files=()
 
 while IFS= read -r relpath; do
     [[ -z "$relpath" ]] && continue
+    # Skip vendored / upstream paths we do not normalize
+    [[ "$relpath" == vsf/* ]] && continue
     filepath="$REPO/$relpath"
     # Skip files that no longer exist in the working tree (deleted but tracked)
     [[ -f "$filepath" ]] || continue
