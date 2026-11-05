@@ -87,7 +87,7 @@ PROPERTY(config_no_crash, 5000)
     if (err != LORA_OK) return;
 
     lora_set_bandwidth(&dev, ARBI_UINT8(seed) % 10);
-    lora_set_spreading_factor(&dev, (uint8_t)(6 + ARBI_UINT8(seed) % 7));
+    lora_set_spreading_factor(&dev, (uint8_t)(7 + ARBI_UINT8(seed) % 6));
     lora_set_coding_rate(&dev, (uint8_t)(1 + ARBI_UINT8(seed) % 4));
     lora_set_tx_power(&dev, (int8_t)(2 + (int)(ARBI_UINT8(seed) % 16)));
 }

@@ -46,7 +46,7 @@ typedef struct {
     const lora_spi_t *spi;
     uint32_t frequency;        /* Hz (e.g., 433000000, 868000000, 915000000) */
     uint8_t  bandwidth;        /* 0-9 (7.8kHz to 500kHz)                    */
-    uint8_t  spreading_factor; /* 6-12                                       */
+    uint8_t  spreading_factor; /* 7-12                                       */
     uint8_t  coding_rate;      /* 1-4 (4/5 to 4/8)                          */
     int8_t   tx_power;         /* dBm (2-17 for PA_BOOST, max 20)           */
 } lora_t;
@@ -62,7 +62,8 @@ lora_err_t lora_set_frequency(lora_t *dev, uint32_t freq_hz);
 /** Set signal bandwidth (0-9). */
 lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw);
 
-/** Set spreading factor (6-12). */
+/** Set spreading factor (7-12). SF6 needs implicit header mode, which this
+ *  driver does not have. */
 lora_err_t lora_set_spreading_factor(lora_t *dev, uint8_t sf);
 
 /** Set coding rate (1-4 → 4/5 to 4/8). */

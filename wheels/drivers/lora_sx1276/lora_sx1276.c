@@ -246,7 +246,7 @@ lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw)
 lora_err_t lora_set_spreading_factor(lora_t *dev, uint8_t sf)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (sf < 6 || sf > 12) return LORA_ERR_PARAM;
+    if (sf < 7 || sf > 12) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
     uint8_t cfg2 = reg_read(spi, REG_MODEM_CONFIG_2);
