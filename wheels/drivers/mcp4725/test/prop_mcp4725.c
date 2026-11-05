@@ -42,10 +42,10 @@ static bool prop_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
 {
     (void)ctx; (void)addr;
     if (len >= 5) {
-        data[0] = (uint8_t)(0x80u | (prop_mock_pd << 2) |
-                            ((prop_mock_dac >> 10) & 0x03u));
-        data[1] = (uint8_t)((prop_mock_dac >> 2) & 0xFFu);
-        data[2] = (uint8_t)((prop_mock_dac & 0x03u) << 6);
+        /* DS22039D Figure 6-3, after the address byte */
+        data[0] = (uint8_t)(0xC0u | ((unsigned)prop_mock_pd << 1));
+        data[1] = (uint8_t)((prop_mock_dac >> 4) & 0xFFu);
+        data[2] = (uint8_t)((prop_mock_dac & 0x0Fu) << 4);
         data[3] = 0;
         data[4] = 0;
     }

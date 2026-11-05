@@ -172,6 +172,24 @@ TEST(test_read_status_ready_flag)
     ASSERT_EQ(st.eeprom_busy, false);
 }
 
+/* DS22039D Figure 6-3, checked on the model's bytes without the driver */
+TEST(test_model_read_frame_figure_6_3)
+{
+    mcp4725_model_init(&model);
+    model.dac_value    = 0xABCu;
+    model.dac_pd       = 2;
+    model.eeprom_value = 0x123u;
+    model.eeprom_pd    = 1;
+
+    uint8_t b[5];
+    ASSERT_TRUE(mcp4725_model_read(&model, MCP4725_ADDR_A, b, 5));
+    ASSERT_EQ_HEX(b[0], 0xC4u);  /* RDY/BSY POR X X X PD1 PD0 X: 1 1 000 10 0 */
+    ASSERT_EQ_HEX(b[1], 0xABu);  /* D11-D4 */
+    ASSERT_EQ_HEX(b[2], 0xC0u);  /* D3-D0 X X X X */
+    ASSERT_EQ_HEX(b[3], 0x21u);  /* X PD1 PD0 X D11-D8: 0 01 0 0001 */
+    ASSERT_EQ_HEX(b[4], 0x23u);  /* D7-D0 */
+}
+
 /* --- edge values --- */
 
 TEST(test_all_zeros)
@@ -238,6 +256,7 @@ TEST_MAIN("mcp4725 hardware model")
     RUN(test_read_status_eeprom);
     RUN(test_read_status_busy_flag);
     RUN(test_read_status_ready_flag);
+    RUN(test_model_read_frame_figure_6_3);
     RUN(test_all_zeros);
     RUN(test_all_ones);
     RUN(test_sequential_writes);

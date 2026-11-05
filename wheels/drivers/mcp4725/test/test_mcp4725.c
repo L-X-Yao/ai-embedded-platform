@@ -19,6 +19,7 @@ static uint8_t  mock_last_write[8];
 static int      mock_last_write_len;
 static int      mock_write_count;
 static int      mock_read_count;
+static const uint8_t *mock_raw_frame;  /* non-NULL: returned as is by read */
 
 static void mock_reset(void)
 {
@@ -34,6 +35,7 @@ static void mock_reset(void)
     mock_last_write_len = 0;
     mock_write_count = 0;
     mock_read_count  = 0;
+    mock_raw_frame   = NULL;
 }
 
 static bool mock_should_fail(void)
@@ -83,12 +85,16 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
     mock_read_count++;
+    if (mock_raw_frame && len >= 5) {
+        memcpy(data, mock_raw_frame, 5);
+        return true;
+    }
     if (len >= 5) {
+        /* DS22039D Figure 6-3, after the address byte */
         uint8_t rdy = mock_eeprom_busy ? 0x00u : 0x80u;
-        data[0] = (uint8_t)(rdy | ((unsigned)mock_dac_pd << 2) |
-                             ((mock_dac_value >> 10) & 0x03u));
-        data[1] = (uint8_t)((mock_dac_value >> 2) & 0xFFu);
-        data[2] = (uint8_t)((mock_dac_value & 0x03u) << 6);
+        data[0] = (uint8_t)(rdy | 0x40u | ((unsigned)mock_dac_pd << 1));
+        data[1] = (uint8_t)((mock_dac_value >> 4) & 0xFFu);
+        data[2] = (uint8_t)((mock_dac_value & 0x0Fu) << 4);
         data[3] = (uint8_t)((mock_eeprom_pd << 5) |
                              ((mock_eeprom_value >> 8) & 0x0Fu));
         data[4] = (uint8_t)(mock_eeprom_value & 0xFFu);
@@ -314,6 +320,55 @@ TEST(test_read_status_busy)
     ASSERT_EQ(st.eeprom_busy, true);
 }
 
+/* DS22039D Figure 6-3. The HAL returns the bytes after the address byte, so
+ * frame[0] is the figure's 2nd byte. RDY/BSY = 1, POR = 1, DAC PD = 10,
+ * DAC data 0xABC, EEPROM PD = 01, EEPROM data 0x123. */
+TEST(test_read_status_figure_6_3_frame)
+{
+    static const uint8_t frame[5] = {
+        0xC4u,  /* RDY/BSY POR X X X PD1 PD0 X: 1 1 000 10 0 */
+        0xABu,  /* D11-D4 */
+        0xC0u,  /* D3-D0 X X X X */
+        0x21u,  /* X PD1 PD0 X D11-D8: 0 01 0 0001 */
+        0x23u,  /* D7-D0 */
+    };
+
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+    mock_raw_frame = frame;
+
+    mcp4725_status_t st;
+    ASSERT_EQ(mcp4725_read_status(&dev, &st), MCP4725_OK);
+    ASSERT_EQ_HEX(st.dac_value, 0xABCu);
+    ASSERT_EQ(st.pd_mode, 2);
+    ASSERT_EQ(st.eeprom_busy, false);
+    ASSERT_EQ_HEX(st.eeprom_value, 0x123u);
+    ASSERT_EQ(st.eeprom_pd, 1);
+}
+
+/* Same frame with every X bit at 1 (Figure 6-3 Note 2: don't care) */
+TEST(test_read_status_ignores_dont_care_bits)
+{
+    static const uint8_t frame[5] = {
+        0xFDu,  /* 1 1 111 10 1 */
+        0xABu,
+        0xCFu,  /* D3-D0 1 1 1 1 */
+        0xB1u,  /* 1 01 1 0001 */
+        0x23u,
+    };
+
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+    mock_raw_frame = frame;
+
+    mcp4725_status_t st;
+    ASSERT_EQ(mcp4725_read_status(&dev, &st), MCP4725_OK);
+    ASSERT_EQ_HEX(st.dac_value, 0xABCu);
+    ASSERT_EQ(st.pd_mode, 2);
+    ASSERT_EQ_HEX(st.eeprom_value, 0x123u);
+    ASSERT_EQ(st.eeprom_pd, 1);
+}
+
 TEST(test_read_status_i2c_fail)
 {
     mock_reset();
@@ -403,6 +458,8 @@ TEST_MAIN("mcp4725")
     RUN(test_write_eeprom_over_max);
     RUN(test_read_status_roundtrip);
     RUN(test_read_status_busy);
+    RUN(test_read_status_figure_6_3_frame);
+    RUN(test_read_status_ignores_dont_care_bits);
     RUN(test_read_status_i2c_fail);
     RUN(test_write_dac_value_encoding);
     RUN(test_read_status_max_values);
