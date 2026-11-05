@@ -11,7 +11,6 @@
  *   0x00 Control, 0x02 Temperature, 0x04 Voltage, 0x06 Flags,
  *   0x0C RemainingCapacity, 0x0E FullChargeCapacity,
  *   0x10 AverageCurrent, 0x18 AveragePower, 0x1C StateOfCharge,
- *   0x3C DesignCapacity (extended data, config mode only)
  *
  * Control sub-commands are written as 16-bit LE to reg 0x00,
  * then read back from reg 0x00.
@@ -32,10 +31,8 @@
 #define REG_AVG_POWER        0x18u
 #define REG_SOC              0x1Cu
 
-/* ---- extended data (config mode) ---- */
-#define REG_DESIGN_CAPACITY  0x3Cu
-
 /* ---- control sub-commands ---- */
+#define CTRL_CONTROL_STATUS  0x0000u
 #define CTRL_DEVICE_TYPE     0x0001u
 #define CTRL_SEALED          0x0020u
 #define CTRL_SET_CFGUPDATE   0x0013u
@@ -47,18 +44,38 @@
 
 /* ---- flags register bits ---- */
 #define FLAG_CFGUPMODE       (1u << 4)
+#define FLAG_BAT_DET         (1u << 3)
+
+/* ---- CONTROL_STATUS bits ---- */
+#define STATUS_SS            (1u << 13)
 
 /* ---- timing ---- */
-#define CFGUPDATE_POLL_MS    10u
-#define CFGUPDATE_MAX_POLLS  100u  /* 1 second total */
+/* Standard commands are limited to two per second while waiting on a mode
+ * change, which can take up to one second. */
+#define CFGUPDATE_POLL_MS    500u
+#define CFGUPDATE_MAX_POLLS  4u
+/* The gauge needs 66 us of bus idle between packets */
+#define BUS_GAP_MS           1u
 
 /* ---- internal helpers ---- */
 
+static void do_delay(const bq27441_t *dev, uint32_t ms)
+{
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
+}
+
+/* Single-byte writes: above 100 kHz the gauge cannot take incremental ones. */
 static bq27441_err_t write_reg16(const bq27441_t *dev, uint8_t reg, uint16_t val)
 {
-    uint8_t buf[2] = { (uint8_t)(val & 0xFFu), (uint8_t)(val >> 8) };
-    if (!dev->i2c->write_regs(dev->i2c->ctx, BQ27441_DEV_ADDR, reg, buf, 2))
+    if (!dev->i2c->write_reg(dev->i2c->ctx, BQ27441_DEV_ADDR, reg,
+                             (uint8_t)(val & 0xFFu)))
         return BQ27441_ERR_I2C;
+    do_delay(dev, BUS_GAP_MS);
+
+    if (!dev->i2c->write_reg(dev->i2c->ctx, BQ27441_DEV_ADDR, (uint8_t)(reg + 1u),
+                             (uint8_t)(val >> 8)))
+        return BQ27441_ERR_I2C;
+    do_delay(dev, BUS_GAP_MS);
     return BQ27441_OK;
 }
 
@@ -67,6 +84,7 @@ static bq27441_err_t read_reg16(const bq27441_t *dev, uint8_t reg, uint16_t *val
     uint8_t buf[2] = {0, 0};
     if (!dev->i2c->read_regs(dev->i2c->ctx, BQ27441_DEV_ADDR, reg, buf, 2))
         return BQ27441_ERR_I2C;
+    do_delay(dev, BUS_GAP_MS);
     *val = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
     return BQ27441_OK;
 }
@@ -86,12 +104,6 @@ static bq27441_err_t read_flags(const bq27441_t *dev, uint16_t *flags)
     return read_reg16(dev, REG_FLAGS, flags);
 }
 
-static void do_delay(const bq27441_t *dev, uint32_t ms)
-{
-    if (dev->i2c->delay_ms)
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-}
-
 /* ---- public API ---- */
 
 bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
@@ -101,8 +113,9 @@ bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
     if (!dev || !i2c)
         return BQ27441_ERR_PARAM;
     REQUIRE(i2c->read_regs != NULL);
-    REQUIRE(i2c->write_regs != NULL);
-    if (!i2c->read_regs || !i2c->write_regs)
+    REQUIRE(i2c->write_reg != NULL);
+    REQUIRE(i2c->delay_ms != NULL);
+    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms)
         return BQ27441_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
@@ -133,6 +146,11 @@ bq27441_err_t bq27441_read(bq27441_t *dev, bq27441_data_t *out)
 
     bq27441_err_t err;
     uint16_t raw;
+
+    /* Gauge predictions are not valid until a battery is detected */
+    err = read_flags(dev, &raw);
+    if (err != BQ27441_OK) return err;
+    if (!(raw & FLAG_BAT_DET)) return BQ27441_ERR_NO_BATTERY;
 
     /* Voltage (mV) */
     err = read_reg16(dev, REG_VOLTAGE, &raw);
@@ -285,7 +303,9 @@ bq27441_err_t bq27441_set_design_capacity(bq27441_t *dev, uint16_t mah)
     if (mah == 0)
         return BQ27441_ERR_PARAM;
 
-    return write_reg16(dev, REG_DESIGN_CAPACITY, mah);
+    /* DesignCapacity() at 0x3C is read-only. The value lives in data memory and
+     * has to go through block data access, which this driver does not do yet. */
+    return BQ27441_ERR_UNSUPPORTED;
 }
 
 bq27441_err_t bq27441_unseal(bq27441_t *dev)
@@ -298,7 +318,21 @@ bq27441_err_t bq27441_unseal(bq27441_t *dev)
     bq27441_err_t err = write_control(dev, UNSEAL_KEY_A);
     if (err != BQ27441_OK)
         return err;
-    return write_control(dev, UNSEAL_KEY_B);
+    err = write_control(dev, UNSEAL_KEY_B);
+    if (err != BQ27441_OK)
+        return err;
+
+    /* A wrong key, or keys sent too soon after a seal, leaves the gauge sealed */
+    err = write_control(dev, CTRL_CONTROL_STATUS);
+    if (err != BQ27441_OK)
+        return err;
+
+    uint16_t status = 0;
+    err = read_control(dev, &status);
+    if (err != BQ27441_OK)
+        return err;
+
+    return (status & STATUS_SS) ? BQ27441_ERR_SEALED : BQ27441_OK;
 }
 
 bq27441_err_t bq27441_seal(bq27441_t *dev)

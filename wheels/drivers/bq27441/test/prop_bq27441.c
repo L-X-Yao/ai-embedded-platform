@@ -13,15 +13,18 @@
 /* BQ27441 CONTROL register sub-command behavior */
 #define REG_CONTROL 0x00u
 
-static bool mock_bq_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
-                                const uint8_t *buf, uint16_t len)
+static uint8_t mock_control_low;
+
+static bool mock_bq_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
 {
-    if (!mock_i2c_write_regs(ctx, dev_addr, reg, buf, len))
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
         return false;
 
-    /* Simulate DEVICE_TYPE sub-command response */
-    if (reg == REG_CONTROL && len == 2) {
-        uint16_t subcmd = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
+    /* Simulate DEVICE_TYPE sub-command response: low byte, then high byte */
+    if (reg == REG_CONTROL) {
+        mock_control_low = val;
+    } else if (reg == REG_CONTROL + 1) {
+        uint16_t subcmd = (uint16_t)((uint16_t)val << 8 | mock_control_low);
         if (subcmd == 0x0001u) {
             mock_regs[REG_CONTROL]     = 0x21;
             mock_regs[REG_CONTROL + 1] = 0x04;
@@ -31,9 +34,9 @@ static bool mock_bq_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
 }
 
 static const bq27441_i2c_t prop_i2c = {
-    .write_reg  = mock_i2c_write_reg,
+    .write_reg  = mock_bq_write_reg,
     .read_regs  = mock_i2c_read_regs,
-    .write_regs = mock_bq_write_regs,
+    .write_regs = mock_i2c_write_regs,
     .delay_ms   = mock_i2c_delay_ms,
     .ctx        = NULL,
 };
@@ -76,6 +79,7 @@ PROPERTY(read_no_crash, 10000)
     if (err != BQ27441_OK) return;
 
     bq27441_data_t data;
+    mock_regs[0x06] = 0x08; /* BAT_DET */
     bq27441_read(&dev, &data);
     /* Must not crash with arbitrary register values */
 }
