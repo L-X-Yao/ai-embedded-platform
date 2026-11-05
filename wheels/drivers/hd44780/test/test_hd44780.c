@@ -296,6 +296,16 @@ TEST(test_init_switches_the_display_on_last)
     ASSERT_EQ_HEX(cmds[4], 0x0C);  /* display on */
 }
 
+TEST(test_init_refuses_rows_past_ddram)
+{
+    mock_reset();
+    /* rows 2 and 3 start at 0x14 and 0x54, which leaves room for 20 columns */
+    ASSERT_EQ(hd44780_init(&dev, &mock_i2c, 0x27, 21, 3), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_init(&dev, &mock_i2c, 0x27, 40, 4), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_init(&dev, &mock_i2c, 0x27, 20, 4), HD44780_OK);
+    ASSERT_EQ(hd44780_init(&dev, &mock_i2c, 0x27, 40, 2), HD44780_OK);
+}
+
 TEST_MAIN("hd44780")
     RUN(test_init_ok);
     RUN(test_init_20x4);
@@ -319,4 +329,5 @@ TEST_MAIN("hd44780")
     RUN(test_write_char_sends_rs_high);
     RUN(test_4x_row_addressing);
     RUN(test_init_switches_the_display_on_last);
+    RUN(test_init_refuses_rows_past_ddram);
 TEST_MAIN_END()
