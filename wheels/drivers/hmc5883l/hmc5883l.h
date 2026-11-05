@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * I2C register-based interface. Fixed address 0x1E.
- * Outputs in raw counts or milligauss (configurable gain).
+ * Outputs in raw counts or Gauss (configurable gain).
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: caller owns the hmc5883l_t struct.
  */
