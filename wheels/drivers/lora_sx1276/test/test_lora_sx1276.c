@@ -770,6 +770,22 @@ TEST(test_send_waits_for_a_long_packet)
     ASSERT_EQ(lora_send(&dev, payload, sizeof(payload)), LORA_OK);
 }
 
+TEST(test_receive_stops_at_rx_timeout)
+{
+    mock_reset_all();
+    lora_t dev;
+    uint8_t buf[8];
+    uint8_t len = 0;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    mock_delay_count = 0;
+    mock_irq_after_delays = 1;
+    mock_irq_value = 0x80;
+    ASSERT_EQ(lora_receive(&dev, buf, &len, sizeof(buf)), LORA_ERR_TIMEOUT);
+    ASSERT_TRUE(mock_delay_count < 5);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -808,4 +824,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_low_data_rate_follows_the_symbol_time);
     RUN(test_tx_power_sets_the_current_limit);
     RUN(test_send_waits_for_a_long_packet);
+    RUN(test_receive_stops_at_rx_timeout);
 TEST_MAIN_END()
