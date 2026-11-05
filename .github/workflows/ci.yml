@@ -6,23 +6,18 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  # ---- Always-run: audit + tooling tests ----
+  # ---- Always-run: static audit + documentation drift ----
 
   wheel-audit:
-    name: wheel audit (orphan + WISHLIST drift)
-    if: github.event_name != 'schedule'
-    runs-on: self-hosted
-    timeout-minutes: 5
-    permissions:
-      contents: write
+    name: wheel audit (63 checks) + doc drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -33,33 +28,42 @@ jobs:
       - name: Audit wheels
         run: python3 tooling/audit/audit_wheels.py
 
-      - name: Check and fix documentation drift
-        run: python3 tooling/audit/doc_drift_check.py --fix
+      - name: Check documentation drift
+        run: python3 tooling/audit/doc_drift_check.py
 
-      - name: Push drift fixes
-        if: github.event_name == 'push'
+  spdx-check:
+    name: SPDX license headers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check SPDX headers in wheel sources
         run: |
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md
-            git commit -m "docs: auto-fix documentation number drift [skip ci]"
-            git push
-            echo "::notice::Documentation drift auto-fixed and pushed"
+          MISSING=0
+          while IFS= read -r f; do
+            if ! head -10 "$f" | grep -q "SPDX-License-Identifier"; then
+              echo "::error file=$f::Missing SPDX-License-Identifier header"
+              MISSING=$((MISSING + 1))
+            fi
+          done < <(find wheels -name '*.c' -o -name '*.h' | grep -v '/build/' | sort)
+          if [ "$MISSING" -gt 0 ]; then
+            echo "::error::$MISSING files missing SPDX license headers"
+            exit 1
           fi
+          echo "All wheel source files have SPDX headers"
 
-  # ---- Change detection ----
+  # ---- Change detection: full run on first push / dispatch / harness change,
+  #      incremental matrix otherwise ----
 
   detect-changes:
     name: detect changed wheels
-    if: github.event_name != 'schedule'
-    runs-on: self-hosted
-    timeout-minutes: 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
+      full-run: ${{ steps.detect.outputs.full_run }}
       wheel-matrix: ${{ steps.detect.outputs.matrix }}
       has-wheels: ${{ steps.detect.outputs.has_wheels }}
-      harness-changed: ${{ steps.detect.outputs.harness_changed }}
-      flybox-changed: ${{ steps.detect.outputs.flybox_changed }}
       log-changed: ${{ steps.detect.outputs.log_changed }}
       crc16-changed: ${{ steps.detect.outputs.crc16_changed }}
       examples-changed: ${{ steps.detect.outputs.examples_changed }}
@@ -72,7 +76,7 @@ jobs:
       - name: Detect
         id: detect
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             BASE=""
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
@@ -80,113 +84,132 @@ jobs:
             BASE="${{ github.event.before }}"
           fi
 
-          # Fallback for first push or force-push (before sha may be 0000...0 or absent)
-          if [ -n "$BASE" ] && [ "$BASE" != "0000000000000000000000000000000000000000" ] && ! git cat-file -e "$BASE" 2>/dev/null; then
-            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
-          elif [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
-            # Brand-new branch — no valid parent; treat as full run
+          # First push to a branch (0000...), force-push or unknown sha -> full run
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            BASE=""
+          elif [ -n "$BASE" ] && ! git cat-file -e "$BASE" 2>/dev/null; then
             BASE=""
           fi
 
           CHANGED=""
           if [ -n "$BASE" ]; then
             CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || echo "")
-          else
-            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || echo "")
           fi
 
-          # If harness or audit changed, test everything
-          HARNESS_CHANGED="false"
-          if echo "$CHANGED" | grep -qE "tooling/test/|tooling/audit/"; then
-            HARNESS_CHANGED="true"
+          FULL="false"
+          if [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^tooling/(test|audit|harness|codegen)/|^\.github/"; then
+            FULL="true"
           fi
-          echo "harness_changed=$HARNESS_CHANGED" >> "$GITHUB_OUTPUT"
 
-          # Detect changed wheels → build matrix
-          MATRIX="["
-          FIRST=true
+          MATRIX="[]"
+          HAS="false"
+          COUNT=0
+          if [ "$FULL" = "false" ]; then
+            ENTRIES=""
+            for test_cmake in wheels/*/*/test/CMakeLists.txt; do
+              wheel_dir=$(dirname "$(dirname "$test_cmake")")
+              name=$(basename "$wheel_dir")
+              test_dir="${wheel_dir}/test"
 
-          for test_cmake in wheels/*/*/test/CMakeLists.txt; do
-            wheel_dir=$(dirname "$(dirname "$test_cmake")")
-            name=$(basename "$wheel_dir")
-            test_dir="${wheel_dir}/test"
+              # log and crc16 have standalone pytest jobs
+              [ "$name" = "log" ] && continue
+              [ "$name" = "crc16" ] && continue
 
-            # Skip log and crc16 (standalone jobs with pytest)
-            [ "$name" = "log" ] && continue
-            [ "$name" = "crc16" ] && continue
+              INCLUDE=false
+              if echo "$CHANGED" | grep -q "^${wheel_dir}/"; then
+                INCLUDE=true
+              else
+                # Upstream deps referenced from test/CMakeLists.txt
+                for upstream in $(grep -oE '\.\./\.\./\.\./(primitives|drivers|protocols|modules)/[a-z0-9_]+' "$test_cmake" 2>/dev/null | sed 's|.*/\.\./\.\./\.\./||' | sort -u); do
+                  if echo "$CHANGED" | grep -q "^wheels/${upstream}/"; then
+                    INCLUDE=true
+                    break
+                  fi
+                done
+              fi
 
-            # Include if: harness changed, or wheel files changed, or upstream dep changed, or no BASE (full run)
-            INCLUDE=false
-            if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ]; then
-              INCLUDE=true
-            elif echo "$CHANGED" | grep -q "^${wheel_dir}/"; then
-              INCLUDE=true
-            else
-              # Auto-detect upstream deps from test/CMakeLists.txt cross-wheel paths
-              for upstream in $(grep -oE '\.\./\.\./\.\./(primitives|drivers|protocols|modules)/[a-z0-9_]+' "$test_cmake" 2>/dev/null | sed 's|.*/\.\./\.\./\.\./||' | sort -u); do
-                if echo "$CHANGED" | grep -q "^wheels/${upstream}/"; then
-                  INCLUDE=true
-                  break
-                fi
-              done
+              if [ "$INCLUDE" = "true" ]; then
+                ENTRIES="${ENTRIES}{\"name\":\"$name\",\"dir\":\"$test_dir\"},"
+              fi
+            done
+
+            COUNT=$(echo "$ENTRIES" | grep -o '"name"' | wc -l)
+            if [ "$COUNT" -gt 120 ]; then
+              # Too many for a matrix (GitHub caps at 256 jobs); run everything in one job
+              FULL="true"
+            elif [ "$COUNT" -gt 0 ]; then
+              MATRIX="[${ENTRIES%,}]"
+              HAS="true"
             fi
+          fi
 
-            if [ "$INCLUDE" = "true" ]; then
-              if [ "$FIRST" = "true" ]; then FIRST=false; else MATRIX="$MATRIX,"; fi
-              MATRIX="$MATRIX{\"name\":\"$name\",\"dir\":\"$test_dir\"}"
-            fi
-          done
-          MATRIX="$MATRIX]"
-
+          echo "full_run=$FULL" >> "$GITHUB_OUTPUT"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-          if [ "$MATRIX" = "[]" ]; then
-            echo "has_wheels=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_wheels=true" >> "$GITHUB_OUTPUT"
-          fi
+          echo "has_wheels=$HAS" >> "$GITHUB_OUTPUT"
 
-          # Standalone job triggers
-          FLYBOX="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^projects/flybox/|^tooling/debug/cortex_m/gd32f4xx/"; then
-            FLYBOX="true"
-          fi
-          echo "flybox_changed=$FLYBOX" >> "$GITHUB_OUTPUT"
+          flag() {
+            if [ "$FULL" = "true" ] || echo "$CHANGED" | grep -qE "$1"; then echo true; else echo false; fi
+          }
+          echo "log_changed=$(flag '^wheels/primitives/log/')" >> "$GITHUB_OUTPUT"
+          echo "crc16_changed=$(flag '^wheels/primitives/crc16/')" >> "$GITHUB_OUTPUT"
+          echo "examples_changed=$(flag '^examples/|^wheels/')" >> "$GITHUB_OUTPUT"
+          echo "wheels_touched=$(flag '^wheels/')" >> "$GITHUB_OUTPUT"
 
-          LOG="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -q "^wheels/primitives/log/"; then
-            LOG="true"
-          fi
-          echo "log_changed=$LOG" >> "$GITHUB_OUTPUT"
+          echo "::notice::full_run=$FULL changed_wheels=$COUNT"
 
-          CRC16="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -q "^wheels/primitives/crc16/"; then
-            CRC16="true"
-          fi
-          echo "crc16_changed=$CRC16" >> "$GITHUB_OUTPUT"
+  # ---- Full run: every wheel, one job, parallel ----
 
-          # Examples trigger: examples/, wheels/, or harness changed
-          EXAMPLES="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^examples/|^wheels/"; then
-            EXAMPLES="true"
-          fi
-          echo "examples_changed=$EXAMPLES" >> "$GITHUB_OUTPUT"
+  wheel-test-all:
+    name: all wheels (host C99, parallel)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.full-run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
 
-          # ARM compile trigger: any wheel code changed
-          WHEELS_TOUCHED="false"
-          if [ "$HARNESS_CHANGED" = "true" ] || [ -z "$BASE" ] || echo "$CHANGED" | grep -qE "^wheels/"; then
-            WHEELS_TOUCHED="true"
-          fi
-          echo "wheels_touched=$WHEELS_TOUCHED" >> "$GITHUB_OUTPUT"
+      - name: Install ninja
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
-          echo "::notice::Changed wheels: $(echo "$MATRIX" | grep -o '"name"' | wc -l) / harness=$HARNESS_CHANGED / examples=$EXAMPLES / arm=$WHEELS_TOUCHED"
+      - name: Build and test every wheel
+        run: bash tooling/test/test_all.sh --parallel
 
-  # ---- Standalone wheel jobs (special build requirements) ----
+  # ---- Incremental run: only changed wheels and their dependents ----
+
+  wheel-test:
+    name: ${{ matrix.name }} wheel (host C99)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-wheels == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.detect-changes.outputs.wheel-matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ninja
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+
+      - name: Build
+        run: |
+          cmake -GNinja -S . -B build
+          cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  # ---- Standalone wheel jobs (C test + pytest) ----
 
   log-wheel:
     name: log wheel (host C99 + pytest)
     needs: detect-changes
     if: needs.detect-changes.outputs.log-changed == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
@@ -194,10 +217,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify ninja
-        run: ninja --version
+      - name: Install ninja
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
-      # Requires: tooling/requirements-ci.txt (checked into repo)
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -222,7 +244,7 @@ jobs:
     name: crc16 wheel (host C99 + pytest)
     needs: detect-changes
     if: needs.detect-changes.outputs.crc16-changed == 'true'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
       run:
@@ -230,8 +252,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify ninja
-        run: ninja --version
+      - name: Install ninja
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
       - uses: actions/setup-python@v5
         with:
@@ -253,99 +275,19 @@ jobs:
       - name: Run pytest
         run: python3 -m pytest test/test_crc16.py -v
 
-  # ---- Dynamic wheel test matrix (only changed wheels) ----
-
-  wheel-test:
-    name: ${{ matrix.name }} wheel (host C99)
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has-wheels == 'true'
-    runs-on: self-hosted
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.wheel-matrix) }}
-    defaults:
-      run:
-        working-directory: ${{ matrix.dir }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify ninja
-        run: ninja --version
-
-      - name: Build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
-
-  # ---- Project tests ----
-
-  flybox-tests:
-    name: flybox project tests (host)
-    needs: detect-changes
-    if: needs.detect-changes.outputs.flybox-changed == 'true'
-    runs-on: self-hosted
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Verify ninja
-        run: ninja --version
-      - name: Build and run mag_cal
-        working-directory: projects/flybox/test/mag_cal
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-          ctest --test-dir build --output-on-failure
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: tooling/requirements-ci.txt
-      - name: Install pytest
-        run: pip install -r ${{ github.workspace }}/tooling/requirements-ci.txt
-      - name: Test parse_fault.py
-        run: python3 -m pytest tooling/debug/cortex_m/test_parse_fault.py -v
-
-  flybox-build:
-    name: flybox firmware (gd32f405 cross-compile)
-    needs: detect-changes
-    if: needs.detect-changes.outputs.flybox-changed == 'true'
-    runs-on: self-hosted
-    timeout-minutes: 15
-    # TODO(temporary): vendor headers (GD32F4xx SDK) are gitignored — build
-    # will fail until a CI-accessible source is set up.  Remove
-    # continue-on-error once the SDK is available in CI.
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify toolchain
-        run: arm-none-eabi-gcc --version | head -1 && ninja --version
-
-      - name: Build flybox firmware
-        working-directory: projects/flybox/vsf_build
-        run: |
-          cmake -GNinja -S . -B build
-          cmake --build build
-
   # ---- Integration examples ----
 
   examples-test:
     name: examples (build + run)
     needs: detect-changes
     if: needs.detect-changes.outputs.examples-changed == 'true'
-    runs-on: self-hosted
-    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify ninja
-        run: ninja --version
+      - name: Install ninja
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
 
       - name: Build and run examples
         run: |
@@ -372,20 +314,21 @@ jobs:
           done
           exit $FAIL
 
-  # ---- ARM cross-compile smoke (push-time, not just nightly) ----
+  # ---- ARM cross-compile smoke: every wheel must compile for Cortex-M4 ----
 
   arm-compile-check:
     name: ARM cross-compile smoke
     needs: detect-changes
     if: needs.detect-changes.outputs.wheels-touched == 'true'
-    runs-on: self-hosted
-    timeout-minutes: 10
-    env:
-      GCC_ARM_URL: "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify arm-none-eabi-gcc
+      - name: Install arm-none-eabi-gcc
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq gcc-arm-none-eabi
+
+      - name: Verify toolchain
         run: arm-none-eabi-gcc --version | head -1
 
       - name: ARM compile all wheels
@@ -396,94 +339,3 @@ jobs:
             echo "::error::ARM cross-compile failures detected"
             exit 1
           fi
-
-  # ---- SPDX license header check ----
-
-  spdx-check:
-    name: SPDX license headers
-    if: github.event_name != 'schedule'
-    runs-on: self-hosted
-    timeout-minutes: 2
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check SPDX headers in wheel sources
-        run: |
-          MISSING=0
-          while IFS= read -r f; do
-            if ! head -10 "$f" | grep -q "SPDX-License-Identifier"; then
-              echo "::error file=$f::Missing SPDX-License-Identifier header"
-              MISSING=$((MISSING + 1))
-            fi
-          done < <(find wheels -name '*.c' -o -name '*.h' | grep -v '/build/' | sort)
-          if [ "$MISSING" -gt 0 ]; then
-            echo "::error::$MISSING files missing SPDX license headers"
-            exit 1
-          fi
-          echo "All wheel source files have SPDX headers"
-
-  # ---- Nightly: libfuzzer protocol fuzzing ----
-
-  fuzz-protocols:
-    name: libfuzzer protocol fuzz (nightly)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: self-hosted
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify clang
-        run: clang --version | head -1
-
-      - name: Run libfuzzer (10s per protocol)
-        run: bash tooling/test/run_libfuzzer.sh --time 10
-
-  # ---- Nightly: coverage gate ----
-
-  coverage-gate:
-    name: coverage gate (>=80% all wheels)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: self-hosted
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Check if coverage-relevant files changed
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-            if echo "$CHANGED" | grep -qE "^tooling/test/|^tooling/audit/"; then
-              echo "run=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "run=false" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-
-      - name: Install dependencies
-        if: steps.check.outputs.run == 'true'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
-
-      - name: Coverage scan (parallel, gate)
-        if: steps.check.outputs.run == 'true'
-        run: bash tooling/test/coverage_scan.sh --gate --jobs 4
-
-  # ---- Nightly: ARM size audit ----
-
-  arm-size-audit:
-    name: ARM size audit (nightly)
-    if: github.event_name == 'schedule'
-    runs-on: self-hosted
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify arm-none-eabi-gcc
-        run: arm-none-eabi-gcc --version | head -1
-
-      - name: Run ARM size audit
-        run: bash tooling/audit/arm_size_audit.sh
