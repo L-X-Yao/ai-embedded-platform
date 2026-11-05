@@ -483,6 +483,41 @@ TEST(test_cnf_250kbps)
     ASSERT_EQ(model.hw.regs[MCP_REG_CNF3], 0x02);
 }
 
+TEST(test_send_succeeds_when_the_frame_goes_out_at_once)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    model.auto_clear_txreq = true;
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_FALSE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+}
+
+static void next_frame_arrives(void *user, uint8_t reg, uint8_t old_val, uint8_t new_val)
+{
+    (void)old_val;
+    (void)new_val;
+    mcp2515_model_t *m = (mcp2515_model_t *)user;
+    m->hw.regs[reg] |= MCP_CANINTF_RX0IF;
+}
+
+TEST(test_receive_succeeds_when_the_next_frame_is_already_in)
+{
+    setup();
+    mcp2515_t dev;
+    uint8_t data[1] = {0x5A};
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_model_inject_rx_std(&model, 0x100, data, 1);
+    hw_model_set_on_write(&model.hw, MCP_REG_CANINTF, next_frame_arrives);
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    ASSERT_EQ(mcp2515_receive(&dev, &msg), MCP2515_OK);
+    ASSERT_EQ(msg.data[0], 0x5A);
+}
+
 TEST_MAIN("mcp2515 hardware model")
     RUN(test_init_config_mode);
     RUN(test_mode_to_loopback);
@@ -509,4 +544,6 @@ TEST_MAIN("mcp2515 hardware model")
     RUN(test_mask_extended_encoding);
     RUN(test_tx_rtr_frame);
     RUN(test_cnf_250kbps);
+    RUN(test_send_succeeds_when_the_frame_goes_out_at_once);
+    RUN(test_receive_succeeds_when_the_next_frame_is_already_in);
 TEST_MAIN_END()

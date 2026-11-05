@@ -137,9 +137,9 @@ static void mcp2515_on_txb0ctrl_write(void *user, uint8_t reg,
         /* TX requested */
         m->tx_complete_count++;
         if (m->auto_clear_txreq) {
-            /* Simulate immediate TX completion: TXREQ stays set until
-             * next read (real chip clears after arbitration + send).
-             * We keep it set so the driver's verify read sees it. */
+            /* The chip clears TXREQ and sets TX0IF once the frame is sent */
+            m->hw.regs[MCP_REG_TXB0CTRL] &= (uint8_t)~MCP_TXB_TXREQ;
+            m->hw.regs[MCP_REG_CANINTF] |= 0x04;
         }
     }
 }
