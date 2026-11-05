@@ -114,8 +114,7 @@ TEST(test_build_connect_basic)
 
     /* protocol name "MQTT" at known offset (after remaining length VBI) */
     /* remaining length is small, so 1-byte VBI at buf[1] */
-    uint8_t rl = buf[1];
-    (void)rl;
+    ASSERT_EQ(buf[1], n - 2);
     /* "MQTT" at buf[4..7] (len=0x0004, then 'M','Q','T','T') */
     ASSERT_EQ(buf[2], 0x00);
     ASSERT_EQ(buf[3], 0x04);
@@ -444,6 +443,35 @@ TEST(test_parse_publish_wrong_type)
     ASSERT_EQ(mqtt5_parse_publish(data, sizeof(data), &pub), MQTT5_ERR_PROTOCOL);
 }
 
+TEST(test_build_connect_remaining_length_counts_the_frame)
+{
+    /* MQTT 5.0 section 3.1: variable header 10, property length 1,
+     * client id 2 + 3. The whole frame is 2 + 16 bytes. */
+    uint8_t buf[18];
+    mqtt5_connect_t cfg = {
+        .keep_alive = 60,
+        .client_id = "abc",
+        .clean_start = true,
+    };
+
+    ASSERT_EQ(mqtt5_build_connect(buf, sizeof(buf), &cfg), 18);
+    ASSERT_EQ(buf[1], 16);
+    ASSERT_EQ(mqtt5_build_connect(buf, sizeof(buf) - 1, &cfg), MQTT5_ERR_SIZE);
+}
+
+TEST(test_build_connect_remaining_length_with_properties)
+{
+    /* Session expiry adds an identifier and four value bytes. */
+    uint8_t buf[23];
+    mqtt5_connect_t cfg = {
+        .client_id = "abc",
+        .session_expiry = 3600,
+    };
+
+    ASSERT_EQ(mqtt5_build_connect(buf, sizeof(buf), &cfg), 23);
+    ASSERT_EQ(buf[1], 21);
+}
+
 TEST_MAIN("mqtt5_packet")
     /* VBI */
     RUN(test_vbi_encode_single_byte);
@@ -487,4 +515,6 @@ TEST_MAIN("mqtt5_packet")
     RUN(test_parse_publish_null);
     RUN(test_parse_publish_short);
     RUN(test_parse_publish_wrong_type);
+    RUN(test_build_connect_remaining_length_counts_the_frame);
+    RUN(test_build_connect_remaining_length_with_properties);
 TEST_MAIN_END()
