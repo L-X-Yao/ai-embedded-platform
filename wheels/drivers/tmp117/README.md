@@ -5,8 +5,9 @@
 
 Platform-agnostic driver for the TI TMP117 high-accuracy digital
 temperature sensor. I2C interface injected via callbacks. 16-bit
-resolution (0.0078125 deg C/LSB) with typical accuracy of +/-0.1 deg C.
-Configurable hardware averaging (none, 8, 32, or 64 samples).
+resolution (0.0078125 deg C/LSB). Accuracy is +/-0.1 deg C maximum from
+-20 to 50 deg C. Configurable hardware averaging (none, 8, 32, or 64
+samples).
 
 ## Origin
 
@@ -56,6 +57,15 @@ None. I2C address and averaging mode are runtime-configurable via
 
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
+
+## Datasheet check
+
+Checked on 2026-11-06 against TI SNOSD82D (September 2022). Not run on hardware.
+
+- **Matched:** Addresses, register addresses, the device ID, the temperature format, the AVG and MOD fields, Soft_Reset and its 2 ms, 16-bit access.
+- **Fixed:** `tmp117_read` returned -256 C with `TMP117_OK` until the first conversion finished, and now returns `TMP117_ERR_NOT_READY`. `tmp117_init` compared the revision bits too, so a later revision would have failed with `TMP117_ERR_ID`. The header called +/-0.1 C typical, where the manual gives it as a maximum from -20 C to 50 C.
+- **Still open:** The model's power-up comment says no averaging, but AVG 01 means 8. It stores every write as data, so Soft_Reset stays at 1 and resets nothing, read-only registers accept writes, and two tests assert that wrong read-back, so no test shows what a reset does. There is no alert or therm mode, no one-shot or shutdown mode, no conversion cycle setting, and no EEPROM, offset or unique ID access. `tmp117_reset` does not reapply `cfg.avg`, so the sensor goes back to its EEPROM defaults.
+- **Suspected:** `tmp117_init` writes only AVG, so CONV falls to 000 and the sensor converts almost all the time, with more current and self-heating. It also writes the configuration without waiting for the POR load or checking EEPROM_Busy, so the setting can be lost right after power-up.
 
 ## Known issues
 
