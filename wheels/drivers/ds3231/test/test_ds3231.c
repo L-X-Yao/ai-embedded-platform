@@ -404,6 +404,29 @@ TEST(test_get_temp_null_out)
     ASSERT_EQ(ds3231_get_temperature(&dev, NULL), DS3231_ERR_PARAM);
 }
 
+TEST(test_set_time_refuses_a_day_the_month_lacks)
+{
+    mock_reset();
+    ds3231_init(&dev, &mock_i2c);
+
+    ds3231_time_t t = {
+        .year = 24, .month = 2, .day = 30,
+        .weekday = 3, .hour = 12, .minute = 0, .second = 0
+    };
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
+
+    t.month = 4;
+    t.day = 31;
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
+
+    /* 29 February exists only in leap years */
+    t.month = 2;
+    t.day = 29;
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_OK);
+    t.year = 23;
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
+}
+
 TEST_MAIN("ds3231")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -433,4 +456,5 @@ TEST_MAIN("ds3231")
     RUN(test_set_time_null_dev);
     RUN(test_get_temp_null_dev);
     RUN(test_get_temp_null_out);
+    RUN(test_set_time_refuses_a_day_the_month_lacks);
 TEST_MAIN_END()
