@@ -234,6 +234,7 @@ static void sx1276_model_delay_ms(void *ctx, uint32_t ms)
     if (mode == SX_MODE_RX_SINGLE && m->rx_done_after_delays > 0 &&
         m->delay_count >= m->rx_done_after_delays) {
         m->hw.regs[SX_REG_IRQ_FLAGS] |= SX_IRQ_RX_DONE;
+        m->hw.regs[0x1C] |= 0x40;  /* CrcOnPayload */
         if (m->rx_inject_crc_error) {
             m->hw.regs[SX_REG_IRQ_FLAGS] |= SX_IRQ_PAYLOAD_CRC;
         }
