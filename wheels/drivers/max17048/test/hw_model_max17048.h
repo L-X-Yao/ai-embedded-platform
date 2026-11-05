@@ -113,10 +113,11 @@ static uint8_t max17048_model_get_alert_threshold(const max17048_model_t *m)
     return (uint8_t)(32u - (m->regs[HW_REG_CONFIG + 1] & 0x1Fu));
 }
 
-/** Check if sleep bit is set (bit 7 of CONFIG low byte). */
+/** Asleep needs CONFIG.SLEEP and MODE.EnSleep (bit 13). */
 static bool max17048_model_is_sleeping(const max17048_model_t *m)
 {
-    return (m->regs[HW_REG_CONFIG + 1] & 0x80u) != 0;
+    return (m->regs[HW_REG_CONFIG + 1] & 0x80u) != 0 &&
+           (m->regs[HW_REG_MODE] & 0x20u) != 0;
 }
 
 /** Check if alert flag is set (bit 5 of CONFIG low byte). */

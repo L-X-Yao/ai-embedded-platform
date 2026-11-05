@@ -20,6 +20,8 @@
 #define REG_CRATE    0x16u
 #define REG_STATUS   0x1Au
 
+#define MODE_EN_SLEEP  0x2000u
+
 /* ─── helpers ────────────────────────────────────────────────── */
 
 static bool rd16(const max17048_t *dev, uint8_t reg, uint16_t *val)
@@ -131,6 +133,8 @@ max17048_err_t max17048_sleep(max17048_t *dev)
 {
     REQUIRE(dev != NULL);
     if (!dev) return MAX17048_ERR_PARAM;
+    /* CONFIG.SLEEP acts only once MODE.EnSleep is set */
+    if (!wr16(dev, REG_MODE, MODE_EN_SLEEP)) return MAX17048_ERR_I2C;
     uint16_t cfg;
     if (!rd16(dev, REG_CONFIG, &cfg)) return MAX17048_ERR_I2C;
     cfg = (uint16_t)(cfg | (1u << 7));
