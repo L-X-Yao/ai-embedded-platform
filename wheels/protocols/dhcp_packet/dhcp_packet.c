@@ -179,7 +179,7 @@ static int build_base(uint8_t *buf, size_t cap, uint32_t xid,
                       const uint8_t mac[6])
 {
     if (!buf || !mac) return DHCP_PACKET_ERR_PARAM;
-    if (cap < DHCP_PACKET_MIN_LEN + 4) return DHCP_PACKET_ERR_OVERFLOW;
+    if (cap < DHCP_PACKET_BOOTP_MIN_LEN) return DHCP_PACKET_ERR_OVERFLOW;
 
     memset(buf, 0, DHCP_PACKET_MIN_LEN);
 
@@ -199,6 +199,14 @@ static int build_base(uint8_t *buf, size_t cap, uint32_t xid,
     put_u32(buf + OFF_COOKIE, DHCP_MAGIC_COOKIE);
 
     return DHCP_PACKET_OK;
+}
+
+/* RFC 1542 section 2.1: the UDP length must hold the 300-octet BOOTP header. */
+static size_t pad_to_bootp_min(uint8_t *buf, size_t pos)
+{
+    if (pos >= DHCP_PACKET_BOOTP_MIN_LEN) return pos;
+    memset(buf + pos, 0, DHCP_PACKET_BOOTP_MIN_LEN - pos);
+    return DHCP_PACKET_BOOTP_MIN_LEN;
 }
 
 /* ---------- build DISCOVER ---------- */
@@ -230,6 +238,7 @@ int dhcp_packet_build_discover(uint8_t *buf, size_t cap,
     if (pos + 1 > cap) return DHCP_PACKET_ERR_OVERFLOW;
     buf[pos++] = DHCP_OPT_END;
 
+    pos = pad_to_bootp_min(buf, pos);
     ENSURE(pos <= cap);
     return (int)pos;
 }
@@ -281,6 +290,7 @@ int dhcp_packet_build_request(uint8_t *buf, size_t cap,
     if (pos + 1 > cap) return DHCP_PACKET_ERR_OVERFLOW;
     buf[pos++] = DHCP_OPT_END;
 
+    pos = pad_to_bootp_min(buf, pos);
     ENSURE(pos <= cap);
     return (int)pos;
 }
