@@ -4,6 +4,20 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Fixed by the encoder fuzz targets (2026-11-05)
+
+Eleven protocol fuzz targets only parsed input. They now also build frames from the fuzz input in exact-size buffers and read them back, which lifted their line coverage from 35-56% to 94-100%. Writing and running them found:
+
+- `mqtt5_packet`: `mqtt5_build_connect` counted the variable header as 11 bytes, not 10, so every CONNECT announced one byte more than it carried. The unit test had set the field aside with `(void)rl`.
+- `mqtt_packet`: `mqtt_packet_build_publish` passed -1 to `memcpy` when the remaining length went past 268435455. `mqtt_packet_build_connect` could do the same with very long strings and now checks each string first.
+- `mqtt_packet`: `mqtt_packet_build_subscribe` accepted a QoS above 2.
+- `mqtt_packet`, `mqtt5_packet`: a PUBLISH with a NULL payload and a non-zero length announced bytes it did not hold.
+- `websocket_frame`: `websocket_frame_build` accepted fragmented control frames and control frames over 125 bytes, which its own parser rejects.
+- `coap_packet`: a NULL token or option value with a non-zero length shifted the rest of the frame, and a NULL payload with a length was dropped. All three now return `COAP_PACKET_ERR_PARAM`.
+- `msgpack`: `msgpack_enc_str` and `msgpack_enc_bin` passed NULL to `memcpy` for empty values.
+
+A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
+
 ## Datasheet check of ten drivers (2026-11-05)
 
 All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what was checked, fixed and left open. None had run on hardware, and these fixes have not either, so they match the documents and nothing more.

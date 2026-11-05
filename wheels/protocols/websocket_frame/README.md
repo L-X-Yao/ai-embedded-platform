@@ -51,8 +51,9 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **11 C cases** — unmasked/masked text parse, ping, close, 16-bit length,
-  incomplete, build unmasked/masked, overflow, roundtrip, NULL safety
+- Unit tests: **19 C cases** — unmasked/masked text parse, ping, close, 16-bit length,
+  incomplete, build unmasked/masked, overflow, roundtrip, NULL safety, illegal control frames
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 
 ## API convention deviations
 

@@ -80,7 +80,8 @@ verify topic + payload + QoS), null parameter safety.
 
 ## Test status
 
-- Unit tests (sim): PASS (16 C tests, 57 assertions)
+- Unit tests (sim): 25 pass, 0 fail
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 
 ## API convention deviations
