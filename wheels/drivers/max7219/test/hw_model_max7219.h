@@ -123,7 +123,7 @@ static bool max7219_model_spi_transfer(void *ctx, const uint8_t *tx,
     max7219_model_t *m = (max7219_model_t *)ctx;
     if (len != 2 || !tx) return false;
 
-    uint8_t reg = tx[0];
+    uint8_t reg = tx[0] & 0x0Fu;  /* D12-D15 are don't care */
     uint8_t val = tx[1];
 
     m->write_count++;
