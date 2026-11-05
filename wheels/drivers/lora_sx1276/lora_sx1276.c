@@ -51,6 +51,12 @@
 #define IRQ_RX_DONE           0x40
 #define IRQ_PAYLOAD_CRC_ERR  0x20
 
+/* RegModemConfig3 bits */
+#define CONFIG3_LOW_DATA_RATE 0x08
+
+/* LowDataRateOptimize is mandated above this symbol time */
+#define LDRO_SYMBOL_US        16000UL
+
 /* RegHopChannel bits */
 #define HOP_CRC_ON_PAYLOAD    0x40
 
@@ -100,6 +106,30 @@ static lora_err_t set_mode(const lora_spi_t *spi, uint8_t mode)
     /* Read back to verify mode switch took effect */
     uint8_t actual = reg_read(spi, REG_OP_MODE) & (OPMODE_LORA | 0x07);
     return (actual == wanted) ? LORA_OK : LORA_ERR_SPI;
+}
+
+/* Bandwidth in Hz for each RegModemConfig1 code */
+static const uint32_t BW_HZ[10] = {
+    7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000,
+};
+
+static uint32_t symbol_us(const lora_t *dev)
+{
+    return (uint32_t)(((uint64_t)1000000U << dev->spreading_factor) /
+                      BW_HZ[dev->bandwidth]);
+}
+
+static bool low_data_rate(const lora_t *dev)
+{
+    return symbol_us(dev) > LDRO_SYMBOL_US;
+}
+
+static void update_low_data_rate(const lora_t *dev)
+{
+    uint8_t cfg3 = reg_read(dev->spi, REG_MODEM_CONFIG_3);
+    cfg3 = (uint8_t)(cfg3 & ~CONFIG3_LOW_DATA_RATE);
+    if (low_data_rate(dev)) cfg3 |= CONFIG3_LOW_DATA_RATE;
+    reg_write(dev->spi, REG_MODEM_CONFIG_3, cfg3);
 }
 
 static lora_err_t calibrate_image(const lora_spi_t *spi)
@@ -209,6 +239,7 @@ lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw)
     reg_write(spi, REG_MODEM_CONFIG_1, cfg1);
 
     dev->bandwidth = bw;
+    update_low_data_rate(dev);
     return LORA_OK;
 }
 
@@ -223,6 +254,7 @@ lora_err_t lora_set_spreading_factor(lora_t *dev, uint8_t sf)
     reg_write(spi, REG_MODEM_CONFIG_2, cfg2);
 
     dev->spreading_factor = sf;
+    update_low_data_rate(dev);
     return LORA_OK;
 }
 
