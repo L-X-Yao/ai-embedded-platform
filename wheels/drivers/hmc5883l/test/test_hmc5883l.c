@@ -21,6 +21,37 @@ static hmc5883l_i2c_t mock_i2c = {
     .ctx       = NULL
 };
 
+/* A chip with a delay hook: reading the data clears RDY, and the next set
+ * raises it again unless the test says the sensor is stuck. */
+static int      data_reads;
+static uint32_t delay_total;
+static bool     sensor_stuck;
+
+static bool mock_read_clears_rdy(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                 uint8_t *buf, uint16_t len)
+{
+    bool ok = mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+    if (reg == 0x03) {
+        data_reads++;
+        mock_regs[0x09] = 0x00;
+    }
+    return ok;
+}
+
+static void mock_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    delay_total += ms;
+    if (data_reads > 0 && !sensor_stuck) mock_regs[0x09] = 0x01;
+}
+
+static hmc5883l_i2c_t timed_i2c = {
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_read_clears_rdy,
+    .delay_ms  = mock_delay,
+    .ctx       = NULL
+};
+
 static void set_mock_data(int16_t x, int16_t y, int16_t z)
 {
     mock_regs[0x03] = (uint8_t)((uint16_t)x >> 8);
@@ -150,6 +181,33 @@ TEST(test_read_reports_adc_overflow)
     ASSERT_EQ(hmc5883l_read_gauss(&dev, &out), HMC5883L_ERR_OVERFLOW);
 }
 
+TEST(test_init_drops_the_sample_taken_at_the_old_gain)
+{
+    mock_reset();
+    data_reads = 0;
+    delay_total = 0;
+    sensor_stuck = false;
+    hmc5883l_t dev;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    ASSERT_EQ(hmc5883l_init(&dev, &timed_i2c, &cfg), HMC5883L_OK);
+
+    /* 2/fDO at 15 Hz is 133 ms, then one set is read and thrown away */
+    ASSERT_GE(delay_total, 133u);
+    ASSERT_EQ(data_reads, 1);
+    ASSERT_EQ(mock_regs[0x09], 0x01);
+}
+
+TEST(test_init_times_out_when_no_sample_arrives)
+{
+    mock_reset();
+    data_reads = 0;
+    delay_total = 0;
+    sensor_stuck = true;
+    hmc5883l_t dev;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    ASSERT_EQ(hmc5883l_init(&dev, &timed_i2c, &cfg), HMC5883L_ERR_TIMEOUT);
+}
+
 TEST_MAIN("hmc5883l")
     RUN(test_init_null);
     RUN(test_init_id_check);
@@ -162,4 +220,6 @@ TEST_MAIN("hmc5883l")
     RUN(test_idle_writes_mode_idle);
     RUN(test_idle_null_param);
     RUN(test_read_reports_adc_overflow);
+    RUN(test_init_drops_the_sample_taken_at_the_old_gain);
+    RUN(test_init_times_out_when_no_sample_arrives);
 TEST_MAIN_END()
