@@ -135,6 +135,21 @@ TEST(test_idle_null_param)
     ASSERT_EQ(hmc5883l_idle(NULL), HMC5883L_ERR_PARAM);
 }
 
+TEST(test_read_reports_adc_overflow)
+{
+    mock_reset();
+    hmc5883l_t dev;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    ASSERT_EQ(hmc5883l_init(&dev, &mock_i2c, &cfg), HMC5883L_OK);
+
+    /* -4096 is the overflow marker, not a field of -3.76 Ga */
+    set_mock_data(100, -4096, 100);
+    hmc5883l_raw_t raw;
+    ASSERT_EQ(hmc5883l_read_raw(&dev, &raw), HMC5883L_ERR_OVERFLOW);
+    hmc5883l_data_t out;
+    ASSERT_EQ(hmc5883l_read_gauss(&dev, &out), HMC5883L_ERR_OVERFLOW);
+}
+
 TEST_MAIN("hmc5883l")
     RUN(test_init_null);
     RUN(test_init_id_check);
@@ -146,4 +161,5 @@ TEST_MAIN("hmc5883l")
     RUN(test_read_null);
     RUN(test_idle_writes_mode_idle);
     RUN(test_idle_null_param);
+    RUN(test_read_reports_adc_overflow);
 TEST_MAIN_END()
