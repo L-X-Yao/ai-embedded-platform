@@ -20,6 +20,7 @@ static int     fifo_rx_idx;
 
 /* Chip state: tracks current mode */
 static uint8_t mock_marcstate;
+static int     mock_marcstate_glitches;  /* reads that return a corrupt IDLE */
 
 /* SPI state machine */
 static uint8_t spi_addr;
@@ -46,6 +47,7 @@ static void mock_reset_all(void)
     memset(fifo_tx, 0, sizeof(fifo_tx));
     memset(fifo_rx, 0, sizeof(fifo_rx));
     mock_marcstate = 0x01; /* IDLE */
+    mock_marcstate_glitches = 0;
     spi_addr = 0;
     spi_byte_idx = 0;
     spi_is_write = 0;
@@ -123,6 +125,10 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         if (reg_idx < sizeof(mock_status_regs)) {
             if (spi_addr == 0x35) {
                 /* MARCSTATE */
+                if (mock_marcstate_glitches > 0) {
+                    mock_marcstate_glitches--;
+                    return 0x01;
+                }
                 return mock_marcstate & 0x1F;
             }
             if (spi_addr == 0x3B) {
@@ -689,6 +695,22 @@ TEST(test_receive_rejects_length_past_fifo)
     ASSERT_EQ(cc1101_receive(&dev, buf, sizeof(buf), &len), CC1101_ERR_CRC);
 }
 
+TEST(test_transmit_ignores_a_corrupt_marcstate)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    /* the radio never leaves TX, and one read wrongly says IDLE */
+    mock_delay_count = 0;
+    mock_idle_after_delays = 0;
+    mock_marcstate_glitches = 1;
+
+    uint8_t payload[] = {0xCA, 0xFE};
+    ASSERT_EQ(cc1101_transmit(&dev, payload, 2), CC1101_ERR_TIMEOUT);
+}
+
 TEST_MAIN("cc1101")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -728,4 +750,5 @@ TEST_MAIN("cc1101")
     RUN(test_receive_returns_payload);
     RUN(test_receive_reports_crc_error);
     RUN(test_receive_rejects_length_past_fifo);
+    RUN(test_transmit_ignores_a_corrupt_marcstate);
 TEST_MAIN_END()
