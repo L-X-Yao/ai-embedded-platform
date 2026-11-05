@@ -205,6 +205,20 @@ TEST(test_reset)
     ASSERT_EQ(model.user_reg, SI_USER_REG_DEFAULT);
 }
 
+/* Table 2 (p.5): ready within 15 ms "after issuing a software reset command",
+ * so the next command must not arrive before that. */
+TEST(test_read_straight_after_reset)
+{
+    setup();
+    si7021_t dev;
+    si7021_init(&dev, &model_i2c);
+    ASSERT_EQ(si7021_reset(&dev), SI7021_OK);
+
+    float rh = 0.0f;
+    ASSERT_EQ(si7021_read_humidity(&dev, &rh), SI7021_OK);
+    ASSERT_NEAR(rh, 50.0f, 0.5f);
+}
+
 /* --- serial number ---------------------------------------------------- */
 
 TEST(test_read_serial)
@@ -285,6 +299,7 @@ TEST_MAIN("si7021 hardware model")
     RUN(test_model_nacks_read_during_rh_conversion);
     RUN(test_model_nacks_read_during_temp_conversion);
     RUN(test_reset);
+    RUN(test_read_straight_after_reset);
     RUN(test_read_serial);
     RUN(test_temperature_varies);
     RUN(test_humidity_varies);
