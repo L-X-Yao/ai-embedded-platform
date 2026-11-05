@@ -494,6 +494,16 @@ TEST(test_self_test_restores_the_configuration)
     ASSERT_EQ(mock_regs[0x14] & 0x03, 0x03);
 }
 
+TEST(test_self_test_refuses_a_wrong_signature)
+{
+    rc522_t dev;
+    mock_reset();
+    ASSERT_EQ(rc522_init(&dev, &mock_spi), RC522_OK);
+    mock_self_test_armed = true;
+    mock_self_test_corrupt = true;
+    ASSERT_EQ(rc522_self_test(&dev), RC522_ERR_SPI);
+}
+
 TEST_MAIN("rc522")
     RUN(test_init_ok);
     RUN(test_init_version_v1);
@@ -523,4 +533,5 @@ TEST_MAIN("rc522")
     RUN(test_transceive_buffer_overflow_error);
     RUN(test_init_switches_the_field_on);
     RUN(test_self_test_restores_the_configuration);
+    RUN(test_self_test_refuses_a_wrong_signature);
 TEST_MAIN_END()
