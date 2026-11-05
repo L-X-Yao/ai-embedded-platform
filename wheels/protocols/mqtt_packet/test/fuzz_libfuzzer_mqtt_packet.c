@@ -266,7 +266,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     // Parse PUBLISH
     mqtt_publish_t pub;
     memset(&pub, 0, sizeof(pub));
-    mqtt_packet_parse_publish(data, size, &pub);
+    if (mqtt_packet_parse_publish(data, size, &pub) == MQTT_PACKET_OK && pub.qos > 2) {
+        __builtin_trap();
+    }
 
     // Parse PUBACK
     uint16_t packet_id;
