@@ -20,6 +20,17 @@ static const lis3dh_i2c_t mock_i2c = {
 /* ---------- helpers ---------- */
 
 static lis3dh_t dev;
+
+/* LPen and HR must never be set together */
+static int modes_clashed;
+
+static bool write_watching_modes(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                 uint8_t val)
+{
+    bool ok = mock_i2c_write_reg(ctx, dev_addr, reg, val);
+    if ((mock_regs[0x20] & 0x08) && (mock_regs[0x23] & 0x08)) modes_clashed = 1;
+    return ok;
+}
 static lis3dh_cfg_t default_cfg = {
     .addr  = LIS3DH_ADDR_LOW,
     .range = LIS3DH_RANGE_2G,
@@ -271,6 +282,30 @@ TEST(test_config_registers)
     ASSERT_EQ(mock_regs[0x23], 0xA8);
 }
 
+TEST(test_low_power_rates_select_low_power_mode)
+{
+    setup();
+    lis3dh_i2c_t bus = mock_i2c;
+    bus.write_reg = write_watching_modes;
+    modes_clashed = 0;
+    lis3dh_cfg_t cfg = { .addr = LIS3DH_ADDR_LOW,
+                         .range = LIS3DH_RANGE_2G,
+                         .odr = LIS3DH_ODR_100HZ };
+    lis3dh_t d;
+    ASSERT_EQ(lis3dh_init(&d, &bus, &cfg), LIS3DH_OK);
+
+    ASSERT_EQ(lis3dh_set_odr(&d, LIS3DH_ODR_5376HZ_LP), LIS3DH_OK);
+    ASSERT_EQ(mock_regs[0x20], 0x9F);  /* ODR 9, LPen, all axes */
+    ASSERT_EQ(mock_regs[0x23] & 0x08, 0x00);
+    ASSERT_EQ(lis3dh_set_range(&d, LIS3DH_RANGE_4G), LIS3DH_OK);
+    ASSERT_EQ(mock_regs[0x23] & 0x08, 0x00);
+
+    ASSERT_EQ(lis3dh_set_odr(&d, LIS3DH_ODR_100HZ), LIS3DH_OK);
+    ASSERT_EQ(mock_regs[0x20], 0x57);
+    ASSERT_EQ(mock_regs[0x23] & 0x08, 0x08);
+    ASSERT_EQ(modes_clashed, 0);
+}
+
 TEST_MAIN("lis3dh")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -292,4 +327,5 @@ TEST_MAIN("lis3dh")
     RUN(test_invalid_odr);
     RUN(test_addr_high);
     RUN(test_config_registers);
+    RUN(test_low_power_rates_select_low_power_mode);
 TEST_MAIN_END()
