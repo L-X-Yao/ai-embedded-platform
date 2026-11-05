@@ -25,6 +25,7 @@
 #define REG_RX_ADDR_P2      0x0C
 #define REG_TX_ADDR         0x10
 #define REG_RX_PW_P0        0x11
+#define REG_FIFO_STATUS     0x17
 
 #define CONFIG_EN_CRC       0x08
 #define CONFIG_CRCO         0x04
@@ -66,6 +67,7 @@ static int     mock_in_tx;       /* inside CS low..high */
 static int     mock_force_max_rt;    /* STATUS.MAX_RT on next poll */
 static int     mock_force_tx_ds;     /* STATUS.TX_DS on next poll */
 static int     mock_force_rx_dr;     /* STATUS.RX_DR on next poll */
+static int     mock_rx_queued;       /* payloads in the RX FIFO */
 static int     mock_poll_count;      /* track status polls */
 
 static void mock_reset(void)
@@ -88,6 +90,7 @@ static void mock_reset(void)
     mock_force_max_rt = 0;
     mock_force_tx_ds = 0;
     mock_force_rx_dr = 0;
+    mock_rx_queued = 0;
     mock_poll_count = 0;
 
     /* Power-on defaults per datasheet */
@@ -197,6 +200,11 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         if (reg_addr == REG_RX_ADDR_P1) {
             return (data_idx < MOCK_ADDR_SIZE) ? mock_rx_addr_p1[data_idx] : 0;
         }
+        if (reg_addr == REG_FIFO_STATUS) {
+            bool rx_empty = mock_rx_queued == 0 && !mock_force_rx_dr &&
+                            !(mock_regs[REG_STATUS] & STATUS_RX_DR);
+            return rx_empty ? 0x11 : 0x10;
+        }
         /* Single-byte register */
         if (reg_addr < MOCK_REG_COUNT) {
             return mock_regs[reg_addr];
@@ -243,6 +251,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     /* Read RX payload */
     if (mock_cur_cmd == CMD_R_RX_PAYLOAD) {
+        if (data_idx == 0 && mock_rx_queued > 0) mock_rx_queued--;
         if (data_idx < mock_rx_fifo_len) {
             return mock_rx_fifo[data_idx];
         }
@@ -840,6 +849,27 @@ TEST(test_set_power_n12dbm)
 
 /* ---------- main ---------- */
 
+TEST(test_receive_reaches_every_queued_payload)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 4);
+
+    /* Two payloads under one RX_DR: clearing it must not strand the second */
+    mock_rx_queued = 2;
+    mock_force_rx_dr = 1;
+    uint8_t buf[32];
+    uint8_t len = 0;
+    ASSERT_EQ(nrf24_receive(&dev, buf, 32, &len), NRF24_OK);
+    ASSERT_EQ(len, 4);
+    ASSERT_TRUE(nrf24_data_ready(&dev));
+
+    len = 0;
+    ASSERT_EQ(nrf24_receive(&dev, buf, 32, &len), NRF24_OK);
+    ASSERT_EQ(len, 4);
+    ASSERT_FALSE(nrf24_data_ready(&dev));
+}
+
 TEST_MAIN("nrf24l01")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -877,4 +907,5 @@ TEST_MAIN("nrf24l01")
     RUN(test_set_rx_addr_pipes_3_to_5);
     RUN(test_receive_buf_too_small);
     RUN(test_set_power_n12dbm);
+    RUN(test_receive_reaches_every_queued_payload);
 TEST_MAIN_END()

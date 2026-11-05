@@ -38,6 +38,7 @@
 #define REG_RX_ADDR_P5      0x0F
 #define REG_TX_ADDR         0x10
 #define REG_RX_PW_P0        0x11
+#define REG_FIFO_STATUS     0x17
 
 /* ---------- register bits ---------- */
 
@@ -49,6 +50,8 @@
 #define STATUS_RX_DR        0x40
 #define STATUS_TX_DS        0x20
 #define STATUS_MAX_RT       0x10
+
+#define FIFO_RX_EMPTY       0x01
 
 /* RF_SETUP bits for data rate:
  *   250kbps: RF_DR_LOW=1, RF_DR_HIGH=0
@@ -334,9 +337,9 @@ nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len,
     if (!dev || !dev->spi || !data || !len) return NRF24_ERR_SPI;
 
     const nrf24_spi_t *s = dev->spi;
-    uint8_t status = get_status(s);
 
-    if (!(status & STATUS_RX_DR)) {
+    /* RX_DR marks an arrival, but up to three payloads can wait in the FIFO */
+    if (read_reg(s, REG_FIFO_STATUS) & FIFO_RX_EMPTY) {
         *len = 0;
         return NRF24_OK;
     }
@@ -364,8 +367,7 @@ nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len,
 bool nrf24_data_ready(nrf24_t *dev)
 {
     if (!dev || !dev->spi) return false;
-    uint8_t status = get_status(dev->spi);
-    return (status & STATUS_RX_DR) != 0;
+    return (read_reg(dev->spi, REG_FIFO_STATUS) & FIFO_RX_EMPTY) == 0;
 }
 
 nrf24_err_t nrf24_flush_tx(nrf24_t *dev)
