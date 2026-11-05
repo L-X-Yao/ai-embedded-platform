@@ -27,6 +27,7 @@ typedef enum {
     BMM150_ERR_I2C   = -1,
     BMM150_ERR_ID    = -2,
     BMM150_ERR_PARAM = -3,
+    BMM150_ERR_OVERFLOW = -4,
 } bmm150_err_t;
 
 typedef struct {
@@ -59,7 +60,10 @@ typedef struct {
 bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
                           const bmm150_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** Read the field in uT. Returns BMM150_ERR_OVERFLOW if an axis saturated.
+ *  Uses nominal scale factors, not the chip's trim data, so readings are not
+ *  compensated for gain, offset or temperature.
+ *  @thread_safe: no @isr_safe: no */
 bmm150_err_t bmm150_read(bmm150_t *dev, bmm150_data_t *out);
 
 /** @thread_safe: no @isr_safe: no */

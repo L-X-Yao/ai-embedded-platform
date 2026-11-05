@@ -14,6 +14,13 @@
 #define REG_PWR_CTRL   0x4Bu
 #define REG_OP_MODE    0x4Cu
 
+/* Soft reset bits in the power control register; bit 0 is the power control */
+#define PWR_SOFT_RESET 0x82u
+
+/* An axis that overflowed reads as this marker instead of a measurement */
+#define XY_OVERFLOW    (-4096)
+#define Z_OVERFLOW     (-16384)
+
 /* Linear scaling (no trim compensation) */
 #define XY_UT_PER_LSB  0.3f
 #define Z_UT_PER_LSB   0.15f
@@ -64,6 +71,9 @@ bmm150_err_t bmm150_read(bmm150_t *dev, bmm150_data_t *out)
     /* Z: 15-bit signed, left-justified with 1 LSB status bit */
     int16_t raw_z = (int16_t)((uint16_t)buf[5] << 8 | buf[4]) >> 1;
 
+    if (raw_x == XY_OVERFLOW || raw_y == XY_OVERFLOW || raw_z == Z_OVERFLOW)
+        return BMM150_ERR_OVERFLOW;
+
     out->x_ut = (float)raw_x * XY_UT_PER_LSB;
     out->y_ut = (float)raw_y * XY_UT_PER_LSB;
     out->z_ut = (float)raw_z * Z_UT_PER_LSB;
@@ -75,10 +85,18 @@ bmm150_err_t bmm150_reset(bmm150_t *dev)
 {
     if (!dev)
         return BMM150_ERR_PARAM;
-    /* Soft reset: set bit 7 and power control bit 0 */
-    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, REG_PWR_CTRL, 0x82))
+    /* Keep the power bit: writing it as 0 would suspend the chip */
+    uint8_t pwr = 0;
+    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_PWR_CTRL, &pwr, 1))
+        return BMM150_ERR_I2C;
+    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, REG_PWR_CTRL,
+                             (uint8_t)(pwr | PWR_SOFT_RESET)))
         return BMM150_ERR_I2C;
     if (dev->i2c->delay_ms)
         dev->i2c->delay_ms(dev->i2c->ctx, 3);
+
+    /* Soft reset leaves the chip in sleep mode, so measurements have to restart */
+    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, REG_OP_MODE, 0x00))
+        return BMM150_ERR_I2C;
     return BMM150_OK;
 }
