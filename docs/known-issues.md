@@ -4,6 +4,19 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Fixed after the encoder batch (2026-11-05)
+
+These came out of reading the encoder results and the list of remaining work.
+
+- `tftp`: the request builders and `tftp_parse` cut a filename of 128 bytes or more down to 127, so a request could name a different file. They now return `TFTP_ERR_OVERFLOW`.
+- `intel_hex`: `intel_hex_decode` accepted record types above 05 and any text after the checksum, and `intel_hex_encode` wrote undefined types. All three are refused now.
+- `sntp_client`: `sntp_client_unix_to_ntp` and `sntp_client_ntp_to_unix` both rounded down, so 992 of the 1000 millisecond values lost 1 ms on a round trip.
+- `mqtt_client`: `mqtt_client_subscribe` reported an illegal QoS as `MQTT_CLIENT_ERR_SIZE`, and it sent QoS 2 although the client never answers a QoS 2 delivery with PUBREC. A QoS above 1 now returns `MQTT_CLIENT_ERR_PARAM`.
+- `bencode`: a stray `e` at depth 0 came back as `LIST_END`. Past `BENCODE_MAX_DEPTH` a dict end came back as `LIST_END`, and 256 opens wrapped the depth counter. Both are errors now.
+- `dhcp_packet`: DISCOVER was 250 bytes and REQUEST 262, under the 300-octet BOOTP minimum in RFC 1542 section 2.1. The builders now pad to 300, so `cap` must be at least `DHCP_PACKET_BOOTP_MIN_LEN`.
+
+The 26 fixed-seed fuzz programs (`wheels/protocols/*/test/fuzz_<name>.c`) and `tooling/test/run_fuzz_protocols.sh` are gone. Replaying each libFuzzer corpus under gcov against the old program showed 10 lines reached only by the old one, all NULL guards that `test_null_*.c` covers.
+
 ## Fixed by the encoder fuzz targets (2026-11-05)
 
 Eleven protocol fuzz targets only parsed input. They now also build frames from the fuzz input in exact-size buffers and read them back, which lifted their line coverage from 35-56% to 94-100%. Writing and running them found:
