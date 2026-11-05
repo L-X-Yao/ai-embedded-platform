@@ -210,7 +210,7 @@ static void bme688_model_init(bme688_model_t *m)
     hw_model_set_on_write(&m->hw, BME688_REG_CTRL_MEAS, bme688_model_on_ctrl_meas);
     hw_model_set_on_write(&m->hw, BME688_REG_RESET, bme688_model_on_reset);
 
-    /* Default "true" environment: ~25C, ~101325 Pa, ~50%RH, ~200k ohm gas */
+    /* Default "true" environment: ~25C, ~101325 Pa, ~50%RH, ~4M ohm gas */
     m->true_temp_adc  = 500000;
     m->true_press_adc = 400000;
     m->true_hum_adc   = 20000;
