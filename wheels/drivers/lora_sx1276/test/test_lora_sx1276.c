@@ -570,8 +570,8 @@ TEST(test_rssi_hf_boundary)
     mock_reset_all();
     lora_t dev;
     memset(&dev, 0, sizeof(dev));
-    /* 868 MHz exactly is the HF boundary */
-    lora_init(&dev, &mock_spi, 868000000UL);
+    /* Band 1 and the HF port start at 862 MHz */
+    lora_init(&dev, &mock_spi, 862000000UL);
 
     mock_regs[0x1A] = 157;
     /* HF: -157 + 157 = 0 dBm */
