@@ -150,6 +150,28 @@ TEST(test_read_diff_all_pairs)
     }
 }
 
+/* DS21295D Table 5-2, with SGL/DIFF D2 D1 D0 in the top nibble of byte 2
+ * (Figure 6-1). The header promises pair 1 = CH2-CH3, 2 = CH4-CH5 and
+ * 3 = CH6-CH7, even channel = IN+. */
+TEST(test_read_diff_config_byte_per_pair)
+{
+    static const uint8_t expected[4] = {
+        0x00u,  /* 0 0 0 0: CH0 = IN+, CH1 = IN- */
+        0x20u,  /* 0 0 1 0: CH2 = IN+, CH3 = IN- */
+        0x40u,  /* 0 1 0 0: CH4 = IN+, CH5 = IN- */
+        0x60u,  /* 0 1 1 0: CH6 = IN+, CH7 = IN- */
+    };
+
+    setup();
+    for (uint8_t p = 0; p < 4; p++)
+    {
+        uint16_t raw;
+        model.last_config = 0xFFu;
+        ASSERT_EQ(mcp3008_read_diff(&dev, p, &raw), MCP3008_OK);
+        ASSERT_EQ_HEX(model.last_config, expected[p]);
+    }
+}
+
 TEST(test_read_diff_pair_out_of_range)
 {
     setup();
@@ -286,6 +308,7 @@ TEST_MAIN("mcp3008")
     RUN(test_read_single_channel_out_of_range);
     RUN(test_read_diff_pair0);
     RUN(test_read_diff_all_pairs);
+    RUN(test_read_diff_config_byte_per_pair);
     RUN(test_read_diff_pair_out_of_range);
     RUN(test_read_voltage_zero);
     RUN(test_read_voltage_midscale);

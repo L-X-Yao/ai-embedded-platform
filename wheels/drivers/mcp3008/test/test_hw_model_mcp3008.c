@@ -80,6 +80,37 @@ TEST(test_hw_model_diff_round_trip_all_pairs)
     }
 }
 
+/* DS21295D Table 5-2: raw D2 D1 D0 codes reach the pair the table names.
+ * The frame is sent directly, so this does not depend on the driver. */
+TEST(test_hw_model_diff_table_5_2)
+{
+    /* SGL/DIFF D2 D1 D0 in the top nibble of byte 2 (Figure 6-1) */
+    static const struct { uint8_t cfg; uint16_t raw; } rows[] = {
+        { 0x00u, 100u },  /* 0 0 0 0: CH0 = IN+, CH1 = IN- */
+        { 0x10u,   0u },  /* 0 0 0 1: CH0 = IN-, CH1 = IN+ */
+        { 0x20u, 200u },  /* 0 0 1 0: CH2 = IN+, CH3 = IN- */
+        { 0x30u,   0u },  /* 0 0 1 1: CH2 = IN-, CH3 = IN+ */
+        { 0x40u, 300u },  /* 0 1 0 0: CH4 = IN+, CH5 = IN- */
+        { 0x50u,   0u },  /* 0 1 0 1: CH4 = IN-, CH5 = IN+ */
+        { 0x60u, 400u },  /* 0 1 1 0: CH6 = IN+, CH7 = IN- */
+        { 0x70u,   0u },  /* 0 1 1 1: CH6 = IN-, CH7 = IN+ */
+    };
+
+    setup();
+    mcp3008_model_set_diff(&model, 0, 100);
+    mcp3008_model_set_diff(&model, 1, 200);
+    mcp3008_model_set_diff(&model, 2, 300);
+    mcp3008_model_set_diff(&model, 3, 400);
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++)
+    {
+        uint8_t tx[3] = { 0x01u, rows[i].cfg, 0x00u };
+        uint8_t rx[3] = { 0xFFu, 0xFFu, 0xFFu };
+        ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+        ASSERT_EQ((rx[1] & 0x03u) << 8 | rx[2], rows[i].raw);
+    }
+}
+
 /* hw_model counts transfers correctly */
 TEST(test_hw_model_transfer_count)
 {
@@ -113,6 +144,7 @@ TEST_MAIN("mcp3008_hw_model")
     RUN(test_hw_model_single_round_trip_all_channels);
     RUN(test_hw_model_clamps_to_10bit);
     RUN(test_hw_model_diff_round_trip_all_pairs);
+    RUN(test_hw_model_diff_table_5_2);
     RUN(test_hw_model_transfer_count);
     RUN(test_hw_model_fail_cs);
     RUN(test_hw_model_fail_transfer);
