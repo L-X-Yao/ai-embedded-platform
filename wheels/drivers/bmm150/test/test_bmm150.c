@@ -4,10 +4,16 @@
 #include "bmm150.h"
 #include <string.h>
 
+static void no_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    (void)ms;
+}
+
 static const bmm150_i2c_t mock_i2c = {
     .write_reg = hw_model_write_reg,
     .read_regs = hw_model_read_regs,
-    .delay_ms  = NULL,
+    .delay_ms  = no_delay,
     .ctx       = NULL,
 };
 
@@ -145,6 +151,13 @@ TEST(test_read_reports_z_overflow)
     ASSERT_EQ(bmm150_read(&dev, &data), BMM150_ERR_OVERFLOW);
 }
 
+TEST(test_init_requires_delay)
+{
+    bmm150_i2c_t no_wait = mock_i2c;
+    no_wait.delay_ms = NULL;
+    ASSERT_EQ(bmm150_init(&dev, &no_wait, &default_cfg), BMM150_ERR_PARAM);
+}
+
 TEST_MAIN("bmm150")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -161,4 +174,5 @@ TEST_MAIN("bmm150")
     RUN(test_reset_keeps_power_and_restarts_measuring);
     RUN(test_read_reports_xy_overflow);
     RUN(test_read_reports_z_overflow);
+    RUN(test_init_requires_delay);
 TEST_MAIN_END()

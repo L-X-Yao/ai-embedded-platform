@@ -30,7 +30,7 @@ bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
 {
     if (!dev || !i2c || !cfg)
         return BMM150_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
         return BMM150_ERR_PARAM;
 
     dev->i2c = i2c;
@@ -39,8 +39,7 @@ bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
     /* Power on (set power control bit) */
     if (!i2c->write_reg(i2c->ctx, cfg->addr, REG_PWR_CTRL, 0x01))
         return BMM150_ERR_I2C;
-    if (i2c->delay_ms)
-        i2c->delay_ms(i2c->ctx, 3);
+    i2c->delay_ms(i2c->ctx, 3);
 
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, cfg->addr, REG_CHIP_ID, &id, 1))
