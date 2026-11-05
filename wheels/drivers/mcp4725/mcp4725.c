@@ -101,10 +101,10 @@ mcp4725_err_t mcp4725_read_status(mcp4725_t *dev, mcp4725_status_t *out)
     REQUIRE(out != NULL);
     if (!dev || !out) return MCP4725_ERR_PARAM;
 
-    /* 5-byte read:
-     * [0]: [RDY/BSY(7)][POR(6)][C1(5):C0(4)][PD1(3):PD0(2)][D11(1):D10(0)]
-     * [1]: [D9:D2]
-     * [2]: [D1:D0][xxxxxx]
+    /* 5-byte read (datasheet Figure 6-3, after the address byte):
+     * [0]: [RDY/BSY(7)][POR(6)][x(5:3)][PD1(2):PD0(1)][x(0)]
+     * [1]: [D11:D4]
+     * [2]: [D3:D0][xxxx]
      * [3]: [x(7)][PD1e(6):PD0e(5)][x(4)][D11e(3):D8e(0)]
      * [4]: [D7e:D0e]
      */
@@ -113,10 +113,9 @@ mcp4725_err_t mcp4725_read_status(mcp4725_t *dev, mcp4725_status_t *out)
         return MCP4725_ERR_I2C;
 
     out->eeprom_busy = !(buf[0] & 0x80u);
-    out->pd_mode     = (buf[0] >> 2) & 0x03u;
-    out->dac_value   = (uint16_t)(((uint16_t)(buf[0] & 0x03u) << 10) |
-                                  ((uint16_t)buf[1] << 2) |
-                                  ((uint16_t)buf[2] >> 6));
+    out->pd_mode     = (buf[0] >> 1) & 0x03u;
+    out->dac_value   = (uint16_t)(((uint16_t)buf[1] << 4) |
+                                  ((uint16_t)buf[2] >> 4));
     out->eeprom_pd   = (buf[3] >> 5) & 0x03u;
     out->eeprom_value = (uint16_t)(((uint16_t)(buf[3] & 0x0Fu) << 8) |
                                    (uint16_t)buf[4]);

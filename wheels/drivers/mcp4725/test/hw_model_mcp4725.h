@@ -86,14 +86,16 @@ static bool mcp4725_model_read(void *ctx, uint8_t addr,
     m->read_count++;
 
     if (len >= 5) {
-        /* Byte 0: [RDY/BSY][POR][C1:C0][PD1:PD0][D11:D10] */
+        /* Figure 6-3, after the address byte.
+         * Byte 0: [RDY/BSY][POR][x][x][x][PD1][PD0][x]
+         * Table 5-4 names POR but gives no level. It reads 1 here, so a
+         * driver that leaves it unmasked shows up. */
         uint8_t rdy = m->eeprom_busy ? 0x00u : 0x80u;
-        data[0] = (uint8_t)(rdy | ((unsigned)m->dac_pd << 2) |
-                            ((m->dac_value >> 10) & 0x03u));
-        /* Byte 1: [D9:D2] */
-        data[1] = (uint8_t)((m->dac_value >> 2) & 0xFFu);
-        /* Byte 2: [D1:D0][000000] */
-        data[2] = (uint8_t)((m->dac_value & 0x03u) << 6);
+        data[0] = (uint8_t)(rdy | 0x40u | ((unsigned)m->dac_pd << 1));
+        /* Byte 1: [D11:D4] */
+        data[1] = (uint8_t)((m->dac_value >> 4) & 0xFFu);
+        /* Byte 2: [D3:D0][xxxx] */
+        data[2] = (uint8_t)((m->dac_value & 0x0Fu) << 4);
         /* Byte 3: [x][PD1e:PD0e][x][D11e:D8e] */
         data[3] = (uint8_t)((m->eeprom_pd << 5) |
                             ((m->eeprom_value >> 8) & 0x0Fu));
