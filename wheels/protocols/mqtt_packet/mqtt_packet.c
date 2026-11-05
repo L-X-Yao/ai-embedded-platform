@@ -98,9 +98,17 @@ int mqtt_packet_build_connect(uint8_t *buf, size_t buf_size,
     var_header[7] = flags;
     put_u16(&var_header[8], opts->keepalive_s);
 
-    size_t plen = 2 + strlen(opts->client_id);
-    if (opts->username) plen += 2 + strlen(opts->username);
-    if (opts->password) plen += 2 + strlen(opts->password);
+    /* Each string carries a 16-bit length. Refusing longer ones here also
+     * keeps the remaining length within what the fixed header can encode. */
+    size_t client_len = strlen(opts->client_id);
+    size_t user_len = opts->username ? strlen(opts->username) : 0;
+    size_t pass_len = opts->password ? strlen(opts->password) : 0;
+    if (client_len > UINT16_MAX || user_len > UINT16_MAX || pass_len > UINT16_MAX)
+        return MQTT_PACKET_ERR_SIZE;
+
+    size_t plen = 2 + client_len;
+    if (opts->username) plen += 2 + user_len;
+    if (opts->password) plen += 2 + pass_len;
 
     uint32_t remaining = 10 + (uint32_t)plen;
     uint8_t rl_buf[4];
@@ -148,6 +156,7 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
 
     uint8_t rl_buf[4];
     int rl_len = mqtt_packet_encode_remaining_length(rl_buf, remaining);
+    if (rl_len < 0) return MQTT_PACKET_ERR_SIZE;
     size_t total = 1 + (size_t)rl_len + remaining;
     if (total > buf_size) return MQTT_PACKET_ERR_SIZE;
 

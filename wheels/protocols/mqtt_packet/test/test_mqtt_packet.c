@@ -283,6 +283,44 @@ TEST(test_build_connect_string_exceeds_uint16_max)
     free(big);
 }
 
+TEST(test_build_publish_over_protocol_limit)
+{
+    /* 268435455 is the largest remaining length MQTT can encode. The frame
+     * is refused before anything is copied, so the size given here does not
+     * have to be real. */
+    uint8_t buf[8];
+    uint8_t payload[1] = {0};
+    mqtt_publish_t pub = { .topic = "t", .payload = payload, .payload_len = 268435456u };
+
+    ASSERT_EQ(mqtt_packet_build_publish(buf, SIZE_MAX, &pub), MQTT_PACKET_ERR_SIZE);
+}
+
+TEST(test_build_connect_long_string_writes_nothing)
+{
+    /* Each string has a 16-bit length, so the limit is checked up front. */
+    char *big = malloc(65537);
+    ASSERT_NOT_NULL(big);
+    memset(big, 'a', 65536);
+    big[65536] = 0;
+
+    uint8_t buf[16];
+    memset(buf, 0xEE, sizeof(buf));
+
+    mqtt_connect_opts_t opts = { .client_id = big };
+    ASSERT_EQ(mqtt_packet_build_connect(buf, SIZE_MAX, &opts), MQTT_PACKET_ERR_SIZE);
+
+    opts.client_id = "c";
+    opts.username = big;
+    ASSERT_EQ(mqtt_packet_build_connect(buf, SIZE_MAX, &opts), MQTT_PACKET_ERR_SIZE);
+
+    opts.username = "u";
+    opts.password = big;
+    ASSERT_EQ(mqtt_packet_build_connect(buf, SIZE_MAX, &opts), MQTT_PACKET_ERR_SIZE);
+
+    ASSERT_EQ(buf[0], 0xEE);
+    free(big);
+}
+
 TEST_MAIN("mqtt_packet")
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
@@ -305,5 +343,7 @@ TEST_MAIN("mqtt_packet")
     RUN(test_parse_malformed_type);
     RUN(test_null_params);
     RUN(test_build_connect_string_exceeds_uint16_max);
+    RUN(test_build_publish_over_protocol_limit);
+    RUN(test_build_connect_long_string_writes_nothing);
 TEST_MAIN_END()
 
