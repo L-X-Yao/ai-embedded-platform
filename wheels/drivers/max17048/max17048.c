@@ -22,6 +22,9 @@
 
 #define MODE_EN_SLEEP  0x2000u
 
+/* STATUS high byte: X EnVR SC HD VR VL VH RI */
+#define STATUS_FLAGS   0x3F00u
+
 /* ─── helpers ────────────────────────────────────────────────── */
 
 static bool rd16(const max17048_t *dev, uint8_t reg, uint16_t *val)
@@ -123,6 +126,10 @@ max17048_err_t max17048_clear_alert(max17048_t *dev)
 {
     REQUIRE(dev != NULL);
     if (!dev) return MAX17048_ERR_PARAM;
+    uint16_t status;
+    if (!rd16(dev, REG_STATUS, &status)) return MAX17048_ERR_I2C;
+    if (!wr16(dev, REG_STATUS, (uint16_t)(status & ~STATUS_FLAGS)))
+        return MAX17048_ERR_I2C;
     uint16_t cfg;
     if (!rd16(dev, REG_CONFIG, &cfg)) return MAX17048_ERR_I2C;
     cfg &= (uint16_t)~(1u << 5);
