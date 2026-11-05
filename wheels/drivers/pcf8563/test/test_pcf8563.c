@@ -162,6 +162,125 @@ TEST(test_write_time)
     ASSERT_EQ(mock_regs[0x08], 0x25);  /* 25 years = 0x25 BCD */
 }
 
+/* Every write_reg call in order, with Control_status_1 as it stood when the
+ * write arrived. Rev. 10 Table 5: TEST1 bit 7, STOP bit 5, TESTC bit 3. */
+#define WLOG_MAX 16
+static struct { uint8_t reg; uint8_t val; uint8_t ctrl1; bool ok; } wlog[WLOG_MAX];
+static int wlog_n;
+
+static bool write_reg_logged(void *ctx, uint8_t dev_addr, uint8_t reg,
+                             uint8_t val)
+{
+    uint8_t ctrl1 = mock_regs[0x00];
+    bool ok = mock_i2c_write_reg(ctx, dev_addr, reg, val);
+    if (wlog_n < WLOG_MAX) {
+        wlog[wlog_n].reg   = reg;
+        wlog[wlog_n].val   = val;
+        wlog[wlog_n].ctrl1 = ctrl1;
+        wlog[wlog_n].ok    = ok;
+        wlog_n++;
+    }
+    return ok;
+}
+
+static const pcf8563_i2c_t mock_i2c_logged = {
+    .write_reg = write_reg_logged,
+    .read_regs = read_regs_ctrl1_bits,
+    .ctx       = NULL,
+};
+
+static const pcf8563_time_t stop_test_time = {
+    .year = 26, .month = 11, .day = 6,
+    .weekday = 5, .hour = 12, .minute = 30, .second = 15
+};
+
+static void stop_test_setup(void)
+{
+    mock_reset();
+    ctrl1_or_bits = 0;
+    (void)pcf8563_init(&dev, &mock_i2c_logged);
+    wlog_n = 0;
+}
+
+/* Rev. 10 p.20: with STOP set "The time circuits can then be set and will not
+ * increment until the STOP bit is released". */
+TEST(test_write_time_holds_stop_for_every_time_write)
+{
+    stop_test_setup();
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_OK);
+
+    ASSERT_EQ(wlog_n, 9);
+    ASSERT_EQ(wlog[0].reg, 0x00);
+    ASSERT_EQ_HEX(wlog[0].val, 0x20u);
+    for (int i = 0; i < 7; i++) {
+        ASSERT_EQ(wlog[1 + i].reg, 0x02 + i);
+        ASSERT_EQ_HEX(wlog[1 + i].ctrl1 & 0x20u, 0x20u);
+    }
+    ASSERT_EQ(wlog[8].reg, 0x00);
+    ASSERT_EQ_HEX(wlog[8].val, 0x00u);
+    ASSERT_EQ_HEX(mock_regs[0x00], 0x00u);
+}
+
+/* TEST1 and TESTC keep their values. N bits may read 1 but Table 4 says they
+ * "should always be written with logic 0". */
+TEST(test_write_time_keeps_control_bits)
+{
+    stop_test_setup();
+    mock_regs[0x00] = 0x88u;   /* TEST1, TESTC */
+    ctrl1_or_bits   = 0x57u;   /* bits 6, 4 and 2-0 */
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_OK);
+
+    ASSERT_EQ(wlog_n, 9);
+    ASSERT_EQ_HEX(wlog[0].val, 0xA8u);
+    ASSERT_EQ_HEX(wlog[8].val, 0x88u);
+}
+
+/* A failed time write stops the sequence but must not leave the clock stopped */
+TEST(test_write_time_failure_still_releases_stop)
+{
+    for (int k = 0; k < 7; k++) {
+        stop_test_setup();
+        mock_fail_at = mock_op_count + 2 + k;  /* read, STOP, k good writes */
+        ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_ERR_I2C);
+
+        ASSERT_EQ(wlog_n, k + 3);              /* STOP, k + 1 tries, release */
+        ASSERT_FALSE(wlog[k + 1].ok);
+        ASSERT_EQ(wlog[k + 2].reg, 0x00);
+        ASSERT_TRUE(wlog[k + 2].ok);
+        ASSERT_EQ_HEX(mock_regs[0x00], 0x00u);
+    }
+}
+
+TEST(test_write_time_stop_write_fails)
+{
+    stop_test_setup();
+    mock_fail_at = mock_op_count + 1;
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_ERR_I2C);
+
+    /* No time write without STOP, and the release is still tried */
+    ASSERT_EQ(wlog_n, 2);
+    ASSERT_EQ(wlog[0].reg, 0x00);
+    ASSERT_EQ(wlog[1].reg, 0x00);
+    ASSERT_EQ_HEX(wlog[1].val, 0x00u);
+}
+
+TEST(test_write_time_ctrl1_read_fails)
+{
+    stop_test_setup();
+    mock_fail_at = mock_op_count;
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_ERR_I2C);
+    ASSERT_EQ(wlog_n, 0);
+}
+
+TEST(test_write_time_release_fails)
+{
+    stop_test_setup();
+    mock_fail_at = mock_op_count + 9;
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_ERR_I2C);
+    ASSERT_EQ(wlog_n, 9);
+    ASSERT_EQ_HEX(mock_regs[0x00], 0x20u);     /* the clock stays stopped */
+}
+
 TEST(test_write_time_null)
 {
     mock_reset();
@@ -393,6 +512,12 @@ TEST_MAIN("pcf8563")
     RUN(test_read_time_null);
     RUN(test_read_time_i2c_fail);
     RUN(test_write_time);
+    RUN(test_write_time_holds_stop_for_every_time_write);
+    RUN(test_write_time_keeps_control_bits);
+    RUN(test_write_time_failure_still_releases_stop);
+    RUN(test_write_time_stop_write_fails);
+    RUN(test_write_time_ctrl1_read_fails);
+    RUN(test_write_time_release_fails);
     RUN(test_write_time_null);
     RUN(test_write_time_invalid);
     RUN(test_time_roundtrip);

@@ -42,6 +42,8 @@
 #define TIMER_TE_BIT     0x80u   /* timer enable */
 #define ALARM_DISABLE    0x80u   /* alarm disable bit (AE_x) */
 #define CTRL1_TEST1_STOP 0xA0u   /* TEST1 and STOP in Control_status_1 */
+#define CTRL1_STOP_BIT   0x20u   /* STOP: hold the time circuits */
+#define CTRL1_KEEP_BITS  0x88u   /* TEST1 and TESTC; N bits are written 0 */
 
 /* --- BCD helpers --- */
 static uint8_t bcd_to_bin(uint8_t bcd)
@@ -137,22 +139,27 @@ pcf8563_err_t pcf8563_write_time(const pcf8563_t *dev,
     if (!time_valid(time))
         return PCF8563_ERR_PARAM;
 
-    if (!write_reg(dev, REG_SECONDS,  bin_to_bcd(time->second)))
+    /* The HAL has no multi-byte write, so the time cannot go in one access
+     * (manual p14). STOP holds the time circuits instead (p20). */
+    uint8_t ctrl1 = 0;
+    if (!read_regs(dev, REG_CONTROL1, &ctrl1, 1))
         return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_MINUTES,  bin_to_bcd(time->minute)))
-        return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_HOURS,    bin_to_bcd(time->hour)))
-        return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_DAYS,     bin_to_bcd(time->day)))
-        return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_WEEKDAYS, time->weekday))
-        return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_MONTHS,   bin_to_bcd(time->month)))
-        return PCF8563_ERR_I2C;
-    if (!write_reg(dev, REG_YEARS,    bin_to_bcd(time->year)))
-        return PCF8563_ERR_I2C;
+    uint8_t running = (uint8_t)(ctrl1 & CTRL1_KEEP_BITS);
 
-    return PCF8563_OK;
+    bool ok = write_reg(dev, REG_CONTROL1, (uint8_t)(running | CTRL1_STOP_BIT))
+           && write_reg(dev, REG_SECONDS,  bin_to_bcd(time->second))
+           && write_reg(dev, REG_MINUTES,  bin_to_bcd(time->minute))
+           && write_reg(dev, REG_HOURS,    bin_to_bcd(time->hour))
+           && write_reg(dev, REG_DAYS,     bin_to_bcd(time->day))
+           && write_reg(dev, REG_WEEKDAYS, time->weekday)
+           && write_reg(dev, REG_MONTHS,   bin_to_bcd(time->month))
+           && write_reg(dev, REG_YEARS,    bin_to_bcd(time->year));
+
+    /* Release STOP even after a failure, so the clock is not left stopped */
+    if (!write_reg(dev, REG_CONTROL1, running))
+        ok = false;
+
+    return ok ? PCF8563_OK : PCF8563_ERR_I2C;
 }
 
 pcf8563_err_t pcf8563_read_alarm(const pcf8563_t *dev,
