@@ -3,10 +3,16 @@
 #include "hw_model_bmm150.h"
 #include "bmm150.h"
 
+static void no_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    (void)ms;
+}
+
 static const bmm150_i2c_t hw_i2c = {
     .write_reg = hw_model_write_reg,
     .read_regs = hw_model_read_regs,
-    .delay_ms  = NULL,
+    .delay_ms  = no_delay,
     .ctx       = NULL,
 };
 
