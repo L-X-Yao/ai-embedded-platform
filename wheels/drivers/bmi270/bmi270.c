@@ -28,6 +28,9 @@
 
 #define SPI_READ_BIT  0x80u
 
+/* A new range applies at the next sample, 40 ms away at 25 Hz, the slowest ODR. */
+#define RANGE_SETTLE_MS  40u
+
 /* ACC_CONF and GYR_CONF: filter_perf set and bwp normal, the normal mode */
 #define CONF_NORMAL_MODE  0xA0u
 
@@ -275,6 +278,7 @@ bmi270_err_t bmi270_set_acc_range(bmi270_t *dev, bmi270_acc_range_t range)
     if ((unsigned)range > 3) return BMI270_ERR_PARAM;
 
     reg_write(dev->spi, BMI270_REG_ACC_RANGE, (uint8_t)range);
+    dev->spi->delay_ms(dev->spi->ctx, RANGE_SETTLE_MS);
     dev->acc_div = acc_scale[range & 0x03];
     return BMI270_OK;
 }
@@ -285,6 +289,7 @@ bmi270_err_t bmi270_set_gyro_range(bmi270_t *dev, bmi270_gyro_range_t range)
     if ((unsigned)range > 4) return BMI270_ERR_PARAM;
 
     reg_write(dev->spi, BMI270_REG_GYR_RANGE, (uint8_t)range);
+    dev->spi->delay_ms(dev->spi->ctx, RANGE_SETTLE_MS);
     dev->gyro_div = gyro_scale[range & 0x07];
     return BMI270_OK;
 }

@@ -492,6 +492,26 @@ TEST(test_soft_reset_waits_for_the_chip)
     ASSERT_EQ(delay_total_ms, 3);
 }
 
+TEST(test_range_change_waits_for_the_next_sample)
+{
+    bmi270_spi_t timed = mock_spi;
+    timed.delay_ms = count_delay;
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+
+    mock_reset();
+    ASSERT_EQ(bmi270_init(&dev, &timed, &cfg), BMI270_OK);
+
+    /* a sample takes 40 ms at the slowest ODR the API offers, 25 Hz */
+    delay_total_ms = 0;
+    ASSERT_EQ(bmi270_set_acc_range(&dev, BMI270_ACC_RANGE_16G), BMI270_OK);
+    ASSERT_TRUE(delay_total_ms >= 40);
+
+    delay_total_ms = 0;
+    ASSERT_EQ(bmi270_set_gyro_range(&dev, BMI270_GYRO_RANGE_250DPS), BMI270_OK);
+    ASSERT_TRUE(delay_total_ms >= 40);
+}
+
 TEST_MAIN("bmi270")
     RUN(test_init_ok);
     RUN(test_init_bad_id);
@@ -524,4 +544,5 @@ TEST_MAIN("bmi270")
     RUN(test_read_after_failed_init_is_rejected);
     RUN(test_gyro_scale_is_exact);
     RUN(test_soft_reset_waits_for_the_chip);
+    RUN(test_range_change_waits_for_the_next_sample);
 TEST_MAIN_END()
