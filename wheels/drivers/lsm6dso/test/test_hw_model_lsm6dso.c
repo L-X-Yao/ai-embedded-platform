@@ -207,6 +207,22 @@ TEST(test_different_accel_values)
     ASSERT_TRUE(a2.x_mg > a1.x_mg);
 }
 
+TEST(test_init_keeps_the_address_increment)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    ASSERT_EQ(model.regs[0x12] & 0x44, 0x44);
+
+    /* Each axis has to come from its own register pair */
+    lsm6dso_model_set_accel(&model, 1000, 2000, 3000);
+    lsm6dso_accel_data_t accel;
+    ASSERT_EQ(lsm6dso_read_accel(&dev, &accel), LSM6DSO_OK);
+    ASSERT_NEAR(accel.x_mg, 61.0f, 0.1f);
+    ASSERT_NEAR(accel.y_mg, 122.0f, 0.1f);
+    ASSERT_NEAR(accel.z_mg, 183.0f, 0.1f);
+}
+
 TEST_MAIN("lsm6dso hardware model")
     RUN(test_init_reads_who_am_i);
     RUN(test_init_wrong_who_am_i);
@@ -222,4 +238,5 @@ TEST_MAIN("lsm6dso hardware model")
     RUN(test_data_registers_readonly);
     RUN(test_reset_via_driver);
     RUN(test_different_accel_values);
+    RUN(test_init_keeps_the_address_increment);
 TEST_MAIN_END()

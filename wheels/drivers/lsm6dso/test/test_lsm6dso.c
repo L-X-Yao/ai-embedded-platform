@@ -9,6 +9,7 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[0x0F] = 0x6C;  /* WHO_AM_I */
+    mock_regs[0x12] = 0x04;  /* CTRL3_C reset value: IF_INC set */
 }
 
 static const lsm6dso_i2c_t mock_i2c = {
