@@ -71,6 +71,10 @@ s_record_err_t s_record_decode(const char *line, size_t len,
     if (byte_count < 0)
         return S_RECORD_ERR_FORMAT;
 
+    /* The count covers the address and the checksum, so it cannot be less. */
+    if (byte_count < ab + 1)
+        return S_RECORD_ERR_FORMAT;
+
     /* Verify line has enough hex chars: 'S' + type + (byte_count+1)*2 */
     size_t expected_chars = 4 + (size_t)byte_count * 2;
     if (len < expected_chars)
@@ -103,8 +107,6 @@ s_record_err_t s_record_decode(const char *line, size_t len,
 
     /* Extract data */
     int data_len = byte_count - ab - 1;
-    if (data_len < 0)
-        data_len = 0;
     if (data_len > S_RECORD_MAX_DATA)
         return S_RECORD_ERR_OVERFLOW;
 
