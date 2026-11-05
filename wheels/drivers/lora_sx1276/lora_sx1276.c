@@ -50,6 +50,7 @@
 /* IRQ flags */
 #define IRQ_TX_DONE           0x08
 #define IRQ_RX_DONE           0x40
+#define IRQ_RX_TIMEOUT        0x80
 #define IRQ_PAYLOAD_CRC_ERR  0x20
 
 /* RegModemConfig3 bits */
@@ -397,6 +398,11 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
     for (uint32_t i = 0; i < limit; i++) {
         spi->delay_ms(spi->ctx, POLL_STEP_MS);
         uint8_t flags = reg_read(spi, REG_IRQ_FLAGS);
+        if (flags & IRQ_RX_TIMEOUT) {
+            /* The radio has gone back to standby by itself */
+            reg_write(spi, REG_IRQ_FLAGS, 0xFF);
+            return LORA_ERR_TIMEOUT;
+        }
         if (flags & IRQ_RX_DONE) {
             /* PayloadCrcError means nothing unless the packet carried a CRC */
             if ((flags & IRQ_PAYLOAD_CRC_ERR) ||
