@@ -406,6 +406,78 @@ TEST(test_reset)
     ASSERT_TRUE(memcmp(decompressed, msg2, len2) == 0);
 }
 
+/* Compress through a small output chunk, giving up if the encoder stalls. */
+static int compress_chunked(const uint8_t *src, uint16_t src_len,
+                            uint8_t *dst, uint16_t dst_cap, uint16_t *dst_len,
+                            uint16_t chunk_size)
+{
+    heatshrink_encoder_t enc;
+    uint8_t window[256];
+    uint8_t chunk[16];
+    uint16_t in_off = 0;
+    uint16_t out_off = 0;
+    uint8_t finishing = 0;
+
+    if (heatshrink_encoder_init(&enc, window, sizeof(window), 4) != HEATSHRINK_OK) {
+        return -1;
+    }
+
+    while (!finishing) {
+        uint16_t consumed = 0;
+        uint16_t before = out_off;
+        heatshrink_poll_res_t pr;
+
+        if (in_off < src_len) {
+            heatshrink_encoder_sink(&enc, &src[in_off],
+                                    (uint16_t)(src_len - in_off), &consumed);
+            in_off = (uint16_t)(in_off + consumed);
+        }
+        if (in_off == src_len) {
+            heatshrink_encoder_finish(&enc);
+            finishing = 1;
+        }
+
+        do {
+            uint16_t produced = 0;
+            pr = heatshrink_encoder_poll(&enc, chunk, chunk_size, &produced);
+            if (out_off + produced > dst_cap) return -1;
+            memcpy(&dst[out_off], chunk, produced);
+            out_off = (uint16_t)(out_off + produced);
+        } while (pr == HEATSHRINK_POLL_MORE);
+
+        if (!finishing && consumed == 0 && out_off == before) return -1;
+    }
+
+    *dst_len = out_off;
+    return 0;
+}
+
+static void fill_mixed(uint8_t *buf, uint16_t len)
+{
+    for (uint16_t i = 0; i < len; i++) {
+        buf[i] = (uint8_t)((i / 7u) * 31u + (i % 3u));
+    }
+}
+
+TEST(test_roundtrip_one_byte_output_chunks)
+{
+    uint8_t input[200];
+    uint8_t compressed[512];
+    uint8_t output[200];
+    uint16_t compressed_len = 0;
+    uint16_t output_len = 0;
+
+    fill_mixed(input, sizeof(input));
+
+    /* Every token spans a poll boundary, so it has to resume mid token. */
+    ASSERT_EQ(compress_chunked(input, sizeof(input), compressed, sizeof(compressed),
+                               &compressed_len, 1), 0);
+    ASSERT_EQ(decompress_all(compressed, compressed_len, output, sizeof(output),
+                             &output_len, 8, 4), 0);
+    ASSERT_EQ(output_len, sizeof(input));
+    ASSERT_MEMEQ_N(output, input, sizeof(input));
+}
+
 TEST_MAIN("heatshrink")
     RUN(test_init_null);
     RUN(test_encode_empty);
@@ -414,4 +486,5 @@ TEST_MAIN("heatshrink")
     RUN(test_round_trip_random);
     RUN(test_streaming);
     RUN(test_reset);
+    RUN(test_roundtrip_one_byte_output_chunks);
 TEST_MAIN_END()
