@@ -12,8 +12,10 @@
  * the channel mask; read one byte to query it.
  *
  * Uses the register-based I2C HAL (write_reg / read_regs) with
- * register address 0x00 — the chip treats any byte after its address
- * as the control value, so reg=0x00 is a harmless dummy.
+ * register address 0x00 — the chip has no register numbers and keeps
+ * the last byte written after its address, so reg=0x00 is a harmless
+ * dummy on writes only.  On a read nothing follows it: a read_regs HAL
+ * that sends reg first switches every channel off.
  *
  * Pure C99, no heap, fully reentrant per-context.
  */
