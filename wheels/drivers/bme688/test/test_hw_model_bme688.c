@@ -158,6 +158,17 @@ TEST(test_read_gas_resistance_from_manual)
     ASSERT_EQ(data.gas_resistance_ohm, 4035400);
 }
 
+/* Manual p27 with the model's calibration at 25 degC, 300 degC target:
+ * the floating point form gives 110.9, the integer code gives 111 */
+TEST(test_heater_code_from_manual)
+{
+    setup();
+    bme688_t dev;
+    bme688_init(&dev, &model_i2c, &hw_cfg);
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 300, 100), BME688_OK);
+    ASSERT_EQ(model.hw.regs[BME688_REG_RES_HEAT0], 111);
+}
+
 /* Manual p40: gas conversions start only if run_gas = 1 */
 TEST(test_read_no_gas_without_run_gas)
 {
@@ -224,6 +235,7 @@ TEST_MAIN("bme688 hardware model")
     RUN(test_read_humidity_reasonable);
     RUN(test_read_gas_nonnegative);
     RUN(test_read_gas_resistance_from_manual);
+    RUN(test_heater_code_from_manual);
     RUN(test_read_no_gas_without_run_gas);
     RUN(test_chip_id_readonly);
     RUN(test_calib_registers_readonly);
