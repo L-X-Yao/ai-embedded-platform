@@ -61,7 +61,7 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
                                     (uint16_t)data[1]);
     } else if (len == 3) {
         uint8_t cmd = data[0] & 0xE0u;
-        uint8_t pd  = (data[0] >> 2) & 0x03u;
+        uint8_t pd  = (data[0] >> 1) & 0x03u;
         uint16_t val = (uint16_t)(((uint16_t)data[1] << 4) |
                                   ((uint16_t)data[2] >> 4));
 
@@ -200,7 +200,7 @@ TEST(test_write_dac_power_down_1k)
 
     ASSERT_EQ(mcp4725_write_dac(&dev, 0, MCP4725_PD_1K), MCP4725_OK);
     ASSERT_EQ(mock_dac_pd, 1);
-    ASSERT_EQ(mock_last_write[0], 0x44);
+    ASSERT_EQ(mock_last_write[0], 0x42);
 }
 
 TEST(test_write_dac_power_down_500k)
@@ -210,7 +210,29 @@ TEST(test_write_dac_power_down_500k)
 
     ASSERT_EQ(mcp4725_write_dac(&dev, 0, MCP4725_PD_500K), MCP4725_OK);
     ASSERT_EQ(mock_dac_pd, 3);
-    ASSERT_EQ(mock_last_write[0], 0x4C);
+    ASSERT_EQ(mock_last_write[0], 0x46);
+}
+
+/* DS22039D Figure 6-2: 2nd byte is C2 C1 C0 X X PD1 PD0 X, with PD1 PD0 from
+ * Table 5-2: 00 normal, 01 1 kOhm, 10 100 kOhm, 11 500 kOhm. */
+TEST(test_write_command_byte_all_pd_modes)
+{
+    static const struct { mcp4725_pd_t pd; uint8_t dac; uint8_t eeprom; } rows[] = {
+        { MCP4725_PD_NORMAL, 0x40u, 0x60u },  /* 010 00 00 0, 011 00 00 0 */
+        { MCP4725_PD_1K,     0x42u, 0x62u },  /* 010 00 01 0, 011 00 01 0 */
+        { MCP4725_PD_100K,   0x44u, 0x64u },  /* 010 00 10 0, 011 00 10 0 */
+        { MCP4725_PD_500K,   0x46u, 0x66u },  /* 010 00 11 0, 011 00 11 0 */
+    };
+
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        ASSERT_EQ(mcp4725_write_dac(&dev, 0, rows[i].pd), MCP4725_OK);
+        ASSERT_EQ_HEX(mock_last_write[0], rows[i].dac);
+        ASSERT_EQ(mcp4725_write_eeprom(&dev, 0, rows[i].pd), MCP4725_OK);
+        ASSERT_EQ_HEX(mock_last_write[0], rows[i].eeprom);
+    }
 }
 
 TEST(test_write_dac_i2c_fail)
@@ -246,7 +268,7 @@ TEST(test_write_eeprom_with_pd)
 
     ASSERT_EQ(mcp4725_write_eeprom(&dev, 1000, MCP4725_PD_100K), MCP4725_OK);
     ASSERT_EQ(mock_eeprom_pd, 2);
-    ASSERT_EQ(mock_last_write[0], 0x68);
+    ASSERT_EQ(mock_last_write[0], 0x64);
 }
 
 TEST(test_write_eeprom_i2c_fail)
@@ -372,6 +394,7 @@ TEST_MAIN("mcp4725")
     RUN(test_write_dac_normal);
     RUN(test_write_dac_power_down_1k);
     RUN(test_write_dac_power_down_500k);
+    RUN(test_write_command_byte_all_pd_modes);
     RUN(test_write_dac_i2c_fail);
     RUN(test_write_dac_over_max);
     RUN(test_write_eeprom);

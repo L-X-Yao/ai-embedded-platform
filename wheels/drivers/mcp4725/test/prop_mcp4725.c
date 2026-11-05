@@ -31,7 +31,7 @@ static bool prop_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
         prop_mock_dac = (uint16_t)(((uint16_t)(data[0] & 0x0Fu) << 8) |
                                    (uint16_t)data[1]);
     } else if (len == 3) {
-        prop_mock_pd  = (data[0] >> 2) & 0x03u;
+        prop_mock_pd  = (data[0] >> 1) & 0x03u;
         prop_mock_dac = (uint16_t)(((uint16_t)data[1] << 4) |
                                    ((uint16_t)data[2] >> 4));
     }
