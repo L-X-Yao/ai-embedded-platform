@@ -73,8 +73,8 @@ declare -a HARNESSES=(
     "tftp|wheels/protocols/tftp|test/fuzz_libfuzzer_tftp.c|tftp.c||"
     "tlv_codec|wheels/protocols/tlv_codec|test/fuzz_libfuzzer_tlv_codec.c|tlv_codec.c||"
     "websocket_frame|wheels/protocols/websocket_frame|test/fuzz_libfuzzer_websocket_frame.c|websocket_frame.c||"
-    "xmodem|wheels/protocols/xmodem|test/fuzz_libfuzzer_xmodem.c|xmodem.c||"
-    "ymodem|wheels/protocols/ymodem|test/fuzz_libfuzzer_ymodem.c|ymodem.c||"
+    "xmodem|wheels/protocols/xmodem|test/fuzz_libfuzzer_xmodem.c|xmodem.c|wheels/protocols/crc_any/crc_any.c|-Iwheels/protocols/crc_any"
+    "ymodem|wheels/protocols/ymodem|test/fuzz_libfuzzer_ymodem.c|ymodem.c|wheels/protocols/crc_any/crc_any.c|-Iwheels/protocols/crc_any"
 )
 
 run_libfuzzer() {
