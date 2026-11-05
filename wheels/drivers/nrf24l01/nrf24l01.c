@@ -210,6 +210,9 @@ nrf24_err_t nrf24_set_rx_addr(nrf24_t *dev, uint8_t pipe,
         write_reg(s, reg, addr[0]);
     }
 
+    /* A width of 0 means the pipe is not used */
+    write_reg(s, (uint8_t)(REG_RX_PW_P0 + pipe), dev->payload_size);
+
     /* Enable RX on this pipe */
     uint8_t en = read_reg(s, REG_EN_RXADDR);
     en = (uint8_t)(en | (uint8_t)(1U << pipe));
