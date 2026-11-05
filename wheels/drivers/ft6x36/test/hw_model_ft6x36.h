@@ -7,7 +7,8 @@
  * - Up to 2 simultaneous touch points
  * - Touch point data: 6 bytes per point (XH/XL/YH/YL + weight/misc)
  * - TD_STATUS (0x02) reports active touch count
- * - CHIP_ID (0xA8), FW_VER (0xA6) identification registers
+ * - CIPHER (0xA3) chip ID, FOCALTECH_ID (0xA8) panel ID and FW_VER (0xA6)
+ *   identification registers, from the FT6x06 application note V0.1 p.9
  * - TH_GROUP (0x80) touch detection threshold
  *
  * Uses the standard register-based mock_i2c callbacks.
@@ -74,8 +75,10 @@ static void ft6x36_model_build_regs(const ft6x36_model_t *m,
     if (len < 256) return;
     memset(regs, 0, len);
 
-    /* Identification */
-    regs[FT6X36_REG_CHIP_ID] = m->chip_id;
+    /* Identification. Literal addresses, so the model cannot follow a wrong
+     * value in the driver's header. */
+    regs[0xA3] = m->chip_id;    /* CIPHER */
+    regs[0xA8] = 0x11;          /* FOCALTECH_ID, the panel ID */
     regs[FT6X36_REG_FW_VER]  = m->fw_version;
 
     /* Configuration */

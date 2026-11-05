@@ -5,11 +5,18 @@
 
 /* ---------- chip-specific mock setup ---------- */
 
+/* FT6x06 application note V0.1 p.9: 0xA3 CIPHER is the chip ID, 0xA8
+ * FOCALTECH_ID is the panel ID with default 0x11. Literal addresses, so the
+ * mock cannot follow a wrong value in the driver's header. */
+#define REG_CIPHER    0xA3u
+#define REG_PANEL_ID  0xA8u
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
     /* Default: FT6236 chip ID */
-    mock_regs[FT6X36_REG_CHIP_ID] = FT6X36_CHIP_ID_6236;
+    mock_regs[REG_CIPHER] = FT6X36_CHIP_ID_6236;
+    mock_regs[REG_PANEL_ID] = 0x11;
     /* Default: firmware version */
     mock_regs[FT6X36_REG_FW_VER] = 0x10;
 }
@@ -47,7 +54,7 @@ static ft6x36_t dev;
 TEST(test_init_ok_ft6236)
 {
     mock_reset();
-    mock_regs[FT6X36_REG_CHIP_ID] = FT6X36_CHIP_ID_6236;
+    mock_regs[REG_CIPHER] = FT6X36_CHIP_ID_6236;
     ASSERT_EQ(ft6x36_init(&dev, &mock_i2c), FT6X36_OK);
     ASSERT_EQ(dev.chip_id, FT6X36_CHIP_ID_6236);
 }
@@ -55,7 +62,7 @@ TEST(test_init_ok_ft6236)
 TEST(test_init_ok_ft6336)
 {
     mock_reset();
-    mock_regs[FT6X36_REG_CHIP_ID] = FT6X36_CHIP_ID_6336;
+    mock_regs[REG_CIPHER] = FT6X36_CHIP_ID_6336;
     ASSERT_EQ(ft6x36_init(&dev, &mock_i2c), FT6X36_OK);
     ASSERT_EQ(dev.chip_id, FT6X36_CHIP_ID_6336);
 }
@@ -63,7 +70,16 @@ TEST(test_init_ok_ft6336)
 TEST(test_init_wrong_id)
 {
     mock_reset();
-    mock_regs[FT6X36_REG_CHIP_ID] = 0xAB;
+    mock_regs[REG_CIPHER] = 0xAB;
+    ASSERT_EQ(ft6x36_init(&dev, &mock_i2c), FT6X36_ERR_ID);
+}
+
+/* A valid chip ID in the panel ID register must not pass */
+TEST(test_init_ignores_panel_id)
+{
+    mock_reset();
+    mock_regs[REG_CIPHER]   = 0xAB;
+    mock_regs[REG_PANEL_ID] = FT6X36_CHIP_ID_6236;
     ASSERT_EQ(ft6x36_init(&dev, &mock_i2c), FT6X36_ERR_ID);
 }
 
@@ -332,6 +348,7 @@ TEST_MAIN("ft6x36")
     RUN(test_init_ok_ft6236);
     RUN(test_init_ok_ft6336);
     RUN(test_init_wrong_id);
+    RUN(test_init_ignores_panel_id);
     RUN(test_init_i2c_fail);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
