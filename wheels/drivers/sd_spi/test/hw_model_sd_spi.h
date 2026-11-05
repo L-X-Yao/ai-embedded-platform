@@ -29,6 +29,7 @@
 
 #define SD_CMD0     0    /* GO_IDLE_STATE */
 #define SD_CMD8     8    /* SEND_IF_COND */
+#define SD_CMD13   13    /* SEND_STATUS */
 #define SD_CMD16   16    /* SET_BLOCKLEN */
 #define SD_CMD17   17    /* READ_SINGLE_BLOCK */
 #define SD_CMD24   24    /* WRITE_BLOCK */
@@ -248,6 +249,14 @@ static void sd_model_prepare_response(sd_model_t *m)
         } else {
             m->read_block = m->arg / SD_MODEL_BLOCK_SIZE;
         }
+        m->phase = SD_PH_R1;
+        return;
+
+    case SD_CMD13:
+        /* SEND_STATUS: R2, no errors */
+        m->r1 = 0x00U;
+        m->ext[0] = 0x00U;
+        m->ext_len = 1;
         m->phase = SD_PH_R1;
         return;
 

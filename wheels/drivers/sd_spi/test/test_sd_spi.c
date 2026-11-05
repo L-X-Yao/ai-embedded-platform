@@ -665,6 +665,18 @@ TEST(test_read_token_limit_is_100_ms)
     ASSERT_TRUE(mock_delay_calls >= 100);
 }
 
+TEST(test_write_reports_a_programming_error)
+{
+    uint8_t buf[512] = { 0 };
+    sd_spi_t sd;
+    mock_reset();
+    sd_spi_init(&sd, &mock_hal);
+
+    /* the write was accepted, and the failure shows only in CMD13 */
+    mock_status_r2 = 0x40;
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_WRITE);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -693,4 +705,5 @@ TEST_MAIN("sd_spi")
     RUN(test_write_outlasts_a_long_busy);
     RUN(test_write_busy_limit_is_over_500_ms);
     RUN(test_read_token_limit_is_100_ms);
+    RUN(test_write_reports_a_programming_error);
 TEST_MAIN_END()
