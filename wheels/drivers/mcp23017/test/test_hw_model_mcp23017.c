@@ -51,9 +51,54 @@ static const mcp23017_i2c_t fail_read_i2c = {
     .ctx       = &model.hw,
 };
 
+/* --- Interrupt hooks ---------------------------------------------------- *
+ * DS20001952C p.25: "The interrupt remains active until the INTCAP or GPIO
+ * register is read. Writing to these registers does not affect the
+ * interrupt." The model has no interrupt engine, so these wrappers add that
+ * rule and count writes to the read-only INTF and INTCAP registers.        */
+
+static int     hook_readonly_writes;
+static int     hook_fail_read_reg;
+static uint8_t hook_gpinten_at_clear;
+
+static bool hook_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    if (reg >= MCP23017_REG_INTFA && reg <= MCP23017_REG_INTCAPB)
+        hook_readonly_writes++;
+    return hw_model_i2c_write_reg(ctx, dev_addr, reg, val);
+}
+
+static bool hook_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t *buf, uint16_t len)
+{
+    if (reg == hook_fail_read_reg)
+        return false;
+    if (!hw_model_i2c_read_regs(ctx, dev_addr, reg, buf, len))
+        return false;
+    if (reg == MCP23017_REG_GPIOA || reg == MCP23017_REG_INTCAPA) {
+        model.hw.regs[MCP23017_REG_INTFA] = 0;
+        hook_gpinten_at_clear |= model.hw.regs[MCP23017_REG_GPINTENA];
+    }
+    if (reg == MCP23017_REG_GPIOB || reg == MCP23017_REG_INTCAPB) {
+        model.hw.regs[MCP23017_REG_INTFB] = 0;
+        hook_gpinten_at_clear |= model.hw.regs[MCP23017_REG_GPINTENB];
+    }
+    return true;
+}
+
+static const mcp23017_i2c_t hook_i2c = {
+    .write_reg = hook_write_reg,
+    .read_regs = hook_read_regs,
+    .delay_ms  = NULL,
+    .ctx       = &model.hw,
+};
+
 static void setup(void)
 {
     mcp23017_model_init(&model);
+    hook_readonly_writes  = 0;
+    hook_fail_read_reg    = -1;
+    hook_gpinten_at_clear = 0;
 }
 
 /* --- init tests -------------------------------------------------------- */
@@ -81,6 +126,45 @@ TEST(test_init_clears_other_registers)
     /* Init should write 0x00 to all non-IODIR registers */
     ASSERT_EQ(model.hw.regs[MCP23017_REG_GPPUA], 0x00);
     ASSERT_EQ(model.hw.regs[MCP23017_REG_OLATA], 0x00);
+}
+
+TEST(test_init_clears_pending_interrupt)
+{
+    setup();
+    /* An MCU-only reset leaves the part as it was: enabled and pending */
+    model.hw.regs[MCP23017_REG_GPINTENA] = 0x04;
+    model.hw.regs[MCP23017_REG_GPINTENB] = 0x80;
+    mcp23017_model_set_intf(&model, true, 0x04);
+    mcp23017_model_set_intf(&model, false, 0x80);
+
+    mcp23017_t dev;
+    ASSERT_EQ(mcp23017_init(&dev, &hook_i2c, 0x20), MCP23017_OK);
+
+    ASSERT_EQ(model.hw.regs[MCP23017_REG_INTFA], 0x00);
+    ASSERT_EQ(model.hw.regs[MCP23017_REG_INTFB], 0x00);
+    /* Interrupts were off by then, so no new change could re-arm them */
+    ASSERT_EQ(hook_gpinten_at_clear, 0x00);
+}
+
+TEST(test_init_skips_readonly_registers)
+{
+    setup();
+    mcp23017_t dev;
+    ASSERT_EQ(mcp23017_init(&dev, &hook_i2c, 0x20), MCP23017_OK);
+    ASSERT_EQ(hook_readonly_writes, 0);
+}
+
+TEST(test_init_interrupt_clear_read_fail)
+{
+    mcp23017_t dev;
+
+    setup();
+    hook_fail_read_reg = MCP23017_REG_GPIOA;
+    ASSERT_EQ(mcp23017_init(&dev, &hook_i2c, 0x20), MCP23017_ERR_I2C);
+
+    setup();
+    hook_fail_read_reg = MCP23017_REG_GPIOB;
+    ASSERT_EQ(mcp23017_init(&dev, &hook_i2c, 0x20), MCP23017_ERR_I2C);
 }
 
 /* --- direction --------------------------------------------------------- */
@@ -605,6 +689,9 @@ TEST(test_read_interrupt_flag_port_b)
 TEST_MAIN("mcp23017 hardware model")
     RUN(test_init_resets_iodir_to_input);
     RUN(test_init_clears_other_registers);
+    RUN(test_init_clears_pending_interrupt);
+    RUN(test_init_skips_readonly_registers);
+    RUN(test_init_interrupt_clear_read_fail);
     RUN(test_set_direction_output);
     RUN(test_set_direction_port_b);
     RUN(test_write_port_a);

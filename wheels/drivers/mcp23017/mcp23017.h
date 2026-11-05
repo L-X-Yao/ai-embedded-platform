@@ -46,7 +46,8 @@ typedef struct {
     uint8_t dev_addr;           /* 7-bit (0x20-0x27, A0-A2 pins) */
 } mcp23017_t;
 
-/** Initialize device and reset all registers to defaults.
+/** Initialize device: write the writable registers back to their defaults,
+ *  then read GPIOA/B to clear any interrupt left pending.
  *  dev_addr must be in range 0x20..0x27. @thread_safe: no @isr_safe: no */
 mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
                              uint8_t dev_addr);
