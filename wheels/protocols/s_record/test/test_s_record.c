@@ -179,6 +179,23 @@ TEST(test_fuzz)
     }
 }
 
+TEST(test_decode_count_zero)
+{
+    s_record_line_t rec;
+    ASSERT_EQ(s_record_decode("S100", 4, &rec), S_RECORD_ERR_FORMAT);
+}
+
+TEST(test_decode_count_too_small_for_address)
+{
+    s_record_line_t rec;
+
+    /* S1 needs two address bytes plus the checksum. */
+    ASSERT_EQ(s_record_decode("S101FE", 6, &rec), S_RECORD_ERR_FORMAT);
+
+    /* S3 needs four address bytes plus the checksum. */
+    ASSERT_EQ(s_record_decode("S304000000FB", 12, &rec), S_RECORD_ERR_FORMAT);
+}
+
 TEST_MAIN("s_record")
     RUN(test_decode_s1);
     RUN(test_decode_s0);
@@ -196,4 +213,6 @@ TEST_MAIN("s_record")
     RUN(test_roundtrip_s2);
     RUN(test_error_codes);
     RUN(test_fuzz);
+    RUN(test_decode_count_zero);
+    RUN(test_decode_count_too_small_for_address);
 TEST_MAIN_END()
