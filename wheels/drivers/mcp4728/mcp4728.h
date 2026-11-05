@@ -73,8 +73,11 @@ mcp4728_err_t mcp4728_write_channel(mcp4728_t *dev, uint8_t channel,
                                     uint16_t value);
 
 /** Write all 4 channels in one I2C transaction.
- *  Uses Multi-Write commands, with the same side effects as
- *  mcp4728_write_channel. Values > 4095 are rejected.
+ *  Uses one Multi-Write with bytes 2-4 repeated per channel, with the same
+ *  side effects as mcp4728_write_channel. Each output changes after its own
+ *  last byte is acknowledged, so the four do not change at the same instant,
+ *  and a bus error part way leaves the earlier channels updated.
+ *  write_regs must accept 11 data bytes. Values > 4095 are rejected.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4]);
 

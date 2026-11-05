@@ -65,15 +65,22 @@ mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4])
         if (values[ch] > MCP4728_MAX_VALUE) return MCP4728_ERR_PARAM;
     }
 
-    for (uint8_t ch = 0; ch < MCP4728_NUM_CHANNELS; ch++) {
-        uint8_t cmd = (uint8_t)(CMD_MULTI_WRITE | ((uint8_t)(ch << 1u)));
-        uint8_t buf[2];
-        buf[0] = (uint8_t)((values[ch] >> 8) & 0x0Fu);
-        buf[1] = (uint8_t)(values[ch] & 0xFFu);
+    /* Bytes 2-4 repeat per channel (Figure 5-8). reg carries channel A's
+     * command byte, so buf starts at its 3rd byte. */
+    uint8_t  buf[(MCP4728_NUM_CHANNELS * 3u) - 1u];
+    uint16_t len = 0;
 
-        if (!dev->i2c->write_regs(dev->i2c->ctx, dev->addr, cmd, buf, 2))
-            return MCP4728_ERR_I2C;
+    for (uint8_t ch = 0; ch < MCP4728_NUM_CHANNELS; ch++) {
+        if (ch > 0) {
+            buf[len++] = (uint8_t)(CMD_MULTI_WRITE | ((uint8_t)(ch << 1u)));
+        }
+        buf[len++] = (uint8_t)((values[ch] >> 8) & 0x0Fu);
+        buf[len++] = (uint8_t)(values[ch] & 0xFFu);
     }
+
+    if (!dev->i2c->write_regs(dev->i2c->ctx, dev->addr, CMD_MULTI_WRITE,
+                              buf, len))
+        return MCP4728_ERR_I2C;
 
     return MCP4728_OK;
 }
