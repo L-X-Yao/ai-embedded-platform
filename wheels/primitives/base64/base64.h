@@ -33,11 +33,13 @@ typedef enum {
 /**
  * Calculate encoded size (without NUL terminator).
  *
- * @param data_len  Number of input bytes.
+ * @param data_len  Number of input bytes, at most 49149. Longer input needs
+ *                  more characters than a uint16_t can count.
  * @return          Number of Base64 characters produced.
  * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
-/*@ assigns \nothing;
+/*@ requires data_len <= 49149;
+    assigns \nothing;
     ensures \result == ((data_len + 2) / 3) * 4;
 */
 uint16_t base64_encoded_size(uint16_t data_len);

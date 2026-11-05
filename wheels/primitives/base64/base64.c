@@ -68,8 +68,9 @@ base64_err_t base64_encode(const uint8_t *data, uint16_t data_len,
         return BASE64_ERR_PARAM;
     }
 
-    uint16_t needed = base64_encoded_size(data_len);
-    if (*out_len < (uint16_t)(needed + 1u)) {   /* +1 for NUL */
+    /* 32-bit: past 49149 input bytes the size no longer fits uint16_t. */
+    uint32_t needed = ((uint32_t)data_len + 2u) / 3u * 4u;
+    if ((uint32_t)*out_len < needed + 1u) {   /* +1 for NUL */
         return BASE64_ERR_OVERFLOW;
     }
 
