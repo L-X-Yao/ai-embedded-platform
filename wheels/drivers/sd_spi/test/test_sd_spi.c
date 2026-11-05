@@ -58,6 +58,9 @@ static int         mock_fail_spi;       /* all xfer return 0xFF */
 static int         mock_fail_cmd17;    /* CMD17 returns error R1 */
 static int         mock_fail_cmd24;    /* CMD24 returns error R1 */
 static int         mock_cmd55_seen;
+static int         mock_busy_polls;     /* polls the card stays busy, -1 = forever */
+static uint8_t     mock_read_token;     /* first byte of the read data phase */
+static uint8_t     mock_status_r2;      /* second byte of the CMD13 response */
 
 /* block storage */
 static uint8_t     mock_block[512];
@@ -86,6 +89,9 @@ static void mock_reset(void)
     mock_fail_cmd17 = 0;
     mock_fail_cmd24 = 0;
     mock_cmd55_seen = 0;
+    mock_busy_polls = 0;
+    mock_read_token = 0xFE;
+    mock_status_r2 = 0;
     mock_last_addr = 0;
 
     memset(mock_write_buf, 0, sizeof(mock_write_buf));
@@ -163,6 +169,13 @@ static void prepare_response(void)
         mock_ext[2] = 0x80;
         mock_ext[3] = 0x00;
         mock_ext_len = 4;
+        mock_phase = PH_R1;
+        return;
+    }
+    if (mock_cmd == 13) {
+        mock_r1 = 0x00;
+        mock_ext[0] = mock_status_r2;
+        mock_ext_len = 1;
         mock_phase = PH_R1;
         return;
     }
@@ -294,7 +307,10 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         return 0x05;                        /* accepted */
 
     case PH_WRITE_BUSY:
-        /* card busy for a few cycles then ready */
+        if (mock_busy_polls != 0) {
+            if (mock_busy_polls > 0) mock_busy_polls--;
+            return 0x00;    /* holds DataOut low while programming */
+        }
         mock_phase = PH_IDLE;
         return 0xFF;    /* not busy */
     default:
@@ -611,6 +627,44 @@ TEST(test_err_spi_value)
 
 /* ---------- main ---------- */
 
+TEST(test_write_outlasts_a_long_busy)
+{
+    uint8_t buf[512] = { 0 };
+    sd_spi_t sd;
+    mock_reset();
+    sd_spi_init(&sd, &mock_hal);
+
+    /* more polls than the old fixed limit of 8000 */
+    mock_busy_polls = 9000;
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_OK);
+}
+
+TEST(test_write_busy_limit_is_over_500_ms)
+{
+    uint8_t buf[512] = { 0 };
+    sd_spi_t sd;
+    mock_reset();
+    sd_spi_init(&sd, &mock_hal);
+
+    mock_busy_polls = -1;
+    mock_delay_calls = 0;
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_TIMEOUT);
+    ASSERT_TRUE(mock_delay_calls > 500);
+}
+
+TEST(test_read_token_limit_is_100_ms)
+{
+    uint8_t buf[512];
+    sd_spi_t sd;
+    mock_reset();
+    mock_fail_read = 1;
+    sd_spi_init(&sd, &mock_hal);
+
+    mock_delay_calls = 0;
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_TIMEOUT);
+    ASSERT_TRUE(mock_delay_calls >= 100);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -636,4 +690,7 @@ TEST_MAIN("sd_spi")
     RUN(test_spi_failure_during_write);
     RUN(test_err_crc_value);
     RUN(test_err_spi_value);
+    RUN(test_write_outlasts_a_long_busy);
+    RUN(test_write_busy_limit_is_over_500_ms);
+    RUN(test_read_token_limit_is_100_ms);
 TEST_MAIN_END()

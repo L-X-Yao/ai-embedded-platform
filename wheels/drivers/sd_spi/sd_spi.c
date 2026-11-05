@@ -28,6 +28,12 @@
 
 #ifndef SD_SPI_RETRY_LIMIT
 #define SD_SPI_RETRY_LIMIT  8000U
+
+/* Card waits are limited by time: a byte count shrinks as the clock speeds up.
+ * Spec 3.01 section 4.6.2: 100 ms for reads, more than 500 ms for writes. */
+#define SD_SPI_READ_TIMEOUT_MS   100U
+#define SD_SPI_WRITE_TIMEOUT_MS  600U
+#define SD_SPI_POLLS_PER_MS      16U
 #endif
 
 /* ---------- helpers ---------- */
@@ -81,11 +87,28 @@ static void deselect(const sd_spi_hal_t *h)
 
 static sd_spi_err_t wait_ready(const sd_spi_hal_t *h)
 {
-    for (uint32_t i = 0; i < SD_SPI_RETRY_LIMIT; i++) {
-        if (h->xfer(h->ctx, 0xFF) == 0xFF)
-            return SD_SPI_OK;
+    for (uint32_t ms = 0; ms < SD_SPI_WRITE_TIMEOUT_MS; ms++) {
+        for (uint32_t i = 0; i < SD_SPI_POLLS_PER_MS; i++) {
+            if (h->xfer(h->ctx, 0xFF) == 0xFF)
+                return SD_SPI_OK;
+        }
+        h->delay_ms(h->ctx, 1);
     }
     return SD_SPI_ERR_TIMEOUT;
+}
+
+/* First byte other than idle, or 0xFF when the card stays silent. */
+static uint8_t wait_token(const sd_spi_hal_t *h)
+{
+    for (uint32_t ms = 0; ms < SD_SPI_READ_TIMEOUT_MS; ms++) {
+        for (uint32_t i = 0; i < SD_SPI_POLLS_PER_MS; i++) {
+            uint8_t token = h->xfer(h->ctx, 0xFF);
+            if (token != 0xFF)
+                return token;
+        }
+        h->delay_ms(h->ctx, 1);
+    }
+    return 0xFF;
 }
 
 /* ---------- API ---------- */
@@ -181,11 +204,7 @@ sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
     if (r1 != 0x00) { deselect(h); return SD_SPI_ERR_CMD; }
 
     /* wait for data token 0xFE */
-    uint8_t token = 0xFF;
-    for (uint32_t i = 0; i < SD_SPI_RETRY_LIMIT; i++) {
-        token = h->xfer(h->ctx, 0xFF);
-        if (token != 0xFF) break;
-    }
+    uint8_t token = wait_token(h);
     if (token != DATA_TOKEN) { deselect(h); return SD_SPI_ERR_TIMEOUT; }
 
     /* read 512 bytes */
