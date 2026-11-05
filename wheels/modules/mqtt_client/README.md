@@ -87,6 +87,7 @@ if (mqtt_client_get_state(&client) == MQTT_CLIENT_CONNECTED) {
 
 - QoS 2 not supported.
 - Only one inflight QoS 1 publish and one inflight subscribe at a time.
+- A refused subscription is not reported: a SUBACK failure code clears the inflight id like a grant.
 
 ## How to test
 
@@ -98,7 +99,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS
+- Unit tests (sim): 40 pass, 0 fail
+- libFuzzer: runs sessions in input order, compares a stream fed whole and byte by byte, and checks that an oversized packet is dropped whole
 - HIL: N/A
 
 ## API convention deviations

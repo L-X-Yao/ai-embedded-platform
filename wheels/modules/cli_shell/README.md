@@ -83,6 +83,7 @@ ctest --test-dir build --output-on-failure
 ## Test status
 
 - Unit tests: **PASS** (26 test cases, 0 failures)
+- libFuzzer: types the input and checks the line and the argument split against a separate model
 - Coverage: init (valid/null/prompt), register+call, argc/argv correctness,
   multi-arg commands, built-in help, unknown command feedback, empty line,
   backspace, line overflow, sequential commands, max commands (ERR_FULL),

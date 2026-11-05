@@ -4,6 +4,26 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Fixed by the stateful fuzz targets (2026-11-05)
+
+`mqtt_client`, `ota_manager`, `cli_shell` and `air780eg` got libFuzzer targets, which takes the total to 57. Each one runs the component through sequences the input picks and checks it against a model. Line coverage is 89 to 97 percent, and 22 injected bugs were all found. `cli_shell` had no findings.
+
+- `mqtt_client`: `mqtt_client_feed` dropped what did not fit in the receive buffer, so a large read lost packets and the stream lost its place.
+- `mqtt_client`: a packet larger than the buffer cleared the buffer, and the rest of it was read as new packets. It is now skipped whole.
+- `mqtt_client`: a broken remaining length, or a PUBLISH that failed to parse, left the session open. Both now close it with reason 0xFD.
+- `mqtt_client`: a refused CONNACK followed by more bytes in the same read still dispatched them.
+- `mqtt_client`: `on_message` and `on_event` shared one context pointer, so the second registration replaced the first. Found by reading the code.
+- `mqtt_packet`, `mqtt5_packet`: a PUBLISH with both QoS bits set parsed as QoS 3.
+- `ota_manager`: the last chunk could write past the announced image size, a transport claiming more bytes than the buffer holds was believed, and an image of size 0 was accepted.
+- `ota_manager`: progress fell back near 0 on images of 42949673 to 50331647 bytes, because the overflow guard started too late.
+- `air780eg`: a long digit string in `+CSQ` overflowed an int, and any number was stored as the signal level.
+- `air780eg`: a topic of 128 bytes or more was cut and delivered, so a message could reach the handler of a different topic. It is now dropped.
+
+Left as they are, and listed in each README:
+
+- `mqtt_client` does not report a refused subscription. Telling the caller needs a new callback or return value.
+- `air780eg` cuts a line at 511 bytes and still processes it.
+
 ## Fixed after the encoder batch (2026-11-05)
 
 These came out of reading the encoder results and the list of remaining work.

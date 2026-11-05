@@ -58,7 +58,7 @@ const char    *air780eg_get_matched_line(const air780eg_t *dev);
 
 ## Known issues
 
-None.
+- A line over 511 bytes is cut at 511 and still processed.
 
 ## How to test
 
@@ -70,7 +70,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS
+- Unit tests (sim): 54 pass, 0 fail
+- libFuzzer: plays the modem with raw bytes, URC lines and command replies
 - HIL: N/A
 
 ## API convention deviations
