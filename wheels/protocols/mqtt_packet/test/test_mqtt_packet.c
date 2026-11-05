@@ -342,6 +342,14 @@ TEST(test_build_publish_length_without_payload)
     ASSERT_TRUE(mqtt_packet_build_publish(buf, sizeof(buf), &pub) > 0);
 }
 
+TEST(test_parse_publish_refuses_both_qos_bits)
+{
+    const uint8_t frame[] = { 0x36, 0x05, 0x00, 0x01, 't', 0x00, 0x01 };
+    mqtt_publish_t pub;
+
+    ASSERT_EQ(mqtt_packet_parse_publish(frame, sizeof(frame), &pub), MQTT_PACKET_ERR_MALFORMED);
+}
+
 TEST_MAIN("mqtt_packet")
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
@@ -368,5 +376,6 @@ TEST_MAIN("mqtt_packet")
     RUN(test_build_connect_long_string_writes_nothing);
     RUN(test_build_subscribe_qos3_rejected);
     RUN(test_build_publish_length_without_payload);
+    RUN(test_parse_publish_refuses_both_qos_bits);
 TEST_MAIN_END()
 

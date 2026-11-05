@@ -250,6 +250,7 @@ mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
 
     out->dup = (buf[0] & 0x08) != 0;
     out->qos = (buf[0] >> 1) & 0x03;
+    if (out->qos > 2) return MQTT_PACKET_ERR_MALFORMED;  /* MQTT-3.3.1-4 */
     out->retain = (buf[0] & 0x01) != 0;
 
     int rl_bytes = 0;
