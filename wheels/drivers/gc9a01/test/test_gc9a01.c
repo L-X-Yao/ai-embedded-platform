@@ -428,6 +428,17 @@ TEST(test_fill_xfer_count)
 
 /* ========== rotation tests ========== */
 
+/* V1.0 p.127: the 36h parameter is MY MX MV ML BGR MH 0 0, from D7 to D0 */
+TEST(test_madctl_bits)
+{
+    ASSERT_EQ(GC9A01_MADCTL_MY, 0x80);
+    ASSERT_EQ(GC9A01_MADCTL_MX, 0x40);
+    ASSERT_EQ(GC9A01_MADCTL_MV, 0x20);
+    ASSERT_EQ(GC9A01_MADCTL_ML, 0x10);
+    ASSERT_EQ(GC9A01_MADCTL_BGR, 0x08);
+    ASSERT_EQ(GC9A01_MADCTL_MH, 0x04);
+}
+
 TEST(test_rotation_0)
 {
     setup();
@@ -671,6 +682,7 @@ TEST_MAIN("gc9a01")
     RUN(test_fill_null_dev);
     RUN(test_fill_xfer_count);
     /* rotation */
+    RUN(test_madctl_bits);
     RUN(test_rotation_0);
     RUN(test_rotation_1);
     RUN(test_rotation_2);
