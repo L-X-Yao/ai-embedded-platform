@@ -217,6 +217,28 @@ TEST(test_fuzz)
     }
 }
 
+TEST(test_rx_flow_control_is_not_a_message)
+{
+    static const uint8_t ff[8] = { 0x10, 0x0A, 1, 2, 3, 4, 5, 6 };
+    static const uint8_t fc[3] = { 0x30, 0x00, 0x00 };
+    static const uint8_t cf[5] = { 0x21, 7, 8, 9, 10 };
+    uint8_t buf[16];
+    isotp_rx_t rx;
+
+    ASSERT_EQ(isotp_rx_init(&rx, buf, sizeof(buf)), ISOTP_OK);
+
+    /* With nothing received, a stray FC frame reports no message. */
+    ASSERT_EQ(isotp_rx_feed(&rx, fc, sizeof(fc)), ISOTP_INCOMPLETE);
+
+    /* In the middle of a message it reports no message either. */
+    ASSERT_EQ(isotp_rx_feed(&rx, ff, sizeof(ff)), ISOTP_INCOMPLETE);
+    ASSERT_EQ(isotp_rx_feed(&rx, fc, sizeof(fc)), ISOTP_INCOMPLETE);
+
+    /* And the reassembly carries on. */
+    ASSERT_EQ(isotp_rx_feed(&rx, cf, sizeof(cf)), ISOTP_OK);
+    ASSERT_EQ(isotp_rx_length(&rx), 10);
+}
+
 TEST_MAIN("isotp")
     RUN(test_frame_type);
     RUN(test_sf_decode);
@@ -239,4 +261,5 @@ TEST_MAIN("isotp")
     RUN(test_rx_data_null);
     RUN(test_error_codes);
     RUN(test_fuzz);
+    RUN(test_rx_flow_control_is_not_a_message);
 TEST_MAIN_END()
