@@ -9,6 +9,8 @@
 static uint8_t last_reg;
 static uint8_t last_val;
 static int cmd_count;
+static int data_before_on;
+static bool on_seen;
 
 /* Override to track command/data writes via control byte */
 static bool track_write_reg(void *ctx, uint8_t dev_addr,
@@ -20,6 +22,8 @@ static bool track_write_reg(void *ctx, uint8_t dev_addr,
     last_reg = reg;
     last_val = val;
     cmd_count++;
+    if (reg == 0x40 && !on_seen) data_before_on++;
+    if (reg == 0x00 && val == 0xAF) on_seen = true;
     return true;
 }
 
@@ -29,6 +33,8 @@ static void mock_reset(void)
     last_reg = 0;
     last_val = 0;
     cmd_count = 0;
+    data_before_on = 0;
+    on_seen = false;
 }
 
 static const sh1106_i2c_t mock_i2c = {
@@ -254,6 +260,15 @@ TEST(test_init_clears_framebuffer)
     ASSERT_FALSE(sh1106_get_pixel(&dev, 127, 63));
 }
 
+TEST(test_init_clears_display_ram_before_switching_on)
+{
+    mock_reset();
+    ASSERT_EQ(sh1106_init(&dev, &mock_i2c, SH1106_ADDR_A, framebuf), SH1106_OK);
+
+    ASSERT_TRUE(on_seen);
+    ASSERT_EQ(data_before_on, SH1106_PAGES * SH1106_WIDTH);
+}
+
 TEST_MAIN("sh1106")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -275,4 +290,5 @@ TEST_MAIN("sh1106")
     RUN(test_null_clear_fill_pixel);
     RUN(test_addr_b);
     RUN(test_init_clears_framebuffer);
+    RUN(test_init_clears_display_ram_before_switching_on);
 TEST_MAIN_END()

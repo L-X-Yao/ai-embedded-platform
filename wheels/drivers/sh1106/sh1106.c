@@ -22,7 +22,7 @@
 #define CMD_SET_MUX_RATIO       0xA8u
 #define CMD_SET_DISPLAY_OFFSET  0xD3u
 #define CMD_SET_START_LINE      0x40u
-#define CMD_SET_SEG_REMAP       0xA1u   /* column address 127 mapped to SEG0 */
+#define CMD_SET_SEG_REMAP       0xA1u   /* column address 131 mapped to SEG0 */
 #define CMD_SET_COM_SCAN_DEC    0xC8u   /* scan from COM63 to COM0 */
 #define CMD_SET_COM_PINS        0xDAu
 #define CMD_SET_CONTRAST        0x81u
@@ -102,6 +102,9 @@ sh1106_err_t sh1106_init(sh1106_t *dev, const sh1106_i2c_t *i2c,
     if (!cmd(dev, 0x40))                     return SH1106_ERR_I2C;
     if (!cmd(dev, CMD_SET_ENTIRE_ON_RESUME)) return SH1106_ERR_I2C;
     if (!cmd(dev, CMD_SET_NORMAL_DISPLAY))   return SH1106_ERR_I2C;
+
+    /* Reset leaves display RAM as it was, so clear it before switching on. */
+    if (sh1106_display(dev) != SH1106_OK)    return SH1106_ERR_I2C;
     if (!cmd(dev, CMD_DISPLAY_ON))           return SH1106_ERR_I2C;
 
     INVARIANT(dev->i2c != NULL);
