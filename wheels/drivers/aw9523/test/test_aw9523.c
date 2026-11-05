@@ -17,6 +17,7 @@
 #define REG_LED_MODE_P0 0x12
 #define REG_LED_MODE_P1 0x13
 #define REG_DIM_BASE    0x20
+#define REG_SW_RSTN     0x7F
 
 #define TEST_ADDR       0x58
 
@@ -41,6 +42,35 @@ static aw9523_err_t init_ok(void)
     return aw9523_init(&dev, &mock_i2c, TEST_ADDR);
 }
 
+/* The plain mock only stores a write to 7FH. V1.1.1 p.16 says it restores the
+ * default state, so this hook does that, using Table-4 (p.17) and the Table 1
+ * outputs for AD1 = AD0 = GND. A write made before the reset is then lost. */
+static int first_write_reg;
+
+static bool hook_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t val)
+{
+    if (first_write_reg < 0)
+        first_write_reg = reg;
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
+        return false;
+    if (reg == REG_SW_RSTN && val == 0x00) {
+        memset(&mock_regs[REG_OUTPUT_P0], 0x00, 6);  /* Output, Config, Int */
+        mock_regs[REG_CTL] = 0x00;
+        mock_regs[REG_LED_MODE_P0] = 0xFF;
+        mock_regs[REG_LED_MODE_P1] = 0xFF;
+        memset(&mock_regs[REG_DIM_BASE], 0x00, 16);
+    }
+    return true;
+}
+
+static const aw9523_i2c_t hook_i2c = {
+    .write_reg = hook_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .delay_ms  = mock_i2c_delay_ms,
+    .ctx       = NULL,
+};
+
 /* ========== init tests ========== */
 
 TEST(test_init_ok)
@@ -62,6 +92,28 @@ TEST(test_init_wrong_id)
     mock_reset();
     mock_regs[REG_ID] = 0x99;  /* wrong chip ID */
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, TEST_ADDR), AW9523_ERR_ID);
+    ASSERT_EQ(mock_write_count, 0);  /* nothing written to an unknown chip */
+}
+
+TEST(test_init_soft_reset_comes_first)
+{
+    mock_reset();
+    first_write_reg = -1;
+    /* Left by an earlier run: DIM is write-only and init does not write it */
+    mock_regs[REG_DIM_BASE]      = 0x55;
+    mock_regs[REG_DIM_BASE + 15] = 0xAA;
+
+    ASSERT_EQ(aw9523_init(&dev, &hook_i2c, TEST_ADDR), AW9523_OK);
+
+    /* The reset ran */
+    ASSERT_EQ(mock_regs[REG_DIM_BASE], 0x00);
+    ASSERT_EQ(mock_regs[REG_DIM_BASE + 15], 0x00);
+    /* It came first, so nothing init set was wiped */
+    ASSERT_EQ(first_write_reg, REG_SW_RSTN);
+    ASSERT_EQ(mock_regs[REG_CONFIG_P0], 0xFF);
+    ASSERT_EQ(mock_regs[REG_CONFIG_P1], 0xFF);
+    ASSERT_EQ(mock_regs[REG_INT_P0], 0xFF);
+    ASSERT_EQ(mock_regs[REG_INT_P1], 0xFF);
 }
 
 TEST(test_init_i2c_fail)
@@ -71,10 +123,10 @@ TEST(test_init_i2c_fail)
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, TEST_ADDR), AW9523_ERR_I2C);
 }
 
-TEST(test_init_i2c_fail_ctl_write)
+TEST(test_init_i2c_fail_reset_write)
 {
     mock_reset();
-    /* ID read succeeds (op 0), CTL write fails (op 1) */
+    /* ID read succeeds (op 0), soft reset write fails (op 1) */
     mock_fail_at = 1;
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, TEST_ADDR), AW9523_ERR_I2C);
 }
@@ -581,8 +633,9 @@ TEST_MAIN("aw9523")
     /* init */
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
+    RUN(test_init_soft_reset_comes_first);
     RUN(test_init_i2c_fail);
-    RUN(test_init_i2c_fail_ctl_write);
+    RUN(test_init_i2c_fail_reset_write);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_null_write_reg);

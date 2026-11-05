@@ -95,7 +95,8 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize device: read ID register (expect 0x23), reset to defaults.
+/** Initialize device: read ID register (expect 0x23), software reset, then
+ *  all pins GPIO inputs, interrupts disabled, output latches low.
  *  @param dev_addr 7-bit I2C address (0x58 to 0x5B, set by AD1/AD0)
  *  @thread_safe: no @isr_safe: no */
 aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
@@ -145,7 +146,8 @@ aw9523_err_t aw9523_set_led_current(aw9523_t *dev, aw9523_port_t port,
 aw9523_err_t aw9523_set_interrupt_enable(aw9523_t *dev, aw9523_port_t port,
                                          uint8_t mask);
 
-/** Software reset: write reset sequence to CTL register.
+/** Software reset: write 00H to SW_RSTN (7FH). Every register returns to its
+ *  default, so all pins become outputs at the Table 1 level set by AD1/AD0.
  *  @thread_safe: no @isr_safe: no */
 aw9523_err_t aw9523_reset(aw9523_t *dev);
 
