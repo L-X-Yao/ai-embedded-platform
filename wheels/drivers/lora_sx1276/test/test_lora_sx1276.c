@@ -674,6 +674,25 @@ TEST(test_init_really_enters_lora_mode)
     ASSERT_EQ(mock_regs[0x01] & 0x80, 0x80);
 }
 
+TEST(test_init_calibrates_at_the_frequency_in_use)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(lora_init(&dev, &mock_spi, 868000000UL), LORA_OK);
+    /* the calibration runs in FSK mode, before the switch to LoRa */
+    ASSERT_EQ(mock_image_cal_seen, 1);
+}
+
+TEST(test_init_reports_a_stuck_calibration)
+{
+    mock_reset_all();
+    mock_image_cal_stuck = 1;
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(lora_init(&dev, &mock_spi, 868000000UL), LORA_ERR_TIMEOUT);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -705,4 +724,6 @@ TEST_MAIN("lora_sx1276")
     RUN(test_set_spreading_factor_all_valid);
     RUN(test_set_coding_rate_all_valid);
     RUN(test_init_really_enters_lora_mode);
+    RUN(test_init_calibrates_at_the_frequency_in_use);
+    RUN(test_init_reports_a_stuck_calibration);
 TEST_MAIN_END()

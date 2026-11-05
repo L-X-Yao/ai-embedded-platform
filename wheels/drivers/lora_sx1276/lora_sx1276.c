@@ -32,6 +32,7 @@
 #define REG_MODEM_CONFIG_2   0x1E
 #define REG_PAYLOAD_LEN      0x22
 #define REG_MODEM_CONFIG_3   0x26
+#define REG_IMAGE_CAL         0x3B
 #define REG_VERSION           0x42
 
 /* SPI write flag */
@@ -48,6 +49,10 @@
 #define IRQ_TX_DONE           0x08
 #define IRQ_RX_DONE           0x40
 #define IRQ_PAYLOAD_CRC_ERR  0x20
+
+/* RegImageCal bits */
+#define IMAGE_CAL_START       0x40
+#define IMAGE_CAL_RUNNING     0x20
 
 /* Version */
 #define SX1276_VERSION        0x12
@@ -90,6 +95,20 @@ static lora_err_t set_mode(const lora_spi_t *spi, uint8_t mode)
     return (actual == wanted) ? LORA_OK : LORA_ERR_SPI;
 }
 
+static lora_err_t calibrate_image(const lora_spi_t *spi)
+{
+    reg_write(spi, REG_IMAGE_CAL,
+              (uint8_t)(reg_read(spi, REG_IMAGE_CAL) | IMAGE_CAL_START));
+
+    for (int i = 0; i < POLL_MAX; i++) {
+        if (!(reg_read(spi, REG_IMAGE_CAL) & IMAGE_CAL_RUNNING)) {
+            return LORA_OK;
+        }
+        spi->delay_ms(spi->ctx, 1);
+    }
+    return LORA_ERR_TIMEOUT;
+}
+
 /* ---------- public API ---------- */
 
 lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
@@ -110,13 +129,6 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     spi->reset(spi->ctx);
     spi->delay_ms(spi->ctx, 10);
 
-    /* LongRangeMode can only change in Sleep, and reset leaves the chip in
-     * standby, so go to Sleep first and then set the bit. */
-    reg_write(spi, REG_OP_MODE, MODE_SLEEP);
-    lora_err_t err = set_mode(spi, MODE_SLEEP);
-    if (err != LORA_OK) return err;
-    spi->delay_ms(spi->ctx, 10);
-
     /* verify chip version */
     uint8_t ver = reg_read(spi, REG_VERSION);
     if (ver != SX1276_VERSION) {
@@ -124,8 +136,19 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     }
 
     /* set frequency */
-    err = lora_set_frequency(dev, freq_hz);
+    lora_err_t err = lora_set_frequency(dev, freq_hz);
     if (err != LORA_OK) return err;
+
+    /* Reset only calibrates at 434 MHz, and calibration runs in FSK mode */
+    err = calibrate_image(spi);
+    if (err != LORA_OK) return err;
+
+    /* LongRangeMode can only change in Sleep, and reset leaves the chip in
+     * standby, so go to Sleep first and then set the bit. */
+    reg_write(spi, REG_OP_MODE, MODE_SLEEP);
+    err = set_mode(spi, MODE_SLEEP);
+    if (err != LORA_OK) return err;
+    spi->delay_ms(spi->ctx, 10);
 
     /* FIFO base addresses: TX=0x00, RX=0x00 (use full 256-byte FIFO) */
     reg_write(spi, REG_FIFO_TX_BASE, 0x00);
