@@ -9,7 +9,7 @@
  *
  * I2C interface injected via callbacks. Implements the Bosch compensation
  * algorithm from the BMP388 datasheet (BST-BMP388-DS001).
- * Uses float compensation (datasheet Section 9.3).
+ * Uses float compensation (datasheet Sections 9.2 and 9.3).
  * Pure C99, no heap, fully reentrant per-context.
  */
 

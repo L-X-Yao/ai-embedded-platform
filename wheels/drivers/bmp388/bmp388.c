@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * Compensation algorithm from Bosch BMP388 datasheet (BST-BMP388-DS001),
- * Section 9.3 (floating point).
+ * Sections 9.2 and 9.3 (floating point).
  */
 
 #include "bmp388.h"
@@ -116,7 +116,7 @@ static bmp388_err_t read_calibration(bmp388_t *dev)
 }
 
 /*
- * Temperature compensation (datasheet Section 9.3).
+ * Temperature compensation (datasheet Section 9.2).
  * Returns compensated temperature in degrees C.
  * Also stores t_lin in dev for use by pressure compensation.
  */
