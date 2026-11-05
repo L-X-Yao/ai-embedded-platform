@@ -31,7 +31,9 @@
 
 /* ---------- command execution times, ms (Table 9) ---------- */
 
+#define STOP_PERIODIC_TIME_MS   500u
 #define REINIT_TIME_MS          30u
+#define SET_ALTITUDE_TIME_MS    1u
 
 /* ---------- internal helpers ---------- */
 
@@ -155,6 +157,7 @@ scd40_err_t scd40_stop_periodic(scd40_t *dev)
     {
         return SCD40_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, STOP_PERIODIC_TIME_MS);
     return SCD40_OK;
 }
 
@@ -243,6 +246,7 @@ scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters)
     {
         return SCD40_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, SET_ALTITUDE_TIME_MS);
     return SCD40_OK;
 }
 
