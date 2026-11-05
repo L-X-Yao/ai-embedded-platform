@@ -82,6 +82,10 @@ static void hw_load_coefficients(void)
     hw_regs[0x16] = 0x03;  /* c10[15:8] */
     hw_regs[0x17] = 0xE8;  /* c10[7:0] */
     /* 0x18-0x21 remain zero (c01..c30 = 0) */
+
+    /* TMP_COEF_SRCE: XXH in the manual, set per part. MEMS here; tests
+     * change it. */
+    hw_regs[0x28] = 0x80;
 }
 
 /* Let time pass: the ready bits rise and the coefficients appear */
