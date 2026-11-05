@@ -154,6 +154,31 @@ static void plant_data(uint32_t adc_p, uint32_t adc_t,
                                 (gas_range & 0x0F));
 }
 
+/*
+ * Floating point forms from manual p23 and p25 with the mock's calibration.
+ * Expected values come from here, not from the driver's integer code.
+ */
+static double manual_temp_c(uint32_t adc)
+{
+    const double t1 = 26041.0, t2 = 26285.0, t3 = -3.0;
+    double var1 = (((double)adc / 16384.0) - (t1 / 1024.0)) * t2;
+    double d = ((double)adc / 131072.0) - (t1 / 8192.0);
+    return (var1 + (d * d * (t3 * 16.0))) / 5120.0;
+}
+
+static double manual_humidity(uint16_t adc, double temp_c)
+{
+    const double h1 = 823.0, h2 = 1016.0, h3 = 0.0, h4 = 45.0;
+    const double h5 = 20.0, h6 = 120.0, h7 = -100.0;
+    double var1 = (double)adc - ((h1 * 16.0) + ((h3 / 2.0) * temp_c));
+    double var2 = var1 * ((h2 / 262144.0) *
+                          (1.0 + ((h4 / 16384.0) * temp_c) +
+                           ((h5 / 1048576.0) * temp_c * temp_c)));
+    double var3 = h6 / 16384.0;
+    double var4 = h7 / 2097152.0;
+    return var2 + ((var3 + (var4 * temp_c)) * var2 * var2);
+}
+
 /* ---------- tests ---------- */
 
 TEST(test_init_null)
@@ -247,7 +272,23 @@ TEST(test_read_tph)
     ASSERT_EQ(e, BME688_OK);
     ASSERT_TRUE(data.temperature_c > 0.0f && data.temperature_c < 60.0f);
     ASSERT_TRUE(data.pressure_pa > 30000.0f && data.pressure_pa < 130000.0f);
-    ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
+    ASSERT_NEAR(data.humidity_pct, 64.79f, 0.1f);
+}
+
+/* A range check cannot see a wrong scale, so compare with the manual */
+TEST(test_humidity_matches_manual)
+{
+    static const uint16_t adc[] = { 16025, 18000, 20000, 25000, 26000 };
+
+    for (unsigned i = 0; i < sizeof(adc) / sizeof(adc[0]); i++)
+    {
+        setup();
+        plant_data(415148, 500000, adc[i], 300, 3, true);
+        bme688_data_t data;
+        ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+        ASSERT_NEAR(data.humidity_pct,
+                    manual_humidity(adc[i], manual_temp_c(500000)), 0.1f);
+    }
 }
 
 TEST(test_gas_heater)
@@ -607,6 +648,7 @@ TEST_MAIN("bme688")
     RUN(test_calibration_loading);
     RUN(test_calibration_i2c_fail);
     RUN(test_read_tph);
+    RUN(test_humidity_matches_manual);
     RUN(test_gas_heater);
     RUN(test_oversampling_config);
     RUN(test_oversampling_invalid);

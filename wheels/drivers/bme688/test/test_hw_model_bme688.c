@@ -125,7 +125,9 @@ TEST(test_read_humidity_reasonable)
 
     bme688_data_t data;
     bme688_read(&dev, &data);
-    ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
+    /* floating point form on manual p25 with the model's calibration,
+     * hum_adc 20000 at 31.51 degC gives 28.01 %RH */
+    ASSERT_NEAR(data.humidity_pct, 28.01f, 0.1f);
 }
 
 TEST(test_read_gas_nonnegative)
