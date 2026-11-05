@@ -29,9 +29,7 @@ static void round_trip_request(fuzz_input_t *in) {
     want = fuzz_u8(in) % (MODE_CAP + 1);
     size_t mode_len = fuzz_take_str(in, mode, want);
 
-    // The builder keeps the first 127 bytes of a longer name.
-    size_t sent = name_len < TFTP_MAX_FILENAME ? name_len : TFTP_MAX_FILENAME - 1;
-    size_t need = 2 + sent + 1 + mode_len + 1;
+    size_t need = 2 + name_len + 1 + mode_len + 1;
     uint8_t *wire = malloc(need);
     if (!wire) return;
 
@@ -41,14 +39,13 @@ static void round_trip_request(fuzz_input_t *in) {
     if (build(wire, need - 1, filename, mode) >= 0) __builtin_trap();
 
     int len = build(wire, need, filename, mode);
-    if (name_len == 0) {
+    if (name_len == 0 || name_len >= TFTP_MAX_FILENAME) {
         if (len >= 0) __builtin_trap();
     } else {
         tftp_packet_t pkt;
         if (len != (int)need || tftp_parse(wire, need, &pkt) != TFTP_OK ||
             pkt.opcode != (write ? TFTP_OP_WRQ : TFTP_OP_RRQ) ||
-            strlen(pkt.u.rq.filename) != sent ||
-            memcmp(pkt.u.rq.filename, filename, sent) != 0 ||
+            strcmp(pkt.u.rq.filename, filename) != 0 ||
             strncmp(pkt.u.rq.mode, mode, sizeof(pkt.u.rq.mode) - 1) != 0) {
             __builtin_trap();
         }
