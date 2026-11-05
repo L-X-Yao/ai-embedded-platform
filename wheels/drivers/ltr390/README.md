@@ -47,6 +47,15 @@ ltr390_err_t ltr390_set_mode(ltr390_t *dev, ltr390_mode_t mode);
 - [x] Host (sim) — 2026-05-13
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Lite-On LTR-390UV-01, BNS-OD-FC002/A4, version 1.1. Not run on hardware.
+
+- **Matched:** Address, part ID check, register addresses, MAIN_CTRL values, resolution and gain fields, the 20-bit data read.
+- **Fixed:** `ltr390_init` wrote the measurement rate bits as 000 (25 ms) while its comment said they stayed at the default, 010 (100 ms). It now writes 010, as the manual's 0x22 example does, so 17, 16 and 13-bit modes sample every 100 ms instead of every 50, 25 and 25 ms.
+- **Still open:** There is no lux or UVI conversion and no call for measurement rate, interrupts, thresholds or software reset. Power-On status is never read, so a reset that restores the defaults goes unnoticed. The model leaves MAIN_STATUS, INT_CFG and THRES_UP at 0 instead of 0x20, 0x10 and 0xFF 0xFF 0x0F, never clears status on read and has no conversion time or software reset, so tests cannot show a stale read.
+- **Suspected:** `ltr390_read_als` and `ltr390_read_uvs` do not check the new-data bit, so a read straight after `ltr390_init` or `ltr390_set_mode` gets zero or old data. Each also succeeds in the other mode, returning stale data as current.
+
 ## Known issues
 
 None.
@@ -62,7 +71,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 10 pass (test_ltr390) + 35 pass (test_hw_model_ltr390)
+- Unit tests (sim): 10 pass (test_ltr390) + 36 pass (test_hw_model_ltr390)
 - HIL: N/A
 
 ## API convention deviations

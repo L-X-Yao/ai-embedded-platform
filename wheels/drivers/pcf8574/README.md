@@ -70,6 +70,13 @@ None. All configuration is runtime via `pcf8574_init()`.
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SCPS068K. Not run on hardware.
+
+- **Matched:** Addresses 0x20-0x27, one-byte port access, bit order, the 0xFF start state, pin writes through the cached latch, read timing.
+- **Still open:** The driver and README do not state the 100 kHz maximum SCL, so a bus shared with 400 kHz devices would exceed it. There is no INT support. The PCF8574A range 0x38-0x3F could not be checked, because this manual covers only the PCF8574. The model and mocks ignore `dev_addr`, so a wrong address cannot NACK in tests, and the mocks in `test_pcf8574.c` and `prop_pcf8574.c` return the latch as the pin level.
+
 ## Known issues
 
 None.

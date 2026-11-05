@@ -45,6 +45,15 @@ None. Address passed at runtime via `mcp4725_init()`.
 - [x] Host (sim) — 2026-05-05
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Microchip DS22039D. Not run on hardware.
+
+- **Matched:** Addresses, the Fast mode frame, command values, write data bytes, power-down codes, the 5-byte read length, RDY/BSY polarity, the EEPROM readback layout.
+- **Fixed:** `mcp4725_write_dac` and `mcp4725_write_eeprom` put PD at bits 3:2 instead of 2:1, so `MCP4725_PD_1K` and `MCP4725_PD_500K` gave 100 kOhm, `MCP4725_PD_100K` left the output on, and the EEPROM stored that mode. `mcp4725_read_status` used the wrong read layout, so `dac_value` came back about a quarter of the true code and `pd_mode` was wrong in every power-down mode. The model and both mocks copied these layouts.
+- **Still open:** The POR bit is not exposed. There is no General Call reset or wake-up and no voltage helper. `mcp4725_write_fast` always sends PD = 00, so it also wakes a powered-down DAC. `mcp4725_init` does not range-check the address. In the model an EEPROM write never goes busy and writes land while busy, so a write the device would ignore during the 25-50 ms EEPROM cycle cannot show up in tests. The model starts at 0, while a factory part starts at mid-scale, and it never loads the EEPROM into the DAC.
+- **Suspected:** `mcp4725_write_eeprom` returns at once, so a write in the next 25-50 ms is ignored while the driver reports success. `mcp4725_init` skips the General Call Reset the manual recommends, which matters on a VDD ramp slower than 1 V/ms.
+
 ## Known issues
 
 None.
@@ -59,7 +68,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 25/25 pass
+- Unit tests (sim): 28/28 pass
 - HIL: N/A
 
 ## API convention deviations
