@@ -16,6 +16,7 @@ static uint8_t mock_last_write[8];
 static int     mock_last_write_len;
 static int     mock_write_count;
 static int     mock_read_count;
+static uint32_t mock_delay_at_write;    /* delay total at the last write */
 
 static void mock_reset(void)
 {
@@ -24,6 +25,7 @@ static void mock_reset(void)
     mock_fail_at       = -1;
     mock_write_count   = 0;
     mock_read_count    = 0;
+    mock_delay_at_write = 0;
     mock_time_reset();
     memset(mock_read_data, 0, sizeof(mock_read_data));
     memset(mock_last_write, 0, sizeof(mock_last_write));
@@ -43,6 +45,7 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
     mock_write_count++;
+    mock_delay_at_write = mock_time_delay_total_ms;
     if (len <= (uint16_t)sizeof(mock_last_write))
     {
         memcpy(mock_last_write, data, len);
@@ -346,6 +349,15 @@ TEST(test_reset)
     ASSERT_EQ(mock_last_write_len, 1);
 }
 
+/* Si7021-A20 Rev. 1.2 Table 2 (p.5): 15 ms maximum "after issuing a software
+ * reset command", so the wait has to come after the write. */
+TEST(test_reset_waits_after_command)
+{
+    setup();
+    ASSERT_EQ(si7021_reset(&dev), SI7021_OK);
+    ASSERT_TRUE(mock_time_delay_total_ms - mock_delay_at_write >= 15u);
+}
+
 TEST(test_reset_i2c_fail)
 {
     setup();
@@ -461,6 +473,7 @@ TEST_MAIN("si7021")
     RUN(test_set_resolution);
     RUN(test_set_resolution_invalid);
     RUN(test_reset);
+    RUN(test_reset_waits_after_command);
     RUN(test_reset_i2c_fail);
     RUN(test_reset_null);
     RUN(test_read_serial);

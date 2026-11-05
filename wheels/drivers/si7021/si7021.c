@@ -28,6 +28,9 @@
 /* Measurement delay (ms) — worst case 14-bit: ~23 ms */
 #define MEASURE_DELAY_MS         25u
 
+/* Time to be ready after a software reset (ms) — datasheet maximum */
+#define RESET_DELAY_MS           15u
+
 /* User register resolution bits */
 #define USER_REG_RES0_BIT        0x01u
 #define USER_REG_RES1_BIT        0x80u
@@ -231,6 +234,7 @@ si7021_err_t si7021_reset(si7021_t *dev)
     {
         return SI7021_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, RESET_DELAY_MS);
     return SI7021_OK;
 }
 

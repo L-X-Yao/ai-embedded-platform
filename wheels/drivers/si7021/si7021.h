@@ -67,7 +67,8 @@ si7021_err_t si7021_read_both(si7021_t *dev, float *rh, float *temp_c);
 /** Set measurement resolution. @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_set_resolution(si7021_t *dev, si7021_resolution_t res);
 
-/** Software reset. @thread_safe: no @isr_safe: no */
+/** Software reset. Waits 15 ms for the sensor to be ready again.
+ *  @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_reset(si7021_t *dev);
 
 /** Read 64-bit electronic serial number (two 32-bit halves). @thread_safe: no @isr_safe: no */

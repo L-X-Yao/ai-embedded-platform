@@ -38,6 +38,9 @@
 #define SI_TCONV_RH_MS              23u
 #define SI_TCONV_TEMP_MS            11u
 
+/* Time to be ready after a software reset, also from Table 2 */
+#define SI_TRESET_MS                15u
+
 /* --- Simulated environment --- */
 typedef struct {
     float    true_temp_c;         /* simulated temperature */
@@ -47,6 +50,7 @@ typedef struct {
     uint32_t serial_b;            /* electronic serial number part B */
     uint32_t now_ms;              /* model time, advanced by delay_ms */
     uint32_t convert_done_ms;     /* reads are NACKed until this time */
+    uint32_t reset_done_ms;       /* commands are refused until this time */
     /* Command state */
     uint8_t  last_cmd;
     uint8_t  last_cmd2;           /* second byte of 2-byte commands */
@@ -113,6 +117,13 @@ static bool si7021_model_write(void *ctx, uint8_t dev_addr,
 
     if (len == 0) return true;
 
+    /* Table 2 (p.5) gives the time to be ready after a reset. The manual does
+     * not say how the part reacts before that, so refuse the command to make
+     * an early one show. */
+    if (m->now_ms < m->reset_done_ms) {
+        return false;
+    }
+
     uint8_t cmd = data[0];
 
     /* Handle 2-byte commands */
@@ -159,6 +170,7 @@ static bool si7021_model_write(void *ctx, uint8_t dev_addr,
     case SI_CMD_RESET:
         m->user_reg = SI_USER_REG_DEFAULT;
         m->reset_count++;
+        m->reset_done_ms = m->now_ms + SI_TRESET_MS;
         m->pending_response = SI_RESP_NONE;
         break;
     default:
