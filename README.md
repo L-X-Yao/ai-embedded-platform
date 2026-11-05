@@ -124,7 +124,7 @@ Gates every component passes before it is allowed into `wheels/`:
 | AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 | `tooling/audit/audit_sanitizer.py` |
 | Generated NULL-argument and boundary-value tests | every public API | `tooling/codegen/` |
 | ARM cross-compile, Cortex-M4 `-Os` | 259/259, per-component sizes in [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) | `tooling/audit/arm_size_audit.sh` |
-| libFuzzer harnesses | 25 targets (24 protocol parsers, `json_parser`, `modbus_rtu`) | `tooling/test/run_libfuzzer.sh` |
+| libFuzzer harnesses | 25 targets (24 protocol parsers plus `json_parser`) | `tooling/test/run_libfuzzer.sh` |
 | Property-based, differential and mutation tests | where the component shape allows | `tooling/test/` |
 | Pre-commit gate | build + test + audit must pass before a wheel commit is accepted | `make wheel-gate` |
 
