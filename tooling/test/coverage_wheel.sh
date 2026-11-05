@@ -96,8 +96,9 @@ while IFS= read -r exe; do
     [[ -n "$exe" ]] && "$exe" > /dev/null 2>&1 || true
 done <<< "$EXES"
 
-# Find ALL .gcda files for the wheel source (one per cmake target)
-mapfile -t GCDA_FILES < <(find "$BUILD_DIR" -name "${NAME}.c.gcda" 2>/dev/null)
+# Find ALL .gcda files for the wheel source (one per cmake target).
+# Sorted so the order is deterministic across filesystems.
+mapfile -t GCDA_FILES < <(find "$BUILD_DIR" -name "${NAME}.c.gcda" 2>/dev/null | sort)
 
 if [[ ${#GCDA_FILES[@]} -eq 0 ]]; then
     [[ $MACHINE -eq 1 ]] && echo "NO_GCDA" && exit 0
@@ -105,60 +106,44 @@ if [[ ${#GCDA_FILES[@]} -eq 0 ]]; then
     exit 0
 fi
 
-# Merge all gcda directories if multiple targets exist
-MERGED_DIR="$BUILD_DIR/_merged"
-if [[ ${#GCDA_FILES[@]} -gt 1 ]]; then
-    # Start with the first gcda's directory (has .gcno + .gcda)
-    FIRST_DIR=$(dirname "${GCDA_FILES[0]}")
-    cp -r "$FIRST_DIR" "$MERGED_DIR"
+# Run gcov per target and union the reports at line level.
+# gcov-tool merge is NOT used: it requires identical instrumentation across
+# targets, and wheels whose test executables compile the source with
+# different defines (e.g. CONTRACT_ENABLED only on the main test) make it
+# print "mismatched profiles" yet exit 0 with empty counters, which once
+# reported a 95%-covered wheel as 0%. See tooling/test/gcov_union.py.
+GCOV_REPORTS=()
+for gcda in "${GCDA_FILES[@]}"; do
+    d=$(dirname "$gcda")
+    (cd "$d" && gcov -b "${NAME}.c.gcda" > /dev/null 2>&1) || true
+    rep=$(find "$d" -maxdepth 1 -name "*${NAME}.c.gcov" 2>/dev/null | head -1 || true)
+    [[ -n "$rep" ]] && GCOV_REPORTS+=("$rep")
+done
 
-    # Merge remaining gcda directories into it
-    for ((i=1; i<${#GCDA_FILES[@]}; i++)); do
-        OTHER_DIR=$(dirname "${GCDA_FILES[$i]}")
-        TEMP_MERGED="$BUILD_DIR/_merge_tmp"
-        if gcov-tool merge "$MERGED_DIR" "$OTHER_DIR" -o "$TEMP_MERGED" 2>/dev/null; then
-            # gcov-tool merge only outputs .gcda; copy .gcno from original
-            cp "$MERGED_DIR"/*.gcno "$TEMP_MERGED/" 2>/dev/null || true
-            rm -rf "$MERGED_DIR"
-            mv "$TEMP_MERGED" "$MERGED_DIR"
-        else
-            rm -rf "$TEMP_MERGED" 2>/dev/null || true
-        fi
-    done
-    GCDA_DIR="$MERGED_DIR"
-else
-    GCDA_DIR=$(dirname "${GCDA_FILES[0]}")
+if [[ ${#GCOV_REPORTS[@]} -eq 0 ]]; then
+    [[ $MACHINE -eq 1 ]] && echo "NO_GCDA" && exit 0
+    echo "  gcov produced no report for ${NAME}.c"
+    exit 0
 fi
 
-# Run gcov with branch coverage (subshell keeps cwd stable)
-GCOV_OUT=$(cd "$GCDA_DIR" && gcov -b "${NAME}.c.gcda" 2>&1 || true)
-
-# Extract summary
-LINE_INFO=$(echo "$GCOV_OUT" | grep -A1 "File.*${NAME}.c'" | grep "Lines executed" | head -1)
-BRANCH_INFO=$(echo "$GCOV_OUT" | grep -A2 "File.*${NAME}.c'" | grep "Branches executed" | head -1)
+MERGED_DIR="$BUILD_DIR/_merged"
+mkdir -p "$MERGED_DIR"
+GCOV_FILE="$MERGED_DIR/${NAME}.c.gcov"
+UNION=$(python3 "$REPO/tooling/test/gcov_union.py" --out "$GCOV_FILE" "${GCOV_REPORTS[@]}")
+LINE_PCT=${UNION%% *}
+BRANCH_PCT=${UNION##* }
 
 if [[ $MACHINE -eq 1 ]]; then
-    LINE_PCT=$(echo "$LINE_INFO" | sed -n 's/.*Lines executed:\([0-9.]*\)%.*/\1/p')
-    BRANCH_PCT=$(echo "$BRANCH_INFO" | sed -n 's/.*Branches executed:\([0-9.]*\)%.*/\1/p')
     echo "${LINE_PCT:-0} ${BRANCH_PCT:-0}"
     exit 0
 fi
 
 echo ""
 echo "--- Results ---"
-if [[ -n "$LINE_INFO" ]]; then
-    echo "  $LINE_INFO"
-else
-    echo "  Lines: no data"
-fi
-if [[ -n "$BRANCH_INFO" ]]; then
-    echo "  $BRANCH_INFO"
-else
-    echo "  Branches: no data"
-fi
+echo "  Lines executed:${LINE_PCT}% (union of ${#GCOV_REPORTS[@]} test targets)"
+echo "  Branches taken at least once:${BRANCH_PCT}%"
 
-# Show uncovered lines from .gcov file
-GCOV_FILE=$(find "$GCDA_DIR" -name "*${NAME}.c.gcov" 2>/dev/null | head -1 || true)
+# Show uncovered lines from the merged .gcov file
 if [[ -n "$GCOV_FILE" && -f "$GCOV_FILE" ]]; then
     MISSED=$(grep -c '^\s*#####:' "$GCOV_FILE" 2>/dev/null || echo 0)
     if [[ $MISSED -gt 0 ]]; then
