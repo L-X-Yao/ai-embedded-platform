@@ -44,6 +44,13 @@ static bool read_regs(const bmp388_t *dev, uint8_t reg, uint8_t *buf, uint16_t l
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
+/* OSR codes run from 000 = x1 to 101 = x32, one below the enum.
+ * OSR has no code for skipping, so SKIP measures at x1 */
+static uint8_t osr_code(bmp388_oversampling_t os)
+{
+    return (os == BMP388_OVERSAMPLING_SKIP) ? 0u : (uint8_t)(os - 1);
+}
+
 /*
  * Parse NVM calibration bytes into float coefficients.
  * Raw NVM layout (21 bytes at 0x31-0x45):
@@ -190,7 +197,7 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
 
     /* Configure oversampling: OSR register 0x1C
      * bits [2:0] = osr_p, bits [5:3] = osr_t */
-    uint8_t osr = (uint8_t)(((cfg->osrs_t & 0x07) << 3) | (cfg->osrs_p & 0x07));
+    uint8_t osr = (uint8_t)((osr_code(cfg->osrs_t) << 3) | osr_code(cfg->osrs_p));
     if (!write_reg(dev, REG_OSR, osr))
     {
         return BMP388_ERR_I2C;
