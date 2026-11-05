@@ -321,6 +321,15 @@ TEST(test_build_connect_long_string_writes_nothing)
     free(big);
 }
 
+TEST(test_build_subscribe_qos3_rejected)
+{
+    /* MQTT 3.1.1 section 3.8.3: a requested QoS of 3 is a protocol violation. */
+    uint8_t buf[32];
+
+    ASSERT_EQ(mqtt_packet_build_subscribe(buf, sizeof(buf), 1, "t", 3), MQTT_PACKET_ERR_PARAM);
+    ASSERT_TRUE(mqtt_packet_build_subscribe(buf, sizeof(buf), 1, "t", 2) > 0);
+}
+
 TEST_MAIN("mqtt_packet")
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
@@ -345,5 +354,6 @@ TEST_MAIN("mqtt_packet")
     RUN(test_build_connect_string_exceeds_uint16_max);
     RUN(test_build_publish_over_protocol_limit);
     RUN(test_build_connect_long_string_writes_nothing);
+    RUN(test_build_subscribe_qos3_rejected);
 TEST_MAIN_END()
 
