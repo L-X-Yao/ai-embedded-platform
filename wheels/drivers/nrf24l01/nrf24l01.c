@@ -116,6 +116,19 @@ static uint8_t get_status(const nrf24_spi_t *s)
     return st;
 }
 
+/* W_REGISTER works only in power down or standby, so RX stops around it */
+static void leave_rx(const nrf24_t *dev)
+{
+    dev->spi->ce_low(dev->spi->ctx);
+}
+
+static void resume_rx(const nrf24_t *dev)
+{
+    if (dev->mode == NRF24_MODE_RX) {
+        dev->spi->ce_high(dev->spi->ctx);
+    }
+}
+
 /* ---------- API ---------- */
 
 nrf24_err_t nrf24_init(nrf24_t *dev, const nrf24_spi_t *spi,
@@ -177,6 +190,7 @@ nrf24_err_t nrf24_set_tx_addr(nrf24_t *dev, const uint8_t *addr,
     if (addr_len < 3 || addr_len > 5) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
+    leave_rx(dev);
 
     /* Set address width: register value = addr_len - 2 */
     write_reg(s, REG_SETUP_AW, (uint8_t)(addr_len - 2));
@@ -187,6 +201,7 @@ nrf24_err_t nrf24_set_tx_addr(nrf24_t *dev, const uint8_t *addr,
     /* Set RX_ADDR_P0 to same address for auto-ack */
     write_reg_multi(s, REG_RX_ADDR_P0, addr, addr_len);
 
+    resume_rx(dev);
     return NRF24_OK;
 }
 
@@ -203,6 +218,7 @@ nrf24_err_t nrf24_set_rx_addr(nrf24_t *dev, uint8_t pipe,
 
     const nrf24_spi_t *s = dev->spi;
     uint8_t reg = (uint8_t)(REG_RX_ADDR_P0 + pipe);
+    leave_rx(dev);
 
     if (pipe <= 1) {
         write_reg_multi(s, reg, addr, addr_len);
@@ -218,6 +234,7 @@ nrf24_err_t nrf24_set_rx_addr(nrf24_t *dev, uint8_t pipe,
     en = (uint8_t)(en | (uint8_t)(1U << pipe));
     write_reg(s, REG_EN_RXADDR, en);
 
+    resume_rx(dev);
     return NRF24_OK;
 }
 
@@ -226,6 +243,7 @@ nrf24_err_t nrf24_set_mode(nrf24_t *dev, nrf24_mode_t mode)
     if (!dev || !dev->spi) return NRF24_ERR_SPI;
 
     const nrf24_spi_t *s = dev->spi;
+    leave_rx(dev);
     uint8_t cfg = read_reg(s, REG_CONFIG);
 
     if (mode == NRF24_MODE_RX) {
@@ -236,13 +254,8 @@ nrf24_err_t nrf24_set_mode(nrf24_t *dev, nrf24_mode_t mode)
     write_reg(s, REG_CONFIG, cfg);
     dev->mode = mode;
 
-    if (mode == NRF24_MODE_RX) {
-        /* CE high to start listening */
-        s->ce_high(s->ctx);
-    } else {
-        s->ce_low(s->ctx);
-    }
-
+    /* CE high to start listening */
+    resume_rx(dev);
     return NRF24_OK;
 }
 
@@ -252,6 +265,7 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
     if (rate > NRF24_RATE_2MBPS) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
+    leave_rx(dev);
     uint8_t setup = read_reg(s, REG_RF_SETUP);
 
     /* Clear data rate bits */
@@ -272,6 +286,7 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
     }
 
     write_reg(s, REG_RF_SETUP, setup);
+    resume_rx(dev);
     return NRF24_OK;
 }
 
@@ -281,6 +296,7 @@ nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power)
     if (power > NRF24_POWER_0DBM) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
+    leave_rx(dev);
     uint8_t setup = read_reg(s, REG_RF_SETUP);
 
     /* Clear power bits [2:1], then set */
@@ -288,6 +304,7 @@ nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power)
     setup = (uint8_t)(setup | (uint8_t)((uint8_t)power << 1));
 
     write_reg(s, REG_RF_SETUP, setup);
+    resume_rx(dev);
     return NRF24_OK;
 }
 
