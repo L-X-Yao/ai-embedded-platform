@@ -267,6 +267,35 @@ TEST(test_4x_row_addressing)
     ASSERT_EQ(hd44780_set_cursor(&dev, 0, 4), HD44780_ERR_PARAM);
 }
 
+/* Commands sent, rebuilt from the EN-high writes: two nibbles each, after the four reset nibbles. */
+static int sent_commands(uint8_t *out, int cap)
+{
+    uint8_t nibbles[64];
+    int n = 0;
+    for (int i = 0; i < write_log_idx && n < 64; i++) {
+        if (write_log[i] & 0x04u) nibbles[n++] = (uint8_t)(write_log[i] >> 4);
+    }
+    int count = 0;
+    for (int i = 4; i + 1 < n && count < cap; i += 2) {
+        out[count++] = (uint8_t)(nibbles[i] << 4 | nibbles[i + 1]);
+    }
+    return count;
+}
+
+TEST(test_init_switches_the_display_on_last)
+{
+    uint8_t cmds[8];
+    mock_reset();
+    ASSERT_EQ(hd44780_init(&dev, &mock_i2c, HD44780_ADDR_PCF8574, 16, 2), HD44780_OK);
+
+    ASSERT_EQ(sent_commands(cmds, 8), 5);
+    ASSERT_EQ_HEX(cmds[0], 0x28);  /* function set */
+    ASSERT_EQ_HEX(cmds[1], 0x08);  /* display off */
+    ASSERT_EQ_HEX(cmds[2], 0x01);  /* clear */
+    ASSERT_EQ_HEX(cmds[3], 0x06);  /* entry mode */
+    ASSERT_EQ_HEX(cmds[4], 0x0C);  /* display on */
+}
+
 TEST_MAIN("hd44780")
     RUN(test_init_ok);
     RUN(test_init_20x4);
@@ -289,4 +318,5 @@ TEST_MAIN("hd44780")
     RUN(test_backlight_i2c_fail);
     RUN(test_write_char_sends_rs_high);
     RUN(test_4x_row_addressing);
+    RUN(test_init_switches_the_display_on_last);
 TEST_MAIN_END()
