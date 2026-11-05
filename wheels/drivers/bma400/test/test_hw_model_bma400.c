@@ -147,18 +147,15 @@ TEST(test_hw_set_range_updates_config1)
     ASSERT_EQ((model.hw.regs[BMA400_REG_ACC_CONFIG1] >> 6) & 0x03, 3);
 }
 
-TEST(test_hw_config1_mask)
+TEST(test_hw_config1_writable)
 {
     setup();
     bma400_t dev;
     bma400_init(&dev, &model_i2c, &default_cfg);
 
-    /* Writing to ACC_CONFIG1 should only affect bits [7:6] */
-    /* The driver writes (range << 6), so lower bits stay 0 from init.
-     * Verify mask enforcement: attempt to write full 0xFF via model */
+    /* ACC_CONFIG1 holds range, OSR and ODR, and all of them are writable */
     hw_model__write_reg(&model.hw, BMA400_REG_ACC_CONFIG1, 0xFF);
-    /* Only bits [7:6] should be writable */
-    ASSERT_EQ(model.hw.regs[BMA400_REG_ACC_CONFIG1] & 0x3F, 0x00);
+    ASSERT_EQ(model.hw.regs[BMA400_REG_ACC_CONFIG1], 0xFF);
 }
 
 /* --- power mode with hw model ------------------------------------------ */
@@ -212,7 +209,7 @@ TEST_MAIN("bma400_hw_model")
     RUN(test_hw_read_negative_accel);
     RUN(test_hw_inject_accel_mg);
     RUN(test_hw_set_range_updates_config1);
-    RUN(test_hw_config1_mask);
+    RUN(test_hw_config1_writable);
     RUN(test_hw_set_power_updates_config0);
     RUN(test_hw_config0_mask);
     RUN(test_hw_read_4g_range);

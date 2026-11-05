@@ -9,6 +9,7 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[0x00] = 0x90;  /* chip ID */
+    mock_regs[0x1A] = 0x49;  /* POR: 4g, OSR 0, 200 Hz */
 }
 
 static const bma400_i2c_t mock_i2c = {
@@ -208,8 +209,8 @@ TEST(test_set_range_runtime)
 {
     setup();
     ASSERT_EQ(bma400_set_range(&dev, BMA400_RANGE_8G), BMA400_OK);
-    /* Verify ACC_CONFIG1 was written: range=8g -> bits [7:6]=0b10 -> 0x80 */
-    ASSERT_EQ(mock_regs[0x1A], 0x80);
+    /* Verify ACC_CONFIG1 was written: range=8g -> bits [7:6]=0b10, ODR kept */
+    ASSERT_EQ(mock_regs[0x1A], 0x89);
 
     /* At +/-8g: 1g = 256 LSB */
     plant_accel(256, 0, 0);
@@ -363,6 +364,98 @@ TEST(test_12bit_minus_one)
     ASSERT_NEAR(data.x_mg, -0.977f, 0.1f);
 }
 
+static int write_order[2];
+static int write_count;
+
+static bool record_config_writes(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+{
+    if ((reg == 0x19 || reg == 0x1A) && write_count < 2) {
+        write_order[write_count++] = reg;
+    }
+    return mock_i2c_write_reg(ctx, addr, reg, val);
+}
+
+static bool drop_config1_write(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+{
+    if (reg == 0x1A) {
+        return true;
+    }
+    return mock_i2c_write_reg(ctx, addr, reg, val);
+}
+
+TEST(test_init_keeps_odr)
+{
+    bma400_cfg_t cfg = { .addr = BMA400_ADDR_LOW, .range = BMA400_RANGE_8G,
+                         .power = BMA400_POWER_NORMAL };
+    mock_reset();
+    ASSERT_EQ(bma400_init(&dev, &mock_i2c, &cfg), BMA400_OK);
+
+    /* POR value 0x49 is range 4g, OSR 0, ODR 200 Hz. Only the range may change. */
+    ASSERT_EQ(mock_regs[0x1A], 0x89);
+}
+
+TEST(test_set_range_keeps_odr)
+{
+    setup();
+    ASSERT_EQ(bma400_set_range(&dev, BMA400_RANGE_16G), BMA400_OK);
+    ASSERT_EQ(mock_regs[0x1A] & 0x3F, 0x09);
+}
+
+TEST(test_init_sets_range_before_power)
+{
+    static const bma400_i2c_t i2c = {
+        .write_reg = record_config_writes,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = NULL,
+        .ctx       = NULL,
+    };
+    bma400_cfg_t cfg = { .addr = BMA400_ADDR_LOW, .range = BMA400_RANGE_2G,
+                         .power = BMA400_POWER_LOW_POWER };
+    mock_reset();
+    write_count = 0;
+
+    ASSERT_EQ(bma400_init(&dev, &i2c, &cfg), BMA400_OK);
+    ASSERT_EQ(write_order[0], 0x1A);
+    ASSERT_EQ(write_order[1], 0x19);
+}
+
+TEST(test_set_range_detects_dropped_write)
+{
+    static const bma400_i2c_t i2c = {
+        .write_reg = drop_config1_write,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = NULL,
+        .ctx       = NULL,
+    };
+    setup();
+    float before = dev.sensitivity;
+    dev.i2c = &i2c;
+
+    ASSERT_EQ(bma400_set_range(&dev, BMA400_RANGE_16G), BMA400_ERR_I2C);
+    ASSERT_TRUE(dev.sensitivity == before);
+}
+
+TEST(test_read_in_sleep_is_rejected)
+{
+    bma400_data_t data;
+    setup();
+    ASSERT_EQ(bma400_set_power(&dev, BMA400_POWER_SLEEP), BMA400_OK);
+    ASSERT_EQ(bma400_read(&dev, &data), BMA400_ERR_PARAM);
+}
+
+TEST(test_read_after_failed_init_is_rejected)
+{
+    bma400_cfg_t cfg = { .addr = BMA400_ADDR_LOW, .range = BMA400_RANGE_2G,
+                         .power = BMA400_POWER_NORMAL };
+    bma400_data_t data;
+    bma400_t d;
+    mock_reset();
+    mock_regs[0x00] = 0x00; /* wrong chip ID */
+
+    ASSERT_EQ(bma400_init(&d, &mock_i2c, &cfg), BMA400_ERR_ID);
+    ASSERT_EQ(bma400_read(&d, &data), BMA400_ERR_PARAM);
+}
+
 TEST_MAIN("bma400")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -392,4 +485,10 @@ TEST_MAIN("bma400")
     RUN(test_12bit_max_positive);
     RUN(test_12bit_max_negative);
     RUN(test_12bit_minus_one);
+    RUN(test_init_keeps_odr);
+    RUN(test_set_range_keeps_odr);
+    RUN(test_init_sets_range_before_power);
+    RUN(test_set_range_detects_dropped_write);
+    RUN(test_read_in_sleep_is_rejected);
+    RUN(test_read_after_failed_init_is_rejected);
 TEST_MAIN_END()

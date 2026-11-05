@@ -21,6 +21,10 @@
 #define REG_ACC_CONFIG0  0x19u  /* power mode bits [1:0] */
 #define REG_ACC_CONFIG1  0x1Au  /* range bits [7:6] */
 
+#define ACC_RANGE_MASK       0xC0u
+#define ACC_RANGE_SHIFT      6u
+#define MODE_CHANGE_WAIT_MS  10u
+
 /* ---------- sensitivity: LSB per g for each range ---------- */
 static const float range_sensitivity[] = {
     1024.0f,    /* +/-2g  */
@@ -58,6 +62,37 @@ static int16_t sign_extend_12(uint8_t lo, uint8_t hi)
 
 /* ---------- public API ---------- */
 
+/* ACC_CONFIG1 also holds OSR and ODR, so only the range bits may change. The
+ * read back catches a write the chip dropped, which would otherwise leave every
+ * reading scaled for the wrong range. */
+static bma400_err_t write_range(const bma400_t *dev, bma400_range_t range)
+{
+    uint8_t config1 = 0;
+    if (!read_regs(dev, REG_ACC_CONFIG1, &config1, 1))
+        return BMA400_ERR_I2C;
+
+    config1 = (uint8_t)((config1 & (uint8_t)~ACC_RANGE_MASK) |
+                        ((unsigned)range << ACC_RANGE_SHIFT));
+    if (!write_reg(dev, REG_ACC_CONFIG1, config1))
+        return BMA400_ERR_I2C;
+
+    uint8_t check = 0;
+    if (!read_regs(dev, REG_ACC_CONFIG1, &check, 1))
+        return BMA400_ERR_I2C;
+    return (check == config1) ? BMA400_OK : BMA400_ERR_I2C;
+}
+
+static bma400_err_t write_power(const bma400_t *dev, bma400_power_t mode)
+{
+    uint8_t config0 = (uint8_t)((unsigned)mode & 0x03u);
+    if (!write_reg(dev, REG_ACC_CONFIG0, config0))
+        return BMA400_ERR_I2C;
+
+    if (dev->i2c->delay_ms)
+        dev->i2c->delay_ms(dev->i2c->ctx, MODE_CHANGE_WAIT_MS);
+    return BMA400_OK;
+}
+
 bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
                          const bma400_cfg_t *cfg)
 {
@@ -79,15 +114,14 @@ bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
     if (id != BMA400_CHIP_ID)
         return BMA400_ERR_ID;
 
-    /* Set power mode: ACC_CONFIG0 bits [1:0] */
-    uint8_t config0 = (uint8_t)((unsigned)cfg->power & 0x03u);
-    if (!write_reg(dev, REG_ACC_CONFIG0, config0))
-        return BMA400_ERR_I2C;
+    /* Configure first: the datasheet allows little in low power mode */
+    bma400_err_t err = write_range(dev, cfg->range);
+    if (err != BMA400_OK)
+        return err;
 
-    /* Set range: ACC_CONFIG1 bits [7:6] */
-    uint8_t config1 = (uint8_t)((unsigned)cfg->range << 6);
-    if (!write_reg(dev, REG_ACC_CONFIG1, config1))
-        return BMA400_ERR_I2C;
+    err = write_power(dev, cfg->power);
+    if (err != BMA400_OK)
+        return err;
 
     dev->sensitivity = range_sensitivity[cfg->range & 0x03u];
 
@@ -99,7 +133,11 @@ bma400_err_t bma400_read(bma400_t *dev, bma400_data_t *out)
 {
     if (!dev || !out)
         return BMA400_ERR_PARAM;
-    if (!dev->i2c)
+    if (!dev->i2c || dev->sensitivity <= 0.0f)
+        return BMA400_ERR_PARAM;
+
+    /* Sleep mode produces no data, the registers would only hold old samples */
+    if (dev->cfg.power == BMA400_POWER_SLEEP)
         return BMA400_ERR_PARAM;
 
     uint8_t buf[6];
@@ -129,9 +167,9 @@ bma400_err_t bma400_set_power(bma400_t *dev, bma400_power_t mode)
     if (!dev->i2c)
         return BMA400_ERR_PARAM;
 
-    uint8_t config0 = (uint8_t)((unsigned)mode & 0x03u);
-    if (!write_reg(dev, REG_ACC_CONFIG0, config0))
-        return BMA400_ERR_I2C;
+    bma400_err_t err = write_power(dev, mode);
+    if (err != BMA400_OK)
+        return err;
 
     dev->cfg.power = mode;
     return BMA400_OK;
@@ -144,9 +182,9 @@ bma400_err_t bma400_set_range(bma400_t *dev, bma400_range_t range)
     if (!dev->i2c)
         return BMA400_ERR_PARAM;
 
-    uint8_t config1 = (uint8_t)((unsigned)range << 6);
-    if (!write_reg(dev, REG_ACC_CONFIG1, config1))
-        return BMA400_ERR_I2C;
+    bma400_err_t err = write_range(dev, range);
+    if (err != BMA400_OK)
+        return err;
 
     dev->cfg.range = range;
     dev->sensitivity = range_sensitivity[range & 0x03u];

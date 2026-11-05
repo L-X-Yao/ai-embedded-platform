@@ -67,8 +67,8 @@ static void bma400_model_init(bma400_model_t *m)
     /* ACC_CONFIG0: only bits [1:0] are power_mode */
     hw_model_set_writable_mask(&m->hw, BMA400_REG_ACC_CONFIG0, 0x03);
 
-    /* ACC_CONFIG1: only bits [7:6] are acc_range */
-    hw_model_set_writable_mask(&m->hw, BMA400_REG_ACC_CONFIG1, 0xC0);
+    /* ACC_CONFIG1: range, OSR and ODR, all writable. POR is 4g at 200 Hz. */
+    hw_model_set_reset_value(&m->hw, BMA400_REG_ACC_CONFIG1, 0x49);
 
     /* Default "true" sensor output: 0g X, 0g Y, +1g Z
      * At +/-2g range, sensitivity = 1024 LSB/g, so 1g = 1024 raw. */
