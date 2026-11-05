@@ -604,6 +604,16 @@ TEST(test_transport_claiming_too_much_is_refused)
     ASSERT_EQ(write_called, 0);
 }
 
+TEST(test_empty_image_is_refused)
+{
+    mock_reset();
+    mock_new_size = 0;
+    ASSERT_EQ(ota_manager_init(&mgr, &test_ops, "1.0.0"), OTA_MGR_OK);
+
+    ASSERT_EQ(ota_manager_check(&mgr), OTA_MGR_ERR_DOWNLOAD);
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
+}
+
 TEST_MAIN("ota_manager")
     RUN(test_init_valid);
     RUN(test_init_null_mgr);
@@ -639,4 +649,5 @@ TEST_MAIN("ota_manager")
     RUN(test_reset_then_restart);
     RUN(test_last_chunk_stays_inside_the_image);
     RUN(test_transport_claiming_too_much_is_refused);
+    RUN(test_empty_image_is_refused);
 TEST_MAIN_END()
