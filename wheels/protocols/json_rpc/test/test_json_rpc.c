@@ -291,6 +291,30 @@ TEST(test_error_code_enum)
     ASSERT_EQ(-2, (int)JSON_RPC_ERR_OVERFLOW);
 }
 
+TEST(test_extract_id_limits)
+{
+    const char *max = "{\"id\":2147483647}";
+    const char *min = "{\"id\":-2147483648}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(max, strlen(max), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 2147483647);
+    ASSERT_EQ(json_rpc_extract_id(min, strlen(min), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, -2147483647 - 1);
+}
+
+TEST(test_extract_id_overflow)
+{
+    const char *over = "{\"id\":2147483648}";
+    const char *under = "{\"id\":-2147483649}";
+    const char *huge = "{\"id\":99999999999999999999}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(over, strlen(over), &id), JSON_RPC_ERR_OVERFLOW);
+    ASSERT_EQ(json_rpc_extract_id(under, strlen(under), &id), JSON_RPC_ERR_OVERFLOW);
+    ASSERT_EQ(json_rpc_extract_id(huge, strlen(huge), &id), JSON_RPC_ERR_OVERFLOW);
+}
+
 TEST_MAIN("json_rpc")
     RUN(test_build_request_with_params);
     RUN(test_build_request_no_params);
@@ -321,4 +345,6 @@ TEST_MAIN("json_rpc")
     RUN(test_roundtrip_error);
     RUN(test_standard_error_codes);
     RUN(test_error_code_enum);
+    RUN(test_extract_id_limits);
+    RUN(test_extract_id_overflow);
 TEST_MAIN_END()

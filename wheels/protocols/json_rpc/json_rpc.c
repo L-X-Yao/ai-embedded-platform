@@ -186,19 +186,21 @@ json_rpc_err_t json_rpc_extract_id(const char *json, size_t len,
     if (val >= end) return JSON_RPC_ERR_PARAM;
 
     /* Parse integer value (possibly negative) */
-    int32_t sign = 1;
+    int64_t sign = 1;
     if (*val == '-') {
         sign = -1;
         val++;
     }
     if (val >= end || *val < '0' || *val > '9') return JSON_RPC_ERR_PARAM;
 
-    int32_t result = 0;
+    int64_t limit = (sign < 0) ? (int64_t)INT32_MAX + 1 : INT32_MAX;
+    int64_t result = 0;
     while (val < end && *val >= '0' && *val <= '9') {
         result = result * 10 + (*val - '0');
+        if (result > limit) return JSON_RPC_ERR_OVERFLOW;
         val++;
     }
 
-    *id = sign * result;
+    *id = (int32_t)(sign * result);
     return JSON_RPC_OK;
 }
