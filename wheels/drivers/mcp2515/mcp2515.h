@@ -45,7 +45,7 @@ typedef enum {
     MCP2515_SPEED_125KBPS  = 0,
     MCP2515_SPEED_250KBPS  = 1,
     MCP2515_SPEED_500KBPS  = 2,
-    MCP2515_SPEED_1MBPS    = 3,
+    MCP2515_SPEED_1MBPS    = 3,   /* refused: needs a faster oscillator */
 } mcp2515_speed_t;
 
 /* ---------- CAN message ---------- */
@@ -110,7 +110,7 @@ mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num,
 /** Read status register (quick poll: TX/RX flags). */
 uint8_t mcp2515_read_status(mcp2515_t *dev);
 
-/** Read error counter byte (TEC high nibble, REC low nibble from EFLG). */
+/** Read the EFLG error flag byte. */
 uint8_t mcp2515_read_errors(mcp2515_t *dev);
 
 #ifdef __cplusplus

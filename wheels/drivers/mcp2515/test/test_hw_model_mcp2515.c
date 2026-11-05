@@ -109,11 +109,7 @@ TEST(test_cnf_1mbps)
 {
     setup();
     mcp2515_t dev;
-    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_1MBPS);
-
-    ASSERT_EQ(model.hw.regs[MCP_REG_CNF1], 0x00);
-    ASSERT_EQ(model.hw.regs[MCP_REG_CNF2], 0x80);
-    ASSERT_EQ(model.hw.regs[MCP_REG_CNF3], 0x00);
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_1MBPS), MCP2515_ERR_PARAM);
 }
 
 /* --- 5. TX buffer load and send --- */

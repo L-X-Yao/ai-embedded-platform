@@ -92,7 +92,7 @@ None.
 ## Features
 
 - Hardware reset + automatic config mode entry
-- Four CAN bus speeds: 125 kbps, 250 kbps, 500 kbps, 1 Mbps (8 MHz crystal)
+- Three CAN bus speeds: 125 kbps, 250 kbps, 500 kbps (8 MHz crystal)
 - Standard (11-bit) and extended (29-bit) frame support
 - RTR frame support
 - TX buffer busy detection
