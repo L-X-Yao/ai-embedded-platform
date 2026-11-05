@@ -233,6 +233,18 @@ TEST(test_fuzz)
     }
 }
 
+TEST(test_encode_rejects_payload_len_past_array)
+{
+    crsf_frame_t frame;
+    uint8_t buf[256];
+    size_t out_len = 0;
+
+    memset(&frame, 0, sizeof(frame));
+    frame.payload_len = CRSF_MAX_FRAME_SIZE + 1;
+
+    ASSERT_EQ(crsf_encode_frame(&frame, buf, sizeof(buf), &out_len), CRSF_ERR_OVERFLOW);
+}
+
 TEST_MAIN("crsf")
     RUN(test_crc8_empty);
     RUN(test_crc8_known);
@@ -254,4 +266,5 @@ TEST_MAIN("crsf")
     RUN(test_full_roundtrip);
     RUN(test_error_codes);
     RUN(test_fuzz);
+    RUN(test_encode_rejects_payload_len_past_array);
 TEST_MAIN_END()
