@@ -201,8 +201,8 @@ TEST(test_read_voltage_midscale)
     float v;
     mcp3008_err_t e = mcp3008_read_voltage(&dev, 0, 3.3f, &v);
     ASSERT_EQ(e, MCP3008_OK);
-    /* 512 * 3.3 / 1023 = 1.6520... */
-    ASSERT_NEAR(v, 1.652f, 0.01f);
+    /* DS21295D Equation 4-2: code = 1024 x VIN / VREF, so 512 is VREF / 2 */
+    ASSERT_NEAR(v, 1.65f, 0.0005f);
 }
 
 TEST(test_read_voltage_fullscale)
@@ -213,7 +213,8 @@ TEST(test_read_voltage_fullscale)
     float v;
     mcp3008_err_t e = mcp3008_read_voltage(&dev, 0, 3.3f, &v);
     ASSERT_EQ(e, MCP3008_OK);
-    ASSERT_NEAR(v, 3.3f, 0.001f);
+    /* Equation 4-1: 1 LSB = VREF / 1024, and 3FFh sits 1 LSB below VREF */
+    ASSERT_NEAR(v, 3.3f - 3.3f / 1024.0f, 0.0005f);
 }
 
 TEST(test_read_voltage_vref_zero)
