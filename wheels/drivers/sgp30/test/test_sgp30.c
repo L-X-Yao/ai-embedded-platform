@@ -143,16 +143,30 @@ TEST(test_init_null_i2c)
 
 TEST(test_init_null_write_fn)
 {
-    sgp30_i2c_t bad = { .write = NULL, .read = mock_read, .ctx = NULL };
+    sgp30_i2c_t bad = { .write = NULL, .read = mock_read,
+                        .delay_ms = mock_delay_ms_u16, .ctx = NULL };
     sgp30_t d;
     ASSERT_EQ(sgp30_init(&d, &bad), SGP30_ERR_PARAM);
 }
 
 TEST(test_init_null_read_fn)
 {
-    sgp30_i2c_t bad = { .write = mock_write, .read = NULL, .ctx = NULL };
+    sgp30_i2c_t bad = { .write = mock_write, .read = NULL,
+                        .delay_ms = mock_delay_ms_u16, .ctx = NULL };
     sgp30_t d;
     ASSERT_EQ(sgp30_init(&d, &bad), SGP30_ERR_PARAM);
+}
+
+TEST(test_init_null_delay_fn)
+{
+    /* p8: "When the measurement is in progress, no communication with the
+     * sensor is possible", so a HAL with no delay cannot work. */
+    mock_reset();
+    sgp30_i2c_t bad = { .write = mock_write, .read = mock_read,
+                        .delay_ms = NULL, .ctx = NULL };
+    sgp30_t d;
+    ASSERT_EQ(sgp30_init(&d, &bad), SGP30_ERR_PARAM);
+    ASSERT_EQ(mock_last_write_len, 0);   /* iaq_init was not sent */
 }
 
 TEST(test_measure_iaq_ok)
@@ -481,6 +495,7 @@ TEST_MAIN("sgp30")
     RUN(test_init_null_i2c);
     RUN(test_init_null_write_fn);
     RUN(test_init_null_read_fn);
+    RUN(test_init_null_delay_fn);
     RUN(test_measure_iaq_ok);
     RUN(test_measure_iaq_high_values);
     RUN(test_measure_iaq_max_values);

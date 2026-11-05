@@ -123,7 +123,7 @@ sgp30_err_t sgp30_init(sgp30_t *dev, const sgp30_i2c_t *i2c)
     if (!dev || !i2c) {
         return SGP30_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read) {
+    if (!i2c->write || !i2c->read || !i2c->delay_ms) {
         return SGP30_ERR_PARAM;
     }
 
@@ -136,9 +136,7 @@ sgp30_err_t sgp30_init(sgp30_t *dev, const sgp30_i2c_t *i2c)
     }
 
     /* SGP30 needs 10ms after iaq_init before accepting commands */
-    if (i2c->delay_ms) {
-        i2c->delay_ms(i2c->ctx, 10);
-    }
+    i2c->delay_ms(i2c->ctx, 10);
 
     return SGP30_OK;
 }
@@ -154,9 +152,7 @@ sgp30_err_t sgp30_measure_iaq(sgp30_t *dev, sgp30_data_t *out)
     }
 
     /* SGP30 needs 12ms to complete measurement */
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, 12);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 12);
 
     /* Response: 2 words (eCO2 first, then TVOC), each with CRC */
     uint8_t data[4];
@@ -181,9 +177,7 @@ sgp30_err_t sgp30_get_baseline(sgp30_t *dev, sgp30_baseline_t *out)
         return SGP30_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, 10);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 10);
 
     /* Response: 2 words (eCO2 baseline first, then TVOC baseline) */
     uint8_t data[4];
@@ -217,9 +211,7 @@ sgp30_err_t sgp30_set_baseline(sgp30_t *dev, const sgp30_baseline_t *bl)
         return SGP30_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, 10);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 10);
 
     return SGP30_OK;
 }
@@ -234,9 +226,7 @@ sgp30_err_t sgp30_get_serial_id(sgp30_t *dev, sgp30_serial_t *out)
         return SGP30_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     /* Response: 3 words = 6 bytes serial */
     sgp30_err_t err = read_words(dev, out->id, 3);
@@ -263,9 +253,7 @@ sgp30_err_t sgp30_set_humidity(sgp30_t *dev, uint16_t abs_humidity_8_8)
         return SGP30_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, 10);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 10);
 
     return SGP30_OK;
 }
