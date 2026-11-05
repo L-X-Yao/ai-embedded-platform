@@ -77,6 +77,7 @@ TEST(test_init_ok)
 {
     ASSERT_EQ(init_ok(), AW9523_OK);
     /* After init: all pins input, GPIO mode, interrupts disabled, outputs cleared */
+    ASSERT_EQ(mock_regs[REG_CTL], 0x10);  /* V1.1.1 p.19: D[4]=1 is push-pull */
     ASSERT_EQ(mock_regs[REG_CONFIG_P0], 0xFF);
     ASSERT_EQ(mock_regs[REG_CONFIG_P1], 0xFF);
     ASSERT_EQ(mock_regs[REG_LED_MODE_P0], 0xFF);
@@ -110,6 +111,7 @@ TEST(test_init_soft_reset_comes_first)
     ASSERT_EQ(mock_regs[REG_DIM_BASE + 15], 0x00);
     /* It came first, so nothing init set was wiped */
     ASSERT_EQ(first_write_reg, REG_SW_RSTN);
+    ASSERT_EQ(mock_regs[REG_CTL], 0x10);
     ASSERT_EQ(mock_regs[REG_CONFIG_P0], 0xFF);
     ASSERT_EQ(mock_regs[REG_CONFIG_P1], 0xFF);
     ASSERT_EQ(mock_regs[REG_INT_P0], 0xFF);
@@ -129,6 +131,15 @@ TEST(test_init_i2c_fail_reset_write)
     /* ID read succeeds (op 0), soft reset write fails (op 1) */
     mock_fail_at = 1;
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, TEST_ADDR), AW9523_ERR_I2C);
+}
+
+TEST(test_init_i2c_fail_ctl_write)
+{
+    mock_reset();
+    /* ID read (op 0) and soft reset (op 1) succeed, CTL write fails (op 2) */
+    mock_fail_at = 2;
+    ASSERT_EQ(aw9523_init(&dev, &mock_i2c, TEST_ADDR), AW9523_ERR_I2C);
+    ASSERT_EQ(mock_regs[REG_CONFIG_P0], 0x00);  /* stopped before Config */
 }
 
 TEST(test_init_null_dev)
@@ -636,6 +647,7 @@ TEST_MAIN("aw9523")
     RUN(test_init_soft_reset_comes_first);
     RUN(test_init_i2c_fail);
     RUN(test_init_i2c_fail_reset_write);
+    RUN(test_init_i2c_fail_ctl_write);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_null_write_reg);
