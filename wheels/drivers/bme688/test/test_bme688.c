@@ -121,14 +121,14 @@ static void setup(void)
 }
 
 /*
- * Plant ADC data into mock registers matching code's 13-byte read from 0x1F.
+ * Plant ADC data into mock registers matching code's 15-byte read from 0x1F.
  * Data layout:
  *   0x1D = meas_status (new_data = bit 7, set separately)
  *   0x1F..0x21 = pressure (20-bit)
  *   0x22..0x24 = temperature (20-bit)
  *   0x25..0x26 = humidity (16-bit)
- *   0x2A = gas_r MSB
- *   0x2B = gas_r LSB[7:6] | gas_valid[5] | gas_range[3:0]
+ *   0x2C = gas_r MSB
+ *   0x2D = gas_r LSB[7:6] | gas_valid[5] | gas_range[3:0]
  */
 static void plant_data(uint32_t adc_p, uint32_t adc_t,
                        uint16_t adc_h, uint16_t adc_gas,
@@ -148,8 +148,8 @@ static void plant_data(uint32_t adc_p, uint32_t adc_t,
     mock_regs[0x25] = (uint8_t)(adc_h >> 8);
     mock_regs[0x26] = (uint8_t)(adc_h & 0xFF);
     /* gas: 10-bit ADC + valid + range */
-    mock_regs[0x2A] = (uint8_t)(adc_gas >> 2);
-    mock_regs[0x2B] = (uint8_t)(((adc_gas & 0x03) << 6) |
+    mock_regs[0x2C] = (uint8_t)(adc_gas >> 2);
+    mock_regs[0x2D] = (uint8_t)(((adc_gas & 0x03) << 6) |
                                 (gas_valid ? 0x20 : 0x00) |
                                 (gas_range & 0x0F));
 }
@@ -317,6 +317,19 @@ TEST(test_read_gas_invalid)
     ASSERT_EQ(e, BME688_OK);
     ASSERT_FALSE(data.gas_valid);
     ASSERT_EQ((long long)data.gas_resistance_ohm, 0);
+}
+
+/* Manual p42, p44: field 0 holds gas_r and its status at 0x2C and 0x2D */
+TEST(test_gas_status_from_field0)
+{
+    setup();
+    plant_data(415148, 500000, 25000, 300, 3, false);
+    mock_regs[0x2A] = 0xFF;  /* the BME680 locations, nothing on a BME688 */
+    mock_regs[0x2B] = 0xFF;
+
+    bme688_data_t data;
+    ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+    ASSERT_FALSE(data.gas_valid);
 }
 
 TEST(test_read_i2c_fail)
@@ -572,6 +585,7 @@ TEST_MAIN("bme688")
     RUN(test_oversampling_config);
     RUN(test_oversampling_invalid);
     RUN(test_read_gas_invalid);
+    RUN(test_gas_status_from_field0);
     RUN(test_read_i2c_fail);
     RUN(test_read_timeout);
     RUN(test_reset);

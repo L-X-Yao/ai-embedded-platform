@@ -10,7 +10,7 @@
  * - Soft reset via 0xE0 = 0xB6
  * - ctrl_hum (0x72), ctrl_meas (0x74), ctrl_gas1 (0x71), config (0x75)
  * - Forced measurement via ctrl_meas mode bits [1:0]
- * - Meas status at 0x1D, data at 0x1F..0x2B (13 bytes)
+ * - Meas status at 0x1D, field 0 data at 0x1F..0x2D (15 bytes)
  */
 
 #ifndef HW_MODEL_BME688_H
@@ -113,7 +113,7 @@ static void bme688_model_set_reference_calib(bme688_model_t *m)
     m->hw.reset_values[0x04] = 0x00;
 }
 
-/* Write ADC values into data registers (0x1F..0x2B) */
+/* Write ADC values into data registers (0x1F..0x2D) */
 static void bme688_model_set_data_regs(bme688_model_t *m)
 {
     /* press: 0x1F..0x21 (20-bit) */
@@ -127,19 +127,20 @@ static void bme688_model_set_data_regs(bme688_model_t *m)
     /* hum: 0x25..0x26 (16-bit, big-endian) */
     m->hw.regs[0x25] = (uint8_t)(m->true_hum_adc >> 8);
     m->hw.regs[0x26] = (uint8_t)(m->true_hum_adc & 0xFF);
-    /* padding: 0x27..0x29 */
+    /* padding: 0x27..0x2B */
     m->hw.regs[0x27] = 0; m->hw.regs[0x28] = 0; m->hw.regs[0x29] = 0;
-    /* gas: 0x2A = gas_r MSB, 0x2B = gas_r LSB + valid + stable + range.
+    m->hw.regs[0x2A] = 0; m->hw.regs[0x2B] = 0;
+    /* gas: 0x2C = gas_r MSB, 0x2D = gas_r LSB + valid + stable + range.
      * A gas conversion runs only with run_gas<5> of ctrl_gas_1 set (p40) */
     if (m->hw.regs[BME688_REG_CTRL_GAS1] & 0x20u) {
-        m->hw.regs[0x2A] = (uint8_t)(m->true_gas_adc >> 2);
-        m->hw.regs[0x2B] = (uint8_t)(((m->true_gas_adc & 0x03) << 6) |
+        m->hw.regs[0x2C] = (uint8_t)(m->true_gas_adc >> 2);
+        m->hw.regs[0x2D] = (uint8_t)(((m->true_gas_adc & 0x03) << 6) |
                                       (1u << 5) |  /* gas_valid_r = 1 */
                                       (1u << 4) |  /* heat_stab_r = 1 */
                                       (m->true_gas_range & 0x0F));
     } else {
-        m->hw.regs[0x2A] = 0;
-        m->hw.regs[0x2B] = 0;
+        m->hw.regs[0x2C] = 0;
+        m->hw.regs[0x2D] = 0;
     }
     /* meas_status: new_data = 1 */
     m->hw.regs[BME688_REG_MEAS_STATUS] = 0x80;
@@ -198,8 +199,8 @@ static void bme688_model_init(bme688_model_t *m)
     /* Meas status (read-only) */
     hw_model_set_readonly(&m->hw, BME688_REG_MEAS_STATUS);
 
-    /* Data registers 0x1F..0x2B (read-only, written by measurement) */
-    for (unsigned i = 0; i < 13; i++) {
+    /* Data registers 0x1F..0x2D (read-only, written by measurement) */
+    for (unsigned i = 0; i < 15; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(BME688_REG_DATA_START + i));
     }
 
