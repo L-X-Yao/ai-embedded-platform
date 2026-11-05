@@ -786,6 +786,21 @@ TEST(test_receive_stops_at_rx_timeout)
     ASSERT_TRUE(mock_delay_count < 5);
 }
 
+TEST(test_rssi_adds_a_negative_snr)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 868000000UL);
+
+    mock_regs[0x1A] = 100;
+    mock_regs[0x19] = (uint8_t)(int8_t)-40;  /* -10 dB */
+    ASSERT_EQ(lora_get_rssi(&dev), -157 + 100 - 10);
+
+    mock_regs[0x19] = 40;  /* +10 dB changes nothing */
+    ASSERT_EQ(lora_get_rssi(&dev), -157 + 100);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -825,4 +840,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_tx_power_sets_the_current_limit);
     RUN(test_send_waits_for_a_long_packet);
     RUN(test_receive_stops_at_rx_timeout);
+    RUN(test_rssi_adds_a_negative_snr);
 TEST_MAIN_END()

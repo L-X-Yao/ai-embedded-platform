@@ -456,7 +456,12 @@ int16_t lora_get_rssi(lora_t *dev)
     /* RSSI[dBm] = -157 + raw on the HF port (Band 1, from 862 MHz) */
     /* RSSI[dBm] = -164 + raw on the LF port */
     int16_t offset = (dev->frequency > LF_BAND_MAX_HZ) ? -157 : -164;
-    return offset + (int16_t)raw;
+    int16_t rssi = (int16_t)(offset + (int16_t)raw);
+
+    /* Below the noise floor the packet is weaker than RSSI alone says */
+    int8_t snr = (int8_t)reg_read(dev->spi, REG_PKT_SNR);
+    if (snr < 0) rssi = (int16_t)(rssi + snr / 4);
+    return rssi;
 }
 
 int8_t lora_get_snr(lora_t *dev)
