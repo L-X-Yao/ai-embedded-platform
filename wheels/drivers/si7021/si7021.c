@@ -74,10 +74,7 @@ static si7021_err_t measure_nohold(const si7021_t *dev, uint8_t cmd,
         return SI7021_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, MEASURE_DELAY_MS);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, MEASURE_DELAY_MS);
 
     uint8_t buf[3];
     if (!dev->i2c->read(dev->i2c->ctx, SI7021_DEV_ADDR, buf, 3))
@@ -100,7 +97,8 @@ si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c)
     {
         return SI7021_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read)
+    /* delay_ms is required: the sensor NACKs reads until a conversion ends */
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
     {
         return SI7021_ERR_PARAM;
     }

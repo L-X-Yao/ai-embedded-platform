@@ -49,7 +49,10 @@ typedef struct {
 
 #define SI7021_DEV_ADDR  0x40u
 
-/** Initialize device context. @thread_safe: no @isr_safe: no */
+/** Initialize device context. All of write, read and delay_ms are required:
+ *  a measurement waits on delay_ms, because the sensor NACKs the read until
+ *  the conversion ends. Returns SI7021_ERR_PARAM if one is missing.
+ *  @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c);
 
 /** Read relative humidity (%). @thread_safe: no @isr_safe: yes */

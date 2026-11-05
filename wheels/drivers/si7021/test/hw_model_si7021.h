@@ -33,6 +33,11 @@
 /* User register default (14-bit temp / 12-bit RH) */
 #define SI_USER_REG_DEFAULT         0x3Au
 
+/* Worst-case conversion times from Table 2 (p.5), rounded up to whole ms.
+ * An RH measurement also measures temperature: 12 ms + 10.8 ms. */
+#define SI_TCONV_RH_MS              23u
+#define SI_TCONV_TEMP_MS            11u
+
 /* --- Simulated environment --- */
 typedef struct {
     float    true_temp_c;         /* simulated temperature */
@@ -40,6 +45,8 @@ typedef struct {
     uint8_t  user_reg;            /* user register value */
     uint32_t serial_a;            /* electronic serial number part A */
     uint32_t serial_b;            /* electronic serial number part B */
+    uint32_t now_ms;              /* model time, advanced by delay_ms */
+    uint32_t convert_done_ms;     /* reads are NACKed until this time */
     /* Command state */
     uint8_t  last_cmd;
     uint8_t  last_cmd2;           /* second byte of 2-byte commands */
@@ -135,10 +142,12 @@ static bool si7021_model_write(void *ctx, uint8_t dev_addr,
         m->last_rh_raw = si7021_model_hum_to_raw(m->true_humidity_pct);
         m->last_temp_raw = si7021_model_temp_to_raw(m->true_temp_c);
         m->pending_response = SI_RESP_RH;
+        m->convert_done_ms = m->now_ms + SI_TCONV_RH_MS;
         m->measure_rh_count++;
         break;
     case SI_CMD_MEASURE_TEMP_NOHOLD:
         m->pending_response = SI_RESP_TEMP;
+        m->convert_done_ms = m->now_ms + SI_TCONV_TEMP_MS;
         m->measure_temp_count++;
         break;
     case SI_CMD_READ_TEMP_FROM_RH:
@@ -166,6 +175,12 @@ static bool si7021_model_read(void *ctx, uint8_t dev_addr,
 {
     (void)dev_addr;
     si7021_model_t *m = (si7021_model_t *)ctx;
+
+    /* p.20: "Device will NACK the slave address byte until conversion is
+     * complete." */
+    if (m->now_ms < m->convert_done_ms) {
+        return false;
+    }
 
     memset(data, 0xFF, len);
 
@@ -244,11 +259,12 @@ static bool si7021_model_read(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-/* Delay callback (no-op for model) */
+/* Delay callback: the only source of time in the model */
 __attribute__((unused))
 static void si7021_model_delay(void *ctx, uint32_t ms)
 {
-    (void)ctx; (void)ms;
+    si7021_model_t *m = (si7021_model_t *)ctx;
+    m->now_ms += ms;
 }
 
 static void si7021_model_init(si7021_model_t *m)
