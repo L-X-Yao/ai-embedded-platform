@@ -84,7 +84,8 @@ json_rpc_err_t json_rpc_extract_method(const char *json, size_t len,
                                         size_t *method_len);
 
 /** Extract the integer id from a JSON-RPC string.
- *  Returns JSON_RPC_OK on success, JSON_RPC_ERR_PARAM if not found.
+ *  Returns JSON_RPC_OK on success, JSON_RPC_ERR_PARAM if not found,
+ *  JSON_RPC_ERR_OVERFLOW if the value does not fit an int32_t.
  *  @thread_safe: yes  @isr_safe: no */
 json_rpc_err_t json_rpc_extract_id(const char *json, size_t len,
                                     int32_t *id);
