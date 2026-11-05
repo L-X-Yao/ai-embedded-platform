@@ -59,7 +59,8 @@ static void hw_model_inject_temp(float temp_c)
     /* Round to 9-bit boundary */
     raw = (int16_t)(raw & ~0x7F);
     lm75_mdl.temp[0] = (uint8_t)((uint16_t)raw >> 8);
-    lm75_mdl.temp[1] = (uint8_t)((uint16_t)raw & 0xFFu);
+    /* D0-D6 are undefined, so the model leaves them non-zero */
+    lm75_mdl.temp[1] = (uint8_t)(((uint16_t)raw & 0x80u) | 0x55u);
 }
 
 __attribute__((unused))

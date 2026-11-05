@@ -214,6 +214,18 @@ TEST(test_init_i2c_fail)
     ASSERT_EQ(lm75_init(&d, &mock_i2c), LM75_ERR_I2C);
 }
 
+TEST(test_read_ignores_the_undefined_low_bits)
+{
+    setup();
+
+    /* 25.0 C is 0x1900, and D0-D6 carry no data */
+    mock_regs[0x00] = 0x19;
+    mock_regs[0x01] = 0x7F;
+    float temp = 0.0f;
+    ASSERT_EQ(lm75_read_temp(&dev, &temp), LM75_OK);
+    ASSERT_NEAR(temp, 25.0f, 0.001f);
+}
+
 TEST_MAIN("lm75")
     RUN(test_init_ok);
     RUN(test_read_25c);
@@ -232,4 +244,5 @@ TEST_MAIN("lm75")
     RUN(test_zero_init_safety);
     RUN(test_error_codes);
     RUN(test_init_i2c_fail);
+    RUN(test_read_ignores_the_undefined_low_bits);
 TEST_MAIN_END()
