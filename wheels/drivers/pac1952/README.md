@@ -58,7 +58,7 @@ Checked on 2026-11-05 against Microchip DS20006539E. Not run on hardware.
 
 - **Matched:** CTRL, ACC_COUNT, VBUS, VSENSE and ID register addresses, register widths, VBUS format and LSB, current and power formulas.
 - **Fixed:** Product ID was 0x59, which matches no part; PAC1952-1 is 0x79 and PAC1952-2 is 0x7D. VSENSE was read as signed, but the default range is unipolar, so 25 mV read as 50 mV. `pac1952_set_sample_rate` wrote the GPIO_ALERT2 bits and ACC_COUNT; it now refuses. Removed the wrong VPOWER addresses.
-- **Still open:** REFRESH is at 0x00, not 0x1F, and needs a Send Byte plus a 1 ms wait. CTRL needs a Block Write and a REFRESH afterwards. The I2C address is fixed at 0x10, which is the ADDRSEL-to-GND case only.
+- **Still open:** REFRESH is at 0x00, not 0x1F, and needs a Send Byte plus a 1 ms wait. `pac1952_refresh` sends REFRESH_V with a data byte, where the manual allows a Send Byte only. CTRL needs a Block Write and a REFRESH afterwards. The I2C address is fixed at 0x10, which is the ADDRSEL-to-GND case only.
 
 ## Known issues
 

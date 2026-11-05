@@ -45,6 +45,15 @@ None. I2C address is fixed at 0x59.
 - [x] Host (sim) -- passed 2026-05-11
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sensirion SGP40 datasheet v1.2. Not run on hardware.
+
+- **Matched:** I2C address, command codes, word and CRC format, wait times, default compensation words.
+- **Fixed:** The self-test compared both result bytes although only the first counts, so a healthy sensor could fail `sgp40_init`. The comments called the default words compensation, which they turn off.
+- **Still open:** `hw_model_sgp40.h` is not compiled by any test.
+- **Suspected:** The first sample should be discarded when the Gas Index Algorithm is not used, and the driver does not say so.
+
 ## Known issues
 
 - Uses raw write/read I2C HAL (different from register-based drivers).

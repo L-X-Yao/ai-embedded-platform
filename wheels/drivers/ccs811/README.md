@@ -3,6 +3,8 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Not usable on hardware yet.** The HAL cannot send the address-only write that starts the application, and `ccs811_set_env_data` writes the wrong registers. See Datasheet check.
+
 Platform-agnostic driver for AMS CCS811 indoor air quality sensor.
 I2C interface injected via callbacks. Reads eCO2 (400-8192 ppm) and
 TVOC (0-1187 ppb). Implements boot sequence and drive mode configuration.
@@ -42,6 +44,15 @@ None. Drive mode and I2C address are runtime-configurable via `ccs811_cfg_t`.
 
 - [x] Host (sim) -- passed 2026-05-11
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
+
+## Datasheet check
+
+Checked on 2026-11-06 against ams CCS811 datasheet v1-00. Not run on hardware.
+
+- **Matched:** I2C addresses, HW_ID, register addresses, STATUS bits, drive mode codes, result byte order, the APP_VALID and FW_MODE checks.
+- **Fixed:** `ccs811_read` returned old values in the 250 ms raw mode, where the chip leaves ALG_RESULT_DATA alone. It now returns `CCS811_ERR_MODE`.
+- **Still open:** The HAL has no address-only write, so APP_START goes out with a data byte the manual does not allow. It has no multi-byte write either, so `ccs811_set_env_data` sends two single bytes, one to a register that does not exist, and its units disagree with the manual. Both need HAL changes. `hw_model_ccs811.h` is not compiled by any test and does not model the mailbox registers.
+- **Suspected:** A change to a slower mode should pass through idle for 10 minutes. The STATUS error bit is never read. APP_START is sent even when the chip is already in application mode. There is no wait after power-on.
 
 ## Known issues
 

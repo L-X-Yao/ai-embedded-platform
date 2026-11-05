@@ -44,6 +44,15 @@ None. All configuration is runtime via `veml7700_init()`, `veml7700_set_gain()`,
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Vishay 84286 rev 1.8. Not run on hardware.
+
+- **Matched:** Address, command codes, gain and integration time fields, shutdown bit, LSB-first word order.
+- **Fixed:** The base resolution was 0.0576 lux per count where the manual gives 0.0672, so every reading was 14.3 % low.
+- **Still open:** The mock in `test_veml7700.c` overlaps the ALS and WHITE registers.
+- **Suspected:** The driver does not wait one integration time after power-on or a setting change, so the next read can return an old sample.
+
 ## Known issues
 
 None.

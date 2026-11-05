@@ -40,6 +40,15 @@ None. Actuator type is runtime-configurable via `drv2605_set_mode()`.
 - [x] Host (sim) -- passed 2026-05-01
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SLOS854D (DRV2605L) and SLOS825E (DRV2605). Not run on hardware.
+
+- **Matched:** I2C address, device ID values, register addresses, MODE values, the actuator bit, the GO bit.
+- **Fixed:** `drv2605_set_realtime_value` never entered RTP mode, so the motor never ran. `drv2605_stop` and `drv2605_go` now leave RTP mode. `drv2605_set_actuator` now selects a ROM library to match the actuator. The init comment claimed a reset and standby that never happened. The model takes its reset values from Table 3.
+- **Still open:** The model keeps GO set until software clears it, while the chip clears it when playback ends.
+- **Suspected:** The DRV2605 sheet disagrees with itself on the default library, and init does not set one. An LRA runs closed-loop with no calibration path. init does not wait 250 us after power-up.
+
 ## Known issues
 
 - Only internal trigger and real-time modes are exercised. External trigger,
