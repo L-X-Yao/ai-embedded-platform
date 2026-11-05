@@ -15,6 +15,7 @@ static uint8_t mock_read_buf[3];
 static uint8_t mock_last_cmd;
 static int     mock_cmd_count;
 static int     mock_read_count;
+static uint32_t mock_wait_before_cmd;   /* delay total at the first command */
 
 static void mock_reset(void)
 {
@@ -25,6 +26,7 @@ static void mock_reset(void)
     mock_last_cmd   = 0;
     mock_cmd_count  = 0;
     mock_read_count = 0;
+    mock_wait_before_cmd = 0;
     mock_time_reset();
 }
 
@@ -40,6 +42,7 @@ static bool mock_write_cmd(void *ctx, uint8_t dev_addr, uint8_t cmd)
 {
     (void)ctx; (void)dev_addr;
     if (mock_should_fail()) return false;
+    if (mock_cmd_count == 0) mock_wait_before_cmd = mock_time_delay_total_ms;
     mock_last_cmd = cmd;
     mock_cmd_count++;
     return true;
@@ -282,6 +285,18 @@ TEST(test_init_delays_after_reset)
     ASSERT_TRUE(mock_time_delay_total_ms > 0);
 }
 
+/* HPC199_3 p.10: "After power up, the device needs at most 15ms ... No
+ * command should be sent before that time." p.12: "The soft reset takes less
+ * than 15ms." So init owes both waits, one on each side of the reset. */
+TEST(test_init_waits_before_first_command)
+{
+    mock_reset();
+    htu21d_t d;
+    ASSERT_EQ(htu21d_init(&d, &mock_i2c), HTU21D_OK);
+    ASSERT_TRUE(mock_wait_before_cmd >= 15u);
+    ASSERT_TRUE(mock_time_delay_total_ms >= 30u);
+}
+
 TEST(test_no_delay_hal_null)
 {
     /* delay_ms = NULL should not crash */
@@ -314,5 +329,6 @@ TEST_MAIN("htu21d")
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_init_delays_after_reset);
+    RUN(test_init_waits_before_first_command);
     RUN(test_no_delay_hal_null);
 TEST_MAIN_END()
