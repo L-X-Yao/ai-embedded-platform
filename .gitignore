@@ -57,26 +57,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# NuttX artifacts (inside _eval/)
-_eval/_compare/nuttx/.config
-_eval/_compare/nuttx/.config.old
-_eval/_compare/nuttx/Kconfig
-_eval/_compare/nuttx/boards/dummy/
-_eval/_compare/nuttx/staging/
-_eval/_compare/nuttx/.tmp_nuttx*
-_eval/_compare/nuttx/nuttx
-_eval/_compare/nuttx/nuttx.tgz
-_eval/_compare/nuttx/include/nuttx/config.h
-_eval/_compare/nuttx/sim-pac/
-_eval/_compare/apps/libapps.a
-_eval/_compare/apps/etctmp/
-
-# Ignore NuttX/Zephyr clones in _eval (kept as reference only, not versioned)
-# If we need to reproduce comparisons, we clone them fresh
-_eval/_compare/nuttx/
-_eval/_compare/zephyr/
-_eval/_compare/apps/
-
 # tooling generated
 tooling/patches/*.rej
 tooling/.vsf-upstream/
