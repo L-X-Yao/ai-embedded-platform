@@ -85,16 +85,15 @@ PROPERTY(config_variants, 10000) {
     PROP_ASSERT(err == PAC1952_OK);
 }
 
-/* --- current_sign_matches_vsense: current sign matches sense voltage sign --- */
-PROPERTY(current_sign_matches_vsense, 10000) {
+/* --- current_tracks_vsense: the default unipolar VSENSE reads as unsigned --- */
+PROPERTY(current_tracks_vsense, 10000) {
     mock_reset_chip();
     pac1952_t dev;
     pac1952_cfg_t cfg = { .sense_resistor_mohm = { 10.0f, 10.0f } };
     pac1952_init(&dev, &mock_i2c_hal, &cfg);
 
-    /* Random signed VSENSE for channel 0 */
-    int16_t raw_vs = (int16_t)ARBI_UINT16(seed);
-    uint16_t u = (uint16_t)raw_vs;
+    /* Random VSENSE for channel 0 */
+    uint16_t u = ARBI_UINT16(seed);
     mock_regs[REG_VSENSE1]     = (uint8_t)(u >> 8);
     mock_regs[REG_VSENSE1 + 1] = (uint8_t)(u & 0xFF);
     mock_regs[REG_VBUS1]       = 0x40; /* some non-zero VBUS */
@@ -104,11 +103,11 @@ PROPERTY(current_sign_matches_vsense, 10000) {
     pac1952_err_t err = pac1952_read_channel(&dev, 0, &ch);
     PROP_ASSERT(err == PAC1952_OK);
 
-    /* If VSENSE positive, current should be non-negative; if negative, non-positive */
-    if (raw_vs > 0) {
-        PROP_ASSERT(ch.current_ma >= 0.0f);
-    } else if (raw_vs < 0) {
-        PROP_ASSERT(ch.current_ma <= 0.0f);
+    /* Full scale is 100 mV, which is 10 A across 10 mOhm. */
+    PROP_ASSERT(ch.current_ma >= 0.0f);
+    PROP_ASSERT(ch.current_ma <= 10000.0f);
+    if (u > 0) {
+        PROP_ASSERT(ch.current_ma > 0.0f);
     }
 }
 
@@ -117,6 +116,6 @@ TEST_MAIN("pac1952 properties") {
     RUN(vbus_in_range);
     RUN(double_init_safe);
     RUN(config_variants);
-    RUN(current_sign_matches_vsense);
+    RUN(current_tracks_vsense);
 }
 TEST_MAIN_END()
