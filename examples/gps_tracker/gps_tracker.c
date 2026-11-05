@@ -202,6 +202,11 @@ static void sd_process_cmd(void)
         sd_mock.response_buf[4] = 0x00;
         sd_mock.resp_len = 5;
         break;
+    case 13:  /* CMD13: SEND_STATUS -- R2, no errors */
+        sd_mock.response_buf[0] = 0x00;
+        sd_mock.response_buf[1] = 0x00;
+        sd_mock.resp_len = 2;
+        break;
     case 17:  /* CMD17: READ_SINGLE_BLOCK */
         sd_mock.response_buf[0] = 0x00;
         sd_mock.resp_len = 1;

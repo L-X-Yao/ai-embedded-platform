@@ -16,6 +16,7 @@
 
 #define CMD0    0   /* GO_IDLE_STATE */
 #define CMD8    8   /* SEND_IF_COND */
+#define CMD13   13  /* SEND_STATUS */
 #define CMD17   17  /* READ_SINGLE_BLOCK */
 #define CMD24   24  /* WRITE_BLOCK */
 #define CMD55   55  /* APP_CMD prefix */
@@ -256,7 +257,13 @@ sd_spi_err_t sd_spi_write_block(sd_spi_t *sd, uint32_t block_addr,
     /* wait for card to finish programming */
     sd_spi_err_t err = wait_ready(h);
     deselect(h);
-    return err;
+    if (err != SD_SPI_OK) return err;
+
+    /* Errors during programming only show in the status (R2 response). */
+    r1 = send_cmd(h, CMD13, 0);
+    uint8_t status = h->xfer(h->ctx, 0xFF);
+    deselect(h);
+    return (r1 == 0x00 && status == 0x00) ? SD_SPI_OK : SD_SPI_ERR_WRITE;
 }
 
 sd_spi_card_type_t sd_spi_get_type(const sd_spi_t *sd)
