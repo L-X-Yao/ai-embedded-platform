@@ -269,6 +269,27 @@ TEST(test_gga_no_fix)
     ASSERT_EQ(d.satellites, 0);
 }
 
+TEST(test_rmc_non_finite_lat_lon_rejected)
+{
+    /* libFuzzer 2026-11-05: strtof("9e99") is inf and (int)(inf / 100.0f)
+     * is undefined behaviour. Out-of-range coordinates must parse to 0. */
+    nmea_parser_data_t d;
+    nmea_parser_data_init(&d);
+    nmea_parser_parse("$GPRMC,120000,A,9e99,N,01131.000,E,,,010126,,,A*37", &d);
+    ASSERT_NEAR(d.latitude_deg, 0.0f, 1e-6f);
+    ASSERT_NEAR(d.longitude_deg, 11.5166667f, 1e-4f);
+
+    nmea_parser_data_init(&d);
+    nmea_parser_parse("$GPRMC,120000,A,4807.038,N,1e40,E,,,010126,,,A*09", &d);
+    ASSERT_NEAR(d.latitude_deg, 48.1173f, 1e-4f);
+    ASSERT_NEAR(d.longitude_deg, 0.0f, 1e-6f);
+
+    nmea_parser_data_init(&d);
+    nmea_parser_parse("$GPRMC,120000,A,nan,N,inf,E,,,010126,,,A*47", &d);
+    ASSERT_NEAR(d.latitude_deg, 0.0f, 1e-6f);
+    ASSERT_NEAR(d.longitude_deg, 0.0f, 1e-6f);
+}
+
 TEST(test_rmc_empty_speed_course)
 {
     nmea_parser_data_t d;
@@ -335,6 +356,7 @@ TEST_MAIN("nmea_parser")
     RUN(test_max_latitude_longitude);
     RUN(test_year_boundary);
     RUN(test_gga_no_fix);
+    RUN(test_rmc_non_finite_lat_lon_rejected);
     RUN(test_rmc_empty_speed_course);
     RUN(test_alternate_talker_id);
     RUN(test_truncated_rmc);
