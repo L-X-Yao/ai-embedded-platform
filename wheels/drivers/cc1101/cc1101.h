@@ -32,6 +32,7 @@ typedef enum {
     CC1101_ERR_SPI      = -2,
     CC1101_ERR_ID       = -3,
     CC1101_ERR_TIMEOUT  = -4,
+    CC1101_ERR_CRC      = -5,
 } cc1101_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -60,20 +61,22 @@ typedef struct {
 /** Reset chip, verify PARTNUM/VERSION, enter idle. */
 cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal);
 
-/** Set carrier frequency in Hz. F_XOSC = 26 MHz. */
+/** Set carrier frequency in Hz. F_XOSC = 26 MHz.
+ *  Supported bands: 300-348, 387-464 and 779-928 MHz. */
 cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz);
 
-/** Set TX power (raw PATABLE byte). */
+/** Set TX power (raw PATABLE byte). 0x61-0x6F are not allowed. */
 cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value);
 
 /** Transmit packet. Writes to TX FIFO, strobes STX, polls for TX complete. */
 cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data, uint8_t len);
 
-/** Receive packet. Strobes SRX, polls for RX complete, reads RX FIFO. */
+/** Receive packet. Strobes SRX, polls for RX complete, reads RX FIFO.
+ *  Returns CC1101_ERR_CRC for a damaged packet. */
 cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len);
 
-/** Read last packet RSSI in half-dBm raw value. */
+/** Read the RSSI register in dBm. It freezes at sync word detection. */
 int16_t cc1101_get_rssi(cc1101_t *dev);
 
 /** Enter idle mode (SIDLE strobe). */
