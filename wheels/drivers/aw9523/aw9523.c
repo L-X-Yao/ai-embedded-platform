@@ -78,7 +78,7 @@ aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
 {
     if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
         return AW9523_ERR_PARAM;
-    if (dev_addr != 0x58 && dev_addr != 0x59)
+    if (dev_addr < 0x58 || dev_addr > 0x5B)
         return AW9523_ERR_PARAM;
 
     dev->i2c      = i2c;

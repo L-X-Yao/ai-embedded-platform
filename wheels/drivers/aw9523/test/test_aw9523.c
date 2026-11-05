@@ -109,11 +109,22 @@ TEST(test_init_addr_0x59)
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x59), AW9523_OK);
 }
 
+/* V1.1.1 p.16: the address is 1 0 1 1 0 AD1 AD0, so AD1 high is 0x5A/0x5B */
+TEST(test_init_addr_ad1_high)
+{
+    mock_reset();
+    ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x5A), AW9523_OK);
+    ASSERT_EQ(dev.dev_addr, 0x5A);
+    mock_reset();
+    ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x5B), AW9523_OK);
+    ASSERT_EQ(dev.dev_addr, 0x5B);
+}
+
 TEST(test_init_bad_addr)
 {
     mock_reset();
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x57), AW9523_ERR_PARAM);
-    ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x5A), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x5C), AW9523_ERR_PARAM);
     ASSERT_EQ(aw9523_init(&dev, &mock_i2c, 0x20), AW9523_ERR_PARAM);
 }
 
@@ -577,6 +588,7 @@ TEST_MAIN("aw9523")
     RUN(test_init_null_write_reg);
     RUN(test_init_null_read_regs);
     RUN(test_init_addr_0x59);
+    RUN(test_init_addr_ad1_high);
     RUN(test_init_bad_addr);
     /* direction */
     RUN(test_set_direction_output);
