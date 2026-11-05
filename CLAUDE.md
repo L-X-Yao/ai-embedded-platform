@@ -60,6 +60,7 @@ make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 完整策略见 **[ADR-010](docs/adr/010-adopt-opensource-before-reinvent.md)** + **[ADR-011](docs/adr/011-ecosystem-driven-wheel-building.md)**。
 
 - **不再等项目触发**——按"嵌入式常用"标准主动构建（ADR-011）
+- **2026-11-05 起暂停造新 wheel**：先把现有 wheel 做实，用户明确要求才开工
 - **查通用开源库**（jsmn / LittleFS / cJSON 等），能 vendor 就 vendor（ADR-010）
 - **不查 VSF**——VSF 组件绑定 VSF 内核，与我们的零依赖 wheel 无关
 
@@ -464,7 +465,7 @@ docs: update wheel count 222 to 227
 Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ 目录结构（docs/adr / wheels L0-L3 / vsf-addon / tooling/ci/patches）
 - ✅ 核心文档（philosophy / wheel-contract / api-conventions / ai-workflow / debugging-playbook）
-- ✅ 10 个 ADR（平台决策历史）
+- ✅ 11 个 ADR（平台决策历史）
 - ✅ tooling/ci/patches + apply.sh 骨架
 - ✅ vsf-addon 骨架
 - ✅ Claude Code 自动记忆（用户背景 + 战略决策 + feedback）
@@ -497,7 +498,8 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
 进行中：
-- 生态驱动 wheel 构建（ADR-011）：八批共 76 个新 wheel 已完成（第一批 8 + 第二批 20 + 第三批 8 + 第四批 8 + 第五批 8 + 第六批 8 + 第七批 8 + 第八批 8）
+- 现有 wheel 做实（2026-11-05 起）：补 fuzz 目标、逐颗对照手册；期间暂停造新 wheel
+- 生态驱动 wheel 构建（ADR-011）已暂停：八批共 76 个新 wheel 已完成（第一批 8 + 第二批 20 + 第三批 8 + 第四批 8 + 第五批 8 + 第六批 8 + 第七批 8 + 第八批 8）
 
 ## 下一步触发点（Sprint 0 已封版）
 
