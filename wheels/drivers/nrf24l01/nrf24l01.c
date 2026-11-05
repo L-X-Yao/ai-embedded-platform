@@ -73,7 +73,8 @@
 #endif
 
 #define CE_PULSE_US         10U
-#define POWER_ON_DELAY_US   1500U
+#define POWER_ON_DELAY_US   100000U  /* TPOR, up to 100 ms */
+#define PWR_UP_DELAY_US     1500U    /* Tpd2stby */
 
 /* ---------- internal helpers ---------- */
 
@@ -162,7 +163,7 @@ nrf24_err_t nrf24_init(nrf24_t *dev, const nrf24_spi_t *spi,
               CONFIG_PWR_UP | CONFIG_EN_CRC | CONFIG_CRCO);
 
     /* Startup delay after PWR_UP */
-    spi->delay_us(spi->ctx, POWER_ON_DELAY_US);
+    spi->delay_us(spi->ctx, PWR_UP_DELAY_US);
 
     /* Set channel */
     write_reg(spi, REG_RF_CH, channel);
