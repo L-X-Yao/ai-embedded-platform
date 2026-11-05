@@ -7,7 +7,7 @@ Platform-agnostic driver for QST QMC5883P digital magnetometer.
 
 ## Origin
 
-Extracted from `projects/flybox/src/drivers/mag/mag_driver.c`. Flybox retains soft I2C bit-bang (PA11/PA12 open-drain) + bus recovery + 3x retry wrapper.
+Reimplemented for the needs of an internal project. Soft I2C bit-bang, bus recovery and retry wrappers stay in the consumer.
 
 ## Why self-written?
 

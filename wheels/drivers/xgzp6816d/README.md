@@ -8,7 +8,7 @@ Platform-agnostic driver for the CFSensor XGZP6816D barometric pressure sensor
 
 ## Origin
 
-Extracted from `projects/flybox/src/drivers/baro/baro_driver.c` 2026-04-27.
+Reimplemented for the needs of an internal project, 2026-04-27.
 
 ## Why self-written?
 

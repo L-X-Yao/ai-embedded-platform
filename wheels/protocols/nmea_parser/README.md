@@ -8,7 +8,7 @@ Zero hardware dependency — feed null-terminated sentence strings, get structur
 
 ## Origin
 
-Extracted from `projects/flybox/src/app/gnss_task.c` (Air780EG GNSS NMEA handling).
+Reimplemented for the needs of an internal project (Air780EG GNSS NMEA handling).
 Decoupled: modem interaction, quality gating, filtering stay in the project; pure sentence parsing moves to this wheel.
 
 ## Why self-written?

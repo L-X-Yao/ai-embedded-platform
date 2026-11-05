@@ -7,7 +7,7 @@ Single HAL callback, zero hardware dependency, no dynamic allocation.
 
 ## Origin
 
-Extracted from common patterns in `projects/flybox/` (LED task) and `projects/drone_light/` (WS2812 control loop).
+Proactive build for common LED indicator patterns.
 Generalized into a reusable state machine with HAL callback injection.
 
 ## Why self-written?

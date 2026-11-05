@@ -7,7 +7,7 @@ Single HAL callback, zero hardware dependency, no dynamic allocation.
 
 ## Origin
 
-Extracted from common embedded button patterns. Proactive build for `projects/flybox/` and `projects/drone_light/` platform.
+Proactive build for common embedded button patterns.
 
 ## Why self-written?
 

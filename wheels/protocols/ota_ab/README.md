@@ -9,7 +9,7 @@ Flash operations injected via HAL callbacks — no hardware dependency.
 
 ## Origin
 
-Extracted from `projects/flybox/src/app/ota_task.c` + `projects/flybox/src/bsp/internal_flash.c`.
+Reimplemented for the needs of an internal project.
 Decoupled: HTTP download, modem interaction, FreeRTOS task scheduling stay in the project;
 pure slot management logic moves to this wheel.
 

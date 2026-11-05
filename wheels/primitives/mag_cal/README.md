@@ -8,7 +8,7 @@ Zero hardware dependency — feed samples in, get calibration parameters out.
 
 ## Origin
 
-Extracted from `projects/flybox/src/app/mag_cal.c` (QMC5883P magnetometer calibration).
+Reimplemented for the needs of an internal project (QMC5883P magnetometer calibration).
 Decoupled: FreeRTOS timing, flash persistence, LED indicators stay in the project;
 pure min/max algorithm moves to this wheel.
 
