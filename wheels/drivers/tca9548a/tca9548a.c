@@ -13,7 +13,9 @@
 
 /* Dummy register address — TCA9548A has no register map, but we use
  * the write_reg HAL callback which sends (addr, reg, val).  The chip
- * treats the first data byte as the control value regardless.         */
+ * keeps the last byte it receives, so on a write val wins.  The dummy
+ * is safe on writes only: on a read nothing follows it, so a HAL that
+ * sends reg first leaves 0x00 in the control register.                */
 #define REG_CTRL  0x00u
 
 /* ------------------------------------------------------------------ */
