@@ -175,8 +175,9 @@ shtc3_err_t shtc3_read(shtc3_t *dev, shtc3_data_t *out)
     uint16_t raw_t = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
     uint16_t raw_h = (uint16_t)((uint16_t)buf[3] << 8 | buf[4]);
 
-    out->temperature_c = -45.0f + 175.0f * (float)raw_t / 65535.0f;
-    float hum = 100.0f * (float)raw_h / 65535.0f;
+    /* Section 5.10: both formulas divide by 2^16, not 2^16 - 1 */
+    out->temperature_c = -45.0f + 175.0f * (float)raw_t / 65536.0f;
+    float hum = 100.0f * (float)raw_h / 65536.0f;
     if (hum < 0.0f) hum = 0.0f;
     if (hum > 100.0f) hum = 100.0f;
     out->humidity_pct = hum;
