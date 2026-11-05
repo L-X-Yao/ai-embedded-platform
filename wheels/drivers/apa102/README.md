@@ -40,6 +40,14 @@ void         apa102_clear(apa102_pixel_t *buf, uint16_t num_leds);
 - [x] Host (sim) — 2026-05-11
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against the Shenzhen LED Color Opto Electronic APA102 datasheet, which prints no document number or revision. The frame figure on p4 is an image, so it was read from the rendered page. Not run on hardware.
+
+- **Matched:** Start frame, LED frame header and BGR byte order, brightness 0-31, 8 bits per colour, an end frame of at least 32 one-bits.
+- **Still open:** VEN self-detection is not supported, which matters only where VEN is strapped on a bare IC. The HAL contract is unwritten: bits must go MSB first. `cs_low` and `cs_high` are mandatory although the part has no chip select, so a caller must supply stubs.
+- **Suspected:** `apa102_show` sends ceil(N/2) end-frame bytes, more than the manual's 32 bits above 8 LEDs, which looks like a slip of bytes for bits and costs about 10% more bus time on long strips. The model passes a frame with no end frame.
+
 ## Known issues
 
 None.

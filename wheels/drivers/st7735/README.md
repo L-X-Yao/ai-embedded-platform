@@ -49,6 +49,14 @@ None. Display dimensions fixed at 128x160 via ST7735_WIDTH/ST7735_HEIGHT.
 - [x] Host (sim) — passed 2026-05-12
 - [ ] ARM Cortex-M — not yet verified (uses injected SPI HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sitronix ST7735, V2.1, 2010-02-01. The rev 1.4 that this README and the model cite was not available. Not run on hardware.
+
+- **Matched:** All eight command codes, the 128x160 limits, CASET and RASET format, the reset and SLPOUT waits, D/CX and CSX use, RGB565 packing, MADCTL 0x00 as an RGB panel.
+- **Still open:** The model starts with normal mode off where the manual says Normal, clears MADCTL and COLMOD on a software reset, which the manual leaves unchanged, takes bytes with CSX high, and has no time base, so it cannot see a command sent inside a 120 ms wait. There is no GM=000 support, so a module wired for 132x162 memory cannot get its window offsets. MADCTL is fixed, so a BGR panel swaps red and blue. Every `st7735_write_pixels` sends RAMWR and returns to the window start, so a window must be filled in one call. Init turns the display on with frame memory still random, so garbage shows until the first fill. The HAL contract is unwritten: RESX low at least 10 us, SCL write cycle at least 66 ns, SPI4W strapped high. ST7735R and ST7735S parts have their own manuals, which were not checked.
+- **Suspected:** COLMOD is sent as 0x05 where one note asks for 55h, though the same page and p52 allow 0x05.
+
 ## Known issues
 
 - No rotation support (MADCTL fixed at 0x00).

@@ -42,6 +42,14 @@ None. Number of LEDs set at init time.
 - [x] Host (sim) -- 2026-05-11
 - [ ] Real hardware (SK6812 strip) -- not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Document No.: SPC / SK6812, Rev. No.: 01. Not run on hardware.
+
+- **Matched:** G, R, B colour order on the wire, a 100 us reset above the manual's minimum, reset after the data, no power-up sequence.
+- **Still open:** The HAL contract is unwritten: `send_data` must block until the last bit is out, send MSB first, meet the T0H/T1H/T0L/T1L timing and leave the line low, or a DMA send that returns early shortens the reset. There is no 24-bit mode. The header calls the part WorldSemi, which this manual does not show.
+- **Suspected:** The driver sends 4 bytes per LED, while this manual describes a 3-colour part taking 24 bits, so on that part every pixel after the first would be wrong. The RGBW variant the driver targets has no manual here.
+
 ## Known issues
 
 - Pixel buffer is caller-provided (no internal allocation).

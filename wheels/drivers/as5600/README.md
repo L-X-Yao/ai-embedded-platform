@@ -39,6 +39,15 @@ None. All configuration is runtime via API calls.
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against the ams AS5600 Datasheet [v1-06] 2018-Jun-20. Not run on hardware.
+
+- **Matched:** Address 0x36, the ZPOS, MANG, CONF, STATUS and RAW ANGLE addresses, STATUS bits, the 12-bit layout and byte order, the 360/4096 scale.
+- **Fixed:** `as5600_set_start_position` and `as5600_set_max_angle` overwrote blank bits 7:4 of 0x01 and 0x05, which may hold factory settings; they now read first and keep them. `as5600_set_max_angle` accepted 1 to 204, a range of 18 degrees or less.
+- **Still open:** Angle reads use RAW ANGLE, so ZPOS and MANG reach the OUT pin but never a value the driver returns. No CONF, MPOS, ZMCO, AGC or MAGNITUDE access. No burn commands, so ZPOS and MANG are lost at power-down. Init and angle reads ignore MD, so with no magnet they return OK and the caller must check `as5600_read_status`. The model does not rescale ANGLE and has no ZMCO or BURN behaviour.
+- **Suspected:** MANG may be writable only while ZMCO is 00, so a burned part could return OK and change nothing. The setters do not wait the 1 ms before a setting takes effect. Init does not wait the 10 ms power-up time.
+
 ## Known issues
 
 None.
@@ -53,7 +62,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 19 tests, all pass
+- Unit tests (sim): 24 tests, all pass
 - HIL: N/A
 
 ## API convention deviations

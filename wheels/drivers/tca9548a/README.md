@@ -44,6 +44,15 @@ None.
 
 - [x] Linux host (sim) -- passed 2026-05-01
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SCPS207H, May 2012, revised September 2024. Not run on hardware.
+
+- **Matched:** Addresses 0x70-0x77, the control byte, several channels at once, the 0x00 default, how writes work, no delay needed.
+- **Fixed:** The comments said the chip takes the first data byte and that reg=0x00 is a harmless dummy. It keeps the last byte, so the dummy is safe on writes only.
+- **Still open:** `tca9548a_get_channel` misbehaves on hardware. A normal register `read_regs` HAL, such as flybox's, sends the 0x00 register byte before reading, and the chip stores that byte as the control value: every channel switches off, the real mask is lost, and the call returns `TCA9548A_OK` with mask 0, which also goes into the cached mask. Do not call it on a live bus until the HAL has a raw read. The mock and the model both treat reg as a register number, so the tests pass and hide this. There is no RESET pin control, the manual's way out of a stuck downstream bus. The model does not turn channels on at STOP and has no NACK for a wrong address.
+- **Suspected:** `tca9548a_select`, `tca9548a_select_multi` and `tca9548a_disable_all` skip the bus when the cached mask matches, so after a RESET pulse or supply dip they can report success with the channel off, until `tca9548a_init` runs again.
+
 ## Known issues
 
 None.
