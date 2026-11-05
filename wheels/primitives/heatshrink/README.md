@@ -76,12 +76,13 @@ heatshrink_encoder_sink(&enc, data, data_len, &consumed);
 /* Signal end of input */
 heatshrink_encoder_finish(&enc);
 
-/* Drain output */
+/* Drain output: the call that returns POLL_EMPTY can still produce bytes */
 uint16_t produced;
-while (heatshrink_encoder_poll(&enc, out, out_cap, &produced)
-       == HEATSHRINK_POLL_MORE) {
+heatshrink_poll_res_t res;
+do {
+    res = heatshrink_encoder_poll(&enc, out, out_cap, &produced);
     /* process produced bytes in out[] */
-}
+} while (res == HEATSHRINK_POLL_MORE);
 ```
 
 ## Configuration (compile-time)
@@ -122,7 +123,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (7 tests)
+- Unit tests (sim): PASS (9 tests)
   - NULL/bad parameter rejection (encoder + decoder)
   - Empty input (finish with no data)
   - Round-trip: "Hello, World!" (short string)
@@ -130,6 +131,8 @@ cmake -GNinja -S . -B build && cmake --build build
   - Round-trip: 128 bytes pseudo-random (incompressible, expands slightly)
   - Streaming: feed/poll in small chunks (3-5 bytes)
   - Reset: encode partial, reset, encode new data, verify clean state
+  - Round-trip through 1-byte output chunks (tokens resume across polls)
+  - Round-trip of input larger than the window (the window restarts)
 - HIL: N/A (pure compute)
 
 ## API convention deviations
