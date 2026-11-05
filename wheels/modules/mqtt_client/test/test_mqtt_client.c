@@ -514,6 +514,17 @@ TEST(test_oversized_packet_is_skipped_whole)
     ASSERT_EQ(g_msg_len, 16 - 5);
 }
 
+TEST(test_broken_length_closes_the_session)
+{
+    uint8_t bad[] = { 0x30, 0xFF, 0xFF, 0xFF, 0xFF, 0x30, 0x03, 0x00, 0x01, 't' };
+    setup_connected();
+
+    ASSERT_EQ(mqtt_client_feed(&g_c, bad, sizeof(bad)), MQTT_CLIENT_ERR_PROTOCOL);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
+    ASSERT_EQ(g_evt_reason, 0xFD);
+    ASSERT_EQ(g_msg_count, 0);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -551,4 +562,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_subscribe_refuses_qos_it_cannot_serve);
     RUN(test_feed_keeps_bytes_past_the_buffer);
     RUN(test_oversized_packet_is_skipped_whole);
+    RUN(test_broken_length_closes_the_session);
 TEST_MAIN_END()
