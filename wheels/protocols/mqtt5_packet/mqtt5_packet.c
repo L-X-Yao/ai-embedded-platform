@@ -368,6 +368,7 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
     if ((buf[0] >> 4) != 3) return MQTT5_ERR_PROTOCOL; /* not PUBLISH */
 
     pub->qos = (uint8_t)((buf[0] >> 1) & 0x03);
+    if (pub->qos > 2) return MQTT5_ERR_PROTOCOL;  /* MQTT-3.3.1-4 */
     pub->retain = (buf[0] & 0x01) != 0;
 
     /* decode remaining length */

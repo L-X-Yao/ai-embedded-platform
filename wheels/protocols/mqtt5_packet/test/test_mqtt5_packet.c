@@ -484,6 +484,14 @@ TEST(test_build_publish_length_without_payload)
     ASSERT_TRUE(mqtt5_build_publish(buf, sizeof(buf), &pub) > 0);
 }
 
+TEST(test_parse_publish_refuses_both_qos_bits)
+{
+    const uint8_t frame[] = { 0x36, 0x06, 0x00, 0x01, 't', 0x00, 0x01, 0x00 };
+    mqtt5_publish_t pub;
+
+    ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_ERR_PROTOCOL);
+}
+
 TEST_MAIN("mqtt5_packet")
     /* VBI */
     RUN(test_vbi_encode_single_byte);
@@ -530,4 +538,5 @@ TEST_MAIN("mqtt5_packet")
     RUN(test_build_connect_remaining_length_counts_the_frame);
     RUN(test_build_connect_remaining_length_with_properties);
     RUN(test_build_publish_length_without_payload);
+    RUN(test_parse_publish_refuses_both_qos_bits);
 TEST_MAIN_END()
