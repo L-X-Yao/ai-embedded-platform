@@ -24,6 +24,7 @@
 #define REG_OUTX_L_A   0x28    /* accel data start (6 bytes, little-endian) */
 
 #define CTRL3_C_SW_RESET  0x01
+#define CTRL3_C_IF_INC    0x04
 #define CTRL3_C_BDU       0x40
 
 /* ---------- sensitivity tables ---------- */
@@ -140,8 +141,9 @@ lsm6dso_err_t lsm6dso_init(lsm6dso_t *dev, const lsm6dso_i2c_t *i2c,
         return LSM6DSO_ERR_I2C;
     }
 
-    /* Enable BDU in CTRL3_C for data consistency */
-    if (!write_reg(dev, REG_CTRL3_C, CTRL3_C_BDU))
+    /* Enable BDU in CTRL3_C for data consistency, and keep IF_INC set so that
+     * multi-byte reads advance */
+    if (!write_reg(dev, REG_CTRL3_C, CTRL3_C_BDU | CTRL3_C_IF_INC))
     {
         return LSM6DSO_ERR_I2C;
     }

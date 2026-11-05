@@ -70,6 +70,9 @@ static void lsm6dso_model_init(lsm6dso_model_t *m)
     m->reset_values[0x0F] = 0x6C;
     m->readonly[0x0F] = true;
 
+    /* CTRL3_C resets with IF_INC (bit 2) set */
+    m->reset_values[0x12] = 0x04;
+
     /* Data output registers: temp (0x20..0x21), gyro (0x22..0x27), accel (0x28..0x2D) */
     for (int i = 0x20; i <= 0x2D; i++) {
         m->readonly[i] = true;
@@ -116,8 +119,11 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
     (void)dev_addr;
     lsm6dso_model_t *m = (lsm6dso_model_t *)ctx;
     m->read_count++;
+
+    /* With IF_INC clear, a multi-byte read stays on one register */
+    bool inc = (m->regs[0x12] & 0x04) != 0;
     for (uint16_t i = 0; i < len; i++) {
-        buf[i] = m->regs[(uint8_t)(reg + i)];
+        buf[i] = m->regs[(uint8_t)(reg + (inc ? i : 0))];
     }
     return true;
 }
