@@ -25,6 +25,24 @@
 /* Temperature range: datasheet specifies 0x8000 as error flag */
 #define RAW_ERROR_FLAG  0x8000u
 
+/* SMBus PEC: CRC-8, polynomial x^8 + x^2 + x + 1, init 0, MSB first. */
+static uint8_t smbus_pec(const uint8_t *data, uint16_t len)
+{
+    uint8_t crc = 0;
+    for (uint16_t i = 0; i < len; i++)
+    {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; bit++)
+        {
+            if (crc & 0x80u)
+                crc = (uint8_t)((uint8_t)(crc << 1) ^ 0x07u);
+            else
+                crc = (uint8_t)(crc << 1);
+        }
+    }
+    return crc;
+}
+
 static bool smbus_read_word(const mlx90614_t *dev, uint8_t cmd,
                             uint16_t *out)
 {
@@ -32,7 +50,7 @@ static bool smbus_read_word(const mlx90614_t *dev, uint8_t cmd,
     if (!dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &tx, 1))
         return false;
 
-    uint8_t rx[3]; /* LSB, MSB, PEC (PEC ignored in sim) */
+    uint8_t rx[3]; /* LSB, MSB, PEC (PEC not checked) */
     if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, rx, 3))
         return false;
 
@@ -43,12 +61,14 @@ static bool smbus_read_word(const mlx90614_t *dev, uint8_t cmd,
 static bool smbus_write_word(const mlx90614_t *dev, uint8_t cmd,
                              uint16_t val)
 {
-    uint8_t tx[4];
-    tx[0] = cmd;
-    tx[1] = (uint8_t)(val & 0xFFu);
-    tx[2] = (uint8_t)(val >> 8);
-    tx[3] = 0; /* PEC placeholder */
-    return dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, tx, 4);
+    /* The PEC covers the address byte, which the HAL sends itself */
+    uint8_t frame[5];
+    frame[0] = (uint8_t)(dev->cfg.addr << 1);   /* R/W bit 0: write */
+    frame[1] = cmd;
+    frame[2] = (uint8_t)(val & 0xFFu);
+    frame[3] = (uint8_t)(val >> 8);
+    frame[4] = smbus_pec(frame, 4);
+    return dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &frame[1], 4);
 }
 
 static mlx90614_err_t read_temp_reg(mlx90614_t *dev, uint8_t reg,

@@ -55,6 +55,21 @@ static void mlx90614_model_update_temps(mlx90614_model_t *m)
     m->hw.regs[MLX_SLOT(MLX_REG_TOBJ1) + 1] = (uint8_t)(tobj >> 8);
 }
 
+/* PEC, p18: CRC-8 with polynomial X8+X2+X1+1 over every byte on the wire */
+static uint8_t mlx_model_pec(const uint8_t *frame, uint16_t len)
+{
+    uint8_t crc = 0;
+    for (uint16_t i = 0; i < len; i++) {
+        crc ^= frame[i];
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            bool top = (crc & 0x80u) != 0u;
+            crc = (uint8_t)(crc << 1);
+            if (top) crc ^= 0x07u;
+        }
+    }
+    return crc;
+}
+
 /*
  * SMBus I2C callbacks for MLX90614.
  * write(): receives command byte (+ optional data for EEPROM writes)
@@ -65,7 +80,6 @@ __attribute__((unused))
 static bool mlx90614_model_write(void *ctx, uint8_t dev_addr,
                                  const uint8_t *data, uint16_t len)
 {
-    (void)dev_addr;
     mlx90614_model_t *m = (mlx90614_model_t *)ctx;
 
     if (len == 0) return true;
@@ -73,8 +87,12 @@ static bool mlx90614_model_write(void *ctx, uint8_t dev_addr,
     m->last_cmd = data[0];
     m->cmd_pending = true;
 
-    /* EEPROM write: cmd + LSB + MSB + PEC */
+    /* EEPROM write: cmd + LSB + MSB + PEC. p18: a NACK after the PEC means
+     * the message had an error, so a bad frame changes nothing. */
     if (len >= 3 && data[0] == MLX_REG_EMISSIVITY) {
+        uint8_t frame[4] = { (uint8_t)(dev_addr << 1), data[0], data[1], data[2] };
+        if (len != 4 || mlx_model_pec(frame, 4) != data[3]) return false;
+
         uint8_t slot = MLX_SLOT(MLX_REG_EMISSIVITY);
         m->hw.regs[slot]     = data[1];  /* LSB */
         m->hw.regs[slot + 1] = data[2];  /* MSB */
@@ -87,7 +105,6 @@ __attribute__((unused))
 static bool mlx90614_model_read(void *ctx, uint8_t dev_addr,
                                 uint8_t *data, uint16_t len)
 {
-    (void)dev_addr;
     mlx90614_model_t *m = (mlx90614_model_t *)ctx;
 
     if (!m->cmd_pending || len < 3) {
@@ -101,7 +118,7 @@ static bool mlx90614_model_read(void *ctx, uint8_t dev_addr,
     uint8_t cmd = m->last_cmd;
     uint8_t slot = MLX_SLOT(cmd);
 
-    /* LSB, MSB, PEC (PEC=0 placeholder) */
+    /* LSB, MSB, PEC */
     if (slot + 1 < HW_MODEL_REG_COUNT) {
         data[0] = m->hw.regs[slot];      /* LSB */
         data[1] = m->hw.regs[slot + 1];  /* MSB */
@@ -109,7 +126,9 @@ static bool mlx90614_model_read(void *ctx, uint8_t dev_addr,
         data[0] = 0xFF;
         data[1] = 0xFF;
     }
-    data[2] = 0x00;  /* PEC placeholder */
+    uint8_t frame[5] = { (uint8_t)(dev_addr << 1), cmd,
+                         (uint8_t)((dev_addr << 1) | 1u), data[0], data[1] };
+    data[2] = mlx_model_pec(frame, 5);
 
     m->cmd_pending = false;
     return true;
