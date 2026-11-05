@@ -907,6 +907,23 @@ TEST(test_standby_wakes_the_chip_from_sleep)
     ASSERT_FALSE(mock_asleep);
 }
 
+TEST(test_low_spreading_factors_get_a_longer_preamble)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF6, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    int params = last_cmd(0x8C);
+    ASSERT_TRUE(params >= 0);
+    ASSERT_EQ(cmd_log[params][2], 12);
+
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF7, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    params = last_cmd(0x8C);
+    ASSERT_EQ(cmd_log[params][2], 8);
+}
+
 TEST_MAIN("sx1262")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -956,4 +973,5 @@ TEST_MAIN("sx1262")
     RUN(test_configure_lora_low_data_rate_optimize);
     RUN(test_configure_lora_tx_modulation_workaround);
     RUN(test_standby_wakes_the_chip_from_sleep);
+    RUN(test_low_spreading_factors_get_a_longer_preamble);
 TEST_MAIN_END()
