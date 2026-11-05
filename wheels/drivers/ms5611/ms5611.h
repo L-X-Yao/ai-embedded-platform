@@ -34,7 +34,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* required: reads must wait for conversions */
     void *ctx;
 } ms5611_i2c_t;
 

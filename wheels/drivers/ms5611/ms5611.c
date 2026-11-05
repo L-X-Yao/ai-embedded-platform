@@ -40,10 +40,7 @@ static bool read_bytes(const ms5611_t *dev, uint8_t cmd, uint8_t *buf,
 
 static void delay(const ms5611_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 /* CRC-4 verification per MS5611 datasheet AN520 */
@@ -139,6 +136,11 @@ ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
                          const ms5611_cfg_t *cfg)
 {
     if (!dev || !i2c || !cfg)
+    {
+        return MS5611_ERR_PARAM;
+    }
+
+    if (!i2c->delay_ms)
     {
         return MS5611_ERR_PARAM;
     }
