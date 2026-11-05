@@ -69,8 +69,10 @@ typedef struct {
 
 #define MAX31865_FAULT_HIGHTHRESH   0x80
 #define MAX31865_FAULT_LOWTHRESH    0x40
-#define MAX31865_FAULT_REFINLOW     0x20
-#define MAX31865_FAULT_REFINHIGH    0x10
+/* The next two names run against the chip's own wording, and match the
+ * Adafruit library. Go by the comments, which give the manual's meaning. */
+#define MAX31865_FAULT_REFINLOW     0x20  /* D5: REFIN- above 0.85 x VBIAS */
+#define MAX31865_FAULT_REFINHIGH    0x10  /* D4: REFIN- below 0.85 x VBIAS */
 #define MAX31865_FAULT_RTDLOW       0x08
 #define MAX31865_FAULT_OVUV         0x04
 
