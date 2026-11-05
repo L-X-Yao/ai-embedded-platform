@@ -37,7 +37,7 @@
 #define REG_OLATA       0x14
 #define REG_OLATB       0x15
 
-/* Number of register pairs to reset during init (IODIRA..OLATB = 22 regs) */
+/* Register span walked during init (IODIRA..OLATB = 22 regs) */
 #define REG_RESET_COUNT 22
 
 static bool write_reg(const mcp23017_t *dev, uint8_t reg, uint8_t val)
@@ -67,14 +67,26 @@ mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
     dev->i2c      = i2c;
     dev->dev_addr = dev_addr;
 
-    /* Reset all registers to POR defaults:
-     * IODIR=0xFF (all input), all others=0x00 */
+    /* Write the writable registers back to their POR defaults:
+     * IODIR=0xFF (all input), all others=0x00. INTF and INTCAP are read-only. */
     for (uint8_t reg = 0; reg < REG_RESET_COUNT; reg++)
     {
+        if (reg >= REG_INTFA && reg <= REG_INTCAPB)
+            continue;
+
         uint8_t val = (reg == REG_IODIRA || reg == REG_IODIRB) ? 0xFF : 0x00;
         if (!write_reg(dev, reg, val))
             return MCP23017_ERR_I2C;
     }
+
+    /* An interrupt left pending by an earlier run stays active until GPIO or
+     * INTCAP is read, and blocks later interrupts on that port. GPINTEN is
+     * already 0 here, so the read clears it for good. */
+    uint8_t discard;
+    if (!read_reg(dev, REG_GPIOA, &discard))
+        return MCP23017_ERR_I2C;
+    if (!read_reg(dev, REG_GPIOB, &discard))
+        return MCP23017_ERR_I2C;
 
     return MCP23017_OK;
 }
