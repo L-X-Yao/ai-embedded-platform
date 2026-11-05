@@ -44,6 +44,16 @@ jobs:
           path: /tmp/libfuzzer_artifacts
           if-no-files-found: ignore
 
+  property-tests:
+    name: property tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run property tests
+        run: make test-property
+
   coverage-gate:
     name: coverage gate (>=80% all wheels)
     runs-on: ubuntu-latest
