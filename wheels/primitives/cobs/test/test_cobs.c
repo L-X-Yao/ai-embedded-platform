@@ -524,6 +524,36 @@ TEST(test_roundtrip_single_nonzero)
     roundtrip(data, sizeof(data));
 }
 
+TEST(test_max_encoded_size_saturates)
+{
+    ASSERT_EQ(cobs_max_encoded_size(65277), 65534);
+    ASSERT_EQ(cobs_max_encoded_size(65278), UINT16_MAX);
+    ASSERT_EQ(cobs_max_encoded_size(65279), UINT16_MAX);
+    ASSERT_EQ(cobs_max_encoded_size(UINT16_MAX), UINT16_MAX);
+}
+
+TEST(test_encode_long_input_past_capacity)
+{
+    static uint8_t data[UINT16_MAX];
+    static uint8_t out[UINT16_MAX];
+    uint16_t out_len = sizeof(out);
+
+    /* Non-zero data needs a code byte per 254 bytes on top of its own length. */
+    memset(data, 0x55, sizeof(data));
+    ASSERT_EQ(cobs_encode(data, sizeof(data), out, &out_len), COBS_ERR_OVERFLOW);
+}
+
+TEST(test_encode_long_input_that_fits)
+{
+    static const uint8_t data[UINT16_MAX - 1];
+    static uint8_t out[UINT16_MAX];
+    uint16_t out_len = sizeof(out);
+
+    /* Zeros encode one to one, so this still fits the largest capacity. */
+    ASSERT_EQ(cobs_encode(data, sizeof(data), out, &out_len), COBS_OK);
+    ASSERT_EQ(out_len, UINT16_MAX);
+}
+
 TEST_MAIN("cobs")
     RUN(test_encode_empty);
     RUN(test_encode_single_nonzero);
@@ -563,4 +593,7 @@ TEST_MAIN("cobs")
     RUN(test_roundtrip_leading_zero);
     RUN(test_roundtrip_all_zeros);
     RUN(test_roundtrip_single_nonzero);
+    RUN(test_max_encoded_size_saturates);
+    RUN(test_encode_long_input_past_capacity);
+    RUN(test_encode_long_input_that_fits);
 TEST_MAIN_END()
