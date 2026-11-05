@@ -88,14 +88,16 @@ typedef struct {
 
 /**
  * Parse a TFTP packet from raw bytes.
- * Returns 0 on success, negative tftp_err_t on failure.
+ * Returns 0 on success, negative tftp_err_t on failure. A request naming a
+ * file of TFTP_MAX_FILENAME bytes or more returns TFTP_ERR_OVERFLOW.
  * @thread_safe: yes (pure function)
  */
 int tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt);
 
 /**
  * Build a RRQ (Read Request) packet.
- * Returns bytes written on success, negative tftp_err_t on failure.
+ * Returns bytes written on success, negative tftp_err_t on failure. A filename
+ * of TFTP_MAX_FILENAME bytes or more returns TFTP_ERR_OVERFLOW.
  * @thread_safe: yes (pure function)
  */
 int tftp_build_rrq(uint8_t *buf, size_t cap,
@@ -103,7 +105,8 @@ int tftp_build_rrq(uint8_t *buf, size_t cap,
 
 /**
  * Build a WRQ (Write Request) packet.
- * Returns bytes written on success, negative tftp_err_t on failure.
+ * Returns bytes written on success, negative tftp_err_t on failure. A filename
+ * of TFTP_MAX_FILENAME bytes or more returns TFTP_ERR_OVERFLOW.
  * @thread_safe: yes (pure function)
  */
 int tftp_build_wrq(uint8_t *buf, size_t cap,

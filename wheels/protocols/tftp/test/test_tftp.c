@@ -209,26 +209,6 @@ TEST(test_is_last_data_null)
     ASSERT_FALSE(tftp_is_last_data(NULL));
 }
 
-/* ---------- filename truncation ---------- */
-
-TEST(test_large_filename_truncation)
-{
-    char longname[256];
-    memset(longname, 'A', 200);
-    longname[200] = '\0';
-
-    uint8_t buf[512];
-    int n = tftp_build_rrq(buf, sizeof(buf), longname, "octet");
-    ASSERT_TRUE(n > 0);
-
-    tftp_packet_t pkt;
-    ASSERT_EQ(tftp_parse(buf, (size_t)n, &pkt), TFTP_OK);
-    ASSERT_EQ(pkt.opcode, TFTP_OP_RRQ);
-    /* filename should be truncated to TFTP_MAX_FILENAME - 1 */
-    ASSERT_TRUE(strlen(pkt.u.rq.filename) <= TFTP_MAX_FILENAME - 1);
-    ASSERT_STR_EQ(pkt.u.rq.mode, "octet");
-}
-
 /* ---------- error / edge cases ---------- */
 
 TEST(test_parse_null_params)
@@ -367,6 +347,55 @@ TEST(test_error_codes)
     ASSERT_EQ(-4, (int)TFTP_ERR_OVERFLOW);
 }
 
+/* ---------- filename limit ---------- */
+
+static void fill_name(char *name, size_t len)
+{
+    memset(name, 'A', len);
+    name[len] = '\0';
+}
+
+TEST(test_build_refuses_name_it_cannot_send_whole)
+{
+    char name[TFTP_MAX_FILENAME + 1];
+    uint8_t buf[512];
+    fill_name(name, TFTP_MAX_FILENAME);
+
+    ASSERT_EQ(tftp_build_rrq(buf, sizeof(buf), name, "octet"), TFTP_ERR_OVERFLOW);
+    ASSERT_EQ(tftp_build_wrq(buf, sizeof(buf), name, "octet"), TFTP_ERR_OVERFLOW);
+}
+
+TEST(test_longest_name_round_trips)
+{
+    char name[TFTP_MAX_FILENAME];
+    uint8_t buf[512];
+    tftp_packet_t pkt;
+    fill_name(name, TFTP_MAX_FILENAME - 1);
+
+    int n = tftp_build_rrq(buf, sizeof(buf), name, "octet");
+    ASSERT_GT(n, 0);
+    ASSERT_EQ(tftp_parse(buf, (size_t)n, &pkt), TFTP_OK);
+    ASSERT_STR_EQ(pkt.u.rq.filename, name);
+    ASSERT_STR_EQ(pkt.u.rq.mode, "octet");
+}
+
+TEST(test_parse_refuses_name_it_cannot_store)
+{
+    uint8_t buf[2 + TFTP_MAX_FILENAME + 1 + 6];
+    tftp_packet_t pkt;
+    size_t pos = 0;
+
+    buf[pos++] = 0;
+    buf[pos++] = TFTP_OP_WRQ;
+    memset(buf + pos, 'A', TFTP_MAX_FILENAME);
+    pos += TFTP_MAX_FILENAME;
+    buf[pos++] = 0;
+    memcpy(buf + pos, "octet", 6);
+    pos += 6;
+
+    ASSERT_EQ(tftp_parse(buf, pos, &pkt), TFTP_ERR_OVERFLOW);
+}
+
 TEST_MAIN("tftp")
     RUN(test_build_parse_rrq);
     RUN(test_build_parse_wrq);
@@ -384,7 +413,6 @@ TEST_MAIN("tftp")
     RUN(test_is_last_data_zero);
     RUN(test_is_last_data_non_data_pkt);
     RUN(test_is_last_data_null);
-    RUN(test_large_filename_truncation);
     RUN(test_parse_null_params);
     RUN(test_parse_short_buffer);
     RUN(test_parse_unknown_opcode);
@@ -400,4 +428,7 @@ TEST_MAIN("tftp")
     RUN(test_parse_adversarial);
     RUN(test_parse_mini_fuzz);
     RUN(test_error_codes);
+    RUN(test_build_refuses_name_it_cannot_send_whole);
+    RUN(test_longest_name_round_trips);
+    RUN(test_parse_refuses_name_it_cannot_store);
 TEST_MAIN_END()

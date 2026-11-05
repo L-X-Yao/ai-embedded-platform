@@ -59,7 +59,8 @@ int tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt)
 
         size_t fn_len = (size_t)(fn_end - (buf + 2));
         if (fn_len == 0) return TFTP_ERR_FORMAT;
-        if (fn_len >= TFTP_MAX_FILENAME) fn_len = TFTP_MAX_FILENAME - 1;
+        /* A shortened name would be a different file. */
+        if (fn_len >= TFTP_MAX_FILENAME) return TFTP_ERR_OVERFLOW;
 
         memcpy(pkt->u.rq.filename, buf + 2, fn_len);
         pkt->u.rq.filename[fn_len] = '\0';
@@ -144,19 +145,18 @@ static int build_rq(uint8_t *buf, size_t cap, uint16_t opcode,
 
     if (fn_len == 0) return TFTP_ERR_PARAM;
 
-    /* Truncate filename to TFTP_MAX_FILENAME - 1 (defensive) */
-    size_t copy_fn = fn_len;
-    if (copy_fn >= TFTP_MAX_FILENAME) copy_fn = TFTP_MAX_FILENAME - 1;
+    /* A shortened name would ask for a different file. */
+    if (fn_len >= TFTP_MAX_FILENAME) return TFTP_ERR_OVERFLOW;
 
     /* total: opcode(2) + filename + NUL + mode + NUL */
-    size_t total = 2 + copy_fn + 1 + mode_len + 1;
+    size_t total = 2 + fn_len + 1 + mode_len + 1;
     if (total > cap) return TFTP_ERR_OVERFLOW;
 
     put_u16(buf, opcode);
     size_t pos = 2;
 
-    memcpy(buf + pos, filename, copy_fn);
-    pos += copy_fn;
+    memcpy(buf + pos, filename, fn_len);
+    pos += fn_len;
     buf[pos++] = 0;
 
     memcpy(buf + pos, mode, mode_len);
