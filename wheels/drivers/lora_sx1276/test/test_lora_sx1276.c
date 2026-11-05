@@ -693,6 +693,15 @@ TEST(test_init_reports_a_stuck_calibration)
     ASSERT_EQ(lora_init(&dev, &mock_spi, 868000000UL), LORA_ERR_TIMEOUT);
 }
 
+TEST(test_init_turns_the_payload_crc_on)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(lora_init(&dev, &mock_spi, 433000000UL), LORA_OK);
+    ASSERT_EQ(mock_regs[0x1E] & 0x04, 0x04);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -726,4 +735,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_init_really_enters_lora_mode);
     RUN(test_init_calibrates_at_the_frequency_in_use);
     RUN(test_init_reports_a_stuck_calibration);
+    RUN(test_init_turns_the_payload_crc_on);
 TEST_MAIN_END()
