@@ -7,7 +7,8 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * Register-based I2C with command register protocol (0x80 | reg).
+ * Register-based I2C with command register protocol (0x80 | reg, and
+ * 0xA0 | reg for the auto-increment RGBC read).
  * Addr 0x29, ID register 0x12 returns 0x44 or 0x4D.
  * RGBC data in registers 0x14-0x1B (16-bit little-endian).
  * Pure C99, no heap, fully reentrant per-context.

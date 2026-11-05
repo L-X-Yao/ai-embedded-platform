@@ -4,15 +4,16 @@
  *
  * Models TCS34725 register behavior:
  * - Chip ID at register 0x12: 0x44 or 0x4D (read-only)
- * - Command protocol: driver sends (0x80 | reg), model stores at raw reg
+ * - Command byte: CMD bit 7, TYPE bits 6:5, ADDR bits 4:0 (p.14). On reads
+ *   TYPE 00b repeats one register, TYPE 01b steps to successive registers
  * - Enable register at 0x00 (PON bit 0, AEN bit 1)
  * - Integration time (ATIME) at 0x01
  * - Control (gain) at 0x0F
  * - RGBC data at 0x14..0x1B: C(14-15) R(16-17) G(18-19) B(1A-1B) LE
  *
- * NOTE: The driver uses CMD(reg) = 0x80|reg for all I2C transactions.
- *       The hw_model stores registers at the 0x80+ addresses since that
- *       is what the driver actually sends over I2C.
+ * NOTE: The hw_model stores registers at 0x80 | addr, the TYPE 00b command
+ *       byte. Use tcs34725_model_read_regs, not the harness callback, which
+ *       steps whatever the command byte says.
  */
 
 #ifndef HW_MODEL_TCS34725_H
@@ -54,6 +55,23 @@ static void tcs34725_model_on_enable(void *user, uint8_t reg,
     if ((new_val & 0x03u) == 0x03u) { /* PON + AEN */
         tcs34725_model_set_color_data(m);
     }
+}
+
+/* Read callback: TYPE in the command byte picks the protocol (p.14) */
+__attribute__((unused))
+static bool tcs34725_model_read_regs(void *ctx, uint8_t dev_addr, uint8_t cmd,
+                                     uint8_t *buf, uint16_t len)
+{
+    (void)dev_addr;
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    if (hw_model__should_fail(hw)) return false;
+
+    unsigned reg  = 0x80u | (cmd & 0x1Fu);
+    unsigned step = ((cmd & 0x60u) == 0x20u) ? 1u : 0u;
+    for (uint16_t i = 0; i < len; i++) {
+        buf[i] = hw->regs[(reg + i * step) & 0xFFu];
+    }
+    return true;
 }
 
 static void tcs34725_model_init(tcs34725_model_t *m)
