@@ -59,6 +59,14 @@ None. Range, ODR, and I2C address are runtime-configurable via
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against ST DocID025056 Rev 6, May 2017. Not run on hardware.
+
+- **Matched:** Addresses, WHO_AM_I, register addresses, CTRL_REG1 and CTRL_REG4 fields, ODR codes, normal-mode sensitivities including 48 mg/digit at 16 g, the 0xA8 burst read, the data format, BDU.
+- **Still open:** STATUS_REG is never read, so overruns go unseen. The caller must allow the 5 ms boot before `lis2dh12_init`. `delay_ms` is in the HAL struct but never called. The model auto-increments whether or not SUB bit 7 is set, so the tests would pass a driver that lost the 0x80 and read one register six times. It also leaves CTRL_REG0 and CTRL_REG1 at 0 where the manual gives 0x10 and 0x07. High-resolution and low-power modes, ODR above 400 Hz, SPI, FIFO, interrupts, the temperature sensor, self-test and reboot are not implemented.
+- **Suspected:** Init does not wait for the turn-on time and `lis2dh12_read` does not check ZYXDA, so a read straight after init can return old or empty registers with `LIS2DH12_OK`.
+
 ## Known issues
 
 - Normal mode (10-bit) only; high-resolution (12-bit) and low-power

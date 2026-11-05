@@ -5,7 +5,7 @@
 
 Bosch BME688 temperature + pressure + humidity + gas resistance (VOC) sensor
 driver. I2C interface injected via callbacks. Implements Bosch compensation
-algorithms (integer arithmetic for TPH, lookup-table for gas resistance).
+algorithms in integer arithmetic.
 Register-compatible with BME680 (same chip ID 0x61).
 
 ## Origin
@@ -59,6 +59,15 @@ No compile-time defines. All configuration is runtime via `bme688_cfg_t`:
 - [x] Host (sim) — 2026-05-12
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against BST-BME688-DS000-03 Revision_1.3 022024. Not run on hardware.
+
+- **Matched:** Addresses, chip ID, soft reset, control and status registers, every calibration address, raw T/P/H packing, temperature and pressure compensation, gas_wait encoding, nb_conv.
+- **Fixed:** run_gas was written to bit 4 instead of bit 5, so gas conversions never started. Gas data came from 0x2A and 0x2B instead of 0x2C and 0x2D. Gas resistance used the BME680 formula: 504014 ohm where the manual gives 4035400. Humidity read 4.096 times too high. The heater code did not follow the manual: 10 where it gives 120 at 300 degC, so the plate stayed cold. `gas_valid` ignored heat_stab_r. A heater over about 1 s always ended in a timeout. The model and mock repeated the run_gas and gas register errors.
+- **Still open:** Once set, run_gas stays on and heat_off is never used, so every read heats the plate until a soft reset. A skipped channel's marker value comes back as real data with `BME688_OK`, and skipping temperature also spoils pressure and humidity. With a NULL `delay_ms` the polls run back to back, so a read with the heater on ends in `BME688_ERR_TIMEOUT`. The manual does not give the unit of amb_temp in the integer heater code: the driver uses 0.01 degC, which agrees with the floating point form, while `bme68x.c` divides by 1000 and loses the term. `range_sw_err` stays in `bme688_t` and 0x04 is still read, though the BME688 formula does not use it. Parallel mode, heater profiles, fields 1 and 2, idac_heat_x and SPI are not implemented.
+- **Suspected:** `bme688_reset` does not wait and does not restore settings, so the next read returns skipped-channel markers as data. `bme688_init` starts without a soft reset, so its writes can be ignored after an MCU reset during a measurement. variant_id at 0xF0 is not checked, so a BME680 passes init and then gets the wrong gas handling. A negative humidity wraps to 100 %RH. This README and the code comments call the register map the same as the BME680's, which run_gas and gas_r contradict, and cite DS000-18 where this manual is DS000-03.
+
 ## Known issues
 
 None.
@@ -74,8 +83,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 34 pass, 0 fail
-- HW model tests (sim): 13 pass, 0 fail
+- Unit tests (sim): 46 pass, 0 fail
+- HW model tests (sim): 16 pass, 0 fail
 - HIL: N/A
 
 ## API convention deviations
