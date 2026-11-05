@@ -60,10 +60,18 @@ None. Fixed I2C address 0x70.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sensirion SHTC3 Datasheet, Version 0.3, October 2017, watermarked PRELIMINARY: its maximum timings are tbd. Not run on hardware.
+
+- **Matched:** I2C address, command codes, ID mask and value, read layout, the wakeup, measure, read, sleep sequence, CRC-8. The 1 ms and 13 ms waits exceed the typical 230 us and 10.8 ms, but with the maximums tbd the margin cannot be shown.
+- **Fixed:** Both conversions divided by 65535 where the manual divides by 2^16, so readings ran up to 0.0027 C and 0.0015 %RH high. `shtc3_init` refuses a HAL without `delay_ms`, because `shtc3_read` then sent its read header during the measurement and failed every time.
+- **Still open:** After an I2C or CRC error `shtc3_read` returns without sending Sleep, so the sensor stays idle at 42 uA instead of 0.3 uA until the next read. No low-power measurement mode, and no RH-first or clock-stretching commands. The model starts asleep, where the sensor starts idle, accepts every command while asleep and has no measurement period, so tests cannot see a missing Wakeup or a missing wait.
+- **Suspected:** `shtc3_reset` sends no Wakeup, so it may fail on a sleeping sensor, which is the state after init and read. `shtc3_wakeup` and `shtc3_reset` return at once, so the next command may arrive before the sensor is idle.
+
 ## Known issues
 
-- Must call `shtc3_wakeup()` before `shtc3_read()` if sensor is sleeping.
-  `shtc3_read()` does not auto-wake.
+None.
 
 ## How to test
 
