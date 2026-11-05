@@ -282,7 +282,7 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
         setup = (uint8_t)(setup | RF_SETUP_RF_DR_LOW);
         break;
     case NRF24_RATE_1MBPS:
-        /* Both bits 0 = 1Mbps (default) */
+        /* Both bits 0 = 1Mbps (the reset value is 2Mbps) */
         break;
     case NRF24_RATE_2MBPS:
         setup = (uint8_t)(setup | RF_SETUP_RF_DR_HIGH);
