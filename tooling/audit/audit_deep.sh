@@ -206,20 +206,23 @@ fi
 if run_layer 5 "Cross-wheel API consistency"; then
     layer5_issues=0
 
-    # Check 1: init/deinit symmetry — every _init must have a _deinit
+    # Check 1: init/deinit symmetry. Wheels own no resources, so _deinit is
+    # optional: api-conventions 3.4 only constrains it when it exists. The
+    # count is reported for reference and does not add to the issue total.
     echo "  --- init/deinit symmetry ---"
+    init_only=0
     for h in wheels/*/*/*.h; do
         [[ -f "$h" ]] || continue
         name="$(basename "$h" .h)"
         dir="$(dirname "$h")"
         [[ -d "$dir/vendor" ]] && continue
-        has_init=$(grep -c "${name}_init\b" "$h" 2>/dev/null || echo 0)
-        has_deinit=$(grep -c "${name}_deinit\b" "$h" 2>/dev/null || echo 0)
+        has_init=$(grep -c "${name}_init\b" "$h" 2>/dev/null || true)
+        has_deinit=$(grep -c "${name}_deinit\b" "$h" 2>/dev/null || true)
         if [[ "$has_init" -gt 0 && "$has_deinit" -eq 0 ]]; then
-            echo -e "  ${YELLOW}WARN${NC}  $name: has _init but no _deinit"
-            layer5_issues=$((layer5_issues + 1))
+            init_only=$((init_only + 1))
         fi
     done
+    echo "  INFO  $init_only wheels have _init without _deinit"
 
     # Check 2: error type naming — _err_t must be typedef'd enum
     echo "  --- error type naming ---"
@@ -228,9 +231,9 @@ if run_layer 5 "Cross-wheel API consistency"; then
         name="$(basename "$h" .h)"
         dir="$(dirname "$h")"
         [[ -d "$dir/vendor" ]] && continue
-        has_err_t=$(grep -c "${name}_err_t" "$h" 2>/dev/null || echo 0)
+        has_err_t=$(grep -c "${name}_err_t" "$h" 2>/dev/null || true)
         if [[ "$has_err_t" -gt 0 ]]; then
-            has_typedef=$(grep -c "typedef enum.*${name}_err_t\|} ${name}_err_t" "$h" 2>/dev/null || echo 0)
+            has_typedef=$(grep -c "typedef enum.*${name}_err_t\|} ${name}_err_t" "$h" 2>/dev/null || true)
             if [[ "$has_typedef" -eq 0 ]]; then
                 echo -e "  ${YELLOW}WARN${NC}  $name: _err_t not a typedef'd enum"
                 layer5_issues=$((layer5_issues + 1))

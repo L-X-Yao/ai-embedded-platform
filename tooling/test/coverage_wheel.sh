@@ -145,7 +145,7 @@ echo "  Branches taken at least once:${BRANCH_PCT}%"
 
 # Show uncovered lines from the merged .gcov file
 if [[ -n "$GCOV_FILE" && -f "$GCOV_FILE" ]]; then
-    MISSED=$(grep -c '^\s*#####:' "$GCOV_FILE" 2>/dev/null || echo 0)
+    MISSED=$(grep -c '^\s*#####:' "$GCOV_FILE" 2>/dev/null || true)
     if [[ $MISSED -gt 0 ]]; then
         echo ""
         echo "--- Uncovered Lines ($MISSED) ---"
