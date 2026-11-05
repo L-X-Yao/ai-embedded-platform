@@ -291,6 +291,8 @@ TEST(test_set_spreading_factor)
 
     /* SF=5 out of range */
     ASSERT_EQ(lora_set_spreading_factor(&dev, 5), LORA_ERR_PARAM);
+    /* SF6 needs implicit header mode, which the driver does not have */
+    ASSERT_EQ(lora_set_spreading_factor(&dev, 6), LORA_ERR_PARAM);
     /* SF=13 out of range */
     ASSERT_EQ(lora_set_spreading_factor(&dev, 13), LORA_ERR_PARAM);
 }
@@ -622,7 +624,7 @@ TEST(test_set_spreading_factor_all_valid)
 
     /* All valid SF values 6-12 */
     uint8_t sf;
-    for (sf = 6; sf <= 12; sf++) {
+    for (sf = 7; sf <= 12; sf++) {
         lora_err_t e = lora_set_spreading_factor(&dev, sf);
         ASSERT_EQ(e, LORA_OK);
         ASSERT_EQ(dev.spreading_factor, sf);
