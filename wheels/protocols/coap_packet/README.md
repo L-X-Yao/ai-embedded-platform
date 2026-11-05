@@ -57,8 +57,10 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **10 C cases** — CON GET parse, payload parse, ACK empty, bad version,
-  incomplete, build GET, build with payload, overflow, multi-option roundtrip, NULL safety
+- Unit tests: **38 C cases** — CON GET parse, payload parse, ACK empty, bad version,
+  incomplete, build GET, build with payload, overflow, multi-option roundtrip, NULL safety,
+  lengths without bytes
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 
 ## API convention deviations
 
