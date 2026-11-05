@@ -201,6 +201,48 @@ TEST(test_set_max_angle_i2c_fail)
     ASSERT_EQ(as5600_set_max_angle(&dev, 2048), AS5600_ERR_I2C);
 }
 
+/* v1-06 p.18 note 1: "Blank fields may contain factory settings", so bits 7:4
+ * of the high registers must survive a write of the 12-bit value. */
+TEST(test_set_start_position_keeps_blank_bits)
+{
+    setup();
+    mock_regs[REG_ZPOS_H] = 0xAF;  /* old ZPOS(11:8) must go, blank bits stay */
+    ASSERT_EQ(as5600_set_start_position(&dev, 0x0234), AS5600_OK);
+    ASSERT_EQ(mock_regs[REG_ZPOS_H], 0xA2);
+    ASSERT_EQ(mock_regs[REG_ZPOS_L], 0x34);
+}
+
+TEST(test_set_max_angle_keeps_blank_bits)
+{
+    setup();
+    mock_regs[REG_MANG_H] = 0x50;
+    ASSERT_EQ(as5600_set_max_angle(&dev, 0x0F56), AS5600_OK);
+    ASSERT_EQ(mock_regs[REG_MANG_H], 0x5F);
+    ASSERT_EQ(mock_regs[REG_MANG_L], 0x56);
+}
+
+TEST(test_set_12bit_failed_read_writes_nothing)
+{
+    setup();
+    int writes = mock_write_count;
+    mock_fail_next = 1;
+    ASSERT_EQ(as5600_set_start_position(&dev, 512), AS5600_ERR_I2C);
+    mock_fail_next = 1;
+    ASSERT_EQ(as5600_set_max_angle(&dev, 2048), AS5600_ERR_I2C);
+    ASSERT_EQ(mock_write_count, writes);
+}
+
+TEST(test_set_12bit_write_fail)
+{
+    setup();
+    /* Read is op +0, high write +1, low write +2 */
+    mock_fail_at = mock_op_count + 1;
+    ASSERT_EQ(as5600_set_start_position(&dev, 512), AS5600_ERR_I2C);
+    mock_fail_at = mock_op_count + 2;
+    ASSERT_EQ(as5600_set_max_angle(&dev, 2048), AS5600_ERR_I2C);
+    mock_fail_at = -1;
+}
+
 TEST(test_read_raw_angle_12bit_mask)
 {
     setup();
@@ -231,5 +273,9 @@ TEST_MAIN("as5600")
     RUN(test_set_max_angle);
     RUN(test_set_max_angle_overflow);
     RUN(test_set_max_angle_i2c_fail);
+    RUN(test_set_start_position_keeps_blank_bits);
+    RUN(test_set_max_angle_keeps_blank_bits);
+    RUN(test_set_12bit_failed_read_writes_nothing);
+    RUN(test_set_12bit_write_fail);
     RUN(test_read_raw_angle_12bit_mask);
 TEST_MAIN_END()
