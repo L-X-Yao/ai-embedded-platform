@@ -194,6 +194,21 @@ TEST(test_set_max_angle_overflow)
     ASSERT_EQ(as5600_set_max_angle(&dev, 4096), AS5600_ERR_PARAM);
 }
 
+/* v1-06 p.21: "The angular range must be greater than 18 degrees." At 4096
+ * counts per turn, 18 degrees is 204.8 counts: 204 is too small, 205 is not.
+ * 0 is the unprogrammed default, which p.25 gives as the full 360 degrees. */
+TEST(test_set_max_angle_minimum_range)
+{
+    setup();
+    ASSERT_EQ(as5600_set_max_angle(&dev, 1), AS5600_ERR_PARAM);
+    ASSERT_EQ(as5600_set_max_angle(&dev, 204), AS5600_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, 0);
+    ASSERT_EQ(as5600_set_max_angle(&dev, 205), AS5600_OK);
+    ASSERT_EQ(mock_regs[REG_MANG_L], 205);
+    ASSERT_EQ(as5600_set_max_angle(&dev, 0), AS5600_OK);
+    ASSERT_EQ(mock_regs[REG_MANG_L], 0);
+}
+
 TEST(test_set_max_angle_i2c_fail)
 {
     setup();
@@ -272,6 +287,7 @@ TEST_MAIN("as5600")
     RUN(test_set_start_position_i2c_fail);
     RUN(test_set_max_angle);
     RUN(test_set_max_angle_overflow);
+    RUN(test_set_max_angle_minimum_range);
     RUN(test_set_max_angle_i2c_fail);
     RUN(test_set_start_position_keeps_blank_bits);
     RUN(test_set_max_angle_keeps_blank_bits);

@@ -64,7 +64,9 @@ as5600_err_t as5600_read_status(const as5600_t *dev, uint8_t *status);
 /** Set start position (ZPOS, 12-bit). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_set_start_position(const as5600_t *dev, uint16_t pos);
 
-/** Set maximum angle (MANG, 12-bit). @thread_safe: caller_must_lock @isr_safe: no */
+/** Set maximum angle (MANG, 12-bit): 0 for the default 360 degrees, otherwise
+ *  205-4095, because the range must be greater than 18 degrees.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle);
 
 #ifdef __cplusplus

@@ -23,6 +23,7 @@
 #define REG_RAW_ANG_L 0x0Du  /* raw angle low byte       */
 
 #define ANGLE_MASK    0x0FFFu  /* 12-bit mask */
+#define MANG_MIN      205u     /* range must exceed 18 deg = 204.8 counts */
 #define FULL_TURN_DEG 360.0f
 #define FULL_TURN_CNT 4096.0f
 
@@ -127,6 +128,8 @@ as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle)
     if (!dev)
         return AS5600_ERR_PARAM;
     if (angle > ANGLE_MASK)
+        return AS5600_ERR_PARAM;
+    if (angle != 0 && angle < MANG_MIN)  /* 0 = default, the full 360 degrees */
         return AS5600_ERR_PARAM;
 
     return write_12bit(dev, REG_MANG_H, REG_MANG_L, angle);
