@@ -40,7 +40,7 @@ fi
 dirty_all=$(git -C "$REPO" status --porcelain 2>/dev/null)
 dirty=$(echo "$dirty_all" | head -20)
 if [[ -n "$dirty_all" ]]; then
-    count=$(echo "$dirty_all" | grep -c '^' || echo 0)
+    count=$(echo "$dirty_all" | grep -c '^' || true)
     echo -e "  Dirty files: ${YELLOW}${count}${NC}"
     echo "$dirty" | sed 's/^/    /'
     if [[ "$count" -gt 20 ]]; then
@@ -175,8 +175,8 @@ fi
 
 echo ""
 echo -e "${BOLD}=== CI ===${NC}"
-yaml_jobs=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || echo 0)
-matrix_entries=$(grep -cE '^\s+- \{ name:' "$CI_YAML" 2>/dev/null || echo 0)
+yaml_jobs=$(grep -cE '^    name: ' "$CI_YAML" 2>/dev/null || true)
+matrix_entries=$(grep -cE '^\s+- \{ name:' "$CI_YAML" 2>/dev/null || true)
 if [[ "$matrix_entries" -gt 0 ]]; then
     job_count=$((yaml_jobs + matrix_entries - 1))
 else
