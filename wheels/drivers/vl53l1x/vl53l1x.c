@@ -7,9 +7,9 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * Simplified init + continuous ranging. The real ST ultra-lite driver
- * writes a large default-config blob; we do a minimal subset that
- * verifies the chip and enables basic ranging.
+ * Not a working ranging driver yet: it verifies the chip and writes the start
+ * command. The ST ultra-lite driver also loads a default configuration, checks
+ * range status and clears the interrupt. See the README.
  */
 
 #include "vl53l1x.h"

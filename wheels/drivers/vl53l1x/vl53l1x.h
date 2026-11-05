@@ -8,8 +8,8 @@
  * Instances: multi
  *
  * Simplified driver for the VL53L1X ToF sensor. Uses 16-bit register
- * addresses (unlike most I2C sensors). Continuous ranging mode with
- * 16-bit millimeter distance output, up to 4 meters.
+ * addresses (unlike most I2C sensors). Not usable on hardware yet, see the
+ * README.
  */
 
 #ifndef VL53L1X_H
