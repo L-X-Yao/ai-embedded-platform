@@ -80,6 +80,8 @@ typedef void (*mqtt_client_msg_cb_t)(void *ctx, const char *topic,
                                      const uint8_t *payload, uint16_t len,
                                      uint8_t qos);
 
+/* reason: a CONNACK return code, or 0xFF connect failed or timed out,
+ * 0xFE keepalive lost, 0xFD broker broke the protocol. */
 typedef void (*mqtt_client_evt_cb_t)(void *ctx, mqtt_client_state_t new_state,
                                      uint8_t reason);
 

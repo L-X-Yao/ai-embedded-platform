@@ -131,7 +131,12 @@ static mqtt_client_err_t drain_rx(mqtt_client_t *c)
         uint16_t hdr_bytes;
         int rc = try_decode_packet_len(c->rx_buf, c->rx_len, &remaining, &hdr_bytes);
         if (rc == -1) break;
-        if (rc == -2) { c->rx_len = 0; return MQTT_CLIENT_ERR_PROTOCOL; }
+        if (rc == -2) {
+            /* MQTT 3.1.1 section 4.8: a protocol violation ends the connection. */
+            c->rx_len = 0;
+            set_state(c, MQTT_CLIENT_DISCONNECTED, 0xFD);
+            return MQTT_CLIENT_ERR_PROTOCOL;
+        }
 
         uint32_t total = (uint32_t)hdr_bytes + remaining;
         if (total > MQTT_CLIENT_RX_BUF_SIZE) {
@@ -287,7 +292,7 @@ mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
 
     mqtt_client_err_t result = MQTT_CLIENT_OK;
 
-    while (len > 0) {
+    while (len > 0 && c->state != MQTT_CLIENT_DISCONNECTED) {
         if (c->rx_skip > 0) {
             uint16_t drop = (c->rx_skip < len) ? (uint16_t)c->rx_skip : len;
             c->rx_skip -= drop;
