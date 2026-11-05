@@ -464,6 +464,59 @@ TEST(test_error_codes)
     ASSERT_EQ(-4, (int)DHCP_PACKET_ERR_OVERFLOW);
 }
 
+static const uint8_t pad_mac[6] = { 2, 0, 0, 0, 0, 1 };
+static const uint8_t pad_ip[4] = { 192, 168, 1, 10 };
+static const uint8_t pad_server[4] = { 192, 168, 1, 1 };
+
+static void assert_zero_after_end(const uint8_t *buf, int n, size_t end_offset)
+{
+    ASSERT_EQ(n, DHCP_PACKET_BOOTP_MIN_LEN);
+    ASSERT_EQ(buf[end_offset], DHCP_OPT_END);
+    for (size_t i = end_offset + 1; i < (size_t)n; i++) {
+        ASSERT_EQ(buf[i], 0);
+    }
+}
+
+TEST(test_discover_fills_the_bootp_minimum)
+{
+    uint8_t buf[DHCP_PACKET_MAX_LEN];
+    dhcp_header_t hdr;
+    memset(buf, 0xAA, sizeof(buf));
+
+    int n = dhcp_packet_build_discover(buf, sizeof(buf), 7, pad_mac);
+    assert_zero_after_end(buf, n, 249);
+    ASSERT_EQ(buf[n], 0xAA);
+    ASSERT_EQ(dhcp_packet_parse(buf, (size_t)n, &hdr), DHCP_PACKET_OK);
+    ASSERT_EQ(hdr.msg_type, DHCP_MSG_DISCOVER);
+}
+
+TEST(test_request_fills_the_bootp_minimum)
+{
+    uint8_t buf[DHCP_PACKET_MAX_LEN];
+    dhcp_header_t hdr;
+    memset(buf, 0xAA, sizeof(buf));
+
+    int n = dhcp_packet_build_request(buf, sizeof(buf), 7, pad_mac, pad_ip, pad_server);
+    assert_zero_after_end(buf, n, 261);
+    ASSERT_EQ(buf[n], 0xAA);
+    ASSERT_EQ(dhcp_packet_parse(buf, (size_t)n, &hdr), DHCP_PACKET_OK);
+    ASSERT_EQ(hdr.msg_type, DHCP_MSG_REQUEST);
+}
+
+TEST(test_builders_need_room_for_the_padding)
+{
+    uint8_t buf[DHCP_PACKET_BOOTP_MIN_LEN];
+
+    ASSERT_EQ(dhcp_packet_build_discover(buf, sizeof(buf) - 1, 7, pad_mac),
+              DHCP_PACKET_ERR_OVERFLOW);
+    ASSERT_EQ(dhcp_packet_build_request(buf, sizeof(buf) - 1, 7, pad_mac, pad_ip, pad_server),
+              DHCP_PACKET_ERR_OVERFLOW);
+    ASSERT_EQ(dhcp_packet_build_discover(buf, sizeof(buf), 7, pad_mac),
+              DHCP_PACKET_BOOTP_MIN_LEN);
+    ASSERT_EQ(dhcp_packet_build_request(buf, sizeof(buf), 7, pad_mac, pad_ip, pad_server),
+              DHCP_PACKET_BOOTP_MIN_LEN);
+}
+
 TEST_MAIN("dhcp_packet")
     RUN(test_parse_discover);
     RUN(test_parse_offer);
@@ -489,4 +542,7 @@ TEST_MAIN("dhcp_packet")
     RUN(test_parse_adversarial);
     RUN(test_parse_mini_fuzz);
     RUN(test_error_codes);
+    RUN(test_discover_fills_the_bootp_minimum);
+    RUN(test_request_fills_the_bootp_minimum);
+    RUN(test_builders_need_room_for_the_padding);
 TEST_MAIN_END()

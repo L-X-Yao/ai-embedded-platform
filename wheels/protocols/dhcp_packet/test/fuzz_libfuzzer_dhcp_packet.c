@@ -49,7 +49,7 @@ static void round_trip_discover(fuzz_input_t *in) {
     fuzz_take(in, mac, sizeof(mac));
 
     int need = dhcp_packet_build_discover(scratch, sizeof(scratch), xid, mac);
-    if (need <= 0) __builtin_trap();
+    if (need != DHCP_PACKET_BOOTP_MIN_LEN) __builtin_trap();
 
     size_t cap = fuzz_u16(in) % (size_t)need;
     uint8_t *small = malloc(cap ? cap : 1);
@@ -76,7 +76,7 @@ static void round_trip_request(fuzz_input_t *in) {
     fuzz_take(in, server_ip, sizeof(server_ip));
 
     int need = dhcp_packet_build_request(scratch, sizeof(scratch), xid, mac, req_ip, server_ip);
-    if (need <= 0) __builtin_trap();
+    if (need != DHCP_PACKET_BOOTP_MIN_LEN) __builtin_trap();
 
     size_t cap = fuzz_u16(in) % (size_t)need;
     uint8_t *small = malloc(cap ? cap : 1);

@@ -26,6 +26,7 @@ extern "C" {
 /* ---------- constants ---------- */
 
 #define DHCP_PACKET_MIN_LEN    240
+#define DHCP_PACKET_BOOTP_MIN_LEN 300  /* RFC 1542: builders pad up to this */
 #define DHCP_PACKET_MAX_LEN    576
 #define DHCP_MAGIC_COOKIE      0x63825363U
 
@@ -121,16 +122,18 @@ int dhcp_packet_get_option(const uint8_t *buf, size_t len,
                            uint8_t code, dhcp_option_t *opt);
 
 /**
- * Build a DHCP DISCOVER message.
+ * Build a DHCP DISCOVER message, zero-padded to DHCP_PACKET_BOOTP_MIN_LEN.
  * Returns bytes written on success, or negative dhcp_packet_err_t on failure.
+ * A cap below DHCP_PACKET_BOOTP_MIN_LEN returns DHCP_PACKET_ERR_OVERFLOW.
  * @thread_safe: yes (pure function)
  */
 int dhcp_packet_build_discover(uint8_t *buf, size_t cap,
                                uint32_t xid, const uint8_t mac[6]);
 
 /**
- * Build a DHCP REQUEST message.
+ * Build a DHCP REQUEST message, zero-padded to DHCP_PACKET_BOOTP_MIN_LEN.
  * Returns bytes written on success, or negative dhcp_packet_err_t on failure.
+ * A cap below DHCP_PACKET_BOOTP_MIN_LEN returns DHCP_PACKET_ERR_OVERFLOW.
  * @thread_safe: yes (pure function)
  */
 int dhcp_packet_build_request(uint8_t *buf, size_t cap,
