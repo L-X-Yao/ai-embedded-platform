@@ -762,6 +762,25 @@ TEST(test_feed_cr_lf_sequence)
     ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
 }
 
+TEST(test_csq_outside_the_at_range_is_ignored)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_csq(&dev, on_csq, NULL);
+
+    feed_line(&dev, "+CSQ: 100,99");
+    ASSERT_EQ(-1, g_csq_value);
+    /* more digits than an int holds */
+    feed_line(&dev, "+CSQ: 99999999999999,99");
+    ASSERT_EQ(-1, g_csq_value);
+    ASSERT_EQ(-1, air780eg_get_last_csq(&dev));
+
+    feed_line(&dev, "+CSQ: 99,99");
+    ASSERT_EQ(99, g_csq_value);
+}
+
 TEST_MAIN("air780eg")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -816,4 +835,5 @@ TEST_MAIN("air780eg")
     RUN(test_matched_line_null_dev);
     RUN(test_send_cmd_null_dev);
     RUN(test_feed_cr_lf_sequence);
+    RUN(test_csq_outside_the_at_range_is_ignored);
 TEST_MAIN_END()
