@@ -294,13 +294,15 @@ TEST(test_set_altitude)
 TEST(test_perform_reset)
 {
     setup();
+    mock_time_reset();
 
     scd40_err_t e = scd40_perform_reset(&dev);
     ASSERT_EQ(e, SCD40_OK);
-    /* Verify reset command: 0xD3 0x04 */
-    ASSERT_EQ(mock_last_write[0], 0xD3);
-    ASSERT_EQ(mock_last_write[1], 0x04);
+    /* Table 9, p8: reinit is 0x3646 with a 30 ms execution time */
+    ASSERT_EQ_HEX(mock_last_write[0], 0x36);
+    ASSERT_EQ_HEX(mock_last_write[1], 0x46);
     ASSERT_EQ(mock_last_write_len, 2);
+    ASSERT_EQ(mock_time_delay_total_ms, 30);
 }
 
 TEST(test_null_params_all_apis)

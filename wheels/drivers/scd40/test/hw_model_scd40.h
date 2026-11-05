@@ -26,8 +26,8 @@
 #define SCD40_CMD_STOP_PERIODIC_LSB   0x86u
 #define SCD40_CMD_GET_SERIAL_MSB      0x36u
 #define SCD40_CMD_GET_SERIAL_LSB      0x82u
-#define SCD40_CMD_PERFORM_RESET_MSB   0xD3u
-#define SCD40_CMD_PERFORM_RESET_LSB   0x04u
+#define SCD40_CMD_REINIT_MSB          0x36u
+#define SCD40_CMD_REINIT_LSB          0x46u
 #define SCD40_CMD_SET_ALTITUDE_MSB    0x24u
 #define SCD40_CMD_SET_ALTITUDE_LSB    0x27u
 #define SCD40_CMD_GET_DATA_READY_MSB  0xE4u
@@ -146,10 +146,9 @@ static bool scd40_model_write(void *ctx, uint8_t dev_addr,
              data[1] == SCD40_CMD_GET_SERIAL_LSB) {
         m->pending_response = SCD40_MODEL_RESP_SERIAL;
     }
-    /* perform_reset */
-    else if (data[0] == SCD40_CMD_PERFORM_RESET_MSB &&
-             data[1] == SCD40_CMD_PERFORM_RESET_LSB) {
-        m->periodic_running = false;
+    /* reinit: does not end a periodic measurement (p17) */
+    else if (data[0] == SCD40_CMD_REINIT_MSB &&
+             data[1] == SCD40_CMD_REINIT_LSB) {
         m->reset_count++;
     }
     /* set_altitude (5 bytes: cmd + arg + crc) */

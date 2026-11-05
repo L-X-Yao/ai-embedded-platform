@@ -162,10 +162,12 @@ TEST(test_hw_perform_reset)
     scd40_start_periodic(&dev);
     ASSERT_TRUE(model.periodic_running);
 
+    /* p17: stop_periodic_measurement must come before reinit */
+    ASSERT_EQ(scd40_stop_periodic(&dev), SCD40_OK);
     scd40_err_t err = scd40_perform_reset(&dev);
     ASSERT_EQ(err, SCD40_OK);
     ASSERT_EQ(model.reset_count, 1);
-    ASSERT_FALSE(model.periodic_running);  /* reset stops periodic */
+    ASSERT_FALSE(model.periodic_running);
 }
 
 /* --- CRC agreement ----------------------------------------------------- */
