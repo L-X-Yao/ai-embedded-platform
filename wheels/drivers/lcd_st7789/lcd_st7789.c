@@ -121,6 +121,11 @@ lcd_st7789_err_t lcd_st7789_init(lcd_st7789_t *dev,
     if (cfg->width == 0 || cfg->height == 0) {
         return LCD_ST7789_ERR_PARAM;
     }
+    /* Frame memory addresses run X 0-239 and Y 0-319. */
+    if ((uint32_t)cfg->width + cfg->col_offset > 240u ||
+        (uint32_t)cfg->height + cfg->row_offset > 320u) {
+        return LCD_ST7789_ERR_PARAM;
+    }
 
     memset(dev, 0, sizeof(*dev));
     dev->spi = spi;

@@ -587,6 +587,19 @@ TEST(test_fill_rect_after_rotation_oob)
 
 /* ========== runner ========== */
 
+TEST(test_init_refuses_a_panel_past_the_frame_memory)
+{
+    lcd_st7789_cfg_t wide = { .width = 240, .height = 240, .col_offset = 1, .row_offset = 0 };
+    lcd_st7789_cfg_t tall = { .width = 240, .height = 240, .col_offset = 0, .row_offset = 81 };
+    lcd_st7789_cfg_t edge = { .width = 240, .height = 240, .col_offset = 0, .row_offset = 80 };
+    lcd_st7789_t d;
+
+    mock_reset();
+    ASSERT_EQ(lcd_st7789_init(&d, &mock_spi, &wide), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_init(&d, &mock_spi, &tall), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_init(&d, &mock_spi, &edge), LCD_ST7789_OK);
+}
+
 TEST_MAIN("lcd_st7789")
     /* init */
     RUN(test_init_ok);
@@ -649,4 +662,5 @@ TEST_MAIN("lcd_st7789")
     /* rotation + fill_rect integration */
     RUN(test_fill_rect_after_rotation);
     RUN(test_fill_rect_after_rotation_oob);
+    RUN(test_init_refuses_a_panel_past_the_frame_memory);
 TEST_MAIN_END()
