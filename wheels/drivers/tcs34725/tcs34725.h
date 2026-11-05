@@ -45,7 +45,7 @@ typedef struct {
 typedef enum {
     TCS34725_INTEG_2_4MS  = 0xFF,   /* 1 cycle   */
     TCS34725_INTEG_24MS   = 0xF6,   /* 10 cycles */
-    TCS34725_INTEG_50MS   = 0xEB,   /* 20 cycles */
+    TCS34725_INTEG_50MS   = 0xEB,   /* 21 cycles */
     TCS34725_INTEG_101MS  = 0xD5,   /* 42 cycles */
     TCS34725_INTEG_154MS  = 0xC0,   /* 64 cycles */
     TCS34725_INTEG_700MS  = 0x00,   /* 256 cycles */
