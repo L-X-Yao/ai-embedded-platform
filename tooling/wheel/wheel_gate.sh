@@ -201,6 +201,19 @@ for wheel in "${WHEELS[@]}"; do
         rm -rf "$conv_dir" "$conv_log"
     fi
 
+    # --- 2.75. Property test ---
+    # Most prop_*.c files are not CMake targets, so the build above skips them.
+    if ls "${wheel_dir}"/test/prop_*.c >/dev/null 2>&1; then
+        if bash "$REPO/tooling/test/run_generated_tests.sh" "prop_*.c" "property"                 --extra-cflags="-Wextra" --wheel="$wheel" >/dev/null 2>&1; then
+            echo -e "  ${GREEN}PASS${NC} property test"
+        else
+            echo -e "  ${RED}FAIL${NC} property test"
+            FAIL=$((FAIL + 1))
+            FAILED_WHEELS+=("$wheel")
+            continue
+        fi
+    fi
+
     # --- 2.8. SPDX header check ---
     spdx_missing=0
     while IFS= read -r f; do
