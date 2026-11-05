@@ -140,7 +140,7 @@ static void plant_data(uint32_t adc_p, uint32_t adc_t,
     /* gas: 10-bit ADC + valid + range */
     mock_regs[0x2A] = (uint8_t)(adc_gas >> 2);
     mock_regs[0x2B] = (uint8_t)(((adc_gas & 0x03) << 6) |
-                                (gas_valid ? 0x20 : 0x00) |
+                                (gas_valid ? 0x30 : 0x00) | /* valid + stable */
                                 (gas_range & 0x0F));
 }
 
@@ -640,6 +640,159 @@ TEST(test_no_delay_callback)
     ASSERT_EQ(e, BME680_OK);
 }
 
+/* Bosch's floating point humidity formula from the datasheet, section 3.3.3. */
+static double datasheet_humidity(const bme680_t *d, double temp_comp, uint16_t hum_adc)
+{
+    double var1 = hum_adc - (((double)d->par_h1 * 16.0) +
+                             (((double)d->par_h3 / 2.0) * temp_comp));
+    double var2 = var1 * (((double)d->par_h2 / 262144.0) *
+                          (1.0 + (((double)d->par_h4 / 16384.0) * temp_comp) +
+                           (((double)d->par_h5 / 1048576.0) * temp_comp * temp_comp)));
+    double var3 = (double)d->par_h6 / 16384.0;
+    double var4 = (double)d->par_h7 / 2097152.0;
+    return var2 + ((var3 + (var4 * temp_comp)) * var2 * var2);
+}
+
+/* Bosch's floating point heater formula, for an ambient temperature in deg C. */
+static uint8_t datasheet_res_heat(const bme680_t *d, double target, double ambient)
+{
+    double var1 = ((double)d->par_gh1 / 16.0) + 49.0;
+    double var2 = (((double)d->par_gh2 / 32768.0) * 0.0005) + 0.00235;
+    double var3 = (double)d->par_gh3 / 1024.0;
+    double var4 = var1 * (1.0 + (var2 * target));
+    double var5 = var4 + (var3 * ambient);
+    return (uint8_t)(3.4 * ((var5 * (4.0 / (4.0 + (double)d->res_heat_range)) *
+                             (1.0 / (1.0 + ((double)d->res_heat_val * 0.002)))) - 25.0));
+}
+
+static int polls_until_ready;
+
+static void delay_until_ready(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    (void)ms;
+    if (--polls_until_ready <= 0) {
+        mock_regs[0x1D] = 0x80;
+    }
+}
+
+TEST(test_humidity_matches_datasheet)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(415148, 500000, 25000, 300, 3, true);
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+
+    double want = datasheet_humidity(&dev, data.temperature_c, 25000);
+    ASSERT_TRUE(want > 10.0 && want < 90.0);
+    ASSERT_TRUE(data.humidity_pct > want - 0.1 && data.humidity_pct < want + 0.1);
+}
+
+TEST(test_humidity_below_zero_reads_zero)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(415148, 500000, 0, 300, 3, true);
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.humidity_pct == 0.0f);
+}
+
+TEST(test_heater_matches_datasheet)
+{
+    setup();
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 100), BME680_OK);
+    ASSERT_EQ(mock_regs[0x5A], datasheet_res_heat(&dev, 300.0, 25.0));
+    ASSERT_TRUE(mock_regs[0x5A] > 50);
+}
+
+TEST(test_heater_caps_target_at_400)
+{
+    setup();
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 500, 100), BME680_OK);
+    ASSERT_EQ(mock_regs[0x5A], datasheet_res_heat(&dev, 400.0, 25.0));
+}
+
+TEST(test_heater_uses_measured_temperature)
+{
+    bme680_data_t data;
+    setup();
+    dev.par_gh3 = 120;
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 300, 100), BME680_OK);
+    ASSERT_EQ(mock_regs[0x5A], datasheet_res_heat(&dev, 300.0, (double)(int)data.temperature_c));
+}
+
+TEST(test_gas_needs_stable_heater)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    mock_regs[0x2B] &= (uint8_t)~0x10u; /* heat_stab_r clear */
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.gas_resistance_ohm == 0.0f);
+}
+
+TEST(test_long_heater_does_not_time_out)
+{
+    static const bme680_i2c_t i2c_ready_later = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = delay_until_ready,
+        .ctx       = NULL,
+    };
+    bme680_data_t data;
+    bme680_t d;
+    mock_reset();
+    ASSERT_EQ(bme680_init(&d, &i2c_ready_later, BME680_ADDR_LOW), BME680_OK);
+    ASSERT_EQ(bme680_set_gas_heater(&d, 300, 4000), BME680_OK);
+
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    mock_regs[0x1D] = 0x00;
+    polls_until_ready = 350; /* well past the old one second window */
+
+    ASSERT_EQ(bme680_read(&d, &data), BME680_OK);
+}
+
+TEST(test_reset_restores_defaults)
+{
+    bme680_data_t data;
+    setup();
+    mock_regs[0x72] = 0;
+    mock_regs[0x74] = 0;
+    uint32_t delays = mock_delay_ms_count;
+
+    ASSERT_EQ(bme680_reset(&dev), BME680_OK);
+
+    ASSERT_TRUE(mock_delay_ms_count > delays);
+    ASSERT_EQ(mock_regs[0x72], 0x01);
+    ASSERT_EQ(mock_regs[0x74], 0x24);
+
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+}
+
+TEST(test_temperature_cannot_be_skipped)
+{
+    setup();
+    ASSERT_EQ(bme680_set_oversampling(&dev, 0, 1, 1), BME680_ERR_PARAM);
+}
+
+TEST(test_skipped_channels_read_zero)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(0x80000, 500000, 0x8000, 300, 3, true);
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.pressure_pa == 0.0f);
+    ASSERT_TRUE(data.humidity_pct == 0.0f);
+}
+
 TEST_MAIN("bme680")
     RUN(test_init_ok);
     RUN(test_init_chip_id);
@@ -682,4 +835,14 @@ TEST_MAIN("bme680")
     RUN(test_gas_various_ranges);
     RUN(test_humidity_clamp);
     RUN(test_no_delay_callback);
+    RUN(test_humidity_matches_datasheet);
+    RUN(test_humidity_below_zero_reads_zero);
+    RUN(test_heater_matches_datasheet);
+    RUN(test_heater_caps_target_at_400);
+    RUN(test_heater_uses_measured_temperature);
+    RUN(test_gas_needs_stable_heater);
+    RUN(test_long_heater_does_not_time_out);
+    RUN(test_reset_restores_defaults);
+    RUN(test_temperature_cannot_be_skipped);
+    RUN(test_skipped_channels_read_zero);
 TEST_MAIN_END()

@@ -139,6 +139,7 @@ static void bme680_model_set_data_regs(bme680_model_t *m)
     m->hw.regs[0x2A] = (uint8_t)(m->true_gas_adc >> 2);
     m->hw.regs[0x2B] = (uint8_t)(((m->true_gas_adc & 0x03) << 6) |
                                   (1u << 5) |  /* gas_valid = 1 */
+                                  (1u << 4) |  /* heat_stab = 1 */
                                   (m->true_gas_range & 0x0F));
     /* meas_status: new_data = 1 */
     m->hw.regs[BME680_REG_MEAS_STATUS] = 0x80;
