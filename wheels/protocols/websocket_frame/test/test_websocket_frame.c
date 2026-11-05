@@ -206,6 +206,36 @@ TEST(test_parse_control_frame_fragmented_rejected)
               WEBSOCKET_FRAME_ERR_PROTOCOL);
 }
 
+TEST(test_build_refuses_oversized_control_frame)
+{
+    /* RFC 6455 section 5.5: a control frame carries at most 125 bytes. */
+    uint8_t payload[126] = {0};
+    uint8_t buf[140];
+    size_t out_len = 0;
+
+    ASSERT_EQ(websocket_frame_build(buf, sizeof(buf), &out_len, true,
+                                    WEBSOCKET_FRAME_OPCODE_PING, NULL, payload, 126),
+              WEBSOCKET_FRAME_ERR_PROTOCOL);
+    ASSERT_EQ(websocket_frame_build(buf, sizeof(buf), &out_len, true,
+                                    WEBSOCKET_FRAME_OPCODE_PING, NULL, payload, 125),
+              WEBSOCKET_FRAME_OK);
+    ASSERT_EQ(out_len, 127);
+}
+
+TEST(test_build_refuses_fragmented_control_frame)
+{
+    /* RFC 6455 section 5.5: control frames must not be fragmented. */
+    uint8_t buf[8];
+    size_t out_len = 0;
+
+    ASSERT_EQ(websocket_frame_build(buf, sizeof(buf), &out_len, false,
+                                    WEBSOCKET_FRAME_OPCODE_CLOSE, NULL, NULL, 0),
+              WEBSOCKET_FRAME_ERR_PROTOCOL);
+    ASSERT_EQ(websocket_frame_build(buf, sizeof(buf), &out_len, false,
+                                    WEBSOCKET_FRAME_OPCODE_TEXT, NULL, NULL, 0),
+              WEBSOCKET_FRAME_OK);
+}
+
 TEST_MAIN("websocket_frame")
     RUN(test_parse_unmasked_text);
     RUN(test_parse_masked_text);
@@ -224,4 +254,6 @@ TEST_MAIN("websocket_frame")
     RUN(test_parse_fragmented_continuation);
     RUN(test_parse_rsv_bits_rejected);
     RUN(test_parse_control_frame_fragmented_rejected);
+    RUN(test_build_refuses_oversized_control_frame);
+    RUN(test_build_refuses_fragmented_control_frame);
 TEST_MAIN_END()

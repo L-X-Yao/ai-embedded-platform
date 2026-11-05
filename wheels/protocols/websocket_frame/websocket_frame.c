@@ -91,6 +91,10 @@ websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t
     if (!payload && payload_len > 0)
         return WEBSOCKET_FRAME_ERR_PARAM;
 
+    /* RFC 6455 s5.5: control frames are short and never fragmented */
+    if (((uint8_t)opcode & 0x08) != 0 && (!fin || payload_len > 125))
+        return WEBSOCKET_FRAME_ERR_PROTOCOL;
+
     size_t hdr_len = 2;
     if (payload_len > 125 && payload_len <= 65535)
         hdr_len = 4;
