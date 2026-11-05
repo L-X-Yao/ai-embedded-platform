@@ -13,7 +13,6 @@
 #define REG_AVG_CURRENT      0x10u
 #define REG_AVG_POWER        0x18u
 #define REG_SOC              0x1Cu
-#define REG_DESIGN_CAPACITY  0x3Cu
 
 #define FLAG_CFGUPMODE       (1u << 4)
 
@@ -27,32 +26,33 @@ static void mock_set_le16(uint8_t reg, uint16_t val)
     mock_regs[reg + 1] = (uint8_t)(val >> 8);
 }
 
-static uint16_t mock_get_le16(uint8_t reg)
-{
-    return (uint16_t)((uint16_t)mock_regs[reg + 1] << 8 | mock_regs[reg]);
-}
-
 /* ---------- BQ27441 control register behavior ---------- */
 /*
  * The real BQ27441 treats writes to reg 0x00 as sub-commands:
  * writing DEVICE_TYPE (0x0001) causes the next read of reg 0x00
  * to return 0x0421. Our mock simulates this by intercepting
- * write_regs and patching the response into mock_regs.
+ * write_reg and patching the response into mock_regs.
  */
 static uint16_t mock_device_type = 0x0421u;
 
-static bool mock_bq_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
-                                const uint8_t *buf, uint16_t len)
+static uint16_t mock_control_status;
+static uint8_t  mock_control_low;
+
+static bool mock_bq_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
 {
     /* Let the base mock handle storage + fail injection first */
-    if (!mock_i2c_write_regs(ctx, dev_addr, reg, buf, len))
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
         return false;
 
-    /* Simulate CONTROL sub-command response */
-    if (reg == REG_CONTROL && len == 2) {
-        uint16_t subcmd = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
+    /* Simulate CONTROL sub-command response: low byte, then high byte */
+    if (reg == REG_CONTROL) {
+        mock_control_low = val;
+    } else if (reg == REG_CONTROL + 1) {
+        uint16_t subcmd = (uint16_t)((uint16_t)val << 8 | mock_control_low);
         if (subcmd == CTRL_DEVICE_TYPE) {
             mock_set_le16(REG_CONTROL, mock_device_type);
+        } else if (subcmd == 0x0000u) {
+            mock_set_le16(REG_CONTROL, mock_control_status);
         }
     }
     return true;
@@ -64,6 +64,7 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_device_type = 0x0421u;
+    mock_control_status = 0x0000u; /* unsealed */
     /* Default voltage: 3700 mV */
     mock_set_le16(REG_VOLTAGE, 3700);
     /* Default SOC: 75% */
@@ -78,14 +79,14 @@ static void mock_reset(void)
     mock_set_le16(REG_FULL_CHARGE_CAP, 2000);
     /* Default avg power: -555 mW */
     mock_set_le16(REG_AVG_POWER, (uint16_t)(int16_t)-555);
-    /* Default flags: no config mode */
-    mock_set_le16(REG_FLAGS, 0x0000);
+    /* Default flags: battery detected, no config mode */
+    mock_set_le16(REG_FLAGS, 0x0008);
 }
 
 static const bq27441_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = mock_bq_write_reg,
     .read_regs = mock_i2c_read_regs,
-    .write_regs = mock_bq_write_regs,
+    .write_regs = mock_i2c_write_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
@@ -393,30 +394,12 @@ TEST(test_exit_config_mode_timeout)
 
 /* ========== design capacity ========== */
 
-TEST(test_set_design_capacity)
-{
-    mock_reset();
-    bq27441_init(&dev, &mock_i2c);
-
-    ASSERT_EQ(bq27441_set_design_capacity(&dev, 2200), BQ27441_OK);
-    ASSERT_EQ(mock_get_le16(REG_DESIGN_CAPACITY), 2200);
-}
-
 TEST(test_set_design_capacity_zero_rejected)
 {
     mock_reset();
     bq27441_init(&dev, &mock_i2c);
 
     ASSERT_EQ(bq27441_set_design_capacity(&dev, 0), BQ27441_ERR_PARAM);
-}
-
-TEST(test_set_design_capacity_i2c_fail)
-{
-    mock_reset();
-    bq27441_init(&dev, &mock_i2c);
-
-    mock_fail_next = 1;
-    ASSERT_EQ(bq27441_set_design_capacity(&dev, 2200), BQ27441_ERR_I2C);
 }
 
 /* ========== seal / unseal ========== */
@@ -427,7 +410,6 @@ TEST(test_unseal)
     bq27441_init(&dev, &mock_i2c);
 
     ASSERT_EQ(bq27441_unseal(&dev), BQ27441_OK);
-    /* Two write_regs calls happened (key A + key B) */
 }
 
 TEST(test_seal)
@@ -456,10 +438,10 @@ TEST(test_init_null_read_regs)
     ASSERT_EQ(bq27441_init(&dev, &bad_i2c), BQ27441_ERR_PARAM);
 }
 
-TEST(test_init_null_write_regs)
+TEST(test_init_null_write_reg)
 {
     bq27441_i2c_t bad_i2c = mock_i2c;
-    bad_i2c.write_regs = NULL;
+    bad_i2c.write_reg = NULL;
     ASSERT_EQ(bq27441_init(&dev, &bad_i2c), BQ27441_ERR_PARAM);
 }
 
@@ -474,6 +456,72 @@ TEST(test_zero_init_safety)
     (void)data;
     /* Cannot call read on zero dev (i2c is NULL -> would deref), but
        null checks on dev/out protect the entry point */
+}
+
+static uint32_t shortest_poll_ms;
+
+static void record_poll_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    /* Bus gaps are 1 ms. Anything longer is a wait between Flags() polls. */
+    if (ms > 1 && (shortest_poll_ms == 0 || ms < shortest_poll_ms)) {
+        shortest_poll_ms = ms;
+    }
+}
+
+TEST(test_control_uses_single_byte_writes)
+{
+    bq27441_i2c_t no_block = mock_i2c;
+    no_block.write_regs = NULL;
+    mock_reset();
+    ASSERT_EQ(bq27441_init(&dev, &no_block), BQ27441_OK);
+}
+
+TEST(test_init_requires_delay)
+{
+    bq27441_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+    mock_reset();
+    ASSERT_EQ(bq27441_init(&dev, &no_delay), BQ27441_ERR_PARAM);
+}
+
+TEST(test_unseal_reports_still_sealed)
+{
+    mock_reset();
+    bq27441_init(&dev, &mock_i2c);
+
+    mock_control_status = 1u << 13; /* SS */
+    ASSERT_EQ(bq27441_unseal(&dev), BQ27441_ERR_SEALED);
+}
+
+TEST(test_read_needs_a_battery)
+{
+    bq27441_data_t data;
+    mock_reset();
+    bq27441_init(&dev, &mock_i2c);
+
+    mock_set_le16(REG_FLAGS, 0x0000);
+    ASSERT_EQ(bq27441_read(&dev, &data), BQ27441_ERR_NO_BATTERY);
+}
+
+TEST(test_config_polls_at_most_twice_a_second)
+{
+    bq27441_i2c_t slow = mock_i2c;
+    slow.delay_ms = record_poll_delay;
+    mock_reset();
+    ASSERT_EQ(bq27441_init(&dev, &slow), BQ27441_OK);
+
+    shortest_poll_ms = 0;
+    mock_set_le16(REG_FLAGS, FLAG_CFGUPMODE);
+    ASSERT_EQ(bq27441_enter_config_mode(&dev), BQ27441_OK);
+    ASSERT_TRUE(shortest_poll_ms >= 500);
+}
+
+TEST(test_set_design_capacity_is_unsupported)
+{
+    mock_reset();
+    bq27441_init(&dev, &mock_i2c);
+    ASSERT_EQ(bq27441_set_design_capacity(&dev, 2200), BQ27441_ERR_UNSUPPORTED);
 }
 
 TEST_MAIN("bq27441")
@@ -510,13 +558,17 @@ TEST_MAIN("bq27441")
     RUN(test_enter_config_mode_timeout);
     RUN(test_exit_config_mode_ok);
     RUN(test_exit_config_mode_timeout);
-    RUN(test_set_design_capacity);
     RUN(test_set_design_capacity_zero_rejected);
-    RUN(test_set_design_capacity_i2c_fail);
     RUN(test_unseal);
     RUN(test_seal);
     RUN(test_unseal_i2c_fail);
     RUN(test_init_null_read_regs);
-    RUN(test_init_null_write_regs);
+    RUN(test_init_null_write_reg);
     RUN(test_zero_init_safety);
+    RUN(test_control_uses_single_byte_writes);
+    RUN(test_init_requires_delay);
+    RUN(test_unseal_reports_still_sealed);
+    RUN(test_read_needs_a_battery);
+    RUN(test_config_polls_at_most_twice_a_second);
+    RUN(test_set_design_capacity_is_unsupported);
 TEST_MAIN_END()

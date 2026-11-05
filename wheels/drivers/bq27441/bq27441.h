@@ -31,6 +31,9 @@ typedef enum {
     BQ27441_ERR_ID      = -2,
     BQ27441_ERR_PARAM   = -3,
     BQ27441_ERR_TIMEOUT = -4,
+    BQ27441_ERR_SEALED  = -5,
+    BQ27441_ERR_NO_BATTERY = -6,
+    BQ27441_ERR_UNSUPPORTED = -7,
 } bq27441_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -41,7 +44,7 @@ typedef struct {
                       uint8_t *buf, uint16_t len);
     bool (*write_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                        const uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = no delay */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* required */
     void *ctx;
 } bq27441_i2c_t;
 
@@ -73,7 +76,9 @@ typedef struct {
 /** Initialize and verify device ID (0x0421). @thread_safe: no @isr_safe: no */
 bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c);
 
-/** Read all fuel gauge data into out. @thread_safe: caller_must_lock @isr_safe: no */
+/** Read all fuel gauge data into out. Returns BQ27441_ERR_NO_BATTERY when the
+ *  gauge detects no battery, as its predictions are then not valid.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 bq27441_err_t bq27441_read(bq27441_t *dev, bq27441_data_t *out);
 
 /** Read battery voltage in mV. @thread_safe: caller_must_lock @isr_safe: no */
@@ -94,10 +99,12 @@ bq27441_err_t bq27441_enter_config_mode(bq27441_t *dev);
 /** Exit config update mode and reseal. @thread_safe: no @isr_safe: no */
 bq27441_err_t bq27441_exit_config_mode(bq27441_t *dev);
 
-/** Set design capacity in mAh (must be in config mode). @thread_safe: no @isr_safe: no */
+/** Not available yet: returns BQ27441_ERR_UNSUPPORTED, as the value needs block
+ *  data access. @thread_safe: no @isr_safe: no */
 bq27441_err_t bq27441_set_design_capacity(bq27441_t *dev, uint16_t mah);
 
-/** Send unseal keys to transition from sealed to unsealed. @thread_safe: no @isr_safe: no */
+/** Send unseal keys. Returns BQ27441_ERR_SEALED if the gauge stayed sealed.
+ *  @thread_safe: no @isr_safe: no */
 bq27441_err_t bq27441_unseal(bq27441_t *dev);
 
 /** Seal the device (restrict access to control/config). @thread_safe: no @isr_safe: no */
