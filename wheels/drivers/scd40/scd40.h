@@ -67,7 +67,8 @@ scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c);
 /** Start periodic measurement (5 s interval). @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_start_periodic(scd40_t *dev);
 
-/** Stop periodic measurement. @thread_safe: no @isr_safe: no */
+/** Stop periodic measurement. Blocks 500 ms, the time the sensor stays
+ *  silent after this command. @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_stop_periodic(scd40_t *dev);
 
 /** Read CO2/temp/humidity. Call after data_ready returns true.

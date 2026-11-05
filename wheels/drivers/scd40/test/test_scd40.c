@@ -163,6 +163,26 @@ TEST(test_start_stop_periodic)
     ASSERT_EQ(mock_last_write_len, 2);
 }
 
+TEST(test_stop_periodic_waits)
+{
+    /* p10: "the sensor will only respond to other commands 500 ms after
+     * the stop_periodic_measurement command has been issued" */
+    setup();
+    mock_time_reset();
+    ASSERT_EQ(scd40_stop_periodic(&dev), SCD40_OK);
+    ASSERT_EQ(mock_time_delay_total_ms, 500);
+}
+
+TEST(test_set_altitude_waits)
+{
+    /* Table 9, p8: set_sensor_altitude has a 1 ms execution time, and p7
+     * forbids a new command while the previous one is being processed */
+    setup();
+    mock_time_reset();
+    ASSERT_EQ(scd40_set_altitude(&dev, 1500), SCD40_OK);
+    ASSERT_EQ(mock_time_delay_total_ms, 1);
+}
+
 TEST(test_read_measurement)
 {
     setup();
@@ -379,6 +399,8 @@ TEST_MAIN("scd40")
     RUN(test_init_ok);
     RUN(test_init_requires_delay);
     RUN(test_start_stop_periodic);
+    RUN(test_stop_periodic_waits);
+    RUN(test_set_altitude_waits);
     RUN(test_read_measurement);
     RUN(test_data_ready);
     RUN(test_get_serial);
