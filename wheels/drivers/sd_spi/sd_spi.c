@@ -23,6 +23,7 @@
 #define CMD58   58  /* READ_OCR */
 #define ACMD41  41  /* SD_SEND_OP_COND */
 
+#define R1_ILLEGAL_CMD  0x04
 #define DATA_TOKEN      0xFE
 #define DATA_RESP_MASK  0x1F
 #define DATA_RESP_OK    0x05
@@ -167,6 +168,10 @@ sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
         sd->card_type = (ocr[0] & 0x40U)
                         ? SD_SPI_TYPE_SDV2_HC
                         : SD_SPI_TYPE_SDV2_SC;
+    } else if (r1 == 0xFF || !(r1 & R1_ILLEGAL_CMD)) {
+        /* Only an illegal command marks a legacy card (spec 7.2.1). */
+        deselect(hal);
+        return SD_SPI_ERR_INIT;
     } else {
         /* SDv1: CMD8 returns illegal command (0x05 = idle + illegal) */
         deselect(hal);

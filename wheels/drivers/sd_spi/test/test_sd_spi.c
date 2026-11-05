@@ -61,6 +61,7 @@ static int         mock_cmd55_seen;
 static int         mock_busy_polls;     /* polls the card stays busy, -1 = forever */
 static uint8_t     mock_read_token;     /* first byte of the read data phase */
 static uint8_t     mock_status_r2;      /* second byte of the CMD13 response */
+static uint8_t     mock_cmd8_r1;        /* forced CMD8 response, 0 = normal */
 
 /* block storage */
 static uint8_t     mock_block[512];
@@ -92,6 +93,7 @@ static void mock_reset(void)
     mock_busy_polls = 0;
     mock_read_token = 0xFE;
     mock_status_r2 = 0;
+    mock_cmd8_r1 = 0;
     mock_last_addr = 0;
 
     memset(mock_write_buf, 0, sizeof(mock_write_buf));
@@ -133,6 +135,11 @@ static void prepare_response(void)
     }
     if (mock_cmd == 8) {
         /* CMD8 */
+        if (mock_cmd8_r1 != 0) {
+            mock_r1 = mock_cmd8_r1;
+            mock_phase = PH_R1;
+            return;
+        }
         if (mock_is_v1) {
             mock_r1 = 0x05; /* illegal command for v1 */
             mock_phase = PH_R1;
@@ -677,6 +684,22 @@ TEST(test_write_reports_a_programming_error)
     ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_WRITE);
 }
 
+TEST(test_cmd8_crc_error_is_not_a_legacy_card)
+{
+    sd_spi_t sd;
+    mock_reset();
+    mock_cmd8_r1 = 0x09;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_ERR_INIT);
+}
+
+TEST(test_silent_cmd8_is_not_a_legacy_card)
+{
+    sd_spi_t sd;
+    mock_reset();
+    mock_cmd8_r1 = 0xFF;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_ERR_INIT);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -706,4 +729,6 @@ TEST_MAIN("sd_spi")
     RUN(test_write_busy_limit_is_over_500_ms);
     RUN(test_read_token_limit_is_100_ms);
     RUN(test_write_reports_a_programming_error);
+    RUN(test_cmd8_crc_error_is_not_a_legacy_card);
+    RUN(test_silent_cmd8_is_not_a_legacy_card);
 TEST_MAIN_END()
