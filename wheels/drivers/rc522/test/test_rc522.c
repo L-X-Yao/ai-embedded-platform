@@ -22,6 +22,17 @@ static bool    pending_resp_armed;
 
 /* Self-test simulation: fill FIFO when CalcCRC is commanded */
 static bool    mock_self_test_armed;
+static bool    mock_self_test_corrupt;
+static const uint8_t selftest_v2[64] = {  /* data sheet rev 3.9, p.82 */
+    0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
+    0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
+    0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
+    0x51, 0x3A, 0xEB, 0x02, 0x0C, 0xA5, 0x00, 0x49,
+    0x7C, 0x84, 0x4D, 0xB3, 0xCC, 0xD2, 0x1B, 0x81,
+    0x5D, 0x48, 0x76, 0xD5, 0x71, 0x61, 0x21, 0xA9,
+    0x86, 0x96, 0x83, 0x38, 0xCF, 0x9D, 0x5B, 0x6D,
+    0xDC, 0x15, 0xBA, 0x3E, 0x7D, 0x95, 0x3B, 0x2F,
+};
 static bool    mock_self_test_all_zero;  /* if true, fill with zeros (fail case) */
 
 /* Transceive error injection */
@@ -68,6 +79,7 @@ static void mock_reset(void)
     pending_resp_armed = false;
     mock_self_test_armed = false;
     mock_self_test_all_zero = false;
+    mock_self_test_corrupt = false;
     mock_error_inject = 0;
     mock_error_armed = false;
 
@@ -139,13 +151,22 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             /* CalcCRC command during self-test -- fill FIFO with 64 bytes */
             mock_fifo_head = 0;
             mock_fifo_count = 0;
-            uint8_t fill = mock_self_test_all_zero ? 0x00 : 0xA5;
             for (uint8_t i = 0; i < 64; i++) {
-                mock_fifo_push(fill);
+                mock_fifo_push(mock_self_test_all_zero ? 0x00 : selftest_v2[i]);
+            }
+            if (mock_self_test_corrupt) {
+                mock_fifo[(mock_fifo_head + 5) % MOCK_FIFO_SIZE] ^= 0x01;
             }
             mock_regs[0x0A] = mock_fifo_count;
             mock_self_test_armed = false;
             mock_regs[mock_addr_latch] = tx;
+        } else if (mock_addr_latch == 0x01 && tx == 0x0F) {
+            /* SoftReset: registers return to their reset values */
+            mock_regs[0x11] = 0x3F;
+            mock_regs[0x14] = 0x80;
+            mock_regs[0x15] = 0x00;
+            mock_regs[0x2A] = 0x00;
+            mock_regs[mock_addr_latch] = 0x20;
         } else if (mock_addr_latch == 0x09) {
             mock_fifo_push(tx);
             mock_regs[0x0A] = mock_fifo_count;
@@ -450,6 +471,15 @@ TEST(test_transceive_buffer_overflow_error)
     ASSERT_EQ(rc522_detect_card(&dev), RC522_ERR_SPI);
 }
 
+TEST(test_init_switches_the_field_on)
+{
+    rc522_t dev;
+    mock_reset();
+    ASSERT_EQ(rc522_init(&dev, &mock_spi), RC522_OK);
+    /* TxControlReg resets to 80h, which leaves both drivers off */
+    ASSERT_EQ(mock_regs[0x14] & 0x03, 0x03);
+}
+
 TEST_MAIN("rc522")
     RUN(test_init_ok);
     RUN(test_init_version_v1);
@@ -477,4 +507,5 @@ TEST_MAIN("rc522")
     RUN(test_transceive_pure_collision_error);
     RUN(test_transceive_parity_error);
     RUN(test_transceive_buffer_overflow_error);
+    RUN(test_init_switches_the_field_on);
 TEST_MAIN_END()
