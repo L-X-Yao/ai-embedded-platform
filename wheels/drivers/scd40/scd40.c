@@ -116,7 +116,7 @@ scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c)
     {
         return SCD40_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read)
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
     {
         return SCD40_ERR_PARAM;
     }
@@ -166,10 +166,7 @@ scd40_err_t scd40_read(scd40_t *dev, scd40_data_t *out)
         return SCD40_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     uint16_t words[3];
     scd40_err_t err = read_words(dev, words, 3);
@@ -199,10 +196,7 @@ scd40_err_t scd40_data_ready(scd40_t *dev, bool *ready)
         return SCD40_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     uint16_t status;
     scd40_err_t err = read_words(dev, &status, 1);
@@ -230,10 +224,7 @@ scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3])
         return SCD40_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     return read_words(dev, serial, 3);
 }
