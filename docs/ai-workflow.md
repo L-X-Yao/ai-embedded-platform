@@ -304,7 +304,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 
 **触发**：项目即将消费一个未验证的 L1 驱动，或用户说"验证 xxx 驱动"。
 
-**背景**：AI 生成的驱动缺陷率实测——常见芯片（BMP280、MPU6050）~16%，冷门芯片 ~60%。优先验证冷门芯片。
+**背景**：AI 生成的驱动缺陷率实测——常见芯片（BMP280、MPU6050）~16%，冷门芯片 ~60%，2026-11 抽查的 10 颗全部有缺陷。优先验证冷门芯片。测试全绿不能当证据：有 6 个 mock 抄了驱动的错值。
 
 1. **查验证状态**：`memory/project_platform_quality_ceiling_2026_05_07.md`。
 2. **获取 datasheet**：web search `"<chip> datasheet PDF"`，找到寄存器表。
@@ -315,7 +315,8 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
    - 灵敏度常数 / 单位换算
    - 补偿公式（int64 / double 精度）
 4. **跑 UBSan**：`wsl python3 tooling/audit/audit_sanitizer.py --changed`。
-5. **更新验证记录**：在 memory 文件中标记已验证芯片。
+5. **按手册改 mock**：测试的期望值取自手册或官方驱动，不从驱动里抄。
+6. **更新验证记录**：写进驱动 README 的 `## Datasheet check`，并在 memory 文件中标记已验证芯片。
 
 ---
 
