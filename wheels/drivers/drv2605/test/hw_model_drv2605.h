@@ -76,7 +76,10 @@ static void drv2605_model_init(drv2605_model_t *m)
 
     /* RTP register: 0x00 at POR */
 
-    /* Waveform slots: 0x00 at POR */
+    /* Library and first waveform slot: 0x01 at POR, CONTROL3: 0xA0 (Table 3) */
+    hw_model_set_reset_value(&m->hw, 0x03, 0x01);
+    hw_model_set_reset_value(&m->hw, DRV2605_REG_WAVEFORM0, 0x01);
+    hw_model_set_reset_value(&m->hw, DRV2605_REG_CONTROL3, 0xA0);
 
     /* GO register: 0x00 at POR, only bit 0 is writable */
     hw_model_set_writable_mask(&m->hw, DRV2605_REG_GO, 0x01);

@@ -18,6 +18,7 @@
 #define REG_STATUS      0x00u
 #define REG_MODE        0x01u
 #define REG_RTP         0x02u
+#define REG_LIBRARY     0x03u
 #define REG_WAVEFORM0   0x04u  /* 0x04 .. 0x0B = 8 slots */
 #define REG_GO          0x0Cu
 #define REG_FEEDBACK    0x1Au
@@ -29,6 +30,10 @@
 #define MODE_STANDBY        0x40u
 
 #define FEEDBACK_LRA_BIT    0x80u
+
+#define LIBRARY_SEL_MASK    0x07u
+#define LIBRARY_ERM_A       0x01u
+#define LIBRARY_LRA         0x06u
 
 #define GO_BIT              0x01u
 
@@ -94,6 +99,17 @@ drv2605_err_t drv2605_set_actuator(drv2605_t *dev, drv2605_actuator_t type)
         fb &= (uint8_t)~FEEDBACK_LRA_BIT;
 
     if (!write_reg(dev, REG_FEEDBACK, fb))
+        return DRV2605_ERR_I2C;
+
+    /* The ROM effects come from a library matched to the actuator */
+    uint8_t lib = 0;
+    if (!read_reg(dev, REG_LIBRARY, &lib))
+        return DRV2605_ERR_I2C;
+
+    lib &= (uint8_t)~LIBRARY_SEL_MASK;
+    lib |= (type == DRV2605_ACTUATOR_LRA) ? LIBRARY_LRA : LIBRARY_ERM_A;
+
+    if (!write_reg(dev, REG_LIBRARY, lib))
         return DRV2605_ERR_I2C;
 
     return DRV2605_OK;
