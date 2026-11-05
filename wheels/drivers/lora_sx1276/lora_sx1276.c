@@ -26,6 +26,7 @@
 #define REG_FIFO_RX_CURRENT  0x10
 #define REG_IRQ_FLAGS         0x12
 #define REG_RX_NB_BYTES      0x13
+#define REG_HOP_CHANNEL       0x1C
 #define REG_PKT_SNR           0x19
 #define REG_PKT_RSSI          0x1A
 #define REG_MODEM_CONFIG_1   0x1D
@@ -49,6 +50,9 @@
 #define IRQ_TX_DONE           0x08
 #define IRQ_RX_DONE           0x40
 #define IRQ_PAYLOAD_CRC_ERR  0x20
+
+/* RegHopChannel bits */
+#define HOP_CRC_ON_PAYLOAD    0x40
 
 /* RegModemConfig2 bits */
 #define CONFIG2_CRC_ON        0x04
@@ -328,8 +332,9 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
         spi->delay_ms(spi->ctx, 10);
         uint8_t flags = reg_read(spi, REG_IRQ_FLAGS);
         if (flags & IRQ_RX_DONE) {
-            /* check CRC error */
-            if (flags & IRQ_PAYLOAD_CRC_ERR) {
+            /* PayloadCrcError means nothing unless the packet carried a CRC */
+            if ((flags & IRQ_PAYLOAD_CRC_ERR) ||
+                !(reg_read(spi, REG_HOP_CHANNEL) & HOP_CRC_ON_PAYLOAD)) {
                 reg_write(spi, REG_IRQ_FLAGS, 0xFF);
                 (void)set_mode(spi, MODE_STANDBY);
                 return LORA_ERR_CRC;

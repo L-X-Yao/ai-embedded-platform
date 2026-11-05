@@ -702,6 +702,23 @@ TEST(test_init_turns_the_payload_crc_on)
     ASSERT_EQ(mock_regs[0x1E] & 0x04, 0x04);
 }
 
+TEST(test_receive_refuses_a_packet_without_crc)
+{
+    mock_reset_all();
+    lora_t dev;
+    uint8_t buf[8];
+    uint8_t len = 0;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* the header says no CRC, so PayloadCrcError can never be raised */
+    mock_regs[0x1C] = 0x00;
+    mock_delay_count = 0;
+    mock_irq_after_delays = 1;
+    mock_irq_value = 0x40;
+    ASSERT_EQ(lora_receive(&dev, buf, &len, sizeof(buf)), LORA_ERR_CRC);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -736,4 +753,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_init_calibrates_at_the_frequency_in_use);
     RUN(test_init_reports_a_stuck_calibration);
     RUN(test_init_turns_the_payload_crc_on);
+    RUN(test_receive_refuses_a_packet_without_crc);
 TEST_MAIN_END()
