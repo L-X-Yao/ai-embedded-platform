@@ -134,25 +134,25 @@ TEST(test_error_codes)
 TEST(test_read_accel_1g_z)
 {
     setup();
-    plant_accel(0, 0, 16393);  /* 1g / 0.061 mg/LSB = 16393 */
+    plant_accel(0, 0, 16384);  /* manual p.8: 16384 LSB/g at +/-2g */
     plant_gyro(0, 0, 0);
 
     bmi160_data_t data;
     ASSERT_EQ(bmi160_read(&dev, &data), BMI160_OK);
-    ASSERT_NEAR(data.accel_mg[0], 0.0f, 1.0f);
-    ASSERT_NEAR(data.accel_mg[1], 0.0f, 1.0f);
-    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 1.0f);   /* 1g = 1000 mg */
+    ASSERT_NEAR(data.accel_mg[0], 0.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[1], 0.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 0.01f);   /* 1g = 1000 mg */
 }
 
 TEST(test_read_accel_negative)
 {
     setup();
-    plant_accel(-16393, 0, 0);
+    plant_accel(-16384, 0, 0);
     plant_gyro(0, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&dev, &data);
-    ASSERT_NEAR(data.accel_mg[0], -1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], -1000.0f, 0.01f);
 }
 
 /* ---------- read tests: gyro ---------- */
@@ -161,13 +161,12 @@ TEST(test_read_gyro_known_value)
 {
     setup();
     plant_accel(0, 0, 0);
-    /* At +/-250 dps: sensitivity = 0.00763 dps/LSB
-     * For 1 dps: raw = 1 / 0.00763 = ~131.1 -> use 131 */
-    plant_gyro(131, 0, 0);
+    /* Manual p.61: 131.2 LSB/dps at +/-250 dps, so 100 dps = 13120 */
+    plant_gyro(13120, 0, 0);
 
     bmi160_data_t data;
     ASSERT_EQ(bmi160_read(&dev, &data), BMI160_OK);
-    ASSERT_NEAR(data.gyro_dps[0], 1.0f, 0.01f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
     ASSERT_NEAR(data.gyro_dps[1], 0.0f, 0.01f);
     ASSERT_NEAR(data.gyro_dps[2], 0.0f, 0.01f);
 }
@@ -182,13 +181,13 @@ TEST(test_accel_range_4g)
                          .gyro_range = BMI160_GYRO_250DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 1g at 4g range: raw = 1000 / 0.122 = 8197 */
-    plant_accel(8197, 0, 0);
+    /* Manual p.8: 8192 LSB/g at +/-4g */
+    plant_accel(8192, 0, 0);
     plant_gyro(0, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 0.01f);
 }
 
 TEST(test_accel_range_8g)
@@ -199,13 +198,13 @@ TEST(test_accel_range_8g)
                          .gyro_range = BMI160_GYRO_250DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 1g at 8g range: raw = 1000 / 0.244 = 4098 */
-    plant_accel(4098, 0, 0);
+    /* Manual p.8: 4096 LSB/g at +/-8g */
+    plant_accel(4096, 0, 0);
     plant_gyro(0, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 0.01f);
 }
 
 TEST(test_accel_range_16g)
@@ -216,13 +215,13 @@ TEST(test_accel_range_16g)
                          .gyro_range = BMI160_GYRO_250DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 1g at 16g range: raw = 1000 / 0.488 = 2049 */
-    plant_accel(2049, 0, 0);
+    /* Manual p.8: 2048 LSB/g at +/-16g */
+    plant_accel(2048, 0, 0);
     plant_gyro(0, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], 1000.0f, 0.01f);
 }
 
 /* ---------- gyro range tests ---------- */
@@ -235,13 +234,13 @@ TEST(test_gyro_range_125dps)
                          .gyro_range = BMI160_GYRO_125DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 10 dps at 125 range: raw = 10 / 0.00381 = 2625 */
+    /* Manual p.61: 262.4 LSB/dps, so 100 dps = 26240 */
     plant_accel(0, 0, 0);
-    plant_gyro(2625, 0, 0);
+    plant_gyro(26240, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.gyro_dps[0], 10.0f, 0.1f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
 }
 
 TEST(test_gyro_range_500dps)
@@ -252,13 +251,13 @@ TEST(test_gyro_range_500dps)
                          .gyro_range = BMI160_GYRO_500DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 10 dps at 500 range: raw = 10 / 0.01526 = 655 */
+    /* Manual p.61: 65.6 LSB/dps, so 100 dps = 6560 */
     plant_accel(0, 0, 0);
-    plant_gyro(655, 0, 0);
+    plant_gyro(6560, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.gyro_dps[0], 10.0f, 0.1f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
 }
 
 TEST(test_gyro_range_1000dps)
@@ -269,13 +268,13 @@ TEST(test_gyro_range_1000dps)
                          .gyro_range = BMI160_GYRO_1000DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 10 dps at 1000 range: raw = 10 / 0.03052 = 328 */
+    /* Manual p.61: 32.8 LSB/dps, so 100 dps = 3280 */
     plant_accel(0, 0, 0);
-    plant_gyro(328, 0, 0);
+    plant_gyro(3280, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.gyro_dps[0], 10.0f, 0.1f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
 }
 
 TEST(test_gyro_range_2000dps)
@@ -286,13 +285,13 @@ TEST(test_gyro_range_2000dps)
                          .gyro_range = BMI160_GYRO_2000DPS };
     bmi160_t d;
     bmi160_init(&d, &mock_hal, &cfg);
-    /* 10 dps at 2000 range: raw = 10 / 0.06104 = 164 */
+    /* Manual p.61: 16.4 LSB/dps, so 100 dps = 1640 */
     plant_accel(0, 0, 0);
-    plant_gyro(164, 0, 0);
+    plant_gyro(1640, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&d, &data);
-    ASSERT_NEAR(data.gyro_dps[0], 10.0f, 0.1f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
 }
 
 /* ---------- read I2C failure ---------- */

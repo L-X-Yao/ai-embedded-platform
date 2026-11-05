@@ -146,7 +146,7 @@ static void bmi160_model_init(bmi160_model_t *m)
     hw_model_set_on_write(&m->hw, BMI160_REG_CMD, bmi160_model_on_cmd);
 
     /* Default "true" sensor output: 0g X, 0g Y, +1g Z at 2g range
-     * 1g / 0.061 mg/LSB = 16393 raw (approx 16384) */
+     * (manual p.8: 16384 LSB/g) */
     m->true_ax = 0;
     m->true_ay = 0;
     m->true_az = 16384;

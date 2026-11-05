@@ -29,22 +29,24 @@
 
 /* ---------- sensitivity tables ---------- */
 
-/* Accel sensitivity: mg per LSB (16-bit signed output)
+/* Accel sensitivity: mg per LSB (16-bit signed output), from the
+ * manual's LSB/g figures (p.8).
  * Indexed by a helper that maps range enum to table index. */
 static const float accel_sens[] = {
-    0.061f,    /* +/-2g  */
-    0.122f,    /* +/-4g  */
-    0.244f,    /* +/-8g  */
-    0.488f,    /* +/-16g */
+    1000.0f / 16384.0f,  /* +/-2g  */
+    1000.0f / 8192.0f,   /* +/-4g  */
+    1000.0f / 4096.0f,   /* +/-8g  */
+    1000.0f / 2048.0f,   /* +/-16g */
 };
 
-/* Gyro sensitivity: dps per LSB (16-bit signed output) */
+/* Gyro sensitivity: dps per LSB (16-bit signed output), from the
+ * manual's LSB/dps figures (p.61) */
 static const float gyro_sens[] = {
-    0.06104f,  /* +/-2000 dps */
-    0.03052f,  /* +/-1000 dps */
-    0.01526f,  /* +/-500 dps  */
-    0.00763f,  /* +/-250 dps  */
-    0.00381f,  /* +/-125 dps  */
+    1.0f / 16.4f,   /* +/-2000 dps */
+    1.0f / 32.8f,   /* +/-1000 dps */
+    1.0f / 65.6f,   /* +/-500 dps  */
+    1.0f / 131.2f,  /* +/-250 dps  */
+    1.0f / 262.4f,  /* +/-125 dps  */
 };
 
 /* ---------- helpers ---------- */
