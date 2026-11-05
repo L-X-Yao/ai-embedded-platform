@@ -116,7 +116,8 @@ typedef struct {
 bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
                          const bme688_cfg_t *cfg);
 
-/** Trigger forced-mode measurement and read all channels.
+/** Trigger forced-mode measurement and read all channels. Blocks for the
+ *  conversions plus the heater duration, up to about 5 s when a sensor fails.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out);
 

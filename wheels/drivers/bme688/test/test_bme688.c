@@ -475,6 +475,103 @@ TEST(test_read_timeout)
     ASSERT_EQ(bme688_read(&d, &data), BME688_ERR_TIMEOUT);
 }
 
+/* A delay that advances time: new_data appears when the measurement ends */
+static uint32_t elapsed_ms;
+static uint32_t meas_ms;
+
+static void timed_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    elapsed_ms += ms;
+    if (elapsed_ms >= meas_ms)
+        mock_regs[0x1D] |= 0x80;
+}
+
+static const bme688_i2c_t timed_i2c = {
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .delay_ms  = timed_delay,
+    .ctx       = NULL,
+};
+
+static bme688_err_t read_timed(bme688_t *d, uint32_t ms, bme688_data_t *out)
+{
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    mock_regs[0x1D] = 0;
+    elapsed_ms = 0;
+    meas_ms = ms;
+    return bme688_read(d, out);
+}
+
+/* Manual p28: heating lasts up to 4032 ms and starts after T, P and H.
+ * bme68x_get_meas_dur puts those at about 100 ms with everything at 16x */
+TEST(test_read_waits_for_heater)
+{
+    static const uint16_t dur[] = { 100, 1000, 2000, 4032 };
+
+    for (unsigned i = 0; i < sizeof(dur) / sizeof(dur[0]); i++)
+    {
+        mock_reset();
+        bme688_t d;
+        ASSERT_EQ(bme688_init(&d, &timed_i2c, &default_cfg), BME688_OK);
+        ASSERT_EQ(bme688_set_gas_heater(&d, 300, dur[i]), BME688_OK);
+        bme688_data_t data;
+        ASSERT_EQ(read_timed(&d, dur[i] + 100u, &data), BME688_OK);
+        ASSERT_TRUE(data.gas_valid);
+    }
+}
+
+TEST(test_read_waits_for_heater_from_cfg)
+{
+    mock_reset();
+    bme688_cfg_t cfg = default_cfg;
+    cfg.gas_heater_temp_c = 300;
+    cfg.gas_heater_dur_ms = 4032;
+    bme688_t d;
+    ASSERT_EQ(bme688_init(&d, &timed_i2c, &cfg), BME688_OK);
+    bme688_data_t data;
+    ASSERT_EQ(read_timed(&d, 4132, &data), BME688_OK);
+}
+
+/* A dead sensor still times out, and gas_wait cannot exceed 4032 ms */
+TEST(test_read_timeout_with_heater)
+{
+    mock_reset();
+    bme688_t d;
+    ASSERT_EQ(bme688_init(&d, &timed_i2c, &default_cfg), BME688_OK);
+    ASSERT_EQ(bme688_set_gas_heater(&d, 300, 65535), BME688_OK);
+    bme688_data_t data;
+    ASSERT_EQ(read_timed(&d, UINT32_MAX, &data), BME688_ERR_TIMEOUT);
+    ASSERT_TRUE(elapsed_ms >= 4032u && elapsed_ms < 5200u);
+}
+
+/* init leaves the heater off here, so there is no heater time to wait */
+TEST(test_read_no_wait_without_heater)
+{
+    mock_reset();
+    bme688_cfg_t cfg = default_cfg;
+    cfg.gas_heater_temp_c = 0;
+    cfg.gas_heater_dur_ms = 4000;
+    bme688_t d;
+    ASSERT_EQ(bme688_init(&d, &timed_i2c, &cfg), BME688_OK);
+    bme688_data_t data;
+    ASSERT_EQ(read_timed(&d, 0, &data), BME688_OK);
+    ASSERT_TRUE(elapsed_ms < 1000u);
+}
+
+/* Manual p36: a soft reset acts as a power-on, which stops the heater */
+TEST(test_reset_clears_heater_wait)
+{
+    mock_reset();
+    bme688_t d;
+    ASSERT_EQ(bme688_init(&d, &timed_i2c, &default_cfg), BME688_OK);
+    ASSERT_EQ(bme688_set_gas_heater(&d, 300, 4000), BME688_OK);
+    ASSERT_EQ(bme688_reset(&d), BME688_OK);
+    bme688_data_t data;
+    ASSERT_EQ(read_timed(&d, 0, &data), BME688_OK);
+    ASSERT_TRUE(elapsed_ms < 1000u);
+}
+
 TEST(test_reset)
 {
     setup();
@@ -742,6 +839,11 @@ TEST_MAIN("bme688")
     RUN(test_gas_needs_heat_stab);
     RUN(test_read_i2c_fail);
     RUN(test_read_timeout);
+    RUN(test_read_waits_for_heater);
+    RUN(test_read_waits_for_heater_from_cfg);
+    RUN(test_read_timeout_with_heater);
+    RUN(test_read_no_wait_without_heater);
+    RUN(test_reset_clears_heater_wait);
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);
