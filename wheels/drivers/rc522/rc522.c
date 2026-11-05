@@ -145,6 +145,27 @@ static rc522_err_t transceive(const rc522_t *dev,
 
 /* ---------- public API ---------- */
 
+/* Everything a soft reset clears. */
+static void configure(const rc522_spi_t *spi)
+{
+    /* Configure timer: TModeReg and TPrescalerReg
+     * TAuto=1, f_timer = 13.56MHz / (2*TPreScaler+1)
+     * TPrescaler = 0xD3E => ~2kHz timer, reload=30 => ~15ms timeout */
+    reg_write(spi, RC522_REG_TMODE, 0x8D);         /* TAuto=1, prescaler high nibble */
+    reg_write(spi, RC522_REG_TPRESCALER, 0x3E);    /* prescaler low byte */
+    reg_write(spi, RC522_REG_TRELOAD_HI, 0x00);    /* reload value high */
+    reg_write(spi, RC522_REG_TRELOAD_LO, 0x1E);    /* reload value low = 30 */
+
+    /* Force 100% ASK modulation */
+    reg_write(spi, RC522_REG_TXASK, 0x40);
+
+    /* Set CRC preset to 0x6363 (ISO 14443-3) */
+    reg_write(spi, RC522_REG_MODE, 0x3D);
+
+    /* TxControlReg resets to 80h, so there is no RF field until these are set */
+    reg_set_bits(spi, RC522_REG_TXCONTROL, 0x03);
+}
+
 rc522_err_t rc522_init(rc522_t *dev,
                            const rc522_spi_t *spi)
 {
@@ -166,19 +187,7 @@ rc522_err_t rc522_init(rc522_t *dev,
     }
     dev->version = ver;
 
-    /* Configure timer: TModeReg and TPrescalerReg
-     * TAuto=1, f_timer = 6.78MHz / (2*TPreScaler+1)
-     * TPrescaler = 0xD3E => ~2kHz timer, reload=30 => ~15ms timeout */
-    reg_write(spi, RC522_REG_TMODE, 0x8D);         /* TAuto=1, prescaler high nibble */
-    reg_write(spi, RC522_REG_TPRESCALER, 0x3E);    /* prescaler low byte */
-    reg_write(spi, RC522_REG_TRELOAD_HI, 0x00);    /* reload value high */
-    reg_write(spi, RC522_REG_TRELOAD_LO, 0x1E);    /* reload value low = 30 */
-
-    /* Force 100% ASK modulation */
-    reg_write(spi, RC522_REG_TXASK, 0x40);
-
-    /* Set CRC preset to 0x6363 (ISO 14443-3) */
-    reg_write(spi, RC522_REG_MODE, 0x3D);
+    configure(spi);
 
     INVARIANT(dev->spi != NULL);
     INVARIANT(dev->version == RC522_VERSION_1_0 || dev->version == RC522_VERSION_2_0);
