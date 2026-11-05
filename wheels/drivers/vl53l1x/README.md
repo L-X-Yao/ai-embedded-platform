@@ -3,10 +3,11 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Not usable on hardware yet.** The driver checks the chip ID and writes one register. It does not load the configuration ST's driver loads, and it reports every reading as valid.
+
 Platform-agnostic driver for the ST VL53L1X time-of-flight (ToF) laser
 distance sensor. I2C interface injected via callbacks (uses 16-bit register
-addresses, unlike most I2C sensors). Continuous ranging mode with 16-bit
-millimeter distance output, up to 4 meters range.
+addresses, unlike most I2C sensors).
 
 ## Origin
 
@@ -60,6 +61,14 @@ None. I2C address is runtime-configurable via `vl53l1x_cfg_t`.
 
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
+
+## Datasheet check
+
+Checked on 2026-11-05 against Pololu `vl53l1x-arduino`, a port of ST's API. ST's datasheet has no register map. Not run on hardware.
+
+- **Matched:** Register addresses, model and module IDs, I2C address, start value, result byte order.
+- **Fixed:** Nothing changed: the gaps need ST's ultra-lite driver ported, not a patch.
+- **Still open:** No default configuration, boot wait or timing budget in init. Range status, data ready and the interrupt clear are never used, so failed and stale readings return `VL53L1X_OK`. Start sets no inter-measurement period. Whether stop should write 0x00 or 0x80, and whether the result needs a gain correction, depends on which ST API is followed.
 
 ## Known issues
 

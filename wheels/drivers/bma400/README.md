@@ -44,6 +44,14 @@ bma400_err_t bma400_set_range(bma400_t *dev, bma400_range_t range);
 - [x] Host (sim) — 2026-05-13
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-05 against BST-BMA400-DS000-14 and Bosch `bma400.c`. Not run on hardware.
+
+- **Matched:** Register addresses, chip ID, I2C addresses, range and power encodings, data layout, sensitivity.
+- **Fixed:** Init and `bma400_set_range` overwrote ACC_CONFIG1 and left a reserved ODR code; range is now set before the power mode and read back, so a dropped write cannot scale readings wrongly; reading in sleep mode and after a failed init is refused; mode changes wait 10 ms when `delay_ms` is given.
+- **Still open:** Data ready is not checked. The 10 ms wait comes from Bosch's driver, not the datasheet.
+
 ## Known issues
 
 None.

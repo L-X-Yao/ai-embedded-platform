@@ -3,6 +3,8 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Not usable on hardware yet.** `pac1952_refresh` sends the wrong command and the HAL cannot issue the Send Byte the chip expects, so measurements do not update. `pac1952_set_sample_rate` returns `PAC1952_ERR_UNSUPPORTED`.
+
 Dual-channel bus voltage, sense voltage, current, and power measurement.
 VBUS: 16-bit unsigned, FSR = 32V. VSENSE: 16-bit signed, FSR = +/-100mV.
 Configurable sense resistor per channel for current/power calculation.
@@ -49,6 +51,14 @@ pac1952_err_t pac1952_get_product_id(pac1952_t *dev, uint8_t *id);
 
 - [x] Host (sim) — 2026-05-06
 - [ ] Real hardware target — not yet verified
+
+## Datasheet check
+
+Checked on 2026-11-05 against Microchip DS20006539E. Not run on hardware.
+
+- **Matched:** CTRL, ACC_COUNT, VBUS, VSENSE and ID register addresses, register widths, VBUS format and LSB, current and power formulas.
+- **Fixed:** Product ID was 0x59, which matches no part; PAC1952-1 is 0x79 and PAC1952-2 is 0x7D. VSENSE was read as signed, but the default range is unipolar, so 25 mV read as 50 mV. `pac1952_set_sample_rate` wrote the GPIO_ALERT2 bits and ACC_COUNT; it now refuses. Removed the wrong VPOWER addresses.
+- **Still open:** REFRESH is at 0x00, not 0x1F, and needs a Send Byte plus a 1 ms wait. CTRL needs a Block Write and a REFRESH afterwards. The I2C address is fixed at 0x10, which is the ADDRSEL-to-GND case only.
 
 ## Known issues
 

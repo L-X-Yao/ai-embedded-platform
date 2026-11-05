@@ -3,6 +3,8 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Reading works per the manual, configuring does not.** `bq27441_set_design_capacity` returns `BQ27441_ERR_UNSUPPORTED`, so the gauge stays on its default capacity.
+
 I2C driver for the TI BQ27441-G1 single-cell Li-Ion fuel gauge. Reads voltage, current,
 state of charge, temperature, remaining/full-charge capacity, and average power. Supports
 config mode for setting design capacity, plus seal/unseal for device security.
@@ -72,6 +74,14 @@ No compile-time defines required. All configuration is runtime via API calls.
 
 - [x] Host (sim) — 2026-05-06
 - [ ] Real hardware target — not yet verified
+
+## Datasheet check
+
+Checked on 2026-11-05 against TI SLUSBH1C and SLUUAC9A. Not run on hardware.
+
+- **Matched:** I2C address, all command addresses, sub-commands, unseal key, device type, byte order, signedness, units.
+- **Fixed:** Control writes are now single bytes, as the gauge needs above 100 kHz, with a bus gap after each transfer; Flags() polling dropped from every 10 ms to every 500 ms; `delay_ms` is now required; unseal confirms the state and returns `BQ27441_ERR_SEALED`; `bq27441_read` returns `BQ27441_ERR_NO_BATTERY` without BAT_DET; `bq27441_set_design_capacity` wrote a read-only register and now refuses.
+- **Still open:** Design capacity through block data access (TRM section 3.1). `bq27441_exit_config_mode` always seals, even a gauge that started unsealed. `bq27441_read` issues eight commands in a row, and the datasheet limit of two per second may apply to them.
 
 ## Known issues
 
