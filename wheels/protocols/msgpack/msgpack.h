@@ -100,11 +100,12 @@ msgpack_err_t msgpack_enc_int(msgpack_enc_t *enc, int32_t val);
 msgpack_err_t msgpack_enc_float(msgpack_enc_t *enc, float val);
 
 /** Pack string (length-prefixed, no NUL terminator stored).
+ *  str may be NULL when len is 0.
  *  @thread_safe: yes (pure function) */
 msgpack_err_t msgpack_enc_str(msgpack_enc_t *enc,
                               const char *str, size_t len);
 
-/** Pack binary blob (length-prefixed).
+/** Pack binary blob (length-prefixed). data may be NULL when len is 0.
  *  @thread_safe: yes (pure function) */
 msgpack_err_t msgpack_enc_bin(msgpack_enc_t *enc,
                               const uint8_t *data, size_t len);
