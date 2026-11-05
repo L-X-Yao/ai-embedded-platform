@@ -112,6 +112,18 @@ TEST(test_null_safety)
     ASSERT_EQ(ms5611_reset(NULL), MS5611_ERR_PARAM);
 }
 
+TEST(test_init_requires_delay)
+{
+    /* p11: "If the ADC read command is sent during conversion the result
+     * will be 0, the conversion will not stop and the final result will
+     * be wrong." Only the delay callback keeps reads out of that window. */
+    mock_reset();
+    ms5611_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+    ms5611_t d;
+    ASSERT_EQ(ms5611_init(&d, &no_delay, &default_cfg), MS5611_ERR_PARAM);
+}
+
 TEST(test_prom_readback)
 {
     setup();
@@ -276,6 +288,7 @@ TEST_MAIN("ms5611")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
+    RUN(test_init_requires_delay);
     RUN(test_prom_readback);
     RUN(test_read_ok);
     RUN(test_read_compensation);
