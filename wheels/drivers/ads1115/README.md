@@ -36,6 +36,15 @@ ads1115_err_t ads1115_set_channel(ads1115_t *dev, ads1115_mux_t mux);
 - [x] Linux host (sim) — passed 2026-04-29
 - [x] Windows (TDM-GCC) — passed 2026-04-29
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SBAS444E. Not run on hardware.
+
+- **Matched:** Addresses, config register fields, data rate and PGA codes, scaling.
+- **Fixed:** Nothing in the driver.
+- **Still open:** The model finishes a conversion inside the config write, so the poll loop never runs, and it lets a write clear OS. The property tests use a byte-wide mock in which two registers share a byte.
+- **Suspected:** With `delay_ms` NULL the poll is 200 back-to-back reads, shorter than an 8 SPS conversion on a fast bus. `ads1115_read_voltage` is tagged ISR safe although it blocks for a conversion.
+
 ## Known issues
 
 None.

@@ -55,6 +55,15 @@ No compile-time configuration needed. DS3231 has a fixed I2C address (0x68).
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Maxim 19-5170 Rev 10, as a recheck of the May review. Not run on hardware.
+
+- **Matched:** Address, register map, BCD fields, 24-hour handling, the temperature format.
+- **Fixed:** `ds3231_set_time` accepted days the month does not have, such as 31 February.
+- **Still open:** The model resets to a made-up date with OSF clear, where the chip resets to 01/01/00 with OSF set.
+- **Suspected:** OSF is never read, so the time after a battery loss comes back as valid.
+
 ## Known issues
 
 None.

@@ -42,6 +42,15 @@ None. Range, data rate, and I2C address are runtime-configurable via `adxl345_cf
 - [x] Host (sim) -- passed 2026-05-11
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against ADI ADXL345 Rev. G. Not run on hardware.
+
+- **Matched:** Addresses, device ID, register map, range and rate codes, data order and scaling.
+- **Fixed:** `adxl345_init` accepted 1600 and 3200 Hz, above the 800 Hz limit of a 400 kHz I2C bus.
+- **Still open:** No test uses `hw_model_adxl345.h`. It has no BW_RATE reset value, skips the turn-on time and ignores DATA_FORMAT.
+- **Suspected:** init does not wait for the turn-on time, so an early read can return stale data. DATA_FORMAT is written while measuring. The full-resolution scale uses the rounded 3.9 mg/LSB.
+
 ## Known issues
 
 - Only I2C is implemented (ADXL345 also supports SPI).

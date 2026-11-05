@@ -39,6 +39,15 @@ ina219_err_t ina219_reset(ina219_t *dev);
 
 - [x] Linux host (sim) — passed 2026-05-01
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SBOS448G, as a recheck of the May review. Not run on hardware.
+
+- **Matched:** Register map, gain and range fields, the calibration formula, current and power scaling.
+- **Fixed:** Calibration could be odd, though bit 0 does not exist, which left the scale slightly off at the 80 mV gain. The 32 V range comment now gives the 26 V input limit.
+- **Still open:** The model always returns zero in the low bits of Bus Voltage, so no test proves the flags are dropped.
+- **Suspected:** `ina219_reset` leaves calibration at 0, so current and power then read 0. The manual does not say how the Power register behaves with reverse current.
+
 ## Known issues
 
 None.

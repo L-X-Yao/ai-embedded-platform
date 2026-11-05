@@ -47,11 +47,13 @@ None. All parameters set at runtime via API calls.
 
 ## Datasheet check
 
-Checked on 2026-11-05 against Semtech `sx126x_driver` and LoRaMac-node. The datasheet could not be downloaded. Not run on hardware.
+Checked on 2026-11-05 against Semtech `sx126x_driver` and LoRaMac-node, and on 2026-11-06 against DS.SX1261-2.W.APP Rev. 1.2. Not run on hardware.
 
-- **Matched:** 17 opcodes, IRQ bits, SF, BW and CR codes, 16 command frames, frequency word, buffer limits.
+- **Matched:** 21 opcodes, IRQ bits, SF, BW and CR codes, 16 command frames, frequency word, buffer limits.
 - **Fixed:** Every packet went out as 255 bytes, as the length was never updated; the "3 s" timeout was 300 ms; PA and TX power were never configured; RSSI used the instantaneous value; init did not check that a chip answered; `SX1262_ERR_CRC` now reports damaged packets, which also set RxDone; RX stops the RTC as required; added the BW500 and PA clamp workarounds, low data rate optimization, the TX timeout IRQ, a BW check and SPI error checks on reads.
-- **Still open:** TX power is fixed at 14 dBm. SetRegulatorMode is not sent, so DC-DC boards stay on the LDO. There is no wake-up path from sleep. Pulsing NRESET is left to the caller.
+- **Still open:** TX power is fixed at 14 dBm. SetRegulatorMode is not sent, so DC-DC boards stay on the LDO. There is no TCXO or RF switch control, so boards that need either will not run. Pulsing NRESET is left to the caller.
+- **Fixed on 2026-11-06:** After `sx1262_sleep` every command failed on BUSY, and `sx1262_standby` now wakes the chip. Time on air left out 12 symbols, which could abort long packets at SF10 to SF12 and narrow bandwidths. The preamble is now 12 symbols at SF5 and SF6.
+- **Suspected:** CalibrateImage is never sent, so bands outside 902-928 MHz keep the power-on image calibration. The 0x0889 workaround runs at configure time and not before each packet. There is no 600 ns guard before the first BUSY read.
 
 ## Known issues
 
