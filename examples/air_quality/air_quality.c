@@ -502,7 +502,7 @@ static void veml_plant_lux_raw(uint16_t als_raw, uint16_t white_raw)
 static void veml_mock_reset(void)
 {
     memset(veml_regs, 0, sizeof(veml_regs));
-    /* Plant ALS raw=1000 (~57.6 lux at gain=1, IT=100ms) */
+    /* Plant ALS raw=1000 (~67.2 lux at gain=1, IT=100ms) */
     veml_plant_lux_raw(1000, 950);
 }
 
@@ -727,8 +727,8 @@ TEST(test_veml7700_read_lux)
     veml7700_err_t err = veml7700_read_lux(&veml_dev, &lux);
     ASSERT_EQ(err, VEML7700_OK);
 
-    /* At gain=1, IT=100ms, resolution=0.0576: raw=1000 -> 57.6 lux */
-    ASSERT_NEAR(lux, 57.6f, 1.0f);
+    /* At gain=1, IT=100ms, resolution=0.0672: raw=1000 -> 67.2 lux */
+    ASSERT_NEAR(lux, 67.2f, 1.0f);
     ASSERT_TRUE(lux > 0.0f);
 
     printf("\n  VEML7700: lux=%.2f\n", (double)lux);

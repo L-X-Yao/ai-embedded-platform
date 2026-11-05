@@ -9,7 +9,7 @@
  *
  * 16-bit register-based I2C: write/read 2 bytes (little-endian).
  * Fixed address 0x10. ALS + White channel. Configurable gain and
- * integration time for 0.0036 to 1.8432 lux/bit resolution.
+ * integration time for 0.0042 to 2.1504 lux/bit resolution.
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: caller owns the veml7700_t struct.
  */

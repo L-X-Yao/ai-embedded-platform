@@ -106,8 +106,8 @@ TEST(test_read_lux_reasonable)
     float lux = 0.0f;
     veml7700_err_t err = veml7700_read_lux(&dev, &lux);
     ASSERT_EQ(err, VEML7700_OK);
-    /* raw=1000, resolution at gain=1, IT=100ms = 0.0576 -> ~57.6 lux */
-    ASSERT_TRUE(lux > 50.0f && lux < 65.0f);
+    /* raw=1000, resolution at gain=1, IT=100ms = 0.0672 -> 67.2 lux */
+    ASSERT_TRUE(lux > 67.1f && lux < 67.3f);
 }
 
 /* --- datasheet behavior tests ------------------------------------------ */
