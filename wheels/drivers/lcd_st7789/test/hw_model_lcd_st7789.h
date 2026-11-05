@@ -13,7 +13,7 @@
  * - INVON/INVOFF (0x21/0x20): display inversion
  * - DISPON/DISPOFF (0x29/0x28): display enable
  * - SLPIN/SLPOUT (0x10/0x11): sleep mode
- * - SWRESET (0x01): software reset to POR defaults
+ * - SWRESET (0x01): software reset, keeps MADCTL and COLMOD; POR defaults
  *
  * The model provides SPI HAL callbacks (cs/dc/rst/xfer/delay) that the
  * driver injects, so the full driver init / draw path runs against this
@@ -102,18 +102,18 @@ static void lcd_st7789_model_init(lcd_st7789_model_t *m)
     m->rst_level   = true;
 }
 
-/* Software reset: returns most state to POR */
+/* Software reset: MADCTL and COLMOD keep their values (V1.0 p.217, p.224) */
 static void lcd_st7789_model_sw_reset(lcd_st7789_model_t *m)
 {
+    bool swapped = (m->madctl & 0x20) != 0;  /* MV */
+
     m->sleep       = true;
     m->display_on  = false;
     m->inversion   = false;
-    m->madctl      = 0x00;
-    m->colmod      = 0x06;
     m->col_start   = 0x0000;
-    m->col_end     = 0x00EF;
+    m->col_end     = swapped ? 0x013F : 0x00EF;
     m->row_start   = 0x0000;
-    m->row_end     = 0x013F;
+    m->row_end     = swapped ? 0x00EF : 0x013F;
     m->pending_cmd = 0;
     m->arg_pos     = 0;
     m->pixel_buf_pos = 0;
@@ -296,6 +296,8 @@ static void st7789_model_rst_set(void *ctx, bool level)
     m->rst_level = level;
     if (!level) {
         /* Reset asserted -- return to POR defaults */
+        m->madctl = 0x00;
+        m->colmod = 0x06;
         lcd_st7789_model_sw_reset(m);
     }
 }
