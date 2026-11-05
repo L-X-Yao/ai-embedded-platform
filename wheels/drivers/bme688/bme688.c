@@ -8,8 +8,8 @@
  * Instances: multi
  *
  * Compensation algorithms from Bosch BME688 datasheet (BST-BME688-DS000-18).
- * Register-compatible with BME680; integer arithmetic for temp/press/hum
- * and gas resistance.
+ * Same chip ID as the BME680, but run_gas, gas_r and the gas formula differ.
+ * Integer arithmetic for temp/press/hum and gas resistance.
  */
 
 #include "bme688.h"

@@ -11,8 +11,8 @@
  * algorithm from the BME688 datasheet (BST-BME688-DS000-18).
  * Pure C99, no heap, fully reentrant per-context.
  *
- * The BME688 shares the same register map and chip ID (0x61) as the BME680.
- * The gas sensor is improved but the digital interface is compatible.
+ * The BME688 shares its chip ID (0x61) with the BME680, but not its whole
+ * register map: run_gas and gas_r sit elsewhere, and the gas formula differs.
  */
 
 #ifndef BME688_H
