@@ -11,7 +11,7 @@ Vendor: see VENDOR.md.
 
 ## Why self-written?
 
-Not self-written. Vendored from armink's FlashDB v2.1.0 (BSD-3). See "Why this upstream?" below.
+Not self-written. Vendored from armink's FlashDB v2.1.0 (Apache-2.0). See "Why this upstream?" below.
 
 ## Dependencies
 
