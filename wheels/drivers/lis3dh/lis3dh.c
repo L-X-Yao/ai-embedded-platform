@@ -26,6 +26,7 @@
 
 /* CTRL_REG4 bits */
 #define CTRL4_BDU       0x80u   /* block data update */
+#define CTRL4_HR        0x08u   /* high resolution: 12-bit output */
 
 /* Multi-byte read: set MSB of sub-address for auto-increment */
 #define AUTO_INC        0x80u
@@ -87,8 +88,8 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
     if (!write_reg(dev, REG_CTRL_REG1, ctrl1))
         return LIS3DH_ERR_I2C;
 
-    /* CTRL_REG4: BDU + full-scale range */
-    uint8_t ctrl4 = CTRL4_BDU | (uint8_t)((unsigned)cfg->range << 4);
+    /* CTRL_REG4: BDU + full-scale range + high resolution */
+    uint8_t ctrl4 = CTRL4_BDU | CTRL4_HR | (uint8_t)((unsigned)cfg->range << 4);
     if (!write_reg(dev, REG_CTRL_REG4, ctrl4))
         return LIS3DH_ERR_I2C;
 
@@ -139,7 +140,7 @@ lis3dh_err_t lis3dh_set_range(lis3dh_t *dev, lis3dh_range_t range)
     if (!dev || (unsigned)range > 3)
         return LIS3DH_ERR_PARAM;
 
-    uint8_t ctrl4 = CTRL4_BDU | (uint8_t)((unsigned)range << 4);
+    uint8_t ctrl4 = CTRL4_BDU | CTRL4_HR | (uint8_t)((unsigned)range << 4);
     if (!write_reg(dev, REG_CTRL_REG4, ctrl4))
         return LIS3DH_ERR_I2C;
 
