@@ -66,6 +66,7 @@
 
 /* Packet format: 8 symbol preamble, explicit header, CRC on, standard IQ */
 #define PREAMBLE_SYMBOLS          8U
+#define PREAMBLE_SYMBOLS_LOW_SF   12U  /* the datasheet asks for 12 at SF5 and SF6 */
 #define PAYLOAD_MAX               255U
 
 /* PA: full SX1262 high power path, power set separately with SetTxParams */
@@ -252,6 +253,11 @@ static bool needs_ldro(sx1262_sf_t sf, sx1262_bw_t bw)
 }
 
 /* LoRa time on air, from the formula in Semtech's reference driver. */
+static uint8_t preamble_symbols(const sx1262_t *dev)
+{
+    return (dev->sf <= SX1262_SF6) ? PREAMBLE_SYMBOLS_LOW_SF : PREAMBLE_SYMBOLS;
+}
+
 static uint32_t time_on_air_ms(const sx1262_t *dev, uint8_t payload_len)
 {
     int32_t sf = (int32_t)dev->sf;
@@ -270,7 +276,7 @@ static uint32_t time_on_air_ms(const sx1262_t *dev, uint8_t payload_len)
     }
 
     int32_t symbols = ((numerator + denominator - 1) / denominator) * cr_denominator +
-                      (int32_t)PREAMBLE_SYMBOLS + 12;
+                      (int32_t)preamble_symbols(dev) + 12;
     if (sf <= 6) {
         symbols += 2;
     }
@@ -297,7 +303,7 @@ static sx1262_err_t set_packet_params(const sx1262_t *dev, uint8_t payload_len)
     uint8_t params[6];
 
     params[0] = 0x00;             /* preamble MSB */
-    params[1] = PREAMBLE_SYMBOLS; /* preamble LSB */
+    params[1] = preamble_symbols(dev); /* preamble LSB */
     params[2] = 0x00;             /* explicit header */
     params[3] = payload_len;
     params[4] = 0x01;             /* CRC on */
@@ -454,10 +460,10 @@ sx1262_err_t sx1262_configure_lora(sx1262_t *dev, sx1262_sf_t sf,
     err = send_command(dev->hal, CMD_SET_MOD_PARAMS, mod_params, 4);
     if (err != SX1262_OK) return err;
 
+    dev->sf = sf;
     err = set_packet_params(dev, PAYLOAD_MAX);
     if (err != SX1262_OK) return err;
 
-    dev->sf = sf;
     dev->bw = bw;
     dev->cr = cr;
     return apply_tx_modulation(dev);
