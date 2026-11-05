@@ -66,6 +66,13 @@ typedef struct {
 - [x] Host (sim) -- passed 2026-05-07
 - [ ] ARM Cortex-M -- not yet verified (uses injected GPIO HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Titan Micro TM1637 V2.4. Not run on hardware.
+
+- **Matched:** Data, address and display commands, byte order, start and stop conditions, the ACK slot, brightness values.
+- **Fixed:** Nothing needed fixing.
+
 ## Known issues
 
 - Only 4-digit displays supported (6-digit TM1637 modules exist but are rare).

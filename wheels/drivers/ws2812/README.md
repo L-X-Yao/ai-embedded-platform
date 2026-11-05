@@ -25,7 +25,7 @@ Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. Sub-micr
 ws2812_timing_t timing = {
     .period_ticks  = 59,   /* 48MHz / 60 = 800kHz */
     .t0h_ticks     = 16,   /* 0-bit high: ~0.33µs */
-    .t1h_ticks     = 31,   /* 1-bit high: ~0.65µs */
+    .t1h_ticks     = 32,   /* 1-bit high: ~0.67µs */
     .reset_periods = 80,   /* reset: ≥100µs low */
 };
 
@@ -50,6 +50,14 @@ uint8_t r8 = ws2812_scale5to8(15);  /* → 123 */
 
 - [x] Host (sim) — passed 2026-04-27
 - [ ] N32G003 (drone_light) — original project code verified, wheel not separately HIL tested
+
+## Datasheet check
+
+Checked on 2026-11-06 against the Worldsemi WS2812 and WS2812B sheets, which carry no revision. Not run on hardware.
+
+- **Matched:** 24 bits per LED in GRB order, MSB first, bit period, T0H and T0L, reset time.
+- **Fixed:** The README's T1H ticks fell just outside the WS2812B window at 48 and 168 MHz.
+- **Suspected:** `ws2812_send` encodes the 24 slots of the next LED between two bits, which may run past one bit period if the PWM is free-running.
 
 ## Known issues
 
@@ -80,9 +88,9 @@ cmake -GNinja -S . -B build && cmake --build build
 
 | Clock | period_ticks | t0h_ticks | t1h_ticks |
 |-------|-------------|-----------|-----------|
-| 48 MHz | 59 | 16 | 31 |
+| 48 MHz | 59 | 16 | 32 |
 | 72 MHz | 89 | 24 | 47 |
-| 168 MHz | 209 | 56 | 109 |
+| 168 MHz | 209 | 56 | 110 |
 
 ## API review
 

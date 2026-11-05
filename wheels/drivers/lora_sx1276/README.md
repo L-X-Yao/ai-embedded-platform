@@ -46,7 +46,7 @@ typedef struct {
     const lora_spi_t *spi;
     uint32_t frequency;        /* Hz */
     uint8_t  bandwidth;        /* 0-9 */
-    uint8_t  spreading_factor; /* 6-12 */
+    uint8_t  spreading_factor; /* 7-12 */
     uint8_t  coding_rate;      /* 1-4 */
     int8_t   tx_power;         /* dBm (2-20) */
 } lora_t;
@@ -74,6 +74,15 @@ None. All parameters set at runtime via API calls.
 
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware (SX1276/SX1278 module) — not yet verified
+
+## Datasheet check
+
+Checked on 2026-11-06 against Semtech SX1276/77/78/79 Rev. 4. Not run on hardware.
+
+- **Matched:** RegVersion, register addresses, SPI framing, mode codes, IRQ bits, the Frf formula, the FIFO flow.
+- **Fixed:** Setup registers went to the FSK page because the LoRa bit was set from standby. There was no calibration at the working frequency, and the payload CRC was off. A packet without a CRC was accepted. LowDataRateOptimize never followed the settings. SF6 was accepted without the implicit header it needs. +20 dBm kept the 100 mA current limit. Long packets hit a fixed 2 s limit, and RxTimeout was ignored. RSSI used the wrong offset at 862-868 MHz and left out a negative SNR. Frequencies outside the three bands are refused, and so are 250 and 500 kHz in the low band.
+- **Still open:** `lora_set_frequency` after init does not calibrate again. `lora_receive` listens for one RX single window, 100 symbols by default. The model stays in RX after RxDone, has no RxTimeout, and resets the TX FIFO base to 0 instead of 0x80.
+- **Suspected:** `set_mode` clears LowFrequencyModeOn on every mode change. RegVersion must be exactly 0x12, though its low bits are a metal mask revision. On a slow bus the read-back after TX can already see standby.
 
 ## Known issues
 
