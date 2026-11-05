@@ -173,6 +173,18 @@ TEST(test_crc8_rohc_vector)
     ASSERT_EQ_HEX(crc, 0xD0);
 }
 
+TEST(test_update_leaves_the_crc_alone_on_a_bad_width)
+{
+    static const uint8_t data[1] = { 0x31 };
+    crc_any_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+
+    cfg.width = 0;
+    ASSERT_EQ(crc_any_update(&cfg, 0x1234u, data, 1), 0x1234u);
+    cfg.width = 33;
+    ASSERT_EQ(crc_any_update(&cfg, 0x1234u, data, 1), 0x1234u);
+}
+
 TEST_MAIN("crc_any")
     RUN(test_crc16_modbus_vector);
     RUN(test_crc16_ccitt_vector);
@@ -189,4 +201,5 @@ TEST_MAIN("crc_any")
     RUN(test_width_zero_returns_err);
     RUN(test_crc16_xmodem_vector);
     RUN(test_crc8_rohc_vector);
+    RUN(test_update_leaves_the_crc_alone_on_a_bad_width);
 TEST_MAIN_END()
