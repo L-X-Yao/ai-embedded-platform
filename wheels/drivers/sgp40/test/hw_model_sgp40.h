@@ -61,7 +61,7 @@ static bool sgp40_model_read(void *ctx, uint8_t dev_addr,
     uint16_t word;
     if (m->last_cmd_msb == 0x28 && m->last_cmd_lsb == 0x0E) {
         /* Self-test response */
-        word = m->self_test_pass ? 0xD400 : 0x0000;
+        word = m->self_test_pass ? 0xD400 : 0x4B00;
     } else {
         /* Measurement response */
         word = m->sraw_value;
