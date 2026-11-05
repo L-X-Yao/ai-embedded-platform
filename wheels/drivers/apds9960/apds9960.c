@@ -99,8 +99,8 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
     err = write_reg(dev, REG_ATIME, 0xFFu);
     if (err != APDS9960_OK) return err;
 
-    /* Default proximity pulse: 8 pulses, 8us */
-    err = write_reg(dev, REG_PPULSE, 0x87u);
+    /* Default proximity pulse: 8 pulses, 8us (PPLEN 1, PPULSE 7) */
+    err = write_reg(dev, REG_PPULSE, 0x47u);
     if (err != APDS9960_OK) return err;
 
     /* Default control: gain x1 for ALS/prox, LED 100mA */

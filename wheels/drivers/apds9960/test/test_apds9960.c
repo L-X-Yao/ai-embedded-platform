@@ -50,8 +50,8 @@ TEST(test_init_ok)
     ASSERT_EQ(mock_regs[REG_ENABLE] & 0x01, 0x01);
     /* Verify default ATIME */
     ASSERT_EQ(mock_regs[REG_ATIME], 0xFF);
-    /* Verify PPULSE configured */
-    ASSERT_EQ(mock_regs[REG_PPULSE], 0x87);
+    /* p23: PPLEN 1 in bits 7:6 is 8 us, PPULSE 7 in bits 5:0 is 8 pulses */
+    ASSERT_EQ_HEX(mock_regs[REG_PPULSE], (1u << 6) | 7u);
     /* Verify CONTROL configured */
     ASSERT_EQ(mock_regs[REG_CONTROL], 0x00);
 }
