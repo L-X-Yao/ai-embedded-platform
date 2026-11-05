@@ -283,6 +283,23 @@ TEST(test_init_accepts_the_other_die_id)
     ASSERT_EQ(ina226_init(&d, &mock_i2c, &default_cfg), INA226_OK);
 }
 
+TEST(test_calibration_fits_its_15_bits)
+{
+    ina226_t d;
+    ina226_cfg_t cfg = default_cfg;
+    cfg.shunt_resistance_mohm = 1;
+    cfg.max_current_ma = 5000;
+    mock_reset();
+    mock_set_reg16(0xFE, 0x5449);
+    mock_set_reg16(0xFF, 0x2260);
+    ASSERT_EQ(ina226_init(&d, &mock_i2c, &cfg), INA226_OK);
+
+    /* 1 mOhm at 5 A would need 33554, and bit 15 does not exist */
+    ASSERT_EQ(mock_get_reg16(0x05), 0x7FFF);
+    /* the scale follows the value written: 0.00512 / (32767 * 0.001) */
+    ASSERT_NEAR(d.current_lsb, 0.00512f / (32767.0f * 0.001f), 0.0000001f);
+}
+
 TEST_MAIN("ina226")
     RUN(test_init_ok);
     RUN(test_init_wrong_mfr_id);
@@ -303,4 +320,5 @@ TEST_MAIN("ina226")
     RUN(test_reset_i2c_fail);
     RUN(test_read_current_and_power);
     RUN(test_init_accepts_the_other_die_id);
+    RUN(test_calibration_fits_its_15_bits);
 TEST_MAIN_END()

@@ -118,7 +118,10 @@ ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
     /* Calibration register: CAL = 0.00512 / (current_lsb * r_shunt_ohms) */
     float r_shunt_ohms = (float)cfg->shunt_resistance_mohm / 1000.0f;
     float cal_f = 0.00512f / (dev->current_lsb * r_shunt_ohms);
-    uint16_t cal = (cal_f >= 65535.0f) ? 65535u : (uint16_t)cal_f;
+    uint16_t cal = (cal_f >= 32767.0f) ? 0x7FFFu : (uint16_t)cal_f;
+
+    /* The register has 15 bits, so scale from the value it really holds */
+    if (cal != 0u) dev->current_lsb = 0.00512f / ((float)cal * r_shunt_ohms);
 
     err = write_reg16(dev, REG_CALIBRATION, cal);
     if (err != INA226_OK)
