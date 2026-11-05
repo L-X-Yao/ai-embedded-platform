@@ -35,11 +35,21 @@ typedef struct {
     float            true_temp_c;     /* simulated temperature */
 } tmp102_model_t;
 
-/* Convert Celsius to 12-bit register value (bits[15:4]) */
+/* Convert Celsius to 12-bit register value (bits[15:4]). Table 6-2 gives
+ * 128 C as 7FFh, so the format saturates at its ends. */
 static void tmp102_c_to_raw16(float temp_c, uint8_t *msb, uint8_t *lsb)
 {
-    int16_t raw = (int16_t)(temp_c / 0.0625f);
-    uint16_t val = (uint16_t)(raw << 4);
+    float scaled = temp_c / 0.0625f;
+    int16_t raw;
+
+    if (scaled >= 2047.0f)
+        raw = 2047;
+    else if (scaled <= -2048.0f)
+        raw = -2048;
+    else
+        raw = (int16_t)scaled;
+
+    uint16_t val = (uint16_t)((uint16_t)raw << 4);
     *msb = (uint8_t)(val >> 8);
     *lsb = (uint8_t)(val & 0xFF);
 }

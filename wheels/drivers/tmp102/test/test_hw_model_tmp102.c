@@ -153,6 +153,19 @@ TEST(test_wake_clears_sd_bit)
     ASSERT_EQ(model.hw.regs[cfg_slot] & 0x01, 0x00);
 }
 
+/* Table 6-2 (p.9): 128 C reads as 7FFh, the same as 127.9375 C */
+TEST(test_read_128c_row)
+{
+    setup();
+    tmp102_t dev;
+    tmp102_init(&dev, &model_i2c, &default_cfg);
+
+    tmp102_model_set_temperature(&model, 128.0f);
+    float temp = 0.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+    ASSERT_NEAR(temp, 127.9375f, 0.0001f);
+}
+
 TEST(test_set_alert_thresholds)
 {
     setup();
@@ -208,6 +221,7 @@ TEST_MAIN("tmp102 hardware model")
     RUN(test_temp_register_readonly);
     RUN(test_shutdown_sets_sd_bit);
     RUN(test_wake_clears_sd_bit);
+    RUN(test_read_128c_row);
     RUN(test_set_alert_thresholds);
     RUN(test_different_temperatures);
     RUN(test_multiple_reads_consistent);

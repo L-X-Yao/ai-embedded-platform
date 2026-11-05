@@ -55,11 +55,22 @@ static float raw_to_c(uint8_t msb, uint8_t lsb)
     return (float)assemble_raw12(msb, lsb) * LSB_C;
 }
 
-/* Convert Celsius to 12-bit register value (bits[15:4]). */
+/* Convert Celsius to 12-bit register value (bits[15:4]). Table 6-2 gives
+ * 128 C as 7FFh, so values past the ends saturate instead of wrapping to the
+ * other sign. The caller has already refused NaN. */
 static void c_to_raw(float temp_c, uint8_t *msb, uint8_t *lsb)
 {
-    int16_t raw = (int16_t)(temp_c / LSB_C);
-    uint16_t val = (uint16_t)(raw << 4);
+    float scaled = temp_c / LSB_C;
+    int16_t raw;
+
+    if (scaled >= 2047.0f)          /* 7FFh = 127.9375 C */
+        raw = 2047;
+    else if (scaled <= -2048.0f)    /* 800h = -128 C */
+        raw = -2048;
+    else
+        raw = (int16_t)scaled;
+
+    uint16_t val = (uint16_t)((uint16_t)raw << 4);
     *msb = (uint8_t)(val >> 8);
     *lsb = (uint8_t)(val & 0xFFu);
 }
@@ -104,6 +115,8 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
 static tmp102_err_t write_alert(tmp102_t *dev, uint8_t reg, float temp_c)
 {
     if (!dev)
+        return TMP102_ERR_PARAM;
+    if (temp_c != temp_c)   /* NaN */
         return TMP102_ERR_PARAM;
 
     uint8_t msb, lsb;

@@ -2,6 +2,7 @@
 #include "test_harness.h"
 #include "mock_i2c.h"
 #include "tmp102.h"
+#include <math.h>
 
 /* ---------- chip-specific mock setup ---------- */
 
@@ -173,6 +174,63 @@ TEST(test_alert_i2c_fail)
     ASSERT_EQ(tmp102_set_alert_high(&dev, 80.0f), TMP102_ERR_I2C);
 }
 
+/* T_HIGH as written: ptr 0x03 lands in mock_regs[0x03..0x04] */
+static uint16_t t_high_word(void)
+{
+    return (uint16_t)((uint16_t)mock_regs[0x03] << 8 | mock_regs[0x04]);
+}
+
+/* TI SBOS397I, Table 6-2 (p.9). The limit registers use the same format
+ * (p.19), and the 12 bits are left-justified in the 16-bit word. */
+TEST(test_alert_table_6_2)
+{
+    static const struct {
+        float    temp_c;
+        uint16_t word;
+    } rows[] = {
+        {  128.0f,    0x7FF0 }, {  127.9375f, 0x7FF0 }, { 100.0f, 0x6400 },
+        {   80.0f,    0x5000 }, {   75.0f,    0x4B00 }, {  50.0f, 0x3200 },
+        {   25.0f,    0x1900 }, {    0.25f,   0x0040 }, {   0.0f, 0x0000 },
+        {   -0.25f,   0xFFC0 }, {  -25.0f,    0xE700 }, { -55.0f, 0xC900 },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        setup();
+        ASSERT_EQ(tmp102_set_alert_high(&dev, rows[i].temp_c), TMP102_OK);
+        ASSERT_EQ(t_high_word(), rows[i].word);
+    }
+}
+
+/* Past the ends of the 12-bit format a limit must not wrap to the other
+ * sign: 150 C used to become 0x9600, which is -106 C. */
+TEST(test_alert_saturates)
+{
+    static const struct {
+        float    temp_c;
+        uint16_t word;
+    } rows[] = {
+        {  150.0f,   0x7FF0 }, {  1.0e6f,   0x7FF0 }, {  INFINITY, 0x7FF0 },
+        { -128.0f,   0x8000 }, { -150.0f,   0x8000 }, { -1.0e6f,   0x8000 },
+        { -INFINITY, 0x8000 },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        setup();
+        ASSERT_EQ(tmp102_set_alert_high(&dev, rows[i].temp_c), TMP102_OK);
+        ASSERT_EQ(t_high_word(), rows[i].word);
+    }
+}
+
+TEST(test_alert_refuses_nan)
+{
+    setup();
+    mock_regs[0x03] = 0x50;
+    mock_regs[0x04] = 0x00;
+    ASSERT_EQ(tmp102_set_alert_high(&dev, NAN), TMP102_ERR_PARAM);
+    ASSERT_EQ(tmp102_set_alert_low(&dev, NAN), TMP102_ERR_PARAM);
+    ASSERT_EQ(t_high_word(), 0x5000);
+}
+
 TEST(test_shutdown_sets_bit)
 {
     setup();
@@ -252,6 +310,9 @@ TEST_MAIN("tmp102")
     RUN(test_alert_high);
     RUN(test_alert_low);
     RUN(test_alert_i2c_fail);
+    RUN(test_alert_table_6_2);
+    RUN(test_alert_saturates);
+    RUN(test_alert_refuses_nan);
     RUN(test_shutdown_sets_bit);
     RUN(test_wake_clears_bit);
     RUN(test_shutdown_i2c_fail);
