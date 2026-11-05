@@ -140,6 +140,35 @@ TEST(test_read_touched_all_channels)
     ASSERT_EQ_HEX(status, 0x0FFFu);
 }
 
+/* Rev 4 p.11: register 0x01 is OVCF 0 0 E12TS E11TS E10TS E9TS E8TS. E12TS is
+ * the proximity channel, not one of the 12 electrodes of the bitmap. */
+TEST(test_read_touched_masks_proximity)
+{
+    mock_reset();
+    mpr121_init(&dev, &mock_i2c, &default_cfg);
+
+    mock_regs[MPR121_REG_TOUCH_STATUS_L] = 0x01u;
+    mock_regs[MPR121_REG_TOUCH_STATUS_H] = 0x18u;  /* E12TS and E11TS */
+
+    uint16_t status = 0;
+    ASSERT_EQ(mpr121_read_touched(&dev, &status), MPR121_OK);
+    ASSERT_EQ_HEX(status, 0x0801u);
+}
+
+/* Rev 4 p.11: on over current OVCF is set, the part stops, ExTS bits clear */
+TEST(test_read_touched_overcurrent)
+{
+    mock_reset();
+    mpr121_init(&dev, &mock_i2c, &default_cfg);
+
+    mock_regs[MPR121_REG_TOUCH_STATUS_L] = 0x00u;
+    mock_regs[MPR121_REG_TOUCH_STATUS_H] = 0x80u;
+
+    uint16_t status = 0xFFFFu;
+    ASSERT_EQ(mpr121_read_touched(&dev, &status), MPR121_ERR_OVERCURRENT);
+    ASSERT_EQ_HEX(status, 0x0000u);
+}
+
 TEST(test_read_touched_i2c_fail)
 {
     mock_reset();
@@ -234,6 +263,8 @@ TEST_MAIN("mpr121")
     RUN(test_read_touched_single_channel);
     RUN(test_read_touched_multiple_channels);
     RUN(test_read_touched_all_channels);
+    RUN(test_read_touched_masks_proximity);
+    RUN(test_read_touched_overcurrent);
     RUN(test_read_touched_i2c_fail);
     RUN(test_read_electrode_ch0);
     RUN(test_read_electrode_ch11);

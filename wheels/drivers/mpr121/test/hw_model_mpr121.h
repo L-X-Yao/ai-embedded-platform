@@ -5,7 +5,8 @@
  * Models NXP MPR121 behavior:
  * - Register-based I2C interface at 0x5A-0x5D
  * - 12 capacitive touch electrodes with 10-bit filtered data
- * - Touch status: 16-bit bitmap in regs 0x00-0x01
+ * - Touch status: regs 0x00-0x01, ELE0-11 in bits 11:0, E12TS (proximity) in
+ *   bit 12, OVCF in bit 15
  * - Electrode filtered data: regs 0x04-0x1D (2 bytes each)
  * - Touch/release thresholds: regs 0x41-0x5A
  * - ECR (0x5E): electrode configuration
@@ -24,7 +25,8 @@
 #define MPR121_MODEL_ELECTRODE_COUNT  12
 
 typedef struct {
-    uint16_t touch_status;       /* 12-bit bitmap */
+    uint16_t touch_status;       /* ELE0-11, plus E12TS at bit 12 */
+    bool     ovcf;               /* over current flag, bit 7 of 0x01 */
     uint16_t electrode[MPR121_MODEL_ELECTRODE_COUNT];  /* 10-bit filtered data */
     uint8_t  touch_threshold[MPR121_MODEL_ELECTRODE_COUNT];
     uint8_t  release_threshold[MPR121_MODEL_ELECTRODE_COUNT];
@@ -45,10 +47,20 @@ static void mpr121_model_reset(mpr121_model_t *m)
     m->reset_pending = false;
 }
 
-/* Inject touch status bitmap (bit N = electrode N touched) */
+/* Inject touch status bitmap (bit N = electrode N touched, bit 12 = E12TS) */
 static void mpr121_model_inject_touch(mpr121_model_t *m, uint16_t status)
 {
-    m->touch_status = status & 0x0FFFu;
+    m->touch_status = status & 0x1FFFu;
+}
+
+/* Inject over current on REXT. Rev 4 p.11: OVCF is set, the part goes to Stop
+ * Mode, and the ExTS bits, output registers and ECR D5-D0 are cleared. */
+static void mpr121_model_inject_overcurrent(mpr121_model_t *m)
+{
+    m->ovcf = true;
+    m->touch_status = 0;
+    memset(m->electrode, 0, sizeof(m->electrode));
+    m->ecr &= 0xC0u;
 }
 
 /* Inject 10-bit electrode filtered data for a channel */
@@ -69,7 +81,8 @@ static void mpr121_model_build_regs(const mpr121_model_t *m,
 
     /* Touch status: 0x00 = low byte, 0x01 = high byte */
     regs[0x00] = (uint8_t)(m->touch_status & 0xFFu);
-    regs[0x01] = (uint8_t)((m->touch_status >> 8) & 0x0Fu);
+    regs[0x01] = (uint8_t)(((m->touch_status >> 8) & 0x1Fu)
+                           | (m->ovcf ? 0x80u : 0x00u));
 
     /* Electrode filtered data: 0x04-0x1D, 2 bytes each (LSB first) */
     for (uint8_t ch = 0; ch < MPR121_MODEL_ELECTRODE_COUNT; ch++) {
@@ -112,6 +125,7 @@ static bool mpr121_model_write_reg(void *ctx, uint8_t dev_addr,
     /* Soft reset: write 0x63 to 0x80 */
     if (reg == 0x80u && val == 0x63u) {
         m->ecr = 0x00u;
+        m->ovcf = false;
         memset(m->touch_threshold, 0, sizeof(m->touch_threshold));
         memset(m->release_threshold, 0, sizeof(m->release_threshold));
         m->mhdr = 0; m->nhdr = 0; m->nclr = 0; m->fdlr = 0;
@@ -120,8 +134,15 @@ static bool mpr121_model_write_reg(void *ctx, uint8_t dev_addr,
         return true;
     }
 
-    /* ECR write */
+    /* OVCF: writing 1 clears it; the ExTS bits are read-only */
+    if (reg == 0x01u) {
+        if ((val & 0x80u) != 0u) m->ovcf = false;
+        return true;
+    }
+
+    /* ECR write. While OVCF is 1, a write to enter Run Mode is discarded. */
     if (reg == 0x5Eu) {
+        if (m->ovcf && (val & 0x3Fu) != 0u) return true;
         m->ecr = val;
         return true;
     }

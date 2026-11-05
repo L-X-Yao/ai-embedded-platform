@@ -126,6 +126,56 @@ TEST(test_touch_roundtrip_all)
     ASSERT_EQ_HEX(status, 0x0FFFu);
 }
 
+TEST(test_touch_proximity_not_in_bitmap)
+{
+    setup();
+    mpr121_model_inject_touch(&model, 0x1001u);  /* E12TS and electrode 0 */
+
+    uint16_t status = 0;
+    ASSERT_EQ(mpr121_read_touched(&dev, &status), MPR121_OK);
+    ASSERT_EQ_HEX(status, 0x0001u);
+}
+
+/* --- over current --- */
+
+TEST(test_overcurrent_reported)
+{
+    setup();
+    mpr121_model_inject_touch(&model, 0x0005u);
+    mpr121_model_inject_electrode(&model, 3, 0x0123u);
+    mpr121_model_inject_overcurrent(&model);
+
+    uint16_t status = 0xFFFFu;
+    ASSERT_EQ(mpr121_read_touched(&dev, &status), MPR121_ERR_OVERCURRENT);
+    ASSERT_EQ_HEX(status, 0x0000u);
+
+    /* Rev 4 p.11: Stop Mode, ECR D5-D0 and output registers cleared */
+    ASSERT_EQ_HEX(model.ecr, 0x80u);
+    uint16_t val = 0xFFFFu;
+    ASSERT_EQ(mpr121_read_electrode(&dev, 3, &val), MPR121_OK);
+    ASSERT_EQ(val, 0u);
+}
+
+/* Rev 4 p.11: ECR writes into Run Mode are discarded while OVCF is 1, and
+ * writing 1 to OVCF clears it. This is the recovery the header describes. */
+TEST(test_overcurrent_recovery)
+{
+    setup();
+    mpr121_model_inject_overcurrent(&model);
+
+    ASSERT_TRUE(mpr121_model_write_reg(&model, MPR121_DEV_ADDR, 0x5Eu, 0x8Fu));
+    ASSERT_EQ_HEX(model.ecr, 0x80u);
+
+    ASSERT_TRUE(mpr121_model_write_reg(&model, MPR121_DEV_ADDR,
+                                       MPR121_REG_TOUCH_STATUS_H, 0x80u));
+    ASSERT_EQ(mpr121_init(&dev, &model_i2c, &default_cfg), MPR121_OK);
+    ASSERT_EQ_HEX(model.ecr, 0x8Fu);
+
+    uint16_t status = 0xFFFFu;
+    ASSERT_EQ(mpr121_read_touched(&dev, &status), MPR121_OK);
+    ASSERT_EQ_HEX(status, 0x0000u);
+}
+
 /* --- electrode data round-trip --- */
 
 TEST(test_electrode_roundtrip_ch0)
@@ -212,6 +262,9 @@ TEST_MAIN("mpr121 hardware model")
     RUN(test_touch_roundtrip_multiple);
     RUN(test_touch_roundtrip_none);
     RUN(test_touch_roundtrip_all);
+    RUN(test_touch_proximity_not_in_bitmap);
+    RUN(test_overcurrent_reported);
+    RUN(test_overcurrent_recovery);
     RUN(test_electrode_roundtrip_ch0);
     RUN(test_electrode_roundtrip_ch11);
     RUN(test_electrode_roundtrip_zero);

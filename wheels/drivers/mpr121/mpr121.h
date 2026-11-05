@@ -29,6 +29,7 @@ typedef enum {
     MPR121_OK        =  0,
     MPR121_ERR_I2C   = -1,
     MPR121_ERR_PARAM = -2,
+    MPR121_ERR_OVERCURRENT = -3,  /* OVCF set: the part has stopped */
 } mpr121_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -87,7 +88,11 @@ mpr121_err_t mpr121_init(mpr121_t *dev,
                          const mpr121_i2c_t *i2c,
                          const mpr121_cfg_t *cfg);
 
-/** Read 12-channel touch bitmap (bit N = electrode N). @thread_safe: caller_must_lock @isr_safe: no */
+/** Read 12-channel touch bitmap (bit N = electrode N, bits 15:12 always 0).
+ *  Returns MPR121_ERR_OVERCURRENT if OVCF is set: over current on REXT put the
+ *  part in Stop Mode. To restart, write 0x80 to MPR121_REG_TOUCH_STATUS_H
+ *  through the HAL to clear OVCF, then call mpr121_init again.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 mpr121_err_t mpr121_read_touched(mpr121_t *dev, uint16_t *status);
 
 /** Read 10-bit filtered electrode data for one channel [0..11]. @thread_safe: caller_must_lock @isr_safe: no */
