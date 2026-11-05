@@ -98,6 +98,24 @@ TEST(test_f_clamp_above)
     ASSERT_NEAR(scale_map_f_clamp(1.5f, 0.0f, 1.0f, 0.0f, 100.0f), 100.0f, 0.01f);
 }
 
+TEST(test_i32_survives_the_full_int32_range)
+{
+    /* Each difference here needs 33 bits, and their product needs 64 */
+    ASSERT_EQ(scale_map_i32(0, INT32_MIN, INT32_MAX, 0, 1000), 500);
+    ASSERT_EQ(scale_map_i32(INT32_MAX, INT32_MIN, INT32_MAX, INT32_MIN, INT32_MAX),
+              INT32_MAX);
+    ASSERT_EQ(scale_map_i32(INT32_MIN, INT32_MIN, INT32_MAX, INT32_MIN, INT32_MAX),
+              INT32_MIN);
+    ASSERT_EQ(scale_map_i32(INT32_MAX, INT32_MIN, INT32_MAX, INT32_MAX, INT32_MIN),
+              INT32_MIN);
+}
+
+TEST(test_i32_saturates_a_result_past_int32)
+{
+    ASSERT_EQ(scale_map_i32(INT32_MAX, 0, 1, 0, INT32_MAX), INT32_MAX);
+    ASSERT_EQ(scale_map_i32(INT32_MIN, 0, 1, 0, INT32_MAX), INT32_MIN);
+}
+
 TEST_MAIN("scale_map")
     RUN(test_i32_midpoint);
     RUN(test_i32_identity);
@@ -116,4 +134,6 @@ TEST_MAIN("scale_map")
     RUN(test_f_clamp_in_range);
     RUN(test_f_clamp_below);
     RUN(test_f_clamp_above);
+    RUN(test_i32_survives_the_full_int32_range);
+    RUN(test_i32_saturates_a_result_past_int32);
 TEST_MAIN_END()
