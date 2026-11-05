@@ -118,6 +118,10 @@ drv2605_err_t drv2605_go(drv2605_t *dev)
     if (!dev || !dev->i2c)
         return DRV2605_ERR_PARAM;
 
+    /* GO plays the sequencer only in internal trigger mode */
+    if (!write_reg(dev, REG_MODE, DRV2605_MODE_INTERNAL_TRIGGER))
+        return DRV2605_ERR_I2C;
+
     if (!write_reg(dev, REG_GO, GO_BIT))
         return DRV2605_ERR_I2C;
 
@@ -132,6 +136,10 @@ drv2605_err_t drv2605_stop(drv2605_t *dev)
     if (!write_reg(dev, REG_GO, 0x00))
         return DRV2605_ERR_I2C;
 
+    /* RTP mode keeps driving the actuator until MODE changes */
+    if (!write_reg(dev, REG_MODE, DRV2605_MODE_INTERNAL_TRIGGER))
+        return DRV2605_ERR_I2C;
+
     return DRV2605_OK;
 }
 
@@ -141,6 +149,10 @@ drv2605_err_t drv2605_set_realtime_value(drv2605_t *dev, uint8_t value)
         return DRV2605_ERR_PARAM;
 
     if (!write_reg(dev, REG_RTP, value))
+        return DRV2605_ERR_I2C;
+
+    /* The chip drives RTP_INPUT only in RTP mode */
+    if (!write_reg(dev, REG_MODE, DRV2605_MODE_REALTIME))
         return DRV2605_ERR_I2C;
 
     return DRV2605_OK;
