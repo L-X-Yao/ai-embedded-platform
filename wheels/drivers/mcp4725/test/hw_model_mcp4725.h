@@ -57,7 +57,8 @@ static bool mcp4725_model_write(void *ctx, uint8_t addr,
                                   (uint16_t)data[1]);
     } else if (len == 3) {
         uint8_t cmd = data[0] & 0xE0u;
-        uint8_t pd  = (data[0] >> 2) & 0x03u;
+        /* Figure 6-2: C2 C1 C0 X X PD1 PD0 X */
+        uint8_t pd  = (data[0] >> 1) & 0x03u;
         uint16_t val = (uint16_t)(((uint16_t)data[1] << 4) |
                                   ((uint16_t)data[2] >> 4));
 

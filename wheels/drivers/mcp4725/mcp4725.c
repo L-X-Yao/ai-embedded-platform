@@ -13,8 +13,8 @@
 #include "mcp4725.h"
 #include "contract.h"
 
-/* Command byte bit positions (datasheet Table 6-2):
- * Byte 0: [C2(7)][C1(6)][C0(5)][x(4)][PD1(3)][PD0(2)][x(1)][x(0)]
+/* Command byte bit positions (datasheet Figure 6-2):
+ * Byte 0: [C2(7)][C1(6)][C0(5)][x(4)][x(3)][PD1(2)][PD0(1)][x(0)]
  */
 #define CMD_WRITE_DAC    0x40u   /* C2:C1:C0 = 010 */
 #define CMD_WRITE_EEPROM 0x60u   /* C2:C1:C0 = 011 */
@@ -62,9 +62,9 @@ mcp4725_err_t mcp4725_write_dac(mcp4725_t *dev, uint16_t value,
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
 
-    /* [010x][PD1:PD0][xx] [D11:D4] [D3:D0][xxxx] */
+    /* [010xx][PD1:PD0][x] [D11:D4] [D3:D0][xxxx] */
     uint8_t buf[3];
-    buf[0] = (uint8_t)(CMD_WRITE_DAC | (((uint8_t)pd & 0x03u) << 2));
+    buf[0] = (uint8_t)(CMD_WRITE_DAC | (((uint8_t)pd & 0x03u) << 1));
     buf[1] = (uint8_t)(value >> 4);
     buf[2] = (uint8_t)((value & 0x0Fu) << 4);
 
@@ -83,9 +83,9 @@ mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value,
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
 
-    /* [011x][PD1:PD0][xx] [D11:D4] [D3:D0][xxxx] */
+    /* [011xx][PD1:PD0][x] [D11:D4] [D3:D0][xxxx] */
     uint8_t buf[3];
-    buf[0] = (uint8_t)(CMD_WRITE_EEPROM | (((uint8_t)pd & 0x03u) << 2));
+    buf[0] = (uint8_t)(CMD_WRITE_EEPROM | (((uint8_t)pd & 0x03u) << 1));
     buf[1] = (uint8_t)(value >> 4);
     buf[2] = (uint8_t)((value & 0x0Fu) << 4);
 
