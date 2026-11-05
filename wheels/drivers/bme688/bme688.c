@@ -38,6 +38,7 @@
 #define MODE_FORCED       0x01u
 #define RUN_GAS           0x20u  /* ctrl_gas_1 run_gas<5> */
 #define HEATER_MAX_C      400
+#define GAS_WAIT_MAX_MS   4032u  /* gas_wait_x = 0xFF */
 #define T_FINE_25C        128000  /* t_fine for 25 degC */
 
 /* --- internal helpers --- */
@@ -216,6 +217,7 @@ bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
+    dev->cfg.gas_heater_dur_ms = 0;  /* set when the heater is configured */
     dev->t_fine = T_FINE_25C;  /* heater ambient until the first read */
 
     /* verify chip ID */
@@ -277,8 +279,9 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
                    (uint8_t)((ctrl_meas & 0xFC) | MODE_FORCED)))
         return BME688_ERR_HAL;
 
-    /* wait for measurement completion */
-    delay_ms(dev, 50);
+    /* wait for measurement completion: heating follows the T, P and H
+     * conversions, which the polling below leaves about a second for */
+    delay_ms(dev, 50u + dev->cfg.gas_heater_dur_ms);
 
     /* poll for new_data bit (bit 7 of meas_status register) */
     bool data_ready = false;
@@ -378,7 +381,7 @@ bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
     /* calculate gas wait register value
      * duration_ms mapped to multiplication factor encoding */
     uint8_t gas_wait;
-    if (dur_ms >= 4032)
+    if (dur_ms >= GAS_WAIT_MAX_MS)
     {
         gas_wait = 0xFF;
     }
@@ -402,6 +405,9 @@ bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
     if (!write_reg(dev, REG_CTRL_GAS1, RUN_GAS))
         return BME688_ERR_HAL;
 
+    dev->cfg.gas_heater_temp_c = temp_c;
+    dev->cfg.gas_heater_dur_ms = (dur_ms > GAS_WAIT_MAX_MS) ?
+                                 (uint16_t)GAS_WAIT_MAX_MS : dur_ms;
     return BME688_OK;
 }
 
@@ -411,5 +417,6 @@ bme688_err_t bme688_reset(bme688_t *dev)
         return BME688_ERR_PARAM;
     if (!write_reg(dev, REG_RESET, RESET_CMD))
         return BME688_ERR_HAL;
+    dev->cfg.gas_heater_dur_ms = 0;  /* a soft reset stops the heater */
     return BME688_OK;
 }
