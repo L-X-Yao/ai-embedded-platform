@@ -106,6 +106,7 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
         int rssi = 0;
         while (*p >= '0' && *p <= '9') {
             rssi = rssi * 10 + (*p - '0');
+            if (rssi > 99) return;  /* 3GPP TS 27.007: 0-31, or 99 for unknown */
             p++;
         }
         dev->last_csq = rssi;
