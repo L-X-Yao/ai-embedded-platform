@@ -224,6 +224,23 @@ TEST(test_read_channel_negative_shunt)
     ASSERT_NEAR(shunt_uv, -2000.0f, 41.0f);
 }
 
+/* SBOS576C p.28 worked example: VSHUNT = -80 mV is C180h */
+TEST(test_model_encodes_negative_shunt)
+{
+    setup();
+    ina3221_model_inject_shunt(&model, 0, -80000.0f);
+    ASSERT_EQ_HEX(model.regs[INA3221_REG_CH1_SHUNT_V], 0xC180u);
+}
+
+/* p.28: bit 15 = 1 is a negative number in twos complement, and the bus LSB
+ * is 8 mV, so -8 mV is one count below zero: 1111 1111 1111 1 000 */
+TEST(test_model_encodes_negative_bus)
+{
+    setup();
+    ina3221_model_inject_bus(&model, 0, -8.0f);
+    ASSERT_EQ_HEX(model.regs[INA3221_REG_CH1_BUS_V], 0xFFF8u);
+}
+
 /* ---------- read all channels + current calculation ---------- */
 
 TEST(test_read_all_channels)
@@ -403,4 +420,6 @@ TEST_MAIN("ina3221 hardware model")
     RUN(test_read_channel_null_dev_hw);
     RUN(test_read_all_null_dev_hw);
     RUN(test_read_all_null_out_hw);
+    RUN(test_model_encodes_negative_shunt);
+    RUN(test_model_encodes_negative_bus);
 TEST_MAIN_END()
