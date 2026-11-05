@@ -69,7 +69,8 @@ TEST(test_init_sets_ppulse)
     setup();
     apds9960_t dev;
     apds9960_init(&dev, &model_i2c);
-    ASSERT_EQ(model.hw.regs[APDS_REG_PPULSE], 0x87u);
+    /* p23: PPLEN 1 in bits 7:6 is 8 us, PPULSE 7 in bits 5:0 is 8 pulses */
+    ASSERT_EQ_HEX(model.hw.regs[APDS_REG_PPULSE], (1u << 6) | 7u);
 }
 
 /* --- proximity tests --------------------------------------------------- */
