@@ -82,8 +82,13 @@
 /* Oscillator frequency for Frf calculation */
 #define FXOSC                 32000000UL
 
-/* Max polling iterations for TX/RX done */
+/* Max polling iterations for register flags */
 #define POLL_MAX              200
+
+/* TX and RX waits: time on air plus a margin, in steps of POLL_STEP_MS */
+#define POLL_STEP_MS          10
+#define POLL_MARGIN_MS        200U
+#define MAX_PACKET_LEN        255
 
 /* ---------- internal helpers ---------- */
 
@@ -135,6 +140,26 @@ static void update_low_data_rate(const lora_t *dev)
     cfg3 = (uint8_t)(cfg3 & ~CONFIG3_LOW_DATA_RATE);
     if (low_data_rate(dev)) cfg3 |= CONFIG3_LOW_DATA_RATE;
     reg_write(dev->spi, REG_MODEM_CONFIG_3, cfg3);
+}
+
+/* Time on air by the formula on p.31 of the datasheet, with the default preamble
+ * of 8 symbols, explicit header and CRC on. */
+static uint32_t time_on_air_ms(const lora_t *dev, uint8_t len)
+{
+    int32_t sf = dev->spreading_factor;
+    int32_t de = low_data_rate(dev) ? 1 : 0;
+    int32_t bits = 8 * (int32_t)len - 4 * sf + 28 + 16;
+    int32_t per_block = 4 * (sf - 2 * de);
+    int32_t blocks = (bits > 0) ? (bits + per_block - 1) / per_block : 0;
+
+    /* preamble 8 + 4.25, payload 8 + blocks * (CR + 4), counted in quarters */
+    uint64_t quarters = 49 + 32 + 4 * (uint64_t)blocks * (dev->coding_rate + 4U);
+    return (uint32_t)(quarters * symbol_us(dev) / 4000U);
+}
+
+static uint32_t poll_limit(const lora_t *dev, uint8_t len)
+{
+    return (time_on_air_ms(dev, len) + POLL_MARGIN_MS) / POLL_STEP_MS;
 }
 
 static lora_err_t calibrate_image(const lora_spi_t *spi)
@@ -334,8 +359,9 @@ lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len)
     if (merr != LORA_OK) return merr;
 
     /* poll for TxDone */
-    for (int i = 0; i < POLL_MAX; i++) {
-        spi->delay_ms(spi->ctx, 10);
+    uint32_t limit = poll_limit(dev, len);
+    for (uint32_t i = 0; i < limit; i++) {
+        spi->delay_ms(spi->ctx, POLL_STEP_MS);
         uint8_t flags = reg_read(spi, REG_IRQ_FLAGS);
         if (flags & IRQ_TX_DONE) {
             reg_write(spi, REG_IRQ_FLAGS, IRQ_TX_DONE);
@@ -367,8 +393,9 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
     if (merr != LORA_OK) return merr;
 
     /* poll for RxDone */
-    for (int i = 0; i < POLL_MAX; i++) {
-        spi->delay_ms(spi->ctx, 10);
+    uint32_t limit = poll_limit(dev, MAX_PACKET_LEN);
+    for (uint32_t i = 0; i < limit; i++) {
+        spi->delay_ms(spi->ctx, POLL_STEP_MS);
         uint8_t flags = reg_read(spi, REG_IRQ_FLAGS);
         if (flags & IRQ_RX_DONE) {
             /* PayloadCrcError means nothing unless the packet carried a CRC */

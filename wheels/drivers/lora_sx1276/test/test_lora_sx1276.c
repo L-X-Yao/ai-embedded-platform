@@ -754,6 +754,22 @@ TEST(test_tx_power_sets_the_current_limit)
     ASSERT_EQ_HEX(mock_regs[0x0B], 0x2B);  /* 100 mA, the reset value */
 }
 
+TEST(test_send_waits_for_a_long_packet)
+{
+    mock_reset_all();
+    lora_t dev;
+    uint8_t payload[200] = { 0 };
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+    ASSERT_EQ(lora_set_spreading_factor(&dev, 12), LORA_OK);
+
+    /* 200 bytes at SF12 and 125 kHz take over 7 s on air */
+    mock_delay_count = 0;
+    mock_irq_after_delays = 600;
+    mock_irq_value = 0x08;
+    ASSERT_EQ(lora_send(&dev, payload, sizeof(payload)), LORA_OK);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -791,4 +807,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_receive_refuses_a_packet_without_crc);
     RUN(test_low_data_rate_follows_the_symbol_time);
     RUN(test_tx_power_sets_the_current_limit);
+    RUN(test_send_waits_for_a_long_packet);
 TEST_MAIN_END()
