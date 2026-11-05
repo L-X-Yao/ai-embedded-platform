@@ -257,8 +257,8 @@ TEST(test_gas_heater)
     ASSERT_EQ(e, BME688_OK);
     /* gas_wait0: 150ms -> 150>63 -> dur=150>>2=37, factor=1 -> 37+(1<<6)=101=0x65 */
     ASSERT_EQ(mock_regs[0x64], 0x65);
-    /* ctrl_gas1 should have run_gas bit set */
-    ASSERT_EQ(mock_regs[0x71] & 0x10, 0x10);
+    /* manual p40: run_gas is bit 5; p19: nb_conv 0 selects heater step 0 */
+    ASSERT_EQ_HEX(mock_regs[0x71], 0x20);
 
     /* now read with gas data planted */
     plant_data(415148, 500000, 25000, 300, 3, true);
@@ -401,8 +401,8 @@ TEST(test_init_with_gas_heater)
     bme688_t d;
     bme688_err_t e = bme688_init(&d, &mock_i2c, &cfg);
     ASSERT_EQ(e, BME688_OK);
-    /* ctrl_gas1 should have run_gas bit set */
-    ASSERT_EQ(mock_regs[0x71] & 0x10, 0x10);
+    /* manual p40: run_gas is bit 5; p19: nb_conv 0 selects heater step 0 */
+    ASSERT_EQ_HEX(mock_regs[0x71], 0x20);
 }
 
 TEST(test_humidity_clamp)

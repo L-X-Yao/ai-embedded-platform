@@ -133,11 +133,25 @@ TEST(test_read_gas_nonnegative)
     setup();
     bme688_t dev;
     bme688_init(&dev, &model_i2c, &hw_cfg);
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 300, 100), BME688_OK);
 
     bme688_data_t data;
     bme688_read(&dev, &data);
     ASSERT_TRUE(data.gas_valid);
     ASSERT_TRUE(data.gas_resistance_ohm > 0);
+}
+
+/* Manual p40: gas conversions start only if run_gas = 1 */
+TEST(test_read_no_gas_without_run_gas)
+{
+    setup();
+    bme688_t dev;
+    bme688_init(&dev, &model_i2c, &hw_cfg);
+
+    bme688_data_t data;
+    ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+    ASSERT_FALSE(data.gas_valid);
+    ASSERT_EQ((long long)data.gas_resistance_ohm, 0);
 }
 
 /* --- datasheet behavior tests ------------------------------------------ */
@@ -192,6 +206,7 @@ TEST_MAIN("bme688 hardware model")
     RUN(test_read_pressure_reasonable);
     RUN(test_read_humidity_reasonable);
     RUN(test_read_gas_nonnegative);
+    RUN(test_read_no_gas_without_run_gas);
     RUN(test_chip_id_readonly);
     RUN(test_calib_registers_readonly);
     RUN(test_soft_reset_restores_defaults);
