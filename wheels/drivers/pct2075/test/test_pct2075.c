@@ -221,6 +221,36 @@ TEST(test_custom_address)
     ASSERT_EQ(d.addr, 0x4F);
 }
 
+/* NXP PCT2075 Rev. 9, Table 5 (p.8-9): the three-state address pins give
+ * 27 slave addresses, and Table 6 (6-pin package) uses three of them. */
+TEST(test_table5_addresses)
+{
+    static const uint8_t table5[27] = {
+        0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,     /* rows 1-8 */
+        0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,     /* rows 9-16 */
+        0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,     /* rows 17-24 */
+        0x35, 0x36, 0x37,                                   /* rows 25-27 */
+    };
+
+    for (unsigned addr = 0; addr <= 0xFFu; addr++) {
+        pct2075_err_t want = PCT2075_ERR_PARAM;
+        for (size_t i = 0; i < sizeof(table5); i++) {
+            if (table5[i] == addr) {
+                want = PCT2075_OK;
+            }
+        }
+
+        mock_reset();
+        pct2075_t d;
+        pct2075_cfg_t cfg = { .addr = (uint8_t)addr, .write_config = false,
+                              .conf_val = 0 };
+        ASSERT_EQ(pct2075_init(&d, &mock_i2c, &cfg), want);
+        if (want == PCT2075_OK) {
+            ASSERT_EQ(d.addr, addr);
+        }
+    }
+}
+
 TEST(test_read_neg0_125)
 {
     setup();
@@ -267,6 +297,7 @@ TEST_MAIN("pct2075")
     RUN(test_invalid_address_low);
     RUN(test_invalid_address_high);
     RUN(test_custom_address);
+    RUN(test_table5_addresses);
     RUN(test_read_neg0_125);
     RUN(test_config_write_i2c_fail);
 TEST_MAIN_END()

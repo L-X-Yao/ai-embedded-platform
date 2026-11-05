@@ -41,6 +41,16 @@ static float raw_to_temp(int16_t raw)
     return (float)shifted * 0.125f;
 }
 
+/* The three-state A0-A2 pins give 27 slave addresses (datasheet Table 5).
+ * The 6-pin package uses 0x48-0x4A of these (Table 6). */
+static bool addr_is_valid(uint8_t addr)
+{
+    return (addr >= 0x28u && addr <= 0x2Fu) ||
+           (addr >= 0x35u && addr <= 0x37u) ||
+           (addr >= 0x48u && addr <= 0x4Fu) ||
+           (addr >= 0x70u && addr <= 0x77u);
+}
+
 /* ---------- public API ---------- */
 
 pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
@@ -52,8 +62,7 @@ pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
     if (!i2c->read_regs || !i2c->write_reg) {
         return PCT2075_ERR_PARAM;
     }
-    /* Valid PCT2075 addresses: 0x48 through 0x4F (A0-A2 pins) */
-    if (cfg->addr < 0x48u || cfg->addr > 0x4Fu) {
+    if (!addr_is_valid(cfg->addr)) {
         return PCT2075_ERR_PARAM;
     }
 

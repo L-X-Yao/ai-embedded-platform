@@ -47,7 +47,8 @@ typedef struct {
 /* ---------- configuration ---------- */
 
 typedef struct {
-    uint8_t addr;           /* I2C address (0x48-0x4F) */
+    uint8_t addr;           /* I2C address: 0x28-0x2F, 0x35-0x37, 0x48-0x4F
+                               or 0x70-0x77 (datasheet Table 5) */
     bool    write_config;   /* if true, write conf_val to config register */
     uint8_t conf_val;       /* configuration register value to write */
 } pct2075_cfg_t;
