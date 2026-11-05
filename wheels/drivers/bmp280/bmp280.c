@@ -116,8 +116,9 @@ static uint32_t compensate_pressure(const bmp280_t *dev, int32_t adc_p)
 {
     int32_t var1 = (((int32_t)dev->t_fine) >> 1) - 64000;
     int32_t var2 = (((var1 >> 2) * (var1 >> 2)) >> 11) * ((int32_t)dev->calib.dig_p6);
-    var2 = var2 + ((var1 * ((int32_t)dev->calib.dig_p5)) << 1);
-    var2 = (var2 >> 2) + (((int32_t)dev->calib.dig_p4) << 16);
+    /* Multiplied, not shifted: both values can be negative */
+    var2 = var2 + ((var1 * ((int32_t)dev->calib.dig_p5)) * 2);
+    var2 = (var2 >> 2) + (((int32_t)dev->calib.dig_p4) * 65536);
     var1 = (((dev->calib.dig_p3 * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3)
             + ((((int32_t)dev->calib.dig_p2) * var1) >> 1)) >> 18;
     var1 = ((((32768 + var1)) * ((int32_t)dev->calib.dig_p1)) >> 15);
