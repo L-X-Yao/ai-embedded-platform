@@ -23,10 +23,11 @@ extern "C" {
 #endif
 
 typedef enum {
-    TMP117_OK         =  0,
-    TMP117_ERR_I2C    = -1,
-    TMP117_ERR_ID     = -2,
-    TMP117_ERR_PARAM  = -3,
+    TMP117_OK            =  0,
+    TMP117_ERR_I2C       = -1,
+    TMP117_ERR_ID        = -2,
+    TMP117_ERR_PARAM     = -3,
+    TMP117_ERR_NOT_READY = -4,  /* no conversion finished since reset */
 } tmp117_err_t;
 
 typedef struct {
@@ -65,7 +66,11 @@ typedef struct {
 tmp117_err_t tmp117_init(tmp117_t *dev, const tmp117_i2c_t *i2c,
                          const tmp117_cfg_t *cfg);
 
-/** Read temperature in degrees Celsius. @thread_safe: no @isr_safe: no */
+/** Read temperature in degrees Celsius.
+ *  Returns TMP117_ERR_NOT_READY and leaves *temp_c unchanged while the result
+ *  register still holds its reset value 0x8000 (-256 C). It holds that until
+ *  the first conversion, including averaging, is complete, so read again.
+ *  @thread_safe: no @isr_safe: no */
 tmp117_err_t tmp117_read(tmp117_t *dev, float *temp_c);
 
 /** Soft reset. @thread_safe: no @isr_safe: no */

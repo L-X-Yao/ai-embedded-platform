@@ -79,9 +79,38 @@ TEST(test_error_codes)
     ASSERT_EQ((int)TMP117_ERR_I2C, -1);
     ASSERT_EQ((int)TMP117_ERR_ID, -2);
     ASSERT_EQ((int)TMP117_ERR_PARAM, -3);
+    ASSERT_EQ((int)TMP117_ERR_NOT_READY, -4);
 }
 
 /* ---------- read ---------- */
+
+/* TI SNOSD82D p.26: the register resets to 8000h and "reads -256 C until the
+ * first conversion, including averaging, is complete". */
+TEST(test_read_before_first_conversion)
+{
+    hw_model_reset();
+    tmp117_init(&dev, &mock_i2c, &default_cfg);
+
+    float temp = 99.0f;
+    ASSERT_EQ(tmp117_read(&dev, &temp), TMP117_ERR_NOT_READY);
+    ASSERT_NEAR(temp, 99.0f, 1e-6f);
+
+    hw_model_inject_temperature(25.0f);
+    ASSERT_EQ(tmp117_read(&dev, &temp), TMP117_OK);
+    ASSERT_NEAR(temp, 25.0f, 0.01f);
+}
+
+/* Only the reset value itself means "no result yet" */
+TEST(test_read_next_code_is_data)
+{
+    hw_model_reset();
+    tmp117_init(&dev, &mock_i2c, &default_cfg);
+    hw_regs16[0x00] = 0x8001;
+
+    float temp = 0.0f;
+    ASSERT_EQ(tmp117_read(&dev, &temp), TMP117_OK);
+    ASSERT_NEAR(temp, -255.9921875f, 1e-4f);
+}
 
 TEST(test_read_25c)
 {
@@ -170,6 +199,8 @@ TEST_MAIN("tmp117")
     RUN(test_init_avg_modes);
     RUN(test_init_avg_invalid);
     RUN(test_error_codes);
+    RUN(test_read_before_first_conversion);
+    RUN(test_read_next_code_is_data);
     RUN(test_read_25c);
     RUN(test_read_zero);
     RUN(test_read_negative);
