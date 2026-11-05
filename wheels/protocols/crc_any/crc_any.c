@@ -75,6 +75,8 @@ uint32_t crc_any_update(const crc_any_config_t *cfg, uint32_t crc,
 {
     if (!cfg)
         return crc;
+    if (cfg->width < 1 || cfg->width > 32)
+        return crc;
     if (len == 0)
         return crc;
     if (!data)
