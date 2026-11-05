@@ -51,6 +51,14 @@ None. Oversampling, gas heater, and I2C address are runtime-configurable.
 - [x] Host (sim) — passed 2026-05-01
 - [ ] ARM Cortex-M — not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-05 against BST-BME680-DS001-09 and Bosch `bme68x.c`. Not run on hardware.
+
+- **Matched:** Register addresses, chip ID, ADC packing, all calibration fields, temperature, pressure, gas resistance and gas_wait.
+- **Fixed:** Humidity read 4.096 times too high; a negative humidity read as 100%; the heater formula was wrong, giving register value 10 where the datasheet gives 119, so the plate stayed cold; a gas result now needs heat_stab_r; the read timeout covers the heater time; reset waits and restores the defaults; skipped channels read 0.
+- **Still open:** The datasheet does not say when `new_data_0` clears, so a heater over 50 ms could return the previous result. The variant register at 0xF0 is not read.
+
 ## Known issues
 
 - Uses forced mode on every read (not continuous). For high-frequency sampling,

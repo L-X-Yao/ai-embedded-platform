@@ -45,6 +45,14 @@ None. All parameters set at runtime via API calls.
 - [x] Host (sim) -- 2026-05-11
 - [ ] Real hardware (SX1262 module) -- not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-05 against Semtech `sx126x_driver` and LoRaMac-node. The datasheet could not be downloaded. Not run on hardware.
+
+- **Matched:** 17 opcodes, IRQ bits, SF, BW and CR codes, 16 command frames, frequency word, buffer limits.
+- **Fixed:** Every packet went out as 255 bytes, as the length was never updated; the "3 s" timeout was 300 ms; PA and TX power were never configured; RSSI used the instantaneous value; init did not check that a chip answered; `SX1262_ERR_CRC` now reports damaged packets, which also set RxDone; RX stops the RTC as required; added the BW500 and PA clamp workarounds, low data rate optimization, the TX timeout IRQ, a BW check and SPI error checks on reads.
+- **Still open:** TX power is fixed at 14 dBm. SetRegulatorMode is not sent, so DC-DC boards stay on the LDO. There is no wake-up path from sleep. Pulsing NRESET is left to the caller.
+
 ## Known issues
 
 - TX/RX uses polling (delay_ms loop), not interrupt-driven.

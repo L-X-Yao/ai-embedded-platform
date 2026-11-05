@@ -3,6 +3,8 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Not usable on hardware yet.** `bmi270_init` skips the 8 KB config file upload the chip requires, so on a real part it stops at `BMI270_ERR_CONFIG`.
+
 Platform-agnostic driver for the Bosch BMI270 6-axis inertial measurement
 unit (accelerometer + gyroscope). SPI interface injected via callbacks.
 Handles config file loading, chip ID verification, and per-axis scaling
@@ -65,10 +67,18 @@ setter functions.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
+## Datasheet check
+
+Checked on 2026-11-05 against BST-BMI270-DS000-08 and Bosch `bmi2_defs.h`. Not run on hardware.
+
+- **Matched:** 27 register addresses, chip ID, soft reset, range and ODR codes, SPI framing, data layout, accel and temperature scaling.
+- **Fixed:** PWR_CTRL turned on aux instead of the gyro; ACC_CONF and GYR_CONF cleared the filter bit, so neither ran in normal mode; missing 450 us and 200 us waits; INTERNAL_STATUS read as one bit, which passed error codes; gyro sensitivity constants; `delay_ms` is now required; soft reset waits for the chip; reads after a failed init are refused.
+- **Still open:** Config file upload. GYR_CAS correction on the X axis, which needs the config file first.
+
 ## Known issues
 
 - SPI only; I2C not implemented.
-- Config file data embedded in driver (8 KB array from Bosch).
+- The 8 KB config file is not uploaded, see above.
 
 ## How to test
 
