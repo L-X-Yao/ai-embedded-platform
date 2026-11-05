@@ -92,6 +92,9 @@ typedef struct {
 /** @thread_safe: yes (pure function, no state) */
 coap_packet_err_t coap_packet_parse(const uint8_t *data, size_t len, coap_packet_t *pkt);
 
+/** Build a CoAP message. The token, option values and payload may be NULL only
+ *  when their length is 0; anything else returns COAP_PACKET_ERR_PARAM.
+ *  @thread_safe: yes (pure function, no state) */
 coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_len,
                       coap_packet_type_t type, uint8_t code, uint16_t message_id,
                       const uint8_t *token, uint8_t token_len,

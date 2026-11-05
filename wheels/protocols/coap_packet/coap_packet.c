@@ -151,6 +151,8 @@ coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_le
         return COAP_PACKET_ERR_PARAM;
     if (option_count > 0 && !options)
         return COAP_PACKET_ERR_PARAM;
+    if ((!token && token_len > 0) || (!payload && payload_len > 0))
+        return COAP_PACKET_ERR_PARAM;
 
     size_t pos = 0;
 
@@ -170,6 +172,7 @@ coap_packet_err_t coap_packet_build(uint8_t *buf, size_t buf_len, size_t *out_le
     uint16_t prev_num = 0;
     for (int i = 0; i < option_count; i++) {
         if (options[i].number < prev_num) return COAP_PACKET_ERR_MALFORMED;
+        if (!options[i].value && options[i].value_len > 0) return COAP_PACKET_ERR_PARAM;
         uint16_t delta = (uint16_t)(options[i].number - prev_num);
         if (options[i].value_len > UINT16_MAX) return COAP_PACKET_ERR_OVERFLOW;
         uint8_t hdr[5];

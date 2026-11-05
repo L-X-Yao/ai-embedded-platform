@@ -574,6 +574,37 @@ TEST(test_build_options_out_of_order)
               COAP_PACKET_ERR_MALFORMED);
 }
 
+TEST(test_build_refuses_token_length_without_token)
+{
+    uint8_t buf[32];
+    size_t out_len = 0;
+
+    ASSERT_EQ(coap_packet_build(buf, sizeof(buf), &out_len, COAP_TYPE_CON, 1, 1,
+                                NULL, 4, NULL, 0, NULL, 0),
+              COAP_PACKET_ERR_PARAM);
+}
+
+TEST(test_build_refuses_option_length_without_value)
+{
+    uint8_t buf[32];
+    size_t out_len = 0;
+    coap_packet_option_t opt = { .number = COAP_OPT_URI_PATH, .value = NULL, .value_len = 3 };
+
+    ASSERT_EQ(coap_packet_build(buf, sizeof(buf), &out_len, COAP_TYPE_CON, 1, 1,
+                                NULL, 0, &opt, 1, NULL, 0),
+              COAP_PACKET_ERR_PARAM);
+}
+
+TEST(test_build_refuses_payload_length_without_payload)
+{
+    uint8_t buf[32];
+    size_t out_len = 0;
+
+    ASSERT_EQ(coap_packet_build(buf, sizeof(buf), &out_len, COAP_TYPE_CON, 1, 1,
+                                NULL, 0, NULL, 0, NULL, 5),
+              COAP_PACKET_ERR_PARAM);
+}
+
 TEST_MAIN("coap_packet")
     RUN(test_parse_con_get);
     RUN(test_parse_with_payload);
@@ -610,4 +641,7 @@ TEST_MAIN("coap_packet")
     RUN(test_build_opt_len13_roundtrip);
     RUN(test_build_opt_len14_roundtrip);
     RUN(test_build_options_out_of_order);
+    RUN(test_build_refuses_token_length_without_token);
+    RUN(test_build_refuses_option_length_without_value);
+    RUN(test_build_refuses_payload_length_without_payload);
 TEST_MAIN_END()
