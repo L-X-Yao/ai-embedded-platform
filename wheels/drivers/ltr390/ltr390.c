@@ -39,6 +39,10 @@
 #define MAIN_CTRL_ENABLE   (1u << 1)   /* bit 1: sensor enable */
 #define MAIN_CTRL_UVS_MODE (1u << 3)   /* bit 3: 0=ALS, 1=UVS */
 
+/* ---------- MEAS_RATE fields ---------- */
+
+#define MEAS_RATE_100MS    0x02u       /* bits [2:0]: POR default, 010 */
+
 /* ---------- masks ---------- */
 
 #define DATA_20BIT_MASK    0x000FFFFFu
@@ -128,8 +132,10 @@ ltr390_err_t ltr390_init(ltr390_t *dev, const ltr390_i2c_t *i2c,
         return LTR390_ERR_I2C;
     }
 
-    /* Set resolution (bits [6:4]) — measurement rate bits [2:0] left at POR default */
-    if (!write_reg(dev, REG_MEAS_RATE, (uint8_t)((uint8_t)cfg->resolution << 4))) {
+    /* Set resolution (bits [6:4]). One write covers the whole register, so
+     * measurement rate bits [2:0] are written with their POR default. */
+    if (!write_reg(dev, REG_MEAS_RATE,
+                   (uint8_t)(((uint8_t)cfg->resolution << 4) | MEAS_RATE_100MS))) {
         return LTR390_ERR_I2C;
     }
 

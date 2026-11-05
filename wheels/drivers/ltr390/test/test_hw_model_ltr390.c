@@ -51,9 +51,31 @@ TEST(test_hw_init_sets_gain)
 TEST(test_hw_init_sets_resolution)
 {
     setup();
-    /* MEAS_RATE register (0x04): resolution in bits [6:4], default_cfg.resolution=2 */
-    /* (2 << 4) = 0x20, rate bits [2:0] = 0 */
-    ASSERT_EQ(ltr390_mdl.regs[0x04], 0x20);
+    /* LTR-390UV-01 p.27 pseudo code: "Command = 0x22 // Resolution=18bits,
+     * Meas Rate = 100ms", which is also the register default on p.14 */
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x04], 0x22u);
+}
+
+/* p.14: resolution in bits 6:4, measurement rate in bits 2:0, 010 = 100 ms.
+ * Every resolution keeps the default rate. */
+TEST(test_hw_init_keeps_default_rate_at_all_resolutions)
+{
+    static const struct { ltr390_res_t res; uint8_t reg; } rows[] = {
+        { LTR390_RES_20BIT, 0x02u },  /* 000 */
+        { LTR390_RES_19BIT, 0x12u },  /* 001 */
+        { LTR390_RES_18BIT, 0x22u },  /* 010 */
+        { LTR390_RES_17BIT, 0x32u },  /* 011 */
+        { LTR390_RES_16BIT, 0x42u },  /* 100 */
+        { LTR390_RES_13BIT, 0x52u },  /* 101 */
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        hw_model_reset();
+        ltr390_cfg_t cfg = { .mode = LTR390_MODE_ALS, .gain = LTR390_GAIN_3,
+                             .resolution = rows[i].res };
+        ASSERT_EQ(ltr390_init(&dev, &hw_i2c, &cfg), LTR390_OK);
+        ASSERT_EQ_HEX(ltr390_mdl.regs[0x04], rows[i].reg);
+    }
 }
 
 TEST(test_hw_init_enables_sensor)
@@ -355,6 +377,7 @@ TEST_MAIN("ltr390_hw_model")
     RUN(test_hw_init_reads_part_id);
     RUN(test_hw_init_sets_gain);
     RUN(test_hw_init_sets_resolution);
+    RUN(test_hw_init_keeps_default_rate_at_all_resolutions);
     RUN(test_hw_init_enables_sensor);
     RUN(test_hw_init_uvs_mode);
     RUN(test_hw_init_wrong_id);
