@@ -56,7 +56,10 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialise device and issue soft reset. @thread_safe: no @isr_safe: no */
+/** Initialise device and issue soft reset. Waits 15 ms first, because the
+ *  sensor takes up to that long after power up to accept a command, and 15 ms
+ *  after the reset. With delay_ms NULL the caller must make both waits.
+ *  @thread_safe: no @isr_safe: no */
 htu21d_err_t htu21d_init(htu21d_t *dev, const htu21d_i2c_t *i2c);
 
 /** Read temperature in degrees Celsius. @thread_safe: caller_must_lock @isr_safe: no */

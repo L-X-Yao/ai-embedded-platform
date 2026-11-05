@@ -22,10 +22,14 @@
 #define HW_HTU21D_CMD_TRIG_HUM     0xE5u
 #define HW_HTU21D_CMD_SOFT_RESET   0xFEu
 
+/* Time to reach idle after power up (HPC199_3 p.10) */
+#define HW_HTU21D_POWER_UP_MS      15u
+
 /* --- Simulated environment --- */
 typedef struct {
     float   true_temp_c;          /* simulated temperature */
     float   true_humidity_pct;    /* simulated humidity    */
+    uint32_t elapsed_ms;          /* time since power up, from delay_ms */
     /* Command state */
     uint8_t last_cmd;
     int     temp_count;
@@ -89,6 +93,12 @@ static bool htu21d_model_write_cmd(void *ctx, uint8_t dev_addr, uint8_t cmd)
     (void)dev_addr;
     htu21d_model_t *m = (htu21d_model_t *)ctx;
 
+    /* p.10: "No command should be sent before that time." The manual does
+     * not say how the part reacts, so refuse it to make an early one show. */
+    if (m->elapsed_ms < HW_HTU21D_POWER_UP_MS) {
+        return false;
+    }
+
     m->last_cmd = cmd;
 
     if (cmd == HW_HTU21D_CMD_TRIG_TEMP) {
@@ -131,11 +141,12 @@ static bool htu21d_model_read_data(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-/* Delay callback (no-op for model) */
+/* Delay callback: the only source of time in the model */
 __attribute__((unused))
 static void htu21d_model_delay(void *ctx, uint32_t ms)
 {
-    (void)ctx; (void)ms;
+    htu21d_model_t *m = (htu21d_model_t *)ctx;
+    m->elapsed_ms += ms;
 }
 
 static void htu21d_model_init(htu21d_model_t *m)

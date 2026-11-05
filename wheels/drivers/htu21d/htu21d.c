@@ -15,6 +15,9 @@
 /* Post-measurement delay (ms) — datasheet max for 14-bit temp / 12-bit hum */
 #define MEASURE_DELAY_MS  50u
 
+/* Datasheet: up to 15 ms after power up before any command */
+#define POWER_UP_DELAY_MS 15u
+
 uint8_t htu21d_crc8(const uint8_t *data, uint16_t len)
 {
     uint8_t crc = 0x00;
@@ -49,6 +52,11 @@ htu21d_err_t htu21d_init(htu21d_t *dev, const htu21d_i2c_t *i2c)
 
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
+
+    if (i2c->delay_ms)
+    {
+        i2c->delay_ms(i2c->ctx, POWER_UP_DELAY_MS);
+    }
 
     /* Issue soft reset */
     if (!i2c->write_cmd(i2c->ctx, HTU21D_DEV_ADDR, HTU21D_CMD_SOFT_RESET))
