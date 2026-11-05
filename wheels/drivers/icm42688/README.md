@@ -48,6 +48,10 @@ No compile-time defines needed. All configuration via `icm42688_cfg_t` at runtim
 - [x] Host (sim) -- 2026-05-06
 - [ ] Real hardware target -- not yet verified
 
+## Datasheet check
+
+Not checked: the TDK datasheet could not be downloaded on 2026-11-06, so registers, timing and scaling here are unverified.
+
 ## Known issues
 
 None.

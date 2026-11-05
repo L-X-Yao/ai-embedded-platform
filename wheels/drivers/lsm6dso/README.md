@@ -63,6 +63,15 @@ None. Ranges, ODR, and I2C address are runtime-configurable via
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against ST DS12140 Rev 2. Not run on hardware.
+
+- **Matched:** Addresses, WHO_AM_I, register map, ODR and full-scale codes, sensitivities.
+- **Fixed:** init cleared IF_INC when it set BDU, so every multi-byte read stayed on its first register and each axis came from one low byte. The model and mock now start from the reset value, and the model honours IF_INC, which is why this now fails if it comes back.
+- **Still open:** The model has no STATUS_REG behaviour, and `test_reset` expects SW_RESET to stay set, where the chip clears it.
+- **Suspected:** init and `lsm6dso_reset` do not wait for SW_RESET to finish. Reads never check STATUS_REG, so a read within the 35 ms turn-on time returns old data. I3C_disable is never set.
+
 ## Known issues
 
 - I2C only; SPI not implemented.
