@@ -10,12 +10,14 @@
 
 #include "cc1101.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- CC1101 register addresses ---------- */
 
 #define REG_IOCFG2          0x00U
 #define REG_IOCFG1          0x01U
 #define REG_IOCFG0          0x02U
+#define REG_PKTCTRL1        0x07U
 #define REG_PKTCTRL0        0x08U
 #define REG_FREQ2           0x0DU
 #define REG_FREQ1           0x0EU
@@ -23,6 +25,7 @@
 #define REG_MDMCFG4         0x10U
 #define REG_MDMCFG3         0x11U
 #define REG_MDMCFG2         0x12U
+#define REG_MCSM0           0x18U
 #define REG_PKTLEN          0x06U
 #define REG_PATABLE         0x3EU
 #define REG_TX_FIFO         0x3FU
@@ -50,9 +53,28 @@
 #define SPI_BURST           0x40U
 #define SPI_STATUS_READ     0xC0U  /* SPI_READ | SPI_BURST for status regs */
 
-/* Expected ID values */
+/* Expected ID value. VERSION is not fixed, a bus with no chip reads 0x00 or 0xFF */
 #define CC1101_PARTNUM      0x00U
-#define CC1101_VERSION      0x14U
+#define VERSION_NO_CHIP_LOW  0x00U
+#define VERSION_NO_CHIP_HIGH 0xFFU
+
+/* MCSM0: FS_AUTOCAL = 01 (calibrate going from IDLE to RX or TX), the rest at reset */
+#define MCSM0_AUTOCAL       0x14U
+
+/* IOCFG: high impedance instead of the default clock output on GDO0 */
+#define IOCFG_HIGH_Z        0x2EU
+
+/* PKTCTRL1: append the two status bytes to each received packet */
+#define PKTCTRL1_APPEND     0x04U
+
+/* Packet limits: the 64-byte FIFO also holds length and status bytes */
+#define PKT_MAX_LEN         61U
+#define RX_STATUS_BYTES     2U
+#define RX_STATUS_CRC_OK    0x80U
+
+/* PA settings the datasheet forbids */
+#define PA_FORBIDDEN_LOW    0x61U
+#define PA_FORBIDDEN_HIGH   0x6FU
 
 /* Crystal oscillator frequency */
 #define FXOSC               26000000UL
@@ -133,6 +155,13 @@ static uint8_t get_marcstate(const cc1101_hal_t *hal)
     return status_reg_read(hal, SREG_MARCSTATE) & 0x1FU;
 }
 
+static bool frequency_supported(uint32_t freq_hz)
+{
+    return (freq_hz >= 300000000UL && freq_hz <= 348000000UL) ||
+           (freq_hz >= 387000000UL && freq_hz <= 464000000UL) ||
+           (freq_hz >= 779000000UL && freq_hz <= 928000000UL);
+}
+
 /* ---------- public API ---------- */
 
 cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
@@ -161,13 +190,19 @@ cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
     partnum = status_reg_read(hal, SREG_PARTNUM);
     version = status_reg_read(hal, SREG_VERSION);
 
-    if (partnum != CC1101_PARTNUM || version != CC1101_VERSION) {
+    if (partnum != CC1101_PARTNUM || version == VERSION_NO_CHIP_LOW ||
+        version == VERSION_NO_CHIP_HIGH) {
         return CC1101_ERR_ID;
     }
 
     /* Configure: variable packet length, CRC enabled */
     reg_write(hal, REG_PKTCTRL0, 0x45U); /* variable len + CRC + whitening */
-    reg_write(hal, REG_PKTLEN, 0xFF);    /* max packet length */
+    reg_write(hal, REG_PKTCTRL1, PKTCTRL1_APPEND);
+    reg_write(hal, REG_PKTLEN, PKT_MAX_LEN);
+
+    /* The synthesizer has to be calibrated before use and for each new frequency */
+    reg_write(hal, REG_MCSM0, MCSM0_AUTOCAL);
+    reg_write(hal, REG_IOCFG0, IOCFG_HIGH_Z);
 
     /* Enter idle */
     (void)spi_strobe(hal, STROBE_SIDLE);
@@ -180,7 +215,7 @@ cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz)
     uint32_t freq_word;
 
     if (!dev || !dev->hal) return CC1101_ERR_PARAM;
-    if (freq_hz < 300000000UL || freq_hz > 928000000UL) {
+    if (!frequency_supported(freq_hz)) {
         return CC1101_ERR_PARAM;
     }
 
@@ -198,6 +233,9 @@ cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz)
 cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value)
 {
     if (!dev || !dev->hal) return CC1101_ERR_PARAM;
+    if (pa_value >= PA_FORBIDDEN_LOW && pa_value <= PA_FORBIDDEN_HIGH) {
+        return CC1101_ERR_PARAM;
+    }
 
     reg_write(dev->hal, REG_PATABLE, pa_value);
     dev->tx_power = (int8_t)pa_value;
@@ -270,18 +308,24 @@ cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                 return CC1101_ERR_TIMEOUT;
             }
 
-            /* Read length byte */
+            /* The FIFO holds the length byte, the payload and two status bytes */
             pkt_len = reg_read(dev->hal, REG_RX_FIFO | SPI_STATUS_READ);
-            /* Actually use burst read for FIFO */
-            {
-                /* We already read the length byte. Read payload data. */
-                uint8_t read_len = pkt_len;
-                if (read_len > cap) {
-                    read_len = cap;
-                }
-                fifo_read_burst(dev->hal, buf, read_len);
-                *out_len = read_len;
+            if (pkt_len == 0 || pkt_len > PKT_MAX_LEN ||
+                (uint16_t)pkt_len + 1U + RX_STATUS_BYTES > rxbytes) {
+                (void)spi_strobe(dev->hal, STROBE_SFRX);
+                return CC1101_ERR_CRC;
             }
+
+            uint8_t pkt[PKT_MAX_LEN + RX_STATUS_BYTES];
+            fifo_read_burst(dev->hal, pkt, (uint8_t)(pkt_len + RX_STATUS_BYTES));
+
+            if (!(pkt[pkt_len + 1U] & RX_STATUS_CRC_OK)) {
+                return CC1101_ERR_CRC;
+            }
+
+            uint8_t read_len = (pkt_len < cap) ? pkt_len : cap;
+            memcpy(buf, pkt, read_len);
+            *out_len = read_len;
 
             return CC1101_OK;
         }
