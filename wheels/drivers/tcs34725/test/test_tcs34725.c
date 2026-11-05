@@ -11,6 +11,10 @@
  */
 #define CMD(r) (0x80u | (r))
 
+/* TYPE 01b (p.14): the auto-increment form a multi-byte read needs. The
+ * mock steps on any read, so the data sits at the address this gives. */
+#define CMD_AUTO_INC(r) (0xA0u | (r))
+
 #define REG_ENABLE  0x00u
 #define REG_ATIME   0x01u
 #define REG_CONTROL 0x0Fu
@@ -94,14 +98,14 @@ TEST(test_read_rgbc)
     tcs34725_init(&dev, &mock_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
 
     /* Set RGBC data: C=1000 R=500 G=600 B=300 (16-bit LE) */
-    mock_regs[CMD(REG_CDATAL) + 0] = (uint8_t)(1000 & 0xFF);
-    mock_regs[CMD(REG_CDATAL) + 1] = (uint8_t)(1000 >> 8);
-    mock_regs[CMD(REG_CDATAL) + 2] = (uint8_t)(500 & 0xFF);
-    mock_regs[CMD(REG_CDATAL) + 3] = (uint8_t)(500 >> 8);
-    mock_regs[CMD(REG_CDATAL) + 4] = (uint8_t)(600 & 0xFF);
-    mock_regs[CMD(REG_CDATAL) + 5] = (uint8_t)(600 >> 8);
-    mock_regs[CMD(REG_CDATAL) + 6] = (uint8_t)(300 & 0xFF);
-    mock_regs[CMD(REG_CDATAL) + 7] = (uint8_t)(300 >> 8);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 0] = (uint8_t)(1000 & 0xFF);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 1] = (uint8_t)(1000 >> 8);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 2] = (uint8_t)(500 & 0xFF);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 3] = (uint8_t)(500 >> 8);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 4] = (uint8_t)(600 & 0xFF);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 5] = (uint8_t)(600 >> 8);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 6] = (uint8_t)(300 & 0xFF);
+    mock_regs[CMD_AUTO_INC(REG_CDATAL) + 7] = (uint8_t)(300 >> 8);
 
     tcs34725_rgbc_t rgbc;
     ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_OK);

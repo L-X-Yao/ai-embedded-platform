@@ -4,7 +4,7 @@
  *
  * Validates TCS34725 driver against a datasheet-accurate register model.
  * The model enforces read-only chip ID (0x44), RGBC data register
- * protection, command protocol (0x80|reg), enable/disable behavior.
+ * protection, the command byte's TYPE field, enable/disable behavior.
  */
 
 #include "test_harness.h"
@@ -16,7 +16,7 @@ static tcs34725_model_t model;
 
 static const tcs34725_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .read_regs = tcs34725_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -111,6 +111,28 @@ TEST(test_read_rgbc)
 
 /* --- datasheet behavior tests ------------------------------------------ */
 
+TEST(test_byte_protocol_repeats_register)
+{
+    setup();
+    tcs34725_model_set_color_data(&model);
+
+    uint8_t buf[2];
+    ASSERT_TRUE(tcs34725_model_read_regs(&model.hw, TCS34725_ADDR, 0x94u, buf, 2));
+    ASSERT_EQ(buf[0], 0x88u);  /* 5000 = 0x1388 */
+    ASSERT_EQ(buf[1], 0x88u);
+}
+
+TEST(test_block_protocol_steps_through_registers)
+{
+    setup();
+    tcs34725_model_set_color_data(&model);
+
+    uint8_t buf[2];
+    ASSERT_TRUE(tcs34725_model_read_regs(&model.hw, TCS34725_ADDR, 0xB4u, buf, 2));
+    ASSERT_EQ(buf[0], 0x88u);
+    ASSERT_EQ(buf[1], 0x13u);
+}
+
 TEST(test_chip_id_readonly)
 {
     setup();
@@ -159,6 +181,8 @@ TEST_MAIN("tcs34725 hardware model")
     RUN(test_init_sets_gain);
     RUN(test_init_enables_pon_aen);
     RUN(test_read_rgbc);
+    RUN(test_byte_protocol_repeats_register);
+    RUN(test_block_protocol_steps_through_registers);
     RUN(test_chip_id_readonly);
     RUN(test_rgbc_data_readonly);
     RUN(test_disable_clears_enable);

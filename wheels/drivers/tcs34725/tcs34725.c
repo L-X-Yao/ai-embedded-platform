@@ -17,8 +17,11 @@
 #define REG_ID      0x12u
 #define REG_CDATAL  0x14u   /* RGBC data: C(14-15) R(16-17) G(18-19) B(1A-1B) */
 
-/* Command register: bit 7 must be set for register access */
-#define CMD(reg)    (uint8_t)(0x80u | (reg))
+/* Command register (p.14): bit 7 must be set for register access. TYPE in
+ * bits 6:5 sets the protocol: 00b repeats one register on every byte,
+ * 01b auto-increments, which a multi-byte read needs. */
+#define CMD(reg)          (uint8_t)(0x80u | (reg))
+#define CMD_AUTO_INC(reg) (uint8_t)(0xA0u | (reg))
 
 /* Enable register bits */
 #define ENABLE_PON  0x01u   /* power on */
@@ -36,9 +39,9 @@ static tcs34725_err_t write_reg(const tcs34725_t *dev,
 }
 
 static tcs34725_err_t read_regs(const tcs34725_t *dev,
-                                uint8_t reg, uint8_t *buf, uint16_t len)
+                                uint8_t cmd, uint8_t *buf, uint16_t len)
 {
-    if (!dev->i2c->read_regs(dev->i2c->ctx, TCS34725_ADDR, CMD(reg), buf, len))
+    if (!dev->i2c->read_regs(dev->i2c->ctx, TCS34725_ADDR, cmd, buf, len))
         return TCS34725_ERR_I2C;
     return TCS34725_OK;
 }
@@ -61,7 +64,7 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
 
     /* Verify chip ID */
     uint8_t id = 0;
-    tcs34725_err_t err = read_regs(dev, REG_ID, &id, 1);
+    tcs34725_err_t err = read_regs(dev, CMD(REG_ID), &id, 1);
     if (err != TCS34725_OK)
         return err;
     if (id != CHIP_ID_44 && id != CHIP_ID_4D)
@@ -88,7 +91,7 @@ tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
         return TCS34725_ERR_PARAM;
 
     uint8_t buf[8];
-    tcs34725_err_t err = read_regs(dev, REG_CDATAL, buf, 8);
+    tcs34725_err_t err = read_regs(dev, CMD_AUTO_INC(REG_CDATAL), buf, 8);
     if (err != TCS34725_OK)
         return err;
 
