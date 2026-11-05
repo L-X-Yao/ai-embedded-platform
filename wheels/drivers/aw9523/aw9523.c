@@ -92,9 +92,11 @@ aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
     if (id != AW9523_CHIP_ID)
         return AW9523_ERR_ID;
 
-    /* Software reset via CTL register bit 0 */
-    if (!write_reg(dev, AW9523_REG_CTL, 0x00))
-        return AW9523_ERR_I2C;
+    /* Software reset first: it would undo any write made before it. This also
+     * clears what init does not write, such as DIM0-15 after an MCU restart. */
+    aw9523_err_t err = aw9523_reset(dev);
+    if (err != AW9523_OK)
+        return err;
 
     /* Set all pins as input (POR default: 0xFF = all input) */
     if (!write_reg(dev, AW9523_REG_CONFIG_P0, 0xFF))
