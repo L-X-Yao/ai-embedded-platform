@@ -27,6 +27,7 @@
 #define REG_EN_AA           0x01
 #define REG_EN_RXADDR       0x02
 #define REG_SETUP_AW        0x03
+#define REG_SETUP_RETR      0x04
 #define REG_RF_CH           0x05
 #define REG_RF_SETUP        0x06
 #define REG_STATUS          0x07
@@ -52,6 +53,9 @@
 #define STATUS_MAX_RT       0x10
 
 #define FIFO_RX_EMPTY       0x01
+
+#define SETUP_RETR_ARD_MASK  0xF0
+#define SETUP_RETR_ARD_500US 0x10
 
 /* RF_SETUP bits for data rate:
  *   250kbps: RF_DR_LOW=1, RF_DR_HIGH=0
@@ -286,6 +290,15 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate)
     }
 
     write_reg(s, REG_RF_SETUP, setup);
+
+    /* At 250 kbps the retransmit delay has to be at least 500 us */
+    if (rate == NRF24_RATE_250KBPS) {
+        uint8_t retr = read_reg(s, REG_SETUP_RETR);
+        if ((retr & SETUP_RETR_ARD_MASK) == 0) {
+            write_reg(s, REG_SETUP_RETR, (uint8_t)(retr | SETUP_RETR_ARD_500US));
+        }
+    }
+
     resume_rx(dev);
     return NRF24_OK;
 }
