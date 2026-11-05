@@ -244,8 +244,8 @@ pcf8563_err_t pcf8563_disable_timer(const pcf8563_t *dev)
     if (!dev || !dev->i2c)
         return PCF8563_ERR_PARAM;
 
-    /* Clear TE bit */
-    if (!write_reg(dev, REG_TIMER_CTRL, 0x00))
+    /* TE = 0, and TD = 1/60 Hz, the setting the manual wants when unused */
+    if (!write_reg(dev, REG_TIMER_CTRL, (uint8_t)PCF8563_TIMER_1_60HZ))
         return PCF8563_ERR_I2C;
 
     return PCF8563_OK;
