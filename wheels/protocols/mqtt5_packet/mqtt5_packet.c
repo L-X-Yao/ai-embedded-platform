@@ -109,7 +109,7 @@ int mqtt5_build_connect(uint8_t *buf, uint16_t size,
     uint16_t props_len = 0;
     if (cfg->session_expiry > 0) props_len += 5;  /* id(1) + u32(4) */
 
-    /* variable header: protocol name(7) + version(1) + flags(1) + keep_alive(2) + props_vbi + props */
+    /* variable header: protocol name(6) + version(1) + flags(1) + keep_alive(2) + props_vbi + props */
     uint8_t props_vbi[4];
     int props_vbi_len = mqtt5_encode_vbi(props_vbi, props_len);
 
@@ -122,8 +122,8 @@ int mqtt5_build_connect(uint8_t *buf, uint16_t size,
     if (cfg->username) payload_len += 2 + strlen(cfg->username);
     if (cfg->password) payload_len += 2 + strlen(cfg->password);
 
-    /* remaining = var_header(11) + props_vbi + props + payload */
-    uint32_t remaining = 11 + (uint32_t)props_vbi_len + props_len + (uint32_t)payload_len;
+    /* remaining = var_header(10) + props_vbi + props + payload */
+    uint32_t remaining = 10 + (uint32_t)props_vbi_len + props_len + (uint32_t)payload_len;
     uint8_t rl_buf[4];
     int rl_len = mqtt5_encode_vbi(rl_buf, remaining);
     if (rl_len < 0) return MQTT5_ERR_OVERFLOW;
