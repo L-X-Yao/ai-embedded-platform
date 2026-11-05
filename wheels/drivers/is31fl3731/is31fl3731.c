@@ -30,6 +30,7 @@
 #define FRAME_LED_CTRL_BASE 0x00   /* LED on/off: 18 bytes (0x00-0x11) */
 #define FRAME_LED_CTRL_SIZE 18u
 #define FRAME_BLINK_BASE    0x12   /* Blink control: 18 bytes (0x12-0x23) */
+#define FRAME_BLINK_SIZE    18u
 #define FRAME_PWM_BASE      0x24   /* PWM: 144 bytes (0x24-0xB3) */
 
 /* Config register values */
@@ -60,6 +61,37 @@ static bool select_frame_page(is31fl3731_t *dev, uint8_t frame)
 {
     dev->current_frame = frame;
     return select_page(dev, frame);
+}
+
+/* Put one frame in a known state: all LEDs enabled, no blink, PWM 0 */
+static bool init_frame(is31fl3731_t *dev, uint8_t frame)
+{
+    if (!select_frame_page(dev, frame))
+    {
+        return false;
+    }
+    for (uint8_t i = 0; i < FRAME_LED_CTRL_SIZE; i++)
+    {
+        if (!write_reg(dev, (uint8_t)(FRAME_LED_CTRL_BASE + i), 0xFF))
+        {
+            return false;
+        }
+    }
+    for (uint8_t i = 0; i < FRAME_BLINK_SIZE; i++)
+    {
+        if (!write_reg(dev, (uint8_t)(FRAME_BLINK_BASE + i), 0x00))
+        {
+            return false;
+        }
+    }
+    for (uint16_t i = 0; i < IS31FL3731_NUM_LEDS; i++)
+    {
+        if (!write_reg(dev, (uint8_t)(FRAME_PWM_BASE + i), 0x00))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* ---------- public API ---------- */
@@ -115,23 +147,11 @@ is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
         return IS31FL3731_ERR_I2C;
     }
 
-    /* Enable all 144 LEDs on frame 0 (set all bits in LED control bytes) */
-    if (!select_frame_page(dev, 0))
+    /* Frame data is not assured at power-on, so set up every frame, not just
+     * the displayed one. Frame 0 goes last and stays the current frame. */
+    for (uint8_t frame = IS31FL3731_NUM_FRAMES; frame > 0u; frame--)
     {
-        return IS31FL3731_ERR_I2C;
-    }
-    for (uint8_t i = 0; i < FRAME_LED_CTRL_SIZE; i++)
-    {
-        if (!write_reg(dev, (uint8_t)(FRAME_LED_CTRL_BASE + i), 0xFF))
-        {
-            return IS31FL3731_ERR_I2C;
-        }
-    }
-
-    /* Clear all PWM values on frame 0 */
-    for (uint16_t i = 0; i < IS31FL3731_NUM_LEDS; i++)
-    {
-        if (!write_reg(dev, (uint8_t)(FRAME_PWM_BASE + i), 0x00))
+        if (!init_frame(dev, (uint8_t)(frame - 1u)))
         {
             return IS31FL3731_ERR_I2C;
         }

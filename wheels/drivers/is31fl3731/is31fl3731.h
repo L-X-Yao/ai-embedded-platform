@@ -66,7 +66,9 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Initialize: picture mode, enable all LEDs on frame 0, exit shutdown.
+/** Initialize: picture mode showing frame 0, every frame set to all LEDs
+ *  enabled, no blink and PWM 0, then exit shutdown. This takes 1455 register
+ *  writes because frame data is not assured at power-on.
  *  @thread_safe: no @isr_safe: no */
 is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
                                  const is31fl3731_i2c_t *i2c,
