@@ -84,7 +84,9 @@ scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3]);
 /** Set altitude compensation in meters. @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters);
 
-/** Perform soft reset (reboot sensor). @thread_safe: no @isr_safe: no */
+/** Soft reset: reinit, reloads user settings from EEPROM, takes 30 ms.
+ *  Idle mode only: call scd40_stop_periodic first.
+ *  @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_perform_reset(scd40_t *dev);
 
 /** CRC-8 used by Sensirion sensors (poly 0x31, init 0xFF). */

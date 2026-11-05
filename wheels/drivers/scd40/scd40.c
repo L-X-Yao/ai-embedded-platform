@@ -22,12 +22,16 @@
 #define CMD_STOP_PERIODIC_LSB   0x86u
 #define CMD_GET_SERIAL_MSB      0x36u
 #define CMD_GET_SERIAL_LSB      0x82u
-#define CMD_PERFORM_RESET_MSB   0xD3u
-#define CMD_PERFORM_RESET_LSB   0x04u
+#define CMD_REINIT_MSB          0x36u
+#define CMD_REINIT_LSB          0x46u
 #define CMD_SET_ALTITUDE_MSB    0x24u
 #define CMD_SET_ALTITUDE_LSB    0x27u
 #define CMD_GET_DATA_READY_MSB  0xE4u
 #define CMD_GET_DATA_READY_LSB  0xB8u
+
+/* ---------- command execution times, ms (Table 9) ---------- */
+
+#define REINIT_TIME_MS          30u
 
 /* ---------- internal helpers ---------- */
 
@@ -248,9 +252,10 @@ scd40_err_t scd40_perform_reset(scd40_t *dev)
     {
         return SCD40_ERR_PARAM;
     }
-    if (!send_cmd(dev, CMD_PERFORM_RESET_MSB, CMD_PERFORM_RESET_LSB))
+    if (!send_cmd(dev, CMD_REINIT_MSB, CMD_REINIT_LSB))
     {
         return SCD40_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, REINIT_TIME_MS);
     return SCD40_OK;
 }
