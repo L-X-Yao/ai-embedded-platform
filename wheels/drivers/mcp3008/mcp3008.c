@@ -118,7 +118,7 @@ mcp3008_err_t mcp3008_read_voltage(mcp3008_t *dev, uint8_t channel,
         return err;
     }
 
-    *voltage = (float)raw * vref / 1023.0f;
+    *voltage = (float)raw * vref / 1024.0f;
 
     ENSURE(*voltage == *voltage);  /* NaN guard */
     return MCP3008_OK;
