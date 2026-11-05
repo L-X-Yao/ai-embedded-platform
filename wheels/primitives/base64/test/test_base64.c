@@ -202,6 +202,26 @@ TEST(test_size_functions)
     ASSERT_TRUE(base64_decoded_size(8) >= 6);
 }
 
+TEST(test_encode_length_past_uint16_limit)
+{
+    static const uint8_t data[49150];
+    char out[16];
+    uint16_t out_len = sizeof(out);
+
+    /* 49150 bytes need 65536 characters, which wraps to 0 in uint16_t. */
+    ASSERT_EQ(base64_encode(data, sizeof(data), out, &out_len), BASE64_ERR_OVERFLOW);
+}
+
+TEST(test_encode_longest_input)
+{
+    static const uint8_t data[49149];
+    static char out[65533];
+    uint16_t out_len = sizeof(out);
+
+    ASSERT_EQ(base64_encode(data, sizeof(data), out, &out_len), BASE64_OK);
+    ASSERT_EQ(out_len, 65532);
+}
+
 TEST_MAIN("base64")
     RUN(test_encode_empty);
     RUN(test_encode_f);
@@ -220,4 +240,6 @@ TEST_MAIN("base64")
     RUN(test_decode_invalid_char);
     RUN(test_null_pointers);
     RUN(test_size_functions);
+    RUN(test_encode_length_past_uint16_limit);
+    RUN(test_encode_longest_input);
 TEST_MAIN_END()
