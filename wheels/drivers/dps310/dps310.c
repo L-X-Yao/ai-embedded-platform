@@ -29,10 +29,14 @@
 #define REG_RESET      0x0Cu  /* soft reset        */
 #define REG_ID         0x0Du  /* product ID        */
 #define REG_COEF_START 0x10u  /* calibration start */
+#define REG_COEF_SRCE  0x28u  /* coefficient source */
 
 #define ID_PROD_MASK   0x0Fu  /* PROD_ID; REV_ID is bits 7:4 */
 #define RESET_CMD      0x89u
 #define COEF_LEN       18u
+
+/* Bit 7 in both TMP_COEF_SRCE and TMP_CFG (TMP_EXT): MEMS element sensor */
+#define TMP_SENSOR_MEMS 0x80u
 
 /* MEAS_CFG bits */
 #define MEAS_CFG_COEF_RDY   0x80u
@@ -304,9 +308,17 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
         return DPS310_ERR_I2C;
     }
 
+    /* The coefficients are valid for one temperature sensor only */
+    uint8_t coef_srce = 0;
+    if (!read_regs(dev, REG_COEF_SRCE, &coef_srce, 1))
+    {
+        return DPS310_ERR_I2C;
+    }
+
     /* Configure temperature oversampling: TMP_CFG register 0x07 bits [2:0]
-     * bit 7 = TMP_EXT (use external sensor, common default) */
-    uint8_t tmp_cfg = (uint8_t)(0x80u | (cfg->osrs_t & 0x07u));
+     * bit 7 = TMP_EXT, the sensor the coefficients are based on */
+    uint8_t tmp_cfg = (uint8_t)((coef_srce & TMP_SENSOR_MEMS) |
+                                (cfg->osrs_t & 0x07u));
     if (!write_reg(dev, REG_TMP_CFG, tmp_cfg))
     {
         return DPS310_ERR_I2C;

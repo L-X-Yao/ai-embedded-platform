@@ -149,6 +149,18 @@ TEST(test_hw_reading_result_clears_ready_flag)
     ASSERT_EQ(hw_regs[0x08], 0xC0);
 }
 
+TEST(test_hw_tmp_ext_follows_coef_source)
+{
+    hw_model_reset();
+    ASSERT_EQ(dps310_init(&dev, &hw_i2c, &default_cfg), DPS310_OK);
+    ASSERT_EQ(hw_regs[0x07] & 0x80, 0x80);
+
+    hw_model_reset();
+    hw_regs[0x28] = 0x00;  /* a part calibrated against the ASIC sensor */
+    ASSERT_EQ(dps310_init(&dev, &hw_i2c, &default_cfg), DPS310_OK);
+    ASSERT_EQ(hw_regs[0x07] & 0x80, 0);
+}
+
 TEST(test_hw_wrong_id)
 {
     hw_model_reset();
@@ -168,5 +180,6 @@ TEST_MAIN("dps310_hw_model")
     RUN(test_hw_soft_reset_needs_low_nibble);
     RUN(test_hw_meas_cfg_status_bits_read_only);
     RUN(test_hw_reading_result_clears_ready_flag);
+    RUN(test_hw_tmp_ext_follows_coef_source);
     RUN(test_hw_wrong_id);
 TEST_MAIN_END()

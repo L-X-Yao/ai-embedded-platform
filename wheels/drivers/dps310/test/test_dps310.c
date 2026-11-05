@@ -90,6 +90,9 @@ static void mock_reset(void)
     /* MEAS_CFG reset value C0H (p.32): COEF_RDY + SENSOR_RDY */
     mock_regs[0x08] = 0xC0;
 
+    /* TMP_COEF_SRCE: coefficients based on the MEMS element sensor */
+    mock_regs[0x28] = 0x80;
+
     plant_calib();
 }
 
@@ -368,7 +371,7 @@ TEST(test_oversampling_config)
 
     /* PRS_CFG (0x06): bits[2:0] = osrs_p = 3 */
     ASSERT_EQ(mock_regs[0x06] & 0x07, DPS310_OVERSAMPLING_8);
-    /* TMP_CFG (0x07): bit7 = TMP_EXT, bits[2:0] = osrs_t = 4 */
+    /* TMP_CFG (0x07): bit7 = TMP_EXT from 0x28, bits[2:0] = osrs_t = 4 */
     ASSERT_EQ(mock_regs[0x07] & 0x07, DPS310_OVERSAMPLING_16);
     ASSERT_TRUE(mock_regs[0x07] & 0x80);  /* TMP_EXT bit */
 }
@@ -387,6 +390,45 @@ TEST(test_oversampling_shift_bits)
     /* CFG_REG (0x09): P_SHIFT=bit2, T_SHIFT=bit3 for >8x oversampling */
     ASSERT_TRUE(mock_regs[0x09] & 0x04);  /* P_SHIFT */
     ASSERT_TRUE(mock_regs[0x09] & 0x08);  /* T_SHIFT */
+}
+
+/* p.38: TMP_EXT must match TMP_COEF_SRCE, bit 7 of 0x28 */
+
+TEST(test_tmp_ext_clear_for_asic_coefficients)
+{
+    mock_reset();
+    mock_regs[0x28] = 0x00;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_OK);
+    ASSERT_EQ(mock_regs[0x07] & 0x80, 0);
+}
+
+TEST(test_tmp_ext_set_for_mems_coefficients)
+{
+    mock_reset();
+    mock_regs[0x28] = 0x80;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_OK);
+    ASSERT_EQ(mock_regs[0x07] & 0x80, 0x80);
+}
+
+TEST(test_coef_source_reserved_bits_ignored)
+{
+    /* Bits 6:0 of 0x28 are reserved and must not reach TMP_RATE or TMP_PRC */
+    mock_reset();
+    mock_regs[0x28] = 0x7F;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_OK);
+    ASSERT_EQ(mock_regs[0x07], (int)DPS310_OVERSAMPLING_1);
+}
+
+TEST(test_coef_source_i2c_fail)
+{
+    mock_reset();
+    /* ID, MEAS_CFG, calibration, PRS_CFG write, then TMP_COEF_SRCE */
+    mock_fail_at = 4;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_I2C);
 }
 
 /* ---------- calibration tests ---------- */
@@ -489,6 +531,10 @@ TEST_MAIN("dps310")
     RUN(test_addr_low);
     RUN(test_oversampling_config);
     RUN(test_oversampling_shift_bits);
+    RUN(test_tmp_ext_clear_for_asic_coefficients);
+    RUN(test_tmp_ext_set_for_mems_coefficients);
+    RUN(test_coef_source_reserved_bits_ignored);
+    RUN(test_coef_source_i2c_fail);
     RUN(test_calib_i2c_fail);
     RUN(test_meas_temp_cmd_written);
     RUN(test_error_codes);
