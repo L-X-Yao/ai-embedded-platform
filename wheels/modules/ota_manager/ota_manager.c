@@ -86,6 +86,11 @@ ota_mgr_err_t ota_manager_check(ota_manager_t *mgr)
         return OTA_MGR_ERR_VERSION;
     }
 
+    if (new_size == 0) {
+        mgr->state = OTA_MGR_STATE_ERROR;
+        return OTA_MGR_ERR_DOWNLOAD;
+    }
+
     mgr->total_size = new_size;
     mgr->downloaded = 0;
     mgr->progress_pct = 0;
