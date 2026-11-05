@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test that all examples/ compile on host.
+# Build every example on host and run it, except those marked BUILD_ONLY.
 # Usage: bash tooling/test/test_examples.sh
 set -euo pipefail
 
@@ -20,7 +20,8 @@ for dir in examples/*/; do
     mkdir -p "$dir/build"
 
     if cmake -S "$dir" -B "$dir/build" -G "Unix Makefiles" > /dev/null 2>&1 && \
-       make -C "$dir/build" --no-print-directory > /dev/null 2>&1; then
+       make -C "$dir/build" --no-print-directory > /dev/null 2>&1 && \
+       { [ -f "$dir/BUILD_ONLY" ] || timeout 120 "$dir/build/$name" > /dev/null 2>&1; }; then
         echo "PASS $name"
         pass=$((pass + 1))
     else
