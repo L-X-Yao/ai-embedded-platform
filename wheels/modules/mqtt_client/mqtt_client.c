@@ -103,7 +103,7 @@ static void dispatch_suback(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
     if (len < 5) return;
     uint16_t id = (uint16_t)((pkt[2] << 8) | pkt[3]);
     if (c->inflight_sub_id == id) c->inflight_sub_id = 0;
-    (void)pkt[4]; /* return code — caller can check via inflight_sub_id cleared */
+    /* pkt[4], the return code, is not reported: a refusal looks like a grant. */
 }
 
 static void dispatch_packet(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
