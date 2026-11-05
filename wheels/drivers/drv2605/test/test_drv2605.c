@@ -233,6 +233,27 @@ TEST(test_realtime_value_i2c_fail)
     ASSERT_EQ(drv2605_set_realtime_value(&dev, 0x40), DRV2605_ERR_I2C);
 }
 
+TEST(test_realtime_enters_rtp_mode)
+{
+    setup();
+    ASSERT_EQ(drv2605_set_realtime_value(&dev, 0x40), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x01], DRV2605_MODE_REALTIME);
+    ASSERT_EQ(mock_regs[0x02], 0x40);
+}
+
+TEST(test_stop_and_go_leave_rtp_mode)
+{
+    setup();
+    drv2605_set_realtime_value(&dev, 0x40);
+    ASSERT_EQ(drv2605_stop(&dev), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x01], DRV2605_MODE_INTERNAL_TRIGGER);
+
+    drv2605_set_realtime_value(&dev, 0x40);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x01], DRV2605_MODE_INTERNAL_TRIGGER);
+    ASSERT_EQ(mock_regs[0x0C], 0x01);
+}
+
 TEST_MAIN("drv2605")
     RUN(test_init_ok);
     RUN(test_init_drv2605_non_l);
@@ -254,4 +275,6 @@ TEST_MAIN("drv2605")
     RUN(test_set_waveform_i2c_fail);
     RUN(test_stop_i2c_fail);
     RUN(test_realtime_value_i2c_fail);
+    RUN(test_realtime_enters_rtp_mode);
+    RUN(test_stop_and_go_leave_rtp_mode);
 TEST_MAIN_END()

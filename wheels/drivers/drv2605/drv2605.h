@@ -80,7 +80,7 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Reset, verify device ID, enter standby. @thread_safe: no @isr_safe: no */
+/** Verify device ID and leave standby in internal trigger mode. @thread_safe: no @isr_safe: no */
 drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c);
 
 /** Set actuator type (ERM or LRA) in feedback control register. @thread_safe: caller_must_lock @isr_safe: no */
@@ -90,13 +90,13 @@ drv2605_err_t drv2605_set_actuator(drv2605_t *dev, drv2605_actuator_t type);
 drv2605_err_t drv2605_set_waveform(drv2605_t *dev, uint8_t slot,
                                    uint8_t effect_id);
 
-/** Trigger waveform sequencer playback (set GO bit). @thread_safe: caller_must_lock @isr_safe: no */
+/** Trigger waveform sequencer playback (internal trigger mode, then GO). @thread_safe: caller_must_lock @isr_safe: no */
 drv2605_err_t drv2605_go(drv2605_t *dev);
 
-/** Stop playback (clear GO bit). @thread_safe: caller_must_lock @isr_safe: no */
+/** Stop playback (clear GO, return to internal trigger mode). @thread_safe: caller_must_lock @isr_safe: no */
 drv2605_err_t drv2605_stop(drv2605_t *dev);
 
-/** Set real-time playback value (signed, for RTP mode). @thread_safe: caller_must_lock @isr_safe: no */
+/** Drive the actuator with a real-time value (signed, enters RTP mode). @thread_safe: caller_must_lock @isr_safe: no */
 drv2605_err_t drv2605_set_realtime_value(drv2605_t *dev, uint8_t value);
 
 #ifdef __cplusplus
