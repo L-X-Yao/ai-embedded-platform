@@ -75,7 +75,7 @@ typedef struct {
 #define GC9A01_MADCTL_MV    0x20
 #define GC9A01_MADCTL_ML    0x10
 #define GC9A01_MADCTL_BGR   0x08
-#define GC9A01_MADCTL_MH    0x02
+#define GC9A01_MADCTL_MH    0x04
 
 /* COLMOD values */
 #define GC9A01_COLMOD_RGB565  0x05
