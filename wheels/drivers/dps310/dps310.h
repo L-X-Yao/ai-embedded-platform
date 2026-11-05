@@ -97,7 +97,7 @@ typedef struct {
 
 #define DPS310_ADDR_HIGH  0x77u
 #define DPS310_ADDR_LOW   0x76u
-#define DPS310_PRODUCT_ID 0x10u
+#define DPS310_PRODUCT_ID 0x10u  /* ID reset value: revision 1, product 0 */
 
 /* ---------- API ---------- */
 

@@ -30,6 +30,7 @@
 #define REG_ID         0x0Du  /* product ID        */
 #define REG_COEF_START 0x10u  /* calibration start */
 
+#define ID_PROD_MASK   0x0Fu  /* PROD_ID; REV_ID is bits 7:4 */
 #define RESET_CMD      0x89u
 #define COEF_LEN       18u
 
@@ -277,7 +278,7 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
     {
         return DPS310_ERR_I2C;
     }
-    if ((id & 0xF0u) != DPS310_PRODUCT_ID)
+    if ((id & ID_PROD_MASK) != (DPS310_PRODUCT_ID & ID_PROD_MASK))
     {
         return DPS310_ERR_ID;
     }
