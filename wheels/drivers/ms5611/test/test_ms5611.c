@@ -15,67 +15,38 @@
  */
 
 /*
- * CRC-4 helper (mirrors ms5611.c internal prom_crc4) so we can compute the
- * correct CRC word for the test PROM and plant it in mock registers.
+ * PROM vector from ArduPilot libraries/SITL/SIM_MS5611.h (commit 32f57526):
+ * the C1-C6 of the manual's p8 table, word 0 = 0xFFFF, word 7 = 0x0008. It
+ * passes AP_Baro_MS5611.cpp's check, and Figure 16 (p13) puts the CRC in
+ * DB3-DB0 of word 7. The vector is literal so that no test computes the
+ * CRC with a copy of the driver's own routine.
  */
-static uint8_t test_prom_crc4(const uint16_t prom[8])
+static const uint16_t ref_prom[8] = {
+    0xFFFF,  /* word 0 - reserved for manufacturer */
+    40127,   /* C1 = 0x9CBF */
+    36924,   /* C2 = 0x903C */
+    23317,   /* C3 = 0x5B15 */
+    23282,   /* C4 = 0x5AF2 */
+    33464,   /* C5 = 0x82B8 */
+    28312,   /* C6 = 0x6E98 */
+    0x0008,  /* word 7 - CRC 0x8 in DB3-DB0 */
+};
+
+static void plant_word7(uint16_t word7)
 {
-    uint32_t rem = 0;
-    uint16_t data[8];
-    uint8_t i, bit;
-    for (i = 0; i < 8; i++) data[i] = prom[i];
-    data[7] = (uint16_t)(data[7] & 0x0FFF); /* zero CRC nibble */
-    for (i = 0; i < 16; i++) {
-        if (i % 2 == 1) rem ^= (uint32_t)(data[i >> 1] & 0x00FFU);
-        else             rem ^= (uint32_t)(data[i >> 1] >> 8);
-        for (bit = 8; bit > 0; bit--) {
-            if (rem & 0x8000U) rem = (rem << 1) ^ 0x3000U;
-            else               rem <<= 1;
-        }
-    }
-    return (uint8_t)((rem >> 12) & 0x000FU);
+    mock_regs[0xAE] = (uint8_t)(word7 >> 8);
+    mock_regs[0xAF] = (uint8_t)(word7 & 0xFF);
 }
 
 static void plant_prom(void)
 {
-    /* Datasheet example calibration: word[0]=0, C1-C6, word[7] with CRC */
-    uint16_t prom[8] = {
-        0x0000,  /* word 0 — factory data, unused */
-        40127,   /* C1 = 0x9CBF */
-        36924,   /* C2 = 0x903C */
-        23317,   /* C3 = 0x5B15 */
-        23282,   /* C4 = 0x5AF2 */
-        33464,   /* C5 = 0x82B8 */
-        28312,   /* C6 = 0x6E98 */
-        0x0000,  /* word 7 — CRC in MSN, initialise to 0 */
-    };
-    uint8_t crc = test_prom_crc4(prom);
-    prom[7] = (uint16_t)((uint16_t)crc << 12);
-
-    /* word 0 at 0xA0 */
-    mock_regs[0xA0] = (uint8_t)(prom[0] >> 8);
-    mock_regs[0xA1] = (uint8_t)(prom[0] & 0xFF);
-    /* C1 at 0xA2 */
-    mock_regs[0xA2] = (uint8_t)(prom[1] >> 8);
-    mock_regs[0xA3] = (uint8_t)(prom[1] & 0xFF);
-    /* C2 at 0xA4 */
-    mock_regs[0xA4] = (uint8_t)(prom[2] >> 8);
-    mock_regs[0xA5] = (uint8_t)(prom[2] & 0xFF);
-    /* C3 at 0xA6 */
-    mock_regs[0xA6] = (uint8_t)(prom[3] >> 8);
-    mock_regs[0xA7] = (uint8_t)(prom[3] & 0xFF);
-    /* C4 at 0xA8 */
-    mock_regs[0xA8] = (uint8_t)(prom[4] >> 8);
-    mock_regs[0xA9] = (uint8_t)(prom[4] & 0xFF);
-    /* C5 at 0xAA */
-    mock_regs[0xAA] = (uint8_t)(prom[5] >> 8);
-    mock_regs[0xAB] = (uint8_t)(prom[5] & 0xFF);
-    /* C6 at 0xAC */
-    mock_regs[0xAC] = (uint8_t)(prom[6] >> 8);
-    mock_regs[0xAD] = (uint8_t)(prom[6] & 0xFF);
-    /* word 7 (CRC) at 0xAE */
-    mock_regs[0xAE] = (uint8_t)(prom[7] >> 8);
-    mock_regs[0xAF] = (uint8_t)(prom[7] & 0xFF);
+    /* Word n sits at 0xA0 + 2n, MSB first */
+    for (uint8_t n = 0; n < 8; n++)
+    {
+        uint8_t reg = (uint8_t)(0xA0u + 2u * n);
+        mock_regs[reg]      = (uint8_t)(ref_prom[n] >> 8);
+        mock_regs[reg + 1u] = (uint8_t)(ref_prom[n] & 0xFF);
+    }
 }
 
 static void plant_adc(uint32_t val)
@@ -262,14 +233,43 @@ TEST(test_delay_called)
 
 TEST(test_init_crc_fail)
 {
+    /* Flip one bit of the CRC, which Figure 16 puts in DB3-DB0 of word 7 */
     mock_reset();
-    /* Corrupt the CRC nibble in word 7 (0xAE byte 0 = MSB).
-     * XOR the high byte with 0x10 to flip one CRC bit while
-     * keeping lower 12 bits (factory data) intact. */
-    mock_regs[0xAE] ^= 0x10;
+    plant_word7(ref_prom[7] ^ 0x0001u);
     ms5611_t d;
-    ms5611_err_t e = ms5611_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, MS5611_ERR_CRC);
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
+}
+
+TEST(test_init_crc_is_not_in_top_nibble)
+{
+    /* The layout the driver used to expect: 0x8 in DB15-DB12 */
+    mock_reset();
+    plant_word7(0x8000);
+    ms5611_t d;
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
+}
+
+TEST(test_init_crc_skips_word7_db7_db4)
+{
+    /* The reference clears the low byte (prom[7] &= 0xff00), so DB7-DB4
+     * do not count: the CRC of word 7 = 0x00F8 is still 0x8. */
+    mock_reset();
+    plant_word7(0x00F8);
+    ms5611_t d;
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_OK);
+}
+
+TEST(test_init_crc_covers_word7_top_byte)
+{
+    /* The top byte does count. Reference crc_crc4 gives 0x3 for 0xA5xx */
+    mock_reset();
+    plant_word7(0xA503);
+    ms5611_t d;
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_OK);
+
+    mock_reset();
+    plant_word7(0xA403);   /* same CRC, other top byte: 0xA4xx gives 0x0 */
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
 }
 
 TEST_MAIN("ms5611")
@@ -287,4 +287,7 @@ TEST_MAIN("ms5611")
     RUN(test_osr_invalid);
     RUN(test_delay_called);
     RUN(test_init_crc_fail);
+    RUN(test_init_crc_is_not_in_top_nibble);
+    RUN(test_init_crc_skips_word7_db7_db4);
+    RUN(test_init_crc_covers_word7_top_byte);
 TEST_MAIN_END()
