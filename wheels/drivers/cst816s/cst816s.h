@@ -100,7 +100,8 @@ cst816s_err_t cst816s_read(cst816s_t *dev,
  *  @thread_safe: no @isr_safe: no */
 cst816s_err_t cst816s_set_auto_sleep(cst816s_t *dev, bool enable);
 
-/** Configure motion detection mask (register 0xAA).
+/** Configure motion detection mask (register 0xEC). The chip has no bit for
+ *  long press, so long_press is ignored.
  *  @thread_safe: no @isr_safe: no */
 cst816s_err_t cst816s_set_motion_mask(cst816s_t *dev,
                                       bool continuous,

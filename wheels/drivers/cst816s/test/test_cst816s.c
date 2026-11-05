@@ -13,7 +13,7 @@
 #define REG_YL               0x06u
 #define REG_CHIP_ID          0xA7u
 #define REG_FW_VERSION       0xA9u
-#define REG_MOTION_MASK      0xAAu
+#define REG_MOTION_MASK      0xECu
 #define REG_DIS_AUTO_SLEEP   0xFEu
 
 /* ---------- chip-specific mock setup ---------- */
@@ -239,7 +239,7 @@ TEST(test_motion_mask)
 
     /* Enable all: continuous | double_click | long_press = 0x07 */
     ASSERT_EQ(cst816s_set_motion_mask(&dev, true, true, true), CST816S_OK);
-    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x07);
+    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x07);  /* EnConLR, EnConUD, EnDClick */
 
     /* Disable all: 0x00 */
     ASSERT_EQ(cst816s_set_motion_mask(&dev, false, false, false), CST816S_OK);
@@ -247,15 +247,15 @@ TEST(test_motion_mask)
 
     /* Only continuous: 0x01 */
     ASSERT_EQ(cst816s_set_motion_mask(&dev, true, false, false), CST816S_OK);
-    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x01);
+    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x06);
 
     /* Only double_click: 0x02 */
     ASSERT_EQ(cst816s_set_motion_mask(&dev, false, true, false), CST816S_OK);
-    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x02);
+    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x01);
 
     /* Only long_press: 0x04 */
     ASSERT_EQ(cst816s_set_motion_mask(&dev, false, false, true), CST816S_OK);
-    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x04);
+    ASSERT_EQ(mock_regs[REG_MOTION_MASK], 0x00);  /* no bit for long press */
 }
 
 TEST(test_motion_mask_i2c_fail)

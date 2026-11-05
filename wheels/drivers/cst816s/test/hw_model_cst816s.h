@@ -6,9 +6,9 @@
  * - Chip ID 0xB5 at 0xA7 (read-only)
  * - Firmware version at 0xA9 (read-only)
  * - Touch data at 0x01..0x06 (read-only, set by inject helper)
- * - MotionMask at 0xAA (writable)
+ * - MotionMask at 0xEC (writable)
  * - DisAutoSleep at 0xFE (writable)
- * - AutoSleepTime at 0xEC (writable)
+ * - AutoSleepTime at 0xF9 (writable, 2 s after reset)
  */
 
 #ifndef HW_MODEL_CST816S_H
@@ -25,8 +25,8 @@
 #define CST816S_REG_YL              0x06u
 #define CST816S_REG_CHIP_ID         0xA7u
 #define CST816S_REG_FW_VERSION      0xA9u
-#define CST816S_REG_MOTION_MASK     0xAAu
-#define CST816S_REG_AUTO_SLEEP_TIME 0xECu
+#define CST816S_REG_MOTION_MASK     0xECu
+#define CST816S_REG_AUTO_SLEEP_TIME 0xF9u
 #define CST816S_REG_DIS_AUTO_SLEEP  0xFEu
 
 /* --- Simulated physical environment --- */
@@ -74,9 +74,10 @@ static void cst816s_model_init(cst816s_model_t *m)
     hw_model_set_readonly(&m->hw, CST816S_REG_YL);
 
     /* Writable config registers keep defaults (all bits writable) */
-    /* MotionMask (0xAA) default 0x00 — no gestures enabled */
+    /* MotionMask (0xEC) default 0x00 — no gestures enabled */
     /* DisAutoSleep (0xFE) default 0x00 — auto sleep enabled */
-    /* AutoSleepTime (0xEC) default 0x00 */
+    /* AutoSleepTime (0xF9) default 2 s */
+    hw_model_set_reset_value(&m->hw, CST816S_REG_AUTO_SLEEP_TIME, 0x02);
 
     hw_model_reset(&m->hw);
 }
