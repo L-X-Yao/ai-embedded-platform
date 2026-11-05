@@ -540,6 +540,42 @@ TEST(test_nothing_is_dispatched_after_a_refused_connack)
     ASSERT_EQ(g_msg_count, 0);
 }
 
+static void *g_msg_ctx_seen;
+static void *g_evt_ctx_seen;
+
+static void ctx_msg_cb(void *ctx, const char *topic, uint16_t topic_len,
+                       const uint8_t *payload, uint16_t len, uint8_t qos)
+{
+    (void)topic; (void)topic_len; (void)payload; (void)len; (void)qos;
+    g_msg_ctx_seen = ctx;
+}
+
+static void ctx_evt_cb(void *ctx, mqtt_client_state_t s, uint8_t reason)
+{
+    (void)s; (void)reason;
+    g_evt_ctx_seen = ctx;
+}
+
+TEST(test_each_callback_keeps_its_own_context)
+{
+    static int msg_ctx;
+    static int evt_ctx;
+    uint8_t connack[] = { 0x20, 0x02, 0x00, 0x00 };
+    uint8_t publish[] = { 0x30, 0x03, 0x00, 0x01, 't' };
+    mqtt_client_cfg_t cfg = { .client_id = "test" };
+
+    reset_mocks();
+    mqtt_client_init(&g_c, &g_io, &cfg);
+    mqtt_client_on_message(&g_c, ctx_msg_cb, &msg_ctx);
+    mqtt_client_on_event(&g_c, ctx_evt_cb, &evt_ctx);
+    mqtt_client_connect(&g_c);
+    mqtt_client_feed(&g_c, connack, sizeof(connack));
+    mqtt_client_feed(&g_c, publish, sizeof(publish));
+
+    ASSERT_TRUE(g_msg_ctx_seen == &msg_ctx);
+    ASSERT_TRUE(g_evt_ctx_seen == &evt_ctx);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -579,4 +615,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_oversized_packet_is_skipped_whole);
     RUN(test_broken_length_closes_the_session);
     RUN(test_nothing_is_dispatched_after_a_refused_connack);
+    RUN(test_each_callback_keeps_its_own_context);
 TEST_MAIN_END()

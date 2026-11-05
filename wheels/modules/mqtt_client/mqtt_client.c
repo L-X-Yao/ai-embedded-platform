@@ -30,7 +30,7 @@ static void set_state(mqtt_client_t *c, mqtt_client_state_t s, uint8_t reason)
 {
     if (c->state == s) return;
     c->state = s;
-    if (c->on_event) c->on_event(c->cb_ctx, s, reason);
+    if (c->on_event) c->on_event(c->evt_ctx, s, reason);
 }
 
 static int try_decode_packet_len(const uint8_t *buf, uint16_t buf_len,
@@ -76,7 +76,7 @@ static void dispatch_publish(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
     if (mqtt_packet_parse_publish(pkt, len, &pub) != MQTT_PACKET_OK) return;
 
     if (c->on_message) {
-        c->on_message(c->cb_ctx, pub.topic, pub.topic_len,
+        c->on_message(c->msg_ctx, pub.topic, pub.topic_len,
                       pub.payload, (uint16_t)pub.payload_len, pub.qos);
     }
 
@@ -378,7 +378,7 @@ void mqtt_client_on_message(mqtt_client_t *c, mqtt_client_msg_cb_t cb, void *ctx
     REQUIRE(c != NULL);
     if (!c) return;
     c->on_message = cb;
-    c->cb_ctx     = ctx;
+    c->msg_ctx    = ctx;
 }
 
 void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx)
@@ -386,7 +386,7 @@ void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx)
     REQUIRE(c != NULL);
     if (!c) return;
     c->on_event = cb;
-    c->cb_ctx   = ctx;
+    c->evt_ctx  = ctx;
 }
 
 uint16_t mqtt_client_next_id(mqtt_client_t *c)
