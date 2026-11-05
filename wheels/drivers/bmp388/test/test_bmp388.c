@@ -262,10 +262,72 @@ TEST(test_oversampling_config)
     bmp388_t d;
     bmp388_init(&d, &mock_i2c, &cfg);
 
-    /* OSR register 0x1C: osr_t bits[5:3], osr_p bits[2:0] */
+    /* OSR register 0x1C: osr_t bits[5:3], osr_p bits[2:0].
+     * Manual p37: x16 is 100 and x8 is 011 */
     uint8_t osr = mock_regs[0x1C];
-    ASSERT_EQ((osr >> 3) & 0x07, BMP388_OVERSAMPLING_16);
-    ASSERT_EQ(osr & 0x07, BMP388_OVERSAMPLING_8);
+    ASSERT_EQ((osr >> 3) & 0x07, 4);
+    ASSERT_EQ(osr & 0x07, 3);
+}
+
+/* Manual p37: osr_p and osr_t both run from 000 = x1 to 101 = x32 */
+TEST(test_oversampling_codes)
+{
+    static const struct {
+        bmp388_oversampling_t os;
+        uint8_t               code;
+    } v[] = {
+        { BMP388_OVERSAMPLING_1,  0 },
+        { BMP388_OVERSAMPLING_2,  1 },
+        { BMP388_OVERSAMPLING_4,  2 },
+        { BMP388_OVERSAMPLING_8,  3 },
+        { BMP388_OVERSAMPLING_16, 4 },
+        { BMP388_OVERSAMPLING_32, 5 },
+    };
+
+    for (unsigned i = 0; i < 6; i++)
+    {
+        unsigned j = (i + 1) % 6;  /* a different setting in each field */
+        mock_reset();
+        bmp388_cfg_t cfg = {
+            .addr = BMP388_ADDR_LOW,
+            .osrs_t = v[i].os,
+            .osrs_p = v[j].os,
+        };
+        bmp388_t d;
+        ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_OK);
+        ASSERT_EQ((mock_regs[0x1C] >> 3) & 0x07, v[i].code);
+        ASSERT_EQ(mock_regs[0x1C] & 0x07, v[j].code);
+    }
+}
+
+/* Nothing above x32 has a code in the manual */
+TEST(test_oversampling_above_x32)
+{
+    mock_reset();
+    bmp388_t d;
+    bmp388_cfg_t cfg = default_cfg;
+    cfg.osrs_t = (bmp388_oversampling_t)7;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_PARAM);
+    cfg = default_cfg;
+    cfg.osrs_p = (bmp388_oversampling_t)7;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_PARAM);
+}
+
+/* OSR has no skip code: p14 skips through press_en and temp_en, which the
+ * driver never clears. SKIP keeps measuring at x1, as it always did */
+TEST(test_oversampling_skip_measures_x1)
+{
+    mock_reset();
+    bmp388_t d;
+    bmp388_cfg_t cfg = default_cfg;
+    cfg.osrs_t = BMP388_OVERSAMPLING_SKIP;
+    cfg.osrs_p = BMP388_OVERSAMPLING_SKIP;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_OK);
+    ASSERT_EQ(mock_regs[0x1C], 0x00);
+
+    bmp388_data_t data;
+    ASSERT_EQ(bmp388_read(&d, &data), BMP388_OK);
+    ASSERT_EQ_HEX(mock_regs[0x1B], 0x13);
 }
 
 TEST(test_oversampling_32x)
@@ -279,6 +341,7 @@ TEST(test_oversampling_32x)
     bmp388_t d;
     bmp388_err_t e = bmp388_init(&d, &mock_i2c, &cfg);
     ASSERT_EQ(e, BMP388_OK);
+    ASSERT_EQ_HEX(mock_regs[0x1C], 0x2D);  /* 101 in both fields, manual p37 */
 }
 
 TEST(test_calib_i2c_fail)
@@ -353,6 +416,9 @@ TEST_MAIN("bmp388")
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);
     RUN(test_oversampling_config);
+    RUN(test_oversampling_codes);
+    RUN(test_oversampling_above_x32);
+    RUN(test_oversampling_skip_measures_x1);
     RUN(test_oversampling_32x);
     RUN(test_calib_i2c_fail);
     RUN(test_forced_mode_write);

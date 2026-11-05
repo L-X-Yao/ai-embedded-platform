@@ -40,7 +40,7 @@ typedef struct {
 } bmp388_i2c_t;
 
 typedef enum {
-    BMP388_OVERSAMPLING_SKIP = 0,
+    BMP388_OVERSAMPLING_SKIP = 0,  /* does not skip: measures at x1 */
     BMP388_OVERSAMPLING_1    = 1,
     BMP388_OVERSAMPLING_2    = 2,
     BMP388_OVERSAMPLING_4    = 3,
