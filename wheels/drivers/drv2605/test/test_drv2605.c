@@ -254,6 +254,16 @@ TEST(test_stop_and_go_leave_rtp_mode)
     ASSERT_EQ(mock_regs[0x0C], 0x01);
 }
 
+TEST(test_set_actuator_picks_the_library)
+{
+    setup();
+    mock_regs[0x03] = 0x10;  /* HI_Z stays as it is */
+    ASSERT_EQ(drv2605_set_actuator(&dev, DRV2605_ACTUATOR_LRA), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x03], 0x16);
+    ASSERT_EQ(drv2605_set_actuator(&dev, DRV2605_ACTUATOR_ERM), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x03], 0x11);
+}
+
 TEST_MAIN("drv2605")
     RUN(test_init_ok);
     RUN(test_init_drv2605_non_l);
@@ -277,4 +287,5 @@ TEST_MAIN("drv2605")
     RUN(test_realtime_value_i2c_fail);
     RUN(test_realtime_enters_rtp_mode);
     RUN(test_stop_and_go_leave_rtp_mode);
+    RUN(test_set_actuator_picks_the_library);
 TEST_MAIN_END()
