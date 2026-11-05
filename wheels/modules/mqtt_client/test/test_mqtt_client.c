@@ -493,6 +493,27 @@ TEST(test_feed_keeps_bytes_past_the_buffer)
     ASSERT_EQ(g_msg_count, 3);
 }
 
+TEST(test_oversized_packet_is_skipped_whole)
+{
+    static uint8_t stream[2 * MQTT_CLIENT_RX_BUF_SIZE];
+    size_t over = MQTT_CLIENT_RX_BUF_SIZE + 64;
+    setup_connected();
+
+    size_t len = put_publish(stream, over);
+    /* a frame hiding in the payload of the packet that cannot be buffered */
+    put_publish(&stream[MQTT_CLIENT_RX_BUF_SIZE + 8], 16);
+    len += put_publish(&stream[len], 16);
+
+    /* the header decides the size, so the first piece fails and the rest is dropped */
+    ASSERT_EQ(mqtt_client_feed(&g_c, stream, MQTT_CLIENT_RX_BUF_SIZE), MQTT_CLIENT_ERR_SIZE);
+    ASSERT_EQ(mqtt_client_feed(&g_c, &stream[MQTT_CLIENT_RX_BUF_SIZE],
+                               (uint16_t)(len - MQTT_CLIENT_RX_BUF_SIZE)), MQTT_CLIENT_OK);
+
+    /* only the packet after the oversized one arrives */
+    ASSERT_EQ(g_msg_count, 1);
+    ASSERT_EQ(g_msg_len, 16 - 5);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -529,4 +550,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_feed_overflow_returns_err_size);
     RUN(test_subscribe_refuses_qos_it_cannot_serve);
     RUN(test_feed_keeps_bytes_past_the_buffer);
+    RUN(test_oversized_packet_is_skipped_whole);
 TEST_MAIN_END()
