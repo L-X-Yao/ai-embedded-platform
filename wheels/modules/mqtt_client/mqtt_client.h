@@ -110,7 +110,8 @@ typedef struct {
 
     mqtt_client_msg_cb_t on_message;  /* internal */
     mqtt_client_evt_cb_t on_event;    /* internal */
-    void *cb_ctx;                     /* internal */
+    void *msg_ctx;                    /* internal */
+    void *evt_ctx;                    /* internal */
 } mqtt_client_t;
 
 /* ---------- API ---------- */
