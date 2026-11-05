@@ -69,6 +69,8 @@ crsf_err_t crsf_encode_frame(const crsf_frame_t *frame,
 {
     if (!frame || !buf || !out_len)
         return CRSF_ERR_PARAM;
+    if (frame->payload_len > CRSF_MAX_FRAME_SIZE)
+        return CRSF_ERR_OVERFLOW;
 
     size_t total = (size_t)frame->payload_len + 4;
     if (total > cap)
