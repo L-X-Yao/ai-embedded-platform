@@ -38,13 +38,15 @@ static void hw_model_reset(void)
     hw_regs[0x00] = 0x24;  /* CHIP_ID */
     hw_regs[0x02] = 0x00;  /* ERR_REG: no errors */
     hw_regs[0x03] = 0x00;  /* STATUS */
-    hw_regs[0x21] = 0x01;  /* INTERNAL_STATUS: init OK */
+    /* INTERNAL_STATUS: POR is 0x00. Modelled as init OK, because the driver does
+     * not upload the config file yet and a real chip would stay at 0x00. */
+    hw_regs[0x21] = 0x01;
 
     /* Default accel config: normal BWP, 100Hz ODR */
-    hw_regs[0x40] = 0x28;  /* ACC_CONF */
-    hw_regs[0x41] = 0x00;  /* ACC_RANGE: +/-2g */
+    hw_regs[0x40] = 0xA8;  /* ACC_CONF */
+    hw_regs[0x41] = 0x02;  /* ACC_RANGE: +/-8g */
     /* Default gyro config: normal BWP, 200Hz ODR */
-    hw_regs[0x42] = 0x29;  /* GYR_CONF */
+    hw_regs[0x42] = 0xA9;  /* GYR_CONF */
     hw_regs[0x43] = 0x00;  /* GYR_RANGE: +/-2000dps */
 
     hw_regs[0x7C] = 0x00;  /* PWR_CONF */

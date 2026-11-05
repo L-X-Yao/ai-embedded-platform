@@ -22,10 +22,14 @@
 
 #include "bmi270.h"
 #include "contract.h"
+#include <stddef.h>
 
 /* ---------- SPI helpers ---------- */
 
 #define SPI_READ_BIT  0x80u
+
+/* ACC_CONF and GYR_CONF: filter_perf set and bwp normal, the normal mode */
+#define CONF_NORMAL_MODE  0xA0u
 
 /* Scale tables: indexed by range enum */
 static const float acc_scale[] = {
@@ -36,11 +40,11 @@ static const float acc_scale[] = {
 };
 
 static const float gyro_scale[] = {
-    16.4f,      /* +/-2000 dps */
-    32.8f,      /* +/-1000 dps */
-    65.5f,      /* +/-500 dps  */
-    131.0f,     /* +/-250 dps  */
-    262.0f,     /* +/-125 dps  */
+    16.384f,    /* +/-2000 dps */
+    32.768f,    /* +/-1000 dps */
+    65.536f,    /* +/-500 dps  */
+    131.072f,   /* +/-250 dps  */
+    262.144f,   /* +/-125 dps  */
 };
 
 static void reg_write(const bmi270_spi_t *spi, uint8_t reg, uint8_t val)
@@ -82,6 +86,9 @@ static bmi270_err_t load_config(const bmi270_spi_t *spi)
     /* Disable advanced power save before config load */
     reg_write(spi, BMI270_REG_PWR_CONF, 0x00);
 
+    /* The chip needs 450 us after leaving advanced power save */
+    spi->delay_ms(spi->ctx, 1);
+
     /* Prepare config load: set INIT_CTRL to start */
     reg_write(spi, BMI270_REG_INIT_CTRL, 0x00);
 
@@ -93,13 +100,11 @@ static bmi270_err_t load_config(const bmi270_spi_t *spi)
     reg_write(spi, BMI270_REG_INIT_CTRL, 0x01);
 
     /* Wait for initialization */
-    if (spi->delay_ms) {
-        spi->delay_ms(spi->ctx, 20);
-    }
+    spi->delay_ms(spi->ctx, 20);
 
-    /* Check INTERNAL_STATUS: bit 0 should be set (init OK) */
+    /* INTERNAL_STATUS.message: 0x01 is init OK, 0x03, 0x05 and 0x07 are errors */
     uint8_t status = reg_read(spi, BMI270_REG_INTERNAL_STATUS);
-    if (!(status & BMI270_INIT_OK)) {
+    if ((status & BMI270_INTERNAL_MESSAGE_MASK) != BMI270_INIT_OK) {
         return BMI270_ERR_CONFIG;
     }
 
@@ -123,7 +128,9 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
                              const bmi270_cfg_t *cfg)
 {
     if (!dev || !spi || !cfg) return BMI270_ERR_PARAM;
-    if (!spi->cs_low || !spi->cs_high || !spi->xfer) return BMI270_ERR_PARAM;
+    if (!spi->cs_low || !spi->cs_high || !spi->xfer || !spi->delay_ms) {
+        return BMI270_ERR_PARAM;
+    }
 
     /* Validate enum ranges */
     if ((unsigned)cfg->acc_range > 3)  return BMI270_ERR_PARAM;
@@ -133,16 +140,17 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
     if (cfg->gyro_odr < BMI270_ODR_25HZ || cfg->gyro_odr > BMI270_ODR_1600HZ)
         return BMI270_ERR_PARAM;
 
-    dev->spi = spi;
+    /* Stays NULL until init succeeds, so reads cannot use unset divisors */
+    dev->spi = NULL;
 
     /* Soft reset */
     reg_write(spi, BMI270_REG_CMD, BMI270_CMD_SOFTRESET);
-    if (spi->delay_ms) {
-        spi->delay_ms(spi->ctx, 2);
-    }
+    spi->delay_ms(spi->ctx, 2);
 
-    /* Read dummy to wake SPI after reset (per datasheet) */
+    /* Read dummy to wake SPI after reset (per datasheet). The interface
+     * switches to SPI 200 us after that rising edge on CSB. */
     (void)reg_read(spi, BMI270_REG_CHIP_ID);
+    spi->delay_ms(spi->ctx, 1);
 
     /* Read and verify chip ID */
     uint8_t id = reg_read(spi, BMI270_REG_CHIP_ID);
@@ -157,25 +165,26 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
     }
 
     /* Configure accelerometer: ACC_CONF and ACC_RANGE */
-    /* ACC_CONF: acc_bwp=norm (bits 6:4 = 0x02), acc_odr (bits 3:0) */
+    /* ACC_CONF: acc_filter_perf=1 and acc_bwp=norm, acc_odr (bits 3:0) */
     reg_write(spi, BMI270_REG_ACC_CONF,
-              (uint8_t)(0x20u | ((uint8_t)cfg->acc_odr & 0x0Fu)));
+              (uint8_t)(CONF_NORMAL_MODE | ((uint8_t)cfg->acc_odr & 0x0Fu)));
     reg_write(spi, BMI270_REG_ACC_RANGE, (uint8_t)cfg->acc_range);
 
     /* Configure gyroscope: GYR_CONF and GYR_RANGE */
-    /* GYR_CONF: gyr_bwp=norm (bits 5:4 = 0x02), gyr_odr (bits 3:0) */
+    /* GYR_CONF: gyr_filter_perf=1 and gyr_bwp=norm, gyr_odr (bits 3:0) */
     reg_write(spi, BMI270_REG_GYR_CONF,
-              (uint8_t)(0x20u | ((uint8_t)cfg->gyro_odr & 0x0Fu)));
+              (uint8_t)(CONF_NORMAL_MODE | ((uint8_t)cfg->gyro_odr & 0x0Fu)));
     reg_write(spi, BMI270_REG_GYR_RANGE, (uint8_t)cfg->gyro_range);
 
     /* Enable accel + gyro in normal mode.
-     * PWR_CTRL: bit3=temp_en, bit2=gyr_en, bit1=aux_en, bit0=acc_en
-     * 0x0D = 1101 = temp + gyro + accel enabled. */
-    reg_write(spi, BMI270_REG_PWR_CTRL, 0x0D);
+     * PWR_CTRL: bit3=temp_en, bit2=acc_en, bit1=gyr_en, bit0=aux_en
+     * 0x0E = 1110 = temp + accel + gyro enabled, aux off. */
+    reg_write(spi, BMI270_REG_PWR_CTRL, 0x0E);
 
     /* Store scale divisors */
     dev->acc_div  = acc_scale[cfg->acc_range & 0x03];
     dev->gyro_div = gyro_scale[cfg->gyro_range & 0x07];
+    dev->spi = spi;
 
     INVARIANT(dev->spi != NULL);
     return BMI270_OK;
@@ -284,5 +293,10 @@ bmi270_err_t bmi270_soft_reset(const bmi270_t *dev)
 {
     if (!dev || !dev->spi) return BMI270_ERR_PARAM;
     reg_write(dev->spi, BMI270_REG_CMD, BMI270_CMD_SOFTRESET);
+    dev->spi->delay_ms(dev->spi->ctx, 2);
+
+    /* Back to SPI mode: the rising edge of this read switches the interface */
+    (void)reg_read(dev->spi, BMI270_REG_CHIP_ID);
+    dev->spi->delay_ms(dev->spi->ctx, 1);
     return BMI270_OK;
 }

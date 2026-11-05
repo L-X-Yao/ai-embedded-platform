@@ -32,8 +32,8 @@ static void prop_mock_reset(void) {
     /* POR defaults */
     mock_regs_prop[0x00] = 0x24;  /* CHIP_ID */
     mock_regs_prop[0x21] = 0x01;  /* INTERNAL_STATUS: init OK */
-    mock_regs_prop[0x40] = 0x28;  /* ACC_CONF */
-    mock_regs_prop[0x42] = 0x29;  /* GYR_CONF */
+    mock_regs_prop[0x40] = 0xA8;  /* ACC_CONF */
+    mock_regs_prop[0x42] = 0xA9;  /* GYR_CONF */
 }
 
 static void prop_cs_low(void *ctx) {
