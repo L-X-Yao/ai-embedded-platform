@@ -111,6 +111,40 @@ TEST(test_reset_null)
     ASSERT_EQ(bmm150_reset(NULL), BMM150_ERR_PARAM);
 }
 
+TEST(test_reset_keeps_power_and_restarts_measuring)
+{
+    hw_model_reset();
+    ASSERT_EQ(bmm150_init(&dev, &mock_i2c, &default_cfg), BMM150_OK);
+    hw_regs[0x4C] = 0x06; /* sleep, where soft reset leaves the chip */
+
+    ASSERT_EQ(bmm150_reset(&dev), BMM150_OK);
+
+    ASSERT_EQ(hw_regs[0x4B], 0x83); /* reset bits set, power bit kept */
+    ASSERT_EQ(hw_regs[0x4C], 0x00); /* normal mode */
+}
+
+TEST(test_read_reports_xy_overflow)
+{
+    bmm150_data_t data;
+    hw_model_reset();
+    ASSERT_EQ(bmm150_init(&dev, &mock_i2c, &default_cfg), BMM150_OK);
+    hw_regs[0x42] = 0x00; /* X = -4096 */
+    hw_regs[0x43] = 0x80;
+
+    ASSERT_EQ(bmm150_read(&dev, &data), BMM150_ERR_OVERFLOW);
+}
+
+TEST(test_read_reports_z_overflow)
+{
+    bmm150_data_t data;
+    hw_model_reset();
+    ASSERT_EQ(bmm150_init(&dev, &mock_i2c, &default_cfg), BMM150_OK);
+    hw_regs[0x46] = 0x00; /* Z = -16384 */
+    hw_regs[0x47] = 0x80;
+
+    ASSERT_EQ(bmm150_read(&dev, &data), BMM150_ERR_OVERFLOW);
+}
+
 TEST_MAIN("bmm150")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -124,4 +158,7 @@ TEST_MAIN("bmm150")
     RUN(test_read_null);
     RUN(test_reset_ok);
     RUN(test_reset_null);
+    RUN(test_reset_keeps_power_and_restarts_measuring);
+    RUN(test_read_reports_xy_overflow);
+    RUN(test_read_reports_z_overflow);
 TEST_MAIN_END()
