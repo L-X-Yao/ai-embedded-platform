@@ -238,7 +238,7 @@ scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3])
 
 scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters)
 {
-    if (!dev)
+    if (!dev || meters > SCD40_ALTITUDE_MAX_M)
     {
         return SCD40_ERR_PARAM;
     }

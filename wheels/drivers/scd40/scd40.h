@@ -42,7 +42,8 @@ typedef struct {
 
 /* ---------- constants ---------- */
 
-#define SCD40_DEV_ADDR  0x62u
+#define SCD40_DEV_ADDR        0x62u
+#define SCD40_ALTITUDE_MAX_M  3000u
 
 /* ---------- data types ---------- */
 
@@ -82,7 +83,8 @@ scd40_err_t scd40_data_ready(scd40_t *dev, bool *ready);
 /** Read 48-bit unique serial number (3 x uint16). @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3]);
 
-/** Set altitude compensation in meters. @thread_safe: no @isr_safe: no */
+/** Set altitude compensation, 0 to SCD40_ALTITUDE_MAX_M meters. Idle mode only.
+ *  @thread_safe: no @isr_safe: no */
 scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters);
 
 /** Soft reset: reinit, reloads user settings from EEPROM, takes 30 ms.

@@ -311,6 +311,19 @@ TEST(test_set_altitude)
     ASSERT_EQ(mock_last_write_len, 5);
 }
 
+TEST(test_set_altitude_range)
+{
+    /* p11: "Valid input values are between 0 - 3000 m." */
+    setup();
+    ASSERT_EQ(scd40_set_altitude(&dev, 0), SCD40_OK);
+    ASSERT_EQ(scd40_set_altitude(&dev, 3000), SCD40_OK);
+
+    mock_last_write_len = 0;
+    ASSERT_EQ(scd40_set_altitude(&dev, 3001), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_set_altitude(&dev, 0xFFFF), SCD40_ERR_PARAM);
+    ASSERT_EQ(mock_last_write_len, 0);   /* nothing reached the sensor */
+}
+
 TEST(test_perform_reset)
 {
     setup();
@@ -406,6 +419,7 @@ TEST_MAIN("scd40")
     RUN(test_get_serial);
     RUN(test_crc_error);
     RUN(test_set_altitude);
+    RUN(test_set_altitude_range);
     RUN(test_perform_reset);
     RUN(test_null_params_all_apis);
     RUN(test_i2c_fail_propagation);
