@@ -77,15 +77,19 @@ typedef struct {
     bno055_cfg_t cfg;
 } bno055_t;
 
+/* Set by the COM3 pin: 0x28 when low, 0x29 when high. The datasheet calls 0x29
+ * the default, as COM3 has an internal pull-up; these names predate that check. */
 #define BNO055_ADDR_PRIMARY  0x28
 #define BNO055_ADDR_ALT      0x29
 #define BNO055_CHIP_ID       0xA0
 
-/** @thread_safe: no @isr_safe: no */
+/** Call at least 650 ms after power-on or reset, the chip's start-up time.
+ *  @thread_safe: no @isr_safe: no */
 bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
                          const bno055_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** Returns BNO055_ERR_PARAM outside the fusion modes, which have no orientation.
+ *  @thread_safe: no @isr_safe: no */
 bno055_err_t bno055_read_euler(const bno055_t *dev, bno055_euler_t *out);
 
 /** @thread_safe: no @isr_safe: no */
