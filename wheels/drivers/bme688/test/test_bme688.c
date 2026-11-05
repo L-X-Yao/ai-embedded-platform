@@ -818,6 +818,15 @@ TEST(test_read_data_buf_fail)
     ASSERT_EQ(bme688_read(&dev, &data), BME688_ERR_HAL);
 }
 
+TEST(test_humidity_clamps_a_negative_result_to_zero)
+{
+    setup();
+    plant_data(415148, 500000, 0, 300, 3, true);
+    bme688_data_t data;
+    ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+    ASSERT_NEAR(data.humidity_pct, 0.0f, 0.001f);
+}
+
 TEST_MAIN("bme688")
     RUN(test_init_null);
     RUN(test_init_null_callbacks);
@@ -865,4 +874,5 @@ TEST_MAIN("bme688")
     RUN(test_gas_heater_gas_wait_fail);
     RUN(test_gas_heater_ctrl_gas1_fail);
     RUN(test_read_data_buf_fail);
+    RUN(test_humidity_clamps_a_negative_result_to_zero);
 TEST_MAIN_END()
