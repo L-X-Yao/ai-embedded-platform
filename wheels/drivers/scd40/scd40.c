@@ -211,9 +211,9 @@ scd40_err_t scd40_data_ready(scd40_t *dev, bool *ready)
         return err;
     }
 
-    /* Bits [10:0] are undefined; data is ready when any of bits [15:11]
-     * are set. Mask the lower 11 bits and check the remainder. */
-    *ready = (status & 0xF800u) != 0u;
+    /* Data is ready when any of the low 11 bits is set. Bits [15:11] carry
+     * no meaning: the manual's not-ready example is 0x8000 (Table 23). */
+    *ready = (status & 0x07FFu) != 0u;
 
     return SCD40_OK;
 }

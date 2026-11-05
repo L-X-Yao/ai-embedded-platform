@@ -183,7 +183,8 @@ static bool scd40_model_read(void *ctx, uint8_t dev_addr,
     }
     case SCD40_MODEL_RESP_DATA_READY: {
         if (len < 3) { memset(data, 0xFF, len); return true; }
-        uint16_t status = m->data_ready ? 0x0800u : 0x0000u;
+        /* Table 23: low 11 bits 0 = not ready, example word 0x8000 */
+        uint16_t status = m->data_ready ? 0x8006u : 0x8000u;
         scd40_model_encode_word(&data[0], status);
         break;
     }
