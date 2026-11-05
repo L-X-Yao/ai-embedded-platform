@@ -270,7 +270,7 @@ static uint32_t time_on_air_ms(const sx1262_t *dev, uint8_t payload_len)
     }
 
     int32_t symbols = ((numerator + denominator - 1) / denominator) * cr_denominator +
-                      (int32_t)PREAMBLE_SYMBOLS;
+                      (int32_t)PREAMBLE_SYMBOLS + 12;
     if (sf <= 6) {
         symbols += 2;
     }
