@@ -83,10 +83,11 @@ static void reg_write(const lora_spi_t *spi, uint8_t addr, uint8_t val)
 
 static lora_err_t set_mode(const lora_spi_t *spi, uint8_t mode)
 {
-    reg_write(spi, REG_OP_MODE, OPMODE_LORA | mode);
+    uint8_t wanted = (uint8_t)(OPMODE_LORA | mode);
+    reg_write(spi, REG_OP_MODE, wanted);
     /* Read back to verify mode switch took effect */
-    uint8_t actual = reg_read(spi, REG_OP_MODE) & 0x07;
-    return (actual == mode) ? LORA_OK : LORA_ERR_SPI;
+    uint8_t actual = reg_read(spi, REG_OP_MODE) & (OPMODE_LORA | 0x07);
+    return (actual == wanted) ? LORA_OK : LORA_ERR_SPI;
 }
 
 /* ---------- public API ---------- */
@@ -109,7 +110,9 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     spi->reset(spi->ctx);
     spi->delay_ms(spi->ctx, 10);
 
-    /* enter sleep to switch to LoRa mode */
+    /* LongRangeMode can only change in Sleep, and reset leaves the chip in
+     * standby, so go to Sleep first and then set the bit. */
+    reg_write(spi, REG_OP_MODE, MODE_SLEEP);
     lora_err_t err = set_mode(spi, MODE_SLEEP);
     if (err != LORA_OK) return err;
     spi->delay_ms(spi->ctx, 10);
