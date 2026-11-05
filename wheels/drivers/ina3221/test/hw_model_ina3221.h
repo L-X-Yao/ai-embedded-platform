@@ -130,8 +130,9 @@ static void ina3221_model_inject_shunt(ina3221_model_t *m,
     };
 
     int16_t counts = (int16_t)(shunt_uv / 40.0f);
-    /* Register format: signed value in bits[15:3], lower 3 bits zero */
-    uint16_t regval = (uint16_t)(counts << 3);
+    /* Register format: signed value in bits[15:3], lower 3 bits zero.
+     * Shift as unsigned: left-shifting a negative int is undefined. */
+    uint16_t regval = (uint16_t)((uint16_t)counts << 3);
 
     m->regs[shunt_regs[channel]] = regval;
 }
@@ -152,7 +153,7 @@ static void ina3221_model_inject_bus(ina3221_model_t *m,
     };
 
     int16_t counts = (int16_t)(bus_mv / 8.0f);
-    uint16_t regval = (uint16_t)(counts << 3);
+    uint16_t regval = (uint16_t)((uint16_t)counts << 3);
 
     m->regs[bus_regs[channel]] = regval;
 }
