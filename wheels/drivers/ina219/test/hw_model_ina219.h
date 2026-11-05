@@ -156,6 +156,7 @@ static void ina219_model_init(ina219_model_t *m)
     /* Calibration register (R/W) */
     hw_model_set_reset_value(&m->hw, INA219_REG_CAL_H, 0x00);
     hw_model_set_reset_value(&m->hw, INA219_REG_CAL_L, 0x00);
+    hw_model_set_writable_mask(&m->hw, INA219_REG_CAL_L, 0xFE);  /* FS0 is void */
 
     /* Write callback for reset bit */
     hw_model_set_on_write(&m->hw, INA219_REG_CONFIG_H,

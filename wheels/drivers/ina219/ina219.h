@@ -30,7 +30,7 @@ typedef enum {
 
 typedef enum {
     INA219_RANGE_16V = 0,   /* Bus voltage range 0-16V */
-    INA219_RANGE_32V = 1,   /* Bus voltage range 0-32V */
+    INA219_RANGE_32V = 1,   /* 32V full scale; never apply more than 26V */
 } ina219_bus_range_t;
 
 typedef enum {

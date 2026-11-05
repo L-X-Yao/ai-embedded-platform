@@ -459,6 +459,15 @@ TEST(test_read_shunt_voltage_null_dev)
     ASSERT_EQ(ina219_read_shunt_voltage(NULL, &v), INA219_ERR_PARAM);
 }
 
+TEST(test_calibration_stays_even)
+{
+    setup();
+    ina219_t dev;
+    /* 0.04096 / (0.8 A / 32768 * 0.1 ohm) comes to 16777 before the mask */
+    ina219_init(&dev, &model_i2c, 0x40, 0.1f, INA219_RANGE_32V, INA219_GAIN_80MV);
+    ASSERT_EQ(model.hw.regs[INA219_REG_CAL_L] & 0x01, 0);
+}
+
 TEST_MAIN("ina219 hardware model")
     RUN(test_init_success);
     RUN(test_init_writes_config);
@@ -491,4 +500,5 @@ TEST_MAIN("ina219 hardware model")
     RUN(test_read_power_i2c_fail);
     RUN(test_read_bus_voltage_null_dev);
     RUN(test_read_shunt_voltage_null_dev);
+    RUN(test_calibration_stays_even);
 TEST_MAIN_END()
