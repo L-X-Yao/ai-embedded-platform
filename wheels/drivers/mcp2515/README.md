@@ -66,6 +66,15 @@ static void example(void) {
 - [x] Host C99 (mock SPI) — 17 tests, 2026-05-01
 - [ ] Real MCP2515 hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Microchip DS20001801J. Not run on hardware.
+
+- **Matched:** SPI opcodes, register addresses, mode encodings and polling, BIT MODIFY targets, ID packing, the 125 to 500 kbps timing values.
+- **Fixed:** The 1 Mbps setting broke the 2 TQ minimum for PS2 and no legal one exists at 8 MHz, so it is now refused. Standard remote frames read as data frames. Read-backs of TXREQ and RXnIF turned a fast send or a busy bus into `MCP2515_ERR_SPI`. Two comments were wrong. The models use the CANCTRL reset value and clear TXREQ.
+- **Still open:** The HAL has no delay, so init cannot wait the 128 OSC1 cycles after reset, and leaving Sleep cannot wait for the oscillator; nothing sets WAKIF either. The model changes mode at once and accepts writes that only work in Configuration mode.
+- **Suspected:** init promises to accept all messages but never writes RXFnSIDL, and EXIDE is unknown after power-on, so one frame format may be dropped.
+
 ## Known issues
 
 - Only TX buffer 0 is used; TX buffers 1 and 2 are not utilized (no priority queueing)

@@ -44,6 +44,14 @@ sh1106_err_t sh1106_display_off(const sh1106_t *dev);
 - [x] Host (sim) — 2026-05-11
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sino Wealth SH1106 V2.2. Not run on hardware.
+
+- **Matched:** I2C addresses, control bytes, every command code and init value, page write order.
+- **Fixed:** init switched the display on without clearing display RAM.
+- **Suspected:** The reference flow waits about 100 ms before Display ON and 150 ms after it, and the driver does not.
+
 ## Known issues
 
 None.

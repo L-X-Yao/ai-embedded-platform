@@ -69,6 +69,14 @@ Runtime config via `lcd_st7789_cfg_t`:
 - [x] Host (sim) — 2026-05-06
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sitronix ST7789VW V1.0. Not run on hardware.
+
+- **Matched:** Command codes, MADCTL bits, rotation values, COLMOD, CASET and RASET layout, RGB565 byte order, reset and sleep waits.
+- **Fixed:** init accepted a panel and offsets larger than the frame memory. The model reset MADCTL and COLMOD on SWRESET, which keeps them.
+- **Suspected:** Offsets may be wrong at 90, 180 and 270 degrees on panels not centred in the frame memory, such as 240x240; the proof is Figure 33, which is an image. `lcd_st7789_write_pixels` sends RAMWR on each call, so a window written in several calls restarts at its beginning. DISPON goes out with random frame memory, so the panel shows noise until the first draw.
+
 ## Known issues
 
 - `fill_rect` sends pixels one-by-one via `xfer()`. For performance on real hardware, consider a bulk SPI DMA transfer in the HAL layer.

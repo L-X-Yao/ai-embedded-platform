@@ -64,7 +64,7 @@ None. I2C address is runtime-configurable via `bmm150_cfg_t`.
 Checked on 2026-11-05 against BST-BMM150-DS001-05 and Bosch `bmm150.c`. Not run on hardware.
 
 - **Matched:** Register addresses, I2C address, chip ID, power bit, operating mode, axis decoding, start-up delay.
-- **Fixed:** `bmm150_reset` wrote 0x82 and so cleared the power bit, which suspends the chip; reset now keeps that bit and restarts measuring; overflow markers return `BMM150_ERR_OVERFLOW` instead of a huge reading.
+- **Fixed:** `bmm150_reset` wrote 0x82 and so cleared the power bit, which suspends the chip; reset now keeps that bit and restarts measuring; overflow markers return `BMM150_ERR_OVERFLOW` instead of a huge reading. `delay_ms` is now required, because the chip needs up to 3 ms after power-on.
 - **Still open:** Trim register read and Bosch compensation, which also settle the two scale factors. No RHALL or data ready check.
 
 ## Known issues

@@ -64,6 +64,15 @@ None.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against NXP MFRC522 rev 3.9. Not run on hardware.
+
+- **Matched:** SPI address byte, version values, all register addresses and command codes, bit masks, timer values.
+- **Fixed:** `rc522_init` left the antenna off, so no card could answer. The self-test lost the configuration and passed on any non-zero byte; it now restores the setup and compares the 64-byte signature. The timer comment had the wrong clock. The mock and model now treat ComIrqReg writes as the chip does.
+- **Still open:** The mock and model answer a transceive without StartSend or the RF field, and they load only some reset values.
+- **Suspected:** `rc522_halt` sends HLTA with no CRC and no SELECT, so it probably does not halt the card; the rule comes from ISO/IEC 14443-3, not this manual. After the self-test AutoTestReg loses AmpRcv.
+
 ## Known issues
 
 - Only cascade level 1 (4-byte UID) is supported; 7-byte and 10-byte

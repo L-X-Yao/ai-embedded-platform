@@ -72,7 +72,7 @@ setter functions.
 Checked on 2026-11-05 against BST-BMI270-DS000-08 and Bosch `bmi2_defs.h`. Not run on hardware.
 
 - **Matched:** 27 register addresses, chip ID, soft reset, range and ODR codes, SPI framing, data layout, accel and temperature scaling.
-- **Fixed:** PWR_CTRL turned on aux instead of the gyro; ACC_CONF and GYR_CONF cleared the filter bit, so neither ran in normal mode; missing 450 us and 200 us waits; INTERNAL_STATUS read as one bit, which passed error codes; gyro sensitivity constants; `delay_ms` is now required; soft reset waits for the chip; reads after a failed init are refused.
+- **Fixed:** PWR_CTRL turned on aux instead of the gyro; ACC_CONF and GYR_CONF cleared the filter bit, so neither ran in normal mode; missing 450 us and 200 us waits; INTERNAL_STATUS read as one bit, which passed error codes; gyro sensitivity constants; `delay_ms` is now required; soft reset waits for the chip; reads after a failed init are refused. A range change now waits 40 ms for the next sample before the scale changes.
 - **Still open:** Config file upload. GYR_CAS correction on the X axis, which needs the config file first.
 
 ## Known issues

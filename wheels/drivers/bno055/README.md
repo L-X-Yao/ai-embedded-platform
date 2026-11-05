@@ -51,7 +51,7 @@ Checked on 2026-11-05 against BST-BNO055-DS000-18 and Bosch `bno055.h`. Not run 
 
 - **Matched:** Register addresses, chip ID, bit fields, 15 mode values, mode switch delays, Euler data layout and scale.
 - **Fixed:** `bno055_read_euler` returned zeros as success outside the fusion modes; `delay_ms` is now required; the header now states the 650 ms start-up time and which COM3 level selects each address.
-- **Still open:** `BNO055_ADDR_PRIMARY` is 0x28 although the datasheet calls 0x29 the default; the name is kept to avoid an API change. PAGE_ID and UNIT_SEL are assumed to be at their power-on values.
+- **Still open:** `BNO055_ADDR_PRIMARY` is 0x28 although the datasheet calls 0x29 the default; the name is kept to avoid an API change.
 
 ## Known issues
 

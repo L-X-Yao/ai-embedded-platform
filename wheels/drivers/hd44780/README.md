@@ -41,6 +41,14 @@ hd44780_err_t hd44780_backlight(hd44780_t *dev, bool on);
 - [x] Host (sim) — 2026-05-11
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Hitachi ADE-207-272(Z). The PCF8574 backpack pin map and addresses were not checked. Not run on hardware.
+
+- **Matched:** Instruction codes, 4-bit reset order and waits, nibble order, bus timing.
+- **Fixed:** init switched the display on before clearing it, and it accepted more than 20 columns on 3 and 4 row panels, past the end of DDRAM.
+- **Suspected:** Row starts are fixed for 20 columns, so rows 2 and 3 of a 16x4 panel would land 4 columns off. A 16x1 panel with split addressing is not supported. `delay_ms` is called required, but init runs without it.
+
 ## Known issues
 
 None.

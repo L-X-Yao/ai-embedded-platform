@@ -48,8 +48,8 @@ None. All parameters set at runtime via API calls.
 Checked on 2026-11-05 against TI SWRS061I. The errata notes were not available. Not run on hardware.
 
 - **Matched:** Strobes, register and status addresses, SPI header bits, FREQ word, RSSI conversion, packet format, state flow.
-- **Fixed:** The synthesizer was never calibrated; the received CRC was never checked, so `CC1101_ERR_CRC` is new; PKTLEN allowed packets the FIFO cannot hold; unsupported frequency gaps and the forbidden PATABLE values 0x61-0x6F were accepted; any VERSION other than 0x14 was rejected, though the datasheet says it can change; GDO0 kept its clock output; the RSSI comment was wrong.
-- **Still open:** Bitrate, deviation, bandwidth and modulation stay at reset values, with no API to set them. MARCSTATE is read once per poll, and the errata may advise more.
+- **Fixed:** The synthesizer was never calibrated; the received CRC was never checked, so `CC1101_ERR_CRC` is new; PKTLEN allowed packets the FIFO cannot hold; unsupported frequency gaps and the forbidden PATABLE values 0x61-0x6F were accepted; any VERSION other than 0x14 was rejected, though the datasheet says it can change; GDO0 kept its clock output; the RSSI comment was wrong. MARCSTATE is now read until two reads agree, as p.32 warns one read can be corrupt.
+- **Still open:** Bitrate, deviation, bandwidth and modulation stay at reset values, with no API to set them.
 
 ## Known issues
 
