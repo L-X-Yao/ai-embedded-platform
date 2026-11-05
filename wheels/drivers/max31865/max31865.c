@@ -72,15 +72,17 @@ static float rtd_to_temperature(float r_rtd, float r_nom)
         return -240.0f;
     }
 
-    /* Use sqrtf approximation — Newton's method, 3 iterations */
-    float x = disc;
-    float g = disc * 0.5f;
-    if (g <= 0.0f) g = 1.0f;
-    g = (g + x / g) * 0.5f;
-    g = (g + x / g) * 0.5f;
-    g = (g + x / g) * 0.5f;
+    /* Square root by Newton's method, so the driver needs no libm. CVD_A is
+     * the root at 0C and within about 25% of it from R = 0 up to 850C, so
+     * seeding there reaches float resolution in four steps. */
+    float g = CVD_A;
+    for (int i = 0; i < 4; i++) {
+        g = (g + disc / g) * 0.5f;
+    }
 
-    float temp = (-CVD_A + g) / (2.0f * CVD_B);
+    /* (-A + g) / 2B, with top and bottom multiplied by (A + g) so that small
+     * T does not come from subtracting two nearly equal numbers. */
+    float temp = 2.0f * (ratio - 1.0f) / (CVD_A + g);
 
     /* For T < 0C the quadratic overestimates.  Use linear approximation
      * T ~ (R/R0 - 1) / A.  Accuracy is ~+/-0.3C down to -50C; below that

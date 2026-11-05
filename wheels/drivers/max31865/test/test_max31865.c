@@ -116,6 +116,51 @@ static void plant_rtd(uint16_t rtd_raw, uint8_t fault_bit)
     mock_regs[0x02] = (uint8_t)(reg_val & 0xFF);
 }
 
+/* ---------- reference data from the manual ---------- */
+
+/* Maxim 19-6478 Rev 3, Table 9 (p.20-21): PT100 with a 400 ohm RREF.
+ * word is the 01h-02h register pair as printed. */
+typedef struct {
+    float    temp_c;
+    uint16_t word;
+} table9_row_t;
+
+static const table9_row_t table9_warm[] = {
+    {   0.0f, 0x4000 }, {  10.0f, 0x4280 }, {  20.0f, 0x44FC },
+    {  30.0f, 0x4778 }, {  40.0f, 0x49F2 }, {  50.0f, 0x4C6A },
+    {  60.0f, 0x4EE0 }, {  70.0f, 0x5154 }, {  80.0f, 0x53C6 },
+    {  90.0f, 0x5636 }, { 100.0f, 0x58A4 }, { 110.0f, 0x5B12 },
+    { 120.0f, 0x5D7C }, { 130.0f, 0x5FE4 }, { 140.0f, 0x624C },
+    { 150.0f, 0x64B0 }, { 160.0f, 0x6714 }, { 170.0f, 0x6974 },
+    { 180.0f, 0x6BD4 }, { 190.0f, 0x6E30 }, { 200.0f, 0x708C },
+    { 225.0f, 0x7668 }, { 250.0f, 0x7C3A }, { 275.0f, 0x81FE },
+    { 300.0f, 0x87B6 }, { 325.0f, 0x8D64 }, { 350.0f, 0x9304 },
+    { 375.0f, 0x989A }, { 400.0f, 0x9E24 }, { 425.0f, 0xA3A2 },
+    { 450.0f, 0xA914 }, { 475.0f, 0xAE7A }, { 500.0f, 0xB3D4 },
+    { 525.0f, 0xB922 }, { 550.0f, 0xBE64 },
+};
+
+/* Half an ADC code is 0.019 C at 550 C, the widest row of Table 9. */
+#define TABLE9_TOL_C    0.02f
+
+/* Codes at each end of the range, from R(T) on p.10 with RREF 400 */
+#define CODE_0C         8192u
+#define CODE_850C       31988u
+
+/* R(T)/R0 from the equation on p.10, in double so that the check does not
+ * share the driver's float rounding. */
+static double cvd_ratio(double t)
+{
+    return 1.0 + 3.90830e-3 * t - 5.77500e-7 * t * t;
+}
+
+static const max31865_cfg_t table9_cfg = {
+    .r_ref       = 400.0f,
+    .r_nom       = 100.0f,
+    .wire        = MAX31865_WIRE_2,
+    .filter_50hz = false,
+};
+
 /* ---------- tests ---------- */
 
 TEST(test_init_ok)
@@ -270,6 +315,56 @@ TEST(test_read_temperature_pt1000)
     ASSERT_NEAR(temp, 0.0f, 1.0f);
 }
 
+TEST(test_table9_warm_rows)
+{
+    mock_reset();
+    ASSERT_EQ(max31865_init(&dev, &mock_spi, &table9_cfg), MAX31865_OK);
+
+    for (size_t i = 0; i < sizeof(table9_warm) / sizeof(table9_warm[0]); i++) {
+        float temp = 9999.0f;
+        plant_rtd((uint16_t)(table9_warm[i].word >> 1),
+                  (uint8_t)(table9_warm[i].word & 1u));
+        ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_OK);
+        ASSERT_NEAR(temp, table9_warm[i].temp_c, TABLE9_TOL_C);
+    }
+}
+
+/* Table 9 stops at 550 C, so the top of the range comes from the equation. */
+TEST(test_equation_up_to_850c)
+{
+    mock_reset();
+    ASSERT_EQ(max31865_init(&dev, &mock_spi, &table9_cfg), MAX31865_OK);
+
+    for (int t = 575; t <= 850; t += 25) {
+        float temp = 9999.0f;
+        double code = cvd_ratio((double)t) * 100.0 / 400.0 * 32768.0;
+        plant_rtd((uint16_t)(code + 0.5), 0);
+        ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_OK);
+        /* half an ADC code is 0.021 C at 850 C */
+        ASSERT_NEAR(temp, (float)t, 0.025f);
+    }
+}
+
+/* Every code in range must solve the equation and rank above the last one,
+ * which also catches a step where two branches meet. */
+TEST(test_every_code_solves_equation)
+{
+    mock_reset();
+    ASSERT_EQ(max31865_init(&dev, &mock_spi, &table9_cfg), MAX31865_OK);
+
+    float prev = -1000.0f;
+    for (uint16_t code = CODE_0C; code <= CODE_850C; code++) {
+        float temp = 9999.0f;
+        plant_rtd(code, 0);
+        ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_OK);
+        /* one ADC code is 0.012 ohm */
+        ASSERT_NEAR_D(cvd_ratio((double)temp) * 100.0,
+                      (double)code * 400.0 / 32768.0, 0.0002);
+        ASSERT_TRUE(temp > prev);
+        prev = temp;
+    }
+}
+
 TEST(test_read_fault_register)
 {
     setup();
@@ -329,6 +424,9 @@ TEST_MAIN("max31865")
     RUN(test_read_temperature_100c);
     RUN(test_read_temperature_negative);
     RUN(test_read_temperature_pt1000);
+    RUN(test_table9_warm_rows);
+    RUN(test_equation_up_to_850c);
+    RUN(test_every_code_solves_equation);
     RUN(test_read_fault_register);
     RUN(test_clear_fault);
     RUN(test_init_spi_null_callbacks);
