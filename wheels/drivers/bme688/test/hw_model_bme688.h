@@ -129,11 +129,18 @@ static void bme688_model_set_data_regs(bme688_model_t *m)
     m->hw.regs[0x26] = (uint8_t)(m->true_hum_adc & 0xFF);
     /* padding: 0x27..0x29 */
     m->hw.regs[0x27] = 0; m->hw.regs[0x28] = 0; m->hw.regs[0x29] = 0;
-    /* gas: 0x2A = gas_r MSB, 0x2B = gas_r LSB + valid + range */
-    m->hw.regs[0x2A] = (uint8_t)(m->true_gas_adc >> 2);
-    m->hw.regs[0x2B] = (uint8_t)(((m->true_gas_adc & 0x03) << 6) |
-                                  (1u << 5) |  /* gas_valid = 1 */
-                                  (m->true_gas_range & 0x0F));
+    /* gas: 0x2A = gas_r MSB, 0x2B = gas_r LSB + valid + stable + range.
+     * A gas conversion runs only with run_gas<5> of ctrl_gas_1 set (p40) */
+    if (m->hw.regs[BME688_REG_CTRL_GAS1] & 0x20u) {
+        m->hw.regs[0x2A] = (uint8_t)(m->true_gas_adc >> 2);
+        m->hw.regs[0x2B] = (uint8_t)(((m->true_gas_adc & 0x03) << 6) |
+                                      (1u << 5) |  /* gas_valid_r = 1 */
+                                      (1u << 4) |  /* heat_stab_r = 1 */
+                                      (m->true_gas_range & 0x0F));
+    } else {
+        m->hw.regs[0x2A] = 0;
+        m->hw.regs[0x2B] = 0;
+    }
     /* meas_status: new_data = 1 */
     m->hw.regs[BME688_REG_MEAS_STATUS] = 0x80;
 }

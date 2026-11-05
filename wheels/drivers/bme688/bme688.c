@@ -36,6 +36,7 @@
 
 #define RESET_CMD         0xB6u
 #define MODE_FORCED       0x01u
+#define RUN_GAS           0x20u  /* ctrl_gas_1 run_gas<5> */
 
 /* gas range lookup tables (from Bosch reference code) */
 static const uint32_t gas_range_lut1[16] = {
@@ -411,7 +412,7 @@ bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
     if (!write_reg(dev, REG_GAS_WAIT0, gas_wait))
         return BME688_ERR_HAL;
     /* enable gas measurement: run_gas=1, nb_conv=0 (heater profile 0) */
-    if (!write_reg(dev, REG_CTRL_GAS1, 0x10))
+    if (!write_reg(dev, REG_CTRL_GAS1, RUN_GAS))
         return BME688_ERR_HAL;
 
     return BME688_OK;
