@@ -67,7 +67,7 @@ via `ina3221_cfg_t`.
 Checked on 2026-11-06 against TI SBOS576C. Not run on hardware.
 
 - **Matched:** Addresses, both IDs, channel pointers, shunt and bus formats, byte order, the current formula, the POR Configuration the driver relies on.
-- **Still open:** The Configuration register cannot be reached, so averaging, conversion times, channel enable and operating mode stay at their reset values. There is no single-shot, power-down or software reset, no alert limits or Mask/Enable flags, and no power output. The model resets the alert, sum and power-valid limits and Mask/Enable to 0000h, which the driver does not read today. `ina3221_model_inject_shunt` left-shifts a negative count, which is undefined in C, so `make wheel-gate` fails at its UBSan step; the driver is not involved.
+- **Still open:** The Configuration register cannot be reached, so averaging, conversion times, channel enable and operating mode stay at their reset values. There is no single-shot, power-down or software reset, no alert limits or Mask/Enable flags, and no power output. The model resets the alert, sum and power-valid limits and Mask/Enable to 0000h, which the driver does not read today.
 - **Suspected:** A read within one sweep of power-up, up to 7.26 ms, returns the reset value 0000h as a valid 0 V or 0 A. The model's reads longer than 2 bytes step to the next register, which the manual never describes and the driver does not use.
 
 ## Known issues
