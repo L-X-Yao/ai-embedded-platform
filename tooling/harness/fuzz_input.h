@@ -47,4 +47,16 @@ static inline size_t fuzz_take(fuzz_input_t *in, uint8_t *out, size_t n)
     return n;
 }
 
+// Copy up to n bytes into out as a C string, without embedded NULs. out holds
+// n + 1 bytes. Returns the string length.
+static inline size_t fuzz_take_str(fuzz_input_t *in, char *out, size_t n)
+{
+    size_t len = fuzz_take(in, (uint8_t *)out, n);
+    for (size_t i = 0; i < len; i++) {
+        if (out[i] == 0) out[i] = 'a';
+    }
+    out[len] = 0;
+    return len;
+}
+
 #endif // FUZZ_INPUT_H
