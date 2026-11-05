@@ -7,7 +7,7 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * Conversion per LPS22HB datasheet (DocID027112):
+ * Conversion per LPS22HB datasheet (DocID027083):
  *   pressure = raw / 4096.0 (hPa)
  *   temperature = raw / 100.0 (deg C)
  */
