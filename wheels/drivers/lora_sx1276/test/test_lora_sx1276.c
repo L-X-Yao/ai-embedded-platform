@@ -29,6 +29,10 @@ static int     spi_is_write;
 /* Failure injection */
 static int     mock_fail_spi;
 
+/* RegImageCal: 1 = run in FSK mode, -1 = run in LoRa mode, 0 = never */
+static int     mock_image_cal_seen;
+static int     mock_image_cal_stuck;
+
 /* Deferred IRQ: set mock_regs[0x12] after N delay_ms calls */
 static int     mock_delay_count;
 static int     mock_irq_after_delays;  /* 0 = disabled */
@@ -41,6 +45,9 @@ static void mock_reset_all(void)
     mock_cs_state = 1;
     mock_delay_total = 0;
     mock_reset_count = 0;
+    mock_image_cal_seen = 0;
+    mock_image_cal_stuck = 0;
+    mock_regs[0x1C] = 0x40;  /* CrcOnPayload */
     fifo_written_len = 0;
     fifo_read_len = 0;
     fifo_read_idx = 0;
@@ -93,6 +100,15 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         } else if (spi_current_addr == 0x12) {
             /* IRQ flags: write-1-to-clear (real SX1276 behavior) */
             mock_regs[0x12] = (uint8_t)(mock_regs[0x12] & ~tx);
+        } else if (spi_current_addr == 0x01) {
+            /* LongRangeMode only changes in Sleep */
+            if ((mock_regs[0x01] & 0x07) != 0) {
+                tx = (uint8_t)((tx & 0x7F) | (mock_regs[0x01] & 0x80));
+            }
+            mock_regs[0x01] = tx;
+        } else if (spi_current_addr == 0x3B) {
+            if (tx & 0x40) mock_image_cal_seen = (mock_regs[0x01] & 0x80) ? -1 : 1;
+            mock_regs[0x3B] = mock_image_cal_stuck ? (uint8_t)(tx | 0x20) : tx;
         } else {
             mock_regs[spi_current_addr] = tx;
         }
@@ -113,6 +129,7 @@ static void mock_hw_reset(void *ctx)
 {
     (void)ctx;
     mock_reset_count++;
+    mock_regs[0x01] = 0x09;  /* FSK, standby */
 }
 
 static void mock_delay(void *ctx, uint32_t ms)
@@ -648,6 +665,15 @@ TEST(test_sleep_standby)
     ASSERT_EQ(mock_regs[0x01], 0x81);
 }
 
+TEST(test_init_really_enters_lora_mode)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(lora_init(&dev, &mock_spi, 433000000UL), LORA_OK);
+    ASSERT_EQ(mock_regs[0x01] & 0x80, 0x80);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -678,4 +704,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_set_bandwidth_all_valid);
     RUN(test_set_spreading_factor_all_valid);
     RUN(test_set_coding_rate_all_valid);
+    RUN(test_init_really_enters_lora_mode);
 TEST_MAIN_END()

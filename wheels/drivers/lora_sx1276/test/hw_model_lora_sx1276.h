@@ -175,6 +175,11 @@ static uint8_t sx1276_model_xfer(void *ctx, uint8_t tx)
             m->spi_byte_idx++;
             return 0x00;
         }
+        if (m->spi_addr == SX_REG_OP_MODE &&
+            (m->hw.regs[SX_REG_OP_MODE] & 0x07) != SX_MODE_SLEEP) {
+            /* LongRangeMode only changes in Sleep */
+            tx = (uint8_t)((tx & 0x7F) | (m->hw.regs[SX_REG_OP_MODE] & 0x80));
+        }
         /* Normal register write */
         hw_model__write_reg(&m->hw, m->spi_addr, tx);
         m->spi_byte_idx++;
