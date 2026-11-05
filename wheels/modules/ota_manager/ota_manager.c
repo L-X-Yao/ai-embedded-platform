@@ -20,8 +20,8 @@ static void update_progress(ota_manager_t *mgr)
         mgr->progress_pct = 0;
         return;
     }
-    /* avoid overflow: divide first if total_size > 42M */
-    if (mgr->total_size > 0x02FFFFFFu) {
+    /* downloaded * 100 must fit in 32 bits, so divide first on large images */
+    if (mgr->total_size > UINT32_MAX / 100u) {
         mgr->progress_pct = mgr->downloaded / (mgr->total_size / 100u);
     } else {
         mgr->progress_pct = (mgr->downloaded * 100u) / mgr->total_size;
