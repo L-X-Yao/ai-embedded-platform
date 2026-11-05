@@ -58,6 +58,14 @@ None. The driver has no compile-time options.
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Maxim 19-5793 Rev 5 (1/15). Not run on hardware.
+
+- **Matched:** The 32-bit frame and its bit order, the 14-bit and 12-bit signed fields with all rows of Tables 4 and 5, the D16, D2, D1 and D0 fault bits.
+- **Still open:** The model keeps the last temperature on an open circuit and the test frame 0x00010001 has zeros there, while the manual gives D31 = 0 and D[30:18] all 1, so no test sees a real open-circuit frame. There is no nonlinearity correction, so the output is the chip's linear value, which p.8 says to correct. Reads faster than tCONV (100 ms maximum) repeat the last result with no warning. D17 and D3 are not checked, so a stuck-low or floating SO goes undetected and 0x00000000 reads as 0 C. The HAL is not told the SPI limits, such as 5 MHz.
+- **Suspected:** Nothing tells the caller to wait 200 ms after power-up, so an early read can be inaccurate. A frame with D16 set and D[2:0] clear returns `MAX31855_OK` and leaves the outputs unwritten.
+
 ## Known issues
 
 None.

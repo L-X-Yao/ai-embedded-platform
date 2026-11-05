@@ -61,6 +61,14 @@ None.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Maxim 19-2235 Rev 3 (6/21). Not run on hardware.
+
+- **Matched:** The 16-bit frame and its bit order, the 12-bit temperature field at 0.25 C, the D2 open-thermocouple bit, the model's frame layout, the 220 ms read interval under Known issues.
+- **Still open:** D15 and D1 are not checked, so a stuck-high SO reads as `MAX6675_ERR_OPEN`, a stuck-low SO reads as a valid 0 C, and `MAX6675_ERR_SPI` is never returned. The HAL is not told the SPI limits, such as 4.3 MHz. Open detection needs T- grounded on the board, which the header does not say.
+- **Suspected:** Each read pulls CS low, which stops the running conversion, so polling faster than 0.22 s can freeze the value with `MAX6675_OK`.
+
 ## Known issues
 
 - K-type only (no cold-junction compensation in software).

@@ -41,6 +41,15 @@ max31865_err_t max31865_clear_fault(max31865_t *dev);
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Maxim 19-6478 Rev 3 (7/15). Not run on hardware.
+
+- **Matched:** Register addresses and the write bit, Config bits, read and write frames, the RTD word and its fault flag, the resistance formula, coefficients a and b, the fault masks for D7, D6, D3 and D2.
+- **Fixed:** The square root never converged, so every reading was a straight line: 376.4 C at 400 C and 743.2 C at 850 C. Below 0 C the c term was missing, which gave -208.5 C at -200 C. All 46 rows of Table 9 now read within 0.02 C, and every code from -200 C to 850 C solves the manual's equation.
+- **Still open:** `MAX31865_FAULT_REFINLOW` and `MAX31865_FAULT_REFINHIGH` are swapped: 0x20 (D5) means REFIN- is above the threshold and 0x10 (D4) means it is below, so a caller testing by name reads the opposite fault. Swapping them changes public values, so it waits for a decision. The model preloads a result and leaves the high threshold at 0000h, where the chip starts at 0000h and FFFFh, so it cannot show a read before the first conversion. There is no fault detection cycle, so D5, D4 and D3 are never set. The fault thresholds stay at their power-up values, so an RTD shorted to near zero is not flagged and reads about -242 C. There is no 1-shot mode and no DRDY, so the driver cannot tell when a result is new. The HAL is not told the SPI limits: modes 1 or 3, 5 MHz. Re-init on a chip that stayed powered can change the notch in auto mode, which p.14 forbids. A missing chip is not detected at init.
+- **Suspected:** A read during the first conversion (up to 66 ms) returns `MAX31865_OK` with about -242 C. MSB and LSB are read in separate frames, so a conversion between them could mix two results. Bias and auto mode start in one write, with no settling time for an input filter. `max31865_clear_fault` toggles auto mode and leaves D5, D3 and D2 as read, where the manual asks for 0. The `disc < 0` branch is commented as cold but is reached far over range, where it returns -240 C.
+
 ## Known issues
 
 None.
@@ -55,7 +64,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 15 tests, all passing
+- Unit tests (sim): 19 tests, all passing
 - HIL: N/A
 
 ## API convention deviations
@@ -74,7 +83,7 @@ None.
 ## API review
 
 - **Date**: 2026-05-01
-- **Key decisions**: Context struct pattern (like bmp280); Callendar-Van Dusen for T>=0C, linear approximation for T<0C; fault bit in LSB triggers ERR_FAULT on read.
+- **Key decisions**: Context struct pattern (like bmp280); Callendar-Van Dusen for T>=0C, its full form by Newton steps for T<0C (linear until 2026-11-06); fault bit in LSB triggers ERR_FAULT on read.
 
 ## Responsible human
 
