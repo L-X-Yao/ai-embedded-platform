@@ -472,6 +472,18 @@ TEST(test_build_connect_remaining_length_with_properties)
     ASSERT_EQ(buf[1], 21);
 }
 
+TEST(test_build_publish_length_without_payload)
+{
+    /* A length with no bytes would announce a payload the frame does not hold. */
+    uint8_t buf[32];
+    mqtt5_publish_t pub = { .topic = "t", .payload = NULL, .payload_len = 4 };
+
+    ASSERT_EQ(mqtt5_build_publish(buf, sizeof(buf), &pub), MQTT5_ERR_PARAM);
+
+    pub.payload_len = 0;
+    ASSERT_TRUE(mqtt5_build_publish(buf, sizeof(buf), &pub) > 0);
+}
+
 TEST_MAIN("mqtt5_packet")
     /* VBI */
     RUN(test_vbi_encode_single_byte);
@@ -517,4 +529,5 @@ TEST_MAIN("mqtt5_packet")
     RUN(test_parse_publish_wrong_type);
     RUN(test_build_connect_remaining_length_counts_the_frame);
     RUN(test_build_connect_remaining_length_with_properties);
+    RUN(test_build_publish_length_without_payload);
 TEST_MAIN_END()

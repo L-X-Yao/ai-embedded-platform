@@ -330,6 +330,18 @@ TEST(test_build_subscribe_qos3_rejected)
     ASSERT_TRUE(mqtt_packet_build_subscribe(buf, sizeof(buf), 1, "t", 2) > 0);
 }
 
+TEST(test_build_publish_length_without_payload)
+{
+    /* A length with no bytes would announce a payload the frame does not hold. */
+    uint8_t buf[32];
+    mqtt_publish_t pub = { .topic = "t", .payload = NULL, .payload_len = 4 };
+
+    ASSERT_EQ(mqtt_packet_build_publish(buf, sizeof(buf), &pub), MQTT_PACKET_ERR_PARAM);
+
+    pub.payload_len = 0;
+    ASSERT_TRUE(mqtt_packet_build_publish(buf, sizeof(buf), &pub) > 0);
+}
+
 TEST_MAIN("mqtt_packet")
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
@@ -355,5 +367,6 @@ TEST_MAIN("mqtt_packet")
     RUN(test_build_publish_over_protocol_limit);
     RUN(test_build_connect_long_string_writes_nothing);
     RUN(test_build_subscribe_qos3_rejected);
+    RUN(test_build_publish_length_without_payload);
 TEST_MAIN_END()
 

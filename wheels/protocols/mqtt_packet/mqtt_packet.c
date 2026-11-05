@@ -145,6 +145,7 @@ int mqtt_packet_build_publish(uint8_t *buf, size_t buf_size,
 {
     if (!buf || !pub || !pub->topic) return MQTT_PACKET_ERR_PARAM;
     if (pub->qos > 2) return MQTT_PACKET_ERR_PARAM;
+    if (!pub->payload && pub->payload_len > 0) return MQTT_PACKET_ERR_PARAM;
 
     size_t raw_topic_len = strlen(pub->topic);
     if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
