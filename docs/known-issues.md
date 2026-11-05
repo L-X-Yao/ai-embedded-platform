@@ -4,6 +4,23 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Fixed by the fuzz target expansion (2026-11-05)
+
+Growing libFuzzer from 25 to 53 targets, with harnesses that compute check fields and build frames, found these:
+
+- `base64`: past 49149 input bytes the encoded size wrapped in `uint16_t`, so `base64_encode` passed its size check and wrote past the buffer.
+- `cobs`: `cobs_max_encoded_size` wrapped to 0 and 1 for 65278 and 65279 bytes, and a saturated bound let the encoder run past a 65535-byte buffer. The bound now saturates from 65278 and the encoder checks capacity as it writes.
+- `slip`: `slip_max_encoded_size` saturates past 32766 bytes, so the encoder could run past a 65535-byte buffer. It now checks capacity per byte.
+- `heatshrink`: a full output buffer left `out_bit_idx` at 8 (undefined shift on the next poll) and sent the current token twice, corrupting the stream. The token now resumes where it stopped. The encoder also refused all data after `window_size` bytes; it now restarts the window once it is encoded.
+- `crsf`: `crsf_encode_frame` read past the 64-byte payload array when `payload_len` was larger.
+- `s_record`: a count of 0 read `binary[-1]`, and a count below the address size plus checksum took the address from uninitialized stack.
+- `json_rpc`: `json_rpc_extract_id` overflowed `int32_t` on long digit strings and on `-2147483648`. Values that do not fit now return `JSON_RPC_ERR_OVERFLOW`.
+- `ota_ab`: `fw_size` from a loaded record was not bounded, so verification could read past the slot, and size 0 with CRC 0 passed as verified. Both now return `OTA_AB_ERR_SIZE`.
+- `isotp`: a Flow Control frame returned `ISOTP_OK`, the code for a complete message. It now returns `ISOTP_INCOMPLETE`.
+- `at_command` fuzz harness: registered its URC with a NULL callback, which is rejected, so URC dispatch never ran (harness bug, wheel unaffected).
+- `tooling/test/run_libfuzzer.sh`: fuzz builds did not define `CONTRACT_ENABLED`, so contracts were compiled out under fuzzing.
+- `tooling/audit/audit_deep.sh`: `grep -c ... || echo 0` gave two lines, so the init/deinit and `_err_t` checks could never fire. `_deinit` is optional for wheels, so the init/deinit count is now information, not an issue.
+
 ## Fixed after the first hosted nightly run (2026-11-05)
 
 The public mirror's nightly workflow (libFuzzer + coverage gate on GitHub-hosted runners) found these on its first run:
