@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * Register map (key registers, all big-endian):
- *   0x01 CTRL, 0x02 ACC_COUNT, 0x03 VPOWER1, 0x04 VPOWER2,
+ *   0x01 CTRL, 0x02 ACC_COUNT,
  *   0x07 VBUS1, 0x08 VBUS2, 0x0B VSENSE1, 0x0C VSENSE2,
  *   0x1F REFRESH (send-byte command), 0xFD PRODUCT_ID,
  *   0xFE MANUFACTURER_ID, 0xFF REVISION_ID
@@ -24,8 +24,6 @@
 /* ---- register addresses ---- */
 #define REG_CTRL            0x01u
 #define REG_ACC_COUNT       0x02u
-#define REG_VPOWER1         0x03u
-#define REG_VPOWER2         0x04u
 #define REG_VBUS1           0x07u
 #define REG_VBUS2           0x08u
 #define REG_VSENSE1         0x0Bu
@@ -37,11 +35,7 @@
 
 /* ---- conversion constants ---- */
 #define VBUS_LSB    (32.0f / 65536.0f)      /* V per LSB   */
-#define VSENSE_LSB  (100.0f / 32768.0f)     /* mV per LSB  */
-
-/* ---- CTRL register sample rate bits [11:10] ---- */
-#define CTRL_RATE_SHIFT  10u
-#define CTRL_RATE_MASK   0x0C00u
+#define VSENSE_LSB  (100.0f / 65536.0f)     /* mV per LSB, unipolar POR default */
 
 /* ---- internal helpers ---- */
 
@@ -57,7 +51,7 @@ static pac1952_err_t read_reg16(const pac1952_t *dev, uint8_t reg,
 
 static pac1952_err_t read_channel_raw(const pac1952_t *dev, uint8_t ch,
                                       uint16_t *vbus_raw,
-                                      int16_t *vsense_raw)
+                                      uint16_t *vsense_raw)
 {
     uint8_t vbus_reg   = (ch == 0) ? REG_VBUS1   : REG_VBUS2;
     uint8_t vsense_reg = (ch == 0) ? REG_VSENSE1 : REG_VSENSE2;
@@ -73,12 +67,12 @@ static pac1952_err_t read_channel_raw(const pac1952_t *dev, uint8_t ch,
         return err;
 
     *vbus_raw   = vb;
-    *vsense_raw = (int16_t)vs;
+    *vsense_raw = vs;
     return PAC1952_OK;
 }
 
 static void convert_channel(const pac1952_t *dev, uint8_t ch,
-                            uint16_t vbus_raw, int16_t vsense_raw,
+                            uint16_t vbus_raw, uint16_t vsense_raw,
                             pac1952_channel_t *out)
 {
     out->vbus_v    = (float)vbus_raw * VBUS_LSB;
@@ -123,7 +117,7 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
     if (!i2c->read_regs(i2c->ctx, PAC1952_DEV_ADDR, REG_PRODUCT_ID, &id, 1))
         return PAC1952_ERR_I2C;
 
-    if (id != PAC1952_PRODUCT_ID_VAL)
+    if (id != PAC1952_PRODUCT_ID_VAL && id != PAC1952_PRODUCT_ID_VAL_2)
         return PAC1952_ERR_ID;
 
     return PAC1952_OK;
@@ -156,7 +150,7 @@ pac1952_err_t pac1952_read_channel(pac1952_t *dev, uint8_t ch,
         return PAC1952_ERR_PARAM;
 
     uint16_t vbus_raw;
-    int16_t  vsense_raw;
+    uint16_t vsense_raw;
     pac1952_err_t err = read_channel_raw(dev, ch, &vbus_raw, &vsense_raw);
     if (err != PAC1952_OK)
         return err;
@@ -176,7 +170,7 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
         return PAC1952_ERR_PARAM;
 
     uint16_t vbus_raw;
-    int16_t  vsense_raw;
+    uint16_t vsense_raw;
 
     /* Channel 0 */
     pac1952_err_t err = read_channel_raw(dev, 0, &vbus_raw, &vsense_raw);
@@ -201,28 +195,10 @@ pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate)
     if ((unsigned)rate > 3u)
         return PAC1952_ERR_PARAM;
 
-    /* Read current CTRL value, modify rate bits, write back.
-     * CTRL is at 0x01, 16-bit big-endian. Rate bits at [11:10]. */
-    uint16_t ctrl;
-    pac1952_err_t err = read_reg16(dev, REG_CTRL, &ctrl);
-    if (err != PAC1952_OK)
-        return err;
-
-    ctrl = (uint16_t)((ctrl & ~CTRL_RATE_MASK) |
-                      (((uint16_t)rate & 0x03u) << CTRL_RATE_SHIFT));
-
-    /* Write high byte then low byte */
-    uint8_t hi = (uint8_t)(ctrl >> 8);
-    uint8_t lo = (uint8_t)(ctrl & 0xFFu);
-
-    if (!dev->i2c->write_reg(dev->i2c->ctx, PAC1952_DEV_ADDR, REG_CTRL, hi))
-        return PAC1952_ERR_I2C;
-    /* Write second byte at reg+1 */
-    if (!dev->i2c->write_reg(dev->i2c->ctx, PAC1952_DEV_ADDR,
-                             (uint8_t)(REG_CTRL + 1u), lo))
-        return PAC1952_ERR_I2C;
-
-    return PAC1952_OK;
+    /* The rate is SAMPLE_MODE in bits [15:12] of the 16-bit CTRL register, which
+     * takes a Block Write. This HAL can only write one byte, and a byte at
+     * 0x01 and 0x02 would reach GPIO_ALERT2 and ACC_COUNT instead. */
+    return PAC1952_ERR_UNSUPPORTED;
 }
 
 pac1952_err_t pac1952_get_product_id(pac1952_t *dev, uint8_t *id)

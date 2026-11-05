@@ -44,13 +44,12 @@ static void mock_set_vbus(uint8_t ch, uint16_t raw)
     mock_regs[base + 1] = (uint8_t)(raw & 0xFFu);
 }
 
-/* Helper: set VSENSE register (16-bit signed big-endian) */
-static void mock_set_vsense(uint8_t ch, int16_t raw)
+/* Helper: set VSENSE register (16-bit unsigned big-endian) */
+static void mock_set_vsense(uint8_t ch, uint16_t raw)
 {
     uint8_t base = (ch == 0) ? REG_VSENSE1 : REG_VSENSE2;
-    uint16_t u = (uint16_t)raw;
-    mock_regs[base]     = (uint8_t)(u >> 8);
-    mock_regs[base + 1] = (uint8_t)(u & 0xFFu);
+    mock_regs[base]     = (uint8_t)(raw >> 8);
+    mock_regs[base + 1] = (uint8_t)(raw & 0xFFu);
 }
 
 /* ---------- init tests ---------- */
@@ -207,25 +206,25 @@ TEST(test_read_channel0_vsense_positive)
 
     /* VSENSE raw = 0x4000 (16384) -> 16384 * 100/32768 = 50.0 mV */
     mock_set_vbus(0, 0);
-    mock_set_vsense(0, 0x4000);
+    mock_set_vsense(0, 0x8000);
 
     pac1952_channel_t ch;
     pac1952_read_channel(&dev, 0, &ch);
     ASSERT_NEAR(ch.vsense_mv, 50.0f, 0.01f);
 }
 
-TEST(test_read_channel0_vsense_negative)
+TEST(test_read_channel0_vsense_upper_half)
 {
     mock_reset();
     pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
 
     /* VSENSE raw = -16384 (0xC000) -> -16384 * 100/32768 = -50.0 mV */
     mock_set_vbus(0, 0);
-    mock_set_vsense(0, -16384);
+    mock_set_vsense(0, 0xC000); /* unipolar at POR: 75 mV, not negative */
 
     pac1952_channel_t ch;
     pac1952_read_channel(&dev, 0, &ch);
-    ASSERT_NEAR(ch.vsense_mv, -50.0f, 0.01f);
+    ASSERT_NEAR(ch.vsense_mv, 75.0f, 0.01f);
 }
 
 TEST(test_read_channel0_current_calculation)
@@ -236,7 +235,7 @@ TEST(test_read_channel0_current_calculation)
 
     /* VSENSE = 50 mV, Rsense = 10 mOhm -> I = 50/10*1000 = 5000 mA */
     mock_set_vbus(0, 0);
-    mock_set_vsense(0, 0x4000);  /* 50 mV */
+    mock_set_vsense(0, 0x8000);  /* 50 mV */
 
     pac1952_channel_t ch;
     pac1952_read_channel(&dev, 0, &ch);
@@ -251,7 +250,7 @@ TEST(test_read_channel0_power_calculation)
     /* VBUS = 16V, VSENSE = 50 mV, Rsense = 10 mOhm
      * Current = 5000 mA, Power = 16V * 5000mA = 80000 mW */
     mock_set_vbus(0, 0x8000);    /* 16V */
-    mock_set_vsense(0, 0x4000);  /* 50 mV */
+    mock_set_vsense(0, 0x8000);  /* 50 mV */
 
     pac1952_channel_t ch;
     pac1952_read_channel(&dev, 0, &ch);
@@ -265,7 +264,7 @@ TEST(test_read_channel1)
 
     /* Set channel 1 registers */
     mock_set_vbus(1, 0x4000);    /* 8V */
-    mock_set_vsense(1, 0x2000);  /* 25 mV */
+    mock_set_vsense(1, 0x4000);  /* 25 mV */
 
     pac1952_channel_t ch;
     ASSERT_EQ(pac1952_read_channel(&dev, 1, &ch), PAC1952_OK);
@@ -327,8 +326,8 @@ TEST(test_read_both_ok)
      * ch1's high byte. Use ch1 values where high byte = ch0 low byte. */
     mock_set_vbus(1, 0x4000);   /* ch1: 8V   -- sets [0x08]=0x40 [0x09]=0x00 */
     mock_set_vbus(0, 0x8040);   /* ch0: ~16V -- sets [0x07]=0x80 [0x08]=0x40 */
-    mock_set_vsense(1, 0x2000); /* ch1: 25 mV */
-    mock_set_vsense(0, 0x4000); /* ch0: 50 mV -- [0x0B]=0x40 [0x0C]=0x00 */
+    mock_set_vsense(1, 0x4000); /* ch1: 25 mV */
+    mock_set_vsense(0, 0x8000); /* ch0: 50 mV -- [0x0B]=0x80 [0x0C]=0x00 */
     /* VSENSE2 at 0x0C shares with VSENSE1 low byte. Set consistently: */
     mock_set_vsense(1, 0x0020); /* ch1: ~0.1 mV -- [0x0C]=0x00 [0x0D]=0x20 */
 
@@ -364,15 +363,18 @@ TEST(test_read_both_null_ch2)
 
 /* ---------- sample rate tests ---------- */
 
-TEST(test_set_sample_rate_ok)
+TEST(test_set_sample_rate_is_unsupported)
 {
     mock_reset();
     pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
-    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_1024SPS), PAC1952_OK);
-    /* Verify rate bits [11:10] = 0b11 -> 0x0C in high byte position */
-    /* CTRL high byte at reg 0x01, low byte at reg 0x02 */
-    uint8_t hi = mock_regs[REG_CTRL];
-    ASSERT_EQ((hi >> 2) & 0x03, 3);   /* bits 11:10 in 16-bit = bits 3:2 of hi byte */
+    mock_regs[REG_CTRL] = 0x07;
+    mock_regs[REG_CTRL + 1] = 0x30;
+
+    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_1024SPS), PAC1952_ERR_UNSUPPORTED);
+
+    /* A byte write would have changed GPIO_ALERT2 or ACC_COUNT. */
+    ASSERT_EQ(mock_regs[REG_CTRL], 0x07);
+    ASSERT_EQ(mock_regs[REG_CTRL + 1], 0x30);
 }
 
 TEST(test_set_sample_rate_invalid)
@@ -386,14 +388,6 @@ TEST(test_set_sample_rate_invalid)
 TEST(test_set_sample_rate_null)
 {
     ASSERT_EQ(pac1952_set_sample_rate(NULL, PAC1952_RATE_8SPS), PAC1952_ERR_PARAM);
-}
-
-TEST(test_set_sample_rate_i2c_fail)
-{
-    mock_reset();
-    pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
-    mock_fail_next = 1;   /* fail on CTRL read */
-    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_64SPS), PAC1952_ERR_I2C);
 }
 
 /* ---------- get_product_id tests ---------- */
@@ -439,7 +433,7 @@ TEST(test_zero_resistor_current_zero)
     pac1952_init(&dev, &mock_i2c_hal, &cfg_zero);
 
     mock_set_vbus(0, 0x8000);
-    mock_set_vsense(0, 0x4000);
+    mock_set_vsense(0, 0x8000);
 
     pac1952_channel_t ch;
     pac1952_read_channel(&dev, 0, &ch);
@@ -463,6 +457,24 @@ TEST(test_zero_init_safety)
     ASSERT_EQ(pac1952_read_channel(NULL, 0, &ch), PAC1952_ERR_PARAM);
 }
 
+TEST(test_init_accepts_both_product_ids)
+{
+    mock_reset();
+    mock_regs[REG_PRODUCT_ID] = 0x79; /* PAC1952-1 */
+    ASSERT_EQ(pac1952_init(&dev, &mock_i2c_hal, &default_cfg), PAC1952_OK);
+
+    mock_reset();
+    mock_regs[REG_PRODUCT_ID] = 0x7D; /* PAC1952-2 */
+    ASSERT_EQ(pac1952_init(&dev, &mock_i2c_hal, &default_cfg), PAC1952_OK);
+}
+
+TEST(test_init_rejects_other_product_id)
+{
+    mock_reset();
+    mock_regs[REG_PRODUCT_ID] = 0x78; /* PAC1951-1 */
+    ASSERT_EQ(pac1952_init(&dev, &mock_i2c_hal, &default_cfg), PAC1952_ERR_ID);
+}
+
 TEST_MAIN("pac1952")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -481,7 +493,7 @@ TEST_MAIN("pac1952")
     RUN(test_read_channel0_vbus_conversion);
     RUN(test_read_channel0_vbus_full_scale);
     RUN(test_read_channel0_vsense_positive);
-    RUN(test_read_channel0_vsense_negative);
+    RUN(test_read_channel0_vsense_upper_half);
     RUN(test_read_channel0_current_calculation);
     RUN(test_read_channel0_power_calculation);
     RUN(test_read_channel1);
@@ -494,14 +506,15 @@ TEST_MAIN("pac1952")
     RUN(test_read_both_null_dev);
     RUN(test_read_both_null_ch1);
     RUN(test_read_both_null_ch2);
-    RUN(test_set_sample_rate_ok);
+    RUN(test_set_sample_rate_is_unsupported);
     RUN(test_set_sample_rate_invalid);
     RUN(test_set_sample_rate_null);
-    RUN(test_set_sample_rate_i2c_fail);
     RUN(test_get_product_id_ok);
     RUN(test_get_product_id_null_dev);
     RUN(test_get_product_id_null_id);
     RUN(test_get_product_id_i2c_fail);
     RUN(test_zero_resistor_current_zero);
     RUN(test_zero_init_safety);
+    RUN(test_init_accepts_both_product_ids);
+    RUN(test_init_rejects_other_product_id);
 TEST_MAIN_END()

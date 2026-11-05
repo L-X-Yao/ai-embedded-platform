@@ -4,13 +4,13 @@
  *
  * Models Microchip PAC1952 register behavior:
  * - 16-bit big-endian registers, mapped to byte pairs in hw_reg_model_t
- * - 0x01 CTRL (R/W), sample rate bits at [11:10]
+ * - 0x01 CTRL (R/W, 16-bit), SAMPLE_MODE at [15:12]
  * - 0x07 VBUS1 (read-only, 16-bit unsigned, FSR = 32V)
  * - 0x08 VBUS2 (read-only, 16-bit unsigned, FSR = 32V)
- * - 0x0B VSENSE1 (read-only, 16-bit signed, FSR = +/-100mV)
- * - 0x0C VSENSE2 (read-only, 16-bit signed, FSR = +/-100mV)
+ * - 0x0B VSENSE1 (read-only, 16-bit unsigned at POR, FSR = 100mV)
+ * - 0x0C VSENSE2 (read-only, 16-bit unsigned at POR, FSR = 100mV)
  * - 0x1F REFRESH (write-only, send-byte command to latch readings)
- * - 0xFD PRODUCT_ID (read-only, 1 byte, default 0x59)
+ * - 0xFD PRODUCT_ID (read-only, 1 byte, default 0x79)
  *
  * Each 16-bit register is stored as two consecutive bytes at reg*2 and
  * reg*2+1 in the model, so the standard hw_model I2C callbacks can
@@ -44,8 +44,8 @@ typedef struct {
     hw_reg_model_t hw;
     uint16_t true_vbus1;    /* raw 16-bit unsigned */
     uint16_t true_vbus2;
-    int16_t  true_vsense1;  /* raw 16-bit signed */
-    int16_t  true_vsense2;
+    uint16_t true_vsense1;  /* raw 16-bit unsigned */
+    uint16_t true_vsense2;
     int      refresh_count;
 } pac1952_model_t;
 
@@ -85,7 +85,7 @@ static bool pac1952_model_i2c_read_regs(void *ctx, uint8_t dev_addr,
 
     /* Single-byte registers (PRODUCT_ID at 0xFD) */
     if (reg == 0xFD) {
-        if (len >= 1) buf[0] = 0x59;  /* PAC1952 product ID */
+        if (len >= 1) buf[0] = 0x79;  /* PAC1952 product ID */
         return true;
     }
 
@@ -104,11 +104,11 @@ static void pac1952_model_update_outputs(pac1952_model_t *m)
     m->hw.regs[PAC_REG_VBUS2_H] = (uint8_t)(m->true_vbus2 >> 8);
     m->hw.regs[PAC_REG_VBUS2_L] = (uint8_t)(m->true_vbus2 & 0xFF);
 
-    uint16_t vs1 = (uint16_t)m->true_vsense1;
+    uint16_t vs1 = m->true_vsense1;
     m->hw.regs[PAC_REG_VSENSE1_H] = (uint8_t)(vs1 >> 8);
     m->hw.regs[PAC_REG_VSENSE1_L] = (uint8_t)(vs1 & 0xFF);
 
-    uint16_t vs2 = (uint16_t)m->true_vsense2;
+    uint16_t vs2 = m->true_vsense2;
     m->hw.regs[PAC_REG_VSENSE2_H] = (uint8_t)(vs2 >> 8);
     m->hw.regs[PAC_REG_VSENSE2_L] = (uint8_t)(vs2 & 0xFF);
 }
@@ -159,7 +159,7 @@ static void pac1952_model_set_vbus(pac1952_model_t *m, uint8_t ch,
 /* Helper: set simulated VSENSE (raw 16-bit signed) */
 __attribute__((unused))
 static void pac1952_model_set_vsense(pac1952_model_t *m, uint8_t ch,
-                                     int16_t raw)
+                                     uint16_t raw)
 {
     if (ch == 0) m->true_vsense1 = raw;
     else         m->true_vsense2 = raw;
