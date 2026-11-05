@@ -9,6 +9,7 @@
 #   --define=MACRO          add -D<MACRO> to compilation
 #   --filter-contract       only test wheels whose .c includes contract.h
 #   --use-main-test         use test_<name>.c (not generated) as test source
+#   --wheel=LAYER/NAME      run one wheel instead of all of them
 #
 # Examples:
 #   run_generated_tests.sh "test_null_*.c" "NULL parameter"
@@ -28,6 +29,7 @@ EXTRA_CFLAGS=""
 DEFINES=""
 FILTER_CONTRACT=0
 USE_MAIN_TEST=0
+SEARCH_ROOT="wheels/"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -35,6 +37,7 @@ while [[ $# -gt 0 ]]; do
         --define=*)       DEFINES="$DEFINES -D${1#*=}"; shift ;;
         --filter-contract) FILTER_CONTRACT=1; shift ;;
         --use-main-test)  USE_MAIN_TEST=1; shift ;;
+        --wheel=*)        SEARCH_ROOT="wheels/${1#*=}"; shift ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
@@ -115,7 +118,7 @@ while IFS= read -r f; do
         fail=$((fail + 1))
         build_fail_names+=("$name")
     fi
-done < <(find wheels/ -name "$PATTERN" 2>/dev/null | sort)
+done < <(find "$SEARCH_ROOT" -name "$PATTERN" 2>/dev/null | sort)
 
 echo ""
 # Print FAIL roster at the tail so it survives `tail -N` invocations.
