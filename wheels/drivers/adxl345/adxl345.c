@@ -49,7 +49,8 @@ adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
         return ADXL345_ERR_PARAM;
     }
 
-    if ((unsigned)cfg->range > 3 || (unsigned)cfg->data_rate > 15)
+    /* 800 Hz is the most a 400 kHz I2C bus can carry */
+    if ((unsigned)cfg->range > 3 || (unsigned)cfg->data_rate > ADXL345_RATE_800HZ)
     {
         return ADXL345_ERR_PARAM;
     }
