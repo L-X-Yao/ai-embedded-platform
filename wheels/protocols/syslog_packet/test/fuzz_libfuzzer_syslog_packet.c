@@ -67,7 +67,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         msg.msg_id = msg_id;
         msg.message = message;
         msg.timestamp = (size >= 6)
-            ? (uint32_t)(data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24))
+            ? ((uint32_t)data[2] | ((uint32_t)data[3] << 8) | ((uint32_t)data[4] << 16) | ((uint32_t)data[5] << 24))
             : 0;
 
         char out_buf[1024];
