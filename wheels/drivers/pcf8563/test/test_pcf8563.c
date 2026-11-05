@@ -42,6 +42,42 @@ TEST(test_init_ok)
     ASSERT_EQ(pcf8563_init(&dev, &mock_i2c), PCF8563_OK);
 }
 
+/* Control_status_1 as read back after init writes 0x00. Rev. 10 Table 4: N
+ * bits "could be either logic 0 or logic 1". Table 5: bit 7 TEST1, bit 5 STOP. */
+static uint8_t ctrl1_or_bits;
+
+static bool read_regs_ctrl1_bits(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                 uint8_t *buf, uint16_t len)
+{
+    bool ok = mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+    if (ok && reg == 0x00u) buf[0] |= ctrl1_or_bits;
+    return ok;
+}
+
+static const pcf8563_i2c_t mock_i2c_ctrl1 = {
+    .write_reg = mock_i2c_write_reg,
+    .read_regs = read_regs_ctrl1_bits,
+    .ctx       = NULL,
+};
+
+TEST(test_init_accepts_n_bits_high)
+{
+    mock_reset();
+    ctrl1_or_bits = 0x57u;   /* bits 6, 4 and 2-0 */
+    ASSERT_EQ(pcf8563_init(&dev, &mock_i2c_ctrl1), PCF8563_OK);
+    ctrl1_or_bits = 0x40u;   /* bit 6 alone */
+    ASSERT_EQ(pcf8563_init(&dev, &mock_i2c_ctrl1), PCF8563_OK);
+}
+
+TEST(test_init_refuses_test1_or_stop)
+{
+    mock_reset();
+    ctrl1_or_bits = 0x80u;   /* TEST1 */
+    ASSERT_EQ(pcf8563_init(&dev, &mock_i2c_ctrl1), PCF8563_ERR_ID);
+    ctrl1_or_bits = 0x20u;   /* STOP */
+    ASSERT_EQ(pcf8563_init(&dev, &mock_i2c_ctrl1), PCF8563_ERR_ID);
+}
+
 TEST(test_init_i2c_fail)
 {
     mock_reset();
@@ -345,6 +381,8 @@ TEST(test_clkout_null)
 
 TEST_MAIN("pcf8563")
     RUN(test_init_ok);
+    RUN(test_init_accepts_n_bits_high);
+    RUN(test_init_refuses_test1_or_stop);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_zero_init_safety);

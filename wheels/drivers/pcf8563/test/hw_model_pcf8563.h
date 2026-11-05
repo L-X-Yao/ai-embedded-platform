@@ -14,6 +14,11 @@
 
 #define HW_REG_COUNT 16   /* PCF8563 has 16 registers (0x00-0x0F) */
 
+/* Rev. 10 Table 4: N bits "could be either logic 0 or logic 1" when read.
+ * Control_status_1 has them at bits 6, 4 and 2-0 (Table 5). They read 1
+ * here, so a driver that expects 0 fails. */
+#define HW_CTRL1_N_BITS 0x57u
+
 static uint8_t hw_regs[HW_REG_COUNT];
 static int     hw_write_count;
 static int     hw_read_count;
@@ -71,6 +76,7 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
     for (uint16_t i = 0; i < len; i++) {
         uint16_t idx = (uint16_t)(reg + i);
         buf[i] = (idx < HW_REG_COUNT) ? hw_regs[idx] : 0x00;
+        if (idx == 0x00u) buf[i] |= HW_CTRL1_N_BITS;
     }
     return true;
 }
