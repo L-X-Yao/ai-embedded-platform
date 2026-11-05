@@ -123,6 +123,32 @@ static void dispatch_packet(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
     }
 }
 
+/* Dispatch every complete packet in rx_buf. */
+static mqtt_client_err_t drain_rx(mqtt_client_t *c)
+{
+    while (c->rx_len >= 2) {
+        uint32_t remaining;
+        uint16_t hdr_bytes;
+        int rc = try_decode_packet_len(c->rx_buf, c->rx_len, &remaining, &hdr_bytes);
+        if (rc == -1) break;
+        if (rc == -2) { c->rx_len = 0; return MQTT_CLIENT_ERR_PROTOCOL; }
+
+        uint32_t total = (uint32_t)hdr_bytes + remaining;
+        if (total > MQTT_CLIENT_RX_BUF_SIZE) { c->rx_len = 0; return MQTT_CLIENT_ERR_SIZE; }
+        if (c->rx_len < (uint16_t)total) break;
+
+        dispatch_packet(c, c->rx_buf, (uint16_t)total);
+
+        uint16_t consumed = (uint16_t)total;
+        if (c->rx_len > consumed) {
+            memmove(c->rx_buf, &c->rx_buf[consumed], c->rx_len - consumed);
+        }
+        c->rx_len -= consumed;
+    }
+
+    return MQTT_CLIENT_OK;
+}
+
 /* ─── public API ─────────────────────────────────────────────── */
 
 mqtt_client_err_t mqtt_client_init(mqtt_client_t *c,
@@ -253,40 +279,26 @@ mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
     if (!c || !data) return MQTT_CLIENT_ERR_PARAM;
     if (c->state == MQTT_CLIENT_DISCONNECTED) return MQTT_CLIENT_ERR_STATE;
 
-    uint16_t to_copy = len;
-    if (c->rx_len + to_copy > MQTT_CLIENT_RX_BUF_SIZE) {
-        to_copy = (uint16_t)(MQTT_CLIENT_RX_BUF_SIZE - c->rx_len);
-        if (to_copy == 0) {
+    mqtt_client_err_t result = MQTT_CLIENT_OK;
+
+    while (len > 0) {
+        uint16_t room = (uint16_t)(MQTT_CLIENT_RX_BUF_SIZE - c->rx_len);
+        if (room == 0) {
             c->rx_len = 0;
             return MQTT_CLIENT_ERR_SIZE;
         }
-    }
-    memcpy(&c->rx_buf[c->rx_len], data, to_copy);
-    c->rx_len += to_copy;
 
-    for (;;) {
-        if (c->rx_len < 2) break;
+        uint16_t to_copy = (len < room) ? len : room;
+        memcpy(&c->rx_buf[c->rx_len], data, to_copy);
+        c->rx_len += to_copy;
+        data += to_copy;
+        len  -= to_copy;
 
-        uint32_t remaining;
-        uint16_t hdr_bytes;
-        int rc = try_decode_packet_len(c->rx_buf, c->rx_len, &remaining, &hdr_bytes);
-        if (rc == -1) break;
-        if (rc == -2) { c->rx_len = 0; return MQTT_CLIENT_ERR_PROTOCOL; }
-
-        uint32_t total = (uint32_t)hdr_bytes + remaining;
-        if (total > MQTT_CLIENT_RX_BUF_SIZE) { c->rx_len = 0; return MQTT_CLIENT_ERR_SIZE; }
-        if (c->rx_len < (uint16_t)total) break;
-
-        dispatch_packet(c, c->rx_buf, (uint16_t)total);
-
-        uint16_t consumed = (uint16_t)total;
-        if (c->rx_len > consumed) {
-            memmove(c->rx_buf, &c->rx_buf[consumed], c->rx_len - consumed);
-        }
-        c->rx_len -= consumed;
+        mqtt_client_err_t err = drain_rx(c);
+        if (err != MQTT_CLIENT_OK) result = err;
     }
 
-    return MQTT_CLIENT_OK;
+    return result;
 }
 
 mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
