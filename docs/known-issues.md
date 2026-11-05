@@ -51,6 +51,19 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Datasheet check of 24 more drivers (2026-11-06)
+
+This batch covers 20 unreviewed drivers, rechecks of `ina219`, `ds3231` and `nrf24l01` from May, and `sx1262` against the datasheet the first batch could not download: 122 confirmed, 55 suspect. Only `tm1637` had no finding. Each README lists what was checked, fixed and left open. None of this has run on hardware.
+
+- Confirmed driver faults in constants, formulas, timing and checks are fixed, each with a failing test first. `lora_sx1276` took 13 commits, `nrf24l01` 8, and `sd_spi`, `rc522`, `mcp2515` and `sx1262` 4 each.
+- The May rechecks all found faults those reviews had passed. In `nrf24l01` the register map was right, but sequencing, timing and registers never written were not.
+- Waiting on a HAL change: `ccs811` needs address-only and multi-byte writes, as APP_START and ENV_DATA go out in a form the manual does not allow. `max17048` needs a 16-bit write, as its writes change nothing today. `mcp2515` needs a delay.
+- Model faults are fixed where a driver fix needed them. The rest are in each README under Still open.
+- Of the 23 suspect items from the first batch, 4 are now confirmed, 9 were dismissed and 10 stay open.
+- Some calls now refuse what they used to accept, or take longer: 1 Mbps on `mcp2515`, SF6 on `lora_sx1276`, rates above 800 Hz on `adxl345`, a NULL `delay_ms` on `bmm150`, and about 100 ms in `nrf24_init`.
+
+`make test-examples` used to build the examples without running them. It runs them now, and the first real run caught a mock that a `lora_sx1276` fix had left behind.
+
 ## Datasheet check of ten drivers (2026-11-05)
 
 All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what was checked, fixed and left open. None had run on hardware, and these fixes have not either, so they match the documents and nothing more.
@@ -61,7 +74,7 @@ All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what w
 
 Six test models repeated the driver's mistakes while claiming to come from the datasheet, which is why the tests were green. A passing mock test says nothing about a register value. Take expected values from the document.
 
-The other 70 drivers with registers have not been reviewed. This batch suggests they hold defects of the same kind.
+The other 50 drivers with registers are in review.
 
 ## Fixed by the fuzz target expansion (2026-11-05)
 

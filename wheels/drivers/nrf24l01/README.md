@@ -68,6 +68,15 @@ uint8_t     nrf24_read_status(nrf24_t *dev);
 - [x] Host (sim) -- 2026-05-01
 - [ ] Real hardware target -- not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against the nRF24L01+ Product Specification v1.0, as a recheck of the May review. Not run on hardware.
+
+- **Matched:** Every opcode, register address, bit and encoding the driver uses.
+- **Fixed:** Payloads queued behind the first were stranded, as only RX_DR was checked. Pipes 1 to 5 never received, as RX_PW stayed 0. Registers were written with CE high in RX. The retransmit delay stayed at 250 us at 250 kbps. The power-on wait was 1.5 ms against TPOR of up to 100 ms, so `nrf24_init` now takes about 100 ms. `nrf24_set_rx_addr` did not set the address width.
+- **Still open:** Auto-ack is on pipe 0 only, so a sender to pipes 1 to 5 gets no ACK. `nrf24_init` leaves RF_SETUP, SETUP_AW and SETUP_RETR as they were, so an MCU-only reset keeps old values. There is no API for the retry count, and no dynamic payload length. The model still transmits without checking PWR_UP or the CE pulse width, and the plain mock ignores flush commands.
+- **Suspected:** `nrf24_send` takes any length up to 32 whatever the peer's width. A timeout leaves the payload in the TX FIFO, TX_FULL is never read, and so `NRF24_ERR_FULL` is never returned. There is no 4 us gap after CE rises in `nrf24_set_mode`.
+
 ## Known issues
 
 None.
