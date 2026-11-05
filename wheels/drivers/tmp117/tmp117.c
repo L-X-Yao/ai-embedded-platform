@@ -15,6 +15,9 @@
 
 #define TMP117_RESOLUTION 0.0078125f  /* °C per LSB (1/128) */
 
+/* Reset value of the result register: -256 C, outside the sensor's range */
+#define TEMP_RESET_RAW  0x8000u
+
 static bool read_reg16(const tmp117_t *dev, uint8_t reg, uint16_t *val)
 {
     uint8_t buf[2];
@@ -64,6 +67,8 @@ tmp117_err_t tmp117_read(tmp117_t *dev, float *temp_c)
     uint16_t raw = 0;
     if (!read_reg16(dev, REG_TEMP_RESULT, &raw))
         return TMP117_ERR_I2C;
+    if (raw == TEMP_RESET_RAW)
+        return TMP117_ERR_NOT_READY;
 
     *temp_c = (float)(int16_t)raw * TMP117_RESOLUTION;
     return TMP117_OK;
