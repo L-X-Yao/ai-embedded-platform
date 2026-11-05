@@ -59,8 +59,8 @@ typedef enum {
     ADXL345_RATE_200HZ   = 11,
     ADXL345_RATE_400HZ   = 12,
     ADXL345_RATE_800HZ   = 13,
-    ADXL345_RATE_1600HZ  = 14,
-    ADXL345_RATE_3200HZ  = 15,
+    ADXL345_RATE_1600HZ  = 14,   /* SPI only: refused by this I2C driver */
+    ADXL345_RATE_3200HZ  = 15,   /* SPI only: refused by this I2C driver */
 } adxl345_data_rate_t;
 
 typedef struct {

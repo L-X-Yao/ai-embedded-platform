@@ -217,6 +217,16 @@ TEST(test_full_scale_16g)
     ASSERT_NEAR(data.y_g, -15.974f, 0.1f);
 }
 
+TEST(test_init_refuses_rates_i2c_cannot_carry)
+{
+    adxl345_cfg_t cfg = default_cfg;
+    mock_reset();
+    cfg.data_rate = ADXL345_RATE_1600HZ;
+    ASSERT_EQ(adxl345_init(&dev, &mock_i2c, &cfg), ADXL345_ERR_PARAM);
+    cfg.data_rate = ADXL345_RATE_3200HZ;
+    ASSERT_EQ(adxl345_init(&dev, &mock_i2c, &cfg), ADXL345_ERR_PARAM);
+}
+
 TEST_MAIN("adxl345")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -234,4 +244,5 @@ TEST_MAIN("adxl345")
     RUN(test_init_invalid_range);
     RUN(test_init_bw_rate_i2c_fail);
     RUN(test_full_scale_16g);
+    RUN(test_init_refuses_rates_i2c_cannot_carry);
 TEST_MAIN_END()
