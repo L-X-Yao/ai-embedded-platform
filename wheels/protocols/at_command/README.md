@@ -7,10 +7,10 @@ Zero OS dependency — consumer feeds bytes from any UART source, engine emits e
 
 ## Origin
 
-Extracted from `projects/flybox/src/drivers/air780eg/air780eg_driver.c` — line buffering,
+Reimplemented for the needs of an internal project: line buffering,
 substring response matching, URC dispatch, `>` prompt detection, and prev-line capture.
-Stripped all FreeRTOS/RTOS synchronization (consumer handles that), all Air780EG-specific
-commands, and all hardware UART/DMA code.
+No RTOS synchronization (consumer handles that), no Air780EG-specific
+commands, and no hardware UART/DMA code.
 
 ## Why self-written?
 

@@ -7,7 +7,7 @@ Zero hardware dependency — feed raw I2C bytes in, get structured color/enable 
 
 ## Origin
 
-Extracted from `projects/drone_light/Src/i2c_slave.c` (NCP5623 protocol state machine).
+Reimplemented for the needs of an internal project (NCP5623 protocol state machine).
 Decoupled: I2C hardware handling stays in the project, parser is pure byte-stream logic.
 
 ## Why self-written?

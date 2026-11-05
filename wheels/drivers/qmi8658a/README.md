@@ -7,7 +7,7 @@ Platform-agnostic driver for QST QMI8658A accelerometer + gyroscope.
 
 ## Origin
 
-Extracted from `projects/flybox/src/drivers/imu/imu_driver.c`.
+Reimplemented for the needs of an internal project.
 
 ## Why self-written?
 

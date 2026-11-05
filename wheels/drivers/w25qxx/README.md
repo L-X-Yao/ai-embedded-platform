@@ -7,7 +7,7 @@ Platform-agnostic driver for Winbond W25Q series (W25Q32/W25Q64/W25Q128 etc).
 
 ## Origin
 
-Extracted from `projects/flybox/src/drivers/w25q64/w25q64_driver.c`. Flybox retains GD32F4xx SPI1 bring-up + `flash_ring_*` application-layer ring buffer; platform-agnostic command logic moved to this wheel.
+Reimplemented for the needs of an internal project. SPI bring-up and any application-layer ring buffer stay in the consumer; this wheel holds the platform-agnostic command logic.
 
 ## Why self-written?
 

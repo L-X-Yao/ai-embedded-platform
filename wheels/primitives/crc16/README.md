@@ -9,7 +9,7 @@ other CRC16 with poly 0xA001 / init 0xFFFF / no final XOR.
 
 ## Origin
 
-Extracted from `projects/flybox/src/bsp/frame_pack.c` (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
+Reimplemented for the needs of an internal project (CRC16-MODBUS for telemetry frames). Also consumed by `wheels/protocols/modbus_rtu/` as concrete dependency.
 
 ## Why self-written?
 

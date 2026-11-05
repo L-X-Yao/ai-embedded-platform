@@ -10,7 +10,7 @@ deactivation, module restart, NMEA sentences, and signal quality.
 
 ## Origin
 
-Extracted from `projects/flybox/` for reuse across cellular IoT projects.
+Reimplemented for the needs of an internal project, for reuse across cellular IoT projects.
 
 ## Why self-written?
 
