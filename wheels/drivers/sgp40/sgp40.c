@@ -18,10 +18,10 @@
 #define CRC_POLY   0x31
 #define CRC_INIT   0xFF
 
-/* Self-test expected response */
-#define SELFTEST_OK  0xD400u
+/* Self-test passed: first byte 0xD4, the second byte is undefined */
+#define SELFTEST_PASSED  0xD4u
 
-/* Default compensation values */
+/* Sending both of these keeps on-chip compensation disabled */
 #define DEFAULT_HUMIDITY    0x8000u  /* 50% RH */
 #define DEFAULT_TEMPERATURE 0x6666u  /* 25 C */
 
@@ -98,8 +98,7 @@ sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c)
     }
 
     /* Check self-test result */
-    uint16_t result = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
-    if (result != SELFTEST_OK)
+    if (buf[0] != SELFTEST_PASSED)
     {
         return SGP40_ERR_SELFTEST;
     }
