@@ -118,10 +118,10 @@ sx1262_err_t sx1262_receive(sx1262_t *dev, uint8_t *buf, uint8_t cap,
 /** Read last packet RSSI in dBm. */
 int16_t sx1262_get_rssi(sx1262_t *dev);
 
-/** Enter sleep mode. */
+/** Enter sleep mode. Every command except sx1262_standby then fails on BUSY. */
 sx1262_err_t sx1262_sleep(sx1262_t *dev);
 
-/** Enter standby (RC oscillator). */
+/** Enter standby (RC oscillator). This also wakes the chip from sleep. */
 sx1262_err_t sx1262_standby(sx1262_t *dev);
 
 /** Get chip status byte. */
