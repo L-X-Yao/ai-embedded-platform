@@ -10,8 +10,9 @@ static int     mock_op_count;
 static int     mock_fail_at;
 
 static uint16_t mock_ch_value[4];
+static uint8_t  mock_ch_config[4];  /* VREF PD1 PD0 Gx of each channel */
 static uint8_t  mock_last_cmd;
-static uint8_t  mock_last_buf[8];
+static uint8_t  mock_last_buf[16];
 static int      mock_last_buf_len;
 static int      mock_write_count;
 
@@ -21,6 +22,7 @@ static void mock_reset(void)
     mock_op_count     = 0;
     mock_fail_at      = -1;
     memset(mock_ch_value, 0, sizeof(mock_ch_value));
+    memset(mock_ch_config, 0x08, sizeof(mock_ch_config));  /* factory VREF = 1 */
     mock_last_cmd     = 0;
     memset(mock_last_buf, 0, sizeof(mock_last_buf));
     mock_last_buf_len = 0;
@@ -48,12 +50,18 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr,
         mock_last_buf_len = (int)len;
     }
 
-    /* Decode fast write: cmd = 0x40 | (ch << 1) */
-    if ((reg & 0xC0u) == 0x40u && len == 2) {
-        uint8_t ch = (uint8_t)((reg >> 1) & 0x03u);
-        uint16_t val = (uint16_t)(((uint16_t)(buf[0] & 0x0Fu) << 8) |
-                                  (uint16_t)buf[1]);
-        if (ch < 4) mock_ch_value[ch] = val;
+    /* DS22187E Figure 5-8: Multi-Write is 0 1 0 0 0 DAC1 DAC0 UDAC, then
+     * VREF PD1 PD0 Gx D11-D8, then D7-D0. Bytes 2-4 repeat per channel. */
+    if ((reg & 0xF8u) == 0x40u && len >= 2 && (len - 2u) % 3u == 0) {
+        uint8_t cmd = reg;
+        for (uint16_t i = 0; ; i = (uint16_t)(i + 3u)) {
+            uint8_t ch = (uint8_t)((cmd >> 1) & 0x03u);
+            mock_ch_config[ch] = (uint8_t)(buf[i] >> 4);
+            mock_ch_value[ch]  = (uint16_t)(((uint16_t)(buf[i] & 0x0Fu) << 8) |
+                                            (uint16_t)buf[i + 1u]);
+            if ((uint16_t)(i + 2u) >= len) break;
+            cmd = buf[i + 2u];
+        }
     }
     return true;
 }
@@ -326,6 +334,23 @@ TEST(test_value_encoding_1)
     ASSERT_EQ(mock_last_buf[1], 0x01);
 }
 
+/* ---------- configuration bits ---------- */
+
+/* DS22187E Table 4-2 Notes 2 and 3 and Figure 5-8: the upper nibble of the
+ * 3rd byte is VREF PD1 PD0 Gx, and 0000 means VDD, normal mode, gain x1. */
+TEST(test_write_channel_selects_vdd_gain1_normal)
+{
+    mock_reset();
+    mcp4728_init(&dev, &mock_i2c, &default_cfg);
+
+    ASSERT_EQ(mcp4728_write_channel(&dev, 2, 4095), MCP4728_OK);
+    ASSERT_EQ_HEX(mock_ch_config[2], 0x0u);
+    /* Only the selected channel is affected (section 5.6.2) */
+    ASSERT_EQ_HEX(mock_ch_config[0], 0x8u);
+    ASSERT_EQ_HEX(mock_ch_config[1], 0x8u);
+    ASSERT_EQ_HEX(mock_ch_config[3], 0x8u);
+}
+
 /* ---------- channel independence ---------- */
 
 TEST(test_channels_independent)
@@ -376,5 +401,6 @@ TEST_MAIN("mcp4728")
     RUN(test_write_all_uninit_dev);
     RUN(test_value_encoding_1234);
     RUN(test_value_encoding_1);
+    RUN(test_write_channel_selects_vdd_gain1_normal);
     RUN(test_channels_independent);
 TEST_MAIN_END()

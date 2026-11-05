@@ -64,13 +64,17 @@ mcp4728_err_t mcp4728_init(mcp4728_t *dev, const mcp4728_i2c_t *i2c,
                            const mcp4728_cfg_t *cfg);
 
 /** Write a single channel (0-3). Values > 4095 are rejected.
- *  Uses MCP4728 fast write command (0x40 | channel<<1).
+ *  Uses the MCP4728 Multi-Write command (0x40 | channel<<1), which also
+ *  sets the channel to VREF = VDD, gain x1 and normal mode. A channel at
+ *  the factory default leaves the internal 2.048 V reference at its first
+ *  write, so its output scale changes.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 mcp4728_err_t mcp4728_write_channel(mcp4728_t *dev, uint8_t channel,
                                     uint16_t value);
 
 /** Write all 4 channels in one I2C transaction.
- *  Uses sequential fast write commands. Values > 4095 are rejected.
+ *  Uses Multi-Write commands, with the same side effects as
+ *  mcp4728_write_channel. Values > 4095 are rejected.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4]);
 

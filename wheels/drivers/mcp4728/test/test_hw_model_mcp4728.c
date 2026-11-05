@@ -3,7 +3,7 @@
  * test_hw_model_mcp4728.c — tests using hardware model
  *
  * Validates MCP4728 driver against a datasheet-accurate model.
- * The model enforces fast write command byte encoding and channel
+ * The model enforces Multi-Write command byte encoding and channel
  * mapping, rejecting malformed protocol bytes.
  */
 
@@ -147,6 +147,72 @@ TEST(test_hw_i2c_fail_injection)
     ASSERT_EQ(model.channel_value[0], 0);
 }
 
+/* --- the model against the manual, without the driver --- */
+
+/* DS22187E Table 5-1: C2 C1 C0 W1 W0 = 0 1 0 0 0 is Multi-Write. The other
+ * commands with C2 C1 = 0 1 mean something else and must not store data. */
+TEST(test_hw_model_rejects_other_commands)
+{
+    static const uint8_t cmds[] = {
+        0x50u,  /* 0 1 0 1 0: Sequential Write */
+        0x58u,  /* 0 1 0 1 1: Single Write */
+        0x60u,  /* 0 1 1 X X: Write I2C Address */
+    };
+    const uint8_t data[2] = { 0x08u, 0x00u };
+
+    setup();
+    for (size_t i = 0; i < sizeof(cmds); i++) {
+        ASSERT_FALSE(mcp4728_model_write_regs(&model, 0x60u, cmds[i], data, 2));
+        ASSERT_EQ(model.channel_value[0], 0);
+    }
+}
+
+/* Figure 5-8: the 3rd byte is VREF PD1 PD0 Gx D11-D8, so its upper nibble
+ * is configuration, not an error. */
+TEST(test_hw_model_accepts_config_bits)
+{
+    const uint8_t data[2] = { 0x98u, 0x00u };  /* 1 00 1 1000 */
+
+    setup();
+    ASSERT_TRUE(mcp4728_model_write_regs(&model, 0x60u, 0x40u, data, 2));
+    ASSERT_EQ_HEX(model.channel_value[0], 0x800u);
+    ASSERT_EQ(model.channel_vref[0], 1);
+    ASSERT_EQ(model.channel_pd[0], 0);
+    ASSERT_EQ(model.channel_gain[0], 1);
+}
+
+/* Figure 5-8: bytes 2-4 repeat, and the top five bits of a repeated 2nd
+ * byte are don't care (Note 3). */
+TEST(test_hw_model_repeated_bytes)
+{
+    const uint8_t data[5] = {
+        0x01u, 0x23u,  /* channel A: 0 00 0 0001, 0x23 */
+        0xFAu,         /* X X X X X, DAC1 DAC0 = 01, UDAC = 0 */
+        0xD4u, 0x56u,  /* channel B: 1 10 1 0100, 0x56 */
+    };
+
+    setup();
+    ASSERT_TRUE(mcp4728_model_write_regs(&model, 0x60u, 0x40u, data, 5));
+    ASSERT_EQ_HEX(model.channel_value[0], 0x123u);
+    ASSERT_EQ_HEX(model.channel_value[1], 0x456u);
+    ASSERT_EQ(model.channel_vref[1], 1);
+    ASSERT_EQ(model.channel_pd[1], 2);
+    ASSERT_EQ(model.channel_gain[1], 1);
+}
+
+/* The driver writes VREF = 0, so a factory channel (Table 4-2: VREF = 1,
+ * internal 2.048 V) moves to VDD at its first write. Others stay. */
+TEST(test_hw_write_moves_channel_to_vdd)
+{
+    setup();
+    ASSERT_EQ(model.channel_vref[0], 1);
+    ASSERT_EQ(mcp4728_write_channel(&dev, 0, 2048), MCP4728_OK);
+    ASSERT_EQ(model.channel_vref[0], 0);
+    ASSERT_EQ(model.channel_pd[0], 0);
+    ASSERT_EQ(model.channel_gain[0], 0);
+    ASSERT_EQ(model.channel_vref[1], 1);
+}
+
 TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_init_ok);
     RUN(test_hw_write_channel_a_zero);
@@ -160,4 +226,8 @@ TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_sequential_writes_same_channel);
     RUN(test_hw_all_channels_max);
     RUN(test_hw_i2c_fail_injection);
+    RUN(test_hw_model_rejects_other_commands);
+    RUN(test_hw_model_accepts_config_bits);
+    RUN(test_hw_model_repeated_bytes);
+    RUN(test_hw_write_moves_channel_to_vdd);
 TEST_MAIN_END()
