@@ -56,6 +56,26 @@ TEST(test_init_wrong_id)
     ASSERT_EQ(tmp117_init(&dev, &mock_i2c, &default_cfg), TMP117_ERR_ID);
 }
 
+/* TI SNOSD82D Table 7-15 (p.32): bits 15:12 are Rev[3:0], and only bits 11:0
+ * hold the device ID, so a later revision must pass and a wrong ID must not. */
+TEST(test_init_id_ignores_revision)
+{
+    static const struct {
+        uint16_t      id;
+        tmp117_err_t  want;
+    } rows[] = {
+        { 0x0117, TMP117_OK },     { 0x1117, TMP117_OK },
+        { 0xF117, TMP117_OK },     { 0x0118, TMP117_ERR_ID },
+        { 0x1118, TMP117_ERR_ID }, { 0x1000, TMP117_ERR_ID },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        hw_model_reset();
+        hw_regs16[0x0F] = rows[i].id;
+        ASSERT_EQ(tmp117_init(&dev, &mock_i2c, &default_cfg), rows[i].want);
+    }
+}
+
 TEST(test_init_avg_modes)
 {
     hw_model_reset();
@@ -196,6 +216,7 @@ TEST_MAIN("tmp117")
     RUN(test_init_null_cfg);
     RUN(test_init_zero_hal);
     RUN(test_init_wrong_id);
+    RUN(test_init_id_ignores_revision);
     RUN(test_init_avg_modes);
     RUN(test_init_avg_invalid);
     RUN(test_error_codes);
