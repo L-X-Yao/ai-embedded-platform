@@ -186,6 +186,7 @@ int mqtt_packet_build_subscribe(uint8_t *buf, size_t buf_size,
                                 const char *topic, uint8_t qos)
 {
     if (!buf || !topic) return MQTT_PACKET_ERR_PARAM;
+    if (qos > 2) return MQTT_PACKET_ERR_PARAM;
 
     size_t raw_topic_len = strlen(topic);
     if (raw_topic_len > UINT16_MAX) return MQTT_PACKET_ERR_SIZE;
