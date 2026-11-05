@@ -69,8 +69,8 @@ static void max17048_model_init(max17048_model_t *m)
     m->regs[HW_REG_MODE]        = 0x00u;
     m->regs[HW_REG_MODE + 1]    = 0x00u;
 
-    /* STATUS = 0x0000 */
-    m->regs[HW_REG_STATUS]      = 0x00u;
+    /* STATUS = 0x01__, RI set at power-up */
+    m->regs[HW_REG_STATUS]      = 0x01u;
     m->regs[HW_REG_STATUS + 1]  = 0x00u;
 }
 

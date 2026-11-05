@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 /*
- * max17048 — MAX17048/MAX17049 1-cell LiPo fuel gauge (I2C)
+ * max17048 — MAX17048 1-cell and MAX17049 2-cell LiPo fuel gauge (I2C)
  *
  * Layer:     L1
  * Status:    candidate
@@ -24,6 +24,7 @@
 
 /* STATUS high byte: X EnVR SC HD VR VL VH RI */
 #define STATUS_FLAGS   0x3F00u
+#define STATUS_RI      0x0100u
 
 /* ─── helpers ────────────────────────────────────────────────── */
 
@@ -58,6 +59,13 @@ max17048_err_t max17048_init(max17048_t *dev, const max17048_i2c_t *i2c)
     uint16_t ver;
     if (!rd16(dev, REG_VERSION, &ver)) return MAX17048_ERR_I2C;
     if (ver == 0x0000 || ver == 0xFFFF) return MAX17048_ERR_ID;
+
+    /* RI is set after power-up. Clearing it lets a later reset show. */
+    uint16_t status;
+    if (!rd16(dev, REG_STATUS, &status)) return MAX17048_ERR_I2C;
+    if ((status & STATUS_RI) != 0 &&
+        !wr16(dev, REG_STATUS, (uint16_t)(status & ~STATUS_RI)))
+        return MAX17048_ERR_I2C;
 
     return MAX17048_OK;
 }

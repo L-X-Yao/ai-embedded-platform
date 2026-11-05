@@ -255,6 +255,14 @@ TEST(test_clear_alert_clears_the_status_flags)
     ASSERT_EQ_HEX(mock_regs[0x1A], 0x40);
 }
 
+TEST(test_init_clears_the_reset_indicator)
+{
+    mock_reset_chip();
+    mock_regs[0x1A] = 0x41;  /* EnVR and RI */
+    ASSERT_EQ(max17048_init(&dev, &mock_bus), MAX17048_OK);
+    ASSERT_EQ_HEX(mock_regs[0x1A], 0x40);
+}
+
 TEST_MAIN("max17048")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -281,4 +289,5 @@ TEST_MAIN("max17048")
     RUN(test_version_null);
     RUN(test_sleep_sets_ensleep_before_sleep);
     RUN(test_clear_alert_clears_the_status_flags);
+    RUN(test_init_clears_the_reset_indicator);
 TEST_MAIN_END()

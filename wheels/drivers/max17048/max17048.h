@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 /*
- * max17048 — MAX17048/MAX17049 1-cell LiPo fuel gauge (I2C)
+ * max17048 — MAX17048 1-cell and MAX17049 2-cell LiPo fuel gauge (I2C)
  *
  * Layer:     L1
  * Status:    candidate
@@ -46,7 +46,7 @@ typedef struct {
 /* ---------- data types ---------- */
 
 typedef struct {
-    float    voltage_v;     /* cell voltage in volts */
+    float    voltage_v;     /* voltage per cell in volts */
     float    soc_pct;       /* state-of-charge 0.0 – 100.0 % */
     float    charge_rate;   /* charge/discharge rate in %/hr (positive=charging) */
 } max17048_data_t;
