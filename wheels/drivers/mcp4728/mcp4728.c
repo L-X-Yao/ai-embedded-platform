@@ -8,14 +8,16 @@
  * Instances: multi
  *
  * Protocol reference: Microchip DS20002278 Section 5.
- * Fast write command: 0x40 | (channel << 1), then [upper_nibble | D11:D8], [D7:D0]
+ * Multi-Write command: 0x40 | (channel << 1), then [VREF PD1 PD0 Gx D11:D8], [D7:D0]
  */
 
 #include "mcp4728.h"
 #include "contract.h"
 
-/* Fast write command byte: 010 0 CC 0  where CC = channel (0-3) */
-#define CMD_FAST_WRITE  0x40u
+/* Multi-Write command byte: 0 1 0 0 0 DAC1 DAC0 UDAC (DS22187E Figure 5-8).
+ * UDAC = 0 updates VOUT after the 4th byte's ACK. The next byte's upper
+ * nibble is sent as 0, which selects VREF = VDD, normal mode and gain x1. */
+#define CMD_MULTI_WRITE  0x40u
 
 mcp4728_err_t mcp4728_init(mcp4728_t *dev, const mcp4728_i2c_t *i2c,
                            const mcp4728_cfg_t *cfg)
@@ -42,7 +44,7 @@ mcp4728_err_t mcp4728_write_channel(mcp4728_t *dev, uint8_t channel,
     if (channel >= MCP4728_NUM_CHANNELS) return MCP4728_ERR_PARAM;
     if (value > MCP4728_MAX_VALUE) return MCP4728_ERR_PARAM;
 
-    uint8_t cmd = (uint8_t)(CMD_FAST_WRITE | ((uint8_t)(channel << 1u)));
+    uint8_t cmd = (uint8_t)(CMD_MULTI_WRITE | ((uint8_t)(channel << 1u)));
     uint8_t buf[2];
     buf[0] = (uint8_t)((value >> 8) & 0x0Fu);
     buf[1] = (uint8_t)(value & 0xFFu);
@@ -64,7 +66,7 @@ mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4])
     }
 
     for (uint8_t ch = 0; ch < MCP4728_NUM_CHANNELS; ch++) {
-        uint8_t cmd = (uint8_t)(CMD_FAST_WRITE | ((uint8_t)(ch << 1u)));
+        uint8_t cmd = (uint8_t)(CMD_MULTI_WRITE | ((uint8_t)(ch << 1u)));
         uint8_t buf[2];
         buf[0] = (uint8_t)((values[ch] >> 8) & 0x0Fu);
         buf[1] = (uint8_t)(values[ch] & 0xFFu);
