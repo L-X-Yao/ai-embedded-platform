@@ -75,7 +75,7 @@ byte_buffer_err_t byte_buffer_put_bytes(byte_buffer_t *buf, const uint8_t *src, 
 {
     if (!buf || (!src && len > 0)) return BYTE_BUFFER_ERR_PARAM;
     if (buf->capacity - buf->write_pos < len) return BYTE_BUFFER_ERR_FULL;
-    memcpy(buf->data + buf->write_pos, src, len);
+    if (len > 0) memcpy(buf->data + buf->write_pos, src, len);
     buf->write_pos += len;
     BB_INVARIANT(buf);
     return BYTE_BUFFER_OK;
@@ -116,7 +116,7 @@ byte_buffer_err_t byte_buffer_get_bytes(byte_buffer_t *buf, uint8_t *dst, size_t
 {
     if (!buf || (!dst && len > 0)) return BYTE_BUFFER_ERR_PARAM;
     if (buf->write_pos - buf->read_pos < len) return BYTE_BUFFER_ERR_EMPTY;
-    memcpy(dst, buf->data + buf->read_pos, len);
+    if (len > 0) memcpy(dst, buf->data + buf->read_pos, len);
     buf->read_pos += len;
     return BYTE_BUFFER_OK;
 }
