@@ -13,6 +13,8 @@
 #define REG_CONFIG      0x01u
 #define REG_DEVICE_ID   0x0Fu
 
+#define DEVICE_ID_MASK  0x0FFFu  /* bits 15:12 are the revision */
+
 #define TMP117_RESOLUTION 0.0078125f  /* °C per LSB (1/128) */
 
 /* Reset value of the result register: -256 C, outside the sensor's range */
@@ -49,7 +51,7 @@ tmp117_err_t tmp117_init(tmp117_t *dev, const tmp117_i2c_t *i2c,
     uint16_t id = 0;
     if (!read_reg16(dev, REG_DEVICE_ID, &id))
         return TMP117_ERR_I2C;
-    if (id != TMP117_DEVICE_ID)
+    if ((id & DEVICE_ID_MASK) != TMP117_DEVICE_ID)
         return TMP117_ERR_ID;
 
     uint16_t config = (uint16_t)((unsigned)cfg->avg << 5);
