@@ -229,6 +229,8 @@ mqtt_client_err_t mqtt_client_subscribe(mqtt_client_t *c,
     REQUIRE(topic != NULL);
     if (!c || !topic) return MQTT_CLIENT_ERR_PARAM;
     if (c->state != MQTT_CLIENT_CONNECTED) return MQTT_CLIENT_ERR_STATE;
+    /* A QoS 2 delivery needs PUBREC, which this client does not send. */
+    if (qos > 1) return MQTT_CLIENT_ERR_PARAM;
     if (c->inflight_sub_id != 0) return MQTT_CLIENT_ERR_BUSY;
 
     uint16_t pkt_id = mqtt_client_next_id(c);
