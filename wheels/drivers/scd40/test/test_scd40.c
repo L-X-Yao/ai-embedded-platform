@@ -134,6 +134,16 @@ TEST(test_init_ok)
     ASSERT_EQ(e, SCD40_OK);
 }
 
+TEST(test_init_requires_delay)
+{
+    /* p7: "it is required to wait the command execution time before
+     * issuing the read header", so a HAL without a delay cannot work. */
+    scd40_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+    scd40_t d;
+    ASSERT_EQ(scd40_init(&d, &no_delay), SCD40_ERR_PARAM);
+}
+
 TEST(test_start_stop_periodic)
 {
     setup();
@@ -365,6 +375,7 @@ TEST(test_read_boundary_values)
 TEST_MAIN("scd40")
     RUN(test_init_null);
     RUN(test_init_ok);
+    RUN(test_init_requires_delay);
     RUN(test_start_stop_periodic);
     RUN(test_read_measurement);
     RUN(test_data_ready);
