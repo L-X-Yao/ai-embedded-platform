@@ -84,6 +84,8 @@ typedef struct {
     int8_t   range_sw_err;
     /* internal */
     int32_t  t_fine;
+    int8_t   amb_temp;   /* last measured temperature, for the heater formula */
+    uint16_t heat_ms;    /* configured heater duration */
 } bme680_t;
 
 /** Configure and verify chip ID. @thread_safe: no @isr_safe: no */
@@ -93,7 +95,9 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
 /** Trigger forced-mode measurement and read all channels. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data);
 
-/** Set oversampling for temp, humidity, pressure (0=skip, 1..5 = 1x..16x). @thread_safe: no @isr_safe: no */
+/** Set oversampling for temp, humidity, pressure (0=skip, 1..5 = 1x..16x).
+ *  Temperature cannot be skipped, the other channels are compensated with it.
+ *  A skipped channel reads as 0. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
                                      uint8_t os_hum, uint8_t os_pres);
 
@@ -101,7 +105,8 @@ bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
 bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
                                    uint16_t duration_ms);
 
-/** Soft reset. @thread_safe: no @isr_safe: no */
+/** Soft reset, then restore the defaults from bme680_init. Heater settings are
+ *  lost. @thread_safe: no @isr_safe: no */
 bme680_err_t bme680_reset(bme680_t *dev);
 
 #ifdef __cplusplus

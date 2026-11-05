@@ -33,6 +33,11 @@
 #define REG_DATA_LEN      13u
 
 #define RESET_CMD         0xB6u
+#define RESET_WAIT_MS     10u
+#define HEATER_MAX_C      400u
+#define AMBIENT_DEFAULT_C 25
+#define ADC_SKIPPED_20BIT 0x80000u
+#define ADC_SKIPPED_16BIT 0x8000u
 #define MODE_FORCED       0x01u
 
 /* gas range lookup table (from Bosch reference code) */
@@ -72,6 +77,18 @@ static void delay_ms(const bme680_t *dev, uint32_t ms)
 }
 
 /* --- calibration --- */
+
+static bme680_err_t apply_defaults(const bme680_t *dev)
+{
+    /* Default oversampling: 1x all, humidity must be written before ctrl_meas.
+     * ctrl_meas bits [1:0] = 0b00 leaves mode as sleep — intentional so the
+     * caller triggers a forced-mode measurement via bme680_read(). */
+    if (!write_reg(dev, REG_CTRL_HUM, 0x01))
+        return BME680_ERR_I2C;
+    if (!write_reg(dev, REG_CTRL_MEAS, (0x01 << 5) | (0x01 << 2)))
+        return BME680_ERR_I2C;
+    return BME680_OK;
+}
 
 static bme680_err_t read_calibration(bme680_t *dev)
 {
@@ -191,11 +208,13 @@ static uint32_t compensate_humidity(const bme680_t *dev, uint16_t adc_h)
     var4 = (var4 + ((temp_scaled * (int32_t)dev->par_h7) / 100)) >> 4;
     int32_t var5 = (int32_t)(((int64_t)(var3 >> 14) * (var3 >> 14)) >> 10);
     int32_t var6 = (int32_t)(((int64_t)var4 * var5) >> 1);
-    uint32_t hum = (uint32_t)((int32_t)(((int64_t)var3 + var6) >> 10));
+    int64_t hum = ((((int64_t)var3 + var6) >> 10) * 1000) >> 12;
     /* clamp to 0..100000 (in units of 1/1000 %RH) */
-    if (hum > 100000u)
-        hum = 100000u;
-    return hum;
+    if (hum > 100000)
+        hum = 100000;
+    if (hum < 0)
+        hum = 0;
+    return (uint32_t)hum;
 }
 
 static uint32_t compensate_gas(const bme680_t *dev, uint16_t adc_gas,
@@ -239,13 +258,11 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
     if (err != BME680_OK)
         return err;
 
-    /* Default oversampling: 1x all, humidity must be written before ctrl_meas.
-     * ctrl_meas bits [1:0] = 0b00 leaves mode as sleep — intentional so the
-     * caller triggers a forced-mode measurement via bme680_read(). */
-    if (!write_reg(dev, REG_CTRL_HUM, 0x01))
-        return BME680_ERR_I2C;
-    if (!write_reg(dev, REG_CTRL_MEAS, (0x01 << 5) | (0x01 << 2)))
-        return BME680_ERR_I2C;
+    err = apply_defaults(dev);
+    if (err != BME680_OK)
+        return err;
+
+    dev->amb_temp = AMBIENT_DEFAULT_C;
 
     INVARIANT(dev->i2c != NULL);
     return BME680_OK;
@@ -275,7 +292,8 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
 
     /* poll for new_data bit */
     bool data_ready = false;
-    for (int tries = 0; tries < 100; tries++)
+    int max_tries = 100 + dev->heat_ms / 10;
+    for (int tries = 0; tries < max_tries; tries++)
     {
         uint8_t status = 0;
         if (!read_regs(dev, REG_MEAS_STATUS, &status, 1))
@@ -310,18 +328,23 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
     uint16_t adc_gas  = (uint16_t)((uint16_t)buf[11] << 2 | (buf[12] >> 6));
     uint8_t  gas_range = buf[12] & 0x0F;
     uint8_t  gas_valid = (buf[12] >> 5) & 0x01;
+    uint8_t  heat_stable = (buf[12] >> 4) & 0x01;
 
     /* compensate -- temperature must be first (sets t_fine) */
     int32_t temp_comp = compensate_temperature(dev, adc_temp);
     data->temperature_c = (float)temp_comp / 100.0f;
+    dev->amb_temp = (temp_comp <= -12800) ? INT8_MIN :
+                    (temp_comp >= 12700) ? INT8_MAX : (int8_t)(temp_comp / 100);
 
+    /* A skipped channel holds a marker value, not a measurement */
     uint32_t pres_comp = compensate_pressure(dev, adc_pres);
-    data->pressure_pa = (float)pres_comp;
+    data->pressure_pa = (adc_pres == ADC_SKIPPED_20BIT) ? 0.0f : (float)pres_comp;
 
     uint32_t hum_comp = compensate_humidity(dev, adc_hum);
-    data->humidity_pct = (float)hum_comp / 1000.0f;
+    data->humidity_pct = (adc_hum == ADC_SKIPPED_16BIT) ? 0.0f : (float)hum_comp / 1000.0f;
 
-    if (gas_valid)
+    /* Without heat_stab_r the plate never reached its target temperature */
+    if (gas_valid && heat_stable)
     {
         uint32_t gas_comp = compensate_gas(dev, adc_gas, gas_range);
         data->gas_resistance_ohm = (float)gas_comp;
@@ -342,7 +365,7 @@ bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
 {
     if (!dev)
         return BME680_ERR_PARAM;
-    if (os_temp > 5 || os_hum > 5 || os_pres > 5)
+    if (os_temp == 0 || os_temp > 5 || os_hum > 5 || os_pres > 5)
         return BME680_ERR_PARAM;
 
     if (!write_reg(dev, REG_CTRL_HUM, os_hum & 0x07))
@@ -361,21 +384,17 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
     if (!dev)
         return BME680_ERR_PARAM;
 
-    /* calculate heater resistance register value */
-    /* formula from Bosch BME680 reference code; keep FP intermediates
-     * to avoid truncation-to-zero when par_gh2 < 32768 */
-    int32_t rhr = (int32_t)dev->res_heat_range * 16384;
-    int32_t pgh = (int32_t)dev->par_gh1 / 16;
-    float var1f = ((float)dev->par_gh2 / 32768.0f) *
-                  ((float)rhr + (float)pgh + 49152.0f);
-    int32_t var1 = (var1f <= -2147483648.0f) ? (int32_t)-2147483647 - 1
-                 : (var1f >=  2147483647.0f) ? (int32_t) 2147483647
-                 : (int32_t)var1f;
-    int32_t var2 = (var1 / 32768) + 1;
-    int32_t var3 = (int32_t)temp_c * var2 / 2;
-    int32_t var4 = var3 + (dev->res_heat_val * 16);
-    int32_t res_raw = (var4 + 50) / 100;
-    uint8_t res_heat = (res_raw <= 0) ? 0u : (res_raw >= 255) ? 255u : (uint8_t)res_raw;
+    /* heater resistance register value, Bosch's floating point form */
+    float target = (temp_c > HEATER_MAX_C) ? (float)HEATER_MAX_C : (float)temp_c;
+    float var1 = ((float)dev->par_gh1 / 16.0f) + 49.0f;
+    float var2 = (((float)dev->par_gh2 / 32768.0f) * 0.0005f) + 0.00235f;
+    float var3 = (float)dev->par_gh3 / 1024.0f;
+    float var4 = var1 * (1.0f + (var2 * target));
+    float var5 = var4 + (var3 * (float)dev->amb_temp);
+    float res = 3.4f * ((var5 * (4.0f / (4.0f + (float)dev->res_heat_range)) *
+                         (1.0f / (1.0f + ((float)dev->res_heat_val * 0.002f)))) -
+                        25.0f);
+    uint8_t res_heat = (res <= 0.0f) ? 0u : (res >= 255.0f) ? 255u : (uint8_t)res;
 
     /* calculate gas wait register value */
     /* duration_ms mapped to multiplication factor encoding */
@@ -404,6 +423,7 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
     if (!write_reg(dev, REG_CTRL_GAS1, 0x10))
         return BME680_ERR_I2C;
 
+    dev->heat_ms = duration_ms;
     return BME680_OK;
 }
 
@@ -413,5 +433,9 @@ bme680_err_t bme680_reset(bme680_t *dev)
         return BME680_ERR_PARAM;
     if (!write_reg(dev, REG_RESET, RESET_CMD))
         return BME680_ERR_I2C;
-    return BME680_OK;
+    delay_ms(dev, RESET_WAIT_MS);
+
+    /* Soft reset clears every setting, as a power-on would */
+    dev->heat_ms = 0;
+    return apply_defaults(dev);
 }
