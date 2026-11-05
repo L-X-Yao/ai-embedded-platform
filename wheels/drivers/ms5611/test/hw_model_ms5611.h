@@ -28,15 +28,16 @@ typedef struct {
 static void ms5611_model_init(ms5611_model_t *m)
 {
     memset(m, 0, sizeof(*m));
-    /* Datasheet example calibration */
-    m->prom[0] = 0;
+    /* Datasheet example calibration. Word 0 and word 7 are from ArduPilot
+     * SIM_MS5611.h, which gives this PROM a valid CRC in DB3-DB0. */
+    m->prom[0] = 0xFFFF;
     m->prom[1] = 40127;    /* C1 */
     m->prom[2] = 36924;    /* C2 */
     m->prom[3] = 23317;    /* C3 */
     m->prom[4] = 23282;    /* C4 */
     m->prom[5] = 33464;    /* C5 */
     m->prom[6] = 28312;    /* C6 */
-    m->prom[7] = 0;
+    m->prom[7] = 0x0008;   /* CRC */
 
     /* Default ADC values from datasheet example */
     m->d1_raw = 9085466;

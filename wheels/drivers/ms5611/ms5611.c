@@ -57,8 +57,8 @@ static uint8_t prom_crc4(const uint16_t prom[8])
         data[i] = prom[i];
     }
 
-    /* Save original CRC nibble, then zero it for calculation */
-    data[7] = (uint16_t)(data[7] & 0x0FFF);
+    /* Word 7 enters the calculation with its whole low byte cleared */
+    data[7] = (uint16_t)(data[7] & 0xFF00);
 
     for (i = 0; i < 16; i++) {
         if (i % 2 == 1) {
@@ -94,8 +94,8 @@ static ms5611_err_t read_prom(ms5611_t *dev)
         prom[i] = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
     }
 
-    /* Verify CRC-4 (stored in MSN of word 7) */
-    uint8_t crc_read = (uint8_t)((prom[7] >> 12) & 0x000F);
+    /* Verify CRC-4 (DB3-DB0 of word 7, Figure 16) */
+    uint8_t crc_read = (uint8_t)(prom[7] & 0x000F);
     uint8_t crc_calc = prom_crc4(prom);
     if (crc_read != crc_calc)
     {
