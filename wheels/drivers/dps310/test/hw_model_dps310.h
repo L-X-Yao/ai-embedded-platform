@@ -14,6 +14,12 @@
  * With 1x oversampling (kT = kP = 524288):
  *   T_comp = c1 * T_raw / kT  = 100 * T_raw / 524288
  *   P_comp = c00 + c10 * P_raw / kP = 100000 + 1000 * P_raw / 524288
+ *
+ * Start-up (Table 8, p.10): after power-on or a soft reset SENSOR_RDY rises
+ * at 12 ms and COEF_RDY at 40 ms, and the coefficient registers read 0
+ * until COEF_RDY. Only the delay callback lets time pass.
+ * hw_model_power_on() starts there; hw_model_reset() is a chip already
+ * past it.
  */
 #ifndef HW_MODEL_DPS310_H
 #define HW_MODEL_DPS310_H
@@ -24,9 +30,14 @@
 
 #define HW_REG_COUNT 256
 
-static uint8_t hw_regs[HW_REG_COUNT];
-static int     hw_write_count;
-static int     hw_read_count;
+/* Table 8 (p.10): maximum times after power-on or soft reset */
+#define HW_SENSOR_RDY_MS 12u
+#define HW_COEF_RDY_MS   40u
+
+static uint8_t  hw_regs[HW_REG_COUNT];
+static int      hw_write_count;
+static int      hw_read_count;
+static uint32_t hw_uptime_ms;   /* time since power-on or soft reset */
 
 /*
  * Encode a signed 24-bit value into 3 register bytes (big-endian).
@@ -40,18 +51,8 @@ static void hw_encode_24(uint8_t reg_start, int32_t val)
     hw_regs[(uint8_t)(reg_start + 2u)] = (uint8_t)(u & 0xFFu);
 }
 
-static void hw_model_reset(void)
+static void hw_load_coefficients(void)
 {
-    memset(hw_regs, 0, sizeof(hw_regs));
-    hw_write_count = 0;
-    hw_read_count  = 0;
-
-    /* POR defaults */
-    hw_regs[0x0D] = 0x10;  /* Product ID */
-
-    /* MEAS_CFG: assert TMP_RDY + PRS_RDY so reads don't timeout */
-    hw_regs[0x08] = 0x30;
-
     /*
      * Calibration coefficients in registers 0x10-0x21.
      *
@@ -83,6 +84,44 @@ static void hw_model_reset(void)
     /* 0x18-0x21 remain zero (c01..c30 = 0) */
 }
 
+/* Let time pass: the ready bits rise and the coefficients appear */
+static void hw_advance(uint32_t ms)
+{
+    hw_uptime_ms += ms;
+    if (hw_uptime_ms >= HW_SENSOR_RDY_MS)
+    {
+        hw_regs[0x08] |= 0x40u;  /* SENSOR_RDY */
+    }
+    if (hw_uptime_ms >= HW_COEF_RDY_MS && !(hw_regs[0x08] & 0x80u))
+    {
+        hw_load_coefficients();
+        hw_regs[0x08] |= 0x80u;  /* COEF_RDY */
+    }
+}
+
+/* Shared by power-on and soft reset: reset values, ready bits low */
+static void hw_start_up(void)
+{
+    memset(hw_regs, 0, sizeof(hw_regs));
+    hw_uptime_ms  = 0;
+    hw_regs[0x0D] = 0x10;  /* Product ID */
+}
+
+/* Cold boot: nothing is ready until the delay callback lets time pass */
+static void hw_model_power_on(void)
+{
+    hw_write_count = 0;
+    hw_read_count  = 0;
+    hw_start_up();
+}
+
+/* Chip past start-up: MEAS_CFG at its reset value C0H (p.32) */
+static void hw_model_reset(void)
+{
+    hw_model_power_on();
+    hw_advance(HW_COEF_RDY_MS);
+}
+
 __attribute__((unused))
 static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
                                 uint8_t reg, uint8_t val)
@@ -90,28 +129,32 @@ static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     hw_write_count++;
 
-    /* RESET register: soft reset restores measurement-ready flags */
-    if (reg == 0x0Cu && val == 0x89u)
+    /* RESET: '1001' in SOFT_RST bits 3:0 reruns the power-on sequence (p.36) */
+    if (reg == 0x0Cu)
     {
-        hw_regs[0x08] = 0x30;  /* re-assert TMP_RDY + PRS_RDY */
+        if ((val & 0x0Fu) == 0x09u)
+        {
+            hw_start_up();
+        }
+        return true;
+    }
+
+    /* MEAS_CFG: only MEAS_CTRL is writable (p.32). The measurement ends at
+     * once, so the ready flag rises and the mode is back to Standby. */
+    if (reg == 0x08u)
+    {
+        if ((val & 0x07u) == 0x02u)  /* temperature command */
+        {
+            hw_regs[0x08] |= 0x20u;  /* TMP_RDY */
+        }
+        if ((val & 0x07u) == 0x01u)  /* pressure command */
+        {
+            hw_regs[0x08] |= 0x10u;  /* PRS_RDY */
+        }
         return true;
     }
 
     hw_regs[reg] = val;
-
-    /* MEAS_CFG write: simulate measurement complete immediately */
-    if (reg == 0x08u)
-    {
-        if (val & 0x02u)  /* temperature command */
-        {
-            hw_regs[0x08] |= 0x20u;  /* TMP_RDY */
-        }
-        if (val & 0x01u)  /* pressure command */
-        {
-            hw_regs[0x08] |= 0x10u;  /* PRS_RDY */
-        }
-    }
-
     return true;
 }
 
@@ -122,9 +165,27 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     hw_read_count++;
     for (uint16_t i = 0; i < len; i++) {
-        buf[i] = hw_regs[(uint8_t)(reg + i)];
+        uint8_t r = (uint8_t)(reg + i);
+        buf[i] = hw_regs[r];
+        /* p.32: reading a result clears its ready flag */
+        if (r <= 0x02u)
+        {
+            hw_regs[0x08] &= (uint8_t)~0x10u;  /* PRS_RDY */
+        }
+        else if (r <= 0x05u)
+        {
+            hw_regs[0x08] &= (uint8_t)~0x20u;  /* TMP_RDY */
+        }
     }
     return true;
+}
+
+/* Delay callback: the only way time passes in the model */
+__attribute__((unused))
+static void hw_model_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    hw_advance(ms);
 }
 
 /*

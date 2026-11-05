@@ -87,8 +87,8 @@ static void mock_reset(void)
     /* Product ID register */
     mock_regs[0x0D] = 0x10;
 
-    /* MEAS_CFG: TMP_RDY + PRS_RDY so reads don't timeout */
-    mock_regs[0x08] = 0x30;
+    /* MEAS_CFG reset value C0H (p.32): COEF_RDY + SENSOR_RDY */
+    mock_regs[0x08] = 0xC0;
 
     plant_calib();
 }
@@ -153,6 +153,46 @@ TEST(test_init_i2c_fail)
     dps310_t d;
     dps310_err_t e = dps310_init(&d, &mock_i2c_hal, &default_cfg);
     ASSERT_EQ(e, DPS310_ERR_I2C);
+}
+
+/* Table 8 (p.10): COEF_RDY within 40 ms, SENSOR_RDY within 12 ms */
+
+TEST(test_init_timeout_coef_not_ready)
+{
+    mock_reset();
+    mock_regs[0x08] = 0x40;  /* SENSOR_RDY only */
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_TIMEOUT);
+    ASSERT_TRUE(mock_delay_ms_count > 40);
+}
+
+TEST(test_init_timeout_sensor_not_ready)
+{
+    mock_reset();
+    mock_regs[0x08] = 0x80;  /* COEF_RDY only */
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_TIMEOUT);
+    ASSERT_TRUE(mock_delay_ms_count > 40);
+}
+
+TEST(test_init_timeout_without_delay)
+{
+    /* delay_ms stays optional: the wait still ends, on the try count */
+    mock_reset();
+    mock_regs[0x08] = 0x00;
+    dps310_i2c_t no_delay = mock_i2c_hal;
+    no_delay.delay_ms = NULL;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &no_delay, &default_cfg), DPS310_ERR_TIMEOUT);
+}
+
+TEST(test_init_ready_poll_i2c_fail)
+{
+    mock_reset();
+    /* Second operation: the first MEAS_CFG read, after product ID */
+    mock_fail_at = 1;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_I2C);
 }
 
 TEST(test_null_dev)
@@ -336,8 +376,8 @@ TEST(test_oversampling_shift_bits)
 TEST(test_calib_i2c_fail)
 {
     mock_reset();
-    /* Fail on the second I2C read (calibration, after product ID) */
-    mock_fail_at = 1;
+    /* Fail on the third I2C read: product ID, MEAS_CFG, calibration */
+    mock_fail_at = 2;
     dps310_t d;
     dps310_err_t e = dps310_init(&d, &mock_i2c_hal, &default_cfg);
     ASSERT_EQ(e, DPS310_ERR_I2C);
@@ -366,6 +406,7 @@ TEST(test_error_codes)
     ASSERT_EQ(-1, (int)DPS310_ERR_I2C);
     ASSERT_EQ(-2, (int)DPS310_ERR_ID);
     ASSERT_EQ(-3, (int)DPS310_ERR_PARAM);
+    ASSERT_EQ(-4, (int)DPS310_ERR_TIMEOUT);
 }
 
 /* ---------- zero HAL safety ---------- */
@@ -408,6 +449,10 @@ TEST_MAIN("dps310")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
     RUN(test_init_i2c_fail);
+    RUN(test_init_timeout_coef_not_ready);
+    RUN(test_init_timeout_sensor_not_ready);
+    RUN(test_init_timeout_without_delay);
+    RUN(test_init_ready_poll_i2c_fail);
     RUN(test_null_dev);
     RUN(test_null_i2c);
     RUN(test_null_cfg);
