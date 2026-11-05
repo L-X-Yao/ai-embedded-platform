@@ -3,6 +3,8 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
+> **Not usable on hardware yet.** `vl53l0x_init` skips the initialisation and calibration the manual requires before the first ranging.
+
 Platform-agnostic driver for the ST VL53L0X time-of-flight laser ranging
 sensor. I2C interface injected via callbacks. Simplified init sequence
 (not the full ST API) with single-shot ranging returning 16-bit millimeter
