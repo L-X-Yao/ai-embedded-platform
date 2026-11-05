@@ -323,6 +323,24 @@ TEST(test_encode_string_nonzero_len_null_data)
     ASSERT_EQ(bencode_encode_string(&enc, NULL, 5), BENCODE_ERR_PARAM);
 }
 
+TEST(test_end_with_nothing_open_is_malformed)
+{
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+    const uint8_t stray[] = "e";
+    const uint8_t extra[] = "lee";
+
+    ASSERT_EQ(bencode_decoder_init(&dec, stray, 1), BENCODE_OK);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
+
+    ASSERT_EQ(bencode_decoder_init(&dec, extra, 3), BENCODE_OK);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_LIST_BEGIN);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_LIST_END);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
+}
+
 TEST_MAIN("bencode")
     RUN(test_encode_int_positive);
     RUN(test_encode_int_zero);
@@ -344,4 +362,5 @@ TEST_MAIN("bencode")
     RUN(test_decode_invalid_char);
     RUN(test_null_params);
     RUN(test_encode_string_nonzero_len_null_data);
+    RUN(test_end_with_nothing_open_is_malformed);
 TEST_MAIN_END()

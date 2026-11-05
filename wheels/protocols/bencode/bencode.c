@@ -260,15 +260,13 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
 
     /* End marker (list or dict) — use nesting stack to distinguish */
     if (ch == 'e') {
+        if (dec->depth == 0)
+            return BENCODE_ERR_MALFORMED;
         dec->pos++;
-        if (dec->depth > 0) {
-            dec->depth--;
-            if (dec->depth < BENCODE_MAX_DEPTH &&
-                dec->nesting[dec->depth] == 'd') {
-                token->type = BENCODE_TOKEN_DICT_END;
-            } else {
-                token->type = BENCODE_TOKEN_LIST_END;
-            }
+        dec->depth--;
+        if (dec->depth < BENCODE_MAX_DEPTH &&
+            dec->nesting[dec->depth] == 'd') {
+            token->type = BENCODE_TOKEN_DICT_END;
         } else {
             token->type = BENCODE_TOKEN_LIST_END;
         }
