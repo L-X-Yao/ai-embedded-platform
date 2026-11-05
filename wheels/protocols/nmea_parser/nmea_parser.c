@@ -57,6 +57,9 @@ static char field_char(const char *line, int n)
 static float parse_lat(const char *raw, char ns)
 {
     float v = strtof(raw, NULL);
+    /* ddmm.mmmm: |v| <= 9000. Reject NaN/inf/garbage before the int cast;
+     * casting inf to int is undefined behaviour (found by libFuzzer). */
+    if (!(v >= -9000.0f && v <= 9000.0f)) return 0.0f;
     int deg = (int)(v / 100.0f);
     float min = v - (float)deg * 100.0f;
     float result = (float)deg + min / 60.0f;
@@ -67,6 +70,8 @@ static float parse_lat(const char *raw, char ns)
 static float parse_lon(const char *raw, char ew)
 {
     float v = strtof(raw, NULL);
+    /* dddmm.mmmm: |v| <= 18000. Same guard as parse_lat. */
+    if (!(v >= -18000.0f && v <= 18000.0f)) return 0.0f;
     int deg = (int)(v / 100.0f);
     float min = v - (float)deg * 100.0f;
     float result = (float)deg + min / 60.0f;
