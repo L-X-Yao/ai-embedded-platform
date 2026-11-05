@@ -30,7 +30,7 @@ static void mock_reset(void)
 
     /* after hardware reset, chip is in config mode (0x80 in CANSTAT) */
     mock_regs[0x0E] = 0x80;  /* CANSTAT: config mode */
-    mock_regs[0x0F] = 0x80;  /* CANCTRL: config mode */
+    mock_regs[0x0F] = 0x87;  /* CANCTRL: config mode */
 }
 
 static void mock_cs_low(void *ctx)
@@ -56,7 +56,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         if (tx == 0xC0) {
             /* RESET: put chip into config mode */
             mock_regs[0x0E] = 0x80;
-            mock_regs[0x0F] = 0x80;
+            mock_regs[0x0F] = 0x87;
             return 0xFF;
         }
         if (tx == 0xA0) {
