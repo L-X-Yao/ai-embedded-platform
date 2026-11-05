@@ -447,6 +447,16 @@ TEST(test_build_write_regs_zero_count)
               MODBUS_TCP_ERR_PARAM);
 }
 
+TEST(test_parse_length_field_wraps_u16)
+{
+    /* libFuzzer 2026-11-05: length=0xFFFF made 6+length wrap to 5 in a
+     * uint16_t, so this 8-byte frame passed the size check with
+     * data_len=0xFFFD and get_regs read past the buffer. */
+    uint8_t raw[] = { 0xFF, 0x41, 0x00, 0x00, 0xFF, 0xFF, 0x41, 0x2D };
+    modbus_tcp_frame_t frame;
+    ASSERT_EQ(modbus_tcp_parse(raw, sizeof(raw), &frame), MODBUS_TCP_ERR_SHORT);
+}
+
 TEST(test_parse_length_exceeds_buffer)
 {
     /* MBAP says length=10 but buffer only has 10 bytes total */
@@ -493,5 +503,6 @@ TEST_MAIN("modbus_tcp")
     RUN(test_build_read_regs_zero_count);
     RUN(test_build_write_regs_zero_count);
     RUN(test_parse_length_exceeds_buffer);
+    RUN(test_parse_length_field_wraps_u16);
     RUN(test_exception_helpers_null);
 TEST_MAIN_END()

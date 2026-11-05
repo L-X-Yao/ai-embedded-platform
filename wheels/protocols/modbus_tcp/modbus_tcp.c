@@ -134,9 +134,10 @@ modbus_tcp_err_t modbus_tcp_parse(const uint8_t *buf, uint16_t len,
     if (frame->header.length < 2)
         return MODBUS_TCP_ERR_SHORT;
 
-    /* Validate that buffer has enough data: MBAP(6) + length */
-    uint16_t expected = (uint16_t)(6 + frame->header.length);
-    if (len < expected)
+    /* Validate that buffer has enough data: MBAP(6) + length.
+     * Compare in 32-bit: 6 + 0xFFFF wraps to 5 in uint16_t and would let an
+     * 8-byte frame through with data_len = 0xFFFD (found by libFuzzer). */
+    if ((uint32_t)len < 6u + (uint32_t)frame->header.length)
         return MODBUS_TCP_ERR_SHORT;
 
     /* Extract PDU */
