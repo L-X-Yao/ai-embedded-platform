@@ -452,7 +452,7 @@ TEST(test_gas_various_ranges)
     uint8_t r;
     bme688_data_t data;
 
-    /* Exercise all 16 gas ranges to exercise lut1/lut2 indexing */
+    /* Exercise all 16 gas ranges */
     for (r = 0; r < 16; r++)
     {
         setup();
@@ -460,6 +460,32 @@ TEST(test_gas_various_ranges)
         bme688_err_t e = bme688_read(&dev, &data);
         ASSERT_EQ(e, BME688_OK);
         ASSERT_TRUE(data.gas_resistance_ohm > 0);
+    }
+}
+
+/* Expected values from the integer code on manual p28 and p29:
+ * (10000 * (262144 >> range)) / (4096 + 3 * (adc - 512)) * 100 */
+TEST(test_gas_resistance_formula)
+{
+    static const struct {
+        uint16_t adc;
+        uint8_t  range;
+        uint32_t ohm;
+    } v[] = {
+        {  500,  4,   4035400u },  /* 163840000 / 4060 = 40354 */
+        {  300,  3,   9470500u },  /* 327680000 / 3460 = 94705 */
+        {  512,  0,  64000000u },  /* 2621440000 / 4096 = 640000 */
+        {    0,  0, 102400000u },  /* lowest ADC code, largest result */
+        { 1023, 15,      1400u },  /* 80000 / 5629 = 14 */
+    };
+
+    for (unsigned i = 0; i < sizeof(v) / sizeof(v[0]); i++)
+    {
+        setup();
+        plant_data(415148, 500000, 25000, v[i].adc, v[i].range, true);
+        bme688_data_t data;
+        ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+        ASSERT_EQ(data.gas_resistance_ohm, v[i].ohm);
     }
 }
 
@@ -597,6 +623,7 @@ TEST_MAIN("bme688")
     RUN(test_humidity_clamp);
     RUN(test_no_delay_callback);
     RUN(test_gas_various_ranges);
+    RUN(test_gas_resistance_formula);
     RUN(test_pressure_var1_zero);
     RUN(test_zero_init_safety);
     RUN(test_error_codes);

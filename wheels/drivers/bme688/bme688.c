@@ -8,8 +8,8 @@
  * Instances: multi
  *
  * Compensation algorithms from Bosch BME688 datasheet (BST-BME688-DS000-18).
- * Register-compatible with BME680; integer arithmetic for temp/press/hum,
- * gas resistance via lookup tables from Bosch reference code.
+ * Register-compatible with BME680; integer arithmetic for temp/press/hum
+ * and gas resistance.
  */
 
 #include "bme688.h"
@@ -37,21 +37,6 @@
 #define RESET_CMD         0xB6u
 #define MODE_FORCED       0x01u
 #define RUN_GAS           0x20u  /* ctrl_gas_1 run_gas<5> */
-
-/* gas range lookup tables (from Bosch reference code) */
-static const uint32_t gas_range_lut1[16] = {
-    2147483647u, 2147483647u, 2147483647u, 2147483647u,
-    2147483647u, 2126008810u, 2147483647u, 2130303777u,
-    2147483647u, 2147483647u, 2143188679u, 2136746228u,
-    2147483647u, 2126008810u, 2147483647u, 2147483647u,
-};
-
-static const uint32_t gas_range_lut2[16] = {
-    4096000000u, 2048000000u, 1024000000u, 512000000u,
-    255744255u,  127110228u,  64000000u,   32258064u,
-    16016016u,   8000000u,    4000000u,    2000000u,
-    1000000u,    500000u,     250000u,     125000u,
-};
 
 /* --- internal helpers --- */
 
@@ -201,19 +186,15 @@ static uint32_t compensate_humidity(const bme688_t *dev, uint16_t adc_h)
     return hum;
 }
 
-static uint32_t compensate_gas(const bme688_t *dev, uint16_t adc_gas,
-                               uint8_t gas_range)
+/* adc_gas has 10 bits, so var2 stays between 2560 and 5629 */
+static uint32_t compensate_gas(uint16_t adc_gas, uint8_t gas_range)
 {
-    uint8_t r = gas_range & 0x0F;
-    int64_t var1 = (int64_t)((1340 + (5 * (int64_t)dev->range_sw_err)) *
-                             ((int64_t)gas_range_lut1[r])) >> 16;
-    int64_t var2 = (int64_t)adc_gas * 32768 - 16777216 + var1;
-    int64_t var3 = ((int64_t)gas_range_lut2[r] * (int64_t)var1) >> 9;
-
-    if (var2 == 0)
-        return 0;
-
-    return (uint32_t)((var3 + ((int64_t)var2 >> 1)) / (int64_t)var2);
+    uint32_t var1 = UINT32_C(262144) >> gas_range;
+    int32_t var2 = (int32_t)adc_gas - INT32_C(512);
+    var2 *= INT32_C(3);
+    var2 = INT32_C(4096) + var2;
+    /* times 10000, then 100: multiplying by 1000000 would overflow */
+    return ((UINT32_C(10000) * var1) / (uint32_t)var2) * 100u;
 }
 
 /* --- public API --- */
@@ -349,7 +330,7 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
 
     if (gas_valid)
     {
-        uint32_t gas_comp = compensate_gas(dev, adc_gas, gas_range);
+        uint32_t gas_comp = compensate_gas(adc_gas, gas_range);
         out->gas_resistance_ohm = gas_comp;
         out->gas_valid = true;
     }
