@@ -445,6 +445,17 @@ TEST(test_feed_overflow_returns_err_size)
     ASSERT_EQ(mqtt_client_feed(&g_c, &one, 1), MQTT_CLIENT_ERR_SIZE);
 }
 
+TEST(test_subscribe_refuses_qos_it_cannot_serve)
+{
+    setup_connected();
+    g_sent_len = 0;
+    /* no PUBREC handling, so QoS 2 is as unusable here as an illegal value */
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/topic", 2), MQTT_CLIENT_ERR_PARAM);
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/topic", 3), MQTT_CLIENT_ERR_PARAM);
+    ASSERT_EQ(g_sent_len, 0);
+    ASSERT_EQ(g_c.inflight_sub_id, 0);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -479,4 +490,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_publish_send_fail_returns_err_io);
     RUN(test_feed_bad_remaining_length_returns_err_protocol);
     RUN(test_feed_overflow_returns_err_size);
+    RUN(test_subscribe_refuses_qos_it_cannot_serve);
 TEST_MAIN_END()

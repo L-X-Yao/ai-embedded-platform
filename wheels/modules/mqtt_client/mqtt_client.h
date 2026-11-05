@@ -128,7 +128,7 @@ mqtt_client_err_t mqtt_client_publish(mqtt_client_t *c, const char *topic,
                                       const uint8_t *payload, uint16_t len,
                                       uint8_t qos);
 
-/** Subscribe to a topic. One inflight subscribe at a time. @thread_safe: no @isr_safe: no */
+/** Subscribe to a topic (QoS 0 or 1). One inflight subscribe at a time. @thread_safe: no @isr_safe: no */
 mqtt_client_err_t mqtt_client_subscribe(mqtt_client_t *c,
                                         const char *topic, uint8_t qos);
 
