@@ -5,8 +5,8 @@
  * Models Awinic AW9523B (datasheet rev 1.5) register behavior:
  * - INPUT_P0/P1 at 0x00/0x01: pin input state (read-only from bus)
  * - OUTPUT_P0/P1 at 0x02/0x03: output latch
- * - CONFIG_P0/P1 at 0x04/0x05: direction (0=output, 1=input), POR=0xFF
- * - INT_P0/P1 at 0x06/0x07: interrupt enable (0=enabled, 1=disabled), POR=0xFF
+ * - CONFIG_P0/P1 at 0x04/0x05: direction (0=output, 1=input), POR=0x00
+ * - INT_P0/P1 at 0x06/0x07: interrupt enable (0=enabled, 1=disabled), POR=0x00
  * - ID at 0x10: chip ID (read-only, 0x23)
  * - CTL at 0x11: global control
  * - LED_MODE_P0/P1 at 0x12/0x13: 0=LED, 1=GPIO, POR=0x00
@@ -98,10 +98,10 @@ static void aw9523_model_init(aw9523_model_t *m)
     m->hw.user = m;
 
     /* POR defaults */
-    hw_model_set_reset_value(&m->hw, AW9523M_REG_CONFIG_P0, 0xFF);   /* all input */
-    hw_model_set_reset_value(&m->hw, AW9523M_REG_CONFIG_P1, 0xFF);
-    hw_model_set_reset_value(&m->hw, AW9523M_REG_INT_P0, 0xFF);      /* all disabled */
-    hw_model_set_reset_value(&m->hw, AW9523M_REG_INT_P1, 0xFF);
+    hw_model_set_reset_value(&m->hw, AW9523M_REG_CONFIG_P0, 0x00);   /* all output */
+    hw_model_set_reset_value(&m->hw, AW9523M_REG_CONFIG_P1, 0x00);
+    hw_model_set_reset_value(&m->hw, AW9523M_REG_INT_P0, 0x00);      /* all enabled */
+    hw_model_set_reset_value(&m->hw, AW9523M_REG_INT_P1, 0x00);
     hw_model_set_reset_value(&m->hw, AW9523M_REG_ID, 0x23);          /* chip ID */
     hw_model_set_reset_value(&m->hw, AW9523M_REG_LED_MODE_P0, 0x00); /* all LED mode */
     hw_model_set_reset_value(&m->hw, AW9523M_REG_LED_MODE_P1, 0x00);

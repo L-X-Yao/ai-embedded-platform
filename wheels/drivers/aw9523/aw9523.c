@@ -103,7 +103,7 @@ aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
     if (!write_reg(dev, AW9523_REG_CTL, CTL_P0_PUSH_PULL))
         return AW9523_ERR_I2C;
 
-    /* Set all pins as input (POR default: 0xFF = all input) */
+    /* Set all pins as input (POR default: 0x00 = all output) */
     if (!write_reg(dev, AW9523_REG_CONFIG_P0, 0xFF))
         return AW9523_ERR_I2C;
     if (!write_reg(dev, AW9523_REG_CONFIG_P1, 0xFF))
