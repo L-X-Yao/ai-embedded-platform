@@ -525,6 +525,21 @@ TEST(test_broken_length_closes_the_session)
     ASSERT_EQ(g_msg_count, 0);
 }
 
+TEST(test_nothing_is_dispatched_after_a_refused_connack)
+{
+    uint8_t stream[] = { 0x20, 0x02, 0x00, 0x05, 0x30, 0x03, 0x00, 0x01, 't' };
+    mqtt_client_cfg_t cfg = { .client_id = "test" };
+
+    reset_mocks();
+    mqtt_client_init(&g_c, &g_io, &cfg);
+    mqtt_client_on_message(&g_c, msg_cb, NULL);
+    mqtt_client_connect(&g_c);
+
+    mqtt_client_feed(&g_c, stream, sizeof(stream));
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
+    ASSERT_EQ(g_msg_count, 0);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -563,4 +578,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_feed_keeps_bytes_past_the_buffer);
     RUN(test_oversized_packet_is_skipped_whole);
     RUN(test_broken_length_closes_the_session);
+    RUN(test_nothing_is_dispatched_after_a_refused_connack);
 TEST_MAIN_END()

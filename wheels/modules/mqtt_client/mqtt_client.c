@@ -126,7 +126,7 @@ static void dispatch_packet(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
 /* Dispatch every complete packet in rx_buf. */
 static mqtt_client_err_t drain_rx(mqtt_client_t *c)
 {
-    while (c->rx_len >= 2) {
+    while (c->rx_len >= 2 && c->state != MQTT_CLIENT_DISCONNECTED) {
         uint32_t remaining;
         uint16_t hdr_bytes;
         int rc = try_decode_packet_len(c->rx_buf, c->rx_len, &remaining, &hdr_bytes);
