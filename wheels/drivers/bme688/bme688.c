@@ -179,7 +179,7 @@ static uint32_t compensate_humidity(const bme688_t *dev, uint16_t adc_h)
     var4 = (var4 + ((temp_scaled * (int32_t)dev->par_h7) / 100)) >> 4;
     int32_t var5 = (int32_t)(((int64_t)(var3 >> 14) * (var3 >> 14)) >> 10);
     int32_t var6 = (int32_t)(((int64_t)var4 * var5) >> 1);
-    uint32_t hum = (uint32_t)((int32_t)(((int64_t)var3 + var6) >> 10));
+    uint32_t hum = (uint32_t)(((((int64_t)var3 + var6) >> 10) * 1000) >> 12);
     /* clamp to 0..100000 (in units of 1/1000 %RH) */
     if (hum > 100000u)
         hum = 100000u;
