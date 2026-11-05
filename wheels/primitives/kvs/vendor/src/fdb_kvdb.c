@@ -292,9 +292,11 @@ static uint32_t find_next_kv_addr(fdb_kvdb_t db, uint32_t start, uint32_t end)
             return FAILED_ADDR;
         for (i = 0; i < sizeof(buf) - sizeof(uint32_t) && start + i < end; i++) {
 #ifndef FDB_BIG_ENDIAN            /* Little Endian Order */
-            magic = buf[i] + (buf[i + 1] << 8) + (buf[i + 2] << 16) + (buf[i + 3] << 24);
+            /* Local change: widen before shifting, as a byte shifted by 24
+             * overflows int. */
+            magic = buf[i] + (buf[i + 1] << 8) + (buf[i + 2] << 16) + ((uint32_t)buf[i + 3] << 24);
 #else                       /* Big Endian Order */
-            magic = buf[i + 3] + (buf[i + 2] << 8) + (buf[i + 1] << 16) + (buf[i] << 24);
+            magic = buf[i + 3] + (buf[i + 2] << 8) + (buf[i + 1] << 16) + ((uint32_t)buf[i] << 24);
 #endif
             if (magic == KV_MAGIC_WORD && (start + i - KV_MAGIC_OFFSET) >= start_bak) {
                 return start + i - KV_MAGIC_OFFSET;

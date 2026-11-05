@@ -22,5 +22,13 @@ target_include_directories(test_kvs PRIVATE
 )
 target_compile_options(test_kvs PRIVATE -Wall -Wextra -Wpedantic)
 
+# Vendored FlashDB is not held to our warning flags
+set_source_files_properties(
+    ../vendor/src/fdb.c
+    ../vendor/src/fdb_kvdb.c
+    ../vendor/src/fdb_tsdb.c
+    ../vendor/src/fdb_utils.c
+    PROPERTIES COMPILE_OPTIONS "-w")
+
 enable_testing()
 add_test(NAME kvs_tests COMMAND test_kvs)
