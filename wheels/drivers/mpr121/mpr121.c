@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * Register map (NXP MPR121 datasheet):
- *   0x00-0x01  Touch status (16-bit bitmap, bit per electrode)
+ *   0x00-0x01  Touch status (bits 11:0 electrodes, 12 proximity, 15 OVCF)
  *   0x04-0x1D  Electrode 0-11 filtered data (2 bytes each, 10-bit)
  *   0x2B-0x32  Baseline filtering control (MHD/NHD/NCL/FDL)
  *   0x41-0x5A  Touch/release thresholds (2 bytes per electrode)
@@ -29,6 +29,8 @@
 #define RESET_DELAY_MS     1u
 #define ELECTRODE_DATA_LEN 2u     /* 2 bytes per electrode (10-bit) */
 #define ELECTRODE_DATA_MASK 0x03FFu  /* 10-bit mask */
+#define TOUCH_BITMAP_MASK  0x0FFFu   /* ELE0-11 in the touch status word */
+#define TOUCH_STATUS_OVCF  0x8000u   /* over current flag, bit 7 of 0x01 */
 
 /* Baseline filtering defaults (from datasheet application note) */
 #define DEFAULT_MHDR  0x01u
@@ -130,7 +132,10 @@ mpr121_err_t mpr121_read_touched(mpr121_t *dev, uint16_t *status)
     if (err != MPR121_OK) return err;
 
     /* Touch status: low byte at 0x00, high byte at 0x01 */
-    *status = (uint16_t)((uint16_t)buf[1] << 8 | (uint16_t)buf[0]);
+    uint16_t raw = (uint16_t)((uint16_t)buf[1] << 8 | (uint16_t)buf[0]);
+    *status = (uint16_t)(raw & TOUCH_BITMAP_MASK);
+
+    if (raw & TOUCH_STATUS_OVCF) return MPR121_ERR_OVERCURRENT;
 
     return MPR121_OK;
 }
