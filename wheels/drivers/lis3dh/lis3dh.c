@@ -23,6 +23,7 @@
 #define CTRL1_YEN       0x02u
 #define CTRL1_ZEN       0x04u
 #define CTRL1_AXES_ALL  (CTRL1_XEN | CTRL1_YEN | CTRL1_ZEN)
+#define CTRL1_LPEN      0x08u   /* low power: 8-bit output */
 
 /* CTRL_REG4 bits */
 #define CTRL4_BDU       0x80u   /* block data update */
@@ -63,6 +64,37 @@ static bool read_regs(const lis3dh_t *dev, uint8_t reg,
 
 /* ---------- public API ---------- */
 
+static bool is_low_power(lis3dh_odr_t odr)
+{
+    return odr == LIS3DH_ODR_1620HZ_LP || odr == LIS3DH_ODR_5376HZ_LP;
+}
+
+static uint8_t ctrl4_value(lis3dh_range_t range, lis3dh_odr_t odr)
+{
+    uint8_t mode = is_low_power(odr) ? 0u : CTRL4_HR;
+    return (uint8_t)(CTRL4_BDU | mode | ((unsigned)range << 4));
+}
+
+/* LPen and HR must not be set together, so whichever is cleared goes first */
+static lis3dh_err_t write_mode(const lis3dh_t *dev, lis3dh_range_t range,
+                               lis3dh_odr_t odr)
+{
+    bool low_power = is_low_power(odr);
+    uint8_t ctrl1 = (uint8_t)((unsigned)odr << 4) | CTRL1_AXES_ALL;
+    uint8_t ctrl4 = ctrl4_value(range, odr);
+
+    if (low_power) {
+        ctrl1 |= CTRL1_LPEN;
+        if (!write_reg(dev, REG_CTRL_REG4, ctrl4))
+            return LIS3DH_ERR_I2C;
+    }
+    if (!write_reg(dev, REG_CTRL_REG1, ctrl1))
+        return LIS3DH_ERR_I2C;
+    if (!low_power && !write_reg(dev, REG_CTRL_REG4, ctrl4))
+        return LIS3DH_ERR_I2C;
+    return LIS3DH_OK;
+}
+
 lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
                          const lis3dh_cfg_t *cfg)
 {
@@ -83,15 +115,10 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
     if (id != LIS3DH_WHO_AM_I)
         return LIS3DH_ERR_ID;
 
-    /* CTRL_REG1: ODR + enable all axes */
-    uint8_t ctrl1 = (uint8_t)((unsigned)cfg->odr << 4) | CTRL1_AXES_ALL;
-    if (!write_reg(dev, REG_CTRL_REG1, ctrl1))
-        return LIS3DH_ERR_I2C;
-
-    /* CTRL_REG4: BDU + full-scale range + high resolution */
-    uint8_t ctrl4 = CTRL4_BDU | CTRL4_HR | (uint8_t)((unsigned)cfg->range << 4);
-    if (!write_reg(dev, REG_CTRL_REG4, ctrl4))
-        return LIS3DH_ERR_I2C;
+    /* ODR, all axes, BDU, full-scale range and the operating mode */
+    lis3dh_err_t err = write_mode(dev, cfg->range, cfg->odr);
+    if (err != LIS3DH_OK)
+        return err;
 
     dev->scale = range_scale[cfg->range & 0x03];
     INVARIANT(dev->i2c != NULL);
@@ -140,8 +167,7 @@ lis3dh_err_t lis3dh_set_range(lis3dh_t *dev, lis3dh_range_t range)
     if (!dev || (unsigned)range > 3)
         return LIS3DH_ERR_PARAM;
 
-    uint8_t ctrl4 = CTRL4_BDU | CTRL4_HR | (uint8_t)((unsigned)range << 4);
-    if (!write_reg(dev, REG_CTRL_REG4, ctrl4))
+    if (!write_reg(dev, REG_CTRL_REG4, ctrl4_value(range, dev->cfg.odr)))
         return LIS3DH_ERR_I2C;
 
     dev->cfg.range = range;
@@ -154,9 +180,9 @@ lis3dh_err_t lis3dh_set_odr(lis3dh_t *dev, lis3dh_odr_t odr)
     if (!dev || (unsigned)odr > 9)
         return LIS3DH_ERR_PARAM;
 
-    uint8_t ctrl1 = (uint8_t)((unsigned)odr << 4) | CTRL1_AXES_ALL;
-    if (!write_reg(dev, REG_CTRL_REG1, ctrl1))
-        return LIS3DH_ERR_I2C;
+    lis3dh_err_t err = write_mode(dev, dev->cfg.range, odr);
+    if (err != LIS3DH_OK)
+        return err;
 
     dev->cfg.odr = odr;
     return LIS3DH_OK;
