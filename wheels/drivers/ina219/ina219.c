@@ -98,6 +98,10 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
     float cal_f = 0.04096f / (dev->current_lsb * shunt_ohms);
     uint16_t cal = (cal_f <= 0.0f) ? 0u : (cal_f >= 65535.0f) ? 65535u : (uint16_t)cal_f;
 
+    /* FS0 is a void bit, so scale from the value the chip can really hold */
+    cal &= 0xFFFEu;
+    if (cal != 0u) dev->current_lsb = 0.04096f / ((float)cal * shunt_ohms);
+
     err = write_reg16(dev, REG_CALIBRATION, cal);
     if (err != INA219_OK)
         return err;

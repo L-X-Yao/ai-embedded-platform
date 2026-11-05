@@ -331,11 +331,11 @@ TEST(test_different_shunt_calibration)
 
     /* max_current = 0.08 / 0.05 = 1.6 A
      * current_lsb = 1.6 / 32768
-     * cal = trunc(0.04096 / (current_lsb * 0.05)) */
+     * cal = trunc(0.04096 / (current_lsb * 0.05)), and bit 0 does not exist */
     float lsb = 1.6f / 32768.0f;
     float cal_f = 0.04096f / (lsb * 0.05f);
     uint16_t cal = mock_get_reg16(0x05);
-    ASSERT_EQ(cal, (uint16_t)cal_f);
+    ASSERT_EQ(cal, (uint16_t)cal_f & 0xFFFE);
     ASSERT_EQ(dev.dev_addr, 0x41);
 }
 
