@@ -171,8 +171,8 @@ TEST(test_set_range_runtime)
 {
     setup();
     ASSERT_EQ(lis3dh_set_range(&dev, LIS3DH_RANGE_8G), LIS3DH_OK);
-    /* Verify CTRL_REG4 was written: BDU(0x80) | FS=8g(0x20) = 0xA0 */
-    ASSERT_EQ(mock_regs[0x23], 0xA0);
+    /* Verify CTRL_REG4 was written: BDU(0x80) | FS=8g(0x20) | HR(0x08) = 0xA8 */
+    ASSERT_EQ(mock_regs[0x23], 0xA8);
 
     /* At +/-8g: 1g = 4000 raw counts */
     plant_accel(4000, 0, 0);
@@ -267,8 +267,8 @@ TEST(test_config_registers)
     lis3dh_init(&d, &mock_i2c, &cfg);
     /* CTRL_REG1: ODR=400Hz(7<<4=0x70) | axes(0x07) = 0x77 */
     ASSERT_EQ(mock_regs[0x20], 0x77);
-    /* CTRL_REG4: BDU(0x80) | FS=8g(2<<4=0x20) = 0xA0 */
-    ASSERT_EQ(mock_regs[0x23], 0xA0);
+    /* CTRL_REG4: BDU(0x80) | FS=8g(2<<4=0x20) | HR(0x08) = 0xA8 */
+    ASSERT_EQ(mock_regs[0x23], 0xA8);
 }
 
 TEST_MAIN("lis3dh")
