@@ -453,6 +453,38 @@ TEST(test_init_err_params_size_too_small)
     ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAM);
 }
 
+TEST(test_boot_event_rejects_fw_size_past_slot)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+
+    /* A size no slot can hold, as a damaged but CRC-valid record would carry. */
+    m.params.ota_flag = OTA_AB_FLAG_PENDING;
+    m.params.fw_size = test_layout.slot_max_size + 1U;
+    m.params.fw_crc = 0;
+
+    mock_read_count = 0;
+    ASSERT_EQ(ota_ab_boot_event(&m), OTA_AB_ERR_SIZE);
+    ASSERT_EQ(mock_read_count, 0);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0);
+}
+
+TEST(test_boot_event_rejects_zero_fw_size)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_init(&m, &mock_flash, &test_layout);
+
+    /* An empty image has CRC 0, so it would otherwise pass as verified. */
+    m.params.ota_flag = OTA_AB_FLAG_PENDING;
+    m.params.fw_size = 0;
+    m.params.fw_crc = 0;
+
+    ASSERT_EQ(ota_ab_boot_event(&m), OTA_AB_ERR_SIZE);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0);
+}
+
 TEST_MAIN("ota_ab")
     RUN(test_init_fresh);
     RUN(test_init_with_saved_params);
@@ -481,5 +513,7 @@ TEST_MAIN("ota_ab")
     RUN(test_boot_event_crc_mismatch);
     RUN(test_init_err_params_max_boot_zero);
     RUN(test_init_err_params_size_too_small);
+    RUN(test_boot_event_rejects_fw_size_past_slot);
+    RUN(test_boot_event_rejects_zero_fw_size);
 TEST_MAIN_END()
 

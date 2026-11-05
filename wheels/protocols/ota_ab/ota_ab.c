@@ -123,6 +123,10 @@ ota_ab_err_t ota_ab_mark_pending(ota_ab_t *m, uint32_t fw_size, uint32_t fw_crc)
 
 static ota_ab_err_t verify_firmware_crc(ota_ab_t *m, uint8_t slot)
 {
+    /* A record with a good CRC can still describe no image a slot can hold. */
+    if (m->params.fw_size == 0 || m->params.fw_size > m->layout.slot_max_size)
+        return OTA_AB_ERR_SIZE;
+
     uint32_t base = (slot == 0) ? m->layout.slot_a_addr : m->layout.slot_b_addr;
     uint32_t remaining = m->params.fw_size;
     uint32_t offset = 0;
