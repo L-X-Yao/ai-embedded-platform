@@ -37,8 +37,7 @@ static void check_conversions(const sntp_timestamp_t *ts) {
     sntp_client_ntp_to_unix(&back, &back_sec, &back_ms);
     if (back_sec != unix_sec) __builtin_trap();
 
-    // The fraction truncates, so one millisecond can go missing on the way back.
-    if (back_ms > ms || ms - back_ms > 1) __builtin_trap();
+    if (back_ms != ms) __builtin_trap();
 }
 
 static void check_packet(const uint8_t *data, fuzz_input_t *in) {

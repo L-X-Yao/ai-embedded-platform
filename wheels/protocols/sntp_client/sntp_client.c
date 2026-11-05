@@ -135,7 +135,8 @@ sntp_timestamp_t sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms)
 {
     sntp_timestamp_t ts;
     ts.seconds  = unix_sec + (uint32_t)SNTP_UNIX_OFFSET;
-    ts.fraction = (uint32_t)(((uint64_t)ms << 32) / 1000ULL);
+    /* Round up: the way back floors, so a floored fraction would lose 1 ms. */
+    ts.fraction = (uint32_t)((((uint64_t)ms << 32) + 999ULL) / 1000ULL);
     return ts;
 }
 

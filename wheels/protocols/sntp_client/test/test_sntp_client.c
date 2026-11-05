@@ -237,6 +237,18 @@ TEST(test_parse_fuzz)
     }
 }
 
+TEST(test_ms_survive_the_round_trip)
+{
+    for (uint16_t ms = 0; ms < 1000; ms++) {
+        sntp_timestamp_t ntp = sntp_client_unix_to_ntp(1700000000U, ms);
+        uint32_t sec = 0;
+        uint16_t back = 0;
+        sntp_client_ntp_to_unix(&ntp, &sec, &back);
+        ASSERT_EQ(sec, 1700000000U);
+        ASSERT_EQ(back, ms);
+    }
+}
+
 TEST_MAIN("sntp_client")
     RUN(test_build_request_ok);
     RUN(test_build_request_with_tx_time);
@@ -258,4 +270,5 @@ TEST_MAIN("sntp_client")
     RUN(test_ntp_to_unix_null);
     RUN(test_unix_to_ntp_zero);
     RUN(test_parse_fuzz);
+    RUN(test_ms_survive_the_round_trip);
 TEST_MAIN_END()

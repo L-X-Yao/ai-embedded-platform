@@ -45,10 +45,7 @@ PROPERTY(unix_ntp_roundtrip, 10000) {
     sntp_client_ntp_to_unix(&ntp, &out_sec, &out_ms);
 
     PROP_ASSERT_EQ(out_sec, unix_sec);
-    /* ms may lose sub-ms precision due to fraction rounding */
-    int diff = (int)out_ms - (int)ms;
-    if (diff < 0) diff = -diff;
-    PROP_ASSERT(diff <= 1);
+    PROP_ASSERT_EQ(out_ms, ms);
 }
 
 /* --- Property 2: build request produces exactly 48 bytes --- */
