@@ -113,7 +113,7 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
     ota_mgr_err_t err = mgr->ops->download_chunk(
         mgr->ops->ctx, mgr->downloaded, chunk_buf, want, &bytes_read);
 
-    if (err != OTA_MGR_OK) {
+    if (err != OTA_MGR_OK || bytes_read > want) {
         mgr->state = OTA_MGR_STATE_ERROR;
         return OTA_MGR_ERR_DOWNLOAD;
     }
