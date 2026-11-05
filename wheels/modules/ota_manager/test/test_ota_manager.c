@@ -614,6 +614,42 @@ TEST(test_empty_image_is_refused)
     ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
 }
 
+static ota_mgr_err_t full_download(void *ctx, uint32_t offset, uint8_t *buf,
+                                   uint16_t buf_size, uint16_t *bytes_read)
+{
+    (void)ctx; (void)offset; (void)buf;
+    *bytes_read = buf_size;
+    return OTA_MGR_OK;
+}
+
+static ota_mgr_err_t discard_write(void *ctx, uint32_t offset, const uint8_t *data,
+                                   uint16_t len)
+{
+    (void)ctx; (void)offset; (void)data; (void)len;
+    return OTA_MGR_OK;
+}
+
+TEST(test_progress_never_falls_on_a_large_image)
+{
+    static uint8_t buf[60000];
+    ota_mgr_ops_t big = test_ops;
+    big.download_chunk = full_download;
+    big.write_chunk = discard_write;
+    mock_reset();
+    /* past 42949672 bytes, downloaded * 100 no longer fits in 32 bits */
+    mock_new_size = 45000000;
+    ASSERT_EQ(ota_manager_init(&mgr, &big, "1.0.0"), OTA_MGR_OK);
+    ASSERT_EQ(ota_manager_check(&mgr), OTA_MGR_OK);
+
+    uint32_t last = 0;
+    while (ota_manager_get_state(&mgr) == OTA_MGR_STATE_DOWNLOADING) {
+        ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
+        ASSERT_TRUE(ota_manager_get_progress(&mgr) >= last);
+        last = ota_manager_get_progress(&mgr);
+    }
+    ASSERT_EQ(last, 100);
+}
+
 TEST_MAIN("ota_manager")
     RUN(test_init_valid);
     RUN(test_init_null_mgr);
@@ -650,4 +686,5 @@ TEST_MAIN("ota_manager")
     RUN(test_last_chunk_stays_inside_the_image);
     RUN(test_transport_claiming_too_much_is_refused);
     RUN(test_empty_image_is_refused);
+    RUN(test_progress_never_falls_on_a_large_image);
 TEST_MAIN_END()
