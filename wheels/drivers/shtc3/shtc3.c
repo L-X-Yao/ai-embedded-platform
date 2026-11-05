@@ -64,7 +64,7 @@ shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
     {
         return SHTC3_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read)
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
     {
         return SHTC3_ERR_PARAM;
     }
@@ -79,10 +79,7 @@ shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
     }
 
     /* Short delay for wakeup (datasheet: ~240 us) */
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     /* Read chip ID */
     if (!send_cmd(dev, CMD_READ_ID_MSB, CMD_READ_ID_LSB))
@@ -136,10 +133,7 @@ shtc3_err_t shtc3_read(shtc3_t *dev, shtc3_data_t *out)
         return SHTC3_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 1);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 1);
 
     /* Trigger measurement (normal power, T-first) */
     if (!send_cmd(dev, CMD_MEASURE_NP_MSB, CMD_MEASURE_NP_LSB))
@@ -148,10 +142,7 @@ shtc3_err_t shtc3_read(shtc3_t *dev, shtc3_data_t *out)
     }
 
     /* Wait for measurement to complete (~12 ms for normal power) */
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 13);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, 13);
 
     /* Read 6 bytes: temp MSB, temp LSB, temp CRC, hum MSB, hum LSB, hum CRC */
     uint8_t buf[6];

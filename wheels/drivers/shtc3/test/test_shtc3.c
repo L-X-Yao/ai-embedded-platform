@@ -161,9 +161,24 @@ TEST(test_null_i2c)
 
 TEST(test_null_i2c_funcs)
 {
-    shtc3_i2c_t bad = { .write = NULL, .read = NULL, .ctx = NULL };
+    shtc3_i2c_t bad = { .write = NULL, .read = NULL,
+                        .delay_ms = mock_delay_ms_u16, .ctx = NULL };
     shtc3_t d;
     ASSERT_EQ(shtc3_init(&d, &bad), SHTC3_ERR_PARAM);
+}
+
+TEST(test_init_null_delay_fn)
+{
+    /* p9: "the sensor does not respond to any I2C activity during
+     * measurement", and no measurement command here stretches the clock,
+     * so a HAL with no delay cannot work. */
+    mock_reset();
+    plant_id(0x0807);
+    shtc3_i2c_t bad = { .write = mock_write, .read = mock_read,
+                        .delay_ms = NULL, .ctx = NULL };
+    shtc3_t d;
+    ASSERT_EQ(shtc3_init(&d, &bad), SHTC3_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, 0);   /* nothing reached the sensor */
 }
 
 TEST(test_read_null_dev)
@@ -392,6 +407,7 @@ TEST_MAIN("shtc3")
     RUN(test_null_dev);
     RUN(test_null_i2c);
     RUN(test_null_i2c_funcs);
+    RUN(test_init_null_delay_fn);
     RUN(test_read_null_dev);
     RUN(test_read_null_out);
     RUN(test_read_25c_50pct);
