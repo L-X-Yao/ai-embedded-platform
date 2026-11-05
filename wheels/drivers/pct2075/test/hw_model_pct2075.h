@@ -56,7 +56,7 @@ static void hw_model_inject_temp(float temp_c)
 {
     /* Convert: temp_c / 0.125 = raw 11-bit value, then shift left 5 */
     int16_t raw11 = (int16_t)(temp_c / 0.125f);
-    int16_t raw16 = (int16_t)(raw11 << 5);
+    int16_t raw16 = (int16_t)(uint16_t)((uint16_t)raw11 << 5);
     hw_regs[0x00] = (uint8_t)((uint16_t)raw16 >> 8);
     hw_regs[0x01] = (uint8_t)((uint16_t)raw16 & 0xFFu);
 }
