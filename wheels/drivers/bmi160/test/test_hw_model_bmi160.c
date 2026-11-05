@@ -4,7 +4,7 @@
  *
  * Validates BMI160 driver against a datasheet-accurate register model.
  * The model enforces chip ID read-only, data registers read-only,
- * CMD-driven power mode, and soft-reset behavior.
+ * CMD-driven power mode, CMD occupancy and soft-reset behavior.
  */
 
 #include "test_harness.h"
@@ -17,7 +17,7 @@ static bmi160_model_t model;
 static const bmi160_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
     .read_regs = hw_model_i2c_read_regs,
-    .delay_ms  = NULL,
+    .delay_ms  = bmi160_model_delay_ms,
     .ctx       = &model.hw,
 };
 
@@ -87,6 +87,26 @@ TEST(test_init_sets_normal_mode)
     ASSERT_EQ((pmu >> 4) & 0x03, 0x01);
     /* gyr_pmu[3:2] = 01 */
     ASSERT_EQ((pmu >> 2) & 0x03, 0x01);
+}
+
+TEST(test_init_drops_no_command)
+{
+    setup();
+    bmi160_t dev;
+    ASSERT_EQ(bmi160_init(&dev, &model_i2c, &default_cfg), BMI160_OK);
+    ASSERT_EQ(model.hw.regs[BMI160_REG_ERR] & ERR_DROP_CMD, 0);
+    ASSERT_EQ(model.cmd_busy_us, 0);
+}
+
+TEST(test_init_refuses_missing_delay)
+{
+    /* With no wait the gyro command lands while the accel command still
+     * occupies CMD, so the chip drops it (p.85). */
+    setup();
+    bmi160_i2c_t no_delay = model_i2c;
+    no_delay.delay_ms = NULL;
+    bmi160_t dev;
+    ASSERT_EQ(bmi160_init(&dev, &no_delay, &default_cfg), BMI160_ERR_PARAM);
 }
 
 /* --- read tests -------------------------------------------------------- */
@@ -193,6 +213,31 @@ TEST(test_data_registers_readonly)
     ASSERT_EQ(model.hw.regs[BMI160_REG_ACC_DATA_XL], original);
 }
 
+TEST(test_cmd_dropped_while_occupied)
+{
+    setup();
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x11);
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x15);
+    ASSERT_EQ((model.hw.regs[BMI160_REG_PMU_STATUS] >> PMU_GYR_SHIFT) & 0x03, 0x00);
+    ASSERT_EQ(model.hw.regs[BMI160_REG_ERR] & ERR_DROP_CMD, ERR_DROP_CMD);
+
+    /* 3.8 ms is the Table 24 maximum for 0x11 */
+    bmi160_model_delay_ms(&model.hw, 4);
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x15);
+    ASSERT_EQ((model.hw.regs[BMI160_REG_PMU_STATUS] >> PMU_GYR_SHIFT) & 0x03,
+              PMU_NORMAL);
+}
+
+TEST(test_softreset_not_dropped_while_occupied)
+{
+    setup();
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x15);
+    int before = model.reset_count;
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0xB6);
+    ASSERT_TRUE(model.reset_count > before);
+    ASSERT_EQ(model.cmd_busy_us, 0);
+}
+
 TEST(test_reset_via_driver)
 {
     setup();
@@ -233,6 +278,8 @@ TEST_MAIN("bmi160 hardware model")
     RUN(test_init_writes_acc_range);
     RUN(test_init_writes_gyr_range);
     RUN(test_init_sets_normal_mode);
+    RUN(test_init_drops_no_command);
+    RUN(test_init_refuses_missing_delay);
     RUN(test_read_accel_1g_z);
     RUN(test_read_gyro_zero);
     RUN(test_read_accel_negative);
@@ -240,6 +287,8 @@ TEST_MAIN("bmi160 hardware model")
     RUN(test_roundtrip_gyro_all_axes);
     RUN(test_chip_id_readonly);
     RUN(test_data_registers_readonly);
+    RUN(test_cmd_dropped_while_occupied);
+    RUN(test_softreset_not_dropped_while_occupied);
     RUN(test_reset_via_driver);
     RUN(test_different_accel_values);
 TEST_MAIN_END()

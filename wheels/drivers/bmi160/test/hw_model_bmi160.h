@@ -9,6 +9,9 @@
  * - Accel data 0x12..0x17 (6 bytes, little-endian, read-only)
  * - ACC_RANGE at 0x41, GYR_RANGE at 0x43
  * - CMD at 0x7E: 0x11=acc_normal, 0x15=gyr_normal, 0xB6=soft_reset
+ * - A running command occupies CMD for its Table 24 maximum. Writes in
+ *   that time are dropped and set drop_cmd_err, except softreset (p.85).
+ *   Only the delay callback lets the time pass.
  */
 
 #ifndef HW_MODEL_BMI160_H
@@ -18,6 +21,7 @@
 
 /* --- BMI160 register addresses --- */
 #define BMI160_REG_CHIP_ID      0x00
+#define BMI160_REG_ERR          0x02
 #define BMI160_REG_PMU_STATUS   0x03
 #define BMI160_REG_GYR_DATA_XL  0x0C
 #define BMI160_REG_ACC_DATA_XL  0x12
@@ -36,6 +40,14 @@
 #define PMU_GYR_SHIFT 2
 #define PMU_NORMAL    0x01  /* normal mode value per field */
 
+/* ERR_REG bit 6 (p.50) */
+#define ERR_DROP_CMD  0x40u
+
+/* Table 24 (p.86): maximum time a command occupies CMD. The footnote's
+ * extra 0.3 ms from all-suspend is left out: see Suspected in the README. */
+#define CMD_BUSY_ACC_US   3800u
+#define CMD_BUSY_GYR_US  80000u
+
 /* --- Simulated physical environment --- */
 typedef struct {
     hw_reg_model_t   hw;
@@ -43,6 +55,7 @@ typedef struct {
     int16_t          true_ax, true_ay, true_az;
     int16_t          true_gx, true_gy, true_gz;
     int              reset_count;
+    uint32_t         cmd_busy_us;   /* time left before CMD is free */
 } bmi160_model_t;
 
 /* Write accel+gyro raw values into data registers (little-endian) */
@@ -71,23 +84,34 @@ static void bmi160_model_on_cmd(void *user, uint8_t reg,
     (void)reg; (void)old_val;
     bmi160_model_t *m = (bmi160_model_t *)user;
 
+    if (m->cmd_busy_us > 0 && new_val != 0xB6) {
+        /* p.85: dropped while the last command occupies CMD */
+        m->hw.regs[BMI160_REG_ERR] =
+            (uint8_t)(m->hw.regs[BMI160_REG_ERR] | ERR_DROP_CMD);
+        m->hw.regs[BMI160_REG_CMD] = 0x00;
+        return;
+    }
+
     if (new_val == 0xB6) {
         /* Soft reset: restore all registers to POR defaults */
         hw_model_reset(&m->hw);
         bmi160_model_set_data_regs(m);
         m->reset_count++;
+        m->cmd_busy_us = 0;
     } else if (new_val == 0x11) {
         /* ACC set to normal mode: PMU_STATUS acc_pmu[5:4] = 01 */
         uint8_t pmu = m->hw.regs[BMI160_REG_PMU_STATUS];
         pmu = (uint8_t)((pmu & ~(0x03u << PMU_ACC_SHIFT))
                         | (PMU_NORMAL << PMU_ACC_SHIFT));
         m->hw.regs[BMI160_REG_PMU_STATUS] = pmu;
+        m->cmd_busy_us = CMD_BUSY_ACC_US;
     } else if (new_val == 0x15) {
         /* GYR set to normal mode: PMU_STATUS gyr_pmu[3:2] = 01 */
         uint8_t pmu = m->hw.regs[BMI160_REG_PMU_STATUS];
         pmu = (uint8_t)((pmu & ~(0x03u << PMU_GYR_SHIFT))
                         | (PMU_NORMAL << PMU_GYR_SHIFT));
         m->hw.regs[BMI160_REG_PMU_STATUS] = pmu;
+        m->cmd_busy_us = CMD_BUSY_GYR_US;
     }
     /* CMD register always reads 0x00 after any write */
     m->hw.regs[BMI160_REG_CMD] = 0x00;
@@ -132,6 +156,18 @@ static void bmi160_model_init(bmi160_model_t *m)
 
     hw_model_reset(&m->hw);
     bmi160_model_set_data_regs(m);
+}
+
+/* Delay callback: the time passing is what frees CMD */
+__attribute__((unused))
+static void bmi160_model_delay_ms(void *ctx, uint32_t ms)
+{
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    bmi160_model_t *m = (bmi160_model_t *)hw->user;
+    uint32_t us = ms * 1000u;
+
+    m->cmd_busy_us = (m->cmd_busy_us > us) ? m->cmd_busy_us - us : 0u;
+    hw_model_delay_ms(ctx, ms);
 }
 
 __attribute__((unused))

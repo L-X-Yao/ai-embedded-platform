@@ -84,6 +84,16 @@ TEST(test_init_i2c_fail)
     ASSERT_EQ(bmi160_init(&d, &mock_hal, &default_cfg), BMI160_ERR_I2C);
 }
 
+TEST(test_init_refuses_missing_delay)
+{
+    /* The chip drops a CMD write made before the last command ends (p.85) */
+    mock_reset();
+    bmi160_i2c_t no_delay = mock_hal;
+    no_delay.delay_ms = NULL;
+    bmi160_t d;
+    ASSERT_EQ(bmi160_init(&d, &no_delay, &default_cfg), BMI160_ERR_PARAM);
+}
+
 /* ---------- NULL safety ---------- */
 
 TEST(test_null_safety)
@@ -356,6 +366,7 @@ TEST_MAIN("bmi160")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
     RUN(test_init_i2c_fail);
+    RUN(test_init_refuses_missing_delay);
     RUN(test_null_safety);
     RUN(test_zero_hal_safety);
     RUN(test_error_codes);
