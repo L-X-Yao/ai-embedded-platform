@@ -283,7 +283,7 @@ static void bme_mock_reset(void)
     bme_regs[0x26] = (uint8_t)(adc_h & 0xFF);
     /* pad bytes 0x27..0x29 = 0 */
     bme_regs[0x2A] = (uint8_t)(adc_gas >> 2);
-    bme_regs[0x2B] = (uint8_t)(((adc_gas & 0x03) << 6) | (1u << 5) | gas_range);
+    bme_regs[0x2B] = (uint8_t)(((adc_gas & 0x03) << 6) | (1u << 5) | (1u << 4) | gas_range);
 }
 
 static bool bme_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
