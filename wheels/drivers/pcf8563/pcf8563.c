@@ -41,6 +41,7 @@
 #define CLKOUT_FE_BIT    0x80u   /* CLKOUT enable (active high) */
 #define TIMER_TE_BIT     0x80u   /* timer enable */
 #define ALARM_DISABLE    0x80u   /* alarm disable bit (AE_x) */
+#define CTRL1_TEST1_STOP 0xA0u   /* TEST1 and STOP in Control_status_1 */
 
 /* --- BCD helpers --- */
 static uint8_t bcd_to_bin(uint8_t bcd)
@@ -99,9 +100,9 @@ pcf8563_err_t pcf8563_init(pcf8563_t *dev,
     if (!read_regs(dev, REG_CONTROL1, &ctrl1, 1))
         return PCF8563_ERR_I2C;
 
-    /* Upper 3 bits of control1 are always 0 in normal mode.
-     * If we read back something unexpected, communication failed. */
-    if (ctrl1 & 0xE0u)
+    /* init just wrote TEST1 = STOP = 0. If either reads back 1,
+     * communication failed. Bit 6 is an N bit and may read either way. */
+    if (ctrl1 & CTRL1_TEST1_STOP)
         return PCF8563_ERR_ID;
 
     return PCF8563_OK;
