@@ -61,11 +61,15 @@ tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
  *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c);
 
-/** Set high alert threshold in degrees Celsius.
+/** Set high alert threshold in degrees Celsius. Values past the ends of the
+ *  12-bit format saturate at 127.9375 C and -128 C; NaN returns
+ *  TMP102_ERR_PARAM.
  *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_set_alert_high(tmp102_t *dev, float temp_c);
 
-/** Set low alert threshold in degrees Celsius.
+/** Set low alert threshold in degrees Celsius. Values past the ends of the
+ *  12-bit format saturate at 127.9375 C and -128 C; NaN returns
+ *  TMP102_ERR_PARAM.
  *  @thread_safe: no @isr_safe: yes */
 tmp102_err_t tmp102_set_alert_low(tmp102_t *dev, float temp_c);
 
