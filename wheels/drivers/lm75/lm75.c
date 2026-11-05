@@ -40,11 +40,11 @@ static bool write_regs(const lm75_t *dev, uint8_t reg,
 }
 
 /* Convert raw 16-bit register to temperature in degrees C.
- * The 9-bit value sits in bits [15:7], sign-extended.
- * Temperature = (int16_t)(raw) / 256.0f */
+ * The 9-bit value sits in bits [15:7], sign-extended, and bits [6:0] are
+ * undefined. Temperature = (int16_t)(raw) / 256.0f */
 static float raw_to_temp(int16_t raw)
 {
-    return (float)raw / 256.0f;
+    return (float)(int16_t)((uint16_t)raw & 0xFF80u) / 256.0f;
 }
 
 /* Convert temperature in degrees C to 9-bit raw register value.
