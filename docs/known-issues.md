@@ -4,6 +4,18 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Datasheet check of ten drivers (2026-11-05)
+
+All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what was checked, fixed and left open. None had run on hardware, and these fixes have not either, so they match the documents and nothing more.
+
+- Fixed in full or nearly so: `sx1262`, `cc1101`, `bme680`, `bma400`, `bno055`.
+- Not usable on hardware until a larger change lands: `bmi270` (8 KB config upload), `vl53l1x` (port ST's driver), `pac1952` (HAL needs Send Byte, Block Write and a delay).
+- Limited: `bmm150` (no trim compensation, so uT values are approximate), `bq27441` (reads work, design capacity needs block data access).
+
+Six test models repeated the driver's mistakes while claiming to come from the datasheet, which is why the tests were green. A passing mock test says nothing about a register value. Take expected values from the document.
+
+The other 70 drivers with registers have not been reviewed. This batch suggests they hold defects of the same kind.
+
 ## Fixed by the fuzz target expansion (2026-11-05)
 
 Growing libFuzzer from 25 to 53 targets, with harnesses that compute check fields and build frames, found these:
