@@ -233,6 +233,17 @@ TEST(test_version_null)
     ASSERT_EQ(max17048_version(&dev, NULL), MAX17048_ERR_PARAM);
 }
 
+TEST(test_sleep_sets_ensleep_before_sleep)
+{
+    mock_reset_chip();
+    ASSERT_EQ(max17048_init(&dev, &mock_bus), MAX17048_OK);
+
+    ASSERT_EQ(max17048_sleep(&dev), MAX17048_OK);
+    /* MODE.EnSleep is bit 13, CONFIG.SLEEP is bit 7 */
+    ASSERT_EQ(mock_regs[0x06] & 0x20, 0x20);
+    ASSERT_EQ(mock_regs[REG_CONFIG + 1] & 0x80, 0x80);
+}
+
 TEST_MAIN("max17048")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -257,4 +268,5 @@ TEST_MAIN("max17048")
     RUN(test_sleep_null);
     RUN(test_version);
     RUN(test_version_null);
+    RUN(test_sleep_sets_ensleep_before_sleep);
 TEST_MAIN_END()
