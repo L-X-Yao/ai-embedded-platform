@@ -31,6 +31,7 @@ typedef enum {
     PAC1952_ERR_I2C   = -1,
     PAC1952_ERR_ID    = -2,
     PAC1952_ERR_PARAM = -3,
+    PAC1952_ERR_UNSUPPORTED = -4,
 } pac1952_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -46,7 +47,8 @@ typedef struct {
 
 #define PAC1952_DEV_ADDR        0x10u
 
-#define PAC1952_PRODUCT_ID_VAL  0x59u   /* expected PRODUCT_ID register value */
+#define PAC1952_PRODUCT_ID_VAL    0x79u   /* PRODUCT_ID of a PAC1952-1 */
+#define PAC1952_PRODUCT_ID_VAL_2  0x7Du   /* PRODUCT_ID of a PAC1952-2 */
 
 /* ---------- sample rate ---------- */
 
@@ -102,7 +104,8 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
                                 pac1952_channel_t *ch1,
                                 pac1952_channel_t *ch2);
 
-/** Set sample rate (writes to CTRL register).
+/** Not available yet: returns PAC1952_ERR_UNSUPPORTED without touching the
+ *  chip, as CTRL needs a Block Write this HAL cannot issue.
  *  @thread_safe: no @isr_safe: no */
 pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate);
 
