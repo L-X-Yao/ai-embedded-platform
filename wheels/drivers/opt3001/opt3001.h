@@ -46,10 +46,19 @@ typedef struct {
     uint8_t addr;
 } opt3001_t;
 
-#define OPT3001_ADDR_GND_GND  0x44
-#define OPT3001_ADDR_GND_VDD  0x45
-#define OPT3001_ADDR_VDD_GND  0x46
-#define OPT3001_ADDR_VDD_VDD  0x47
+/* I2C address, set by the one ADDR pin (SBOS681C Table 1) */
+#define OPT3001_ADDR_GND  0x44  /* ADDR tied to GND */
+#define OPT3001_ADDR_VDD  0x45  /* ADDR tied to VDD */
+#define OPT3001_ADDR_SDA  0x46  /* ADDR tied to SDA */
+#define OPT3001_ADDR_SCL  0x47  /* ADDR tied to SCL */
+
+/* Older names for the same addresses, kept so existing code still compiles.
+ * They read like two strapped pins, but the part has one ADDR pin, so go by
+ * the pin in each comment and prefer the names above. */
+#define OPT3001_ADDR_GND_GND  0x44  /* ADDR tied to GND */
+#define OPT3001_ADDR_GND_VDD  0x45  /* ADDR tied to VDD */
+#define OPT3001_ADDR_VDD_GND  0x46  /* ADDR tied to SDA, not to VDD or GND */
+#define OPT3001_ADDR_VDD_VDD  0x47  /* ADDR tied to SCL, not to VDD */
 
 /** Configure sensor and verify manufacturer/device IDs. @thread_safe: no @isr_safe: no */
 opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,

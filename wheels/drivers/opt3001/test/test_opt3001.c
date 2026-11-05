@@ -109,6 +109,26 @@ TEST(test_init_all_addrs)
     }
 }
 
+/* SBOS681C Table 1: 1000100 GND, 1000101 VDD, 1000110 SDA, 1000111 SCL.
+ * The older two-pin names must keep compiling with the same values. */
+TEST(test_addr_macros_match_table_1)
+{
+    static const struct { uint8_t pin; uint8_t older; uint8_t value; } rows[] = {
+        { OPT3001_ADDR_GND, OPT3001_ADDR_GND_GND, 0x44u },
+        { OPT3001_ADDR_VDD, OPT3001_ADDR_GND_VDD, 0x45u },
+        { OPT3001_ADDR_SDA, OPT3001_ADDR_VDD_GND, 0x46u },
+        { OPT3001_ADDR_SCL, OPT3001_ADDR_VDD_VDD, 0x47u },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        ASSERT_EQ_HEX(rows[i].pin, rows[i].value);
+        ASSERT_EQ_HEX(rows[i].older, rows[i].value);
+        mock_reset();
+        ASSERT_EQ(opt3001_init(&dev, &mock_i2c, rows[i].pin), OPT3001_OK);
+        ASSERT_EQ(dev.addr, rows[i].value);
+    }
+}
+
 TEST(test_init_null_dev)
 {
     mock_reset();
@@ -389,6 +409,7 @@ TEST(test_single_shot_cycle)
 TEST_MAIN("opt3001")
     RUN(test_init_ok);
     RUN(test_init_all_addrs);
+    RUN(test_addr_macros_match_table_1);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_bad_addr);
