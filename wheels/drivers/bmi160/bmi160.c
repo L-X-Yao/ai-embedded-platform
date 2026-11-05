@@ -85,9 +85,7 @@ static bool read_regs(const bmi160_t *dev, uint8_t reg,
 
 static void delay_ms(const bmi160_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 /* ---------- API ---------- */
@@ -98,7 +96,7 @@ bmi160_err_t bmi160_init(bmi160_t *dev, const bmi160_i2c_t *i2c,
     if (!dev || !i2c || !cfg) {
         return BMI160_ERR_PARAM;
     }
-    if (!i2c->read_regs || !i2c->write_reg) {
+    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms) {
         return BMI160_ERR_PARAM;
     }
 
