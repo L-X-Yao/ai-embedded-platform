@@ -478,7 +478,7 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **第一个真实项目 `projects/flybox/`**（无人机遥测盒子，GD32F405 + FreeRTOS + Air780EG）
   - 阶段 A（结构整合）完成
   - VSF compat 层完成：FreeRTOS API 通过 POSIX shim 运行在 VSF 上，8 个 compat 问题已修，600s HIL soak 0 watchdog reset（2026-04-27）
-  - 5 个 wheel 沉淀完成（crc16 / w25qxx / qmi8658a / xgzp6816d / qmc5883p），全部 CI + flybox 真消费
+  - 5 个 wheel 按项目需要重新实现（crc16 / w25qxx / qmi8658a / xgzp6816d / qmc5883p），全部 CI + flybox 真消费
   - 磁力计功能完成：QMC5883P 驱动 + Mahony 9 轴 + 校准（Flash 持久化）
 - ✅ **第二个真实项目 `projects/drone_light/`**（无人机 LED 灯控，N32G003 裸机）
   - 轻量整合完成：不做 VSF 迁移（30KB Flash 放不下），保持裸机

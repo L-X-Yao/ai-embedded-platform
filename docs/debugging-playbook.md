@@ -175,7 +175,7 @@ pre-push: audit FAILED
 
 ## GD32F4xx 调试快速包（HIL boot / fault / 栈溢出 一键定位）
 
-> 📦 `tooling/debug/cortex_m/` —— flybox Phase B + 后期 triage 沉淀的 reusable 调试资产，**任何 GD32F4xx 项目可直接拿来用**（其中 5/7 是任意 Cortex-M / GCC ARM 项目通用）。
+> 📦 `tooling/debug/cortex_m/` —— flybox Phase B 和后期 triage 期间写的 reusable 调试工具，**任何 GD32F4xx 项目可直接拿来用**（其中 5/7 是任意 Cortex-M / GCC ARM 项目通用）。
 
 ### 何时打开包
 
