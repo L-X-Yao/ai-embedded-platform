@@ -147,6 +147,17 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             mock_regs[0x04] = 0x20;  /* RxIRq set */
             mock_error_armed = false;
             mock_regs[mock_addr_latch] = tx;
+        } else if (mock_addr_latch == 0x01 && tx == 0x0C) {
+            /* Transceive with nothing to receive: the timer runs out */
+            mock_regs[0x04] |= 0x01;
+            mock_regs[mock_addr_latch] = tx;
+        } else if (mock_addr_latch == 0x04) {
+            /* Set1 says whether the marked ComIrqReg bits are set or cleared */
+            if (tx & 0x80u) {
+                mock_regs[0x04] |= (uint8_t)(tx & 0x7Fu);
+            } else {
+                mock_regs[0x04] &= (uint8_t)~tx;
+            }
         } else if (mock_addr_latch == 0x01 && tx == 0x03 && mock_self_test_armed) {
             /* CalcCRC command during self-test -- fill FIFO with 64 bytes */
             mock_fifo_head = 0;
