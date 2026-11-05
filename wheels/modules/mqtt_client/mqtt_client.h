@@ -92,6 +92,7 @@ typedef struct {
 
     uint8_t  rx_buf[MQTT_CLIENT_RX_BUF_SIZE]; /* internal */
     uint16_t rx_len;                  /* internal */
+    uint32_t rx_skip;                 /* internal: rest of a packet too big to buffer */
 
     uint8_t  tx_buf[MQTT_CLIENT_TX_BUF_SIZE]; /* internal */
 

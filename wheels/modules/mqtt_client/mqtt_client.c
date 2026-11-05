@@ -134,7 +134,12 @@ static mqtt_client_err_t drain_rx(mqtt_client_t *c)
         if (rc == -2) { c->rx_len = 0; return MQTT_CLIENT_ERR_PROTOCOL; }
 
         uint32_t total = (uint32_t)hdr_bytes + remaining;
-        if (total > MQTT_CLIENT_RX_BUF_SIZE) { c->rx_len = 0; return MQTT_CLIENT_ERR_SIZE; }
+        if (total > MQTT_CLIENT_RX_BUF_SIZE) {
+            /* Drop it whole, or its payload would be read as packets. */
+            c->rx_skip = total - c->rx_len;
+            c->rx_len  = 0;
+            return MQTT_CLIENT_ERR_SIZE;
+        }
         if (c->rx_len < (uint16_t)total) break;
 
         dispatch_packet(c, c->rx_buf, (uint16_t)total);
@@ -193,6 +198,7 @@ mqtt_client_err_t mqtt_client_connect(mqtt_client_t *c)
     if (send_raw(c, c->tx_buf, (uint16_t)len) != 0) return MQTT_CLIENT_ERR_IO;
 
     c->rx_len           = 0;
+    c->rx_skip          = 0;
     c->inflight_pub_id  = 0;
     c->inflight_sub_id  = 0;
     c->connect_start_ms = now_ms(c);
@@ -282,6 +288,14 @@ mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
     mqtt_client_err_t result = MQTT_CLIENT_OK;
 
     while (len > 0) {
+        if (c->rx_skip > 0) {
+            uint16_t drop = (c->rx_skip < len) ? (uint16_t)c->rx_skip : len;
+            c->rx_skip -= drop;
+            data += drop;
+            len  -= drop;
+            continue;
+        }
+
         uint16_t room = (uint16_t)(MQTT_CLIENT_RX_BUF_SIZE - c->rx_len);
         if (room == 0) {
             c->rx_len = 0;
