@@ -2,15 +2,17 @@
 /*
  * hw_model_lps22hb.h — LPS22HB hardware model from datasheet
  *
- * Models ST LPS22HB (DocID027112) behavior:
+ * Models ST LPS22HB (DocID027083) behavior:
  * - Register-based I2C interface at 0x5C (SA0=0) or 0x5D (SA0=1)
  * - 24-bit pressure output, 16-bit temperature output
  * - WHO_AM_I (0x0F) = 0xB1
  * - CTRL_REG1 (0x10): ODR[6:4], BDU (bit 1)
  * - CTRL_REG2 (0x11): ONE_SHOT (bit 0), auto-clears after conversion
  * - STATUS (0x27): P_DA (bit 0), T_DA (bit 1)
- * - BDU enforcement: when BDU=1, output registers freeze until both
- *   pressure and temperature are fully read
+ * - BDU enforcement: when BDU=1, output registers hold their sample until
+ *   PRESS_OUT_H (0x2A) is read
+ * - IF_ADD_INC (CTRL_REG2 bit 4): a multi-byte read stays on one register
+ *   when clear; bursts on output registers under BDU are counted
  * - One-shot: setting ONE_SHOT bit triggers conversion, then self-clears
  *
  * Uses the standard register-based I2C callbacks.
@@ -34,7 +36,7 @@
 #define LPS22HB_MODEL_REG_TEMP_L      0x2Bu
 #define LPS22HB_MODEL_REG_TEMP_H      0x2Cu
 
-/* POR defaults per datasheet Table 15 */
+/* POR defaults per datasheet Table 16 */
 #define LPS22HB_MODEL_POR_WHO_AM_I    0xB1u
 #define LPS22HB_MODEL_POR_CTRL_REG1   0x00u
 #define LPS22HB_MODEL_POR_CTRL_REG2   0x10u  /* BOOT=0, IF_ADD_INC=1 */
@@ -57,6 +59,12 @@ typedef struct {
      * read of output registers (simulates conversion complete) */
     bool    one_shot_pending;
 
+    /* BDU: the output registers hold a sample until PRESS_OUT_H is read, and
+     * a newer one waits in the shadow values */
+    bool    held;
+    bool    sample_waiting;
+    int     bdu_bursts;   /* multi-byte reads of output registers under BDU */
+
     /* Counters for observability */
     int     write_count;
     int     read_count;
@@ -71,28 +79,46 @@ static void lps22hb_model_init(lps22hb_model_t *m)
     m->regs[LPS22HB_MODEL_REG_STATUS]    = LPS22HB_MODEL_POR_STATUS;
 }
 
+/* Copy the shadow values into the output registers */
+static void lps22hb_model_refresh(lps22hb_model_t *m)
+{
+    uint32_t up = (uint32_t)m->pressure_raw;
+    uint16_t ut = (uint16_t)m->temperature_raw;
+    m->regs[LPS22HB_MODEL_REG_PRESS_XL] = (uint8_t)(up & 0xFFu);
+    m->regs[LPS22HB_MODEL_REG_PRESS_L]  = (uint8_t)((up >> 8) & 0xFFu);
+    m->regs[LPS22HB_MODEL_REG_PRESS_H]  = (uint8_t)((up >> 16) & 0xFFu);
+    m->regs[LPS22HB_MODEL_REG_TEMP_L]   = (uint8_t)(ut & 0xFFu);
+    m->regs[LPS22HB_MODEL_REG_TEMP_H]   = (uint8_t)((ut >> 8) & 0xFFu);
+}
+
+/* A new sample reaches the registers unless BDU is holding the last one */
+static void lps22hb_model_new_sample(lps22hb_model_t *m)
+{
+    bool bdu = (m->regs[LPS22HB_MODEL_REG_CTRL_REG1] & 0x02u) != 0;
+    if (bdu && m->held) {
+        m->sample_waiting = true;
+        return;
+    }
+    lps22hb_model_refresh(m);
+    m->held = bdu;
+}
+
 /* Inject pressure raw value and mark data available */
 static void lps22hb_model_inject_pressure(lps22hb_model_t *m, int32_t raw)
 {
     m->pressure_raw = raw;
-    uint32_t u = (uint32_t)raw;
-    /* Store in output registers */
-    m->regs[LPS22HB_MODEL_REG_PRESS_XL] = (uint8_t)(u & 0xFFu);
-    m->regs[LPS22HB_MODEL_REG_PRESS_L]  = (uint8_t)((u >> 8) & 0xFFu);
-    m->regs[LPS22HB_MODEL_REG_PRESS_H]  = (uint8_t)((u >> 16) & 0xFFu);
     m->p_da = true;
     m->regs[LPS22HB_MODEL_REG_STATUS] |= 0x01u;  /* P_DA */
+    lps22hb_model_new_sample(m);
 }
 
 /* Inject temperature raw value and mark data available */
 static void lps22hb_model_inject_temperature(lps22hb_model_t *m, int16_t raw)
 {
     m->temperature_raw = raw;
-    uint16_t u = (uint16_t)raw;
-    m->regs[LPS22HB_MODEL_REG_TEMP_L] = (uint8_t)(u & 0xFFu);
-    m->regs[LPS22HB_MODEL_REG_TEMP_H] = (uint8_t)((u >> 8) & 0xFFu);
     m->t_da = true;
     m->regs[LPS22HB_MODEL_REG_STATUS] |= 0x02u;  /* T_DA */
+    lps22hb_model_new_sample(m);
 }
 
 /* Inject both pressure and temperature at once */
@@ -100,8 +126,12 @@ static void lps22hb_model_inject(lps22hb_model_t *m,
                                  int32_t pressure_raw,
                                  int16_t temperature_raw)
 {
-    lps22hb_model_inject_pressure(m, pressure_raw);
-    lps22hb_model_inject_temperature(m, temperature_raw);
+    m->pressure_raw = pressure_raw;
+    m->temperature_raw = temperature_raw;
+    m->p_da = true;
+    m->t_da = true;
+    m->regs[LPS22HB_MODEL_REG_STATUS] |= 0x03u;
+    lps22hb_model_new_sample(m);
 }
 
 /* I2C write callback: models register write behavior */
@@ -132,18 +162,7 @@ static bool lps22hb_model_write_reg(void *ctx, uint8_t dev_addr,
                  * refresh output registers from shadow and set DA flags.
                  * The ONE_SHOT bit self-clears after conversion. */
                 m->one_shot_pending = true;
-                uint32_t up = (uint32_t)m->pressure_raw;
-                uint16_t ut = (uint16_t)m->temperature_raw;
-                m->regs[LPS22HB_MODEL_REG_PRESS_XL] =
-                    (uint8_t)(up & 0xFFu);
-                m->regs[LPS22HB_MODEL_REG_PRESS_L] =
-                    (uint8_t)((up >> 8) & 0xFFu);
-                m->regs[LPS22HB_MODEL_REG_PRESS_H] =
-                    (uint8_t)((up >> 16) & 0xFFu);
-                m->regs[LPS22HB_MODEL_REG_TEMP_L] =
-                    (uint8_t)(ut & 0xFFu);
-                m->regs[LPS22HB_MODEL_REG_TEMP_H] =
-                    (uint8_t)((ut >> 8) & 0xFFu);
+                lps22hb_model_new_sample(m);
                 m->p_da = true;
                 m->t_da = true;
                 m->regs[LPS22HB_MODEL_REG_STATUS] |= 0x03u;
@@ -184,27 +203,30 @@ static bool lps22hb_model_read_regs(void *ctx, uint8_t dev_addr,
     m->read_count++;
 
     bool bdu = (m->regs[LPS22HB_MODEL_REG_CTRL_REG1] & 0x02u) != 0;
+    bool inc = (m->regs[LPS22HB_MODEL_REG_CTRL_REG2] & 0x10u) != 0;
 
-    for (uint16_t i = 0; i < len; i++) {
-        unsigned idx = (unsigned)reg + i;
-        buf[i] = (idx < LPS22HB_MODEL_REG_COUNT) ? m->regs[idx] : 0x00u;
+    if (bdu && len > 1 && reg >= LPS22HB_MODEL_REG_PRESS_XL &&
+        reg <= LPS22HB_MODEL_REG_TEMP_H) {
+        m->bdu_bursts++;
     }
 
-    /* BDU behavior: after reading output data, clear data-available flags.
-     * Per datasheet, with BDU=1 the output registers are "frozen" until
-     * both MSB of pressure and temperature have been read. We simplify:
-     * any read that touches PRESS_H clears P_DA, TEMP_H clears T_DA. */
-    if (bdu) {
-        unsigned end = (unsigned)reg + (unsigned)len;
-        if (end > LPS22HB_MODEL_REG_PRESS_H &&
-            reg <= LPS22HB_MODEL_REG_PRESS_H) {
-            m->p_da = false;
-            m->regs[LPS22HB_MODEL_REG_STATUS] &= (uint8_t)~0x01u;
-        }
-        if (end > LPS22HB_MODEL_REG_TEMP_H &&
-            reg <= LPS22HB_MODEL_REG_TEMP_H) {
+    for (uint16_t i = 0; i < len; i++) {
+        unsigned idx = (unsigned)reg + (inc ? i : 0u);
+        buf[i] = (idx < LPS22HB_MODEL_REG_COUNT) ? m->regs[idx] : 0x00u;
+
+        /* Reading an MSB clears its flag, and PRESS_OUT_H ends the BDU hold */
+        if (idx == LPS22HB_MODEL_REG_TEMP_H) {
             m->t_da = false;
             m->regs[LPS22HB_MODEL_REG_STATUS] &= (uint8_t)~0x02u;
+        }
+        if (idx == LPS22HB_MODEL_REG_PRESS_H) {
+            m->p_da = false;
+            m->regs[LPS22HB_MODEL_REG_STATUS] &= (uint8_t)~0x01u;
+            m->held = false;
+            if (bdu && m->sample_waiting) {
+                m->sample_waiting = false;
+                lps22hb_model_new_sample(m);
+            }
         }
     }
 

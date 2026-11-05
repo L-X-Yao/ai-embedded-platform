@@ -49,6 +49,21 @@ static bool read_regs(const lps22hb_t *dev, uint8_t reg,
 
 /* ---------- API ---------- */
 
+/* BDU over I2C allows only single-byte reads of the output registers, and
+ * PRESS_OUT_H has to come last, because reading it lets them update. */
+static bool read_outputs(const lps22hb_t *dev, const uint8_t *regs,
+                         uint8_t *buf, uint8_t count)
+{
+    for (uint8_t i = 0; i < count; i++)
+    {
+        if (!read_regs(dev, regs[i], &buf[i], 1))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 lps22hb_err_t lps22hb_init(lps22hb_t *dev, const lps22hb_i2c_t *i2c)
 {
     if (!dev || !i2c)
@@ -76,6 +91,12 @@ lps22hb_err_t lps22hb_init(lps22hb_t *dev, const lps22hb_i2c_t *i2c)
         return LPS22HB_ERR_I2C;
     }
 
+    /* BDU over I2C needs IF_ADD_INC clear */
+    if (!write_reg(dev, REG_CTRL_REG2, 0x00))
+    {
+        return LPS22HB_ERR_I2C;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return LPS22HB_OK;
 }
@@ -87,15 +108,17 @@ lps22hb_err_t lps22hb_read(lps22hb_t *dev, lps22hb_data_t *out)
         return LPS22HB_ERR_PARAM;
     }
 
-    /* read 5 bytes: PRESS_XL, PRESS_L, PRESS_H, TEMP_L, TEMP_H */
+    static const uint8_t order[5] = {
+        REG_PRESS_XL, REG_PRESS_L, REG_TEMP_L, REG_TEMP_H, REG_PRESS_H
+    };
     uint8_t buf[5];
-    if (!read_regs(dev, REG_PRESS_XL, buf, 5))
+    if (!read_outputs(dev, order, buf, 5))
     {
         return LPS22HB_ERR_I2C;
     }
 
     /* 24-bit two's complement pressure */
-    int32_t raw_p = (int32_t)((uint32_t)buf[2] << 16 |
+    int32_t raw_p = (int32_t)((uint32_t)buf[4] << 16 |
                               (uint32_t)buf[1] << 8  |
                               (uint32_t)buf[0]);
     /* sign-extend from 24-bit */
@@ -105,7 +128,7 @@ lps22hb_err_t lps22hb_read(lps22hb_t *dev, lps22hb_data_t *out)
     }
 
     /* 16-bit two's complement temperature */
-    int16_t raw_t = (int16_t)((uint16_t)buf[4] << 8 | (uint16_t)buf[3]);
+    int16_t raw_t = (int16_t)((uint16_t)buf[3] << 8 | (uint16_t)buf[2]);
 
     out->pressure_hpa  = (float)raw_p / 4096.0f;
     out->temperature_c = (float)raw_t / 100.0f;
@@ -166,8 +189,9 @@ lps22hb_err_t lps22hb_read_raw_pressure(lps22hb_t *dev, int32_t *raw)
         return LPS22HB_ERR_PARAM;
     }
 
+    static const uint8_t order[3] = { REG_PRESS_XL, REG_PRESS_L, REG_PRESS_H };
     uint8_t buf[3];
-    if (!read_regs(dev, REG_PRESS_XL, buf, 3))
+    if (!read_outputs(dev, order, buf, 3))
     {
         return LPS22HB_ERR_I2C;
     }
@@ -192,8 +216,10 @@ lps22hb_err_t lps22hb_read_raw_temperature(lps22hb_t *dev, int16_t *raw)
         return LPS22HB_ERR_PARAM;
     }
 
-    uint8_t buf[2];
-    if (!read_regs(dev, REG_TEMP_L, buf, 2))
+    /* PRESS_H is read only to release the BDU hold */
+    static const uint8_t order[3] = { REG_TEMP_L, REG_TEMP_H, REG_PRESS_H };
+    uint8_t buf[3];
+    if (!read_outputs(dev, order, buf, 3))
     {
         return LPS22HB_ERR_I2C;
     }

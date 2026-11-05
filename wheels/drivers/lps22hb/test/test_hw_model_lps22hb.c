@@ -319,9 +319,58 @@ TEST(test_init_io_count)
     lps22hb_model_init(&model);
     lps22hb_t d;
     lps22hb_init(&d, &model_i2c);
-    /* init should perform: 1 read (WHO_AM_I) + 1 write (CTRL_REG1) */
+    /* init should perform: 1 read (WHO_AM_I) + 2 writes (CTRL_REG1 and 2) */
     ASSERT_EQ(model.read_count, 1);
-    ASSERT_EQ(model.write_count, 1);
+    ASSERT_EQ(model.write_count, 2);
+}
+
+TEST(test_init_clears_if_add_inc_for_bdu)
+{
+    setup();
+    ASSERT_EQ(model.regs[LPS22HB_MODEL_REG_CTRL_REG2] & 0x10u, 0);
+}
+
+TEST(test_read_uses_no_burst_under_bdu)
+{
+    setup();
+    lps22hb_model_inject(&model, 4096 * 1000, 2500);
+
+    lps22hb_data_t data;
+    int32_t raw_p = 0;
+    int16_t raw_t = 0;
+    ASSERT_EQ(lps22hb_read(&dev, &data), LPS22HB_OK);
+    ASSERT_EQ(lps22hb_read_raw_pressure(&dev, &raw_p), LPS22HB_OK);
+    ASSERT_EQ(lps22hb_read_raw_temperature(&dev, &raw_t), LPS22HB_OK);
+    ASSERT_EQ(model.bdu_bursts, 0);
+}
+
+TEST(test_read_keeps_both_values_from_one_sample)
+{
+    setup();
+    lps22hb_model_inject(&model, 4096 * 1000, 2500);
+    lps22hb_model_inject(&model, 4096 * 900, 1000);  /* waits behind the first */
+
+    lps22hb_data_t data;
+    ASSERT_EQ(lps22hb_read(&dev, &data), LPS22HB_OK);
+    ASSERT_NEAR(data.pressure_hpa, 1000.0f, 0.01f);
+    ASSERT_NEAR(data.temperature_c, 25.0f, 0.01f);
+
+    ASSERT_EQ(lps22hb_read(&dev, &data), LPS22HB_OK);
+    ASSERT_NEAR(data.pressure_hpa, 900.0f, 0.01f);
+    ASSERT_NEAR(data.temperature_c, 10.0f, 0.01f);
+}
+
+TEST(test_temperature_alone_does_not_freeze_the_output)
+{
+    setup();
+    int16_t raw = 0;
+    lps22hb_model_inject(&model, 0, 2500);
+    ASSERT_EQ(lps22hb_read_raw_temperature(&dev, &raw), LPS22HB_OK);
+    ASSERT_EQ(raw, 2500);
+
+    lps22hb_model_inject(&model, 0, 1000);
+    ASSERT_EQ(lps22hb_read_raw_temperature(&dev, &raw), LPS22HB_OK);
+    ASSERT_EQ(raw, 1000);
 }
 
 TEST_MAIN("lps22hb hardware model")
@@ -351,4 +400,8 @@ TEST_MAIN("lps22hb hardware model")
     RUN(test_who_am_i_read_only);
     RUN(test_sequential_pressure_updates);
     RUN(test_init_io_count);
+    RUN(test_init_clears_if_add_inc_for_bdu);
+    RUN(test_read_uses_no_burst_under_bdu);
+    RUN(test_read_keeps_both_values_from_one_sample);
+    RUN(test_temperature_alone_does_not_freeze_the_output);
 TEST_MAIN_END()

@@ -22,6 +22,7 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[REG_WHO_AM_I] = 0xB1;   /* LPS22HB chip ID */
+    mock_regs[REG_CTRL_REG2] = 0x10;  /* POR value: IF_ADD_INC set */
 }
 
 /* Load a 24-bit raw pressure into the mock register bank.
