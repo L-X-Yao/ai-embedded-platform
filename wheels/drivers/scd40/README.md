@@ -50,6 +50,14 @@ No compile-time configuration needed. I2C address is fixed at 0x62.
 - [x] Host (sim) — 2026-05-12
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against Sensirion SCD4x Datasheet, Version 1.5, July 2023. Not run on hardware.
+
+- **Matched:** I2C address, the command codes in use, word format, read waits, measurement conversions, serial number order, altitude frame, CRC-8 (0xBEEF gives 0x92). The manual's example 0x01f4 -> 0x7b does not fit its own algorithm, which gives 0x33, so it is not used as a test vector.
+- **Fixed:** `scd40_data_ready` tested the top 5 bits, so the not-ready word 0x8000 read as ready. `scd40_perform_reset` sent 0xD304, which is not an SCD4x command; it now sends reinit 0x3646 and waits 30 ms. `scd40_stop_periodic` now waits 500 ms and `scd40_set_altitude` 1 ms. `scd40_init` refuses a HAL without `delay_ms`, and `scd40_set_altitude` refuses more than 3000 m.
+- **Still open:** The driver does not track idle and periodic mode, so `scd40_get_serial`, `scd40_set_altitude` or `scd40_perform_reset` during a measurement reach a sensor that must not get them, and after an MCU-only reset the sensor keeps measuring. There is no persist_settings, so the altitude is lost at power-off. No temperature offset, ambient pressure, forced recalibration, ASC control, low-power mode, self test, factory reset or SCD41 single shot. The model never empties its buffer, never NACKs and serves idle-only commands during a measurement, so tests cannot catch a double read or a command sent at the wrong time.
+
 ## Known issues
 
 None.
@@ -65,7 +73,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 13 PASS / 0 FAIL (test_scd40)
+- Unit tests (sim): 17 PASS / 0 FAIL (test_scd40)
 - Hardware model tests (sim): 13 PASS / 0 FAIL (test_hw_model_scd40)
 - HIL: N/A
 

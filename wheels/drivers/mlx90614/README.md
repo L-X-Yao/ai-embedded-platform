@@ -37,6 +37,7 @@ I2C HAL uses command-based (SMBus) callbacks, not register-based:
 typedef struct {
     bool (*write)(void *ctx, uint8_t dev_addr, const uint8_t *data, uint16_t len);
     bool (*read)(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len);
+    void (*delay_ms)(void *ctx, uint32_t ms);  /* required for EEPROM writes */
     void *ctx;
 } mlx90614_i2c_t;
 ```
@@ -50,10 +51,19 @@ None. I2C address is runtime-configurable via `mlx90614_cfg_t`.
 - [x] Host (sim) — passed 2026-05-01
 - [ ] ARM Cortex-M — not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Melexis DOC#3901090614, Datasheet Rev 021 (Doc server Rev 012), 02-Jun-2026. Not run on hardware.
+
+- **Matched:** Default address, RAM and EEPROM commands, byte order, the error flag, temperature and emissivity formulas, erase before write with 10 ms after each.
+- **Fixed:** `smbus_write_word` always sent PEC 0x00, so the sensor would NACK every EEPROM write and `mlx90614_set_emissivity` could not change the cell. It now sends CRC-8 (polynomial 0x07) over address, command and data: 0x28 for the erase frame. The same CRC gives all four PECs in Figures 6 to 9. `mlx90614_set_emissivity` refuses a HAL without `delay_ms`, where it used to skip both waits and return OK.
+- **Still open:** Every read uses separate `write` and `read` calls, so a HAL that ends each call with STOP puts a STOP where the manual requires a repeated START. The manual does not say what the sensor does then, so expect `mlx90614_init` and every read to fail or return bad data on hardware until the HAL gains a combined write-read call. The model and the mock serve a read after a separate write, which hides this, and the model takes a non-zero write to a cell that was not erased, so the erase step is untested. The read PEC is not checked, so a corrupted word passes. No Tobj2, read flags, sleep, other EEPROM cells or the SMBus request that leaves PWM mode.
+- **Suspected:** `mlx90614_init` does not wait the 250 ms after POR, so a first reading may be undefined. Changing the emissivity cell alone may upset calibration, and the Melexis application note on it is not in the manual set. `mlx90614_set_emissivity` skips the recommended read-back and power cycle.
+
 ## Known issues
 
-- PEC (SMBus CRC-8) is not verified on reads or computed on writes. For
-  production use on noisy buses, add PEC checking.
+- PEC (SMBus CRC-8) is sent on writes, which the sensor requires, but it is
+  not verified on reads.
 - `set_emissivity` writes to EEPROM — limit write cycles (~100K per Melexis spec).
 - Only single-zone (Tobj1) supported. Dual-zone MLX90614xCx Tobj2 not implemented.
 
@@ -67,7 +77,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (14 C tests)
+- Unit tests (sim): PASS (19 C tests)
 - HIL: N/A
 
 ## API convention deviations
