@@ -51,6 +51,19 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Datasheet check of the last 49 drivers (2026-11-06)
+
+This batch covers every driver with registers not yet reviewed in November: 186 confirmed, 103 suspect. Only `pcf8574` had no finding. `icm42688` could not be checked, because its manual could not be downloaded. Each README lists what was checked, fixed and left open. None of this has run on hardware.
+
+- Confirmed driver faults in constants, formulas, timing and checks are fixed, each with a failing test first. The worst were: `lsm6dso` and `tcs34725` read every axis or channel from one register, `bme688` was a BME680 driver and its gas path could not work, `max31865` was 107 C out at 850 C, `mcp4725` power-down modes did nothing, `ms5611` failed its CRC on real parts, and `scd40` took not-ready for ready.
+- Not usable on hardware until a larger change lands: `vl53l0x` has no device initialisation or calibration. `apds9960_read_gesture` needs its direction logic rewritten.
+- Waiting on a HAL change: `mlx90614` needs a repeated START on reads, `ms5611` a command with no data byte, and `tca9548a` a read with no register byte.
+- Left for a decision: `is31fl3731_set_led_enable` reads a frame register while the chip runs, and the fix adds 144 bytes to `is31fl3731_t`. `mcp4728` writes move a channel to the VDD reference, and keeping 2.048 V needs new fields in its config.
+- The drivers reviewed only in May have not been redone, apart from the three rechecks in the batch below, and all three of those found faults. Treat that review as weaker than this one.
+- Some calls now refuse what they used to accept, or take longer. `delay_ms` is required by `bmi160`, `ms5611`, `scd40`, `sgp30`, `shtc3`, `si7021` and `tcs34725`. `hmc5883l` init takes about 3 output periods when `delay_ms` is set, `dps310` init waits for its ready bits, and `pcf8563` stops the clock while setting the time. Each README says what changed.
+
+Running `wheel-gate` on every wheel also found 8 that had been failing its UBSan stage, which `make check` does not run: negative shifts in `bmp280` and in the `pct2075`, `tmp102` and `ina3221` models, a NULL passed to memcpy in `byte_buffer`, overflow in `scale_map`, a bad width in `crc_any`, and a shift in vendored FlashDB. All are fixed. `audit_sanitizer.py` only runs each wheel's main test target, which is why it reported them clean.
+
 ## Datasheet check of 24 more drivers (2026-11-06)
 
 This batch covers 20 unreviewed drivers, rechecks of `ina219`, `ds3231` and `nrf24l01` from May, and `sx1262` against the datasheet the first batch could not download: 122 confirmed, 55 suspect. Only `tm1637` had no finding. Each README lists what was checked, fixed and left open. None of this has run on hardware.
@@ -74,7 +87,6 @@ All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what w
 
 Six test models repeated the driver's mistakes while claiming to come from the datasheet, which is why the tests were green. A passing mock test says nothing about a register value. Take expected values from the document.
 
-The other 50 drivers with registers are in review.
 
 ## Fixed by the fuzz target expansion (2026-11-05)
 
