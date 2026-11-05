@@ -20,7 +20,7 @@
 | AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 |
 | 自动生成的 NULL 参数测试和边界值测试 | 全部公开 API |
 | ARM 交叉编译（Cortex-M4，`-Os`） | 259/259，体积表在 [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) |
-| libFuzzer | 53 个目标（42 个协议、11 个原语），解析和编码都覆盖 |
+| libFuzzer | 57 个目标（42 个协议、11 个原语、3 个模块、1 个驱动），解析和编码都覆盖 |
 | 提交卡口 | `make wheel-gate`：编译、测试、审计任一不过，提交被拦 |
 
 host 之外的证据：
