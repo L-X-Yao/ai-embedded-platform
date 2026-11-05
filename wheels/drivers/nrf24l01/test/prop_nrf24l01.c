@@ -57,6 +57,7 @@ static void full_reset(void)
     mock_spi_reset();
     memset(nrf_regs, 0, sizeof(nrf_regs));
     nrf_regs[0x07] = 0x0E; /* STATUS: RX_DR=0, TX_DS=0, MAX_RT=0 */
+    nrf_regs[0x17] = 0x11; /* FIFO_STATUS: both FIFOs empty */
 }
 
 PROPERTY(init_no_crash, 10000)
