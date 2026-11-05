@@ -24,6 +24,7 @@ typedef struct {
     bool     fail_transfer; /* simulate SPI failure */
     bool     fail_cs;       /* simulate CS select failure */
     int      transfer_count;
+    uint8_t  last_config;   /* tx[1] of the last conversion */
 } mcp3008_model_t;
 
 static void mcp3008_model_init(mcp3008_model_t *m)
@@ -88,6 +89,7 @@ static bool mcp3008_model_transfer(void *ctx, const uint8_t *tx,
     uint8_t config = tx[1];
     bool single_ended = (config & 0x80u) != 0;
     uint8_t channel = (uint8_t)((config >> 4) & 0x07u);
+    m->last_config = config;
 
     uint16_t raw;
     if (single_ended)
@@ -96,7 +98,10 @@ static bool mcp3008_model_transfer(void *ctx, const uint8_t *tx,
     }
     else
     {
-        raw = (channel < 4) ? m->diff[channel] : 0;
+        /* DS21295D Table 5-2: D2:D1 pick the pair, D0 = 1 swaps IN+ and
+         * IN-. diff[] holds the even-channel-positive reading, and the
+         * manual gives code 000h when IN+ <= IN-, so a swapped read is 0. */
+        raw = (channel & 0x01u) ? 0 : m->diff[channel >> 1];
     }
 
     rx[0] = 0x00;

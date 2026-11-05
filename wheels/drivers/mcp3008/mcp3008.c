@@ -93,8 +93,8 @@ mcp3008_err_t mcp3008_read_diff(mcp3008_t *dev, uint8_t diff_pair,
         return MCP3008_ERR_PARAM;
     }
 
-    /* Differential mode: SGL=0, channel = diff_pair */
-    uint8_t config = (uint8_t)(diff_pair << 4);
+    /* Differential mode: SGL=0, D2:D1 = diff_pair, D0 = 0 (even = IN+) */
+    uint8_t config = (uint8_t)(diff_pair << 5);
     return do_read(dev->spi, config, raw);
 }
 
