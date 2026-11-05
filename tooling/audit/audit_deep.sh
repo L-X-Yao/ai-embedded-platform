@@ -146,15 +146,11 @@ if run_layer 2 "Sanitizer (-fsanitize=address,undefined -O2)"; then
 fi
 
 # ============================================================
-# Layer 3: Fuzz (L2 protocols)
+# Layer 3: Fuzz (libFuzzer targets)
 # ============================================================
 
-if run_layer 3 "Fuzz (L2 protocol parsers)"; then
-    if [[ -x "$REPO/tooling/test/run_fuzz_protocols.sh" ]]; then
-        bash "$REPO/tooling/test/run_fuzz_protocols.sh" 2>&1 | tail -5
-    else
-        echo -e "  ${YELLOW}SKIP${NC}  run_fuzz_protocols.sh not found"
-    fi
+if run_layer 3 "Fuzz (libFuzzer targets)"; then
+    bash "$REPO/tooling/test/run_libfuzzer.sh" 2>&1 | tail -5
 fi
 
 # ============================================================
