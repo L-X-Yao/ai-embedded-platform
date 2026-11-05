@@ -40,13 +40,21 @@ slip_err_t slip_encode(const uint8_t *data, uint16_t data_len,
         return SLIP_ERR_OVERFLOW;
     }
 
-    uint16_t w = 0;
+    uint32_t w = 0;
 
     /* leading END delimiter */
     out[w++] = (uint8_t)SLIP_END;
 
     /* encode payload */
     for (uint16_t i = 0; i < data_len; i++) {
+        /* max_size saturates, so a long input can still outgrow capacity.
+         * The extra byte is the trailing END. */
+        uint32_t need = (data[i] == (uint8_t)SLIP_END ||
+                         data[i] == (uint8_t)SLIP_ESC) ? 2u : 1u;
+        if (w + need + 1u > capacity) {
+            return SLIP_ERR_OVERFLOW;
+        }
+
         if (data[i] == (uint8_t)SLIP_END) {
             out[w++] = (uint8_t)SLIP_ESC;
             out[w++] = (uint8_t)SLIP_ESC_END;
@@ -61,7 +69,7 @@ slip_err_t slip_encode(const uint8_t *data, uint16_t data_len,
     /* trailing END delimiter */
     out[w++] = (uint8_t)SLIP_END;
 
-    *out_len = w;
+    *out_len = (uint16_t)w;
     return SLIP_OK;
 }
 
