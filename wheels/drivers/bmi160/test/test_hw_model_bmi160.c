@@ -116,15 +116,15 @@ TEST(test_read_accel_1g_z)
     setup();
     bmi160_t dev;
     bmi160_init(&dev, &model_i2c, &default_cfg);
-    /* At 2g range, 0.061 mg/LSB: +1g = 1000 mg / 0.061 = 16393 raw */
-    bmi160_model_set_accel(&model, 0, 0, 16393);
+    /* Manual p.8: 16384 LSB/g at +/-2g */
+    bmi160_model_set_accel(&model, 0, 0, 16384);
 
     bmi160_data_t data;
     bmi160_err_t err = bmi160_read(&dev, &data);
     ASSERT_EQ(err, BMI160_OK);
-    ASSERT_NEAR(data.accel_mg[0], 0.0f, 1.0f);
-    ASSERT_NEAR(data.accel_mg[1], 0.0f, 1.0f);
-    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], 0.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[1], 0.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 0.01f);
 }
 
 TEST(test_read_gyro_zero)
@@ -148,11 +148,11 @@ TEST(test_read_accel_negative)
     bmi160_t dev;
     bmi160_init(&dev, &model_i2c, &default_cfg);
     /* -1g on X */
-    bmi160_model_set_accel(&model, -16393, 0, 0);
+    bmi160_model_set_accel(&model, -16384, 0, 0);
 
     bmi160_data_t data;
     bmi160_read(&dev, &data);
-    ASSERT_NEAR(data.accel_mg[0], -1000.0f, 1.0f);
+    ASSERT_NEAR(data.accel_mg[0], -1000.0f, 0.01f);
 }
 
 /* --- roundtrip: inject raw, read through driver, verify conversion --- */
@@ -163,17 +163,17 @@ TEST(test_roundtrip_accel_all_axes)
     bmi160_t dev;
     bmi160_init(&dev, &model_i2c, &default_cfg);
 
-    /* Known raw values at 2g range (0.061 mg/LSB) */
-    int16_t raw_x = 1000;   /* expect ~61 mg */
-    int16_t raw_y = -2000;  /* expect ~-122 mg */
-    int16_t raw_z = 16393;  /* expect ~1000 mg */
+    /* Known raw values at 2g range (manual p.8: 16384 LSB/g) */
+    int16_t raw_x = 8192;   /* expect 500 mg */
+    int16_t raw_y = -4096;  /* expect -250 mg */
+    int16_t raw_z = 16384;  /* expect 1000 mg */
     bmi160_model_set_accel(&model, raw_x, raw_y, raw_z);
 
     bmi160_data_t data;
     bmi160_read(&dev, &data);
-    ASSERT_NEAR(data.accel_mg[0], (float)raw_x * 0.061f, 0.1f);
-    ASSERT_NEAR(data.accel_mg[1], (float)raw_y * 0.061f, 0.1f);
-    ASSERT_NEAR(data.accel_mg[2], (float)raw_z * 0.061f, 0.1f);
+    ASSERT_NEAR(data.accel_mg[0], 500.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[1], -250.0f, 0.01f);
+    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 0.01f);
 }
 
 TEST(test_roundtrip_gyro_all_axes)
@@ -182,17 +182,17 @@ TEST(test_roundtrip_gyro_all_axes)
     bmi160_t dev;
     bmi160_init(&dev, &model_i2c, &default_cfg);
 
-    /* Known raw values at 250 dps range (0.00763 dps/LSB) */
-    int16_t raw_x = 1000;   /* expect ~7.63 dps */
-    int16_t raw_y = -500;   /* expect ~-3.815 dps */
-    int16_t raw_z = 131;    /* expect ~1.0 dps */
+    /* Known raw values at 250 dps range (manual p.61: 131.2 LSB/dps) */
+    int16_t raw_x = 13120;  /* expect 100 dps */
+    int16_t raw_y = -6560;  /* expect -50 dps */
+    int16_t raw_z = 1312;   /* expect 10 dps */
     bmi160_model_set_gyro(&model, raw_x, raw_y, raw_z);
 
     bmi160_data_t data;
     bmi160_read(&dev, &data);
-    ASSERT_NEAR(data.gyro_dps[0], (float)raw_x * 0.00763f, 0.01f);
-    ASSERT_NEAR(data.gyro_dps[1], (float)raw_y * 0.00763f, 0.01f);
-    ASSERT_NEAR(data.gyro_dps[2], (float)raw_z * 0.00763f, 0.01f);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
+    ASSERT_NEAR(data.gyro_dps[1], -50.0f, 0.01f);
+    ASSERT_NEAR(data.gyro_dps[2], 10.0f, 0.001f);
 }
 
 /* --- datasheet behavior tests ------------------------------------------ */
