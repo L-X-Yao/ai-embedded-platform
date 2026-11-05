@@ -355,6 +355,7 @@ static void lora_delay_ms(void *ctx, uint32_t ms)
         uint8_t mode = lora_mock.regs[LORA_REG_OP_MODE] & 0x07;
         if (mode == LORA_MODE_RX_SINGLE && lora_mock.fifo_len > 0) {
             lora_mock.regs[LORA_REG_IRQ_FLAGS] |= LORA_IRQ_RX_DONE;
+            lora_mock.regs[0x1C] |= 0x40;  /* CrcOnPayload */
             lora_mock.regs[LORA_REG_RX_NB_BYTES] = lora_mock.fifo_len;
             lora_mock.regs[LORA_REG_FIFO_RX_CURRENT] = 0;
         }
