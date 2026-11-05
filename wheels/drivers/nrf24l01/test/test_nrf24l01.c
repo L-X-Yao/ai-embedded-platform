@@ -884,6 +884,17 @@ TEST(test_rx_addr_sets_the_pipe_payload_width)
     ASSERT_EQ(mock_regs[REG_RX_PW_P0 + 5], 16);
 }
 
+TEST(test_250kbps_sets_a_retransmit_delay_of_500us)
+{
+    mock_reset();
+    mock_regs[0x04] = 0x03;  /* reset value: 250 us, 3 retries */
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    ASSERT_EQ(nrf24_set_data_rate(&dev, NRF24_RATE_250KBPS), NRF24_OK);
+    ASSERT_EQ(mock_regs[0x04], 0x13);
+}
+
 TEST_MAIN("nrf24l01")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -923,4 +934,5 @@ TEST_MAIN("nrf24l01")
     RUN(test_set_power_n12dbm);
     RUN(test_receive_reaches_every_queued_payload);
     RUN(test_rx_addr_sets_the_pipe_payload_width);
+    RUN(test_250kbps_sets_a_retransmit_delay_of_500us);
 TEST_MAIN_END()
