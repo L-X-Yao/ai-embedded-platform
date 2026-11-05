@@ -213,14 +213,14 @@ TEST(test_read_high_25c_50pct)
 {
     setup();
     /* raw_t for 25 C: (25+45)/175 * 65535 = 26214.17 -> 26214 */
-    /* raw_h for 50%: (50+6)/125 * 65535 = 29491.2 -> 29491 */
-    plant_reading(26214, 29491);
+    /* raw_h for 50%: (50+6)/125 * 65535 = 29359.68 -> 29360 */
+    plant_reading(26214, 29360);
 
     sht40_data_t data;
     sht40_err_t e = sht40_read_high(&dev, &data);
     ASSERT_EQ(e, SHT40_OK);
     ASSERT_NEAR(data.temperature_c, 25.0f, 0.1f);
-    ASSERT_NEAR(data.humidity_pct, 50.0f, 0.3f);  /* rounding from integer raw */
+    ASSERT_NEAR(data.humidity_pct, 50.0f, 0.01f);
 }
 
 TEST(test_read_high_sends_fd_cmd)
