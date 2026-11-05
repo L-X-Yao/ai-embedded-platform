@@ -45,7 +45,8 @@ None. All configuration is done at runtime via API calls.
 Checked on 2026-11-06 against TI SBOS681C. Not run on hardware.
 
 - **Matched:** Addresses and the init range check, register addresses, both IDs, the result format and lux formula, mode and CRF fields, the default config value, byte order.
-- **Still open:** The address macros are named after two pins, but the part has one ADDR pin: 0x46 needs it on SDA and 0x47 on SCL, so wiring by `OPT3001_ADDR_VDD_GND` or `OPT3001_ADDR_VDD_VDD` gives a device that does not answer. `opt3001_read_lux` ignores OVF and CRF and `OPT3001_ERR_NOT_READY` is never returned, so a read straight after init gives 0 lux with `OPT3001_OK`. `opt3001_data_ready` clears CRF by reading it, so a second call after a finished conversion returns false, and the config reads in `opt3001_start_single` and `opt3001_set_continuous` clear it too. There is no shutdown call, 800 ms mode, manual range, limit, INT or reset support, and no wait helper. The model resets Config to C010h instead of C810h, so the init test passes even if init writes nothing. It never clears CRF, finishes a conversion inside the write and leaves M at 01b, ignores M = 10b, lets OVF, FH and FL be written, and encodes lux wrongly (50000 lux reads back as 83865.6), so tests cannot show a conversion in progress.
+- **Fixed:** The address macros were named after two pins, but the part has one ADDR pin, so wiring 0x46 or 0x47 by name gave a device that did not answer. `OPT3001_ADDR_GND`, `_VDD`, `_SDA` and `_SCL` are added. The old names stay with the same values, and their comments now say which pin each one means.
+- **Still open:** `opt3001_read_lux` ignores OVF and CRF and `OPT3001_ERR_NOT_READY` is never returned, so a read straight after init gives 0 lux with `OPT3001_OK`. `opt3001_data_ready` clears CRF by reading it, so a second call after a finished conversion returns false, and the config reads in `opt3001_start_single` and `opt3001_set_continuous` clear it too. There is no shutdown call, 800 ms mode, manual range, limit, INT or reset support, and no wait helper. The model resets Config to C010h instead of C810h, so the init test passes even if init writes nothing. It never clears CRF, finishes a conversion inside the write and leaves M at 01b, ignores M = 10b, lets OVF, FH and FL be written, and encodes lux wrongly (50000 lux reads back as 83865.6), so tests cannot show a conversion in progress.
 
 ## Known issues
 
@@ -61,7 +62,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 25 tests, all passing
+- Unit tests (sim): 30 tests, all passing
 - HIL: N/A
 
 ## API convention deviations
