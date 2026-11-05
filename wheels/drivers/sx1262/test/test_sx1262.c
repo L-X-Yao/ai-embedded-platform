@@ -737,12 +737,12 @@ TEST(test_transmit_timeout_covers_time_on_air)
 
     ASSERT_EQ(sx1262_transmit(&dev, data, sizeof(data)), SX1262_OK);
 
-    /* 263 symbols take 8627 ms; with 1000 ms margin that is 616128 RTC steps. */
+    /* 275.25 symbols take 9020 ms; with 1000 ms margin that is 641280 RTC steps. */
     int tx = last_cmd(0x83);
     ASSERT_TRUE(tx >= 0);
     ASSERT_EQ(cmd_log[tx][1], 0x09);
-    ASSERT_EQ(cmd_log[tx][2], 0x66);
-    ASSERT_EQ(cmd_log[tx][3], 0xC0);
+    ASSERT_EQ(cmd_log[tx][2], 0xC9);
+    ASSERT_EQ(cmd_log[tx][3], 0x00);
 }
 
 TEST(test_transmit_reports_chip_timeout)
