@@ -29,13 +29,17 @@ typedef enum {
     HMC5883L_ERR_ID      = -2,
     HMC5883L_ERR_PARAM   = -3,
     HMC5883L_ERR_OVERFLOW = -4,  /* an axis read -4096: ADC overflow or underflow */
+    HMC5883L_ERR_TIMEOUT  = -5,  /* no sample after init */
 } hmc5883l_err_t;
 
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    /* Optional. With it, init blocks for about 3 output periods, 200 ms at
+     * 15 Hz and 4 s at 0.75 Hz, so that the first read has a sample at the
+     * new gain. With NULL, early reads return old data. */
+    void (*delay_ms)(void *ctx, uint32_t ms);
     void *ctx;
 } hmc5883l_i2c_t;
 

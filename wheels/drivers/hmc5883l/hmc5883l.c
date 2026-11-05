@@ -17,6 +17,12 @@
 #define REG_ID_A     0x0A
 
 #define DATA_OVERFLOW  (-4096)
+#define REG_STATUS     0x09u
+#define STATUS_RDY     0x01u
+#define RDY_MARGIN_MS  100u
+
+/* Output period at each rate code, rounded up */
+static const uint16_t sample_period_ms[] = { 1334, 667, 334, 134, 67, 34, 14 };
 
 static const float gain_scale[] = {
     1.0f / 1370.0f,
@@ -28,6 +34,29 @@ static const float gain_scale[] = {
     1.0f / 330.0f,
     1.0f / 230.0f,
 };
+
+/* The first set arrives after 2/fDO and still has the previous gain, so
+ * read it to clear RDY and wait for the next one. */
+static hmc5883l_err_t wait_for_first_sample(const hmc5883l_t *dev)
+{
+    const hmc5883l_i2c_t *i2c = dev->i2c;
+    uint32_t period = sample_period_ms[dev->cfg.rate];
+    uint8_t buf[6];
+
+    i2c->delay_ms(i2c->ctx, 2u * period);
+    if (!i2c->read_regs(i2c->ctx, HMC5883L_ADDR, REG_DATA_X_H, buf, sizeof(buf)))
+        return HMC5883L_ERR_I2C;
+
+    for (uint32_t waited = 0; waited < period + RDY_MARGIN_MS; waited++) {
+        uint8_t status = 0;
+        i2c->delay_ms(i2c->ctx, 1);
+        if (!i2c->read_regs(i2c->ctx, HMC5883L_ADDR, REG_STATUS, &status, 1))
+            return HMC5883L_ERR_I2C;
+        if (status & STATUS_RDY)
+            return HMC5883L_OK;
+    }
+    return HMC5883L_ERR_TIMEOUT;
+}
 
 hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
                              const hmc5883l_cfg_t *cfg)
@@ -63,7 +92,7 @@ hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
     if (!dev->i2c->write_reg(dev->i2c->ctx, HMC5883L_ADDR, REG_MODE, 0x00))
         return HMC5883L_ERR_I2C;
 
-    return HMC5883L_OK;
+    return i2c->delay_ms ? wait_for_first_sample(dev) : HMC5883L_OK;
 }
 
 hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw)
