@@ -903,6 +903,18 @@ TEST(test_init_waits_out_the_power_on_reset)
     ASSERT_GE(mock_delay_total_us, 100000u);
 }
 
+TEST(test_rx_addr_sets_the_address_width)
+{
+    mock_reset();
+    mock_regs[REG_SETUP_AW] = 0x03;  /* reset value: 5 bytes */
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    static const uint8_t addr[3] = { 0xE7, 0xE7, 0xE7 };
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 1, addr, 3), NRF24_OK);
+    ASSERT_EQ(mock_regs[REG_SETUP_AW], 0x01);
+}
+
 TEST_MAIN("nrf24l01")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -944,4 +956,5 @@ TEST_MAIN("nrf24l01")
     RUN(test_rx_addr_sets_the_pipe_payload_width);
     RUN(test_250kbps_sets_a_retransmit_delay_of_500us);
     RUN(test_init_waits_out_the_power_on_reset);
+    RUN(test_rx_addr_sets_the_address_width);
 TEST_MAIN_END()

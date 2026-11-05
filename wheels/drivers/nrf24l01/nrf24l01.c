@@ -226,6 +226,7 @@ nrf24_err_t nrf24_set_rx_addr(nrf24_t *dev, uint8_t pipe,
     leave_rx(dev);
 
     if (pipe <= 1) {
+        write_reg(s, REG_SETUP_AW, (uint8_t)(addr_len - 2));
         write_reg_multi(s, reg, addr, addr_len);
     } else {
         write_reg(s, reg, addr[0]);
