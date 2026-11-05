@@ -118,7 +118,7 @@ Gates every component passes before it is allowed into `wheels/`:
 
 | Gate | Scope | Tooling |
 |------|-------|---------|
-| Host unit tests | 259/259 components, 1,172 test sources, 11,254 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
+| Host unit tests | 259/259 components, 1,172 test sources, 11,320 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
 | 63-check static audit (API naming, NULL guards, error codes, polling delays, test/run balance, ...) | 259/259 | `tooling/audit/audit_wheels.py` |
 | Line coverage >= 80% | 259/259 (nightly gate) | `tooling/test/coverage_scan.sh` |
 | AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 | `tooling/audit/audit_sanitizer.py` |
@@ -134,14 +134,14 @@ Evidence beyond the host machine:
 |----------|------------|
 | Ran on real hardware (GD32F405 telemetry firmware, 600 s soak, zero watchdog resets, 2026-04-27) | `crc16`, `w25qxx`, `qmi8658a`, `xgzp6816d`, `qmc5883p` |
 | Register maps and formulas cross-checked against reference drivers (Linux kernel, vendor reference code, Adafruit, betaflight) | 10 L1 drivers, listed in [docs/known-issues.md](docs/known-issues.md) |
-| Register-by-register datasheet review | a sample of common and obscure chips, results below |
+| Register-by-register datasheet review | 33 drivers in November 2026 and an earlier sample, results below |
 
 ### Known limits
 
 Read these before putting a driver on silicon.
 
 - **Only the five components above have run on real hardware.** Every other driver was exercised against a mock register model. Many of those models were written with the driver and repeat its mistakes, so a green test does not show that a register value is right. The bug surfaces on the board.
-- **The datasheet review found real defects, and the rate is high.** Roughly 16% of the reviewed common-chip drivers (BMP280, MPU6050, SHT30 class) and 3 of 5 obscure-chip drivers had a wrong register offset, a missing bit mask or a missing sign extension. A later batch of 10 drivers found defects in all 10, 67 confirmed in total, from wrong product IDs to radios that were never calibrated. Most are fixed, but those fixes have not run on hardware either, `bmi270`, `vl53l1x` and `pac1952` are marked not usable, and 70 drivers have not been reviewed at all. Treat an unreviewed driver as a draft. See [docs/known-issues.md](docs/known-issues.md). Drivers that were not sampled should be assumed to carry a similar rate until you verify them; the review procedure is task type 14 in [docs/ai-workflow.md](docs/ai-workflow.md).
+- **The datasheet review found real defects, and the rate is high.** Roughly 16% of the reviewed common-chip drivers (BMP280, MPU6050, SHT30 class) and 3 of 5 obscure-chip drivers had a wrong register offset, a missing bit mask or a missing sign extension. A stricter review in November 2026 covered 33 drivers and confirmed about 190 faults in 32 of them, from wrong product IDs to radios that were never calibrated, and it found more in drivers the earlier review had passed. Most are fixed, but those fixes have not run on hardware either, `bmi270`, `vl53l1x` and `pac1952` are marked not usable, `ccs811` and `max17048` wait on a HAL change, and 50 more drivers are still under review. Treat an unreviewed driver as a draft. See [docs/known-issues.md](docs/known-issues.md). Drivers that were not sampled should be assumed to carry a similar rate until you verify them; the review procedure is task type 14 in [docs/ai-workflow.md](docs/ai-workflow.md).
 - **No RTOS and no MCU HAL ship here.** You supply the bus callbacks. A VSF HAL port for GD32F4xx lives in `vsf-addon/` as a worked example, and `vsf/` is an unmodified upstream snapshot kept for that port.
 - **Licensing.** Components are MIT. The vendored FlashDB under `wheels/primitives/kvs/vendor/` and the VSF snapshot under `vsf/` are Apache-2.0 and keep their own notices.
 
