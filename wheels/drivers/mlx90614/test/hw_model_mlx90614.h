@@ -134,6 +134,13 @@ static bool mlx90614_model_read(void *ctx, uint8_t dev_addr,
     return true;
 }
 
+/* Delay callback (no-op: the model has no EEPROM busy time) */
+__attribute__((unused))
+static void mlx90614_model_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+}
+
 static void mlx90614_model_init(mlx90614_model_t *m)
 {
     memset(m, 0, sizeof(*m));

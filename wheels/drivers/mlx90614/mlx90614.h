@@ -61,6 +61,7 @@ mlx90614_err_t mlx90614_read_ambient_temp(mlx90614_t *dev, float *temp_c);
 mlx90614_err_t mlx90614_read_emissivity(mlx90614_t *dev, float *emissivity);
 
 /** Set emissivity (0.1 .. 1.0). Writes to EEPROM — limit write cycles.
+ *  Returns MLX90614_ERR_PARAM if the HAL has no delay_ms.
  *  @thread_safe: no @isr_safe: no */
 mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity);
 

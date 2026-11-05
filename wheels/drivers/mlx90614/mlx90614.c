@@ -141,6 +141,8 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
         return MLX90614_ERR_PARAM;
     if (!(emissivity >= 0.1f && emissivity <= 1.0f))
         return MLX90614_ERR_PARAM;
+    if (!dev->i2c->delay_ms)
+        return MLX90614_ERR_PARAM;
 
     uint16_t raw = (uint16_t)(emissivity * 65535.0f + 0.5f);
     if (raw == 0) raw = 1;
@@ -149,13 +151,11 @@ mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
      * Datasheet mandates >= 5 ms between erase and write; use 10 ms for margin. */
     if (!smbus_write_word(dev, REG_EMISSIVITY, 0x0000))
         return MLX90614_ERR_I2C;
-    if (dev->i2c->delay_ms)
-        dev->i2c->delay_ms(dev->i2c->ctx, 10);
+    dev->i2c->delay_ms(dev->i2c->ctx, 10);
     if (!smbus_write_word(dev, REG_EMISSIVITY, raw))
         return MLX90614_ERR_I2C;
     /* Second EEPROM write also needs a write-cycle delay per datasheet */
-    if (dev->i2c->delay_ms)
-        dev->i2c->delay_ms(dev->i2c->ctx, 10);
+    dev->i2c->delay_ms(dev->i2c->ctx, 10);
 
     return MLX90614_OK;
 }
