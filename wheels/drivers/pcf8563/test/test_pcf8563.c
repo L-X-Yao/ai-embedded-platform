@@ -346,7 +346,9 @@ TEST(test_timer_disable)
 
     pcf8563_enable_timer(&dev, PCF8563_TIMER_1HZ, 100);
     ASSERT_EQ(pcf8563_disable_timer(&dev), PCF8563_OK);
-    ASSERT_EQ(mock_regs[0x0E], 0x00);
+    /* Rev. 10 Table 23: TE = 0, and when not in use TD[1:0] should be
+     * 11 (1/60 Hz) for power saving */
+    ASSERT_EQ_HEX(mock_regs[0x0E], 0x03u);
 }
 
 TEST(test_timer_null)
