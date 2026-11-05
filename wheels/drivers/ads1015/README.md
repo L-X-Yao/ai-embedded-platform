@@ -44,6 +44,14 @@ No compile-time defines required. All configuration via `ads1015_cfg_t`.
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SBAS473F. Not run on hardware.
+
+- **Matched:** Addresses, pointer values, Config fields and codes, OS polarity, the 12-bit result format, byte order, LSB sizes, the poll bound.
+- **Still open:** Continuous mode, the comparator, thresholds, ALERT/RDY and general-call reset are not supported. `ads1015_init` does not touch the bus, so an absent device shows up only at the first read. The model stores a written OS = 0 and never shows OS = 0 during a conversion, so tests cannot show a conversion in progress. It also resets Lo_thresh and Hi_thresh to 0000h instead of 8000h and 7FFFh, which the driver does not use today.
+- **Suspected:** `ads1015_read_raw` polls OS straight after setting it, and OS reads 1 for about 25 us first, so a very fast bus could take the previous conversion as ready.
+
 ## Known issues
 
 None.

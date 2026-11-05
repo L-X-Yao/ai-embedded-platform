@@ -5,7 +5,7 @@
 
 Platform-agnostic driver for the Microchip MCP4728 4-channel 12-bit
 digital-to-analog converter. I2C interface injected via callbacks.
-Supports single-channel and all-channel writes using the fast write
+Supports single-channel and all-channel writes using the Multi-Write
 command. 12-bit resolution (0-4095 values).
 
 ## Origin
@@ -36,7 +36,8 @@ mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4]);
 ```
 
 - `write_channel()` -- write one channel (0-3), values > 4095 rejected
-- `write_all()` -- write all 4 channels in one I2C transaction
+- `write_all()` -- write all 4 channels in one I2C transaction; each output
+  changes after its own last byte, and the HAL must accept 11 data bytes
 
 ## Usage
 
@@ -59,6 +60,15 @@ None. I2C address is runtime-configurable via `mcp4728_cfg_t`.
 
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
+
+## Datasheet check
+
+Checked on 2026-11-06 against Microchip DS22187E. Not run on hardware.
+
+- **Matched:** Address, channel coding, data layout, UDAC = 0 output update, the 12-bit range.
+- **Fixed:** The code called the 0x40 command a fast write, but it is Multi-Write, so nothing said what its zero upper nibble does. The name and header now say so; the bytes sent are the same. `mcp4728_write_all` made four I2C transactions and now makes one. The model and mock refused VREF, PD and Gx bits and took commands other than Multi-Write.
+- **Still open:** Every write sets the channel to VREF = VDD, gain x1 and normal mode, so a factory channel leaves the internal 2.048 V reference at its first write and its output scale changes. Keeping that reference needs new fields in `mcp4728_cfg_t`. There is no LDAC or General Call Software Update, so the four outputs of `mcp4728_write_all` change one after another, and a bus error part way leaves the earlier channels updated. There is no power-down control, EEPROM write, read-back or address programming. `mcp4728_init` sends nothing, so a missing device shows up only at the first write. The model has no EEPROM load at power-up and its reads return zeros.
+- **Suspected:** The driver and model cite DS20002278, which may not be this manual's document number.
 
 ## Known issues
 

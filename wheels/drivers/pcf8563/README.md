@@ -66,6 +66,15 @@ None. Fixed I2C address 0x51.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against NXP PCF8563 Rev. 10. Not run on hardware.
+
+- **Matched:** Address, register map, read masks, BCD conversion, weekday coding, the 7-byte time read, alarm, CLKOUT and timer fields, the leap rule for 2000-2099.
+- **Fixed:** `pcf8563_init` returned `PCF8563_ERR_ID` when bit 6 of Control_status_1 read 1, but that N bit may read either way, so a working chip could be refused. `pcf8563_disable_timer` left TD at 4.096 kHz, and the manual wants 1/60 Hz for power saving.
+- **Still open:** `pcf8563_write_time` uses seven one-byte writes where the manual asks for one access, because the HAL has no multi-byte write, so the clock can tick part way and corrupt the time. AF and TF cannot be read or cleared and AIE, TIE and TI_TP cannot be set, so a fired alarm or timer cannot be seen. The century bit is ignored, there is no timer read-back, `pcf8563_enable_timer` accepts countdown 0, which stops the timer, and 31 February is accepted. The model and mock start from wrong reset values (Control_status_1, VL, CLKOUT_control, Timer_control and a made-up time), and the model has no tick and no AND-on-write for AF and TF, so tests cannot show a first power-up.
+- **Suspected:** `pcf8563_read_time` masks VL and returns `PCF8563_OK`, so undefined time after a first power-up or a dead battery reads as valid. `pcf8563_init` has no wait or retry, and I2C is not possible during reset, so a cold start without a backup battery may fail.
+
 ## Known issues
 
 - Year range limited to 2000-2099 (2-digit BCD).
