@@ -7,8 +7,8 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * ±0.1°C accuracy (typical), 16-bit resolution (0.0078125°C/LSB).
- * All registers are 16-bit, MSB first.
+ * ±0.1°C accuracy (maximum, from -20°C to 50°C), 16-bit resolution
+ * (0.0078125°C/LSB). All registers are 16-bit, MSB first.
  * Pure C99, no heap, fully reentrant per-context.
  */
 
