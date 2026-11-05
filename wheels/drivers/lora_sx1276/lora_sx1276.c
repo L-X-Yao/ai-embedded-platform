@@ -50,6 +50,9 @@
 #define IRQ_RX_DONE           0x40
 #define IRQ_PAYLOAD_CRC_ERR  0x20
 
+/* RegModemConfig2 bits */
+#define CONFIG2_CRC_ON        0x04
+
 /* RegImageCal bits */
 #define IMAGE_CAL_START       0x40
 #define IMAGE_CAL_RUNNING     0x20
@@ -154,8 +157,12 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     reg_write(spi, REG_FIFO_TX_BASE, 0x00);
     reg_write(spi, REG_FIFO_RX_BASE, 0x00);
 
-    /* LNA boost (max gain) + AGC auto on */
+    /* AGC auto on */
     reg_write(spi, REG_MODEM_CONFIG_3, 0x04);
+
+    /* In explicit header mode only the transmitter needs this set */
+    reg_write(spi, REG_MODEM_CONFIG_2,
+              (uint8_t)(reg_read(spi, REG_MODEM_CONFIG_2) | CONFIG2_CRC_ON));
 
     /* default TX power */
     err = lora_set_tx_power(dev, dev->tx_power);
