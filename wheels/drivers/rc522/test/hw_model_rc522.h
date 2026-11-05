@@ -120,6 +120,17 @@ static uint8_t hw_model_xfer(void *ctx, uint8_t tx)
             hw_regs[0x04] = 0x20;  /* RxIRq */
             hw_pending_armed = false;
             hw_regs[hw_addr_latch] = tx;
+        } else if (hw_addr_latch == 0x01 && tx == 0x0C) {
+            /* Transceive with nothing to receive: the timer runs out */
+            hw_regs[0x04] |= 0x01;
+            hw_regs[hw_addr_latch] = tx;
+        } else if (hw_addr_latch == 0x04) {
+            /* Set1 says whether the marked ComIrqReg bits are set or cleared */
+            if (tx & 0x80u) {
+                hw_regs[0x04] |= (uint8_t)(tx & 0x7Fu);
+            } else {
+                hw_regs[0x04] &= (uint8_t)~tx;
+            }
         } else if (hw_addr_latch == 0x09) {
             hw_fifo_push(tx);
             hw_regs[0x0A] = hw_fifo_count;
