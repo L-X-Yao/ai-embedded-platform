@@ -150,6 +150,36 @@ TEST(test_set_emissivity)
     ASSERT_NEAR(em, 0.95f, 0.01f);
 }
 
+TEST(test_model_nacks_bad_pec)
+{
+    /* p18: "A NACK could be received after the PEC". CRC-8 of
+     * B4 24 00 00 is 0x28, so the placeholder 0x00 must not get through. */
+    static const uint8_t bad[]  = { 0x24, 0x00, 0x00, 0x00 };
+    static const uint8_t good[] = { 0x24, 0x00, 0x00, 0x28 };
+    setup();
+
+    ASSERT_FALSE(mlx90614_model_write(&model, 0x5A, bad, 4));
+    ASSERT_EQ_HEX(model.hw.regs[MLX_SLOT(MLX_REG_EMISSIVITY)], 0xFF);
+
+    ASSERT_TRUE(mlx90614_model_write(&model, 0x5A, good, 4));
+    ASSERT_EQ_HEX(model.hw.regs[MLX_SLOT(MLX_REG_EMISSIVITY)], 0x00);
+}
+
+TEST(test_model_read_matches_figure_6)
+{
+    /* Figure 6, p20: RAM 0x07 holding 0x3AD2 reads as D2 3A, PEC 0x30.
+     * 0x3AD2 = 15058 = (28.01 + 273.15) * 50. */
+    static const uint8_t cmd[] = { 0x07 };
+    static const uint8_t expect[] = { 0xD2, 0x3A, 0x30 };
+    uint8_t rx[3];
+    setup();
+    mlx90614_model_set_object_temp(&model, 28.01f);
+
+    ASSERT_TRUE(mlx90614_model_write(&model, 0x5A, cmd, 1));
+    ASSERT_TRUE(mlx90614_model_read(&model, 0x5A, rx, 3));
+    ASSERT_MEMEQ_N(rx, expect, sizeof(expect));
+}
+
 TEST(test_set_emissivity_out_of_range)
 {
     setup();
@@ -185,6 +215,8 @@ TEST_MAIN("mlx90614 hardware model")
     RUN(test_object_temp_increases_with_raw);
     RUN(test_read_emissivity_default);
     RUN(test_set_emissivity);
+    RUN(test_model_nacks_bad_pec);
+    RUN(test_model_read_matches_figure_6);
     RUN(test_set_emissivity_out_of_range);
     RUN(test_multiple_reads_consistent);
 TEST_MAIN_END()
