@@ -97,7 +97,8 @@ is31fl3731_err_t is31fl3731_fill(is31fl3731_t *dev, uint8_t frame,
  *  @thread_safe: no @isr_safe: no */
 is31fl3731_err_t is31fl3731_display_frame(is31fl3731_t *dev, uint8_t frame);
 
-/** Enter or exit hardware shutdown mode.
+/** Enter or exit software shutdown (SSD in the Shutdown Register). Hardware
+ *  shutdown is the SDB pin, which this driver does not control.
  *  @thread_safe: no @isr_safe: no */
 is31fl3731_err_t is31fl3731_shutdown(is31fl3731_t *dev, bool enable);
 
