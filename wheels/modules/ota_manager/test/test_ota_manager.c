@@ -582,6 +582,28 @@ TEST(test_last_chunk_stays_inside_the_image)
     ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_VERIFYING);
 }
 
+static ota_mgr_err_t claiming_download(void *ctx, uint32_t offset, uint8_t *buf,
+                                       uint16_t buf_size, uint16_t *bytes_read)
+{
+    (void)ctx; (void)offset; (void)buf;
+    *bytes_read = (uint16_t)(buf_size + 1);
+    return OTA_MGR_OK;
+}
+
+TEST(test_transport_claiming_too_much_is_refused)
+{
+    uint8_t buf[64];
+    ota_mgr_ops_t claiming = test_ops;
+    claiming.download_chunk = claiming_download;
+    mock_reset();
+    ASSERT_EQ(ota_manager_init(&mgr, &claiming, "1.0.0"), OTA_MGR_OK);
+    ASSERT_EQ(ota_manager_check(&mgr), OTA_MGR_OK);
+
+    ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_ERR_DOWNLOAD);
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
+    ASSERT_EQ(write_called, 0);
+}
+
 TEST_MAIN("ota_manager")
     RUN(test_init_valid);
     RUN(test_init_null_mgr);
@@ -616,4 +638,5 @@ TEST_MAIN("ota_manager")
     RUN(test_check_not_from_downloading);
     RUN(test_reset_then_restart);
     RUN(test_last_chunk_stays_inside_the_image);
+    RUN(test_transport_claiming_too_much_is_refused);
 TEST_MAIN_END()
