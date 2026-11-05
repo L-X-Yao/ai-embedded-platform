@@ -117,7 +117,7 @@ TEST(test_read_white_raw)
 
 TEST(test_read_lux_gain1_it100ms)
 {
-    /* gain=1, IT=100ms -> resolution = 0.0576 lux/bit */
+    /* gain=1, IT=100ms -> resolution = 0.0672 lux/bit */
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
               VEML7700_OK);
@@ -125,8 +125,8 @@ TEST(test_read_lux_gain1_it100ms)
     mock_set_reg16(REG_ALS_DATA, 1000);
     float lux = 0.0f;
     ASSERT_EQ(veml7700_read_lux(&dev, &lux), VEML7700_OK);
-    /* 1000 x 0.0576 = 57.6 */
-    float expected = 1000.0f * 0.0576f;
+    /* 1000 x 0.0672 = 67.2 */
+    float expected = 1000.0f * 0.0672f;
     float diff = lux - expected;
     if (diff < 0) diff = -diff;
     ASSERT_TRUE(diff < 0.01f);
@@ -134,7 +134,7 @@ TEST(test_read_lux_gain1_it100ms)
 
 TEST(test_read_lux_gain2_it800ms)
 {
-    /* gain=2, IT=800ms -> resolution = 0.0576 / (2 x 8) = 0.0036 */
+    /* gain=2, IT=800ms -> 0.0042 lux/bit, as printed in the datasheet */
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_2, VEML7700_IT_800MS),
               VEML7700_OK);
@@ -142,7 +142,7 @@ TEST(test_read_lux_gain2_it800ms)
     mock_set_reg16(REG_ALS_DATA, 5000);
     float lux = 0.0f;
     ASSERT_EQ(veml7700_read_lux(&dev, &lux), VEML7700_OK);
-    float expected = 5000.0f * (0.0576f / (2.0f * 8.0f));
+    float expected = 5000.0f * 0.0042f;
     float diff = lux - expected;
     if (diff < 0) diff = -diff;
     ASSERT_TRUE(diff < 0.01f);
@@ -150,7 +150,7 @@ TEST(test_read_lux_gain2_it800ms)
 
 TEST(test_read_lux_gain1_8_it25ms)
 {
-    /* gain=1/8, IT=25ms -> resolution = 0.0576 / (0.125 x 0.25) = 1.8432 */
+    /* gain=1/8, IT=25ms -> 2.1504 lux/bit: 512 x the 0.0042 at gain=2, IT=800ms */
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1_8, VEML7700_IT_25MS),
               VEML7700_OK);
@@ -158,7 +158,7 @@ TEST(test_read_lux_gain1_8_it25ms)
     mock_set_reg16(REG_ALS_DATA, 100);
     float lux = 0.0f;
     ASSERT_EQ(veml7700_read_lux(&dev, &lux), VEML7700_OK);
-    float expected = 100.0f * (0.0576f / (0.125f * 0.25f));
+    float expected = 100.0f * 2.1504f;
     float diff = lux - expected;
     if (diff < 0) diff = -diff;
     ASSERT_TRUE(diff < 0.1f);

@@ -3,7 +3,7 @@
 **Status: candidate**
 **Layer: L1 (drivers)**
 
-16-bit register-based I2C ambient light sensor with configurable gain (1/8x to 2x) and integration time (25ms to 800ms). Provides ALS and White channel raw reads plus computed lux output. Alternative to BH1750 with better dynamic range (0.0036 to 1.8432 lux/bit resolution).
+16-bit register-based I2C ambient light sensor with configurable gain (1/8x to 2x) and integration time (25ms to 800ms). Provides ALS and White channel raw reads plus computed lux output. Alternative to BH1750 with better dynamic range (0.0042 to 2.1504 lux/bit resolution).
 
 ## Origin
 

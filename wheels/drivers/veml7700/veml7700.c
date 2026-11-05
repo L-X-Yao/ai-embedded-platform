@@ -13,7 +13,7 @@
  *   0x05  White data
  *
  * Lux = raw_als x resolution, where resolution depends on gain x IT.
- * Base resolution: gain=1, IT=100ms -> 0.0576 lux/bit (datasheet Table 1).
+ * Base resolution: gain=1, IT=100ms -> 0.0672 lux/bit (Vishay 84286 rev 1.8).
  */
 
 #include "veml7700.h"
@@ -32,7 +32,7 @@
 #define CONF_GAIN_MASK   0x03u
 
 /* --- base resolution at gain=1, IT=100ms (lux per count) --- */
-#define BASE_RESOLUTION  0.0576f
+#define BASE_RESOLUTION  0.0672f
 
 /* ---- helpers ---- */
 
