@@ -104,6 +104,11 @@ static void nrf_cs_high(void *ctx)
         nrf_mock.regs[0x07] |= NRF_STATUS_RX_DR;
         nrf_mock.tx_pending = false;
     }
+
+    /* A payload leaves the RX FIFO once it has been read */
+    if (nrf_mock.spi_cmd == NRF_CMD_R_RX_PAYLOAD) {
+        nrf_mock.rx_len = 0;
+    }
 }
 
 static uint8_t nrf_xfer(void *ctx, uint8_t tx)
@@ -137,6 +142,9 @@ static uint8_t nrf_xfer(void *ctx, uint8_t tx)
     if ((nrf_mock.spi_cmd & 0xE0) == NRF_CMD_R_REGISTER) {
         /* Read register */
         uint8_t reg = nrf_mock.spi_cmd & 0x1F;
+        if (reg == 0x17) {
+            return nrf_mock.rx_len ? 0x10 : 0x11;  /* FIFO_STATUS: RX_EMPTY */
+        }
         return nrf_mock.regs[reg + idx];
     }
 
