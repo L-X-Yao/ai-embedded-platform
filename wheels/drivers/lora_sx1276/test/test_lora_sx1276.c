@@ -33,6 +33,9 @@ static int     mock_fail_spi;
 static int     mock_image_cal_seen;
 static int     mock_image_cal_stuck;
 
+/* OpMode at the moment init wrote the FIFO TX base, which exists only in LoRa */
+static uint8_t mock_opmode_at_tx_base;
+
 /* Deferred IRQ: set mock_regs[0x12] after N delay_ms calls */
 static int     mock_delay_count;
 static int     mock_irq_after_delays;  /* 0 = disabled */
@@ -106,6 +109,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                 tx = (uint8_t)((tx & 0x7F) | (mock_regs[0x01] & 0x80));
             }
             mock_regs[0x01] = tx;
+        } else if (spi_current_addr == 0x0E) {
+            mock_opmode_at_tx_base = mock_regs[0x01];
+            mock_regs[0x0E] = tx;
         } else if (spi_current_addr == 0x3B) {
             if (tx & 0x40) mock_image_cal_seen = (mock_regs[0x01] & 0x80) ? -1 : 1;
             mock_regs[0x3B] = mock_image_cal_stuck ? (uint8_t)(tx | 0x20) : tx;
@@ -674,6 +680,8 @@ TEST(test_init_really_enters_lora_mode)
     memset(&dev, 0, sizeof(dev));
     ASSERT_EQ(lora_init(&dev, &mock_spi, 433000000UL), LORA_OK);
     ASSERT_EQ(mock_regs[0x01] & 0x80, 0x80);
+    /* the LoRa registers are set up after the switch, not before it */
+    ASSERT_EQ(mock_opmode_at_tx_base & 0x80, 0x80);
 }
 
 TEST(test_init_calibrates_at_the_frequency_in_use)
