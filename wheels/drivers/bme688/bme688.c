@@ -320,6 +320,7 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
     uint16_t adc_gas  = (uint16_t)((uint16_t)buf[13] << 2 | (buf[14] >> 6));
     uint8_t  gas_range = buf[14] & 0x0F;
     uint8_t  gas_valid = (buf[14] >> 5) & 0x01;
+    uint8_t  heat_stab = (buf[14] >> 4) & 0x01;
 
     /* compensate -- temperature must be first (sets t_fine) */
     int32_t temp_comp = compensate_temperature(dev, adc_temp);
@@ -331,7 +332,8 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
     uint32_t hum_comp = compensate_humidity(dev, adc_hum);
     out->humidity_pct = (float)hum_comp / 1000.0f;
 
-    if (gas_valid)
+    /* without heat_stab_r the plate did not reach its target temperature */
+    if (gas_valid && heat_stab)
     {
         uint32_t gas_comp = compensate_gas(adc_gas, gas_range);
         out->gas_resistance_ohm = gas_comp;
