@@ -4,6 +4,16 @@ This file is the single source of truth for audit agents. **Read this before rep
 
 Anything listed here has been evaluated and either fixed or documented as accepted.
 
+## Fixed after the first hosted nightly run (2026-11-05)
+
+The public mirror's nightly workflow (libFuzzer + coverage gate on GitHub-hosted runners) found these on its first run:
+
+- `modbus_tcp`: `6 + header.length` was computed in `uint16_t`, so a length field of 0xFFFF wrapped to 5 and an 8-byte frame passed the size check with `data_len = 0xFFFD`; `modbus_tcp_get_regs` then read past the buffer (ASan heap-buffer-overflow). Fixed with a 32-bit comparison; the fuzzer input is now `test_parse_length_field_wraps_u16`.
+- `nmea_parser`: `strtof` accepts `9e99`, `nan` and `inf`, and `(int)(v / 100.0f)` on those is undefined behaviour. `parse_lat`/`parse_lon` now reject values outside the ddmm.mmmm / dddmm.mmmm range and return 0; regression test `test_rmc_non_finite_lat_lon_rejected`.
+- `syslog_packet` fuzz harness: `data[5] << 24` promoted to `int` and overflowed for bytes >= 0x80 (harness bug, wheel unaffected).
+- `tooling/test/run_libfuzzer.sh`: the `xmodem` and `ymodem` targets had no `crc_any` source or include path and never compiled.
+- `tooling/test/coverage_wheel.sh`: `gcov-tool merge` prints "mismatched profiles" but exits 0 when test targets compile the wheel with different defines (`CONTRACT_ENABLED` adds a function), leaving empty counters; `mpr121` was reported at 0% although its tests cover 100% of lines. Replaced by `tooling/test/gcov_union.py`, a line-level union of the per-target gcov reports. Branch percentage now means "taken at least once".
+
 ## Fixed in R3-R12 (do NOT re-report)
 
 ### Cross-wheel error propagation (R12)
