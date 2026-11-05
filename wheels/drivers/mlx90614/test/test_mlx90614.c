@@ -302,6 +302,22 @@ TEST(test_set_emissivity_pec_covers_address)
     ASSERT_EQ(e, MLX90614_OK);
 }
 
+TEST(test_set_emissivity_requires_delay)
+{
+    /* p16: after each write, "Wait at least 5ms (10ms to be on the safe
+     * side)". Without a delay callback the cell must stay untouched. */
+    mlx90614_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+    mlx90614_t d;
+    mock_reset();
+    plant_temp(0x06, 25.0f);
+    ASSERT_EQ(mlx90614_init(&d, &no_delay, &default_cfg), MLX90614_OK);
+    mock_write_count = 0;
+
+    ASSERT_EQ(mlx90614_set_emissivity(&d, 0.95f), MLX90614_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, 0);
+}
+
 TEST(test_set_emissivity_range)
 {
     setup();
@@ -358,6 +374,7 @@ TEST_MAIN("mlx90614")
     RUN(test_ref_pec_matches_manual_figures);
     RUN(test_set_emissivity_frames_carry_pec);
     RUN(test_set_emissivity_pec_covers_address);
+    RUN(test_set_emissivity_requires_delay);
     RUN(test_set_emissivity_range);
     RUN(test_set_emissivity_i2c_fail);
     RUN(test_high_temp);

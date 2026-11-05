@@ -17,7 +17,7 @@ static mlx90614_model_t model;
 static const mlx90614_i2c_t model_i2c = {
     .write    = mlx90614_model_write,
     .read     = mlx90614_model_read,
-    .delay_ms = NULL,
+    .delay_ms = mlx90614_model_delay,
     .ctx      = &model,
 };
 
@@ -140,7 +140,6 @@ TEST(test_set_emissivity)
     mlx90614_t dev;
     mlx90614_init(&dev, &model_i2c, &default_cfg);
 
-    /* Need delay for EEPROM write */
     mlx90614_err_t err = mlx90614_set_emissivity(&dev, 0.95f);
     ASSERT_EQ(err, MLX90614_OK);
 
