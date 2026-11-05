@@ -54,7 +54,9 @@ typedef struct {
 /** @thread_safe: yes (pure function, no state) */
 websocket_frame_err_t websocket_frame_parse(const uint8_t *data, size_t len, websocket_frame_t *frame);
 
-/** Build a WebSocket frame into buf; writes total frame length to out_len. */
+/** Build a WebSocket frame into buf; writes total frame length to out_len.
+ *  A control frame that is fragmented or longer than 125 bytes returns
+ *  WEBSOCKET_FRAME_ERR_PROTOCOL (RFC 6455 section 5.5). */
 websocket_frame_err_t websocket_frame_build(uint8_t *buf, size_t buf_len, size_t *out_len,
                         bool fin, websocket_frame_opcode_t opcode,
                         const uint8_t *mask_key,
