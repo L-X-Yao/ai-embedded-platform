@@ -230,6 +230,33 @@ TEST(test_read_euler_360)
     ASSERT_NEAR(euler.heading_deg, 359.9375f, 0.01f);
 }
 
+TEST(test_read_euler_needs_fusion_mode)
+{
+    bno055_euler_t euler;
+    setup();
+
+    /* CONFIG output is all zero, which would read as level and pointing north. */
+    ASSERT_EQ(bno055_set_mode(&dev, BNO055_MODE_CONFIG), BNO055_OK);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_ERR_PARAM);
+
+    ASSERT_EQ(bno055_set_mode(&dev, BNO055_MODE_NDOF), BNO055_OK);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_OK);
+}
+
+TEST(test_init_requires_delay)
+{
+    static const bno055_i2c_t no_delay = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = NULL,
+        .ctx       = NULL,
+    };
+    bno055_t d;
+    mock_reset();
+
+    ASSERT_EQ(bno055_init(&d, &no_delay, &default_cfg), BNO055_ERR_PARAM);
+}
+
 TEST_MAIN("bno055")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -249,4 +276,6 @@ TEST_MAIN("bno055")
     RUN(test_delay_called_for_fusion);
     RUN(test_init_invalid_mode);
     RUN(test_read_euler_360);
+    RUN(test_read_euler_needs_fusion_mode);
+    RUN(test_init_requires_delay);
 TEST_MAIN_END()

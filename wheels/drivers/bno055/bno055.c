@@ -41,10 +41,7 @@ static bool read_regs(const bno055_t *dev, uint8_t reg, uint8_t *buf,
 
 static void delay(const bno055_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 static bool is_fusion_mode(bno055_opr_mode_t mode)
@@ -80,6 +77,12 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
                          const bno055_cfg_t *cfg)
 {
     if (!dev || !i2c || !cfg)
+    {
+        return BNO055_ERR_PARAM;
+    }
+
+    /* Mode changes need their settling time, so the delay is not optional */
+    if (!i2c->delay_ms)
     {
         return BNO055_ERR_PARAM;
     }
@@ -125,6 +128,12 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
 bno055_err_t bno055_read_euler(const bno055_t *dev, bno055_euler_t *out)
 {
     if (!dev || !out)
+    {
+        return BNO055_ERR_PARAM;
+    }
+
+    /* Orientation output only exists in the fusion modes */
+    if (!is_fusion_mode(dev->cfg.mode))
     {
         return BNO055_ERR_PARAM;
     }
