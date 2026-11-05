@@ -259,10 +259,8 @@ gc9a01_err_t gc9a01_sleep(gc9a01_t *dev, bool enable)
         return GC9A01_ERR_PARAM;
     }
     write_cmd(dev, enable ? GC9A01_CMD_SLPIN : GC9A01_CMD_SLPOUT);
-    if (!enable) {
-        /* datasheet: need 120ms delay after sleep out */
-        dev->spi->delay_ms(dev->spi->ctx, 120);
-    }
+    /* datasheet: 120ms before the opposite sleep command, in both directions */
+    dev->spi->delay_ms(dev->spi->ctx, 120);
     return GC9A01_OK;
 }
 

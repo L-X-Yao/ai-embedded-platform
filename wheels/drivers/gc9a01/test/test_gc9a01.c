@@ -525,6 +525,8 @@ TEST(test_sleep_enter)
     gc9a01_err_t e = gc9a01_sleep(&dev, true);
     ASSERT_EQ(e, GC9A01_OK);
     ASSERT_TRUE(find_cmd(GC9A01_CMD_SLPIN) >= 0);
+    /* V1.0 p.103: SLPOUT can only follow 120 ms after SLPIN */
+    ASSERT_TRUE(delay_total_ms >= 120);
 }
 
 TEST(test_sleep_exit)

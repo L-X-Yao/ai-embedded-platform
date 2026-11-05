@@ -135,7 +135,8 @@ gc9a01_err_t gc9a01_fill(gc9a01_t *dev, uint16_t color);
 gc9a01_err_t gc9a01_set_rotation(gc9a01_t *dev, uint8_t rotation);
 
 /**
- * Enter or exit sleep mode.
+ * Enter or exit sleep mode. Either way this waits the 120 ms the display
+ * needs before the opposite command.
  *
  * @param enable  true = enter sleep, false = exit sleep
  *

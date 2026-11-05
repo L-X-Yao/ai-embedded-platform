@@ -173,6 +173,7 @@ TEST(test_sleep_exit_model)
     gc9a01_sleep(&dev, true);
     gc9a01_sleep(&dev, false);
     ASSERT_TRUE(gc9a01_model_is_awake(&model));
+    ASSERT_EQ(model.seq_violations, 0);  /* 120 ms between SLPIN and SLPOUT */
 }
 
 TEST(test_display_off_model)
