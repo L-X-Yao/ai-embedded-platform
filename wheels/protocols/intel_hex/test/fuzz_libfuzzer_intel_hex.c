@@ -47,11 +47,13 @@ static void decode_any_count(fuzz_input_t *in) {
 
     intel_hex_record_t rec;
     intel_hex_err_t err = intel_hex_decode(line, len, &rec);
-    if (count == n && n <= INTEL_HEX_MAX_DATA) {
+    if (count == n && n <= INTEL_HEX_MAX_DATA && type <= INTEL_HEX_START_LINEAR) {
         if (err != INTEL_HEX_OK || rec.data_len != n || rec.address != address ||
-            memcmp(rec.data, body, n) != 0) {
+            rec.type != type || memcmp(rec.data, body, n) != 0) {
             __builtin_trap();
         }
+    } else if (err == INTEL_HEX_OK) {
+        __builtin_trap();
     }
     free(line);
 }

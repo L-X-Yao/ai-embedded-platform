@@ -51,8 +51,9 @@ intel_hex_err_t intel_hex_decode(const char *line, size_t len,
     if (byte_count < 0)
         return INTEL_HEX_ERR_FORMAT;
 
-    size_t expected = 1 + (size_t)(4 + byte_count + 1) * 2 + 2;
-    if (len < expected - 2)
+    /* ':', then count, address, type, data and checksum as hex pairs. */
+    size_t expected = 1 + (size_t)(4 + byte_count + 1) * 2;
+    if (len < expected)
         return INTEL_HEX_ERR_SHORT;
 
     int addr_hi = hex_byte(&line[3]);
@@ -60,9 +61,13 @@ intel_hex_err_t intel_hex_decode(const char *line, size_t len,
     int rec_type = hex_byte(&line[7]);
     if (addr_hi < 0 || addr_lo < 0 || rec_type < 0)
         return INTEL_HEX_ERR_FORMAT;
+    if (rec_type > INTEL_HEX_START_LINEAR)
+        return INTEL_HEX_ERR_FORMAT;
 
     if (byte_count > INTEL_HEX_MAX_DATA)
         return INTEL_HEX_ERR_OVERFLOW;
+    if (len > expected)
+        return INTEL_HEX_ERR_FORMAT;
 
     uint8_t checksum = (uint8_t)((uint8_t)byte_count + (uint8_t)addr_hi +
                                 (uint8_t)addr_lo + (uint8_t)rec_type);
@@ -93,6 +98,8 @@ intel_hex_err_t intel_hex_encode(const intel_hex_record_t *rec,
                                  char *buf, size_t cap, size_t *out_len)
 {
     if (!rec || !buf || !out_len)
+        return INTEL_HEX_ERR_PARAM;
+    if ((uint32_t)rec->type > (uint32_t)INTEL_HEX_START_LINEAR)
         return INTEL_HEX_ERR_PARAM;
     if (rec->data_len > INTEL_HEX_MAX_DATA)
         return INTEL_HEX_ERR_OVERFLOW;

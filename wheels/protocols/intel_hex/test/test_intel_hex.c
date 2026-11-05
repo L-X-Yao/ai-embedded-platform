@@ -166,6 +166,39 @@ TEST(test_fuzz)
     }
 }
 
+TEST(test_decode_rejects_undefined_record_type)
+{
+    intel_hex_record_t rec;
+    /* the checksums are right, so only the type check can refuse these */
+    ASSERT_EQ(intel_hex_decode(":00000006FA", 11, &rec), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(intel_hex_decode(":000000FF01", 11, &rec), INTEL_HEX_ERR_FORMAT);
+}
+
+TEST(test_decode_rejects_text_after_checksum)
+{
+    intel_hex_record_t rec;
+    ASSERT_EQ(intel_hex_decode(":00000001FFjunk", 15, &rec), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(intel_hex_decode(":00000001FF00", 13, &rec), INTEL_HEX_ERR_FORMAT);
+}
+
+TEST(test_decode_allows_line_ending_after_checksum)
+{
+    intel_hex_record_t rec;
+    ASSERT_EQ(intel_hex_decode(":00000001FF\r\n", 13, &rec), INTEL_HEX_OK);
+    ASSERT_EQ(intel_hex_decode(":00000001FF\n", 12, &rec), INTEL_HEX_OK);
+}
+
+TEST(test_encode_rejects_undefined_record_type)
+{
+    intel_hex_record_t rec;
+    char buf[32];
+    size_t len = 0;
+
+    memset(&rec, 0, sizeof(rec));
+    rec.type = (intel_hex_type_t)(INTEL_HEX_START_LINEAR + 1);
+    ASSERT_EQ(intel_hex_encode(&rec, buf, sizeof(buf), &len), INTEL_HEX_ERR_PARAM);
+}
+
 TEST_MAIN("intel_hex")
     RUN(test_decode_data);
     RUN(test_decode_eof);
@@ -183,4 +216,8 @@ TEST_MAIN("intel_hex")
     RUN(test_roundtrip_eof);
     RUN(test_error_codes);
     RUN(test_fuzz);
+    RUN(test_decode_rejects_undefined_record_type);
+    RUN(test_decode_rejects_text_after_checksum);
+    RUN(test_decode_allows_line_ending_after_checksum);
+    RUN(test_encode_rejects_undefined_record_type);
 TEST_MAIN_END()
