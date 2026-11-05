@@ -51,11 +51,13 @@ typedef struct {
     uint8_t          data_len;
 } intel_hex_record_t;
 
-/** Decode one Intel HEX line. @thread_safe: yes @isr_safe: yes */
+/** Decode one Intel HEX line. Only CR and LF may follow the checksum, and an
+ *  undefined record type returns INTEL_HEX_ERR_FORMAT. @thread_safe: yes @isr_safe: yes */
 intel_hex_err_t intel_hex_decode(const char *line, size_t len,
                                  intel_hex_record_t *out);
 
-/** Encode one Intel HEX record. Returns bytes written via out_len. @thread_safe: yes @isr_safe: yes */
+/** Encode one Intel HEX record. Returns bytes written via out_len. An undefined
+ *  record type returns INTEL_HEX_ERR_PARAM. @thread_safe: yes @isr_safe: yes */
 intel_hex_err_t intel_hex_encode(const intel_hex_record_t *rec,
                                  char *buf, size_t cap, size_t *out_len);
 
