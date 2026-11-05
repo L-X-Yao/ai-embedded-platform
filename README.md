@@ -118,13 +118,13 @@ Gates every component passes before it is allowed into `wheels/`:
 
 | Gate | Scope | Tooling |
 |------|-------|---------|
-| Host unit tests | 259/259 components, 1,431 test files, 11,138 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
+| Host unit tests | 259/259 components, 1,168 test sources, 11,241 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
 | 63-check static audit (API naming, NULL guards, error codes, polling delays, test/run balance, ...) | 259/259 | `tooling/audit/audit_wheels.py` |
 | Line coverage >= 80% | 259/259 (nightly gate) | `tooling/test/coverage_scan.sh` |
 | AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 | `tooling/audit/audit_sanitizer.py` |
 | Generated NULL-argument and boundary-value tests | every public API | `tooling/codegen/` |
 | ARM cross-compile, Cortex-M4 `-Os` | 259/259, per-component sizes in [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) | `tooling/audit/arm_size_audit.sh` |
-| libFuzzer harnesses | 53 targets (42 protocol parsers, 11 parsing primitives) | `tooling/test/run_libfuzzer.sh` |
+| libFuzzer harnesses | 53 targets (42 protocols, 11 primitives), parsers and encoders | `tooling/test/run_libfuzzer.sh` |
 | Property-based, differential and mutation tests | where the component shape allows | `tooling/test/` |
 | Pre-commit gate | build + test + audit must pass before a wheel commit is accepted | `make wheel-gate` |
 
