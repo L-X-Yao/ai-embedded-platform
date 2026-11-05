@@ -158,6 +158,38 @@ TEST(test_set_resolution)
     ASSERT_TRUE((model.user_reg & 0x81) == 0x01);
 }
 
+/* --- conversion timing ------------------------------------------------ */
+
+/* p.20: "Device will NACK the slave address byte until conversion is
+ * complete." Table 2 (p.5): 12 ms for RH plus 10.8 ms for the temperature
+ * measurement that comes with it. */
+TEST(test_model_nacks_read_during_rh_conversion)
+{
+    setup();
+    uint8_t cmd = SI_CMD_MEASURE_RH_NOHOLD;
+    uint8_t buf[3];
+
+    ASSERT_TRUE(si7021_model_write(&model, SI7021_DEV_ADDR, &cmd, 1));
+    ASSERT_FALSE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3));
+    si7021_model_delay(&model, 22);
+    ASSERT_FALSE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3));
+    si7021_model_delay(&model, 1);
+    ASSERT_TRUE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3));
+}
+
+TEST(test_model_nacks_read_during_temp_conversion)
+{
+    setup();
+    uint8_t cmd = SI_CMD_MEASURE_TEMP_NOHOLD;
+    uint8_t buf[3];
+
+    ASSERT_TRUE(si7021_model_write(&model, SI7021_DEV_ADDR, &cmd, 1));
+    si7021_model_delay(&model, 10);
+    ASSERT_FALSE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3));
+    si7021_model_delay(&model, 1);
+    ASSERT_TRUE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3));
+}
+
 /* --- reset ------------------------------------------------------------ */
 
 TEST(test_reset)
@@ -250,6 +282,8 @@ TEST_MAIN("si7021 hardware model")
     RUN(test_crc_matches_driver);
     RUN(test_crc_zero);
     RUN(test_set_resolution);
+    RUN(test_model_nacks_read_during_rh_conversion);
+    RUN(test_model_nacks_read_during_temp_conversion);
     RUN(test_reset);
     RUN(test_read_serial);
     RUN(test_temperature_varies);

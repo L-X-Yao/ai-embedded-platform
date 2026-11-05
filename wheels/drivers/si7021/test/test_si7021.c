@@ -120,6 +120,16 @@ TEST(test_init_null_callbacks)
     ASSERT_EQ(si7021_init(&d, &bad), SI7021_ERR_PARAM);
 }
 
+/* Si7021-A20 Rev. 1.2 p.20: "Device will NACK the slave address byte until
+ * conversion is complete." Without delay_ms every read would land there. */
+TEST(test_init_null_delay)
+{
+    si7021_i2c_t no_delay = { .write = mock_write, .read = mock_read,
+                              .delay_ms = NULL, .ctx = NULL };
+    si7021_t d;
+    ASSERT_EQ(si7021_init(&d, &no_delay), SI7021_ERR_PARAM);
+}
+
 TEST(test_read_humidity_25pct)
 {
     setup();
@@ -432,6 +442,7 @@ TEST_MAIN("si7021")
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_null_callbacks);
+    RUN(test_init_null_delay);
     RUN(test_read_humidity_25pct);
     RUN(test_read_humidity_50pct);
     RUN(test_read_temperature_25c);
