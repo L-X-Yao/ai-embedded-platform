@@ -37,6 +37,8 @@
 #define RESET_CMD         0xB6u
 #define MODE_FORCED       0x01u
 #define RUN_GAS           0x20u  /* ctrl_gas_1 run_gas<5> */
+#define HEATER_MAX_C      400
+#define T_FINE_25C        128000  /* t_fine for 25 degC */
 
 /* --- internal helpers --- */
 
@@ -214,6 +216,7 @@ bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
+    dev->t_fine = T_FINE_25C;  /* heater ambient until the first read */
 
     /* verify chip ID */
     uint8_t id = 0;
@@ -352,19 +355,20 @@ bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
     if (!dev)
         return BME688_ERR_PARAM;
 
-    /* calculate heater resistance register value
-     * formula from Bosch BME680/BME688 reference code */
-    int32_t rhr = (int32_t)dev->res_heat_range * 16384;
-    int32_t pgh = (int32_t)dev->par_gh1 / 16;
-    float var1f = ((float)dev->par_gh2 / 32768.0f) *
-                  ((float)rhr + (float)pgh + 49152.0f);
-    int32_t var1 = (var1f <= -2147483648.0f) ? (int32_t)-2147483647 - 1
-                 : (var1f >=  2147483647.0f) ? (int32_t) 2147483647
-                 : (int32_t)var1f;
-    int32_t var2 = (var1 / 32768) + 1;
-    int32_t var3 = (int32_t)temp_c * var2 / 2;
-    int32_t var4 = var3 + (dev->res_heat_val * 16);
-    int32_t res_raw = (var4 + 50) / 100;
+    /* heater resistance register value, integer code from the manual.
+     * amb_temp is in 0.01 degC, like temp_comp: only then does this code
+     * agree with the floating point form printed next to it */
+    int32_t target = (temp_c > HEATER_MAX_C) ? HEATER_MAX_C : temp_c;
+    int32_t amb_temp = (dev->t_fine * 5 + 128) >> 8;
+    int32_t var1 = ((amb_temp * dev->par_gh3) / 10) * 256;
+    int32_t var2 = (dev->par_gh1 + 784) *
+                   (((((dev->par_gh2 + 154009) * target * 5) / 100) +
+                     3276800) / 10);
+    int32_t var3 = var1 + (var2 >> 1);
+    int32_t var4 = var3 / (dev->res_heat_range + 4);
+    int32_t var5 = (131 * dev->res_heat_val) + 65536;
+    int32_t res_heat_x100 = ((var4 / var5) - 250) * 34;
+    int32_t res_raw = (res_heat_x100 + 50) / 100;
     uint8_t res_heat = (res_raw <= 0) ? 0u
                      : (res_raw >= 255) ? 255u
                      : (uint8_t)res_raw;

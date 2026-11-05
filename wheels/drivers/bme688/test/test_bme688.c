@@ -179,6 +179,19 @@ static double manual_humidity(uint16_t adc, double temp_c)
     return var2 + ((var3 + (var4 * temp_c)) * var2 * var2);
 }
 
+/* Floating point form from manual p27 with the mock's calibration */
+static double manual_res_heat(double target, double amb, double gh3)
+{
+    const double gh1 = 0.0, gh2 = -3100.0, range = 1.0, val = 50.0;
+    double var1 = (gh1 / 16.0) + 49.0;
+    double var2 = ((gh2 / 32768.0) * 0.0005) + 0.00235;
+    double var3 = gh3 / 1024.0;
+    double var4 = var1 * (1.0 + (var2 * target));
+    double var5 = var4 + (var3 * amb);
+    return 3.4 * ((var5 * (4.0 / (4.0 + range)) *
+                   (1.0 / (1.0 + (val * 0.002)))) - 25.0);
+}
+
 /* ---------- tests ---------- */
 
 TEST(test_init_null)
@@ -308,6 +321,62 @@ TEST(test_gas_heater)
     ASSERT_EQ(e, BME688_OK);
     ASSERT_TRUE(data.gas_valid);
     ASSERT_TRUE(data.gas_resistance_ohm > 0);
+}
+
+/* Integer code on manual p27 worked by hand for 300 degC with the mock's
+ * calibration: var2 = 784 * 554043 = 434369712, var3 = 217184856,
+ * var4 = 43436971, var5 = 72086, (602 - 250) * 34 = 11968, 12018 / 100 */
+TEST(test_res_heat_matches_manual)
+{
+    static const struct {
+        uint16_t temp_c;
+        uint8_t  code;
+    } v[] = {
+        { 300, 120 },
+        { 200,  92 },
+        { 320, 125 },
+        { 400, 148 },
+    };
+
+    for (unsigned i = 0; i < sizeof(v) / sizeof(v[0]); i++)
+    {
+        setup();
+        ASSERT_EQ(bme688_set_gas_heater(&dev, v[i].temp_c, 100), BME688_OK);
+        ASSERT_EQ(mock_regs[0x5A], v[i].code);
+        ASSERT_NEAR(mock_regs[0x5A], manual_res_heat(v[i].temp_c, 25.0, 0.0),
+                    1.0f);
+    }
+}
+
+/* bme68x.c caps the target at 400 degC, the top of the range on p27 */
+TEST(test_res_heat_caps_target)
+{
+    setup();
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 1000, 100), BME688_OK);
+    ASSERT_EQ(mock_regs[0x5A], 148);
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 65535, 100), BME688_OK);
+    ASSERT_EQ(mock_regs[0x5A], 148);
+}
+
+/* par_gh3 = 100 makes the ambient term big enough to see. The integer code
+ * agrees with the floating point form only with amb_temp in 0.01 degC */
+TEST(test_res_heat_uses_ambient)
+{
+    mock_reset();
+    mock_regs[0xEE] = 100;
+    ASSERT_EQ(bme688_init(&dev, &mock_i2c, &default_cfg), BME688_OK);
+
+    /* no reading yet: 25 degC */
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 300, 100), BME688_OK);
+    ASSERT_NEAR(mock_regs[0x5A], manual_res_heat(300.0, 25.0, 100.0), 1.0f);
+
+    /* then the last measured temperature, about 60 degC here */
+    plant_data(415148, 608000, 25000, 300, 3, true);
+    bme688_data_t data;
+    ASSERT_EQ(bme688_read(&dev, &data), BME688_OK);
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 300, 100), BME688_OK);
+    ASSERT_NEAR(mock_regs[0x5A],
+                manual_res_heat(300.0, manual_temp_c(608000), 100.0), 1.0f);
 }
 
 TEST(test_oversampling_config)
@@ -650,6 +719,9 @@ TEST_MAIN("bme688")
     RUN(test_read_tph);
     RUN(test_humidity_matches_manual);
     RUN(test_gas_heater);
+    RUN(test_res_heat_matches_manual);
+    RUN(test_res_heat_caps_target);
+    RUN(test_res_heat_uses_ambient);
     RUN(test_oversampling_config);
     RUN(test_oversampling_invalid);
     RUN(test_read_gas_invalid);
