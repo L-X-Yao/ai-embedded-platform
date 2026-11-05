@@ -35,6 +35,7 @@ static uint8_t mock_rssi_raw;
 
 /* Busy pin simulation */
 static bool mock_busy;
+static bool mock_asleep;  /* BUSY stays high until NSS falls */
 
 /* SPI error injection */
 static bool mock_spi_error;
@@ -63,6 +64,7 @@ static void mock_reset_all(void)
     mock_rx_offset = 0;
     mock_rssi_raw = 0;
     mock_busy = false;
+    mock_asleep = false;
     mock_spi_error = false;
     mock_status_byte = 0x22; /* standby mode */
     mock_reg_read = 0;
@@ -71,6 +73,7 @@ static void mock_reset_all(void)
 static void mock_cs_select(void *ctx)
 {
     (void)ctx;
+    mock_asleep = false;
 }
 
 static void mock_cs_deselect(void *ctx)
@@ -164,7 +167,7 @@ static void mock_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
 static bool mock_is_busy(void *ctx)
 {
     (void)ctx;
-    return mock_busy;
+    return mock_busy || mock_asleep;
 }
 
 static bool mock_get_spi_error(void *ctx)
@@ -890,6 +893,20 @@ TEST(test_configure_lora_tx_modulation_workaround)
     ASSERT_EQ(cmd_log[last_register_write(0x0889)][3], 0x04);
 }
 
+TEST(test_standby_wakes_the_chip_from_sleep)
+{
+    mock_reset_all();
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    sx1262_init(&dev, &mock_hal);
+    ASSERT_EQ(sx1262_sleep(&dev), SX1262_OK);
+
+    /* BUSY stays high through SLEEP, and only NSS falling ends it */
+    mock_asleep = true;
+    ASSERT_EQ(sx1262_standby(&dev), SX1262_OK);
+    ASSERT_FALSE(mock_asleep);
+}
+
 TEST_MAIN("sx1262")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -938,4 +955,5 @@ TEST_MAIN("sx1262")
     RUN(test_configure_lora_invalid_bw);
     RUN(test_configure_lora_low_data_rate_optimize);
     RUN(test_configure_lora_tx_modulation_workaround);
+    RUN(test_standby_wakes_the_chip_from_sleep);
 TEST_MAIN_END()
