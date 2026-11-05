@@ -478,6 +478,24 @@ TEST(test_roundtrip_one_byte_output_chunks)
     ASSERT_MEMEQ_N(output, input, sizeof(input));
 }
 
+TEST(test_roundtrip_input_larger_than_window)
+{
+    uint8_t input[700];
+    uint8_t compressed[1024];
+    uint8_t output[700];
+    uint16_t compressed_len = 0;
+    uint16_t output_len = 0;
+
+    fill_mixed(input, sizeof(input));
+
+    ASSERT_EQ(compress_chunked(input, sizeof(input), compressed, sizeof(compressed),
+                               &compressed_len, 16), 0);
+    ASSERT_EQ(decompress_all(compressed, compressed_len, output, sizeof(output),
+                             &output_len, 8, 4), 0);
+    ASSERT_EQ(output_len, sizeof(input));
+    ASSERT_MEMEQ_N(output, input, sizeof(input));
+}
+
 TEST_MAIN("heatshrink")
     RUN(test_init_null);
     RUN(test_encode_empty);
@@ -487,4 +505,5 @@ TEST_MAIN("heatshrink")
     RUN(test_streaming);
     RUN(test_reset);
     RUN(test_roundtrip_one_byte_output_chunks);
+    RUN(test_roundtrip_input_larger_than_window);
 TEST_MAIN_END()
