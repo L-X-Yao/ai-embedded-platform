@@ -341,6 +341,42 @@ TEST(test_end_with_nothing_open_is_malformed)
     ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
 }
 
+TEST(test_deepest_dict_ends_as_dict)
+{
+    uint8_t in[BENCODE_MAX_DEPTH * 2];
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+    memset(in, 'd', BENCODE_MAX_DEPTH);
+    memset(in + BENCODE_MAX_DEPTH, 'e', BENCODE_MAX_DEPTH);
+
+    ASSERT_EQ(bencode_decoder_init(&dec, in, sizeof(in)), BENCODE_OK);
+    for (int i = 0; i < BENCODE_MAX_DEPTH; i++) {
+        ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+        ASSERT_EQ(tok.type, BENCODE_TOKEN_DICT_BEGIN);
+    }
+    for (int i = 0; i < BENCODE_MAX_DEPTH; i++) {
+        ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+        ASSERT_EQ(tok.type, BENCODE_TOKEN_DICT_END);
+    }
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_END);
+}
+
+TEST(test_depth_limit_refuses_one_level_more)
+{
+    uint8_t in[BENCODE_MAX_DEPTH + 1];
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+
+    for (int open = 'd'; open != 0; open = (open == 'd') ? 'l' : 0) {
+        memset(in, open, sizeof(in));
+        ASSERT_EQ(bencode_decoder_init(&dec, in, sizeof(in)), BENCODE_OK);
+        for (int i = 0; i < BENCODE_MAX_DEPTH; i++) {
+            ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+        }
+        ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_OVERFLOW);
+    }
+}
+
 TEST_MAIN("bencode")
     RUN(test_encode_int_positive);
     RUN(test_encode_int_zero);
@@ -363,4 +399,6 @@ TEST_MAIN("bencode")
     RUN(test_null_params);
     RUN(test_encode_string_nonzero_len_null_data);
     RUN(test_end_with_nothing_open_is_malformed);
+    RUN(test_deepest_dict_ends_as_dict);
+    RUN(test_depth_limit_refuses_one_level_more);
 TEST_MAIN_END()

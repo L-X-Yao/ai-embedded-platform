@@ -116,16 +116,37 @@ static void round_trip(fuzz_input_t *in) {
     free(buf);
 }
 
+// Drain tokens until error or exhaustion. Each end token must close the container
+// opened last, and only nesting past the limit may overflow.
+static void drain(bencode_decoder_t *dec) {
+    bencode_token_type_t open[BENCODE_MAX_DEPTH];
+    int depth = 0;
+    bencode_token_t token;
+
+    for (int i = 0; i < 4096; i++) {
+        bencode_err_t err = bencode_decode_next(dec, &token);
+        if (err != BENCODE_OK) {
+            if (err == BENCODE_ERR_OVERFLOW && depth != BENCODE_MAX_DEPTH) __builtin_trap();
+            return;
+        }
+        if (token.type == BENCODE_TOKEN_LIST_BEGIN || token.type == BENCODE_TOKEN_DICT_BEGIN) {
+            if (depth == BENCODE_MAX_DEPTH) __builtin_trap();
+            open[depth++] = token.type;
+        } else if (token.type == BENCODE_TOKEN_LIST_END || token.type == BENCODE_TOKEN_DICT_END) {
+            if (depth == 0) __builtin_trap();
+            depth--;
+            if ((open[depth] == BENCODE_TOKEN_DICT_BEGIN) !=
+                (token.type == BENCODE_TOKEN_DICT_END)) {
+                __builtin_trap();
+            }
+        }
+    }
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     bencode_decoder_t dec;
     bencode_decoder_init(&dec, data, size);
-
-    // Drain all tokens until error or exhaustion
-    bencode_token_t token;
-    for (int i = 0; i < 4096; i++) {
-        bencode_err_t err = bencode_decode_next(&dec, &token);
-        if (err != BENCODE_OK) break;
-    }
+    drain(&dec);
 
     fuzz_input_t in;
     fuzz_input_init(&in, data, size);

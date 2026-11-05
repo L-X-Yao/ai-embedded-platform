@@ -240,20 +240,20 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
 
     /* List begin */
     if (ch == 'l') {
+        if (dec->depth >= BENCODE_MAX_DEPTH)
+            return BENCODE_ERR_OVERFLOW;
         dec->pos++;
-        if (dec->depth < BENCODE_MAX_DEPTH)
-            dec->nesting[dec->depth] = 'l';
-        dec->depth++;
+        dec->nesting[dec->depth++] = 'l';
         token->type = BENCODE_TOKEN_LIST_BEGIN;
         return BENCODE_OK;
     }
 
     /* Dict begin */
     if (ch == 'd') {
+        if (dec->depth >= BENCODE_MAX_DEPTH)
+            return BENCODE_ERR_OVERFLOW;
         dec->pos++;
-        if (dec->depth < BENCODE_MAX_DEPTH)
-            dec->nesting[dec->depth] = 'd';
-        dec->depth++;
+        dec->nesting[dec->depth++] = 'd';
         token->type = BENCODE_TOKEN_DICT_BEGIN;
         return BENCODE_OK;
     }
@@ -264,8 +264,7 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
             return BENCODE_ERR_MALFORMED;
         dec->pos++;
         dec->depth--;
-        if (dec->depth < BENCODE_MAX_DEPTH &&
-            dec->nesting[dec->depth] == 'd') {
+        if (dec->nesting[dec->depth] == 'd') {
             token->type = BENCODE_TOKEN_DICT_END;
         } else {
             token->type = BENCODE_TOKEN_LIST_END;
