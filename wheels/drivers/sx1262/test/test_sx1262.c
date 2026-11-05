@@ -42,6 +42,9 @@ static bool mock_spi_error;
 /* Status byte */
 static uint8_t mock_status_byte;
 
+/* Value returned for any ReadRegister */
+static uint8_t mock_reg_read;
+
 static void mock_reset_all(void)
 {
     cmd_log_count = 0;
@@ -62,6 +65,7 @@ static void mock_reset_all(void)
     mock_busy = false;
     mock_spi_error = false;
     mock_status_byte = 0x22; /* standby mode */
+    mock_reg_read = 0;
 }
 
 static void mock_cs_select(void *ctx)
@@ -134,9 +138,15 @@ static void mock_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
         }
         break;
 
-    case 0x15: /* GetRssiInst */
+    case 0x14: /* GetPacketStatus */
         if (rx && len >= 3) {
             rx[2] = mock_rssi_raw;
+        }
+        break;
+
+    case 0x1D: /* ReadRegister */
+        if (rx && len >= 5) {
+            rx[4] = mock_reg_read;
         }
         break;
 
@@ -184,6 +194,32 @@ static const sx1262_hal_t mock_hal = {
     .get_spi_error  = mock_get_spi_error,
     .ctx            = NULL,
 };
+
+static int last_cmd(uint8_t opcode)
+{
+    for (int i = cmd_log_count - 1; i >= 0; i--) {
+        if (cmd_log[i][0] == opcode) return i;
+    }
+    return -1;
+}
+
+static int last_register_write(uint16_t addr)
+{
+    for (int i = cmd_log_count - 1; i >= 0; i--) {
+        if (cmd_log[i][0] == 0x0D && cmd_log[i][1] == (uint8_t)(addr >> 8) &&
+            cmd_log[i][2] == (uint8_t)addr) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void init_dev(sx1262_t *dev)
+{
+    mock_reset_all();
+    memset(dev, 0, sizeof(*dev));
+    (void)sx1262_init(dev, &mock_hal);
+}
 
 /* ---------- tests ---------- */
 
@@ -240,14 +276,15 @@ TEST(test_init_sends_standby_and_packet_type)
 
     sx1262_init(&dev, &mock_hal);
 
-    /* Should have sent at least 2 commands: SetStandby + SetPacketType */
-    ASSERT_TRUE(cmd_log_count >= 2);
+    /* SetStandby, GetStatus to verify the chip, then SetPacketType */
+    ASSERT_TRUE(cmd_log_count >= 3);
     /* First command: SetStandby (0x80) with RC param */
     ASSERT_EQ(cmd_log[0][0], 0x80);
     ASSERT_EQ(cmd_log[0][1], 0x00); /* STDBY_RC */
-    /* Second command: SetPacketType (0x8A) with LoRa */
-    ASSERT_EQ(cmd_log[1][0], 0x8A);
-    ASSERT_EQ(cmd_log[1][1], 0x01); /* PACKET_TYPE_LORA */
+    ASSERT_EQ(cmd_log[1][0], 0xC0);
+    /* Third command: SetPacketType (0x8A) with LoRa */
+    ASSERT_EQ(cmd_log[2][0], 0x8A);
+    ASSERT_EQ(cmd_log[2][1], 0x01); /* PACKET_TYPE_LORA */
 }
 
 TEST(test_set_frequency_433)
@@ -631,6 +668,228 @@ TEST(test_set_frequency_boundary)
     ASSERT_EQ(sx1262_set_frequency(&dev, 960000001UL), SX1262_ERR_PARAM);
 }
 
+TEST(test_init_rejects_silent_bus)
+{
+    mock_reset_all();
+    mock_status_byte = 0x00; /* nothing answered */
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(sx1262_init(&dev, &mock_hal), SX1262_ERR_SPI);
+}
+
+TEST(test_init_configures_power_amplifier)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    int pa = last_cmd(0x95);
+    ASSERT_TRUE(pa >= 0);
+    ASSERT_EQ(cmd_log[pa][1], 0x04); /* paDutyCycle */
+    ASSERT_EQ(cmd_log[pa][2], 0x07); /* hpMax */
+    ASSERT_EQ(cmd_log[pa][3], 0x00); /* deviceSel: SX1262 */
+    ASSERT_EQ(cmd_log[pa][4], 0x01); /* paLut */
+
+    int tx = last_cmd(0x8E);
+    ASSERT_TRUE(tx > pa);
+    ASSERT_EQ(cmd_log[tx][1], 14);   /* dBm */
+    ASSERT_EQ(cmd_log[tx][2], 0x04); /* 200 us ramp */
+}
+
+TEST(test_init_sets_tx_clamp)
+{
+    mock_reset_all();
+    mock_reg_read = 0x40;
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(sx1262_init(&dev, &mock_hal), SX1262_OK);
+
+    int w = last_register_write(0x08D8);
+    ASSERT_TRUE(w >= 0);
+    ASSERT_EQ(cmd_log[w][3], 0x5E);
+}
+
+TEST(test_transmit_sets_payload_length)
+{
+    sx1262_t dev;
+    uint8_t data[10] = { 0 };
+    init_dev(&dev);
+    mock_irq_after_delays = 1;
+
+    ASSERT_EQ(sx1262_transmit(&dev, data, sizeof(data)), SX1262_OK);
+
+    int params = last_cmd(0x8C);
+    ASSERT_TRUE(params >= 0);
+    ASSERT_EQ(cmd_log[params][4], 10);
+    ASSERT_TRUE(params < last_cmd(0x83));
+}
+
+TEST(test_transmit_timeout_covers_time_on_air)
+{
+    sx1262_t dev;
+    uint8_t data[255] = { 0 };
+    init_dev(&dev);
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF12, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    mock_irq_after_delays = 1;
+
+    ASSERT_EQ(sx1262_transmit(&dev, data, sizeof(data)), SX1262_OK);
+
+    /* 263 symbols take 8627 ms; with 1000 ms margin that is 616128 RTC steps. */
+    int tx = last_cmd(0x83);
+    ASSERT_TRUE(tx >= 0);
+    ASSERT_EQ(cmd_log[tx][1], 0x09);
+    ASSERT_EQ(cmd_log[tx][2], 0x66);
+    ASSERT_EQ(cmd_log[tx][3], 0xC0);
+}
+
+TEST(test_transmit_reports_chip_timeout)
+{
+    sx1262_t dev;
+    uint8_t data[4] = { 0 };
+    init_dev(&dev);
+    mock_delay_count = 0;
+    mock_irq_status = 0x0200;
+
+    ASSERT_EQ(sx1262_transmit(&dev, data, sizeof(data)), SX1262_ERR_TIMEOUT);
+    ASSERT_EQ(mock_delay_count, 1);
+
+    int irq = last_cmd(0x08);
+    ASSERT_EQ(cmd_log[irq][1], 0x02); /* Timeout */
+    ASSERT_EQ(cmd_log[irq][2], 0x01); /* TxDone */
+}
+
+TEST(test_receive_restores_max_length)
+{
+    sx1262_t dev;
+    uint8_t data[4] = { 0 };
+    uint8_t out[8];
+    uint8_t out_len = 0;
+    init_dev(&dev);
+    mock_irq_after_delays = 1;
+    ASSERT_EQ(sx1262_transmit(&dev, data, sizeof(data)), SX1262_OK);
+
+    mock_irq_after_delays = 0;
+    mock_irq_status = 0x0200;
+    (void)sx1262_receive(&dev, out, sizeof(out), &out_len);
+
+    ASSERT_EQ(cmd_log[last_cmd(0x8C)][4], 0xFF);
+}
+
+TEST(test_receive_reports_crc_error)
+{
+    sx1262_t dev;
+    uint8_t out[8];
+    uint8_t out_len = 0;
+    init_dev(&dev);
+    mock_irq_status = 0x0042; /* RxDone with CrcErr */
+
+    ASSERT_EQ(sx1262_receive(&dev, out, sizeof(out), &out_len), SX1262_ERR_CRC);
+    ASSERT_EQ(last_cmd(0x1E), -1); /* nothing read from the buffer */
+}
+
+TEST(test_receive_waits_three_seconds)
+{
+    sx1262_t dev;
+    uint8_t out[8];
+    uint8_t out_len = 0;
+    init_dev(&dev);
+    mock_irq_status = 0x0200;
+
+    ASSERT_EQ(sx1262_receive(&dev, out, sizeof(out), &out_len), SX1262_ERR_TIMEOUT);
+
+    int rx = last_cmd(0x82);
+    ASSERT_EQ(cmd_log[rx][1], 0x02); /* 3000 ms = 192000 steps = 0x02EE00 */
+    ASSERT_EQ(cmd_log[rx][2], 0xEE);
+    ASSERT_EQ(cmd_log[rx][3], 0x00);
+}
+
+TEST(test_receive_stops_rtc_after_timeout)
+{
+    sx1262_t dev;
+    uint8_t out[8];
+    uint8_t out_len = 0;
+    init_dev(&dev);
+    mock_reg_read = 0x10;
+    mock_irq_status = 0x0200;
+
+    ASSERT_EQ(sx1262_receive(&dev, out, sizeof(out), &out_len), SX1262_ERR_TIMEOUT);
+
+    int rtc = last_register_write(0x0902);
+    ASSERT_TRUE(rtc >= 0);
+    ASSERT_EQ(cmd_log[rtc][3], 0x00);
+
+    int evt = last_register_write(0x0944);
+    ASSERT_TRUE(evt > rtc);
+    ASSERT_EQ(cmd_log[evt][3], 0x12);
+}
+
+TEST(test_get_rssi_reads_packet_status)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    mock_rssi_raw = 161;
+    ASSERT_EQ(sx1262_get_rssi(&dev), -81); /* rounds down, as Semtech's >> 1 */
+    ASSERT_TRUE(last_cmd(0x14) >= 0);
+}
+
+TEST(test_get_rssi_reports_spi_error_as_zero)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    mock_rssi_raw = 160;
+    mock_spi_error = true;
+    ASSERT_EQ(sx1262_get_rssi(&dev), 0);
+}
+
+TEST(test_configure_lora_invalid_bw)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF7, (sx1262_bw_t)7, SX1262_CR_4_5),
+              SX1262_ERR_PARAM);
+}
+
+TEST(test_configure_lora_low_data_rate_optimize)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF10, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_cmd(0x8B)][4], 0);
+
+    /* 16.38 ms symbols and longer: Semtech lists SF11/125k and SF12/250k. */
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF11, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_cmd(0x8B)][4], 1);
+
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF12, SX1262_BW_250K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_cmd(0x8B)][4], 1);
+
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF12, SX1262_BW_500K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_cmd(0x8B)][4], 0);
+}
+
+TEST(test_configure_lora_tx_modulation_workaround)
+{
+    sx1262_t dev;
+    init_dev(&dev);
+
+    mock_reg_read = 0x04;
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF7, SX1262_BW_500K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_register_write(0x0889)][3], 0x00);
+
+    mock_reg_read = 0x00;
+    ASSERT_EQ(sx1262_configure_lora(&dev, SX1262_SF7, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_OK);
+    ASSERT_EQ(cmd_log[last_register_write(0x0889)][3], 0x04);
+}
+
 TEST_MAIN("sx1262")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -664,4 +923,19 @@ TEST_MAIN("sx1262")
     RUN(test_get_status);
     RUN(test_get_status_null);
     RUN(test_busy_timeout);
+    RUN(test_init_rejects_silent_bus);
+    RUN(test_init_configures_power_amplifier);
+    RUN(test_init_sets_tx_clamp);
+    RUN(test_transmit_sets_payload_length);
+    RUN(test_transmit_timeout_covers_time_on_air);
+    RUN(test_transmit_reports_chip_timeout);
+    RUN(test_receive_restores_max_length);
+    RUN(test_receive_reports_crc_error);
+    RUN(test_receive_waits_three_seconds);
+    RUN(test_receive_stops_rtc_after_timeout);
+    RUN(test_get_rssi_reads_packet_status);
+    RUN(test_get_rssi_reports_spi_error_as_zero);
+    RUN(test_configure_lora_invalid_bw);
+    RUN(test_configure_lora_low_data_rate_optimize);
+    RUN(test_configure_lora_tx_modulation_workaround);
 TEST_MAIN_END()

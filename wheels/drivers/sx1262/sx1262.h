@@ -32,6 +32,7 @@ typedef enum {
     SX1262_ERR_SPI      = -2,
     SX1262_ERR_BUSY     = -3,
     SX1262_ERR_TIMEOUT  = -4,
+    SX1262_ERR_CRC      = -5,
 } sx1262_err_t;
 
 /* ---------- LoRa parameters ---------- */
@@ -94,7 +95,8 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) @isr_safe: no ---------- */
 
-/** Initialize chip: reset, configure standby, verify communication. */
+/** Initialize chip: enter standby, verify communication, set LoRa and 14 dBm.
+ *  Pulsing NRESET first is up to the caller. */
 sx1262_err_t sx1262_init(sx1262_t *dev, const sx1262_hal_t *hal);
 
 /** Set carrier frequency in Hz (150 MHz - 960 MHz). */
@@ -107,7 +109,8 @@ sx1262_err_t sx1262_configure_lora(sx1262_t *dev, sx1262_sf_t sf,
 /** Transmit packet (blocks until TX done or timeout). Max 255 bytes. */
 sx1262_err_t sx1262_transmit(sx1262_t *dev, const uint8_t *data, uint8_t len);
 
-/** Receive packet (blocks until RX done or timeout). */
+/** Receive packet (blocks until RX done or timeout).
+ *  Returns SX1262_ERR_CRC for a packet that arrived damaged. */
 sx1262_err_t sx1262_receive(sx1262_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len);
 
