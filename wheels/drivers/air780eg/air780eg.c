@@ -31,7 +31,8 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
         if (topic_end == NULL) return;
         char topic[AIR780EG_TOPIC_MAX];
         size_t tlen = (size_t)(topic_end - p);
-        if (tlen >= sizeof(topic)) tlen = sizeof(topic) - 1;
+        /* A shortened topic could match a different subscription. */
+        if (tlen >= sizeof(topic)) return;
         memcpy(topic, p, tlen);
         topic[tlen] = '\0';
 
