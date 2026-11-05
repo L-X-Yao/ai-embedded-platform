@@ -182,8 +182,8 @@ TEST(test_read_25c_50pct)
 {
     setup();
 
-    /* raw_t for 25 C: raw = (25+45)/175 * 65535 = 26214 */
-    /* raw_h for 50%: raw = 50/100 * 65535 = 32768 */
+    /* raw_t for 25 C: raw = (25+45)/175 * 65536 = 26214 */
+    /* raw_h for 50%: raw = 50/100 * 65536 = 32768 */
     plant_reading(26214, 32768);
 
     shtc3_data_t data;
@@ -197,7 +197,7 @@ TEST(test_read_0c_0pct)
 {
     setup();
 
-    /* raw_t for 0 C: raw = 45/175 * 65535 = 16852 */
+    /* raw_t for 0 C: raw = 45/175 * 65536 = 16852 */
     /* raw_h for 0%: raw = 0 */
     plant_reading(16852, 0);
 
@@ -211,9 +211,9 @@ TEST(test_read_125c_100pct)
 {
     setup();
 
-    /* raw_t for 125 C: raw = (125+45)/175 * 65535 = 63635 */
-    /* raw_h for 100%: raw = 65535 */
-    plant_reading(63635, 65535);
+    /* raw_t for 125 C: raw = (125+45)/175 * 65536 = 63664 */
+    /* raw_h for 100%: raw = 65535 is the largest the 16 bits can hold */
+    plant_reading(63664, 65535);
 
     shtc3_data_t data;
     shtc3_read(&dev, &data);
@@ -225,12 +225,25 @@ TEST(test_read_minus40c)
 {
     setup();
 
-    /* raw_t for -40 C: raw = (-40+45)/175 * 65535 = 1873 */
+    /* raw_t for -40 C: raw = (-40+45)/175 * 65536 = 1873 */
     plant_reading(1873, 0);
 
     shtc3_data_t data;
     shtc3_read(&dev, &data);
     ASSERT_NEAR(data.temperature_c, -40.0f, 0.2f);
+}
+
+TEST(test_read_full_scale_divides_by_2_16)
+{
+    /* p10: T = -45 + 175 * ST / 2^16 and RH = 100 * SRH / 2^16, with no
+     * "-1" term, so full scale falls just short of 130 C and 100 %RH. */
+    setup();
+    plant_reading(0xFFFF, 0xFFFF);
+
+    shtc3_data_t data;
+    ASSERT_EQ(shtc3_read(&dev, &data), SHTC3_OK);
+    ASSERT_NEAR(data.temperature_c, 129.99733f, 0.0005f);
+    ASSERT_NEAR(data.humidity_pct, 99.99847f, 0.0005f);
 }
 
 TEST(test_read_crc_fail_temp)
@@ -385,6 +398,7 @@ TEST_MAIN("shtc3")
     RUN(test_read_0c_0pct);
     RUN(test_read_125c_100pct);
     RUN(test_read_minus40c);
+    RUN(test_read_full_scale_divides_by_2_16);
     RUN(test_read_crc_fail_temp);
     RUN(test_read_crc_fail_humidity);
     RUN(test_read_i2c_fail_wakeup);
