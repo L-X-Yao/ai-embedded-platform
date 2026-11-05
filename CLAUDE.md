@@ -1,5 +1,8 @@
 # ai-embedded-platform
 
+> **公开镜像说明（2026-11）**：本仓库是内部 monorepo 的公开副本。`projects/`（客户固件 flybox、drone_light）和 `_eval/` 不在其中，下文凡提到它们的地方，指的是只存在于私有仓库里的工作；`wheels/`、`tooling/`、`docs/`、`examples/`、`vsf-addon/` 完整。
+> **Public mirror note (2026-11):** this is the public copy of an internal monorepo. `projects/` (customer firmware: flybox, drone_light) and `_eval/` are not included; references to them below describe work that exists only in the private repository. Everything under `wheels/`, `tooling/`, `docs/`, `examples/` and `vsf-addon/` is complete.
+
 AI 驱动的嵌入式开发母仓库。**不是**学习仓库、不是 sandbox，是公司真实嵌入式项目的底座。
 
 ## 核心愿景
