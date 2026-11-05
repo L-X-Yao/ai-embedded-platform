@@ -176,6 +176,7 @@ int mqtt5_build_publish(uint8_t *buf, uint16_t size,
 {
     if (!buf || !pub || !pub->topic) return MQTT5_ERR_PARAM;
     if (pub->qos > 2) return MQTT5_ERR_PARAM;
+    if (!pub->payload && pub->payload_len > 0) return MQTT5_ERR_PARAM;
 
     size_t topic_raw = strlen(pub->topic);
     if (topic_raw > UINT16_MAX) return MQTT5_ERR_SIZE;
