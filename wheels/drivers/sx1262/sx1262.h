@@ -86,6 +86,7 @@ typedef struct {
 
 typedef struct {
     const sx1262_hal_t *hal;
+    bool asleep;               /* internal: BUSY is high until the chip is woken */
     uint32_t frequency;
     sx1262_sf_t sf;
     sx1262_bw_t bw;

@@ -364,6 +364,7 @@ sx1262_err_t sx1262_init(sx1262_t *dev, const sx1262_hal_t *hal)
     }
 
     dev->hal = hal;
+    dev->asleep = false;
     dev->frequency = 0;
     dev->sf = SX1262_SF7;
     dev->bw = SX1262_BW_125K;
@@ -664,7 +665,13 @@ sx1262_err_t sx1262_sleep(sx1262_t *dev)
 
     /* SetSleep: warm start (retain config) */
     param = 0x04;
-    return send_command(dev->hal, CMD_SET_SLEEP, &param, 1);
+    sx1262_err_t err = send_command(dev->hal, CMD_SET_SLEEP, &param, 1);
+    if (err != SX1262_OK) return err;
+
+    /* The chip needs 500 us after SetSleep before it can be woken */
+    dev->hal->delay_ms(dev->hal->ctx, 1);
+    dev->asleep = true;
+    return SX1262_OK;
 }
 
 sx1262_err_t sx1262_standby(sx1262_t *dev)
@@ -672,6 +679,13 @@ sx1262_err_t sx1262_standby(sx1262_t *dev)
     uint8_t param;
 
     if (!dev || !dev->hal) return SX1262_ERR_PARAM;
+
+    if (dev->asleep) {
+        /* BUSY stays high through SLEEP, and only NSS falling wakes the chip */
+        dev->hal->cs_select(dev->hal->ctx);
+        dev->hal->cs_deselect(dev->hal->ctx);
+        dev->asleep = false;
+    }
 
     param = STDBY_RC;
     return send_command(dev->hal, CMD_SET_STANDBY, &param, 1);
