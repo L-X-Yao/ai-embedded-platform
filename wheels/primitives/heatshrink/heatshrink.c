@@ -109,8 +109,15 @@ heatshrink_sink_res_t heatshrink_encoder_sink(heatshrink_encoder_t *enc,
     /* How much room is left in the window? */
     uint16_t remaining = enc->window_size - enc->input_pos;
     if (remaining == 0) {
-        *consumed = 0;
-        return HEATSHRINK_SINK_FULL;
+        if (enc->match_scan < enc->input_pos) {
+            *consumed = 0;
+            return HEATSHRINK_SINK_FULL;
+        }
+        /* Window fully encoded: start it over.  New data cannot reference the
+         * old contents, and the decoder needs no notice of the restart. */
+        enc->input_pos = 0;
+        enc->match_scan = 0;
+        remaining = enc->window_size;
     }
 
     uint16_t to_copy = (len < remaining) ? len : remaining;
