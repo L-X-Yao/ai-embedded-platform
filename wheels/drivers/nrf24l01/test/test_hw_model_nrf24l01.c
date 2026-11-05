@@ -247,6 +247,24 @@ TEST(test_model_rx_fifo_pops_on_read)
     ASSERT_EQ(model.rx_fifo[0][0], 0x22);
 }
 
+TEST(test_config_writes_wait_for_standby)
+{
+    setup();
+    nrf24_t dev;
+    static const uint8_t addr[5] = { 1, 2, 3, 4, 5 };
+    ASSERT_EQ(nrf24_init(&dev, &model_spi, 76, 8), NRF24_OK);
+    ASSERT_EQ(nrf24_set_mode(&dev, NRF24_MODE_RX), NRF24_OK);
+
+    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 5), NRF24_OK);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 1, addr, 5), NRF24_OK);
+    ASSERT_EQ(nrf24_set_data_rate(&dev, NRF24_RATE_1MBPS), NRF24_OK);
+    ASSERT_EQ(nrf24_set_power(&dev, NRF24_POWER_0DBM), NRF24_OK);
+    ASSERT_TRUE(model.ce_high);  /* back to listening */
+
+    ASSERT_EQ(nrf24_set_mode(&dev, NRF24_MODE_TX), NRF24_OK);
+    ASSERT_EQ(model.writes_in_rx, 0);
+}
+
 TEST_MAIN("nrf24l01 hardware model")
     RUN(test_init_success);
     RUN(test_init_writes_config);
@@ -265,4 +283,5 @@ TEST_MAIN("nrf24l01 hardware model")
     RUN(test_read_status);
     RUN(test_model_address_writes_leave_rx_pw_alone);
     RUN(test_model_rx_fifo_pops_on_read);
+    RUN(test_config_writes_wait_for_standby);
 TEST_MAIN_END()
