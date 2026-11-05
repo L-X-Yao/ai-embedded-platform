@@ -46,6 +46,10 @@ uint32_t dhcp_packet_option_u32(const dhcp_option_t *opt);
 void     dhcp_packet_option_ip(const dhcp_option_t *opt, uint8_t ip[4]);
 ```
 
+The builders zero-pad after the END option up to `DHCP_PACKET_BOOTP_MIN_LEN`,
+the 300-octet BOOTP minimum from RFC 1542 section 2.1, so `cap` must be at
+least that.
+
 ## Usage
 
 ```c
@@ -81,7 +85,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS
+- Unit tests (sim): 27 pass, 0 fail
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 
 ## API convention deviations

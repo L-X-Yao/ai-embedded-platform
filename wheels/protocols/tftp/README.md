@@ -40,6 +40,10 @@ int  tftp_build_error(uint8_t *buf, size_t cap, uint16_t code, const char *msg);
 bool tftp_is_last_data(const tftp_packet_t *pkt);
 ```
 
+A filename holds at most `TFTP_MAX_FILENAME - 1` bytes. The builders and
+`tftp_parse` return `TFTP_ERR_OVERFLOW` for a longer one, because a shortened
+name is a different file.
+
 ## Usage
 
 ```c
@@ -79,7 +83,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS
+- Unit tests (sim): 34 pass, 0 fail
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 
 ## API convention deviations
