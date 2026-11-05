@@ -29,6 +29,7 @@ typedef enum {
     DPS310_ERR_I2C   = -1,
     DPS310_ERR_ID    = -2,
     DPS310_ERR_PARAM = -3,
+    DPS310_ERR_TIMEOUT = -4,
 } dps310_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -37,7 +38,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = no pause in polls */
     void *ctx;
 } dps310_i2c_t;
 
@@ -100,7 +101,9 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify product ID, read calibration. @thread_safe: no @isr_safe: no */
+/** Configure and verify product ID, wait for start-up to end, read calibration.
+ *  Takes up to 40 ms after power-on or soft reset; DPS310_ERR_TIMEOUT if it
+ *  never ends. @thread_safe: no @isr_safe: no */
 dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
                          const dps310_cfg_t *cfg);
 

@@ -34,10 +34,18 @@
 #define COEF_LEN       18u
 
 /* MEAS_CFG bits */
+#define MEAS_CFG_COEF_RDY   0x80u
+#define MEAS_CFG_SENSOR_RDY 0x40u
+#define MEAS_CFG_START_UP (MEAS_CFG_COEF_RDY | MEAS_CFG_SENSOR_RDY)
 #define MEAS_CFG_TMP_RDY  0x20u
 #define MEAS_CFG_PRS_RDY  0x10u
 #define MEAS_CFG_CMD_TEMP 0x02u  /* single temperature measurement */
 #define MEAS_CFG_CMD_PRS  0x01u  /* single pressure measurement   */
+
+/* MEAS_CFG polls in the start-up wait. At 1 ms each this is far past the
+ * 40 ms of Table 8. With delay_ms NULL only the bus time paces it, about
+ * 48 ms at 400 kHz, so a faster bus can time out on a cold boot. */
+#define START_UP_TRIES 500
 
 /* ---------- scale factor table ---------- */
 
@@ -80,6 +88,31 @@ static int32_t sign_extend_24(uint32_t raw)
         return (int32_t)(raw | 0xFF000000u);
     }
     return (int32_t)raw;
+}
+
+/*
+ * Wait for COEF_RDY and SENSOR_RDY. Table 8 allows 40 ms and 12 ms after
+ * power-on or soft reset, and the coefficients are not valid before that.
+ */
+static dps310_err_t wait_start_up(const dps310_t *dev)
+{
+    for (int tries = 0; tries < START_UP_TRIES; tries++)
+    {
+        uint8_t status;
+        if (!read_regs(dev, REG_MEAS_CFG, &status, 1))
+        {
+            return DPS310_ERR_I2C;
+        }
+        if ((status & MEAS_CFG_START_UP) == MEAS_CFG_START_UP)
+        {
+            return DPS310_OK;
+        }
+        if (dev->i2c->delay_ms)
+        {
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
+        }
+    }
+    return DPS310_ERR_TIMEOUT;
 }
 
 /*
@@ -249,8 +282,15 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
         return DPS310_ERR_ID;
     }
 
+    /* The coefficients can only be read once start-up has finished */
+    dps310_err_t err = wait_start_up(dev);
+    if (err != DPS310_OK)
+    {
+        return err;
+    }
+
     /* Read calibration coefficients */
-    dps310_err_t err = read_calibration(dev);
+    err = read_calibration(dev);
     if (err != DPS310_OK)
     {
         return err;
