@@ -15,6 +15,7 @@
 #include <string.h>
 
 #define HW_NUM_PAGES     12
+#define HW_NUM_FRAME_PAGES 8
 #define HW_REGS_PER_PAGE 256
 
 typedef struct {
@@ -28,6 +29,8 @@ typedef struct {
 static void is31fl3731_model_init(is31fl3731_model_t *m)
 {
     memset(m, 0, sizeof(*m));
+    /* Rev. G p.9 Note 10: frame data is not assured at power-on */
+    memset(m->pages, 0xA5, HW_NUM_FRAME_PAGES * sizeof(m->pages[0]));
     m->current_page = 0;
     m->in_shutdown = true;  /* POR: shutdown mode */
 }

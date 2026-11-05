@@ -54,6 +54,26 @@ TEST(test_hw_init_picture_mode)
     ASSERT_EQ(model.pages[0x0B][0x00], 0x00);
 }
 
+/* Rev. G p.9 Note 10: "Please initialize the Frame Registers first". The model
+ * starts every frame page as junk, so a byte init misses shows up here. */
+TEST(test_hw_init_writes_every_frame)
+{
+    setup();
+    is31fl3731_t dev;
+    ASSERT_EQ(is31fl3731_init(&dev, &model_i2c, &default_cfg), IS31FL3731_OK);
+
+    for (unsigned frame = 0; frame < IS31FL3731_NUM_FRAMES; frame++) {
+        for (unsigned reg = 0x00; reg <= 0x11; reg++)   /* LED Control */
+            ASSERT_EQ(model.pages[frame][reg], 0xFF);
+        for (unsigned reg = 0x12; reg <= 0x23; reg++)   /* Blink Control */
+            ASSERT_EQ(model.pages[frame][reg], 0x00);
+        for (unsigned reg = 0x24; reg <= 0xB3; reg++)   /* PWM */
+            ASSERT_EQ(model.pages[frame][reg], 0x00);
+    }
+    ASSERT_EQ(dev.current_frame, 0);
+    ASSERT_FALSE(model.in_shutdown);
+}
+
 TEST(test_hw_init_enables_leds)
 {
     setup();
@@ -148,6 +168,7 @@ TEST_MAIN("is31fl3731 hardware model")
     RUN(test_hw_init_ok);
     RUN(test_hw_init_exits_shutdown);
     RUN(test_hw_init_picture_mode);
+    RUN(test_hw_init_writes_every_frame);
     RUN(test_hw_init_enables_leds);
     RUN(test_hw_set_pixel_round_trip);
     RUN(test_hw_fill_round_trip);
