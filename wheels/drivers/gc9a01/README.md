@@ -63,6 +63,15 @@ Display is fixed at 240x240 (GC9A01 is a round LCD controller).
 - [x] Host (sim) -- 2026-05-07
 - [ ] Real hardware target -- not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against LCD-DST-3014 GC9A01 Datasheet V1.0 Preliminary (GC9A01A, Rev.1.0 Preliminary, 2019-07-02). Not run on hardware.
+
+- **Matched:** Command codes, MADCTL bits MY to BGR, COLMOD 0x05, CASET and RASET format, the 240x240 area, RGB565 byte order, D/CX and CSX use, the wait after SLPOUT.
+- **Fixed:** `gc9a01_sleep(dev, true)` returned without the 120 ms the manual requires before SLPOUT. `GC9A01_MADCTL_MH` was 0x02; the bit is 0x04.
+- **Still open:** The model's COLMOD reset value is 0x06 where the manual gives 0x66, and its one reset routine clears MADCTL and COLMOD on a software reset, which the manual leaves unchanged. There is no chip ID check, so a missing panel goes unnoticed. No API for INVOFF, TE, partial, idle, scroll, brightness or gamma. Only the 4-line serial interface is supported.
+- **Suspected:** Init sends no vendor init table, so a real panel may show no usable picture. BGR is always 0, so a BGR panel swaps red and blue, and rotation 0 may be mirrored there. Init sends 0x01 as a software reset, which the manual's command list never defines.
+
 ## Known issues
 
 - `fill` and `write_pixels` send pixels one-by-one via `xfer()`. For performance on real hardware, consider a bulk SPI DMA transfer in the HAL layer.
@@ -80,7 +89,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 58 pass, 0 fail
+- Unit tests (sim): 59 pass, 0 fail
 - HW model tests (sim): 18 pass, 0 fail
 - Null tests (auto-generated): 9 pass, 0 fail
 - HIL: N/A

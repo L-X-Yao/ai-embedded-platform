@@ -53,6 +53,14 @@ No compile-time configuration. Address and brightness set at runtime via `ht16k3
 - [x] Host (sim) — 2026-05-13
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against HT16K33 RAM Mapping 16*8 LED Controller Driver with keyscan, Revision V1.10, May 16, 2011. Not run on hardware.
+
+- **Matched:** Addresses 0x70-0x77, system setup 0x21 sent first, display setup 0x81, dimming 0xE0 plus 0-15, the 16-byte display RAM.
+- **Still open:** The model resets brightness to 0 where the manual gives 16/16 duty, accepts commands and RAM writes in standby, and its header denies the readable INT flag and key data, so it cannot catch a write before the oscillator is on. No blink, standby, ROW/INT, key scan or INT flag support. RAM is written one byte per transaction, without the page write.
+- **Suspected:** Commands go out through `write_reg` with a trailing 0x00 the manual never says is ignored. Init turns the display on before dimming and never clears RAM, so old RAM content can show at full brightness. Init does not wait the 1 ms after power-on.
+
 ## Known issues
 
 None.
