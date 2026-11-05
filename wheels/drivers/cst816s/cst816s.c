@@ -24,8 +24,8 @@
 #define REG_YL               0x06u
 #define REG_CHIP_ID          0xA7u
 #define REG_FW_VERSION       0xA9u
-#define REG_MOTION_MASK      0xAAu
-#define REG_AUTO_SLEEP_TIME  0xECu
+#define REG_MOTION_MASK      0xECu
+#define REG_AUTO_SLEEP_TIME  0xF9u
 #define REG_DIS_AUTO_SLEEP   0xFEu
 
 /* ---------- internal helpers ---------- */
@@ -110,11 +110,11 @@ cst816s_err_t cst816s_set_motion_mask(cst816s_t *dev,
 {
     if (!dev) return CST816S_ERR_PARAM;
 
-    /* 0xAA: bit 0 = en_continuous, bit 1 = en_dclick, bit 2 = en_long_press */
+    /* 0xEC: bit 2 = EnConLR, bit 1 = EnConUD, bit 0 = EnDClick */
+    (void)long_press;
     uint8_t val = 0;
-    if (continuous)   val |= 0x01u;
-    if (double_click) val |= 0x02u;
-    if (long_press)   val |= 0x04u;
+    if (continuous)   val |= 0x06u;
+    if (double_click) val |= 0x01u;
 
     if (!write_reg(dev, REG_MOTION_MASK, val))
         return CST816S_ERR_I2C;

@@ -160,7 +160,7 @@ TEST(test_hw_motion_mask_register)
     ASSERT_EQ(model.hw.regs[CST816S_REG_MOTION_MASK], 0x00);
 
     cst816s_set_motion_mask(&dev, true, false, true);
-    ASSERT_EQ(model.hw.regs[CST816S_REG_MOTION_MASK], 0x05);
+    ASSERT_EQ(model.hw.regs[CST816S_REG_MOTION_MASK], 0x06);
 }
 
 /* --- datasheet behavior tests ------------------------------------------ */
