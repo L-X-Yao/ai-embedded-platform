@@ -337,6 +337,21 @@ TEST(test_init_sends_multiple_commands)
  * Runner
  * ==================================================================== */
 
+TEST(test_swreset_keeps_madctl_and_colmod)
+{
+    setup();
+    lcd_st7789_set_rotation(&dev, LCD_ST7789_ROT_90);
+    uint8_t madctl = model.madctl;
+
+    lcd_st7789_model_sw_reset(&model);
+
+    ASSERT_EQ_HEX(model.madctl, madctl);
+    ASSERT_EQ_HEX(model.colmod, LCD_ST7789_COLMOD_RGB565);
+    /* MV=1 swaps the default address window */
+    ASSERT_EQ(model.col_end, 0x013F);
+    ASSERT_EQ(model.row_end, 0x00EF);
+}
+
 TEST_MAIN("lcd_st7789 hardware model")
     /* init sequence */
     RUN(test_init_exits_sleep);
@@ -373,4 +388,5 @@ TEST_MAIN("lcd_st7789 hardware model")
     RUN(test_swreset_returns_to_por_then_reinits);
     /* command count */
     RUN(test_init_sends_multiple_commands);
+    RUN(test_swreset_keeps_madctl_and_colmod);
 TEST_MAIN_END()
