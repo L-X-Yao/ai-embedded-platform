@@ -66,8 +66,11 @@ typedef struct {
 #define FT6X36_REG_P2_YH      0x0Bu
 #define FT6X36_REG_P2_YL      0x0Cu
 #define FT6X36_REG_TH_GROUP   0x80u
+/* 0xA3 and 0xA8 come from the FT6x06 application note and the Adafruit_FT6206
+ * and Arduino-FT6336U headers; no FT6236/FT6336 document could be obtained. */
+#define FT6X36_REG_CHIP_ID    0xA3u  /* CIPHER */
 #define FT6X36_REG_FW_VER     0xA6u
-#define FT6X36_REG_CHIP_ID    0xA8u
+#define FT6X36_REG_PANEL_ID   0xA8u  /* FOCALTECH_ID, not the chip ID */
 
 /* Expected chip ID values */
 #define FT6X36_CHIP_ID_6236   0x36u
@@ -94,7 +97,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify chip ID (0xA8 must read 0x36 or 0x64).
+/** Configure and verify chip ID (0xA3 must read 0x36 or 0x64).
  *  @thread_safe: no @isr_safe: no */
 ft6x36_err_t ft6x36_init(ft6x36_t *dev, const ft6x36_i2c_t *i2c);
 
@@ -106,7 +109,7 @@ ft6x36_err_t ft6x36_read_touch(ft6x36_t *dev, ft6x36_touch_t *out);
  *  @thread_safe: no @isr_safe: no */
 ft6x36_err_t ft6x36_set_threshold(ft6x36_t *dev, uint8_t value);
 
-/** Read chip ID register (0xA8). Result stored in *out.
+/** Read chip ID register (0xA3). Result stored in *out.
  *  @thread_safe: no @isr_safe: no */
 ft6x36_err_t ft6x36_get_chip_id(ft6x36_t *dev, uint8_t *out);
 
