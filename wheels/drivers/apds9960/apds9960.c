@@ -166,15 +166,17 @@ apds9960_err_t apds9960_enable_gesture(apds9960_t *dev)
     err = write_reg(dev, REG_GEXTH, 30);
     if (err != APDS9960_OK) return err;
 
-    /* GCONF1: 4 datasets per FIFO entry, no side masking */
+    /* GCONF1: FIFO threshold 1 dataset, no exit masking, exit on the first
+     * gesture end. The threshold only drives the interrupt, which is off. */
     err = write_reg(dev, REG_GCONF1, 0x00u);
     if (err != APDS9960_OK) return err;
 
-    /* GCONF2: gain x1, LED 100mA, 1 wait time */
+    /* GCONF2: gain x1, LED 100mA, no wait between gesture cycles (0 ms) */
     err = write_reg(dev, REG_GCONF2, 0x00u);
     if (err != APDS9960_OK) return err;
 
-    /* GCONF4: enable gesture interrupt, gesture mode */
+    /* GCONF4: GMODE 1 enters the gesture state machine at once, with no
+     * object needed. GIEN 0 leaves the interrupt off: read_gesture polls. */
     err = write_reg(dev, REG_GCONF4, 0x01u);
     if (err != APDS9960_OK) return err;
 
