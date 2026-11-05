@@ -185,8 +185,10 @@ msgpack_err_t msgpack_enc_str(msgpack_enc_t *enc,
         enc_u8(enc, FMT_STR32);
         enc_u32(enc, (uint32_t)len);
     }
-    memcpy(&enc->buf[enc->pos], str, len);
-    enc->pos += len;
+    if (len > 0) {
+        memcpy(&enc->buf[enc->pos], str, len);
+        enc->pos += len;
+    }
     return MSGPACK_OK;
 }
 
@@ -217,8 +219,10 @@ msgpack_err_t msgpack_enc_bin(msgpack_enc_t *enc,
         enc_u8(enc, FMT_BIN32);
         enc_u32(enc, (uint32_t)len);
     }
-    memcpy(&enc->buf[enc->pos], data, len);
-    enc->pos += len;
+    if (len > 0) {
+        memcpy(&enc->buf[enc->pos], data, len);
+        enc->pos += len;
+    }
     return MSGPACK_OK;
 }
 

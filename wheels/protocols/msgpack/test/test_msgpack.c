@@ -793,6 +793,20 @@ TEST(test_dec_float32_short)
     ASSERT_EQ(msgpack_dec_next(&dec, &tok), MSGPACK_ERR_SHORT);
 }
 
+TEST(test_enc_str_and_bin_accept_null_when_empty)
+{
+    uint8_t buf[4];
+    msgpack_enc_t enc;
+
+    ASSERT_EQ(msgpack_enc_init(&enc, buf, sizeof(buf)), MSGPACK_OK);
+    ASSERT_EQ(msgpack_enc_str(&enc, NULL, 0), MSGPACK_OK);
+    ASSERT_EQ(msgpack_enc_bin(&enc, NULL, 0), MSGPACK_OK);
+    ASSERT_EQ(msgpack_enc_len(&enc), 3);
+    ASSERT_EQ(buf[0], 0xA0);
+    ASSERT_EQ(buf[1], 0xC4);
+    ASSERT_EQ(buf[2], 0x00);
+}
+
 TEST_MAIN("msgpack")
     RUN(test_enc_init_null);
     RUN(test_enc_init_ok);
@@ -852,4 +866,5 @@ TEST_MAIN("msgpack")
     RUN(test_dec_uint32_short);
     RUN(test_dec_bin8_short_payload);
     RUN(test_dec_float32_short);
+    RUN(test_enc_str_and_bin_accept_null_when_empty);
 TEST_MAIN_END()
