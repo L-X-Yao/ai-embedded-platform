@@ -417,7 +417,7 @@ TEST(test_msub_malformed_no_comma)
     ASSERT_EQ(0, g_mqtt_rx_count);
 }
 
-TEST(test_msub_long_topic_truncation)
+TEST(test_msub_long_topic_is_dropped)
 {
     /* Topic of 200 'A' chars — exceeds AIR780EG_TOPIC_MAX (128).
      * Implementation clamps tlen to sizeof(topic)-1 = 127, NUL-terminates,
@@ -440,12 +440,15 @@ TEST(test_msub_long_topic_truncation)
     strcat(line, "\",3,abc");
     feed_line(&dev, line);
 
+    /* a shortened topic could match a different subscription */
+    ASSERT_EQ(0, g_mqtt_rx_count);
+
+    /* the longest topic that fits arrives whole */
+    line[base + 127] = '\0';
+    strcat(line, "\",3,abc");
+    feed_line(&dev, line);
     ASSERT_EQ(1, g_mqtt_rx_count);
-    /* Topic must be exactly 127 chars and NUL-terminated */
     ASSERT_EQ(127, (int)strlen(g_mqtt_rx_topic));
-    ASSERT_EQ('A', (int)(unsigned char)g_mqtt_rx_topic[0]);
-    ASSERT_EQ('A', (int)(unsigned char)g_mqtt_rx_topic[126]);
-    ASSERT_EQ('\0', (int)(unsigned char)g_mqtt_rx_topic[127]);
 }
 
 TEST(test_urc_closed_bare)
@@ -809,7 +812,7 @@ TEST_MAIN("air780eg")
     RUN(test_timeout_tick_overflow);
     RUN(test_msub_unquoted_payload);
     RUN(test_msub_malformed_no_comma);
-    RUN(test_msub_long_topic_truncation);
+    RUN(test_msub_long_topic_is_dropped);
     RUN(test_urc_closed_bare);
     RUN(test_urc_pdp_deact_bare);
     RUN(test_feed_overflow_protection);
