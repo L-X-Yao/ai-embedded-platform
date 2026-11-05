@@ -150,9 +150,20 @@ static void fifo_read_burst(const cc1101_hal_t *hal,
     hal->cs_deselect(hal->ctx);
 }
 
+/* One read can be corrupt while the radio updates the register (SWRS061I p.32),
+ * so a value counts once two reads in a row agree. */
 static uint8_t get_marcstate(const cc1101_hal_t *hal)
 {
-    return status_reg_read(hal, SREG_MARCSTATE) & 0x1FU;
+    uint8_t state = status_reg_read(hal, SREG_MARCSTATE);
+
+    for (uint8_t i = 0; i < 4U; i++) {
+        uint8_t again = status_reg_read(hal, SREG_MARCSTATE);
+        if (again == state) {
+            break;
+        }
+        state = again;
+    }
+    return state & 0x1FU;
 }
 
 static bool frequency_supported(uint32_t freq_hz)
