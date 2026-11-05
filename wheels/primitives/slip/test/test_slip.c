@@ -404,6 +404,28 @@ TEST(test_zero_init_safety)
     slip_decoder_reset(&dec);
 }
 
+TEST(test_encode_long_input_past_capacity)
+{
+    static uint8_t data[40000];
+    static uint8_t out[UINT16_MAX];
+    uint16_t out_len = sizeof(out);
+
+    /* Every END byte doubles, which is 80002 bytes for a 65535-byte buffer. */
+    memset(data, SLIP_END, sizeof(data));
+    ASSERT_EQ(slip_encode(data, sizeof(data), out, &out_len), SLIP_ERR_OVERFLOW);
+}
+
+TEST(test_encode_long_input_that_fits)
+{
+    static const uint8_t data[40000];
+    static uint8_t out[UINT16_MAX];
+    uint16_t out_len = sizeof(out);
+
+    /* No byte needs escaping, so this still fits the largest capacity. */
+    ASSERT_EQ(slip_encode(data, sizeof(data), out, &out_len), SLIP_OK);
+    ASSERT_EQ(out_len, 40002);
+}
+
 TEST_MAIN("slip")
     RUN(test_encode_empty);
     RUN(test_encode_no_special);
@@ -431,4 +453,6 @@ TEST_MAIN("slip")
     RUN(test_stream_overflow);
     RUN(test_stream_init_null);
     RUN(test_zero_init_safety);
+    RUN(test_encode_long_input_past_capacity);
+    RUN(test_encode_long_input_that_fits);
 TEST_MAIN_END()
