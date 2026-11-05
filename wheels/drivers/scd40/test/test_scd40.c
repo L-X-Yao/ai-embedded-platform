@@ -175,20 +175,40 @@ TEST(test_read_measurement)
 TEST(test_data_ready)
 {
     setup();
-    bool ready = false;
+    bool ready = true;
 
-    /* Not ready: status word with only lower 11 bits (e.g. 0x0000) */
-    plant_status(0x0000);
+    /* Table 23, p15: response 0x8000 0xa2 means the low 11 bits are 0,
+     * so data is not ready. Bytes are the manual's, CRC included. */
+    mock_read_data[0] = 0x80;
+    mock_read_data[1] = 0x00;
+    mock_read_data[2] = 0xA2;
     scd40_err_t e = scd40_data_ready(&dev, &ready);
     ASSERT_EQ(e, SCD40_OK);
     ASSERT_FALSE(ready);
 
-    /* Ready: bit 11 set (0x0800) */
-    plant_status(0x0800);
-    mock_op_count = 0;
-    e = scd40_data_ready(&dev, &ready);
-    ASSERT_EQ(e, SCD40_OK);
-    ASSERT_TRUE(ready);
+    /* Only the low 11 bits count, whatever the top 5 hold */
+    static const uint16_t not_ready[] = { 0x0000, 0x0800, 0xF800 };
+    for (size_t i = 0; i < sizeof(not_ready) / sizeof(not_ready[0]); i++)
+    {
+        plant_status(not_ready[i]);
+        mock_op_count = 0;
+        ready = true;
+        e = scd40_data_ready(&dev, &ready);
+        ASSERT_EQ(e, SCD40_OK);
+        ASSERT_FALSE(ready);
+    }
+
+    /* Any low bit set means ready, with the top bits clear or set */
+    static const uint16_t is_ready[] = { 0x0001, 0x0400, 0x07FF, 0x8006 };
+    for (size_t i = 0; i < sizeof(is_ready) / sizeof(is_ready[0]); i++)
+    {
+        plant_status(is_ready[i]);
+        mock_op_count = 0;
+        ready = false;
+        e = scd40_data_ready(&dev, &ready);
+        ASSERT_EQ(e, SCD40_OK);
+        ASSERT_TRUE(ready);
+    }
 
     /* Verify command bytes: 0xE4 0xB8 */
     ASSERT_EQ(mock_last_write[0], 0xE4);
