@@ -870,6 +870,20 @@ TEST(test_receive_reaches_every_queued_payload)
     ASSERT_FALSE(nrf24_data_ready(&dev));
 }
 
+TEST(test_rx_addr_sets_the_pipe_payload_width)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+
+    static const uint8_t addr[5] = { 0xC2, 0xC2, 0xC2, 0xC2, 0xC2 };
+    static const uint8_t lsb = 0xC6;
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 1, addr, 5), NRF24_OK);
+    ASSERT_EQ(mock_regs[REG_RX_PW_P0 + 1], 16);
+    ASSERT_EQ(nrf24_set_rx_addr(&dev, 5, &lsb, 1), NRF24_OK);
+    ASSERT_EQ(mock_regs[REG_RX_PW_P0 + 5], 16);
+}
+
 TEST_MAIN("nrf24l01")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -908,4 +922,5 @@ TEST_MAIN("nrf24l01")
     RUN(test_receive_buf_too_small);
     RUN(test_set_power_n12dbm);
     RUN(test_receive_reaches_every_queued_payload);
+    RUN(test_rx_addr_sets_the_pipe_payload_width);
 TEST_MAIN_END()
