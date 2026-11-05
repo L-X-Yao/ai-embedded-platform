@@ -16,6 +16,8 @@
 #define REG_DATA_X_H 0x03
 #define REG_ID_A     0x0A
 
+#define DATA_OVERFLOW  (-4096)
+
 static const float gain_scale[] = {
     1.0f / 1370.0f,
     1.0f / 1090.0f,
@@ -76,6 +78,8 @@ hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw)
     raw->x = (int16_t)((uint16_t)buf[0] << 8 | buf[1]);
     raw->z = (int16_t)((uint16_t)buf[2] << 8 | buf[3]);
     raw->y = (int16_t)((uint16_t)buf[4] << 8 | buf[5]);
+    if (raw->x == DATA_OVERFLOW || raw->y == DATA_OVERFLOW || raw->z == DATA_OVERFLOW)
+        return HMC5883L_ERR_OVERFLOW;
     return HMC5883L_OK;
 }
 

@@ -28,6 +28,7 @@ typedef enum {
     HMC5883L_ERR_I2C     = -1,
     HMC5883L_ERR_ID      = -2,
     HMC5883L_ERR_PARAM   = -3,
+    HMC5883L_ERR_OVERFLOW = -4,  /* an axis read -4096: ADC overflow or underflow */
 } hmc5883l_err_t;
 
 typedef struct {
