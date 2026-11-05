@@ -26,6 +26,7 @@ static tcs34725_t dev;
 static const tcs34725_i2c_t mock_i2c = {
     .write_reg = mock_i2c_write_reg,
     .read_regs = mock_i2c_read_regs,
+    .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
 
@@ -81,6 +82,33 @@ TEST(test_init_i2c_fail)
     mock_fail_at = 0;  /* fail the first I2C operation (read ID) */
     ASSERT_EQ(tcs34725_init(&dev, &mock_i2c,
               TCS34725_INTEG_24MS, TCS34725_GAIN_1X), TCS34725_ERR_I2C);
+}
+
+TEST(test_init_refuses_missing_delay)
+{
+    mock_reset();
+    tcs34725_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+    ASSERT_EQ(tcs34725_init(&dev, &no_delay,
+              TCS34725_INTEG_24MS, TCS34725_GAIN_1X), TCS34725_ERR_PARAM);
+}
+
+TEST(test_init_pon_write_fail)
+{
+    mock_reset();
+    mock_fail_at = 3;  /* ID, ATIME, CONTROL, then PON */
+    ASSERT_EQ(tcs34725_init(&dev, &mock_i2c,
+              TCS34725_INTEG_24MS, TCS34725_GAIN_1X), TCS34725_ERR_I2C);
+    ASSERT_EQ(mock_delay_ms_count, 0);
+}
+
+TEST(test_init_aen_write_fail)
+{
+    mock_reset();
+    mock_fail_at = 4;  /* ID, ATIME, CONTROL, PON, then PON | AEN */
+    ASSERT_EQ(tcs34725_init(&dev, &mock_i2c,
+              TCS34725_INTEG_24MS, TCS34725_GAIN_1X), TCS34725_ERR_I2C);
+    ASSERT_EQ(mock_delay_ms_count, 1);
 }
 
 TEST(test_init_bad_gain)
@@ -209,6 +237,9 @@ TEST_MAIN("tcs34725")
     RUN(test_init_bad_id);
     RUN(test_init_null);
     RUN(test_init_i2c_fail);
+    RUN(test_init_refuses_missing_delay);
+    RUN(test_init_pon_write_fail);
+    RUN(test_init_aen_write_fail);
     RUN(test_init_bad_gain);
     RUN(test_read_rgbc);
     RUN(test_read_rgbc_null);

@@ -36,7 +36,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* required: PON to AEN wait */
     void *ctx;
 } tcs34725_i2c_t;
 
@@ -91,7 +91,7 @@ tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
 tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
                                  tcs34725_gain_t gain);
 
-/** Enable RGBC measurement (power on + ADC enable).
+/** Enable RGBC measurement (power on, wait 3 ms, ADC enable).
  *  @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_enable(tcs34725_t *dev);
 

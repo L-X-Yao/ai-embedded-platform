@@ -17,7 +17,7 @@ static tcs34725_model_t model;
 static const tcs34725_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
     .read_regs = tcs34725_model_read_regs,
-    .delay_ms  = NULL,
+    .delay_ms  = tcs34725_model_delay_ms,
     .ctx       = &model.hw,
 };
 
@@ -92,6 +92,19 @@ TEST(test_init_enables_pon_aen)
     ASSERT_EQ(model.hw.regs[TCS_REG_ENABLE], 0x03u);
 }
 
+TEST(test_init_refuses_missing_delay)
+{
+    /* With no wait AEN cannot follow PON by the 2.4 ms of p.15 */
+    setup();
+    tcs34725_i2c_t no_delay = model_i2c;
+    no_delay.delay_ms = NULL;
+    tcs34725_t dev;
+    tcs34725_err_t err = tcs34725_init(&dev, &no_delay,
+                                        TCS34725_INTEG_101MS,
+                                        TCS34725_GAIN_1X);
+    ASSERT_EQ(err, TCS34725_ERR_PARAM);
+}
+
 /* --- read tests -------------------------------------------------------- */
 
 TEST(test_read_rgbc)
@@ -131,6 +144,47 @@ TEST(test_block_protocol_steps_through_registers)
     ASSERT_TRUE(tcs34725_model_read_regs(&model.hw, TCS34725_ADDR, 0xB4u, buf, 2));
     ASSERT_EQ(buf[0], 0x88u);
     ASSERT_EQ(buf[1], 0x13u);
+}
+
+TEST(test_pon_and_aen_together_start_nothing)
+{
+    setup();
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x00u);
+}
+
+TEST(test_aen_held_from_pon_starts_nothing)
+{
+    /* AEN has to rise after the interval, not just still be set after it */
+    setup();
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    tcs34725_model_delay_ms(&model.hw, 3);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x00u);
+}
+
+TEST(test_aen_after_pon_interval_starts_rgbc)
+{
+    setup();
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x01);
+    tcs34725_model_delay_ms(&model.hw, 3);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x88u);  /* 5000 = 0x1388 */
+}
+
+TEST(test_enable_waits_after_pon)
+{
+    setup();
+    tcs34725_t dev;
+    tcs34725_init(&dev, &model_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
+    tcs34725_disable(&dev);
+
+    model.true_c = 1234;
+    ASSERT_EQ(tcs34725_enable(&dev), TCS34725_OK);
+
+    tcs34725_rgbc_t rgbc;
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_OK);
+    ASSERT_EQ(rgbc.c, 1234);
 }
 
 TEST(test_chip_id_readonly)
@@ -180,9 +234,14 @@ TEST_MAIN("tcs34725 hardware model")
     RUN(test_init_sets_integration_time);
     RUN(test_init_sets_gain);
     RUN(test_init_enables_pon_aen);
+    RUN(test_init_refuses_missing_delay);
     RUN(test_read_rgbc);
     RUN(test_byte_protocol_repeats_register);
     RUN(test_block_protocol_steps_through_registers);
+    RUN(test_pon_and_aen_together_start_nothing);
+    RUN(test_aen_held_from_pon_starts_nothing);
+    RUN(test_aen_after_pon_interval_starts_rgbc);
+    RUN(test_enable_waits_after_pon);
     RUN(test_chip_id_readonly);
     RUN(test_rgbc_data_readonly);
     RUN(test_disable_clears_enable);
