@@ -93,7 +93,8 @@ isotp_err_t isotp_rx_feed(isotp_rx_t *rx, const uint8_t *can_data, uint8_t dlc)
     }
 
     case ISOTP_FC:
-        return ISOTP_OK;
+        /* Flow control carries no message data, so nothing became ready. */
+        return ISOTP_INCOMPLETE;
 
     default:
         return ISOTP_ERR_FORMAT;
