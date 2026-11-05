@@ -44,6 +44,14 @@ None. I2C address is runtime-configurable via `lm75_init_addr()`.
 - [x] Host (sim) — passed 2026-05-12
 - [ ] ARM Cortex-M — not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against TI SNIS153D (LM75B, LM75C). The NXP LM75B sheet cited above could not be downloaded, so LM75A and NXP behaviour is unchecked. Not run on hardware.
+
+- **Matched:** Addresses, the temperature read as a bus check, pointer values, register widths, byte order, scaling.
+- **Fixed:** All 16 bits went into the temperature although D0 to D6 are undefined, which could add up to 0.496 C. NXP parts use D5 and D6 for finer data, which the driver drops to stay at its stated 9 bits.
+- **Suspected:** Each access restarts the conversion, so polling faster than 300 ms freezes the reading.
+
 ## Known issues
 
 - Only supports 9-bit resolution (LM75 default). LM75A/LM75B 11-bit mode

@@ -18,7 +18,7 @@ Searched GitHub/embedded ecosystem (2026-05-06):
 - STM32 HAL examples tightly coupled to STM32 HAL, not portable.
 - No suitable zero-dependency C99 implementation found that matches wheel contract.
 
-Reference: ST DocID027112 (LPS22HB datasheet).
+Reference: ST DocID027083 (LPS22HB datasheet).
 
 ## Dependencies
 
@@ -46,6 +46,14 @@ lps22hb_err_t lps22hb_read_raw_temperature(lps22hb_t *dev, int16_t *raw);
 
 - [x] Host (sim) — 2026-05-06
 - [ ] Real hardware target — not yet verified
+
+## Datasheet check
+
+Checked on 2026-11-06 against ST DocID027083 Rev 5. Not run on hardware.
+
+- **Matched:** Addresses, WHO_AM_I, register map, ODR codes, output scaling.
+- **Fixed:** With BDU over I2C the manual allows only single-byte reads with IF_ADD_INC clear, and needs PRESS_OUT_H read last. The driver used bursts with 0x2A in the middle, and the temperature read never touched 0x2A, so its output froze. The model now holds samples as the manual says.
+- **Suspected:** `lps22hb_one_shot_trigger` returns at once and the reads never check ONE_SHOT or STATUS, so trigger then read can return the last sample. The model finishes a one-shot inside the write, which hides this.
 
 ## Known issues
 
