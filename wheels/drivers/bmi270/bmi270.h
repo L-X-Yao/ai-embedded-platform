@@ -81,6 +81,7 @@ typedef struct {
 
 /* INTERNAL_STATUS bits */
 #define BMI270_INIT_OK              0x01u
+#define BMI270_INTERNAL_MESSAGE_MASK 0x0Fu
 
 /* CMD register values */
 #define BMI270_CMD_SOFTRESET        0xB6u
@@ -173,7 +174,8 @@ bmi270_err_t bmi270_set_acc_range(bmi270_t *dev, bmi270_acc_range_t range);
  *  @thread_safe: no @isr_safe: no */
 bmi270_err_t bmi270_set_gyro_range(bmi270_t *dev, bmi270_gyro_range_t range);
 
-/** Soft-reset the device.
+/** Soft-reset the device. All settings return to their defaults, so call
+ *  bmi270_init before using it again.
  *  @thread_safe: no @isr_safe: no */
 bmi270_err_t bmi270_soft_reset(const bmi270_t *dev);
 

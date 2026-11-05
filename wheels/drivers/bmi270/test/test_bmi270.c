@@ -28,8 +28,8 @@ static void mock_reset(void)
     /* POR defaults */
     mock_regs[0x00] = 0x24;  /* CHIP_ID */
     mock_regs[0x21] = 0x01;  /* INTERNAL_STATUS: init OK */
-    mock_regs[0x40] = 0x28;  /* ACC_CONF */
-    mock_regs[0x42] = 0x29;  /* GYR_CONF */
+    mock_regs[0x40] = 0xA8;  /* ACC_CONF */
+    mock_regs[0x42] = 0xA9;  /* GYR_CONF */
 }
 
 static void mock_cs_low(void *ctx)
@@ -368,6 +368,130 @@ TEST(test_soft_reset_null)
     ASSERT_EQ(bmi270_soft_reset(NULL), BMI270_ERR_PARAM);
 }
 
+static uint32_t delay_total_ms;
+
+static void count_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    delay_total_ms += ms;
+}
+
+TEST(test_init_enables_accel_gyro_temp_not_aux)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_OK);
+
+    ASSERT_EQ(mock_regs[0x7D], 0x0E); /* the datasheet's own example value */
+}
+
+TEST(test_init_selects_normal_filter_mode)
+{
+    mock_reset();
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_OK);
+
+    /* 100 Hz accel and 200 Hz gyro, the values in the datasheet's quick start. */
+    ASSERT_EQ(mock_regs[0x40], 0xA8);
+    ASSERT_EQ(mock_regs[0x42], 0xA9);
+}
+
+TEST(test_init_rejects_error_messages)
+{
+    static const uint8_t errors[] = { 0x00, 0x03, 0x05, 0x07 };
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+
+    for (unsigned i = 0; i < sizeof(errors); i++) {
+        mock_reset();
+        mock_regs[0x21] = errors[i];
+        ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_ERR_CONFIG);
+    }
+}
+
+TEST(test_init_waits_for_each_step)
+{
+    static const bmi270_spi_t spi = {
+        .cs_low   = mock_cs_low,
+        .cs_high  = mock_cs_high,
+        .xfer     = mock_xfer,
+        .delay_ms = count_delay,
+        .ctx      = NULL,
+    };
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    mock_reset();
+    delay_total_ms = 0;
+
+    ASSERT_EQ(bmi270_init(&dev, &spi, &cfg), BMI270_OK);
+
+    /* 2 ms reset, 1 ms SPI switch, 1 ms after PWR_CONF, 20 ms config load. */
+    ASSERT_EQ(delay_total_ms, 24);
+}
+
+TEST(test_init_requires_delay)
+{
+    static const bmi270_spi_t spi = {
+        .cs_low   = mock_cs_low,
+        .cs_high  = mock_cs_high,
+        .xfer     = mock_xfer,
+        .delay_ms = NULL,
+        .ctx      = NULL,
+    };
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    mock_reset();
+
+    ASSERT_EQ(bmi270_init(&dev, &spi, &cfg), BMI270_ERR_PARAM);
+}
+
+TEST(test_read_after_failed_init_is_rejected)
+{
+    bmi270_accel_gyro_t data;
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    mock_reset();
+    mock_regs[0x00] = 0x00; /* wrong chip ID */
+
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_ERR_ID);
+    ASSERT_EQ(bmi270_read_accel_gyro(&dev, &data), BMI270_ERR_PARAM);
+}
+
+TEST(test_gyro_scale_is_exact)
+{
+    bmi270_accel_gyro_t data;
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    cfg.gyro_range = BMI270_GYRO_RANGE_2000DPS;
+    mock_reset();
+    ASSERT_EQ(bmi270_init(&dev, &mock_spi, &cfg), BMI270_OK);
+
+    inject_accel_gyro(0, 0, 0, 32767, 0, 0); /* full scale */
+    ASSERT_EQ(bmi270_read_accel_gyro(&dev, &data), BMI270_OK);
+    ASSERT_NEAR(data.gx_dps, 1999.94f, 0.01f);
+}
+
+TEST(test_soft_reset_waits_for_the_chip)
+{
+    static const bmi270_spi_t spi = {
+        .cs_low   = mock_cs_low,
+        .cs_high  = mock_cs_high,
+        .xfer     = mock_xfer,
+        .delay_ms = count_delay,
+        .ctx      = NULL,
+    };
+    bmi270_t dev;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    mock_reset();
+    ASSERT_EQ(bmi270_init(&dev, &spi, &cfg), BMI270_OK);
+    delay_total_ms = 0;
+
+    ASSERT_EQ(bmi270_soft_reset(&dev), BMI270_OK);
+    ASSERT_EQ(delay_total_ms, 3);
+}
+
 TEST_MAIN("bmi270")
     RUN(test_init_ok);
     RUN(test_init_bad_id);
@@ -392,4 +516,12 @@ TEST_MAIN("bmi270")
     RUN(test_set_range_null);
     RUN(test_soft_reset);
     RUN(test_soft_reset_null);
+    RUN(test_init_enables_accel_gyro_temp_not_aux);
+    RUN(test_init_selects_normal_filter_mode);
+    RUN(test_init_rejects_error_messages);
+    RUN(test_init_waits_for_each_step);
+    RUN(test_init_requires_delay);
+    RUN(test_read_after_failed_init_is_rejected);
+    RUN(test_gyro_scale_is_exact);
+    RUN(test_soft_reset_waits_for_the_chip);
 TEST_MAIN_END()
