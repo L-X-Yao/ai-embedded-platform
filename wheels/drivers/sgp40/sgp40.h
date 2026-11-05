@@ -57,7 +57,7 @@ uint8_t sgp40_crc8(const uint8_t *data, uint16_t len);
  *  @thread_safe: no @isr_safe: no */
 sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c);
 
-/** Measure raw VOC signal with default compensation (50% RH, 25C).
+/** Measure raw VOC signal uncompensated: the chip reads 50% RH and 25C as off.
  *  @thread_safe: no @isr_safe: no */
 sgp40_err_t sgp40_measure_raw(sgp40_t *dev, sgp40_data_t *out);
 

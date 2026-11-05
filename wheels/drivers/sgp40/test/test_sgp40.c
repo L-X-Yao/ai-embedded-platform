@@ -294,6 +294,28 @@ TEST(test_selftest_command_bytes)
     ASSERT_EQ(mock_write_buf[1], 0x0E);
 }
 
+TEST(test_init_ignores_second_selftest_byte)
+{
+    mock_reset();
+    mock_read_buf[0] = 0xD4;
+    mock_read_buf[1] = 0x5A;
+    mock_read_buf[2] = sgp40_crc8(mock_read_buf, 2);
+    mock_read_len = 3;
+    sgp40_t d;
+    ASSERT_EQ(sgp40_init(&d, &mock_i2c), SGP40_OK);
+}
+
+TEST(test_init_refuses_the_failure_pattern)
+{
+    mock_reset();
+    mock_read_buf[0] = 0x4B;
+    mock_read_buf[1] = 0x5A;
+    mock_read_buf[2] = sgp40_crc8(mock_read_buf, 2);
+    mock_read_len = 3;
+    sgp40_t d;
+    ASSERT_EQ(sgp40_init(&d, &mock_i2c), SGP40_ERR_SELFTEST);
+}
+
 TEST_MAIN("sgp40")
     RUN(test_crc8_known);
     RUN(test_crc8_zeros);
@@ -313,4 +335,6 @@ TEST_MAIN("sgp40")
     RUN(test_delay_during_selftest);
     RUN(test_delay_during_measure);
     RUN(test_selftest_command_bytes);
+    RUN(test_init_ignores_second_selftest_byte);
+    RUN(test_init_refuses_the_failure_pattern);
 TEST_MAIN_END()
