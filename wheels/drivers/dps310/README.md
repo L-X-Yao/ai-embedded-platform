@@ -61,6 +61,15 @@ None. Oversampling and I2C address are runtime-configurable via
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against DPS310 datasheet V1.2, 2020-10-15, document reference IFX-sch1406115644540. Not run on hardware.
+
+- **Matched:** Addresses, register map, MEAS_CFG and CFG_REG fields, oversampling codes and scale factors, soft reset value, coefficient layout and signs, compensation formulas, 24-bit result handling.
+- **Fixed:** `dps310_init` read the coefficients without checking COEF_RDY, so on a cold boot it could store invalid calibration and return OK. It now polls COEF_RDY and SENSOR_RDY and returns the new `DPS310_ERR_TIMEOUT` if they never rise. The ID check tested REV_ID and ignored PROD_ID, so it refused other revisions and took other products. TMP_EXT was always set; it now follows TMP_COEF_SRCE, so a part calibrated against the ASIC sensor uses that sensor. The model now has MEAS_CFG at C0H, runs start-up through the delay callback, keeps the status bits on writes, clears the ready flags on reads and reruns start-up on a soft reset.
+- **Still open:** Figure 4 shows no chip access for the first 2.5 ms after power-up, so `dps310_init` called that early fails with `DPS310_ERR_I2C`. No 128x oversampling, background mode, FIFO, interrupts or SPI. From memory and not in this manual: Infineon's Arduino library writes undocumented registers for parts that report about 60 C, so check for this on first hardware bring-up. The plain mock in `test_dps310.c` stores MEAS_CFG writes whole, which only affects the tests.
+- **Suspected:** `dps310_reset` returns at once, and a read straight after it measures at 1x while still dividing by the configured kP and kT, so `dps310_init` should follow it. With `delay_ms` NULL only the bus paces the polls, about 48 ms at 400 kHz, so 32x and 64x measurements can time out, and so can the start-up wait on a faster bus. CFG_REG is written only when a shift is needed, so a second init at 8x or less keeps the old shift.
+
 ## Known issues
 
 - I2C only; SPI not implemented.
