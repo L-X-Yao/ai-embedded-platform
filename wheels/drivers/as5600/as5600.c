@@ -37,6 +37,24 @@ static bool read_regs(const as5600_t *dev, uint8_t reg,
     return dev->i2c->read_regs(dev->i2c->ctx, AS5600_ADDR, reg, buf, len);
 }
 
+/* Write a 12-bit value to a high/low register pair. Bits 7:4 of the high
+ * register are blank and may hold factory settings, so keep them. */
+static as5600_err_t write_12bit(const as5600_t *dev, uint8_t reg_h,
+                                uint8_t reg_l, uint16_t val)
+{
+    uint8_t high;
+    if (!read_regs(dev, reg_h, &high, 1))
+        return AS5600_ERR_I2C;
+
+    high = (uint8_t)((high & 0xF0u) | (val >> 8));
+    if (!write_reg(dev, reg_h, high))
+        return AS5600_ERR_I2C;
+    if (!write_reg(dev, reg_l, (uint8_t)(val & 0xFF)))
+        return AS5600_ERR_I2C;
+
+    return AS5600_OK;
+}
+
 as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c)
 {
     if (!dev || !i2c)
@@ -101,12 +119,7 @@ as5600_err_t as5600_set_start_position(const as5600_t *dev, uint16_t pos)
     if (pos > ANGLE_MASK)
         return AS5600_ERR_PARAM;
 
-    if (!write_reg(dev, REG_ZPOS_H, (uint8_t)(pos >> 8)))
-        return AS5600_ERR_I2C;
-    if (!write_reg(dev, REG_ZPOS_L, (uint8_t)(pos & 0xFF)))
-        return AS5600_ERR_I2C;
-
-    return AS5600_OK;
+    return write_12bit(dev, REG_ZPOS_H, REG_ZPOS_L, pos);
 }
 
 as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle)
@@ -116,10 +129,5 @@ as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle)
     if (angle > ANGLE_MASK)
         return AS5600_ERR_PARAM;
 
-    if (!write_reg(dev, REG_MANG_H, (uint8_t)(angle >> 8)))
-        return AS5600_ERR_I2C;
-    if (!write_reg(dev, REG_MANG_L, (uint8_t)(angle & 0xFF)))
-        return AS5600_ERR_I2C;
-
-    return AS5600_OK;
+    return write_12bit(dev, REG_MANG_H, REG_MANG_L, angle);
 }

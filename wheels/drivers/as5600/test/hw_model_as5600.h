@@ -38,6 +38,10 @@
 #define AS5600_STATUS_ML      0x10u  /* magnet too weak   */
 #define AS5600_STATUS_MD      0x20u  /* magnet detected   */
 
+/* Bits 7:4 of ZPOS_H, MPOS_H and MANG_H are blank, and v1-06 p.18 note 1 says
+ * blank fields may hold factory settings. The value here is made up. */
+#define AS5600_MODEL_BLANK_BITS 0xA0u
+
 /* --- Simulated environment --- */
 typedef struct {
     hw_reg_model_t   hw;
@@ -79,10 +83,11 @@ static void as5600_model_init(as5600_model_t *m)
     hw_model_set_readonly(&m->hw, AS5600_REG_MAGNITUDE_L);
     hw_model_set_reset_value(&m->hw, AS5600_REG_AGC, 0x80);
 
-    /* ZPOS, MPOS, MANG, CONF: writable (12-bit values, upper nibble masked) */
-    hw_model_set_writable_mask(&m->hw, AS5600_REG_ZPOS_H, 0x0F);
-    hw_model_set_writable_mask(&m->hw, AS5600_REG_MPOS_H, 0x0F);
-    hw_model_set_writable_mask(&m->hw, AS5600_REG_MANG_H, 0x0F);
+    /* ZPOS, MPOS, MANG, CONF: writable. No mask on the blank bits: a mask would
+     * keep them on any write and hide a driver that overwrites them. */
+    hw_model_set_reset_value(&m->hw, AS5600_REG_ZPOS_H, AS5600_MODEL_BLANK_BITS);
+    hw_model_set_reset_value(&m->hw, AS5600_REG_MPOS_H, AS5600_MODEL_BLANK_BITS);
+    hw_model_set_reset_value(&m->hw, AS5600_REG_MANG_H, AS5600_MODEL_BLANK_BITS);
 
     /* Default angle: 180 degrees = 2048 */
     m->true_angle = 2048;
