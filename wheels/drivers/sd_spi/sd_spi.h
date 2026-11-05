@@ -29,6 +29,7 @@ typedef enum {
     SD_SPI_ERR_CMD     = -5,
     SD_SPI_ERR_WRITE   = -6,
     SD_SPI_ERR_INIT    = -7,
+    SD_SPI_ERR_READ    = -8,
 } sd_spi_err_t;
 
 /* ---------- card type ---------- */
