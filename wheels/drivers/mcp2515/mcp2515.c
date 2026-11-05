@@ -75,6 +75,7 @@
 #define TXB_TXREQ           0x08
 #define TXB_EXIDE            0x08
 #define RXB_IDE              0x08
+#define RXB_SRR              0x10
 
 /* Mode values in CANCTRL/CANSTAT bits [7:5] */
 #define OPMOD_NORMAL    0x00
@@ -366,12 +367,14 @@ mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg)
 
     /* read DLC */
     uint8_t raw_dlc = reg_read(dev->spi, dlc_reg);
-    msg->rtr = (raw_dlc & 0x40) != 0;
+    uint8_t sidl = reg_read(dev->spi, (uint8_t)(sidh_base + 1));
+    /* RTR in RXBnDLC is valid only for extended frames; SRR marks standard ones */
+    msg->rtr = msg->extended ? (raw_dlc & 0x40) != 0 : (sidl & RXB_SRR) != 0;
     msg->dlc = raw_dlc & 0x0F;
     if (msg->dlc > 8) msg->dlc = 8;
 
-    /* read data */
-    for (uint8_t i = 0; i < msg->dlc; i++)
+    /* read data: a remote frame has none */
+    for (uint8_t i = 0; !msg->rtr && i < msg->dlc; i++)
         msg->data[i] = reg_read(dev->spi, (uint8_t)(d0_reg + i));
 
     /* clear RX flag */

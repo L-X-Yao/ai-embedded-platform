@@ -753,10 +753,10 @@ TEST(test_receive_rtr_frame)
     memset(&dev, 0, sizeof(dev));
     mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
 
-    /* Inject a frame with RTR bit set in DLC register */
+    /* A standard remote frame is flagged by SRR in RXB0SIDL */
     uint8_t data[1] = {0};
     inject_rx_std(0x200, data, 0);
-    mock_regs[0x65] = 0x40;  /* RTR=1, DLC=0 */
+    mock_regs[0x62] |= 0x10;
 
     mcp2515_msg_t msg;
     memset(&msg, 0, sizeof(msg));
@@ -846,6 +846,43 @@ TEST(test_set_mode_null_spi)
 
 /* ---------- main ---------- */
 
+TEST(test_receive_extended_remote_frame_uses_dlc_bit)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    uint8_t data[1] = {0};
+    inject_rx_ext(0x12345, data, 0);
+    mock_regs[0x65] = 0x42;  /* RTR, and a requested DLC of 2 */
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0xEE, sizeof(msg));
+    ASSERT_EQ(mcp2515_receive(&dev, &msg), MCP2515_OK);
+    ASSERT_TRUE(msg.rtr);
+    ASSERT_EQ(msg.dlc, 2);
+    ASSERT_EQ(msg.data[0], 0xEE);  /* a remote frame carries no data */
+}
+
+TEST(test_standard_data_frame_ignores_dlc_bit_6)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
+
+    uint8_t data[1] = {0x5A};
+    inject_rx_std(0x200, data, 1);
+    mock_regs[0x65] |= 0x40;  /* undefined for a standard frame */
+
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    ASSERT_EQ(mcp2515_receive(&dev, &msg), MCP2515_OK);
+    ASSERT_FALSE(msg.rtr);
+    ASSERT_EQ(msg.data[0], 0x5A);
+}
+
 TEST_MAIN("mcp2515")
     RUN(test_init_ok);
     RUN(test_null_params);
@@ -878,4 +915,6 @@ TEST_MAIN("mcp2515")
     RUN(test_set_filter_extended);
     RUN(test_set_mask_extended);
     RUN(test_set_mode_null_spi);
+    RUN(test_receive_extended_remote_frame_uses_dlc_bit);
+    RUN(test_standard_data_frame_ignores_dlc_bit_6);
 TEST_MAIN_END()
