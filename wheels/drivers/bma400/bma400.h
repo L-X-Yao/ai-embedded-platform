@@ -37,7 +37,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, waits out mode changes */
     void *ctx;
 } bma400_i2c_t;
 
@@ -90,13 +90,15 @@ typedef struct {
 bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
                          const bma400_cfg_t *cfg);
 
-/** Read acceleration in milli-g. @thread_safe: caller_must_lock @isr_safe: no */
+/** Read acceleration in milli-g. Sleep mode has no data and returns
+ *  BMA400_ERR_PARAM. @thread_safe: caller_must_lock @isr_safe: no */
 bma400_err_t bma400_read(bma400_t *dev, bma400_data_t *out);
 
 /** Change power mode at runtime. @thread_safe: no @isr_safe: no */
 bma400_err_t bma400_set_power(bma400_t *dev, bma400_power_t mode);
 
-/** Change full-scale range at runtime. @thread_safe: no @isr_safe: no */
+/** Change full-scale range at runtime. Returns BMA400_ERR_I2C if the chip did
+ *  not take the value. @thread_safe: no @isr_safe: no */
 bma400_err_t bma400_set_range(bma400_t *dev, bma400_range_t range);
 
 #ifdef __cplusplus
