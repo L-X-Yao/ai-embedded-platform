@@ -80,6 +80,10 @@
 #define OCP_DEFAULT           0x2B  /* 100 mA */
 #define OCP_HIGH_POWER        0x31  /* 140 mA */
 
+/* Top of Band 3, where 250 and 500 kHz are not supported */
+#define LOW_BAND_MAX_HZ       175000000UL
+#define BW_250KHZ             8
+
 /* Top of Band 2, the highest band on the LF port */
 #define LF_BAND_MAX_HZ        525000000UL
 
@@ -120,6 +124,13 @@ static lora_err_t set_mode(const lora_spi_t *spi, uint8_t mode)
     /* Read back to verify mode switch took effect */
     uint8_t actual = reg_read(spi, REG_OP_MODE) & (OPMODE_LORA | 0x07);
     return (actual == wanted) ? LORA_OK : LORA_ERR_SPI;
+}
+
+static bool band_supported(uint32_t freq_hz)
+{
+    return (freq_hz >= 137000000UL && freq_hz <= LOW_BAND_MAX_HZ) ||
+           (freq_hz >= 410000000UL && freq_hz <= LF_BAND_MAX_HZ) ||
+           (freq_hz >= 862000000UL && freq_hz <= 1020000000UL);
 }
 
 /* Bandwidth in Hz for each RegModemConfig1 code */
@@ -246,7 +257,8 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
 lora_err_t lora_set_frequency(lora_t *dev, uint32_t freq_hz)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
-    if (freq_hz < 137000000UL || freq_hz > 1020000000UL) {
+    if (!band_supported(freq_hz)) return LORA_ERR_PARAM;
+    if (freq_hz <= LOW_BAND_MAX_HZ && dev->bandwidth >= BW_250KHZ) {
         return LORA_ERR_PARAM;
     }
 
@@ -266,6 +278,7 @@ lora_err_t lora_set_bandwidth(lora_t *dev, uint8_t bw)
 {
     if (!dev || !dev->spi) return LORA_ERR_SPI;
     if (bw > 9) return LORA_ERR_PARAM;
+    if (bw >= BW_250KHZ && dev->frequency <= LOW_BAND_MAX_HZ) return LORA_ERR_PARAM;
 
     const lora_spi_t *spi = dev->spi;
     uint8_t cfg1 = reg_read(spi, REG_MODEM_CONFIG_1);

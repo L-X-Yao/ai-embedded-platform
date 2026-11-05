@@ -801,6 +801,33 @@ TEST(test_rssi_adds_a_negative_snr)
     ASSERT_EQ(lora_get_rssi(&dev), -157 + 100);
 }
 
+TEST(test_frequency_must_be_in_a_band)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    ASSERT_EQ(lora_set_frequency(&dev, 300000000UL), LORA_ERR_PARAM);
+    ASSERT_EQ(lora_set_frequency(&dev, 600000000UL), LORA_ERR_PARAM);
+    ASSERT_EQ(lora_set_frequency(&dev, 169000000UL), LORA_OK);
+    ASSERT_EQ(lora_set_frequency(&dev, 915000000UL), LORA_OK);
+}
+
+TEST(test_wide_bandwidths_stay_out_of_the_low_band)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 169000000UL);
+    ASSERT_EQ(lora_set_bandwidth(&dev, 8), LORA_ERR_PARAM);
+    ASSERT_EQ(lora_set_bandwidth(&dev, 7), LORA_OK);
+
+    lora_set_frequency(&dev, 433000000UL);
+    ASSERT_EQ(lora_set_bandwidth(&dev, 9), LORA_OK);
+    ASSERT_EQ(lora_set_frequency(&dev, 169000000UL), LORA_ERR_PARAM);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -841,4 +868,6 @@ TEST_MAIN("lora_sx1276")
     RUN(test_send_waits_for_a_long_packet);
     RUN(test_receive_stops_at_rx_timeout);
     RUN(test_rssi_adds_a_negative_snr);
+    RUN(test_frequency_must_be_in_a_band);
+    RUN(test_wide_bandwidths_stay_out_of_the_low_band);
 TEST_MAIN_END()
