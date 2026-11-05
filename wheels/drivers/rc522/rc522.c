@@ -245,11 +245,15 @@ rc522_err_t rc522_self_test(rc522_t *dev)
     reg_write(spi, RC522_REG_COMMAND, RC522_CMD_IDLE);
     reg_write(spi, RC522_REG_AUTOTEST, 0x00);
 
-    if (wait == 0) return RC522_ERR_TIMEOUT;
+    if (wait == 0) {
+        configure(spi);
+        return RC522_ERR_TIMEOUT;
+    }
 
     /* Read and check: at least one non-zero byte expected */
     uint8_t result[64];
     fifo_read(spi, result, 64);
+    configure(spi);
 
     bool all_zero = true;
     for (uint8_t i = 0; i < 64; i++) {
