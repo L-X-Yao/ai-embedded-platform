@@ -86,11 +86,12 @@
 /* ---------- CNF values for 8 MHz crystal ---------- */
 
 /*
- * Bit timing for 8 MHz oscillator:
- *   125 kbps: TQ=500ns, SJW=1, BRP=3,  PS1=3, PS2=3, PROPSEG=1
- *   250 kbps: TQ=250ns, SJW=1, BRP=1,  PS1=3, PS2=3, PROPSEG=1
- *   500 kbps: TQ=125ns, SJW=1, BRP=0,  PS1=3, PS2=3, PROPSEG=1
- *   1 Mbps:   TQ=125ns, SJW=1, BRP=0,  PS1=1, PS2=1, PROPSEG=1
+ * Bit timing for 8 MHz oscillator, TQ = 2 x (BRP + 1) / FOSC:
+ *   125 kbps: TQ=1000ns, SJW=1, BRP=3,  PS1=3, PS2=3, PROPSEG=1
+ *   250 kbps: TQ=500ns,  SJW=1, BRP=1,  PS1=3, PS2=3, PROPSEG=1
+ *   500 kbps: TQ=250ns,  SJW=1, BRP=0,  PS1=3, PS2=3, PROPSEG=1
+ * 1 Mbps needs a faster oscillator: at 250 ns a bit has only 4 TQ, too few
+ * for the 2 TQ minimum of PS2.
  */
 
 typedef struct {
@@ -103,7 +104,6 @@ static const cnf_set_t cnf_table[] = {
     [MCP2515_SPEED_125KBPS] = { 0x03, 0x90, 0x02 },  /* BRP=3, PS1=2, PROPSEG=0, PS2=2 */
     [MCP2515_SPEED_250KBPS] = { 0x01, 0x90, 0x02 },  /* BRP=1 */
     [MCP2515_SPEED_500KBPS] = { 0x00, 0x90, 0x02 },  /* BRP=0 */
-    [MCP2515_SPEED_1MBPS]   = { 0x00, 0x80, 0x00 },  /* BRP=0, shorter segments */
 };
 
 /* ---------- low-level SPI helpers ---------- */
@@ -256,7 +256,7 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
 {
     if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
         return MCP2515_ERR_SPI;
-    if (speed > MCP2515_SPEED_1MBPS)
+    if (speed >= MCP2515_SPEED_1MBPS)
         return MCP2515_ERR_PARAM;
 
     dev->spi = spi;

@@ -458,10 +458,8 @@ TEST(test_speed_config)
 
     mock_reset();
     memset(&dev, 0, sizeof(dev));
-    mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_1MBPS);
-    ASSERT_EQ(mock_regs[0x2A], 0x00);
-    ASSERT_EQ(mock_regs[0x29], 0x80);
-    ASSERT_EQ(mock_regs[0x28], 0x00);
+    /* no legal 1 Mbps timing exists at 8 MHz: PS2 needs 2 TQ, and a bit has 4 */
+    ASSERT_EQ(mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_1MBPS), MCP2515_ERR_PARAM);
 }
 
 TEST(test_tx_busy)

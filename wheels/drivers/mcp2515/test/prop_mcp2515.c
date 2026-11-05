@@ -150,7 +150,7 @@ PROPERTY(init_roundtrip, 200)
 {
     prop_mock_reset_state();
     mcp2515_t dev;
-    uint8_t speed_idx = (uint8_t)(ARBI_UINT8(seed) % 4u);
+    uint8_t speed_idx = (uint8_t)(ARBI_UINT8(seed) % 3u);
     mcp2515_err_t err = mcp2515_init(&dev, &prop_spi,
                                      (mcp2515_speed_t)speed_idx);
     PROP_ASSERT(err == MCP2515_OK);
@@ -264,7 +264,7 @@ PROPERTY(filter_mask_config, 200)
 }
 
 /*
- * invalid_speed_rejected: init with speed > 3 must return ERR_PARAM.
+ * invalid_speed_rejected: init with speed > 2 must return ERR_PARAM.
  */
 PROPERTY(invalid_speed_rejected, 50)
 {
