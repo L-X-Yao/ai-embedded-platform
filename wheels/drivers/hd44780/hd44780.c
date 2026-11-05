@@ -151,8 +151,8 @@ hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
     if (send_cmd(dev, func) != HD44780_OK) return HD44780_ERR_I2C;
     delay(dev, 1);
 
-    /* Display on, cursor off, blink off */
-    if (send_cmd(dev, (uint8_t)(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON)) != HD44780_OK)
+    /* Display off while it is set up, as in Figure 24 */
+    if (send_cmd(dev, LCD_DISPLAY_CONTROL) != HD44780_OK)
         return HD44780_ERR_I2C;
     delay(dev, 1);
 
@@ -163,6 +163,11 @@ hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
 
     /* Entry mode: increment, no shift */
     if (send_cmd(dev, (uint8_t)(LCD_ENTRY_MODE_SET | LCD_ENTRY_INC)) != HD44780_OK)
+        return HD44780_ERR_I2C;
+    delay(dev, 1);
+
+    /* Display on, cursor off, blink off */
+    if (send_cmd(dev, (uint8_t)(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON)) != HD44780_OK)
         return HD44780_ERR_I2C;
     delay(dev, 1);
 
