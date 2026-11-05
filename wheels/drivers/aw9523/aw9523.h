@@ -66,7 +66,7 @@ typedef struct {
 
 /* ---------- constants ---------- */
 
-#define AW9523_DEV_ADDR       0x58u  /* AD=GND (0x59 when AD=VDD) */
+#define AW9523_DEV_ADDR       0x58u  /* AD1=AD0=GND; 1 0 1 1 0 AD1 AD0 */
 #define AW9523_CHIP_ID        0x23u  /* expected ID register value */
 
 /* ---------- register addresses ---------- */
@@ -96,7 +96,7 @@ typedef struct {
 /* ---------- API ---------- */
 
 /** Initialize device: read ID register (expect 0x23), reset to defaults.
- *  @param dev_addr 7-bit I2C address (0x58 or 0x59)
+ *  @param dev_addr 7-bit I2C address (0x58 to 0x5B, set by AD1/AD0)
  *  @thread_safe: no @isr_safe: no */
 aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
                          uint8_t dev_addr);
