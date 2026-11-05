@@ -1049,11 +1049,11 @@ static uint8_t hw_model_xfer(void *ctx, uint8_t tx)
     (void)ctx;
     hw_xfer_count++;
     if (hw_byte_idx == 0) {
-        hw_addr_latch = tx & 0x7F;
+        hw_addr_latch = tx;
         hw_byte_idx++;
         return 0xFF;
     }
-    uint8_t reg = (uint8_t)(hw_addr_latch + hw_byte_idx - 1);
+    uint8_t reg = (uint8_t)((hw_addr_latch & 0x7F) + hw_byte_idx - 1);
     uint8_t ret = hw_regs[reg];
     if (!(hw_addr_latch & 0x80)) {
         hw_regs[reg] = tx;
