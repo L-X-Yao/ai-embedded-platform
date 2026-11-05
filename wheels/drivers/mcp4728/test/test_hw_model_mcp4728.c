@@ -100,7 +100,7 @@ TEST(test_hw_write_all_varied)
     ASSERT_EQ(model.channel_value[1], 1000);
     ASSERT_EQ(model.channel_value[2], 2500);
     ASSERT_EQ(model.channel_value[3], 4095);
-    ASSERT_EQ(model.write_count, 4);
+    ASSERT_EQ(model.write_count, 1);
 }
 
 TEST(test_hw_write_all_then_overwrite_one)

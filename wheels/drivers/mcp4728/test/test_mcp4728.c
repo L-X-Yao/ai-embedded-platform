@@ -262,7 +262,29 @@ TEST(test_write_all_different)
     ASSERT_EQ(mock_ch_value[1], 2000);
     ASSERT_EQ(mock_ch_value[2], 3500);
     ASSERT_EQ(mock_ch_value[3], 4095);
-    ASSERT_EQ(mock_write_count, 4);
+    ASSERT_EQ(mock_write_count, 1);
+}
+
+/* DS22187E Figure 5-8: bytes 2-4 repeat per channel inside one transaction.
+ * reg carries channel A's 2nd byte, so the buffer starts at its 3rd byte. */
+TEST(test_write_all_single_multi_write_frame)
+{
+    static const uint8_t expected[11] = {
+        0x00u, 0x64u,         /* A: 100 = 0x064 */
+        0x42u, 0x07u, 0xD0u,  /* B: DAC1 DAC0 = 01, 2000 = 0x7D0 */
+        0x44u, 0x0Du, 0xACu,  /* C: DAC1 DAC0 = 10, 3500 = 0xDAC */
+        0x46u, 0x0Fu, 0xFFu,  /* D: DAC1 DAC0 = 11, 4095 = 0xFFF */
+    };
+
+    mock_reset();
+    mcp4728_init(&dev, &mock_i2c, &default_cfg);
+
+    const uint16_t vals[4] = {100, 2000, 3500, 4095};
+    ASSERT_EQ(mcp4728_write_all(&dev, vals), MCP4728_OK);
+    ASSERT_EQ(mock_write_count, 1);
+    ASSERT_EQ_HEX(mock_last_cmd, 0x40u);
+    ASSERT_EQ(mock_last_buf_len, 11);
+    ASSERT_TRUE(memcmp(mock_last_buf, expected, sizeof(expected)) == 0);
 }
 
 TEST(test_write_all_max)
@@ -288,18 +310,17 @@ TEST(test_write_all_over_max)
     ASSERT_EQ(mock_write_count, 0);
 }
 
-TEST(test_write_all_i2c_fail_midway)
+TEST(test_write_all_i2c_fail)
 {
     mock_reset();
     mcp4728_init(&dev, &mock_i2c, &default_cfg);
 
-    /* Fail on 3rd I2C op (channel C) */
-    mock_fail_at = 2;
+    /* The only I2C op fails, and the driver does not try again */
+    mock_fail_at = 0;
     const uint16_t vals[4] = {100, 200, 300, 400};
     ASSERT_EQ(mcp4728_write_all(&dev, vals), MCP4728_ERR_I2C);
-    /* Channels A and B should have been written before failure */
-    ASSERT_EQ(mock_ch_value[0], 100);
-    ASSERT_EQ(mock_ch_value[1], 200);
+    ASSERT_EQ(mock_op_count, 1);
+    ASSERT_EQ(mock_write_count, 0);
 }
 
 TEST(test_write_all_uninit_dev)
@@ -395,9 +416,10 @@ TEST_MAIN("mcp4728")
     RUN(test_write_channel_uninit_dev);
     RUN(test_write_all_zeros);
     RUN(test_write_all_different);
+    RUN(test_write_all_single_multi_write_frame);
     RUN(test_write_all_max);
     RUN(test_write_all_over_max);
-    RUN(test_write_all_i2c_fail_midway);
+    RUN(test_write_all_i2c_fail);
     RUN(test_write_all_uninit_dev);
     RUN(test_value_encoding_1234);
     RUN(test_value_encoding_1);
