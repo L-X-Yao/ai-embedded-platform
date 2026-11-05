@@ -264,6 +264,10 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         }
 
     case PH_READ_TOKEN:
+        if (mock_read_token != 0xFE) {
+            mock_phase = PH_IDLE;
+            return mock_read_token;
+        }
         mock_phase = PH_READ_DATA;
         mock_byte_idx = 0;
         return 0xFE;
@@ -700,6 +704,17 @@ TEST(test_silent_cmd8_is_not_a_legacy_card)
     ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_ERR_INIT);
 }
 
+TEST(test_read_reports_a_data_error_token)
+{
+    uint8_t buf[512];
+    sd_spi_t sd;
+    mock_reset();
+    sd_spi_init(&sd, &mock_hal);
+
+    mock_read_token = 0x08;  /* out of range */
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_READ);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -731,4 +746,5 @@ TEST_MAIN("sd_spi")
     RUN(test_write_reports_a_programming_error);
     RUN(test_cmd8_crc_error_is_not_a_legacy_card);
     RUN(test_silent_cmd8_is_not_a_legacy_card);
+    RUN(test_read_reports_a_data_error_token);
 TEST_MAIN_END()

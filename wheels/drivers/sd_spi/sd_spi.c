@@ -211,7 +211,11 @@ sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
 
     /* wait for data token 0xFE */
     uint8_t token = wait_token(h);
-    if (token != DATA_TOKEN) { deselect(h); return SD_SPI_ERR_TIMEOUT; }
+    if (token != DATA_TOKEN) {
+        deselect(h);
+        /* The top four bits are clear in a data error token (spec 7.3.3.3). */
+        return ((token & 0xF0U) == 0) ? SD_SPI_ERR_READ : SD_SPI_ERR_TIMEOUT;
+    }
 
     /* read 512 bytes */
     for (uint32_t i = 0; i < SD_SPI_BLOCK_SIZE; i++)
