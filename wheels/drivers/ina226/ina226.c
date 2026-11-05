@@ -96,7 +96,8 @@ ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
     err = read_reg16(dev, REG_DIE_ID, &die_id);
     if (err != INA226_OK)
         return err;
-    if (die_id != INA226_DIE_ID)
+    /* Bits 3:0 are the die revision: 2260 and 2261 are both listed */
+    if ((die_id & 0xFFF0u) != INA226_DIE_ID)
         return INA226_ERR_ID;
 
     /* Calculate current LSB: max_current_ma / 1000.0 / 2^15 */

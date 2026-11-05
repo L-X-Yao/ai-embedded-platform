@@ -274,6 +274,15 @@ TEST(test_read_current_and_power)
     ASSERT_TRUE(data.power_mw > 70 && data.power_mw < 85);
 }
 
+TEST(test_init_accepts_the_other_die_id)
+{
+    ina226_t d;
+    mock_reset();
+    mock_set_reg16(0xFE, 0x5449);
+    mock_set_reg16(0xFF, 0x2261);
+    ASSERT_EQ(ina226_init(&d, &mock_i2c, &default_cfg), INA226_OK);
+}
+
 TEST_MAIN("ina226")
     RUN(test_init_ok);
     RUN(test_init_wrong_mfr_id);
@@ -293,4 +302,5 @@ TEST_MAIN("ina226")
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_read_current_and_power);
+    RUN(test_init_accepts_the_other_die_id);
 TEST_MAIN_END()
