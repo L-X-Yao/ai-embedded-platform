@@ -127,39 +127,38 @@ heatshrink_sink_res_t heatshrink_encoder_sink(heatshrink_encoder_t *enc,
 
 /* ---- bit-level output ---- */
 
-/* Push a single bit to the output accumulator, flushing complete bytes
- * to the output buffer.  Returns 0 on success, -1 if output is full. */
-static int enc_push_bit(heatshrink_encoder_t *enc,
-                        uint8_t *out, uint16_t out_size, uint16_t *out_idx,
-                        uint8_t bit)
+/* Write a completed byte to the output.  Returns -1 if the output is full. */
+static int enc_flush_byte(heatshrink_encoder_t *enc,
+                          uint8_t *out, uint16_t out_size, uint16_t *out_idx)
 {
-    enc->out_bits |= (uint8_t)(bit << (7u - enc->out_bit_idx));
-    enc->out_bit_idx++;
-
-    if (enc->out_bit_idx == 8) {
-        if (*out_idx >= out_size) {
-            return -1;  /* output full */
-        }
-        out[*out_idx] = enc->out_bits;
-        (*out_idx)++;
-        enc->out_bits = 0;
-        enc->out_bit_idx = 0;
+    if (enc->out_bit_idx < 8) {
+        return 0;
     }
+    if (*out_idx >= out_size) {
+        return -1;
+    }
+    out[*out_idx] = enc->out_bits;
+    (*out_idx)++;
+    enc->out_bits = 0;
+    enc->out_bit_idx = 0;
     return 0;
 }
 
-/* Push nbits of val (MSB-first) to the output.  Returns 0 on success. */
-static int enc_push_bits(heatshrink_encoder_t *enc,
-                         uint8_t *out, uint16_t out_size, uint16_t *out_idx,
-                         uint16_t val, uint8_t nbits)
+/* Move the pending token to the output, MSB first.  Returns -1 if the output
+ * fills up; the bits left in the token wait for the next poll. */
+static int enc_emit_token(heatshrink_encoder_t *enc,
+                          uint8_t *out, uint16_t out_size, uint16_t *out_idx)
 {
-    for (uint8_t i = 0; i < nbits; i++) {
-        uint8_t bit = (uint8_t)((val >> (nbits - 1u - i)) & 1u);
-        if (enc_push_bit(enc, out, out_size, out_idx, bit) < 0) {
+    while (enc->token_bits > 0) {
+        if (enc_flush_byte(enc, out, out_size, out_idx) < 0) {
             return -1;
         }
+        enc->token_bits--;
+        uint8_t bit = (uint8_t)((enc->token >> enc->token_bits) & 1u);
+        enc->out_bits |= (uint8_t)(bit << (7u - enc->out_bit_idx));
+        enc->out_bit_idx++;
     }
-    return 0;
+    return enc_flush_byte(enc, out, out_size, out_idx);
 }
 
 /* Find the longest match looking back from scan_pos. */
@@ -215,35 +214,20 @@ heatshrink_poll_res_t heatshrink_encoder_poll(heatshrink_encoder_t *enc,
         return HEATSHRINK_POLL_EMPTY;
     }
 
-    /* Nothing to compress */
-    if (enc->match_scan >= enc->input_pos) {
-        if (enc->finishing) {
-            /* Flush partial byte */
-            if (enc->out_bit_idx > 0) {
-                if (out_size > 0) {
-                    out[0] = enc->out_bits;
-                    *produced = 1;
-                    enc->out_bits = 0;
-                    enc->out_bit_idx = 0;
-                }
-            }
-            enc->state = HS_ENC_DONE;
-        } else {
-            enc->state = HS_ENC_READY;
-        }
-        return HEATSHRINK_POLL_EMPTY;
-    }
-
-    /* Transition to SEARCHING */
-    if (enc->state == HS_ENC_FILLING) {
-        enc->state = HS_ENC_SEARCHING;
-    }
-
     uint16_t max_match = (uint16_t)(1u << enc->lookahead_bits);
     uint16_t max_back = (uint16_t)(1u << enc->window_bits);
     uint16_t out_idx = 0;
 
-    while (enc->match_scan < enc->input_pos) {
+    for (;;) {
+        if (enc_emit_token(enc, out, out_size, &out_idx) < 0) {
+            *produced = out_idx;
+            enc->state = HS_ENC_YIELDING;
+            return HEATSHRINK_POLL_MORE;
+        }
+        if (enc->match_scan >= enc->input_pos) {
+            break;
+        }
+
         uint16_t best_len = 0;
         uint16_t best_offset = 0;
         find_longest_match(enc->window,
@@ -252,31 +236,16 @@ heatshrink_poll_res_t heatshrink_encoder_poll(heatshrink_encoder_t *enc,
                            &best_offset, &best_len);
 
         if (best_len >= 2) {
-            /* Emit back-reference: flag(0) + offset-1(window_bits)
+            /* Back-reference: flag(0) + offset-1(window_bits)
              * + length-1(lookahead_bits) */
-            uint16_t coded_offset = (uint16_t)(best_offset - 1u);
-            uint16_t coded_len = (uint16_t)(best_len - 1u);
-
-            if (enc_push_bits(enc, out, out_size, &out_idx, 0, 1) < 0 ||
-                enc_push_bits(enc, out, out_size, &out_idx,
-                              coded_offset, enc->window_bits) < 0 ||
-                enc_push_bits(enc, out, out_size, &out_idx,
-                              coded_len, enc->lookahead_bits) < 0) {
-                /* Output buffer full */
-                *produced = out_idx;
-                enc->state = HS_ENC_YIELDING;
-                return HEATSHRINK_POLL_MORE;
-            }
+            enc->token = ((uint32_t)(best_offset - 1u) << enc->lookahead_bits) |
+                         (uint32_t)(best_len - 1u);
+            enc->token_bits = (uint8_t)(1u + enc->window_bits + enc->lookahead_bits);
             enc->match_scan = (uint16_t)(enc->match_scan + best_len);
         } else {
-            /* Emit literal: flag(1) + byte(8) */
-            uint16_t byte_val = enc->window[enc->match_scan];
-            if (enc_push_bits(enc, out, out_size, &out_idx, 1, 1) < 0 ||
-                enc_push_bits(enc, out, out_size, &out_idx, byte_val, 8) < 0) {
-                *produced = out_idx;
-                enc->state = HS_ENC_YIELDING;
-                return HEATSHRINK_POLL_MORE;
-            }
+            /* Literal: flag(1) + byte(8) */
+            enc->token = 0x100u | enc->window[enc->match_scan];
+            enc->token_bits = 9;
             enc->match_scan++;
         }
     }
@@ -318,7 +287,8 @@ heatshrink_finish_res_t heatshrink_encoder_finish(heatshrink_encoder_t *enc)
         return HEATSHRINK_FINISH_DONE;
     }
 
-    if (enc->match_scan >= enc->input_pos && enc->out_bit_idx == 0) {
+    if (enc->match_scan >= enc->input_pos && enc->token_bits == 0 &&
+        enc->out_bit_idx == 0) {
         enc->state = HS_ENC_DONE;
         return HEATSHRINK_FINISH_DONE;
     }

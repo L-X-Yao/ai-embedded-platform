@@ -73,12 +73,14 @@ typedef struct {
 
     uint16_t            input_pos;    /* write cursor into window        */
     uint16_t            match_scan;   /* scan cursor for matching        */
-    uint16_t            match_len;    /* current best match length       */
-    uint16_t            match_pos;    /* current best match offset       */
+
+    /* token being written out, kept across a full output buffer */
+    uint32_t            token;        /* token bits, right-aligned       */
+    uint8_t             token_bits;   /* bits of token still to emit     */
 
     /* bit-level output accumulator */
     uint8_t             out_bits;     /* pending output bits             */
-    uint8_t             out_bit_idx;  /* how many bits in out_bits (0-7) */
+    uint8_t             out_bit_idx;  /* how many bits in out_bits (0-8) */
 
     uint8_t             finishing;    /* finish() has been called        */
 } heatshrink_encoder_t;
