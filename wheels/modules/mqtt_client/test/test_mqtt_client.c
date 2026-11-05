@@ -456,6 +456,43 @@ TEST(test_subscribe_refuses_qos_it_cannot_serve)
     ASSERT_EQ(g_c.inflight_sub_id, 0);
 }
 
+/* ─── stream framing ─────────────────────── */
+
+/* One PUBLISH of a given total size, topic "t", QoS 0. */
+static size_t put_publish(uint8_t *out, size_t total)
+{
+    size_t rl_len = (total - 1 > 128) ? 2 : 1;
+    size_t remaining = total - 1 - rl_len;
+    size_t pos = 0;
+
+    out[pos++] = 0x30;
+    if (rl_len == 2) {
+        out[pos++] = (uint8_t)(0x80 | (remaining & 0x7F));
+        out[pos++] = (uint8_t)(remaining >> 7);
+    } else {
+        out[pos++] = (uint8_t)remaining;
+    }
+    out[pos++] = 0;
+    out[pos++] = 1;
+    out[pos++] = 't';
+    memset(&out[pos], 'p', total - pos);
+    return total;
+}
+
+TEST(test_feed_keeps_bytes_past_the_buffer)
+{
+    static uint8_t stream[3 * MQTT_CLIENT_RX_BUF_SIZE];
+    size_t len = 0;
+    setup_connected();
+
+    /* three packets that together overrun the receive buffer */
+    for (int i = 0; i < 3; i++) {
+        len += put_publish(&stream[len], MQTT_CLIENT_RX_BUF_SIZE / 2);
+    }
+    ASSERT_EQ(mqtt_client_feed(&g_c, stream, (uint16_t)len), MQTT_CLIENT_OK);
+    ASSERT_EQ(g_msg_count, 3);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -491,4 +528,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_feed_bad_remaining_length_returns_err_protocol);
     RUN(test_feed_overflow_returns_err_size);
     RUN(test_subscribe_refuses_qos_it_cannot_serve);
+    RUN(test_feed_keeps_bytes_past_the_buffer);
 TEST_MAIN_END()
