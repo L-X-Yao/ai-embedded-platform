@@ -125,7 +125,11 @@ typedef struct {
     uint16_t word;
 } table9_row_t;
 
-static const table9_row_t table9_warm[] = {
+static const table9_row_t table9[] = {
+    { -200.0f, 0x0BDA }, { -175.0f, 0x12B4 }, { -150.0f, 0x196C },
+    { -125.0f, 0x200A }, { -100.0f, 0x2690 }, {  -75.0f, 0x2D04 },
+    {  -50.0f, 0x3366 }, {  -40.0f, 0x35EE }, {  -30.0f, 0x3876 },
+    {  -20.0f, 0x3AFC }, {  -10.0f, 0x3D7E },
     {   0.0f, 0x4000 }, {  10.0f, 0x4280 }, {  20.0f, 0x44FC },
     {  30.0f, 0x4778 }, {  40.0f, 0x49F2 }, {  50.0f, 0x4C6A },
     {  60.0f, 0x4EE0 }, {  70.0f, 0x5154 }, {  80.0f, 0x53C6 },
@@ -143,20 +147,34 @@ static const table9_row_t table9_warm[] = {
 /* Half an ADC code is 0.019 C at 550 C, the widest row of Table 9. */
 #define TABLE9_TOL_C    0.02f
 
-/* Codes at each end of the range, from R(T) on p.10 with RREF 400 */
-#define CODE_0C         8192u
+/* Codes at each end of the range: Table 9 at -200 C, and R(T) on p.10 at
+ * 850 C, where the table has no row */
+#define CODE_MINUS_200C 1517u
 #define CODE_850C       31988u
 
 /* R(T)/R0 from the equation on p.10, in double so that the check does not
  * share the driver's float rounding. */
 static double cvd_ratio(double t)
 {
-    return 1.0 + 3.90830e-3 * t - 5.77500e-7 * t * t;
+    double ratio = 1.0 + 3.90830e-3 * t - 5.77500e-7 * t * t;
+
+    if (t < 0.0)
+        ratio += -4.18301e-12 * (t - 100.0) * t * t * t;
+    return ratio;
 }
 
 static const max31865_cfg_t table9_cfg = {
     .r_ref       = 400.0f,
     .r_nom       = 100.0f,
+    .wire        = MAX31865_WIRE_2,
+    .filter_50hz = false,
+};
+
+/* p.10 pairs a PT1000 with 4k, which gives the same ratio and so the same
+ * codes as Table 9. */
+static const max31865_cfg_t pt1000_table9_cfg = {
+    .r_ref       = 4000.0f,
+    .r_nom       = 1000.0f,
     .wire        = MAX31865_WIRE_2,
     .filter_50hz = false,
 };
@@ -315,18 +333,28 @@ TEST(test_read_temperature_pt1000)
     ASSERT_NEAR(temp, 0.0f, 1.0f);
 }
 
-TEST(test_table9_warm_rows)
+static void check_table9(const max31865_cfg_t *cfg)
 {
     mock_reset();
-    ASSERT_EQ(max31865_init(&dev, &mock_spi, &table9_cfg), MAX31865_OK);
+    ASSERT_EQ(max31865_init(&dev, &mock_spi, cfg), MAX31865_OK);
 
-    for (size_t i = 0; i < sizeof(table9_warm) / sizeof(table9_warm[0]); i++) {
+    for (size_t i = 0; i < sizeof(table9) / sizeof(table9[0]); i++) {
         float temp = 9999.0f;
-        plant_rtd((uint16_t)(table9_warm[i].word >> 1),
-                  (uint8_t)(table9_warm[i].word & 1u));
+        plant_rtd((uint16_t)(table9[i].word >> 1),
+                  (uint8_t)(table9[i].word & 1u));
         ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_OK);
-        ASSERT_NEAR(temp, table9_warm[i].temp_c, TABLE9_TOL_C);
+        ASSERT_NEAR(temp, table9[i].temp_c, TABLE9_TOL_C);
     }
+}
+
+TEST(test_table9_rows)
+{
+    check_table9(&table9_cfg);
+}
+
+TEST(test_table9_rows_pt1000)
+{
+    check_table9(&pt1000_table9_cfg);
 }
 
 /* Table 9 stops at 550 C, so the top of the range comes from the equation. */
@@ -353,7 +381,7 @@ TEST(test_every_code_solves_equation)
     ASSERT_EQ(max31865_init(&dev, &mock_spi, &table9_cfg), MAX31865_OK);
 
     float prev = -1000.0f;
-    for (uint16_t code = CODE_0C; code <= CODE_850C; code++) {
+    for (uint16_t code = CODE_MINUS_200C; code <= CODE_850C; code++) {
         float temp = 9999.0f;
         plant_rtd(code, 0);
         ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_OK);
@@ -424,7 +452,8 @@ TEST_MAIN("max31865")
     RUN(test_read_temperature_100c);
     RUN(test_read_temperature_negative);
     RUN(test_read_temperature_pt1000);
-    RUN(test_table9_warm_rows);
+    RUN(test_table9_rows);
+    RUN(test_table9_rows_pt1000);
     RUN(test_equation_up_to_850c);
     RUN(test_every_code_solves_equation);
     RUN(test_read_fault_register);

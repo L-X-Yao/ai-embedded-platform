@@ -9,8 +9,8 @@
  *
  * Register map: config 0x00, RTD MSB 0x01, RTD LSB 0x02, fault 0x07.
  * Read address = reg, write address = reg | 0x80.
- * Temperature conversion uses Callendar-Van Dusen equation for T >= 0C
- * and a rational approximation for T < 0C.
+ * Temperature conversion solves the Callendar-Van Dusen equation: its
+ * quadratic form for T >= 0C, its full form by Newton steps for T < 0C.
  */
 
 #include "max31865.h"
@@ -38,6 +38,7 @@
 
 #define CVD_A   3.9083e-3f
 #define CVD_B  -5.775e-7f
+#define CVD_C  -4.18301e-12f   /* T < 0C only */
 
 /* ---------- SPI helpers ---------- */
 
@@ -84,12 +85,19 @@ static float rtd_to_temperature(float r_rtd, float r_nom)
      * T does not come from subtracting two nearly equal numbers. */
     float temp = 2.0f * (ratio - 1.0f) / (CVD_A + g);
 
-    /* For T < 0C the quadratic overestimates.  Use linear approximation
-     * T ~ (R/R0 - 1) / A.  Accuracy is ~+/-0.3C down to -50C; below that
-     * the cubic Callendar-Van Dusen term (C coefficient) would be needed,
-     * but a full cubic solver exceeds the scope of this lightweight driver. */
+    /* Below 0C the equation also has C*(T-100)*T^3, which leaves the
+     * quadratic root about 2.4C too cold at -200C. That is close enough for
+     * Newton's method on the full form to reach float resolution in two
+     * steps, from any code down to R = 0. */
     if (temp < 0.0f) {
-        temp = (ratio - 1.0f) / CVD_A;
+        for (int i = 0; i < 2; i++) {
+            float t = temp;
+            float err = (1.0f - ratio) +
+                        t * (CVD_A + t * (CVD_B + CVD_C * (t - 100.0f) * t));
+            float slope = CVD_A +
+                          t * (2.0f * CVD_B + CVD_C * t * (4.0f * t - 300.0f));
+            temp = t - err / slope;
+        }
     }
 
     return temp;
