@@ -88,7 +88,8 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **PASS** (32 test cases, 0 failures)
+- Unit tests: **PASS** (36 test cases, 0 failures)
+- libFuzzer: plays a server and a flash slot that misbehave, with the slot exactly the announced size
 - Coverage: init (valid/null-mgr/null-ops/null-version/missing-callback),
   check (update-available/no-update/callback-error), download (full/progress/
   offset-advances/failure/write-failure), verify (success/failure), activate,
