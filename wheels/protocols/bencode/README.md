@@ -46,7 +46,8 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
 
 ## Configuration (compile-time)
 
-None. No compile-time macros required.
+`BENCODE_MAX_DEPTH` (default 16) is the deepest nesting the decoder tracks. One
+level more returns `BENCODE_ERR_OVERFLOW`.
 
 ## Supported platforms
 
@@ -66,7 +67,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 20 tests, all passing
+- Unit tests (sim): 23 pass, 0 fail
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A (pure software codec)
 
 ## API convention deviations

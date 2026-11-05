@@ -64,7 +64,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 19 tests, all passing
+- Unit tests (sim): 34 pass, 0 fail
+- libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 
 ## API convention deviations

@@ -8,7 +8,7 @@ Platform development tools, organized by domain. Run `make help` to see all avai
 |-----------|---------|-----------|
 | `harness/` | C test framework headers (#include'd by 186 wheels) | `test_harness.h`, `contract.h`, `property_test.h`, `hw_model.h`, `mock_i2c.h`, `mock_spi.h`, `mock_gpio.h` |
 | `codegen/` | Python test code generators + shared parser | `gen_null_tests.py`, `gen_sentinel_tests.py`, `gen_boundary_tests.py`, `_wheel_parser.py`, `test_wheel_parser.py` |
-| `test/` | Shell test runners | `test_all.sh`, `test_scaffold.sh`, `test_downstream.sh`, `coverage_scan.sh`, `coverage_wheel.sh`, `run_generated_tests.sh`, `run_fuzz_protocols.sh`, `run_libfuzzer.sh`, `test_mutation.sh`, `test_differential.sh` |
+| `test/` | Shell test runners | `test_all.sh`, `test_scaffold.sh`, `test_downstream.sh`, `coverage_scan.sh`, `coverage_wheel.sh`, `run_generated_tests.sh`, `run_libfuzzer.sh`, `test_mutation.sh`, `test_differential.sh` |
 | `audit/` | Code quality checks (55 automated) | `audit_wheels.py`, `audit_deep.sh`, `doc_drift_check.py`, `memory_audit.py`, `arm_size_audit.sh`, `arm_stack_audit.sh`, `run_frama_c.sh` |
 | `wheel/` | Wheel lifecycle + batch tools | `new_wheel.sh`, `wheel_promote.sh`, `batch_fix.sh`, `find_all_refs.sh`, `release.sh` |
 | `session/` | Session management + dispatch | `bootstrap.sh`, `handoff.sh`, `dispatch_agent.sh` |
