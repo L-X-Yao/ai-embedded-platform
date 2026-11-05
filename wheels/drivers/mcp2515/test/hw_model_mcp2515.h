@@ -176,7 +176,7 @@ static uint8_t mcp2515_model_xfer(void *ctx, uint8_t tx)
             hw_model_reset(&m->hw);
             /* After reset, chip is in config mode */
             m->hw.regs[MCP_REG_CANSTAT] = MCP_OPMOD_CONFIG;
-            m->hw.regs[MCP_REG_CANCTRL] = MCP_OPMOD_CONFIG;
+            m->hw.regs[MCP_REG_CANCTRL] = 0x87;  /* POR: config mode, CLKEN, CLKPRE=11 */
             m->reset_count++;
             return 0xFF;
         }
@@ -253,7 +253,7 @@ static void mcp2515_model_init(mcp2515_model_t *m)
 
     /* POR defaults: chip comes up in config mode after reset */
     hw_model_set_reset_value(&m->hw, MCP_REG_CANSTAT, MCP_OPMOD_CONFIG);
-    hw_model_set_reset_value(&m->hw, MCP_REG_CANCTRL, MCP_OPMOD_CONFIG);
+    hw_model_set_reset_value(&m->hw, MCP_REG_CANCTRL, 0x87);
 
     /* Register write callbacks */
     hw_model_set_on_write(&m->hw, MCP_REG_CANCTRL, mcp2515_on_canctrl_write);
