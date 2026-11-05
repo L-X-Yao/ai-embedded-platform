@@ -51,13 +51,22 @@ static bool read_regs(const ds3231_t *dev, uint8_t reg,
 }
 
 /* --- time validation --- */
+static uint8_t days_in_month(uint8_t month, uint8_t year)
+{
+    static const uint8_t days[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+    /* Every fourth year is a leap year from 2000 to 2099 */
+    if (month == 2 && (year % 4) == 0) return 29;
+    return days[month - 1];
+}
+
 static bool time_valid(const ds3231_time_t *t)
 {
     return t->second <= 59
         && t->minute <= 59
         && t->hour   <= 23
-        && t->day    >= 1 && t->day    <= 31
         && t->month  >= 1 && t->month  <= 12
+        && t->day    >= 1 && t->day    <= days_in_month(t->month, t->year)
         && t->year   <= 99
         && t->weekday >= 1 && t->weekday <= 7;
 }
