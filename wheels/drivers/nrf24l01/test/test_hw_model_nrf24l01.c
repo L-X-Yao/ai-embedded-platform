@@ -218,6 +218,35 @@ TEST(test_read_status)
     ASSERT_FALSE(st & NRF_STATUS_MAX_RT);
 }
 
+TEST(test_model_address_writes_leave_rx_pw_alone)
+{
+    setup();
+    nrf24_t dev;
+    static const uint8_t addr[5] = { 1, 2, 3, 4, 5 };
+    ASSERT_EQ(nrf24_init(&dev, &model_spi, 76, 20), NRF24_OK);
+    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 5), NRF24_OK);
+    ASSERT_EQ(model.hw.regs[NRF_REG_RX_PW_P0], 20);
+    ASSERT_MEMEQ_N(model.addr_tx, addr, 5);
+}
+
+TEST(test_model_rx_fifo_pops_on_read)
+{
+    setup();
+    static const uint8_t one[1] = { 0x11 };
+    static const uint8_t two[1] = { 0x22 };
+    nrf24_model_inject_rx(&model, one, 1);
+    nrf24_model_inject_rx(&model, two, 1);
+    ASSERT_EQ(model.rx_count, 2);
+    ASSERT_EQ(nrf24_model_fifo_status(&model) & 0x01, 0);
+
+    nrf24_model_cs_low(&model);
+    nrf24_model_xfer(&model, NRF_CMD_R_RX_PAYLOAD);
+    ASSERT_EQ(nrf24_model_xfer(&model, NRF_CMD_NOP), 0x11);
+    nrf24_model_cs_high(&model);
+    ASSERT_EQ(model.rx_count, 1);
+    ASSERT_EQ(model.rx_fifo[0][0], 0x22);
+}
+
 TEST_MAIN("nrf24l01 hardware model")
     RUN(test_init_success);
     RUN(test_init_writes_config);
@@ -234,4 +263,6 @@ TEST_MAIN("nrf24l01 hardware model")
     RUN(test_receive_data);
     RUN(test_flush_tx);
     RUN(test_read_status);
+    RUN(test_model_address_writes_leave_rx_pw_alone);
+    RUN(test_model_rx_fifo_pops_on_read);
 TEST_MAIN_END()
