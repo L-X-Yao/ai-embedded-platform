@@ -244,6 +244,17 @@ TEST(test_sleep_sets_ensleep_before_sleep)
     ASSERT_EQ(mock_regs[REG_CONFIG + 1] & 0x80, 0x80);
 }
 
+TEST(test_clear_alert_clears_the_status_flags)
+{
+    mock_reset_chip();
+    ASSERT_EQ(max17048_init(&dev, &mock_bus), MAX17048_OK);
+
+    /* EnVR stays set, the SC and VL flags go */
+    mock_regs[0x1A] = 0x64;
+    ASSERT_EQ(max17048_clear_alert(&dev), MAX17048_OK);
+    ASSERT_EQ_HEX(mock_regs[0x1A], 0x40);
+}
+
 TEST_MAIN("max17048")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -269,4 +280,5 @@ TEST_MAIN("max17048")
     RUN(test_version);
     RUN(test_version_null);
     RUN(test_sleep_sets_ensleep_before_sleep);
+    RUN(test_clear_alert_clears_the_status_flags);
 TEST_MAIN_END()
