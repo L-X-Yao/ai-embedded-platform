@@ -146,6 +146,24 @@ TEST(test_init_wrong_id)
     ASSERT_EQ(e, DPS310_ERR_ID);
 }
 
+TEST(test_init_accepts_other_revision)
+{
+    /* p.36: REV_ID is bits 7:4, so 0x20 is the same product at revision 2 */
+    mock_reset();
+    mock_regs[0x0D] = 0x20;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_OK);
+}
+
+TEST(test_init_refuses_other_product)
+{
+    /* p.36: PROD_ID is bits 3:0, so 0x11 is revision 1 of another product */
+    mock_reset();
+    mock_regs[0x0D] = 0x11;
+    dps310_t d;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_ID);
+}
+
 TEST(test_init_i2c_fail)
 {
     mock_reset();
@@ -448,6 +466,8 @@ TEST(test_init_raw_mock)
 TEST_MAIN("dps310")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
+    RUN(test_init_accepts_other_revision);
+    RUN(test_init_refuses_other_product);
     RUN(test_init_i2c_fail);
     RUN(test_init_timeout_coef_not_ready);
     RUN(test_init_timeout_sensor_not_ready);
