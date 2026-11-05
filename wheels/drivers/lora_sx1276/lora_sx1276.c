@@ -80,6 +80,9 @@
 #define OCP_DEFAULT           0x2B  /* 100 mA */
 #define OCP_HIGH_POWER        0x31  /* 140 mA */
 
+/* Top of Band 2, the highest band on the LF port */
+#define LF_BAND_MAX_HZ        525000000UL
+
 /* Oscillator frequency for Frf calculation */
 #define FXOSC                 32000000UL
 
@@ -450,9 +453,9 @@ int16_t lora_get_rssi(lora_t *dev)
 {
     if (!dev || !dev->spi) return 0;
     uint8_t raw = reg_read(dev->spi, REG_PKT_RSSI);
-    /* RSSI[dBm] = -157 + raw  (for HF port, freq > 868 MHz) */
-    /* RSSI[dBm] = -164 + raw  (for LF port, freq < 868 MHz) */
-    int16_t offset = (dev->frequency >= 868000000UL) ? -157 : -164;
+    /* RSSI[dBm] = -157 + raw on the HF port (Band 1, from 862 MHz) */
+    /* RSSI[dBm] = -164 + raw on the LF port */
+    int16_t offset = (dev->frequency > LF_BAND_MAX_HZ) ? -157 : -164;
     return offset + (int16_t)raw;
 }
 
