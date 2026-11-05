@@ -68,6 +68,8 @@ typedef struct {
 
     /* Sequence violation counters */
     int      seq_violations;     /* e.g. DISPON while still in sleep */
+    bool     slpin_sent;         /* SLPIN entered sleep, no SLPOUT yet */
+    int      ms_since_slpin;     /* delay time since that SLPIN */
 
     /* Pin-level tracking (mirrors driver calls) */
     bool     dc_level;           /* false=command, true=data */
@@ -144,9 +146,18 @@ static void gc9a01_model_process_cmd(gc9a01_model_t *m, uint8_t cmd)
         break;
 
     case 0x10: /* SLPIN */
+        if (!m->sleep) {
+            m->slpin_sent     = true;
+            m->ms_since_slpin = 0;
+        }
         m->sleep = true;
         break;
     case 0x11: /* SLPOUT */
+        /* V1.0 p.103: wait 120 ms after SLPIN before SLPOUT can be sent */
+        if (m->slpin_sent && m->ms_since_slpin < 120) {
+            m->seq_violations++;
+        }
+        m->slpin_sent = false;
         m->sleep = false;
         break;
 
@@ -325,6 +336,7 @@ static void gc9a01_model_delay_ms(void *ctx, uint16_t ms)
     gc9a01_model_t *m = (gc9a01_model_t *)ctx;
     m->delay_total_ms += (int)ms;
     m->delay_call_count++;
+    m->ms_since_slpin += (int)ms;
 }
 
 /* --- Convenience: build a gc9a01_spi_t pointing at the model --- */
