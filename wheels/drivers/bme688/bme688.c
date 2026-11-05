@@ -31,8 +31,8 @@
 #define REG_GAS_WAIT0     0x64u
 #define REG_RES_HEAT0     0x5Au
 #define REG_MEAS_STATUS   0x1Du
-#define REG_DATA_START    0x1Fu  /* 0x1F..0x2B (13 bytes) */
-#define REG_DATA_LEN      13u
+#define REG_DATA_START    0x1Fu  /* 0x1F..0x2D (15 bytes) */
+#define REG_DATA_LEN      15u
 
 #define RESET_CMD         0xB6u
 #define MODE_FORCED       0x01u
@@ -313,13 +313,13 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
     if (!data_ready)
         return BME688_ERR_TIMEOUT;
 
-    /* read data registers 0x1F..0x2B (13 bytes)
+    /* read field 0 data registers 0x1F..0x2D (15 bytes)
      * buf[0..2]  = pressure (0x1F..0x21, 20-bit)
      * buf[3..5]  = temperature (0x22..0x24, 20-bit)
      * buf[6..7]  = humidity (0x25..0x26, 16-bit)
-     * buf[8..10] = padding (0x27..0x29)
-     * buf[11]    = gas_r MSB (0x2A)
-     * buf[12]    = gas_r LSB[7:6] | gas_valid[5] | heat_stab[4] | gas_range[3:0] (0x2B)
+     * buf[8..12] = padding (0x27..0x2B)
+     * buf[13]    = gas_r MSB (0x2C)
+     * buf[14]    = gas_r LSB[7:6] | gas_valid[5] | heat_stab[4] | gas_range[3:0] (0x2D)
      */
     uint8_t buf[REG_DATA_LEN];
     if (!read_regs(dev, REG_DATA_START, buf, REG_DATA_LEN))
@@ -333,9 +333,9 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
                         ((uint32_t)buf[4] << 4) |
                         ((uint32_t)buf[5] >> 4);
     uint16_t adc_hum  = (uint16_t)((uint16_t)buf[6] << 8 | buf[7]);
-    uint16_t adc_gas  = (uint16_t)((uint16_t)buf[11] << 2 | (buf[12] >> 6));
-    uint8_t  gas_range = buf[12] & 0x0F;
-    uint8_t  gas_valid = (buf[12] >> 5) & 0x01;
+    uint16_t adc_gas  = (uint16_t)((uint16_t)buf[13] << 2 | (buf[14] >> 6));
+    uint8_t  gas_range = buf[14] & 0x0F;
+    uint8_t  gas_valid = (buf[14] >> 5) & 0x01;
 
     /* compensate -- temperature must be first (sets t_fine) */
     int32_t temp_comp = compensate_temperature(dev, adc_temp);
