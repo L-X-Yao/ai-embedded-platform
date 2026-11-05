@@ -120,6 +120,11 @@ ccs811_err_t ccs811_read(const ccs811_t *dev, ccs811_data_t *out)
         return CCS811_ERR_PARAM;
     }
 
+    if (dev->cfg.mode == CCS811_MODE_250MS)
+    {
+        return CCS811_ERR_MODE;
+    }
+
     /* Check data ready */
     uint8_t status = 0;
     if (!read_regs(dev, REG_STATUS, &status, 1))

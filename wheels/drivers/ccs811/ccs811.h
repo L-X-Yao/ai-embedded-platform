@@ -30,6 +30,7 @@ typedef enum {
     CCS811_ERR_PARAM      = -3,
     CCS811_ERR_BOOT       = -4,
     CCS811_ERR_NOT_READY  = -5,
+    CCS811_ERR_MODE       = -6,
 } ccs811_err_t;
 
 typedef struct {
@@ -71,7 +72,8 @@ typedef struct {
 ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
                          const ccs811_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** Read eCO2 and TVOC. CCS811_MODE_250MS leaves those registers alone, so it
+ *  returns CCS811_ERR_MODE. @thread_safe: no @isr_safe: no */
 ccs811_err_t ccs811_read(const ccs811_t *dev, ccs811_data_t *out);
 
 /** @thread_safe: no @isr_safe: no */

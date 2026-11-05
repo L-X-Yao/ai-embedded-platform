@@ -200,6 +200,18 @@ TEST(test_read_high_values)
     ASSERT_EQ(data.tvoc_ppb, 1187);
 }
 
+TEST(test_read_refuses_the_raw_data_mode)
+{
+    ccs811_cfg_t cfg = { .addr = CCS811_ADDR_PRIMARY, .mode = CCS811_MODE_250MS };
+    ccs811_t d;
+    ccs811_data_t data;
+
+    mock_reset();
+    ASSERT_EQ(ccs811_init(&d, &mock_i2c, &cfg), CCS811_OK);
+    /* mode 4 updates only RAW_DATA, so ALG_RESULT_DATA would be stale */
+    ASSERT_EQ(ccs811_read(&d, &data), CCS811_ERR_MODE);
+}
+
 TEST_MAIN("ccs811")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -217,4 +229,5 @@ TEST_MAIN("ccs811")
     RUN(test_addr_alt);
     RUN(test_init_invalid_mode);
     RUN(test_read_high_values);
+    RUN(test_read_refuses_the_raw_data_mode);
 TEST_MAIN_END()
