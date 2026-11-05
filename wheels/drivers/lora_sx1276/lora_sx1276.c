@@ -19,6 +19,7 @@
 #define REG_FRF_MID           0x07
 #define REG_FRF_LSB           0x08
 #define REG_PA_CONFIG         0x09
+#define REG_OCP               0x0B
 #define REG_PA_DAC            0x4D
 #define REG_FIFO_ADDR_PTR    0x0D
 #define REG_FIFO_TX_BASE     0x0E
@@ -73,6 +74,10 @@
 /* PA_DAC values */
 #define PA_DAC_DEFAULT        0x84
 #define PA_DAC_HIGH_POWER     0x87
+
+/* RegOcp: the limit must cover 120 mA at +20 dBm */
+#define OCP_DEFAULT           0x2B  /* 100 mA */
+#define OCP_HIGH_POWER        0x31  /* 140 mA */
 
 /* Oscillator frequency for Frf calculation */
 #define FXOSC                 32000000UL
@@ -282,10 +287,12 @@ lora_err_t lora_set_tx_power(lora_t *dev, int8_t dbm)
     if (dbm > 17) {
         /* high power mode (+20 dBm) */
         reg_write(spi, REG_PA_DAC, PA_DAC_HIGH_POWER);
+        reg_write(spi, REG_OCP, OCP_HIGH_POWER);
         reg_write(spi, REG_PA_CONFIG,
                   (uint8_t)(0x80 | (uint8_t)(dbm - 5)));
     } else {
         reg_write(spi, REG_PA_DAC, PA_DAC_DEFAULT);
+        reg_write(spi, REG_OCP, OCP_DEFAULT);
         reg_write(spi, REG_PA_CONFIG,
                   (uint8_t)(0x80 | (uint8_t)(dbm - 2)));
     }

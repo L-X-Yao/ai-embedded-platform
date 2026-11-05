@@ -741,6 +741,19 @@ TEST(test_low_data_rate_follows_the_symbol_time)
     ASSERT_EQ(mock_regs[0x26] & 0x04, 0x04);
 }
 
+TEST(test_tx_power_sets_the_current_limit)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    ASSERT_EQ(lora_set_tx_power(&dev, 20), LORA_OK);
+    ASSERT_EQ_HEX(mock_regs[0x0B], 0x31);  /* 140 mA */
+    ASSERT_EQ(lora_set_tx_power(&dev, 17), LORA_OK);
+    ASSERT_EQ_HEX(mock_regs[0x0B], 0x2B);  /* 100 mA, the reset value */
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -777,4 +790,5 @@ TEST_MAIN("lora_sx1276")
     RUN(test_init_turns_the_payload_crc_on);
     RUN(test_receive_refuses_a_packet_without_crc);
     RUN(test_low_data_rate_follows_the_symbol_time);
+    RUN(test_tx_power_sets_the_current_limit);
 TEST_MAIN_END()
