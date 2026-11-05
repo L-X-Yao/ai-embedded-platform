@@ -73,7 +73,10 @@ static void dispatch_connack(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
 static void dispatch_publish(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
 {
     mqtt_publish_t pub;
-    if (mqtt_packet_parse_publish(pkt, len, &pub) != MQTT_PACKET_OK) return;
+    if (mqtt_packet_parse_publish(pkt, len, &pub) != MQTT_PACKET_OK) {
+        set_state(c, MQTT_CLIENT_DISCONNECTED, 0xFD);
+        return;
+    }
 
     if (c->on_message) {
         c->on_message(c->msg_ctx, pub.topic, pub.topic_len,

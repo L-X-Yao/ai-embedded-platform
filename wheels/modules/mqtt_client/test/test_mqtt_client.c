@@ -576,6 +576,17 @@ TEST(test_each_callback_keeps_its_own_context)
     ASSERT_TRUE(g_evt_ctx_seen == &evt_ctx);
 }
 
+TEST(test_malformed_publish_closes_the_session)
+{
+    uint8_t bad[] = { 0x36, 0x05, 0x00, 0x01, 't', 0x00, 0x01 };
+    setup_connected();
+
+    mqtt_client_feed(&g_c, bad, sizeof(bad));
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
+    ASSERT_EQ(g_evt_reason, 0xFD);
+    ASSERT_EQ(g_msg_count, 0);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -616,4 +627,5 @@ TEST_MAIN("mqtt_client")
     RUN(test_broken_length_closes_the_session);
     RUN(test_nothing_is_dispatched_after_a_refused_connack);
     RUN(test_each_callback_keeps_its_own_context);
+    RUN(test_malformed_publish_closes_the_session);
 TEST_MAIN_END()
