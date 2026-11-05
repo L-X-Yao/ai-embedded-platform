@@ -98,7 +98,14 @@ pcf8563_err_t pcf8563_init(pcf8563_t *dev,
 pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,
                                     pcf8563_time_t *time);
 
-/** Write time to RTC. @thread_safe: no @isr_safe: no */
+/** Write time to RTC. The HAL has no multi-byte write, so this holds STOP
+ *  across the seven register writes, then clears it, keeping TEST1 and TESTC.
+ *  The clock loses the time between STOP and release, and its first increment
+ *  comes 0.507813 s to 0.507935 s after release. CLKOUT at 1.024 kHz, 32 Hz or
+ *  1 Hz stops meanwhile. A failed write still attempts the release, and the
+ *  time may then be part written. If the release itself fails the clock stays
+ *  stopped until a later write_time or init.
+ *  @thread_safe: no @isr_safe: no */
 pcf8563_err_t pcf8563_write_time(const pcf8563_t *dev,
                                      const pcf8563_time_t *time);
 

@@ -22,12 +22,14 @@
 static uint8_t hw_regs[HW_REG_COUNT];
 static int     hw_write_count;
 static int     hw_read_count;
+static int     hw_time_writes_running;  /* 02h-08h written with STOP = 0 */
 
 static void hw_model_reset(void)
 {
     memset(hw_regs, 0, sizeof(hw_regs));
     hw_write_count = 0;
     hw_read_count  = 0;
+    hw_time_writes_running = 0;
 
     /* POR defaults from datasheet:
      * Control1/2 = 0x00
@@ -63,6 +65,9 @@ static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     hw_write_count++;
     if (reg >= HW_REG_COUNT) return true;  /* ignore out of range */
+    if (reg >= 0x02u && reg <= 0x08u && !(hw_regs[0x00] & 0x20u)) {
+        hw_time_writes_running++;
+    }
     hw_regs[reg] = val;
     return true;
 }

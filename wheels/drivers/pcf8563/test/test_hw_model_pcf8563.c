@@ -56,6 +56,23 @@ TEST(test_hw_write_read_roundtrip)
     ASSERT_EQ(tr.second, 59);
 }
 
+/* Rev. 10 p.20: with STOP set the time circuits "will not increment until the
+ * STOP bit is released". The model reads the N bits as 1, and Table 4 wants
+ * them written as 0, so Control_status_1 must end at 0x00. */
+TEST(test_hw_write_time_runs_stopped)
+{
+    hw_model_reset();
+    pcf8563_init(&dev, &hw_i2c);
+
+    pcf8563_time_t t = {
+        .year = 26, .month = 11, .day = 6,
+        .weekday = 5, .hour = 12, .minute = 30, .second = 15
+    };
+    ASSERT_EQ(pcf8563_write_time(&dev, &t), PCF8563_OK);
+    ASSERT_EQ(hw_time_writes_running, 0);
+    ASSERT_EQ_HEX(hw_regs[0x00], 0x00u);
+}
+
 TEST(test_hw_inject_time)
 {
     hw_model_reset();
@@ -97,6 +114,7 @@ TEST_MAIN("pcf8563_hw_model")
     RUN(test_hw_init_por_defaults);
     RUN(test_hw_read_por_time);
     RUN(test_hw_write_read_roundtrip);
+    RUN(test_hw_write_time_runs_stopped);
     RUN(test_hw_inject_time);
     RUN(test_hw_alarm_roundtrip);
 TEST_MAIN_END()
