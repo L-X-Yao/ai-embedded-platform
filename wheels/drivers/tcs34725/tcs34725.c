@@ -27,6 +27,9 @@
 #define ENABLE_PON  0x01u   /* power on */
 #define ENABLE_AEN  0x02u   /* RGBC enable */
 
+/* p.15: at least 2.4 ms from PON to the start of an RGBC, in whole ms */
+#define PON_WAIT_MS 3u
+
 #define CHIP_ID_44  0x44u
 #define CHIP_ID_4D  0x4Du
 
@@ -46,6 +49,16 @@ static tcs34725_err_t read_regs(const tcs34725_t *dev,
     return TCS34725_OK;
 }
 
+/* Power on, then start the RGBC once the PON interval has passed */
+static tcs34725_err_t power_on(const tcs34725_t *dev)
+{
+    tcs34725_err_t err = write_reg(dev, REG_ENABLE, ENABLE_PON);
+    if (err != TCS34725_OK)
+        return err;
+    dev->i2c->delay_ms(dev->i2c->ctx, PON_WAIT_MS);
+    return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
+}
+
 tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ,
@@ -53,7 +66,7 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
 {
     if (!dev || !i2c)
         return TCS34725_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
         return TCS34725_ERR_PARAM;
     if ((unsigned)gain > TCS34725_GAIN_60X)
         return TCS34725_ERR_PARAM;
@@ -81,7 +94,7 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
         return err;
 
     /* Enable: power on + RGBC */
-    return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
+    return power_on(dev);
 }
 
 tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
@@ -133,7 +146,7 @@ tcs34725_err_t tcs34725_enable(tcs34725_t *dev)
 {
     if (!dev)
         return TCS34725_ERR_PARAM;
-    return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
+    return power_on(dev);
 }
 
 tcs34725_err_t tcs34725_disable(tcs34725_t *dev)
