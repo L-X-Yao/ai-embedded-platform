@@ -566,6 +566,22 @@ TEST(test_reset_then_restart)
 
 /* ================================================================ */
 
+TEST(test_last_chunk_stays_inside_the_image)
+{
+    uint8_t buf[256];
+    mock_reset();
+    mock_new_size = 300;
+    chunk_return_size = 256;
+    ASSERT_EQ(ota_manager_init(&mgr, &test_ops, "1.0.0"), OTA_MGR_OK);
+    ASSERT_EQ(ota_manager_check(&mgr), OTA_MGR_OK);
+
+    ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
+    ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
+
+    ASSERT_EQ(written_total, 300);
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_VERIFYING);
+}
+
 TEST_MAIN("ota_manager")
     RUN(test_init_valid);
     RUN(test_init_null_mgr);
@@ -599,4 +615,5 @@ TEST_MAIN("ota_manager")
     RUN(test_version_string_truncation);
     RUN(test_check_not_from_downloading);
     RUN(test_reset_then_restart);
+    RUN(test_last_chunk_stays_inside_the_image);
 TEST_MAIN_END()

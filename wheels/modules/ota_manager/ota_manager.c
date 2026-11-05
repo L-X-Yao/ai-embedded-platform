@@ -105,9 +105,13 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
         return OTA_MGR_ERR_STATE;
     }
 
+    /* Ask for no more than is left, so the last chunk stays inside the image. */
+    uint32_t left = mgr->total_size - mgr->downloaded;
+    uint16_t want = (left < buf_size) ? (uint16_t)left : buf_size;
+
     uint16_t bytes_read = 0;
     ota_mgr_err_t err = mgr->ops->download_chunk(
-        mgr->ops->ctx, mgr->downloaded, chunk_buf, buf_size, &bytes_read);
+        mgr->ops->ctx, mgr->downloaded, chunk_buf, want, &bytes_read);
 
     if (err != OTA_MGR_OK) {
         mgr->state = OTA_MGR_STATE_ERROR;
