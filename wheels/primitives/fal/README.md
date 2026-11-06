@@ -74,8 +74,9 @@ cmake -GNinja -S . -B build && cmake --build build && ctest --test-dir build
 
 - `fal_init()` returns the partition count (>= 0) on success rather than 0.
   This matches armink/FAL's contract, which FlashDB and kvs rely on. The
-  function is documented as "returns partition count on success, -1 on
-  failure". Negative return still signals error per api-conventions §2.1(b).
+  function is documented as "returns partition count on success, a negative
+  `fal_err_t` on failure". Negative return still signals error per
+  api-conventions §2.1(b).
 
 ## Porting (per-project fal_cfg.h)
 
@@ -99,7 +100,7 @@ And implement the flash device:
 const struct fal_flash_dev onchip_flash = {
     .name     = "onchip",
     .addr     = 0x08000000,
-    .len      = 512 * 1024,
+    .len      = 1024 * 1024,
     .blk_size = 4096,
     .ops      = { .init = ..., .read = ..., .write = ..., .erase = ... },
     .write_gran = 8,
@@ -108,6 +109,11 @@ const struct fal_flash_dev onchip_flash = {
 
 All ops (`.read`, `.write`, `.erase`) must be non-NULL. `.init` is optional
 (NULL is accepted and silently skipped during `fal_init()`).
+
+`fal_init()` must succeed before any partition call: until then they return
+`FAL_ERR_NOT_READY`. It returns `FAL_ERR_PART_TABLE`, before touching any
+device, if a partition does not fit inside its device, so `.len` has to be
+right. It returns `FAL_ERR_HAL` if an `.init` fails, and can then be retried.
 
 ## API review
 

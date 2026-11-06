@@ -142,7 +142,9 @@ void debug_shell_init(void) {
     cli_parser_init(&cli, &cfg);
 }
 
-/* Call from UART RX ISR or polling loop */
+/* Call from a task or polling loop, never from an ISR: feed echoes through
+ * write_fn and runs the command handler. A UART RX ISR queues the byte
+ * (ring_buffer, say) and the loop drains the queue into here. */
 void debug_shell_rx(uint8_t byte) {
     cli_parser_feed(&cli, byte);
 }
@@ -150,13 +152,13 @@ void debug_shell_rx(uint8_t byte) {
 
 ## Features
 
-- Character-at-a-time feed (`cli_parser_feed`) — works with UART ISR
+- Character-at-a-time feed (`cli_parser_feed`) — call it from a task, with the UART ISR queueing bytes
 - Command table: static array of `{name, handler, help}` entries
 - Built-in `help` command lists all registered commands
 - Argument splitting (whitespace-delimited, argc/argv style)
 - Backspace / DEL handling with echo
 - Configurable prompt string
-- Line buffer overflow protection
+- Line buffer overflow protection: a fed line that outgrows the buffer is refused at end of line with `line too long`
 - Pure C99, no heap, fully reentrant per-context
 - Output via callback (works with any transport: UART, RTT, USB CDC)
 

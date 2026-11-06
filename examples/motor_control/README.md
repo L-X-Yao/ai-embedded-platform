@@ -51,7 +51,7 @@ Replace HAL stubs:
 - `hal_delay_us` -- microsecond delay (DWT or hardware timer)
 - `hal_uart_write` -- UART TX for CLI output
 - Feed UART RX bytes into `cli_parser_feed(&cli, byte)` from your
-  UART ISR or polling loop
+  polling loop. A UART ISR has to queue them: feed runs the command handler
 
 ## Syntax Check
 
