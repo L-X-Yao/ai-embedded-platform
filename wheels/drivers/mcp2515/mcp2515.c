@@ -358,6 +358,13 @@ mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg)
     if (!dev || !dev->spi || !msg) return MCP2515_ERR_SPI;
     if (msg->dlc > 8) return MCP2515_ERR_PARAM;
 
+    /* DS20001801J p.60: Normal "is also the only mode in which the MCP2515 will
+     * transmit messages over the CAN bus", and Loopback passes frames on inside
+     * the chip. Elsewhere the frame stays pending, which by p.59 holds up every
+     * later mode change. */
+    if (dev->mode != MCP2515_MODE_NORMAL && dev->mode != MCP2515_MODE_LOOPBACK)
+        return MCP2515_ERR_PARAM;
+
     /* check if TX buffer 0 is free */
     uint8_t ctrl = reg_read(dev->spi, REG_TXB0CTRL);
     if (ctrl & TXB_TXREQ) return MCP2515_ERR_TX_BUSY;

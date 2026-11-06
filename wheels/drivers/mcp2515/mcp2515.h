@@ -96,10 +96,14 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
 /** Switch operating mode. Leaving Sleep wakes the chip first: this sets WAKIE
  *  and WAKIF, which pulls the INT pin low until the mode change is done, and
  *  waits 128 us for the oscillator. Frames on the bus meanwhile are ignored.
- *  Returns MCP2515_ERR_TIMEOUT if the chip does not reach the mode. */
+ *  The chip changes mode only once no frame is pending, so a frame that cannot
+ *  go out holds it up.
+ *  Returns MCP2515_ERR_TIMEOUT if the chip does not reach the mode. The request
+ *  stays with the chip, which can still change mode later, so ask again. */
 mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode);
 
-/** Transmit a CAN frame (standard or extended). */
+/** Transmit a CAN frame (standard or extended). Returns MCP2515_ERR_PARAM in
+ *  Listen-Only, Sleep and Configuration mode, where the chip sends nothing. */
 mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg);
 
 /** Receive a CAN frame from RX buffer 0 or 1. */
