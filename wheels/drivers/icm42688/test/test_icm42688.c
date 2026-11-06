@@ -635,6 +635,18 @@ TEST(test_init_accepts_accel_odr_in_ln_range)
     }
 }
 
+/* 33. GYRO_MODE 10 is Reserved (DS-000347 Rev 1.6 p.76) */
+TEST(test_power_mode_refuses_gyro_lp)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LN, ICM42688_PM_LP),
+              ICM42688_ERR_PARAM);
+    ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x0F);          /* left as init set it */
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -672,4 +684,5 @@ TEST_MAIN("icm42688")
     RUN(test_init_accepts_named_gyro_odr);
     RUN(test_init_refuses_accel_odr_below_ln_range);
     RUN(test_init_accepts_accel_odr_in_ln_range);
+    RUN(test_power_mode_refuses_gyro_lp);
 TEST_MAIN_END()
