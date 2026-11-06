@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Batch-fix README.md warnings: rename VSF section, add missing sections, reorder."""
+"""Batch-fix README.md warnings: rename VSF section, add missing sections, reorder.
+
+Review fields are left for a person: see the note in fix_readme.
+"""
 import re
 import sys
 from pathlib import Path
@@ -87,7 +90,7 @@ def fix_readme(readme_path):
 
     if "Origin" not in sections:
         desc_line = ""
-        for line in header:
+        for line in header.splitlines():
             if line.strip() and not line.startswith("#") and not line.startswith("**"):
                 desc_line = line.strip()
                 break
@@ -106,13 +109,8 @@ def fix_readme(readme_path):
         sections["API convention deviations"] = "\nNone.\n"
         changed = True
 
-    if "API review" not in sections:
-        sections["API review"] = f"\n- **Date**: 2026-05-19\n- **Key decisions**: Standard platform conventions. Context struct for multi-instance support where applicable.\n"
-        changed = True
-
-    if "Responsible human" not in sections:
-        sections["Responsible human"] = "\n@user\n"
-        changed = True
+    # "API review" and "Responsible human" record what a person did, so they are
+    # never filled in here: the audit keeps warning until a person writes them.
 
     ordered = []
     for name in CANONICAL_ORDER:
