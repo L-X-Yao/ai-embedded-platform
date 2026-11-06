@@ -439,6 +439,57 @@ TEST(test_long_value_is_not_cut)
     ASSERT_STR_EQ(sent_buf, "ts=2 x=" MINUS_3E38F_TEXT);
 }
 
+TEST(test_long_value_is_sent_in_every_format)
+{
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, "x");
+    telemetry_update(&telem, "x", -3e38f);
+    ASSERT_EQ(telemetry_publish(&telem, 2), TELEMETRY_OK);
+    ASSERT_STR_EQ(sent_buf, "{\"ts\":2,\"x\":" MINUS_3E38F_TEXT "}");
+
+    setup(TELEMETRY_FMT_CSV);
+    telemetry_register(&telem, "x");
+    telemetry_update(&telem, "x", -3e38f);
+    ASSERT_EQ(telemetry_publish(&telem, 2), TELEMETRY_OK);
+    ASSERT_STR_EQ(sent_buf, "2," MINUS_3E38F_TEXT);
+}
+
+/* Only the whole buffer limits a field: a value that grows at run time must
+ * not stop every field of the device. */
+TEST(test_field_is_limited_only_by_the_buffer)
+{
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, "engine_coolant_temp");
+    telemetry_update(&telem, "engine_coolant_temp", 25.5f);
+    ASSERT_EQ(telemetry_publish(&telem, 7), TELEMETRY_OK);
+    ASSERT_STR_EQ(sent_buf, "{\"ts\":7,\"engine_coolant_temp\":25.5}");
+
+    capture_reset();
+    telemetry_update(&telem, "engine_coolant_temp", 123456.75f);
+    ASSERT_EQ(telemetry_publish(&telem, 7), TELEMETRY_OK);
+    ASSERT_STR_EQ(sent_buf, "{\"ts\":7,\"engine_coolant_temp\":123456.75}");
+    ASSERT_EQ(telemetry_get_error_count(&telem), 0);
+}
+
+TEST(test_long_name_is_sent)
+{
+    static const char name[] =
+        "a_field_name_far_longer_than_any_one_field_used_to_be_allowed_to_be";
+
+    setup(TELEMETRY_FMT_KEY_VALUE);
+    telemetry_register(&telem, name);
+    telemetry_update(&telem, name, 1.5f);
+    ASSERT_EQ(telemetry_publish(&telem, 3), TELEMETRY_OK);
+    ASSERT_TRUE(strncmp(sent_buf, "ts=3 a_field_name", 17) == 0);
+    ASSERT_TRUE(strstr(sent_buf, "_to_be=1.5") != NULL);
+
+    setup(TELEMETRY_FMT_JSON);
+    telemetry_register(&telem, name);
+    telemetry_update(&telem, name, 1.5f);
+    ASSERT_EQ(telemetry_publish(&telem, 3), TELEMETRY_OK);
+    ASSERT_TRUE(strstr(sent_buf, "_to_be\":1.5}") != NULL);
+}
+
 /* ================================================================ */
 
 TEST_MAIN("telemetry")
@@ -473,4 +524,7 @@ TEST_MAIN("telemetry")
     RUN(test_update_inf_rejected);
     RUN(test_update_by_index_nan_rejected);
     RUN(test_long_value_is_not_cut);
+    RUN(test_long_value_is_sent_in_every_format);
+    RUN(test_field_is_limited_only_by_the_buffer);
+    RUN(test_long_name_is_sent);
 TEST_MAIN_END()
