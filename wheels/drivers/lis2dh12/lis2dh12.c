@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "lis2dh12.h"
+#include <string.h>
 
 #define REG_WHO_AM_I  0x0Fu
 #define REG_CTRL_REG1 0x20u
@@ -22,20 +23,10 @@ static const float sensitivity_table[] = {
     48.0f,  /* ±16g */
 };
 
-lis2dh12_err_t lis2dh12_init(lis2dh12_t *dev, const lis2dh12_i2c_t *i2c,
-                              const lis2dh12_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static lis2dh12_err_t bring_up(const lis2dh12_i2c_t *i2c,
+                               const lis2dh12_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return LIS2DH12_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return LIS2DH12_ERR_PARAM;
-    if ((unsigned)cfg->range > 3 || (unsigned)cfg->odr > 7)
-        return LIS2DH12_ERR_PARAM;
-
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->sensitivity = sensitivity_table[(unsigned)cfg->range];
-
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, cfg->addr, REG_WHO_AM_I, &id, 1))
         return LIS2DH12_ERR_I2C;
@@ -55,9 +46,36 @@ lis2dh12_err_t lis2dh12_init(lis2dh12_t *dev, const lis2dh12_i2c_t *i2c,
     return LIS2DH12_OK;
 }
 
+lis2dh12_err_t lis2dh12_init(lis2dh12_t *dev, const lis2dh12_i2c_t *i2c,
+                              const lis2dh12_cfg_t *cfg)
+{
+    if (!dev)
+        return LIS2DH12_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other call refuses a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return LIS2DH12_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return LIS2DH12_ERR_PARAM;
+    if ((unsigned)cfg->range > 3 || (unsigned)cfg->odr > 7)
+        return LIS2DH12_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->sensitivity = sensitivity_table[(unsigned)cfg->range];
+
+    lis2dh12_err_t err = bring_up(i2c, cfg);
+    if (err != LIS2DH12_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 lis2dh12_err_t lis2dh12_read(lis2dh12_t *dev, lis2dh12_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return LIS2DH12_ERR_PARAM;
 
     uint8_t buf[6];
