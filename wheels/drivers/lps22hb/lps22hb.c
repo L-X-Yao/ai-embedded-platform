@@ -14,6 +14,7 @@
 
 #include "lps22hb.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- register map ---------- */
 
@@ -64,16 +65,9 @@ static bool read_outputs(const lps22hb_t *dev, const uint8_t *regs,
     return true;
 }
 
-lps22hb_err_t lps22hb_init(lps22hb_t *dev, const lps22hb_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static lps22hb_err_t bring_up(const lps22hb_t *dev)
 {
-    if (!dev || !i2c)
-    {
-        return LPS22HB_ERR_PARAM;
-    }
-
-    dev->i2c  = i2c;
-    dev->addr = LPS22HB_DEV_ADDR;
-
     /* verify chip identity */
     uint8_t id = 0;
     if (!read_regs(dev, REG_WHO_AM_I, &id, 1))
@@ -97,13 +91,42 @@ lps22hb_err_t lps22hb_init(lps22hb_t *dev, const lps22hb_i2c_t *i2c)
         return LPS22HB_ERR_I2C;
     }
 
+    return LPS22HB_OK;
+}
+
+lps22hb_err_t lps22hb_init(lps22hb_t *dev, const lps22hb_i2c_t *i2c)
+{
+    if (!dev)
+    {
+        return LPS22HB_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs)
+    {
+        return LPS22HB_ERR_PARAM;
+    }
+
+    dev->i2c  = i2c;
+    dev->addr = LPS22HB_DEV_ADDR;
+
+    lps22hb_err_t err = bring_up(dev);
+    if (err != LPS22HB_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return LPS22HB_OK;
 }
 
 lps22hb_err_t lps22hb_read(lps22hb_t *dev, lps22hb_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return LPS22HB_ERR_PARAM;
     }
@@ -140,7 +163,7 @@ lps22hb_err_t lps22hb_read(lps22hb_t *dev, lps22hb_data_t *out)
 
 lps22hb_err_t lps22hb_set_odr(lps22hb_t *dev, lps22hb_odr_t odr)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return LPS22HB_ERR_PARAM;
     }
@@ -161,7 +184,7 @@ lps22hb_err_t lps22hb_set_odr(lps22hb_t *dev, lps22hb_odr_t odr)
 
 lps22hb_err_t lps22hb_one_shot_trigger(lps22hb_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return LPS22HB_ERR_PARAM;
     }
@@ -184,7 +207,7 @@ lps22hb_err_t lps22hb_one_shot_trigger(lps22hb_t *dev)
 
 lps22hb_err_t lps22hb_read_raw_pressure(lps22hb_t *dev, int32_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
     {
         return LPS22HB_ERR_PARAM;
     }
@@ -211,7 +234,7 @@ lps22hb_err_t lps22hb_read_raw_pressure(lps22hb_t *dev, int32_t *raw)
 
 lps22hb_err_t lps22hb_read_raw_temperature(lps22hb_t *dev, int16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
     {
         return LPS22HB_ERR_PARAM;
     }

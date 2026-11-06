@@ -74,7 +74,15 @@ lm75_err_t lm75_init(lm75_t *dev, const lm75_i2c_t *i2c)
 
 lm75_err_t lm75_init_addr(lm75_t *dev, const lm75_i2c_t *i2c, uint8_t addr)
 {
-    if (!dev || !i2c) {
+    if (!dev) {
+        return LM75_ERR_PARAM;
+    }
+
+    /* The HAL pointer stays NULL unless init succeeds: the other calls refuse
+     * a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c) {
         return LM75_ERR_PARAM;
     }
     if (!i2c->read_regs || !i2c->write_reg || !i2c->write_regs) {
@@ -85,7 +93,6 @@ lm75_err_t lm75_init_addr(lm75_t *dev, const lm75_i2c_t *i2c, uint8_t addr)
         return LM75_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->addr = addr;
 
@@ -93,6 +100,7 @@ lm75_err_t lm75_init_addr(lm75_t *dev, const lm75_i2c_t *i2c, uint8_t addr)
      * LM75 has no chip ID register, so we just confirm the bus works. */
     uint8_t buf[2];
     if (!read_regs(dev, REG_TEMP, buf, 2)) {
+        dev->i2c = NULL;
         return LM75_ERR_I2C;
     }
 
@@ -102,7 +110,7 @@ lm75_err_t lm75_init_addr(lm75_t *dev, const lm75_i2c_t *i2c, uint8_t addr)
 
 lm75_err_t lm75_read_temp(lm75_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c) {
+    if (!dev || !dev->i2c || !temp_c) {
         return LM75_ERR_PARAM;
     }
 
@@ -120,7 +128,7 @@ lm75_err_t lm75_read_temp(lm75_t *dev, float *temp_c)
 
 lm75_err_t lm75_read_raw(lm75_t *dev, int16_t *raw)
 {
-    if (!dev || !raw) {
+    if (!dev || !dev->i2c || !raw) {
         return LM75_ERR_PARAM;
     }
 
@@ -135,7 +143,7 @@ lm75_err_t lm75_read_raw(lm75_t *dev, int16_t *raw)
 
 lm75_err_t lm75_set_os_temp(lm75_t *dev, float temp_c)
 {
-    if (!dev) {
+    if (!dev || !dev->i2c) {
         return LM75_ERR_PARAM;
     }
 
@@ -153,7 +161,7 @@ lm75_err_t lm75_set_os_temp(lm75_t *dev, float temp_c)
 
 lm75_err_t lm75_set_hyst_temp(lm75_t *dev, float temp_c)
 {
-    if (!dev) {
+    if (!dev || !dev->i2c) {
         return LM75_ERR_PARAM;
     }
 

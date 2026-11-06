@@ -442,6 +442,54 @@ TEST(test_write_i2c_fail)
     ASSERT_EQ(bus_count, 0);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(max17048_t *d)
+{
+    max17048_data_t out;
+    float f;
+    uint16_t ver;
+    ASSERT_EQ(max17048_read(d, &out), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_read_voltage(d, &f), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_read_soc(d, &f), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_quickstart(d), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_set_alert_threshold(d, 10), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_clear_alert(d), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_sleep(d), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_wake(d), MAX17048_ERR_PARAM);
+    ASSERT_EQ(max17048_version(d, &ver), MAX17048_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static max17048_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    max17048_t d;
+    mock_reset_chip();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max17048_init(&d, NULL), MAX17048_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* No such part answers version 0xFFFF */
+    mock_regs[REG_VERSION]     = 0xFF;
+    mock_regs[REG_VERSION + 1] = 0xFF;
+    ASSERT_EQ(max17048_init(&d, &mock_bus), MAX17048_ERR_ID);
+    assert_device_refused(&d);
+
+    /* The version read worked, the status read did not */
+    mock_reset_chip();
+    mock_fail_at = 1;
+    ASSERT_EQ(max17048_init(&d, &mock_bus), MAX17048_ERR_I2C);
+    mock_reset_chip();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max17048")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -479,4 +527,6 @@ TEST_MAIN("max17048")
     RUN(test_init_clears_ri_with_one_word_write);
     RUN(test_init_without_ri_writes_nothing);
     RUN(test_write_i2c_fail);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

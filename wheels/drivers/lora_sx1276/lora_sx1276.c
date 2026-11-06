@@ -10,6 +10,7 @@
 
 #include "lora_sx1276.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- SX1276 register map ---------- */
 
@@ -193,20 +194,9 @@ static lora_err_t calibrate_image(const lora_spi_t *spi)
 
 /* ---------- public API ---------- */
 
-lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
+/* The steps of init that talk to the chip */
+static lora_err_t bring_up(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high ||
-        !spi->xfer || !spi->reset || !spi->delay_ms) {
-        return LORA_ERR_SPI;
-    }
-
-    dev->spi = spi;
-    dev->frequency = 0;
-    dev->bandwidth = 7;        /* 125 kHz default */
-    dev->spreading_factor = 7; /* SF7 default */
-    dev->coding_rate = 1;      /* 4/5 default */
-    dev->tx_power = 17;        /* max PA_BOOST default */
-
     /* hardware reset */
     spi->reset(spi->ctx);
     spi->delay_ms(spi->ctx, 10);
@@ -248,10 +238,35 @@ lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
     if (err != LORA_OK) return err;
 
     /* standby mode */
-    err = set_mode(spi, MODE_STANDBY);
-    if (err != LORA_OK) return err;
+    return set_mode(spi, MODE_STANDBY);
+}
 
-    return LORA_OK;
+lora_err_t lora_init(lora_t *dev, const lora_spi_t *spi, uint32_t freq_hz)
+{
+    if (!dev) {
+        return LORA_ERR_SPI;
+    }
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !spi->cs_low || !spi->cs_high ||
+        !spi->xfer || !spi->reset || !spi->delay_ms) {
+        return LORA_ERR_SPI;
+    }
+
+    dev->spi = spi;
+    dev->bandwidth = 7;        /* 125 kHz default */
+    dev->spreading_factor = 7; /* SF7 default */
+    dev->coding_rate = 1;      /* 4/5 default */
+    dev->tx_power = 17;        /* max PA_BOOST default */
+
+    lora_err_t err = bring_up(dev, spi, freq_hz);
+    if (err != LORA_OK) {
+        dev->spi = NULL;
+    }
+    return err;
 }
 
 lora_err_t lora_set_frequency(lora_t *dev, uint32_t freq_hz)

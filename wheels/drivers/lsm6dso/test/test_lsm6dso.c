@@ -366,6 +366,48 @@ TEST(test_error_codes)
     ASSERT_EQ(-3, (int)LSM6DSO_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lsm6dso_t *d)
+{
+    lsm6dso_accel_data_t a;
+    lsm6dso_gyro_data_t g;
+    float t;
+    ASSERT_EQ(lsm6dso_read_accel(d, &a), LSM6DSO_ERR_PARAM);
+    ASSERT_EQ(lsm6dso_read_gyro(d, &g), LSM6DSO_ERR_PARAM);
+    ASSERT_EQ(lsm6dso_read_temp(d, &t), LSM6DSO_ERR_PARAM);
+    ASSERT_EQ(lsm6dso_reset(d), LSM6DSO_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    lsm6dso_t d;
+    lsm6dso_cfg_t bad_range = default_cfg;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lsm6dso_init(&d, NULL, &default_cfg), LSM6DSO_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* 0x6A is the WHO_AM_I of an LSM6DSL: it answers, but it is another chip */
+    mock_regs[0x0F] = 0x6A;
+    ASSERT_EQ(lsm6dso_init(&d, &mock_i2c, &default_cfg), LSM6DSO_ERR_ID);
+    assert_device_refused(&d);
+
+    mock_reset();
+    bad_range.accel_range = (lsm6dso_accel_range_t)0x7F;
+    ASSERT_EQ(lsm6dso_init(&d, &mock_i2c, &bad_range), LSM6DSO_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* The reset and ID read worked, the first configuration write did not */
+    mock_reset();
+    mock_fail_at = 2;
+    ASSERT_EQ(lsm6dso_init(&d, &mock_i2c, &default_cfg), LSM6DSO_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lsm6dso")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -390,4 +432,5 @@ TEST_MAIN("lsm6dso")
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_error_codes);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

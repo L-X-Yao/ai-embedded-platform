@@ -76,22 +76,9 @@ static bool read_regs(const lsm6dso_t *dev, uint8_t reg,
 
 /* ---------- public API ---------- */
 
-lsm6dso_err_t lsm6dso_init(lsm6dso_t *dev, const lsm6dso_i2c_t *i2c,
-                            const lsm6dso_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static lsm6dso_err_t bring_up(lsm6dso_t *dev, const lsm6dso_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return LSM6DSO_ERR_PARAM;
-    }
-    if (!i2c->read_regs || !i2c->write_reg)
-    {
-        return LSM6DSO_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* SW_RESET */
     if (!write_reg(dev, REG_CTRL3_C, CTRL3_C_SW_RESET))
     {
@@ -146,6 +133,40 @@ lsm6dso_err_t lsm6dso_init(lsm6dso_t *dev, const lsm6dso_i2c_t *i2c,
     if (!write_reg(dev, REG_CTRL3_C, CTRL3_C_BDU | CTRL3_C_IF_INC))
     {
         return LSM6DSO_ERR_I2C;
+    }
+
+    return LSM6DSO_OK;
+}
+
+lsm6dso_err_t lsm6dso_init(lsm6dso_t *dev, const lsm6dso_i2c_t *i2c,
+                            const lsm6dso_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return LSM6DSO_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no sensitivities and would read zeros */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return LSM6DSO_ERR_PARAM;
+    }
+    if (!i2c->read_regs || !i2c->write_reg)
+    {
+        return LSM6DSO_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    lsm6dso_err_t err = bring_up(dev, cfg);
+    if (err != LSM6DSO_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

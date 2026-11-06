@@ -122,6 +122,38 @@ TEST(test_error_codes)
     ASSERT_EQ((int)LTR390_ERR_PARAM, -3);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ltr390_t *d)
+{
+    uint32_t raw;
+    ASSERT_EQ(ltr390_read_als(d, &raw), LTR390_ERR_PARAM);
+    ASSERT_EQ(ltr390_read_uvs(d, &raw), LTR390_ERR_PARAM);
+    ASSERT_EQ(ltr390_set_mode(d, LTR390_MODE_ALS), LTR390_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    ltr390_t d;
+    ltr390_cfg_t bad_gain = default_cfg;
+    hw_model_reset();
+
+    bad_gain.gain = (ltr390_gain_t)0x7F;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ltr390_init(&d, &hw_i2c, &bad_gain), LTR390_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ltr390_init(&d, NULL, &default_cfg), LTR390_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* A chip that answers with another part number was never configured */
+    ltr390_mdl.regs[0x06] = 0x00;
+    ASSERT_EQ(ltr390_init(&d, &hw_i2c, &default_cfg), LTR390_ERR_ID);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ltr390")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -133,4 +165,5 @@ TEST_MAIN("ltr390")
     RUN(test_read_uvs);
     RUN(test_mode_switch);
     RUN(test_error_codes);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()
