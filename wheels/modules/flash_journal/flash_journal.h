@@ -98,7 +98,9 @@ typedef struct {
  * @param storage       Storage callbacks (must outlive jrnl).
  * @param sector_count  Number of sectors (1..FLASH_JOURNAL_MAX_SECTORS).
  * @param sector_size   Bytes per sector (must be > FLASH_JOURNAL_OVERHEAD).
- * @return              FLASH_JOURNAL_OK on success.
+ * @return              FLASH_JOURNAL_OK on success.  FLASH_JOURNAL_ERR_STORAGE
+ *                      if a read failed: the entries are unknown, so jrnl
+ *                      refuses every append until an init succeeds.
  * @thread_safe: no (caller must serialize)
  */
 flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
