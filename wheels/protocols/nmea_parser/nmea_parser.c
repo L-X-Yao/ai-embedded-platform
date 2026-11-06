@@ -13,6 +13,24 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*
+ * A valid checksum says a sentence arrived as sent, not that its values make
+ * sense, and strtof takes nan, inf and 1e30 as numbers. A value outside these
+ * limits is ignored and the field keeps what it had. NMEA sets few of them, so
+ * they are wide, and only have to keep out what no receiver reports.
+ */
+#define MAX_SPEED_KNOTS 1000.0f     /* the CoCom limit on civil GPS receivers */
+#define MAX_COURSE_DEG  360.0f
+#define MAX_ABS_ALT_M   1000000.0f
+#define MAX_DOP         1000.0f     /* receivers report 99.99 with no geometry */
+#define MAX_FIX_QUALITY 9L
+#define MAX_SATELLITES  99L         /* the field is two digits */
+#define MAX_HOUR        23
+#define MAX_MINUTE      59
+#define MAX_SECOND      60          /* UTC can have a leap second */
+#define MAX_MONTH       12
+#define MAX_DAY         31
+
 /* ---------- helpers ---------- */
 
 static int hex_digit(char c)
@@ -40,11 +58,25 @@ static float field_float(const char *line, int n)
     return strtof(f, NULL);
 }
 
-static int field_int(const char *line, int n)
+/* Store a field only if it lies in lo..hi. NaN fails both comparisons. */
+static void field_float_in(const char *line, int n, float lo, float hi, float *out)
+{
+    float v = field_float(line, n);
+    if (v >= lo && v <= hi) *out = v;
+}
+
+/* long, because a cast to int would turn 4294967304 into 8. */
+static long field_long(const char *line, int n)
 {
     const char *f = get_field(line, n);
     if (*f == '\0' || *f == ',') return 0;
-    return (int)strtol(f, NULL, 10);
+    return strtol(f, NULL, 10);
+}
+
+static void field_u8_in(const char *line, int n, long hi, uint8_t *out)
+{
+    long v = field_long(line, n);
+    if (v >= 0 && v <= hi) *out = (uint8_t)v;
 }
 
 static char field_char(const char *line, int n)
@@ -87,9 +119,13 @@ static void parse_time(const char *field, nmea_parser_data_t *d)
     if (!is_digit(field[0]) || !is_digit(field[1]) ||
         !is_digit(field[2]) || !is_digit(field[3]) ||
         !is_digit(field[4]) || !is_digit(field[5])) return;
-    d->hour = (uint8_t)((field[0] - '0') * 10 + (field[1] - '0'));
-    d->min  = (uint8_t)((field[2] - '0') * 10 + (field[3] - '0'));
-    d->sec  = (uint8_t)((field[4] - '0') * 10 + (field[5] - '0'));
+    int hour   = (field[0] - '0') * 10 + (field[1] - '0');
+    int minute = (field[2] - '0') * 10 + (field[3] - '0');
+    int sec    = (field[4] - '0') * 10 + (field[5] - '0');
+    if (hour > MAX_HOUR || minute > MAX_MINUTE || sec > MAX_SECOND) return;
+    d->hour = (uint8_t)hour;
+    d->min  = (uint8_t)minute;
+    d->sec  = (uint8_t)sec;
 }
 
 static void parse_date(const char *field, nmea_parser_data_t *d)
@@ -98,8 +134,11 @@ static void parse_date(const char *field, nmea_parser_data_t *d)
     if (!is_digit(field[0]) || !is_digit(field[1]) ||
         !is_digit(field[2]) || !is_digit(field[3]) ||
         !is_digit(field[4]) || !is_digit(field[5])) return;
-    d->day   = (uint8_t)((field[0] - '0') * 10 + (field[1] - '0'));
-    d->month = (uint8_t)((field[2] - '0') * 10 + (field[3] - '0'));
+    int day   = (field[0] - '0') * 10 + (field[1] - '0');
+    int month = (field[2] - '0') * 10 + (field[3] - '0');
+    if (day < 1 || day > MAX_DAY || month < 1 || month > MAX_MONTH) return;
+    d->day   = (uint8_t)day;
+    d->month = (uint8_t)month;
     uint8_t yy = (uint8_t)((field[4] - '0') * 10 + (field[5] - '0'));
     d->year  = (yy >= 80) ? (uint16_t)(1900 + yy) : (uint16_t)(2000 + yy);
 }
@@ -108,10 +147,10 @@ static void parse_date(const char *field, nmea_parser_data_t *d)
 
 static void parse_gga(const char *line, nmea_parser_data_t *d)
 {
-    d->fix_quality = (uint8_t)field_int(line, 6);
-    d->satellites  = (uint8_t)field_int(line, 7);
-    d->hdop        = field_float(line, 8);
-    d->altitude_m  = field_float(line, 9);
+    field_u8_in(line, 6, MAX_FIX_QUALITY, &d->fix_quality);
+    field_u8_in(line, 7, MAX_SATELLITES, &d->satellites);
+    field_float_in(line, 8, 0.0f, MAX_DOP, &d->hdop);
+    field_float_in(line, 9, -MAX_ABS_ALT_M, MAX_ABS_ALT_M, &d->altitude_m);
 }
 
 static void parse_rmc(const char *line, nmea_parser_data_t *d)
@@ -133,14 +172,16 @@ static void parse_rmc(const char *line, nmea_parser_data_t *d)
         d->longitude_deg = parse_lon(lon_f, ew);
 
     float knots = field_float(line, 7);
-    d->speed_kmh = knots * 1.852f;
+    if (knots >= 0.0f && knots <= MAX_SPEED_KNOTS) d->speed_kmh = knots * 1.852f;
 
     const char *course_f = get_field(line, 8);
+    d->course_valid = 0;
     if (*course_f && *course_f != ',' && *course_f != '*') {
-        d->course_deg = strtof(course_f, NULL);
-        d->course_valid = 1;
-    } else {
-        d->course_valid = 0;
+        float course = strtof(course_f, NULL);
+        if (course >= 0.0f && course <= MAX_COURSE_DEG) {
+            d->course_deg = course;
+            d->course_valid = 1;
+        }
     }
 
     const char *date_f = get_field(line, 9);
@@ -149,14 +190,14 @@ static void parse_rmc(const char *line, nmea_parser_data_t *d)
 
 static void parse_gsa(const char *line, nmea_parser_data_t *d)
 {
-    int mode = field_int(line, 2);
+    long mode = field_long(line, 2);
     if (mode == 3)      d->fix_mode = 2;
     else if (mode == 2)  d->fix_mode = 1;
     else                 d->fix_mode = 0;
 
-    d->pdop = field_float(line, 15);
-    d->hdop = field_float(line, 16);
-    d->vdop = field_float(line, 17);
+    field_float_in(line, 15, 0.0f, MAX_DOP, &d->pdop);
+    field_float_in(line, 16, 0.0f, MAX_DOP, &d->hdop);
+    field_float_in(line, 17, 0.0f, MAX_DOP, &d->vdop);
 }
 
 /* ---------- API ---------- */

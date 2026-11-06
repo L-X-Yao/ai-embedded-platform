@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "nmea_parser.h"
@@ -331,7 +332,298 @@ TEST(test_speed_conversion)
     ASSERT_NEAR(d.speed_kmh, 185.2f, 0.5f);
 }
 
+/* ---------- values a valid checksum cannot vouch for ---------- */
+
+/* Build "$GPxxx,<head><value><tail>" with a correct checksum and parse it. */
+static nmea_parser_err_t parse_field(const char *head, const char *value,
+                                     const char *tail, nmea_parser_data_t *d)
+{
+    char body[128];
+    char line[136];
+    uint8_t sum = 0;
+
+    snprintf(body, sizeof(body), "%s%s%s", head, value, tail);
+    for (const char *p = body + 1; *p; p++) {
+        sum ^= (uint8_t)*p;
+    }
+    snprintf(line, sizeof(line), "%s*%02X", body, (unsigned)sum);
+    return nmea_parser_parse(line, d);
+}
+
+#define RMC_SPEED_HEAD  "$GPRMC,123519,A,4807.038,N,01131.000,E,"
+#define RMC_COURSE_HEAD "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,"
+#define RMC_DATE_HEAD   "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,"
+#define RMC_TIME_TAIL   ",A,4807.038,N,01131.000,E,022.4,084.4,230394,,"
+#define GGA_QUALITY_HEAD "$GPGGA,123519,4807.038,N,01131.000,E,"
+#define GGA_SATS_HEAD   "$GPGGA,123519,4807.038,N,01131.000,E,1,"
+#define GGA_HDOP_HEAD   "$GPGGA,123519,4807.038,N,01131.000,E,1,08,"
+#define GGA_ALT_HEAD    "$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,"
+#define GSA_HEAD        "$GPGSA,A,3,04,05,,09,12,,,24,,,,,"
+
+static void seed_good_fix(nmea_parser_data_t *d)
+{
+    nmea_parser_data_init(d);
+    (void)parse_field(RMC_SPEED_HEAD, "022.4", ",084.4,230394,,", d);
+    (void)parse_field(GGA_ALT_HEAD, "545.4", ",M,46.9,M,,", d);
+    (void)parse_field(GSA_HEAD, "2.5", ",1.3,2.1", d);
+}
+
+TEST(test_rmc_bad_speed_keeps_the_old_value)
+{
+    static const char *const bad[] = {
+        "nan", "inf", "-inf", "1e30", "-1.0", "1000.5",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(RMC_SPEED_HEAD, bad[i], ",084.4,230394,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.speed_kmh, 22.4f * 1.852f, 0.01f);
+    }
+}
+
+TEST(test_rmc_speed_limits)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(RMC_SPEED_HEAD, "1000.0", ",084.4,230394,,", &d);
+    ASSERT_NEAR(d.speed_kmh, 1852.0f, 0.1f);
+    (void)parse_field(RMC_SPEED_HEAD, "0.0", ",084.4,230394,,", &d);
+    ASSERT_NEAR(d.speed_kmh, 0.0f, 0.001f);
+}
+
+TEST(test_rmc_bad_course_is_not_valid)
+{
+    static const char *const bad[] = {
+        "nan", "inf", "-inf", "1e30", "-1.0", "360.5",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(d.course_valid, 1);
+        ASSERT_EQ(parse_field(RMC_COURSE_HEAD, bad[i], ",230394,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.course_valid, 0);
+        ASSERT_NEAR(d.course_deg, 84.4f, 0.01f);
+    }
+}
+
+TEST(test_rmc_course_limits)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(RMC_COURSE_HEAD, "360.0", ",230394,,", &d);
+    ASSERT_EQ(d.course_valid, 1);
+    ASSERT_NEAR(d.course_deg, 360.0f, 0.001f);
+    (void)parse_field(RMC_COURSE_HEAD, "0.0", ",230394,,", &d);
+    ASSERT_EQ(d.course_valid, 1);
+    ASSERT_NEAR(d.course_deg, 0.0f, 0.001f);
+}
+
+TEST(test_gga_bad_altitude_keeps_the_old_value)
+{
+    static const char *const bad[] = {
+        "nan", "inf", "-inf", "1e30", "-1e30", "1000001.0", "-1000001.0",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(GGA_ALT_HEAD, bad[i], ",M,46.9,M,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.altitude_m, 545.4f, 0.01f);
+    }
+}
+
+TEST(test_gga_altitude_below_sea_level_is_fine)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(GGA_ALT_HEAD, "-430.5", ",M,46.9,M,,", &d);
+    ASSERT_NEAR(d.altitude_m, -430.5f, 0.01f);
+}
+
+TEST(test_bad_dop_keeps_the_old_value)
+{
+    static const char *const bad[] = {
+        "nan", "inf", "-inf", "1e30", "-1.0", "1000.5",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(GGA_HDOP_HEAD, bad[i], ",545.4,M,46.9,M,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.hdop, 1.3f, 0.001f);
+
+        ASSERT_EQ(parse_field(GSA_HEAD, bad[i], ",1.3,2.1", &d), NMEA_PARSER_OK);
+        ASSERT_NEAR(d.pdop, 2.5f, 0.001f);
+
+        ASSERT_EQ(parse_field(GSA_HEAD "2.5,", bad[i], ",2.1", &d), NMEA_PARSER_OK);
+        ASSERT_NEAR(d.hdop, 1.3f, 0.001f);
+
+        ASSERT_EQ(parse_field(GSA_HEAD "2.5,1.3,", bad[i], "", &d), NMEA_PARSER_OK);
+        ASSERT_NEAR(d.vdop, 2.1f, 0.001f);
+    }
+}
+
+TEST(test_dop_of_a_receiver_with_no_geometry_is_fine)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(GSA_HEAD, "99.99", ",99.99,99.99", &d);
+    ASSERT_NEAR(d.pdop, 99.99f, 0.001f);
+    ASSERT_NEAR(d.hdop, 99.99f, 0.001f);
+    ASSERT_NEAR(d.vdop, 99.99f, 0.001f);
+}
+
+TEST(test_rmc_bad_time_keeps_the_old_time)
+{
+    static const char *const bad[] = { "240000", "126000", "123561", "999999" };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field("$GPRMC,", bad[i], RMC_TIME_TAIL, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.hour, 12);
+        ASSERT_EQ(d.min, 35);
+        ASSERT_EQ(d.sec, 19);
+    }
+}
+
+TEST(test_rmc_time_limits)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field("$GPRMC,", "000000", RMC_TIME_TAIL, &d);
+    ASSERT_EQ(d.hour, 0);
+    ASSERT_EQ(d.min, 0);
+    ASSERT_EQ(d.sec, 0);
+
+    /* UTC can have a 60th second. */
+    (void)parse_field("$GPRMC,", "235960", RMC_TIME_TAIL, &d);
+    ASSERT_EQ(d.hour, 23);
+    ASSERT_EQ(d.min, 59);
+    ASSERT_EQ(d.sec, 60);
+}
+
+TEST(test_rmc_bad_date_keeps_the_old_date)
+{
+    static const char *const bad[] = {
+        "019926", "011326", "010026", "001026", "321026", "000000",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(RMC_DATE_HEAD, bad[i], ",,", &d), NMEA_PARSER_OK);
+        ASSERT_EQ(d.day, 23);
+        ASSERT_EQ(d.month, 3);
+        ASSERT_EQ(d.year, 1994);
+        ASSERT_EQ(d.fix_valid, 1);
+    }
+}
+
+TEST(test_rmc_date_limits)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(RMC_DATE_HEAD, "311226", ",,", &d);
+    ASSERT_EQ(d.day, 31);
+    ASSERT_EQ(d.month, 12);
+    ASSERT_EQ(d.year, 2026);
+    (void)parse_field(RMC_DATE_HEAD, "010126", ",,", &d);
+    ASSERT_EQ(d.day, 1);
+    ASSERT_EQ(d.month, 1);
+}
+
+TEST(test_gga_bad_satellites_keep_the_old_count)
+{
+    /* 300 used to wrap to 44, and the last one wraps to 8 through an int. */
+    static const char *const bad[] = { "300", "256", "100", "-1", "4294967304" };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        (void)parse_field(GGA_SATS_HEAD, "06", ",0.9,545.4,M,46.9,M,,", &d);
+        ASSERT_EQ(parse_field(GGA_SATS_HEAD, bad[i], ",0.9,545.4,M,46.9,M,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.satellites, 6);
+    }
+}
+
+TEST(test_gga_satellite_limit)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    (void)parse_field(GGA_SATS_HEAD, "99", ",0.9,545.4,M,46.9,M,,", &d);
+    ASSERT_EQ(d.satellites, 99);
+}
+
+TEST(test_gga_bad_quality_keeps_the_old_value)
+{
+    static const char *const bad[] = { "300", "257", "10", "-1", "4294967297" };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        (void)parse_field(GGA_QUALITY_HEAD, "2", ",08,0.9,545.4,M,46.9,M,,", &d);
+        ASSERT_EQ(parse_field(GGA_QUALITY_HEAD, bad[i], ",08,0.9,545.4,M,46.9,M,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.fix_quality, 2);
+    }
+}
+
+TEST(test_gsa_mode_does_not_wrap)
+{
+    nmea_parser_data_t d;
+
+    /* 4294967299 is 3 once it goes through an int. */
+    seed_good_fix(&d);
+    (void)parse_field("$GPGSA,A,", "4294967299", ",04,,,,,,,,,,,,2.5,1.3,2.1", &d);
+    ASSERT_EQ(d.fix_mode, 0);
+}
+
+TEST(test_bad_field_leaves_the_rest_of_the_sentence)
+{
+    nmea_parser_data_t d;
+
+    nmea_parser_data_init(&d);
+    (void)parse_field(RMC_SPEED_HEAD, "inf", ",084.4,230394,,", &d);
+    ASSERT_EQ(d.fix_valid, 1);
+    ASSERT_NEAR(d.latitude_deg, 48.1173f, 1e-4f);
+    ASSERT_NEAR(d.course_deg, 84.4f, 0.01f);
+    ASSERT_EQ(d.day, 23);
+}
+
 TEST_MAIN("nmea_parser")
+    RUN(test_rmc_bad_speed_keeps_the_old_value);
+    RUN(test_rmc_speed_limits);
+    RUN(test_rmc_bad_course_is_not_valid);
+    RUN(test_rmc_course_limits);
+    RUN(test_gga_bad_altitude_keeps_the_old_value);
+    RUN(test_gga_altitude_below_sea_level_is_fine);
+    RUN(test_bad_dop_keeps_the_old_value);
+    RUN(test_dop_of_a_receiver_with_no_geometry_is_fine);
+    RUN(test_rmc_bad_time_keeps_the_old_time);
+    RUN(test_rmc_time_limits);
+    RUN(test_rmc_bad_date_keeps_the_old_date);
+    RUN(test_rmc_date_limits);
+    RUN(test_gga_bad_satellites_keep_the_old_count);
+    RUN(test_gga_satellite_limit);
+    RUN(test_gga_bad_quality_keeps_the_old_value);
+    RUN(test_gsa_mode_does_not_wrap);
+    RUN(test_bad_field_leaves_the_rest_of_the_sentence);
     RUN(test_checksum_valid);
     RUN(test_checksum_invalid);
     RUN(test_checksum_null);
