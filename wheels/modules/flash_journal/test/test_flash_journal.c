@@ -19,6 +19,7 @@ static bool sim_fail_erase;
 static int sim_cut_after;      /* bytes programmed before power goes, -1 = never */
 static int sim_bad_programs;   /* bytes that needed a 0 bit raised to 1 */
 static int sim_fail_read_at;   /* value of sim_read_calls that fails, 0 = none */
+static int sim_lost_ack_at;    /* sim_write_calls that lands but reports failure */
 
 static void sim_reset(void)
 {
@@ -32,6 +33,7 @@ static void sim_reset(void)
     sim_cut_after = -1;
     sim_bad_programs = 0;
     sim_fail_read_at = 0;
+    sim_lost_ack_at = 0;
 }
 
 static flash_journal_err_t sim_read(void *ctx, uint32_t sector,
@@ -66,6 +68,7 @@ static flash_journal_err_t sim_write(void *ctx, uint32_t sector,
         if ((uint8_t)(*cell & data[i]) != data[i]) sim_bad_programs++;
         *cell &= data[i];
     }
+    if (sim_write_calls == sim_lost_ack_at) return FLASH_JOURNAL_ERR_STORAGE;
     return FLASH_JOURNAL_OK;
 }
 
@@ -616,6 +619,147 @@ TEST(test_failed_boot_refuses_appends)
     ASSERT_TRUE(latest_is("CCCC"));
 }
 
+/* ---------- Failed writes with no reset after them ------------------------ */
+
+#define ENTRIES_PER_SECTOR  (SIM_SECTOR_SIZE / ENTRY4_SIZE)
+
+/* A write can stop at any byte.  The next append must not program over what
+ * the failed one left, or it and all that follow in the sector are lost. */
+TEST(test_failed_write_keeps_later_entries)
+{
+    for (int cut = 0; cut < (int)ENTRY4_SIZE; cut++) {
+        fresh_journal();
+        ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+
+        sim_cut_after = cut;
+        ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_ERR_STORAGE);
+        sim_cut_after = -1;
+        ASSERT_EQ(flash_journal_count(&jrnl), 1);
+        ASSERT_TRUE(latest_is("AAAA"));
+
+        ASSERT_EQ(put("CCCCCCCC"), FLASH_JOURNAL_OK);
+        ASSERT_EQ(put("DDDD"), FLASH_JOURNAL_OK);
+        ASSERT_EQ(sim_bad_programs, 0);
+        ASSERT_EQ(flash_journal_count(&jrnl), 3);
+        ASSERT_TRUE(nth_is(0, "AAAA"));
+        ASSERT_TRUE(nth_is(1, "CCCCCCCC"));
+        ASSERT_TRUE(nth_is(2, "DDDD"));
+        ASSERT_TRUE(latest_is("DDDD"));
+
+        ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+        ASSERT_EQ(flash_journal_count(&jrnl), 3);
+        ASSERT_TRUE(nth_is(1, "CCCCCCCC"));
+        ASSERT_TRUE(latest_is("DDDD"));
+    }
+}
+
+/* The write sector holds no entry yet: the newest one is in the sector before. */
+TEST(test_failed_write_at_start_of_sector)
+{
+    for (int cut = 0; cut < (int)ENTRY4_SIZE; cut++) {
+        fresh_journal();
+        for (uint32_t i = 0; i < ENTRIES_PER_SECTOR; i++) {
+            ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+        }
+
+        sim_cut_after = cut;
+        ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_ERR_STORAGE);
+        sim_cut_after = -1;
+        ASSERT_EQ(jrnl.write_sector, 1);
+        ASSERT_EQ(flash_journal_count(&jrnl), ENTRIES_PER_SECTOR);
+        ASSERT_TRUE(latest_is("AAAA"));
+
+        ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+        ASSERT_EQ(sim_bad_programs, 0);
+        ASSERT_EQ(flash_journal_count(&jrnl), ENTRIES_PER_SECTOR + 1u);
+        ASSERT_TRUE(nth_is(ENTRIES_PER_SECTOR, "CCCC"));
+        ASSERT_TRUE(latest_is("CCCC"));
+
+        ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+        ASSERT_EQ(flash_journal_count(&jrnl), ENTRIES_PER_SECTOR + 1u);
+        ASSERT_TRUE(latest_is("CCCC"));
+    }
+}
+
+/* Nothing reached flash, so nothing is given up: a fault that lasts must not
+ * walk through the sectors and erase the journal. */
+TEST(test_write_that_programmed_nothing_costs_nothing)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+
+    sim_fail_write = true;
+    for (int i = 0; i < 10; i++) {
+        ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_ERR_STORAGE);
+    }
+    sim_fail_write = false;
+
+    ASSERT_EQ(sim_erase_calls, 0);
+    ASSERT_EQ(jrnl.write_sector, 0);
+    ASSERT_EQ(jrnl.write_offset, ENTRY4_SIZE);
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 2);
+}
+
+/* With reads failing too nobody can tell, so the sector must be given up. */
+TEST(test_failed_write_that_cannot_be_checked)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+
+    sim_cut_after = 5;
+    sim_fail_read = true;
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_ERR_STORAGE);
+    sim_cut_after = -1;
+    sim_fail_read = false;
+
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(sim_bad_programs, 0);
+    ASSERT_EQ(jrnl.write_sector, 1);
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 2);
+    ASSERT_TRUE(latest_is("CCCC"));
+}
+
+/* All bytes landed and only the report failed, so a valid entry stays behind
+ * with its seq.  The next one must not share it, or a boot takes the older
+ * for the newest and appends behind it. */
+TEST(test_failed_write_does_not_reuse_its_seq)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+
+    sim_write_calls = 0;
+    sim_lost_ack_at = 3;  /* header, payload, then the CRC */
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_ERR_STORAGE);
+    sim_lost_ack_at = 0;
+
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(sim_bad_programs, 0);
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(jrnl.write_sector, 1);
+    ASSERT_TRUE(latest_is("CCCC"));
+}
+
+/* An older entry is not an answer when a read stopped the search. */
+TEST(test_read_latest_reports_a_failed_read)
+{
+    uint8_t buf[16];
+    uint32_t size = sizeof(buf);
+
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_OK);
+
+    sim_read_calls = 0;
+    sim_fail_read_at = 3 + 1;  /* the first read of the second entry */
+    ASSERT_EQ(flash_journal_read_latest(&jrnl, buf, &size),
+              FLASH_JOURNAL_ERR_STORAGE);
+    sim_fail_read_at = 0;
+}
+
 /* Entry id -> payload, so a read can be checked from the id alone. */
 static uint16_t model_payload(uint32_t id, uint8_t *buf)
 {
@@ -745,5 +889,11 @@ TEST_MAIN("flash_journal")
     RUN(test_boot_sees_last_byte_of_sector_programmed);
     RUN(test_boot_reports_every_failed_read);
     RUN(test_failed_boot_refuses_appends);
+    RUN(test_failed_write_keeps_later_entries);
+    RUN(test_failed_write_at_start_of_sector);
+    RUN(test_write_that_programmed_nothing_costs_nothing);
+    RUN(test_failed_write_that_cannot_be_checked);
+    RUN(test_failed_write_does_not_reuse_its_seq);
+    RUN(test_read_latest_reports_a_failed_read);
     RUN(test_power_cut_model);
 TEST_MAIN_END()

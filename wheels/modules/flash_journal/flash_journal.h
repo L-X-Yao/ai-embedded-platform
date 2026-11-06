@@ -112,7 +112,8 @@ flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
  * Append a new entry to the journal.
  *
  * If the current sector is full, advances to the next sector (erasing it).
- * Wraps around when all sectors have been used.
+ * Wraps around when all sectors have been used.  A write that fails after
+ * programming any byte gives up the rest of the sector, as a power cut does.
  *
  * @param jrnl  Journal context.
  * @param data  Payload data.

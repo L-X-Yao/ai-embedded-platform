@@ -196,6 +196,22 @@ static flash_journal_err_t fail_init(flash_journal_t *jrnl)
     return FLASH_JOURNAL_ERR_STORAGE;
 }
 
+/*
+ * A failed write may have programmed any of its bytes, so the same place
+ * cannot simply be written again.  Stepping past them would not do either:
+ * every scan stops at the first bad entry and would miss what came after.
+ * Give up the rest of the sector, unless nothing reached the flash: a fault
+ * that lasts must not walk through the sectors, erasing each.
+ */
+static flash_journal_err_t fail_append(flash_journal_t *jrnl)
+{
+    if (retire_dirty_tail(jrnl) != FLASH_JOURNAL_OK) {
+        jrnl->write_offset = jrnl->sector_size;  /* no telling: assume dirty */
+    }
+    jrnl->next_seq++;  /* the entry may be complete: do not reuse its seq */
+    return FLASH_JOURNAL_ERR_STORAGE;
+}
+
 /* ---------- Public API ----------------------------------------------------- */
 
 flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
@@ -322,17 +338,17 @@ flash_journal_err_t flash_journal_append(flash_journal_t *jrnl,
 
     err = st->write(st->ctx, jrnl->write_sector, jrnl->write_offset,
                     hdr, FLASH_JOURNAL_HDR_SIZE);
-    if (err != FLASH_JOURNAL_OK) return FLASH_JOURNAL_ERR_STORAGE;
+    if (err != FLASH_JOURNAL_OK) return fail_append(jrnl);
 
     err = st->write(st->ctx, jrnl->write_sector,
                     jrnl->write_offset + FLASH_JOURNAL_HDR_SIZE,
                     data, len);
-    if (err != FLASH_JOURNAL_OK) return FLASH_JOURNAL_ERR_STORAGE;
+    if (err != FLASH_JOURNAL_OK) return fail_append(jrnl);
 
     err = st->write(st->ctx, jrnl->write_sector,
                     jrnl->write_offset + FLASH_JOURNAL_HDR_SIZE + (uint32_t)len,
                     crc_bytes, FLASH_JOURNAL_CRC_SIZE);
-    if (err != FLASH_JOURNAL_OK) return FLASH_JOURNAL_ERR_STORAGE;
+    if (err != FLASH_JOURNAL_OK) return fail_append(jrnl);
 
     jrnl->write_offset += entry_size;
     jrnl->next_seq++;
@@ -356,22 +372,35 @@ flash_journal_err_t flash_journal_read_latest(const flash_journal_t *jrnl,
         return FLASH_JOURNAL_ERR_PARAM;
     if (jrnl->entry_count == 0) return FLASH_JOURNAL_ERR_EMPTY;
 
-    /* Find the last entry: scan the write sector backwards from write_offset */
+    /*
+     * Find the last entry: scan the write sector up to write_offset.  After a
+     * failed write it can hold none, and the newest is in a sector before it.
+     */
     uint32_t sector = jrnl->write_sector;
-    uint32_t offset = 0;
+    uint32_t limit = jrnl->write_offset;
     uint32_t last_offset = 0;
     uint32_t seq;
     uint16_t len;
     bool found = false;
 
-    while (offset + FLASH_JOURNAL_OVERHEAD <= jrnl->sector_size &&
-           offset < jrnl->write_offset) {
-        flash_journal_err_t err = read_entry(jrnl, sector, offset,
-                                             &seq, &len, NULL, 0);
-        if (err != FLASH_JOURNAL_OK) break;
-        last_offset = offset;
-        found = true;
-        offset += FLASH_JOURNAL_OVERHEAD + (uint32_t)len;
+    for (uint32_t s = 0; s < jrnl->sector_count && !found; s++) {
+        uint32_t offset = 0;
+
+        while (offset + FLASH_JOURNAL_OVERHEAD <= jrnl->sector_size &&
+               offset < limit) {
+            flash_journal_err_t err = read_entry(jrnl, sector, offset,
+                                                 &seq, &len, NULL, 0);
+            if (err == FLASH_JOURNAL_ERR_STORAGE) return err;
+            if (err != FLASH_JOURNAL_OK) break;
+            last_offset = offset;
+            found = true;
+            offset += FLASH_JOURNAL_OVERHEAD + (uint32_t)len;
+        }
+
+        if (!found) {
+            sector = (sector + jrnl->sector_count - 1u) % jrnl->sector_count;
+            limit = jrnl->sector_size;
+        }
     }
 
     if (!found) return FLASH_JOURNAL_ERR_EMPTY;
