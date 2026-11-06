@@ -15,7 +15,9 @@
 #define WRAPPED_MAX 128
 
 static void check_ranges(const nmea_parser_data_t *d) {
-    // Written so that a NaN fails too.
+    // Written so that a NaN fails too. RMC minutes can run to 99.99, hence 91 and 181.
+    if (!(d->latitude_deg >= -91.0f && d->latitude_deg <= 91.0f)) __builtin_trap();
+    if (!(d->longitude_deg >= -181.0f && d->longitude_deg <= 181.0f)) __builtin_trap();
     if (!(d->speed_kmh >= 0.0f && d->speed_kmh <= 1852.1f)) __builtin_trap();
     if (!(d->course_deg >= 0.0f && d->course_deg <= 360.0f)) __builtin_trap();
     if (!(d->altitude_m >= -1e6f && d->altitude_m <= 1e6f)) __builtin_trap();

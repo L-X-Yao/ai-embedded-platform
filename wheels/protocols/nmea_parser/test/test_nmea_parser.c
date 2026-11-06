@@ -606,7 +606,157 @@ TEST(test_bad_field_leaves_the_rest_of_the_sentence)
     ASSERT_EQ(d.day, 23);
 }
 
+/* ---------- GGA position ---------- */
+
+#define GGA_AFTER_POSITION ",1,08,0.9,545.4,M,46.9,M,,"
+
+/* An old position far from the one the GGA sentences below carry. */
+static void seed_position(nmea_parser_data_t *d)
+{
+    nmea_parser_data_init(d);
+    (void)parse_field("$GPRMC,123519,A,3000.000,N,06000.000,E,", "022.4",
+                      ",084.4,230394,,", d);
+}
+
+TEST(test_gga_takes_position)
+{
+    nmea_parser_data_t d;
+
+    nmea_parser_data_init(&d);
+    ASSERT_EQ(parse_field("$GPGGA,123519,4807.038,N,01131.000,E", "",
+                          GGA_AFTER_POSITION, &d), NMEA_PARSER_OK);
+    ASSERT_NEAR(d.latitude_deg, 48.1173f, 1e-4f);
+    ASSERT_NEAR(d.longitude_deg, 11.5167f, 1e-4f);
+}
+
+TEST(test_gga_south_west_is_negative)
+{
+    nmea_parser_data_t d;
+
+    nmea_parser_data_init(&d);
+    (void)parse_field("$GPGGA,123519,3352.000,S,15112.000,W", "",
+                      GGA_AFTER_POSITION, &d);
+    ASSERT_NEAR(d.latitude_deg, -33.8667f, 1e-4f);
+    ASSERT_NEAR(d.longitude_deg, -151.2f, 1e-4f);
+}
+
+TEST(test_gga_position_limits)
+{
+    nmea_parser_data_t d;
+
+    seed_position(&d);
+    (void)parse_field("$GPGGA,123519,9000.000,N,18000.000,E", "",
+                      GGA_AFTER_POSITION, &d);
+    ASSERT_NEAR(d.latitude_deg, 90.0f, 1e-4f);
+    ASSERT_NEAR(d.longitude_deg, 180.0f, 1e-4f);
+
+    (void)parse_field("$GPGGA,123519,0000.000,N,00000.000,E", "",
+                      GGA_AFTER_POSITION, &d);
+    ASSERT_NEAR(d.latitude_deg, 0.0f, 1e-6f);
+    ASSERT_NEAR(d.longitude_deg, 0.0f, 1e-6f);
+}
+
+TEST(test_gga_leaves_the_time_alone)
+{
+    /* Time and date come from RMC only: a consumer pairs them with the
+     * moment the RMC arrived. */
+    nmea_parser_data_t d;
+
+    seed_position(&d);
+    (void)parse_field("$GPGGA,235958,4807.038,N,01131.000,E", "",
+                      GGA_AFTER_POSITION, &d);
+    ASSERT_EQ(d.hour, 12);
+    ASSERT_EQ(d.min, 35);
+    ASSERT_EQ(d.sec, 19);
+    ASSERT_EQ(d.day, 23);
+    ASSERT_EQ(d.month, 3);
+    ASSERT_EQ(d.year, 1994);
+
+    /* A GGA-only stream has a position and no time. */
+    nmea_parser_data_init(&d);
+    (void)parse_field("$GPGGA,235958,4807.038,N,01131.000,E", "",
+                      GGA_AFTER_POSITION, &d);
+    ASSERT_EQ(d.hour, 0);
+    ASSERT_EQ(d.fix_valid, 0);
+}
+
+TEST(test_gga_empty_position_keeps_the_old_value)
+{
+    nmea_parser_data_t d;
+
+    seed_position(&d);
+    ASSERT_EQ(parse_field("$GPGGA,123520,,,,,0,00,99.99,,,,,,", "", "", &d),
+              NMEA_PARSER_OK);
+    ASSERT_NEAR(d.latitude_deg, 30.0f, 1e-4f);
+    ASSERT_NEAR(d.longitude_deg, 60.0f, 1e-4f);
+}
+
+TEST(test_gga_bad_latitude_keeps_the_old_value)
+{
+    static const char *const bad[] = {
+        "", "nan", "inf", "-inf", "1e30", "9000.5", "9100.000", "-4807.038",
+        "abc", "4860.000",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_position(&d);
+        ASSERT_EQ(parse_field("$GPGGA,123519,", bad[i],
+                              ",N,01131.000,E" GGA_AFTER_POSITION, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.latitude_deg, 30.0f, 1e-4f);
+        ASSERT_NEAR(d.longitude_deg, 11.5167f, 1e-4f);
+    }
+}
+
+TEST(test_gga_bad_longitude_keeps_the_old_value)
+{
+    static const char *const bad[] = {
+        "", "nan", "inf", "-inf", "1e30", "18000.5", "18100.000", "-01131.000",
+        "abc", "01160.000",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_position(&d);
+        ASSERT_EQ(parse_field("$GPGGA,123519,4807.038,N,", bad[i],
+                              ",E" GGA_AFTER_POSITION, &d), NMEA_PARSER_OK);
+        ASSERT_NEAR(d.latitude_deg, 48.1173f, 1e-4f);
+        ASSERT_NEAR(d.longitude_deg, 60.0f, 1e-4f);
+    }
+}
+
+TEST(test_gga_bad_hemisphere_keeps_the_old_value)
+{
+    /* Without N, S, E or W the sign of the value is not known. */
+    static const char *const bad[] = { "", "X", "E", "1" };
+    static const char *const bad_ew[] = { "", "X", "N", "1" };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_position(&d);
+        (void)parse_field("$GPGGA,123519,4807.038,", bad[i],
+                          ",01131.000,E" GGA_AFTER_POSITION, &d);
+        ASSERT_NEAR(d.latitude_deg, 30.0f, 1e-4f);
+        ASSERT_NEAR(d.longitude_deg, 11.5167f, 1e-4f);
+
+        seed_position(&d);
+        (void)parse_field("$GPGGA,123519,4807.038,N,01131.000,", bad_ew[i],
+                          GGA_AFTER_POSITION, &d);
+        ASSERT_NEAR(d.latitude_deg, 48.1173f, 1e-4f);
+        ASSERT_NEAR(d.longitude_deg, 60.0f, 1e-4f);
+    }
+}
+
 TEST_MAIN("nmea_parser")
+    RUN(test_gga_takes_position);
+    RUN(test_gga_south_west_is_negative);
+    RUN(test_gga_position_limits);
+    RUN(test_gga_leaves_the_time_alone);
+    RUN(test_gga_empty_position_keeps_the_old_value);
+    RUN(test_gga_bad_latitude_keeps_the_old_value);
+    RUN(test_gga_bad_longitude_keeps_the_old_value);
+    RUN(test_gga_bad_hemisphere_keeps_the_old_value);
     RUN(test_rmc_bad_speed_keeps_the_old_value);
     RUN(test_rmc_speed_limits);
     RUN(test_rmc_bad_course_is_not_valid);
