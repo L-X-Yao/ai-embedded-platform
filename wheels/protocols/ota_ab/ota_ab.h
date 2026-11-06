@@ -43,7 +43,7 @@ typedef struct {
     uint32_t slot_max_size;
     uint32_t params_addr;
     uint32_t params_size;
-    uint8_t  max_boot_count;
+    uint8_t  max_boot_count;   /* 1..254; ota_ab_init refuses 0 and 255 */
 } ota_ab_layout_t;
 
 /* ---------- persistent parameters ---------- */
