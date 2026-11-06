@@ -80,7 +80,9 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Verify device ID and leave standby in internal trigger mode. @thread_safe: no @isr_safe: no */
+/** Verify device ID, leave standby in internal trigger mode and select the ROM
+ *  library for the actuator FEEDBACK holds: 1 for ERM, 6 for LRA.
+ *  @thread_safe: no @isr_safe: no */
 drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c);
 
 /** Set actuator type (ERM or LRA) in feedback control register. @thread_safe: caller_must_lock @isr_safe: no */

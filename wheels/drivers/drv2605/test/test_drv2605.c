@@ -189,6 +189,39 @@ TEST(test_init_waveform_clear_fail)
     ASSERT_EQ(e, DRV2605_ERR_I2C);
 }
 
+/* drv2605_init: Initialization Procedure step 6 (DRV2605 sheet p.53). 0x03
+ * starts as the Empty library of that sheet's p.33, and nothing would play. */
+TEST(test_init_selects_a_library)
+{
+    mock_reset();
+    mock_regs[0x00] = (3u << 5);  /* DRV2605 */
+    mock_regs[0x03] = 0x10;       /* HI_Z stays as it is */
+    drv2605_t d;
+    ASSERT_EQ(drv2605_init(&d, &mock_i2c), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x03], 0x11);
+}
+
+/* drv2605_init: the library matches the actuator FEEDBACK already holds */
+TEST(test_init_library_follows_the_actuator)
+{
+    mock_reset();
+    mock_regs[0x1A] = 0xB6;  /* N_ERM_LRA set */
+    drv2605_t d;
+    ASSERT_EQ(drv2605_init(&d, &mock_i2c), DRV2605_OK);
+    ASSERT_EQ(mock_regs[0x03], 0x06);
+}
+
+/* drv2605_init: ops 10, 11 and 12 read FEEDBACK, read 0x03 and write 0x03 */
+TEST(test_init_library_i2c_fail)
+{
+    for (int op = 10; op <= 12; op++) {
+        mock_reset();
+        mock_fail_at = op;
+        drv2605_t d;
+        ASSERT_EQ(drv2605_init(&d, &mock_i2c), DRV2605_ERR_I2C);
+    }
+}
+
 /* drv2605_set_actuator: invalid type value rejected */
 TEST(test_set_actuator_invalid_type)
 {
@@ -201,9 +234,10 @@ TEST(test_set_actuator_invalid_type)
 TEST(test_set_actuator_write_fail)
 {
     setup();
-    /* After setup(): mock_op_count == 10 (1 read + 1 write_mode + 8 waveform writes).
-     * set_actuator does: op 10 = read FEEDBACK (ok), op 11 = write FEEDBACK (fail). */
-    mock_fail_at = 11;
+    /* After setup(): mock_op_count == 13 (1 read + 1 write_mode + 8 waveform writes
+     * + 3 to select the library).
+     * set_actuator does: op 13 = read FEEDBACK (ok), op 14 = write FEEDBACK (fail). */
+    mock_fail_at = 14;
     drv2605_err_t e = drv2605_set_actuator(&dev, DRV2605_ACTUATOR_LRA);
     ASSERT_EQ(e, DRV2605_ERR_I2C);
 }
@@ -287,5 +321,8 @@ TEST_MAIN("drv2605")
     RUN(test_realtime_value_i2c_fail);
     RUN(test_realtime_enters_rtp_mode);
     RUN(test_stop_and_go_leave_rtp_mode);
+    RUN(test_init_selects_a_library);
+    RUN(test_init_library_follows_the_actuator);
+    RUN(test_init_library_i2c_fail);
     RUN(test_set_actuator_picks_the_library);
 TEST_MAIN_END()
