@@ -1,16 +1,23 @@
 // SPDX-License-Identifier: MIT
 /*
- * hw_model_tca9548a.h — TCA9548A hardware register model
+ * hw_model_tca9548a.h — TCA9548A bus model
  *
- * Models TI TCA9548A I2C multiplexer:
- * - Single control register (byte write to device address)
+ * Models TI TCA9548A I2C multiplexer, from SCPS207H, September 2024:
+ * - One control byte and no register numbers: the controller "merely
+ *   writes the register data after the target address, skipping the
+ *   register number" (p16)
+ * - Every byte written after the address goes into the control byte and
+ *   the last one stays (p16, p17), so a register byte sent ahead of a
+ *   read overwrites it too
+ * - A read is the address with R/W=1, and the chip answers at once with
+ *   the control byte (p16, Figure 7-5)
  * - Each bit enables one of 8 downstream channels
- * - POR state: all channels disabled (0x00)
- * - No other registers exist; the chip treats any written byte
- *   as the control value.
+ * - POR state: all channels disabled (0x00) (p14, p18)
+ * - Only the strapped address gets an ACK (p15)
  *
- * We model this using hw_model with register 0x00 as the single
- * control register (matching the driver's dummy reg=0x00 convention).
+ * The callbacks work at bus level, so tests see the exact bytes.
+ * hw_reg_model_t is kept for its failure injection only.
+ * Not modelled: a channel turning on at the STOP (p17).
  */
 
 #ifndef HW_MODEL_TCA9548A_H
@@ -18,44 +25,55 @@
 
 #include "hw_model.h"
 
-#define TCA9548A_REG_CTRL  0x00
+#define TCA9548A_MODEL_LOG_MAX 8
 
 typedef struct {
     hw_reg_model_t  hw;
-    int             write_count;   /* total writes to control register */
-    uint8_t         last_mask;     /* last channel mask written */
+    uint8_t         addr;          /* strapped address */
+    uint8_t         ctrl;          /* the control byte */
+    int             write_count;   /* write transactions acknowledged */
+    int             read_count;    /* read transactions acknowledged */
+    uint16_t        last_write_len;                  /* bytes after addr */
+    uint8_t         last_write[TCA9548A_MODEL_LOG_MAX];
 } tca9548a_model_t;
 
-/* Callback: track channel selection writes */
-static void tca9548a_model_on_ctrl(void *user, uint8_t reg,
-                                   uint8_t old_val, uint8_t new_val)
-{
-    (void)reg; (void)old_val;
-    tca9548a_model_t *m = (tca9548a_model_t *)user;
-    m->write_count++;
-    m->last_mask = new_val;
-}
-
-static void tca9548a_model_init(tca9548a_model_t *m)
+static void tca9548a_model_init(tca9548a_model_t *m, uint8_t addr)
 {
     memset(m, 0, sizeof(*m));
     hw_model_init(&m->hw);
-    m->hw.user = m;
+    m->addr = addr;
+}
 
-    /* POR: all channels disabled */
-    hw_model_set_reset_value(&m->hw, TCA9548A_REG_CTRL, 0x00);
+/* START, address with R/W=0, data bytes, STOP */
+__attribute__((unused))
+static bool tca9548a_model_write_raw(void *ctx, uint8_t dev_addr,
+                                     const uint8_t *data, uint16_t len)
+{
+    tca9548a_model_t *m = (tca9548a_model_t *)ctx;
+    if (hw_model__should_fail(&m->hw)) return false;
+    if (dev_addr != m->addr) return false;
 
-    /* All non-existent registers: read-only 0xFF
-     * (only reg 0x00 is the actual control register) */
-    for (int i = 1; i < HW_MODEL_REG_COUNT; i++) {
-        hw_model_set_reset_value(&m->hw, (uint8_t)i, 0xFF);
-        hw_model_set_readonly(&m->hw, (uint8_t)i);
+    m->write_count++;
+    m->last_write_len = len;
+    for (uint16_t i = 0; i < len; i++) {
+        if (i < TCA9548A_MODEL_LOG_MAX) m->last_write[i] = data[i];
+        m->ctrl = data[i];
     }
+    return true;
+}
 
-    /* Write callback for control register */
-    hw_model_set_on_write(&m->hw, TCA9548A_REG_CTRL, tca9548a_model_on_ctrl);
+/* START, address with R/W=1, data bytes, STOP */
+__attribute__((unused))
+static bool tca9548a_model_read_raw(void *ctx, uint8_t dev_addr,
+                                    uint8_t *data, uint16_t len)
+{
+    tca9548a_model_t *m = (tca9548a_model_t *)ctx;
+    if (hw_model__should_fail(&m->hw)) return false;
+    if (dev_addr != m->addr) return false;
 
-    hw_model_reset(&m->hw);
+    m->read_count++;
+    for (uint16_t i = 0; i < len; i++) data[i] = m->ctrl;
+    return true;
 }
 
 /* HAL delay stub */

@@ -5,15 +5,52 @@
 
 /* ---------- chip-specific mock setup ---------- */
 
+/* The chip has one control byte and no register numbers (SCPS207H p16):
+ * mock_regs[0x00] holds it, and every byte written lands there.         */
+#define BUS_LOG_MAX 4
+
+static uint8_t  bus_addr;
+static uint16_t bus_write_len;
+static uint8_t  bus_write[BUS_LOG_MAX];
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
+    bus_addr = 0;
+    bus_write_len = 0;
+    memset(bus_write, 0, sizeof(bus_write));
+}
+
+static bool mock_write_raw(void *ctx, uint8_t dev_addr,
+                           const uint8_t *data, uint16_t len)
+{
+    (void)ctx;
+    if (mock_i2c_should_fail()) return false;
+    mock_write_count++;
+    bus_addr = dev_addr;
+    bus_write_len = len;
+    for (uint16_t i = 0; i < len; i++) {
+        if (i < BUS_LOG_MAX) bus_write[i] = data[i];
+        mock_regs[0x00] = data[i];
+    }
+    return true;
+}
+
+static bool mock_read_raw(void *ctx, uint8_t dev_addr,
+                          uint8_t *data, uint16_t len)
+{
+    (void)ctx;
+    if (mock_i2c_should_fail()) return false;
+    mock_read_count++;
+    bus_addr = dev_addr;
+    for (uint16_t i = 0; i < len; i++) data[i] = mock_regs[0x00];
+    return true;
 }
 
 static const tca9548a_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
+    .write_raw = mock_write_raw,
+    .read_raw  = mock_read_raw,
 };
 
 static tca9548a_t dev;
@@ -69,7 +106,40 @@ TEST(test_init_i2c_fail)
     ASSERT_EQ(tca9548a_init(&dev, &mock_i2c, 0x70), TCA9548A_ERR_I2C);
 }
 
+TEST(test_init_null_write_raw)
+{
+    static const tca9548a_i2c_t hal = { .read_raw = mock_read_raw };
+    mock_reset();
+    ASSERT_EQ(tca9548a_init(&dev, &hal, 0x70), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
+}
+
+TEST(test_init_refuses_a_register_hal)
+{
+    /* No fallback: write_reg would send a stray byte ahead of the mask */
+    static const tca9548a_i2c_t hal = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+    };
+    mock_reset();
+    ASSERT_EQ(tca9548a_init(&dev, &hal, 0x70), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
+}
+
 /* ---------- select tests ---------- */
+
+TEST(test_select_sends_the_mask_alone)
+{
+    mock_reset();
+    tca9548a_init(&dev, &mock_i2c, 0x71);
+    ASSERT_EQ(bus_write_len, 1);
+    ASSERT_EQ(bus_write[0], 0x00);
+
+    ASSERT_EQ(tca9548a_select(&dev, 6), TCA9548A_OK);
+    ASSERT_EQ(bus_addr, 0x71);
+    ASSERT_EQ(bus_write_len, 1);
+    ASSERT_EQ(bus_write[0], 0x40);
+}
 
 TEST(test_select_channel_0)
 {
@@ -200,6 +270,36 @@ TEST(test_get_channel_ok)
     ASSERT_EQ(mask, 0x40);
 }
 
+TEST(test_get_channel_writes_nothing)
+{
+    mock_reset();
+    tca9548a_init(&dev, &mock_i2c, 0x72);
+    tca9548a_select_multi(&dev, 0xA5);
+    int writes_before = mock_write_count;
+
+    uint8_t mask = 0;
+    ASSERT_EQ(tca9548a_get_channel(&dev, &mask), TCA9548A_OK);
+    ASSERT_EQ(mask, 0xA5);
+    ASSERT_EQ(bus_addr, 0x72);
+    ASSERT_EQ(mock_write_count, writes_before);
+    ASSERT_EQ(mock_regs[0x00], 0xA5);
+}
+
+TEST(test_get_channel_null_read_raw)
+{
+    static const tca9548a_i2c_t hal = { .write_raw = mock_write_raw };
+    mock_reset();
+    ASSERT_EQ(tca9548a_init(&dev, &hal, 0x70), TCA9548A_OK);
+    ASSERT_EQ(tca9548a_select(&dev, 2), TCA9548A_OK);
+    int ops_before = mock_op_count;
+
+    uint8_t mask = 0x5A;
+    ASSERT_EQ(tca9548a_get_channel(&dev, &mask), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, ops_before);
+    ASSERT_EQ(mask, 0x5A);
+    ASSERT_EQ(dev.current_channel, 0x04);
+}
+
 TEST(test_get_channel_resyncs_cache)
 {
     mock_reset();
@@ -268,6 +368,9 @@ TEST_MAIN("tca9548a")
     RUN(test_init_addr_too_high);
     RUN(test_init_all_valid_addrs);
     RUN(test_init_i2c_fail);
+    RUN(test_init_null_write_raw);
+    RUN(test_init_refuses_a_register_hal);
+    RUN(test_select_sends_the_mask_alone);
     RUN(test_select_channel_0);
     RUN(test_select_channel_7);
     RUN(test_select_channel_invalid);
@@ -282,6 +385,8 @@ TEST_MAIN("tca9548a")
     RUN(test_disable_all_already_disabled);
     RUN(test_disable_all_null);
     RUN(test_get_channel_ok);
+    RUN(test_get_channel_writes_nothing);
+    RUN(test_get_channel_null_read_raw);
     RUN(test_get_channel_resyncs_cache);
     RUN(test_get_channel_i2c_fail);
     RUN(test_get_channel_null_dev);

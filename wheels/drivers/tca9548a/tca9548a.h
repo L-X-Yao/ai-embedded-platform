@@ -11,11 +11,10 @@
  * downstream I2C channels.  Write one byte after the address to set
  * the channel mask; read one byte to query it.
  *
- * Uses the register-based I2C HAL (write_reg / read_regs) with
- * register address 0x00 — the chip has no register numbers and keeps
- * the last byte written after its address, so reg=0x00 is a harmless
- * dummy on writes only.  On a read nothing follows it: a read_regs HAL
- * that sends reg first switches every channel off.
+ * Uses the raw I2C callbacks (write_raw / read_raw).  The chip has no
+ * register numbers and stores every byte written after its address,
+ * so a register HAL does not fit: a read_regs that sends a register
+ * byte first switches every channel off.
  *
  * Pure C99, no heap, fully reentrant per-context.
  */
@@ -37,11 +36,20 @@ typedef enum {
 } tca9548a_err_t;
 
 typedef struct {
+    /* Unused: the register byte would land in the control register. */
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
+    /* Unused, for the same reason. */
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
     void *ctx;
+    /* Required.  Puts exactly data[0..len-1] on the bus after the address,
+     * then STOP.  NULL: tca9548a_init returns TCA9548A_ERR_PARAM. */
+    bool (*write_raw)(void *ctx, uint8_t dev_addr,
+                      const uint8_t *data, uint16_t len);
+    /* Reads len bytes with no register byte first.  Needed only by
+     * tca9548a_get_channel, which returns TCA9548A_ERR_PARAM on NULL. */
+    bool (*read_raw)(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len);
 } tca9548a_i2c_t;
 
 /** Valid 7-bit addresses: 0x70 .. 0x77 (A0-A2 pins). */

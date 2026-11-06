@@ -11,12 +11,8 @@
 #include "tca9548a.h"
 #include "contract.h"
 
-/* Dummy register address — TCA9548A has no register map, but we use
- * the write_reg HAL callback which sends (addr, reg, val).  The chip
- * keeps the last byte it receives, so on a write val wins.  The dummy
- * is safe on writes only: on a read nothing follows it, so a HAL that
- * sends reg first leaves 0x00 in the control register.                */
-#define REG_CTRL  0x00u
+/* TCA9548A has no register map: the control byte is the only byte after
+ * the address, in a write and in a read (SCPS207H p16-p17).             */
 
 /* ------------------------------------------------------------------ */
 
@@ -24,7 +20,7 @@ tca9548a_err_t tca9548a_init(tca9548a_t *dev,
                              const tca9548a_i2c_t *i2c,
                              uint8_t dev_addr)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
+    if (!dev || !i2c || !i2c->write_raw)
         return TCA9548A_ERR_PARAM;
     if (dev_addr < TCA9548A_ADDR_BASE || dev_addr > TCA9548A_ADDR_MAX)
         return TCA9548A_ERR_PARAM;
@@ -33,7 +29,8 @@ tca9548a_err_t tca9548a_init(tca9548a_t *dev,
     dev->dev_addr = dev_addr;
 
     /* Disable all channels on init */
-    if (!i2c->write_reg(i2c->ctx, dev_addr, REG_CTRL, 0x00))
+    const uint8_t none = 0x00;
+    if (!i2c->write_raw(i2c->ctx, dev_addr, &none, 1))
         return TCA9548A_ERR_I2C;
 
     dev->current_channel = 0x00;
@@ -52,7 +49,7 @@ tca9548a_err_t tca9548a_select(tca9548a_t *dev, uint8_t channel)
     /* Skip I2C write if already on the right channel */
     if (dev->current_channel == mask) return TCA9548A_OK;
 
-    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->dev_addr, REG_CTRL, mask))
+    if (!dev->i2c->write_raw(dev->i2c->ctx, dev->dev_addr, &mask, 1))
         return TCA9548A_ERR_I2C;
 
     dev->current_channel = mask;
@@ -67,7 +64,7 @@ tca9548a_err_t tca9548a_select_multi(tca9548a_t *dev, uint8_t mask)
 
     if (dev->current_channel == mask) return TCA9548A_OK;
 
-    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->dev_addr, REG_CTRL, mask))
+    if (!dev->i2c->write_raw(dev->i2c->ctx, dev->dev_addr, &mask, 1))
         return TCA9548A_ERR_I2C;
 
     dev->current_channel = mask;
@@ -82,7 +79,8 @@ tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev)
 
     if (dev->current_channel == 0x00) return TCA9548A_OK;
 
-    if (!dev->i2c->write_reg(dev->i2c->ctx, dev->dev_addr, REG_CTRL, 0x00))
+    const uint8_t none = 0x00;
+    if (!dev->i2c->write_raw(dev->i2c->ctx, dev->dev_addr, &none, 1))
         return TCA9548A_ERR_I2C;
 
     dev->current_channel = 0x00;
@@ -94,9 +92,10 @@ tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev)
 tca9548a_err_t tca9548a_get_channel(tca9548a_t *dev, uint8_t *mask)
 {
     if (!dev || !mask) return TCA9548A_ERR_PARAM;
+    if (!dev->i2c->read_raw) return TCA9548A_ERR_PARAM;
 
     uint8_t val = 0;
-    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->dev_addr, REG_CTRL, &val, 1))
+    if (!dev->i2c->read_raw(dev->i2c->ctx, dev->dev_addr, &val, 1))
         return TCA9548A_ERR_I2C;
 
     *mask = val;
