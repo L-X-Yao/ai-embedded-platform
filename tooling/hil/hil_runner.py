@@ -78,6 +78,7 @@ def resolve_result_dir(project, name):
 
 
 def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
+    """Run one soak. Return its verdict, or None if it could not start."""
     if not BFC_SCRIPT.exists():
         print(f"[ERR] build_flash_check.sh not found: {BFC_SCRIPT}", file=sys.stderr)
         return None
@@ -91,6 +92,11 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
 
     serial_log_path = Path(serial_log)
     verdict_json_path = serial_log_path.with_name(serial_log_path.stem + "_verdict.json")
+
+    # A run that stops before its check writes neither file, and what an
+    # earlier run left there must not be taken for this run's result.
+    serial_log_path.unlink(missing_ok=True)
+    verdict_json_path.unlink(missing_ok=True)
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     result_dir = RESULTS_DIR / project / ts
@@ -135,11 +141,11 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
         except subprocess.TimeoutExpired:
             print(f"[ERR] build_flash_check.sh timed out after {bfc_timeout}s")
             _save_meta(result_dir, project, soak_tier, duration, conf_path, "TIMEOUT")
-            return result_dir
+            return "TIMEOUT"
         if rc != 0 and action[0] in ("build", "flash"):
             print(f"[ERR] {action[0]} failed (rc={rc})")
             _save_meta(result_dir, project, soak_tier, duration, conf_path, "ERROR")
-            return result_dir
+            return "ERROR"
 
         if need_separate_check:
             try:
@@ -147,7 +153,7 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
             except subprocess.TimeoutExpired:
                 print(f"[ERR] check timed out after {bfc_timeout}s")
                 _save_meta(result_dir, project, soak_tier, duration, conf_path, "TIMEOUT")
-                return result_dir
+                return "TIMEOUT"
             if rc != 0:
                 print(f"[WARN] check action exited with rc={rc}")
 
@@ -159,11 +165,15 @@ def run_soak(project, conf_path, soak_tier, skip_build, skip_flash):
 
         verdict_data = _load_json(result_dir / "verdict.json")
         verdict_str = verdict_data.get("verdict", "UNKNOWN") if verdict_data else "NO_VERDICT"
+        # build_flash_check.sh exits 1 on a FAIL verdict; any other non-zero
+        # exit means the run broke, whatever verdict is on disk.
+        if rc != 0 and verdict_str != "FAIL":
+            verdict_str = "ERROR"
         _save_meta(result_dir, project, soak_tier, duration, conf_path, verdict_str)
 
         print()
         print(f"=== Result: {verdict_str} — saved to {result_dir} ===")
-        return result_dir
+        return verdict_str
 
     finally:
         Path(tmp.name).unlink(missing_ok=True)
@@ -324,8 +334,8 @@ def main():
     elif args.compare:
         cmd_compare(project, args.compare[0], args.compare[1])
     else:
-        result = run_soak(project, conf_path, args.soak, args.skip_build, args.skip_flash)
-        sys.exit(0 if result else 1)
+        verdict = run_soak(project, conf_path, args.soak, args.skip_build, args.skip_flash)
+        sys.exit(0 if verdict == "PASS" else 1)
 
 
 if __name__ == "__main__":

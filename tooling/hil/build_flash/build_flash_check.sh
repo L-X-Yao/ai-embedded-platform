@@ -85,7 +85,7 @@ OCD_SPEED="1000"
 CHECK_DURATION="30"
 SERIAL_PORT=""
 SERIAL_LOG="/tmp/build_flash_check_serial.log"
-MIN_PASSED="0"
+MIN_PASSED=""
 SRAM_LIMIT=""
 CCM_OFFSET="0"
 SRAM_RESERVE="0"
@@ -187,6 +187,11 @@ do_flash() {
 
 do_check() {
     [[ -z "$SERIAL_PORT" ]] && { echo "[ERR] SERIAL_PORT not set in conf" >&2; exit 1; }
+    # Without these any log would pass, an empty one included.
+    if [[ ${#FAIL_PATTERNS[@]} -eq 0 || ${#PASS_PATTERNS[@]} -eq 0 || -z "$MIN_PASSED" ]]; then
+        echo "[ERR] check needs FAIL_PATTERNS, PASS_PATTERNS and MIN_PASSED in conf" >&2
+        exit 1
+    fi
     [[ -f "$SERIAL_CAPTURE_SCRIPT" ]] || {
         echo "[ERR] capture script not found: $SERIAL_CAPTURE_SCRIPT" >&2; exit 1; }
     echo "=== SERIAL CHECK (${CHECK_DURATION}s) ==="
@@ -206,6 +211,11 @@ do_verdict() {
     local log
     log=$(cat "$SERIAL_LOG")
     local ok=1
+
+    if [[ ! -s "$SERIAL_LOG" ]]; then
+        echo "[FAIL] serial log is empty"
+        ok=0
+    fi
 
     if [[ ${#FAIL_PATTERNS[@]} -gt 0 ]]; then
         for pat in "${FAIL_PATTERNS[@]}"; do
