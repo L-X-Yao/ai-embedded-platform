@@ -67,7 +67,7 @@ cmake -GNinja -S . -B build && cmake --build build && ctest --test-dir build
 
 ## Test status
 
-- Unit tests (sim): PASS (13 C tests + 6 null parameter tests + 5 property tests)
+- Unit tests (sim): PASS (20 C tests + 6 null parameter tests + 5 property tests)
 - HIL: N/A
 
 ## API convention deviations
