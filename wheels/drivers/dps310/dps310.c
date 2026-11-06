@@ -52,6 +52,9 @@
  * 48 ms at 400 kHz, so a faster bus can time out on a cold boot. */
 #define START_UP_TRIES 500
 
+/* Figure 4: "No chip access" for the first 2.5 ms of start-up, in whole ms */
+#define NO_ACCESS_MS 3u
+
 /* ---------- scale factor table ---------- */
 
 /*
@@ -275,6 +278,12 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
     /* Set scale factors from oversampling config */
     dev->kt = scale_factors[(unsigned)cfg->osrs_t];
     dev->kp = scale_factors[(unsigned)cfg->osrs_p];
+
+    /* The first access may follow power-on or a soft reset directly */
+    if (i2c->delay_ms)
+    {
+        i2c->delay_ms(i2c->ctx, NO_ACCESS_MS);
+    }
 
     /* Verify product ID */
     uint8_t id = 0;
