@@ -221,6 +221,26 @@ TEST(test_read_raw_zero)
     ASSERT_EQ(val, 0);
 }
 
+/* p.4: "the output data will be saturated at 800000h (MIN) or 7FFFFFh (MAX)",
+ * in "2's complement format". */
+TEST(test_read_raw_saturation_limits)
+{
+    hx711_t dev;
+    int32_t val = 0;
+    mock_reset();
+    hx711_init(&dev, &mock_hal, HX711_GAIN_128);
+
+    mock_raw_value  = 0x800000;
+    mock_dout_ready = true;
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ(val, -8388608);
+
+    mock_raw_value  = 0x7FFFFF;
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ(val, 8388607);
+}
+
 TEST(test_read_raw_not_ready)
 {
     hx711_t dev;
@@ -571,6 +591,7 @@ TEST_MAIN("hx711")
     RUN(test_read_raw_positive);
     RUN(test_read_raw_negative);
     RUN(test_read_raw_zero);
+    RUN(test_read_raw_saturation_limits);
     RUN(test_read_raw_not_ready);
     RUN(test_gain_128_pulse_count);
     RUN(test_gain_32_pulse_count);
