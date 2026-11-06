@@ -18,6 +18,10 @@ Limitations:
   - Static analysis only. Doesn't account for VLAs/alloca (marked `dynamic`
     in .su) or function pointers (silently miss).
   - Recursion is detected and broken at the cycle (worst-case 1 frame).
+  - Functions with no .su, such as libc, count as 0 bytes; the run lists them.
+
+Exit 1 if a task overflows its budget or is not in the build, or if the ELF
+is missing or yields no callgraph.
 """
 
 from __future__ import annotations
@@ -82,7 +86,12 @@ def parse_callgraph(elf: Path, objdump: str) -> dict[str, set[str]]:
     callgraph: dict[str, set[str]] = defaultdict(set)
     current: str | None = None
     func_hdr = re.compile(r"^[0-9a-fA-F]+\s+<([^>]+)>:\s*$")
-    call_re = re.compile(r"\b(?:blx?|bx?)\s+[0-9a-fA-F]+\s+<([^>+]+)(?:\+0x[0-9a-fA-F]+)?>")
+    # A tail call is a plain or conditional branch, b.w or bne.w at -Os, to
+    # another function. Branches inside a function are dropped below.
+    call_re = re.compile(
+        r"\b(?:blx?|bx|b(?:eq|ne|cs|cc|hs|lo|mi|pl|vs|vc|hi|ls|ge|lt|gt|le)?)(?:\.[nw])?"
+        r"\s+[0-9a-fA-F]+\s+<([^>+]+)(?:\+0x[0-9a-fA-F]+)?>"
+    )
 
     for line in out.splitlines():
         m = func_hdr.match(line)
@@ -103,12 +112,18 @@ def deepest_chain(
     callgraph: dict[str, set[str]],
     visiting: set[str],
     cache: dict[str, tuple[int, list[str]]],
+    no_frame: set[str],
 ) -> tuple[int, list[str]]:
-    """Return (max_stack_bytes, chain_of_function_names)."""
+    """Return (max_stack_bytes, chain_of_function_names).
+
+    Functions with no .su entry count as 0 bytes and are added to no_frame.
+    """
     if fn in cache:
         return cache[fn]
     if fn in visiting:
         return 0, [fn + " <recursion>"]
+    if fn not in sizes:
+        no_frame.add(fn)
     own = sizes.get(fn, (0, "missing"))[0]
 
     visiting.add(fn)
@@ -116,7 +131,7 @@ def deepest_chain(
     best_chain: list[str] = []
     for callee in callgraph.get(fn, ()):
         sub_bytes, sub_chain = deepest_chain(
-            callee, sizes, callgraph, visiting, cache,
+            callee, sizes, callgraph, visiting, cache, no_frame,
         )
         if sub_bytes > best_extra:
             best_extra = sub_bytes
@@ -201,8 +216,8 @@ def main() -> int:
         print(f"  {marker} {bytes_used:>5}B  {kind:<8}  {name}")
 
     if not elf.exists():
-        print(f"\n[WARN] ELF not found: {elf} — skipping callgraph walk")
-        return 0
+        print(f"\n[ERR] ELF not found: {elf} — no callgraph, no task totals", file=sys.stderr)
+        return 1
 
     print(f"\n=== Building callgraph from {elf} ===")
     try:
@@ -211,15 +226,22 @@ def main() -> int:
         print(f"[ERR] objdump not found: {args.objdump}", file=sys.stderr)
         return 1
     print(f"  {len(callgraph)} functions in callgraph")
+    if not callgraph:
+        print("[ERR] empty callgraph: per-task totals would count one frame only",
+              file=sys.stderr)
+        return 1
 
     print("\n=== Per-task cumulative stack (static, depth-first) ===")
     cache: dict[str, tuple[int, list[str]]] = {}
+    no_frame: set[str] = set()
     overflows = 0
+    not_found = 0
     for entry, allocated in task_entries.items():
         if entry not in sizes and entry not in callgraph:
-            print(f"  [skip] {entry}: not found in build")
+            print(f"  [ERR] {entry}: not found in build")
+            not_found += 1
             continue
-        total, chain = deepest_chain(entry, sizes, callgraph, set(), cache)
+        total, chain = deepest_chain(entry, sizes, callgraph, set(), cache, no_frame)
         margin = allocated - total
         flag = "OK"
         if margin < 256:
@@ -235,7 +257,12 @@ def main() -> int:
             if len(chain) > 15:
                 print(f"      -> ... ({len(chain) - 15} more)")
 
-    return 1 if overflows > 0 else 0
+    if no_frame:
+        names = ", ".join(sorted(no_frame)[:10])
+        print(f"\n[WARN] {len(no_frame)} called function(s) have no .su entry and "
+              f"count as 0B: {names}{' ...' if len(no_frame) > 10 else ''}")
+
+    return 1 if overflows > 0 or not_found > 0 else 0
 
 
 if __name__ == "__main__":
