@@ -56,6 +56,8 @@ bool midi_parse(midi_parser_t *p, uint8_t byte, midi_msg_t *out);
 ## Known issues
 
 - SysEx data beyond `MIDI_SYSEX_MAX` is silently dropped.
+- A SysEx ended by a status byte other than EOX is dropped, not delivered:
+  the status byte is parsed as usual, and only an EOX yields `MIDI_MSG_SYSEX`.
 - System Common messages (0xF1-0xF6) other than SysEx are ignored.
 - No support for Poly Aftertouch (0xA0) or Channel Pressure (0xD0) parsing
   (data bytes are consumed but no message is emitted).
