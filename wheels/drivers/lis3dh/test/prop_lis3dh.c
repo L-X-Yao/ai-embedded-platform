@@ -14,9 +14,21 @@
 #include "mock_i2c.h"
 #include "lis3dh.h"
 
+/* p.21: "the 7 LSb represent the actual register address while the MSB
+ * enables address auto increment". */
+static bool lis3dh_mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t sub,
+                                  uint8_t *buf, uint16_t len)
+{
+    uint8_t reg = (uint8_t)(sub & 0x7Fu);
+
+    if (!mock_i2c_read_regs(ctx, dev_addr, reg, buf, len)) return false;
+    if (!(sub & 0x80u)) memset(buf, mock_regs[reg], len);
+    return true;
+}
+
 static const lis3dh_i2c_t prop_i2c = {
     .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = lis3dh_mock_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
@@ -59,11 +71,9 @@ PROPERTY(accel_bounded_2g, 5000)
     lis3dh_err_t err = lis3dh_init(&dev, &prop_i2c, &cfg);
     if (err != LIS3DH_OK) return;
 
-    /* Plant random acceleration data in output registers.
-     * LIS3DH reads with auto-increment from 0x28 | 0x80 = 0xA8.
-     * mock_i2c reads from reg index directly, so plant at 0xA8..0xAD */
+    /* Plant random acceleration data in output registers 0x28..0x2D */
     for (int i = 0; i < 6; i++)
-        mock_regs[0xA8 + i] = ARBI_UINT8(seed);
+        mock_regs[0x28 + i] = ARBI_UINT8(seed);
 
     lis3dh_accel_t accel;
     err = lis3dh_read_accel(&dev, &accel);
@@ -96,7 +106,7 @@ PROPERTY(accel_all_ranges_bounded, 5000)
     if (err != LIS3DH_OK) return;
 
     for (int i = 0; i < 6; i++)
-        mock_regs[0xA8 + i] = ARBI_UINT8(seed);
+        mock_regs[0x28 + i] = ARBI_UINT8(seed);
 
     lis3dh_accel_t accel;
     err = lis3dh_read_accel(&dev, &accel);

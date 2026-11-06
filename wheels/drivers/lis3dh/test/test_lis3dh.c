@@ -11,9 +11,21 @@ static void mock_reset(void)
     mock_regs[0x0F] = 0x33;  /* WHO_AM_I */
 }
 
+/* p.21: "the 7 LSb represent the actual register address while the MSB
+ * enables address auto increment". */
+static bool lis3dh_mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t sub,
+                                  uint8_t *buf, uint16_t len)
+{
+    uint8_t reg = (uint8_t)(sub & 0x7Fu);
+
+    if (!mock_i2c_read_regs(ctx, dev_addr, reg, buf, len)) return false;
+    if (!(sub & 0x80u)) memset(buf, mock_regs[reg], len);
+    return true;
+}
+
 static const lis3dh_i2c_t mock_i2c = {
     .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = lis3dh_mock_read_regs,
     .ctx       = NULL,
 };
 
@@ -47,12 +59,10 @@ static void setup(void)
 /*
  * Plant raw 16-bit left-justified accel values into mock registers.
  * LIS3DH output is little-endian: low byte first (OUT_X_L=0x28).
- * The driver ORs 0x80 onto the register address for auto-increment,
- * so mock_i2c_read_regs sees reg=0xA8 and indexes mock_regs[0xA8+i].
  */
 static void plant_accel(int16_t x, int16_t y, int16_t z)
 {
-    uint8_t base = 0xA8u;  /* 0x28 | 0x80 (auto-increment) */
+    uint8_t base = 0x28u;  /* OUT_X_L */
     mock_regs[base + 0] = (uint8_t)(x & 0xFF);
     mock_regs[base + 1] = (uint8_t)((x >> 8) & 0xFF);
     mock_regs[base + 2] = (uint8_t)(y & 0xFF);
@@ -306,6 +316,23 @@ TEST(test_low_power_rates_select_low_power_mode)
     ASSERT_EQ(modes_clashed, 0);
 }
 
+TEST(test_sub_address_bit_7_is_auto_increment)
+{
+    uint8_t buf[2] = { 0, 0 };
+
+    mock_reset();
+    mock_regs[0x28] = 0x11;
+    mock_regs[0x29] = 0x22;
+
+    ASSERT_TRUE(mock_i2c.read_regs(NULL, LIS3DH_ADDR_LOW, 0xA8, buf, 2));
+    ASSERT_EQ_HEX(buf[0], 0x11);
+    ASSERT_EQ_HEX(buf[1], 0x22);
+
+    ASSERT_TRUE(mock_i2c.read_regs(NULL, LIS3DH_ADDR_LOW, 0x28, buf, 2));
+    ASSERT_EQ_HEX(buf[0], 0x11);
+    ASSERT_EQ_HEX(buf[1], 0x11);
+}
+
 TEST_MAIN("lis3dh")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -328,4 +355,5 @@ TEST_MAIN("lis3dh")
     RUN(test_addr_high);
     RUN(test_config_registers);
     RUN(test_low_power_rates_select_low_power_mode);
+    RUN(test_sub_address_bit_7_is_auto_increment);
 TEST_MAIN_END()
