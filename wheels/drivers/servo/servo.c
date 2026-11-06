@@ -59,6 +59,12 @@ servo_err_t servo_set_pulse(servo_t *dev, uint32_t pulse_us)
         return SERVO_ERR_PARAM;
     if (!dev->pwm->set_pulse_us(dev->pwm->ctx, pulse_us))
         return SERVO_ERR_HAL;
+
+    /* To the nearest degree: servo_set_angle truncates its pulse, so rounding
+     * down here would read that pulse back one degree low */
+    uint32_t range  = dev->cfg.max_pulse_us - dev->cfg.min_pulse_us;
+    uint32_t offset = pulse_us - dev->cfg.min_pulse_us;
+    dev->current_angle = (uint16_t)((offset * dev->cfg.max_angle + range / 2U) / range);
     return SERVO_OK;
 }
 
