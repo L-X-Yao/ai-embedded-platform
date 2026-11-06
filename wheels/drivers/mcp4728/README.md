@@ -43,7 +43,9 @@ mcp4728_err_t mcp4728_write_all(mcp4728_t *dev, const uint16_t values[4]);
 
 ```c
 mcp4728_t dac;
-mcp4728_cfg_t cfg = { .addr = MCP4728_ADDR_DEFAULT };
+mcp4728_cfg_t cfg = { .addr = MCP4728_ADDR_DEFAULT,
+                      .vref_internal = 0x0F,   /* all channels on 2.048 V */
+                      .gain_x2 = 0x01 };       /* channel A at gain x2 */
 mcp4728_init(&dac, &i2c_hal, &cfg);
 
 mcp4728_write_channel(&dac, 0, 2048);  /* channel 0 to mid-scale */
@@ -54,7 +56,11 @@ mcp4728_write_all(&dac, vals);
 
 ## Configuration (compile-time)
 
-None. I2C address is runtime-configurable via `mcp4728_cfg_t`.
+None. I2C address, reference and gain are runtime-configurable via
+`mcp4728_cfg_t`. In `vref_internal` and `gain_x2`, bit n is channel n, and 0
+means VDD and gain x1. Init returns `MCP4728_ERR_PARAM` for gain x2 on a channel
+using VDD, where the device ignores it, and for any bit above bit 3. With gain
+x2 the output still cannot go above VDD.
 
 ## Supported platforms
 
@@ -66,14 +72,13 @@ None. I2C address is runtime-configurable via `mcp4728_cfg_t`.
 Checked on 2026-11-06 against Microchip DS22187E. Not run on hardware.
 
 - **Matched:** Address, channel coding, data layout, UDAC = 0 output update, the 12-bit range.
-- **Fixed:** The code called the 0x40 command a fast write, but it is Multi-Write, so nothing said what its zero upper nibble does. The name and header now say so; the bytes sent are the same. `mcp4728_write_all` made four I2C transactions and now makes one. The model and mock refused VREF, PD and Gx bits and took commands other than Multi-Write.
-- **Still open:** Every write sets the channel to VREF = VDD, gain x1 and normal mode, so a factory channel leaves the internal 2.048 V reference at its first write and its output scale changes. Keeping that reference needs new fields in `mcp4728_cfg_t`. There is no LDAC or General Call Software Update, so the four outputs of `mcp4728_write_all` change one after another, and a bus error part way leaves the earlier channels updated. There is no power-down control, EEPROM write, read-back or address programming. `mcp4728_init` sends nothing, so a missing device shows up only at the first write. The model has no EEPROM load at power-up and its reads return zeros.
+- **Fixed:** The code called the 0x40 command a fast write, but it is Multi-Write, so nothing said what its zero upper nibble does. The name and header now say so; the bytes sent are the same. `mcp4728_write_all` made four I2C transactions and now makes one. The model and mock refused VREF, PD and Gx bits and took commands other than Multi-Write. Every write set VDD and gain x1, so a factory channel left the internal 2.048 V reference at its first write and gain x2 could not be reached. `vref_internal` and `gain_x2` in `mcp4728_cfg_t` now set both for each channel. This fix has not run on hardware.
+- **Still open:** With both fields at 0 a write still sets VDD and gain x1, and every write sets normal mode, so a factory channel changes output scale at its first write unless `vref_internal` is set. There is no LDAC or General Call Software Update, so the four outputs of `mcp4728_write_all` change one after another, and a bus error part way leaves the earlier channels updated. There is no power-down control, EEPROM write, read-back or address programming. `mcp4728_init` sends nothing, so a missing device shows up only at the first write. The model has no EEPROM load at power-up and its reads return zeros.
 - **Suspected:** The driver and model cite DS20002278, which may not be this manual's document number.
 
 ## Known issues
 
 - EEPROM write (persistent output on power-up) not implemented.
-- Gain and voltage reference selection not implemented.
 
 ## How to test
 

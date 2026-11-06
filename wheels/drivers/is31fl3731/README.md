@@ -66,8 +66,8 @@ None. I2C address is runtime-configurable via `is31fl3731_cfg_t`.
 Checked on 2026-11-06 against IS31FL3731 Rev. G, 10/24/2024 (Lumissil Microsystems). Not run on hardware.
 
 - **Matched:** Addresses, command register and pages, the frame map, LED index arithmetic, function registers, MODE, PFS, AE and SSD bits, 256 PWM steps.
-- **Fixed:** `is31fl3731_init` set up only part of frame 0, so the rest of the frame registers stayed random and frames 1-7 could show random LEDs. It now writes LED Control, Blink Control and PWM of all 8 frames before leaving shutdown, which takes 1455 register writes instead of 170. The header called software shutdown hardware shutdown.
-- **Still open:** `is31fl3731_set_led_enable` reads LED Control while the chip runs, but the manual allows frame register reads only in software shutdown, so the write-back can corrupt the other 7 LEDs in that byte. The model returns frame data in any state, which hides this. The fix needs a shadow in `is31fl3731_t`, a public struct change, and waits for a decision. No blink, Auto Frame Play, Audio Frame Play, breath, AGC or SDB pin support.
+- **Fixed:** `is31fl3731_init` set up only part of frame 0, so the rest of the frame registers stayed random and frames 1-7 could show random LEDs. It now writes LED Control, Blink Control and PWM of all 8 frames before leaving shutdown, which takes 1455 register writes instead of 170. The header called software shutdown hardware shutdown. `is31fl3731_set_led_enable` read LED Control while the chip ran, but the manual allows frame register reads only in software shutdown, so the write-back could corrupt the other 7 LEDs in that byte. It now works from `led_ctrl`, a shadow in `is31fl3731_t` that costs 144 bytes per instance, and never reads the chip. The model and mock returned frame data in any state, which hid this, and now return junk while the chip runs. This fix has not run on hardware.
+- **Still open:** No blink, Auto Frame Play, Audio Frame Play, breath, AGC or SDB pin support. No driver function calls `read_regs` any more, but init still refuses NULL there.
 
 ## Known issues
 
