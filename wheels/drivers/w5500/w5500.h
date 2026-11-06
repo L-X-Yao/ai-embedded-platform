@@ -96,6 +96,7 @@ w5500_err_t w5500_set_ip(w5500_t *dev, const uint8_t ip[4],
 /**
  * Open a socket with given protocol and local port.
  * Protocol: W5500_PROTO_TCP, W5500_PROTO_UDP, or W5500_PROTO_MACRAW.
+ * MACRAW works on socket 0 only: other sockets return W5500_ERR_SOCK.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 w5500_err_t w5500_socket_open(w5500_t *dev, uint8_t sock,
