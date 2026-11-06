@@ -63,8 +63,11 @@ void scheduler_run(scheduler_t *s)
 {
     if (!s) return;
 
-    for (uint8_t i = 0; i < s->count; i++) {
-        sched_task_t *t = &s->tasks[i];
+    /* In s, not a local: scheduler_remove moves it when a task removes a task */
+    s->next = 0;
+    while (s->next < s->count) {
+        sched_task_t *t = &s->tasks[s->next];
+        s->next++;
         if (!t->enabled) continue;
 
         uint32_t elapsed = s->tick - t->last_run;
@@ -74,8 +77,8 @@ void scheduler_run(scheduler_t *s)
                 if (t->overrun_count < UINT32_MAX) t->overrun_count++;
             }
             t->last_run = s->tick;
-            t->fn(t->ctx);
             if (t->run_count < UINT32_MAX) t->run_count++;
+            t->fn(t->ctx);  /* it may remove itself: t is not ours after this */
         }
     }
 }
@@ -110,6 +113,9 @@ sched_err_t scheduler_remove(scheduler_t *s, const char *name)
     }
     s->count--;
     memset(&s->tasks[s->count], 0, sizeof(sched_task_t));
+
+    /* The tasks after idx moved down a slot, so scheduler_run's place did too */
+    if ((uint8_t)idx < s->next) s->next--;
     return SCHED_OK;
 }
 
