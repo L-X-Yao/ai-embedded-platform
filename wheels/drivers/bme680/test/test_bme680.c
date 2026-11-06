@@ -793,6 +793,122 @@ TEST(test_skipped_channels_read_zero)
     ASSERT_TRUE(data.humidity_pct == 0.0f);
 }
 
+/* Bosch's floating point pressure formula from the datasheet, section 3.3.2. */
+static double datasheet_pressure(const bme680_t *d, uint32_t press_adc)
+{
+    double var1 = ((double)d->t_fine / 2.0) - 64000.0;
+    double var2 = var1 * var1 * ((double)d->par_p6 / 131072.0);
+    var2 = var2 + (var1 * (double)d->par_p5 * 2.0);
+    var2 = (var2 / 4.0) + ((double)d->par_p4 * 65536.0);
+    var1 = ((((double)d->par_p3 * var1 * var1) / 16384.0) +
+            ((double)d->par_p2 * var1)) / 524288.0;
+    var1 = (1.0 + (var1 / 32768.0)) * (double)d->par_p1;
+    double press = 1048576.0 - (double)press_adc;
+    press = ((press - (var2 / 4096.0)) * 6250.0) / var1;
+    var1 = ((double)d->par_p9 * press * press) / 2147483648.0;
+    var2 = press * ((double)d->par_p8 / 32768.0);
+    double var3 = (press / 256.0) * (press / 256.0) * (press / 256.0) *
+                  ((double)d->par_p10 / 131072.0);
+    return press + ((var1 + var2 + var3 + ((double)d->par_p7 * 128.0)) / 16.0);
+}
+
+static void assert_pressure_matches_datasheet(uint32_t adc_t)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(400000, adc_t, 25000, 300, 3, true);
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+
+    double want = datasheet_pressure(&dev, 400000);
+    ASSERT_TRUE(data.pressure_pa > want - 10.0 && data.pressure_pa < want + 10.0);
+}
+
+/* (var1 >> 2) squared leaves int32_t for t_fine above 498724, about 97 C */
+TEST(test_pressure_right_when_hot)
+{
+    assert_pressure_matches_datasheet(735000);
+    ASSERT_TRUE(dev.t_fine > 498724);
+}
+
+/* The same below t_fine -242724, about -47 C */
+TEST(test_pressure_right_when_cold)
+{
+    assert_pressure_matches_datasheet(260000);
+    ASSERT_TRUE(dev.t_fine < -242724);
+}
+
+TEST(test_pressure_right_at_room_temperature)
+{
+    assert_pressure_matches_datasheet(500000);
+}
+
+/* Calibration has no CRC, so a bad read reaches the compensation */
+static void init_with_bad_calibration(void)
+{
+    mock_reset();
+    for (uint8_t i = 0; i < 0x17u; i++) {
+        mock_regs[0x8A + i] = (uint8_t)(0x40u + i);
+    }
+    for (uint8_t i = 0; i < 0x0Eu; i++) {
+        mock_regs[0xE1 + i] = (uint8_t)(0x20u + i);
+    }
+    ASSERT_EQ(bme680_init(&dev, &mock_i2c, BME680_ADDR_LOW), BME680_OK);
+}
+
+TEST(test_bad_calibration_stays_defined)
+{
+    bme680_data_t data;
+    init_with_bad_calibration();
+    plant_data(415148, 500000, 25000, 300, 3, true);
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+
+    double want = datasheet_pressure(&dev, 415148);
+    ASSERT_TRUE(data.pressure_pa > want - 50.0 && data.pressure_pa < want + 50.0);
+}
+
+/* par_p1 of 2 gives a divisor of 1, and a result whose cube leaves int64_t */
+TEST(test_tiny_divisor_reads_zero)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(626000, 500000, 25000, 300, 3, true);
+    dev.par_p1 = 2;
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.pressure_pa == 0.0f);
+}
+
+/* A negative divisor gives no pressure either */
+TEST(test_negative_divisor_reads_zero)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(415148, 1048575, 25000, 300, 3, true);
+    dev.par_t2 = 32767;
+    dev.par_p2 = -32768;
+    dev.par_p3 = -128;
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.pressure_pa == 0.0f);
+}
+
+/* temp_scaled, the h4 and h5 products and var1 * var2 all leave int32_t here */
+TEST(test_humidity_stays_defined_at_full_scale)
+{
+    bme680_data_t data;
+    setup();
+    plant_data(415148, 1048575, 65535, 300, 3, true);
+    dev.par_t2 = 32767;
+    dev.par_h2 = 4095;
+    dev.par_h4 = 127;
+    dev.par_h5 = 127;
+
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
+    ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
+}
+
 TEST_MAIN("bme680")
     RUN(test_init_ok);
     RUN(test_init_chip_id);
@@ -845,4 +961,11 @@ TEST_MAIN("bme680")
     RUN(test_reset_restores_defaults);
     RUN(test_temperature_cannot_be_skipped);
     RUN(test_skipped_channels_read_zero);
+    RUN(test_pressure_right_at_room_temperature);
+    RUN(test_pressure_right_when_hot);
+    RUN(test_pressure_right_when_cold);
+    RUN(test_bad_calibration_stays_defined);
+    RUN(test_tiny_divisor_reads_zero);
+    RUN(test_negative_divisor_reads_zero);
+    RUN(test_humidity_stays_defined_at_full_scale);
 TEST_MAIN_END()
