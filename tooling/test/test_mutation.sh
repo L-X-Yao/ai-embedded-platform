@@ -297,15 +297,17 @@ for entry in "${WHEELS[@]}"; do
     # Verify baseline: the test must pass unmutated
     TMP_BUILD_DIR=$(mktemp -d "$MUT_TMPDIR/build_${name}_XXXXXX")
     if ! build_test "$test_dir" "$TMP_BUILD_DIR"; then
-        echo -e "  ${YELLOW}SKIP${NC}  ${layer}/${name}  (baseline build failed)"
-        RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "SKIP (build fail)")")
+        echo -e "  ${RED}FAIL${NC}  ${layer}/${name}  (baseline build failed)"
+        RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "FAIL (baseline build)")")
+        GLOBAL_PASS=false
         rm -rf "$TMP_BUILD_DIR"
         TMP_BUILD_DIR=""
         continue
     fi
     if ! run_test "$TMP_BUILD_DIR" "$name"; then
-        echo -e "  ${YELLOW}SKIP${NC}  ${layer}/${name}  (baseline test fails)"
-        RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "SKIP (test fail)")")
+        echo -e "  ${RED}FAIL${NC}  ${layer}/${name}  (baseline test fails)"
+        RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "FAIL (baseline test)")")
+        GLOBAL_PASS=false
         rm -rf "$TMP_BUILD_DIR"
         TMP_BUILD_DIR=""
         continue
@@ -339,14 +341,14 @@ for entry in "${WHEELS[@]}"; do
             continue
         fi
 
-        # Find lines in the source that match (skip comments and strings)
+        # Find lines in the source that match, skipping comments and preprocessor
+        # lines. The filter has to allow for the "N:" that grep -n puts first. A
+        # comment line's * is followed by a space, a / or nothing, unlike "*p = 1;".
         matching_lines=()
         while IFS= read -r lineno; do
             [[ -n "$lineno" ]] && matching_lines+=("$lineno")
         done < <(grep -n "$search_pattern" "$src_file" 2>/dev/null \
-            | grep -v '^\s*//' \
-            | grep -v '^\s*\*' \
-            | grep -v '^\s*#' \
+            | grep -vE '^[0-9]+:[[:space:]]*(//|/\*|\*([[:space:]/]|$)|#)' \
             | cut -d: -f1 || true)
 
         for lineno in "${matching_lines[@]}"; do
@@ -372,7 +374,7 @@ for entry in "${WHEELS[@]}"; do
 
             if ! build_test "$test_dir" "$TMP_BUILD_DIR"; then
                 build_fail=$((build_fail + 1))
-                log_verbose "KILLED(build)  L${lineno}  ${label}"
+                log_verbose "NO BUILD       L${lineno}  ${label}"
             else
                 if ! run_test "$TMP_BUILD_DIR" "$name"; then
                     killed=$((killed + 1))
@@ -405,8 +407,16 @@ for entry in "${WHEELS[@]}"; do
         continue
     fi
 
-    killed_total=$((killed + build_fail))
-    kill_rate=$(( (killed_total * 100) / total ))
+    # A mutant that does not compile says nothing about the tests, so the rate
+    # counts only the ones that ran.
+    scored=$((killed + survived))
+    if [[ $scored -eq 0 ]]; then
+        echo -e "    ${RED}FAIL${NC}  none of the $total mutants compiled: nothing measured"
+        RESULT_LINES+=("$(printf "  %-30s  %s" "${layer}/${name}" "FAIL (no mutant compiled)")")
+        GLOBAL_PASS=false
+        continue
+    fi
+    kill_rate=$(( (killed * 100) / scored ))
 
     if [[ $kill_rate -ge $KILL_THRESHOLD ]]; then
         color="$GREEN"
@@ -454,6 +464,6 @@ if $GLOBAL_PASS; then
     echo -e "  ${GREEN}All wheels meet the ${KILL_THRESHOLD}% kill rate threshold.${NC}"
     exit 0
 else
-    echo -e "  ${RED}Some wheels are below the ${KILL_THRESHOLD}% kill rate threshold.${NC}"
+    echo -e "  ${RED}Some wheels failed their baseline or are below the ${KILL_THRESHOLD}% kill rate threshold.${NC}"
     exit 1
 fi
