@@ -30,6 +30,94 @@ static void setup(void)
     model.read_count  = 0;
 }
 
+/* --- what the manual says about timing and read-out --- */
+
+static void send(uint8_t cmd)
+{
+    ASSERT_TRUE(sht40_model_write(&model, SHT40_ADDR_A, &cmd, 1));
+}
+
+static bool read_header(void)
+{
+    uint8_t b[6];
+    return sht40_model_read(&model, SHT40_ADDR_A, b, sizeof(b));
+}
+
+/* p.10-11 "In case the sensor receives a read header and is still busy
+ * with e.g. measurement or heating, it will return a NACK." p.10 Table 5
+ * maximum tMEAS: 1.6 ms low, 4.5 ms medium, 8.3 ms high. */
+TEST(test_read_header_nacked_until_tmeas_max)
+{
+    static const struct { uint8_t cmd; uint16_t early; } rows[] = {
+        { 0xE0, 1 }, { 0xF6, 4 }, { 0xFD, 8 },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        sht40_model_init(&model);
+        send(rows[i].cmd);
+        ASSERT_FALSE(read_header());
+        sht40_model_delay(&model, rows[i].early);
+        ASSERT_FALSE(read_header());
+        sht40_model_delay(&model, 1);
+        ASSERT_TRUE(read_header());
+    }
+}
+
+/* p.11 "Measurement data can only be received once and will be deleted
+ * from the sensor's register after the first acknowledged I2C read
+ * header." */
+TEST(test_measurement_data_can_be_read_once)
+{
+    sht40_model_init(&model);
+    send(0xFD);
+    sht40_model_delay(&model, 9);
+    ASSERT_TRUE(read_header());
+    ASSERT_FALSE(read_header());
+}
+
+/* p.10 tSR: 1 ms maximum between "ACK of soft reset command and sensor
+ * entering idle state". Table 8: a sensor "not ready to process a command"
+ * answers the read header with NACK. */
+TEST(test_command_is_lost_during_soft_reset)
+{
+    sht40_model_init(&model);
+    send(0x94);
+    send(0xFD);
+    sht40_model_delay(&model, 9);
+    ASSERT_FALSE(read_header());
+
+    sht40_model_init(&model);
+    send(0x94);
+    sht40_model_delay(&model, 1);
+    send(0xFD);
+    sht40_model_delay(&model, 9);
+    ASSERT_TRUE(read_header());
+}
+
+/* Table 8: the same goes for a command during a measurement. */
+TEST(test_command_is_lost_during_measurement)
+{
+    sht40_model_init(&model);
+    send(0xFD);
+    send(0x89);
+    sht40_model_delay(&model, 9);
+
+    uint8_t b[6];
+    ASSERT_TRUE(sht40_model_read(&model, SHT40_ADDR_A, b, sizeof(b)));
+    ASSERT_EQ(model.last_cmd, 0xFD);
+}
+
+/* The header offers sht40_soft_reset on its own, so the next call has to
+ * work without the caller waiting out tSR. */
+TEST(test_measure_right_after_soft_reset)
+{
+    setup();
+    ASSERT_EQ(sht40_soft_reset(&dev), SHT40_OK);
+
+    sht40_data_t out;
+    ASSERT_EQ(sht40_read_high(&dev, &out), SHT40_OK);
+}
+
 /* --- init --- */
 
 TEST(test_init_reads_serial)
@@ -283,6 +371,11 @@ TEST(test_soft_reset_via_model)
 }
 
 TEST_MAIN("sht40 hardware model")
+    RUN(test_read_header_nacked_until_tmeas_max);
+    RUN(test_measurement_data_can_be_read_once);
+    RUN(test_command_is_lost_during_soft_reset);
+    RUN(test_command_is_lost_during_measurement);
+    RUN(test_measure_right_after_soft_reset);
     RUN(test_init_reads_serial);
     RUN(test_init_sends_reset);
     RUN(test_roundtrip_25c);

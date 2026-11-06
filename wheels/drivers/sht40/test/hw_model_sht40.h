@@ -8,6 +8,11 @@
  * - Commands: 0xFD (high), 0xF6 (medium), 0xE0 (low), 0x94 (reset), 0x89 (serial)
  * - Response: 2 bytes data + CRC8 + 2 bytes data + CRC8
  * - CRC-8: polynomial 0x31, init 0xFF (Sensirion standard)
+ * - Busy for the maximum of Table 5 after a measurement or soft reset
+ *   command: read headers get a NACK and commands are lost. Time comes from
+ *   the delay callback.
+ * - Measurement data can be read once (p.11)
+ * - The model starts idle: tPU after VDD is the system's to wait out.
  *
  * Internal state: temperature_raw and humidity_raw, computed from physical
  * values via inverse conversion formulas from the datasheet:
@@ -30,6 +35,13 @@
 #define SHT40_CMD_SOFT_RESET     0x94u
 #define SHT40_CMD_READ_SERIAL    0x89u
 
+/* ---------- p.10 Table 5, maximum values ---------- */
+
+#define SHT40_T_SR_US      1000u
+#define SHT40_T_MEAS_L_US  1600u
+#define SHT40_T_MEAS_M_US  4500u
+#define SHT40_T_MEAS_H_US  8300u
+
 /* ---------- model state ---------- */
 
 typedef struct {
@@ -40,6 +52,10 @@ typedef struct {
     bool     reset_done;
     int      write_count;
     int      read_count;
+    uint32_t now_us;      /* model clock, moved by the delay callback */
+    uint32_t idle_us;     /* the sensor is busy until this time */
+    bool     has_data;    /* a response is waiting for a read header */
+    int      nack_count;  /* read headers refused */
 } sht40_model_t;
 
 /* ---------- CRC-8 (poly 0x31, init 0xFF) ---------- */
@@ -115,10 +131,37 @@ static bool sht40_model_write(void *ctx, uint8_t addr,
         return false;  /* SHT40 only accepts 1-byte commands */
     }
 
-    m->last_cmd = data[0];
+    /* Table 8: a sensor "not ready to process a command" answers the read
+     * header with NACK, so a command sent while it is busy is lost. */
+    if (m->now_us < m->idle_us) {
+        return true;
+    }
 
-    if (data[0] == SHT40_CMD_SOFT_RESET) {
+    m->last_cmd = data[0];
+    m->has_data = false;
+
+    switch (data[0]) {
+    case SHT40_CMD_SOFT_RESET:
         m->reset_done = true;
+        m->idle_us = m->now_us + SHT40_T_SR_US;
+        break;
+    case SHT40_CMD_MEASURE_HIGH:
+        m->has_data = true;
+        m->idle_us = m->now_us + SHT40_T_MEAS_H_US;
+        break;
+    case SHT40_CMD_MEASURE_MEDIUM:
+        m->has_data = true;
+        m->idle_us = m->now_us + SHT40_T_MEAS_M_US;
+        break;
+    case SHT40_CMD_MEASURE_LOW:
+        m->has_data = true;
+        m->idle_us = m->now_us + SHT40_T_MEAS_L_US;
+        break;
+    case SHT40_CMD_READ_SERIAL:
+        m->has_data = true;   /* Table 5 gives this command no duration */
+        break;
+    default:
+        break;
     }
 
     return true;
@@ -138,6 +181,13 @@ static bool sht40_model_read(void *ctx, uint8_t addr,
         return false;
     }
 
+    /* p.10-11 "In case the sensor receives a read header and is still busy
+     * with e.g. measurement or heating, it will return a NACK." */
+    if (m->now_us < m->idle_us || !m->has_data) {
+        m->nack_count++;
+        return false;
+    }
+
     switch (m->last_cmd) {
     case SHT40_CMD_MEASURE_HIGH:
     case SHT40_CMD_MEASURE_MEDIUM:
@@ -150,6 +200,8 @@ static bool sht40_model_read(void *ctx, uint8_t addr,
         data[3] = (uint8_t)(m->humidity_raw >> 8);
         data[4] = (uint8_t)(m->humidity_raw & 0xFFu);
         data[5] = sht40_model_crc8(&data[3], 2);
+        /* p.11 "Measurement data can only be received once" */
+        m->has_data = false;
         break;
     }
     case SHT40_CMD_READ_SERIAL: {
@@ -173,12 +225,13 @@ static bool sht40_model_read(void *ctx, uint8_t addr,
     return true;
 }
 
-/* ---------- delay callback (no-op) ---------- */
+/* ---------- delay callback ---------- */
 
 __attribute__((unused))
 static void sht40_model_delay(void *ctx, uint16_t ms)
 {
-    (void)ctx; (void)ms;
+    sht40_model_t *m = (sht40_model_t *)ctx;
+    m->now_us += (uint32_t)ms * 1000u;
 }
 
 #endif /* HW_MODEL_SHT40_H */
