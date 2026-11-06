@@ -16,10 +16,11 @@
 static mcp2515_model_t model;
 
 static const mcp2515_spi_t model_spi = {
-    .cs_low  = mcp2515_model_cs_low,
-    .cs_high = mcp2515_model_cs_high,
-    .xfer    = mcp2515_model_xfer,
-    .ctx     = &model,
+    .cs_low   = mcp2515_model_cs_low,
+    .cs_high  = mcp2515_model_cs_high,
+    .xfer     = mcp2515_model_xfer,
+    .ctx      = &model,
+    .delay_us = mcp2515_model_delay_us,
 };
 
 static void setup(void)
@@ -41,6 +42,19 @@ TEST(test_init_config_mode)
               MCP_OPMOD_NORMAL);
     /* Reset should have been called */
     ASSERT_TRUE(model.reset_count > 0);
+}
+
+/* DS20001801J p.55: the OST "keeps the device in a Reset state for 128 OSC1 clock
+ * cycles after the occurrence of a Power-on Reset, SPI Reset", and "no SPI
+ * protocol operations should be attempted until after the OST has expired". */
+TEST(test_init_waits_out_the_ost_after_reset)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(model.reset_count, 1);
+    ASSERT_EQ(model.spi_during_ost, 0);
+    ASSERT_GE(model.delay_us_total, MCP_OST_US);
 }
 
 /* --- 2. Mode transition: normal -> loopback --- */
@@ -520,6 +534,7 @@ TEST(test_receive_succeeds_when_the_next_frame_is_already_in)
 
 TEST_MAIN("mcp2515 hardware model")
     RUN(test_init_config_mode);
+    RUN(test_init_waits_out_the_ost_after_reset);
     RUN(test_mode_to_loopback);
     RUN(test_mode_roundtrip);
     RUN(test_cnf_125kbps);

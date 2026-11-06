@@ -84,6 +84,11 @@
 #define OPMOD_LISTEN    0x60
 #define OPMOD_CONFIG    0x80
 
+/* Oscillator Start-up Timer (DS20001801J p.55): 128 OSC1 cycles after a Reset,
+ * and no SPI operation until it has expired. The driver is not told the
+ * oscillator, so it waits for the slowest: TOSC max 1000 ns (Table 13-2). */
+#define OST_WAIT_US     128u
+
 /* ---------- CNF values for 8 MHz crystal ---------- */
 
 /*
@@ -259,11 +264,14 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
         return MCP2515_ERR_SPI;
     if (speed >= MCP2515_SPEED_1MBPS)
         return MCP2515_ERR_PARAM;
+    if (!spi->delay_us)
+        return MCP2515_ERR_PARAM;
 
     dev->spi = spi;
 
     /* hardware reset */
     reset_cmd(spi);
+    spi->delay_us(spi->ctx, OST_WAIT_US);
 
     /* chip enters config mode after reset — verify */
     mcp2515_err_t err = wait_mode(spi, OPMOD_CONFIG);

@@ -13,6 +13,7 @@
  * - RX buffer 0: injectable received frames via helper function
  * - CANINTF (0x2C): interrupt flags, bit-modifiable
  * - CNF1/2/3 (0x2A/0x29/0x28): bit timing configuration
+ * - OST after a RESET: SPI operations before it expires are counted
  *
  * Uses hw_reg_model_t for the underlying register file, with custom
  * SPI command parsing to model the real chip protocol.
@@ -67,6 +68,11 @@
 #define MCP_OPMOD_LISTEN     0x60
 #define MCP_OPMOD_CONFIG     0x80
 
+/* Oscillator Start-up Timer: 128 OSC1 cycles (DS20001801J p.55). The model uses
+ * the slowest clock the chip allows, TOSC max 1000 ns (Table 13-2), so a driver
+ * that waits for a faster clock than it was told about fails here. */
+#define MCP_OST_US           128u
+
 /* --- SPI commands --- */
 #define MCP_SPI_RESET        0xC0
 #define MCP_SPI_READ         0x03
@@ -95,6 +101,10 @@ typedef struct {
     /* Counters */
     int              reset_count;
     int              tx_complete_count;
+    /* OST: the model has no clock of its own, only the driver's waits count */
+    uint32_t         ost_left_us;
+    int              spi_during_ost;
+    uint32_t         delay_us_total;
     /* TX behavior: auto-clear TXREQ after send */
     bool             auto_clear_txreq;
 } mcp2515_model_t;
@@ -150,6 +160,9 @@ __attribute__((unused))
 static void mcp2515_model_cs_low(void *ctx)
 {
     mcp2515_model_t *m = (mcp2515_model_t *)ctx;
+    if (m->ost_left_us > 0u) {
+        m->spi_during_ost++;
+    }
     m->phase = MCP_PHASE_CMD;
     m->spi_cmd = 0;
     m->spi_addr = 0;
@@ -178,6 +191,7 @@ static uint8_t mcp2515_model_xfer(void *ctx, uint8_t tx)
             m->hw.regs[MCP_REG_CANSTAT] = MCP_OPMOD_CONFIG;
             m->hw.regs[MCP_REG_CANCTRL] = 0x87;  /* POR: config mode, CLKEN, CLKPRE=11 */
             m->reset_count++;
+            m->ost_left_us = MCP_OST_US;
             return 0xFF;
         }
 
@@ -241,6 +255,14 @@ static uint8_t mcp2515_model_xfer(void *ctx, uint8_t tx)
     }
 
     return 0xFF;
+}
+
+__attribute__((unused))
+static void mcp2515_model_delay_us(void *ctx, uint32_t us)
+{
+    mcp2515_model_t *m = (mcp2515_model_t *)ctx;
+    m->delay_us_total += us;
+    m->ost_left_us = (us >= m->ost_left_us) ? 0u : m->ost_left_us - us;
 }
 
 /* --- Model initialization --- */

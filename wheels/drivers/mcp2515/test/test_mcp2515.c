@@ -18,6 +18,21 @@ static uint8_t mock_bm_mask;
 /* for READ_STATUS instruction */
 static uint8_t mock_status_byte;
 
+/* every byte the driver sends, and where in that stream the first wait fell */
+#define MOCK_TX_LOG_SIZE 64
+static uint8_t  mock_tx_log[MOCK_TX_LOG_SIZE];
+static int      mock_tx_len;
+static int      mock_delay_at;     /* mock_tx_len at the first wait, -1 = none */
+static uint32_t mock_delay_total;  /* microseconds */
+
+static void mock_tx_clear(void)
+{
+    memset(mock_tx_log, 0, sizeof(mock_tx_log));
+    mock_tx_len = 0;
+    mock_delay_at = -1;
+    mock_delay_total = 0;
+}
+
 static void mock_reset(void)
 {
     memset(mock_regs, 0, sizeof(mock_regs));
@@ -27,6 +42,7 @@ static void mock_reset(void)
     mock_spi_phase = 0;
     mock_bm_mask = 0;
     mock_status_byte = 0;
+    mock_tx_clear();
 
     /* after hardware reset, chip is in config mode (0x80 in CANSTAT) */
     mock_regs[0x0E] = 0x80;  /* CANSTAT: config mode */
@@ -47,9 +63,19 @@ static void mock_cs_high(void *ctx)
     mock_spi_phase = 0;
 }
 
+static void mock_delay_us(void *ctx, uint32_t us)
+{
+    (void)ctx;
+    if (mock_delay_at < 0) mock_delay_at = mock_tx_len;
+    mock_delay_total += us;
+}
+
 static uint8_t mock_xfer(void *ctx, uint8_t tx)
 {
     (void)ctx;
+
+    if (mock_tx_len < MOCK_TX_LOG_SIZE) mock_tx_log[mock_tx_len] = tx;
+    mock_tx_len++;
 
     if (mock_spi_phase == 1) {
         mock_spi_cmd = tx;
@@ -125,10 +151,11 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 }
 
 static const mcp2515_spi_t mock_spi = {
-    .cs_low  = mock_cs_low,
-    .cs_high = mock_cs_high,
-    .xfer    = mock_xfer,
-    .ctx     = NULL,
+    .cs_low   = mock_cs_low,
+    .cs_high  = mock_cs_high,
+    .xfer     = mock_xfer,
+    .ctx      = NULL,
+    .delay_us = mock_delay_us,
 };
 
 /* ---------- helper: inject an RX message into mock registers ---------- */
@@ -190,6 +217,41 @@ TEST(test_init_ok)
     ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
     /* verify CNF1 was written (500 kbps => 0x00) */
     ASSERT_EQ(mock_regs[0x2A], 0x00);
+}
+
+/* DS20001801J p.55: no SPI operation until the OST has expired, and that is 128
+ * OSC1 cycles. The driver is not told the oscillator, so it has to cover the
+ * slowest one: TOSC max 1000 ns (Table 13-2) gives 128 us. */
+TEST(test_init_waits_after_reset)
+{
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    ASSERT_EQ_HEX(mock_tx_log[0], 0xC0);  /* RESET */
+    ASSERT_EQ(mock_delay_at, 1);          /* the wait comes right after it */
+    ASSERT_GE(mock_delay_total, 128u);
+    ASSERT_EQ_HEX(mock_tx_log[1], 0x03);  /* then READ CANSTAT */
+    ASSERT_EQ_HEX(mock_tx_log[2], 0x0E);
+}
+
+/* Without a way to wait, init must not touch the chip at all */
+TEST(test_init_refuses_null_delay_us)
+{
+    static const mcp2515_spi_t no_delay = {
+        .cs_low  = mock_cs_low,
+        .cs_high = mock_cs_high,
+        .xfer    = mock_xfer,
+        .ctx     = NULL,
+    };
+
+    mock_reset();
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(mcp2515_init(&dev, &no_delay, MCP2515_SPEED_500KBPS),
+              MCP2515_ERR_PARAM);
+    ASSERT_EQ(mock_tx_len, 0);
 }
 
 TEST(test_null_params)
@@ -548,10 +610,11 @@ static uint8_t mock_xfer_freeze(void *ctx, uint8_t tx)
 }
 
 static const mcp2515_spi_t mock_spi_freeze = {
-    .cs_low  = mock_cs_low,
-    .cs_high = mock_cs_high,
-    .xfer    = mock_xfer_freeze,
-    .ctx     = NULL,
+    .cs_low   = mock_cs_low,
+    .cs_high  = mock_cs_high,
+    .xfer     = mock_xfer_freeze,
+    .ctx      = NULL,
+    .delay_us = mock_delay_us,
 };
 
 TEST(test_set_mode_timeout)
@@ -885,6 +948,8 @@ TEST(test_standard_data_frame_ignores_dlc_bit_6)
 
 TEST_MAIN("mcp2515")
     RUN(test_init_ok);
+    RUN(test_init_waits_after_reset);
+    RUN(test_init_refuses_null_delay_us);
     RUN(test_null_params);
     RUN(test_set_mode_normal);
     RUN(test_set_mode_loopback);
