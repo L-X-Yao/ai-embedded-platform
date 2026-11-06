@@ -14,7 +14,9 @@
  *
  * Writes follow p10 and p17: a register changes only on one transaction of
  * MAddr, Data0, Data1 through write_raw. "8-bit writes cause no effect", and
- * "A valid write must include both register bytes".
+ * "A valid write must include both register bytes". Writes to the registers
+ * Table 2 marks R are dropped too: "Data is also ignored on writes to
+ * read-only addresses."
  * Helpers convert physical units to raw register values.
  */
 
@@ -136,6 +138,13 @@ static void max17048_model_trigger_alert(max17048_model_t *m)
 
 /* ─── I2C callbacks backed by model ─────────────────────────── */
 
+/* p.10 and p.11 Table 2: the registers marked R */
+static bool max17048_model__read_only(uint8_t reg)
+{
+    return reg == HW_REG_VCELL || reg == HW_REG_SOC ||
+           reg == HW_REG_VERSION || reg == HW_REG_CRATE;
+}
+
 __attribute__((unused))
 static bool max17048_model_write_reg(void *ctx, uint8_t dev_addr,
                                      uint8_t reg, uint8_t val)
@@ -158,6 +167,9 @@ static bool max17048_model_write_raw(void *ctx, uint8_t dev_addr,
     /* p17: the address increments per byte, and a word needs both its bytes */
     for (uint16_t i = 1; i + 1u < len; i = (uint16_t)(i + 2u)) {
         uint8_t reg = (uint8_t)(data[0] + i - 1u);
+        if (max17048_model__read_only(reg))
+            continue;
+
         m->regs[reg]                = data[i];
         m->regs[(uint8_t)(reg + 1)] = data[i + 1u];
 

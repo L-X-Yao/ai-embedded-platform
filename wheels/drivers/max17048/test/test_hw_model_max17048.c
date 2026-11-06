@@ -54,6 +54,64 @@ TEST(test_model_stores_a_write_with_both_bytes)
     ASSERT_EQ_HEX(model.regs[HW_REG_CONFIG + 1], 0x34);
 }
 
+/* p.17 "Data is also ignored on writes to read-only addresses."
+ * p.10 and p.11 Table 2 mark these four R. */
+TEST(test_model_ignores_writes_to_read_only_registers)
+{
+    static const uint8_t read_only[] = {
+        HW_REG_VCELL, HW_REG_SOC, HW_REG_VERSION, HW_REG_CRATE
+    };
+
+    max17048_model_init(&model);
+    for (size_t i = 0; i < sizeof(read_only); i++) {
+        uint8_t reg = read_only[i];
+        uint8_t msb = model.regs[reg];
+        uint8_t lsb = model.regs[reg + 1];
+        const uint8_t word[] = { reg, (uint8_t)~msb, (uint8_t)~lsb };
+
+        ASSERT_TRUE(max17048_model_write_raw(&model, MAX17048_DEV_ADDR,
+                                             word, sizeof(word)));
+        ASSERT_EQ_HEX(model.regs[reg], msb);
+        ASSERT_EQ_HEX(model.regs[reg + 1], lsb);
+    }
+}
+
+/* p.11 Table 2: STATUS default 0x01__. p.14 "RI (reset indicator) is set
+ * when the device powers up." */
+TEST(test_model_status_resets_with_ri_set)
+{
+    uint8_t status[2] = { 0, 0 };
+
+    max17048_model_init(&model);
+    ASSERT_TRUE(max17048_model_read_regs(&model, MAX17048_DEV_ADDR,
+                                         HW_REG_STATUS, status, 2));
+    ASSERT_EQ_HEX(status[0], 0x01);
+}
+
+/* p.14 "the bit should be cleared" */
+TEST(test_init_clears_ri_in_the_model)
+{
+    setup();
+    ASSERT_EQ_HEX(model.regs[HW_REG_STATUS] & 0x01, 0);
+}
+
+/* p.12 "SLEEP forces the IC in or out of sleep mode if Mode. EnSleep is
+ * set." */
+TEST(test_model_sleep_bit_needs_en_sleep)
+{
+    static const uint8_t config_sleep[] = { HW_REG_CONFIG, 0x97, 0x9C };
+    static const uint8_t mode_en_sleep[] = { HW_REG_MODE, 0x20, 0x00 };
+
+    max17048_model_init(&model);
+    ASSERT_TRUE(max17048_model_write_raw(&model, MAX17048_DEV_ADDR,
+                                         config_sleep, sizeof(config_sleep)));
+    ASSERT_FALSE(max17048_model_is_sleeping(&model));
+
+    ASSERT_TRUE(max17048_model_write_raw(&model, MAX17048_DEV_ADDR,
+                                         mode_en_sleep, sizeof(mode_en_sleep)));
+    ASSERT_TRUE(max17048_model_is_sleeping(&model));
+}
+
 /* ─── init ──────────────────────────────────────────────────── */
 
 TEST(test_init_with_model)
@@ -321,7 +379,7 @@ TEST(test_por_defaults)
     ASSERT_EQ(max17048_read_soc(&dev, &soc), MAX17048_OK);
     ASSERT_NEAR(soc, 100.0f, 0.5f);
 
-    /* Voltage should read as ~4.05V (POR = 0xCE40) */
+    /* Voltage should read as ~4.05V (the model starts at 0xCA80) */
     float v;
     ASSERT_EQ(max17048_read_voltage(&dev, &v), MAX17048_OK);
     ASSERT_NEAR(v, 4.05f, 0.05f);
@@ -351,6 +409,10 @@ TEST_MAIN("max17048 hardware model")
     RUN(test_init_with_model);
     RUN(test_model_ignores_a_write_without_both_bytes);
     RUN(test_model_stores_a_write_with_both_bytes);
+    RUN(test_model_ignores_writes_to_read_only_registers);
+    RUN(test_model_status_resets_with_ri_set);
+    RUN(test_init_clears_ri_in_the_model);
+    RUN(test_model_sleep_bit_needs_en_sleep);
     RUN(test_init_bad_version_zero);
     RUN(test_init_bad_version_ffff);
     RUN(test_voltage_4v05);

@@ -17,10 +17,13 @@
 #define REG_CONFIG  0x0C
 #define REG_CRATE   0x16
 
-/* Each write is the register, then its bytes, in one transaction */
+/* Each write is the register, then its bytes, in one transaction.
+ * p.17 "A valid write must include both register bytes." */
 static bool mock_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
                            uint16_t len)
 {
+    if (len != 3)
+        return true;
     return mock_i2c_write_regs(ctx, dev_addr, data[0], &data[1],
                                (uint16_t)(len - 1u));
 }
