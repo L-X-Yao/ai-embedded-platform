@@ -189,7 +189,7 @@ startup). cli_parser is for simpler cases with a fixed command table.
 - **Echo**: input bytes echoed back for interactive terminal use
 - **CRLF handling**: `\r\n`, `\r`, `\n` all treated as single newline
 - **Unknown command feedback**: prints error + suggests "help"
-- **Line overflow protection**: silently drops chars beyond buffer limit
+- **Line overflow protection**: a line that outgrows the buffer is refused at end of line with `line too long`
 - **Configurable** via compile-time macros (line size, max args, max cmds)
 - Pure C99, no heap, no OS dependency, fully reentrant per-context
 
