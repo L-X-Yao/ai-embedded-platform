@@ -102,6 +102,7 @@
 #define ENC_ECON2_PKTDEC  0x40U
 #define ENC_ESTAT_CLKRDY  0x01U
 #define ENC_ESTAT_TXABRT  0x02U
+#define ENC_ESTAT_RXBUSY  0x04U
 #define ENC_ESTAT_LATECOL 0x10U
 #define ENC_ESTAT_BUFER   0x40U
 /* Register 12-1: the R/C bits, which only the host clears */
@@ -184,6 +185,12 @@ typedef struct {
     /* Counters */
     int      reset_count;
     int      delay_count;
+
+    /* A frame arriving: ESTAT reads until RXBUSY clears, 0 = never */
+    int      rxbusy_after;
+    int      rxbusy_reads;
+    /* MAADR writes made with RXEN or RXBUSY set */
+    int      mac_write_rx_active;
 
     /* Oscillator Start-up Timer: ESTAT reads until CLKRDY sets, 0 = never */
     int      clkrdy_after;
@@ -414,6 +421,10 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
             if (m->clkrdy_after > 0 &&
                 m->estat_read_count >= m->clkrdy_after)
                 m->common[ENC_ESTAT] |= ENC_ESTAT_CLKRDY;
+            if ((m->common[ENC_ESTAT] & ENC_ESTAT_RXBUSY) &&
+                m->rxbusy_after > 0 &&
+                ++m->rxbusy_reads >= m->rxbusy_after)
+                m->common[ENC_ESTAT] &= (uint8_t)~ENC_ESTAT_RXBUSY;
         }
         uint8_t val = *enc_reg_ptr(m, m->spi_addr);
         /* A PHY write ends after phy_busy_after reads that saw BUSY */
@@ -443,6 +454,11 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
     case ENC_PH_WRITE_DATA: {
         if (enc_is_mac_mii(m->current_bank, m->spi_addr))
             enc_note_ready_needed(m);
+        /* DS39662C p.45: clear RXEN before altering the MAC address */
+        if (m->current_bank == 3U && m->spi_addr <= ENC_MAADR2 &&
+            ((m->common[ENC_ECON1] & ENC_ECON1_RXEN) ||
+             (m->common[ENC_ESTAT] & ENC_ESTAT_RXBUSY)))
+            m->mac_write_rx_active++;
         enc_write_reg(m, m->spi_addr, tx);
         /* If writing ECON1, update bank selection */
         if (m->spi_addr == ENC_ECON1) {
