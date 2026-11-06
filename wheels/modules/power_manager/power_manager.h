@@ -43,6 +43,10 @@ extern "C" {
 #error "POWER_MANAGER_MAX_VOTERS exceeds 255, the most a uint8_t count can hold"
 #endif
 
+/* Longest timeout_ms: half the tick range, so that poll can tell an old
+ * activity from one later than the time it read. */
+#define POWER_MANAGER_MAX_TIMEOUT_MS  0x7FFFFFFFu
+
 /* ---------- error codes ---------- */
 
 typedef enum {
@@ -100,7 +104,8 @@ power_manager_err_t power_manager_init(power_manager_t *pm,
  * Register a voter (module that can veto sleep).
  * @param name       Human-readable label (for debug)
  * @param max_sleep  Deepest sleep this voter allows when active
- * @param timeout_ms Activity auto-expires after this (0 = no timeout)
+ * @param timeout_ms Activity auto-expires after this (0 = no timeout),
+ *                   at most POWER_MANAGER_MAX_TIMEOUT_MS
  * @param id_out     Receives voter ID (0-based index) for activity/release
  * @thread_safe: no @isr_safe: no
  */
@@ -110,10 +115,15 @@ power_manager_err_t power_manager_register(power_manager_t *pm,
                                            uint32_t timeout_ms,
                                            uint8_t *id_out);
 
-/** Mark voter as busy (prevents sleep beyond voter's max_sleep). @thread_safe: no @isr_safe: yes */
+/**
+ * Mark voter as busy (prevents sleep beyond voter's max_sleep).
+ * Not for interrupts: it calls get_tick_ms, and poll has no protection
+ * against it.  An ISR can set a flag for the main loop to report.
+ * @thread_safe: no @isr_safe: no
+ */
 power_manager_err_t power_manager_activity(power_manager_t *pm, uint8_t voter_id);
 
-/** Mark voter as idle (no longer blocking sleep). @thread_safe: no @isr_safe: yes */
+/** Mark voter as idle (no longer blocking sleep). @thread_safe: no @isr_safe: no */
 power_manager_err_t power_manager_release(power_manager_t *pm, uint8_t voter_id);
 
 /**

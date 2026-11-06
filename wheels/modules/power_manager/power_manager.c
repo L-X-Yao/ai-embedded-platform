@@ -40,6 +40,7 @@ power_manager_err_t power_manager_register(power_manager_t *pm,
     if (!pm || !id_out) return POWER_MANAGER_ERR_PARAM;
     if (pm->voter_count >= POWER_MANAGER_MAX_VOTERS) return POWER_MANAGER_ERR_FULL;
     if ((unsigned)max_sleep >= POWER_LEVEL_COUNT) return POWER_MANAGER_ERR_PARAM;
+    if (timeout_ms > POWER_MANAGER_MAX_TIMEOUT_MS) return POWER_MANAGER_ERR_PARAM;
 
     uint8_t id = pm->voter_count;
     power_voter_t *v = &pm->voters[id];
@@ -84,7 +85,9 @@ power_level_t power_manager_poll(power_manager_t *pm)
         power_voter_t *v = &pm->voters[i];
 
         if (v->active && v->timeout_ms > 0) {
-            if ((t - v->last_activity_ms) >= v->timeout_ms) {
+            /* Past half the range the activity is later than t, not old */
+            uint32_t elapsed = t - v->last_activity_ms;
+            if (elapsed >= v->timeout_ms && elapsed <= POWER_MANAGER_MAX_TIMEOUT_MS) {
                 v->active = false;
             }
         }
