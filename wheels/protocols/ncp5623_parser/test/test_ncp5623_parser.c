@@ -362,6 +362,37 @@ TEST(test_register_address_boundaries)
     ASSERT_TRUE(send_transaction(&p, regFF, 4, &evt) == NCP5623_EVT_NONE);
 }
 
+TEST(test_reads_toshiba_led_traffic)
+{
+    /* AP_Notify/ToshibaLED_I2C.cpp at address 0x55: register 0x04 gets 0x03,
+     * then { 0x01, b >> 4, g / 16, r / 16 } goes out in one transfer. */
+    static const uint8_t enable[] = {0x04, 0x03};
+    static const uint8_t color[] = {0x01, 0x0F, 0x08, 0x01};
+    ncp5623_parser_t p;
+    ncp5623_evt_t evt;
+    ncp5623_parser_init(&p);
+
+    ASSERT_TRUE(send_transaction(&p, enable, 2, &evt) == NCP5623_EVT_ENABLE);
+    ASSERT_TRUE(send_transaction(&p, color, 4, &evt) == NCP5623_EVT_COLOR);
+    ASSERT_EQ(evt.data.color.b, 0x0F);
+    ASSERT_EQ(evt.data.color.g, 0x08);
+    ASSERT_EQ(evt.data.color.r, 0x01);
+}
+
+TEST(test_real_ncp5623_traffic_gives_no_events)
+{
+    /* AP_Notify/NCP5623.cpp sends one byte per transfer, made of
+     * (reg & 0xE0) | (data & 0x1F): enable, then the three PWM registers. */
+    static const uint8_t bytes[] = {0x3F, 0x5F, 0x7F, 0x9F};
+    ncp5623_parser_t p;
+    ncp5623_parser_init(&p);
+
+    for (int i = 0; i < 4; i++) {
+        ASSERT_TRUE(send_transaction(&p, &bytes[i], 1, NULL) == NCP5623_EVT_NONE);
+    }
+    ASSERT_TRUE(p.enabled == 0);
+}
+
 TEST_MAIN("ncp5623_parser")
     RUN(test_init);
     RUN(test_enable);
@@ -383,5 +414,7 @@ TEST_MAIN("ncp5623_parser")
     RUN(test_rapid_enable_disable_enable);
     RUN(test_enable_non_standard_value);
     RUN(test_register_address_boundaries);
+    RUN(test_reads_toshiba_led_traffic);
+    RUN(test_real_ncp5623_traffic_gives_no_events);
 TEST_MAIN_END()
 

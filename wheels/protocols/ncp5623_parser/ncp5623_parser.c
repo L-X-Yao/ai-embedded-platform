@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 /*
- * ncp5623_parser — NCP5623 I2C LED driver command parser
+ * ncp5623_parser — ToshibaLED (TCA62724) I2C LED command parser
  *
  * Layer:   L2
  * Status:  candidate
