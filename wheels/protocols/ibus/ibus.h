@@ -9,6 +9,8 @@
  *
  * 32-byte frame: length(0x20) + type(0x40) + 14 channels (16-bit LE) + checksum.
  * Channel range: 1000-2000 (center 1500, like standard RC PWM).
+ * Each channel is the low 12 bits of its word. ibus_decode drops the top
+ * nibble, where newer receivers carry channels 15 to 18.
  * Pure C99, no heap, no OS.
  */
 

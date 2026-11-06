@@ -12,6 +12,12 @@
 #define IBUS_HEADER_LEN  0x20
 #define IBUS_HEADER_TYPE 0x40
 
+/*
+ * A channel is the low 12 bits of its word. Newer receivers carry channels
+ * 15 to 18 in the top nibbles, so a valid frame can have them set.
+ */
+#define IBUS_CHANNEL_HI_MASK 0x0F
+
 uint16_t ibus_checksum(const uint8_t *data, size_t len)
 {
     uint16_t sum = 0xFFFF;
@@ -38,7 +44,8 @@ ibus_err_t ibus_decode(const uint8_t *data, size_t len, ibus_frame_t *out)
 
     for (int i = 0; i < IBUS_NUM_CHANNELS; i++) {
         size_t off = 2 + (size_t)i * 2;
-        out->channels[i] = (uint16_t)((uint16_t)data[off + 1] << 8 | data[off]);
+        out->channels[i] = (uint16_t)((uint16_t)(data[off + 1] & IBUS_CHANNEL_HI_MASK) << 8 |
+                                      data[off]);
     }
 
     return IBUS_OK;

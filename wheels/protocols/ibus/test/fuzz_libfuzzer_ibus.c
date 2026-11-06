@@ -2,7 +2,8 @@
 // LibFuzzer harness for ibus -- coverage-guided fuzzing
 //
 // Decodes the input as raw bytes, then writes the header and checksum so channel
-// data always reaches the decoder. Decoded frames have to encode back unchanged.
+// data always reaches the decoder. Decoded frames have to encode back unchanged,
+// apart from the top nibble of each channel, which the decoder drops.
 //
 // Compile: clang -fsanitize=fuzzer,address,undefined -I.. fuzz_libfuzzer_ibus.c ../ibus.c -o fuzz_ibus
 // Run:     ./fuzz_ibus -max_total_time=60 corpus_ibus/
@@ -29,6 +30,13 @@ static void check_wrapped(const uint8_t *data, size_t size, uint8_t *wire, uint8
 
     if (ibus_encode(&frame, again, IBUS_FRAME_LEN - 1) != IBUS_ERR_SHORT) __builtin_trap();
     if (ibus_encode(&frame, again, IBUS_FRAME_LEN) != IBUS_OK) __builtin_trap();
+    for (int i = 0; i < IBUS_NUM_CHANNELS; i++) {
+        if (frame.channels[i] > 0x0FFF) __builtin_trap();
+        wire[3 + i * 2] &= 0x0F;
+    }
+    sum = ibus_checksum(wire, IBUS_FRAME_LEN - 2);
+    wire[IBUS_FRAME_LEN - 2] = (uint8_t)(sum & 0xFF);
+    wire[IBUS_FRAME_LEN - 1] = (uint8_t)(sum >> 8);
     if (memcmp(wire, again, IBUS_FRAME_LEN) != 0) __builtin_trap();
 
     // A flipped channel bit moves the sum, so the checksum has to catch it.
