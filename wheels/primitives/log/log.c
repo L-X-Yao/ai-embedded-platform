@@ -110,7 +110,7 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
         return;
     }
 
-    /* per-call stack buffer => thread-safe without locks */
+    /* per-call stack buffer: formatting needs no lock, the sinks may (log.h) */
     char buf[LOG_LINE_BUFSIZE];
     int pos = 0;
     int rem = (int)sizeof(buf);
