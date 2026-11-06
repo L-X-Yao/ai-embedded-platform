@@ -25,6 +25,25 @@
 #   define LOG_LINE_BUFSIZE    256
 #endif
 
+/* Formatter: libc, or printf_tiny for less stack, see log_emit in log.h */
+#ifndef LOG_USE_PRINTF_TINY
+#   define LOG_USE_PRINTF_TINY 0
+#endif
+
+#if LOG_USE_PRINTF_TINY
+#   include "printf_tiny.h"
+#   if LOG_LINE_BUFSIZE > 65535
+#       error "printf_tiny takes a 16-bit size: LOG_LINE_BUFSIZE is too large"
+#   endif
+#   define LOG_SNPRINTF(buf, size, ...) \
+        snprintf_tiny((buf), (uint16_t)(size), __VA_ARGS__)
+#   define LOG_VSNPRINTF(buf, size, fmt, ap) \
+        vsnprintf_tiny((buf), (uint16_t)(size), (fmt), (ap))
+#else
+#   define LOG_SNPRINTF(buf, size, ...)      snprintf((buf), (size), __VA_ARGS__)
+#   define LOG_VSNPRINTF(buf, size, fmt, ap) vsnprintf((buf), (size), (fmt), (ap))
+#endif
+
 /* ======================================================================
  * State
  * ====================================================================== */
@@ -120,7 +139,7 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     uint32_t (*time_fn)(void) = g_time_fn;
     if (time_fn) {
         uint32_t ts = time_fn();
-        n = snprintf(buf + pos, (size_t)rem, "[%08u] ", (unsigned)ts);
+        n = LOG_SNPRINTF(buf + pos, (size_t)rem, "[%08u] ", (unsigned)ts);
         if (n > 0) {
             int adv = n < rem ? n : rem - 1;
             pos += adv; rem -= adv;
@@ -130,8 +149,8 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     /* Level + module */
     char lvl_char = ((unsigned)level < sizeof(LOG_LEVEL_CHAR))
                     ? LOG_LEVEL_CHAR[(unsigned)level] : '?';
-    n = snprintf(buf + pos, (size_t)rem, "[%c] [%s] ",
-                 lvl_char, module ? module : "-");
+    n = LOG_SNPRINTF(buf + pos, (size_t)rem, "[%c] [%s] ",
+                     lvl_char, module ? module : "-");
     if (n > 0) {
         int adv = n < rem ? n : rem - 1;
         pos += adv; rem -= adv;
@@ -140,7 +159,7 @@ void log_emit(log_level_t level, const char *module, const char *fmt, ...) {
     /* User message */
     va_list ap;
     va_start(ap, fmt);
-    n = vsnprintf(buf + pos, (size_t)rem, fmt, ap);
+    n = LOG_VSNPRINTF(buf + pos, (size_t)rem, fmt, ap);
     va_end(ap);
     if (n > 0) {
         if (n >= rem) {

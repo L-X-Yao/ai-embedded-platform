@@ -38,6 +38,21 @@ add_test(NAME log_tests COMMAND test_log)
 add_test(NAME log_null_tests COMMAND test_null_log)
 add_test(NAME log_boundary_tests COMMAND test_boundary_log)
 
+# log.c with printf_tiny as its formatter, which is optional.
+add_executable(test_log_tiny
+    test_log_tiny.c
+    ../log.c
+    ../../printf_tiny/printf_tiny.c
+)
+target_compile_definitions(test_log_tiny PRIVATE LOG_USE_PRINTF_TINY=1)
+target_include_directories(test_log_tiny PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../printf_tiny
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_log_tiny PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME log_tiny_tests COMMAND test_log_tiny)
+
 # One build per LOG_LEVEL_MAX, each told how many levels must survive.
 function(add_log_max_test name max expected)
     add_executable(${name} test_log_max.c ../log.c)

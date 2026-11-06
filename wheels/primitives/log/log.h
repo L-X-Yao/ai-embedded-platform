@@ -150,6 +150,21 @@ void log_set_time_fn(uint32_t (*fn)(void));
  * must serialise log_emit. log_ringbuf, log_dedup, log_rate and log_flash
  * are not reentrant. Sinks must not be added or removed after init.
  *
+ * Stack: log_emit holds a LOG_LINE_BUFSIZE buffer while the formatter and then
+ * each sink run on top of it, so one call needs the buffer and the deeper of
+ * the two. Measured in bytes with -Os on a Cortex-M4, transport not counted:
+ *
+ *   formatter     no-op sink, %d %s   no-op sink, %.2f   log_color, %d %s
+ *   newlib        816                 1008               856
+ *   newlib-nano   720                 1024               856
+ *   printf_tiny   496                 no float           856
+ *
+ * Size every task that logs for this plus its own frames, an interrupt frame
+ * and the transport: a 1 KB task has little left. To cut the formatter, build
+ * log.c with LOG_USE_PRINTF_TINY=1 and link printf_tiny.c. That helps only
+ * while no sink is deeper, as log_color shows, and the first conversion
+ * printf_tiny lacks ends formatting: see printf_tiny.h.
+ *
  * @thread_safe: caller_must_lock (unless every sink is reentrant, see above)
  * @isr_safe: no (vsnprintf, and a LOG_LINE_BUFSIZE stack buffer)
  * ====================================================================== */
