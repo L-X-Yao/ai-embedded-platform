@@ -779,6 +779,98 @@ TEST(test_block0_size_past_32_bits_saturates)
     ASSERT_EQ(size_from_header("18446744073709551616"), UINT32_MAX);
 }
 
+/* A lost ACK makes the sender repeat the block: it is ACKed, not written twice. */
+TEST(test_duplicate_block_reacked)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "dup.bin", 256);
+    feed_bytes(&ym, frame, 133);
+
+    build_soh_data_frame(frame, 1, 0x11);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(g_written.count, 1);
+
+    int sent = g_sent.count;
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+    ASSERT_EQ(g_written.count, 1);
+    ASSERT_EQ(g_sent.count, sent + 1);
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_ACK);
+
+    /* The transfer carries on with the next block in its place. */
+    build_soh_data_frame(frame, 2, 0x22);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(g_written.count, 2);
+    ASSERT_EQ(g_written.offsets[1], 128);
+    ASSERT_EQ(g_written.data[1][0], 0x22);
+}
+
+TEST(test_duplicate_block0_reacked)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "dup.bin", 256);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+
+    int sent = g_sent.count;
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
+    ASSERT_EQ(g_file_start.count, 1);
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_ACK);
+}
+
+TEST(test_two_file_batch_resets_per_file)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    /* File one: 200 bytes in two blocks, the second trimmed to 72. */
+    uint8_t frame[133];
+    build_block0(frame, "one.bin", 200);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 2, 0x22);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(g_written.count, 2);
+    ASSERT_EQ(g_written.lens[1], 72);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+
+    /* File two starts at offset 0, with its own name, size and numbering. */
+    build_block0(frame, "two.bin", 100);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(g_file_start.count, 2);
+    ASSERT_STR_EQ(ymodem_get_filename(&ym), "two.bin");
+    ASSERT_EQ(ymodem_get_file_size(&ym), 100);
+
+    build_soh_data_frame(frame, 1, 0x33);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(g_written.count, 3);
+    ASSERT_EQ(g_written.offsets[2], 0);
+    ASSERT_EQ(g_written.lens[2], 100);
+    ASSERT_EQ(g_written.data[2][0], 0x33);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    build_empty_block0(frame);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_DONE);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_COMPLETE);
+}
+
 TEST_MAIN("ymodem")
     RUN(test_init_null_params);
     RUN(test_init_ok);
@@ -806,4 +898,7 @@ TEST_MAIN("ymodem")
     RUN(test_block0_name_without_terminator_refused);
     RUN(test_block0_size_at_32_bit_limit);
     RUN(test_block0_size_past_32_bits_saturates);
+    RUN(test_duplicate_block_reacked);
+    RUN(test_duplicate_block0_reacked);
+    RUN(test_two_file_batch_resets_per_file);
 TEST_MAIN_END()
