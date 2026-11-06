@@ -123,7 +123,8 @@ typedef struct {
 bencode_err_t bencode_decoder_init(bencode_decoder_t *dec,
                                    const uint8_t *data, size_t len);
 
-/** Decode next token. Returns BENCODE_ERR_END when input is exhausted.
+/** Decode next token. Returns BENCODE_ERR_END when input is exhausted with
+ *  every list and dict closed, BENCODE_ERR_MALFORMED if one is still open.
  *  @thread_safe: caller_must_lock */
 bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
                                   bencode_token_t *token);

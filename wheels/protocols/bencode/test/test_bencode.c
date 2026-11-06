@@ -377,6 +377,49 @@ TEST(test_depth_limit_refuses_one_level_more)
     }
 }
 
+TEST(test_input_ending_inside_a_list_is_malformed)
+{
+    static const uint8_t in[] = "li1e";
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+
+    ASSERT_EQ(bencode_decoder_init(&dec, in, sizeof(in) - 1), BENCODE_OK);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_LIST_BEGIN);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_INT);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
+    /* Asking again must not turn the truncated input into a complete one */
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
+}
+
+TEST(test_input_ending_inside_a_dict_is_malformed)
+{
+    static const uint8_t in[] = "d3:foo";
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+
+    ASSERT_EQ(bencode_decoder_init(&dec, in, sizeof(in) - 1), BENCODE_OK);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_DICT_BEGIN);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    ASSERT_EQ(tok.type, BENCODE_TOKEN_STRING);
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_MALFORMED);
+}
+
+TEST(test_closed_list_still_ends_with_end)
+{
+    static const uint8_t in[] = "li1ee";
+    bencode_decoder_t dec;
+    bencode_token_t tok;
+
+    ASSERT_EQ(bencode_decoder_init(&dec, in, sizeof(in) - 1), BENCODE_OK);
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_OK);
+    }
+    ASSERT_EQ(bencode_decode_next(&dec, &tok), BENCODE_ERR_END);
+}
+
 TEST_MAIN("bencode")
     RUN(test_encode_int_positive);
     RUN(test_encode_int_zero);
@@ -401,4 +444,7 @@ TEST_MAIN("bencode")
     RUN(test_end_with_nothing_open_is_malformed);
     RUN(test_deepest_dict_ends_as_dict);
     RUN(test_depth_limit_refuses_one_level_more);
+    RUN(test_input_ending_inside_a_list_is_malformed);
+    RUN(test_input_ending_inside_a_dict_is_malformed);
+    RUN(test_closed_list_still_ends_with_end);
 TEST_MAIN_END()

@@ -172,8 +172,9 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
     if (!dec || !token)
         return BENCODE_ERR_PARAM;
 
+    /* A list or dict still open means the input was cut short */
     if (dec->pos >= dec->len)
-        return BENCODE_ERR_END;
+        return (dec->depth == 0) ? BENCODE_ERR_END : BENCODE_ERR_MALFORMED;
 
     uint8_t ch = dec->data[dec->pos];
 
