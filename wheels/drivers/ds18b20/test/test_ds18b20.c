@@ -588,6 +588,89 @@ TEST(test_read_zero_celsius)
     ASSERT_NEAR(temp, 0.0f, 0.01f);
 }
 
+/* --- reduced resolution ---
+ * p.3: "For 11-bit resolution, bit 0 is undefined. For 10-bit resolution,
+ * bits 1 and 0 are undefined, and for 9-bit resolution bits 2, 1, and 0 are
+ * undefined." Each frame below has those bits set. Table 1 gives the rest:
+ * 0008h is +0.5 and FFF8h is -0.5. */
+
+static void setup_scratchpad_config(uint16_t raw, uint8_t config)
+{
+    setup_scratchpad((int16_t)raw);
+    mock_scratchpad[4] = config;
+    mock_scratchpad[8] = ref_crc8(mock_scratchpad, 8);
+}
+
+TEST(test_9bit_drops_undefined_bits)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    float temp;
+
+    setup_scratchpad_config(0x000F, 0x1F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.5f, 0.001f);
+
+    setup_scratchpad_config(0xFFFF, 0x1F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, -0.5f, 0.001f);
+}
+
+TEST(test_10bit_drops_undefined_bits)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    float temp;
+
+    setup_scratchpad_config(0x000B, 0x3F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.5f, 0.001f);
+
+    /* bit 2 is defined at 10 bits and worth 0.25 */
+    setup_scratchpad_config(0x0007, 0x3F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.25f, 0.001f);
+}
+
+TEST(test_11bit_drops_undefined_bit)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    float temp;
+
+    setup_scratchpad_config(0x0009, 0x5F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.5f, 0.001f);
+
+    /* bit 1 is defined at 11 bits and worth 0.125 */
+    setup_scratchpad_config(0x0003, 0x5F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.125f, 0.001f);
+}
+
+TEST(test_12bit_keeps_every_bit)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    float temp;
+
+    setup_scratchpad_config(0x0191, 0x7F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 25.0625f, 0.001f);
+
+    setup_scratchpad_config(0xFE6F, 0x7F);
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, -25.0625f, 0.001f);
+}
+
 TEST_MAIN("ds18b20")
     RUN(test_init_null);
     RUN(test_read_25c);
@@ -627,4 +710,8 @@ TEST_MAIN("ds18b20")
     RUN(test_set_resolution_all_values);
     RUN(test_read_min_temperature);
     RUN(test_read_zero_celsius);
+    RUN(test_9bit_drops_undefined_bits);
+    RUN(test_10bit_drops_undefined_bits);
+    RUN(test_11bit_drops_undefined_bit);
+    RUN(test_12bit_keeps_every_bit);
 TEST_MAIN_END()

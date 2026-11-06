@@ -18,6 +18,11 @@
 #define CMD_READ_SCRATCHPAD  0xBE
 #define CMD_WRITE_SCRATCHPAD 0x4E
 
+/* Configuration register: R1 R0 in bits 6 and 5, 0 for 9 bits to 3 for 12. */
+#define CONFIG_RES_SHIFT     5u
+#define CONFIG_RES_MASK      0x03u
+#define CONFIG_RES_12BIT     3u
+
 /* CRC = X8 + X5 + X4 + 1, written for a register that shifts right. */
 #define CRC8_POLY_REFLECTED  0x8C
 
@@ -112,7 +117,13 @@ ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c)
     if (ds18b20_crc8(sp, 8) != sp[8])
         return DS18B20_ERR_CRC;
 
-    int16_t raw = (int16_t)((uint16_t)sp[1] << 8 | sp[0]);
+    /* Below 12-bit resolution the lowest bits are undefined: one per step. */
+    unsigned res_steps = ((unsigned)sp[4] >> CONFIG_RES_SHIFT) & CONFIG_RES_MASK;
+    unsigned undefined_bits = CONFIG_RES_12BIT - res_steps;
+    uint16_t bits = (uint16_t)((uint16_t)sp[1] << 8 | sp[0]);
+    bits = (uint16_t)(bits & (uint16_t)(0xFFFFu << undefined_bits));
+
+    int16_t raw = (int16_t)bits;
     *temp_c = (float)raw / 16.0f;
     ENSURE(*temp_c == *temp_c);  /* not NaN */
     return DS18B20_OK;
