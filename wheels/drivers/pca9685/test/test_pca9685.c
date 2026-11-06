@@ -394,6 +394,27 @@ TEST(test_set_freq_writes_restart_after_500us)
     ASSERT_GE(mode1_log_ms[2] - mode1_log_ms[1], 1);
 }
 
+/* p.14: "No PWM control is possible when the oscillator is off", so one failed
+ * write must not leave every output stopped. The prescaler stays round(25 MHz /
+ * (4096 * 50)) - 1. */
+TEST(test_failed_prescale_write_wakes_the_chip)
+{
+    mock_reset();
+    pca9685_init(&dev, &log_i2c, 0x40, 50);
+    mode1_log_len = 0;
+
+    mock_fail_at = mock_op_count + 2;  /* read MODE1, write SLEEP, then this */
+    ASSERT_EQ(pca9685_set_freq(&dev, 200), PCA9685_ERR_I2C);
+
+    ASSERT_FALSE(mock_regs[REG_MODE1] & MODE1_SLEEP);
+    ASSERT_EQ(mode1_log_len, 3);
+    ASSERT_EQ(mode1_log[1] & (MODE1_SLEEP | MODE1_RESTART), 0);
+    ASSERT_EQ(mode1_log[2] & (MODE1_SLEEP | MODE1_RESTART), MODE1_RESTART);
+    ASSERT_GE(mode1_log_ms[2] - mode1_log_ms[1], 1);
+    ASSERT_EQ(mock_regs[REG_PRE_SCALE], 121);
+    ASSERT_EQ(dev.freq_hz, 50);
+}
+
 /* p.14: "User writes logic 1 to this bit to clear it to logic 0. A user write
  * of logic 0 will have no effect." A sleep that finds RESTART set, as a second
  * sleep does, must write 0 there or wake has nothing left to restart. 0xB1 is
@@ -476,6 +497,7 @@ TEST_MAIN("pca9685")
     RUN(test_mock_channels_reset_to_full_off);
     RUN(test_wake_writes_restart_after_500us);
     RUN(test_set_freq_writes_restart_after_500us);
+    RUN(test_failed_prescale_write_wakes_the_chip);
     RUN(test_sleep_writes_restart_as_zero);
     RUN(test_i2c_failure);
 TEST_MAIN_END()
