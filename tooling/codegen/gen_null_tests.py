@@ -3,8 +3,11 @@
 
 For each wheel with a public .h file, parses function declarations that accept
 pointer parameters and generates a test_null_<name>.c that passes NULL for each
-pointer param (one test per pointer param), asserting the function returns an
-error code or at least does not crash.
+pointer param (one test per pointer param). A function returning <x>_err_t must
+answer with anything but <X>_OK, unless NULL_ACCEPTED says NULL is part of its
+contract; every other function only has to survive the call.
+
+Regenerating replaces the whole file, so hand edits in it are lost.
 
 Usage:
     python tooling/codegen/gen_null_tests.py [--dry-run]
@@ -26,6 +29,40 @@ from _wheel_parser import (
     scalar_default,
     discover_wheels,
 )
+
+# ---------------------------------------------------------------------------
+# What a NULL has to do
+# ---------------------------------------------------------------------------
+
+# (function, parameter): NULL is part of the contract, so the call only has to
+# survive. Each entry was read against the wheel's header and source.
+NULL_ACCEPTED = {
+    ("cli_shell_init", "io"): "a shell with no io stays silent",
+    ("cli_shell_init", "prompt"): "the prompt is optional",
+    ("config_store_init", "storage"): "no storage means no persistence",
+    ("event_bus_publish", "data"): "the payload is passed on unread",
+    ("hex_decode", "out"): "nothing is written when hex_len is 0",
+    ("param_table_define", "default_val"): "a parameter may start empty",
+    ("power_manager_register", "name"): "the name is only a debug label",
+}
+
+LENGTH_PARAM_RE = re.compile(
+    r"^(?:len|length|size|count|n|num|\w+_(?:len|length|size|count|bytes))$"
+)
+
+
+def is_length_param(param) -> bool:
+    """True for a scalar that gives the size of the pointer before it."""
+    return (not param.is_pointer and not param.is_func_ptr
+            and bool(LENGTH_PARAM_RE.match(param.name or "")))
+
+
+def ok_constant(return_type: str, header_text: str) -> str:
+    """Name the success value of an <x>_err_t, or 0 if the header has no <X>_OK."""
+    m = re.search(r"(\w+)_err_t", return_type)
+    ok = f"{m.group(1).upper()}_OK" if m else ""
+    return ok if ok and re.search(rf"\b{ok}\b", header_text) else "0"
+
 
 # ---------------------------------------------------------------------------
 # Default value generation for non-NULL params
@@ -93,6 +130,7 @@ def generate_test_file(wheel: WheelInfo) -> str:
     name = wheel.name
     lines = []
     test_names = []
+    header_text = read_header(wheel.header_path)
 
     lines.append("// SPDX-License-Identifier: MIT")
     lines.append(f"// Auto-generated NULL parameter tests for {name}")
@@ -162,6 +200,10 @@ def generate_test_file(wheel: WheelInfo) -> str:
                         call_args.append(f"&{var}")
                 elif param.is_func_ptr:
                     call_args.append("NULL")
+                elif i == null_idx + 1 and is_length_param(param):
+                    # NULL with length 0 is a valid empty buffer in many APIs,
+                    # so only a non-zero length tests the rejection.
+                    call_args.append("1")
                 else:
                     call_args.append(scalar_default(param.type_text))
 
@@ -169,8 +211,13 @@ def generate_test_file(wheel: WheelInfo) -> str:
                 lines.append(dl)
 
             args_str = ", ".join(call_args)
-            lines.append(f"    (void){func.name}({args_str});")
-            lines.append(f"    /* must not crash */")
+            accepted = NULL_ACCEPTED.get((func.name, pname))
+            if ret_class == 'err_t' and accepted is None:
+                ok = ok_constant(func.return_type, header_text)
+                lines.append(f"    ASSERT_TRUE({func.name}({args_str}) != {ok});")
+            else:
+                lines.append(f"    (void){func.name}({args_str});")
+                lines.append(f"    /* must not crash{': ' + accepted if accepted else ''} */")
             lines.append("}")
             lines.append("")
 
