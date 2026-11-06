@@ -61,11 +61,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_nmea_parser
 ```
 
-179 assertions across 55 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (position/quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion, value limits.
+203 assertions across 62 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (position/quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion, value limits, plain decimals only, long digit fields, bit-for-bit match with strtof.
 
 ## Test status
 
-- Unit tests (sim): PASS (55 C tests, 179 assertions)
+- Unit tests (sim): PASS (62 C tests, 203 assertions)
 - HIL: N/A
 
 ## API convention deviations
@@ -106,6 +106,12 @@ A value outside them is ignored: its field keeps what it had, a bad course also 
 `course_valid`, and the call still returns `NMEA_PARSER_OK`. An empty field still counts
 as 0, except a GGA position field, which keeps the old value. In RMC, latitude and
 longitude out of range still parse to 0.
+
+A decimal field is a sign, digits and at most one point, up to the field end. Anything
+else in it (`1e2`, `0x10`, `12abc`, `nan`, `inf`, a space) counts as out of range. Digits
+past the 15th are dropped, which can move the result by one float step at most, and
+before the point they put the number past every limit. The parser uses no heap and no
+libc float parsing, and for fields a receiver sends it gives what `strtof` gives.
 
 ## API review
 
