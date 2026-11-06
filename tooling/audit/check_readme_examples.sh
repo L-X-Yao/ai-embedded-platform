@@ -348,14 +348,7 @@ hard_error_lines() {
 # list only postpones: nobody has reviewed or approved these. They stay SKIP
 # as long as a stale API is their only hard error. Delete an entry once its
 # README is fixed; the run prints a note when an entry has gone clean.
-PENDING_README_FIXES=(
-    drivers/bh1750
-    drivers/hmc5883l
-    drivers/mpu6050
-    drivers/qmi8658a
-    modules/config_store
-    protocols/modbus_rtu
-)
+PENDING_README_FIXES=()
 
 is_pending_readme() {
     local label="$1" entry
