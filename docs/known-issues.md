@@ -51,6 +51,17 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Super audit, first fixes (2026-11-06)
+
+The tenth super audit covered wheels, tooling, CI, portability, memory safety, numerics, tests and licences. It found about 35 critical and 210 moderate candidates. So far 57 are fixed, each proved by a failing test or a forced failure first, and none of those proved wrong. The rest are still open, and the docs, security and HAL port slice has to be redone.
+
+- Checks that could not fail: `test_all.sh` ran one executable per wheel, so 100 of 944 test targets never ran in `make check`. It now runs all of them, and all pass. `--parallel` lost pytest results, `audit_compile.py` could not see warnings, `audit_coverage.py` measured the test file, `audit_deep.sh` skipped failed builds, and `build_flash_check.sh` and `hil_runner.py` could report a pass after a failed run.
+- Memory safety: `lorawan_build_data` wrapped its length check, `mqtt_client` overran its buffer when a callback reconnected, `soft_timer_start` accepted a destroyed slot, `memory_pool_init` took misaligned buffers, and `config_store` and `error_handler` trusted what they loaded from flash.
+- Wrong results: `fp_to_string` at 5 places, `crc_any` below 8 bits, `stepper` ramps, `hdlc` on shared flags, `json_parser` state, and `heatshrink` finish.
+- Storage: `flash_journal` lost appends after a torn write, and `flash_ring_init` accepted layouts that destroy live frames.
+
+Still open and serious: `flash_ring` reads a full ring as empty and overwrites cells after a reset, `framebuffer_line` can hang, and `gnss_datetime_to_unix` reads out of bounds. `hmac_sha256_t` can HardFault on Cortex-M, `ring_buffer` and `fifo_queue` lose data in their ISR use, and `xmodem` can accept a truncated file. The last three need an API change.
+
 ## High-severity suspects settled from second sources (2026-11-06)
 
 17 suspects went to vendor application notes, vendor drivers, Linux, Zephyr and mainstream libraries: 16 confirmed, 1 dismissed. None of this has run on hardware.
