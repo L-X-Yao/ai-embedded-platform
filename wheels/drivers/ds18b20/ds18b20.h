@@ -56,16 +56,16 @@ typedef struct {
 /** @thread_safe: no @isr_safe: no */
 ds18b20_err_t ds18b20_init(ds18b20_t *dev, const ds18b20_ow_t *ow);
 
-/** Read 64-bit ROM code from single device on bus. @thread_safe: no @isr_safe: yes */
+/** Read 64-bit ROM code from single device on bus. @thread_safe: no @isr_safe: no */
 ds18b20_err_t ds18b20_read_rom(ds18b20_t *dev);
 
-/** Issue convert command; caller must wait for conversion time. @thread_safe: no @isr_safe: yes */
+/** Issue convert command; caller must wait for conversion time. @thread_safe: no @isr_safe: no */
 ds18b20_err_t ds18b20_start_conversion(ds18b20_t *dev);
 
-/** Read scratchpad and return temperature in degrees Celsius. @thread_safe: no @isr_safe: yes */
+/** Read scratchpad and return temperature in degrees Celsius. @thread_safe: no @isr_safe: no */
 ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c);
 
-/** Set conversion resolution (9-12 bits). @thread_safe: no @isr_safe: yes */
+/** Set conversion resolution (9-12 bits). @thread_safe: no @isr_safe: no */
 ds18b20_err_t ds18b20_set_resolution(ds18b20_t *dev, ds18b20_resolution_t res);
 
 /** Compute Dallas/Maxim 1-Wire CRC8 over data buffer. @thread_safe: yes @isr_safe: yes */
