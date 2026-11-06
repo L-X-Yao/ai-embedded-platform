@@ -269,6 +269,26 @@ TEST(test_create_full_returns_err_full)
     ASSERT_EQ(overflow, SOFT_TIMER_ERR_FULL);
 }
 
+TEST(test_destroyed_slot_refuses_start_stop_reset)
+{
+    setup();
+    /* A slot below the high-water mark that holds no timer must not be
+     * armed: the next tick would call a NULL callback. */
+    int id = soft_timer_create(&mgr, 5, SOFT_TIMER_REPEAT, test_callback, NULL);
+    ASSERT_EQ(soft_timer_destroy(&mgr, id), SOFT_TIMER_OK);
+
+    ASSERT_EQ(soft_timer_start(&mgr, id), SOFT_TIMER_ERR_PARAM);
+    ASSERT_EQ(soft_timer_stop(&mgr, id), SOFT_TIMER_ERR_PARAM);
+    ASSERT_EQ(soft_timer_reset(&mgr, id), SOFT_TIMER_ERR_PARAM);
+    ASSERT_TRUE(!soft_timer_is_active(&mgr, id));
+
+    for (int i = 0; i < 10; i++)
+    {
+        soft_timer_tick(&mgr);
+    }
+    ASSERT_EQ(cb_count, 0);
+}
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -287,5 +307,6 @@ TEST_MAIN("soft_timer")
     RUN(test_destroy_invalid_id);
     RUN(test_destroy_slot_is_inactive);
     RUN(test_create_full_returns_err_full);
+    RUN(test_destroyed_slot_refuses_start_stop_reset);
 TEST_MAIN_END()
 
