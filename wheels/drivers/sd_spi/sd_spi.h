@@ -63,7 +63,7 @@ typedef struct {
 
 #define SD_SPI_BLOCK_SIZE  512U
 
-/* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: yes */
+/* ---------- API (all @thread_safe: caller_must_lock) ---------- */
 
 /** Initialize card (CMD0->CMD8->ACMD41->CMD58). @thread_safe: no @isr_safe: no */
 sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal);

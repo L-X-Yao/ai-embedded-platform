@@ -41,7 +41,7 @@ typedef struct {
     void    (*cs_low)(void *ctx);
     void    (*cs_high)(void *ctx);
     uint8_t (*xfer)(void *ctx, uint8_t tx);
-    void    (*delay_ms)(void *ctx, uint32_t ms);   /* required for soft reset */
+    void    (*delay_ms)(void *ctx, uint32_t ms);   /* optional: NULL skips the 50 ms wait after soft reset */
     void    *ctx;
 } rc522_spi_t;
 

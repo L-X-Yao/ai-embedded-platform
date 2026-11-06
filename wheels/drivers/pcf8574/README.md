@@ -26,7 +26,7 @@ None (I2C transport injected via callbacks).
 typedef enum {
     PCF8574_OK         =  0,
     PCF8574_ERR_I2C    = -1,
-    PCF8574_ERR_PARAMS = -2,
+    PCF8574_ERR_PARAM = -2,
 } pcf8574_err_t;
 
 typedef struct {

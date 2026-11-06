@@ -43,7 +43,7 @@ typedef struct {
     uint8_t  fport;
     bool     ack, adr;
     const uint8_t *payload;
-    uint8_t  payload_len;
+    uint16_t payload_len;
     uint8_t  mic[4];
 } lorawan_frame_t;
 
