@@ -70,9 +70,9 @@ typedef enum {
     ICM42688_ODR_50HZ   = 9,
     ICM42688_ODR_25HZ   = 10,
     ICM42688_ODR_12HZ   = 11,
-    ICM42688_ODR_6HZ    = 12,       /* accel only */
-    ICM42688_ODR_3HZ    = 13,       /* accel only */
-    ICM42688_ODR_1HZ    = 14,       /* accel only */
+    ICM42688_ODR_6HZ    = 12,       /* accel LP only: init refuses it */
+    ICM42688_ODR_3HZ    = 13,       /* accel LP only: init refuses it */
+    ICM42688_ODR_1HZ    = 14,       /* accel LP only: init refuses it */
     ICM42688_ODR_500HZ  = 15,
 } icm42688_odr_t;
 
@@ -132,7 +132,8 @@ typedef struct {
 icm42688_cfg_t   icm42688_default_cfg(void);
 
 /** Initialize and verify chip identity (WHO_AM_I == 0x47).
- *  Configures accel/gyro range and ODR per cfg.
+ *  Configures accel/gyro range and ODR per cfg and starts both sensors in
+ *  low-noise mode, so ICM42688_ODR_6HZ, 3HZ and 1HZ return ICM42688_ERR_PARAM.
  *  @thread_safe: no  @isr_safe: no */
 icm42688_err_t   icm42688_init(icm42688_t *dev,
                                 const icm42688_spi_t *spi,
