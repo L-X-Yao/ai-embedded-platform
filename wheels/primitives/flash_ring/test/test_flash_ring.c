@@ -11,6 +11,7 @@
 #define MOCK_HDR_ADDR     0
 #define MOCK_DATA_ADDR    MOCK_SECTOR_SIZE
 #define MOCK_TOTAL_SLOTS  ((MOCK_FLASH_SIZE - MOCK_SECTOR_SIZE) / MOCK_SLOT_SIZE)
+#define MOCK_SLOTS_PER_SECTOR (MOCK_SECTOR_SIZE / MOCK_SLOT_SIZE)
 
 static uint8_t g_flash[MOCK_FLASH_SIZE];
 static int g_erase_count;
@@ -19,6 +20,10 @@ static int g_read_count;
 static bool g_fail_erase;
 static bool g_fail_write;
 static bool g_fail_read;
+static int g_fail_read_after;   /* fail reads after this many, -1 = never */
+static int g_overprogram;       /* bytes programmed over cells not erased */
+#define MOCK_ERASE_LOG 512
+static uint32_t g_erase_log[MOCK_ERASE_LOG];
 
 static void mock_flash_reset(void)
 {
@@ -29,11 +34,14 @@ static void mock_flash_reset(void)
     g_fail_erase = false;
     g_fail_write = false;
     g_fail_read = false;
+    g_fail_read_after = -1;
+    g_overprogram = 0;
 }
 
 static int mock_erase(void *ctx, uint32_t addr)
 {
     (void)ctx;
+    if (g_erase_count < MOCK_ERASE_LOG) g_erase_log[g_erase_count] = addr;
     g_erase_count++;
     if (g_fail_erase) return -1;
     uint32_t end = addr + MOCK_SECTOR_SIZE;
@@ -42,13 +50,17 @@ static int mock_erase(void *ctx, uint32_t addr)
     return 0;
 }
 
+/* NOR flash: a program only clears bits, so a cell has to be erased first. */
 static int mock_write(void *ctx, uint32_t addr, const uint8_t *data, uint16_t len)
 {
     (void)ctx;
     g_write_count++;
     if (g_fail_write) return -1;
     if (addr + len > MOCK_FLASH_SIZE) return -1;
-    memcpy(&g_flash[addr], data, len);
+    for (uint16_t i = 0; i < len; i++) {
+        if (g_flash[addr + i] != 0xFF) g_overprogram++;
+        g_flash[addr + i] &= data[i];
+    }
     return 0;
 }
 
@@ -57,6 +69,7 @@ static int mock_read(void *ctx, uint32_t addr, uint8_t *buf, uint16_t len)
     (void)ctx;
     g_read_count++;
     if (g_fail_read) return -1;
+    if (g_fail_read_after >= 0 && g_read_count > g_fail_read_after) return -1;
     if (addr + len > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, &g_flash[addr], len);
     return 0;
@@ -363,8 +376,9 @@ TEST(test_init_null_read)
 }
 
 /*
- * The very first push always hits a sector boundary (write_idx=0,
- * 0 % slots_per_sector == 0). Setting g_fail_erase=true must yield ERR_IO.
+ * push erases the next sector before it programs the last slot of the current
+ * one. A failed erase must return ERR_IO, write nothing and leave write_idx
+ * where it is, so that a retry repeats the erase.
  */
 TEST(test_push_erase_fail)
 {
@@ -372,9 +386,40 @@ TEST(test_push_erase_fail)
     mock_flash_reset();
     flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
 
-    g_fail_erase = true;
     uint8_t frame[MOCK_SLOT_SIZE] = {0x11};
+    for (uint32_t i = 0; i < MOCK_SLOTS_PER_SECTOR - 1u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+
+    g_fail_erase = true;
+    uint32_t before = ring.write_idx;
+    int writes = g_write_count;
     ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(before, ring.write_idx);
+    ASSERT_EQ(writes, g_write_count);
+
+    g_fail_erase = false;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(before + 1u, ring.write_idx);
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* A failed erase may have damaged the sector: the reader must not stay in it. */
+TEST(test_failed_erase_still_moves_the_reader_on)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x31};
+    for (uint32_t i = 0; i < MOCK_TOTAL_SLOTS - 1u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(0u, ring.read_idx);
+
+    g_fail_erase = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, ring.read_idx);
 }
 
 /*
@@ -428,8 +473,8 @@ TEST(test_pop_persist_interval)
 }
 
 /*
- * Push (total_slots + 5) frames without popping. write_idx wraps to 5,
- * read_idx stays at 0. count formula: write(5) >= read(0) → 5 - 0 = 5.
+ * Push (total_slots + 5) frames without popping. The writer has erased sector
+ * 0 ahead of itself, so the oldest frame left is the first one of sector 1.
  */
 TEST(test_count_after_wrap)
 {
@@ -445,9 +490,437 @@ TEST(test_count_after_wrap)
     }
 
     ASSERT_EQ(5u, ring.write_idx);
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, ring.read_idx);
+    ASSERT_EQ(total - MOCK_SLOTS_PER_SECTOR + 5u, flash_ring_count(&ring));
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&ring, ring.read_idx, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, buf[0]);
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/*
+ * W1A-2: a ring that has gone all the way round must not read as empty.
+ * Before the fix the push that filled the last slot left write_idx on
+ * read_idx, so count was 0 and pop returned EMPTY with every frame in flash.
+ */
+TEST(test_full_ring_does_not_read_as_empty)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    for (uint32_t i = 0; i < MOCK_TOTAL_SLOTS; i++) {
+        memset(frame, (uint8_t)i, sizeof(frame));
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+        ASSERT_TRUE(flash_ring_count(&ring) > 0u);
+    }
+
+    uint32_t left = MOCK_TOTAL_SLOTS - MOCK_SLOTS_PER_SECTOR;
+    ASSERT_EQ(left, flash_ring_count(&ring));
+
+    /* Every frame left is intact, oldest first, up to the newest. */
+    uint8_t buf[MOCK_SLOT_SIZE];
+    uint32_t want = MOCK_SLOTS_PER_SECTOR;
+    while (flash_ring_count(&ring) > 0u) {
+        ASSERT_EQ(FLASH_RING_OK,
+                  flash_ring_peek(&ring, ring.read_idx, buf, MOCK_SLOT_SIZE));
+        ASSERT_EQ((uint8_t)want, buf[0]);
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+        want++;
+    }
+    ASSERT_EQ(MOCK_TOTAL_SLOTS, want);
+}
+
+/*
+ * W1A-2: a reader part way through the sector the writer is about to erase.
+ * Its frames are gone, so read_idx has to move past them, not stay on 0xFF.
+ */
+TEST(test_read_idx_leaves_a_sector_being_erased)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    for (uint32_t i = 0; i < MOCK_SLOTS_PER_SECTOR + 3u; i++) {
+        memset(frame, 0x11, sizeof(frame));
+        flash_ring_push(&ring, frame, MOCK_SLOT_SIZE);
+    }
+    /* Reader lands in sector 1, three slots in, one frame short of write_idx */
+    for (uint32_t i = 0; i < MOCK_SLOTS_PER_SECTOR + 2u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    }
+    ASSERT_EQ(1u, flash_ring_count(&ring));
+
+    /* Write up to the last slot of the sector before sector 1, a lap later */
+    while (ring.write_idx != 0u) {
+        memset(frame, 0x22, sizeof(frame));
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    for (uint32_t i = 0; i < MOCK_SLOTS_PER_SECTOR; i++) {
+        memset(frame, 0x33, sizeof(frame));
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+
+    ASSERT_EQ(2u * MOCK_SLOTS_PER_SECTOR, ring.read_idx);
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&ring, ring.read_idx, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x22, buf[0]);
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/*
+ * Q24-3: the data erases of a lap, by address. Each one has to land exactly
+ * once, on the sector after the one being finished, just before its last slot.
+ */
+TEST(test_erases_each_sector_once_per_lap)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x5A};
+    uint32_t sectors = MOCK_TOTAL_SLOTS / MOCK_SLOTS_PER_SECTOR;
+    for (uint32_t lap = 0; lap < 2u; lap++) {
+        for (uint32_t s = 0; s < sectors; s++) {
+            for (uint32_t k = 0; k < MOCK_SLOTS_PER_SECTOR; k++) {
+                int before = g_erase_count;
+                ASSERT_EQ(FLASH_RING_OK,
+                          flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+                int data_erases = 0;
+                uint32_t addr = 0;
+                for (int e = before; e < g_erase_count; e++) {
+                    if (g_erase_log[e] != MOCK_HDR_ADDR) {
+                        data_erases++;
+                        addr = g_erase_log[e];
+                    }
+                }
+                if (k + 1u < MOCK_SLOTS_PER_SECTOR) {
+                    ASSERT_EQ(0, data_erases);
+                } else {
+                    uint32_t next = (s + 1u) % sectors;
+                    ASSERT_EQ(1, data_erases);
+                    ASSERT_EQ(MOCK_DATA_ADDR + next * MOCK_SECTOR_SIZE, addr);
+                }
+            }
+        }
+    }
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* A single-sector ring would have nothing to erase ahead of itself. */
+TEST(test_init_refuses_a_single_sector_ring)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+
+    flash_ring_cfg_t bad = g_mock_cfg;
+    bad.total_slots = MOCK_SLOTS_PER_SECTOR;
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
+
+    bad.total_slots = MOCK_SLOTS_PER_SECTOR - 1u;
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
+
+    /* One slot into a second sector is the smallest ring that works. */
+    flash_ring_cfg_t ok = g_mock_cfg;
+    ok.total_slots = MOCK_SLOTS_PER_SECTOR + 1u;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &ok));
+}
+
+/* A ring on flash holding old data: push must not program over it. */
+TEST(test_fresh_ring_erases_its_first_sector)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    memset(&g_flash[MOCK_DATA_ADDR], 0xA5, MOCK_SECTOR_SIZE * 2u);
+
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x3C, sizeof(frame));
+    for (uint32_t i = 0; i < MOCK_SLOTS_PER_SECTOR + 2u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(0, g_overprogram);
+    ASSERT_EQ(0x3C, g_flash[MOCK_DATA_ADDR + MOCK_SECTOR_SIZE + MOCK_SLOT_SIZE]);
+}
+
+/*
+ * W1A-4: the header on flash is up to persist_interval pushes old. The README
+ * example uses 16: 25 pushes leave a header saying 16. Before the fix the next
+ * push programmed over slot 16 and returned OK.
+ */
+TEST(test_reset_finds_frames_newer_than_the_header)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 16;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    for (uint32_t i = 0; i < 25u; i++) {
+        memset(frame, (uint8_t)i, sizeof(frame));
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(25u, after.write_idx);
+    ASSERT_EQ(25u, flash_ring_count(&after));
+    ASSERT_EQ(25u, after.frame_count);
+
+    memset(frame, 0x2A, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&after, 25u, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x2A, buf[0]);
+}
+
+/*
+ * The header can be stale right across a sector boundary in a ring that has
+ * wrapped, where the slots ahead hold old frames. Erasing ahead is what keeps
+ * write_idx on a blank slot there.
+ */
+TEST(test_reset_on_a_sector_boundary_after_a_lap)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x44, sizeof(frame));
+    for (uint32_t i = 0; i < MOCK_TOTAL_SLOTS + MOCK_SLOTS_PER_SECTOR; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, ring.write_idx);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(ring.write_idx, after.write_idx);
+    ASSERT_EQ(ring.read_idx, after.read_idx);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* The walk replays the same rule as push, so read_idx leaves a sector the
+ * writer erased after the last header flush. */
+TEST(test_reset_moves_read_idx_out_of_an_erased_sector)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x66, sizeof(frame));
+    uint32_t to_end = MOCK_TOTAL_SLOTS - 3u;
+    for (uint32_t i = 0; i < to_end; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring)); /* read_idx 0 */
     ASSERT_EQ(0u, ring.read_idx);
-    /* write >= read → count = write - read = 5 */
-    ASSERT_EQ(5u, flash_ring_count(&ring));
+
+    for (uint32_t i = 0; i < 5u; i++) {     /* crosses into sector 0 again */
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, ring.read_idx);
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(ring.write_idx, after.write_idx);
+    ASSERT_EQ(ring.read_idx, after.read_idx);
+}
+
+/*
+ * A cut between push's erase and its program: the next sector is blank, the
+ * last slot is not written and the stored read_idx still points into the
+ * blank sector. Nothing was written, so only a check of read_idx can see it.
+ */
+TEST(test_reset_after_a_cut_between_erase_and_program)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x77, sizeof(frame));
+    for (uint32_t i = 0; i < MOCK_TOTAL_SLOTS - 1u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+    ASSERT_EQ(0u, ring.read_idx);
+
+    /* The push of the last slot gets as far as its erase and no further. */
+    g_fail_write = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_fail_write = false;
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(MOCK_TOTAL_SLOTS - 1u, after.write_idx);
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, after.read_idx);
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&after, after.read_idx, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x77, buf[0]);
+}
+
+/*
+ * An interval longer than the ring: the writer comes back round and erases the
+ * sector the stored write_idx points into, so the header has to be rewritten
+ * before that, whatever the interval says. Reset after every push of 3 laps.
+ */
+TEST(test_header_is_flushed_before_the_writer_laps_it)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.total_slots = 2u * MOCK_SLOTS_PER_SECTOR + 3u;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x4D, sizeof(frame));
+    for (uint32_t i = 0; i < 3u * cfg.total_slots; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+        flash_ring_t after;
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+        ASSERT_EQ(ring.write_idx, after.write_idx);
+    }
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* An all-0xFF frame looks blank on its own. Frames after it must still count. */
+TEST(test_reset_walks_past_an_all_ff_frame)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x10, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    memset(frame, 0xFF, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    memset(frame, 0x12, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(3u, after.write_idx);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/*
+ * The old code erased a sector on entering it, so a ring it wrapped with
+ * write_idx on a sector boundary has no blank slot anywhere. Init must make
+ * one rather than program over old frames.
+ */
+TEST(test_reset_of_a_ring_with_no_blank_slot)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    memset(&g_flash[MOCK_DATA_ADDR], 0x5C, MOCK_TOTAL_SLOTS * MOCK_SLOT_SIZE);
+    ring.write_idx = 2u * MOCK_SLOTS_PER_SECTOR;
+    ring.read_idx = 2u * MOCK_SLOTS_PER_SECTOR + 3u;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(2u * MOCK_SLOTS_PER_SECTOR, after.write_idx);
+    ASSERT_EQ(3u * MOCK_SLOTS_PER_SECTOR, after.read_idx);
+    ASSERT_EQ(ring.frame_count, after.frame_count);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x01, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* The same with write_idx part way through a sector, which only damage can do:
+ * write_idx goes back to the start of the sector init has to erase. */
+TEST(test_reset_of_a_ring_with_no_blank_slot_mid_sector)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    memset(&g_flash[MOCK_DATA_ADDR], 0x5C, MOCK_TOTAL_SLOTS * MOCK_SLOT_SIZE);
+    ring.write_idx = 2u * MOCK_SLOTS_PER_SECTOR + 5u;
+    ring.read_idx = ring.write_idx;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(2u * MOCK_SLOTS_PER_SECTOR, after.write_idx);
+    ASSERT_EQ(0u, flash_ring_count(&after));
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x02, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/* A partial last sector: what lies past the ring's end is not ring data. */
+TEST(test_blank_check_stops_at_the_end_of_the_ring)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.total_slots = 2u * MOCK_SLOTS_PER_SECTOR + 3u;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x6E, sizeof(frame));
+    for (uint32_t i = 0; i < 2u * MOCK_SLOTS_PER_SECTOR + 1u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    g_flash[MOCK_DATA_ADDR + cfg.total_slots * MOCK_SLOT_SIZE] = 0x00;
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(ring.write_idx, after.write_idx);
+}
+
+TEST(test_reset_read_error_during_the_walk)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x09};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+    g_read_count = 0;
+    g_fail_read_after = 1;              /* the header read succeeds, no more */
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_init(&after, &g_mock_io, &cfg));
 }
 
 /*
@@ -509,9 +982,25 @@ TEST_MAIN("flash_ring")
     RUN(test_init_null_write);
     RUN(test_init_null_read);
     RUN(test_push_erase_fail);
+    RUN(test_failed_erase_still_moves_the_reader_on);
     RUN(test_init_fresh_flash_erase_fail);
     RUN(test_pop_persist_interval);
     RUN(test_count_after_wrap);
+    RUN(test_full_ring_does_not_read_as_empty);
+    RUN(test_read_idx_leaves_a_sector_being_erased);
+    RUN(test_erases_each_sector_once_per_lap);
+    RUN(test_init_refuses_a_single_sector_ring);
+    RUN(test_fresh_ring_erases_its_first_sector);
+    RUN(test_reset_finds_frames_newer_than_the_header);
+    RUN(test_reset_on_a_sector_boundary_after_a_lap);
+    RUN(test_reset_moves_read_idx_out_of_an_erased_sector);
+    RUN(test_reset_after_a_cut_between_erase_and_program);
+    RUN(test_header_is_flushed_before_the_writer_laps_it);
+    RUN(test_reset_walks_past_an_all_ff_frame);
+    RUN(test_reset_of_a_ring_with_no_blank_slot);
+    RUN(test_reset_of_a_ring_with_no_blank_slot_mid_sector);
+    RUN(test_blank_check_stops_at_the_end_of_the_ring);
+    RUN(test_reset_read_error_during_the_walk);
     RUN(test_discard_io_fail);
     RUN(test_push_min_len);
 TEST_MAIN_END()
