@@ -14,6 +14,9 @@
  * - CANINTF (0x2C): interrupt flags, bit-modifiable
  * - CNF1/2/3 (0x2A/0x29/0x28): bit timing configuration
  * - OST after a RESET: SPI operations before it expires are counted
+ * - Sleep: the oscillator is stopped, so CANCTRL requests do nothing until
+ *   WAKIF is set with WAKIE set. The chip then wakes in Listen-Only mode,
+ *   and another OST runs
  *
  * Uses hw_reg_model_t for the underlying register file, with custom
  * SPI command parsing to model the real chip protocol.
@@ -30,6 +33,7 @@
 #define MCP_REG_CNF3         0x28
 #define MCP_REG_CNF2         0x29
 #define MCP_REG_CNF1         0x2A
+#define MCP_REG_CANINTE      0x2B
 #define MCP_REG_CANINTF      0x2C
 #define MCP_REG_EFLG         0x2D
 
@@ -59,6 +63,8 @@
 #define MCP_CANSTAT_OPMOD_MASK 0xE0
 #define MCP_CANINTF_RX0IF      0x01
 #define MCP_CANINTF_RX1IF      0x02
+#define MCP_CANINTF_WAKIF      0x40
+#define MCP_CANINTE_WAKIE      0x40
 #define MCP_TXB_TXREQ          0x08
 
 /* --- Mode values in bits [7:5] --- */
@@ -129,8 +135,34 @@ static void mcp2515_on_canctrl_write(void *user, uint8_t reg,
     (void)old_val;
     mcp2515_model_t *m = (mcp2515_model_t *)user;
     (void)new_val;
+    /* DS20001801J p.59: "When in Sleep mode, the MCP2515 stops its internal
+     * oscillator", so nothing acts on the request until the chip wakes */
+    if ((m->hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK) == MCP_OPMOD_SLEEP) {
+        return;
+    }
     /* Mirror mode bits from CANCTRL to CANSTAT (instant transition) */
     mcp2515_mirror_mode(m);
+}
+
+/* --- Write callback: CANINTF WAKIF wakes the chip --- */
+
+/* p.59: the chip wakes "when the MCU sets, via the SPI interface, the WAKIF bit",
+ * "the WAKIE bit (CANINTE[6]) must also be set", and it "will wake-up in
+ * Listen-Only mode". p.55: the OST runs again after a wake-up from Sleep. */
+__attribute__((unused))
+static void mcp2515_on_canintf_write(void *user, uint8_t reg,
+                                     uint8_t old_val, uint8_t new_val)
+{
+    (void)reg;
+    mcp2515_model_t *m = (mcp2515_model_t *)user;
+    uint8_t *canstat = &m->hw.regs[MCP_REG_CANSTAT];
+
+    if ((*canstat & MCP_CANSTAT_OPMOD_MASK) == MCP_OPMOD_SLEEP &&
+        (m->hw.regs[MCP_REG_CANINTE] & MCP_CANINTE_WAKIE) &&
+        (new_val & MCP_CANINTF_WAKIF) && !(old_val & MCP_CANINTF_WAKIF)) {
+        *canstat = (uint8_t)((*canstat & ~MCP_CANSTAT_OPMOD_MASK) | MCP_OPMOD_LISTEN);
+        m->ost_left_us = MCP_OST_US;
+    }
 }
 
 /* --- Write callback: TXB0CTRL TXREQ handling --- */
@@ -280,6 +312,7 @@ static void mcp2515_model_init(mcp2515_model_t *m)
     /* Register write callbacks */
     hw_model_set_on_write(&m->hw, MCP_REG_CANCTRL, mcp2515_on_canctrl_write);
     hw_model_set_on_write(&m->hw, MCP_REG_TXB0CTRL, mcp2515_on_txb0ctrl_write);
+    hw_model_set_on_write(&m->hw, MCP_REG_CANINTF, mcp2515_on_canintf_write);
 
     hw_model_reset(&m->hw);
 

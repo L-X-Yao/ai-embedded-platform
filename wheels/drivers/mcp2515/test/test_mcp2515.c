@@ -49,6 +49,24 @@ static void mock_reset(void)
     mock_regs[0x0F] = 0x87;  /* CANCTRL: config mode */
 }
 
+/* DS20001801J p.59: the oscillator stops in Sleep, so nothing acts on a mode
+ * request until the chip wakes */
+static void mock_apply_mode(void)
+{
+    if ((mock_regs[0x0E] & 0xE0) == 0x20) return;
+    mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) |
+                                 (mock_regs[0x0F] & 0xE0));
+}
+
+/* p.59: WAKIF set with WAKIE set wakes the chip, in Listen-Only mode */
+static void mock_check_wake(void)
+{
+    if ((mock_regs[0x0E] & 0xE0) == 0x20 &&
+        (mock_regs[0x2B] & 0x40) && (mock_regs[0x2C] & 0x40)) {
+        mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) | 0x60);
+    }
+}
+
 static void mock_cs_low(void *ctx)
 {
     (void)ctx;
@@ -115,9 +133,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             mock_regs[mock_spi_addr] = tx;
             /* simulate mode change via CANCTRL write */
             if (mock_spi_addr == 0x0F) {
-                mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) |
-                                             (tx & 0xE0));
+                mock_apply_mode();
             }
+            mock_check_wake();
             return 0xFF;
         }
         if (mock_spi_cmd == 0xA0) {
@@ -141,9 +159,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             (tx & mock_bm_mask));
         /* simulate mode change */
         if (mock_spi_addr == 0x0F) {
-            mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) |
-                                         (mock_regs[0x0F] & 0xE0));
+            mock_apply_mode();
         }
+        mock_check_wake();
         return 0xFF;
     }
 
@@ -156,6 +174,14 @@ static const mcp2515_spi_t mock_spi = {
     .xfer     = mock_xfer,
     .ctx      = NULL,
     .delay_us = mock_delay_us,
+};
+
+/* A HAL that cannot wait */
+static const mcp2515_spi_t mock_spi_no_delay = {
+    .cs_low  = mock_cs_low,
+    .cs_high = mock_cs_high,
+    .xfer    = mock_xfer,
+    .ctx     = NULL,
 };
 
 /* ---------- helper: inject an RX message into mock registers ---------- */
@@ -239,17 +265,10 @@ TEST(test_init_waits_after_reset)
 /* Without a way to wait, init must not touch the chip at all */
 TEST(test_init_refuses_null_delay_us)
 {
-    static const mcp2515_spi_t no_delay = {
-        .cs_low  = mock_cs_low,
-        .cs_high = mock_cs_high,
-        .xfer    = mock_xfer,
-        .ctx     = NULL,
-    };
-
     mock_reset();
     mcp2515_t dev;
     memset(&dev, 0, sizeof(dev));
-    ASSERT_EQ(mcp2515_init(&dev, &no_delay, MCP2515_SPEED_500KBPS),
+    ASSERT_EQ(mcp2515_init(&dev, &mock_spi_no_delay, MCP2515_SPEED_500KBPS),
               MCP2515_ERR_PARAM);
     ASSERT_EQ(mock_tx_len, 0);
 }
@@ -736,6 +755,85 @@ TEST(test_set_mode_sleep)
     ASSERT_EQ(mock_regs[0x0E] & 0xE0, 0x20);
 }
 
+/* Put the mock chip in Sleep through the driver, then forget the traffic */
+static void sleep_setup(mcp2515_t *dev)
+{
+    mock_reset();
+    memset(dev, 0, sizeof(*dev));
+    mcp2515_init(dev, &mock_spi, MCP2515_SPEED_500KBPS);
+    mcp2515_set_mode(dev, MCP2515_MODE_SLEEP);
+    mock_tx_clear();
+}
+
+/* DS20001801J p.59: with the oscillator stopped a mode request does nothing. The
+ * chip wakes when the MCU sets WAKIF with WAKIE set, in Listen-Only mode, and the
+ * MCU must then ask for the mode it wants. p.55: no SPI operation until the OST
+ * has expired. Table 11-1 shades CANINTE, CANINTF and CANCTRL: BIT MODIFY is
+ * allowed on all three. The flags go back only once CANSTAT shows the chip awake. */
+TEST(test_leave_sleep_exact_bus)
+{
+    static const uint8_t before_wait[] = {
+        0x03, 0x2B, 0xFF,        /* READ CANINTE */
+        0x05, 0x2B, 0x40, 0x40,  /* set WAKIE */
+        0x05, 0x2C, 0x40, 0x40,  /* set WAKIF */
+    };
+    static const uint8_t after_wait[] = {
+        0x05, 0x0F, 0xE0, 0x00,  /* REQOP = Normal */
+        0x03, 0x0E, 0xFF,        /* READ CANSTAT */
+        0x05, 0x2C, 0x40, 0x00,  /* clear WAKIF */
+        0x05, 0x2B, 0x40, 0x00,  /* WAKIE back as it was */
+    };
+    mcp2515_t dev;
+
+    sleep_setup(&dev);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+
+    ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
+    ASSERT_EQ(mock_regs[0x0E] & 0xE0, 0x00);
+    ASSERT_EQ(mock_delay_at, (int)sizeof(before_wait));
+    ASSERT_GE(mock_delay_total, 128u);
+    ASSERT_EQ(mock_tx_len, (int)(sizeof(before_wait) + sizeof(after_wait)));
+    ASSERT_MEMEQ_N(mock_tx_log, before_wait, sizeof(before_wait));
+    ASSERT_MEMEQ_N(mock_tx_log + sizeof(before_wait), after_wait,
+                   sizeof(after_wait));
+}
+
+/* Enable bits the driver did not set stay as they were, WAKIE included */
+TEST(test_leave_sleep_keeps_caninte)
+{
+    mcp2515_t dev;
+
+    sleep_setup(&dev);
+    mock_regs[0x2B] = 0x43;
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+    ASSERT_EQ_HEX(mock_regs[0x2B], 0x43);
+    ASSERT_EQ(mock_regs[0x2C] & 0x40, 0);
+}
+
+/* Staying in Sleep is not a wake-up */
+TEST(test_sleep_to_sleep_does_not_wake)
+{
+    mcp2515_t dev;
+
+    sleep_setup(&dev);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+    ASSERT_EQ(mock_delay_at, -1);
+    ASSERT_EQ(mock_regs[0x2C] & 0x40, 0);
+    ASSERT_EQ(mock_regs[0x0E] & 0xE0, 0x20);
+}
+
+/* A wake-up needs the wait, so without delay_us nothing goes out */
+TEST(test_leave_sleep_refuses_null_delay_us)
+{
+    mcp2515_t dev;
+
+    sleep_setup(&dev);
+    dev.spi = &mock_spi_no_delay;
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_ERR_PARAM);
+    ASSERT_EQ(mock_tx_len, 0);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_SLEEP);
+}
+
 TEST(test_set_mode_listen)
 {
     mock_reset();
@@ -970,6 +1068,10 @@ TEST_MAIN("mcp2515")
     RUN(test_set_mode_timeout);
     RUN(test_init_mode_timeout);
     RUN(test_set_mode_sleep);
+    RUN(test_leave_sleep_exact_bus);
+    RUN(test_leave_sleep_keeps_caninte);
+    RUN(test_sleep_to_sleep_does_not_wake);
+    RUN(test_leave_sleep_refuses_null_delay_us);
     RUN(test_set_mode_listen);
     RUN(test_init_invalid_speed);
     RUN(test_receive_from_rxb1);

@@ -27,6 +27,7 @@
 #define REG_CNF3        0x28
 #define REG_CNF2        0x29
 #define REG_CNF1        0x2A
+#define REG_CANINTE     0x2B
 #define REG_CANINTF     0x2C
 #define REG_EFLG        0x2D
 
@@ -72,6 +73,8 @@
 #define CANSTAT_OPMOD_MASK  0xE0
 #define CANINTF_RX0IF       0x01
 #define CANINTF_RX1IF       0x02
+#define CANINTF_WAKIF       0x40
+#define CANINTE_WAKIE       0x40
 #define TXB_TXREQ           0x08
 #define TXB_EXIDE            0x08
 #define RXB_IDE              0x08
@@ -84,9 +87,9 @@
 #define OPMOD_LISTEN    0x60
 #define OPMOD_CONFIG    0x80
 
-/* Oscillator Start-up Timer (DS20001801J p.55): 128 OSC1 cycles after a Reset,
- * and no SPI operation until it has expired. The driver is not told the
- * oscillator, so it waits for the slowest: TOSC max 1000 ns (Table 13-2). */
+/* Oscillator Start-up Timer (DS20001801J p.55): 128 OSC1 cycles after a Reset or
+ * a wake-up, and no SPI operation until it has expired. The driver is not told
+ * the oscillator, so it waits for the slowest: TOSC max 1000 ns (Table 13-2). */
 #define OST_WAIT_US     128u
 
 /* ---------- CNF values for 8 MHz crystal ---------- */
@@ -181,6 +184,30 @@ static mcp2515_err_t wait_mode(const mcp2515_spi_t *s, uint8_t expected)
             return MCP2515_OK;
     }
     return MCP2515_ERR_TIMEOUT;
+}
+
+/*
+ * Wake from Sleep (DS20001801J p.59). The oscillator is stopped, so a mode
+ * request alone never takes effect: the chip wakes when the MCU sets WAKIF with
+ * WAKIE also set, then runs the OST and comes up in Listen-Only mode. Returns
+ * CANINTE as it was, for wake_finish.
+ */
+static uint8_t wake_start(const mcp2515_spi_t *s)
+{
+    uint8_t inte = reg_read(s, REG_CANINTE);
+
+    bit_modify(s, REG_CANINTE, CANINTE_WAKIE, CANINTE_WAKIE);
+    bit_modify(s, REG_CANINTF, CANINTF_WAKIF, CANINTF_WAKIF);
+    s->delay_us(s->ctx, OST_WAIT_US);
+    return inte;
+}
+
+/* After the mode change has settled: leave no wake-up interrupt behind, and
+ * clear WAKIF even after a timeout so that the next wake-up can set it again */
+static void wake_finish(const mcp2515_spi_t *s, uint8_t inte)
+{
+    bit_modify(s, REG_CANINTF, CANINTF_WAKIF, 0x00);
+    bit_modify(s, REG_CANINTE, CANINTE_WAKIE, (uint8_t)(inte & CANINTE_WAKIE));
 }
 
 /* ---------- ID encoding helpers ---------- */
@@ -306,10 +333,21 @@ mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode)
 {
     if (!dev || !dev->spi) return MCP2515_ERR_SPI;
 
+    bool leaving_sleep = dev->mode == MCP2515_MODE_SLEEP &&
+                         mode != MCP2515_MODE_SLEEP;
+    uint8_t inte = 0;
+
+    if (leaving_sleep) {
+        if (!dev->spi->delay_us) return MCP2515_ERR_PARAM;
+        inte = wake_start(dev->spi);
+    }
+
     uint8_t opmod = mode_to_opmod(mode);
     bit_modify(dev->spi, REG_CANCTRL, CANCTRL_REQOP_MASK, opmod);
 
     mcp2515_err_t err = wait_mode(dev->spi, opmod);
+    if (leaving_sleep)
+        wake_finish(dev->spi, inte);
     if (err == MCP2515_OK)
         dev->mode = mode;
     return err;
