@@ -492,6 +492,174 @@ TEST(test_parse_publish_refuses_both_qos_bits)
     ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_ERR_PROTOCOL);
 }
 
+/* --- properties the codec does not store (MQTT 5.0 section 2.2.2.2) --- */
+
+static uint16_t frame_connack(uint8_t *out, const uint8_t *props, uint8_t n)
+{
+    out[0] = 0x20;
+    out[1] = (uint8_t)(3 + n);  /* flags, reason, property length, properties */
+    out[2] = 0x00;
+    out[3] = 0x00;
+    out[4] = n;
+    memcpy(&out[5], props, n);
+    return (uint16_t)(5 + n);
+}
+
+/* QoS 0 PUBLISH to topic "t" with payload "hi". */
+static uint16_t frame_publish(uint8_t *out, const uint8_t *props, uint8_t n)
+{
+    out[0] = 0x30;
+    out[1] = (uint8_t)(3 + 1 + n + 2);
+    out[2] = 0x00;
+    out[3] = 0x01;
+    out[4] = 't';
+    out[5] = n;
+    memcpy(&out[6], props, n);
+    out[6 + n] = 'h';
+    out[7 + n] = 'i';
+    return (uint16_t)(8 + n);
+}
+
+static mqtt5_err_t connack_with(const uint8_t *props, uint8_t n)
+{
+    uint8_t frame[100];
+    mqtt5_connack_t ack;
+    uint16_t len = frame_connack(frame, props, n);
+    return mqtt5_parse_connack(frame, len, &ack);
+}
+
+static mqtt5_err_t publish_with(const uint8_t *props, uint8_t n)
+{
+    uint8_t frame[100];
+    mqtt5_publish_t pub;
+    uint16_t len = frame_publish(frame, props, n);
+    return mqtt5_parse_publish(frame, len, &pub);
+}
+
+TEST(test_parse_connack_from_a_default_broker)
+{
+    /* Reason 0 and Topic Alias Maximum 10. */
+    const uint8_t frame[] = { 0x20, 0x06, 0x00, 0x00, 0x03, 0x22, 0x00, 0x0A };
+    mqtt5_connack_t ack;
+
+    ASSERT_EQ(mqtt5_parse_connack(frame, sizeof(frame), &ack), MQTT5_OK);
+    ASSERT_EQ(ack.reason_code, 0);
+    ASSERT_EQ(ack.session_expiry, 0u);
+    ASSERT_EQ(ack.receive_max, 65535u);
+    ASSERT_EQ(ack.max_qos, 2);
+}
+
+TEST(test_parse_connack_skips_every_property_it_does_not_store)
+{
+    static const uint8_t props[] = {
+        0x12, 0x00, 0x02, 'i', 'd',     /* Assigned Client Identifier */
+        0x13, 0x00, 0x3C,               /* Server Keep Alive */
+        0x15, 0x00, 0x01, 'm',          /* Authentication Method */
+        0x16, 0x00, 0x02, 0xAA, 0xBB,   /* Authentication Data */
+        0x1A, 0x00, 0x01, 'r',          /* Response Information */
+        0x1C, 0x00, 0x01, 's',          /* Server Reference */
+        0x1F, 0x00, 0x01, 'e',          /* Reason String */
+        0x22, 0x00, 0x0A,               /* Topic Alias Maximum */
+        0x25, 0x01,                     /* Retain Available */
+        0x26, 0x00, 0x01, 'k', 0x00, 0x01, 'v', /* User Property */
+        0x27, 0x00, 0x00, 0x10, 0x00,   /* Maximum Packet Size */
+        0x28, 0x01,                     /* Wildcard Subscription Available */
+        0x29, 0x01,                     /* Subscription Identifier Available */
+        0x2A, 0x00,                     /* Shared Subscription Available */
+        0x24, 0x01,                     /* Maximum QoS */
+        0x21, 0x00, 0x14,               /* Receive Maximum */
+        0x11, 0x00, 0x00, 0x00, 0x1E,   /* Session Expiry Interval */
+    };
+    uint8_t frame[100];
+    mqtt5_connack_t ack;
+    uint16_t len = frame_connack(frame, props, sizeof(props));
+
+    ASSERT_EQ(mqtt5_parse_connack(frame, len, &ack), MQTT5_OK);
+    /* These sit last, so one wrong skip would misread them. */
+    ASSERT_EQ(ack.max_qos, 1);
+    ASSERT_EQ(ack.receive_max, 20u);
+    ASSERT_EQ(ack.session_expiry, 30u);
+}
+
+TEST(test_parse_publish_skips_every_property_it_does_not_store)
+{
+    static const uint8_t props[] = {
+        0x01, 0x01,                     /* Payload Format Indicator */
+        0x03, 0x00, 0x02, 'a', 'b',     /* Content Type */
+        0x08, 0x00, 0x01, 'r',          /* Response Topic */
+        0x09, 0x00, 0x02, 0x01, 0x02,   /* Correlation Data */
+        0x0B, 0x80, 0x01,               /* Subscription Identifier 128 */
+        0x23, 0x00, 0x05,               /* Topic Alias */
+        0x26, 0x00, 0x01, 'k', 0x00, 0x01, 'v', /* User Property */
+        0x02, 0x00, 0x00, 0x00, 0x3C,   /* Message Expiry Interval */
+    };
+    uint8_t frame[100];
+    mqtt5_publish_t pub;
+    uint16_t len = frame_publish(frame, props, sizeof(props));
+
+    ASSERT_EQ(mqtt5_parse_publish(frame, len, &pub), MQTT5_OK);
+    ASSERT_EQ(pub.message_expiry, 60u);
+    ASSERT_EQ(pub.payload_len, 2);
+    ASSERT_EQ(pub.payload[0], 'h');
+    ASSERT_EQ(pub.payload[1], 'i');
+}
+
+TEST(test_properties_refuse_ids_the_spec_does_not_define)
+{
+    static const uint8_t undefined[] = { 0x00, 0x04, 0x14, 0x2B, 0x7F, 0xFF };
+
+    for (size_t i = 0; i < sizeof(undefined); i++) {
+        uint8_t prop[3] = { undefined[i], 0x00, 0x00 };
+        ASSERT_EQ(connack_with(prop, 3), MQTT5_ERR_PROTOCOL);
+        ASSERT_EQ(publish_with(prop, 3), MQTT5_ERR_PROTOCOL);
+    }
+}
+
+TEST(test_properties_refuse_ids_of_other_packets)
+{
+    /* Section 2.2.2.2: an Identifier not valid for its packet type is a
+     * Malformed Packet. */
+    static const uint8_t in_connack[][5] = {
+        { 0x02, 0x00, 0x00, 0x00, 0x01 },   /* Message Expiry Interval */
+        { 0x18, 0x00, 0x00, 0x00, 0x01 },   /* Will Delay Interval */
+    };
+    static const uint8_t alias[3] = { 0x23, 0x00, 0x01 };
+    static const uint8_t request[2] = { 0x17, 0x01 };
+    static const uint8_t max_qos[2] = { 0x24, 0x01 };
+    static const uint8_t keep_alive[3] = { 0x13, 0x00, 0x01 };
+
+    ASSERT_EQ(connack_with(in_connack[0], 5), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(in_connack[1], 5), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(alias, 3), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(request, 2), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(publish_with(max_qos, 2), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(publish_with(keep_alive, 3), MQTT5_ERR_PROTOCOL);
+}
+
+TEST(test_skipped_property_cannot_overrun_the_block)
+{
+    static const uint8_t cut_byte[1] = { 0x25 };
+    static const uint8_t cut_u16[2] = { 0x22, 0x00 };
+    static const uint8_t cut_u32[4] = { 0x27, 0x00, 0x00, 0x10 };
+    static const uint8_t no_len[2] = { 0x1F, 0x00 };
+    static const uint8_t cut_str[4] = { 0x1F, 0x00, 0x05, 'a' };
+    static const uint8_t no_value[4] = { 0x26, 0x00, 0x01, 'k' };
+    static const uint8_t cut_value[7] = { 0x26, 0x00, 0x01, 'k', 0x00, 0x05, 'v' };
+    static const uint8_t cut_vbi[2] = { 0x0B, 0x80 };
+    static const uint8_t long_vbi[6] = { 0x0B, 0x80, 0x80, 0x80, 0x80, 0x01 };
+
+    ASSERT_EQ(connack_with(cut_byte, 1), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(cut_u16, 2), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(cut_u32, 4), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(no_len, 2), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(cut_str, 4), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(no_value, 4), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(connack_with(cut_value, 7), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(publish_with(no_value, 4), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(publish_with(cut_vbi, 2), MQTT5_ERR_PROTOCOL);
+    ASSERT_EQ(publish_with(long_vbi, 6), MQTT5_ERR_PROTOCOL);
+}
+
 TEST_MAIN("mqtt5_packet")
     /* VBI */
     RUN(test_vbi_encode_single_byte);
@@ -539,4 +707,11 @@ TEST_MAIN("mqtt5_packet")
     RUN(test_build_connect_remaining_length_with_properties);
     RUN(test_build_publish_length_without_payload);
     RUN(test_parse_publish_refuses_both_qos_bits);
+    /* properties the codec does not store */
+    RUN(test_parse_connack_from_a_default_broker);
+    RUN(test_parse_connack_skips_every_property_it_does_not_store);
+    RUN(test_parse_publish_skips_every_property_it_does_not_store);
+    RUN(test_properties_refuse_ids_the_spec_does_not_define);
+    RUN(test_properties_refuse_ids_of_other_packets);
+    RUN(test_skipped_property_cannot_overrun_the_block);
 TEST_MAIN_END()

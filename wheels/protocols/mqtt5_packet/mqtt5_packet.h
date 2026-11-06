@@ -87,12 +87,16 @@ int mqtt5_build_subscribe(uint8_t *buf, uint16_t size,
 int mqtt5_build_disconnect(uint8_t *buf, uint16_t size,
                            uint8_t reason_code);
 
-/** Parse CONNACK packet (v5.0) including properties.
+/** Parse CONNACK packet (v5.0) including properties. A property with no field
+ *  in mqtt5_connack_t is stepped over. One the spec does not allow in a CONNACK
+ *  returns MQTT5_ERR_PROTOCOL.
  *  @thread_safe: yes (pure function) */
 mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
                                 mqtt5_connack_t *ack);
 
-/** Parse incoming PUBLISH packet (v5.0) including properties.
+/** Parse incoming PUBLISH packet (v5.0) including properties. A property with
+ *  no field in mqtt5_publish_t is stepped over. One the spec does not allow in
+ *  a PUBLISH returns MQTT5_ERR_PROTOCOL.
  *  @thread_safe: yes (pure function) */
 mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
                                 mqtt5_publish_t *pub);
