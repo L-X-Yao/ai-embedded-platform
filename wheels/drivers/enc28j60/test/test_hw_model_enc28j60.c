@@ -522,6 +522,18 @@ TEST(test_init_disables_half_duplex_loopback)
     ASSERT_EQ(model.phy_write_rx_on, 0);
 }
 
+/* --- 16. MACON4.DEFER --- */
+
+/* DS39662C p.36: "Configure the bits in MACON4. For conformance to the IEEE
+ * 802.3 standard, set the DEFER bit." It is bit 6 (p.38), and the others
+ * stay at their reset 0. */
+TEST(test_init_sets_macon4_defer)
+{
+    setup();
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+    ASSERT_EQ(model.regs[2][ENC_MACON4], 0x40);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -543,4 +555,5 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_times_out_when_phy_stays_busy);
     RUN(test_model_dummy_byte_only_on_mac_mii);
     RUN(test_init_disables_half_duplex_loopback);
+    RUN(test_init_sets_macon4_defer);
 TEST_MAIN_END()

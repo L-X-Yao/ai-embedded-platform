@@ -61,6 +61,7 @@
 
 #define ENC_MACON1    0x00U
 #define ENC_MACON3    0x02U
+#define ENC_MACON4    0x03U
 #define ENC_MABBIPG   0x04U
 #define ENC_MAIPGL    0x06U
 #define ENC_MAIPGH    0x07U
