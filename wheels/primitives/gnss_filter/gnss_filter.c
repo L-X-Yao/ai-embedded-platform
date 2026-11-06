@@ -156,6 +156,10 @@ int64_t gnss_datetime_to_unix(uint16_t year, uint8_t month, uint8_t day,
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
     };
 
+    if (month < 1 || month > 12) {
+        return -1;
+    }
+
     int32_t days = 0;
     for (uint16_t yr = 1970; yr < year; yr++) {
         bool leap = ((yr % 4 == 0 && yr % 100 != 0) || yr % 400 == 0);
