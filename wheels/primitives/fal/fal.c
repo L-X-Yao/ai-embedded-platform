@@ -54,8 +54,8 @@ int fal_init(void)
         }
     }
     for (size_t i = 0; i < s_dev_count; i++) {
-        if (s_devs[i]->ops.init) {
-            s_devs[i]->ops.init();
+        if (s_devs[i]->ops.init && s_devs[i]->ops.init() < 0) {
+            return FAL_ERR_HAL;
         }
     }
     s_init_ok = 1;

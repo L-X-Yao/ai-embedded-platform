@@ -36,16 +36,18 @@ typedef enum {
  * fal_err_t value on failure: FAL_ERR_PART_TABLE if a partition does not
  * fit its device, and no device is touched. A partition that names no
  * registered device is not an error here: its calls return
- * FAL_ERR_NOT_READY.
- * Idempotent — subsequent calls return the partition count without
- * re-initialising devices.
+ * FAL_ERR_NOT_READY. FAL_ERR_HAL if an ops.init returns a negative value:
+ * the first failure stops the walk, FAL stays uninitialised, and calling
+ * fal_init again retries every device from the first.
+ * Idempotent once it has succeeded: subsequent calls return the partition
+ * count without re-initialising devices.
  * @thread_safe: no
  * @isr_safe: no
  */
 int fal_init(void);
 
 /**
- * Return 1 if fal_init has been called, 0 otherwise.
+ * Return 1 if fal_init has succeeded, 0 otherwise.
  * @thread_safe: yes
  * @isr_safe: yes
  */

@@ -11,10 +11,12 @@
 
 static uint8_t mock_flash_buf[MOCK_FLASH_SIZE];
 
+static int mock_init_rc;    /* what mock_init reports */
+
 static int mock_init(void)
 {
     memset(mock_flash_buf, 0xFF, sizeof(mock_flash_buf));
-    return 0;
+    return mock_init_rc;
 }
 
 static int mock_fail_next;
@@ -77,6 +79,23 @@ TEST(test_partition_calls_before_init)
     ASSERT_EQ(fal_partition_erase(p, 0, 4096), FAL_ERR_NOT_READY);
     ASSERT_EQ(fal_partition_erase_all(p), FAL_ERR_NOT_READY);
     ASSERT_EQ(mock_calls, 0);
+}
+
+/* Has to run before the first fal_init that succeeds. */
+TEST(test_init_failure_can_be_retried)
+{
+    const struct fal_partition *p = fal_partition_find("config");
+    ASSERT_NOT_NULL(p);
+    uint8_t buf[16] = {0};
+
+    mock_init_rc = -1;
+    ASSERT_EQ(fal_init(), FAL_ERR_HAL);
+    ASSERT_EQ(fal_init_check(), 0);
+    ASSERT_EQ(fal_partition_read(p, 0, buf, sizeof(buf)), FAL_ERR_NOT_READY);
+
+    mock_init_rc = 0;
+    ASSERT_EQ(fal_init(), 3);
+    ASSERT_EQ(fal_init_check(), 1);
 }
 
 TEST(test_init)
@@ -292,6 +311,7 @@ TEST(test_err_hal)
 
 TEST_MAIN("fal")
     RUN(test_partition_calls_before_init);
+    RUN(test_init_failure_can_be_retried);
     RUN(test_init);
     RUN(test_find_partition);
     RUN(test_find_not_exist);
