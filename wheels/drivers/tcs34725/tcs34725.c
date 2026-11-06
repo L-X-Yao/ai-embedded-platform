@@ -37,6 +37,10 @@
 #define CHIP_ID_44  0x44u
 #define CHIP_ID_4D  0x4Du
 
+/* DN40 Table 1 (p.13), TCS3472 row: open air, GA = 1 */
+#define DN40_CT_COEF    3810.0f
+#define DN40_CT_OFFSET  1391.0f
+
 static tcs34725_err_t write_reg(const tcs34725_t *dev,
                                 uint8_t reg, uint8_t val)
 {
@@ -177,18 +181,19 @@ tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc,
     if (rgbc->c == 0)
         return TCS34725_ERR_PARAM;
 
-    /* DN40 application note: chromaticity then McCamy's formula */
-    float r_ratio = (float)rgbc->r / (float)rgbc->c;
-    float b_ratio = (float)rgbc->b / (float)rgbc->c;
+    /* DN40 p.4: no IR channel, so IR = (R + G + B - C) / 2 comes off each
+     * channel. Every term fits a float exactly. */
+    float ir = ((float)rgbc->r + (float)rgbc->g +
+                (float)rgbc->b - (float)rgbc->c) / 2.0f;
+    float r_ir = (float)rgbc->r - ir;
+    float b_ir = (float)rgbc->b - ir;
 
-    /* Simplified CCT via empirical formula from DN40 */
-    float x = -0.14282f * r_ratio + 1.54924f * b_ratio - 0.95641f;
-    /* Guard against division by zero when x == 0.1858 */
-    float denom = 0.1858f - x;
-    if (!(denom > 1e-6f || denom < -1e-6f))
+    /* Nothing left of R: the ratio below has no value */
+    if (r_ir <= 0.0f)
         return TCS34725_ERR_PARAM;
-    float n = (x - 0.3320f) / denom;
-    float cct = 449.0f * n * n * n + 3525.0f * n * n + 6823.3f * n + 5520.33f;
+
+    /* DN40 p.6: CT = CT_Coef * B' / R' + CT_Offset */
+    float cct = DN40_CT_COEF * b_ir / r_ir + DN40_CT_OFFSET;
 
     if (cct < 0.0f)
         cct = 0.0f;

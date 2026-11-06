@@ -240,6 +240,57 @@ TEST(test_color_temp)
     ASSERT_EQ(tcs34725_get_color_temp(&zero_c, &cct), TCS34725_ERR_PARAM);
 }
 
+/* DN40 p.6 and Table 1 on p.13, TCS3472 row: CT = 3810 * B' / R' + 1391 */
+TEST(test_color_temp_dn40)
+{
+    uint16_t cct = 0;
+
+    /* IR = (1800 + 2200 + 1000 - 5000) / 2 = 0: 3810 * 1000 / 1800 + 1391 */
+    tcs34725_rgbc_t no_ir = { .c = 5000, .r = 1800, .g = 2200, .b = 1000 };
+    ASSERT_EQ(tcs34725_get_color_temp(&no_ir, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 3507);
+
+    /* IR = (400 + 500 + 300 - 1000) / 2 = 100, so R' = 300 and B' = 200:
+     * 3810 * 200 / 300 + 1391 */
+    tcs34725_rgbc_t with_ir = { .c = 1000, .r = 400, .g = 500, .b = 300 };
+    ASSERT_EQ(tcs34725_get_color_temp(&with_ir, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 3931);
+
+    /* The ratio has no unit: the same light at 4x the counts */
+    tcs34725_rgbc_t scaled = { .c = 4000, .r = 1600, .g = 2000, .b = 1200 };
+    ASSERT_EQ(tcs34725_get_color_temp(&scaled, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 3931);
+}
+
+TEST(test_color_temp_no_red_left)
+{
+    uint16_t cct = 7;
+
+    /* IR = 50 takes all of R, so B' / R' has no value */
+    tcs34725_rgbc_t zero_r = { .c = 100, .r = 50, .g = 100, .b = 50 };
+    ASSERT_EQ(tcs34725_get_color_temp(&zero_r, &cct), TCS34725_ERR_PARAM);
+
+    /* IR = 100 is more than R */
+    tcs34725_rgbc_t neg_r = { .c = 100, .r = 10, .g = 200, .b = 90 };
+    ASSERT_EQ(tcs34725_get_color_temp(&neg_r, &cct), TCS34725_ERR_PARAM);
+    ASSERT_EQ(cct, 7);
+}
+
+TEST(test_color_temp_clamped)
+{
+    uint16_t cct = 7;
+
+    /* IR = 30, R' = 30, B' = -30: 1391 - 3810 is below zero */
+    tcs34725_rgbc_t low = { .c = 100, .r = 60, .g = 100, .b = 0 };
+    ASSERT_EQ(tcs34725_get_color_temp(&low, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 0);
+
+    /* IR = 0.5, R' = 0.5, B' = 99.5: about 760000 K */
+    tcs34725_rgbc_t high = { .c = 101, .r = 1, .g = 1, .b = 100 };
+    ASSERT_EQ(tcs34725_get_color_temp(&high, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 65535);
+}
+
 TEST(test_lux)
 {
     tcs34725_rgbc_t rgbc = { .c = 1000, .r = 400, .g = 500, .b = 300 };
@@ -280,6 +331,9 @@ TEST_MAIN("tcs34725")
     RUN(test_set_gain);
     RUN(test_enable_disable);
     RUN(test_color_temp);
+    RUN(test_color_temp_dn40);
+    RUN(test_color_temp_no_red_left);
+    RUN(test_color_temp_clamped);
     RUN(test_lux);
     RUN(test_lux_clamp_negative);
 TEST_MAIN_END()

@@ -102,7 +102,10 @@ tcs34725_err_t tcs34725_enable(tcs34725_t *dev);
 tcs34725_err_t tcs34725_disable(tcs34725_t *dev);
 
 /** Estimate correlated color temperature (CCT) in Kelvin from RGBC data.
- *  Uses the DN40 application note formula.
+ *  Uses ams DN40: CT = 3810 * B' / R' + 1391 with the IR content removed, for
+ *  a part in open air. Saturated counts give a meaningless result, and the
+ *  caller has to check for that. Clamped to 0..65535.
+ *  @return TCS34725_ERR_PARAM if C is 0 or no red is left after IR removal.
  *  @thread_safe: caller_must_lock @isr_safe: yes */
 tcs34725_err_t tcs34725_get_color_temp(const tcs34725_rgbc_t *rgbc,
                                        uint16_t *cct_k);
