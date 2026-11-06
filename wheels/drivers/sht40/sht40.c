@@ -175,6 +175,12 @@ sht40_err_t sht40_soft_reset(sht40_t *dev)
     {
         return SHT40_ERR_I2C;
     }
+
+    /* p.10 tSR: up to 1 ms from the ACK of the command to the idle state */
+    if (dev->i2c->delay_ms)
+    {
+        dev->i2c->delay_ms(dev->i2c->ctx, 1);
+    }
     return SHT40_OK;
 }
 
