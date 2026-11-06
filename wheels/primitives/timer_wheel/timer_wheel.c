@@ -109,7 +109,8 @@ timer_wheel_err_t timer_wheel_cancel(timer_wheel_t *tw, uint32_t id)
 
 void timer_wheel_tick(timer_wheel_t *tw)
 {
-    if (!tw)
+    /* num_slots is 0 on a wheel that was zeroed or failed init */
+    if (!tw || tw->num_slots == 0)
     {
         return;
     }
