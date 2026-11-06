@@ -65,7 +65,7 @@ git -C "$REPO" log --oneline -5 | sed 's/^/  /'
 # (oversized files are filtered out). Warn early so the user can /clear
 # or split sessions before reaching that point.
 session_dir=""
-for c in "$HOME/.claude/projects" "/mnt/c/Users/Administrator/.claude/projects"; do
+for c in "$HOME/.claude/projects" /mnt/c/Users/*/.claude/projects; do
     if [ -d "$c" ]; then
         match=$(find "$c" -maxdepth 1 -type d -name "*$(basename "$REPO")*" 2>/dev/null | head -1)
         if [ -n "$match" ]; then
