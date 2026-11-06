@@ -9,6 +9,7 @@
  */
 #include "tcs34725.h"
 #include "contract.h"
+#include <string.h>
 
 /* --- Register addresses (raw, without command bit) --- */
 #define REG_ENABLE  0x00u
@@ -67,12 +68,44 @@ static tcs34725_err_t power_on(const tcs34725_t *dev)
     return write_reg(dev, REG_ENABLE, ENABLE_PON | ENABLE_AEN);
 }
 
+/* The steps of init that talk to the chip */
+static tcs34725_err_t bring_up(const tcs34725_t *dev)
+{
+    /* Verify chip ID */
+    uint8_t id = 0;
+    tcs34725_err_t err = read_regs(dev, CMD(REG_ID), &id, 1);
+    if (err != TCS34725_OK)
+        return err;
+    if (id != CHIP_ID_44 && id != CHIP_ID_4D)
+        return TCS34725_ERR_ID;
+
+    /* Set integration time */
+    err = write_reg(dev, REG_ATIME, (uint8_t)dev->integ);
+    if (err != TCS34725_OK)
+        return err;
+
+    /* Set gain */
+    err = write_reg(dev, REG_CONTROL, (uint8_t)dev->gain);
+    if (err != TCS34725_OK)
+        return err;
+
+    /* Enable: power on + RGBC */
+    return power_on(dev);
+}
+
 tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              const tcs34725_i2c_t *i2c,
                              tcs34725_integ_t integ,
                              tcs34725_gain_t gain)
 {
-    if (!dev || !i2c)
+    if (!dev)
+        return TCS34725_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
         return TCS34725_ERR_PARAM;
     if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
         return TCS34725_ERR_PARAM;
@@ -83,32 +116,16 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
     dev->integ = integ;
     dev->gain  = gain;
 
-    /* Verify chip ID */
-    uint8_t id = 0;
-    tcs34725_err_t err = read_regs(dev, CMD(REG_ID), &id, 1);
+    tcs34725_err_t err = bring_up(dev);
     if (err != TCS34725_OK)
-        return err;
-    if (id != CHIP_ID_44 && id != CHIP_ID_4D)
-        return TCS34725_ERR_ID;
-
-    /* Set integration time */
-    err = write_reg(dev, REG_ATIME, (uint8_t)integ);
-    if (err != TCS34725_OK)
-        return err;
-
-    /* Set gain */
-    err = write_reg(dev, REG_CONTROL, (uint8_t)gain);
-    if (err != TCS34725_OK)
-        return err;
-
-    /* Enable: power on + RGBC */
-    return power_on(dev);
+        dev->i2c = NULL;
+    return err;
 }
 
 tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
                                   tcs34725_rgbc_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return TCS34725_ERR_PARAM;
 
     /* p.19, AVALID: "Indicates that the RGBC channels have completed an
@@ -136,7 +153,7 @@ tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
 tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
                                              tcs34725_integ_t integ)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TCS34725_ERR_PARAM;
     tcs34725_err_t err = write_reg(dev, REG_ATIME, (uint8_t)integ);
     if (err != TCS34725_OK)
@@ -148,7 +165,7 @@ tcs34725_err_t tcs34725_set_integration_time(tcs34725_t *dev,
 tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
                                  tcs34725_gain_t gain)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TCS34725_ERR_PARAM;
     if ((unsigned)gain > TCS34725_GAIN_60X)
         return TCS34725_ERR_PARAM;
@@ -161,14 +178,14 @@ tcs34725_err_t tcs34725_set_gain(tcs34725_t *dev,
 
 tcs34725_err_t tcs34725_enable(tcs34725_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TCS34725_ERR_PARAM;
     return power_on(dev);
 }
 
 tcs34725_err_t tcs34725_disable(tcs34725_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TCS34725_ERR_PARAM;
     return write_reg(dev, REG_ENABLE, 0x00);
 }

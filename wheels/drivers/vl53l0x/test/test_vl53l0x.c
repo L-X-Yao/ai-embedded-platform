@@ -243,6 +243,49 @@ TEST(test_init_writes_sequence_config)
     ASSERT_EQ(mock_regs[0x60], 0x12);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(vl53l0x_t *d)
+{
+    bool ready;
+    uint16_t range_mm;
+    ASSERT_EQ(vl53l0x_start_single(d), VL53L0X_ERR_PARAM);
+    ASSERT_EQ(vl53l0x_is_ready(d, &ready), VL53L0X_ERR_PARAM);
+    ASSERT_EQ(vl53l0x_read_range_mm(d, &range_mm), VL53L0X_ERR_PARAM);
+    ASSERT_EQ(vl53l0x_set_measurement_timing_budget(d, 33000u), VL53L0X_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    vl53l0x_t d;
+    mock_reset();
+    mock_regs[0xC0] = 0x00;
+    ASSERT_EQ(vl53l0x_init(&d, &mock_i2c, &default_cfg), VL53L0X_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const vl53l0x_i2c_t zeroed;
+    vl53l0x_i2c_t no_read = mock_i2c;
+    vl53l0x_t d;
+    no_read.read_regs = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(vl53l0x_init(&d, NULL, &default_cfg), VL53L0X_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(vl53l0x_init(&d, &zeroed, &default_cfg), VL53L0X_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(vl53l0x_init(&d, &no_read, &default_cfg), VL53L0X_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("vl53l0x")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -263,4 +306,6 @@ TEST_MAIN("vl53l0x")
     RUN(test_set_timing_budget_too_low);
     RUN(test_set_timing_budget_too_high);
     RUN(test_init_writes_sequence_config);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

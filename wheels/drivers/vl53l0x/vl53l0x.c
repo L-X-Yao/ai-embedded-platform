@@ -97,19 +97,9 @@ static bool write_budget(const vl53l0x_t *dev, uint32_t budget_us)
 
 /* ---- public API ---- */
 
-vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
-                            const vl53l0x_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static vl53l0x_err_t bring_up(const vl53l0x_t *dev)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return VL53L0X_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->timing_budget_us = 30000u; /* 30 ms default */
-
     /* verify model ID */
     uint8_t id = 0;
     if (!read_reg(dev, REG_MODEL_ID, &id))
@@ -142,9 +132,44 @@ vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
     return VL53L0X_OK;
 }
 
-vl53l0x_err_t vl53l0x_start_single(vl53l0x_t *dev)
+vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
+                            const vl53l0x_cfg_t *cfg)
 {
     if (!dev)
+    {
+        return VL53L0X_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it. delay_ms is optional: read_range_mm tests it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return VL53L0X_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return VL53L0X_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->timing_budget_us = 30000u; /* 30 ms default */
+
+    vl53l0x_err_t err = bring_up(dev);
+    if (err != VL53L0X_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
+    return VL53L0X_OK;
+}
+
+vl53l0x_err_t vl53l0x_start_single(vl53l0x_t *dev)
+{
+    if (!dev || !dev->i2c)
     {
         return VL53L0X_ERR_PARAM;
     }
@@ -166,7 +191,7 @@ vl53l0x_err_t vl53l0x_start_single(vl53l0x_t *dev)
 
 vl53l0x_err_t vl53l0x_is_ready(vl53l0x_t *dev, bool *ready)
 {
-    if (!dev || !ready)
+    if (!dev || !dev->i2c || !ready)
     {
         return VL53L0X_ERR_PARAM;
     }
@@ -183,7 +208,7 @@ vl53l0x_err_t vl53l0x_is_ready(vl53l0x_t *dev, bool *ready)
 
 vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm)
 {
-    if (!dev || !range_mm)
+    if (!dev || !dev->i2c || !range_mm)
     {
         return VL53L0X_ERR_PARAM;
     }
@@ -241,7 +266,7 @@ vl53l0x_err_t vl53l0x_read_range_mm(vl53l0x_t *dev, uint16_t *range_mm)
 vl53l0x_err_t vl53l0x_set_measurement_timing_budget(vl53l0x_t *dev,
                                                      uint32_t budget_us)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return VL53L0X_ERR_PARAM;
     }

@@ -313,6 +313,46 @@ TEST(test_lux_clamp_negative)
     ASSERT_NEAR(lux, 0.0f, 0.01f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tcs34725_t *d)
+{
+    tcs34725_rgbc_t rgbc;
+    ASSERT_EQ(tcs34725_read_rgbc(d, &rgbc), TCS34725_ERR_PARAM);
+    ASSERT_EQ(tcs34725_set_integration_time(d, TCS34725_INTEG_24MS), TCS34725_ERR_PARAM);
+    ASSERT_EQ(tcs34725_set_gain(d, TCS34725_GAIN_4X), TCS34725_ERR_PARAM);
+    ASSERT_EQ(tcs34725_enable(d), TCS34725_ERR_PARAM);
+    ASSERT_EQ(tcs34725_disable(d), TCS34725_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    tcs34725_t d;
+    mock_reset();
+    mock_regs[CMD(REG_ID)] = 0xFF;
+    ASSERT_EQ(tcs34725_init(&d, &mock_i2c, TCS34725_INTEG_24MS, TCS34725_GAIN_1X),
+              TCS34725_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tcs34725_i2c_t zeroed;
+    tcs34725_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tcs34725_init(&d, NULL, TCS34725_INTEG_24MS, TCS34725_GAIN_1X),
+              TCS34725_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tcs34725_init(&d, &zeroed, TCS34725_INTEG_24MS, TCS34725_GAIN_1X),
+              TCS34725_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tcs34725")
     RUN(test_init_ok);
     RUN(test_init_alt_id);
@@ -336,4 +376,6 @@ TEST_MAIN("tcs34725")
     RUN(test_color_temp_clamped);
     RUN(test_lux);
     RUN(test_lux_clamp_negative);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

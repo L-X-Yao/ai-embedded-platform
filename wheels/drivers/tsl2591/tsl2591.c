@@ -10,6 +10,7 @@
 
 #include "tsl2591.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- ENABLE register bits ---------- */
 #define ENABLE_PON   0x01u   /* power on */
@@ -87,22 +88,9 @@ static tsl2591_err_t write_config(const tsl2591_t *dev, tsl2591_gain_t gain,
     return write_reg(dev, TSL2591_REG_CONFIG, cfg);
 }
 
-/* ---------- public API ---------- */
-
-tsl2591_err_t tsl2591_init(tsl2591_t *dev, const tsl2591_i2c_t *i2c,
-                           tsl2591_gain_t gain, tsl2591_itime_t itime)
+/* The steps of init that talk to the chip */
+static tsl2591_err_t bring_up(const tsl2591_t *dev)
 {
-    if (!dev || !i2c)
-        return TSL2591_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return TSL2591_ERR_PARAM;
-    if (!gain_valid(gain) || !itime_valid(itime))
-        return TSL2591_ERR_PARAM;
-
-    dev->i2c   = i2c;
-    dev->gain  = gain;
-    dev->itime = itime;
-
     /* verify chip ID */
     uint8_t id = 0;
     tsl2591_err_t err = read_regs(dev, TSL2591_REG_ID, &id, 1);
@@ -117,12 +105,41 @@ tsl2591_err_t tsl2591_init(tsl2591_t *dev, const tsl2591_i2c_t *i2c,
         return err;
 
     /* configure gain + integration time */
-    return write_config(dev, gain, itime);
+    return write_config(dev, dev->gain, dev->itime);
+}
+
+/* ---------- public API ---------- */
+
+tsl2591_err_t tsl2591_init(tsl2591_t *dev, const tsl2591_i2c_t *i2c,
+                           tsl2591_gain_t gain, tsl2591_itime_t itime)
+{
+    if (!dev)
+        return TSL2591_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+        return TSL2591_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return TSL2591_ERR_PARAM;
+    if (!gain_valid(gain) || !itime_valid(itime))
+        return TSL2591_ERR_PARAM;
+
+    dev->i2c   = i2c;
+    dev->gain  = gain;
+    dev->itime = itime;
+
+    tsl2591_err_t err = bring_up(dev);
+    if (err != TSL2591_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return TSL2591_ERR_PARAM;
 
     /* read all 4 channel data bytes (C0DATAL..C1DATAH) */
@@ -166,7 +183,7 @@ tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out)
 
 tsl2591_err_t tsl2591_read_raw(tsl2591_t *dev, uint16_t *ch0, uint16_t *ch1)
 {
-    if (!dev || !ch0 || !ch1)
+    if (!dev || !dev->i2c || !ch0 || !ch1)
         return TSL2591_ERR_PARAM;
 
     uint8_t buf[4] = {0};
@@ -181,7 +198,7 @@ tsl2591_err_t tsl2591_read_raw(tsl2591_t *dev, uint16_t *ch0, uint16_t *ch1)
 
 tsl2591_err_t tsl2591_set_gain(tsl2591_t *dev, tsl2591_gain_t gain)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TSL2591_ERR_PARAM;
     if (!gain_valid(gain))
         return TSL2591_ERR_PARAM;
@@ -195,7 +212,7 @@ tsl2591_err_t tsl2591_set_gain(tsl2591_t *dev, tsl2591_gain_t gain)
 
 tsl2591_err_t tsl2591_set_integration_time(tsl2591_t *dev, tsl2591_itime_t itime)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TSL2591_ERR_PARAM;
     if (!itime_valid(itime))
         return TSL2591_ERR_PARAM;
@@ -208,7 +225,7 @@ tsl2591_err_t tsl2591_set_integration_time(tsl2591_t *dev, tsl2591_itime_t itime
 
 tsl2591_err_t tsl2591_enable(tsl2591_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TSL2591_ERR_PARAM;
 
     return write_reg(dev, TSL2591_REG_ENABLE, ENABLE_PON | ENABLE_AEN);
@@ -216,7 +233,7 @@ tsl2591_err_t tsl2591_enable(tsl2591_t *dev)
 
 tsl2591_err_t tsl2591_disable(tsl2591_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TSL2591_ERR_PARAM;
 
     return write_reg(dev, TSL2591_REG_ENABLE, 0x00);
@@ -224,7 +241,7 @@ tsl2591_err_t tsl2591_disable(tsl2591_t *dev)
 
 tsl2591_err_t tsl2591_get_status(tsl2591_t *dev, uint8_t *status)
 {
-    if (!dev || !status)
+    if (!dev || !dev->i2c || !status)
         return TSL2591_ERR_PARAM;
 
     return read_regs(dev, TSL2591_REG_STATUS, status, 1);
