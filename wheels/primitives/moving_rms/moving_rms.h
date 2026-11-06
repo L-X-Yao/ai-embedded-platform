@@ -34,6 +34,7 @@ typedef struct {
     size_t   head;      /* internal: write index */
     size_t   count;     /* internal: samples stored */
     float    sum_sq;    /* internal: running sum of squares */
+    float    fresh_sq;  /* internal: sum of squares since head last wrapped */
 } moving_rms_t;
 
 /** Init with caller-provided buffer. @thread_safe: no @isr_safe: yes */
