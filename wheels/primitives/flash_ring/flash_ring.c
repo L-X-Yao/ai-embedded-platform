@@ -75,6 +75,14 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
     if (cfg->slot_size == 0 || cfg->total_slots == 0 || cfg->sector_size == 0) {
         return FLASH_RING_ERR_PARAM;
     }
+    /* push erases whole sectors: slots must tile them exactly, starting on
+     * a sector boundary. This also refuses a slot larger than a sector. */
+    REQUIRE(cfg->sector_size % cfg->slot_size == 0);
+    REQUIRE(cfg->data_start_addr % cfg->sector_size == 0);
+    if (cfg->sector_size % cfg->slot_size != 0 ||
+        cfg->data_start_addr % cfg->sector_size != 0) {
+        return FLASH_RING_ERR_PARAM;
+    }
 
     ring->io  = io;
     ring->cfg = *cfg;

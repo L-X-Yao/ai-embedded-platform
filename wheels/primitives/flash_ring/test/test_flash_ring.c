@@ -99,6 +99,41 @@ TEST(test_init_bad_cfg)
     ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
 }
 
+/*
+ * push erases whole sectors, so a slot that straddles a sector boundary
+ * loses live frames, and a slot larger than a sector is never erased.
+ * Each layout below breaks that, so init must refuse it.
+ */
+TEST(test_init_rejects_bad_geometry)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+
+    flash_ring_cfg_t bad = g_mock_cfg;
+    bad.slot_size = 100;                /* 4096 % 100 != 0 */
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
+
+    bad = g_mock_cfg;
+    bad.slot_size = 8192;               /* two sectors per slot */
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
+
+    bad = g_mock_cfg;
+    bad.data_start_addr = MOCK_DATA_ADDR + MOCK_SLOT_SIZE; /* mid-sector */
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_init(&ring, &g_mock_io, &bad));
+}
+
+/* The limit case stays legal: one slot filling one sector exactly. */
+TEST(test_init_accepts_slot_equal_to_sector)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.slot_size = MOCK_SECTOR_SIZE;
+    cfg.total_slots = 4;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &cfg));
+}
+
 TEST(test_init_fresh_flash)
 {
     flash_ring_t ring;
@@ -453,6 +488,8 @@ TEST(test_push_min_len)
 TEST_MAIN("flash_ring")
     RUN(test_init_null);
     RUN(test_init_bad_cfg);
+    RUN(test_init_rejects_bad_geometry);
+    RUN(test_init_accepts_slot_equal_to_sector);
     RUN(test_init_fresh_flash);
     RUN(test_init_existing_header);
     RUN(test_push_pop_one);
