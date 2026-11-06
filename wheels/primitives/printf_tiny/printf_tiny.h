@@ -23,6 +23,15 @@ extern "C" {
 #endif
 
 /**
+ * Largest field width, at most INT_MAX. A wider one in a format string is cut
+ * to this, which bounds the padding one conversion can emit. 4095 is the least
+ * a C99 printf has to support for one conversion.
+ */
+#ifndef PRINTF_TINY_MAX_WIDTH
+#define PRINTF_TINY_MAX_WIDTH 4095
+#endif
+
+/**
  * Character output callback type.
  *
  * @param ctx   User-supplied context (e.g. UART handle).

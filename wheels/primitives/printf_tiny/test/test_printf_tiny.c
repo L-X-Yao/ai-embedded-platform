@@ -306,9 +306,46 @@ TEST(test_putc_null_returns_zero)
     ASSERT_EQ(n, 0);
 }
 
+/* --- width limit --------------------------------------------------- */
+
+/* A width past the limit saturates: no signed overflow, no 2^31 callbacks. */
+TEST(test_huge_width_saturates)
+{
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    /* 2^32 + 1 would wrap round to a width of 1 */
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4294967297d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%-99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%099999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999u", 1u), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999s", "ab"), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999c", 'a'), PRINTF_TINY_MAX_WIDTH);
+}
+
+TEST(test_width_at_the_limit)
+{
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4094d", 1), 4094);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4095d", 1), 4095);
+    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4096d", 1), 4095);
+}
+
+/* All the digits are consumed, so what follows still formats. */
+TEST(test_format_continues_after_huge_width)
+{
+    static char big[PRINTF_TINY_MAX_WIDTH + 8];
+    int n = snprintf_tiny(big, (uint16_t)sizeof(big), "%-99999999999d|%d", 1, 22);
+
+    ASSERT_EQ(n, PRINTF_TINY_MAX_WIDTH + 3);
+    ASSERT_EQ(big[0], '1');
+    ASSERT_EQ(big[PRINTF_TINY_MAX_WIDTH - 1], ' ');
+    ASSERT_STR_EQ(big + PRINTF_TINY_MAX_WIDTH, "|22");
+}
+
 /* ------------------------------------------------------------------- */
 
 TEST_MAIN("printf_tiny")
+    RUN(test_huge_width_saturates);
+    RUN(test_width_at_the_limit);
+    RUN(test_format_continues_after_huge_width);
     RUN(test_d_positive);
     RUN(test_d_negative);
     RUN(test_d_zero);

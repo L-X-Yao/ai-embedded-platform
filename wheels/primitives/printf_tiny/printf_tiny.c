@@ -144,10 +144,16 @@ static int format_engine(out_t *o, const char *fmt, va_list ap)
         /* left-align overrides zero-pad */
         if (left_align) zero_pad = 0;
 
-        /* width */
+        /* width: saturates, checked before the multiply so that nothing
+         * overflows even where int is 16 bits */
         int width = 0;
         while (*fmt >= '0' && *fmt <= '9') {
-            width = width * 10 + (*fmt - '0');
+            int digit = *fmt - '0';
+            if (width > (PRINTF_TINY_MAX_WIDTH - digit) / 10) {
+                width = PRINTF_TINY_MAX_WIDTH;
+            } else {
+                width = width * 10 + digit;
+            }
             fmt++;
         }
 
