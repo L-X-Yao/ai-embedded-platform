@@ -232,7 +232,10 @@ pca9685_err_t pca9685_sleep(pca9685_t *dev)
     if (!read_reg(dev, REG_MODE1, &mode1))
         return PCA9685_ERR_I2C;
 
-    if (!write_reg(dev, REG_MODE1, (uint8_t)(mode1 | MODE1_SLEEP)))
+    /* A 1 written to RESTART clears it, and mode1 holds a 1 if the chip already
+     * sleeps with channels active: wake would then have nothing to restart. */
+    uint8_t asleep = (uint8_t)((mode1 & ~MODE1_RESTART) | MODE1_SLEEP);
+    if (!write_reg(dev, REG_MODE1, asleep))
         return PCA9685_ERR_I2C;
 
     return PCA9685_OK;
