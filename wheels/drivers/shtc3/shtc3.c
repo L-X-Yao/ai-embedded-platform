@@ -31,6 +31,10 @@
 #define SHTC3_ID_MASK         0x083F
 #define SHTC3_ID_EXPECT       0x0807
 
+/* Table 5: typically 230 us after a Wakeup and 173 us after a soft reset before
+ * the sensor is idle. The maximums are tbd in this version of the manual. */
+#define IDLE_WAIT_MS          1
+
 static bool send_cmd(const shtc3_t *dev, uint8_t msb, uint8_t lsb)
 {
     uint8_t cmd[2] = { msb, lsb };
@@ -78,8 +82,8 @@ shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
         return SHTC3_ERR_I2C;
     }
 
-    /* Short delay for wakeup (datasheet: ~240 us) */
-    dev->i2c->delay_ms(dev->i2c->ctx, 1);
+    /* Short delay for wakeup */
+    dev->i2c->delay_ms(dev->i2c->ctx, IDLE_WAIT_MS);
 
     /* Read chip ID */
     if (!send_cmd(dev, CMD_READ_ID_MSB, CMD_READ_ID_LSB))
@@ -133,7 +137,7 @@ shtc3_err_t shtc3_read(shtc3_t *dev, shtc3_data_t *out)
         return SHTC3_ERR_I2C;
     }
 
-    dev->i2c->delay_ms(dev->i2c->ctx, 1);
+    dev->i2c->delay_ms(dev->i2c->ctx, IDLE_WAIT_MS);
 
     /* Trigger measurement (normal power, T-first) */
     if (!send_cmd(dev, CMD_MEASURE_NP_MSB, CMD_MEASURE_NP_LSB))
@@ -215,6 +219,7 @@ shtc3_err_t shtc3_wakeup(shtc3_t *dev)
     {
         return SHTC3_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, IDLE_WAIT_MS);
     return SHTC3_OK;
 }
 
@@ -228,9 +233,18 @@ shtc3_err_t shtc3_reset(shtc3_t *dev)
     {
         return SHTC3_ERR_PARAM;
     }
+
+    /* Manual p.7: asleep, which is how init and read leave it, the sensor
+     * "requires the following wake up command before any further communication" */
+    shtc3_err_t err = shtc3_wakeup(dev);
+    if (err != SHTC3_OK)
+    {
+        return err;
+    }
     if (!send_cmd(dev, CMD_RESET_MSB, CMD_RESET_LSB))
     {
         return SHTC3_ERR_I2C;
     }
+    dev->i2c->delay_ms(dev->i2c->ctx, IDLE_WAIT_MS);
     return SHTC3_OK;
 }
