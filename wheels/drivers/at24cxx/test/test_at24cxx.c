@@ -24,6 +24,10 @@ static int     mock_delay_calls;
 /* Write cycle: "All inputs are disabled during this write cycle" (manual p.10),
  * so a transfer gets no acknowledge until tWR has passed. */
 #define MOCK_TWR_MS 20u
+
+/* The AT24C128/256 side of the mock: its address and its 64-byte page */
+#define MOCK_DEV_ADDR 0x50u
+#define MOCK_PAGE_16  64u
 static uint32_t mock_busy_ms;
 
 static void mock_reset(void)
@@ -86,12 +90,13 @@ static bool mock_read_regs(void *ctx, uint8_t dev_addr,
 static bool mock_write_regs(void *ctx, uint8_t dev_addr,
                             uint16_t reg, const uint8_t *data, uint16_t len)
 {
-    (void)ctx; (void)dev_addr;
+    (void)ctx;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
-    if (mock_busy_ms) return false;
+    if (dev_addr != MOCK_DEV_ADDR || mock_busy_ms) return false;
     for (uint16_t i = 0; i < len; i++) {
-        uint16_t a = (uint16_t)(reg + i);
-        if (a < MOCK_MEM_SIZE) mock_mem[a] = data[i];
+        /* a page write wraps inside its page (manual p.10) */
+        uint32_t a = (reg & ~(MOCK_PAGE_16 - 1u)) | ((reg + i) & (MOCK_PAGE_16 - 1u));
+        mock_mem[a % MOCK_MEM_SIZE] = data[i];
     }
     mock_busy_ms = MOCK_TWR_MS;
     return true;
@@ -100,12 +105,12 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr,
 static bool mock_read_regs16(void *ctx, uint8_t dev_addr,
                              uint16_t reg, uint8_t *buf, uint16_t len)
 {
-    (void)ctx; (void)dev_addr;
+    (void)ctx;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
-    if (mock_busy_ms) return false;
+    if (dev_addr != MOCK_DEV_ADDR || mock_busy_ms) return false;
     for (uint16_t i = 0; i < len; i++) {
-        uint16_t a = (uint16_t)(reg + i);
-        buf[i] = (a < MOCK_MEM_SIZE) ? mock_mem[a] : 0xFF;
+        /* a read rolls over from the last byte to the first (manual p.11) */
+        buf[i] = mock_mem[((uint32_t)reg + i) % MOCK_MEM_SIZE];
     }
     return true;
 }
@@ -439,6 +444,45 @@ TEST(test_byte_by_byte_write_waits_after_every_byte)
     ASSERT_EQ(memcmp(back, data, 3), 0);
 }
 
+/* p.10: "When the word address, internally generated, reaches the page
+ * boundary, the following byte is placed at the beginning of the same page." */
+TEST(test_mock_page_write_wraps_inside_the_page)
+{
+    mock_reset();
+    const uint8_t data[4] = { 0x11, 0x22, 0x33, 0x44 };
+    ASSERT_TRUE(mock_write_regs(NULL, 0x50, 62, data, 4));
+    ASSERT_EQ_HEX(mock_mem[62], 0x11);
+    ASSERT_EQ_HEX(mock_mem[63], 0x22);
+    ASSERT_EQ_HEX(mock_mem[0], 0x33);
+    ASSERT_EQ_HEX(mock_mem[1], 0x44);
+    ASSERT_EQ_HEX(mock_mem[64], 0xFF);
+}
+
+/* p.11: "The address "roll over" during read is from the last byte of the last
+ * memory page, to the first byte of the first page." */
+TEST(test_mock_read_rolls_over)
+{
+    mock_reset();
+    mock_mem[32767] = 0xB2;
+    mock_mem[0]     = 0xA1;
+    uint8_t back[2] = { 0 };
+    ASSERT_TRUE(mock_read_regs16(NULL, 0x50, 32767, back, 2));
+    ASSERT_EQ_HEX(back[0], 0xB2);
+    ASSERT_EQ_HEX(back[1], 0xA1);
+}
+
+/* p.10: "If a compare is not made, the device will return to a standby state." */
+TEST(test_wrong_device_address_gets_no_ack)
+{
+    mock_reset();
+    at24cxx_t dev;
+    ASSERT_EQ(at24cxx_init(&dev, &i2c_16bit, 0x51, AT24CXX_C256), AT24CXX_OK);
+    uint8_t val = 0;
+    ASSERT_EQ(at24cxx_read(&dev, 0, &val, 1), AT24CXX_ERR_I2C);
+    ASSERT_EQ(at24cxx_write_byte(&dev, 0, 0x11), AT24CXX_ERR_I2C);
+    ASSERT_EQ_HEX(mock_mem[0], 0xFF);
+}
+
 /* ============================================================
  * Main
  * ============================================================ */
@@ -466,4 +510,7 @@ TEST_MAIN("at24cxx")
     RUN(test_at24c04_address_bit_in_dev_addr);
     RUN(test_write_survives_the_slowest_write_cycle);
     RUN(test_byte_by_byte_write_waits_after_every_byte);
+    RUN(test_mock_page_write_wraps_inside_the_page);
+    RUN(test_mock_read_rolls_over);
+    RUN(test_wrong_device_address_gets_no_ack);
 TEST_MAIN_END()
