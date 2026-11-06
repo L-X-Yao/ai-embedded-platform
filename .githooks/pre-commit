@@ -19,7 +19,9 @@ large=()
 
 ctrl_chars=()
 
-while IFS= read -r file; do
+# -z gives raw paths: without it git quotes non-ASCII and control characters,
+# and the checks below would see the quoted string.
+while IFS= read -r -d '' file; do
     [[ -z "$file" ]] && continue
 
     # Control characters in filename (Claude Code runtime artifact)
@@ -28,12 +30,12 @@ while IFS= read -r file; do
     fi
 
     # Binary artifacts
-    if echo "$file" | grep -qE "($BLOCKED_EXTS)$"; then
+    if echo "$file" | grep -qiE "($BLOCKED_EXTS)$"; then
         blocked+=("$file")
     fi
 
     # Secrets
-    if echo "$file" | grep -qE "($SECRET_PATTERNS)"; then
+    if echo "$file" | grep -qiE "($SECRET_PATTERNS)"; then
         secrets+=("$file")
     fi
 
@@ -44,7 +46,7 @@ while IFS= read -r file; do
             large+=("$file ($(( size / 1024 ))KB)")
         fi
     fi
-done < <(git diff --cached --name-only --diff-filter=ACR)
+done < <(git diff --cached --name-only -z --diff-filter=ACMR)
 
 EXIT=0
 
