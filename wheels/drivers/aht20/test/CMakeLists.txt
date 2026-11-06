@@ -42,7 +42,20 @@ target_include_directories(test_boundary_aht20 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_aht20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_hw_model_aht20
+    test_hw_model_aht20.c
+    ../aht20.c
+)
+target_include_directories(test_hw_model_aht20 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_aht20 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+target_link_libraries(test_hw_model_aht20 PRIVATE m)
+
 enable_testing()
 add_test(NAME aht20_tests COMMAND test_aht20)
+add_test(NAME aht20_hw_model_tests COMMAND test_hw_model_aht20)
 add_test(NAME aht20_null_tests COMMAND test_null_aht20)
 add_test(NAME aht20_boundary_tests COMMAND test_boundary_aht20)
