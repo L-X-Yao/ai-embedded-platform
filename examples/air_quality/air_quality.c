@@ -482,10 +482,15 @@ static bool aht_read(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len)
     return true;
 }
 
+static void aht_delay_ms(void *ctx, uint16_t ms)
+{
+    (void)ctx; (void)ms;
+}
+
 static const aht20_i2c_t aht_i2c = {
     .write    = aht_write,
     .read     = aht_read,
-    .delay_ms = NULL,
+    .delay_ms = aht_delay_ms,
     .ctx      = NULL,
 };
 
