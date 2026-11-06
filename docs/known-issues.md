@@ -51,6 +51,25 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## API fixes approved after the datasheet check (2026-11-06)
+
+These drivers could not follow their manuals through the old HAL or config, so the HAL structs and two configs gained fields. New callbacks go at the end of each struct. A driver with a NULL callback it needs returns its parameter error and sends nothing, so an old HAL fails loudly. None of this has run on hardware.
+
+| Driver | Added | What was wrong |
+|---|---|---|
+| `ccs811` | `write_raw` | APP_START carried a data byte, and ENV_DATA went out as two one-byte writes |
+| `max17048` | `write_raw` | 16-bit registers were written a byte at a time, so no write took effect |
+| `ms5611` | `write_raw` | A 0x00 followed each command, and an all-zero PROM passed the CRC |
+| `pac1952` | `write_raw`, `delay_ms` | REFRESH was at the wrong address with a data byte, and CTRL needs a Block Write |
+| `tca9548a` | `write_raw`, `read_raw` | Reading the channels cleared them |
+| `mlx90614` | `write_read` | Reads had a STOP where the manual needs a repeated START |
+| `mcp2515` | `delay_us` | Nothing waited out the oscillator start-up, and leaving Sleep never woke the chip |
+| `is31fl3731` | `led_ctrl` in `is31fl3731_t`, 144 bytes | LED Control was read while the chip ran |
+| `mcp4728` | `vref_internal`, `gain_x2` in the config | Every write moved the channel to VDD and gain x1 |
+| `bmp388` | none | SKIP measured at x1. It now clears the enable bit, and `{ .addr = x }` alone returns `BMP388_ERR_PARAM` |
+
+`mcp2515` waits 128 us after a wake, which follows the manual but says nothing about crystal start-up, so check it on a board. `pac1952` still has a fixed address of 0x10. With temperature set to SKIP, `bmp388` reuses the temperature measured in init.
+
 ## Fixed by the full sanitizer audit (2026-11-06)
 
 `audit_sanitizer.py` ran only each wheel's main test target, skipped `kvs`, and counted a failed build as a skip. 27 wheels failed to build under it, because the instrumentation sets off their own `-Werror`, so they never ran. The earlier "259/259" was therefore too high. It now builds with `-w`, runs all 931 test targets in all 259 wheels, and fails on a build error. `wheel-gate` now runs ASan as well as UBSan, covers the property tests, and fails on a sanitizer build error.
@@ -71,8 +90,8 @@ This batch covers every driver with registers not yet reviewed in November: 186 
 
 - Confirmed driver faults in constants, formulas, timing and checks are fixed, each with a failing test first. The worst were: `lsm6dso` and `tcs34725` read every axis or channel from one register, `bme688` was a BME680 driver and its gas path could not work, `max31865` was 107 C out at 850 C, `mcp4725` power-down modes did nothing, `ms5611` failed its CRC on real parts, and `scd40` took not-ready for ready.
 - Not usable on hardware until a larger change lands: `vl53l0x` has no device initialisation or calibration. `apds9960_read_gesture` needs its direction logic rewritten.
-- Waiting on a HAL change: `mlx90614` needs a repeated START on reads, `ms5611` a command with no data byte, and `tca9548a` a read with no register byte.
-- Left for a decision: `is31fl3731_set_led_enable` reads a frame register while the chip runs, and the fix adds 144 bytes to `is31fl3731_t`. `mcp4728` writes move a channel to the VDD reference, and keeping 2.048 V needs new fields in its config.
+- The HAL changes for `mlx90614`, `ms5611` and `tca9548a` landed later, see above.
+- `is31fl3731` and `mcp4728` needed public struct changes, which landed later, see above.
 - The drivers reviewed only in May have not been redone, apart from the three rechecks in the batch below, and all three of those found faults. Treat that review as weaker than this one.
 - Some calls now refuse what they used to accept, or take longer. `delay_ms` is required by `bmi160`, `ms5611`, `scd40`, `sgp30`, `shtc3`, `si7021` and `tcs34725`. `hmc5883l` init takes about 3 output periods when `delay_ms` is set, `dps310` init waits for its ready bits, and `pcf8563` stops the clock while setting the time. Each README says what changed.
 
@@ -84,7 +103,7 @@ This batch covers 20 unreviewed drivers, rechecks of `ina219`, `ds3231` and `nrf
 
 - Confirmed driver faults in constants, formulas, timing and checks are fixed, each with a failing test first. `lora_sx1276` took 13 commits, `nrf24l01` 8, and `sd_spi`, `rc522`, `mcp2515` and `sx1262` 4 each.
 - The May rechecks all found faults those reviews had passed. In `nrf24l01` the register map was right, but sequencing, timing and registers never written were not.
-- Waiting on a HAL change: `ccs811` needs address-only and multi-byte writes, as APP_START and ENV_DATA go out in a form the manual does not allow. `max17048` needs a 16-bit write, as its writes change nothing today. `mcp2515` needs a delay.
+- The HAL changes for `ccs811`, `max17048` and `mcp2515` landed later, see above.
 - Model faults are fixed where a driver fix needed them. The rest are in each README under Still open.
 - Of the 23 suspect items from the first batch, 4 are now confirmed, 9 were dismissed and 10 stay open.
 - Some calls now refuse what they used to accept, or take longer: 1 Mbps on `mcp2515`, SF6 on `lora_sx1276`, rates above 800 Hz on `adxl345`, a NULL `delay_ms` on `bmm150`, and about 100 ms in `nrf24_init`.
@@ -96,7 +115,7 @@ This batch covers 20 unreviewed drivers, rechecks of `ina219`, `ds3231` and `nrf
 All ten had defects: 67 confirmed, 23 suspect. Each driver's README lists what was checked, fixed and left open. None had run on hardware, and these fixes have not either, so they match the documents and nothing more.
 
 - Fixed in full or nearly so: `sx1262`, `cc1101`, `bme680`, `bma400`, `bno055`.
-- Not usable on hardware until a larger change lands: `bmi270` (8 KB config upload), `vl53l1x` (port ST's driver), `pac1952` (HAL needs Send Byte, Block Write and a delay).
+- Not usable on hardware until a larger change lands: `bmi270` (8 KB config upload) and `vl53l1x` (port ST's driver). `pac1952` got its HAL change later, see above.
 - Limited: `bmm150` (no trim compensation, so uT values are approximate), `bq27441` (reads work, design capacity needs block data access).
 
 Six test models repeated the driver's mistakes while claiming to come from the datasheet, which is why the tests were green. A passing mock test says nothing about a register value. Take expected values from the document.
