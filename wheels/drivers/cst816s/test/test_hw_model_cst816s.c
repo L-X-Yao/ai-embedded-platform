@@ -35,6 +35,17 @@ TEST(test_hw_init_por_defaults)
     ASSERT_EQ(cst816s_get_firmware_version(&dev), 0x03);
 }
 
+/* Register sheet, AutoSleepTime @0xF9: "Automatically enter low-power mode if
+ * there is no touch in x seconds. Unit: 1s, Default: 2s." */
+TEST(test_hw_auto_sleep_time_resets_to_2s)
+{
+    setup();
+    uint8_t seconds = 0;
+    ASSERT_TRUE(hw_model_i2c_read_regs(&model.hw, CST816S_DEV_ADDR, 0xF9,
+                                       &seconds, 1));
+    ASSERT_EQ(seconds, 2);
+}
+
 TEST(test_hw_init_wrong_chip_id)
 {
     setup();
@@ -219,6 +230,7 @@ TEST(test_hw_multiple_reads_consistent)
 
 TEST_MAIN("cst816s hardware model")
     RUN(test_hw_init_por_defaults);
+    RUN(test_hw_auto_sleep_time_resets_to_2s);
     RUN(test_hw_init_wrong_chip_id);
     RUN(test_hw_read_round_trip);
     RUN(test_hw_read_no_touch);
