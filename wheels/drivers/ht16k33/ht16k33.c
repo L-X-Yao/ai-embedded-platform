@@ -39,13 +39,43 @@ static bool send_cmd(const ht16k33_t *dev, uint8_t cmd)
     return dev->i2c->write_reg(dev->i2c->ctx, dev->addr, cmd, 0x00);
 }
 
+/* The steps of init that talk to the chip */
+static ht16k33_err_t bring_up(const ht16k33_t *dev, uint8_t brightness)
+{
+    /* Turn on system oscillator */
+    if (!send_cmd(dev, CMD_OSCILLATOR_ON)) {
+        return HT16K33_ERR_I2C;
+    }
+
+    /* Turn on display */
+    if (!send_cmd(dev, CMD_DISPLAY_ON)) {
+        return HT16K33_ERR_I2C;
+    }
+
+    /* Set brightness */
+    uint8_t bright_cmd = (uint8_t)(CMD_BRIGHTNESS_BASE | brightness);
+    if (!send_cmd(dev, bright_cmd)) {
+        return HT16K33_ERR_I2C;
+    }
+
+    return HT16K33_OK;
+}
+
 /* ---------- public API ---------- */
 
 ht16k33_err_t ht16k33_init(ht16k33_t *dev,
                             const ht16k33_i2c_t *i2c,
                             const ht16k33_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg) {
+    if (!dev) {
+        return HT16K33_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) {
         return HT16K33_ERR_PARAM;
     }
     if (!i2c->write_reg || !i2c->read_regs) {
@@ -59,24 +89,13 @@ ht16k33_err_t ht16k33_init(ht16k33_t *dev,
         return HT16K33_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->addr = cfg->addr;
 
-    /* Turn on system oscillator */
-    if (!send_cmd(dev, CMD_OSCILLATOR_ON)) {
-        return HT16K33_ERR_I2C;
-    }
-
-    /* Turn on display */
-    if (!send_cmd(dev, CMD_DISPLAY_ON)) {
-        return HT16K33_ERR_I2C;
-    }
-
-    /* Set brightness */
-    uint8_t bright_cmd = (uint8_t)(CMD_BRIGHTNESS_BASE | cfg->brightness);
-    if (!send_cmd(dev, bright_cmd)) {
-        return HT16K33_ERR_I2C;
+    ht16k33_err_t err = bring_up(dev, cfg->brightness);
+    if (err != HT16K33_OK) {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

@@ -9,6 +9,7 @@
  */
 #include "hmc5883l.h"
 #include "contract.h"
+#include <string.h>
 
 #define REG_CONFIG_A 0x00
 #define REG_CONFIG_B 0x01
@@ -61,23 +62,9 @@ static hmc5883l_err_t wait_for_first_sample(const hmc5883l_t *dev)
     return HMC5883L_ERR_TIMEOUT;
 }
 
-hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
-                             const hmc5883l_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static hmc5883l_err_t bring_up(const hmc5883l_t *dev, const hmc5883l_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return HMC5883L_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return HMC5883L_ERR_PARAM;
-    if ((unsigned)cfg->rate > 6 || (unsigned)cfg->gain > 7)
-        return HMC5883L_ERR_PARAM;
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
-    int gain_idx = (int)cfg->gain;
-    if (gain_idx < 0) gain_idx = 0;
-    if (gain_idx > 7) gain_idx = 7;
-    dev->scale = gain_scale[gain_idx];
-
     uint8_t id[3];
     if (!dev->i2c->read_regs(dev->i2c->ctx, HMC5883L_ADDR, REG_ID_A, id, 3))
         return HMC5883L_ERR_I2C;
@@ -95,12 +82,42 @@ hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
     if (!dev->i2c->write_reg(dev->i2c->ctx, HMC5883L_ADDR, REG_MODE, 0x00))
         return HMC5883L_ERR_I2C;
 
-    return i2c->delay_ms ? wait_for_first_sample(dev) : HMC5883L_OK;
+    return dev->i2c->delay_ms ? wait_for_first_sample(dev) : HMC5883L_OK;
+}
+
+hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
+                             const hmc5883l_cfg_t *cfg)
+{
+    if (!dev)
+        return HMC5883L_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return HMC5883L_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return HMC5883L_ERR_PARAM;
+    if ((unsigned)cfg->rate > 6 || (unsigned)cfg->gain > 7)
+        return HMC5883L_ERR_PARAM;
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    int gain_idx = (int)cfg->gain;
+    if (gain_idx < 0) gain_idx = 0;
+    if (gain_idx > 7) gain_idx = 7;
+    dev->scale = gain_scale[gain_idx];
+
+    hmc5883l_err_t err = bring_up(dev, cfg);
+    if (err != HMC5883L_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
         return HMC5883L_ERR_PARAM;
 
     uint8_t buf[6];
@@ -117,7 +134,7 @@ hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw)
 
 hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return HMC5883L_ERR_PARAM;
 
     hmc5883l_raw_t raw;
@@ -136,7 +153,7 @@ hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out)
 
 hmc5883l_err_t hmc5883l_idle(const hmc5883l_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return HMC5883L_ERR_PARAM;
     if (!dev->i2c->write_reg)
         return HMC5883L_ERR_I2C;

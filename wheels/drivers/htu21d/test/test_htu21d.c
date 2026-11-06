@@ -366,6 +366,42 @@ TEST(test_no_delay_hal_null)
     ASSERT_EQ(e, HTU21D_OK);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(htu21d_t *d)
+{
+    float value = 0.0f;
+    ASSERT_EQ(htu21d_read_temperature(d, &value), HTU21D_ERR_PARAM);
+    ASSERT_EQ(htu21d_read_humidity(d, &value), HTU21D_ERR_PARAM);
+    ASSERT_EQ(htu21d_reset(d), HTU21D_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_reset)
+{
+    htu21d_t d;
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(htu21d_init(&d, &mock_i2c), HTU21D_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    htu21d_t d;
+    htu21d_i2c_t no_read = mock_i2c;
+    no_read.read_data = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(htu21d_init(&d, NULL), HTU21D_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(htu21d_init(&d, &no_read), HTU21D_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("htu21d")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -389,4 +425,6 @@ TEST_MAIN("htu21d")
     RUN(test_init_delays_after_reset);
     RUN(test_init_waits_before_first_command);
     RUN(test_no_delay_hal_null);
+    RUN(test_device_refused_after_failed_reset);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
