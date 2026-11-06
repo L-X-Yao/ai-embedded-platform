@@ -142,10 +142,10 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
     if (!write_reg(dev, REG_SPO2_CONFIG, 0x27))
         return MAX30102_ERR_I2C;
 
-    /* default LED currents: ~6.4 mA each (register value 0x20 * 0.2 mA) */
-    if (!write_reg(dev, REG_LED1_PA, 0x20))
+    /* default LED currents: 6.4 mA typical each (Table 8: register 0x1F) */
+    if (!write_reg(dev, REG_LED1_PA, 0x1F))
         return MAX30102_ERR_I2C;
-    if (!write_reg(dev, REG_LED2_PA, 0x20))
+    if (!write_reg(dev, REG_LED2_PA, 0x1F))
         return MAX30102_ERR_I2C;
 
     /* default mode: SpO2 */
@@ -199,7 +199,9 @@ max30102_err_t max30102_set_led_current(max30102_t *dev,
     if (!dev || !dev->i2c)
         return MAX30102_ERR_PARAM;
 
-    /* Each register step = 0.2 mA.  Input is in 0.1 mA units.
+    /* Each register step is about 0.2 mA, and that is a typical figure:
+     * Table 8 is not uniform (0x1F is 6.4 mA, 0x3F is 12.5 mA), and real
+     * parts vary widely.  Input is in 0.1 mA units.
      * Register value = red_ma_x10 / 2 (integer division, rounds down).
      * Max input 255 (25.5 mA representable; full range 0-50 mA needs
      * uint16_t, but API uses uint8_t so max 25.5 mA). */

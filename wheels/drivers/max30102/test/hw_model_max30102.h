@@ -11,7 +11,7 @@
  * - FIFO_DATA (0x07): burst-read returns sample bytes, advances RD_PTR
  * - Die temperature: TEMP_INT (0x1F, signed), TEMP_FRAC (0x20, 4-bit)
  * - Temperature one-shot trigger via TEMP_CONFIG (0x21)
- * - LED1_PA (0x0C), LED2_PA (0x0D): 0.2 mA per step
+ * - LED1_PA (0x0C), LED2_PA (0x0D): about 0.2 mA per step, typical (Table 8)
  * - MODE_CONFIG (0x09): mode[2:0], SHDN bit 7, RESET bit 6
  * - SPO2_CONFIG (0x0A): ADC_RANGE[6:5], SR[4:2], PW[1:0]
  * - FIFO_CONFIG (0x08): SMP_AVE[7:5], FIFO_ROLLOVER[4], FIFO_A_FULL[3:0]
