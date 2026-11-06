@@ -48,6 +48,9 @@ moving_window_err_t moving_window_init(moving_window_t *ctx,
 
 /** @thread_safe: no @isr_safe: yes
  *  Push a new sample into the window. Oldest sample is evicted when full.
+ *  @return MOVING_WINDOW_ERR_PARAM, leaving the window unchanged, for NaN,
+ *          Inf, or a value whose square would overflow the running sum of
+ *          squares (any |value| above about 1.8e19).
  */
 moving_window_err_t moving_window_push(moving_window_t *ctx, float value);
 
