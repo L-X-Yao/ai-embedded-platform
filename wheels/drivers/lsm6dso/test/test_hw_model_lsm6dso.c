@@ -32,6 +32,18 @@ static void setup(void)
     lsm6dso_model_init(&model);
 }
 
+/* STATUS_REG, DS12140 Table 78 p64 */
+#define XLDA 0x01u
+#define GDA  0x02u
+#define TDA  0x04u
+
+static uint8_t read_status(void)
+{
+    uint8_t status = 0xFFu;
+    hw_model_read_regs(&model, 0, 0x1E, &status, 1);
+    return status;
+}
+
 /* --- init tests -------------------------------------------------------- */
 
 TEST(test_init_reads_who_am_i)
@@ -223,6 +235,147 @@ TEST(test_init_keeps_the_address_increment)
     ASSERT_NEAR(accel.z_mg, 183.0f, 0.1f);
 }
 
+/* --- what the model itself must do (DS12140) ----------------------------- */
+
+/* p40 Table 20: "CTRL3_C RW 12 00010010 00000100", "CTRL9_XL RW 18 00011000
+ * 11100000" */
+TEST(test_table_20_defaults)
+{
+    setup();
+    ASSERT_EQ_HEX(model.regs[0x0F], 0x6Cu);
+    ASSERT_EQ_HEX(model.regs[0x12], 0x04u);
+    ASSERT_EQ_HEX(model.regs[0x18], 0xE0u);
+}
+
+/* p52: SW_RESET "This bit is automatically cleared." */
+TEST(test_sw_reset_clears_itself)
+{
+    setup();
+    hw_model_write_reg(&model, 0, 0x12, 0x45u);
+    ASSERT_EQ_HEX(model.regs[0x12], 0x04u);
+    ASSERT_EQ(model.reset_count, 1);
+}
+
+/* p52: BOOT "This bit is automatically cleared." */
+TEST(test_boot_clears_itself)
+{
+    setup();
+    hw_model_write_reg(&model, 0, 0x12, 0x84u);
+    ASSERT_EQ_HEX(model.regs[0x12], 0x04u);
+}
+
+/* p64: every flag has "Default value: 0" and the register is read-only */
+TEST(test_status_is_clear_and_read_only)
+{
+    setup();
+    ASSERT_EQ_HEX(read_status(), 0u);
+    hw_model_write_reg(&model, 0, 0x1E, 0xFFu);
+    ASSERT_EQ_HEX(read_status(), 0u);
+}
+
+/* p64: XLDA "1: a new set of data is available at accelerometer output" */
+TEST(test_accel_sample_sets_xlda_only)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    lsm6dso_model_set_accel(&model, 1, 2, 3);
+    ASSERT_EQ_HEX(read_status(), XLDA);
+}
+
+/* p64: GDA "1: a new set of data is available at gyroscope output" */
+TEST(test_gyro_sample_sets_gda_only)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    lsm6dso_model_set_gyro(&model, 1, 2, 3);
+    ASSERT_EQ_HEX(read_status(), GDA);
+}
+
+/* p64: TDA "1: a new set of data is available at temperature sensor output" */
+TEST(test_temp_sample_sets_tda_only)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    lsm6dso_model_set_temp(&model, 256);
+    ASSERT_EQ_HEX(read_status(), TDA);
+}
+
+/* p64 Table 81: "reset when one of the high parts of the output data is read" */
+TEST(test_read_clears_only_that_flag)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    lsm6dso_model_set_accel(&model, 1, 2, 3);
+    lsm6dso_model_set_gyro(&model, 1, 2, 3);
+    lsm6dso_model_set_temp(&model, 256);
+    ASSERT_EQ_HEX(read_status(), XLDA | GDA | TDA);
+
+    lsm6dso_accel_data_t accel;
+    ASSERT_EQ(lsm6dso_read_accel(&dev, &accel), LSM6DSO_OK);
+    ASSERT_EQ_HEX(read_status(), GDA | TDA);
+
+    lsm6dso_gyro_data_t gyro;
+    ASSERT_EQ(lsm6dso_read_gyro(&dev, &gyro), LSM6DSO_OK);
+    ASSERT_EQ_HEX(read_status(), TDA);
+
+    float temp;
+    ASSERT_EQ(lsm6dso_read_temp(&dev, &temp), LSM6DSO_OK);
+    ASSERT_EQ_HEX(read_status(), 0u);
+}
+
+/* The low byte alone is not one of the "high parts" */
+TEST(test_low_byte_keeps_the_flag)
+{
+    setup();
+    lsm6dso_t dev;
+    ASSERT_EQ(lsm6dso_init(&dev, &model_i2c, &default_cfg), LSM6DSO_OK);
+    lsm6dso_model_set_accel(&model, 1, 2, 3);
+    uint8_t low = 0;
+    hw_model_read_regs(&model, 0, 0x28, &low, 1);
+    ASSERT_EQ_HEX(read_status(), XLDA);
+    uint8_t high = 0;
+    hw_model_read_regs(&model, 0, 0x29, &high, 1);
+    ASSERT_EQ_HEX(read_status(), 0u);
+}
+
+/* p27: each sensor "is activated from power-down by writing" its ODR field, so
+ * with both at 0 no sample reaches the output registers */
+TEST(test_power_down_makes_no_sample)
+{
+    setup();
+    lsm6dso_model_set_accel(&model, 0x1234, 0, 0);
+    lsm6dso_model_set_gyro(&model, 0x1234, 0, 0);
+    lsm6dso_model_set_temp(&model, 0x1234);
+    ASSERT_EQ_HEX(read_status(), 0u);
+    ASSERT_EQ_HEX(model.regs[0x28], 0u);
+    ASSERT_EQ_HEX(model.regs[0x22], 0u);
+    ASSERT_EQ_HEX(model.regs[0x20], 0u);
+}
+
+/* The two ODR fields are separate: p27 "the ODRs are totally independent" */
+TEST(test_each_odr_gates_its_own_sensor)
+{
+    setup();
+    hw_model_write_reg(&model, 0, 0x10, 0x40u);  /* accel on, gyro off */
+    lsm6dso_model_set_gyro(&model, 0x1234, 0, 0);
+    ASSERT_EQ_HEX(read_status(), 0u);
+    ASSERT_EQ_HEX(model.regs[0x22], 0u);
+    lsm6dso_model_set_accel(&model, 0x1234, 0, 0);
+    ASSERT_EQ_HEX(read_status(), XLDA);
+
+    setup();
+    hw_model_write_reg(&model, 0, 0x11, 0x40u);  /* gyro on, accel off */
+    lsm6dso_model_set_accel(&model, 0x1234, 0, 0);
+    ASSERT_EQ_HEX(read_status(), 0u);
+    ASSERT_EQ_HEX(model.regs[0x28], 0u);
+    lsm6dso_model_set_gyro(&model, 0x1234, 0, 0);
+    ASSERT_EQ_HEX(read_status(), GDA);
+}
+
 TEST_MAIN("lsm6dso hardware model")
     RUN(test_init_reads_who_am_i);
     RUN(test_init_wrong_who_am_i);
@@ -239,4 +392,15 @@ TEST_MAIN("lsm6dso hardware model")
     RUN(test_reset_via_driver);
     RUN(test_different_accel_values);
     RUN(test_init_keeps_the_address_increment);
+    RUN(test_table_20_defaults);
+    RUN(test_sw_reset_clears_itself);
+    RUN(test_boot_clears_itself);
+    RUN(test_status_is_clear_and_read_only);
+    RUN(test_accel_sample_sets_xlda_only);
+    RUN(test_gyro_sample_sets_gda_only);
+    RUN(test_temp_sample_sets_tda_only);
+    RUN(test_read_clears_only_that_flag);
+    RUN(test_low_byte_keeps_the_flag);
+    RUN(test_power_down_makes_no_sample);
+    RUN(test_each_odr_gates_its_own_sensor);
 TEST_MAIN_END()

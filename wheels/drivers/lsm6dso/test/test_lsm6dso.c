@@ -5,15 +5,32 @@
 
 /* ---------- chip-specific mock setup ---------- */
 
+static int sw_reset_writes;
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[0x0F] = 0x6C;  /* WHO_AM_I */
     mock_regs[0x12] = 0x04;  /* CTRL3_C reset value: IF_INC set */
+    sw_reset_writes = 0;
+}
+
+/* DS12140 p52: SW_RESET "This bit is automatically cleared.", so a plain store
+ * would leave a bit the chip never shows. */
+static bool lsm6dso_mock_write_reg(void *ctx, uint8_t dev_addr,
+                                   uint8_t reg, uint8_t val)
+{
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
+        return false;
+    if (reg == 0x12 && (val & 0x01u)) {
+        sw_reset_writes++;
+        mock_regs[0x12] = 0x04;
+    }
+    return true;
 }
 
 static const lsm6dso_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = lsm6dso_mock_write_reg,
     .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
@@ -325,9 +342,12 @@ TEST(test_addr_high)
 TEST(test_reset)
 {
     setup();
+    int before = sw_reset_writes;
     ASSERT_EQ(lsm6dso_reset(&dev), LSM6DSO_OK);
-    /* CTRL3_C should have SW_RESET bit set */
-    ASSERT_EQ(mock_regs[0x12], 0x01);
+    /* DS12140 p52: SW_RESET "This bit is automatically cleared." CTRL3_C is
+     * back at its p40 default, so the proof of the reset is the write. */
+    ASSERT_EQ(sw_reset_writes, before + 1);
+    ASSERT_EQ_HEX(mock_regs[0x12], 0x04u);
 }
 
 TEST(test_reset_i2c_fail)
