@@ -14,8 +14,17 @@
 #include "mock_i2c.h"
 #include "bme280.h"
 
+/* A forced measurement is over at once: the sensor is back in sleep mode */
+static bool prop_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    bool ok = mock_i2c_write_reg(ctx, dev_addr, reg, val);
+    if (reg == 0xF4)
+        mock_regs[0xF4] &= 0xFC;
+    return ok;
+}
+
 static const bme280_i2c_t prop_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = prop_write_reg,
     .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
