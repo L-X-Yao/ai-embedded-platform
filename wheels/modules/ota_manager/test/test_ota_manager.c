@@ -337,6 +337,29 @@ TEST(test_activate_success)
     ASSERT_EQ(activate_called, 1);
 }
 
+TEST(test_activate_failure_goes_to_error)
+{
+    mock_reset();
+    mock_new_size = 256;
+    chunk_return_size = 256;
+    ota_manager_init(&mgr, &test_ops, "1.0.0");
+    ota_manager_check(&mgr);
+
+    uint8_t buf[256];
+    ota_manager_download_step(&mgr, buf, sizeof(buf));
+    ota_manager_verify(&mgr);
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_READY);
+
+    mock_activate_ret = OTA_MGR_ERR_WRITE;
+    ASSERT_EQ(ota_manager_activate(&mgr), OTA_MGR_ERR_WRITE);
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
+    ASSERT_EQ(activate_called, 1);
+
+    /* no longer ready: a second try must not reach the slot switch */
+    ASSERT_EQ(ota_manager_activate(&mgr), OTA_MGR_ERR_STATE);
+    ASSERT_EQ(activate_called, 1);
+}
+
 TEST(test_download_without_check)
 {
     mock_reset();
@@ -744,6 +767,8 @@ TEST(test_progress_never_falls_on_a_large_image)
         ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
         ASSERT_TRUE(ota_manager_get_progress(&mgr) >= last);
         last = ota_manager_get_progress(&mgr);
+        /* 64 bits hold the plain sum, and the size divides by 100 exactly */
+        ASSERT_EQ(last, (uint64_t)mgr.downloaded * 100u / mock_new_size);
     }
     ASSERT_EQ(last, 100);
 }
@@ -763,6 +788,7 @@ TEST_MAIN("ota_manager")
     RUN(test_verify_success);
     RUN(test_verify_failure);
     RUN(test_activate_success);
+    RUN(test_activate_failure_goes_to_error);
     RUN(test_download_without_check);
     RUN(test_verify_before_complete);
     RUN(test_activate_before_verify);
