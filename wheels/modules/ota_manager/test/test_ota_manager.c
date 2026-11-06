@@ -25,10 +25,14 @@ static uint32_t last_download_offset;
 /* Simulated firmware data: each chunk returns chunk_fill_byte */
 static uint8_t  chunk_fill_byte;
 static uint16_t chunk_return_size;
+static uint32_t server_image_size;   /* 0 = as long as announced */
+static uint32_t idle_reads_per_chunk; /* empty reads before each chunk */
+static uint32_t idle_reads_left;
 
 /* Written data tracking */
 static uint8_t  written_buf[4096];
 static uint32_t written_total;
+static int      empty_writes;
 
 static void mock_reset(void)
 {
@@ -49,9 +53,13 @@ static void mock_reset(void)
     last_download_offset = 0;
     chunk_fill_byte      = 0xAA;
     chunk_return_size     = OTA_MGR_CHUNK_SIZE;
+    server_image_size     = 0;
+    idle_reads_per_chunk  = 0;
+    idle_reads_left       = 0;
 
     memset(written_buf, 0, sizeof(written_buf));
     written_total = 0;
+    empty_writes  = 0;
 }
 
 /* ---- Mock callbacks ---- */
@@ -80,9 +88,18 @@ static ota_mgr_err_t mock_download_chunk(void *ctx, uint32_t offset,
     if (mock_download_ret != OTA_MGR_OK) {
         return mock_download_ret;
     }
+    if (idle_reads_left > 0) {
+        idle_reads_left--;
+        *bytes_read = 0;
+        return OTA_MGR_OK;
+    }
+    idle_reads_left = idle_reads_per_chunk;
     uint16_t to_read = chunk_return_size;
     if (to_read > buf_size) {
         to_read = buf_size;
+    }
+    if (server_image_size != 0 && offset + to_read > server_image_size) {
+        to_read = (uint16_t)(server_image_size - offset);
     }
     memset(buf, chunk_fill_byte, to_read);
     *bytes_read = to_read;
@@ -94,6 +111,7 @@ static ota_mgr_err_t mock_write_chunk(void *ctx, uint32_t offset,
 {
     (void)ctx;
     write_called++;
+    if (len == 0) empty_writes++;
     if (mock_write_ret != OTA_MGR_OK) {
         return mock_write_ret;
     }
@@ -448,6 +466,86 @@ TEST(test_chunk_smaller_than_buf)
     ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_VERIFYING);
 }
 
+/* The server holds 900 of the 1000 bytes announced and answers 0 bytes with
+ * OK at the end of the file: the loop the header prescribes must end. */
+TEST(test_short_image_ends_the_download_loop)
+{
+    mock_reset();
+    mock_new_size = 1000;
+    server_image_size = 900;
+    chunk_return_size = 256;
+    ota_manager_init(&mgr, &test_ops, "1.0.0");
+    ota_manager_check(&mgr);
+
+    uint8_t buf[256];
+    ota_mgr_err_t err = OTA_MGR_OK;
+    uint32_t steps = 0;
+    const uint32_t cap = 4u + OTA_MGR_MAX_EMPTY_READS + 1000u;
+
+    while (ota_manager_get_state(&mgr) == OTA_MGR_STATE_DOWNLOADING &&
+           steps < cap) {
+        err = ota_manager_download_step(&mgr, buf, sizeof(buf));
+        steps++;
+    }
+
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
+    ASSERT_EQ(err, OTA_MGR_ERR_DOWNLOAD);
+    ASSERT_EQ(steps, 4u + OTA_MGR_MAX_EMPTY_READS);  /* 256 256 256 132, then 0s */
+    ASSERT_EQ(written_total, 900);
+    ASSERT_EQ(empty_writes, 0);
+    ASSERT_EQ(write_called, 4);
+    ASSERT_EQ(verify_called, 0);
+}
+
+/* A non-blocking transport may have nothing yet: as long as chunks keep
+ * coming, empty reads cost nothing and never reach storage. */
+TEST(test_empty_reads_do_not_stop_a_live_download)
+{
+    mock_reset();
+    mock_new_size = 768;
+    chunk_return_size = 256;
+    idle_reads_per_chunk = OTA_MGR_MAX_EMPTY_READS - 1u;
+    idle_reads_left = OTA_MGR_MAX_EMPTY_READS - 1u;
+    ota_manager_init(&mgr, &test_ops, "1.0.0");
+    ota_manager_check(&mgr);
+
+    uint8_t buf[256];
+    while (ota_manager_get_state(&mgr) == OTA_MGR_STATE_DOWNLOADING) {
+        ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
+    }
+
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_VERIFYING);
+    ASSERT_EQ(ota_manager_get_progress(&mgr), 100);
+    ASSERT_EQ(written_total, 768);
+    ASSERT_EQ(write_called, 3);
+    ASSERT_EQ(empty_writes, 0);
+}
+
+/* A failed download must not eat into the allowance of the next one. */
+TEST(test_empty_read_count_restarts_with_each_download)
+{
+    mock_reset();
+    mock_new_size = 256;
+    chunk_return_size = 256;
+    ota_manager_init(&mgr, &test_ops, "1.0.0");
+
+    uint8_t buf[256];
+    ota_manager_check(&mgr);
+    idle_reads_left = OTA_MGR_MAX_EMPTY_READS;
+    while (ota_manager_get_state(&mgr) == OTA_MGR_STATE_DOWNLOADING) {
+        (void)ota_manager_download_step(&mgr, buf, sizeof(buf));
+    }
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_ERROR);
+
+    ota_manager_reset(&mgr);
+    ASSERT_EQ(ota_manager_check(&mgr), OTA_MGR_OK);
+    idle_reads_left = OTA_MGR_MAX_EMPTY_READS - 1u;
+    while (ota_manager_get_state(&mgr) == OTA_MGR_STATE_DOWNLOADING) {
+        ASSERT_EQ(ota_manager_download_step(&mgr, buf, sizeof(buf)), OTA_MGR_OK);
+    }
+    ASSERT_EQ(ota_manager_get_state(&mgr), OTA_MGR_STATE_VERIFYING);
+}
+
 TEST(test_get_state_null)
 {
     ASSERT_EQ(ota_manager_get_state(NULL), OTA_MGR_STATE_IDLE);
@@ -687,4 +785,7 @@ TEST_MAIN("ota_manager")
     RUN(test_transport_claiming_too_much_is_refused);
     RUN(test_empty_image_is_refused);
     RUN(test_progress_never_falls_on_a_large_image);
+    RUN(test_short_image_ends_the_download_loop);
+    RUN(test_empty_reads_do_not_stop_a_live_download);
+    RUN(test_empty_read_count_restarts_with_each_download);
 TEST_MAIN_END()
