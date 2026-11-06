@@ -10,7 +10,14 @@
 
 #include "moving_average.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
+
+/* False for NaN as well: every comparison with NaN is false. */
+static bool is_finite(float x)
+{
+    return x >= -FLT_MAX && x <= FLT_MAX;
+}
 
 /* --- SMA --- */
 
@@ -53,19 +60,17 @@ float moving_average_sma_feed(moving_average_sma_t *ctx, float sample)
     {
         return 0.0f;
     }
-    /* reject NaN — would poison running sum and corrupt all averages */
-    if (sample != sample)
+    /* reject NaN, Inf and a sample that overflows the sum — the running sum
+     * would never recover (inf - x is still inf) and corrupt all averages */
+    float evicted = ctx->count >= ctx->window ? ctx->buf[ctx->head] : 0.0f;
+    float sum = ctx->sum - evicted + sample;
+    if (!is_finite(sum))
     {
         return ctx->count > 0 ? ctx->sum / (float)ctx->count : 0.0f;
     }
 
-    if (ctx->count >= ctx->window)
-    {
-        ctx->sum -= ctx->buf[ctx->head];
-    }
-
     ctx->buf[ctx->head] = sample;
-    ctx->sum += sample;
+    ctx->sum = sum;
     ctx->head = (ctx->head + 1) % ctx->window;
 
     if (ctx->count < ctx->window)
@@ -127,8 +132,8 @@ float moving_average_ema_feed(moving_average_ema_t *ctx, float sample)
     {
         return 0.0f;
     }
-    /* reject NaN — would poison EMA state permanently */
-    if (sample != sample)
+    /* reject NaN and Inf — would poison EMA state permanently */
+    if (!is_finite(sample))
     {
         return ctx->value;
     }

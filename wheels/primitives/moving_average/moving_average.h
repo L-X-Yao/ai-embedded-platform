@@ -48,7 +48,9 @@ moving_average_err_t moving_average_sma_init(moving_average_sma_t *ctx,
 /** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_sma_reset(moving_average_sma_t *ctx);
 
-/** @thread_safe: no @isr_safe: yes */
+/** Feed a sample and return the average.  A sample that is NaN or Inf, or
+ *  that would overflow the running sum, is ignored.
+ *  @thread_safe: no @isr_safe: yes */
 float moving_average_sma_feed(moving_average_sma_t *ctx, float sample);
 
 /** @thread_safe: no @isr_safe: yes */
@@ -71,7 +73,8 @@ moving_average_err_t moving_average_ema_init(moving_average_ema_t *ctx, float al
 /** @thread_safe: no @isr_safe: no */
 moving_average_err_t moving_average_ema_reset(moving_average_ema_t *ctx);
 
-/** @thread_safe: no @isr_safe: yes */
+/** Feed a sample and return the average.  A NaN or Inf sample is ignored.
+ *  @thread_safe: no @isr_safe: yes */
 float moving_average_ema_feed(moving_average_ema_t *ctx, float sample);
 
 /** @thread_safe: no @isr_safe: yes */
