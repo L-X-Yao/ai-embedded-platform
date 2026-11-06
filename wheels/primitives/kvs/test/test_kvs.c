@@ -321,6 +321,89 @@ TEST(test_record_name_too_long)
     check_long_name_record_is_skipped(255);
 }
 
+/* fdb_def.h: "the KV max name length must less then it". */
+TEST(test_key_at_name_max_is_refused)
+{
+    char key[FDB_KV_NAME_MAX + 2];
+    uint32_t value = 64;
+    struct fdb_blob blob;
+
+    reset_flash();
+    init_kvdb();
+
+    memset(key, 'k', sizeof(key));
+    key[FDB_KV_NAME_MAX] = '\0';
+    ASSERT_TRUE(fdb_kv_set_blob(&test_kvdb, key,
+                                fdb_blob_make(&blob, &value, sizeof(value))) == FDB_KV_NAME_ERR);
+    ASSERT_TRUE(find_record(key) == NULL);
+
+    key[FDB_KV_NAME_MAX] = 'k';
+    key[FDB_KV_NAME_MAX + 1] = '\0';
+    ASSERT_TRUE(fdb_kv_set_blob(&test_kvdb, key,
+                                fdb_blob_make(&blob, &value, sizeof(value))) == FDB_KV_NAME_ERR);
+}
+
+TEST(test_every_accepted_key_survives_reboot)
+{
+    char key[FDB_KV_NAME_MAX + 2];
+    uint32_t value = 7;
+    uint32_t read_back = 0;
+    struct fdb_blob blob;
+
+    for (size_t len = FDB_KV_NAME_MAX - 2; len <= FDB_KV_NAME_MAX + 1; len++) {
+        reset_flash();
+        init_kvdb();
+
+        memset(key, 'k', sizeof(key));
+        key[len] = '\0';
+        fdb_err_t err = fdb_kv_set_blob(&test_kvdb, key,
+                                        fdb_blob_make(&blob, &value, sizeof(value)));
+        fdb_kvdb_deinit(&test_kvdb);
+        if (err != FDB_NO_ERR) {
+            continue;
+        }
+
+        ASSERT_TRUE(init_kvdb() == FDB_NO_ERR);
+        ASSERT_EQ(fdb_kv_get_blob(&test_kvdb, key,
+                                  fdb_blob_make(&blob, &read_back, sizeof(read_back))),
+                  sizeof(read_back));
+    }
+}
+
+TEST(test_longest_key_survives_reboot)
+{
+    char key[FDB_KV_NAME_MAX];
+    uint32_t value = 63;
+    uint32_t read_back = 0;
+    struct fdb_blob blob;
+
+    reset_flash();
+    init_kvdb();
+
+    memset(key, 'k', sizeof(key));
+    key[FDB_KV_NAME_MAX - 1] = '\0';
+    ASSERT_TRUE(fdb_kv_set_blob(&test_kvdb, key,
+                                fdb_blob_make(&blob, &value, sizeof(value))) == FDB_NO_ERR);
+    fdb_kvdb_deinit(&test_kvdb);
+
+    ASSERT_TRUE(init_kvdb() == FDB_NO_ERR);
+    ASSERT_EQ(fdb_kv_get_blob(&test_kvdb, key,
+                              fdb_blob_make(&blob, &read_back, sizeof(read_back))),
+              sizeof(read_back));
+    ASSERT_EQ(read_back, 63);
+
+    /* Setting it again replaces the record, and deleting it removes it. */
+    value = 64;
+    ASSERT_TRUE(fdb_kv_set_blob(&test_kvdb, key,
+                                fdb_blob_make(&blob, &value, sizeof(value))) == FDB_NO_ERR);
+    ASSERT_TRUE(fdb_kv_del(&test_kvdb, key) == FDB_NO_ERR);
+    fdb_kvdb_deinit(&test_kvdb);
+
+    ASSERT_TRUE(init_kvdb() == FDB_NO_ERR);
+    ASSERT_EQ(fdb_kv_get_blob(&test_kvdb, key,
+                              fdb_blob_make(&blob, &read_back, sizeof(read_back))), 0);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("kvs")
@@ -336,5 +419,8 @@ TEST_MAIN("kvs")
     RUN(test_multiple_keys);
     RUN(test_iterator);
     RUN(test_record_name_too_long);
+    RUN(test_key_at_name_max_is_refused);
+    RUN(test_every_accepted_key_survives_reboot);
+    RUN(test_longest_key_survives_reboot);
 TEST_MAIN_END()
 

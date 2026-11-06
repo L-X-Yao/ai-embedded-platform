@@ -37,6 +37,9 @@ these changes to `src/fdb_kvdb.c`, each marked `Local change` in the file:
   even when its CRC is valid. Upstream reads the whole name into the fixed
   `kv->name` first and overruns it, so a build with a smaller limit than
   the one that wrote the flash crashed in `fdb_kvdb_init`.
+- `create_kv_blob` refuses a key of exactly `FDB_KV_NAME_MAX` characters, as
+  the comment in `fdb_def.h` asks. Upstream accepts it, but `read_kv` replaces
+  its last character with the NUL, so the key cannot be found after a reboot.
 
 The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 
