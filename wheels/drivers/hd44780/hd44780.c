@@ -57,8 +57,7 @@ static bool expander_write(const hd44780_t *dev, uint8_t data)
 
 static void delay(const hd44780_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms)
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 /* Pulse EN high then low */
@@ -172,7 +171,7 @@ hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
 
     if (!i2c)
         return HD44780_ERR_PARAM;
-    if (!i2c->write_reg)
+    if (!i2c->write_reg || !i2c->delay_ms)
         return HD44780_ERR_PARAM;
     if (cols == 0 || cols > HD44780_MAX_COLS || rows == 0 || rows > HD44780_MAX_ROWS)
         return HD44780_ERR_PARAM;
