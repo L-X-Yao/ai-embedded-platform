@@ -579,6 +579,29 @@ TEST(test_sizes_past_uint16)
     ASSERT_EQ(0, lit_pixels(&fb));
 }
 
+/* ---- test_blit_source_past_64k ---- */
+
+/* 1024x768 is 96 KB of source at 128 bytes a row, so each row past the first
+ * 512 sits 65536 bytes after the row 512 above it. */
+TEST(test_blit_source_past_64k)
+{
+    static uint8_t bitmap[128u * 768u];
+    static uint8_t buf[768]; /* 8x768 HLSB: one byte per row */
+    framebuffer_t fb;
+    ASSERT_EQ(FRAMEBUFFER_OK,
+              framebuffer_init(&fb, buf, 8, 768, FB_FORMAT_MONO_HLSB));
+
+    bitmap[88u * 128u] = 0x80u;
+    bitmap[700u * 128u] = 0x80u;
+    framebuffer_blit_1bpp(&fb, 0, 0, bitmap, 1024, 768, 1);
+
+    ASSERT_EQ(1, framebuffer_get_pixel(&fb, 0, 88));
+    ASSERT_EQ(1, framebuffer_get_pixel(&fb, 0, 700));
+    ASSERT_EQ(0, framebuffer_get_pixel(&fb, 0, 600));
+    ASSERT_EQ(0, framebuffer_get_pixel(&fb, 0, 188));
+    ASSERT_EQ(2, lit_pixels(&fb));
+}
+
 TEST_MAIN("framebuffer")
     RUN(test_init_null);
     RUN(test_init_mono_vlsb);
@@ -598,4 +621,5 @@ TEST_MAIN("framebuffer")
     RUN(test_buf_size);
     RUN(test_blit_1bpp_on_rgb565);
     RUN(test_sizes_past_uint16);
+    RUN(test_blit_source_past_64k);
 TEST_MAIN_END()
