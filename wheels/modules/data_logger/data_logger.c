@@ -39,6 +39,28 @@ static data_logger_err_t buf_comma(data_logger_t *dl)
 }
 
 /*
+ * Append one field with its comma and count it.  A field that does not fit
+ * leaves the buffer as it was, so a retry cannot add an empty column.
+ */
+static data_logger_err_t add_field(data_logger_t *dl, const char *s,
+                                   uint16_t len)
+{
+    uint16_t start = dl->buf_pos;
+
+    data_logger_err_t err = buf_comma(dl);
+    if (err == DATA_LOGGER_OK) {
+        err = buf_append(dl, s, len);
+    }
+    if (err != DATA_LOGGER_OK) {
+        dl->buf_pos = start;
+        return err;
+    }
+
+    dl->field_idx++;
+    return DATA_LOGGER_OK;
+}
+
+/*
  * Check common preconditions for add_* functions:
  * - dl not NULL
  * - record is active (between begin/commit)
@@ -190,32 +212,18 @@ data_logger_err_t data_logger_add_int(data_logger_t *dl, int32_t value)
         return err;
     }
 
-    err = buf_comma(dl);
-    if (err != DATA_LOGGER_OK) {
-        return err;
-    }
-
     char tmp[12];
     int n = snprintf(tmp, sizeof(tmp), "%ld", (long)value);
     if (n < 0 || (uint16_t)n >= sizeof(tmp)) {
         return DATA_LOGGER_ERR_OVERFLOW;
     }
 
-    err = buf_append(dl, tmp, (uint16_t)n);
-    if (err == DATA_LOGGER_OK) {
-        dl->field_idx++;
-    }
-    return err;
+    return add_field(dl, tmp, (uint16_t)n);
 }
 
 data_logger_err_t data_logger_add_uint(data_logger_t *dl, uint32_t value)
 {
     data_logger_err_t err = check_add(dl, DATA_LOGGER_FIELD_UINT32);
-    if (err != DATA_LOGGER_OK) {
-        return err;
-    }
-
-    err = buf_comma(dl);
     if (err != DATA_LOGGER_OK) {
         return err;
     }
@@ -226,21 +234,12 @@ data_logger_err_t data_logger_add_uint(data_logger_t *dl, uint32_t value)
         return DATA_LOGGER_ERR_OVERFLOW;
     }
 
-    err = buf_append(dl, tmp, (uint16_t)n);
-    if (err == DATA_LOGGER_OK) {
-        dl->field_idx++;
-    }
-    return err;
+    return add_field(dl, tmp, (uint16_t)n);
 }
 
 data_logger_err_t data_logger_add_float(data_logger_t *dl, float value)
 {
     data_logger_err_t err = check_add(dl, DATA_LOGGER_FIELD_FLOAT);
-    if (err != DATA_LOGGER_OK) {
-        return err;
-    }
-
-    err = buf_comma(dl);
     if (err != DATA_LOGGER_OK) {
         return err;
     }
@@ -251,11 +250,7 @@ data_logger_err_t data_logger_add_float(data_logger_t *dl, float value)
         return DATA_LOGGER_ERR_OVERFLOW;
     }
 
-    err = buf_append(dl, tmp, (uint16_t)n);
-    if (err == DATA_LOGGER_OK) {
-        dl->field_idx++;
-    }
-    return err;
+    return add_field(dl, tmp, (uint16_t)n);
 }
 
 data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
@@ -272,20 +267,11 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
         return DATA_LOGGER_ERR_PARAM;
     }
 
-    err = buf_comma(dl);
-    if (err != DATA_LOGGER_OK) {
-        return err;
-    }
-
     size_t slen = strlen(value);
     if (slen > DATA_LOGGER_BUF_SIZE) {
         return DATA_LOGGER_ERR_OVERFLOW;
     }
-    err = buf_append(dl, value, (uint16_t)slen);
-    if (err == DATA_LOGGER_OK) {
-        dl->field_idx++;
-    }
-    return err;
+    return add_field(dl, value, (uint16_t)slen);
 }
 
 data_logger_err_t data_logger_commit(data_logger_t *dl)
@@ -294,6 +280,10 @@ data_logger_err_t data_logger_commit(data_logger_t *dl)
         return DATA_LOGGER_ERR_PARAM;
     }
     if (!dl->active) {
+        return DATA_LOGGER_ERR_PARAM;
+    }
+    /* A short record would be read as the wrong columns.  It stays open. */
+    if (dl->field_idx != dl->field_count) {
         return DATA_LOGGER_ERR_PARAM;
     }
 

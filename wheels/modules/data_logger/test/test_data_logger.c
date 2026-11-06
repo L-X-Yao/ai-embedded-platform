@@ -196,6 +196,148 @@ TEST(test_buffer_overflow_long_string)
     ASSERT_EQ(err, DATA_LOGGER_ERR_OVERFLOW);
 }
 
+static const data_logger_field_t fields_int_int[] = {
+    { "a", DATA_LOGGER_FIELD_INT32 },
+    { "b", DATA_LOGGER_FIELD_INT32 },
+};
+
+static const data_logger_field_t fields_string_int[] = {
+    { "msg", DATA_LOGGER_FIELD_STRING },
+    { "n",   DATA_LOGGER_FIELD_INT32  },
+};
+
+static const data_logger_field_t fields_float_int[] = {
+    { "x", DATA_LOGGER_FIELD_FLOAT },
+    { "n", DATA_LOGGER_FIELD_INT32 },
+};
+
+static char long_text[DATA_LOGGER_BUF_SIZE + 44];
+
+static const char *text_of(size_t len)
+{
+    memset(long_text, 'X', len);
+    long_text[len] = '\0';
+    return long_text;
+}
+
+TEST(test_commit_refuses_short_record)
+{
+    mock_reset();
+    data_logger_init(&dl, &test_storage, fields_int_int, 2);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_add_int(&dl, 1), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(write_called, 0);
+    ASSERT_EQ(data_logger_get_count(&dl), 0);
+
+    /* nothing was lost: the record is still open */
+    ASSERT_EQ(data_logger_add_int(&dl, 2), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_OK);
+    ASSERT_STR_EQ((char *)store_buf, "1000,1,2\n");
+    ASSERT_EQ(data_logger_get_count(&dl), 1);
+}
+
+TEST(test_commit_refuses_begin_only_record)
+{
+    mock_reset();
+    data_logger_init(&dl, &test_storage, fields_int_int, 2);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(write_called, 0);
+}
+
+TEST(test_overflowed_record_is_not_written)
+{
+    mock_reset();
+    data_logger_init(&dl, &test_storage, fields_string_int, 1);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_add_string(&dl, text_of(DATA_LOGGER_BUF_SIZE + 40)),
+              DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(write_called, 0);
+    ASSERT_EQ(data_logger_get_count(&dl), 0);
+}
+
+TEST(test_failed_string_leaves_no_empty_column)
+{
+    mock_reset();
+    data_logger_init(&dl, &test_storage, fields_string_int, 2);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_add_string(&dl, text_of(DATA_LOGGER_BUF_SIZE + 40)),
+              DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(data_logger_add_string(&dl, "ok"), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_add_int(&dl, 7), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_OK);
+    ASSERT_STR_EQ((char *)store_buf, "1000,ok,7\n");
+}
+
+TEST(test_failed_float_leaves_no_empty_column)
+{
+    mock_reset();
+    data_logger_init(&dl, &test_storage, fields_float_int, 2);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_add_float(&dl, 1e20f), DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(data_logger_add_float(&dl, 1.5f), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_add_int(&dl, 7), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_OK);
+    ASSERT_STR_EQ((char *)store_buf, "1000,1.50,7\n");
+}
+
+/* A failed int or uint leaves the buffer alone too: only the comma fits. */
+TEST(test_failed_int_leaves_no_comma)
+{
+    static const data_logger_field_t f[] = {
+        { "msg", DATA_LOGGER_FIELD_STRING },
+        { "n",   DATA_LOGGER_FIELD_INT32  },
+        { "u",   DATA_LOGGER_FIELD_UINT32 },
+    };
+
+    mock_reset();
+    data_logger_init(&dl, &test_storage, f, 3);
+
+    /* "1," and the text leave 2 bytes: comma and one digit, not two */
+    data_logger_begin(&dl, 1);
+    ASSERT_EQ(data_logger_add_string(&dl, text_of(DATA_LOGGER_BUF_SIZE - 4)),
+              DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_add_int(&dl, 12), DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(dl.buf_pos, DATA_LOGGER_BUF_SIZE - 2);
+    ASSERT_EQ(data_logger_add_int(&dl, 1), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_add_uint(&dl, 2), DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(dl.buf_pos, DATA_LOGGER_BUF_SIZE);
+}
+
+/* The newline needs a byte of its own. */
+TEST(test_record_that_fits_the_buffer_exactly)
+{
+    static const data_logger_field_t f[] = {
+        { "msg", DATA_LOGGER_FIELD_STRING },
+    };
+
+    mock_reset();
+    data_logger_init(&dl, &test_storage, f, 1);
+
+    /* "1," and the text and "\n" take the whole buffer */
+    data_logger_begin(&dl, 1);
+    ASSERT_EQ(data_logger_add_string(&dl, text_of(DATA_LOGGER_BUF_SIZE - 3)),
+              DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_OK);
+    ASSERT_EQ(store_len, DATA_LOGGER_BUF_SIZE);
+
+    /* one byte more: no room for the newline, and the record is dropped */
+    data_logger_begin(&dl, 1);
+    ASSERT_EQ(data_logger_add_string(&dl, text_of(DATA_LOGGER_BUF_SIZE - 2)),
+              DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_OVERFLOW);
+    ASSERT_EQ(write_called, 1);
+    ASSERT_EQ(data_logger_get_count(&dl), 1);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_ERR_PARAM);
+}
+
 TEST(test_flush_calls_storage)
 {
     mock_reset();
@@ -452,6 +594,13 @@ TEST_MAIN("data_logger")
     RUN(test_timestamp_in_record);
     RUN(test_record_count_increments);
     RUN(test_buffer_overflow_long_string);
+    RUN(test_commit_refuses_short_record);
+    RUN(test_commit_refuses_begin_only_record);
+    RUN(test_overflowed_record_is_not_written);
+    RUN(test_failed_string_leaves_no_empty_column);
+    RUN(test_failed_float_leaves_no_empty_column);
+    RUN(test_failed_int_leaves_no_comma);
+    RUN(test_record_that_fits_the_buffer_exactly);
     RUN(test_flush_calls_storage);
     RUN(test_flush_no_callback);
     RUN(test_multiple_records_sequential);

@@ -120,6 +120,9 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value);
 
 /**
  * Commit record: calls storage->write() with complete CSV line.
+ * Until every field of the schema is added it writes nothing and returns
+ * DATA_LOGGER_ERR_PARAM, and the record stays open.  A field that failed
+ * with DATA_LOGGER_ERR_OVERFLOW left no trace and can be added again.
  * @thread_safe: no
  */
 data_logger_err_t data_logger_commit(data_logger_t *dl);
