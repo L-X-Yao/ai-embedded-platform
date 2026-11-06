@@ -25,9 +25,21 @@ static const sht30_cfg_t default_cfg = {
     .addr = SHT30_ADDR_A,
 };
 
+static const uint8_t cmd_measure[2] = { SHT30_CMD_SINGLE_HIGH_MSB,
+                                        SHT30_CMD_SINGLE_HIGH_LSB };
+static const uint8_t cmd_reset[2]   = { SHT30_CMD_SOFT_RESET_MSB,
+                                        SHT30_CMD_SOFT_RESET_LSB };
+
 static void setup(void)
 {
     sht30_model_init(&model);
+}
+
+/* Past tPU: Table 5 p.7 gives 1.5 ms at most. */
+static void setup_idle(void)
+{
+    setup();
+    sht30_model_delay(&model, 2);
 }
 
 /* --- init tests -------------------------------------------------------- */
@@ -64,11 +76,71 @@ TEST(test_init_refuses_null_delay)
 
 /* --- read tests -------------------------------------------------------- */
 
-TEST(test_model_nacks_until_measurement_ends)
+/* p.9: "the sensor needs the time tPU to enter idle state. Once the idle state
+ * is entered it is ready to receive commands". */
+TEST(test_model_refuses_commands_during_power_up)
 {
     setup();
-    const uint8_t cmd[2] = { SHT30_CMD_SINGLE_HIGH_MSB,
-                             SHT30_CMD_SINGLE_HIGH_LSB };
+    ASSERT_FALSE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    sht30_model_delay(&model, 1);
+    ASSERT_FALSE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    sht30_model_delay(&model, 1);
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+}
+
+/* p.12: "During the reset procedure the sensor will not process commands."
+ * p.7: tSR is at most 1.5 ms after the ACK of the command. */
+TEST(test_model_refuses_commands_during_soft_reset)
+{
+    setup_idle();
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_reset, 2));
+    ASSERT_FALSE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    sht30_model_delay(&model, 1);
+    ASSERT_FALSE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    sht30_model_delay(&model, 1);
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    ASSERT_EQ(model.measure_count, 1);
+}
+
+/* p.9: "After sending a command to the sensor a minimal waiting time of 1ms is
+ * needed before another command can be received by the sensor." */
+TEST(test_model_wants_1ms_between_commands)
+{
+    setup_idle();
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    ASSERT_FALSE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    ASSERT_EQ(model.measure_count, 1);
+
+    sht30_model_delay(&model, 1);
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    ASSERT_EQ(model.measure_count, 2);
+}
+
+/* p.10: "The I2C master can abort the read transfer with a NACK condition after
+ * any data byte if it is not interested in subsequent data". */
+TEST(test_model_short_read_gives_the_first_bytes)
+{
+    setup_idle();
+    uint8_t frame[6];
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+    sht30_model_delay(&model, 15);
+    ASSERT_TRUE(sht30_model_read(&model, SHT30_ADDR_A, frame, 6));
+
+    for (uint16_t len = 1; len < 6u; len++) {
+        uint8_t buf[6];
+        memset(buf, 0xA5, sizeof(buf));
+        ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd_measure, 2));
+        sht30_model_delay(&model, 15);
+        ASSERT_TRUE(sht30_model_read(&model, SHT30_ADDR_A, buf, len));
+        ASSERT_MEMEQ_N(buf, frame, len);
+        ASSERT_EQ_HEX(buf[len], 0xA5);
+    }
+}
+
+TEST(test_model_nacks_until_measurement_ends)
+{
+    setup_idle();
+    const uint8_t *cmd = cmd_measure;
     uint8_t buf[6];
 
     ASSERT_FALSE(sht30_model_read(&model, SHT30_ADDR_A, buf, 6));
@@ -133,6 +205,8 @@ TEST(test_crc_matches_driver)
     uint8_t model_crc = sht30_model_crc8(data1, 2);
     uint8_t driver_crc = sht30_crc8(data1, 2);
     ASSERT_EQ(model_crc, driver_crc);
+    /* Table 20 p.14: "CRC (0xBEEF) = 0x92" */
+    ASSERT_EQ_HEX(model_crc, 0x92);
 }
 
 TEST(test_crc_various_values)
@@ -155,6 +229,29 @@ TEST(test_reset)
     sht30_err_t err = sht30_reset(&dev);
     ASSERT_EQ(err, SHT30_OK);
     ASSERT_EQ(model.reset_count, 2); /* 1 from init + 1 explicit */
+}
+
+/* The driver cannot know how long ago power came, and the sensor needs tPU
+ * and tSR before it takes the next command. */
+TEST(test_read_right_after_init)
+{
+    setup();
+    sht30_t dev;
+    ASSERT_EQ(sht30_init(&dev, &model_i2c, &default_cfg), SHT30_OK);
+
+    sht30_data_t data;
+    ASSERT_EQ(sht30_read(&dev, &data), SHT30_OK);
+}
+
+TEST(test_read_right_after_reset)
+{
+    setup();
+    sht30_t dev;
+    ASSERT_EQ(sht30_init(&dev, &model_i2c, &default_cfg), SHT30_OK);
+    ASSERT_EQ(sht30_reset(&dev), SHT30_OK);
+
+    sht30_data_t data;
+    ASSERT_EQ(sht30_read(&dev, &data), SHT30_OK);
 }
 
 /* --- measurement count ------------------------------------------------ */
@@ -226,6 +323,10 @@ TEST_MAIN("sht30 hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
     RUN(test_init_refuses_null_delay);
+    RUN(test_model_refuses_commands_during_power_up);
+    RUN(test_model_refuses_commands_during_soft_reset);
+    RUN(test_model_wants_1ms_between_commands);
+    RUN(test_model_short_read_gives_the_first_bytes);
     RUN(test_model_nacks_until_measurement_ends);
     RUN(test_read_25c_50rh);
     RUN(test_read_hot_dry);
@@ -233,6 +334,8 @@ TEST_MAIN("sht30 hardware model")
     RUN(test_crc_matches_driver);
     RUN(test_crc_various_values);
     RUN(test_reset);
+    RUN(test_read_right_after_init);
+    RUN(test_read_right_after_reset);
     RUN(test_read_triggers_measurement);
     RUN(test_temperature_varies);
     RUN(test_humidity_varies);
