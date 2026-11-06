@@ -89,6 +89,8 @@ typedef struct {
  *  normal mode. The wait is 128 us, which covers the slowest clock the chip
  *  allows. The power-on start-up comes before the RESET and the driver cannot
  *  know when power came up, so do not call this until the oscillator runs.
+ *  Accepts all frames: masks are 0, and each buffer has a zero filter for
+ *  standard and one for extended frames, even filters standard, odd extended.
  *  Returns MCP2515_ERR_PARAM and sends nothing if spi->delay_us is NULL. */
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
                             mcp2515_speed_t speed);

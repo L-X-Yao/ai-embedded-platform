@@ -282,6 +282,13 @@ static void decode_id(const mcp2515_spi_t *s, uint8_t base,
     }
 }
 
+#define FILTER_COUNT 6u
+
+static const uint8_t filter_base[FILTER_COUNT] = {
+    REG_RXF0SIDH, REG_RXF1SIDH, REG_RXF2SIDH,
+    REG_RXF3SIDH, REG_RXF4SIDH, REG_RXF5SIDH,
+};
+
 /* ---------- public API ---------- */
 
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
@@ -324,6 +331,13 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
     reg_write(spi, (uint8_t)(REG_RXM1SIDH + 1), 0x00);
     reg_write(spi, (uint8_t)(REG_RXM1SIDH + 2), 0x00);
     reg_write(spi, (uint8_t)(REG_RXM1SIDH + 3), 0x00);
+
+    /* p.35: EXIDE gives each filter one frame format and is unknown after POR,
+     * and the masks have no such bit. So zero filters of both formats go on
+     * each buffer: RXF0 and RXF1 on RXB0, the other four on RXB1. */
+    for (uint8_t i = 0; i < FILTER_COUNT; i++) {
+        encode_id(spi, filter_base[i], 0, (i & 1u) != 0u);
+    }
 
     /* switch to normal mode */
     return mcp2515_set_mode(dev, MCP2515_MODE_NORMAL);
@@ -443,13 +457,9 @@ mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num,
                                   uint32_t id, bool extended)
 {
     if (!dev || !dev->spi) return MCP2515_ERR_SPI;
-    if (filter_num > 5) return MCP2515_ERR_PARAM;
+    if (filter_num >= FILTER_COUNT) return MCP2515_ERR_PARAM;
     if (dev->mode != MCP2515_MODE_CONFIG) return MCP2515_ERR_PARAM;
 
-    static const uint8_t filter_base[] = {
-        REG_RXF0SIDH, REG_RXF1SIDH, REG_RXF2SIDH,
-        REG_RXF3SIDH, REG_RXF4SIDH, REG_RXF5SIDH,
-    };
     encode_id(dev->spi, filter_base[filter_num], id, extended);
     return MCP2515_OK;
 }
