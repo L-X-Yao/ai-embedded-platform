@@ -224,7 +224,7 @@ TEST(test_read_straight_after_reset)
 TEST(test_read_serial)
 {
     setup();
-    si7021_model_set_serial(&model, 0x12345678, 0xABCDEF01);
+    si7021_model_set_serial(&model, 0x12345678, 0x15CDEF01);
     si7021_t dev;
     si7021_init(&dev, &model_i2c);
 
@@ -232,7 +232,168 @@ TEST(test_read_serial)
     si7021_err_t err = si7021_read_serial(&dev, &a, &b);
     ASSERT_EQ(err, SI7021_OK);
     ASSERT_EQ_HEX(a, 0x12345678);
-    ASSERT_EQ_HEX(b, 0xABCDEF01);
+    ASSERT_EQ_HEX(b, 0x15CDEF01);
+}
+
+/* p.24: SNB_3 "contains the device identification", "0x15=21=Si7021" */
+TEST(test_default_serial_names_a_si7021)
+{
+    setup();
+    si7021_t dev;
+    si7021_init(&dev, &model_i2c);
+
+    uint32_t a, b;
+    ASSERT_EQ(si7021_read_serial(&dev, &a, &b), SI7021_OK);
+    ASSERT_EQ_HEX(b >> 24, 0x15);
+}
+
+/* --- codes the manual fixes ------------------------------------------- */
+
+/* A refused transfer returns 0xFFFF: no measurement ends in the bits 11. */
+static uint16_t measure_code(uint8_t cmd)
+{
+    uint8_t buf[3] = { 0, 0, 0 };
+
+    if (!si7021_model_write(&model, SI7021_DEV_ADDR, &cmd, 1))
+        return 0xFFFF;
+    si7021_model_delay(&model, 25);
+    if (!si7021_model_read(&model, SI7021_DEV_ADDR, buf, 3))
+        return 0xFFFF;
+    return (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+}
+
+/* p.21: "A humidity measurement will always return XXXXXX10 in the LSB
+ * field." */
+TEST(test_rh_code_always_ends_in_10)
+{
+    setup();
+    for (int rh = -6; rh <= 119; rh++) {
+        si7021_model_set_humidity(&model, (float)rh + 0.37f);
+        ASSERT_EQ_HEX(measure_code(SI_CMD_MEASURE_RH_NOHOLD) & 0x03u, 0x02);
+    }
+}
+
+/* p.22: "A temperature measurement will always return XXXXXX00 in the LSB
+ * field." */
+TEST(test_temp_code_always_ends_in_00)
+{
+    setup();
+    for (int t = -46; t <= 128; t++) {
+        si7021_model_set_temperature(&model, (float)t + 0.37f);
+        ASSERT_EQ_HEX(measure_code(SI_CMD_MEASURE_TEMP_NOHOLD) & 0x03u, 0x00);
+    }
+}
+
+/* p.21: 0xE0 "returns the temperature value measured during the relative
+ * humidity measurement", so it is a temperature code too. */
+TEST(test_temp_from_rh_code_ends_in_00)
+{
+    setup();
+    si7021_model_set_temperature(&model, 21.37f);
+    (void)measure_code(SI_CMD_MEASURE_RH_NOHOLD);
+
+    uint8_t cmd = SI_CMD_READ_TEMP_FROM_RH;
+    uint8_t buf[2] = { 0xFF, 0xFF };
+    ASSERT_TRUE(si7021_model_write(&model, SI7021_DEV_ADDR, &cmd, 1));
+    ASSERT_TRUE(si7021_model_read(&model, SI7021_DEV_ADDR, buf, 2));
+    ASSERT_EQ_HEX(buf[1] & 0x03u, 0x00);
+}
+
+/* Top of the range: the code stays a 16-bit word, it does not wrap to 0. */
+TEST(test_codes_saturate_at_the_top_of_the_range)
+{
+    setup();
+    si7021_model_set_humidity(&model, 500.0f);
+    ASSERT_EQ_HEX(measure_code(SI_CMD_MEASURE_RH_NOHOLD), 0xFFFE);
+    si7021_model_set_temperature(&model, 500.0f);
+    ASSERT_EQ_HEX(measure_code(SI_CMD_MEASURE_TEMP_NOHOLD), 0xFFFC);
+}
+
+/* --- user register ---------------------------------------------------- */
+
+/* A refused transfer returns 0: the reserved bits never read back as 0. */
+static uint8_t read_user_reg(void)
+{
+    uint8_t cmd = SI_CMD_READ_USER_REG;
+    uint8_t val = 0;
+
+    if (!si7021_model_write(&model, SI7021_DEV_ADDR, &cmd, 1))
+        return 0;
+    if (!si7021_model_read(&model, SI7021_DEV_ADDR, &val, 1))
+        return 0;
+    return val;
+}
+
+static void write_user_reg(uint8_t val)
+{
+    uint8_t buf[2] = { SI_CMD_WRITE_USER_REG, val };
+
+    ASSERT_TRUE(si7021_model_write(&model, SI7021_DEV_ADDR, buf, 2));
+}
+
+/* p.26: "Reset Settings = 0011_1010" */
+TEST(test_user_reg_reset_value)
+{
+    setup();
+    ASSERT_EQ_HEX(read_user_reg(), 0x3A);
+}
+
+/* p.26: "reserved register bits will always read back as "1," and are not
+ * affected by write operations", and VDDS has type R. Only RES1, HTRE and
+ * RES0 take the written value. */
+TEST(test_user_reg_keeps_vdds_and_reserved_bits)
+{
+    setup();
+    write_user_reg(0x00);
+    ASSERT_EQ_HEX(read_user_reg(), 0x3A);
+    write_user_reg(0xFF);
+    ASSERT_EQ_HEX(read_user_reg(), 0xBF);
+    write_user_reg(0x40);
+    ASSERT_EQ_HEX(read_user_reg(), 0x3A);
+}
+
+/* VDDS is set by the part: 1 = VDD Low. A write cannot clear it. */
+TEST(test_user_reg_write_does_not_clear_vdd_low)
+{
+    setup();
+    model.user_reg |= 0x40u;
+    write_user_reg(0x3A);
+    ASSERT_EQ_HEX(read_user_reg(), 0x7A);
+}
+
+/* p.26 table: 00 = RH 12 / T 14, 01 = 8 / 12, 10 = 10 / 13, 11 = 11 / 11,
+ * with RES1 in D7 and RES0 in D0. */
+TEST(test_set_resolution_sets_the_manual_codes)
+{
+    static const struct {
+        si7021_resolution_t res;
+        uint8_t reg;
+    } cases[] = {
+        { SI7021_RES_14BIT_12BIT, 0x3A },
+        { SI7021_RES_12BIT_8BIT,  0x3B },
+        { SI7021_RES_13BIT_10BIT, 0xBA },
+        { SI7021_RES_11BIT_11BIT, 0xBB },
+    };
+
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        setup();
+        si7021_t dev;
+        si7021_init(&dev, &model_i2c);
+        ASSERT_EQ(si7021_set_resolution(&dev, cases[i].res), SI7021_OK);
+        ASSERT_EQ_HEX(read_user_reg(), cases[i].reg);
+    }
+}
+
+/* p.26: "prior to a write operation, registers should be read", so the
+ * heater bit must survive a change of resolution. */
+TEST(test_set_resolution_keeps_the_heater_bit)
+{
+    setup();
+    write_user_reg(0x3E);   /* HTRE = 1 */
+    si7021_t dev;
+    si7021_init(&dev, &model_i2c);
+    ASSERT_EQ(si7021_set_resolution(&dev, SI7021_RES_11BIT_11BIT), SI7021_OK);
+    ASSERT_EQ_HEX(read_user_reg(), 0xBF);
 }
 
 /* --- varying environment ---------------------------------------------- */
@@ -301,6 +462,16 @@ TEST_MAIN("si7021 hardware model")
     RUN(test_reset);
     RUN(test_read_straight_after_reset);
     RUN(test_read_serial);
+    RUN(test_default_serial_names_a_si7021);
+    RUN(test_rh_code_always_ends_in_10);
+    RUN(test_temp_code_always_ends_in_00);
+    RUN(test_temp_from_rh_code_ends_in_00);
+    RUN(test_codes_saturate_at_the_top_of_the_range);
+    RUN(test_user_reg_reset_value);
+    RUN(test_user_reg_keeps_vdds_and_reserved_bits);
+    RUN(test_user_reg_write_does_not_clear_vdd_low);
+    RUN(test_set_resolution_sets_the_manual_codes);
+    RUN(test_set_resolution_keeps_the_heater_bit);
     RUN(test_temperature_varies);
     RUN(test_humidity_varies);
     RUN(test_multiple_reads_consistent);
