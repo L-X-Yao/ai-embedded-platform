@@ -97,7 +97,10 @@ task_wd_err_t task_watchdog_feed(task_watchdog_t *wd, const char *name)
     }
 
     e->last_feed = wd->tick_count;
-    e->status    = TASK_WD_STATUS_OK;
+    if (e->enabled)
+    {
+        e->status = TASK_WD_STATUS_OK;
+    }
     return TASK_WD_OK;
 }
 
