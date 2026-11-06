@@ -192,9 +192,15 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte)
         sh_puts(sh, "\r\n");
         if (sh->line_pos > 0) {
             sh->line[sh->line_pos] = '\0';
-            sh_execute(sh);
+            if (sh->line_overflow) {
+                /* what is left is not what was typed: do not run it */
+                sh_puts(sh, "line too long\r\n");
+            } else {
+                sh_execute(sh);
+            }
         }
         sh->line_pos = 0;
+        sh->line_overflow = 0;
         sh_prompt(sh);
         return;
     }
@@ -219,8 +225,10 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte)
                 char c = (char)byte;
                 sh->io->write(sh->io->ctx, &c, 1);
             }
+        } else {
+            /* line full: drop it, and refuse the line at end of line */
+            sh->line_overflow = 1U;
         }
-        /* line full: silently drop extra chars */
         return;
     }
 
