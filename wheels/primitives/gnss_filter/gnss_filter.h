@@ -64,6 +64,7 @@ typedef struct {
     bool              filter_valid;   /* internal */
     uint32_t          quality_ok_ms;  /* internal: accumulated quality time */
     bool              quality_ready;  /* internal */
+    bool              last_raw_ok;    /* internal: previous sample was good */
     uint32_t          last_tick_ms;   /* internal */
     bool              started;        /* internal */
 } gnss_filter_t;
