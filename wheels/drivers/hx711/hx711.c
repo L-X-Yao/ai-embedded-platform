@@ -30,6 +30,18 @@ static hx711_err_t wait_ready(const hx711_t *dev)
     return HX711_ERR_TIMEOUT;
 }
 
+/* The pulses of a read choose the next conversion, so only a read tells the
+ * chip dev->gain. The data of this one came from the old setting: drop it. */
+static hx711_err_t clock_in_gain(hx711_t *dev)
+{
+    int32_t     dropped;
+    hx711_err_t err = wait_ready(dev);
+
+    if (err != HX711_OK)
+        return err;
+    return hx711_read_raw(dev, &dropped);
+}
+
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
 {
     if (!dev || !hal)
@@ -47,7 +59,7 @@ hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
     /* ensure SCK low (power-up state) */
     hal->set_sck(hal->ctx, false);
 
-    return HX711_OK;
+    return clock_in_gain(dev);
 }
 
 bool hx711_is_ready(const hx711_t *dev)
@@ -176,4 +188,9 @@ void hx711_power_up(hx711_t *dev)
     if (!dev || !dev->hal)
         return;
     dev->hal->set_sck(dev->hal->ctx, false);
+
+    /* The chip reset to Channel A, gain 128. A timeout cannot be reported here,
+     * but DOUT is then still high, so the next read returns NOT_READY. */
+    if (dev->gain != HX711_GAIN_128)
+        (void)clock_in_gain(dev);
 }

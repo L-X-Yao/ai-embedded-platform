@@ -5,7 +5,11 @@
 /* ---------- mock HX711 serial protocol ---------- */
 
 static bool     mock_dout_ready;      /* true = data ready, DOUT low */
-static uint32_t mock_raw_value;       /* 24-bit value to serve */
+static uint32_t mock_raw_value;       /* Channel A, gain 128 */
+static uint32_t mock_value_b32;       /* Channel B, gain 32 */
+static uint32_t mock_value_a64;       /* Channel A, gain 64 */
+static int      mock_selected;        /* pulses that chose the data on offer */
+static bool     mock_powered_down;    /* SCK has been high for over 60 us */
 static int      mock_bit_index;       /* SCK rising edges of this read */
 static int      mock_sck_rises;       /* total SCK rising edges */
 static int      mock_sck_falls;       /* total SCK falling edges */
@@ -24,6 +28,10 @@ static void mock_reset(void)
 {
     mock_dout_ready   = true;   /* ready by default */
     mock_raw_value    = 0;
+    mock_value_b32    = 0;
+    mock_value_a64    = 0;
+    mock_selected     = 25;  /* p.5: after a reset, Channel A, gain 128 */
+    mock_powered_down = false;
     mock_bit_index    = 0;
     mock_sck_rises    = 0;
     mock_sck_falls    = 0;
@@ -34,6 +42,13 @@ static void mock_reset(void)
     mock_conv_us      = MOCK_CONV_10SPS_US;
     mock_done_at_us   = 0;
     mock_converting   = false;
+}
+
+static uint32_t mock_data(void)
+{
+    if (mock_selected == 26) return mock_value_b32;
+    if (mock_selected == 27) return mock_value_a64;
+    return mock_raw_value;
 }
 
 static bool mock_read_dout(void *ctx)
@@ -47,7 +62,7 @@ static bool mock_read_dout(void *ctx)
     /* during data clocking (bits 0..23): serve MSB first on SCK high */
     if (mock_bit_index >= 1 && mock_bit_index <= 24) {
         int bit_pos = 23 - (mock_bit_index - 1);
-        return (mock_raw_value >> (unsigned)bit_pos) & 1U ? true : false;
+        return (mock_data() >> (unsigned)bit_pos) & 1U ? true : false;
     }
 
     /* the 25th pulse pulled DOUT high */
@@ -60,9 +75,12 @@ static void mock_set_sck(void *ctx, bool level)
 
     if (level && !mock_sck_level) {
         mock_sck_rises++;
-        /* the first pulse after a finished read starts a new one */
-        if (mock_bit_index >= 25 && mock_dout_ready)
+        /* the first pulse after a finished read starts a new one, and the
+         * pulse count of that read chose the data of this one (Table 3) */
+        if (mock_bit_index >= 25 && mock_dout_ready) {
+            mock_selected = mock_bit_index;
             mock_bit_index = 0;
+        }
         mock_bit_index++;
         /* p.4: "The 25th pulse at PD_SCK input will pull DOUT pin back to
          * high". It stays high until the next conversion ends. */
@@ -72,8 +90,18 @@ static void mock_set_sck(void *ctx, bool level)
             mock_done_at_us = mock_now_us + mock_conv_us;
         }
     }
-    if (!level && mock_sck_level)
+    if (!level && mock_sck_level) {
         mock_sck_falls++;
+        /* p.5: "When PD_SCK returns to low, chip will reset" */
+        if (mock_powered_down) {
+            mock_powered_down = false;
+            mock_selected     = 25;
+            mock_bit_index    = 0;
+            mock_dout_ready   = false;
+            mock_converting   = true;
+            mock_done_at_us   = mock_now_us + mock_conv_us;
+        }
+    }
     mock_sck_level = level;
 }
 
@@ -83,6 +111,8 @@ static void mock_delay_us(void *ctx, uint32_t us)
     mock_delay_calls++;
     mock_last_delay_us = us;
     mock_now_us += us;
+    if (mock_sck_level && us > 60)
+        mock_powered_down = true;
     if (mock_converting && mock_now_us >= mock_done_at_us) {
         mock_converting = false;
         mock_dout_ready = true;
@@ -95,6 +125,11 @@ static const hx711_hal_t mock_hal = {
     .delay_us  = mock_delay_us,
     .ctx       = NULL,
 };
+
+static void mock_wait_conversion(void)
+{
+    mock_delay_us(NULL, mock_conv_us);
+}
 
 /* ---------- tests ---------- */
 
@@ -206,6 +241,7 @@ TEST(test_gain_128_pulse_count)
 
     mock_raw_value  = 0x000001;
     mock_dout_ready = true;
+    mock_sck_rises  = 0;
 
     hx711_read_raw(&dev, &val);
     /* 24 data + 1 gain = 25 pulses */
@@ -221,6 +257,7 @@ TEST(test_gain_32_pulse_count)
 
     mock_raw_value  = 0x000001;
     mock_dout_ready = true;
+    mock_sck_rises  = 0;
 
     hx711_read_raw(&dev, &val);
     /* 24 data + 2 gain = 26 pulses */
@@ -236,10 +273,110 @@ TEST(test_gain_64_pulse_count)
 
     mock_raw_value  = 0x000001;
     mock_dout_ready = true;
+    mock_sck_rises  = 0;
 
     hx711_read_raw(&dev, &val);
     /* 24 data + 3 gain = 27 pulses */
     ASSERT_EQ(mock_sck_rises, 27);
+}
+
+/* p.4: the pulses of a read choose the next conversion. p.5: "After a reset
+ * or power-down event, input selection is default to Channel A with a gain of
+ * 128." So the chip only learns dev->gain from a read. */
+static void check_first_read(hx711_gain_t gain, uint32_t expected)
+{
+    hx711_t dev;
+    int32_t val = 0;
+    mock_reset();
+    mock_raw_value = 0x000111;
+    mock_value_b32 = 0x000222;
+    mock_value_a64 = 0x000333;
+
+    ASSERT_EQ(hx711_init(&dev, &mock_hal, gain), HX711_OK);
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ_HEX(val, expected);
+}
+
+TEST(test_first_read_after_init_has_the_gain)
+{
+    check_first_read(HX711_GAIN_128, 0x000111);
+    check_first_read(HX711_GAIN_32,  0x000222);
+    check_first_read(HX711_GAIN_64,  0x000333);
+}
+
+/* init is the only way to change gain, and the chip keeps the old one until
+ * a read tells it otherwise */
+TEST(test_first_read_after_changing_back_to_128)
+{
+    hx711_t dev;
+    int32_t val = 0;
+    mock_reset();
+    mock_raw_value = 0x000111;
+    mock_value_b32 = 0x000222;
+
+    hx711_init(&dev, &mock_hal, HX711_GAIN_32);
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ_HEX(val, 0x000222);
+
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_init(&dev, &mock_hal, HX711_GAIN_128), HX711_OK);
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ_HEX(val, 0x000111);
+}
+
+TEST(test_first_read_after_power_up_has_the_gain)
+{
+    hx711_t dev;
+    int32_t val = 0;
+    mock_reset();
+    mock_raw_value = 0x000111;
+    mock_value_b32 = 0x000222;
+
+    hx711_init(&dev, &mock_hal, HX711_GAIN_32);
+    hx711_power_down(&dev);
+    hx711_power_up(&dev);
+    ASSERT_FALSE(mock_sck_level);
+    mock_wait_conversion();
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_OK);
+    ASSERT_EQ_HEX(val, 0x000222);
+}
+
+/* Reset already selects gain 128, so power_up has nothing to clock in */
+TEST(test_power_up_at_gain_128_does_not_read)
+{
+    hx711_t dev;
+    mock_reset();
+    hx711_init(&dev, &mock_hal, HX711_GAIN_128);
+    hx711_power_down(&dev);
+    mock_sck_rises = 0;
+    hx711_power_up(&dev);
+    ASSERT_EQ(mock_sck_rises, 0);
+}
+
+TEST(test_init_no_conversion_times_out)
+{
+    hx711_t dev;
+    mock_reset();
+    mock_dout_ready = false;
+    ASSERT_EQ(hx711_init(&dev, &mock_hal, HX711_GAIN_128), HX711_ERR_TIMEOUT);
+    ASSERT_GE(mock_now_us, 1105920u);
+    ASSERT_LE(mock_now_us, 2000000u);
+    ASSERT_EQ(mock_sck_rises, 0);
+}
+
+TEST(test_power_up_no_conversion_leaves_read_not_ready)
+{
+    hx711_t dev;
+    int32_t val = 0;
+    mock_reset();
+    hx711_init(&dev, &mock_hal, HX711_GAIN_32);
+    hx711_power_down(&dev);
+    mock_conv_us = MOCK_CONV_NEVER_US;
+    hx711_power_up(&dev);
+    ASSERT_EQ(hx711_read_raw(&dev, &val), HX711_ERR_NOT_READY);
 }
 
 TEST(test_tare)
@@ -250,6 +387,9 @@ TEST(test_tare)
 
     mock_raw_value  = 0x001000;  /* 4096 */
     mock_dout_ready = true;
+    mock_sck_rises  = 0;
+    mock_now_us     = 0;
+    mock_converting = false;
 
     ASSERT_EQ(hx711_tare(&dev, 3), HX711_OK);
     /* each call reads 4096 → avg = 4096 */
@@ -395,6 +535,7 @@ TEST(test_tare_never_ready_times_out)
 {
     hx711_t dev;
     mock_reset();
+    mock_conv_us = MOCK_CONV_NEVER_US;
     hx711_init(&dev, &mock_hal, HX711_GAIN_128);
 
     mock_dout_ready = false;  /* DOUT high = not ready */
@@ -434,6 +575,12 @@ TEST_MAIN("hx711")
     RUN(test_gain_128_pulse_count);
     RUN(test_gain_32_pulse_count);
     RUN(test_gain_64_pulse_count);
+    RUN(test_first_read_after_init_has_the_gain);
+    RUN(test_first_read_after_changing_back_to_128);
+    RUN(test_first_read_after_power_up_has_the_gain);
+    RUN(test_power_up_at_gain_128_does_not_read);
+    RUN(test_init_no_conversion_times_out);
+    RUN(test_power_up_no_conversion_leaves_read_not_ready);
     RUN(test_tare);
     RUN(test_tare_at_80sps);
     RUN(test_tare_at_slowest_clock);

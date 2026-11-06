@@ -46,7 +46,11 @@ typedef struct {
     float              scale;   /* raw-to-unit conversion factor */
 } hx711_t;
 
-/** Initialize device. @thread_safe: no @isr_safe: no */
+/** Initialize device and tell the chip the gain, which only a read can do. So
+ *  this waits for one conversion, 100 ms at 10 SPS, drops that data, and leaves
+ *  the first result one conversion away. Returns HX711_ERR_TIMEOUT if no
+ *  conversion ends within 1.2 s, as with no chip on the bus.
+ *  @thread_safe: no @isr_safe: no */
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain);
 
 /** Check if data is ready (DOUT low). @thread_safe: no @isr_safe: no */
@@ -73,7 +77,10 @@ void hx711_set_offset(hx711_t *dev, int32_t offset);
 /** Power down (SCK high >60us). @thread_safe: no @isr_safe: no */
 void hx711_power_down(hx711_t *dev);
 
-/** Power up (SCK low). @thread_safe: no @isr_safe: no */
+/** Power up (SCK low). The chip comes back at gain 128, so with gain 32 or 64
+ *  this blocks like hx711_init to set it again. It cannot report a timeout, but
+ *  the next read then returns HX711_ERR_NOT_READY.
+ *  @thread_safe: no @isr_safe: no */
 void hx711_power_up(hx711_t *dev);
 
 #ifdef __cplusplus
