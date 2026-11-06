@@ -268,6 +268,87 @@ TEST(test_poll_null)
     ASSERT_EQ(power_manager_poll(NULL), POWER_LEVEL_ACTIVE);
 }
 
+/* ─── activity against the clock ─────────────────────────────── */
+
+static uint8_t g_late_voter;
+static bool    g_late_activity;
+
+/* Activity arriving just after poll has read the clock: by then the tick has
+ * moved on, so last_activity_ms is later than the t that poll works with. */
+static uint32_t late_activity_tick(void *ctx)
+{
+    (void)ctx;
+    uint32_t t = g_tick_ms;
+    if (g_late_activity) {
+        g_late_activity = false;
+        g_tick_ms = t + 1;
+        power_manager_activity(&g_pm, g_late_voter);
+    }
+    return t;
+}
+
+static const power_manager_io_t g_late_io = {
+    .get_tick_ms = late_activity_tick,
+    .ctx         = NULL,
+};
+
+TEST(test_activity_later_than_poll_does_not_expire)
+{
+    reset();
+    power_manager_init(&g_pm, &g_late_io);
+    power_manager_register(&g_pm, "uart", POWER_LEVEL_IDLE, 50, &g_late_voter);
+    g_tick_ms = 1000;
+    power_manager_activity(&g_pm, g_late_voter);
+
+    g_tick_ms = 1010;
+    g_late_activity = true;
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_IDLE);
+    ASSERT_TRUE(power_manager_is_active(&g_pm, g_late_voter));
+
+    /* and it still runs out, counted from that activity */
+    g_tick_ms = 1060;
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_IDLE);
+    g_tick_ms = 1061;
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_SHUTDOWN);
+}
+
+TEST(test_timeout_runs_across_the_tick_wrap)
+{
+    uint8_t id;
+
+    reset();
+    power_manager_init(&g_pm, &g_io);
+    power_manager_register(&g_pm, "uart", POWER_LEVEL_IDLE, 50, &id);
+    g_tick_ms = 0xFFFFFFF0u;
+    power_manager_activity(&g_pm, id);
+
+    g_tick_ms = 0x21u;  /* 49 ms on */
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_IDLE);
+    g_tick_ms = 0x22u;  /* 50 ms on */
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_SHUTDOWN);
+}
+
+/* The longest timeout that can be told from an activity in the future. */
+TEST(test_longest_timeout)
+{
+    uint8_t id;
+
+    reset();
+    power_manager_init(&g_pm, &g_io);
+    ASSERT_EQ(power_manager_register(&g_pm, "a", POWER_LEVEL_IDLE,
+                                     0x80000000u, &id),
+              POWER_MANAGER_ERR_PARAM);
+    ASSERT_EQ(power_manager_register(&g_pm, "a", POWER_LEVEL_IDLE,
+                                     0x7FFFFFFFu, &id),
+              POWER_MANAGER_OK);
+    power_manager_activity(&g_pm, id);
+
+    g_tick_ms = 0x7FFFFFFEu;
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_IDLE);
+    g_tick_ms = 0x7FFFFFFFu;
+    ASSERT_EQ(power_manager_poll(&g_pm), POWER_LEVEL_SHUTDOWN);
+}
+
 TEST_MAIN("power_manager")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -291,4 +372,7 @@ TEST_MAIN("power_manager")
     RUN(test_voter_name);
     RUN(test_voter_name_bad_id);
     RUN(test_poll_null);
+    RUN(test_activity_later_than_poll_does_not_expire);
+    RUN(test_timeout_runs_across_the_tick_wrap);
+    RUN(test_longest_timeout);
 TEST_MAIN_END()
