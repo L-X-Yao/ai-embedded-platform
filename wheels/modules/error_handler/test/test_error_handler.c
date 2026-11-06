@@ -435,6 +435,50 @@ TEST(test_load_on_init)
     ASSERT_EQ(rec.timestamp, 600);
 }
 
+/* A backend that copies what fits and hands back the count byte it read
+ * from flash, 0xFF when the flash is erased. */
+static error_handler_err_t mock_load_erased_count(void *ctx,
+                                                  error_record_t *records,
+                                                  uint8_t max, uint8_t *count)
+{
+    (void)ctx;
+    (void)records;
+    (void)max;
+    *count = 0xFFU;
+    return ERROR_HANDLER_OK;
+}
+
+static const error_handler_storage_t mock_storage_erased = {
+    mock_save, mock_load_erased_count, NULL
+};
+
+TEST(test_load_count_above_max_rejected)
+{
+    reset_mock();
+    error_handler_init(&eh, &mock_storage_erased);
+    error_handler_report(&eh, 10, ERROR_SEVERITY_ERROR, 100, 0);
+    error_handler_report(&eh, 20, ERROR_SEVERITY_ERROR, 200, 0);
+
+    ASSERT_EQ(error_handler_load(&eh), ERROR_HANDLER_ERR_STORAGE);
+    ASSERT_EQ(error_handler_get_count(&eh), 2);
+    ASSERT_EQ(eh.head, 2);
+
+    /* save walks count records into a MAX_RECORDS array on the stack */
+    ASSERT_EQ(error_handler_save(&eh), ERROR_HANDLER_OK);
+    ASSERT_EQ(saved_count, 2);
+}
+
+/* Exactly MAX_RECORDS is a full buffer, not a bad count. */
+TEST(test_load_count_at_max_accepted)
+{
+    reset_mock();
+    preloaded_count = ERROR_HANDLER_MAX_RECORDS;
+    error_handler_init(&eh, &mock_storage);
+    ASSERT_EQ(error_handler_load(&eh), ERROR_HANDLER_OK);
+    ASSERT_EQ(error_handler_get_count(&eh), ERROR_HANDLER_MAX_RECORDS);
+    ASSERT_EQ(eh.head, 0);
+}
+
 TEST(test_get_count_null)
 {
     ASSERT_EQ(error_handler_get_count(NULL), 0);
@@ -567,6 +611,8 @@ TEST_MAIN("error_handler")
     RUN(test_max_records_fill);
     RUN(test_multiple_errors_sequence);
     RUN(test_load_on_init);
+    RUN(test_load_count_above_max_rejected);
+    RUN(test_load_count_at_max_accepted);
     RUN(test_get_count_null);
     RUN(test_set_fatal_callback_null_handler);
     RUN(test_save_empty_buffer);
