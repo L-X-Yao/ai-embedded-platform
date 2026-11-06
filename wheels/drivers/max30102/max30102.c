@@ -88,6 +88,19 @@ static uint8_t rate_to_sr_bits(uint16_t rate)
     }
 }
 
+/* Highest SR code allowed for a mode and the LED_PW[1:0] bits of SPO2_CONFIG:
+ * data sheet p24, Tables 11 and 12.  Above it the chip programs a lower rate
+ * than the one written, and nothing reports that (p20). */
+static uint8_t max_sr_bits(max30102_mode_t mode, uint8_t spo2_config)
+{
+    /* per LED_PW 69, 118, 215, 411 us */
+    static const uint8_t spo2[4] = {6u, 5u, 4u, 3u};  /* 1600..400 sps  */
+    static const uint8_t hr[4]   = {7u, 6u, 6u, 5u};  /* 3200..1000 sps */
+    uint8_t pw = (uint8_t)(spo2_config & 0x03u);
+
+    return (mode == MAX30102_MODE_SPO2) ? spo2[pw] : hr[pw];
+}
+
 /* --- public API --- */
 
 max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
@@ -150,6 +163,13 @@ max30102_err_t max30102_set_mode(max30102_t *dev, max30102_mode_t mode)
     if (mode != MAX30102_MODE_HR && mode != MAX30102_MODE_SPO2)
         return MAX30102_ERR_PARAM;
 
+    /* a rate allowed in HR mode can be above the SpO2 limit */
+    uint8_t cfg = 0;
+    if (!read_regs(dev, REG_SPO2_CONFIG, &cfg, 1))
+        return MAX30102_ERR_I2C;
+    if (((cfg >> 2) & 0x07u) > max_sr_bits(mode, cfg))
+        return MAX30102_ERR_PARAM;
+
     /* read current MODE_CONFIG to preserve SHDN bit */
     uint8_t reg = 0;
     if (!read_regs(dev, REG_MODE_CONFIG, &reg, 1))
@@ -198,6 +218,9 @@ max30102_err_t max30102_set_sample_rate(max30102_t *dev, uint16_t rate)
     uint8_t reg = 0;
     if (!read_regs(dev, REG_SPO2_CONFIG, &reg, 1))
         return MAX30102_ERR_I2C;
+
+    if (sr > max_sr_bits(dev->mode, reg))
+        return MAX30102_ERR_PARAM;
 
     reg = (uint8_t)((reg & 0x63u) | (uint8_t)(sr << 2));
     if (!write_reg(dev, REG_SPO2_CONFIG, reg))
