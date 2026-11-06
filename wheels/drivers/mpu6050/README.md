@@ -25,8 +25,8 @@ I2C HAL (injected via `mpu6050_i2c_t` callbacks). No other dependencies.
 ```c
 mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
                            const mpu6050_cfg_t *cfg);
-mpu6050_err_t mpu6050_read_accel(mpu6050_t *dev, mpu6050_accel_t *out);
-mpu6050_err_t mpu6050_read_gyro(mpu6050_t *dev, mpu6050_gyro_t *out);
+mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out);
+mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out);
 mpu6050_err_t mpu6050_reset(mpu6050_t *dev);
 ```
 

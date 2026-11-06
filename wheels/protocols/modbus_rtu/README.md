@@ -32,10 +32,13 @@ int  modbus_rtu_build(uint8_t *buf, uint16_t buf_size,
                       const uint8_t *data, uint16_t data_len);
 
 /* --- Master --- */
-int modbus_rtu_master_read_regs(buf, buf_size, slave, func, start, count);
-int modbus_rtu_master_write_reg(buf, buf_size, slave, reg, value);
-int modbus_rtu_master_write_regs(buf, buf_size, slave, start, count, values);
-int modbus_rtu_master_get_regs(frame, regs, max_count);
+int modbus_rtu_master_read_regs(uint8_t *buf, uint16_t buf_size, uint8_t slave, uint8_t func,
+                                uint16_t start, uint16_t count);
+int modbus_rtu_master_write_reg(uint8_t *buf, uint16_t buf_size, uint8_t slave,
+                                uint16_t reg, uint16_t value);
+int modbus_rtu_master_write_regs(uint8_t *buf, uint16_t buf_size, uint8_t slave,
+                                 uint16_t start, uint16_t count, const uint16_t *values);
+int modbus_rtu_master_get_regs(const modbus_rtu_frame_t *frame, uint16_t *regs, uint16_t max_count);
 
 /* --- Slave --- */
 modbus_rtu_slave_t slave;

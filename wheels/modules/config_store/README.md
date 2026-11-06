@@ -43,8 +43,10 @@ config_store_err_t config_store_init(config_store_t *cs,
 /* Define entries with defaults and ranges */
 config_store_err_t config_store_define_int(cs, key, default_val, min, max);
 config_store_err_t config_store_define_uint(cs, key, default_val, min, max);
-config_store_err_t config_store_define_float(cs, key, default_val, min, max);
-config_store_err_t config_store_define_bool(cs, key, default_val);
+config_store_err_t config_store_define_float(config_store_t *cs, const char *key,
+                                             float default_val, float min, float max);
+config_store_err_t config_store_define_bool(config_store_t *cs, const char *key,
+                                            bool default_val);
 config_store_err_t config_store_define_string(cs, key, default_val);
 
 /* Set values (validated) */

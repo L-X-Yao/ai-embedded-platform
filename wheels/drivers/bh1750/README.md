@@ -26,10 +26,10 @@ I2C HAL (injected via callbacks, command-based pattern).
 
 bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
                          const bh1750_cfg_t *cfg);
-bh1750_err_t bh1750_read_lux(bh1750_t *dev, float *lux);
-bh1750_err_t bh1750_power_on(bh1750_t *dev);
-bh1750_err_t bh1750_power_off(bh1750_t *dev);
-bh1750_err_t bh1750_reset(bh1750_t *dev);
+bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux);
+bh1750_err_t bh1750_power_on(const bh1750_t *dev);
+bh1750_err_t bh1750_power_off(const bh1750_t *dev);
+bh1750_err_t bh1750_reset(const bh1750_t *dev);
 ```
 
 HAL: command-based I2C (write raw bytes, read raw bytes — no register address).

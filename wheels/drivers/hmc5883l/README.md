@@ -28,8 +28,8 @@ I2C HAL (injected via callbacks, register-based pattern).
 
 hmc5883l_err_t hmc5883l_init(hmc5883l_t *dev, const hmc5883l_i2c_t *i2c,
                              const hmc5883l_cfg_t *cfg);
-hmc5883l_err_t hmc5883l_read_raw(hmc5883l_t *dev, hmc5883l_raw_t *raw);
-hmc5883l_err_t hmc5883l_read_gauss(hmc5883l_t *dev, hmc5883l_data_t *out);
+hmc5883l_err_t hmc5883l_read_raw(const hmc5883l_t *dev, hmc5883l_raw_t *raw);
+hmc5883l_err_t hmc5883l_read_gauss(const hmc5883l_t *dev, hmc5883l_data_t *out);
 ```
 
 HAL: I2C register-based (write_reg/read_regs).
