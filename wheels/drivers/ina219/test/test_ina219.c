@@ -339,6 +339,75 @@ TEST(test_different_shunt_calibration)
     ASSERT_EQ(dev.dev_addr, 0x41);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ina219_t *d)
+{
+    float value = 0.0f;
+    ASSERT_EQ(ina219_read_bus_voltage(d, &value), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_shunt_voltage(d, &value), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_current(d, &value), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_read_power(d, &value), INA219_ERR_PARAM);
+    ASSERT_EQ(ina219_reset(d), INA219_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static ina219_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* The configuration write goes through, the calibration write does not */
+static bool mock_fail_second_write(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                   const uint8_t *buf, uint16_t len)
+{
+    if (mock_write_count >= 1) return false;
+    return mock_write_regs(ctx, dev_addr, reg, buf, len);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    ina219_t d;
+    ina219_i2c_t second_fails = mock_i2c;
+    second_fails.write_regs = mock_fail_second_write;
+
+    mock_reset();
+    mock_i2c_fail = true;
+    ASSERT_EQ(ina219_init(&d, &mock_i2c, 0x40, 0.1f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_ERR_I2C);
+    mock_i2c_fail = false;
+    assert_device_refused(&d);
+
+    mock_reset();
+    ASSERT_EQ(ina219_init(&d, &second_fails, 0x40, 0.1f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ina219_t d;
+    ina219_i2c_t no_read = mock_i2c;
+    no_read.read_regs = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina219_init(&d, NULL, 0x40, 0.1f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina219_init(&d, &no_read, 0x40, 0.1f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina219_init(&d, &mock_i2c, 0x40, 0.0f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ina219")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -361,4 +430,7 @@ TEST_MAIN("ina219")
     RUN(test_reset_null);
     RUN(test_read_null_output);
     RUN(test_different_shunt_calibration);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

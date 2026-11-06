@@ -897,6 +897,55 @@ TEST(test_read_lowest_valid_sample)
     ASSERT_NEAR(data.ax_g, -7.9995f, 0.001f);           /* -32766 / 4096 */
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(icm42688_t *d)
+{
+    icm42688_data_t data;
+    float temp = 0.0f;
+    ASSERT_EQ(icm42688_read(d, &data), ICM42688_ERR_PARAM);
+    ASSERT_EQ(icm42688_read_temperature(d, &temp), ICM42688_ERR_PARAM);
+    ASSERT_EQ(icm42688_set_power_mode(d, ICM42688_PM_LN, ICM42688_PM_LN),
+              ICM42688_ERR_PARAM);
+    ASSERT_EQ(icm42688_soft_reset(d), ICM42688_ERR_PARAM);
+}
+
+/* It answers, but init returned before it set a divisor */
+TEST(test_device_refused_after_wrong_id)
+{
+    icm42688_t d;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    mock_reset();
+    mock_regs[REG_WHO_AM_I] = 0x00;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(icm42688_init(&d, &mock_spi, &cfg), ICM42688_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    icm42688_t d;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    icm42688_cfg_t bad = cfg;
+    icm42688_spi_t no_xfer = mock_spi;
+    no_xfer.xfer = NULL;
+    bad.acc_odr = ICM42688_ODR_6HZ;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(icm42688_init(&d, NULL, &cfg), ICM42688_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(icm42688_init(&d, &no_xfer, &cfg), ICM42688_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(icm42688_init(&d, &mock_spi, &bad), ICM42688_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -950,4 +999,6 @@ TEST_MAIN("icm42688")
     RUN(test_read_gyro_standby_leaves_accel_usable);
     RUN(test_read_accel_off_leaves_gyro_usable);
     RUN(test_read_lowest_valid_sample);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

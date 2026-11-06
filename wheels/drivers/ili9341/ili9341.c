@@ -108,14 +108,21 @@ ili9341_err_t ili9341_init(ili9341_t *dev,
 {
     REQUIRE(dev != NULL);
     REQUIRE(spi != NULL);
-    if (!dev || !spi) {
+    if (!dev) {
+        return ILI9341_ERR_PARAM;
+    }
+
+    /* dev->spi stays NULL unless init accepts the HAL: the other calls refuse
+     * a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi) {
         return ILI9341_ERR_PARAM;
     }
     if (!validate_hal(spi)) {
         return ILI9341_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->spi = spi;
     apply_rotation(dev, ILI9341_ROT_0);
 
