@@ -51,6 +51,16 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Datasheet check of the last 22 drivers (2026-11-06)
+
+This batch covers the 21 drivers reviewed only in May and `icm42688`, whose manual turned up: 130 confirmed, 53 suspect. 68 of the confirmed items are in driver code and 62 in test models. Each README lists what was checked, fixed and left open. None of this has run on hardware.
+
+- Fixed in 17 drivers. The worst: 218 of the 256 entries in the `ds18b20` CRC table were wrong, so real reads almost always failed. `pca9685_init` left the oscillator off, so no channel could work. `hx711_tare` failed on its second sample. A skipped channel on `bme280` and `bmp280` came back as a real reading. `max30102` read a full FIFO as empty, and `bh1750` one-time modes returned the same value forever.
+- `enc28j60` needed nine fixes. `send` reported success on aborted frames, and half duplex was not set up as the manual and errata DS80349C require.
+- Not usable as claimed: `w5500` has no API to connect, listen or set a peer, so TCP and UDP cannot work. Its README now says so.
+- Checked but not changed, because they ran on a board or are held back and no board is available to retest: `w25qxx`, `qmi8658a`, `qmc5883p`, `xgzp6816d` and `air780eg`. `w25qxx_chip_erase` gives up after about 0.4 s while the chip needs 20 s or more. `air780eg` takes a plain OK as the end of any command. `xgzp6816d` was checked against the sibling GZP6816D only.
+- `delay_ms` is now required by `aht20`, `enc28j60`, `max30102`, `pca9685` and `sht30`, and by `bh1750` in one-time modes. `at24cxx` waits 20 ms per write unless `AT24CXX_WRITE_CYCLE_MS` says less. `hx711` and `bh1750` init take longer. `icm42688_read` returns `ICM42688_ERR_NOT_READY` until the first sample. Each README says what changed.
+
 ## API fixes approved after the datasheet check (2026-11-06)
 
 These drivers could not follow their manuals through the old HAL or config, so the HAL structs and two configs gained fields. New callbacks go at the end of each struct. A driver with a NULL callback it needs returns its parameter error and sends nothing, so an old HAL fails loudly. None of this has run on hardware.
@@ -80,9 +90,9 @@ These drivers could not follow their manuals through the old HAL or config, so t
 
 ## How to read the datasheet check counts (2026-11-06)
 
-The three batches below confirmed 385 items. 228 are in driver code, across 65 drivers. 157 are in test models or mocks, and 12 more drivers had confirmed items only there: `ads1015`, `ads1115`, `cst816s`, `ht16k33`, `ina3221`, `lis2dh12`, `lis3mdl`, `max31855`, `max7219`, `sht40`, `st7735` and `tsl2591`. Model faults are fixed where a driver fix needed them, and the rest are under Still open in each README.
+The four batches confirmed 515 items in 104 drivers. 296 are in driver code, across 84 drivers. 219 are in test models or mocks, and 14 more drivers had confirmed items only there: `ads1015`, `ads1115`, `cst816s`, `dht11`, `ht16k33`, `ili9341`, `ina3221`, `lis2dh12`, `lis3mdl`, `max31855`, `max7219`, `sht40`, `st7735` and `tsl2591`. Model faults are fixed where a driver fix needed them, and the rest are under Still open in each README.
 
-Six suspects from the last batch were confirmed later from a second source (`ms5611`, `ft6x36` and `bme688`, two each), so those counts differ by six from the batch figures below. 162 suspects remain open.
+Six suspects from the last batch were confirmed later from a second source (`ms5611`, `ft6x36` and `bme688`, two each), so those counts differ by six from the batch figures below. 215 suspects remain open.
 
 ## Datasheet check of the last 49 drivers (2026-11-06)
 
@@ -92,7 +102,7 @@ This batch covers every driver with registers not yet reviewed in November: 186 
 - Not usable on hardware until a larger change lands: `vl53l0x` has no device initialisation or calibration. `apds9960_read_gesture` needs its direction logic rewritten.
 - The HAL changes for `mlx90614`, `ms5611` and `tca9548a` landed later, see above.
 - `is31fl3731` and `mcp4728` needed public struct changes, which landed later, see above.
-- The drivers reviewed only in May have not been redone, apart from the three rechecks in the batch below, and all three of those found faults. Treat that review as weaker than this one.
+- The drivers reviewed only in May were redone later, see above. The three rechecks in the batch below all found faults, so that review was weaker than this one.
 - Some calls now refuse what they used to accept, or take longer. `delay_ms` is required by `bmi160`, `ms5611`, `scd40`, `sgp30`, `shtc3`, `si7021` and `tcs34725`. `hmc5883l` init takes about 3 output periods when `delay_ms` is set, `dps310` init waits for its ready bits, and `pcf8563` stops the clock while setting the time. Each README says what changed.
 
 Running `wheel-gate` on every wheel also found 8 that had been failing its UBSan stage, which `make check` does not run: negative shifts in `bmp280` and in the `pct2075`, `tmp102` and `ina3221` models, a NULL passed to memcpy in `byte_buffer`, overflow in `scale_map`, a bad width in `crc_any`, and a shift in vendored FlashDB. All are fixed. `audit_sanitizer.py` only ran each wheel's main test target then, which is why it reported them clean.
