@@ -41,6 +41,14 @@ these changes to `src/fdb_kvdb.c`, each marked `Local change` in the file:
   the comment in `fdb_def.h` asks. Upstream accepts it, but `read_kv` replaces
   its last character with the NUL, so the key cannot be found after a reboot.
 
+And these to `src/fdb_tsdb.c`, marked the same way:
+
+- `read_sector_info` clears `status` when the magic word is wrong. Without
+  that a sector with a bad header inherits the status of the sector read
+  before it, and the format callbacks skip one that inherits EMPTY, so a
+  sector left blank by a power cut stayed blank through init and
+  `fdb_tsl_clean`, and the next boot formatted away the logs written since.
+
 The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 
 ## Update procedure
@@ -49,5 +57,5 @@ The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 2. Copy `inc/flashdb.h`, `inc/fdb_def.h`, `inc/fdb_low_lvl.h` to `vendor/inc/`
 3. Copy `src/fdb.c`, `src/fdb_kvdb.c`, `src/fdb_tsdb.c`, `src/fdb_utils.c` to `vendor/src/`
 4. Run tests: `cd test && cmake -GNinja -S . -B build && cmake --build build && ./build/test_kvs`
-5. Reapply the `fdb_kvdb.c` changes above unless upstream has fixed them
+5. Reapply the `fdb_kvdb.c` and `fdb_tsdb.c` changes above unless upstream has fixed them
 6. Update version and date in this file

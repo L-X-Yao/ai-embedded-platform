@@ -211,6 +211,10 @@ static fdb_err_t read_sector_info(fdb_tsdb_t db, uint32_t addr, tsdb_sec_info_t 
     /* check magic word */
     if (sector->magic != SECTOR_MAGIC_WORD) {
         sector->check_ok = false;
+        /* Local change: clear the status, or this sector keeps the one left
+         * by the sector read before it. Inherited EMPTY made the format that
+         * repairs a bad header skip it. */
+        sector->status = FDB_SECTOR_STORE_UNUSED;
         return FDB_INIT_FAILED;
     }
     sector->check_ok = true;
