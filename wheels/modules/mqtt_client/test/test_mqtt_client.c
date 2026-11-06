@@ -341,6 +341,110 @@ TEST(test_pingresp_resets_rx_timer)
     ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
 }
 
+/* A QoS 0 step of a telemetry device: returns the PINGREQs of its poll. */
+static int publish_and_poll(uint32_t step_ms)
+{
+    const uint8_t payload[] = { 1 };
+
+    g_tick_ms += step_ms;
+    if (mqtt_client_publish(&g_c, "t", payload, 1, 0) != MQTT_CLIENT_OK) {
+        return -1;
+    }
+    g_sent_len = 0;
+    mqtt_client_poll(&g_c);
+    if (g_sent_len == 0) return 0;
+    return (g_sent_len == 2 && g_sent[0] == 0xC0) ? 1 : -1;
+}
+
+/* The broker owes a client that only publishes QoS 0 no packet at all, so
+ * only a PINGREQ can show that the link works. */
+TEST(test_keepalive_publisher_is_not_cut_off)
+{
+    const uint8_t pingresp[] = { 0xD0, 0x00 };
+    int pings = 0;
+
+    setup_connected();
+    int events = g_evt_count;
+    for (int i = 0; i < 60; i++) {
+        int rc = publish_and_poll(10000);
+        ASSERT_TRUE(rc >= 0);
+        if (rc == 1) {
+            pings++;
+            mqtt_client_feed(&g_c, pingresp, sizeof(pingresp));
+        }
+    }
+
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
+    ASSERT_EQ(g_evt_count, events);  /* it never dropped */
+    ASSERT_EQ(pings, 12);            /* 45 s of silence is next seen at 50 s */
+}
+
+/* Asking must not turn into a flood while the answer is awaited, and with no
+ * answer the link is still declared dead on time. */
+TEST(test_keepalive_publisher_detects_a_dead_link)
+{
+    int pings = 0;
+
+    setup_connected();
+    for (int i = 1; i < 90; i++) {
+        int rc = publish_and_poll(1000);
+        ASSERT_TRUE(rc >= 0);
+        pings += rc;
+        ASSERT_EQ(rc, i == 45 ? 1 : 0);
+    }
+    ASSERT_EQ(pings, 1);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
+
+    (void)publish_and_poll(1000);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
+    ASSERT_EQ(g_evt_reason, 0xFE);
+}
+
+/* A send that failed asked nothing, so the next poll tries again. */
+static int g_fail_sends;
+
+static int flaky_send(void *ctx, const uint8_t *data, uint16_t len)
+{
+    if (g_fail_sends > 0) {
+        g_fail_sends--;
+        return -1;
+    }
+    return mock_send(ctx, data, len);
+}
+
+static const mqtt_client_io_t g_flaky_io = {
+    .send        = flaky_send,
+    .get_tick_ms = mock_tick,
+    .ctx         = NULL,
+};
+
+TEST(test_keepalive_retries_a_failed_ping)
+{
+    const uint8_t connack[] = { 0x20, 0x02, 0x00, 0x00 };
+    const uint8_t payload[] = { 1 };
+    mqtt_client_cfg_t cfg = { .client_id = "t", .keepalive_s = 60,
+                              .clean_session = true };
+
+    reset_mocks();
+    g_fail_sends = 0;
+    mqtt_client_init(&g_c, &g_flaky_io, &cfg);
+    mqtt_client_connect(&g_c);
+    mqtt_client_feed(&g_c, connack, sizeof(connack));
+
+    /* a publish just now: only the broker's silence calls for a ping */
+    g_tick_ms = 45000;
+    ASSERT_EQ(mqtt_client_publish(&g_c, "t", payload, 1, 0), MQTT_CLIENT_OK);
+    g_sent_len = 0;
+    g_fail_sends = 1;
+    mqtt_client_poll(&g_c);
+    ASSERT_EQ(g_sent_len, 0);
+
+    g_tick_ms = 46000;
+    mqtt_client_poll(&g_c);
+    ASSERT_EQ(g_sent_len, 2);
+    ASSERT_EQ(g_sent[0], 0xC0);
+}
+
 /* ─── disconnect tests ───────────────────────────────────────── */
 
 TEST(test_disconnect)
@@ -713,6 +817,9 @@ TEST_MAIN("mqtt_client")
     RUN(test_incoming_publish_qos1_sends_puback);
     RUN(test_keepalive_pingreq);
     RUN(test_keepalive_timeout_disconnects);
+    RUN(test_keepalive_publisher_is_not_cut_off);
+    RUN(test_keepalive_publisher_detects_a_dead_link);
+    RUN(test_keepalive_retries_a_failed_ping);
     RUN(test_pingresp_resets_rx_timer);
     RUN(test_disconnect);
     RUN(test_feed_partial_packet);

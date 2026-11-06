@@ -101,6 +101,7 @@ typedef struct {
 
     uint32_t last_tx_ms;              /* internal */
     uint32_t last_rx_ms;              /* internal */
+    uint32_t last_ping_ms;            /* internal */
     uint32_t connect_start_ms;        /* internal */
 
     uint16_t next_packet_id;          /* internal */
