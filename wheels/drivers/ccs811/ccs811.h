@@ -39,6 +39,10 @@ typedef struct {
                       uint8_t *buf, uint16_t len);
     void (*delay_ms)(void *ctx, uint32_t ms);
     void *ctx;
+    /* Required. Puts exactly data[0..len-1] on the bus after the address,
+     * then STOP. ccs811_init returns CCS811_ERR_PARAM without it. */
+    bool (*write_raw)(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                      uint16_t len);
 } ccs811_i2c_t;
 
 typedef enum {
