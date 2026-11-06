@@ -52,6 +52,10 @@ And these to `src/fdb_tsdb.c`, marked the same way:
   after their "isn't initialize OK" message, as the other TSDB calls do. They
   carried on, and after a failed init the sector size is 0, so the traversal
   never ended and held the database lock.
+- `search_start_tsl_addr` returns the last index on a reverse walk when every
+  log in the sector is older than `from`. It read the slot after that index,
+  which is log data in a sector that filled exactly, so `fdb_tsl_iter_by_time`
+  with `from` above `to` stopped there and lost the older sectors.
 
 And this to `src/fdb.c`, marked the same way:
 
