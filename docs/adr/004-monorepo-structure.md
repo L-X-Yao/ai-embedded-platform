@@ -73,7 +73,7 @@ ai-embedded-platform/    (整个私有 monorepo)
 
 ## 当前仓库情况
 
-仓库位置：本地 `D:\temp\project\ai-embedded-platform\`（未来推到公司私有 Gitea/GitLab）
+仓库位置：本地 `ai-embedded-platform/`（未来推到公司私有 Gitea/GitLab）
 
 ### 分支策略
 - `main` 干线
