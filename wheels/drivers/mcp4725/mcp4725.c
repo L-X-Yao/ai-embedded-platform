@@ -19,6 +19,29 @@
 #define CMD_WRITE_DAC    0x40u   /* C2:C1:C0 = 010 */
 #define CMD_WRITE_EEPROM 0x60u   /* C2:C1:C0 = 011 */
 
+#define STATUS_RDY       0x80u   /* first read byte: RDY/BSY, 1 = ready */
+
+/*
+ * p.21: "While the RDY/BSY bit is low (during the EEPROM writing), any new
+ * write command is ignored (for EEPROM or DAC register)." A write sent then
+ * is lost, so refuse it. RDY/BSY is read only while an EEPROM write may be
+ * running, which keeps Fast mode at one transfer.
+ */
+static mcp4725_err_t check_ready(mcp4725_t *dev)
+{
+    if (!dev->eeprom_pending)
+        return MCP4725_OK;
+
+    uint8_t buf[5];
+    if (!dev->i2c->read(dev->i2c->ctx, dev->addr, buf, 5))
+        return MCP4725_ERR_I2C;
+    if (!(buf[0] & STATUS_RDY))
+        return MCP4725_ERR_BUSY;
+
+    dev->eeprom_pending = false;
+    return MCP4725_OK;
+}
+
 mcp4725_err_t mcp4725_init(mcp4725_t *dev, const mcp4725_i2c_t *i2c,
                            uint8_t addr)
 {
@@ -27,10 +50,14 @@ mcp4725_err_t mcp4725_init(mcp4725_t *dev, const mcp4725_i2c_t *i2c,
     if (!dev || !i2c) return MCP4725_ERR_PARAM;
     dev->i2c = i2c;
     dev->addr = addr;
+    dev->eeprom_pending = false;
 
     uint8_t buf[5];
     if (!i2c->read(i2c->ctx, addr, buf, 5))
         return MCP4725_ERR_I2C;
+
+    /* The MCU may restart while the device still writes its EEPROM. */
+    dev->eeprom_pending = !(buf[0] & STATUS_RDY);
 
     return MCP4725_OK;
 }
@@ -41,6 +68,9 @@ mcp4725_err_t mcp4725_write_fast(mcp4725_t *dev, uint16_t value)
     REQUIRE(value <= MCP4725_MAX_VALUE);
     if (!dev) return MCP4725_ERR_PARAM;
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
+
+    mcp4725_err_t err = check_ready(dev);
+    if (err != MCP4725_OK) return err;
 
     /* Fast mode: [00][PD=00][D11:D8] [D7:D0] */
     uint8_t buf[2];
@@ -61,6 +91,9 @@ mcp4725_err_t mcp4725_write_dac(mcp4725_t *dev, uint16_t value,
     if (!dev) return MCP4725_ERR_PARAM;
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
+
+    mcp4725_err_t err = check_ready(dev);
+    if (err != MCP4725_OK) return err;
 
     /* [010xx][PD1:PD0][x] [D11:D4] [D3:D0][xxxx] */
     uint8_t buf[3];
@@ -83,6 +116,9 @@ mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value,
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
 
+    mcp4725_err_t err = check_ready(dev);
+    if (err != MCP4725_OK) return err;
+
     /* [011xx][PD1:PD0][x] [D11:D4] [D3:D0][xxxx] */
     uint8_t buf[3];
     buf[0] = (uint8_t)(CMD_WRITE_EEPROM | (((uint8_t)pd & 0x03u) << 1));
@@ -92,6 +128,7 @@ mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value,
     if (!dev->i2c->write(dev->i2c->ctx, dev->addr, buf, 3))
         return MCP4725_ERR_I2C;
 
+    dev->eeprom_pending = true;
     return MCP4725_OK;
 }
 
@@ -112,7 +149,8 @@ mcp4725_err_t mcp4725_read_status(mcp4725_t *dev, mcp4725_status_t *out)
     if (!dev->i2c->read(dev->i2c->ctx, dev->addr, buf, 5))
         return MCP4725_ERR_I2C;
 
-    out->eeprom_busy = !(buf[0] & 0x80u);
+    out->eeprom_busy = !(buf[0] & STATUS_RDY);
+    dev->eeprom_pending = out->eeprom_busy;
     out->pd_mode     = (buf[0] >> 1) & 0x03u;
     out->dac_value   = (uint16_t)(((uint16_t)buf[1] << 4) |
                                   ((uint16_t)buf[2] >> 4));

@@ -26,6 +26,7 @@ typedef enum {
     MCP4725_OK        =  0,
     MCP4725_ERR_I2C   = -1,
     MCP4725_ERR_PARAM = -2,
+    MCP4725_ERR_BUSY  = -3,   /* EEPROM write running, nothing was sent */
 } mcp4725_err_t;
 
 typedef enum {
@@ -52,6 +53,7 @@ typedef struct {
 typedef struct {
     const mcp4725_i2c_t *i2c;
     uint8_t addr;
+    bool    eeprom_pending;   /* private: RDY/BSY not yet seen high */
 } mcp4725_t;
 
 #define MCP4725_ADDR_A  0x60u
@@ -70,7 +72,12 @@ mcp4725_err_t mcp4725_write_fast(mcp4725_t *dev, uint16_t value);
 mcp4725_err_t mcp4725_write_dac(mcp4725_t *dev, uint16_t value,
                                 mcp4725_pd_t pd);
 
-/** Write DAC register and EEPROM (persistent across power cycle). @thread_safe: no @isr_safe: no */
+/**
+ * Write DAC register and EEPROM (persistent across power cycle).
+ * Returns at once. The EEPROM cycle takes 25 to 50 ms, and until it ends
+ * every write function returns MCP4725_ERR_BUSY.
+ * @thread_safe: no @isr_safe: no
+ */
 mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value,
                                    mcp4725_pd_t pd);
 
