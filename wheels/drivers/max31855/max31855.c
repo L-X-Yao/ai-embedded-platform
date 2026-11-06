@@ -38,7 +38,8 @@ static max31855_err_t check_faults(uint32_t raw)
     if (raw & 0x01U) return MAX31855_ERR_OPEN;
     if (raw & 0x02U) return MAX31855_ERR_SHORT_GND;
     if (raw & 0x04U) return MAX31855_ERR_SHORT_VCC;
-    return MAX31855_OK;
+    /* D16 reads 1 only with one of those set, so this frame is corrupted */
+    return MAX31855_ERR_SPI;
 }
 
 static float decode_thermocouple(uint32_t raw)

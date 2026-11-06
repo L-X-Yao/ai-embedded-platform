@@ -183,6 +183,21 @@ TEST(test_fault_short_vcc)
     ASSERT_EQ(e, MAX31855_ERR_SHORT_VCC);
 }
 
+/* D16 only reads 1 with a fault in D2..D0, so alone it marks a corrupted frame */
+TEST(test_fault_bit_alone_is_a_bad_frame)
+{
+    mock_reset();
+    set_frame(0x00010000U);
+
+    max31855_t dev;
+    max31855_init(&dev, &mock_spi);
+
+    float tc = -999.0f, ic = -999.0f;
+    ASSERT_EQ(max31855_read(&dev, &tc, &ic), MAX31855_ERR_SPI);
+    ASSERT_TRUE(tc == -999.0f);
+    ASSERT_TRUE(ic == -999.0f);
+}
+
 TEST(test_read_raw)
 {
     mock_reset();
@@ -289,6 +304,7 @@ TEST_MAIN("max31855")
     RUN(test_fault_open_circuit);
     RUN(test_fault_short_gnd);
     RUN(test_fault_short_vcc);
+    RUN(test_fault_bit_alone_is_a_bad_frame);
     RUN(test_read_raw);
     RUN(test_read_raw_null_out);
     RUN(test_read_null_dev);
