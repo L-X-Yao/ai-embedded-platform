@@ -9,11 +9,19 @@
  */
 #include "servo.h"
 #include "contract.h"
+#include <string.h>
 
 servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
                        const servo_cfg_t *cfg)
 {
-    if (!dev || !pwm || !cfg)
+    if (!dev)
+        return SERVO_ERR_PARAM;
+
+    /* dev->pwm stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which also has no range to divide by */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!pwm || !cfg)
         return SERVO_ERR_PARAM;
     if (!pwm->set_pulse_us)
         return SERVO_ERR_PARAM;
@@ -21,14 +29,13 @@ servo_err_t servo_init(servo_t *dev, const servo_pwm_t *pwm,
         return SERVO_ERR_PARAM;
     dev->pwm = pwm;
     dev->cfg = *cfg;
-    dev->current_angle = 0;
     INVARIANT(dev->pwm != NULL);
     return SERVO_OK;
 }
 
 servo_err_t servo_set_angle(servo_t *dev, uint16_t angle)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return SERVO_ERR_PARAM;
     if (angle > dev->cfg.max_angle)
         angle = dev->cfg.max_angle;
@@ -46,7 +53,7 @@ servo_err_t servo_set_angle(servo_t *dev, uint16_t angle)
 
 servo_err_t servo_set_pulse(servo_t *dev, uint32_t pulse_us)
 {
-    if (!dev)
+    if (!dev || !dev->pwm)
         return SERVO_ERR_PARAM;
     if (pulse_us < dev->cfg.min_pulse_us || pulse_us > dev->cfg.max_pulse_us)
         return SERVO_ERR_PARAM;
