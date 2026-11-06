@@ -119,7 +119,11 @@ for wheel in "${WHEELS[@]}"; do
             done
 
             if [[ $test_count -eq 0 ]]; then
-                echo -e "  ${YELLOW}WARN${NC} no test executables found"
+                echo -e "  ${RED}FAIL${NC} no test executables found"
+                FAIL=$((FAIL + 1))
+                FAILED_WHEELS+=("$wheel")
+                rm -rf "$build_dir" "$build_log"
+                continue
             elif $test_ok; then
                 echo -e "  ${GREEN}PASS${NC} tests ($test_count executables)"
             else
@@ -154,13 +158,19 @@ for wheel in "${WHEELS[@]}"; do
            cmake --build "$san_dir" >> "$san_log" 2>&1; then
 
             ubsan_ok=true
+            san_count=0
             for exe in "$san_dir"/test_* "$san_dir"/prop_*; do
                 [[ -f "$exe" && -x "$exe" ]] || continue
+                san_count=$((san_count + 1))
                 if ! "$exe" > /dev/null 2>&1; then
                     echo -e "  ${RED}FAIL${NC} ASan/UBSan: $(basename "$exe")"
                     ubsan_ok=false
                 fi
             done
+            if [[ $san_count -eq 0 ]]; then
+                echo -e "  ${RED}FAIL${NC} ASan/UBSan: no executables ran"
+                ubsan_ok=false
+            fi
 
             if $ubsan_ok; then
                 echo -e "  ${GREEN}PASS${NC} ASan/UBSan"
@@ -235,7 +245,12 @@ for wheel in "${WHEELS[@]}"; do
 
     # --- 2.9. README quality check ---
     readme_file="${wheel_dir}/README.md"
-    if [[ -f "$readme_file" ]] && grep -q "TODO" "$readme_file"; then
+    if [[ ! -f "$readme_file" ]]; then
+        echo -e "  ${RED}FAIL${NC} README: missing"
+        FAIL=$((FAIL + 1))
+        FAILED_WHEELS+=("$wheel")
+        continue
+    elif grep -q "TODO" "$readme_file"; then
         echo -e "  ${RED}FAIL${NC} README: contains TODO placeholders"
         FAIL=$((FAIL + 1))
         FAILED_WHEELS+=("$wheel")
