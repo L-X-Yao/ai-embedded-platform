@@ -171,6 +171,49 @@ TEST(test_reset)
     ASSERT_EQ(model.raw_light, 5000);
 }
 
+/* p.5: "Reset command is not acceptable in Power Down mode." and "This command
+ * is not working in power down mode, so that please set the power on mode before
+ * input this command." */
+TEST(test_model_reset_is_ignored_in_power_down)
+{
+    setup();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    bh1750_model_set_raw(&model, 5000);
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+    ASSERT_EQ(bh1750_power_off(&dev), BH1750_OK);
+
+    ASSERT_EQ(bh1750_reset(&dev), BH1750_OK);
+    ASSERT_EQ(model.data_reg, 5000);
+}
+
+/* A one-time mode ends in Power Down too, so the result survives a reset. */
+TEST(test_model_reset_is_ignored_after_a_one_time_measurement)
+{
+    setup();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+    ASSERT_FALSE(model.powered);
+
+    ASSERT_EQ(bh1750_reset(&dev), BH1750_OK);
+    ASSERT_EQ(model.data_reg, 1200);
+}
+
+/* p.7: the address is 0100011 with ADDR low and 1011100 with ADDR high. */
+TEST(test_model_answers_at_its_two_addresses_only)
+{
+    setup();
+    uint8_t cmd = 0x01;
+    uint8_t buf[2];
+    ASSERT_TRUE(bh1750_model_i2c_write(&model, 0x23, &cmd, 1));
+    ASSERT_TRUE(bh1750_model_i2c_write(&model, 0x5C, &cmd, 1));
+    ASSERT_FALSE(bh1750_model_i2c_write(&model, 0x24, &cmd, 1));
+    ASSERT_TRUE(bh1750_model_i2c_read(&model, 0x23, buf, 2));
+    ASSERT_FALSE(bh1750_model_i2c_read(&model, 0x5D, buf, 2));
+    ASSERT_EQ(model.cmd_count, 2);
+}
+
 /* --- waiting for a measurement (manual p.2, p.7) --- */
 
 TEST(test_model_data_register_starts_at_zero)
@@ -401,6 +444,9 @@ TEST_MAIN("bh1750 hardware model")
     RUN(test_power_off);
     RUN(test_power_on);
     RUN(test_reset);
+    RUN(test_model_reset_is_ignored_in_power_down);
+    RUN(test_model_reset_is_ignored_after_a_one_time_measurement);
+    RUN(test_model_answers_at_its_two_addresses_only);
     RUN(test_model_data_register_starts_at_zero);
     RUN(test_init_waits_for_h_res_measurement);
     RUN(test_init_waits_for_h_res2_measurement);
