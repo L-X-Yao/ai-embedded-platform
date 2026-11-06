@@ -486,7 +486,65 @@ TEST(test_reinit_same_bus)
     ASSERT_TRUE(bus.gpio == &gpio2);
 }
 
+/*
+ * I2C addresses are 7 bits. 0xD0 is the 8-bit form of 0x68: shifted left
+ * it would leave 0xA0 on the wire, which selects 0x50, another device.
+ * It must be refused before the bus moves at all.
+ */
+TEST(test_addr_above_7_bits_refused)
+{
+    static const uint8_t bad[] = {0x80, 0xD0, 0xFF};
+    uint8_t data = 0x42;
+    uint8_t buf[1] = {0};
+    soft_i2c_t bus;
+
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    for (size_t i = 0; i < sizeof(bad); i++) {
+        g_trace_idx = 0;
+        ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_write(&bus, bad[i], &data, 1));
+        ASSERT_EQ(SOFT_I2C_ERR_PARAM, soft_i2c_read(&bus, bad[i], buf, 1));
+        ASSERT_EQ(SOFT_I2C_ERR_PARAM,
+                  soft_i2c_write_reg(&bus, bad[i], 0x0D, 0x40));
+        ASSERT_EQ(SOFT_I2C_ERR_PARAM,
+                  soft_i2c_read_regs(&bus, bad[i], 0x0F, buf, 1));
+        ASSERT_EQ(0, g_trace_idx);
+    }
+}
+
+/* 0x7F is the top legal address: it must reach the wire as 0xFE. */
+TEST(test_addr_7f_still_sent)
+{
+    soft_i2c_t bus;
+    uint8_t wire = 0;
+    int bits = 0;
+
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_trace_idx = 0;
+    set_slave_acks(1);
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_write(&bus, 0x7F, NULL, 0));
+
+    /* START ends with SCL falling. After that each bit is one SDA level
+     * clocked by one rising SCL edge. */
+    uint16_t i = 0;
+    while (i < g_trace_idx && g_trace[i] != TR_SCL_L) i++;
+    uint8_t level = 0;
+    for (; i < g_trace_idx && bits < 8; i++) {
+        if (g_trace[i] == TR_SDA_H) level = 1;
+        if (g_trace[i] == TR_SDA_L) level = 0;
+        if (g_trace[i] == TR_SCL_H) {
+            wire = (uint8_t)((wire << 1) | level);
+            bits++;
+        }
+    }
+    ASSERT_EQ(8, bits);
+    ASSERT_EQ(0xFE, wire);
+}
+
 TEST_MAIN("soft_i2c")
+    RUN(test_addr_above_7_bits_refused);
+    RUN(test_addr_7f_still_sent);
     RUN(test_init_null_bus);
     RUN(test_init_null_gpio);
     RUN(test_init_missing_callback);

@@ -11,6 +11,8 @@
 #include "soft_i2c.h"
 #include "contract.h"
 
+#define SOFT_I2C_ADDR_MAX 0x7FU /* addresses are 7 bits, shifted left on the wire */
+
 /* ---------- internal helpers ---------- */
 
 static inline void scl_high(const soft_i2c_gpio_t *g)
@@ -148,7 +150,7 @@ soft_i2c_err_t soft_i2c_write(soft_i2c_t *bus, uint8_t addr,
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
-    if (len > 0 && data == NULL) {
+    if (addr > SOFT_I2C_ADDR_MAX || (len > 0 && data == NULL)) {
         return SOFT_I2C_ERR_PARAM;
     }
 
@@ -178,7 +180,7 @@ soft_i2c_err_t soft_i2c_read(soft_i2c_t *bus, uint8_t addr,
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
-    if (len == 0 || buf == NULL) {
+    if (addr > SOFT_I2C_ADDR_MAX || len == 0 || buf == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
 
@@ -205,7 +207,7 @@ soft_i2c_err_t soft_i2c_write_reg(soft_i2c_t *bus, uint8_t addr,
                                   uint8_t reg, uint8_t val)
 {
     REQUIRE(bus != NULL);
-    if (bus == NULL || bus->gpio == NULL) {
+    if (bus == NULL || bus->gpio == NULL || addr > SOFT_I2C_ADDR_MAX) {
         return SOFT_I2C_ERR_PARAM;
     }
 
@@ -237,7 +239,7 @@ soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
     if (bus == NULL || bus->gpio == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
-    if (len == 0 || buf == NULL) {
+    if (addr > SOFT_I2C_ADDR_MAX || len == 0 || buf == NULL) {
         return SOFT_I2C_ERR_PARAM;
     }
 
