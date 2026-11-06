@@ -48,6 +48,10 @@ And these to `src/fdb_tsdb.c`, marked the same way:
   before it, and the format callbacks skip one that inherits EMPTY, so a
   sector left blank by a power cut stayed blank through init and
   `fdb_tsl_clean`, and the next boot formatted away the logs written since.
+- `fdb_tsl_iter`, `fdb_tsl_iter_reverse` and `fdb_tsl_iter_by_time` return
+  after their "isn't initialize OK" message, as the other TSDB calls do. They
+  carried on, and after a failed init the sector size is 0, so the traversal
+  never ended and held the database lock.
 
 And this to `src/fdb.c`, marked the same way:
 

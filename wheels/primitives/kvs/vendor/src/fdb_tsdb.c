@@ -609,6 +609,9 @@ void fdb_tsl_iter(fdb_tsdb_t db, fdb_tsl_cb cb, void *arg)
 
     if (!db_init_ok(db)) {
         FDB_INFO("Error: TSL (%s) isn't initialize OK.\n", db_name(db));
+        /* Local change: return as the other calls do. After a failed init
+         * the sector size is 0, so the traversal below would never end. */
+        return;
     }
 
     if (cb == NULL) {
@@ -668,6 +671,9 @@ void fdb_tsl_iter_reverse(fdb_tsdb_t db, fdb_tsl_cb cb, void *cb_arg)
 
     if (!db_init_ok(db)) {
         FDB_INFO("Error: TSL (%s) isn't initialize OK.\n", db_name(db));
+        /* Local change: return as the other calls do. After a failed init
+         * the sector size is 0, so the traversal below would never end. */
+        return;
     }
 
     if (cb == NULL) {
@@ -757,6 +763,9 @@ void fdb_tsl_iter_by_time(fdb_tsdb_t db, fdb_time_t from, fdb_time_t to, fdb_tsl
 
     if (!db_init_ok(db)) {
         FDB_INFO("Error: TSL (%s) isn't initialize OK.\n", db_name(db));
+        /* Local change: return as the other calls do. After a failed init
+         * the sector size is 0, so the traversal below would never end. */
+        return;
     }
 
     if(from <= to) {
