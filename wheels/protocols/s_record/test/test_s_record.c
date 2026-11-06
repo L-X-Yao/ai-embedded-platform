@@ -86,6 +86,25 @@ TEST(test_decode_with_crlf)
     ASSERT_EQ(s_record_decode(line, strlen(line), &rec), S_RECORD_OK);
 }
 
+TEST(test_decode_refuses_text_after_checksum)
+{
+    /* A valid record, then text the count does not cover. The first line is
+     * two records joined by a lost newline: the second must not vanish. */
+    static const char *const lines[] = {
+        "S1050000AA55FBS1050010AA55EB",
+        "S1050000AA55FB garbage",
+        "S1050000AA55FB ",
+        "S1050000AA55FBX\r\n",
+    };
+    s_record_line_t rec;
+    for (size_t i = 0; i < sizeof(lines) / sizeof(lines[0]); i++)
+        ASSERT_EQ(s_record_decode(lines[i], strlen(lines[i]), &rec), S_RECORD_ERR_FORMAT);
+
+    ASSERT_EQ(s_record_decode("S1050000AA55FB", 14, &rec), S_RECORD_OK);
+    ASSERT_EQ(s_record_decode("S1050000AA55FB\n", 15, &rec), S_RECORD_OK);
+    ASSERT_EQ(rec.data_len, 2);
+}
+
 /* ---------- encode ---------- */
 
 TEST(test_encode_s1)
@@ -242,6 +261,7 @@ TEST_MAIN("s_record")
     RUN(test_decode_no_s);
     RUN(test_decode_bad_checksum);
     RUN(test_decode_with_crlf);
+    RUN(test_decode_refuses_text_after_checksum);
     RUN(test_encode_s1);
     RUN(test_encode_null);
     RUN(test_encode_overflow);
