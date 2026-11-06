@@ -19,9 +19,10 @@ matching our wheel contract. Self-written; protocol from CCS811 datasheet.
 
 ## Dependencies
 
-I2C HAL (injected via `ccs811_i2c_t` callbacks). `write_raw` is required: it
-puts exact bytes on the bus, which APP_START and ENV_DATA need. No other
-dependencies.
+I2C HAL (injected via `ccs811_i2c_t` callbacks). `write_reg`, `read_regs` and
+`write_raw` are required, and `ccs811_init` returns `CCS811_ERR_PARAM` without
+them. `write_raw` puts exact bytes on the bus, which APP_START and ENV_DATA
+need. `delay_ms` is optional. No other dependencies.
 
 ## API
 

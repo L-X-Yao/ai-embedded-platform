@@ -42,7 +42,7 @@ Checked on 2026-11-06 against TI SBAS444E. Not run on hardware.
 
 - **Matched:** Addresses, config register fields, data rate and PGA codes, scaling.
 - **Fixed:** With `delay_ms` NULL the poll stopped after 200 reads, 90 ms on a 100 kHz bus, so an 8 SPS conversion ended in `ADS1115_ERR_BUSY`. It now polls up to 10500 times, which also means a stuck OS takes about 4.7 s to give up on that bus. The model finished a conversion inside the config write, let a write clear OS and reset the thresholds to 0. It now takes 1 / DR per conversion, the mock clears OS for a few polls, and the property tests run on the model instead of a byte-wide mock in which two registers shared a byte. This fix has not run on hardware.
-- **Suspected:** `ads1115_read_voltage` is tagged ISR safe although it blocks for a conversion.
+- **Fixed:** `ads1115_read_voltage` was tagged ISR safe although it blocks for a conversion.
 
 ## Known issues
 
