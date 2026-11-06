@@ -1046,6 +1046,52 @@ TEST(test_set_mode_null_spi)
     ASSERT_EQ(e, MCP2515_ERR_SPI);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+/* This driver gives MCP2515_ERR_SPI for a missing device or SPI */
+static void assert_device_refused(mcp2515_t *d)
+{
+    mcp2515_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    ASSERT_EQ(mcp2515_set_mode(d, MCP2515_MODE_NORMAL), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_send(d, &msg), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_receive(d, &msg), MCP2515_ERR_SPI);
+    ASSERT_FALSE(mcp2515_has_message(d));
+    ASSERT_EQ(mcp2515_set_filter(d, 0, 0, false), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_set_mask(d, 0, 0, false), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_read_status(d), 0);
+    ASSERT_EQ(mcp2515_read_errors(d), 0);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    mcp2515_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp2515_init(&d, NULL, MCP2515_SPEED_500KBPS), MCP2515_ERR_SPI);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp2515_init(&d, &mock_spi_no_delay, MCP2515_SPEED_500KBPS),
+              MCP2515_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp2515_init(&d, &mock_spi, MCP2515_SPEED_1MBPS),
+              MCP2515_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* CANSTAT never showed config mode, so no setup reached a chip */
+    mock_freeze_canstat = 1;
+    mock_regs[0x0E] = 0xFF;
+    ASSERT_EQ(mcp2515_init(&d, &mock_spi_freeze, MCP2515_SPEED_500KBPS),
+              MCP2515_ERR_TIMEOUT);
+    assert_device_refused(&d);
+    mock_freeze_canstat = 0;
+}
+
 /* ---------- main ---------- */
 
 TEST(test_receive_extended_remote_frame_uses_dlc_bit)
@@ -1126,4 +1172,5 @@ TEST_MAIN("mcp2515")
     RUN(test_set_mode_null_spi);
     RUN(test_receive_extended_remote_frame_uses_dlc_bit);
     RUN(test_standard_data_frame_ignores_dlc_bit_6);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

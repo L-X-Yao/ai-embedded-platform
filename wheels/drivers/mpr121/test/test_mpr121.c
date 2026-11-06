@@ -252,6 +252,44 @@ TEST(test_error_codes)
     ASSERT_EQ(-2, (int)MPR121_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(mpr121_t *d)
+{
+    uint16_t value = 0;
+    ASSERT_EQ(mpr121_read_touched(d, &value), MPR121_ERR_PARAM);
+    ASSERT_EQ(mpr121_read_electrode(d, 0, &value), MPR121_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static mpr121_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    mpr121_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mpr121_init(&d, NULL, &default_cfg), MPR121_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* ECR did not read 0 after the soft reset, so this is no working MPR121 */
+    mock_regs[MPR121_REG_ECR] = 0x42u;
+    ASSERT_EQ(mpr121_init(&d, &mock_i2c, &default_cfg), MPR121_ERR_I2C);
+    assert_device_refused(&d);
+
+    /* The reset and the ECR read worked, the first filter write did not */
+    mock_reset();
+    mock_fail_at = 2;
+    ASSERT_EQ(mpr121_init(&d, &mock_i2c, &default_cfg), MPR121_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("mpr121")
     RUN(test_init_ok);
     RUN(test_init_soft_reset_write);
@@ -272,4 +310,6 @@ TEST_MAIN("mpr121")
     RUN(test_read_electrode_invalid_channel);
     RUN(test_read_electrode_i2c_fail);
     RUN(test_error_codes);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

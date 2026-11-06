@@ -297,6 +297,39 @@ TEST(test_read_voltage_null_out)
     ASSERT_EQ(mcp3008_read_voltage(&dev, 0, 3.3f, NULL), MCP3008_ERR_PARAM);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(mcp3008_t *d)
+{
+    uint16_t raw = 0;
+    float volts = 0.0f;
+    ASSERT_EQ(mcp3008_read_single(d, 0, &raw), MCP3008_ERR_PARAM);
+    ASSERT_EQ(mcp3008_read_diff(d, 0, &raw), MCP3008_ERR_PARAM);
+    ASSERT_EQ(mcp3008_read_voltage(d, 0, 3.3f, &volts), MCP3008_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static mcp3008_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    mcp3008_t d;
+    mcp3008_spi_t zeroed;
+    memset(&zeroed, 0, sizeof(zeroed));
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp3008_init(&d, NULL), MCP3008_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp3008_init(&d, &zeroed), MCP3008_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("mcp3008")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -325,4 +358,6 @@ TEST_MAIN("mcp3008")
     RUN(test_read_diff_null_out);
     RUN(test_read_voltage_null_dev);
     RUN(test_read_voltage_null_out);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

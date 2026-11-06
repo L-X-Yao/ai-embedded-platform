@@ -506,6 +506,54 @@ TEST(test_ready_check_i2c_fail)
     ASSERT_EQ(mock_write_count, writes);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(mcp4725_t *d)
+{
+    mcp4725_status_t st;
+    ASSERT_EQ(mcp4725_write_fast(d, 100), MCP4725_ERR_PARAM);
+    ASSERT_EQ(mcp4725_write_dac(d, 100, MCP4725_PD_NORMAL), MCP4725_ERR_PARAM);
+    ASSERT_EQ(mcp4725_write_eeprom(d, 100, MCP4725_PD_NORMAL), MCP4725_ERR_PARAM);
+    ASSERT_EQ(mcp4725_read_status(d, &st), MCP4725_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static mcp4725_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    mcp4725_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp4725_init(&d, NULL, 0x60), MCP4725_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* Nothing answered the status read, and the bus is fine again */
+    mock_fail_at = 0;
+    ASSERT_EQ(mcp4725_init(&d, &mock_i2c, 0x60), MCP4725_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    mcp4725_t d;
+    mcp4725_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write = NULL;
+    ASSERT_EQ(mcp4725_init(&d, &bad, 0x60), MCP4725_ERR_PARAM);
+
+    bad = mock_i2c;
+    bad.read = NULL;
+    ASSERT_EQ(mcp4725_init(&d, &bad, 0x60), MCP4725_ERR_PARAM);
+}
+
 TEST_MAIN("mcp4725")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -539,4 +587,7 @@ TEST_MAIN("mcp4725")
     RUN(test_addr_b);
     RUN(test_fast_does_not_touch_eeprom);
     RUN(test_dac_does_not_touch_eeprom);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()

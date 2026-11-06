@@ -12,6 +12,7 @@
 
 #include "mcp4725.h"
 #include "contract.h"
+#include <string.h>
 
 /* Command byte bit positions (datasheet Figure 6-2):
  * Byte 0: [C2(7)][C1(6)][C0(5)][x(4)][x(3)][PD1(2)][PD0(1)][x(0)]
@@ -47,14 +48,21 @@ mcp4725_err_t mcp4725_init(mcp4725_t *dev, const mcp4725_i2c_t *i2c,
 {
     REQUIRE(dev != NULL);
     REQUIRE(i2c != NULL);
-    if (!dev || !i2c) return MCP4725_ERR_PARAM;
+    if (!dev) return MCP4725_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write || !i2c->read) return MCP4725_ERR_PARAM;
     dev->i2c = i2c;
     dev->addr = addr;
-    dev->eeprom_pending = false;
 
     uint8_t buf[5];
-    if (!i2c->read(i2c->ctx, addr, buf, 5))
+    if (!i2c->read(i2c->ctx, addr, buf, 5)) {
+        dev->i2c = NULL;
         return MCP4725_ERR_I2C;
+    }
 
     /* The MCU may restart while the device still writes its EEPROM. */
     dev->eeprom_pending = !(buf[0] & STATUS_RDY);
@@ -66,7 +74,7 @@ mcp4725_err_t mcp4725_write_fast(mcp4725_t *dev, uint16_t value)
 {
     REQUIRE(dev != NULL);
     REQUIRE(value <= MCP4725_MAX_VALUE);
-    if (!dev) return MCP4725_ERR_PARAM;
+    if (!dev || !dev->i2c) return MCP4725_ERR_PARAM;
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
 
     mcp4725_err_t err = check_ready(dev);
@@ -88,7 +96,7 @@ mcp4725_err_t mcp4725_write_dac(mcp4725_t *dev, uint16_t value,
 {
     REQUIRE(dev != NULL);
     REQUIRE(value <= MCP4725_MAX_VALUE);
-    if (!dev) return MCP4725_ERR_PARAM;
+    if (!dev || !dev->i2c) return MCP4725_ERR_PARAM;
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
 
@@ -112,7 +120,7 @@ mcp4725_err_t mcp4725_write_eeprom(mcp4725_t *dev, uint16_t value,
 {
     REQUIRE(dev != NULL);
     REQUIRE(value <= MCP4725_MAX_VALUE);
-    if (!dev) return MCP4725_ERR_PARAM;
+    if (!dev || !dev->i2c) return MCP4725_ERR_PARAM;
     if (value > MCP4725_MAX_VALUE) return MCP4725_ERR_PARAM;
     if ((unsigned)pd > 3u) return MCP4725_ERR_PARAM;
 
@@ -136,7 +144,7 @@ mcp4725_err_t mcp4725_read_status(mcp4725_t *dev, mcp4725_status_t *out)
 {
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
-    if (!dev || !out) return MCP4725_ERR_PARAM;
+    if (!dev || !dev->i2c || !out) return MCP4725_ERR_PARAM;
 
     /* 5-byte read (datasheet Figure 6-3, after the address byte):
      * [0]: [RDY/BSY(7)][POR(6)][x(5:3)][PD1(2):PD0(1)][x(0)]

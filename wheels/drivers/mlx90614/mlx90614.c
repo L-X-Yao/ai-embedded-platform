@@ -86,40 +86,49 @@ static mlx90614_err_t read_temp_reg(mlx90614_t *dev, uint8_t reg,
 mlx90614_err_t mlx90614_init(mlx90614_t *dev, const mlx90614_i2c_t *i2c,
                              const mlx90614_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+        return MLX90614_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
         return MLX90614_ERR_PARAM;
     if (!i2c->write || !i2c->write_read)
         return MLX90614_ERR_PARAM;
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
     /* Verify communication by reading ambient temp register */
     uint16_t raw;
     if (!smbus_read_word(dev, REG_TA, &raw))
+    {
+        dev->i2c = NULL;
         return MLX90614_ERR_I2C;
+    }
 
     return MLX90614_OK;
 }
 
 mlx90614_err_t mlx90614_read_object_temp(mlx90614_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
         return MLX90614_ERR_PARAM;
     return read_temp_reg(dev, REG_TOBJ1, temp_c);
 }
 
 mlx90614_err_t mlx90614_read_ambient_temp(mlx90614_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
         return MLX90614_ERR_PARAM;
     return read_temp_reg(dev, REG_TA, temp_c);
 }
 
 mlx90614_err_t mlx90614_read_emissivity(mlx90614_t *dev, float *emissivity)
 {
-    if (!dev || !emissivity)
+    if (!dev || !dev->i2c || !emissivity)
         return MLX90614_ERR_PARAM;
 
     uint16_t raw;
@@ -134,7 +143,7 @@ mlx90614_err_t mlx90614_read_emissivity(mlx90614_t *dev, float *emissivity)
 
 mlx90614_err_t mlx90614_set_emissivity(mlx90614_t *dev, float emissivity)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return MLX90614_ERR_PARAM;
     if (!(emissivity >= 0.1f && emissivity <= 1.0f))
         return MLX90614_ERR_PARAM;
