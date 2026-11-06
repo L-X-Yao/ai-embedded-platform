@@ -256,11 +256,15 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
     return rx;
 }
 
+/* The mock chip has no oscillator to wait for */
+static void mock_delay_us(void *ctx, uint32_t us) { (void)ctx; (void)us; }
+
 static const mcp2515_spi_t spi_hal = {
-    .cs_low  = mock_cs_low,
-    .cs_high = mock_cs_high,
-    .xfer    = mock_xfer,
-    .ctx     = NULL,
+    .cs_low   = mock_cs_low,
+    .cs_high  = mock_cs_high,
+    .xfer     = mock_xfer,
+    .ctx      = NULL,
+    .delay_us = mock_delay_us,
 };
 
 /* ======================================================================
