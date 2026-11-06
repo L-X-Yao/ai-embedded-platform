@@ -77,7 +77,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
-- **`gpio_button_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
+- **`gpio_button_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. With a NULL `hal` or `cfg` it clears the instance and stops there, and `gpio_button_tick` then returns `GPIO_BUTTON_EVT_NONE`, as it does for a HAL with no `read`.
 - **Internal state fields exposed** in `gpio_button_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly.
 
 ## Event priority

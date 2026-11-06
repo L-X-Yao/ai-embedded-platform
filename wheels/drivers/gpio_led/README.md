@@ -82,7 +82,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## API convention deviations
 
-- **All API functions return void** instead of error codes. Reason: operations are pure state-machine transitions on a caller-allocated struct — no I2C transactions or hardware probes that could fail. NULL inputs are silently ignored (no-op).
+- **All API functions return void** instead of error codes. Reason: operations are pure state-machine transitions on a caller-allocated struct — no I2C transactions or hardware probes that could fail. With a NULL `hal` init clears the instance and stops there, and the other calls then do nothing and the mode stays `GPIO_LED_OFF`, as they do for a HAL with no `set`.
 - **Internal state fields exposed** in `gpio_led_t`. Reason: caller-allocated struct requires known size at compile time. Fields are documented as internal — callers must not read or write them directly (except `brightness`, which is a user-settable field).
 
 ## Integration
