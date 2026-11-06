@@ -12,6 +12,7 @@
 
 #include "drv2605.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- register addresses ---------- */
 
@@ -68,13 +69,9 @@ static drv2605_err_t select_library(const drv2605_t *dev,
 
 /* ---------- API ---------- */
 
-drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static drv2605_err_t bring_up(const drv2605_t *dev)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
-        return DRV2605_ERR_PARAM;
-
-    dev->i2c = i2c;
-
     /* Read status register and check device ID (bits [7:5]) */
     uint8_t status = 0;
     if (!read_reg(dev, REG_STATUS, &status))
@@ -106,6 +103,29 @@ drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
                                             : DRV2605_ACTUATOR_ERM);
     if (err != DRV2605_OK)
         return err;
+
+    return DRV2605_OK;
+}
+
+drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c)
+{
+    if (!dev)
+        return DRV2605_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs)
+        return DRV2605_ERR_PARAM;
+
+    dev->i2c = i2c;
+
+    drv2605_err_t err = bring_up(dev);
+    if (err != DRV2605_OK) {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return DRV2605_OK;

@@ -582,6 +582,41 @@ TEST(test_read_takes_both_results)
     ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(dps310_t *d)
+{
+    dps310_data_t data;
+    ASSERT_EQ(dps310_read(d, &data), DPS310_ERR_PARAM);
+    ASSERT_EQ(dps310_reset(d), DPS310_ERR_PARAM);
+}
+
+/* It answers, but no coefficient was ever read */
+TEST(test_device_refused_after_wrong_id)
+{
+    dps310_t d;
+    mock_reset();
+    mock_regs[0x0D] = 0xFF;
+    ASSERT_EQ(dps310_init(&d, &mock_i2c_hal, &default_cfg), DPS310_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const dps310_i2c_t no_callbacks;
+    dps310_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(dps310_init(&d, NULL, &default_cfg), DPS310_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(dps310_init(&d, &no_callbacks, &default_cfg), DPS310_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("dps310")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -623,4 +658,6 @@ TEST_MAIN("dps310")
     RUN(test_undefined_meas_ctrl_starts_nothing);
     RUN(test_reading_a_result_clears_its_ready_flag);
     RUN(test_read_takes_both_results);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

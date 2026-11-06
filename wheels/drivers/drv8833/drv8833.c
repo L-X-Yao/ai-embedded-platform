@@ -10,6 +10,7 @@
 
 #include "drv8833.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- helpers ---------- */
 
@@ -35,7 +36,14 @@ static int32_t clamp(int32_t v, int32_t lo, int32_t hi)
 drv8833_err_t drv8833_init(drv8833_t *dev, const drv8833_hal_t *hal,
                            uint16_t max_duty)
 {
-    if (!dev || !hal)
+    if (!dev)
+        return DRV8833_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal)
         return DRV8833_ERR_PARAM;
     if (!hal->set_pwm)
         return DRV8833_ERR_PARAM;

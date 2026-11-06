@@ -254,35 +254,13 @@ static float compensate_pressure(const dps310_t *dev, int32_t raw_press,
 
 /* ---------- public API ---------- */
 
-dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
-                         const dps310_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static dps310_err_t bring_up(dps310_t *dev, const dps310_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return DPS310_ERR_PARAM;
-    }
-    if (!i2c->write_reg || !i2c->read_regs)
-    {
-        return DPS310_ERR_PARAM;
-    }
-    if ((unsigned)cfg->osrs_t >= SCALE_FACTOR_COUNT ||
-        (unsigned)cfg->osrs_p >= SCALE_FACTOR_COUNT)
-    {
-        return DPS310_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
-    /* Set scale factors from oversampling config */
-    dev->kt = scale_factors[(unsigned)cfg->osrs_t];
-    dev->kp = scale_factors[(unsigned)cfg->osrs_p];
-
     /* The first access may follow power-on or a soft reset directly */
-    if (i2c->delay_ms)
+    if (dev->i2c->delay_ms)
     {
-        i2c->delay_ms(i2c->ctx, NO_ACCESS_MS);
+        dev->i2c->delay_ms(dev->i2c->ctx, NO_ACCESS_MS);
     }
 
     /* Verify product ID */
@@ -349,6 +327,49 @@ dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
         {
             return DPS310_ERR_I2C;
         }
+    }
+
+    return DPS310_OK;
+}
+
+dps310_err_t dps310_init(dps310_t *dev, const dps310_i2c_t *i2c,
+                         const dps310_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return DPS310_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no coefficients */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return DPS310_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return DPS310_ERR_PARAM;
+    }
+    if ((unsigned)cfg->osrs_t >= SCALE_FACTOR_COUNT ||
+        (unsigned)cfg->osrs_p >= SCALE_FACTOR_COUNT)
+    {
+        return DPS310_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    /* Set scale factors from oversampling config */
+    dev->kt = scale_factors[(unsigned)cfg->osrs_t];
+    dev->kp = scale_factors[(unsigned)cfg->osrs_p];
+
+    dps310_err_t err = bring_up(dev, cfg);
+    if (err != DPS310_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

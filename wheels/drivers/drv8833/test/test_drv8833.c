@@ -298,6 +298,39 @@ TEST(test_speed_clamps_at_the_int16_limit)
 
 /* ---------- runner ---------- */
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(drv8833_t *d)
+{
+    ASSERT_EQ(drv8833_set_speed(d, DRV8833_CH_A, 100), DRV8833_ERR_PARAM);
+    ASSERT_EQ(drv8833_brake(d, DRV8833_CH_A), DRV8833_ERR_PARAM);
+    ASSERT_EQ(drv8833_coast(d, DRV8833_CH_A), DRV8833_ERR_PARAM);
+    drv8833_sleep(d);
+    drv8833_wake(d);
+    ASSERT_EQ(mock_pwm_calls, 0);
+    ASSERT_EQ(mock_sleep_calls, 0);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const drv8833_hal_t no_callbacks;
+    drv8833_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(drv8833_init(&d, NULL, 1000), DRV8833_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(drv8833_init(&d, &no_callbacks, 1000), DRV8833_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(drv8833_init(&d, &mock_hal, 0), DRV8833_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("drv8833")
     /* init */
     RUN(test_init_ok);
@@ -327,4 +360,5 @@ TEST_MAIN("drv8833")
     RUN(test_sleep_wake);
     RUN(test_sleep_no_callback);
     RUN(test_sleep_null_dev);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
