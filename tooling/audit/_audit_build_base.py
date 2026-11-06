@@ -135,6 +135,17 @@ def extract_test_target(wheel_dir: Path) -> str:
     return m.group(1) if m else ""
 
 
+def extract_test_targets(wheel_dir: Path) -> list[str]:
+    """Return every ``add_executable(...)`` target name in the wheel's
+    ``test/CMakeLists.txt``, or an empty list on failure."""
+    cmake_path = wheel_dir / "test" / "CMakeLists.txt"
+    try:
+        text = cmake_path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return re.findall(r'add_executable\(\s*(\w+)', text)
+
+
 # ---------------------------------------------------------------------------
 # cmake configure + build
 # ---------------------------------------------------------------------------
@@ -145,6 +156,7 @@ def cmake_build(
     build_dir_name: str,
     extra_cmake_flags: str,
     extra_linker_flags: str = "",
+    build_timeout: int = 120,
 ) -> tuple[bool, str]:
     """Configure and build a wheel's test.
 
@@ -191,11 +203,12 @@ def cmake_build(
     try:
         result = subprocess.run(
             build_cmd,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=build_timeout,
         )
         if result.returncode != 0:
             cleanup_build(build_dir)
-            return False, result.stderr
+            # Ninja reports compiler errors on stdout
+            return False, result.stderr or result.stdout
     except (subprocess.TimeoutExpired, OSError) as e:
         cleanup_build(build_dir)
         return False, str(e)
