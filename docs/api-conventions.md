@@ -504,20 +504,24 @@ typedef struct {
 
 ### 6.3 config.h 放置规则
 
-`config.h` 是可选的编译期配置文件。放置规则：
-
-- `config.h` **只被 `.c` 文件 include**，不被 `.h` 文件 include
-- 消费者通过 `-D<WHEEL>_CONFIG_PATH="myconfig.h"` 或直接 `-D<MACRO>=<value>` 传入配置
-- 禁止通过 include path 覆盖 `config.h`（会导致不同 TU 使用不同配置，引发 ODR 违规）
+wheel 的编译期配置是 `#ifndef` 包着的默认宏，消费者用 `-D<MACRO>=<value>` 覆盖：
 
 ```c
-// ✅ wheel.c 中
-#ifdef CLI_SHELL_CONFIG_PATH
-#include CLI_SHELL_CONFIG_PATH
+// ✅ wheel.h 中，消费者用 -DCLI_SHELL_MAX_CMDS=32 覆盖
+#ifndef CLI_SHELL_MAX_CMDS
+#define CLI_SHELL_MAX_CMDS      16
 #endif
 
 // ❌ wheel.h 中 include config.h（暴露给所有消费者，可能冲突）
 ```
+
+- `-D` 要加在包含该头文件的**每个**编译单元上（CMake 用 `target_compile_definitions` 加到整个 target）。这类宏常决定 struct 大小，比如上面这个把 `sizeof(cli_shell_t)` 从 672 改成 1184（x86-64），只加给 wheel 的 `.c` 会让两边的 struct 大小不一致
+- 没有 wheel 读取 `<WHEEL>_CONFIG_PATH` 这类宏，传了不报错也不生效
+
+`config.h` 是可选文件，目前没有 wheel 带它。新增时遵守：
+
+- `config.h` **只被 `.c` 文件 include**，不被 `.h` 文件 include
+- 禁止通过 include path 覆盖 `config.h`（会导致不同 TU 使用不同配置，引发 ODR 违规）
 
 ## 7. 日志
 
