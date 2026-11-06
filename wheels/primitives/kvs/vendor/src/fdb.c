@@ -154,7 +154,9 @@ const char *_fdb_db_path(fdb_db_t db)
     }
     else {
 #ifdef FDB_USING_FAL_MODE
-        return db->storage.part->name;
+        /* Local change: part is NULL after a failed partition lookup, and
+         * every message on that path prints this. */
+        return db->storage.part ? db->storage.part->name : "";
 #else
         return NULL;
 #endif
