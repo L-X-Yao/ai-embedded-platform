@@ -70,13 +70,33 @@ static void mock_bus_reset(void)
     mock_read_count = 0;
 }
 
+/*
+ * Reference CRC, written from the manual so that it shares nothing with the
+ * driver. DS18B20 REV 042208 p.8: CRC = X8 + X5 + X4 + 1, shift register
+ * bits initialized to 0, least significant bit shifted in first.
+ */
+static uint8_t ref_crc8(const uint8_t *data, size_t len)
+{
+    uint8_t sr = 0;
+    for (size_t i = 0; i < len; i++) {
+        for (unsigned bit = 0; bit < 8u; bit++) {
+            unsigned in = ((unsigned)data[i] >> bit) & 1u;
+            unsigned feedback = (sr ^ in) & 1u;
+            sr = (uint8_t)(sr >> 1);
+            if (feedback)
+                sr = (uint8_t)(sr ^ 0x8Cu);
+        }
+    }
+    return sr;
+}
+
 static void setup_scratchpad(int16_t raw_temp)
 {
     memset(mock_scratchpad, 0, 9);
     mock_scratchpad[0] = (uint8_t)(raw_temp & 0xFF);
     mock_scratchpad[1] = (uint8_t)((uint16_t)raw_temp >> 8);
     mock_scratchpad[4] = 0x7F;
-    mock_scratchpad[8] = ds18b20_crc8(mock_scratchpad, 8);
+    mock_scratchpad[8] = ref_crc8(mock_scratchpad, 8);
 }
 
 static void setup_rom(void)
@@ -88,7 +108,7 @@ static void setup_rom(void)
     mock_rom[4] = 0xDD;
     mock_rom[5] = 0xEE;
     mock_rom[6] = 0xFF;
-    mock_rom[7] = ds18b20_crc8(mock_rom, 7);
+    mock_rom[7] = ref_crc8(mock_rom, 7);
 }
 
 TEST(test_init_null)
@@ -167,12 +187,55 @@ TEST(test_read_rom)
     ASSERT_EQ(dev.use_rom, 1);
 }
 
-TEST(test_crc8_known_vector)
+/* The worked example of Maxim Application Note 27. */
+TEST(test_crc8_an27_example)
 {
-    uint8_t data[] = {0x28, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-    uint8_t crc = ds18b20_crc8(data, 7);
-    setup_rom();
-    ASSERT_EQ(crc, mock_rom[7]);
+    const uint8_t rom[7] = {0x02, 0x1C, 0xB8, 0x01, 0x00, 0x00, 0x00};
+    ASSERT_EQ_HEX(ds18b20_crc8(rom, 7), 0xA2);
+}
+
+/* p.8: once the CRC is shifted in too, "the shift register will contain
+ * all 0s". */
+TEST(test_crc8_good_frame_leaves_zero)
+{
+    const uint8_t rom[8] = {0x02, 0x1C, 0xB8, 0x01, 0x00, 0x00, 0x00, 0xA2};
+    ASSERT_EQ_HEX(ds18b20_crc8(rom, 8), 0x00);
+}
+
+TEST(test_crc8_every_byte_follows_polynomial)
+{
+    for (unsigned v = 0; v < 256u; v++) {
+        uint8_t b = (uint8_t)v;
+        ASSERT_EQ_HEX(ds18b20_crc8(&b, 1), ref_crc8(&b, 1));
+    }
+}
+
+TEST(test_read_rom_accepts_an27_code)
+{
+    const uint8_t rom[8] = {0x02, 0x1C, 0xB8, 0x01, 0x00, 0x00, 0x00, 0xA2};
+    mock_presence = true;
+    mock_bus_reset();
+    memcpy(mock_rom, rom, 8);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    ASSERT_EQ(ds18b20_read_rom(&dev), DS18B20_OK);
+    ASSERT_TRUE(dev.use_rom);
+}
+
+/* p.7 power-up state: 50h 05h, TH, TL and config from EEPROM, FFh, reserved,
+ * 10h. The CRC byte of this frame comes from the polynomial. */
+TEST(test_read_power_up_frame)
+{
+    const uint8_t frame[9] = {0x50, 0x05, 0x4B, 0x46, 0x7F,
+                              0xFF, 0x0C, 0x10, 0x1C};
+    mock_presence = true;
+    mock_bus_reset();
+    memcpy(mock_scratchpad, frame, 9);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+    float temp;
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 85.0f, 0.01f);
 }
 
 TEST(test_start_conversion)
@@ -533,7 +596,11 @@ TEST_MAIN("ds18b20")
     RUN(test_no_device);
     RUN(test_crc_failure);
     RUN(test_read_rom);
-    RUN(test_crc8_known_vector);
+    RUN(test_crc8_an27_example);
+    RUN(test_crc8_good_frame_leaves_zero);
+    RUN(test_crc8_every_byte_follows_polynomial);
+    RUN(test_read_rom_accepts_an27_code);
+    RUN(test_read_power_up_frame);
     RUN(test_start_conversion);
     RUN(test_set_resolution);
     RUN(test_bus_error_write);
