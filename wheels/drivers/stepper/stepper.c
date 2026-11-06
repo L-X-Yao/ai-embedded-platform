@@ -9,13 +9,27 @@
  *
  * Trapezoidal ramp uses David Austin's algorithm:
  *   delay_n = delay_{n-1} * (1 - 2 / (4n + 1))
- * All integer math, no float.
+ * All integer math, no float.  In whole microseconds 2*delay/(4n+1)
+ * truncates to zero long before the ramp ends, so the delay is held in
+ * Q8 microseconds and the division remainder is carried to the next step,
+ * as Atmel AVR446 does.  Delays stay near 1e6 us at most, so
+ * 2*delay fits uint32_t in Q8.
  */
 
 #include "stepper.h"
 #include "contract.h"
 
+#define RAMP_Q 8U   /* fractional bits of the ramp delay */
+
 /* ---- helpers ---- */
+
+/* 2*delay_q/den, with the remainder kept for the next step. */
+static uint32_t ramp_term(uint32_t delay_q, uint32_t den, uint32_t *rem)
+{
+    uint32_t num = 2U * delay_q + *rem;
+    *rem = num % den;
+    return num / den;
+}
 
 static void pulse_step(const stepper_hal_t *hal)
 {
@@ -125,7 +139,9 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
     s->current_delay_us = c0;
 
     /* execute steps */
-    uint32_t delay = c0;
+    uint32_t delay_q = c0 << RAMP_Q;
+    uint32_t min_delay_q = min_delay << RAMP_Q;
+    uint32_t rem = 0;
 
     for (uint32_t i = 0; i < total; i++) {
         /* determine phase */
@@ -136,22 +152,26 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
              * c_n = c_{n-1} - 2*c_{n-1} / (4n + 1)
              */
             if (i > 0) {
-                delay = delay - (2U * delay) / (4U * i + 1U);
+                delay_q -= ramp_term(delay_q, 4U * i + 1U, &rem);
             }
-            if (delay < min_delay) delay = min_delay;
+            if (delay_q < min_delay_q) delay_q = min_delay_q;
         } else if (i >= decel_start) {
             s->state = STEPPER_STATE_DECEL;
-            /* mirror of accel: steps remaining */
+            /* Mirror of accel: the same formula run backwards from
+             * n = steps_left - 1, which is
+             * c_{n-1} = c_n + 2*c_n / (4n - 1).
+             * The last step has no delay after it.
+             */
             uint32_t steps_left = total - i;
-            if (steps_left > 0 && steps_left < n_accel) {
-                /* increase delay (decelerate) */
-                delay = delay + (2U * delay) / (4U * steps_left + 1U);
+            if (steps_left > 1) {
+                delay_q += ramp_term(delay_q, 4U * steps_left - 5U, &rem);
             }
         } else {
             s->state = STEPPER_STATE_CRUISE;
-            delay = min_delay;
+            delay_q = min_delay_q;
         }
 
+        uint32_t delay = (delay_q + (1U << (RAMP_Q - 1U))) >> RAMP_Q;
         s->current_delay_us = delay;
         s->step_count = i + 1;
 
