@@ -36,6 +36,9 @@ mcp3008_err_t mcp3008_init(mcp3008_t *dev, const mcp3008_spi_t *spi)
 
     dev->spi = spi;
 
+    /* A chip powered up with CS low ignores us until CS has been high */
+    spi->cs_deselect(spi->ctx);
+
     INVARIANT(dev->spi != NULL);
     return MCP3008_OK;
 }
