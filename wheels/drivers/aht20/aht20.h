@@ -30,6 +30,7 @@ typedef enum {
     AHT20_ERR_CRC     = -2,
     AHT20_ERR_PARAM   = -3,
     AHT20_ERR_NOT_CAL = -4,
+    AHT20_ERR_TIMEOUT = -5,  /* still measuring after the wait */
 } aht20_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -65,7 +66,9 @@ typedef struct {
  *  @thread_safe: no @isr_safe: no */
 aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c);
 
-/** Trigger measurement, read 7 bytes, CRC-verify, convert.
+/** Trigger measurement, wait 80ms, read 7 bytes, CRC-verify, convert.
+ *  While status bit 7 says busy it reads again every 10ms, and after 200ms more
+ *  returns AHT20_ERR_TIMEOUT.
  *  @thread_safe: no @isr_safe: no */
 aht20_err_t aht20_read(aht20_t *dev, aht20_data_t *out);
 

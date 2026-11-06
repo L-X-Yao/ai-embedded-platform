@@ -14,6 +14,12 @@ static uint8_t mock_read_data[16];
 static int     mock_read_data_len;
 static uint8_t mock_last_write[8];
 static int     mock_last_write_len;
+static bool     mock_measuring;        /* a trigger is running */
+static uint32_t mock_measure_ms;       /* delay time since that trigger */
+static uint32_t mock_measure_need_ms;  /* when status bit 7 clears */
+
+/* p.8: "Wait for 80ms to wait for the measurement to be completed." */
+#define MOCK_MEASURE_MS 80u
 
 static void mock_reset(void)
 {
@@ -24,6 +30,9 @@ static void mock_reset(void)
     mock_read_data_len = 0;
     memset(mock_last_write, 0, sizeof(mock_last_write));
     mock_last_write_len = 0;
+    mock_measuring = false;
+    mock_measure_ms = 0;
+    mock_measure_need_ms = MOCK_MEASURE_MS;
 }
 
 static bool mock_should_fail(void)
@@ -43,7 +52,18 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
         memcpy(mock_last_write, data, len);
         mock_last_write_len = len;
     }
+    if (len == 3 && data[0] == 0xAC)
+    {
+        mock_measuring = true;
+        mock_measure_ms = 0;
+    }
     return true;
+}
+
+static void mock_delay(void *ctx, uint16_t ms)
+{
+    (void)ctx;
+    mock_measure_ms += ms;
 }
 
 static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
@@ -54,13 +74,25 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
     {
         data[i] = mock_read_data[i];
     }
+    /* status bit 7 stays set for as long as the measurement runs */
+    if (mock_measuring)
+    {
+        if (mock_measure_ms < mock_measure_need_ms)
+        {
+            data[0] |= 0x80;
+        }
+        else
+        {
+            mock_measuring = false;
+        }
+    }
     return true;
 }
 
 static const aht20_i2c_t mock_i2c = {
     .write    = mock_write,
     .read     = mock_read,
-    .delay_ms = NULL,
+    .delay_ms = mock_delay,
     .ctx      = NULL,
 };
 
@@ -276,15 +308,54 @@ TEST(test_read_crc_fail)
     ASSERT_EQ(e, AHT20_ERR_CRC);
 }
 
-TEST(test_read_busy_returns_error)
+/* p.8: "If the read status word Bit [7] is 0, it indicates that the
+ * measurement is completed, and then six bytes can be read in a row;
+ * otherwise, continue to wait." */
+TEST(test_read_waits_for_busy_to_clear)
+{
+    setup();
+    plant_measurement(524288, 393216, 0x08);  /* 50 %RH, 25 C by 6.1 and 6.2 */
+    mock_measure_need_ms = 130;
+
+    aht20_data_t data;
+    ASSERT_EQ(aht20_read(&dev, &data), AHT20_OK);
+    ASSERT_NEAR(data.humidity_pct, 50.0f, 0.01f);
+    ASSERT_NEAR(data.temperature_c, 25.0f, 0.01f);
+    ASSERT_GE(mock_measure_ms, 130u);
+}
+
+TEST(test_read_busy_times_out)
 {
     setup();
     /* Plant data with busy bit set (bit 7 = 1) */
     plant_measurement(524288, 393216, 0x88);
 
     aht20_data_t data;
-    aht20_err_t e = aht20_read(&dev, &data);
-    ASSERT_EQ(e, AHT20_ERR_I2C);
+    ASSERT_EQ(aht20_read(&dev, &data), AHT20_ERR_TIMEOUT);
+    ASSERT_GT(mock_measure_ms, MOCK_MEASURE_MS);
+    ASSERT_LE(mock_measure_ms, 300u);
+}
+
+/* A busy frame holds no result, so its CRC says nothing about the bus */
+TEST(test_read_busy_is_not_a_crc_error)
+{
+    setup();
+    plant_measurement(524288, 393216, 0x88);
+    mock_read_data[6] = (uint8_t)(mock_read_data[6] ^ 0xFF);
+
+    aht20_data_t data;
+    ASSERT_EQ(aht20_read(&dev, &data), AHT20_ERR_TIMEOUT);
+}
+
+TEST(test_read_i2c_fail_while_waiting)
+{
+    setup();
+    plant_measurement(524288, 393216, 0x08);
+    mock_measure_need_ms = 130;
+    mock_fail_at = 2;  /* trigger, first read, then the read that fails */
+
+    aht20_data_t data;
+    ASSERT_EQ(aht20_read(&dev, &data), AHT20_ERR_I2C);
 }
 
 TEST(test_read_i2c_fail_on_trigger)
@@ -389,6 +460,7 @@ TEST(test_error_codes)
     ASSERT_EQ((int)AHT20_ERR_CRC,    -2);
     ASSERT_EQ((int)AHT20_ERR_PARAM,  -3);
     ASSERT_EQ((int)AHT20_ERR_NOT_CAL,-4);
+    ASSERT_EQ((int)AHT20_ERR_TIMEOUT,-5);
 }
 
 TEST_MAIN("aht20")
@@ -404,7 +476,10 @@ TEST_MAIN("aht20")
     RUN(test_read_minus50c);
     RUN(test_read_100pct_humidity);
     RUN(test_read_crc_fail);
-    RUN(test_read_busy_returns_error);
+    RUN(test_read_waits_for_busy_to_clear);
+    RUN(test_read_busy_times_out);
+    RUN(test_read_busy_is_not_a_crc_error);
+    RUN(test_read_i2c_fail_while_waiting);
     RUN(test_read_i2c_fail_on_trigger);
     RUN(test_read_i2c_fail_on_data);
     RUN(test_read_sends_trigger_cmd);
