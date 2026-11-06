@@ -96,10 +96,36 @@ static bno055_err_t change_mode(bno055_t *dev, bno055_opr_mode_t mode)
     return BNO055_OK;
 }
 
+/* The steps of init that talk to the chip */
+static bno055_err_t bring_up(bno055_t *dev, bno055_opr_mode_t mode)
+{
+    /* Verify chip ID */
+    uint8_t id = 0;
+    if (!read_regs(dev, REG_CHIP_ID, &id, 1))
+    {
+        return BNO055_ERR_I2C;
+    }
+    if (id != BNO055_CHIP_ID)
+    {
+        return BNO055_ERR_ID;
+    }
+
+    return change_mode(dev, mode);
+}
+
 bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
                          const bno055_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+    {
+        return BNO055_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
     {
         return BNO055_ERR_PARAM;
     }
@@ -120,25 +146,14 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
         return BNO055_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
     dev->cfg.mode = BNO055_MODE_CONFIG;  /* the mode after power-on */
 
-    /* Verify chip ID */
-    uint8_t id = 0;
-    if (!read_regs(dev, REG_CHIP_ID, &id, 1))
-    {
-        return BNO055_ERR_I2C;
-    }
-    if (id != BNO055_CHIP_ID)
-    {
-        return BNO055_ERR_ID;
-    }
-
-    bno055_err_t err = change_mode(dev, cfg->mode);
+    bno055_err_t err = bring_up(dev, cfg->mode);
     if (err != BNO055_OK)
     {
+        dev->i2c = NULL;
         return err;
     }
 
@@ -148,7 +163,7 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
 
 bno055_err_t bno055_read_euler(const bno055_t *dev, bno055_euler_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return BNO055_ERR_PARAM;
     }
@@ -183,7 +198,7 @@ bno055_err_t bno055_read_euler(const bno055_t *dev, bno055_euler_t *out)
 bno055_err_t bno055_get_calib_status(const bno055_t *dev,
                                      bno055_calib_status_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return BNO055_ERR_PARAM;
     }
@@ -204,7 +219,7 @@ bno055_err_t bno055_get_calib_status(const bno055_t *dev,
 
 bno055_err_t bno055_set_mode(bno055_t *dev, bno055_opr_mode_t mode)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return BNO055_ERR_PARAM;
     }

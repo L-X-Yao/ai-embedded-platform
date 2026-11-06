@@ -311,6 +311,62 @@ TEST(test_init_requires_write_and_read)
     ASSERT_EQ(bno055_init(&d, &bad, &default_cfg), BNO055_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bno055_t *d)
+{
+    bno055_euler_t euler;
+    bno055_calib_status_t calib;
+    ASSERT_EQ(bno055_read_euler(d, &euler), BNO055_ERR_PARAM);
+    ASSERT_EQ(bno055_get_calib_status(d, &calib), BNO055_ERR_PARAM);
+    ASSERT_EQ(bno055_set_mode(d, BNO055_MODE_NDOF), BNO055_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static bno055_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    bno055_t d;
+    mock_reset();
+    mock_regs[0x00] = 0x68;
+    ASSERT_EQ(bno055_init(&d, &mock_i2c, &default_cfg), BNO055_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_mode_write)
+{
+    bno055_t d;
+    mock_reset();
+    mock_fail_at = 2;  /* after the ID read and the write into CONFIG */
+    ASSERT_EQ(bno055_init(&d, &mock_i2c, &default_cfg), BNO055_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* d holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    bno055_t d;
+    bno055_cfg_t bad = default_cfg;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bno055_init(&d, NULL, &default_cfg), BNO055_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bno055_init(&d, &mock_i2c, NULL), BNO055_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad.mode = (bno055_opr_mode_t)0x0D;
+    ASSERT_EQ(bno055_init(&d, &mock_i2c, &bad), BNO055_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bno055")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -336,4 +392,8 @@ TEST_MAIN("bno055")
     RUN(test_read_euler_works_after_failed_write_into_config);
     RUN(test_read_euler_refused_after_failed_init);
     RUN(test_init_requires_write_and_read);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_mode_write);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
