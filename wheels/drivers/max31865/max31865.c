@@ -145,6 +145,13 @@ max31865_err_t max31865_read_rtd_raw(max31865_t *dev, uint16_t *rtd_raw)
     if (lsb & 0x01)
         return MAX31865_ERR_FAULT;
 
+    /* The RTD registers reset to 00h (p.13). A result of 0 would set the flag
+     * above, since p.16 trips RTD Low at or below the Low Fault Threshold and
+     * this driver leaves that at its POR value of 0000h. So a clear word means
+     * no conversion has finished, up to 66 ms after init (p.3, p.4 note 5). */
+    if (msb == 0 && lsb == 0)
+        return MAX31865_ERR_NOT_READY;
+
     *rtd_raw = (uint16_t)(((uint16_t)msb << 8 | lsb) >> 1);
 
     return MAX31865_OK;
