@@ -50,7 +50,8 @@ static uint32_t bh1750_model_measure_ms(uint8_t mode)
 }
 
 /* Let simulated time pass. A measurement that ends copies the light into the
- * Data Register, and a continuous mode then starts the next one. */
+ * Data Register. A continuous mode then starts the next one, and a one-time
+ * mode goes to Power Down (p.5), which keeps the data readable (p.7). */
 __attribute__((unused))
 static void bh1750_model_advance(bh1750_model_t *m, uint32_t ms)
 {
@@ -58,7 +59,12 @@ static void bh1750_model_advance(bh1750_model_t *m, uint32_t ms)
         ms -= m->measure_left_ms;
         m->data_reg = m->raw_light;
         m->measure_count++;
-        m->measure_left_ms = bh1750_model_measure_ms(m->mode);
+        if (m->mode & 0x20) {
+            m->measure_left_ms = 0;
+            m->powered = false;
+        } else {
+            m->measure_left_ms = bh1750_model_measure_ms(m->mode);
+        }
     }
     if (m->measure_left_ms != 0) {
         m->measure_left_ms -= ms;
