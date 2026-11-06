@@ -33,6 +33,28 @@ static void byte_to_hex(uint8_t b, char *out)
     out[1] = h[b & 0x0F];
 }
 
+/*
+ * Every record type but data fixes its byte count, and the four address
+ * types carry their value in the data field, so their address must be 0.
+ * The address of an EOF record is left free: some tools put the start
+ * address there, and no reader uses it.
+ */
+static bool shape_fits_type(int type, int byte_count, unsigned address)
+{
+    switch (type) {
+    case INTEL_HEX_EOF:
+        return byte_count == 0;
+    case INTEL_HEX_EXT_SEGMENT:
+    case INTEL_HEX_EXT_LINEAR:
+        return byte_count == 2 && address == 0;
+    case INTEL_HEX_START_SEGMENT:
+    case INTEL_HEX_START_LINEAR:
+        return byte_count == 4 && address == 0;
+    default:
+        return true;
+    }
+}
+
 intel_hex_err_t intel_hex_decode(const char *line, size_t len,
                                  intel_hex_record_t *out)
 {
@@ -67,6 +89,9 @@ intel_hex_err_t intel_hex_decode(const char *line, size_t len,
     if (byte_count > INTEL_HEX_MAX_DATA)
         return INTEL_HEX_ERR_OVERFLOW;
     if (len > expected)
+        return INTEL_HEX_ERR_FORMAT;
+    if (!shape_fits_type(rec_type, byte_count,
+                         (unsigned)addr_hi << 8 | (unsigned)addr_lo))
         return INTEL_HEX_ERR_FORMAT;
 
     uint8_t checksum = (uint8_t)((uint8_t)byte_count + (uint8_t)addr_hi +
@@ -107,6 +132,8 @@ intel_hex_err_t intel_hex_encode(const intel_hex_record_t *rec,
     size_t total = 1 + (4 + (size_t)rec->data_len + 1) * 2 + 2;
     if (total > cap)
         return INTEL_HEX_ERR_OVERFLOW;
+    if (!shape_fits_type((int)rec->type, rec->data_len, rec->address))
+        return INTEL_HEX_ERR_FORMAT;
 
     size_t pos = 0;
     buf[pos++] = ':';
