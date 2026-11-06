@@ -767,9 +767,134 @@ TEST(test_crc_error)
     ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_CRC);
 }
 
+/* ---------- a bus that goes wrong on one walk ---------- */
+
+typedef struct {
+    mock_bus_t mock;
+    int  walk;         /* resets so far */
+    int  reads;        /* read_bit calls in this walk */
+    int  fault_walk;   /* the walk to disturb, from 1 */
+    int  first_read;   /* first read_bit call to invert, from 1 */
+    int  last_read;    /* last read_bit call to invert */
+} glitch_bus_t;
+
+/* A walk reads two bits per ROM bit, so ROM bit n is reads 2n-1 and 2n. */
+#define LAST_BIT_FIRST_READ 127
+#define LAST_BIT_LAST_READ  128
+
+static bool glitch_reset(void *ctx)
+{
+    glitch_bus_t *g = (glitch_bus_t *)ctx;
+    g->walk++;
+    g->reads = 0;
+    return mock_reset(&g->mock);
+}
+
+static void glitch_write_bit(void *ctx, uint8_t bit)
+{
+    mock_write_bit(&((glitch_bus_t *)ctx)->mock, bit);
+}
+
+static uint8_t glitch_read_bit(void *ctx)
+{
+    glitch_bus_t *g = (glitch_bus_t *)ctx;
+    uint8_t bit = mock_read_bit(&g->mock);
+
+    g->reads++;
+    if (g->walk == g->fault_walk &&
+        g->reads >= g->first_read && g->reads <= g->last_read) {
+        bit ^= 1u;
+    }
+    return bit;
+}
+
+/* Three devices, found in this order: they first differ at ROM bit 9. */
+static void glitch_setup(glitch_bus_t *g, onewire_search_bus_t *bus,
+                         onewire_search_state_t *state)
+{
+    static const uint8_t serial[3] = { 0x10, 0x21, 0x33 };
+
+    memset(g, 0, sizeof(*g));
+    g->mock.presence = true;
+    g->mock.num_devices = 3;
+    for (uint8_t i = 0; i < 3u; i++) {
+        g->mock.roms[i][0] = 0x28;
+        g->mock.roms[i][1] = serial[i];
+        mock_set_rom_with_crc(g->mock.roms[i]);
+    }
+    bus->ctx = g;
+    bus->reset = glitch_reset;
+    bus->write_bit = glitch_write_bit;
+    bus->read_bit = glitch_read_bit;
+    (void)onewire_search_init(state, bus);
+}
+
+/* The devices from index first on have to turn up in order, then the end. */
+static void expect_rest(onewire_search_state_t *state, const glitch_bus_t *g,
+                        uint8_t first)
+{
+    onewire_search_rom_t rom;
+
+    for (uint8_t i = first; i < g->mock.num_devices; i++) {
+        ASSERT_EQ(onewire_search_next(state, &rom), ONEWIRE_SEARCH_OK);
+        ASSERT_TRUE(memcmp(rom.rom, g->mock.roms[i], 8) == 0);
+    }
+    ASSERT_TRUE(onewire_search_done(state));
+    ASSERT_EQ(onewire_search_next(state, &rom), ONEWIRE_SEARCH_ERR_NONE_FOUND);
+}
+
+TEST(test_clean_bus_finds_all_three)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+
+    glitch_setup(&g, &bus, &state);
+    expect_rest(&state, &g, 0);
+}
+
+static void crc_error_on_walk(int walk, uint8_t found_before)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    glitch_setup(&g, &bus, &state);
+    g.fault_walk = walk;
+    g.first_read = LAST_BIT_FIRST_READ;
+    g.last_read = LAST_BIT_LAST_READ;
+
+    for (uint8_t i = 0; i < found_before; i++) {
+        ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_OK);
+    }
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_CRC);
+    ASSERT_FALSE(onewire_search_done(&state));
+    expect_rest(&state, &g, found_before);
+}
+
+TEST(test_crc_error_on_the_first_walk_loses_no_device)
+{
+    crc_error_on_walk(1, 0);
+}
+
+TEST(test_crc_error_mid_search_loses_no_device)
+{
+    crc_error_on_walk(2, 1);
+}
+
+TEST(test_crc_error_on_the_last_device_loses_no_device)
+{
+    crc_error_on_walk(3, 2);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("onewire_search")
+    RUN(test_clean_bus_finds_all_three);
+    RUN(test_crc_error_on_the_first_walk_loses_no_device);
+    RUN(test_crc_error_mid_search_loses_no_device);
+    RUN(test_crc_error_on_the_last_device_loses_no_device);
     RUN(test_single_device);
     RUN(test_two_devices);
     RUN(test_three_devices);

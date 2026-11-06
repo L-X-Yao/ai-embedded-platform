@@ -81,6 +81,11 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
 
     int16_t last_zero = 0;  /* bit position of last discrepancy where we chose 0 */
 
+    /* Walk into a copy: a retry follows the bits of the last good walk, so
+     * state may only move on once this ROM proves good. */
+    uint8_t walk[ONEWIRE_SEARCH_ROM_LEN];
+    memcpy(walk, state->rom, sizeof(walk));
+
     /* Walk all 64 bits of the ROM code */
     for (uint8_t bit_pos = 1; bit_pos <= 64u; bit_pos++) {
         /* Read bit and its complement from the bus */
@@ -111,7 +116,7 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
                 /* Before last_discrepancy -- repeat previous choice */
                 uint8_t byte_idx = (uint8_t)((bit_pos - 1u) / 8u);
                 uint8_t bit_idx  = (uint8_t)((bit_pos - 1u) % 8u);
-                direction = (uint8_t)((state->rom[byte_idx] >> bit_idx) & 0x01u);
+                direction = (uint8_t)((walk[byte_idx] >> bit_idx) & 0x01u);
             }
 
             /* Track the last position where we chose 0 */
@@ -125,9 +130,9 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
             uint8_t byte_idx = (uint8_t)((bit_pos - 1u) / 8u);
             uint8_t bit_idx  = (uint8_t)((bit_pos - 1u) % 8u);
             if (direction != 0u) {
-                state->rom[byte_idx] |= (uint8_t)(1u << bit_idx);
+                walk[byte_idx] |= (uint8_t)(1u << bit_idx);
             } else {
-                state->rom[byte_idx] &= (uint8_t)(~(1u << bit_idx));
+                walk[byte_idx] &= (uint8_t)(~(1u << bit_idx));
             }
         }
 
@@ -135,19 +140,20 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
         state->bus->write_bit(state->bus->ctx, direction);
     }
 
+    /* Verify CRC8: CRC of all 8 bytes should be 0 */
+    if (onewire_search_crc8(walk, 8u) != 0u) {
+        return ONEWIRE_SEARCH_ERR_CRC;
+    }
+
     /* Update state for next call */
+    memcpy(state->rom, walk, ONEWIRE_SEARCH_ROM_LEN);
     state->last_discrepancy = last_zero;
     if (last_zero == 0) {
         state->last_device = true;  /* no discrepancies left -- last device */
     }
 
-    /* Verify CRC8: CRC of all 8 bytes should be 0 */
-    if (onewire_search_crc8(state->rom, 8u) != 0u) {
-        return ONEWIRE_SEARCH_ERR_CRC;
-    }
-
     /* Copy result */
-    memcpy(rom->rom, state->rom, ONEWIRE_SEARCH_ROM_LEN);
+    memcpy(rom->rom, walk, ONEWIRE_SEARCH_ROM_LEN);
 
     return ONEWIRE_SEARCH_OK;
 }
