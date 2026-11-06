@@ -45,7 +45,7 @@ fp_t    fp_from_float(float val);
 /** Truncate toward zero. @thread_safe: yes @isr_safe: yes */
 int16_t fp_to_int(fp_t val);
 
-/** Round to nearest integer. @thread_safe: yes @isr_safe: no */
+/** Round to nearest integer, saturating at INT16_MAX. @thread_safe: yes @isr_safe: yes */
 int16_t fp_to_int_rounded(fp_t val);
 
 /** @thread_safe: yes (pure function, no state) @isr_safe: yes */
