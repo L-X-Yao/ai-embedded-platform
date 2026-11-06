@@ -178,7 +178,7 @@ ai-embedded-platform/
 | 9. **沉淀**（项目结束后）🔑 | AI 扫 + API 提案 → 人 15 分钟审批 → AI 实现 |
 | 10. 代码审查 | 对照 wheel-contract + api-conventions + 项目 CLAUDE |
 | 11. 平台自省 | 40 维度审计（见 `docs/audit-dimensions.md`），支持 `审计` / `超级审计` 指令 |
-| 12. 发布 | `release.sh` 打版本标签 + 生成 CHANGELOG |
+| 12. 发布 | `release.sh` 生成 CHANGELOG，tag 用 `git tag` 手动打 |
 | 13. 市场交付物 | 发文章 / 开源 repo / 闲鱼挂服务 |
 | 14. Datasheet 验证 | 逐寄存器对照 datasheet，冷门芯片优先 |
 
