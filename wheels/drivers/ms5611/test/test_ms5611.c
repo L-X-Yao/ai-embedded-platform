@@ -7,7 +7,9 @@
 /*
  * MS5611 uses command-based I2C. We abuse mock_regs:
  * - Reset and Convert land in bus_log as the exact bytes after the address
- * - read_regs(addr, 0x00, buf, 3) reads ADC data from mock_regs[0..2]
+ * - read_regs(addr, 0x00, buf, 3) reads ADC data from mock_regs[0..2], and only
+ *   after a Convert: p11 "If the conversion is not executed before the ADC read
+ *   command, or the ADC read command is repeated, it will give 0"
  * - read_regs(addr, 0xA2..0xAC, buf, 2) reads PROM from mock_regs[prom_addr..+1]
  *
  * Plant PROM calibration values from the MS5611 datasheet example:
@@ -72,6 +74,7 @@ typedef struct {
 
 static bus_tx_t bus_log[BUS_LOG_MAX];
 static int      bus_count;
+static bool     adc_ready;   /* a Convert went out since the last ADC read */
 
 static void bus_clear(void)
 {
@@ -90,6 +93,24 @@ static bool bus_write(uint8_t dev_addr, const uint8_t *data, uint16_t len)
         memcpy(tx->data, data, len < BUS_TX_MAX ? len : BUS_TX_MAX);
     }
     bus_count++;
+
+    /* p10: Convert D1 is 0x40-0x48, Convert D2 is 0x50-0x58 */
+    if (len == 1 && (data[0] & 0xE0u) == 0x40u)
+        adc_ready = true;
+    return true;
+}
+
+static bool mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t *buf, uint16_t len)
+{
+    if (!mock_i2c_read_regs(ctx, dev_addr, reg, buf, len))
+        return false;
+
+    if (reg == 0x00) {
+        if (!adc_ready)
+            memset(buf, 0, len);
+        adc_ready = false;
+    }
     return true;
 }
 
@@ -120,12 +141,13 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     bus_clear();
+    adc_ready = false;
     plant_prom();
 }
 
 static const ms5611_i2c_t mock_i2c = {
     .write_reg = bus_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = mock_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
     .write_raw = bus_write_raw,
@@ -319,6 +341,38 @@ TEST(test_osr_invalid)
     ASSERT_EQ(e, MS5611_ERR_PARAM);
 }
 
+/* p.11: 0 is the only way the part reports a missed conversion */
+TEST(test_read_refuses_an_adc_result_of_0)
+{
+    setup();
+    plant_adc(0);
+    ms5611_data_t data;
+    ASSERT_EQ(ms5611_read(&dev, &data), MS5611_ERR_ADC);
+}
+
+/* The mock itself, p.11 "or the ADC read command is repeated" */
+TEST(test_mock_gives_each_conversion_once)
+{
+    static const uint8_t convert = 0x48;
+    uint8_t adc[3] = { 0xFF, 0xFF, 0xFF };
+
+    setup();
+    plant_adc(0x123456);
+    ASSERT_TRUE(mock_read_regs(NULL, MS5611_ADDR_CSB_LOW, 0x00, adc, 3));
+    ASSERT_EQ_HEX(adc[0], 0x00);   /* no Convert yet */
+
+    ASSERT_TRUE(bus_write_raw(NULL, MS5611_ADDR_CSB_LOW, &convert, 1));
+    ASSERT_TRUE(mock_read_regs(NULL, MS5611_ADDR_CSB_LOW, 0x00, adc, 3));
+    ASSERT_EQ_HEX(adc[0], 0x12);
+    ASSERT_EQ_HEX(adc[1], 0x34);
+    ASSERT_EQ_HEX(adc[2], 0x56);
+
+    ASSERT_TRUE(mock_read_regs(NULL, MS5611_ADDR_CSB_LOW, 0x00, adc, 3));
+    ASSERT_EQ_HEX(adc[0], 0x00);   /* repeated */
+    ASSERT_EQ_HEX(adc[1], 0x00);
+    ASSERT_EQ_HEX(adc[2], 0x00);
+}
+
 TEST(test_delay_called)
 {
     setup();
@@ -470,6 +524,8 @@ TEST_MAIN("ms5611")
     RUN(test_prom_read_i2c_fail);
     RUN(test_osr_invalid);
     RUN(test_delay_called);
+    RUN(test_read_refuses_an_adc_result_of_0);
+    RUN(test_mock_gives_each_conversion_once);
     RUN(test_init_crc_fail);
     RUN(test_init_crc_is_not_in_top_nibble);
     RUN(test_init_crc_skips_word7_db7_db4);
