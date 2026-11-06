@@ -78,6 +78,7 @@ typedef struct {
     uint16_t              line_pos;
     const char           *prompt;
     uint8_t               last_was_cr;
+    uint8_t               line_overflow;  /* internal: this line lost bytes */
 } cli_shell_t;
 
 /* ---------- API ---------- */
@@ -99,6 +100,8 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
 
 /**
  * Feed one byte (from UART RX ISR or polling loop).
+ * A line that outgrows CLI_SHELL_LINE_SIZE is refused at end of line with
+ * "line too long": the handler does not run, and backspace does not undo it.
  * @thread_safe: no
  */
 void cli_shell_feed(cli_shell_t *sh, uint8_t byte);

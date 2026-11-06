@@ -20,6 +20,7 @@ typedef struct {
     char   line[CLI_SHELL_LINE_SIZE];
     size_t len;
     bool   last_was_cr;
+    bool   overflow;
     char   argv[CLI_SHELL_MAX_ARGS][CLI_SHELL_LINE_SIZE];
     int    argc;
     int    calls;
@@ -82,12 +83,16 @@ static void type_byte(cli_shell_t *sh, model_t *m, uint8_t byte) {
             m->last_was_cr = false;
             if (m->echoed != echoed) __builtin_trap();
         } else {
+            // A line that lost bytes must not run, whatever is left of it.
+            if (m->overflow && m->calls != calls) __builtin_trap();
+            m->overflow = false;
             m->len = 0;
         }
     } else {
         m->last_was_cr = false;
         if ((byte == '\b' || byte == 0x7F) && m->len > 0) m->len--;
         if (printable && room) m->line[m->len++] = (char)byte;
+        if (printable && !room) m->overflow = true;
     }
 
     if (sh->line_pos != m->len || memcmp(sh->line, m->line, m->len) != 0) __builtin_trap();

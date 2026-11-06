@@ -192,6 +192,58 @@ TEST(test_line_overflow)
     ASSERT_EQ(shell.line_pos, CLI_SHELL_LINE_SIZE - 1);
 }
 
+/* "test " then filler until the line is `total` characters long. */
+static void feed_long_test(int total)
+{
+    feed_str("test ");
+    for (int i = 5; i < total; i++) {
+        cli_shell_feed(&shell, '7');
+    }
+}
+
+/* A cut line is not what was typed, so it must not run. */
+TEST(test_line_that_overflowed_is_refused)
+{
+    setup(NULL);
+    cli_shell_register(&shell, "test", NULL, cmd_test, NULL);
+    reset_handler();
+    feed_long_test(CLI_SHELL_LINE_SIZE);
+    cli_shell_feed(&shell, '\r');
+    ASSERT_EQ(handler_called, 0);
+    ASSERT_TRUE(strstr(out_buf, "line too long") != NULL);
+
+    /* The refusal covers that line only. */
+    feed_str("test again\r");
+    ASSERT_EQ(handler_called, 1);
+    ASSERT_EQ(handler_argc, 2);
+    ASSERT_STR_EQ(handler_argv[1], "again");
+}
+
+TEST(test_line_that_exactly_fits_runs)
+{
+    setup(NULL);
+    cli_shell_register(&shell, "test", NULL, cmd_test, NULL);
+    reset_handler();
+    feed_long_test(CLI_SHELL_LINE_SIZE - 1);
+    cli_shell_feed(&shell, '\r');
+    ASSERT_EQ(handler_called, 1);
+    ASSERT_EQ(handler_argc, 2);
+    ASSERT_TRUE(strstr(out_buf, "line too long") == NULL);
+}
+
+/* Backspace cannot bring dropped bytes back. */
+TEST(test_overflow_survives_backspace)
+{
+    setup(NULL);
+    cli_shell_register(&shell, "test", NULL, cmd_test, NULL);
+    reset_handler();
+    feed_long_test(CLI_SHELL_LINE_SIZE + 10);
+    cli_shell_feed(&shell, '\b');
+    cli_shell_feed(&shell, '\r');
+    ASSERT_EQ(handler_called, 0);
+    ASSERT_TRUE(strstr(out_buf, "line too long") != NULL);
+}
+
 TEST(test_multiple_commands_in_sequence)
 {
     setup(NULL);
@@ -399,6 +451,9 @@ TEST_MAIN("cli_shell")
     RUN(test_empty_line);
     RUN(test_backspace_handling);
     RUN(test_line_overflow);
+    RUN(test_line_that_overflowed_is_refused);
+    RUN(test_line_that_exactly_fits_runs);
+    RUN(test_overflow_survives_backspace);
     RUN(test_multiple_commands_in_sequence);
     RUN(test_register_max_commands);
     RUN(test_echo_input);
