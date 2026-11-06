@@ -534,6 +534,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(ms5611_init(&d, NULL, &default_cfg), MS5611_ERR_PARAM);
     assert_device_refused(&d);
 
+    static ms5611_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ms5611_init(&d, &zeroed_hal, &default_cfg), MS5611_ERR_PARAM);
+    assert_device_refused(&d);
+
     memset(&d, 0xA5, sizeof(d));
     ASSERT_EQ(ms5611_init(&d, &mock_i2c, &bad_osr), MS5611_ERR_PARAM);
     assert_device_refused(&d);

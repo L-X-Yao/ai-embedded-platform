@@ -533,6 +533,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(mcp4725_init(&d, NULL, 0x60), MCP4725_ERR_PARAM);
     assert_device_refused(&d);
 
+    static mcp4725_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp4725_init(&d, &zeroed_hal, 0x60), MCP4725_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* Nothing answered the status read, and the bus is fine again */
     mock_fail_at = 0;
     ASSERT_EQ(mcp4725_init(&d, &mock_i2c, 0x60), MCP4725_ERR_I2C);
