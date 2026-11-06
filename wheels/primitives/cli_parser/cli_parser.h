@@ -60,10 +60,14 @@ typedef struct {
 /** Initialize parser. @thread_safe: no @isr_safe: no */
 void      cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg);
 
-/** Feed one byte (from UART ISR or poll). @thread_safe: caller_must_lock @isr_safe: yes */
+/** Feed one byte from a task or polling loop. Every printable byte calls
+ *  write_fn and end of line runs the command handler inside this call, so a
+ *  UART ISR must queue its bytes rather than call this.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 void      cli_parser_feed(cli_parser_t *ctx, uint8_t byte);
 
-/** Parse and execute a complete line. @thread_safe: caller_must_lock @isr_safe: yes */
+/** Parse and execute a complete line. Calls the handler and write_fn.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line);
 
 #ifdef __cplusplus
