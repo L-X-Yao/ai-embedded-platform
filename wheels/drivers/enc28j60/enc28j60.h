@@ -42,7 +42,7 @@ typedef struct {
 
 /* ---------- constants ---------- */
 
-#define ENC28J60_MAX_FRAME  1518U
+#define ENC28J60_MAX_FRAME  1518U   /* on the wire, with the 4-byte CRC */
 
 /* ---------- device handle ---------- */
 
@@ -65,7 +65,8 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr);
 
 /**
- * Transmit a single Ethernet frame.
+ * Transmit a single Ethernet frame. The chip appends the CRC, so len is 1514 at
+ * most, ENC28J60_MAX_FRAME less those 4 bytes, or ENC28J60_ERR_SIZE comes back.
  * Returns ENC28J60_ERR_TX_ABORT if the chip aborted the frame, for example
  * after too many collisions. The frame was not delivered and may be sent again.
  * @thread_safe: caller_must_lock @isr_safe: no

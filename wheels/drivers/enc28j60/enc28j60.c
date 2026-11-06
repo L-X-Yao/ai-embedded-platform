@@ -113,6 +113,9 @@
 #define TXSTART  0x1A00U
 #define TXEND    0x1FFFU
 
+/* MACON3.TXCRCEN appends this much to each frame, and MAMXFL counts it */
+#define CRC_LEN  4U
+
 /* ---------- timing ---------- */
 
 /* Errata DS80349C issue 2: wait at least 1 ms after an SPI Reset */
@@ -353,7 +356,7 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
     if (!dev || !dev->spi) return ENC28J60_ERR_PARAM;
     if (!frame)            return ENC28J60_ERR_PARAM;
     if (len == 0)          return ENC28J60_ERR_SIZE;
-    if (len > ENC28J60_MAX_FRAME) return ENC28J60_ERR_SIZE;
+    if (len > ENC28J60_MAX_FRAME - CRC_LEN) return ENC28J60_ERR_SIZE;
 
     /* Set TX buffer pointers */
     write_reg(dev, 0, EWRPTL, (uint8_t)(TXSTART & 0xFFU));

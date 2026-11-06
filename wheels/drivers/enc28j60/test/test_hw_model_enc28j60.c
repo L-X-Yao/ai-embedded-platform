@@ -612,6 +612,28 @@ TEST(test_send_timeout_cancels_the_transmission)
     ASSERT_EQ(model.tx_write_while_pending, 0);
 }
 
+/* --- 19. Largest frame send accepts --- */
+
+/* DS39662C p.34: 802.3 frames are "between 64 and 1518 bytes long", CRC
+ * included, and the data field stops at 1500 bytes. TXCRCEN appends the 4-byte
+ * CRC, and with HFRMEN clear p.37 says "Frames bigger than MAMXFL will be
+ * aborted". So the caller's frame, which has no CRC, ends at 1514 bytes. */
+TEST(test_send_leaves_room_for_the_crc)
+{
+    static uint8_t frame[1518];
+    setup_and_init();
+    memset(frame, 0x5A, sizeof(frame));
+
+    ASSERT_TRUE(model.regs[2][ENC_MACON3] & 0x10U);          /* TXCRCEN */
+    ASSERT_FALSE(model.regs[2][ENC_MACON3] & 0x04U);         /* HFRMEN */
+    ASSERT_EQ(model.regs[2][ENC_MAMXFLL], 0xEE);             /* 1518 */
+    ASSERT_EQ(model.regs[2][ENC_MAMXFLH], 0x05);
+
+    ASSERT_EQ(enc28j60_send(&dev, frame, 1514), ENC28J60_OK);
+    ASSERT_EQ(enc28j60_send(&dev, frame, 1515), ENC28J60_ERR_SIZE);
+    ASSERT_EQ(enc28j60_send(&dev, frame, 1518), ENC28J60_ERR_SIZE);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -639,4 +661,5 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_send_ignores_stale_tx_abort);
     RUN(test_model_bfc_clears_only_rc_bits_of_estat);
     RUN(test_send_timeout_cancels_the_transmission);
+    RUN(test_send_leaves_room_for_the_crc);
 TEST_MAIN_END()
