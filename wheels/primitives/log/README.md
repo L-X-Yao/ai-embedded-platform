@@ -172,10 +172,10 @@ log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
 | Aspect | Choice | Rationale |
 |--------|--------|-----------|
 | Module tagging | `#define LOG_MODULE` per file | Simplest, no linker dependency, compile-time constant enables optimization |
-| Compile-time filter | `if ((level) <= LOG_LEVEL_MAX)` | Compiler eliminates dead branch + string literals |
+| Compile-time filter | `#if LOG_LEVEL_MAX >= ...` around each macro | Levels above the limit expand to `((void)0)`, so strings and argument side effects go, with no help from the optimizer. C only: in C++ it removes nothing |
 | Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
 | No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
-| Thread safety | Stack buffer 256B per log_emit call | No shared state, no lock needed; tradeoff is stack usage |
+| Thread safety | Stack buffer 256B per log_emit call, no lock around sinks | Formatting needs no lock, at the cost of stack. With several logging contexts, sinks must be reentrant or callers must serialise `log_emit`: `log_ringbuf`, `log_dedup`, `log_rate` and `log_flash` are not reentrant |
 | **Stack budget** | **log_emit=256B + each sink's own buffer** | **With log_color(512B): ~800B per LOG_* call. Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 

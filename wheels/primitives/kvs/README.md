@@ -63,7 +63,7 @@ static void kvs_example(void) {
 | `FDB_USING_FAL_MODE` | (must define) | Use FAL for flash access |
 | `FDB_USING_KVDB` | (must define) | Enable KV database |
 | `FDB_USING_TSDB` | (optional) | Enable time-series database |
-| `FDB_KV_NAME_MAX` | 64 | Max key name length |
+| `FDB_KV_NAME_MAX` | 64 | Key names must be shorter than this |
 | `FDB_WRITE_GRAN` | 1 | Flash write granularity (bits) |
 | `FDB_KV_CACHE_TABLE_SIZE` | 64 | KV lookup cache entries |
 
