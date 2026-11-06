@@ -600,6 +600,42 @@ TEST(test_init_refuses_a_panel_past_the_frame_memory)
     ASSERT_EQ(lcd_st7789_init(&d, &mock_spi, &edge), LCD_ST7789_OK);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(lcd_st7789_t *d)
+{
+    uint8_t pixel[2] = {0, 0};
+    ASSERT_EQ(lcd_st7789_set_window(d, 0, 0, 1, 1), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_write_pixels(d, pixel, 2), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_fill_rect(d, 0, 0, 1, 1, 0), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_display_on(d), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_display_off(d), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_set_rotation(d, LCD_ST7789_ROT_90), LCD_ST7789_ERR_PARAM);
+    ASSERT_EQ(lcd_st7789_invert(d, true), LCD_ST7789_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    lcd_st7789_t d;
+    lcd_st7789_spi_t no_xfer = mock_spi;
+    lcd_st7789_cfg_t bad = default_cfg;
+    no_xfer.xfer = NULL;
+    bad.width = 0;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lcd_st7789_init(&d, NULL, &default_cfg), LCD_ST7789_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lcd_st7789_init(&d, &no_xfer, &default_cfg), LCD_ST7789_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lcd_st7789_init(&d, &mock_spi, &bad), LCD_ST7789_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lcd_st7789")
     /* init */
     RUN(test_init_ok);
@@ -663,4 +699,5 @@ TEST_MAIN("lcd_st7789")
     RUN(test_fill_rect_after_rotation);
     RUN(test_fill_rect_after_rotation_oob);
     RUN(test_init_refuses_a_panel_past_the_frame_memory);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

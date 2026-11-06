@@ -350,6 +350,40 @@ TEST(test_every_column_reports_its_key)
 }
 #endif
 
+/* ---------- a keypad init did not accept ---------- */
+
+static void assert_keypad_refused(keypad_matrix_t *k)
+{
+    char key = 0;
+    keypad_matrix_scan(k);
+    ASSERT_EQ(keypad_matrix_get_event(k, &key), KEYPAD_EVENT_NONE);
+    ASSERT_EQ(keypad_matrix_get_pressed(k), 0);
+    ASSERT_FALSE(keypad_matrix_is_pressed(k, '1'));
+}
+
+/* kp holds whatever the stack did, as nothing else wrote it: 165 rows would
+ * walk off the end of state[] */
+TEST(test_keypad_refused_after_rejected_init)
+{
+    keypad_matrix_t k;
+    keypad_hal_t no_read = mock_hal;
+    no_read.read_col = NULL;
+    mock_reset();
+
+    memset(&k, 0xA5, sizeof(k));
+    ASSERT_EQ(keypad_matrix_init(&k, NULL, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
+    assert_keypad_refused(&k);
+
+    memset(&k, 0xA5, sizeof(k));
+    ASSERT_EQ(keypad_matrix_init(&k, &no_read, 4, 4, keymap_4x4),
+              KEYPAD_ERR_PARAM);
+    assert_keypad_refused(&k);
+
+    memset(&k, 0xA5, sizeof(k));
+    ASSERT_EQ(keypad_matrix_init(&k, &mock_hal, 4, 4, NULL), KEYPAD_ERR_PARAM);
+    assert_keypad_refused(&k);
+}
+
 TEST_MAIN("keypad_matrix")
     RUN(test_init_valid_4x4);
     RUN(test_init_null_params);
@@ -365,6 +399,7 @@ TEST_MAIN("keypad_matrix")
     RUN(test_3x3_non_square);
     RUN(test_rapid_press_release_cycle);
     RUN(test_init_missing_hal_functions);
+    RUN(test_keypad_refused_after_rejected_init);
 #if KEYPAD_MAX_COLS > 8
     RUN(test_every_column_reports_its_key);
 #endif
