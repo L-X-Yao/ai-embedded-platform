@@ -38,6 +38,11 @@ static bool read_regs(const ccs811_t *dev, uint8_t reg, uint8_t *buf,
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
+static bool write_raw(const ccs811_t *dev, const uint8_t *data, uint16_t len)
+{
+    return dev->i2c->write_raw(dev->i2c->ctx, dev->cfg.addr, data, len);
+}
+
 static void delay(const ccs811_t *dev, uint32_t ms)
 {
     if (dev->i2c->delay_ms)
@@ -50,6 +55,11 @@ ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
                          const ccs811_cfg_t *cfg)
 {
     if (!dev || !i2c || !cfg)
+    {
+        return CCS811_ERR_PARAM;
+    }
+
+    if (!i2c->write_raw)
     {
         return CCS811_ERR_PARAM;
     }
@@ -85,8 +95,9 @@ ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
         return CCS811_ERR_BOOT;
     }
 
-    /* Write to APP_START (0xF4) with no data to transition from boot to app */
-    if (!write_reg(dev, REG_APP_START, 0))
+    /* APP_START (0xF4) goes out alone, with no data, to leave boot mode */
+    const uint8_t app_start = REG_APP_START;
+    if (!write_raw(dev, &app_start, 1))
     {
         return CCS811_ERR_I2C;
     }

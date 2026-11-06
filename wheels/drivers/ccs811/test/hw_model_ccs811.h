@@ -5,7 +5,7 @@
  * Models CCS811 datasheet (ams AG) register behavior:
  * - HW_ID 0x81 at 0x20 (read-only)
  * - STATUS at 0x00 with APP_VALID, DATA_READY, FW_MODE bits
- * - APP_START at 0xF4 transitions to application mode
+ * - APP_START: only the single byte 0xF4, with no data, starts the application
  * - MEAS_MODE at 0x01 controls drive mode
  * - ALG_RESULT at 0x02 (8 bytes, read-only)
  */
@@ -47,15 +47,6 @@ static void ccs811_model_update_data(ccs811_model_t *m)
     m->hw.regs[0x05] = (uint8_t)(m->true_tvoc & 0xFF);
 }
 
-static void ccs811_model_on_app_start(void *user, uint8_t reg,
-                                      uint8_t old_val, uint8_t new_val)
-{
-    (void)reg; (void)old_val; (void)new_val;
-    ccs811_model_t *m = (ccs811_model_t *)user;
-    m->app_mode = true;
-    ccs811_model_update_status(m);
-}
-
 static void ccs811_model_on_meas_mode(void *user, uint8_t reg,
                                       uint8_t old_val, uint8_t new_val)
 {
@@ -89,7 +80,6 @@ static void ccs811_model_init(ccs811_model_t *m)
     }
 
     /* Callbacks */
-    hw_model_set_on_write(&m->hw, CCS811_REG_APP_START, ccs811_model_on_app_start);
     hw_model_set_on_write(&m->hw, CCS811_REG_MEAS_MODE, ccs811_model_on_meas_mode);
 
     /* Default values */
@@ -99,6 +89,28 @@ static void ccs811_model_init(ccs811_model_t *m)
     hw_model_reset(&m->hw);
     /* Set initial STATUS: APP_VALID */
     m->hw.regs[CCS811_REG_STATUS] = 0x10;
+}
+
+/*
+ * Exact bus traffic, for the HAL's write_raw. ctx is &model.hw. Datasheet v1-00
+ * p13: the first byte selects a register and the rest is data. p24, p25: only
+ * 0xF4 alone starts the application, so a write that carries data does not.
+ */
+__attribute__((unused))
+static bool ccs811_model_write_raw(void *ctx, uint8_t dev_addr,
+                                   const uint8_t *data, uint16_t len)
+{
+    (void)dev_addr;
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    ccs811_model_t *m = (ccs811_model_t *)hw->user;
+
+    if (hw_model__should_fail(hw)) return false;
+
+    if (len == 1 && data[0] == CCS811_REG_APP_START) {
+        m->app_mode = true;
+        ccs811_model_update_status(m);
+    }
+    return true;
 }
 
 static void ccs811_model_set_air_quality(ccs811_model_t *m,
