@@ -52,6 +52,18 @@ TEST(test_init_ok)
     ASSERT_EQ(dev.freq_hz, 50);
     /* Verify prescaler was written (50Hz: round(25M/(4096*50))-1 = 121) */
     ASSERT_EQ(mock_regs[REG_PRE_SCALE], 121);
+    /* p.14: "No PWM control is possible when the oscillator is off" */
+    ASSERT_FALSE(mock_regs[REG_MODE1] & MODE1_SLEEP);
+}
+
+TEST(test_set_freq_leaves_chip_awake)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    ASSERT_EQ(pca9685_sleep(&dev), PCA9685_OK);
+    ASSERT_EQ(pca9685_set_freq(&dev, 100), PCA9685_OK);
+    ASSERT_FALSE(mock_regs[REG_MODE1] & MODE1_SLEEP);
 }
 
 TEST(test_init_null_dev)
@@ -255,6 +267,7 @@ TEST(test_set_duty_negative_rejected)
 
 TEST_MAIN("pca9685")
     RUN(test_init_ok);
+    RUN(test_set_freq_leaves_chip_awake);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_null_callbacks);

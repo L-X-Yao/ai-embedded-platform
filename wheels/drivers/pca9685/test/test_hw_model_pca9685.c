@@ -34,10 +34,10 @@ TEST(test_init_succeeds)
     pca9685_err_t err = pca9685_init(&dev, &model_i2c, PCA9685_ADDR_DEFAULT, 50);
     ASSERT_EQ(err, PCA9685_OK);
     /* The init sequence: write SLEEP, write prescale, wake, set RESTART.
-     * The final MODE1 write restores original mode1 | RESTART, which may
-     * include SLEEP from the original read.  What matters is the wake
-     * transition happened (tested separately). */
+     * p.14: "No PWM control is possible when the oscillator is off", so the
+     * chip must be awake at the end, not only have woken on the way. */
     ASSERT_TRUE(model.wake_count >= 1);
+    ASSERT_FALSE(pca9685_model_is_sleeping(&model));
 }
 
 TEST(test_init_sets_prescaler)
@@ -55,6 +55,9 @@ TEST(test_init_sets_prescaler)
 TEST(test_init_sleep_before_prescale)
 {
     setup();
+    /* Awake, as after a restart of the MCU alone. From power-up the chip
+     * already sleeps (p.14), so init would have no transition to make. */
+    model.hw.regs[PCA9685_REG_MODE1] = PCA9685_MODE1_ALLCALL;
     pca9685_t dev;
     pca9685_init(&dev, &model_i2c, PCA9685_ADDR_DEFAULT, 50);
     /* Driver must enter sleep to write prescaler, then wake.
@@ -147,8 +150,6 @@ TEST(test_sleep_sets_bit)
     pca9685_t dev;
     pca9685_init(&dev, &model_i2c, PCA9685_ADDR_DEFAULT, 50);
 
-    /* Explicitly wake first (clear SLEEP bit) so we have a known state */
-    pca9685_wake(&dev);
     ASSERT_FALSE(pca9685_model_is_sleeping(&model));
 
     pca9685_err_t err = pca9685_sleep(&dev);
