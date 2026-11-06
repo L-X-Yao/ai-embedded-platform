@@ -74,7 +74,10 @@ typedef struct {
  *  @thread_safe: no  @isr_safe: no */
 max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c);
 
-/** Set operating mode (HR-only or SpO2). @thread_safe: no @isr_safe: no */
+/** Set operating mode (HR-only or SpO2).
+ *  Returns MAX30102_ERR_PARAM, changing nothing, if the current sample rate
+ *  is above the limit of the new mode: lower the rate first.
+ *  @thread_safe: no @isr_safe: no */
 max30102_err_t max30102_set_mode(max30102_t *dev, max30102_mode_t mode);
 
 /** Set LED pulse amplitudes.
@@ -84,7 +87,10 @@ max30102_err_t max30102_set_led_current(max30102_t *dev,
                                         uint8_t red_ma_x10,
                                         uint8_t ir_ma_x10);
 
-/** Set sample rate (Hz).  Valid: 50,100,200,400,800,1000,1600,3200.
+/** Set sample rate (Hz): 50,100,200,400,800,1000,1600 or 3200, up to the
+ *  limit for the current mode and LED pulse width (data sheet Tables 11 and
+ *  12).  At the 411 us init sets, that is 400 in SpO2 mode, 1000 in HR mode.
+ *  Above the limit returns MAX30102_ERR_PARAM and keeps the old rate.
  *  @thread_safe: no @isr_safe: no */
 max30102_err_t max30102_set_sample_rate(max30102_t *dev, uint16_t rate);
 

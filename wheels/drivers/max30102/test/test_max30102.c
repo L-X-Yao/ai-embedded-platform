@@ -192,17 +192,89 @@ TEST(test_set_led_current_i2c_fail)
     ASSERT_EQ(e, MAX30102_ERR_I2C);
 }
 
-TEST(test_set_sample_rate_all_valid)
+/* 19-7740 Rev 0 p24, Tables 11 and 12.  Rows are the samples per second of
+ * rate_list, columns LED_PW 00..11 (69, 118, 215, 411 us), 1 is an "O". */
+static const uint16_t rate_list[8] = {50, 100, 200, 400, 800, 1000, 1600, 3200};
+static const uint8_t allowed_spo2[8][4] = {
+    {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1},
+    {1, 1, 1, 0}, {1, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 0, 0},
+};
+static const uint8_t allowed_hr[8][4] = {
+    {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1},
+    {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 0}, {1, 0, 0, 0},
+};
+
+TEST(test_set_sample_rate_tables_11_12)
 {
-    static const uint16_t rates[] = {50, 100, 200, 400, 800, 1000, 1600, 3200};
-    for (int i = 0; i < 8; i++)
+    for (int hr = 0; hr < 2; hr++)
+    {
+        for (uint8_t pw = 0; pw < 4; pw++)
+        {
+            for (uint8_t i = 0; i < 8; i++)
+            {
+                setup();
+                ASSERT_EQ(max30102_set_mode(&dev, hr ? MAX30102_MODE_HR
+                                                     : MAX30102_MODE_SPO2),
+                          MAX30102_OK);
+                uint8_t before = (uint8_t)(0x20u | pw);   /* 50 sps */
+                mock_regs[REG_SPO2_CONFIG] = before;
+
+                max30102_err_t e = max30102_set_sample_rate(&dev, rate_list[i]);
+                if (hr ? allowed_hr[i][pw] : allowed_spo2[i][pw])
+                {
+                    ASSERT_EQ(e, MAX30102_OK);
+                    /* SR bits are [4:2] of SPO2_CONFIG */
+                    uint8_t sr_bits =
+                        (uint8_t)((mock_regs[REG_SPO2_CONFIG] >> 2) & 0x07);
+                    ASSERT_EQ(sr_bits, i);
+                }
+                else
+                {
+                    ASSERT_EQ(e, MAX30102_ERR_PARAM);
+                    ASSERT_EQ_HEX(mock_regs[REG_SPO2_CONFIG], before);
+                }
+            }
+        }
+    }
+}
+
+TEST(test_set_sample_rate_default_pw_limits)
+{
+    /* init leaves LED_PW at 411 us: Table 11 stops at 400, Table 12 at 1000 */
+    setup();
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 400), MAX30102_OK);
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 800), MAX30102_ERR_PARAM);
+
+    ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_HR), MAX30102_OK);
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 1000), MAX30102_OK);
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 1600), MAX30102_ERR_PARAM);
+}
+
+TEST(test_set_mode_spo2_refuses_rate_above_limit)
+{
+    setup();
+    ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_HR), MAX30102_OK);
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 1000), MAX30102_OK);
+
+    /* 1000 sps at 411 us is in Table 12 but not in Table 11 */
+    ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_SPO2), MAX30102_ERR_PARAM);
+    ASSERT_EQ(mock_regs[REG_MODE_CONFIG] & 0x07, 0x02);
+    ASSERT_EQ(dev.mode, MAX30102_MODE_HR);
+
+    /* lowering the rate first makes the switch legal */
+    ASSERT_EQ(max30102_set_sample_rate(&dev, 400), MAX30102_OK);
+    ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_SPO2), MAX30102_OK);
+    ASSERT_EQ(mock_regs[REG_MODE_CONFIG] & 0x07, 0x03);
+}
+
+TEST(test_set_mode_rate_check_i2c_fail)
+{
+    /* every read and write inside set_mode must report a bus failure */
+    for (int op = 0; op < 3; op++)
     {
         setup();
-        max30102_err_t e = max30102_set_sample_rate(&dev, rates[i]);
-        ASSERT_EQ(e, MAX30102_OK);
-        /* SR bits are [4:2] of SPO2_CONFIG */
-        uint8_t sr_bits = (uint8_t)((mock_regs[REG_SPO2_CONFIG] >> 2) & 0x07);
-        ASSERT_EQ(sr_bits, i);
+        mock_fail_at = mock_op_count + op;
+        ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_HR), MAX30102_ERR_I2C);
     }
 }
 
@@ -563,7 +635,10 @@ TEST_MAIN("max30102")
     RUN(test_set_led_current);
     RUN(test_set_led_current_zero);
     RUN(test_set_led_current_i2c_fail);
-    RUN(test_set_sample_rate_all_valid);
+    RUN(test_set_sample_rate_tables_11_12);
+    RUN(test_set_sample_rate_default_pw_limits);
+    RUN(test_set_mode_spo2_refuses_rate_above_limit);
+    RUN(test_set_mode_rate_check_i2c_fail);
     RUN(test_set_sample_rate_invalid);
     RUN(test_set_sample_rate_preserves_other_bits);
     RUN(test_set_sample_rate_i2c_fail);
