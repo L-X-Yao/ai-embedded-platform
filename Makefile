@@ -208,7 +208,7 @@ install-hooks:
 	@echo "Git hooks now read from .githooks/"
 
 ship:
-	@test -n "$(M)" || { echo "Usage: make ship M=\"commit message\""; exit 1; }
+	@test -n '$(subst ','\'',$(M))' || { echo "Usage: make ship M=\"commit message\""; exit 1; }
 	bash tooling/test/test_all.sh
 	python3 tooling/audit/audit_wheels.py --quiet
 	git add -u
@@ -385,12 +385,12 @@ wheel-gate:
 
 wheel-commit:
 	@test -n "$(WHEELS)" || { echo "Usage: make wheel-commit WHEELS=\"primitives/ewma drivers/bmp388\" M=\"commit msg\""; exit 1; }
-	@test -n "$(M)" || { echo "Usage: make wheel-commit WHEELS=\"...\" M=\"commit message\""; exit 1; }
+	@test -n '$(subst ','\'',$(M))' || { echo "Usage: make wheel-commit WHEELS=\"...\" M=\"commit message\""; exit 1; }
 	bash tooling/wheel/wheel_gate.sh $(WHEELS)
 	@dirs=""; for w in $(WHEELS); do dirs="$$dirs wheels/$$w/"; done; \
 	git add $$dirs && \
 	printf '%s\n' '$(subst ','\'',$(M))' | git commit -F - && \
-	echo "" && echo "Committed: $(M)" && \
+	echo "" && printf 'Committed: %s\n' '$(subst ','\'',$(M))' && \
 	echo "TIP: run 'make wheel-docs' after last wheel to update CLAUDE.md counts"
 
 wheel-docs:
