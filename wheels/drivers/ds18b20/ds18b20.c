@@ -58,19 +58,24 @@ static bool address_device(ds18b20_t *dev)
 
 ds18b20_err_t ds18b20_init(ds18b20_t *dev, const ds18b20_ow_t *ow)
 {
-    if (!dev || !ow)
+    if (!dev)
+        return DS18B20_ERR_PARAM;
+
+    /* dev->ow stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!ow)
         return DS18B20_ERR_PARAM;
     if (!ow->reset || !ow->write_byte || !ow->read_byte)
         return DS18B20_ERR_PARAM;
     dev->ow = ow;
-    memset(dev->rom, 0, 8);
-    dev->use_rom = false;
     return DS18B20_OK;
 }
 
 ds18b20_err_t ds18b20_read_rom(ds18b20_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->ow)
         return DS18B20_ERR_PARAM;
     if (!dev->ow->reset(dev->ow->ctx))
         return DS18B20_ERR_NO_DEVICE;
@@ -87,7 +92,7 @@ ds18b20_err_t ds18b20_read_rom(ds18b20_t *dev)
 
 ds18b20_err_t ds18b20_start_conversion(ds18b20_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->ow)
         return DS18B20_ERR_PARAM;
     if (!dev->ow->reset(dev->ow->ctx))
         return DS18B20_ERR_NO_DEVICE;
@@ -100,7 +105,7 @@ ds18b20_err_t ds18b20_start_conversion(ds18b20_t *dev)
 
 ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->ow || !temp_c)
         return DS18B20_ERR_PARAM;
     if (!dev->ow->reset(dev->ow->ctx))
         return DS18B20_ERR_NO_DEVICE;
@@ -131,7 +136,7 @@ ds18b20_err_t ds18b20_read_temperature(ds18b20_t *dev, float *temp_c)
 
 ds18b20_err_t ds18b20_set_resolution(ds18b20_t *dev, ds18b20_resolution_t res)
 {
-    if (!dev)
+    if (!dev || !dev->ow)
         return DS18B20_ERR_PARAM;
     if (!dev->ow->reset(dev->ow->ctx))
         return DS18B20_ERR_NO_DEVICE;

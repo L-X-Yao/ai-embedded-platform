@@ -14,6 +14,7 @@
 
 #include "ds3231.h"
 #include "contract.h"
+#include <string.h>
 
 /* --- register map --- */
 #define REG_SECONDS   0x00u
@@ -75,7 +76,16 @@ static bool time_valid(const ds3231_time_t *t)
 
 ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c)
 {
-    if (!dev || !i2c)
+    if (!dev)
+    {
+        return DS3231_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs)
     {
         return DS3231_ERR_PARAM;
     }
@@ -85,6 +95,7 @@ ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c)
     uint8_t hr = 0;
     if (!read_regs(dev, REG_HOURS, &hr, 1))
     {
+        dev->i2c = NULL;
         return DS3231_ERR_I2C;
     }
     if (hr & 0x40u)
@@ -98,6 +109,7 @@ ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c)
             h12 = 0;
         if (!write_reg(dev, REG_HOURS, bin_to_bcd(h12)))
         {
+            dev->i2c = NULL;
             return DS3231_ERR_I2C;
         }
     }

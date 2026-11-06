@@ -731,6 +731,39 @@ TEST(test_set_resolution_changes_the_reading)
     ASSERT_NEAR(temp, 0.5f, 0.001f);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(ds18b20_t *d)
+{
+    float t = 0.0f;
+    ASSERT_EQ(ds18b20_read_rom(d), DS18B20_ERR_PARAM);
+    ASSERT_EQ(ds18b20_start_conversion(d), DS18B20_ERR_PARAM);
+    ASSERT_EQ(ds18b20_read_temperature(d, &t), DS18B20_ERR_PARAM);
+    ASSERT_EQ(ds18b20_set_resolution(d, DS18B20_RES_12BIT), DS18B20_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static ds18b20_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ds18b20_t d;
+    ds18b20_ow_t no_reset = mock_ow;
+    no_reset.reset = NULL;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ds18b20_init(&d, NULL), DS18B20_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ds18b20_init(&d, &no_reset), DS18B20_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ds18b20")
     RUN(test_mock_frame_follows_figure_7);
     RUN(test_set_resolution_reaches_config_byte);
@@ -777,4 +810,6 @@ TEST_MAIN("ds18b20")
     RUN(test_10bit_drops_undefined_bits);
     RUN(test_11bit_drops_undefined_bit);
     RUN(test_12bit_keeps_every_bit);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

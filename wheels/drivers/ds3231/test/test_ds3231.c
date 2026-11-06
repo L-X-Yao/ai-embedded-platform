@@ -427,6 +427,56 @@ TEST(test_set_time_refuses_a_day_the_month_lacks)
     ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ds3231_t *d)
+{
+    ds3231_time_t t = { .year = 26, .month = 11, .day = 7, .weekday = 6 };
+    float temp = 0.0f;
+    ASSERT_EQ(ds3231_get_time(d, &t), DS3231_ERR_PARAM);
+    ASSERT_EQ(ds3231_set_time(d, &t), DS3231_ERR_PARAM);
+    ASSERT_EQ(ds3231_get_temperature(d, &temp), DS3231_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    ds3231_t d;
+
+    mock_reset();
+    mock_fail_at = 0;  /* the read of the hours register */
+    ASSERT_EQ(ds3231_init(&d, &mock_i2c), DS3231_ERR_I2C);
+    assert_device_refused(&d);
+
+    mock_reset();
+    mock_regs[0x02] = 0x52;  /* 12 AM in 12-hour mode */
+    mock_fail_at = 1;  /* the write back in 24-hour form */
+    ASSERT_EQ(ds3231_init(&d, &mock_i2c), DS3231_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ds3231_t d;
+    ds3231_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ds3231_init(&d, NULL), DS3231_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad.write_reg = NULL;
+    ASSERT_EQ(ds3231_init(&d, &bad), DS3231_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(ds3231_init(&d, &bad), DS3231_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ds3231")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -457,4 +507,6 @@ TEST_MAIN("ds3231")
     RUN(test_get_temp_null_dev);
     RUN(test_get_temp_null_out);
     RUN(test_set_time_refuses_a_day_the_month_lacks);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

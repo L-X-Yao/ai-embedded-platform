@@ -281,20 +281,9 @@ static void write_mac_regs(enc28j60_t *dev)
 
 /* ---------- API ---------- */
 
-enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
-                              const uint8_t *mac_addr)
+/* The steps of init that talk to the chip */
+static enc28j60_err_t bring_up(enc28j60_t *dev)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer ||
-        !spi->delay_ms)
-        return ENC28J60_ERR_PARAM;
-    if (!mac_addr)
-        return ENC28J60_ERR_PARAM;
-
-    dev->spi  = spi;
-    dev->bank = 0;
-    dev->next_packet_ptr = RXSTART;
-    memcpy(dev->mac_addr, mac_addr, 6);
-
     /* Soft reset */
     soft_reset(dev);
 
@@ -356,6 +345,33 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
     bit_field_set(dev, ECON1, ECON1_RXEN);
 
     return ENC28J60_OK;
+}
+
+enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
+                              const uint8_t *mac_addr)
+{
+    if (!dev)
+        return ENC28J60_ERR_PARAM;
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !spi->cs_low || !spi->cs_high || !spi->xfer ||
+        !spi->delay_ms)
+        return ENC28J60_ERR_PARAM;
+    if (!mac_addr)
+        return ENC28J60_ERR_PARAM;
+
+    dev->spi  = spi;
+    dev->bank = 0;
+    dev->next_packet_ptr = RXSTART;
+    memcpy(dev->mac_addr, mac_addr, 6);
+
+    enc28j60_err_t err = bring_up(dev);
+    if (err != ENC28J60_OK)
+        dev->spi = NULL;
+    return err;
 }
 
 enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,

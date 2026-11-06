@@ -332,16 +332,64 @@ TEST(test_touch_count_clamped_to_two)
     ASSERT_EQ(touch.touch_count, 2);
 }
 
-/* ---------- zero-init safety ---------- */
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ft6x36_t *d)
+{
+    ft6x36_touch_t touch;
+    uint8_t value = 0;
+    ASSERT_EQ(ft6x36_read_touch(d, &touch), FT6X36_ERR_PARAM);
+    ASSERT_EQ(ft6x36_set_threshold(d, 40), FT6X36_ERR_PARAM);
+    ASSERT_EQ(ft6x36_get_chip_id(d, &value), FT6X36_ERR_PARAM);
+    ASSERT_EQ(ft6x36_get_firmware_version(d, &value), FT6X36_ERR_PARAM);
+}
 
 TEST(test_zero_init_safety)
 {
-    ft6x36_t zero_dev;
-    memset(&zero_dev, 0, sizeof(zero_dev));
-    /* Zero-init struct: read functions should reject NULL i2c gracefully
-     * (they check dev != NULL but i2c pointer is 0 -> ERR_PARAM would be ideal,
-     *  but since our code dereferences i2c->read_regs, we just verify no crash
-     *  when calling functions that only check dev/out NULL) */
+    static ft6x36_t zero_dev;
+    assert_device_refused(&zero_dev);
+}
+
+/* A chip that answers with another ID was never verified */
+TEST(test_device_refused_after_wrong_id)
+{
+    ft6x36_t d;
+    mock_reset();
+    mock_regs[REG_CIPHER] = 0xAB;
+    ASSERT_EQ(ft6x36_init(&d, &mock_i2c), FT6X36_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_read)
+{
+    ft6x36_t d;
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(ft6x36_init(&d, &mock_i2c), FT6X36_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ft6x36_t d;
+    ft6x36_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ft6x36_init(&d, NULL), FT6X36_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad.write_reg = NULL;
+    ASSERT_EQ(ft6x36_init(&d, &bad), FT6X36_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(ft6x36_init(&d, &bad), FT6X36_ERR_PARAM);
+    assert_device_refused(&d);
 }
 
 TEST_MAIN("ft6x36")
@@ -373,4 +421,7 @@ TEST_MAIN("ft6x36")
     RUN(test_get_firmware_version_null_out);
     RUN(test_touch_count_clamped_to_two);
     RUN(test_zero_init_safety);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_read);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
