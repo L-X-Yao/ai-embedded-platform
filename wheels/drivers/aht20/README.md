@@ -52,9 +52,8 @@ None. I2C address is fixed at 0x38 (hardware limitation).
 Checked on 2026-11-06 against ASAIR AHT20 Product manuals, Version V1.1, 2020/04. Not run on hardware.
 
 - **Matched:** Address, the init, trigger and soft reset commands, status bits 7 and 3, the calibration check, the waits, frame order, CRC, both conversion formulas.
-- **Fixed:** When the sensor was still busy after 80 ms, `aht20_read` gave up with `AHT20_ERR_I2C` or `AHT20_ERR_CRC`. It now reads again for up to 200 ms more, then returns the new `AHT20_ERR_TIMEOUT`. A NULL `delay_ms` removed every wait, so `aht20_init` now returns `AHT20_ERR_PARAM`.
-- **Still open:** The manual does not say which nibble of the shared byte is humidity, so the split here is the usual one and unproven. Nothing limits the rate, though the manual recommends one measurement every 2 seconds to keep self-heating low. No test uses `hw_model_aht20.h`, which is never busy and fills reads of 2 to 6 bytes with FFh, so it shows nothing about the waits.
-- **Suspected:** The model turns 100 %RH into a raw value that wraps to 0 in the 20-bit field.
+- **Fixed:** When the sensor was still busy after 80 ms, `aht20_read` gave up with `AHT20_ERR_I2C` or `AHT20_ERR_CRC`. It now reads again for up to 200 ms more, then returns the new `AHT20_ERR_TIMEOUT`. A NULL `delay_ms` removed every wait, so `aht20_init` now returns `AHT20_ERR_PARAM`. No test used `hw_model_aht20.h`, which was never busy, filled reads of 2 to 6 bytes with FFh and turned 100 %RH into a raw value that wrapped to 0. It now follows the waits and the frame of the manual, and `test_hw_model_aht20.c` runs the driver against it.
+- **Still open:** The manual does not say which nibble of the shared byte is humidity, so the split here is the usual one and unproven. Nothing limits the rate, though the manual recommends one measurement every 2 seconds to keep self-heating low.
 
 ## Known issues
 
