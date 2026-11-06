@@ -23,7 +23,7 @@ static drv8833_err_t validate_dev_ch(const drv8833_t *dev,
     return DRV8833_OK;
 }
 
-static int16_t clamp(int16_t v, int16_t lo, int16_t hi)
+static int32_t clamp(int32_t v, int32_t lo, int32_t hi)
 {
     if (v < lo) return lo;
     if (v > hi) return hi;
@@ -55,21 +55,22 @@ drv8833_err_t drv8833_set_speed(drv8833_t *dev, drv8833_channel_t ch,
     if (err != DRV8833_OK)
         return err;
 
-    int16_t md = (int16_t)dev->max_duty;
-    speed = clamp(speed, (int16_t)(-md), md);
+    /* In 32 bits: max_duty is a uint16_t, and speed is not */
+    int32_t md   = (int32_t)dev->max_duty;
+    int32_t duty = clamp((int32_t)speed, -md, md);
 
     uint8_t c = (uint8_t)ch;
 
-    if (speed > 0) {
+    if (duty > 0) {
         /* forward: IN1=PWM, IN2=LOW */
-        dev->hal->set_pwm(dev->hal->ctx, c, 0, (uint16_t)speed);
+        dev->hal->set_pwm(dev->hal->ctx, c, 0, (uint16_t)duty);
         dev->hal->set_pwm(dev->hal->ctx, c, 1, 0);
-    } else if (speed < 0) {
+    } else if (duty < 0) {
         /* reverse: IN1=LOW, IN2=PWM */
         dev->hal->set_pwm(dev->hal->ctx, c, 0, 0);
-        dev->hal->set_pwm(dev->hal->ctx, c, 1, (uint16_t)(-speed));
+        dev->hal->set_pwm(dev->hal->ctx, c, 1, (uint16_t)(-duty));
     } else {
-        /* speed == 0 → coast */
+        /* duty == 0 → coast */
         dev->hal->set_pwm(dev->hal->ctx, c, 0, 0);
         dev->hal->set_pwm(dev->hal->ctx, c, 1, 0);
     }
