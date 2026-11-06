@@ -255,6 +255,83 @@ TEST(test_peek_bad_idx)
     ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_peek(&ring, MOCK_TOTAL_SLOTS, buf, 10));
 }
 
+/* W1A-11: len past the slot read into the next slot, or past the region. */
+TEST(test_peek_refuses_len_past_the_slot)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x21};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+    uint8_t buf[MOCK_SLOT_SIZE + 1];
+    ASSERT_EQ(FLASH_RING_ERR_PARAM,
+              flash_ring_peek(&ring, ring.read_idx, buf, MOCK_SLOT_SIZE + 1));
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&ring, ring.read_idx, buf, MOCK_SLOT_SIZE));
+}
+
+/* W1A-11: an empty ring has no frame to show, whatever the slot holds. */
+TEST(test_peek_empty_ring)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t buf[4];
+    ASSERT_EQ(FLASH_RING_ERR_EMPTY, flash_ring_peek(&ring, 0, buf, 4));
+
+    uint8_t frame[4] = {1, 2, 3, 4};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, 4));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    ASSERT_EQ(FLASH_RING_ERR_EMPTY, flash_ring_peek(&ring, 0, buf, 4));
+}
+
+/* W1A-11: only read_idx up to write_idx - 1 holds live frames. */
+TEST(test_peek_refuses_slots_outside_the_live_range)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x23};
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+
+    uint8_t buf[4];
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_peek(&ring, 0, buf, 4)); /* popped */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 1, buf, 4));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 2, buf, 4));
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_peek(&ring, 3, buf, 4)); /* write_idx */
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_peek(&ring, 100, buf, 4));
+}
+
+/* W1A-11: the same once the live range wraps past the end of the ring. */
+TEST(test_peek_live_range_across_the_wrap)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x24};
+    for (uint32_t i = 0; i < MOCK_TOTAL_SLOTS + 5u; i++) {
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    }
+    ASSERT_EQ(5u, ring.write_idx);
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, ring.read_idx);
+
+    uint8_t buf[4];
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 4, buf, 4));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, MOCK_TOTAL_SLOTS - 1u, buf, 4));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, ring.read_idx, buf, 4));
+    ASSERT_EQ(FLASH_RING_ERR_PARAM, flash_ring_peek(&ring, 5, buf, 4));
+    ASSERT_EQ(FLASH_RING_ERR_PARAM,
+              flash_ring_peek(&ring, ring.read_idx - 1u, buf, 4));
+}
+
 TEST(test_discard_all)
 {
     flash_ring_t ring;
@@ -972,6 +1049,10 @@ TEST_MAIN("flash_ring")
     RUN(test_push_oversized);
     RUN(test_push_io_fail);
     RUN(test_peek_bad_idx);
+    RUN(test_peek_refuses_len_past_the_slot);
+    RUN(test_peek_empty_ring);
+    RUN(test_peek_refuses_slots_outside_the_live_range);
+    RUN(test_peek_live_range_across_the_wrap);
     RUN(test_discard_all);
     RUN(test_flush_header_explicit);
     RUN(test_persist_interval);
