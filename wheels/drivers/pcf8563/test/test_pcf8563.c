@@ -109,6 +109,7 @@ TEST(test_error_codes)
     ASSERT_EQ(-1, (int)PCF8563_ERR_I2C);
     ASSERT_EQ(-2, (int)PCF8563_ERR_ID);
     ASSERT_EQ(-3, (int)PCF8563_ERR_PARAM);
+    ASSERT_EQ(-4, (int)PCF8563_ERR_VL);
 }
 
 TEST(test_read_time)
@@ -216,8 +217,9 @@ TEST(test_write_time_holds_stop_for_every_time_write)
     ASSERT_EQ(wlog_n, 9);
     ASSERT_EQ(wlog[0].reg, 0x00);
     ASSERT_EQ_HEX(wlog[0].val, 0x20u);
+    /* Seconds go last, as their bit 7 clears VL */
     for (int i = 0; i < 7; i++) {
-        ASSERT_EQ(wlog[1 + i].reg, 0x02 + i);
+        ASSERT_EQ(wlog[1 + i].reg, (i < 6) ? 0x03 + i : 0x02);
         ASSERT_EQ_HEX(wlog[1 + i].ctrl1 & 0x20u, 0x20u);
     }
     ASSERT_EQ(wlog[8].reg, 0x00);
@@ -253,6 +255,35 @@ TEST(test_write_time_failure_still_releases_stop)
         ASSERT_TRUE(wlog[k + 2].ok);
         ASSERT_EQ_HEX(mock_regs[0x00], 0x00u);
     }
+}
+
+/* VL is what tells a caller the time is no good, so it must outlast a write
+ * that stops half way, or the next read would pass that time as valid */
+TEST(test_write_time_failure_leaves_vl_set)
+{
+    for (int k = 0; k < 7; k++) {
+        stop_test_setup();
+        mock_fail_at = mock_op_count + 2 + k;  /* read, STOP, k good writes */
+        ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_ERR_I2C);
+
+        ASSERT_EQ_HEX(mock_regs[0x02] & 0x80u, 0x80u);
+        mock_fail_at = -1;
+        pcf8563_time_t t;
+        ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_ERR_VL);
+    }
+}
+
+/* p.10: "The VL flag can only be cleared by using the interface." */
+TEST(test_write_time_clears_vl)
+{
+    stop_test_setup();
+    ASSERT_EQ_HEX(mock_regs[0x02] & 0x80u, 0x80u);
+    ASSERT_EQ(pcf8563_write_time(&dev, &stop_test_time), PCF8563_OK);
+
+    ASSERT_EQ_HEX(mock_regs[0x02], 0x15u);
+    pcf8563_time_t t;
+    ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_OK);
+    ASSERT_EQ(t.second, 15);
 }
 
 TEST(test_write_time_stop_write_fails)
@@ -371,12 +402,23 @@ TEST(test_vl_bit_masked_on_read)
     mock_reset();
     pcf8563_init(&dev, &mock_i2c);
 
+    plant_time();
+
     /* Set VL (voltage-low) bit in seconds register */
     mock_regs[0x02] = 0x80 | 0x45;  /* VL set + 45 sec BCD */
 
+    /* p.10: VL means "the integrity of the clock information is no longer
+     * guaranteed", so that is the result, with the fields filled in anyway */
     pcf8563_time_t t;
-    ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_OK);
+    memset(&t, 0xA5, sizeof(t));
+    ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_ERR_VL);
     ASSERT_EQ(t.second, 45);  /* VL bit must be masked */
+    ASSERT_EQ(t.minute, 30);
+    ASSERT_EQ(t.hour, 12);
+    ASSERT_EQ(t.day, 15);
+    ASSERT_EQ(t.weekday, 4);
+    ASSERT_EQ(t.month, 1);
+    ASSERT_EQ(t.year, 26);
 }
 
 TEST(test_alarm_write_read)
@@ -532,6 +574,8 @@ TEST_MAIN("pcf8563")
     RUN(test_write_time_holds_stop_for_every_time_write);
     RUN(test_write_time_keeps_control_bits);
     RUN(test_write_time_failure_still_releases_stop);
+    RUN(test_write_time_failure_leaves_vl_set);
+    RUN(test_write_time_clears_vl);
     RUN(test_write_time_stop_write_fails);
     RUN(test_write_time_ctrl1_read_fails);
     RUN(test_write_time_release_fails);

@@ -29,6 +29,7 @@ typedef enum {
     PCF8563_ERR_I2C   = -1,
     PCF8563_ERR_ID    = -2,
     PCF8563_ERR_PARAM = -3,
+    PCF8563_ERR_VL    = -4,   /* VL set: the time read is not guaranteed */
 } pcf8563_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -94,7 +95,11 @@ typedef struct {
 pcf8563_err_t pcf8563_init(pcf8563_t *dev,
                                const pcf8563_i2c_t *i2c);
 
-/** Read current time from RTC. @thread_safe: no @isr_safe: no */
+/** Read current time from RTC. Returns PCF8563_ERR_VL if the chip's VL flag is
+ *  set, after a first power-up or when the supply dropped too low. time is
+ *  filled in all the same, but it may be wrong or not a date at all, until
+ *  pcf8563_write_time clears VL.
+ *  @thread_safe: no @isr_safe: no */
 pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,
                                     pcf8563_time_t *time);
 
@@ -104,7 +109,8 @@ pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,
  *  comes 0.507813 s to 0.507935 s after release. CLKOUT at 1.024 kHz, 32 Hz or
  *  1 Hz stops meanwhile. A failed write still attempts the release, and the
  *  time may then be part written. If the release itself fails the clock stays
- *  stopped until a later write_time or init.
+ *  stopped until a later write_time or init. Clears VL with the seconds, which
+ *  go last, so a time left part written keeps the VL it had.
  *  @thread_safe: no @isr_safe: no */
 pcf8563_err_t pcf8563_write_time(const pcf8563_t *dev,
                                      const pcf8563_time_t *time);
