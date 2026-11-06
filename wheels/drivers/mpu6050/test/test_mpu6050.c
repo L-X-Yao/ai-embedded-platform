@@ -365,6 +365,62 @@ TEST(test_config_registers)
     ASSERT_EQ(mock_regs[0x1B], (2 << 3));
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(mpu6050_t *d)
+{
+    mpu6050_accel_t a;
+    mpu6050_gyro_t g;
+    ASSERT_EQ(mpu6050_read_accel(d, &a), MPU6050_ERR_PARAM);
+    ASSERT_EQ(mpu6050_read_gyro(d, &g), MPU6050_ERR_PARAM);
+    ASSERT_EQ(mpu6050_reset(d), MPU6050_ERR_PARAM);
+}
+
+/* 0x71 is the WHO_AM_I of an MPU9250: it answers, but no scale was ever set */
+TEST(test_device_refused_after_wrong_id)
+{
+    mpu6050_t d;
+    mock_reset();
+    mock_regs[0x75] = 0x71;
+    ASSERT_EQ(mpu6050_init(&d, &mock_i2c, &default_cfg), MPU6050_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_bad_range)
+{
+    mpu6050_t d;
+    mpu6050_cfg_t cfg = default_cfg;
+    mock_reset();
+    cfg.gyro_range = (mpu6050_gyro_range_t)4;
+    ASSERT_EQ(mpu6050_init(&d, &mock_i2c, &cfg), MPU6050_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_range_write)
+{
+    mpu6050_t d;
+    mock_reset();
+    mock_fail_at = 5;  /* reset, its poll, wake-up, read back, ID, then this */
+    ASSERT_EQ(mpu6050_init(&d, &mock_i2c, &default_cfg), MPU6050_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* Refused before the chip: dev is not touched by anything else, so it holds
+ * whatever the stack did */
+TEST(test_device_refused_after_rejected_init)
+{
+    mpu6050_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mpu6050_init(&d, NULL, &default_cfg), MPU6050_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mpu6050_init(&d, &mock_i2c, NULL), MPU6050_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST(test_init_needs_write_and_read)
 {
     mpu6050_t d;
@@ -403,5 +459,9 @@ TEST_MAIN("mpu6050")
     RUN(test_reset_write_failures);
     RUN(test_addr_high);
     RUN(test_config_registers);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_bad_range);
+    RUN(test_device_refused_after_failed_range_write);
+    RUN(test_device_refused_after_rejected_init);
     RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()
