@@ -24,7 +24,7 @@ I2C HAL (injected via `drv2605_i2c_t` callbacks). No other dependencies.
 
 ```c
 drv2605_err_t drv2605_init(drv2605_t *dev, const drv2605_i2c_t *i2c);
-drv2605_err_t drv2605_set_mode(drv2605_t *dev, drv2605_actuator_t type);
+drv2605_err_t drv2605_set_actuator(drv2605_t *dev, drv2605_actuator_t type);
 drv2605_err_t drv2605_set_waveform(drv2605_t *dev, uint8_t slot, uint8_t effect_id);
 drv2605_err_t drv2605_go(drv2605_t *dev);
 drv2605_err_t drv2605_stop(drv2605_t *dev);
@@ -33,7 +33,7 @@ drv2605_err_t drv2605_set_realtime_value(drv2605_t *dev, uint8_t value);
 
 ## Configuration (compile-time)
 
-None. Actuator type is runtime-configurable via `drv2605_set_mode()`.
+None. Actuator type is runtime-configurable via `drv2605_set_actuator()`.
 
 ## Supported platforms
 
@@ -80,7 +80,7 @@ None.
 ## API review
 
 - **Date**: 2026-05-01
-- **Key decisions**: Minimal context struct (only stores I2C HAL pointer) since DRV2605L has a fixed address and no calibration data to cache; `set_mode` controls actuator type (ERM/LRA) via feedback register bit 7 rather than the mode register; accepts both DRV2605 (devid=3) and DRV2605L (devid=7) variants; waveform slots map directly to registers 0x04-0x0B.
+- **Key decisions**: Minimal context struct (only stores I2C HAL pointer) since DRV2605L has a fixed address and no calibration data to cache; `set_actuator` controls actuator type (ERM/LRA) via feedback register bit 7 rather than the mode register; accepts both DRV2605 (devid=3) and DRV2605L (devid=7) variants; waveform slots map directly to registers 0x04-0x0B.
 
 ## Responsible human
 
