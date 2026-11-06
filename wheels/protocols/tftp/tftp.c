@@ -85,6 +85,8 @@ int tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt)
     {
         /* format: opcode(2) + block#(2) + data(0..512) */
         if (len < 4) return TFTP_ERR_SHORT;
+        /* A caller may copy this into a block buffer, and a peer picks len. */
+        if (len - 4 > TFTP_BLOCK_SIZE) return TFTP_ERR_OVERFLOW;
 
         pkt->u.data.block = get_u16(buf + 2);
         pkt->u.data.data  = (len > 4) ? (buf + 4) : NULL;

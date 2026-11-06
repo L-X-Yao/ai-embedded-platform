@@ -278,6 +278,22 @@ TEST(test_build_data_oversized)
     ASSERT_TRUE(tftp_build_data(buf, sizeof(buf), 1, payload, 513) < 0);
 }
 
+TEST(test_parse_refuses_data_larger_than_a_block)
+{
+    /* RFC 1350: a DATA packet carries 0 to 512 bytes. */
+    static uint8_t wire[4 + 1000];
+    tftp_packet_t pkt;
+    wire[1] = TFTP_OP_DATA;
+    wire[3] = 1;
+
+    ASSERT_EQ(tftp_parse(wire, 4 + 513, &pkt), TFTP_ERR_OVERFLOW);
+    ASSERT_EQ(tftp_parse(wire, sizeof(wire), &pkt), TFTP_ERR_OVERFLOW);
+
+    ASSERT_EQ(tftp_parse(wire, 4 + 512, &pkt), TFTP_OK);
+    ASSERT_EQ(pkt.u.data.len, (size_t)512);
+    ASSERT_FALSE(tftp_is_last_data(&pkt));
+}
+
 TEST(test_build_error_null)
 {
     uint8_t buf[64];
@@ -423,6 +439,7 @@ TEST_MAIN("tftp")
     RUN(test_build_data_null_buf);
     RUN(test_build_data_null_data_nonzero_len);
     RUN(test_build_data_oversized);
+    RUN(test_parse_refuses_data_larger_than_a_block);
     RUN(test_build_error_null);
     RUN(test_build_rrq_short_buffer);
     RUN(test_parse_adversarial);
