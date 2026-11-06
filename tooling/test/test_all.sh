@@ -136,9 +136,10 @@ discover_wheel_tests() {
         TARGETS+=("${name}|${src_dir}|wheel")
     done < <(find "$REPO/wheels/primitives" -maxdepth 2 -name "CMakeLists.txt" 2>/dev/null | sort)
 
-    # pytest files
+    # pytest files, named after their wheel so a name filter selects them
     while IFS= read -r pyf; do
         local dir; dir="$(dirname "$pyf")"
+        [[ "$(basename "$dir")" == "test" ]] && dir="$(dirname "$dir")"
         local name; name="$(basename "$dir")"
         PYTEST+=("${name}|${pyf}")
     done < <(find "$REPO/wheels" -name "test_*.py" 2>/dev/null | sort)
@@ -372,10 +373,12 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     PAR_DIR=$(mktemp -d)
     trap "rm -rf '$PAR_DIR'" EXIT INT TERM
 
+    # Result files are keyed on a job number: names repeat (the wheel mag_cal
+    # and the project test mag_cal), and a repeat would overwrite a result.
     run_c_test_isolated() {
-        local name="$1" src_dir="$2" type="$3"
-        local rf="$PAR_DIR/${name}.result"
-        local of="$PAR_DIR/${name}.output"
+        local name="$1" src_dir="$2" type="$3" job="$4"
+        local rf="$PAR_DIR/${job}.result"
+        local of="$PAR_DIR/${job}.output"
 
         if is_vsf_dependent "$src_dir"; then
             if [[ -z "${VSF_PATH:-}" && ! -d "$REPO/vsf" ]]; then
@@ -409,9 +412,9 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     }
 
     run_pytest_isolated() {
-        local name="$1" pyf="$2"
-        local rf="$PAR_DIR/${name}_py.result"
-        local of="$PAR_DIR/${name}_py.output"
+        local name="$1" pyf="$2" job="$3"
+        local rf="$PAR_DIR/${job}.result"
+        local of="$PAR_DIR/${job}.output"
 
         local py; py="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
         if [[ -z "$py" ]] || ! "$py" -m pytest --version &>/dev/null 2>&1; then
@@ -433,10 +436,12 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     }
 
     RUNNING=0
+    JOBS=0
     for t in "${TARGETS[@]:-}"; do
         [[ -z "$t" ]] && continue
         IFS='|' read -r name src_dir type <<< "$t"
-        run_c_test_isolated "$name" "$src_dir" "$type" &
+        JOBS=$((JOBS + 1))
+        run_c_test_isolated "$name" "$src_dir" "$type" "$(printf '%05d' "$JOBS")" &
         RUNNING=$((RUNNING + 1))
         if [[ $RUNNING -ge $MAX_J ]]; then
             wait -n 2>/dev/null || wait
@@ -446,7 +451,8 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
     for p in "${PYTEST[@]:-}"; do
         [[ -z "$p" ]] && continue
         IFS='|' read -r name pyf <<< "$p"
-        run_pytest_isolated "$name" "$pyf" &
+        JOBS=$((JOBS + 1))
+        run_pytest_isolated "$name" "$pyf" "$(printf '%05d' "$JOBS")" &
         RUNNING=$((RUNNING + 1))
         if [[ $RUNNING -ge $MAX_J ]]; then
             wait -n 2>/dev/null || wait
@@ -477,6 +483,15 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
                 ;;
         esac
     done
+
+    # A job killed before it wrote its result must not read as a pass.
+    if [[ $TOTAL -ne $JOBS ]]; then
+        LOST=$((JOBS - TOTAL))
+        echo -e "  ${RED}FAIL${NC}  $LOST of $JOBS jobs left no result"
+        TOTAL=$JOBS
+        FAILED=$((FAILED + LOST))
+        FAIL_NAMES+=("no-result($LOST)")
+    fi
 else
     # Sequential mode (default)
     for t in "${TARGETS[@]:-}"; do
