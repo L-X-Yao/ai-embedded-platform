@@ -58,6 +58,13 @@ static void example(void) {
 - [x] Host C99 (mock I2C) — 21 tests, 39 assertions, 2026-04-29
 - [x] GD32F405 + XGZP6816D @ soft I2C ~50 kHz (PB6/PB7) — HIL verified 2026-04-27
 
+## Datasheet check
+
+Checked on 2026-11-06 against the Sencoch GZP6816D product specification V1.4, 2022.03.16. That is a sibling part, not the CFSensor XGZP6816D this driver names, so every difference below is only suspected. This check was not run on hardware. Nothing was changed: the owner decided this driver is checked but not fixed, because no board is available to retest it.
+
+- **Matched:** On the sibling part: address 0x78, command 0xAC, the 6-byte read frame, the pressure formula for 30 to 110 kPa, the temperature formula.
+- **Suspected:** Finding X1, the most serious: since commit 5ed3afd1 (2026-05-06) the flybox adapter `baro_i2c_write` in `projects/flybox/src/drivers/baro/baro_driver.c` goes through `soft_i2c_write`, which fails on a NACKed data byte. The manual shows the chip NACKing 0xAC, and commit d4345b79 recorded the real part doing so, with every read failing. So `xgzp6816d_trigger` may fail every cycle and the barometer may no longer read on the board. The HIL run listed above (2026-04-27) predates that commit, and the git log records no later hardware run. The fault would be in the adapter, which does what Known issues below warns against. Other suspicions: `XGZP6816D_CONV_MS` is 25 ms where the sibling manual gives 203 ms at its default oversampling and 19 ms at 8x, so reads may return old data. `xgzp6816d_read` ignores the status byte, so it also returns data while bit 5 says busy. A raw pressure of 0 is clamped to a plausible 30 kPa, while the manual's example code treats it as no reading. The model and mock return status 0x00 although bit 2 is fixed at 1, and the model never shows a conversion in progress.
+
 ## Known issues
 
 - I2C HAL shape is generic write/read (not register-paired) because XGZP6816D uses bare command bytes + streamed data reads; adapters from register-paired I2C (like flybox's software I2C) must not check ACK on data bytes after the command byte (chip NACKs it — see flybox d4345b7 fix)
