@@ -33,6 +33,11 @@
 /* User register default (14-bit temp / 12-bit RH) */
 #define SI_USER_REG_DEFAULT         0x3Au
 
+/* p.26: VDDS is read-only and "reserved register bits will always read back
+ * as "1," and are not affected by write operations". That leaves RES1, HTRE
+ * and RES0. */
+#define SI_USER_REG_WRITABLE        0x85u
+
 /* Worst-case conversion times from Table 2 (p.5), rounded up to whole ms.
  * An RH measurement also measures temperature: 12 ms + 10.8 ms. */
 #define SI_TCONV_RH_MS              23u
@@ -88,22 +93,26 @@ static uint8_t si7021_model_crc8(const uint8_t *data, uint16_t len)
     return crc;
 }
 
-/* Convert humidity % to raw: raw = (RH + 6) / 125 * 65536 */
+/* Convert humidity % to raw: raw = (RH + 6) / 125 * 65536.
+ * p.21: "A humidity measurement will always return XXXXXX10 in the LSB
+ * field." */
 static uint16_t si7021_model_hum_to_raw(float rh)
 {
-    float norm = (rh + 6.0f) / 125.0f;
-    if (norm < 0.0f) norm = 0.0f;
-    if (norm > 1.0f) norm = 1.0f;
-    return (uint16_t)(norm * 65536.0f);
+    float code = (rh + 6.0f) / 125.0f * 65536.0f;
+    if (code < 0.0f) code = 0.0f;
+    if (code > 65535.0f) code = 65535.0f;
+    return (uint16_t)(((uint16_t)code & 0xFFFCu) | 0x0002u);
 }
 
-/* Convert temperature C to raw: raw = (T + 46.85) / 175.72 * 65536 */
+/* Convert temperature C to raw: raw = (T + 46.85) / 175.72 * 65536.
+ * p.22: "A temperature measurement will always return XXXXXX00 in the LSB
+ * field." */
 static uint16_t si7021_model_temp_to_raw(float temp_c)
 {
-    float norm = (temp_c + 46.85f) / 175.72f;
-    if (norm < 0.0f) norm = 0.0f;
-    if (norm > 1.0f) norm = 1.0f;
-    return (uint16_t)(norm * 65536.0f);
+    float code = (temp_c + 46.85f) / 175.72f * 65536.0f;
+    if (code < 0.0f) code = 0.0f;
+    if (code > 65535.0f) code = 65535.0f;
+    return (uint16_t)((uint16_t)code & 0xFFFCu);
 }
 
 /* --- I2C HAL callbacks --- */
@@ -132,7 +141,8 @@ static bool si7021_model_write(void *ctx, uint8_t dev_addr,
         m->last_cmd2 = data[1];
 
         if (cmd == SI_CMD_WRITE_USER_REG) {
-            m->user_reg = data[1];
+            m->user_reg = (uint8_t)((m->user_reg & ~SI_USER_REG_WRITABLE) |
+                                    (data[1] & SI_USER_REG_WRITABLE));
             m->pending_response = SI_RESP_NONE;
             return true;
         }
@@ -288,7 +298,7 @@ static void si7021_model_init(si7021_model_t *m)
     m->true_humidity_pct = 50.0f;
     m->user_reg = SI_USER_REG_DEFAULT;
     m->serial_a = 0x12345678;
-    m->serial_b = 0xABCDEF01;
+    m->serial_b = 0x15CDEF01;     /* p.24: SNB_3 0x15=21=Si7021 */
 }
 
 /* Helper: set simulated temperature */
