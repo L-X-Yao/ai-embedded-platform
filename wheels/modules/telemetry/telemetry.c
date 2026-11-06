@@ -148,7 +148,9 @@ static int fmt_json(telemetry_t *t, uint32_t timestamp)
 
     for (uint8_t i = 0; i < t->field_count; i++) {
         char fval[FLOAT_TEXT_SIZE];
-        fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
+        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
+            return -1;
+        }
         n = snprintf(tmp, sizeof(tmp), ",\"%s\":%s",
                      t->fields[i].name, fval);
         if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
@@ -181,7 +183,9 @@ static int fmt_csv(telemetry_t *t, uint32_t timestamp)
 
     for (uint8_t i = 0; i < t->field_count; i++) {
         char fval[FLOAT_TEXT_SIZE];
-        fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
+        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
+            return -1;
+        }
         n = snprintf(tmp, sizeof(tmp), ",%s", fval);
         if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
         n = buf_append(t->buf, pos, cap, tmp);
@@ -209,7 +213,9 @@ static int fmt_key_value(telemetry_t *t, uint32_t timestamp)
 
     for (uint8_t i = 0; i < t->field_count; i++) {
         char fval[FLOAT_TEXT_SIZE];
-        fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
+        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
+            return -1;
+        }
         n = snprintf(tmp, sizeof(tmp), " %s=%s",
                      t->fields[i].name, fval);
         if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }

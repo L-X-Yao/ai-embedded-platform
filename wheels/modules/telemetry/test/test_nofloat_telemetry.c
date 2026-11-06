@@ -121,6 +121,36 @@ TEST(test_non_finite_prints_zero)
     ASSERT_STR_EQ(text, "0");
 }
 
+/* A text that does not fit is refused whole, never cut. */
+TEST(test_float_refuses_a_buffer_too_small)
+{
+    char text[8];
+
+    ASSERT_EQ(fmt_float(text, 5, 25.5f), 4);
+    ASSERT_STR_EQ(text, "25.5");
+    ASSERT_EQ(fmt_float(text, 4, 25.5f), -1);
+
+    ASSERT_EQ(fmt_float(text, 6, -1.25f), 5);
+    ASSERT_STR_EQ(text, "-1.25");
+    ASSERT_EQ(fmt_float(text, 5, -1.25f), -1);
+
+    ASSERT_EQ(fmt_float(text, 3, 60.0f), 2);
+    ASSERT_STR_EQ(text, "60");
+    ASSERT_EQ(fmt_float(text, 2, 60.0f), -1);
+
+    ASSERT_EQ(fmt_float(text, 2, NAN), 1);
+    ASSERT_EQ(fmt_float(text, 1, NAN), -1);
+}
+
+/* FLOAT_TEXT_SIZE must hold the longest text there is. */
+TEST(test_float_text_size_holds_the_longest_text)
+{
+    char text[FLOAT_TEXT_SIZE];
+
+    ASSERT_EQ(fmt_float(text, (int)sizeof(text), -FLT_MAX), 40);
+    ASSERT_STR_EQ(text, "-340282346638528859811704183484516925440");
+}
+
 /* Printing with the real snprintf and trimming is the oracle, at any size. */
 TEST(test_float_text_matches_printf)
 {
@@ -160,5 +190,7 @@ TEST_MAIN("telemetry without float printf")
     RUN(test_float_is_published_without_float_printf);
     RUN(test_float_vectors);
     RUN(test_non_finite_prints_zero);
+    RUN(test_float_refuses_a_buffer_too_small);
+    RUN(test_float_text_size_holds_the_longest_text);
     RUN(test_float_text_matches_printf);
 TEST_MAIN_END()
