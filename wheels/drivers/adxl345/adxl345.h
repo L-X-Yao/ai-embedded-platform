@@ -33,7 +33,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* NULL: see adxl345_init */
     void *ctx;
 } adxl345_i2c_t;
 
@@ -84,7 +84,11 @@ typedef struct {
 #define ADXL345_ADDR_ALT       0x1D
 #define ADXL345_CHIP_ID        0xE5
 
-/** @thread_safe: no @isr_safe: no */
+/** Configure the part and start measuring, then wait through delay_ms for the
+ *  turn-on time, 1/(data rate) + 1.1 ms: 12 ms at 100 Hz, but 643 ms at 1.56 Hz
+ *  and 10 s at 0.10 Hz. With no delay_ms the caller must wait that long before
+ *  the first adxl345_read, which until then returns zeros.
+ *  @thread_safe: no @isr_safe: no */
 adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
                            const adxl345_cfg_t *cfg);
 

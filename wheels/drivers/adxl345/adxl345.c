@@ -30,6 +30,13 @@
 /* Full-resolution scale: 3.9 mg/LSB = 0.0039 g/LSB */
 #define SCALE_FULL_RES  0.0039f
 
+/* Turn-on time of each accepted rate code, rounded up to whole milliseconds.
+ * Data sheet Rev. G, p.4, note 7: "approximately tau + 1.1 in milliseconds,
+ * where tau = 1/(data rate)". */
+static const uint16_t TURN_ON_MS[] = {
+    10002, 5002, 2566, 1284, 643, 321, 162, 82, 42, 22, 12, 7, 4, 3,
+};
+
 static bool write_reg(const adxl345_t *dev, uint8_t reg, uint8_t val)
 {
     return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, reg, val);
@@ -87,6 +94,12 @@ adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
     if (!write_reg(dev, REG_POWER_CTL, POWER_MEASURE))
     {
         return ADXL345_ERR_I2C;
+    }
+
+    /* The data registers hold no sample until the turn-on time has passed */
+    if (i2c->delay_ms)
+    {
+        i2c->delay_ms(i2c->ctx, TURN_ON_MS[cfg->data_rate]);
     }
 
     INVARIANT(dev->i2c != NULL);
