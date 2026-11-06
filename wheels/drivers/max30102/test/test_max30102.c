@@ -141,9 +141,10 @@ TEST(test_init_writes_defaults)
     ASSERT_EQ(mock_regs[REG_FIFO_CONFIG], 0x10);
     /* SPO2 config = 0x27 (ADC 4096, 100 sps, 411 us) */
     ASSERT_EQ(mock_regs[REG_SPO2_CONFIG], 0x27);
-    /* LED defaults: 0x20 each */
-    ASSERT_EQ(mock_regs[REG_LED1_PA], 0x20);
-    ASSERT_EQ(mock_regs[REG_LED2_PA], 0x20);
+    /* LED defaults: 6.4 mA typical each, which 19-7740 Rev 0 Table 8 (p21)
+     * gives as 0x1F */
+    ASSERT_EQ_HEX(mock_regs[REG_LED1_PA], 0x1F);
+    ASSERT_EQ_HEX(mock_regs[REG_LED2_PA], 0x1F);
     /* Mode = SpO2 (0x03) */
     ASSERT_EQ(mock_regs[REG_MODE_CONFIG] & 0x07, 0x03);
 }
