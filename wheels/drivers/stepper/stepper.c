@@ -18,6 +18,7 @@
 
 #include "stepper.h"
 #include "contract.h"
+#include <string.h>
 
 #define RAMP_Q 8U   /* fractional bits of the ramp delay */
 
@@ -48,7 +49,14 @@ static void set_direction(const stepper_hal_t *hal, stepper_dir_t dir)
 stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
                            uint16_t max_speed, uint16_t accel)
 {
-    if (!s || !hal)
+    if (!s)
+        return STEPPER_ERR_PARAM;
+
+    /* s->hal stays NULL unless init succeeds: the other calls refuse a device
+     * without it. This also leaves the position at 0 and the state idle. */
+    memset(s, 0, sizeof(*s));
+
+    if (!hal)
         return STEPPER_ERR_PARAM;
     if (!hal->step_pin || !hal->dir_pin || !hal->delay_us)
         return STEPPER_ERR_PARAM;
@@ -58,20 +66,13 @@ stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
     s->hal = hal;
     s->max_speed = max_speed;
     s->accel = accel;
-    s->position = 0;
-    s->state = STEPPER_STATE_IDLE;
-    s->step_count = 0;
-    s->accel_steps = 0;
-    s->decel_start = 0;
-    s->total_steps = 0;
-    s->current_delay_us = 0;
     INVARIANT(s->hal != NULL);
     return STEPPER_OK;
 }
 
 stepper_err_t stepper_move(stepper_t *s, int32_t steps)
 {
-    if (!s)
+    if (!s || !s->hal)
         return STEPPER_ERR_PARAM;
     if (steps == 0)
         return STEPPER_OK;
@@ -200,7 +201,7 @@ stepper_err_t stepper_move_to(stepper_t *s, int32_t target)
 
 void stepper_step_once(stepper_t *s, stepper_dir_t dir)
 {
-    if (!s) return;
+    if (!s || !s->hal) return;
     set_direction(s->hal, dir);
     pulse_step(s->hal);
     s->position += (dir == STEPPER_DIR_CW) ? 1 : -1;

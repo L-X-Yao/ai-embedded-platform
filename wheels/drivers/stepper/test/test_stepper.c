@@ -448,6 +448,50 @@ TEST(test_triangle_even_peaks_on_the_ramp)
     }
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(stepper_t *s)
+{
+    mock_reset();
+    ASSERT_EQ(stepper_move(s, 10), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_move(s, 0), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_move_to(s, 10), STEPPER_ERR_PARAM);
+    stepper_step_once(s, STEPPER_DIR_CW);
+    ASSERT_EQ(stepper_get_position(s), 0);
+    ASSERT_EQ(stepper_get_state(s), STEPPER_STATE_IDLE);
+    ASSERT_EQ(g_mock.step_count, 0);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static stepper_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* s holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    stepper_t s;
+    stepper_hal_t no_step = mock_hal;
+    no_step.step_pin = NULL;
+
+    memset(&s, 0xA5, sizeof(s));
+    ASSERT_EQ(stepper_init(&s, NULL, 1000, 500), STEPPER_ERR_PARAM);
+    assert_device_refused(&s);
+
+    memset(&s, 0xA5, sizeof(s));
+    ASSERT_EQ(stepper_init(&s, &no_step, 1000, 500), STEPPER_ERR_PARAM);
+    assert_device_refused(&s);
+
+    memset(&s, 0xA5, sizeof(s));
+    ASSERT_EQ(stepper_init(&s, &mock_hal, 0, 500), STEPPER_ERR_PARAM);
+    assert_device_refused(&s);
+
+    memset(&s, 0xA5, sizeof(s));
+    ASSERT_EQ(stepper_init(&s, &mock_hal, 1000, 0), STEPPER_ERR_PARAM);
+    assert_device_refused(&s);
+}
+
 TEST_MAIN("stepper")
     RUN(test_init_valid);
     RUN(test_init_null);
@@ -477,4 +521,6 @@ TEST_MAIN("stepper")
     RUN(test_triangle_3_steps_stays_slow);
     RUN(test_triangle_odd_peaks_on_the_ramp);
     RUN(test_triangle_even_peaks_on_the_ramp);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
