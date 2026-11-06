@@ -216,6 +216,7 @@ mqtt_client_err_t mqtt_client_connect(mqtt_client_t *c)
     c->inflight_sub_id  = 0;
     c->connect_start_ms = now_ms(c);
     c->last_rx_ms       = c->connect_start_ms;
+    c->last_ping_ms     = c->connect_start_ms;
     set_state(c, MQTT_CLIENT_CONNECTING, 0);
     return MQTT_CLIENT_OK;
 }
@@ -350,10 +351,22 @@ mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
     /* keepalive */
     if (c->cfg.keepalive_s > 0) {
         uint32_t ka_ms = (uint32_t)c->cfg.keepalive_s * 1000;
+        uint32_t ping_ms = ka_ms * 3 / 4;
 
-        if ((t - c->last_tx_ms) >= (ka_ms * 3 / 4)) {
+        /*
+         * Silence either way calls for a PINGREQ.  A client that only
+         * publishes QoS 0 sends all the time, but the broker owes it no
+         * packet, so the check below would cut it off unless it asks.
+         * last_ping_ms holds that to one per period while the answer is due.
+         */
+        bool tx_idle = (t - c->last_tx_ms) >= ping_ms;
+        bool rx_idle = (t - c->last_rx_ms) >= ping_ms &&
+                       (t - c->last_ping_ms) >= ping_ms;
+        if (tx_idle || rx_idle) {
             int len = mqtt_packet_build_pingreq(c->tx_buf, sizeof(c->tx_buf));
-            if (len > 0) send_raw(c, c->tx_buf, (uint16_t)len);
+            if (len > 0 && send_raw(c, c->tx_buf, (uint16_t)len) == 0) {
+                c->last_ping_ms = t;
+            }
         }
 
         if ((t - c->last_rx_ms) >= (ka_ms * 3 / 2)) {
