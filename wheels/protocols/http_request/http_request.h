@@ -56,7 +56,10 @@ typedef struct {
  * @param cap      Buffer capacity.
  * @param cfg      Request configuration. Must not be NULL.
  * @param out_len  Receives bytes written (excluding NUL). Must not be NULL.
- * @return         HTTP_REQUEST_OK on success.
+ * @return         HTTP_REQUEST_OK on success. HTTP_REQUEST_ERR_PARAM if the
+ *                 path holds a space, CR or LF, or the host, a header name
+ *                 or a header value holds a CR or LF: they would add lines
+ *                 to the request. Percent-encode the path first.
  * @thread_safe: yes @isr_safe: yes
  */
 http_request_err_t http_request_build(uint8_t *buf, size_t cap,
@@ -76,7 +79,8 @@ http_request_err_t http_request_build(uint8_t *buf, size_t cap,
  * @param offset   Byte offset to resume from.
  * @param end      Last byte position (0 = open-ended, i.e. "offset-").
  * @param out_len  Receives bytes written. Must not be NULL.
- * @return         HTTP_REQUEST_OK on success.
+ * @return         HTTP_REQUEST_OK on success. HTTP_REQUEST_ERR_PARAM as for
+ *                 http_request_build.
  * @thread_safe: yes @isr_safe: yes
  */
 http_request_err_t http_request_build_range_get(uint8_t *buf, size_t cap,

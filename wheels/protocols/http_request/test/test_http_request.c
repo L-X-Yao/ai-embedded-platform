@@ -269,7 +269,105 @@ TEST(test_null_header_name_skipped)
     ASSERT_TRUE(contains(buf, len, "Good: yes\r\n"));
 }
 
+/* ---------- line breaks must not reach the wire ---------- */
+
+static http_request_err_t build_with(const char *host, const char *path,
+                                     const char *name, const char *value,
+                                     size_t *len)
+{
+    static uint8_t buf[512];
+    http_header_t hdrs[] = { { .name = name, .value = value } };
+    http_request_cfg_t cfg = {
+        .method       = HTTP_METHOD_GET,
+        .host         = host,
+        .path         = path,
+        .headers      = hdrs,
+        .header_count = 1,
+    };
+    return http_request_build(buf, sizeof(buf), &cfg, len);
+}
+
+TEST(test_path_cannot_add_a_second_request)
+{
+    size_t len = 99;
+    ASSERT_EQ(build_with("h", "/a HTTP/1.1\r\nHost: h\r\n\r\nGET /evil",
+                         "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(len, (size_t)0);
+}
+
+TEST(test_path_refuses_cr_lf_and_space)
+{
+    size_t len;
+    ASSERT_EQ(build_with("h", "/a\rb", "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h", "/a\nb", "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h", "/a b", "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+}
+
+TEST(test_host_refuses_cr_lf)
+{
+    size_t len;
+    ASSERT_EQ(build_with("h\r\nX: y", "/", "N", "v", &len),
+              HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h\ry", "/", "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h\ny", "/", "N", "v", &len), HTTP_REQUEST_ERR_PARAM);
+}
+
+TEST(test_header_cannot_add_a_header)
+{
+    size_t len;
+    ASSERT_EQ(build_with("h", "/", "N", "1\r\nX-Injected: yes", &len),
+              HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h", "/", "N\r\nX-Injected: yes", "1", &len),
+              HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h", "/", "N", "a\nb", &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(build_with("h", "/", "N\ry", "b", &len), HTTP_REQUEST_ERR_PARAM);
+}
+
+TEST(test_later_header_is_checked_too)
+{
+    uint8_t buf[256];
+    size_t len;
+    http_header_t hdrs[] = {
+        { .name = "Good", .value = "yes" },
+        { .name = NULL,   .value = "skipped\r\n" },
+        { .name = "Bad",  .value = "a\r\nb" },
+    };
+    http_request_cfg_t cfg = {
+        .method       = HTTP_METHOD_GET,
+        .path         = "/",
+        .headers      = hdrs,
+        .header_count = 3,
+    };
+    ASSERT_EQ(http_request_build(buf, sizeof(buf), &cfg, &len),
+              HTTP_REQUEST_ERR_PARAM);
+}
+
+TEST(test_range_get_refuses_line_breaks)
+{
+    uint8_t buf[256];
+    size_t len;
+    ASSERT_EQ(http_request_build_range_get(buf, sizeof(buf), "h",
+              "/fw\r\nX: y", 0, 0, &len), HTTP_REQUEST_ERR_PARAM);
+    ASSERT_EQ(http_request_build_range_get(buf, sizeof(buf), "h\r\nX: y",
+              "/fw", 0, 0, &len), HTTP_REQUEST_ERR_PARAM);
+}
+
+TEST(test_spaces_stay_legal_in_host_and_header_value)
+{
+    size_t len;
+    /* Only the request line is split by spaces (RFC 9112 section 3). */
+    ASSERT_EQ(build_with("h", "/", "User-Agent", "a b c", &len),
+              HTTP_REQUEST_OK);
+}
+
 TEST_MAIN("http_request")
+    RUN(test_path_cannot_add_a_second_request);
+    RUN(test_path_refuses_cr_lf_and_space);
+    RUN(test_host_refuses_cr_lf);
+    RUN(test_header_cannot_add_a_header);
+    RUN(test_later_header_is_checked_too);
+    RUN(test_range_get_refuses_line_breaks);
+    RUN(test_spaces_stay_legal_in_host_and_header_value);
     RUN(test_simple_get);
     RUN(test_post_with_body);
     RUN(test_head_method);
