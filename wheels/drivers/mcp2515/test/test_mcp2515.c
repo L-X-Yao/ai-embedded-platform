@@ -456,6 +456,29 @@ TEST(test_no_message)
     ASSERT_EQ(e, MCP2515_ERR_NO_MSG);
 }
 
+/* DS20001801J p.35: filters are unknown after POR, and EXIDE gives each one a
+ * single frame format. The masks have no such bit, so zero masks alone do not
+ * say which format a buffer takes. RXF0 and RXF1 serve RXB0, the rest RXB1. */
+TEST(test_init_accepts_both_frame_formats)
+{
+    static const uint8_t filter_base[6] = { 0x00, 0x04, 0x08, 0x10, 0x14, 0x18 };
+
+    mock_reset();
+    for (int i = 0; i < 6; i++)
+        memset(&mock_regs[filter_base[i]], 0xFF, 4);
+
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    for (int i = 0; i < 6; i++) {
+        uint8_t exide = (i % 2 == 1) ? 0x08 : 0x00;
+        ASSERT_EQ_HEX(mock_regs[filter_base[i]], 0x00);
+        ASSERT_EQ_HEX(mock_regs[filter_base[i] + 1], exide);
+        ASSERT_EQ_HEX(mock_regs[filter_base[i] + 2], 0x00);
+        ASSERT_EQ_HEX(mock_regs[filter_base[i] + 3], 0x00);
+    }
+}
+
 TEST(test_set_filter)
 {
     mock_reset();
@@ -1074,6 +1097,7 @@ TEST_MAIN("mcp2515")
     RUN(test_receive_message);
     RUN(test_has_message);
     RUN(test_no_message);
+    RUN(test_init_accepts_both_frame_formats);
     RUN(test_set_filter);
     RUN(test_set_mask);
     RUN(test_read_status);
