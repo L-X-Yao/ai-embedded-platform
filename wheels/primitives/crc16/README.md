@@ -64,7 +64,7 @@ python3 -m pytest test/test_crc16.py -v
   - Single byte 0x00 / 0xFF
   - Step API equivalent to bulk API
   - Segmented step (3+4+3) equivalent to one-shot
-  - flybox 34-byte deterministic frame (regression guard)
+  - 34-byte deterministic pattern (regression guard)
   - 256-byte all-zeros / all-ones buffers (step vs bulk consistency)
   - Single-byte uniqueness (all 256 CRCs distinct — proves table collision-free)
   - CRC residue self-check (append CRC little-endian → residue is 0x0000)
