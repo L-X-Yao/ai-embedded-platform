@@ -15,6 +15,7 @@ static int      mock_op_count;
 static int      mock_fail_at;
 static int      mock_write_count;
 static int      mock_read_count;
+static int      mock_rst_count;
 
 static void mock_reset(void)
 {
@@ -24,6 +25,7 @@ static void mock_reset(void)
     mock_fail_at    = -1;
     mock_write_count = 0;
     mock_read_count  = 0;
+    mock_rst_count   = 0;
 }
 
 static bool mock_should_fail(void)
@@ -65,7 +67,15 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr,
     if (mock_should_fail()) return false;
     mock_write_count++;
     if (len >= 2) {
-        mock_regs16[reg] = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+        uint16_t val = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+        if (reg == 0x00 && (val & 0x8000u)) {
+            /* "Resets all registers to default values; this bit self-clears" */
+            mock_rst_count++;
+            mock_regs16[0x05] = 0;
+            mock_regs16[0x00] = 0x4127;
+        } else {
+            mock_regs16[reg] = val;
+        }
     }
     return true;
 }
@@ -247,9 +257,11 @@ TEST(test_reset)
 {
     setup();
     mock_reset();
+    mock_set_reg16(0x05, 0x0A00);
     ASSERT_EQ(ina226_reset(&dev), INA226_OK);
-    uint16_t config = mock_get_reg16(0x00);
-    ASSERT_TRUE(config & 0x8000u);
+    ASSERT_EQ(mock_rst_count, 1);
+    ASSERT_EQ_HEX(mock_get_reg16(0x00), 0x4127);
+    ASSERT_EQ_HEX(mock_get_reg16(0x05), 0x0000);
 }
 
 TEST(test_reset_i2c_fail)
