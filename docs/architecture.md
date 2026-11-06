@@ -209,7 +209,7 @@ Wheel 和 RTOS 组件（如 RT-Thread 的 freemodbus、FAL、FinSH）**不冲突
 | 场景 | 应对 |
 |------|------|
 | Wheel 增长到 200+ | 扁平架构天然可扩展，每个 wheel 独立 |
-| 多项目复用同一 wheel | 零成本——复制目录或 submodule |
+| 多项目复用同一 wheel | 零成本——复制目录和 `tooling/harness/contract.h`，或用 submodule（include path 同样要有 `tooling/harness`） |
 | 需要跨 wheel 统一行为 | 通过 api-conventions.md 约束，不通过代码依赖 |
 
 ### 极端
