@@ -28,9 +28,16 @@ Excluded:
 ## Source
 
 Vendored from user's production copy (previously used in an RT-Thread
-project). Core source files are unmodified from FlashDB v2.1.0, with one
-exception: `src/fdb_kvdb.c` casts to `uint32_t` before a shift by 24, which
-UBSan flagged as overflowing `int`. The change is marked in the file.
+project). Core source files are unmodified from FlashDB v2.1.0, except for
+these changes to `src/fdb_kvdb.c`, each marked `Local change` in the file:
+
+- `find_next_kv_addr` casts to `uint32_t` before a shift by 24, which UBSan
+  flagged as overflowing `int`.
+- `read_kv` treats a record with `name_len` above `FDB_KV_NAME_MAX` as bad
+  even when its CRC is valid. Upstream reads the whole name into the fixed
+  `kv->name` first and overruns it, so a build with a smaller limit than
+  the one that wrote the flash crashed in `fdb_kvdb_init`.
+
 The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 
 ## Update procedure
@@ -39,5 +46,5 @@ The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 2. Copy `inc/flashdb.h`, `inc/fdb_def.h`, `inc/fdb_low_lvl.h` to `vendor/inc/`
 3. Copy `src/fdb.c`, `src/fdb_kvdb.c`, `src/fdb_tsdb.c`, `src/fdb_utils.c` to `vendor/src/`
 4. Run tests: `cd test && cmake -GNinja -S . -B build && cmake --build build && ./build/test_kvs`
-5. Reapply the `fdb_kvdb.c` change above unless upstream has fixed it
+5. Reapply the `fdb_kvdb.c` changes above unless upstream has fixed them
 6. Update version and date in this file
