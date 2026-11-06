@@ -378,6 +378,40 @@ TEST(test_ramp_extreme_range)
     ASSERT_TRUE(within_pct(g_ramp_last, 956008, 5));
 }
 
+TEST(test_move_to_refuses_unreachable_distance)
+{
+    stepper_t s;
+    stepper_init(&s, &mock_hal, 1000, 500);
+    mock_reset();
+    stepper_set_position(&s, -2000000000);
+    ASSERT_EQ(stepper_move_to(&s, 2000000000), STEPPER_ERR_PARAM);
+    stepper_set_position(&s, 2000000000);
+    ASSERT_EQ(stepper_move_to(&s, -2000000000), STEPPER_ERR_PARAM);
+    /* One past the int32_t range in each direction. */
+    stepper_set_position(&s, -1);
+    ASSERT_EQ(stepper_move_to(&s, INT32_MAX), STEPPER_ERR_PARAM);
+    stepper_set_position(&s, 1);
+    ASSERT_EQ(stepper_move_to(&s, INT32_MIN), STEPPER_ERR_PARAM);
+    ASSERT_EQ(stepper_get_position(&s), 1);
+    ASSERT_EQ(g_mock.step_count, 0);
+}
+
+TEST(test_move_to_near_the_limits)
+{
+    stepper_t s;
+    stepper_init(&s, &mock_hal, 1000, 500);
+    mock_reset();
+    stepper_set_position(&s, INT32_MAX - 5);
+    ASSERT_EQ(stepper_move_to(&s, INT32_MAX), STEPPER_OK);
+    ASSERT_EQ(stepper_get_position(&s), INT32_MAX);
+    ASSERT_FALSE(g_mock.last_dir);
+    stepper_set_position(&s, INT32_MIN + 5);
+    ASSERT_EQ(stepper_move_to(&s, INT32_MIN), STEPPER_OK);
+    ASSERT_EQ(stepper_get_position(&s), INT32_MIN);
+    ASSERT_TRUE(g_mock.last_dir);
+    ASSERT_EQ(g_mock.step_count, 10);
+}
+
 TEST(test_triangle_3_steps_stays_slow)
 {
     /* Too short to accelerate: the middle step must not run at 5000 sps. */
@@ -438,6 +472,8 @@ TEST_MAIN("stepper")
     RUN(test_ramp_down_mirrors_ramp_up);
     RUN(test_ramp_low_accel);
     RUN(test_ramp_extreme_range);
+    RUN(test_move_to_refuses_unreachable_distance);
+    RUN(test_move_to_near_the_limits);
     RUN(test_triangle_3_steps_stays_slow);
     RUN(test_triangle_odd_peaks_on_the_ramp);
     RUN(test_triangle_even_peaks_on_the_ramp);

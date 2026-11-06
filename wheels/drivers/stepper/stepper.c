@@ -192,7 +192,10 @@ stepper_err_t stepper_move_to(stepper_t *s, int32_t target)
 {
     if (!s)
         return STEPPER_ERR_PARAM;
-    return stepper_move(s, target - s->position);
+    int64_t distance = (int64_t)target - (int64_t)s->position;
+    if (distance > INT32_MAX || distance < INT32_MIN)
+        return STEPPER_ERR_PARAM;
+    return stepper_move(s, (int32_t)distance);
 }
 
 void stepper_step_once(stepper_t *s, stepper_dir_t dir)
