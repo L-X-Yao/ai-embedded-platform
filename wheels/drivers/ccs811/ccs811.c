@@ -189,20 +189,23 @@ ccs811_err_t ccs811_set_env_data(const ccs811_t *dev, uint16_t humidity,
         return CCS811_ERR_PARAM;
     }
 
-    /*
-     * ENV_DATA register (0x05): 4 bytes hum_msb, hum_lsb, temp_msb, temp_lsb.
-     * With single-byte write_reg HAL we write humidity MSB first, then
-     * temperature MSB to the next register offset. This is a limitation
-     * of the register-based HAL; full 4-byte write needs write_regs.
-     */
-    uint8_t hum_msb = (uint8_t)(humidity >> 8);
-    if (!write_reg(dev, REG_ENV_DATA, hum_msb))
+    /* A 0.5 step is one count of the high byte, so larger values do not fit */
+    if (humidity > 0xFF || temperature > 0xFF)
     {
-        return CCS811_ERR_I2C;
+        return CCS811_ERR_PARAM;
     }
 
-    uint8_t temp_msb = (uint8_t)(temperature >> 8);
-    if (!write_reg(dev, (uint8_t)(REG_ENV_DATA + 2), temp_msb))
+    /*
+     * ENV_DATA (0x05) is one 4-byte mailbox, written in one transaction:
+     * humidity high and low, then temperature high and low, each in 1/512
+     * units. The low bytes hold the fraction below 0.5, which is always 0.
+     */
+    const uint8_t frame[5] = {
+        REG_ENV_DATA,
+        (uint8_t)humidity, 0x00,
+        (uint8_t)temperature, 0x00,
+    };
+    if (!write_raw(dev, frame, sizeof(frame)))
     {
         return CCS811_ERR_I2C;
     }
