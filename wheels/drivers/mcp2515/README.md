@@ -26,7 +26,7 @@ mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg);
 mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg);
 bool          mcp2515_has_message(mcp2515_t *dev);
 mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num, uint32_t id, bool extended);
-mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num, uint32_t mask);
+mcp2515_err_t mcp2515_set_mask(mcp2515_t *dev, uint8_t mask_num, uint32_t mask, bool extended);
 uint8_t       mcp2515_read_status(mcp2515_t *dev);
 uint8_t       mcp2515_read_errors(mcp2515_t *dev);
 ```

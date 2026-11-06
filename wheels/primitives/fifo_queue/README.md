@@ -25,11 +25,11 @@ None.
 
 ```c
 typedef enum {
-    FIFO_OK         =  0,
-    FIFO_ERR_PARAMS = -1,
-    FIFO_ERR_FULL   = -2,
-    FIFO_ERR_EMPTY  = -3,
-} fifo_err_t;
+    FIFO_QUEUE_OK        =  0,
+    FIFO_QUEUE_ERR_PARAM = -1,
+    FIFO_QUEUE_ERR_FULL  = -2,
+    FIFO_QUEUE_ERR_EMPTY = -3,
+} fifo_queue_err_t;
 
 typedef struct {
     uint8_t *buf;
@@ -40,11 +40,11 @@ typedef struct {
     uint16_t count;
 } fifo_queue_t;
 
-fifo_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
+fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
                            uint16_t capacity, uint16_t elem_size);
-fifo_err_t fifo_queue_push(fifo_queue_t *q, const void *item);
-fifo_err_t fifo_queue_pop(fifo_queue_t *q, void *item);
-fifo_err_t fifo_queue_peek(const fifo_queue_t *q, void *item);
+fifo_queue_err_t fifo_queue_push(fifo_queue_t *q, const void *item);
+fifo_queue_err_t fifo_queue_pop(fifo_queue_t *q, void *item);
+fifo_queue_err_t fifo_queue_peek(const fifo_queue_t *q, void *item);
 uint16_t   fifo_queue_count(const fifo_queue_t *q);
 uint16_t   fifo_queue_free(const fifo_queue_t *q);
 bool       fifo_queue_is_empty(const fifo_queue_t *q);

@@ -34,7 +34,9 @@ typedef struct {
 i2c_scan_err_t i2c_scan(probe, probe_ctx, result);
 
 /* Scan sub-range [start, end] inclusive */
-i2c_scan_err_t i2c_scan_range(probe, probe_ctx, start, end, result);
+i2c_scan_err_t i2c_scan_range(i2c_scan_probe_fn probe, void *probe_ctx,
+                               uint8_t start, uint8_t end,
+                               i2c_scan_result_t *result);
 
 /* Scan with per-device callback (no array limit) */
 i2c_scan_err_t i2c_scan_callback(probe, probe_ctx, found, found_ctx);

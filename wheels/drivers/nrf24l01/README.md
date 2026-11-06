@@ -50,7 +50,7 @@ nrf24_err_t nrf24_set_mode(nrf24_t *dev, nrf24_mode_t mode);
 nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate);
 nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power);
 nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len);
-nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t *len);
+nrf24_err_t nrf24_receive(nrf24_t *dev, uint8_t *data, uint8_t max_len, uint8_t *len);
 bool        nrf24_data_ready(nrf24_t *dev);
 nrf24_err_t nrf24_flush_tx(nrf24_t *dev);
 nrf24_err_t nrf24_flush_rx(nrf24_t *dev);
