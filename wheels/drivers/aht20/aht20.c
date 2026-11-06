@@ -31,6 +31,8 @@
 #define DELAY_POWER_ON_MS   40
 #define DELAY_MEASURE_MS    80
 #define DELAY_RESET_MS      20
+#define DELAY_BUSY_POLL_MS  10
+#define MAX_BUSY_POLLS      20    /* no limit in the manual: 200 ms past the 80 */
 
 /* ---- conversion ---- */
 #define RAW_DIVISOR         1048576.0f   /* 2^20 */
@@ -156,23 +158,30 @@ aht20_err_t aht20_read(aht20_t *dev, aht20_data_t *out)
 
     delay(dev, DELAY_MEASURE_MS);
 
-    /* read 7 bytes: status + 5 data bytes + CRC */
+    /* read 7 bytes: status + 5 data bytes + CRC, until bit 7 says it is done.
+     * Only then do the data and the CRC mean anything. */
     uint8_t buf[7];
-    if (!dev->i2c->read(dev->i2c->ctx, AHT20_ADDR, buf, 7))
+    for (uint8_t polls = 0; ; polls++)
     {
-        return AHT20_ERR_I2C;
+        if (!dev->i2c->read(dev->i2c->ctx, AHT20_ADDR, buf, 7))
+        {
+            return AHT20_ERR_I2C;
+        }
+        if (!(buf[0] & STATUS_BUSY_BIT))
+        {
+            break;
+        }
+        if (polls >= MAX_BUSY_POLLS)
+        {
+            return AHT20_ERR_TIMEOUT;
+        }
+        delay(dev, DELAY_BUSY_POLL_MS);
     }
 
     /* verify CRC over first 6 bytes (status + data) */
     if (aht20_crc8(buf, 6) != buf[6])
     {
         return AHT20_ERR_CRC;
-    }
-
-    /* check busy bit */
-    if (buf[0] & STATUS_BUSY_BIT)
-    {
-        return AHT20_ERR_I2C;
     }
 
     dev->status = buf[0];
