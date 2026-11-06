@@ -39,6 +39,18 @@
 /* ---- timing ---- */
 #define REFRESH_WAIT_MS 1u      /* results settle, commands get NACKed */
 
+/* ---- CTRL fields ---- */
+#define CTRL_HI_MODE_SHIFT  4u      /* SAMPLE_MODE is bits [15:12] */
+#define CTRL_HI_OTHER_MASK  0x0Fu   /* GPIO_ALERT2 and SLOW_ALERT1 */
+
+/* SAMPLE_MODE by pac1952_rate_t: the plain modes, not the adaptive ones */
+static const uint8_t sample_mode[] = {
+    [PAC1952_RATE_8SPS]    = 0x7u,
+    [PAC1952_RATE_64SPS]   = 0x6u,
+    [PAC1952_RATE_256SPS]  = 0x5u,
+    [PAC1952_RATE_1024SPS] = 0x4u,
+};
+
 /* ---- internal helpers ---- */
 
 /* REFRESH is a Send Byte: the command and no data.  The registers settle
@@ -203,11 +215,24 @@ pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate)
         return PAC1952_ERR_PARAM;
     if ((unsigned)rate > 3u)
         return PAC1952_ERR_PARAM;
+    if (!dev->i2c->write_raw || !dev->i2c->delay_ms)
+        return PAC1952_ERR_PARAM;
 
-    /* The rate is SAMPLE_MODE in bits [15:12] of the 16-bit CTRL register, which
-     * takes a Block Write. This HAL can only write one byte, and a byte at
-     * 0x01 and 0x02 would reach GPIO_ALERT2 and ACC_COUNT instead. */
-    return PAC1952_ERR_UNSUPPORTED;
+    /* CTRL is 16 bits, so it takes a Block Write: the register, then high
+     * and low byte.  Read it first to keep the pin and channel settings. */
+    uint8_t frame[3];
+    frame[0] = REG_CTRL;
+    if (!dev->i2c->read_regs(dev->i2c->ctx, PAC1952_DEV_ADDR, REG_CTRL,
+                             &frame[1], 2))
+        return PAC1952_ERR_I2C;
+
+    frame[1] = (uint8_t)((frame[1] & CTRL_HI_OTHER_MASK) |
+                         (uint8_t)(sample_mode[rate] << CTRL_HI_MODE_SHIFT));
+    if (!dev->i2c->write_raw(dev->i2c->ctx, PAC1952_DEV_ADDR, frame, 3))
+        return PAC1952_ERR_I2C;
+
+    /* A change to CTRL is activated by a REFRESH */
+    return send_refresh(dev);
 }
 
 pac1952_err_t pac1952_get_product_id(pac1952_t *dev, uint8_t *id)
