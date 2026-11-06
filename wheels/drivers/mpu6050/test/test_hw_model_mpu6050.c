@@ -169,6 +169,29 @@ TEST(test_reset_via_driver)
     ASSERT_EQ(model.hw.regs[MPU6050_REG_SMPLRT_DIV], 0x00);
 }
 
+TEST(test_reset_restores_what_init_set)
+{
+    setup();
+    mpu6050_cfg_t cfg = { .addr = MPU6050_ADDR_LOW,
+                          .accel_range = MPU6050_ACCEL_8G,
+                          .gyro_range = MPU6050_GYRO_1000DPS };
+    mpu6050_t dev;
+    ASSERT_EQ(mpu6050_init(&dev, &model_i2c, &cfg), MPU6050_OK);
+    ASSERT_EQ(mpu6050_reset(&dev), MPU6050_OK);
+
+    /* The reset alone leaves register 107 at 0x40 and the ranges at 0 (p.8) */
+    ASSERT_EQ(model.hw.regs[MPU6050_REG_PWR_MGMT_1] & 0x40, 0);   /* SLEEP */
+    ASSERT_EQ(model.hw.regs[MPU6050_REG_PWR_MGMT_1] & 0x07, 1);   /* CLKSEL */
+    ASSERT_EQ(model.hw.regs[MPU6050_REG_ACCEL_CONFIG], 2 << 3);   /* AFS_SEL */
+    ASSERT_EQ(model.hw.regs[MPU6050_REG_GYRO_CONFIG], 2 << 3);    /* FS_SEL */
+
+    /* The scale the driver kept matches the chip again: 4096 LSB/g at +-8 g */
+    mpu6050_model_set_accel(&model, 0, 0, 4096);
+    mpu6050_accel_t a;
+    ASSERT_EQ(mpu6050_read_accel(&dev, &a), MPU6050_OK);
+    ASSERT_NEAR(a.az_g, 1.0f, 0.001f);
+}
+
 TEST(test_different_accel_values)
 {
     setup();
@@ -198,5 +221,6 @@ TEST_MAIN("mpu6050 hardware model")
     RUN(test_who_am_i_readonly);
     RUN(test_data_registers_readonly);
     RUN(test_reset_via_driver);
+    RUN(test_reset_restores_what_init_set);
     RUN(test_different_accel_values);
 TEST_MAIN_END()

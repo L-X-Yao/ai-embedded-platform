@@ -27,13 +27,14 @@ typedef enum {
     MPU6050_ERR_I2C   = -1,
     MPU6050_ERR_ID    = -2,
     MPU6050_ERR_PARAM = -3,
+    MPU6050_ERR_TIMEOUT = -4,
 } mpu6050_err_t;
 
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional: see mpu6050_reset */
     void *ctx;
 } mpu6050_i2c_t;
 
@@ -86,7 +87,13 @@ mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out);
 /** @thread_safe: no @isr_safe: no */
 mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out);
 
-/** @thread_safe: no @isr_safe: no */
+/** Reset the chip, wait for DEVICE_RESET to clear, then wake it and restore the
+ *  ranges init set, as a reset alone leaves it asleep. Calls delay_ms for 1 ms
+ *  per poll, up to 1 s if the chip never finishes; with delay_ms NULL it polls
+ *  with no pause. Returns MPU6050_ERR_TIMEOUT if the bit never clears, with the
+ *  chip left unconfigured. Allow the same wait before the first read as after
+ *  mpu6050_init.
+ *  @thread_safe: no @isr_safe: no */
 mpu6050_err_t mpu6050_reset(mpu6050_t *dev);
 
 #ifdef __cplusplus
