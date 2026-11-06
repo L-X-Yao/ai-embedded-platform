@@ -15,7 +15,7 @@ static mcp23017_model_t model;
 
 static const mcp23017_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .read_regs = mcp23017_hw_model_read_regs,
     .delay_ms  = mcp23017_model_delay,
     .ctx       = &model.hw,
 };
@@ -38,7 +38,7 @@ static bool fail_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
 /* I2C that always fails writes */
 static const mcp23017_i2c_t fail_write_i2c = {
     .write_reg = fail_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .read_regs = mcp23017_hw_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -52,10 +52,8 @@ static const mcp23017_i2c_t fail_read_i2c = {
 };
 
 /* --- Interrupt hooks ---------------------------------------------------- *
- * DS20001952C p.25: "The interrupt remains active until the INTCAP or GPIO
- * register is read. Writing to these registers does not affect the
- * interrupt." The model has no interrupt engine, so these wrappers add that
- * rule and count writes to the read-only INTF and INTCAP registers.        */
+ * These wrappers count writes to the read-only INTF and INTCAP registers,
+ * and note whether interrupts were still enabled when a read cleared one.  */
 
 static int     hook_readonly_writes;
 static int     hook_fail_read_reg;
@@ -73,17 +71,11 @@ static bool hook_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
 {
     if (reg == hook_fail_read_reg)
         return false;
-    if (!hw_model_i2c_read_regs(ctx, dev_addr, reg, buf, len))
-        return false;
-    if (reg == MCP23017_REG_GPIOA || reg == MCP23017_REG_INTCAPA) {
-        model.hw.regs[MCP23017_REG_INTFA] = 0;
+    if (reg == MCP23017_REG_GPIOA || reg == MCP23017_REG_INTCAPA)
         hook_gpinten_at_clear |= model.hw.regs[MCP23017_REG_GPINTENA];
-    }
-    if (reg == MCP23017_REG_GPIOB || reg == MCP23017_REG_INTCAPB) {
-        model.hw.regs[MCP23017_REG_INTFB] = 0;
+    if (reg == MCP23017_REG_GPIOB || reg == MCP23017_REG_INTCAPB)
         hook_gpinten_at_clear |= model.hw.regs[MCP23017_REG_GPINTENB];
-    }
-    return true;
+    return mcp23017_hw_model_read_regs(ctx, dev_addr, reg, buf, len);
 }
 
 static const mcp23017_i2c_t hook_i2c = {
@@ -99,6 +91,18 @@ static void setup(void)
     hook_readonly_writes  = 0;
     hook_fail_read_reg    = -1;
     hook_gpinten_at_clear = 0;
+}
+
+static void reg_write(uint8_t reg, uint8_t val)
+{
+    model_i2c.write_reg(&model.hw, 0x20, reg, val);
+}
+
+static uint8_t reg_read(uint8_t reg)
+{
+    uint8_t val = 0;
+    model_i2c.read_regs(&model.hw, 0x20, reg, &val, 1);
+    return val;
 }
 
 /* --- init tests -------------------------------------------------------- */
@@ -132,16 +136,20 @@ TEST(test_init_clears_pending_interrupt)
 {
     setup();
     /* An MCU-only reset leaves the part as it was: enabled and pending */
-    model.hw.regs[MCP23017_REG_GPINTENA] = 0x04;
-    model.hw.regs[MCP23017_REG_GPINTENB] = 0x80;
-    mcp23017_model_set_intf(&model, true, 0x04);
-    mcp23017_model_set_intf(&model, false, 0x80);
+    reg_write(MCP23017_REG_GPINTENA, 0x04);
+    reg_write(MCP23017_REG_GPINTENB, 0x80);
+    mcp23017_model_set_pin_input_a(&model, 0x04);
+    mcp23017_model_set_pin_input_b(&model, 0x80);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    ASSERT_TRUE(mcp23017_model_int_active(&model, false));
 
     mcp23017_t dev;
     ASSERT_EQ(mcp23017_init(&dev, &hook_i2c, 0x20), MCP23017_OK);
 
     ASSERT_EQ(model.hw.regs[MCP23017_REG_INTFA], 0x00);
     ASSERT_EQ(model.hw.regs[MCP23017_REG_INTFB], 0x00);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+    ASSERT_FALSE(mcp23017_model_int_active(&model, false));
     /* Interrupts were off by then, so no new change could re-arm them */
     ASSERT_EQ(hook_gpinten_at_clear, 0x00);
 }
@@ -285,13 +293,11 @@ TEST(test_interrupt_flag_readonly)
     hw_model__write_reg(&model.hw, MCP23017_REG_INTFA, 0xFF);
     ASSERT_EQ(model.hw.regs[MCP23017_REG_INTFA], 0x00);
 
-    /* But model can set it for simulation */
-    mcp23017_model_set_intf(&model, true, 0x42);
-
+    /* Pins that change raise it */
     mcp23017_t dev;
     mcp23017_init(&dev, &model_i2c, 0x20);
-    /* Note: init resets registers, so re-set the flag */
-    mcp23017_model_set_intf(&model, true, 0x42);
+    mcp23017_set_interrupt(&dev, MCP23017_PORT_A, 0x42);
+    mcp23017_model_set_pin_input_a(&model, 0x42);
 
     uint8_t flags = 0;
     mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, &flags);
@@ -512,11 +518,9 @@ TEST(test_write_pin_clear_bit)
     mcp23017_set_direction(&dev, MCP23017_PORT_A, 0x00); /* all output */
     /* Set all bits, then clear bit 4 */
     mcp23017_write_port(&dev, MCP23017_PORT_A, 0xFF);
-    /* Write via OLAT: need to clear OLAT first */
-    model.hw.regs[MCP23017_REG_OLATA] = 0xFF;
     mcp23017_err_t err = mcp23017_write_pin(&dev, MCP23017_PORT_A, 4, false);
     ASSERT_EQ(err, MCP23017_OK);
-    ASSERT_EQ(model.hw.regs[MCP23017_REG_OLATA] & (1u << 4), 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[MCP23017_REG_OLATA], 0xEF);
 }
 
 /* --- read_pin param/i2c failure ----------------------------------------- */
@@ -680,13 +684,256 @@ TEST(test_read_interrupt_flag_port_b)
     setup();
     mcp23017_t dev;
     mcp23017_init(&dev, &model_i2c, 0x20);
-    mcp23017_model_set_intf(&model, false, 0x5A);
+    mcp23017_set_interrupt(&dev, MCP23017_PORT_B, 0x5A);
+    mcp23017_model_set_pin_input_b(&model, 0x5A);
     uint8_t flags = 0;
     ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_B, &flags), MCP23017_OK);
     ASSERT_EQ(flags, 0x5A);
 }
 
+/* --- the model against the manual ------------------------------------- */
+
+/* "Writing to this register modifies the Output Latch (OLAT) register", and
+ * "Reading from this register reads the port", p23 */
+TEST(test_gpio_write_fills_the_whole_latch)
+{
+    setup();
+    mcp23017_model_set_pin_input_a(&model, 0x0F);
+    reg_write(MCP23017_REG_GPIOA, 0xA5);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_OLATA), 0xA5);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0x0F);
+
+    /* The value written before the switch comes out with it */
+    reg_write(MCP23017_REG_IODIRA, 0x00);
+    ASSERT_EQ_HEX(model.pin_state_a, 0xA5);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0xA5);
+}
+
+TEST(test_gpio_read_joins_inputs_and_latch)
+{
+    setup();
+    reg_write(MCP23017_REG_IODIRB, 0xF0);
+    reg_write(MCP23017_REG_OLATB, 0x05);
+    mcp23017_model_set_pin_input_b(&model, 0xA0);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOB), 0xA5);
+}
+
+/* "A write to this register modifies the output latches that modifies the
+ * pins configured as outputs", p24, and GPIO "reflects the value on the
+ * port", p23 */
+TEST(test_olat_write_reaches_gpio)
+{
+    setup();
+    reg_write(MCP23017_REG_IODIRA, 0x00);
+    reg_write(MCP23017_REG_OLATA, 0x3C);
+    ASSERT_EQ_HEX(model.pin_state_a, 0x3C);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0x3C);
+}
+
+/* "A read from this register results in a read of the OLAT and not the port
+ * itself", p24 */
+TEST(test_olat_read_is_not_the_port)
+{
+    setup();
+    mcp23017_model_set_pin_input_a(&model, 0xFF);
+    reg_write(MCP23017_REG_OLATA, 0x00);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_OLATA), 0x00);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0xFF);
+}
+
+TEST(test_write_pin_reads_back_on_an_output)
+{
+    setup();
+    mcp23017_t dev;
+    mcp23017_init(&dev, &model_i2c, 0x20);
+    mcp23017_set_direction(&dev, MCP23017_PORT_A, 0x00);
+
+    bool level = false;
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 5, true), MCP23017_OK);
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 5, &level), MCP23017_OK);
+    ASSERT_TRUE(level);
+    ASSERT_EQ(mcp23017_write_pin(&dev, MCP23017_PORT_A, 5, false), MCP23017_OK);
+    ASSERT_EQ(mcp23017_read_pin(&dev, MCP23017_PORT_A, 5, &level), MCP23017_OK);
+    ASSERT_FALSE(level);
+}
+
+/* Table 3-1 on p12 gives 0Ah and 0Bh as the one IOCON, and bit 0 is
+ * unimplemented, Register 3-6 on p21 */
+TEST(test_iocon_is_one_register)
+{
+    setup();
+    reg_write(MCP23017_REG_IOCON_A, 0x40);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_IOCON_B), 0x40);
+    reg_write(MCP23017_REG_IOCON_B, 0x20);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_IOCON_A), 0x20);
+    reg_write(MCP23017_REG_IOCON_A, 0x01);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_IOCON_B), 0x00);
+}
+
+/* "GPIO register bit reflects the opposite logic state of the input pin",
+ * Register 3-2 on p18 */
+TEST(test_ipol_inverts_inputs_only)
+{
+    setup();
+    reg_write(MCP23017_REG_IODIRA, 0xF0);
+    reg_write(MCP23017_REG_OLATA, 0x05);
+    mcp23017_model_set_pin_input_a(&model, 0x50);
+    reg_write(MCP23017_REG_IPOLA, 0xFF);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0xA5);
+}
+
+/* "A set bit indicates that the associated pin caused the interrupt" (p22);
+ * INTCAP "captures the GPIO port value at the time the interrupt occurred"
+ * (p23) */
+TEST(test_ioc_fills_intf_and_intcap)
+{
+    setup();
+    reg_write(MCP23017_REG_GPINTENA, 0x04);
+    mcp23017_model_set_pin_input_a(&model, 0x06);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    ASSERT_FALSE(mcp23017_model_int_active(&model, false));
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTFA), 0x04);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTCAPA), 0x06);
+}
+
+/* "Only those pins that are configured as an input (IODIR register) with
+ * Interrupt-On-Change (IOC) enabled ... can cause an interrupt", p25 */
+TEST(test_ioc_needs_an_enabled_input)
+{
+    setup();
+    reg_write(MCP23017_REG_GPINTENA, 0x0F);
+    mcp23017_model_set_pin_input_a(&model, 0xF0);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+
+    reg_write(MCP23017_REG_IODIRB, 0x00);
+    reg_write(MCP23017_REG_GPINTENB, 0xFF);
+    reg_write(MCP23017_REG_OLATB, 0xFF);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, false));
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTFB), 0x00);
+}
+
+/* "Subsequent interrupt conditions on the port will not cause an interrupt
+ * to occur as long as the interrupt is not cleared" and "Writing to these
+ * registers does not affect the interrupt", p25 */
+TEST(test_ioc_holds_until_gpio_or_intcap_is_read)
+{
+    setup();
+    reg_write(MCP23017_REG_GPINTENA, 0xFF);
+    mcp23017_model_set_pin_input_a(&model, 0x01);
+    mcp23017_model_set_pin_input_a(&model, 0x03);
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTFA), 0x01);
+    ASSERT_EQ_HEX(model.hw.regs[MCP23017_REG_INTCAPA], 0x01);
+
+    reg_write(MCP23017_REG_GPIOA, 0x00);
+    reg_write(MCP23017_REG_INTCAPA, 0x00);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_GPIOA), 0x03);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTFA), 0x00);
+    /* "The register remains unchanged until the interrupt is cleared", and
+     * it "is updated only when an interrupt occurs", p23 */
+    ASSERT_EQ_HEX(model.hw.regs[MCP23017_REG_INTCAPA], 0x01);
+
+    mcp23017_model_set_pin_input_a(&model, 0x07);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    ASSERT_EQ_HEX(reg_read(MCP23017_REG_INTCAPA), 0x07);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+}
+
+/* "The new initial state for the pin is a logic '0' after the interrupt is
+ * cleared", p25 */
+TEST(test_ioc_on_pin_change_takes_the_new_level)
+{
+    setup();
+    mcp23017_model_set_pin_input_a(&model, 0x01);
+    reg_write(MCP23017_REG_GPINTENA, 0x01);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+
+    mcp23017_model_set_pin_input_a(&model, 0x00);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    (void)reg_read(MCP23017_REG_GPIOA);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+
+    mcp23017_model_set_pin_input_a(&model, 0x00);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+    mcp23017_model_set_pin_input_a(&model, 0x01);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+}
+
+/* "The interrupt condition will remain as long as the condition exists,
+ * regardless if the INTCAP or GPIO is read", p25 */
+TEST(test_ioc_from_defval_stays_while_the_pin_differs)
+{
+    setup();
+    reg_write(MCP23017_REG_DEFVALA, 0x01);
+    reg_write(MCP23017_REG_INTCONA, 0x01);
+    mcp23017_model_set_pin_input_a(&model, 0x01);
+    reg_write(MCP23017_REG_GPINTENA, 0x01);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+
+    mcp23017_model_set_pin_input_a(&model, 0x00);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    (void)reg_read(MCP23017_REG_GPIOA);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+
+    mcp23017_model_set_pin_input_a(&model, 0x01);
+    (void)reg_read(MCP23017_REG_GPIOA);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+}
+
+/* "the internal signals are OR'ed together and routed to the INTn pads", p24 */
+TEST(test_mirror_joins_the_int_pins)
+{
+    setup();
+    reg_write(MCP23017_REG_GPINTENB, 0x01);
+    reg_write(MCP23017_REG_IOCON_A, 0x40);
+    mcp23017_model_set_pin_input_b(&model, 0x01);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    ASSERT_TRUE(mcp23017_model_int_active(&model, false));
+
+    /* Table 3-6: GPIOA leaves port B's interrupt, GPIOB clears it */
+    (void)reg_read(MCP23017_REG_GPIOA);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+    (void)reg_read(MCP23017_REG_GPIOB);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+}
+
+/* The whole path through the API */
+TEST(test_driver_sees_an_interrupt_and_clears_it)
+{
+    setup();
+    mcp23017_t dev;
+    ASSERT_EQ(mcp23017_init(&dev, &model_i2c, 0x20), MCP23017_OK);
+    ASSERT_EQ(mcp23017_set_interrupt(&dev, MCP23017_PORT_A, 0x10), MCP23017_OK);
+
+    mcp23017_model_set_pin_input_a(&model, 0x10);
+    uint8_t flags = 0;
+    ASSERT_EQ(mcp23017_read_interrupt_flag(&dev, MCP23017_PORT_A, &flags), MCP23017_OK);
+    ASSERT_EQ_HEX(flags, 0x10);
+    ASSERT_TRUE(mcp23017_model_int_active(&model, true));
+
+    uint8_t value = 0;
+    ASSERT_EQ(mcp23017_read_port(&dev, MCP23017_PORT_A, &value), MCP23017_OK);
+    ASSERT_EQ_HEX(value, 0x10);
+    ASSERT_FALSE(mcp23017_model_int_active(&model, true));
+}
+
 TEST_MAIN("mcp23017 hardware model")
+    RUN(test_gpio_write_fills_the_whole_latch);
+    RUN(test_gpio_read_joins_inputs_and_latch);
+    RUN(test_olat_write_reaches_gpio);
+    RUN(test_olat_read_is_not_the_port);
+    RUN(test_write_pin_reads_back_on_an_output);
+    RUN(test_iocon_is_one_register);
+    RUN(test_ipol_inverts_inputs_only);
+    RUN(test_ioc_fills_intf_and_intcap);
+    RUN(test_ioc_needs_an_enabled_input);
+    RUN(test_ioc_holds_until_gpio_or_intcap_is_read);
+    RUN(test_ioc_on_pin_change_takes_the_new_level);
+    RUN(test_ioc_from_defval_stays_while_the_pin_differs);
+    RUN(test_mirror_joins_the_int_pins);
+    RUN(test_driver_sees_an_interrupt_and_clears_it);
     RUN(test_init_resets_iodir_to_input);
     RUN(test_init_clears_other_registers);
     RUN(test_init_clears_pending_interrupt);
