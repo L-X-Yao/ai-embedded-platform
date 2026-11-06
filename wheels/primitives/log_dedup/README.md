@@ -123,6 +123,7 @@ cmake -GNinja -S . -B build && cmake --build build
   - Flush pending (emits repeat summary on explicit flush)
   - Timestamp ignored for comparison (different `[XXXXXXXX]` prefixes, same body -- deduplicated)
   - No timestamp comparison (lines without timestamp prefix -- still deduplicated)
+  - Level compared (WARN, ERROR and INFO of one text stay three lines, with or without a timestamp)
   - Single line no repeat (flush after one unique line emits no repeat summary)
   - NULL safety (NULL self, NULL inner fn)
 - HIL: N/A
@@ -135,7 +136,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 | Aspect | Choice | Rationale |
 |--------|--------|-----------|
-| Comparison | Timestamp-aware: strips `[XXXXXXXX] ` prefix (10 chars) before comparing | Same message at different times should still deduplicate |
+| Comparison | Timestamp-aware: strips a leading all-digit `[12345678] ` bracket before comparing | Same message at different times should still deduplicate; any other bracket, such as the level, is part of the message |
 | Buffer | 256-byte fixed line buffer in `log_dedup_t` | Matches `LOG_LINE_BUFSIZE` default in `log` wheel; no heap allocation |
 | Summary format | `[repeated N times]\n` | Matches Linux kernel `dmesg` convention |
 | Flush | Explicit `log_dedup_flush()` before shutdown | Ensures pending repeat count is not lost on system halt |

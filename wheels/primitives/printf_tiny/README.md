@@ -64,10 +64,18 @@ int vsnprintf_tiny(char *buf, uint16_t size, const char *fmt, va_list ap);
 - Float (`%f`, `%e`, `%g`) — too much code for constrained MCUs
 - `%n` — security risk
 - Precision (`%.3s`) — rarely needed on embedded
+- Length modifiers other than `l` (`%lld`, `%zu`, `%hd`, `%jd`, `%td`) and `*` width
+
+The first unsupported specifier ends formatting: it and the rest of the format are
+copied literally and no further argument is read, since there is no telling what
+argument it owns. The format attribute on the API catches plain mismatches such as
+`%s` with an int, but not these, which are valid C.
 
 ## Configuration (compile-time)
 
-No compile-time configuration needed. The wheel is always fully functional.
+| Macro | Default | Description |
+|-------|---------|-------------|
+| `PRINTF_TINY_MAX_WIDTH` | 4095 | Largest field width, at most `INT_MAX`. A wider one is cut to this |
 
 ## Supported platforms
 

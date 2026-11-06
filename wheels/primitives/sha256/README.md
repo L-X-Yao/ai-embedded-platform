@@ -72,7 +72,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (9 tests, 15+ assertions)
+- Unit tests (sim): PASS (12 tests, 15+ assertions)
 - Property tests (sim): PASS (4 tests, 300 random trials)
 - Test vectors:
   - NIST "abc" (3 bytes)
@@ -82,7 +82,7 @@ cmake -GNinja -S . -B build && cmake --build build
   - "The quick brown fox..." known answer
   - Streaming byte-by-byte == one-shot
   - Chunked streaming (7-byte chunks) == one-shot
-  - NULL parameter rejection
+  - NULL parameter rejection, including NULL data with a non-zero length, for which `sha256_hash` gives all zeros
   - Zero-length update is harmless
 - Property tests:
   - Determinism: same input always produces same hash (100 trials)

@@ -24,7 +24,7 @@ None.
 
 ```c
 /* Error codes: LOOKUP_TABLE_OK=0, LOOKUP_TABLE_ERR_PARAM=-1,
- *              LOOKUP_TABLE_ERR_NOT_SORTED=-2 */
+ *              LOOKUP_TABLE_ERR_NOT_SORTED=-2 (also for NaN in x) */
 
 /* Initialise with caller-owned sorted x/y arrays */
 lookup_table_err_t lut_init(lookup_table_t *table,
@@ -58,7 +58,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 13 tests passing
+- Unit tests (sim): 14 tests passing
 - HIL: N/A
 
 ## API convention deviations
