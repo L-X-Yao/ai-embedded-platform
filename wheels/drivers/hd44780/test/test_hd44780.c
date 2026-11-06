@@ -126,6 +126,20 @@ TEST(test_zero_init_safety)
     ASSERT_TRUE(hd44780_init(&zero_dev, &zero_hal, 0x27, 16, 2) < 0);
 }
 
+/* The header makes delay_ms required: without it the reset sequence has none
+ * of the waits of more than 4.1 ms and 100 us that it needs. */
+TEST(test_init_requires_delay_ms)
+{
+    hd44780_i2c_t no_delay = mock_i2c;
+    no_delay.delay_ms = NULL;
+
+    mock_reset();
+    ASSERT_EQ(hd44780_init(&dev, &no_delay, HD44780_ADDR_PCF8574, 16, 2),
+              HD44780_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, 0);
+    ASSERT_EQ(hd44780_clear(&dev), HD44780_ERR_PARAM);
+}
+
 TEST(test_invalid_dimensions)
 {
     mock_reset();
@@ -360,6 +374,7 @@ TEST_MAIN("hd44780")
     RUN(test_null_safety);
     RUN(test_null_str);
     RUN(test_zero_init_safety);
+    RUN(test_init_requires_delay_ms);
     RUN(test_invalid_dimensions);
     RUN(test_error_codes);
     RUN(test_clear);
