@@ -93,7 +93,10 @@ typedef struct {
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
                             mcp2515_speed_t speed);
 
-/** Switch operating mode. */
+/** Switch operating mode. Leaving Sleep wakes the chip first: this sets WAKIE
+ *  and WAKIF, which pulls the INT pin low until the mode change is done, and
+ *  waits 128 us for the oscillator. Frames on the bus meanwhile are ignored.
+ *  Returns MCP2515_ERR_TIMEOUT if the chip does not reach the mode. */
 mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode);
 
 /** Transmit a CAN frame (standard or extended). */

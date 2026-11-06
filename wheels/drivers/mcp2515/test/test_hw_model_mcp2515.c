@@ -396,6 +396,94 @@ TEST(test_mode_to_listen)
               MCP_OPMOD_LISTEN);
 }
 
+/* The model against the manual, without the driver's wake code: p.59 says the
+ * oscillator stops in Sleep and only WAKIF with WAKIE set wakes the chip. */
+TEST(test_model_sleep_needs_wakif_and_wakie)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+
+    /* A mode request alone does nothing */
+    hw_model__write_reg(&model.hw, MCP_REG_CANCTRL, MCP_OPMOD_NORMAL);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+              MCP_OPMOD_SLEEP);
+
+    /* WAKIF without WAKIE does nothing either */
+    hw_model__write_reg(&model.hw, MCP_REG_CANINTF, MCP_CANINTF_WAKIF);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+              MCP_OPMOD_SLEEP);
+    hw_model__write_reg(&model.hw, MCP_REG_CANINTF, 0x00);
+
+    /* Both wake it, in Listen-Only mode, and the OST runs again */
+    hw_model__write_reg(&model.hw, MCP_REG_CANINTE, MCP_CANINTE_WAKIE);
+    hw_model__write_reg(&model.hw, MCP_REG_CANINTF, MCP_CANINTF_WAKIF);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+              MCP_OPMOD_LISTEN);
+    ASSERT_EQ(model.ost_left_us, MCP_OST_US);
+}
+
+/* Every mode can be reached from Sleep, with no SPI operation inside the OST
+ * and no wake-up interrupt left behind */
+TEST(test_leave_sleep_to_every_mode)
+{
+    static const struct { mcp2515_mode_t mode; uint8_t opmod; } to[] = {
+        { MCP2515_MODE_NORMAL,   MCP_OPMOD_NORMAL   },
+        { MCP2515_MODE_LOOPBACK, MCP_OPMOD_LOOPBACK },
+        { MCP2515_MODE_LISTEN,   MCP_OPMOD_LISTEN   },
+        { MCP2515_MODE_CONFIG,   MCP_OPMOD_CONFIG   },
+    };
+
+    for (size_t i = 0; i < sizeof(to) / sizeof(to[0]); i++) {
+        setup();
+        mcp2515_t dev;
+        mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+        ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+
+        ASSERT_EQ(mcp2515_set_mode(&dev, to[i].mode), MCP2515_OK);
+        ASSERT_EQ(dev.mode, to[i].mode);
+        ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK,
+                  to[i].opmod);
+        ASSERT_EQ(model.spi_during_ost, 0);
+        ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_WAKIF, 0);
+        ASSERT_EQ(model.hw.regs[MCP_REG_CANINTE] & MCP_CANINTE_WAKIE, 0);
+    }
+}
+
+/* Sleep and back, more than once */
+TEST(test_sleep_cycles)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+        ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+    }
+    ASSERT_EQ(model.spi_during_ost, 0);
+}
+
+/* A chip that stays asleep is a timeout, not a success, and leaves no flag set,
+ * so that the next attempt can set WAKIF again */
+TEST(test_leave_sleep_chip_stays_asleep)
+{
+    setup();
+    mcp2515_t dev;
+    mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+
+    hw_model_set_on_write(&model.hw, MCP_REG_CANINTF, NULL);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_ERR_TIMEOUT);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_SLEEP);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_WAKIF, 0);
+
+    hw_model_set_on_write(&model.hw, MCP_REG_CANINTF, mcp2515_on_canintf_write);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
+}
+
 /* --- 17. Init with invalid speed returns ERR_PARAM --- */
 
 TEST(test_init_invalid_speed_hw)
@@ -553,6 +641,10 @@ TEST_MAIN("mcp2515 hardware model")
     RUN(test_tx_extended_frame);
     RUN(test_mode_to_sleep);
     RUN(test_mode_to_listen);
+    RUN(test_model_sleep_needs_wakif_and_wakie);
+    RUN(test_leave_sleep_to_every_mode);
+    RUN(test_sleep_cycles);
+    RUN(test_leave_sleep_chip_stays_asleep);
     RUN(test_init_invalid_speed_hw);
     RUN(test_rx_from_rxb1);
     RUN(test_filter_extended_encoding);
