@@ -12,8 +12,6 @@
 #include "contract.h"
 #include <stddef.h>
 
-#define WS2812_BITS_PER_LED  24U
-
 static const uint8_t s_scale5to8_lut[32] = {
       0U,   8U,  16U,  24U,  32U,  41U,  49U,  57U,
      65U,  74U,  82U,  90U,  98U, 106U, 115U, 123U,
@@ -29,19 +27,41 @@ uint8_t ws2812_scale5to8(uint8_t v5)
     return s_scale5to8_lut[v5];
 }
 
+/* The PWM slot for the top bit of value */
+static uint16_t top_bit_slot(uint8_t value, const ws2812_timing_t *timing)
+{
+    return ((value & 0x80U) != 0U) ? timing->t1h_ticks : timing->t0h_ticks;
+}
+
 static void encode_byte(uint8_t value, const ws2812_timing_t *timing,
                          uint16_t *dst)
 {
     uint8_t i;
 
     for (i = 0U; i < 8U; i++) {
-        if ((value & 0x80U) != 0U) {
-            dst[i] = timing->t1h_ticks;
-        } else {
-            dst[i] = timing->t0h_ticks;
-        }
+        dst[i] = top_bit_slot(value, timing);
         value <<= 1U;
     }
+}
+
+/* A free-running PWM repeats the last compare value in every period that gets
+ * no new one, and the LED takes that as an extra bit. A bit period is only 60
+ * cycles at 48 MHz, so nothing longer than picking the next slot may run
+ * between two bits: not even between two LEDs. */
+static bool send_byte(const ws2812_hal_t *hal, const ws2812_timing_t *timing,
+                      uint8_t value)
+{
+    uint8_t i;
+
+    for (i = 0U; i < 8U; i++) {
+        uint16_t slot = top_bit_slot(value, timing);
+
+        value <<= 1U;
+        hal->wait_period(hal->ctx);
+        if (!hal->set_compare(hal->ctx, slot))
+            return false;
+    }
+    return true;
 }
 
 void ws2812_encode_grb(const ws2812_color_t *color,
@@ -72,9 +92,7 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
                          const ws2812_color_t *colors,
                          uint32_t num_leds)
 {
-    uint16_t slots[WS2812_BITS_PER_LED];
     uint32_t led;
-    uint32_t bit;
 
     if (hal == NULL || timing == NULL || colors == NULL || num_leds == 0U) {
         return WS2812_ERR_NULL;
@@ -89,20 +107,11 @@ ws2812_err_t ws2812_send(const ws2812_hal_t *hal,
     hal->enter_critical(hal->ctx);
 
     for (led = 0U; led < num_leds; led++) {
-        (void)ws2812_encode_grb(&colors[led], timing, slots);
-
-        hal->wait_period(hal->ctx);
-        if (!hal->set_compare(hal->ctx, slots[0])) {
+        if (!send_byte(hal, timing, colors[led].g) ||
+            !send_byte(hal, timing, colors[led].r) ||
+            !send_byte(hal, timing, colors[led].b)) {
             hal->exit_critical(hal->ctx);
             return WS2812_ERR_HAL;
-        }
-
-        for (bit = 1U; bit < WS2812_BITS_PER_LED; bit++) {
-            hal->wait_period(hal->ctx);
-            if (!hal->set_compare(hal->ctx, slots[bit])) {
-                hal->exit_critical(hal->ctx);
-                return WS2812_ERR_HAL;
-            }
         }
     }
 

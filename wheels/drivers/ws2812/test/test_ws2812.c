@@ -385,6 +385,63 @@ TEST(test_data_inside_critical_section)
     ASSERT_TRUE(data_outside_crit == 0);
 }
 
+/* A free-running PWM repeats the last compare value in every period that gets
+ * no new one, so a batch of 24 slots between two bits adds bits to the stream.
+ * The host cannot see time, but it can see when the driver reads a colour: a
+ * byte changed during the first bit of LED 2 only goes out if the slots of
+ * that LED come from the bit loop and were not all worked out up front. */
+static ws2812_color_t late_colors[2];
+
+static bool mock_set_compare_late(void *ctx, uint16_t value)
+{
+    bool ok = mock_set_compare(ctx, value);
+    if (mock_set_compare_count == 26)   /* reset latch, 24 bits, then this */
+        late_colors[1].b = 0xFF;
+    return ok;
+}
+
+TEST(test_slots_derived_in_bit_loop)
+{
+    const ws2812_hal_t hal = {
+        .set_compare    = mock_set_compare_late,
+        .wait_period    = mock_wait_period,
+        .enter_critical = mock_enter_critical,
+        .exit_critical  = mock_exit_critical,
+        .ctx            = NULL,
+    };
+    memset(late_colors, 0, sizeof(late_colors));
+    mock_reset();
+    ASSERT_TRUE(ws2812_send(&hal, &timing_48mhz, late_colors, 2) == WS2812_OK);
+
+    uint16_t vals[64];
+    ASSERT_EQ(extract_data_compares(vals, 64), 49);
+    /* LED 1, then G and R of LED 2 */
+    for (int i = 0; i < 40; i++)
+        ASSERT_EQ(vals[i], timing_48mhz.t0h_ticks);
+    /* B of LED 2 as it was when its turn came */
+    for (int i = 40; i < 48; i++)
+        ASSERT_EQ(vals[i], timing_48mhz.t1h_ticks);
+}
+
+/* Every bit waits for exactly one period, also across a change of LED */
+TEST(test_one_wait_per_bit)
+{
+    ws2812_color_t colors[3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    mock_reset();
+    ASSERT_TRUE(ws2812_send(&mock_hal, &timing_48mhz, colors, 3) == WS2812_OK);
+
+    int i = 0;
+    while (mock_log[i].type != EVT_ENTER_CRIT)
+        i++;
+    i++;
+    for (int bit = 0; bit < 3 * 24 + 1; bit++) {
+        ASSERT_EQ(mock_log[i].type, EVT_WAIT_PERIOD);
+        ASSERT_EQ(mock_log[i + 1].type, EVT_SET_COMPARE);
+        i += 2;
+    }
+    ASSERT_EQ(mock_log[i].type, EVT_EXIT_CRIT);
+}
+
 TEST(test_hal_error_during_reset_latch)
 {
     ws2812_color_t c = {128, 64, 32};
@@ -519,6 +576,8 @@ TEST_MAIN("ws2812")
     RUN(test_data_inside_critical_section);
     RUN(test_hal_error_during_reset_latch);
     RUN(test_hal_error_during_data);
+    RUN(test_slots_derived_in_bit_loop);
+    RUN(test_one_wait_per_bit);
     RUN(test_hal_error_in_reset_latch_first_call);
     RUN(test_hal_error_trailing_zero);
     RUN(test_null_hal_function_pointer);
