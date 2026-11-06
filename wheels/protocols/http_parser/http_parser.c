@@ -105,8 +105,11 @@ static http_parser_err_t parse_headers(const char *data, size_t len,
 
         const char *val = colon + 1;
         while (val < crlf && (*val == ' ' || *val == '\t')) val++;
+        const char *val_end = crlf;
+        while (val_end > val && (val_end[-1] == ' ' || val_end[-1] == '\t'))
+            val_end--;
         headers[*count].value = val;
-        headers[*count].value_len = (size_t)(crlf - val);
+        headers[*count].value_len = (size_t)(val_end - val);
         (*count)++;
 
         p = crlf + 2;
