@@ -99,7 +99,15 @@
 #define ENC_ECON1_BSEL1   0x02U
 #define ENC_ECON1_RXEN    0x04U
 #define ENC_ECON1_TXRTS   0x08U
+#define ENC_ECON1_TXRST   0x80U
 #define ENC_ECON2_PKTDEC  0x40U
+#define ENC_EIR_RXERIF    0x01U
+#define ENC_EIR_TXERIF    0x02U
+#define ENC_EIR_TXIF      0x08U
+#define ENC_EIR_DMAIF     0x20U
+/* Register 12-3: the R/C bits. PKTIF and LINKIF are R and follow the chip. */
+#define ENC_EIR_RC_MASK \
+    (ENC_EIR_DMAIF | ENC_EIR_TXIF | ENC_EIR_TXERIF | ENC_EIR_RXERIF)
 #define ENC_ESTAT_CLKRDY  0x01U
 #define ENC_ESTAT_TXABRT  0x02U
 #define ENC_ESTAT_RXBUSY  0x04U
@@ -208,6 +216,13 @@ typedef struct {
     uint8_t  tx_end_estat;
     /* Buffer bytes written while a transmission was pending */
     int      tx_write_while_pending;
+    /* Errata DS80349C issue 12: an abort left the transmit logic stalled, so
+     * TXRTS stays set until a TXRST. Off to model silicon that recovers. */
+    bool     tx_abort_stalls;
+    bool     tx_stalled;
+    /* TXRTS set with TXRST still held, and EIR as the last TXRTS found it */
+    int      tx_start_in_reset;
+    uint8_t  eir_at_tx_start;
 
     /* Track buffer writes for verification */
     uint8_t  tx_captured[2048];
@@ -284,6 +299,8 @@ static void enc_bfc_reg(enc28j60_model_t *m, uint8_t addr, uint8_t mask)
     uint8_t *p = enc_reg_ptr(m, addr);
     if (addr == ENC_ESTAT) {
         *p = (uint8_t)(*p & ~(mask & ENC_ESTAT_RC_MASK));
+    } else if (addr == ENC_EIR) {
+        *p = (uint8_t)(*p & ~(mask & ENC_EIR_RC_MASK));
     } else if (ENC_IS_COMMON(addr)) {
         if (!m->readonly_common[addr])
             *p = (uint8_t)(*p & ~mask);
@@ -298,6 +315,55 @@ __attribute__((unused))
 static void enc_update_bank(enc28j60_model_t *m)
 {
     m->current_bank = m->common[ENC_ECON1] & 0x03U;
+}
+
+/* DS39662C p.42: the end of a transmission. TXRTS clears and TXIF sets, and
+ * p.70: an abort sets TXERIF with it and TXABRT. */
+__attribute__((unused))
+static void enc_tx_end(enc28j60_model_t *m)
+{
+    m->common[ENC_ECON1] &= (uint8_t)~ENC_ECON1_TXRTS;
+    m->common[ENC_ESTAT] |= m->tx_end_estat;
+    m->common[ENC_EIR] |= ENC_EIR_TXIF;
+    if (m->tx_end_estat & ENC_ESTAT_TXABRT) {
+        m->common[ENC_EIR] |= ENC_EIR_TXERIF;
+        m->tx_stalled = m->tx_abort_stalls;
+    }
+    m->tx_end_estat = 0;
+}
+
+/* Side effects of any write to ECON1 */
+__attribute__((unused))
+static void enc_econ1_written(enc28j60_model_t *m, uint8_t old)
+{
+    uint8_t now  = m->common[ENC_ECON1];
+    uint8_t rose = (uint8_t)(now & ~old);
+    uint8_t fell = (uint8_t)(old & ~now);
+
+    enc_update_bank(m);
+
+    if (rose & ENC_ECON1_TXRST) {
+        /* p.62: "the hardware will automatically clear the TXRTS bit and
+         * abort the transmission" */
+        if (now & ENC_ECON1_TXRTS) {
+            m->common[ENC_ECON1] &= (uint8_t)~ENC_ECON1_TXRTS;
+            m->common[ENC_EIR] |= ENC_EIR_TXIF;
+        }
+        m->tx_stalled = false;
+    }
+    /* Errata issue 12: "Clearing ECON1.TXRST may cause a new transmit error
+     * interrupt event (EIR.TXERIF will become set)." */
+    if (fell & ENC_ECON1_TXRST)
+        m->common[ENC_EIR] |= ENC_EIR_TXERIF;
+    if (rose & ENC_ECON1_TXRTS) {
+        m->tx_econ1_read_count = 0;
+        if (now & ENC_ECON1_TXRST)
+            m->tx_start_in_reset++;
+        m->eir_at_tx_start = m->common[ENC_EIR];
+    }
+    /* p.70: TXIF also sets on "transmission cancellation by the host" */
+    if (fell & ENC_ECON1_TXRTS)
+        m->common[ENC_EIR] |= ENC_EIR_TXIF;
 }
 
 /* Get the 16-bit buffer read pointer from ERDPTL/H */
@@ -334,6 +400,7 @@ static void enc_soft_reset(enc28j60_model_t *m)
     m->buf_wrptr = 0;
     m->tx_econ1_read_count = 0;
     m->tx_captured_len = 0;
+    m->tx_stalled = false;  /* p.62: a System Reset includes the TX reset */
     m->reset_count++;
 }
 
@@ -439,11 +506,10 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         if (m->spi_addr == ENC_ECON1) {
             if (m->common[ENC_ECON1] & ENC_ECON1_TXRTS) {
                 m->tx_econ1_read_count++;
-                if (m->tx_complete_after > 0 &&
+                if (m->tx_complete_after > 0 && !m->tx_stalled &&
+                    !(m->common[ENC_ECON1] & ENC_ECON1_TXRST) &&
                     m->tx_econ1_read_count >= m->tx_complete_after) {
-                    m->common[ENC_ECON1] &= (uint8_t)~ENC_ECON1_TXRTS;
-                    m->common[ENC_ESTAT] |= m->tx_end_estat;
-                    m->tx_end_estat = 0;
+                    enc_tx_end(m);
                     val = m->common[ENC_ECON1];
                 }
             }
@@ -459,10 +525,10 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
             ((m->common[ENC_ECON1] & ENC_ECON1_RXEN) ||
              (m->common[ENC_ESTAT] & ENC_ESTAT_RXBUSY)))
             m->mac_write_rx_active++;
+        uint8_t econ1 = m->common[ENC_ECON1];
         enc_write_reg(m, m->spi_addr, tx);
-        /* If writing ECON1, update bank selection */
         if (m->spi_addr == ENC_ECON1) {
-            enc_update_bank(m);
+            enc_econ1_written(m, econ1);
         }
         /* DS39662C p.21: writing MIWRH starts the PHY write */
         if (m->current_bank == 2 && m->spi_addr == ENC_MIWRH) {
@@ -496,18 +562,20 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         if (m->spi_addr == ENC_ECON1 &&
             (tx & (ENC_ECON1_RXEN | ENC_ECON1_TXRTS)))
             enc_note_ready_needed(m);
+        uint8_t econ1 = m->common[ENC_ECON1];
         enc_bfs_reg(m, m->spi_addr, tx);
         if (m->spi_addr == ENC_ECON1) {
-            enc_update_bank(m);
+            enc_econ1_written(m, econ1);
         }
         m->phase = ENC_PH_IDLE;
         return 0xFFU;
     }
 
     case ENC_PH_BFC_DATA: {
+        uint8_t econ1 = m->common[ENC_ECON1];
         enc_bfc_reg(m, m->spi_addr, tx);
         if (m->spi_addr == ENC_ECON1) {
-            enc_update_bank(m);
+            enc_econ1_written(m, econ1);
         }
         m->phase = ENC_PH_IDLE;
         return 0xFFU;
@@ -609,6 +677,7 @@ static void enc28j60_model_init(enc28j60_model_t *m)
     m->tx_complete_after = 1;   /* TXRTS clears after 1 read by default */
     m->tx_econ1_read_count = 0;
     m->tx_captured_len = 0;
+    m->tx_abort_stalls = true;  /* the errata says "may": assume the worst */
 }
 
 /* ================================================================
