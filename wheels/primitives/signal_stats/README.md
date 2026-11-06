@@ -9,7 +9,7 @@ computation. Pure C99, no heap, no OS, fully reentrant per-context.
 
 ## Origin
 
-Proactive build (ADR-011). s
+Proactive build (ADR-011). Running statistics over a signal stream: mean, variance, min, max, count,
 
 
 ## Why self-written?

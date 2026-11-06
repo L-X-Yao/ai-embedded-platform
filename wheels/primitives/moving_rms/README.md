@@ -10,7 +10,7 @@ detection. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). m
+Proactive build (ADR-011). Running root-mean-square over a sliding window with O(1) per-sample updates.
 
 
 ## Why self-written?

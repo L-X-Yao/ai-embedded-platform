@@ -11,7 +11,7 @@ Pure C99, no heap, fully reentrant.
 
 ## Origin
 
-Proactive build (ADR-011). s
+Proactive build (ADR-011). SNTP v4 packet codec and clock offset calculation per RFC 4330. Builds
 
 
 ## Why self-written?

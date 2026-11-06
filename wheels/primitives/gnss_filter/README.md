@@ -10,7 +10,7 @@ quality thresholds hold for a configurable duration.
 
 ## Origin
 
-Proactive build (ADR-011). g
+Proactive build (ADR-011). GNSS position EMA filter with satellite/DOP quality gate and ZUPT (Zero
 
 
 ## Why self-written?

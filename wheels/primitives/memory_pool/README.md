@@ -10,7 +10,7 @@ and alignment on free.
 
 ## Origin
 
-Proactive build (ADR-011). m
+Proactive build (ADR-011). Fixed-size block allocator with O(1) alloc and free via an intrusive free-list.
 
 
 ## Why self-written?

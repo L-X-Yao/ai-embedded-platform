@@ -9,7 +9,7 @@ CRSF frames with CRC-8 DVB-S2 (poly 0xD5) validation. Packs and unpacks
 
 ## Origin
 
-Proactive build (ADR-011). c
+Proactive build (ADR-011). TBS Crossfire / ExpressLRS (CRSF) RC protocol codec. Encodes and decodes
 
 
 ## Why self-written?

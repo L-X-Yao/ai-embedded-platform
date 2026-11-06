@@ -10,7 +10,7 @@ parser for interrupt-driven UART reception. Frame format:
 
 ## Origin
 
-Proactive build (ADR-011). h
+Proactive build (ADR-011). HDLC frame encoding/decoding with byte stuffing and FCS-16 (CRC-16-CCITT
 
 
 ## Why self-written?

@@ -11,7 +11,7 @@ Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). m
+Proactive build (ADR-011). Modbus ASCII frame encoder and decoder. Frame format:
 
 
 ## Why self-written?

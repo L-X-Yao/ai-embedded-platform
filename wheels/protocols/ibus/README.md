@@ -10,7 +10,7 @@ Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). i
+Proactive build (ADR-011). FlySky iBUS serial protocol codec for RC receivers. Decodes and encodes
 
 
 ## Why self-written?

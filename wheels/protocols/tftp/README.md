@@ -10,7 +10,7 @@ bare-metal Ethernet stacks. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). t
+Proactive build (ADR-011). Stateless TFTP (Trivial File Transfer Protocol) packet builder and parser
 
 
 ## Why self-written?

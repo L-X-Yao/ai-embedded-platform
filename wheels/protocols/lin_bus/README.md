@@ -10,7 +10,7 @@ Break field is at UART level and not included. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). l
+Proactive build (ADR-011). LIN bus (Local Interconnect Network) frame encoding and decoding. Handles
 
 
 ## Why self-written?

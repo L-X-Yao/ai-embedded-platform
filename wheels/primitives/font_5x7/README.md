@@ -9,7 +9,7 @@ Font data is const (ROM-able). All functions are read-only and ISR-safe.
 
 ## Origin
 
-Proactive build (ADR-011). f
+Proactive build (ADR-011). 5x7 pixel bitmap font covering ASCII 0x20..0x7E (95 printable characters).
 
 
 ## Why self-written?
