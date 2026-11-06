@@ -231,6 +231,35 @@ TEST(test_read_timeout)
     ASSERT_EQ(e, BMP280_ERR_TIMEOUT);
 }
 
+/* ---------- skipped temperature: the extra measurement can fail ---------- */
+
+static const bmp280_cfg_t skip_t_cfg = {
+    .addr   = BMP280_ADDR_LOW,
+    .osrs_t = BMP280_OVERSAMPLING_SKIP,
+    .osrs_p = BMP280_OVERSAMPLING_1,
+};
+
+TEST(test_init_skip_temperature_i2c_fail)
+{
+    /* read(ID)=op0, read(CALIB)=op1, write(CONFIG)=op2, then the measurement:
+     * write(CTRL_MEAS)=op3, read(STATUS)=op4, read(PRESS_MSB x6)=op5. */
+    for (int op = 3; op <= 5; op++)
+    {
+        mock_reset();
+        mock_fail_at = op;
+        bmp280_t d;
+        ASSERT_EQ(bmp280_init(&d, &mock_i2c, &skip_t_cfg), BMP280_ERR_I2C);
+    }
+}
+
+TEST(test_init_skip_temperature_timeout)
+{
+    mock_reset();
+    mock_regs[0xF3] = 0x08;   /* measuring stuck at 1 */
+    bmp280_t d;
+    ASSERT_EQ(bmp280_init(&d, &mock_i2c, &skip_t_cfg), BMP280_ERR_TIMEOUT);
+}
+
 TEST_MAIN("bmp280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -247,5 +276,7 @@ TEST_MAIN("bmp280")
     RUN(test_calib_readback);
     RUN(test_calib_i2c_fail);
     RUN(test_read_timeout);
+    RUN(test_init_skip_temperature_i2c_fail);
+    RUN(test_init_skip_temperature_timeout);
 TEST_MAIN_END()
 

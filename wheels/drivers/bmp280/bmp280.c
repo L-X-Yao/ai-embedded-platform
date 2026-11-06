@@ -60,6 +60,66 @@ static bmp280_err_t read_calibration(bmp280_t *dev)
     return BMP280_OK;
 }
 
+/* Sets t_fine, which pressure compensation uses */
+static void compensate_temperature(bmp280_t *dev, int32_t adc_t)
+{
+    /* 64-bit intermediates, here and in compensate_pressure: the manual's
+     * 32-bit formula overflows on calibration it does not expect. A real
+     * part gives the same result either way. */
+    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
+    int32_t var1 = (int32_t)((((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
+                              * (int64_t)dev->calib.dig_t2) >> 11);
+    int32_t var2 = (int32_t)((((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3) >> 14);
+    dev->t_fine = var1 + var2;
+}
+
+/* adc_t and adc_p: 20 bits, MSB first, xlsb in bits 7:4 */
+static int32_t adc_20bit(const uint8_t *buf)
+{
+    return (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
+}
+
+/*
+ * One forced measurement, leaving the 6 data bytes from 0xF7 in buf. A skipped
+ * channel holds 0x80000 (manual Tables 21, 22). That is a placeholder, not a
+ * measurement, so it must not be compensated.
+ */
+static bmp280_err_t measure(const bmp280_t *dev, bmp280_oversampling_t osrs_t,
+                            bmp280_oversampling_t osrs_p, uint8_t *buf)
+{
+    /* 0x07 mask is wider than the 3-bit osrs fields strictly require (max valid
+     * value is 5), but safe: extra bits are silently ignored by the BMP280 and
+     * the shift/OR cannot overflow a uint8_t. */
+    uint8_t ctrl = (uint8_t)(((osrs_t & 0x07) << 5) | ((osrs_p & 0x07) << 2) | MODE_FORCED);
+    if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
+    {
+        return BMP280_ERR_I2C;
+    }
+
+    for (int tries = 0; tries < 500; tries++)
+    {
+        uint8_t status;
+        if (!read_regs(dev, REG_STATUS, &status, 1))
+        {
+            return BMP280_ERR_I2C;
+        }
+        if ((status & 0x08) == 0)
+        {
+            break;
+        }
+        if (tries == 499)
+        {
+            return BMP280_ERR_TIMEOUT;
+        }
+    }
+
+    if (!read_regs(dev, REG_PRESS_MSB, buf, 6))
+    {
+        return BMP280_ERR_I2C;
+    }
+    return BMP280_OK;
+}
+
 bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
                          const bmp280_cfg_t *cfg)
 {
@@ -70,6 +130,12 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
 
     if ((unsigned)cfg->osrs_t > 5 || (unsigned)cfg->osrs_p > 5)
         return BMP280_ERR_PARAM;
+
+    if (cfg->osrs_t == BMP280_OVERSAMPLING_SKIP &&
+        cfg->osrs_p == BMP280_OVERSAMPLING_SKIP)
+    {
+        return BMP280_ERR_PARAM;   /* nothing left to measure */
+    }
 
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
@@ -97,21 +163,21 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
         return BMP280_ERR_I2C;
     }
 
+    /* Pressure compensation needs t_fine, and reads that skip temperature cannot
+     * set it, so measure temperature once here, alone at x1, for them to reuse. */
+    if (cfg->osrs_t == BMP280_OVERSAMPLING_SKIP)
+    {
+        uint8_t buf[6];
+        err = measure(dev, BMP280_OVERSAMPLING_1, BMP280_OVERSAMPLING_SKIP, buf);
+        if (err != BMP280_OK)
+        {
+            return err;
+        }
+        compensate_temperature(dev, adc_20bit(&buf[3]));
+    }
+
     INVARIANT(dev->i2c != NULL);
     return BMP280_OK;
-}
-
-static int32_t compensate_temperature(bmp280_t *dev, int32_t adc_t)
-{
-    /* 64-bit intermediates, here and in compensate_pressure: the manual's
-     * 32-bit formula overflows on calibration it does not expect. A real
-     * part gives the same result either way. */
-    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
-    int32_t var1 = (int32_t)((((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
-                              * (int64_t)dev->calib.dig_t2) >> 11);
-    int32_t var2 = (int32_t)((((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3) >> 14);
-    dev->t_fine = var1 + var2;
-    return (dev->t_fine * 5 + 128) >> 8;
 }
 
 static uint32_t compensate_pressure(const bmp280_t *dev, int32_t adc_p)
@@ -155,46 +221,26 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
         return BMP280_ERR_PARAM;
     }
 
-    /* 0x07 mask is wider than the 3-bit osrs fields strictly require (max valid
-     * value is 5), but safe: extra bits are silently ignored by the BMP280 and
-     * the shift/OR cannot overflow a uint8_t. */
-    uint8_t ctrl = (uint8_t)(((dev->cfg.osrs_t & 0x07) << 5) | ((dev->cfg.osrs_p & 0x07) << 2) | MODE_FORCED);
-    if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
-    {
-        return BMP280_ERR_I2C;
-    }
-
-    for (int tries = 0; tries < 500; tries++)
-    {
-        uint8_t status;
-        if (!read_regs(dev, REG_STATUS, &status, 1))
-        {
-            return BMP280_ERR_I2C;
-        }
-        if ((status & 0x08) == 0)
-        {
-            break;
-        }
-        if (tries == 499)
-        {
-            return BMP280_ERR_TIMEOUT;
-        }
-    }
+    bool temp  = dev->cfg.osrs_t != BMP280_OVERSAMPLING_SKIP;
+    bool press = dev->cfg.osrs_p != BMP280_OVERSAMPLING_SKIP;
 
     uint8_t buf[6];
-    if (!read_regs(dev, REG_PRESS_MSB, buf, 6))
+    bmp280_err_t err = measure(dev, dev->cfg.osrs_t, dev->cfg.osrs_p, buf);
+    if (err != BMP280_OK)
     {
-        return BMP280_ERR_I2C;
+        return err;
     }
 
-    int32_t adc_p = (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
-    int32_t adc_t = (int32_t)(((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | ((uint32_t)buf[5] >> 4));
-
-    int32_t temp_raw = compensate_temperature(dev, adc_t);
+    /* Temperature goes first to set t_fine. When it is skipped, t_fine still
+     * holds the temperature init measured. */
+    if (temp)
+    {
+        compensate_temperature(dev, adc_20bit(&buf[3]));
+    }
+    int32_t temp_raw = (dev->t_fine * 5 + 128) >> 8;
     out->temperature_c = (float)temp_raw / 100.0f;
 
-    uint32_t press_raw = compensate_pressure(dev, adc_p);
-    out->pressure_pa = (float)press_raw;
+    out->pressure_pa = press ? (float)compensate_pressure(dev, adc_20bit(&buf[0])) : 0.0f;
 
     ENSURE(out->temperature_c == out->temperature_c);  /* not NaN */
     ENSURE(out->pressure_pa == out->pressure_pa);        /* not NaN */
