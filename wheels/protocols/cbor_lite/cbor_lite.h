@@ -115,7 +115,9 @@ typedef struct {
 /** Initialize decoder over read-only input buffer. */
 void cbor_lite_dec_init(cbor_lite_decoder_t *dec, const uint8_t *buf, size_t len);
 
-/** Decode the next CBOR item. @thread_safe: yes (operates only on *dec) */
+/** Decode the next CBOR item. A float16 or float64 is skipped and returns
+ *  CBOR_LITE_ERR_MALFORMED, as only float32 is supported.
+ *  @thread_safe: yes (operates only on *dec) */
 cbor_lite_err_t cbor_lite_dec_next(cbor_lite_decoder_t *dec, cbor_lite_item_t *item);
 
 /** Return number of bytes consumed so far. */
