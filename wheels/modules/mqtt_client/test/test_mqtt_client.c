@@ -587,6 +587,110 @@ TEST(test_malformed_publish_closes_the_session)
     ASSERT_EQ(g_msg_count, 0);
 }
 
+/* ─── reconnecting from a callback ───────────────────────────── */
+
+static int g_reconnects;
+static mqtt_client_err_t g_reconnect_rc;
+
+static void reconnect_evt_cb(void *ctx, mqtt_client_state_t s, uint8_t reason)
+{
+    (void)ctx; (void)reason;
+    if (s == MQTT_CLIENT_DISCONNECTED && g_reconnects == 0) {
+        g_reconnects++;
+        g_reconnect_rc = mqtt_client_connect(&g_c);
+    }
+}
+
+static void reconnect_msg_cb(void *ctx, const char *topic, uint16_t topic_len,
+                             const uint8_t *payload, uint16_t len, uint8_t qos)
+{
+    (void)ctx; (void)topic; (void)topic_len; (void)payload; (void)len; (void)qos;
+    g_sent_len = 0;
+    mqtt_client_disconnect(&g_c);
+    g_reconnect_rc = mqtt_client_connect(&g_c);
+    g_reconnects++;
+}
+
+static void setup_auto_reconnect(void)
+{
+    mqtt_client_cfg_t cfg = { .client_id = "test" };
+
+    reset_mocks();
+    g_reconnects = 0;
+    g_reconnect_rc = MQTT_CLIENT_ERR_STATE;
+    mqtt_client_init(&g_c, &g_io, &cfg);
+    mqtt_client_on_event(&g_c, reconnect_evt_cb, NULL);
+    mqtt_client_connect(&g_c);
+}
+
+TEST(test_reconnect_on_refused_connack)
+{
+    uint8_t refused[] = { 0x20, 0x02, 0x00, 0x03 };
+    uint8_t accepted[] = { 0x20, 0x02, 0x00, 0x00 };
+
+    setup_auto_reconnect();
+    ASSERT_EQ(mqtt_client_feed(&g_c, refused, sizeof(refused)), MQTT_CLIENT_OK);
+    ASSERT_EQ(g_reconnects, 1);
+    ASSERT_EQ(g_reconnect_rc, MQTT_CLIENT_OK);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTING);
+    ASSERT_EQ(g_c.rx_len, 0);
+
+    /* the new session runs normally */
+    ASSERT_EQ(mqtt_client_feed(&g_c, accepted, sizeof(accepted)), MQTT_CLIENT_OK);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
+}
+
+/* Bytes behind the refusal came from the closed connection: an accepting
+ * CONNACK among them must not open the new session. */
+TEST(test_reconnect_drops_the_rest_of_the_feed)
+{
+    uint8_t stream[] = { 0x20, 0x02, 0x00, 0x03, 0x20, 0x02, 0x00, 0x00 };
+
+    setup_auto_reconnect();
+    ASSERT_EQ(mqtt_client_feed(&g_c, stream, sizeof(stream)), MQTT_CLIENT_OK);
+    ASSERT_EQ(g_reconnects, 1);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTING);
+    ASSERT_EQ(g_c.rx_len, 0);
+}
+
+TEST(test_reconnect_on_malformed_publish)
+{
+    uint8_t connack[] = { 0x20, 0x02, 0x00, 0x00 };
+    uint8_t bad[] = { 0x36, 0x05, 0x00, 0x01, 't', 0x00, 0x01, 0xD0, 0x00 };
+
+    setup_auto_reconnect();
+    mqtt_client_feed(&g_c, connack, sizeof(connack));
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
+
+    ASSERT_EQ(mqtt_client_feed(&g_c, bad, sizeof(bad)), MQTT_CLIENT_OK);
+    ASSERT_EQ(g_reconnects, 1);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTING);
+    ASSERT_EQ(g_c.rx_len, 0);
+}
+
+/* The PUBACK of the old session must not go out on the new one. */
+TEST(test_reconnect_from_on_message)
+{
+    uint8_t publish[] = { 0x32, 0x06, 0x00, 0x01, 't', 0x12, 0x34, 'x' };
+
+    setup_connected();
+    g_reconnects = 0;
+    g_reconnect_rc = MQTT_CLIENT_ERR_STATE;
+    mqtt_client_on_event(&g_c, NULL, NULL);
+    mqtt_client_on_message(&g_c, reconnect_msg_cb, NULL);
+
+    ASSERT_EQ(mqtt_client_feed(&g_c, publish, sizeof(publish)), MQTT_CLIENT_OK);
+    ASSERT_EQ(g_reconnects, 1);
+    ASSERT_EQ(g_reconnect_rc, MQTT_CLIENT_OK);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTING);
+    ASSERT_EQ(g_c.rx_len, 0);
+
+    /* sent: DISCONNECT (2 bytes), then CONNECT, and nothing after it */
+    ASSERT_EQ(g_sent[0], 0xE0);
+    ASSERT_EQ(g_sent[2], 0x10);
+    ASSERT_EQ(g_sent_len, 2 + 2 + g_sent[3]);
+}
+
 TEST_MAIN("mqtt_client")
     RUN(test_init_null_params);
     RUN(test_init_defaults);
@@ -628,4 +732,8 @@ TEST_MAIN("mqtt_client")
     RUN(test_nothing_is_dispatched_after_a_refused_connack);
     RUN(test_each_callback_keeps_its_own_context);
     RUN(test_malformed_publish_closes_the_session);
+    RUN(test_reconnect_on_refused_connack);
+    RUN(test_reconnect_drops_the_rest_of_the_feed);
+    RUN(test_reconnect_on_malformed_publish);
+    RUN(test_reconnect_from_on_message);
 TEST_MAIN_END()
