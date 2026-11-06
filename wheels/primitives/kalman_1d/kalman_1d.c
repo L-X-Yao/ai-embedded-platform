@@ -26,7 +26,14 @@
 
 #include "kalman_1d.h"
 #include "contract.h"
+#include <stdbool.h>
 #include <string.h>
+
+/* v - v is 0 for a finite v, and NaN for NaN and both infinities. */
+static bool is_finite(float v)
+{
+    return (v - v) == 0.0f;
+}
 
 kalman_1d_err_t kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg)
 {
@@ -55,9 +62,9 @@ float kalman_1d_update(kalman_1d_t *kf, float z)
     {
         return 0.0f;
     }
-    /* NaN-safe guard: reject NaN measurement (api-conventions §2.5).
-     * A NaN z would propagate into kf->x, permanently corrupting state. */
-    if (!(z == z))
+    /* NaN-safe guard: reject NaN and infinite measurements (api-conventions
+     * §2.5). Either would reach kf->x, permanently corrupting state. */
+    if (!is_finite(z))
     {
         return kf->x;
     }
@@ -75,9 +82,18 @@ float kalman_1d_update(kalman_1d_t *kf, float z)
     float p_pred = kf->p + kf->q;
 
     /* Update */
-    kf->k = p_pred / (p_pred + kf->r);
-    kf->x = kf->x + kf->k * (z - kf->x);
-    kf->p = (1.0f - kf->k) * p_pred;
+    float k = p_pred / (p_pred + kf->r);
+    float x = kf->x + k * (z - kf->x);
+
+    /* z - x overflows when finite extremes meet: skip the sample as above. */
+    if (!is_finite(x))
+    {
+        return kf->x;
+    }
+
+    kf->k = k;
+    kf->x = x;
+    kf->p = (1.0f - k) * p_pred;
 
     INVARIANT(kf->p > 0.0f);
     INVARIANT(kf->k >= 0.0f && kf->k <= 1.0f);

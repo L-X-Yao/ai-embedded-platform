@@ -31,7 +31,8 @@ kalman_1d_err_t kalman_1d_init(kalman_1d_t *kf, const kalman_1d_cfg_t *cfg);
 
 /* Feed measurement, return updated state estimate.
  * First call sets x=measurement, P=1.0 (bootstrap).
- * Returns 0.0f on NULL; returns current estimate unchanged if z is NaN.
+ * Returns 0.0f on NULL. Returns the current estimate, with the state
+ * unchanged, if z is NaN or infinite or the step to z overflows a float.
  * @thread_safe: no  @isr_safe: yes (if instance not shared) */
 float kalman_1d_update(kalman_1d_t *kf, float z);
 

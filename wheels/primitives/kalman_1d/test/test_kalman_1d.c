@@ -318,6 +318,55 @@ TEST(test_update_nan)
     ASSERT_TRUE(kalman_1d_get(&kf) == kalman_1d_get(&kf));
 }
 
+/* q=0.01 r=1 fed 1, 2, 3, by hand:
+ *   after 2: p_pred = 1.01, k = 1.01/2.01, x = 1.5024876, p = 0.5024876
+ *   after 3: p_pred = 0.5124876, k = 0.3388374, x = 2.0099006
+ * A bad sample between 2 and 3 must not change any of that. */
+static void check_sample_is_skipped(float bad)
+{
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.01f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    kalman_1d_update(&kf, 1.0f);
+    ASSERT_NEAR(kalman_1d_update(&kf, 2.0f), 1.5024876f, 1e-5f);
+    ASSERT_NEAR(kalman_1d_update(&kf, bad), 1.5024876f, 1e-5f);
+    ASSERT_NEAR(kalman_1d_update(&kf, 3.0f), 2.0099006f, 1e-4f);
+}
+
+TEST(test_update_infinity_is_skipped)
+{
+    check_sample_is_skipped((float)INFINITY);
+    check_sample_is_skipped(-(float)INFINITY);
+}
+
+TEST(test_update_infinity_as_first_sample)
+{
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.01f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    ASSERT_NEAR(kalman_1d_update(&kf, (float)INFINITY), 0.0f, 1e-6f);
+    /* Not bootstrapped yet, so the next real sample is taken as it is. */
+    ASSERT_NEAR(kalman_1d_update(&kf, 5.0f), 5.0f, 1e-6f);
+}
+
+TEST(test_update_overflow_is_skipped)
+{
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.01f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    kalman_1d_update(&kf, 3.0e38f);
+
+    /* z - x = -6e38 does not fit in a float, though z and x both do. */
+    ASSERT_TRUE(kalman_1d_update(&kf, -3.0e38f) == 3.0e38f);
+
+    /* A sample the filter can use still moves it. */
+    float next = kalman_1d_update(&kf, 2.0e38f);
+    ASSERT_TRUE(next < 3.0e38f && next > 2.0e38f);
+}
+
 /* ------------------------------------------------------------------ */
 /* Main                                                                 */
 /* ------------------------------------------------------------------ */
@@ -346,4 +395,7 @@ TEST_MAIN("kalman_1d")
     RUN(test_get_gain_null);
     RUN(test_update_null);
     RUN(test_update_nan);
+    RUN(test_update_infinity_is_skipped);
+    RUN(test_update_infinity_as_first_sample);
+    RUN(test_update_overflow_is_skipped);
 TEST_MAIN_END()
