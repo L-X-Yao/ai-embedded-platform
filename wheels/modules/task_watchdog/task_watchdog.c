@@ -59,18 +59,25 @@ task_wd_err_t task_watchdog_register(task_watchdog_t *wd, const char *name,
     {
         return TASK_WD_ERR_PARAM;
     }
-    if (wd->count >= TASK_WD_MAX_TASKS)
+
+    /* A restarted task takes over its entry: feed reaches only the first of
+     * two, and the other would expire for a task that is being fed. */
+    task_wd_entry_t *e = find_task(wd, name);
+    if (!e)
     {
-        return TASK_WD_ERR_FULL;
+        if (wd->count >= TASK_WD_MAX_TASKS)
+        {
+            return TASK_WD_ERR_FULL;
+        }
+        e = &wd->tasks[wd->count];
+        wd->count++;
     }
 
-    task_wd_entry_t *e = &wd->tasks[wd->count];
     e->name      = name;
     e->timeout   = timeout_ticks;
     e->last_feed = wd->tick_count;
     e->status    = TASK_WD_STATUS_OK;
     e->enabled   = true;
-    wd->count++;
     INVARIANT(wd->count <= TASK_WD_MAX_TASKS);
 
     return TASK_WD_OK;

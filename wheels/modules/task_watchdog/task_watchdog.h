@@ -69,7 +69,11 @@ typedef struct {
 /** @thread_safe: no */
 task_wd_err_t task_watchdog_init(task_watchdog_t *wd);
 
-/** @thread_safe: caller_must_lock */
+/**
+ * Start watching a task.  A name already registered is restarted with the new
+ * timeout: enabled, status OK, and fed as of now.
+ * @thread_safe: caller_must_lock
+ */
 task_wd_err_t task_watchdog_register(task_watchdog_t *wd, const char *name,
                                      uint32_t timeout_ticks);
 
