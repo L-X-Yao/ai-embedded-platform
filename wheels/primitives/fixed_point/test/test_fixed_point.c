@@ -581,6 +581,23 @@ TEST(test_to_string_five_places_exhaustive)
     }
 }
 
+/* FP_MIN is exactly -32768.0, the one value whose magnitude int32_t cannot hold. */
+TEST(test_to_string_fp_min)
+{
+    char buf[16];
+
+    ASSERT_EQ(fp_to_string(FP_MIN, buf, sizeof(buf), 0), 6);
+    ASSERT_STR_EQ(buf, "-32768");
+    ASSERT_EQ(fp_to_string(FP_MIN, buf, sizeof(buf), 2), 9);
+    ASSERT_STR_EQ(buf, "-32768.00");
+    ASSERT_EQ(fp_to_string(FP_MIN, buf, sizeof(buf), 5), 12);
+    ASSERT_STR_EQ(buf, "-32768.00000");
+
+    /* One LSB up is -32767 - 65535/65536. */
+    ASSERT_EQ(fp_to_string(FP_MIN + 1, buf, sizeof(buf), 0), 6);
+    ASSERT_STR_EQ(buf, "-32767");
+}
+
 TEST_MAIN("fixed_point")
     RUN(test_from_int_to_int_roundtrip);
     RUN(test_from_float_to_float_roundtrip);
@@ -620,4 +637,5 @@ TEST_MAIN("fixed_point")
     RUN(test_to_float_exact);
     RUN(test_to_string_five_places_large_fraction);
     RUN(test_to_string_five_places_exhaustive);
+    RUN(test_to_string_fp_min);
 TEST_MAIN_END()

@@ -141,23 +141,19 @@ int fp_to_string(fp_t val, char *buf, uint16_t buf_size, uint8_t decimal_places)
 
     int pos = 0;
     uint16_t remaining = buf_size;
-    fp_t work = val;
 
-    /* Sign — handle FP_MIN (INT32_MIN) specially to avoid -INT32_MIN UB */
-    if (work < 0) {
+    /* Sign — the magnitude is uint32_t because FP_MIN's does not fit fp_t */
+    uint32_t magnitude = (uint32_t)val;
+    if (val < 0) {
         if (remaining < 2) { buf[0] = '\0'; return -1; }
         buf[pos++] = '-';
         remaining--;
-        if (work == (fp_t)INT32_MIN) {
-            work = INT32_MAX; /* off by 1 LSB, acceptable for formatting */
-        } else {
-            work = -work;
-        }
+        magnitude = 0u - magnitude;
     }
 
     /* Integer part */
-    uint16_t integer_part = (uint16_t)((uint32_t)work >> FP_FRAC_BITS);
-    uint16_t frac_raw     = (uint16_t)((uint32_t)work & FP_FRAC_MASK);
+    uint16_t integer_part = (uint16_t)(magnitude >> FP_FRAC_BITS);
+    uint16_t frac_raw     = (uint16_t)(magnitude & FP_FRAC_MASK);
 
     /* Convert integer to string (reverse then flip) */
     char tmp[8];
