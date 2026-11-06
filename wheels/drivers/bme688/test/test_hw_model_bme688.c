@@ -224,6 +224,35 @@ TEST(test_data_registers_readonly)
     ASSERT_EQ(model.hw.regs[BME688_REG_DATA_START], original);
 }
 
+/* p.34: the memory map marks field 0 read only, and p.29 and p.42 end it
+ * with gas_r at 0x2C and 0x2D */
+TEST(test_all_of_field_0_is_readonly)
+{
+    setup();
+    bme688_model_set_data_regs(&model);
+    for (uint8_t reg = BME688_REG_DATA_START; reg <= 0x2Du; reg++) {
+        uint8_t original = model.hw.regs[reg];
+        hw_model__write_reg(&model.hw, reg, (uint8_t)~original);
+        ASSERT_EQ_HEX(model.hw.regs[reg], original);
+    }
+}
+
+/* p.34 reset state of field 0: nothing measured yet, so meas_status is 00h
+ * and the MSB of each result is 80h. */
+TEST(test_field_0_reset_state)
+{
+    bme688_model_init(&model);
+    ASSERT_EQ_HEX(model.hw.regs[BME688_REG_MEAS_STATUS], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0x1F], 0x80);  /* press_msb */
+    ASSERT_EQ_HEX(model.hw.regs[0x20], 0x00);  /* press_lsb */
+    ASSERT_EQ_HEX(model.hw.regs[0x22], 0x80);  /* temp_msb */
+    ASSERT_EQ_HEX(model.hw.regs[0x23], 0x00);  /* temp_lsb */
+    ASSERT_EQ_HEX(model.hw.regs[0x25], 0x80);  /* hum_msb */
+    ASSERT_EQ_HEX(model.hw.regs[0x26], 0x00);  /* hum_lsb */
+    ASSERT_EQ_HEX(model.hw.regs[0x2C], 0x00);  /* gas_r_msb */
+    ASSERT_EQ_HEX(model.hw.regs[0x2D], 0x00);  /* gas_r_lsb */
+}
+
 TEST_MAIN("bme688 hardware model")
     RUN(test_init_reads_chip_id);
     RUN(test_init_wrong_chip_id);
@@ -237,6 +266,8 @@ TEST_MAIN("bme688 hardware model")
     RUN(test_read_gas_resistance_from_manual);
     RUN(test_heater_code_from_manual);
     RUN(test_read_no_gas_without_run_gas);
+    RUN(test_all_of_field_0_is_readonly);
+    RUN(test_field_0_reset_state);
     RUN(test_chip_id_readonly);
     RUN(test_calib_registers_readonly);
     RUN(test_soft_reset_restores_defaults);

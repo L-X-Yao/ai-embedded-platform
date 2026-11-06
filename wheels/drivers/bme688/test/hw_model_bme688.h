@@ -204,6 +204,11 @@ static void bme688_model_init(bme688_model_t *m)
         hw_model_set_readonly(&m->hw, (uint8_t)(BME688_REG_DATA_START + i));
     }
 
+    /* p.34 reset state: 80h in the MSB of each result, the rest 00h */
+    hw_model_set_reset_value(&m->hw, 0x1F, 0x80);
+    hw_model_set_reset_value(&m->hw, 0x22, 0x80);
+    hw_model_set_reset_value(&m->hw, 0x25, 0x80);
+
     bme688_model_set_reference_calib(m);
 
     /* Write callbacks */
@@ -218,7 +223,6 @@ static void bme688_model_init(bme688_model_t *m)
     m->true_gas_range = 4;
 
     hw_model_reset(&m->hw);
-    bme688_model_set_data_regs(m);
 }
 
 __attribute__((unused))
