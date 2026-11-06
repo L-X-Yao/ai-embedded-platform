@@ -24,6 +24,17 @@ static bool qmc_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
     return true;
 }
 
+/* p.15: reading the status register resets DRDY */
+static bool qmc_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                          uint8_t *buf, uint16_t len)
+{
+    if (!mock_i2c_read_regs(ctx, dev_addr, reg, buf, len))
+        return false;
+    if (reg == 0x09)
+        mock_regs[0x09] = 0x00;
+    return true;
+}
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
@@ -34,7 +45,7 @@ static void mock_reset(void)
 
 static const qmc5883p_i2c_t mock_i2c = {
     .write_reg = qmc_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = qmc_read_regs,
     .ctx       = NULL,
 };
 
@@ -287,6 +298,18 @@ TEST(test_read_data_i2c_fail)
 
 /* ---------- main ---------- */
 
+/* p.15: DRDY "is reset to "0" by reading the status register", so the same
+ * data is not new twice. */
+TEST(test_second_read_finds_no_new_data)
+{
+    mock_reset();
+    qmc5883p_init(&mock_i2c);
+
+    qmc5883p_data_t data;
+    ASSERT_EQ(qmc5883p_read(&mock_i2c, &data), QMC5883P_OK);
+    ASSERT_EQ(qmc5883p_read(&mock_i2c, &data), QMC5883P_ERR_NOT_READY);
+}
+
 TEST_MAIN("qmc5883p")
     RUN(test_init_ok);
     RUN(test_init_wake_register);
@@ -302,6 +325,7 @@ TEST_MAIN("qmc5883p")
     RUN(test_init_cr1_write_fail);
     RUN(test_read_ok);
     RUN(test_read_not_ready);
+    RUN(test_second_read_finds_no_new_data);
     RUN(test_read_i2c_fail);
     RUN(test_read_negative);
     RUN(test_read_int16_extremes);
