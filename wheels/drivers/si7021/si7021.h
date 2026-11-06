@@ -55,10 +55,10 @@ typedef struct {
  *  @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c);
 
-/** Read relative humidity (%). @thread_safe: no @isr_safe: yes */
+/** Read relative humidity (%). @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh);
 
-/** Read temperature (deg C). @thread_safe: no @isr_safe: yes */
+/** Read temperature (deg C). @thread_safe: no @isr_safe: no */
 si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c);
 
 /** Read both: humidity first, then temperature from previous RH measurement. @thread_safe: no @isr_safe: no */
