@@ -333,6 +333,40 @@ TEST(test_reset_ok)
     ASSERT_EQ(mock_last_write[1], 0x5D);
 }
 
+/* Figure 7, Table 5: the sensor needs its wakeup time before the next command */
+TEST(test_wakeup_waits)
+{
+    setup();
+    mock_time_reset();
+    ASSERT_EQ(shtc3_wakeup(&dev), SHTC3_OK);
+    ASSERT_EQ(mock_last_write[0], 0x35);
+    ASSERT_EQ(mock_last_write[1], 0x17);
+    ASSERT_EQ(mock_time_delay_total_ms, 1);
+}
+
+/* p.7: Wakeup first, because the sensor sleeps after init and read. Table 5: tSR
+ * passes before the sensor is idle again. */
+TEST(test_reset_wakes_first_and_waits)
+{
+    setup();
+    mock_time_reset();
+    mock_write_count = 0;
+    ASSERT_EQ(shtc3_reset(&dev), SHTC3_OK);
+    ASSERT_EQ(mock_write_count, 2);
+    ASSERT_EQ(mock_last_write[0], 0x80);
+    ASSERT_EQ(mock_last_write[1], 0x5D);
+    ASSERT_EQ(mock_time_delay_total_ms, 2);
+}
+
+/* Both writes of the reset can fail */
+TEST(test_reset_i2c_fail_on_the_reset_command)
+{
+    setup();
+    mock_op_count = 0;
+    mock_fail_at = 1;
+    ASSERT_EQ(shtc3_reset(&dev), SHTC3_ERR_I2C);
+}
+
 TEST(test_reset_i2c_fail)
 {
     setup();
@@ -422,6 +456,9 @@ TEST_MAIN("shtc3")
     RUN(test_sleep_ok);
     RUN(test_wakeup_ok);
     RUN(test_reset_ok);
+    RUN(test_wakeup_waits);
+    RUN(test_reset_wakes_first_and_waits);
+    RUN(test_reset_i2c_fail_on_the_reset_command);
     RUN(test_reset_i2c_fail);
     RUN(test_sleep_null);
     RUN(test_wakeup_null);
