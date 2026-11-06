@@ -446,8 +446,14 @@ config_store_err_t config_store_load_all(config_store_t *cs)
             else if (loaded.f32 < e->min_val.f32 || loaded.f32 > e->max_val.f32)
                 in_range = false;
             break;
-        case CONFIG_TYPE_BOOL:
-            break;  /* no range constraint for booleans */
+        case CONFIG_TYPE_BOOL: {
+            /* read the byte: a bool holding anything but 0 or 1 is UB */
+            uint8_t raw;
+            memcpy(&raw, &loaded, sizeof(raw));
+            if (raw > 1U)
+                in_range = false;
+            break;
+        }
         case CONFIG_TYPE_STRING:
             if (strlen(loaded.str) >= CONFIG_STORE_STRING_SIZE)
                 in_range = false;

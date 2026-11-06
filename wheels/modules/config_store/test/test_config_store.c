@@ -401,6 +401,46 @@ TEST(test_load_failure)
     ASSERT_EQ(err, CONFIG_STORE_ERR_STORAGE);
 }
 
+/* Stores a value the way erased flash or a corrupt record would look. */
+static void mock_put_raw(const char *key, uint8_t fill)
+{
+    uint8_t raw[sizeof(config_value_t)];
+    memset(raw, fill, sizeof(raw));
+    ASSERT_EQ(mock_save(NULL, key, raw, (uint16_t)sizeof(raw)),
+              CONFIG_STORE_OK);
+}
+
+/* A bool is 0 or 1: any other stored byte is out of range, like an int
+ * outside min..max, so the entry keeps its value. */
+TEST(test_load_bool_rejects_invalid_byte)
+{
+    setup(&mock_storage);
+    config_store_define_bool(&cs, "flag", false);
+
+    mock_put_raw("flag", 0xFFU);
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_OK);
+
+    uint8_t stored;
+    memcpy(&stored, &cs.entries[0].current, 1);
+    ASSERT_EQ(stored, 0U);
+    ASSERT_FALSE(cs.entries[0].modified);
+
+    mock_put_raw("flag", 0x02U);
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_OK);
+    memcpy(&stored, &cs.entries[0].current, 1);
+    ASSERT_EQ(stored, 0U);
+    ASSERT_FALSE(cs.entries[0].modified);
+
+    /* the two legal bytes still load */
+    mock_put_raw("flag", 0x00U);
+    ((uint8_t *)mock_store[0].data)[0] = 1U;
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_OK);
+    bool val = false;
+    ASSERT_EQ(config_store_get_bool(&cs, "flag", &val), CONFIG_STORE_OK);
+    ASSERT_TRUE(val);
+    ASSERT_TRUE(cs.entries[0].modified);
+}
+
 TEST(test_reset_defaults)
 {
     setup(NULL);
@@ -575,6 +615,7 @@ TEST_MAIN("config_store")
     RUN(test_load_no_storage);
     RUN(test_save_failure);
     RUN(test_load_failure);
+    RUN(test_load_bool_rejects_invalid_byte);
     RUN(test_reset_defaults);
     RUN(test_null_params_define);
     RUN(test_null_params_get_set);
