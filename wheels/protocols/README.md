@@ -58,7 +58,7 @@ None.
 | `mqtt_packet` | MQTT 3.1.1 报文编解码 | candidate |
 | `mqtt5_packet` | MQTT 5.0 报文编解码 | candidate |
 | `msgpack` | MessagePack 编解码 | candidate |
-| `ncp5623_parser` | NCP5623 I2C LED 协议解析 | candidate |
+| `ncp5623_parser` | ToshibaLED (TCA62724) I2C LED 协议解析 | candidate |
 | `nmea_parser` | NMEA 0183 GPS 语句解析 | candidate |
 | `ota_ab` | OTA A/B 槽管理 | candidate |
 | `protobuf_lite` | Protocol Buffers 轻量编解码 | candidate |
