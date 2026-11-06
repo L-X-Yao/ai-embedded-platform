@@ -42,9 +42,10 @@ void              memory_pool_reset(memory_pool_t *pool);
 ## Usage
 
 ```c
-static uint8_t backing[64 * 32];  /* 64 blocks of 32 bytes */
+/* 64 blocks of 32 bytes; the union makes the storage pointer-aligned */
+static union { void *align; uint8_t bytes[64 * 32]; } backing;
 memory_pool_t pool;
-memory_pool_init(&pool, backing, sizeof(backing), 32);
+memory_pool_init(&pool, backing.bytes, sizeof(backing.bytes), 32);
 
 void *blk = memory_pool_alloc(&pool);  /* O(1) */
 if (blk) {
@@ -52,6 +53,11 @@ if (blk) {
     memory_pool_free(&pool, blk);      /* O(1) */
 }
 ```
+
+Every free block holds a pointer, so `buf` must be aligned for `void *`, and
+`block_size` must be at least `sizeof(void *)` and a multiple of that alignment.
+`memory_pool_init` returns `MEMORY_POOL_ERR_SIZE` otherwise. A plain `uint8_t`
+array has no alignment guarantee.
 
 ## Supported platforms
 
