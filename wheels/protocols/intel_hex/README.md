@@ -5,8 +5,8 @@
 
 Intel HEX firmware format parser and encoder. Handles all record types:
 Data (00), EOF (01), Extended Segment (02), Start Segment (03), Extended
-Linear Address (04), and Start Linear Address (05). Checksum validation
-included. Complement to the s_record wheel. Useful for bootloaders and
+Linear Address (04), and Start Linear Address (05). Checksum and record
+shape validation included. Complement to the s_record wheel. Useful for bootloaders and
 firmware update tools. Pure C99, no heap, no OS.
 
 ## Origin

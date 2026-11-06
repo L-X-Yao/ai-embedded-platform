@@ -77,11 +77,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_modbus_rtu
 ```
 
-143 assertions across 44 test cases: frame build/parse/CRC, master request builders (FC 03/04/06/10), master response parsing, slave dispatch (read holding/input, write single/multiple), address mismatch, broadcast (write executes + no response, read skipped), exception responses (unknown FC, missing callback, callback failure), write_regs count boundary validation, null safety, master-slave round-trip integration, max frame boundary (252-byte data), oversized frame rejection, data_len uint16 overflow guard, slave re-init address change, CRC corruption at middle/first byte, build with null data, slave response buffer too small, write-multiple mismatched byte_count, slave max register count, exact minimum frame parsing.
+161 assertions across 50 test cases: frame build/parse/CRC, master request builders (FC 03/04/06/10), master response parsing, slave dispatch (read holding/input, write single/multiple), address mismatch, broadcast (write executes + no response, read skipped), exception responses (unknown FC, missing callback, callback failure), write_regs count boundary validation, null safety, master-slave round-trip integration, max frame boundary (252-byte data), oversized frame rejection, data_len uint16 overflow guard, slave re-init address change, CRC corruption at middle/first byte, build with null data, slave response buffer too small, write-multiple mismatched byte_count, slave max register count, exact minimum frame parsing.
 
 ## Test status
 
-- Unit tests (sim): PASS (44 C tests, 143 assertions)
+- Unit tests (sim): PASS (50 C tests, 161 assertions)
 - HIL: N/A
 
 ## API convention deviations

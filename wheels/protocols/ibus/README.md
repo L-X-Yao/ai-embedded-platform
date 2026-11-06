@@ -4,8 +4,8 @@
 **Layer: L2 (protocols)**
 
 FlySky iBUS serial protocol codec for RC receivers. Decodes and encodes
-32-byte frames carrying 14 channels of 16-bit servo data (range 1000-2000,
-center 1500). Frame format: `[0x20] [0x40] [ch1_lo ch1_hi ... ch14_lo ch14_hi] [cksum_lo cksum_hi]`.
+32-byte frames carrying 14 channels of servo data (range 1000-2000,
+center 1500), each in the low 12 bits of a 16-bit word. Frame format: `[0x20] [0x40] [ch1_lo ch1_hi ... ch14_lo ch14_hi] [cksum_lo cksum_hi]`.
 Pure C99, no heap, no OS.
 
 ## Origin
@@ -57,7 +57,8 @@ ibus_encode(&tx, buf, sizeof(buf));
 
 ## Known issues
 
-None.
+- Channels 15 to 18, which newer receivers carry in the top nibbles, are not
+  decoded: `ibus_decode` drops those bits and `ibus_frame_t` has no field for them.
 
 
 ## How to test

@@ -68,9 +68,12 @@ No compile-time configuration needed.
 
 ## Known issues
 
-- Validation uses simple string matching, not a full JSON parser. Malformed JSON that
-  happens to contain the right key patterns may be misclassified.
-- Method names containing escaped quotes are not handled in extract_method.
+- Validation follows strings and nesting to read the top-level keys, but it is not a
+  full JSON parser. Malformed JSON that happens to contain the right key patterns may
+  be misclassified.
+- A batch, which is an array, validates as invalid: only an object has keys here.
+- extract_method returns the raw JSON text, so a method name with escapes reads back
+  with them.
 - Integer id only (no string or null ids per JSON-RPC 2.0 spec extension).
 - snprintf dependency means the C library must provide it (standard on all targets).
 
@@ -83,11 +86,11 @@ cmake -B build -S . && cmake --build build
 ./build/test_null_json_rpc
 ```
 
-29 tests + 16 null tests: request building (with/without params, overflow, null), response building (scalar, object, null), error building (standard codes, null), validation (request/response/error/invalid/wrong version/null/empty), method extraction (found/not found/null), id extraction (positive/negative/zero/not found/null), round-trip request and error, standard error code constants.
+50 tests + 16 null tests: request building (with/without params, overflow, null), response building (scalar, object, null), error building (standard codes, null), validation (request/response/error/invalid/wrong version/null/empty), method extraction (found/not found/null), id extraction (positive/negative/zero/not found/null), round-trip request and error, standard error code constants.
 
 ## Test status
 
-- Unit tests (sim): PASS (29 C tests + 16 null tests)
+- Unit tests (sim): PASS (50 C tests + 16 null tests)
 - HIL: N/A
 
 ## API convention deviations
