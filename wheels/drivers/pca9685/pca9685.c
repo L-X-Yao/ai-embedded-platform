@@ -98,6 +98,18 @@ static pca9685_err_t set_prescaler(pca9685_t *dev, uint16_t freq_hz)
     return PCA9685_OK;
 }
 
+static pca9685_err_t set_full_off(pca9685_t *dev, uint8_t channel)
+{
+    if (channel >= PCA9685_CHANNELS) return PCA9685_ERR_PARAM;
+    uint8_t base = (uint8_t)(REG_LED0_ON_L + channel * 4u);
+    if (!write_reg(dev, base,            0))        return PCA9685_ERR_I2C;
+    if (!write_reg(dev, (uint8_t)(base + 1u), 0))   return PCA9685_ERR_I2C;
+    if (!write_reg(dev, (uint8_t)(base + 2u), 0))   return PCA9685_ERR_I2C;
+    if (!write_reg(dev, (uint8_t)(base + 3u), FULL_ON_BIT))
+        return PCA9685_ERR_I2C;
+    return PCA9685_OK;
+}
+
 /* ---- Public API ---- */
 
 pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
@@ -128,6 +140,8 @@ pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
     if (channel >= PCA9685_CHANNELS) return PCA9685_ERR_PARAM;
     if (on > PCA9685_COUNT_MAX || off > PCA9685_COUNT_MAX)
         return PCA9685_ERR_PARAM;
+    if (on == off)  /* datasheet: never program the same value */
+        return PCA9685_ERR_PARAM;
 
     uint8_t base = (uint8_t)(REG_LED0_ON_L + channel * 4u);
 
@@ -150,17 +164,8 @@ pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
     if (!(duty_pct >= 0.0f && duty_pct <= 100.0f))
         return PCA9685_ERR_PARAM;
 
-    if (duty_pct <= 0.0f) {
-        /* Full OFF */
-        if (channel >= PCA9685_CHANNELS) return PCA9685_ERR_PARAM;
-        uint8_t base = (uint8_t)(REG_LED0_ON_L + channel * 4u);
-        if (!write_reg(dev, base,            0))        return PCA9685_ERR_I2C;
-        if (!write_reg(dev, (uint8_t)(base + 1u), 0))   return PCA9685_ERR_I2C;
-        if (!write_reg(dev, (uint8_t)(base + 2u), 0))   return PCA9685_ERR_I2C;
-        if (!write_reg(dev, (uint8_t)(base + 3u), FULL_ON_BIT))
-            return PCA9685_ERR_I2C;
-        return PCA9685_OK;
-    }
+    if (duty_pct <= 0.0f)
+        return set_full_off(dev, channel);
     if (duty_pct >= 100.0f) {
         /* Full ON */
         if (channel >= PCA9685_CHANNELS) return PCA9685_ERR_PARAM;
@@ -174,6 +179,8 @@ pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
 
     uint16_t off = (uint16_t)(duty_pct * 4095.0f / 100.0f + 0.5f);
     if (off > PCA9685_COUNT_MAX) off = PCA9685_COUNT_MAX;
+    if (off == 0u)  /* too short for one count, and would equal ON */
+        return set_full_off(dev, channel);
     return pca9685_set_pwm(dev, channel, 0, off);
 }
 
@@ -190,6 +197,8 @@ pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
     if (off > PCA9685_COUNT_MAX) off = PCA9685_COUNT_MAX;
     uint16_t off16 = (off <= 0xFFFFU) ? (uint16_t)off : 0xFFFFU;
 
+    if (off16 == 0u)  /* too short for one count, and would equal ON */
+        return set_full_off(dev, channel);
     return pca9685_set_pwm(dev, channel, 0, off16);
 }
 
