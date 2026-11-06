@@ -169,7 +169,9 @@ if [[ ${#NAME_FILTER[@]} -gt 0 ]]; then
             [[ "$tname" == "$f" ]] && FILTERED+=("$t") && break
         done
     done
-    TARGETS=("${FILTERED[@]:-}")
+    # Not "${FILTERED[@]:-}": that leaves one empty element in an empty result,
+    # and the "no tests" check below never fires.
+    TARGETS=(${FILTERED[@]+"${FILTERED[@]}"})
 
     declare -a FILTERED_PY=()
     for p in "${PYTEST[@]:-}"; do
@@ -178,7 +180,7 @@ if [[ ${#NAME_FILTER[@]} -gt 0 ]]; then
             [[ "$pname" == "$f" ]] && FILTERED_PY+=("$p") && break
         done
     done
-    PYTEST=("${FILTERED_PY[@]:-}")
+    PYTEST=(${FILTERED_PY[@]+"${FILTERED_PY[@]}"})
 fi
 
 if [[ ${#TARGETS[@]} -eq 0 && ${#PYTEST[@]} -eq 0 ]]; then
@@ -524,6 +526,11 @@ fi
 
 if [[ $PASSED -eq 0 && $SKIPPED -gt 0 ]]; then
     echo -e "  ${YELLOW}All tests were skipped.${NC}"
+    exit 2
+fi
+
+if [[ $TOTAL -eq 0 ]]; then
+    echo -e "  ${RED}No tests ran.${NC}"
     exit 2
 fi
 
