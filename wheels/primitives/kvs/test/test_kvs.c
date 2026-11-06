@@ -406,6 +406,121 @@ TEST(test_longest_key_survives_reboot)
 
 /* ---------- main ---------- */
 
+/* ---------- tsdb ---------- */
+
+#define TSDB_PART_ADDR    53248 /* the "tsdb" partition in fal_cfg.h */
+#define TSDB_SECTOR_COUNT 3
+
+static struct fdb_tsdb test_tsdb;
+static fdb_time_t tsdb_now;
+
+static fdb_time_t tsdb_get_time(void)
+{
+    return ++tsdb_now;
+}
+
+static fdb_err_t init_tsdb(void)
+{
+    uint32_t sec_size = MOCK_BLOCK_SIZE;
+
+    memset(&test_tsdb, 0, sizeof(test_tsdb));
+    fdb_tsdb_control(&test_tsdb, FDB_TSDB_CTRL_SET_SEC_SIZE, &sec_size);
+    return fdb_tsdb_init(&test_tsdb, "log", "tsdb", tsdb_get_time, 64, NULL);
+}
+
+/* What a power cut between erase and header write leaves. */
+static void blank_tsdb_sector(int n)
+{
+    memset(mock_flash_buf + TSDB_PART_ADDR + n * MOCK_BLOCK_SIZE, 0xFF,
+           MOCK_BLOCK_SIZE);
+}
+
+static bool tsdb_sector_has_header(int n)
+{
+    const uint8_t *hdr = mock_flash_buf + TSDB_PART_ADDR + n * MOCK_BLOCK_SIZE;
+
+    for (size_t i = 0; i < 32; i++) {
+        if (hdr[i] != 0xFF) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int8_t count_tsl_cb(fdb_tsl_t tsl, void *arg)
+{
+    (void)tsl;
+    (*(int *)arg)++;
+    return 0; /* carry on */
+}
+
+static int tsdb_count(void)
+{
+    int n = 0;
+
+    fdb_tsl_iter(&test_tsdb, count_tsl_cb, &n);
+    return n;
+}
+
+/* The format that repairs a bad header must not skip it, whatever sector
+ * came before it, or the logs written next are lost at the following boot. */
+TEST(test_tsdb_init_repairs_blank_sector)
+{
+    for (int bad = 0; bad < TSDB_SECTOR_COUNT; bad++) {
+        struct fdb_blob blob;
+        int val = 7;
+
+        reset_flash();
+        tsdb_now = 0;
+        ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+        blank_tsdb_sector(bad);
+        ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+        ASSERT_TRUE(tsdb_sector_has_header(bad));
+
+        for (int i = 0; i < 10; i++) {
+            ASSERT_EQ(fdb_tsl_append(&test_tsdb,
+                                     fdb_blob_make(&blob, &val, sizeof(val))),
+                      FDB_NO_ERR);
+        }
+        ASSERT_EQ(tsdb_count(), 10);
+        ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+        ASSERT_EQ(tsdb_count(), 10);
+    }
+}
+
+TEST(test_tsdb_clean_repairs_blank_sector)
+{
+    for (int bad = 0; bad < TSDB_SECTOR_COUNT; bad++) {
+        reset_flash();
+        tsdb_now = 0;
+        ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+        blank_tsdb_sector(bad);
+        ASSERT_EQ(fdb_tsl_clean(&test_tsdb), FDB_NO_ERR);
+        ASSERT_TRUE(tsdb_sector_has_header(bad));
+    }
+}
+
+static void note_percent(uint8_t percent, void *arg)
+{
+    *(uint8_t *)arg = percent;
+}
+
+TEST(test_tsdb_clean_progress_repairs_blank_sector)
+{
+    for (int bad = 0; bad < TSDB_SECTOR_COUNT; bad++) {
+        uint8_t percent = 0;
+
+        reset_flash();
+        tsdb_now = 0;
+        ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+        blank_tsdb_sector(bad);
+        ASSERT_EQ(fdb_tsl_clean_with_progress(&test_tsdb, note_percent, &percent),
+                  FDB_NO_ERR);
+        ASSERT_EQ(percent, 100);
+        ASSERT_TRUE(tsdb_sector_has_header(bad));
+    }
+}
+
 TEST_MAIN("kvs")
     RUN(test_fal_init);
     RUN(test_kvdb_init);
@@ -422,5 +537,8 @@ TEST_MAIN("kvs")
     RUN(test_key_at_name_max_is_refused);
     RUN(test_every_accepted_key_survives_reboot);
     RUN(test_longest_key_survives_reboot);
+    RUN(test_tsdb_init_repairs_blank_sector);
+    RUN(test_tsdb_clean_repairs_blank_sector);
+    RUN(test_tsdb_clean_progress_repairs_blank_sector);
 TEST_MAIN_END()
 
