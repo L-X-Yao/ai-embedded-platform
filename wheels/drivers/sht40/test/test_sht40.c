@@ -56,11 +56,13 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
 }
 
 static uint32_t mock_delay_calls;
+static uint32_t mock_delay_total_ms;
 
 static void mock_delay(void *ctx, uint16_t ms)
 {
-    (void)ctx; (void)ms;
+    (void)ctx;
     mock_delay_calls++;
+    mock_delay_total_ms += ms;
 }
 
 static const sht40_i2c_t mock_i2c = {
@@ -475,6 +477,15 @@ TEST(test_zero_init_safety)
     (void)data;
 }
 
+/* p.10 tSR: maximum 1 ms between the ACK of the command and the idle state */
+TEST(test_soft_reset_waits_tsr)
+{
+    setup();
+    mock_delay_total_ms = 0;
+    ASSERT_EQ(sht40_soft_reset(&dev), SHT40_OK);
+    ASSERT_GE(mock_delay_total_ms, 1u);
+}
+
 TEST_MAIN("sht40")
     RUN(test_init_ok);
     RUN(test_init_addr_b);
@@ -505,6 +516,7 @@ TEST_MAIN("sht40")
     RUN(test_humidity_clamp_high);
     RUN(test_soft_reset_ok);
     RUN(test_soft_reset_i2c_fail);
+    RUN(test_soft_reset_waits_tsr);
     RUN(test_read_serial_ok);
     RUN(test_read_serial_sends_89_cmd);
     RUN(test_read_serial_crc_fail);
