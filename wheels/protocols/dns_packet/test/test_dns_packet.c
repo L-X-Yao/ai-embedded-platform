@@ -315,6 +315,64 @@ TEST(test_build_parse_roundtrip)
     ASSERT_EQ(rec.cls, DNS_CLASS_IN);
 }
 
+/* RFC 1035 3.1: a domain name is terminated by a length byte of zero. */
+
+TEST(test_decode_pointer_to_a_name_with_no_root_label)
+{
+    /* Pointer at 12 to the label at 14, which ends the 18-byte packet */
+    uint8_t pkt[18];
+    memset(pkt, 0, sizeof(pkt));
+    pkt[12] = 0xC0;
+    pkt[13] = 0x0E;
+    pkt[14] = 3;
+    memcpy(pkt + 15, "abc", 3);
+
+    char name[32];
+    ASSERT_EQ(dns_decode_name(pkt, sizeof(pkt), 12, name, sizeof(name)),
+              DNS_ERR_FORMAT);
+}
+
+TEST(test_decode_labels_then_pointer_to_a_name_with_no_root_label)
+{
+    /* x at 12, then a pointer at 14 to the label at 16 */
+    uint8_t pkt[20];
+    memset(pkt, 0, sizeof(pkt));
+    pkt[12] = 1;
+    pkt[13] = 'x';
+    pkt[14] = 0xC0;
+    pkt[15] = 0x10;
+    pkt[16] = 3;
+    memcpy(pkt + 17, "abc", 3);
+
+    char name[32];
+    ASSERT_EQ(dns_decode_name(pkt, sizeof(pkt), 12, name, sizeof(name)),
+              DNS_ERR_FORMAT);
+}
+
+TEST(test_decode_label_with_no_root_label)
+{
+    uint8_t pkt[4] = { 3, 'a', 'b', 'c' };
+
+    char name[32];
+    ASSERT_EQ(dns_decode_name(pkt, sizeof(pkt), 0, name, sizeof(name)),
+              DNS_ERR_FORMAT);
+}
+
+TEST(test_decode_pointer_to_a_terminated_name)
+{
+    /* Same as the first case, with the root label present */
+    uint8_t pkt[19];
+    memset(pkt, 0, sizeof(pkt));
+    pkt[12] = 0xC0;
+    pkt[13] = 0x0E;
+    pkt[14] = 3;
+    memcpy(pkt + 15, "abc", 3);
+
+    char name[32];
+    ASSERT_EQ(dns_decode_name(pkt, sizeof(pkt), 12, name, sizeof(name)), 2);
+    ASSERT_EQ(strcmp(name, "abc"), 0);
+}
+
 TEST_MAIN("dns_packet")
     RUN(test_build_query_a_record);
     RUN(test_build_query_aaaa_type);
@@ -332,4 +390,8 @@ TEST_MAIN("dns_packet")
     RUN(test_get_ipv4);
     RUN(test_nxdomain_response);
     RUN(test_build_parse_roundtrip);
+    RUN(test_decode_pointer_to_a_name_with_no_root_label);
+    RUN(test_decode_labels_then_pointer_to_a_name_with_no_root_label);
+    RUN(test_decode_label_with_no_root_label);
+    RUN(test_decode_pointer_to_a_terminated_name);
 TEST_MAIN_END()
