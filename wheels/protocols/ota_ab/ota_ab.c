@@ -79,7 +79,9 @@ ota_ab_err_t ota_ab_init(ota_ab_t *m, const ota_ab_flash_t *flash,
 {
     if (!m || !flash || !layout) return OTA_AB_ERR_NULL;
     if (!flash->erase || !flash->write || !flash->read) return OTA_AB_ERR_NULL;
-    if (layout->max_boot_count == 0) return OTA_AB_ERR_PARAM;
+    /* Rollback needs boot_count > max, and boot_count stops at 255. */
+    if (layout->max_boot_count == 0 || layout->max_boot_count == 255)
+        return OTA_AB_ERR_PARAM;
     if (layout->params_size < sizeof(ota_ab_params_t)) return OTA_AB_ERR_PARAM;
     m->flash = flash;
     m->layout = *layout;

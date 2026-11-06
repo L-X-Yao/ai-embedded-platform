@@ -444,6 +444,39 @@ TEST(test_init_err_params_max_boot_zero)
     ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAM);
 }
 
+/* boot_count is 8 bits, so it can never exceed 255 and that limit never
+ * triggers a rollback. */
+TEST(test_init_err_params_max_boot_255)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_layout_t bad_layout = test_layout;
+    bad_layout.max_boot_count = 255;
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &bad_layout), OTA_AB_ERR_PARAM);
+}
+
+/* 254 is the largest limit: boot_count reaches 255, one past it, on boot 255. */
+TEST(test_rollback_at_largest_max_boot_count)
+{
+    ota_ab_t m;
+    mock_reset();
+    ota_ab_layout_t layout = test_layout;
+    layout.max_boot_count = 254;
+    ASSERT_EQ(ota_ab_init(&m, &mock_flash, &layout), OTA_AB_OK);
+    uint32_t crc = write_test_firmware(layout.slot_b_addr, 512);
+    ASSERT_EQ(ota_ab_mark_pending(&m, 512, crc), OTA_AB_OK);
+
+    for (int boot = 1; boot <= 254; boot++) {
+        ASSERT_EQ(ota_ab_boot_event(&m), OTA_AB_OK);
+        ASSERT_EQ(ota_ab_active_slot(&m), 1);
+        ASSERT_EQ(m.params.boot_count, boot);
+    }
+
+    ASSERT_EQ(ota_ab_boot_event(&m), OTA_AB_OK);
+    ASSERT_EQ(ota_ab_active_slot(&m), 0);
+    ASSERT_EQ(m.params.ota_flag, OTA_AB_FLAG_IDLE);
+}
+
 TEST(test_init_err_params_size_too_small)
 {
     ota_ab_t m;
@@ -512,6 +545,8 @@ TEST_MAIN("ota_ab")
     RUN(test_crc32_known_vector);
     RUN(test_boot_event_crc_mismatch);
     RUN(test_init_err_params_max_boot_zero);
+    RUN(test_init_err_params_max_boot_255);
+    RUN(test_rollback_at_largest_max_boot_count);
     RUN(test_init_err_params_size_too_small);
     RUN(test_boot_event_rejects_fw_size_past_slot);
     RUN(test_boot_event_rejects_zero_fw_size);
