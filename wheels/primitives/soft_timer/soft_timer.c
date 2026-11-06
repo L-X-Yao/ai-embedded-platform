@@ -90,6 +90,12 @@ soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id)
     {
         return SOFT_TIMER_ERR_PARAM;
     }
+    /* A fired one-shot sits at 0, which tick would take as due at once.
+     * A stopped timer keeps what it has left. */
+    if (mgr->timers[id].remaining == 0)
+    {
+        mgr->timers[id].remaining = mgr->timers[id].period;
+    }
     mgr->timers[id].active = true;
     return SOFT_TIMER_OK;
 }
