@@ -258,6 +258,111 @@ TEST(test_model_stores_a_register_byte)
     ASSERT_EQ(model.ctrl, 0x00);
 }
 
+/* p.18: "No channel selected, power-up/reset default state" */
+TEST(test_model_powers_up_with_no_channel)
+{
+    setup();
+    ASSERT_EQ(model.ctrl, 0x00);
+    ASSERT_EQ(model.active, 0x00);
+}
+
+/* p.17: "When a channel is selected, the channel becomes active after a stop
+ * condition has been placed on the I2C bus." */
+TEST(test_model_channel_turns_on_at_the_stop)
+{
+    setup();
+    const uint8_t mask = 0x04;
+
+    model.no_stop = true;
+    ASSERT_TRUE(tca9548a_model_write_raw(&model, ADDR, &mask, 1));
+    ASSERT_EQ(model.ctrl, 0x04);
+    ASSERT_EQ(model.active, 0x00);
+
+    /* The next STOP on the bus does it, here at the end of a read */
+    uint8_t val = 0;
+    ASSERT_TRUE(tca9548a_model_read_raw(&model, ADDR, &val, 1));
+    ASSERT_EQ(val, 0x04);
+    ASSERT_EQ(model.active, 0x04);
+}
+
+TEST(test_model_channel_turns_off_at_the_stop_too)
+{
+    setup();
+    const uint8_t on = 0x04;
+    const uint8_t off = 0x00;
+
+    ASSERT_TRUE(tca9548a_model_write_raw(&model, ADDR, &on, 1));
+    model.no_stop = true;
+    ASSERT_TRUE(tca9548a_model_write_raw(&model, ADDR, &off, 1));
+    ASSERT_EQ(model.active, 0x04);
+}
+
+/* p.17: "If multiple bytes are received by the TCA9548A, it saves the last byte
+ * received", so only that one reaches the channels */
+TEST(test_model_only_the_last_byte_reaches_the_channels)
+{
+    setup();
+    const uint8_t two[2] = { 0x11, 0x22 };
+    ASSERT_TRUE(tca9548a_model_write_raw(&model, ADDR, two, 2));
+    ASSERT_EQ(model.active, 0x22);
+}
+
+/* A NACK at the address changes nothing */
+TEST(test_model_wrong_address_reaches_no_channel)
+{
+    setup();
+    const uint8_t mask = 0x04;
+    ASSERT_FALSE(tca9548a_model_write_raw(&model, ADDR + 1, &mask, 1));
+    ASSERT_EQ(model.active, 0x00);
+}
+
+/* p.18: RESET low: "the TCA9548A resets its registers and I2C state machine and
+ * deselects all channels" */
+TEST(test_model_reset_pin_deselects_all)
+{
+    setup();
+    const uint8_t mask = 0x81;
+    ASSERT_TRUE(tca9548a_model_write_raw(&model, ADDR, &mask, 1));
+
+    tca9548a_model_reset_pin(&model);
+    ASSERT_EQ(model.ctrl, 0x00);
+    ASSERT_EQ(model.active, 0x00);
+}
+
+/* The driver's writes end in a STOP, so its channels are really connected */
+TEST(test_driver_connects_the_channels)
+{
+    setup();
+    tca9548a_t dev;
+    ASSERT_EQ(tca9548a_init(&dev, &model_i2c, ADDR), TCA9548A_OK);
+    ASSERT_EQ(model.active, 0x00);
+
+    ASSERT_EQ(tca9548a_select(&dev, 2), TCA9548A_OK);
+    ASSERT_EQ(model.active, 0x04);
+    ASSERT_EQ(tca9548a_select_multi(&dev, 0x81), TCA9548A_OK);
+    ASSERT_EQ(model.active, 0x81);
+    ASSERT_EQ(tca9548a_disable_all(&dev), TCA9548A_OK);
+    ASSERT_EQ(model.active, 0x00);
+}
+
+/* After a RESET pulse the driver's cache is out of date until it reads the chip.
+ * tca9548a_get_channel brings it back, and the next select goes out on the bus. */
+TEST(test_get_channel_recovers_from_a_reset_pulse)
+{
+    setup();
+    tca9548a_t dev;
+    ASSERT_EQ(tca9548a_init(&dev, &model_i2c, ADDR), TCA9548A_OK);
+    ASSERT_EQ(tca9548a_select(&dev, 3), TCA9548A_OK);
+
+    tca9548a_model_reset_pin(&model);
+
+    uint8_t mask = 0xFF;
+    ASSERT_EQ(tca9548a_get_channel(&dev, &mask), TCA9548A_OK);
+    ASSERT_EQ(mask, 0x00);
+    ASSERT_EQ(tca9548a_select(&dev, 3), TCA9548A_OK);
+    ASSERT_EQ(model.active, 0x08);
+}
+
 TEST_MAIN("tca9548a hardware model")
     RUN(test_init_disables_all_channels);
     RUN(test_init_rejects_invalid_addr);
@@ -278,4 +383,12 @@ TEST_MAIN("tca9548a hardware model")
     RUN(test_get_channel_sees_what_the_chip_holds);
     RUN(test_model_keeps_the_last_byte);
     RUN(test_model_stores_a_register_byte);
+    RUN(test_model_powers_up_with_no_channel);
+    RUN(test_model_channel_turns_on_at_the_stop);
+    RUN(test_model_channel_turns_off_at_the_stop_too);
+    RUN(test_model_only_the_last_byte_reaches_the_channels);
+    RUN(test_model_wrong_address_reaches_no_channel);
+    RUN(test_model_reset_pin_deselects_all);
+    RUN(test_driver_connects_the_channels);
+    RUN(test_get_channel_recovers_from_a_reset_pulse);
 TEST_MAIN_END()
