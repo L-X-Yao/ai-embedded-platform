@@ -455,7 +455,7 @@ config_store_err_t config_store_load_all(config_store_t *cs)
             break;
         }
         case CONFIG_TYPE_STRING:
-            if (strlen(loaded.str) >= CONFIG_STORE_STRING_SIZE)
+            if (!memchr(loaded.str, 0, CONFIG_STORE_STRING_SIZE))
                 in_range = false;
             break;
         default:
