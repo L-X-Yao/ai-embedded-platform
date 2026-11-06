@@ -14,6 +14,8 @@
 #   test_all.sh --parallel -j 4  # run tests in parallel with 4 jobs
 #
 # Each test dir gets its own build_ta/ subdirectory (ignored via .gitignore).
+# Every add_executable target in a test dir runs, not only test_<name>: a
+# wheel also has test_null_, test_boundary_, test_hw_model_ and prop_ targets.
 # VSF-dependent tests (log wheel) are skipped unless VSF_PATH is set or
 # the default ../../../vsf relative path exists.
 #
@@ -214,6 +216,53 @@ is_linux() {
     [[ "$(uname -s)" == "Linux" ]]
 }
 
+# The add_executable targets of a test dir, in file order. Same set as
+# extract_test_targets() in tooling/audit/_audit_build_base.py.
+list_targets() {
+    sed 's/#.*$//' "$1/CMakeLists.txt" | tr '\n' ' ' \
+        | grep -oE 'add_executable\([[:space:]]*[A-Za-z0-9_]+' \
+        | sed -E 's/^add_executable\([[:space:]]*//' || true
+}
+
+# run_targets <src_dir> <build_dir> <log>
+# Runs every target from inside the build dir, so a test that writes a
+# relative path stays out of the tree, as under audit_sanitizer.py. Prints a
+# one-line result, appends the output of each failing target to <log>, and
+# returns non-zero if any target fails or has no binary.
+run_targets() {
+    local src_dir="$1" build_dir="$2" log="$3"
+    local -a targets=() failed=()
+    local t exe out n cases=0
+
+    mapfile -t targets < <(list_targets "$src_dir")
+    if [[ ${#targets[@]} -eq 0 ]]; then
+        echo "no add_executable in CMakeLists.txt"
+        return 1
+    fi
+
+    for t in "${targets[@]}"; do
+        exe="$build_dir/$t"
+        [[ -x "$exe" ]] || exe="$build_dir/$t.exe"
+        if [[ ! -x "$exe" ]]; then
+            failed+=("$t(no binary)")
+            continue
+        fi
+        if out=$(cd "$build_dir" && "$exe" 2>&1); then
+            n=$(grep -oE '[0-9]+ passed' <<< "$out" | tail -1 | grep -oE '[0-9]+' || true)
+            cases=$((cases + ${n:-0}))
+        else
+            failed+=("$t")
+            { echo "--- $t"; tail -10 <<< "$out"; } >> "$log"
+        fi
+    done
+
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        echo "${#failed[@]} of ${#targets[@]} targets failed: ${failed[*]}"
+        return 1
+    fi
+    echo "${#targets[@]} targets, $cases cases"
+}
+
 run_c_test() {
     local name="$1" src_dir="$2" type="$3"
     TOTAL=$((TOTAL + 1))
@@ -255,37 +304,15 @@ run_c_test() {
         return 0
     fi
 
-    # Find test executable
-    local exe=""
-    for candidate in "$build_dir/test_${name}" "$build_dir/${name}_test" "$build_dir/test_main"; do
-        [[ -x "$candidate" ]] && exe="$candidate" && break
-    done
-    # Fallback: first executable in build dir
-    if [[ -z "$exe" ]]; then
-        exe="$(find "$build_dir" -maxdepth 1 -type f -executable 2>/dev/null | head -1 || true)"
-    fi
-
-    if [[ -z "$exe" ]]; then
-        echo -e "  ${RED}FAIL${NC}  $name  (no test executable found in $build_dir)"
-        FAILED=$((FAILED + 1))
-        FAIL_NAMES+=("$name")
-        return 0
-    fi
-
     # Run
-    local output
-    if output=$("$exe" 2>&1); then
-        local summary_line
-        summary_line=$(echo "$output" | grep -E '[0-9]+ passed' | tail -1 || true)
-        if [[ -n "$summary_line" ]]; then
-            echo -e "  ${GREEN}PASS${NC}  $name  (${summary_line})"
-        else
-            echo -e "  ${GREEN}PASS${NC}  $name"
-        fi
+    local summary run_log="$build_dir.run.log"
+    : > "$run_log"
+    if summary=$(run_targets "$src_dir" "$build_dir" "$run_log"); then
+        echo -e "  ${GREEN}PASS${NC}  $name  (${summary})"
         PASSED=$((PASSED + 1))
     else
-        echo -e "  ${RED}FAIL${NC}  $name  (test execution failed)"
-        echo "$output" | tail -10
+        echo -e "  ${RED}FAIL${NC}  $name  (${summary})"
+        tail -30 "$run_log"
         FAILED=$((FAILED + 1))
         FAIL_NAMES+=("$name")
     fi
@@ -370,26 +397,13 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
             echo "FAIL|$name|build failed" > "$rf"; return 0
         fi
 
-        local exe=""
-        for candidate in "$build_dir/test_${name}" "$build_dir/${name}_test" "$build_dir/test_main"; do
-            [[ -x "$candidate" ]] && exe="$candidate" && break
-        done
-        if [[ -z "$exe" ]]; then
-            exe="$(find "$build_dir" -maxdepth 1 -type f -executable 2>/dev/null | head -1 || true)"
-        fi
-        if [[ -z "$exe" ]]; then
-            rm -rf "$build_dir"
-            echo "FAIL|$name|no test executable found" > "$rf"; return 0
-        fi
-
-        local test_output
-        if test_output=$("$exe" 2>&1); then
-            local summary
-            summary=$(echo "$test_output" | grep -E '[0-9]+ passed' | tail -1 || true)
-            echo "PASS|$name|${summary:-ok}" > "$rf"
+        # The build went through: from here the log holds only test failures.
+        : > "$of"
+        local summary
+        if summary=$(run_targets "$src_dir" "$build_dir" "$of"); then
+            echo "PASS|$name|$summary" > "$rf"
         else
-            echo "$test_output" >> "$of"
-            echo "FAIL|$name|test execution failed" > "$rf"
+            echo "FAIL|$name|$summary" > "$rf"
         fi
         rm -rf "$build_dir"
     }
@@ -455,7 +469,7 @@ if $PARALLEL && ! $FAIL_FAST && ! $COVERAGE; then
                 FAIL_NAMES+=("$name")
                 echo -e "  ${RED}FAIL${NC}  $name  (${msg})"
                 base="${rf%.result}"
-                [[ -f "${base}.output" ]] && tail -10 "${base}.output"
+                [[ -f "${base}.output" ]] && tail -30 "${base}.output"
                 ;;
             SKIP)
                 SKIPPED=$((SKIPPED + 1))
