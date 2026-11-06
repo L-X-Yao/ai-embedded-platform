@@ -18,15 +18,21 @@
 #define REG_MANUFACTURER_ID 0x7E
 #define REG_DEVICE_ID       0x7F
 
+/* SBOS681C Figure 24: OVF, CRF, FH and FL are read-only */
+#define CFG_WRITABLE        0xFE1Fu
+#define CFG_MODE_MASK       (3u << 9)
+#define CFG_CRF             (1u << 7)
+
 #define REG16_COUNT         4
-static struct { uint8_t addr; uint16_t val; } reg16_table[REG16_COUNT];
+typedef struct { uint8_t addr; uint16_t val; } reg16_t;
+static reg16_t reg16_table[REG16_COUNT];
 
 static void reg16_reset(void)
 {
-    reg16_table[0] = (typeof(reg16_table[0])){REG_RESULT,          0x0000};
-    reg16_table[1] = (typeof(reg16_table[0])){REG_CONFIG,          0xC810};
-    reg16_table[2] = (typeof(reg16_table[0])){REG_MANUFACTURER_ID, 0x5449};
-    reg16_table[3] = (typeof(reg16_table[0])){REG_DEVICE_ID,       0x3001};
+    reg16_table[0] = (reg16_t){REG_RESULT,          0x0000};
+    reg16_table[1] = (reg16_t){REG_CONFIG,          0xC810};
+    reg16_table[2] = (reg16_t){REG_MANUFACTURER_ID, 0x5449};
+    reg16_table[3] = (reg16_t){REG_DEVICE_ID,       0x3001};
 }
 
 static int reg16_find(uint8_t addr)
@@ -56,9 +62,13 @@ static bool opt_mock_write_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
     (void)ctx; (void)dev_addr;
     if (mock_i2c_should_fail()) return false;
     mock_write_count++;
-    if (len == 2) {
+    if (len == 2 && reg == REG_CONFIG) {  /* result and IDs are read-only */
         uint16_t val = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
-        set_reg16(reg, val);
+        uint16_t old = get_reg16(REG_CONFIG);
+        val = (uint16_t)((val & CFG_WRITABLE) | (old & (uint16_t)~CFG_WRITABLE));
+        if (val & CFG_MODE_MASK)  /* p22: not a shutdown write, CRF clears */
+            val = (uint16_t)(val & (uint16_t)~CFG_CRF);
+        set_reg16(REG_CONFIG, val);
     }
     return true;
 }
@@ -73,6 +83,8 @@ static bool opt_mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
         uint16_t val = get_reg16(reg);
         buf[0] = (uint8_t)(val >> 8);
         buf[1] = (uint8_t)(val & 0xFF);
+        if (reg == REG_CONFIG)  /* p14 note 4: reading CRF clears it */
+            set_reg16(REG_CONFIG, (uint16_t)(val & (uint16_t)~CFG_CRF));
     }
     return true;
 }
@@ -295,6 +307,48 @@ TEST(test_data_ready_true)
     uint16_t cfg = get_reg16(REG_CONFIG);
     set_reg16(REG_CONFIG, cfg | (1u << 7));
     ASSERT_TRUE(opt3001_data_ready(&dev));
+    /* SBOS681C p14 note 4: "the first reads 1 and the second reads 0" */
+    ASSERT_FALSE(opt3001_data_ready(&dev));
+}
+
+/* p22: CRF is cleared by a config write "with any value except one containing
+ * the shutdown mode", and "Writing a shutdown mode does not affect" it */
+TEST(test_config_write_and_crf)
+{
+    mock_reset();
+    ASSERT_EQ(opt3001_init(&dev, &mock_i2c, 0x44), OPT3001_OK);
+    uint8_t shutdown[2] = {0xC0u, 0x10u};
+    uint8_t single[2]   = {0xC2u, 0x10u};
+
+    set_reg16(REG_CONFIG, 0xC090u);
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_CONFIG, shutdown, 2));
+    ASSERT_EQ_HEX(get_reg16(REG_CONFIG) & (1u << 7), 1u << 7);
+
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_CONFIG, single, 2));
+    ASSERT_EQ_HEX(get_reg16(REG_CONFIG) & (1u << 7), 0u);
+}
+
+/* p22 Table 10: OVF, CRF, FH and FL are read-only */
+TEST(test_config_status_fields_are_read_only)
+{
+    mock_reset();
+    uint8_t all[2] = {0xF9u, 0xFFu};
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_CONFIG, all, 2));
+    ASSERT_EQ_HEX(get_reg16(REG_CONFIG), 0xF81Fu);
+}
+
+/* p20 Figure 23 "Result Register (Read-Only)"; the two ID registers hold fixed
+ * values, reset = 5449h and 3001h */
+TEST(test_result_and_ids_are_read_only)
+{
+    mock_reset();
+    uint8_t junk[2] = {0x12u, 0x34u};
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_RESULT, junk, 2));
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_MANUFACTURER_ID, junk, 2));
+    ASSERT_TRUE(opt_mock_write_regs(NULL, 0x44, REG_DEVICE_ID, junk, 2));
+    ASSERT_EQ_HEX(get_reg16(REG_RESULT), 0x0000u);
+    ASSERT_EQ_HEX(get_reg16(REG_MANUFACTURER_ID), 0x5449u);
+    ASSERT_EQ_HEX(get_reg16(REG_DEVICE_ID), 0x3001u);
 }
 
 TEST(test_data_ready_false)
@@ -429,6 +483,9 @@ TEST_MAIN("opt3001")
     RUN(test_set_continuous_null);
     RUN(test_mode_preserves_other_bits);
     RUN(test_data_ready_true);
+    RUN(test_config_write_and_crf);
+    RUN(test_config_status_fields_are_read_only);
+    RUN(test_result_and_ids_are_read_only);
     RUN(test_data_ready_false);
     RUN(test_data_ready_null);
     RUN(test_data_ready_i2c_fail);
