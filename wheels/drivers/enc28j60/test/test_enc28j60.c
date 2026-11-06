@@ -31,6 +31,9 @@
 #define ECON2_PKTDEC 0x40U
 #define ESTAT_CLKRDY 0x01U
 
+/* Table 7-3 bit 23, Received Ok: bit 7 of the fifth header byte (Figure 7-3) */
+#define RSV_RECEIVED_OK 0x80U
+
 static uint8_t xfer_log[1024];
 static int     xfer_log_idx;
 static int     xfer_call_count;
@@ -190,6 +193,8 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
         if (mock_spi_opcode == OP_WCR) {
             *reg_ptr = tx;
+        } else if (IS_MAC_MII_REG(mock_current_bank, mock_spi_addr)) {
+            /* DS39662C p.31: BFS and BFC have no effect on these */
         } else if (mock_spi_opcode == OP_BFS) {
             *reg_ptr |= tx;
         } else if (mock_spi_opcode == OP_BFC) {
@@ -374,7 +379,7 @@ TEST(test_receive_packet)
     mock_rx_buf[1] = 0x00; /* next packet pointer high */
     mock_rx_buf[2] = 0x04; /* byte count low */
     mock_rx_buf[3] = 0x00; /* byte count high */
-    mock_rx_buf[4] = 0x00; /* status low */
+    mock_rx_buf[4] = RSV_RECEIVED_OK; /* status low */
     mock_rx_buf[5] = 0x00; /* status high */
     memcpy(&mock_rx_buf[6], test_frame, 4);
     mock_rx_buf_len = 10;
@@ -545,7 +550,7 @@ TEST(test_receive_buf_too_small_wrap)
     mock_rx_buf[1] = 0x00; /* next_pkt hi */
     mock_rx_buf[2] = 40;   /* rx_len lo */
     mock_rx_buf[3] = 0x00; /* rx_len hi */
-    mock_rx_buf[4] = 0x00; /* status lo */
+    mock_rx_buf[4] = RSV_RECEIVED_OK; /* status lo */
     mock_rx_buf[5] = 0x00; /* status hi */
     mock_rx_buf_len = 6;
     mock_rx_buf_idx = 0;
@@ -575,7 +580,7 @@ TEST(test_receive_buf_too_small_no_wrap)
     mock_rx_buf[1] = 0x00; /* next_pkt hi */
     mock_rx_buf[2] = 40;   /* rx_len lo */
     mock_rx_buf[3] = 0x00; /* rx_len hi */
-    mock_rx_buf[4] = 0x00;
+    mock_rx_buf[4] = RSV_RECEIVED_OK;
     mock_rx_buf[5] = 0x00;
     mock_rx_buf_len = 6;
     mock_rx_buf_idx = 0;
@@ -606,7 +611,7 @@ TEST(test_receive_next_pkt_nonzero)
     mock_rx_buf[1] = 0x00; /* next_pkt hi */
     mock_rx_buf[2] = 0x04; /* rx_len lo */
     mock_rx_buf[3] = 0x00; /* rx_len hi */
-    mock_rx_buf[4] = 0x00;
+    mock_rx_buf[4] = RSV_RECEIVED_OK;
     mock_rx_buf[5] = 0x00;
     memcpy(&mock_rx_buf[6], test_frame, 4);
     mock_rx_buf_len = 10;
@@ -623,6 +628,27 @@ TEST(test_receive_next_pkt_nonzero)
     ASSERT_EQ(out[3], 0x44);
     /* next_packet_ptr should be updated to 0x0010 */
     ASSERT_EQ(dev.next_packet_ptr, 0x0010);
+}
+
+/* DS39662C p.31: BFS and BFC "cannot be used on the MAC registers, MII
+ * registers, PHY registers or buffer memory" */
+TEST(test_mock_bfs_bfc_leave_mac_registers_alone)
+{
+    init_dev();
+    enc28j60_get_revision(&dev);   /* bank 3, where MAADR1 is */
+    ASSERT_EQ(mock_regs[3][MAADR1], test_mac[0]);
+
+    mock_cs_low(NULL);
+    mock_xfer(NULL, OP_BFS | MAADR1);
+    mock_xfer(NULL, 0xFFU);
+    mock_cs_high(NULL);
+    ASSERT_EQ(mock_regs[3][MAADR1], test_mac[0]);
+
+    mock_cs_low(NULL);
+    mock_xfer(NULL, OP_BFC | MAADR1);
+    mock_xfer(NULL, 0xFFU);
+    mock_cs_high(NULL);
+    ASSERT_EQ(mock_regs[3][MAADR1], test_mac[0]);
 }
 
 TEST_MAIN("enc28j60")
@@ -653,4 +679,5 @@ TEST_MAIN("enc28j60")
     RUN(test_receive_buf_too_small_wrap);
     RUN(test_receive_buf_too_small_no_wrap);
     RUN(test_receive_next_pkt_nonzero);
+    RUN(test_mock_bfs_bfc_leave_mac_registers_alone);
 TEST_MAIN_END()
