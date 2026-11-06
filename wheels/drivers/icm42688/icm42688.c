@@ -99,6 +99,8 @@ icm42688_err_t icm42688_init(icm42688_t *dev,
     if ((unsigned)cfg->gyro_range > 3) return ICM42688_ERR_PARAM;
     if (cfg->acc_odr < 1 || cfg->acc_odr > 15)  return ICM42688_ERR_PARAM;
     if (cfg->gyro_odr < 1 || cfg->gyro_odr > 15) return ICM42688_ERR_PARAM;
+    /* Init starts both sensors in LN, which these rates do not support */
+    if (odr_is_accel_lp_only(cfg->acc_odr))      return ICM42688_ERR_PARAM;
     if (odr_is_accel_lp_only(cfg->gyro_odr))     return ICM42688_ERR_PARAM;
 
     dev->spi = spi;

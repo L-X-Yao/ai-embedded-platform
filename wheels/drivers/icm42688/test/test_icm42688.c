@@ -602,6 +602,39 @@ TEST(test_init_accepts_named_gyro_odr)
     }
 }
 
+/* 31. init starts the accel in LN, and 6.25, 3.125 and 1.5625 Hz are LP mode
+ * only (DS-000347 Rev 1.6 p.58 and p.78) */
+TEST(test_init_refuses_accel_odr_below_ln_range)
+{
+    static const uint8_t lp_only[] = { 0x0C, 0x0D, 0x0E };
+
+    for (size_t i = 0; i < sizeof(lp_only); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.acc_odr = (icm42688_odr_t)lp_only[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_ERR_PARAM);
+        ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x00);      /* accel not started */
+    }
+}
+
+/* 32. every ACCEL_ODR code marked LN or "LP or LN" is still accepted (p.78) */
+TEST(test_init_accepts_accel_odr_in_ln_range)
+{
+    static const uint8_t ln_ok[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                                     0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0F };
+
+    for (size_t i = 0; i < sizeof(ln_ok); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.acc_range = ICM42688_ACC_RANGE_16G;         /* FS_SEL = 0 */
+        cfg.acc_odr   = (icm42688_odr_t)ln_ok[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+        ASSERT_EQ(mock_regs[REG_ACCEL_CONFIG0], ln_ok[i]);
+    }
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -637,4 +670,6 @@ TEST_MAIN("icm42688")
     RUN(test_accel_2g_scale);
     RUN(test_init_refuses_reserved_gyro_odr);
     RUN(test_init_accepts_named_gyro_odr);
+    RUN(test_init_refuses_accel_odr_below_ln_range);
+    RUN(test_init_accepts_accel_odr_in_ln_range);
 TEST_MAIN_END()
