@@ -19,13 +19,15 @@
 static uint8_t g_long_input[65535];
 
 static void decode_raw(const uint8_t *data, uint16_t len) {
-    // Exact-size output, so ASan sees any write past the claimed capacity.
-    uint16_t cap = (uint16_t)(base64_decoded_size(len) + 2u);
+    // Exact-size output, so ASan sees any write past the claimed capacity. The
+    // size is an upper bound, so the decoder must never call this buffer short.
+    uint16_t cap = base64_decoded_size(len);
     uint8_t *out = malloc(cap);
     if (!out) return;
 
     uint16_t out_len = cap;
-    if (base64_decode((const char *)data, len, out, &out_len) == BASE64_OK && out_len > cap) {
+    base64_err_t rc = base64_decode((const char *)data, len, out, &out_len);
+    if (rc == BASE64_ERR_OVERFLOW || (rc == BASE64_OK && out_len > cap)) {
         __builtin_trap();
     }
     free(out);
