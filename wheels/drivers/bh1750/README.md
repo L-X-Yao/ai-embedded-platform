@@ -34,10 +34,26 @@ bh1750_err_t bh1750_reset(bh1750_t *dev);
 
 HAL: command-based I2C (write raw bytes, read raw bytes — no register address).
 
+A measurement takes up to 180 ms, or 24 ms in the L modes, and the driver waits
+it out through `delay_ms`:
+
+| `delay_ms` | Continuous modes | One-time modes |
+|---|---|---|
+| set | init and `bh1750_power_on` block for one measurement; reads do not block | init blocks for one measurement, and each read measures, so it blocks too |
+| NULL | the caller waits before the first read, or it gets 0 with `BH1750_OK` | init returns `BH1750_ERR_PARAM` |
+
 ## Supported platforms
 
 - [x] Linux host (sim) — passed 2026-04-29
 - [x] Windows (TDM-GCC) — passed 2026-04-29
+
+## Datasheet check
+
+Checked on 2026-11-06 against ROHM BH1750FVI Technical Note, 2011.11 - Rev.D. Not run on hardware.
+
+- **Matched:** Addresses, opcodes, one opcode per write, the read format, the lux formula with the manual's worked examples, the init order.
+- **Fixed:** Nothing waited for a measurement, so a read straight after init gave 0 lx with `BH1750_OK`. init now waits the maximum time, 180 ms or 24 ms in L mode. One-time modes measured only in init, so every read returned the first result: each read now measures, which needs `delay_ms`, and init refuses a one-time mode without it. `bh1750_power_on` left a continuous mode stopped, so reads kept the value from before the power off, and it now restarts it. The model returned a fixed value in any state and handled one-time modes like continuous ones. None of this has run on hardware.
+- **Still open:** With `delay_ms` NULL in a continuous mode, a read that comes too early still gives 0 or an old value with `BH1750_OK`, because the driver has no clock. The model clears the data on Reset even in Power Down, where the chip ignores it, so a test could pass on a reset the chip would not do. MTreg is not supported, so there is no optical window adjustment and no 0.11 lx range. The 1.2 factor is typical, 0.96 to 1.44 by part, with no calibration input. The mode cannot change after init. The DVI reset is left to the board.
 
 ## Known issues
 
@@ -53,8 +69,9 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **8 C cases** — init null, init cmd verification, H-res lux,
-  H-res2 lux (0.5x), zero lux, I2C failure, power off/on, read null
+- Unit tests: **12 C cases** — init null, init cmd verification, H-res lux,
+  H-res2 lux (0.5x), zero lux, I2C failure, power off/on, read null, one-time
+  reads; **24 hw_model cases** with the manual's measurement times
 
 ## API convention deviations
 
