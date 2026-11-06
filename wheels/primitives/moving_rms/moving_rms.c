@@ -20,6 +20,7 @@ moving_rms_err_t moving_rms_init(moving_rms_t *ctx, float *buf, size_t window)
     ctx->head = 0;
     ctx->count = 0;
     ctx->sum_sq = 0.0f;
+    ctx->fresh_sq = 0.0f;
     for (size_t i = 0; i < window; i++)
         buf[i] = 0.0f;
     return MOVING_RMS_OK;
@@ -32,18 +33,27 @@ float moving_rms_feed(moving_rms_t *ctx, float sample)
 
     float sq = sample * sample;
     float sum_sq = ctx->sum_sq - ctx->buf[ctx->head] + sq;
+    float fresh_sq = ctx->fresh_sq + sq;
 
     /* reject NaN, Inf and a sample that overflows the sum: inf - inf would
      * leave the running sum NaN for good */
-    if (!(sum_sq >= -FLT_MAX && sum_sq <= FLT_MAX))
+    if (!(sum_sq >= -FLT_MAX && sum_sq <= FLT_MAX) || !(fresh_sq <= FLT_MAX))
         return moving_rms_get(ctx);
 
     ctx->buf[ctx->head] = sq;
     ctx->sum_sq = sum_sq;
+    ctx->fresh_sq = fresh_sq;
     if (ctx->sum_sq < 0.0f)
         ctx->sum_sq = 0.0f;
 
     ctx->head = (ctx->head + 1) % ctx->cap;
+    if (ctx->head == 0) {
+        /* Every entry was replaced since the last wrap, so fresh_sq is the
+         * sum of the window, free of what subtraction lost to rounding.
+         * Adopting it bounds that loss to one window, with no loop here. */
+        ctx->sum_sq = ctx->fresh_sq;
+        ctx->fresh_sq = 0.0f;
+    }
     if (ctx->count < ctx->cap)
         ctx->count++;
 
@@ -67,6 +77,7 @@ moving_rms_err_t moving_rms_reset(moving_rms_t *ctx)
     ctx->head = 0;
     ctx->count = 0;
     ctx->sum_sq = 0.0f;
+    ctx->fresh_sq = 0.0f;
     for (size_t i = 0; i < ctx->cap; i++)
         ctx->buf[i] = 0.0f;
     return MOVING_RMS_OK;

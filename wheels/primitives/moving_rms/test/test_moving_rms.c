@@ -149,7 +149,69 @@ TEST(test_feed_rejects_sample_overflowing_sum)
     ASSERT_EQ(rms.count, 1);
 }
 
+/* 32767^2 is so large that float loses the +-5 squares beside it. Two windows
+ * later only +-5 is left and the RMS must say so, wherever the sample fell. */
+TEST(test_large_sample_leaves_no_residue)
+{
+    float buf[64];
+    moving_rms_t r;
+
+    for (int pos = 0; pos < 64; pos++) {
+        moving_rms_init(&r, buf, 64);
+        for (int i = 0; i < pos; i++) {
+            moving_rms_feed(&r, 5.0f);
+        }
+        moving_rms_feed(&r, 32767.0f);
+
+        float v = 0.0f;
+        for (int i = 0; i < 2 * 64; i++) {
+            v = moving_rms_feed(&r, (i & 1) ? 5.0f : -5.0f);
+        }
+        ASSERT_NEAR(v, 5.0f, 1e-3f);
+    }
+}
+
+TEST(test_large_sample_leaves_no_residue_small_window)
+{
+    float buf[8];
+    moving_rms_t r;
+    moving_rms_init(&r, buf, 8);
+
+    moving_rms_feed(&r, 1e6f);
+    float v = 0.0f;
+    for (int i = 0; i < 2 * 8; i++) {
+        v = moving_rms_feed(&r, 1.0f);
+    }
+    ASSERT_NEAR(v, 1.0f, 1e-5f);
+}
+
+/* While the large sample is in the window it must still count in full. */
+TEST(test_large_sample_counts_while_in_window)
+{
+    float buf[64];
+    moving_rms_t r;
+    /* sqrt((32767^2 + 63 * 5^2) / 64) */
+    const float want = (float)sqrt((32767.0 * 32767.0 + 63.0 * 25.0) / 64.0);
+
+    for (int pos = 0; pos < 64; pos++) {
+        moving_rms_init(&r, buf, 64);
+        for (int i = 0; i < pos; i++) {
+            moving_rms_feed(&r, 5.0f);
+        }
+        moving_rms_feed(&r, 32767.0f);
+
+        float v = 0.0f;
+        for (int i = 0; i < 63; i++) {
+            v = moving_rms_feed(&r, 5.0f);
+        }
+        ASSERT_NEAR(v, want, 0.5f);
+    }
+}
+
 TEST_MAIN("moving_rms")
+    RUN(test_large_sample_leaves_no_residue);
+    RUN(test_large_sample_leaves_no_residue_small_window);
+    RUN(test_large_sample_counts_while_in_window);
     RUN(test_init_ok);
     RUN(test_init_null);
     RUN(test_get_empty);
