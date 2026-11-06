@@ -441,6 +441,39 @@ TEST(test_load_bool_rejects_invalid_byte)
     ASSERT_TRUE(cs.entries[0].modified);
 }
 
+/* Erased flash has no zero byte anywhere in the value. */
+TEST(test_load_string_without_terminator_keeps_default)
+{
+    setup(&mock_storage);
+    config_store_define_string(&cs, "name", "dflt");
+
+    mock_put_raw("name", 0xFFU);
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_OK);
+
+    char val[CONFIG_STORE_STRING_SIZE];
+    ASSERT_EQ(config_store_get_string(&cs, "name", val, sizeof(val)),
+              CONFIG_STORE_OK);
+    ASSERT_STR_EQ(val, "dflt");
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
+/* The longest legal value ends on the last byte and still loads. */
+TEST(test_load_string_full_length_loads)
+{
+    setup(&mock_storage);
+    config_store_define_string(&cs, "name", "dflt");
+
+    mock_put_raw("name", 'x');
+    mock_store[0].data[CONFIG_STORE_STRING_SIZE - 1] = 0;
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_OK);
+
+    char val[CONFIG_STORE_STRING_SIZE];
+    ASSERT_EQ(config_store_get_string(&cs, "name", val, sizeof(val)),
+              CONFIG_STORE_OK);
+    ASSERT_EQ(strlen(val), (size_t)(CONFIG_STORE_STRING_SIZE - 1));
+    ASSERT_TRUE(cs.entries[0].modified);
+}
+
 TEST(test_reset_defaults)
 {
     setup(NULL);
@@ -616,6 +649,8 @@ TEST_MAIN("config_store")
     RUN(test_save_failure);
     RUN(test_load_failure);
     RUN(test_load_bool_rejects_invalid_byte);
+    RUN(test_load_string_without_terminator_keeps_default);
+    RUN(test_load_string_full_length_loads);
     RUN(test_reset_defaults);
     RUN(test_null_params_define);
     RUN(test_null_params_get_set);
