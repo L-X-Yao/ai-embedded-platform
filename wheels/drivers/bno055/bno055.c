@@ -73,6 +73,29 @@ static bno055_err_t switch_to_mode(const bno055_t *dev, bno055_opr_mode_t mode)
     return BNO055_OK;
 }
 
+/*
+ * Every change goes through CONFIG. dev->cfg.mode follows the chip one step at
+ * a time, so after a failed write the fusion guard still sees the real mode:
+ * outside the fusion modes the Euler registers read zero.
+ */
+static bno055_err_t change_mode(bno055_t *dev, bno055_opr_mode_t mode)
+{
+    bno055_err_t err = switch_to_config(dev);
+    if (err != BNO055_OK)
+    {
+        return err;
+    }
+    dev->cfg.mode = BNO055_MODE_CONFIG;
+
+    err = switch_to_mode(dev, mode);
+    if (err != BNO055_OK)
+    {
+        return err;
+    }
+    dev->cfg.mode = mode;
+    return BNO055_OK;
+}
+
 bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
                          const bno055_cfg_t *cfg)
 {
@@ -95,6 +118,7 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
+    dev->cfg.mode = BNO055_MODE_CONFIG;  /* the mode after power-on */
 
     /* Verify chip ID */
     uint8_t id = 0;
@@ -107,15 +131,7 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
         return BNO055_ERR_ID;
     }
 
-    /* Switch to CONFIG mode first */
-    bno055_err_t err = switch_to_config(dev);
-    if (err != BNO055_OK)
-    {
-        return err;
-    }
-
-    /* Switch to desired operating mode */
-    err = switch_to_mode(dev, cfg->mode);
+    bno055_err_t err = change_mode(dev, cfg->mode);
     if (err != BNO055_OK)
     {
         return err;
@@ -192,19 +208,5 @@ bno055_err_t bno055_set_mode(bno055_t *dev, bno055_opr_mode_t mode)
         return BNO055_ERR_PARAM;
     }
 
-    /* Must go through CONFIG mode */
-    bno055_err_t err = switch_to_config(dev);
-    if (err != BNO055_OK)
-    {
-        return err;
-    }
-
-    err = switch_to_mode(dev, mode);
-    if (err != BNO055_OK)
-    {
-        return err;
-    }
-
-    dev->cfg.mode = mode;
-    return BNO055_OK;
+    return change_mode(dev, mode);
 }

@@ -257,6 +257,46 @@ TEST(test_init_requires_delay)
     ASSERT_EQ(bno055_init(&d, &no_delay, &default_cfg), BNO055_ERR_PARAM);
 }
 
+/* The chip stays in CONFIG, whose output is all zero, so reads must be refused */
+TEST(test_read_euler_refused_after_failed_mode_change)
+{
+    bno055_euler_t euler;
+    setup();
+
+    mock_fail_at = mock_op_count + 1;  /* the write out of CONFIG */
+    ASSERT_EQ(bno055_set_mode(&dev, BNO055_MODE_IMU), BNO055_ERR_I2C);
+    ASSERT_EQ(mock_regs[0x3D], BNO055_MODE_CONFIG);
+    ASSERT_EQ(dev.cfg.mode, BNO055_MODE_CONFIG);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_ERR_PARAM);
+
+    ASSERT_EQ(bno055_set_mode(&dev, BNO055_MODE_IMU), BNO055_OK);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_OK);
+}
+
+/* When the write into CONFIG fails the chip has not moved at all */
+TEST(test_read_euler_works_after_failed_write_into_config)
+{
+    bno055_euler_t euler;
+    setup();
+
+    mock_fail_next = 1;
+    ASSERT_EQ(bno055_set_mode(&dev, BNO055_MODE_IMU), BNO055_ERR_I2C);
+    ASSERT_EQ(mock_regs[0x3D], BNO055_MODE_NDOF);
+    ASSERT_EQ(dev.cfg.mode, BNO055_MODE_NDOF);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_OK);
+}
+
+TEST(test_read_euler_refused_after_failed_init)
+{
+    bno055_euler_t euler;
+    mock_reset();
+
+    mock_fail_at = 2;  /* after the ID read and the write into CONFIG */
+    ASSERT_EQ(bno055_init(&dev, &mock_i2c, &default_cfg), BNO055_ERR_I2C);
+    ASSERT_EQ(mock_regs[0x3D], BNO055_MODE_CONFIG);
+    ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_ERR_PARAM);
+}
+
 TEST_MAIN("bno055")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -278,4 +318,7 @@ TEST_MAIN("bno055")
     RUN(test_read_euler_360);
     RUN(test_read_euler_needs_fusion_mode);
     RUN(test_init_requires_delay);
+    RUN(test_read_euler_refused_after_failed_mode_change);
+    RUN(test_read_euler_works_after_failed_write_into_config);
+    RUN(test_read_euler_refused_after_failed_init);
 TEST_MAIN_END()
