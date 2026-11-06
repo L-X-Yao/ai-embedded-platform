@@ -63,25 +63,29 @@ add_test(NAME fal_boundary_tests COMMAND test_boundary_fal)
 # ---------- partition tables ----------
 # The table is compile-time, so each one needs its own build.
 
-# The tooling reads target names straight from add_executable, so they are
-# spelled out here rather than built in a loop.
+# The tooling reads target names and compile options straight from this file,
+# so they are spelled out per target rather than built in a loop.
 function(configure_table_test target table)
     target_include_directories(${target} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/bad_table
         ${COMMON_INCLUDE}
     )
     target_compile_definitions(${target} PRIVATE TABLE_${table})
-    target_compile_options(${target} PRIVATE ${STRICT_FLAGS})
     add_test(NAME fal_${target}_tests COMMAND ${target})
 endfunction()
 
 add_executable(test_table_past_end test_table_fal.c ../fal.c)
 configure_table_test(test_table_past_end PAST_END)
+target_compile_options(test_table_past_end PRIVATE ${STRICT_FLAGS})
 add_executable(test_table_offset_past_end test_table_fal.c ../fal.c)
 configure_table_test(test_table_offset_past_end OFFSET_PAST_END)
+target_compile_options(test_table_offset_past_end PRIVATE ${STRICT_FLAGS})
 add_executable(test_table_negative_offset test_table_fal.c ../fal.c)
 configure_table_test(test_table_negative_offset NEGATIVE_OFFSET)
+target_compile_options(test_table_negative_offset PRIVATE ${STRICT_FLAGS})
 add_executable(test_table_wrapping_len test_table_fal.c ../fal.c)
 configure_table_test(test_table_wrapping_len WRAPPING_LEN)
+target_compile_options(test_table_wrapping_len PRIVATE ${STRICT_FLAGS})
 add_executable(test_table_unknown_device test_table_fal.c ../fal.c)
 configure_table_test(test_table_unknown_device UNKNOWN_DEVICE)
+target_compile_options(test_table_unknown_device PRIVATE ${STRICT_FLAGS})
