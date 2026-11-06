@@ -306,7 +306,6 @@ TEST(test_set_power_mode)
     ASSERT_EQ(e, ICM42688_OK);
 
     /* Set accel LP (2), gyro standby (1) → GYRO_MODE=01<<2 | ACCEL_MODE=10 = 0x06 */
-    /* Note: standby is only for accel, but we test the register write */
     e = icm42688_set_power_mode(&dev, ICM42688_PM_LP, ICM42688_PM_STANDBY);
     ASSERT_EQ(e, ICM42688_OK);
     ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x06);
@@ -647,6 +646,30 @@ TEST(test_power_mode_refuses_gyro_lp)
     ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x0F);          /* left as init set it */
 }
 
+/* 34. the accel has no standby: ACCEL_MODE 01 "Turns accelerometer off" (p.76) */
+TEST(test_power_mode_refuses_accel_standby)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_STANDBY, ICM42688_PM_LN),
+              ICM42688_ERR_PARAM);
+    ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x0F);          /* left as init set it */
+}
+
+/* 35. gyro standby is real: GYRO_MODE 01 (p.76), with the accel left in LN */
+TEST(test_power_mode_accepts_gyro_standby)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LN, ICM42688_PM_STANDBY),
+              ICM42688_OK);
+    ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x07);          /* 01 << 2 | 11 */
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -685,4 +708,6 @@ TEST_MAIN("icm42688")
     RUN(test_init_refuses_accel_odr_below_ln_range);
     RUN(test_init_accepts_accel_odr_in_ln_range);
     RUN(test_power_mode_refuses_gyro_lp);
+    RUN(test_power_mode_refuses_accel_standby);
+    RUN(test_power_mode_accepts_gyro_standby);
 TEST_MAIN_END()
