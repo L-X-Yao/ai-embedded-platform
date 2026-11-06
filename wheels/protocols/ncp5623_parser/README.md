@@ -1,18 +1,24 @@
-# ncp5623_parser — NCP5623 I2C color protocol parser
+# ncp5623_parser — ToshibaLED (TCA62724) I2C color protocol parser
 
 **Status: candidate**
 
-Pure-software parser for the NCP5623-compatible LED color protocol used by ArduPilot flight controllers.
-Zero hardware dependency — feed raw I2C bytes in, get structured color/enable events out.
+Pure-software parser for the LED color protocol that ArduPilot's ToshibaLED driver sends to a
+TCA62724 at I2C address 0x55. Zero hardware dependency — feed raw I2C bytes in, get structured
+color/enable events out.
+
+**This is not the NCP5623 protocol, despite the name.** A real NCP5623 master
+(`AP_Notify/NCP5623.cpp`, address 0x38 or 0x39) sends single bytes of
+`(reg & 0xE0) | (data & 0x1F)`, which give no events here. The name stays because renaming the
+wheel would change its API.
 
 ## Origin
 
-Reimplemented for the needs of an internal project (NCP5623 protocol state machine).
+Reimplemented for the needs of an internal project, which called this protocol NCP5623.
 Decoupled: I2C hardware handling stays in the project, parser is pure byte-stream logic.
 
 ## Why self-written?
 
-Searched GitHub (2026-05-02). No suitable lightweight zero-dependency C99 implementation found. Trivial single-byte command format specific to the ArduPilot NCP5623 subset. Self-written per platform conventions.
+Searched GitHub (2026-05-02). No suitable lightweight zero-dependency C99 implementation found. Trivial register-write format specific to ArduPilot's ToshibaLED driver. Self-written per platform conventions.
 
 ## Dependencies
 
@@ -46,7 +52,7 @@ ncp5623_parser_stop(&parser);
 
 ## Known issues
 
-- Only handles the ArduPilot NCP5623 subset (ENABLE + COLOR). Real NCP5623 has PWM, gradual dimming, and off-timer registers — not implemented.
+- Only handles what ArduPilot's ToshibaLED driver sends (ENABLE + COLOR). The real NCP5623 format, with its PWM and gradual dimming registers, is not implemented.
 - Color output is raw 4-bit. Brightness mapping (e.g., non-zero → full brightness) is left to the consumer.
 - The `enabled` flag persists across I2C transactions (by design — ArduPilot sends ENABLE once at boot, then only COLOR commands).
 
@@ -58,11 +64,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ncp5623_parser
 ```
 
-70 assertions across 20 test cases: init state, enable/disable, color parsing, enable gating, 4-bit masking, unknown register rejection, persistence, short packet, null safety, off color, re-init state reset, empty transaction, extra-long packet, disable-then-color gating, rapid enable/disable/enable toggle, non-standard enable values (0x01/0xFF), register address boundaries (0x00/0x02/0x03/0x05/0xFF).
+77 assertions across 22 test cases: init state, enable/disable, color parsing, enable gating, 4-bit masking, unknown register rejection, persistence, short packet, null safety, off color, re-init state reset, empty transaction, extra-long packet, disable-then-color gating, rapid enable/disable/enable toggle, non-standard enable values (0x01/0xFF), register address boundaries (0x00/0x02/0x03/0x05/0xFF), ToshibaLED traffic, real NCP5623 traffic.
 
 ## Test status
 
-- Unit tests (sim): PASS (20 C tests, 70 assertions)
+- Unit tests (sim): PASS (22 C tests, 77 assertions)
 - HIL: N/A
 
 ## API convention deviations
@@ -72,7 +78,7 @@ None.
 
 ## Protocol
 
-NCP5623-compatible subset used by ArduPilot (`AP_Notify/NCP5623.cpp`):
+The TCA62724 writes ArduPilot makes at I2C address 0x55 (`AP_Notify/ToshibaLED_I2C.cpp`):
 
 | Command | I2C data (after address) | Description |
 |---------|--------------------------|-------------|

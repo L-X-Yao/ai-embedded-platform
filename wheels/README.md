@@ -471,7 +471,7 @@ for quality criteria.
 | [midi_packet](protocols/midi_packet/) | MIDI message codec |
 | [dmx512](protocols/dmx512/) | DMX512 lighting protocol data layer |
 | [syslog_packet](protocols/syslog_packet/) | Syslog packet codec (RFC 5424) |
-| [ncp5623_parser](protocols/ncp5623_parser/) | NCP5623 I2C LED driver protocol parser |
+| [ncp5623_parser](protocols/ncp5623_parser/) | ToshibaLED (TCA62724) I2C LED protocol parser |
 | [i2c_scan](protocols/i2c_scan/) | I2C bus scanner utility |
 | [ota_ab](protocols/ota_ab/) | A/B firmware slot management with rollback |
 | [crc_any](protocols/crc_any/) | Generic CRC calculator (configurable polynomial/width) |
