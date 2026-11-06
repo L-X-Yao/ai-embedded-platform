@@ -425,6 +425,20 @@ TEST(test_update_by_index_nan_rejected)
     ASSERT_EQ(telemetry_update_by_index(&telem, 0, INFINITY), TELEMETRY_ERR_PARAM);
 }
 
+/* The exact value of -3e38f: a cut text would read nine orders of magnitude
+ * too small, and still look like a number. */
+#define MINUS_3E38F_TEXT "-300000000549775575777803994281145270272"
+
+TEST(test_long_value_is_not_cut)
+{
+    setup(TELEMETRY_FMT_KEY_VALUE);
+    telemetry_register(&telem, "x");
+    ASSERT_EQ(telemetry_update(&telem, "x", -3e38f), TELEMETRY_OK);
+
+    ASSERT_EQ(telemetry_publish(&telem, 2), TELEMETRY_OK);
+    ASSERT_STR_EQ(sent_buf, "ts=2 x=" MINUS_3E38F_TEXT);
+}
+
 /* ================================================================ */
 
 TEST_MAIN("telemetry")
@@ -458,4 +472,5 @@ TEST_MAIN("telemetry")
     RUN(test_update_nan_rejected);
     RUN(test_update_inf_rejected);
     RUN(test_update_by_index_nan_rejected);
+    RUN(test_long_value_is_not_cut);
 TEST_MAIN_END()
