@@ -56,6 +56,19 @@ hcsr04_err_t hcsr04_read_us(hcsr04_t *dev, uint32_t *echo_us)
 
     const hcsr04_hal_t *hal = dev->hal;
 
+    /* With no object some modules hold echo high for longer than
+     * ECHO_TIMEOUT_US, so a retry can start inside the last pulse. Timing
+     * that tail would report a distance that is not there. */
+    uint32_t idle_start = hal->get_time_us(hal->ctx);
+    while (hal->echo_read(hal->ctx))
+    {
+        uint32_t elapsed = hal->get_time_us(hal->ctx) - idle_start;
+        if (elapsed >= ECHO_TIMEOUT_US)
+        {
+            return HCSR04_ERR_TIMEOUT;
+        }
+    }
+
     /* Send 10us trigger pulse */
     hal->trigger_low(hal->ctx);
     hal->delay_us(hal->ctx, 2);

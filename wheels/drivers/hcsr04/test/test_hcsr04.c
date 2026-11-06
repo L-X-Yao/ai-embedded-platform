@@ -16,6 +16,8 @@ static uint32_t mock_echo_start_time;
 static uint32_t mock_echo_end_time;
 static bool     mock_echo_never_high;   /* simulate no echo at all */
 static bool     mock_echo_stuck_high;   /* simulate echo never goes LOW */
+static uint32_t mock_pulse_us;          /* if set, each trigger starts a pulse */
+static int      mock_triggers;
 
 static void mock_reset(void)
 {
@@ -27,12 +29,21 @@ static void mock_reset(void)
     mock_echo_end_time   = 0;
     mock_echo_never_high = false;
     mock_echo_stuck_high = false;
+    mock_pulse_us        = 0;
+    mock_triggers        = 0;
 }
 
 static void mock_trigger_high(void *ctx)
 {
     (void)ctx;
     mock_trigger_pin = true;
+    mock_triggers++;
+    /* A module ignores a trigger while its last pulse is still running */
+    if (mock_pulse_us != 0 && mock_time_us >= mock_echo_end_time)
+    {
+        mock_echo_start_time = mock_time_us + 30;
+        mock_echo_end_time   = mock_echo_start_time + mock_pulse_us;
+    }
 }
 
 static void mock_trigger_low(void *ctx)
@@ -301,6 +312,46 @@ TEST(test_read_us_null_out)
     ASSERT_EQ(hcsr04_read_us(&dev, NULL), HCSR04_ERR_PARAM);
 }
 
+/* ---------- a pulse that outlasts ECHO_TIMEOUT_US ---------- */
+
+/* 1000 us of echo is 1000 * 0.0343 / 2 cm */
+TEST(test_retry_measures_new_pulse_not_old_tail)
+{
+    float cm = 0.0f;
+    setup();
+    mock_pulse_us = 38000;
+    ASSERT_EQ(hcsr04_read_cm(&dev, &cm), HCSR04_ERR_TIMEOUT);
+
+    mock_pulse_us = 1000;
+    ASSERT_EQ(hcsr04_read_cm(&dev, &cm), HCSR04_OK);
+    ASSERT_NEAR(cm, 17.15f, 0.2f);
+}
+
+TEST(test_no_object_never_reads_as_distance)
+{
+    static const uint32_t pulses[] = { 26000, 38000, 66000, 200000 };
+    for (unsigned i = 0; i < sizeof(pulses) / sizeof(pulses[0]); i++)
+    {
+        setup();
+        mock_pulse_us = pulses[i];
+        for (int n = 0; n < 12; n++)
+        {
+            float cm = 0.0f;
+            ASSERT_EQ(hcsr04_read_cm(&dev, &cm), HCSR04_ERR_TIMEOUT);
+        }
+    }
+}
+
+TEST(test_echo_stuck_high_sends_no_trigger)
+{
+    uint32_t us = 0;
+    setup();
+    mock_echo_stuck_high = true;
+
+    ASSERT_EQ(hcsr04_read_us(&dev, &us), HCSR04_ERR_TIMEOUT);
+    ASSERT_EQ(mock_triggers, 0);
+}
+
 TEST_MAIN("hcsr04")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -321,4 +372,7 @@ TEST_MAIN("hcsr04")
     RUN(test_read_cm_null_out);
     RUN(test_read_us_null_dev);
     RUN(test_read_us_null_out);
+    RUN(test_retry_measures_new_pulse_not_old_tail);
+    RUN(test_no_object_never_reads_as_distance);
+    RUN(test_echo_stuck_high_sends_no_trigger);
 TEST_MAIN_END()
