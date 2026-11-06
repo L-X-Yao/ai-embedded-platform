@@ -46,6 +46,9 @@ varint_err_t varint_decode_u64(const uint8_t *buf, size_t len,
         if (shift >= 64)
             return VARINT_ERR_OVERFLOW;
         uint64_t byte = buf[i];
+        /* The tenth byte only has room for bit 63: the rest would be lost */
+        if (shift == 63 && (byte & 0x7E))
+            return VARINT_ERR_OVERFLOW;
         result |= (byte & 0x7F) << shift;
         shift += 7;
         i++;
