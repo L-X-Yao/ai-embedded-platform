@@ -8,10 +8,9 @@
  * Instances: multi
  *
  * Register map (key registers, all big-endian):
- *   0x01 CTRL, 0x02 ACC_COUNT,
+ *   0x00 REFRESH (Send Byte command, no data), 0x01 CTRL, 0x02 ACC_COUNT,
  *   0x07 VBUS1, 0x08 VBUS2, 0x0B VSENSE1, 0x0C VSENSE2,
- *   0x1F REFRESH (send-byte command), 0xFD PRODUCT_ID,
- *   0xFE MANUFACTURER_ID, 0xFF REVISION_ID
+ *   0xFD PRODUCT_ID, 0xFE MANUFACTURER_ID, 0xFF REVISION_ID
  *
  * VBUS:   16-bit unsigned, FSR = 32V,     LSB = 32/65536 V
  * VSENSE: 16-bit signed,   FSR = +/-100mV, LSB = 100/32768 mV
@@ -22,13 +21,13 @@
 #include <string.h>
 
 /* ---- register addresses ---- */
+#define REG_REFRESH         0x00u
 #define REG_CTRL            0x01u
 #define REG_ACC_COUNT       0x02u
 #define REG_VBUS1           0x07u
 #define REG_VBUS2           0x08u
 #define REG_VSENSE1         0x0Bu
 #define REG_VSENSE2         0x0Cu
-#define REG_REFRESH         0x1Fu
 #define REG_PRODUCT_ID      0xFDu
 #define REG_MANUFACTURER_ID 0xFEu
 #define REG_REVISION_ID     0xFFu
@@ -37,7 +36,22 @@
 #define VBUS_LSB    (32.0f / 65536.0f)      /* V per LSB   */
 #define VSENSE_LSB  (100.0f / 65536.0f)     /* mV per LSB, unipolar POR default */
 
+/* ---- timing ---- */
+#define REFRESH_WAIT_MS 1u      /* results settle, commands get NACKed */
+
 /* ---- internal helpers ---- */
+
+/* REFRESH is a Send Byte: the command and no data.  The registers settle
+ * within 1 ms of it, and the chip NACKs any command sent before that. */
+static pac1952_err_t send_refresh(const pac1952_t *dev)
+{
+    const uint8_t cmd = REG_REFRESH;
+    if (!dev->i2c->write_raw(dev->i2c->ctx, PAC1952_DEV_ADDR, &cmd, 1))
+        return PAC1952_ERR_I2C;
+
+    dev->i2c->delay_ms(dev->i2c->ctx, REFRESH_WAIT_MS);
+    return PAC1952_OK;
+}
 
 static pac1952_err_t read_reg16(const pac1952_t *dev, uint8_t reg,
                                 uint16_t *val)
@@ -99,9 +113,8 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
     REQUIRE(cfg != NULL);
     if (!dev || !i2c || !cfg)
         return PAC1952_ERR_PARAM;
-    REQUIRE(i2c->write_reg != NULL);
     REQUIRE(i2c->read_regs != NULL);
-    if (!i2c->write_reg || !i2c->read_regs)
+    if (!i2c->read_regs)
         return PAC1952_ERR_PARAM;
 
     /* Validate sense resistors: must be non-negative */
@@ -128,14 +141,10 @@ pac1952_err_t pac1952_refresh(pac1952_t *dev)
     REQUIRE(dev != NULL);
     if (!dev)
         return PAC1952_ERR_PARAM;
+    if (!dev->i2c->write_raw || !dev->i2c->delay_ms)
+        return PAC1952_ERR_PARAM;
 
-    /* REFRESH is a send-byte command: write register address 0x1F with
-     * any value to latch all measurement registers simultaneously. */
-    if (!dev->i2c->write_reg(dev->i2c->ctx, PAC1952_DEV_ADDR,
-                             REG_REFRESH, 0x00u))
-        return PAC1952_ERR_I2C;
-
-    return PAC1952_OK;
+    return send_refresh(dev);
 }
 
 pac1952_err_t pac1952_read_channel(pac1952_t *dev, uint8_t ch,

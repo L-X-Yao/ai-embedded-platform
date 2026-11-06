@@ -12,23 +12,53 @@
 #define REG_VBUS2           0x08u
 #define REG_VSENSE1         0x0Bu
 #define REG_VSENSE2         0x0Cu
-#define REG_REFRESH         0x1Fu
 #define REG_PRODUCT_ID      0xFDu
+
+/* The last write on the bus, byte for byte, and the time waited */
+#define MOCK_RAW_MAX 4
+static uint8_t  mock_raw_addr;
+static uint16_t mock_raw_len;
+static uint8_t  mock_raw[MOCK_RAW_MAX];
+static uint32_t mock_wait_ms;
 
 static void mock_reset(void)
 {
     mock_i2c_reset();
+    mock_raw_addr = 0;
+    mock_raw_len  = 0;
+    memset(mock_raw, 0, sizeof(mock_raw));
+    mock_wait_ms  = 0;
     /* Set PRODUCT_ID to expected value */
     mock_regs[REG_PRODUCT_ID] = PAC1952_PRODUCT_ID_VAL;
-    /* CTRL defaults to 0x00 0x00 */
-    mock_regs[REG_CTRL]     = 0x00;
-    mock_regs[REG_CTRL + 1] = 0x00;
+    /* CTRL of a PAC1952 at POR is 0730h (DS20006539E p49) */
+    mock_regs[REG_CTRL]     = 0x07;
+    mock_regs[REG_CTRL + 1] = 0x30;
+}
+
+static bool mock_write_raw(void *ctx, uint8_t dev_addr,
+                           const uint8_t *data, uint16_t len)
+{
+    (void)ctx;
+    if (mock_i2c_should_fail()) return false;
+    mock_write_count++;
+    mock_raw_addr = dev_addr;
+    mock_raw_len  = len;
+    for (uint16_t i = 0; i < len && i < MOCK_RAW_MAX; i++)
+        mock_raw[i] = data[i];
+    return true;
+}
+
+static void mock_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    mock_wait_ms += ms;
 }
 
 static const pac1952_i2c_t mock_i2c_hal = {
-    .write_reg = mock_i2c_write_reg,
     .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
+    .write_raw = mock_write_raw,
+    .delay_ms  = mock_delay,
 };
 
 static pac1952_t dev;
@@ -107,24 +137,22 @@ TEST(test_init_nan_resistor)
     ASSERT_EQ(pac1952_init(&dev, &mock_i2c_hal, &bad_cfg), PAC1952_ERR_PARAM);
 }
 
-TEST(test_init_null_write_reg)
+TEST(test_init_needs_only_read_regs)
 {
-    pac1952_i2c_t bad_i2c = {
-        .write_reg = NULL,
+    /* init reads the product ID and writes nothing */
+    pac1952_i2c_t read_only = {
         .read_regs = mock_i2c_read_regs,
         .ctx = NULL,
     };
     pac1952_t d;
-    ASSERT_EQ(pac1952_init(&d, &bad_i2c, &default_cfg), PAC1952_ERR_PARAM);
+    mock_reset();
+    ASSERT_EQ(pac1952_init(&d, &read_only, &default_cfg), PAC1952_OK);
 }
 
 TEST(test_init_null_read_regs)
 {
-    pac1952_i2c_t bad_i2c = {
-        .write_reg = mock_i2c_write_reg,
-        .read_regs = NULL,
-        .ctx = NULL,
-    };
+    pac1952_i2c_t bad_i2c = mock_i2c_hal;
+    bad_i2c.read_regs = NULL;
     pac1952_t d;
     ASSERT_EQ(pac1952_init(&d, &bad_i2c, &default_cfg), PAC1952_ERR_PARAM);
 }
@@ -136,9 +164,12 @@ TEST(test_refresh_ok)
     mock_reset();
     pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
     ASSERT_EQ(pac1952_refresh(&dev), PAC1952_OK);
-    /* Verify write went to REFRESH register */
-    ASSERT_EQ(mock_regs[REG_REFRESH], 0x00);
+    /* One Send Byte of the REFRESH command, no data, then the wait */
     ASSERT_EQ(mock_write_count, 1);
+    ASSERT_EQ(mock_raw_addr, 0x10);
+    ASSERT_EQ(mock_raw_len, 1);
+    ASSERT_EQ_HEX(mock_raw[0], 0x00);
+    ASSERT_TRUE(mock_wait_ms >= 1);
 }
 
 TEST(test_refresh_null)
@@ -152,6 +183,22 @@ TEST(test_refresh_i2c_fail)
     pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
     mock_fail_next = 1;
     ASSERT_EQ(pac1952_refresh(&dev), PAC1952_ERR_I2C);
+    ASSERT_EQ(mock_wait_ms, 0);
+}
+
+TEST(test_refresh_refuses_a_register_hal)
+{
+    /* No fallback: write_reg would add a data byte after the command */
+    static const pac1952_i2c_t hal = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+    };
+    mock_reset();
+    ASSERT_EQ(pac1952_init(&dev, &hal, &default_cfg), PAC1952_OK);
+    int ops_before = mock_op_count;
+
+    ASSERT_EQ(pac1952_refresh(&dev), PAC1952_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, ops_before);
 }
 
 /* ---------- read channel tests ---------- */
@@ -484,11 +531,12 @@ TEST_MAIN("pac1952")
     RUN(test_init_null_cfg);
     RUN(test_init_negative_resistor);
     RUN(test_init_nan_resistor);
-    RUN(test_init_null_write_reg);
+    RUN(test_init_needs_only_read_regs);
     RUN(test_init_null_read_regs);
     RUN(test_refresh_ok);
     RUN(test_refresh_null);
     RUN(test_refresh_i2c_fail);
+    RUN(test_refresh_refuses_a_register_hal);
     RUN(test_read_channel0_zero);
     RUN(test_read_channel0_vbus_conversion);
     RUN(test_read_channel0_vbus_full_scale);
