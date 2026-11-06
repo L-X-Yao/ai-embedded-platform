@@ -18,6 +18,7 @@
 #define REG_GEXTH   0xA1u
 #define REG_GCONF1  0xA2u
 #define REG_GCONF2  0xA3u
+#define REG_GPULSE  0xA6u
 #define REG_GCONF4  0xABu
 #define REG_GFLVL   0xAEu
 #define REG_GFIFO_U 0xFCu
@@ -176,6 +177,31 @@ TEST(test_enable_gesture)
     ASSERT_EQ(mock_regs[REG_GEXTH], 30);
 }
 
+/* The reset value 0x40 of GPULSE is one pulse of 8 us. SparkFun and Adafruit
+ * both run gesture on 10 pulses of 32 us at 4x gain. */
+TEST(test_enable_gesture_sets_pulses_and_gain)
+{
+    mock_reset();
+    mock_regs[REG_GPULSE] = 0x40;
+    ASSERT_EQ(apds9960_init(&dev, &mock_i2c), APDS9960_OK);
+    ASSERT_EQ(apds9960_enable_gesture(&dev), APDS9960_OK);
+    /* p29: GPLEN in bits 7:6, GPULSE in bits 5:0 as pulses - 1 */
+    ASSERT_EQ_HEX(mock_regs[REG_GPULSE], (3u << 6) | 9u);
+    /* p29: GGAIN in bits 6:5, with GLDRIVE 100 mA and GWTIME 0 */
+    ASSERT_EQ_HEX(mock_regs[REG_GCONF2], 2u << 5);
+}
+
+/* Each of the 8 bus operations of enable_gesture reports its failure */
+TEST(test_enable_gesture_i2c_fail)
+{
+    for (int op = 0; op < 8; op++) {
+        mock_reset();
+        ASSERT_EQ(apds9960_init(&dev, &mock_i2c), APDS9960_OK);
+        mock_fail_at = mock_op_count + op;
+        ASSERT_EQ(apds9960_enable_gesture(&dev), APDS9960_ERR_I2C);
+    }
+}
+
 TEST(test_gesture_up)
 {
     mock_reset();
@@ -313,6 +339,8 @@ TEST_MAIN("apds9960")
     RUN(test_read_color);
     RUN(test_color_i2c_fail);
     RUN(test_enable_gesture);
+    RUN(test_enable_gesture_sets_pulses_and_gain);
+    RUN(test_enable_gesture_i2c_fail);
     RUN(test_gesture_up);
     RUN(test_gesture_down);
     RUN(test_gesture_left);

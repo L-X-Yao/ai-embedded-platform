@@ -35,6 +35,7 @@
 #define REG_GEXTH       0xA1u
 #define REG_GCONF1      0xA2u
 #define REG_GCONF2      0xA3u
+#define REG_GPULSE      0xA6u
 #define REG_GCONF4      0xABu
 #define REG_GFLVL       0xAEu
 #define REG_GSTATUS     0xAFu
@@ -171,8 +172,14 @@ apds9960_err_t apds9960_enable_gesture(apds9960_t *dev)
     err = write_reg(dev, REG_GCONF1, 0x00u);
     if (err != APDS9960_OK) return err;
 
-    /* GCONF2: gain x1, LED 100mA, no wait between gesture cycles (0 ms) */
-    err = write_reg(dev, REG_GCONF2, 0x00u);
+    /* GCONF2: gain x4, LED 100mA, no wait between gesture cycles (0 ms) */
+    err = write_reg(dev, REG_GCONF2, 0x40u);
+    if (err != APDS9960_OK) return err;
+
+    /* GPULSE: 10 pulses of 32 us. The reset value is one pulse of 8 us, too
+     * little to stay above GEXTH. SparkFun and Adafruit both use this value;
+     * the manual sets none, and it needs tuning on the real optics. */
+    err = write_reg(dev, REG_GPULSE, 0xC9u);
     if (err != APDS9960_OK) return err;
 
     /* GCONF4: GMODE 1 enters the gesture state machine at once, with no
