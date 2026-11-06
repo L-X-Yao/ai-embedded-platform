@@ -340,6 +340,20 @@ TEST(test_datetime_year2000_leap)
     ASSERT_EQ(951868800LL, ts);
 }
 
+TEST(test_datetime_month_range)
+{
+    /* The month comes off the wire: an RMC date of 019926 is month 99. */
+    static const uint8_t bad[] = { 0, 13, 14, 99, 200, 255 };
+    for (size_t i = 0; i < sizeof(bad); i++) {
+        ASSERT_EQ(-1LL, gnss_datetime_to_unix(2026, bad[i], 1, 0, 0, 0));
+    }
+
+    /* Both ends of the range stay valid: date -u -d 2026-01-01 +%s,
+     * then 2026-12-31 is 364 days later. */
+    ASSERT_EQ(1767225600LL, gnss_datetime_to_unix(2026, 1, 1, 0, 0, 0));
+    ASSERT_EQ(1798675200LL, gnss_datetime_to_unix(2026, 12, 31, 0, 0, 0));
+}
+
 TEST(test_tick_wraparound)
 {
     /* Unsigned subtraction (uint32_t) wraps correctly:
@@ -435,6 +449,7 @@ TEST_MAIN("gnss_filter")
     RUN(test_stable_ms_zero);
     RUN(test_datetime_leap_year_feb29);
     RUN(test_datetime_year2000_leap);
+    RUN(test_datetime_month_range);
     RUN(test_tick_wraparound);
     RUN(test_hdop_zero_blocks);
     RUN(test_vdop_exceeds_max);

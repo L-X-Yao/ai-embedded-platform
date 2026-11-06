@@ -94,6 +94,10 @@ float gnss_filter_alt(const gnss_filter_t *flt);
 
 /* ---------- utility ---------- */
 
+/** Convert a UTC date and time to Unix seconds.
+ *  Returns -1 for a month outside 1..12. A parser that checks digits only
+ *  passes such a month through, so check for -1 before using the result.
+ *  @thread_safe: yes @isr_safe: yes */
 int64_t gnss_datetime_to_unix(uint16_t year, uint8_t month, uint8_t day,
                               uint8_t hour, uint8_t min, uint8_t sec);
 
