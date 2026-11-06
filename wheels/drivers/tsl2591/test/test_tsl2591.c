@@ -551,6 +551,51 @@ TEST(test_failed_set_integration_time_keeps_the_scale)
     assert_low_gain_100ms_scale(&d);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tsl2591_t *d)
+{
+    tsl2591_data_t data;
+    uint16_t ch0;
+    uint16_t ch1;
+    uint8_t status;
+    ASSERT_EQ(tsl2591_read(d, &data), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_read_raw(d, &ch0, &ch1), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_set_gain(d, TSL2591_GAIN_LOW), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_set_integration_time(d, TSL2591_ITIME_100MS), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_enable(d), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_disable(d), TSL2591_ERR_PARAM);
+    ASSERT_EQ(tsl2591_get_status(d, &status), TSL2591_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    tsl2591_t d;
+    mock_reset();
+    mock_regs[CMD(TSL2591_REG_ID)] = 0xFF;
+    ASSERT_EQ(tsl2591_init(&d, &mock_i2c, TSL2591_GAIN_LOW, TSL2591_ITIME_100MS),
+              TSL2591_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tsl2591_i2c_t zeroed;
+    tsl2591_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tsl2591_init(&d, NULL, TSL2591_GAIN_LOW, TSL2591_ITIME_100MS),
+              TSL2591_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tsl2591_init(&d, &zeroed, TSL2591_GAIN_LOW, TSL2591_ITIME_100MS),
+              TSL2591_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tsl2591")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -590,4 +635,6 @@ TEST_MAIN("tsl2591")
     RUN(test_hw_model_id_check);
     RUN(test_failed_set_gain_keeps_the_scale);
     RUN(test_failed_set_integration_time_keeps_the_scale);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

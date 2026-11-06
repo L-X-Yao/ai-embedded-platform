@@ -181,7 +181,15 @@ static tm1637_err_t tm1637_write_fixed(tm1637_t *dev, uint8_t pos,
 
 tm1637_err_t tm1637_init(tm1637_t *dev, const tm1637_gpio_t *gpio)
 {
-    if (!dev || !gpio) {
+    if (!dev) {
+        return TM1637_ERR_PARAM;
+    }
+
+    /* dev->gpio stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!gpio) {
         return TM1637_ERR_PARAM;
     }
     if (!gpio->clk_low || !gpio->clk_high || !gpio->dio_low ||
@@ -189,12 +197,15 @@ tm1637_err_t tm1637_init(tm1637_t *dev, const tm1637_gpio_t *gpio)
         return TM1637_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->gpio = gpio;
     dev->brightness = TM1637_CMD_DISP_ON | 2;  /* on, brightness 2 */
 
     /* Clear display on init */
-    return tm1637_flush(dev);
+    tm1637_err_t err = tm1637_flush(dev);
+    if (err != TM1637_OK) {
+        dev->gpio = NULL;
+    }
+    return err;
 }
 
 tm1637_err_t tm1637_set_brightness(tm1637_t *dev, uint8_t level, bool on)

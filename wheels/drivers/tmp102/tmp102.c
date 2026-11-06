@@ -78,29 +78,43 @@ static void c_to_raw(float temp_c, uint8_t *msb, uint8_t *lsb)
 tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
                          const tmp102_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
         return TMP102_ERR_PARAM;
 
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
     memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return TMP102_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_regs)
+        return TMP102_ERR_PARAM;
+
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
     /* Read config register to verify communication. */
     uint8_t buf[2];
     if (!read16(dev, REG_CONFIG, buf))
+    {
+        dev->i2c = NULL;
         return TMP102_ERR_I2C;
+    }
 
     /* Clear shutdown bit to ensure continuous conversion. */
     buf[0] &= (uint8_t)~CFG_SD_BIT;
     if (!write16(dev, REG_CONFIG, buf[0], buf[1]))
+    {
+        dev->i2c = NULL;
         return TMP102_ERR_I2C;
+    }
 
     return TMP102_OK;
 }
 
 tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
         return TMP102_ERR_PARAM;
 
     uint8_t buf[2];
@@ -114,7 +128,7 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
 
 static tmp102_err_t write_alert(tmp102_t *dev, uint8_t reg, float temp_c)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TMP102_ERR_PARAM;
     if (temp_c != temp_c)   /* NaN */
         return TMP102_ERR_PARAM;
@@ -161,14 +175,14 @@ static tmp102_err_t set_shutdown_bit(tmp102_t *dev, bool sd)
 
 tmp102_err_t tmp102_shutdown(tmp102_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TMP102_ERR_PARAM;
     return set_shutdown_bit(dev, true);
 }
 
 tmp102_err_t tmp102_wake(tmp102_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return TMP102_ERR_PARAM;
     return set_shutdown_bit(dev, false);
 }

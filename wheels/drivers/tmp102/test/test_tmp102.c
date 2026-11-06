@@ -297,6 +297,57 @@ TEST(test_wake_write_fail)
     ASSERT_EQ(tmp102_wake(&dev), TMP102_ERR_I2C);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tmp102_t *d)
+{
+    float temp_c;
+    ASSERT_EQ(tmp102_read_temp(d, &temp_c), TMP102_ERR_PARAM);
+    ASSERT_EQ(tmp102_set_alert_high(d, 80.0f), TMP102_ERR_PARAM);
+    ASSERT_EQ(tmp102_set_alert_low(d, 75.0f), TMP102_ERR_PARAM);
+    ASSERT_EQ(tmp102_shutdown(d), TMP102_ERR_PARAM);
+    ASSERT_EQ(tmp102_wake(d), TMP102_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    tmp102_cfg_t cfg = { .addr = TMP102_ADDR_GND };
+    tmp102_t d;
+
+    mock_reset();
+    mock_fail_at = 0;  /* the config read */
+    ASSERT_EQ(tmp102_init(&d, &mock_i2c, &cfg), TMP102_ERR_I2C);
+    assert_device_refused(&d);
+
+    mock_reset();
+    mock_fail_at = 1;  /* the config write */
+    ASSERT_EQ(tmp102_init(&d, &mock_i2c, &cfg), TMP102_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tmp102_i2c_t zeroed;
+    tmp102_i2c_t no_write = mock_i2c;
+    tmp102_cfg_t cfg = { .addr = TMP102_ADDR_GND };
+    tmp102_t d;
+    no_write.write_regs = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tmp102_init(&d, NULL, &cfg), TMP102_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tmp102_init(&d, &zeroed, &cfg), TMP102_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tmp102_init(&d, &no_write, &cfg), TMP102_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tmp102")
     RUN(test_init_ok);
     RUN(test_init_clears_shutdown);
@@ -320,4 +371,6 @@ TEST_MAIN("tmp102")
     RUN(test_init_write_config_fail);
     RUN(test_shutdown_write_fail);
     RUN(test_wake_write_fail);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

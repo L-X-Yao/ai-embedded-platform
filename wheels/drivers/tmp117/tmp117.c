@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "tmp117.h"
+#include <string.h>
 
 #define REG_TEMP_RESULT 0x00u
 #define REG_CONFIG      0x01u
@@ -35,10 +36,33 @@ static bool write_reg16(const tmp117_t *dev, uint8_t reg, uint16_t val)
     return dev->i2c->write_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, 2);
 }
 
+/* The steps of init that talk to the chip */
+static tmp117_err_t bring_up(const tmp117_t *dev)
+{
+    uint16_t id = 0;
+    if (!read_reg16(dev, REG_DEVICE_ID, &id))
+        return TMP117_ERR_I2C;
+    if ((id & DEVICE_ID_MASK) != TMP117_DEVICE_ID)
+        return TMP117_ERR_ID;
+
+    uint16_t config = (uint16_t)((unsigned)dev->cfg.avg << 5);
+    if (!write_reg16(dev, REG_CONFIG, config))
+        return TMP117_ERR_I2C;
+
+    return TMP117_OK;
+}
+
 tmp117_err_t tmp117_init(tmp117_t *dev, const tmp117_i2c_t *i2c,
                          const tmp117_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+        return TMP117_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
         return TMP117_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return TMP117_ERR_PARAM;
@@ -48,22 +72,15 @@ tmp117_err_t tmp117_init(tmp117_t *dev, const tmp117_i2c_t *i2c,
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
-    uint16_t id = 0;
-    if (!read_reg16(dev, REG_DEVICE_ID, &id))
-        return TMP117_ERR_I2C;
-    if ((id & DEVICE_ID_MASK) != TMP117_DEVICE_ID)
-        return TMP117_ERR_ID;
-
-    uint16_t config = (uint16_t)((unsigned)cfg->avg << 5);
-    if (!write_reg16(dev, REG_CONFIG, config))
-        return TMP117_ERR_I2C;
-
-    return TMP117_OK;
+    tmp117_err_t err = bring_up(dev);
+    if (err != TMP117_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 tmp117_err_t tmp117_read(tmp117_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
         return TMP117_ERR_PARAM;
 
     uint16_t raw = 0;

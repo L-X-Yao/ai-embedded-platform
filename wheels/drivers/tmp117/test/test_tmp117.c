@@ -213,6 +213,40 @@ TEST(test_reset_null)
     ASSERT_EQ(tmp117_reset(NULL), TMP117_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tmp117_t *d)
+{
+    float temp_c;
+    ASSERT_EQ(tmp117_read(d, &temp_c), TMP117_ERR_PARAM);
+    ASSERT_EQ(tmp117_reset(d), TMP117_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    tmp117_t d;
+    hw_model_reset();
+    hw_regs16[0x0F] = 0x0116;
+    ASSERT_EQ(tmp117_init(&d, &mock_i2c, &default_cfg), TMP117_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tmp117_i2c_t zeroed;
+    tmp117_t d;
+    hw_model_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tmp117_init(&d, NULL, &default_cfg), TMP117_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tmp117_init(&d, &zeroed, &default_cfg), TMP117_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tmp117")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -235,4 +269,6 @@ TEST_MAIN("tmp117")
     RUN(test_read_null_out);
     RUN(test_reset_ok);
     RUN(test_reset_null);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -616,6 +616,45 @@ TEST(test_display_number_100)
     ASSERT_EQ_HEX(dev.segments[3], 0x3F); /* 0 */
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tm1637_t *d)
+{
+    const uint8_t segments[1] = { 0x3F };
+    ASSERT_EQ(tm1637_set_brightness(d, 2, true), TM1637_ERR_PARAM);
+    ASSERT_EQ(tm1637_display_segments(d, segments, 1), TM1637_ERR_PARAM);
+    ASSERT_EQ(tm1637_display_number(d, 1234, false), TM1637_ERR_PARAM);
+    ASSERT_EQ(tm1637_display_digit(d, 0, 1), TM1637_ERR_PARAM);
+    ASSERT_EQ(tm1637_set_colon(d, true), TM1637_ERR_PARAM);
+    ASSERT_EQ(tm1637_clear(d), TM1637_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_nack)
+{
+    tm1637_t d;
+    mock_reset();
+    mock_ack_nack_at = 0;
+    ASSERT_EQ(tm1637_init(&d, &mock_gpio), TM1637_ERR_ACK);
+    mock_reset();  /* the display answers again: only init can bring it up */
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tm1637_gpio_t zeroed;
+    tm1637_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tm1637_init(&d, NULL), TM1637_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tm1637_init(&d, &zeroed), TM1637_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tm1637")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -668,4 +707,6 @@ TEST_MAIN("tm1637")
     RUN(test_display_number_single_digit);
     RUN(test_display_number_negative_1);
     RUN(test_display_number_100);
+    RUN(test_device_refused_after_nack);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
