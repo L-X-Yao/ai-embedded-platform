@@ -784,6 +784,131 @@ TEST(test_slave_address_wrap)
 
 /* ============================================================ */
 
+/* ============================================================ */
+/*             WHOLE RESPONSES AND THE MAXIMUM READ             */
+/* ============================================================ */
+
+static int accept_any_write(void *ctx, uint16_t addr, uint16_t value)
+{
+    (void)ctx;
+    (void)addr;
+    (void)value;
+    return 0;
+}
+
+/* FC16 answers with the slave, function, start and count of the request. CRC
+ * values here come from CRC-16/MODBUS worked out apart from this code. */
+TEST(test_slave_write_multiple_whole_response)
+{
+    static const uint8_t req[] = {
+        0x11, 0x10, 0x00, 0x01, 0x00, 0x02, 0x04,
+        0x00, 0x0A, 0x01, 0x02, 0xC6, 0xF0,
+    };
+    static const uint8_t want[] = {
+        0x11, 0x10, 0x00, 0x01, 0x00, 0x02, 0x12, 0x98,
+    };
+    modbus_rtu_slave_t s;
+    uint8_t resp[32];
+
+    modbus_rtu_slave_init(&s, 0x11, NULL);
+    s.write_holding = accept_any_write;
+
+    int resp_len = modbus_rtu_slave_process(&s, req, sizeof(req), resp, sizeof(resp));
+    ASSERT_EQ(resp_len, (int)sizeof(want));
+    ASSERT_TRUE(memcmp(resp, want, sizeof(want)) == 0);
+}
+
+TEST(test_slave_write_multiple_response_follows_the_request)
+{
+    static const uint8_t req[] = {
+        0x01, 0x10, 0x00, 0x0A, 0x00, 0x03, 0x06,
+        0x00, 0x0A, 0x00, 0x0B, 0x00, 0x0C, 0x2F, 0x66,
+    };
+    static const uint8_t want[] = {
+        0x01, 0x10, 0x00, 0x0A, 0x00, 0x03, 0xA0, 0x0A,
+    };
+    modbus_rtu_slave_t s;
+    uint8_t resp[32];
+
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.write_holding = accept_any_write;
+
+    int resp_len = modbus_rtu_slave_process(&s, req, sizeof(req), resp, sizeof(resp));
+    ASSERT_EQ(resp_len, (int)sizeof(want));
+    ASSERT_TRUE(memcmp(resp, want, sizeof(want)) == 0);
+}
+
+static int read_from_address(void *ctx, uint16_t addr, uint16_t *value)
+{
+    (void)ctx;
+    *value = (uint16_t)(addr ^ 0xA5A5u);
+    return 0;
+}
+
+TEST(test_slave_reads_exactly_125_registers)
+{
+    modbus_rtu_slave_t s;
+    uint8_t req[8];
+    uint8_t resp[MODBUS_RTU_MAX_FRAME];
+
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = read_from_address;
+
+    int req_len = modbus_rtu_master_read_regs(req, sizeof(req), 0x01,
+                                              MODBUS_FC_READ_HOLDING_REGS,
+                                              0x0100, 125);
+    ASSERT_EQ(req_len, 8);
+
+    /* Slave, function, byte count, 250 data bytes and the CRC. */
+    int resp_len = modbus_rtu_slave_process(&s, req, 8, resp, sizeof(resp));
+    ASSERT_EQ(resp_len, 255);
+
+    modbus_rtu_frame_t frame;
+    ASSERT_EQ(modbus_rtu_parse(resp, (uint16_t)resp_len, &frame), 0);
+    ASSERT_TRUE(!modbus_rtu_is_exception(&frame));
+    ASSERT_EQ(frame.data[0], 250);
+
+    uint16_t regs[125];
+    ASSERT_EQ(modbus_rtu_master_get_regs(&frame, regs, 125), 125);
+    for (uint16_t i = 0; i < 125u; i++) {
+        ASSERT_EQ(regs[i], (uint16_t)((0x0100u + i) ^ 0xA5A5u));
+    }
+}
+
+TEST(test_slave_refuses_126_registers)
+{
+    static const uint8_t data[] = { 0x00, 0x00, 0x00, 0x7E };
+    modbus_rtu_slave_t s;
+    uint8_t req[8];
+    uint8_t resp[MODBUS_RTU_MAX_FRAME];
+
+    modbus_rtu_slave_init(&s, 0x01, NULL);
+    s.read_holding = read_from_address;
+
+    /* The master refuses to build this, so it goes in by hand. */
+    int req_len = modbus_rtu_build(req, sizeof(req), 0x01,
+                                   MODBUS_FC_READ_HOLDING_REGS, data, sizeof(data));
+    int resp_len = modbus_rtu_slave_process(&s, req, (uint16_t)req_len, resp, sizeof(resp));
+
+    modbus_rtu_frame_t frame;
+    ASSERT_EQ(modbus_rtu_parse(resp, (uint16_t)resp_len, &frame), 0);
+    ASSERT_TRUE(modbus_rtu_is_exception(&frame));
+    ASSERT_EQ(modbus_rtu_exception_code(&frame), MODBUS_EX_ILLEGAL_DATA_VALUE);
+}
+
+TEST(test_master_get_regs_one_byte_short)
+{
+    /* The byte count says 4 and three data bytes follow it. */
+    static const uint8_t short_data[] = { 0x04, 0x00, 0x64, 0x00 };
+    uint8_t buf[32];
+    uint16_t regs[4];
+    modbus_rtu_frame_t frame;
+
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, short_data, 4);
+    ASSERT_EQ(modbus_rtu_parse(buf, (uint16_t)len, &frame), 0);
+    ASSERT_EQ(modbus_rtu_master_get_regs(&frame, regs, 4), MODBUS_RTU_ERR_OVERFLOW);
+}
+
 TEST_MAIN("modbus_rtu")
     RUN(test_build_and_check_crc);
     RUN(test_build_with_data);
@@ -830,5 +955,10 @@ TEST_MAIN("modbus_rtu")
     RUN(test_build_data_len_overflow);
     RUN(test_parse_exact_min_frame);
     RUN(test_slave_address_wrap);
+    RUN(test_slave_write_multiple_whole_response);
+    RUN(test_slave_write_multiple_response_follows_the_request);
+    RUN(test_slave_reads_exactly_125_registers);
+    RUN(test_slave_refuses_126_registers);
+    RUN(test_master_get_regs_one_byte_short);
 TEST_MAIN_END()
 
