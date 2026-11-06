@@ -97,6 +97,45 @@ TEST(test_set_pulse_direct)
     ASSERT_EQ(mock_last_pulse, 1234);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(servo_t *dev)
+{
+    ASSERT_EQ(servo_set_angle(dev, 90), SERVO_ERR_PARAM);
+    ASSERT_EQ(servo_set_pulse(dev, 1500), SERVO_ERR_PARAM);
+    ASSERT_EQ(servo_get_angle(dev), 0);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static servo_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    servo_t dev;
+    servo_pwm_t no_callback = { .set_pulse_us = NULL, .ctx = NULL };
+    servo_cfg_t bad = { .min_pulse_us = 2500, .max_pulse_us = 500, .max_angle = 180 };
+
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(servo_init(&dev, NULL, &standard_cfg), SERVO_ERR_PARAM);
+    assert_device_refused(&dev);
+
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(servo_init(&dev, &mock_pwm, NULL), SERVO_ERR_PARAM);
+    assert_device_refused(&dev);
+
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(servo_init(&dev, &no_callback, &standard_cfg), SERVO_ERR_PARAM);
+    assert_device_refused(&dev);
+
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(servo_init(&dev, &mock_pwm, &bad), SERVO_ERR_PARAM);
+    assert_device_refused(&dev);
+}
+
 TEST_MAIN("servo")
     RUN(test_init_null);
     RUN(test_init_bad_config);
@@ -106,4 +145,6 @@ TEST_MAIN("servo")
     RUN(test_angle_clamp);
     RUN(test_hal_failure);
     RUN(test_set_pulse_direct);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
