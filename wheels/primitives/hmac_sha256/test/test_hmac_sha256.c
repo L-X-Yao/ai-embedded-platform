@@ -244,6 +244,28 @@ TEST(test_null_key_nonzero_len)
     ASSERT_TRUE(hmac_sha256_init(&ctx, NULL, 5) == HMAC_SHA256_ERR_PARAM);
 }
 
+/* compute() returns nothing, so a bad argument has to show in the output:
+ * no key or message means there is no MAC to give. */
+TEST(test_compute_null_key_nonzero_len_zeroes_mac)
+{
+    static const uint8_t zero[32] = {0};
+    uint8_t mac[32];
+
+    memset(mac, 0xA5, sizeof(mac));
+    hmac_sha256_compute(NULL, 5, (const uint8_t *)"msg", 3, mac);
+    ASSERT_MEMEQ_N(mac, zero, sizeof(mac));
+}
+
+TEST(test_compute_null_data_nonzero_len_zeroes_mac)
+{
+    static const uint8_t zero[32] = {0};
+    uint8_t mac[32];
+
+    memset(mac, 0xA5, sizeof(mac));
+    hmac_sha256_compute((const uint8_t *)"key", 3, NULL, 100, mac);
+    ASSERT_MEMEQ_N(mac, zero, sizeof(mac));
+}
+
 TEST(test_verify_null_args)
 {
     uint8_t a[32] = {0};
@@ -270,5 +292,7 @@ TEST_MAIN("hmac_sha256")
     RUN(test_null_mac_final);
     RUN(test_null_data_nonzero_len);
     RUN(test_null_key_nonzero_len);
+    RUN(test_compute_null_key_nonzero_len_zeroes_mac);
+    RUN(test_compute_null_data_nonzero_len_zeroes_mac);
     RUN(test_verify_null_args);
 TEST_MAIN_END()
