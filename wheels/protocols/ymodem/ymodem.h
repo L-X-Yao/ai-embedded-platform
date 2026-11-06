@@ -41,6 +41,7 @@ typedef enum {
     YMODEM_ERR_SEQ      = -3,
     YMODEM_ERR_CANCEL   = -4,
     YMODEM_ERR_WRITE    = -5,
+    YMODEM_ERR_OVERFLOW = -6,   /* block 0 name does not fit filename[] */
     YMODEM_DONE         =  1,
 } ymodem_err_t;
 

@@ -190,11 +190,45 @@ static void build_stx_data_frame(uint8_t *frame, uint8_t blk, uint8_t fill)
     frame[1028] = (uint8_t)(crc & 0xFF);
 }
 
+/* Build SOH block 0 from a raw payload: build_block0 caps names at 60. */
+static void build_raw_block0(uint8_t *frame, const uint8_t *payload)
+{
+    frame[0] = YMODEM_SOH;
+    frame[1] = 0x00;
+    frame[2] = 0xFF;
+    memcpy(&frame[3], payload, 128);
+
+    uint16_t crc = calc_crc16(payload, 128);
+    frame[131] = (uint8_t)(crc >> 8);
+    frame[132] = (uint8_t)(crc & 0xFF);
+}
+
+/* Build SOH block 0 naming name_len 'a's, then NUL and size_text. */
+static void build_named_block0(uint8_t *frame, size_t name_len, const char *size_text)
+{
+    uint8_t payload[128];
+    memset(payload, 0, sizeof(payload));
+    memset(payload, 'a', name_len);
+    memcpy(&payload[name_len + 1], size_text, strlen(size_text));
+    build_raw_block0(frame, payload);
+}
+
 static void feed_bytes(ymodem_t *ym, const uint8_t *data, int len)
 {
     for (int i = 0; i < len; i++) {
         ymodem_feed(ym, data[i]);
     }
+}
+
+/* Feed a frame and return the last result that was not YMODEM_OK. */
+static ymodem_err_t feed_frame(ymodem_t *ym, const uint8_t *data, int len)
+{
+    ymodem_err_t last = YMODEM_OK;
+    for (int i = 0; i < len; i++) {
+        ymodem_err_t err = ymodem_feed(ym, data[i]);
+        if (err != YMODEM_OK) last = err;
+    }
+    return last;
 }
 
 /* ---------- tests ---------- */
@@ -645,6 +679,78 @@ TEST(test_err_crc_constant_and_recovery)
     ASSERT_EQ(g_sent.bytes[g_sent.count - 1], YMODEM_ACK);
 }
 
+TEST(test_block0_longest_name_fits)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_named_block0(frame, 63, "100");
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(strlen(ymodem_get_filename(&ym)), 63);
+    ASSERT_EQ(ymodem_get_file_size(&ym), 100);
+    ASSERT_EQ(g_file_start.count, 1);
+
+    build_soh_data_frame(frame, 1, 0x11);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_OK);
+    ASSERT_EQ(g_written.lens[0], 100);
+}
+
+static void assert_block0_refused(const uint8_t *frame)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_ERR_OVERFLOW);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_ERROR);
+    ASSERT_EQ(g_file_start.count, 0);
+    /* The sender hears CAN CAN instead of retrying a header we will refuse. */
+    ASSERT_EQ(g_sent.count, 3);   /* 'C' from ymodem_start, then the two CANs */
+    ASSERT_EQ(g_sent.bytes[1], YMODEM_CAN);
+    ASSERT_EQ(g_sent.bytes[2], YMODEM_CAN);
+
+    uint8_t data[133];
+    build_soh_data_frame(data, 1, 0x22);
+    feed_bytes(&ym, data, 133);
+    ASSERT_EQ(g_written.count, 0);
+}
+
+TEST(test_block0_name_too_long_refused)
+{
+    uint8_t frame[133];
+    uint8_t payload[128];
+
+    /* One past the 63 that fit, with an honest size after it. */
+    build_named_block0(frame, 64, "100");
+    assert_block0_refused(frame);
+
+    /* The tail of the name must not be read as the size: "12", then "7". */
+    memset(payload, 0, sizeof(payload));
+    memset(payload, 'a', 64);
+    memcpy(&payload[64], "12\0" "5000 0", 9);
+    build_raw_block0(frame, payload);
+    assert_block0_refused(frame);
+
+    memset(payload, 0, sizeof(payload));
+    memset(payload, 'a', 64);
+    memcpy(&payload[64], "7.bin\0" "100", 9);
+    build_raw_block0(frame, payload);
+    assert_block0_refused(frame);
+}
+
+TEST(test_block0_name_without_terminator_refused)
+{
+    uint8_t frame[133];
+    uint8_t payload[128];
+    memset(payload, 'a', sizeof(payload));
+    build_raw_block0(frame, payload);
+    assert_block0_refused(frame);
+}
+
 TEST_MAIN("ymodem")
     RUN(test_init_null_params);
     RUN(test_init_ok);
@@ -667,4 +773,7 @@ TEST_MAIN("ymodem")
     RUN(test_write_callback_error);
     RUN(test_bad_complement_sends_nak);
     RUN(test_err_crc_constant_and_recovery);
+    RUN(test_block0_longest_name_fits);
+    RUN(test_block0_name_too_long_refused);
+    RUN(test_block0_name_without_terminator_refused);
 TEST_MAIN_END()
