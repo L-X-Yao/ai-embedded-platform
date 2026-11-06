@@ -353,6 +353,41 @@ TEST(test_no_cycle_after_aen_falls)
     ASSERT_EQ(avalid(), 0);
 }
 
+/* --- the driver on the cycle ------------------------------------------- */
+
+/* p.19: until a cycle has finished there is nothing valid to read */
+TEST(test_read_before_the_first_cycle_ends)
+{
+    setup();
+    tcs34725_t dev;
+    ASSERT_EQ(tcs34725_init(&dev, &model_i2c, TCS34725_INTEG_101MS,
+                            TCS34725_GAIN_1X), TCS34725_OK);
+
+    tcs34725_rgbc_t rgbc = { 1, 2, 3, 4 };
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_ERR_NOT_READY);
+    ASSERT_EQ(rgbc.c, 1);
+    ASSERT_EQ(rgbc.b, 4);
+
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_OK);
+    ASSERT_EQ(rgbc.c, 5000);
+}
+
+/* After disable and enable the old counts no longer stand for the light */
+TEST(test_read_after_enable_waits_again)
+{
+    setup();
+    tcs34725_t dev;
+    ASSERT_EQ(tcs34725_init(&dev, &model_i2c, TCS34725_INTEG_101MS,
+                            TCS34725_GAIN_1X), TCS34725_OK);
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
+    ASSERT_EQ(tcs34725_disable(&dev), TCS34725_OK);
+    ASSERT_EQ(tcs34725_enable(&dev), TCS34725_OK);
+
+    tcs34725_rgbc_t rgbc;
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_ERR_NOT_READY);
+}
+
 TEST_MAIN("tcs34725 hardware model")
     RUN(test_init_ok);
     RUN(test_init_wrong_chip_id);
@@ -379,4 +414,6 @@ TEST_MAIN("tcs34725 hardware model")
     RUN(test_counts_stop_at_the_maximum);
     RUN(test_new_light_waits_for_the_end_of_a_cycle);
     RUN(test_no_cycle_after_aen_falls);
+    RUN(test_read_before_the_first_cycle_ends);
+    RUN(test_read_after_enable_waits_again);
 TEST_MAIN_END()

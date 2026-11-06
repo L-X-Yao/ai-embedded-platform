@@ -15,6 +15,7 @@
 #define REG_ATIME   0x01u
 #define REG_CONTROL 0x0Fu
 #define REG_ID      0x12u
+#define REG_STATUS  0x13u
 #define REG_CDATAL  0x14u   /* RGBC data: C(14-15) R(16-17) G(18-19) B(1A-1B) */
 
 /* Command register (p.14): bit 7 must be set for register access. TYPE in
@@ -26,6 +27,9 @@
 /* Enable register bits */
 #define ENABLE_PON  0x01u   /* power on */
 #define ENABLE_AEN  0x02u   /* RGBC enable */
+
+/* Status register bits */
+#define STATUS_AVALID 0x01u  /* an integration cycle has finished */
 
 /* p.15: at least 2.4 ms from PON to the start of an RGBC, in whole ms */
 #define PON_WAIT_MS 3u
@@ -103,8 +107,17 @@ tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
     if (!dev || !out)
         return TCS34725_ERR_PARAM;
 
+    /* p.19, AVALID: "Indicates that the RGBC channels have completed an
+     * integration cycle." */
+    uint8_t status = 0;
+    tcs34725_err_t err = read_regs(dev, CMD(REG_STATUS), &status, 1);
+    if (err != TCS34725_OK)
+        return err;
+    if (!(status & STATUS_AVALID))
+        return TCS34725_ERR_NOT_READY;
+
     uint8_t buf[8];
-    tcs34725_err_t err = read_regs(dev, CMD_AUTO_INC(REG_CDATAL), buf, 8);
+    err = read_regs(dev, CMD_AUTO_INC(REG_CDATAL), buf, 8);
     if (err != TCS34725_OK)
         return err;
 
