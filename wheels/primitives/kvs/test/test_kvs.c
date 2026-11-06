@@ -232,6 +232,95 @@ TEST(test_iterator)
     ASSERT_TRUE(count >= 4);
 }
 
+/* ---------- records on flash ---------- */
+
+/* struct kv_hdr_data at FDB_WRITE_GRAN 1, counted from the magic word. */
+#define REC_LEN_OFF        4u
+#define REC_CRC_OFF        8u
+#define REC_NAME_LEN_OFF  12u
+#define REC_VALUE_LEN_OFF 16u
+#define REC_DATA_OFF      20u   /* name, then value */
+#define REC_HDR_SIZE      24u   /* the record starts 4 bytes before the magic */
+
+static uint8_t *find_record(const char *key)
+{
+    static const uint8_t magic[4] = { 'K', 'V', '0', '0' };
+    size_t key_len = strlen(key);
+
+    for (size_t i = 0; i + REC_DATA_OFF + key_len < MOCK_FLASH_SIZE; i++) {
+        if (memcmp(&mock_flash_buf[i], magic, sizeof(magic)) == 0 &&
+            memcmp(&mock_flash_buf[i + REC_DATA_OFF], key, key_len) == 0) {
+            return &mock_flash_buf[i];
+        }
+    }
+    return NULL;
+}
+
+static uint32_t record_crc(const uint8_t *rec)
+{
+    uint32_t len;
+    uint32_t crc;
+
+    memcpy(&len, &rec[REC_LEN_OFF], sizeof(len));
+    crc = fdb_calc_crc32(0, &rec[REC_NAME_LEN_OFF], sizeof(uint32_t));
+    crc = fdb_calc_crc32(crc, &rec[REC_VALUE_LEN_OFF], sizeof(uint32_t));
+    return fdb_calc_crc32(crc, &rec[REC_DATA_OFF], len - REC_HDR_SIZE);
+}
+
+/* A record with a valid CRC and a name longer than this build allows: what
+ * a build with a larger FDB_KV_NAME_MAX leaves on flash. */
+static void check_long_name_record_is_skipped(uint8_t name_len)
+{
+    uint8_t value[200];
+    struct fdb_blob blob;
+    uint32_t stored_crc;
+    uint32_t crc;
+
+    memset(value, 'v', sizeof(value));
+    reset_flash();
+    init_kvdb();
+    fdb_kv_set(&test_kvdb, "before", "1");
+    fdb_kv_set_blob(&test_kvdb, "forged", fdb_blob_make(&blob, value, sizeof(value)));
+    fdb_kv_set(&test_kvdb, "after", "2");
+    fdb_kvdb_deinit(&test_kvdb);
+
+    uint8_t *rec = find_record("forged");
+    ASSERT_TRUE(rec != NULL);
+
+    /* record_crc() has to agree with the library before it can forge. */
+    memcpy(&stored_crc, &rec[REC_CRC_OFF], sizeof(stored_crc));
+    ASSERT_EQ_HEX(record_crc(rec), stored_crc);
+
+    rec[REC_NAME_LEN_OFF] = name_len;
+    crc = record_crc(rec);
+    memcpy(&rec[REC_CRC_OFF], &crc, sizeof(crc));
+
+    ASSERT_TRUE(init_kvdb() == FDB_NO_ERR);
+    ASSERT_EQ(fdb_kv_get_blob(&test_kvdb, "forged",
+                              fdb_blob_make(&blob, value, sizeof(value))), 0);
+
+    /* Its neighbours survive, and the database stays usable across a boot. */
+    char *val = fdb_kv_get(&test_kvdb, "before");
+    ASSERT_TRUE(val != NULL && strcmp(val, "1") == 0);
+    val = fdb_kv_get(&test_kvdb, "after");
+    ASSERT_TRUE(val != NULL && strcmp(val, "2") == 0);
+
+    ASSERT_TRUE(fdb_kv_set(&test_kvdb, "later", "3") == FDB_NO_ERR);
+    fdb_kvdb_deinit(&test_kvdb);
+    ASSERT_TRUE(init_kvdb() == FDB_NO_ERR);
+    val = fdb_kv_get(&test_kvdb, "later");
+    ASSERT_TRUE(val != NULL && strcmp(val, "3") == 0);
+    val = fdb_kv_get(&test_kvdb, "after");
+    ASSERT_TRUE(val != NULL && strcmp(val, "2") == 0);
+}
+
+TEST(test_record_name_too_long)
+{
+    check_long_name_record_is_skipped(FDB_KV_NAME_MAX + 1);
+    check_long_name_record_is_skipped(180);
+    check_long_name_record_is_skipped(255);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("kvs")
@@ -246,5 +335,6 @@ TEST_MAIN("kvs")
     RUN(test_get_nonexistent);
     RUN(test_multiple_keys);
     RUN(test_iterator);
+    RUN(test_record_name_too_long);
 TEST_MAIN_END()
 

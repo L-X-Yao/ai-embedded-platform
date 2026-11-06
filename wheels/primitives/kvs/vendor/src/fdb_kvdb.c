@@ -385,7 +385,9 @@ static fdb_err_t read_kv(fdb_kvdb_t db, fdb_kv_t kv)
         calc_crc32 = fdb_calc_crc32(calc_crc32, buf, size);
     }
     /* check CRC32 */
-    if (calc_crc32 != kv_hdr.crc32) {
+    /* Local change: a name too long for kv->name makes the record bad even
+     * with a valid CRC, as reading it would overrun kv->name. */
+    if (calc_crc32 != kv_hdr.crc32 || kv_hdr.name_len > FDB_KV_NAME_MAX) {
         size_t name_len = kv_hdr.name_len > FDB_KV_NAME_MAX ? FDB_KV_NAME_MAX : kv_hdr.name_len;
         kv->crc_is_ok = false;
         result = FDB_READ_ERR;
