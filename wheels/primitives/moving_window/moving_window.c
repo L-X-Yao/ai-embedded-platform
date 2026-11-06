@@ -13,7 +13,14 @@
 
 #include "moving_window.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
+
+/* False for NaN as well: every comparison with NaN is false. */
+static bool is_finite(float x)
+{
+    return x >= -FLT_MAX && x <= FLT_MAX;
+}
 
 moving_window_err_t moving_window_init(moving_window_t *ctx,
                                        float *buf, size_t capacity)
@@ -39,23 +46,22 @@ moving_window_err_t moving_window_push(moving_window_t *ctx, float value)
     {
         return MOVING_WINDOW_ERR_PARAM;
     }
-    /* reject NaN — would poison sum/sum_sq and corrupt all derived stats */
-    if (value != value)
+
+    /* evict oldest once full */
+    float old = ctx->count >= ctx->capacity ? ctx->buf[ctx->head] : 0.0f;
+    float sum_sq = ctx->sum_sq - old * old + value * value;
+
+    /* reject NaN, Inf and a value that overflows sum_sq — would poison
+     * sum/sum_sq for good and corrupt all derived stats.  sum needs no check
+     * of its own: it overflows long after sum_sq does. */
+    if (!is_finite(sum_sq))
     {
         return MOVING_WINDOW_ERR_PARAM;
     }
 
-    if (ctx->count >= ctx->capacity)
-    {
-        /* evict oldest */
-        float old = ctx->buf[ctx->head];
-        ctx->sum    -= old;
-        ctx->sum_sq -= old * old;
-    }
-
     ctx->buf[ctx->head] = value;
-    ctx->sum    += value;
-    ctx->sum_sq += value * value;
+    ctx->sum    = ctx->sum - old + value;
+    ctx->sum_sq = sum_sq;
     ctx->head = (ctx->head + 1) % ctx->capacity;
 
     if (ctx->count < ctx->capacity)

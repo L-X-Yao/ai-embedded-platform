@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <math.h>
 #include <string.h>
 #include "moving_window.h"
 
@@ -271,6 +272,59 @@ TEST(test_zero_init_safety)
     ASSERT_EQ(moving_window_push(&ctx, 1.0f), MOVING_WINDOW_ERR_PARAM);
 }
 
+/* ---- input that would poison the running sums for good ---- */
+
+TEST(test_push_rejects_infinity)
+{
+    float buf[2];
+    moving_window_t ctx;
+    moving_window_init(&ctx, buf, 2);
+
+    ASSERT_EQ(moving_window_push(&ctx, 1.0f), MOVING_WINDOW_OK);
+    ASSERT_EQ(moving_window_push(&ctx, INFINITY), MOVING_WINDOW_ERR_PARAM);
+    ASSERT_EQ(moving_window_push(&ctx, -INFINITY), MOVING_WINDOW_ERR_PARAM);
+    ASSERT_EQ(moving_window_get_count(&ctx), 1);
+
+    ASSERT_EQ(moving_window_push(&ctx, 3.0f), MOVING_WINDOW_OK);
+    ASSERT_NEAR(moving_window_get_mean(&ctx), 2.0f, 1e-6f);
+    ASSERT_NEAR(moving_window_get_variance(&ctx), 1.0f, 1e-6f);
+}
+
+TEST(test_push_rejects_value_whose_square_overflows)
+{
+    float buf[2];
+    moving_window_t ctx;
+    moving_window_init(&ctx, buf, 2);
+
+    /* 2e19 is finite, its square 4e38 is not: FLT_MAX is about 3.4e38. */
+    ASSERT_EQ(moving_window_push(&ctx, 2e19f), MOVING_WINDOW_ERR_PARAM);
+    ASSERT_EQ(moving_window_get_count(&ctx), 0);
+
+    ASSERT_EQ(moving_window_push(&ctx, 1.0f), MOVING_WINDOW_OK);
+    ASSERT_EQ(moving_window_push(&ctx, 3.0f), MOVING_WINDOW_OK);
+    ASSERT_NEAR(moving_window_get_variance(&ctx), 1.0f, 1e-6f);
+}
+
+TEST(test_push_rejects_value_overflowing_sum_sq)
+{
+    float buf[2];
+    moving_window_t ctx;
+    moving_window_init(&ctx, buf, 2);
+
+    /* Each square is about 2.25e38, finite; together they are not. */
+    ASSERT_EQ(moving_window_push(&ctx, 1.5e19f), MOVING_WINDOW_OK);
+    ASSERT_EQ(moving_window_push(&ctx, 1.5e19f), MOVING_WINDOW_ERR_PARAM);
+    ASSERT_EQ(moving_window_get_count(&ctx), 1);
+
+    /* The large sample ages out. The precision it cost stays (README, Known
+     * issues), but the sums stay finite, which is what this test is about. */
+    ASSERT_EQ(moving_window_push(&ctx, 2.0f), MOVING_WINDOW_OK);
+    ASSERT_EQ(moving_window_push(&ctx, 2.0f), MOVING_WINDOW_OK);
+    ASSERT_EQ(moving_window_push(&ctx, 4.0f), MOVING_WINDOW_OK);
+    ASSERT_TRUE(isfinite(moving_window_get_mean(&ctx)));
+    ASSERT_TRUE(isfinite(moving_window_get_variance(&ctx)));
+}
+
 TEST_MAIN("moving_window")
     RUN(test_init_null_ctx);
     RUN(test_init_null_buf);
@@ -288,4 +342,7 @@ TEST_MAIN("moving_window")
     RUN(test_window_size_one);
     RUN(test_negative_values);
     RUN(test_zero_init_safety);
+    RUN(test_push_rejects_infinity);
+    RUN(test_push_rejects_value_whose_square_overflows);
+    RUN(test_push_rejects_value_overflowing_sum_sq);
 TEST_MAIN_END()
