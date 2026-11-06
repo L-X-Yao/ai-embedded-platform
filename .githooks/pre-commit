@@ -83,14 +83,27 @@ if [[ $EXIT -ne 0 ]]; then
     exit $EXIT
 fi
 
-# Auto-fix documentation drift and stage corrected files
+# Auto-fix documentation drift and stage corrected files. Only a file the tool
+# changed is staged, and not one with unstaged edits: git add would commit
+# those edits too.
 if command -v python3 &>/dev/null; then
-    python3 tooling/audit/doc_drift_check.py --fix 2>/dev/null || true
     drift_files=(CLAUDE.md docs/ai-workflow.md docs/debugging-playbook.md)
+    declare -A hash_before=()
+    declare -A had_edits=()
+    for df in "${drift_files[@]}"; do
+        [[ -f "$df" ]] || continue
+        hash_before["$df"]=$(git hash-object -- "$df")
+        git diff --quiet -- "$df" 2>/dev/null || had_edits["$df"]=1
+    done
+    python3 tooling/audit/doc_drift_check.py --fix 2>/dev/null || true
     staged=()
     for df in "${drift_files[@]}"; do
-        if [[ -f "$df" ]] && ! git diff --quiet "$df" 2>/dev/null; then
-            git add "$df"
+        [[ -f "$df" ]] || continue
+        [[ "$(git hash-object -- "$df")" == "${hash_before[$df]:-}" ]] && continue
+        if [[ -n "${had_edits[$df]:-}" ]]; then
+            echo "NOTE: doc drift fixed in $df, not staged: it has unstaged edits"
+        else
+            git add -- "$df"
             staged+=("$df")
         fi
     done
