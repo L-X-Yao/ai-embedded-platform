@@ -154,7 +154,7 @@ void mqtt_client_on_message(mqtt_client_t *c, mqtt_client_msg_cb_t cb, void *ctx
 /** Register state-change event callback. @thread_safe: no @isr_safe: no */
 void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx);
 
-/** Allocate next packet ID (1-65535, wraps). @thread_safe: no @isr_safe: yes */
+/** Allocate next packet ID (1-65535, wraps). @thread_safe: no @isr_safe: no */
 uint16_t mqtt_client_next_id(mqtt_client_t *c);
 
 /** Check if QoS 1 publish is still awaiting PUBACK. @thread_safe: no @isr_safe: yes */
