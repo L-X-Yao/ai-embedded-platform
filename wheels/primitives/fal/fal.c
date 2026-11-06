@@ -99,6 +99,9 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
     if (!part || !buf) {
         return FAL_ERR_PARAM;
     }
+    if (!s_init_ok) {
+        return FAL_ERR_NOT_READY;
+    }
     if ((size_t)addr + size > part->len) {
         return FAL_ERR_OVERFLOW;
     }
@@ -118,6 +121,9 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
     if (!part || !buf) {
         return FAL_ERR_PARAM;
     }
+    if (!s_init_ok) {
+        return FAL_ERR_NOT_READY;
+    }
     if ((size_t)addr + size > part->len) {
         return FAL_ERR_OVERFLOW;
     }
@@ -135,6 +141,9 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
     REQUIRE(part != NULL);
     if (!part) {
         return FAL_ERR_PARAM;
+    }
+    if (!s_init_ok) {
+        return FAL_ERR_NOT_READY;
     }
     if ((size_t)addr + size > part->len) {
         return FAL_ERR_OVERFLOW;
