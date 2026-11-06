@@ -6,27 +6,26 @@
 
 /* ---------- chip-specific mock setup ---------- */
 
+/* DEVICE_RESET as the chip does it. Registers go to their reset values, with
+ * register 107 at 0x40 (manual p.8), and "The bit automatically clears to 0 once
+ * the reset is done" (p.42), here after mock_reset_busy_reads more reads. The
+ * manual does not say what a write does meanwhile, so here it is lost. */
+static int mock_reset_busy_reads;
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[0x75] = 0x68;
+    mock_reset_busy_reads = 0;
 }
-
-static const mpu6050_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_i2c_read_regs,
-    .ctx       = NULL,
-};
-
-/* DEVICE_RESET as the chip does it. Registers go to their reset values, with
- * register 107 at 0x40 (manual p.8), and "The bit automatically clears to 0 once
- * the reset is done" (p.42), here after mock_reset_busy_reads more reads. */
-static int mock_reset_busy_reads;
 
 static bool chip_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
 {
+    uint8_t before = mock_regs[0x6B];
     bool ok = mock_i2c_write_reg(ctx, addr, reg, val);
-    if (ok && reg == 0x6B && (val & 0x80)) {
+    if (ok && reg == 0x6B && (before & 0x80)) {
+        mock_regs[0x6B] = before;
+    } else if (ok && reg == 0x6B && (val & 0x80)) {
         mock_regs[0x1B] = 0;
         mock_regs[0x1C] = 0;
     }
@@ -57,6 +56,29 @@ static const mpu6050_i2c_t chip_i2c_no_delay = {
     .write_reg = chip_write_reg,
     .read_regs = chip_read_regs,
     .delay_ms  = NULL,
+    .ctx       = NULL,
+};
+
+static const mpu6050_i2c_t mock_i2c = {
+    .write_reg = chip_write_reg,
+    .read_regs = chip_read_regs,
+    .ctx       = NULL,
+};
+
+/* A chip that stays asleep whatever is written to register 107 */
+static bool asleep_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+{
+    bool ok = chip_write_reg(ctx, addr, reg, val);
+    if (ok && reg == 0x6B && !(val & 0x80)) {
+        mock_regs[0x6B] = 0x40;
+    }
+    return ok;
+}
+
+static const mpu6050_i2c_t asleep_i2c = {
+    .write_reg = asleep_write_reg,
+    .read_regs = chip_read_regs,
+    .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
 
@@ -125,6 +147,49 @@ TEST(test_init_i2c_fail)
     mock_fail_at = 0;
     mpu6050_t d;
     ASSERT_EQ(mpu6050_init(&d, &mock_i2c, &default_cfg), MPU6050_ERR_I2C);
+}
+
+TEST(test_init_waits_for_the_reset)
+{
+    mock_reset();
+    mock_reset_busy_reads = 3;
+    mock_delay_ms_count = 0;
+    mpu6050_t d;
+    ASSERT_EQ(mpu6050_init(&d, &chip_i2c, &default_cfg), MPU6050_OK);
+    ASSERT_EQ(mock_delay_ms_count, 3);
+    ASSERT_EQ(mock_regs[0x6B], 0x01);   /* awake, not lost to the reset */
+}
+
+TEST(test_init_timeout)
+{
+    mock_reset();
+    mock_reset_busy_reads = 1000000;
+    mpu6050_t d;
+    ASSERT_EQ(mpu6050_init(&d, &chip_i2c, &default_cfg), MPU6050_ERR_TIMEOUT);
+}
+
+/* write(107)=op0, read(107)=op1, write(107)=op2, read(107)=op3 */
+TEST(test_init_wake_up_i2c_fail)
+{
+    static const int ops[] = { 2, 3 };
+    for (unsigned i = 0; i < 2; i++) {
+        mock_reset();
+        mock_fail_at = ops[i];
+        mpu6050_t d;
+        ASSERT_EQ(mpu6050_init(&d, &chip_i2c, &default_cfg), MPU6050_ERR_I2C);
+    }
+}
+
+/* Asleep the chip reads zeros with MPU6050_OK, so this must not pass quietly */
+TEST(test_wake_up_that_did_not_take)
+{
+    mock_reset();
+    mpu6050_t d;
+    ASSERT_EQ(mpu6050_init(&d, &asleep_i2c, &default_cfg), MPU6050_ERR_I2C);
+
+    setup_chip(&chip_i2c);
+    dev.i2c = &asleep_i2c;
+    ASSERT_EQ(mpu6050_reset(&dev), MPU6050_ERR_I2C);
 }
 
 TEST(test_null_safety)
@@ -268,10 +333,10 @@ TEST(test_reset_timeout)
 
 TEST(test_reset_write_failures)
 {
-    /* write(107)=op0, read(107)=op1, write(107)=op2, write(0x1C)=op3,
-     * write(0x1B)=op4 */
-    static const int ops[] = { 0, 2, 3, 4 };
-    for (unsigned i = 0; i < 4; i++) {
+    /* write(107)=op0, read(107)=op1, write(107)=op2, read(107)=op3,
+     * write(0x1C)=op4, write(0x1B)=op5 */
+    static const int ops[] = { 0, 2, 3, 4, 5 };
+    for (unsigned i = 0; i < 5; i++) {
         setup_chip(&chip_i2c);
         mock_fail_at = ops[i];
         ASSERT_EQ(mpu6050_reset(&dev), MPU6050_ERR_I2C);
@@ -304,6 +369,10 @@ TEST_MAIN("mpu6050")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
     RUN(test_init_i2c_fail);
+    RUN(test_init_waits_for_the_reset);
+    RUN(test_init_timeout);
+    RUN(test_init_wake_up_i2c_fail);
+    RUN(test_wake_up_that_did_not_take);
     RUN(test_null_safety);
     RUN(test_read_accel_1g_z);
     RUN(test_read_accel_negative);

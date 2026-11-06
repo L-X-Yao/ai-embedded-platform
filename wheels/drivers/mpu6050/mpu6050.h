@@ -34,7 +34,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional: see mpu6050_reset */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional: paces the reset wait */
     void *ctx;
 } mpu6050_i2c_t;
 
@@ -77,7 +77,10 @@ typedef struct {
 #define MPU6050_ADDR_HIGH  0x69
 #define MPU6050_WHO_AM_I   0x68
 
-/** @thread_safe: no @isr_safe: no */
+/** Reset the chip, wake it and set the ranges. The wait for DEVICE_RESET works
+ *  as in mpu6050_reset, and MPU6050_ERR_TIMEOUT means the bit never cleared.
+ *  Returns MPU6050_ERR_I2C if the chip stays asleep after the wake-up.
+ *  @thread_safe: no @isr_safe: no */
 mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
                            const mpu6050_cfg_t *cfg);
 
