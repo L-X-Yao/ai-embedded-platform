@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <stdio.h>
 #include <string.h>
 #include "fixed_point.h"
 
@@ -544,6 +545,42 @@ TEST(test_to_float_exact)
     ASSERT_NEAR(fp_to_float(fp_from_int(100)), 100.0f, 0.001f);
 }
 
+/*
+ * fp_to_string, 5 places: frac_raw * 100000 passes 2^32 at frac_raw 42950.
+ * The expected digits are exact binary fractions worked out by hand.
+ */
+TEST(test_to_string_five_places_large_fraction)
+{
+    char buf[32];
+
+    ASSERT_EQ(fp_to_string((fp_t)0x0000C000, buf, sizeof(buf), 5), 7);
+    ASSERT_STR_EQ(buf, "0.75000");
+    ASSERT_EQ(fp_to_string((fp_t)0x0003C000, buf, sizeof(buf), 5), 7);
+    ASSERT_STR_EQ(buf, "3.75000");
+    ASSERT_EQ(fp_to_string(-(fp_t)0x000CE000, buf, sizeof(buf), 5), 9);
+    ASSERT_STR_EQ(buf, "-12.87500");
+    /* last fraction that fitted, then the first that did not */
+    ASSERT_EQ(fp_to_string((fp_t)42949, buf, sizeof(buf), 5), 7);
+    ASSERT_STR_EQ(buf, "0.65535");
+    ASSERT_EQ(fp_to_string((fp_t)42950, buf, sizeof(buf), 5), 7);
+    ASSERT_STR_EQ(buf, "0.65536");
+}
+
+/* Every fraction at 5 places against round-to-nearest in double, which is
+ * exact here: frac * 100000 needs 33 bits and / 65536 only moves the point. */
+TEST(test_to_string_five_places_exhaustive)
+{
+    char buf[32];
+    char want[32];
+
+    for (uint32_t frac = 0; frac <= 0xFFFFu; frac++) {
+        double scaled = (double)frac * 100000.0 / 65536.0;
+        (void)snprintf(want, sizeof(want), "0.%05u", (unsigned)(scaled + 0.5));
+        ASSERT_EQ(fp_to_string((fp_t)frac, buf, sizeof(buf), 5), 7);
+        ASSERT_STR_EQ(buf, want);
+    }
+}
+
 TEST_MAIN("fixed_point")
     RUN(test_from_int_to_int_roundtrip);
     RUN(test_from_float_to_float_roundtrip);
@@ -581,4 +618,6 @@ TEST_MAIN("fixed_point")
     RUN(test_to_string_nul_termination);
     RUN(test_from_float_nan);
     RUN(test_to_float_exact);
+    RUN(test_to_string_five_places_large_fraction);
+    RUN(test_to_string_five_places_exhaustive);
 TEST_MAIN_END()

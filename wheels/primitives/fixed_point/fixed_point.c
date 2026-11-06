@@ -189,9 +189,10 @@ int fp_to_string(fp_t val, char *buf, uint16_t buf_size, uint8_t decimal_places)
 
         /* Scale fractional bits to decimal digits:
          * frac_decimal = frac_raw * pow10[decimal_places] / 65536
-         * Use uint32_t to avoid overflow. */
-        uint32_t frac_scaled = ((uint32_t)frac_raw * pow10[decimal_places]
-                                + 32768u) / 65536u;
+         * 0xFFFF * 100000 needs 33 bits, so the product is uint64_t. */
+        uint32_t frac_scaled = (uint32_t)(((uint64_t)frac_raw
+                                           * pow10[decimal_places]
+                                           + 32768u) >> 16);
 
         /* Clamp in case rounding pushes over (e.g. 0.99999 rounds up) */
         if (frac_scaled >= pow10[decimal_places]) {
