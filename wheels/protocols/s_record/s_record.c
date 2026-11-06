@@ -79,6 +79,9 @@ s_record_err_t s_record_decode(const char *line, size_t len,
     size_t expected_chars = 4 + (size_t)byte_count * 2;
     if (len < expected_chars)
         return S_RECORD_ERR_SHORT;
+    /* Text past the checksum may be a whole record, joined by a lost newline. */
+    if (len > expected_chars)
+        return S_RECORD_ERR_FORMAT;
 
     /* Parse all binary bytes (including address, data, checksum) */
     uint8_t binary[256];

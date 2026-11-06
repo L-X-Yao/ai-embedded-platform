@@ -53,7 +53,8 @@ typedef struct {
     uint8_t         data_len;
 } s_record_line_t;
 
-/** Decode one S-Record line (ASCII text). @thread_safe: yes @isr_safe: yes */
+/** Decode one S-Record line (ASCII text). Only CR and LF may follow the checksum.
+ *  @thread_safe: yes @isr_safe: yes */
 s_record_err_t s_record_decode(const char *line, size_t len,
                                 s_record_line_t *out);
 
