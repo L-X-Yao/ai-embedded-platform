@@ -15,6 +15,8 @@ static uint8_t mock_last_write[8];
 static int     mock_last_write_len;
 static bool     mock_measuring;     /* a single-shot command is running */
 static uint32_t mock_measure_ms;    /* delay time since that command */
+static uint32_t mock_now_ms;        /* total delay time */
+static uint32_t mock_last_write_ms; /* when the last command went out */
 
 /* Table 4: tMEAS,h maximum */
 #define MOCK_TMEAS_H_MS 15u
@@ -29,6 +31,8 @@ static void mock_reset(void)
     mock_last_write_len = 0;
     mock_measuring  = false;
     mock_measure_ms = 0;
+    mock_now_ms     = 0;
+    mock_last_write_ms = 0;
 }
 
 static bool mock_should_fail(void)
@@ -43,6 +47,7 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
 {
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
+    mock_last_write_ms = mock_now_ms;
     if (len <= sizeof(mock_last_write))
     {
         memcpy(mock_last_write, data, len);
@@ -60,6 +65,7 @@ static void mock_delay(void *ctx, uint16_t ms)
 {
     (void)ctx;
     mock_measure_ms += ms;
+    mock_now_ms += ms;
 }
 
 static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
@@ -114,6 +120,25 @@ TEST(test_init_ok)
     ASSERT_EQ(e, SHT30_OK);
     ASSERT_EQ(mock_last_write[0], 0x30);
     ASSERT_EQ(mock_last_write[1], 0xA2);
+}
+
+/* p.9: "the sensor needs the time tPU to enter idle state", at most 1.5 ms in
+ * Table 5. p.7: tSR is at most 1.5 ms too, and p.12: "During the reset procedure
+ * the sensor will not process commands." delay_ms counts whole ms. */
+TEST(test_init_waits_out_power_up_and_soft_reset)
+{
+    mock_reset();
+    sht30_t d;
+    ASSERT_EQ(sht30_init(&d, &mock_i2c, &default_cfg), SHT30_OK);
+    ASSERT_GE(mock_last_write_ms, 2);
+    ASSERT_GE(mock_now_ms - mock_last_write_ms, 2);
+}
+
+TEST(test_reset_waits_out_soft_reset)
+{
+    setup();
+    ASSERT_EQ(sht30_reset(&dev), SHT30_OK);
+    ASSERT_GE(mock_now_ms - mock_last_write_ms, 2);
 }
 
 TEST(test_init_i2c_fail)
@@ -263,6 +288,8 @@ TEST(test_read_sends_measure_cmd)
 
 TEST_MAIN("sht30")
     RUN(test_init_ok);
+    RUN(test_init_waits_out_power_up_and_soft_reset);
+    RUN(test_reset_waits_out_soft_reset);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_read_25c_50pct);

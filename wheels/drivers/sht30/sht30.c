@@ -17,10 +17,24 @@
 #define CMD_SOFT_RESET_MSB    0x30
 #define CMD_SOFT_RESET_LSB    0xA2
 
+/* tPU and tSR are each at most 1.5 ms, and delay_ms counts whole ms */
+#define STARTUP_WAIT_MS       2
+
 static bool send_cmd(const sht30_t *dev, uint8_t msb, uint8_t lsb)
 {
     uint8_t cmd[2] = { msb, lsb };
     return dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, cmd, 2);
+}
+
+/* The sensor processes no command until tSR has passed. */
+static bool soft_reset(const sht30_t *dev)
+{
+    if (!send_cmd(dev, CMD_SOFT_RESET_MSB, CMD_SOFT_RESET_LSB))
+    {
+        return false;
+    }
+    dev->i2c->delay_ms(dev->i2c->ctx, STARTUP_WAIT_MS);
+    return true;
 }
 
 uint8_t sht30_crc8(const uint8_t *data, uint16_t len)
@@ -60,7 +74,10 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
-    if (!send_cmd(dev, CMD_SOFT_RESET_MSB, CMD_SOFT_RESET_LSB))
+    /* The driver cannot tell how long ago power came, so it waits out tPU */
+    dev->i2c->delay_ms(dev->i2c->ctx, STARTUP_WAIT_MS);
+
+    if (!soft_reset(dev))
     {
         return SHT30_ERR_I2C;
     }
@@ -115,7 +132,7 @@ sht30_err_t sht30_reset(sht30_t *dev)
     {
         return SHT30_ERR_PARAM;
     }
-    if (!send_cmd(dev, CMD_SOFT_RESET_MSB, CMD_SOFT_RESET_LSB))
+    if (!soft_reset(dev))
     {
         return SHT30_ERR_I2C;
     }
