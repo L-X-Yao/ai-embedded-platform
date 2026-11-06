@@ -46,7 +46,8 @@ uint16_t base64_encoded_size(uint16_t data_len);
 
 /**
  * Calculate maximum decoded size (upper bound; ignores padding).
- * May over-estimate by up to 2 bytes. Exact size is known only
+ * A buffer of this size holds any input base64_decode accepts, padded or
+ * not. Padded input can need fewer bytes: the exact size is known only
  * after inspecting padding characters.
  *
  * @param b64_len   Number of Base64 characters (including padding).
@@ -54,7 +55,8 @@ uint16_t base64_encoded_size(uint16_t data_len);
  * @thread_safe: yes (pure function, no state) @isr_safe: yes
  */
 /*@ assigns \nothing;
-    ensures \result == (b64_len / 4) * 3;
+    ensures \result == (b64_len / 4) * 3
+                     + (b64_len % 4 > 1 ? b64_len % 4 - 1 : 0);
 */
 uint16_t base64_decoded_size(uint16_t b64_len);
 

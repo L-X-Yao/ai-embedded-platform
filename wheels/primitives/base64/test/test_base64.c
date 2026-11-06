@@ -202,6 +202,34 @@ TEST(test_size_functions)
     ASSERT_TRUE(base64_decoded_size(8) >= 6);
 }
 
+/* n characters carry floor(6n / 8) bytes, padded or not, and a buffer sized
+ * from base64_decoded_size has to hold every input the decoder accepts. */
+TEST(test_decoded_size_covers_decodable_input)
+{
+    static const struct {
+        const char *b64;
+        uint16_t    bytes;
+    } cases[] = {
+        { "QQ",       1u }, { "QUI",      2u }, { "QUJD",     3u },
+        { "QUJDRA",   4u }, { "QUJDREU",  5u }, { "QUJDREVG", 6u },
+        { "QQ==",     1u }, { "QUI=",     2u }, { "QUJDRA==", 4u },
+        { "QUJDREU=", 5u },
+    };
+
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        uint16_t len = (uint16_t)strlen(cases[i].b64);
+        uint8_t out[8];
+        uint16_t out_len = base64_decoded_size(len);
+        ASSERT_TRUE(out_len <= sizeof(out));
+        ASSERT_EQ(base64_decode(cases[i].b64, len, out, &out_len), BASE64_OK);
+        ASSERT_EQ(out_len, cases[i].bytes);
+    }
+
+    ASSERT_EQ(base64_decoded_size(0), 0);
+    ASSERT_EQ(base64_decoded_size(1), 0);  /* 6 bits: not one byte */
+    ASSERT_EQ(base64_decoded_size(65535), 49151);
+}
+
 TEST(test_encode_length_past_uint16_limit)
 {
     static const uint8_t data[49150];
@@ -240,6 +268,7 @@ TEST_MAIN("base64")
     RUN(test_decode_invalid_char);
     RUN(test_null_pointers);
     RUN(test_size_functions);
+    RUN(test_decoded_size_covers_decodable_input);
     RUN(test_encode_length_past_uint16_limit);
     RUN(test_encode_longest_input);
 TEST_MAIN_END()

@@ -52,8 +52,11 @@ uint16_t base64_encoded_size(uint16_t data_len)
 
 uint16_t base64_decoded_size(uint16_t b64_len)
 {
-    /* Upper bound: 3 bytes per 4 chars (may over-estimate by up to 2) */
-    return (uint16_t)((uint32_t)b64_len / 4u * 3u);
+    /* Upper bound: 3 bytes per 4 chars, plus the unpadded last group the
+     * decoder accepts: 2 chars carry 1 byte, 3 chars carry 2. */
+    uint32_t tail = (uint32_t)b64_len % 4u;
+    uint32_t bytes = (uint32_t)b64_len / 4u * 3u;
+    return (uint16_t)(bytes + ((tail > 1u) ? tail - 1u : 0u));
 }
 
 /* ---- Encode ----------------------------------------------------------- */
