@@ -671,6 +671,31 @@ TEST(test_init_missing_callbacks)
     ASSERT_EQ(max30102_init(&d, &bad_i2c2), MAX30102_ERR_PARAM);
 }
 
+TEST(test_init_requires_delay)
+{
+    mock_reset();
+    max30102_t d;
+    /* 19-7740 Rev 0 p5: a temperature conversion takes 29 ms.  Without a
+     * delay read_temp would return the previous result. */
+    max30102_i2c_t no_delay = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+        .delay_ms  = NULL,
+        .ctx       = NULL,
+    };
+    ASSERT_EQ(max30102_init(&d, &no_delay), MAX30102_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
+}
+
+TEST(test_read_temp_waits_for_conversion)
+{
+    setup();
+    mock_delay_ms_count = 0;
+    float temp = 0.0f;
+    ASSERT_EQ(max30102_read_temp(&dev, &temp), MAX30102_OK);
+    ASSERT_EQ(mock_delay_ms_count, 1);
+}
+
 TEST(test_init_i2c_fail_during_fifo_clear)
 {
     /* ops 0-6: part ID, reset, FIFO_CONFIG, SPO2_CONFIG, LED1, LED2, MODE.
@@ -706,6 +731,8 @@ TEST_MAIN("max30102")
     RUN(test_null_safety);
     RUN(test_init_writes_defaults);
     RUN(test_init_missing_callbacks);
+    RUN(test_init_requires_delay);
+    RUN(test_read_temp_waits_for_conversion);
     RUN(test_init_i2c_fail_during_fifo_clear);
     RUN(test_init_clears_fifo_after_mode_write);
     RUN(test_set_mode_hr);
