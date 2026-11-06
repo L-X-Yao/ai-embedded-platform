@@ -32,6 +32,41 @@ static bool ci_equal(const char *a, size_t alen, const char *b, size_t blen)
     return true;
 }
 
+/* One Content-Length value: 1*DIGIT that fits an int, else -1. */
+static int length_value(const char *value, size_t len)
+{
+    int val = 0;
+
+    if (len == 0) return -1;
+    for (size_t j = 0; j < len; j++) {
+        char c = value[j];
+        if (c < '0' || c > '9') return -1;
+        if (val > 214748364 || (val == 214748364 && (c - '0') > 7))
+            return -1;
+        val = val * 10 + (c - '0');
+    }
+    return val;
+}
+
+/* Check every Content-Length field: *length is -1 when there is none. An
+ * invalid value, or two that differ, cannot frame a message (RFC 7230
+ * section 3.3.3). Repeats of one value count as that value (section 3.3.2). */
+static http_parser_err_t scan_content_length(const http_parser_header_t *headers,
+                                             int count, int *length)
+{
+    *length = -1;
+    for (int i = 0; i < count; i++) {
+        if (!ci_equal(headers[i].name, headers[i].name_len,
+                      "content-length", 14))
+            continue;
+        int val = length_value(headers[i].value, headers[i].value_len);
+        if (val < 0 || (*length >= 0 && val != *length))
+            return HTTP_PARSER_ERR_MALFORMED;
+        *length = val;
+    }
+    return HTTP_PARSER_OK;
+}
+
 static http_parser_err_t parse_headers(const char *data, size_t len,
                                 http_parser_header_t *headers, int max_headers,
                                 int *count, const char **body_start,
@@ -55,6 +90,9 @@ static http_parser_err_t parse_headers(const char *data, size_t len,
         const char *colon = NULL;
         for (const char *c = p; c < crlf; c++) {
             if (*c == ':') { colon = c; break; }
+            /* A name holds no whitespace, least of all before the colon
+             * (RFC 7230 section 3.2.4): it would hide the header */
+            if (*c == ' ' || *c == '\t') return HTTP_PARSER_ERR_MALFORMED;
         }
         if (!colon)
             return HTTP_PARSER_ERR_MALFORMED;
@@ -120,7 +158,10 @@ http_parser_err_t http_parser_parse_request(const char *data, size_t len,
         return err;
 
     size_t header_end = (size_t)(body_start - data);
-    int content_length = http_parser_get_content_length(req->headers, req->header_count);
+    int content_length = -1;
+    err = scan_content_length(req->headers, req->header_count, &content_length);
+    if (err != HTTP_PARSER_OK)
+        return err;
     if (content_length > 0) {
         if (header_end + (size_t)content_length > len)
             return HTTP_PARSER_ERR_INCOMPLETE;
@@ -183,7 +224,10 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
         return err;
 
     size_t header_end = (size_t)(body_start - data);
-    int content_length = http_parser_get_content_length(resp->headers, resp->header_count);
+    int content_length = -1;
+    err = scan_content_length(resp->headers, resp->header_count, &content_length);
+    if (err != HTTP_PARSER_OK)
+        return err;
     if (content_length > 0) {
         if (header_end + (size_t)content_length > len)
             return HTTP_PARSER_ERR_INCOMPLETE;
@@ -219,19 +263,9 @@ http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, i
 int http_parser_get_content_length(const http_parser_header_t *headers, int count)
 {
     if (!headers) return -1;
-    for (int i = 0; i < count; i++) {
-        if (ci_equal(headers[i].name, headers[i].name_len,
-                     "content-length", 14)) {
-            int val = 0;
-            for (size_t j = 0; j < headers[i].value_len; j++) {
-                char c = headers[i].value[j];
-                if (c < '0' || c > '9') return -1;
-                if (val > 214748364 || (val == 214748364 && (c - '0') > 7))
-                    return -1;
-                val = val * 10 + (c - '0');
-            }
-            return val;
-        }
-    }
-    return -1;
+
+    int length = -1;
+    if (scan_content_length(headers, count, &length) != HTTP_PARSER_OK)
+        return -1;
+    return length;
 }
