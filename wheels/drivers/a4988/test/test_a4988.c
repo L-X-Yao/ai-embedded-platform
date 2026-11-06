@@ -476,6 +476,33 @@ TEST(test_step_pulse_timing)
     ASSERT_TRUE(mock_delay_us_total >= 2);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(a4988_t *d)
+{
+    ASSERT_EQ(a4988_enable(d, true), A4988_ERR_PARAM);
+    ASSERT_EQ(a4988_set_direction(d, A4988_DIR_CCW), A4988_ERR_PARAM);
+    ASSERT_EQ(a4988_step(d), A4988_ERR_PARAM);
+    ASSERT_EQ(a4988_step_n(d, 2, 10), A4988_ERR_PARAM);
+    ASSERT_EQ(a4988_set_microstep(d, A4988_STEP_HALF), A4988_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const a4988_hal_t no_callbacks;
+    a4988_t d;
+    mock_reset_all();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(a4988_init(&d, NULL, &test_cfg), A4988_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(a4988_init(&d, &no_callbacks, &test_cfg), A4988_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("a4988")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -505,4 +532,5 @@ TEST_MAIN("a4988")
     RUN(test_step_null);
     RUN(test_step_n_null);
     RUN(test_set_microstep_null);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -94,20 +94,9 @@ uint8_t aht20_crc8(const uint8_t *data, uint16_t len)
     return crc;
 }
 
-aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static aht20_err_t bring_up(aht20_t *dev)
 {
-    if (!dev || !i2c)
-    {
-        return AHT20_ERR_PARAM;
-    }
-    if (!i2c->write || !i2c->read || !i2c->delay_ms)
-    {
-        return AHT20_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* wait for power-on */
     delay(dev, DELAY_POWER_ON_MS);
 
@@ -138,6 +127,36 @@ aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c)
     }
 
     return AHT20_OK;
+}
+
+aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c)
+{
+    if (!dev)
+    {
+        return AHT20_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+    {
+        return AHT20_ERR_PARAM;
+    }
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
+    {
+        return AHT20_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+
+    aht20_err_t err = bring_up(dev);
+    if (err != AHT20_OK)
+    {
+        dev->i2c = NULL;
+    }
+    return err;
 }
 
 aht20_err_t aht20_read(aht20_t *dev, aht20_data_t *out)

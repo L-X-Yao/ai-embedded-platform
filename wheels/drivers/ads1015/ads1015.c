@@ -14,6 +14,7 @@
  */
 #include "ads1015.h"
 #include "contract.h"
+#include <string.h>
 
 #define REG_CONVERSION 0x00u
 #define REG_CONFIG     0x01u
@@ -81,7 +82,14 @@ static ads1015_err_t poll_ready(ads1015_t *dev)
 ads1015_err_t ads1015_init(ads1015_t *dev, const ads1015_i2c_t *i2c,
                            const ads1015_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+        return ADS1015_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the reads refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
         return ADS1015_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return ADS1015_ERR_PARAM;
@@ -95,7 +103,7 @@ ads1015_err_t ads1015_init(ads1015_t *dev, const ads1015_i2c_t *i2c,
 ads1015_err_t ads1015_read_raw(ads1015_t *dev, ads1015_mux_t channel,
                                int16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
         return ADS1015_ERR_PARAM;
     if ((unsigned)channel > 7u)
         return ADS1015_ERR_PARAM;
@@ -122,7 +130,7 @@ ads1015_err_t ads1015_read_raw(ads1015_t *dev, ads1015_mux_t channel,
 ads1015_err_t ads1015_read_single(ads1015_t *dev, ads1015_mux_t channel,
                                   float *voltage_mv)
 {
-    if (!dev || !voltage_mv)
+    if (!dev || !dev->i2c || !voltage_mv)
         return ADS1015_ERR_PARAM;
 
     int16_t raw;

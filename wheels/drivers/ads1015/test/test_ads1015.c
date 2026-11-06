@@ -288,6 +288,33 @@ TEST(test_read_raw_bad_channel)
     ASSERT_EQ(ads1015_read_raw(&dev, (ads1015_mux_t)8, &raw), ADS1015_ERR_PARAM);
 }
 
+/* ---- a device init refused ---- */
+
+static void assert_device_refused(ads1015_t *d)
+{
+    int16_t raw;
+    float mv;
+    ASSERT_EQ(ads1015_read_raw(d, ADS1015_MUX_AIN0_GND, &raw), ADS1015_ERR_PARAM);
+    ASSERT_EQ(ads1015_read_single(d, ADS1015_MUX_AIN0_GND, &mv), ADS1015_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const ads1015_i2c_t no_callbacks;
+    ads1015_t d;
+    ads1015_cfg_t cfg = default_cfg();
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ads1015_init(&d, NULL, &cfg), ADS1015_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ads1015_init(&d, &no_callbacks, &cfg), ADS1015_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ads1015")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -307,4 +334,5 @@ TEST_MAIN("ads1015")
     RUN(test_config_bits);
     RUN(test_read_all_four_channels);
     RUN(test_read_raw_bad_channel);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

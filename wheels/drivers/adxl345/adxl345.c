@@ -48,24 +48,9 @@ static bool read_regs(const adxl345_t *dev, uint8_t reg, uint8_t *buf,
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
-adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
-                           const adxl345_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static adxl345_err_t bring_up(const adxl345_t *dev, const adxl345_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return ADXL345_ERR_PARAM;
-    }
-
-    /* 800 Hz is the most a 400 kHz I2C bus can carry */
-    if ((unsigned)cfg->range > 3 || (unsigned)cfg->data_rate > ADXL345_RATE_800HZ)
-    {
-        return ADXL345_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify chip ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_DEVID, &id, 1))
@@ -97,9 +82,49 @@ adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
     }
 
     /* The data registers hold no sample until the turn-on time has passed */
-    if (i2c->delay_ms)
+    if (dev->i2c->delay_ms)
     {
-        i2c->delay_ms(i2c->ctx, TURN_ON_MS[cfg->data_rate]);
+        dev->i2c->delay_ms(dev->i2c->ctx, TURN_ON_MS[cfg->data_rate]);
+    }
+
+    return ADXL345_OK;
+}
+
+adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
+                           const adxl345_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return ADXL345_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return ADXL345_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return ADXL345_ERR_PARAM;
+    }
+
+    /* 800 Hz is the most a 400 kHz I2C bus can carry */
+    if ((unsigned)cfg->range > 3 || (unsigned)cfg->data_rate > ADXL345_RATE_800HZ)
+    {
+        return ADXL345_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    adxl345_err_t err = bring_up(dev, cfg);
+    if (err != ADXL345_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);
@@ -108,7 +133,7 @@ adxl345_err_t adxl345_init(adxl345_t *dev, const adxl345_i2c_t *i2c,
 
 adxl345_err_t adxl345_read(const adxl345_t *dev, adxl345_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return ADXL345_ERR_PARAM;
     }
@@ -136,7 +161,7 @@ adxl345_err_t adxl345_read(const adxl345_t *dev, adxl345_data_t *out)
 
 adxl345_err_t adxl345_set_range(adxl345_t *dev, adxl345_range_t range)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return ADXL345_ERR_PARAM;
     }

@@ -250,6 +250,29 @@ TEST(test_show_brightness_clamped)
     ASSERT_EQ_HEX(xfer_log[4], 0xE0 | 31);
 }
 
+/* ---------- a device init refused ---------- */
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const apa102_spi_t no_callbacks;
+    apa102_pixel_t buf[1] = { { 0, 0, 0, 0 } };
+    apa102_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(apa102_init(&d, NULL, 1), APA102_ERR_PARAM);
+    ASSERT_EQ(apa102_show(&d, buf), APA102_ERR_PARAM);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(apa102_init(&d, &no_callbacks, 1), APA102_ERR_PARAM);
+    ASSERT_EQ(apa102_show(&d, buf), APA102_ERR_PARAM);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(apa102_init(&d, &mock_spi, 0), APA102_ERR_PARAM);
+    ASSERT_EQ(apa102_show(&d, buf), APA102_ERR_PARAM);
+}
+
 TEST_MAIN("apa102")
     RUN(test_init_ok);
     RUN(test_init_zero_leds);
@@ -267,4 +290,5 @@ TEST_MAIN("apa102")
     RUN(test_show_multiple_leds);
     RUN(test_show_cs_asserted);
     RUN(test_show_brightness_clamped);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

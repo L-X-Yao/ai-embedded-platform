@@ -26,14 +26,20 @@ static void spi_send(const apa102_t *dev, uint8_t byte)
 apa102_err_t apa102_init(apa102_t *dev, const apa102_spi_t *spi,
                          uint16_t num_leds)
 {
-    if (!dev || !spi)
+    if (!dev)
+        return APA102_ERR_PARAM;
+
+    /* dev->spi stays NULL unless init succeeds: apa102_show refuses a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi)
         return APA102_ERR_PARAM;
     if (!spi->cs_low || !spi->cs_high || !spi->xfer)
         return APA102_ERR_PARAM;
     if (num_leds == 0)
         return APA102_ERR_PARAM;
 
-    memset(dev, 0, sizeof(*dev));
     dev->spi      = spi;
     dev->num_leds = num_leds;
 

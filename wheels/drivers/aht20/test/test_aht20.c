@@ -476,6 +476,41 @@ TEST(test_error_codes)
     ASSERT_EQ((int)AHT20_ERR_TIMEOUT,-5);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(aht20_t *d)
+{
+    aht20_data_t data;
+    ASSERT_EQ(aht20_read(d, &data), AHT20_ERR_PARAM);
+    ASSERT_EQ(aht20_reset(d), AHT20_ERR_PARAM);
+}
+
+/* The part stays uncalibrated, so what it measures means nothing */
+TEST(test_device_refused_after_not_calibrated)
+{
+    aht20_t d;
+    mock_reset();
+    plant_status(0x00);
+    ASSERT_EQ(aht20_init(&d, &mock_i2c), AHT20_ERR_NOT_CAL);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const aht20_i2c_t no_callbacks;
+    aht20_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(aht20_init(&d, NULL), AHT20_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(aht20_init(&d, &no_callbacks), AHT20_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("aht20")
     RUN(test_init_ok_already_calibrated);
     RUN(test_init_needs_calibration);
@@ -505,4 +540,6 @@ TEST_MAIN("aht20")
     RUN(test_crc8_null_returns_zero);
     RUN(test_crc8_empty);
     RUN(test_error_codes);
+    RUN(test_device_refused_after_not_calibrated);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

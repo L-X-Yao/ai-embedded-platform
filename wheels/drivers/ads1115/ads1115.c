@@ -9,6 +9,7 @@
  */
 #include "ads1115.h"
 #include "contract.h"
+#include <string.h>
 
 #define REG_CONVERSION 0x00
 #define REG_CONFIG     0x01
@@ -55,7 +56,14 @@ static ads1115_err_t write_config(ads1115_t *dev, uint16_t config)
 ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
                            const ads1115_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+        return ADS1115_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the reads refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
         return ADS1115_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return ADS1115_ERR_PARAM;
@@ -68,7 +76,7 @@ ads1115_err_t ads1115_init(ads1115_t *dev, const ads1115_i2c_t *i2c,
 
 ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
         return ADS1115_ERR_PARAM;
 
     uint16_t config = build_config(&dev->cfg, true);
@@ -98,7 +106,7 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
 
 ads1115_err_t ads1115_read_voltage(ads1115_t *dev, float *voltage_mv)
 {
-    if (!dev || !voltage_mv)
+    if (!dev || !dev->i2c || !voltage_mv)
         return ADS1115_ERR_PARAM;
 
     int16_t raw;
