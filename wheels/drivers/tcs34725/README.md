@@ -52,12 +52,12 @@ runtime via init or setter functions.
 
 ## Datasheet check
 
-Checked on 2026-11-06 against TAOS135 - AUGUST 2012. Not run on hardware.
+Checked on 2026-11-06 against TAOS135 - AUGUST 2012, and ams DN40 Rev 1.0 for the CCT and lux formulas. Not run on hardware.
 
 - **Matched:** Address, ID values, CMD bit, register addresses, PON and AEN bits, gain codes, the ATIME values from Table 6, channel and byte order.
-- **Fixed:** The 8-byte RGBC read used TYPE 00b, which by the manual repeats CDATAL and gives the same value on all four channels, so it now sends 0xA0 | reg. A real part may be more forgiving; that is untested. `tcs34725_init` and `tcs34725_enable` set PON and AEN in one write, against the 2.4 ms the manual asks for. They now wait 3 ms between them, so `delay_ms` is required. The comment on `TCS34725_INTEG_50MS` said 20 cycles; 0xEB is 21. The model now honours TYPE and starts an RGBC only when AEN rises 2.4 ms after PON. `tcs34725_read_rgbc` returned zeros with `TCS34725_OK` until the first cycle ended, and now returns `TCS34725_ERR_NOT_READY`. The model now resets ATIME and WTIME to 0xFF, has STATUS, and fills the data and AVALID only at the end of a cycle.
-- **Still open:** After a change of gain or integration time `tcs34725_read_rgbc` returns counts from the old setting. No check for saturation at (256 - ATIME) x 1024. No wait state, thresholds, persistence or interrupt support.
-- **Suspected:** `TCS34725_INTEG_101MS` is 0xD5 as Table 6 prints, but the formula makes that 43 cycles, 103 ms. `TCS34725_INTEG_700MS` follows Table 6, but the formula gives 614 ms. `tcs34725_get_color_temp` puts one value in both halves of its formula, so the result may be far off; DN40 is not in the manual set. `tcs34725_get_lux` takes neither gain nor integration time, so its result scales with both, and fixing that changes the API.
+- **Fixed:** The 8-byte RGBC read used TYPE 00b, which by the manual repeats CDATAL and gives the same value on all four channels, so it now sends 0xA0 | reg. A real part may be more forgiving; that is untested. `tcs34725_init` and `tcs34725_enable` set PON and AEN in one write, against the 2.4 ms the manual asks for. They now wait 3 ms between them, so `delay_ms` is required. The comment on `TCS34725_INTEG_50MS` said 20 cycles; 0xEB is 21. The model now honours TYPE and starts an RGBC only when AEN rises 2.4 ms after PON. `tcs34725_read_rgbc` returned zeros with `TCS34725_OK` until the first cycle ended, and now returns `TCS34725_ERR_NOT_READY`. The model now resets ATIME and WTIME to 0xFF, has STATUS, and fills the data and AVALID only at the end of a cycle. `tcs34725_get_color_temp` was not DN40's method: it misapplied an RGB to XYZ matrix and gave 1645 K where DN40 gives 3507 K for R=1800, G=2200, B=1000, C=5000. It now uses DN40 p.6, CT = 3810 * B' / R' + 1391 with IR removed, and returns `TCS34725_ERR_PARAM` when IR removal leaves no red.
+- **Still open:** After a change of gain or integration time `tcs34725_read_rgbc` returns counts from the old setting. No check for saturation at (256 - ATIME) x 1024. No wait state, thresholds, persistence or interrupt support. `tcs34725_get_lux` takes neither gain nor integration time, so its result scales with both, and its coefficients are not DN40's. DN40 p.5 divides by counts per lux, CPL = (ATIME_ms * AGAINx) / (GA * DF), which needs those settings and so changes the API.
+- **Suspected:** `TCS34725_INTEG_101MS` is 0xD5 as Table 6 prints, but the formula makes that 43 cycles, 103 ms. `TCS34725_INTEG_700MS` follows Table 6, but the formula gives 614 ms.
 
 ## Known issues
 
@@ -73,11 +73,11 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **17 C cases** — init OK, alt chip ID, bad chip ID, null safety,
+- Unit tests: **22 C cases** — init OK, alt chip ID, bad chip ID, null safety,
   I2C failure, missing delay, PON and AEN write failures, bad gain, read RGBC,
   read null, set integration time, set gain, enable/disable, color temp, lux,
   lux negative clamp
-- Model tests: **18 C cases**
+- Model tests: **27 C cases**
 
 ## API convention deviations
 

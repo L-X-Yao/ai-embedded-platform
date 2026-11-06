@@ -69,8 +69,8 @@ Checked on 2026-11-06 against LCD-DST-3014 GC9A01 Datasheet V1.0 Preliminary (GC
 
 - **Matched:** Command codes, MADCTL bits MY to BGR, COLMOD 0x05, CASET and RASET format, the 240x240 area, RGB565 byte order, D/CX and CSX use, the wait after SLPOUT.
 - **Fixed:** `gc9a01_sleep(dev, true)` returned without the 120 ms the manual requires before SLPOUT. `GC9A01_MADCTL_MH` was 0x02; the bit is 0x04. The model resets COLMOD to 0x66 and has separate power-on, hardware and software resets, with MADCTL and COLMOD kept on a software reset.
-- **Still open:** There is no chip ID check, so a missing panel goes unnoticed. No API for INVOFF, TE, partial, idle, scroll, brightness or gamma. Only the 4-line serial interface is supported.
-- **Suspected:** Init sends no vendor init table, so a real panel may show no usable picture. BGR is always 0, so a BGR panel swaps red and blue, and rotation 0 may be mirrored there. Init sends 0x01 as a software reset, which the manual's command list never defines.
+- **Still open:** There is no chip ID check, so a missing panel goes unnoticed. No API for INVOFF, TE, partial, idle, scroll, brightness or gamma. Only the 4-line serial interface is supported. Init sends no vendor init table, which Zephyr calls "essential for proper operation of the display controller", so a real panel may show no usable picture. It is not added because the tables differ by panel (30 of 51 registers across Adafruit, Espressif and TFT_eSPI) and none can be tried here. A caller-supplied table, as Espressif has, would change the API.
+- **Suspected:** BGR is always 0, so a BGR panel swaps red and blue, and rotation 0 may be mirrored there. Init sends 0x01 as a software reset, which the manual's command list never defines.
 
 ## Known issues
 

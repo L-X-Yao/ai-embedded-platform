@@ -44,11 +44,10 @@ None. Number of LEDs set at init time.
 
 ## Datasheet check
 
-Checked on 2026-11-06 against Document No.: SPC / SK6812, Rev. No.: 01. Not run on hardware.
+Checked on 2026-11-06 against Document No.: SPC / SK6812, Rev. No.: 01, and for the W byte against Normand's SK6812RGBX-XX spec, Rev. 07. Not run on hardware.
 
-- **Matched:** G, R, B colour order on the wire, a 100 us reset above the manual's minimum, reset after the data, no power-up sequence.
-- **Still open:** The HAL contract is unwritten: `send_data` must block until the last bit is out, send MSB first, meet the T0H/T1H/T0L/T1L timing and leave the line low, or a DMA send that returns early shortens the reset. There is no 24-bit mode. The header calls the part WorldSemi, which this manual does not show.
-- **Suspected:** The driver sends 4 bytes per LED, while this manual describes a 3-colour part taking 24 bits, so on that part every pixel after the first would be wrong. The RGBW variant the driver targets has no manual here.
+- **Matched:** G, R, B colour order on the wire, 32 bits per LED in G, R, B, W order on the RGBW parts (spec p.9; an older copy prints R first), a 100 us reset above the manual's minimum, reset after the data, no power-up sequence.
+- **Still open:** The HAL contract is unwritten: `send_data` must block until the last bit is out, send MSB first, meet the T0H/T1H/T0L/T1L timing and leave the line low, or a DMA send that returns early shortens the reset. There is no 24-bit mode, so a 24-bit SK6812 would show every LED after the first wrong; `sk6812.h` says those parts are not supported. The header calls the part WorldSemi, which this manual does not show.
 
 ## Known issues
 

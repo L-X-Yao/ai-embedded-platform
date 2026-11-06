@@ -69,8 +69,9 @@ None.
 Checked on 2026-11-06 against NXP MFRC522 rev 3.9. Not run on hardware.
 
 - **Matched:** SPI address byte, version values, all register addresses and command codes, bit masks, timer values.
-- **Fixed:** `rc522_init` left the antenna off, so no card could answer. The self-test lost the configuration and passed on any non-zero byte; it now restores the setup and compares the 64-byte signature. The timer comment had the wrong clock. The mock and model now treat ComIrqReg writes as the chip does. The test model now answers only after StartSend with the field on and the receiver active, loads all reset values, and gives the self-test bytes only for the whole procedure. `test_rc522.c` now runs on that model.
-- **Suspected:** `rc522_halt` sends HLTA with no CRC and no SELECT, so it probably does not halt the card; the rule comes from ISO/IEC 14443-3, not this manual. After the self-test AutoTestReg loses AmpRcv.
+- **Fixed:** `rc522_init` left the antenna off, so no card could answer. The self-test lost the configuration and passed on any non-zero byte; it now restores the setup and compares the 64-byte signature. The timer comment had the wrong clock. The mock and model now treat ComIrqReg writes as the chip does. The test model now answers only after StartSend with the field on and the receiver active, loads all reset values, and gives the self-test bytes only for the whole procedure. `test_rc522.c` now runs on that model. `rc522_halt` sent HLTA with no CRC and called a card's answer success. TxCRCEn is now on for that frame alone, and an answer gives the new `RC522_ERR_NACK`.
+- **Still open:** `rc522_halt` still does not halt a card: the driver has no SELECT and NXP puts Halt after selection, so `RC522_OK` means only that nothing answered. SELECT needs a decision on where the UID comes from.
+- **Suspected:** After the self-test AutoTestReg loses AmpRcv.
 
 ## Known issues
 
