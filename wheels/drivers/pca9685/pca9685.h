@@ -53,7 +53,7 @@ typedef struct {
 pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
                            uint8_t dev_addr, uint16_t freq_hz);
 
-/** Set raw PWM on/off counts (0-4095) for a channel (0-15). @thread_safe: no @isr_safe: no */
+/** Set raw PWM on/off counts (0-4095, not equal) for a channel (0-15). @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
                               uint16_t on, uint16_t off);
 

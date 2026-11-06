@@ -157,6 +157,41 @@ TEST(test_set_pwm_channel_out_of_range)
     ASSERT_EQ(pca9685_set_pwm(&dev, 255, 0, 1000), PCA9685_ERR_PARAM);
 }
 
+/* p.25: "The LEDn_ON and LEDn_OFF count registers should never be programmed
+ * with the same values." */
+TEST(test_set_pwm_equal_counts_rejected)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+    int writes = mock_write_count;
+
+    ASSERT_EQ(pca9685_set_pwm(&dev, 0, 0, 0), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_pwm(&dev, 0, 100, 100), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_pwm(&dev, 0, 4095, 4095), PCA9685_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, writes);
+}
+
+/* Below half a count of 4096, the count rounds to 0 and would equal ON. */
+TEST(test_set_duty_tiny_is_full_off)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    ASSERT_EQ(pca9685_set_duty(&dev, 2, 0.001f), PCA9685_OK);
+    /* Channel 2: base = 0x06 + 2*4 = 0x0E, OFF_H = 0x11 */
+    ASSERT_EQ(mock_regs[0x11] & FULL_ON_BIT, FULL_ON_BIT);
+}
+
+TEST(test_set_servo_zero_pulse_is_full_off)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    ASSERT_EQ(pca9685_set_servo_us(&dev, 2, 0), PCA9685_OK);
+    ASSERT_EQ(mock_regs[0x11] & FULL_ON_BIT, FULL_ON_BIT);
+    ASSERT_EQ(pca9685_set_servo_us(&dev, 16, 0), PCA9685_ERR_PARAM);
+}
+
 TEST(test_set_duty_50_percent)
 {
     mock_reset();
@@ -330,6 +365,9 @@ TEST_MAIN("pca9685")
     RUN(test_set_pwm_channel0);
     RUN(test_set_pwm_channel15);
     RUN(test_set_pwm_channel_out_of_range);
+    RUN(test_set_pwm_equal_counts_rejected);
+    RUN(test_set_duty_tiny_is_full_off);
+    RUN(test_set_servo_zero_pulse_is_full_off);
     RUN(test_set_duty_50_percent);
     RUN(test_set_duty_0_percent);
     RUN(test_set_duty_100_percent);
