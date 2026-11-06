@@ -6,6 +6,8 @@
 
 Wheel 不是独立 CMake 子项目，而是 **.h + .c 文件对**。项目通过 `target_include_directories` + `target_sources` 引入。
 
+**`contract.h` 要单独处理**：绝大多数 wheel 的 `.c` 都 `#include "contract.h"`，这个头文件不在 wheel 目录里，而在 `tooling/harness/contract.h`，wheel README 的 Dependencies 节也不列它。include path 里少了 `tooling/harness`，编译就停在 `fatal error: contract.h: No such file or directory`。它是单个头文件，不定义 `CONTRACT_ENABLED` 时里面的断言宏全部为空，不需要额外配置。把 wheel 拷到本仓库之外的项目时，把 `contract.h` 一起拷走，放进任一 include 目录。wheel 源码用到的 harness 头文件只有这一个。
+
 ### 纯 CMake 项目
 
 ```cmake
@@ -14,6 +16,7 @@ set(PLATFORM_ROOT ${CMAKE_CURRENT_LIST_DIR}/../..)
 
 # 1. 头文件搜索路径
 target_include_directories(my_app PRIVATE
+    ${PLATFORM_ROOT}/tooling/harness    # contract.h
     ${PLATFORM_ROOT}/wheels/primitives/crc16
     ${PLATFORM_ROOT}/wheels/drivers/w25qxx
     ${PLATFORM_ROOT}/wheels/protocols/at_command
@@ -32,8 +35,9 @@ target_sources(my_app PRIVATE
 VSF 项目同样使用标准 CMake 命令（不需要 `vsf_add_*` 宏）：
 
 ```cmake
-# projects/flybox/vsf_build/CMakeLists.txt 实际模式
+# 写法同 projects/flybox/vsf_build/CMakeLists.txt，另加 tooling/harness（该文件目前缺这一行）
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+    ${PLATFORM_ROOT}/tooling/harness    # contract.h
     ${PLATFORM_ROOT}/wheels/primitives/crc16
     ${PLATFORM_ROOT}/wheels/drivers/qmi8658a
 )
@@ -45,7 +49,7 @@ target_sources(${CMAKE_PROJECT_NAME} PUBLIC
 
 ### Keil MDK / Makefile 项目
 
-直接把 wheel 的 `.c` 加入源文件列表，`.h` 所在目录加入 include path。无 CMake 依赖。
+直接把 wheel 的 `.c` 加入源文件列表，`.h` 所在目录和 `tooling/harness`（`contract.h`）加入 include path。无 CMake 依赖。
 
 ## HAL 适配
 
