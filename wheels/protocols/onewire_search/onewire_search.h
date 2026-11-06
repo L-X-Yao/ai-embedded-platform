@@ -64,6 +64,8 @@ onewire_search_err_t onewire_search_init(onewire_search_state_t *state,
 
 /** Find the next device on the bus. Returns ROM code in *rom.
  *  Returns ONEWIRE_SEARCH_ERR_NONE_FOUND when all devices have been enumerated.
+ *  ONEWIRE_SEARCH_ERR_CRC leaves the search where it was, so calling again
+ *  retries the same device.
  *  @thread_safe: no  @isr_safe: no */
 onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
                                           onewire_search_rom_t *rom);
