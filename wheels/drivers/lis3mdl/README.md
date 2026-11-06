@@ -60,7 +60,8 @@ lis3mdl_err_t lis3mdl_read_raw(const lis3mdl_t *dev, lis3mdl_raw_t *raw);
 Checked on 2026-11-06 against ST DocID024204 Rev 6, May 2017. Not run on hardware. The reference above cites DocID025866 Rev 3, which needs confirming.
 
 - **Matched:** Addresses, WHO_AM_I, CTRL_REG1 to CTRL_REG3 addresses and values, full-scale codes, sensitivities and the conversion to microtesla, the 0xA8 burst read, the output order and format.
-- **Still open:** The model auto-increments whether or not SUB bit 7 is set, so the tests would pass a driver that forgot it. It starts CTRL_REG1 and CTRL_REG3 at 0x00 where the manual gives 0x10 and 0x03, so it powers up in continuous mode and `test_hw_init_sets_continuous_mode` cannot fail. It has no STATUS_REG, so ZYXDA reads 0 while data is present. Its masks drop REBOOT, SOFT_RST, LP and SIM, and `test_ctrl_reg2_writable_mask` pins that as if it came from the manual. ODR and performance mode are fixed at 10 Hz and medium. Temperature output, self-test, soft reset, reboot, interrupts, overrun reporting and SPI are not implemented.
+- **Fixed:** The model stepped the address without SUB bit 7, started CTRL_REG1 and CTRL_REG3 at 0x00, had no STATUS_REG and dropped REBOOT, SOFT_RST, LP and SIM. It now has the manual's reset values and masks, and samples come from a clock, so tests wait for one.
+- **Still open:** ODR and performance mode are fixed at 10 Hz and medium. Temperature output, self-test, soft reset, reboot, interrupts, overrun reporting and SPI are not implemented.
 - **Suspected:** `lis3mdl_read_raw` never reads STATUS_REG, so a read in the first 100 ms after init, or polling faster than 10 Hz, returns old data with `LIS3MDL_OK`. BDU stays 0, so a sample landing mid-read can pair bytes from two samples. CTRL_REG4 is never written, so the Z axis stays in low-power mode while X and Y run at medium performance.
 
 ## Known issues

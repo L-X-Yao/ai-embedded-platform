@@ -43,8 +43,7 @@ ina226_err_t ina226_reset(ina226_t *dev);
 Checked on 2026-11-06 against TI SBOS547C. Not run on hardware.
 
 - **Matched:** Addresses, manufacturer ID, register map, Config fields, voltage LSBs, the calibration formula.
-- **Fixed:** `ina226_init` refused die ID 0x2261, which the manual lists, and it clamped calibration at 16 bits although the register has 15.
-- **Still open:** The model never computes current or power, ignores RST and accepts writes to read-only registers.
+- **Fixed:** `ina226_init` refused die ID 0x2261, which the manual lists, and it clamped calibration at 16 bits although the register has 15. CAL, current and power were truncated, so the manual's example gave CAL 2559 and 9999 mA; they are now rounded. The model computes Current and Power, acts on RST and ignores writes to read-only registers.
 - **Suspected:** The OVF flag is never read. `ina226_reset` leaves calibration at 0, so later reads show zero current with `INA226_OK`. Config bit 14 is written as 0.
 
 ## Known issues

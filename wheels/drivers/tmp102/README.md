@@ -45,8 +45,8 @@ No compile-time configuration. All settings via runtime API.
 Checked on 2026-11-06 against TI SBOS397I (June 2024). Not run on hardware.
 
 - **Matched:** Addresses, pointer values, the SD bit and its read-modify-write, the 12-bit temperature format and the Table 6-2 values, the model's power-up values, no chip ID.
-- **Fixed:** An alert limit of 128 C or more wrapped to the other sign: 128 C became -128 C and 150 C became -106 C, which turns ALERT on at once. Limits now saturate at 127.9375 C and -128 C, and NaN returns `TMP102_ERR_PARAM`.
-- **Still open:** The model lets every configuration bit be written, although R1, R0 and AL are read-only. It refreshes the temperature even with SD set and answers the first read with a real value, so it cannot show the stale reads listed below. There is no extended mode, so nothing above 128 C can be read or set, and no one-shot, conversion rate, thermostat mode, ALERT polarity, fault queue, AL status, limit read-back, SMBus alert response or general-call reset.
+- **Fixed:** An alert limit of 128 C or more wrapped to the other sign: 128 C became -128 C and 150 C became -106 C, which turns ALERT on at once. Limits now saturate at 127.9375 C and -128 C, and NaN returns `TMP102_ERR_PARAM`. In the model R1, R0 and AL are read-only, and results come from conversions, which stop with SD set.
+- **Still open:** There is no extended mode, so nothing above 128 C can be read or set, and no one-shot, conversion rate, thermostat mode, ALERT polarity, fault queue, AL status, limit read-back, SMBus alert response or general-call reset.
 - **Suspected:** A read straight after `tmp102_init` returns 0 C, and one after `tmp102_wake` the old result, both with `TMP102_OK`. `tmp102_init` leaves EM as it finds it, so extended mode left on by earlier firmware halves the temperature.
 
 ## Known issues

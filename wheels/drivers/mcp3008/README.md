@@ -48,9 +48,9 @@ None. All configuration is runtime via API parameters.
 Checked on 2026-11-06 against Microchip DS21295D. Not run on hardware.
 
 - **Matched:** The 24-clock frame, single-ended channel codes, result parsing, SPI mode 0,0, CS held low across all 3 bytes.
-- **Fixed:** `mcp3008_read_diff` put the pair number in D2:D0, so pairs 1-3 read the wrong channels and CH4-CH7 were unreachable. `mcp3008_read_voltage` divided by 1023, so readings came out up to 1 LSB high. The model decoded pairs the same wrong way.
-- **Still open:** No call selects the swapped polarity codes or converts a differential reading to volts. The SPI clock limits are not stated for HAL authors: 3.6 MHz at 5 V, 1.35 MHz at 2.7 V, and rates below 10 kHz can affect linearity. The model returns 0 in the bits the manual calls unknown and never checks CS, so a dropped mask or a transfer with CS high would pass the tests and give bad data on hardware.
-- **Suspected:** `mcp3008_init` never drives CS high, so a board that powers up with CS low may get bad data from the first conversion. Nothing enforces the 270 ns CS-high time between conversions.
+- **Fixed:** `mcp3008_read_diff` put the pair number in D2:D0, so pairs 1-3 read the wrong channels and CH4-CH7 were unreachable. `mcp3008_read_voltage` divided by 1023, so readings came out up to 1 LSB high. The model decoded pairs the same wrong way. `mcp3008_init` never drove CS high, so a chip powered up with CS low ignored the first read. The model fills the bits the manual calls unknown and checks CS.
+- **Still open:** No call selects the swapped polarity codes or converts a differential reading to volts. The SPI clock limits are not stated for HAL authors: 3.6 MHz at 5 V, 1.35 MHz at 2.7 V, and rates below 10 kHz can affect linearity.
+- **Suspected:** Nothing enforces the 270 ns CS-high time between conversions.
 
 ## Known issues
 
