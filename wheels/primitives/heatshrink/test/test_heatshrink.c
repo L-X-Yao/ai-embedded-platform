@@ -632,7 +632,44 @@ TEST(test_finish_truncated_stream)
     }
 }
 
+/* ---- Test: sink reports input it could not take ---- */
+
+TEST(test_decoder_sink_reports_partial_take)
+{
+    heatshrink_decoder_t dec;
+    uint8_t buf[256 + 128];
+    uint8_t input[300];
+    uint16_t consumed = 0;
+
+    memset(input, 0, sizeof(input));
+    ASSERT_EQ(heatshrink_decoder_init(&dec, buf, 256, 4), HEATSHRINK_OK);
+
+    /* The staging buffer holds window_size / 2 = 128 bytes. */
+    ASSERT_EQ(heatshrink_decoder_sink(&dec, input, 300, &consumed), HEATSHRINK_SINK_FULL);
+    ASSERT_EQ(consumed, 128);
+    ASSERT_EQ(heatshrink_decoder_sink(&dec, input, 1, &consumed), HEATSHRINK_SINK_FULL);
+    ASSERT_EQ(consumed, 0);
+}
+
+TEST(test_decoder_sink_exact_fit_is_ok)
+{
+    heatshrink_decoder_t dec;
+    uint8_t buf[256 + 128];
+    uint8_t input[128];
+    uint16_t consumed = 0;
+
+    memset(input, 0, sizeof(input));
+    ASSERT_EQ(heatshrink_decoder_init(&dec, buf, 256, 4), HEATSHRINK_OK);
+
+    ASSERT_EQ(heatshrink_decoder_sink(&dec, input, 100, &consumed), HEATSHRINK_SINK_OK);
+    ASSERT_EQ(consumed, 100);
+    ASSERT_EQ(heatshrink_decoder_sink(&dec, input, 28, &consumed), HEATSHRINK_SINK_OK);
+    ASSERT_EQ(consumed, 28);
+}
+
 TEST_MAIN("heatshrink")
+    RUN(test_decoder_sink_reports_partial_take);
+    RUN(test_decoder_sink_exact_fit_is_ok);
     RUN(test_finish_after_padded_stream);
     RUN(test_finish_every_short_length);
     RUN(test_finish_empty_stream);
