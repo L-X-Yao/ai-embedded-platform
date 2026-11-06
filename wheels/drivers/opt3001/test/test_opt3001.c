@@ -460,6 +460,46 @@ TEST(test_single_shot_cycle)
     ASSERT_NEAR(lux, 20.0f, 0.1f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(opt3001_t *d)
+{
+    float lux = 0.0f;
+    ASSERT_EQ(opt3001_read_lux(d, &lux), OPT3001_ERR_PARAM);
+    ASSERT_EQ(opt3001_start_single(d), OPT3001_ERR_PARAM);
+    ASSERT_EQ(opt3001_set_continuous(d), OPT3001_ERR_PARAM);
+    ASSERT_FALSE(opt3001_data_ready(d));
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static opt3001_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    opt3001_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(opt3001_init(&d, &mock_i2c, 0x48), OPT3001_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* Something answers, but only 0x3001 is an OPT3001 */
+    reg16_table[3].val = 0x3002;
+    ASSERT_EQ(opt3001_init(&d, &mock_i2c, 0x44), OPT3001_ERR_ID);
+    assert_device_refused(&d);
+
+    /* Both IDs read, the config write failed, and the bus is fine again */
+    mock_reset();
+    mock_fail_at = 2;
+    ASSERT_EQ(opt3001_init(&d, &mock_i2c, 0x44), OPT3001_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("opt3001")
     RUN(test_init_ok);
     RUN(test_init_all_addrs);
@@ -494,4 +534,6 @@ TEST_MAIN("opt3001")
     RUN(test_read_lux_before_conversion_done);
     RUN(test_err_not_ready_value);
     RUN(test_single_shot_cycle);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

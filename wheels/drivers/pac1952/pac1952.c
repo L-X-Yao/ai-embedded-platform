@@ -123,7 +123,14 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
     REQUIRE(dev != NULL);
     REQUIRE(i2c != NULL);
     REQUIRE(cfg != NULL);
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+        return PAC1952_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
         return PAC1952_ERR_PARAM;
     REQUIRE(i2c->read_regs != NULL);
     if (!i2c->read_regs)
@@ -134,9 +141,6 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
         !(cfg->sense_resistor_mohm[1] >= 0.0f))
         return PAC1952_ERR_PARAM;
 
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Read and verify PRODUCT_ID */
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, PAC1952_DEV_ADDR, REG_PRODUCT_ID, &id, 1))
@@ -145,13 +149,16 @@ pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
     if (id != PAC1952_PRODUCT_ID_VAL && id != PAC1952_PRODUCT_ID_VAL_2)
         return PAC1952_ERR_ID;
 
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
     return PAC1952_OK;
 }
 
 pac1952_err_t pac1952_refresh(pac1952_t *dev)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return PAC1952_ERR_PARAM;
     if (!dev->i2c->write_raw || !dev->i2c->delay_ms)
         return PAC1952_ERR_PARAM;
@@ -165,7 +172,7 @@ pac1952_err_t pac1952_read_channel(pac1952_t *dev, uint8_t ch,
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
     REQUIRE(ch <= 1);
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return PAC1952_ERR_PARAM;
     if (ch > 1)
         return PAC1952_ERR_PARAM;
@@ -187,7 +194,7 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
     REQUIRE(dev != NULL);
     REQUIRE(ch1 != NULL);
     REQUIRE(ch2 != NULL);
-    if (!dev || !ch1 || !ch2)
+    if (!dev || !dev->i2c || !ch1 || !ch2)
         return PAC1952_ERR_PARAM;
 
     uint16_t vbus_raw;
@@ -211,7 +218,7 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
 pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return PAC1952_ERR_PARAM;
     if ((unsigned)rate > 3u)
         return PAC1952_ERR_PARAM;
@@ -239,7 +246,7 @@ pac1952_err_t pac1952_get_product_id(pac1952_t *dev, uint8_t *id)
 {
     REQUIRE(dev != NULL);
     REQUIRE(id != NULL);
-    if (!dev || !id)
+    if (!dev || !dev->i2c || !id)
         return PAC1952_ERR_PARAM;
 
     if (!dev->i2c->read_regs(dev->i2c->ctx, PAC1952_DEV_ADDR,

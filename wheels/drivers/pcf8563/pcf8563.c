@@ -17,6 +17,7 @@
 
 #include "pcf8563.h"
 #include "contract.h"
+#include <string.h>
 
 /* --- register map --- */
 #define REG_CONTROL1     0x00u
@@ -93,13 +94,9 @@ static bool time_valid(const pcf8563_time_t *t)
 
 /* --- public API --- */
 
-pcf8563_err_t pcf8563_init(pcf8563_t *dev,
-                               const pcf8563_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static pcf8563_err_t bring_up(const pcf8563_t *dev)
 {
-    if (!dev || !i2c) return PCF8563_ERR_PARAM;
-    if (!i2c->read_regs || !i2c->write_reg) return PCF8563_ERR_PARAM;
-    dev->i2c = i2c;
-
     /* Clear control registers to known state:
      * Control1 = 0x00 (normal mode, no test, no stop)
      * Control2 = 0x00 (no alarm/timer interrupts) */
@@ -119,6 +116,25 @@ pcf8563_err_t pcf8563_init(pcf8563_t *dev,
         return PCF8563_ERR_ID;
 
     return PCF8563_OK;
+}
+
+pcf8563_err_t pcf8563_init(pcf8563_t *dev,
+                               const pcf8563_i2c_t *i2c)
+{
+    if (!dev) return PCF8563_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c) return PCF8563_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_reg) return PCF8563_ERR_PARAM;
+    dev->i2c = i2c;
+
+    pcf8563_err_t err = bring_up(dev);
+    if (err != PCF8563_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,

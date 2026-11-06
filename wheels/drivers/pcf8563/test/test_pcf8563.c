@@ -613,6 +613,46 @@ TEST(test_write_time_takes_the_last_day_of_every_month)
     ASSERT_EQ(write_date(96, 2, 29), PCF8563_OK);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(pcf8563_t *d)
+{
+    pcf8563_time_t t;
+    pcf8563_alarm_t a;
+    memset(&a, 0, sizeof(a));
+    ASSERT_EQ(pcf8563_read_time(d, &t), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_write_time(d, &stop_test_time), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_read_alarm(d, &a), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_write_alarm(d, &a), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_enable_timer(d, PCF8563_TIMER_1HZ, 10), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_disable_timer(d), PCF8563_ERR_PARAM);
+    ASSERT_EQ(pcf8563_set_clkout(d, true, PCF8563_CLKOUT_1HZ), PCF8563_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    pcf8563_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pcf8563_init(&d, NULL), PCF8563_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* STOP reads back set just after init cleared it: no working chip */
+    ctrl1_or_bits = 0x20u;
+    ASSERT_EQ(pcf8563_init(&d, &mock_i2c_ctrl1), PCF8563_ERR_ID);
+    ctrl1_or_bits = 0;
+    assert_device_refused(&d);
+
+    /* Control_status_1 was written, Control_status_2 was not */
+    mock_reset();
+    mock_fail_at = 1;
+    ASSERT_EQ(pcf8563_init(&d, &mock_i2c), PCF8563_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("pcf8563")
     RUN(test_init_ok);
     RUN(test_init_accepts_n_bits_high);
@@ -652,4 +692,5 @@ TEST_MAIN("pcf8563")
     RUN(test_write_time_refuses_dates_that_do_not_exist);
     RUN(test_write_time_refuses_a_month_out_of_range);
     RUN(test_write_time_takes_the_last_day_of_every_month);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

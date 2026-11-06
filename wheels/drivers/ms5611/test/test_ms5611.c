@@ -507,6 +507,54 @@ TEST(test_init_zero_check_counts_word7)
     ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_OK);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ms5611_t *d)
+{
+    ms5611_data_t data;
+    ASSERT_EQ(ms5611_read(d, &data), MS5611_ERR_PARAM);
+    ASSERT_EQ(ms5611_reset(d), MS5611_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static ms5611_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    ms5611_t d;
+    ms5611_cfg_t bad_osr = default_cfg;
+    bad_osr.osr = (ms5611_osr_t)5;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ms5611_init(&d, NULL, &default_cfg), MS5611_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &bad_osr), MS5611_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* word 7 holds CRC 0x9 where the PROM gives 0x8, so C1-C6 were not kept */
+    plant_word7(0x0009);
+    plant_adc(0x800000);
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_read_regs)
+{
+    ms5611_t d;
+    ms5611_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.read_regs = NULL;
+    ASSERT_EQ(ms5611_init(&d, &bad, &default_cfg), MS5611_ERR_PARAM);
+}
+
 TEST_MAIN("ms5611")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -536,4 +584,7 @@ TEST_MAIN("ms5611")
     RUN(test_init_refuses_an_all_zero_prom);
     RUN(test_init_zero_check_counts_word0);
     RUN(test_init_zero_check_counts_word7);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_init_needs_read_regs);
 TEST_MAIN_END()

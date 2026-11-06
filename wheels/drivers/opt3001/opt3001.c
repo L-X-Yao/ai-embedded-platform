@@ -9,6 +9,7 @@
  */
 #include "opt3001.h"
 #include "contract.h"
+#include <string.h>
 
 /* Register addresses */
 #define REG_RESULT          0x00
@@ -50,19 +51,9 @@ static opt3001_err_t write_reg16(const opt3001_t *dev, uint8_t reg,
     return OPT3001_OK;
 }
 
-opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,
-                           uint8_t addr)
+/* The steps of init that talk to the chip */
+static opt3001_err_t bring_up(const opt3001_t *dev)
 {
-    if (!dev || !i2c)
-        return OPT3001_ERR_PARAM;
-    if (!i2c->write_regs || !i2c->read_regs)
-        return OPT3001_ERR_PARAM;
-    if (addr < 0x44 || addr > 0x47)
-        return OPT3001_ERR_PARAM;
-
-    dev->i2c = i2c;
-    dev->addr = addr;
-
     /* Verify manufacturer ID */
     uint16_t id;
     opt3001_err_t err = read_reg16(dev, REG_MANUFACTURER_ID, &id);
@@ -82,9 +73,35 @@ opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,
     return write_reg16(dev, REG_CONFIG, CFG_DEFAULT);
 }
 
+opt3001_err_t opt3001_init(opt3001_t *dev, const opt3001_i2c_t *i2c,
+                           uint8_t addr)
+{
+    if (!dev)
+        return OPT3001_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+        return OPT3001_ERR_PARAM;
+    if (!i2c->write_regs || !i2c->read_regs)
+        return OPT3001_ERR_PARAM;
+    if (addr < 0x44 || addr > 0x47)
+        return OPT3001_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->addr = addr;
+
+    opt3001_err_t err = bring_up(dev);
+    if (err != OPT3001_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 opt3001_err_t opt3001_read_lux(opt3001_t *dev, float *lux)
 {
-    if (!dev || !lux)
+    if (!dev || !dev->i2c || !lux)
         return OPT3001_ERR_PARAM;
 
     uint16_t raw;
@@ -103,7 +120,7 @@ opt3001_err_t opt3001_read_lux(opt3001_t *dev, float *lux)
 
 opt3001_err_t opt3001_start_single(opt3001_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return OPT3001_ERR_PARAM;
 
     uint16_t cfg;
@@ -117,7 +134,7 @@ opt3001_err_t opt3001_start_single(opt3001_t *dev)
 
 opt3001_err_t opt3001_set_continuous(opt3001_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return OPT3001_ERR_PARAM;
 
     uint16_t cfg;
@@ -131,7 +148,7 @@ opt3001_err_t opt3001_set_continuous(opt3001_t *dev)
 
 bool opt3001_data_ready(opt3001_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return false;
 
     uint16_t cfg;
