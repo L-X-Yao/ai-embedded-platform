@@ -40,7 +40,20 @@ target_include_directories(test_boundary_icm42688 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_icm42688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+# hw_model datasheet test
+add_executable(test_hw_model_icm42688
+    test_hw_model_icm42688.c
+    ../icm42688.c
+)
+target_include_directories(test_hw_model_icm42688 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_icm42688 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+
 enable_testing()
 add_test(NAME icm42688_tests COMMAND test_icm42688)
 add_test(NAME icm42688_null_tests COMMAND test_null_icm42688)
 add_test(NAME icm42688_boundary_tests COMMAND test_boundary_icm42688)
+add_test(NAME icm42688_hw_model_tests COMMAND test_hw_model_icm42688)

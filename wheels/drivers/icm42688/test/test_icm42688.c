@@ -9,6 +9,7 @@
 #define REG_TEMP_DATA1      0x1D
 #define REG_ACCEL_DATA_X1   0x1F
 #define REG_GYRO_DATA_X1    0x25
+#define REG_GYRO_DATA_Z1    0x29
 #define REG_GYRO_CONFIG0    0x4F
 #define REG_ACCEL_CONFIG0   0x50
 #define REG_PWR_MGMT0       0x4E
@@ -50,6 +51,27 @@ static void mock_reset(void)
 
     /* Power-on default: WHO_AM_I = 0x47 */
     mock_regs[REG_WHO_AM_I] = WHO_AM_I_VAL;
+
+    /* Sense registers read -32768 until the first sample (DS-000347 Rev 1.6
+     * p.60): high bytes reset to 0x80, low bytes to 0x00 (p.65 to p.68) */
+    for (int reg = REG_TEMP_DATA1; reg <= REG_GYRO_DATA_Z1; reg += 2)
+        mock_regs[reg] = 0x80;
+}
+
+/* First sample arrives on every sensor: 1 g on X at 8 g, everything else 0 */
+static void mock_first_sample(void)
+{
+    memset(&mock_regs[REG_TEMP_DATA1], 0, 14);
+    mock_regs[REG_ACCEL_DATA_X1] = 0x10;                /* 0x1000 = 4096 */
+}
+
+/* Put one sensor's three axes back to "no sample yet" */
+static void mock_no_sample(int first_reg)
+{
+    for (int i = 0; i < 3; i++) {
+        mock_regs[first_reg + 2 * i]     = 0x80;
+        mock_regs[first_reg + 2 * i + 1] = 0x00;
+    }
 }
 
 static void mock_cs_low(void *ctx)
@@ -378,6 +400,7 @@ TEST(test_error_codes)
     ASSERT_EQ(-2, (int)ICM42688_ERR_SPI);
     ASSERT_EQ(-3, (int)ICM42688_ERR_ID);
     ASSERT_EQ(-4, (int)ICM42688_ERR_TIMEOUT);
+    ASSERT_EQ(-5, (int)ICM42688_ERR_NOT_READY);
 }
 
 /* 15. invalid acc_range rejected */
@@ -724,6 +747,156 @@ TEST(test_power_mode_lp_limit_uses_the_chip_odr)
               ICM42688_ERR_PARAM);
 }
 
+/* 39. every sense register reads -32768 until the first sample (DS-000347
+ * Rev 1.6 p.60), which used to come out as about -8 g, -2000 dps and -222 C */
+TEST(test_read_before_first_sample)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+
+    icm42688_data_t data;
+    icm42688_data_t before;
+    memset(&data, 0x5A, sizeof(data));
+    memcpy(&before, &data, sizeof(data));
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_ERR_NOT_READY);
+    ASSERT_MEMEQ_N(&data, &before, sizeof(data));       /* *out left alone */
+}
+
+/* 40. the same for the temperature-only read */
+TEST(test_read_temperature_before_first_sample)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+
+    float temp = 99.0f;
+    ASSERT_EQ(icm42688_read_temperature(&dev, &temp), ICM42688_ERR_NOT_READY);
+    ASSERT_NEAR(temp, 99.0f, 0.001f);
+}
+
+/* 41. the accel starts in 10 ms (p.12) and the gyro in 30 ms (p.11), so the
+ * read in between must not pass the gyro's -32768 on as -2000 dps */
+TEST(test_read_gyro_still_starting)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_GYRO_DATA_X1);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_ERR_NOT_READY);
+}
+
+/* 42. the accel side of the same check */
+TEST(test_read_accel_still_starting)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_ACCEL_DATA_X1);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_ERR_NOT_READY);
+}
+
+/* 43. accel LP samples too, so it is waited for like LN */
+TEST(test_read_accel_lp_still_starting)
+{
+    mock_reset();
+    icm42688_t dev;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    cfg.acc_odr = ICM42688_ODR_100HZ;
+    ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LP, ICM42688_PM_OFF),
+              ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_ACCEL_DATA_X1);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_ERR_NOT_READY);
+}
+
+/* 44. the temperature alone still at -32768 */
+TEST(test_read_temperature_channel_still_starting)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    mock_first_sample();
+    mock_regs[REG_TEMP_DATA1] = 0x80;
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_ERR_NOT_READY);
+}
+
+/* 45. a disabled sensor may show invalid data for good (p.75, note b), so it
+ * must not block the sensor that is on */
+TEST(test_read_gyro_off_leaves_accel_usable)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LN, ICM42688_PM_OFF),
+              ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_GYRO_DATA_X1);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
+}
+
+/* 46. gyro standby keeps the drive on (Table 12, p.25) but gives no samples */
+TEST(test_read_gyro_standby_leaves_accel_usable)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LN, ICM42688_PM_STANDBY),
+              ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_GYRO_DATA_X1);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
+}
+
+/* 47. the other way round: accel off, gyro on */
+TEST(test_read_accel_off_leaves_gyro_usable)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_OFF, ICM42688_PM_LN),
+              ICM42688_OK);
+    mock_first_sample();
+    mock_no_sample(REG_ACCEL_DATA_X1);
+    mock_regs[REG_GYRO_DATA_X1 + 1] = 0x10;             /* 16 LSB */
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.gx_dps, 0.9756f, 0.01f);
+}
+
+/* 48. -32766 is the lowest valid sample (p.60), so it is real data */
+TEST(test_read_lowest_valid_sample)
+{
+    mock_reset();
+    icm42688_t dev;
+    ASSERT_EQ(setup_dev(&dev), ICM42688_OK);
+    mock_first_sample();
+    mock_regs[REG_ACCEL_DATA_X1]     = 0x80;            /* 0x8002 = -32766 */
+    mock_regs[REG_ACCEL_DATA_X1 + 1] = 0x02;
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.ax_g, -7.9995f, 0.001f);           /* -32766 / 4096 */
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -767,4 +940,14 @@ TEST_MAIN("icm42688")
     RUN(test_power_mode_refuses_accel_lp_above_500hz);
     RUN(test_power_mode_accepts_accel_lp_at_500hz_and_below);
     RUN(test_power_mode_lp_limit_uses_the_chip_odr);
+    RUN(test_read_before_first_sample);
+    RUN(test_read_temperature_before_first_sample);
+    RUN(test_read_gyro_still_starting);
+    RUN(test_read_accel_still_starting);
+    RUN(test_read_accel_lp_still_starting);
+    RUN(test_read_temperature_channel_still_starting);
+    RUN(test_read_gyro_off_leaves_accel_usable);
+    RUN(test_read_gyro_standby_leaves_accel_usable);
+    RUN(test_read_accel_off_leaves_gyro_usable);
+    RUN(test_read_lowest_valid_sample);
 TEST_MAIN_END()
