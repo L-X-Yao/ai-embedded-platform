@@ -10,7 +10,14 @@
 
 #include "mag_cal.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
+
+/* False for NaN as well: every comparison with NaN is false. */
+static bool is_finite(float x)
+{
+    return x >= -FLT_MAX && x <= FLT_MAX;
+}
 
 void mag_cal_init(mag_cal_t *cal)
 {
@@ -41,8 +48,8 @@ bool mag_cal_feed(mag_cal_t *cal, float mx, float my, float mz)
         return false;
     if (cal->count >= MAG_CAL_MAX_SAMPLES)
         return false;
-    /* reject NaN — would corrupt min/max calibration and produce invalid offsets */
-    if (mx != mx || my != my || mz != mz)
+    /* reject NaN and infinity — would corrupt min/max calibration and produce invalid offsets */
+    if (!is_finite(mx) || !is_finite(my) || !is_finite(mz))
         return false;
 
     cal->samples[cal->count][0] = mx;
@@ -80,7 +87,7 @@ mag_cal_state_t mag_cal_compute(mag_cal_t *cal)
     }
 
     for (int a = 0; a < 3; a++) {
-        if (radius[a] < MAG_CAL_MIN_SPREAD || radius[a] <= 0.0f) {
+        if (!(radius[a] >= MAG_CAL_MIN_SPREAD) || radius[a] <= 0.0f) {
             cal->state = MAG_CAL_DONE_FAIL;
             return MAG_CAL_DONE_FAIL;
         }
@@ -88,12 +95,23 @@ mag_cal_state_t mag_cal_compute(mag_cal_t *cal)
 
     float avg_r = (radius[0] + radius[1] + radius[2]) / 3.0f;
 
+    /* Finite samples can still overflow the sums, so check what comes out.
+     * An infinite radius shows up here too, as NaN from inf / inf. */
+    float scale[3];
+    for (int a = 0; a < 3; a++) {
+        scale[a] = avg_r / radius[a];
+        if (!is_finite(offset[a]) || !is_finite(scale[a])) {
+            cal->state = MAG_CAL_DONE_FAIL;
+            return MAG_CAL_DONE_FAIL;
+        }
+    }
+
     cal->result.offset_x = offset[0];
     cal->result.offset_y = offset[1];
     cal->result.offset_z = offset[2];
-    cal->result.scale_x = avg_r / radius[0];
-    cal->result.scale_y = avg_r / radius[1];
-    cal->result.scale_z = avg_r / radius[2];
+    cal->result.scale_x = scale[0];
+    cal->result.scale_y = scale[1];
+    cal->result.scale_z = scale[2];
 
     cal->state = MAG_CAL_DONE_OK;
     return MAG_CAL_DONE_OK;

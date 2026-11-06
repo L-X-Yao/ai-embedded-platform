@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <float.h>
 #include <string.h>
 #include <math.h>
 #include "mag_cal.h"
@@ -224,7 +225,99 @@ TEST(test_abort_null_is_safe)
     ASSERT_TRUE(1);
 }
 
+TEST(test_feed_rejects_non_finite)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    ASSERT_FALSE(mag_cal_feed(&cal, INFINITY, 0.0f, 0.0f));
+    ASSERT_FALSE(mag_cal_feed(&cal, 0.0f, -INFINITY, 0.0f));
+    ASSERT_FALSE(mag_cal_feed(&cal, 0.0f, 0.0f, INFINITY));
+    ASSERT_FALSE(mag_cal_feed(&cal, NAN, 0.0f, 0.0f));
+    ASSERT_EQ(mag_cal_sample_count(&cal), 0);
+}
+
+/* The refused sample leaves the calibration the good ones give. */
+TEST(test_infinite_sample_does_not_spoil_result)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    mag_cal_feed(&cal, 1.0f, 1.0f, 1.0f);
+    mag_cal_feed(&cal, -1.0f, -1.0f, -1.0f);
+    mag_cal_feed(&cal, INFINITY, 0.0f, 0.0f);
+
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_OK);
+    const mag_cal_result_t *r = mag_cal_get_result(&cal);
+    ASSERT_NEAR(r->offset_x, 0.0f, 1e-6f);
+    ASSERT_NEAR(r->scale_x, 1.0f, 1e-6f);
+    ASSERT_NEAR(r->scale_y, 1.0f, 1e-6f);
+    ASSERT_NEAR(r->scale_z, 1.0f, 1e-6f);
+}
+
+/* Feed two samples, then expect DONE_FAIL and the old result untouched. */
+static void expect_fail(float a, float b)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    ASSERT_TRUE(mag_cal_feed(&cal, a, a, a));
+    ASSERT_TRUE(mag_cal_feed(&cal, b, b, b));
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL);
+
+    const mag_cal_result_t *r = mag_cal_get_result(&cal);
+    ASSERT_NEAR(r->offset_x, 0.0f, 1e-6f);
+    ASSERT_NEAR(r->scale_x, 1.0f, 1e-6f);
+}
+
+/* Finite samples can still overflow the arithmetic in compute. */
+TEST(test_compute_fails_on_overflow)
+{
+    expect_fail(FLT_MAX, -FLT_MAX);    /* max - min overflows the radius */
+    expect_fail(FLT_MAX, 3.0e38f);     /* max + min overflows the offset */
+    expect_fail(1.5e38f, -1.5e38f);    /* the mean radius overflows */
+}
+
+/* Every radius and the mean are finite, but 5e37 / 0.01 is not. */
+TEST(test_compute_fails_on_scale_overflow)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    mag_cal_feed(&cal, 1.5e38f, 0.01f, 0.01f);
+    mag_cal_feed(&cal, -1.5e38f, -0.01f, -0.01f);
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL);
+}
+
+/* samples[] is public: what feed would refuse can still be in there. */
+TEST(test_compute_fails_on_bad_stored_sample)
+{
+    mag_cal_t cal;
+    mag_cal_init(&cal);
+    mag_cal_start(&cal);
+
+    mag_cal_feed(&cal, 1.0f, 1.0f, 1.0f);
+    mag_cal_feed(&cal, -1.0f, -1.0f, -1.0f);
+    cal.samples[0][0] = NAN;
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL);
+
+    mag_cal_start(&cal);
+    mag_cal_feed(&cal, 1.0f, 1.0f, 1.0f);
+    mag_cal_feed(&cal, -1.0f, -1.0f, -1.0f);
+    cal.samples[1][2] = INFINITY;
+    ASSERT_EQ(mag_cal_compute(&cal), MAG_CAL_DONE_FAIL);
+}
+
 TEST_MAIN("mag_cal")
+    RUN(test_feed_rejects_non_finite);
+    RUN(test_infinite_sample_does_not_spoil_result);
+    RUN(test_compute_fails_on_overflow);
+    RUN(test_compute_fails_on_scale_overflow);
+    RUN(test_compute_fails_on_bad_stored_sample);
     RUN(test_init);
     RUN(test_start);
     RUN(test_feed_before_start);
