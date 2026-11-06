@@ -37,6 +37,16 @@ run_tool() {
     return $rc
 }
 
+# A tool that gave no usable summary died part way: one failure, never a
+# clean result. Counts are parsed with "|| true" because grep finding nothing
+# would otherwise end this script under set -e and pipefail.
+tool_crashed() {
+    local name="$1" rc="$2" out="$3"
+    echo -e "  ${RED}ERROR: $name exited $rc (crash?)${NC}"
+    echo "$out" | tail -3 | while read -r line; do echo "    $line"; done
+    TOTAL_FAIL=$((TOTAL_FAIL + 1))
+}
+
 # 1. Wheel audit
 echo -e "${BOLD}[1/5] Wheel audit (audit_wheels.py)${NC}"
 SAVE_FLAG=""
@@ -51,9 +61,7 @@ wheel_i=$(echo "$wheel_out" | sed -n 's/.*info:[[:space:]]*\([0-9][0-9]*\).*/\1/
 wheel_i=${wheel_i:-0}
 # Detect tool crash: non-zero exit AND no parseable summary (Python traceback, etc.)
 if [[ $wheel_rc -ne 0 && $wheel_f -eq 0 && $wheel_w -eq 0 ]]; then
-    echo -e "  ${RED}ERROR: audit_wheels.py exited $wheel_rc (crash?)${NC}"
-    echo "$wheel_out" | tail -3 | while read -r line; do echo "    $line"; done
-    TOTAL_FAIL=$((TOTAL_FAIL + 1))
+    tool_crashed audit_wheels.py "$wheel_rc" "$wheel_out"
 else
     echo -e "  Failures: $wheel_f  Warnings: $wheel_w  Info: $wheel_i"
     TOTAL_FAIL=$((TOTAL_FAIL + wheel_f))
@@ -63,29 +71,37 @@ echo ""
 
 # 2. Doc drift
 echo -e "${BOLD}[2/5] Doc drift (doc_drift_check.py)${NC}"
-drift_out=$(python3 tooling/audit/doc_drift_check.py 2>&1) || true
-if echo "$drift_out" | grep -q "all assertions match"; then
+drift_rc=0
+drift_out=$(python3 tooling/audit/doc_drift_check.py 2>&1) || drift_rc=$?
+drift_count=$(echo "$drift_out" | grep -oE '[0-9]+ drift' | grep -oE '[0-9]+' | head -1 || true)
+drift_count=${drift_count:-0}
+if [[ $drift_rc -eq 0 && "$drift_out" == *"all assertions match"* ]]; then
     echo -e "  ${GREEN}Clean${NC}"
     TOTAL_PASS=$((TOTAL_PASS + 1))
-else
-    drift_count=$(echo "$drift_out" | grep -oE '[0-9]+ drift' | grep -oE '[0-9]+' | head -1)
-    drift_count=${drift_count:-0}
+elif [[ $drift_count -gt 0 ]]; then
     echo -e "  ${YELLOW}$drift_count drift(s)${NC}"
     TOTAL_WARN=$((TOTAL_WARN + drift_count))
+else
+    tool_crashed doc_drift_check.py "$drift_rc" "$drift_out"
 fi
 echo ""
 
 # 3. Memory audit
 echo -e "${BOLD}[3/5] Memory audit (memory_audit.py)${NC}"
-mem_out=$(python3 tooling/audit/memory_audit.py 2>&1) || true
-if echo "$mem_out" | grep -q "clean"; then
+mem_rc=0
+mem_out=$(python3 tooling/audit/memory_audit.py 2>&1) || mem_rc=$?
+mem_errs=$(echo "$mem_out" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' | head -1 || true)
+mem_errs=${mem_errs:-0}
+mem_warns=$(echo "$mem_out" | grep -oE '[0-9]+ warning' | grep -oE '[0-9]+' | head -1 || true)
+mem_warns=${mem_warns:-0}
+if [[ $mem_rc -ne 0 && $mem_errs -eq 0 ]]; then
+    tool_crashed memory_audit.py "$mem_rc" "$mem_out"
+elif [[ "$mem_out" == *"memory_audit: clean"* ]]; then
     echo -e "  ${GREEN}Clean${NC}"
     TOTAL_PASS=$((TOTAL_PASS + 1))
+elif [[ "$mem_out" == *"skipping"* ]]; then
+    echo -e "  ${YELLOW}Skipped${NC}: $mem_out"
 else
-    mem_errs=$(echo "$mem_out" | grep -oE '[0-9]+ error' | grep -oE '[0-9]+' | head -1)
-    mem_errs=${mem_errs:-0}
-    mem_warns=$(echo "$mem_out" | grep -oE '[0-9]+ warning' | grep -oE '[0-9]+' | head -1)
-    mem_warns=${mem_warns:-0}
     echo -e "  Errors: $mem_errs  Warnings: $mem_warns"
     TOTAL_FAIL=$((TOTAL_FAIL + mem_errs))
     TOTAL_WARN=$((TOTAL_WARN + mem_warns))
@@ -94,24 +110,34 @@ echo ""
 
 # 4. Tests
 echo -e "${BOLD}[4/5] Test suite (test_all.sh)${NC}"
-test_out=$(bash tooling/test/test_all.sh --parallel 2>&1) || true
+test_rc=0
+test_out=$(bash tooling/test/test_all.sh --parallel 2>&1) || test_rc=$?
 test_pass=$(echo "$test_out" | sed -n 's/.*Passed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
 test_pass=${test_pass:-0}
 test_fail=$(echo "$test_out" | sed -n 's/.*Failed:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
 test_fail=${test_fail:-0}
-echo -e "  Passed: $test_pass  Failed: $test_fail"
-TOTAL_FAIL=$((TOTAL_FAIL + test_fail))
+if [[ $test_rc -ne 0 && $test_fail -eq 0 ]]; then
+    tool_crashed test_all.sh "$test_rc" "$test_out"
+else
+    echo -e "  Passed: $test_pass  Failed: $test_fail"
+    TOTAL_FAIL=$((TOTAL_FAIL + test_fail))
+fi
 echo ""
 
 # 5. Audit tool self-test
 echo -e "${BOLD}[5/5] Audit self-test (test_audit_wheels.py)${NC}"
-selftest_out=$(python3 tooling/audit/test_audit_wheels.py 2>&1) || true
-selftest_pass=$(echo "$selftest_out" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | head -1)
+selftest_rc=0
+selftest_out=$(python3 tooling/audit/test_audit_wheels.py 2>&1) || selftest_rc=$?
+selftest_pass=$(echo "$selftest_out" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | head -1 || true)
 selftest_pass=${selftest_pass:-0}
-selftest_fail=$(echo "$selftest_out" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' | head -1)
+selftest_fail=$(echo "$selftest_out" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' | head -1 || true)
 selftest_fail=${selftest_fail:-0}
-echo -e "  Passed: $selftest_pass  Failed: $selftest_fail"
-TOTAL_FAIL=$((TOTAL_FAIL + selftest_fail))
+if [[ $selftest_rc -ne 0 && $selftest_fail -eq 0 ]]; then
+    tool_crashed test_audit_wheels.py "$selftest_rc" "$selftest_out"
+else
+    echo -e "  Passed: $selftest_pass  Failed: $selftest_fail"
+    TOTAL_FAIL=$((TOTAL_FAIL + selftest_fail))
+fi
 echo ""
 
 # Summary
