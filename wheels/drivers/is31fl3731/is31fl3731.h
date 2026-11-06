@@ -37,6 +37,8 @@ typedef enum {
 
 typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
+    /* Unused: no driver function reads the chip, because frame registers can
+     * only be read in software shutdown. Init still refuses NULL here. */
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
@@ -62,6 +64,8 @@ typedef struct {
     const is31fl3731_i2c_t *i2c;
     is31fl3731_cfg_t        cfg;
     uint8_t                 current_frame;   /* last selected frame page */
+    /* Shadow of the LED Control bytes (00h-11h) of each frame */
+    uint8_t                 led_ctrl[IS31FL3731_NUM_FRAMES][18];
 } is31fl3731_t;
 
 /* ---------- API ---------- */
@@ -83,7 +87,9 @@ is31fl3731_err_t is31fl3731_set_frame(is31fl3731_t *dev, uint8_t frame);
 is31fl3731_err_t is31fl3731_set_pixel(is31fl3731_t *dev, uint8_t frame,
                                       uint8_t led_idx, uint8_t pwm);
 
-/** Enable or disable one LED on a frame. led_idx: 0-143.
+/** Enable or disable one LED on a frame. led_idx: 0-143. Works from the shadow
+ *  in dev and never reads the chip, which is only allowed in software shutdown.
+ *  On an error the shadow keeps the old byte, so calling again is safe.
  *  @thread_safe: no @isr_safe: no */
 is31fl3731_err_t is31fl3731_set_led_enable(is31fl3731_t *dev, uint8_t frame,
                                            uint8_t led_idx, bool enable);

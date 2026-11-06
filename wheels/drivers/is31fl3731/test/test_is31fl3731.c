@@ -10,6 +10,7 @@
  * values in a flat array per page. */
 
 #define NUM_PAGES 12   /* frames 0-7 + function page 0x0B */
+#define NUM_FRAME_PAGES 8
 static uint8_t page_regs[NUM_PAGES][256];
 static uint8_t current_page;
 
@@ -18,6 +19,12 @@ static void mock_reset_pages(void)
     memset(page_regs, 0, sizeof(page_regs));
     current_page = 0;
     mock_i2c_reset();
+}
+
+/* SSD of the Shutdown Register, D0: 0 is software shutdown (Rev. G p.14) */
+static bool chip_running(void)
+{
+    return (page_regs[0x0B][0x0A] & 0x01u) != 0u;
 }
 
 /* Page-aware write_reg: intercepts 0xFD for page select */
@@ -50,6 +57,13 @@ static bool page_read_regs(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     if (mock_i2c_should_fail()) return false;
     mock_read_count++;
+
+    /* Rev. G p.7: frame registers can only be read in software shutdown. What
+     * a read gives while the chip runs is not stated, so return junk. */
+    if (current_page < NUM_FRAME_PAGES && chip_running()) {
+        memset(buf, 0x5A, len);
+        return true;
+    }
 
     for (uint16_t i = 0; i < len; i++) {
         unsigned idx = (unsigned)reg + i;
@@ -264,6 +278,41 @@ TEST(test_led_enable_invalid_idx)
     ASSERT_EQ(is31fl3731_set_led_enable(&dev, 0, 144, true), IS31FL3731_ERR_PARAM);
 }
 
+/* Rev. G p.7: the chip runs after init, so no read may reach the bus */
+TEST(test_led_enable_never_reads)
+{
+    setup();
+    mock_read_count = 0;
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 4, 100, false), IS31FL3731_OK);
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 4, 100, true), IS31FL3731_OK);
+    ASSERT_EQ(mock_read_count, 0);
+}
+
+/* A write the chip never took must not count: the next change of that byte
+ * has to leave the LED of the failed call as it was. */
+TEST(test_led_enable_failed_write_changes_nothing)
+{
+    setup();
+    mock_fail_at = 1;   /* op 0 is the page select, op 1 the data byte */
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 0, 0, false), IS31FL3731_ERR_I2C);
+    ASSERT_EQ_HEX(page_regs[0][0x00], 0xFF);
+
+    mock_fail_at = -1;
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 0, 1, false), IS31FL3731_OK);
+    ASSERT_EQ_HEX(page_regs[0][0x00], 0xFD);
+}
+
+/* A failed page select writes nothing and changes nothing */
+TEST(test_led_enable_failed_page_select)
+{
+    setup();
+    mock_fail_at = 0;
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 0, 0, false), IS31FL3731_ERR_I2C);
+    mock_fail_at = -1;
+    ASSERT_EQ(is31fl3731_set_led_enable(&dev, 0, 1, false), IS31FL3731_OK);
+    ASSERT_EQ_HEX(page_regs[0][0x00], 0xFD);
+}
+
 /* ---------- shutdown tests ---------- */
 
 TEST(test_shutdown_enable)
@@ -345,6 +394,9 @@ TEST_MAIN("is31fl3731")
     RUN(test_led_enable_disable);
     RUN(test_led_enable_mid_byte);
     RUN(test_led_enable_invalid_idx);
+    RUN(test_led_enable_never_reads);
+    RUN(test_led_enable_failed_write_changes_nothing);
+    RUN(test_led_enable_failed_page_select);
     RUN(test_shutdown_enable);
     RUN(test_shutdown_disable);
     RUN(test_addr_0x75);

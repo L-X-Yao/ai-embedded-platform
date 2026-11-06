@@ -76,6 +76,7 @@ static bool init_frame(is31fl3731_t *dev, uint8_t frame)
         {
             return false;
         }
+        dev->led_ctrl[frame][i] = 0xFF;
     }
     for (uint8_t i = 0; i < FRAME_BLINK_SIZE; i++)
     {
@@ -244,12 +245,9 @@ is31fl3731_err_t is31fl3731_set_led_enable(is31fl3731_t *dev, uint8_t frame,
     uint8_t bit_idx  = led_idx % 8u;
     uint8_t reg = (uint8_t)(FRAME_LED_CTRL_BASE + byte_idx);
 
-    /* Read current value */
-    uint8_t val = 0;
-    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, &val, 1))
-    {
-        return IS31FL3731_ERR_I2C;
-    }
+    /* Rev. G p.7: frame registers can only be read in software shutdown, and
+     * the chip normally runs here, so the current byte comes from the shadow */
+    uint8_t val = dev->led_ctrl[frame][byte_idx];
 
     if (enable)
     {
@@ -265,6 +263,7 @@ is31fl3731_err_t is31fl3731_set_led_enable(is31fl3731_t *dev, uint8_t frame,
         return IS31FL3731_ERR_I2C;
     }
 
+    dev->led_ctrl[frame][byte_idx] = val;
     return IS31FL3731_OK;
 }
 
