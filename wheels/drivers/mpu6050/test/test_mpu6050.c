@@ -365,6 +365,20 @@ TEST(test_config_registers)
     ASSERT_EQ(mock_regs[0x1B], (2 << 3));
 }
 
+TEST(test_init_needs_write_and_read)
+{
+    mpu6050_t d;
+    mpu6050_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(mpu6050_init(&d, &bad, &default_cfg), MPU6050_ERR_PARAM);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(mpu6050_init(&d, &bad, &default_cfg), MPU6050_ERR_PARAM);
+}
+
 TEST_MAIN("mpu6050")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -389,4 +403,5 @@ TEST_MAIN("mpu6050")
     RUN(test_reset_write_failures);
     RUN(test_addr_high);
     RUN(test_config_registers);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()
