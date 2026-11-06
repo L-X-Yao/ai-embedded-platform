@@ -41,6 +41,13 @@ static bool read_regs(const cst816s_t *dev, uint8_t reg,
     return dev->i2c->read_regs(dev->i2c->ctx, CST816S_DEV_ADDR, reg, buf, len);
 }
 
+/* Neither Hynitron sheet gives a value for 0xA7. Zephyr takes 0xB4 and 0xB5 as
+ * a CST816S, and ESPHome lists 0xB4, 0xB5 and 0xB6 for the S, T and D parts. */
+static bool chip_id_known(uint8_t id)
+{
+    return id == 0xB4u || id == 0xB5u || id == 0xB6u;
+}
+
 /* ---------- public API ---------- */
 
 cst816s_err_t cst816s_init(cst816s_t *dev,
@@ -52,12 +59,12 @@ cst816s_err_t cst816s_init(cst816s_t *dev,
     memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
 
-    /* Read and verify chip ID (register 0xA7, expect 0xB5) */
+    /* Read and verify chip ID (register 0xA7) */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
         return CST816S_ERR_I2C;
 
-    if (id != CST816S_CHIP_ID)
+    if (!chip_id_known(id))
         return CST816S_ERR_ID;
 
     dev->chip_id = id;
