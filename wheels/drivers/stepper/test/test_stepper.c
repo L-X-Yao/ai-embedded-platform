@@ -334,6 +334,50 @@ TEST(test_ramp_up_follows_constant_accel)
     ASSERT_EQ(g_ramp[20000], 200);                    /* cruise */
 }
 
+/* One move worked by hand from the published recurrence, with no driver code:
+ * a = 200 sps^2, v = 500 sps, 2000 steps.
+ *   first delay  0.676 * sqrt(2 / 200) * 1e6 = 67600 us
+ *   up the ramp  c_n = c_(n-1) - 2 * c_(n-1) / (4n + 1): 40560, then 31546.67
+ *   ramp length  500^2 / (2 * 200) = 625 steps
+ *   cruise       1e6 / 500 = 2000 us, where the ramp itself ends on 2000.86
+ *   last delay   c_(n-1) = c_n + 2 * c_n / (4n - 1) from 2000 at n = 624 down
+ *                to n = 1 gives 67570.78 us
+ * Every step of both ramps changes the delay by at least 1.6 us, so even in
+ * whole microseconds each one must differ from the last. */
+TEST(test_ramp_exact_delays)
+{
+    ramp_run(500, 200, 2000, 1);
+    ASSERT_EQ(g_ramp_n, 1999);
+
+    ASSERT_EQ(g_ramp[0], 67600);
+    ASSERT_EQ(g_ramp[1], 40560);
+    ASSERT_EQ(g_ramp[2], 31547);
+
+    for (uint32_t i = 1; i < 625; i++) {
+        ASSERT_TRUE(g_ramp[i] < g_ramp[i - 1]);
+    }
+    for (uint32_t i = 625; i < 1375; i++) {
+        ASSERT_EQ(g_ramp[i], 2000);
+    }
+    for (uint32_t i = 1375; i < 1999; i++) {
+        ASSERT_TRUE(g_ramp[i] > g_ramp[i - 1]);
+    }
+
+    ASSERT_TRUE(g_ramp[1998] >= 67570 && g_ramp[1998] <= 67572);
+}
+
+/* isqrt(2000000 / 65535) truncates 5.52 to 5, so the first delay is 3380 us and
+ * the recurrence reaches 913 us inside its 8 step ramp: past the 976 us that
+ * 1024 sps allows, which only the clamp prevents. */
+TEST(test_ramp_never_beats_max_speed)
+{
+    ramp_run(1024, 65535, 100, 1);
+    ASSERT_EQ(g_ramp_n, 99);
+    for (uint32_t i = 0; i < 99; i++) {
+        ASSERT_TRUE(g_ramp[i] >= 976);
+    }
+}
+
 TEST(test_ramp_has_no_speed_jump)
 {
     ramp_run(5000, 1000, 40000, 1);
@@ -512,6 +556,8 @@ TEST_MAIN("stepper")
     RUN(test_state_idle_after_move_to);
     RUN(test_move_null_returns_param);
     RUN(test_ramp_up_follows_constant_accel);
+    RUN(test_ramp_exact_delays);
+    RUN(test_ramp_never_beats_max_speed);
     RUN(test_ramp_has_no_speed_jump);
     RUN(test_ramp_down_mirrors_ramp_up);
     RUN(test_ramp_low_accel);
