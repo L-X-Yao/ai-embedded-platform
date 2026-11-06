@@ -10,39 +10,33 @@
 TEST(test_cst816s_init_null_dev) {
     cst816s_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)cst816s_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_init(NULL, &_i2c) != CST816S_OK);
 }
 
 TEST(test_cst816s_init_null_i2c) {
     cst816s_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)cst816s_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_init(&_dev, NULL) != CST816S_OK);
 }
 
 TEST(test_cst816s_read_null_dev) {
     cst816s_touch_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)cst816s_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_read(NULL, &_out) != CST816S_OK);
 }
 
 TEST(test_cst816s_read_null_out) {
     cst816s_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)cst816s_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_read(&_dev, NULL) != CST816S_OK);
 }
 
 TEST(test_cst816s_set_auto_sleep_null_dev) {
-    (void)cst816s_set_auto_sleep(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_set_auto_sleep(NULL, false) != CST816S_OK);
 }
 
 TEST(test_cst816s_set_motion_mask_null_dev) {
-    (void)cst816s_set_motion_mask(NULL, false, false, false);
-    /* must not crash */
+    ASSERT_TRUE(cst816s_set_motion_mask(NULL, false, false, false) != CST816S_OK);
 }
 
 TEST(test_cst816s_get_chip_id_null_dev) {

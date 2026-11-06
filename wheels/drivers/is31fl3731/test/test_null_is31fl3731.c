@@ -12,8 +12,7 @@ TEST(test_is31fl3731_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     is31fl3731_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)is31fl3731_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_init(NULL, &_i2c, &_cfg) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_is31fl3731_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     is31fl3731_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)is31fl3731_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_init(&_dev, NULL, &_cfg) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_init_null_cfg) {
@@ -30,38 +28,31 @@ TEST(test_is31fl3731_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     is31fl3731_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)is31fl3731_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_init(&_dev, &_i2c, NULL) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_set_frame_null_dev) {
-    (void)is31fl3731_set_frame(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_set_frame(NULL, 0) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_set_pixel_null_dev) {
-    (void)is31fl3731_set_pixel(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_set_pixel(NULL, 0, 0, 0) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_set_led_enable_null_dev) {
-    (void)is31fl3731_set_led_enable(NULL, 0, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_set_led_enable(NULL, 0, 0, false) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_fill_null_dev) {
-    (void)is31fl3731_fill(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_fill(NULL, 0, 0) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_display_frame_null_dev) {
-    (void)is31fl3731_display_frame(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_display_frame(NULL, 0) != IS31FL3731_OK);
 }
 
 TEST(test_is31fl3731_shutdown_null_dev) {
-    (void)is31fl3731_shutdown(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(is31fl3731_shutdown(NULL, false) != IS31FL3731_OK);
 }
 
 TEST_MAIN("null_param_is31fl3731") {

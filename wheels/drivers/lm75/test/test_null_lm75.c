@@ -10,67 +10,57 @@
 TEST(test_lm75_init_null_dev) {
     lm75_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lm75_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(lm75_init(NULL, &_i2c) != LM75_OK);
 }
 
 TEST(test_lm75_init_null_i2c) {
     lm75_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lm75_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lm75_init(&_dev, NULL) != LM75_OK);
 }
 
 TEST(test_lm75_init_addr_null_dev) {
     lm75_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lm75_init_addr(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(lm75_init_addr(NULL, &_i2c, 0) != LM75_OK);
 }
 
 TEST(test_lm75_init_addr_null_i2c) {
     lm75_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lm75_init_addr(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lm75_init_addr(&_dev, NULL, 0) != LM75_OK);
 }
 
 TEST(test_lm75_read_temp_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)lm75_read_temp(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(lm75_read_temp(NULL, &_temp_c) != LM75_OK);
 }
 
 TEST(test_lm75_read_temp_null_temp_c) {
     lm75_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lm75_read_temp(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lm75_read_temp(&_dev, NULL) != LM75_OK);
 }
 
 TEST(test_lm75_read_raw_null_dev) {
     int16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)lm75_read_raw(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(lm75_read_raw(NULL, &_raw) != LM75_OK);
 }
 
 TEST(test_lm75_read_raw_null_raw) {
     lm75_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lm75_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lm75_read_raw(&_dev, NULL) != LM75_OK);
 }
 
 TEST(test_lm75_set_os_temp_null_dev) {
-    (void)lm75_set_os_temp(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(lm75_set_os_temp(NULL, 0.0f) != LM75_OK);
 }
 
 TEST(test_lm75_set_hyst_temp_null_dev) {
-    (void)lm75_set_hyst_temp(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(lm75_set_hyst_temp(NULL, 0.0f) != LM75_OK);
 }
 
 TEST_MAIN("null_param_lm75") {

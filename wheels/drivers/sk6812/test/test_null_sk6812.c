@@ -10,71 +10,61 @@
 TEST(test_sk6812_init_null_dev) {
     sk6812_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)sk6812_init(NULL, &_hal, 1);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_init(NULL, &_hal, 1) != SK6812_OK);
 }
 
 TEST(test_sk6812_init_null_hal) {
     sk6812_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sk6812_init(&_dev, NULL, 1);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_init(&_dev, NULL, 1) != SK6812_OK);
 }
 
 TEST(test_sk6812_set_pixel_null_dev) {
     sk6812_pixel_t _buf[1];
     memset(_buf, 0, sizeof(_buf));
-    (void)sk6812_set_pixel(NULL, _buf, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_set_pixel(NULL, _buf, 0, 0, 0, 0, 0) != SK6812_OK);
 }
 
 TEST(test_sk6812_set_pixel_null_buf) {
     sk6812_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sk6812_set_pixel(&_dev, NULL, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_set_pixel(&_dev, NULL, 0, 0, 0, 0, 0) != SK6812_OK);
 }
 
 TEST(test_sk6812_show_null_dev) {
     sk6812_pixel_t _buf[1];
     memset(_buf, 0, sizeof(_buf));
-    (void)sk6812_show(NULL, _buf);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_show(NULL, _buf) != SK6812_OK);
 }
 
 TEST(test_sk6812_show_null_buf) {
     sk6812_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sk6812_show(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_show(&_dev, NULL) != SK6812_OK);
 }
 
 TEST(test_sk6812_fill_null_dev) {
     sk6812_pixel_t _buf[1];
     memset(_buf, 0, sizeof(_buf));
-    (void)sk6812_fill(NULL, _buf, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_fill(NULL, _buf, 0, 0, 0, 0) != SK6812_OK);
 }
 
 TEST(test_sk6812_fill_null_buf) {
     sk6812_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sk6812_fill(&_dev, NULL, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_fill(&_dev, NULL, 0, 0, 0, 0) != SK6812_OK);
 }
 
 TEST(test_sk6812_clear_null_dev) {
     sk6812_pixel_t _buf[1];
     memset(_buf, 0, sizeof(_buf));
-    (void)sk6812_clear(NULL, _buf);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_clear(NULL, _buf) != SK6812_OK);
 }
 
 TEST(test_sk6812_clear_null_buf) {
     sk6812_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sk6812_clear(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sk6812_clear(&_dev, NULL) != SK6812_OK);
 }
 
 TEST_MAIN("null_param_sk6812") {

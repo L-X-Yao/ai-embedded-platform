@@ -27,66 +27,55 @@ TEST(test_cbor_lite_enc_len_null_enc) {
 }
 
 TEST(test_cbor_lite_enc_uint_null_enc) {
-    (void)cbor_lite_enc_uint(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_uint(NULL, 0) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_nint_null_enc) {
-    (void)cbor_lite_enc_nint(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_nint(NULL, 0) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_bstr_null_enc) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)cbor_lite_enc_bstr(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_bstr(NULL, _data, 0) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_bstr_null_data) {
     cbor_lite_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)cbor_lite_enc_bstr(&_enc, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_bstr(&_enc, NULL, 1) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_tstr_null_enc) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)cbor_lite_enc_tstr(NULL, _str, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_tstr(NULL, _str, 0) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_tstr_null_str) {
     cbor_lite_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)cbor_lite_enc_tstr(&_enc, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_tstr(&_enc, NULL, 1) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_array_null_enc) {
-    (void)cbor_lite_enc_array(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_array(NULL, 1) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_map_null_enc) {
-    (void)cbor_lite_enc_map(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_map(NULL, 1) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_bool_null_enc) {
-    (void)cbor_lite_enc_bool(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_bool(NULL, false) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_null_null_enc) {
-    (void)cbor_lite_enc_null(NULL);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_null(NULL) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_enc_float_null_enc) {
-    (void)cbor_lite_enc_float(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_enc_float(NULL, 0.0f) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_dec_init_null_dec) {
@@ -106,15 +95,13 @@ TEST(test_cbor_lite_dec_init_null_buf) {
 TEST(test_cbor_lite_dec_next_null_dec) {
     cbor_lite_item_t _item;
     memset(&_item, 0, sizeof(_item));
-    (void)cbor_lite_dec_next(NULL, &_item);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_dec_next(NULL, &_item) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_dec_next_null_item) {
     cbor_lite_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)cbor_lite_dec_next(&_dec, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cbor_lite_dec_next(&_dec, NULL) != CBOR_LITE_OK);
 }
 
 TEST(test_cbor_lite_dec_offset_null_dec) {

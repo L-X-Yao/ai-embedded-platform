@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_param_table_init_null_pt) {
-    (void)param_table_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(param_table_init(NULL) != PARAM_OK);
 }
 
 TEST(test_param_table_define_null_pt) {
@@ -17,8 +16,7 @@ TEST(test_param_table_define_null_pt) {
     memset(_key, 0, sizeof(_key));
     char _default_val[64];
     memset(_default_val, 0, sizeof(_default_val));
-    (void)param_table_define(NULL, _key, _default_val, false);
-    /* must not crash */
+    ASSERT_TRUE(param_table_define(NULL, _key, _default_val, false) != PARAM_OK);
 }
 
 TEST(test_param_table_define_null_key) {
@@ -26,8 +24,7 @@ TEST(test_param_table_define_null_key) {
     memset(&_pt, 0, sizeof(_pt));
     char _default_val[64];
     memset(_default_val, 0, sizeof(_default_val));
-    (void)param_table_define(&_pt, NULL, _default_val, false);
-    /* must not crash */
+    ASSERT_TRUE(param_table_define(&_pt, NULL, _default_val, false) != PARAM_OK);
 }
 
 TEST(test_param_table_define_null_default_val) {
@@ -36,7 +33,7 @@ TEST(test_param_table_define_null_default_val) {
     char _key[64];
     memset(_key, 0, sizeof(_key));
     (void)param_table_define(&_pt, _key, NULL, false);
-    /* must not crash */
+    /* must not crash: a parameter may start empty */
 }
 
 TEST(test_param_table_set_null_pt) {
@@ -44,8 +41,7 @@ TEST(test_param_table_set_null_pt) {
     memset(_key, 0, sizeof(_key));
     char _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)param_table_set(NULL, _key, _value);
-    /* must not crash */
+    ASSERT_TRUE(param_table_set(NULL, _key, _value) != PARAM_OK);
 }
 
 TEST(test_param_table_set_null_key) {
@@ -53,8 +49,7 @@ TEST(test_param_table_set_null_key) {
     memset(&_pt, 0, sizeof(_pt));
     char _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)param_table_set(&_pt, NULL, _value);
-    /* must not crash */
+    ASSERT_TRUE(param_table_set(&_pt, NULL, _value) != PARAM_OK);
 }
 
 TEST(test_param_table_set_null_value) {
@@ -62,8 +57,7 @@ TEST(test_param_table_set_null_value) {
     memset(&_pt, 0, sizeof(_pt));
     char _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)param_table_set(&_pt, _key, NULL);
-    /* must not crash */
+    ASSERT_TRUE(param_table_set(&_pt, _key, NULL) != PARAM_OK);
 }
 
 TEST(test_param_table_get_null_pt) {
@@ -71,8 +65,7 @@ TEST(test_param_table_get_null_pt) {
     memset(_key, 0, sizeof(_key));
     char _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)param_table_get(NULL, _key, _value, 0);
-    /* must not crash */
+    ASSERT_TRUE(param_table_get(NULL, _key, _value, 0) != PARAM_OK);
 }
 
 TEST(test_param_table_get_null_key) {
@@ -80,8 +73,7 @@ TEST(test_param_table_get_null_key) {
     memset(&_pt, 0, sizeof(_pt));
     char _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)param_table_get(&_pt, NULL, _value, 0);
-    /* must not crash */
+    ASSERT_TRUE(param_table_get(&_pt, NULL, _value, 0) != PARAM_OK);
 }
 
 TEST(test_param_table_get_null_value) {
@@ -89,22 +81,19 @@ TEST(test_param_table_get_null_value) {
     memset(&_pt, 0, sizeof(_pt));
     char _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)param_table_get(&_pt, _key, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(param_table_get(&_pt, _key, NULL, 1) != PARAM_OK);
 }
 
 TEST(test_param_table_set_callback_null_pt) {
     char _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)param_table_set_callback(NULL, _key, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(param_table_set_callback(NULL, _key, NULL, NULL) != PARAM_OK);
 }
 
 TEST(test_param_table_set_callback_null_key) {
     param_table_t _pt;
     memset(&_pt, 0, sizeof(_pt));
-    (void)param_table_set_callback(&_pt, NULL, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(param_table_set_callback(&_pt, NULL, NULL, NULL) != PARAM_OK);
 }
 
 TEST(test_param_table_set_callback_null_ctx) {
@@ -113,7 +102,7 @@ TEST(test_param_table_set_callback_null_ctx) {
     char _key[64];
     memset(_key, 0, sizeof(_key));
     (void)param_table_set_callback(&_pt, _key, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_param_table_find_null_pt) {

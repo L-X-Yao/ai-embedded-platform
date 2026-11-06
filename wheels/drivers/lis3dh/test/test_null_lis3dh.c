@@ -12,8 +12,7 @@ TEST(test_lis3dh_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     lis3dh_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis3dh_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_init(NULL, &_i2c, &_cfg) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_lis3dh_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     lis3dh_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis3dh_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_init(&_dev, NULL, &_cfg) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_init_null_cfg) {
@@ -30,46 +28,39 @@ TEST(test_lis3dh_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     lis3dh_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lis3dh_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_init(&_dev, &_i2c, NULL) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_read_accel_null_dev) {
     lis3dh_accel_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lis3dh_read_accel(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_read_accel(NULL, &_out) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_read_accel_null_out) {
     lis3dh_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lis3dh_read_accel(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_read_accel(&_dev, NULL) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_read_raw_null_dev) {
     lis3dh_raw_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lis3dh_read_raw(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_read_raw(NULL, &_out) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_read_raw_null_out) {
     lis3dh_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lis3dh_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_read_raw(&_dev, NULL) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_set_range_null_dev) {
-    (void)lis3dh_set_range(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_set_range(NULL, 0) != LIS3DH_OK);
 }
 
 TEST(test_lis3dh_set_odr_null_dev) {
-    (void)lis3dh_set_odr(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lis3dh_set_odr(NULL, 0) != LIS3DH_OK);
 }
 
 TEST_MAIN("null_param_lis3dh") {

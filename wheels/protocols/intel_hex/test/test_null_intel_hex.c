@@ -10,15 +10,13 @@
 TEST(test_intel_hex_decode_null_line) {
     intel_hex_record_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)intel_hex_decode(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(intel_hex_decode(NULL, 1, &_out) != INTEL_HEX_OK);
 }
 
 TEST(test_intel_hex_decode_null_out) {
     char _line[64];
     memset(_line, 0, sizeof(_line));
-    (void)intel_hex_decode(_line, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(intel_hex_decode(_line, 0, NULL) != INTEL_HEX_OK);
 }
 
 TEST(test_intel_hex_encode_null_rec) {
@@ -26,8 +24,7 @@ TEST(test_intel_hex_encode_null_rec) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)intel_hex_encode(NULL, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(intel_hex_encode(NULL, _buf, 0, &_out_len) != INTEL_HEX_OK);
 }
 
 TEST(test_intel_hex_encode_null_buf) {
@@ -35,8 +32,7 @@ TEST(test_intel_hex_encode_null_buf) {
     memset(&_rec, 0, sizeof(_rec));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)intel_hex_encode(&_rec, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(intel_hex_encode(&_rec, NULL, 0, &_out_len) != INTEL_HEX_OK);
 }
 
 TEST(test_intel_hex_encode_null_out_len) {
@@ -44,8 +40,7 @@ TEST(test_intel_hex_encode_null_out_len) {
     memset(&_rec, 0, sizeof(_rec));
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)intel_hex_encode(&_rec, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(intel_hex_encode(&_rec, _buf, 0, NULL) != INTEL_HEX_OK);
 }
 
 TEST_MAIN("null_param_intel_hex") {

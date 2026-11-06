@@ -15,43 +15,37 @@ TEST(test_sgp40_crc8_null_data) {
 TEST(test_sgp40_init_null_dev) {
     sgp40_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)sgp40_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_init(NULL, &_i2c) != SGP40_OK);
 }
 
 TEST(test_sgp40_init_null_i2c) {
     sgp40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp40_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_init(&_dev, NULL) != SGP40_OK);
 }
 
 TEST(test_sgp40_measure_raw_null_dev) {
     sgp40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sgp40_measure_raw(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_measure_raw(NULL, &_out) != SGP40_OK);
 }
 
 TEST(test_sgp40_measure_raw_null_out) {
     sgp40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp40_measure_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_measure_raw(&_dev, NULL) != SGP40_OK);
 }
 
 TEST(test_sgp40_measure_raw_comp_null_dev) {
     sgp40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sgp40_measure_raw_comp(NULL, &_out, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_measure_raw_comp(NULL, &_out, 0, 0) != SGP40_OK);
 }
 
 TEST(test_sgp40_measure_raw_comp_null_out) {
     sgp40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp40_measure_raw_comp(&_dev, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(sgp40_measure_raw_comp(&_dev, NULL, 0, 0) != SGP40_OK);
 }
 
 TEST_MAIN("null_param_sgp40") {

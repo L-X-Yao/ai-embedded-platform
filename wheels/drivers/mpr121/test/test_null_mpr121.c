@@ -16,15 +16,13 @@ static const mpr121_cfg_t default_cfg = {
 TEST(test_mpr121_init_null_dev) {
     mpr121_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)mpr121_init(NULL, &_i2c, &default_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_init(NULL, &_i2c, &default_cfg) != MPR121_OK);
 }
 
 TEST(test_mpr121_init_null_i2c) {
     mpr121_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mpr121_init(&_dev, NULL, &default_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_init(&_dev, NULL, &default_cfg) != MPR121_OK);
 }
 
 TEST(test_mpr121_init_null_cfg) {
@@ -32,36 +30,31 @@ TEST(test_mpr121_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     mpr121_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)mpr121_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_init(&_dev, &_i2c, NULL) != MPR121_OK);
 }
 
 TEST(test_mpr121_read_touched_null_dev) {
     uint16_t _status;
     memset(&_status, 0, sizeof(_status));
-    (void)mpr121_read_touched(NULL, &_status);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_read_touched(NULL, &_status) != MPR121_OK);
 }
 
 TEST(test_mpr121_read_touched_null_status) {
     mpr121_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mpr121_read_touched(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_read_touched(&_dev, NULL) != MPR121_OK);
 }
 
 TEST(test_mpr121_read_electrode_null_dev) {
     uint16_t _value;
     memset(&_value, 0, sizeof(_value));
-    (void)mpr121_read_electrode(NULL, 0, &_value);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_read_electrode(NULL, 0, &_value) != MPR121_OK);
 }
 
 TEST(test_mpr121_read_electrode_null_value) {
     mpr121_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mpr121_read_electrode(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mpr121_read_electrode(&_dev, 0, NULL) != MPR121_OK);
 }
 
 TEST(test_mpr121_init_zero_hal) {

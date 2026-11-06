@@ -10,20 +10,17 @@
 TEST(test_heatshrink_encoder_init_null_enc) {
     uint8_t _window_buf[64];
     memset(_window_buf, 0, sizeof(_window_buf));
-    (void)heatshrink_encoder_init(NULL, _window_buf, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_encoder_init(NULL, _window_buf, 0, 0) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_encoder_init_null_window_buf) {
     heatshrink_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)heatshrink_encoder_init(&_enc, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_encoder_init(&_enc, NULL, 1, 0) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_encoder_reset_null_enc) {
-    (void)heatshrink_encoder_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_encoder_reset(NULL) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_encoder_sink_null_enc) {
@@ -88,20 +85,17 @@ TEST(test_heatshrink_encoder_finish_null_enc) {
 TEST(test_heatshrink_decoder_init_null_dec) {
     uint8_t _window_buf[64];
     memset(_window_buf, 0, sizeof(_window_buf));
-    (void)heatshrink_decoder_init(NULL, _window_buf, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_decoder_init(NULL, _window_buf, 0, 0) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_decoder_init_null_window_buf) {
     heatshrink_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)heatshrink_decoder_init(&_dec, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_decoder_init(&_dec, NULL, 1, 0) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_decoder_reset_null_dec) {
-    (void)heatshrink_decoder_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(heatshrink_decoder_reset(NULL) != HEATSHRINK_OK);
 }
 
 TEST(test_heatshrink_decoder_sink_null_dec) {

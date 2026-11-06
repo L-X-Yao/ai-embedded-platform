@@ -10,110 +10,93 @@
 TEST(test_bq27441_init_null_dev) {
     bq27441_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bq27441_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_init(NULL, &_i2c) != BQ27441_OK);
 }
 
 TEST(test_bq27441_init_null_i2c) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_init(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_null_dev) {
     bq27441_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bq27441_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read(NULL, &_out) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_null_out) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_voltage_null_dev) {
     uint16_t _voltage_mv;
     memset(&_voltage_mv, 0, sizeof(_voltage_mv));
-    (void)bq27441_read_voltage(NULL, &_voltage_mv);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_voltage(NULL, &_voltage_mv) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_voltage_null_voltage_mv) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_read_voltage(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_voltage(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_soc_null_dev) {
     uint16_t _soc_pct;
     memset(&_soc_pct, 0, sizeof(_soc_pct));
-    (void)bq27441_read_soc(NULL, &_soc_pct);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_soc(NULL, &_soc_pct) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_soc_null_soc_pct) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_read_soc(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_soc(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_current_null_dev) {
     int16_t _current_ma;
     memset(&_current_ma, 0, sizeof(_current_ma));
-    (void)bq27441_read_current(NULL, &_current_ma);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_current(NULL, &_current_ma) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_current_null_current_ma) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_read_current(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_current(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_temperature_null_dev) {
     int16_t _temperature_01c;
     memset(&_temperature_01c, 0, sizeof(_temperature_01c));
-    (void)bq27441_read_temperature(NULL, &_temperature_01c);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_temperature(NULL, &_temperature_01c) != BQ27441_OK);
 }
 
 TEST(test_bq27441_read_temperature_null_temperature_01c) {
     bq27441_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bq27441_read_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_read_temperature(&_dev, NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_enter_config_mode_null_dev) {
-    (void)bq27441_enter_config_mode(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_enter_config_mode(NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_exit_config_mode_null_dev) {
-    (void)bq27441_exit_config_mode(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_exit_config_mode(NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_set_design_capacity_null_dev) {
-    (void)bq27441_set_design_capacity(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_set_design_capacity(NULL, 0) != BQ27441_OK);
 }
 
 TEST(test_bq27441_unseal_null_dev) {
-    (void)bq27441_unseal(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_unseal(NULL) != BQ27441_OK);
 }
 
 TEST(test_bq27441_seal_null_dev) {
-    (void)bq27441_seal(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bq27441_seal(NULL) != BQ27441_OK);
 }
 
 TEST_MAIN("null_param_bq27441") {

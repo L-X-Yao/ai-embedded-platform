@@ -10,44 +10,37 @@
 TEST(test_tca9548a_init_null_dev) {
     tca9548a_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)tca9548a_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_init(NULL, &_i2c, 0) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_init_null_i2c) {
     tca9548a_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tca9548a_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_init(&_dev, NULL, 0) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_select_null_dev) {
-    (void)tca9548a_select(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_select(NULL, 0) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_select_multi_null_dev) {
-    (void)tca9548a_select_multi(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_select_multi(NULL, 0) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_disable_all_null_dev) {
-    (void)tca9548a_disable_all(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_disable_all(NULL) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_get_channel_null_dev) {
     uint8_t _mask[64];
     memset(_mask, 0, sizeof(_mask));
-    (void)tca9548a_get_channel(NULL, _mask);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_get_channel(NULL, _mask) != TCA9548A_OK);
 }
 
 TEST(test_tca9548a_get_channel_null_mask) {
     tca9548a_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tca9548a_get_channel(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tca9548a_get_channel(&_dev, NULL) != TCA9548A_OK);
 }
 
 TEST_MAIN("null_param_tca9548a") {

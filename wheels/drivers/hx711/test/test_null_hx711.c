@@ -10,15 +10,13 @@
 TEST(test_hx711_init_null_dev) {
     hx711_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)hx711_init(NULL, &_hal, 0);
-    /* must not crash */
+    ASSERT_TRUE(hx711_init(NULL, &_hal, 0) != HX711_OK);
 }
 
 TEST(test_hx711_init_null_hal) {
     hx711_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hx711_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(hx711_init(&_dev, NULL, 0) != HX711_OK);
 }
 
 TEST(test_hx711_is_ready_null_dev) {
@@ -29,34 +27,29 @@ TEST(test_hx711_is_ready_null_dev) {
 TEST(test_hx711_read_raw_null_dev) {
     int32_t _value;
     memset(&_value, 0, sizeof(_value));
-    (void)hx711_read_raw(NULL, &_value);
-    /* must not crash */
+    ASSERT_TRUE(hx711_read_raw(NULL, &_value) != HX711_OK);
 }
 
 TEST(test_hx711_read_raw_null_value) {
     hx711_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hx711_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hx711_read_raw(&_dev, NULL) != HX711_OK);
 }
 
 TEST(test_hx711_read_null_dev) {
     float _value;
     memset(&_value, 0, sizeof(_value));
-    (void)hx711_read(NULL, &_value);
-    /* must not crash */
+    ASSERT_TRUE(hx711_read(NULL, &_value) != HX711_OK);
 }
 
 TEST(test_hx711_read_null_value) {
     hx711_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hx711_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hx711_read(&_dev, NULL) != HX711_OK);
 }
 
 TEST(test_hx711_tare_null_dev) {
-    (void)hx711_tare(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(hx711_tare(NULL, 0) != HX711_OK);
 }
 
 TEST(test_hx711_set_scale_null_dev) {

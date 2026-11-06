@@ -12,8 +12,7 @@ TEST(test_keypad_matrix_init_null_kp) {
     memset(&_hal, 0, sizeof(_hal));
     char _keymap[64];
     memset(_keymap, 0, sizeof(_keymap));
-    (void)keypad_matrix_init(NULL, &_hal, 0, 0, _keymap);
-    /* must not crash */
+    ASSERT_TRUE(keypad_matrix_init(NULL, &_hal, 0, 0, _keymap) != KEYPAD_OK);
 }
 
 TEST(test_keypad_matrix_init_null_hal) {
@@ -21,8 +20,7 @@ TEST(test_keypad_matrix_init_null_hal) {
     memset(&_kp, 0, sizeof(_kp));
     char _keymap[64];
     memset(_keymap, 0, sizeof(_keymap));
-    (void)keypad_matrix_init(&_kp, NULL, 0, 0, _keymap);
-    /* must not crash */
+    ASSERT_TRUE(keypad_matrix_init(&_kp, NULL, 0, 0, _keymap) != KEYPAD_OK);
 }
 
 TEST(test_keypad_matrix_init_null_keymap) {
@@ -30,8 +28,7 @@ TEST(test_keypad_matrix_init_null_keymap) {
     memset(&_kp, 0, sizeof(_kp));
     keypad_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)keypad_matrix_init(&_kp, &_hal, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(keypad_matrix_init(&_kp, &_hal, 0, 0, NULL) != KEYPAD_OK);
 }
 
 TEST(test_keypad_matrix_scan_null_kp) {

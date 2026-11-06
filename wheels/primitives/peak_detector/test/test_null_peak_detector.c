@@ -8,13 +8,11 @@
 #include <stddef.h>
 
 TEST(test_peak_detector_init_null_ctx) {
-    (void)peak_detector_init(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(peak_detector_init(NULL, 0.0f) != PEAK_DETECTOR_OK);
 }
 
 TEST(test_peak_detector_feed_null_ctx) {
-    (void)peak_detector_feed(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(peak_detector_feed(NULL, 0.0f) != PEAK_DETECTOR_OK);
 }
 
 TEST(test_peak_detector_get_peak_null_ctx) {
@@ -33,8 +31,7 @@ TEST(test_peak_detector_get_range_null_ctx) {
 }
 
 TEST(test_peak_detector_reset_null_ctx) {
-    (void)peak_detector_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(peak_detector_reset(NULL) != PEAK_DETECTOR_OK);
 }
 
 TEST_MAIN("null_param_peak_detector") {

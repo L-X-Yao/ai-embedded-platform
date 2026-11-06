@@ -10,29 +10,25 @@
 TEST(test_dht11_init_null_dev) {
     dht11_gpio_t _gpio;
     memset(&_gpio, 0, sizeof(_gpio));
-    (void)dht11_init(NULL, &_gpio);
-    /* must not crash */
+    ASSERT_TRUE(dht11_init(NULL, &_gpio) != DHT11_OK);
 }
 
 TEST(test_dht11_init_null_gpio) {
     dht11_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)dht11_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dht11_init(&_dev, NULL) != DHT11_OK);
 }
 
 TEST(test_dht11_read_null_dev) {
     dht11_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)dht11_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(dht11_read(NULL, &_out) != DHT11_OK);
 }
 
 TEST(test_dht11_read_null_out) {
     dht11_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)dht11_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dht11_read(&_dev, NULL) != DHT11_OK);
 }
 
 TEST_MAIN("null_param_dht11") {

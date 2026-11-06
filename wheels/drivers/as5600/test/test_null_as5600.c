@@ -10,67 +10,57 @@
 TEST(test_as5600_init_null_dev) {
     as5600_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)as5600_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(as5600_init(NULL, &_i2c) != AS5600_OK);
 }
 
 TEST(test_as5600_init_null_i2c) {
     as5600_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)as5600_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(as5600_init(&_dev, NULL) != AS5600_OK);
 }
 
 TEST(test_as5600_read_raw_angle_null_dev) {
     uint16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)as5600_read_raw_angle(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_raw_angle(NULL, &_raw) != AS5600_OK);
 }
 
 TEST(test_as5600_read_raw_angle_null_raw) {
     as5600_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)as5600_read_raw_angle(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_raw_angle(&_dev, NULL) != AS5600_OK);
 }
 
 TEST(test_as5600_read_degrees_null_dev) {
     float _degrees;
     memset(&_degrees, 0, sizeof(_degrees));
-    (void)as5600_read_degrees(NULL, &_degrees);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_degrees(NULL, &_degrees) != AS5600_OK);
 }
 
 TEST(test_as5600_read_degrees_null_degrees) {
     as5600_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)as5600_read_degrees(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_degrees(&_dev, NULL) != AS5600_OK);
 }
 
 TEST(test_as5600_read_status_null_dev) {
     uint8_t _status[64];
     memset(_status, 0, sizeof(_status));
-    (void)as5600_read_status(NULL, _status);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_status(NULL, _status) != AS5600_OK);
 }
 
 TEST(test_as5600_read_status_null_status) {
     as5600_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)as5600_read_status(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(as5600_read_status(&_dev, NULL) != AS5600_OK);
 }
 
 TEST(test_as5600_set_start_position_null_dev) {
-    (void)as5600_set_start_position(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(as5600_set_start_position(NULL, 0) != AS5600_OK);
 }
 
 TEST(test_as5600_set_max_angle_null_dev) {
-    (void)as5600_set_max_angle(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(as5600_set_max_angle(NULL, 0) != AS5600_OK);
 }
 
 TEST_MAIN("null_param_as5600") {

@@ -12,8 +12,7 @@ TEST(test_vl53l0x_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     vl53l0x_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)vl53l0x_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_init(NULL, &_i2c, &_cfg) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_vl53l0x_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     vl53l0x_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)vl53l0x_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_init(&_dev, NULL, &_cfg) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_init_null_cfg) {
@@ -30,46 +28,39 @@ TEST(test_vl53l0x_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     vl53l0x_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)vl53l0x_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_init(&_dev, &_i2c, NULL) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_read_range_mm_null_dev) {
     uint16_t _range_mm;
     memset(&_range_mm, 0, sizeof(_range_mm));
-    (void)vl53l0x_read_range_mm(NULL, &_range_mm);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_read_range_mm(NULL, &_range_mm) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_read_range_mm_null_range_mm) {
     vl53l0x_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)vl53l0x_read_range_mm(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_read_range_mm(&_dev, NULL) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_start_single_null_dev) {
-    (void)vl53l0x_start_single(NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_start_single(NULL) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_is_ready_null_dev) {
     bool _ready;
     memset(&_ready, 0, sizeof(_ready));
-    (void)vl53l0x_is_ready(NULL, &_ready);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_is_ready(NULL, &_ready) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_is_ready_null_ready) {
     vl53l0x_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)vl53l0x_is_ready(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_is_ready(&_dev, NULL) != VL53L0X_OK);
 }
 
 TEST(test_vl53l0x_set_measurement_timing_budget_null_dev) {
-    (void)vl53l0x_set_measurement_timing_budget(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(vl53l0x_set_measurement_timing_budget(NULL, 0) != VL53L0X_OK);
 }
 
 TEST_MAIN("null_param_vl53l0x") {

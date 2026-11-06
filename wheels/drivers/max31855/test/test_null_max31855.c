@@ -10,15 +10,13 @@
 TEST(test_max31855_init_null_dev) {
     max31855_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)max31855_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(max31855_init(NULL, &_spi) != MAX31855_OK);
 }
 
 TEST(test_max31855_init_null_spi) {
     max31855_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max31855_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31855_init(&_dev, NULL) != MAX31855_OK);
 }
 
 TEST(test_max31855_read_null_dev) {
@@ -26,8 +24,7 @@ TEST(test_max31855_read_null_dev) {
     memset(&_thermocouple_c, 0, sizeof(_thermocouple_c));
     float _internal_c;
     memset(&_internal_c, 0, sizeof(_internal_c));
-    (void)max31855_read(NULL, &_thermocouple_c, &_internal_c);
-    /* must not crash */
+    ASSERT_TRUE(max31855_read(NULL, &_thermocouple_c, &_internal_c) != MAX31855_OK);
 }
 
 TEST(test_max31855_read_null_thermocouple_c) {
@@ -36,7 +33,7 @@ TEST(test_max31855_read_null_thermocouple_c) {
     float _internal_c;
     memset(&_internal_c, 0, sizeof(_internal_c));
     (void)max31855_read(&_dev, NULL, &_internal_c);
-    /* must not crash */
+    /* must not crash: either output may be left out */
 }
 
 TEST(test_max31855_read_null_internal_c) {
@@ -45,21 +42,19 @@ TEST(test_max31855_read_null_internal_c) {
     float _thermocouple_c;
     memset(&_thermocouple_c, 0, sizeof(_thermocouple_c));
     (void)max31855_read(&_dev, &_thermocouple_c, NULL);
-    /* must not crash */
+    /* must not crash: either output may be left out */
 }
 
 TEST(test_max31855_read_raw_null_dev) {
     uint32_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)max31855_read_raw(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(max31855_read_raw(NULL, &_raw) != MAX31855_OK);
 }
 
 TEST(test_max31855_read_raw_null_raw) {
     max31855_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max31855_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31855_read_raw(&_dev, NULL) != MAX31855_OK);
 }
 
 TEST_MAIN("null_param_max31855") {

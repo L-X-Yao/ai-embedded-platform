@@ -10,43 +10,37 @@
 TEST(test_sd_spi_init_null_sd) {
     sd_spi_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)sd_spi_init(NULL, &_hal);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_init(NULL, &_hal) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_init_null_hal) {
     sd_spi_t _sd;
     memset(&_sd, 0, sizeof(_sd));
-    (void)sd_spi_init(&_sd, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_init(&_sd, NULL) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_read_block_null_sd) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)sd_spi_read_block(NULL, 0, _buf);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_read_block(NULL, 0, _buf) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_read_block_null_buf) {
     sd_spi_t _sd;
     memset(&_sd, 0, sizeof(_sd));
-    (void)sd_spi_read_block(&_sd, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_read_block(&_sd, 0, NULL) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_write_block_null_sd) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)sd_spi_write_block(NULL, 0, _buf);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_write_block(NULL, 0, _buf) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_write_block_null_buf) {
     sd_spi_t _sd;
     memset(&_sd, 0, sizeof(_sd));
-    (void)sd_spi_write_block(&_sd, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sd_spi_write_block(&_sd, 0, NULL) != SD_SPI_OK);
 }
 
 TEST(test_sd_spi_get_type_null_sd) {

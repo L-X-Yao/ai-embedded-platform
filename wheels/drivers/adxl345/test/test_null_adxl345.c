@@ -12,8 +12,7 @@ TEST(test_adxl345_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     adxl345_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)adxl345_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_init(NULL, &_i2c, &_cfg) != ADXL345_OK);
 }
 
 TEST(test_adxl345_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_adxl345_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     adxl345_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)adxl345_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_init(&_dev, NULL, &_cfg) != ADXL345_OK);
 }
 
 TEST(test_adxl345_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_adxl345_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     adxl345_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)adxl345_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_init(&_dev, &_i2c, NULL) != ADXL345_OK);
 }
 
 TEST(test_adxl345_read_null_dev) {
     adxl345_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)adxl345_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_read(NULL, &_out) != ADXL345_OK);
 }
 
 TEST(test_adxl345_read_null_out) {
     adxl345_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)adxl345_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_read(&_dev, NULL) != ADXL345_OK);
 }
 
 TEST(test_adxl345_set_range_null_dev) {
-    (void)adxl345_set_range(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(adxl345_set_range(NULL, 0) != ADXL345_OK);
 }
 
 TEST_MAIN("null_param_adxl345") {

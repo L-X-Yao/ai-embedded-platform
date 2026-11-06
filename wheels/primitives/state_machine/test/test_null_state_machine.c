@@ -10,20 +10,17 @@
 TEST(test_state_machine_init_null_ctx) {
     sm_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)state_machine_init(NULL, &_cfg, 0);
-    /* must not crash */
+    ASSERT_TRUE(state_machine_init(NULL, &_cfg, 0) != STATE_MACHINE_OK);
 }
 
 TEST(test_state_machine_init_null_cfg) {
     state_machine_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)state_machine_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(state_machine_init(&_ctx, NULL, 0) != STATE_MACHINE_OK);
 }
 
 TEST(test_state_machine_process_null_ctx) {
-    (void)state_machine_process(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(state_machine_process(NULL, 0) != STATE_MACHINE_OK);
 }
 
 TEST(test_state_machine_current_null_ctx) {
@@ -37,8 +34,7 @@ TEST(test_state_machine_transition_count_null_ctx) {
 }
 
 TEST(test_state_machine_reset_null_ctx) {
-    (void)state_machine_reset(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(state_machine_reset(NULL, 0) != STATE_MACHINE_OK);
 }
 
 TEST_MAIN("null_param_state_machine") {

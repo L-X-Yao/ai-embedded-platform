@@ -12,8 +12,7 @@ TEST(test_ir_nec_encode_null_msg) {
     memset(&_pulses, 0, sizeof(_pulses));
     uint16_t _count;
     memset(&_count, 0, sizeof(_count));
-    (void)ir_nec_encode(NULL, &_pulses, &_count);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode(NULL, &_pulses, &_count) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_encode_null_pulses) {
@@ -21,8 +20,7 @@ TEST(test_ir_nec_encode_null_pulses) {
     memset(&_msg, 0, sizeof(_msg));
     uint16_t _count;
     memset(&_count, 0, sizeof(_count));
-    (void)ir_nec_encode(&_msg, NULL, &_count);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode(&_msg, NULL, &_count) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_encode_null_count) {
@@ -30,36 +28,31 @@ TEST(test_ir_nec_encode_null_count) {
     memset(&_msg, 0, sizeof(_msg));
     ir_nec_pulse_t _pulses;
     memset(&_pulses, 0, sizeof(_pulses));
-    (void)ir_nec_encode(&_msg, &_pulses, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode(&_msg, &_pulses, NULL) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_decode_null_pulses) {
     ir_nec_msg_t _msg;
     memset(&_msg, 0, sizeof(_msg));
-    (void)ir_nec_decode(NULL, 0, &_msg);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_decode(NULL, 1, &_msg) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_decode_null_msg) {
     ir_nec_pulse_t _pulses;
     memset(&_pulses, 0, sizeof(_pulses));
-    (void)ir_nec_decode(&_pulses, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_decode(&_pulses, 0, NULL) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_encode_repeat_null_pulses) {
     uint16_t _count;
     memset(&_count, 0, sizeof(_count));
-    (void)ir_nec_encode_repeat(NULL, &_count);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode_repeat(NULL, &_count) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_encode_repeat_null_count) {
     ir_nec_pulse_t _pulses;
     memset(&_pulses, 0, sizeof(_pulses));
-    (void)ir_nec_encode_repeat(&_pulses, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode_repeat(&_pulses, NULL) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_is_repeat_null_pulses) {
@@ -70,15 +63,13 @@ TEST(test_ir_nec_is_repeat_null_pulses) {
 TEST(test_ir_nec_encode_extended_null_pulses) {
     uint16_t _count;
     memset(&_count, 0, sizeof(_count));
-    (void)ir_nec_encode_extended(0, 0, NULL, &_count);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode_extended(0, 0, NULL, &_count) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_encode_extended_null_count) {
     ir_nec_pulse_t _pulses;
     memset(&_pulses, 0, sizeof(_pulses));
-    (void)ir_nec_encode_extended(0, 0, &_pulses, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_encode_extended(0, 0, &_pulses, NULL) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_decode_extended_null_pulses) {
@@ -86,8 +77,7 @@ TEST(test_ir_nec_decode_extended_null_pulses) {
     memset(&_address, 0, sizeof(_address));
     uint8_t _command[64];
     memset(_command, 0, sizeof(_command));
-    (void)ir_nec_decode_extended(NULL, 0, &_address, _command);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_decode_extended(NULL, 1, &_address, _command) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_decode_extended_null_address) {
@@ -95,8 +85,7 @@ TEST(test_ir_nec_decode_extended_null_address) {
     memset(&_pulses, 0, sizeof(_pulses));
     uint8_t _command[64];
     memset(_command, 0, sizeof(_command));
-    (void)ir_nec_decode_extended(&_pulses, 0, NULL, _command);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_decode_extended(&_pulses, 0, NULL, _command) != IR_NEC_OK);
 }
 
 TEST(test_ir_nec_decode_extended_null_command) {
@@ -104,8 +93,7 @@ TEST(test_ir_nec_decode_extended_null_command) {
     memset(&_pulses, 0, sizeof(_pulses));
     uint16_t _address;
     memset(&_address, 0, sizeof(_address));
-    (void)ir_nec_decode_extended(&_pulses, 0, &_address, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ir_nec_decode_extended(&_pulses, 0, &_address, NULL) != IR_NEC_OK);
 }
 
 TEST_MAIN("null_param_ir_nec") {

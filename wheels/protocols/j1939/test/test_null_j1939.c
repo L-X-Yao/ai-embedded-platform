@@ -8,22 +8,19 @@
 #include <stddef.h>
 
 TEST(test_j1939_decode_id_null_out) {
-    (void)j1939_decode_id(0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(j1939_decode_id(0, NULL) != J1939_OK);
 }
 
 TEST(test_j1939_encode_id_null_fields) {
     uint32_t _can_id;
     memset(&_can_id, 0, sizeof(_can_id));
-    (void)j1939_encode_id(NULL, &_can_id);
-    /* must not crash */
+    ASSERT_TRUE(j1939_encode_id(NULL, &_can_id) != J1939_OK);
 }
 
 TEST(test_j1939_encode_id_null_can_id) {
     j1939_id_t _fields;
     memset(&_fields, 0, sizeof(_fields));
-    (void)j1939_encode_id(&_fields, NULL);
-    /* must not crash */
+    ASSERT_TRUE(j1939_encode_id(&_fields, NULL) != J1939_OK);
 }
 
 TEST_MAIN("null_param_j1939") {

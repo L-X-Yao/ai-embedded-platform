@@ -10,20 +10,17 @@
 TEST(test_moving_window_init_null_ctx) {
     float _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)moving_window_init(NULL, &_buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(moving_window_init(NULL, &_buf, 0) != MOVING_WINDOW_OK);
 }
 
 TEST(test_moving_window_init_null_buf) {
     moving_window_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)moving_window_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(moving_window_init(&_ctx, NULL, 0) != MOVING_WINDOW_OK);
 }
 
 TEST(test_moving_window_push_null_ctx) {
-    (void)moving_window_push(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(moving_window_push(NULL, 0.0f) != MOVING_WINDOW_OK);
 }
 
 TEST(test_moving_window_get_mean_null_ctx) {
@@ -57,8 +54,7 @@ TEST(test_moving_window_is_full_null_ctx) {
 }
 
 TEST(test_moving_window_reset_null_ctx) {
-    (void)moving_window_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(moving_window_reset(NULL) != MOVING_WINDOW_OK);
 }
 
 TEST_MAIN("null_param_moving_window") {

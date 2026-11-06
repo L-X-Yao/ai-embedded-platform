@@ -10,49 +10,41 @@
 TEST(test_st7735_init_null_dev) {
     st7735_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)st7735_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(st7735_init(NULL, &_spi) != ST7735_OK);
 }
 
 TEST(test_st7735_init_null_spi) {
     st7735_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)st7735_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(st7735_init(&_dev, NULL) != ST7735_OK);
 }
 
 TEST(test_st7735_set_window_null_dev) {
-    (void)st7735_set_window(NULL, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_set_window(NULL, 0, 0, 0, 0) != ST7735_OK);
 }
 
 TEST(test_st7735_write_pixels_null_dev) {
     uint16_t _pixels;
     memset(&_pixels, 0, sizeof(_pixels));
-    (void)st7735_write_pixels(NULL, &_pixels, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_write_pixels(NULL, &_pixels, 0) != ST7735_OK);
 }
 
 TEST(test_st7735_write_pixels_null_pixels) {
     st7735_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)st7735_write_pixels(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_write_pixels(&_dev, NULL, 1) != ST7735_OK);
 }
 
 TEST(test_st7735_fill_rect_null_dev) {
-    (void)st7735_fill_rect(NULL, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_fill_rect(NULL, 0, 0, 0, 0, 0) != ST7735_OK);
 }
 
 TEST(test_st7735_fill_screen_null_dev) {
-    (void)st7735_fill_screen(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_fill_screen(NULL, 0) != ST7735_OK);
 }
 
 TEST(test_st7735_draw_pixel_null_dev) {
-    (void)st7735_draw_pixel(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(st7735_draw_pixel(NULL, 0, 0, 0) != ST7735_OK);
 }
 
 TEST_MAIN("null_param_st7735") {

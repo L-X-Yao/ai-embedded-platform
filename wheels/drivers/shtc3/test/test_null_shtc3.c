@@ -10,44 +10,37 @@
 TEST(test_shtc3_init_null_dev) {
     shtc3_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)shtc3_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_init(NULL, &_i2c) != SHTC3_OK);
 }
 
 TEST(test_shtc3_init_null_i2c) {
     shtc3_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)shtc3_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_init(&_dev, NULL) != SHTC3_OK);
 }
 
 TEST(test_shtc3_read_null_dev) {
     shtc3_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)shtc3_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_read(NULL, &_out) != SHTC3_OK);
 }
 
 TEST(test_shtc3_read_null_out) {
     shtc3_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)shtc3_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_read(&_dev, NULL) != SHTC3_OK);
 }
 
 TEST(test_shtc3_sleep_null_dev) {
-    (void)shtc3_sleep(NULL);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_sleep(NULL) != SHTC3_OK);
 }
 
 TEST(test_shtc3_wakeup_null_dev) {
-    (void)shtc3_wakeup(NULL);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_wakeup(NULL) != SHTC3_OK);
 }
 
 TEST(test_shtc3_reset_null_dev) {
-    (void)shtc3_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(shtc3_reset(NULL) != SHTC3_OK);
 }
 
 TEST(test_shtc3_crc8_null_data) {

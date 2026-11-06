@@ -10,44 +10,37 @@
 TEST(test_buzzer_init_null_dev) {
     buzzer_pwm_t _pwm;
     memset(&_pwm, 0, sizeof(_pwm));
-    (void)buzzer_init(NULL, &_pwm);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_init(NULL, &_pwm) != BUZZER_OK);
 }
 
 TEST(test_buzzer_init_null_pwm) {
     buzzer_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)buzzer_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_init(&_dev, NULL) != BUZZER_OK);
 }
 
 TEST(test_buzzer_tone_null_dev) {
-    (void)buzzer_tone(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_tone(NULL, 0, 0) != BUZZER_OK);
 }
 
 TEST(test_buzzer_off_null_dev) {
-    (void)buzzer_off(NULL);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_off(NULL) != BUZZER_OK);
 }
 
 TEST(test_buzzer_play_null_dev) {
     buzzer_note_t _melody;
     memset(&_melody, 0, sizeof(_melody));
-    (void)buzzer_play(NULL, &_melody, 0);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_play(NULL, &_melody, 0) != BUZZER_OK);
 }
 
 TEST(test_buzzer_play_null_melody) {
     buzzer_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)buzzer_play(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_play(&_dev, NULL, 1) != BUZZER_OK);
 }
 
 TEST(test_buzzer_beep_null_dev) {
-    (void)buzzer_beep(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(buzzer_beep(NULL, 1, 0, 0) != BUZZER_OK);
 }
 
 TEST_MAIN("null_param_buzzer") {

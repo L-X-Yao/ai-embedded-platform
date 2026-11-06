@@ -10,44 +10,37 @@
 TEST(test_bme680_init_null_dev) {
     bme680_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bme680_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(bme680_init(NULL, &_i2c, 0) != BME680_OK);
 }
 
 TEST(test_bme680_init_null_i2c) {
     bme680_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bme680_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bme680_init(&_dev, NULL, 0) != BME680_OK);
 }
 
 TEST(test_bme680_read_null_dev) {
     bme680_data_t _data;
     memset(&_data, 0, sizeof(_data));
-    (void)bme680_read(NULL, &_data);
-    /* must not crash */
+    ASSERT_TRUE(bme680_read(NULL, &_data) != BME680_OK);
 }
 
 TEST(test_bme680_read_null_data) {
     bme680_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bme680_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bme680_read(&_dev, NULL) != BME680_OK);
 }
 
 TEST(test_bme680_set_oversampling_null_dev) {
-    (void)bme680_set_oversampling(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(bme680_set_oversampling(NULL, 0, 0, 0) != BME680_OK);
 }
 
 TEST(test_bme680_set_gas_heater_null_dev) {
-    (void)bme680_set_gas_heater(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(bme680_set_gas_heater(NULL, 0, 0) != BME680_OK);
 }
 
 TEST(test_bme680_reset_null_dev) {
-    (void)bme680_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bme680_reset(NULL) != BME680_OK);
 }
 
 TEST_MAIN("null_param_bme680") {

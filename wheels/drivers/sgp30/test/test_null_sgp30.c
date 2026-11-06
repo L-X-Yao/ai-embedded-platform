@@ -10,76 +10,65 @@
 TEST(test_sgp30_init_null_dev) {
     sgp30_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)sgp30_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_init(NULL, &_i2c) != SGP30_OK);
 }
 
 TEST(test_sgp30_init_null_i2c) {
     sgp30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp30_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_init(&_dev, NULL) != SGP30_OK);
 }
 
 TEST(test_sgp30_measure_iaq_null_dev) {
     sgp30_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sgp30_measure_iaq(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_measure_iaq(NULL, &_out) != SGP30_OK);
 }
 
 TEST(test_sgp30_measure_iaq_null_out) {
     sgp30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp30_measure_iaq(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_measure_iaq(&_dev, NULL) != SGP30_OK);
 }
 
 TEST(test_sgp30_get_baseline_null_dev) {
     sgp30_baseline_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sgp30_get_baseline(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_get_baseline(NULL, &_out) != SGP30_OK);
 }
 
 TEST(test_sgp30_get_baseline_null_out) {
     sgp30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp30_get_baseline(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_get_baseline(&_dev, NULL) != SGP30_OK);
 }
 
 TEST(test_sgp30_set_baseline_null_dev) {
     sgp30_baseline_t _bl;
     memset(&_bl, 0, sizeof(_bl));
-    (void)sgp30_set_baseline(NULL, &_bl);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_set_baseline(NULL, &_bl) != SGP30_OK);
 }
 
 TEST(test_sgp30_set_baseline_null_bl) {
     sgp30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp30_set_baseline(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_set_baseline(&_dev, NULL) != SGP30_OK);
 }
 
 TEST(test_sgp30_get_serial_id_null_dev) {
     sgp30_serial_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sgp30_get_serial_id(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_get_serial_id(NULL, &_out) != SGP30_OK);
 }
 
 TEST(test_sgp30_get_serial_id_null_out) {
     sgp30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sgp30_get_serial_id(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_get_serial_id(&_dev, NULL) != SGP30_OK);
 }
 
 TEST(test_sgp30_set_humidity_null_dev) {
-    (void)sgp30_set_humidity(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(sgp30_set_humidity(NULL, 0) != SGP30_OK);
 }
 
 TEST(test_sgp30_crc8_null_data) {

@@ -12,8 +12,7 @@ TEST(test_base64_encode_null_data) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)base64_encode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(base64_encode(NULL, 1, _out, &_out_len) != BASE64_OK);
 }
 
 TEST(test_base64_encode_null_out) {
@@ -21,8 +20,7 @@ TEST(test_base64_encode_null_out) {
     memset(_data, 0, sizeof(_data));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)base64_encode(_data, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(base64_encode(_data, 0, NULL, &_out_len) != BASE64_OK);
 }
 
 TEST(test_base64_encode_null_out_len) {
@@ -30,8 +28,7 @@ TEST(test_base64_encode_null_out_len) {
     memset(_data, 0, sizeof(_data));
     char _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)base64_encode(_data, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(base64_encode(_data, 0, _out, NULL) != BASE64_OK);
 }
 
 TEST(test_base64_decode_null_b64) {
@@ -39,8 +36,7 @@ TEST(test_base64_decode_null_b64) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)base64_decode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(base64_decode(NULL, 1, _out, &_out_len) != BASE64_OK);
 }
 
 TEST(test_base64_decode_null_out) {
@@ -48,8 +44,7 @@ TEST(test_base64_decode_null_out) {
     memset(_b64, 0, sizeof(_b64));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)base64_decode(_b64, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(base64_decode(_b64, 0, NULL, &_out_len) != BASE64_OK);
 }
 
 TEST(test_base64_decode_null_out_len) {
@@ -57,8 +52,7 @@ TEST(test_base64_decode_null_out_len) {
     memset(_b64, 0, sizeof(_b64));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)base64_decode(_b64, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(base64_decode(_b64, 0, _out, NULL) != BASE64_OK);
 }
 
 TEST_MAIN("null_param_base64") {

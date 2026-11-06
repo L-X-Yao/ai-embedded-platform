@@ -8,53 +8,46 @@
 #include <stddef.h>
 
 TEST(test_telemetry_init_null_t) {
-    (void)telemetry_init(NULL, NULL, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_init(NULL, NULL, NULL, 0) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_init_null_ctx) {
     telemetry_t _t;
     memset(&_t, 0, sizeof(_t));
     (void)telemetry_init(&_t, NULL, NULL, 0);
-    /* must not crash */
+    /* must not crash: ctx goes to the send callback unread */
 }
 
 TEST(test_telemetry_register_null_t) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)telemetry_register(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_register(NULL, _name) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_register_null_name) {
     telemetry_t _t;
     memset(&_t, 0, sizeof(_t));
-    (void)telemetry_register(&_t, NULL);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_register(&_t, NULL) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_update_null_t) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)telemetry_update(NULL, _name, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_update(NULL, _name, 0.0f) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_update_null_name) {
     telemetry_t _t;
     memset(&_t, 0, sizeof(_t));
-    (void)telemetry_update(&_t, NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_update(&_t, NULL, 0.0f) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_update_by_index_null_t) {
-    (void)telemetry_update_by_index(NULL, 0, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_update_by_index(NULL, 0, 0.0f) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_publish_null_t) {
-    (void)telemetry_publish(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(telemetry_publish(NULL, 0) != TELEMETRY_OK);
 }
 
 TEST(test_telemetry_get_send_count_null_t) {

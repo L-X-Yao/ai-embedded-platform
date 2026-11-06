@@ -10,57 +10,49 @@
 TEST(test_mcp3008_init_null_dev) {
     mcp3008_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)mcp3008_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_init(NULL, &_spi) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_init_null_spi) {
     mcp3008_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp3008_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_init(&_dev, NULL) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_single_null_dev) {
     uint16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)mcp3008_read_single(NULL, 0, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_single(NULL, 0, &_raw) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_single_null_raw) {
     mcp3008_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp3008_read_single(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_single(&_dev, 0, NULL) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_diff_null_dev) {
     uint16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)mcp3008_read_diff(NULL, 0, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_diff(NULL, 0, &_raw) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_diff_null_raw) {
     mcp3008_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp3008_read_diff(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_diff(&_dev, 0, NULL) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_voltage_null_dev) {
     float _voltage;
     memset(&_voltage, 0, sizeof(_voltage));
-    (void)mcp3008_read_voltage(NULL, 0, 0.0f, &_voltage);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_voltage(NULL, 0, 0.0f, &_voltage) != MCP3008_OK);
 }
 
 TEST(test_mcp3008_read_voltage_null_voltage) {
     mcp3008_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp3008_read_voltage(&_dev, 0, 0.0f, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp3008_read_voltage(&_dev, 0, 0.0f, NULL) != MCP3008_OK);
 }
 
 TEST_MAIN("null_param_mcp3008") {

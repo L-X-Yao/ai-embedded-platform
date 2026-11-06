@@ -8,44 +8,40 @@
 #include <stddef.h>
 
 TEST(test_event_bus_init_null_bus) {
-    (void)event_bus_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_bus_init(NULL) != EVENT_BUS_OK);
 }
 
 TEST(test_event_bus_subscribe_null_bus) {
-    (void)event_bus_subscribe(NULL, 0, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_bus_subscribe(NULL, 0, NULL, NULL) != EVENT_BUS_OK);
 }
 
 TEST(test_event_bus_subscribe_null_ctx) {
     event_bus_t _bus;
     memset(&_bus, 0, sizeof(_bus));
     (void)event_bus_subscribe(&_bus, 0, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_event_bus_unsubscribe_null_bus) {
-    (void)event_bus_unsubscribe(NULL, 0, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_bus_unsubscribe(NULL, 0, NULL, NULL) != EVENT_BUS_OK);
 }
 
 TEST(test_event_bus_unsubscribe_null_ctx) {
     event_bus_t _bus;
     memset(&_bus, 0, sizeof(_bus));
     (void)event_bus_unsubscribe(&_bus, 0, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx is only compared */
 }
 
 TEST(test_event_bus_publish_null_bus) {
-    (void)event_bus_publish(NULL, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(event_bus_publish(NULL, 0, NULL, 0) != EVENT_BUS_OK);
 }
 
 TEST(test_event_bus_publish_null_data) {
     event_bus_t _bus;
     memset(&_bus, 0, sizeof(_bus));
     (void)event_bus_publish(&_bus, 0, NULL, 0);
-    /* must not crash */
+    /* must not crash: the payload is passed on unread */
 }
 
 TEST_MAIN("null_param_event_bus") {

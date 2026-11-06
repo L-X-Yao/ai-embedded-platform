@@ -10,29 +10,25 @@
 TEST(test_w5500_init_null_dev) {
     w5500_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)w5500_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(w5500_init(NULL, &_spi) != W5500_OK);
 }
 
 TEST(test_w5500_init_null_spi) {
     w5500_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)w5500_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(w5500_init(&_dev, NULL) != W5500_OK);
 }
 
 TEST(test_w5500_set_mac_null_dev) {
     uint8_t _mac[64];
     memset(_mac, 0, sizeof(_mac));
-    (void)w5500_set_mac(NULL, _mac);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_mac(NULL, _mac) != W5500_OK);
 }
 
 TEST(test_w5500_set_mac_null_mac) {
     w5500_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)w5500_set_mac(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_mac(&_dev, NULL) != W5500_OK);
 }
 
 TEST(test_w5500_set_ip_null_dev) {
@@ -42,8 +38,7 @@ TEST(test_w5500_set_ip_null_dev) {
     memset(_subnet, 0, sizeof(_subnet));
     uint8_t _gateway[64];
     memset(_gateway, 0, sizeof(_gateway));
-    (void)w5500_set_ip(NULL, _ip, _subnet, _gateway);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_ip(NULL, _ip, _subnet, _gateway) != W5500_OK);
 }
 
 TEST(test_w5500_set_ip_null_ip) {
@@ -53,8 +48,7 @@ TEST(test_w5500_set_ip_null_ip) {
     memset(_subnet, 0, sizeof(_subnet));
     uint8_t _gateway[64];
     memset(_gateway, 0, sizeof(_gateway));
-    (void)w5500_set_ip(&_dev, NULL, _subnet, _gateway);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_ip(&_dev, NULL, _subnet, _gateway) != W5500_OK);
 }
 
 TEST(test_w5500_set_ip_null_subnet) {
@@ -64,8 +58,7 @@ TEST(test_w5500_set_ip_null_subnet) {
     memset(_ip, 0, sizeof(_ip));
     uint8_t _gateway[64];
     memset(_gateway, 0, sizeof(_gateway));
-    (void)w5500_set_ip(&_dev, _ip, NULL, _gateway);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_ip(&_dev, _ip, NULL, _gateway) != W5500_OK);
 }
 
 TEST(test_w5500_set_ip_null_gateway) {
@@ -75,32 +68,27 @@ TEST(test_w5500_set_ip_null_gateway) {
     memset(_ip, 0, sizeof(_ip));
     uint8_t _subnet[64];
     memset(_subnet, 0, sizeof(_subnet));
-    (void)w5500_set_ip(&_dev, _ip, _subnet, NULL);
-    /* must not crash */
+    ASSERT_TRUE(w5500_set_ip(&_dev, _ip, _subnet, NULL) != W5500_OK);
 }
 
 TEST(test_w5500_socket_open_null_dev) {
-    (void)w5500_socket_open(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_open(NULL, 0, 0, 0) != W5500_OK);
 }
 
 TEST(test_w5500_socket_close_null_dev) {
-    (void)w5500_socket_close(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_close(NULL, 0) != W5500_OK);
 }
 
 TEST(test_w5500_socket_send_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)w5500_socket_send(NULL, 0, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_send(NULL, 0, _data, 0) != W5500_OK);
 }
 
 TEST(test_w5500_socket_send_null_data) {
     w5500_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)w5500_socket_send(&_dev, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_send(&_dev, 0, NULL, 1) != W5500_OK);
 }
 
 TEST(test_w5500_socket_recv_null_dev) {
@@ -108,8 +96,7 @@ TEST(test_w5500_socket_recv_null_dev) {
     memset(_buf, 0, sizeof(_buf));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)w5500_socket_recv(NULL, 0, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_recv(NULL, 0, _buf, 0, &_out_len) != W5500_OK);
 }
 
 TEST(test_w5500_socket_recv_null_buf) {
@@ -117,8 +104,7 @@ TEST(test_w5500_socket_recv_null_buf) {
     memset(&_dev, 0, sizeof(_dev));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)w5500_socket_recv(&_dev, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_recv(&_dev, 0, NULL, 1, &_out_len) != W5500_OK);
 }
 
 TEST(test_w5500_socket_recv_null_out_len) {
@@ -126,22 +112,19 @@ TEST(test_w5500_socket_recv_null_out_len) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)w5500_socket_recv(&_dev, 0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_recv(&_dev, 0, _buf, 0, NULL) != W5500_OK);
 }
 
 TEST(test_w5500_socket_status_null_dev) {
     uint8_t _status[64];
     memset(_status, 0, sizeof(_status));
-    (void)w5500_socket_status(NULL, 0, _status);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_status(NULL, 0, _status) != W5500_OK);
 }
 
 TEST(test_w5500_socket_status_null_status) {
     w5500_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)w5500_socket_status(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(w5500_socket_status(&_dev, 0, NULL) != W5500_OK);
 }
 
 TEST(test_w5500_read_version_null_dev) {

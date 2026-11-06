@@ -10,67 +10,57 @@
 TEST(test_lps22hb_init_null_dev) {
     lps22hb_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lps22hb_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_init(NULL, &_i2c) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_init_null_i2c) {
     lps22hb_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lps22hb_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_init(&_dev, NULL) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_null_dev) {
     lps22hb_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lps22hb_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read(NULL, &_out) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_null_out) {
     lps22hb_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lps22hb_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read(&_dev, NULL) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_set_odr_null_dev) {
-    (void)lps22hb_set_odr(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_set_odr(NULL, 0) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_one_shot_trigger_null_dev) {
-    (void)lps22hb_one_shot_trigger(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_one_shot_trigger(NULL) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_raw_pressure_null_dev) {
     int32_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)lps22hb_read_raw_pressure(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read_raw_pressure(NULL, &_raw) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_raw_pressure_null_raw) {
     lps22hb_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lps22hb_read_raw_pressure(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read_raw_pressure(&_dev, NULL) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_raw_temperature_null_dev) {
     int16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)lps22hb_read_raw_temperature(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read_raw_temperature(NULL, &_raw) != LPS22HB_OK);
 }
 
 TEST(test_lps22hb_read_raw_temperature_null_raw) {
     lps22hb_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lps22hb_read_raw_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lps22hb_read_raw_temperature(&_dev, NULL) != LPS22HB_OK);
 }
 
 TEST_MAIN("null_param_lps22hb") {

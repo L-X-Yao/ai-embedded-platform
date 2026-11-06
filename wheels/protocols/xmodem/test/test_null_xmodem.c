@@ -10,25 +10,21 @@
 TEST(test_xmodem_init_null_xm) {
     xmodem_io_t _io;
     memset(&_io, 0, sizeof(_io));
-    (void)xmodem_init(NULL, &_io, false);
-    /* must not crash */
+    ASSERT_TRUE(xmodem_init(NULL, &_io, false) != XMODEM_OK);
 }
 
 TEST(test_xmodem_init_null_io) {
     xmodem_t _xm;
     memset(&_xm, 0, sizeof(_xm));
-    (void)xmodem_init(&_xm, NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(xmodem_init(&_xm, NULL, false) != XMODEM_OK);
 }
 
 TEST(test_xmodem_start_null_xm) {
-    (void)xmodem_start(NULL);
-    /* must not crash */
+    ASSERT_TRUE(xmodem_start(NULL) != XMODEM_OK);
 }
 
 TEST(test_xmodem_feed_null_xm) {
-    (void)xmodem_feed(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(xmodem_feed(NULL, 0) != XMODEM_OK);
 }
 
 TEST(test_xmodem_get_state_null_xm) {

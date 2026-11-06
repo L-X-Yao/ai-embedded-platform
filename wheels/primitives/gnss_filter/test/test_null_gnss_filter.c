@@ -10,34 +10,29 @@
 TEST(test_gnss_filter_init_null_flt) {
     gnss_filter_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)gnss_filter_init(NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(gnss_filter_init(NULL, &_cfg) != GNSS_FILTER_OK);
 }
 
 TEST(test_gnss_filter_init_null_cfg) {
     gnss_filter_t _flt;
     memset(&_flt, 0, sizeof(_flt));
-    (void)gnss_filter_init(&_flt, NULL);
-    /* must not crash */
+    ASSERT_TRUE(gnss_filter_init(&_flt, NULL) != GNSS_FILTER_OK);
 }
 
 TEST(test_gnss_filter_update_null_flt) {
     gnss_filter_input_t _input;
     memset(&_input, 0, sizeof(_input));
-    (void)gnss_filter_update(NULL, &_input, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(gnss_filter_update(NULL, &_input, 0, 0) != GNSS_FILTER_OK);
 }
 
 TEST(test_gnss_filter_update_null_input) {
     gnss_filter_t _flt;
     memset(&_flt, 0, sizeof(_flt));
-    (void)gnss_filter_update(&_flt, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(gnss_filter_update(&_flt, NULL, 0, 0) != GNSS_FILTER_OK);
 }
 
 TEST(test_gnss_filter_reset_null_flt) {
-    (void)gnss_filter_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(gnss_filter_reset(NULL) != GNSS_FILTER_OK);
 }
 
 TEST(test_gnss_filter_is_ready_null_flt) {

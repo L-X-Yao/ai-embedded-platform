@@ -8,34 +8,30 @@
 #include <stddef.h>
 
 TEST(test_json_parser_init_null_p) {
-    (void)json_parser_init(NULL, NULL, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(json_parser_init(NULL, NULL, NULL, 0) != JSON_PARSER_OK);
 }
 
 TEST(test_json_parser_init_null_ctx) {
     json_parser_t _p;
     memset(&_p, 0, sizeof(_p));
     (void)json_parser_init(&_p, NULL, NULL, 0);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_json_parser_feed_null_p) {
     char _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)json_parser_feed(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(json_parser_feed(NULL, _data, 0) != JSON_PARSER_OK);
 }
 
 TEST(test_json_parser_feed_null_data) {
     json_parser_t _p;
     memset(&_p, 0, sizeof(_p));
-    (void)json_parser_feed(&_p, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(json_parser_feed(&_p, NULL, 1) != JSON_PARSER_OK);
 }
 
 TEST(test_json_parser_finish_null_p) {
-    (void)json_parser_finish(NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_parser_finish(NULL) != JSON_PARSER_OK);
 }
 
 TEST(test_json_parser_reset_null_p) {

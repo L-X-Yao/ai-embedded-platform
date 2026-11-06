@@ -8,50 +8,43 @@
 #include <stddef.h>
 
 TEST(test_ring_log_init_null_rl) {
-    (void)ring_log_init(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_init(NULL, 0) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_write_null_rl) {
     char _fmt[64];
     memset(_fmt, 0, sizeof(_fmt));
-    (void)ring_log_write(NULL, 0, 0, _fmt);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_write(NULL, 0, 0, _fmt) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_write_null_fmt) {
     ring_log_t _rl;
     memset(&_rl, 0, sizeof(_rl));
-    (void)ring_log_write(&_rl, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_write(&_rl, 0, 0, NULL) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_read_null_rl) {
     ring_log_entry_t _entry;
     memset(&_entry, 0, sizeof(_entry));
-    (void)ring_log_read(NULL, 0, &_entry);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_read(NULL, 0, &_entry) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_read_null_entry) {
     ring_log_t _rl;
     memset(&_rl, 0, sizeof(_rl));
-    (void)ring_log_read(&_rl, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_read(&_rl, 0, NULL) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_read_oldest_null_rl) {
     ring_log_entry_t _entry;
     memset(&_entry, 0, sizeof(_entry));
-    (void)ring_log_read_oldest(NULL, 0, &_entry);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_read_oldest(NULL, 0, &_entry) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_read_oldest_null_entry) {
     ring_log_t _rl;
     memset(&_rl, 0, sizeof(_rl));
-    (void)ring_log_read_oldest(&_rl, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_read_oldest(&_rl, 0, NULL) != RING_LOG_OK);
 }
 
 TEST(test_ring_log_count_null_rl) {
@@ -75,8 +68,7 @@ TEST(test_ring_log_clear_null_rl) {
 }
 
 TEST(test_ring_log_set_level_null_rl) {
-    (void)ring_log_set_level(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ring_log_set_level(NULL, 0) != RING_LOG_OK);
 }
 
 TEST_MAIN("null_param_ring_log") {

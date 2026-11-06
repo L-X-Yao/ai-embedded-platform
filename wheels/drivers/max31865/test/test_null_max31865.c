@@ -12,8 +12,7 @@ TEST(test_max31865_init_null_dev) {
     memset(&_spi, 0, sizeof(_spi));
     max31865_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)max31865_init(NULL, &_spi, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(max31865_init(NULL, &_spi, &_cfg) != MAX31865_OK);
 }
 
 TEST(test_max31865_init_null_spi) {
@@ -21,8 +20,7 @@ TEST(test_max31865_init_null_spi) {
     memset(&_dev, 0, sizeof(_dev));
     max31865_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)max31865_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(max31865_init(&_dev, NULL, &_cfg) != MAX31865_OK);
 }
 
 TEST(test_max31865_init_null_cfg) {
@@ -30,55 +28,47 @@ TEST(test_max31865_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     max31865_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)max31865_init(&_dev, &_spi, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31865_init(&_dev, &_spi, NULL) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_temperature_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)max31865_read_temperature(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_temperature(NULL, &_temp_c) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_temperature_null_temp_c) {
     max31865_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max31865_read_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_temperature(&_dev, NULL) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_rtd_raw_null_dev) {
     uint16_t _rtd_raw;
     memset(&_rtd_raw, 0, sizeof(_rtd_raw));
-    (void)max31865_read_rtd_raw(NULL, &_rtd_raw);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_rtd_raw(NULL, &_rtd_raw) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_rtd_raw_null_rtd_raw) {
     max31865_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max31865_read_rtd_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_rtd_raw(&_dev, NULL) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_fault_null_dev) {
     uint8_t _fault[64];
     memset(_fault, 0, sizeof(_fault));
-    (void)max31865_read_fault(NULL, _fault);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_fault(NULL, _fault) != MAX31865_OK);
 }
 
 TEST(test_max31865_read_fault_null_fault) {
     max31865_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max31865_read_fault(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31865_read_fault(&_dev, NULL) != MAX31865_OK);
 }
 
 TEST(test_max31865_clear_fault_null_dev) {
-    (void)max31865_clear_fault(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max31865_clear_fault(NULL) != MAX31865_OK);
 }
 
 TEST_MAIN("null_param_max31865") {

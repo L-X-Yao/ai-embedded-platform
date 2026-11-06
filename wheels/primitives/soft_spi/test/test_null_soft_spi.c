@@ -12,8 +12,7 @@ TEST(test_soft_spi_init_null_dev) {
     memset(&_gpio, 0, sizeof(_gpio));
     soft_spi_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)soft_spi_init(NULL, &_gpio, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_init(NULL, &_gpio, &_cfg) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_init_null_gpio) {
@@ -21,8 +20,7 @@ TEST(test_soft_spi_init_null_gpio) {
     memset(&_dev, 0, sizeof(_dev));
     soft_spi_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)soft_spi_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_init(&_dev, NULL, &_cfg) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_init_null_cfg) {
@@ -30,8 +28,7 @@ TEST(test_soft_spi_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     soft_spi_gpio_t _gpio;
     memset(&_gpio, 0, sizeof(_gpio));
-    (void)soft_spi_init(&_dev, &_gpio, NULL);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_init(&_dev, &_gpio, NULL) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_xfer_null_dev) {
@@ -42,29 +39,25 @@ TEST(test_soft_spi_xfer_null_dev) {
 TEST(test_soft_spi_write_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)soft_spi_write(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_write(NULL, _data, 0) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_write_null_data) {
     soft_spi_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)soft_spi_write(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_write(&_dev, NULL, 1) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_read_null_dev) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)soft_spi_read(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_read(NULL, _buf, 0) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_read_null_buf) {
     soft_spi_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)soft_spi_read(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_read(&_dev, NULL, 1) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_transfer_null_dev) {
@@ -72,8 +65,7 @@ TEST(test_soft_spi_transfer_null_dev) {
     memset(_tx, 0, sizeof(_tx));
     uint8_t _rx[64];
     memset(_rx, 0, sizeof(_rx));
-    (void)soft_spi_transfer(NULL, _tx, _rx, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_transfer(NULL, _tx, _rx, 0) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_transfer_null_tx) {
@@ -81,8 +73,7 @@ TEST(test_soft_spi_transfer_null_tx) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _rx[64];
     memset(_rx, 0, sizeof(_rx));
-    (void)soft_spi_transfer(&_dev, NULL, _rx, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_transfer(&_dev, NULL, _rx, 0) != SOFT_SPI_OK);
 }
 
 TEST(test_soft_spi_transfer_null_rx) {
@@ -90,8 +81,7 @@ TEST(test_soft_spi_transfer_null_rx) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _tx[64];
     memset(_tx, 0, sizeof(_tx));
-    (void)soft_spi_transfer(&_dev, _tx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_spi_transfer(&_dev, _tx, NULL, 1) != SOFT_SPI_OK);
 }
 
 TEST_MAIN("null_param_soft_spi") {

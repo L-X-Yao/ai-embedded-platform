@@ -8,22 +8,19 @@
 #include <stddef.h>
 
 TEST(test_scheduler_init_null_s) {
-    (void)scheduler_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_init(NULL) != SCHED_OK);
 }
 
 TEST(test_scheduler_add_null_s) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)scheduler_add(NULL, _name, NULL, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_add(NULL, _name, NULL, NULL, 0) != SCHED_OK);
 }
 
 TEST(test_scheduler_add_null_name) {
     scheduler_t _s;
     memset(&_s, 0, sizeof(_s));
-    (void)scheduler_add(&_s, NULL, NULL, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_add(&_s, NULL, NULL, NULL, 0) != SCHED_OK);
 }
 
 TEST(test_scheduler_add_null_ctx) {
@@ -32,7 +29,7 @@ TEST(test_scheduler_add_null_ctx) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
     (void)scheduler_add(&_s, _name, NULL, NULL, 0);
-    /* must not crash */
+    /* must not crash: ctx goes to the task unread */
 }
 
 TEST(test_scheduler_tick_null_s) {
@@ -48,43 +45,37 @@ TEST(test_scheduler_run_null_s) {
 TEST(test_scheduler_enable_null_s) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)scheduler_enable(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_enable(NULL, _name) != SCHED_OK);
 }
 
 TEST(test_scheduler_enable_null_name) {
     scheduler_t _s;
     memset(&_s, 0, sizeof(_s));
-    (void)scheduler_enable(&_s, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_enable(&_s, NULL) != SCHED_OK);
 }
 
 TEST(test_scheduler_disable_null_s) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)scheduler_disable(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_disable(NULL, _name) != SCHED_OK);
 }
 
 TEST(test_scheduler_disable_null_name) {
     scheduler_t _s;
     memset(&_s, 0, sizeof(_s));
-    (void)scheduler_disable(&_s, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_disable(&_s, NULL) != SCHED_OK);
 }
 
 TEST(test_scheduler_remove_null_s) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)scheduler_remove(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_remove(NULL, _name) != SCHED_OK);
 }
 
 TEST(test_scheduler_remove_null_name) {
     scheduler_t _s;
     memset(&_s, 0, sizeof(_s));
-    (void)scheduler_remove(&_s, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scheduler_remove(&_s, NULL) != SCHED_OK);
 }
 
 TEST(test_scheduler_count_null_s) {

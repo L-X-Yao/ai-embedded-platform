@@ -12,8 +12,7 @@ TEST(test_sht30_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     sht30_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)sht30_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(sht30_init(NULL, &_i2c, &_cfg) != SHT30_OK);
 }
 
 TEST(test_sht30_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_sht30_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     sht30_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)sht30_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(sht30_init(&_dev, NULL, &_cfg) != SHT30_OK);
 }
 
 TEST(test_sht30_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_sht30_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     sht30_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)sht30_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht30_init(&_dev, &_i2c, NULL) != SHT30_OK);
 }
 
 TEST(test_sht30_read_null_dev) {
     sht30_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sht30_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sht30_read(NULL, &_out) != SHT30_OK);
 }
 
 TEST(test_sht30_read_null_out) {
     sht30_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht30_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht30_read(&_dev, NULL) != SHT30_OK);
 }
 
 TEST(test_sht30_reset_null_dev) {
-    (void)sht30_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht30_reset(NULL) != SHT30_OK);
 }
 
 TEST(test_sht30_crc8_null_data) {

@@ -12,8 +12,7 @@ TEST(test_hmc5883l_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     hmc5883l_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)hmc5883l_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_init(NULL, &_i2c, &_cfg) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_hmc5883l_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     hmc5883l_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)hmc5883l_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_init(&_dev, NULL, &_cfg) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_init_null_cfg) {
@@ -30,41 +28,35 @@ TEST(test_hmc5883l_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     hmc5883l_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)hmc5883l_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_init(&_dev, &_i2c, NULL) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_read_raw_null_dev) {
     hmc5883l_raw_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)hmc5883l_read_raw(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_read_raw(NULL, &_raw) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_read_raw_null_raw) {
     hmc5883l_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hmc5883l_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_read_raw(&_dev, NULL) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_read_gauss_null_dev) {
     hmc5883l_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)hmc5883l_read_gauss(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_read_gauss(NULL, &_out) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_read_gauss_null_out) {
     hmc5883l_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hmc5883l_read_gauss(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_read_gauss(&_dev, NULL) != HMC5883L_OK);
 }
 
 TEST(test_hmc5883l_idle_null_dev) {
-    (void)hmc5883l_idle(NULL);
-    /* must not crash */
+    ASSERT_TRUE(hmc5883l_idle(NULL) != HMC5883L_OK);
 }
 
 TEST_MAIN("null_param_hmc5883l") {

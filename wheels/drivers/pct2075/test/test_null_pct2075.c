@@ -12,8 +12,7 @@ TEST(test_pct2075_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     pct2075_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)pct2075_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(pct2075_init(NULL, &_i2c, &_cfg) != PCT2075_OK);
 }
 
 TEST(test_pct2075_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_pct2075_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     pct2075_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)pct2075_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(pct2075_init(&_dev, NULL, &_cfg) != PCT2075_OK);
 }
 
 TEST(test_pct2075_init_null_cfg) {
@@ -30,22 +28,19 @@ TEST(test_pct2075_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     pct2075_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)pct2075_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pct2075_init(&_dev, &_i2c, NULL) != PCT2075_OK);
 }
 
 TEST(test_pct2075_read_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)pct2075_read(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(pct2075_read(NULL, &_temp_c) != PCT2075_OK);
 }
 
 TEST(test_pct2075_read_null_temp_c) {
     pct2075_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pct2075_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pct2075_read(&_dev, NULL) != PCT2075_OK);
 }
 
 TEST_MAIN("null_param_pct2075") {

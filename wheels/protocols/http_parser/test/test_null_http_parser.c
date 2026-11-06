@@ -10,45 +10,39 @@
 TEST(test_http_parser_parse_request_null_data) {
     http_parser_request_t _req;
     memset(&_req, 0, sizeof(_req));
-    (void)http_parser_parse_request(NULL, 0, &_req);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_parse_request(NULL, 1, &_req) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_parse_request_null_req) {
     char _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)http_parser_parse_request(_data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_parse_request(_data, 0, NULL) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_parse_response_null_data) {
     http_parser_response_t _resp;
     memset(&_resp, 0, sizeof(_resp));
-    (void)http_parser_parse_response(NULL, 0, &_resp);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_parse_response(NULL, 1, &_resp) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_parse_response_null_resp) {
     char _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)http_parser_parse_response(_data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_parse_response(_data, 0, NULL) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_find_header_null_headers) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
     const http_parser_header_t *_out = NULL;
-    (void)http_parser_find_header(NULL, 0, _name, &_out);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_find_header(NULL, 1, _name, &_out) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_find_header_null_name) {
     http_parser_header_t _headers;
     memset(&_headers, 0, sizeof(_headers));
     const http_parser_header_t *_out = NULL;
-    (void)http_parser_find_header(&_headers, 0, NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_find_header(&_headers, 0, NULL, &_out) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_find_header_null_out) {
@@ -56,8 +50,7 @@ TEST(test_http_parser_find_header_null_out) {
     memset(&_headers, 0, sizeof(_headers));
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)http_parser_find_header(&_headers, 0, _name, NULL);
-    /* must not crash */
+    ASSERT_TRUE(http_parser_find_header(&_headers, 0, _name, NULL) != HTTP_PARSER_OK);
 }
 
 TEST(test_http_parser_get_content_length_null_headers) {

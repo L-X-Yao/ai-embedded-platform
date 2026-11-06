@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_ewma_init_null_ctx) {
-    (void)ewma_init(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ewma_init(NULL, 0) != EWMA_OK);
 }
 
 TEST(test_ewma_feed_null_ctx) {
@@ -23,8 +22,7 @@ TEST(test_ewma_get_null_ctx) {
 }
 
 TEST(test_ewma_reset_null_ctx) {
-    (void)ewma_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ewma_reset(NULL) != EWMA_OK);
 }
 
 TEST_MAIN("null_param_ewma") {

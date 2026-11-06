@@ -12,8 +12,7 @@ TEST(test_lsm6dso_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     lsm6dso_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lsm6dso_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_init(NULL, &_i2c, &_cfg) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_lsm6dso_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     lsm6dso_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lsm6dso_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_init(&_dev, NULL, &_cfg) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_init_null_cfg) {
@@ -30,55 +28,47 @@ TEST(test_lsm6dso_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     lsm6dso_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lsm6dso_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_init(&_dev, &_i2c, NULL) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_accel_null_dev) {
     lsm6dso_accel_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lsm6dso_read_accel(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_accel(NULL, &_out) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_accel_null_out) {
     lsm6dso_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lsm6dso_read_accel(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_accel(&_dev, NULL) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_gyro_null_dev) {
     lsm6dso_gyro_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lsm6dso_read_gyro(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_gyro(NULL, &_out) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_gyro_null_out) {
     lsm6dso_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lsm6dso_read_gyro(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_gyro(&_dev, NULL) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_temp_null_dev) {
     float _temperature_c;
     memset(&_temperature_c, 0, sizeof(_temperature_c));
-    (void)lsm6dso_read_temp(NULL, &_temperature_c);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_temp(NULL, &_temperature_c) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_read_temp_null_temperature_c) {
     lsm6dso_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lsm6dso_read_temp(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_read_temp(&_dev, NULL) != LSM6DSO_OK);
 }
 
 TEST(test_lsm6dso_reset_null_dev) {
-    (void)lsm6dso_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lsm6dso_reset(NULL) != LSM6DSO_OK);
 }
 
 TEST_MAIN("null_param_lsm6dso") {

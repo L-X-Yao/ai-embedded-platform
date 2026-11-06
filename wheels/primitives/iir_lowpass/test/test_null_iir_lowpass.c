@@ -10,15 +10,13 @@
 TEST(test_iir_lowpass_init_null_f) {
     iir_lowpass_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)iir_lowpass_init(NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(iir_lowpass_init(NULL, &_cfg) != IIR_LOWPASS_OK);
 }
 
 TEST(test_iir_lowpass_init_null_cfg) {
     iir_lowpass_t _f;
     memset(&_f, 0, sizeof(_f));
-    (void)iir_lowpass_init(&_f, NULL);
-    /* must not crash */
+    ASSERT_TRUE(iir_lowpass_init(&_f, NULL) != IIR_LOWPASS_OK);
 }
 
 TEST(test_iir_lowpass_feed_null_f) {
@@ -37,8 +35,7 @@ TEST(test_iir_lowpass_reset_null_f) {
 }
 
 TEST(test_iir_lowpass_set_alpha_null_f) {
-    (void)iir_lowpass_set_alpha(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(iir_lowpass_set_alpha(NULL, 0.0f) != IIR_LOWPASS_OK);
 }
 
 TEST_MAIN("null_param_iir_lowpass") {

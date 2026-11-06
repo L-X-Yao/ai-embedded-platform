@@ -10,25 +10,21 @@
 TEST(test_ymodem_init_null_ym) {
     ymodem_io_t _io;
     memset(&_io, 0, sizeof(_io));
-    (void)ymodem_init(NULL, &_io);
-    /* must not crash */
+    ASSERT_TRUE(ymodem_init(NULL, &_io) != YMODEM_OK);
 }
 
 TEST(test_ymodem_init_null_io) {
     ymodem_t _ym;
     memset(&_ym, 0, sizeof(_ym));
-    (void)ymodem_init(&_ym, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ymodem_init(&_ym, NULL) != YMODEM_OK);
 }
 
 TEST(test_ymodem_start_null_ym) {
-    (void)ymodem_start(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ymodem_start(NULL) != YMODEM_OK);
 }
 
 TEST(test_ymodem_feed_null_ym) {
-    (void)ymodem_feed(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ymodem_feed(NULL, 0) != YMODEM_OK);
 }
 
 TEST(test_ymodem_get_state_null_ym) {

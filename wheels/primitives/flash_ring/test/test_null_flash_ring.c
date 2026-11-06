@@ -12,8 +12,7 @@ TEST(test_flash_ring_init_null_ring) {
     memset(&_io, 0, sizeof(_io));
     flash_ring_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)flash_ring_init(NULL, &_io, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_init(NULL, &_io, &_cfg) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_init_null_io) {
@@ -21,8 +20,7 @@ TEST(test_flash_ring_init_null_io) {
     memset(&_ring, 0, sizeof(_ring));
     flash_ring_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)flash_ring_init(&_ring, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_init(&_ring, NULL, &_cfg) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_init_null_cfg) {
@@ -30,41 +28,35 @@ TEST(test_flash_ring_init_null_cfg) {
     memset(&_ring, 0, sizeof(_ring));
     flash_ring_io_t _io;
     memset(&_io, 0, sizeof(_io));
-    (void)flash_ring_init(&_ring, &_io, NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_init(&_ring, &_io, NULL) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_push_null_ring) {
     uint8_t _frame[64];
     memset(_frame, 0, sizeof(_frame));
-    (void)flash_ring_push(NULL, _frame, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_push(NULL, _frame, 0) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_push_null_frame) {
     flash_ring_t _ring;
     memset(&_ring, 0, sizeof(_ring));
-    (void)flash_ring_push(&_ring, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_push(&_ring, NULL, 1) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_peek_null_ring) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)flash_ring_peek(NULL, 0, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_peek(NULL, 0, _buf, 0) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_peek_null_buf) {
     flash_ring_t _ring;
     memset(&_ring, 0, sizeof(_ring));
-    (void)flash_ring_peek(&_ring, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_peek(&_ring, 0, NULL, 1) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_pop_null_ring) {
-    (void)flash_ring_pop(NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_pop(NULL) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_count_null_ring) {
@@ -73,13 +65,11 @@ TEST(test_flash_ring_count_null_ring) {
 }
 
 TEST(test_flash_ring_discard_all_null_ring) {
-    (void)flash_ring_discard_all(NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_discard_all(NULL) != FLASH_RING_OK);
 }
 
 TEST(test_flash_ring_flush_header_null_ring) {
-    (void)flash_ring_flush_header(NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_ring_flush_header(NULL) != FLASH_RING_OK);
 }
 
 TEST_MAIN("null_param_flash_ring") {

@@ -12,8 +12,7 @@ TEST(test_dps310_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     dps310_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)dps310_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(dps310_init(NULL, &_i2c, &_cfg) != DPS310_OK);
 }
 
 TEST(test_dps310_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_dps310_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     dps310_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)dps310_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(dps310_init(&_dev, NULL, &_cfg) != DPS310_OK);
 }
 
 TEST(test_dps310_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_dps310_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     dps310_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)dps310_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dps310_init(&_dev, &_i2c, NULL) != DPS310_OK);
 }
 
 TEST(test_dps310_read_null_dev) {
     dps310_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)dps310_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(dps310_read(NULL, &_out) != DPS310_OK);
 }
 
 TEST(test_dps310_read_null_out) {
     dps310_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)dps310_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dps310_read(&_dev, NULL) != DPS310_OK);
 }
 
 TEST(test_dps310_reset_null_dev) {
-    (void)dps310_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(dps310_reset(NULL) != DPS310_OK);
 }
 
 TEST_MAIN("null_param_dps310") {

@@ -12,8 +12,7 @@ TEST(test_mqtt_client_init_null_c) {
     memset(&_io, 0, sizeof(_io));
     mqtt_client_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)mqtt_client_init(NULL, &_io, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_init(NULL, &_io, &_cfg) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_init_null_io) {
@@ -21,8 +20,7 @@ TEST(test_mqtt_client_init_null_io) {
     memset(&_c, 0, sizeof(_c));
     mqtt_client_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)mqtt_client_init(&_c, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_init(&_c, NULL, &_cfg) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_init_null_cfg) {
@@ -30,18 +28,15 @@ TEST(test_mqtt_client_init_null_cfg) {
     memset(&_c, 0, sizeof(_c));
     mqtt_client_io_t _io;
     memset(&_io, 0, sizeof(_io));
-    (void)mqtt_client_init(&_c, &_io, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_init(&_c, &_io, NULL) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_connect_null_c) {
-    (void)mqtt_client_connect(NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_connect(NULL) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_disconnect_null_c) {
-    (void)mqtt_client_disconnect(NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_disconnect(NULL) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_publish_null_c) {
@@ -49,8 +44,7 @@ TEST(test_mqtt_client_publish_null_c) {
     memset(_topic, 0, sizeof(_topic));
     uint8_t _payload[64];
     memset(_payload, 0, sizeof(_payload));
-    (void)mqtt_client_publish(NULL, _topic, _payload, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_publish(NULL, _topic, _payload, 0, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_publish_null_topic) {
@@ -58,8 +52,7 @@ TEST(test_mqtt_client_publish_null_topic) {
     memset(&_c, 0, sizeof(_c));
     uint8_t _payload[64];
     memset(_payload, 0, sizeof(_payload));
-    (void)mqtt_client_publish(&_c, NULL, _payload, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_publish(&_c, NULL, _payload, 0, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_publish_null_payload) {
@@ -67,41 +60,35 @@ TEST(test_mqtt_client_publish_null_payload) {
     memset(&_c, 0, sizeof(_c));
     char _topic[64];
     memset(_topic, 0, sizeof(_topic));
-    (void)mqtt_client_publish(&_c, _topic, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_publish(&_c, _topic, NULL, 1, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_subscribe_null_c) {
     char _topic[64];
     memset(_topic, 0, sizeof(_topic));
-    (void)mqtt_client_subscribe(NULL, _topic, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_subscribe(NULL, _topic, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_subscribe_null_topic) {
     mqtt_client_t _c;
     memset(&_c, 0, sizeof(_c));
-    (void)mqtt_client_subscribe(&_c, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_subscribe(&_c, NULL, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_feed_null_c) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)mqtt_client_feed(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_feed(NULL, _data, 0) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_feed_null_data) {
     mqtt_client_t _c;
     memset(&_c, 0, sizeof(_c));
-    (void)mqtt_client_feed(&_c, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_feed(&_c, NULL, 1) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_poll_null_c) {
-    (void)mqtt_client_poll(NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_client_poll(NULL) != MQTT_CLIENT_OK);
 }
 
 TEST(test_mqtt_client_get_state_null_c) {

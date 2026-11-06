@@ -12,8 +12,7 @@ TEST(test_http_request_build_null_buf) {
     memset(&_cfg, 0, sizeof(_cfg));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)http_request_build(NULL, 0, &_cfg, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build(NULL, 0, &_cfg, &_out_len) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_null_cfg) {
@@ -21,8 +20,7 @@ TEST(test_http_request_build_null_cfg) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)http_request_build(_buf, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build(_buf, 0, NULL, &_out_len) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_null_out_len) {
@@ -30,8 +28,7 @@ TEST(test_http_request_build_null_out_len) {
     memset(_buf, 0, sizeof(_buf));
     http_request_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)http_request_build(_buf, 0, &_cfg, NULL);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build(_buf, 0, &_cfg, NULL) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_range_get_null_buf) {
@@ -41,8 +38,7 @@ TEST(test_http_request_build_range_get_null_buf) {
     memset(_path, 0, sizeof(_path));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)http_request_build_range_get(NULL, 0, _host, _path, 0, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build_range_get(NULL, 0, _host, _path, 0, 0, &_out_len) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_range_get_null_host) {
@@ -52,8 +48,7 @@ TEST(test_http_request_build_range_get_null_host) {
     memset(_path, 0, sizeof(_path));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)http_request_build_range_get(_buf, 0, NULL, _path, 0, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build_range_get(_buf, 0, NULL, _path, 0, 0, &_out_len) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_range_get_null_path) {
@@ -63,8 +58,7 @@ TEST(test_http_request_build_range_get_null_path) {
     memset(_host, 0, sizeof(_host));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)http_request_build_range_get(_buf, 0, _host, NULL, 0, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build_range_get(_buf, 0, _host, NULL, 0, 0, &_out_len) != HTTP_REQUEST_OK);
 }
 
 TEST(test_http_request_build_range_get_null_out_len) {
@@ -74,8 +68,7 @@ TEST(test_http_request_build_range_get_null_out_len) {
     memset(_host, 0, sizeof(_host));
     char _path[64];
     memset(_path, 0, sizeof(_path));
-    (void)http_request_build_range_get(_buf, 0, _host, _path, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(http_request_build_range_get(_buf, 0, _host, _path, 0, 0, NULL) != HTTP_REQUEST_OK);
 }
 
 TEST_MAIN("null_param_http_request") {

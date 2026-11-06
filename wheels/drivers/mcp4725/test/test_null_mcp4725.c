@@ -10,44 +10,37 @@
 TEST(test_mcp4725_init_null_dev) {
     mcp4725_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)mcp4725_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_init(NULL, &_i2c, 0) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_init_null_i2c) {
     mcp4725_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp4725_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_init(&_dev, NULL, 0) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_write_fast_null_dev) {
-    (void)mcp4725_write_fast(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_write_fast(NULL, 0) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_write_dac_null_dev) {
-    (void)mcp4725_write_dac(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_write_dac(NULL, 0, 0) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_write_eeprom_null_dev) {
-    (void)mcp4725_write_eeprom(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_write_eeprom(NULL, 0, 0) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_read_status_null_dev) {
     mcp4725_status_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)mcp4725_read_status(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_read_status(NULL, &_out) != MCP4725_OK);
 }
 
 TEST(test_mcp4725_read_status_null_out) {
     mcp4725_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp4725_read_status(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp4725_read_status(&_dev, NULL) != MCP4725_OK);
 }
 
 TEST_MAIN("null_param_mcp4725") {

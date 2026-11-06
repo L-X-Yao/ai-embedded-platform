@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_soft_timer_init_null_mgr) {
-    (void)soft_timer_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(soft_timer_init(NULL) != SOFT_TIMER_OK);
 }
 
 TEST(test_soft_timer_create_null_mgr) {
@@ -25,23 +24,19 @@ TEST(test_soft_timer_create_null_user_ctx) {
 }
 
 TEST(test_soft_timer_destroy_null_mgr) {
-    (void)soft_timer_destroy(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_timer_destroy(NULL, 0) != SOFT_TIMER_OK);
 }
 
 TEST(test_soft_timer_start_null_mgr) {
-    (void)soft_timer_start(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_timer_start(NULL, 0) != SOFT_TIMER_OK);
 }
 
 TEST(test_soft_timer_stop_null_mgr) {
-    (void)soft_timer_stop(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_timer_stop(NULL, 0) != SOFT_TIMER_OK);
 }
 
 TEST(test_soft_timer_reset_null_mgr) {
-    (void)soft_timer_reset(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_timer_reset(NULL, 0) != SOFT_TIMER_OK);
 }
 
 TEST(test_soft_timer_is_active_null_mgr) {

@@ -10,15 +10,13 @@
 TEST(test_uds_decode_null_buf) {
     uds_msg_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)uds_decode(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(uds_decode(NULL, 1, &_out) != UDS_OK);
 }
 
 TEST(test_uds_decode_null_out) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)uds_decode(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uds_decode(_buf, 0, NULL) != UDS_OK);
 }
 
 TEST(test_uds_encode_request_null_data) {
@@ -26,8 +24,7 @@ TEST(test_uds_encode_request_null_data) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)uds_encode_request(0, NULL, 0, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_request(0, NULL, 1, _buf, 0, &_out_len) != UDS_OK);
 }
 
 TEST(test_uds_encode_request_null_buf) {
@@ -35,8 +32,7 @@ TEST(test_uds_encode_request_null_buf) {
     memset(_data, 0, sizeof(_data));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)uds_encode_request(0, _data, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_request(0, _data, 0, NULL, 0, &_out_len) != UDS_OK);
 }
 
 TEST(test_uds_encode_request_null_out_len) {
@@ -44,8 +40,7 @@ TEST(test_uds_encode_request_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)uds_encode_request(0, _data, 0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_request(0, _data, 0, _buf, 0, NULL) != UDS_OK);
 }
 
 TEST(test_uds_encode_response_null_data) {
@@ -53,8 +48,7 @@ TEST(test_uds_encode_response_null_data) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)uds_encode_response(0, NULL, 0, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_response(0, NULL, 1, _buf, 0, &_out_len) != UDS_OK);
 }
 
 TEST(test_uds_encode_response_null_buf) {
@@ -62,8 +56,7 @@ TEST(test_uds_encode_response_null_buf) {
     memset(_data, 0, sizeof(_data));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)uds_encode_response(0, _data, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_response(0, _data, 0, NULL, 0, &_out_len) != UDS_OK);
 }
 
 TEST(test_uds_encode_response_null_out_len) {
@@ -71,22 +64,19 @@ TEST(test_uds_encode_response_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)uds_encode_response(0, _data, 0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_response(0, _data, 0, _buf, 0, NULL) != UDS_OK);
 }
 
 TEST(test_uds_encode_negative_null_buf) {
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)uds_encode_negative(0, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_negative(0, 0, NULL, 0, &_out_len) != UDS_OK);
 }
 
 TEST(test_uds_encode_negative_null_out_len) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)uds_encode_negative(0, 0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uds_encode_negative(0, 0, _buf, 0, NULL) != UDS_OK);
 }
 
 TEST_MAIN("null_param_uds") {

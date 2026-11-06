@@ -12,8 +12,7 @@ TEST(test_bmp388_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     bmp388_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmp388_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_init(NULL, &_i2c, &_cfg) != BMP388_OK);
 }
 
 TEST(test_bmp388_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_bmp388_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     bmp388_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmp388_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_init(&_dev, NULL, &_cfg) != BMP388_OK);
 }
 
 TEST(test_bmp388_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_bmp388_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bmp388_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bmp388_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_init(&_dev, &_i2c, NULL) != BMP388_OK);
 }
 
 TEST(test_bmp388_read_null_dev) {
     bmp388_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bmp388_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_read(NULL, &_out) != BMP388_OK);
 }
 
 TEST(test_bmp388_read_null_out) {
     bmp388_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bmp388_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_read(&_dev, NULL) != BMP388_OK);
 }
 
 TEST(test_bmp388_reset_null_dev) {
-    (void)bmp388_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmp388_reset(NULL) != BMP388_OK);
 }
 
 TEST_MAIN("null_param_bmp388") {

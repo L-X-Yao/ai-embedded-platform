@@ -10,72 +10,61 @@
 TEST(test_nrf24_init_null_dev) {
     nrf24_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)nrf24_init(NULL, &_spi, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_init(NULL, &_spi, 0, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_init_null_spi) {
     nrf24_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)nrf24_init(&_dev, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_init(&_dev, NULL, 0, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_tx_addr_null_dev) {
     uint8_t _addr[64];
     memset(_addr, 0, sizeof(_addr));
-    (void)nrf24_set_tx_addr(NULL, _addr, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_tx_addr(NULL, _addr, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_tx_addr_null_addr) {
     nrf24_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)nrf24_set_tx_addr(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_tx_addr(&_dev, NULL, 1) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_rx_addr_null_dev) {
     uint8_t _addr[64];
     memset(_addr, 0, sizeof(_addr));
-    (void)nrf24_set_rx_addr(NULL, 0, _addr, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_rx_addr(NULL, 0, _addr, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_rx_addr_null_addr) {
     nrf24_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)nrf24_set_rx_addr(&_dev, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_rx_addr(&_dev, 0, NULL, 1) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_mode_null_dev) {
-    (void)nrf24_set_mode(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_mode(NULL, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_data_rate_null_dev) {
-    (void)nrf24_set_data_rate(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_data_rate(NULL, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_set_power_null_dev) {
-    (void)nrf24_set_power(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_set_power(NULL, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_send_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)nrf24_send(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_send(NULL, _data, 0) != NRF24_OK);
 }
 
 TEST(test_nrf24_send_null_data) {
     nrf24_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)nrf24_send(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_send(&_dev, NULL, 1) != NRF24_OK);
 }
 
 TEST(test_nrf24_receive_null_dev) {
@@ -83,8 +72,7 @@ TEST(test_nrf24_receive_null_dev) {
     memset(_data, 0, sizeof(_data));
     uint8_t _len[64];
     memset(_len, 0, sizeof(_len));
-    (void)nrf24_receive(NULL, _data, 0, _len);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_receive(NULL, _data, 0, _len) != NRF24_OK);
 }
 
 TEST(test_nrf24_receive_null_data) {
@@ -92,8 +80,7 @@ TEST(test_nrf24_receive_null_data) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _len[64];
     memset(_len, 0, sizeof(_len));
-    (void)nrf24_receive(&_dev, NULL, 0, _len);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_receive(&_dev, NULL, 1, _len) != NRF24_OK);
 }
 
 TEST(test_nrf24_receive_null_len) {
@@ -101,8 +88,7 @@ TEST(test_nrf24_receive_null_len) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)nrf24_receive(&_dev, _data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_receive(&_dev, _data, 0, NULL) != NRF24_OK);
 }
 
 TEST(test_nrf24_data_ready_null_dev) {
@@ -111,13 +97,11 @@ TEST(test_nrf24_data_ready_null_dev) {
 }
 
 TEST(test_nrf24_flush_tx_null_dev) {
-    (void)nrf24_flush_tx(NULL);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_flush_tx(NULL) != NRF24_OK);
 }
 
 TEST(test_nrf24_flush_rx_null_dev) {
-    (void)nrf24_flush_rx(NULL);
-    /* must not crash */
+    ASSERT_TRUE(nrf24_flush_rx(NULL) != NRF24_OK);
 }
 
 TEST(test_nrf24_read_status_null_dev) {

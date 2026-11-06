@@ -10,27 +10,23 @@
 TEST(test_memory_pool_init_null_pool) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)memory_pool_init(NULL, _buf, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(memory_pool_init(NULL, _buf, 0, 0) != MEMORY_POOL_OK);
 }
 
 TEST(test_memory_pool_init_null_buf) {
     memory_pool_t _pool;
     memset(&_pool, 0, sizeof(_pool));
-    (void)memory_pool_init(&_pool, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(memory_pool_init(&_pool, NULL, 1, 0) != MEMORY_POOL_OK);
 }
 
 TEST(test_memory_pool_free_null_pool) {
-    (void)memory_pool_free(NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(memory_pool_free(NULL, NULL) != MEMORY_POOL_OK);
 }
 
 TEST(test_memory_pool_free_null_ptr) {
     memory_pool_t _pool;
     memset(&_pool, 0, sizeof(_pool));
-    (void)memory_pool_free(&_pool, NULL);
-    /* must not crash */
+    ASSERT_TRUE(memory_pool_free(&_pool, NULL) != MEMORY_POOL_OK);
 }
 
 TEST(test_memory_pool_available_null_pool) {

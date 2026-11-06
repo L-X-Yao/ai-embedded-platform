@@ -10,49 +10,41 @@
 TEST(test_rc522_init_null_dev) {
     rc522_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)rc522_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(rc522_init(NULL, &_spi) != RC522_OK);
 }
 
 TEST(test_rc522_init_null_spi) {
     rc522_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)rc522_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_init(&_dev, NULL) != RC522_OK);
 }
 
 TEST(test_rc522_self_test_null_dev) {
-    (void)rc522_self_test(NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_self_test(NULL) != RC522_OK);
 }
 
 TEST(test_rc522_detect_card_null_dev) {
-    (void)rc522_detect_card(NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_detect_card(NULL) != RC522_OK);
 }
 
 TEST(test_rc522_read_card_uid_null_dev) {
     rc522_uid_t _uid;
     memset(&_uid, 0, sizeof(_uid));
-    (void)rc522_read_card_uid(NULL, &_uid);
-    /* must not crash */
+    ASSERT_TRUE(rc522_read_card_uid(NULL, &_uid) != RC522_OK);
 }
 
 TEST(test_rc522_read_card_uid_null_uid) {
     rc522_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)rc522_read_card_uid(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_read_card_uid(&_dev, NULL) != RC522_OK);
 }
 
 TEST(test_rc522_halt_null_dev) {
-    (void)rc522_halt(NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_halt(NULL) != RC522_OK);
 }
 
 TEST(test_rc522_antenna_on_null_dev) {
-    (void)rc522_antenna_on(NULL);
-    /* must not crash */
+    ASSERT_TRUE(rc522_antenna_on(NULL) != RC522_OK);
 }
 
 TEST(test_rc522_get_version_null_dev) {

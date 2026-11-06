@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_mavlink_parser_init_null_parser) {
-    (void)mavlink_parser_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(mavlink_parser_init(NULL) != MAVLINK_OK);
 }
 
 TEST(test_mavlink_parse_byte_null_parser) {
@@ -22,8 +21,7 @@ TEST(test_mavlink_serialize_null_msg) {
     memset(_buf, 0, sizeof(_buf));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)mavlink_serialize(NULL, _buf, 0, &_out_len, 0);
-    /* must not crash */
+    ASSERT_TRUE(mavlink_serialize(NULL, _buf, 0, &_out_len, 0) != MAVLINK_OK);
 }
 
 TEST(test_mavlink_serialize_null_buf) {
@@ -31,8 +29,7 @@ TEST(test_mavlink_serialize_null_buf) {
     memset(&_msg, 0, sizeof(_msg));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)mavlink_serialize(&_msg, NULL, 0, &_out_len, 0);
-    /* must not crash */
+    ASSERT_TRUE(mavlink_serialize(&_msg, NULL, 1, &_out_len, 0) != MAVLINK_OK);
 }
 
 TEST(test_mavlink_serialize_null_out_len) {
@@ -40,8 +37,7 @@ TEST(test_mavlink_serialize_null_out_len) {
     memset(&_msg, 0, sizeof(_msg));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mavlink_serialize(&_msg, _buf, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mavlink_serialize(&_msg, _buf, 0, NULL, 0) != MAVLINK_OK);
 }
 
 TEST(test_mavlink_crc16_null_data) {

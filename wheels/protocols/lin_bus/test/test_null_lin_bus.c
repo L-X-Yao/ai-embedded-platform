@@ -17,8 +17,7 @@ TEST(test_lin_bus_encode_null_frame) {
     memset(_buf, 0, sizeof(_buf));
     size_t _len;
     memset(&_len, 0, sizeof(_len));
-    (void)lin_bus_encode(NULL, _buf, 0, &_len);
-    /* must not crash */
+    ASSERT_TRUE(lin_bus_encode(NULL, _buf, 0, &_len) != LIN_BUS_OK);
 }
 
 TEST(test_lin_bus_encode_null_buf) {
@@ -26,8 +25,7 @@ TEST(test_lin_bus_encode_null_buf) {
     memset(&_frame, 0, sizeof(_frame));
     size_t _len;
     memset(&_len, 0, sizeof(_len));
-    (void)lin_bus_encode(&_frame, NULL, 0, &_len);
-    /* must not crash */
+    ASSERT_TRUE(lin_bus_encode(&_frame, NULL, 0, &_len) != LIN_BUS_OK);
 }
 
 TEST(test_lin_bus_encode_null_len) {
@@ -35,22 +33,19 @@ TEST(test_lin_bus_encode_null_len) {
     memset(&_frame, 0, sizeof(_frame));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)lin_bus_encode(&_frame, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lin_bus_encode(&_frame, _buf, 0, NULL) != LIN_BUS_OK);
 }
 
 TEST(test_lin_bus_decode_null_buf) {
     lin_bus_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)lin_bus_decode(NULL, 0, &_frame);
-    /* must not crash */
+    ASSERT_TRUE(lin_bus_decode(NULL, 1, &_frame) != LIN_BUS_OK);
 }
 
 TEST(test_lin_bus_decode_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)lin_bus_decode(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lin_bus_decode(_buf, 0, NULL) != LIN_BUS_OK);
 }
 
 TEST_MAIN("null_param_lin_bus") {

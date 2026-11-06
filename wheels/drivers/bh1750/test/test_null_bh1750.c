@@ -12,8 +12,7 @@ TEST(test_bh1750_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     bh1750_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bh1750_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_init(NULL, &_i2c, &_cfg) != BH1750_OK);
 }
 
 TEST(test_bh1750_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_bh1750_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     bh1750_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bh1750_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_init(&_dev, NULL, &_cfg) != BH1750_OK);
 }
 
 TEST(test_bh1750_init_null_cfg) {
@@ -30,37 +28,31 @@ TEST(test_bh1750_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bh1750_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bh1750_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_init(&_dev, &_i2c, NULL) != BH1750_OK);
 }
 
 TEST(test_bh1750_read_lux_null_dev) {
     float _lux;
     memset(&_lux, 0, sizeof(_lux));
-    (void)bh1750_read_lux(NULL, &_lux);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_read_lux(NULL, &_lux) != BH1750_OK);
 }
 
 TEST(test_bh1750_read_lux_null_lux) {
     bh1750_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bh1750_read_lux(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_read_lux(&_dev, NULL) != BH1750_OK);
 }
 
 TEST(test_bh1750_power_on_null_dev) {
-    (void)bh1750_power_on(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_power_on(NULL) != BH1750_OK);
 }
 
 TEST(test_bh1750_power_off_null_dev) {
-    (void)bh1750_power_off(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_power_off(NULL) != BH1750_OK);
 }
 
 TEST(test_bh1750_reset_null_dev) {
-    (void)bh1750_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bh1750_reset(NULL) != BH1750_OK);
 }
 
 TEST_MAIN("null_param_bh1750") {

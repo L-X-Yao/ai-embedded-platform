@@ -8,27 +8,23 @@
 #include <stddef.h>
 
 TEST(test_datetime_from_epoch_null_out) {
-    (void)datetime_from_epoch(0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(datetime_from_epoch(0, NULL) != DATETIME_OK);
 }
 
 TEST(test_datetime_to_epoch_null_dt) {
     uint32_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)datetime_to_epoch(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(datetime_to_epoch(NULL, &_out) != DATETIME_OK);
 }
 
 TEST(test_datetime_to_epoch_null_out) {
     datetime_t _dt;
     memset(&_dt, 0, sizeof(_dt));
-    (void)datetime_to_epoch(&_dt, NULL);
-    /* must not crash */
+    ASSERT_TRUE(datetime_to_epoch(&_dt, NULL) != DATETIME_OK);
 }
 
 TEST(test_datetime_add_seconds_null_dt) {
-    (void)datetime_add_seconds(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(datetime_add_seconds(NULL, 0) != DATETIME_OK);
 }
 
 TEST_MAIN("null_param_datetime") {

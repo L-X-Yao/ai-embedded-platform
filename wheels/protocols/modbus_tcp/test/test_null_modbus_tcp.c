@@ -34,15 +34,13 @@ TEST(test_modbus_tcp_build_write_regs_null_values) {
 TEST(test_modbus_tcp_parse_null_buf) {
     modbus_tcp_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)modbus_tcp_parse(NULL, 0, &_frame);
-    /* must not crash */
+    ASSERT_TRUE(modbus_tcp_parse(NULL, 1, &_frame) != MODBUS_TCP_OK);
 }
 
 TEST(test_modbus_tcp_parse_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)modbus_tcp_parse(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(modbus_tcp_parse(_buf, 0, NULL) != MODBUS_TCP_OK);
 }
 
 TEST(test_modbus_tcp_get_regs_null_frame) {
@@ -50,8 +48,7 @@ TEST(test_modbus_tcp_get_regs_null_frame) {
     memset(&_values, 0, sizeof(_values));
     uint16_t _actual_count;
     memset(&_actual_count, 0, sizeof(_actual_count));
-    (void)modbus_tcp_get_regs(NULL, &_values, 0, &_actual_count);
-    /* must not crash */
+    ASSERT_TRUE(modbus_tcp_get_regs(NULL, &_values, 0, &_actual_count) != MODBUS_TCP_OK);
 }
 
 TEST(test_modbus_tcp_get_regs_null_values) {
@@ -59,8 +56,7 @@ TEST(test_modbus_tcp_get_regs_null_values) {
     memset(&_frame, 0, sizeof(_frame));
     uint16_t _actual_count;
     memset(&_actual_count, 0, sizeof(_actual_count));
-    (void)modbus_tcp_get_regs(&_frame, NULL, 0, &_actual_count);
-    /* must not crash */
+    ASSERT_TRUE(modbus_tcp_get_regs(&_frame, NULL, 1, &_actual_count) != MODBUS_TCP_OK);
 }
 
 TEST(test_modbus_tcp_get_regs_null_actual_count) {
@@ -69,7 +65,7 @@ TEST(test_modbus_tcp_get_regs_null_actual_count) {
     uint16_t _values;
     memset(&_values, 0, sizeof(_values));
     (void)modbus_tcp_get_regs(&_frame, &_values, 0, NULL);
-    /* must not crash */
+    /* must not crash: the count is optional */
 }
 
 TEST_MAIN("null_param_modbus_tcp") {

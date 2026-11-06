@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_sbus_parser_init_null_parser) {
-    (void)sbus_parser_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sbus_parser_init(NULL) != SBUS_OK);
 }
 
 TEST(test_sbus_parse_byte_null_parser) {
@@ -20,29 +19,25 @@ TEST(test_sbus_parse_byte_null_parser) {
 TEST(test_sbus_decode_null_frame) {
     sbus_frame_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sbus_decode(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sbus_decode(NULL, &_out) != SBUS_OK);
 }
 
 TEST(test_sbus_decode_null_out) {
     uint8_t _frame[64];
     memset(_frame, 0, sizeof(_frame));
-    (void)sbus_decode(_frame, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sbus_decode(_frame, NULL) != SBUS_OK);
 }
 
 TEST(test_sbus_encode_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)sbus_encode(NULL, _buf);
-    /* must not crash */
+    ASSERT_TRUE(sbus_encode(NULL, _buf) != SBUS_OK);
 }
 
 TEST(test_sbus_encode_null_buf) {
     sbus_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)sbus_encode(&_frame, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sbus_encode(&_frame, NULL) != SBUS_OK);
 }
 
 TEST_MAIN("null_param_sbus") {

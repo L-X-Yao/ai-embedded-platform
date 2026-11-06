@@ -10,86 +10,73 @@
 TEST(test_pcf8563_init_null_dev) {
     pcf8563_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)pcf8563_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_init(NULL, &_i2c) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_init_null_i2c) {
     pcf8563_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8563_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_init(&_dev, NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_read_time_null_dev) {
     pcf8563_time_t _time;
     memset(&_time, 0, sizeof(_time));
-    (void)pcf8563_read_time(NULL, &_time);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_read_time(NULL, &_time) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_read_time_null_time) {
     pcf8563_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8563_read_time(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_read_time(&_dev, NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_write_time_null_dev) {
     pcf8563_time_t _time;
     memset(&_time, 0, sizeof(_time));
-    (void)pcf8563_write_time(NULL, &_time);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_write_time(NULL, &_time) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_write_time_null_time) {
     pcf8563_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8563_write_time(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_write_time(&_dev, NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_read_alarm_null_dev) {
     pcf8563_alarm_t _alarm;
     memset(&_alarm, 0, sizeof(_alarm));
-    (void)pcf8563_read_alarm(NULL, &_alarm);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_read_alarm(NULL, &_alarm) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_read_alarm_null_alarm) {
     pcf8563_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8563_read_alarm(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_read_alarm(&_dev, NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_write_alarm_null_dev) {
     pcf8563_alarm_t _alarm;
     memset(&_alarm, 0, sizeof(_alarm));
-    (void)pcf8563_write_alarm(NULL, &_alarm);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_write_alarm(NULL, &_alarm) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_write_alarm_null_alarm) {
     pcf8563_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8563_write_alarm(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_write_alarm(&_dev, NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_enable_timer_null_dev) {
-    (void)pcf8563_enable_timer(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_enable_timer(NULL, 0, 0) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_disable_timer_null_dev) {
-    (void)pcf8563_disable_timer(NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_disable_timer(NULL) != PCF8563_OK);
 }
 
 TEST(test_pcf8563_set_clkout_null_dev) {
-    (void)pcf8563_set_clkout(NULL, false, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8563_set_clkout(NULL, false, 0) != PCF8563_OK);
 }
 
 TEST_MAIN("null_param_pcf8563") {

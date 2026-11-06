@@ -10,29 +10,25 @@
 TEST(test_tsl2591_init_null_dev) {
     tsl2591_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)tsl2591_init(NULL, &_i2c, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_init(NULL, &_i2c, 0, 0) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_init_null_i2c) {
     tsl2591_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tsl2591_init(&_dev, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_init(&_dev, NULL, 0, 0) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_read_null_dev) {
     tsl2591_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)tsl2591_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_read(NULL, &_out) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_read_null_out) {
     tsl2591_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tsl2591_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_read(&_dev, NULL) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_read_raw_null_dev) {
@@ -40,8 +36,7 @@ TEST(test_tsl2591_read_raw_null_dev) {
     memset(&_ch0, 0, sizeof(_ch0));
     uint16_t _ch1;
     memset(&_ch1, 0, sizeof(_ch1));
-    (void)tsl2591_read_raw(NULL, &_ch0, &_ch1);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_read_raw(NULL, &_ch0, &_ch1) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_read_raw_null_ch0) {
@@ -49,8 +44,7 @@ TEST(test_tsl2591_read_raw_null_ch0) {
     memset(&_dev, 0, sizeof(_dev));
     uint16_t _ch1;
     memset(&_ch1, 0, sizeof(_ch1));
-    (void)tsl2591_read_raw(&_dev, NULL, &_ch1);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_read_raw(&_dev, NULL, &_ch1) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_read_raw_null_ch1) {
@@ -58,42 +52,35 @@ TEST(test_tsl2591_read_raw_null_ch1) {
     memset(&_dev, 0, sizeof(_dev));
     uint16_t _ch0;
     memset(&_ch0, 0, sizeof(_ch0));
-    (void)tsl2591_read_raw(&_dev, &_ch0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_read_raw(&_dev, &_ch0, NULL) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_set_gain_null_dev) {
-    (void)tsl2591_set_gain(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_set_gain(NULL, 0) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_set_integration_time_null_dev) {
-    (void)tsl2591_set_integration_time(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_set_integration_time(NULL, 0) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_enable_null_dev) {
-    (void)tsl2591_enable(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_enable(NULL) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_disable_null_dev) {
-    (void)tsl2591_disable(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_disable(NULL) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_get_status_null_dev) {
     uint8_t _status[64];
     memset(_status, 0, sizeof(_status));
-    (void)tsl2591_get_status(NULL, _status);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_get_status(NULL, _status) != TSL2591_OK);
 }
 
 TEST(test_tsl2591_get_status_null_status) {
     tsl2591_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tsl2591_get_status(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tsl2591_get_status(&_dev, NULL) != TSL2591_OK);
 }
 
 TEST_MAIN("null_param_tsl2591") {

@@ -12,8 +12,7 @@ TEST(test_servo_init_null_dev) {
     memset(&_pwm, 0, sizeof(_pwm));
     servo_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)servo_init(NULL, &_pwm, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(servo_init(NULL, &_pwm, &_cfg) != SERVO_OK);
 }
 
 TEST(test_servo_init_null_pwm) {
@@ -21,8 +20,7 @@ TEST(test_servo_init_null_pwm) {
     memset(&_dev, 0, sizeof(_dev));
     servo_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)servo_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(servo_init(&_dev, NULL, &_cfg) != SERVO_OK);
 }
 
 TEST(test_servo_init_null_cfg) {
@@ -30,18 +28,15 @@ TEST(test_servo_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     servo_pwm_t _pwm;
     memset(&_pwm, 0, sizeof(_pwm));
-    (void)servo_init(&_dev, &_pwm, NULL);
-    /* must not crash */
+    ASSERT_TRUE(servo_init(&_dev, &_pwm, NULL) != SERVO_OK);
 }
 
 TEST(test_servo_set_angle_null_dev) {
-    (void)servo_set_angle(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(servo_set_angle(NULL, 0) != SERVO_OK);
 }
 
 TEST(test_servo_set_pulse_null_dev) {
-    (void)servo_set_pulse(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(servo_set_pulse(NULL, 0) != SERVO_OK);
 }
 
 TEST(test_servo_get_angle_null_dev) {

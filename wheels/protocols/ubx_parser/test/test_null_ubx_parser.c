@@ -10,15 +10,13 @@
 TEST(test_ubx_parser_init_null_ctx) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)ubx_parser_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(ubx_parser_init(NULL, _buf, 0) != UBX_PARSER_OK);
 }
 
 TEST(test_ubx_parser_init_null_buf) {
     ubx_parser_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)ubx_parser_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ubx_parser_init(&_ctx, NULL, 1) != UBX_PARSER_OK);
 }
 
 TEST(test_ubx_parser_feed_null_ctx) {
@@ -29,15 +27,13 @@ TEST(test_ubx_parser_feed_null_ctx) {
 TEST(test_ubx_parser_get_msg_null_ctx) {
     ubx_msg_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ubx_parser_get_msg(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ubx_parser_get_msg(NULL, &_out) != UBX_PARSER_OK);
 }
 
 TEST(test_ubx_parser_get_msg_null_out) {
     ubx_parser_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)ubx_parser_get_msg(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ubx_parser_get_msg(&_ctx, NULL) != UBX_PARSER_OK);
 }
 
 TEST(test_ubx_parser_reset_null_ctx) {

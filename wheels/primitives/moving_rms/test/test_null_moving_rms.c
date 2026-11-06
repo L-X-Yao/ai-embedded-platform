@@ -10,15 +10,13 @@
 TEST(test_moving_rms_init_null_ctx) {
     float _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)moving_rms_init(NULL, &_buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(moving_rms_init(NULL, &_buf, 0) != MOVING_RMS_OK);
 }
 
 TEST(test_moving_rms_init_null_buf) {
     moving_rms_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)moving_rms_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(moving_rms_init(&_ctx, NULL, 0) != MOVING_RMS_OK);
 }
 
 TEST(test_moving_rms_feed_null_ctx) {
@@ -32,8 +30,7 @@ TEST(test_moving_rms_get_null_ctx) {
 }
 
 TEST(test_moving_rms_reset_null_ctx) {
-    (void)moving_rms_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(moving_rms_reset(NULL) != MOVING_RMS_OK);
 }
 
 TEST_MAIN("null_param_moving_rms") {
