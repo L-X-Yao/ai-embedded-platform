@@ -59,6 +59,7 @@ s_record_err_t s_record_decode(const char *line, size_t len,
 
 /**
  * Encode one S-Record line to ASCII. Returns bytes written via out_len.
+ * S_RECORD_ERR_OVERFLOW if the address does not fit the record type.
  * @thread_safe: yes @isr_safe: yes
  */
 s_record_err_t s_record_encode(const s_record_line_t *rec,

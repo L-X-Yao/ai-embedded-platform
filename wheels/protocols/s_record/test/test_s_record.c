@@ -121,6 +121,42 @@ TEST(test_encode_overflow)
     ASSERT_EQ(s_record_encode(&rec, buf, sizeof(buf), &len), S_RECORD_ERR_OVERFLOW);
 }
 
+TEST(test_encode_address_too_wide)
+{
+    /* The record type fixes the address field at 2, 3 or 4 bytes. */
+    static const struct { s_record_type_t type; uint32_t address; } cases[] = {
+        { S_RECORD_S0, 0x00010000u }, { S_RECORD_S1, 0x00012345u },
+        { S_RECORD_S1, 0x00010000u }, { S_RECORD_S5, 0x00010000u },
+        { S_RECORD_S9, 0x00010000u }, { S_RECORD_S2, 0x01234567u },
+        { S_RECORD_S2, 0x01000000u }, { S_RECORD_S8, 0x01000000u },
+    };
+    char buf[32];
+    size_t len;
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        s_record_line_t rec = { .type = cases[i].type, .address = cases[i].address,
+                                .data_len = 1, .data = { 0xAA } };
+        ASSERT_EQ(s_record_encode(&rec, buf, sizeof(buf), &len), S_RECORD_ERR_OVERFLOW);
+    }
+}
+
+TEST(test_encode_largest_address_of_each_type)
+{
+    static const struct { s_record_type_t type; uint32_t address; } cases[] = {
+        { S_RECORD_S1, 0x0000FFFFu }, { S_RECORD_S2, 0x00FFFFFFu },
+        { S_RECORD_S3, 0xFFFFFFFFu }, { S_RECORD_S7, 0xFFFFFFFFu },
+        { S_RECORD_S8, 0x00FFFFFFu }, { S_RECORD_S9, 0x0000FFFFu },
+    };
+    char buf[32];
+    size_t len;
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        s_record_line_t rec = { .type = cases[i].type, .address = cases[i].address };
+        s_record_line_t back;
+        ASSERT_EQ(s_record_encode(&rec, buf, sizeof(buf), &len), S_RECORD_OK);
+        ASSERT_EQ(s_record_decode(buf, len, &back), S_RECORD_OK);
+        ASSERT_EQ(back.address, cases[i].address);
+    }
+}
+
 /* ---------- roundtrip ---------- */
 
 TEST(test_roundtrip_s1)
@@ -209,6 +245,8 @@ TEST_MAIN("s_record")
     RUN(test_encode_s1);
     RUN(test_encode_null);
     RUN(test_encode_overflow);
+    RUN(test_encode_address_too_wide);
+    RUN(test_encode_largest_address_of_each_type);
     RUN(test_roundtrip_s1);
     RUN(test_roundtrip_s2);
     RUN(test_error_codes);

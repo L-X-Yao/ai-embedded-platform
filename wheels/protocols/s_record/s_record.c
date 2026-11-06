@@ -131,6 +131,10 @@ s_record_err_t s_record_encode(const s_record_line_t *rec,
     if (ab < 0)
         return S_RECORD_ERR_FORMAT;
 
+    /* Widened because a shift by 32 is undefined for the 4-byte types. */
+    if (((uint64_t)rec->address >> (ab * 8)) != 0)
+        return S_RECORD_ERR_OVERFLOW;
+
     int byte_count = ab + (int)rec->data_len + 1;
     size_t total = 4 + (size_t)byte_count * 2 + 2;
     if (total > cap)

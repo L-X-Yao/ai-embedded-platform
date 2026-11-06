@@ -76,6 +76,7 @@ static void round_trip(fuzz_input_t *in) {
 
     int ab = address_bytes(rec.type);
     uint32_t mask = ab == 4 ? 0xFFFFFFFFu : ((1u << (ab * 8)) - 1u);
+    if (fuzz_u8(in) & 1) rec.address &= mask;
 
     // Exact-size output, so ASan sees any write past the CRLF.
     size_t need = 4 + ((size_t)ab + rec.data_len + 1) * 2 + 2;
@@ -86,13 +87,13 @@ static void round_trip(fuzz_input_t *in) {
     if (s_record_encode(&rec, line, need - 1, &len) != S_RECORD_ERR_OVERFLOW) __builtin_trap();
 
     s_record_err_t err = s_record_encode(&rec, line, need, &len);
-    if (rec.data_len > S_RECORD_MAX_DATA) {
+    if (rec.data_len > S_RECORD_MAX_DATA || (rec.address & ~mask) != 0) {
         if (err != S_RECORD_ERR_OVERFLOW) __builtin_trap();
     } else {
         s_record_line_t back;
         if (err != S_RECORD_OK || len != need) __builtin_trap();
         if (s_record_decode(line, len, &back) != S_RECORD_OK || back.type != rec.type ||
-            back.address != (rec.address & mask) || back.data_len != rec.data_len ||
+            back.address != rec.address || back.data_len != rec.data_len ||
             memcmp(back.data, rec.data, rec.data_len) != 0) {
             __builtin_trap();
         }
