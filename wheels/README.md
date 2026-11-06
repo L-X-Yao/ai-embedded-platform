@@ -1,8 +1,9 @@
 # Component Catalog
 
 **259** reusable C99 embedded components. Zero heap, zero OS dependencies,
-dependency-injected via function pointers. Copy the source into your project,
-include the header, wire the HAL callbacks.
+dependency-injected via function pointers. Copy the source and
+`tooling/harness/contract.h` into your project, include the header, wire the
+HAL callbacks.
 
 | Layer | Directory | Count | Description |
 |-------|-----------|------:|-------------|
@@ -14,6 +15,10 @@ include the header, wire the HAL callbacks.
 All components are MIT-licensed, tested on host (gcc/clang), and
 verified by a 63-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
 for quality criteria.
+
+**Limited** in a row below means the component's README or
+[known-issues.md](../docs/known-issues.md) records it as not usable, or usable
+only in part, on hardware. A row without the mark is not proof of hardware use.
 
 ---
 
@@ -60,7 +65,7 @@ for quality criteria.
 | [tsl2591](drivers/tsl2591/) | AMS TSL2591 high-dynamic-range light sensor (I2C) |
 | [ltr390](drivers/ltr390/) | Lite-On LTR-390UV UV and ambient light sensor (I2C) |
 | [tcs34725](drivers/tcs34725/) | ams TCS34725 color sensor (I2C) |
-| [apds9960](drivers/apds9960/) | Broadcom APDS-9960 gesture/color/proximity (I2C) |
+| [apds9960](drivers/apds9960/) | Broadcom APDS-9960 gesture/color/proximity (I2C). **Limited:** gesture direction logic needs a rewrite |
 
 ### Gas and Air Quality
 
@@ -78,7 +83,7 @@ for quality criteria.
 | [adxl345](drivers/adxl345/) | Analog Devices ADXL345 3-axis accelerometer (I2C) |
 | [bma400](drivers/bma400/) | Bosch BMA400 ultra-low-power 3-axis accelerometer (I2C) |
 | [bmi160](drivers/bmi160/) | Bosch BMI160 6-axis IMU (I2C) |
-| [bmi270](drivers/bmi270/) | Bosch BMI270 6-axis IMU (SPI) |
+| [bmi270](drivers/bmi270/) | Bosch BMI270 6-axis IMU (SPI). **Limited:** not usable on hardware yet, init skips the 8 KB config upload |
 | [bno055](drivers/bno055/) | Bosch BNO055 9-axis IMU with sensor fusion (I2C) |
 | [icm42688](drivers/icm42688/) | TDK ICM-42688-P 6-axis IMU (SPI) |
 | [lis2dh12](drivers/lis2dh12/) | ST LIS2DH12 ultra-low-power 3-axis accelerometer (I2C) |
@@ -91,7 +96,7 @@ for quality criteria.
 
 | Component | Description |
 |-----------|-------------|
-| [bmm150](drivers/bmm150/) | Bosch BMM150 3-axis geomagnetic sensor (I2C) |
+| [bmm150](drivers/bmm150/) | Bosch BMM150 3-axis geomagnetic sensor (I2C). **Limited:** no trim compensation, uT values are approximate |
 | [hmc5883l](drivers/hmc5883l/) | Honeywell HMC5883L 3-axis magnetometer (I2C) |
 | [lis3mdl](drivers/lis3mdl/) | ST LIS3MDL 3-axis digital magnetometer (I2C) |
 | [qmc5883p](drivers/qmc5883p/) | QST QMC5883P 3-axis magnetometer (I2C) |
@@ -109,7 +114,7 @@ for quality criteria.
 | [oled_ssd1306](drivers/oled_ssd1306/) | Solomon SSD1306 128x64 OLED (I2C) |
 | [sh1106](drivers/sh1106/) | SH1106 132x64 OLED display (I2C) |
 | [lcd_st7789](drivers/lcd_st7789/) | ST7789 240x320 TFT LCD (SPI, RGB565) |
-| [gc9a01](drivers/gc9a01/) | GC9A01 240x240 round TFT LCD (SPI, RGB565) |
+| [gc9a01](drivers/gc9a01/) | GC9A01 240x240 round TFT LCD (SPI, RGB565). **Limited:** init sends no panel init table, a real panel may show no usable picture |
 | [ili9341](drivers/ili9341/) | ILI9341 240x320 TFT LCD (SPI, RGB565) |
 | [st7735](drivers/st7735/) | ST7735 128x160 TFT LCD (SPI, RGB565) |
 | [max7219](drivers/max7219/) | Maxim MAX7219 LED matrix/7-segment (SPI) |
@@ -135,7 +140,7 @@ for quality criteria.
 | [sx1262](drivers/sx1262/) | Semtech SX1262 LoRa transceiver (SPI) |
 | [cc1101](drivers/cc1101/) | TI CC1101 sub-GHz transceiver (SPI) |
 | [enc28j60](drivers/enc28j60/) | Microchip ENC28J60 Ethernet controller (SPI) |
-| [w5500](drivers/w5500/) | Wiznet W5500 SPI Ethernet controller |
+| [w5500](drivers/w5500/) | Wiznet W5500 SPI Ethernet controller. **Limited:** no connect or listen API, so TCP and UDP cannot work yet |
 | [mcp2515](drivers/mcp2515/) | Microchip MCP2515 CAN controller (SPI) |
 | [air780eg](drivers/air780eg/) | Quectel Air780EG 4G/GNSS AT modem |
 
@@ -187,7 +192,7 @@ for quality criteria.
 | [ina226](drivers/ina226/) | TI INA226 precision current/power monitor (I2C) |
 | [ina3221](drivers/ina3221/) | TI INA3221 triple-channel current/power monitor (I2C) |
 | [max17048](drivers/max17048/) | MAX17048 LiPo fuel gauge (I2C) |
-| [bq27441](drivers/bq27441/) | TI BQ27441-G1 battery fuel gauge (I2C) |
+| [bq27441](drivers/bq27441/) | TI BQ27441-G1 battery fuel gauge (I2C). **Limited:** reads only, setting the design capacity is unsupported |
 | [pac1952](drivers/pac1952/) | Microchip PAC1952 dual-channel power monitor (I2C) |
 
 ### ADC
@@ -216,8 +221,8 @@ for quality criteria.
 | Component | Description |
 |-----------|-------------|
 | [hcsr04](drivers/hcsr04/) | HC-SR04 ultrasonic distance sensor (GPIO) |
-| [vl53l0x](drivers/vl53l0x/) | ST VL53L0X time-of-flight distance sensor (I2C) |
-| [vl53l1x](drivers/vl53l1x/) | ST VL53L1X time-of-flight distance sensor (I2C) |
+| [vl53l0x](drivers/vl53l0x/) | ST VL53L0X time-of-flight distance sensor (I2C). **Limited:** not usable on hardware yet, init skips the required initialisation and calibration |
+| [vl53l1x](drivers/vl53l1x/) | ST VL53L1X time-of-flight distance sensor (I2C). **Limited:** not usable on hardware yet, init does not load ST's configuration |
 
 ### IR Temperature
 
@@ -510,24 +515,43 @@ for quality criteria.
 Every component follows the same pattern:
 
 ```c
-// 1. Copy the component directory into your project
-//    e.g. wheels/drivers/bmp280/ -> your_project/lib/bmp280/
+// 1. Copy the component directory into your project, with contract.h beside it
+//    wheels/drivers/bmp280/     -> your_project/lib/bmp280/
+//    tooling/harness/contract.h -> your_project/lib/bmp280/
 
 // 2. Include the header
+#include <stddef.h>
 #include "bmp280.h"
 
-// 3. Wire your platform HAL via the init struct
-bmp280_t sensor;
-bmp280_cfg_t cfg = {
-    .i2c_write = my_i2c_write,   // your platform's I2C write
-    .i2c_read  = my_i2c_read,    // your platform's I2C read
-    .delay_ms  = my_delay_ms,    // your platform's delay
-};
-bmp280_init(&sensor, &cfg);
+// 3. Wire your platform HAL: a struct of callbacks, then the chip settings
+bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val);
+bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg,
+                  uint8_t *buf, uint16_t len);
+void my_delay_ms(void *ctx, uint32_t ms);
 
-// 4. Use it
-bmp280_data_t data;
-bmp280_read(&sensor, &data);
+static const bmp280_i2c_t i2c = {
+    .write_reg = my_write_reg,   // your platform's I2C write
+    .read_regs = my_read_regs,   // your platform's I2C read
+    .delay_ms  = my_delay_ms,    // your platform's delay
+    .ctx       = NULL,
+};
+
+static const bmp280_cfg_t cfg = {
+    .addr   = BMP280_ADDR_LOW,
+    .osrs_t = BMP280_OVERSAMPLING_2,
+    .osrs_p = BMP280_OVERSAMPLING_16,
+};
+
+// 4. Init with the device, the HAL and the settings, then use it
+void app_main(void) {
+    bmp280_t sensor;
+    bmp280_data_t data;
+
+    if (bmp280_init(&sensor, &i2c, &cfg) == BMP280_OK &&
+        bmp280_read(&sensor, &data) == BMP280_OK) {
+        // data.temperature_c, data.pressure_pa
+    }
+}
 ```
 
 Components never call `malloc`, never create threads, and never touch
