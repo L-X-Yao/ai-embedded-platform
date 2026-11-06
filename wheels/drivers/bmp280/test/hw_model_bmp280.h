@@ -33,7 +33,7 @@ typedef struct {
     int              measure_count;   /* how many forced measurements triggered */
 } bmp280_model_t;
 
-/* Datasheet reference calibration (from BST-BMP280-DS001-26 appendix 8.1) */
+/* Example calibration. The manual prints none, so this is not a device's data. */
 static void bmp280_model_set_reference_calib(bmp280_model_t *m)
 {
     /* dig_T1..T3, dig_P1..P9 (example values producing ~25°C / ~101325 Pa) */

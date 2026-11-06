@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * Compensation algorithm from Bosch BMP280 datasheet (BST-BMP280-DS001-26),
- * Section 8.1 (integer 32-bit).
+ * Section 8.2 (32-bit fixed point), with 64-bit intermediates.
  */
 
 #include "bmp280.h"
