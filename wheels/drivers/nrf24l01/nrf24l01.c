@@ -327,6 +327,8 @@ nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len)
 {
     if (!dev || !dev->spi || !data) return NRF24_ERR_SPI;
     if (len < 1 || len > 32) return NRF24_ERR_PARAM;
+    /* TX needs PRIM_RX low, and a CE pulse here would only end RX mode */
+    if (dev->mode != NRF24_MODE_TX) return NRF24_ERR_PARAM;
 
     const nrf24_spi_t *s = dev->spi;
 

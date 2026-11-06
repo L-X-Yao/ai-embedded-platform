@@ -98,6 +98,7 @@ nrf24_err_t nrf24_set_data_rate(nrf24_t *dev, nrf24_data_rate_t rate);
 nrf24_err_t nrf24_set_power(nrf24_t *dev, nrf24_power_t power);
 
 /** Send payload (blocking: waits for TX_DS or MAX_RT).
+ *  NRF24_ERR_PARAM in RX mode: call nrf24_set_mode() first.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 nrf24_err_t nrf24_send(nrf24_t *dev, const uint8_t *data, uint8_t len);
 
