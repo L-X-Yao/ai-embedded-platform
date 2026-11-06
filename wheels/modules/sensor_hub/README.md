@@ -62,7 +62,7 @@ int sensor_hub_find(const sensor_hub_t *hub, const char *name);
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `SENSOR_HUB_MAX_SENSORS` | 8 | Max registered sensors |
+| `SENSOR_HUB_MAX_SENSORS` | 8 | Max registered sensors, at most 255 |
 
 ## Supported platforms
 

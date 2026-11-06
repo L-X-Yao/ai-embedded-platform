@@ -168,7 +168,11 @@ static void logger_example(void)
 - **CSV output**: `timestamp,field1,field2,...\n` format
 - **Storage abstraction**: write + flush callbacks, application chooses backend
 - **Field count validation**: rejects extra fields or wrong types
-- **Buffer overflow protection**: returns ERR_OVERFLOW, record discarded
+- **Buffer overflow protection**: returns ERR_OVERFLOW and the field leaves no
+  trace, so it can be added again; until every field is in, commit writes
+  nothing and returns ERR_PARAM
+- **One line per record**: a string with a comma, a double quote, CR or LF
+  is refused with ERR_PARAM
 - **Record counting**: track total committed records
 - **Configurable** via compile-time macros (buffer size, max fields)
 - Pure C99, no heap, no OS dependency, fully reentrant per-context

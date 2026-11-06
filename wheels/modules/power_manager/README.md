@@ -75,7 +75,7 @@ if (level >= POWER_LEVEL_DEEP_SLEEP) {
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `POWER_MANAGER_MAX_VOTERS` | 16 | Maximum registered voters |
+| `POWER_MANAGER_MAX_VOTERS` | 16 | Maximum registered voters, at most 255 |
 
 ## Supported platforms
 

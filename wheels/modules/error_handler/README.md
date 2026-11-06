@@ -67,7 +67,7 @@ uint32_t error_handler_total_fatals(const error_handler_t *eh);
 
 | Macro | Default | Description |
 |-------|---------|-------------|
-| `ERROR_HANDLER_MAX_RECORDS` | 16 | Max error records in ring buffer |
+| `ERROR_HANDLER_MAX_RECORDS` | 16 | Max error records in ring buffer, at most 254: 0xFF stays invalid for erased flash |
 
 ## Supported platforms
 

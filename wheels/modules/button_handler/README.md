@@ -63,6 +63,9 @@ All timing in tick counts. Example at 10ms tick rate:
 
 Set `repeat_ticks = 0` to disable repeat events.
 
+`BTN_HANDLER_MAX_BUTTONS` (default 8, at most 255) is the number of buttons
+one handler can hold.
+
 ## Supported platforms
 
 - [x] Linux host (sim) -- passed 2026-05-01

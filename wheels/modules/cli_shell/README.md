@@ -61,7 +61,7 @@ void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 |-------|---------|-------------|
 | `CLI_SHELL_LINE_SIZE` | 128 | Max input line length (bytes) |
 | `CLI_SHELL_MAX_ARGS` | 8 | Max arguments per command |
-| `CLI_SHELL_MAX_CMDS` | 16 | Max registered commands (including help) |
+| `CLI_SHELL_MAX_CMDS` | 16 | Max registered commands (including help), at most 255 |
 
 ## Supported platforms
 

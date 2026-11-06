@@ -50,7 +50,7 @@ uint32_t    scheduler_get_run_count(const scheduler_t *s, const char *name);
 
 | Macro | Default | Purpose |
 |-------|---------|---------|
-| `SCHED_MAX_TASKS` | 16 | Max registered tasks (compile-time) |
+| `SCHED_MAX_TASKS` | 16 | Max registered tasks (compile-time), at most 255 |
 
 ### Overrun detection
 

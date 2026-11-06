@@ -66,7 +66,7 @@ uint8_t config_store_count(cs);
 
 | Macro | Default | Description |
 |-------|---------|-------------|
-| `CONFIG_STORE_MAX_ENTRIES` | 16 | Max config entries per store |
+| `CONFIG_STORE_MAX_ENTRIES` | 16 | Max config entries per store, at most 255 |
 | `CONFIG_STORE_STRING_SIZE` | 32 | Max string value length (bytes) |
 
 ## Supported platforms

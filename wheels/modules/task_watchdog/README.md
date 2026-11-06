@@ -44,7 +44,7 @@ uint32_t      task_watchdog_expired_count(const task_watchdog_t *wd);
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `TASK_WD_MAX_TASKS` | 8 | Maximum number of monitored tasks |
+| `TASK_WD_MAX_TASKS` | 8 | Maximum number of monitored tasks, at most 255 |
 
 ## Supported platforms
 
