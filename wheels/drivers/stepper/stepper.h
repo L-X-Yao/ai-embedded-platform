@@ -70,7 +70,7 @@ stepper_err_t stepper_init(stepper_t *s, const stepper_hal_t *hal,
 /** Move relative (blocking, uses delay_us callback). @thread_safe: no @isr_safe: no */
 stepper_err_t stepper_move(stepper_t *s, int32_t steps);
 
-/** Move to absolute position (blocking). @thread_safe: no @isr_safe: yes */
+/** Move to absolute position (blocking). @thread_safe: no @isr_safe: no */
 stepper_err_t stepper_move_to(stepper_t *s, int32_t target);
 
 /** Single step for manual control. @thread_safe: no @isr_safe: no */

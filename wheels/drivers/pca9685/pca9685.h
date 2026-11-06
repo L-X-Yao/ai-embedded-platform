@@ -60,14 +60,14 @@ pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
 /** Set duty cycle (0.0-100.0%) for a channel. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct);
 
-/** Set servo pulse width in microseconds for a channel. @thread_safe: no @isr_safe: yes */
+/** Set servo pulse width in microseconds for a channel. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
                                    uint16_t pulse_us);
 
 /** Turn all channels off. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_all_off(pca9685_t *dev);
 
-/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode and always leaves the chip awake. @thread_safe: no @isr_safe: yes */
+/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode and always leaves the chip awake. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_set_freq(pca9685_t *dev, uint16_t freq_hz);
 
 /** Enter low-power sleep mode (outputs off). @thread_safe: no @isr_safe: no */

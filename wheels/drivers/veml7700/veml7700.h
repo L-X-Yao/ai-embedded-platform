@@ -76,16 +76,16 @@ veml7700_err_t veml7700_read_white(veml7700_t *dev, uint16_t *raw);
 /** Read ambient light in lux (raw x resolution). @thread_safe: caller_must_lock @isr_safe: no */
 veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux);
 
-/** Change gain setting. @thread_safe: caller_must_lock @isr_safe: yes */
+/** Change gain setting. @thread_safe: caller_must_lock @isr_safe: no */
 veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain);
 
-/** Change integration time setting. @thread_safe: caller_must_lock @isr_safe: yes */
+/** Change integration time setting. @thread_safe: caller_must_lock @isr_safe: no */
 veml7700_err_t veml7700_set_integration_time(veml7700_t *dev, veml7700_it_t it);
 
-/** Power on sensor (clear SD bit). @thread_safe: caller_must_lock @isr_safe: yes */
+/** Power on sensor (clear SD bit). @thread_safe: caller_must_lock @isr_safe: no */
 veml7700_err_t veml7700_power_on(veml7700_t *dev);
 
-/** Shut down sensor (set SD bit). @thread_safe: caller_must_lock @isr_safe: yes */
+/** Shut down sensor (set SD bit). @thread_safe: caller_must_lock @isr_safe: no */
 veml7700_err_t veml7700_shutdown(veml7700_t *dev);
 
 #ifdef __cplusplus
