@@ -19,6 +19,9 @@
 #include <stddef.h>
 #include <string.h>
 
+/* TxModeReg bit 7, data sheet p.49: the chip appends the CRC to a sent frame */
+#define TXMODE_TX_CRC_EN 0x80u
+
 /* ---------- SPI helpers ---------- */
 
 static void reg_write(const rc522_spi_t *spi, uint8_t reg, uint8_t val)
@@ -334,10 +337,16 @@ rc522_err_t rc522_halt(rc522_t *dev)
 
     uint8_t cmd[2] = { RC522_PICC_HALT_CMD, 0x00 };
 
-    /* HALT doesn't expect a response (card goes silent) */
+    /* HLTA carries CRC_A. TxModeReg resets with TxCRCEn off, and the other
+     * frames here must stay without it, so it is on for this frame only. */
+    reg_set_bits(dev->spi, RC522_REG_TXMODE, TXMODE_TX_CRC_EN);
     rc522_err_t err = transceive(dev, cmd, 2, NULL, NULL, 0);
-    /* Timeout is expected -- card goes to HALT state and stops responding */
+    reg_clear_bits(dev->spi, RC522_REG_TXMODE, TXMODE_TX_CRC_EN);
+
+    /* HLTA has no acknowledge: silence is the good outcome, and any answer
+     * means the card did not take it */
     if (err == RC522_ERR_TIMEOUT) return RC522_OK;
+    if (err == RC522_OK) return RC522_ERR_NACK;
     return err;
 }
 

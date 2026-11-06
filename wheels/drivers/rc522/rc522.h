@@ -32,6 +32,7 @@ typedef enum {
     RC522_ERR_ID      = -3,
     RC522_ERR_TIMEOUT = -4,
     RC522_ERR_COLL    = -5,   /* collision during anticollision */
+    RC522_ERR_NACK    = -6,   /* card answered HLTA: not acknowledged */
 } rc522_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -59,6 +60,7 @@ typedef struct {
 #define RC522_REG_CONTROL        0x0Cu
 #define RC522_REG_BITFRAMING     0x0Du
 #define RC522_REG_MODE           0x11u
+#define RC522_REG_TXMODE         0x12u
 #define RC522_REG_TXCONTROL      0x14u
 #define RC522_REG_TXASK          0x15u
 #define RC522_REG_CRCRESULT_MSB  0x21u
@@ -132,7 +134,10 @@ rc522_err_t rc522_detect_card(rc522_t *dev);
  *  @thread_safe: no @isr_safe: no */
 rc522_err_t rc522_read_card_uid(rc522_t *dev, rc522_uid_t *uid);
 
-/** Send HALT to put PICC in HALT state.
+/** Send HLTA with CRC_A. A card halts only if it was selected first, and this
+ *  driver has no SELECT, so RC522_OK does not mean the card is in HALT state:
+ *  it means no card answered, which is also the result with no card present.
+ *  @return RC522_ERR_NACK if a card answered, which means not acknowledged.
  *  @thread_safe: no @isr_safe: no */
 rc522_err_t rc522_halt(rc522_t *dev);
 
