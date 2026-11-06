@@ -510,6 +510,47 @@ TEST(test_hw_model_id_check)
                            TSL2591_ITIME_100MS), TSL2591_ERR_ID);
 }
 
+/* ---------- a setting the chip did not take ---------- */
+
+/* 800 counts at low gain and 100 ms: 800 / (100 * 1 / 408) = 3264 lux */
+static void assert_low_gain_100ms_scale(tsl2591_t *d)
+{
+    tsl2591_data_t data;
+    ASSERT_EQ(tsl2591_read(d, &data), TSL2591_OK);
+    ASSERT_NEAR(data.lux, 3264.0f, 1.0f);
+}
+
+static void start_at_low_gain_100ms(tsl2591_t *d)
+{
+    mock_reset();
+    mock_set_channels(1000, 200);
+    ASSERT_EQ(tsl2591_init(d, &mock_i2c, TSL2591_GAIN_LOW, TSL2591_ITIME_100MS),
+              TSL2591_OK);
+    assert_low_gain_100ms_scale(d);
+}
+
+TEST(test_failed_set_gain_keeps_the_scale)
+{
+    tsl2591_t d;
+    start_at_low_gain_100ms(&d);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(tsl2591_set_gain(&d, TSL2591_GAIN_MAX), TSL2591_ERR_I2C);
+    ASSERT_EQ(d.gain, TSL2591_GAIN_LOW);
+    assert_low_gain_100ms_scale(&d);
+}
+
+TEST(test_failed_set_integration_time_keeps_the_scale)
+{
+    tsl2591_t d;
+    start_at_low_gain_100ms(&d);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(tsl2591_set_integration_time(&d, TSL2591_ITIME_600MS), TSL2591_ERR_I2C);
+    ASSERT_EQ(d.itime, TSL2591_ITIME_100MS);
+    assert_low_gain_100ms_scale(&d);
+}
+
 TEST_MAIN("tsl2591")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -547,4 +588,6 @@ TEST_MAIN("tsl2591")
     RUN(test_lux_all_gains);
     RUN(test_lux_all_itimes);
     RUN(test_hw_model_id_check);
+    RUN(test_failed_set_gain_keeps_the_scale);
+    RUN(test_failed_set_integration_time_keeps_the_scale);
 TEST_MAIN_END()
