@@ -50,8 +50,7 @@ None. I2C address is fixed at 0x59.
 Checked on 2026-11-06 against Sensirion SGP40 datasheet v1.2. Not run on hardware.
 
 - **Matched:** I2C address, command codes, word and CRC format, wait times, default compensation words.
-- **Fixed:** The self-test compared both result bytes although only the first counts, so a healthy sensor could fail `sgp40_init`. The comments called the default words compensation, which they turn off.
-- **Still open:** `hw_model_sgp40.h` is not compiled by any test.
+- **Fixed:** The self-test compared both result bytes although only the first counts, so a healthy sensor could fail `sgp40_init`. The comments called the default words compensation, which they turn off. `hw_model_sgp40.h` has the raw I2C signatures and runs in `test_hw_model_sgp40`, with a NACK while a command runs.
 - **Suspected:** The first sample should be discarded when the Gas Index Algorithm is not used, and the driver does not say so.
 
 ## Known issues

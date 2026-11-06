@@ -59,8 +59,8 @@ set at runtime via `mcp23017_init()`.
 Checked on 2026-11-06 against Microchip DS20001952C, (c) 2005-2016. Not run on hardware.
 
 - **Matched:** Address range, all 22 BANK=0 register addresses, POR values, IODIR and GPPU polarity, what GPIO and OLAT reads and writes do, INTF reads.
-- **Fixed:** `mcp23017_init` never cleared a pending interrupt, so after an MCU-only reset that port raised no further interrupts. It now reads GPIOA and GPIOB last, and it no longer writes the read-only INTF and INTCAP registers.
-- **Still open:** Init assumes BANK=0: if other firmware left BANK=1, its writes land on the wrong registers. There is no INTCAP read, so the port value at the moment of an interrupt is not available. No DEFVAL, INTCON, IOCON, IPOL or RESET control, so only interrupt-on-pin-change is reachable. The model has no interrupt engine, ignores IPOL, masks OLAT with IODIR on a GPIO write, does not refresh GPIO on an OLAT write, and keeps 0Ah and 0Bh as two bytes, so it cannot catch faults in those areas. Unverified and not from this manual: later revisions are believed to restrict GPA7 and GPB7 to outputs, so check one before using pin 7 as an input.
+- **Fixed:** `mcp23017_init` never cleared a pending interrupt, so after an MCU-only reset that port raised no further interrupts. It now reads GPIOA and GPIOB last, and it no longer writes the read-only INTF and INTCAP registers. The model has interrupt logic, applies IPOL, takes a GPIO write into the whole latch, refreshes GPIO on an OLAT write and keeps IOCON as one register.
+- **Still open:** Init assumes BANK=0: if other firmware left BANK=1, its writes land on the wrong registers. There is no INTCAP read, so the port value at the moment of an interrupt is not available. No DEFVAL, INTCON, IOCON, IPOL or RESET control, so only interrupt-on-pin-change is reachable. Unverified and not from this manual: later revisions are believed to restrict GPA7 and GPB7 to outputs, so check one before using pin 7 as an input.
 
 ## Known issues
 
