@@ -10,7 +10,7 @@ int64. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). v
+Proactive build (ADR-011). Variable-length integer encoding using LEB128 (protobuf-compatible).
 
 
 ## Why self-written?

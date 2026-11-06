@@ -10,7 +10,7 @@ Control (FC). Provides stateful reassembly for multi-frame messages up to
 
 ## Origin
 
-Proactive build (ADR-011). i
+Proactive build (ADR-011). ISO-TP (ISO 15765-2) CAN multi-frame transport protocol codec. Handles
 
 
 ## Why self-written?

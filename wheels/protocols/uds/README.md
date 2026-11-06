@@ -11,7 +11,7 @@ Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). u
+Proactive build (ADR-011). Unified Diagnostic Services (ISO 14229) message codec. Encodes and decodes
 
 
 ## Why self-written?

@@ -10,7 +10,7 @@ thread-safe, and ISR-safe. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). s
+Proactive build (ADR-011). Linear value mapping from one range to another, like Arduino's `map()`.
 
 
 ## Why self-written?

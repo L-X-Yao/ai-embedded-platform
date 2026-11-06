@@ -10,7 +10,7 @@ PF < 240) from PDU2 (broadcast, PF >= 240). Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). j
+Proactive build (ADR-011). SAE J1939 CAN identifier and PGN (Parameter Group Number) codec. Encodes
 
 
 ## Why self-written?

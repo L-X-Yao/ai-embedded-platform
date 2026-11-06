@@ -10,7 +10,7 @@ Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). h
+Proactive build (ADR-011). Schmitt-trigger-style threshold comparator with configurable hysteresis band.
 
 
 ## Why self-written?

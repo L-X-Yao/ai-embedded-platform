@@ -11,7 +11,7 @@ protocols. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). s
+Proactive build (ADR-011). Motorola S-Record (SREC) firmware format parser and encoder. Handles all
 
 
 ## Why self-written?

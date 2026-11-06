@@ -11,7 +11,7 @@ firmware update tools. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). i
+Proactive build (ADR-011). Intel HEX firmware format parser and encoder. Handles all record types:
 
 
 ## Why self-written?

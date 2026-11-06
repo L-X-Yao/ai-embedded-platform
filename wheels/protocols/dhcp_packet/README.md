@@ -10,7 +10,7 @@ caller-provided. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). d
+Proactive build (ADR-011). Stateless DHCP message builder and parser per RFC 2131. Handles
 
 
 ## Why self-written?

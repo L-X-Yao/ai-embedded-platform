@@ -10,7 +10,7 @@ Pure C99, no heap, no OS, fully reentrant.
 
 ## Origin
 
-Proactive build (ADR-011). p
+Proactive build (ADR-011). Tracks running peak (max) and valley (min) of a signal stream with
 
 
 ## Why self-written?

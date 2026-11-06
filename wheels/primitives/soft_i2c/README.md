@@ -10,7 +10,7 @@ clock-stretching recovery. Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). s
+Proactive build (ADR-011). GPIO bit-bang I2C master with bus recovery. All hardware access is via
 
 
 ## Why self-written?

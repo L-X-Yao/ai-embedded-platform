@@ -9,7 +9,7 @@ sequences (full Unicode range). Pure C99, no heap, no OS.
 
 ## Origin
 
-Proactive build (ADR-011). u
+Proactive build (ADR-011). UTF-8 validation, decoding, encoding, and codepoint counting for embedded
 
 
 ## Why self-written?
