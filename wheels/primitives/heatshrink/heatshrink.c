@@ -599,6 +599,11 @@ static uint16_t dec_bits_needed(const heatshrink_decoder_t *dec)
         return (uint16_t)(dec->window_bits + dec->lookahead_bits);
     case HS_DEC_BACKREF_COUNT:
         return dec->lookahead_bits;
+    case HS_DEC_READY:
+    case HS_DEC_YIELD_LITERAL:
+    case HS_DEC_YIELD_BACKREF:
+    case HS_DEC_FINISHING:
+    case HS_DEC_DONE:
     default:
         return 0u;
     }

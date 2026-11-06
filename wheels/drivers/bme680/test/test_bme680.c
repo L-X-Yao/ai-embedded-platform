@@ -686,7 +686,7 @@ TEST(test_humidity_matches_datasheet)
 
     double want = datasheet_humidity(&dev, data.temperature_c, 25000);
     ASSERT_TRUE(want > 10.0 && want < 90.0);
-    ASSERT_TRUE(data.humidity_pct > want - 0.1 && data.humidity_pct < want + 0.1);
+    ASSERT_TRUE((double)data.humidity_pct > want - 0.1 && (double)data.humidity_pct < want + 0.1);
 }
 
 TEST(test_humidity_below_zero_reads_zero)
@@ -821,7 +821,7 @@ static void assert_pressure_matches_datasheet(uint32_t adc_t)
     ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
 
     double want = datasheet_pressure(&dev, 400000);
-    ASSERT_TRUE(data.pressure_pa > want - 10.0 && data.pressure_pa < want + 10.0);
+    ASSERT_TRUE((double)data.pressure_pa > want - 10.0 && (double)data.pressure_pa < want + 10.0);
 }
 
 /* (var1 >> 2) squared leaves int32_t for t_fine above 498724, about 97 C */
@@ -865,7 +865,7 @@ TEST(test_bad_calibration_stays_defined)
     ASSERT_EQ(bme680_read(&dev, &data), BME680_OK);
 
     double want = datasheet_pressure(&dev, 415148);
-    ASSERT_TRUE(data.pressure_pa > want - 50.0 && data.pressure_pa < want + 50.0);
+    ASSERT_TRUE((double)data.pressure_pa > want - 50.0 && (double)data.pressure_pa < want + 50.0);
 }
 
 /* par_p1 of 2 gives a divisor of 1, and a result whose cube leaves int64_t */

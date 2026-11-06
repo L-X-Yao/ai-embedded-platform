@@ -388,6 +388,7 @@ static mqtt5_err_t skip_prop(prop_kind_t kind, const uint8_t *buf,
     case PROP_PAIR:
         strings = 2;
         break;
+    case PROP_INVALID:
     default:
         return MQTT5_ERR_PROTOCOL;
     }

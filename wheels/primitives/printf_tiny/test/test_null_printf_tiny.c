@@ -8,9 +8,7 @@
 #include <stddef.h>
 
 TEST(test_printf_tiny_null_ctx) {
-    char _fmt[64];
-    memset(_fmt, 0, sizeof(_fmt));
-    (void)printf_tiny(0, NULL, _fmt);
+    (void)printf_tiny(0, NULL, "x");
     /* must not crash */
 }
 
@@ -20,9 +18,7 @@ TEST(test_printf_tiny_null_fmt) {
 }
 
 TEST(test_snprintf_tiny_null_buf) {
-    char _fmt[64];
-    memset(_fmt, 0, sizeof(_fmt));
-    (void)snprintf_tiny(NULL, 0, _fmt);
+    (void)snprintf_tiny(NULL, 0, "x");
     /* must not crash */
 }
 
