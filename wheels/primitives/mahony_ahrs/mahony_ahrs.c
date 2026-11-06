@@ -10,11 +10,19 @@
 
 #include "mahony_ahrs.h"
 #include "contract.h"
+#include <float.h>
 #include <math.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define DEG_TO_RAD (3.14159265358979f / 180.0f)
 #define RAD_TO_DEG (180.0f / 3.14159265358979f)
+
+/* False for NaN as well: every comparison with NaN is false. */
+static bool is_finite(float x)
+{
+    return x >= -FLT_MAX && x <= FLT_MAX;
+}
 
 mahony_ahrs_cfg_t mahony_ahrs_default_cfg(void)
 {
@@ -46,6 +54,10 @@ void mahony_ahrs_update(mahony_ahrs_t *f,
 {
     if (!f) return;
 
+    /* NaN in the state never leaves it, so a bad sample must not get there */
+    if (!is_finite(gx_dps) || !is_finite(gy_dps) || !is_finite(gz_dps) ||
+        !is_finite(ax) || !is_finite(ay) || !is_finite(az)) return;
+
     float norm;
     float vx, vy, vz;
     float ex, ey, ez;
@@ -62,8 +74,9 @@ void mahony_ahrs_update(mahony_ahrs_t *f,
     ey = (az * vx - ax * vz);
     ez = (ax * vy - ay * vx);
 
+    /* The magnetometer is optional: a bad sample counts as not available */
     float mag_norm = sqrtf(mx * mx + my * my + mz * mz);
-    if (mag_norm > 0.001f) {
+    if (is_finite(mag_norm) && mag_norm > 0.001f) {
         mx /= mag_norm; my /= mag_norm; mz /= mag_norm;
 
         float hx = 2.0f * (mx * (0.5f - f->q2*f->q2 - f->q3*f->q3) +
@@ -108,7 +121,12 @@ void mahony_ahrs_update(mahony_ahrs_t *f,
     float nq3 = f->q3 + ( f->q0 * gz + f->q1 * gy - f->q2 * gx) * f->half_t;
 
     norm = sqrtf(nq0 * nq0 + nq1 * nq1 + nq2 * nq2 + nq3 * nq3);
-    if (norm < 1e-8f) { f->q0 = 1.0f; f->q1 = f->q2 = f->q3 = 0.0f; return; }
+    if (!is_finite(norm) || norm < 1e-8f) {
+        /* Clear the integrators too: they feed every later step */
+        f->q0 = 1.0f; f->q1 = f->q2 = f->q3 = 0.0f;
+        f->integral_fb_x = f->integral_fb_y = f->integral_fb_z = 0.0f;
+        return;
+    }
     f->q0 = nq0 / norm;
     f->q1 = nq1 / norm;
     f->q2 = nq2 / norm;
