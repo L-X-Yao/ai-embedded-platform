@@ -19,6 +19,7 @@
 #define REG_ATIME   0x01u
 #define REG_CONTROL 0x0Fu
 #define REG_ID      0x12u
+#define REG_STATUS  0x13u
 #define REG_CDATAL  0x14u
 
 static tcs34725_t dev;
@@ -35,6 +36,8 @@ static void mock_reset(void)
     mock_i2c_reset();
     /* Default chip ID = 0x44 at CMD-encoded address */
     mock_regs[CMD(REG_ID)] = 0x44;
+    /* AVALID: these tests start after an integration cycle has finished */
+    mock_regs[CMD(REG_STATUS)] = 0x01;
 }
 
 /* ---------- init tests ---------- */
@@ -143,6 +146,34 @@ TEST(test_read_rgbc)
     ASSERT_EQ(rgbc.b, 300);
 }
 
+/* p.19: AVALID is bit 0 of STATUS, and AINT does not stand in for it */
+TEST(test_read_rgbc_not_ready)
+{
+    mock_reset();
+    tcs34725_init(&dev, &mock_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
+    mock_regs[CMD(REG_STATUS)] = 0x10;  /* AINT */
+
+    tcs34725_rgbc_t rgbc = { 1, 2, 3, 4 };
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_ERR_NOT_READY);
+    ASSERT_EQ(rgbc.c, 1);
+    ASSERT_EQ(rgbc.r, 2);
+    ASSERT_EQ(rgbc.g, 3);
+    ASSERT_EQ(rgbc.b, 4);
+
+    mock_regs[CMD(REG_STATUS)] = 0x11;
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_OK);
+}
+
+TEST(test_read_rgbc_data_i2c_fail)
+{
+    mock_reset();
+    tcs34725_init(&dev, &mock_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
+    mock_fail_at = mock_op_count + 1;  /* the STATUS read passes */
+
+    tcs34725_rgbc_t rgbc;
+    ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_ERR_I2C);
+}
+
 TEST(test_read_rgbc_null)
 {
     mock_reset();
@@ -242,6 +273,8 @@ TEST_MAIN("tcs34725")
     RUN(test_init_aen_write_fail);
     RUN(test_init_bad_gain);
     RUN(test_read_rgbc);
+    RUN(test_read_rgbc_not_ready);
+    RUN(test_read_rgbc_data_i2c_fail);
     RUN(test_read_rgbc_null);
     RUN(test_set_integration_time);
     RUN(test_set_gain);

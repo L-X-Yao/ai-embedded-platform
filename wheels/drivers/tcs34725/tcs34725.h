@@ -30,6 +30,7 @@ typedef enum {
     TCS34725_ERR_I2C   = -1,
     TCS34725_ERR_ID    = -2,
     TCS34725_ERR_PARAM = -3,
+    TCS34725_ERR_NOT_READY = -4,  /* no integration cycle finished: read again later */
 } tcs34725_err_t;
 
 typedef struct {
@@ -78,8 +79,9 @@ tcs34725_err_t tcs34725_init(tcs34725_t *dev,
                              tcs34725_integ_t integ,
                              tcs34725_gain_t gain);
 
-/** Read RGBC data (clear, red, green, blue — 16-bit each).
- *  @thread_safe: caller_must_lock @isr_safe: no */
+/** Read RGBC data (clear, red, green, blue — 16-bit each). Returns
+ *  TCS34725_ERR_NOT_READY and leaves *out unchanged until an integration cycle
+ *  has finished. @thread_safe: caller_must_lock @isr_safe: no */
 tcs34725_err_t tcs34725_read_rgbc(tcs34725_t *dev,
                                   tcs34725_rgbc_t *out);
 
