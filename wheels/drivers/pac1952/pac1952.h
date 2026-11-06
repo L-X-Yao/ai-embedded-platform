@@ -37,10 +37,17 @@ typedef enum {
 /* ---------- I2C HAL (caller provides) ---------- */
 
 typedef struct {
+    /* Unused: the chip's commands take no data byte. */
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void *ctx;
+    /* Puts exactly data[0..len-1] on the bus after the address, then STOP.
+     * NULL: pac1952_refresh returns PAC1952_ERR_PARAM and sends nothing. */
+    bool (*write_raw)(void *ctx, uint8_t dev_addr,
+                      const uint8_t *data, uint16_t len);
+    /* Waits at least ms milliseconds.  NULL: as for write_raw. */
+    void (*delay_ms)(void *ctx, uint32_t ms);
 } pac1952_i2c_t;
 
 /* ---------- constants ---------- */
@@ -88,8 +95,10 @@ typedef struct {
 pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
                            const pac1952_cfg_t *cfg);
 
-/** Send REFRESH command (0x1F) to latch new readings.
- *  Must be called before read_channel/read_both for fresh data.
+/** Send REFRESH (command 0x00) to latch new readings, then wait for them
+ *  to settle.  It also resets the chip's accumulators, which this driver
+ *  does not read.  Must be called before read_channel/read_both for fresh
+ *  data.  Needs write_raw and delay_ms.  Calls delay_ms (1 ms).
  *  @thread_safe: no @isr_safe: no */
 pac1952_err_t pac1952_refresh(pac1952_t *dev);
 

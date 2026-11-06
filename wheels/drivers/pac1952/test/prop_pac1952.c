@@ -18,7 +18,6 @@
 #define REG_PRODUCT_ID 0xFDu
 
 static const pac1952_i2c_t mock_i2c_hal = {
-    .write_reg = mock_i2c_write_reg,
     .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
 };
