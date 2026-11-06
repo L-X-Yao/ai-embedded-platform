@@ -62,6 +62,82 @@ static data_logger_err_t check_add(const data_logger_t *dl,
     return DATA_LOGGER_OK;
 }
 
+/*
+ * Format value as "%.2f" does, with integer arithmetic.  snprintf will not do:
+ * newlib-nano prints nothing for a float unless _printf_float is linked, and
+ * full newlib allocates from the heap.  Assumes IEEE 754 binary32.
+ * Returns the length, or -1 if the text does not fit in size bytes.
+ */
+static int fmt_float(char *out, size_t size, float value)
+{
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+
+    int negative = (int)(bits >> 31);
+    uint32_t exponent = (bits >> 23) & 0xFFu;
+    uint64_t mantissa = bits & 0x7FFFFFu;
+
+    if (exponent == 0xFFu) {
+        const char *text = mantissa != 0 ? "nan" : (negative ? "-inf" : "inf");
+        size_t len = strlen(text);
+        if (len >= size) {
+            return -1;
+        }
+        memcpy(out, text, len);
+        out[len] = '\0';
+        return (int)len;
+    }
+
+    /* |value| = mantissa * 2^shift exactly, so hundredths can round exactly */
+    int shift = -149;
+    if (exponent != 0) {
+        mantissa |= 0x800000u;
+        shift = (int)exponent - 150;
+    }
+    if (shift > 32) {
+        return -1;  /* 2^56 and up: longer than any buffer here, and past 64 bits */
+    }
+
+    uint64_t hundredths = mantissa * 100u;
+    if (shift >= 0) {
+        hundredths <<= shift;
+    } else if (shift > -64) {
+        uint32_t drop = (uint32_t)-shift;
+        uint64_t rest = hundredths & ((UINT64_C(1) << drop) - 1u);
+        uint64_t half = UINT64_C(1) << (drop - 1u);
+        hundredths >>= drop;
+        if (rest > half || (rest == half && (hundredths & 1u) != 0)) {
+            hundredths++;  /* ties go to the even digit */
+        }
+    } else {
+        hundredths = 0;
+    }
+
+    char digits[20];  /* least significant first; 2^63 has 19 */
+    int count = 0;
+    do {
+        digits[count++] = (char)('0' + (int)(hundredths % 10u));
+        hundredths /= 10u;
+    } while (hundredths != 0 || count < 3);
+
+    if ((size_t)(negative + count + 1) >= size) {
+        return -1;
+    }
+
+    int n = 0;
+    if (negative) {
+        out[n++] = '-';
+    }
+    while (count > 2) {
+        out[n++] = digits[--count];
+    }
+    out[n++] = '.';
+    out[n++] = digits[1];
+    out[n++] = digits[0];
+    out[n] = '\0';
+    return n;
+}
+
 /* ---------- Public API ---------- */
 
 data_logger_err_t data_logger_init(data_logger_t *dl,
@@ -170,8 +246,8 @@ data_logger_err_t data_logger_add_float(data_logger_t *dl, float value)
     }
 
     char tmp[20];
-    int n = snprintf(tmp, sizeof(tmp), "%.2f", (double)value);
-    if (n < 0 || (uint16_t)n >= sizeof(tmp)) {
+    int n = fmt_float(tmp, sizeof(tmp), value);
+    if (n < 0) {
         return DATA_LOGGER_ERR_OVERFLOW;
     }
 
