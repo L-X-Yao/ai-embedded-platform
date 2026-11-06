@@ -57,6 +57,8 @@ typedef struct {
  * Build a MAC data frame (MHDR + FHDR + FPort + FRMPayload + MIC).
  * Does NOT encrypt payload or compute MIC — caller does crypto and
  * fills frame->mic before calling this.
+ * frame->payload_len above 242, the largest FRMPayload of any region
+ * with FOpts empty, returns LORAWAN_ERR_SIZE.
  * Returns total bytes written, or negative lorawan_err_t on error.
  * @thread_safe: yes (pure function)
  */
