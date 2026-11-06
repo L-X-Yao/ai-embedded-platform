@@ -888,9 +888,67 @@ TEST(test_crc_error_on_the_last_device_loses_no_device)
     crc_error_on_walk(3, 2);
 }
 
+/* ---------- a ROM of zeros is no device ---------- */
+
+static bool always_present(void *ctx)
+{
+    (void)ctx;
+    return true;
+}
+
+static void ignore_bit(void *ctx, uint8_t bit)
+{
+    (void)ctx;
+    (void)bit;
+}
+
+static uint8_t always_low(void *ctx)
+{
+    (void)ctx;
+    return 0;
+}
+
+TEST(test_bus_stuck_low_is_a_bus_error)
+{
+    /* Every bit reads 0,0 and the CRC of eight zero bytes is 0. */
+    onewire_search_bus_t bus = {
+        .ctx = NULL,
+        .reset = always_present,
+        .write_bit = ignore_bit,
+        .read_bit = always_low
+    };
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    memset(&rom, 0xA5, sizeof(rom));
+    ASSERT_EQ(onewire_search_init(&state, &bus), ONEWIRE_SEARCH_OK);
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+        ASSERT_EQ(rom.rom[0], 0xA5);
+    }
+}
+
+TEST(test_family_code_zero_is_refused)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    glitch_setup(&g, &bus, &state);
+    g.mock.num_devices = 1;
+    g.mock.roms[0][0] = 0x00;
+    mock_set_rom_with_crc(g.mock.roms[0]);
+    ASSERT_EQ(onewire_search_crc8(g.mock.roms[0], 8u), 0);
+
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("onewire_search")
+    RUN(test_bus_stuck_low_is_a_bus_error);
+    RUN(test_family_code_zero_is_refused);
     RUN(test_clean_bus_finds_all_three);
     RUN(test_crc_error_on_the_first_walk_loses_no_device);
     RUN(test_crc_error_mid_search_loses_no_device);
