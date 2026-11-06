@@ -12,6 +12,9 @@
  *
  * STATUS starts in boot mode. Only the single byte 0xF4 moves it to
  * application mode (p24, p25); a write that carries data does not.
+ *
+ * Registers are mailboxes (p13), so reads of 0x02 stream alg_result rather than
+ * mock_regs[0x02..], and they clear DATA_READY (p16).
  */
 #define BUS_LOG_MAX 8
 #define BUS_TX_MAX  8
@@ -25,6 +28,7 @@ typedef struct {
 static bus_tx_t bus_log[BUS_LOG_MAX];
 static int      bus_count;
 static bool     chip_refuses_app_start;
+static uint8_t  alg_result[4];
 
 static void bus_clear(void)
 {
@@ -67,6 +71,18 @@ static bool bus_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
     return bus_write(dev_addr, data, len);
 }
 
+static bool bus_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                          uint8_t *buf, uint16_t len)
+{
+    if (!mock_i2c_read_regs(ctx, dev_addr, reg, buf, len)) return false;
+
+    if (reg == 0x02) {
+        memcpy(buf, alg_result, len < sizeof(alg_result) ? len : sizeof(alg_result));
+        mock_regs[0x00] &= (uint8_t)~0x08u;  /* DATA_READY */
+    }
+    return true;
+}
+
 /* Assert that write transaction i was exactly these bytes */
 #define ASSERT_TX(i, ...) do { \
     static const uint8_t want_[] = { __VA_ARGS__ }; \
@@ -80,13 +96,14 @@ static void mock_reset(void)
     mock_i2c_reset();
     bus_clear();
     chip_refuses_app_start = false;
+    memset(alg_result, 0, sizeof(alg_result));
     mock_regs[0x20] = 0x81;  /* HW_ID */
     mock_regs[0x00] = 0x10;  /* STATUS: APP_VALID(0x10), still in boot mode */
 }
 
 static const ccs811_i2c_t mock_i2c = {
     .write_reg = bus_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = bus_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
     .write_raw = bus_write_raw,
@@ -104,13 +121,13 @@ static void setup(void)
     ccs811_init(&dev, &mock_i2c, &default_cfg);
 }
 
-/* Plant measurement data in ALG_RESULT registers */
+/* Plant measurement data in the ALG_RESULT_DATA mailbox */
 static void plant_data(uint16_t eco2, uint16_t tvoc)
 {
-    mock_regs[0x02] = (uint8_t)(eco2 >> 8);
-    mock_regs[0x03] = (uint8_t)(eco2 & 0xFF);
-    mock_regs[0x04] = (uint8_t)(tvoc >> 8);
-    mock_regs[0x05] = (uint8_t)(tvoc & 0xFF);
+    alg_result[0] = (uint8_t)(eco2 >> 8);
+    alg_result[1] = (uint8_t)(eco2 & 0xFF);
+    alg_result[2] = (uint8_t)(tvoc >> 8);
+    alg_result[3] = (uint8_t)(tvoc & 0xFF);
     /* Set DATA_READY bit in STATUS */
     mock_regs[0x00] |= 0x08;
 }
@@ -388,6 +405,43 @@ TEST(test_env_data_i2c_fail)
     ASSERT_EQ(ccs811_set_env_data(&dev, 100, 100), CCS811_ERR_I2C);
 }
 
+/* p16: DATA_READY "is cleared when ALG_RESULT_DATA is read" */
+TEST(test_one_sample_reads_once)
+{
+    setup();
+    plant_data(450, 10);
+    ccs811_data_t data;
+    ASSERT_EQ(ccs811_read(&dev, &data), CCS811_OK);
+    ASSERT_EQ(ccs811_read(&dev, &data), CCS811_ERR_NOT_READY);
+}
+
+/* p13: "the address does not increment", so all four bytes come from mailbox
+ * 0x02, whatever RAW_DATA 0x03 and ENV_DATA 0x05 hold */
+TEST(test_read_takes_the_result_from_one_mailbox)
+{
+    setup();
+    plant_data(450, 10);
+    mock_regs[0x03] = 0xEE;
+    mock_regs[0x04] = 0xEE;
+    mock_regs[0x05] = 0xEE;
+    ccs811_data_t data;
+    ASSERT_EQ(ccs811_read(&dev, &data), CCS811_OK);
+    ASSERT_EQ(data.eco2_ppm, 450);
+    ASSERT_EQ(data.tvoc_ppb, 10);
+}
+
+/* After an MCU restart the chip may still run the application, and p15 has no
+ * 0xF4 in that map */
+TEST(test_init_leaves_a_running_chip_alone)
+{
+    mock_reset();
+    mock_regs[0x00] = 0x90;  /* FW_MODE, APP_VALID */
+    ccs811_t d;
+    ASSERT_EQ(ccs811_init(&d, &mock_i2c, &default_cfg), CCS811_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x01, 0x10);
+}
+
 TEST_MAIN("ccs811")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -416,4 +470,7 @@ TEST_MAIN("ccs811")
     RUN(test_env_data_takes_the_largest_step);
     RUN(test_env_data_refuses_what_the_high_byte_cannot_hold);
     RUN(test_env_data_i2c_fail);
+    RUN(test_one_sample_reads_once);
+    RUN(test_read_takes_the_result_from_one_mailbox);
+    RUN(test_init_leaves_a_running_chip_alone);
 TEST_MAIN_END()
