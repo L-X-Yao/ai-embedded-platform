@@ -619,6 +619,47 @@ TEST(test_failed_boot_refuses_appends)
     ASSERT_TRUE(latest_is("CCCC"));
 }
 
+/* One record byte for byte.  Writer and reader share the CRC code, so it can
+ * drift with every read still good: only bytes from elsewhere can show that.
+ * The CRC here is zlib's crc32 of the 14 bytes before it. */
+TEST(test_record_bytes_on_flash)
+{
+    static const uint8_t want[ENTRY4_SIZE] = {
+        0x4C, 0x4E, 0x52, 0x4A,  /* magic, little-endian */
+        0x01, 0x00, 0x00, 0x00,  /* seq */
+        0x04, 0x00,              /* len */
+        'A', 'B', 'C', 'D',
+        0x69, 0xD1, 0x3B, 0x97,  /* CRC-32, little-endian */
+    };
+
+    fresh_journal();
+    ASSERT_EQ(put("ABCD"), FLASH_JOURNAL_OK);
+    ASSERT_TRUE(memcmp(sim_flash, want, sizeof(want)) == 0);
+    ASSERT_EQ(sim_flash[ENTRY4_SIZE], 0xFF);
+}
+
+/* What a boot recovers shows only in what the next boot finds, so go through
+ * two: a wrong position or seq loses or reorders entries only then. */
+TEST(test_boot_append_boot_keeps_every_entry)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_OK);
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(sim_bad_programs, 0);
+    ASSERT_EQ(sim_flash[2u * ENTRY4_SIZE + 4u], 3);  /* its seq, on flash */
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 3);
+    ASSERT_EQ(jrnl.write_offset, 3u * ENTRY4_SIZE);
+    ASSERT_TRUE(nth_is(0, "AAAA"));
+    ASSERT_TRUE(nth_is(1, "BBBB"));
+    ASSERT_TRUE(nth_is(2, "CCCC"));
+    ASSERT_TRUE(latest_is("CCCC"));
+}
+
 /* ---------- Failed writes with no reset after them ------------------------ */
 
 #define ENTRIES_PER_SECTOR  (SIM_SECTOR_SIZE / ENTRY4_SIZE)
@@ -889,6 +930,8 @@ TEST_MAIN("flash_journal")
     RUN(test_boot_sees_last_byte_of_sector_programmed);
     RUN(test_boot_reports_every_failed_read);
     RUN(test_failed_boot_refuses_appends);
+    RUN(test_record_bytes_on_flash);
+    RUN(test_boot_append_boot_keeps_every_entry);
     RUN(test_failed_write_keeps_later_entries);
     RUN(test_failed_write_at_start_of_sector);
     RUN(test_write_that_programmed_nothing_costs_nothing);
