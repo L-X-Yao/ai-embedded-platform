@@ -47,6 +47,7 @@
 /* Bank 2 */
 #define MACON1    0x00U
 #define MACON3    0x02U
+#define MACON4    0x03U
 #define MAMXFLL   0x0AU
 #define MAMXFLH   0x0BU
 #define MABBIPG   0x04U
@@ -93,6 +94,7 @@
 #define MACON3_TXCRCEN 0x10U
 #define MACON3_FRMLNEN 0x02U
 #define MACON3_FULDPX  0x01U
+#define MACON4_DEFER   0x40U
 
 #define MISTAT_BUSY   0x01U
 
@@ -305,6 +307,7 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
     write_reg(dev, 2, MACON1, MACON1_MARXEN);
     write_reg(dev, 2, MACON3,
               MACON3_PADCFG0 | MACON3_TXCRCEN | MACON3_FRMLNEN);
+    write_reg(dev, 2, MACON4, MACON4_DEFER);
 
     /* Max frame length */
     write_reg(dev, 2, MAMXFLL, (uint8_t)(ENC28J60_MAX_FRAME & 0xFFU));
