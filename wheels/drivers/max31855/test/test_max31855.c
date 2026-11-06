@@ -139,16 +139,20 @@ TEST(test_read_internal_temp)
 
 TEST(test_fault_open_circuit)
 {
-    /* Fault bit [16] = 1, OC bit [0] = 1 */
+    /* p.9: "If T+ and T- are unconnected, the thermocouple temperature sign
+     * bit (D31) is 0, and the remainder of the thermocouple temperature value
+     * (D[30:18]) is 1." Fault bit [16] = 1, internal 25 C, OC bit [0] = 1 */
     mock_reset();
-    set_frame(0x00010001U);
+    set_frame(0x7FFD1901U);
 
     max31855_t dev;
     max31855_init(&dev, &mock_spi);
 
-    float tc = 0.0f, ic = 0.0f;
+    float tc = -1.0f, ic = -1.0f;
     max31855_err_t e = max31855_read(&dev, &tc, &ic);
     ASSERT_EQ(e, MAX31855_ERR_OPEN);
+    ASSERT_TRUE(fabsf(tc - (-1.0f)) < 0.01f);  /* no 2047.75 C reaches the caller */
+    ASSERT_TRUE(fabsf(ic - (-1.0f)) < 0.01f);
 }
 
 TEST(test_fault_short_gnd)
