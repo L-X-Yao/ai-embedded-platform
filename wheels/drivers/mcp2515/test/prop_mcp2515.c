@@ -34,7 +34,7 @@ static void prop_mock_reset_state(void)
     prop_status_byte = 0;
     /* After hardware reset, chip starts in config mode */
     prop_regs[0x0E] = 0x80;  /* CANSTAT: config mode */
-    prop_regs[0x0F] = 0x80;  /* CANCTRL: config mode */
+    prop_regs[0x0F] = 0x87;  /* CANCTRL: p.63 reset value */
 }
 
 static void prop_cs_low(void *ctx)
@@ -58,7 +58,7 @@ static uint8_t prop_xfer(void *ctx, uint8_t tx)
         if (tx == 0xC0) {
             /* RESET: enter config mode */
             prop_regs[0x0E] = 0x80;
-            prop_regs[0x0F] = 0x80;
+            prop_regs[0x0F] = 0x87;
             return 0xFF;
         }
         if (tx == 0xA0) {

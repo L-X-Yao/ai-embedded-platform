@@ -28,6 +28,36 @@ static void setup(void)
     mcp2515_model_init(&model);
 }
 
+/* Reach the chip the way the bus does, without the driver */
+static void spi_write(uint8_t addr, uint8_t val)
+{
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_WRITE);
+    mcp2515_model_xfer(&model, addr);
+    mcp2515_model_xfer(&model, val);
+    mcp2515_model_cs_high(&model);
+}
+
+static uint8_t spi_read(uint8_t addr)
+{
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_READ);
+    mcp2515_model_xfer(&model, addr);
+    uint8_t val = mcp2515_model_xfer(&model, 0xFF);
+    mcp2515_model_cs_high(&model);
+    return val;
+}
+
+static void spi_bit_modify(uint8_t addr, uint8_t mask, uint8_t val)
+{
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_BIT_MODIFY);
+    mcp2515_model_xfer(&model, addr);
+    mcp2515_model_xfer(&model, mask);
+    mcp2515_model_xfer(&model, val);
+    mcp2515_model_cs_high(&model);
+}
+
 /* --- 1. Init sets config mode then transitions to normal --- */
 
 TEST(test_init_config_mode)
@@ -180,10 +210,10 @@ TEST(test_txreq_clears_on_completion)
     /* TXREQ is set after send */
     ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
 
-    /* Simulate TX completion: clear TXREQ externally (hardware does this) */
-    model.hw.regs[MCP_REG_TXB0CTRL] =
-        (uint8_t)(model.hw.regs[MCP_REG_TXB0CTRL] & ~MCP_TXB_TXREQ);
+    /* p.15: "the TXREQ bit will be cleared, the TXnIF bit (CANINTF) will be set" */
+    mcp2515_model_finish_tx(&model);
     ASSERT_FALSE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF);
 
     /* TX complete counter should have been incremented by the model */
     ASSERT_TRUE(model.tx_complete_count >= 1);
@@ -547,8 +577,11 @@ TEST(test_mask_extended_encoding)
 
     mcp2515_err_t err = mcp2515_set_mask(&dev, 0, 0x1FFFFFFF, true);
     ASSERT_EQ(err, MCP2515_OK);
-    /* Mask 0 base = 0x20; SIDL (0x21) must have EXIDE bit */
-    ASSERT_TRUE(model.hw.regs[0x21] & 0x08);
+    /* RXM0 at 0x20. p.37: RXMnSIDL has no EXIDE, bits 4:2 are U-0 */
+    ASSERT_EQ_HEX(model.hw.regs[0x20], 0xFF);
+    ASSERT_EQ_HEX(model.hw.regs[0x21], 0xE3);
+    ASSERT_EQ_HEX(model.hw.regs[0x22], 0xFF);
+    ASSERT_EQ_HEX(model.hw.regs[0x23], 0xFF);
 }
 
 /* --- 21. RTR frame TX sets DLC bit 6 --- */
@@ -595,6 +628,7 @@ TEST(test_send_succeeds_when_the_frame_goes_out_at_once)
     mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
     ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
     ASSERT_FALSE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF);
 }
 
 static void next_frame_arrives(void *user, uint8_t reg, uint8_t old_val, uint8_t new_val)
@@ -618,6 +652,307 @@ TEST(test_receive_succeeds_when_the_next_frame_is_already_in)
     memset(&msg, 0, sizeof(msg));
     ASSERT_EQ(mcp2515_receive(&dev, &msg), MCP2515_OK);
     ASSERT_EQ(msg.data[0], 0x5A);
+}
+
+/* DS20001801J p.59: "When changing modes, the mode will not actually change until
+ * all pending message transmissions are complete. The requested mode must be
+ * verified by reading the OPMODE[2:0] bits". */
+TEST(test_mode_change_waits_for_a_pending_transmission)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_ERR_TIMEOUT);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_NORMAL);
+
+    /* The request is still in REQOP, so the chip changes once the frame is out */
+    mcp2515_model_finish_tx(&model);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_CONFIG);
+
+    /* and asking again brings the driver back in step */
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_CONFIG);
+}
+
+/* p.16: "The MCU can request to abort a message in a specific message buffer by
+ * clearing the associated TXREQ bit". Nothing is pending any more after that. */
+TEST(test_model_abort_by_clearing_txreq_ends_the_wait)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 0, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    spi_write(MCP_REG_CANCTRL, MCP_OPMOD_CONFIG);
+    ASSERT_EQ(spi_read(MCP_REG_CANSTAT) & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_NORMAL);
+
+    spi_bit_modify(MCP_REG_TXB0CTRL, MCP_TXB_TXREQ, 0x00);
+    ASSERT_EQ(spi_read(MCP_REG_CANSTAT) & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_CONFIG);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF, 0);
+}
+
+/* p.59 and p.60: Listen-Only and Sleep send nothing, and Normal "is also the only
+ * mode in which the MCP2515 will transmit messages over the CAN bus" */
+TEST(test_model_only_normal_and_loopback_finish_a_transmission)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_LISTEN), MCP2515_OK);
+
+    spi_bit_modify(MCP_REG_TXB0CTRL, MCP_TXB_TXREQ, MCP_TXB_TXREQ);
+    mcp2515_model_finish_tx(&model);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF, 0);
+}
+
+/* p.59, Listen-Only: "no messages will be transmitted while in this mode". Sleep:
+ * "The TXCAN pin will remain in the recessive state". p.60: Normal "is also the
+ * only mode in which the MCP2515 will transmit messages over the CAN bus", and
+ * Loopback passes frames to the receive buffers. A frame queued anywhere else
+ * could never go out and, by p.59, would hold up every later mode change. */
+TEST(test_send_refused_where_no_frame_can_go_out)
+{
+    static const mcp2515_mode_t silent[] = {
+        MCP2515_MODE_LISTEN, MCP2515_MODE_SLEEP, MCP2515_MODE_CONFIG,
+    };
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
+
+    for (size_t i = 0; i < sizeof(silent) / sizeof(silent[0]); i++) {
+        setup();
+        mcp2515_t dev;
+        ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+        ASSERT_EQ(mcp2515_set_mode(&dev, silent[i]), MCP2515_OK);
+
+        ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_ERR_PARAM);
+        ASSERT_EQ(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ, 0);
+    }
+}
+
+TEST(test_send_works_in_loopback)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_LOOPBACK), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+    mcp2515_model_finish_tx(&model);
+    ASSERT_FALSE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+}
+
+/* p.59: "Configuration mode is the only mode where the following registers are
+ * modifiable: CNF1, CNF2, CNF3 registers, TXRTSCTRL register, Filter registers,
+ * Mask registers" */
+TEST(test_model_config_only_registers_ignore_writes_elsewhere)
+{
+    static const uint8_t regs[] = {
+        MCP_REG_CNF3, MCP_REG_CNF2, MCP_REG_CNF1, MCP_REG_TXRTSCTRL,
+        0x00, 0x03, 0x04, 0x07, 0x08, 0x0B,   /* RXF0 to RXF2 */
+        0x10, 0x13, 0x14, 0x17, 0x18, 0x1B,   /* RXF3 to RXF5 */
+        0x20, 0x23, 0x24, 0x27,               /* RXM0, RXM1 */
+    };
+
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    for (size_t i = 0; i < sizeof(regs); i++) {
+        uint8_t before = model.hw.regs[regs[i]];
+        spi_write(regs[i], (uint8_t)~before);
+        ASSERT_EQ_HEX(model.hw.regs[regs[i]], before);
+        spi_bit_modify(regs[i], 0xFF, (uint8_t)~before);
+        ASSERT_EQ_HEX(model.hw.regs[regs[i]], before);
+    }
+
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_OK);
+    spi_write(MCP_REG_CNF1, 0x41);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_CNF1], 0x41);
+    spi_write(0x20, 0x7E);
+    ASSERT_EQ_HEX(model.hw.regs[0x20], 0x7E);
+}
+
+/* Note 1 of every RXFn and RXMn register, p.34 to p.38: "The Mask and Filter
+ * registers read all '0's when in any mode except Configuration mode." */
+TEST(test_model_masks_and_filters_read_zero_outside_config)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mask(&dev, 0, 0x7FF, false), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_filter(&dev, 5, 0x7FF, false), MCP2515_OK);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_RXM0SIDH), 0xFF);
+    ASSERT_EQ_HEX(spi_read(0x18), 0xFF);
+
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_RXM0SIDH), 0x00);
+    ASSERT_EQ_HEX(spi_read(0x18), 0x00);
+
+    /* They kept their value */
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_OK);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_RXM0SIDH), 0xFF);
+}
+
+/* p.63: Table 11-2, POR/Reset value */
+TEST(test_model_reset_values)
+{
+    setup();
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_RESET);
+    mcp2515_model_cs_high(&model);
+    mcp2515_model_delay_us(&model, MCP_OST_US);
+
+    ASSERT_EQ_HEX(spi_read(MCP_REG_CANSTAT), 0x80);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_CANCTRL), 0x87);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_CANINTE), 0x00);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_CANINTF), 0x00);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_EFLG), 0x00);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_TXB0CTRL), 0x00);
+}
+
+/* Bits marked R in the register tables: the transmit flags, the receive buffers,
+ * CANSTAT and most of EFLG belong to the chip */
+TEST(test_model_read_only_bits_ignore_writes)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    spi_write(MCP_REG_CANSTAT, 0xFF);
+    ASSERT_EQ(spi_read(MCP_REG_CANSTAT) & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_NORMAL);
+
+    /* ABTF, MLOA and TXERR are status, TXP and TXREQ are the MCU's */
+    spi_write(MCP_REG_TXB0CTRL, 0x73);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_TXB0CTRL), 0x03);
+
+    spi_write(MCP_REG_RXB0SIDH, 0xA5);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_RXB0SIDH), 0x00);
+    spi_write(MCP_REG_EFLG, 0xFF);
+    ASSERT_EQ_HEX(spi_read(MCP_REG_EFLG), 0xC0);
+}
+
+/* p.15: "When TXREQ is set, the ABTF, MLOA and TXERR bits (TXBnCTRL[5:4]) will be
+ * cleared automatically." */
+TEST(test_model_txreq_clears_the_transmit_flags)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    model.hw.regs[MCP_REG_TXB0CTRL] = 0x70;
+    spi_bit_modify(MCP_REG_TXB0CTRL, MCP_TXB_TXREQ, MCP_TXB_TXREQ);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_TXB0CTRL], MCP_TXB_TXREQ);
+}
+
+/* Section 12.10 note: "Executing the BIT MODIFY command on registers that are not
+ * bit-modifiable will force the mask to FFh." */
+TEST(test_model_bit_modify_is_a_write_on_other_registers)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    spi_write(MCP_REG_TXB0D0, 0xFF);
+    spi_bit_modify(MCP_REG_TXB0D0, 0x0F, 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_TXB0D0], 0x00);
+
+    /* CANINTE is shaded in Table 11-1, so the mask holds there */
+    spi_write(MCP_REG_CANINTE, 0xFF);
+    spi_bit_modify(MCP_REG_CANINTE, 0x0F, 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_CANINTE], 0xF0);
+}
+
+/* Section 12.3: "The internal Address Pointer is automatically incremented to the
+ * next address once each byte of data is shifted out". 12.4: "It is possible to
+ * write to sequential registers by continuing to clock in data bytes". */
+TEST(test_model_address_pointer_runs_on)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_WRITE);
+    mcp2515_model_xfer(&model, MCP_REG_TXB0D0);
+    mcp2515_model_xfer(&model, 0x11);
+    mcp2515_model_xfer(&model, 0x22);
+    mcp2515_model_cs_high(&model);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_TXB0D0], 0x11);
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_TXB0D0 + 1], 0x22);
+
+    mcp2515_model_cs_low(&model);
+    mcp2515_model_xfer(&model, MCP_SPI_READ);
+    mcp2515_model_xfer(&model, MCP_REG_TXB0D0);
+    ASSERT_EQ_HEX(mcp2515_model_xfer(&model, 0xFF), 0x11);
+    ASSERT_EQ_HEX(mcp2515_model_xfer(&model, 0xFF), 0x22);
+    mcp2515_model_cs_high(&model);
+}
+
+/* p.15 note: "The TXREQ bit (TXBnCTRL[3]) must be clear (indicating the transmit
+ * buffer is not pending transmission) before writing to the transmit buffer." */
+TEST(test_send_leaves_a_pending_buffer_alone)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 2, .data = {0xAA, 0xBB}, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_EQ(model.tx_buffer_writes_pending, 0);
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_ERR_TX_BUSY);
+    ASSERT_EQ(model.tx_buffer_writes_pending, 0);
+
+    /* The counter does count */
+    spi_write(MCP_REG_TXB0D0, 0x00);
+    ASSERT_EQ(model.tx_buffer_writes_pending, 1);
+}
+
+/* p.59: "The MCP2515 will wake-up when bus activity occurs", "If the WAKIE bit is
+ * set, the device will wake-up and generate an interrupt", in Listen-Only mode */
+TEST(test_model_bus_activity_wakes_only_with_wakie)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+
+    mcp2515_model_bus_activity(&model);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_SLEEP);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_WAKIF, 0);
+
+    spi_bit_modify(MCP_REG_CANINTE, MCP_CANINTE_WAKIE, MCP_CANINTE_WAKIE);
+    mcp2515_model_bus_activity(&model);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_LISTEN);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_WAKIF);
+    ASSERT_EQ(model.ost_left_us, MCP_OST_US);
+}
+
+/* The bus woke the chip while the driver still thinks it sleeps */
+TEST(test_leave_sleep_after_the_bus_woke_the_chip)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    spi_bit_modify(MCP_REG_CANINTE, MCP_CANINTE_WAKIE, MCP_CANINTE_WAKIE);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_SLEEP), MCP2515_OK);
+
+    mcp2515_model_bus_activity(&model);
+    mcp2515_model_delay_us(&model, MCP_OST_US);
+
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_NORMAL), MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_NORMAL);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANSTAT] & MCP_CANSTAT_OPMOD_MASK, MCP_OPMOD_NORMAL);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_WAKIF, 0);
+    ASSERT_EQ(model.spi_during_ost, 0);
 }
 
 TEST_MAIN("mcp2515 hardware model")
@@ -653,4 +988,19 @@ TEST_MAIN("mcp2515 hardware model")
     RUN(test_cnf_250kbps);
     RUN(test_send_succeeds_when_the_frame_goes_out_at_once);
     RUN(test_receive_succeeds_when_the_next_frame_is_already_in);
+    RUN(test_mode_change_waits_for_a_pending_transmission);
+    RUN(test_model_abort_by_clearing_txreq_ends_the_wait);
+    RUN(test_model_only_normal_and_loopback_finish_a_transmission);
+    RUN(test_send_refused_where_no_frame_can_go_out);
+    RUN(test_send_works_in_loopback);
+    RUN(test_model_config_only_registers_ignore_writes_elsewhere);
+    RUN(test_model_masks_and_filters_read_zero_outside_config);
+    RUN(test_model_reset_values);
+    RUN(test_model_read_only_bits_ignore_writes);
+    RUN(test_model_txreq_clears_the_transmit_flags);
+    RUN(test_model_bit_modify_is_a_write_on_other_registers);
+    RUN(test_model_address_pointer_runs_on);
+    RUN(test_send_leaves_a_pending_buffer_alone);
+    RUN(test_model_bus_activity_wakes_only_with_wakie);
+    RUN(test_leave_sleep_after_the_bus_woke_the_chip);
 TEST_MAIN_END()
