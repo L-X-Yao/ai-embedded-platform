@@ -103,27 +103,30 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
 
 static int32_t compensate_temperature(bmp280_t *dev, int32_t adc_t)
 {
-    int32_t var1 = ((((adc_t >> 3) - (int32_t)((uint32_t)dev->calib.dig_t1 << 1)))
-                    * ((int32_t)dev->calib.dig_t2)) >> 11;
-    int32_t var2 = (((((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))
-                      * ((adc_t >> 4) - ((int32_t)dev->calib.dig_t1))) >> 12)
-                    * ((int32_t)dev->calib.dig_t3)) >> 14;
+    /* 64-bit intermediates, here and in compensate_pressure: the manual's
+     * 32-bit formula overflows on calibration it does not expect. A real
+     * part gives the same result either way. */
+    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
+    int32_t var1 = (int32_t)((((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
+                              * (int64_t)dev->calib.dig_t2) >> 11);
+    int32_t var2 = (int32_t)((((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3) >> 14);
     dev->t_fine = var1 + var2;
     return (dev->t_fine * 5 + 128) >> 8;
 }
 
 static uint32_t compensate_pressure(const bmp280_t *dev, int32_t adc_p)
 {
-    int32_t var1 = (((int32_t)dev->t_fine) >> 1) - 64000;
-    int32_t var2 = (((var1 >> 2) * (var1 >> 2)) >> 11) * ((int32_t)dev->calib.dig_p6);
+    int64_t var1 = ((int64_t)dev->t_fine >> 1) - 64000;
+    int64_t var2 = (((var1 >> 2) * (var1 >> 2)) >> 11) * (int64_t)dev->calib.dig_p6;
     /* Multiplied, not shifted: both values can be negative */
-    var2 = var2 + ((var1 * ((int32_t)dev->calib.dig_p5)) * 2);
-    var2 = (var2 >> 2) + (((int32_t)dev->calib.dig_p4) * 65536);
-    var1 = (((dev->calib.dig_p3 * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3)
-            + ((((int32_t)dev->calib.dig_p2) * var1) >> 1)) >> 18;
-    var1 = ((((32768 + var1)) * ((int32_t)dev->calib.dig_p1)) >> 15);
+    var2 = var2 + ((var1 * (int64_t)dev->calib.dig_p5) * 2);
+    var2 = (var2 >> 2) + ((int64_t)dev->calib.dig_p4 * 65536);
+    var1 = ((((int64_t)dev->calib.dig_p3 * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3)
+            + (((int64_t)dev->calib.dig_p2 * var1) >> 1)) >> 18;
+    var1 = ((32768 + var1) * (int64_t)dev->calib.dig_p1) >> 15;
 
-    if (var1 == 0)
+    /* Only corrupt calibration leaves this range, and var1 is the divisor */
+    if (var1 <= 0 || var1 > (int64_t)UINT32_MAX)
     {
         return 0;
     }
@@ -138,9 +141,9 @@ static uint32_t compensate_pressure(const bmp280_t *dev, int32_t adc_p)
         p = (p / (uint32_t)var1) * 2;
     }
 
-    var1 = (((int32_t)dev->calib.dig_p9) * ((int32_t)(((p >> 3) * (p >> 3)) >> 13))) >> 12;
-    var2 = (((int32_t)(p >> 2)) * ((int32_t)dev->calib.dig_p8)) >> 13;
-    p = (uint32_t)((int32_t)p + ((var1 + var2 + dev->calib.dig_p7) >> 4));
+    var1 = ((int64_t)dev->calib.dig_p9 * (int64_t)(((p >> 3) * (p >> 3)) >> 13)) >> 12;
+    var2 = ((int64_t)(p >> 2) * (int64_t)dev->calib.dig_p8) >> 13;
+    p = (uint32_t)((int64_t)p + ((var1 + var2 + dev->calib.dig_p7) >> 4));
 
     return p;
 }
