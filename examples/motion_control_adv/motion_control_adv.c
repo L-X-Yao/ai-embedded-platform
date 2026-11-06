@@ -151,10 +151,15 @@ static bool pca_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
     return true;
 }
 
+static void pca_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+}
+
 static const pca9685_i2c_t pca_i2c = {
     .write_reg = pca_write_reg,
     .read_regs = pca_read_regs,
-    .delay_ms  = NULL,
+    .delay_ms  = pca_delay_ms,
     .ctx       = NULL,
 };
 
