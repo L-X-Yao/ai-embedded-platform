@@ -426,6 +426,34 @@ TEST(test_register_again_needs_no_free_slot)
     ASSERT_EQ(task_watchdog_register(&wd, "extra", 100), TASK_WD_ERR_FULL);
 }
 
+/* Nothing watches a disabled task, so it must not report a healthy status. */
+TEST(test_feed_leaves_a_disabled_task_disabled)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    task_watchdog_register(&wd, "t", 5);
+    task_watchdog_disable(&wd, "t");
+
+    ASSERT_EQ(task_watchdog_feed(&wd, "t"), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_DISABLED);
+
+    advance_ticks(&wd, 100);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_DISABLED);
+    ASSERT_EQ(cb_count, 0);
+
+    /* enabling starts it fresh, and from then on it can expire */
+    ASSERT_EQ(task_watchdog_enable(&wd, "t"), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_OK);
+    advance_ticks(&wd, 5);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_EXPIRED);
+    ASSERT_EQ(cb_count, 1);
+}
+
 TEST_MAIN("task_watchdog")
     RUN(test_init);
     RUN(test_init_null);
@@ -449,4 +477,5 @@ TEST_MAIN("task_watchdog")
     RUN(test_register_again_does_not_expire_a_fed_task);
     RUN(test_register_again_takes_over_the_entry);
     RUN(test_register_again_needs_no_free_slot);
+    RUN(test_feed_leaves_a_disabled_task_disabled);
 TEST_MAIN_END()
