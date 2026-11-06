@@ -23,6 +23,7 @@ Each component is a `.h` + `.c` pair in a self-contained folder. To use one:
 
 ```bash
 # 1. Copy the component files into your source tree
+mkdir -p your_project/lib/bmp280
 cp wheels/drivers/bmp280/bmp280.{c,h} your_project/lib/bmp280/
 
 # 2. Add two lines to your CMakeLists.txt
@@ -30,17 +31,25 @@ target_include_directories(your_app PRIVATE lib/bmp280)
 target_sources(your_app PRIVATE lib/bmp280/bmp280.c)
 ```
 
-Also copy `tooling/harness/contract.h` (a single header with optional runtime assertions). Then include the component header, inject your HAL callbacks, and call the API:
+Also copy `tooling/harness/contract.h` into `lib/bmp280/` (a single header with optional runtime assertions). Then include the component header, inject your HAL callbacks, and call the API:
 
 ```c
+#include <stddef.h>
+#include <stdio.h>
 #include "bmp280.h"
+
+/* Your platform's I2C calls */
+bool hal_i2c_write(uint8_t addr, uint8_t reg, const uint8_t *buf, uint16_t len);
+bool hal_i2c_read(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len);
 
 /* Provide your platform's I2C implementation */
 static bool my_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val) {
+    (void)ctx;
     return hal_i2c_write(addr, reg, &val, 1);  /* your HAL here */
 }
 static bool my_read_regs(void *ctx, uint8_t addr, uint8_t reg,
                          uint8_t *buf, uint16_t len) {
+    (void)ctx;
     return hal_i2c_read(addr, reg, buf, len);
 }
 
@@ -192,13 +201,13 @@ All 27 examples in `examples/` compile on host. The five above produce the most 
 make test-parallel
 
 # Test a single component
-bash tooling/test/test_all.sh wheels/drivers/bmp280
+bash tooling/test/test_all.sh bmp280
 
 # Run the 63-check audit
 python3 tooling/audit/audit_wheels.py --quiet
 
 # Coverage for one component
-bash tooling/test/coverage_wheel.sh wheels/drivers/bmp280
+bash tooling/test/coverage_wheel.sh bmp280
 ```
 
 ## Project structure
