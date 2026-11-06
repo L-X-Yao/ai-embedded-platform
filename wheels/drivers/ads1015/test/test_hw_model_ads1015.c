@@ -218,6 +218,121 @@ TEST(test_different_adc_values)
     ASSERT_TRUE(mv2 > mv1);
 }
 
+/* --- the device, from SBAS473F ----------------------------------------- */
+
+static uint16_t read_reg(uint8_t reg)
+{
+    uint8_t buf[2] = { 0, 0 };
+
+    (void)ads1015_model_read_regs(&model, ADS1015_ADDR_GND, reg, buf, 2);
+    return (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+}
+
+static void write_reg(uint8_t reg, uint16_t val)
+{
+    uint8_t buf[2] = { (uint8_t)(val >> 8), (uint8_t)val };
+
+    (void)ads1015_model_write_regs(&model, ADS1015_ADDR_GND, reg, buf, 2);
+}
+
+/* p.20: Conversion [reset = 0000h]. p.21: Config [reset = 8583h].
+ * p.23: Lo_thresh [reset = 8000h], Hi_thresh [reset = 7FFFh]. */
+TEST(test_reset_values)
+{
+    setup();
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONVERSION), 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG), 0x8583);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_LO_THRESH), 0x8000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_HI_THRESH), 0x7FFF);
+}
+
+/* p.23: bits 3:0 of the thresholds are RESERVED, R-0h and R-Fh */
+TEST(test_threshold_reserved_bits_are_read_only)
+{
+    setup();
+    write_reg(ADS1015_REG_LO_THRESH, 0x123F);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_LO_THRESH), 0x1230);
+    write_reg(ADS1015_REG_HI_THRESH, 0x4560);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_HI_THRESH), 0x456F);
+}
+
+/* p.21, OS "When writing: 0b : No effect". The other fields still change. */
+TEST(test_writing_os_0_has_no_effect)
+{
+    setup();
+    write_reg(ADS1015_REG_CONFIG, 0x4383);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG), 0xC383);
+    ASSERT_EQ(model.conversion_count, 0);
+}
+
+/* p.21, OS "When reading: 0b : Device is currently performing a conversion,
+ * 1b : Device is not currently performing a conversion" */
+TEST(test_os_reads_0_during_a_conversion)
+{
+    setup();
+    model.conv_reads = 3;
+    write_reg(ADS1015_REG_CONFIG, 0x8583);
+    for (int i = 0; i < 3; i++)
+        ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x8000);
+}
+
+/* p.14: the result comes when "conversion data are ready for retrieval" */
+TEST(test_result_appears_when_the_conversion_ends)
+{
+    setup();
+    model.conv_reads = 1;
+    ads1015_model_set_adc(&model, 1000);
+
+    write_reg(ADS1015_REG_CONFIG, 0x8583);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONVERSION), 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONVERSION), 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x8000);
+    /* p.20: D[11:0] in 15:4, and bits 3:0 "Always reads back 0h" */
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONVERSION), 0x3E80);
+}
+
+/* p.14: "Writing a 1b to the OS bit while a conversion is ongoing has no
+ * effect." */
+TEST(test_os_write_during_a_conversion_has_no_effect)
+{
+    setup();
+    model.conv_reads = 2;
+    write_reg(ADS1015_REG_CONFIG, 0x8583);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x0000);
+
+    write_reg(ADS1015_REG_CONFIG, 0x8583);
+    ASSERT_EQ(model.conversion_count, 1);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x0000);
+    ASSERT_EQ_HEX(read_reg(ADS1015_REG_CONFIG) & 0x8000u, 0x8000);
+}
+
+TEST(test_driver_waits_for_the_conversion)
+{
+    setup();
+    model.conv_reads = 150;
+    ads1015_model_set_adc(&model, -777);
+    ads1015_t dev;
+    ads1015_init(&dev, &model_i2c, &default_cfg);
+
+    int16_t raw = 0;
+    ASSERT_EQ(ads1015_read_raw(&dev, ADS1015_MUX_AIN0_GND, &raw), ADS1015_OK);
+    ASSERT_EQ(raw, -777);
+}
+
+TEST(test_driver_gives_up_on_a_stuck_conversion)
+{
+    setup();
+    model.conv_reads = -1;
+    ads1015_t dev;
+    ads1015_init(&dev, &model_i2c, &default_cfg);
+
+    int16_t raw = 0;
+    ASSERT_EQ(ads1015_read_raw(&dev, ADS1015_MUX_AIN0_GND, &raw),
+              ADS1015_ERR_BUSY);
+}
+
 TEST_MAIN("ads1015 hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
@@ -233,4 +348,12 @@ TEST_MAIN("ads1015 hardware model")
     RUN(test_conversion_register_readonly);
     RUN(test_multiple_reads_consistent);
     RUN(test_different_adc_values);
+    RUN(test_reset_values);
+    RUN(test_threshold_reserved_bits_are_read_only);
+    RUN(test_writing_os_0_has_no_effect);
+    RUN(test_os_reads_0_during_a_conversion);
+    RUN(test_result_appears_when_the_conversion_ends);
+    RUN(test_os_write_during_a_conversion_has_no_effect);
+    RUN(test_driver_waits_for_the_conversion);
+    RUN(test_driver_gives_up_on_a_stuck_conversion);
 TEST_MAIN_END()
