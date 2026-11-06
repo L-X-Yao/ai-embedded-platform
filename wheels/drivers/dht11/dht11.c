@@ -11,6 +11,10 @@
 #include "contract.h"
 #include <string.h>
 
+/* The manual's figure asks for more than 18 ms. This leaves room for a delay_us
+ * that runs a little short. */
+#define START_LOW_US 20000U
+
 dht11_err_t dht11_init(dht11_t *dev, const dht11_gpio_t *gpio)
 {
     if (!dev || !gpio)
@@ -42,10 +46,10 @@ dht11_err_t dht11_read(dht11_t *dev, dht11_data_t *out)
 
     dev->gpio->set_output(dev->gpio->ctx);
     dev->gpio->write_pin(dev->gpio->ctx, false);
-    dev->gpio->delay_us(dev->gpio->ctx, 18000);
-    dev->gpio->write_pin(dev->gpio->ctx, true);
-    dev->gpio->delay_us(dev->gpio->ctx, 30);
+    dev->gpio->delay_us(dev->gpio->ctx, START_LOW_US);
 
+    /* Release the bus and let the pull-up raise it: driving it high could fight
+     * a sensor that answers soon, and the manual gives no time for that. */
     dev->gpio->set_input(dev->gpio->ctx);
 
     if (wait_pin(dev, false, 100) != DHT11_OK)
