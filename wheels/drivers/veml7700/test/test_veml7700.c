@@ -297,6 +297,55 @@ TEST(test_failed_set_integration_time_keeps_the_scale)
     ASSERT_NEAR(lux, 67.2f, 0.1f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(veml7700_t *d)
+{
+    uint16_t raw = 0;
+    float lux = 0.0f;
+    ASSERT_EQ(veml7700_read_als(d, &raw), VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_read_white(d, &raw), VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_read_lux(d, &lux), VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_set_gain(d, VEML7700_GAIN_1), VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_set_integration_time(d, VEML7700_IT_100MS),
+              VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_power_on(d), VEML7700_ERR_PARAM);
+    ASSERT_EQ(veml7700_shutdown(d), VEML7700_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    veml7700_t d;
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(veml7700_init(&d, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
+              VEML7700_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static veml7700_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* d holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    veml7700_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(veml7700_init(&d, NULL, VEML7700_GAIN_1, VEML7700_IT_100MS),
+              VEML7700_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(veml7700_init(&d, &mock_i2c, (veml7700_gain_t)7, VEML7700_IT_100MS),
+              VEML7700_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("veml7700")
     RUN(test_init_ok);
     RUN(test_init_writes_config_register);
@@ -317,4 +366,7 @@ TEST_MAIN("veml7700")
     RUN(test_power_on_clears_sd_bit);
     RUN(test_failed_set_gain_keeps_the_scale);
     RUN(test_failed_set_integration_time_keeps_the_scale);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
