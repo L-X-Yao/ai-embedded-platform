@@ -474,6 +474,34 @@ TEST(test_load_string_full_length_loads)
     ASSERT_TRUE(cs.entries[0].modified);
 }
 
+/* A firmware update added "fresh", so storage has no value for it yet: the
+ * saved keys behind it must still load, and the failure still be reported. */
+TEST(test_load_goes_on_past_a_key_it_cannot_load)
+{
+    config_value_t saved;
+    memset(&saved, 0, sizeof(saved));
+    saved.i32 = 42;
+
+    setup(&mock_storage);
+    mock_save(NULL, "before", (const uint8_t *)&saved, (uint16_t)sizeof(saved));
+    mock_save(NULL, "after", (const uint8_t *)&saved, (uint16_t)sizeof(saved));
+    config_store_define_int(&cs, "before", 1, 0, 100);
+    config_store_define_int(&cs, "fresh", 2, 0, 100);
+    config_store_define_int(&cs, "after", 3, 0, 100);
+
+    ASSERT_EQ(config_store_load_all(&cs), CONFIG_STORE_ERR_STORAGE);
+
+    int32_t val = 0;
+    ASSERT_EQ(config_store_get_int(&cs, "before", &val), CONFIG_STORE_OK);
+    ASSERT_EQ(val, 42);
+    ASSERT_EQ(config_store_get_int(&cs, "fresh", &val), CONFIG_STORE_OK);
+    ASSERT_EQ(val, 2);
+    ASSERT_EQ(config_store_get_int(&cs, "after", &val), CONFIG_STORE_OK);
+    ASSERT_EQ(val, 42);
+    ASSERT_FALSE(cs.entries[1].modified);
+    ASSERT_TRUE(cs.entries[2].modified);
+}
+
 TEST(test_reset_defaults)
 {
     setup(NULL);
@@ -651,6 +679,7 @@ TEST_MAIN("config_store")
     RUN(test_load_bool_rejects_invalid_byte);
     RUN(test_load_string_without_terminator_keeps_default);
     RUN(test_load_string_full_length_loads);
+    RUN(test_load_goes_on_past_a_key_it_cannot_load);
     RUN(test_reset_defaults);
     RUN(test_null_params_define);
     RUN(test_null_params_get_set);

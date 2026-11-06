@@ -419,6 +419,8 @@ config_store_err_t config_store_load_all(config_store_t *cs)
         return CONFIG_STORE_ERR_STORAGE;
     }
 
+    config_store_err_t result = CONFIG_STORE_OK;
+
     for (uint8_t i = 0; i < cs->count; i++) {
         config_entry_t *e = &cs->entries[i];
         config_value_t loaded;
@@ -427,7 +429,9 @@ config_store_err_t config_store_load_all(config_store_t *cs)
             cs->storage->ctx, e->key,
             (uint8_t *)&loaded, sizeof(config_value_t));
         if (err != CONFIG_STORE_OK) {
-            return CONFIG_STORE_ERR_STORAGE;
+            /* A key new to this firmware must not hide the saved ones after it. */
+            result = CONFIG_STORE_ERR_STORAGE;
+            continue;
         }
         /* validate loaded value against range; revert to default if OOB */
         bool in_range = true;
@@ -489,7 +493,7 @@ config_store_err_t config_store_load_all(config_store_t *cs)
             break;
         }
     }
-    return CONFIG_STORE_OK;
+    return result;
 }
 
 config_store_err_t config_store_reset_defaults(config_store_t *cs)

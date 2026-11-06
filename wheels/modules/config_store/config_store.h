@@ -189,7 +189,9 @@ config_store_err_t config_store_get_string(const config_store_t *cs,
 config_store_err_t config_store_save_all(config_store_t *cs);
 
 /**
- * Load all entries via storage callbacks.
+ * Load all entries via storage callbacks.  An entry that fails to load keeps
+ * its value and the rest still load; the call then returns
+ * CONFIG_STORE_ERR_STORAGE.
  * @thread_safe: no
  */
 config_store_err_t config_store_load_all(config_store_t *cs);
