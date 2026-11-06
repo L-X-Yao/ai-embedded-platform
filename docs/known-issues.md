@@ -51,6 +51,14 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Fixed by the full sanitizer audit (2026-11-06)
+
+`audit_sanitizer.py` ran only each wheel's main test target, skipped `kvs`, and counted a failed build as a skip. 27 wheels failed to build under it, because the instrumentation sets off their own `-Werror`, so they never ran. The earlier "259/259" was therefore too high. It now builds with `-w`, runs all 931 test targets in all 259 wheels, and fails on a build error. `wheel-gate` now runs ASan as well as UBSan, covers the property tests, and fails on a sanitizer build error.
+
+- `bmp280`: compensation overflowed on corrupt calibration. It now uses 64-bit intermediates, and a real part gives the same results.
+- `bme280`: `dig_H4` and `dig_H5` shifted a negative value left.
+- `modbus_rtu`: a test passed one buffer as both source and destination of `memcpy`.
+
 ## How to read the datasheet check counts (2026-11-06)
 
 The three batches below confirmed 385 items. 228 are in driver code, across 65 drivers. 157 are in test models or mocks, and 12 more drivers had confirmed items only there: `ads1015`, `ads1115`, `cst816s`, `ht16k33`, `ina3221`, `lis2dh12`, `lis3mdl`, `max31855`, `max7219`, `sht40`, `st7735` and `tsl2591`. Model faults are fixed where a driver fix needed them, and the rest are under Still open in each README.
@@ -68,7 +76,7 @@ This batch covers every driver with registers not yet reviewed in November: 186 
 - The drivers reviewed only in May have not been redone, apart from the three rechecks in the batch below, and all three of those found faults. Treat that review as weaker than this one.
 - Some calls now refuse what they used to accept, or take longer. `delay_ms` is required by `bmi160`, `ms5611`, `scd40`, `sgp30`, `shtc3`, `si7021` and `tcs34725`. `hmc5883l` init takes about 3 output periods when `delay_ms` is set, `dps310` init waits for its ready bits, and `pcf8563` stops the clock while setting the time. Each README says what changed.
 
-Running `wheel-gate` on every wheel also found 8 that had been failing its UBSan stage, which `make check` does not run: negative shifts in `bmp280` and in the `pct2075`, `tmp102` and `ina3221` models, a NULL passed to memcpy in `byte_buffer`, overflow in `scale_map`, a bad width in `crc_any`, and a shift in vendored FlashDB. All are fixed. `audit_sanitizer.py` only runs each wheel's main test target, which is why it reported them clean.
+Running `wheel-gate` on every wheel also found 8 that had been failing its UBSan stage, which `make check` does not run: negative shifts in `bmp280` and in the `pct2075`, `tmp102` and `ina3221` models, a NULL passed to memcpy in `byte_buffer`, overflow in `scale_map`, a bad width in `crc_any`, and a shift in vendored FlashDB. All are fixed. `audit_sanitizer.py` only ran each wheel's main test target then, which is why it reported them clean.
 
 ## Datasheet check of 24 more drivers (2026-11-06)
 
