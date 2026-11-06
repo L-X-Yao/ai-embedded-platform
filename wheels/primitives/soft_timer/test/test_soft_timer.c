@@ -289,6 +289,53 @@ TEST(test_destroyed_slot_refuses_start_stop_reset)
     ASSERT_EQ(cb_count, 0);
 }
 
+static int self_fires;
+static int self_id;
+
+static void rearm_callback(void *ctx)
+{
+    (void)ctx;
+    self_fires++;
+    soft_timer_reset(&mgr, self_id);
+    soft_timer_start(&mgr, self_id);
+}
+
+static void stop_callback(void *ctx)
+{
+    (void)ctx;
+    self_fires++;
+    soft_timer_stop(&mgr, self_id);
+}
+
+/* Period 3 over 20 ticks fires at 3, 6, 9, 12, 15 and 18. */
+TEST(test_one_shot_rearms_from_callback)
+{
+    setup();
+    self_fires = 0;
+    self_id = soft_timer_create(&mgr, 3, SOFT_TIMER_ONE_SHOT, rearm_callback, NULL);
+    soft_timer_start(&mgr, self_id);
+    for (int i = 0; i < 20; i++)
+    {
+        soft_timer_tick(&mgr);
+    }
+    ASSERT_EQ(self_fires, 6);
+    ASSERT_TRUE(soft_timer_is_active(&mgr, self_id));
+}
+
+TEST(test_repeat_stops_from_callback)
+{
+    setup();
+    self_fires = 0;
+    self_id = soft_timer_create(&mgr, 3, SOFT_TIMER_REPEAT, stop_callback, NULL);
+    soft_timer_start(&mgr, self_id);
+    for (int i = 0; i < 20; i++)
+    {
+        soft_timer_tick(&mgr);
+    }
+    ASSERT_EQ(self_fires, 1);
+    ASSERT_FALSE(soft_timer_is_active(&mgr, self_id));
+}
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -308,5 +355,7 @@ TEST_MAIN("soft_timer")
     RUN(test_destroy_slot_is_inactive);
     RUN(test_create_full_returns_err_full);
     RUN(test_destroyed_slot_refuses_start_stop_reset);
+    RUN(test_one_shot_rearms_from_callback);
+    RUN(test_repeat_stops_from_callback);
 TEST_MAIN_END()
 
