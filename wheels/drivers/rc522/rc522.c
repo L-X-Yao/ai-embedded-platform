@@ -200,10 +200,14 @@ static void configure(const rc522_spi_t *spi)
 rc522_err_t rc522_init(rc522_t *dev,
                            const rc522_spi_t *spi)
 {
-    if (!dev || !spi) return RC522_ERR_PARAM;
+    if (!dev) return RC522_ERR_PARAM;
+
+    /* dev->spi stays NULL unless the chip proves to be a MFRC522: the other
+     * calls refuse a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi) return RC522_ERR_PARAM;
     if (!spi->cs_low || !spi->cs_high || !spi->xfer) return RC522_ERR_PARAM;
-    dev->spi = spi;
-    dev->version = 0;
 
     /* Soft reset */
     reg_write(spi, RC522_REG_COMMAND, RC522_CMD_SOFTRESET);
@@ -217,6 +221,7 @@ rc522_err_t rc522_init(rc522_t *dev,
         return RC522_ERR_ID;
     }
     dev->version = ver;
+    dev->spi = spi;
 
     configure(spi);
 

@@ -63,7 +63,15 @@ static bool addr_is_valid(uint8_t addr)
 pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
                             const pct2075_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg) {
+    if (!dev) {
+        return PCT2075_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: pct2075_read refuses a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) {
         return PCT2075_ERR_PARAM;
     }
     if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms) {
@@ -73,7 +81,6 @@ pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
         return PCT2075_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c  = i2c;
     dev->addr = cfg->addr;
 
@@ -81,12 +88,14 @@ pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
      * PCT2075 has no chip ID register, so we just confirm the bus works. */
     uint8_t buf[2];
     if (!read_regs(dev, REG_TEMP, buf, 2)) {
+        dev->i2c = NULL;
         return PCT2075_ERR_I2C;
     }
 
     /* Optionally write configuration register */
     if (cfg->write_config) {
         if (!i2c->write_reg(i2c->ctx, dev->addr, REG_CONF, cfg->conf_val)) {
+            dev->i2c = NULL;
             return PCT2075_ERR_I2C;
         }
     }

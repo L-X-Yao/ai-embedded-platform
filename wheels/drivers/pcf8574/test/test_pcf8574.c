@@ -200,6 +200,44 @@ TEST(test_address_range)
     ASSERT_EQ(dev.dev_addr, 0x3F);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(pcf8574_t *d)
+{
+    uint8_t value;
+    bool level;
+    ASSERT_EQ(pcf8574_write(d, 0x00), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_read(d, &value), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_write_pin(d, 0, true), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_read_pin(d, 0, &level), PCF8574_ERR_PARAM);
+    ASSERT_EQ(pcf8574_toggle_pin(d, 0), PCF8574_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_link_check)
+{
+    pcf8574_t d;
+    mock_reset();
+    mock_fail_next = 1;
+    ASSERT_EQ(pcf8574_init(&d, &mock_i2c, 0x20), PCF8574_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const pcf8574_i2c_t zeroed;
+    pcf8574_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pcf8574_init(&d, NULL, 0x20), PCF8574_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pcf8574_init(&d, &zeroed, 0x20), PCF8574_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("pcf8574")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -215,4 +253,6 @@ TEST_MAIN("pcf8574")
     RUN(test_i2c_read_fail);
     RUN(test_read_modify_write_preserves_other_pins);
     RUN(test_address_range);
+    RUN(test_device_refused_after_failed_link_check);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -121,15 +121,9 @@ static uint8_t wait_token(const sd_spi_hal_t *h)
 
 /* ---------- API ---------- */
 
-sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
+/* The steps of init that talk to the card */
+static sd_spi_err_t bring_up(sd_spi_t *sd, const sd_spi_hal_t *hal)
 {
-    if (!sd || !hal || !hal->cs_low || !hal->cs_high ||
-        !hal->xfer || !hal->delay_ms)
-        return SD_SPI_ERR_PARAM;
-
-    memset(sd, 0, sizeof(*sd));
-    sd->hal = hal;
-
     /* 74+ clock pulses with CS high */
     hal->cs_high(hal->ctx);
     spi_dummy(hal, 10);
@@ -196,6 +190,27 @@ sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
         sd->card_type = SD_SPI_TYPE_SDV1;
     }
 
+    return SD_SPI_OK;
+}
+
+sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
+{
+    if (!sd)
+        return SD_SPI_ERR_PARAM;
+
+    /* sd->hal stays NULL unless init succeeds: the block calls refuse a card
+     * without it, whose type and addressing are not known */
+    memset(sd, 0, sizeof(*sd));
+
+    if (!hal || !hal->cs_low || !hal->cs_high ||
+        !hal->xfer || !hal->delay_ms)
+        return SD_SPI_ERR_PARAM;
+
+    sd_spi_err_t err = bring_up(sd, hal);
+    if (err != SD_SPI_OK)
+        return err;
+
+    sd->hal = hal;
     return SD_SPI_OK;
 }
 

@@ -446,6 +446,43 @@ TEST(test_read_boundary_values)
     ASSERT_NEAR(data.humidity_pct, 100.0f, 0.1f);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(scd40_t *d)
+{
+    scd40_data_t data;
+    bool ready;
+    uint16_t serial[3];
+    ASSERT_EQ(scd40_start_periodic(d), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_stop_periodic(d), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_read(d, &data), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_data_ready(d, &ready), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_get_serial(d, serial), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_set_altitude(d, 100), SCD40_ERR_PARAM);
+    ASSERT_EQ(scd40_perform_reset(d), SCD40_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static scd40_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const scd40_i2c_t zeroed;
+    scd40_t d;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(scd40_init(&d, NULL), SCD40_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(scd40_init(&d, &zeroed), SCD40_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("scd40")
     RUN(test_init_null);
     RUN(test_init_ok);
@@ -467,4 +504,6 @@ TEST_MAIN("scd40")
     RUN(test_i2c_fail_propagation);
     RUN(test_crc8_known_vector);
     RUN(test_read_boundary_values);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
