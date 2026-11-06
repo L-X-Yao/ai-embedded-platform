@@ -78,6 +78,9 @@ typedef enum {
     JSON_STATE_AFTER_VALUE,  /* after a complete value, expect , or ])} */
     JSON_STATE_AFTER_KEY,    /* after a key string, expect :            */
     JSON_STATE_DONE,         /* top-level value complete                */
+    JSON_STATE_OBJECT_START, /* after {, expect a key or }              */
+    JSON_STATE_ARRAY_START,  /* after [, expect a value or ]            */
+    JSON_STATE_KEY,          /* expect an object key                    */
 } json_state_t;
 
 /* Container kind pushed onto the stack */

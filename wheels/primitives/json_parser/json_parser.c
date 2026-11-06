@@ -162,9 +162,8 @@ json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
                     return JSON_PARSER_ERR_DEPTH;
                 push_container(p, JSON_CONTAINER_OBJECT);
                 p->depth++;
-                p->expect_key = true;
                 emit(p, JSON_EVENT_OBJECT_START, NULL, 0);
-                /* stay in VALUE state for first key or } */
+                p->state = JSON_STATE_OBJECT_START;
                 break;
             }
             if (c == '[') {
@@ -172,26 +171,8 @@ json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
                     return JSON_PARSER_ERR_DEPTH;
                 push_container(p, JSON_CONTAINER_ARRAY);
                 p->depth++;
-                p->expect_key = false;
                 emit(p, JSON_EVENT_ARRAY_START, NULL, 0);
-                break;
-            }
-            if (c == '}') {
-                /* empty object */
-                if (p->depth == 0 || peek_container(p) != JSON_CONTAINER_OBJECT)
-                    return JSON_PARSER_ERR_SYNTAX;
-                p->depth--;
-                emit(p, JSON_EVENT_OBJECT_END, NULL, 0);
-                after_value(p);
-                break;
-            }
-            if (c == ']') {
-                /* empty array */
-                if (p->depth == 0 || peek_container(p) != JSON_CONTAINER_ARRAY)
-                    return JSON_PARSER_ERR_SYNTAX;
-                p->depth--;
-                emit(p, JSON_EVENT_ARRAY_END, NULL, 0);
-                after_value(p);
+                p->state = JSON_STATE_ARRAY_START;
                 break;
             }
             if (c == '"') {
@@ -212,6 +193,41 @@ json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
                 break;
             }
             return JSON_PARSER_ERR_SYNTAX;
+
+        /* ── After '{': a key or the closing brace ───────────── */
+        case JSON_STATE_OBJECT_START:
+            if (is_ws(c)) break;
+            if (c == '}') {
+                p->depth--;
+                emit(p, JSON_EVENT_OBJECT_END, NULL, 0);
+                after_value(p);
+                break;
+            }
+            p->state = JSON_STATE_KEY;
+            i--;  /* re-process current char as a key */
+            break;
+
+        /* ── After '[': a value or the closing bracket ───────── */
+        case JSON_STATE_ARRAY_START:
+            if (is_ws(c)) break;
+            if (c == ']') {
+                p->depth--;
+                emit(p, JSON_EVENT_ARRAY_END, NULL, 0);
+                after_value(p);
+                break;
+            }
+            p->state = JSON_STATE_VALUE;
+            i--;  /* re-process current char as a value */
+            break;
+
+        /* ── Expecting an object key ─────────────────────────── */
+        case JSON_STATE_KEY:
+            if (is_ws(c)) break;
+            if (c != '"') return JSON_PARSER_ERR_SYNTAX;
+            vbuf_reset(p);
+            p->expect_key = true;
+            p->state = JSON_STATE_STRING;
+            break;
 
         /* ── Inside a string ─────────────────────────────────── */
         case JSON_STATE_STRING:
@@ -310,11 +326,8 @@ json_parser_err_t json_parser_feed(json_parser_t *p, const char *data,
         case JSON_STATE_AFTER_VALUE:
             if (is_ws(c)) break;
             if (c == ',') {
-                uint8_t container = peek_container(p);
-                if (container == JSON_CONTAINER_OBJECT) {
-                    p->expect_key = true;
-                }
-                p->state = JSON_STATE_VALUE;
+                p->state = (peek_container(p) == JSON_CONTAINER_OBJECT)
+                               ? JSON_STATE_KEY : JSON_STATE_VALUE;
                 break;
             }
             if (c == '}') {
