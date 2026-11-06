@@ -15,6 +15,16 @@
  * - Block write: captures written data into per-block storage
  * - sd_model_set_block() for pre-loading read data
  *
+ * What Physical Layer Spec v3.01 asks of the card, and this model does:
+ * - Before the first valid CMD0 the card is in SD mode and stays silent
+ *   (7.2.2, 6.4.1). In SPI mode the CRC is off, except for CMD8.
+ * - The idle bit is set in every R1 until ACMD41 completes (7.3.2.1), and
+ *   only CMD8, ACMD41, CMD58 and CMD59 are valid until then (7.2.7).
+ * - An SDHC card stays busy without HCS at the first ACMD41 (4.2.3).
+ * - A write holds DataOut low while programming, also after a reselect
+ *   (7.2.4). Programming errors show only in CMD13.
+ * - A failed read sends a data error token (7.3.3.3).
+ *
  * Header-only. Include from test_hw_model_sd_spi.c.
  */
 
@@ -36,6 +46,8 @@
 #define SD_CMD55   55    /* APP_CMD prefix */
 #define SD_CMD58   58    /* READ_OCR */
 #define SD_ACMD41  41    /* SD_SEND_OP_COND (after CMD55) */
+
+#define SD_ACMD41_HCS  0x40000000U   /* Host Capacity Support */
 
 /* --- R1 response flags --- */
 
@@ -113,6 +125,7 @@ typedef struct {
     sd_model_phase_t phase;
     uint8_t  cmd;              /* current command number */
     uint32_t arg;              /* 4-byte argument */
+    uint8_t  crc_byte;         /* last byte of the command frame */
     int      byte_idx;         /* multi-purpose counter */
 
     /* Response state */
@@ -127,10 +140,18 @@ typedef struct {
     /* Configurable behavior */
     int      acmd41_remain;    /* countdown: >0 means still initializing */
     bool     cmd55_seen;       /* flag for APP_CMD prefix */
+    bool     cmd8_seen;        /* a valid CMD8 came since the last CMD0 */
+    bool     acmd41_seen;      /* the first ACMD41 since CMD0 has come */
+    bool     no_hcs;           /* that first ACMD41 had no usable HCS */
+    int      busy_polls;       /* polls a write stays busy, -1 = forever */
+    int      busy_remain;      /* polls left in the current programming */
+    uint8_t  status_r2;        /* second byte of the next CMD13 response */
 
     /* Error injection */
     bool     fail_cmd0;        /* CMD0 returns no response */
-    bool     fail_read;        /* CMD17 data: no 0xFE token */
+    bool     fail_read;        /* CMD17 data: a data error token */
+    uint8_t  read_error_token; /* the token fail_read sends */
+    bool     silent_read;      /* CMD17 data: nothing after R1 */
     bool     fail_write;       /* write response = rejected */
     bool     fail_crc;         /* write response = CRC error */
     bool     fail_cmd17;       /* CMD17 R1 = error */
@@ -143,17 +164,85 @@ typedef struct {
     int      acmd41_count;
     int      cmd58_count;
     int      delay_count;
+    int      busy_seen;        /* polls answered with DataOut held low */
 } sd_model_t;
 
 /* ================================================================
  * Response preparation
  * ================================================================ */
 
+/* CRC7 of section 4.5, generator x^7 + x^3 + 1. */
+__attribute__((unused))
+static uint8_t sd_model_crc7(const uint8_t *bytes, int n)
+{
+    uint8_t crc = 0;
+
+    for (int i = 0; i < n; i++) {
+        for (int bit = 7; bit >= 0; bit--) {
+            uint8_t in = (uint8_t)((bytes[i] >> bit) & 1U);
+            uint8_t top = (uint8_t)((crc >> 6) & 1U);
+
+            crc = (uint8_t)((crc << 1) & 0x7FU);
+            if (in != top)
+                crc ^= 0x09U;
+        }
+    }
+    return crc;
+}
+
+__attribute__((unused))
+static bool sd_model_frame_crc_ok(const sd_model_t *m)
+{
+    const uint8_t frame[5] = {
+        (uint8_t)(0x40U | m->cmd),
+        (uint8_t)(m->arg >> 24), (uint8_t)(m->arg >> 16),
+        (uint8_t)(m->arg >> 8),  (uint8_t)m->arg,
+    };
+
+    /* Seven CRC bits, then the end bit, which is always 1. */
+    return m->crc_byte == (uint8_t)((sd_model_crc7(frame, 5) << 1) | 1U);
+}
+
+/* In idle state: the card is running the initializing process (7.3.2.1). */
+__attribute__((unused))
+static uint8_t sd_model_idle_bit(const sd_model_t *m)
+{
+    return (uint8_t)((m->state == SD_STATE_IDLE) ? SD_R1_IDLE : 0x00U);
+}
+
+__attribute__((unused))
+static void sd_model_illegal(sd_model_t *m)
+{
+    m->r1 = (uint8_t)(sd_model_idle_bit(m) | SD_R1_ILLEGAL_CMD);
+    m->phase = SD_PH_R1;
+}
+
 __attribute__((unused))
 static void sd_model_prepare_response(sd_model_t *m)
 {
+    bool crc_ok = sd_model_frame_crc_ok(m);
+    bool app_cmd = m->cmd55_seen;   /* APP_CMD covers the next command only */
+
     m->ext_len = 0;
     m->ext_idx = 0;
+    m->cmd55_seen = false;
+
+    /* 7.2.2: the first CMD0 "is received by the card while in SD mode and,
+     * therefore, shall have a valid CRC field". 6.4.1: "CMD0 shall be the
+     * first command to send the card to SPI mode". */
+    if (m->state == SD_STATE_POWER_ON && (m->cmd != SD_CMD0 || !crc_ok)) {
+        m->r1 = 0xFFU;
+        m->phase = SD_PH_R1;
+        return;
+    }
+
+    /* 7.2.7: the commands below are not valid in the idle state. */
+    if (m->state == SD_STATE_IDLE &&
+        (m->cmd == SD_CMD13 || m->cmd == SD_CMD16 ||
+         m->cmd == SD_CMD17 || m->cmd == SD_CMD24)) {
+        sd_model_illegal(m);
+        return;
+    }
 
     switch (m->cmd) {
     case SD_CMD0:
@@ -163,6 +252,9 @@ static void sd_model_prepare_response(sd_model_t *m)
         } else {
             m->r1 = SD_R1_IDLE;
             m->state = SD_STATE_IDLE;
+            m->cmd8_seen = false;
+            m->acmd41_seen = false;
+            m->no_hcs = false;
         }
         m->phase = SD_PH_R1;
         return;
@@ -171,12 +263,19 @@ static void sd_model_prepare_response(sd_model_t *m)
         m->cmd8_count++;
         if (m->card_type == SD_MODEL_TYPE_SDV1) {
             /* SDv1 doesn't understand CMD8 */
-            m->r1 = SD_R1_IDLE | SD_R1_ILLEGAL_CMD;
+            sd_model_illegal(m);
+            return;
+        }
+        /* 7.2.2: "The CMD8 CRC verification is always enabled." 7.3.2: with
+         * a CRC error the card sends only the first byte. */
+        if (!crc_ok) {
+            m->r1 = (uint8_t)(sd_model_idle_bit(m) | SD_R1_CRC_ERR);
             m->phase = SD_PH_R1;
             return;
         }
+        m->cmd8_seen = true;
         /* SDv2: R1 + 4-byte R7 response */
-        m->r1 = SD_R1_IDLE;
+        m->r1 = sd_model_idle_bit(m);
         m->ext[0] = 0x00;
         m->ext[1] = 0x00;
         m->ext[2] = (uint8_t)((m->arg >> 8) & 0xFFU);   /* echo voltage */
@@ -187,20 +286,27 @@ static void sd_model_prepare_response(sd_model_t *m)
 
     case SD_CMD55:
         m->cmd55_seen = true;
-        m->r1 = (m->state == SD_STATE_IDLE) ? SD_R1_IDLE : 0x00U;
+        m->r1 = sd_model_idle_bit(m);
         m->phase = SD_PH_R1;
         return;
 
     case SD_ACMD41:
-        if (!m->cmd55_seen) {
+        if (!app_cmd) {
             /* ACMD41 without CMD55 prefix: illegal */
-            m->r1 = SD_R1_ILLEGAL_CMD;
-            m->phase = SD_PH_R1;
+            sd_model_illegal(m);
             return;
         }
-        m->cmd55_seen = false;
         m->acmd41_count++;
-        if (m->acmd41_remain > 0) {
+        /* 7.2.1: "The card checks the HCS bit in the OCR only at the first
+         * ACMD41", and HCS means something only after CMD8. 4.2.3: "If HCS
+         * is set to 0, SDHC and SDXC Cards never return ready status". */
+        if (!m->acmd41_seen) {
+            m->acmd41_seen = true;
+            m->no_hcs = !m->cmd8_seen || !(m->arg & SD_ACMD41_HCS);
+        }
+        if (m->card_type == SD_MODEL_TYPE_SDV2_HC && m->no_hcs) {
+            m->r1 = SD_R1_IDLE;
+        } else if (m->acmd41_remain > 0) {
             m->acmd41_remain--;
             m->r1 = SD_R1_IDLE;  /* still initializing */
         } else {
@@ -212,9 +318,12 @@ static void sd_model_prepare_response(sd_model_t *m)
 
     case SD_CMD58:
         m->cmd58_count++;
-        m->r1 = 0x00U;
-        /* OCR register */
-        if (m->card_type == SD_MODEL_TYPE_SDV2_HC) {
+        m->r1 = sd_model_idle_bit(m);
+        /* OCR register. 5.1: bit 31 is set when the power up procedure has
+         * finished, and bit 30 (CCS) is valid only then. */
+        if (m->state == SD_STATE_IDLE) {
+            m->ext[0] = 0x00U;
+        } else if (m->card_type == SD_MODEL_TYPE_SDV2_HC) {
             m->ext[0] = 0xC0U;  /* CCS=1, power up complete */
         } else {
             m->ext[0] = 0x80U;  /* CCS=0, power up complete */
@@ -223,21 +332,21 @@ static void sd_model_prepare_response(sd_model_t *m)
         m->ext[2] = 0x80U;
         m->ext[3] = 0x00U;
         m->ext_len = 4;
-        m->state = SD_STATE_TRANSFER;
+        if (m->state == SD_STATE_READY)
+            m->state = SD_STATE_TRANSFER;
         m->phase = SD_PH_R1;
         return;
 
     case SD_CMD16:
         /* SET_BLOCKLEN -- always OK in transfer state */
-        m->r1 = (m->state >= SD_STATE_READY) ? 0x00U : SD_R1_ILLEGAL_CMD;
+        m->r1 = 0x00U;
         m->phase = SD_PH_R1;
         return;
 
     case SD_CMD17:
         /* READ_SINGLE_BLOCK */
         if (m->fail_cmd17) {
-            m->r1 = SD_R1_ILLEGAL_CMD;
-            m->phase = SD_PH_R1;
+            sd_model_illegal(m);
             return;
         }
         m->r1 = 0x00U;
@@ -253,9 +362,11 @@ static void sd_model_prepare_response(sd_model_t *m)
         return;
 
     case SD_CMD13:
-        /* SEND_STATUS: R2, no errors */
+        /* SEND_STATUS: R2. 7.3.4: "error bits are cleared when read by the
+         * host, regardless of the response format". */
         m->r1 = 0x00U;
-        m->ext[0] = 0x00U;
+        m->ext[0] = m->status_r2;
+        m->status_r2 = 0x00U;
         m->ext_len = 1;
         m->phase = SD_PH_R1;
         return;
@@ -263,8 +374,7 @@ static void sd_model_prepare_response(sd_model_t *m)
     case SD_CMD24:
         /* WRITE_BLOCK */
         if (m->fail_cmd24) {
-            m->r1 = SD_R1_ILLEGAL_CMD;
-            m->phase = SD_PH_R1;
+            sd_model_illegal(m);
             return;
         }
         m->r1 = 0x00U;
@@ -278,8 +388,7 @@ static void sd_model_prepare_response(sd_model_t *m)
 
     default:
         /* Unknown command */
-        m->r1 = SD_R1_ILLEGAL_CMD;
-        m->phase = SD_PH_R1;
+        sd_model_illegal(m);
         return;
     }
 }
@@ -292,7 +401,10 @@ __attribute__((unused))
 static void sd_model_cs_low(void *ctx)
 {
     sd_model_t *m = (sd_model_t *)ctx;
-    m->phase = SD_PH_WAIT_CMD;
+    /* 7.2.4: "If the card is reselected before the programming is finished,
+     * the DataOut line will be forced back to low and all commands will be
+     * rejected." */
+    m->phase = (m->busy_remain != 0) ? SD_PH_WRITE_BUSY : SD_PH_WAIT_CMD;
     m->byte_idx = 0;
 }
 
@@ -300,6 +412,7 @@ __attribute__((unused))
 static void sd_model_cs_high(void *ctx)
 {
     sd_model_t *m = (sd_model_t *)ctx;
+    /* 7.2.4: programming goes on, and the card releases DataOut. */
     m->phase = SD_PH_IDLE;
 }
 
@@ -315,8 +428,8 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
         return 0xFFU;
 
     case SD_PH_WAIT_CMD:
-        /* Skip 0xFF dummy bytes (bus idle / MOSI high) */
-        if (tx == 0xFFU) return 0xFFU;
+        /* A frame starts with bits 01. 0xFF dummies are the bus idling. */
+        if ((tx & 0xC0U) != 0x40U) return 0xFFU;
         /* Command byte: 0x40 | cmd_number */
         m->cmd = (uint8_t)(tx & 0x3FU);
         m->arg = 0;
@@ -333,6 +446,7 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
 
     case SD_PH_CRC:
         /* CRC byte received, prepare response */
+        m->crc_byte = tx;
         sd_model_prepare_response(m);
         return 0xFFU;
 
@@ -342,8 +456,8 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
             m->phase = SD_PH_EXT;
         } else if (m->cmd == SD_CMD17 && m->r1 == 0x00U) {
             /* Transition to read data phase */
-            if (m->fail_read) {
-                m->phase = SD_PH_IDLE;  /* no data token sent */
+            if (m->silent_read) {
+                m->phase = SD_PH_IDLE;  /* no token of any kind */
             } else {
                 m->phase = SD_PH_READ_TOKEN;
             }
@@ -364,6 +478,12 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
     }
 
     case SD_PH_READ_TOKEN:
+        /* 7.3.3.3: "If a read operation fails and the card cannot provide
+         * the required data, it will send a data error token instead." */
+        if (m->fail_read) {
+            m->phase = SD_PH_IDLE;
+            return m->read_error_token;
+        }
         /* Send data start token */
         m->phase = SD_PH_READ_DATA;
         m->byte_idx = 0;
@@ -415,11 +535,13 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
         return 0xFFU;
 
     case SD_PH_WRITE_RESP: {
-        m->phase = SD_PH_WRITE_BUSY;
+        m->phase = SD_PH_IDLE;
         m->byte_idx = 0;
         if (m->fail_write) return SD_DATA_RESP_WRITE;  /* rejected */
         if (m->fail_crc)  return SD_DATA_RESP_CRC;     /* CRC error */
         /* Success: store the written data */
+        m->phase = SD_PH_WRITE_BUSY;
+        m->busy_remain = m->busy_polls;
         m->write_captured = true;
         if (m->last_write_block < SD_MODEL_MAX_BLOCKS) {
             memcpy(m->blocks[m->last_write_block], m->write_buf,
@@ -430,7 +552,15 @@ static uint8_t sd_model_xfer(void *ctx, uint8_t tx)
     }
 
     case SD_PH_WRITE_BUSY:
-        /* Card busy for zero cycles (return 0xFF = ready immediately) */
+        /* 7.2.4: "As long as the card is busy programming, a continuous
+         * stream of busy tokens will be sent to the host (effectively
+         * holding the DataOut line low)." */
+        if (m->busy_remain != 0) {
+            if (m->busy_remain > 0)
+                m->busy_remain--;
+            m->busy_seen++;
+            return 0x00U;
+        }
         m->phase = SD_PH_IDLE;
         return 0xFFU;
 
@@ -461,6 +591,7 @@ static void sd_model_init(sd_model_t *m)
     m->state = SD_STATE_POWER_ON;
     m->phase = SD_PH_IDLE;
     m->acmd41_remain = 0;  /* ready immediately by default */
+    m->read_error_token = 0x01U;  /* Figure 7-13: Error */
 }
 
 /* ================================================================

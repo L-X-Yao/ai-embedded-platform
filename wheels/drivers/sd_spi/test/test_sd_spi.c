@@ -52,12 +52,15 @@ static int         mock_is_sdhc;
 static int         mock_is_v1;
 static int         mock_acmd41_remain;  /* countdown to ready */
 static int         mock_fail_init;      /* CMD0 no response */
-static int         mock_fail_read;      /* no 0xFE token for CMD17 */
+static int         mock_silent_read;    /* nothing at all after CMD17's R1 */
 static int         mock_fail_write;     /* write response = rejected */
 static int         mock_fail_spi;       /* all xfer return 0xFF */
 static int         mock_fail_cmd17;    /* CMD17 returns error R1 */
 static int         mock_fail_cmd24;    /* CMD24 returns error R1 */
 static int         mock_cmd55_seen;
+static int         mock_spi_mode;       /* a valid CMD0 has left SD mode */
+static int         mock_ready;          /* ACMD41 done: the idle bit is clear */
+static uint8_t     mock_crc;            /* last byte of the command frame */
 static int         mock_busy_polls;     /* polls the card stays busy, -1 = forever */
 static uint8_t     mock_read_token;     /* first byte of the read data phase */
 static uint8_t     mock_status_r2;      /* second byte of the CMD13 response */
@@ -84,12 +87,15 @@ static void mock_reset(void)
     mock_is_v1 = 0;
     mock_acmd41_remain = 0;
     mock_fail_init = 0;
-    mock_fail_read = 0;
+    mock_silent_read = 0;
     mock_fail_write = 0;
     mock_fail_spi = 0;
     mock_fail_cmd17 = 0;
     mock_fail_cmd24 = 0;
     mock_cmd55_seen = 0;
+    mock_spi_mode = 0;
+    mock_ready = 0;
+    mock_crc = 0;
     mock_busy_polls = 0;
     mock_read_token = 0xFE;
     mock_status_r2 = 0;
@@ -121,15 +127,60 @@ static void mock_delay_ms(void *ctx, uint32_t ms)
     mock_delay_calls++;
 }
 
+/* CRC7 of spec section 4.5, generator x^7 + x^3 + 1, then the end bit. */
+static uint8_t frame_crc(void)
+{
+    const uint8_t frame[5] = {
+        (uint8_t)(0x40U | mock_cmd),
+        (uint8_t)(mock_arg >> 24), (uint8_t)(mock_arg >> 16),
+        (uint8_t)(mock_arg >> 8),  (uint8_t)mock_arg,
+    };
+    uint8_t crc = 0;
+
+    for (int i = 0; i < 5; i++) {
+        for (int bit = 7; bit >= 0; bit--) {
+            uint8_t in = (uint8_t)((frame[i] >> bit) & 1U);
+            uint8_t top = (uint8_t)((crc >> 6) & 1U);
+
+            crc = (uint8_t)((crc << 1) & 0x7FU);
+            if (in != top)
+                crc ^= 0x09U;
+        }
+    }
+    return (uint8_t)((crc << 1) | 1U);
+}
+
 /* prepare response after CRC received */
 static void prepare_response(void)
 {
+    int crc_ok = (mock_crc == frame_crc());
+    int app_cmd = mock_cmd55_seen;
+    uint8_t idle = (uint8_t)(mock_ready ? 0x00U : 0x01U);
+
     mock_ext_len = 0;
     mock_ext_idx = 0;
+    mock_cmd55_seen = 0;
 
+    /* Spec 7.2.2: the first CMD0 arrives in SD mode and needs its CRC, and
+     * 6.4.1: "CMD0 shall be the first command". */
+    if (!mock_spi_mode && (mock_cmd != 0 || !crc_ok)) {
+        mock_r1 = 0xFF;
+        mock_phase = PH_R1;
+        return;
+    }
+    /* Spec 7.2.7: these are not valid in the idle state. */
+    if (!mock_ready && (mock_cmd == 13 || mock_cmd == 17 || mock_cmd == 24)) {
+        mock_r1 = 0x05;
+        mock_phase = PH_R1;
+        return;
+    }
     if (mock_cmd == 0) {
         /* CMD0: GO_IDLE */
         mock_r1 = mock_fail_init ? 0xFF : 0x01;
+        if (!mock_fail_init) {
+            mock_spi_mode = 1;
+            mock_ready = 0;
+        }
         mock_phase = PH_R1;
         return;
     }
@@ -145,7 +196,13 @@ static void prepare_response(void)
             mock_phase = PH_R1;
             return;
         }
-        mock_r1 = 0x01;
+        /* Spec 7.2.2: "The CMD8 CRC verification is always enabled." */
+        if (!crc_ok) {
+            mock_r1 = (uint8_t)(idle | 0x08U);
+            mock_phase = PH_R1;
+            return;
+        }
+        mock_r1 = idle;
         mock_ext[0] = 0x00; mock_ext[1] = 0x00;
         mock_ext[2] = 0x01; mock_ext[3] = 0xAA;
         mock_ext_len = 4;
@@ -154,24 +211,29 @@ static void prepare_response(void)
     }
     if (mock_cmd == 55) {
         mock_cmd55_seen = 1;
-        mock_r1 = 0x01;
+        mock_r1 = idle;
         mock_phase = PH_R1;
         return;
     }
-    if (mock_cmd == 41 && mock_cmd55_seen) {
-        mock_cmd55_seen = 0;
-        if (mock_acmd41_remain > 0) {
+    if (mock_cmd == 41 && app_cmd) {
+        /* Spec 4.2.3: "If HCS is set to 0, SDHC and SDXC Cards never return
+         * ready status". */
+        if (mock_is_sdhc && !mock_is_v1 && !(mock_arg & 0x40000000U)) {
+            mock_r1 = 0x01;
+        } else if (mock_acmd41_remain > 0) {
             mock_acmd41_remain--;
             mock_r1 = 0x01;
         } else {
             mock_r1 = 0x00;
+            mock_ready = 1;
         }
         mock_phase = PH_R1;
         return;
     }
     if (mock_cmd == 58) {
-        mock_r1 = 0x00;
-        mock_ext[0] = mock_is_sdhc ? 0xC0U : 0x80U;
+        mock_r1 = idle;
+        /* Spec 5.1: bit 31 says power up is done, and only then is CCS valid */
+        mock_ext[0] = (uint8_t)(!mock_ready ? 0x00U : (mock_is_sdhc ? 0xC0U : 0x80U));
         mock_ext[1] = 0xFF;
         mock_ext[2] = 0x80;
         mock_ext[3] = 0x00;
@@ -230,6 +292,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     case PH_CRC:
         /* CRC received, prepare response for next reads */
+        mock_crc = tx;
         prepare_response();
         return 0xFF;
 
@@ -241,7 +304,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                 mock_phase = PH_EXT;
             } else if (mock_cmd == 17 && mock_r1 == 0x00) {
                 /* transition to read data */
-                if (mock_fail_read) {
+                if (mock_silent_read) {
                     mock_phase = PH_IDLE;
                 } else {
                     mock_phase = PH_READ_TOKEN;
@@ -438,7 +501,7 @@ TEST(test_read_block)
 TEST(test_read_timeout)
 {
     mock_reset();
-    mock_fail_read = 1;
+    mock_silent_read = 1;
     sd_spi_t sd;
     sd_spi_init(&sd, &mock_hal);
 
@@ -668,7 +731,7 @@ TEST(test_read_token_limit_is_100_ms)
     uint8_t buf[512];
     sd_spi_t sd;
     mock_reset();
-    mock_fail_read = 1;
+    mock_silent_read = 1;
     sd_spi_init(&sd, &mock_hal);
 
     mock_delay_calls = 0;
@@ -715,6 +778,123 @@ TEST(test_read_reports_a_data_error_token)
     ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_READ);
 }
 
+/* ---------- the card itself, from Physical Layer Spec v3.01 ---------- */
+
+/* One command frame sent straight to the mock. */
+static uint8_t raw_cmd(uint8_t cmd, uint32_t arg, uint8_t crc)
+{
+    mock_cs_high(NULL);
+    mock_cs_low(NULL);
+    (void)mock_xfer(NULL, 0xFF);
+    (void)mock_xfer(NULL, (uint8_t)(0x40U | cmd));
+    (void)mock_xfer(NULL, (uint8_t)(arg >> 24));
+    (void)mock_xfer(NULL, (uint8_t)(arg >> 16));
+    (void)mock_xfer(NULL, (uint8_t)(arg >> 8));
+    (void)mock_xfer(NULL, (uint8_t)arg);
+    (void)mock_xfer(NULL, crc);
+
+    uint8_t r1 = 0xFF;
+    for (int i = 0; i < 8 && (r1 & 0x80U); i++)
+        r1 = mock_xfer(NULL, 0xFF);
+    return r1;
+}
+
+static uint8_t raw_acmd41(uint32_t arg)
+{
+    (void)raw_cmd(55, 0, 0xFF);
+    return raw_cmd(41, arg, 0xFF);
+}
+
+TEST(test_card_first_cmd0_needs_a_valid_crc)
+{
+    mock_reset();
+    /* 7.2.2: CMD0 "shall have a valid CRC field", which is 0x95 */
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0xFF), 0xFF);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0x87), 0xFF);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    /* in SPI mode the CRC is off until CMD59 */
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0xFF), 0x01);
+}
+
+TEST(test_card_checks_the_cmd8_crc)
+{
+    mock_reset();
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    /* 7.2.2: "card returns CRC error in R1 response", Figure 7-9 has the
+     * com crc error at bit 3. 7.3.2: only that byte is sent. */
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0xFF), 0x09);
+    ASSERT_EQ_HEX(mock_xfer(NULL, 0xFF), 0xFF);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0x87), 0x01);
+}
+
+TEST(test_card_sdhc_never_ready_without_hcs)
+{
+    mock_reset();
+    mock_is_sdhc = 1;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0x87), 0x01);
+    /* 4.2.3: "If HCS is set to 0, SDHC and SDXC Cards never return ready
+     * status (keep busy bit to 0)." */
+    for (int i = 0; i < 50; i++)
+        ASSERT_EQ_HEX(raw_acmd41(0), 0x01);
+    ASSERT_EQ_HEX(raw_acmd41(0x40000000U), 0x00);
+}
+
+TEST(test_card_standard_capacity_ignores_hcs)
+{
+    mock_reset();
+    mock_is_sdhc = 0;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0x87), 0x01);
+    /* 4.2.3: "Standard Capacity SD Memory Card ignores HCS." */
+    ASSERT_EQ_HEX(raw_acmd41(0), 0x00);
+}
+
+TEST(test_card_idle_state_refuses_transfers)
+{
+    mock_reset();
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    /* 7.2.7: "the only valid host commands are CMD8 (SEND_IF_COND), ACMD41
+     * (SD_SEND_OP_COND), CMD58 (READ_OCR) and CMD59 (CRC_ON_OFF)". */
+    ASSERT_EQ_HEX(raw_cmd(17, 0, 0xFF), 0x05);
+    ASSERT_EQ_HEX(raw_cmd(24, 0, 0xFF), 0x05);
+    ASSERT_EQ_HEX(raw_cmd(13, 0, 0xFF), 0x05);
+    /* CMD58 works, with the idle bit and the power up bit (5.1) clear */
+    ASSERT_EQ_HEX(raw_cmd(58, 0, 0xFF), 0x01);
+    ASSERT_EQ_HEX(mock_xfer(NULL, 0xFF) & 0xC0U, 0x00);
+}
+
+TEST(test_card_r1_loses_the_idle_bit_when_ready)
+{
+    mock_reset();
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0x87), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(55, 0, 0xFF), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(41, 0x40000000U, 0xFF), 0x00);
+    /* 7.3.2.1: the bit means "running the initializing process" */
+    ASSERT_EQ_HEX(raw_cmd(55, 0, 0xFF), 0x00);
+    ASSERT_EQ_HEX(raw_cmd(58, 0, 0xFF), 0x00);
+    ASSERT_EQ_HEX(mock_xfer(NULL, 0xFF) & 0xC0U, 0xC0);
+    ASSERT_EQ_HEX(raw_cmd(17, 0, 0xFF), 0x00);
+}
+
+TEST(test_read_is_refused_before_init)
+{
+    uint8_t buf[512] = { 0 };
+    sd_spi_t sd;
+    mock_reset();
+    memset(&sd, 0, sizeof(sd));
+    sd.hal = &mock_hal;
+    sd.card_type = SD_SPI_TYPE_SDV2_HC;
+
+    /* no CMD0 yet: the card has not even entered SPI mode */
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_CMD);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0x95), 0x01);
+    mock_cs_high(NULL);
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_CMD);
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_CMD);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -747,4 +927,11 @@ TEST_MAIN("sd_spi")
     RUN(test_cmd8_crc_error_is_not_a_legacy_card);
     RUN(test_silent_cmd8_is_not_a_legacy_card);
     RUN(test_read_reports_a_data_error_token);
+    RUN(test_card_first_cmd0_needs_a_valid_crc);
+    RUN(test_card_checks_the_cmd8_crc);
+    RUN(test_card_sdhc_never_ready_without_hcs);
+    RUN(test_card_standard_capacity_ignores_hcs);
+    RUN(test_card_idle_state_refuses_transfers);
+    RUN(test_card_r1_loses_the_idle_bit_when_ready);
+    RUN(test_read_is_refused_before_init);
 TEST_MAIN_END()

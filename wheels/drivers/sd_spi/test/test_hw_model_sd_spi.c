@@ -202,8 +202,8 @@ TEST(test_read_timeout)
     sd_spi_t sd;
     sd_spi_init(&sd, &model_hal);
 
-    /* Enable read failure: no 0xFE token sent */
-    model.fail_read = true;
+    /* A card that says nothing after R1 */
+    model.silent_read = true;
 
     uint8_t buf[512];
     sd_spi_err_t err = sd_spi_read_block(&sd, 0, buf);
@@ -296,6 +296,270 @@ TEST(test_spi_bus_failure)
     ASSERT_TRUE(err != SD_SPI_OK);
 }
 
+/* --- 13. What the card does, from Physical Layer Spec v3.01 --- */
+
+/* One command frame sent straight to the model. Returns the first byte
+ * with the top bit clear, or 0xFF after the 8 bytes of NCR. */
+static uint8_t raw_cmd(uint8_t cmd, uint32_t arg, uint8_t crc)
+{
+    sd_model_cs_high(&model);
+    sd_model_cs_low(&model);
+    (void)sd_model_xfer(&model, 0xFF);
+    (void)sd_model_xfer(&model, (uint8_t)(0x40U | cmd));
+    (void)sd_model_xfer(&model, (uint8_t)(arg >> 24));
+    (void)sd_model_xfer(&model, (uint8_t)(arg >> 16));
+    (void)sd_model_xfer(&model, (uint8_t)(arg >> 8));
+    (void)sd_model_xfer(&model, (uint8_t)arg);
+    (void)sd_model_xfer(&model, crc);
+
+    uint8_t r1 = 0xFF;
+    for (int i = 0; i < 8 && (r1 & 0x80U); i++)
+        r1 = sd_model_xfer(&model, 0xFF);
+    return r1;
+}
+
+static uint8_t raw_acmd41(uint32_t arg)
+{
+    (void)raw_cmd(55, 0, 0xFF);
+    return raw_cmd(41, arg, 0xFF);
+}
+
+#define VALID_CMD0_CRC  0x95   /* 7.2.2: 0x40, 0x0, 0x0, 0x0, 0x0, 0x95 */
+#define VALID_CMD8_CRC  0x87   /* CRC7 of 48 00 00 01 AA, then the end bit */
+#define HCS             0x40000000U
+
+TEST(test_crc7_matches_the_examples_in_4_5)
+{
+    /* CMD0 (Argument=0) --> 01 000000 00...00 "1001010" 1 */
+    static const uint8_t cmd0[5] = { 0x40, 0, 0, 0, 0 };
+    /* CMD17 (Argument=0) --> 01 010001 00...00 "0101010" 1 */
+    static const uint8_t cmd17[5] = { 0x51, 0, 0, 0, 0 };
+    /* Response of CMD17 --> 00 010001 00..00100100000000 "0110011" 1 */
+    static const uint8_t resp17[5] = { 0x11, 0, 0, 0x09, 0 };
+
+    ASSERT_EQ_HEX(sd_model_crc7(cmd0, 5), 0x4A);
+    ASSERT_EQ_HEX(sd_model_crc7(cmd17, 5), 0x2A);
+    ASSERT_EQ_HEX(sd_model_crc7(resp17, 5), 0x33);
+}
+
+TEST(test_first_cmd0_needs_a_valid_crc)
+{
+    sd_model_init(&model);
+
+    /* 7.2.2: CMD0 is received in SD mode, "therefore, shall have a valid
+     * CRC field". */
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0xFF), 0xFF);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+
+    /* In SPI mode the CRC is off until CMD59 turns it on. */
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0xFF), 0x01);
+}
+
+TEST(test_cmd0_must_come_first)
+{
+    sd_model_init(&model);
+
+    /* 6.4.1: "CMD0 shall be the first command to send the card to SPI
+     * mode". */
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0xFF);
+    ASSERT_EQ_HEX(raw_cmd(58, 0, 0xFF), 0xFF);
+}
+
+TEST(test_bad_cmd8_crc_gets_a_crc_error)
+{
+    sd_model_init(&model);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+
+    /* 7.2.2: CMD8 CRC is always checked. 7.3.2: only the first byte is
+     * sent when a CRC error is indicated. */
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, 0xFF), 0x09);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0xFF);
+
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x01);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0x00);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0x00);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0x01);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0xAA);
+}
+
+TEST(test_sdhc_never_ready_without_hcs)
+{
+    sd_model_init(&model);
+    model.card_type = SD_MODEL_TYPE_SDV2_HC;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x01);
+
+    /* 4.2.3: "If HCS is set to 0, SDHC and SDXC Cards never return ready
+     * status". */
+    for (int i = 0; i < 50; i++)
+        ASSERT_EQ_HEX(raw_acmd41(0), 0x01);
+
+    /* 7.2.1: "The card checks the HCS bit in the OCR only at the first
+     * ACMD41", so setting it now is too late. */
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x01);
+
+    /* CMD0 starts over. */
+    ASSERT_EQ_HEX(raw_cmd(0, 0, 0xFF), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x00);
+}
+
+TEST(test_sdhc_needs_cmd8_before_acmd41)
+{
+    sd_model_init(&model);
+    model.card_type = SD_MODEL_TYPE_SDV2_HC;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+
+    /* 7.2.1: "It is mandatory to issue CMD8 prior to the first ACMD41",
+     * and only CMD8 makes ACMD41 look at HCS. */
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x01);
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x01);
+}
+
+TEST(test_standard_capacity_cards_ignore_hcs)
+{
+    /* 4.2.3: "Standard Capacity SD Memory Card ignores HCS". */
+    sd_model_init(&model);
+    model.card_type = SD_MODEL_TYPE_SDV2_SC;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_acmd41(0), 0x00);
+
+    sd_model_init(&model);
+    model.card_type = SD_MODEL_TYPE_SDV1;
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x05);
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x00);
+}
+
+TEST(test_idle_state_allows_only_the_init_commands)
+{
+    sd_model_init(&model);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+
+    /* 7.2.7: only CMD8, ACMD41, CMD58 and CMD59 are valid here, and the
+     * idle bit stays set (7.3.2.1). 0x05 = idle + illegal command. */
+    ASSERT_EQ_HEX(raw_cmd(17, 0, 0xFF), 0x05);
+    ASSERT_EQ_HEX(raw_cmd(24, 0, 0xFF), 0x05);
+    ASSERT_EQ_HEX(raw_cmd(16, 512, 0xFF), 0x05);
+    ASSERT_EQ_HEX(raw_cmd(13, 0, 0xFF), 0x05);
+
+    /* CMD58 is valid, but the power up bit is clear and CCS is not
+     * valid yet (5.1). */
+    ASSERT_EQ_HEX(raw_cmd(58, 0, 0xFF), 0x01);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF) & 0xC0U, 0x00);
+
+    ASSERT_EQ_HEX(raw_cmd(8, 0x1AA, VALID_CMD8_CRC), 0x01);
+    ASSERT_EQ_HEX(raw_acmd41(HCS), 0x00);
+
+    /* Ready: the idle bit is gone from every R1 and transfers work. */
+    ASSERT_EQ_HEX(raw_cmd(55, 0, 0xFF), 0x00);
+    ASSERT_EQ_HEX(raw_cmd(58, 0, 0xFF), 0x00);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF) & 0xC0U, 0xC0);
+    ASSERT_EQ_HEX(raw_cmd(17, 0, 0xFF), 0x00);
+}
+
+TEST(test_read_and_write_are_refused_before_init)
+{
+    sd_model_init(&model);
+    ASSERT_EQ_HEX(raw_cmd(0, 0, VALID_CMD0_CRC), 0x01);
+    sd_model_cs_high(&model);
+
+    sd_spi_t sd;
+    memset(&sd, 0, sizeof(sd));
+    sd.hal = &model_hal;
+    sd.card_type = SD_SPI_TYPE_SDV2_HC;
+
+    uint8_t buf[512] = { 0 };
+    ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_CMD);
+    ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_CMD);
+}
+
+TEST(test_write_waits_for_the_busy_line)
+{
+    sd_model_init(&model);
+    sd_spi_t sd;
+    ASSERT_EQ(sd_spi_init(&sd, &model_hal), SD_SPI_OK);
+
+    /* 7.2.4: "a continuous stream of busy tokens will be sent to the
+     * host (effectively holding the DataOut line low)". */
+    model.busy_polls = 300;
+    uint8_t buf[512] = { 0 };
+    ASSERT_EQ(sd_spi_write_block(&sd, 1, buf), SD_SPI_OK);
+    ASSERT_EQ(model.busy_seen, 300);
+}
+
+TEST(test_write_gives_up_when_busy_never_ends)
+{
+    sd_model_init(&model);
+    sd_spi_t sd;
+    ASSERT_EQ(sd_spi_init(&sd, &model_hal), SD_SPI_OK);
+
+    model.busy_polls = -1;
+    uint8_t buf[512] = { 0 };
+    ASSERT_EQ(sd_spi_write_block(&sd, 1, buf), SD_SPI_ERR_TIMEOUT);
+    /* 4.6.2.2: an SDXC card "can indicate write busy up to 500ms" */
+    ASSERT_TRUE(model.delay_count > 500);
+}
+
+TEST(test_reselect_during_programming_keeps_dataout_low)
+{
+    sd_model_init(&model);
+    sd_spi_t sd;
+    ASSERT_EQ(sd_spi_init(&sd, &model_hal), SD_SPI_OK);
+
+    model.busy_polls = -1;
+    uint8_t buf[512] = { 0 };
+    ASSERT_EQ(sd_spi_write_block(&sd, 1, buf), SD_SPI_ERR_TIMEOUT);
+
+    /* 7.2.4: with CS high "The card will release the DataOut line".
+     * "If the card is reselected before the programming is finished, the
+     * DataOut line will be forced back to low and all commands will be
+     * rejected." */
+    sd_model_cs_high(&model);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0xFF);
+    sd_model_cs_low(&model);
+    ASSERT_EQ_HEX(sd_model_xfer(&model, 0xFF), 0x00);
+    sd_model_cs_high(&model);
+
+    /* A card in this state must not look like a working one. */
+    ASSERT_TRUE(sd_spi_read_block(&sd, 1, buf) != SD_SPI_OK);
+    ASSERT_TRUE(sd_spi_write_block(&sd, 1, buf) != SD_SPI_OK);
+}
+
+TEST(test_programming_error_shows_only_in_cmd13)
+{
+    sd_model_init(&model);
+    sd_spi_t sd;
+    ASSERT_EQ(sd_spi_init(&sd, &model_hal), SD_SPI_OK);
+
+    /* 7.2.4: "Some errors (e.g. address out of range, write protect
+     * violation etc.) are detected during programming only." */
+    model.status_r2 = 0x20;   /* WP violation, Figure 7-10 */
+    uint8_t buf[512] = { 0 };
+    ASSERT_EQ(sd_spi_write_block(&sd, 1, buf), SD_SPI_ERR_WRITE);
+
+    /* 7.3.4: "error bits are cleared when read by the host" */
+    ASSERT_EQ(sd_spi_write_block(&sd, 1, buf), SD_SPI_OK);
+}
+
+TEST(test_read_error_token_reaches_the_caller)
+{
+    sd_model_init(&model);
+    sd_spi_t sd;
+    ASSERT_EQ(sd_spi_init(&sd, &model_hal), SD_SPI_OK);
+
+    /* 7.3.3.3: "it will send a data error token instead", Figure 7-13:
+     * 0000 then out of range, card ECC failed, CC error, error. */
+    uint8_t buf[512];
+    static const uint8_t tokens[] = { 0x01, 0x02, 0x04, 0x08 };
+    model.fail_read = true;
+    for (unsigned i = 0; i < sizeof(tokens); i++) {
+        model.read_error_token = tokens[i];
+        ASSERT_EQ(sd_spi_read_block(&sd, 0, buf), SD_SPI_ERR_READ);
+    }
+}
+
 TEST_MAIN("sd_spi hardware model")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -310,4 +574,18 @@ TEST_MAIN("sd_spi hardware model")
     RUN(test_sdhc_block_addressing);
     RUN(test_sdsc_byte_addressing);
     RUN(test_spi_bus_failure);
+    RUN(test_crc7_matches_the_examples_in_4_5);
+    RUN(test_first_cmd0_needs_a_valid_crc);
+    RUN(test_cmd0_must_come_first);
+    RUN(test_bad_cmd8_crc_gets_a_crc_error);
+    RUN(test_sdhc_never_ready_without_hcs);
+    RUN(test_sdhc_needs_cmd8_before_acmd41);
+    RUN(test_standard_capacity_cards_ignore_hcs);
+    RUN(test_idle_state_allows_only_the_init_commands);
+    RUN(test_read_and_write_are_refused_before_init);
+    RUN(test_write_waits_for_the_busy_line);
+    RUN(test_write_gives_up_when_busy_never_ends);
+    RUN(test_reselect_during_programming_keeps_dataout_low);
+    RUN(test_programming_error_shows_only_in_cmd13);
+    RUN(test_read_error_token_reaches_the_caller);
 TEST_MAIN_END()
