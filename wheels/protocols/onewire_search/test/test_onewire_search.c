@@ -776,6 +776,7 @@ typedef struct {
     int  fault_walk;   /* the walk to disturb, from 1 */
     int  first_read;   /* first read_bit call to invert, from 1 */
     int  last_read;    /* last read_bit call to invert */
+    bool no_presence;  /* that walk's reset sees no presence */
 } glitch_bus_t;
 
 /* A walk reads two bits per ROM bit, so ROM bit n is reads 2n-1 and 2n. */
@@ -787,7 +788,8 @@ static bool glitch_reset(void *ctx)
     glitch_bus_t *g = (glitch_bus_t *)ctx;
     g->walk++;
     g->reads = 0;
-    return mock_reset(&g->mock);
+    bool presence = mock_reset(&g->mock);
+    return presence && !(g->no_presence && g->walk == g->fault_walk);
 }
 
 static void glitch_write_bit(void *ctx, uint8_t bit)
@@ -944,9 +946,130 @@ TEST(test_family_code_zero_is_refused)
     ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
 }
 
+/* ---------- one glitch does not end the search ---------- */
+
+/* ROM bit 20 is 0 on every device. Read inverted, the walk picks 1 there and
+ * deselects all of them, so the next bit reads 1,1. */
+static void lost_devices_on_walk(int walk, uint8_t found_before)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    glitch_setup(&g, &bus, &state);
+    g.fault_walk = walk;
+    g.first_read = 39;
+    g.last_read = 40;
+
+    for (uint8_t i = 0; i < found_before; i++) {
+        ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_OK);
+    }
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+    ASSERT_FALSE(onewire_search_done(&state));
+    expect_rest(&state, &g, found_before);
+}
+
+TEST(test_lost_devices_on_the_first_walk_is_a_bus_error)
+{
+    lost_devices_on_walk(1, 0);
+}
+
+TEST(test_lost_devices_mid_search_is_a_bus_error)
+{
+    lost_devices_on_walk(2, 1);
+}
+
+TEST(test_lost_devices_on_the_last_walk_is_a_bus_error)
+{
+    lost_devices_on_walk(3, 2);
+}
+
+static void missed_presence_on_walk(int walk, uint8_t found_before)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    glitch_setup(&g, &bus, &state);
+    g.fault_walk = walk;
+    g.no_presence = true;
+
+    for (uint8_t i = 0; i < found_before; i++) {
+        ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_OK);
+    }
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+    ASSERT_FALSE(onewire_search_done(&state));
+    expect_rest(&state, &g, found_before);
+}
+
+TEST(test_missed_presence_mid_search_loses_no_device)
+{
+    missed_presence_on_walk(2, 1);
+}
+
+TEST(test_missed_presence_on_the_last_walk_loses_no_device)
+{
+    missed_presence_on_walk(3, 2);
+}
+
+TEST(test_no_presence_at_the_start_is_an_empty_bus)
+{
+    glitch_bus_t g;
+    onewire_search_bus_t bus;
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    glitch_setup(&g, &bus, &state);
+    g.fault_walk = 1;
+    g.no_presence = true;
+
+    /* Nothing has been found, so this reads as an empty bus and ends the
+     * search, and onewire_search_first is the way to look again. */
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+    ASSERT_TRUE(onewire_search_done(&state));
+    ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_NONE_FOUND);
+
+    ASSERT_EQ(onewire_search_first(&state, &rom), ONEWIRE_SEARCH_OK);
+    ASSERT_TRUE(memcmp(rom.rom, g.mock.roms[0], 8) == 0);
+    expect_rest(&state, &g, 1);
+}
+
+static uint8_t always_high(void *ctx)
+{
+    (void)ctx;
+    return 1;
+}
+
+TEST(test_bus_with_no_answers_is_a_bus_error)
+{
+    onewire_search_bus_t bus = {
+        .ctx = NULL,
+        .reset = always_present,
+        .write_bit = ignore_bit,
+        .read_bit = always_high
+    };
+    onewire_search_state_t state;
+    onewire_search_rom_t rom;
+
+    ASSERT_EQ(onewire_search_init(&state, &bus), ONEWIRE_SEARCH_OK);
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(onewire_search_next(&state, &rom), ONEWIRE_SEARCH_ERR_BUS);
+        ASSERT_FALSE(onewire_search_done(&state));
+    }
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("onewire_search")
+    RUN(test_lost_devices_on_the_first_walk_is_a_bus_error);
+    RUN(test_lost_devices_mid_search_is_a_bus_error);
+    RUN(test_lost_devices_on_the_last_walk_is_a_bus_error);
+    RUN(test_missed_presence_mid_search_loses_no_device);
+    RUN(test_missed_presence_on_the_last_walk_loses_no_device);
+    RUN(test_no_presence_at_the_start_is_an_empty_bus);
+    RUN(test_bus_with_no_answers_is_a_bus_error);
     RUN(test_bus_stuck_low_is_a_bus_error);
     RUN(test_family_code_zero_is_refused);
     RUN(test_clean_bus_finds_all_three);
