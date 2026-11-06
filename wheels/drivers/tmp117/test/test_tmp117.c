@@ -200,8 +200,12 @@ TEST(test_reset_ok)
 {
     hw_model_reset();
     tmp117_init(&dev, &mock_i2c, &default_cfg);
+    int before = hw_reset_count;
     ASSERT_EQ(tmp117_reset(&dev), TMP117_OK);
-    ASSERT_EQ(hw_regs16[0x01] & 0x0002, 0x0002);
+    /* SNOSD82D p28: Soft_Reset "will always read back 0", so the proof of a
+     * reset is what it did */
+    ASSERT_EQ(hw_reset_count, before + 1);
+    ASSERT_EQ_HEX(hw_regs16[0x01] & 0x0002u, 0x0000u);
 }
 
 TEST(test_reset_null)
