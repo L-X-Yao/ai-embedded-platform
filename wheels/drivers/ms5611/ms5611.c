@@ -79,6 +79,7 @@ static uint8_t prom_crc4(const uint16_t prom[8])
 static ms5611_err_t read_prom(ms5611_t *dev)
 {
     uint16_t prom[8];
+    uint16_t any_bit = 0;
     uint8_t buf[2];
     int i;
 
@@ -91,6 +92,13 @@ static ms5611_err_t read_prom(ms5611_t *dev)
             return MS5611_ERR_I2C;
         }
         prom[i] = (uint16_t)((uint16_t)buf[0] << 8 | buf[1]);
+        any_bit |= prom[i];
+    }
+
+    /* A bus that reads zeros would pass, as the CRC of all zeros is 0 */
+    if (any_bit == 0)
+    {
+        return MS5611_ERR_CRC;
     }
 
     /* Verify CRC-4 (DB3-DB0 of word 7, Figure 16) */

@@ -421,6 +421,38 @@ TEST(test_convert_is_one_byte_at_every_osr)
     }
 }
 
+TEST(test_init_refuses_an_all_zero_prom)
+{
+    /* A bus that reads zeros. The CRC of zeros is 0, so the CRC passes it */
+    ms5611_t d;
+
+    mock_reset();
+    memset(&mock_regs[0xA0], 0, 16);
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
+}
+
+TEST(test_init_zero_check_counts_word0)
+{
+    /* Not all zero. Reference crc_crc4 gives 0x0 for word 0 = 0x0013 */
+    ms5611_t d;
+
+    mock_reset();
+    memset(&mock_regs[0xA0], 0, 16);
+    mock_regs[0xA1] = 0x13;
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_OK);
+}
+
+TEST(test_init_zero_check_counts_word7)
+{
+    /* Not all zero. Reference crc_crc4 gives 0x3 for a top byte of 0x01 */
+    ms5611_t d;
+
+    mock_reset();
+    memset(&mock_regs[0xA0], 0, 16);
+    plant_word7(0x0103);
+    ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_OK);
+}
+
 TEST_MAIN("ms5611")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -445,4 +477,7 @@ TEST_MAIN("ms5611")
     RUN(test_init_reset_is_one_byte);
     RUN(test_reset_is_one_byte);
     RUN(test_convert_is_one_byte_at_every_osr);
+    RUN(test_init_refuses_an_all_zero_prom);
+    RUN(test_init_zero_check_counts_word0);
+    RUN(test_init_zero_check_counts_word7);
 TEST_MAIN_END()
