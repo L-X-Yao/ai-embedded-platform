@@ -1021,6 +1021,11 @@ TEST(test_device_refused_after_rejected_init)
     ASSERT_EQ(nrf24_init(&d, NULL, 76, 16), NRF24_ERR_SPI);
     assert_device_refused(&d);
 
+    static nrf24_spi_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(nrf24_init(&d, &zeroed_hal, 76, 16), NRF24_ERR_SPI);
+    assert_device_refused(&d);
+
     memset(&d, 0xA5, sizeof(d));
     ASSERT_EQ(nrf24_init(&d, &mock_spi, 126, 16), NRF24_ERR_PARAM);
     assert_device_refused(&d);

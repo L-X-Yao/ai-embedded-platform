@@ -487,6 +487,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(opt3001_init(&d, &mock_i2c, 0x48), OPT3001_ERR_PARAM);
     assert_device_refused(&d);
 
+    static opt3001_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(opt3001_init(&d, &zeroed_hal, 0x44), OPT3001_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* Something answers, but only 0x3001 is an OPT3001 */
     reg16_table[3].val = 0x3002;
     ASSERT_EQ(opt3001_init(&d, &mock_i2c, 0x44), OPT3001_ERR_ID);

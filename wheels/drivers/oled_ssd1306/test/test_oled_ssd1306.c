@@ -319,6 +319,12 @@ TEST(test_device_refused_after_failed_init)
               OLED_SSD1306_ERR_PARAM);
     assert_device_refused(&d);
 
+    static oled_ssd1306_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(oled_ssd1306_init(&d, &zeroed_hal, &default_cfg, framebuf),
+              OLED_SSD1306_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* The pixel calls are guarded by buf, which must be cleared as well */
     memset(&d, 0xA5, sizeof(d));
     ASSERT_EQ(oled_ssd1306_init(&d, &mock_i2c, &too_short, framebuf),
