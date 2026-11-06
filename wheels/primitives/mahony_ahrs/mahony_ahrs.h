@@ -52,7 +52,10 @@ mahony_ahrs_cfg_t mahony_ahrs_default_cfg(void);
 /** Initialize filter state. @thread_safe: no @isr_safe: no */
 void mahony_ahrs_init(mahony_ahrs_t *f, const mahony_ahrs_cfg_t *cfg);
 
-/** Update with 9-axis data. Pass mx=my=mz=0 for 6-axis. @thread_safe: caller_must_lock @isr_safe: no */
+/** Update with 9-axis data. Pass mx=my=mz=0 for 6-axis.
+ *  A non-finite gyro or accel value drops the whole sample. A non-finite
+ *  magnetometer value counts as mx=my=mz=0.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 void mahony_ahrs_update(mahony_ahrs_t *f,
                    float gx_dps, float gy_dps, float gz_dps,
                    float ax, float ay, float az,

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <float.h>
 #include <string.h>
 #include <math.h>
 #include "mahony_ahrs.h"
@@ -273,7 +274,108 @@ TEST(test_ki_corrects_bias)
     ASSERT_NEAR(e.roll_deg, 0.0f, 5.0f);
 }
 
+/* Level and still: the estimate must settle at identity. */
+static void level_samples(mahony_ahrs_t *f, int n)
+{
+    for (int i = 0; i < n; i++) {
+        mahony_ahrs_update(f, 0, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+    }
+}
+
+/* One bad gyro or accel value drops the sample and leaves the state alone. */
+TEST(test_non_finite_gyro_accel_dropped)
+{
+    const float bad[] = { NAN, INFINITY, -INFINITY };
+
+    for (int b = 0; b < 3; b++) {
+        for (int axis = 0; axis < 6; axis++) {
+            mahony_ahrs_t f;
+            mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+            mahony_ahrs_init(&f, &cfg);
+            level_samples(&f, 10);
+
+            mahony_ahrs_t before = f;
+            float in[6] = { 1.0f, 2.0f, 3.0f, 0.0f, 0.0f, 1.0f };
+            in[axis] = bad[b];
+            mahony_ahrs_update(&f, in[0], in[1], in[2], in[3], in[4], in[5],
+                               0, 0, 0);
+            ASSERT_MEMEQ_N(&f, &before, sizeof(f));
+
+            level_samples(&f, 1000);
+            float q0;
+            mahony_ahrs_get_quaternion(&f, &q0, NULL, NULL, NULL);
+            ASSERT_NEAR(q0, 1.0f, 0.001f);
+        }
+    }
+}
+
+/* A bad magnetometer value means "not available", the same as zeros. */
+TEST(test_non_finite_mag_treated_as_absent)
+{
+    const float bad[] = { NAN, INFINITY, -INFINITY };
+
+    for (int b = 0; b < 3; b++) {
+        for (int axis = 0; axis < 3; axis++) {
+            mahony_ahrs_t f, ref;
+            mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+            mahony_ahrs_init(&f, &cfg);
+            mahony_ahrs_init(&ref, &cfg);
+
+            float m[3] = { 0.3f, 0.1f, 0.4f };
+            m[axis] = bad[b];
+            mahony_ahrs_update(&f, 1.0f, 2.0f, 3.0f, 0.1f, 0, 1.0f,
+                               m[0], m[1], m[2]);
+            mahony_ahrs_update(&ref, 1.0f, 2.0f, 3.0f, 0.1f, 0, 1.0f, 0, 0, 0);
+            ASSERT_MEMEQ_N(&f, &ref, sizeof(f));
+        }
+    }
+}
+
+/* NaN already in the state must not stay: the integrators feed every step. */
+TEST(test_nan_in_state_recovers)
+{
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    float q0;
+
+    mahony_ahrs_init(&f, &cfg);
+    f.q2 = NAN;
+    level_samples(&f, 1);
+    mahony_ahrs_get_quaternion(&f, &q0, NULL, NULL, NULL);
+    ASSERT_NEAR(q0, 1.0f, 0.001f);
+
+    mahony_ahrs_init(&f, &cfg);
+    f.integral_fb_x = NAN;
+    level_samples(&f, 1);
+    ASSERT_NEAR(f.integral_fb_x, 0.0f, 0.001f);
+
+    /* tilted accel: a NaN integrator would reset the estimate every step */
+    for (int i = 0; i < 2000; i++) {
+        mahony_ahrs_update(&f, 0, 0, 0, 0.5f, 0, 0.866f, 0, 0, 0);
+    }
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
+    ASSERT_NEAR(e.pitch_deg, -30.0f, 2.0f);
+}
+
+/* A finite rate so large that the norm overflows must not zero the estimate. */
+TEST(test_overflowing_norm_keeps_unit_quaternion)
+{
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    float q0, q1, q2, q3;
+
+    mahony_ahrs_init(&f, &cfg);
+    mahony_ahrs_update(&f, FLT_MAX, 0, 0, 0, 0, 1.0f, 0, 0, 0);
+    mahony_ahrs_get_quaternion(&f, &q0, &q1, &q2, &q3);
+    ASSERT_NEAR(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3, 1.0f, 0.001f);
+}
+
 TEST_MAIN("mahony_ahrs")
+    RUN(test_non_finite_gyro_accel_dropped);
+    RUN(test_non_finite_mag_treated_as_absent);
+    RUN(test_nan_in_state_recovers);
+    RUN(test_overflowing_norm_keeps_unit_quaternion);
     RUN(test_default_cfg);
     RUN(test_init_quaternion_identity);
     RUN(test_init_euler_zero);
