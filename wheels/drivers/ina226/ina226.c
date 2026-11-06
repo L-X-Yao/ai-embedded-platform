@@ -118,7 +118,8 @@ ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
     /* Calibration register: CAL = 0.00512 / (current_lsb * r_shunt_ohms) */
     float r_shunt_ohms = (float)cfg->shunt_resistance_mohm / 1000.0f;
     float cal_f = 0.00512f / (dev->current_lsb * r_shunt_ohms);
-    uint16_t cal = (cal_f >= 32767.0f) ? 0x7FFFu : (uint16_t)cal_f;
+    /* Rounded: float error alone can take 2560 down to 2559.99 */
+    uint16_t cal = (cal_f >= 32767.0f) ? 0x7FFFu : (uint16_t)(cal_f + 0.5f);
 
     /* The register has 15 bits, so scale from the value it really holds */
     if (cal != 0u) dev->current_lsb = 0.00512f / ((float)cal * r_shunt_ohms);
@@ -154,13 +155,14 @@ ina226_err_t ina226_read(ina226_t *dev, ina226_data_t *out)
     err = read_reg16(dev, REG_CURRENT, &raw);
     if (err != INA226_OK)
         return err;
-    out->current_ma = (int32_t)((float)((int16_t)raw) * dev->current_lsb * 1000.0f);
+    float current_ma = (float)((int16_t)raw) * dev->current_lsb * 1000.0f;
+    out->current_ma = (int32_t)(current_ma + (current_ma < 0.0f ? -0.5f : 0.5f));
 
     /* Power: unsigned 16-bit, LSB = 25 * current_lsb (W) */
     err = read_reg16(dev, REG_POWER, &raw);
     if (err != INA226_OK)
         return err;
-    out->power_mw = (uint32_t)((float)raw * 25.0f * dev->current_lsb * 1000.0f);
+    out->power_mw = (uint32_t)((float)raw * 25.0f * dev->current_lsb * 1000.0f + 0.5f);
 
     return INA226_OK;
 }
