@@ -75,6 +75,85 @@ TEST(test_multiframe_20bytes)
     uint8_t cf2[8] = {0x22, 13, 14, 15, 16, 17, 18, 19};
     ASSERT_EQ(isotp_rx_feed(&rx, cf2, 8), ISOTP_OK);
     ASSERT_EQ(isotp_rx_length(&rx), 20u);
+    for (int i = 0; i < 20; i++)
+        ASSERT_EQ(isotp_rx_data(&rx)[i], (uint8_t)i);
+}
+
+/* Send a whole message of len bytes as padded 8-byte frames, and check every
+ * step. The bytes are 7i + 3, so a shift or a repeat shows up. */
+static void feed_long_message(isotp_rx_t *r, uint16_t len)
+{
+    uint8_t can[8] = {0};
+
+    can[0] = (uint8_t)(0x10 | (len >> 8));
+    can[1] = (uint8_t)(len & 0xFF);
+    for (uint16_t i = 0; i < 6u; i++)
+        can[2 + i] = (uint8_t)(i * 7u + 3u);
+    ASSERT_EQ(isotp_rx_feed(r, can, 8), ISOTP_INCOMPLETE);
+
+    uint16_t sent = 6;
+    uint8_t sn = 1;
+    while (sent < len) {
+        memset(can, 0xCC, sizeof(can));
+        can[0] = (uint8_t)(0x20 | sn);
+        for (uint16_t i = 0; i < 7u && sent < len; i++, sent++)
+            can[1 + i] = (uint8_t)(sent * 7u + 3u);
+        sn = (uint8_t)((sn + 1u) & 0x0F);
+        ASSERT_EQ(isotp_rx_feed(r, can, 8),
+                  sent < len ? ISOTP_INCOMPLETE : ISOTP_OK);
+    }
+
+    ASSERT_EQ(isotp_rx_length(r), (size_t)len);
+    for (uint16_t i = 0; i < len; i++)
+        ASSERT_EQ(isotp_rx_data(r)[i], (uint8_t)(i * 7u + 3u));
+}
+
+TEST(test_message_exactly_fills_the_buffer)
+{
+    /* 6 + 42 * 7: every frame is full, and the sequence number wraps twice. */
+    uint8_t buf[300];
+    isotp_rx_t r;
+
+    ASSERT_EQ(isotp_rx_init(&r, buf, sizeof(buf)), ISOTP_OK);
+    feed_long_message(&r, 300);
+}
+
+TEST(test_padding_of_the_last_frame_stays_out_of_the_message)
+{
+    /* 6 + 41 * 7 + 6: the last frame ends in one byte of padding. The bytes
+     * after the message belong to someone else. */
+    uint8_t buf[304];
+    isotp_rx_t r;
+
+    memset(buf, 0x5A, sizeof(buf));
+    ASSERT_EQ(isotp_rx_init(&r, buf, 299), ISOTP_OK);
+    feed_long_message(&r, 299);
+    for (size_t i = 299; i < sizeof(buf); i++)
+        ASSERT_EQ(buf[i], 0x5A);
+}
+
+TEST(test_first_frame_length_uses_all_12_bits)
+{
+    uint8_t buf[300];
+    isotp_rx_t r;
+    uint8_t ff[8] = {0x11, 0x2C, 0, 0, 0, 0, 0, 0};
+
+    /* 0x12C is 300, which fits, and 0x12D does not. */
+    ASSERT_EQ(isotp_rx_init(&r, buf, sizeof(buf)), ISOTP_OK);
+    ASSERT_EQ(isotp_rx_feed(&r, ff, 8), ISOTP_INCOMPLETE);
+    ff[1] = 0x2D;
+    ASSERT_EQ(isotp_rx_feed(&r, ff, 8), ISOTP_ERR_OVERFLOW);
+}
+
+TEST(test_sf_needs_all_its_bytes_in_the_frame)
+{
+    setup();
+    /* A length of 4 fits a DLC of 5, and a length of 5 does not. */
+    uint8_t fits[5] = {0x04, 1, 2, 3, 4};
+    uint8_t cut[5]  = {0x05, 1, 2, 3, 4};
+    ASSERT_EQ(isotp_rx_feed(&rx, fits, 5), ISOTP_OK);
+    ASSERT_EQ(isotp_rx_length(&rx), 4u);
+    ASSERT_EQ(isotp_rx_feed(&rx, cut, 5), ISOTP_ERR_SHORT);
 }
 
 TEST(test_cf_wrong_sequence)
@@ -202,6 +281,23 @@ TEST(test_reset)
     ASSERT_EQ(isotp_rx_length(&rx), 0u);
 }
 
+TEST(test_reset_ends_the_reception)
+{
+    setup();
+    uint8_t ff[8] = {0x10, 0x0A, 0, 1, 2, 3, 4, 5};
+    uint8_t cf_next[8] = {0x21, 6, 7, 8, 9, 0xCC, 0xCC, 0xCC};
+    uint8_t cf_zero[8] = {0x20, 6, 7, 8, 9, 0xCC, 0xCC, 0xCC};
+
+    ASSERT_EQ(isotp_rx_feed(&rx, ff, 8), ISOTP_INCOMPLETE);
+    ASSERT_EQ(isotp_rx_reset(&rx), ISOTP_OK);
+
+    /* SN 1 carries on the old message, and SN 0 is what reset leaves next_sn
+     * at. Neither may complete anything. */
+    ASSERT_EQ(isotp_rx_feed(&rx, cf_zero, 8), ISOTP_ERR_SEQUENCE);
+    ASSERT_EQ(isotp_rx_feed(&rx, cf_next, 8), ISOTP_ERR_SEQUENCE);
+    ASSERT_EQ(isotp_rx_length(&rx), 0u);
+}
+
 TEST(test_reset_null)
 {
     ASSERT_EQ(isotp_rx_reset(NULL), ISOTP_ERR_PARAM);
@@ -280,6 +376,10 @@ TEST_MAIN("isotp")
     RUN(test_sf_zero_len);
     RUN(test_multiframe_10bytes);
     RUN(test_multiframe_20bytes);
+    RUN(test_message_exactly_fills_the_buffer);
+    RUN(test_padding_of_the_last_frame_stays_out_of_the_message);
+    RUN(test_first_frame_length_uses_all_12_bits);
+    RUN(test_sf_needs_all_its_bytes_in_the_frame);
     RUN(test_cf_wrong_sequence);
     RUN(test_wrong_sequence_ends_the_reception);
     RUN(test_new_message_after_wrong_sequence);
@@ -292,6 +392,7 @@ TEST_MAIN("isotp")
     RUN(test_sf_roundtrip);
     RUN(test_init_null);
     RUN(test_reset);
+    RUN(test_reset_ends_the_reception);
     RUN(test_reset_null);
     RUN(test_feed_null);
     RUN(test_rx_data_null);
