@@ -59,23 +59,11 @@ typedef struct {
     event_bus_sub_t  subs[EVENT_BUS_MAX_SUBS_PER_EVENT];
 } event_bus_slot_t;
 
-/* Deferred unsubscribe entry (used when unsubscribe called during publish) */
-#ifndef EVENT_BUS_MAX_DEFERRED
-#define EVENT_BUS_MAX_DEFERRED 4
-#endif
-
 typedef struct {
-    uint16_t       event_id;
-    event_bus_cb_t cb;
-    void          *ctx;
-} event_bus_deferred_unsub_t;
-
-typedef struct {
-    event_bus_slot_t           slots[EVENT_BUS_MAX_EVENTS];
-    uint8_t                    slot_count;
-    uint8_t                    iterating;       /* >0 while inside publish */
-    uint8_t                    deferred_count;
-    event_bus_deferred_unsub_t deferred[EVENT_BUS_MAX_DEFERRED];
+    event_bus_slot_t slots[EVENT_BUS_MAX_EVENTS];
+    uint8_t          slot_count;
+    uint8_t          iterating;     /* >0 while inside publish */
+    uint8_t          has_dead;      /* a sub has cb NULL, removed after publish */
 } event_bus_t;
 
 /* ---------- API ---------- */
@@ -87,7 +75,12 @@ event_bus_err_t event_bus_init(event_bus_t *bus);
 event_bus_err_t event_bus_subscribe(event_bus_t *bus, uint16_t event_id,
                                     event_bus_cb_t cb, void *ctx);
 
-/** Unsubscribe a callback from an event. Matches both cb and ctx. @thread_safe: no */
+/**
+ * Unsubscribe a callback from an event. Matches both cb and ctx.
+ * Callable from a subscriber callback. Once this returns the callback is not
+ * called again, not even by the publish in progress, so ctx can be released.
+ * @thread_safe: no
+ */
 event_bus_err_t event_bus_unsubscribe(event_bus_t *bus, uint16_t event_id,
                                       event_bus_cb_t cb, void *ctx);
 

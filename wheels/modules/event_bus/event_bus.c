@@ -64,16 +64,22 @@ event_bus_err_t event_bus_subscribe(event_bus_t *bus, uint16_t event_id,
     return EVENT_BUS_OK;
 }
 
-/* Process deferred unsubscribes queued during publish. */
-static void flush_deferred(event_bus_t *bus)
+/* Drop the entries unsubscribe marked dead during a publish, keeping order. */
+static void remove_dead(event_bus_t *bus)
 {
-    for (uint8_t d = 0; d < bus->deferred_count; d++) {
-        event_bus_unsubscribe(bus,
-                              bus->deferred[d].event_id,
-                              bus->deferred[d].cb,
-                              bus->deferred[d].ctx);
+    for (uint8_t s = 0; s < bus->slot_count; s++) {
+        event_bus_slot_t *slot = &bus->slots[s];
+        uint8_t kept = 0;
+
+        for (uint8_t i = 0; i < slot->count; i++) {
+            if (slot->subs[i].cb) {
+                slot->subs[kept] = slot->subs[i];
+                kept++;
+            }
+        }
+        slot->count = kept;
     }
-    bus->deferred_count = 0;
+    bus->has_dead = 0;
 }
 
 event_bus_err_t event_bus_unsubscribe(event_bus_t *bus, uint16_t event_id,
@@ -83,17 +89,6 @@ event_bus_err_t event_bus_unsubscribe(event_bus_t *bus, uint16_t event_id,
         return EVENT_BUS_ERR_PARAM;
     }
 
-    /* If we're inside a publish, defer to avoid corrupting iteration */
-    if (bus->iterating > 0) {
-        if (bus->deferred_count < EVENT_BUS_MAX_DEFERRED) {
-            bus->deferred[bus->deferred_count].event_id = event_id;
-            bus->deferred[bus->deferred_count].cb       = cb;
-            bus->deferred[bus->deferred_count].ctx      = ctx;
-            bus->deferred_count++;
-        }
-        return EVENT_BUS_OK;
-    }
-
     event_bus_slot_t *slot = find_slot(bus, event_id);
     if (!slot) {
         return EVENT_BUS_OK;
@@ -101,6 +96,17 @@ event_bus_err_t event_bus_unsubscribe(event_bus_t *bus, uint16_t event_id,
 
     for (uint8_t i = 0; i < slot->count; i++) {
         if (slot->subs[i].cb == cb && slot->subs[i].ctx == ctx) {
+            /*
+             * A publish is walking this table: mark the entry so that nothing
+             * calls it, and let the outermost publish remove it.  There is no
+             * limit to reach, so the caller can rely on OK and release ctx.
+             */
+            if (bus->iterating > 0) {
+                slot->subs[i].cb = NULL;
+                bus->has_dead = 1;
+                return EVENT_BUS_OK;
+            }
+
             /* Shift remaining entries down to keep order stable. */
             for (uint8_t j = i; j + 1 < slot->count; j++) {
                 slot->subs[j] = slot->subs[j + 1];
@@ -127,13 +133,15 @@ event_bus_err_t event_bus_publish(event_bus_t *bus, uint16_t event_id,
 
     bus->iterating++;
     for (uint8_t i = 0; i < slot->count; i++) {
-        slot->subs[i].cb(event_id, data, data_len, slot->subs[i].ctx);
+        if (slot->subs[i].cb) {
+            slot->subs[i].cb(event_id, data, data_len, slot->subs[i].ctx);
+        }
     }
     bus->iterating--;
 
-    /* Process any unsubscribes that were deferred during callbacks */
-    if (bus->iterating == 0 && bus->deferred_count > 0) {
-        flush_deferred(bus);
+    /* Only the outermost publish: an outer loop would lose its place */
+    if (bus->iterating == 0 && bus->has_dead) {
+        remove_dead(bus);
     }
 
     return EVENT_BUS_OK;
