@@ -26,6 +26,9 @@ extern "C" {
 #ifndef TASK_WD_MAX_TASKS
 #define TASK_WD_MAX_TASKS  8
 #endif
+#if TASK_WD_MAX_TASKS > 255
+#error "TASK_WD_MAX_TASKS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 typedef enum {
     TASK_WD_OK            =  0,

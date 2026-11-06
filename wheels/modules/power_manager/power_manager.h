@@ -39,6 +39,9 @@ extern "C" {
 #ifndef POWER_MANAGER_MAX_VOTERS
 #define POWER_MANAGER_MAX_VOTERS  16
 #endif
+#if POWER_MANAGER_MAX_VOTERS > 255
+#error "POWER_MANAGER_MAX_VOTERS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ---------- error codes ---------- */
 

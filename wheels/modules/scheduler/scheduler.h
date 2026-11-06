@@ -47,6 +47,9 @@ typedef void (*sched_task_fn)(void *ctx);
 #ifndef SCHED_MAX_TASKS
 #define SCHED_MAX_TASKS 16
 #endif
+#if SCHED_MAX_TASKS > 255
+#error "SCHED_MAX_TASKS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ======================================================================
  * Data structures

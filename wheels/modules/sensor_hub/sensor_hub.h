@@ -27,6 +27,9 @@ extern "C" {
 #ifndef SENSOR_HUB_MAX_SENSORS
 #define SENSOR_HUB_MAX_SENSORS 8
 #endif
+#if SENSOR_HUB_MAX_SENSORS > 255
+#error "SENSOR_HUB_MAX_SENSORS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ---------- Error codes ---------- */
 
