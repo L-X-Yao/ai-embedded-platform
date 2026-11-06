@@ -373,6 +373,49 @@ TEST(test_set_frame_invalid)
     ASSERT_EQ(is31fl3731_set_frame(&dev, 8), IS31FL3731_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(is31fl3731_t *d)
+{
+    ASSERT_EQ(is31fl3731_set_frame(d, 0), IS31FL3731_ERR_PARAM);
+    ASSERT_EQ(is31fl3731_set_pixel(d, 0, 0, 1), IS31FL3731_ERR_PARAM);
+    ASSERT_EQ(is31fl3731_set_led_enable(d, 0, 0, true), IS31FL3731_ERR_PARAM);
+    ASSERT_EQ(is31fl3731_fill(d, 0, 1), IS31FL3731_ERR_PARAM);
+    ASSERT_EQ(is31fl3731_display_frame(d, 0), IS31FL3731_ERR_PARAM);
+    ASSERT_EQ(is31fl3731_shutdown(d, true), IS31FL3731_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    is31fl3731_t d;
+
+    mock_reset_pages();
+    mock_fail_at = 0;  /* the first of the 1455 writes */
+    ASSERT_EQ(is31fl3731_init(&d, &mock_i2c, &default_cfg), IS31FL3731_ERR_I2C);
+    assert_device_refused(&d);
+
+    mock_reset_pages();
+    mock_fail_at = 1454;  /* the last, which leaves shutdown */
+    ASSERT_EQ(is31fl3731_init(&d, &mock_i2c, &default_cfg), IS31FL3731_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    is31fl3731_t d;
+    is31fl3731_cfg_t bad = { .addr = 0x73 };
+    mock_reset_pages();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(is31fl3731_init(&d, NULL, &default_cfg), IS31FL3731_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(is31fl3731_init(&d, &mock_i2c, &bad), IS31FL3731_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("is31fl3731")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -404,4 +447,6 @@ TEST_MAIN("is31fl3731")
     RUN(test_addr_invalid);
     RUN(test_set_frame_valid);
     RUN(test_set_frame_invalid);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

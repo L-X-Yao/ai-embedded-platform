@@ -23,7 +23,14 @@
 keypad_err_t keypad_matrix_init(keypad_matrix_t *kp, const keypad_hal_t *hal,
                                 uint8_t rows, uint8_t cols, const char *keymap)
 {
-    if (!kp || !hal || !keymap)
+    if (!kp)
+        return KEYPAD_ERR_PARAM;
+
+    /* kp->hal stays NULL and kp->rows 0 unless init accepts its arguments:
+     * scan refuses a keypad without a HAL, and the queries find no rows */
+    memset(kp, 0, sizeof(*kp));
+
+    if (!hal || !keymap)
         return KEYPAD_ERR_PARAM;
     if (rows == 0 || cols == 0)
         return KEYPAD_ERR_PARAM;
@@ -36,9 +43,6 @@ keypad_err_t keypad_matrix_init(keypad_matrix_t *kp, const keypad_hal_t *hal,
     kp->keymap = keymap;
     kp->rows   = rows;
     kp->cols   = cols;
-    memset(kp->state, 0, sizeof(kp->state));
-    memset(kp->prev_state, 0, sizeof(kp->prev_state));
-    memset(kp->debounce, 0, sizeof(kp->debounce));
     return KEYPAD_OK;
 }
 

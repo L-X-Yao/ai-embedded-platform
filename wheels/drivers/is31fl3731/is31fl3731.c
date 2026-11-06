@@ -97,27 +97,9 @@ static bool init_frame(is31fl3731_t *dev, uint8_t frame)
 
 /* ---------- public API ---------- */
 
-is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
-                                 const is31fl3731_i2c_t *i2c,
-                                 const is31fl3731_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static is31fl3731_err_t bring_up(is31fl3731_t *dev)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return IS31FL3731_ERR_PARAM;
-    }
-    if (!i2c->read_regs || !i2c->write_reg)
-    {
-        return IS31FL3731_ERR_PARAM;
-    }
-    if (cfg->addr < IS31FL3731_ADDR_BASE || cfg->addr > IS31FL3731_ADDR_MAX)
-    {
-        return IS31FL3731_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Select function register page */
     if (!select_function_page(dev))
     {
@@ -166,6 +148,45 @@ is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
     if (!write_reg(dev, FUNC_SHUTDOWN, SHUTDOWN_NORMAL))
     {
         return IS31FL3731_ERR_I2C;
+    }
+
+    return IS31FL3731_OK;
+}
+
+is31fl3731_err_t is31fl3731_init(is31fl3731_t *dev,
+                                 const is31fl3731_i2c_t *i2c,
+                                 const is31fl3731_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return IS31FL3731_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return IS31FL3731_ERR_PARAM;
+    }
+    if (!i2c->read_regs || !i2c->write_reg)
+    {
+        return IS31FL3731_ERR_PARAM;
+    }
+    if (cfg->addr < IS31FL3731_ADDR_BASE || cfg->addr > IS31FL3731_ADDR_MAX)
+    {
+        return IS31FL3731_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    is31fl3731_err_t err = bring_up(dev);
+    if (err != IS31FL3731_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

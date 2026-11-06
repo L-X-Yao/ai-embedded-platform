@@ -112,7 +112,15 @@ lcd_st7789_err_t lcd_st7789_init(lcd_st7789_t *dev,
     REQUIRE(dev != NULL);
     REQUIRE(spi != NULL);
     REQUIRE(cfg != NULL);
-    if (!dev || !spi || !cfg) {
+    if (!dev) {
+        return LCD_ST7789_ERR_PARAM;
+    }
+
+    /* dev->spi stays NULL unless init accepts the HAL: the other calls refuse
+     * a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !cfg) {
         return LCD_ST7789_ERR_PARAM;
     }
     if (!validate_hal(spi)) {
@@ -127,7 +135,6 @@ lcd_st7789_err_t lcd_st7789_init(lcd_st7789_t *dev,
         return LCD_ST7789_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->spi = spi;
     dev->cfg = *cfg;
     apply_rotation(dev, LCD_ST7789_ROT_0);
