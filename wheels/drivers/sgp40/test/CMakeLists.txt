@@ -35,7 +35,20 @@ target_include_directories(test_boundary_sgp40 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_sgp40 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_executable(test_hw_model_sgp40
+    test_hw_model_sgp40.c
+    ../sgp40.c
+)
+target_include_directories(test_hw_model_sgp40 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_sgp40 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function)
+target_link_libraries(test_hw_model_sgp40 PRIVATE m)
+
 enable_testing()
 add_test(NAME sgp40_tests COMMAND test_sgp40)
 add_test(NAME sgp40_null_tests COMMAND test_null_sgp40)
 add_test(NAME sgp40_boundary_tests COMMAND test_boundary_sgp40)
+add_test(NAME sgp40_hw_model_tests COMMAND test_hw_model_sgp40)
