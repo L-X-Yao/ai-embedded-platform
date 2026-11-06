@@ -12,6 +12,8 @@
 #
 # Vendor wheels (fal, kvs) compile vendor/src/*.c instead.
 # Skips wheels that have no .c files at wheel root.
+#
+# Exit 0 if every wheel compiled; 1 if any failed or none compiled.
 
 set -euo pipefail
 
@@ -149,3 +151,7 @@ case "$FORMAT" in
 esac
 echo ""
 echo "Compiled: $WHEEL_COUNT  Skipped: $SKIP_COUNT  Failed: $FAIL_COUNT"
+
+if [[ $FAIL_COUNT -gt 0 || $WHEEL_COUNT -eq 0 ]]; then
+    exit 1
+fi
