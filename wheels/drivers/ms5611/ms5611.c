@@ -139,6 +139,13 @@ static ms5611_err_t read_adc(const ms5611_t *dev, uint8_t conv_cmd,
     }
 
     *adc_val = ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2];
+
+    /* p.11: 0 is what a missed, repeated or early read gives, and it is the
+     * only failure signal the part has. */
+    if (*adc_val == 0)
+    {
+        return MS5611_ERR_ADC;
+    }
     return MS5611_OK;
 }
 
