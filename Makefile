@@ -261,17 +261,24 @@ test-differential:
 test-mutate:
 	bash tooling/test/test_mutation.sh
 
+# Seconds allowed per harness; a run that hits it counts as a failure.
+VERIFY_TIMEOUT ?= 300
+
 verify:
 	@echo "CBMC verification (requires cbmc in PATH)..."
-	@if ! command -v cbmc >/dev/null 2>&1; then echo "cbmc not installed -- skipping"; exit 0; fi
+	@command -v cbmc >/dev/null 2>&1 || { echo "ERROR: cbmc not installed -- nothing verified"; exit 1; }
 	@fail=0; total=0; \
 	for f in $$(find wheels/ -name 'verify_*.c' 2>/dev/null); do \
 		dir=$$(dirname "$$f"); wheel_dir=$$(dirname "$$dir"); name=$$(basename "$$wheel_dir"); \
 		total=$$((total + 1)); \
 		echo "  verifying $$name..."; \
-		result=$$(cbmc "$$f" "$$wheel_dir/$$name.c" -I "$$wheel_dir" -I "tooling/harness" --unwind 51 --bounds-check --pointer-check 2>&1 | tail -1); \
+		result=$$( { timeout $(VERIFY_TIMEOUT) cbmc "$$f" "$$wheel_dir/$$name.c" -I "$$wheel_dir" -I "tooling/harness" --unwind 51 --unwinding-assertions --object-bits 12 --bounds-check --pointer-check 2>&1; echo "exit $$?"; } | tail -2 | tr '\n' ' '); \
 		echo "    $$result"; \
-		echo "$$result" | grep -q "SUCCESSFUL" || fail=$$((fail + 1)); \
+		case "$$result" in \
+			*"VERIFICATION SUCCESSFUL exit 0 "*) ;; \
+			*"exit 124 "*) echo "    TIMEOUT after $(VERIFY_TIMEOUT)s"; fail=$$((fail + 1));; \
+			*) fail=$$((fail + 1));; \
+		esac; \
 	done; \
 	echo ""; echo "$$total wheels, $$fail failures"; \
 	[ $$fail -eq 0 ]
