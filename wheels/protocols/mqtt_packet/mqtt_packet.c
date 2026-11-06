@@ -282,7 +282,7 @@ mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
     size_t header_size = 1 + (size_t)rl_bytes;
     size_t payload_start = pos;
     size_t packet_end = header_size + remaining;
-    if (packet_end > len) packet_end = len;
+    if (packet_end > len) return MQTT_PACKET_ERR_MALFORMED;
 
     if (packet_end < payload_start) return MQTT_PACKET_ERR_MALFORMED;
     out->payload = (payload_start < packet_end) ? (buf + payload_start) : NULL;

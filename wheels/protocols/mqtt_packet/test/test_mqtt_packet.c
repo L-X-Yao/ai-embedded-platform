@@ -350,7 +350,54 @@ TEST(test_parse_publish_refuses_both_qos_bits)
     ASSERT_EQ(mqtt_packet_parse_publish(frame, sizeof(frame), &pub), MQTT_PACKET_ERR_MALFORMED);
 }
 
+/* Header 2, topic length 2, topic 3, payload 10: 17 bytes, remaining 15. */
+static const uint8_t publish_17[] = {
+    0x30, 0x0F, 0x00, 0x03, 'a', '/', 'b',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+};
+
+TEST(test_parse_publish_refuses_a_cut_packet)
+{
+    mqtt_publish_t pub;
+
+    /* Below 4 bytes is ERR_PARAM, so every cut from there up has to fail. */
+    for (size_t len = 4; len < sizeof(publish_17); len++) {
+        ASSERT_EQ(mqtt_packet_parse_publish(publish_17, len, &pub),
+                  MQTT_PACKET_ERR_MALFORMED);
+    }
+}
+
+TEST(test_parse_publish_takes_the_whole_packet)
+{
+    mqtt_publish_t pub;
+
+    ASSERT_EQ(mqtt_packet_parse_publish(publish_17, sizeof(publish_17), &pub),
+              MQTT_PACKET_OK);
+    ASSERT_EQ(pub.topic_len, 3);
+    ASSERT_TRUE(memcmp(pub.topic, "a/b", 3) == 0);
+    ASSERT_EQ(pub.payload_len, 10);
+    ASSERT_TRUE(memcmp(pub.payload, "0123456789", 10) == 0);
+}
+
+TEST(test_parse_publish_stops_at_the_remaining_length)
+{
+    uint8_t stream[sizeof(publish_17) + 2];
+    mqtt_publish_t pub;
+
+    /* Bytes of the next packet follow, and they are not this payload. */
+    memcpy(stream, publish_17, sizeof(publish_17));
+    stream[sizeof(publish_17)] = 0xC0;
+    stream[sizeof(publish_17) + 1] = 0x00;
+
+    ASSERT_EQ(mqtt_packet_parse_publish(stream, sizeof(stream), &pub),
+              MQTT_PACKET_OK);
+    ASSERT_EQ(pub.payload_len, 10);
+}
+
 TEST_MAIN("mqtt_packet")
+    RUN(test_parse_publish_refuses_a_cut_packet);
+    RUN(test_parse_publish_takes_the_whole_packet);
+    RUN(test_parse_publish_stops_at_the_remaining_length);
     RUN(test_remaining_length_encode);
     RUN(test_remaining_length_decode);
     RUN(test_build_connect);
