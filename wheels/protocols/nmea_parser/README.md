@@ -51,7 +51,7 @@ No compile-time configuration needed.
 - Only handles GGA, RMC, GSA. Other sentence types (VTG, GLL, ZDA) return `NMEA_PARSER_ERR_UNKNOWN`.
 - Coordinate parsing uses single-precision float (~7 significant digits ≈ ~1cm at equator). Sufficient for consumer GNSS.
 - Year field uses 80-threshold: YY≥80 → 19XX, YY<80 → 20XX (standard NMEA convention).
-- `nmea_parser_parse()` does not verify checksum internally — caller should call `nmea_parser_verify_checksum()` first if data integrity matters.
+- `nmea_parser_parse()` verifies the checksum itself and returns `NMEA_PARSER_ERR_CHECKSUM` on a mismatch, so a sentence without a valid `*HH` is refused.
 
 ## How to test
 
@@ -61,11 +61,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_nmea_parser
 ```
 
-149 assertions across 47 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion, value limits.
+179 assertions across 55 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (position/quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion, value limits.
 
 ## Test status
 
-- Unit tests (sim): PASS (47 C tests, 149 assertions)
+- Unit tests (sim): PASS (55 C tests, 179 assertions)
 - HIL: N/A
 
 ## API convention deviations
@@ -78,9 +78,13 @@ NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
 
 | Sentence | Fields extracted |
 |----------|----------------|
-| GGA | fix_quality, satellites, hdop, altitude |
+| GGA | lat/lon, fix_quality, satellites, hdop, altitude |
 | RMC | time, date, fix_valid, lat/lon, speed, course |
 | GSA | fix_mode (2D/3D), pdop, hdop, vdop |
+
+Time and date come from RMC only. GGA carries a time too, but a consumer pairs the time
+with the date and with the moment the RMC arrived, so a GGA-only stream has a position
+and no time.
 
 Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.
 
@@ -88,6 +92,7 @@ A valid checksum does not vouch for a value, so each one has to fit these limits
 
 | Field | Accepted |
 |-------|----------|
+| GGA latitude, longitude | ddmm.mmmm to 90 degrees, dddmm.mmmm to 180, minutes under 60, with N/S or E/W |
 | time | hour 0-23, minute 0-59, second 0-60 (leap second) |
 | date | day 1-31, month 1-12 |
 | speed | 0 to 1000 knots |
@@ -99,12 +104,13 @@ A valid checksum does not vouch for a value, so each one has to fit these limits
 
 A value outside them is ignored: its field keeps what it had, a bad course also clears
 `course_valid`, and the call still returns `NMEA_PARSER_OK`. An empty field still counts
-as 0, and latitude and longitude out of range still parse to 0.
+as 0, except a GGA position field, which keeps the old value. In RMC, latitude and
+longitude out of range still parse to 0.
 
 ## API review
 
 - **Date**: 2026-04-28
-- **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); checksum verification is separate from parsing (caller decides); single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
+- **Key decisions**: Accumulative data struct (caller feeds GGA+RMC+GSA, fields accumulate); parsing verifies the checksum, and the check is also public on its own; single-precision float coordinates (sufficient for consumer GNSS); supports GP and GN talker prefixes via 2-char skip.
 
 ## Responsible human
 
