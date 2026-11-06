@@ -7,8 +7,8 @@
  * - WHO_AM_I (0x75) = 0x47 (read-only)
  * - BANK_SEL (0x76) selects register bank (only bank 0 modeled)
  * - PWR_MGMT0 (0x4E): GYRO_MODE[3:2] | ACCEL_MODE[1:0]
- * - GYRO_CONFIG0 (0x4F): GYRO_FS_SEL[6:5] | GYRO_ODR[3:0]
- * - ACCEL_CONFIG0 (0x50): ACCEL_FS_SEL[6:5] | ACCEL_ODR[3:0]
+ * - GYRO_CONFIG0 (0x4F): GYRO_FS_SEL[7:5] | GYRO_ODR[3:0]
+ * - ACCEL_CONFIG0 (0x50): ACCEL_FS_SEL[7:5] | ACCEL_ODR[3:0]
  * - DEVICE_CONFIG (0x11): bit 0 = soft_reset_config
  * - TEMP_DATA (0x1D-0x1E), ACCEL_DATA (0x1F-0x24), GYRO_DATA (0x25-0x2A)
  * - Burst read with auto-increment from any start register
