@@ -331,6 +331,63 @@ TEST(test_read_refuses_the_raw_data_mode)
     ASSERT_EQ(ccs811_read(&d, &data), CCS811_ERR_MODE);
 }
 
+TEST(test_env_data_is_one_write_of_register_and_four_bytes)
+{
+    setup();
+    bus_clear();
+    /* p15: ENV_DATA is one 4-byte register at 0x05, and the map has no 0x07.
+     * p19: the defaults 50 %RH and 25 C are both 0x64, 0x00. */
+    ASSERT_EQ(ccs811_set_env_data(&dev, 100, 100), CCS811_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x05, 0x64, 0x00, 0x64, 0x00);
+    ASSERT_EQ(bus_log[0].addr, CCS811_ADDR_PRIMARY);
+}
+
+TEST(test_env_data_matches_the_manual_examples)
+{
+    setup();
+    bus_clear();
+    /* p19: 48.5 %RH and 23.5 degrees are both 0x61, 0x00 */
+    ASSERT_EQ(ccs811_set_env_data(&dev, 97, 97), CCS811_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x05, 0x61, 0x00, 0x61, 0x00);
+}
+
+TEST(test_env_data_sends_humidity_before_temperature)
+{
+    setup();
+    bus_clear();
+    /* p19 bit weights: 40 %RH = 0x50; 20 C is 45 above -25 C = 0x5A */
+    ASSERT_EQ(ccs811_set_env_data(&dev, 80, 90), CCS811_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x05, 0x50, 0x00, 0x5A, 0x00);
+}
+
+TEST(test_env_data_takes_the_largest_step)
+{
+    setup();
+    bus_clear();
+    ASSERT_EQ(ccs811_set_env_data(&dev, 255, 255), CCS811_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x05, 0xFF, 0x00, 0xFF, 0x00);
+}
+
+TEST(test_env_data_refuses_what_the_high_byte_cannot_hold)
+{
+    setup();
+    bus_clear();
+    ASSERT_EQ(ccs811_set_env_data(&dev, 256, 100), CCS811_ERR_PARAM);
+    ASSERT_EQ(ccs811_set_env_data(&dev, 100, 256), CCS811_ERR_PARAM);
+    ASSERT_EQ(bus_count, 0);
+}
+
+TEST(test_env_data_i2c_fail)
+{
+    setup();
+    mock_fail_next = 1;
+    ASSERT_EQ(ccs811_set_env_data(&dev, 100, 100), CCS811_ERR_I2C);
+}
+
 TEST_MAIN("ccs811")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -353,4 +410,10 @@ TEST_MAIN("ccs811")
     RUN(test_init_invalid_mode);
     RUN(test_read_high_values);
     RUN(test_read_refuses_the_raw_data_mode);
+    RUN(test_env_data_is_one_write_of_register_and_four_bytes);
+    RUN(test_env_data_matches_the_manual_examples);
+    RUN(test_env_data_sends_humidity_before_temperature);
+    RUN(test_env_data_takes_the_largest_step);
+    RUN(test_env_data_refuses_what_the_high_byte_cannot_hold);
+    RUN(test_env_data_i2c_fail);
 TEST_MAIN_END()

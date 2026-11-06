@@ -3,7 +3,8 @@
  * test_hw_model_ccs811.c — driver against the hardware model
  *
  * Checks what hw_model_ccs811.h takes from ams CCS811 datasheet v1-00: the
- * change from boot to application mode needs the single byte 0xF4.
+ * change from boot to application mode needs the single byte 0xF4, and
+ * ENV_DATA takes its 4 bytes in one write.
  */
 
 #include "test_harness.h"
@@ -49,7 +50,22 @@ TEST(test_a_write_with_data_does_not_start_the_application)
     ASSERT_FALSE(model.app_mode);
 }
 
+TEST(test_env_data_reaches_the_mailbox_whole)
+{
+    static const uint8_t defaults[4] = { 0x64, 0x00, 0x64, 0x00 };
+    static const uint8_t want[4]     = { 0x50, 0x00, 0x5A, 0x00 };
+    ccs811_t d;
+
+    ccs811_model_init(&model);
+    ASSERT_MEMEQ_N(model.env_data, defaults, 4);
+    ASSERT_EQ(ccs811_init(&d, &model_i2c, &cfg), CCS811_OK);
+    ASSERT_EQ(ccs811_set_env_data(&d, 80, 90), CCS811_OK);
+    ASSERT_EQ(model.env_write_count, 1);
+    ASSERT_MEMEQ_N(model.env_data, want, 4);
+}
+
 TEST_MAIN("hw_model_ccs811")
     RUN(test_init_starts_the_application);
     RUN(test_a_write_with_data_does_not_start_the_application);
+    RUN(test_env_data_reaches_the_mailbox_whole);
 TEST_MAIN_END()

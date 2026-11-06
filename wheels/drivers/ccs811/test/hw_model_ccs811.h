@@ -8,6 +8,7 @@
  * - APP_START: only the single byte 0xF4, with no data, starts the application
  * - MEAS_MODE at 0x01 controls drive mode
  * - ALG_RESULT at 0x02 (8 bytes, read-only)
+ * - ENV_DATA at 0x05: one 4-byte write through write_raw, held apart from regs
  */
 
 #ifndef HW_MODEL_CCS811_H
@@ -29,6 +30,8 @@ typedef struct {
     bool           app_mode;
     bool           data_ready;
     int            measure_count;
+    uint8_t        env_data[4];      /* ENV_DATA mailbox */
+    int            env_write_count;  /* whole 4-byte writes to ENV_DATA */
 } ccs811_model_t;
 
 static void ccs811_model_update_status(ccs811_model_t *m)
@@ -86,6 +89,10 @@ static void ccs811_model_init(ccs811_model_t *m)
     m->true_eco2 = 412;
     m->true_tvoc = 5;
 
+    /* p19: 50 %RH and 25 C */
+    m->env_data[0] = 0x64;
+    m->env_data[2] = 0x64;
+
     hw_model_reset(&m->hw);
     /* Set initial STATUS: APP_VALID */
     m->hw.regs[CCS811_REG_STATUS] = 0x10;
@@ -95,6 +102,7 @@ static void ccs811_model_init(ccs811_model_t *m)
  * Exact bus traffic, for the HAL's write_raw. ctx is &model.hw. Datasheet v1-00
  * p13: the first byte selects a register and the rest is data. p24, p25: only
  * 0xF4 alone starts the application, so a write that carries data does not.
+ * p15: ENV_DATA takes its 4 bytes in one write.
  */
 __attribute__((unused))
 static bool ccs811_model_write_raw(void *ctx, uint8_t dev_addr,
@@ -109,6 +117,9 @@ static bool ccs811_model_write_raw(void *ctx, uint8_t dev_addr,
     if (len == 1 && data[0] == CCS811_REG_APP_START) {
         m->app_mode = true;
         ccs811_model_update_status(m);
+    } else if (len == 5 && data[0] == CCS811_REG_ENV_DATA) {
+        memcpy(m->env_data, &data[1], sizeof(m->env_data));
+        m->env_write_count++;
     }
     return true;
 }

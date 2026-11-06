@@ -83,8 +83,9 @@ ccs811_err_t ccs811_read(const ccs811_t *dev, ccs811_data_t *out);
 /** @thread_safe: no @isr_safe: no */
 ccs811_err_t ccs811_set_mode(ccs811_t *dev, ccs811_drive_mode_t mode);
 
-/** Set environmental data for compensation. humidity in 0.5% steps,
- *  temperature in 0.5C steps offset by +25C.
+/** Set environmental data for compensation. humidity in 0.5% steps (100 is
+ *  50 %RH), temperature in 0.5C steps offset by +25C (0 is -25C, 100 is 25C).
+ *  A value above 255 returns CCS811_ERR_PARAM and sends nothing.
  *  @thread_safe: no @isr_safe: no */
 ccs811_err_t ccs811_set_env_data(const ccs811_t *dev, uint16_t humidity,
                                  uint16_t temperature);
