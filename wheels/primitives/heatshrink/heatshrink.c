@@ -573,21 +573,35 @@ need_input:
 
     *produced = out_idx;
 
-    /* If finishing and no more complete tokens can be read, we're done.
-     * Remaining bits (if any) are zero-padding from the encoder's
-     * final partial byte -- not real data. */
-    if (dec->finishing && dec->state == HS_DEC_TAG) {
+    /* Every state that gets here ran out of bits.  Once finishing, none
+     * are coming: what is left is the encoder's zero padding, whose first
+     * bit reads as a back-reference tag, or a truncated token. */
+    if (dec->finishing) {
         dec->state = HS_DEC_DONE;
-        if (out_idx > 0) {
-            return HEATSHRINK_POLL_MORE;
-        }
-        return HEATSHRINK_POLL_EMPTY;
     }
 
     if (out_idx > 0) {
         return HEATSHRINK_POLL_MORE;
     }
     return HEATSHRINK_POLL_EMPTY;
+}
+
+/* Bits the current state needs before it can produce output.  0 for the
+ * yield states, which already have output pending. */
+static uint16_t dec_bits_needed(const heatshrink_decoder_t *dec)
+{
+    switch (dec->state) {
+    case HS_DEC_TAG:
+        return 9u;  /* 1 (tag) + 8 (literal), the shortest token */
+    case HS_DEC_LITERAL:
+        return 8u;
+    case HS_DEC_BACKREF_INDEX:
+        return (uint16_t)(dec->window_bits + dec->lookahead_bits);
+    case HS_DEC_BACKREF_COUNT:
+        return dec->lookahead_bits;
+    default:
+        return 0u;
+    }
 }
 
 heatshrink_finish_res_t heatshrink_decoder_finish(heatshrink_decoder_t *dec)
@@ -602,17 +616,13 @@ heatshrink_finish_res_t heatshrink_decoder_finish(heatshrink_decoder_t *dec)
         return HEATSHRINK_FINISH_DONE;
     }
 
-    /* If we're waiting for a tag and there isn't enough input for any
-     * complete token, the remaining bits are padding -- mark done. */
-    if (dec->state == HS_DEC_TAG && dec->output_count == 0) {
-        /* Try to read a tag + minimum token (1 + 8 bits for literal).
-         * If we can't, there's no more real data. */
-        uint16_t bits_avail = (uint16_t)((uint16_t)(dec->input_size - dec->input_index) * 8u
-                                         + dec->bit_idx);
-        if (bits_avail < 9u) {  /* need at least 1 (tag) + 8 (literal) */
-            dec->state = HS_DEC_DONE;
-            return HEATSHRINK_FINISH_DONE;
-        }
+    /* No stream at all, or too few bits left to complete a token: the
+     * rest is padding or a truncated token, so poll() has nothing to do. */
+    uint16_t bits_avail = (uint16_t)((uint16_t)(dec->input_size - dec->input_index) * 8u
+                                     + dec->bit_idx);
+    if (dec->state == HS_DEC_READY || bits_avail < dec_bits_needed(dec)) {
+        dec->state = HS_DEC_DONE;
+        return HEATSHRINK_FINISH_DONE;
     }
 
     return HEATSHRINK_FINISH_MORE;

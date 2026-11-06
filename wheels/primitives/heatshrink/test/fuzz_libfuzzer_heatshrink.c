@@ -110,6 +110,7 @@ static size_t decompress(const uint8_t *src, size_t len, const params_t *p, uint
 
     heatshrink_decoder_finish(&dec);
     drain_decoder(&dec, chunk, p->chunk, out, out_cap, &out_len);
+    if (heatshrink_decoder_finish(&dec) != HEATSHRINK_FINISH_DONE) __builtin_trap();
     free(buf);
     return out_len;
 }

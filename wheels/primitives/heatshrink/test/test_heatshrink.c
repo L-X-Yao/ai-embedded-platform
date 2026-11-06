@@ -110,6 +110,10 @@ static int decompress_all(const uint8_t *src, uint16_t src_len,
         if (pr == HEATSHRINK_POLL_EMPTY) break;
     }
 
+    if (heatshrink_decoder_finish(&dec) != HEATSHRINK_FINISH_DONE) {
+        return -1;
+    }
+
     *dst_len = total_out;
     return 0;
 }
@@ -345,6 +349,7 @@ TEST(test_streaming)
         if (pr == HEATSHRINK_POLL_EMPTY) break;
     }
 
+    ASSERT_EQ(heatshrink_decoder_finish(&dec), HEATSHRINK_FINISH_DONE);
     ASSERT_EQ(decomp_len, msg_len);
     ASSERT_TRUE(memcmp(decompressed, msg, msg_len) == 0);
 }
@@ -496,7 +501,142 @@ TEST(test_roundtrip_input_larger_than_window)
     ASSERT_MEMEQ_N(output, input, sizeof(input));
 }
 
+/* ---- Test: heatshrink.h says "keep calling poll() until FINISH_DONE" ---- */
+
+#define FINISH_SPIN_LIMIT 1000u
+
+static void poll_step(heatshrink_decoder_t *dec, uint8_t *dst, uint16_t dst_cap,
+                      uint16_t *out_off, uint16_t step)
+{
+    uint16_t room = (uint16_t)(dst_cap - *out_off);
+    uint16_t produced = 0;
+
+    (void)heatshrink_decoder_poll(dec, &dst[*out_off],
+                                  (step < room) ? step : room, &produced);
+    *out_off = (uint16_t)(*out_off + produced);
+}
+
+/* Sink src, optionally poll it dry, then run that loop.  Returns 0 once
+ * finish() says DONE, -1 if it never does. */
+static int decode_until_done(const uint8_t *src, uint16_t src_len,
+                             uint8_t *dst, uint16_t dst_cap, uint16_t *dst_len,
+                             uint16_t step, int poll_first)
+{
+    heatshrink_decoder_t dec;
+    uint8_t buf[256 + 128];
+    uint16_t consumed = 0;
+    uint16_t out_off = 0;
+
+    if (heatshrink_decoder_init(&dec, buf, 256, 4) != HEATSHRINK_OK) {
+        return -1;
+    }
+    if (src_len > 0) {
+        (void)heatshrink_decoder_sink(&dec, src, src_len, &consumed);
+        if (consumed != src_len) {
+            return -1;
+        }
+    }
+    for (uint16_t i = 0; poll_first && i < FINISH_SPIN_LIMIT; i++) {
+        poll_step(&dec, dst, dst_cap, &out_off, step);
+    }
+    for (uint16_t spin = 0; spin < FINISH_SPIN_LIMIT; spin++) {
+        if (heatshrink_decoder_finish(&dec) == HEATSHRINK_FINISH_DONE) {
+            *dst_len = out_off;
+            return 0;
+        }
+        poll_step(&dec, dst, dst_cap, &out_off, step);
+    }
+    return -1;
+}
+
+static void check_finishes(const uint8_t *input, uint16_t len)
+{
+    uint8_t packed[128];
+    uint8_t output[128];
+    uint16_t packed_len = 0;
+    uint16_t output_len = 0;
+
+    ASSERT_EQ(compress_all(input, len, packed, sizeof(packed), &packed_len, 8, 4), 0);
+
+    /* Polled dry first, finish() first, and one output byte at a time. */
+    ASSERT_EQ(decode_until_done(packed, packed_len, output, sizeof(output),
+                                &output_len, 128, 1), 0);
+    ASSERT_EQ(output_len, len);
+    ASSERT_MEMEQ_N(output, input, len);
+
+    ASSERT_EQ(decode_until_done(packed, packed_len, output, sizeof(output),
+                                &output_len, 128, 0), 0);
+    ASSERT_EQ(output_len, len);
+    ASSERT_MEMEQ_N(output, input, len);
+
+    ASSERT_EQ(decode_until_done(packed, packed_len, output, sizeof(output),
+                                &output_len, 1, 0), 0);
+    ASSERT_EQ(output_len, len);
+    ASSERT_MEMEQ_N(output, input, len);
+}
+
+TEST(test_finish_after_padded_stream)
+{
+    uint8_t run[64];
+
+    memset(run, 'x', sizeof(run));
+
+    /* 9 bits pack into 2 bytes: 7 zero bits of padding read as a tag. */
+    check_finishes((const uint8_t *)"A", 1);
+    check_finishes((const uint8_t *)"Hello, World!", 13);
+    check_finishes(run, sizeof(run));
+}
+
+TEST(test_finish_every_short_length)
+{
+    uint8_t input[40];
+
+    for (uint16_t i = 0; i < sizeof(input); i++) {
+        input[i] = (uint8_t)(i + 1u);
+    }
+    /* Only lengths divisible by 8 pack into whole bytes with no padding. */
+    for (uint16_t len = 1; len <= sizeof(input); len++) {
+        check_finishes(input, len);
+    }
+}
+
+TEST(test_finish_empty_stream)
+{
+    uint8_t output[4];
+    uint16_t output_len = 99;
+
+    ASSERT_EQ(decode_until_done(NULL, 0, output, sizeof(output), &output_len, 4, 1), 0);
+    ASSERT_EQ(output_len, 0);
+}
+
+TEST(test_finish_truncated_stream)
+{
+    uint8_t input[40];
+    uint8_t packed[128];
+    uint8_t output[128];
+    uint16_t packed_len = 0;
+
+    for (uint16_t i = 0; i < sizeof(input); i++) {
+        input[i] = (uint8_t)((i % 5u) + 'a');
+    }
+    ASSERT_EQ(compress_all(input, sizeof(input), packed, sizeof(packed),
+                           &packed_len, 8, 4), 0);
+
+    /* A cut can land inside any token: the loop still ends, with a prefix. */
+    for (uint16_t cut = 0; cut < packed_len; cut++) {
+        uint16_t output_len = 0;
+        ASSERT_EQ(decode_until_done(packed, cut, output, sizeof(output),
+                                    &output_len, 128, 1), 0);
+        ASSERT_TRUE(output_len <= sizeof(input));
+        ASSERT_MEMEQ_N(output, input, output_len);
+    }
+}
+
 TEST_MAIN("heatshrink")
+    RUN(test_finish_after_padded_stream);
+    RUN(test_finish_every_short_length);
+    RUN(test_finish_empty_stream);
+    RUN(test_finish_truncated_stream);
     RUN(test_init_null);
     RUN(test_encode_empty);
     RUN(test_round_trip_simple);
