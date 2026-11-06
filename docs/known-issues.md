@@ -51,6 +51,27 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## Test models corrected from the manuals (2026-11-06)
+
+The test models and mocks of 77 drivers were corrected to follow their manuals: ignored writes, read-only bits, reset values, busy periods and first-sample waits. Models that no test compiled are now wired in. New assertions failed on the old model first, and many were also checked by putting faults back into the driver. None of this has run on hardware, so a model is still only a reading of the manual.
+
+Corrected models exposed about 30 more driver bugs, which were fixed:
+
+- Reads that gave zeros or junk with OK before the first result: `tsl2591`, `tcs34725`, `max31865`, `adxl345`, `pct2075`, `ms5611`.
+- Waits that ended early or never happened: `hmc5883l` init, `bme280` and `bmp280` during the NVM copy and at high oversampling, `dps310`, `sht30`, `sht40`, `shtc3`, `at24cxx`.
+- Calls the chip ignores or rejects, reported as OK: `mcp4725` during an EEPROM write, `mcp2515_send` outside Normal mode, `nrf24_send` in RX mode, `scd40` commands during a measurement, `veml7700` setters with codes outside the table.
+- `bmp388` reset lost its oversampling, `pca9685_sleep` twice lost RESTART, `ccs811` init sent APP_START to a running chip, and `mcp3008` never raised CS at init.
+
+Left for a decision, because a fix changes what callers get:
+
+- `enc28j60_receive` counts the 4 CRC bytes in `*frame_len`.
+- `icm42688_soft_reset` leaves the scale divisors stale, so 1 g reads 0.5 g until init.
+- `lis3mdl`, `apds9960`, `tmp102` and `ltr390` return OK with zeros or old data before the first result. `ds3231` reads back a reset date as valid with OSF set.
+- `mcp2515` has no way to abort a frame that cannot go out, so mode changes time out.
+- `adxl345_init` now waits the turn-on time, which is about 10 s at 0.10 Hz.
+
+The held-back drivers kept their code, so their models stop short of what the manuals say: `air780eg` tests still feed strings that exist only in the driver, and the `qmi8658a` model hands out data at once.
+
 ## Datasheet check of the last 22 drivers (2026-11-06)
 
 This batch covers the 21 drivers reviewed only in May and `icm42688`, whose manual turned up: 130 confirmed, 53 suspect. 68 of the confirmed items are in driver code and 62 in test models. Each README lists what was checked, fixed and left open. None of this has run on hardware.
