@@ -48,6 +48,7 @@ typedef struct {
  * @return LOOKUP_TABLE_OK on success,
  *         LOOKUP_TABLE_ERR_PARAM if any pointer is NULL or count == 0,
  *         LOOKUP_TABLE_ERR_NOT_SORTED if x is not strictly ascending
+ *         or holds a NaN
  *
  * @thread_safe: no @isr_safe: no
  */
