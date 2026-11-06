@@ -79,6 +79,7 @@ TEST(test_read_als)
 {
     setup();
     hw_model_inject_als(1000);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
     ASSERT_EQ(raw, 1000u);
@@ -89,7 +90,9 @@ TEST(test_read_als)
 TEST(test_read_uvs)
 {
     setup();
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
     hw_model_inject_uvs(2000);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ASSERT_EQ(ltr390_read_uvs(&dev, &raw), LTR390_OK);
     ASSERT_EQ(raw, 2000u);
