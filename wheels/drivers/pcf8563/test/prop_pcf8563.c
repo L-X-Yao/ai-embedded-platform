@@ -42,6 +42,13 @@ static const pcf8563_i2c_t mock_i2c_hal = {
     .ctx       = NULL,
 };
 
+/* Last day of a month in 2000-2099, from the calendar */
+static uint8_t last_day(uint8_t month, uint8_t year)
+{
+    static const uint8_t last[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    return (month == 2 && year % 4 == 0) ? 29 : last[month - 1];
+}
+
 /* Property: BCD encode/decode roundtrip for time values */
 PROPERTY(bcd_roundtrip, 10000) {
     mock_setup();
@@ -52,10 +59,10 @@ PROPERTY(bcd_roundtrip, 10000) {
     tw.second  = (uint8_t)(ARBI_SIZE(seed, 59));
     tw.minute  = (uint8_t)(ARBI_SIZE(seed, 59));
     tw.hour    = (uint8_t)(ARBI_SIZE(seed, 23));
-    tw.day     = (uint8_t)(ARBI_SIZE(seed, 30) + 1);
     tw.weekday = (uint8_t)(ARBI_SIZE(seed, 6));
     tw.month   = (uint8_t)(ARBI_SIZE(seed, 11) + 1);
     tw.year    = (uint8_t)(ARBI_SIZE(seed, 99));
+    tw.day     = (uint8_t)(ARBI_SIZE(seed, last_day(tw.month, tw.year) - 1U) + 1);
 
     pcf8563_err_t wrc = pcf8563_write_time(&dev, &tw);
     PROP_ASSERT_EQ(wrc, PCF8563_OK);

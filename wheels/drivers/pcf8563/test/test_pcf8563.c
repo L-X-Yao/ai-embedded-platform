@@ -559,6 +559,60 @@ TEST(test_mock_starts_at_the_reset_values)
     ASSERT_EQ_HEX(mock_regs[0x0E] & 0x83u, 0x03); /* TE = 0, TD = 11 */
 }
 
+/* ---------- dates that do not exist ---------- */
+
+static pcf8563_err_t write_date(uint8_t year, uint8_t month, uint8_t day)
+{
+    pcf8563_time_t t = {
+        .second = 0, .minute = 0, .hour = 12,
+        .day = day, .weekday = 1, .month = month, .year = year,
+    };
+    return pcf8563_write_time(&dev, &t);
+}
+
+TEST(test_write_time_refuses_dates_that_do_not_exist)
+{
+    mock_reset();
+    pcf8563_init(&dev, &mock_i2c);
+    uint8_t day_reg = mock_regs[0x05];
+
+    ASSERT_EQ(write_date(23, 2, 30), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 4, 31), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 6, 31), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 9, 31), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 11, 31), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 2, 29), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(24, 2, 30), PCF8563_ERR_PARAM);
+    ASSERT_EQ(mock_regs[0x05], day_reg);
+}
+
+/* A month out of range must not reach the table of month lengths */
+TEST(test_write_time_refuses_a_month_out_of_range)
+{
+    mock_reset();
+    pcf8563_init(&dev, &mock_i2c);
+
+    ASSERT_EQ(write_date(23, 0, 15), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 13, 15), PCF8563_ERR_PARAM);
+    ASSERT_EQ(write_date(23, 255, 15), PCF8563_ERR_PARAM);
+}
+
+/* Rev. 10: a 29th day "if the year counter contains a value which is exactly
+ * divisible by 4, including the year 00" */
+TEST(test_write_time_takes_the_last_day_of_every_month)
+{
+    static const uint8_t last[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    mock_reset();
+    pcf8563_init(&dev, &mock_i2c);
+
+    for (uint8_t m = 1; m <= 12; m++) {
+        ASSERT_EQ(write_date(23, m, last[m - 1]), PCF8563_OK);
+    }
+    ASSERT_EQ(write_date(24, 2, 29), PCF8563_OK);
+    ASSERT_EQ(write_date(0, 2, 29), PCF8563_OK);
+    ASSERT_EQ(write_date(96, 2, 29), PCF8563_OK);
+}
+
 TEST_MAIN("pcf8563")
     RUN(test_init_ok);
     RUN(test_init_accepts_n_bits_high);
@@ -595,4 +649,7 @@ TEST_MAIN("pcf8563")
     RUN(test_clkout_disable);
     RUN(test_clkout_null);
     RUN(test_mock_starts_at_the_reset_values);
+    RUN(test_write_time_refuses_dates_that_do_not_exist);
+    RUN(test_write_time_refuses_a_month_out_of_range);
+    RUN(test_write_time_takes_the_last_day_of_every_month);
 TEST_MAIN_END()
