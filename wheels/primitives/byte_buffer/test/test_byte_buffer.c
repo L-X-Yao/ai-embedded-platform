@@ -180,6 +180,113 @@ TEST(test_written)
     ASSERT_EQ(byte_buffer_written(NULL), 0);
 }
 
+/* ---------- partly used buffer ---------- */
+
+#define SMALL 8
+
+/* One guard byte on each side of the storage. */
+static uint8_t guarded[SMALL + 2];
+static const uint8_t fill[SMALL] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+static void setup_small(void)
+{
+    memset(guarded, 0xEE, sizeof(guarded));
+    byte_buffer_init(&bb, guarded + 1, SMALL);
+}
+
+TEST(test_put_one_byte_too_few_left)
+{
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 1), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_u16_be(&bb, 0xABCD), BYTE_BUFFER_ERR_FULL);
+    ASSERT_EQ(byte_buffer_written(&bb), SMALL - 1);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 3), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_u32_be(&bb, 0x01020304u), BYTE_BUFFER_ERR_FULL);
+    ASSERT_EQ(byte_buffer_written(&bb), SMALL - 3);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 2), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, 3), BYTE_BUFFER_ERR_FULL);
+    ASSERT_EQ(byte_buffer_written(&bb), SMALL - 2);
+
+    ASSERT_EQ(guarded[0], 0xEE);
+    ASSERT_EQ(guarded[SMALL + 1], 0xEE);
+}
+
+TEST(test_put_exact_fit_when_partly_used)
+{
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 2), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_u16_be(&bb, 0xABCD), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_writable(&bb), 0);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 4), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_u32_be(&bb, 0x01020304u), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_writable(&bb), 0);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, SMALL - 3), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, 3), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_writable(&bb), 0);
+
+    ASSERT_EQ(guarded[0], 0xEE);
+    ASSERT_EQ(guarded[SMALL + 1], 0xEE);
+}
+
+TEST(test_get_one_byte_too_few_left)
+{
+    uint8_t out[SMALL];
+    uint16_t v16 = 0x5A5A;
+    uint32_t v32 = 0x5A5A5A5Au;
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, 7), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_bytes(&bb, out, 6), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_u16_be(&bb, &v16), BYTE_BUFFER_ERR_EMPTY);
+    ASSERT_EQ(v16, 0x5A5A);
+    ASSERT_EQ(byte_buffer_readable(&bb), 1);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, 7), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_bytes(&bb, out, 4), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_u32_be(&bb, &v32), BYTE_BUFFER_ERR_EMPTY);
+    ASSERT_EQ(v32, 0x5A5A5A5Au);
+    ASSERT_EQ(byte_buffer_readable(&bb), 3);
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, fill, 6), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_bytes(&bb, out, 4), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_bytes(&bb, out, 3), BYTE_BUFFER_ERR_EMPTY);
+    ASSERT_EQ(byte_buffer_readable(&bb), 2);
+}
+
+/* put_bytes and get_bytes must work from where the last call stopped. */
+TEST(test_bytes_follow_earlier_put_and_get)
+{
+    static const uint8_t src[3] = {0xA1, 0xA2, 0xA3};
+    static const uint8_t want[5] = {0x11, 0x22, 0xA1, 0xA2, 0xA3};
+    uint8_t out[3] = {0, 0, 0};
+    uint8_t v = 0;
+
+    setup_small();
+    ASSERT_EQ(byte_buffer_put_u8(&bb, 0x11), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_u8(&bb, 0x22), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_put_bytes(&bb, src, 3), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_written(&bb), 5);
+    ASSERT_MEMEQ_N(guarded + 1, want, 5);
+
+    ASSERT_EQ(byte_buffer_get_u8(&bb, &v), BYTE_BUFFER_OK);
+    ASSERT_EQ(byte_buffer_get_u8(&bb, &v), BYTE_BUFFER_OK);
+    ASSERT_EQ(v, 0x22);
+    ASSERT_EQ(byte_buffer_get_bytes(&bb, out, 3), BYTE_BUFFER_OK);
+    ASSERT_MEMEQ_N(out, src, 3);
+    ASSERT_EQ(byte_buffer_readable(&bb), 0);
+    ASSERT_EQ(guarded[0], 0xEE);
+}
+
 TEST_MAIN("byte_buffer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -194,5 +301,9 @@ TEST_MAIN("byte_buffer")
     RUN(test_compact);
     RUN(test_mixed_types);
     RUN(test_written);
+    RUN(test_put_one_byte_too_few_left);
+    RUN(test_put_exact_fit_when_partly_used);
+    RUN(test_get_one_byte_too_few_left);
+    RUN(test_bytes_follow_earlier_put_and_get);
 TEST_MAIN_END()
 
