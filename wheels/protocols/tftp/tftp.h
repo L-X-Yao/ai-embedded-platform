@@ -89,7 +89,8 @@ typedef struct {
 /**
  * Parse a TFTP packet from raw bytes.
  * Returns 0 on success, negative tftp_err_t on failure. A request naming a
- * file of TFTP_MAX_FILENAME bytes or more returns TFTP_ERR_OVERFLOW.
+ * file of TFTP_MAX_FILENAME bytes or more returns TFTP_ERR_OVERFLOW, and so
+ * does a DATA packet of more than TFTP_BLOCK_SIZE bytes of data.
  * @thread_safe: yes (pure function)
  */
 int tftp_parse(const uint8_t *buf, size_t len, tftp_packet_t *pkt);
