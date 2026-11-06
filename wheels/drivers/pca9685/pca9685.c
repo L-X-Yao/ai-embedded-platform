@@ -112,18 +112,9 @@ static pca9685_err_t set_full_off(pca9685_t *dev, uint8_t channel)
 
 /* ---- Public API ---- */
 
-pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
-                           uint8_t dev_addr, uint16_t freq_hz)
+/* The steps of init that talk to the chip */
+static pca9685_err_t bring_up(pca9685_t *dev, uint16_t freq_hz)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
-        return PCA9685_ERR_PARAM;
-    if (freq_hz < PCA9685_FREQ_MIN || freq_hz > PCA9685_FREQ_MAX)
-        return PCA9685_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c      = i2c;
-    dev->dev_addr = dev_addr;
-
     /* MODE1 = SLEEP + AI + ALLCALL. This is no reset, which takes the SWRST
      * General Call: after a restart of the MCU alone, MODE2, the LED registers
      * and EXTCLK keep what they held. */
@@ -135,10 +126,34 @@ pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
     return set_prescaler(dev, freq_hz);
 }
 
+pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
+                           uint8_t dev_addr, uint16_t freq_hz)
+{
+    if (!dev)
+        return PCA9685_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
+        return PCA9685_ERR_PARAM;
+    if (freq_hz < PCA9685_FREQ_MIN || freq_hz > PCA9685_FREQ_MAX)
+        return PCA9685_ERR_PARAM;
+
+    dev->i2c      = i2c;
+    dev->dev_addr = dev_addr;
+
+    pca9685_err_t err = bring_up(dev, freq_hz);
+    if (err != PCA9685_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
                               uint16_t on, uint16_t off)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
     if (channel >= PCA9685_CHANNELS) return PCA9685_ERR_PARAM;
     if (on > PCA9685_COUNT_MAX || off > PCA9685_COUNT_MAX)
         return PCA9685_ERR_PARAM;
@@ -161,7 +176,7 @@ pca9685_err_t pca9685_set_pwm(pca9685_t *dev, uint8_t channel,
 
 pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
     /* NaN fails both < and > comparisons, so check with negated in-range test */
     if (!(duty_pct >= 0.0f && duty_pct <= 100.0f))
         return PCA9685_ERR_PARAM;
@@ -189,7 +204,7 @@ pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
 pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
                                    uint16_t pulse_us)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
     if (dev->freq_hz == 0) return PCA9685_ERR_PARAM;
 
     /* period_us = 1,000,000 / freq_hz
@@ -206,7 +221,7 @@ pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
 
 pca9685_err_t pca9685_all_off(pca9685_t *dev)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
 
     /* ALL_LED registers: set full-off bit */
     if (!write_reg(dev, REG_ALL_ON_L,  0)) return PCA9685_ERR_I2C;
@@ -219,7 +234,7 @@ pca9685_err_t pca9685_all_off(pca9685_t *dev)
 
 pca9685_err_t pca9685_set_freq(pca9685_t *dev, uint16_t freq_hz)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
     if (freq_hz < PCA9685_FREQ_MIN || freq_hz > PCA9685_FREQ_MAX)
         return PCA9685_ERR_PARAM;
 
@@ -228,7 +243,7 @@ pca9685_err_t pca9685_set_freq(pca9685_t *dev, uint16_t freq_hz)
 
 pca9685_err_t pca9685_sleep(pca9685_t *dev)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
 
     uint8_t mode1;
     if (!read_reg(dev, REG_MODE1, &mode1))
@@ -245,7 +260,7 @@ pca9685_err_t pca9685_sleep(pca9685_t *dev)
 
 pca9685_err_t pca9685_wake(pca9685_t *dev)
 {
-    if (!dev) return PCA9685_ERR_PARAM;
+    if (!dev || !dev->i2c) return PCA9685_ERR_PARAM;
 
     uint8_t mode1;
     if (!read_reg(dev, REG_MODE1, &mode1))
