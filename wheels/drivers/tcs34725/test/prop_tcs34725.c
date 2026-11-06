@@ -188,16 +188,17 @@ TEST(test_disable_i2c_fail)
 TEST(test_color_temp_cct_clamped)
 {
     /* Force the CCT formula to produce a negative or huge value */
-    /* Use values that push cct negative: large r relative to b and c */
-    tcs34725_rgbc_t rgbc = { .c = 100, .r = 100, .g = 1, .b = 1 };
-    uint16_t cct = 0;
-    /* May succeed or return ERR_PARAM depending on denom; either is fine */
-    tcs34725_get_color_temp(&rgbc, &cct);
+    /* Use values that push cct negative: B' below zero, IR = 30 */
+    tcs34725_rgbc_t rgbc = { .c = 100, .r = 60, .g = 100, .b = 0 };
+    uint16_t cct = 1;
+    ASSERT_EQ(tcs34725_get_color_temp(&rgbc, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 0);
 
-    /* Use values that push cct >= 65535 */
-    tcs34725_rgbc_t rgbc2 = { .c = 100, .r = 1, .g = 1, .b = 100 };
+    /* Use values that push cct >= 65535: R' = 0.5, B' = 99.5 */
+    tcs34725_rgbc_t rgbc2 = { .c = 101, .r = 1, .g = 1, .b = 100 };
     uint16_t cct2 = 0;
-    tcs34725_get_color_temp(&rgbc2, &cct2);
+    ASSERT_EQ(tcs34725_get_color_temp(&rgbc2, &cct2), TCS34725_OK);
+    ASSERT_EQ(cct2, 65535);
 }
 
 TEST(test_lux_all_zeros)
@@ -272,18 +273,16 @@ TEST(test_null_guards_api)
 
 TEST(test_color_temp_denom_near_zero)
 {
-    /* Manufacture RGBC values where the denominator (0.1858 - x) is near zero.
-     * x = -0.14282*r_ratio + 1.54924*b_ratio - 0.95641
-     * Want x == 0.1858:
-     * r/c=0, b/c large: 1.54924*b_ratio - 0.95641 = 0.1858
-     * b_ratio = (0.1858 + 0.95641) / 1.54924 = 1.14221 / 1.54924 ~= 0.7373
-     * b/c = 0.7373 => c=10000, b=7373 */
-    tcs34725_rgbc_t rgbc = { .c = 10000, .r = 0, .g = 1000, .b = 7373 };
+    /* The denominator is R' = R - IR, with IR = (R + G + B - C) / 2 */
+    tcs34725_rgbc_t rgbc = { .c = 100, .r = 50, .g = 100, .b = 50 };
     uint16_t cct = 0;
-    /* Should return ERR_PARAM (denom too close to zero) */
-    tcs34725_err_t err = tcs34725_get_color_temp(&rgbc, &cct);
-    /* Accept either ERR_PARAM (denom guard) or OK (depends on float precision) */
-    ASSERT_TRUE(err == TCS34725_ERR_PARAM || err == TCS34725_OK);
+    /* R' is exactly 0 */
+    ASSERT_EQ(tcs34725_get_color_temp(&rgbc, &cct), TCS34725_ERR_PARAM);
+
+    /* R' is the smallest step above 0, and B' = 0.5 too: 3810 * 1 + 1391 */
+    tcs34725_rgbc_t tiny = { .c = 101, .r = 50, .g = 100, .b = 50 };
+    ASSERT_EQ(tcs34725_get_color_temp(&tiny, &cct), TCS34725_OK);
+    ASSERT_EQ(cct, 5201);
 }
 
 TEST_MAIN("prop_tcs34725")
