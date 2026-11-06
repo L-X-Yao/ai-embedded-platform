@@ -165,7 +165,7 @@ veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux)
 
 veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain)
 {
-    if (!dev) return VEML7700_ERR_PARAM;
+    if (!dev || !valid_gain(gain)) return VEML7700_ERR_PARAM;
     dev->gain = gain;
     return write_conf(dev, false);
 }
@@ -173,7 +173,8 @@ veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain)
 veml7700_err_t veml7700_set_integration_time(veml7700_t *dev,
                                               veml7700_it_t it)
 {
-    if (!dev) return VEML7700_ERR_PARAM;
+    /* Vishay 84286 p.7, Table 1: ALS_IT has six codes and no others */
+    if (!dev || !valid_it(it)) return VEML7700_ERR_PARAM;
     dev->it = it;
     return write_conf(dev, false);
 }
