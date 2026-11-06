@@ -251,6 +251,113 @@ TEST(test_multiple_reads_consistent)
     ASSERT_NEAR(h1, h2, 0.01f);
 }
 
+/* --- what the model itself must do (HPC199_3) --------------------------- */
+
+static void read_frame(uint8_t cmd, uint8_t frame[3])
+{
+    ASSERT_TRUE(htu21d_model_write_cmd(&model, HTU21D_DEV_ADDR, cmd));
+    ASSERT_TRUE(htu21d_model_read_data(&model, HTU21D_DEV_ADDR, frame, 3));
+}
+
+/* p11: "Bit 1 of the two LSBs indicates the measurement type ('0': temperature,
+ * '1': humidity). Bit 0 is currently not assigned." */
+TEST(test_humidity_frame_sets_status_bit_1)
+{
+    setup();
+    htu21d_model_delay(&model, HW_HTU21D_POWER_UP_MS);
+    uint8_t frame[3];
+    read_frame(HW_HTU21D_CMD_TRIG_HUM, frame);
+    ASSERT_EQ_HEX(frame[1] & 0x03u, 0x02u);
+}
+
+TEST(test_temperature_frame_clears_status_bit_1)
+{
+    setup();
+    htu21d_model_delay(&model, HW_HTU21D_POWER_UP_MS);
+    uint8_t frame[3];
+    read_frame(HW_HTU21D_CMD_TRIG_TEMP, frame);
+    ASSERT_EQ_HEX(frame[1] & 0x03u, 0x00u);
+}
+
+/* p14: "The CRC covers all read data transmitted by the sensor", status bits
+ * too: the p11 frame 0x7C 0x82 has checksum 0x97 */
+TEST(test_frame_crc_covers_the_status_bits)
+{
+    setup();
+    htu21d_model_delay(&model, HW_HTU21D_POWER_UP_MS);
+    uint8_t frame[3];
+    read_frame(HW_HTU21D_CMD_TRIG_HUM, frame);
+    ASSERT_EQ_HEX(frame[2], htu21d_model_crc8(frame, 2));
+    uint8_t masked[2] = { frame[0], (uint8_t)(frame[1] & 0xFCu) };
+    ASSERT_TRUE(frame[2] != htu21d_model_crc8(masked, 2));
+}
+
+/* p12: "For the calculation of physical values status bits must be set to '0'",
+ * so the status bit of a humidity frame must not reach the result */
+TEST(test_driver_drops_the_humidity_status_bits)
+{
+    setup();
+    htu21d_model_set_humidity(&model, 50.0f);
+    htu21d_t dev;
+    ASSERT_EQ(htu21d_init(&dev, &model_i2c), HTU21D_OK);
+
+    uint8_t frame[3];
+    read_frame(HW_HTU21D_CMD_TRIG_HUM, frame);
+    uint16_t no_status = (uint16_t)(((uint16_t)frame[0] << 8) | (frame[1] & 0xFCu));
+    float want = -6.0f + 125.0f * (float)no_status / 65536.0f;
+
+    float rh = 0.0f;
+    ASSERT_EQ(htu21d_read_humidity(&dev, &rh), HTU21D_OK);
+    ASSERT_NEAR(rh, want, 0.001f);
+}
+
+/* p15 CRC examples, and the frame of p11 */
+TEST(test_crc_on_the_manual_examples)
+{
+    static const struct { uint8_t data[2]; uint16_t len; uint8_t crc; } rows[] = {
+        { { 0xDCu, 0x00u }, 1, 0x79u },
+        { { 0x68u, 0x3Au }, 2, 0x7Cu },
+        { { 0x4Eu, 0x85u }, 2, 0x6Bu },
+        { { 0x7Cu, 0x82u }, 2, 0x97u },
+    };
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        ASSERT_EQ_HEX(htu21d_model_crc8(rows[i].data, rows[i].len), rows[i].crc);
+    }
+}
+
+/* p15: "RH output can reach 118%RH and above this value, there will have a
+ * clamp", and at the bottom "-6%RH corresponds to 0x00" */
+TEST(test_humidity_output_clamps)
+{
+    setup();
+    htu21d_model_delay(&model, HW_HTU21D_POWER_UP_MS);
+    uint8_t frame[3];
+
+    htu21d_model_set_humidity(&model, 150.0f);
+    read_frame(HW_HTU21D_CMD_TRIG_HUM, frame);
+    ASSERT_EQ_HEX(frame[0], 0xFFu);
+
+    htu21d_model_set_humidity(&model, -20.0f);
+    read_frame(HW_HTU21D_CMD_TRIG_HUM, frame);
+    ASSERT_EQ_HEX(frame[0], 0x00u);
+}
+
+/* p12: "The soft reset takes less than 15ms." Like the power-up wait, an early
+ * command is refused so that it shows. */
+TEST(test_command_during_soft_reset_is_refused)
+{
+    setup();
+    htu21d_model_delay(&model, HW_HTU21D_POWER_UP_MS);
+    ASSERT_TRUE(htu21d_model_write_cmd(&model, HTU21D_DEV_ADDR,
+                                       HW_HTU21D_CMD_SOFT_RESET));
+    htu21d_model_delay(&model, 14);
+    ASSERT_FALSE(htu21d_model_write_cmd(&model, HTU21D_DEV_ADDR,
+                                        HW_HTU21D_CMD_TRIG_TEMP));
+    htu21d_model_delay(&model, 1);
+    ASSERT_TRUE(htu21d_model_write_cmd(&model, HTU21D_DEV_ADDR,
+                                       HW_HTU21D_CMD_TRIG_TEMP));
+}
+
 TEST_MAIN("htu21d hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
@@ -269,4 +376,11 @@ TEST_MAIN("htu21d hardware model")
     RUN(test_temperature_varies);
     RUN(test_humidity_varies);
     RUN(test_multiple_reads_consistent);
+    RUN(test_humidity_frame_sets_status_bit_1);
+    RUN(test_temperature_frame_clears_status_bit_1);
+    RUN(test_frame_crc_covers_the_status_bits);
+    RUN(test_driver_drops_the_humidity_status_bits);
+    RUN(test_crc_on_the_manual_examples);
+    RUN(test_humidity_output_clamps);
+    RUN(test_command_during_soft_reset_is_refused);
 TEST_MAIN_END()

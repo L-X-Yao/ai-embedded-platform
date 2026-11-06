@@ -7,7 +7,9 @@
  * - Read 3-byte response (MSB, LSB, CRC-8)
  *
  * This model tracks the last command and returns appropriate data
- * with correct CRC-8 (poly 0x131, init 0x00).
+ * with correct CRC-8 (poly 0x131, init 0x00), computed over the bytes as sent,
+ * status bits included. Status bit 1 is 0 for temperature, 1 for humidity.
+ * After power up and after a soft reset the part takes no command for 15 ms.
  */
 
 #ifndef HW_MODEL_HTU21D_H
@@ -25,11 +27,19 @@
 /* Time to reach idle after power up (HPC199_3 p.10) */
 #define HW_HTU21D_POWER_UP_MS      15u
 
+/* "The soft reset takes less than 15ms." (p.12) */
+#define HW_HTU21D_SOFT_RESET_MS    15u
+
+/* Status bits, the two LSBs of the data (p.11) */
+#define HW_HTU21D_STATUS_MASK      0x0003u
+#define HW_HTU21D_STATUS_HUMIDITY  0x0002u
+
 /* --- Simulated environment --- */
 typedef struct {
     float   true_temp_c;          /* simulated temperature */
     float   true_humidity_pct;    /* simulated humidity    */
     uint32_t elapsed_ms;          /* time since power up, from delay_ms */
+    uint32_t ready_at_ms;         /* no command is accepted before this time */
     /* Command state */
     uint8_t last_cmd;
     int     temp_count;
@@ -53,36 +63,37 @@ static uint8_t htu21d_model_crc8(const uint8_t *data, uint16_t len)
     return crc;
 }
 
+/* Scale 0..1 to the data bits of a frame. The top of the range clamps at the
+ * last code, as 65536 does not fit. */
+static uint16_t htu21d_model_scale(float norm)
+{
+    if (norm <= 0.0f) return 0x0000u;
+    if (norm >= 1.0f) return 0xFFFCu;
+    return (uint16_t)((uint16_t)(norm * 65536.0f) & 0xFFFCu);
+}
+
 /*
- * Convert temperature C to HTU21D raw (14-bit, status bits cleared).
+ * Convert temperature C to HTU21D raw (14-bit).
  * Formula: T = -46.85 + 175.72 * raw / 65536
  * Inverse: raw = (T + 46.85) / 175.72 * 65536
  * Status bits [1:0] of LSB are 0 for temperature.
  */
 static uint16_t htu21d_model_temp_to_raw(float temp_c)
 {
-    float norm = (temp_c + 46.85f) / 175.72f;
-    if (norm < 0.0f) norm = 0.0f;
-    if (norm > 1.0f) norm = 1.0f;
-    uint16_t raw = (uint16_t)(norm * 65536.0f);
-    raw &= 0xFFFC; /* clear status bits */
-    return raw;
+    return htu21d_model_scale((temp_c + 46.85f) / 175.72f);
 }
 
 /*
- * Convert humidity % to HTU21D raw (12-bit, status bits cleared).
+ * Convert humidity % to HTU21D raw (12-bit).
  * Formula: RH = -6 + 125 * raw / 65536
  * Inverse: raw = (RH + 6) / 125 * 65536
- * Status bits [1:0] of LSB are 0x02 for humidity, but we clear for CRC calc.
+ * Status bits [1:0] of LSB are 0x02 for humidity (p.11), and they are part of
+ * the frame the CRC covers: 0x7C 0x82 has checksum 0x97.
  */
 static uint16_t htu21d_model_hum_to_raw(float humidity_pct)
 {
-    float norm = (humidity_pct + 6.0f) / 125.0f;
-    if (norm < 0.0f) norm = 0.0f;
-    if (norm > 1.0f) norm = 1.0f;
-    uint16_t raw = (uint16_t)(norm * 65536.0f);
-    raw &= 0xFFFC; /* clear status bits */
-    return raw;
+    uint16_t raw = htu21d_model_scale((humidity_pct + 6.0f) / 125.0f);
+    return (uint16_t)(raw | HW_HTU21D_STATUS_HUMIDITY);
 }
 
 /* --- I2C HAL callbacks --- */
@@ -95,7 +106,7 @@ static bool htu21d_model_write_cmd(void *ctx, uint8_t dev_addr, uint8_t cmd)
 
     /* p.10: "No command should be sent before that time." The manual does
      * not say how the part reacts, so refuse it to make an early one show. */
-    if (m->elapsed_ms < HW_HTU21D_POWER_UP_MS) {
+    if (m->elapsed_ms < m->ready_at_ms) {
         return false;
     }
 
@@ -107,6 +118,7 @@ static bool htu21d_model_write_cmd(void *ctx, uint8_t dev_addr, uint8_t cmd)
         m->hum_count++;
     } else if (cmd == HW_HTU21D_CMD_SOFT_RESET) {
         m->reset_count++;
+        m->ready_at_ms = m->elapsed_ms + HW_HTU21D_SOFT_RESET_MS;
     }
 
     return true;
@@ -152,6 +164,7 @@ static void htu21d_model_delay(void *ctx, uint32_t ms)
 static void htu21d_model_init(htu21d_model_t *m)
 {
     memset(m, 0, sizeof(*m));
+    m->ready_at_ms = HW_HTU21D_POWER_UP_MS;
 
     /* Default environment: 25C, 50% RH */
     m->true_temp_c       = 25.0f;

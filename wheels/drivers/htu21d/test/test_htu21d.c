@@ -207,12 +207,13 @@ TEST(test_read_hum_50pct)
      */
     uint16_t raw = (uint16_t)((50.0f + 6.0f) / 125.0f * 65536.0f);
     raw &= 0xFFFC;
-    plant_reading(raw);
+    plant_reading((uint16_t)(raw | 0x0002u));  /* p11: bit 1 set for humidity */
 
     float rh;
     htu21d_err_t e = htu21d_read_humidity(&dev, &rh);
     ASSERT_EQ(e, HTU21D_OK);
-    ASSERT_NEAR(rh, 50.0f, 0.2f);
+    /* Close enough to see the status bits if they stayed in */
+    ASSERT_NEAR(rh, -6.0f + 125.0f * (float)raw / 65536.0f, 0.001f);
     /* Verify correct command was sent */
     ASSERT_EQ(mock_last_cmd, 0xE5);
 }
@@ -239,6 +240,59 @@ TEST(test_crc_check)
     float temp;
     htu21d_err_t e = htu21d_read_temperature(&dev, &temp);
     ASSERT_EQ(e, HTU21D_ERR_CRC);
+}
+
+/* Whole frames from the manual, sent as the sensor sends them. The status bits
+ * are in the checksum, and p12 wants them set to 0 before the conversion. */
+static void plant_frame(uint8_t msb, uint8_t lsb, uint8_t crc)
+{
+    mock_read_buf[0] = msb;
+    mock_read_buf[1] = lsb;
+    mock_read_buf[2] = crc;
+}
+
+/* p11 frame; p15: "0x7C80: 31872. The relative humidity results to be 54.8%RH" */
+TEST(test_read_hum_frame_of_p11)
+{
+    setup();
+    plant_frame(0x7Cu, 0x82u, 0x97u);
+    float rh;
+    ASSERT_EQ(htu21d_read_humidity(&dev, &rh), HTU21D_OK);
+    ASSERT_NEAR(rh, -6.0f + 125.0f * 31872.0f / 65536.0f, 0.001f);
+    ASSERT_NEAR(rh, 54.8f, 0.05f);
+}
+
+/* p15: "0x4E85: 32.3%RH" has checksum 0x6B */
+TEST(test_read_hum_crc_example_of_p15)
+{
+    setup();
+    plant_frame(0x4Eu, 0x85u, 0x6Bu);
+    float rh;
+    ASSERT_EQ(htu21d_read_humidity(&dev, &rh), HTU21D_OK);
+    ASSERT_NEAR(rh, -6.0f + 125.0f * 20100.0f / 65536.0f, 0.001f);
+    ASSERT_NEAR(rh, 32.3f, 0.05f);
+}
+
+/* p15: "0x683A: 24.7 C" has checksum 0x7C */
+TEST(test_read_temp_crc_example_of_p15)
+{
+    setup();
+    plant_frame(0x68u, 0x3Au, 0x7Cu);
+    float temp;
+    ASSERT_EQ(htu21d_read_temperature(&dev, &temp), HTU21D_OK);
+    ASSERT_NEAR(temp, -46.85f + 175.72f * 26680.0f / 65536.0f, 0.001f);
+    ASSERT_NEAR(temp, 24.7f, 0.05f);
+}
+
+/* p15 CRC examples */
+TEST(test_crc_examples_of_p15)
+{
+    uint8_t one[] = { 0xDCu };
+    uint8_t temp[] = { 0x68u, 0x3Au };
+    uint8_t rh[] = { 0x4Eu, 0x85u };
+    ASSERT_EQ_HEX(htu21d_crc8(one, 1), 0x79u);
+    ASSERT_EQ_HEX(htu21d_crc8(temp, 2), 0x7Cu);
+    ASSERT_EQ_HEX(htu21d_crc8(rh, 2), 0x6Bu);
 }
 
 TEST(test_crc_known_vector)
@@ -325,6 +379,10 @@ TEST_MAIN("htu21d")
     RUN(test_read_hum_50pct);
     RUN(test_read_hum_i2c_fail);
     RUN(test_crc_check);
+    RUN(test_read_hum_frame_of_p11);
+    RUN(test_read_hum_crc_example_of_p15);
+    RUN(test_read_temp_crc_example_of_p15);
+    RUN(test_crc_examples_of_p15);
     RUN(test_crc_known_vector);
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
