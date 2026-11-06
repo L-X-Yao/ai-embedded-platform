@@ -63,7 +63,8 @@ drv8833_err_t drv8833_init(drv8833_t *dev, const drv8833_hal_t *hal,
 /**
  * Set motor speed and direction.
  * speed: -max_duty..+max_duty. Positive = forward, negative = reverse.
- * Clamped to [-max_duty, +max_duty].
+ * Clamped to [-max_duty, +max_duty]. With max_duty above 32767, int16_t ends
+ * first: the highest speed is 32767 counts, not full duty.
  * @thread_safe: no @isr_safe: no
  */
 drv8833_err_t drv8833_set_speed(drv8833_t *dev, drv8833_channel_t ch,

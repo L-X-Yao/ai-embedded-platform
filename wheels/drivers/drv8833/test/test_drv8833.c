@@ -7,6 +7,7 @@
 static uint8_t  mock_ch;
 static uint8_t  mock_pin;
 static uint16_t mock_duty;
+static uint16_t mock_in[2];  /* last duty on IN1 and IN2 */
 static int      mock_pwm_calls;
 static bool     mock_sleep_state;
 static int      mock_sleep_calls;
@@ -18,6 +19,7 @@ static void mock_set_pwm(void *ctx, uint8_t channel, uint8_t pin,
     mock_ch   = channel;
     mock_pin  = pin;
     mock_duty = duty;
+    mock_in[pin & 1u] = duty;
     mock_pwm_calls++;
 }
 
@@ -45,6 +47,8 @@ static void mock_reset(void)
     mock_ch    = 0xFF;
     mock_pin   = 0xFF;
     mock_duty  = 0xFFFF;
+    mock_in[0] = 0xFFFF;
+    mock_in[1] = 0xFFFF;
     mock_pwm_calls  = 0;
     mock_sleep_state = false;
     mock_sleep_calls = 0;
@@ -257,6 +261,41 @@ TEST(test_sleep_null_dev)
     ASSERT_EQ(mock_sleep_calls, 0);
 }
 
+/* ---------- max_duty above INT16_MAX ---------- */
+
+static void assert_drive(uint16_t max_duty, int16_t speed,
+                         uint16_t in1, uint16_t in2)
+{
+    drv8833_t dev;
+    mock_reset();
+    ASSERT_EQ(drv8833_init(&dev, &mock_hal, max_duty), DRV8833_OK);
+    ASSERT_EQ(drv8833_set_speed(&dev, DRV8833_CH_A, speed), DRV8833_OK);
+    ASSERT_EQ(mock_in[0], in1);
+    ASSERT_EQ(mock_in[1], in2);
+}
+
+TEST(test_stop_stops_with_16_bit_max_duty)
+{
+    assert_drive(32768, 0, 0, 0);
+    assert_drive(40000, 0, 0, 0);
+    assert_drive(65535, 0, 0, 0);
+}
+
+TEST(test_speed_passes_through_with_16_bit_max_duty)
+{
+    assert_drive(40000, 1000, 1000, 0);
+    assert_drive(40000, -1000, 0, 1000);
+    assert_drive(65535, 20000, 20000, 0);
+    assert_drive(65535, 32767, 32767, 0);
+    assert_drive(65535, -32768, 0, 32768);
+}
+
+TEST(test_speed_clamps_at_the_int16_limit)
+{
+    assert_drive(32767, 32767, 32767, 0);
+    assert_drive(32767, -32768, 0, 32767);
+}
+
 /* ---------- runner ---------- */
 
 TEST_MAIN("drv8833")
@@ -276,6 +315,9 @@ TEST_MAIN("drv8833")
     RUN(test_speed_clamped_negative);
     RUN(test_set_speed_invalid_channel);
     RUN(test_set_speed_null_dev);
+    RUN(test_stop_stops_with_16_bit_max_duty);
+    RUN(test_speed_passes_through_with_16_bit_max_duty);
+    RUN(test_speed_clamps_at_the_int16_limit);
     /* brake / coast */
     RUN(test_brake_channel_a);
     RUN(test_coast_channel_a);
