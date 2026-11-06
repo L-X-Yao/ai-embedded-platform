@@ -231,6 +231,91 @@ TEST(test_multiple_reads_consistent)
     ASSERT_NEAR(t1, t2, 0.01f);
 }
 
+/* --- EEPROM cells ------------------------------------------------------- */
+
+/* Frames for cell 0x24 at address 0x5A, each with its PEC */
+static bool write_cell(uint16_t val)
+{
+    uint8_t wire[4] = { 0xB4, 0x24, (uint8_t)(val & 0xFFu), (uint8_t)(val >> 8) };
+    uint8_t frame[4] = { 0x24, wire[2], wire[3], mlx_model_pec(wire, 4) };
+    return mlx90614_model_write(&model, 0x5A, frame, 4);
+}
+
+static uint16_t cell(void)
+{
+    uint8_t slot = MLX_SLOT(MLX_REG_EMISSIVITY);
+    return (uint16_t)(model.hw.regs[slot] | (model.hw.regs[slot + 1] << 8));
+}
+
+/* p.13: "Erase (write 0) must take place before the write of the desired data
+ * is done." p.19: "A write of 0x0000 must be done prior to writing in EEPROM" */
+TEST(test_model_spoils_a_write_to_an_unerased_cell)
+{
+    setup();
+    ASSERT_EQ_HEX(cell(), 0xFFFF);
+    ASSERT_TRUE(write_cell(0xF332));
+    ASSERT_TRUE(cell() != 0xF332);
+    ASSERT_EQ(model.unerased_writes, 1);
+}
+
+/* p.16: "Wait at least 5ms" after the erase and after the write */
+TEST(test_model_takes_a_write_after_erase_and_wait)
+{
+    setup();
+    ASSERT_TRUE(write_cell(0x0000));
+    ASSERT_EQ_HEX(cell(), 0x0000);
+    mlx90614_model_delay(&model, 5);
+    ASSERT_TRUE(write_cell(0xF332));
+    ASSERT_EQ_HEX(cell(), 0xF332);
+    ASSERT_EQ(model.unerased_writes, 0);
+}
+
+/* p.17: EEBUSY, "EEPROM is busy with executing the previous write/erase" */
+TEST(test_model_loses_a_write_inside_the_wait)
+{
+    setup();
+    ASSERT_TRUE(write_cell(0x0000));
+    mlx90614_model_delay(&model, 4);
+    ASSERT_TRUE(write_cell(0xF332));
+    ASSERT_EQ_HEX(cell(), 0x0000);
+    ASSERT_EQ(model.busy_writes, 1);
+}
+
+TEST(test_model_is_busy_after_a_write_as_well)
+{
+    setup();
+    ASSERT_TRUE(write_cell(0x0000));
+    mlx90614_model_delay(&model, 5);
+    ASSERT_TRUE(write_cell(0xF332));
+    ASSERT_TRUE(write_cell(0x0000));
+    ASSERT_EQ_HEX(cell(), 0xF332);
+    ASSERT_EQ(model.busy_writes, 1);
+}
+
+/* p.13: "Emissivity = dec2hex[ round( 65535 x e) ]", over the factory 0xFFFF */
+TEST(test_set_emissivity_replaces_the_factory_value)
+{
+    setup();
+    mlx90614_t dev;
+    ASSERT_EQ(mlx90614_init(&dev, &model_i2c, &default_cfg), MLX90614_OK);
+    ASSERT_EQ(mlx90614_set_emissivity(&dev, 0.95f), MLX90614_OK);
+    ASSERT_EQ_HEX(cell(), 0xF332);
+    ASSERT_EQ(model.unerased_writes, 0);
+    ASSERT_EQ(model.busy_writes, 0);
+}
+
+/* Each call leaves the wait of p.16 behind it, so a second call works */
+TEST(test_set_emissivity_twice)
+{
+    setup();
+    mlx90614_t dev;
+    ASSERT_EQ(mlx90614_init(&dev, &model_i2c, &default_cfg), MLX90614_OK);
+    ASSERT_EQ(mlx90614_set_emissivity(&dev, 0.95f), MLX90614_OK);
+    ASSERT_EQ(mlx90614_set_emissivity(&dev, 0.5f), MLX90614_OK);
+    ASSERT_EQ_HEX(cell(), 0x8000);  /* round(32767.5) */
+    ASSERT_EQ(model.busy_writes, 0);
+}
+
 TEST_MAIN("mlx90614 hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
@@ -247,4 +332,10 @@ TEST_MAIN("mlx90614 hardware model")
     RUN(test_read_object_temp_matches_figure_6);
     RUN(test_set_emissivity_out_of_range);
     RUN(test_multiple_reads_consistent);
+    RUN(test_model_spoils_a_write_to_an_unerased_cell);
+    RUN(test_model_takes_a_write_after_erase_and_wait);
+    RUN(test_model_loses_a_write_inside_the_wait);
+    RUN(test_model_is_busy_after_a_write_as_well);
+    RUN(test_set_emissivity_replaces_the_factory_value);
+    RUN(test_set_emissivity_twice);
 TEST_MAIN_END()

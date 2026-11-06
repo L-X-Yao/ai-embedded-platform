@@ -84,6 +84,9 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
         {
             uint8_t frame[4] = { (uint8_t)(addr << 1), data[0], data[1], data[2] };
             if (len != 4 || ref_pec(frame, 4) != data[3]) return false;
+            /* p.13: an erase (write 0) has to come first */
+            if ((mock_mem[data[0]][0] | mock_mem[data[0]][1]) != 0 &&
+                (data[1] | data[2]) != 0) return true;
             mock_mem[data[0]][0] = data[1]; /* LSB */
             mock_mem[data[0]][1] = data[2]; /* MSB */
         }
@@ -422,6 +425,32 @@ TEST(test_set_emissivity_eeprom_delay)
     ASSERT_TRUE(mock_time_delay_total_ms >= 5);
 }
 
+/* p.13: "Erase (write 0) must take place before the write of the desired data
+ * is done", and the cell comes with the factory 0xFFFF */
+TEST(test_set_emissivity_over_a_written_cell)
+{
+    setup();
+    plant_raw(0x24, 0xFFFF);
+    ASSERT_EQ(mlx90614_set_emissivity(&dev, 0.95f), MLX90614_OK);
+
+    float em;
+    ASSERT_EQ(mlx90614_read_emissivity(&dev, &em), MLX90614_OK);
+    ASSERT_NEAR(em, 0.95f, 0.001f);
+}
+
+/* A write over an unerased cell must not take, or that test proves nothing */
+TEST(test_mock_refuses_a_write_over_a_written_cell)
+{
+    static const uint8_t wire[4] = { 0xB4, 0x24, 0x32, 0xF3 };
+    uint8_t frame[4] = { 0x24, 0x32, 0xF3, ref_pec(wire, 4) };
+
+    setup();
+    plant_raw(0x24, 0xFFFF);
+    ASSERT_TRUE(mock_write(NULL, 0x5A, frame, 4));
+    ASSERT_EQ_HEX(mock_mem[0x24][0], 0xFF);
+    ASSERT_EQ_HEX(mock_mem[0x24][1], 0xFF);
+}
+
 TEST_MAIN("mlx90614")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -445,4 +474,6 @@ TEST_MAIN("mlx90614")
     RUN(test_set_emissivity_i2c_fail);
     RUN(test_high_temp);
     RUN(test_set_emissivity_eeprom_delay);
+    RUN(test_set_emissivity_over_a_written_cell);
+    RUN(test_mock_refuses_a_write_over_a_written_cell);
 TEST_MAIN_END()
