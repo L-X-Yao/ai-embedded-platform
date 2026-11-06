@@ -12,6 +12,8 @@
  * - A running command occupies CMD for its Table 24 maximum. Writes in
  *   that time are dropped and set drop_cmd_err, except softreset (p.85).
  *   Only the delay callback lets the time pass.
+ * - The data registers start at 0x00. A sensor samples only with its PMU field
+ *   normal and no command running: in suspend its data stays as it was (p.13).
  */
 
 #ifndef HW_MODEL_BMI160_H
@@ -58,23 +60,33 @@ typedef struct {
     uint32_t         cmd_busy_us;   /* time left before CMD is free */
 } bmi160_model_t;
 
-/* Write accel+gyro raw values into data registers (little-endian) */
+/* One sample into the data registers (little-endian) of each running sensor.
+ * p.13, suspend: "No sampling takes place, all data is retained". */
 static void bmi160_model_set_data_regs(bmi160_model_t *m)
 {
-    /* Gyro: 0x0C..0x11 (little-endian) */
-    m->hw.regs[0x0C] = (uint8_t)((uint16_t)m->true_gx & 0xFF);
-    m->hw.regs[0x0D] = (uint8_t)((uint16_t)m->true_gx >> 8);
-    m->hw.regs[0x0E] = (uint8_t)((uint16_t)m->true_gy & 0xFF);
-    m->hw.regs[0x0F] = (uint8_t)((uint16_t)m->true_gy >> 8);
-    m->hw.regs[0x10] = (uint8_t)((uint16_t)m->true_gz & 0xFF);
-    m->hw.regs[0x11] = (uint8_t)((uint16_t)m->true_gz >> 8);
-    /* Accel: 0x12..0x17 (little-endian) */
-    m->hw.regs[0x12] = (uint8_t)((uint16_t)m->true_ax & 0xFF);
-    m->hw.regs[0x13] = (uint8_t)((uint16_t)m->true_ax >> 8);
-    m->hw.regs[0x14] = (uint8_t)((uint16_t)m->true_ay & 0xFF);
-    m->hw.regs[0x15] = (uint8_t)((uint16_t)m->true_ay >> 8);
-    m->hw.regs[0x16] = (uint8_t)((uint16_t)m->true_az & 0xFF);
-    m->hw.regs[0x17] = (uint8_t)((uint16_t)m->true_az >> 8);
+    uint8_t pmu = m->hw.regs[BMI160_REG_PMU_STATUS];
+
+    if (m->cmd_busy_us > 0) {
+        return;   /* the sensor is still starting */
+    }
+    if (((pmu >> PMU_GYR_SHIFT) & 0x03u) == PMU_NORMAL) {
+        /* Gyro: 0x0C..0x11 (little-endian) */
+        m->hw.regs[0x0C] = (uint8_t)((uint16_t)m->true_gx & 0xFF);
+        m->hw.regs[0x0D] = (uint8_t)((uint16_t)m->true_gx >> 8);
+        m->hw.regs[0x0E] = (uint8_t)((uint16_t)m->true_gy & 0xFF);
+        m->hw.regs[0x0F] = (uint8_t)((uint16_t)m->true_gy >> 8);
+        m->hw.regs[0x10] = (uint8_t)((uint16_t)m->true_gz & 0xFF);
+        m->hw.regs[0x11] = (uint8_t)((uint16_t)m->true_gz >> 8);
+    }
+    if (((pmu >> PMU_ACC_SHIFT) & 0x03u) == PMU_NORMAL) {
+        /* Accel: 0x12..0x17 (little-endian) */
+        m->hw.regs[0x12] = (uint8_t)((uint16_t)m->true_ax & 0xFF);
+        m->hw.regs[0x13] = (uint8_t)((uint16_t)m->true_ax >> 8);
+        m->hw.regs[0x14] = (uint8_t)((uint16_t)m->true_ay & 0xFF);
+        m->hw.regs[0x15] = (uint8_t)((uint16_t)m->true_ay >> 8);
+        m->hw.regs[0x16] = (uint8_t)((uint16_t)m->true_az & 0xFF);
+        m->hw.regs[0x17] = (uint8_t)((uint16_t)m->true_az >> 8);
+    }
 }
 
 /* Callback: CMD register write — handle soft reset and power mode commands */
@@ -93,9 +105,9 @@ static void bmi160_model_on_cmd(void *user, uint8_t reg,
     }
 
     if (new_val == 0xB6) {
-        /* Soft reset: restore all registers to POR defaults */
+        /* Soft reset: restore all registers to POR defaults, so both sensors
+         * are back in suspend */
         hw_model_reset(&m->hw);
-        bmi160_model_set_data_regs(m);
         m->reset_count++;
         m->cmd_busy_us = 0;
     } else if (new_val == 0x11) {
@@ -155,7 +167,6 @@ static void bmi160_model_init(bmi160_model_t *m)
     m->true_gz = 0;
 
     hw_model_reset(&m->hw);
-    bmi160_model_set_data_regs(m);
 }
 
 /* Delay callback: the time passing is what frees CMD */
@@ -167,6 +178,7 @@ static void bmi160_model_delay_ms(void *ctx, uint32_t ms)
     uint32_t us = ms * 1000u;
 
     m->cmd_busy_us = (m->cmd_busy_us > us) ? m->cmd_busy_us - us : 0u;
+    bmi160_model_set_data_regs(m);
     hw_model_delay_ms(ctx, ms);
 }
 

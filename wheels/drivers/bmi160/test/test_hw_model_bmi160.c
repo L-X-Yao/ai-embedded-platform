@@ -272,6 +272,93 @@ TEST(test_different_accel_values)
     ASSERT_TRUE(d2.accel_mg[0] > d1.accel_mg[0]);
 }
 
+/* p.13: "By default BMI160 accel and gyro are in suspend mode after powering up",
+ * and p.52 has 0x00 as the reset value of the data registers */
+TEST(test_model_no_data_after_power_up)
+{
+    setup();
+    for (uint8_t reg = BMI160_REG_GYR_DATA_XL; reg <= 0x17u; reg++) {
+        ASSERT_EQ_HEX(model.hw.regs[reg], 0x00);
+    }
+}
+
+/* p.13, suspend: "No sampling takes place, all data is retained" */
+TEST(test_model_suspended_sensors_do_not_sample)
+{
+    setup();
+    bmi160_model_set_accel(&model, 1000, 2000, 3000);
+    bmi160_model_set_gyro(&model, 400, 500, 600);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_ACC_DATA_XL], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_GYR_DATA_XL], 0x00);
+}
+
+/* Each sensor runs by its own PMU field. Table 24: 3.8 ms for the accel. */
+TEST(test_model_only_the_started_sensor_samples)
+{
+    setup();
+    bmi160_model_set_accel(&model, 0x0102, 0, 0);
+    bmi160_model_set_gyro(&model, 0x0304, 0, 0);
+
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x11);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_ACC_DATA_XL], 0x00);
+    bmi160_model_delay_ms(&model.hw, 4);
+
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_ACC_DATA_XL], 0x02);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_GYR_DATA_XL], 0x00);
+}
+
+/* p.85: a dropped command leaves the sensor in suspend, and now the read shows it:
+ * the gyro stays at the last data it had, which is none */
+TEST(test_dropped_gyro_command_shows_in_the_data)
+{
+    setup();
+    bmi160_t dev;
+    ASSERT_EQ(bmi160_init(&dev, &model_i2c, &default_cfg), BMI160_OK);
+
+    /* Back to suspend with a reset, then the two commands with no wait between */
+    ASSERT_EQ(bmi160_reset(&dev), BMI160_OK);
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x11);
+    hw_model__write_reg(&model.hw, BMI160_REG_CMD, 0x15);
+    bmi160_model_delay_ms(&model.hw, 100);
+
+    bmi160_model_set_accel(&model, 8192, 0, 0);
+    bmi160_model_set_gyro(&model, 13120, 0, 0);
+
+    bmi160_data_t data;
+    ASSERT_EQ(bmi160_read(&dev, &data), BMI160_OK);
+    ASSERT_NEAR(data.accel_mg[0], 500.0f, 0.01f);
+    ASSERT_NEAR(data.gyro_dps[0], 0.0f, 0.01f);
+}
+
+/* A working init starts both, so the data moves */
+TEST(test_init_starts_both_sensors_sampling)
+{
+    setup();
+    bmi160_t dev;
+    ASSERT_EQ(bmi160_init(&dev, &model_i2c, &default_cfg), BMI160_OK);
+
+    bmi160_data_t data;
+    ASSERT_EQ(bmi160_read(&dev, &data), BMI160_OK);
+    ASSERT_NEAR(data.accel_mg[2], 1000.0f, 0.01f);
+
+    bmi160_model_set_gyro(&model, 13120, 0, 0);
+    ASSERT_EQ(bmi160_read(&dev, &data), BMI160_OK);
+    ASSERT_NEAR(data.gyro_dps[0], 100.0f, 0.01f);
+}
+
+/* p.87: a soft reset overwrites the settings, and the sensors go back to suspend */
+TEST(test_softreset_stops_the_sampling)
+{
+    setup();
+    bmi160_t dev;
+    ASSERT_EQ(bmi160_init(&dev, &model_i2c, &default_cfg), BMI160_OK);
+    ASSERT_EQ(bmi160_reset(&dev), BMI160_OK);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_PMU_STATUS], 0x00);
+
+    bmi160_model_set_accel(&model, 8192, 0, 0);
+    ASSERT_EQ_HEX(model.hw.regs[BMI160_REG_ACC_DATA_XL + 1], 0x00);
+}
+
 TEST_MAIN("bmi160 hardware model")
     RUN(test_init_reads_chip_id);
     RUN(test_init_wrong_chip_id);
@@ -291,4 +378,10 @@ TEST_MAIN("bmi160 hardware model")
     RUN(test_softreset_not_dropped_while_occupied);
     RUN(test_reset_via_driver);
     RUN(test_different_accel_values);
+    RUN(test_model_no_data_after_power_up);
+    RUN(test_model_suspended_sensors_do_not_sample);
+    RUN(test_model_only_the_started_sensor_samples);
+    RUN(test_dropped_gyro_command_shows_in_the_data);
+    RUN(test_init_starts_both_sensors_sampling);
+    RUN(test_softreset_stops_the_sampling);
 TEST_MAIN_END()
