@@ -9,8 +9,11 @@
  *   bit 12, OVCF in bit 15
  * - Electrode filtered data: regs 0x04-0x1D (2 bytes each)
  * - Touch/release thresholds: regs 0x41-0x5A
- * - ECR (0x5E): electrode configuration
- * - Soft reset: write 0x63 to 0x80 → ECR becomes 0x00
+ * - ECR (0x5E): electrode configuration. D5-D0 not all zero is Run Mode, where
+ *   writes to the control registers other than ECR and GPIO/LED are lost, and
+ *   only Run Mode measures
+ * - AFE configuration: 0x5C resets to 0x10, 0x5D to 0x24
+ * - Soft reset: write 0x63 to 0x80 → every register back to its reset value
  *
  * Uses model-based I2C callbacks for round-trip verification.
  */
@@ -33,6 +36,7 @@ typedef struct {
     uint8_t  ecr;
     uint8_t  mhdr, nhdr, nclr, fdlr;
     uint8_t  mhdf, nhdf, nclf, fdlf;
+    uint8_t  control[256];       /* other control registers, 0x33-0x7F */
     bool     reset_pending;      /* set by soft-reset write */
     int      write_count;
     int      read_count;
@@ -45,12 +49,25 @@ static void mpr121_model_reset(mpr121_model_t *m)
     /* After POR / soft-reset, ECR is 0x00 (all electrodes stopped) */
     m->ecr = 0x00u;
     m->reset_pending = false;
+    /* p10: "All the registers are cleared, except AFE Configuration Registers
+     * 0x5C (Default 0x10) and 0x5D (Default 0x24)." */
+    m->control[0x5C] = 0x10u;
+    m->control[0x5D] = 0x24u;
 }
 
-/* Inject touch status bitmap (bit N = electrode N touched, bit 12 = E12TS) */
+/* ECR D5-D0 not all zero: at least one channel measures */
+static bool mpr121_model_in_run_mode(const mpr121_model_t *m)
+{
+    return (m->ecr & 0x3Fu) != 0u;
+}
+
+/* Inject touch status bitmap (bit N = electrode N touched, bit 12 = E12TS).
+ * Stop Mode measures nothing, so the output registers do not change there. */
 static void mpr121_model_inject_touch(mpr121_model_t *m, uint16_t status)
 {
-    m->touch_status = status & 0x1FFFu;
+    if (mpr121_model_in_run_mode(m)) {
+        m->touch_status = status & 0x1FFFu;
+    }
 }
 
 /* Inject over current on REXT. Rev 4 p.11: OVCF is set, the part goes to Stop
@@ -67,7 +84,7 @@ static void mpr121_model_inject_overcurrent(mpr121_model_t *m)
 static void mpr121_model_inject_electrode(mpr121_model_t *m,
                                           uint8_t channel, uint16_t value)
 {
-    if (channel < MPR121_MODEL_ELECTRODE_COUNT) {
+    if (channel < MPR121_MODEL_ELECTRODE_COUNT && mpr121_model_in_run_mode(m)) {
         m->electrode[channel] = value & 0x03FFu;
     }
 }
@@ -78,6 +95,12 @@ static void mpr121_model_build_regs(const mpr121_model_t *m,
 {
     if (len < 256) return;
     memset(regs, 0, len);
+
+    /* Control registers without a field of their own, AFE and GPIO/LED among
+     * them. The fields below fill in the rest. */
+    for (unsigned reg = 0x33u; reg <= 0x7Fu; reg++) {
+        regs[reg] = m->control[reg];
+    }
 
     /* Touch status: 0x00 = low byte, 0x01 = high byte */
     regs[0x00] = (uint8_t)(m->touch_status & 0xFFu);
@@ -124,12 +147,13 @@ static bool mpr121_model_write_reg(void *ctx, uint8_t dev_addr,
 
     /* Soft reset: write 0x63 to 0x80 */
     if (reg == 0x80u && val == 0x63u) {
-        m->ecr = 0x00u;
-        m->ovcf = false;
-        memset(m->touch_threshold, 0, sizeof(m->touch_threshold));
-        memset(m->release_threshold, 0, sizeof(m->release_threshold));
-        m->mhdr = 0; m->nhdr = 0; m->nclr = 0; m->fdlr = 0;
-        m->mhdf = 0; m->nhdf = 0; m->nclf = 0; m->fdlf = 0;
+        int writes = m->write_count;
+        int reads = m->read_count;
+        int delays = m->delay_count;
+        mpr121_model_reset(m);
+        m->write_count = writes;
+        m->read_count = reads;
+        m->delay_count = delays;
         m->reset_pending = true;
         return true;
     }
@@ -144,6 +168,13 @@ static bool mpr121_model_write_reg(void *ctx, uint8_t dev_addr,
     if (reg == 0x5Eu) {
         if (m->ovcf && (val & 0x3Fu) != 0u) return true;
         m->ecr = val;
+        return true;
+    }
+
+    /* p10: in Run Mode a write to these "will not be effective". 0x73-0x7A are
+     * the GPIO registers, which stay open. */
+    if (reg >= 0x2Bu && reg <= 0x7Fu && !(reg >= 0x73u && reg <= 0x7Au) &&
+        mpr121_model_in_run_mode(m)) {
         return true;
     }
 
@@ -171,6 +202,9 @@ static bool mpr121_model_write_reg(void *ctx, uint8_t dev_addr,
         return true;
     }
 
+    if (reg >= 0x33u && reg <= 0x7Fu) {
+        m->control[reg] = val;
+    }
     return true;
 }
 

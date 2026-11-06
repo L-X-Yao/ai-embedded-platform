@@ -34,6 +34,18 @@ static void setup(void)
     mpr121_init(&dev, &model_i2c, &default_cfg);
 }
 
+static uint8_t bus_read(uint8_t reg)
+{
+    uint8_t val = 0xA5u;
+    (void)mpr121_model_read_regs(&model, MPR121_DEV_ADDR, reg, &val, 1);
+    return val;
+}
+
+static void bus_write(uint8_t reg, uint8_t val)
+{
+    ASSERT_TRUE(mpr121_model_write_reg(&model, MPR121_DEV_ADDR, reg, val));
+}
+
 /* --- init --- */
 
 TEST(test_init_soft_reset_and_ecr)
@@ -253,6 +265,118 @@ TEST(test_electrode_updates)
     ASSERT_EQ(val, 900);
 }
 
+/* --- what the model itself must do (MPR121 Rev 4) --- */
+
+/* p10: "All the registers are cleared, except AFE Configuration Registers 0x5C
+ * (Default 0x10) and 0x5D (Default 0x24)." */
+TEST(test_afe_reset_values)
+{
+    mpr121_model_reset(&model);
+    ASSERT_EQ_HEX(bus_read(0x5Cu), 0x10u);
+    ASSERT_EQ_HEX(bus_read(0x5Du), 0x24u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_ECR), 0x00u);
+}
+
+/* p10: the same note covers "soft reset by command", output registers too */
+TEST(test_soft_reset_clears_everything_else)
+{
+    mpr121_model_reset(&model);
+    bus_write(0x5Cu, 0x3Fu);
+    bus_write(0x5Du, 0x00u);
+    bus_write(MPR121_REG_MHDR, 0x3Fu);
+    bus_write(MPR121_REG_ECR, 0x8Fu);
+    mpr121_model_inject_touch(&model, 0x0FFFu);
+    mpr121_model_inject_electrode(&model, 0, 0x0123u);
+
+    bus_write(MPR121_REG_SOFT_RESET, 0x63u);
+    ASSERT_EQ_HEX(bus_read(0x00u), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x01u), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x04u), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_MHDR), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_ECR), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x5Cu), 0x10u);
+    ASSERT_EQ_HEX(bus_read(0x5Du), 0x24u);
+}
+
+/* p10: "Registers write operation can only be done after MPR121 is set into
+ * Stop Mode, except the ECR and GPIO/LED related registers, which means
+ * changing the value of these registers while MPR121 is in Run Mode will not
+ * be effective." */
+TEST(test_control_writes_are_lost_in_run_mode)
+{
+    mpr121_model_reset(&model);
+    bus_write(MPR121_REG_ECR, 0x8Fu);
+
+    bus_write(MPR121_REG_MHDR, 0x3Fu);
+    bus_write(MPR121_REG_FDLF, 0x3Fu);
+    bus_write(MPR121_REG_E0TTH, 0x55u);
+    bus_write(MPR121_REG_E0RTH, 0x55u);
+    bus_write(0x5Cu, 0x3Fu);
+    bus_write(0x33u, 0x3Fu);  /* touched MHD */
+    bus_write(0x5Fu, 0x3Fu);  /* CDC0 */
+    bus_write(0x7Bu, 0x3Fu);  /* auto-config control */
+
+    ASSERT_EQ_HEX(bus_read(0x33u), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_MHDR), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_FDLF), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_E0TTH), 0x00u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_E0RTH), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x5Cu), 0x10u);
+    ASSERT_EQ_HEX(bus_read(0x5Fu), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x7Bu), 0x00u);
+}
+
+TEST(test_control_writes_land_in_stop_mode)
+{
+    mpr121_model_reset(&model);
+    bus_write(MPR121_REG_MHDR, 0x3Fu);
+    bus_write(MPR121_REG_E0TTH, 0x55u);
+    bus_write(0x5Cu, 0x3Fu);
+    bus_write(0x33u, 0x3Fu);
+    bus_write(0x5Fu, 0x3Fu);
+    bus_write(0x7Bu, 0x3Fu);
+
+    ASSERT_EQ_HEX(bus_read(0x33u), 0x3Fu);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_MHDR), 0x3Fu);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_E0TTH), 0x55u);
+    ASSERT_EQ_HEX(bus_read(0x5Cu), 0x3Fu);
+    ASSERT_EQ_HEX(bus_read(0x5Fu), 0x3Fu);
+    ASSERT_EQ_HEX(bus_read(0x7Bu), 0x3Fu);
+}
+
+/* p10: "Set MPR121 into Stop Mode by writing 2bXX000000 to ECR register at any
+ * time", and that opens the control registers again */
+TEST(test_ecr_stop_mode_reopens_control_registers)
+{
+    mpr121_model_reset(&model);
+    bus_write(MPR121_REG_ECR, 0x8Fu);
+    bus_write(MPR121_REG_ECR, 0xC0u);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_ECR), 0xC0u);
+    bus_write(MPR121_REG_MHDR, 0x3Fu);
+    ASSERT_EQ_HEX(bus_read(MPR121_REG_MHDR), 0x3Fu);
+}
+
+TEST(test_gpio_writes_work_in_run_mode)
+{
+    mpr121_model_reset(&model);
+    bus_write(MPR121_REG_ECR, 0x8Fu);
+    for (uint8_t reg = 0x73u; reg <= 0x7Au; reg++) {
+        bus_write(reg, 0x5Au);
+        ASSERT_EQ_HEX(bus_read(reg), 0x5Au);
+    }
+}
+
+/* p7: "MPR121 is default in Stop Mode without any capacitance measurement",
+ * so nothing reaches the output registers until Run Mode */
+TEST(test_stop_mode_measures_nothing)
+{
+    mpr121_model_reset(&model);
+    mpr121_model_inject_touch(&model, 0x0FFFu);
+    mpr121_model_inject_electrode(&model, 0, 0x0123u);
+    ASSERT_EQ_HEX(bus_read(0x00u), 0x00u);
+    ASSERT_EQ_HEX(bus_read(0x04u), 0x00u);
+}
+
 TEST_MAIN("mpr121 hardware model")
     RUN(test_init_soft_reset_and_ecr);
     RUN(test_init_thresholds_roundtrip);
@@ -271,4 +395,11 @@ TEST_MAIN("mpr121 hardware model")
     RUN(test_electrode_all_channels);
     RUN(test_touch_then_clear);
     RUN(test_electrode_updates);
+    RUN(test_afe_reset_values);
+    RUN(test_soft_reset_clears_everything_else);
+    RUN(test_control_writes_are_lost_in_run_mode);
+    RUN(test_control_writes_land_in_stop_mode);
+    RUN(test_ecr_stop_mode_reopens_control_registers);
+    RUN(test_gpio_writes_work_in_run_mode);
+    RUN(test_stop_mode_measures_nothing);
 TEST_MAIN_END()
