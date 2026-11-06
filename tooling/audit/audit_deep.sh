@@ -97,52 +97,30 @@ fi
 # Layer 2: Sanitizer build + run
 # ============================================================
 
-if run_layer 2 "Sanitizer (-fsanitize=address,undefined -O2)"; then
-    layer2_pass=0
-    layer2_fail=0
-
-    for cmake_file in wheels/*/*/test/CMakeLists.txt; do
-        wheel_dir="$(dirname "$(dirname "$cmake_file")")"
-        name="$(basename "$wheel_dir")"
-        test_dir="$wheel_dir/test"
-
-        # Skip vendor wheels
-        [[ -d "$wheel_dir/vendor" ]] && continue
-
-        build_dir="$test_dir/build_san"
-        rm -rf "$build_dir"
-
-        # Build with sanitizers + O2
-        if cmake -GNinja -S "$test_dir" -B "$build_dir" \
-            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O2" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
-            > /dev/null 2>&1 && \
-           cmake --build "$build_dir" > /dev/null 2>&1; then
-
-            # Find the actual test binary (may differ from test_$name)
-            test_bin=$(find "$build_dir" -maxdepth 1 -type f -executable ! -name '*.o' ! -name '*.a' 2>/dev/null | head -1)
-            [[ -z "$test_bin" ]] && test_bin="$build_dir/test_$name"
-            if timeout 30 "$test_bin" > /dev/null 2>&1; then
-                layer2_pass=$((layer2_pass + 1))
-            else
-                echo -e "  ${RED}FAIL${NC}  $name (sanitizer error or timeout)"
-                layer2_fail=$((layer2_fail + 1))
-            fi
-        else
-            echo -e "  ${YELLOW}SKIP${NC}  $name (build failed with sanitizers)"
-        fi
-
-        rm -rf "$build_dir"
-    done
+if run_layer 2 "Sanitizer (audit_sanitizer.py, every target)"; then
+    # audit_sanitizer.py owns the flags and the target loop: a wheel that does
+    # not build under them is a failure there, and every target runs.
+    san_log=$(mktemp)
+    san_rc=0
+    python3 tooling/audit/audit_sanitizer.py --quiet --jobs 8 > "$san_log" 2>&1 || san_rc=$?
+    sed -n 's/^ *\[FAIL\] */  FAIL  /p' "$san_log"
+    layer2_pass=$(sed -n 's/^ *PASS: //p' "$san_log")
+    layer2_fail=$(sed -n 's/^ *FAIL: //p' "$san_log")
+    # An audit that died before its summary is a failure, not a clean run.
+    if [[ $san_rc -ne 0 && ${layer2_fail:-0} -eq 0 ]]; then
+        tail -5 "$san_log"
+        layer2_fail=1
+    fi
+    rm -f "$san_log"
 
     echo ""
-    echo -e "  Passed: $layer2_pass  Failed: $layer2_fail"
-    if [[ $layer2_fail -gt 0 ]]; then
+    echo -e "  Passed: ${layer2_pass:-0}  Failed: ${layer2_fail:-0}"
+    if [[ ${layer2_fail:-0} -gt 0 ]]; then
         echo -e "  ${RED}Layer 2: $layer2_fail failures${NC}"
     else
         echo -e "  ${GREEN}Layer 2: all clean${NC}"
     fi
-    TOTAL_ISSUES=$((TOTAL_ISSUES + layer2_fail))
+    TOTAL_ISSUES=$((TOTAL_ISSUES + ${layer2_fail:-0}))
 fi
 
 # ============================================================
@@ -150,7 +128,12 @@ fi
 # ============================================================
 
 if run_layer 3 "Fuzz (libFuzzer targets)"; then
-    bash "$REPO/tooling/test/run_libfuzzer.sh" 2>&1 | tail -5
+    layer3_fail=0
+    fuzz_log=$(mktemp)
+    bash "$REPO/tooling/test/run_libfuzzer.sh" > "$fuzz_log" 2>&1 || layer3_fail=1
+    tail -5 "$fuzz_log"
+    rm -f "$fuzz_log"
+    TOTAL_ISSUES=$((TOTAL_ISSUES + layer3_fail))
 fi
 
 # ============================================================
@@ -166,12 +149,23 @@ if run_layer 4 "Stress tests (accumulation, overflow, saturation)"; then
         wheel_dir="$(dirname "$(dirname "$stress_file")")"
         name="$(basename "$stress_file" .c)"
         test_dir="$wheel_dir/test"
+        wheel_src="$(basename "$wheel_dir").c"
+
+        # The stress test links what the wheel's tests link: modbus_rtu.c
+        # needs crc16.c, named in test/CMakeLists.txt.
+        dep_src=()
+        dep_inc=()
+        while IFS= read -r dep; do
+            [[ -z "$dep" || "$dep" == "../$wheel_src" ]] && continue
+            dep_src+=("$test_dir/$dep")
+            dep_inc+=("-I$(dirname "$test_dir/$dep")")
+        done < <(grep -oE '(\.\./)+[A-Za-z0-9_/]+\.c' "$test_dir/CMakeLists.txt" | sort -u || true)
 
         # Build stress test standalone
         out=$(mktemp "/tmp/stress_XXXXXX")
         if gcc -std=c99 -O2 -Wall -Wextra \
-            -I"$wheel_dir" -I"$REPO/tooling/harness" \
-            "$stress_file" "$wheel_dir/$(basename "$wheel_dir").c" \
+            -I"$wheel_dir" -I"$REPO/tooling/harness" "${dep_inc[@]}" \
+            "$stress_file" "$wheel_dir/$wheel_src" "${dep_src[@]}" \
             -lm -o "$out" 2>/dev/null; then
             if timeout 60 "$out" > /dev/null 2>&1; then
                 layer4_pass=$((layer4_pass + 1))
@@ -182,7 +176,9 @@ if run_layer 4 "Stress tests (accumulation, overflow, saturation)"; then
             fi
             rm -f "$out"
         else
-            echo -e "  ${YELLOW}SKIP${NC}  $name (build failed)"
+            echo -e "  ${RED}FAIL${NC}  $name (build failed)"
+            layer4_fail=$((layer4_fail + 1))
+            rm -f "$out"
         fi
     done
 
@@ -325,7 +321,7 @@ if [[ -n "$JSON_OUT" ]]; then
   "layers": {
     "pattern_grep": ${layer1_issues:-0},
     "sanitizer": ${layer2_fail:-0},
-    "fuzz": 0,
+    "fuzz": ${layer3_fail:-0},
     "stress": ${layer4_fail:-0},
     "consistency": ${layer5_issues:-0},
     "cppcheck": ${layer6_issues:-0}
