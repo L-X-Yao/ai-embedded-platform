@@ -17,17 +17,18 @@
 /* ---------- Internal helpers ---------- */
 
 /*
- * Append string to buffer, respecting capacity.
- * Returns number of chars written (0 if would overflow).
+ * Append string to t->buf at *pos, leaving room for the final NUL.
+ * Returns 0, or -1 if it would overflow.
  */
-static int buf_append(char *buf, int pos, int cap, const char *s)
+static int buf_append(telemetry_t *t, int *pos, const char *s)
 {
     int len = (int)strlen(s);
-    if (pos + len >= cap) {
+    if (*pos + len >= TELEMETRY_BUF_SIZE) {
         return -1;  /* would overflow */
     }
-    memcpy(buf + pos, s, (size_t)len);
-    return len;
+    memcpy(t->buf + *pos, s, (size_t)len);
+    *pos += len;
+    return 0;
 }
 
 /* Longest fmt_float text and its NUL: sign, 39 digits, point, 2 decimals */
@@ -132,36 +133,37 @@ static int fmt_float(char *out, int size, float val)
 
 /* ---------- Format functions ---------- */
 
+static int fmt_timestamp(char *out, size_t size, uint32_t timestamp)
+{
+    int n = snprintf(out, size, "%lu", (unsigned long)timestamp);
+    return (n < 0 || (size_t)n >= size) ? -1 : n;
+}
+
 static int fmt_json(telemetry_t *t, uint32_t timestamp)
 {
     int pos = 0;
-    int cap = TELEMETRY_BUF_SIZE;
-    char tmp[32];
-    int n;
+    char num[FLOAT_TEXT_SIZE];
 
     /* opening brace + timestamp */
-    n = snprintf(tmp, sizeof(tmp), "{\"ts\":%lu", (unsigned long)timestamp);
-    if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-    n = buf_append(t->buf, pos, cap, tmp);
-    if (n < 0) { return -1; }
-    pos += n;
-
-    for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[FLOAT_TEXT_SIZE];
-        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
-            return -1;
-        }
-        n = snprintf(tmp, sizeof(tmp), ",\"%s\":%s",
-                     t->fields[i].name, fval);
-        if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-        n = buf_append(t->buf, pos, cap, tmp);
-        if (n < 0) { return -1; }
-        pos += n;
+    if (fmt_timestamp(num, sizeof(num), timestamp) < 0 ||
+        buf_append(t, &pos, "{\"ts\":") < 0 ||
+        buf_append(t, &pos, num) < 0) {
+        return -1;
     }
 
-    n = buf_append(t->buf, pos, cap, "}");
-    if (n < 0) { return -1; }
-    pos += n;
+    for (uint8_t i = 0; i < t->field_count; i++) {
+        if (fmt_float(num, (int)sizeof(num), t->fields[i].value) < 0 ||
+            buf_append(t, &pos, ",\"") < 0 ||
+            buf_append(t, &pos, t->fields[i].name) < 0 ||
+            buf_append(t, &pos, "\":") < 0 ||
+            buf_append(t, &pos, num) < 0) {
+            return -1;
+        }
+    }
+
+    if (buf_append(t, &pos, "}") < 0) {
+        return -1;
+    }
 
     t->buf[pos] = '\0';
     return pos;
@@ -170,27 +172,20 @@ static int fmt_json(telemetry_t *t, uint32_t timestamp)
 static int fmt_csv(telemetry_t *t, uint32_t timestamp)
 {
     int pos = 0;
-    int cap = TELEMETRY_BUF_SIZE;
-    char tmp[32];
-    int n;
+    char num[FLOAT_TEXT_SIZE];
 
     /* timestamp first */
-    n = snprintf(tmp, sizeof(tmp), "%lu", (unsigned long)timestamp);
-    if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-    n = buf_append(t->buf, pos, cap, tmp);
-    if (n < 0) { return -1; }
-    pos += n;
+    if (fmt_timestamp(num, sizeof(num), timestamp) < 0 ||
+        buf_append(t, &pos, num) < 0) {
+        return -1;
+    }
 
     for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[FLOAT_TEXT_SIZE];
-        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
+        if (fmt_float(num, (int)sizeof(num), t->fields[i].value) < 0 ||
+            buf_append(t, &pos, ",") < 0 ||
+            buf_append(t, &pos, num) < 0) {
             return -1;
         }
-        n = snprintf(tmp, sizeof(tmp), ",%s", fval);
-        if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-        n = buf_append(t->buf, pos, cap, tmp);
-        if (n < 0) { return -1; }
-        pos += n;
     }
 
     t->buf[pos] = '\0';
@@ -200,28 +195,23 @@ static int fmt_csv(telemetry_t *t, uint32_t timestamp)
 static int fmt_key_value(telemetry_t *t, uint32_t timestamp)
 {
     int pos = 0;
-    int cap = TELEMETRY_BUF_SIZE;
-    char tmp[64];
-    int n;
+    char num[FLOAT_TEXT_SIZE];
 
     /* timestamp first */
-    n = snprintf(tmp, sizeof(tmp), "ts=%lu", (unsigned long)timestamp);
-    if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-    n = buf_append(t->buf, pos, cap, tmp);
-    if (n < 0) { return -1; }
-    pos += n;
+    if (fmt_timestamp(num, sizeof(num), timestamp) < 0 ||
+        buf_append(t, &pos, "ts=") < 0 ||
+        buf_append(t, &pos, num) < 0) {
+        return -1;
+    }
 
     for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[FLOAT_TEXT_SIZE];
-        if (fmt_float(fval, (int)sizeof(fval), t->fields[i].value) < 0) {
+        if (fmt_float(num, (int)sizeof(num), t->fields[i].value) < 0 ||
+            buf_append(t, &pos, " ") < 0 ||
+            buf_append(t, &pos, t->fields[i].name) < 0 ||
+            buf_append(t, &pos, "=") < 0 ||
+            buf_append(t, &pos, num) < 0) {
             return -1;
         }
-        n = snprintf(tmp, sizeof(tmp), " %s=%s",
-                     t->fields[i].name, fval);
-        if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
-        n = buf_append(t->buf, pos, cap, tmp);
-        if (n < 0) { return -1; }
-        pos += n;
     }
 
     t->buf[pos] = '\0';
