@@ -252,6 +252,58 @@ TEST(test_prompt)
     ASSERT_TRUE(at_command_get_matched(&at)[0] == '>');
 }
 
+TEST(test_prompt_waits_past_an_echo_holding_a_greater_than)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect(&at, ">");
+
+    /* The echo ends in CR. Neither the > inside it nor the line that it
+       completes may answer the expect. */
+    at_command_evt_type_t r = feed_string(&at, "AT+MPUB=\"a>b\",1\r", &evt);
+    ASSERT_TRUE(r == AT_COMMAND_EVT_NONE);
+    ASSERT_TRUE(at.waiting == 1);
+
+    /* TS 27.005 3.5.1: the TA sends CR LF > SP */
+    r = feed_string(&at, "\r\n", &evt);
+    ASSERT_TRUE(r == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(at.waiting == 1);
+
+    r = feed_string(&at, "> ", &evt);
+    ASSERT_TRUE(r == AT_COMMAND_EVT_PROMPT);
+    ASSERT_TRUE(at.waiting == 0);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), ">") == 0);
+}
+
+TEST(test_prompt_waits_past_a_urc_holding_a_greater_than)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    urc_reset();
+    at_command_init(&at, &mock_hal);
+    at_command_register_urc(&at, "+MSUB:", urc_handler, NULL);
+    at_command_expect(&at, ">");
+
+    feed_string(&at, "+MSUB: \"a>b\"\r\n", &evt);
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(strcmp(urc_captured, "+MSUB: \"a>b\"") == 0);
+    ASSERT_TRUE(at.waiting == 1);
+
+    ASSERT_TRUE(feed_string(&at, "\r\n> ", &evt) == AT_COMMAND_EVT_PROMPT);
+}
+
+TEST(test_error_ends_the_wait_for_a_prompt)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect(&at, ">");
+
+    ASSERT_TRUE(feed_string(&at, "\r\nERROR\r\n", &evt) == AT_COMMAND_EVT_ERROR);
+    ASSERT_TRUE(at.waiting == 0);
+}
+
 TEST(test_prompt_no_match_when_not_expected)
 {
     at_command_t at;
@@ -597,6 +649,9 @@ TEST_MAIN("at_command")
     RUN(test_urc_with_prefix);
     RUN(test_urc_during_wait);
     RUN(test_prompt);
+    RUN(test_prompt_waits_past_an_echo_holding_a_greater_than);
+    RUN(test_prompt_waits_past_a_urc_holding_a_greater_than);
+    RUN(test_error_ends_the_wait_for_a_prompt);
     RUN(test_prompt_no_match_when_not_expected);
     RUN(test_cancel);
     RUN(test_send_raw);

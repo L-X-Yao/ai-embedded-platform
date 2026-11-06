@@ -171,7 +171,8 @@ static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *ev
     evt->line_len = len;
 
     if (at->waiting && at->expected[0] != '\0') {
-        if (contains(line, at->expected)) {
+        /* a prompt is matched in at_command_feed, never as part of a line */
+        if (at->expected[0] != '>' && contains(line, at->expected)) {
             strncpy(at->matched, line, sizeof(at->matched) - 1U);
             at->matched[sizeof(at->matched) - 1U] = '\0';
             at->expected[0] = '\0';
@@ -212,8 +213,10 @@ at_command_evt_type_t at_command_feed(at_command_t *at, uint8_t byte, at_command
     evt->line     = NULL;
     evt->line_len = 0U;
 
-    /* ">" prompt detection (data mode, e.g., AT+CMGS, AT+MPUBEX) */
-    if (byte == '>' && at->waiting && at->expected[0] == '>') {
+    /* ">" prompt detection (data mode, e.g., AT+CMGS, AT+MPUBEX). The prompt
+     * starts a line, CR LF > SP in TS 27.005 3.5.1: a > further along is
+     * text, such as a command echo. */
+    if (byte == '>' && at->line_idx == 0U && at->waiting && at->expected[0] == '>') {
         at->matched[0]  = '>';
         at->matched[1]  = '\0';
         at->expected[0] = '\0';
@@ -221,7 +224,6 @@ at_command_evt_type_t at_command_feed(at_command_t *at, uint8_t byte, at_command
         evt->type       = AT_COMMAND_EVT_PROMPT;
         evt->line       = at->matched;
         evt->line_len   = 1U;
-        at->line_idx    = 0U;
         return AT_COMMAND_EVT_PROMPT;
     }
 
