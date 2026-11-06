@@ -297,6 +297,47 @@ TEST(test_malformed_varint)
     ASSERT_EQ(pb_decode_field(&dec, &f), PB_ERR_MALFORMED);
 }
 
+/* ---- Field number range ---- */
+
+static pb_err_t decode_first(const uint8_t *data, uint16_t len, pb_field_t *f)
+{
+    pb_decoder_t dec;
+    pb_decoder_init(&dec, data, len);
+    return pb_decode_field(&dec, f);
+}
+
+TEST(test_field_above_255_refused)
+{
+    /* Tag = field << 3 | wire type, as a varint. */
+    static const uint8_t f256[] = {0x80, 0x10, 0x05};   /* 2048: field 256 */
+    static const uint8_t f257[] = {0x88, 0x10, 0x05};   /* 2056: field 257 */
+    /* 2^63 + 8: its low bits name field 1, the rest are not zero. */
+    static const uint8_t huge[] = {0x88, 0x80, 0x80, 0x80, 0x80, 0x80,
+                                   0x80, 0x80, 0x80, 0x01, 0x05};
+    pb_field_t f;
+    ASSERT_EQ(decode_first(f256, sizeof(f256), &f), PB_ERR_MALFORMED);
+    ASSERT_EQ(decode_first(f257, sizeof(f257), &f), PB_ERR_MALFORMED);
+    ASSERT_EQ(decode_first(huge, sizeof(huge), &f), PB_ERR_MALFORMED);
+}
+
+TEST(test_field_0_refused)
+{
+    static const uint8_t varint[] = {0x00, 0x05};
+    static const uint8_t length[] = {0x02, 0x00};
+    pb_field_t f;
+    ASSERT_EQ(decode_first(varint, sizeof(varint), &f), PB_ERR_MALFORMED);
+    ASSERT_EQ(decode_first(length, sizeof(length), &f), PB_ERR_MALFORMED);
+}
+
+TEST(test_field_255_is_the_largest)
+{
+    static const uint8_t f255[] = {0xF8, 0x0F, 0x05};   /* 2040: field 255 */
+    pb_field_t f;
+    ASSERT_EQ(decode_first(f255, sizeof(f255), &f), PB_OK);
+    ASSERT_EQ(f.field_num, 255);
+    ASSERT_EQ(f.value.varint, 5);
+}
+
 /* ---- Empty message ---- */
 
 TEST(test_empty_message)
@@ -449,6 +490,9 @@ TEST_MAIN("protobuf_lite")
     RUN(test_encode_overflow);
     RUN(test_decode_truncated);
     RUN(test_malformed_varint);
+    RUN(test_field_above_255_refused);
+    RUN(test_field_0_refused);
+    RUN(test_field_255_is_the_largest);
     RUN(test_empty_message);
     RUN(test_zigzag_roundtrip);
     RUN(test_decoder_done);
