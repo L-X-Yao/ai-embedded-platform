@@ -51,6 +51,166 @@ static uint32_t slot_addr(const flash_ring_t *ring, uint32_t idx)
     return ring->cfg.data_start_addr + idx * ring->cfg.slot_size;
 }
 
+/*
+ * The writer keeps one rule: after every completed push, and after init, the
+ * slot at write_idx and the rest of its sector are blank. So it erases the next
+ * sector just before it programs the last slot of the current one. That gives
+ * init a blank slot to look for, and it means write_idx == read_idx only ever
+ * says the ring is empty.
+ */
+
+#define ERASED_BYTE 0xFFu
+#define SCAN_CHUNK  32u
+
+static uint32_t slots_per_sector(const flash_ring_t *ring)
+{
+    return ring->cfg.sector_size / ring->cfg.slot_size;
+}
+
+static bool same_sector(const flash_ring_t *ring, uint32_t a, uint32_t b)
+{
+    return a / slots_per_sector(ring) == b / slots_per_sector(ring);
+}
+
+/* First slot of the sector after the one holding idx, wrapping to 0. */
+static uint32_t next_sector_start(const flash_ring_t *ring, uint32_t idx)
+{
+    uint32_t sps  = slots_per_sector(ring);
+    uint32_t next = (idx / sps + 1u) * sps;
+    return next < ring->cfg.total_slots ? next : 0u;
+}
+
+static bool last_in_sector(const flash_ring_t *ring, uint32_t idx)
+{
+    return idx + 1u == ring->cfg.total_slots ||
+           (idx + 1u) % slots_per_sector(ring) == 0u;
+}
+
+/* The next sector is about to go: its frames are lost, so the reader skips them. */
+static void drop_next_sector(flash_ring_t *ring)
+{
+    uint32_t next = next_sector_start(ring, ring->write_idx);
+    if (same_sector(ring, ring->read_idx, next)) {
+        ring->read_idx = next_sector_start(ring, next);
+    }
+}
+
+/* The index step of a push, shared with init so the two cannot disagree. */
+static void advance_write(flash_ring_t *ring)
+{
+    if (last_in_sector(ring, ring->write_idx)) {
+        drop_next_sector(ring);
+    }
+    ring->write_idx = (ring->write_idx + 1u) % ring->cfg.total_slots;
+    ring->frame_count++;
+}
+
+/*
+ * Init walks forward from the stored write_idx, so that slot must still hold
+ * what the writer put there. The writer erases its sector again after at most
+ * total_slots - slots_per_sector pushes, which caps the interval.
+ */
+static bool flush_due(const flash_ring_t *ring)
+{
+    uint32_t limit    = ring->cfg.total_slots - slots_per_sector(ring);
+    uint16_t interval = ring->cfg.persist_interval;
+
+    if (interval == 0u) {
+        return true;
+    }
+    return ring->since_flush >= (interval < limit ? interval : limit);
+}
+
+/* Is everything from slot idx to the end of its sector erased? */
+static flash_ring_err_t tail_blank(const flash_ring_t *ring, uint32_t idx,
+                                   bool *blank)
+{
+    const flash_ring_io_t *io = ring->io;
+    uint32_t sps  = slots_per_sector(ring);
+    uint32_t last = (idx / sps + 1u) * sps;
+    if (last > ring->cfg.total_slots) {
+        last = ring->cfg.total_slots;
+    }
+
+    uint32_t addr = slot_addr(ring, idx);
+    uint32_t end  = slot_addr(ring, last);
+    uint8_t  chunk[SCAN_CHUNK];
+
+    while (addr < end) {
+        uint32_t left = end - addr;
+        uint16_t n = (uint16_t)(left < SCAN_CHUNK ? left : SCAN_CHUNK);
+        if (io->read(io->ctx, addr, chunk, n) != 0) {
+            return FLASH_RING_ERR_IO;
+        }
+        for (uint16_t i = 0; i < n; i++) {
+            if (chunk[i] != ERASED_BYTE) {
+                *blank = false;
+                return FLASH_RING_OK;
+            }
+        }
+        addr += n;
+    }
+    *blank = true;
+    return FLASH_RING_OK;
+}
+
+/*
+ * The header is up to persist_interval pushes old. Walk forward over what was
+ * written since, replaying each push, until the rule above holds again.
+ */
+static flash_ring_err_t recover_write_pos(flash_ring_t *ring)
+{
+    const flash_ring_io_t *io = ring->io;
+    uint32_t stored_write = ring->write_idx;
+    uint32_t stored_read  = ring->read_idx;
+    uint32_t stored_count = ring->frame_count;
+    bool blank = false;
+
+    for (uint32_t step = 0; step < ring->cfg.total_slots; step++) {
+        flash_ring_err_t err = tail_blank(ring, ring->write_idx, &blank);
+        if (err != FLASH_RING_OK) {
+            return err;
+        }
+        if (blank) {
+            break;
+        }
+        advance_write(ring);
+    }
+
+    if (!blank) {
+        /*
+         * No blank tail anywhere, which this code never leaves. A ring written
+         * by the erase-on-entry version can look like this with write_idx on a
+         * sector boundary. Make the blank sector it needs.
+         */
+        uint32_t sps   = slots_per_sector(ring);
+        uint32_t start = (stored_write / sps) * sps;
+
+        ring->write_idx   = start;
+        ring->frame_count = stored_count;
+        ring->read_idx    = stored_read;
+        if (same_sector(ring, stored_read, start)) {
+            ring->read_idx = (stored_read == stored_write)
+                           ? start : next_sector_start(ring, start);
+        }
+        if (io->erase_sector(io->ctx, slot_addr(ring, start)) != 0) {
+            return FLASH_RING_ERR_IO;
+        }
+        return FLASH_RING_OK;
+    }
+
+    /*
+     * A cut during push's erase leaves write_idx here on the last slot, with
+     * the next sector blank or half erased and no new frame to show for it. No
+     * read can tell how far the erase got, and the next push erases that sector
+     * anyway, so its frames are given up now.
+     */
+    if (last_in_sector(ring, ring->write_idx)) {
+        drop_next_sector(ring);
+    }
+    return FLASH_RING_OK;
+}
+
 /* ---------- public API ---------- */
 
 flash_ring_err_t flash_ring_init(flash_ring_t *ring,
@@ -83,6 +243,11 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
         cfg->data_start_addr % cfg->sector_size != 0) {
         return FLASH_RING_ERR_PARAM;
     }
+    /* Erasing ahead needs a sector to erase that is not the current one. */
+    REQUIRE(cfg->total_slots > cfg->sector_size / cfg->slot_size);
+    if (cfg->total_slots <= cfg->sector_size / cfg->slot_size) {
+        return FLASH_RING_ERR_PARAM;
+    }
 
     ring->io  = io;
     ring->cfg = *cfg;
@@ -101,14 +266,16 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
         ring->write_idx   = hdr.write_idx;
         ring->read_idx    = hdr.read_idx;
         ring->frame_count = hdr.frame_count;
-    } else {
-        ring->write_idx   = 0;
-        ring->read_idx    = 0;
-        ring->frame_count = 0;
-        return flush_header(ring);
+        return recover_write_pos(ring);
     }
 
-    return FLASH_RING_OK;
+    ring->write_idx   = 0;
+    ring->read_idx    = 0;
+    ring->frame_count = 0;
+    if (io->erase_sector(io->ctx, cfg->data_start_addr) != 0) {
+        return FLASH_RING_ERR_IO;
+    }
+    return flush_header(ring);
 }
 
 flash_ring_err_t flash_ring_push(flash_ring_t *ring,
@@ -127,27 +294,25 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
     }
 
     const flash_ring_io_t *io = ring->io;
-    uint32_t addr = slot_addr(ring, ring->write_idx);
 
-    /* Erase sector if this slot is at a sector boundary */
-    uint32_t slots_per_sector = ring->cfg.sector_size / ring->cfg.slot_size;
-    if (slots_per_sector > 0 && (ring->write_idx % slots_per_sector) == 0) {
-        if (io->erase_sector(io->ctx, addr) != 0) {
+    /* Before the last slot, not after it: a cut in between keeps the rule. */
+    if (last_in_sector(ring, ring->write_idx)) {
+        uint32_t next = next_sector_start(ring, ring->write_idx);
+        drop_next_sector(ring);
+        if (io->erase_sector(io->ctx, slot_addr(ring, next)) != 0) {
             return FLASH_RING_ERR_IO;
         }
     }
 
-    if (io->write(io->ctx, addr, frame, len) != 0) {
+    if (io->write(io->ctx, slot_addr(ring, ring->write_idx), frame, len) != 0) {
         return FLASH_RING_ERR_IO;
     }
 
-    ring->write_idx = (ring->write_idx + 1) % ring->cfg.total_slots;
-    ring->frame_count++;
+    advance_write(ring);
     ring->since_flush++;
 
     /* Auto-persist header at configured interval */
-    uint16_t interval = ring->cfg.persist_interval;
-    if (interval == 0 || ring->since_flush >= interval) {
+    if (flush_due(ring)) {
         return flush_header(ring);
     }
 
@@ -188,8 +353,7 @@ flash_ring_err_t flash_ring_pop(flash_ring_t *ring)
     ring->read_idx = (ring->read_idx + 1) % ring->cfg.total_slots;
     ring->since_flush++;
 
-    uint16_t interval = ring->cfg.persist_interval;
-    if (interval == 0 || ring->since_flush >= interval) {
+    if (flush_due(ring)) {
         return flush_header(ring);
     }
 
