@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply all patches in tooling/patches/ to vsf/ in order.
+# Apply all patches in tooling/ci/patches/ to vsf/ in order.
 # Idempotent-ish: existing patches will show "already applied" but won't error.
 #
 # Usage:
@@ -9,8 +9,8 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PATCH_DIR="$ROOT/tooling/patches"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+PATCH_DIR="$ROOT/tooling/ci/patches"
 VSF_DIR="$ROOT/vsf"
 
 mode="apply"

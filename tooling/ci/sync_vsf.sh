@@ -200,21 +200,20 @@ if $DRY_RUN; then
     exit 0
 fi
 
-# 3. Revert patches (if any applied)
-if [[ -x "$PATCH_SCRIPT" ]]; then
-    shopt -s nullglob
-    _patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
-    shopt -u nullglob
-    patch_count=${#_patches[@]}
-    if [[ "$patch_count" -gt 0 ]]; then
-        log_info "Reverting $patch_count patches before sync..."
-        revert_rc=0
-        revert_out=$(bash "$PATCH_SCRIPT" --revert 2>&1) || revert_rc=$?
-        echo "$revert_out" | sed 's/^/  /'
-        if [[ $revert_rc -ne 0 ]]; then
-            log_err "Patch revert failed (exit $revert_rc) — aborting sync"
-            exit 1
-        fi
+# 3. Revert patches (if any applied). The script runs through bash, so its
+#    mode must not decide whether patches are handled.
+shopt -s nullglob
+_patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
+shopt -u nullglob
+patch_count=${#_patches[@]}
+if [[ "$patch_count" -gt 0 ]]; then
+    log_info "Reverting $patch_count patches before sync..."
+    revert_rc=0
+    revert_out=$(bash "$PATCH_SCRIPT" --revert 2>&1) || revert_rc=$?
+    echo "$revert_out" | sed 's/^/  /'
+    if [[ $revert_rc -ne 0 ]]; then
+        log_err "Patch revert failed (exit $revert_rc) — aborting sync"
+        exit 1
     fi
 fi
 
@@ -258,24 +257,22 @@ echo -e "  Deleted files: $deleted_files"
 
 # 8. Re-apply patches
 patch_conflict=false
-if [[ -x "$PATCH_SCRIPT" ]]; then
-    shopt -s nullglob
-    _patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
-    shopt -u nullglob
-    patch_count=${#_patches[@]}
-    if [[ "$patch_count" -gt 0 ]]; then
-        echo ""
-        log_info "Re-applying $patch_count patches..."
-        apply_rc=0
-        apply_out=$(bash "$PATCH_SCRIPT" 2>&1) || apply_rc=$?
-        echo "$apply_out" | sed 's/^/  /'
-        if [[ $apply_rc -eq 0 ]]; then
-            log_ok "All patches applied cleanly"
-        else
-            log_warn "Some patches failed — manual resolution needed"
-            log_warn "Check tooling/ci/patches/*.rej for conflicts"
-            patch_conflict=true
-        fi
+shopt -s nullglob
+_patches=("$REPO/tooling/ci/patches/"[0-9]*-*.patch)
+shopt -u nullglob
+patch_count=${#_patches[@]}
+if [[ "$patch_count" -gt 0 ]]; then
+    echo ""
+    log_info "Re-applying $patch_count patches..."
+    apply_rc=0
+    apply_out=$(bash "$PATCH_SCRIPT" 2>&1) || apply_rc=$?
+    echo "$apply_out" | sed 's/^/  /'
+    if [[ $apply_rc -eq 0 ]]; then
+        log_ok "All patches applied cleanly"
+    else
+        log_warn "Some patches failed — manual resolution needed"
+        log_warn "Check tooling/ci/patches/*.rej for conflicts"
+        patch_conflict=true
     fi
 fi
 
