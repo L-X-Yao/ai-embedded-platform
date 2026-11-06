@@ -5,7 +5,8 @@
  * Models QMC5883P register behavior:
  * - Chip ID 0x80 at register 0x00 (read-only)
  * - Magnetometer XYZ data at 0x01..0x06 (read-only, 16-bit LE per axis)
- * - Status register at 0x09 with DRDY bit 0
+ * - Status register at 0x09 with DRDY bit 0 and OVFL bit 1, both cleared by
+ *   reading it through qmc5883p_model_read_regs
  * - Control register 1 at 0x0A (mode/ODR/OSR)
  * - Control register 2 at 0x0B (range/soft reset)
  * - Sign register at 0x29
@@ -29,6 +30,10 @@
 
 #define QMC5883P_CR2_SOFT_RST    0x80u
 
+#define QMC5883P_STATUS_DRDY     0x01u
+#define QMC5883P_STATUS_OVFL     0x02u
+#define QMC5883P_OVFL_LIMIT      30000   /* p.16: [-30000,30000] LSB */
+
 typedef struct {
     hw_reg_model_t  hw;
     int16_t         true_mx;    /* simulated raw X (LSB counts) */
@@ -46,7 +51,11 @@ static void qmc5883p_model_set_data(qmc5883p_model_t *m)
     m->hw.regs[0x04] = (uint8_t)((uint16_t)m->true_my >> 8);
     m->hw.regs[0x05] = (uint8_t)(m->true_mz & 0xFF);
     m->hw.regs[0x06] = (uint8_t)((uint16_t)m->true_mz >> 8);
-    m->hw.regs[QMC5883P_REG_STATUS] |= 0x01u; /* DRDY */
+    m->hw.regs[QMC5883P_REG_STATUS] |= QMC5883P_STATUS_DRDY;
+    if (m->true_mx > QMC5883P_OVFL_LIMIT || m->true_mx < -QMC5883P_OVFL_LIMIT ||
+        m->true_my > QMC5883P_OVFL_LIMIT || m->true_my < -QMC5883P_OVFL_LIMIT ||
+        m->true_mz > QMC5883P_OVFL_LIMIT || m->true_mz < -QMC5883P_OVFL_LIMIT)
+        m->hw.regs[QMC5883P_REG_STATUS] |= QMC5883P_STATUS_OVFL;
 }
 
 /* Callback: CR1 write — entering continuous mode triggers measurement */
@@ -101,6 +110,20 @@ static void qmc5883p_model_init(qmc5883p_model_t *m)
     m->true_mz = 6000;   /* 6000 / 15000 = 0.4 Gauss */
 
     hw_model_reset(&m->hw);
+}
+
+/* HAL read. p.15: DRDY "is reset to "0" by reading the status register", and
+ * p.16: OVFL is reset "after this bit is read". The data stays. */
+__attribute__((unused))
+static bool qmc5883p_model_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                     uint8_t *buf, uint16_t len)
+{
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    if (!hw_model_i2c_read_regs(ctx, dev_addr, reg, buf, len))
+        return false;
+    if (reg <= QMC5883P_REG_STATUS && (unsigned)reg + len > QMC5883P_REG_STATUS)
+        hw->regs[QMC5883P_REG_STATUS] = 0;
+    return true;
 }
 
 #endif /* HW_MODEL_QMC5883P_H */

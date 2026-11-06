@@ -16,7 +16,7 @@ static qmc5883p_model_t model;
 
 static const qmc5883p_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .read_regs = qmc5883p_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -157,6 +157,78 @@ TEST(test_measure_count_increments)
     ASSERT_TRUE(model.measure_count > before);
 }
 
+/* --- the status register ----------------------------------------------- */
+
+static uint8_t read_status(void)
+{
+    uint8_t status = 0xA5;
+    (void)qmc5883p_model_read_regs(&model.hw, QMC5883P_DEV_ADDR,
+                                   QMC5883P_REG_STATUS, &status, 1);
+    return status;
+}
+
+/* p.15: DRDY "is reset to "0" by reading the status register through I2C
+ * commands". */
+TEST(test_model_status_read_clears_drdy)
+{
+    setup();
+    qmc5883p_model_set_data(&model);
+    ASSERT_EQ_HEX(read_status() & 0x01u, 0x01u);
+    ASSERT_EQ_HEX(read_status() & 0x01u, 0x00u);
+}
+
+/* p.15: "The data stays the same, regardless of reading status through I2C,
+ * until new data replaces them." */
+TEST(test_model_status_read_leaves_the_data)
+{
+    setup();
+    qmc5883p_model_set_data(&model);
+    (void)read_status();
+
+    uint8_t x[2] = { 0, 0 };
+    ASSERT_TRUE(qmc5883p_model_read_regs(&model.hw, QMC5883P_DEV_ADDR,
+                                         QMC5883P_REG_DATA_X_LSB, x, 2));
+    ASSERT_EQ_HEX(x[0], 4500u & 0xFFu);
+    ASSERT_EQ_HEX(x[1], 4500u >> 8);
+}
+
+/* p.16: OVFL is "set high when either axis code output exceeds the range of
+ * [-30000,30000] LSB and reset to "0" after this bit is read." */
+TEST(test_model_overflow_bit)
+{
+    setup();
+    model.true_mz = 30000;
+    qmc5883p_model_set_data(&model);
+    ASSERT_EQ_HEX(read_status() & 0x02u, 0x00u);
+
+    model.true_mz = 30001;
+    qmc5883p_model_set_data(&model);
+    ASSERT_EQ_HEX(read_status() & 0x02u, 0x02u);
+    ASSERT_EQ_HEX(read_status() & 0x02u, 0x00u);
+
+    model.true_mz = -30001;
+    qmc5883p_model_set_data(&model);
+    ASSERT_EQ_HEX(read_status() & 0x02u, 0x02u);
+}
+
+/* One sample, one read: the driver's second read finds no new data, and the
+ * next sample gives it the new value. */
+TEST(test_read_takes_each_sample_once)
+{
+    setup();
+    ASSERT_EQ(qmc5883p_init(&model_i2c), QMC5883P_OK);
+
+    qmc5883p_data_t data;
+    ASSERT_EQ(qmc5883p_read(&model_i2c, &data), QMC5883P_OK);
+    ASSERT_NEAR(data.mx_gauss, 0.3f, 0.0001f);
+    ASSERT_EQ(qmc5883p_read(&model_i2c, &data), QMC5883P_ERR_NOT_READY);
+
+    model.true_mx = 7500;
+    qmc5883p_model_set_data(&model);
+    ASSERT_EQ(qmc5883p_read(&model_i2c, &data), QMC5883P_OK);
+    ASSERT_NEAR(data.mx_gauss, 0.5f, 0.0001f);
+}
+
 TEST_MAIN("qmc5883p hardware model")
     RUN(test_init_ok);
     RUN(test_init_wrong_chip_id);
@@ -170,4 +242,8 @@ TEST_MAIN("qmc5883p hardware model")
     RUN(test_data_registers_readonly);
     RUN(test_different_field_strengths);
     RUN(test_measure_count_increments);
+    RUN(test_model_status_read_clears_drdy);
+    RUN(test_model_status_read_leaves_the_data);
+    RUN(test_model_overflow_bit);
+    RUN(test_read_takes_each_sample_once);
 TEST_MAIN_END()
