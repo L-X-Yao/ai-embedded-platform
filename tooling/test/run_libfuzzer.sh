@@ -22,6 +22,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --time) MAX_TIME="$2"; shift 2 ;;
         --coverage) MODE="coverage"; shift ;;
+        -*)     echo "ERROR: unknown option: $1" >&2; exit 2 ;;
         *)      SINGLE="$1"; shift ;;
     esac
 done
@@ -281,6 +282,14 @@ echo ""
 
 if [ "$FAIL" -gt 0 ]; then
     echo "FAILED — crashes found! Examine crash-* files in $ARTIFACT_DIR."
+    exit 1
+fi
+if [ "$PASS" -eq 0 ]; then
+    echo "ERROR: nothing was fuzzed${SINGLE:+: no runnable harness named $SINGLE}"
+    exit 1
+fi
+if [ "$SKIP" -gt 0 ]; then
+    echo "FAILED — $SKIP listed harness(es) did not run: see the SKIP lines above."
     exit 1
 fi
 echo "ALL LIBFUZZER RUNS PASSED — no crashes found"
