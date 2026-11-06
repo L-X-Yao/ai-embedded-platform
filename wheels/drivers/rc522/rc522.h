@@ -131,6 +131,8 @@ rc522_err_t rc522_detect_card(rc522_t *dev);
 
 /** Read the UID of a detected card (cascade level 1 only, 4-byte UID).
  *  Call rc522_detect_card() first.
+ *  @return RC522_ERR_ID for a card with a 7 or 10 byte UID, which this driver
+ *  cannot read. uid is not written.
  *  @thread_safe: no @isr_safe: no */
 rc522_err_t rc522_read_card_uid(rc522_t *dev, rc522_uid_t *uid);
 
