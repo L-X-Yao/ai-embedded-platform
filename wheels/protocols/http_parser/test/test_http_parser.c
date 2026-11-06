@@ -211,6 +211,24 @@ TEST(test_no_content_length_is_still_no_body)
     ASSERT_EQ(http_parser_get_content_length(req.headers, req.header_count), -1);
 }
 
+TEST(test_trailing_whitespace_is_not_part_of_a_value)
+{
+    /* RFC 7230 section 3.2: OWS sits on both sides of field-value */
+    static const char *const reqs[] = {
+        "POST / HTTP/1.1\r\nContent-Length: 5 \r\n\r\nhello",
+        "POST / HTTP/1.1\r\nContent-Length: 5\t\r\n\r\nhello",
+        "POST / HTTP/1.1\r\nContent-Length:  5 \t \r\n\r\nhello",
+    };
+
+    for (size_t i = 0; i < sizeof(reqs) / sizeof(reqs[0]); i++) {
+        http_parser_request_t req;
+        ASSERT_EQ(http_parser_parse_request(reqs[i], strlen(reqs[i]), &req),
+                  HTTP_PARSER_OK);
+        ASSERT_EQ(req.body_len, 5);
+        ASSERT_EQ(req.headers[0].value_len, 1);
+    }
+}
+
 TEST(test_get_content_length_says_invalid_for_bad_values)
 {
     http_parser_header_t two[2] = {
@@ -241,5 +259,6 @@ TEST_MAIN("http_parser")
     RUN(test_response_refuses_bad_framing);
     RUN(test_repeated_equal_content_length_frames_the_body);
     RUN(test_no_content_length_is_still_no_body);
+    RUN(test_trailing_whitespace_is_not_part_of_a_value);
     RUN(test_get_content_length_says_invalid_for_bad_values);
 TEST_MAIN_END()
