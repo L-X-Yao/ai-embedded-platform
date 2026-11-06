@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// The decoder stages 1500 bytes, of which header and FCS take six.
-#define PAYLOAD_MAX 1494
+// The default MRU in RFC 1661. The decoder itself has no limit.
+#define PAYLOAD_MAX 1500
 
 static void decode_into(const uint8_t *src, size_t len, size_t cap) {
     // Exact-size output, so ASan sees any write past cap.
