@@ -37,23 +37,9 @@ static bool read_reg(const vl53l1x_t *dev, uint16_t reg, uint8_t *val)
 
 /* ---- public API ---- */
 
-vl53l1x_err_t vl53l1x_init(vl53l1x_t *dev, const vl53l1x_i2c_t *i2c,
-                            const vl53l1x_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static vl53l1x_err_t verify_chip(const vl53l1x_t *dev)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return VL53L1X_ERR_PARAM;
-    }
-    if (!i2c->write_reg || !i2c->read_regs)
-    {
-        return VL53L1X_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->ranging = false;
-
     /* Verify model ID (0x010F must read 0xEA) */
     uint8_t id = 0;
     if (!read_reg(dev, REG_MODEL_ID, &id))
@@ -74,6 +60,41 @@ vl53l1x_err_t vl53l1x_init(vl53l1x_t *dev, const vl53l1x_i2c_t *i2c,
     if (mtype != VL53L1X_MODULE_TYPE_VAL)
     {
         return VL53L1X_ERR_ID;
+    }
+
+    return VL53L1X_OK;
+}
+
+vl53l1x_err_t vl53l1x_init(vl53l1x_t *dev, const vl53l1x_i2c_t *i2c,
+                            const vl53l1x_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return VL53L1X_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return VL53L1X_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return VL53L1X_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->ranging = false;
+
+    vl53l1x_err_t err = verify_chip(dev);
+    if (err != VL53L1X_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     return VL53L1X_OK;

@@ -1099,6 +1099,52 @@ TEST(test_read_version_uninit_dev)
     ASSERT_EQ(w5500_read_version(&d), 0);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(w5500_t *d)
+{
+    const uint8_t mac[6] = { 0x02, 0, 0, 0, 0, 1 };
+    const uint8_t ip[4] = { 192, 168, 1, 2 };
+    const uint8_t mask[4] = { 255, 255, 255, 0 };
+    const uint8_t gateway[4] = { 192, 168, 1, 1 };
+    uint8_t buf[4] = { 1, 2, 3, 4 };
+    uint16_t out_len = 0;
+    uint8_t status = 0;
+    ASSERT_EQ(w5500_set_mac(d, mac), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_set_ip(d, ip, mask, gateway), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_socket_open(d, 0, W5500_PROTO_TCP, 5000), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_socket_close(d, 0), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_socket_send(d, 0, buf, 4), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_socket_recv(d, 0, buf, 4, &out_len), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_socket_status(d, 0, &status), W5500_ERR_PARAM);
+    ASSERT_EQ(w5500_read_version(d), 0);
+}
+
+TEST(test_device_refused_after_wrong_version)
+{
+    w5500_t d;
+    mock_reset();
+    mock_common_regs[REG_VERSIONR] = 0x51;
+    ASSERT_EQ(w5500_init(&d, &mock_spi), W5500_ERR_SPI);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const w5500_spi_t zeroed;
+    w5500_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(w5500_init(&d, NULL), W5500_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(w5500_init(&d, &zeroed), W5500_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("w5500")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -1168,4 +1214,6 @@ TEST_MAIN("w5500")
     RUN(test_socket_send_max_sock_7);
     RUN(test_init_no_delay_fn);
     RUN(test_read_version_uninit_dev);
+    RUN(test_device_refused_after_wrong_version);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
