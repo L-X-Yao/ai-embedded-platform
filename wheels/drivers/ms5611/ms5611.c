@@ -29,7 +29,9 @@ static const uint8_t osr_delay[] = { 1, 2, 3, 5, 10 };
 
 static bool send_cmd(const ms5611_t *dev, uint8_t cmd)
 {
-    return dev->i2c->write_reg(dev->i2c->ctx, dev->cfg.addr, cmd, 0);
+    /* The message ends at the command byte. A data byte of 0x00 would be
+     * ADC Read, which spoils a conversion in progress. */
+    return dev->i2c->write_raw(dev->i2c->ctx, dev->cfg.addr, &cmd, 1);
 }
 
 static bool read_bytes(const ms5611_t *dev, uint8_t cmd, uint8_t *buf,
@@ -140,7 +142,7 @@ ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
         return MS5611_ERR_PARAM;
     }
 
-    if (!i2c->delay_ms)
+    if (!i2c->delay_ms || !i2c->write_raw)
     {
         return MS5611_ERR_PARAM;
     }

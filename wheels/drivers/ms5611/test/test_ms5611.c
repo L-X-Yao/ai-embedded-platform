@@ -6,7 +6,7 @@
 
 /*
  * MS5611 uses command-based I2C. We abuse mock_regs:
- * - write_reg(addr, cmd, 0) stores cmd to trigger behavior
+ * - Reset and Convert land in bus_log as the exact bytes after the address
  * - read_regs(addr, 0x00, buf, 3) reads ADC data from mock_regs[0..2]
  * - read_regs(addr, 0xA2..0xAC, buf, 2) reads PROM from mock_regs[prom_addr..+1]
  *
@@ -56,17 +56,79 @@ static void plant_adc(uint32_t val)
     mock_regs[0x02] = (uint8_t)(val);
 }
 
+/*
+ * Every I2C write lands in bus_log whichever HAL callback carried it, so a
+ * test sees what the chip would see. MS5611-01BA03 06/2017 p10: a command is
+ * 1 byte. Figures 10 and 13: the message ends right after it.
+ */
+#define BUS_LOG_MAX 8
+#define BUS_TX_MAX  4
+
+typedef struct {
+    uint8_t  addr;
+    uint16_t len;
+    uint8_t  data[BUS_TX_MAX];
+} bus_tx_t;
+
+static bus_tx_t bus_log[BUS_LOG_MAX];
+static int      bus_count;
+
+static void bus_clear(void)
+{
+    memset(bus_log, 0, sizeof(bus_log));
+    bus_count = 0;
+}
+
+static bool bus_write(uint8_t dev_addr, const uint8_t *data, uint16_t len)
+{
+    if (mock_i2c_should_fail()) return false;
+
+    if (bus_count < BUS_LOG_MAX) {
+        bus_tx_t *tx = &bus_log[bus_count];
+        tx->addr = dev_addr;
+        tx->len  = len;
+        memcpy(tx->data, data, len < BUS_TX_MAX ? len : BUS_TX_MAX);
+    }
+    bus_count++;
+    return true;
+}
+
+static bool bus_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    const uint8_t tx[2] = { reg, val };
+
+    (void)ctx;
+    return bus_write(dev_addr, tx, 2);
+}
+
+static bool bus_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                          uint16_t len)
+{
+    (void)ctx;
+    return bus_write(dev_addr, data, len);
+}
+
+/* Assert that write transaction i was exactly these bytes */
+#define ASSERT_TX(i, ...) do { \
+    static const uint8_t want_[] = { __VA_ARGS__ }; \
+    ASSERT_TRUE((i) < bus_count); \
+    ASSERT_EQ(bus_log[i].len, sizeof(want_)); \
+    ASSERT_MEMEQ_N(bus_log[i].data, want_, sizeof(want_)); \
+} while (0)
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
+    bus_clear();
     plant_prom();
 }
 
 static const ms5611_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = bus_write_reg,
     .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
+    .write_raw = bus_write_raw,
 };
 
 static ms5611_t dev;
@@ -122,6 +184,30 @@ TEST(test_init_requires_delay)
     no_delay.delay_ms = NULL;
     ms5611_t d;
     ASSERT_EQ(ms5611_init(&d, &no_delay, &default_cfg), MS5611_ERR_PARAM);
+}
+
+TEST(test_init_refuses_a_hal_without_write_raw)
+{
+    ms5611_i2c_t hal = mock_i2c;
+    ms5611_t d;
+
+    hal.write_raw = NULL;
+    mock_reset();
+    ASSERT_EQ(ms5611_init(&d, &hal, &default_cfg), MS5611_ERR_PARAM);
+    /* nothing on the bus at all, reads included */
+    ASSERT_EQ(mock_op_count, 0);
+    ASSERT_EQ(bus_count, 0);
+}
+
+TEST(test_init_needs_no_write_reg)
+{
+    ms5611_i2c_t hal = mock_i2c;
+    ms5611_t d;
+
+    hal.write_reg = NULL;
+    mock_reset();
+    ASSERT_EQ(ms5611_init(&d, &hal, &default_cfg), MS5611_OK);
+    ASSERT_TX(0, 0x1E);
 }
 
 TEST(test_prom_readback)
@@ -208,6 +294,7 @@ TEST(test_addr_csb_high)
     ms5611_t d;
     ms5611_err_t e = ms5611_init(&d, &mock_i2c, &cfg);
     ASSERT_EQ(e, MS5611_OK);
+    ASSERT_EQ(bus_log[0].addr, MS5611_ADDR_CSB_HIGH);
 }
 
 TEST(test_prom_read_i2c_fail)
@@ -284,11 +371,63 @@ TEST(test_init_crc_covers_word7_top_byte)
     ASSERT_EQ(ms5611_init(&d, &mock_i2c, &default_cfg), MS5611_ERR_CRC);
 }
 
+TEST(test_init_reset_is_one_byte)
+{
+    ms5611_t d;
+
+    mock_reset();
+    ms5611_err_t e = ms5611_init(&d, &mock_i2c, &default_cfg);
+    /* Figure 10: address, command 0x1E, STOP */
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x1E);
+    ASSERT_EQ(bus_log[0].addr, MS5611_ADDR_CSB_LOW);
+    ASSERT_EQ(e, MS5611_OK);
+}
+
+TEST(test_reset_is_one_byte)
+{
+    setup();
+    bus_clear();
+    ASSERT_EQ(ms5611_reset(&dev), MS5611_OK);
+    ASSERT_EQ(bus_count, 1);
+    ASSERT_TX(0, 0x1E);
+}
+
+TEST(test_convert_is_one_byte_at_every_osr)
+{
+    /* p10 command table, OSR 256 to 4096 */
+    static const uint8_t d1[5] = { 0x40, 0x42, 0x44, 0x46, 0x48 };
+    static const uint8_t d2[5] = { 0x50, 0x52, 0x54, 0x56, 0x58 };
+    ms5611_data_t data;
+    ms5611_t d;
+
+    for (int osr = MS5611_OSR_256; osr <= MS5611_OSR_4096; osr++) {
+        ms5611_cfg_t cfg = {
+            .addr = MS5611_ADDR_CSB_LOW,
+            .osr  = (ms5611_osr_t)osr,
+        };
+
+        mock_reset();
+        ASSERT_EQ(ms5611_init(&d, &mock_i2c, &cfg), MS5611_OK);
+        bus_clear();
+        plant_adc(8569150);
+        ASSERT_EQ(ms5611_read(&d, &data), MS5611_OK);
+        /* Figure 13: address, one command byte, STOP */
+        ASSERT_EQ(bus_count, 2);
+        ASSERT_EQ(bus_log[0].len, 1);
+        ASSERT_EQ_HEX(bus_log[0].data[0], d1[osr]);
+        ASSERT_EQ(bus_log[1].len, 1);
+        ASSERT_EQ_HEX(bus_log[1].data[0], d2[osr]);
+    }
+}
+
 TEST_MAIN("ms5611")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_init_requires_delay);
+    RUN(test_init_refuses_a_hal_without_write_raw);
+    RUN(test_init_needs_no_write_reg);
     RUN(test_prom_readback);
     RUN(test_read_ok);
     RUN(test_read_compensation);
@@ -303,4 +442,7 @@ TEST_MAIN("ms5611")
     RUN(test_init_crc_is_not_in_top_nibble);
     RUN(test_init_crc_skips_word7_db7_db4);
     RUN(test_init_crc_covers_word7_top_byte);
+    RUN(test_init_reset_is_one_byte);
+    RUN(test_reset_is_one_byte);
+    RUN(test_convert_is_one_byte_at_every_osr);
 TEST_MAIN_END()

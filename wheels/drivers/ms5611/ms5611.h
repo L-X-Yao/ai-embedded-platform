@@ -31,11 +31,17 @@ typedef enum {
 } ms5611_err_t;
 
 typedef struct {
+    /* Unused and may be NULL: a command is one byte, so it goes out through
+     * write_raw. Kept so that existing initialisers still build. */
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void (*delay_ms)(void *ctx, uint32_t ms);   /* required: reads must wait for conversions */
     void *ctx;
+    /* Required. Puts exactly data[0..len-1] on the bus after the address,
+     * then STOP. ms5611_init returns MS5611_ERR_PARAM without it. */
+    bool (*write_raw)(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                      uint16_t len);
 } ms5611_i2c_t;
 
 typedef enum {
