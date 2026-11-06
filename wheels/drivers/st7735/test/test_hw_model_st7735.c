@@ -143,6 +143,189 @@ TEST(test_command_count)
     ASSERT_TRUE(st7735_mdl.cmd_count >= 5);
 }
 
+/* ====================================================================
+ * The chip itself, from ST7735 V2.1
+ * ==================================================================== */
+
+static void raw_cmd(uint8_t cmd)
+{
+    st7735_model_dc_command(NULL);
+    st7735_model_cs_select(NULL);
+    st7735_model_transfer(NULL, &cmd, NULL, 1);
+    st7735_model_cs_deselect(NULL);
+}
+
+static void raw_data(uint8_t val)
+{
+    st7735_model_dc_data(NULL);
+    st7735_model_cs_select(NULL);
+    st7735_model_transfer(NULL, &val, NULL, 1);
+    st7735_model_cs_deselect(NULL);
+}
+
+static void wait_ms(uint32_t ms)
+{
+    st7735_model_delay_ms(NULL, ms);
+}
+
+/* p.69 reset table, "After Power On" column */
+TEST(test_power_on_values)
+{
+    st7735_model_init();
+    ASSERT_TRUE(st7735_mdl.sleep);
+    ASSERT_FALSE(st7735_mdl.display_on);
+    ASSERT_TRUE(st7735_mdl.normal_mode);
+    ASSERT_EQ_HEX(st7735_mdl.madctl, 0x00);
+    ASSERT_EQ_HEX(st7735_mdl.colmod, 0x06);
+    ASSERT_EQ(st7735_mdl.col_end, 0x7F);
+    ASSERT_EQ(st7735_mdl.row_end, 0x9F);
+}
+
+/* p.69, "After S/W Reset": MADCTL and the pixel format are "No Change".
+ * The rest goes back as after a power on. */
+TEST(test_sw_reset_keeps_madctl_and_colmod)
+{
+    setup();
+    raw_cmd(0x36);
+    raw_data(0xC0);
+    raw_cmd(0x2A);
+    raw_data(0); raw_data(1); raw_data(0); raw_data(9);
+
+    raw_cmd(0x01);
+    ASSERT_EQ_HEX(st7735_mdl.madctl, 0xC0);
+    ASSERT_EQ_HEX(st7735_mdl.colmod, 0x05);
+    ASSERT_TRUE(st7735_mdl.sleep);
+    ASSERT_FALSE(st7735_mdl.display_on);
+    ASSERT_TRUE(st7735_mdl.normal_mode);
+    ASSERT_EQ(st7735_mdl.col_start, 0);
+    ASSERT_EQ(st7735_mdl.col_end, 0x7F);
+}
+
+/* p.69: after S/W reset XE is 009Fh and YE 007Fh "when MV=1" */
+TEST(test_sw_reset_window_follows_mv)
+{
+    setup();
+    raw_cmd(0x36);
+    raw_data(0x20);
+    raw_cmd(0x01);
+    ASSERT_EQ(st7735_mdl.col_end, 0x9F);
+    ASSERT_EQ(st7735_mdl.row_end, 0x7F);
+}
+
+/* p.69, "After H/W Reset": MADCTL 0/0/0/0/0, pixel format 6 */
+TEST(test_hw_reset_restores_madctl_and_colmod)
+{
+    setup();
+    raw_cmd(0x36);
+    raw_data(0x20);
+
+    st7735_model_reset(NULL);
+    ASSERT_EQ_HEX(st7735_mdl.madctl, 0x00);
+    ASSERT_EQ_HEX(st7735_mdl.colmod, 0x06);
+    ASSERT_TRUE(st7735_mdl.sleep);
+    ASSERT_FALSE(st7735_mdl.display_on);
+    ASSERT_TRUE(st7735_mdl.normal_mode);
+    ASSERT_EQ(st7735_mdl.col_end, 0x7F);
+    ASSERT_EQ(st7735_mdl.row_end, 0x9F);
+}
+
+/* p.69: frame memory is "No Change" after either reset */
+TEST(test_resets_leave_the_frame_memory)
+{
+    setup();
+    st7735_draw_pixel(&dev, 1, 1, 0xABCD);
+    ASSERT_EQ(st7735_mdl.pixel_buf_pos, 2);
+    raw_cmd(0x01);
+    ASSERT_EQ(st7735_mdl.pixel_buf_pos, 2);
+    st7735_model_reset(NULL);
+    ASSERT_EQ(st7735_mdl.pixel_buf_pos, 2);
+}
+
+/* p.30: "When CSX is "high", SCL clock is ignored." */
+TEST(test_bytes_with_csx_high_are_lost)
+{
+    uint8_t cmd = 0x29;  /* DISPON */
+    uint8_t px = 0x55;
+
+    st7735_model_init();
+    st7735_model_dc_command(NULL);
+    st7735_model_transfer(NULL, &cmd, NULL, 1);
+    ASSERT_FALSE(st7735_mdl.display_on);
+    ASSERT_EQ(st7735_mdl.cmd_count, 0);
+
+    setup();
+    st7735_set_window(&dev, 0, 0, 0, 0);
+    raw_cmd(0x2C);
+    st7735_model_dc_data(NULL);
+    st7735_model_transfer(NULL, &px, NULL, 1);
+    ASSERT_EQ(st7735_mdl.pixel_buf_pos, 0);
+}
+
+/* p.72 note 7: "It is necessary to wait 5msec after releasing RESX before
+ * sending commands. Also Sleep Out command cannot be sent for 120msec." */
+TEST(test_waits_after_hw_reset)
+{
+    st7735_model_init();
+    st7735_model_reset(NULL);
+
+    raw_cmd(0x13);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+    wait_ms(5);
+    raw_cmd(0x13);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+
+    raw_cmd(0x11);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 2);
+    ASSERT_TRUE(st7735_mdl.sleep);
+    wait_ms(115);
+    raw_cmd(0x11);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 2);
+    ASSERT_FALSE(st7735_mdl.sleep);
+}
+
+/* p.81: "it will be necessary to wait 120msec before sending next command" */
+TEST(test_wait_after_sw_reset)
+{
+    setup();
+    raw_cmd(0x01);
+    wait_ms(119);
+    raw_cmd(0x11);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+    ASSERT_TRUE(st7735_mdl.sleep);
+    wait_ms(1);
+    raw_cmd(0x11);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+    ASSERT_FALSE(st7735_mdl.sleep);
+}
+
+/* p.92: after SLPOUT "it is necessary to wait 120msec before sending next
+ * command". A refused command loses its parameters too. */
+TEST(test_wait_after_slpout)
+{
+    st7735_model_init();
+    st7735_model_reset(NULL);
+    wait_ms(120);
+    raw_cmd(0x11);
+
+    wait_ms(119);
+    raw_cmd(0x3A);
+    raw_data(0x05);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+    ASSERT_EQ_HEX(st7735_mdl.colmod, 0x06);
+
+    wait_ms(1);
+    raw_cmd(0x3A);
+    raw_data(0x05);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 1);
+    ASSERT_EQ_HEX(st7735_mdl.colmod, 0x05);
+}
+
+TEST(test_init_keeps_every_wait)
+{
+    ASSERT_EQ(setup(), ST7735_OK);
+    ASSERT_EQ(st7735_mdl.early_cmd_count, 0);
+}
+
 TEST_MAIN("st7735_hw_model")
     RUN(test_init_exits_sleep);
     RUN(test_init_display_on);
@@ -157,4 +340,14 @@ TEST_MAIN("st7735_hw_model")
     RUN(test_fill_rect_sets_window_then_writes);
     RUN(test_draw_pixel_single);
     RUN(test_command_count);
+    RUN(test_power_on_values);
+    RUN(test_sw_reset_keeps_madctl_and_colmod);
+    RUN(test_sw_reset_window_follows_mv);
+    RUN(test_hw_reset_restores_madctl_and_colmod);
+    RUN(test_resets_leave_the_frame_memory);
+    RUN(test_bytes_with_csx_high_are_lost);
+    RUN(test_waits_after_hw_reset);
+    RUN(test_wait_after_sw_reset);
+    RUN(test_wait_after_slpout);
+    RUN(test_init_keeps_every_wait);
 TEST_MAIN_END()

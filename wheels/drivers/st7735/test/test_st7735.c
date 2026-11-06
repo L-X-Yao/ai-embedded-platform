@@ -68,6 +68,9 @@ static bool mock_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
     xfer_count++;
     for (uint16_t i = 0; i < len; i++) {
         uint8_t byte = tx ? tx[i] : 0;
+        if (rx) rx[i] = 0xFF;
+        /* p.30: "When CSX is "high", SCL clock is ignored." */
+        if (cs_state) continue;
         if (!dc_state) {
             /* command mode */
             if (cmd_log_idx < CMD_LOG_SIZE) {
@@ -79,7 +82,6 @@ static bool mock_transfer(void *ctx, const uint8_t *tx, uint8_t *rx,
                 data_log[data_log_idx++] = byte;
             }
         }
-        if (rx) rx[i] = 0xFF;
     }
     return true;
 }
@@ -295,6 +297,17 @@ TEST(test_write_pixels_ok)
     ASSERT_EQ(data_log[3], 0xE0);
 }
 
+/* p.30: "When CSX is "high", SCL clock is ignored." */
+TEST(test_bytes_with_csx_high_are_lost)
+{
+    uint8_t byte = 0x29;
+
+    mock_reset();
+    mock_dc_command(NULL);
+    ASSERT_TRUE(mock_transfer(NULL, &byte, NULL, 1));
+    ASSERT_EQ(cmd_log_idx, 0);
+}
+
 TEST(test_init_spi_fail)
 {
     mock_reset();
@@ -317,5 +330,6 @@ TEST_MAIN("st7735")
     RUN(test_zero_init_safety);
     RUN(test_error_codes);
     RUN(test_write_pixels_ok);
+    RUN(test_bytes_with_csx_high_are_lost);
     RUN(test_init_spi_fail);
 TEST_MAIN_END()
