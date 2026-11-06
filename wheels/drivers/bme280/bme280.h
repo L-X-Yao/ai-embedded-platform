@@ -105,7 +105,9 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
 
 /** One forced measurement of what the oversampling enables. A skipped pressure
  *  or humidity reads 0. A skipped temperature reads the last one measured, and
- *  pressure and humidity are compensated with it.
+ *  pressure and humidity are compensated with it. Waits for the measurement,
+ *  112.8 ms at most with all three at x16, and returns BME280_ERR_TIMEOUT if it
+ *  does not end. With no delay_ms the wait is a run of status reads.
  *  @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out);
 

@@ -6,9 +6,12 @@
 
 /* ---------- chip-specific mock setup ---------- */
 
+static bool mock_stays_forced;       /* the measurement never ends */
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
+    mock_stays_forced = false;
 
     /* BME280 chip ID */
     mock_regs[0xD0] = 0x60;
@@ -37,9 +40,33 @@ static void mock_reset(void)
     mock_regs[0xE7] = 0x1E;                           /* dig_h6 = 30  */
 }
 
+static uint8_t mock_last_ctrl_meas;
+
+/* p.15: "When the measurement is finished, the sensor returns to sleep mode".
+ * Here a measurement is over as soon as it starts. */
+static bool chip_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
+        return false;
+    if (reg == 0xF4) {
+        mock_last_ctrl_meas = val;
+        if (!mock_stays_forced)
+            mock_regs[0xF4] &= 0xFC;
+    }
+    return true;
+}
+
 static const bme280_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = chip_write_reg,
     .read_regs = mock_i2c_read_regs,
+    .ctx       = NULL,
+};
+
+/* The same chip with a delay callback */
+static const bme280_i2c_t mock_delay_i2c = {
+    .write_reg = chip_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
 
@@ -196,7 +223,7 @@ TEST(test_oversampling_16x)
     bme280_data_t data;
     bme280_err_t e = bme280_read(&d, &data);
     ASSERT_EQ(e, BME280_OK);
-    uint8_t ctrl = mock_regs[0xF4];
+    uint8_t ctrl = mock_last_ctrl_meas;
     ASSERT_EQ((ctrl >> 5) & 0x07, BME280_OVERSAMPLING_16);
     ASSERT_EQ((ctrl >> 2) & 0x07, BME280_OVERSAMPLING_16);
     uint8_t ctrl_hum = mock_regs[0xF2];
@@ -400,6 +427,30 @@ TEST(test_init_skip_temperature_timeout)
     ASSERT_EQ(bme280_init(&d, &mock_i2c, &skip_t_cfg), BME280_ERR_TIMEOUT);
 }
 
+/* p.15: forced mode is over when the sensor is back in sleep mode, and Table 21
+ * p.28: measuring is 0 during the NVM copy that comes before a conversion. */
+TEST(test_read_waits_for_sleep_mode)
+{
+    setup();
+    mock_stays_forced = true;
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_ERR_TIMEOUT);
+}
+
+/* Section 9.1: x1 on all three channels takes 9.3 ms at most, so the delay
+ * callback must cover that and may stop soon after. */
+TEST(test_read_gives_up_after_the_section_9_1_time)
+{
+    mock_reset();
+    bme280_init(&dev, &mock_delay_i2c, &default_cfg);
+    mock_delay_ms_count = 0;
+    mock_stays_forced = true;
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_ERR_TIMEOUT);
+    ASSERT_GE(mock_delay_ms_count, 10);
+    ASSERT_LE(mock_delay_ms_count, 12);
+}
+
 TEST(test_read_skip_temperature_measure_fail)
 {
     /* Nothing has measured a temperature, so this read must, and that fails */
@@ -421,6 +472,8 @@ TEST_MAIN("bme280")
     RUN(test_read_pressure);
     RUN(test_read_humidity);
     RUN(test_read_i2c_fail);
+    RUN(test_read_waits_for_sleep_mode);
+    RUN(test_read_gives_up_after_the_section_9_1_time);
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);
