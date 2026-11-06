@@ -4,21 +4,23 @@ audit_coverage.py -- measure line coverage for wheel tests via gcc/gcov.
 
 For each wheel with test/CMakeLists.txt, builds with
   -fprofile-arcs -ftest-coverage (--coverage)
-runs the test, then invokes gcov on the wheel's .c file to extract
-line coverage percentage.
+runs every add_executable target, then invokes gcov on the wheel's .c file in
+each target and takes the union, as coverage_wheel.sh does.
 
 Thresholds (default):
   L0 (primitives) : 80%
   L1-L3 (drivers/protocols/modules) : 60%
 
-Reports per-wheel coverage table and flags wheels below threshold.
+Reports per-wheel coverage table and flags wheels below threshold. A wheel that
+fails to build, has a failing target or yields no coverage data is a FAIL: its
+coverage is unknown, not fine. SKIP means there is nothing to measure.
 
 Flags:
   --quiet       Suppress per-wheel details, show only summary
   --json        Machine-readable JSON output
   --threshold N Override default threshold (all layers)
 
-Exit 0 if all above threshold, 1 if any below.
+Exit 0 if all above threshold, 1 if any below or any FAIL.
 """
 
 import json
@@ -31,13 +33,14 @@ from _audit_build_base import (
     BOLD,
     GREEN,
     RED,
+    REPO,
     RESET,
     WHEELS,
     YELLOW,
     cleanup_build,
     cmake_build,
     color,
-    extract_test_target,
+    extract_test_targets,
     find_test_binary,
     find_wheels,
     parse_args_common,
@@ -45,6 +48,7 @@ from _audit_build_base import (
 
 BUILD_DIR_NAME = "build_cov"
 TIMEOUT_SEC = 30
+GCOV_UNION = REPO / "tooling" / "test" / "gcov_union.py"
 
 # Default thresholds per layer
 DEFAULT_THRESHOLDS = {
@@ -88,61 +92,46 @@ def run_test(binary):
 
 
 def run_gcov(build_dir, source_file):
-    """Run gcov on a source file and return line coverage percentage.
+    """Return the line coverage of source_file over all targets, or None.
 
-    Searches the build directory for the .gcno/.gcda pair corresponding to
-    the source file, then runs gcov from that directory.
+    Each target compiles the source into its own <file>.c.gcda. The name must
+    match exactly: a wildcard also finds test_<file>.c.gcda, and the test
+    file's own coverage is near 100% whatever the wheel does. Targets can
+    compile the source with different defines, so gcov_union.py merges the
+    reports line by line.
     """
     src_name = source_file.name
-    stem = source_file.stem
+    reports = []
+    for gcda in sorted(build_dir.rglob(f"{src_name}.gcda")):
+        try:
+            subprocess.run(
+                ["gcov", gcda.name],
+                capture_output=True, text=True,
+                timeout=30,
+                cwd=str(gcda.parent),
+            )
+        except (subprocess.TimeoutExpired, OSError):
+            return None
+        report = gcda.parent / f"{src_name}.gcov"
+        if report.is_file():
+            reports.append(str(report))
 
-    # Find .gcda files matching the source name
-    gcda_files = list(build_dir.rglob(f"*{stem}*.gcda"))
-    if not gcda_files:
+    if not reports:
         return None
 
-    # Run gcov from the directory containing the .gcda
-    gcda = gcda_files[0]
-    gcda_dir = gcda.parent
-
-    gcno_name = gcda.name.replace('.gcda', '.gcno')
     try:
         result = subprocess.run(
-            ["gcov", gcno_name],
+            [sys.executable, str(GCOV_UNION), *reports],
             capture_output=True, text=True,
             timeout=30,
-            cwd=str(gcda_dir),
         )
-    except (subprocess.TimeoutExpired, OSError, FileNotFoundError):
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if result.returncode != 0:
         return None
 
-    output = result.stdout + result.stderr
-
-    # Parse gcov output for line coverage
-    # Format: "Lines executed:85.71% of 14"  or  "File '<name>.c'"
-    # We look for the coverage line following our source file name
-    coverage = None
-    found_file = False
-    for line in output.splitlines():
-        if src_name in line and ("File" in line or "file" in line.lower()):
-            found_file = True
-            continue
-        if found_file and "Lines executed:" in line:
-            m = re.search(r'Lines executed:\s*([\d.]+)%', line)
-            if m:
-                coverage = float(m.group(1))
-            break
-
-    # Fallback: just grab any "Lines executed" referencing our file
-    if coverage is None:
-        for line in output.splitlines():
-            if "Lines executed:" in line:
-                m = re.search(r'Lines executed:\s*([\d.]+)%', line)
-                if m:
-                    coverage = float(m.group(1))
-                    break
-
-    return coverage
+    # gcov_union.py prints "LINE_PCT BRANCH_PCT"
+    return float(result.stdout.split()[0])
 
 
 def main():
@@ -174,6 +163,7 @@ def main():
     above_count = 0
     below_count = 0
     skip_count = 0
+    fail_count = 0
 
     if not args.quiet and not args.json:
         print(f"{BOLD}=== Coverage audit ({len(wheels)} wheels) ==={RESET}\n")
@@ -182,7 +172,7 @@ def main():
 
     for layer, name, wheel_dir in wheels:
         path = f"wheels/{layer}/{name}"
-        target = extract_test_target(wheel_dir)
+        targets = extract_test_targets(wheel_dir)
 
         # Determine threshold
         if args.threshold is not None:
@@ -190,7 +180,7 @@ def main():
         else:
             threshold = DEFAULT_THRESHOLDS.get(layer, 60)
 
-        if not target:
+        if not targets:
             entry = {"wheel": path, "layer": layer, "status": "SKIP",
                      "coverage": None, "threshold": threshold,
                      "detail": "no target in CMakeLists.txt"}
@@ -200,47 +190,55 @@ def main():
                 print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
             continue
 
+        def report_fail(detail):
+            nonlocal fail_count
+            results.append({"wheel": path, "layer": layer, "status": "FAIL",
+                            "coverage": None, "threshold": threshold,
+                            "detail": detail})
+            fail_count += 1
+            if not args.json:
+                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  "
+                      f"{color('FAIL', RED)}  {detail[:100]}")
+
         # Build with coverage
         cov_flags = "--coverage"
-        ok, err = cmake_build(wheel_dir, target, BUILD_DIR_NAME, cov_flags, cov_flags)
+        ok, err = cmake_build(wheel_dir, targets[0], BUILD_DIR_NAME, cov_flags, cov_flags)
         if not ok:
-            entry = {"wheel": path, "layer": layer, "status": "SKIP",
-                     "coverage": None, "threshold": threshold,
-                     "detail": f"build failed: {err[:200]}"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
+            lines = err.strip().splitlines()
+            reason = next((ln for ln in lines if "error" in ln),
+                          lines[-1] if lines else "unknown")
+            report_fail(f"build failed: {reason.strip()[:200]}")
             continue
 
-        # Find and run binary
+        # Run every target
         build_dir = wheel_dir / "test" / BUILD_DIR_NAME
-        binary = find_test_binary(build_dir, target)
-        if not binary:
-            entry = {"wheel": path, "layer": layer, "status": "SKIP",
-                     "coverage": None, "threshold": threshold,
-                     "detail": "binary not found after build"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
-            cleanup_build(build_dir)
-            continue
-
-        test_ok, _ = run_test(binary)
-        if not test_ok:
-            entry = {"wheel": path, "layer": layer, "status": "SKIP",
-                     "coverage": None, "threshold": threshold,
-                     "detail": "test failed (cannot measure coverage of failing test)"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
+        failures = []
+        for target in targets:
+            binary = find_test_binary(build_dir, target)
+            if not binary:
+                failures.append(f"{target}: binary not found after build")
+                continue
+            test_ok, _ = run_test(binary)
+            if not test_ok:
+                failures.append(f"{target}: test failed")
+        if failures:
+            report_fail("; ".join(failures))
             cleanup_build(build_dir)
             continue
 
         # Run gcov on each source file, take the main one
         sources = find_source_files(wheel_dir, name)
+        if not sources:
+            entry = {"wheel": path, "layer": layer, "status": "SKIP",
+                     "coverage": None, "threshold": threshold,
+                     "detail": "no .c file in the wheel"}
+            results.append(entry)
+            skip_count += 1
+            if not args.quiet and not args.json:
+                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
+            cleanup_build(build_dir)
+            continue
+
         coverage = None
         for src in sources:
             cov = run_gcov(build_dir, src)
@@ -250,13 +248,7 @@ def main():
                     coverage = cov
 
         if coverage is None:
-            entry = {"wheel": path, "layer": layer, "status": "SKIP",
-                     "coverage": None, "threshold": threshold,
-                     "detail": "gcov produced no output"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  {path:<40s}  {'---':>8s}  {threshold:>8d}%  {color('SKIP', YELLOW)}")
+            report_fail("no coverage data for the wheel's source")
             cleanup_build(build_dir)
             continue
 
@@ -284,6 +276,7 @@ def main():
             "wheels": len(wheels),
             "above": above_count,
             "below": below_count,
+            "failed": fail_count,
             "skip": skip_count,
             "results": results,
         }
@@ -293,15 +286,22 @@ def main():
         print(f"  wheels:    {len(wheels)}")
         print(f"  {color('PASS', GREEN)} (above threshold): {above_count}")
         print(f"  {color('FAIL', RED)} (below threshold): {below_count}")
-        print(f"  {color('SKIP', YELLOW)} (build/test/gcov failed): {skip_count}")
+        print(f"  {color('FAIL', RED)} (build/test/gcov failed): {fail_count}")
+        print(f"  {color('SKIP', YELLOW)} (nothing to measure): {skip_count}")
 
         if below_count:
             print(f"\nBelow threshold:")
             for r in results:
-                if r["status"] == "FAIL":
+                if r["status"] == "FAIL" and r["coverage"] is not None:
                     print(f"  - {r['wheel']}: {r['coverage']:.1f}% (threshold: {r['threshold']}%)")
 
-    return 1 if below_count else 0
+        if fail_count:
+            print(f"\nNot measured:")
+            for r in results:
+                if r["status"] == "FAIL" and r["coverage"] is None:
+                    print(f"  - {r['wheel']}: {r['detail'][:200]}")
+
+    return 1 if below_count or fail_count else 0
 
 
 if __name__ == "__main__":
