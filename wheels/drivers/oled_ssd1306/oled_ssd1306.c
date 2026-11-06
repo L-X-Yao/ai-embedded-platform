@@ -26,7 +26,9 @@ oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
     {
         return OLED_SSD1306_ERR_PARAM;
     }
-    if (cfg->width == 0 || cfg->height == 0 || (cfg->height % 8) != 0)
+    /* The chip takes 16MUX to 64MUX and has columns 0 to 127 */
+    if (cfg->width == 0 || cfg->width > 128 ||
+        cfg->height < 16 || cfg->height > 64 || (cfg->height % 8) != 0)
     {
         return OLED_SSD1306_ERR_PARAM;
     }

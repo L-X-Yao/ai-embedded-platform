@@ -199,6 +199,38 @@ TEST(test_invalid_height)
               OLED_SSD1306_ERR_PARAM);
 }
 
+/* Rev 1.1 p.31: Set Multiplex Ratio takes "from 16MUX to 64MUX", and "A[5:0]
+ * from 0 to 14 are invalid entry". p.30: "Column start address, range :
+ * 0-127d". Init must refuse before it sends anything. */
+TEST(test_dimensions_the_chip_cannot_drive_rejected)
+{
+    static uint8_t big_fb[OLED_SSD1306_BUF_SIZE(129, 72)];
+    static const oled_ssd1306_cfg_t bad[] = {
+        { .addr = 0x3C, .width = 128, .height = 8  },   /* A8h 07h */
+        { .addr = 0x3C, .width = 128, .height = 72 },   /* past 64MUX */
+        { .addr = 0x3C, .width = 129, .height = 64 },   /* past column 127 */
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        oled_ssd1306_t d;
+        mock_reset();
+        ASSERT_EQ(oled_ssd1306_init(&d, &mock_i2c, &bad[i], big_fb),
+                  OLED_SSD1306_ERR_PARAM);
+        ASSERT_EQ(mock_cmd_count, 0);
+    }
+}
+
+/* 16MUX is the smallest legal ratio: N = 15 */
+TEST(test_smallest_mux_ratio_accepted)
+{
+    static uint8_t fb[OLED_SSD1306_BUF_SIZE(128, 16)];
+    oled_ssd1306_cfg_t cfg = { .addr = 0x3C, .width = 128, .height = 16 };
+    oled_ssd1306_t d;
+    mock_reset();
+    ASSERT_EQ(oled_ssd1306_init(&d, &mock_i2c, &cfg, fb), OLED_SSD1306_OK);
+    ASSERT_EQ(cmd_log[3], 0xA8);
+    ASSERT_EQ(cmd_log[4], 0x0F);
+}
+
 TEST(test_null_clear_fill)
 {
     oled_ssd1306_clear(NULL);
@@ -273,6 +305,8 @@ TEST_MAIN("oled_ssd1306")
     RUN(test_pixel_bit_packing);
     RUN(test_multiple_pixels_same_byte);
     RUN(test_invalid_height);
+    RUN(test_dimensions_the_chip_cannot_drive_rejected);
+    RUN(test_smallest_mux_ratio_accepted);
     RUN(test_null_clear_fill);
     RUN(test_display_off_sends_0xAE);
     RUN(test_display_on_sends_0xAF);
