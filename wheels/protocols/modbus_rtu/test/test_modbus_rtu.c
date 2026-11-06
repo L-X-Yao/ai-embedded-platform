@@ -738,13 +738,14 @@ TEST(test_slave_read_max_regs)
 TEST(test_build_data_len_overflow)
 {
     uint8_t buf[512] = {0};
-    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, 0xFFFF);
+    static const uint8_t data[MODBUS_RTU_MAX_FRAME] = {0};
+    int len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, 0xFFFF);
     ASSERT_EQ(len, MODBUS_RTU_ERR_OVERFLOW);
 
-    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 3);
+    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, MODBUS_RTU_MAX_FRAME - 3);
     ASSERT_EQ(len, MODBUS_RTU_ERR_OVERFLOW);
 
-    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, buf, MODBUS_RTU_MAX_FRAME - 4);
+    len = modbus_rtu_build(buf, sizeof(buf), 0x01, 0x03, data, MODBUS_RTU_MAX_FRAME - 4);
     ASSERT_TRUE(len == MODBUS_RTU_MAX_FRAME);
 }
 

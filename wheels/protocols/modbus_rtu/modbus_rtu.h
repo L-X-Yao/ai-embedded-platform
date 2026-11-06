@@ -93,6 +93,7 @@ int modbus_rtu_parse(const uint8_t *buf, uint16_t len,
 
 /**
  * @brief Build a raw frame: [addr][func][data...][CRC_lo][CRC_hi].
+ * @param data Payload, which must not overlap buf.
  * @return Frame length on success, negative modbus_rtu_err_t on error.
  * @thread_safe: yes
  */
