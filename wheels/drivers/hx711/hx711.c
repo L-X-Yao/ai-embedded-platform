@@ -12,6 +12,24 @@
 #include "contract.h"
 #include <stddef.h>
 
+/* The slowest conversion the manual allows: RATE = 0 with a 1 MHz clock gives
+ * fclk/1,105,920, 1.106 s. 100 ms at the usual 10 SPS. */
+#define CONVERSION_MAX_US  1200000U
+#define READY_POLL_US      1000U
+
+/* DOUT stays high from the 25th pulse of a read until the next conversion ends */
+static hx711_err_t wait_ready(const hx711_t *dev)
+{
+    uint32_t waited_us;
+
+    for (waited_us = 0; waited_us <= CONVERSION_MAX_US; waited_us += READY_POLL_US) {
+        if (!dev->hal->read_dout(dev->hal->ctx))
+            return HX711_OK;
+        dev->hal->delay_us(dev->hal->ctx, READY_POLL_US);
+    }
+    return HX711_ERR_TIMEOUT;
+}
+
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
 {
     if (!dev || !hal)
@@ -112,7 +130,7 @@ hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples)
     uint8_t     i;
     hx711_err_t err;
 
-    if (!dev || samples == 0)
+    if (!dev || !dev->hal || samples == 0)
         return HX711_ERR_PARAM;
 
     /* Clamp to avoid int32 sum overflow (24-bit values * 100 fits) */
@@ -120,6 +138,9 @@ hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples)
         samples = 100;
 
     for (i = 0; i < samples; i++) {
+        err = wait_ready(dev);
+        if (err != HX711_OK)
+            return err;
         err = hx711_read_raw(dev, &raw);
         if (err != HX711_OK)
             return err;
