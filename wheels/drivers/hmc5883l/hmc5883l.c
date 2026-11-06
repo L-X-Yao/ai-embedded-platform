@@ -35,8 +35,10 @@ static const float gain_scale[] = {
     1.0f / 230.0f,
 };
 
-/* The first set arrives after 2/fDO and still has the previous gain, so
- * read it to clear RDY and wait for the next one. */
+/* The first set arrives after 2/fDO and still has the previous gain, so read
+ * it and wait for the next one. RDY cannot mark that one: in continuous mode
+ * the device clears RDY when it writes new data, not the read, so RDY is still
+ * up after this read. Wait out the period first, then check RDY. */
 static hmc5883l_err_t wait_for_first_sample(const hmc5883l_t *dev)
 {
     const hmc5883l_i2c_t *i2c = dev->i2c;
@@ -46,6 +48,7 @@ static hmc5883l_err_t wait_for_first_sample(const hmc5883l_t *dev)
     i2c->delay_ms(i2c->ctx, 2u * period);
     if (!i2c->read_regs(i2c->ctx, HMC5883L_ADDR, REG_DATA_X_H, buf, sizeof(buf)))
         return HMC5883L_ERR_I2C;
+    i2c->delay_ms(i2c->ctx, period);
 
     for (uint32_t waited = 0; waited < period + RDY_MARGIN_MS; waited++) {
         uint8_t status = 0;
