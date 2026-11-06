@@ -86,6 +86,40 @@ TEST(test_cf_wrong_sequence)
     ASSERT_EQ(isotp_rx_feed(&rx, cf, 8), ISOTP_ERR_SEQUENCE);
 }
 
+TEST(test_wrong_sequence_ends_the_reception)
+{
+    setup();
+    /* Message A, 20 bytes: FF and CF1 arrive, CF2 is lost. */
+    uint8_t a_ff[8]  = {0x10, 20, 'A', 'A', 'A', 'A', 'A', 'A'};
+    uint8_t a_cf1[8] = {0x21, 'A', 'A', 'A', 'A', 'A', 'A', 'A'};
+    ASSERT_EQ(isotp_rx_feed(&rx, a_ff, 8), ISOTP_INCOMPLETE);
+    ASSERT_EQ(isotp_rx_feed(&rx, a_cf1, 8), ISOTP_INCOMPLETE);
+
+    /* Message B: its FF is lost, so its CF1 does not fit A. */
+    uint8_t b_cf1[8] = {0x21, 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+    uint8_t b_cf2[8] = {0x22, 'B', 'B', 'B', 'B', 'B', 'B', 'B'};
+    ASSERT_EQ(isotp_rx_feed(&rx, b_cf1, 8), ISOTP_ERR_SEQUENCE);
+
+    /* The SN of B's CF2 is what A wanted, but A has to stay dead. */
+    ASSERT_EQ(isotp_rx_feed(&rx, b_cf2, 8), ISOTP_ERR_SEQUENCE);
+}
+
+TEST(test_new_message_after_wrong_sequence)
+{
+    setup();
+    uint8_t ff[8] = {0x10, 0x0A, 0, 1, 2, 3, 4, 5};
+    uint8_t bad[8] = {0x25, 9, 9, 9, 9, 9, 9, 9};
+    uint8_t cf[8] = {0x21, 6, 7, 8, 9, 0xCC, 0xCC, 0xCC};
+    ASSERT_EQ(isotp_rx_feed(&rx, ff, 8), ISOTP_INCOMPLETE);
+    ASSERT_EQ(isotp_rx_feed(&rx, bad, 8), ISOTP_ERR_SEQUENCE);
+
+    ASSERT_EQ(isotp_rx_feed(&rx, ff, 8), ISOTP_INCOMPLETE);
+    ASSERT_EQ(isotp_rx_feed(&rx, cf, 8), ISOTP_OK);
+    ASSERT_EQ(isotp_rx_length(&rx), 10u);
+    for (int i = 0; i < 10; i++)
+        ASSERT_EQ(isotp_rx_data(&rx)[i], (uint8_t)i);
+}
+
 TEST(test_cf_without_ff)
 {
     setup();
@@ -247,6 +281,8 @@ TEST_MAIN("isotp")
     RUN(test_multiframe_10bytes);
     RUN(test_multiframe_20bytes);
     RUN(test_cf_wrong_sequence);
+    RUN(test_wrong_sequence_ends_the_reception);
+    RUN(test_new_message_after_wrong_sequence);
     RUN(test_cf_without_ff);
     RUN(test_encode_sf);
     RUN(test_encode_sf_too_long);

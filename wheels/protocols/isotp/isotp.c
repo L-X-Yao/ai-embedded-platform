@@ -76,8 +76,12 @@ isotp_err_t isotp_rx_feed(isotp_rx_t *rx, const uint8_t *can_data, uint8_t dlc)
         if (!rx->active)
             return ISOTP_ERR_SEQUENCE;
         uint8_t sn = can_data[0] & 0x0F;
-        if (sn != rx->next_sn)
+        if (sn != rx->next_sn) {
+            /* ISO-TP has no CRC, so a later frame that happened to match
+             * would join two messages. Abort, as Linux isotp_rcv_cf does. */
+            rx->active = false;
             return ISOTP_ERR_SEQUENCE;
+        }
         size_t remaining = rx->total_len - rx->offset;
         size_t copy = (size_t)(dlc - 1);
         if (copy > remaining)
