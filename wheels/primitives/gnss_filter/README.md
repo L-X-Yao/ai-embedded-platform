@@ -56,13 +56,17 @@ gnss_filter_cfg_t cfg = {
 gnss_filter_init(&flt, &cfg);
 
 gnss_filter_input_t in = { .latitude = 31.23f, .longitude = 121.47f,
-                           .satellites = 8, .hdop = 1.2f, .fix_valid = true };
+                           .satellites = 8, .hdop = 1.2f, .fix_valid = true,
+                           .fix_mode = 2, .fix_quality = 1 };
 gnss_filter_update(&flt, &in, imu_mg, tick_ms());
 
 if (gnss_filter_is_ready(&flt)) {
     float lat = gnss_filter_lat(&flt);
 }
 ```
+
+`fix_mode` must be 2 (3D fix) and `fix_quality` non-zero. Without them the
+quality gate fails with no error, and the filter never becomes ready.
 
 ## Supported platforms
 
