@@ -194,6 +194,29 @@ TEST(test_hw_af_and_tf_are_anded_on_write)
     ASSERT_EQ_HEX(hw_regs[0x01], 0x03);
 }
 
+/* p.22: the time registers are undefined at power-up, with VL set. Here they
+ * read all ones, which decodes to a date like 20165-25-45. */
+TEST(test_hw_first_power_up_reports_vl)
+{
+    hw_model_reset();
+    ASSERT_EQ(pcf8563_init(&dev, &hw_i2c), PCF8563_OK);
+
+    pcf8563_time_t t;
+    ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_ERR_VL);
+    ASSERT_EQ(t.year, 165);
+    ASSERT_EQ(t.month, 25);
+    ASSERT_EQ(t.day, 45);
+
+    const pcf8563_time_t set = {
+        .year = 26, .month = 11, .day = 6,
+        .weekday = 5, .hour = 12, .minute = 30, .second = 15
+    };
+    ASSERT_EQ(pcf8563_write_time(&dev, &set), PCF8563_OK);
+    ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_OK);
+    ASSERT_EQ(t.year, 26);
+    ASSERT_EQ(t.second, 15);
+}
+
 /* p.10: "The VL flag can only be cleared by using the interface." */
 TEST(test_hw_vl_stays_set_until_written)
 {
@@ -319,6 +342,7 @@ TEST_MAIN("pcf8563_hw_model")
     RUN(test_hw_n_bits_are_counted_when_written_as_1);
     RUN(test_hw_driver_writes_n_bits_as_0);
     RUN(test_hw_af_and_tf_are_anded_on_write);
+    RUN(test_hw_first_power_up_reports_vl);
     RUN(test_hw_vl_stays_set_until_written);
     RUN(test_hw_stop_holds_the_time_circuits);
     RUN(test_hw_time_rolls_over_at_the_end_of_the_century);

@@ -128,6 +128,12 @@ pcf8563_err_t pcf8563_read_time(const pcf8563_t *dev,
     time->month   = bcd_to_bin(buf[5] & 0x1Fu);
     time->year    = bcd_to_bin(buf[6]);
 
+    /* p10: VL means "the integrity of the clock information is no longer
+     * guaranteed". After a first power-up the registers are undefined (p22),
+     * so the fields above may not be a date at all. */
+    if (buf[0] & VL_BIT)
+        return PCF8563_ERR_VL;
+
     return PCF8563_OK;
 }
 
@@ -146,14 +152,16 @@ pcf8563_err_t pcf8563_write_time(const pcf8563_t *dev,
         return PCF8563_ERR_I2C;
     uint8_t running = (uint8_t)(ctrl1 & CTRL1_KEEP_BITS);
 
+    /* Seconds go last: bit 7 of that register is VL, and writing it 0 says the
+     * time is good, which a write that stops half way must not do */
     bool ok = write_reg(dev, REG_CONTROL1, (uint8_t)(running | CTRL1_STOP_BIT))
-           && write_reg(dev, REG_SECONDS,  bin_to_bcd(time->second))
            && write_reg(dev, REG_MINUTES,  bin_to_bcd(time->minute))
            && write_reg(dev, REG_HOURS,    bin_to_bcd(time->hour))
            && write_reg(dev, REG_DAYS,     bin_to_bcd(time->day))
            && write_reg(dev, REG_WEEKDAYS, time->weekday)
            && write_reg(dev, REG_MONTHS,   bin_to_bcd(time->month))
-           && write_reg(dev, REG_YEARS,    bin_to_bcd(time->year));
+           && write_reg(dev, REG_YEARS,    bin_to_bcd(time->year))
+           && write_reg(dev, REG_SECONDS,  bin_to_bcd(time->second));
 
     /* Release STOP even after a failure, so the clock is not left stopped */
     if (!write_reg(dev, REG_CONTROL1, running))
