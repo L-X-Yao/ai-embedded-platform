@@ -5,15 +5,19 @@
  * Models GalaxyCore GC9A01 behavior:
  * - SPI command/data interface (DC pin: low=command, high=data)
  * - Internal power-on-reset state: sleep-in, display off, no inversion
- * - Command sequence validation: SLPOUT before DISPON
+ * - Command sequence validation: SLPOUT before DISPON, 5 ms after SLPIN or
+ *   SLPOUT before the next command, 120 ms between them (p101, p103)
  * - MADCTL (0x36): rotation / mirror / color order
  * - COLMOD (0x3A): pixel format (RGB565 / RGB666)
  * - CASET/RASET (0x2A/0x2B): column/row address window (4-byte BE params)
  * - RAMWR (0x2C): pixel data write tracking
  * - INVON/INVOFF (0x21/0x20): display inversion
  * - DISPON/DISPOFF (0x29/0x28): display enable
- * - SLPIN/SLPOUT (0x10/0x11): sleep mode
- * - SWRESET (0x01): software reset to POR defaults
+ * - SLPIN/SLPOUT (0x10/0x11): sleep mode, each with no effect when the
+ *   module is already in that mode
+ * - Three reset columns from the Default Value tables: power on, HW reset
+ *   (RESX low) and SW reset (0x01). SW reset leaves MADCTL and COLMOD alone
+ *   (p128, p135), and CASET and RASET differ between the three (p111 to p114)
  *
  * The model provides SPI HAL callbacks (cs/dc_cmd/dc_data/rst/xfer/delay)
  * that the driver injects, so the full driver init / draw path runs against
@@ -43,7 +47,7 @@ typedef struct {
     uint8_t  madctl;             /* raw MADCTL byte */
 
     /* COLMOD (0x3A) */
-    uint8_t  colmod;             /* POR: 0x06 (18-bit RGB666) */
+    uint8_t  colmod;             /* POR: 0x66 (DPI and DBI both 3'b110) */
 
     /* Column / row address window (CASET / RASET) */
     uint16_t col_start;
@@ -70,6 +74,8 @@ typedef struct {
     int      seq_violations;     /* e.g. DISPON while still in sleep */
     bool     slpin_sent;         /* SLPIN entered sleep, no SLPOUT yet */
     int      ms_since_slpin;     /* delay time since that SLPIN */
+    bool     slpout_sent;        /* SLPOUT left sleep, no SLPIN yet */
+    int      ms_since_slpout;    /* delay time since that SLPOUT */
 
     /* Pin-level tracking (mirrors driver calls) */
     bool     dc_level;           /* false=command, true=data */
@@ -85,42 +91,54 @@ typedef struct {
  * Model lifecycle
  * ================================================================ */
 
-static void gc9a01_model_sw_reset(gc9a01_model_t *m);
+/* The state all three reset columns agree on */
+static void gc9a01_model_reset_common(gc9a01_model_t *m)
+{
+    m->sleep       = true;       /* sleep-in after reset */
+    m->display_on  = false;
+    m->inversion   = false;
+    m->col_start   = 0x0000;
+    m->row_start   = 0x0000;
+    m->pending_cmd = 0;
+    m->arg_pos     = 0;
+    m->pixel_buf_pos = 0;
+    m->slpin_sent  = false;
+    m->slpout_sent = false;
+}
 
 static void gc9a01_model_init(gc9a01_model_t *m)
 {
     memset(m, 0, sizeof(*m));
 
-    /* POR defaults */
-    m->sleep       = true;       /* sleep-in after reset */
-    m->display_on  = false;
-    m->inversion   = false;
+    /* Power On Sequence column */
+    gc9a01_model_reset_common(m);
     m->madctl      = 0x00;
-    m->colmod      = 0x06;       /* 18-bit (RGB666) */
-    m->col_start   = 0x0000;
-    m->col_end     = 0x00EF;     /* 239 */
-    m->row_start   = 0x0000;
-    m->row_end     = 0x00EF;     /* 239 */
+    m->colmod      = 0x66;
+    m->col_end     = 0x013F;
+    m->row_end     = 0x00EF;
     m->dc_level    = true;
     m->cs_level    = true;
     m->rst_level   = true;
 }
 
-/* Software reset: returns most state to POR */
+/* HW Reset column */
+static void gc9a01_model_hw_reset(gc9a01_model_t *m)
+{
+    gc9a01_model_reset_common(m);
+    m->madctl  = 0x00;
+    m->colmod  = 0x66;
+    m->col_end = 0x00EF;
+    m->row_end = 0x00EF;
+}
+
+/* SW Reset column: MADCTL and COLMOD stay, and B5 of MADCTL picks the window */
 static void gc9a01_model_sw_reset(gc9a01_model_t *m)
 {
-    m->sleep       = true;
-    m->display_on  = false;
-    m->inversion   = false;
-    m->madctl      = 0x00;
-    m->colmod      = 0x06;
-    m->col_start   = 0x0000;
-    m->col_end     = 0x00EF;
-    m->row_start   = 0x0000;
-    m->row_end     = 0x00EF;
-    m->pending_cmd = 0;
-    m->arg_pos     = 0;
-    m->pixel_buf_pos = 0;
+    bool b5 = (m->madctl & 0x20) != 0;
+
+    gc9a01_model_reset_common(m);
+    m->col_end = b5 ? 0x00EF : 0x013F;
+    m->row_end = b5 ? 0x013F : 0x00EF;
 }
 
 /* ================================================================
@@ -131,6 +149,12 @@ static void gc9a01_model_process_cmd(gc9a01_model_t *m, uint8_t cmd)
 {
     m->cmd_count++;
     m->last_cmd = cmd;
+
+    /* V1.0 p101, p103: wait 5 ms after SLPIN or SLPOUT before the next one */
+    if ((m->slpin_sent && m->ms_since_slpin < 5) ||
+        (m->slpout_sent && m->ms_since_slpout < 5)) {
+        m->seq_violations++;
+    }
 
     /* Any new command cancels a pending multi-byte command */
     m->pending_cmd   = 0;
@@ -147,17 +171,26 @@ static void gc9a01_model_process_cmd(gc9a01_model_t *m, uint8_t cmd)
 
     case 0x10: /* SLPIN */
         if (!m->sleep) {
+            /* V1.0 p.101: wait 120 ms after SLPOUT before SLPIN can be sent */
+            if (m->slpout_sent && m->ms_since_slpout < 120) {
+                m->seq_violations++;
+            }
+            m->slpout_sent    = false;
             m->slpin_sent     = true;
             m->ms_since_slpin = 0;
         }
         m->sleep = true;
         break;
     case 0x11: /* SLPOUT */
-        /* V1.0 p.103: wait 120 ms after SLPIN before SLPOUT can be sent */
-        if (m->slpin_sent && m->ms_since_slpin < 120) {
-            m->seq_violations++;
+        if (m->sleep) {
+            /* V1.0 p.103: wait 120 ms after SLPIN before SLPOUT can be sent */
+            if (m->slpin_sent && m->ms_since_slpin < 120) {
+                m->seq_violations++;
+            }
+            m->slpin_sent      = false;
+            m->slpout_sent     = true;
+            m->ms_since_slpout = 0;
         }
-        m->slpin_sent = false;
         m->sleep = false;
         break;
 
@@ -306,7 +339,7 @@ static void gc9a01_model_rst_low(void *ctx)
         m->rst_toggle_count++;
     }
     m->rst_level = false;
-    gc9a01_model_sw_reset(m);
+    gc9a01_model_hw_reset(m);
 }
 
 __attribute__((unused))
@@ -337,6 +370,7 @@ static void gc9a01_model_delay_ms(void *ctx, uint16_t ms)
     m->delay_total_ms += (int)ms;
     m->delay_call_count++;
     m->ms_since_slpin += (int)ms;
+    m->ms_since_slpout += (int)ms;
 }
 
 /* --- Convenience: build a gc9a01_spi_t pointing at the model --- */
