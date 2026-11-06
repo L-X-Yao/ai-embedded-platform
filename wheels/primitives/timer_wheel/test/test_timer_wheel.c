@@ -331,6 +331,27 @@ TEST(test_large_wraparound)
 
 /* ---- main ---------------------------------------------------------- */
 
+/* add and cancel refuse a wheel that was never set up: so must tick. */
+TEST(test_tick_on_zeroed_wheel)
+{
+    timer_wheel_t zero;
+
+    memset(&zero, 0, sizeof(zero));
+    timer_wheel_tick(&zero);
+    ASSERT_EQ(zero.current_pos, 0u);
+}
+
+TEST(test_tick_after_failed_init)
+{
+    timer_wheel_t failed;
+
+    memset(&failed, 0, sizeof(failed));
+    ASSERT_EQ(timer_wheel_init(&failed, slots, 0, timers, MAX_TIMERS),
+              TIMER_WHEEL_ERR_PARAM);
+    timer_wheel_tick(&failed);
+    ASSERT_EQ(failed.current_pos, 0u);
+}
+
 TEST_MAIN("timer_wheel")
     RUN(test_init);
     RUN(test_null_params);
@@ -348,4 +369,6 @@ TEST_MAIN("timer_wheel")
     RUN(test_multiple_different_delays);
     RUN(test_cancel_inactive_returns_err);
     RUN(test_large_wraparound);
+    RUN(test_tick_on_zeroed_wheel);
+    RUN(test_tick_after_failed_init);
 TEST_MAIN_END()
