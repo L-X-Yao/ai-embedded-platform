@@ -41,7 +41,16 @@ uint8_t htu21d_crc8(const uint8_t *data, uint16_t len)
 
 htu21d_err_t htu21d_init(htu21d_t *dev, const htu21d_i2c_t *i2c)
 {
-    if (!dev || !i2c)
+    if (!dev)
+    {
+        return HTU21D_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
     {
         return HTU21D_ERR_PARAM;
     }
@@ -50,7 +59,6 @@ htu21d_err_t htu21d_init(htu21d_t *dev, const htu21d_i2c_t *i2c)
         return HTU21D_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
 
     if (i2c->delay_ms)
@@ -61,6 +69,7 @@ htu21d_err_t htu21d_init(htu21d_t *dev, const htu21d_i2c_t *i2c)
     /* Issue soft reset */
     if (!i2c->write_cmd(i2c->ctx, HTU21D_DEV_ADDR, HTU21D_CMD_SOFT_RESET))
     {
+        dev->i2c = NULL;
         return HTU21D_ERR_I2C;
     }
 

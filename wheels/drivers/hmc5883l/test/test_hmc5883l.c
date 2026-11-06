@@ -208,6 +208,63 @@ TEST(test_init_times_out_when_no_sample_arrives)
     ASSERT_EQ(hmc5883l_init(&dev, &timed_i2c, &cfg), HMC5883L_ERR_TIMEOUT);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(hmc5883l_t *d)
+{
+    hmc5883l_raw_t raw;
+    hmc5883l_data_t data;
+    ASSERT_EQ(hmc5883l_read_raw(d, &raw), HMC5883L_ERR_PARAM);
+    ASSERT_EQ(hmc5883l_read_gauss(d, &data), HMC5883L_ERR_PARAM);
+    ASSERT_EQ(hmc5883l_idle(d), HMC5883L_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static hmc5883l_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    hmc5883l_t d;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    mock_reset();
+    mock_regs[0x0C] = '0';
+    ASSERT_EQ(hmc5883l_init(&d, &mock_i2c, &cfg), HMC5883L_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_init_timeout)
+{
+    hmc5883l_t d;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    mock_reset();
+    data_reads = 0;
+    delay_total = 0;
+    sensor_stuck = true;
+    ASSERT_EQ(hmc5883l_init(&d, &timed_i2c, &cfg), HMC5883L_ERR_TIMEOUT);
+    sensor_stuck = false;
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    hmc5883l_t d;
+    hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
+    hmc5883l_cfg_t bad = { .gain = HMC5883L_GAIN_1090, .rate = (hmc5883l_rate_t)7 };
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hmc5883l_init(&d, NULL, &cfg), HMC5883L_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hmc5883l_init(&d, &mock_i2c, &bad), HMC5883L_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("hmc5883l")
     RUN(test_init_null);
     RUN(test_init_id_check);
@@ -222,4 +279,8 @@ TEST_MAIN("hmc5883l")
     RUN(test_read_reports_adc_overflow);
     RUN(test_init_drops_the_sample_taken_at_the_old_gain);
     RUN(test_init_times_out_when_no_sample_arrives);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_init_timeout);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

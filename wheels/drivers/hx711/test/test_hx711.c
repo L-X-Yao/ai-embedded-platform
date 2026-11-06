@@ -582,6 +582,53 @@ TEST(test_err_timeout_value)
     ASSERT_EQ((int)HX711_ERR_TIMEOUT, -2);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(hx711_t *d)
+{
+    int32_t raw = 0;
+    float value = 0.0f;
+    int rises = mock_sck_rises;
+
+    ASSERT_FALSE(hx711_is_ready(d));
+    ASSERT_EQ(hx711_read_raw(d, &raw), HX711_ERR_PARAM);
+    ASSERT_EQ(hx711_read(d, &value), HX711_ERR_PARAM);
+    ASSERT_EQ(hx711_tare(d, 1), HX711_ERR_PARAM);
+    hx711_power_down(d);
+    hx711_power_up(d);
+    ASSERT_EQ(mock_sck_rises, rises);
+}
+
+TEST(test_device_refused_after_init_timeout)
+{
+    hx711_t d;
+    mock_reset();
+    mock_dout_ready = false;
+    ASSERT_EQ(hx711_init(&d, &mock_hal, HX711_GAIN_128), HX711_ERR_TIMEOUT);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    hx711_t d;
+    hx711_hal_t no_dout = mock_hal;
+    no_dout.read_dout = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hx711_init(&d, NULL, HX711_GAIN_128), HX711_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hx711_init(&d, &no_dout, HX711_GAIN_128), HX711_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hx711_init(&d, &mock_hal, (hx711_gain_t)4), HX711_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("hx711")
     RUN(test_init_ok);
     RUN(test_init_null_params);
@@ -615,4 +662,6 @@ TEST_MAIN("hx711")
     RUN(test_tare_never_ready_times_out);
     RUN(test_read_not_ready_propagates_through_read);
     RUN(test_err_timeout_value);
+    RUN(test_device_refused_after_init_timeout);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

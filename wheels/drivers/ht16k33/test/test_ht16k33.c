@@ -292,6 +292,43 @@ TEST(test_uninit_dev_clear)
     ASSERT_EQ(ht16k33_clear(&d), HT16K33_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ht16k33_t *d)
+{
+    uint8_t ram[1] = { 0xFF };
+    ASSERT_EQ(ht16k33_set_brightness(d, 1), HT16K33_ERR_PARAM);
+    ASSERT_EQ(ht16k33_write_raw(d, ram, 1), HT16K33_ERR_PARAM);
+    ASSERT_EQ(ht16k33_clear(d), HT16K33_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    ht16k33_t d;
+    for (int step = 0; step < 3; step++) {
+        mock_reset();
+        mock_fail_at = step;  /* oscillator, display, brightness */
+        ASSERT_EQ(ht16k33_init(&d, &mock_i2c, &default_cfg), HT16K33_ERR_I2C);
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ht16k33_t d;
+    ht16k33_cfg_t bad_addr = { .addr = 0x6F, .brightness = 0 };
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ht16k33_init(&d, NULL, &default_cfg), HT16K33_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ht16k33_init(&d, &mock_i2c, &bad_addr), HT16K33_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ht16k33")
     RUN(test_init_ok);
     RUN(test_init_sends_oscillator_on);
@@ -325,4 +362,6 @@ TEST_MAIN("ht16k33")
     RUN(test_uninit_dev_brightness);
     RUN(test_uninit_dev_write_raw);
     RUN(test_uninit_dev_clear);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

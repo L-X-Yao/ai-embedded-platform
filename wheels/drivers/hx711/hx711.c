@@ -11,6 +11,7 @@
 #include "hx711.h"
 #include "contract.h"
 #include <stddef.h>
+#include <string.h>
 
 /* The slowest conversion the manual allows: RATE = 0 with a 1 MHz clock gives
  * fclk/1,105,920, 1.106 s. 100 ms at the usual 10 SPS. */
@@ -44,7 +45,14 @@ static hx711_err_t clock_in_gain(hx711_t *dev)
 
 hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
 {
-    if (!dev || !hal)
+    if (!dev)
+        return HX711_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal)
         return HX711_ERR_PARAM;
     if (!hal->read_dout || !hal->set_sck || !hal->delay_us)
         return HX711_ERR_PARAM;
@@ -59,7 +67,10 @@ hx711_err_t hx711_init(hx711_t *dev, const hx711_hal_t *hal, hx711_gain_t gain)
     /* ensure SCK low (power-up state) */
     hal->set_sck(hal->ctx, false);
 
-    return clock_in_gain(dev);
+    hx711_err_t err = clock_in_gain(dev);
+    if (err != HX711_OK)
+        dev->hal = NULL;
+    return err;
 }
 
 bool hx711_is_ready(const hx711_t *dev)
