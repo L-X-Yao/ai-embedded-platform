@@ -63,6 +63,10 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 {
     (void)ctx;
     mock_op_count++;
+    /* ILI9341 V1.11 p.33: with CSX high the bus has no effect */
+    if (mock_cs_state) {
+        return 0xFF;
+    }
     if (xfer_total < LOG_SIZE) {
         xfer_dc_log[xfer_total] = mock_dc_state;
     }
@@ -394,6 +398,22 @@ TEST(test_window_after_rotation)
     ASSERT_EQ(ili9341_set_window(&dev, 0, 0, 320, 0), ILI9341_ERR_PARAM);
 }
 
+/* ILI9341 V1.11 p.33: "The serial interface is initialized when CSX is high
+ * status. In this state, SCL clock pulse and SDA data are no effect." */
+TEST(test_mock_drops_bytes_with_csx_high)
+{
+    mock_reset();
+    mock_dc_set(NULL, false);
+
+    mock_xfer(NULL, 0x29);
+    ASSERT_EQ(cmd_log_idx, 0);
+
+    mock_cs_low(NULL);
+    mock_xfer(NULL, 0x29);
+    mock_cs_high(NULL);
+    ASSERT_EQ(cmd_log_idx, 1);
+}
+
 TEST_MAIN("ili9341")
     RUN(test_init_ok);
     RUN(test_init_sends_reset);
@@ -430,4 +450,5 @@ TEST_MAIN("ili9341")
     RUN(test_rgb565_white);
     RUN(test_rgb565_black);
     RUN(test_window_after_rotation);
+    RUN(test_mock_drops_bytes_with_csx_high);
 TEST_MAIN_END()
