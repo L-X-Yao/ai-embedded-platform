@@ -51,6 +51,12 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## How to read the datasheet check counts (2026-11-06)
+
+The three batches below confirmed 385 items. 228 are in driver code, across 65 drivers. 157 are in test models or mocks, and 12 more drivers had confirmed items only there: `ads1015`, `ads1115`, `cst816s`, `ht16k33`, `ina3221`, `lis2dh12`, `lis3mdl`, `max31855`, `max7219`, `sht40`, `st7735` and `tsl2591`. Model faults are fixed where a driver fix needed them, and the rest are under Still open in each README.
+
+Six suspects from the last batch were confirmed later from a second source (`ms5611`, `ft6x36` and `bme688`, two each), so those counts differ by six from the batch figures below. 162 suspects remain open.
+
 ## Datasheet check of the last 49 drivers (2026-11-06)
 
 This batch covers every driver with registers not yet reviewed in November: 186 confirmed, 103 suspect. Only `pcf8574` had no finding. `icm42688` could not be checked, because its manual could not be downloaded. Each README lists what was checked, fixed and left open. None of this has run on hardware.
