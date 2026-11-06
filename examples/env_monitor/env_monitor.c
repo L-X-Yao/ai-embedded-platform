@@ -80,6 +80,8 @@ static bool bmp_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
     (void)ctx; (void)dev_addr;
     bmp_op_count++;
     bmp_regs[reg] = val;
+    if (reg == 0xF4)
+        bmp_regs[reg] &= 0xFC;  /* forced mode ends at once, back to sleep */
     return true;
 }
 
