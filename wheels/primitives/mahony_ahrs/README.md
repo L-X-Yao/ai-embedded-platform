@@ -68,7 +68,7 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_mahony_ahrs
 ```
 
-37 assertions across 17 test cases: default config, identity quaternion, zero Euler at init, level accel convergence, tilted accel (~30° pitch), gyro-only integration (90°/s for 1s), null safety, re-init reset, quaternion normalization after 5000 noisy updates, zero-accel skip, 6-axis vs 9-axis comparison, zero-frequency guard (no NaN), negative-frequency guard, gimbal lock at pitch ±90°, extreme gyro rate stability (2000 dps), near-inverted gravity tracking, ki integrator bias correction.
+53 assertions across 23 test cases: default config, identity quaternion, zero Euler at init, level accel convergence, tilted accel (~30° pitch), gyro-only integration (90°/s for 1s), null safety, re-init reset, quaternion normalization after 5000 noisy updates, zero-accel feedback skip with the gyro still integrated, non-finite input dropped, 6-axis vs 9-axis comparison, zero-frequency guard (no NaN), negative-frequency guard, gimbal lock at pitch ±90°, extreme gyro rate stability (2000 dps), near-inverted gravity tracking, ki integrator bias correction.
 
 ## Test status
 

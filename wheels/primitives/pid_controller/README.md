@@ -55,15 +55,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_pid_controller
 ```
 
-31 assertions across 18 test cases: init state, null safety (6 paths), P-only
+64 assertions across 30 test cases: init state, null safety (6 paths), P-only
 positive/negative, output clamping max/min, integral accumulation, integral
 anti-windup positive/negative, derivative first-step zero, derivative step change,
 PID combined, reset clears state, set_tunings, set_output_limits, zero dt,
-negative dt, convergence simulation, zero error.
+negative dt, convergence simulation, zero error, non-finite inputs, gains and limits.
 
 ## Test status
 
-- Unit tests (sim): PASS (18 C tests, 31 assertions)
+- Unit tests (sim): PASS (30 C tests, 64 assertions)
 - HIL: N/A
 
 ## API convention deviations

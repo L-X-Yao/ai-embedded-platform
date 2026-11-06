@@ -16,7 +16,7 @@ Searched GitHub (2026-05-02). Referenced rxi/log.c (1k stars, MIT) for design co
 
 ## Dependencies
 
-None. Pure C99 with libc `snprintf` / `vsnprintf`.
+None by default. Pure C99 with libc `snprintf` / `vsnprintf`. `LOG_USE_PRINTF_TINY=1` uses `printf_tiny` instead.
 
 ## API
 
@@ -49,6 +49,7 @@ log_set_time_fn(my_ms_fn);           /* NULL disables timestamp */
 | `LOG_LEVEL_MAX` | `LOG_LEVEL_DEBUG` | Compile-time max level (higher levels optimized out) |
 | `LOG_MAX_SINKS` | 4 | Maximum registered sinks |
 | `LOG_LINE_BUFSIZE` | 256 | Max bytes per line (prefix + message + newline) |
+| `LOG_USE_PRINTF_TINY` | 0 | Format with `printf_tiny` for less stack: link `printf_tiny.c`. No float, and the first conversion it lacks ends formatting |
 
 ## Supported platforms
 
@@ -176,7 +177,7 @@ log_add_sink(log_ringbuf_sink, &ringbuf);  /* all levels → RAM ring */
 | Sink registration | Dynamic list (runtime) | Flexible, pluggable across projects; zero overhead when idle |
 | No framework dependency | Output via injected sink function pointers | Projects bridge to vsf_trace / UART / RTT as needed |
 | Thread safety | Stack buffer 256B per log_emit call, no lock around sinks | Formatting needs no lock, at the cost of stack. With several logging contexts, sinks must be reentrant or callers must serialise `log_emit`: `log_ringbuf`, `log_dedup`, `log_rate` and `log_flash` are not reentrant |
-| **Stack budget** | **log_emit=256B + each sink's own buffer** | **With log_color(512B): ~800B per LOG_* call. Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
+| **Stack budget** | **log_emit frame + the deeper of formatter and sinks** | **Cortex-M4, -Os, no transport: 720 to 1024B with newlib, 496B with printf_tiny, 856B through log_color whatever the formatter (table in log.h). Tune LOG_LINE_BUFSIZE/LOG_COLOR_BUFSIZE for tight stacks.** |
 | Structured logging | Not implemented | Typical embedded products don't need JSON logs |
 
 ## Output format

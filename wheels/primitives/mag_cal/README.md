@@ -69,7 +69,7 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_mag_cal
 ```
 
-15 test cases: init, start, feed-before-start rejected, perfect sphere calibration, ellipsoid calibration with scale correction, apply (center→zero), insufficient spread failure, zero samples failure, null safety, re-init clears state, buffer full boundary, single sample, collinear samples, apply null outputs, compute before start.
+22 test cases: non-finite samples and results refused, init, start, feed-before-start rejected, perfect sphere calibration, ellipsoid calibration with scale correction, apply (center→zero), insufficient spread failure, zero samples failure, null safety, re-init clears state, buffer full boundary, single sample, collinear samples, apply null outputs, compute before start.
 
 ## Test status
 
@@ -85,7 +85,7 @@ cmake -GNinja -S . -B build && cmake --build build
 1. Collect N samples while user rotates sensor in all orientations
 2. Find min/max per axis → compute center (hard-iron offset) and radius
 3. Normalize radii to average → compute scale factors (soft-iron correction)
-4. Validate spread ≥ threshold per axis (reject stationary data)
+4. Validate spread ≥ threshold per axis (reject stationary data), and that offset and scale are finite
 
 ## API review
 

@@ -56,7 +56,7 @@ if (rms_val > VIBRATION_THRESHOLD) {
 
 ## Known issues
 
-None.
+- After a sample far larger than the rest leaves the window, float rounding can leave the RMS off until `head` next wraps, at most one window later.
 
 
 ## How to test

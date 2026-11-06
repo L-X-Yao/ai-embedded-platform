@@ -76,7 +76,7 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests (sim): PASS (10 tests — RAM-backed mock flash, 4 sectors x 64 bytes)
+- Unit tests (sim): PASS (13 tests — RAM-backed mock NOR flash, 4 sectors x 64 bytes)
 - HIL: N/A (needs real flash hardware)
 
 ## API convention deviations
@@ -89,6 +89,7 @@ None. Naming follows `log_flash_<verb>` per api-conventions §1.1.
 |--------|--------|-----------|
 | Ring topology | Sector-level ring | Matches flash erase granularity |
 | Eviction | Erase oldest sector on wrap | Simple, deterministic |
+| Failed erase | Drop the line and keep the position | The next line retries, so nothing is programmed over old data |
 | Entry header | 3 bytes (magic + len16) | Minimal overhead, supports recovery scan |
 | HAL injection | Function pointers | No compile-time dependency on flash driver |
 | Thread safety | None built-in | Caller adds mutex if needed |
