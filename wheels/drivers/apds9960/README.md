@@ -47,9 +47,9 @@ None. All configuration is handled at runtime via the API.
 Checked on 2026-11-06 against Avago APDS-9960 data sheet, AV02-4191EN, November 8, 2013. Not run on hardware.
 
 - **Matched:** I2C address, ID 0xAB, all register addresses, ENABLE bits, ATIME, CONTROL, GCONF2 gain and drive, the RGBC block read, gesture FIFO order.
-- **Fixed:** `apds9960_init` wrote PPULSE 0x87, which is 16 us pulses, under a comment saying 8 us. It now writes 0x47, 8 pulses of 8 us as in the manual's test conditions, so proximity counts are lower at the same distance. The GCONF1, GCONF2 and GCONF4 comments described bits the written values do not set; the values are unchanged. The model fills data only from cycles of enabled engines, sets AVALID and PVALID, and holds 32 gesture datasets with page reads.
+- **Fixed:** `apds9960_init` wrote PPULSE 0x87, which is 16 us pulses, under a comment saying 8 us. It now writes 0x47, 8 pulses of 8 us as in the manual's test conditions, so proximity counts are lower at the same distance. The GCONF1, GCONF2 and GCONF4 comments described bits the written values do not set; the values are unchanged. The model fills data only from cycles of enabled engines, sets AVALID and PVALID, and holds 32 gesture datasets with page reads. `apds9960_enable_gesture` never wrote GPULSE and set 1x gain, so gesture ran on one 8 us pulse. It now writes GPULSE 0xC9 and GGAIN 4x, the values of SparkFun's and Adafruit's libraries, which may need tuning on the real optics.
 - **Still open:** `apds9960_read_gesture` sums U-D and L-R and maps the sign to a direction, but the manual has the same diode larger on entry and smaller on exit, so a whole swipe sums to about zero and parts of it read as opposite directions. Expect wrong or missing gestures on hardware. This is not fixed: it needs datasets collected across calls until GMODE returns to 0, and the sign needs hardware because the p17 text and Figure 11 disagree. GFOV and the saturation flags are never read, and the HAL cannot do the address-only write that clears interrupts. `apds9960_enable_gesture` changes gesture registers while other engines may run, which p20 warns against. `delay_ms` is never called. No thresholds, persistence, WTIME, offsets, GDIMS, LED_BOOST or lux calculation.
-- **Suspected:** Gesture runs on the reset GPULSE and 1x gain, which may be too weak to stay in the engine. Reads never check AVALID or PVALID, so an early read may return zeros with `APDS9960_OK`. `apds9960_init` does not wait the 5.7 ms after POR. ID 0xA8 is accepted, which this manual does not list.
+- **Suspected:** Reads never check AVALID or PVALID, so an early read may return zeros with `APDS9960_OK`. `apds9960_init` does not wait the 5.7 ms after POR. ID 0xA8 is accepted, which this manual does not list.
 
 ## Known issues
 
@@ -65,7 +65,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 19 tests, all passing
+- Unit tests (sim): 21 tests, all passing
 - HIL: N/A
 
 ## API convention deviations

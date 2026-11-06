@@ -56,8 +56,7 @@ uint8_t r8 = ws2812_scale5to8(15);  /* → 123 */
 Checked on 2026-11-06 against the Worldsemi WS2812 and WS2812B sheets, which carry no revision. Not run on hardware.
 
 - **Matched:** 24 bits per LED in GRB order, MSB first, bit period, T0H and T0L, reset time.
-- **Fixed:** The README's T1H ticks fell just outside the WS2812B window at 48 and 168 MHz.
-- **Suspected:** `ws2812_send` encodes the 24 slots of the next LED between two bits, which may run past one bit period if the PWM is free-running.
+- **Fixed:** The README's T1H ticks fell just outside the WS2812B window at 48 and 168 MHz. `ws2812_send` encoded the 24 slots of the next LED between two bits, a window of one bit period, and a free-running PWM repeats the last value meanwhile, which adds bits. Each slot now comes from the byte being sent, as in Adafruit_NeoPixel and Zephyr's ws2812_gpio. The failure was reasoned, not measured.
 
 ## Known issues
 

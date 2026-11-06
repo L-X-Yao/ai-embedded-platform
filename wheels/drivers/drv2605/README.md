@@ -45,8 +45,8 @@ None. Actuator type is runtime-configurable via `drv2605_set_mode()`.
 Checked on 2026-11-06 against TI SLOS854D (DRV2605L) and SLOS825E (DRV2605). Not run on hardware.
 
 - **Matched:** I2C address, device ID values, register addresses, MODE values, the actuator bit, the GO bit.
-- **Fixed:** `drv2605_set_realtime_value` never entered RTP mode, so the motor never ran. `drv2605_stop` and `drv2605_go` now leave RTP mode. `drv2605_set_actuator` now selects a ROM library to match the actuator. The init comment claimed a reset and standby that never happened. The model takes all its reset values from Table 3, clears GO when playback ends, and plays only in ready internal trigger mode with something queued.
-- **Suspected:** The DRV2605 sheet disagrees with itself on the default library, and init does not set one. An LRA runs closed-loop with no calibration path. init does not wait 250 us after power-up.
+- **Fixed:** `drv2605_set_realtime_value` never entered RTP mode, so the motor never ran. `drv2605_stop` and `drv2605_go` now leave RTP mode. `drv2605_set_actuator` now selects a ROM library to match the actuator. The init comment claimed a reset and standby that never happened. The model takes all its reset values from Table 3, clears GO when playback ends, and plays only in ready internal trigger mode with something queued. init never wrote the library register, and the DRV2605 sheet gives its default as 0x00, the Empty library, on p.33 and as 1 on p.36. Step 6 of TI's Initialization Procedure says to write it, so init now selects the library that fits the actuator in FEEDBACK.
+- **Suspected:** An LRA runs closed-loop with no calibration path. init does not wait 250 us after power-up.
 
 ## Known issues
 

@@ -56,8 +56,9 @@ None. I2C address is runtime-configurable via `vl53l0x_cfg_t`.
 Checked on 2026-11-06 against ST DocID029104 Rev 1, May 2016. That is the datasheet only: the API User Manual DocID029105 was not available, and this manual has no register map. Not run on hardware.
 
 - **Matched:** Address 0x29, model ID 0xEE at 0xC0, MSB-first reads, the 20 ms minimum timing budget, the 30 ms default against Table 13.
-- **Still open:** `vl53l0x_init` writes four registers and starts ranging with no device initialisation, no reference SPAD or temperature calibration and no calibration data, while the manual puts that phase before the first ranging. Porting the ST API is a large job, so ranging on hardware is unproven until then. Registers 0x00, 0x01, 0x0B, 0x14, 0x1E, 0x60, 0x71 and 0x72, the ready bit and the 8190 sentinel could not be checked. The budget stops at 500 ms where the manual allows 5 s. No offset or cross-talk calibration, continuous ranging, GPIO1 interrupt or XSHUT control. The model sets the ready bit at once, and its tests pin 0xFF, 0x12 and 0x3A98 copied from the driver.
-- **Suspected:** The timeout register is written as budget/2, which may not be its encoding. The manual's range error code is never read, so a weak-signal result may pass as valid. The 500-try poll limit does not scale with the budget. `vl53l0x_init` does not wait the 1.2 ms boot time. There is no 2V8 mode setting.
+- **Fixed:** The final range timeout went out as budget/2, so 30 ms wrote 0x3A98 and budgets from about 131 ms on all wrote 0xFFFF. The ST API holds it in macro periods as (LSByte * 2^MSByte) + 1. The driver now reads the VCSEL period at 0x70 and encodes it that way, so 30 ms gives 0x02C4 at 10 PCLKs.
+- **Still open:** `vl53l0x_init` writes four registers and starts ranging with no device initialisation, no reference SPAD or temperature calibration and no calibration data, while the manual puts that phase before the first ranging. Porting the ST API is a large job, so ranging on hardware is unproven until then. Registers 0x00, 0x01, 0x0B, 0x14, 0x1E and 0x60, the ready bit and the 8190 sentinel could not be checked. The budget stops at 500 ms where the manual allows 5 s. No offset or cross-talk calibration, continuous ranging, GPIO1 interrupt or XSHUT control. The model sets the ready bit at once, and its tests pin 0xFF and 0x12 copied from the driver. The whole budget goes to the final range step, where the ST API first takes off the earlier steps, so a measurement takes a little longer than the budget.
+- **Suspected:** The manual's range error code is never read, so a weak-signal result may pass as valid. The 500-try poll limit does not scale with the budget. `vl53l0x_init` does not wait the 1.2 ms boot time. There is no 2V8 mode setting.
 
 ## Known issues
 
@@ -74,7 +75,7 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_vl53l0x
 ```
 
-30 assertions across 16 test cases: init OK, wrong model ID rejected, I2C
+19 test cases: init OK, wrong model ID rejected, I2C
 fail on init, null safety (9 paths), range read 152mm, range read 2000mm,
 out-of-range sentinel, read timeout, read I2C fail, start_single register
 verify, is_ready true/false, timing budget set + register verify, budget
@@ -82,7 +83,7 @@ bounds (too low / too high), init register config verify.
 
 ## Test status
 
-- Unit tests (sim): PASS (16 C tests, 30 assertions)
+- Unit tests (sim): PASS (19 C tests)
 - HIL: N/A
 
 ## API convention deviations

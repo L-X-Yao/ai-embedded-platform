@@ -48,9 +48,9 @@ I2C address are runtime-configurable via `mpu6050_cfg_t`.
 Checked on 2026-11-06 against RM-MPU-6000A-00 Revision 4.0 (03/09/2012), the register map, and PS-MPU-6000A-00 Revision 3.1 (10/24/2011), the product specification. Not run on hardware.
 
 - **Matched:** Addresses, WHO_AM_I, register addresses, DEVICE_RESET and CLKSEL, the range fields and encodings, accel and gyro sensitivities, big-endian data in one burst per sensor.
-- **Fixed:** `mpu6050_reset` left the chip asleep with both ranges at 0 while the driver kept its scales, so reads returned `MPU6050_OK` with zeros. It now waits for DEVICE_RESET to clear, wakes the chip and restores both ranges, and returns the new `MPU6050_ERR_TIMEOUT` if the bit never clears. This has not run on hardware.
+- **Fixed:** `mpu6050_reset` left the chip asleep with both ranges at 0 while the driver kept its scales, so reads returned `MPU6050_OK` with zeros. It now waits for DEVICE_RESET to clear, wakes the chip and restores both ranges, and returns the new `MPU6050_ERR_TIMEOUT` if the bit never clears. `mpu6050_init` wrote the wake-up straight after DEVICE_RESET with no wait and no read-back. It now polls the bit the same way, as Adafruit's library does, and init and reset both read SLEEP back, so init can return `MPU6050_ERR_TIMEOUT` too. None of this has run on hardware.
 - **Still open:** SMPLRT_DIV and CONFIG are never written, so the chip stays at DLPF_CFG 0 with an 8 kHz gyro rate. There is no temperature read, FIFO, DMP, interrupt or self-test support. Accel and gyro are read separately, so the two can come from different samples.
-- **Suspected:** `mpu6050_init` writes the wake-up straight after DEVICE_RESET with no wait and no read-back, so if the chip is still resetting the write is lost and init returns `MPU6050_OK` with the chip asleep. Init also skips the start-up time of up to 100 ms. The model finishes a reset inside the write, so the tests cannot catch that, and it fills the data registers even in sleep.
+- **Suspected:** Init skips the start-up time of up to 100 ms, which Linux and Adafruit wait out after a reset. The model finishes a reset inside the write and fills the data registers even in sleep.
 
 ## Known issues
 
@@ -66,14 +66,14 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_mpu6050
 ```
 
-19 test cases, among them: init OK, wrong WHO_AM_I, I2C fail on init,
+23 test cases, among them: init OK, wrong WHO_AM_I, I2C fail on init,
 null safety (8 paths), accel 1g on Z axis, negative accel, gyro 1 dps, 16G
 accel range scaling, 2000 dps gyro range scaling, accel I2C fail, gyro I2C fail,
 reset, alternate address (0x69), config register encoding verification.
 
 ## Test status
 
-- Unit tests (sim): PASS (19 C tests, 13 hw_model tests)
+- Unit tests (sim): PASS (23 C tests, 13 hw_model tests)
 - HIL: N/A
 
 ## API convention deviations
