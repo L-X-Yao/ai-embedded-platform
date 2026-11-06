@@ -153,6 +153,10 @@ error_handler_err_t error_handler_load(error_handler_t *eh)
     if (err != ERROR_HANDLER_OK) {
         return err;
     }
+    /* The count comes from storage: 0xFF on erased flash. */
+    if (loaded > ERROR_HANDLER_MAX_RECORDS) {
+        return ERROR_HANDLER_ERR_STORAGE;
+    }
 
     /* After load, records[0..loaded-1] are valid, oldest first */
     eh->count = loaded;
