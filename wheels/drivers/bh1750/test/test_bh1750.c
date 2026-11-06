@@ -142,6 +142,42 @@ TEST(test_reset)
     ASSERT_EQ(bh1750_reset(NULL), BH1750_ERR_PARAM);
 }
 
+static void mock_delay(void *ctx, uint32_t ms)
+{
+    (void)ctx; (void)ms;
+}
+
+static bh1750_i2c_t mock_i2c_delay = {
+    .write    = mock_write,
+    .read     = mock_read,
+    .delay_ms = mock_delay,
+    .ctx      = NULL
+};
+
+TEST(test_read_once_sends_the_mode_again)
+{
+    mock_reset();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &mock_i2c_delay, &cfg), BH1750_OK);
+    mock_cmd_count = 0;
+    float lux;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_EQ(mock_cmd_count, 1);
+    ASSERT_EQ(mock_cmd_log[0], 0x20);
+}
+
+TEST(test_read_once_i2c_fail)
+{
+    mock_reset();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &mock_i2c_delay, &cfg), BH1750_OK);
+    mock_i2c_fail = true;
+    float lux;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_ERR_I2C);
+}
+
 TEST_MAIN("bh1750")
     RUN(test_init_null);
     RUN(test_init_sends_power_on_and_mode);
@@ -152,4 +188,6 @@ TEST_MAIN("bh1750")
     RUN(test_power_off_on);
     RUN(test_read_null);
     RUN(test_reset);
+    RUN(test_read_once_sends_the_mode_again);
+    RUN(test_read_once_i2c_fail);
 TEST_MAIN_END()

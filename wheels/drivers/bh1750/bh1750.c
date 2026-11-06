@@ -44,6 +44,12 @@ static bh1750_err_t start_measurement(const bh1750_t *dev)
     return BH1750_OK;
 }
 
+static bool one_time_mode(bh1750_mode_t mode)
+{
+    return mode == BH1750_ONCE_H_RES || mode == BH1750_ONCE_H_RES2 ||
+           mode == BH1750_ONCE_L_RES;
+}
+
 bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
                          const bh1750_cfg_t *cfg)
 {
@@ -62,6 +68,10 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
         return BH1750_ERR_PARAM;
     }
 
+    /* bh1750_read_lux measures and reads in one call in these modes */
+    if (one_time_mode(dev->cfg.mode) && !i2c->delay_ms)
+        return BH1750_ERR_PARAM;
+
     bh1750_err_t err = send_cmd(dev, CMD_POWER_ON);
     if (err != BH1750_OK)
         return err;
@@ -73,6 +83,14 @@ bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
 {
     if (!dev || !lux)
         return BH1750_ERR_PARAM;
+
+    /* The chip powers down after a one-time measurement, so the data never
+     * changes again unless the instruction is resent (manual p.7) */
+    if (one_time_mode(dev->cfg.mode)) {
+        bh1750_err_t err = start_measurement(dev);
+        if (err != BH1750_OK)
+            return err;
+    }
 
     uint8_t buf[2] = {0};
     if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, buf, 2))

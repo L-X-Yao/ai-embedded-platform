@@ -254,6 +254,91 @@ TEST(test_no_delay_leaves_the_wait_to_the_caller)
     ASSERT_NEAR(lux, 1000.0f, 0.5f);
 }
 
+/* --- one-time modes (manual p.5, p.7) --- */
+
+TEST(test_model_one_time_measures_once_then_powers_down)
+{
+    setup();
+    uint8_t cmd = 0x20;
+    bh1750_model_i2c_write(&model, BH1750_ADDR_LOW, &cmd, 1);
+    ASSERT_TRUE(model.powered);
+    bh1750_model_advance(&model, 180);
+    ASSERT_FALSE(model.powered);
+    ASSERT_EQ(model.data_reg, 1200);
+
+    bh1750_model_set_raw(&model, 2400);
+    bh1750_model_advance(&model, 1000);
+    ASSERT_EQ(model.data_reg, 1200);       /* no new measurement */
+    ASSERT_EQ(model.measure_count, 1);
+}
+
+TEST(test_one_time_read_measures_again)
+{
+    setup();
+    /* p.7 ex2: High Byte 00000001, Low Byte 00010000 gives 227 lx */
+    bh1750_model_set_raw(&model, 0x0110);
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_HIGH, .mode = BH1750_ONCE_L_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+    ASSERT_FALSE(model.powered);
+
+    float lux = 0.0f;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_NEAR(lux, 226.7f, 0.1f);
+
+    /* p.7 ex1 as the next result: 28067 lx */
+    bh1750_model_set_raw(&model, 0x8390);
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_NEAR(lux, 28067.0f, 0.5f);
+    ASSERT_EQ(model.last_cmd, 0x23);
+    ASSERT_FALSE(model.powered);
+    ASSERT_EQ(model.delay_total_ms, 3 * 24);
+}
+
+TEST(test_one_time_h_res_read_waits_for_the_h_time)
+{
+    setup();
+    /* 1200 raw is 1000 lx at /1.2 */
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+
+    bh1750_model_set_raw(&model, 2400);
+    float lux = 0.0f;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_NEAR(lux, 2000.0f, 0.5f);
+    ASSERT_EQ(model.delay_total_ms, 2 * 180);
+}
+
+TEST(test_one_time_h_res2_read)
+{
+    setup();
+    /* p.12: High Byte 00000000, Low Byte 00010010 gives 7.5 lx */
+    bh1750_model_set_raw(&model, 0x0012);
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES2 };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+
+    float lux = 0.0f;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_NEAR(lux, 7.5f, 0.01f);
+    ASSERT_EQ(model.last_cmd, 0x21);
+}
+
+TEST(test_one_time_needs_delay)
+{
+    static const bh1750_mode_t once[] = {
+        BH1750_ONCE_H_RES, BH1750_ONCE_H_RES2, BH1750_ONCE_L_RES,
+    };
+    for (unsigned i = 0; i < 3; i++) {
+        setup();
+        bh1750_t dev;
+        bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = once[i] };
+        ASSERT_EQ(bh1750_init(&dev, &model_i2c_no_delay, &cfg), BH1750_ERR_PARAM);
+        ASSERT_EQ(model.cmd_count, 0);
+    }
+}
+
 TEST_MAIN("bh1750 hardware model")
     RUN(test_init_success);
     RUN(test_init_h_res2_mode);
@@ -271,4 +356,9 @@ TEST_MAIN("bh1750 hardware model")
     RUN(test_init_waits_for_l_res_measurement);
     RUN(test_continuous_read_does_not_wait);
     RUN(test_no_delay_leaves_the_wait_to_the_caller);
+    RUN(test_model_one_time_measures_once_then_powers_down);
+    RUN(test_one_time_read_measures_again);
+    RUN(test_one_time_h_res_read_waits_for_the_h_time);
+    RUN(test_one_time_h_res2_read);
+    RUN(test_one_time_needs_delay);
 TEST_MAIN_END()
