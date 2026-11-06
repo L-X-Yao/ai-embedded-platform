@@ -13,6 +13,15 @@
 #define REG_CONVERSION 0x00
 #define REG_CONFIG     0x01
 
+/*
+ * Polls of OS before giving up. A conversion takes 1 / DR (p.15) and the
+ * data rate can run 10% low (p.5): 139 ms at 8 SPS. With delay_ms a poll
+ * lasts at least 1 ms. Without it a poll is only the 45 clocks of the
+ * read, 13.3 us at the 3.4 MHz top bus speed (p.20).
+ */
+#define POLLS_WITH_DELAY    200
+#define POLLS_WITHOUT_DELAY 10500
+
 static const float pga_scale_mv[] = {
     6144.0f / 32768.0f,
     4096.0f / 32768.0f,
@@ -69,13 +78,14 @@ ads1115_err_t ads1115_read_raw(ads1115_t *dev, int16_t *raw)
 
     /* Poll for conversion complete (bit 15 of config register = 1) */
     uint8_t cfg_buf[2];
-    for (int retry = 0; retry < 200; retry++) {
+    int polls = dev->i2c->delay_ms ? POLLS_WITH_DELAY : POLLS_WITHOUT_DELAY;
+    for (int retry = 0; retry < polls; retry++) {
         if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_CONFIG, cfg_buf, 2))
             return ADS1115_ERR_I2C;
         if (cfg_buf[0] & 0x80) break;
         if (dev->i2c->delay_ms)
             dev->i2c->delay_ms(dev->i2c->ctx, 1);
-        if (retry == 199) return ADS1115_ERR_BUSY;
+        if (retry == polls - 1) return ADS1115_ERR_BUSY;
     }
 
     uint8_t buf[2] = {0};
