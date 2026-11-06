@@ -47,9 +47,8 @@ None. Range, data rate, and I2C address are runtime-configurable via `adxl345_cf
 Checked on 2026-11-06 against ADI ADXL345 Rev. G. Not run on hardware.
 
 - **Matched:** Addresses, device ID, register map, range and rate codes, data order and scaling.
-- **Fixed:** `adxl345_init` accepted 1600 and 3200 Hz, above the 800 Hz limit of a 400 kHz I2C bus.
-- **Still open:** No test uses `hw_model_adxl345.h`. It has no BW_RATE reset value, skips the turn-on time and ignores DATA_FORMAT.
-- **Suspected:** init does not wait for the turn-on time, so an early read can return stale data. DATA_FORMAT is written while measuring. The full-resolution scale uses the rounded 3.9 mg/LSB.
+- **Fixed:** `adxl345_init` accepted 1600 and 3200 Hz, above the 800 Hz limit of a 400 kHz I2C bus. A read straight after init returned the reset zeros as 0 g. Init now waits the turn-on time through `delay_ms`, 12 ms at 100 Hz but about 10 s at 0.10 Hz; with no `delay_ms` that wait is the caller's. No test used `hw_model_adxl345.h`. `test_hw_model_adxl345.c` now does, and the model has the BW_RATE reset value, the turn-on time and DATA_FORMAT.
+- **Suspected:** DATA_FORMAT is written while measuring. The full-resolution scale uses the rounded 3.9 mg/LSB.
 
 ## Known issues
 

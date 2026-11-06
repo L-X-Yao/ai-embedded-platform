@@ -52,8 +52,8 @@ None. All configuration is runtime via `sgp30_i2c_t` callback injection.
 Checked on 2026-11-06 against Sensirion SGP30 Datasheet, Version 1.0, May 2020, D1. Not run on hardware.
 
 - **Matched:** I2C address, the command codes in use, waits against the Table 10 maximum durations, word orders including TVOC first in set_baseline, response lengths, the 8.8 humidity format, CRC-8 (0xBEEF gives 0x92), iaq_init at init.
-- **Fixed:** `sgp30_init` accepted a NULL `delay_ms` and every command then skipped its wait, so reads landed during the measurement, when the sensor aborts communication. It now refuses that HAL.
-- **Still open:** The model has no busy period, serves the same response twice and fills unserved bytes with 0, where the sensor aborts during a measurement, allows one read and returns 1s past the end, so tests cannot see a missing wait or a double read. No measure_raw, get_feature_set, measure_test, soft reset or inceptive baseline, and no helper from temperature and RH to absolute humidity. Nothing marks the 15 s initialization phase, when readings stay at 400 ppm and 0 ppb.
+- **Fixed:** `sgp30_init` accepted a NULL `delay_ms` and every command then skipped its wait, so reads landed during the measurement, when the sensor aborts communication. It now refuses that HAL. The model now refuses communication for the maximum duration in Table 10, serves a response once and returns 1s past its end.
+- **Still open:** No measure_raw, get_feature_set, measure_test, soft reset or inceptive baseline, and no helper from temperature and RH to absolute humidity. Nothing marks the 15 s initialization phase, when readings stay at 400 ppm and 0 ppb.
 
 ## Known issues
 
