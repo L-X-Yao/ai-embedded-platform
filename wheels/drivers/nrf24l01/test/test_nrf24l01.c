@@ -991,6 +991,41 @@ TEST(test_rx_addr_sets_the_address_width)
     ASSERT_EQ(mock_regs[REG_SETUP_AW], 0x01);
 }
 
+/* ---------- a device init refused ---------- */
+
+/* This driver gives NRF24_ERR_SPI for a missing device or SPI */
+static void assert_device_refused(nrf24_t *d)
+{
+    static const uint8_t addr[5] = { 1, 2, 3, 4, 5 };
+    uint8_t buf[4] = { 0 };
+    uint8_t len = 0;
+    ASSERT_EQ(nrf24_set_tx_addr(d, addr, 5), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_set_rx_addr(d, 0, addr, 5), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_set_mode(d, NRF24_MODE_TX), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_set_data_rate(d, NRF24_RATE_1MBPS), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_set_power(d, NRF24_POWER_0DBM), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_send(d, buf, 1), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_receive(d, buf, sizeof(buf), &len), NRF24_ERR_SPI);
+    ASSERT_FALSE(nrf24_data_ready(d));
+    ASSERT_EQ(nrf24_flush_tx(d), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_flush_rx(d), NRF24_ERR_SPI);
+    ASSERT_EQ(nrf24_read_status(d), 0);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    nrf24_t d;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(nrf24_init(&d, NULL, 76, 16), NRF24_ERR_SPI);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(nrf24_init(&d, &mock_spi, 126, 16), NRF24_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("nrf24l01")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -1034,4 +1069,5 @@ TEST_MAIN("nrf24l01")
     RUN(test_250kbps_sets_a_retransmit_delay_of_500us);
     RUN(test_init_waits_out_the_power_on_reset);
     RUN(test_rx_addr_sets_the_address_width);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

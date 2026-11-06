@@ -553,6 +553,50 @@ TEST(test_init_rejects_other_product_id)
     ASSERT_EQ(pac1952_init(&dev, &mock_i2c_hal, &default_cfg), PAC1952_ERR_ID);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(pac1952_t *d)
+{
+    pac1952_channel_t ch1, ch2;
+    uint8_t id = 0;
+    ASSERT_EQ(pac1952_refresh(d), PAC1952_ERR_PARAM);
+    ASSERT_EQ(pac1952_read_channel(d, 0, &ch1), PAC1952_ERR_PARAM);
+    ASSERT_EQ(pac1952_read_both(d, &ch1, &ch2), PAC1952_ERR_PARAM);
+    ASSERT_EQ(pac1952_set_sample_rate(d, PAC1952_RATE_8SPS), PAC1952_ERR_PARAM);
+    ASSERT_EQ(pac1952_get_product_id(d, &id), PAC1952_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static pac1952_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    pac1952_t d;
+    pac1952_cfg_t negative = default_cfg;
+    negative.sense_resistor_mohm[1] = -1.0f;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pac1952_init(&d, &mock_i2c_hal, &negative), PAC1952_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* Something answers, with no product ID of this family */
+    mock_regs[REG_PRODUCT_ID] = 0xAA;
+    ASSERT_EQ(pac1952_init(&d, &mock_i2c_hal, &default_cfg), PAC1952_ERR_ID);
+    assert_device_refused(&d);
+
+    /* Nothing answered the ID read, and the bus is fine again */
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(pac1952_init(&d, &mock_i2c_hal, &default_cfg), PAC1952_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("pac1952")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -598,4 +642,6 @@ TEST_MAIN("pac1952")
     RUN(test_zero_init_safety);
     RUN(test_init_accepts_both_product_ids);
     RUN(test_init_rejects_other_product_id);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

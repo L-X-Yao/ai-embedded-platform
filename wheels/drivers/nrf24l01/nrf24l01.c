@@ -10,6 +10,7 @@
 
 #include "nrf24l01.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- nRF24L01+ SPI commands ---------- */
 
@@ -139,7 +140,15 @@ static void resume_rx(const nrf24_t *dev)
 nrf24_err_t nrf24_init(nrf24_t *dev, const nrf24_spi_t *spi,
                        uint8_t channel, uint8_t payload_size)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer
+    if (!dev) {
+        return NRF24_ERR_SPI;
+    }
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !spi->cs_low || !spi->cs_high || !spi->xfer
         || !spi->ce_low || !spi->ce_high || !spi->delay_us) {
         return NRF24_ERR_SPI;
     }

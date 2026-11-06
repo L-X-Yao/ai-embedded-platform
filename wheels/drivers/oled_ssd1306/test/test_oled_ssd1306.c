@@ -291,6 +291,50 @@ TEST(test_display_on_off_null_param)
     ASSERT_EQ(oled_ssd1306_display_off(NULL), OLED_SSD1306_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(oled_ssd1306_t *d)
+{
+    ASSERT_EQ(oled_ssd1306_flush(d), OLED_SSD1306_ERR_PARAM);
+    ASSERT_EQ(oled_ssd1306_display_on(d), OLED_SSD1306_ERR_PARAM);
+    ASSERT_EQ(oled_ssd1306_display_off(d), OLED_SSD1306_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static oled_ssd1306_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    oled_ssd1306_t d;
+    oled_ssd1306_cfg_t too_short = default_cfg;
+    too_short.height = 8;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(oled_ssd1306_init(&d, NULL, &default_cfg, framebuf),
+              OLED_SSD1306_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* The pixel calls are guarded by buf, which must be cleared as well */
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(oled_ssd1306_init(&d, &mock_i2c, &too_short, framebuf),
+              OLED_SSD1306_ERR_PARAM);
+    oled_ssd1306_set_pixel(&d, 0, 0, true);
+    ASSERT_FALSE(oled_ssd1306_get_pixel(&d, 0, 0));
+    assert_device_refused(&d);
+
+    /* The panel never took its setup, and the bus is fine again */
+    mock_fail_at = 0;
+    ASSERT_EQ(oled_ssd1306_init(&d, &mock_i2c, &default_cfg, framebuf),
+              OLED_SSD1306_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("oled_ssd1306")
     RUN(test_init_ok);
     RUN(test_init_com_pin_config);
@@ -311,5 +355,7 @@ TEST_MAIN("oled_ssd1306")
     RUN(test_display_off_sends_0xAE);
     RUN(test_display_on_sends_0xAF);
     RUN(test_display_on_off_null_param);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()
 

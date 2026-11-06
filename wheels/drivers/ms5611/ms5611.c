@@ -149,15 +149,38 @@ static ms5611_err_t read_adc(const ms5611_t *dev, uint8_t conv_cmd,
     return MS5611_OK;
 }
 
+/* The steps of init that talk to the chip */
+static ms5611_err_t bring_up(ms5611_t *dev)
+{
+    /* Send reset command */
+    if (!send_cmd(dev, CMD_RESET))
+    {
+        return MS5611_ERR_I2C;
+    }
+    delay(dev, 3);
+
+    /* Read PROM calibration data */
+    return read_prom(dev);
+}
+
 ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
                          const ms5611_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
     {
         return MS5611_ERR_PARAM;
     }
 
-    if (!i2c->delay_ms || !i2c->write_raw)
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no calibration */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return MS5611_ERR_PARAM;
+    }
+
+    if (!i2c->read_regs || !i2c->delay_ms || !i2c->write_raw)
     {
         return MS5611_ERR_PARAM;
     }
@@ -167,21 +190,13 @@ ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
         return MS5611_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
-    /* Send reset command */
-    if (!send_cmd(dev, CMD_RESET))
-    {
-        return MS5611_ERR_I2C;
-    }
-    delay(dev, 3);
-
-    /* Read PROM calibration data */
-    ms5611_err_t err = read_prom(dev);
+    ms5611_err_t err = bring_up(dev);
     if (err != MS5611_OK)
     {
+        dev->i2c = NULL;
         return err;
     }
 
@@ -191,7 +206,7 @@ ms5611_err_t ms5611_init(ms5611_t *dev, const ms5611_i2c_t *i2c,
 
 ms5611_err_t ms5611_read(ms5611_t *dev, ms5611_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return MS5611_ERR_PARAM;
     }
@@ -256,7 +271,7 @@ ms5611_err_t ms5611_read(ms5611_t *dev, ms5611_data_t *out)
 
 ms5611_err_t ms5611_reset(ms5611_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return MS5611_ERR_PARAM;
     }

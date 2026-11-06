@@ -17,33 +17,10 @@ static bool cmd(const oled_ssd1306_t *dev, uint8_t c)
     return dev->i2c->write_cmd(dev->i2c->ctx, dev->cfg.addr, c);
 }
 
-oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
-                                     const oled_ssd1306_i2c_t *i2c,
-                                     const oled_ssd1306_cfg_t *cfg,
-                                     uint8_t *framebuf)
+/* The steps of init that talk to the chip */
+static oled_ssd1306_err_t bring_up(const oled_ssd1306_t *dev,
+                                   const oled_ssd1306_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg || !framebuf)
-    {
-        return OLED_SSD1306_ERR_PARAM;
-    }
-    /* The chip takes 16MUX to 64MUX and has columns 0 to 127 */
-    if (cfg->width == 0 || cfg->width > 128 ||
-        cfg->height < 16 || cfg->height > 64 || (cfg->height % 8) != 0)
-    {
-        return OLED_SSD1306_ERR_PARAM;
-    }
-
-    if (!i2c->write_cmd || !i2c->write_data) {
-        return OLED_SSD1306_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->buf = framebuf;
-    dev->buf_size = (size_t)cfg->width * (cfg->height / 8);
-    memset(dev->buf, 0, dev->buf_size);
-
     if (!cmd(dev, 0xAE)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0xD5)) return OLED_SSD1306_ERR_I2C;
     if (!cmd(dev, 0x80)) return OLED_SSD1306_ERR_I2C;
@@ -73,9 +50,54 @@ oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
     return OLED_SSD1306_OK;
 }
 
-oled_ssd1306_err_t oled_ssd1306_flush(oled_ssd1306_t *dev)
+oled_ssd1306_err_t oled_ssd1306_init(oled_ssd1306_t *dev,
+                                     const oled_ssd1306_i2c_t *i2c,
+                                     const oled_ssd1306_cfg_t *cfg,
+                                     uint8_t *framebuf)
 {
     if (!dev)
+    {
+        return OLED_SSD1306_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg || !framebuf)
+    {
+        return OLED_SSD1306_ERR_PARAM;
+    }
+    /* The chip takes 16MUX to 64MUX and has columns 0 to 127 */
+    if (cfg->width == 0 || cfg->width > 128 ||
+        cfg->height < 16 || cfg->height > 64 || (cfg->height % 8) != 0)
+    {
+        return OLED_SSD1306_ERR_PARAM;
+    }
+
+    if (!i2c->write_cmd || !i2c->write_data) {
+        return OLED_SSD1306_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->buf = framebuf;
+    dev->buf_size = (size_t)cfg->width * (cfg->height / 8);
+    memset(dev->buf, 0, dev->buf_size);
+
+    oled_ssd1306_err_t err = bring_up(dev, cfg);
+    if (err != OLED_SSD1306_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
+    return OLED_SSD1306_OK;
+}
+
+oled_ssd1306_err_t oled_ssd1306_flush(oled_ssd1306_t *dev)
+{
+    if (!dev || !dev->i2c)
     {
         return OLED_SSD1306_ERR_PARAM;
     }
@@ -144,14 +166,14 @@ void oled_ssd1306_fill(oled_ssd1306_t *dev, bool on)
 
 oled_ssd1306_err_t oled_ssd1306_display_on(const oled_ssd1306_t *dev)
 {
-    if (!dev) return OLED_SSD1306_ERR_PARAM;
+    if (!dev || !dev->i2c) return OLED_SSD1306_ERR_PARAM;
     if (!cmd(dev, 0xAF)) return OLED_SSD1306_ERR_I2C;
     return OLED_SSD1306_OK;
 }
 
 oled_ssd1306_err_t oled_ssd1306_display_off(const oled_ssd1306_t *dev)
 {
-    if (!dev) return OLED_SSD1306_ERR_PARAM;
+    if (!dev || !dev->i2c) return OLED_SSD1306_ERR_PARAM;
     if (!cmd(dev, 0xAE)) return OLED_SSD1306_ERR_I2C;
     return OLED_SSD1306_OK;
 }
