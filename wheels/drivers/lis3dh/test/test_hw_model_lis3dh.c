@@ -15,8 +15,8 @@
 static lis3dh_model_t model;
 
 static const lis3dh_i2c_t model_i2c = {
-    .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .write_reg = lis3dh_model_write_reg,
+    .read_regs = lis3dh_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -182,6 +182,106 @@ TEST(test_different_accel_values)
     ASSERT_TRUE(a2.x_g > a1.x_g);
 }
 
+/* --- the sub-address, p.21 --------------------------------------------- */
+
+static bool read_sub(uint8_t sub, uint8_t *buf, uint16_t len)
+{
+    return model_i2c.read_regs(model_i2c.ctx, LIS3DH_ADDR_LOW, sub, buf, len);
+}
+
+/* "the 7 LSb represent the actual register address while the MSB enables
+ * address auto increment" */
+TEST(test_read_with_bit_7_steps_through_the_registers)
+{
+    uint8_t buf[6];
+    setup();
+    lis3dh_model_set_accel(&model, 0x0201, 0x0403, 0x0605);
+
+    ASSERT_TRUE(read_sub(0xA8, buf, 6));
+    for (uint8_t i = 0; i < 6; i++)
+        ASSERT_EQ_HEX(buf[i], i + 1u);
+}
+
+/* Only "If the MSb of the SUB field is '1'" does the address move */
+TEST(test_read_without_bit_7_stays_on_one_register)
+{
+    uint8_t buf[6];
+    setup();
+    lis3dh_model_set_accel(&model, 0x0201, 0x0403, 0x0605);
+
+    ASSERT_TRUE(read_sub(0x28, buf, 6));
+    for (uint8_t i = 0; i < 6; i++)
+        ASSERT_EQ_HEX(buf[i], 0x01);
+}
+
+TEST(test_bit_7_is_not_part_of_the_address)
+{
+    uint8_t val = 0;
+    setup();
+
+    ASSERT_TRUE(read_sub(0x8F, &val, 1));
+    ASSERT_EQ_HEX(val, 0x33);
+
+    ASSERT_TRUE(model_i2c.write_reg(model_i2c.ctx, LIS3DH_ADDR_LOW, 0xA3, 0x12));
+    ASSERT_EQ_HEX(model.hw.regs[LIS3DH_REG_CTRL_REG4], 0x12);
+}
+
+/* --- the register map, Table 17 (p.26) ---------------------------------- */
+
+TEST(test_control_register_defaults)
+{
+    uint8_t val = 0xFF;
+    setup();
+
+    ASSERT_TRUE(read_sub(LIS3DH_REG_CTRL_REG1, &val, 1));
+    ASSERT_EQ_HEX(val, 0x07);
+    for (uint8_t reg = LIS3DH_REG_CTRL_REG2; reg <= LIS3DH_REG_CTRL_REG6; reg++) {
+        ASSERT_TRUE(read_sub(reg, &val, 1));
+        ASSERT_EQ_HEX(val, 0x00);
+    }
+}
+
+TEST(test_type_r_registers_ignore_writes)
+{
+    static const uint8_t regs[] = {
+        0x07, 0x08, 0x0D, 0x0E, 0x27, 0x2F, 0x31, 0x39,
+    };
+
+    setup();
+    for (unsigned i = 0; i < sizeof(regs); i++) {
+        uint8_t before = model.hw.regs[regs[i]];
+        ASSERT_TRUE(model_i2c.write_reg(model_i2c.ctx, LIS3DH_ADDR_LOW,
+                                        regs[i], 0x5A));
+        ASSERT_EQ_HEX(model.hw.regs[regs[i]], before);
+    }
+}
+
+/* Table 17 marks 00-06 and 10-1E "Reserved (do not modify)", and p.27 says
+ * "Registers marked as Reserved must not be changed. The writing to
+ * those registers may cause permanent damages to the device." */
+TEST(test_writes_to_reserved_registers_are_counted)
+{
+    static const uint8_t regs[] = { 0x00, 0x06, 0x10, 0x1E };
+
+    setup();
+    for (unsigned i = 0; i < sizeof(regs); i++) {
+        ASSERT_TRUE(model_i2c.write_reg(model_i2c.ctx, LIS3DH_ADDR_LOW,
+                                        regs[i], 0x5A));
+        ASSERT_EQ_HEX(model.hw.regs[regs[i]], 0x00);
+    }
+    ASSERT_EQ(model.reserved_write_count, (int)sizeof(regs));
+}
+
+TEST(test_driver_never_writes_a_reserved_register)
+{
+    setup();
+    lis3dh_t dev;
+    ASSERT_EQ(lis3dh_init(&dev, &model_i2c, &default_cfg), LIS3DH_OK);
+    ASSERT_EQ(lis3dh_set_range(&dev, LIS3DH_RANGE_16G), LIS3DH_OK);
+    ASSERT_EQ(lis3dh_set_odr(&dev, LIS3DH_ODR_5376HZ_LP), LIS3DH_OK);
+    ASSERT_EQ(model.reserved_write_count, 0);
+}
+
 TEST_MAIN("lis3dh hardware model")
     RUN(test_init_reads_who_am_i);
     RUN(test_init_wrong_who_am_i);
@@ -195,4 +295,11 @@ TEST_MAIN("lis3dh hardware model")
     RUN(test_set_range_updates_config);
     RUN(test_set_odr_updates_config);
     RUN(test_different_accel_values);
+    RUN(test_read_with_bit_7_steps_through_the_registers);
+    RUN(test_read_without_bit_7_stays_on_one_register);
+    RUN(test_bit_7_is_not_part_of_the_address);
+    RUN(test_control_register_defaults);
+    RUN(test_type_r_registers_ignore_writes);
+    RUN(test_writes_to_reserved_registers_are_counted);
+    RUN(test_driver_never_writes_a_reserved_register);
 TEST_MAIN_END()
