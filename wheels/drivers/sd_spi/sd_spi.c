@@ -30,11 +30,17 @@
 
 #ifndef SD_SPI_RETRY_LIMIT
 #define SD_SPI_RETRY_LIMIT  8000U
+#endif
 
 /* Card waits are limited by time: a byte count shrinks as the clock speeds up.
  * Spec 3.01 section 4.6.2: 100 ms for reads, more than 500 ms for writes. */
+#ifndef SD_SPI_READ_TIMEOUT_MS
 #define SD_SPI_READ_TIMEOUT_MS   100U
+#endif
+#ifndef SD_SPI_WRITE_TIMEOUT_MS
 #define SD_SPI_WRITE_TIMEOUT_MS  600U
+#endif
+#ifndef SD_SPI_POLLS_PER_MS
 #define SD_SPI_POLLS_PER_MS      16U
 #endif
 

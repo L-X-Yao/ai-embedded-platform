@@ -37,6 +37,19 @@ target_compile_options(test_boundary_sd_spi PRIVATE -Wall -Wextra -Wpedantic -We
 enable_testing()
 add_test(NAME sd_spi_tests COMMAND test_sd_spi)
 
+# The same tests with the override the README documents
+add_executable(test_tuned_sd_spi
+    test_sd_spi.c
+    ../sd_spi.c
+)
+target_compile_definitions(test_tuned_sd_spi PRIVATE SD_SPI_RETRY_LIMIT=300)
+target_include_directories(test_tuned_sd_spi PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_tuned_sd_spi PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME sd_spi_tuned_tests COMMAND test_tuned_sd_spi)
+
 add_executable(prop_sd_spi
     prop_sd_spi.c
     ../sd_spi.c
