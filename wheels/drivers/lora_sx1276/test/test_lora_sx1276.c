@@ -836,6 +836,56 @@ TEST(test_wide_bandwidths_stay_out_of_the_low_band)
     ASSERT_EQ(lora_set_frequency(&dev, 169000000UL), LORA_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+/* This driver gives LORA_ERR_SPI for a missing device or SPI */
+static void assert_device_refused(lora_t *d)
+{
+    uint8_t buf[4] = { 1, 2, 3, 4 };
+    uint8_t len = 0;
+    ASSERT_EQ(lora_set_frequency(d, 433000000UL), LORA_ERR_SPI);
+    ASSERT_EQ(lora_set_bandwidth(d, 7), LORA_ERR_SPI);
+    ASSERT_EQ(lora_set_spreading_factor(d, 7), LORA_ERR_SPI);
+    ASSERT_EQ(lora_set_coding_rate(d, 1), LORA_ERR_SPI);
+    ASSERT_EQ(lora_set_tx_power(d, 10), LORA_ERR_SPI);
+    ASSERT_EQ(lora_send(d, buf, sizeof(buf)), LORA_ERR_SPI);
+    ASSERT_EQ(lora_receive(d, buf, &len, 1), LORA_ERR_SPI);
+    ASSERT_FALSE(lora_packet_available(d));
+    ASSERT_EQ(lora_get_rssi(d), 0);
+    ASSERT_EQ(lora_get_snr(d), 0);
+    ASSERT_EQ(lora_sleep(d), LORA_ERR_SPI);
+    ASSERT_EQ(lora_standby(d), LORA_ERR_SPI);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static lora_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    lora_t d;
+    lora_spi_t no_xfer = mock_spi;
+    no_xfer.xfer = NULL;
+    mock_reset_all();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lora_init(&d, &no_xfer, 433000000UL), LORA_ERR_SPI);
+    assert_device_refused(&d);
+
+    /* 0x42 is the version register: a wrong one means no chip we can drive */
+    mock_regs[0x42] = 0xAA;
+    ASSERT_EQ(lora_init(&d, &mock_spi, 433000000UL), LORA_ERR_VERSION);
+    assert_device_refused(&d);
+
+    /* No band holds this frequency, so the chip is left unconfigured */
+    mock_reset_all();
+    ASSERT_EQ(lora_init(&d, &mock_spi, 1000000UL), LORA_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lora_sx1276")
     RUN(test_init_ok);
     RUN(test_init_version_check);
@@ -878,4 +928,6 @@ TEST_MAIN("lora_sx1276")
     RUN(test_rssi_adds_a_negative_snr);
     RUN(test_frequency_must_be_in_a_band);
     RUN(test_wide_bandwidths_stay_out_of_the_low_band);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

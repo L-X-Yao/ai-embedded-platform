@@ -101,23 +101,9 @@ static ltr390_err_t read_20bit(const ltr390_t *dev, uint8_t reg,
 
 /* ---------- public API ---------- */
 
-ltr390_err_t ltr390_init(ltr390_t *dev, const ltr390_i2c_t *i2c,
-                         const ltr390_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static ltr390_err_t bring_up(ltr390_t *dev, const ltr390_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg) {
-        return LTR390_ERR_PARAM;
-    }
-    if (!i2c->read_regs || !i2c->write_reg) {
-        return LTR390_ERR_PARAM;
-    }
-    if (!gain_valid(cfg->gain) || !res_valid(cfg->resolution) ||
-        !mode_valid(cfg->mode)) {
-        return LTR390_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* Verify part ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_PART_ID, &id, 1)) {
@@ -143,6 +129,39 @@ ltr390_err_t ltr390_init(ltr390_t *dev, const ltr390_i2c_t *i2c,
     dev->mode = cfg->mode;
     if (!write_reg(dev, REG_MAIN_CTRL, build_main_ctrl(dev->mode))) {
         return LTR390_ERR_I2C;
+    }
+
+    return LTR390_OK;
+}
+
+ltr390_err_t ltr390_init(ltr390_t *dev, const ltr390_i2c_t *i2c,
+                         const ltr390_cfg_t *cfg)
+{
+    if (!dev) {
+        return LTR390_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) {
+        return LTR390_ERR_PARAM;
+    }
+    if (!i2c->read_regs || !i2c->write_reg) {
+        return LTR390_ERR_PARAM;
+    }
+    if (!gain_valid(cfg->gain) || !res_valid(cfg->resolution) ||
+        !mode_valid(cfg->mode)) {
+        return LTR390_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+
+    ltr390_err_t err = bring_up(dev, cfg);
+    if (err != LTR390_OK) {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

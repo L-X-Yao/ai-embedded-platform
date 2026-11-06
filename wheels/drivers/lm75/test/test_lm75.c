@@ -226,6 +226,45 @@ TEST(test_read_ignores_the_undefined_low_bits)
     ASSERT_NEAR(temp, 25.0f, 0.001f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lm75_t *d)
+{
+    float t;
+    int16_t raw;
+    ASSERT_EQ(lm75_read_temp(d, &t), LM75_ERR_PARAM);
+    ASSERT_EQ(lm75_read_raw(d, &raw), LM75_ERR_PARAM);
+    ASSERT_EQ(lm75_set_os_temp(d, 80.0f), LM75_ERR_PARAM);
+    ASSERT_EQ(lm75_set_hyst_temp(d, 75.0f), LM75_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static lm75_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    lm75_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lm75_init(&d, NULL), LM75_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lm75_init_addr(&d, &mock_i2c, 0x47), LM75_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* The bus failed once: the device was never read, so it stays refused */
+    mock_fail_at = 0;
+    ASSERT_EQ(lm75_init(&d, &mock_i2c), LM75_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lm75")
     RUN(test_init_ok);
     RUN(test_read_25c);
@@ -245,4 +284,6 @@ TEST_MAIN("lm75")
     RUN(test_error_codes);
     RUN(test_init_i2c_fail);
     RUN(test_read_ignores_the_undefined_low_bits);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

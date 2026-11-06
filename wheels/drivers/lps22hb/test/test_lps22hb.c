@@ -377,6 +377,63 @@ TEST(test_hw_model)
     ASSERT_EQ_HEX(LPS22HB_DEV_ADDR_ALT, 0x5D);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lps22hb_t *d)
+{
+    lps22hb_data_t out;
+    int32_t raw_p;
+    int16_t raw_t;
+    ASSERT_EQ(lps22hb_read(d, &out), LPS22HB_ERR_PARAM);
+    ASSERT_EQ(lps22hb_set_odr(d, LPS22HB_ODR_1HZ), LPS22HB_ERR_PARAM);
+    ASSERT_EQ(lps22hb_one_shot_trigger(d), LPS22HB_ERR_PARAM);
+    ASSERT_EQ(lps22hb_read_raw_pressure(d, &raw_p), LPS22HB_ERR_PARAM);
+    ASSERT_EQ(lps22hb_read_raw_temperature(d, &raw_t), LPS22HB_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static lps22hb_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    lps22hb_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lps22hb_init(&d, NULL), LPS22HB_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* 0xBD is the WHO_AM_I of an LPS25HB: it answers, but it is another chip */
+    mock_regs[REG_WHO_AM_I] = 0xBD;
+    ASSERT_EQ(lps22hb_init(&d, &mock_i2c), LPS22HB_ERR_ID);
+    assert_device_refused(&d);
+
+    /* The ID read and the first write worked, the second write did not */
+    mock_reset();
+    mock_fail_at = 2;
+    ASSERT_EQ(lps22hb_init(&d, &mock_i2c), LPS22HB_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    lps22hb_t d;
+    lps22hb_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(lps22hb_init(&d, &bad), LPS22HB_ERR_PARAM);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(lps22hb_init(&d, &bad), LPS22HB_ERR_PARAM);
+}
+
 TEST_MAIN("lps22hb")
     RUN(test_init_ok);
     RUN(test_init_bad_id);
@@ -409,4 +466,7 @@ TEST_MAIN("lps22hb")
     RUN(test_read_raw_temperature_i2c_fail);
     RUN(test_zero_init_safety);
     RUN(test_hw_model);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()
