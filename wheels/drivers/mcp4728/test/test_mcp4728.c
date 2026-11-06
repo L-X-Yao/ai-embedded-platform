@@ -372,6 +372,143 @@ TEST(test_write_channel_selects_vdd_gain1_normal)
     ASSERT_EQ_HEX(mock_ch_config[3], 0x8u);
 }
 
+/* Figure 5-8: the 3rd byte is VREF PD1 PD0 Gx D11-D8. Table 4-3: VREF 1 is the
+ * internal 2.048 V reference, PD 00 is normal mode, Gx 1 is a gain of 2. */
+TEST(test_write_channel_internal_gain1)
+{
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x0Fu,
+    };
+
+    mock_reset();
+    ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_OK);
+    ASSERT_EQ(mcp4728_write_channel(&dev, 1, 1000), MCP4728_OK);  /* 0x3E8 */
+    ASSERT_EQ_HEX(mock_last_cmd, 0x42u);
+    ASSERT_EQ(mock_last_buf_len, 2);
+    ASSERT_EQ_HEX(mock_last_buf[0], 0x83u);  /* 1 00 0 0011 */
+    ASSERT_EQ_HEX(mock_last_buf[1], 0xE8u);
+}
+
+TEST(test_write_channel_internal_gain2)
+{
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x0Fu, .gain_x2 = 0x0Fu,
+    };
+
+    mock_reset();
+    ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_OK);
+    ASSERT_EQ(mcp4728_write_channel(&dev, 3, 4095), MCP4728_OK);
+    ASSERT_EQ_HEX(mock_last_cmd, 0x46u);
+    ASSERT_EQ(mock_last_buf_len, 2);
+    ASSERT_EQ_HEX(mock_last_buf[0], 0x9Fu);  /* 1 00 1 1111 */
+    ASSERT_EQ_HEX(mock_last_buf[1], 0xFFu);
+}
+
+/* Bit n belongs to channel n only */
+TEST(test_write_channel_uses_its_own_bits)
+{
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x04u, .gain_x2 = 0x04u,
+    };
+
+    mock_reset();
+    ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_OK);
+
+    ASSERT_EQ(mcp4728_write_channel(&dev, 2, 0x123u), MCP4728_OK);
+    ASSERT_EQ_HEX(mock_last_buf[0], 0x91u);  /* 1 00 1 0001 */
+    ASSERT_EQ_HEX(mock_last_buf[1], 0x23u);
+
+    for (uint8_t ch = 0; ch < MCP4728_NUM_CHANNELS; ch++) {
+        if (ch == 2u) continue;
+        ASSERT_EQ(mcp4728_write_channel(&dev, ch, 0x123u), MCP4728_OK);
+        ASSERT_EQ_HEX(mock_last_buf[0], 0x01u);  /* 0 00 0 0001 */
+    }
+}
+
+/* Each repeated 3rd byte carries the bits of its own channel */
+TEST(test_write_all_per_channel_config)
+{
+    static const uint8_t expected[11] = {
+        0x80u, 0x64u,         /* A: internal, x1, 100 = 0x064 */
+        0x42u, 0x07u, 0xD0u,  /* B: VDD, x1, 2000 = 0x7D0 */
+        0x44u, 0x9Du, 0xACu,  /* C: internal, x2, 3500 = 0xDAC */
+        0x46u, 0x0Fu, 0xFFu,  /* D: VDD, x1, 4095 = 0xFFF */
+    };
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x05u, .gain_x2 = 0x04u,
+    };
+    const uint16_t vals[4] = {100, 2000, 3500, 4095};
+
+    mock_reset();
+    ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_OK);
+    ASSERT_EQ(mcp4728_write_all(&dev, vals), MCP4728_OK);
+    ASSERT_EQ(mock_write_count, 1);
+    ASSERT_EQ_HEX(mock_last_cmd, 0x40u);
+    ASSERT_EQ(mock_last_buf_len, 11);
+    ASSERT_MEMEQ_N(mock_last_buf, expected, sizeof(expected));
+}
+
+/* Section 4.3.1: "When the external reference is selected (VREF = VDD), the
+ * Gain of 2 option is disabled". Table 4-3: the device then uses a gain of 1
+ * whatever Gx says, so such a channel would give half the voltage asked for. */
+TEST(test_init_refuses_gain2_on_vdd)
+{
+    static const struct { uint8_t vref; uint8_t gain; } bad[] = {
+        { 0x00u, 0x01u }, { 0x00u, 0x08u }, { 0x0Eu, 0x01u },
+        { 0x07u, 0x08u }, { 0x05u, 0x0Fu },
+    };
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        const mcp4728_cfg_t cfg = {
+            .addr = MCP4728_ADDR_DEFAULT,
+            .vref_internal = bad[i].vref, .gain_x2 = bad[i].gain,
+        };
+        mcp4728_t d;
+        memset(&d, 0, sizeof(d));
+
+        mock_reset();
+        ASSERT_EQ(mcp4728_init(&d, &mock_i2c, &cfg), MCP4728_ERR_PARAM);
+        ASSERT_EQ(mcp4728_write_channel(&d, 0, 0), MCP4728_ERR_PARAM);
+        ASSERT_EQ(mock_op_count, 0);
+    }
+}
+
+TEST(test_init_accepts_gain2_on_internal)
+{
+    static const struct { uint8_t vref; uint8_t gain; } good[] = {
+        { 0x01u, 0x01u }, { 0x08u, 0x08u }, { 0x0Fu, 0x0Fu }, { 0x0Fu, 0x05u },
+    };
+
+    for (size_t i = 0; i < sizeof(good) / sizeof(good[0]); i++) {
+        const mcp4728_cfg_t cfg = {
+            .addr = MCP4728_ADDR_DEFAULT,
+            .vref_internal = good[i].vref, .gain_x2 = good[i].gain,
+        };
+
+        mock_reset();
+        ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_OK);
+        ASSERT_EQ(mock_op_count, 0);
+    }
+}
+
+/* The device has channels A-D only, so bits 4-7 mean nothing */
+TEST(test_init_refuses_bits_above_channel_d)
+{
+    static const struct { uint8_t vref; uint8_t gain; } bad[] = {
+        { 0x10u, 0x00u }, { 0x80u, 0x00u }, { 0xFFu, 0x0Fu }, { 0xFFu, 0xFFu },
+    };
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        const mcp4728_cfg_t cfg = {
+            .addr = MCP4728_ADDR_DEFAULT,
+            .vref_internal = bad[i].vref, .gain_x2 = bad[i].gain,
+        };
+
+        mock_reset();
+        ASSERT_EQ(mcp4728_init(&dev, &mock_i2c, &cfg), MCP4728_ERR_PARAM);
+    }
+}
+
 /* ---------- channel independence ---------- */
 
 TEST(test_channels_independent)
@@ -424,5 +561,12 @@ TEST_MAIN("mcp4728")
     RUN(test_value_encoding_1234);
     RUN(test_value_encoding_1);
     RUN(test_write_channel_selects_vdd_gain1_normal);
+    RUN(test_write_channel_internal_gain1);
+    RUN(test_write_channel_internal_gain2);
+    RUN(test_write_channel_uses_its_own_bits);
+    RUN(test_write_all_per_channel_config);
+    RUN(test_init_refuses_gain2_on_vdd);
+    RUN(test_init_accepts_gain2_on_internal);
+    RUN(test_init_refuses_bits_above_channel_d);
     RUN(test_channels_independent);
 TEST_MAIN_END()

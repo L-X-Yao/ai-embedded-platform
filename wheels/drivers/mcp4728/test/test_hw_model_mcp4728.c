@@ -213,6 +213,44 @@ TEST(test_hw_write_moves_channel_to_vdd)
     ASSERT_EQ(model.channel_vref[1], 1);
 }
 
+/* A driver set up for the internal reference keeps a factory channel on it,
+ * so the output scale does not change at the first write. */
+TEST(test_hw_write_keeps_internal_reference)
+{
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x0Fu,
+    };
+
+    mcp4728_model_init(&model);
+    ASSERT_EQ(mcp4728_init(&dev, &model_i2c, &cfg), MCP4728_OK);
+    ASSERT_EQ(mcp4728_write_channel(&dev, 0, 2048), MCP4728_OK);
+    ASSERT_EQ(model.channel_value[0], 2048);
+    ASSERT_EQ(model.channel_vref[0], 1);
+    ASSERT_EQ(model.channel_pd[0], 0);
+    ASSERT_EQ(model.channel_gain[0], 0);
+}
+
+TEST(test_hw_write_all_config_per_channel)
+{
+    const mcp4728_cfg_t cfg = {
+        .addr = MCP4728_ADDR_DEFAULT, .vref_internal = 0x0Bu, .gain_x2 = 0x09u,
+    };
+    const uint16_t vals[4] = {100, 200, 300, 400};
+    static const uint8_t vref[4] = {1, 1, 0, 1};
+    static const uint8_t gain[4] = {1, 0, 0, 1};
+
+    mcp4728_model_init(&model);
+    ASSERT_EQ(mcp4728_init(&dev, &model_i2c, &cfg), MCP4728_OK);
+    ASSERT_EQ(mcp4728_write_all(&dev, vals), MCP4728_OK);
+    ASSERT_EQ(model.write_count, 1);
+    for (int i = 0; i < 4; i++) {
+        ASSERT_EQ(model.channel_value[i], vals[i]);
+        ASSERT_EQ(model.channel_vref[i], vref[i]);
+        ASSERT_EQ(model.channel_gain[i], gain[i]);
+        ASSERT_EQ(model.channel_pd[i], 0);
+    }
+}
+
 TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_init_ok);
     RUN(test_hw_write_channel_a_zero);
@@ -230,4 +268,6 @@ TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_model_accepts_config_bits);
     RUN(test_hw_model_repeated_bytes);
     RUN(test_hw_write_moves_channel_to_vdd);
+    RUN(test_hw_write_keeps_internal_reference);
+    RUN(test_hw_write_all_config_per_channel);
 TEST_MAIN_END()
