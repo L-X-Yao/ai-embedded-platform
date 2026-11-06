@@ -21,20 +21,19 @@ static hmc5883l_i2c_t mock_i2c = {
     .ctx       = NULL
 };
 
-/* A chip with a delay hook: reading the data clears RDY, and the next set
- * raises it again unless the test says the sensor is stuck. */
+/* A chip with a delay hook at 15 Hz: RDY rises with the first set, after 2/fDO,
+ * unless the test says the sensor is stuck. It stays up across a read: Rev E
+ * p16 has it "Cleared when device initiates a write to the data output
+ * registers". */
 static int      data_reads;
 static uint32_t delay_total;
 static bool     sensor_stuck;
 
-static bool mock_read_clears_rdy(void *ctx, uint8_t dev_addr, uint8_t reg,
-                                 uint8_t *buf, uint16_t len)
+static bool mock_count_data_reads(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                  uint8_t *buf, uint16_t len)
 {
     bool ok = mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
-    if (reg == 0x03) {
-        data_reads++;
-        mock_regs[0x09] = 0x00;
-    }
+    if (reg == 0x03) data_reads++;
     return ok;
 }
 
@@ -42,12 +41,12 @@ static void mock_delay(void *ctx, uint32_t ms)
 {
     (void)ctx;
     delay_total += ms;
-    if (data_reads > 0 && !sensor_stuck) mock_regs[0x09] = 0x01;
+    if (delay_total >= 134u && !sensor_stuck) mock_regs[0x09] = 0x01;
 }
 
 static hmc5883l_i2c_t timed_i2c = {
     .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_read_clears_rdy,
+    .read_regs = mock_count_data_reads,
     .delay_ms  = mock_delay,
     .ctx       = NULL
 };
@@ -191,8 +190,9 @@ TEST(test_init_drops_the_sample_taken_at_the_old_gain)
     hmc5883l_cfg_t cfg = { .gain = HMC5883L_GAIN_1090, .rate = HMC5883L_RATE_15 };
     ASSERT_EQ(hmc5883l_init(&dev, &timed_i2c, &cfg), HMC5883L_OK);
 
-    /* 2/fDO at 15 Hz is 133 ms, then one set is read and thrown away */
-    ASSERT_GE(delay_total, 133u);
+    /* 2/fDO at 15 Hz is 133 ms, then one set is read and thrown away, and the
+     * next one comes at 3/fDO. RDY cannot show that, as it is already up. */
+    ASSERT_GE(delay_total, 200u);
     ASSERT_EQ(data_reads, 1);
     ASSERT_EQ(mock_regs[0x09], 0x01);
 }
