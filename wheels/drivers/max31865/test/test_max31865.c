@@ -439,6 +439,42 @@ TEST(test_init_spi_null_callbacks)
 
 /* ---------- main ---------- */
 
+/* p.13: the RTD registers reset to 00h, and p.16 sets the fault flag on any
+ * result at or below the POR low threshold, so a clear word is no result */
+TEST(test_read_before_the_first_conversion)
+{
+    setup();
+    plant_rtd(0, 0);
+
+    uint16_t raw = 77;
+    float temp = 77.0f;
+    ASSERT_EQ(max31865_read_rtd_raw(&dev, &raw), MAX31865_ERR_NOT_READY);
+    ASSERT_EQ(max31865_read_temperature(&dev, &temp), MAX31865_ERR_NOT_READY);
+    ASSERT_EQ(raw, 77);
+    ASSERT_NEAR(temp, 77.0f, 0.001f);
+}
+
+/* Code 0 with the fault flag is a finished conversion of a shorted RTD */
+TEST(test_code_zero_with_the_flag_is_a_fault)
+{
+    setup();
+    plant_rtd(0, 1);
+
+    uint16_t raw;
+    ASSERT_EQ(max31865_read_rtd_raw(&dev, &raw), MAX31865_ERR_FAULT);
+}
+
+/* The smallest result is a result */
+TEST(test_code_one_is_a_result)
+{
+    setup();
+    plant_rtd(1, 0);
+
+    uint16_t raw = 0;
+    ASSERT_EQ(max31865_read_rtd_raw(&dev, &raw), MAX31865_OK);
+    ASSERT_EQ(raw, 1);
+}
+
 TEST_MAIN("max31865")
     RUN(test_init_ok);
     RUN(test_init_config_3wire);
@@ -459,4 +495,7 @@ TEST_MAIN("max31865")
     RUN(test_read_fault_register);
     RUN(test_clear_fault);
     RUN(test_init_spi_null_callbacks);
+    RUN(test_read_before_the_first_conversion);
+    RUN(test_code_zero_with_the_flag_is_a_fault);
+    RUN(test_code_one_is_a_result);
 TEST_MAIN_END()

@@ -30,6 +30,7 @@ typedef enum {
     MAX31865_ERR_SPI     = -1,
     MAX31865_ERR_PARAM   = -2,
     MAX31865_ERR_FAULT   = -3,
+    MAX31865_ERR_NOT_READY = -4,  /* no conversion finished yet: read again later */
 } max31865_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -82,10 +83,13 @@ typedef struct {
 max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,
                              const max31865_cfg_t *cfg);
 
-/** Read temperature in degrees Celsius via Callendar-Van Dusen. */
+/** Read temperature in degrees Celsius via Callendar-Van Dusen. Returns
+ *  MAX31865_ERR_NOT_READY like max31865_read_rtd_raw. */
 max31865_err_t max31865_read_temperature(max31865_t *dev, float *temp_c);
 
-/** Read raw 15-bit RTD ADC value (0..32767). */
+/** Read raw 15-bit RTD ADC value (0..32767). Returns MAX31865_ERR_NOT_READY and
+ *  leaves *rtd_raw unchanged until the first conversion has finished, up to
+ *  55 ms after init with the 60 Hz filter and 66 ms with the 50 Hz filter. */
 max31865_err_t max31865_read_rtd_raw(max31865_t *dev, uint16_t *rtd_raw);
 
 /** Read fault status register (0x07). */
