@@ -73,14 +73,21 @@ gc9a01_err_t gc9a01_init(gc9a01_t *dev, const gc9a01_spi_t *spi)
 {
     REQUIRE(dev != NULL);
     REQUIRE(spi != NULL);
-    if (!dev || !spi) {
+    if (!dev) {
+        return GC9A01_ERR_PARAM;
+    }
+
+    /* dev->spi stays NULL unless init accepts the HAL: the other calls refuse
+     * a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi) {
         return GC9A01_ERR_PARAM;
     }
     if (!validate_hal(spi)) {
         return GC9A01_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->spi      = spi;
     dev->rotation = 0;
     dev->width    = GC9A01_WIDTH;

@@ -651,6 +651,48 @@ TEST(test_mock_bfs_bfc_leave_mac_registers_alone)
     ASSERT_EQ(mock_regs[3][MAADR1], test_mac[0]);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(enc28j60_t *d)
+{
+    uint8_t frame[8] = {0};
+    uint16_t len = 0;
+    int before = xfer_call_count;
+
+    ASSERT_EQ(enc28j60_send(d, frame, 8), ENC28J60_ERR_PARAM);
+    ASSERT_EQ(enc28j60_receive(d, frame, 8, &len), ENC28J60_ERR_PARAM);
+    ASSERT_FALSE(enc28j60_has_packet(d));
+    ASSERT_EQ(enc28j60_get_revision(d), 0);
+    ASSERT_EQ(enc28j60_set_mac(d, test_mac), ENC28J60_ERR_PARAM);
+    enc28j60_enable_reception(d);
+    ASSERT_EQ(xfer_call_count, before);
+}
+
+/* The oscillator never starts, so CLKRDY never sets */
+TEST(test_device_refused_after_clkrdy_timeout)
+{
+    enc28j60_t d;
+    mock_reset();
+    mock_common[ESTAT] = 0;
+    ASSERT_EQ(enc28j60_init(&d, &mock_spi, test_mac), ENC28J60_ERR_TIMEOUT);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    enc28j60_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(enc28j60_init(&d, NULL, test_mac), ENC28J60_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(enc28j60_init(&d, &mock_spi, NULL), ENC28J60_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("enc28j60")
     RUN(test_init_ok);
     RUN(test_init_sets_mac);
@@ -680,4 +722,6 @@ TEST_MAIN("enc28j60")
     RUN(test_receive_buf_too_small_no_wrap);
     RUN(test_receive_next_pkt_nonzero);
     RUN(test_mock_bfs_bfc_leave_mac_registers_alone);
+    RUN(test_device_refused_after_clkrdy_timeout);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

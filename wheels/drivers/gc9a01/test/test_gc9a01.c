@@ -640,6 +640,35 @@ TEST(test_error_codes)
 
 /* ========== runner ========== */
 
+/* ========== a device init refused ========== */
+
+static void assert_device_refused(gc9a01_t *d)
+{
+    uint16_t pixel = 0;
+    ASSERT_EQ(gc9a01_set_window(d, 0, 0, 1, 1), GC9A01_ERR_PARAM);
+    ASSERT_EQ(gc9a01_write_pixels(d, &pixel, 1), GC9A01_ERR_PARAM);
+    ASSERT_EQ(gc9a01_fill(d, 0), GC9A01_ERR_PARAM);
+    ASSERT_EQ(gc9a01_set_rotation(d, 1), GC9A01_ERR_PARAM);
+    ASSERT_EQ(gc9a01_sleep(d, true), GC9A01_ERR_PARAM);
+    ASSERT_EQ(gc9a01_display(d, true), GC9A01_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    gc9a01_t d;
+    gc9a01_spi_t no_xfer = mock_spi;
+    no_xfer.xfer = NULL;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(gc9a01_init(&d, NULL), GC9A01_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(gc9a01_init(&d, &no_xfer), GC9A01_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("gc9a01")
     /* init */
     RUN(test_init_ok);
@@ -710,4 +739,5 @@ TEST_MAIN("gc9a01")
     RUN(test_rgb565_mixed);
     /* error codes */
     RUN(test_error_codes);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

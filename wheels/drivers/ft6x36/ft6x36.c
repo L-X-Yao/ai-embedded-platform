@@ -17,6 +17,7 @@
 
 #include "ft6x36.h"
 #include "contract.h"
+#include <string.h>
 
 /* Touch point data offsets within a 6-byte block */
 #define TP_XH_OFFSET  0u
@@ -43,16 +44,26 @@ ft6x36_err_t ft6x36_init(ft6x36_t *dev, const ft6x36_i2c_t *i2c)
 {
     REQUIRE(dev != NULL);
     REQUIRE(i2c != NULL);
-    if (!dev || !i2c) return FT6X36_ERR_PARAM;
+    if (!dev) return FT6X36_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs) return FT6X36_ERR_PARAM;
     dev->i2c = i2c;
-    dev->chip_id = 0;
 
     uint8_t id = 0;
     ft6x36_err_t err = read_reg8(dev, FT6X36_REG_CHIP_ID, &id);
-    if (err != FT6X36_OK) return err;
+    if (err != FT6X36_OK) {
+        dev->i2c = NULL;
+        return err;
+    }
 
-    if (id != FT6X36_CHIP_ID_6236 && id != FT6X36_CHIP_ID_6336)
+    if (id != FT6X36_CHIP_ID_6236 && id != FT6X36_CHIP_ID_6336) {
+        dev->i2c = NULL;
         return FT6X36_ERR_ID;
+    }
 
     dev->chip_id = id;
     return FT6X36_OK;
@@ -62,7 +73,7 @@ ft6x36_err_t ft6x36_read_touch(ft6x36_t *dev, ft6x36_touch_t *out)
 {
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
-    if (!dev || !out) return FT6X36_ERR_PARAM;
+    if (!dev || !dev->i2c || !out) return FT6X36_ERR_PARAM;
 
     /* Read TD_STATUS (0x02) through P2_YL (0x0C) = 11 bytes */
     uint8_t buf[11];
@@ -107,7 +118,7 @@ ft6x36_err_t ft6x36_read_touch(ft6x36_t *dev, ft6x36_touch_t *out)
 ft6x36_err_t ft6x36_set_threshold(ft6x36_t *dev, uint8_t value)
 {
     REQUIRE(dev != NULL);
-    if (!dev) return FT6X36_ERR_PARAM;
+    if (!dev || !dev->i2c) return FT6X36_ERR_PARAM;
 
     if (!dev->i2c->write_reg(dev->i2c->ctx, FT6X36_DEV_ADDR,
                              FT6X36_REG_TH_GROUP, value))
@@ -120,7 +131,7 @@ ft6x36_err_t ft6x36_get_chip_id(ft6x36_t *dev, uint8_t *out)
 {
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
-    if (!dev || !out) return FT6X36_ERR_PARAM;
+    if (!dev || !dev->i2c || !out) return FT6X36_ERR_PARAM;
     return read_reg8(dev, FT6X36_REG_CHIP_ID, out);
 }
 
@@ -128,6 +139,6 @@ ft6x36_err_t ft6x36_get_firmware_version(ft6x36_t *dev, uint8_t *out)
 {
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
-    if (!dev || !out) return FT6X36_ERR_PARAM;
+    if (!dev || !dev->i2c || !out) return FT6X36_ERR_PARAM;
     return read_reg8(dev, FT6X36_REG_FW_VER, out);
 }
