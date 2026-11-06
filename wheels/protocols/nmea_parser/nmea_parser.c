@@ -19,7 +19,7 @@
  * limits is ignored and the field keeps what it had. NMEA sets few of them, so
  * they are wide, and only have to keep out what no receiver reports.
  */
-#define MAX_SPEED_KNOTS 1000.0f     /* the CoCom limit on civil GPS receivers */
+#define MAX_SPEED_KNOTS 1000.0f     /* about 514 m/s */
 #define MAX_COURSE_DEG  360.0f
 #define MAX_ABS_ALT_M   1000000.0f
 #define MAX_DOP         1000.0f     /* receivers report 99.99 with no geometry */
@@ -111,6 +111,22 @@ static float parse_lon(const char *raw, char ew)
     return result;
 }
 
+/*
+ * Whether a field holds ddmm.mmmm or dddmm.mmmm, up to max_deg degrees, and
+ * nothing else. strtof alone would read text as 0 and take nan and inf.
+ */
+static bool coord_is_valid(const char *raw, float max_deg)
+{
+    size_t digits = strspn(raw, "0123456789.");
+    char *end;
+    float v = strtof(raw, &end);
+
+    if (digits == 0 || end != raw + digits || *end != ',') return false;
+    if (v > max_deg * 100.0f) return false;
+    int deg = (int)(v / 100.0f);
+    return v - (float)deg * 100.0f < 60.0f;
+}
+
 static int is_digit(char c) { return c >= '0' && c <= '9'; }
 
 static void parse_time(const char *field, nmea_parser_data_t *d)
@@ -147,6 +163,18 @@ static void parse_date(const char *field, nmea_parser_data_t *d)
 
 static void parse_gga(const char *line, nmea_parser_data_t *d)
 {
+    /* GGA carries the time too, but that stays RMC's: a consumer pairs hour,
+     * min and sec with the date and with the moment the RMC arrived. */
+    const char *lat_f = get_field(line, 2);
+    char ns = field_char(line, 3);
+    if (coord_is_valid(lat_f, 90.0f) && (ns == 'N' || ns == 'S'))
+        d->latitude_deg = parse_lat(lat_f, ns);
+
+    const char *lon_f = get_field(line, 4);
+    char ew = field_char(line, 5);
+    if (coord_is_valid(lon_f, 180.0f) && (ew == 'E' || ew == 'W'))
+        d->longitude_deg = parse_lon(lon_f, ew);
+
     field_u8_in(line, 6, MAX_FIX_QUALITY, &d->fix_quality);
     field_u8_in(line, 7, MAX_SATELLITES, &d->satellites);
     field_float_in(line, 8, 0.0f, MAX_DOP, &d->hdop);
