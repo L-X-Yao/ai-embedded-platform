@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 /*
- * ncp5623_parser — NCP5623 I2C LED driver command parser
+ * ncp5623_parser — ToshibaLED (TCA62724) I2C LED command parser
  *
  * Layer:   L2
  * Status:  candidate
  * Deps:      (none)
  * Instances: multi
+ *
+ * Parses what ArduPilot's AP_Notify/ToshibaLED_I2C.cpp sends at I2C address
+ * 0x55, despite the name. A real NCP5623 master sends single bytes of
+ * (reg & 0xE0) | (data & 0x1F), which give no events here. The name stays
+ * because renaming the wheel would change its API.
  */
 
 #ifndef NCP5623_PARSER_H
