@@ -199,6 +199,8 @@ typedef struct {
     int      tx_econ1_read_count;
     /* ESTAT bits the next transmission sets as it ends, to model an abort */
     uint8_t  tx_end_estat;
+    /* Buffer bytes written while a transmission was pending */
+    int      tx_write_while_pending;
 
     /* Track buffer writes for verification */
     uint8_t  tx_captured[2048];
@@ -512,6 +514,9 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
     }
 
     case ENC_PH_WRITE_BUF: {
+        /* DS39662C p.42: no touching the bytes of a pending transmission */
+        if (m->common[ENC_ECON1] & ENC_ECON1_TXRTS)
+            m->tx_write_while_pending++;
         /* Write to buffer memory at buf_wrptr, auto-increment */
         if (m->buf_wrptr < ENC_BUF_SIZE) {
             m->buffer[m->buf_wrptr] = tx;
