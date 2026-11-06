@@ -28,6 +28,7 @@ typedef enum {
     MS5611_ERR_I2C      = -1,
     MS5611_ERR_PARAM    = -2,
     MS5611_ERR_CRC      = -3,
+    MS5611_ERR_ADC      = -4,   /* ADC read gave 0: no finished conversion */
 } ms5611_err_t;
 
 typedef struct {
