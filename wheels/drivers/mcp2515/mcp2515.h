@@ -65,6 +65,9 @@ typedef struct {
     void    (*cs_high)(void *ctx);
     uint8_t (*xfer)(void *ctx, uint8_t tx);
     void    *ctx;
+    /* Required. Waits at least us microseconds, for the chip's Oscillator
+     * Start-up Timer. Init returns MCP2515_ERR_PARAM if it is NULL. */
+    void    (*delay_us)(void *ctx, uint32_t us);
 } mcp2515_spi_t;
 
 /* ---------- device handle ---------- */
@@ -82,7 +85,11 @@ typedef struct {
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
 
-/** Reset chip, configure speed, enter normal mode. */
+/** Reset chip, wait out the Oscillator Start-up Timer, configure speed, enter
+ *  normal mode. The wait is 128 us, which covers the slowest clock the chip
+ *  allows. The power-on start-up comes before the RESET and the driver cannot
+ *  know when power came up, so do not call this until the oscillator runs.
+ *  Returns MCP2515_ERR_PARAM and sends nothing if spi->delay_us is NULL. */
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
                             mcp2515_speed_t speed);
 

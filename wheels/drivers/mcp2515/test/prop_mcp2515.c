@@ -119,11 +119,18 @@ static uint8_t prop_xfer(void *ctx, uint8_t tx)
     return 0xFF;
 }
 
+static void prop_delay_us(void *ctx, uint32_t us)
+{
+    (void)ctx;
+    (void)us;
+}
+
 static const mcp2515_spi_t prop_spi = {
-    .cs_low  = prop_cs_low,
-    .cs_high = prop_cs_high,
-    .xfer    = prop_xfer,
-    .ctx     = NULL,
+    .cs_low   = prop_cs_low,
+    .cs_high  = prop_cs_high,
+    .xfer     = prop_xfer,
+    .ctx      = NULL,
+    .delay_us = prop_delay_us,
 };
 
 /* ---- Helper: inject standard frame into RXB0 ---- */
