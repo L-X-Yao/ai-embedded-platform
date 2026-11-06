@@ -16,7 +16,8 @@
 
 /* Property: alloc/free roundtrip -- alloc N blocks, free them all, pool restores */
 PROPERTY(alloc_free_roundtrip, 5000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -38,7 +39,8 @@ PROPERTY(alloc_free_roundtrip, 5000) {
 
 /* Property: no double-alloc -- all returned pointers are distinct */
 PROPERTY(no_double_alloc, 5000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -57,7 +59,8 @@ PROPERTY(no_double_alloc, 5000) {
 
 /* Property: reset restores all blocks */
 PROPERTY(reset_restores_all, 5000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -80,7 +83,8 @@ PROPERTY(reset_restores_all, 5000) {
 
 /* Property: available + used = total always holds */
 PROPERTY(available_plus_used_eq_total, 5000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
     void *ptrs[MAX_BLOCKS];
@@ -104,7 +108,8 @@ PROPERTY(available_plus_used_eq_total, 5000) {
 
 /* Property: pool full returns NULL, no crash */
 PROPERTY(pool_full_returns_null, 1000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -118,7 +123,8 @@ PROPERTY(pool_full_returns_null, 1000) {
 
 /* Property: free with invalid pointer returns error */
 PROPERTY(free_invalid_ptr_rejected, 1000) {
-    uint8_t buf[BUF_SIZE];
+    union { void *align; uint8_t bytes[BUF_SIZE]; } store;
+    uint8_t *const buf = store.bytes;
     uint8_t other[64];
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);

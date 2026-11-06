@@ -29,7 +29,7 @@ extern "C" {
 typedef enum {
     MEMORY_POOL_OK          =  0,
     MEMORY_POOL_ERR_NULL    = -1,  /* NULL pointer argument            */
-    MEMORY_POOL_ERR_SIZE    = -2,  /* block_size too small or buf too small */
+    MEMORY_POOL_ERR_SIZE    = -2,  /* block_size or buf too small or misaligned */
     MEMORY_POOL_ERR_FULL    = -3,  /* no free blocks                   */
     MEMORY_POOL_ERR_INVALID = -4,  /* ptr not from this pool           */
 } memory_pool_err_t;
@@ -47,8 +47,11 @@ typedef struct {
 /* ---------- API ---------- */
 
 /** Initialize pool over caller-provided buffer.
- *  block_size must be >= sizeof(void*).
+ *  block_size must be >= sizeof(void*) and a multiple of the alignment of void*.
+ *  buf must be aligned for void*.  A plain uint8_t array has no such guarantee;
+ *  declare the storage as union { void *align; uint8_t bytes[N]; }.
  *  buf_size must be >= block_size (determines block_count = buf_size / block_size).
+ *  Returns MEMORY_POOL_ERR_SIZE if any of these does not hold.
  *  @thread_safe: no @isr_safe: no */
 memory_pool_err_t memory_pool_init(memory_pool_t *pool, uint8_t *buf,
                                    size_t buf_size, size_t block_size);
