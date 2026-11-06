@@ -8,6 +8,10 @@
 
 static uint8_t  g_sent[2048];
 static uint16_t g_sent_len;
+/* Far from 0, so that a start time has to be subtracted to get the right
+ * answer, and near the wrap, so that the long timeouts run across it. */
+#define T0  0xFFFF0000u
+
 static uint32_t g_tick_ms;
 
 static int mock_send(void *ctx, const uint8_t *data, uint16_t len)
@@ -66,7 +70,7 @@ static void msg_cb(void *ctx, const char *topic, uint16_t topic_len,
 
 static void reset_mocks(void)
 {
-    g_sent_len = 0; g_tick_ms = 0;
+    g_sent_len = 0; g_tick_ms = T0;
     g_evt_count = 0; g_evt_state = MQTT_CLIENT_DISCONNECTED; g_evt_reason = 0;
     g_msg_count = 0; g_msg_len = 0;
     memset(g_sent, 0, sizeof(g_sent));
@@ -184,10 +188,10 @@ TEST(test_connect_timeout)
     mqtt_client_init(&g_c, &g_io, &cfg);
     mqtt_client_on_event(&g_c, evt_cb, NULL);
     mqtt_client_connect(&g_c);
-    g_tick_ms = 4999;
+    g_tick_ms = T0 + 4999;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTING);
-    g_tick_ms = 5000;
+    g_tick_ms = T0 + 5000;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
     ASSERT_EQ(g_evt_reason, 0xFF);
@@ -248,7 +252,10 @@ TEST(test_puback_timeout_clears_inflight)
     setup_connected();
     mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1);
     ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
-    g_tick_ms = 3000;
+    g_tick_ms = T0 + 2999;
+    mqtt_client_poll(&g_c);
+    ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
+    g_tick_ms = T0 + 3000;
     mqtt_client_poll(&g_c);
     ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
 }
@@ -314,7 +321,7 @@ TEST(test_keepalive_pingreq)
 {
     setup_connected();
     g_sent_len = 0;
-    g_tick_ms = 45000;
+    g_tick_ms = T0 + 45000;
     mqtt_client_poll(&g_c);
     ASSERT_TRUE(g_sent_len >= 2);
     ASSERT_EQ(g_sent[0], 0xC0);
@@ -323,7 +330,7 @@ TEST(test_keepalive_pingreq)
 TEST(test_keepalive_timeout_disconnects)
 {
     setup_connected();
-    g_tick_ms = 90000;
+    g_tick_ms = T0 + 90000;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
     ASSERT_EQ(g_evt_reason, 0xFE);
@@ -332,11 +339,11 @@ TEST(test_keepalive_timeout_disconnects)
 TEST(test_pingresp_resets_rx_timer)
 {
     setup_connected();
-    g_tick_ms = 45000;
+    g_tick_ms = T0 + 45000;
     mqtt_client_poll(&g_c);
     uint8_t pingresp[] = { 0xD0, 0x00 };
     mqtt_client_feed(&g_c, pingresp, sizeof(pingresp));
-    g_tick_ms = 89000;
+    g_tick_ms = T0 + 89000;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
 }
@@ -432,17 +439,111 @@ TEST(test_keepalive_retries_a_failed_ping)
     mqtt_client_feed(&g_c, connack, sizeof(connack));
 
     /* a publish just now: only the broker's silence calls for a ping */
-    g_tick_ms = 45000;
+    g_tick_ms = T0 + 45000;
     ASSERT_EQ(mqtt_client_publish(&g_c, "t", payload, 1, 0), MQTT_CLIENT_OK);
     g_sent_len = 0;
     g_fail_sends = 1;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(g_sent_len, 0);
 
-    g_tick_ms = 46000;
+    g_tick_ms = T0 + 46000;
     mqtt_client_poll(&g_c);
     ASSERT_EQ(g_sent_len, 2);
     ASSERT_EQ(g_sent[0], 0xC0);
+}
+
+/* last_ping_ms counts from the connect, not from whatever it held: a connect
+ * 30 s before the tick wraps must still ping after 45 s. */
+TEST(test_first_ping_is_timed_from_the_connect)
+{
+    const uint8_t connack[] = { 0x20, 0x02, 0x00, 0x00 };
+
+    setup_connected();
+    mqtt_client_disconnect(&g_c);
+
+    g_tick_ms = 0u - 30000u;
+    mqtt_client_connect(&g_c);
+    mqtt_client_feed(&g_c, connack, sizeof(connack));
+
+    ASSERT_EQ(publish_and_poll(45000), 1);
+}
+
+/* ─── packet ids above 255 ───────────────────────────────────── */
+
+/* Uses up ids until the next is id, as a long session would. */
+static void use_ids_up_to(uint16_t id)
+{
+    while (g_c.next_packet_id != id) {
+        (void)mqtt_client_next_id(&g_c);
+    }
+}
+
+TEST(test_publish_id_above_255_is_matched_whole)
+{
+    const uint8_t low_byte_only[]  = { 0x40, 0x02, 0x00, 0x34 };
+    const uint8_t high_byte_only[] = { 0x40, 0x02, 0x12, 0x00 };
+    const uint8_t right[]          = { 0x40, 0x02, 0x12, 0x34 };
+
+    setup_connected();
+    use_ids_up_to(0x1234);
+    ASSERT_EQ(mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1),
+              MQTT_CLIENT_OK);
+
+    mqtt_client_feed(&g_c, low_byte_only, sizeof(low_byte_only));
+    ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
+    mqtt_client_feed(&g_c, high_byte_only, sizeof(high_byte_only));
+    ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
+    mqtt_client_feed(&g_c, right, sizeof(right));
+    ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
+}
+
+TEST(test_incoming_publish_id_above_255_is_acked_whole)
+{
+    const uint8_t pkt[] = { 0x32, 0x06, 0x00, 0x01, 't', 0x12, 0x34, 'x' };
+
+    setup_connected();
+    g_sent_len = 0;
+    mqtt_client_feed(&g_c, pkt, sizeof(pkt));
+
+    ASSERT_EQ(g_msg_count, 1);
+    ASSERT_EQ(g_sent_len, 4);
+    ASSERT_EQ(g_sent[0], 0x40);
+    ASSERT_EQ(g_sent[1], 0x02);
+    ASSERT_EQ(g_sent[2], 0x12);
+    ASSERT_EQ(g_sent[3], 0x34);
+}
+
+TEST(test_subscribe_id_above_255_is_matched_whole)
+{
+    const uint8_t low_byte_only[]  = { 0x90, 0x03, 0x00, 0x34, 0x00 };
+    const uint8_t high_byte_only[] = { 0x90, 0x03, 0x12, 0x00, 0x00 };
+    const uint8_t right[]          = { 0x90, 0x03, 0x12, 0x34, 0x00 };
+
+    setup_connected();
+    use_ids_up_to(0x1234);
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/1", 0), MQTT_CLIENT_OK);
+
+    mqtt_client_feed(&g_c, low_byte_only, sizeof(low_byte_only));
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/2", 0), MQTT_CLIENT_ERR_BUSY);
+    mqtt_client_feed(&g_c, high_byte_only, sizeof(high_byte_only));
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/2", 0), MQTT_CLIENT_ERR_BUSY);
+    mqtt_client_feed(&g_c, right, sizeof(right));
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/2", 0), MQTT_CLIENT_OK);
+}
+
+/* A SUBACK that never comes must not block every later subscribe. */
+TEST(test_suback_timeout_clears_inflight)
+{
+    setup_connected();
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/1", 0), MQTT_CLIENT_OK);
+
+    g_tick_ms = T0 + 2999;
+    mqtt_client_poll(&g_c);
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/2", 0), MQTT_CLIENT_ERR_BUSY);
+
+    g_tick_ms = T0 + 3000;
+    mqtt_client_poll(&g_c);
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s/2", 0), MQTT_CLIENT_OK);
 }
 
 /* ─── disconnect tests ───────────────────────────────────────── */
@@ -820,6 +921,11 @@ TEST_MAIN("mqtt_client")
     RUN(test_keepalive_publisher_is_not_cut_off);
     RUN(test_keepalive_publisher_detects_a_dead_link);
     RUN(test_keepalive_retries_a_failed_ping);
+    RUN(test_first_ping_is_timed_from_the_connect);
+    RUN(test_publish_id_above_255_is_matched_whole);
+    RUN(test_incoming_publish_id_above_255_is_acked_whole);
+    RUN(test_subscribe_id_above_255_is_matched_whole);
+    RUN(test_suback_timeout_clears_inflight);
     RUN(test_pingresp_resets_rx_timer);
     RUN(test_disconnect);
     RUN(test_feed_partial_packet);
