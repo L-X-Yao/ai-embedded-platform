@@ -476,6 +476,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(max17048_init(&d, NULL), MAX17048_ERR_PARAM);
     assert_device_refused(&d);
 
+    static max17048_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max17048_init(&d, &zeroed_hal), MAX17048_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* No such part answers version 0xFFFF */
     mock_regs[REG_VERSION]     = 0xFF;
     mock_regs[REG_VERSION + 1] = 0xFF;

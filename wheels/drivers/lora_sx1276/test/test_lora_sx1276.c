@@ -875,6 +875,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(lora_init(&d, &no_xfer, 433000000UL), LORA_ERR_SPI);
     assert_device_refused(&d);
 
+    static lora_spi_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lora_init(&d, &zeroed_hal, 433000000UL), LORA_ERR_SPI);
+    assert_device_refused(&d);
+
     /* 0x42 is the version register: a wrong one means no chip we can drive */
     mock_regs[0x42] = 0xAA;
     ASSERT_EQ(lora_init(&d, &mock_spi, 433000000UL), LORA_ERR_VERSION);

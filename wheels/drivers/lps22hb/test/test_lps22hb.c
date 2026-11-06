@@ -407,6 +407,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(lps22hb_init(&d, NULL), LPS22HB_ERR_PARAM);
     assert_device_refused(&d);
 
+    static lps22hb_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lps22hb_init(&d, &zeroed_hal), LPS22HB_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* 0xBD is the WHO_AM_I of an LPS25HB: it answers, but it is another chip */
     mock_regs[REG_WHO_AM_I] = 0xBD;
     ASSERT_EQ(lps22hb_init(&d, &mock_i2c), LPS22HB_ERR_ID);

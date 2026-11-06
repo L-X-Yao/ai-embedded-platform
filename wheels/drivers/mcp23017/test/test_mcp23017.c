@@ -392,6 +392,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(mcp23017_init(&d, NULL, 0x20), MCP23017_ERR_PARAM);
     assert_device_refused(&d);
 
+    static mcp23017_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp23017_init(&d, &zeroed_hal, 0x20), MCP23017_ERR_PARAM);
+    assert_device_refused(&d);
+
     memset(&d, 0xA5, sizeof(d));
     ASSERT_EQ(mcp23017_init(&d, &mock_i2c, 0x28), MCP23017_ERR_PARAM);
     assert_device_refused(&d);
