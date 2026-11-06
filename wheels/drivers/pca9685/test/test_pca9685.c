@@ -40,6 +40,29 @@ static const pca9685_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
+/* MODE1 writes in order, each with the delay total at that moment */
+#define MODE1_LOG_MAX 8
+static uint8_t  mode1_log[MODE1_LOG_MAX];
+static uint32_t mode1_log_ms[MODE1_LOG_MAX];
+static int      mode1_log_len;
+
+static bool log_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    if (reg == REG_MODE1 && mode1_log_len < MODE1_LOG_MAX) {
+        mode1_log[mode1_log_len] = val;
+        mode1_log_ms[mode1_log_len] = delay_total_ms;
+        mode1_log_len++;
+    }
+    return mock_i2c_write_reg(ctx, dev_addr, reg, val);
+}
+
+static const pca9685_i2c_t log_i2c = {
+    .write_reg = log_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .delay_ms  = mock_delay_ms,
+    .ctx       = NULL,
+};
+
 static pca9685_t dev;
 
 /* ---------- tests ---------- */
@@ -230,6 +253,37 @@ TEST(test_sleep_wake)
     ASSERT_TRUE(mock_regs[REG_MODE1] & MODE1_RESTART);
 }
 
+/* p.15: a sleep with channels active leaves RESTART at 1, and "The SLEEP bit
+ * must be logic 0 for at least 500 us, before a logic 1 is written into the
+ * RESTART bit." 0xB1 is RESTART, AI, SLEEP and ALLCALL. */
+TEST(test_wake_writes_restart_after_500us)
+{
+    mock_reset();
+    pca9685_init(&dev, &log_i2c, 0x40, 50);
+    mock_regs[REG_MODE1] = 0xB1;
+    mode1_log_len = 0;
+
+    ASSERT_EQ(pca9685_wake(&dev), PCA9685_OK);
+    ASSERT_EQ(mode1_log_len, 2);
+    ASSERT_EQ(mode1_log[0] & (MODE1_SLEEP | MODE1_RESTART), 0);
+    ASSERT_EQ(mode1_log[1] & (MODE1_SLEEP | MODE1_RESTART), MODE1_RESTART);
+    ASSERT_GE(mode1_log_ms[1] - mode1_log_ms[0], 1);
+}
+
+TEST(test_set_freq_writes_restart_after_500us)
+{
+    mock_reset();
+    pca9685_init(&dev, &log_i2c, 0x40, 50);
+    mock_regs[REG_MODE1] = 0xB1;
+    mode1_log_len = 0;
+
+    ASSERT_EQ(pca9685_set_freq(&dev, 100), PCA9685_OK);
+    ASSERT_EQ(mode1_log_len, 3);
+    ASSERT_EQ(mode1_log[1] & (MODE1_SLEEP | MODE1_RESTART), 0);
+    ASSERT_EQ(mode1_log[2] & (MODE1_SLEEP | MODE1_RESTART), MODE1_RESTART);
+    ASSERT_GE(mode1_log_ms[2] - mode1_log_ms[1], 1);
+}
+
 TEST(test_i2c_failure)
 {
     mock_reset();
@@ -286,5 +340,7 @@ TEST_MAIN("pca9685")
     RUN(test_set_freq_prescaler_calc);
     RUN(test_set_freq_range_validation);
     RUN(test_sleep_wake);
+    RUN(test_wake_writes_restart_after_500us);
+    RUN(test_set_freq_writes_restart_after_500us);
     RUN(test_i2c_failure);
 TEST_MAIN_END()
