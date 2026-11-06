@@ -228,6 +228,19 @@ TEST(test_null_safety)
     ASSERT_FALSE(aht20_is_calibrated(NULL));
 }
 
+/* p.8: "the MCU must wait until the measurement is completed", and delay_ms
+ * is the only way to wait. */
+TEST(test_init_null_delay)
+{
+    mock_reset();
+    plant_status(0x08);
+    aht20_i2c_t no_delay = { .write = mock_write, .read = mock_read,
+                             .delay_ms = NULL, .ctx = NULL };
+    aht20_t d;
+    ASSERT_EQ(aht20_init(&d, &no_delay), AHT20_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
+}
+
 TEST(test_init_null_callbacks)
 {
     aht20_i2c_t bad = { .write = NULL, .read = mock_read, .ctx = NULL };
@@ -470,6 +483,7 @@ TEST_MAIN("aht20")
     RUN(test_init_i2c_fail_on_init_cmd);
     RUN(test_init_i2c_fail_on_second_status_read);
     RUN(test_null_safety);
+    RUN(test_init_null_delay);
     RUN(test_init_null_callbacks);
     RUN(test_read_25c_50pct);
     RUN(test_read_0c_0pct);

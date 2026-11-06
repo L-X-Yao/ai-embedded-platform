@@ -53,10 +53,7 @@ static bool send_cmd3(const aht20_t *dev, uint8_t b0, uint8_t b1, uint8_t b2)
 
 static void delay(const aht20_t *dev, uint16_t ms)
 {
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 static bool read_status(aht20_t *dev)
@@ -103,7 +100,7 @@ aht20_err_t aht20_init(aht20_t *dev, const aht20_i2c_t *i2c)
     {
         return AHT20_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read)
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
     {
         return AHT20_ERR_PARAM;
     }
