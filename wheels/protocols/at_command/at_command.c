@@ -142,16 +142,18 @@ static int starts_with(const char *str, const char *prefix)
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-static void dispatch_urc(at_command_t *at, const char *line)
+/** Hand the line to the first matching URC handler. Returns 1 if one took it. */
+static int dispatch_urc(at_command_t *at, const char *line)
 {
     uint8_t i;
 
     for (i = 0U; i < at->urc_count; i++) {
         if (starts_with(line, at->urcs[i].prefix)) {
             at->urcs[i].cb(line, at->urcs[i].ctx);
-            return;
+            return 1;
         }
     }
+    return 0;
 }
 
 static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *evt)
@@ -187,10 +189,12 @@ static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *ev
         }
     }
 
-    /* not a response match — check URCs then save as prev_line */
-    dispatch_urc(at, line);
-    strncpy(at->prev_line, line, sizeof(at->prev_line) - 1U);
-    at->prev_line[sizeof(at->prev_line) - 1U] = '\0';
+    /* not a response match — check URCs, and save a line no handler took
+     * as prev_line: a URC must not replace the data of a pending command */
+    if (!dispatch_urc(at, line)) {
+        strncpy(at->prev_line, line, sizeof(at->prev_line) - 1U);
+        at->prev_line[sizeof(at->prev_line) - 1U] = '\0';
+    }
 
     evt->type = at->waiting ? AT_COMMAND_EVT_LINE : AT_COMMAND_EVT_URC;
     return evt->type;
