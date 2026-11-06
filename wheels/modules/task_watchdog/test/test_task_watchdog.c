@@ -350,6 +350,82 @@ TEST(test_register_bad_params)
     ASSERT_EQ(task_watchdog_register(&wd, "x", 0), TASK_WD_ERR_PARAM);
 }
 
+/* A restarted task registers again.  A second entry would be one that feed
+ * never reaches, and would expire for a task that is being fed. */
+TEST(test_register_again_does_not_expire_a_fed_task)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    ASSERT_EQ(task_watchdog_register(&wd, "t", 5), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_register(&wd, "t", 5), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_count(&wd), 1);
+
+    for (int i = 0; i < 20; i++)
+    {
+        task_watchdog_tick(&wd);
+        ASSERT_EQ(task_watchdog_feed(&wd, "t"), TASK_WD_OK);
+        task_watchdog_check(&wd);
+    }
+    ASSERT_EQ(cb_count, 0);
+}
+
+/* It takes over the entry whatever state that was in, with its new timeout. */
+TEST(test_register_again_takes_over_the_entry)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    task_watchdog_register(&wd, "t", 5);
+    advance_ticks(&wd, 5);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_EXPIRED);
+
+    ASSERT_EQ(task_watchdog_register(&wd, "t", 10), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_OK);
+    advance_ticks(&wd, 9);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_OK);
+    advance_ticks(&wd, 1);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_EXPIRED);
+
+    task_watchdog_disable(&wd, "t");
+    ASSERT_EQ(task_watchdog_register(&wd, "t", 10), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_OK);
+    advance_ticks(&wd, 10);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "t"), TASK_WD_STATUS_EXPIRED);
+}
+
+/* Restarts must not use up the table, and a full table still takes them. */
+TEST(test_register_again_needs_no_free_slot)
+{
+    task_watchdog_t wd;
+    char names[TASK_WD_MAX_TASKS][8];
+
+    task_watchdog_init(&wd);
+    for (int i = 0; i < TASK_WD_MAX_TASKS; i++)
+    {
+        names[i][0] = 't';
+        names[i][1] = (char)('0' + (i / 10));
+        names[i][2] = (char)('0' + (i % 10));
+        names[i][3] = '\0';
+        ASSERT_EQ(task_watchdog_register(&wd, names[i], 100), TASK_WD_OK);
+    }
+
+    for (int i = 0; i < 3 * TASK_WD_MAX_TASKS; i++)
+    {
+        ASSERT_EQ(task_watchdog_register(&wd, names[0], 100), TASK_WD_OK);
+    }
+    ASSERT_EQ(task_watchdog_count(&wd), TASK_WD_MAX_TASKS);
+    ASSERT_EQ(task_watchdog_register(&wd, "extra", 100), TASK_WD_ERR_FULL);
+}
+
 TEST_MAIN("task_watchdog")
     RUN(test_init);
     RUN(test_init_null);
@@ -370,4 +446,7 @@ TEST_MAIN("task_watchdog")
     RUN(test_no_callback_no_crash);
     RUN(test_expired_callback_fires_once);
     RUN(test_register_bad_params);
+    RUN(test_register_again_does_not_expire_a_fed_task);
+    RUN(test_register_again_takes_over_the_entry);
+    RUN(test_register_again_needs_no_free_slot);
 TEST_MAIN_END()
