@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "sensor_hub.h"
+#include <float.h>
+#include <math.h>
 #include <string.h>
 
 /* ---- Mock sensor callbacks ---- */
@@ -380,6 +382,52 @@ TEST(test_unit_stored)
 
 /* ================================================================ */
 
+/* One reading that is not a number must not reach the statistics, where only
+ * sensor_hub_reset_stats could get it out again. */
+TEST(test_non_finite_reading_is_a_read_error)
+{
+    static const float bad[] = { INFINITY, -INFINITY, NAN };
+
+    setup();
+    sensor_hub_register(&hub, "temp", "C", mock_temp_read, NULL);
+    mock_temp_value = 100.0f;
+    ASSERT_EQ(sensor_hub_poll(&hub), SENSOR_HUB_OK);
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        float value = 0.0f;
+        sensor_hub_status_t status = SENSOR_HUB_STATUS_OK;
+
+        mock_temp_value = bad[i];
+        ASSERT_EQ(sensor_hub_poll(&hub), SENSOR_HUB_ERR_READ);
+        ASSERT_EQ(sensor_hub_get(&hub, 0, &value, &status), SENSOR_HUB_OK);
+        ASSERT_EQ(status, SENSOR_HUB_STATUS_ERROR);
+        ASSERT_NEAR(value, 100.0f, 0.001f);
+        ASSERT_EQ(hub.sensors[0].error_count, i + 1u);
+    }
+
+    mock_temp_value = 100.0f;
+    ASSERT_EQ(sensor_hub_poll(&hub), SENSOR_HUB_OK);
+
+    float min = 0.0f, max = 0.0f, avg = 0.0f;
+    ASSERT_EQ(sensor_hub_get_stats(&hub, 0, &min, &max, &avg), SENSOR_HUB_OK);
+    ASSERT_NEAR(min, 100.0f, 0.001f);
+    ASSERT_NEAR(max, 100.0f, 0.001f);
+    ASSERT_NEAR(avg, 100.0f, 0.001f);
+}
+
+/* The largest floats are still readings. */
+TEST(test_largest_finite_readings_are_accepted)
+{
+    setup();
+    sensor_hub_register(&hub, "temp", "C", mock_temp_read, NULL);
+
+    mock_temp_value = FLT_MAX;
+    ASSERT_EQ(sensor_hub_poll(&hub), SENSOR_HUB_OK);
+    mock_temp_value = -FLT_MAX;
+    ASSERT_EQ(sensor_hub_poll(&hub), SENSOR_HUB_OK);
+    ASSERT_EQ(hub.sensors[0].error_count, 0);
+}
+
 TEST_MAIN("sensor_hub")
     RUN(test_init_valid);
     RUN(test_init_null);
@@ -404,4 +452,6 @@ TEST_MAIN("sensor_hub")
     RUN(test_get_stats_partial_null_out);
     RUN(test_get_value_null_out);
     RUN(test_unit_stored);
+    RUN(test_non_finite_reading_is_a_read_error);
+    RUN(test_largest_finite_readings_are_accepted);
 TEST_MAIN_END()
