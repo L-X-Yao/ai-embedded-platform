@@ -47,14 +47,20 @@ static inline bool sda_read(const soft_i2c_gpio_t *g)
     return g->sda_get(g->ctx);
 }
 
-static void i2c_start(const soft_i2c_gpio_t *g)
+/* False, with no START sent, if SDA is low while SCL is high: a device is
+ * holding the line, and every byte after this would read as ACK. */
+static bool i2c_start(const soft_i2c_gpio_t *g)
 {
     sda_high(g);
     scl_high(g);
+    if (!sda_read(g)) {
+        return false;
+    }
     sda_low(g);
     g->delay(g->ctx);
     scl_low(g);
     g->delay(g->ctx);
+    return true;
 }
 
 static void i2c_stop(const soft_i2c_gpio_t *g)
@@ -156,7 +162,9 @@ soft_i2c_err_t soft_i2c_write(soft_i2c_t *bus, uint8_t addr,
 
     const soft_i2c_gpio_t *g = bus->gpio;
 
-    i2c_start(g);
+    if (!i2c_start(g)) {
+        return SOFT_I2C_ERR_BUS;
+    }
     if (!i2c_write_byte(g, (uint8_t)(addr << 1))) {
         i2c_stop(g);
         return SOFT_I2C_ERR_NACK;
@@ -186,7 +194,9 @@ soft_i2c_err_t soft_i2c_read(soft_i2c_t *bus, uint8_t addr,
 
     const soft_i2c_gpio_t *g = bus->gpio;
 
-    i2c_start(g);
+    if (!i2c_start(g)) {
+        return SOFT_I2C_ERR_BUS;
+    }
     if (!i2c_write_byte(g, (uint8_t)((addr << 1) | 0x01))) {
         i2c_stop(g);
         return SOFT_I2C_ERR_NACK;
@@ -213,7 +223,9 @@ soft_i2c_err_t soft_i2c_write_reg(soft_i2c_t *bus, uint8_t addr,
 
     const soft_i2c_gpio_t *g = bus->gpio;
 
-    i2c_start(g);
+    if (!i2c_start(g)) {
+        return SOFT_I2C_ERR_BUS;
+    }
     if (!i2c_write_byte(g, (uint8_t)(addr << 1))) {
         i2c_stop(g);
         return SOFT_I2C_ERR_NACK;
@@ -246,7 +258,9 @@ soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
     const soft_i2c_gpio_t *g = bus->gpio;
 
     /* Write phase: send register address */
-    i2c_start(g);
+    if (!i2c_start(g)) {
+        return SOFT_I2C_ERR_BUS;
+    }
     if (!i2c_write_byte(g, (uint8_t)(addr << 1))) {
         i2c_stop(g);
         return SOFT_I2C_ERR_NACK;
@@ -257,7 +271,10 @@ soft_i2c_err_t soft_i2c_read_regs(soft_i2c_t *bus, uint8_t addr,
     }
 
     /* Repeated start + read phase */
-    i2c_start(g);
+    if (!i2c_start(g)) {
+        i2c_stop(g);
+        return SOFT_I2C_ERR_BUS;
+    }
     if (!i2c_write_byte(g, (uint8_t)((addr << 1) | 0x01))) {
         i2c_stop(g);
         return SOFT_I2C_ERR_NACK;
@@ -298,7 +315,7 @@ soft_i2c_err_t soft_i2c_bus_recover(soft_i2c_t *bus)
         }
     }
 
-    /* Generate STOP condition */
+    /* Generate STOP condition, then look at the line with SCL still high */
     i2c_stop(g);
-    return SOFT_I2C_OK;
+    return sda_read(g) ? SOFT_I2C_OK : SOFT_I2C_ERR_BUS;
 }

@@ -16,15 +16,17 @@
 static uint8_t g_sda_bits[4096];
 static int g_sda_bit_idx;
 static int g_sda_bit_len;
+static bool g_last_sda;
 static void m_scl_set(void *ctx, bool h) { (void)ctx; (void)h; }
 static void m_sda_set(void *ctx, bool h) { (void)ctx; (void)h; }
 static void m_sda_dir_out(void *ctx) { (void)ctx; }
 static void m_sda_dir_in(void *ctx) { (void)ctx; }
 static bool m_sda_get(void *ctx) {
     (void)ctx;
+    g_last_sda = true;
     if (g_sda_bit_idx < g_sda_bit_len)
-        return g_sda_bits[g_sda_bit_idx++] != 0;
-    return true;
+        g_last_sda = g_sda_bits[g_sda_bit_idx++] != 0;
+    return g_last_sda;
 }
 static void m_delay(void *ctx) { (void)ctx; }
 
@@ -51,9 +53,10 @@ PROPERTY(write_never_crashes, 10000) {
     ARBI_FILL(seed, data, len);
     uint8_t addr = ARBI_UINT8(seed) & 0x7F;
 
-    /* Random ACK/NACK pattern */
-    int total_bits = 1 + len; /* addr ACK + data ACKs */
-    for (int i = 0; i < total_bits && i < (int)sizeof(g_sda_bits); i++)
+    /* Line high for the START check, then a random ACK/NACK pattern */
+    int total_bits = 2 + len; /* START check + addr ACK + data ACKs */
+    g_sda_bits[0] = 1;
+    for (int i = 1; i < total_bits && i < (int)sizeof(g_sda_bits); i++)
         g_sda_bits[i] = ARBI_UINT8(seed) & 1;
     g_sda_bit_len = total_bits;
 
@@ -71,11 +74,12 @@ PROPERTY(read_never_crashes, 10000) {
     uint16_t len = (uint16_t)ARBI_RANGE(seed, 1, 32);
     uint8_t addr = ARBI_UINT8(seed) & 0x7F;
 
-    /* ACK addr + random data bits */
-    g_sda_bits[0] = 0; /* ACK addr */
-    for (int i = 1; i < 1 + len * 8 && i < (int)sizeof(g_sda_bits); i++)
+    /* Line high for the START check, ACK addr, random data bits */
+    g_sda_bits[0] = 1; /* START check */
+    g_sda_bits[1] = 0; /* ACK addr */
+    for (int i = 2; i < 2 + len * 8 && i < (int)sizeof(g_sda_bits); i++)
         g_sda_bits[i] = ARBI_UINT8(seed) & 1;
-    g_sda_bit_len = 1 + len * 8;
+    g_sda_bit_len = 2 + len * 8;
 
     soft_i2c_err_t err = soft_i2c_read(&bus, addr, buf, len);
     PROP_ASSERT(err == SOFT_I2C_OK || err == SOFT_I2C_ERR_NACK);
@@ -91,30 +95,32 @@ PROPERTY(write_reg_bounded_errors, 10000) {
     uint8_t reg = ARBI_UINT8(seed);
     uint8_t val = ARBI_UINT8(seed);
 
-    for (int i = 0; i < 3; i++)
+    g_sda_bits[0] = 1; /* START check */
+    for (int i = 1; i < 4; i++)
         g_sda_bits[i] = ARBI_UINT8(seed) & 1;
-    g_sda_bit_len = 3;
+    g_sda_bit_len = 4;
 
     soft_i2c_err_t err = soft_i2c_write_reg(&bus, addr, reg, val);
     PROP_ASSERT(err == SOFT_I2C_OK || err == SOFT_I2C_ERR_NACK);
 }
 
-/* Property: bus_recover always returns OK */
-PROPERTY(bus_recover_always_ok, 5000) {
+/* Property: bus_recover reports the line as last read, after the STOP */
+PROPERTY(bus_recover_reports_final_line, 5000) {
     soft_i2c_t bus;
     mock_reset_prop();
     soft_i2c_init(&bus, &g_gpio);
 
-    for (int i = 0; i < 18; i++)
+    for (int i = 0; i < 19; i++)
         g_sda_bits[i] = ARBI_UINT8(seed) & 1;
-    g_sda_bit_len = 18;
+    g_sda_bit_len = 19;
 
-    PROP_ASSERT_EQ(SOFT_I2C_OK, soft_i2c_bus_recover(&bus));
+    soft_i2c_err_t err = soft_i2c_bus_recover(&bus);
+    PROP_ASSERT_EQ(g_last_sda ? SOFT_I2C_OK : SOFT_I2C_ERR_BUS, err);
 }
 
 TEST_MAIN("soft_i2c properties")
     RUN(write_never_crashes);
     RUN(read_never_crashes);
     RUN(write_reg_bounded_errors);
-    RUN(bus_recover_always_ok);
+    RUN(bus_recover_reports_final_line);
 TEST_MAIN_END()
