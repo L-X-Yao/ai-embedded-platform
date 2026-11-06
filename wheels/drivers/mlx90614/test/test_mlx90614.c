@@ -13,10 +13,16 @@ static int     mock_fail_at;
 
 /* Simulated SMBus register file: cmd -> {LSB, MSB} */
 static uint8_t mock_mem[256][2];
-static uint8_t mock_last_cmd;
 #define MOCK_WRITE_LOG 2
 static uint8_t mock_write_log[MOCK_WRITE_LOG][8];
 static int     mock_write_count;
+
+/* The last read word: address, command bytes sent, bytes read */
+static int      mock_read_word_count;
+static uint8_t  mock_read_word_addr;
+static uint16_t mock_read_word_tx_len;
+static uint8_t  mock_read_word_cmd;
+static uint16_t mock_read_word_rx_len;
 
 static void mock_reset(void)
 {
@@ -24,8 +30,12 @@ static void mock_reset(void)
     mock_op_count   = 0;
     mock_fail_at    = -1;
     mock_time_reset();
-    mock_last_cmd   = 0;
     mock_write_count = 0;
+    mock_read_word_count  = 0;
+    mock_read_word_addr   = 0;
+    mock_read_word_tx_len = 0;
+    mock_read_word_cmd    = 0;
+    mock_read_word_rx_len = 0;
     memset(mock_mem, 0, sizeof(mock_mem));
     memset(mock_write_log, 0, sizeof(mock_write_log));
 }
@@ -62,7 +72,6 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
     if (mock_should_fail()) return false;
     if (len > 0)
     {
-        mock_last_cmd = data[0];
         if (mock_write_count < MOCK_WRITE_LOG &&
             len <= (uint16_t)sizeof(mock_write_log[0]))
         {
@@ -82,27 +91,33 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
     return true;
 }
 
-static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
+/* Figure 6, p20: S SA W cmd Sr SA R LSB MSB PEC P */
+static bool mock_write_read(void *ctx, uint8_t addr,
+                            const uint8_t *tx, uint16_t tx_len,
+                            uint8_t *rx, uint16_t rx_len)
 {
     (void)ctx;
     if (mock_should_fail()) return false;
-    /* Return {LSB, MSB, PEC} for the last written command */
-    if (len >= 1) data[0] = mock_mem[mock_last_cmd][0]; /* LSB */
-    if (len >= 2) data[1] = mock_mem[mock_last_cmd][1]; /* MSB */
-    if (len >= 3)
-    {
-        uint8_t frame[5] = { (uint8_t)(addr << 1), mock_last_cmd,
-                             (uint8_t)((addr << 1) | 1u), data[0], data[1] };
-        data[2] = ref_pec(frame, 5);
-    }
+    mock_read_word_count++;
+    mock_read_word_addr   = addr;
+    mock_read_word_tx_len = tx_len;
+    mock_read_word_cmd    = tx[0];
+    mock_read_word_rx_len = rx_len;
+    if (tx_len != 1 || rx_len != 3) return false;
+
+    rx[0] = mock_mem[tx[0]][0]; /* LSB */
+    rx[1] = mock_mem[tx[0]][1]; /* MSB */
+    uint8_t frame[5] = { (uint8_t)(addr << 1), tx[0],
+                         (uint8_t)((addr << 1) | 1u), rx[0], rx[1] };
+    rx[2] = ref_pec(frame, 5);
     return true;
 }
 
 static const mlx90614_i2c_t mock_i2c = {
-    .write    = mock_write,
-    .read     = mock_read,
-    .delay_ms = mock_delay_ms,
-    .ctx      = NULL,
+    .write      = mock_write,
+    .delay_ms   = mock_delay_ms,
+    .ctx        = NULL,
+    .write_read = mock_write_read,
 };
 
 /* ---------- helpers ---------- */
@@ -150,6 +165,17 @@ TEST(test_init_i2c_fail)
     mlx90614_t d;
     mlx90614_err_t e = mlx90614_init(&d, &mock_i2c, &default_cfg);
     ASSERT_EQ(e, MLX90614_ERR_I2C);
+}
+
+TEST(test_init_null_write_read)
+{
+    /* A HAL built for the old driver: no fallback to write then read */
+    mlx90614_i2c_t no_wr = mock_i2c;
+    no_wr.write_read = NULL;
+    mlx90614_t d;
+    mock_reset();
+    ASSERT_EQ(mlx90614_init(&d, &no_wr, &default_cfg), MLX90614_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
 }
 
 TEST(test_null_safety)
@@ -211,6 +237,43 @@ TEST(test_read_ambient)
     mlx90614_err_t e = mlx90614_read_ambient_temp(&dev, &temp);
     ASSERT_EQ(e, MLX90614_OK);
     ASSERT_NEAR(temp, 22.5f, 0.1f);
+}
+
+TEST(test_reads_are_one_read_word_each)
+{
+    /* Figure 6, p20: command, repeated START, then LSB, MSB and PEC. A
+     * write that ends with STOP must not appear anywhere in a read. */
+    float value;
+    setup();
+    mock_read_word_count = 0;
+
+    ASSERT_EQ(mlx90614_read_object_temp(&dev, &value), MLX90614_OK);
+    ASSERT_EQ(mock_read_word_count, 1);
+    ASSERT_EQ_HEX(mock_read_word_addr, 0x5A);
+    ASSERT_EQ(mock_read_word_tx_len, 1);
+    ASSERT_EQ_HEX(mock_read_word_cmd, 0x07);
+    ASSERT_EQ(mock_read_word_rx_len, 3);
+
+    ASSERT_EQ(mlx90614_read_ambient_temp(&dev, &value), MLX90614_OK);
+    ASSERT_EQ(mock_read_word_count, 2);
+    ASSERT_EQ_HEX(mock_read_word_cmd, 0x06);
+
+    ASSERT_EQ(mlx90614_read_emissivity(&dev, &value), MLX90614_OK);
+    ASSERT_EQ(mock_read_word_count, 3);
+    ASSERT_EQ_HEX(mock_read_word_cmd, 0x24);
+
+    ASSERT_EQ(mock_write_count, 0);
+}
+
+TEST(test_init_reads_ta_in_one_read_word)
+{
+    mock_reset();
+    plant_temp(0x06, 25.0f);
+    mlx90614_t d;
+    ASSERT_EQ(mlx90614_init(&d, &mock_i2c, &default_cfg), MLX90614_OK);
+    ASSERT_EQ(mock_read_word_count, 1);
+    ASSERT_EQ_HEX(mock_read_word_cmd, 0x06);
+    ASSERT_EQ(mock_write_count, 0);
 }
 
 TEST(test_read_object_i2c_fail)
@@ -362,11 +425,14 @@ TEST(test_set_emissivity_eeprom_delay)
 TEST_MAIN("mlx90614")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
+    RUN(test_init_null_write_read);
     RUN(test_null_safety);
     RUN(test_read_object_25c);
     RUN(test_read_object_0c);
     RUN(test_read_object_negative);
     RUN(test_read_ambient);
+    RUN(test_reads_are_one_read_word_each);
+    RUN(test_init_reads_ta_in_one_read_word);
     RUN(test_read_object_i2c_fail);
     RUN(test_read_error_flag);
     RUN(test_read_emissivity);

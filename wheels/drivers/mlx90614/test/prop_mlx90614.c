@@ -2,7 +2,8 @@
 /*
  * prop_mlx90614.c — property-based tests for MLX90614 IR temperature sensor
  *
- * MLX90614 uses SMBus command-based I2C (write/read), not register-based.
+ * MLX90614 uses SMBus command-based I2C (write, write_read), not
+ * register-based.
  */
 
 #include "test_harness.h"
@@ -23,21 +24,22 @@ static bool mock_write(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-static bool mock_read(void *ctx, uint8_t dev_addr,
-                      uint8_t *data, uint16_t len)
+static bool mock_write_read(void *ctx, uint8_t dev_addr,
+                            const uint8_t *tx, uint16_t tx_len,
+                            uint8_t *rx, uint16_t rx_len)
 {
-    (void)ctx; (void)dev_addr;
+    (void)ctx; (void)dev_addr; (void)tx; (void)tx_len;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
-    for (uint16_t i = 0; i < len; i++)
-        data[i] = (i < sizeof(mock_response)) ? mock_response[i] : 0x00;
+    for (uint16_t i = 0; i < rx_len; i++)
+        rx[i] = (i < sizeof(mock_response)) ? mock_response[i] : 0x00;
     return true;
 }
 
 static const mlx90614_i2c_t prop_i2c = {
-    .write    = mock_write,
-    .read     = mock_read,
-    .delay_ms = mock_delay_ms,
-    .ctx      = NULL,
+    .write      = mock_write,
+    .delay_ms   = mock_delay_ms,
+    .ctx        = NULL,
+    .write_read = mock_write_read,
 };
 
 static void mock_reset(void)

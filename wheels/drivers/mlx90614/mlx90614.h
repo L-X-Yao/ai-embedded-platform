@@ -7,7 +7,8 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * SMBus protocol via command-based I2C (write+read, not register-based).
+ * SMBus protocol via command-based I2C (not register-based): write_read
+ * for reads, which need a repeated START, and write for EEPROM writes.
  * Temperature conversion: raw * 0.02 - 273.15 (Kelvin to Celsius).
  * Pure C99, no heap, fully reentrant per-context.
  */
@@ -31,9 +32,15 @@ typedef enum {
 
 typedef struct {
     bool (*write)(void *ctx, uint8_t dev_addr, const uint8_t *data, uint16_t len);
+    /* Unused: a read has to follow the command with no STOP between them. */
     bool (*read)(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len);
     void (*delay_ms)(void *ctx, uint32_t ms);  /* required for EEPROM writes */
     void *ctx;
+    /* Required.  Writes tx, sends a repeated START with no STOP, then reads
+     * rx.  NULL: mlx90614_init returns MLX90614_ERR_PARAM. */
+    bool (*write_read)(void *ctx, uint8_t dev_addr,
+                       const uint8_t *tx, uint16_t tx_len,
+                       uint8_t *rx, uint16_t rx_len);
 } mlx90614_i2c_t;
 
 typedef struct {

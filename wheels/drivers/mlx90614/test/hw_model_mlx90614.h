@@ -7,10 +7,11 @@
  * - RAM register 0x07: object 1 temperature (read-only)
  * - EEPROM register 0x24: emissivity (read/write)
  * - Temperature raw = (Kelvin * 50), so 25C = 298.15K = 14907.5 ~ 14908
- * - SMBus protocol: write cmd byte, read 3 bytes (LSB, MSB, PEC)
+ * - SMBus read word: S SA W cmd Sr SA R LSB MSB PEC P (Figure 6, p20)
  *
- * The model intercepts raw I2C write/read calls to simulate SMBus
- * command-response behavior over the register map.
+ * The model intercepts the I2C calls to simulate SMBus command-response
+ * behavior over the register map.  A write call ends with STOP, so only
+ * write_read, which keeps the repeated START, gets an answer.
  */
 
 #ifndef HW_MODEL_MLX90614_H
@@ -32,8 +33,8 @@ typedef struct {
     hw_reg_model_t   hw;
     float            true_object_temp_c;   /* simulated object temperature */
     float            true_ambient_temp_c;  /* simulated ambient temperature */
-    uint8_t          last_cmd;             /* last command byte written */
-    bool             cmd_pending;          /* a command was written */
+    uint8_t          last_cmd;             /* last command read */
+    int              word_reads;           /* read words answered */
 } mlx90614_model_t;
 
 /* Convert Celsius to MLX90614 raw (raw = K * 50 = (C + 273.15) * 50) */
@@ -72,8 +73,9 @@ static uint8_t mlx_model_pec(const uint8_t *frame, uint16_t len)
 
 /*
  * SMBus I2C callbacks for MLX90614.
- * write(): receives command byte (+ optional data for EEPROM writes)
- * read():  returns response for last command (LSB, MSB, PEC)
+ * write():      a whole message: command byte + data for EEPROM writes, STOP
+ * read():       a read after a STOP, which the sensor is not asked to answer
+ * write_read(): read word: command byte, repeated START, LSB, MSB, PEC
  */
 
 __attribute__((unused))
@@ -83,9 +85,6 @@ static bool mlx90614_model_write(void *ctx, uint8_t dev_addr,
     mlx90614_model_t *m = (mlx90614_model_t *)ctx;
 
     if (len == 0) return true;
-
-    m->last_cmd = data[0];
-    m->cmd_pending = true;
 
     /* EEPROM write: cmd + LSB + MSB + PEC. p18: a NACK after the PEC means
      * the message had an error, so a bad frame changes nothing. */
@@ -101,36 +100,47 @@ static bool mlx90614_model_write(void *ctx, uint8_t dev_addr,
     return true;
 }
 
+/* p18: a read needs a repeated START, so the STOP before this call ended
+ * the message and there is no command to answer.  The manual does not say
+ * what the sensor does then; a model that refuses keeps the bug visible. */
 __attribute__((unused))
 static bool mlx90614_model_read(void *ctx, uint8_t dev_addr,
                                 uint8_t *data, uint16_t len)
 {
+    (void)ctx; (void)dev_addr;
+    memset(data, 0xFF, len);
+    return false;
+}
+
+__attribute__((unused))
+static bool mlx90614_model_write_read(void *ctx, uint8_t dev_addr,
+                                      const uint8_t *tx, uint16_t tx_len,
+                                      uint8_t *rx, uint16_t rx_len)
+{
     mlx90614_model_t *m = (mlx90614_model_t *)ctx;
 
-    if (!m->cmd_pending || len < 3) {
-        memset(data, 0xFF, len);
-        return true;
-    }
+    if (tx_len != 1 || rx_len != 3) return false;
 
     /* Update temperatures before read */
     mlx90614_model_update_temps(m);
 
-    uint8_t cmd = m->last_cmd;
+    uint8_t cmd = tx[0];
     uint8_t slot = MLX_SLOT(cmd);
 
     /* LSB, MSB, PEC */
     if (slot + 1 < HW_MODEL_REG_COUNT) {
-        data[0] = m->hw.regs[slot];      /* LSB */
-        data[1] = m->hw.regs[slot + 1];  /* MSB */
+        rx[0] = m->hw.regs[slot];      /* LSB */
+        rx[1] = m->hw.regs[slot + 1];  /* MSB */
     } else {
-        data[0] = 0xFF;
-        data[1] = 0xFF;
+        rx[0] = 0xFF;
+        rx[1] = 0xFF;
     }
     uint8_t frame[5] = { (uint8_t)(dev_addr << 1), cmd,
-                         (uint8_t)((dev_addr << 1) | 1u), data[0], data[1] };
-    data[2] = mlx_model_pec(frame, 5);
+                         (uint8_t)((dev_addr << 1) | 1u), rx[0], rx[1] };
+    rx[2] = mlx_model_pec(frame, 5);
 
-    m->cmd_pending = false;
+    m->last_cmd = cmd;
+    m->word_reads++;
     return true;
 }
 

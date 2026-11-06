@@ -3,8 +3,8 @@
  * test_hw_model_mlx90614.c — tests using hardware register model
  *
  * Validates MLX90614 driver against a SMBus command-response model.
- * The model simulates command byte write + 3-byte read (LSB, MSB, PEC)
- * for temperature and emissivity registers.
+ * The model simulates the SMBus read word (command byte, repeated START,
+ * LSB, MSB, PEC) for temperature and emissivity registers.
  */
 
 #include "test_harness.h"
@@ -15,10 +15,10 @@
 static mlx90614_model_t model;
 
 static const mlx90614_i2c_t model_i2c = {
-    .write    = mlx90614_model_write,
-    .read     = mlx90614_model_read,
-    .delay_ms = mlx90614_model_delay,
-    .ctx      = &model,
+    .write      = mlx90614_model_write,
+    .delay_ms   = mlx90614_model_delay,
+    .ctx        = &model,
+    .write_read = mlx90614_model_write_read,
 };
 
 static const mlx90614_cfg_t default_cfg = {
@@ -174,9 +174,36 @@ TEST(test_model_read_matches_figure_6)
     setup();
     mlx90614_model_set_object_temp(&model, 28.01f);
 
-    ASSERT_TRUE(mlx90614_model_write(&model, 0x5A, cmd, 1));
-    ASSERT_TRUE(mlx90614_model_read(&model, 0x5A, rx, 3));
+    ASSERT_TRUE(mlx90614_model_write_read(&model, 0x5A, cmd, 1, rx, 3));
     ASSERT_MEMEQ_N(rx, expect, sizeof(expect));
+}
+
+TEST(test_model_refuses_a_read_after_stop)
+{
+    /* p18: the read needs a repeated START, and a STOP ends the message */
+    static const uint8_t cmd[] = { 0x07 };
+    uint8_t rx[3];
+    setup();
+
+    ASSERT_TRUE(mlx90614_model_write(&model, 0x5A, cmd, 1));
+    ASSERT_FALSE(mlx90614_model_read(&model, 0x5A, rx, 3));
+    ASSERT_EQ(model.word_reads, 0);
+}
+
+TEST(test_read_object_temp_matches_figure_6)
+{
+    /* Figure 6, p20: the driver reads RAM 0x07 in one read word */
+    setup();
+    mlx90614_model_set_object_temp(&model, 28.01f);
+    mlx90614_t dev;
+    ASSERT_EQ(mlx90614_init(&dev, &model_i2c, &default_cfg), MLX90614_OK);
+    model.word_reads = 0;
+
+    float temp;
+    ASSERT_EQ(mlx90614_read_object_temp(&dev, &temp), MLX90614_OK);
+    ASSERT_EQ(model.word_reads, 1);
+    ASSERT_EQ_HEX(model.last_cmd, 0x07);
+    ASSERT_NEAR(temp, 28.01f, 0.011f);
 }
 
 TEST(test_set_emissivity_out_of_range)
@@ -216,6 +243,8 @@ TEST_MAIN("mlx90614 hardware model")
     RUN(test_set_emissivity);
     RUN(test_model_nacks_bad_pec);
     RUN(test_model_read_matches_figure_6);
+    RUN(test_model_refuses_a_read_after_stop);
+    RUN(test_read_object_temp_matches_figure_6);
     RUN(test_set_emissivity_out_of_range);
     RUN(test_multiple_reads_consistent);
 TEST_MAIN_END()
