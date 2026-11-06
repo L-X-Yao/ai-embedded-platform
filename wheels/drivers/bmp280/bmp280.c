@@ -25,6 +25,11 @@
 
 #define RESET_CMD      0xB6
 #define MODE_FORCED    0x01
+#define MODE_MASK      0x03
+#define STATUS_MEASURING 0x08
+
+/* A status read with no delay_ms takes at least this long, even at 3.4 MHz */
+#define POLL_MIN_US    10U
 
 static bool write_reg(const bmp280_t *dev, uint8_t reg, uint8_t val)
 {
@@ -34,6 +39,14 @@ static bool write_reg(const bmp280_t *dev, uint8_t reg, uint8_t val)
 static bool read_regs(const bmp280_t *dev, uint8_t reg, uint8_t *buf, uint16_t len)
 {
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
+}
+
+static void wait_ms(const bmp280_t *dev, uint32_t ms)
+{
+    if (dev->i2c->delay_ms)
+    {
+        dev->i2c->delay_ms(dev->i2c->ctx, ms);
+    }
 }
 
 static bmp280_err_t read_calibration(bmp280_t *dev)
@@ -79,6 +92,25 @@ static int32_t adc_20bit(const uint8_t *buf)
     return (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
 }
 
+static uint32_t oversampling_factor(bmp280_oversampling_t osrs)
+{
+    return (osrs == BMP280_OVERSAMPLING_SKIP) ? 0U : 1U << ((uint32_t)osrs - 1U);
+}
+
+/* The maximum measurement time. Table 13 prints it for five pairs: this is the
+ * formula that gives all five, which also covers the pairs it leaves out. */
+static uint32_t measure_max_us(bmp280_oversampling_t osrs_t,
+                               bmp280_oversampling_t osrs_p)
+{
+    uint32_t us = 1250U + 2300U * oversampling_factor(osrs_t);
+
+    if (osrs_p != BMP280_OVERSAMPLING_SKIP)
+    {
+        us += 2300U * oversampling_factor(osrs_p) + 575U;
+    }
+    return us;
+}
+
 /*
  * One forced measurement, leaving the 6 data bytes from 0xF7 in buf. A skipped
  * channel holds 0x80000 (manual Tables 21, 22). That is a placeholder, not a
@@ -96,21 +128,28 @@ static bmp280_err_t measure(const bmp280_t *dev, bmp280_oversampling_t osrs_t,
         return BMP280_ERR_I2C;
     }
 
-    for (int tries = 0; tries < 500; tries++)
+    /* The measuring bit alone cannot end this wait: it is 0 during the NVM copy
+     * before the conversion. Forced mode is over when the mode bits are back at
+     * sleep, and status and ctrl_meas are neighbours. */
+    uint32_t max_us = measure_max_us(osrs_t, osrs_p);
+    uint32_t polls  = dev->i2c->delay_ms ? max_us / 1000U + 2U : max_us / POLL_MIN_US;
+
+    for (uint32_t tries = 0; ; tries++)
     {
-        uint8_t status;
-        if (!read_regs(dev, REG_STATUS, &status, 1))
+        uint8_t state[2];
+        if (!read_regs(dev, REG_STATUS, state, 2))
         {
             return BMP280_ERR_I2C;
         }
-        if ((status & 0x08) == 0)
+        if ((state[0] & STATUS_MEASURING) == 0 && (state[1] & MODE_MASK) == 0)
         {
             break;
         }
-        if (tries == 499)
+        if (tries >= polls)
         {
             return BMP280_ERR_TIMEOUT;
         }
+        wait_ms(dev, 1);
     }
 
     if (!read_regs(dev, REG_PRESS_MSB, buf, 6))

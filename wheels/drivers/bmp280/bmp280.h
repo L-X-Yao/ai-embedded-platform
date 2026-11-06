@@ -95,7 +95,9 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
 
 /** One forced measurement of what the oversampling enables. A skipped pressure
  *  reads 0. A skipped temperature reads the one init measured, and pressure is
- *  compensated with it.
+ *  compensated with it. Waits for the measurement, about 75 ms at most with both
+ *  at x16, and returns BMP280_ERR_TIMEOUT if it does not end. With no delay_ms
+ *  the wait is a run of status reads.
  *  @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out);
 
