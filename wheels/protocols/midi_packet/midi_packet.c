@@ -118,8 +118,12 @@ bool midi_parse(midi_parser_t *p, uint8_t byte, midi_msg_t *out)
             } else {
                 p->sysex_overflow = true;
             }
+            return false;
         }
-        return false;
+        /* MIDI 1.0: any status byte other than real-time also ends a
+         * SysEx. It lost its EOX, so drop the payload, as a new F0 does,
+         * and fall through to handle the byte as a new status. */
+        p->in_sysex = false;
     }
 
     /* Channel voice status byte */

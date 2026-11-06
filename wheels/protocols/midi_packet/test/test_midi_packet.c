@@ -213,6 +213,79 @@ TEST(test_parse_sysex)
     ASSERT_EQ(msg.d.sysex.data[2], 0x02);
 }
 
+/* MIDI 1.0 Detailed Specification, System Exclusive: a SysEx "can be
+ * terminated either by an End of Exclusive (EOX) or any other Status
+ * byte (except Real Time messages)". */
+TEST(test_parse_sysex_ended_by_channel_status)
+{
+    midi_parser_t p;
+    midi_msg_t msg;
+    midi_parser_init(&p);
+
+    ASSERT_FALSE(midi_parse(&p, 0xF0, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x01, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x02, &msg));
+
+    /* The F7 was lost: Note On ends the SysEx and is parsed as a note. */
+    ASSERT_FALSE(midi_parse(&p, 0x90, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x3C, &msg));
+    ASSERT_TRUE(midi_parse(&p, 0x40, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_NOTE_ON);
+    ASSERT_EQ(msg.d.note.note, 0x3C);
+    ASSERT_EQ(msg.d.note.velocity, 0x40);
+
+    /* Running status from that Note On works as usual. */
+    ASSERT_FALSE(midi_parse(&p, 0x3D, &msg));
+    ASSERT_TRUE(midi_parse(&p, 0x40, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_NOTE_ON);
+    ASSERT_EQ(msg.d.note.note, 0x3D);
+
+    ASSERT_FALSE(midi_parse(&p, 0xB0, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x07, &msg));
+    ASSERT_TRUE(midi_parse(&p, 0x64, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_CONTROL_CHANGE);
+    ASSERT_EQ(msg.d.cc.number, 0x07);
+    ASSERT_EQ(msg.d.cc.value, 0x64);
+
+    /* A late F7 no longer delivers anything. */
+    ASSERT_FALSE(midi_parse(&p, 0xF7, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_NONE);
+}
+
+TEST(test_parse_sysex_ended_by_system_common)
+{
+    midi_parser_t p;
+    midi_msg_t msg;
+    midi_parser_init(&p);
+
+    ASSERT_FALSE(midi_parse(&p, 0xF0, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x01, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0xF6, &msg));    /* Tune Request ends it */
+
+    /* Outside SysEx with no running status, data is dropped and F7 is
+     * a stray byte, so no SysEx can come out. */
+    ASSERT_FALSE(midi_parse(&p, 0x02, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0xF7, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_NONE);
+}
+
+TEST(test_parse_sysex_keeps_realtime_transparent)
+{
+    midi_parser_t p;
+    midi_msg_t msg;
+    midi_parser_init(&p);
+
+    ASSERT_FALSE(midi_parse(&p, 0xF0, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0x01, &msg));
+    ASSERT_FALSE(midi_parse(&p, 0xF8, &msg));    /* Timing Clock */
+    ASSERT_FALSE(midi_parse(&p, 0x02, &msg));
+    ASSERT_TRUE(midi_parse(&p, 0xF7, &msg));
+    ASSERT_EQ(msg.type, MIDI_MSG_SYSEX);
+    ASSERT_EQ(msg.d.sysex.len, 2);
+    ASSERT_EQ(msg.d.sysex.data[0], 0x01);
+    ASSERT_EQ(msg.d.sysex.data[1], 0x02);
+}
+
 TEST(test_parse_realtime_ignored)
 {
     /* Real-time bytes (0xF8-0xFF) should be transparent to parsing */
@@ -293,6 +366,9 @@ TEST_MAIN("midi_packet")
     RUN(test_parse_program_change);
     RUN(test_parse_pitch_bend);
     RUN(test_parse_sysex);
+    RUN(test_parse_sysex_ended_by_channel_status);
+    RUN(test_parse_sysex_ended_by_system_common);
+    RUN(test_parse_sysex_keeps_realtime_transparent);
     RUN(test_parse_realtime_ignored);
     RUN(test_parse_null_params);
     RUN(test_roundtrip_note_on);
