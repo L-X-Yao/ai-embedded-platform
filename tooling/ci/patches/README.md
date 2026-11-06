@@ -1,4 +1,4 @@
-# tooling/patches/
+# tooling/ci/patches/
 
 对 `vsf/` 上游源码的修改以 patch 文件形式维护。
 
@@ -23,13 +23,13 @@
 2. 导出 patch：
    ```bash
    cd <root>   # 即 ai-embedded-platform/
-   git diff vsf/ > tooling/patches/NNNN-<slug>.patch
+   git diff vsf/ > tooling/ci/patches/NNNN-<slug>.patch
    git restore vsf/   # 撤回原始改动，保持 vsf/ 干净
    ```
 3. 更新本 README 的清单表
 4. 验证 patch 可应用：
    ```bash
-   bash tooling/patches/apply.sh
+   bash tooling/ci/patches/apply.sh
    cd vsf && <build test>
    git checkout vsf/   # 再次撤回，等下次构建再应用
    ```
@@ -38,7 +38,7 @@
 ## 应用 patches
 
 ```bash
-bash tooling/patches/apply.sh
+bash tooling/ci/patches/apply.sh
 ```
 
 构建前必须应用。注意 `vsf/` 当前状态：
@@ -78,7 +78,7 @@ bash tooling/ci/sync_vsf.sh --ref v1.2.3
 
 | 类型 | 走哪里 | 举例 |
 |------|-------|------|
-| 修改 vsf/ 既有文件 | `tooling/patches/` | 修 `vsf_eda.c` 某处 bug / 加一个参数 |
+| 修改 vsf/ 既有文件 | `tooling/ci/patches/` | 修 `vsf_eda.c` 某处 bug / 加一个参数 |
 | 新增独立文件 / 目录 | `vsf-addon/` | 新 MCU 的 HAL port / 新组件 |
 
 ## 回馈 upstream
