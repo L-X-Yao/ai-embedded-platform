@@ -41,9 +41,8 @@ ads1115_err_t ads1115_set_channel(ads1115_t *dev, ads1115_mux_t mux);
 Checked on 2026-11-06 against TI SBAS444E. Not run on hardware.
 
 - **Matched:** Addresses, config register fields, data rate and PGA codes, scaling.
-- **Fixed:** Nothing in the driver.
-- **Still open:** The model finishes a conversion inside the config write, so the poll loop never runs, and it lets a write clear OS. The property tests use a byte-wide mock in which two registers share a byte.
-- **Suspected:** With `delay_ms` NULL the poll is 200 back-to-back reads, shorter than an 8 SPS conversion on a fast bus. `ads1115_read_voltage` is tagged ISR safe although it blocks for a conversion.
+- **Fixed:** With `delay_ms` NULL the poll stopped after 200 reads, 90 ms on a 100 kHz bus, so an 8 SPS conversion ended in `ADS1115_ERR_BUSY`. It now polls up to 10500 times, which also means a stuck OS takes about 4.7 s to give up on that bus. The model finished a conversion inside the config write, let a write clear OS and reset the thresholds to 0. It now takes 1 / DR per conversion, the mock clears OS for a few polls, and the property tests run on the model instead of a byte-wide mock in which two registers shared a byte. This fix has not run on hardware.
+- **Suspected:** `ads1115_read_voltage` is tagged ISR safe although it blocks for a conversion.
 
 ## Known issues
 

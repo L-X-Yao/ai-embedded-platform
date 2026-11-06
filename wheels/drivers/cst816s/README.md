@@ -55,7 +55,7 @@ No compile-time defines. All configuration via runtime API.
 Checked on 2026-11-06 against the CST816S datasheet V1.4 and Hynitron's register sheet, as hosted by Waveshare. Register details rest on that one sheet, so ESPHome and InfiniTime were used as a cross-check. Not run on hardware.
 
 - **Matched:** I2C address, burst read layout, registers 0x01-0x06, 0xA7, 0xA9 and 0xFE, coordinate decode, gesture IDs, DisAutoSleep polarity.
-- **Fixed:** The motion mask went to 0xAA with its own bit layout. It now goes to 0xEC with EnConLR, EnConUD and EnDClick. `long_press` is ignored because the chip has no such bit. AutoSleepTime is 0xF9, not 0xEC, and the model defaults it to 2 s.
+- **Fixed:** The motion mask went to 0xAA with its own bit layout. It now goes to 0xEC with EnConLR, EnConUD and EnDClick. `long_press` is ignored because the chip has no such bit. AutoSleepTime is 0xF9, not 0xEC, and the model defaults it to 2 s, which a test now checks.
 - **Suspected:** `cst816s_init` requires chip ID 0xB5, but neither sheet gives a value and ESPHome lists the CST816S as 0xB4, so a real part may fail init. The touch event in bits 7:6 of 0x03 is not in the sheet. There is no reset pin in the HAL, and the chip may sleep before init.
 
 ## Known issues
