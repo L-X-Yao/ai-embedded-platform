@@ -45,6 +45,9 @@ typedef struct {
 } pid_controller_t;
 
 /**
+ * Gains must be finite and limits must not be NaN. An infinite limit means
+ * no limit on that side.
+ *
  * @thread_safe: no @isr_safe: no
  */
 pid_controller_err_t pid_controller_init(pid_controller_t *ctx,
@@ -59,22 +62,28 @@ pid_controller_err_t pid_controller_reset(pid_controller_t *ctx);
  * Compute one PID iteration.
  *
  * @param ctx       Controller context.
- * @param setpoint  Desired value.
- * @param measured  Current measurement.
- * @param dt        Time step in seconds (must be > 0).
- * @return          Clamped output value, or 0.0f on error.
+ * @param setpoint  Desired value (must be finite).
+ * @param measured  Current measurement (must be finite).
+ * @param dt        Time step in seconds (must be finite and > 0).
+ * @return          Clamped output value, or 0.0f on error. A result that is
+ *                  NaN despite finite inputs gives 0.0f, or the nearest limit
+ *                  if 0 is outside the output limits.
  * @thread_safe: no @isr_safe: yes
  */
 float pid_controller_update(pid_controller_t *ctx, float setpoint,
                             float measured, float dt);
 
 /**
+ * Refuses a gain that is not finite and keeps the old gains.
+ *
  * @thread_safe: no @isr_safe: yes
  */
 pid_controller_err_t pid_controller_set_tunings(pid_controller_t *ctx,
                                                 float kp, float ki, float kd);
 
 /**
+ * Refuses NaN and min > max and keeps the old limits.
+ *
  * @thread_safe: no @isr_safe: yes
  */
 pid_controller_err_t pid_controller_set_output_limits(pid_controller_t *ctx,
