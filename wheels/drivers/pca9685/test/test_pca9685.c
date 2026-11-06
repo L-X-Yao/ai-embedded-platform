@@ -356,6 +356,23 @@ TEST(test_set_freq_writes_restart_after_500us)
     ASSERT_GE(mode1_log_ms[2] - mode1_log_ms[1], 1);
 }
 
+/* p.14: "User writes logic 1 to this bit to clear it to logic 0. A user write
+ * of logic 0 will have no effect." A sleep that finds RESTART set, as a second
+ * sleep does, must write 0 there or wake has nothing left to restart. 0xB1 is
+ * RESTART, AI, SLEEP and ALLCALL. */
+TEST(test_sleep_writes_restart_as_zero)
+{
+    mock_reset();
+    pca9685_init(&dev, &log_i2c, 0x40, 50);
+    mock_regs[REG_MODE1] = 0xB1;
+    mode1_log_len = 0;
+
+    ASSERT_EQ(pca9685_sleep(&dev), PCA9685_OK);
+    ASSERT_EQ(mode1_log_len, 1);
+    ASSERT_EQ(mode1_log[0] & MODE1_RESTART, 0);
+    ASSERT_EQ(mode1_log[0] & MODE1_SLEEP, MODE1_SLEEP);
+}
+
 TEST(test_i2c_failure)
 {
     mock_reset();
@@ -419,5 +436,6 @@ TEST_MAIN("pca9685")
     RUN(test_sleep_wake);
     RUN(test_wake_writes_restart_after_500us);
     RUN(test_set_freq_writes_restart_after_500us);
+    RUN(test_sleep_writes_restart_as_zero);
     RUN(test_i2c_failure);
 TEST_MAIN_END()
