@@ -80,17 +80,18 @@ static pca9685_err_t set_prescaler(pca9685_t *dev, uint16_t freq_hz)
     if (!write_reg(dev, REG_PRE_SCALE, prescale))
         return PCA9685_ERR_I2C;
 
-    /* Wake: clear SLEEP, restore previous mode (without RESTART yet) */
-    if (!write_reg(dev, REG_MODE1, (uint8_t)(mode1 & ~MODE1_SLEEP)))
+    /* Wake: clear SLEEP, restore previous mode (without RESTART yet). mode1
+     * may hold RESTART=1, and SLEEP must be 0 for 500us before that is written.
+     * Init reads mode1 back with SLEEP set, so it has to stay clear below too. */
+    uint8_t awake = (uint8_t)(mode1 & ~(MODE1_SLEEP | MODE1_RESTART));
+    if (!write_reg(dev, REG_MODE1, awake))
         return PCA9685_ERR_I2C;
 
     /* Datasheet: 500us stabilization after wake before RESTART */
     delay_ms(dev, 1);
 
-    /* Set RESTART to resume any previously active PWM channels. SLEEP stays
-     * clear: init reads mode1 back with SLEEP set. */
-    if (!write_reg(dev, REG_MODE1,
-                   (uint8_t)((mode1 & ~MODE1_SLEEP) | MODE1_RESTART)))
+    /* Set RESTART to resume any previously active PWM channels */
+    if (!write_reg(dev, REG_MODE1, (uint8_t)(awake | MODE1_RESTART)))
         return PCA9685_ERR_I2C;
 
     dev->freq_hz = freq_hz;
@@ -236,13 +237,15 @@ pca9685_err_t pca9685_wake(pca9685_t *dev)
     if (!read_reg(dev, REG_MODE1, &mode1))
         return PCA9685_ERR_I2C;
 
-    if (!write_reg(dev, REG_MODE1, (uint8_t)(mode1 & ~MODE1_SLEEP)))
+    /* Not RESTART yet: SLEEP must be 0 for 500us first */
+    uint8_t awake = (uint8_t)(mode1 & ~(MODE1_SLEEP | MODE1_RESTART));
+    if (!write_reg(dev, REG_MODE1, awake))
         return PCA9685_ERR_I2C;
 
     delay_ms(dev, 1);
 
     /* Set RESTART to resume PWM output */
-    if (!write_reg(dev, REG_MODE1, (uint8_t)((mode1 & ~MODE1_SLEEP) | MODE1_RESTART)))
+    if (!write_reg(dev, REG_MODE1, (uint8_t)(awake | MODE1_RESTART)))
         return PCA9685_ERR_I2C;
 
     return PCA9685_OK;
