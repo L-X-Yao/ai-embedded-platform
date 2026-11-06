@@ -329,12 +329,24 @@ flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
         return FLASH_RING_ERR_PARAM;
     }
     REQUIRE(idx < ring->cfg.total_slots);
-    if (idx >= ring->cfg.total_slots) {
+    REQUIRE(len <= ring->cfg.slot_size);
+    if (idx >= ring->cfg.total_slots || len > ring->cfg.slot_size) {
         return FLASH_RING_ERR_PARAM;
     }
 
-    uint32_t addr = ring->cfg.data_start_addr + idx * ring->cfg.slot_size;
-    if (ring->io->read(ring->io->ctx, addr, buf, len) != 0) {
+    uint32_t count = flash_ring_count(ring);
+    if (count == 0u) {
+        return FLASH_RING_ERR_EMPTY;
+    }
+    /* Distance from the oldest frame, in ring order */
+    uint32_t from_read = idx >= ring->read_idx
+                       ? idx - ring->read_idx
+                       : ring->cfg.total_slots - ring->read_idx + idx;
+    if (from_read >= count) {
+        return FLASH_RING_ERR_PARAM;
+    }
+
+    if (ring->io->read(ring->io->ctx, slot_addr(ring, idx), buf, len) != 0) {
         return FLASH_RING_ERR_IO;
     }
     return FLASH_RING_OK;
