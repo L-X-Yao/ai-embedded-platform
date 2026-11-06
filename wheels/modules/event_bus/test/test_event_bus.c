@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "event_bus.h"
+#include <stdlib.h>
 
 /* ---- test helpers ---- */
 
@@ -278,46 +279,258 @@ TEST(test_unsubscribe_no_cb_ctx_match)
     ASSERT_EQ(call_count, 1);
 }
 
-/* Shared state for deferred-unsubscribe test. */
-static event_bus_t *g_deferred_bus;
-static int deferred_unsub_cb_count;
+/* Shared state for the tests that unsubscribe during a publish. */
+static event_bus_t *g_bus;
+static int self_unsub_cb_count;
+static int unsub_failures;
 
 static void self_unsubscribing_cb(uint16_t event_id, const void *data,
                                   size_t data_len, void *ctx)
 {
     (void)data;
     (void)data_len;
-    deferred_unsub_cb_count++;
-    /* Unsubscribe self while bus->iterating > 0 — must be deferred. */
-    event_bus_unsubscribe(g_deferred_bus, event_id,
-                          self_unsubscribing_cb, ctx);
+    self_unsub_cb_count++;
+    event_bus_unsubscribe(g_bus, event_id, self_unsubscribing_cb, ctx);
 }
 
-/*
- * Cover deferred-unsubscribe path (lines 87-94) and flush_deferred
- * (lines 68-77, triggered at line 135-136).
- *
- * Strategy: subscribe self_unsubscribing_cb, publish once (it fires and
- * queues a deferred unsub), then publish again — it must NOT fire the
- * second time because flush_deferred removed it after the first publish.
- */
-TEST(test_deferred_unsubscribe_during_publish)
+/* It fires once, and the second publish must not call it again. */
+TEST(test_unsubscribe_self_during_publish)
 {
     event_bus_t bus;
     event_bus_init(&bus);
-    g_deferred_bus = &bus;
-    deferred_unsub_cb_count = 0;
+    g_bus = &bus;
+    self_unsub_cb_count = 0;
 
     ASSERT_EQ(event_bus_subscribe(&bus, 20, self_unsubscribing_cb, NULL),
               EVENT_BUS_OK);
 
-    /* First publish: callback fires and defers its own unsubscribe. */
     ASSERT_EQ(event_bus_publish(&bus, 20, NULL, 0), EVENT_BUS_OK);
-    ASSERT_EQ(deferred_unsub_cb_count, 1);
+    ASSERT_EQ(self_unsub_cb_count, 1);
 
-    /* Second publish: deferred unsub ran after first publish, so no fire. */
     ASSERT_EQ(event_bus_publish(&bus, 20, NULL, 0), EVENT_BUS_OK);
-    ASSERT_EQ(deferred_unsub_cb_count, 1);
+    ASSERT_EQ(self_unsub_cb_count, 1);
+}
+
+/* ctx counts the calls of one subscriber */
+static void one_shot_cb(uint16_t event_id, const void *data, size_t data_len,
+                        void *ctx)
+{
+    (void)data;
+    (void)data_len;
+    (*(int *)ctx)++;
+    if (event_bus_unsubscribe(g_bus, event_id, one_shot_cb, ctx)
+        != EVENT_BUS_OK) {
+        unsub_failures++;
+    }
+}
+
+/* A full table of subscribers can all leave in one publish. */
+TEST(test_every_unsubscribe_during_publish_takes_effect)
+{
+    event_bus_t bus;
+    int calls[EVENT_BUS_MAX_SUBS_PER_EVENT] = { 0 };
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    unsub_failures = 0;
+    for (int i = 0; i < EVENT_BUS_MAX_SUBS_PER_EVENT; i++) {
+        ASSERT_EQ(event_bus_subscribe(&bus, 30, one_shot_cb, &calls[i]),
+                  EVENT_BUS_OK);
+    }
+
+    ASSERT_EQ(event_bus_publish(&bus, 30, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(event_bus_publish(&bus, 30, NULL, 0), EVENT_BUS_OK);
+
+    ASSERT_EQ(unsub_failures, 0);
+    for (int i = 0; i < EVENT_BUS_MAX_SUBS_PER_EVENT; i++) {
+        ASSERT_EQ(calls[i], 1);
+    }
+}
+
+/* Their places are free again once the publish has ended. */
+TEST(test_unsubscribe_during_publish_frees_the_table)
+{
+    event_bus_t bus;
+    int calls[EVENT_BUS_MAX_SUBS_PER_EVENT] = { 0 };
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    for (int i = 0; i < EVENT_BUS_MAX_SUBS_PER_EVENT; i++) {
+        ASSERT_EQ(event_bus_subscribe(&bus, 31, one_shot_cb, &calls[i]),
+                  EVENT_BUS_OK);
+    }
+    ASSERT_EQ(event_bus_publish(&bus, 31, NULL, 0), EVENT_BUS_OK);
+
+    for (int i = 0; i < EVENT_BUS_MAX_SUBS_PER_EVENT; i++) {
+        ASSERT_EQ(event_bus_subscribe(&bus, 31, tracker_cb, &calls[i]),
+                  EVENT_BUS_OK);
+    }
+    ASSERT_EQ(event_bus_subscribe(&bus, 31, tracker_cb, NULL),
+              EVENT_BUS_ERR_FULL);
+}
+
+/* ctx is released on OK: ASan reports any later call */
+static void releasing_cb(uint16_t event_id, const void *data, size_t data_len,
+                         void *ctx)
+{
+    (void)data;
+    (void)data_len;
+    (*(int *)ctx)++;
+    if (event_bus_unsubscribe(g_bus, event_id, releasing_cb, ctx)
+        == EVENT_BUS_OK) {
+        free(ctx);
+    }
+}
+
+TEST(test_ctx_can_be_released_after_unsubscribe_returns_ok)
+{
+    event_bus_t bus;
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    for (int i = 0; i < EVENT_BUS_MAX_SUBS_PER_EVENT; i++) {
+        int *ctx = calloc(1, sizeof(*ctx));
+        ASSERT_NOT_NULL(ctx);
+        ASSERT_EQ(event_bus_subscribe(&bus, 32, releasing_cb, ctx),
+                  EVENT_BUS_OK);
+    }
+
+    ASSERT_EQ(event_bus_publish(&bus, 32, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(event_bus_publish(&bus, 32, NULL, 0), EVENT_BUS_OK);
+}
+
+typedef struct {
+    uint16_t       event_id;
+    event_bus_cb_t cb;
+    void          *ctx;
+} unsub_request_t;
+
+/* ctx says which other subscriber to remove */
+static void unsubscribing_other_cb(uint16_t event_id, const void *data,
+                                   size_t data_len, void *ctx)
+{
+    const unsub_request_t *req = ctx;
+
+    (void)event_id;
+    (void)data;
+    (void)data_len;
+    event_bus_unsubscribe(g_bus, req->event_id, req->cb, req->ctx);
+}
+
+/* After OK its ctx may be gone, so even this publish must not call it. */
+TEST(test_later_subscriber_removed_is_not_called_by_this_publish)
+{
+    event_bus_t bus;
+    unsub_request_t req = { 33, tracker_cb, NULL };
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    reset_tracker();
+    second_call_count = 0;
+    event_bus_subscribe(&bus, 33, unsubscribing_other_cb, &req);
+    event_bus_subscribe(&bus, 33, tracker_cb, NULL);
+    event_bus_subscribe(&bus, 33, second_cb, NULL);
+
+    ASSERT_EQ(event_bus_publish(&bus, 33, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 0);
+    ASSERT_EQ(second_call_count, 1);
+}
+
+/* One of two equal subscriptions goes, also from another event's publish. */
+TEST(test_unsubscribe_from_another_events_publish_removes_one)
+{
+    event_bus_t bus;
+    unsub_request_t req = { 35, tracker_cb, NULL };
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    reset_tracker();
+    event_bus_subscribe(&bus, 34, unsubscribing_other_cb, &req);
+    event_bus_subscribe(&bus, 35, tracker_cb, NULL);
+    event_bus_subscribe(&bus, 35, tracker_cb, NULL);
+
+    ASSERT_EQ(event_bus_publish(&bus, 34, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 0);
+
+    ASSERT_EQ(event_bus_publish(&bus, 35, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 1);
+}
+
+static char order_log[16];
+static size_t order_len;
+
+static void order_cb(uint16_t event_id, const void *data, size_t data_len,
+                     void *ctx)
+{
+    (void)event_id;
+    (void)data;
+    (void)data_len;
+    order_log[order_len++] = *(const char *)ctx;
+    order_log[order_len] = '\0';
+}
+
+static void order_once_cb(uint16_t event_id, const void *data,
+                          size_t data_len, void *ctx)
+{
+    order_cb(event_id, data, data_len, ctx);
+    event_bus_unsubscribe(g_bus, event_id, order_once_cb, ctx);
+}
+
+TEST(test_order_survives_unsubscribe_during_publish)
+{
+    event_bus_t bus;
+    char a = 'a', b = 'b', c = 'c';
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    order_len = 0;
+    event_bus_subscribe(&bus, 36, order_cb, &a);
+    event_bus_subscribe(&bus, 36, order_once_cb, &b);
+    event_bus_subscribe(&bus, 36, order_cb, &c);
+
+    ASSERT_EQ(event_bus_publish(&bus, 36, NULL, 0), EVENT_BUS_OK);
+    ASSERT_STR_EQ(order_log, "abc");
+    ASSERT_EQ(event_bus_publish(&bus, 36, NULL, 0), EVENT_BUS_OK);
+    ASSERT_STR_EQ(order_log, "abcac");
+}
+
+static int nesting_depth;
+
+/* removes the subscriber before it, then publishes from inside the publish */
+static void nesting_cb(uint16_t event_id, const void *data, size_t data_len,
+                       void *ctx)
+{
+    (void)ctx;
+    if (nesting_depth > 0) {
+        return;
+    }
+    nesting_depth++;
+    event_bus_unsubscribe(g_bus, event_id, tracker_cb, NULL);
+    event_bus_publish(g_bus, event_id, data, data_len);
+    nesting_depth--;
+}
+
+/* The outer loop is still walking the table when the inner publish ends. */
+TEST(test_nested_publish_keeps_the_outer_loop_in_place)
+{
+    event_bus_t bus;
+
+    event_bus_init(&bus);
+    g_bus = &bus;
+    reset_tracker();
+    second_call_count = 0;
+    nesting_depth = 0;
+    event_bus_subscribe(&bus, 37, tracker_cb, NULL);
+    event_bus_subscribe(&bus, 37, nesting_cb, NULL);
+    event_bus_subscribe(&bus, 37, second_cb, NULL);
+
+    ASSERT_EQ(event_bus_publish(&bus, 37, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 1);          /* the outer publish, before removal */
+    ASSERT_EQ(second_call_count, 2);   /* inner and outer */
+
+    ASSERT_EQ(event_bus_publish(&bus, 37, NULL, 0), EVENT_BUS_OK);
+    ASSERT_EQ(call_count, 1);
+    ASSERT_EQ(second_call_count, 4);
 }
 
 TEST_MAIN("event_bus")
@@ -338,5 +551,12 @@ TEST_MAIN("event_bus")
     RUN(test_publish_null_data_with_zero_len);
     RUN(test_unsubscribe_event_not_found);
     RUN(test_unsubscribe_no_cb_ctx_match);
-    RUN(test_deferred_unsubscribe_during_publish);
+    RUN(test_unsubscribe_self_during_publish);
+    RUN(test_every_unsubscribe_during_publish_takes_effect);
+    RUN(test_unsubscribe_during_publish_frees_the_table);
+    RUN(test_later_subscriber_removed_is_not_called_by_this_publish);
+    RUN(test_unsubscribe_from_another_events_publish_removes_one);
+    RUN(test_order_survives_unsubscribe_during_publish);
+    RUN(test_nested_publish_keeps_the_outer_loop_in_place);
+    RUN(test_ctx_can_be_released_after_unsubscribe_returns_ok);
 TEST_MAIN_END()
