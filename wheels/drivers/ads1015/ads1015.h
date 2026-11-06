@@ -90,7 +90,7 @@ typedef struct {
 ads1015_err_t ads1015_init(ads1015_t *dev, const ads1015_i2c_t *i2c,
                            const ads1015_cfg_t *cfg);
 
-/** Single-shot read on a channel, result in millivolts. @thread_safe: caller_must_lock @isr_safe: yes */
+/** Single-shot read on a channel, result in millivolts. @thread_safe: caller_must_lock @isr_safe: no */
 ads1015_err_t ads1015_read_single(ads1015_t *dev, ads1015_mux_t channel,
                                   float *voltage_mv);
 

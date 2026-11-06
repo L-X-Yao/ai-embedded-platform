@@ -55,7 +55,7 @@ as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c);
 /** Read 12-bit raw angle (0-4095). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_read_raw_angle(const as5600_t *dev, uint16_t *raw);
 
-/** Read angle in degrees (0.0-360.0). @thread_safe: caller_must_lock @isr_safe: yes */
+/** Read angle in degrees (0.0-360.0). @thread_safe: caller_must_lock @isr_safe: no */
 as5600_err_t as5600_read_degrees(const as5600_t *dev, float *degrees);
 
 /** Read STATUS register (use AS5600_STATUS_* masks). @thread_safe: caller_must_lock @isr_safe: no */
