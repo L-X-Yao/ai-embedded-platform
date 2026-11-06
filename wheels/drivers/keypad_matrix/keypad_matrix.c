@@ -55,11 +55,11 @@ void keypad_matrix_scan(keypad_matrix_t *kp)
         kp->hal->set_row_low(kp->hal->ctx, r);
 
         /* Read each column. */
-        uint8_t raw = 0;
+        uint16_t raw = 0;
         for (uint8_t c = 0; c < kp->cols; c++) {
             if (!kp->hal->read_col(kp->hal->ctx, c)) {
                 /* Column reads low → key pressed (active low). */
-                raw |= (uint8_t)(1U << c);
+                raw |= (uint16_t)(1U << c);
             }
         }
 
@@ -83,18 +83,18 @@ keypad_event_t keypad_matrix_get_event(keypad_matrix_t *kp, char *key)
         return KEYPAD_EVENT_NONE;
 
     for (uint8_t r = 0; r < kp->rows; r++) {
-        uint8_t changed = kp->state[r] ^ kp->prev_state[r];
+        uint16_t changed = kp->state[r] ^ kp->prev_state[r];
         if (changed == 0)
             continue;
 
         for (uint8_t c = 0; c < kp->cols; c++) {
             if (changed & (1U << c)) {
                 if (key) {
-                    *key = kp->keymap[(uint8_t)(r * kp->cols + c)];
+                    *key = kp->keymap[(uint16_t)(r * kp->cols + c)];
                 }
                 /* Mark this key as consumed so the same event is not
                  * returned on the next call to get_event. */
-                kp->prev_state[r] ^= (uint8_t)(1U << c);
+                kp->prev_state[r] ^= (uint16_t)(1U << c);
                 if (kp->state[r] & (1U << c)) {
                     return KEYPAD_EVENT_PRESS;
                 } else {
@@ -116,7 +116,7 @@ char keypad_matrix_get_pressed(const keypad_matrix_t *kp)
             continue;
         for (uint8_t c = 0; c < kp->cols; c++) {
             if (kp->state[r] & (1U << c)) {
-                return kp->keymap[(uint8_t)(r * kp->cols + c)];
+                return kp->keymap[(uint16_t)(r * kp->cols + c)];
             }
         }
     }
@@ -130,7 +130,7 @@ bool keypad_matrix_is_pressed(const keypad_matrix_t *kp, char key)
 
     for (uint8_t r = 0; r < kp->rows; r++) {
         for (uint8_t c = 0; c < kp->cols; c++) {
-            if (kp->keymap[(uint8_t)(r * kp->cols + c)] == key) {
+            if (kp->keymap[(uint16_t)(r * kp->cols + c)] == key) {
                 return (kp->state[r] & (1U << c)) != 0;
             }
         }

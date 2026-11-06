@@ -43,6 +43,11 @@ typedef enum {
 #define KEYPAD_MAX_COLS 4
 #endif
 
+/* A row holds one bit per column in a uint16_t */
+#if KEYPAD_MAX_COLS > 16
+#error "KEYPAD_MAX_COLS must be 16 or less"
+#endif
+
 /* ---------- HAL (caller provides) ---------- */
 
 typedef struct {
@@ -59,9 +64,9 @@ typedef struct {
     const char *keymap;                  /* row*cols character map */
     uint8_t rows;
     uint8_t cols;
-    uint8_t state[KEYPAD_MAX_ROWS];      /* current scan bitmask per row */
-    uint8_t prev_state[KEYPAD_MAX_ROWS]; /* previous scan for edge detect */
-    uint8_t debounce[KEYPAD_MAX_ROWS];   /* pending (unconfirmed) bitmask */
+    uint16_t state[KEYPAD_MAX_ROWS];      /* current scan bitmask per row */
+    uint16_t prev_state[KEYPAD_MAX_ROWS]; /* previous scan for edge detect */
+    uint16_t debounce[KEYPAD_MAX_ROWS];   /* pending (unconfirmed) bitmask */
 } keypad_matrix_t;
 
 /* ---------- API ---------- */
