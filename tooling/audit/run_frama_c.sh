@@ -6,6 +6,9 @@
 #
 # Requires Frama-C + Alt-Ergo installed in WSL (opam).
 # See CLAUDE.md for installation path.
+#
+# Exit 1 if the total proof rate is below 50%, any wheel proves under 50%, a
+# wheel's files are missing, or frama-c itself fails.
 
 set -euo pipefail
 
@@ -67,18 +70,26 @@ run_wheel() {
     local cfile="$dir/${name}.c"
 
     if [[ ! -f "$hfile" || ! -f "$cfile" ]]; then
-        echo -e "  ${RED}SKIP${NC} $name — missing .h or .c"
+        echo -e "  ${RED}FAIL${NC} $name — missing .h or .c"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
         return
     fi
 
     local cpp_inc="-I${dir}/ ${CPP_FLAGS}"
 
-    local output
+    local output rc=0
     output=$(frama-c -wp -wp-rte \
         -wp-prover="$PROVER" \
         -wp-timeout="$TIMEOUT" \
         "$cfile" "$hfile" \
-        -cpp-extra-args="$cpp_inc" 2>&1) || true
+        -cpp-extra-args="$cpp_inc" 2>&1) || rc=$?
+
+    if [[ "$rc" -ne 0 ]]; then
+        echo -e "  ${RED}FAIL${NC} $name — frama-c exited $rc"
+        echo "$output" | tail -3 | sed 's/^/    /'
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        return
+    fi
 
     # Parse "Proved goals: X / Y" line
     local proved goals
@@ -155,10 +166,15 @@ echo "  Wheels passed: $PASS_COUNT"
 echo "  Wheels failed: $FAIL_COUNT"
 echo ""
 
-if [[ "$TOTAL_PCT" -ge 50 ]]; then
-    echo -e "  ${GREEN}PASS${NC} — formal verification proof of concept established"
-else
+VERDICT=0
+if [[ "$TOTAL_PCT" -lt 50 ]]; then
     echo -e "  ${RED}FAIL${NC} — below 50% proof rate"
+    VERDICT=1
+elif [[ "$FAIL_COUNT" -ne 0 ]]; then
+    echo -e "  ${RED}FAIL${NC} — $FAIL_COUNT wheel(s) failed"
+    VERDICT=1
+else
+    echo -e "  ${GREEN}PASS${NC} — formal verification proof of concept established"
 fi
 
 echo ""
@@ -170,3 +186,5 @@ echo "  - Non-loop function specs (init, count, free, is_empty, is_full,"
 echo "    reset, pure helpers) generally verify fully."
 echo "  - RTE checks (division by zero, overflow, mem access) are included"
 echo "    via -wp-rte for maximum coverage."
+
+exit "$VERDICT"
