@@ -33,7 +33,8 @@ typedef enum {
 varint_err_t varint_encode_u64(uint64_t value, uint8_t *buf, size_t cap,
                                 size_t *out_len);
 
-/** Decode uint64. @thread_safe: yes @isr_safe: yes */
+/** Decode uint64.  VARINT_ERR_OVERFLOW if the value needs more than 64 bits,
+ *  VARINT_ERR_SHORT if buf ends first. @thread_safe: yes @isr_safe: yes */
 varint_err_t varint_decode_u64(const uint8_t *buf, size_t len,
                                 uint64_t *value, size_t *out_len);
 

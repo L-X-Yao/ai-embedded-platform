@@ -186,6 +186,77 @@ TEST(test_error_codes)
     ASSERT_EQ((int)VARINT_ERR_SHORT, -3);
 }
 
+/* ---------- decode past 64 bits ---------- */
+
+/* Nine bytes carry 63 bits, so the tenth byte may only hold bit 63. */
+static void fill_nine(uint8_t *buf, uint8_t head, uint8_t last)
+{
+    memset(buf, head, 9);
+    buf[9] = last;
+}
+
+TEST(test_decode_tenth_byte_top_values)
+{
+    uint8_t buf[10];
+    uint64_t val = 0;
+    size_t len = 0;
+
+    fill_nine(buf, 0xFF, 0x01);
+    ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_OK);
+    ASSERT_TRUE(val == UINT64_MAX);
+    ASSERT_EQ(len, 10u);
+
+    fill_nine(buf, 0x80, 0x01);
+    ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_OK);
+    ASSERT_TRUE(val == ((uint64_t)1 << 63));
+
+    fill_nine(buf, 0xFF, 0x00); /* padded form of 2^63 - 1 */
+    ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_OK);
+    ASSERT_TRUE(val == INT64_MAX);
+}
+
+TEST(test_decode_past_64_bits)
+{
+    static const uint8_t tenth[] = {0x02, 0x03, 0x40, 0x7F, 0xFF};
+    uint8_t buf[10];
+    uint64_t val = 0x1234;
+    size_t len = 77;
+
+    for (size_t i = 0; i < sizeof(tenth); i++) {
+        fill_nine(buf, 0xFF, tenth[i]);
+        ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_ERR_OVERFLOW);
+        fill_nine(buf, 0x80, tenth[i]);
+        ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_ERR_OVERFLOW);
+    }
+    ASSERT_TRUE(val == 0x1234);
+    ASSERT_EQ(len, 77u);
+}
+
+TEST(test_decode_s64_past_64_bits)
+{
+    uint8_t buf[10];
+    int64_t val = 0x1234;
+    size_t len = 77;
+
+    fill_nine(buf, 0x80, 0x02); /* 2^64, which used to decode as 0 */
+    ASSERT_EQ(varint_decode_s64(buf, 10, &val, &len), VARINT_ERR_OVERFLOW);
+    ASSERT_TRUE(val == 0x1234);
+    ASSERT_EQ(len, 77u);
+}
+
+/* Bit 63 with more bytes promised: short until the eleventh byte arrives. */
+TEST(test_decode_eleventh_byte)
+{
+    uint8_t buf[11];
+    uint64_t val = 0;
+    size_t len = 0;
+
+    fill_nine(buf, 0xFF, 0x81);
+    buf[10] = 0x00;
+    ASSERT_EQ(varint_decode_u64(buf, 10, &val, &len), VARINT_ERR_SHORT);
+    ASSERT_EQ(varint_decode_u64(buf, 11, &val, &len), VARINT_ERR_OVERFLOW);
+}
+
 TEST_MAIN("varint")
     RUN(test_encode_zero);
     RUN(test_encode_127);
@@ -205,4 +276,8 @@ TEST_MAIN("varint")
     RUN(test_decode_s64_null);
     RUN(test_encoded_size);
     RUN(test_error_codes);
+    RUN(test_decode_tenth_byte_top_values);
+    RUN(test_decode_past_64_bits);
+    RUN(test_decode_s64_past_64_bits);
+    RUN(test_decode_eleventh_byte);
 TEST_MAIN_END()
