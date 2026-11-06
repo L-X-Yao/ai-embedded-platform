@@ -10,14 +10,15 @@
 
 #include "nmea_parser.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
 #include <stdlib.h>
 
 /*
  * A valid checksum says a sentence arrived as sent, not that its values make
- * sense, and strtof takes nan, inf and 1e30 as numbers. A value outside these
- * limits is ignored and the field keeps what it had. NMEA sets few of them, so
- * they are wide, and only have to keep out what no receiver reports.
+ * sense. A value outside these limits is ignored and the field keeps what it
+ * had. NMEA sets few of them, so they are wide, and only have to keep out what
+ * no receiver reports.
  */
 #define MAX_SPEED_KNOTS 1000.0f     /* about 514 m/s */
 #define MAX_COURSE_DEG  360.0f
@@ -30,6 +31,13 @@
 #define MAX_SECOND      60          /* UTC can have a leap second */
 #define MAX_MONTH       12
 #define MAX_DAY         31
+
+/* What decimal_value gives for anything but a number: past every limit above,
+ * so each range check ignores it. */
+#define NOT_DECIMAL     FLT_MAX
+/* A digit is kept while value and scale are under this, so each holds at most
+ * 15 digits and converts to double exactly. */
+#define DECIMAL_FULL    100000000000000ULL
 
 /* ---------- helpers ---------- */
 
@@ -51,14 +59,57 @@ static const char *get_field(const char *line, int n)
     return line;
 }
 
+static int is_digit(char c) { return c >= '0' && c <= '9'; }
+
+/*
+ * Read a number up to the end of its field: a sign, digits, and one point at
+ * most. Exponents, hex, nan, inf and text after the digits give NOT_DECIMAL.
+ * This is not strtof because newlib's takes heap for a long run of digits, and
+ * a noisy line can carry one past a good checksum.
+ *
+ * Digits past the 15th are dropped, eight places below what a float holds,
+ * unless they come before the point: such a number is past every limit. Both
+ * sides of the division are exact, so it rounds once, as strtod does.
+ */
+static float decimal_value(const char *s)
+{
+    uint64_t value = 0;
+    uint64_t scale = 1;
+    bool point = false;
+    bool any_digit = false;
+    bool negative = (*s == '-');
+
+    if (*s == '-' || *s == '+') s++;
+
+    for (; *s != '\0' && *s != ',' && *s != '*'; s++) {
+        if (*s == '.' && !point) {
+            point = true;
+        } else if (!is_digit(*s)) {
+            return NOT_DECIMAL;
+        } else {
+            any_digit = true;
+            if (value < DECIMAL_FULL && scale < DECIMAL_FULL) {
+                value = value * 10U + (uint64_t)(*s - '0');
+                if (point) scale *= 10U;
+            } else if (!point) {
+                return NOT_DECIMAL;
+            }
+        }
+    }
+    if (!any_digit) return NOT_DECIMAL;
+
+    float v = (float)((double)value / (double)scale);
+    return negative ? -v : v;
+}
+
 static float field_float(const char *line, int n)
 {
     const char *f = get_field(line, n);
-    if (*f == '\0' || *f == ',') return 0.0f;
-    return strtof(f, NULL);
+    if (*f == '\0' || *f == ',' || *f == '*') return 0.0f;
+    return decimal_value(f);
 }
 
-/* Store a field only if it lies in lo..hi. NaN fails both comparisons. */
+/* Store a field only if it lies in lo..hi. */
 static void field_float_in(const char *line, int n, float lo, float hi, float *out)
 {
     float v = field_float(line, n);
@@ -88,9 +139,9 @@ static char field_char(const char *line, int n)
 
 static float parse_lat(const char *raw, char ns)
 {
-    float v = strtof(raw, NULL);
-    /* ddmm.mmmm: |v| <= 9000. Reject NaN/inf/garbage before the int cast;
-     * casting inf to int is undefined behaviour (found by libFuzzer). */
+    float v = decimal_value(raw);
+    /* ddmm.mmmm: |v| <= 9000. Reject the rest before the int cast; casting a
+     * value too big for int is undefined behaviour (found by libFuzzer). */
     if (!(v >= -9000.0f && v <= 9000.0f)) return 0.0f;
     int deg = (int)(v / 100.0f);
     float min = v - (float)deg * 100.0f;
@@ -101,7 +152,7 @@ static float parse_lat(const char *raw, char ns)
 
 static float parse_lon(const char *raw, char ew)
 {
-    float v = strtof(raw, NULL);
+    float v = decimal_value(raw);
     /* dddmm.mmmm: |v| <= 18000. Same guard as parse_lat. */
     if (!(v >= -18000.0f && v <= 18000.0f)) return 0.0f;
     int deg = (int)(v / 100.0f);
@@ -113,21 +164,18 @@ static float parse_lon(const char *raw, char ew)
 
 /*
  * Whether a field holds ddmm.mmmm or dddmm.mmmm, up to max_deg degrees, and
- * nothing else. strtof alone would read text as 0 and take nan and inf.
+ * nothing else: no sign, and a comma after it because the hemisphere follows.
  */
 static bool coord_is_valid(const char *raw, float max_deg)
 {
     size_t digits = strspn(raw, "0123456789.");
-    char *end;
-    float v = strtof(raw, &end);
 
-    if (digits == 0 || end != raw + digits || *end != ',') return false;
+    if (digits == 0 || raw[digits] != ',') return false;
+    float v = decimal_value(raw);
     if (v > max_deg * 100.0f) return false;
     int deg = (int)(v / 100.0f);
     return v - (float)deg * 100.0f < 60.0f;
 }
-
-static int is_digit(char c) { return c >= '0' && c <= '9'; }
 
 static void parse_time(const char *field, nmea_parser_data_t *d)
 {
@@ -205,7 +253,7 @@ static void parse_rmc(const char *line, nmea_parser_data_t *d)
     const char *course_f = get_field(line, 8);
     d->course_valid = 0;
     if (*course_f && *course_f != ',' && *course_f != '*') {
-        float course = strtof(course_f, NULL);
+        float course = decimal_value(course_f);
         if (course >= 0.0f && course <= MAX_COURSE_DEG) {
             d->course_deg = course;
             d->course_valid = 1;
