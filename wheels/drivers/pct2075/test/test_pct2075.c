@@ -21,10 +21,18 @@ static void inject_temp_raw(int16_t raw)
     mock_regs[0x01] = (uint8_t)((uint16_t)raw & 0xFFu);
 }
 
+static uint32_t mock_waited_ms;
+
+static void mock_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    mock_waited_ms += ms;
+}
+
 static const pct2075_i2c_t mock_i2c = {
     .write_reg = mock_i2c_write_reg,
     .read_regs = mock_i2c_read_regs,
-    .delay_ms  = mock_i2c_delay_ms,
+    .delay_ms  = mock_delay_ms,
     .ctx       = NULL,
 };
 
@@ -60,12 +68,32 @@ TEST(test_init_writes_config)
     pct2075_cfg_t cfg = {
         .addr         = PCT2075_DEV_ADDR,
         .write_config = true,
-        .conf_val     = 0x04,  /* OS fault queue = 2 */
+        .conf_val     = 0x08,  /* Table 10: B[4:3] = 01, queue value = 2 */
     };
     pct2075_err_t e = pct2075_init(&d, &mock_i2c, &cfg);
     ASSERT_EQ(e, PCT2075_OK);
     /* Config register at 0x01 should have been written */
-    ASSERT_EQ(mock_regs[0x01], 0x04);
+    ASSERT_EQ(mock_regs[0x01], 0x08);
+}
+
+/* p.7 "not updated until the first conversion is completed in about
+ * 28 ms" */
+TEST(test_init_waits_for_first_conversion)
+{
+    mock_reset();
+    mock_waited_ms = 0;
+    pct2075_t d;
+    ASSERT_EQ(pct2075_init(&d, &mock_i2c, &default_cfg), PCT2075_OK);
+    ASSERT_GE(mock_waited_ms, 28u);
+}
+
+TEST(test_init_refuses_a_hal_without_delay)
+{
+    mock_reset();
+    pct2075_i2c_t hal = mock_i2c;
+    hal.delay_ms = NULL;
+    pct2075_t d;
+    ASSERT_EQ(pct2075_init(&d, &hal, &default_cfg), PCT2075_ERR_PARAM);
 }
 
 TEST(test_null_dev)
@@ -271,7 +299,7 @@ TEST(test_config_write_i2c_fail)
     pct2075_cfg_t cfg = {
         .addr         = PCT2075_DEV_ADDR,
         .write_config = true,
-        .conf_val     = 0x04,
+        .conf_val     = 0x08,
     };
     ASSERT_EQ(pct2075_init(&d, &mock_i2c, &cfg), PCT2075_ERR_I2C);
 }
@@ -279,6 +307,8 @@ TEST(test_config_write_i2c_fail)
 TEST_MAIN("pct2075")
     RUN(test_init_ok);
     RUN(test_init_writes_config);
+    RUN(test_init_waits_for_first_conversion);
+    RUN(test_init_refuses_a_hal_without_delay);
     RUN(test_null_dev);
     RUN(test_null_i2c);
     RUN(test_null_cfg);
