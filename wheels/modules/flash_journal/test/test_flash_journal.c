@@ -18,6 +18,7 @@ static bool sim_fail_write;
 static bool sim_fail_erase;
 static int sim_cut_after;      /* bytes programmed before power goes, -1 = never */
 static int sim_bad_programs;   /* bytes that needed a 0 bit raised to 1 */
+static int sim_fail_read_at;   /* value of sim_read_calls that fails, 0 = none */
 
 static void sim_reset(void)
 {
@@ -30,6 +31,7 @@ static void sim_reset(void)
     sim_fail_erase = false;
     sim_cut_after = -1;
     sim_bad_programs = 0;
+    sim_fail_read_at = 0;
 }
 
 static flash_journal_err_t sim_read(void *ctx, uint32_t sector,
@@ -38,7 +40,9 @@ static flash_journal_err_t sim_read(void *ctx, uint32_t sector,
 {
     (void)ctx;
     sim_read_calls++;
-    if (sim_fail_read) return FLASH_JOURNAL_ERR_STORAGE;
+    if (sim_fail_read || sim_read_calls == sim_fail_read_at) {
+        return FLASH_JOURNAL_ERR_STORAGE;
+    }
     if (sector >= SIM_SECTOR_COUNT) return FLASH_JOURNAL_ERR_PARAM;
     if (offset + len > SIM_SECTOR_SIZE) return FLASH_JOURNAL_ERR_PARAM;
     memcpy(buf, &sim_flash[sector * SIM_SECTOR_SIZE + offset], len);
@@ -554,6 +558,64 @@ TEST(test_boot_sees_last_byte_of_sector_programmed)
     ASSERT_EQ(flash_journal_count(&jrnl), 2);
 }
 
+/* No read of a boot may fail unnoticed: the journal would look emptier than it
+ * is, and the next append would program over what it could not see. */
+TEST(test_boot_reports_every_failed_read)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+
+    sim_read_calls = 0;
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    int reads = sim_read_calls;
+    ASSERT_TRUE(reads >= 9);  /* three reads for each of the three entries */
+
+    for (int failing = 1; failing <= reads; failing++) {
+        sim_read_calls = 0;
+        sim_fail_read_at = failing;
+        ASSERT_EQ(reboot(), FLASH_JOURNAL_ERR_STORAGE);
+        sim_fail_read_at = 0;
+    }
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 3);
+    ASSERT_EQ(jrnl.write_sector, 0);
+    ASSERT_EQ(jrnl.write_offset, 3u * ENTRY4_SIZE);
+    ASSERT_TRUE(nth_is(0, "AAAA"));
+    ASSERT_TRUE(latest_is("CCCC"));
+}
+
+/* Even a caller that ignores the failed init cannot damage the entries. */
+TEST(test_failed_boot_refuses_appends)
+{
+    fresh_journal();
+    ASSERT_EQ(put("AAAA"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(put("BBBB"), FLASH_JOURNAL_OK);
+
+    sim_fail_read = true;
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_ERR_STORAGE);
+    sim_fail_read = false;
+
+    int writes = sim_write_calls;
+    int erases = sim_erase_calls;
+    ASSERT_TRUE(put("ZZZZ") != FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 0);
+    ASSERT_EQ(sim_write_calls, writes);
+    ASSERT_EQ(sim_erase_calls, erases);
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 2);
+    ASSERT_EQ(put("CCCC"), FLASH_JOURNAL_OK);
+    ASSERT_EQ(sim_bad_programs, 0);
+
+    ASSERT_EQ(reboot(), FLASH_JOURNAL_OK);
+    ASSERT_EQ(flash_journal_count(&jrnl), 3);
+    ASSERT_TRUE(nth_is(0, "AAAA"));
+    ASSERT_TRUE(latest_is("CCCC"));
+}
+
 /* Entry id -> payload, so a read can be checked from the id alone. */
 static uint16_t model_payload(uint32_t id, uint8_t *buf)
 {
@@ -681,5 +743,7 @@ TEST_MAIN("flash_journal")
     RUN(test_cut_first_append_of_empty_journal);
     RUN(test_clean_boot_keeps_write_position);
     RUN(test_boot_sees_last_byte_of_sector_programmed);
+    RUN(test_boot_reports_every_failed_read);
+    RUN(test_failed_boot_refuses_appends);
     RUN(test_power_cut_model);
 TEST_MAIN_END()

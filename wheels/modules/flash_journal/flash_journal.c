@@ -185,6 +185,17 @@ static flash_journal_err_t retire_dirty_tail(flash_journal_t *jrnl)
     return FLASH_JOURNAL_OK;
 }
 
+/*
+ * A journal that could not be read must not be written: it looks emptier than
+ * it is, and an append would program over what the scan did not reach.  A
+ * cleared context refuses every append, should the caller carry on regardless.
+ */
+static flash_journal_err_t fail_init(flash_journal_t *jrnl)
+{
+    memset(jrnl, 0, sizeof(*jrnl));
+    return FLASH_JOURNAL_ERR_STORAGE;
+}
+
 /* ---------- Public API ----------------------------------------------------- */
 
 flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
@@ -210,7 +221,7 @@ flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
     uint32_t total_entries = 0;
     uint32_t max_seq = 0;
     uint32_t max_seq_sector = 0;
-    uint32_t max_seq_offset = 0;
+    uint32_t max_seq_end = 0;  /* where the newest entry ends */
     uint32_t min_seq = UINT32_MAX;
     uint32_t min_seq_sector = 0;
     bool found_any = false;
@@ -223,13 +234,14 @@ flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
         while (offset + FLASH_JOURNAL_OVERHEAD <= sector_size) {
             flash_journal_err_t err = read_entry(jrnl, s, offset,
                                                  &seq, &len, NULL, 0);
+            if (err == FLASH_JOURNAL_ERR_STORAGE) return fail_init(jrnl);
             if (err != FLASH_JOURNAL_OK) break;
 
             total_entries++;
             if (!found_any || seq > max_seq) {
                 max_seq = seq;
                 max_seq_sector = s;
-                max_seq_offset = offset;
+                max_seq_end = offset + FLASH_JOURNAL_OVERHEAD + (uint32_t)len;
             }
             if (!found_any || seq < min_seq) {
                 min_seq = seq;
@@ -247,19 +259,12 @@ flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
         jrnl->oldest_offset = 0; /* oldest is always at sector start */
 
         /* Write position: after the last entry in max_seq's sector */
-        uint16_t last_len;
-        uint32_t dummy_seq;
-        flash_journal_err_t err = read_entry(jrnl, max_seq_sector,
-                                             max_seq_offset, &dummy_seq,
-                                             &last_len, NULL, 0);
-        if (err == FLASH_JOURNAL_OK) {
-            jrnl->write_sector = max_seq_sector;
-            jrnl->write_offset = max_seq_offset + FLASH_JOURNAL_OVERHEAD
-                               + (uint32_t)last_len;
-        }
+        jrnl->write_sector = max_seq_sector;
+        jrnl->write_offset = max_seq_end;
     }
 
-    return retire_dirty_tail(jrnl);
+    if (retire_dirty_tail(jrnl) != FLASH_JOURNAL_OK) return fail_init(jrnl);
+    return FLASH_JOURNAL_OK;
 }
 
 flash_journal_err_t flash_journal_append(flash_journal_t *jrnl,
