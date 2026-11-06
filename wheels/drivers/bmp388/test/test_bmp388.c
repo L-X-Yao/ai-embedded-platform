@@ -62,6 +62,10 @@ static void plant_calib(void)
 static uint8_t pwr_ctrl_log[8];
 static int     pwr_ctrl_len;
 
+/* the drdy flags a measurement can raise, and whether a reset ends */
+static uint8_t mock_drdy_mask;
+static bool    mock_reset_ends;
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
@@ -69,10 +73,12 @@ static void mock_reset(void)
     /* Chip ID register */
     mock_regs[0x00] = 0x50;
 
-    /* STATUS: drdy_press and drdy_temp set so read doesn't timeout */
-    mock_regs[0x03] = 0x60;
+    /* Table 24, p.31: no flag is set before a measurement */
+    mock_regs[0x03] = 0x00;
 
     pwr_ctrl_len = 0;
+    mock_drdy_mask = 0x60;
+    mock_reset_ends = true;
 
     plant_calib();
 }
@@ -83,7 +89,20 @@ static bool log_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
     {
         pwr_ctrl_log[pwr_ctrl_len++] = val;
     }
-    return mock_i2c_write_reg(ctx, dev_addr, reg, val);
+    bool ok = mock_i2c_write_reg(ctx, dev_addr, reg, val);
+
+    /* A forced measurement ends with the flag of each enabled channel */
+    if (ok && reg == 0x1B && (val & 0x30) != 0x00 && (val & 0x30) != 0x30)
+    {
+        uint8_t flags = (uint8_t)(((val & 0x01) ? 0x20 : 0) | ((val & 0x02) ? 0x40 : 0));
+        mock_regs[0x03] = (uint8_t)(flags & mock_drdy_mask);
+    }
+    /* p.11: a soft reset ends with por_detected */
+    if (ok && reg == 0x7E && val == 0xB6 && mock_reset_ends)
+    {
+        mock_regs[0x10] |= 0x01;
+    }
+    return ok;
 }
 
 static const bmp388_i2c_t mock_i2c = {
@@ -257,8 +276,8 @@ TEST(test_read_i2c_fail)
 TEST(test_read_timeout)
 {
     setup();
-    /* Clear STATUS drdy bit so measurement never becomes ready */
-    mock_regs[0x03] = 0x00;
+    /* The measurement never becomes ready */
+    mock_drdy_mask = 0x00;
     plant_adc(6000000, 8000000);
 
     bmp388_data_t data;
@@ -273,6 +292,39 @@ TEST(test_reset_cmd)
     ASSERT_EQ(e, BMP388_OK);
     /* CMD register (0x7E) should have received 0xB6 */
     ASSERT_EQ(mock_regs[0x7E], 0xB6);
+}
+
+/* p.11: por_detected ends the reset. p.39: the reset clears OSR, so it goes back */
+TEST(test_reset_bus)
+{
+    setup();
+    mock_regs[0x1C] = 0x02;  /* what the reset left */
+
+    ASSERT_EQ(bmp388_reset(&dev), BMP388_OK);
+    ASSERT_EQ_HEX(mock_regs[0x1C], 0x00);
+}
+
+TEST(test_reset_timeout)
+{
+    setup();
+    mock_reset_ends = false;
+    mock_regs[0x10] = 0x00;
+    ASSERT_EQ(bmp388_reset(&dev), BMP388_ERR_TIMEOUT);
+}
+
+/* Each step of the reset can fail on the bus */
+TEST(test_reset_i2c_fail_at_each_step)
+{
+    for (int at = 0; at < 3; at++)
+    {
+        setup();
+        mock_fail_at = at;  /* EVENT, CMD, EVENT */
+        ASSERT_EQ(bmp388_reset(&dev), BMP388_ERR_I2C);
+    }
+
+    setup();
+    mock_fail_at = 3;       /* OSR */
+    ASSERT_EQ(bmp388_reset(&dev), BMP388_ERR_I2C);
 }
 
 TEST(test_reset_i2c_fail)
@@ -383,7 +435,6 @@ TEST(test_oversampling_skip_pressure)
     ASSERT_EQ(pwr_ctrl_len, 0);
     ASSERT_EQ(mock_regs[0x1C] & 0x07, 0);
 
-    mock_regs[0x03] = 0x40;
     plant_adc(6000000, 8000000);
 
     bmp388_data_t data;
@@ -409,7 +460,6 @@ TEST(test_oversampling_skip_temperature)
     ASSERT_EQ(pwr_ctrl_len, 1);
     ASSERT_EQ_HEX(pwr_ctrl_log[0], 0x12);
 
-    mock_regs[0x03] = 0x20;
     plant_adc(6000000, 9000000);
 
     bmp388_data_t data;
@@ -429,7 +479,7 @@ TEST(test_oversampling_skip_temperature_init_errors)
     cfg.osrs_t = BMP388_OVERSAMPLING_SKIP;
 
     mock_reset();
-    mock_regs[0x03] = 0x00;
+    mock_drdy_mask = 0x00;
     ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_TIMEOUT);
 
     mock_reset();
@@ -444,11 +494,11 @@ TEST(test_read_waits_for_both_flags)
     bmp388_data_t data;
 
     setup();
-    mock_regs[0x03] = 0x20;
+    mock_drdy_mask = 0x20;
     ASSERT_EQ(bmp388_read(&dev, &data), BMP388_ERR_TIMEOUT);
 
     setup();
-    mock_regs[0x03] = 0x40;
+    mock_drdy_mask = 0x40;
     ASSERT_EQ(bmp388_read(&dev, &data), BMP388_ERR_TIMEOUT);
 }
 
@@ -535,6 +585,9 @@ TEST_MAIN("bmp388")
     RUN(test_read_i2c_fail);
     RUN(test_read_timeout);
     RUN(test_reset_cmd);
+    RUN(test_reset_bus);
+    RUN(test_reset_timeout);
+    RUN(test_reset_i2c_fail_at_each_step);
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);
     RUN(test_oversampling_config);
