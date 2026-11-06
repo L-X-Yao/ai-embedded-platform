@@ -63,17 +63,25 @@ add_test(NAME fal_boundary_tests COMMAND test_boundary_fal)
 # ---------- partition tables ----------
 # The table is compile-time, so each one needs its own build.
 
-foreach(table PAST_END OFFSET_PAST_END NEGATIVE_OFFSET WRAPPING_LEN UNKNOWN_DEVICE)
-    string(TOLOWER ${table} name)
-    add_executable(test_table_${name}
-        test_table_fal.c
-        ../fal.c
-    )
-    target_include_directories(test_table_${name} PRIVATE
+# The tooling reads target names straight from add_executable, so they are
+# spelled out here rather than built in a loop.
+function(configure_table_test target table)
+    target_include_directories(${target} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/bad_table
         ${COMMON_INCLUDE}
     )
-    target_compile_definitions(test_table_${name} PRIVATE TABLE_${table})
-    target_compile_options(test_table_${name} PRIVATE ${STRICT_FLAGS})
-    add_test(NAME fal_table_${name}_tests COMMAND test_table_${name})
-endforeach()
+    target_compile_definitions(${target} PRIVATE TABLE_${table})
+    target_compile_options(${target} PRIVATE ${STRICT_FLAGS})
+    add_test(NAME fal_${target}_tests COMMAND ${target})
+endfunction()
+
+add_executable(test_table_past_end test_table_fal.c ../fal.c)
+configure_table_test(test_table_past_end PAST_END)
+add_executable(test_table_offset_past_end test_table_fal.c ../fal.c)
+configure_table_test(test_table_offset_past_end OFFSET_PAST_END)
+add_executable(test_table_negative_offset test_table_fal.c ../fal.c)
+configure_table_test(test_table_negative_offset NEGATIVE_OFFSET)
+add_executable(test_table_wrapping_len test_table_fal.c ../fal.c)
+configure_table_test(test_table_wrapping_len WRAPPING_LEN)
+add_executable(test_table_unknown_device test_table_fal.c ../fal.c)
+configure_table_test(test_table_unknown_device UNKNOWN_DEVICE)
