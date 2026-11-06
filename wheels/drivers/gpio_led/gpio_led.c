@@ -10,7 +10,15 @@
 
 #include "gpio_led.h"
 #include "contract.h"
+#include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
+
+/* init cannot say no, so each call refuses an LED it has no way to drive */
+static bool can_drive(const gpio_led_t *led)
+{
+    return led != NULL && led->hal != NULL && led->hal->set != NULL;
+}
 
 static void emit(gpio_led_t *led, uint8_t level)
 {
@@ -22,7 +30,14 @@ static void emit(gpio_led_t *led, uint8_t level)
 
 void gpio_led_init(gpio_led_t *led, const gpio_led_hal_t *hal)
 {
-    if (led == NULL || hal == NULL) {
+    if (led == NULL) {
+        return;
+    }
+
+    /* led->hal stays NULL unless init gets a HAL */
+    memset(led, 0, sizeof(*led));
+
+    if (hal == NULL) {
         return;
     }
     led->hal        = hal;
@@ -35,12 +50,14 @@ void gpio_led_init(gpio_led_t *led, const gpio_led_hal_t *hal)
     led->remaining  = 0U;
     led->phase      = 0U;
     led->last_level = 0U;
-    hal->set(hal->ctx, 0U);
+    if (can_drive(led)) {
+        hal->set(hal->ctx, 0U);
+    }
 }
 
 void gpio_led_on(gpio_led_t *led)
 {
-    if (led == NULL) {
+    if (!can_drive(led)) {
         return;
     }
     led->mode = GPIO_LED_ON;
@@ -49,7 +66,7 @@ void gpio_led_on(gpio_led_t *led)
 
 void gpio_led_off(gpio_led_t *led)
 {
-    if (led == NULL) {
+    if (!can_drive(led)) {
         return;
     }
     led->mode = GPIO_LED_OFF;
@@ -59,7 +76,7 @@ void gpio_led_off(gpio_led_t *led)
 void gpio_led_blink(gpio_led_t *led, uint16_t on_ms,
                      uint16_t off_ms, uint8_t repeat)
 {
-    if (led == NULL) {
+    if (!can_drive(led)) {
         return;
     }
     led->mode      = GPIO_LED_BLINK;
@@ -74,7 +91,7 @@ void gpio_led_blink(gpio_led_t *led, uint16_t on_ms,
 
 void gpio_led_breathe(gpio_led_t *led, uint16_t period_ms)
 {
-    if (led == NULL) {
+    if (!can_drive(led)) {
         return;
     }
     led->mode    = GPIO_LED_BREATHE;
@@ -85,7 +102,7 @@ void gpio_led_breathe(gpio_led_t *led, uint16_t period_ms)
 
 void gpio_led_pulse(gpio_led_t *led, uint16_t on_ms)
 {
-    if (led == NULL) {
+    if (!can_drive(led)) {
         return;
     }
     led->mode    = GPIO_LED_PULSE;
@@ -177,7 +194,7 @@ static void tick_pulse(gpio_led_t *led, uint16_t dt_ms)
 
 void gpio_led_tick(gpio_led_t *led, uint16_t dt_ms)
 {
-    if (led == NULL || dt_ms == 0U) {
+    if (!can_drive(led) || dt_ms == 0U) {
         return;
     }
 

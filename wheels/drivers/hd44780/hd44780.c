@@ -106,26 +106,9 @@ static hd44780_err_t send_data(const hd44780_t *dev, uint8_t data)
     return HD44780_OK;
 }
 
-hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
-                           uint8_t addr, uint8_t cols, uint8_t rows)
+/* The steps of init that talk to the display */
+static hd44780_err_t bring_up(const hd44780_t *dev)
 {
-    if (!dev || !i2c)
-        return HD44780_ERR_PARAM;
-    if (!i2c->write_reg)
-        return HD44780_ERR_PARAM;
-    if (cols == 0 || cols > HD44780_MAX_COLS || rows == 0 || rows > HD44780_MAX_ROWS)
-        return HD44780_ERR_PARAM;
-    /* Rows 2 and 3 are the tail of the two DDRAM lines (0x00-0x27, 0x40-0x67). */
-    if (rows > 2 && cols > 20)
-        return HD44780_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c       = i2c;
-    dev->addr      = addr;
-    dev->cols      = cols;
-    dev->rows      = rows;
-    dev->backlight = PIN_BL;
-
     /* Wait >40ms after power-on */
     delay(dev, 50);
 
@@ -149,7 +132,7 @@ hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
 
     /* Function set: 4-bit, 2-line (if rows>1), 5x8 dots */
     uint8_t func = LCD_FUNCTION_SET | LCD_4BIT_MODE | LCD_5X8_DOTS;
-    if (rows > 1)
+    if (dev->rows > 1)
         func |= LCD_2LINE;
     if (send_cmd(dev, func) != HD44780_OK) return HD44780_ERR_I2C;
     delay(dev, 1);
@@ -174,13 +157,49 @@ hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
         return HD44780_ERR_I2C;
     delay(dev, 1);
 
+    return HD44780_OK;
+}
+
+hd44780_err_t hd44780_init(hd44780_t *dev, const hd44780_i2c_t *i2c,
+                           uint8_t addr, uint8_t cols, uint8_t rows)
+{
+    if (!dev)
+        return HD44780_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+        return HD44780_ERR_PARAM;
+    if (!i2c->write_reg)
+        return HD44780_ERR_PARAM;
+    if (cols == 0 || cols > HD44780_MAX_COLS || rows == 0 || rows > HD44780_MAX_ROWS)
+        return HD44780_ERR_PARAM;
+    /* Rows 2 and 3 are the tail of the two DDRAM lines (0x00-0x27, 0x40-0x67). */
+    if (rows > 2 && cols > 20)
+        return HD44780_ERR_PARAM;
+
+    dev->i2c       = i2c;
+    dev->addr      = addr;
+    dev->cols      = cols;
+    dev->rows      = rows;
+    dev->backlight = PIN_BL;
+
+    hd44780_err_t err = bring_up(dev);
+    if (err != HD44780_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return HD44780_OK;
 }
 
 hd44780_err_t hd44780_clear(hd44780_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return HD44780_ERR_PARAM;
     hd44780_err_t err = send_cmd(dev, LCD_CLEAR_DISPLAY);
     if (err != HD44780_OK)
@@ -191,7 +210,7 @@ hd44780_err_t hd44780_clear(hd44780_t *dev)
 
 hd44780_err_t hd44780_set_cursor(hd44780_t *dev, uint8_t col, uint8_t row)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return HD44780_ERR_PARAM;
     if (row >= dev->rows)
         return HD44780_ERR_PARAM;
@@ -204,14 +223,14 @@ hd44780_err_t hd44780_set_cursor(hd44780_t *dev, uint8_t col, uint8_t row)
 
 hd44780_err_t hd44780_write_char(hd44780_t *dev, char ch)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return HD44780_ERR_PARAM;
     return send_data(dev, (uint8_t)ch);
 }
 
 hd44780_err_t hd44780_write_str(hd44780_t *dev, const char *str)
 {
-    if (!dev || !str)
+    if (!dev || !dev->i2c || !str)
         return HD44780_ERR_PARAM;
     while (*str)
     {
@@ -225,7 +244,7 @@ hd44780_err_t hd44780_write_str(hd44780_t *dev, const char *str)
 
 hd44780_err_t hd44780_backlight(hd44780_t *dev, bool on)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return HD44780_ERR_PARAM;
     dev->backlight = on ? PIN_BL : 0;
     if (!expander_write(dev, dev->backlight))

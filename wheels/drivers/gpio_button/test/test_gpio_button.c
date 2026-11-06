@@ -355,6 +355,46 @@ TEST(test_large_dt)
     ASSERT_TRUE(gpio_button_is_pressed(&btn) == 1);
 }
 
+/* ---------- a button init did not accept ---------- */
+
+static void assert_button_refused(gpio_button_t *b)
+{
+    ASSERT_EQ(gpio_button_tick(b, 10), GPIO_BUTTON_EVT_NONE);
+    ASSERT_EQ(gpio_button_is_pressed(b), 0);
+}
+
+TEST(test_zeroed_button_refused)
+{
+    static gpio_button_t zeroed;
+    assert_button_refused(&zeroed);
+}
+
+/* btn holds whatever the stack did, as nothing else wrote it */
+TEST(test_button_refused_after_rejected_init)
+{
+    gpio_button_t b;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+
+    memset(&b, 0xA5, sizeof(b));
+    gpio_button_init(&b, NULL, &cfg);
+    assert_button_refused(&b);
+
+    memset(&b, 0xA5, sizeof(b));
+    gpio_button_init(&b, &mock_hal, NULL);
+    assert_button_refused(&b);
+}
+
+/* init returns nothing, so the tick has to catch a HAL with no read */
+TEST(test_tick_refuses_a_hal_without_read)
+{
+    gpio_button_t b;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+    gpio_button_hal_t no_read = { .read = NULL, .ctx = NULL };
+
+    gpio_button_init(&b, &no_read, &cfg);
+    assert_button_refused(&b);
+}
+
 TEST_MAIN("gpio_button")
     RUN(test_default_cfg);
     RUN(test_init_idle);
@@ -373,5 +413,8 @@ TEST_MAIN("gpio_button")
     RUN(test_barely_miss_long_press);
     RUN(test_triple_click);
     RUN(test_large_dt);
+    RUN(test_zeroed_button_refused);
+    RUN(test_button_refused_after_rejected_init);
+    RUN(test_tick_refuses_a_hal_without_read);
 TEST_MAIN_END()
 
