@@ -478,6 +478,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(mlx90614_init(&d, NULL, &default_cfg), MLX90614_ERR_PARAM);
     assert_device_refused(&d);
 
+    static mlx90614_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mlx90614_init(&d, &zeroed_hal, &default_cfg), MLX90614_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* Nothing answered the ambient read, and the bus is fine again */
     mock_fail_at = 0;
     ASSERT_EQ(mlx90614_init(&d, &mock_i2c, &default_cfg), MLX90614_ERR_I2C);

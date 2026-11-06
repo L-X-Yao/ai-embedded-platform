@@ -277,6 +277,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(mpr121_init(&d, NULL, &default_cfg), MPR121_ERR_PARAM);
     assert_device_refused(&d);
 
+    static mpr121_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mpr121_init(&d, &zeroed_hal, &default_cfg), MPR121_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* ECR did not read 0 after the soft reset, so this is no working MPR121 */
     mock_regs[MPR121_REG_ECR] = 0x42u;
     ASSERT_EQ(mpr121_init(&d, &mock_i2c, &default_cfg), MPR121_ERR_I2C);

@@ -1073,6 +1073,12 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(mcp2515_init(&d, NULL, MCP2515_SPEED_500KBPS), MCP2515_ERR_SPI);
     assert_device_refused(&d);
 
+    static mcp2515_spi_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp2515_init(&d, &zeroed_hal, MCP2515_SPEED_500KBPS),
+              MCP2515_ERR_SPI);
+    assert_device_refused(&d);
+
     memset(&d, 0xA5, sizeof(d));
     ASSERT_EQ(mcp2515_init(&d, &mock_spi_no_delay, MCP2515_SPEED_500KBPS),
               MCP2515_ERR_PARAM);
