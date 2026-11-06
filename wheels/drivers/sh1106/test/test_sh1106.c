@@ -269,6 +269,42 @@ TEST(test_init_clears_display_ram_before_switching_on)
     ASSERT_EQ(data_before_on, SH1106_PAGES * SH1106_WIDTH);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sh1106_t *d)
+{
+    ASSERT_EQ(sh1106_display(d), SH1106_ERR_PARAM);
+    ASSERT_EQ(sh1106_set_contrast(d, 0x80), SH1106_ERR_PARAM);
+    ASSERT_EQ(sh1106_display_on(d), SH1106_ERR_PARAM);
+    ASSERT_EQ(sh1106_display_off(d), SH1106_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_command)
+{
+    sh1106_t d;
+    mock_reset();
+    mock_fail_at = 3;  /* part way through the sequence */
+    ASSERT_EQ(sh1106_init(&d, &mock_i2c, 0x3C, framebuf), SH1106_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sh1106_i2c_t zeroed;
+    sh1106_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sh1106_init(&d, NULL, 0x3C, framebuf), SH1106_ERR_PARAM);
+    assert_device_refused(&d);
+    ASSERT_FALSE(sh1106_get_pixel(&d, 0, 0));
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sh1106_init(&d, &zeroed, 0x3C, framebuf), SH1106_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sh1106")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -291,4 +327,6 @@ TEST_MAIN("sh1106")
     RUN(test_addr_b);
     RUN(test_init_clears_framebuffer);
     RUN(test_init_clears_display_ram_before_switching_on);
+    RUN(test_device_refused_after_failed_command);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

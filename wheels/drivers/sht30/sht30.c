@@ -61,7 +61,16 @@ uint8_t sht30_crc8(const uint8_t *data, uint16_t len)
 sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
                        const sht30_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
+    if (!dev)
+    {
+        return SHT30_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
     {
         return SHT30_ERR_PARAM;
     }
@@ -70,7 +79,6 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
         return SHT30_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
@@ -79,6 +87,7 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
 
     if (!soft_reset(dev))
     {
+        dev->i2c = NULL;
         return SHT30_ERR_I2C;
     }
 
@@ -87,7 +96,7 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
 
 sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return SHT30_ERR_PARAM;
     }
@@ -128,7 +137,7 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
 
 sht30_err_t sht30_reset(sht30_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SHT30_ERR_PARAM;
     }

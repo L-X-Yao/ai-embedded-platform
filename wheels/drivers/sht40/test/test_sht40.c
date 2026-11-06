@@ -486,6 +486,51 @@ TEST(test_soft_reset_waits_tsr)
     ASSERT_GE(mock_delay_total_ms, 1u);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sht40_t *d)
+{
+    sht40_data_t data;
+    uint32_t serial;
+    ASSERT_EQ(sht40_read_high(d, &data), SHT40_ERR_PARAM);
+    ASSERT_EQ(sht40_read_medium(d, &data), SHT40_ERR_PARAM);
+    ASSERT_EQ(sht40_read_low(d, &data), SHT40_ERR_PARAM);
+    ASSERT_EQ(sht40_soft_reset(d), SHT40_ERR_PARAM);
+    ASSERT_EQ(sht40_read_serial(d, &serial), SHT40_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    sht40_t d;
+
+    mock_reset();
+    mock_fail_next = 1;  /* the soft reset */
+    ASSERT_EQ(sht40_init(&d, &mock_i2c, SHT40_ADDR_A), SHT40_ERR_I2C);
+    assert_device_refused(&d);
+
+    mock_reset();
+    plant_serial(0x1234, 0x5678);
+    mock_read_data[2] = (uint8_t)(mock_read_data[2] ^ 0xFFu);  /* a bad CRC */
+    ASSERT_EQ(sht40_init(&d, &mock_i2c, SHT40_ADDR_A), SHT40_ERR_CRC);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sht40_i2c_t zeroed;
+    sht40_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sht40_init(&d, NULL, SHT40_ADDR_A), SHT40_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sht40_init(&d, &zeroed, SHT40_ADDR_A), SHT40_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sht40")
     RUN(test_init_ok);
     RUN(test_init_addr_b);
@@ -522,4 +567,6 @@ TEST_MAIN("sht40")
     RUN(test_read_serial_crc_fail);
     RUN(test_read_serial_i2c_fail);
     RUN(test_zero_init_safety);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

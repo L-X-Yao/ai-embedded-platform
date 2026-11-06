@@ -120,18 +120,26 @@ static sgp30_err_t read_words(const sgp30_t *dev,
 
 sgp30_err_t sgp30_init(sgp30_t *dev, const sgp30_i2c_t *i2c)
 {
-    if (!dev || !i2c) {
+    if (!dev) {
+        return SGP30_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c) {
         return SGP30_ERR_PARAM;
     }
     if (!i2c->write || !i2c->read || !i2c->delay_ms) {
         return SGP30_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c = i2c;
 
     /* Send iaq_init (0x2003) — starts air quality measurement mode */
     if (!send_cmd(dev, CMD_IAQ_INIT_MSB, CMD_IAQ_INIT_LSB)) {
+        dev->i2c = NULL;
         return SGP30_ERR_I2C;
     }
 

@@ -64,16 +64,9 @@ static void delay(const sgp40_t *dev, uint32_t ms)
     }
 }
 
-sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static sgp40_err_t run_self_test(const sgp40_t *dev)
 {
-    if (!dev || !i2c)
-    {
-        return SGP40_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* Send self-test command: 0x280E */
     uint8_t cmd[2] = { 0x28, 0x0E };
     if (!i2c_write(dev, cmd, 2))
@@ -103,6 +96,34 @@ sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c)
         return SGP40_ERR_SELFTEST;
     }
 
+    return SGP40_OK;
+}
+
+sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c)
+{
+    if (!dev)
+    {
+        return SGP40_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the measure calls refuse a
+     * device without it. delay_ms is optional: delay() tests it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write || !i2c->read)
+    {
+        return SGP40_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+
+    sgp40_err_t err = run_self_test(dev);
+    if (err != SGP40_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return SGP40_OK;
 }
@@ -110,7 +131,7 @@ sgp40_err_t sgp40_init(sgp40_t *dev, const sgp40_i2c_t *i2c)
 sgp40_err_t sgp40_measure_raw_comp(sgp40_t *dev, sgp40_data_t *out,
                                    uint16_t humidity, uint16_t temperature)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return SGP40_ERR_PARAM;
     }

@@ -67,20 +67,9 @@ static bool write_data_page(const sh1106_t *dev, uint8_t page,
     return true;
 }
 
-sh1106_err_t sh1106_init(sh1106_t *dev, const sh1106_i2c_t *i2c,
-                         uint8_t addr, uint8_t *framebuf)
+/* The steps of init that talk to the chip */
+static sh1106_err_t bring_up(sh1106_t *dev)
 {
-    if (!dev || !i2c || !framebuf)
-        return SH1106_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return SH1106_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c  = i2c;
-    dev->addr = addr;
-    dev->buf  = framebuf;
-    memset(dev->buf, 0, SH1106_BUF_SIZE);
-
     /* Initialization sequence */
     if (!cmd(dev, CMD_DISPLAY_OFF))          return SH1106_ERR_I2C;
     if (!cmd(dev, CMD_SET_CLK_DIV))          return SH1106_ERR_I2C;
@@ -107,6 +96,36 @@ sh1106_err_t sh1106_init(sh1106_t *dev, const sh1106_i2c_t *i2c,
     if (sh1106_display(dev) != SH1106_OK)    return SH1106_ERR_I2C;
     if (!cmd(dev, CMD_DISPLAY_ON))           return SH1106_ERR_I2C;
 
+    return SH1106_OK;
+}
+
+sh1106_err_t sh1106_init(sh1106_t *dev, const sh1106_i2c_t *i2c,
+                         uint8_t addr, uint8_t *framebuf)
+{
+    if (!dev)
+        return SH1106_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the calls that reach the
+     * display refuse a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !framebuf)
+        return SH1106_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return SH1106_ERR_PARAM;
+
+    dev->i2c  = i2c;
+    dev->addr = addr;
+    dev->buf  = framebuf;
+    memset(dev->buf, 0, SH1106_BUF_SIZE);
+
+    sh1106_err_t err = bring_up(dev);
+    if (err != SH1106_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     INVARIANT(dev->buf != NULL);
     return SH1106_OK;
@@ -114,7 +133,7 @@ sh1106_err_t sh1106_init(sh1106_t *dev, const sh1106_i2c_t *i2c,
 
 sh1106_err_t sh1106_display(sh1106_t *dev)
 {
-    if (!dev || !dev->buf)
+    if (!dev || !dev->i2c || !dev->buf)
         return SH1106_ERR_PARAM;
 
     for (uint8_t page = 0; page < SH1106_PAGES; page++)
@@ -166,7 +185,7 @@ void sh1106_fill(sh1106_t *dev, bool on)
 
 sh1106_err_t sh1106_set_contrast(sh1106_t *dev, uint8_t val)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return SH1106_ERR_PARAM;
     if (!cmd(dev, CMD_SET_CONTRAST)) return SH1106_ERR_I2C;
     if (!cmd(dev, val))              return SH1106_ERR_I2C;
@@ -175,14 +194,14 @@ sh1106_err_t sh1106_set_contrast(sh1106_t *dev, uint8_t val)
 
 sh1106_err_t sh1106_display_on(const sh1106_t *dev)
 {
-    if (!dev) return SH1106_ERR_PARAM;
+    if (!dev || !dev->i2c) return SH1106_ERR_PARAM;
     if (!cmd(dev, CMD_DISPLAY_ON)) return SH1106_ERR_I2C;
     return SH1106_OK;
 }
 
 sh1106_err_t sh1106_display_off(const sh1106_t *dev)
 {
-    if (!dev) return SH1106_ERR_PARAM;
+    if (!dev || !dev->i2c) return SH1106_ERR_PARAM;
     if (!cmd(dev, CMD_DISPLAY_OFF)) return SH1106_ERR_I2C;
     return SH1106_OK;
 }

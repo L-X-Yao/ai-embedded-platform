@@ -286,6 +286,40 @@ TEST(test_read_sends_measure_cmd)
     ASSERT_EQ(mock_last_write[1], 0x00);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sht30_t *d)
+{
+    sht30_data_t data;
+    ASSERT_EQ(sht30_read(d, &data), SHT30_ERR_PARAM);
+    ASSERT_EQ(sht30_reset(d), SHT30_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_reset)
+{
+    sht30_t d;
+    mock_reset();
+    mock_fail_next = 1;
+    ASSERT_EQ(sht30_init(&d, &mock_i2c, &default_cfg), SHT30_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sht30_i2c_t zeroed;
+    sht30_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sht30_init(&d, NULL, &default_cfg), SHT30_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sht30_init(&d, &zeroed, &default_cfg), SHT30_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sht30")
     RUN(test_init_ok);
     RUN(test_init_waits_out_power_up_and_soft_reset);
@@ -304,5 +338,7 @@ TEST_MAIN("sht30")
     RUN(test_addr_b);
     RUN(test_crc8_known_vector);
     RUN(test_read_sends_measure_cmd);
+    RUN(test_device_refused_after_failed_reset);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
 
