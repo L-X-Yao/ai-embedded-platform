@@ -454,6 +454,55 @@ TEST(test_init_refuses_hal_without_delay)
     ASSERT_EQ(model.reset_count, 0);
 }
 
+/* --- 14. Duplex: PHCON1.PDPXMD has to match MACON3.FULDPX --- */
+
+/* DS39662C p.55: "If only one of these two bits is set, the ENC28J60 will be
+ * in an indeterminate state and not function correctly." LEDB sets PDPXMD at
+ * Reset, and p.10 leaves it indeterminate with no LED attached. */
+TEST(test_init_clears_pdpxmd_strapped_by_ledb)
+{
+    setup();
+    enc28j60_model_set_phy(&model, ENC_PHCON1, ENC_PHCON1_PDPXMD);
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+
+    ASSERT_EQ(model.regs[2][ENC_MACON3] & 0x01U, 0);        /* FULDPX */
+    ASSERT_EQ(model.phy_regs[ENC_PHCON1] & ENC_PHCON1_PDPXMD, 0);
+    /* The write takes the whole register: the rest stays at its reset 0 */
+    ASSERT_EQ(model.phy_regs[ENC_PHCON1], 0x0000);
+    /* Polled to the end, and before RXEN as p.45 asks */
+    ASSERT_FALSE(model.regs[3][ENC_MISTAT] & ENC_MISTAT_BUSY);
+    ASSERT_EQ(model.phy_write_rx_on, 0);
+    ASSERT_EQ(model.early_access_count, 0);
+}
+
+TEST(test_init_times_out_when_phy_stays_busy)
+{
+    setup();
+    model.phy_busy_after = 0;   /* BUSY never clears */
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_ERR_TIMEOUT);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
+/* DS39662C p.29: "a dummy byte will first be shifted out" for MAC and MII
+ * registers, and ETH registers in the same bank have none */
+TEST(test_model_dummy_byte_only_on_mac_mii)
+{
+    setup_and_init();
+
+    /* Bank 3, where MISTAT is MII and EREVID is ETH */
+    ASSERT_EQ(enc28j60_get_revision(&dev), 0x06);
+    model.regs[3][ENC_MISTAT] = 0x04U;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_RCR | ENC_MISTAT);
+    uint8_t dummy = model_spi.xfer(model_spi.ctx, 0xFF);
+    uint8_t val = model_spi.xfer(model_spi.ctx, 0xFF);
+    model_spi.cs_high(model_spi.ctx);
+
+    ASSERT_EQ(dummy, 0xFF);
+    ASSERT_EQ(val, 0x04);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -471,4 +520,7 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_times_out_when_clkrdy_never_sets);
     RUN(test_init_waits_after_src_when_clkrdy_already_set);
     RUN(test_init_refuses_hal_without_delay);
+    RUN(test_init_clears_pdpxmd_strapped_by_ledb);
+    RUN(test_init_times_out_when_phy_stays_busy);
+    RUN(test_model_dummy_byte_only_on_mac_mii);
 TEST_MAIN_END()
