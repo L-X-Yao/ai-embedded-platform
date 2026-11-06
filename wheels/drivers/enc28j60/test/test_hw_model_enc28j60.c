@@ -692,6 +692,24 @@ TEST(test_set_mac_leaves_reception_off_if_it_was_off)
     ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
 }
 
+/* --- 21. ERXRDPT stays odd --- */
+
+/* Errata DS80349C issue 14: "The receive hardware may corrupt the circular
+ * receive buffer ... when an even value is programmed into the
+ * ERXRDPTH:ERXRDPTL registers." Its Example 2 gives ERXND when the Next
+ * Packet Pointer equals ERXST, which is where init starts. */
+TEST(test_init_programs_an_odd_erxrdpt)
+{
+    setup();
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+
+    ASSERT_EQ(dev.next_packet_ptr, ENC_RXSTART);
+    ASSERT_EQ(model.regs[0][ENC_ERXRDPTL], 0xFF);
+    ASSERT_EQ(model.regs[0][ENC_ERXRDPTH], 0x19);
+    ASSERT_EQ(model.regs[0][ENC_ERXNDL], model.regs[0][ENC_ERXRDPTL]);
+    ASSERT_EQ(model.regs[0][ENC_ERXNDH], model.regs[0][ENC_ERXRDPTH]);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -724,4 +742,5 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_set_mac_waits_for_the_frame_in_progress);
     RUN(test_set_mac_timeout_keeps_the_old_address);
     RUN(test_set_mac_leaves_reception_off_if_it_was_off);
+    RUN(test_init_programs_an_odd_erxrdpt);
 TEST_MAIN_END()

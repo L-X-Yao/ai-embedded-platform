@@ -304,8 +304,11 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
     write_reg(dev, 0, ERXSTH, (uint8_t)(RXSTART >> 8));
     write_reg(dev, 0, ERXNDL, (uint8_t)(RXEND & 0xFFU));
     write_reg(dev, 0, ERXNDH, (uint8_t)(RXEND >> 8));
-    write_reg(dev, 0, ERXRDPTL, (uint8_t)(RXSTART & 0xFFU));
-    write_reg(dev, 0, ERXRDPTH, (uint8_t)(RXSTART >> 8));
+
+    /* Errata DS80349C issue 14: an even ERXRDPT may corrupt the receive
+     * buffer, so this is ERXND and not the ERXST of DS39662C p.35 */
+    write_reg(dev, 0, ERXRDPTL, (uint8_t)(RXEND & 0xFFU));
+    write_reg(dev, 0, ERXRDPTH, (uint8_t)(RXEND >> 8));
 
     /* RX read pointer */
     write_reg(dev, 0, ERDPTL, (uint8_t)(RXSTART & 0xFFU));
