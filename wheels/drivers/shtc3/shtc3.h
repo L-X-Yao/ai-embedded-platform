@@ -58,10 +58,12 @@ shtc3_err_t shtc3_read(shtc3_t *dev, shtc3_data_t *out);
 /** @thread_safe: no @isr_safe: no */
 shtc3_err_t shtc3_sleep(shtc3_t *dev);
 
-/** @thread_safe: no @isr_safe: no */
+/** Wake the sensor and wait 1 ms for it to be idle.
+ *  @thread_safe: no @isr_safe: no */
 shtc3_err_t shtc3_wakeup(shtc3_t *dev);
 
-/** @thread_safe: no @isr_safe: no */
+/** Soft reset, from sleep or idle. Wakes the sensor first, takes 2 ms, and leaves
+ *  it idle: shtc3_sleep sends it back to sleep. @thread_safe: no @isr_safe: no */
 shtc3_err_t shtc3_reset(shtc3_t *dev);
 
 /** CRC-8 used by Sensirion sensors (poly 0x31, init 0xFF). */
