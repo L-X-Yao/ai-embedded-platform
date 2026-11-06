@@ -29,9 +29,16 @@ static void check_conversions(const sntp_timestamp_t *ts) {
     uint16_t ms = 0;
     sntp_client_ntp_to_unix(ts, &unix_sec, &ms);
     if (ms >= 1000) __builtin_trap();
-    if (ts->seconds < (uint32_t)SNTP_UNIX_OFFSET && unix_sec != 0) __builtin_trap();
+    // RFC 4330 section 3: only 1968-1970 and the all-zero timestamp read as 0.
+    bool pre_1970 = ts->seconds >= 0x80000000u && ts->seconds < (uint32_t)SNTP_UNIX_OFFSET;
+    bool unset = ts->seconds == 0 && ts->fraction == 0;
+    if ((pre_1970 || unset || ts->seconds == (uint32_t)SNTP_UNIX_OFFSET) != (unix_sec == 0)) {
+        __builtin_trap();
+    }
 
     sntp_timestamp_t back = sntp_client_unix_to_ntp(unix_sec, ms);
+    // The rollover instant is the all-zero timestamp, so it cannot come back.
+    if (back.seconds == 0 && back.fraction == 0) return;
     uint32_t back_sec = 0;
     uint16_t back_ms = 0;
     sntp_client_ntp_to_unix(&back, &back_sec, &back_ms);
