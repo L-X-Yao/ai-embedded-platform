@@ -210,9 +210,34 @@ TEST(test_set_duty_50_percent)
     pca9685_init(&dev, &mock_i2c, 0x40, 50);
 
     ASSERT_EQ(pca9685_set_duty(&dev, 0, 50.0f), PCA9685_OK);
-    /* 50% of 4095 = 2047.5, rounded to 2048 */
+    /* 50% of 4096 = 2048 */
     uint16_t off = (uint16_t)(mock_regs[0x08] | ((uint16_t)(mock_regs[0x09] & 0x0F) << 8));
     ASSERT_EQ(off, 2048);
+}
+
+/* p.17 counts percent of 4096: "LED on time = 20 % = 819.2 ~ 819 counts" and
+ * "LED on time = 90 % = 3686 counts". On that basis 75 % is 3072. */
+TEST(test_set_duty_counts_of_4096)
+{
+    mock_reset();
+    pca9685_init(&dev, &mock_i2c, 0x40, 50);
+
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, 20.0f), PCA9685_OK);
+    uint16_t off = (uint16_t)(mock_regs[0x08] | ((uint16_t)(mock_regs[0x09] & 0x0F) << 8));
+    ASSERT_EQ(off, 819);
+
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, 90.0f), PCA9685_OK);
+    off = (uint16_t)(mock_regs[0x08] | ((uint16_t)(mock_regs[0x09] & 0x0F) << 8));
+    ASSERT_EQ(off, 3686);
+
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, 75.0f), PCA9685_OK);
+    off = (uint16_t)(mock_regs[0x08] | ((uint16_t)(mock_regs[0x09] & 0x0F) << 8));
+    ASSERT_EQ(off, 3072);
+
+    /* rounds to 4096, which the 12-bit register cannot hold */
+    ASSERT_EQ(pca9685_set_duty(&dev, 0, 99.99f), PCA9685_OK);
+    off = (uint16_t)(mock_regs[0x08] | ((uint16_t)(mock_regs[0x09] & 0x0F) << 8));
+    ASSERT_EQ(off, 4095);
 }
 
 TEST(test_set_duty_0_percent)
@@ -382,6 +407,7 @@ TEST_MAIN("pca9685")
     RUN(test_set_duty_tiny_is_full_off);
     RUN(test_set_servo_zero_pulse_is_full_off);
     RUN(test_set_duty_50_percent);
+    RUN(test_set_duty_counts_of_4096);
     RUN(test_set_duty_0_percent);
     RUN(test_set_duty_100_percent);
     RUN(test_set_duty_nan_rejected);
