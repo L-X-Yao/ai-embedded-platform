@@ -571,6 +571,37 @@ TEST(test_accel_2g_scale)
     ASSERT_NEAR(data.ax_g, 1.0f, 0.01f);
 }
 
+/* 29. GYRO_ODR 1100, 1101 and 1110 are Reserved (DS-000347 Rev 1.6 p.77) */
+TEST(test_init_refuses_reserved_gyro_odr)
+{
+    static const uint8_t reserved[] = { 0x0C, 0x0D, 0x0E };
+
+    for (size_t i = 0; i < sizeof(reserved); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.gyro_odr = (icm42688_odr_t)reserved[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_ERR_PARAM);
+        ASSERT_EQ(mock_regs[REG_GYRO_CONFIG0], 0x00);   /* nothing written */
+    }
+}
+
+/* 30. every GYRO_ODR code the manual names is still accepted (p.77) */
+TEST(test_init_accepts_named_gyro_odr)
+{
+    static const uint8_t named[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                                     0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0F };
+
+    for (size_t i = 0; i < sizeof(named); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.gyro_odr = (icm42688_odr_t)named[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+        ASSERT_EQ(mock_regs[REG_GYRO_CONFIG0], named[i]);   /* 2000 dps = 0 */
+    }
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -604,4 +635,6 @@ TEST_MAIN("icm42688")
     RUN(test_init_null_spi_callbacks);
     RUN(test_cs_toggling);
     RUN(test_accel_2g_scale);
+    RUN(test_init_refuses_reserved_gyro_odr);
+    RUN(test_init_accepts_named_gyro_odr);
 TEST_MAIN_END()
