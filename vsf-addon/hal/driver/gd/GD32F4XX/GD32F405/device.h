@@ -84,9 +84,8 @@
 #define VSF_HW_GPIO_PORT8_RST           VSF_HW_RST_GPIOI
 
 // USART: 6 units (USART0/1/2/5 sync, UART3/4 async-only)
-// Flybox uses: USART0 (debug PA9/PA10), USART1 (Air780EG PA2/PA3)
-// NOTE: count=1 to avoid USART1_IRQHandler conflict with air780eg_driver.
-//       Increase when air780eg is migrated to VSF HAL callbacks.
+// NOTE: count=1 leaves USART1_IRQHandler to a driver outside this port.
+//       Increase once that driver moves to VSF HAL callbacks.
 //
 // PCLK_HZ: peripheral clock for baud rate calculation.
 // Defaults assume 168MHz HCLK, APB2=/2 (84MHz), APB1=/4 (42MHz).
@@ -161,7 +160,6 @@
 #define VSF_HW_FLASH0_IRQHandler        FMC_IRQHandler
 
 // SPI: GD32F405 has SPI0/1/2 (SPI3/4/5 only on GD32F450+)
-// Flybox uses: SPI1 (W25Q64 NOR flash, PB12-15)
 #define VSF_HW_SPI_COUNT                3
 
 #ifndef VSF_HW_SPI0_PCLK_HZ
@@ -192,7 +190,6 @@
 #define VSF_HW_SPI2_IRQHandler         SPI2_IRQHandler
 
 // I2C: 3 units (all on APB1)
-// Flybox uses: I2C1 (QMI8658A IMU, PB10/PB11, 400kHz)
 // Note: I2C has separate EV and ER interrupts
 #define VSF_HW_I2C_COUNT                3
 
