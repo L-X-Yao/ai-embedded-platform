@@ -284,6 +284,67 @@ TEST(test_read_fifo_empty)
     ASSERT_EQ(count, 0);
 }
 
+TEST(test_read_fifo_full_equal_pointers)
+{
+    setup();
+    /* 19-7740 Rev 0 p18: a full FIFO has "all 32 FIFO words" unread, so the
+     * 5-bit pointers (p14) are equal again.  OVF_COUNTER (p14) only counts
+     * once the FIFO is full, which sets this apart from an empty FIFO. */
+    mock_regs[REG_FIFO_WR_PTR] = 5;
+    mock_regs[REG_FIFO_RD_PTR] = 5;
+    mock_regs[REG_OVF_COUNTER] = 3;
+
+    max30102_sample_t samples[32];
+    uint8_t count = 0;
+    max30102_err_t e = max30102_read_fifo(&dev, samples, 32, &count);
+    ASSERT_EQ(e, MAX30102_OK);
+    ASSERT_EQ(count, 32);
+}
+
+TEST(test_read_fifo_full_max_count_limit)
+{
+    setup();
+    mock_regs[REG_FIFO_WR_PTR] = 9;
+    mock_regs[REG_FIFO_RD_PTR] = 9;
+    mock_regs[REG_OVF_COUNTER] = 0x0F;   /* saturated, p14 */
+
+    max30102_sample_t samples[4];
+    uint8_t count = 0;
+    max30102_err_t e = max30102_read_fifo(&dev, samples, 4, &count);
+    ASSERT_EQ(e, MAX30102_OK);
+    ASSERT_EQ(count, 4);
+}
+
+TEST(test_read_fifo_ovf_unused_bits_ignored)
+{
+    setup();
+    /* OVF_COUNTER is bits [4:0] (p14): bits 7:5 say nothing about the FIFO */
+    mock_regs[REG_FIFO_WR_PTR] = 5;
+    mock_regs[REG_FIFO_RD_PTR] = 5;
+    mock_regs[REG_OVF_COUNTER] = 0xE0;
+
+    max30102_sample_t samples[4];
+    uint8_t count = 99;
+    max30102_err_t e = max30102_read_fifo(&dev, samples, 4, &count);
+    ASSERT_EQ(e, MAX30102_OK);
+    ASSERT_EQ(count, 0);
+}
+
+TEST(test_read_fifo_ovf_i2c_fail)
+{
+    setup();
+    mock_regs[REG_FIFO_WR_PTR] = 5;
+    mock_regs[REG_FIFO_RD_PTR] = 5;
+    /* the two pointer reads pass, the OVF_COUNTER read fails */
+    mock_fail_at = mock_op_count + 2;
+
+    max30102_sample_t samples[4];
+    uint8_t count = 99;
+    max30102_err_t e = max30102_read_fifo(&dev, samples, 4, &count);
+    ASSERT_EQ(e, MAX30102_ERR_I2C);
+    ASSERT_EQ(count, 0);
+}
+
 TEST(test_read_fifo_hr_mode)
 {
     setup();
@@ -509,6 +570,10 @@ TEST_MAIN("max30102")
     RUN(test_read_fifo_spo2_one_sample);
     RUN(test_read_fifo_spo2_adc_mask);
     RUN(test_read_fifo_empty);
+    RUN(test_read_fifo_full_equal_pointers);
+    RUN(test_read_fifo_full_max_count_limit);
+    RUN(test_read_fifo_ovf_unused_bits_ignored);
+    RUN(test_read_fifo_ovf_i2c_fail);
     RUN(test_read_fifo_hr_mode);
     RUN(test_read_fifo_max_count_limit);
     RUN(test_read_fifo_i2c_fail);
