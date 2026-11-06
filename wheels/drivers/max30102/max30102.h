@@ -71,6 +71,8 @@ typedef struct {
 /* --- public API --- */
 
 /** Initialize device: verify part ID, reset, configure defaults.
+ *  All three callbacks are required, delay_ms included: the reset and the
+ *  temperature conversion need real waits.
  *  @thread_safe: no  @isr_safe: no */
 max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c);
 

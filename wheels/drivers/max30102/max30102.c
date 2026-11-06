@@ -64,10 +64,7 @@ static bool read_regs(const max30102_t *dev, uint8_t reg,
 
 static void delay_ms(const max30102_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 /* Map sample rate (Hz) to SPO2_CONFIG SR[4:2] bits.
@@ -116,7 +113,7 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
 {
     if (!dev || !i2c)
         return MAX30102_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
         return MAX30102_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
