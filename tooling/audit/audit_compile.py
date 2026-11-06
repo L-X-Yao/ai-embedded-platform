@@ -5,12 +5,15 @@ and parse gcc output into structured findings.
 
 Iterates wheels under wheels/<layer>/<name>/ that have test/CMakeLists.txt,
 runs cmake + ninja with extra -W flags injected via CMAKE_C_FLAGS, captures
-compiler warnings, and reports per-wheel PASS/WARN status.
+compiler warnings, and reports per-wheel PASS/WARN/ERR status. Most wheels build
+with -Werror, so most warnings arrive as errors tagged [-Werror=<flag>]; those
+count as warnings. Ninja prints compiler output on stdout.
 
 Skips vendor wheels (those with vendor/ subdir).
 Skips warnings originating from system headers.
 
-Exit 0 if no warnings found; 1 if any wheel has warnings.
+Exit 0 if no warnings found; 1 if any wheel has warnings or fails to build,
+a timeout included.
 """
 
 import json
@@ -48,9 +51,10 @@ EXTRA_WARNINGS = [
 
 # Pattern for a gcc/clang warning line:
 #   path/file.c:42:10: warning: some message [-Wflag]
+#   path/file.c:42:10: error: some message [-Werror=flag]
 WARNING_RE = re.compile(
     r'^(?P<file>[^\s:]+):(?P<line>\d+):(?P<col>\d+):\s+'
-    r'warning:\s+(?P<message>.+?)(?:\s+\[(?P<flag>-W[^\]]+)\])?\s*$'
+    r'(?P<kind>warning|error):\s+(?P<message>.+?)(?:\s+\[(?P<flag>-W[^\]]+)\])?\s*$'
 )
 
 EXCEPTIONS_PATH = REPO / "tooling" / "audit" / "known_exceptions.json"
@@ -184,8 +188,9 @@ def compile_wheel(wheel: dict) -> tuple[bool, str, str]:
         if cfg_result.returncode != 0:
             return False, cfg_result.stdout, cfg_result.stderr
 
-        # Build
-        build_cmd = ["ninja", "-j1"]
+        # Build. -k 0 keeps going past a -Werror failure, so one pass shows
+        # the warnings of every file.
+        build_cmd = ["ninja", "-j1", "-k", "0"]
 
         build_result = subprocess.run(
             build_cmd,
@@ -228,17 +233,25 @@ def is_system_header(filepath: str) -> bool:
     return any(m in norm for m in system_markers)
 
 
-def parse_warnings(stderr: str, wheel: dict) -> list[dict]:
-    """Parse gcc/clang warning lines from stderr into structured findings.
+def parse_warnings(output: str, wheel: dict) -> list[dict]:
+    """Parse gcc/clang warning lines from build output into structured findings.
 
+    A warning promoted by -Werror counts as a warning of its own flag; any
+    other error line is left to plain_errors().
     Skips warnings from system headers.
     """
     findings = []
     seen = set()
 
-    for line in stderr.splitlines():
+    for line in output.splitlines():
         m = WARNING_RE.match(line.strip())
         if not m:
+            continue
+
+        flag = m.group("flag") or ""
+        if flag.startswith("-Werror="):
+            flag = "-W" + flag[len("-Werror="):]
+        elif m.group("kind") == "error":
             continue
 
         filepath = m.group("file")
@@ -248,7 +261,6 @@ def parse_warnings(stderr: str, wheel: dict) -> list[dict]:
         lineno = int(m.group("line"))
         col = int(m.group("col"))
         message = m.group("message").strip()
-        flag = m.group("flag") or ""
 
         # Deduplicate identical warnings (same file+line+flag)
         key = (filepath, lineno, flag)
@@ -265,6 +277,29 @@ def parse_warnings(stderr: str, wheel: dict) -> list[dict]:
         })
 
     return findings
+
+
+def plain_errors(output: str) -> list[str]:
+    """Return the error lines of a failed build that -Werror does not explain."""
+    return [
+        ln for ln in output.splitlines()
+        if (": error:" in ln or "CMake Error" in ln) and "[-Werror=" not in ln
+    ]
+
+
+def build_failure(output: str, findings: list[dict]) -> str:
+    """Describe a failed build, or return "" when its warnings fully explain it.
+
+    A timeout or OS error prints no error line and no warning, so it falls
+    through to the last lines of the output.
+    """
+    errors = plain_errors(output)
+    if errors:
+        return "\n".join(errors[:10])
+    if findings:
+        return ""
+    tail = output.strip().splitlines()[-5:]
+    return "\n".join(tail) or "build failed with no output"
 
 
 # ---------------------------------------------------------------------------
@@ -293,14 +328,13 @@ def print_text_report(results: list[dict], quiet: bool) -> None:
                 # Show first few lines of the error
                 for errline in r["build_error"].splitlines()[:5]:
                     print(f"          {errline}")
-            continue
 
         if findings:
             print(f"  [WARN]  {path}: {len(findings)} warning(s)")
             for f in findings:
                 flag_str = f" [{f['flag']}]" if f["flag"] else ""
                 print(f"          {f['file']}:{f['line']}:{f['col']}: {f['message']}{flag_str}")
-        elif not quiet:
+        elif not quiet and not r.get("build_error"):
             print(f"  [PASS]  {path}")
 
     # Summary
@@ -394,10 +428,9 @@ def main() -> int:
 
         success, stdout, stderr = compile_wheel(wheel)
 
-        if not success and not stderr.strip():
-            stderr = stdout  # cmake errors sometimes go to stdout
-
-        findings = parse_warnings(stderr, wheel) if stderr else []
+        output = stdout + "\n" + stderr
+        findings = parse_warnings(output, wheel)
+        failure = "" if success else build_failure(output, findings)
 
         # Filter out excepted findings
         if exceptions:
@@ -413,14 +446,8 @@ def main() -> int:
         }
 
         # Mark build errors (distinct from warnings)
-        if not success:
-            # Check if there are actual errors (not just warnings)
-            error_lines = [
-                ln for ln in stderr.splitlines()
-                if ": error:" in ln or "FAILED" in ln or "Error" in ln
-            ]
-            if error_lines:
-                entry["build_error"] = "\n".join(error_lines[:10])
+        if failure:
+            entry["build_error"] = failure
 
         results.append(entry)
 
@@ -430,9 +457,9 @@ def main() -> int:
     else:
         print_text_report(results, quiet=args.quiet)
 
-    # Exit code: 1 if any warnings found, 0 otherwise
-    has_warnings = any(r["findings"] for r in results)
-    return 1 if has_warnings else 0
+    # Exit code: 1 if any wheel has warnings or did not build, 0 otherwise
+    failed = any(r["findings"] or r.get("build_error") for r in results)
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
