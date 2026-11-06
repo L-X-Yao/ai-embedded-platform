@@ -44,19 +44,23 @@
 
 #define MOCK_REG_COUNT      0x1E
 #define MOCK_ADDR_SIZE      5
+#define MOCK_FIFO_DEPTH     3
 
 static uint8_t mock_regs[MOCK_REG_COUNT];
 static uint8_t mock_tx_addr[MOCK_ADDR_SIZE];
 static uint8_t mock_rx_addr_p0[MOCK_ADDR_SIZE];
 static uint8_t mock_rx_addr_p1[MOCK_ADDR_SIZE];
-static uint8_t mock_rx_fifo[32];
-static uint8_t mock_rx_fifo_len;
-static uint8_t mock_tx_payload[32];
+static uint8_t mock_rx_fifo[MOCK_FIFO_DEPTH][32];
+static uint8_t mock_rx_fifo_len[MOCK_FIFO_DEPTH];
+static uint8_t mock_rx_queued;       /* payloads in the RX FIFO */
+static uint8_t mock_tx_payload[32];  /* the last upload, as clocked in */
 static uint8_t mock_tx_payload_len;
+static uint8_t mock_tx_level;        /* payloads in the TX FIFO */
 static int     mock_ce_state;
 static int     mock_cs_state;
 static int     mock_ce_pulse_count;
 static uint32_t mock_delay_total_us;
+static int     mock_writes_in_rx;    /* W_REGISTER other than STATUS in RX */
 
 /* SPI transaction tracking */
 static uint8_t mock_cur_cmd;
@@ -66,8 +70,6 @@ static int     mock_in_tx;       /* inside CS low..high */
 /* Control flags */
 static int     mock_force_max_rt;    /* STATUS.MAX_RT on next poll */
 static int     mock_force_tx_ds;     /* STATUS.TX_DS on next poll */
-static int     mock_force_rx_dr;     /* STATUS.RX_DR on next poll */
-static int     mock_rx_queued;       /* payloads in the RX FIFO */
 static int     mock_poll_count;      /* track status polls */
 
 static void mock_reset(void)
@@ -77,9 +79,12 @@ static void mock_reset(void)
     memset(mock_rx_addr_p0, 0, sizeof(mock_rx_addr_p0));
     memset(mock_rx_addr_p1, 0, sizeof(mock_rx_addr_p1));
     memset(mock_rx_fifo, 0, sizeof(mock_rx_fifo));
-    mock_rx_fifo_len = 0;
+    memset(mock_rx_fifo_len, 0, sizeof(mock_rx_fifo_len));
+    mock_rx_queued = 0;
     memset(mock_tx_payload, 0, sizeof(mock_tx_payload));
     mock_tx_payload_len = 0;
+    mock_tx_level = 0;
+    mock_writes_in_rx = 0;
     mock_ce_state = 0;
     mock_cs_state = 1;
     mock_ce_pulse_count = 0;
@@ -89,8 +94,6 @@ static void mock_reset(void)
     mock_in_tx = 0;
     mock_force_max_rt = 0;
     mock_force_tx_ds = 0;
-    mock_force_rx_dr = 0;
-    mock_rx_queued = 0;
     mock_poll_count = 0;
 
     /* Power-on defaults per datasheet */
@@ -112,11 +115,34 @@ static void mock_cs_low(void *ctx)
     mock_cur_cmd = 0;
 }
 
+/* A packet arrives: RX_DR rises and the payload takes a level */
+static void mock_queue_rx(const uint8_t *data, uint8_t len)
+{
+    if (mock_rx_queued == MOCK_FIFO_DEPTH) return;
+    memcpy(mock_rx_fifo[mock_rx_queued], data, len);
+    mock_rx_fifo_len[mock_rx_queued] = len;
+    mock_rx_queued++;
+    mock_regs[REG_STATUS] = (uint8_t)(mock_regs[REG_STATUS] | STATUS_RX_DR);
+}
+
 static void mock_cs_high(void *ctx)
 {
     (void)ctx;
     mock_cs_state = 1;
     mock_in_tx = 0;
+
+    /* "Payload is deleted from FIFO after it is read", p51 */
+    if (mock_cur_cmd == CMD_R_RX_PAYLOAD && mock_byte_idx > 1 && mock_rx_queued > 0) {
+        mock_rx_queued--;
+        for (uint8_t i = 0; i < mock_rx_queued; i++) {
+            memcpy(mock_rx_fifo[i], mock_rx_fifo[i + 1], sizeof(mock_rx_fifo[i]));
+            mock_rx_fifo_len[i] = mock_rx_fifo_len[i + 1];
+        }
+    }
+    if (mock_cur_cmd == CMD_W_TX_PAYLOAD && mock_byte_idx > 1 &&
+        mock_tx_level < MOCK_FIFO_DEPTH) {
+        mock_tx_level++;
+    }
 }
 
 static void mock_ce_low(void *ctx)
@@ -139,9 +165,12 @@ static void mock_delay_us(void *ctx, uint32_t us)
     (void)ctx;
     mock_delay_total_us += us;
 
-    /* After CE pulse during send, set TX_DS or MAX_RT */
+    /* During the CE pulse of a send, set TX_DS or MAX_RT. TX_DS takes the
+     * payload out of the FIFO, MAX_RT leaves it there (p56). */
+    if (mock_ce_state == 0 || mock_tx_level == 0) return;
     if (mock_force_tx_ds) {
         mock_regs[REG_STATUS] = (uint8_t)(mock_regs[REG_STATUS] | STATUS_TX_DS);
+        mock_tx_level--;
         mock_force_tx_ds = 0;
     }
     if (mock_force_max_rt) {
@@ -159,18 +188,12 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         mock_cur_cmd = tx;
         mock_byte_idx = 1;
 
-        /* All commands return STATUS on first byte */
-        uint8_t status = mock_regs[REG_STATUS];
-        if (mock_force_rx_dr) {
-            status = (uint8_t)(status | STATUS_RX_DR);
-        }
-
         /* Handle single-byte commands */
-        if (tx == CMD_FLUSH_TX || tx == CMD_FLUSH_RX) {
-            /* Nothing more to do */
-        }
+        if (tx == CMD_FLUSH_TX) mock_tx_level = 0;
+        if (tx == CMD_FLUSH_RX) mock_rx_queued = 0;
 
-        return status;
+        /* All commands return STATUS on first byte */
+        return mock_regs[REG_STATUS];
     }
 
     /* Subsequent bytes depend on command */
@@ -181,11 +204,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     /* NOP: just return status */
     if (mock_cur_cmd == CMD_NOP) {
-        uint8_t status = mock_regs[REG_STATUS];
-        if (mock_force_rx_dr) {
-            status = (uint8_t)(status | STATUS_RX_DR);
-        }
-        return status;
+        return mock_regs[REG_STATUS];
     }
 
     /* Read register */
@@ -201,9 +220,12 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             return (data_idx < MOCK_ADDR_SIZE) ? mock_rx_addr_p1[data_idx] : 0;
         }
         if (reg_addr == REG_FIFO_STATUS) {
-            bool rx_empty = mock_rx_queued == 0 && !mock_force_rx_dr &&
-                            !(mock_regs[REG_STATUS] & STATUS_RX_DR);
-            return rx_empty ? 0x11 : 0x10;
+            uint8_t fifo = 0;
+            if (mock_rx_queued == 0) fifo |= 0x01;
+            if (mock_rx_queued == MOCK_FIFO_DEPTH) fifo |= 0x02;
+            if (mock_tx_level == 0) fifo |= 0x10;
+            if (mock_tx_level == MOCK_FIFO_DEPTH) fifo |= 0x20;
+            return fifo;
         }
         /* Single-byte register */
         if (reg_addr < MOCK_REG_COUNT) {
@@ -214,6 +236,12 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     /* Write register */
     if (cmd_type == CMD_W_REGISTER) {
+        /* "Executable in power down or standby modes only", p51 */
+        if (mock_ce_state == 1 && reg_addr != REG_STATUS &&
+            (mock_regs[REG_CONFIG] & CONFIG_PRIM_RX)) {
+            mock_writes_in_rx++;
+            return 0;
+        }
         /* Multi-byte register writes */
         if (reg_addr == REG_TX_ADDR) {
             if (data_idx < MOCK_ADDR_SIZE) mock_tx_addr[data_idx] = tx;
@@ -230,9 +258,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         /* Single-byte register */
         if (reg_addr < MOCK_REG_COUNT) {
             if (reg_addr == REG_STATUS) {
-                /* Writing 1 clears flag bits */
-                mock_regs[REG_STATUS] = (uint8_t)(mock_regs[REG_STATUS] & (uint8_t)~tx);
-                if (tx & STATUS_RX_DR) mock_force_rx_dr = 0;
+                /* Writing 1 clears flag bits, RX_P_NO is read-only */
+                mock_regs[REG_STATUS] = (uint8_t)(mock_regs[REG_STATUS] &
+                                                  (uint8_t)~(tx & 0x70));
             } else {
                 mock_regs[reg_addr] = tx;
             }
@@ -251,9 +279,8 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     /* Read RX payload */
     if (mock_cur_cmd == CMD_R_RX_PAYLOAD) {
-        if (data_idx == 0 && mock_rx_queued > 0) mock_rx_queued--;
-        if (data_idx < mock_rx_fifo_len) {
-            return mock_rx_fifo[data_idx];
+        if (mock_rx_queued > 0 && data_idx < mock_rx_fifo_len[0]) {
+            return mock_rx_fifo[0][data_idx];
         }
         return 0;
     }
@@ -449,6 +476,7 @@ TEST(test_set_mode_tx)
     ASSERT_EQ(dev.mode, NRF24_MODE_TX);
     /* CE should be low in TX mode */
     ASSERT_EQ(mock_ce_state, 0);
+    ASSERT_EQ(mock_writes_in_rx, 0);
 }
 
 /* 9. Send: verify W_TX_PAYLOAD command + CE pulse */
@@ -456,7 +484,7 @@ TEST(test_send_ok)
 {
     mock_reset();
     nrf24_t dev;
-    nrf24_init(&dev, &mock_spi, 76, 16);
+    nrf24_init(&dev, &mock_spi, 76, 4);
     mock_ce_pulse_count = 0;
 
     /* Mock: TX_DS flag will be set after CE pulse */
@@ -473,6 +501,10 @@ TEST(test_send_ok)
 
     /* CE should have been pulsed (high then low) */
     ASSERT_TRUE(mock_ce_pulse_count > 0);
+
+    /* TX_DS: the payload left the FIFO and the flag is clear again */
+    ASSERT_EQ(mock_tx_level, 0);
+    ASSERT_FALSE(mock_regs[REG_STATUS] & STATUS_TX_DS);
 }
 
 /* 10. Send with MAX_RT -> ERR_MAX_RT */
@@ -480,7 +512,7 @@ TEST(test_send_max_rt)
 {
     mock_reset();
     nrf24_t dev;
-    nrf24_init(&dev, &mock_spi, 76, 16);
+    nrf24_init(&dev, &mock_spi, 76, 2);
 
     /* Mock: MAX_RT flag will be set after CE pulse */
     mock_force_max_rt = 1;
@@ -488,6 +520,11 @@ TEST(test_send_max_rt)
     uint8_t data[] = {0x01, 0x02};
     nrf24_err_t e = nrf24_send(&dev, data, 2);
     ASSERT_EQ(e, NRF24_ERR_MAX_RT);
+
+    /* "It must be cleared to enable further communication" (p59), and the
+     * payload MAX_RT left behind must not go out with the next send */
+    ASSERT_FALSE(mock_regs[REG_STATUS] & STATUS_MAX_RT);
+    ASSERT_EQ(mock_tx_level, 0);
 }
 
 /* 11. Receive: mock RX_DR flag + read payload */
@@ -498,12 +535,8 @@ TEST(test_receive)
     nrf24_init(&dev, &mock_spi, 76, 4);
 
     /* Put data in RX FIFO mock */
-    mock_rx_fifo[0] = 0xCA;
-    mock_rx_fifo[1] = 0xFE;
-    mock_rx_fifo[2] = 0xBA;
-    mock_rx_fifo[3] = 0xBE;
-    mock_rx_fifo_len = 4;
-    mock_force_rx_dr = 1;
+    static const uint8_t pkt[4] = { 0xCA, 0xFE, 0xBA, 0xBE };
+    mock_queue_rx(pkt, 4);
 
     uint8_t buf[32] = {0};
     uint8_t len = 0;
@@ -514,9 +547,13 @@ TEST(test_receive)
     ASSERT_EQ(buf[1], 0xFE);
     ASSERT_EQ(buf[2], 0xBA);
     ASSERT_EQ(buf[3], 0xBE);
+
+    /* The read took the payload and cleared RX_DR */
+    ASSERT_EQ(mock_rx_queued, 0);
+    ASSERT_FALSE(mock_regs[REG_STATUS] & STATUS_RX_DR);
 }
 
-/* 12. data_ready: check STATUS RX_DR */
+/* 12. data_ready: check the RX FIFO */
 TEST(test_data_ready)
 {
     mock_reset();
@@ -526,8 +563,9 @@ TEST(test_data_ready)
     /* No data ready */
     ASSERT_FALSE(nrf24_data_ready(&dev));
 
-    /* Simulate RX_DR flag */
-    mock_force_rx_dr = 1;
+    /* A packet arrives */
+    static const uint8_t pkt[16] = { 0 };
+    mock_queue_rx(pkt, 16);
     ASSERT_TRUE(nrf24_data_ready(&dev));
 }
 
@@ -538,8 +576,14 @@ TEST(test_flush_tx)
     nrf24_t dev;
     nrf24_init(&dev, &mock_spi, 76, 16);
 
+    /* A send that got no answer leaves its payload in the FIFO */
+    uint8_t data[16] = { 0 };
+    ASSERT_EQ(nrf24_send(&dev, data, 16), NRF24_ERR_TIMEOUT);
+    ASSERT_EQ(mock_tx_level, 1);
+
     nrf24_err_t e = nrf24_flush_tx(&dev);
     ASSERT_EQ(e, NRF24_OK);
+    ASSERT_EQ(mock_tx_level, 0);
 }
 
 TEST(test_flush_rx)
@@ -548,8 +592,15 @@ TEST(test_flush_rx)
     nrf24_t dev;
     nrf24_init(&dev, &mock_spi, 76, 16);
 
+    static const uint8_t pkt[16] = { 0 };
+    mock_queue_rx(pkt, 16);
+    mock_queue_rx(pkt, 16);
+    ASSERT_TRUE(nrf24_data_ready(&dev));
+
     nrf24_err_t e = nrf24_flush_rx(&dev);
     ASSERT_EQ(e, NRF24_OK);
+    ASSERT_EQ(mock_rx_queued, 0);
+    ASSERT_FALSE(nrf24_data_ready(&dev));
 }
 
 /* 14. Channel range validation (0-125) */
@@ -760,7 +811,7 @@ TEST(test_send_timeout)
 {
     mock_reset();
     nrf24_t dev;
-    nrf24_init(&dev, &mock_spi, 76, 8);
+    nrf24_init(&dev, &mock_spi, 76, 3);
 
     /* Do NOT set mock_force_tx_ds or mock_force_max_rt — status stays
      * clear, so the poll loop runs until elapsed >= NRF24_TX_TIMEOUT_US. */
@@ -828,11 +879,13 @@ TEST(test_receive_buf_too_small)
     /* payload_size = 16, but we call receive with max_len = 4 */
     nrf24_init(&dev, &mock_spi, 76, 16);
 
-    mock_force_rx_dr = 1;
+    static const uint8_t pkt[16] = { 0 };
+    mock_queue_rx(pkt, 16);
     uint8_t buf[4];
     uint8_t len = 0;
     nrf24_err_t e = nrf24_receive(&dev, buf, 4, &len);
     ASSERT_EQ(e, NRF24_ERR_PARAM);
+    ASSERT_EQ(mock_rx_queued, 1);  /* the payload stays for a bigger buffer */
 }
 
 /* 31. set_power -12dBm (missing power level from existing test) */
@@ -856,18 +909,41 @@ TEST(test_receive_reaches_every_queued_payload)
     nrf24_init(&dev, &mock_spi, 76, 4);
 
     /* Two payloads under one RX_DR: clearing it must not strand the second */
-    mock_rx_queued = 2;
-    mock_force_rx_dr = 1;
+    static const uint8_t one[4] = { 1, 1, 1, 1 };
+    static const uint8_t two[4] = { 2, 2, 2, 2 };
+    mock_queue_rx(one, 4);
+    mock_queue_rx(two, 4);
     uint8_t buf[32];
     uint8_t len = 0;
     ASSERT_EQ(nrf24_receive(&dev, buf, 32, &len), NRF24_OK);
     ASSERT_EQ(len, 4);
+    ASSERT_MEMEQ_N(buf, one, 4);
     ASSERT_TRUE(nrf24_data_ready(&dev));
 
     len = 0;
     ASSERT_EQ(nrf24_receive(&dev, buf, 32, &len), NRF24_OK);
     ASSERT_EQ(len, 4);
+    ASSERT_MEMEQ_N(buf, two, 4);
     ASSERT_FALSE(nrf24_data_ready(&dev));
+}
+
+/* W_REGISTER is "executable in power down or standby modes only" (p51) */
+TEST(test_settings_change_while_listening)
+{
+    mock_reset();
+    nrf24_t dev;
+    nrf24_init(&dev, &mock_spi, 76, 16);
+    ASSERT_EQ(nrf24_set_mode(&dev, NRF24_MODE_RX), NRF24_OK);
+
+    uint8_t addr[5] = { 1, 2, 3, 4, 5 };
+    ASSERT_EQ(nrf24_set_tx_addr(&dev, addr, 5), NRF24_OK);
+    ASSERT_EQ(nrf24_set_data_rate(&dev, NRF24_RATE_1MBPS), NRF24_OK);
+    ASSERT_EQ(nrf24_set_power(&dev, NRF24_POWER_N6DBM), NRF24_OK);
+
+    ASSERT_EQ(mock_writes_in_rx, 0);
+    ASSERT_TRUE(memcmp(mock_tx_addr, addr, 5) == 0);
+    ASSERT_EQ(mock_regs[REG_RF_SETUP] & RF_SETUP_RF_PWR_MASK, 0x04);
+    ASSERT_EQ(mock_ce_state, 1);
 }
 
 TEST(test_rx_addr_sets_the_pipe_payload_width)
@@ -953,6 +1029,7 @@ TEST_MAIN("nrf24l01")
     RUN(test_receive_buf_too_small);
     RUN(test_set_power_n12dbm);
     RUN(test_receive_reaches_every_queued_payload);
+    RUN(test_settings_change_while_listening);
     RUN(test_rx_addr_sets_the_pipe_payload_width);
     RUN(test_250kbps_sets_a_retransmit_delay_of_500us);
     RUN(test_init_waits_out_the_power_on_reset);
