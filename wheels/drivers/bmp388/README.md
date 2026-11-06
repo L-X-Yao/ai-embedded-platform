@@ -55,6 +55,18 @@ bmp388_read(&sensor, &data);
 None. Oversampling and I2C address are runtime-configurable via
 `bmp388_cfg_t`.
 
+Set both `osrs_t` and `osrs_p`, because 0 is `BMP388_OVERSAMPLING_SKIP`:
+
+| `osrs_t` | `osrs_p` | `bmp388_read` |
+|---|---|---|
+| SKIP | SKIP | not reached: init returns `BMP388_ERR_PARAM` |
+| set | SKIP | measures temperature only; `pressure_pa` is 0 |
+| SKIP | set | measures pressure only; `temperature_c` is the temperature init measured, and the pressure is compensated with it |
+
+With `osrs_t` SKIP, init takes one temperature measurement, and the pressure
+loses accuracy as the real temperature moves away from it. Run init again to
+refresh it.
+
 ## Supported platforms
 
 - [x] Host (sim)
@@ -65,9 +77,9 @@ None. Oversampling and I2C address are runtime-configurable via
 Checked on 2026-11-06 against BST-BMP388-DS001-07 Revision_1.7_112020. Not run on hardware.
 
 - **Matched:** Addresses, chip ID, register addresses, PWR_CTRL and STATUS bits, OSR field positions, the 6-byte data read, the calibration block and its float conversions, temperature and pressure compensation, the poll limit.
-- **Fixed:** OSR received the enum numbers instead of the manual's codes, so every setting ran one step above its name and x32 wrote 110, which the manual does not define. Comments cited section 9.3 for temperature, which is in 9.2.
-- **Still open:** `BMP388_OVERSAMPLING_SKIP` does not skip: OSR has no skip code, so it measures at x1 with both channels on. ERR_REG is never read, so sensor errors go unseen. With a NULL `delay_ms` the 500 polls can end before an x32 measurement does, and the read times out. The model and mock start STATUS at 0x20 where the manual gives 0x00, so a read passes its poll with no measurement. The model sets drdy_press at once, never sets drdy_temp, never clears either flag and keeps its settings through a soft reset, so the tests cannot see the poll loop or what a reset does. Normal mode, ODR, the IIR filter, FIFO, interrupts, single-channel measurement, sensor time and SPI are not implemented.
-- **Suspected:** `bmp388_read` waits on drdy_press alone and could return the previous temperature if that flag rises first. `bmp388_reset` skips the cmd_rdy check and the wait for por_detected, and the reset returns OSR to its default while `dev->cfg` keeps the old value, so the next read runs at different oversampling with no error.
+- **Fixed:** OSR received the enum numbers instead of the manual's codes, so every setting ran one step above its name and x32 wrote 110, which the manual does not define. Comments cited section 9.3 for temperature, which is in 9.2. `BMP388_OVERSAMPLING_SKIP` did not skip: OSR has no skip code, so it measured at x1 with both channels on. It now clears press_en or temp_en, and the poll waits for the flags of what was enabled, so with both enabled it waits for both instead of drdy_press alone. The model and mock started STATUS at 0x20 where the manual gives 0x00, and the model ignored the enable bits and handled neither flag properly, so the tests could not see the poll loop. This fix has not run on hardware.
+- **Still open:** ERR_REG is never read, so sensor errors go unseen. With a NULL `delay_ms` the 500 polls can end before an x32 measurement does, and the read times out. The model keeps its settings through a soft reset, so the tests cannot see what a reset does. Normal mode, ODR, the IIR filter, FIFO, interrupts, sensor time and SPI are not implemented.
+- **Suspected:** `bmp388_reset` skips the cmd_rdy check and the wait for por_detected, and the reset returns OSR to its default while `dev->cfg` keeps the old value, so the next read runs at different oversampling with no error.
 
 ## Known issues
 

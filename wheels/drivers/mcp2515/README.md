@@ -31,7 +31,7 @@ uint8_t       mcp2515_read_status(mcp2515_t *dev);
 uint8_t       mcp2515_read_errors(mcp2515_t *dev);
 ```
 
-Caller provides SPI HAL via `mcp2515_spi_t` callbacks (CS control + byte transfer).
+Caller provides SPI HAL via `mcp2515_spi_t` callbacks (CS control + byte transfer + `delay_us`). `delay_us` is required: `mcp2515_init` returns `MCP2515_ERR_PARAM` and sends nothing without it.
 
 ## Usage
 
@@ -39,9 +39,11 @@ Caller provides SPI HAL via `mcp2515_spi_t` callbacks (CS control + byte transfe
 static void my_cs_low(void *ctx)  { (void)ctx; }
 static void my_cs_high(void *ctx) { (void)ctx; }
 static uint8_t my_xfer(void *ctx, uint8_t tx) { (void)ctx; return tx; }
+static void my_delay_us(void *ctx, uint32_t us) { (void)ctx; (void)us; }
 
 static void example(void) {
-    mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer };
+    mcp2515_spi_t spi = { .cs_low = my_cs_low, .cs_high = my_cs_high, .xfer = my_xfer,
+                          .delay_us = my_delay_us };
     mcp2515_t can;
     if (mcp2515_init(&can, &spi, MCP2515_SPEED_500KBPS) == MCP2515_OK) {
         mcp2515_msg_t msg = { .id = 0x123, .dlc = 3, .data = {0xAA, 0xBB, 0xCC} };
@@ -71,8 +73,8 @@ static void example(void) {
 Checked on 2026-11-06 against Microchip DS20001801J. Not run on hardware.
 
 - **Matched:** SPI opcodes, register addresses, mode encodings and polling, BIT MODIFY targets, ID packing, the 125 to 500 kbps timing values.
-- **Fixed:** The 1 Mbps setting broke the 2 TQ minimum for PS2 and no legal one exists at 8 MHz, so it is now refused. Standard remote frames read as data frames. Read-backs of TXREQ and RXnIF turned a fast send or a busy bus into `MCP2515_ERR_SPI`. Two comments were wrong. The models use the CANCTRL reset value and clear TXREQ.
-- **Still open:** The HAL has no delay, so init cannot wait the 128 OSC1 cycles after reset, and leaving Sleep cannot wait for the oscillator; nothing sets WAKIF either. The model changes mode at once and accepts writes that only work in Configuration mode.
+- **Fixed:** The 1 Mbps setting broke the 2 TQ minimum for PS2 and no legal one exists at 8 MHz, so it is now refused. Standard remote frames read as data frames. Read-backs of TXREQ and RXnIF turned a fast send or a busy bus into `MCP2515_ERR_SPI`. Two comments were wrong. The models use the CANCTRL reset value and clear TXREQ. `mcp2515_init` read CANSTAT straight after RESET, inside the Oscillator Start-up Timer. It now waits through the new `delay_us`, for 128 us, which covers 128 OSC1 cycles at the slowest clock the chip allows. `mcp2515_set_mode` could not leave Sleep, because nothing set WAKIF, so any mode after Sleep timed out. It now sets WAKIE and WAKIF, waits the same time, requests the mode and puts both flags back; INT goes low meanwhile. The model and mock changed mode out of Sleep at once, which hid this, and the model now counts SPI operations inside the timer. These two fixes have not run on hardware.
+- **Still open:** init cannot know when power came up, so the caller must not call it during the power-on start-up. The manual defines the wake-up wait as 128 TOSC and gives no crystal start-up time, so only hardware can show whether 128 us is enough before the mode request. The model changes mode at once with a transmission pending and accepts writes that only work in Configuration mode.
 - **Suspected:** init promises to accept all messages but never writes RXFnSIDL, and EXIDE is unknown after power-on, so one frame format may be dropped.
 
 ## Known issues
