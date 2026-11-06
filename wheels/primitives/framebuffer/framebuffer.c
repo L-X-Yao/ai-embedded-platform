@@ -31,9 +31,9 @@ static inline void sp(framebuffer_t *fb, int16_t x, int16_t y, uint16_t color)
     (void)framebuffer_set_pixel(fb, (uint16_t)x, (uint16_t)y, color);
 }
 
-static inline int16_t abs16(int16_t v)
+static inline int32_t abs32(int32_t v)
 {
-    return (v < 0) ? (int16_t)(-v) : v;
+    return (v < 0) ? -v : v;
 }
 
 /* -------- buf_size -------- */
@@ -265,22 +265,23 @@ void framebuffer_line(framebuffer_t *fb, int16_t x0, int16_t y0,
 {
     if (!fb_valid(fb)) { return; }
 
-    int16_t dx = abs16((int16_t)(x1 - x0));
-    int16_t dy = (int16_t)(-abs16((int16_t)(y1 - y0)));
+    /* A span reaches 65535 and 2 * err twice that: neither fits int16_t. */
+    int32_t dx = abs32((int32_t)x1 - (int32_t)x0);
+    int32_t dy = -abs32((int32_t)y1 - (int32_t)y0);
     int16_t sx = (x0 < x1) ? 1 : -1;
     int16_t sy = (y0 < y1) ? 1 : -1;
-    int16_t err = (int16_t)(dx + dy);
+    int32_t err = dx + dy;
 
     for (;;) {
         sp(fb, x0, y0, color);
         if (x0 == x1 && y0 == y1) { break; }
-        int16_t e2 = (int16_t)(2 * err);
+        int32_t e2 = 2 * err;
         if (e2 >= dy) {
-            err = (int16_t)(err + dy);
+            err += dy;
             x0  = (int16_t)(x0 + sx);
         }
         if (e2 <= dx) {
-            err = (int16_t)(err + dx);
+            err += dx;
             y0  = (int16_t)(y0 + sy);
         }
     }
