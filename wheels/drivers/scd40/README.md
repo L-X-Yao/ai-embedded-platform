@@ -39,7 +39,7 @@ scd40_err_t scd40_perform_reset(scd40_t *dev);
 uint8_t     scd40_crc8(const uint8_t *data, uint16_t len);
 ```
 
-Error codes: `SCD40_OK` (0), `SCD40_ERR_I2C` (-1), `SCD40_ERR_CRC` (-2), `SCD40_ERR_PARAM` (-3).
+Error codes: `SCD40_OK` (0), `SCD40_ERR_I2C` (-1), `SCD40_ERR_CRC` (-2), `SCD40_ERR_PARAM` (-3), `SCD40_ERR_BUSY` (-4).
 
 ## Configuration (compile-time)
 
@@ -55,8 +55,8 @@ No compile-time configuration needed. I2C address is fixed at 0x62.
 Checked on 2026-11-06 against Sensirion SCD4x Datasheet, Version 1.5, July 2023. Not run on hardware.
 
 - **Matched:** I2C address, the command codes in use, word format, read waits, measurement conversions, serial number order, altitude frame, CRC-8 (0xBEEF gives 0x92). The manual's example 0x01f4 -> 0x7b does not fit its own algorithm, which gives 0x33, so it is not used as a test vector.
-- **Fixed:** `scd40_data_ready` tested the top 5 bits, so the not-ready word 0x8000 read as ready. `scd40_perform_reset` sent 0xD304, which is not an SCD4x command; it now sends reinit 0x3646 and waits 30 ms. `scd40_stop_periodic` now waits 500 ms and `scd40_set_altitude` 1 ms. `scd40_init` refuses a HAL without `delay_ms`, and `scd40_set_altitude` refuses more than 3000 m.
-- **Still open:** The driver does not track idle and periodic mode, so `scd40_get_serial`, `scd40_set_altitude` or `scd40_perform_reset` during a measurement reach a sensor that must not get them, and after an MCU-only reset the sensor keeps measuring. There is no persist_settings, so the altitude is lost at power-off. No temperature offset, ambient pressure, forced recalibration, ASC control, low-power mode, self test, factory reset or SCD41 single shot. The model never empties its buffer, never NACKs and serves idle-only commands during a measurement, so tests cannot catch a double read or a command sent at the wrong time.
+- **Fixed:** `scd40_data_ready` tested the top 5 bits, so the not-ready word 0x8000 read as ready. `scd40_perform_reset` sent 0xD304, which is not an SCD4x command; it now sends reinit 0x3646 and waits 30 ms. `scd40_stop_periodic` now waits 500 ms and `scd40_set_altitude` 1 ms. `scd40_init` refuses a HAL without `delay_ms`, and `scd40_set_altitude` refuses more than 3000 m. `scd40_get_serial`, `scd40_set_altitude`, `scd40_perform_reset` and a second `scd40_start_periodic` went to a running measurement; they now return `SCD40_ERR_BUSY`. The model has a clock, empties its buffer on read, and NACKs an empty buffer, a command inside an execution time or forbidden during a measurement, and a bad checksum.
+- **Still open:** After an MCU-only reset the sensor keeps measuring while the driver takes it for idle. There is no persist_settings, so the altitude is lost at power-off. No temperature offset, ambient pressure, forced recalibration, ASC control, low-power mode, self test, factory reset or SCD41 single shot.
 
 ## Known issues
 
