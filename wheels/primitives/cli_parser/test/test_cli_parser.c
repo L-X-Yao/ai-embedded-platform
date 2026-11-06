@@ -263,6 +263,60 @@ TEST(test_feed_exact_then_enter)
     ASSERT_TRUE(parser.line_len == CLI_LINE_BUFSIZE - 1);
 }
 
+static void feed_text(const char *text)
+{
+    while (*text != '\0') {
+        cli_parser_feed(&parser, (uint8_t)*text++);
+    }
+}
+
+/* "ping " then filler until the line is `total` characters long. */
+static void feed_long_ping(int total)
+{
+    feed_text("ping ");
+    for (int i = 5; i < total; i++) {
+        cli_parser_feed(&parser, '7');
+    }
+}
+
+/* cli_parser_run refuses this line, so feed must not run a cut copy of it. */
+TEST(test_feed_refuses_line_that_overflowed)
+{
+    setup(NULL);
+    capture_reset();
+    feed_long_ping(CLI_LINE_BUFSIZE);
+    cli_parser_feed(&parser, '\r');
+    ASSERT_EQ(last_argc, 0);
+    ASSERT_TRUE(strstr(out_buf, "line too long") != NULL);
+
+    /* The refusal covers that line only. */
+    feed_text("ping again\r");
+    ASSERT_EQ(last_argc, 2);
+    ASSERT_TRUE(strcmp(last_argv1, "again") == 0);
+}
+
+TEST(test_feed_runs_line_that_exactly_fits)
+{
+    setup(NULL);
+    capture_reset();
+    feed_long_ping(CLI_LINE_BUFSIZE - 1);
+    cli_parser_feed(&parser, '\r');
+    ASSERT_EQ(last_argc, 2);
+    ASSERT_TRUE(strstr(out_buf, "line too long") == NULL);
+}
+
+/* Backspace cannot bring dropped bytes back. */
+TEST(test_feed_overflow_survives_backspace)
+{
+    setup(NULL);
+    capture_reset();
+    feed_long_ping(CLI_LINE_BUFSIZE + 10);
+    cli_parser_feed(&parser, '\b');
+    cli_parser_feed(&parser, '\r');
+    ASSERT_EQ(last_argc, 0);
+    ASSERT_TRUE(strstr(out_buf, "line too long") != NULL);
+}
+
 TEST(test_null_commands)
 {
     capture_reset();
@@ -395,6 +449,9 @@ TEST_MAIN("cli_parser")
     RUN(test_exact_buffer_boundary);
     RUN(test_exact_buffer_plus_one);
     RUN(test_feed_exact_then_enter);
+    RUN(test_feed_refuses_line_that_overflowed);
+    RUN(test_feed_runs_line_that_exactly_fits);
+    RUN(test_feed_overflow_survives_backspace);
     RUN(test_null_commands);
     RUN(test_entry_without_handler);
     RUN(test_entry_without_name);
