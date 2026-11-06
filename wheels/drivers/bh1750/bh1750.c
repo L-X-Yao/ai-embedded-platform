@@ -14,10 +14,33 @@
 #define CMD_POWER_OFF 0x00
 #define CMD_RESET     0x07
 
+/* Maximum measurement times: tHR and tLR (manual p.2) */
+#define T_H_RES_MAX_MS 180
+#define T_L_RES_MAX_MS 24
+
 static bh1750_err_t send_cmd(const bh1750_t *dev, uint8_t cmd)
 {
     if (!dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &cmd, 1))
         return BH1750_ERR_I2C;
+    return BH1750_OK;
+}
+
+/*
+ * Start a measurement and wait out its maximum time, because until it ends the
+ * Data Register still holds 0 or the old value. With no delay_ms that wait falls
+ * to the caller.
+ */
+static bh1750_err_t start_measurement(const bh1750_t *dev)
+{
+    bh1750_err_t err = send_cmd(dev, (uint8_t)dev->cfg.mode);
+    if (err != BH1750_OK)
+        return err;
+
+    if (dev->i2c->delay_ms) {
+        bool l_res = dev->cfg.mode == BH1750_CONT_L_RES ||
+                     dev->cfg.mode == BH1750_ONCE_L_RES;
+        dev->i2c->delay_ms(dev->i2c->ctx, l_res ? T_L_RES_MAX_MS : T_H_RES_MAX_MS);
+    }
     return BH1750_OK;
 }
 
@@ -43,7 +66,7 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
     if (err != BH1750_OK)
         return err;
 
-    return send_cmd(dev, (uint8_t)dev->cfg.mode);
+    return start_measurement(dev);
 }
 
 bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)

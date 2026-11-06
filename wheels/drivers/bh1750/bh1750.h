@@ -34,7 +34,7 @@ typedef struct {
                   const uint8_t *data, uint16_t len);
     bool (*read)(void *ctx, uint8_t dev_addr,
                  uint8_t *data, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional: see bh1750_init */
     void *ctx;
 } bh1750_i2c_t;
 
@@ -60,7 +60,10 @@ typedef struct {
 #define BH1750_ADDR_LOW   0x23
 #define BH1750_ADDR_HIGH  0x5C
 
-/** @thread_safe: no @isr_safe: no */
+/** Power on and start cfg->mode. Calls delay_ms (max 180 ms, 24 ms in the L
+ *  modes) so the first measurement has ended on return. With delay_ms NULL the
+ *  caller must wait that long itself, or the first read gives 0 with BH1750_OK.
+ *  @thread_safe: no @isr_safe: no */
 bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
                          const bh1750_cfg_t *cfg);
 
