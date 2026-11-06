@@ -13,7 +13,16 @@
 #include <string.h>
 
 /* Each free block stores a pointer to the next free block at its start.
- * This is safe because block_size >= sizeof(void*). */
+ * This is safe because block_size >= sizeof(void*), and because buf and
+ * block_size are multiples of POOL_PTR_ALIGN, which puts every block on a
+ * pointer boundary. */
+
+/* C99 has no alignof: the padding before p is the alignment of a pointer. */
+typedef struct {
+    char  c;
+    void *p;
+} ptr_align_probe_t;
+#define POOL_PTR_ALIGN  offsetof(ptr_align_probe_t, p)
 
 memory_pool_err_t memory_pool_init(memory_pool_t *pool, uint8_t *buf,
                                    size_t buf_size, size_t block_size)
@@ -22,6 +31,10 @@ memory_pool_err_t memory_pool_init(memory_pool_t *pool, uint8_t *buf,
         return MEMORY_POOL_ERR_NULL;
     }
     if (block_size < sizeof(void *) || buf_size < block_size) {
+        return MEMORY_POOL_ERR_SIZE;
+    }
+    if ((uintptr_t)buf % POOL_PTR_ALIGN != 0U ||
+        block_size % POOL_PTR_ALIGN != 0U) {
         return MEMORY_POOL_ERR_SIZE;
     }
 

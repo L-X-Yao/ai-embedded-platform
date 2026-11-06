@@ -8,11 +8,16 @@
 #define BLOCK_COUNT  8
 #define BUF_SIZE    (BLOCK_SIZE * BLOCK_COUNT)
 
+/* Pool storage must be pointer-aligned: a bare uint8_t array is not. */
+#define POOL_BUF(name, size) \
+    union { void *align; uint8_t bytes[size]; } name##_store; \
+    uint8_t *const name = name##_store.bytes
+
 /* --- init tests --- */
 
 TEST(test_init_valid)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     ASSERT_EQ(memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE), MEMORY_POOL_OK);
     ASSERT_EQ(memory_pool_available(&pool), BLOCK_COUNT);
@@ -21,7 +26,7 @@ TEST(test_init_valid)
 
 TEST(test_init_null_pool)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     ASSERT_EQ(memory_pool_init(NULL, buf, BUF_SIZE, BLOCK_SIZE), MEMORY_POOL_ERR_NULL);
 }
 
@@ -49,7 +54,7 @@ TEST(test_init_buf_too_small)
 
 TEST(test_init_zero_buf_size)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     /* buf_size = 0 < block_size */
     ASSERT_EQ(memory_pool_init(&pool, buf, 0, BLOCK_SIZE), MEMORY_POOL_ERR_SIZE);
@@ -59,7 +64,7 @@ TEST(test_init_zero_buf_size)
 
 TEST(test_alloc_single)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -71,7 +76,7 @@ TEST(test_alloc_single)
 
 TEST(test_alloc_until_full)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -93,7 +98,7 @@ TEST(test_alloc_until_full)
 
 TEST(test_alloc_when_full_returns_null)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -117,7 +122,7 @@ TEST(test_alloc_null_pool)
 
 TEST(test_free_then_realloc)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -134,7 +139,7 @@ TEST(test_free_then_realloc)
 
 TEST(test_free_invalid_pointer_outside_pool)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -145,7 +150,7 @@ TEST(test_free_invalid_pointer_outside_pool)
 
 TEST(test_free_misaligned_pointer)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -157,7 +162,7 @@ TEST(test_free_misaligned_pointer)
 
 TEST(test_free_null_ptr)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
     ASSERT_EQ(memory_pool_free(&pool, NULL), MEMORY_POOL_ERR_NULL);
@@ -171,7 +176,7 @@ TEST(test_free_null_pool)
 
 TEST(test_double_free_detection)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -186,7 +191,7 @@ TEST(test_double_free_detection)
 
 TEST(test_reset_restores_all_blocks)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -216,7 +221,7 @@ TEST(test_reset_null_pool)
 
 TEST(test_available_used_tracking)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -259,7 +264,7 @@ TEST(test_error_codes)
 
 TEST(test_write_data_into_blocks)
 {
-    uint8_t buf[BUF_SIZE];
+    POOL_BUF(buf, BUF_SIZE);
     memory_pool_t pool;
     memory_pool_init(&pool, buf, BUF_SIZE, BLOCK_SIZE);
 
@@ -283,16 +288,50 @@ TEST(test_write_data_into_blocks)
 TEST(test_min_block_size)
 {
     size_t min_bs = sizeof(void *);
-    uint8_t buf[256];
+    POOL_BUF(buf, 256);
     memory_pool_t pool;
-    ASSERT_EQ(memory_pool_init(&pool, buf, sizeof(buf), min_bs), MEMORY_POOL_OK);
+    ASSERT_EQ(memory_pool_init(&pool, buf, 256, min_bs), MEMORY_POOL_OK);
 
-    size_t expected_count = sizeof(buf) / min_bs;
+    size_t expected_count = 256U / min_bs;
     ASSERT_EQ(memory_pool_available(&pool), expected_count);
 
     void *p = memory_pool_alloc(&pool);
     ASSERT_NOT_NULL(p);
     ASSERT_EQ(memory_pool_free(&pool, p), MEMORY_POOL_OK);
+}
+
+/* --- the free-list stores a pointer in every block, so buf and block_size
+ *     must keep every block pointer-aligned --- */
+
+TEST(test_init_rejects_misaligned_block_size)
+{
+    POOL_BUF(buf, BUF_SIZE);
+    memory_pool_t pool;
+    /* 12 on a 64-bit host, 6 on Cortex-M: big enough, but block 1 is not
+     * pointer-aligned. */
+    size_t bs = sizeof(void *) + sizeof(void *) / 2U;
+    ASSERT_EQ(memory_pool_init(&pool, buf, BUF_SIZE, bs), MEMORY_POOL_ERR_SIZE);
+}
+
+TEST(test_init_rejects_misaligned_buf)
+{
+    POOL_BUF(buf, BUF_SIZE);
+    memory_pool_t pool;
+    ASSERT_EQ(memory_pool_init(&pool, buf + 1, BUF_SIZE - 1U, BLOCK_SIZE),
+              MEMORY_POOL_ERR_SIZE);
+}
+
+TEST(test_blocks_are_pointer_aligned)
+{
+    POOL_BUF(buf, BUF_SIZE);
+    memory_pool_t pool;
+    ASSERT_EQ(memory_pool_init(&pool, buf, BUF_SIZE, 3U * sizeof(void *)),
+              MEMORY_POOL_OK);
+    for (void *p = memory_pool_alloc(&pool); p != NULL;
+         p = memory_pool_alloc(&pool)) {
+        ASSERT_EQ((uintptr_t)p % sizeof(void *), 0U);
+    }
+    ASSERT_EQ(memory_pool_available(&pool), 0U);
 }
 
 TEST_MAIN("memory_pool")
@@ -320,4 +359,7 @@ TEST_MAIN("memory_pool")
     RUN(test_error_codes);
     RUN(test_write_data_into_blocks);
     RUN(test_min_block_size);
+    RUN(test_init_rejects_misaligned_block_size);
+    RUN(test_init_rejects_misaligned_buf);
+    RUN(test_blocks_are_pointer_aligned);
 TEST_MAIN_END()
