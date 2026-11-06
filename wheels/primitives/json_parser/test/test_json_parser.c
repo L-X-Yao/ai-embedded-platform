@@ -722,7 +722,115 @@ TEST(test_multiple_keys_are_key_events)
     ASSERT_MEMEQ(g_events[5].value, "c");
 }
 
+/* ── What may follow '{', '[', ':' and ',' (RFC 8259 section 2) ──── */
+
+/* Same as parse_full, one byte per feed: state must survive a chunk edge. */
+static json_parser_err_t parse_bytewise(const char *json)
+{
+    json_parser_t p;
+    reset_events();
+    json_parser_err_t err = json_parser_init(&p, record_cb, NULL, 16);
+    for (size_t i = 0; err == JSON_PARSER_OK && json[i] != '\0'; i++) {
+        err = json_parser_feed(&p, &json[i], 1);
+    }
+    return (err != JSON_PARSER_OK) ? err : json_parser_finish(&p);
+}
+
+TEST(test_string_after_empty_object_in_array)
+{
+    ASSERT_EQ(parse_full("[{},\"x\"]"), JSON_PARSER_OK);
+    /* ARR[ OBJ{ }OBJ STR ]ARR */
+    ASSERT_EQ(g_event_count, 5);
+    ASSERT_EQ(g_events[3].event, JSON_EVENT_STRING);
+    ASSERT_MEMEQ(g_events[3].value, "x");
+}
+
+TEST(test_string_after_nested_empty_object)
+{
+    ASSERT_EQ(parse_full("{\"a\":[{},\"x\"]}"), JSON_PARSER_OK);
+    /* OBJ{ KEY ARR[ OBJ{ }OBJ STR ]ARR }OBJ */
+    ASSERT_EQ(g_event_count, 8);
+    ASSERT_EQ(g_events[5].event, JSON_EVENT_STRING);
+
+    ASSERT_EQ(parse_full("[[{}],\"x\"]"), JSON_PARSER_OK);
+    /* ARR[ ARR[ OBJ{ }OBJ ]ARR STR ]ARR */
+    ASSERT_EQ(g_event_count, 7);
+    ASSERT_EQ(g_events[5].event, JSON_EVENT_STRING);
+}
+
+TEST(test_key_in_array_rejected)
+{
+    ASSERT_EQ(parse_full("[{},\"x\":1]"), JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_closing_bracket_where_value_required)
+{
+    static const char *const docs[] = {
+        "{\"a\":}", "[1,]", "{\"a\":1,}", "[[],]", "{\"a\":{},}", "[,]", "{,}",
+    };
+    for (size_t i = 0; i < sizeof(docs) / sizeof(docs[0]); i++) {
+        ASSERT_EQ(parse_full(docs[i]), JSON_PARSER_ERR_SYNTAX);
+        ASSERT_EQ(parse_bytewise(docs[i]), JSON_PARSER_ERR_SYNTAX);
+    }
+}
+
+TEST(test_object_member_needs_string_key)
+{
+    static const char *const docs[] = {
+        "{1}", "{true}", "{null}", "{[1]}", "{{}}", "{\"a\":1,2}",
+        "{\"a\":1,[2]}", "{\"a\":1,{}}", "{\"a\":1,true}",
+    };
+    for (size_t i = 0; i < sizeof(docs) / sizeof(docs[0]); i++) {
+        ASSERT_EQ(parse_full(docs[i]), JSON_PARSER_ERR_SYNTAX);
+        ASSERT_EQ(parse_bytewise(docs[i]), JSON_PARSER_ERR_SYNTAX);
+    }
+}
+
+TEST(test_empty_container_closed_by_wrong_bracket)
+{
+    ASSERT_EQ(parse_full("{]"), JSON_PARSER_ERR_SYNTAX);
+    ASSERT_EQ(parse_full("[}"), JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_bare_closing_bracket_at_top_level)
+{
+    ASSERT_EQ(parse_full("}"), JSON_PARSER_ERR_SYNTAX);
+    ASSERT_EQ(parse_full("]"), JSON_PARSER_ERR_SYNTAX);
+}
+
+TEST(test_valid_containers_with_whitespace)
+{
+    static const char *const docs[] = {
+        "{}", "[]", "[[]]", "[{}]", "{\"a\":{}}", "{\"a\":[]}", "[{},{}]", "[[],[]]",
+        " { } ", "[ ]", "[ 1 , 2 ]", "{ \"a\" : 1 , \"b\" : 2 }", "[ {} , \"x\" ]",
+        "[\n\t{ }\r\n]", "[1,{\"a\":[true,null]},\"s\"]", "[-1]", "[false]",
+    };
+    for (size_t i = 0; i < sizeof(docs) / sizeof(docs[0]); i++) {
+        ASSERT_EQ(parse_full(docs[i]), JSON_PARSER_OK);
+        ASSERT_EQ(parse_bytewise(docs[i]), JSON_PARSER_OK);
+    }
+}
+
+TEST(test_unclosed_containers_are_incomplete)
+{
+    static const char *const docs[] = {
+        "{", "[", "{\"a\":1,", "[1,", "{\"a\":", "[{}",
+    };
+    for (size_t i = 0; i < sizeof(docs) / sizeof(docs[0]); i++) {
+        ASSERT_EQ(parse_full(docs[i]), JSON_PARSER_ERR_INCOMPLETE);
+    }
+}
+
 TEST_MAIN("json_parser")
+    RUN(test_string_after_empty_object_in_array);
+    RUN(test_string_after_nested_empty_object);
+    RUN(test_key_in_array_rejected);
+    RUN(test_closing_bracket_where_value_required);
+    RUN(test_object_member_needs_string_key);
+    RUN(test_empty_container_closed_by_wrong_bracket);
+    RUN(test_bare_closing_bracket_at_top_level);
+    RUN(test_valid_containers_with_whitespace);
+    RUN(test_unclosed_containers_are_incomplete);
     RUN(test_init_null_params);
     RUN(test_simple_object);
     RUN(test_nested_object);
