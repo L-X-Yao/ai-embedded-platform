@@ -112,9 +112,18 @@ void hmac_sha256_compute(const uint8_t *key, size_t key_len,
     if (!mac) { return; }
 
     hmac_sha256_t ctx;
-    (void)hmac_sha256_init(&ctx, key, key_len);
-    (void)hmac_sha256_update(&ctx, data, data_len);
-    (void)hmac_sha256_final(&ctx, mac);
+    hmac_sha256_err_t err = hmac_sha256_init(&ctx, key, key_len);
+    if (err == HMAC_SHA256_OK) {
+        err = hmac_sha256_update(&ctx, data, data_len);
+        /* Runs even after a failed update: it wipes the key from ctx. */
+        hmac_sha256_err_t final_err = hmac_sha256_final(&ctx, mac);
+        if (err == HMAC_SHA256_OK) {
+            err = final_err;
+        }
+    }
+    if (err != HMAC_SHA256_OK) {
+        memset(mac, 0, HMAC_SHA256_DIGEST_SIZE);
+    }
 }
 
 bool hmac_sha256_verify(const uint8_t a[32], const uint8_t b[32])

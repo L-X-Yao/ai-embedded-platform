@@ -73,6 +73,7 @@ hmac_sha256_err_t hmac_sha256_final(hmac_sha256_t *ctx, uint8_t mac[32]);
 
 /**
  * One-shot convenience: compute HMAC-SHA256 of a complete message.
+ * If key or data breaks the rule below, mac is set to all zeros.
  *
  * @param key      Key bytes. May be NULL only when key_len == 0.
  * @param key_len  Key length.
