@@ -50,10 +50,12 @@ static void mock_reset(void)
 }
 
 /* DS20001801J p.59: the oscillator stops in Sleep, so nothing acts on a mode
- * request until the chip wakes */
+ * request until the chip wakes, and "the mode will not actually change until all
+ * pending message transmissions are complete" */
 static void mock_apply_mode(void)
 {
     if ((mock_regs[0x0E] & 0xE0) == 0x20) return;
+    if (mock_regs[0x30] & 0x08) return;
     mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) |
                                  (mock_regs[0x0F] & 0xE0));
 }
@@ -65,6 +67,19 @@ static void mock_check_wake(void)
         (mock_regs[0x2B] & 0x40) && (mock_regs[0x2C] & 0x40)) {
         mock_regs[0x0E] = (uint8_t)((mock_regs[0x0E] & ~0xE0) | 0x60);
     }
+}
+
+/* p.59: filters, masks, CNF1 to CNF3 and TXRTSCTRL only take a write in
+ * Configuration mode. p.37: RXMnSIDL has no bits 4:2. */
+static void mock_store(uint8_t addr, uint8_t val)
+{
+    bool config_only = addr <= 0x0B || addr == 0x0D ||
+                       (addr >= 0x10 && addr <= 0x1B) ||
+                       (addr >= 0x20 && addr <= 0x2A);
+
+    if (config_only && (mock_regs[0x0E] & 0xE0) != 0x80) return;
+    if (addr == 0x21 || addr == 0x25) val &= 0xE3;
+    mock_regs[addr] = val;
 }
 
 static void mock_cs_low(void *ctx)
@@ -130,7 +145,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         }
         if (mock_spi_cmd == 0x02) {
             /* WRITE: store value */
-            mock_regs[mock_spi_addr] = tx;
+            mock_store(mock_spi_addr, tx);
             /* simulate mode change via CANCTRL write */
             if (mock_spi_addr == 0x0F) {
                 mock_apply_mode();
@@ -154,9 +169,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
 
     if (mock_spi_phase == 5) {
         /* BIT_MODIFY: this byte is the data */
-        mock_regs[mock_spi_addr] = (uint8_t)(
+        mock_store(mock_spi_addr, (uint8_t)(
             (mock_regs[mock_spi_addr] & ~mock_bm_mask) |
-            (tx & mock_bm_mask));
+            (tx & mock_bm_mask)));
         /* simulate mode change */
         if (mock_spi_addr == 0x0F) {
             mock_apply_mode();
@@ -988,11 +1003,14 @@ TEST(test_set_mask_extended)
     mcp2515_init(&dev, &mock_spi, MCP2515_SPEED_500KBPS);
     mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG);
 
-    /* Extended mask: 29-bit mask via encode_id (should set EXIDE bit) */
+    /* Extended mask: all 29 bits land in RXM1 at 0x24 */
     mcp2515_err_t e = mcp2515_set_mask(&dev, 1, 0x1FFFFFFF, true);
     ASSERT_EQ(e, MCP2515_OK);
-    /* Mask 1 base is 0x24 — SIDL (0x25) should have EXIDE */
-    ASSERT_TRUE(mock_regs[0x25] & 0x08);
+    /* p.37: RXMnSIDL has no EXIDE, bits 4:2 are U-0 */
+    ASSERT_EQ_HEX(mock_regs[0x24], 0xFF);
+    ASSERT_EQ_HEX(mock_regs[0x25], 0xE3);
+    ASSERT_EQ_HEX(mock_regs[0x26], 0xFF);
+    ASSERT_EQ_HEX(mock_regs[0x27], 0xFF);
 }
 
 TEST(test_set_mode_null_spi)
