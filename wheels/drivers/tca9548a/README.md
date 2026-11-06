@@ -18,7 +18,7 @@ Searched GitHub (2026-05-02). No platform-agnostic pure C driver found. 1-regist
 
 ## Dependencies
 
-I2C HAL (injected via callbacks, register-based pattern).
+I2C HAL (injected via callbacks, raw pattern: the chip has no register numbers).
 
 ## API
 
@@ -33,7 +33,22 @@ tca9548a_err_t tca9548a_disable_all(tca9548a_t *dev);
 tca9548a_err_t tca9548a_get_channel(tca9548a_t *dev, uint8_t *mask);
 ```
 
-HAL: register-based I2C (write_reg / read_regs with reg=0x00 dummy address).
+HAL: raw I2C. `write_raw` is required, and `tca9548a_get_channel` also needs
+`read_raw`. `write_reg` and `read_regs` stay in the struct but are unused, so a
+HAL that sets only those fails `tca9548a_init` with `TCA9548A_ERR_PARAM`.
+
+```c
+#include "tca9548a.h"
+
+extern bool bus_write(void *ctx, uint8_t dev_addr, const uint8_t *data, uint16_t len);
+extern bool bus_read(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len);
+
+static const tca9548a_i2c_t i2c = {
+    .write_raw = bus_write,   /* exact bytes after the address, then STOP */
+    .read_raw  = bus_read,    /* no register byte first */
+};
+```
+
 Caches current channel mask to skip redundant I2C writes.
 
 ## Configuration (compile-time)
@@ -48,9 +63,9 @@ None.
 
 Checked on 2026-11-06 against TI SCPS207H, May 2012, revised September 2024. Not run on hardware.
 
-- **Matched:** Addresses 0x70-0x77, the control byte, several channels at once, the 0x00 default, how writes work, no delay needed.
-- **Fixed:** The comments said the chip takes the first data byte and that reg=0x00 is a harmless dummy. It keeps the last byte, so the dummy is safe on writes only.
-- **Still open:** `tca9548a_get_channel` misbehaves on hardware. A normal register `read_regs` HAL, such as flybox's, sends the 0x00 register byte before reading, and the chip stores that byte as the control value: every channel switches off, the real mask is lost, and the call returns `TCA9548A_OK` with mask 0, which also goes into the cached mask. Do not call it on a live bus until the HAL has a raw read. The mock and the model both treat reg as a register number, so the tests pass and hide this. There is no RESET pin control, the manual's way out of a stuck downstream bus. The model does not turn channels on at STOP and has no NACK for a wrong address.
+- **Matched:** Addresses 0x70-0x77, the control byte, several channels at once, the 0x00 default, no delay needed.
+- **Fixed:** `tca9548a_get_channel` went through `read_regs`, and the chip stored the register byte as the control value: every channel switched off and the call returned `TCA9548A_OK` with mask 0. It now reads one byte through `read_raw` with nothing sent first, as in Figure 7-5. The channel writes sent 0x00 and then the mask, which worked only because the chip keeps the last byte. They now send the mask alone through `write_raw`, as in Figure 7-4. The mock and the model treated reg as a register number, which hid this. The model is now one control byte at bus level, with a NACK for a wrong address. None of this has run on hardware.
+- **Still open:** There is no RESET pin control, the manual's way out of a stuck downstream bus. The model does not turn channels on at STOP.
 - **Suspected:** `tca9548a_select`, `tca9548a_select_multi` and `tca9548a_disable_all` skip the bus when the cached mask matches, so after a RESET pulse or supply dip they can report success with the channel off, until `tca9548a_init` runs again.
 
 ## Known issues
@@ -67,10 +82,13 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **26 C cases** -- init (ok, null dev, null i2c, addr low, addr high,
-  all valid addrs, i2c fail), select (ch0, ch7, invalid, null, cached skip, i2c fail),
-  select_multi (ok, all, cached skip, null), disable_all (ok, already disabled, null),
-  get_channel (ok, resync cache, i2c fail, null dev, null mask), workflow
+- Unit tests: **31 C cases** -- init (ok, null dev, null i2c, addr low, addr high,
+  all valid addrs, i2c fail, null write_raw, register HAL), select (bytes on the bus,
+  ch0, ch7, invalid, null, cached skip, i2c fail), select_multi (ok, all, cached skip,
+  null), disable_all (ok, already disabled, null), get_channel (ok, writes nothing,
+  null read_raw, resync cache, i2c fail, null dev, null mask), workflow
+- Model tests: **19 C cases** -- the same calls against the bus model, with the
+  exact bytes of every write and the channels left on by a read
 
 ## API convention deviations
 
@@ -79,7 +97,7 @@ None.
 ## API review
 
 - Date: 2026-05-01
-- Key decisions: register-based HAL with reg=0x00 dummy; channel mask caching
+- Key decisions: raw HAL (`write_raw`, `read_raw`, added 2026-11-06 in place of the register HAL with a reg=0x00 dummy); channel mask caching
 
 ## Responsible human
 
