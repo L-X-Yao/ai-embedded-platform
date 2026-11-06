@@ -532,6 +532,25 @@ TEST(test_tsdb_init_missing_partition)
               FDB_PART_NOT_FOUND);
 }
 
+/* After a failed init the sector size is 0, so a traversal never ends:
+ * on the code this guards, this test hangs instead of failing. */
+TEST(test_tsdb_iter_after_failed_init)
+{
+    struct fdb_tsdb db;
+    int n = 0;
+
+    memset(&db, 0, sizeof(db));
+    ASSERT_EQ(fdb_tsdb_init(&db, "log", "nosuchpart", tsdb_get_time, 64, NULL),
+              FDB_PART_NOT_FOUND);
+
+    fdb_tsl_iter(&db, count_tsl_cb, &n);
+    fdb_tsl_iter_reverse(&db, count_tsl_cb, &n);
+    fdb_tsl_iter_by_time(&db, 0, 100, count_tsl_cb, &n);
+    fdb_tsl_iter_by_time(&db, 100, 0, count_tsl_cb, &n);
+    ASSERT_EQ(n, 0);
+    ASSERT_EQ(fdb_tsl_query_count(&db, 0, 100, FDB_TSL_WRITE), 0);
+}
+
 TEST_MAIN("kvs")
     RUN(test_fal_init);
     RUN(test_kvdb_init);
@@ -551,6 +570,7 @@ TEST_MAIN("kvs")
     RUN(test_tsdb_init_repairs_blank_sector);
     RUN(test_tsdb_clean_repairs_blank_sector);
     RUN(test_tsdb_clean_progress_repairs_blank_sector);
+    RUN(test_tsdb_iter_after_failed_init);
     RUN(test_tsdb_init_missing_partition);
 TEST_MAIN_END()
 
