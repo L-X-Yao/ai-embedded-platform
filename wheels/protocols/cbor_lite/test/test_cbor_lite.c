@@ -499,6 +499,126 @@ TEST(test_dec_tag)
     ASSERT_EQ(item.uval, 1U);    /* tag number 1 */
 }
 
+/* ------------------------------------------------------------------ */
+/*  Major 7 values the decoder must not pass off as simple values     */
+/* ------------------------------------------------------------------ */
+
+TEST(test_dec_refuses_float16)
+{
+    /* RFC 8949 Appendix A: 1.0 is 0xf93c00 */
+    const uint8_t one[] = {0xF9, 0x3C, 0x00};
+    /* Low byte 0x15 must not read as true */
+    const uint8_t low_byte_true[] = {0xF9, 0x00, 0x15};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, one, sizeof(one));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+    cbor_lite_dec_init(&dec, low_byte_true, sizeof(low_byte_true));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+}
+
+TEST(test_dec_refuses_float64)
+{
+    /* RFC 8949 Appendix A: 1.1 is 0xfb3ff199999999999a */
+    const uint8_t one_one[] = {0xFB, 0x3F, 0xF1, 0x99, 0x99,
+                               0x99, 0x99, 0x99, 0x9A};
+    /* Low byte 0x1A must not read as the float32 marker, 0x15 as true */
+    const uint8_t low_byte_float32[] = {0xFB, 0x3F, 0xF0, 0x00, 0x00,
+                                        0x00, 0x00, 0x00, 0x1A};
+    const uint8_t low_byte_true[] = {0xFB, 0x3F, 0xF0, 0x00, 0x00,
+                                     0x00, 0x00, 0x00, 0x15};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, one_one, sizeof(one_one));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+    cbor_lite_dec_init(&dec, low_byte_float32, sizeof(low_byte_float32));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+    cbor_lite_dec_init(&dec, low_byte_true, sizeof(low_byte_true));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+}
+
+TEST(test_dec_refused_float_leaves_the_next_item_readable)
+{
+    /* float16 1.0, then true */
+    const uint8_t data[] = {0xF9, 0x3C, 0x00, 0xF5};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+    ASSERT_EQ(cbor_lite_dec_offset(&dec), 3U);
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_TRUE(item.bool_val);
+}
+
+TEST(test_dec_short_float16_and_float64_stay_short)
+{
+    const uint8_t half[] = {0xF9, 0x3C};
+    const uint8_t dbl[] = {0xFB, 0x3F, 0xF0, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, half, sizeof(half));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_SHORT);
+    cbor_lite_dec_init(&dec, dbl, sizeof(dbl));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_SHORT);
+}
+
+TEST(test_dec_refuses_two_byte_simple_below_32)
+{
+    /* RFC 8949 3.3: 0xf8 followed by a byte below 0x20 is not well-formed */
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    for (unsigned v = 0; v < 32U; v++) {
+        const uint8_t data[] = {0xF8, (uint8_t)v};
+        cbor_lite_dec_init(&dec, data, sizeof(data));
+        ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_ERR_MALFORMED);
+    }
+}
+
+TEST(test_dec_two_byte_simple_from_32_up)
+{
+    /* RFC 8949 Appendix A: simple(255) is 0xf8ff */
+    const uint8_t lowest[] = {0xF8, 0x20};
+    const uint8_t highest[] = {0xF8, 0xFF};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, lowest, sizeof(lowest));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, 32U);
+    cbor_lite_dec_init(&dec, highest, sizeof(highest));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, 255U);
+}
+
+TEST(test_dec_one_byte_simple_and_float32_still_decode)
+{
+    /* RFC 8949 Appendix A: 0xf4 false, 0xf5 true, 0xf6 null, 0xf0 simple(16),
+       0xfa47c35000 100000.0 */
+    const uint8_t data[] = {0xF4, 0xF5, 0xF6, 0xF0, 0xFA, 0x47, 0xC3, 0x50, 0x00};
+    cbor_lite_decoder_t dec;
+    cbor_lite_item_t item;
+
+    cbor_lite_dec_init(&dec, data, sizeof(data));
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, CBOR_SIMPLE_FALSE);
+    ASSERT_FALSE(item.bool_val);
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, CBOR_SIMPLE_TRUE);
+    ASSERT_TRUE(item.bool_val);
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, CBOR_SIMPLE_NULL);
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, 16U);
+    ASSERT_EQ(cbor_lite_dec_next(&dec, &item), CBOR_LITE_OK);
+    ASSERT_EQ(item.simple, 26U);
+    ASSERT_NEAR(item.float_val, 100000.0f, 0.001f);
+}
+
 TEST_MAIN("cbor_lite")
     RUN(test_enc_uint_small);
     RUN(test_enc_uint_onebyte);
@@ -534,4 +654,11 @@ TEST_MAIN("cbor_lite")
     RUN(test_dec_bstr_empty);
     RUN(test_dec_bstr_short);
     RUN(test_dec_tag);
+    RUN(test_dec_refuses_float16);
+    RUN(test_dec_refuses_float64);
+    RUN(test_dec_refused_float_leaves_the_next_item_readable);
+    RUN(test_dec_short_float16_and_float64_stay_short);
+    RUN(test_dec_refuses_two_byte_simple_below_32);
+    RUN(test_dec_two_byte_simple_from_32_up);
+    RUN(test_dec_one_byte_simple_and_float32_still_decode);
 TEST_MAIN_END()

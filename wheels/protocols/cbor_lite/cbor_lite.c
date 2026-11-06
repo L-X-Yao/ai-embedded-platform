@@ -307,6 +307,10 @@ cbor_lite_err_t cbor_lite_dec_next(cbor_lite_decoder_t *dec,
         /* uval holds tag number; tagged value follows */
         break;
     case CBOR_MAJOR_SIMPLE:
+        /* float16 and float64 are not supported: their bits are no simple value */
+        if (ai == 25 || ai == 27) return CBOR_LITE_ERR_MALFORMED;
+        /* RFC 8949 3.3: 0xf8 with a value below 32 is not well-formed */
+        if (ai == 24 && val < 32) return CBOR_LITE_ERR_MALFORMED;
         item->simple = (uint8_t)val;
         if (val == CBOR_SIMPLE_TRUE)  item->bool_val = true;
         if (val == CBOR_SIMPLE_FALSE) item->bool_val = false;
