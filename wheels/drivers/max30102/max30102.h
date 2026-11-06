@@ -74,7 +74,8 @@ typedef struct {
  *  @thread_safe: no  @isr_safe: no */
 max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c);
 
-/** Set operating mode (HR-only or SpO2).
+/** Set operating mode (HR-only or SpO2).  Empties the FIFO, so samples not
+ *  yet read are lost, even if the mode stays the same.
  *  Returns MAX30102_ERR_PARAM, changing nothing, if the current sample rate
  *  is above the limit of the new mode: lower the rate first.
  *  @thread_safe: no @isr_safe: no */
