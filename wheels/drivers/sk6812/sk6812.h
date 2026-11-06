@@ -8,6 +8,8 @@
  * Instances: multi
  *
  * Single-wire protocol, 4 bytes per LED in GRBW order.
+ * For the 32-bit RGBW parts only. A 24-bit SK6812 is not supported: it would
+ * take the W byte as the next LED's G, so every LED after the first is wrong.
  * Timing is platform-specific; HAL provides send_data callback.
  * Caller provides pixel buffer (sk6812_pixel_t array).
  * Pure C99, no heap, fully reentrant per-context.
