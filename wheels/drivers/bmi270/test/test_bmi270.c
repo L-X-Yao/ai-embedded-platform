@@ -512,6 +512,43 @@ TEST(test_range_change_waits_for_the_next_sample)
     ASSERT_TRUE(delay_total_ms >= 40);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(bmi270_t *d)
+{
+    bmi270_accel_gyro_t data;
+    float temp;
+    ASSERT_EQ(bmi270_read_accel_gyro(d, &data), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_read_temp(d, &temp), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_acc_odr(d, BMI270_ODR_100HZ), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_gyro_odr(d, BMI270_ODR_100HZ), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_acc_range(d, BMI270_ACC_RANGE_8G), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_set_gyro_range(d, BMI270_GYRO_RANGE_2000DPS), BMI270_ERR_PARAM);
+    ASSERT_EQ(bmi270_soft_reset(d), BMI270_ERR_PARAM);
+}
+
+/* dev held whatever the stack did: init only cleared it past these checks */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bmi270_spi_t no_callbacks;
+    bmi270_t d;
+    bmi270_cfg_t cfg = bmi270_default_cfg();
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmi270_init(&d, NULL, &cfg), BMI270_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmi270_init(&d, &no_callbacks, &cfg), BMI270_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    cfg.gyro_range = (bmi270_gyro_range_t)5;
+    ASSERT_EQ(bmi270_init(&d, &mock_spi, &cfg), BMI270_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bmi270")
     RUN(test_init_ok);
     RUN(test_init_bad_id);
@@ -545,4 +582,5 @@ TEST_MAIN("bmi270")
     RUN(test_gyro_scale_is_exact);
     RUN(test_soft_reset_waits_for_the_chip);
     RUN(test_range_change_waits_for_the_next_sample);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -361,6 +361,41 @@ TEST(test_invalid_gyro_range)
     ASSERT_EQ(bmi160_init(&d, &mock_hal, &cfg), BMI160_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bmi160_t *d)
+{
+    bmi160_data_t data;
+    ASSERT_EQ(bmi160_read(d, &data), BMI160_ERR_PARAM);
+    ASSERT_EQ(bmi160_reset(d), BMI160_ERR_PARAM);
+}
+
+/* 0x24 is the ID of a BMI270: it answers, but no sensitivity was ever set */
+TEST(test_device_refused_after_wrong_id)
+{
+    bmi160_t d;
+    mock_reset();
+    mock_regs[0x00] = 0x24;
+    ASSERT_EQ(bmi160_init(&d, &mock_hal, &default_cfg), BMI160_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bmi160_i2c_t no_callbacks;
+    bmi160_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmi160_init(&d, NULL, &default_cfg), BMI160_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmi160_init(&d, &no_callbacks, &default_cfg), BMI160_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bmi160")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -385,4 +420,6 @@ TEST_MAIN("bmi160")
     RUN(test_addr_high);
     RUN(test_invalid_accel_range);
     RUN(test_invalid_gyro_range);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

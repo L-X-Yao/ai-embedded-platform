@@ -23,6 +23,7 @@
 #include "bmi270.h"
 #include "contract.h"
 #include <stddef.h>
+#include <string.h>
 
 /* ---------- SPI helpers ---------- */
 
@@ -130,7 +131,13 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
                              const bmi270_spi_t *spi,
                              const bmi270_cfg_t *cfg)
 {
-    if (!dev || !spi || !cfg) return BMI270_ERR_PARAM;
+    if (!dev) return BMI270_ERR_PARAM;
+
+    /* dev->spi stays NULL until init succeeds, so reads cannot use unset
+     * divisors */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !cfg) return BMI270_ERR_PARAM;
     if (!spi->cs_low || !spi->cs_high || !spi->xfer || !spi->delay_ms) {
         return BMI270_ERR_PARAM;
     }
@@ -142,9 +149,6 @@ bmi270_err_t bmi270_init(bmi270_t *dev,
         return BMI270_ERR_PARAM;
     if (cfg->gyro_odr < BMI270_ODR_25HZ || cfg->gyro_odr > BMI270_ODR_1600HZ)
         return BMI270_ERR_PARAM;
-
-    /* Stays NULL until init succeeds, so reads cannot use unset divisors */
-    dev->spi = NULL;
 
     /* Soft reset */
     reg_write(spi, BMI270_REG_CMD, BMI270_CMD_SOFTRESET);

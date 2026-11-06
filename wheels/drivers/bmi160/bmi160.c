@@ -92,26 +92,9 @@ static void delay_ms(const bmi160_t *dev, uint32_t ms)
 
 /* ---------- API ---------- */
 
-bmi160_err_t bmi160_init(bmi160_t *dev, const bmi160_i2c_t *i2c,
-                         const bmi160_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bmi160_err_t bring_up(const bmi160_t *dev, const bmi160_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg) {
-        return BMI160_ERR_PARAM;
-    }
-    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms) {
-        return BMI160_ERR_PARAM;
-    }
-
-    int acc_idx = accel_range_to_idx(cfg->accel_range);
-    int gyr_idx = gyro_range_to_idx(cfg->gyro_range);
-    if (acc_idx < 0 || gyr_idx < 0) {
-        return BMI160_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Read and verify chip ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1)) {
@@ -141,6 +124,42 @@ bmi160_err_t bmi160_init(bmi160_t *dev, const bmi160_i2c_t *i2c,
     /* Configure gyroscope range */
     if (!write_reg(dev, REG_GYR_RANGE, (uint8_t)cfg->gyro_range)) {
         return BMI160_ERR_I2C;
+    }
+
+    return BMI160_OK;
+}
+
+bmi160_err_t bmi160_init(bmi160_t *dev, const bmi160_i2c_t *i2c,
+                         const bmi160_cfg_t *cfg)
+{
+    if (!dev) {
+        return BMI160_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no sensitivity */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) {
+        return BMI160_ERR_PARAM;
+    }
+    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms) {
+        return BMI160_ERR_PARAM;
+    }
+
+    int acc_idx = accel_range_to_idx(cfg->accel_range);
+    int gyr_idx = gyro_range_to_idx(cfg->gyro_range);
+    if (acc_idx < 0 || gyr_idx < 0) {
+        return BMI160_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bmi160_err_t err = bring_up(dev, cfg);
+    if (err != BMI160_OK) {
+        dev->i2c = NULL;
+        return err;
     }
 
     /* Store sensitivity for data conversion */
