@@ -94,6 +94,8 @@ static bool mpu_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
 {
     (void)ctx; (void)dev_addr;
     mpu_op_count++;
+    /* DEVICE_RESET clears itself and leaves the chip asleep */
+    if (reg == 0x6B && (val & 0x80u)) val = 0x40u;
     mpu_regs[reg] = val;
     return true;
 }
