@@ -51,6 +51,7 @@ btn_handler_err_t btn_handler_register(btn_handler_t *bh, uint8_t id,
     e->last_state     = false;
     e->pressed        = false;
     e->press_tick     = 0;
+    e->low_tick       = 0;
     e->release_tick   = 0;
     e->click_count    = 0;
     e->long_press_fired = false;
@@ -103,11 +104,16 @@ static void process_button(btn_handler_t *bh, btn_entry_t *btn)
             btn->repeat_tick = now;
             bh->callback(bh->callback_ctx, btn->id, BTN_EVENT_PRESS);
         }
-    } else if (!raw && btn->last_state) {
-        /* raw went low */
-        btn->last_state = false;
-
-        if (btn->pressed) {
+    } else if (raw) {
+        /* held; a low run that ended here was a bounce */
+        btn->last_state = true;
+    } else if (btn->pressed) {
+        if (btn->last_state) {
+            /* raw went low; start debounce */
+            btn->last_state = false;
+            btn->low_tick = now;
+        }
+        if (now - btn->low_tick >= bh->debounce_ticks) {
             /* debounced release */
             btn->pressed = false;
             bh->callback(bh->callback_ctx, btn->id, BTN_EVENT_RELEASE);
@@ -122,10 +128,11 @@ static void process_button(btn_handler_t *bh, btn_entry_t *btn)
                 /* long-press already fired -- suppress click */
                 btn->click_count = 0;
             }
-        } else {
-            /* released before debounce completed -- bounce, ignore */
         }
-    } else if (!raw && !btn->last_state) {
+    } else if (btn->last_state) {
+        /* released before debounce completed -- bounce, ignore */
+        btn->last_state = false;
+    } else {
         /* still released -- check pending click timeout */
         if (btn->click_count > 0) {
             uint32_t idle = now - btn->release_tick;
@@ -144,7 +151,7 @@ static void process_button(btn_handler_t *bh, btn_entry_t *btn)
     }
 
     /* --- long-press / repeat while held --- */
-    if (btn->pressed) {
+    if (btn->pressed && raw) {
         uint32_t held = now - btn->press_tick;
         if (!btn->long_press_fired && held >= bh->long_press_ticks) {
             btn->long_press_fired = true;

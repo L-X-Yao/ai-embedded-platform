@@ -64,6 +64,7 @@ typedef struct {
     bool         last_state;
     bool         pressed;
     uint32_t     press_tick;
+    uint32_t     low_tick;
     uint32_t     release_tick;
     uint8_t      click_count;
     bool         long_press_fired;

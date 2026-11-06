@@ -175,7 +175,7 @@ TEST(test_simple_press_release)
     /* release */
     reset_events();
     mock_states[0] = false;
-    tick_n(&bh, 1);
+    tick_n(&bh, T_DEBOUNCE + 1);
     ASSERT_TRUE(has_event(1, BTN_EVENT_RELEASE));
 }
 
@@ -191,7 +191,7 @@ TEST(test_click_event)
 
     /* release */
     mock_states[0] = false;
-    tick_n(&bh, 1);
+    tick_n(&bh, T_DEBOUNCE + 1);
 
     /* wait for double-click window to expire */
     reset_events();
@@ -212,13 +212,13 @@ TEST(test_double_click_event)
     mock_states[0] = true;
     tick_n(&bh, T_DEBOUNCE + 1);
     mock_states[0] = false;
-    tick_n(&bh, 1);
+    tick_n(&bh, T_DEBOUNCE + 1);
 
     /* second press + release within double-click window */
     mock_states[0] = true;
     tick_n(&bh, T_DEBOUNCE + 1);
     mock_states[0] = false;
-    tick_n(&bh, 1);
+    tick_n(&bh, T_DEBOUNCE + 1);
 
     /* wait for timeout */
     reset_events();
@@ -298,7 +298,7 @@ TEST(test_release_after_long_press_no_click)
     /* release */
     reset_events();
     mock_states[0] = false;
-    tick_n(&bh, 1);
+    tick_n(&bh, T_DEBOUNCE + 1);
 
     ASSERT_TRUE(has_event(1, BTN_EVENT_RELEASE));
 
@@ -411,7 +411,7 @@ TEST(test_triple_click)
         mock_states[0] = true;
         tick_n(&bh, T_DEBOUNCE + 1);
         mock_states[0] = false;
-        tick_n(&bh, 1);
+        tick_n(&bh, T_DEBOUNCE + 1);
     }
 
     /* wait for timeout */
@@ -470,6 +470,98 @@ TEST(test_timing_config)
     ASSERT_TRUE(has_event(1, BTN_EVENT_LONG_PRESS));
 }
 
+/* Hold or release for n ticks. */
+static void level_for(btn_handler_t *bh, bool pressed, int n)
+{
+    mock_states[0] = pressed;
+    tick_n(bh, n);
+}
+
+/* A low run shorter than debounce_ticks during a hold is a bounce, the same
+ * as a high run that short before a press. */
+TEST(test_short_low_during_hold_is_no_release)
+{
+    btn_handler_t bh;
+    init_default(&bh);
+    btn_handler_register(&bh, 1, mock_read_0, NULL);
+
+    level_for(&bh, true, T_DEBOUNCE + 1);
+    level_for(&bh, false, T_DEBOUNCE);
+    level_for(&bh, true, 5);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 0);
+
+    level_for(&bh, false, 1);
+    level_for(&bh, true, 5);
+    level_for(&bh, false, T_DEBOUNCE + 1 + T_DBLCLICK + 1);
+
+    ASSERT_EQ(count_events(1, BTN_EVENT_PRESS), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_CLICK), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_DOUBLE_CLICK), 0);
+}
+
+TEST(test_release_fires_once_low_for_debounce_ticks)
+{
+    btn_handler_t bh;
+    init_default(&bh);
+    btn_handler_register(&bh, 1, mock_read_0, NULL);
+
+    level_for(&bh, true, T_DEBOUNCE + 1);
+    level_for(&bh, false, T_DEBOUNCE);
+    ASSERT_FALSE(has_event(1, BTN_EVENT_RELEASE));
+    level_for(&bh, false, 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 1);
+}
+
+/* A 150-tick hold with one low sample at tick 94. */
+TEST(test_long_press_survives_a_low_sample)
+{
+    btn_handler_t bh;
+    init_default(&bh);
+    btn_handler_register(&bh, 1, mock_read_0, NULL);
+
+    level_for(&bh, true, 94);
+    level_for(&bh, false, 1);
+    level_for(&bh, true, 55);
+    level_for(&bh, false, T_DEBOUNCE + 1 + T_DBLCLICK + 1);
+
+    ASSERT_EQ(count_events(1, BTN_EVENT_PRESS), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_LONG_PRESS), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_CLICK), 0);
+    ASSERT_EQ(count_events(1, BTN_EVENT_DOUBLE_CLICK), 0);
+}
+
+/* Let go one tick before the threshold: the ticks the release takes to
+ * settle are not held time. */
+TEST(test_no_long_press_while_a_release_settles)
+{
+    btn_handler_t bh;
+    init_default(&bh);
+    btn_handler_register(&bh, 1, mock_read_0, NULL);
+
+    level_for(&bh, true, T_LONG_PRESS);
+    level_for(&bh, false, T_DEBOUNCE + 1 + T_DBLCLICK + 1);
+
+    ASSERT_EQ(count_events(1, BTN_EVENT_LONG_PRESS), 0);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_CLICK), 1);
+}
+
+TEST(test_no_debounce_releases_on_the_first_low_sample)
+{
+    btn_handler_t bh;
+    reset_events();
+    mock_states[0] = false;
+    btn_handler_init(&bh, test_callback, NULL, 0, T_LONG_PRESS, T_DBLCLICK, 0);
+    btn_handler_register(&bh, 1, mock_read_0, NULL);
+
+    level_for(&bh, true, 2);
+    ASSERT_EQ(count_events(1, BTN_EVENT_PRESS), 1);
+    level_for(&bh, false, 1);
+    ASSERT_EQ(count_events(1, BTN_EVENT_RELEASE), 1);
+}
+
 TEST_MAIN("button_handler")
     RUN(test_init_ok);
     RUN(test_init_null_handler);
@@ -495,4 +587,9 @@ TEST_MAIN("button_handler")
     RUN(test_triple_click);
     RUN(test_repeat_zero_no_repeat);
     RUN(test_timing_config);
+    RUN(test_short_low_during_hold_is_no_release);
+    RUN(test_release_fires_once_low_for_debounce_ticks);
+    RUN(test_long_press_survives_a_low_sample);
+    RUN(test_no_long_press_while_a_release_settles);
+    RUN(test_no_debounce_releases_on_the_first_low_sample);
 TEST_MAIN_END()
