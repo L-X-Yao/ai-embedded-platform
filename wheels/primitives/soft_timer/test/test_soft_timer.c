@@ -336,6 +336,67 @@ TEST(test_repeat_stops_from_callback)
     ASSERT_FALSE(soft_timer_is_active(&mgr, self_id));
 }
 
+static void tick_n(uint32_t n)
+{
+    for (uint32_t i = 0; i < n; i++)
+    {
+        soft_timer_tick(&mgr);
+    }
+}
+
+/* A restarted one-shot waits a full period, whatever came before. */
+TEST(test_restart_fired_one_shot)
+{
+    setup();
+    int id = soft_timer_create(&mgr, 100, SOFT_TIMER_ONE_SHOT, test_callback, NULL);
+    soft_timer_start(&mgr, id);
+    tick_n(100);
+    ASSERT_EQ(cb_count, 1);
+    tick_n(100);
+
+    ASSERT_EQ(soft_timer_start(&mgr, id), SOFT_TIMER_OK);
+    tick_n(99);
+    ASSERT_EQ(cb_count, 1);
+    ASSERT_TRUE(soft_timer_is_active(&mgr, id));
+    tick_n(1);
+    ASSERT_EQ(cb_count, 2);
+    ASSERT_FALSE(soft_timer_is_active(&mgr, id));
+}
+
+/* start alone re-arms from the callback too, again for a full period. */
+static void restart_callback(void *ctx)
+{
+    (void)ctx;
+    self_fires++;
+    soft_timer_start(&mgr, self_id);
+}
+
+TEST(test_one_shot_restarts_from_callback)
+{
+    setup();
+    self_fires = 0;
+    self_id = soft_timer_create(&mgr, 3, SOFT_TIMER_ONE_SHOT, restart_callback, NULL);
+    soft_timer_start(&mgr, self_id);
+    tick_n(20);
+    ASSERT_EQ(self_fires, 6);
+}
+
+/* stop then start is a pause: the rest of the period stays. */
+TEST(test_start_keeps_remaining_after_stop)
+{
+    setup();
+    int id = soft_timer_create(&mgr, 10, SOFT_TIMER_ONE_SHOT, test_callback, NULL);
+    soft_timer_start(&mgr, id);
+    tick_n(4);
+    soft_timer_stop(&mgr, id);
+    tick_n(50);
+    soft_timer_start(&mgr, id);
+    tick_n(5);
+    ASSERT_EQ(cb_count, 0);
+    tick_n(1);
+    ASSERT_EQ(cb_count, 1);
+}
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -357,5 +418,8 @@ TEST_MAIN("soft_timer")
     RUN(test_destroyed_slot_refuses_start_stop_reset);
     RUN(test_one_shot_rearms_from_callback);
     RUN(test_repeat_stops_from_callback);
+    RUN(test_restart_fired_one_shot);
+    RUN(test_one_shot_restarts_from_callback);
+    RUN(test_start_keeps_remaining_after_stop);
 TEST_MAIN_END()
 

@@ -71,7 +71,8 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
 /** Release a timer slot for reuse. @thread_safe: no @isr_safe: no */
 soft_timer_err_t soft_timer_destroy(soft_timer_mgr_t *mgr, int id);
 
-/** @thread_safe: no @isr_safe: yes */
+/** Start or resume.  A stopped timer keeps what was left of its period; a
+ *  fired one-shot gets a full period.  @thread_safe: no @isr_safe: yes */
 soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id);
 
 /** @thread_safe: no @isr_safe: yes */
