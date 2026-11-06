@@ -27,6 +27,7 @@ typedef enum {
     ENC28J60_ERR_TIMEOUT   = -3,
     ENC28J60_ERR_SIZE      = -4,
     ENC28J60_ERR_NO_PACKET = -5,
+    ENC28J60_ERR_TX_ABORT  = -6,   /* the chip gave up on the frame */
 } enc28j60_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -65,6 +66,8 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
 
 /**
  * Transmit a single Ethernet frame.
+ * Returns ENC28J60_ERR_TX_ABORT if the chip aborted the frame, for example
+ * after too many collisions. The frame was not delivered and may be sent again.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,

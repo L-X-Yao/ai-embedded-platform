@@ -534,6 +534,63 @@ TEST(test_init_sets_macon4_defer)
     ASSERT_EQ(model.regs[2][ENC_MACON4], 0x40);
 }
 
+/* --- 17. Transmit abort --- */
+
+/* DS39662C p.42: TXRTS clears when "the packet is finished transmitting or is
+ * aborted", and "To check if the packet was successfully transmitted, the
+ * ESTAT.TXABRT bit should be read." */
+TEST(test_send_reports_tx_abort)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.tx_end_estat = ENC_ESTAT_TXABRT;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_ERR_TX_ABORT);
+}
+
+/* p.70: "the host controller should clear the LATECOL (if set) and TXABRT bits
+ * so that future aborts can be detected accurately." */
+TEST(test_send_after_abort_succeeds)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.tx_end_estat = ENC_ESTAT_TXABRT | ENC_ESTAT_LATECOL;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_ERR_TX_ABORT);
+
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_OK);
+    ASSERT_FALSE(model.common[ENC_ESTAT] &
+                 (ENC_ESTAT_TXABRT | ENC_ESTAT_LATECOL));
+}
+
+/* A flag left from before this frame says nothing about this frame */
+TEST(test_send_ignores_stale_tx_abort)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.common[ENC_ESTAT] |= ENC_ESTAT_TXABRT;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_OK);
+}
+
+/* Register 12-1: BFC clears the R/C bits and leaves the R bits alone */
+TEST(test_model_bfc_clears_only_rc_bits_of_estat)
+{
+    setup_and_init();
+    model.common[ENC_ESTAT] |= ENC_ESTAT_TXABRT;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_BFC | ENC_ESTAT);
+    model_spi.xfer(model_spi.ctx, 0xFF);
+    model_spi.cs_high(model_spi.ctx);
+
+    ASSERT_FALSE(model.common[ENC_ESTAT] & ENC_ESTAT_TXABRT);
+    ASSERT_TRUE(model.common[ENC_ESTAT] & ENC_ESTAT_CLKRDY);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -556,4 +613,8 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_model_dummy_byte_only_on_mac_mii);
     RUN(test_init_disables_half_duplex_loopback);
     RUN(test_init_sets_macon4_defer);
+    RUN(test_send_reports_tx_abort);
+    RUN(test_send_after_abort_succeeds);
+    RUN(test_send_ignores_stale_tx_abort);
+    RUN(test_model_bfc_clears_only_rc_bits_of_estat);
 TEST_MAIN_END()
