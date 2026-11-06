@@ -221,6 +221,22 @@ TEST(test_urc_mqtt_rx)
     ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "hello world", 11) == 0);
 }
 
+/* The manual's direct-mode sample, p.248: <- (URC) +MSUB: "mqtt/topic",9 byte,
+ * SSSSddddd. The payload has no quotes and the length carries the word byte. */
+TEST(test_urc_mqtt_rx_manual_sample)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"mqtt/topic\",9 byte,SSSSddddd");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "mqtt/topic") == 0);
+    ASSERT_EQ(9, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "SSSSddddd", 9) == 0);
+}
+
 TEST(test_urc_disconnect)
 {
     air780eg_t dev;
@@ -232,6 +248,13 @@ TEST(test_urc_disconnect)
     ASSERT_EQ(1, g_disconnect_count);
 }
 
+/*
+ * +CGEV: NW DEACT 1 here and PDP: DEACT below are the driver's strings, not the
+ * manual's. The manual gives +CGEV: NW PDN DEACT 1 (p.138), +CGEV: ME PDN DEACT
+ * (p.137), +PDP DEACT (p.249) and +PDP:DEACT (p.173), and the driver fires on
+ * none of them. It is held back, so these tests stay until that is decided: they
+ * only show the callback plumbing, not that a real URC reaches it.
+ */
 TEST(test_urc_pdp_deact)
 {
     air780eg_t dev;
@@ -453,7 +476,8 @@ TEST(test_msub_long_topic_is_dropped)
 
 TEST(test_urc_closed_bare)
 {
-    /* Bare "CLOSED" line triggers disconnect callback via starts_with check */
+    /* Bare "CLOSED" line, the manual's TCP drop URC (p.249), triggers the
+     * disconnect callback via starts_with check */
     air780eg_t dev;
     mock_reset();
     cb_reset();
@@ -796,6 +820,7 @@ TEST_MAIN("air780eg")
     RUN(test_cmd_busy);
     RUN(test_cmd_custom_expect);
     RUN(test_urc_mqtt_rx);
+    RUN(test_urc_mqtt_rx_manual_sample);
     RUN(test_urc_disconnect);
     RUN(test_urc_pdp_deact);
     RUN(test_urc_rdy);
