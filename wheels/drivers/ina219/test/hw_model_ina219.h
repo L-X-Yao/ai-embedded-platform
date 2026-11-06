@@ -6,7 +6,7 @@
  * - 6 registers (16-bit big-endian), mapped to pairs in hw_reg_model_t
  * - 0x00 Config (R/W), bit 15 is self-clearing reset
  * - 0x01 Shunt Voltage (read-only, signed 16-bit, LSB = 10uV)
- * - 0x02 Bus Voltage (read-only, bits [15:3], LSB = 4mV)
+ * - 0x02 Bus Voltage (read-only, bits [15:3], LSB = 4mV; bit 1 CNVR, bit 0 OVF)
  * - 0x03 Power (read-only)
  * - 0x04 Current (read-only)
  * - 0x05 Calibration (R/W)
@@ -39,6 +39,10 @@
 /* Default config after POR: 0x399F */
 #define INA219_CONFIG_DEFAULT_H 0x39
 #define INA219_CONFIG_DEFAULT_L 0x9F
+
+/* Bus Voltage flags, Figure 24 p23. Bit 2 is unused. */
+#define INA219_BUS_CNVR         0x02u
+#define INA219_BUS_OVF          0x01u
 
 /* --- Simulated physical environment --- */
 typedef struct {
@@ -86,6 +90,10 @@ static bool ina219_model_i2c_read_regs(void *ctx, uint8_t dev_addr,
     for (uint16_t i = 0; i < len && (base + i) < HW_MODEL_REG_COUNT; i++) {
         buf[i] = m->regs[base + i];
     }
+    /* p23: CNVR clears on "Reading the Power Register" */
+    if (reg == 0x03) {
+        m->regs[INA219_REG_BUS_V_L] &= (uint8_t)~INA219_BUS_CNVR;
+    }
     return true;
 }
 
@@ -102,16 +110,38 @@ static void ina219_model_on_config_h_write(void *user, uint8_t reg,
     }
 }
 
-/* Compute simulated output registers from calibration + true values */
+/* MODE 000 is power-down and 100 is ADC off: neither one converts */
+static bool ina219_model_adc_off(const hw_reg_model_t *hw)
+{
+    uint8_t mode = hw->regs[INA219_REG_CONFIG_L] & 0x07u;
+    return mode == 0x00u || mode == 0x04u;
+}
+
+/* Callback: the mode field is in the config low byte. p23: CNVR clears on
+ * "Writing a new mode ... (except for Power-Down or Disable)". */
+static void ina219_model_on_config_l_write(void *user, uint8_t reg,
+                                           uint8_t old_val, uint8_t new_val)
+{
+    (void)reg; (void)old_val; (void)new_val;
+    ina219_model_t *m = (ina219_model_t *)user;
+    if (!ina219_model_adc_off(&m->hw)) {
+        m->hw.regs[INA219_REG_BUS_V_L] &= (uint8_t)~INA219_BUS_CNVR;
+    }
+}
+
+/* One conversion: output registers from calibration + true values */
 static void ina219_model_update_outputs(ina219_model_t *m)
 {
+    if (ina219_model_adc_off(&m->hw)) return;
+
+    /* p23: CNVR "is set after all conversions, averaging, and multiplications
+     * are complete", OVF "when the Power or Current calculations are out of
+     * range" */
+    uint8_t flags = INA219_BUS_CNVR;
+
     /* Shunt voltage register (read-only) */
     m->hw.regs[INA219_REG_SHUNT_V_H] = (uint8_t)(m->true_shunt_uv_x10 >> 8);
     m->hw.regs[INA219_REG_SHUNT_V_L] = (uint8_t)(m->true_shunt_uv_x10 & 0xFF);
-
-    /* Bus voltage register: value in bits [15:3], bits [2:1] unused, bit 0 OVF */
-    m->hw.regs[INA219_REG_BUS_V_H] = (uint8_t)(m->true_bus_mv_x4 >> 8);
-    m->hw.regs[INA219_REG_BUS_V_L] = (uint8_t)(m->true_bus_mv_x4 & 0xFF);
 
     /* Current and power depend on calibration register */
     uint16_t cal = (uint16_t)((uint16_t)m->hw.regs[INA219_REG_CAL_H] << 8 |
@@ -119,6 +149,9 @@ static void ina219_model_update_outputs(ina219_model_t *m)
     if (cal > 0) {
         int32_t shunt_raw = (int16_t)m->true_shunt_uv_x10;
         int32_t current_raw = (shunt_raw * (int32_t)cal) / 4096;
+        if (current_raw > 32767 || current_raw < -32768) {
+            flags |= INA219_BUS_OVF;
+        }
         int16_t current_reg = (int16_t)current_raw;
         m->hw.regs[INA219_REG_CURRENT_H] = (uint8_t)(current_reg >> 8);
         m->hw.regs[INA219_REG_CURRENT_L] = (uint8_t)(current_reg & 0xFF);
@@ -126,11 +159,20 @@ static void ina219_model_update_outputs(ina219_model_t *m)
         uint16_t bus_raw = (uint16_t)(m->true_bus_mv_x4 >> 3);
         int32_t power_raw = ((int32_t)(current_reg < 0 ? -current_reg : current_reg)
                              * (int32_t)bus_raw) / 5000;
+        if (power_raw > 65535) {
+            flags |= INA219_BUS_OVF;
+        }
         uint16_t power_reg = (uint16_t)(power_raw < 0 ? 0 :
                               power_raw > 65535 ? 65535 : power_raw);
         m->hw.regs[INA219_REG_POWER_H] = (uint8_t)(power_reg >> 8);
         m->hw.regs[INA219_REG_POWER_L] = (uint8_t)(power_reg & 0xFF);
     }
+
+    /* Bus voltage register: value in bits [15:3], bit 2 unused, bit 1 CNVR,
+     * bit 0 OVF */
+    m->hw.regs[INA219_REG_BUS_V_H] = (uint8_t)(m->true_bus_mv_x4 >> 8);
+    m->hw.regs[INA219_REG_BUS_V_L] =
+        (uint8_t)((m->true_bus_mv_x4 & 0xF8u) | flags);
 }
 
 static void ina219_model_init(ina219_model_t *m)
@@ -161,6 +203,10 @@ static void ina219_model_init(ina219_model_t *m)
     /* Write callback for reset bit */
     hw_model_set_on_write(&m->hw, INA219_REG_CONFIG_H,
                           ina219_model_on_config_h_write);
+
+    /* Write callback for the mode field */
+    hw_model_set_on_write(&m->hw, INA219_REG_CONFIG_L,
+                          ina219_model_on_config_l_write);
 
     /* Default: 12V bus, 100mA through 0.1 ohm -> 10mV shunt
      * Shunt voltage: 10mV = 1000 x 10uV, so raw = 1000 */
