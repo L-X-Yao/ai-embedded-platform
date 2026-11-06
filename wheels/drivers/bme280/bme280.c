@@ -81,6 +81,97 @@ static bme280_err_t read_calibration(bme280_t *dev)
     return BME280_OK;
 }
 
+/* Codes run 0..5, and all three SKIP would leave nothing to measure */
+static bool osrs_valid(bme280_oversampling_t osrs_t, bme280_oversampling_t osrs_p,
+                       bme280_oversampling_t osrs_h)
+{
+    if ((unsigned)osrs_t > 5 || (unsigned)osrs_p > 5 || (unsigned)osrs_h > 5)
+    {
+        return false;
+    }
+    return osrs_t != BME280_OVERSAMPLING_SKIP || osrs_p != BME280_OVERSAMPLING_SKIP
+           || osrs_h != BME280_OVERSAMPLING_SKIP;
+}
+
+/* Sets t_fine, which pressure and humidity compensation use */
+static void compensate_temperature(bme280_t *dev, int32_t adc_t)
+{
+    int32_t var1 = (int32_t)(((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
+                    * (int64_t)dev->calib.dig_t2 >> 11);
+    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
+    int32_t var2 = (int32_t)(((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3 >> 14);
+    dev->t_fine = var1 + var2;
+}
+
+/* adc_t and adc_p: 20 bits, MSB first, xlsb in bits 7:4 */
+static int32_t adc_20bit(const uint8_t *buf)
+{
+    return (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
+}
+
+/*
+ * One forced measurement, leaving the 8 data bytes from 0xF7 in buf. A skipped
+ * channel holds 0x80000, or 0x8000 for humidity (manual Tables 20, 23, 24). That
+ * is a placeholder, not a measurement, so it must not be compensated.
+ */
+static bme280_err_t measure(const bme280_t *dev, bme280_oversampling_t osrs_t,
+                            bme280_oversampling_t osrs_p,
+                            bme280_oversampling_t osrs_h, uint8_t *buf)
+{
+    /* ctrl_hum must be written before ctrl_meas per datasheet */
+    uint8_t ctrl_hum = (uint8_t)(osrs_h & 0x07);
+    if (!write_reg(dev, REG_CTRL_HUM, ctrl_hum))
+    {
+        return BME280_ERR_I2C;
+    }
+
+    uint8_t ctrl = (uint8_t)(((osrs_t & 0x07) << 5)
+                             | ((osrs_p & 0x07) << 2) | MODE_FORCED);
+    if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
+    {
+        return BME280_ERR_I2C;
+    }
+
+    /* Wait for measurement to complete */
+    for (int tries = 0; tries < 500; tries++)
+    {
+        uint8_t status;
+        if (!read_regs(dev, REG_STATUS, &status, 1))
+        {
+            return BME280_ERR_I2C;
+        }
+        if ((status & 0x08) == 0)
+        {
+            break;
+        }
+        if (tries == 499)
+        {
+            return BME280_ERR_TIMEOUT;
+        }
+    }
+
+    /* Read all data: press(3) + temp(3) + hum(2) = 8 bytes from 0xF7 */
+    if (!read_regs(dev, REG_PRESS_MSB, buf, 8))
+    {
+        return BME280_ERR_I2C;
+    }
+    return BME280_OK;
+}
+
+/* Temperature alone at x1, for reads that skip it and so cannot set t_fine */
+static bme280_err_t measure_temperature(bme280_t *dev)
+{
+    uint8_t buf[8];
+    bme280_err_t err = measure(dev, BME280_OVERSAMPLING_1, BME280_OVERSAMPLING_SKIP,
+                               BME280_OVERSAMPLING_SKIP, buf);
+    if (err != BME280_OK)
+    {
+        return err;
+    }
+    compensate_temperature(dev, adc_20bit(&buf[3]));
+    return BME280_OK;
+}
+
 bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
                          const bme280_cfg_t *cfg)
 {
@@ -89,8 +180,7 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
         return BME280_ERR_PARAM;
     }
 
-    if ((unsigned)cfg->osrs_t > 5 || (unsigned)cfg->osrs_p > 5
-        || (unsigned)cfg->osrs_h > 5)
+    if (!osrs_valid(cfg->osrs_t, cfg->osrs_p, cfg->osrs_h))
     {
         return BME280_ERR_PARAM;
     }
@@ -122,6 +212,17 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
         return BME280_ERR_I2C;
     }
 
+    /* Pressure and humidity compensation need t_fine, and reads that skip
+     * temperature cannot set it, so measure it once here for them to reuse. */
+    if (cfg->osrs_t == BME280_OVERSAMPLING_SKIP)
+    {
+        err = measure_temperature(dev);
+        if (err != BME280_OK)
+        {
+            return err;
+        }
+    }
+
     /* ctrl_hum must be written before ctrl_meas to take effect */
     uint8_t ctrl_hum = (uint8_t)(dev->cfg.osrs_h & 0x07);
     if (!write_reg(dev, REG_CTRL_HUM, ctrl_hum))
@@ -130,16 +231,6 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
     }
 
     return BME280_OK;
-}
-
-static int32_t compensate_temperature(bme280_t *dev, int32_t adc_t)
-{
-    int32_t var1 = (int32_t)(((int64_t)(adc_t >> 3) - ((int64_t)dev->calib.dig_t1 * 2))
-                    * (int64_t)dev->calib.dig_t2 >> 11);
-    int64_t tmp = (int64_t)(adc_t >> 4) - (int64_t)dev->calib.dig_t1;
-    int32_t var2 = (int32_t)(((tmp * tmp) >> 12) * (int64_t)dev->calib.dig_t3 >> 14);
-    dev->t_fine = var1 + var2;
-    return (dev->t_fine * 5 + 128) >> 8;
 }
 
 static double compensate_pressure_f(const bme280_t *dev, int32_t adc_p)
@@ -187,58 +278,43 @@ bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
         return BME280_ERR_PARAM;
     }
 
-    /* ctrl_hum must be written before ctrl_meas per datasheet */
-    uint8_t ctrl_hum = (uint8_t)(dev->cfg.osrs_h & 0x07);
-    if (!write_reg(dev, REG_CTRL_HUM, ctrl_hum))
-    {
-        return BME280_ERR_I2C;
-    }
+    bool temp  = dev->cfg.osrs_t != BME280_OVERSAMPLING_SKIP;
+    bool press = dev->cfg.osrs_p != BME280_OVERSAMPLING_SKIP;
+    bool hum   = dev->cfg.osrs_h != BME280_OVERSAMPLING_SKIP;
+    bme280_err_t err;
 
-    uint8_t ctrl = (uint8_t)(((dev->cfg.osrs_t & 0x07) << 5)
-                             | ((dev->cfg.osrs_p & 0x07) << 2) | MODE_FORCED);
-    if (!write_reg(dev, REG_CTRL_MEAS, ctrl))
+    /* bme280_set_oversampling can skip temperature before anything measured
+     * it. t_fine 0 is also a real 0.00 C, which only costs a second measurement. */
+    if (!temp && dev->t_fine == 0)
     {
-        return BME280_ERR_I2C;
-    }
-
-    /* Wait for measurement to complete */
-    for (int tries = 0; tries < 500; tries++)
-    {
-        uint8_t status;
-        if (!read_regs(dev, REG_STATUS, &status, 1))
+        err = measure_temperature(dev);
+        if (err != BME280_OK)
         {
-            return BME280_ERR_I2C;
-        }
-        if ((status & 0x08) == 0)
-        {
-            break;
-        }
-        if (tries == 499)
-        {
-            return BME280_ERR_TIMEOUT;
+            return err;
         }
     }
 
-    /* Read all data: press(3) + temp(3) + hum(2) = 8 bytes from 0xF7 */
     uint8_t buf[8];
-    if (!read_regs(dev, REG_PRESS_MSB, buf, 8))
+    err = measure(dev, dev->cfg.osrs_t, dev->cfg.osrs_p, dev->cfg.osrs_h, buf);
+    if (err != BME280_OK)
     {
-        return BME280_ERR_I2C;
+        return err;
     }
 
-    int32_t adc_p = (int32_t)(((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] << 4) | ((uint32_t)buf[2] >> 4));
-    int32_t adc_t = (int32_t)(((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | ((uint32_t)buf[5] >> 4));
-    int32_t adc_h = (int32_t)(((uint32_t)buf[6] << 8) | (uint32_t)buf[7]);
-
-    /* Temperature must be compensated first to set t_fine */
-    int32_t temp_raw = compensate_temperature(dev, adc_t);
+    /* Temperature must be compensated first to set t_fine. When it is skipped,
+     * t_fine still holds the last one measured. */
+    if (temp)
+    {
+        compensate_temperature(dev, adc_20bit(&buf[3]));
+    }
+    int32_t temp_raw = (dev->t_fine * 5 + 128) >> 8;
     out->temperature_c = (float)temp_raw / 100.0f;
 
-    out->pressure_pa = (float)compensate_pressure_f(dev, adc_p);
+    out->pressure_pa = press ? (float)compensate_pressure_f(dev, adc_20bit(&buf[0])) : 0.0f;
 
     /* Humidity: result is Q22.10 fixed point (value / 1024 = %RH) */
-    uint32_t hum_raw = compensate_humidity(dev, adc_h);
-    out->humidity_pct = (float)hum_raw / 1024.0f;
+    int32_t adc_h = (int32_t)(((uint32_t)buf[6] << 8) | (uint32_t)buf[7]);
+    out->humidity_pct = hum ? (float)compensate_humidity(dev, adc_h) / 1024.0f : 0.0f;
 
     INVARIANT(dev->i2c != NULL);
     return BME280_OK;
@@ -253,7 +329,7 @@ bme280_err_t bme280_set_oversampling(bme280_t *dev,
     {
         return BME280_ERR_PARAM;
     }
-    if ((unsigned)osrs_t > 5 || (unsigned)osrs_p > 5 || (unsigned)osrs_h > 5)
+    if (!osrs_valid(osrs_t, osrs_p, osrs_h))
     {
         return BME280_ERR_PARAM;
     }

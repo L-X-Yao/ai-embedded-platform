@@ -369,6 +369,49 @@ TEST(test_pressure_large_path)
     ASSERT_TRUE(data.pressure_pa == data.pressure_pa);
 }
 
+/* ---------- skipped temperature: the extra measurement can fail ---------- */
+
+static const bme280_cfg_t skip_t_cfg = {
+    .addr   = BME280_ADDR_LOW,
+    .osrs_t = BME280_OVERSAMPLING_SKIP,
+    .osrs_p = BME280_OVERSAMPLING_1,
+    .osrs_h = BME280_OVERSAMPLING_1,
+};
+
+TEST(test_init_skip_temperature_i2c_fail)
+{
+    /* op0..op3 as in test_init_config_write_fail, then the measurement:
+     * write(CTRL_HUM)=op4, write(CTRL_MEAS)=op5, read(STATUS)=op6,
+     * read(PRESS_MSB x8)=op7. */
+    for (int op = 4; op <= 7; op++)
+    {
+        mock_reset();
+        mock_fail_at = op;
+        bme280_t d;
+        ASSERT_EQ(bme280_init(&d, &mock_i2c, &skip_t_cfg), BME280_ERR_I2C);
+    }
+}
+
+TEST(test_init_skip_temperature_timeout)
+{
+    mock_reset();
+    mock_regs[0xF3] = 0x08;   /* measuring stuck at 1 */
+    bme280_t d;
+    ASSERT_EQ(bme280_init(&d, &mock_i2c, &skip_t_cfg), BME280_ERR_TIMEOUT);
+}
+
+TEST(test_read_skip_temperature_measure_fail)
+{
+    /* Nothing has measured a temperature, so this read must, and that fails */
+    setup();
+    ASSERT_EQ(bme280_set_oversampling(&dev, BME280_OVERSAMPLING_SKIP,
+                                      BME280_OVERSAMPLING_1,
+                                      BME280_OVERSAMPLING_1), BME280_OK);
+    mock_fail_next = 1;
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_ERR_I2C);
+}
+
 TEST_MAIN("bme280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -396,4 +439,7 @@ TEST_MAIN("bme280")
     RUN(test_read_data_i2c_fail);
     RUN(test_pressure_var1_zero);
     RUN(test_pressure_large_path);
+    RUN(test_init_skip_temperature_i2c_fail);
+    RUN(test_init_skip_temperature_timeout);
+    RUN(test_read_skip_temperature_measure_fail);
 TEST_MAIN_END()

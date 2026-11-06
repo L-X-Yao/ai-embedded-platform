@@ -83,23 +83,29 @@ static void bme280_model_set_reference_calib(bme280_model_t *m)
     }
 }
 
-/* Write ADC values into data registers */
-static void bme280_model_set_adc_output(bme280_model_t *m)
+/* Write ADC values into data registers. A channel whose osrs field is 000 is
+ * skipped and reads 0x80000, or 0x8000 for humidity (Tables 20, 23, 24).
+ * ctrl_hum only takes effect at a ctrl_meas write, so it is read here. */
+static void bme280_model_set_adc_output(bme280_model_t *m, uint8_t ctrl_meas)
 {
+    uint8_t osrs_t = (uint8_t)(ctrl_meas >> 5);
+    uint8_t osrs_p = (uint8_t)((ctrl_meas >> 2) & 0x07);
+    uint8_t osrs_h = (uint8_t)(m->hw.regs[BME280_REG_CTRL_HUM] & 0x07);
+
     /* pressure: 0xF7..0xF9 (20-bit, MSB first) */
-    uint32_t p = (uint32_t)m->true_press_raw & 0xFFFFFu;
+    uint32_t p = osrs_p ? ((uint32_t)m->true_press_raw & 0xFFFFFu) : 0x80000u;
     m->hw.regs[0xF7] = (uint8_t)(p >> 12);
     m->hw.regs[0xF8] = (uint8_t)(p >> 4);
     m->hw.regs[0xF9] = (uint8_t)((p & 0x0F) << 4);
 
     /* temperature: 0xFA..0xFC (20-bit) */
-    uint32_t t = (uint32_t)m->true_temp_raw & 0xFFFFFu;
+    uint32_t t = osrs_t ? ((uint32_t)m->true_temp_raw & 0xFFFFFu) : 0x80000u;
     m->hw.regs[0xFA] = (uint8_t)(t >> 12);
     m->hw.regs[0xFB] = (uint8_t)(t >> 4);
     m->hw.regs[0xFC] = (uint8_t)((t & 0x0F) << 4);
 
     /* humidity: 0xFD..0xFE (16-bit, MSB first) */
-    uint16_t h = (uint16_t)m->true_hum_raw & 0xFFFF;
+    uint16_t h = osrs_h ? (uint16_t)(m->true_hum_raw & 0xFFFF) : (uint16_t)0x8000;
     m->hw.regs[0xFD] = (uint8_t)(h >> 8);
     m->hw.regs[0xFE] = (uint8_t)(h & 0xFF);
 }
@@ -113,7 +119,7 @@ static void bme280_model_on_ctrl_meas(void *user, uint8_t reg,
     uint8_t mode = new_val & 0x03;
     if (mode == 0x01 || mode == 0x03) {
         m->hw.regs[BME280_REG_STATUS] |= 0x08;
-        bme280_model_set_adc_output(m);
+        bme280_model_set_adc_output(m, new_val);
         m->hw.regs[BME280_REG_STATUS] = (uint8_t)(m->hw.regs[BME280_REG_STATUS] & ~0x08u);
         if (mode == 0x01) {
             m->hw.regs[BME280_REG_CTRL_MEAS] &= 0xFC;
