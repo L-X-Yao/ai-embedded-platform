@@ -17,7 +17,7 @@
 | host 单元测试 | 259/259，1431 个测试文件，11138 个 `TEST()` 用例 |
 | 63 项静态审计（命名、NULL 守卫、错误码、轮询延时、测试平衡等） | 259/259 |
 | 行覆盖率 ≥ 80% | 259/259（夜间门禁） |
-| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 |
+| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259，全部 931 个测试目标（每晚） |
 | 自动生成的 NULL 参数测试和边界值测试 | 全部公开 API |
 | ARM 交叉编译（Cortex-M4，`-Os`） | 259/259，体积表在 [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) |
 | libFuzzer | 57 个目标（42 个协议、11 个原语、3 个模块、1 个驱动），解析和编码都覆盖 |
