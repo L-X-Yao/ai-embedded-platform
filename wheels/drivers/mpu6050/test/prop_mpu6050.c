@@ -13,8 +13,16 @@
 #include "mock_i2c.h"
 #include "mpu6050.h"
 
+/* DEVICE_RESET clears itself, which the plain register mock would not do */
+static bool prop_write_reg(void *ctx, uint8_t addr, uint8_t reg, uint8_t val)
+{
+    if (reg == 0x6B && (val & 0x80))
+        val = 0x40;
+    return mock_i2c_write_reg(ctx, addr, reg, val);
+}
+
 static const mpu6050_i2c_t prop_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = prop_write_reg,
     .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,

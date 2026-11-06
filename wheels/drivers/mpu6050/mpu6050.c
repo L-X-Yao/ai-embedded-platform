@@ -22,6 +22,7 @@
 #define REG_WHO_AM_I      0x75
 
 #define PWR_RESET         0x80
+#define PWR_SLEEP         0x40
 #define PWR_CLKSEL_PLL_X  0x01
 
 /* DEVICE_RESET clears itself "once the reset is done" (register map p.42), with
@@ -75,6 +76,32 @@ static bool wait_reset_done(const mpu6050_t *dev)
     return false;
 }
 
+/* DEVICE_RESET, then a wake-up once it is done. Linux waits 100 ms there and
+ * Adafruit polls the bit. Asleep the chip reads zeros, which look like valid
+ * data, so the wake-up is read back. */
+static mpu6050_err_t reset_and_wake(const mpu6050_t *dev)
+{
+    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_RESET))
+    {
+        return MPU6050_ERR_I2C;
+    }
+    if (!wait_reset_done(dev))
+    {
+        return MPU6050_ERR_TIMEOUT;
+    }
+    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_CLKSEL_PLL_X))
+    {
+        return MPU6050_ERR_I2C;
+    }
+
+    uint8_t pwr = 0;
+    if (!read_regs(dev, REG_PWR_MGMT_1, &pwr, 1) || (pwr & PWR_SLEEP) != 0)
+    {
+        return MPU6050_ERR_I2C;
+    }
+    return MPU6050_OK;
+}
+
 mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
                            const mpu6050_cfg_t *cfg)
 {
@@ -87,14 +114,10 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
-    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_RESET))
+    mpu6050_err_t err = reset_and_wake(dev);
+    if (err != MPU6050_OK)
     {
-        return MPU6050_ERR_I2C;
-    }
-
-    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_CLKSEL_PLL_X))
-    {
-        return MPU6050_ERR_I2C;
+        return err;
     }
 
     uint8_t id = 0;
@@ -111,7 +134,7 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     {
         return MPU6050_ERR_PARAM;
     }
-    mpu6050_err_t err = write_ranges(dev);
+    err = write_ranges(dev);
     if (err != MPU6050_OK)
     {
         return err;
@@ -184,20 +207,13 @@ mpu6050_err_t mpu6050_reset(mpu6050_t *dev)
     {
         return MPU6050_ERR_PARAM;
     }
-    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_RESET))
-    {
-        return MPU6050_ERR_I2C;
-    }
 
     /* The reset leaves register 107 at 0x40, asleep, and both ranges at 0
      * (register map p.8), while dev keeps its scales: put back what init set. */
-    if (!wait_reset_done(dev))
+    mpu6050_err_t err = reset_and_wake(dev);
+    if (err != MPU6050_OK)
     {
-        return MPU6050_ERR_TIMEOUT;
-    }
-    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_CLKSEL_PLL_X))
-    {
-        return MPU6050_ERR_I2C;
+        return err;
     }
     return write_ranges(dev);
 }
