@@ -102,22 +102,9 @@ static mpu6050_err_t reset_and_wake(const mpu6050_t *dev)
     return MPU6050_OK;
 }
 
-mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
-                           const mpu6050_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static mpu6050_err_t bring_up(mpu6050_t *dev, const mpu6050_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return MPU6050_ERR_PARAM;
-    }
-    if (!i2c->write_reg || !i2c->read_regs)
-    {
-        return MPU6050_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     mpu6050_err_t err = reset_and_wake(dev);
     if (err != MPU6050_OK)
     {
@@ -146,6 +133,39 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
 
     dev->accel_scale = accel_scales[cfg->accel_range & 0x03];
     dev->gyro_scale  = gyro_scales[cfg->gyro_range & 0x03];
+    return MPU6050_OK;
+}
+
+mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
+                           const mpu6050_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return MPU6050_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no scales and would read infinity */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return MPU6050_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return MPU6050_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    mpu6050_err_t err = bring_up(dev, cfg);
+    if (err != MPU6050_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return MPU6050_OK;
@@ -153,7 +173,7 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
 
 mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return MPU6050_ERR_PARAM;
     }
@@ -180,7 +200,7 @@ mpu6050_err_t mpu6050_read_accel(const mpu6050_t *dev, mpu6050_accel_t *out)
 
 mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return MPU6050_ERR_PARAM;
     }
@@ -207,7 +227,7 @@ mpu6050_err_t mpu6050_read_gyro(const mpu6050_t *dev, mpu6050_gyro_t *out)
 
 mpu6050_err_t mpu6050_reset(mpu6050_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return MPU6050_ERR_PARAM;
     }
