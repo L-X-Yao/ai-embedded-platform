@@ -72,6 +72,10 @@ No compile-time configuration needed. Constants are fixed by the 1-Wire protocol
   with different command byte.
 - CRC8 is computed bit-by-bit (no lookup table) -- fast enough for 8-byte ROM codes but not
   optimal for bulk data CRC.
+- `ONEWIRE_SEARCH_ERR_CRC` and `ONEWIRE_SEARCH_ERR_BUS` leave the search where it was so
+  that the caller can retry, and a fault that lasts keeps returning them: bound any
+  retries. No presence before any device is found ends the search as an empty bus,
+  and `onewire_search_first` looks again.
 
 ## How to test
 
@@ -83,7 +87,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (16 C tests)
+- Unit tests (sim): PASS (29 C tests)
 - NULL tests: generated
 - HIL: N/A
 

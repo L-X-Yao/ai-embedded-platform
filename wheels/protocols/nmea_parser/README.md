@@ -61,11 +61,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_nmea_parser
 ```
 
-85 assertions across 28 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion.
+149 assertions across 47 test cases: checksum validation (valid/invalid/null/lowercase-hex/truncated-star), sentence identification (GP/GN/GL/BD prefixes), GGA parsing (quality/sats/hdop/altitude), RMC parsing (lat/lon/speed/course/date/time/fix/truncated), GSA parsing (2D/3D/nofix/DOP), null safety, unknown sentence handling, data init, south/west coordinates, equator + prime meridian boundary, cross-sentence accumulation, re-init clears state, no-comma rejection, max lat/lon (90/180), year boundary (00→2000, 79→2079, 80→1980, 99→1999), GGA no-fix empty fields, RMC empty speed/course, alternate talker IDs, speed knots→km/h conversion, value limits.
 
 ## Test status
 
-- Unit tests (sim): PASS (28 C tests, 85 assertions)
+- Unit tests (sim): PASS (47 C tests, 149 assertions)
 - HIL: N/A
 
 ## API convention deviations
@@ -83,6 +83,23 @@ NMEA 0183 sentence format: `$TTDDD,field,field,...*HH\r\n`
 | GSA | fix_mode (2D/3D), pdop, hdop, vdop |
 
 Supports both GP (GPS-only) and GN (multi-constellation) talker prefixes.
+
+A valid checksum does not vouch for a value, so each one has to fit these limits:
+
+| Field | Accepted |
+|-------|----------|
+| time | hour 0-23, minute 0-59, second 0-60 (leap second) |
+| date | day 1-31, month 1-12 |
+| speed | 0 to 1000 knots |
+| course | 0 to 360 degrees |
+| altitude | -1000000 to 1000000 m |
+| HDOP, PDOP, VDOP | 0 to 1000 |
+| fix quality | 0 to 9 |
+| satellites | 0 to 99 |
+
+A value outside them is ignored: its field keeps what it had, a bad course also clears
+`course_valid`, and the call still returns `NMEA_PARSER_OK`. An empty field still counts
+as 0, and latitude and longitude out of range still parse to 0.
 
 ## API review
 

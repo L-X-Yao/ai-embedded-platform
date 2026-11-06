@@ -64,7 +64,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 19 tests (request line + headers + body + Range + overflow + NULL guards)
+- Unit tests (sim): 26 tests (request line + headers + body + Range + overflow + NULL guards + line breaks)
 - HIL: N/A
 
 ## API convention deviations

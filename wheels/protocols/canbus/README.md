@@ -85,7 +85,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 32 tests, all passing
+- Unit tests (sim): 36 tests, all passing
 - HIL: N/A (pure codec, no hardware dependency)
 
 ## API convention deviations

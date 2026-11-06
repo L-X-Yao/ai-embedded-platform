@@ -61,10 +61,11 @@ No compile-time defines. All behavior controlled via function parameters.
 
 ## Known issues
 
-- Property parsing is strict: unknown property IDs cause parse failure
-  (no skip). This is intentional for safety on constrained devices.
-- Only a subset of MQTT 5.0 properties is supported (session expiry,
+- Only a subset of MQTT 5.0 properties is stored (session expiry,
   message expiry, receive max, max QoS). Add more as needed.
+- The parsers step over any other property the spec allows in that
+  packet, by the type it gives the ID, and drop the value. An ID it does
+  not allow there is refused: section 2.2.2.2 calls that a Malformed Packet.
 
 ## How to test
 
@@ -76,7 +77,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 38 pass, 0 fail
+- Unit tests (sim): 45 pass, 0 fail
 - libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 
@@ -89,7 +90,8 @@ None.
 - **Date**: 2026-05-01
 - **Key decisions**: Follow mqtt_packet style. Use uint16_t for buffer
   sizes (matching embedded constraints). Properties encoded inline
-  (no separate property struct/builder). Strict unknown-property rejection.
+  (no separate property struct/builder). Properties with no field are
+  stepped over: rejecting them refused the CONNACK of a default broker.
 
 ## Responsible human
 
