@@ -193,6 +193,21 @@ TEST(test_single_block_crc)
     ASSERT_EQ(xmodem_get_total_bytes(&xm), 128);
 }
 
+/* XMODEM has no length field, so 0x1A padding cannot be told from data. */
+TEST(test_total_bytes_counts_padding)
+{
+    xmodem_t xm;
+    mock_reset();
+    xmodem_init(&xm, &g_io, false);
+    xmodem_start(&xm);
+
+    uint8_t frame[132];
+    build_checksum_frame(frame, 1, 0x1A);
+    feed_bytes(&xm, frame, 132);
+    ASSERT_EQ(xmodem_feed(&xm, XMODEM_EOT), XMODEM_DONE);
+    ASSERT_EQ(xmodem_get_total_bytes(&xm), 128);
+}
+
 TEST(test_eot_completes_transfer)
 {
     xmodem_t xm;
@@ -458,6 +473,7 @@ TEST_MAIN("xmodem")
     RUN(test_start_double_call_rejected);
     RUN(test_single_block_checksum);
     RUN(test_single_block_crc);
+    RUN(test_total_bytes_counts_padding);
     RUN(test_eot_completes_transfer);
     RUN(test_bad_checksum_sends_nak);
     RUN(test_bad_crc_sends_nak);

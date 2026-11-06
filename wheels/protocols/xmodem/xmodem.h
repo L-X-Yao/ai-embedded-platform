@@ -93,7 +93,8 @@ xmodem_err_t   xmodem_feed(xmodem_t *xm, uint8_t byte);
 /** Get current state. */
 xmodem_state_t xmodem_get_state(const xmodem_t *xm);
 
-/** Get total bytes received (excluding padding). */
+/** Get total bytes received, whole blocks only: XMODEM has no length field,
+ *  so this includes any padding in the last block. */
 uint32_t       xmodem_get_total_bytes(const xmodem_t *xm);
 
 /** Send CAN (cancel) and move to error state. */
