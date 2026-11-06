@@ -2,13 +2,17 @@
 /*
  * hw_model_st7735.h -- ST7735 SPI display hardware model from datasheet
  *
- * Models Sitronix ST7735 behavior (datasheet rev 1.4):
+ * Models Sitronix ST7735 behavior (datasheet V2.1, 2010-02-01):
  * - SPI command/data interface (DC pin: 0=command, 1=data)
  * - Internal POR state: sleep-in, display off
  * - Command sequence tracking: SLPOUT, COLMOD, MADCTL, NORON, DISPON
  * - CASET/RASET (0x2A/0x2B): column/row address window
  * - RAMWR (0x2C): pixel data write tracking
- * - Reset tracking
+ * - Reset tracking, with the values of the reset table (p.69)
+ * - Bytes clocked with CSX high are lost (p.30)
+ * - Time, which only the delay callback lets pass. A command inside a wait
+ *   the manual asks for is refused and counted. The manual does not say what
+ *   the chip does with one, so refusing it makes an early one show.
  */
 
 #ifndef HW_MODEL_ST7735_H
@@ -20,6 +24,14 @@
 #include "../st7735.h"
 
 #define ST7735_MODEL_PIXEL_BUF_SIZE  2048
+
+/* Waits before the next command */
+#define ST7735_MODEL_RESX_CMD_MS     5u    /* p.72 note 7 */
+#define ST7735_MODEL_RESX_SLPOUT_MS  120u  /* p.72 note 7 */
+#define ST7735_MODEL_SWRESET_MS      120u  /* p.81 */
+#define ST7735_MODEL_SLPOUT_MS       120u  /* p.92 */
+
+#define ST7735_MODEL_MADCTL_MV       0x20u
 
 typedef struct {
     /* Power / display state */
@@ -59,6 +71,12 @@ typedef struct {
     int      delay_call_count;
     int      xfer_count;
     int      reset_count;
+    int      early_cmd_count;  /* commands refused inside a wait */
+
+    /* Time */
+    uint32_t now_ms;
+    uint32_t cmd_ok_ms;        /* no command before this time */
+    uint32_t slpout_ok_ms;     /* no SLPOUT before this time */
 } st7735_model_t;
 
 static st7735_model_t st7735_mdl;
@@ -68,7 +86,7 @@ static void st7735_model_init(void)
     memset(&st7735_mdl, 0, sizeof(st7735_mdl));
     st7735_mdl.sleep       = true;
     st7735_mdl.display_on  = false;
-    st7735_mdl.normal_mode = false;
+    st7735_mdl.normal_mode = true;
     st7735_mdl.madctl      = 0x00;
     st7735_mdl.colmod      = 0x06;  /* POR: 18-bit */
     st7735_mdl.col_start   = 0;
@@ -79,20 +97,43 @@ static void st7735_model_init(void)
     st7735_mdl.cs_level    = true;
 }
 
-static void st7735_model_sw_reset(void)
+/* What both resets do (p.69). Frame memory is "No Change". */
+static void st7735_model_common_reset(void)
 {
+    bool mv = (st7735_mdl.madctl & ST7735_MODEL_MADCTL_MV) != 0;
+
     st7735_mdl.sleep       = true;
     st7735_mdl.display_on  = false;
-    st7735_mdl.normal_mode = false;
-    st7735_mdl.madctl      = 0x00;
-    st7735_mdl.colmod      = 0x06;
+    st7735_mdl.normal_mode = true;
     st7735_mdl.col_start   = 0;
-    st7735_mdl.col_end     = 127;
+    st7735_mdl.col_end     = mv ? 159 : 127;
     st7735_mdl.row_start   = 0;
-    st7735_mdl.row_end     = 159;
+    st7735_mdl.row_end     = mv ? 127 : 159;
     st7735_mdl.pending_cmd = 0;
     st7735_mdl.arg_pos     = 0;
-    st7735_mdl.pixel_buf_pos = 0;
+}
+
+/* p.69: MADCTL and the pixel format are "No Change" after a S/W reset */
+static void st7735_model_sw_reset(void)
+{
+    st7735_model_common_reset();
+    st7735_mdl.cmd_ok_ms = st7735_mdl.now_ms + ST7735_MODEL_SWRESET_MS;
+}
+
+/* p.69: a H/W reset also restores MADCTL and 18-bit pixels */
+static void st7735_model_hw_reset(void)
+{
+    st7735_mdl.madctl = 0x00;
+    st7735_mdl.colmod = 0x06;
+    st7735_model_common_reset();
+    st7735_mdl.cmd_ok_ms    = st7735_mdl.now_ms + ST7735_MODEL_RESX_CMD_MS;
+    st7735_mdl.slpout_ok_ms = st7735_mdl.now_ms + ST7735_MODEL_RESX_SLPOUT_MS;
+}
+
+static bool st7735_model_too_early(uint8_t cmd)
+{
+    if (st7735_mdl.now_ms < st7735_mdl.cmd_ok_ms) return true;
+    return cmd == 0x11 && st7735_mdl.now_ms < st7735_mdl.slpout_ok_ms;
 }
 
 static void st7735_model_process_cmd(uint8_t cmd)
@@ -103,12 +144,18 @@ static void st7735_model_process_cmd(uint8_t cmd)
     st7735_mdl.arg_pos      = 0;
     st7735_mdl.arg_expected = 0;
 
+    if (st7735_model_too_early(cmd)) {
+        st7735_mdl.early_cmd_count++;
+        return;
+    }
+
     switch (cmd) {
     case 0x01: /* SWRESET */
         st7735_model_sw_reset();
         break;
     case 0x11: /* SLPOUT */
         st7735_mdl.sleep = false;
+        st7735_mdl.cmd_ok_ms = st7735_mdl.now_ms + ST7735_MODEL_SLPOUT_MS;
         break;
     case 0x13: /* NORON */
         st7735_mdl.normal_mode = true;
@@ -222,12 +269,14 @@ static bool st7735_model_transfer(void *ctx, const uint8_t *tx,
     st7735_mdl.xfer_count++;
     for (uint16_t i = 0; i < len; i++) {
         uint8_t byte = tx ? tx[i] : 0;
+        if (rx) rx[i] = 0xFF;
+        /* p.30: "When CSX is "high", SCL clock is ignored." */
+        if (st7735_mdl.cs_level) continue;
         if (!st7735_mdl.dc_level) {
             st7735_model_process_cmd(byte);
         } else {
             st7735_model_process_data(byte);
         }
-        if (rx) rx[i] = 0xFF;
     }
     return true;
 }
@@ -251,13 +300,14 @@ static void st7735_model_reset(void *ctx)
 {
     (void)ctx;
     st7735_mdl.reset_count++;
-    st7735_model_sw_reset();
+    st7735_model_hw_reset();
 }
 
 __attribute__((unused))
 static void st7735_model_delay_ms(void *ctx, uint32_t ms)
 {
     (void)ctx;
+    st7735_mdl.now_ms += ms;
     st7735_mdl.delay_total_ms += (int)ms;
     st7735_mdl.delay_call_count++;
 }
