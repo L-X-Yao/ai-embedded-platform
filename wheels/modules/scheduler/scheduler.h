@@ -69,6 +69,7 @@ typedef struct {
 typedef struct {
     sched_task_t tasks[SCHED_MAX_TASKS];
     uint8_t      count;
+    uint8_t      next;   /* internal: task scheduler_run takes next */
     uint32_t     tick;
 } scheduler_t;
 
@@ -100,7 +101,11 @@ sched_err_t scheduler_enable(scheduler_t *s, const char *name);
 /** Disable a task by name (skipped during run). @thread_safe: no */
 sched_err_t scheduler_disable(scheduler_t *s, const char *name);
 
-/** Remove a task by name. @thread_safe: no */
+/**
+ * Remove a task by name. A task may call this from its callback, for itself
+ * or another task: the pass in progress goes on with the remaining tasks.
+ * @thread_safe: no
+ */
 sched_err_t scheduler_remove(scheduler_t *s, const char *name);
 
 /** Return the number of registered tasks. @thread_safe: no */

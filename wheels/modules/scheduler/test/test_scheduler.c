@@ -320,6 +320,129 @@ TEST(test_remove_middle_preserves_order)
     ASSERT_EQ(g_call_count, 0); /* removed task should not run */
 }
 
+/* ---- tasks that remove tasks ---- */
+
+typedef struct {
+    int         runs;
+    const char *removes[3];  /* names to remove when it runs, NULL ends them */
+} remover_t;
+
+static scheduler_t g_rm;
+
+static void remover_task(void *ctx)
+{
+    remover_t *r = ctx;
+
+    r->runs++;
+    for (int i = 0; i < 3 && r->removes[i]; i++) {
+        scheduler_remove(&g_rm, r->removes[i]);
+    }
+}
+
+static void add_three_due(remover_t *a, remover_t *b, remover_t *c)
+{
+    scheduler_init(&g_rm);
+    scheduler_add(&g_rm, "a", remover_task, a, 1);
+    scheduler_add(&g_rm, "b", remover_task, b, 1);
+    scheduler_add(&g_rm, "c", remover_task, c, 1);
+    scheduler_tick(&g_rm);
+}
+
+/* A one-shot task: the task that moves into its slot still runs, and the run
+ * is counted for the right task. */
+TEST(test_task_removing_itself_skips_nothing)
+{
+    remover_t a = { 0, { "a" } }, b = { 0, { NULL } }, c = { 0, { NULL } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 1);
+    ASSERT_EQ(c.runs, 1);
+    ASSERT_EQ(scheduler_count(&g_rm), 2);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "a"), 0);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "b"), 1);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "c"), 1);
+
+    scheduler_tick(&g_rm);
+    scheduler_run(&g_rm);
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 2);
+    ASSERT_EQ(c.runs, 2);
+}
+
+TEST(test_last_task_removing_itself_leaves_a_clear_slot)
+{
+    remover_t a = { 0, { NULL } }, b = { 0, { NULL } }, c = { 0, { "c" } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+
+    ASSERT_EQ(c.runs, 1);
+    ASSERT_EQ(scheduler_count(&g_rm), 2);
+    ASSERT_EQ(g_rm.tasks[2].run_count, 0);
+}
+
+/* The running task moves down a slot: the one after it must not run twice or
+ * be skipped. */
+TEST(test_task_removing_an_earlier_task)
+{
+    remover_t a = { 0, { NULL } }, b = { 0, { "a" } }, c = { 0, { NULL } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 1);
+    ASSERT_EQ(c.runs, 1);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "b"), 1);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "c"), 1);
+}
+
+TEST(test_task_removing_a_later_task)
+{
+    remover_t a = { 0, { "b" } }, b = { 0, { NULL } }, c = { 0, { NULL } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 0);
+    ASSERT_EQ(c.runs, 1);
+    ASSERT_EQ(scheduler_get_run_count(&g_rm, "a"), 1);
+}
+
+TEST(test_task_removing_every_task)
+{
+    remover_t a = { 0, { NULL } }, b = { 0, { "a", "b", "c" } },
+              c = { 0, { NULL } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 1);
+    ASSERT_EQ(c.runs, 0);
+    ASSERT_EQ(scheduler_count(&g_rm), 0);
+}
+
+/* Between passes a removal must leave the next pass starting from the top. */
+TEST(test_remove_between_passes_skips_nothing)
+{
+    remover_t a = { 0, { NULL } }, b = { 0, { NULL } }, c = { 0, { NULL } };
+
+    add_three_due(&a, &b, &c);
+    scheduler_run(&g_rm);
+    ASSERT_EQ(scheduler_remove(&g_rm, "a"), SCHED_OK);
+
+    scheduler_tick(&g_rm);
+    scheduler_run(&g_rm);
+    ASSERT_EQ(a.runs, 1);
+    ASSERT_EQ(b.runs, 2);
+    ASSERT_EQ(c.runs, 2);
+}
+
 TEST_MAIN("scheduler")
     RUN(test_init);
     RUN(test_init_null);
@@ -341,4 +464,10 @@ TEST_MAIN("scheduler")
     RUN(test_find_by_name);
     RUN(test_tick_null_safety);
     RUN(test_remove_middle_preserves_order);
+    RUN(test_task_removing_itself_skips_nothing);
+    RUN(test_last_task_removing_itself_leaves_a_clear_slot);
+    RUN(test_task_removing_an_earlier_task);
+    RUN(test_task_removing_a_later_task);
+    RUN(test_task_removing_every_task);
+    RUN(test_remove_between_passes_skips_nothing);
 TEST_MAIN_END()
