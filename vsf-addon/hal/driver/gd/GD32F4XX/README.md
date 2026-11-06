@@ -4,7 +4,7 @@ GD32F4xx (Cortex-M4, GigaDevice) 的 VSF HAL 驱动 port。
 
 ## Status
 
-GPIO/USART/Flash/SPI/I2C 五个外设驱动已通过 flybox HIL 验证（600s soak, 0 watchdog reset, 2026-04-26）。CI cross-compile 全绿。代码稳定但未经第二个 GD32F4 项目复验，整体标记 **candidate**。
+GPIO/USART/Flash/SPI/I2C 五个外设驱动已通过 HIL 验证（600s soak, 0 watchdog reset, 2026-04-26）。CI cross-compile 全绿。代码稳定但未经第二个 GD32F4 项目复验，整体标记 **candidate**。
 
 ## 支持的型号
 
@@ -62,9 +62,7 @@ common/vendor/
     └── system_gd32f4xx.c          系统初始化（可选）
 ```
 
-当前 vendor 库来源：`projects/flybox/third_party/`
-- CMSIS 头文件 → `projects/flybox/third_party/CMSIS/`
-- 外设库 → `projects/flybox/third_party/gd32_periph/`
+vendor 库来源：GigaDevice SDK（CMSIS 头文件和外设库）。
 
 ## 使用方式
 
@@ -81,7 +79,7 @@ common/vendor/
 
 ## 验证平台
 
-- GD32F405RGT6 (Flybox 项目硬件)
-- CI cross-compile: gcc-arm-none-eabi 13.x (`.github/workflows/ci.yml` flybox-build job)
-- HIL 验证: flybox 固件在 GD32F405 + Air780EG 上跑 600s soak，0 watchdog reset (2026-04-26)
-- 已验证外设链路: SPI1 (W25Q64), I2C1 (QMI8658A), 软件 I2C (XGZP6816D, QMC5883P), USART0/1, GPIO, FMC
+- GD32F405RGT6
+- CI cross-compile: gcc-arm-none-eabi 13.x
+- HIL 验证: GD32F405 上跑 600s soak，0 watchdog reset (2026-04-26)
+- 已验证外设: SPI1, I2C1, 软件 I2C, USART0/1, GPIO, FMC
