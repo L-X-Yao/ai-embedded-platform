@@ -206,6 +206,38 @@ TEST(test_get_range_null)
     ASSERT_NEAR(peak_detector_get_range(NULL), 0.0f, 1e-6f);
 }
 
+/* ---------- infinity must not reach the held peak and valley ---------- */
+
+TEST(test_feed_rejects_infinity)
+{
+    peak_detector_t pd;
+    peak_detector_init(&pd, 0.1f);
+
+    ASSERT_EQ(peak_detector_feed(&pd, 1.0f), PEAK_DETECTOR_OK);
+    ASSERT_EQ(peak_detector_feed(&pd, (float)INFINITY), PEAK_DETECTOR_ERR_PARAM);
+    ASSERT_EQ(peak_detector_feed(&pd, (float)-INFINITY), PEAK_DETECTOR_ERR_PARAM);
+    ASSERT_NEAR(peak_detector_get_peak(&pd), 1.0f, 1e-6f);
+    ASSERT_NEAR(peak_detector_get_valley(&pd), 1.0f, 1e-6f);
+
+    /* A held inf turned this step into inf - inf = NaN for good. */
+    ASSERT_EQ(peak_detector_feed(&pd, 0.0f), PEAK_DETECTOR_OK);
+    ASSERT_NEAR(peak_detector_get_peak(&pd), 0.9f, 1e-6f);
+    ASSERT_NEAR(peak_detector_get_valley(&pd), 0.0f, 1e-6f);
+}
+
+TEST(test_infinity_does_not_prime)
+{
+    peak_detector_t pd;
+    peak_detector_init(&pd, 0.0f);
+
+    ASSERT_EQ(peak_detector_feed(&pd, (float)INFINITY), PEAK_DETECTOR_ERR_PARAM);
+    ASSERT_NEAR(peak_detector_get_peak(&pd), 0.0f, 1e-6f);
+
+    ASSERT_EQ(peak_detector_feed(&pd, 5.0f), PEAK_DETECTOR_OK);
+    ASSERT_NEAR(peak_detector_get_peak(&pd), 5.0f, 1e-6f);
+    ASSERT_NEAR(peak_detector_get_valley(&pd), 5.0f, 1e-6f);
+}
+
 TEST_MAIN("peak_detector")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -230,4 +262,6 @@ TEST_MAIN("peak_detector")
     RUN(test_get_peak_null);
     RUN(test_get_valley_null);
     RUN(test_get_range_null);
+    RUN(test_feed_rejects_infinity);
+    RUN(test_infinity_does_not_prime);
 TEST_MAIN_END()

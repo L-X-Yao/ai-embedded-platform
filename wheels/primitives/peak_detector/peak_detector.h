@@ -46,6 +46,7 @@ peak_detector_err_t peak_detector_init(peak_detector_t *ctx, float decay_rate);
 
 /**
  * Feed a new sample. Updates peak and valley.
+ * @return PEAK_DETECTOR_ERR_PARAM, leaving the state unchanged, for NaN or Inf.
  * @thread_safe: no @isr_safe: yes
  */
 peak_detector_err_t peak_detector_feed(peak_detector_t *ctx, float sample);

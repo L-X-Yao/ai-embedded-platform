@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "peak_detector.h"
+#include <float.h>
 
 peak_detector_err_t peak_detector_init(peak_detector_t *ctx, float decay_rate)
 {
@@ -26,7 +27,8 @@ peak_detector_err_t peak_detector_feed(peak_detector_t *ctx, float sample)
 {
     if (!ctx)
         return PEAK_DETECTOR_ERR_PARAM;
-    if (!(sample == sample))
+    /* reject NaN and Inf: with decay, a held inf turns into inf - inf = NaN */
+    if (!(sample >= -FLT_MAX && sample <= FLT_MAX))
         return PEAK_DETECTOR_ERR_PARAM;
 
     if (!ctx->primed) {
