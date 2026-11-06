@@ -21,9 +21,14 @@ lookup_table_err_t lut_init(lookup_table_t *table,
         return LOOKUP_TABLE_ERR_PARAM;
     }
 
-    /* Verify strict ascending order */
+    /* Verify strict ascending order, written so that NaN fails it: every
+     * comparison with NaN is false.  x[0] needs its own check, the loop
+     * never runs for a single point. */
+    if (x[0] != x[0]) {
+        return LOOKUP_TABLE_ERR_NOT_SORTED;
+    }
     for (size_t i = 1; i < count; i++) {
-        if (x[i] <= x[i - 1]) {
+        if (!(x[i] > x[i - 1])) {
             return LOOKUP_TABLE_ERR_NOT_SORTED;
         }
     }

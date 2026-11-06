@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <math.h>
 #include <string.h>
 #include "lookup_table.h"
 
@@ -116,6 +117,30 @@ TEST(test_monotonic_check)
     ASSERT_EQ(lut_init(&t, xdec, ydec, 4), LOOKUP_TABLE_ERR_NOT_SORTED);
 }
 
+/* Every comparison with NaN is false, so it must not pass the order check */
+TEST(test_nan_in_x_rejected)
+{
+    lookup_table_t t;
+    const float y[] = { 10.0f, 20.0f, 30.0f };
+
+    /* the wrong pair 2 > 1 is hidden behind the NaN */
+    const float hidden[] = { 2.0f, NAN, 1.0f };
+    ASSERT_EQ(lut_init(&t, hidden, y, 3), LOOKUP_TABLE_ERR_NOT_SORTED);
+
+    const float middle[] = { 0.0f, NAN, 2.0f };
+    ASSERT_EQ(lut_init(&t, middle, y, 3), LOOKUP_TABLE_ERR_NOT_SORTED);
+
+    const float first[] = { NAN, 1.0f, 2.0f };
+    ASSERT_EQ(lut_init(&t, first, y, 3), LOOKUP_TABLE_ERR_NOT_SORTED);
+
+    const float last[] = { 0.0f, 1.0f, NAN };
+    ASSERT_EQ(lut_init(&t, last, y, 3), LOOKUP_TABLE_ERR_NOT_SORTED);
+
+    /* no pair to compare, the loop never runs */
+    const float single[] = { NAN };
+    ASSERT_EQ(lut_init(&t, single, y, 1), LOOKUP_TABLE_ERR_NOT_SORTED);
+}
+
 TEST(test_zero_init_safety)
 {
     /* Zero-init struct must not crash when passed to API */
@@ -174,6 +199,7 @@ TEST_MAIN("lookup_table")
     RUN(test_single_point);
     RUN(test_null_params);
     RUN(test_monotonic_check);
+    RUN(test_nan_in_x_rejected);
     RUN(test_zero_init_safety);
     RUN(test_negative_x_values);
     RUN(test_large_table_binary_search);
