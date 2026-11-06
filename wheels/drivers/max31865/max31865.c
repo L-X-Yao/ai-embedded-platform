@@ -108,7 +108,14 @@ static float rtd_to_temperature(float r_rtd, float r_nom)
 max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,
                              const max31865_cfg_t *cfg)
 {
-    if (!dev || !spi || !cfg)
+    if (!dev)
+        return MAX31865_ERR_PARAM;
+
+    /* dev->spi.xfer stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no r_ref or r_nom to scale with */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !cfg)
         return MAX31865_ERR_PARAM;
 
     if (!spi->cs_low || !spi->cs_high || !spi->xfer)
@@ -117,7 +124,6 @@ max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,
     if (!(cfg->r_ref > 0.0f) || !(cfg->r_nom > 0.0f))
         return MAX31865_ERR_PARAM;
 
-    memset(dev, 0, sizeof(*dev));
     dev->spi = *spi;
     dev->cfg = *cfg;
 
@@ -135,7 +141,7 @@ max31865_err_t max31865_init(max31865_t *dev, const max31865_spi_t *spi,
 
 max31865_err_t max31865_read_rtd_raw(max31865_t *dev, uint16_t *rtd_raw)
 {
-    if (!dev || !rtd_raw)
+    if (!dev || !dev->spi.xfer || !rtd_raw)
         return MAX31865_ERR_PARAM;
 
     uint8_t msb = read_reg(dev, REG_RTD_MSB);
@@ -159,7 +165,7 @@ max31865_err_t max31865_read_rtd_raw(max31865_t *dev, uint16_t *rtd_raw)
 
 max31865_err_t max31865_read_temperature(max31865_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->spi.xfer || !temp_c)
         return MAX31865_ERR_PARAM;
 
     uint16_t rtd_raw;
@@ -178,7 +184,7 @@ max31865_err_t max31865_read_temperature(max31865_t *dev, float *temp_c)
 
 max31865_err_t max31865_read_fault(max31865_t *dev, uint8_t *fault)
 {
-    if (!dev || !fault)
+    if (!dev || !dev->spi.xfer || !fault)
         return MAX31865_ERR_PARAM;
 
     *fault = read_reg(dev, REG_FAULT);
@@ -188,7 +194,7 @@ max31865_err_t max31865_read_fault(max31865_t *dev, uint8_t *fault)
 
 max31865_err_t max31865_clear_fault(max31865_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->spi.xfer)
         return MAX31865_ERR_PARAM;
 
     /* Read current config, set fault-clear bit, write back */

@@ -293,6 +293,32 @@ TEST(test_cs_toggle)
     ASSERT_EQ(mock_cs_state, 1);  /* CS ends high after read */
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(max31855_t *d)
+{
+    float tc = 0.0f, ic = 0.0f;
+    uint32_t raw = 0;
+    ASSERT_EQ(max31855_read(d, &tc, &ic), MAX31855_ERR_PARAM);
+    ASSERT_EQ(max31855_read_raw(d, &raw), MAX31855_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    max31855_t d;
+    max31855_spi_t zeroed;
+    memset(&zeroed, 0, sizeof(zeroed));
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max31855_init(&d, NULL), MAX31855_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max31855_init(&d, &zeroed), MAX31855_ERR_SPI);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max31855")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -312,4 +338,5 @@ TEST_MAIN("max31855")
     RUN(test_read_max_positive_temp);
     RUN(test_read_optional_null_outputs);
     RUN(test_cs_toggle);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -109,16 +109,9 @@ static bool clear_fifo(const max30102_t *dev)
 
 /* --- public API --- */
 
-max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static max30102_err_t bring_up(max30102_t *dev)
 {
-    if (!dev || !i2c)
-        return MAX30102_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
-        return MAX30102_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* verify part ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_PART_ID, &id, 1))
@@ -152,6 +145,32 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
 
     if (!clear_fifo(dev))
         return MAX30102_ERR_I2C;
+
+    return MAX30102_OK;
+}
+
+max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
+{
+    if (!dev)
+        return MAX30102_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+        return MAX30102_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
+        return MAX30102_ERR_PARAM;
+
+    dev->i2c = i2c;
+
+    max30102_err_t err = bring_up(dev);
+    if (err != MAX30102_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return MAX30102_OK;
@@ -366,7 +385,7 @@ max30102_err_t max30102_reset(max30102_t *dev)
 
 uint8_t max30102_read_part_id(max30102_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return 0;
 
     uint8_t id = 0;

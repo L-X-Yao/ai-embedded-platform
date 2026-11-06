@@ -724,6 +724,52 @@ TEST(test_init_clears_fifo_after_mode_write)
     ASSERT_EQ(mock_regs[REG_FIFO_RD_PTR], 0);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(max30102_t *d)
+{
+    max30102_sample_t samples[1];
+    uint8_t count = 0;
+    float t;
+    ASSERT_EQ(max30102_set_mode(d, MAX30102_MODE_SPO2), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_set_led_current(d, 64, 64), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_set_sample_rate(d, 100), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_read_fifo(d, samples, 1, &count), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_read_temp(d, &t), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_shutdown(d, true), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_reset(d), MAX30102_ERR_PARAM);
+    ASSERT_EQ(max30102_read_part_id(d), 0);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static max30102_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    max30102_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max30102_init(&d, NULL), MAX30102_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* 0x11 is the part ID of a MAX30100: it answers, but it is another chip */
+    mock_regs[REG_PART_ID] = 0x11;
+    ASSERT_EQ(max30102_init(&d, &mock_i2c), MAX30102_ERR_ID);
+    assert_device_refused(&d);
+
+    /* The ID read and the reset worked, the FIFO write did not */
+    mock_reset();
+    mock_fail_at = 2;
+    ASSERT_EQ(max30102_init(&d, &mock_i2c), MAX30102_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max30102")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -775,4 +821,6 @@ TEST_MAIN("max30102")
     RUN(test_read_part_id);
     RUN(test_read_part_id_i2c_fail);
     RUN(test_init_missing_callbacks);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

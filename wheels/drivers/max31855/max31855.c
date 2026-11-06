@@ -18,6 +18,7 @@
 
 #include "max31855.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- internal helpers ---------- */
 
@@ -60,7 +61,13 @@ static float decode_internal(uint32_t raw)
 
 max31855_err_t max31855_init(max31855_t *dev, const max31855_spi_t *spi)
 {
-    if (!dev || !spi)           return MAX31855_ERR_PARAM;
+    if (!dev)                   return MAX31855_ERR_PARAM;
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi)                   return MAX31855_ERR_PARAM;
     if (!spi->cs_low ||
         !spi->cs_high ||
         !spi->xfer)            return MAX31855_ERR_SPI;

@@ -179,6 +179,48 @@ TEST(test_decode_mode)
     ASSERT_EQ(spi_log[0].val, 0xFF);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(max7219_t *d)
+{
+    ASSERT_EQ(max7219_set_intensity(d, 1), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_set_scan_limit(d, 8), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_shutdown(d, false), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_set_decode_mode(d, 0), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_set_digit(d, 0, 1), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_clear(d), MAX7219_ERR_PARAM);
+    ASSERT_EQ(max7219_display_test(d, false), MAX7219_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static max7219_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    max7219_t d;
+    max7219_spi_t zeroed;
+    memset(&zeroed, 0, sizeof(zeroed));
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max7219_init(&d, NULL), MAX7219_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max7219_init(&d, &zeroed), MAX7219_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* The chip never took its configuration, and the bus is fine again */
+    spi_fail = true;
+    ASSERT_EQ(max7219_init(&d, &mock_spi), MAX7219_ERR_SPI);
+    spi_fail = false;
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max7219")
     RUN(test_init_null);
     RUN(test_init_sequence);
@@ -192,4 +234,6 @@ TEST_MAIN("max7219")
     RUN(test_scan_limit);
     RUN(test_display_test);
     RUN(test_decode_mode);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()
