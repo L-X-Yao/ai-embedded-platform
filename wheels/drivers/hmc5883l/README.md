@@ -44,8 +44,8 @@ HAL: I2C register-based (write_reg/read_regs).
 Checked on 2026-11-06 against Honeywell Form 900405 Rev E. Not run on hardware.
 
 - **Matched:** Address, ID registers, register map, data order X, Z, Y, rate and gain codes, the Gain column scaling.
-- **Fixed:** The -4096 overflow marker was returned as a field value, and is now `HMC5883L_ERR_OVERFLOW`. With `delay_ms` set, `hmc5883l_init` now waits for the first set, drops it because it still has the old gain, and waits for the next, which takes about 3 output periods: 200 ms at 15 Hz, 4 s at 0.75 Hz. The file comment said milligauss where the code gives Gauss.
-- **Still open:** With `delay_ms` NULL, reads right after init still return old data. The model resets CRA, CRB and Mode to 0, and fills data on the Mode write with RDY never set.
+- **Fixed:** The -4096 overflow marker was returned as a field value, and is now `HMC5883L_ERR_OVERFLOW`. With `delay_ms` set, `hmc5883l_init` now waits for the first set, drops it because it still has the old gain, and waits for the next, which takes about 3 output periods: 200 ms at 15 Hz, 4 s at 0.75 Hz. The file comment said milligauss where the code gives Gauss. That wait no longer depends on a read clearing RDY, which the manual gives only for single-measurement mode. The model now has the reset values, takes 2/fDO to the first set, sets RDY and LOCK, and applies a new gain from the second measurement.
+- **Still open:** With `delay_ms` NULL, reads right after init still return old data.
 - **Suspected:** init does not wait the 200 us for I2C or 50 ms for the analog circuit after power-up.
 
 ## Known issues

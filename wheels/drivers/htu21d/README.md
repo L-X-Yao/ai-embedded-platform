@@ -48,8 +48,8 @@ uint8_t      htu21d_crc8(const uint8_t *data, uint16_t len);
 Checked on 2026-11-06 against HPC199_3 HTU21D(F) Sensor Datasheet, October 2013, revision 3. Not run on hardware.
 
 - **Matched:** Address, commands, the soft reset and its 15 ms, the 50 ms measurement wait, the 3-byte frame, status bit masking, the RH and temperature formulas, CRC-8 on the manual's examples.
-- **Fixed:** `htu21d_init` sent its first command with no wait, although the sensor can take 15 ms after power-up to accept one. It now waits first, so init takes 30 ms.
-- **Still open:** The model clears both status bits in humidity frames, where the real sensor sets bit 1, so no test runs the driver's mask on a real humidity frame, and the tests use none of the manual's CRC vectors. There is no user register access, so resolution, heater and End of Battery are out of reach, and a heater left on stays on because soft reset keeps that bit. There is no RH temperature compensation, which the manual gives for its stated accuracy from 0 to 80 C. Status bit 1 is not checked, so a temperature frame read as humidity goes unnoticed. The reference above cites an August 2014 datasheet, which this check did not use.
+- **Fixed:** `htu21d_init` sent its first command with no wait, although the sensor can take 15 ms after power-up to accept one. It now waits first, so init takes 30 ms. The model now sets status bit 1 in humidity frames, and the tests use the manual's frame and CRC examples.
+- **Still open:** There is no user register access, so resolution, heater and End of Battery are out of reach, and a heater left on stays on because soft reset keeps that bit. There is no RH temperature compensation, which the manual gives for its stated accuracy from 0 to 80 C. Status bit 1 is not checked, so a temperature frame read as humidity goes unnoticed. The reference above cites an August 2014 datasheet, which this check did not use.
 - **Suspected:** The driver sends the Hold Master commands but follows the No Hold flow of wait, then read. Every wait is skipped when `delay_ms` is NULL.
 
 ## Known issues

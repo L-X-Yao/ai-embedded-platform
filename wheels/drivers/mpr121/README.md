@@ -72,8 +72,8 @@ mpr121_err_t mpr121_read_electrode(mpr121_t *dev, uint8_t channel,
 Checked on 2026-11-06 against Freescale MPR121 Technical Data, Rev 4, 09/2010. Not run on hardware.
 
 - **Matched:** Address 0x5A, the touch status, electrode data, filter, threshold, ECR and soft reset registers, configuring in Stop Mode with ECR last.
-- **Fixed:** `mpr121_read_touched` returned all 16 status bits, so proximity read as electrode 12 and an over-current fault read as `MPR121_OK`. It now masks the bitmap to 0x0FFF and returns `MPR121_ERR_OVERCURRENT` when OVCF is set.
-- **Still open:** The address is fixed at 0x5A, so ADDR strapped to VDD, SDA or SCL, or two parts on one bus, cannot be used. No API clears OVCF: the caller writes it through the HAL. `cfg->ecr` can enable proximity, but its filters and thresholds stay at 0 and no API reports it. Touched filter, debounce, AFE, CDC/CDT and auto-configuration stay at reset values, and baseline values, out-of-range status, GPIO/LED and IRQ are not supported. The model reads 0x00 at 0x5C and 0x5D where the manual gives 0x10 and 0x24, and it accepts control register writes in Run Mode, which the manual allows only in Stop Mode, so a driver that configured in the wrong order would pass.
+- **Fixed:** `mpr121_read_touched` returned all 16 status bits, so proximity read as electrode 12 and an over-current fault read as `MPR121_OK`. It now masks the bitmap to 0x0FFF and returns `MPR121_ERR_OVERCURRENT` when OVCF is set. The model now resets 0x5C and 0x5D to 0x10 and 0x24, loses control register writes in Run Mode, measures only there, and clears the output registers on a soft reset.
+- **Still open:** The address is fixed at 0x5A, so ADDR strapped to VDD, SDA or SCL, or two parts on one bus, cannot be used. No API clears OVCF: the caller writes it through the HAL. `cfg->ecr` can enable proximity, but its filters and thresholds stay at 0 and no API reports it. Touched filter, debounce, AFE, CDC/CDT and auto-configuration stay at reset values, and baseline values, out-of-range status, GPIO/LED and IRQ are not supported.
 
 ## Known issues
 
