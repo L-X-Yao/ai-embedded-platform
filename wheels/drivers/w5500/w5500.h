@@ -116,7 +116,7 @@ w5500_err_t w5500_socket_send(w5500_t *dev, uint8_t sock,
                                const uint8_t *data, uint16_t len);
 
 /**
- * Receive data from a socket.
+ * Receive data from a socket.  buf_len must be at least 1.
  * On success, *out_len is set to the number of bytes actually received.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
