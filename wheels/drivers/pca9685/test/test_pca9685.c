@@ -467,6 +467,49 @@ TEST(test_set_duty_negative_rejected)
     ASSERT_EQ(pca9685_set_duty(&dev, 0, -0.001f), PCA9685_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(pca9685_t *d)
+{
+    ASSERT_EQ(pca9685_set_pwm(d, 0, 0, 100), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_duty(d, 0, 50.0f), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_servo_us(d, 0, 1500), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_all_off(d), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_set_freq(d, 50), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_sleep(d), PCA9685_ERR_PARAM);
+    ASSERT_EQ(pca9685_wake(d), PCA9685_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static pca9685_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    pca9685_t d;
+    mock_reset();
+    mock_fail_at = 3;  /* MODE1, read it back, SLEEP, then PRE_SCALE */
+    ASSERT_EQ(pca9685_init(&d, &mock_i2c, 0x40, 50), PCA9685_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* d holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    pca9685_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pca9685_init(&d, NULL, 0x40, 50), PCA9685_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pca9685_init(&d, &mock_i2c, 0x40, 23), PCA9685_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("pca9685")
     RUN(test_init_ok);
     RUN(test_set_freq_leaves_chip_awake);
@@ -498,6 +541,9 @@ TEST_MAIN("pca9685")
     RUN(test_wake_writes_restart_after_500us);
     RUN(test_set_freq_writes_restart_after_500us);
     RUN(test_failed_prescale_write_wakes_the_chip);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
     RUN(test_sleep_writes_restart_as_zero);
     RUN(test_i2c_failure);
 TEST_MAIN_END()
