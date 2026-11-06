@@ -454,6 +454,74 @@ TEST(test_feed_leaves_a_disabled_task_disabled)
     ASSERT_EQ(cb_count, 1);
 }
 
+/* A feed for one task must not keep another, hung one alive. */
+TEST(test_feed_reaches_only_the_named_task)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    task_watchdog_register(&wd, "first", 5);
+    task_watchdog_register(&wd, "second", 5);
+
+    advance_ticks(&wd, 4);
+    ASSERT_EQ(task_watchdog_feed(&wd, "second"), TASK_WD_OK);
+    advance_ticks(&wd, 1);
+    task_watchdog_check(&wd);
+
+    ASSERT_EQ(task_watchdog_status(&wd, "first"), TASK_WD_STATUS_EXPIRED);
+    ASSERT_EQ(task_watchdog_status(&wd, "second"), TASK_WD_STATUS_OK);
+    ASSERT_EQ(cb_count, 1);
+    ASSERT_STR_EQ(cb_last_name, "first");
+    ASSERT_EQ(task_watchdog_expired_count(&wd), 1);
+}
+
+TEST(test_disable_reaches_only_the_named_task)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    task_watchdog_register(&wd, "first", 5);
+    task_watchdog_register(&wd, "second", 5);
+
+    ASSERT_EQ(task_watchdog_disable(&wd, "second"), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "first"), TASK_WD_STATUS_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "second"), TASK_WD_STATUS_DISABLED);
+
+    advance_ticks(&wd, 5);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "first"), TASK_WD_STATUS_EXPIRED);
+    ASSERT_EQ(task_watchdog_status(&wd, "second"), TASK_WD_STATUS_DISABLED);
+    ASSERT_EQ(cb_count, 1);
+    ASSERT_STR_EQ(cb_last_name, "first");
+}
+
+TEST(test_enable_reaches_only_the_named_task)
+{
+    task_watchdog_t wd;
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    task_watchdog_register(&wd, "first", 5);
+    task_watchdog_register(&wd, "second", 5);
+    task_watchdog_disable(&wd, "first");
+    task_watchdog_disable(&wd, "second");
+
+    ASSERT_EQ(task_watchdog_enable(&wd, "second"), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_status(&wd, "first"), TASK_WD_STATUS_DISABLED);
+    ASSERT_EQ(task_watchdog_status(&wd, "second"), TASK_WD_STATUS_OK);
+
+    advance_ticks(&wd, 5);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(task_watchdog_status(&wd, "first"), TASK_WD_STATUS_DISABLED);
+    ASSERT_EQ(task_watchdog_status(&wd, "second"), TASK_WD_STATUS_EXPIRED);
+    ASSERT_STR_EQ(cb_last_name, "second");
+}
+
 TEST_MAIN("task_watchdog")
     RUN(test_init);
     RUN(test_init_null);
@@ -478,4 +546,7 @@ TEST_MAIN("task_watchdog")
     RUN(test_register_again_takes_over_the_entry);
     RUN(test_register_again_needs_no_free_slot);
     RUN(test_feed_leaves_a_disabled_task_disabled);
+    RUN(test_feed_reaches_only_the_named_task);
+    RUN(test_disable_reaches_only_the_named_task);
+    RUN(test_enable_reaches_only_the_named_task);
 TEST_MAIN_END()
