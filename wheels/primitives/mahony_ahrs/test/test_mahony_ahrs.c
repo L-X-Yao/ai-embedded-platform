@@ -156,6 +156,51 @@ TEST(test_zero_accel_skipped)
     ASSERT_NEAR(q0, 1.0f, 0.001f);
 }
 
+/* Without a gravity reference only the feedback is lost: 90 deg/s about z
+ * for 1 s at 200 Hz is still 90 degrees of yaw. */
+TEST(test_zero_accel_still_integrates_gyro)
+{
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    mahony_ahrs_init(&f, &cfg);
+
+    for (int i = 0; i < 200; i++) {
+        mahony_ahrs_update(&f, 0, 0, 90.0f, 0, 0, 0, 0, 0, 0);
+    }
+
+    mahony_ahrs_euler_t e;
+    mahony_ahrs_get_euler(&f, &e);
+    ASSERT_NEAR(e.yaw_deg, 90.0f, 0.05f);
+}
+
+/* The reference filter keeps all feedback inside the accel-valid branch:
+ * neither the integrators nor the magnetometer may move the estimate. */
+TEST(test_zero_accel_applies_no_feedback)
+{
+    mahony_ahrs_t f;
+    mahony_ahrs_cfg_t cfg = mahony_ahrs_default_cfg();
+    cfg.ki = 0.5f;
+    mahony_ahrs_init(&f, &cfg);
+
+    /* a tilted accel charges the integrators */
+    for (int i = 0; i < 200; i++) {
+        mahony_ahrs_update(&f, 0, 0, 0, 0.5f, 0, 0.866f, 0, 0, 0);
+    }
+    ASSERT_TRUE(fabsf(f.integral_fb_y) > 0.001f);
+
+    mahony_ahrs_t before = f;
+    for (int i = 0; i < 200; i++) {
+        mahony_ahrs_update(&f, 0, 0, 0, 0, 0, 0, 0.3f, 0.1f, 0.4f);
+    }
+    ASSERT_NEAR(f.q0, before.q0, 1e-5f);
+    ASSERT_NEAR(f.q1, before.q1, 1e-5f);
+    ASSERT_NEAR(f.q2, before.q2, 1e-5f);
+    ASSERT_NEAR(f.q3, before.q3, 1e-5f);
+    ASSERT_NEAR(f.integral_fb_x, before.integral_fb_x, 0.0f);
+    ASSERT_NEAR(f.integral_fb_y, before.integral_fb_y, 0.0f);
+    ASSERT_NEAR(f.integral_fb_z, before.integral_fb_z, 0.0f);
+}
+
 TEST(test_6axis_vs_9axis)
 {
     mahony_ahrs_t f6, f9;
@@ -386,6 +431,8 @@ TEST_MAIN("mahony_ahrs")
     RUN(test_reinit_resets);
     RUN(test_quaternion_norm);
     RUN(test_zero_accel_skipped);
+    RUN(test_zero_accel_still_integrates_gyro);
+    RUN(test_zero_accel_applies_no_feedback);
     RUN(test_6axis_vs_9axis);
     RUN(test_zero_freq_guard);
     RUN(test_negative_freq_guard);

@@ -54,7 +54,8 @@ void mahony_ahrs_init(mahony_ahrs_t *f, const mahony_ahrs_cfg_t *cfg);
 
 /** Update with 9-axis data. Pass mx=my=mz=0 for 6-axis.
  *  A non-finite gyro or accel value drops the whole sample. A non-finite
- *  magnetometer value counts as mx=my=mz=0.
+ *  magnetometer value counts as mx=my=mz=0. With ax=ay=az=0 there is no
+ *  feedback at all, and the gyro is still integrated.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 void mahony_ahrs_update(mahony_ahrs_t *f,
                    float gx_dps, float gy_dps, float gz_dps,
