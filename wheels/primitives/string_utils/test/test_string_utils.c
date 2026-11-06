@@ -229,6 +229,83 @@ TEST(test_float_format_beats_range)
               STRING_UTILS_ERR_FMT);
 }
 
+/* ---------- truncation ---------- */
+
+#define GUARD 0x7E
+
+/* What a buffer of size bytes must hold once full is cut to fit: the first
+ * size - 1 bytes and a NUL, with every byte past the buffer untouched. */
+static void check_output(const char *buf, size_t cap, size_t size,
+                         const char *full)
+{
+    size_t len = strlen(full);
+    size_t n = size - 1 < len ? size - 1 : len;
+
+    ASSERT_EQ(strlen(buf), n);
+    ASSERT_TRUE(memcmp(buf, full, n) == 0);
+    for (size_t i = size; i < cap; i++) {
+        ASSERT_EQ(buf[i], GUARD);
+    }
+}
+
+typedef string_utils_err_t (*trim_fn_t)(const char *in, char *out, size_t size);
+
+/* Sizes from one byte to one past the fit cover exact, one short and one byte. */
+static void check_trim(trim_fn_t trim, const char *in, const char *full)
+{
+    char buf[24];
+
+    for (size_t size = 1; size <= strlen(full) + 2; size++) {
+        memset(buf, GUARD, sizeof(buf));
+        ASSERT_EQ(trim(in, buf, size), STRING_UTILS_OK);
+        check_output(buf, sizeof(buf), size, full);
+    }
+}
+
+static void check_join(const char **toks, int count, const char *delim,
+                       const char *full)
+{
+    char buf[24];
+    size_t need = strlen(full) + 1;
+
+    for (size_t size = 1; size <= need + 1; size++) {
+        memset(buf, GUARD, sizeof(buf));
+        ASSERT_EQ(str_join(toks, count, delim, buf, size),
+                  size >= need ? STRING_UTILS_OK : STRING_UTILS_ERR_OVERFLOW);
+        check_output(buf, sizeof(buf), size, full);
+    }
+}
+
+TEST(test_trim_truncation)
+{
+    check_trim(str_trim, "  abcd  ", "abcd");
+    check_trim(str_ltrim, "  abcd  ", "abcd  ");
+    check_trim(str_rtrim, "  abcd  ", "  abcd");
+    check_trim(str_trim, "abcd", "abcd");
+    check_trim(str_trim, "    ", "");
+}
+
+TEST(test_join_truncation)
+{
+    const char *two[] = {"ab", "cd"};
+    const char *full_then_more[] = {"abcd", "x"};
+    const char *three[] = {"a", "b", "c"};
+    const char *empty_first[] = {"", "x"};
+    const char *empty_last[] = {"x", ""};
+
+    check_join(two, 2, "-", "ab-cd");
+    check_join(two, 2, "--", "ab--cd");
+    check_join(two, 2, "---", "ab---cd"); /* long enough to pass the end */
+    check_join(two, 2, "", "abcd");
+    check_join(full_then_more, 2, "", "abcdx");
+    check_join(full_then_more, 2, ",", "abcd,x");
+    check_join(three, 3, ", ", "a, b, c");
+    check_join(empty_first, 2, "-", "-x");
+    check_join(empty_last, 2, "-", "x-");
+    check_join(two, 1, "-", "ab");
+    check_join(two, 0, "-", "");
+}
+
 TEST_MAIN("string_utils")
     RUN(test_trim_basic);
     RUN(test_ltrim);
@@ -252,4 +329,6 @@ TEST_MAIN("string_utils")
     RUN(test_float_out_of_range);
     RUN(test_float_large_but_in_range);
     RUN(test_float_format_beats_range);
+    RUN(test_trim_truncation);
+    RUN(test_join_truncation);
 TEST_MAIN_END()
