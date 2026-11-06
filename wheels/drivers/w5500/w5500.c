@@ -239,11 +239,15 @@ static w5500_err_t wait_send_done(const w5500_spi_t *s, uint8_t sock)
 
 w5500_err_t w5500_init(w5500_t *dev, const w5500_spi_t *spi)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
+    if (!dev)
         return W5500_ERR_PARAM;
 
-    dev->spi = spi;
-    memset(dev->mac_addr, 0, 6);
+    /* dev->spi stays NULL unless the chip proves to be a W5500: the other
+     * calls refuse a device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
+        return W5500_ERR_PARAM;
 
     /* Software reset via MR register */
     write_common_reg(spi, REG_MR, MR_RST);
@@ -257,6 +261,8 @@ w5500_err_t w5500_init(w5500_t *dev, const w5500_spi_t *spi)
     if (ver != W5500_VERSION) {
         return W5500_ERR_SPI;
     }
+
+    dev->spi = spi;
 
     /* Configure default 2KB TX/RX buffer per socket */
     for (uint8_t i = 0; i < W5500_MAX_SOCK; i++) {

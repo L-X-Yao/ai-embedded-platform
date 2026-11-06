@@ -272,6 +272,41 @@ TEST(test_result_regs_readonly)
     ASSERT_EQ(dist, 1234);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(vl53l1x_t *d)
+{
+    uint16_t dist_mm;
+    ASSERT_EQ(vl53l1x_read_distance(d, &dist_mm), VL53L1X_ERR_PARAM);
+    ASSERT_EQ(vl53l1x_start_ranging(d), VL53L1X_ERR_PARAM);
+    ASSERT_EQ(vl53l1x_stop_ranging(d), VL53L1X_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    vl53l1x_t d;
+    setup();
+    model.regs[VL1X_REG_MODEL_ID] = 0x00;
+    ASSERT_EQ(vl53l1x_init(&d, &hw_i2c, &default_cfg), VL53L1X_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const vl53l1x_i2c_t zeroed;
+    vl53l1x_t d;
+    setup();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(vl53l1x_init(&d, NULL, &default_cfg), VL53L1X_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(vl53l1x_init(&d, &zeroed, &default_cfg), VL53L1X_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("vl53l1x")
     RUN(test_init_ok);
     RUN(test_init_wrong_model_id);
@@ -295,4 +330,6 @@ TEST_MAIN("vl53l1x")
     RUN(test_measure_count_increments);
     RUN(test_model_id_readonly);
     RUN(test_result_regs_readonly);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
