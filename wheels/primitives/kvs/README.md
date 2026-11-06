@@ -24,6 +24,8 @@ FlashDB's upstream API is used directly. Consumers `#include <flashdb.h>`.
 ```c
 /* Project provides fdb_cfg.h + fal_cfg.h on the include path.
  * See wheels/primitives/kvs/test/fdb_cfg.h for a minimal example. */
+#include <string.h>
+#include "fal.h"
 #include "flashdb.h"
 
 static void kvs_example(void) {
@@ -34,9 +36,20 @@ static void kvs_example(void) {
     };
     struct fdb_default_kv default_kv = { .kvs = defaults, .num = 2 };
 
+    /* Once, before any database. Without it FAL refuses every access:
+     * fdb_kvdb_init still returns FDB_NO_ERR, then fdb_kv_set returns
+     * FDB_SAVED_FULL as if the flash were full. */
+    if (fal_init() < 0) {
+        return;
+    }
+
+    /* The struct must start zeroed: control and init read its fields. */
+    memset(&db, 0, sizeof(db));
     uint32_t sec_size = 4096;
     fdb_kvdb_control(&db, FDB_KVDB_CTRL_SET_SEC_SIZE, &sec_size);
-    fdb_kvdb_init(&db, "app", "kvdb", &default_kv, NULL);
+    if (fdb_kvdb_init(&db, "app", "kvdb", &default_kv, NULL) != FDB_NO_ERR) {
+        return;
+    }
 
     /* String API */
     fdb_kv_set(&db, "wifi_ssid", "MyNetwork");
@@ -87,13 +100,15 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_kvs
 ```
 
-42 assertions across 11 test cases: FAL init, KVDB init, default KV values,
+248 assertions across 41 test cases: FAL init, KVDB init, default KV values,
 string set/get, overwrite, delete, binary blob set/get, persistence across
-re-init, nonexistent key, 20-key batch, KV iterator.
+re-init, nonexistent key, 20-key batch, KV iterator, KV objects, integrity
+check, restoring defaults, and TSDB append, iterators, windows by time, counts
+by status, clean, reboot and rollover.
 
 ## Test status
 
-- Unit tests (sim): PASS (11 C tests, 42 assertions)
+- Unit tests (sim): PASS (41 C tests, 248 assertions)
 - HIL: N/A
 
 ## API convention deviations
