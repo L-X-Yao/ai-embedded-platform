@@ -88,10 +88,12 @@ a4988_err_t a4988_enable(a4988_t *dev, bool on);
 /** Set rotation direction. */
 a4988_err_t a4988_set_direction(a4988_t *dev, a4988_dir_t dir);
 
-/** Single step pulse (2us HIGH, then LOW). */
+/** Single step pulse (2us HIGH, then LOW). Leave STEP LOW for at least 1us
+ *  before the next call. */
 a4988_err_t a4988_step(a4988_t *dev);
 
-/** Step N times with delay_us between steps. */
+/** Step N times with delay_us between steps, raised to the 1us STEP LOW
+ *  minimum if shorter. */
 a4988_err_t a4988_step_n(a4988_t *dev, uint32_t count, uint32_t delay_us_between);
 
 /** Set microstepping mode via MS1/MS2/MS3 pins. */

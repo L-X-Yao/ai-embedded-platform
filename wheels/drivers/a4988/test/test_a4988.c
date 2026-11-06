@@ -287,6 +287,70 @@ TEST(test_step_n_one)
     ASSERT_EQ(mock_delay_us_total, 2);
 }
 
+/* STEP LOW time before each rising edge, from the delays the HAL saw.
+ * A4988 datasheet Figure 1: tB, STEP minimum LOW pulse width, is 1 us. */
+static bool     gap_level;
+static int      gap_pulses;
+static uint32_t gap_low_us;
+static uint32_t gap_min_low_us;
+
+static void gap_write_pin(void *ctx, uint8_t pin_id, bool level)
+{
+    (void)ctx;
+    if (pin_id != PIN_STEP) return;
+    if (level && !gap_level) {
+        if (gap_pulses > 0 && gap_low_us < gap_min_low_us) {
+            gap_min_low_us = gap_low_us;
+        }
+        gap_pulses++;
+    }
+    if (!level) gap_low_us = 0;
+    gap_level = level;
+}
+
+static void gap_delay_us(void *ctx, uint32_t us)
+{
+    (void)ctx;
+    if (!gap_level) gap_low_us += us;
+}
+
+static const a4988_hal_t gap_hal = {
+    .write_pin = gap_write_pin,
+    .delay_us  = gap_delay_us,
+    .ctx       = NULL,
+};
+
+static void gap_reset(void)
+{
+    gap_level = false;
+    gap_pulses = 0;
+    gap_low_us = 0;
+    gap_min_low_us = UINT32_MAX;
+}
+
+TEST(test_step_n_zero_delay_keeps_step_low_time)
+{
+    a4988_t dev;
+    memset(&dev, 0, sizeof(dev));
+    a4988_init(&dev, &gap_hal, &test_cfg);
+    gap_reset();
+
+    ASSERT_EQ(a4988_step_n(&dev, 5, 0), A4988_OK);
+    ASSERT_EQ(gap_pulses, 5);
+    ASSERT_TRUE(gap_min_low_us >= 1);
+}
+
+TEST(test_step_n_longer_delay_is_not_stretched)
+{
+    a4988_t dev;
+    memset(&dev, 0, sizeof(dev));
+    a4988_init(&dev, &gap_hal, &test_cfg);
+    gap_reset();
+
+    ASSERT_EQ(a4988_step_n(&dev, 5, 7), A4988_OK);
+    ASSERT_EQ(gap_min_low_us, 7);
+}
+
 TEST(test_microstep_full)
 {
     mock_reset_all();
@@ -427,6 +491,8 @@ TEST_MAIN("a4988")
     RUN(test_step_n);
     RUN(test_step_n_zero);
     RUN(test_step_n_one);
+    RUN(test_step_n_zero_delay_keeps_step_low_time);
+    RUN(test_step_n_longer_delay_is_not_stretched);
     RUN(test_step_pulse_timing);
     RUN(test_microstep_full);
     RUN(test_microstep_half);

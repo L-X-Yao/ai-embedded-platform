@@ -14,6 +14,9 @@
 /* Minimum step pulse width: 2us (datasheet minimum is 1us) */
 #define STEP_PULSE_US  2U
 
+/* Minimum STEP LOW time between pulses (datasheet tB) */
+#define STEP_LOW_US    1U
+
 /* MS1/MS2/MS3 truth table for microstepping modes:
  *   FULL:      000
  *   HALF:      100
@@ -109,8 +112,10 @@ a4988_err_t a4988_step_n(a4988_t *dev, uint32_t count, uint32_t delay_us_between
         err = a4988_step(dev);
         if (err != A4988_OK) return err;
 
-        if (delay_us_between > 0 && i < count - 1) {
-            dev->hal->delay_us(dev->hal->ctx, delay_us_between);
+        if (i < count - 1) {
+            dev->hal->delay_us(dev->hal->ctx,
+                               delay_us_between > STEP_LOW_US
+                                   ? delay_us_between : STEP_LOW_US);
         }
     }
 
