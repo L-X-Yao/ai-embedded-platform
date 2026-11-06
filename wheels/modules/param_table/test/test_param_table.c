@@ -231,6 +231,66 @@ TEST(test_zero_init_safety)
     ASSERT_TRUE(strcmp("", buf) == 0);
 }
 
+/* ---- param_table_list against the size of the caller's buffer ---- */
+
+#define LIST_GUARD   0x5A
+#define LIST_NEEDED  9u  /* "a=1\nb=2\n" and its NUL */
+
+static void define_two(param_table_t *pt)
+{
+    param_table_init(pt);
+    param_table_define(pt, "a", "1", false);
+    param_table_define(pt, "b", "2", false);
+}
+
+TEST(test_list_exact_fit)
+{
+    param_table_t pt;
+    char area[32];
+
+    define_two(&pt);
+    memset(area, LIST_GUARD, sizeof(area));
+
+    ASSERT_EQ(8, param_table_list(&pt, area, LIST_NEEDED));
+    ASSERT_STR_EQ(area, "a=1\nb=2\n");
+    for (size_t i = LIST_NEEDED; i < sizeof(area); i++) {
+        ASSERT_EQ(LIST_GUARD, area[i]);
+    }
+}
+
+/* A line that does not fit is left out whole, and the rest is terminated. */
+TEST(test_list_one_byte_short)
+{
+    param_table_t pt;
+    char area[32];
+
+    define_two(&pt);
+    memset(area, LIST_GUARD, sizeof(area));
+
+    ASSERT_EQ(-1, param_table_list(&pt, area, LIST_NEEDED - 1u));
+    ASSERT_STR_EQ(area, "a=1\n");
+    for (size_t i = LIST_NEEDED - 1u; i < sizeof(area); i++) {
+        ASSERT_EQ(LIST_GUARD, area[i]);
+    }
+}
+
+TEST(test_list_never_passes_the_size)
+{
+    param_table_t pt;
+    char area[32];
+
+    define_two(&pt);
+    for (uint16_t size = 1; size < LIST_NEEDED; size++) {
+        memset(area, LIST_GUARD, sizeof(area));
+
+        ASSERT_EQ(-1, param_table_list(&pt, area, size));
+        ASSERT_TRUE(memchr(area, '\0', size) != NULL);
+        for (size_t i = size; i < sizeof(area); i++) {
+            ASSERT_EQ(LIST_GUARD, area[i]);
+        }
+    }
+}
+
 TEST_MAIN("param_table")
     RUN(test_init);
     RUN(test_define_and_get);
@@ -247,4 +307,7 @@ TEST_MAIN("param_table")
     RUN(test_multiple_params);
     RUN(test_buffer_too_small);
     RUN(test_zero_init_safety);
+    RUN(test_list_exact_fit);
+    RUN(test_list_one_byte_short);
+    RUN(test_list_never_passes_the_size);
 TEST_MAIN_END()
