@@ -91,11 +91,14 @@ size_t event_queue_count(const event_queue_t *q)
     {
         return 0;
     }
-    if (q->head >= q->tail)
+    /* One read of each: a push or pop can move them between two reads. */
+    size_t head = q->head;
+    size_t tail = q->tail;
+    if (head >= tail)
     {
-        return q->head - q->tail;
+        return head - tail;
     }
-    return q->capacity - q->tail + q->head;
+    return q->capacity - tail + head;
 }
 
 bool event_queue_is_empty(const event_queue_t *q)
