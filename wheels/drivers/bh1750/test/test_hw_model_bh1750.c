@@ -339,6 +339,57 @@ TEST(test_one_time_needs_delay)
     }
 }
 
+/* --- power on (manual p.5: "Waiting for measurement command.") --- */
+
+TEST(test_power_on_restarts_continuous_mode)
+{
+    setup();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+    ASSERT_EQ(bh1750_power_off(&dev), BH1750_OK);
+
+    bh1750_model_set_raw(&model, 2400);
+    uint32_t waited = model.delay_total_ms;
+    ASSERT_EQ(bh1750_power_on(&dev), BH1750_OK);
+    ASSERT_TRUE(model.powered);
+    ASSERT_EQ(model.last_cmd, 0x10);
+    ASSERT_EQ(model.delay_total_ms, waited + 180);
+
+    float lux = 0.0f;
+    ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_OK);
+    ASSERT_NEAR(lux, 2000.0f, 0.5f);
+}
+
+TEST(test_power_on_restarts_l_res_mode)
+{
+    setup();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_L_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+    ASSERT_EQ(bh1750_power_off(&dev), BH1750_OK);
+
+    uint32_t waited = model.delay_total_ms;
+    ASSERT_EQ(bh1750_power_on(&dev), BH1750_OK);
+    ASSERT_EQ(model.last_cmd, 0x13);
+    ASSERT_EQ(model.delay_total_ms, waited + 24);
+}
+
+TEST(test_power_on_one_time_mode_only_powers_on)
+{
+    setup();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_ONCE_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &model_i2c, &cfg), BH1750_OK);
+
+    int cmds = model.cmd_count;
+    uint32_t waited = model.delay_total_ms;
+    ASSERT_EQ(bh1750_power_on(&dev), BH1750_OK);
+    ASSERT_EQ(model.cmd_count, cmds + 1);
+    ASSERT_EQ(model.last_cmd, 0x01);
+    ASSERT_EQ(model.delay_total_ms, waited);
+}
+
 TEST_MAIN("bh1750 hardware model")
     RUN(test_init_success);
     RUN(test_init_h_res2_mode);
@@ -361,4 +412,7 @@ TEST_MAIN("bh1750 hardware model")
     RUN(test_one_time_h_res_read_waits_for_the_h_time);
     RUN(test_one_time_h_res2_read);
     RUN(test_one_time_needs_delay);
+    RUN(test_power_on_restarts_continuous_mode);
+    RUN(test_power_on_restarts_l_res_mode);
+    RUN(test_power_on_one_time_mode_only_powers_on);
 TEST_MAIN_END()

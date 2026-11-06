@@ -8,12 +8,14 @@ static uint8_t mock_cmd_log[16];
 static int mock_cmd_count;
 static uint16_t mock_raw_value;
 static bool mock_i2c_fail;
+static int mock_writes_until_fail;   /* this many-th write fails, 0 = none */
 
 static bool mock_write(void *ctx, uint8_t dev_addr,
                        const uint8_t *data, uint16_t len)
 {
     (void)ctx; (void)dev_addr;
     if (mock_i2c_fail) return false;
+    if (mock_writes_until_fail > 0 && --mock_writes_until_fail == 0) return false;
     if (len == 1 && mock_cmd_count < 16)
         mock_cmd_log[mock_cmd_count++] = data[0];
     return true;
@@ -43,6 +45,7 @@ static void mock_reset(void)
     memset(mock_cmd_log, 0, sizeof(mock_cmd_log));
     mock_raw_value = 0;
     mock_i2c_fail = false;
+    mock_writes_until_fail = 0;
 }
 
 TEST(test_init_null)
@@ -121,6 +124,20 @@ TEST(test_power_off_on)
     ASSERT_EQ(mock_cmd_log[0], 0x00);
     ASSERT_EQ(bh1750_power_on(&dev), BH1750_OK);
     ASSERT_EQ(mock_cmd_log[1], 0x01);
+    ASSERT_EQ(mock_cmd_log[2], 0x10);
+}
+
+TEST(test_power_on_i2c_fail)
+{
+    mock_reset();
+    bh1750_t dev;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    ASSERT_EQ(bh1750_init(&dev, &mock_i2c, &cfg), BH1750_OK);
+
+    mock_writes_until_fail = 1;   /* Power On */
+    ASSERT_EQ(bh1750_power_on(&dev), BH1750_ERR_I2C);
+    mock_writes_until_fail = 2;   /* the mode after it */
+    ASSERT_EQ(bh1750_power_on(&dev), BH1750_ERR_I2C);
 }
 
 TEST(test_read_null)
@@ -186,6 +203,7 @@ TEST_MAIN("bh1750")
     RUN(test_read_lux_zero);
     RUN(test_i2c_failure);
     RUN(test_power_off_on);
+    RUN(test_power_on_i2c_fail);
     RUN(test_read_null);
     RUN(test_reset);
     RUN(test_read_once_sends_the_mode_again);

@@ -75,7 +75,10 @@ bh1750_err_t bh1750_init(bh1750_t *dev, const bh1750_i2c_t *i2c,
  *  L mode). @thread_safe: caller_must_lock @isr_safe: no */
 bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux);
 
-/** Send power-on command to enable measurement. @thread_safe: caller_must_lock @isr_safe: no */
+/** Send power-on command to enable measurement. A continuous mode also restarts
+ *  measuring and calls delay_ms (max 180 ms, 24 ms in the L mode), with the same
+ *  duty on the caller as bh1750_init if delay_ms is NULL.
+ *  @thread_safe: caller_must_lock @isr_safe: no */
 bh1750_err_t bh1750_power_on(const bh1750_t *dev);
 
 /** Send power-down command to enter low-power mode. @thread_safe: caller_must_lock @isr_safe: no */
