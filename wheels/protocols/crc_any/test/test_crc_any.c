@@ -185,6 +185,88 @@ TEST(test_update_leaves_the_crc_alone_on_a_bad_width)
     ASSERT_EQ(crc_any_update(&cfg, 0x1234u, data, 1), 0x1234u);
 }
 
+/* ── Widths below 8: every entry of the reveng catalogue ─────────── */
+
+/* All parameters and check values are copied from
+   https://reveng.sourceforge.io/crc-catalogue/1-15.htm */
+static const struct {
+    crc_any_config_t cfg;
+    uint32_t         check;
+} narrow_vectors[] = {
+    /* CRC-3/GSM */
+    { { 3, 0x3, 0x0, false, false, 0x7 }, 0x4 },
+    /* CRC-3/ROHC */
+    { { 3, 0x3, 0x7, true, true, 0x0 }, 0x6 },
+    /* CRC-4/G-704 */
+    { { 4, 0x3, 0x0, true, true, 0x0 }, 0x7 },
+    /* CRC-4/INTERLAKEN */
+    { { 4, 0x3, 0xF, false, false, 0xF }, 0xB },
+    /* CRC-5/EPC-C1G2 */
+    { { 5, 0x09, 0x09, false, false, 0x00 }, 0x00 },
+    /* CRC-5/G-704 */
+    { { 5, 0x15, 0x00, true, true, 0x00 }, 0x07 },
+    /* CRC-5/USB */
+    { { 5, 0x05, 0x1F, true, true, 0x1F }, 0x19 },
+    /* CRC-6/CDMA2000-A */
+    { { 6, 0x27, 0x3F, false, false, 0x00 }, 0x0D },
+    /* CRC-6/CDMA2000-B */
+    { { 6, 0x07, 0x3F, false, false, 0x00 }, 0x3B },
+    /* CRC-6/DARC */
+    { { 6, 0x19, 0x00, true, true, 0x00 }, 0x26 },
+    /* CRC-6/G-704 */
+    { { 6, 0x03, 0x00, true, true, 0x00 }, 0x06 },
+    /* CRC-6/GSM */
+    { { 6, 0x2F, 0x00, false, false, 0x3F }, 0x13 },
+    /* CRC-7/MMC */
+    { { 7, 0x09, 0x00, false, false, 0x00 }, 0x75 },
+    /* CRC-7/ROHC */
+    { { 7, 0x4F, 0x7F, true, true, 0x00 }, 0x53 },
+    /* CRC-7/UMTS */
+    { { 7, 0x45, 0x00, false, false, 0x00 }, 0x61 },
+};
+
+TEST(test_catalogue_vectors_below_width_8)
+{
+    size_t n = sizeof(narrow_vectors) / sizeof(narrow_vectors[0]);
+    for (size_t i = 0; i < n; i++) {
+        uint32_t crc = 0xFFFFFFFFu;
+        ASSERT_EQ(crc_any_compute(&narrow_vectors[i].cfg, check_data, check_len,
+                                  &crc), CRC_ANY_OK);
+        ASSERT_EQ_HEX(crc, narrow_vectors[i].check);
+    }
+}
+
+TEST(test_narrow_width_streaming_matches_the_catalogue)
+{
+    /* CRC-5/USB fed one byte at a time, then finished by hand:
+       reflect the 5-bit register, then XOR 0x1F. */
+    const crc_any_config_t cfg = { 5, 0x05, 0x1F, true, true, 0x1F };
+    uint32_t reg = cfg.init;
+    for (size_t i = 0; i < check_len; i++)
+        reg = crc_any_update(&cfg, reg, &check_data[i], 1);
+
+    uint32_t reflected = 0;
+    for (uint32_t bit = 0; bit < 5u; bit++) {
+        if (reg & ((uint32_t)1 << bit))
+            reflected |= (uint32_t)1 << (4u - bit);
+    }
+    ASSERT_EQ_HEX(reflected ^ 0x1Fu, 0x19);
+}
+
+TEST(test_width_1_is_the_parity_of_the_message)
+{
+    /* x + 1 divides a message with an even number of set bits: width 1,
+       poly 1 is parity. "123456789" has 3+3+4+3+4+4+5+3+4 = 33 set bits. */
+    const crc_any_config_t cfg = { 1, 0x1, 0x0, false, false, 0x0 };
+    const uint8_t even[2] = { 0x81, 0x03 };
+    uint32_t crc = 0xFFFFFFFFu;
+
+    ASSERT_EQ(crc_any_compute(&cfg, check_data, check_len, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 1);
+    ASSERT_EQ(crc_any_compute(&cfg, even, sizeof(even), &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0);
+}
+
 TEST_MAIN("crc_any")
     RUN(test_crc16_modbus_vector);
     RUN(test_crc16_ccitt_vector);
@@ -202,4 +284,7 @@ TEST_MAIN("crc_any")
     RUN(test_crc16_xmodem_vector);
     RUN(test_crc8_rohc_vector);
     RUN(test_update_leaves_the_crc_alone_on_a_bad_width);
+    RUN(test_catalogue_vectors_below_width_8);
+    RUN(test_narrow_width_streaming_matches_the_catalogue);
+    RUN(test_width_1_is_the_parity_of_the_message);
 TEST_MAIN_END()

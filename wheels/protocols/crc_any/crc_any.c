@@ -41,6 +41,9 @@ static uint32_t width_mask(uint8_t width)
  * Input byte is reflected if cfg->refin is set. The CRC register is
  * maintained in non-reflected (MSB-aligned within a uint32_t) form
  * throughout the update phase; reflection and XOR happen at finalize.
+ *
+ * The message enters one bit at a time at the top of the register, so
+ * a register narrower than the byte works the same as a wider one.
  */
 static uint32_t process_byte(const crc_any_config_t *cfg,
                              uint32_t crc, uint8_t byte)
@@ -48,13 +51,13 @@ static uint32_t process_byte(const crc_any_config_t *cfg,
     uint8_t b = cfg->refin ? (uint8_t)reflect(byte, 8) : byte;
     uint32_t topbit = (uint32_t)1 << (cfg->width - 1u);
 
-    crc ^= (uint32_t)b << (cfg->width > 8 ? cfg->width - 8u : 0u);
+    for (int i = 7; i >= 0; i--) {
+        bool msg_bit = ((b >> i) & 1) != 0;
+        bool top_set = (crc & topbit) != 0;
 
-    for (int i = 0; i < 8; i++) {
-        if (crc & topbit)
-            crc = (crc << 1) ^ cfg->poly;
-        else
-            crc <<= 1;
+        crc <<= 1;
+        if (msg_bit != top_set)
+            crc ^= cfg->poly;
     }
 
     return crc & width_mask(cfg->width);
