@@ -458,3 +458,72 @@ class TestParseFunctions:
         text = read_header(log_header)
         funcs = parse_functions(text, "log")
         assert len(funcs) >= 1
+
+
+# ---------------------------------------------------------------------------
+# gen_null_tests.generate_test_file
+# ---------------------------------------------------------------------------
+
+class TestGenNullTests:
+    """What the generated test_null_<name>.c demands of each kind of function."""
+
+    @staticmethod
+    def generate(tmp_path, name, header):
+        from _wheel_parser import WheelInfo
+        from gen_null_tests import generate_test_file
+        path = tmp_path / f"{name}.h"
+        path.write_text(header, encoding="utf-8")
+        wheel = WheelInfo(name=name, layer="primitives", path=tmp_path, header_path=path)
+        wheel.funcs = parse_functions(read_header(path), name)
+        return generate_test_file(wheel)
+
+    HEADER = (
+        "typedef enum { DEMO_OK = 0, DEMO_ERR_PARAM = -1 } demo_err_t;\n"
+        "demo_err_t demo_init(demo_t *dev);\n"
+        "demo_err_t demo_write(demo_t *dev, const uint8_t *data, size_t len);\n"
+        "demo_err_t demo_put(demo_t *dev, const uint8_t *data, uint8_t flags);\n"
+        "void demo_clear(demo_t *dev);\n"
+        "int demo_count(const demo_t *dev);\n"
+    )
+
+    def test_spdx_is_the_first_line(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert text.splitlines()[0] == "// SPDX-License-Identifier: MIT"
+
+    def test_err_t_function_must_reject(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert "ASSERT_TRUE(demo_init(NULL) != DEMO_OK);" in text
+        assert "(void)demo_init" not in text
+
+    def test_null_buffer_gets_a_non_zero_length(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert "ASSERT_TRUE(demo_write(&_dev, NULL, 1) != DEMO_OK);" in text
+
+    def test_null_dev_keeps_length_zero(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert "ASSERT_TRUE(demo_write(NULL, _data, 0) != DEMO_OK);" in text
+
+    def test_other_scalar_after_pointer_stays_zero(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert "ASSERT_TRUE(demo_put(&_dev, NULL, 0) != DEMO_OK);" in text
+
+    def test_void_and_int_functions_only_must_survive(self, tmp_path):
+        text = self.generate(tmp_path, "demo", self.HEADER)
+        assert "(void)demo_clear(NULL);" in text
+        assert "(void)demo_count(NULL);" in text
+
+    def test_ok_falls_back_to_zero_when_header_lacks_it(self, tmp_path):
+        header = "other_err_t demo_init(demo_t *dev);\n"
+        text = self.generate(tmp_path, "demo", header)
+        assert "ASSERT_TRUE(demo_init(NULL) != 0);" in text
+
+    def test_accepted_null_is_not_asserted(self, tmp_path):
+        header = (
+            "typedef enum { CONFIG_STORE_OK = 0 } config_store_err_t;\n"
+            "config_store_err_t config_store_init(config_store_t *cs,"
+            " const config_store_storage_t *storage);\n"
+        )
+        text = self.generate(tmp_path, "config_store", header)
+        assert "ASSERT_TRUE(config_store_init(NULL, &_storage) != CONFIG_STORE_OK);" in text
+        assert "(void)config_store_init(&_cs, NULL);" in text
+        assert "no storage means no persistence" in text
