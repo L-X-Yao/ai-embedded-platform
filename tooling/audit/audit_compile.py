@@ -79,51 +79,15 @@ def find_wheels() -> list[dict]:
 
 
 def detect_changed_wheels(wheels: list[dict]) -> list[dict]:
-    """Filter wheels to only those with files changed vs HEAD.
+    """Filter wheels to those changed vs origin/main, uncommitted work included.
 
     Returns empty list when nothing has changed.
     Returns all wheels when git is unavailable (compile-all fallback).
     """
     changed = get_changed_wheels()
-    if changed:
-        return [w for w in wheels if (w["layer"], w["name"]) in changed]
-
-    # get_changed_wheels() returns empty both on git failure AND when nothing
-    # changed vs origin/main.  Distinguish by checking working-tree changes.
-    git_ok = False
-    head_changed: list[str] = []
-    try:
-        result = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
-            capture_output=True, text=True, cwd=str(REPO),
-            timeout=30,
-        )
-        git_ok = result.returncode == 0
-        head_changed = result.stdout.strip().splitlines()
-    except (OSError, subprocess.TimeoutExpired):
-        pass  # git unavailable
-
-    if not git_ok:
-        return wheels  # git broken → compile everything
-
-    if not head_changed:
-        # Check untracked files that are wheel sources
-        try:
-            result = subprocess.run(
-                ["git", "ls-files", "--others", "--exclude-standard"],
-                capture_output=True, text=True, cwd=str(REPO),
-                timeout=30,
-            )
-            head_changed = result.stdout.strip().splitlines()
-        except (OSError, subprocess.TimeoutExpired):
-            return wheels  # git broken → compile everything
-
-    if not head_changed:
-        return []  # nothing changed at all
-
-    changed_set = set(head_changed)
-    return [w for w in wheels
-            if any(f.startswith(w["path"] + "/") for f in changed_set)]
+    if changed is None:
+        return wheels  # git broken -> compile everything
+    return [w for w in wheels if (w["layer"], w["name"]) in changed]
 
 
 # ---------------------------------------------------------------------------

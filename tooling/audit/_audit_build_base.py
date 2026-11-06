@@ -90,29 +90,39 @@ def find_wheels(
 # Changed-wheel detection (git diff)
 # ---------------------------------------------------------------------------
 
-def get_changed_wheels() -> set[tuple[str, str]]:
-    """Return set of ``(layer, name)`` for wheels changed vs origin/main.
-
-    Falls back to ``HEAD~1`` when ``origin/main`` is unavailable.
-    Returns an empty set on git failure (callers treat that as "compile all").
-    """
+def _git_paths(*args: str) -> list[str] | None:
+    """Return the lines a git command prints, or ``None`` if it fails."""
     try:
         result = subprocess.run(
-            ["git", "diff", "--name-only", "origin/main", "HEAD"],
+            ["git", *args],
             capture_output=True, text=True, cwd=str(REPO), timeout=30,
         )
-        if result.returncode != 0:
-            print("  NOTE: origin/main not available, using HEAD~1 (only last commit scanned)")
-            result = subprocess.run(
-                ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
-                capture_output=True, text=True, cwd=str(REPO), timeout=30,
-            )
-    except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
-        return set()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.splitlines() if result.returncode == 0 else None
+
+
+def get_changed_wheels() -> set[tuple[str, str]] | None:
+    """Return set of ``(layer, name)`` for wheels changed vs origin/main.
+
+    Commits, staged and unstaged edits and untracked files all count, so
+    ``make check`` audits work that is not committed yet.
+    Falls back to ``HEAD~1`` when ``origin/main`` is unavailable.
+    Returns ``None`` on git failure; callers then process every wheel.
+    """
+    # With one revision, git diff compares it to the working tree.
+    paths = _git_paths("diff", "--name-only", "origin/main")
+    if paths is None:
+        print("  NOTE: origin/main not available, using HEAD~1 (only last commit scanned)",
+              file=sys.stderr)
+        paths = _git_paths("diff", "--name-only", "HEAD~1")
+    untracked = _git_paths("ls-files", "--others", "--exclude-standard")
+    if paths is None or untracked is None:
+        return None
 
     changed: set[tuple[str, str]] = set()
     pat = re.compile(r'^wheels/([^/]+)/([^/]+)/')
-    for line in result.stdout.splitlines():
+    for line in paths + untracked:
         m = pat.match(line.strip())
         if m:
             changed.add((m.group(1), m.group(2)))

@@ -15,7 +15,7 @@ Reports:
   SKIP  -- no test CMakeLists.txt or no target in it
 
 Flags:
-  --changed   Only test wheels changed vs main (git diff)
+  --changed   Only test wheels changed vs main, uncommitted work included
   --jobs N    Audit N wheels at once (default 1)
   --quiet     Suppress per-wheel details, show only summary
   --json      Machine-readable JSON output
@@ -145,7 +145,11 @@ def main():
 
     if args.changed:
         changed = get_changed_wheels()
-        wheels = [(l, n, d) for l, n, d in all_wheels if (l, n) in changed]
+        if changed is None:
+            print("NOTE: git failed, auditing every wheel.", file=sys.stderr)
+            wheels = all_wheels
+        else:
+            wheels = [(l, n, d) for l, n, d in all_wheels if (l, n) in changed]
     else:
         wheels = all_wheels
 
