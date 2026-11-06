@@ -132,12 +132,17 @@ void log_set_time_fn(uint32_t (*fn)(void));
  *   - L is one char: E/W/I/D
  *   - module is whatever LOG_MODULE expands to
  *
- * @thread_safe: yes after init (format uses stack buffer; sink dispatch @isr_safe: no
- *               reads g_sinks without lock — safe if sinks not modified
- *               after init)
+ * Formatting uses a stack buffer and needs no lock, but log_emit takes no
+ * lock around the sinks either. With more than one logging context, every
+ * registered sink must be reentrant (it may take its own lock), or callers
+ * must serialise log_emit. log_ringbuf, log_dedup, log_rate and log_flash
+ * are not reentrant. Sinks must not be added or removed after init.
+ *
+ * @thread_safe: caller_must_lock (unless every sink is reentrant, see above)
+ * @isr_safe: no (vsnprintf, and a LOG_LINE_BUFSIZE stack buffer)
  * ====================================================================== */
 
-/** Format and dispatch a log line to all sinks. @thread_safe: yes (after init) @isr_safe: yes */
+/** Format and dispatch a log line to all sinks. @thread_safe: caller_must_lock @isr_safe: no */
 void log_emit(log_level_t level, const char *module, const char *fmt, ...);
 
 #ifdef __cplusplus
