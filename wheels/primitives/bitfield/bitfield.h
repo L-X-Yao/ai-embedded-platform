@@ -8,7 +8,9 @@
  * Instances: multi
  *
  * Big-endian bit numbering (MSB-first): bit 0 is the MSB of byte 0.
- * Thread safety: all functions are pure / reentrant.
+ * Thread safety: bitfield_get and bitfield_test_bit only read. The writers
+ * do a read-modify-write on the caller's bytes, so two contexts writing
+ * different bits of one byte lose updates unless the caller serialises them.
  */
 
 #ifndef BITFIELD_H
@@ -42,7 +44,8 @@ int bitfield_get(const uint8_t *data, size_t data_len,
                  size_t bit_offset, size_t bit_count,
                  uint32_t *out);
 
-/** Pack value into bit range in byte array. @thread_safe: yes @isr_safe: yes */
+/** Pack value into bit range in byte array.
+ *  @thread_safe: caller_must_lock @isr_safe: yes */
 /*@ requires \valid(data + (0 .. data_len - 1));
     requires data_len > 0;
     requires bit_count >= 1 && bit_count <= 32;
@@ -62,7 +65,7 @@ int bitfield_set(uint8_t *data, size_t data_len,
 */
 bool bitfield_test_bit(const uint8_t *data, size_t data_len, size_t bit_index);
 
-/** Set a single bit to 1. @thread_safe: yes @isr_safe: yes */
+/** Set a single bit to 1. @thread_safe: caller_must_lock @isr_safe: yes */
 /*@ requires \valid(data + (0 .. data_len - 1));
     requires data_len > 0;
     requires bit_index < data_len * 8;
@@ -70,7 +73,7 @@ bool bitfield_test_bit(const uint8_t *data, size_t data_len, size_t bit_index);
 */
 void bitfield_set_bit(uint8_t *data, size_t data_len, size_t bit_index);
 
-/** Clear a single bit to 0. @thread_safe: yes @isr_safe: yes */
+/** Clear a single bit to 0. @thread_safe: caller_must_lock @isr_safe: yes */
 /*@ requires \valid(data + (0 .. data_len - 1));
     requires data_len > 0;
     requires bit_index < data_len * 8;
