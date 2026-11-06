@@ -214,9 +214,9 @@ TEST(test_urc_mqtt_rx)
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
-    feed_line(&dev, "+MSUB: \"/flybox/123/down/cmd\",11,\"hello world\"");
+    feed_line(&dev, "+MSUB: \"/dev/123/down/cmd\",11,\"hello world\"");
     ASSERT_EQ(1, g_mqtt_rx_count);
-    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "/flybox/123/down/cmd") == 0);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "/dev/123/down/cmd") == 0);
     ASSERT_EQ(11, g_mqtt_rx_payload_len);
     ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "hello world", 11) == 0);
 }
