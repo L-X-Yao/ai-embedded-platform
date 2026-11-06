@@ -157,6 +157,34 @@ static uint32_t count_sector_entries(const flash_journal_t *jrnl,
     return count;
 }
 
+/*
+ * Flash cannot be programmed twice without an erase, so bytes a cut append
+ * left at the write position rule out the rest of the sector.  Retire it:
+ * with write_offset at the end, the next append moves to an erased sector.
+ */
+static flash_journal_err_t retire_dirty_tail(flash_journal_t *jrnl)
+{
+    const flash_journal_storage_t *st = jrnl->storage;
+    uint8_t tmp[32];
+    uint32_t pos = jrnl->write_offset;
+
+    while (pos < jrnl->sector_size) {
+        uint32_t left = jrnl->sector_size - pos;
+        uint32_t chunk = left > 32u ? 32u : left;
+        flash_journal_err_t err = st->read(st->ctx, jrnl->write_sector, pos,
+                                           tmp, chunk);
+        if (err != FLASH_JOURNAL_OK) return FLASH_JOURNAL_ERR_STORAGE;
+        for (uint32_t i = 0; i < chunk; i++) {
+            if (tmp[i] != 0xFFu) {
+                jrnl->write_offset = jrnl->sector_size;
+                return FLASH_JOURNAL_OK;
+            }
+        }
+        pos += chunk;
+    }
+    return FLASH_JOURNAL_OK;
+}
+
 /* ---------- Public API ----------------------------------------------------- */
 
 flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
@@ -231,7 +259,7 @@ flash_journal_err_t flash_journal_init(flash_journal_t *jrnl,
         }
     }
 
-    return FLASH_JOURNAL_OK;
+    return retire_dirty_tail(jrnl);
 }
 
 flash_journal_err_t flash_journal_append(flash_journal_t *jrnl,
