@@ -18,15 +18,30 @@ import sys
 from pathlib import Path
 
 
-def find_memory_dir():
-    """Find the memory directory matching the current repo.
+def project_slugs(repo_root):
+    """Names Claude Code may have given this repo's project directory.
 
-    Derives the expected project slug from the repo root path (e.g.
-    D:\\temp\\project\\ai-embedded-platform -> D--temp-project-ai-embedded-platform)
-    and looks for that specific directory first.
+    Every character but [A-Za-z0-9] becomes '-'. A Windows checkout seen from
+    WSL as /mnt/d/temp/x has its memory under D--temp-x, from the sessions run
+    on Windows, so that form comes first.
+    """
+    path = str(repo_root)
+    slugs = []
+    wsl = re.fullmatch(r"/mnt/([a-zA-Z])(/.*)?", path)
+    if wsl:
+        slugs.append(re.sub(r"[^A-Za-z0-9]", "-", f"{wsl.group(1).upper()}:{wsl.group(2) or ''}"))
+    slugs.append(re.sub(r"[^A-Za-z0-9]", "-", path))
+    return slugs
+
+
+def find_memory_dir():
+    """Find the memory directory of the current repo, or None.
+
+    Derives the project slug from the repo root path (e.g.
+    D:\\temp\\project\\ai-embedded-platform -> D--temp-project-ai-embedded-platform).
+    There is no fallback: another project's directory says nothing about this one.
     """
     repo_root = Path(__file__).resolve().parents[2]
-    slug = str(repo_root).replace(":", "-").replace("\\", "-").replace("/", "-")
     candidates = [Path.home() / ".claude" / "projects"]
     win_user = os.environ.get("USERPROFILE") or os.environ.get("HOME_WINDOWS")
     if win_user:
@@ -35,23 +50,13 @@ def find_memory_dir():
     if wsl_mnt.is_dir():
         for u in wsl_mnt.iterdir():
             candidates.append(u / ".claude" / "projects")
-    # First pass: exact match by repo slug
-    for base in candidates:
-        if not base.is_dir():
-            continue
-        exact = base / slug / "memory"
-        if exact.is_dir() and (exact / "MEMORY.md").exists():
-            return exact
-    # Fallback: first directory containing MEMORY.md
-    for base in candidates:
-        if not base.is_dir():
-            continue
-        for d in sorted(base.iterdir()):
-            if not d.is_dir():
+    for slug in project_slugs(repo_root):
+        for base in candidates:
+            if not base.is_dir():
                 continue
-            candidate = d / "memory"
-            if candidate.is_dir() and (candidate / "MEMORY.md").exists():
-                return candidate
+            exact = base / slug / "memory"
+            if exact.is_dir() and (exact / "MEMORY.md").exists():
+                return exact
     return None
 
 
