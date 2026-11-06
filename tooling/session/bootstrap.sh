@@ -193,9 +193,11 @@ echo ""
 echo -e "${BOLD}=== Audit Triggers ===${NC}"
 last_audit_commit=$(git -C "$REPO" log --oneline --grep="audit history" -1 --format=%H 2>/dev/null || echo "")
 if [ -n "$last_audit_commit" ]; then
-    wheel_c_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "\.c$" | wc -l | xargs)
+    # grep -c prints 0 for no match; || true keeps that from ending the script
+    # under set -e and pipefail.
+    wheel_c_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep -c "\.c$" || true)
     wheel_c_changed=${wheel_c_changed:-0}; [[ "$wheel_c_changed" =~ ^[0-9]+$ ]] || wheel_c_changed=0
-    new_wheels=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "README.md" | wc -l | xargs)
+    new_wheels=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep -c "README.md" || true)
     new_wheels=${new_wheels:-0}; [[ "$new_wheels" =~ ^[0-9]+$ ]] || new_wheels=0
     days_since=$(( ($(date +%s) - $(git -C "$REPO" log -1 --format=%ct "$last_audit_commit" 2>/dev/null || echo "$(date +%s)")) / 86400 ))
     days_since=${days_since:-0}; [[ "$days_since" =~ ^[0-9]+$ ]] || days_since=0
