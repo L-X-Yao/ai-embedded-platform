@@ -102,10 +102,13 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
                                    cli_shell_handler_t handler, void *ctx);
 
 /**
- * Feed one byte (from UART RX ISR or polling loop).
+ * Feed one byte from a task or polling loop. Every printable byte calls the
+ * write callback and end of line runs the command handler inside this call,
+ * so a UART ISR must queue its bytes rather than call this.
  * A line that outgrows CLI_SHELL_LINE_SIZE is refused at end of line with
  * "line too long": the handler does not run, and backspace does not undo it.
  * @thread_safe: no
+ * @isr_safe: no
  */
 void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 
