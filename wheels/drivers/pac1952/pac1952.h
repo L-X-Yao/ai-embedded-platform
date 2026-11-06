@@ -31,19 +31,20 @@ typedef enum {
     PAC1952_ERR_I2C   = -1,
     PAC1952_ERR_ID    = -2,
     PAC1952_ERR_PARAM = -3,
-    PAC1952_ERR_UNSUPPORTED = -4,
+    PAC1952_ERR_UNSUPPORTED = -4,   /* no call returns this any more */
 } pac1952_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
 
 typedef struct {
-    /* Unused: the chip's commands take no data byte. */
+    /* Unused: the chip's commands take no data byte, and CTRL takes two. */
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void *ctx;
     /* Puts exactly data[0..len-1] on the bus after the address, then STOP.
-     * NULL: pac1952_refresh returns PAC1952_ERR_PARAM and sends nothing. */
+     * NULL: pac1952_refresh and pac1952_set_sample_rate return
+     * PAC1952_ERR_PARAM and send nothing. */
     bool (*write_raw)(void *ctx, uint8_t dev_addr,
                       const uint8_t *data, uint16_t len);
     /* Waits at least ms milliseconds.  NULL: as for write_raw. */
@@ -113,8 +114,11 @@ pac1952_err_t pac1952_read_both(pac1952_t *dev,
                                 pac1952_channel_t *ch1,
                                 pac1952_channel_t *ch2);
 
-/** Not available yet: returns PAC1952_ERR_UNSUPPORTED without touching the
- *  chip, as CTRL needs a Block Write this HAL cannot issue.
+/** Set SAMPLE_MODE in CTRL, keeping its other bits, then send REFRESH to
+ *  activate it.  The rates are the plain modes; the chip starts in the
+ *  adaptive 1024 SPS mode.  The new rate starts when the current conversion
+ *  cycle ends, which can be after this returns.  Also resets the chip's
+ *  accumulators.  Needs write_raw and delay_ms.  Calls delay_ms (1 ms).
  *  @thread_safe: no @isr_safe: no */
 pac1952_err_t pac1952_set_sample_rate(pac1952_t *dev, pac1952_rate_t rate);
 

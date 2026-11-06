@@ -410,16 +410,47 @@ TEST(test_read_both_null_ch2)
 
 /* ---------- sample rate tests ---------- */
 
-TEST(test_set_sample_rate_is_unsupported)
+TEST(test_set_sample_rate_ok)
 {
     mock_reset();
     pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
-    mock_regs[REG_CTRL] = 0x07;
-    mock_regs[REG_CTRL + 1] = 0x30;
 
-    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_1024SPS), PAC1952_ERR_UNSUPPORTED);
+    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_1024SPS), PAC1952_OK);
 
-    /* A byte write would have changed GPIO_ALERT2 or ACC_COUNT. */
+    /* The Block Write, then the REFRESH as the last write on the bus */
+    ASSERT_EQ(mock_write_count, 2);
+    ASSERT_EQ(mock_raw_addr, 0x10);
+    ASSERT_EQ(mock_raw_len, 1);
+    ASSERT_EQ_HEX(mock_raw[0], 0x00);
+    ASSERT_TRUE(mock_wait_ms >= 1);
+}
+
+TEST(test_set_sample_rate_is_no_longer_refused)
+{
+    /* The code stays in the enum, with its value, but no rate returns it */
+    ASSERT_EQ(PAC1952_ERR_UNSUPPORTED, -4);
+    for (int rate = PAC1952_RATE_8SPS; rate <= PAC1952_RATE_1024SPS; rate++) {
+        mock_reset();
+        pac1952_init(&dev, &mock_i2c_hal, &default_cfg);
+        ASSERT_TRUE(pac1952_set_sample_rate(&dev, (pac1952_rate_t)rate) !=
+                    PAC1952_ERR_UNSUPPORTED);
+    }
+}
+
+TEST(test_set_sample_rate_refuses_a_register_hal)
+{
+    /* No fallback: byte writes would reach GPIO_ALERT2 and ACC_COUNT, and
+     * CTRL's low byte would never be written */
+    static const pac1952_i2c_t hal = {
+        .write_reg = mock_i2c_write_reg,
+        .read_regs = mock_i2c_read_regs,
+    };
+    mock_reset();
+    ASSERT_EQ(pac1952_init(&dev, &hal, &default_cfg), PAC1952_OK);
+    int ops_before = mock_op_count;
+
+    ASSERT_EQ(pac1952_set_sample_rate(&dev, PAC1952_RATE_8SPS), PAC1952_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, ops_before);
     ASSERT_EQ(mock_regs[REG_CTRL], 0x07);
     ASSERT_EQ(mock_regs[REG_CTRL + 1], 0x30);
 }
@@ -554,7 +585,9 @@ TEST_MAIN("pac1952")
     RUN(test_read_both_null_dev);
     RUN(test_read_both_null_ch1);
     RUN(test_read_both_null_ch2);
-    RUN(test_set_sample_rate_is_unsupported);
+    RUN(test_set_sample_rate_ok);
+    RUN(test_set_sample_rate_is_no_longer_refused);
+    RUN(test_set_sample_rate_refuses_a_register_hal);
     RUN(test_set_sample_rate_invalid);
     RUN(test_set_sample_rate_null);
     RUN(test_get_product_id_ok);
