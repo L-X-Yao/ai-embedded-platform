@@ -24,6 +24,13 @@
 #define REG_TEMP    0x00u
 #define REG_CONF    0x01u
 
+/*
+ * p.7: "The temp reading data is 0 C and not updated until the first
+ * conversion is completed in about 28 ms." Table 20 gives 28 ms as the
+ * typical value and no maximum, hence the margin.
+ */
+#define FIRST_CONVERSION_MS 40u
+
 /* ---------- internal helpers ---------- */
 
 static bool read_regs(const pct2075_t *dev, uint8_t reg,
@@ -59,7 +66,7 @@ pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
     if (!dev || !i2c || !cfg) {
         return PCT2075_ERR_PARAM;
     }
-    if (!i2c->read_regs || !i2c->write_reg) {
+    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms) {
         return PCT2075_ERR_PARAM;
     }
     if (!addr_is_valid(cfg->addr)) {
@@ -83,6 +90,9 @@ pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
             return PCT2075_ERR_I2C;
         }
     }
+
+    /* Temp reads 0 C with no error until the first conversion ends. */
+    i2c->delay_ms(i2c->ctx, FIRST_CONVERSION_MS);
 
     INVARIANT(dev->i2c != NULL);
     return PCT2075_OK;
