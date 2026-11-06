@@ -204,6 +204,16 @@ done
 echo ""
 echo "Modified: ${#MODIFIED[@]}  Failed: ${#FAILED[@]}"
 
+# A fix that failed may have stopped half way, so nothing from this run stays.
+# _SCRIPT_DONE keeps the exit trap from repeating this and deleting the backup.
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    echo ""
+    echo "=== Fix FAILED: ${FAILED[*]} ==="
+    rollback
+    _SCRIPT_DONE=true
+    exit 1
+fi
+
 # Verify — rollback on failure
 if $VERIFY && ! $DRY_RUN && [[ ${#MODIFIED[@]} -gt 0 ]]; then
     echo ""
@@ -212,6 +222,7 @@ if $VERIFY && ! $DRY_RUN && [[ ${#MODIFIED[@]} -gt 0 ]]; then
         echo ""
         echo "=== Verification FAILED ==="
         rollback
+        _SCRIPT_DONE=true
         exit 1
     fi
     echo ""
