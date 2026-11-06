@@ -262,6 +262,122 @@ TEST(test_move_null_returns_param)
     ASSERT_EQ(stepper_move_to(NULL, 10), STEPPER_ERR_PARAM);
 }
 
+/* ---------- ramp shape ----------
+ * Expected values come from constant acceleration, not from the driver.
+ * After n steps from rest v = sqrt(2*a*n), so the delay there is
+ * 1e6 / sqrt(2*a*n) us, and Austin's first delay is
+ * 0.676 * sqrt(2/a) * 1e6 us. */
+
+#define RAMP_MAX 40000U
+
+static uint32_t g_ramp[RAMP_MAX];   /* every g_ramp_stride-th step delay */
+static uint32_t g_ramp_stride;
+static uint32_t g_ramp_n;           /* step delays seen */
+static uint32_t g_ramp_last;        /* the latest step delay */
+
+static void ramp_step_pin(void *ctx, bool level)
+{
+    (void)ctx;
+    (void)level;
+}
+
+static void ramp_dir_pin(void *ctx, bool level)
+{
+    (void)ctx;
+    (void)level;
+}
+
+static void ramp_delay_us(void *ctx, uint32_t us)
+{
+    (void)ctx;
+    if (us <= 2) return;   /* pulse width, not a step delay */
+    if (g_ramp_n % g_ramp_stride == 0 &&
+        g_ramp_n / g_ramp_stride < RAMP_MAX) {
+        g_ramp[g_ramp_n / g_ramp_stride] = us;
+    }
+    g_ramp_last = us;
+    g_ramp_n++;
+}
+
+static const stepper_hal_t ramp_hal = {
+    .step_pin  = ramp_step_pin,
+    .dir_pin   = ramp_dir_pin,
+    .delay_us  = ramp_delay_us,
+    .ctx       = NULL,
+};
+
+static void ramp_run(uint16_t max_speed, uint16_t accel, int32_t steps,
+                     uint32_t stride)
+{
+    stepper_t s;
+    g_ramp_n = 0;
+    g_ramp_stride = stride;
+    stepper_init(&s, &ramp_hal, max_speed, accel);
+    stepper_move(&s, steps);
+}
+
+static bool within_pct(uint32_t got, uint32_t want, uint32_t pct)
+{
+    uint32_t diff = got > want ? got - want : want - got;
+    return (uint64_t)diff * 100U <= (uint64_t)want * pct;
+}
+
+TEST(test_ramp_up_follows_constant_accel)
+{
+    /* 5000 sps at 1000 sps^2 takes 12500 steps. */
+    ramp_run(5000, 1000, 40000, 1);
+    ASSERT_EQ(g_ramp_n, 39999);
+    ASSERT_TRUE(within_pct(g_ramp[500], 1000, 3));    /* 1000 sps */
+    ASSERT_TRUE(within_pct(g_ramp[2000], 500, 3));    /* 2000 sps */
+    ASSERT_TRUE(within_pct(g_ramp[4500], 333, 3));    /* 3000 sps */
+    ASSERT_TRUE(within_pct(g_ramp[8000], 250, 3));    /* 4000 sps */
+    ASSERT_EQ(g_ramp[20000], 200);                    /* cruise */
+}
+
+TEST(test_ramp_has_no_speed_jump)
+{
+    ramp_run(5000, 1000, 40000, 1);
+    /* Neighbouring delays differ by about 1/(2n) on a true ramp. */
+    for (uint32_t i = 20; i + 20 < g_ramp_n; i++) {
+        ASSERT_TRUE(within_pct(g_ramp[i], g_ramp[i - 1], 5));
+    }
+}
+
+TEST(test_ramp_down_mirrors_ramp_up)
+{
+    ramp_run(5000, 1000, 40000, 1);
+    uint32_t last = g_ramp_n - 1;
+    ASSERT_TRUE(within_pct(g_ramp[last - 8000], 250, 3));
+    ASSERT_TRUE(within_pct(g_ramp[last - 4500], 333, 3));
+    ASSERT_TRUE(within_pct(g_ramp[last - 2000], 500, 3));
+    ASSERT_TRUE(within_pct(g_ramp[last - 500], 1000, 3));
+    /* It must stop from the speed it started at: 0.676*sqrt(2/1000). */
+    ASSERT_TRUE(within_pct(g_ramp[last], 30231, 5));
+}
+
+TEST(test_ramp_low_accel)
+{
+    /* 125000 steps to reach 5000 sps at 100 sps^2; 2500 sps is at 31250. */
+    ramp_run(5000, 100, 260000, 10);
+    ASSERT_EQ(g_ramp_n, 259999);
+    ASSERT_TRUE(within_pct(g_ramp[3125], 400, 3));
+    ASSERT_TRUE(within_pct(g_ramp[12000], 204, 3));   /* 4899 sps */
+    ASSERT_TRUE(within_pct(g_ramp[25999 - 3125], 400, 3));
+}
+
+TEST(test_ramp_extreme_range)
+{
+    /* At the slowest accel, 1 sps^2, 2000 sps takes 2000000 steps and the
+     * first delay is near 1 s. */
+    ramp_run(2000, 1, 4400000, 500);
+    ASSERT_EQ(g_ramp_n, 4399999);
+    ASSERT_TRUE(within_pct(g_ramp[0], 956008, 3));    /* 0.676*sqrt(2) */
+    ASSERT_TRUE(within_pct(g_ramp[1000], 1000, 3));   /* n=500000 */
+    ASSERT_EQ(g_ramp[4400], 500);                     /* cruise */
+    ASSERT_TRUE(within_pct(g_ramp[8799 - 1000], 1000, 3));
+    ASSERT_TRUE(within_pct(g_ramp_last, 956008, 5));
+}
+
 TEST_MAIN("stepper")
     RUN(test_init_valid);
     RUN(test_init_null);
@@ -281,4 +397,9 @@ TEST_MAIN("stepper")
     RUN(test_state_idle_after_move);
     RUN(test_state_idle_after_move_to);
     RUN(test_move_null_returns_param);
+    RUN(test_ramp_up_follows_constant_accel);
+    RUN(test_ramp_has_no_speed_jump);
+    RUN(test_ramp_down_mirrors_ramp_up);
+    RUN(test_ramp_low_accel);
+    RUN(test_ramp_extreme_range);
 TEST_MAIN_END()
