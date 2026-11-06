@@ -251,6 +251,124 @@ TEST(test_hw_write_all_config_per_channel)
     }
 }
 
+/* --- what the model itself must do (DS22187E) --- */
+
+/* p24 Table 4-2: every channel leaves the factory with VREF = 1, PD = 00,
+ * Gx = 0 and code 0 */
+TEST(test_hw_factory_eeprom_at_power_up)
+{
+    mcp4728_model_init(&model);
+    for (int ch = 0; ch < 4; ch++) {
+        ASSERT_EQ(model.eeprom_vref[ch], 1);
+        ASSERT_EQ(model.eeprom_pd[ch], 0);
+        ASSERT_EQ(model.eeprom_gain[ch], 0);
+        ASSERT_EQ(model.eeprom_value[ch], 0);
+        ASSERT_EQ(model.channel_vref[ch], 1);
+        ASSERT_EQ(model.channel_value[ch], 0);
+    }
+}
+
+/* p23: "each channel uploads all configuration and DAC input codes from
+ * EEPROM", into "both of the DAC input and output registers simultaneously",
+ * and the output is there "regardless of the LDAC and UDAC bit conditions" */
+TEST(test_hw_power_on_uploads_the_eeprom)
+{
+    mcp4728_model_init(&model);
+    model.eeprom_value[2] = 0x0ABCu;
+    model.eeprom_vref[2]  = 0;
+    model.eeprom_pd[2]    = 2;
+    model.eeprom_gain[2]  = 1;
+    mcp4728_model_power_on(&model);
+    ASSERT_EQ_HEX(model.channel_value[2], 0x0ABCu);
+    ASSERT_EQ_HEX(model.channel_output[2], 0x0ABCu);
+    ASSERT_EQ(model.channel_vref[2], 0);
+    ASSERT_EQ(model.channel_pd[2], 2);
+    ASSERT_EQ(model.channel_gain[2], 1);
+}
+
+/* p34 Table 5-1, Multi-Write: "EEPROM is not affected", so a power cycle takes
+ * the channel back to what the EEPROM holds */
+TEST(test_hw_multi_write_is_lost_at_power_off)
+{
+    setup();
+    ASSERT_EQ(mcp4728_write_channel(&dev, 0, 2048), MCP4728_OK);
+    ASSERT_EQ(model.eeprom_value[0], 0);
+    ASSERT_EQ(model.eeprom_vref[0], 1);
+
+    mcp4728_model_power_on(&model);
+    ASSERT_EQ(model.channel_value[0], 0);
+    ASSERT_EQ(model.channel_output[0], 0);
+    ASSERT_EQ(model.channel_vref[0], 1);
+}
+
+/* p45 Figure 5-15: per channel, A to D, three bytes of the DAC input register
+ * and then three of the EEPROM. The first of each three is RDY/BSY POR DAC1
+ * DAC0 0 A2 A1 A0, RDY/BSY = 1 when idle (p25), POR = 1 when powered. */
+TEST(test_hw_read_frame_follows_figure_5_15)
+{
+    static const uint8_t want[24] = {
+        0xC0u, 0x80u, 0x00u, 0xC0u, 0x80u, 0x00u,  /* A: factory, both */
+        0xD0u, 0x0Au, 0xBCu, 0xD0u, 0x80u, 0x00u,  /* B: written, then EEPROM */
+        0xE0u, 0x80u, 0x00u, 0xE0u, 0x80u, 0x00u,  /* C */
+        0xF0u, 0x80u, 0x00u, 0xF0u, 0x80u, 0x00u,  /* D */
+    };
+    setup();
+    ASSERT_EQ(mcp4728_write_channel(&dev, 1, 0x0ABCu), MCP4728_OK);
+
+    uint8_t frame[24];
+    memset(frame, 0xA5, sizeof(frame));
+    ASSERT_TRUE(mcp4728_model_read_regs(&model, MCP4728_ADDR_DEFAULT, 0,
+                                        frame, sizeof(frame)));
+    ASSERT_MEMEQ_N(frame, want, sizeof(want));
+}
+
+/* The same frame carries the VREF, PD and Gx bits and the address bits */
+TEST(test_hw_read_shows_config_and_address)
+{
+    mcp4728_model_init(&model);
+    model.channel_vref[0]  = 1;
+    model.channel_pd[0]    = 3;
+    model.channel_gain[0]  = 1;
+    model.channel_value[0] = 0x0123u;
+
+    uint8_t frame[3];
+    ASSERT_TRUE(mcp4728_model_read_regs(&model, 0x65u, 0, frame, sizeof(frame)));
+    ASSERT_EQ_HEX(frame[0], 0xC5u);
+    ASSERT_EQ_HEX(frame[1], 0xF1u);
+    ASSERT_EQ_HEX(frame[2], 0x23u);
+}
+
+/* p39 Figure 5-8: "If UDAC = 0 or LDAC Pin = 0: VOUT is updated after the 4th
+ * byte's ACK is issued." */
+TEST(test_hw_udac_set_leaves_the_output)
+{
+    mcp4728_model_init(&model);
+    uint8_t data[2] = {0x01u, 0x23u};
+    ASSERT_TRUE(mcp4728_model_write_regs(&model, MCP4728_ADDR_DEFAULT, 0x41u,
+                                         data, sizeof(data)));
+    ASSERT_EQ_HEX(model.channel_value[0], 0x0123u);
+    ASSERT_EQ_HEX(model.channel_output[0], 0x0000u);
+
+    model.ldac_low = true;
+    ASSERT_TRUE(mcp4728_model_write_regs(&model, MCP4728_ADDR_DEFAULT, 0x41u,
+                                         data, sizeof(data)));
+    ASSERT_EQ_HEX(model.channel_output[0], 0x0123u);
+}
+
+/* The driver has no LDAC, so it must write UDAC = 0 for the output to move */
+TEST(test_hw_driver_writes_reach_the_output)
+{
+    setup();
+    ASSERT_EQ(mcp4728_write_channel(&dev, 3, 1000), MCP4728_OK);
+    ASSERT_EQ(model.channel_output[3], 1000);
+
+    const uint16_t values[4] = {10, 20, 30, 40};
+    ASSERT_EQ(mcp4728_write_all(&dev, values), MCP4728_OK);
+    for (int ch = 0; ch < 4; ch++) {
+        ASSERT_EQ(model.channel_output[ch], values[ch]);
+    }
+}
+
 TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_init_ok);
     RUN(test_hw_write_channel_a_zero);
@@ -270,4 +388,11 @@ TEST_MAIN("mcp4728 hardware model")
     RUN(test_hw_write_moves_channel_to_vdd);
     RUN(test_hw_write_keeps_internal_reference);
     RUN(test_hw_write_all_config_per_channel);
+    RUN(test_hw_factory_eeprom_at_power_up);
+    RUN(test_hw_power_on_uploads_the_eeprom);
+    RUN(test_hw_multi_write_is_lost_at_power_off);
+    RUN(test_hw_read_frame_follows_figure_5_15);
+    RUN(test_hw_read_shows_config_and_address);
+    RUN(test_hw_udac_set_leaves_the_output);
+    RUN(test_hw_driver_writes_reach_the_output);
 TEST_MAIN_END()
