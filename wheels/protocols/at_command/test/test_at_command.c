@@ -157,6 +157,42 @@ TEST(test_prev_line)
     ASSERT_TRUE(strcmp(at_command_get_matched(&at), "OK") == 0);
 }
 
+TEST(test_prev_line_survives_a_urc_before_the_final_line)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    urc_reset();
+    at_command_init(&at, &mock_hal);
+    at_command_register_urc(&at, "+CGREG:", urc_handler, NULL);
+    at_command_expect(&at, "OK");
+
+    feed_string(&at, "862104025396754\r\n", &evt);
+    feed_string(&at, "+CGREG: 1\r\n", &evt);
+    at_command_evt_type_t r = feed_string(&at, "OK\r\n", &evt);
+
+    ASSERT_TRUE(r == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(strcmp(urc_captured, "+CGREG: 1") == 0);
+    ASSERT_TRUE(strcmp(at_command_get_prev_line(&at), "862104025396754") == 0);
+}
+
+TEST(test_prev_line_takes_a_line_no_handler_took)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    urc_reset();
+    at_command_init(&at, &mock_hal);
+    at_command_register_urc(&at, "+CGREG:", urc_handler, NULL);
+    at_command_expect(&at, "OK");
+
+    feed_string(&at, "first\r\n", &evt);
+    feed_string(&at, "+CGREG: 1\r\n", &evt);
+    feed_string(&at, "second\r\n", &evt);
+    feed_string(&at, "OK\r\n", &evt);
+
+    ASSERT_TRUE(strcmp(at_command_get_prev_line(&at), "second") == 0);
+}
+
 TEST(test_urc_dispatch)
 {
     at_command_t at;
@@ -555,6 +591,8 @@ TEST_MAIN("at_command")
     RUN(test_error_response);
     RUN(test_cme_error);
     RUN(test_prev_line);
+    RUN(test_prev_line_survives_a_urc_before_the_final_line);
+    RUN(test_prev_line_takes_a_line_no_handler_took);
     RUN(test_urc_dispatch);
     RUN(test_urc_with_prefix);
     RUN(test_urc_during_wait);

@@ -96,7 +96,7 @@ int           at_command_register_urc(at_command_t *at, const char *prefix,
 int           at_command_unregister_urc(at_command_t *at, const char *prefix);
 /** Get last matched response. @thread_safe: caller_must_lock */
 const char   *at_command_get_matched(const at_command_t *at);
-/** Get previous complete line. @thread_safe: caller_must_lock */
+/** Get the last complete line no URC handler took. @thread_safe: caller_must_lock */
 const char   *at_command_get_prev_line(const at_command_t *at);
 
 #ifdef __cplusplus
