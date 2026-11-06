@@ -58,7 +58,10 @@ hx711_err_t hx711_read_raw(hx711_t *dev, int32_t *value);
 /** Read with offset and scale applied: (raw - offset) / scale. @thread_safe: no @isr_safe: no */
 hx711_err_t hx711_read(hx711_t *dev, float *value);
 
-/** Average N readings and store as tare offset. @thread_safe: no @isr_safe: no */
+/** Average N readings and store as tare offset. Blocks through delay_us for one
+ *  conversion per sample, 100 ms at 10 SPS. Returns HX711_ERR_TIMEOUT and keeps
+ *  the old offset if a conversion does not end within 1.2 s.
+ *  @thread_safe: no @isr_safe: no */
 hx711_err_t hx711_tare(hx711_t *dev, uint8_t samples);
 
 /** Set scale factor for raw-to-unit conversion. @thread_safe: no @isr_safe: yes */
