@@ -30,36 +30,103 @@ static int buf_append(char *buf, int pos, int cap, const char *s)
     return len;
 }
 
+/* Longest fmt_float text and its NUL: sign, 39 digits, point, 2 decimals */
+#define FLOAT_TEXT_SIZE 44
+
 /*
  * Format a float with up to 2 decimal places, trimming trailing zeros.
  * E.g. 25.50 -> "25.5", 60.00 -> "60", 1.23 -> "1.23"
+ *
+ * The digits are those of "%.2f", made with integer arithmetic.  snprintf will
+ * not do: newlib-nano prints nothing for a float unless _printf_float is
+ * linked, and full newlib allocates from the heap.  Assumes IEEE 754 binary32.
+ * Returns the length, or -1 if the text does not fit in size bytes.
  */
 static int fmt_float(char *out, int size, float val)
 {
+    uint32_t bits;
+    memcpy(&bits, &val, sizeof(bits));
+
+    int negative = (int)(bits >> 31);
+    uint32_t exponent = (bits >> 23) & 0xFFu;
+    uint64_t mantissa = bits & 0x7FFFFFu;
+
     /* Guard against NaN / Inf which would produce non-numeric strings
      * ("nan", "inf", "-inf") that break JSON/CSV parsers. */
-    if (isnan(val) || isinf(val)) {
-        int n = snprintf(out, (size_t)size, "0");
-        return (n >= 0 && n < size) ? n : -1;
+    if (exponent == 0xFFu) {
+        if (size < 2) {
+            return -1;
+        }
+        out[0] = '0';
+        out[1] = '\0';
+        return 1;
     }
 
-    int n = snprintf(out, (size_t)size, "%.2f", (double)val);
-    if (n <= 0 || n >= size) {
-        return n;
+    /* |val| = mantissa * 2^shift exactly, so hundredths can round exactly */
+    int shift = -149;
+    if (exponent != 0) {
+        mantissa |= 0x800000u;
+        shift = (int)exponent - 150;
     }
-    /* trim trailing zeros after decimal point */
-    char *dot = strchr(out, '.');
-    if (dot) {
-        char *end = out + n - 1;
-        while (end > dot && *end == '0') {
-            *end-- = '\0';
-            n--;
+
+    uint32_t limbs[5] = { 0 };  /* hundredths, least significant first */
+    uint64_t hundredths = mantissa * 100u;  /* below 2^31 */
+    if (shift >= 0) {
+        uint64_t wide = hundredths << (shift % 32);
+        limbs[shift / 32]     = (uint32_t)wide;
+        limbs[shift / 32 + 1] = (uint32_t)(wide >> 32);
+    } else if (shift > -64) {
+        uint32_t drop = (uint32_t)-shift;
+        uint64_t rest = hundredths & ((UINT64_C(1) << drop) - 1u);
+        uint64_t half = UINT64_C(1) << (drop - 1u);
+        hundredths >>= drop;
+        if (rest > half || (rest == half && (hundredths & 1u) != 0)) {
+            hundredths++;  /* ties go to the even digit */
         }
-        if (end == dot) {
-            *end = '\0';
-            n--;
-        }
+        limbs[0] = (uint32_t)hundredths;
     }
+
+    char digits[41];  /* least significant first; FLT_MAX has 41 */
+    int count = 0;
+    int top = 4;
+    do {
+        uint32_t digit = 0;
+        for (int i = top; i >= 0; i--) {
+            uint64_t part = ((uint64_t)digit << 32) | limbs[i];
+            limbs[i] = (uint32_t)(part / 10u);
+            digit    = (uint32_t)(part % 10u);
+        }
+        digits[count++] = (char)('0' + (int)digit);
+        while (top > 0 && limbs[top] == 0) {
+            top--;
+        }
+    } while (limbs[top] != 0 || count < 3);
+
+    int decimals = 0;
+    if (digits[0] != '0') {
+        decimals = 2;
+    } else if (digits[1] != '0') {
+        decimals = 1;
+    }
+    if (negative + count - 2 + (decimals != 0 ? decimals + 1 : 0) >= size) {
+        return -1;
+    }
+
+    int n = 0;
+    if (negative) {
+        out[n++] = '-';
+    }
+    while (count > 2) {
+        out[n++] = digits[--count];
+    }
+    if (decimals != 0) {
+        out[n++] = '.';
+        out[n++] = digits[1];
+    }
+    if (decimals == 2) {
+        out[n++] = digits[0];
+    }
+    out[n] = '\0';
     return n;
 }
 
@@ -80,7 +147,7 @@ static int fmt_json(telemetry_t *t, uint32_t timestamp)
     pos += n;
 
     for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[32];
+        char fval[FLOAT_TEXT_SIZE];
         fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
         n = snprintf(tmp, sizeof(tmp), ",\"%s\":%s",
                      t->fields[i].name, fval);
@@ -113,7 +180,7 @@ static int fmt_csv(telemetry_t *t, uint32_t timestamp)
     pos += n;
 
     for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[32];
+        char fval[FLOAT_TEXT_SIZE];
         fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
         n = snprintf(tmp, sizeof(tmp), ",%s", fval);
         if (n < 0 || (size_t)n >= sizeof(tmp)) { return -1; }
@@ -141,7 +208,7 @@ static int fmt_key_value(telemetry_t *t, uint32_t timestamp)
     pos += n;
 
     for (uint8_t i = 0; i < t->field_count; i++) {
-        char fval[32];
+        char fval[FLOAT_TEXT_SIZE];
         fmt_float(fval, (int)sizeof(fval), t->fields[i].value);
         n = snprintf(tmp, sizeof(tmp), " %s=%s",
                      t->fields[i].name, fval);
