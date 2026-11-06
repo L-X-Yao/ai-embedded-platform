@@ -194,7 +194,7 @@ void framebuffer_hline(framebuffer_t *fb, uint16_t x, uint16_t y,
     if (!fb_valid(fb) || y >= fb->height || w == 0u) { return; }
     /* Clip x range */
     if (x >= fb->width) { return; }
-    uint16_t x_end = x + w;
+    uint32_t x_end = (uint32_t)x + w;
     if (x_end > fb->width) { x_end = fb->width; }
     for (uint16_t xi = x; xi < x_end; xi++) {
         (void)framebuffer_set_pixel(fb, xi, y, color);
@@ -209,7 +209,7 @@ void framebuffer_vline(framebuffer_t *fb, uint16_t x, uint16_t y,
     if (!fb_valid(fb) || x >= fb->width || h == 0u) { return; }
     /* Clip y range */
     if (y >= fb->height) { return; }
-    uint16_t y_end = y + h;
+    uint32_t y_end = (uint32_t)y + h;
     if (y_end > fb->height) { y_end = fb->height; }
     for (uint16_t yi = y; yi < y_end; yi++) {
         (void)framebuffer_set_pixel(fb, x, yi, color);
@@ -222,18 +222,23 @@ void framebuffer_rect(framebuffer_t *fb, uint16_t x, uint16_t y,
                       uint16_t w, uint16_t h, uint16_t color)
 {
     if (!fb_valid(fb) || w == 0u || h == 0u) { return; }
+    /* 32 bits: an edge past 65535 is off the screen, not back at 0. */
+    uint32_t right  = (uint32_t)x + w - 1u;
+    uint32_t bottom = (uint32_t)y + h - 1u;
+    uint32_t inner  = (uint32_t)y + 1u;
+
     /* Top and bottom horizontal lines */
     (void)framebuffer_hline(fb, x, y, w, color);
-    if (h > 1u) {
-        (void)framebuffer_hline(fb, x, (uint16_t)(y + h - 1u), w, color);
+    if (h > 1u && bottom < fb->height) {
+        (void)framebuffer_hline(fb, x, (uint16_t)bottom, w, color);
     }
     /* Left and right vertical lines (skip corners already drawn) */
-    if (h > 2u) {
-        (void)framebuffer_vline(fb, x, (uint16_t)(y + 1u),
+    if (h > 2u && inner < fb->height) {
+        (void)framebuffer_vline(fb, x, (uint16_t)inner,
                           (uint16_t)(h - 2u), color);
-        if (w > 1u) {
-            (void)framebuffer_vline(fb, (uint16_t)(x + w - 1u),
-                              (uint16_t)(y + 1u),
+        if (w > 1u && right < fb->width) {
+            (void)framebuffer_vline(fb, (uint16_t)right,
+                              (uint16_t)inner,
                               (uint16_t)(h - 2u), color);
         }
     }
@@ -247,8 +252,8 @@ void framebuffer_fill_rect(framebuffer_t *fb, uint16_t x, uint16_t y,
     if (!fb_valid(fb) || w == 0u || h == 0u) { return; }
     /* Clip */
     if (x >= fb->width || y >= fb->height) { return; }
-    uint16_t x_end = x + w;
-    uint16_t y_end = y + h;
+    uint32_t x_end = (uint32_t)x + w;
+    uint32_t y_end = (uint32_t)y + h;
     if (x_end > fb->width)  { x_end = fb->width; }
     if (y_end > fb->height) { y_end = fb->height; }
     for (uint16_t yi = y; yi < y_end; yi++) {

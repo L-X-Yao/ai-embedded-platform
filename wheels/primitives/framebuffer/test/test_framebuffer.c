@@ -538,6 +538,47 @@ TEST(test_blit_1bpp_on_rgb565)
     ASSERT_EQ_HEX(0xF800u, framebuffer_get_pixel(&fb, 2, 2));
 }
 
+/* ---- test_sizes_past_uint16 ---- */
+
+/* Position + size can pass 65535. Each shape is clipped like any other, so the
+ * expected counts are what lands in the 128x64 window. */
+TEST(test_sizes_past_uint16)
+{
+    static uint8_t buf[1024];
+    framebuffer_t fb;
+    ASSERT_EQ(FRAMEBUFFER_OK,
+              framebuffer_init(&fb, buf, 128, 64, FB_FORMAT_MONO_VLSB));
+
+    /* 100 + 65436 is exactly 65536: x = 100..127 */
+    framebuffer_hline(&fb, 100, 5, 65436, 1);
+    ASSERT_EQ(28, lit_pixels(&fb));
+
+    /* y = 10..63 */
+    framebuffer_clear(&fb, 0);
+    framebuffer_vline(&fb, 5, 10, 65530, 1);
+    ASSERT_EQ(54, lit_pixels(&fb));
+
+    framebuffer_clear(&fb, 0);
+    framebuffer_fill_rect(&fb, 10, 10, 0xFFFF, 0xFFFF, 1);
+    ASSERT_EQ(118 * 54, lit_pixels(&fb));
+
+    /* Bottom edge is off the screen: the top, then 3 rows of each side */
+    framebuffer_clear(&fb, 0);
+    framebuffer_rect(&fb, 10, 60, 20, 65500, 1);
+    ASSERT_EQ(20 + 3 + 3, lit_pixels(&fb));
+
+    /* Right edge is off the screen: top, bottom and 18 rows of the left */
+    framebuffer_clear(&fb, 0);
+    framebuffer_rect(&fb, 100, 10, 65500, 20, 1);
+    ASSERT_EQ(28 + 28 + 18, lit_pixels(&fb));
+
+    /* Starting at the very last coordinate: nothing comes back round */
+    framebuffer_clear(&fb, 0);
+    framebuffer_rect(&fb, 5, 65535, 10, 5, 1);
+    framebuffer_rect(&fb, 65535, 5, 5, 10, 1);
+    ASSERT_EQ(0, lit_pixels(&fb));
+}
+
 TEST_MAIN("framebuffer")
     RUN(test_init_null);
     RUN(test_init_mono_vlsb);
@@ -556,4 +597,5 @@ TEST_MAIN("framebuffer")
     RUN(test_null_safe);
     RUN(test_buf_size);
     RUN(test_blit_1bpp_on_rgb565);
+    RUN(test_sizes_past_uint16);
 TEST_MAIN_END()
