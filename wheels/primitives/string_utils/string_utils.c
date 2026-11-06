@@ -10,6 +10,7 @@
 
 #include "string_utils.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
 
 /* ── helpers ────────────────────────────────────────────────────────── */
@@ -162,6 +163,9 @@ string_utils_err_t str_to_float(const char *str, float *val)
     }
 
     if (!has_digit || *p != '\0') return STRING_UTILS_ERR_FMT;
+
+    /* Too many digits run result up to +inf */
+    if (result > FLT_MAX) return STRING_UTILS_ERR_RANGE;
 
     *val = neg ? -result : result;
     return STRING_UTILS_OK;

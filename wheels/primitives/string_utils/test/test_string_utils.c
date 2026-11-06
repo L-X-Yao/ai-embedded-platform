@@ -191,6 +191,44 @@ TEST(test_zero_init_safety)
     ASSERT_TRUE(strcmp(buf, "") == 0);
 }
 
+/* Digits past the float range are a range error, as in str_to_int. */
+TEST(test_float_out_of_range)
+{
+    static const char *const big[] = {
+        "999999999999999999999999999999999999999999999",  /* 45 nines */
+        "340282350000000000000000000000000000000000",     /* 3.4e41 */
+        "-999999999999999999999999999999999999999999999",
+        "+340282350000000000000000000000000000000000.5",
+    };
+    float v = 7.0f;
+
+    for (size_t i = 0; i < sizeof(big) / sizeof(big[0]); i++) {
+        ASSERT_EQ(str_to_float(big[i], &v), STRING_UTILS_ERR_RANGE);
+        ASSERT_TRUE(v == 7.0f); /* output untouched, as in str_to_int */
+    }
+}
+
+TEST(test_float_large_but_in_range)
+{
+    float v = 0.0f;
+
+    ASSERT_EQ(str_to_float("300000000000000000000000000000000000000", &v),
+              STRING_UTILS_OK);
+    ASSERT_TRUE(v > 2.9e38f && v < 3.1e38f);
+    ASSERT_EQ(str_to_float("-300000000000000000000000000000000000000", &v),
+              STRING_UTILS_OK);
+    ASSERT_TRUE(v < -2.9e38f && v > -3.1e38f);
+}
+
+/* A malformed string stays a format error however long its digits run. */
+TEST(test_float_format_beats_range)
+{
+    float v = 0.0f;
+
+    ASSERT_EQ(str_to_float("999999999999999999999999999999999999999999999x", &v),
+              STRING_UTILS_ERR_FMT);
+}
+
 TEST_MAIN("string_utils")
     RUN(test_trim_basic);
     RUN(test_ltrim);
@@ -211,4 +249,7 @@ TEST_MAIN("string_utils")
     RUN(test_join_overflow);
     RUN(test_join_null_param);
     RUN(test_zero_init_safety);
+    RUN(test_float_out_of_range);
+    RUN(test_float_large_but_in_range);
+    RUN(test_float_format_beats_range);
 TEST_MAIN_END()
