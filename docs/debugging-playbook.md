@@ -225,7 +225,7 @@ break HardFault_Handler
 
 > ✅ **首选 kernel-only sim 路径**（[ADR-008](adr/008-vsf-linux64-sim-strategy.md) 选项 C，2026-04-22 晚实证通过）。新项目跑 VSF kernel / shell / USB CDC 等 bare-metal 场景走这条，不走 linux64。
 
-`tooling/experiments/vsf-tryouts/mps2_bare/` 是实证跑通的 scaffold——build + link + QEMU 调度 + semihosting 输出全通，外加 pytest harness 一把跑完 5 条断言。下面是 minimal 配置里的 7 个必踩坑。
+`tooling/experiments/vsf-tryouts/mps2_bare/` 是实证跑通的 scaffold——build + link + QEMU 调度 + semihosting 输出全通，外加 pytest harness 一把跑完 5 条断言（2026-11-07 在 QEMU 8.2.2 上重跑，5 条全过）。它编译 log wheel，所以 include 列表要带 `tooling/harness`（`contract.h`），`main.c` 要调 `log_set_time_fn`，否则日志没有时间戳，2 条断言失败。下面是 minimal 配置里的 7 个必踩坑。
 
 ### 工具链（WSL Ubuntu 24.04 apt）
 
