@@ -107,6 +107,8 @@
 
 #define ENC_PHCON1         0x00U
 #define ENC_PHCON1_PDPXMD  0x0100U
+#define ENC_PHCON2         0x10U
+#define ENC_PHCON2_HDLDIS  0x0100U
 
 /* --- Buffer layout --- */
 
