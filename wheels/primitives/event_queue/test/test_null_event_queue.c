@@ -10,48 +10,41 @@
 TEST(test_event_queue_init_null_q) {
     event_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)event_queue_init(NULL, &_buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_init(NULL, &_buf, 0) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_init_null_buf) {
     event_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)event_queue_init(&_q, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_init(&_q, NULL, 0) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_push_null_q) {
-    (void)event_queue_push(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_push(NULL, 0, 0) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_pop_null_q) {
     event_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)event_queue_pop(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_pop(NULL, &_out) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_pop_null_out) {
     event_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)event_queue_pop(&_q, NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_pop(&_q, NULL) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_peek_null_q) {
     event_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)event_queue_peek(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_peek(NULL, &_out) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_peek_null_out) {
     event_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)event_queue_peek(&_q, NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_peek(&_q, NULL) != EVENT_QUEUE_OK);
 }
 
 TEST(test_event_queue_count_null_q) {
@@ -70,8 +63,7 @@ TEST(test_event_queue_is_full_null_q) {
 }
 
 TEST(test_event_queue_clear_null_q) {
-    (void)event_queue_clear(NULL);
-    /* must not crash */
+    ASSERT_TRUE(event_queue_clear(NULL) != EVENT_QUEUE_OK);
 }
 
 TEST_MAIN("null_param_event_queue") {

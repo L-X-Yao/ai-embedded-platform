@@ -26,8 +26,7 @@ TEST(test_syslog_parse_pri_null_buf) {
     memset(_pri, 0, sizeof(_pri));
     uint16_t _offset;
     memset(&_offset, 0, sizeof(_offset));
-    (void)syslog_parse_pri(NULL, 0, _pri, &_offset);
-    /* must not crash */
+    ASSERT_TRUE(syslog_parse_pri(NULL, 1, _pri, &_offset) != SYSLOG_OK);
 }
 
 TEST(test_syslog_parse_pri_null_pri) {
@@ -35,8 +34,7 @@ TEST(test_syslog_parse_pri_null_pri) {
     memset(_buf, 0, sizeof(_buf));
     uint16_t _offset;
     memset(&_offset, 0, sizeof(_offset));
-    (void)syslog_parse_pri(_buf, 0, NULL, &_offset);
-    /* must not crash */
+    ASSERT_TRUE(syslog_parse_pri(_buf, 0, NULL, &_offset) != SYSLOG_OK);
 }
 
 TEST(test_syslog_parse_pri_null_offset) {
@@ -44,8 +42,7 @@ TEST(test_syslog_parse_pri_null_offset) {
     memset(_buf, 0, sizeof(_buf));
     uint8_t _pri[64];
     memset(_pri, 0, sizeof(_pri));
-    (void)syslog_parse_pri(_buf, 0, _pri, NULL);
-    /* must not crash */
+    ASSERT_TRUE(syslog_parse_pri(_buf, 0, _pri, NULL) != SYSLOG_OK);
 }
 
 TEST_MAIN("null_param_syslog_packet") {

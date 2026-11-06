@@ -12,8 +12,7 @@ TEST(test_ina226_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ina226_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ina226_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ina226_init(NULL, &_i2c, &_cfg) != INA226_OK);
 }
 
 TEST(test_ina226_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ina226_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ina226_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ina226_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ina226_init(&_dev, NULL, &_cfg) != INA226_OK);
 }
 
 TEST(test_ina226_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_ina226_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ina226_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ina226_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina226_init(&_dev, &_i2c, NULL) != INA226_OK);
 }
 
 TEST(test_ina226_read_null_dev) {
     ina226_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ina226_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ina226_read(NULL, &_out) != INA226_OK);
 }
 
 TEST(test_ina226_read_null_out) {
     ina226_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina226_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina226_read(&_dev, NULL) != INA226_OK);
 }
 
 TEST(test_ina226_reset_null_dev) {
-    (void)ina226_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina226_reset(NULL) != INA226_OK);
 }
 
 TEST_MAIN("null_param_ina226") {

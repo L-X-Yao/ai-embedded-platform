@@ -10,77 +10,65 @@
 TEST(test_apds9960_init_null_dev) {
     apds9960_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)apds9960_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_init(NULL, &_i2c) != APDS9960_OK);
 }
 
 TEST(test_apds9960_init_null_i2c) {
     apds9960_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apds9960_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_init(&_dev, NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_enable_proximity_null_dev) {
-    (void)apds9960_enable_proximity(NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_enable_proximity(NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_proximity_null_dev) {
     uint8_t _prox[64];
     memset(_prox, 0, sizeof(_prox));
-    (void)apds9960_read_proximity(NULL, _prox);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_proximity(NULL, _prox) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_proximity_null_prox) {
     apds9960_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apds9960_read_proximity(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_proximity(&_dev, NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_enable_color_null_dev) {
-    (void)apds9960_enable_color(NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_enable_color(NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_color_null_dev) {
     apds9960_color_t _color;
     memset(&_color, 0, sizeof(_color));
-    (void)apds9960_read_color(NULL, &_color);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_color(NULL, &_color) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_color_null_color) {
     apds9960_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apds9960_read_color(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_color(&_dev, NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_enable_gesture_null_dev) {
-    (void)apds9960_enable_gesture(NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_enable_gesture(NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_gesture_null_dev) {
     apds9960_gesture_t _gesture;
     memset(&_gesture, 0, sizeof(_gesture));
-    (void)apds9960_read_gesture(NULL, &_gesture);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_gesture(NULL, &_gesture) != APDS9960_OK);
 }
 
 TEST(test_apds9960_read_gesture_null_gesture) {
     apds9960_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apds9960_read_gesture(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_read_gesture(&_dev, NULL) != APDS9960_OK);
 }
 
 TEST(test_apds9960_disable_all_null_dev) {
-    (void)apds9960_disable_all(NULL);
-    /* must not crash */
+    ASSERT_TRUE(apds9960_disable_all(NULL) != APDS9960_OK);
 }
 
 TEST_MAIN("null_param_apds9960") {

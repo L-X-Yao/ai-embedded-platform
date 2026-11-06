@@ -12,8 +12,7 @@ TEST(test_ltr390_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ltr390_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ltr390_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_init(NULL, &_i2c, &_cfg) != LTR390_OK);
 }
 
 TEST(test_ltr390_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ltr390_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ltr390_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ltr390_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_init(&_dev, NULL, &_cfg) != LTR390_OK);
 }
 
 TEST(test_ltr390_init_null_cfg) {
@@ -30,41 +28,35 @@ TEST(test_ltr390_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ltr390_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ltr390_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_init(&_dev, &_i2c, NULL) != LTR390_OK);
 }
 
 TEST(test_ltr390_read_als_null_dev) {
     uint32_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)ltr390_read_als(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_read_als(NULL, &_raw) != LTR390_OK);
 }
 
 TEST(test_ltr390_read_als_null_raw) {
     ltr390_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ltr390_read_als(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_read_als(&_dev, NULL) != LTR390_OK);
 }
 
 TEST(test_ltr390_read_uvs_null_dev) {
     uint32_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)ltr390_read_uvs(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_read_uvs(NULL, &_raw) != LTR390_OK);
 }
 
 TEST(test_ltr390_read_uvs_null_raw) {
     ltr390_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ltr390_read_uvs(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_read_uvs(&_dev, NULL) != LTR390_OK);
 }
 
 TEST(test_ltr390_set_mode_null_dev) {
-    (void)ltr390_set_mode(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ltr390_set_mode(NULL, 0) != LTR390_OK);
 }
 
 TEST_MAIN("null_param_ltr390") {

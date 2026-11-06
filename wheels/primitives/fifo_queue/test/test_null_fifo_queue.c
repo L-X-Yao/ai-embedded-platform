@@ -8,51 +8,43 @@
 #include <stddef.h>
 
 TEST(test_fifo_queue_init_null_q) {
-    (void)fifo_queue_init(NULL, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_init(NULL, NULL, 0, 0) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_init_null_storage) {
     fifo_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)fifo_queue_init(&_q, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_init(&_q, NULL, 0, 0) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_push_null_q) {
-    (void)fifo_queue_push(NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_push(NULL, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_push_null_item) {
     fifo_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)fifo_queue_push(&_q, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_push(&_q, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_pop_null_q) {
-    (void)fifo_queue_pop(NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_pop(NULL, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_pop_null_item) {
     fifo_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)fifo_queue_pop(&_q, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_pop(&_q, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_peek_null_q) {
-    (void)fifo_queue_peek(NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_peek(NULL, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_peek_null_item) {
     fifo_queue_t _q;
     memset(&_q, 0, sizeof(_q));
-    (void)fifo_queue_peek(&_q, NULL);
-    /* must not crash */
+    ASSERT_TRUE(fifo_queue_peek(&_q, NULL) != FIFO_QUEUE_OK);
 }
 
 TEST(test_fifo_queue_count_null_q) {

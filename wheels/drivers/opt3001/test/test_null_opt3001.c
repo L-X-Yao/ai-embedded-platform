@@ -10,39 +10,33 @@
 TEST(test_opt3001_init_null_dev) {
     opt3001_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)opt3001_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_init(NULL, &_i2c, 0) != OPT3001_OK);
 }
 
 TEST(test_opt3001_init_null_i2c) {
     opt3001_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)opt3001_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_init(&_dev, NULL, 0) != OPT3001_OK);
 }
 
 TEST(test_opt3001_read_lux_null_dev) {
     float _lux;
     memset(&_lux, 0, sizeof(_lux));
-    (void)opt3001_read_lux(NULL, &_lux);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_read_lux(NULL, &_lux) != OPT3001_OK);
 }
 
 TEST(test_opt3001_read_lux_null_lux) {
     opt3001_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)opt3001_read_lux(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_read_lux(&_dev, NULL) != OPT3001_OK);
 }
 
 TEST(test_opt3001_start_single_null_dev) {
-    (void)opt3001_start_single(NULL);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_start_single(NULL) != OPT3001_OK);
 }
 
 TEST(test_opt3001_set_continuous_null_dev) {
-    (void)opt3001_set_continuous(NULL);
-    /* must not crash */
+    ASSERT_TRUE(opt3001_set_continuous(NULL) != OPT3001_OK);
 }
 
 TEST(test_opt3001_data_ready_null_dev) {

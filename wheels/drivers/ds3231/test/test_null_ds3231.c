@@ -10,57 +10,49 @@
 TEST(test_ds3231_init_null_dev) {
     ds3231_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ds3231_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_init(NULL, &_i2c) != DS3231_OK);
 }
 
 TEST(test_ds3231_init_null_i2c) {
     ds3231_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds3231_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_init(&_dev, NULL) != DS3231_OK);
 }
 
 TEST(test_ds3231_get_time_null_dev) {
     ds3231_time_t _time;
     memset(&_time, 0, sizeof(_time));
-    (void)ds3231_get_time(NULL, &_time);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_get_time(NULL, &_time) != DS3231_OK);
 }
 
 TEST(test_ds3231_get_time_null_time) {
     ds3231_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds3231_get_time(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_get_time(&_dev, NULL) != DS3231_OK);
 }
 
 TEST(test_ds3231_set_time_null_dev) {
     ds3231_time_t _time;
     memset(&_time, 0, sizeof(_time));
-    (void)ds3231_set_time(NULL, &_time);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_set_time(NULL, &_time) != DS3231_OK);
 }
 
 TEST(test_ds3231_set_time_null_time) {
     ds3231_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds3231_set_time(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_set_time(&_dev, NULL) != DS3231_OK);
 }
 
 TEST(test_ds3231_get_temperature_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)ds3231_get_temperature(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_get_temperature(NULL, &_temp_c) != DS3231_OK);
 }
 
 TEST(test_ds3231_get_temperature_null_temp_c) {
     ds3231_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds3231_get_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds3231_get_temperature(&_dev, NULL) != DS3231_OK);
 }
 
 TEST_MAIN("null_param_ds3231") {

@@ -10,54 +10,45 @@
 TEST(test_bencode_encoder_init_null_enc) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)bencode_encoder_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encoder_init(NULL, _buf, 0) != BENCODE_OK);
 }
 
 TEST(test_bencode_encoder_init_null_buf) {
     bencode_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)bencode_encoder_init(&_enc, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encoder_init(&_enc, NULL, 0) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_int_null_enc) {
-    (void)bencode_encode_int(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_int(NULL, 0) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_string_null_enc) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)bencode_encode_string(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_string(NULL, _data, 0) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_string_null_data) {
     bencode_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)bencode_encode_string(&_enc, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_string(&_enc, NULL, 1) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_list_begin_null_enc) {
-    (void)bencode_encode_list_begin(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_list_begin(NULL) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_list_end_null_enc) {
-    (void)bencode_encode_list_end(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_list_end(NULL) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_dict_begin_null_enc) {
-    (void)bencode_encode_dict_begin(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_dict_begin(NULL) != BENCODE_OK);
 }
 
 TEST(test_bencode_encode_dict_end_null_enc) {
-    (void)bencode_encode_dict_end(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bencode_encode_dict_end(NULL) != BENCODE_OK);
 }
 
 TEST(test_bencode_encoder_len_null_enc) {
@@ -68,29 +59,25 @@ TEST(test_bencode_encoder_len_null_enc) {
 TEST(test_bencode_decoder_init_null_dec) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)bencode_decoder_init(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_decoder_init(NULL, _data, 0) != BENCODE_OK);
 }
 
 TEST(test_bencode_decoder_init_null_data) {
     bencode_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)bencode_decoder_init(&_dec, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bencode_decoder_init(&_dec, NULL, 1) != BENCODE_OK);
 }
 
 TEST(test_bencode_decode_next_null_dec) {
     bencode_token_t _token;
     memset(&_token, 0, sizeof(_token));
-    (void)bencode_decode_next(NULL, &_token);
-    /* must not crash */
+    ASSERT_TRUE(bencode_decode_next(NULL, &_token) != BENCODE_OK);
 }
 
 TEST(test_bencode_decode_next_null_token) {
     bencode_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)bencode_decode_next(&_dec, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bencode_decode_next(&_dec, NULL) != BENCODE_OK);
 }
 
 TEST_MAIN("null_param_bencode") {

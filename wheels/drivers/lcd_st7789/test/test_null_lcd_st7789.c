@@ -12,8 +12,7 @@ TEST(test_lcd_st7789_init_null_dev) {
     memset(&_spi, 0, sizeof(_spi));
     lcd_st7789_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lcd_st7789_init(NULL, &_spi, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_init(NULL, &_spi, &_cfg) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_init_null_spi) {
@@ -21,8 +20,7 @@ TEST(test_lcd_st7789_init_null_spi) {
     memset(&_dev, 0, sizeof(_dev));
     lcd_st7789_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lcd_st7789_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_init(&_dev, NULL, &_cfg) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_init_null_cfg) {
@@ -30,52 +28,43 @@ TEST(test_lcd_st7789_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     lcd_st7789_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)lcd_st7789_init(&_dev, &_spi, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_init(&_dev, &_spi, NULL) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_set_window_null_dev) {
-    (void)lcd_st7789_set_window(NULL, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_set_window(NULL, 0, 0, 0, 0) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_write_pixels_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)lcd_st7789_write_pixels(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_write_pixels(NULL, _data, 0) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_write_pixels_null_data) {
     lcd_st7789_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lcd_st7789_write_pixels(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_write_pixels(&_dev, NULL, 1) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_fill_rect_null_dev) {
-    (void)lcd_st7789_fill_rect(NULL, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_fill_rect(NULL, 0, 0, 0, 0, 0) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_display_on_null_dev) {
-    (void)lcd_st7789_display_on(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_display_on(NULL) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_display_off_null_dev) {
-    (void)lcd_st7789_display_off(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_display_off(NULL) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_set_rotation_null_dev) {
-    (void)lcd_st7789_set_rotation(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_set_rotation(NULL, 0) != LCD_ST7789_OK);
 }
 
 TEST(test_lcd_st7789_invert_null_dev) {
-    (void)lcd_st7789_invert(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(lcd_st7789_invert(NULL, false) != LCD_ST7789_OK);
 }
 
 TEST_MAIN("null_param_lcd_st7789") {

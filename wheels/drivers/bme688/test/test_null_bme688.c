@@ -12,8 +12,7 @@ TEST(test_bme688_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     bme688_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bme688_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bme688_init(NULL, &_i2c, &_cfg) != BME688_OK);
 }
 
 TEST(test_bme688_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_bme688_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     bme688_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bme688_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bme688_init(&_dev, NULL, &_cfg) != BME688_OK);
 }
 
 TEST(test_bme688_init_null_cfg) {
@@ -30,32 +28,27 @@ TEST(test_bme688_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bme688_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bme688_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bme688_init(&_dev, &_i2c, NULL) != BME688_OK);
 }
 
 TEST(test_bme688_read_null_dev) {
     bme688_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bme688_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bme688_read(NULL, &_out) != BME688_OK);
 }
 
 TEST(test_bme688_read_null_out) {
     bme688_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bme688_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bme688_read(&_dev, NULL) != BME688_OK);
 }
 
 TEST(test_bme688_set_gas_heater_null_dev) {
-    (void)bme688_set_gas_heater(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(bme688_set_gas_heater(NULL, 0, 0) != BME688_OK);
 }
 
 TEST(test_bme688_reset_null_dev) {
-    (void)bme688_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bme688_reset(NULL) != BME688_OK);
 }
 
 TEST_MAIN("null_param_bme688") {

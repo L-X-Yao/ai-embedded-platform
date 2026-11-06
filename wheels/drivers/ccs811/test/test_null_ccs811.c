@@ -12,8 +12,7 @@ TEST(test_ccs811_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ccs811_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ccs811_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_init(NULL, &_i2c, &_cfg) != CCS811_OK);
 }
 
 TEST(test_ccs811_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ccs811_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ccs811_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ccs811_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_init(&_dev, NULL, &_cfg) != CCS811_OK);
 }
 
 TEST(test_ccs811_init_null_cfg) {
@@ -30,32 +28,27 @@ TEST(test_ccs811_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ccs811_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ccs811_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_init(&_dev, &_i2c, NULL) != CCS811_OK);
 }
 
 TEST(test_ccs811_read_null_dev) {
     ccs811_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ccs811_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_read(NULL, &_out) != CCS811_OK);
 }
 
 TEST(test_ccs811_read_null_out) {
     ccs811_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ccs811_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_read(&_dev, NULL) != CCS811_OK);
 }
 
 TEST(test_ccs811_set_mode_null_dev) {
-    (void)ccs811_set_mode(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_set_mode(NULL, 0) != CCS811_OK);
 }
 
 TEST(test_ccs811_set_env_data_null_dev) {
-    (void)ccs811_set_env_data(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ccs811_set_env_data(NULL, 0, 0) != CCS811_OK);
 }
 
 TEST_MAIN("null_param_ccs811") {

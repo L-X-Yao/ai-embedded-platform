@@ -12,8 +12,7 @@ TEST(test_cobs_encode_null_data) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)cobs_encode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(cobs_encode(NULL, 1, _out, &_out_len) != COBS_OK);
 }
 
 TEST(test_cobs_encode_null_out) {
@@ -21,8 +20,7 @@ TEST(test_cobs_encode_null_out) {
     memset(_data, 0, sizeof(_data));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)cobs_encode(_data, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(cobs_encode(_data, 0, NULL, &_out_len) != COBS_OK);
 }
 
 TEST(test_cobs_encode_null_out_len) {
@@ -30,8 +28,7 @@ TEST(test_cobs_encode_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)cobs_encode(_data, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cobs_encode(_data, 0, _out, NULL) != COBS_OK);
 }
 
 TEST(test_cobs_decode_null_encoded) {
@@ -39,8 +36,7 @@ TEST(test_cobs_decode_null_encoded) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)cobs_decode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(cobs_decode(NULL, 1, _out, &_out_len) != COBS_OK);
 }
 
 TEST(test_cobs_decode_null_out) {
@@ -48,8 +44,7 @@ TEST(test_cobs_decode_null_out) {
     memset(_encoded, 0, sizeof(_encoded));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)cobs_decode(_encoded, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(cobs_decode(_encoded, 0, NULL, &_out_len) != COBS_OK);
 }
 
 TEST(test_cobs_decode_null_out_len) {
@@ -57,8 +52,7 @@ TEST(test_cobs_decode_null_out_len) {
     memset(_encoded, 0, sizeof(_encoded));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)cobs_decode(_encoded, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cobs_decode(_encoded, 0, _out, NULL) != COBS_OK);
 }
 
 TEST_MAIN("null_param_cobs") {

@@ -12,8 +12,7 @@ TEST(test_bmi270_init_null_dev) {
     memset(&_spi, 0, sizeof(_spi));
     bmi270_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmi270_init(NULL, &_spi, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_init(NULL, &_spi, &_cfg) != BMI270_OK);
 }
 
 TEST(test_bmi270_init_null_spi) {
@@ -21,8 +20,7 @@ TEST(test_bmi270_init_null_spi) {
     memset(&_dev, 0, sizeof(_dev));
     bmi270_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmi270_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_init(&_dev, NULL, &_cfg) != BMI270_OK);
 }
 
 TEST(test_bmi270_init_null_cfg) {
@@ -30,61 +28,51 @@ TEST(test_bmi270_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bmi270_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)bmi270_init(&_dev, &_spi, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_init(&_dev, &_spi, NULL) != BMI270_OK);
 }
 
 TEST(test_bmi270_read_accel_gyro_null_dev) {
     bmi270_accel_gyro_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bmi270_read_accel_gyro(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_read_accel_gyro(NULL, &_out) != BMI270_OK);
 }
 
 TEST(test_bmi270_read_accel_gyro_null_out) {
     bmi270_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bmi270_read_accel_gyro(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_read_accel_gyro(&_dev, NULL) != BMI270_OK);
 }
 
 TEST(test_bmi270_read_temp_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)bmi270_read_temp(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_read_temp(NULL, &_temp_c) != BMI270_OK);
 }
 
 TEST(test_bmi270_read_temp_null_temp_c) {
     bmi270_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bmi270_read_temp(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_read_temp(&_dev, NULL) != BMI270_OK);
 }
 
 TEST(test_bmi270_set_acc_odr_null_dev) {
-    (void)bmi270_set_acc_odr(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_set_acc_odr(NULL, 0) != BMI270_OK);
 }
 
 TEST(test_bmi270_set_gyro_odr_null_dev) {
-    (void)bmi270_set_gyro_odr(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_set_gyro_odr(NULL, 0) != BMI270_OK);
 }
 
 TEST(test_bmi270_set_acc_range_null_dev) {
-    (void)bmi270_set_acc_range(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_set_acc_range(NULL, 0) != BMI270_OK);
 }
 
 TEST(test_bmi270_set_gyro_range_null_dev) {
-    (void)bmi270_set_gyro_range(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_set_gyro_range(NULL, 0) != BMI270_OK);
 }
 
 TEST(test_bmi270_soft_reset_null_dev) {
-    (void)bmi270_soft_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi270_soft_reset(NULL) != BMI270_OK);
 }
 
 TEST_MAIN("null_param_bmi270") {

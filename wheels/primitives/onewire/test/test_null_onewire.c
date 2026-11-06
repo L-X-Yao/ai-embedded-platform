@@ -10,109 +10,93 @@
 TEST(test_onewire_init_null_bus) {
     onewire_gpio_t _gpio;
     memset(&_gpio, 0, sizeof(_gpio));
-    (void)onewire_init(NULL, &_gpio);
-    /* must not crash */
+    ASSERT_TRUE(onewire_init(NULL, &_gpio) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_init_null_gpio) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_init(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_init(&_bus, NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_reset_null_bus) {
     bool _presence;
     memset(&_presence, 0, sizeof(_presence));
-    (void)onewire_reset(NULL, &_presence);
-    /* must not crash */
+    ASSERT_TRUE(onewire_reset(NULL, &_presence) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_reset_null_presence) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_reset(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_reset(&_bus, NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_write_byte_null_bus) {
-    (void)onewire_write_byte(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(onewire_write_byte(NULL, 0) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_byte_null_bus) {
     uint8_t _byte[64];
     memset(_byte, 0, sizeof(_byte));
-    (void)onewire_read_byte(NULL, _byte);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read_byte(NULL, _byte) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_byte_null_byte) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_read_byte(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read_byte(&_bus, NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_write_null_bus) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)onewire_write(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(onewire_write(NULL, _data, 0) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_write_null_data) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_write(&_bus, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(onewire_write(&_bus, NULL, 1) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_null_bus) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)onewire_read(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read(NULL, _buf, 0) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_null_buf) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_read(&_bus, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read(&_bus, NULL, 1) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_select_null_bus) {
     uint8_t _rom[64];
     memset(_rom, 0, sizeof(_rom));
-    (void)onewire_select(NULL, _rom);
-    /* must not crash */
+    ASSERT_TRUE(onewire_select(NULL, _rom) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_select_null_rom) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_select(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_select(&_bus, NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_skip_null_bus) {
-    (void)onewire_skip(NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_skip(NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_rom_null_bus) {
     uint8_t _rom[64];
     memset(_rom, 0, sizeof(_rom));
-    (void)onewire_read_rom(NULL, _rom);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read_rom(NULL, _rom) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_read_rom_null_rom) {
     onewire_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_read_rom(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_read_rom(&_bus, NULL) != ONEWIRE_OK);
 }
 
 TEST(test_onewire_crc8_null_data) {

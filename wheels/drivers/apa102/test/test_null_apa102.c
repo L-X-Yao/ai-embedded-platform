@@ -10,34 +10,29 @@
 TEST(test_apa102_init_null_dev) {
     apa102_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)apa102_init(NULL, &_spi, 0);
-    /* must not crash */
+    ASSERT_TRUE(apa102_init(NULL, &_spi, 0) != APA102_OK);
 }
 
 TEST(test_apa102_init_null_spi) {
     apa102_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apa102_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(apa102_init(&_dev, NULL, 0) != APA102_OK);
 }
 
 TEST(test_apa102_set_pixel_null_buf) {
-    (void)apa102_set_pixel(NULL, 0, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(apa102_set_pixel(NULL, 0, 0, 0, 0, 0, 0) != APA102_OK);
 }
 
 TEST(test_apa102_show_null_dev) {
     apa102_pixel_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)apa102_show(NULL, &_buf);
-    /* must not crash */
+    ASSERT_TRUE(apa102_show(NULL, &_buf) != APA102_OK);
 }
 
 TEST(test_apa102_show_null_buf) {
     apa102_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)apa102_show(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(apa102_show(&_dev, NULL) != APA102_OK);
 }
 
 TEST(test_apa102_clear_null_buf) {

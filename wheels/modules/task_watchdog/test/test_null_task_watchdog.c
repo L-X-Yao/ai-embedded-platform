@@ -8,36 +8,31 @@
 #include <stddef.h>
 
 TEST(test_task_watchdog_init_null_wd) {
-    (void)task_watchdog_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_init(NULL) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_register_null_wd) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)task_watchdog_register(NULL, _name, 0);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_register(NULL, _name, 0) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_register_null_name) {
     task_watchdog_t _wd;
     memset(&_wd, 0, sizeof(_wd));
-    (void)task_watchdog_register(&_wd, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_register(&_wd, NULL, 0) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_feed_null_wd) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)task_watchdog_feed(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_feed(NULL, _name) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_feed_null_name) {
     task_watchdog_t _wd;
     memset(&_wd, 0, sizeof(_wd));
-    (void)task_watchdog_feed(&_wd, NULL);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_feed(&_wd, NULL) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_check_null_wd) {
@@ -65,29 +60,25 @@ TEST(test_task_watchdog_set_callback_null_ctx) {
 TEST(test_task_watchdog_enable_null_wd) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)task_watchdog_enable(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_enable(NULL, _name) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_enable_null_name) {
     task_watchdog_t _wd;
     memset(&_wd, 0, sizeof(_wd));
-    (void)task_watchdog_enable(&_wd, NULL);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_enable(&_wd, NULL) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_disable_null_wd) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)task_watchdog_disable(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_disable(NULL, _name) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_disable_null_name) {
     task_watchdog_t _wd;
     memset(&_wd, 0, sizeof(_wd));
-    (void)task_watchdog_disable(&_wd, NULL);
-    /* must not crash */
+    ASSERT_TRUE(task_watchdog_disable(&_wd, NULL) != TASK_WD_OK);
 }
 
 TEST(test_task_watchdog_status_null_wd) {

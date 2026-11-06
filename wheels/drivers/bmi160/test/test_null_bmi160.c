@@ -12,8 +12,7 @@ TEST(test_bmi160_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     bmi160_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmi160_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_init(NULL, &_i2c, &_cfg) != BMI160_OK);
 }
 
 TEST(test_bmi160_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_bmi160_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     bmi160_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bmi160_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_init(&_dev, NULL, &_cfg) != BMI160_OK);
 }
 
 TEST(test_bmi160_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_bmi160_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bmi160_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bmi160_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_init(&_dev, &_i2c, NULL) != BMI160_OK);
 }
 
 TEST(test_bmi160_read_null_dev) {
     bmi160_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bmi160_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_read(NULL, &_out) != BMI160_OK);
 }
 
 TEST(test_bmi160_read_null_out) {
     bmi160_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bmi160_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_read(&_dev, NULL) != BMI160_OK);
 }
 
 TEST(test_bmi160_reset_null_dev) {
-    (void)bmi160_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bmi160_reset(NULL) != BMI160_OK);
 }
 
 TEST_MAIN("null_param_bmi160") {

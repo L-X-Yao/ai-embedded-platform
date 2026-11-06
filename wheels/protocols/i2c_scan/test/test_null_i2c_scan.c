@@ -11,22 +11,21 @@ TEST(test_i2c_scan_range_null_probe_ctx) {
     i2c_scan_result_t _result;
     memset(&_result, 0, sizeof(_result));
     (void)i2c_scan_range(NULL, NULL, 0, 0, &_result);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_i2c_scan_range_null_result) {
-    (void)i2c_scan_range(NULL, NULL, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(i2c_scan_range(NULL, NULL, 0, 0, NULL) != I2C_SCAN_OK);
 }
 
 TEST(test_i2c_scan_callback_null_probe_ctx) {
     (void)i2c_scan_callback(NULL, NULL, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_i2c_scan_callback_null_found_ctx) {
     (void)i2c_scan_callback(NULL, NULL, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST_MAIN("null_param_i2c_scan") {

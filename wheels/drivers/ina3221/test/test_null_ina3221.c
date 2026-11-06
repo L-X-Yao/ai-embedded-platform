@@ -12,8 +12,7 @@ TEST(test_ina3221_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ina3221_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ina3221_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_init(NULL, &_i2c, &_cfg) != INA3221_OK);
 }
 
 TEST(test_ina3221_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ina3221_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ina3221_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ina3221_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_init(&_dev, NULL, &_cfg) != INA3221_OK);
 }
 
 TEST(test_ina3221_init_null_cfg) {
@@ -30,8 +28,7 @@ TEST(test_ina3221_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ina3221_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ina3221_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_init(&_dev, &_i2c, NULL) != INA3221_OK);
 }
 
 TEST(test_ina3221_read_channel_null_dev) {
@@ -39,8 +36,7 @@ TEST(test_ina3221_read_channel_null_dev) {
     memset(&_shunt_uv, 0, sizeof(_shunt_uv));
     float _bus_mv;
     memset(&_bus_mv, 0, sizeof(_bus_mv));
-    (void)ina3221_read_channel(NULL, 0, &_shunt_uv, &_bus_mv);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_read_channel(NULL, 0, &_shunt_uv, &_bus_mv) != INA3221_OK);
 }
 
 TEST(test_ina3221_read_channel_null_shunt_uv) {
@@ -48,8 +44,7 @@ TEST(test_ina3221_read_channel_null_shunt_uv) {
     memset(&_dev, 0, sizeof(_dev));
     float _bus_mv;
     memset(&_bus_mv, 0, sizeof(_bus_mv));
-    (void)ina3221_read_channel(&_dev, 0, NULL, &_bus_mv);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_read_channel(&_dev, 0, NULL, &_bus_mv) != INA3221_OK);
 }
 
 TEST(test_ina3221_read_channel_null_bus_mv) {
@@ -57,22 +52,19 @@ TEST(test_ina3221_read_channel_null_bus_mv) {
     memset(&_dev, 0, sizeof(_dev));
     float _shunt_uv;
     memset(&_shunt_uv, 0, sizeof(_shunt_uv));
-    (void)ina3221_read_channel(&_dev, 0, &_shunt_uv, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_read_channel(&_dev, 0, &_shunt_uv, NULL) != INA3221_OK);
 }
 
 TEST(test_ina3221_read_all_null_dev) {
     ina3221_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ina3221_read_all(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_read_all(NULL, &_out) != INA3221_OK);
 }
 
 TEST(test_ina3221_read_all_null_out) {
     ina3221_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina3221_read_all(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina3221_read_all(&_dev, NULL) != INA3221_OK);
 }
 
 TEST_MAIN("null_param_ina3221") {

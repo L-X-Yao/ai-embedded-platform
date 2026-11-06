@@ -10,29 +10,25 @@
 TEST(test_flash_journal_init_null_jrnl) {
     flash_journal_storage_t _storage;
     memset(&_storage, 0, sizeof(_storage));
-    (void)flash_journal_init(NULL, &_storage, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_init(NULL, &_storage, 0, 0) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_init_null_storage) {
     flash_journal_t _jrnl;
     memset(&_jrnl, 0, sizeof(_jrnl));
-    (void)flash_journal_init(&_jrnl, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_init(&_jrnl, NULL, 1, 0) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_append_null_jrnl) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)flash_journal_append(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_append(NULL, _data, 0) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_append_null_data) {
     flash_journal_t _jrnl;
     memset(&_jrnl, 0, sizeof(_jrnl));
-    (void)flash_journal_append(&_jrnl, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_append(&_jrnl, NULL, 1) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_latest_null_jrnl) {
@@ -40,8 +36,7 @@ TEST(test_flash_journal_read_latest_null_jrnl) {
     memset(_buf, 0, sizeof(_buf));
     uint32_t _size;
     memset(&_size, 0, sizeof(_size));
-    (void)flash_journal_read_latest(NULL, _buf, &_size);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_latest(NULL, _buf, &_size) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_latest_null_buf) {
@@ -49,8 +44,7 @@ TEST(test_flash_journal_read_latest_null_buf) {
     memset(&_jrnl, 0, sizeof(_jrnl));
     uint32_t _size;
     memset(&_size, 0, sizeof(_size));
-    (void)flash_journal_read_latest(&_jrnl, NULL, &_size);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_latest(&_jrnl, NULL, &_size) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_latest_null_size) {
@@ -58,8 +52,7 @@ TEST(test_flash_journal_read_latest_null_size) {
     memset(&_jrnl, 0, sizeof(_jrnl));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)flash_journal_read_latest(&_jrnl, _buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_latest(&_jrnl, _buf, NULL) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_nth_null_jrnl) {
@@ -67,8 +60,7 @@ TEST(test_flash_journal_read_nth_null_jrnl) {
     memset(_buf, 0, sizeof(_buf));
     uint32_t _size;
     memset(&_size, 0, sizeof(_size));
-    (void)flash_journal_read_nth(NULL, 0, _buf, &_size);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_nth(NULL, 1, _buf, &_size) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_nth_null_buf) {
@@ -76,8 +68,7 @@ TEST(test_flash_journal_read_nth_null_buf) {
     memset(&_jrnl, 0, sizeof(_jrnl));
     uint32_t _size;
     memset(&_size, 0, sizeof(_size));
-    (void)flash_journal_read_nth(&_jrnl, 0, NULL, &_size);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_nth(&_jrnl, 0, NULL, &_size) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_read_nth_null_size) {
@@ -85,8 +76,7 @@ TEST(test_flash_journal_read_nth_null_size) {
     memset(&_jrnl, 0, sizeof(_jrnl));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)flash_journal_read_nth(&_jrnl, 0, _buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_read_nth(&_jrnl, 0, _buf, NULL) != FLASH_JOURNAL_OK);
 }
 
 TEST(test_flash_journal_count_null_jrnl) {
@@ -95,8 +85,7 @@ TEST(test_flash_journal_count_null_jrnl) {
 }
 
 TEST(test_flash_journal_erase_all_null_jrnl) {
-    (void)flash_journal_erase_all(NULL);
-    /* must not crash */
+    ASSERT_TRUE(flash_journal_erase_all(NULL) != FLASH_JOURNAL_OK);
 }
 
 TEST_MAIN("null_param_flash_journal") {

@@ -10,40 +10,33 @@
 TEST(test_ili9341_init_null_dev) {
     ili9341_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)ili9341_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_init(NULL, &_spi) != ILI9341_OK);
 }
 
 TEST(test_ili9341_init_null_spi) {
     ili9341_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ili9341_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_init(&_dev, NULL) != ILI9341_OK);
 }
 
 TEST(test_ili9341_set_rotation_null_dev) {
-    (void)ili9341_set_rotation(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_set_rotation(NULL, 0) != ILI9341_OK);
 }
 
 TEST(test_ili9341_set_window_null_dev) {
-    (void)ili9341_set_window(NULL, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_set_window(NULL, 0, 0, 0, 0) != ILI9341_OK);
 }
 
 TEST(test_ili9341_fill_rect_null_dev) {
-    (void)ili9341_fill_rect(NULL, 0, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_fill_rect(NULL, 0, 0, 0, 0, 0) != ILI9341_OK);
 }
 
 TEST(test_ili9341_draw_pixel_null_dev) {
-    (void)ili9341_draw_pixel(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_draw_pixel(NULL, 0, 0, 0) != ILI9341_OK);
 }
 
 TEST(test_ili9341_fill_screen_null_dev) {
-    (void)ili9341_fill_screen(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ili9341_fill_screen(NULL, 0) != ILI9341_OK);
 }
 
 TEST_MAIN("null_param_ili9341") {

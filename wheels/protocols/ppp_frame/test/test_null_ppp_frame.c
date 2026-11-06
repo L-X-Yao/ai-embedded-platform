@@ -17,8 +17,7 @@ TEST(test_ppp_frame_encode_null_payload) {
     memset(_dst, 0, sizeof(_dst));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)ppp_frame_encode(0, NULL, 0, _dst, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_encode(0, NULL, 1, _dst, 0, &_out_len) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_encode_null_dst) {
@@ -26,8 +25,7 @@ TEST(test_ppp_frame_encode_null_dst) {
     memset(_payload, 0, sizeof(_payload));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)ppp_frame_encode(0, _payload, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_encode(0, _payload, 0, NULL, 0, &_out_len) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_encode_null_out_len) {
@@ -35,8 +33,7 @@ TEST(test_ppp_frame_encode_null_out_len) {
     memset(_payload, 0, sizeof(_payload));
     uint8_t _dst[64];
     memset(_dst, 0, sizeof(_dst));
-    (void)ppp_frame_encode(0, _payload, 0, _dst, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_encode(0, _payload, 0, _dst, 0, NULL) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_decode_null_src) {
@@ -46,8 +43,7 @@ TEST(test_ppp_frame_decode_null_src) {
     memset(_payload_buf, 0, sizeof(_payload_buf));
     size_t _payload_len;
     memset(&_payload_len, 0, sizeof(_payload_len));
-    (void)ppp_frame_decode(NULL, 0, &_protocol, _payload_buf, 0, &_payload_len);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_decode(NULL, 1, &_protocol, _payload_buf, 0, &_payload_len) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_decode_null_protocol) {
@@ -57,8 +53,7 @@ TEST(test_ppp_frame_decode_null_protocol) {
     memset(_payload_buf, 0, sizeof(_payload_buf));
     size_t _payload_len;
     memset(&_payload_len, 0, sizeof(_payload_len));
-    (void)ppp_frame_decode(_src, 0, NULL, _payload_buf, 0, &_payload_len);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_decode(_src, 0, NULL, _payload_buf, 0, &_payload_len) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_decode_null_payload_buf) {
@@ -68,8 +63,7 @@ TEST(test_ppp_frame_decode_null_payload_buf) {
     memset(&_protocol, 0, sizeof(_protocol));
     size_t _payload_len;
     memset(&_payload_len, 0, sizeof(_payload_len));
-    (void)ppp_frame_decode(_src, 0, &_protocol, NULL, 0, &_payload_len);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_decode(_src, 0, &_protocol, NULL, 0, &_payload_len) != PPP_FRAME_OK);
 }
 
 TEST(test_ppp_frame_decode_null_payload_len) {
@@ -79,8 +73,7 @@ TEST(test_ppp_frame_decode_null_payload_len) {
     memset(&_protocol, 0, sizeof(_protocol));
     uint8_t _payload_buf[64];
     memset(_payload_buf, 0, sizeof(_payload_buf));
-    (void)ppp_frame_decode(_src, 0, &_protocol, _payload_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ppp_frame_decode(_src, 0, &_protocol, _payload_buf, 0, NULL) != PPP_FRAME_OK);
 }
 
 TEST_MAIN("null_param_ppp_frame") {

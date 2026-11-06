@@ -10,43 +10,37 @@
 TEST(test_str_trim_null_in) {
     char _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)str_trim(NULL, _out, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_trim(NULL, _out, 0) != STRING_UTILS_OK);
 }
 
 TEST(test_str_trim_null_out) {
     char _in[64];
     memset(_in, 0, sizeof(_in));
-    (void)str_trim(_in, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_trim(_in, NULL, 1) != STRING_UTILS_OK);
 }
 
 TEST(test_str_ltrim_null_in) {
     char _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)str_ltrim(NULL, _out, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_ltrim(NULL, _out, 0) != STRING_UTILS_OK);
 }
 
 TEST(test_str_ltrim_null_out) {
     char _in[64];
     memset(_in, 0, sizeof(_in));
-    (void)str_ltrim(_in, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_ltrim(_in, NULL, 1) != STRING_UTILS_OK);
 }
 
 TEST(test_str_rtrim_null_in) {
     char _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)str_rtrim(NULL, _out, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_rtrim(NULL, _out, 0) != STRING_UTILS_OK);
 }
 
 TEST(test_str_rtrim_null_out) {
     char _in[64];
     memset(_in, 0, sizeof(_in));
-    (void)str_rtrim(_in, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_rtrim(_in, NULL, 1) != STRING_UTILS_OK);
 }
 
 TEST(test_str_split_null_str) {
@@ -93,29 +87,25 @@ TEST(test_str_ends_with_null_suffix) {
 TEST(test_str_to_int_null_str) {
     int32_t _val;
     memset(&_val, 0, sizeof(_val));
-    (void)str_to_int(NULL, &_val);
-    /* must not crash */
+    ASSERT_TRUE(str_to_int(NULL, &_val) != STRING_UTILS_OK);
 }
 
 TEST(test_str_to_int_null_val) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)str_to_int(_str, NULL);
-    /* must not crash */
+    ASSERT_TRUE(str_to_int(_str, NULL) != STRING_UTILS_OK);
 }
 
 TEST(test_str_to_float_null_str) {
     float _val;
     memset(&_val, 0, sizeof(_val));
-    (void)str_to_float(NULL, &_val);
-    /* must not crash */
+    ASSERT_TRUE(str_to_float(NULL, &_val) != STRING_UTILS_OK);
 }
 
 TEST(test_str_to_float_null_val) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)str_to_float(_str, NULL);
-    /* must not crash */
+    ASSERT_TRUE(str_to_float(_str, NULL) != STRING_UTILS_OK);
 }
 
 TEST(test_str_join_null_tokens) {
@@ -123,24 +113,21 @@ TEST(test_str_join_null_tokens) {
     memset(_delim, 0, sizeof(_delim));
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)str_join(NULL, 0, _delim, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_join(NULL, 1, _delim, _buf, 0) != STRING_UTILS_OK);
 }
 
 TEST(test_str_join_null_delim) {
     const char *_tokens = NULL;
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)str_join(&_tokens, 0, NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_join(&_tokens, 0, NULL, _buf, 0) != STRING_UTILS_OK);
 }
 
 TEST(test_str_join_null_buf) {
     const char *_tokens = NULL;
     char _delim[64];
     memset(_delim, 0, sizeof(_delim));
-    (void)str_join(&_tokens, 0, _delim, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(str_join(&_tokens, 0, _delim, NULL, 1) != STRING_UTILS_OK);
 }
 
 TEST_MAIN("null_param_string_utils") {

@@ -12,8 +12,7 @@ TEST(test_ht16k33_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ht16k33_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ht16k33_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_init(NULL, &_i2c, &_cfg) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ht16k33_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ht16k33_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ht16k33_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_init(&_dev, NULL, &_cfg) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_init_null_cfg) {
@@ -30,32 +28,27 @@ TEST(test_ht16k33_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ht16k33_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ht16k33_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_init(&_dev, &_i2c, NULL) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_set_brightness_null_dev) {
-    (void)ht16k33_set_brightness(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_set_brightness(NULL, 0) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_write_raw_null_dev) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)ht16k33_write_raw(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_write_raw(NULL, _buf, 0) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_write_raw_null_buf) {
     ht16k33_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ht16k33_write_raw(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_write_raw(&_dev, NULL, 1) != HT16K33_OK);
 }
 
 TEST(test_ht16k33_clear_null_dev) {
-    (void)ht16k33_clear(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ht16k33_clear(NULL) != HT16K33_OK);
 }
 
 TEST_MAIN("null_param_ht16k33") {

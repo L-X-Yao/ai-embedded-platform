@@ -10,48 +10,41 @@
 TEST(test_htu21d_init_null_dev) {
     htu21d_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)htu21d_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_init(NULL, &_i2c) != HTU21D_OK);
 }
 
 TEST(test_htu21d_init_null_i2c) {
     htu21d_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)htu21d_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_init(&_dev, NULL) != HTU21D_OK);
 }
 
 TEST(test_htu21d_read_temperature_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)htu21d_read_temperature(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_read_temperature(NULL, &_temp_c) != HTU21D_OK);
 }
 
 TEST(test_htu21d_read_temperature_null_temp_c) {
     htu21d_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)htu21d_read_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_read_temperature(&_dev, NULL) != HTU21D_OK);
 }
 
 TEST(test_htu21d_read_humidity_null_dev) {
     float _rh_percent;
     memset(&_rh_percent, 0, sizeof(_rh_percent));
-    (void)htu21d_read_humidity(NULL, &_rh_percent);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_read_humidity(NULL, &_rh_percent) != HTU21D_OK);
 }
 
 TEST(test_htu21d_read_humidity_null_rh_percent) {
     htu21d_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)htu21d_read_humidity(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_read_humidity(&_dev, NULL) != HTU21D_OK);
 }
 
 TEST(test_htu21d_reset_null_dev) {
-    (void)htu21d_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(htu21d_reset(NULL) != HTU21D_OK);
 }
 
 TEST(test_htu21d_crc8_null_data) {

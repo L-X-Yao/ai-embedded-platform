@@ -9,7 +9,7 @@
 
 TEST(test_error_handler_init_null_storage) {
     (void)error_handler_init(NULL, NULL);
-    /* must not crash */
+    /* must not crash: no storage means no persistence */
 }
 
 TEST(test_error_handler_set_fatal_callback_null_ctx) {
@@ -18,8 +18,7 @@ TEST(test_error_handler_set_fatal_callback_null_ctx) {
 }
 
 TEST(test_error_handler_get_null_record) {
-    (void)error_handler_get(NULL, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(error_handler_get(NULL, 0, NULL) != ERROR_HANDLER_OK);
 }
 
 TEST_MAIN("null_param_error_handler") {

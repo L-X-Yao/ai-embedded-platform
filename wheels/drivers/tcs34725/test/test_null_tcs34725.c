@@ -10,77 +10,65 @@
 TEST(test_tcs34725_init_null_dev) {
     tcs34725_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)tcs34725_init(NULL, &_i2c, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_init(NULL, &_i2c, 0, 0) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_init_null_i2c) {
     tcs34725_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tcs34725_init(&_dev, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_init(&_dev, NULL, 0, 0) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_read_rgbc_null_dev) {
     tcs34725_rgbc_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)tcs34725_read_rgbc(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_read_rgbc(NULL, &_out) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_read_rgbc_null_out) {
     tcs34725_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tcs34725_read_rgbc(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_read_rgbc(&_dev, NULL) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_set_integration_time_null_dev) {
-    (void)tcs34725_set_integration_time(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_set_integration_time(NULL, 0) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_set_gain_null_dev) {
-    (void)tcs34725_set_gain(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_set_gain(NULL, 0) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_enable_null_dev) {
-    (void)tcs34725_enable(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_enable(NULL) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_disable_null_dev) {
-    (void)tcs34725_disable(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_disable(NULL) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_get_color_temp_null_rgbc) {
     uint16_t _cct_k;
     memset(&_cct_k, 0, sizeof(_cct_k));
-    (void)tcs34725_get_color_temp(NULL, &_cct_k);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_get_color_temp(NULL, &_cct_k) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_get_color_temp_null_cct_k) {
     tcs34725_rgbc_t _rgbc;
     memset(&_rgbc, 0, sizeof(_rgbc));
-    (void)tcs34725_get_color_temp(&_rgbc, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_get_color_temp(&_rgbc, NULL) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_get_lux_null_rgbc) {
     float _lux;
     memset(&_lux, 0, sizeof(_lux));
-    (void)tcs34725_get_lux(NULL, &_lux);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_get_lux(NULL, &_lux) != TCS34725_OK);
 }
 
 TEST(test_tcs34725_get_lux_null_lux) {
     tcs34725_rgbc_t _rgbc;
     memset(&_rgbc, 0, sizeof(_rgbc));
-    (void)tcs34725_get_lux(&_rgbc, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tcs34725_get_lux(&_rgbc, NULL) != TCS34725_OK);
 }
 
 TEST_MAIN("null_param_tcs34725") {

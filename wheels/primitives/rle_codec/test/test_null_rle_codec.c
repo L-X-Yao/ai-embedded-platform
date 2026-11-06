@@ -12,8 +12,7 @@ TEST(test_rle_codec_encode_null_src) {
     memset(_dst, 0, sizeof(_dst));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)rle_codec_encode(NULL, 0, _dst, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_encode(NULL, 1, _dst, 0, &_out_len) != RLE_CODEC_OK);
 }
 
 TEST(test_rle_codec_encode_null_dst) {
@@ -21,8 +20,7 @@ TEST(test_rle_codec_encode_null_dst) {
     memset(_src, 0, sizeof(_src));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)rle_codec_encode(_src, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_encode(_src, 0, NULL, 0, &_out_len) != RLE_CODEC_OK);
 }
 
 TEST(test_rle_codec_encode_null_out_len) {
@@ -30,8 +28,7 @@ TEST(test_rle_codec_encode_null_out_len) {
     memset(_src, 0, sizeof(_src));
     uint8_t _dst[64];
     memset(_dst, 0, sizeof(_dst));
-    (void)rle_codec_encode(_src, 0, _dst, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_encode(_src, 0, _dst, 0, NULL) != RLE_CODEC_OK);
 }
 
 TEST(test_rle_codec_decode_null_src) {
@@ -39,8 +36,7 @@ TEST(test_rle_codec_decode_null_src) {
     memset(_dst, 0, sizeof(_dst));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)rle_codec_decode(NULL, 0, _dst, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_decode(NULL, 1, _dst, 0, &_out_len) != RLE_CODEC_OK);
 }
 
 TEST(test_rle_codec_decode_null_dst) {
@@ -48,8 +44,7 @@ TEST(test_rle_codec_decode_null_dst) {
     memset(_src, 0, sizeof(_src));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)rle_codec_decode(_src, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_decode(_src, 0, NULL, 0, &_out_len) != RLE_CODEC_OK);
 }
 
 TEST(test_rle_codec_decode_null_out_len) {
@@ -57,8 +52,7 @@ TEST(test_rle_codec_decode_null_out_len) {
     memset(_src, 0, sizeof(_src));
     uint8_t _dst[64];
     memset(_dst, 0, sizeof(_dst));
-    (void)rle_codec_decode(_src, 0, _dst, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(rle_codec_decode(_src, 0, _dst, 0, NULL) != RLE_CODEC_OK);
 }
 
 TEST_MAIN("null_param_rle_codec") {

@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_utf8_validate_null_data) {
-    (void)utf8_validate(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(utf8_validate(NULL, 1) != UTF8_OK);
 }
 
 TEST(test_utf8_codepoint_count_null_data) {
@@ -22,8 +21,7 @@ TEST(test_utf8_decode_null_data) {
     memset(&_codepoint, 0, sizeof(_codepoint));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)utf8_decode(NULL, 0, &_codepoint, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(utf8_decode(NULL, 1, &_codepoint, &_out_len) != UTF8_OK);
 }
 
 TEST(test_utf8_decode_null_codepoint) {
@@ -31,8 +29,7 @@ TEST(test_utf8_decode_null_codepoint) {
     memset(_data, 0, sizeof(_data));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)utf8_decode(_data, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(utf8_decode(_data, 0, NULL, &_out_len) != UTF8_OK);
 }
 
 TEST(test_utf8_decode_null_out_len) {
@@ -40,22 +37,19 @@ TEST(test_utf8_decode_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint32_t _codepoint;
     memset(&_codepoint, 0, sizeof(_codepoint));
-    (void)utf8_decode(_data, 0, &_codepoint, NULL);
-    /* must not crash */
+    ASSERT_TRUE(utf8_decode(_data, 0, &_codepoint, NULL) != UTF8_OK);
 }
 
 TEST(test_utf8_encode_null_buf) {
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)utf8_encode(0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(utf8_encode(0, NULL, 0, &_out_len) != UTF8_OK);
 }
 
 TEST(test_utf8_encode_null_out_len) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)utf8_encode(0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(utf8_encode(0, _buf, 0, NULL) != UTF8_OK);
 }
 
 TEST_MAIN("null_param_utf8") {

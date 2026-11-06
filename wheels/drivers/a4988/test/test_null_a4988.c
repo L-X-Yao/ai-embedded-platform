@@ -12,8 +12,7 @@ TEST(test_a4988_init_null_dev) {
     memset(&_hal, 0, sizeof(_hal));
     a4988_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)a4988_init(NULL, &_hal, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(a4988_init(NULL, &_hal, &_cfg) != A4988_OK);
 }
 
 TEST(test_a4988_init_null_hal) {
@@ -21,8 +20,7 @@ TEST(test_a4988_init_null_hal) {
     memset(&_dev, 0, sizeof(_dev));
     a4988_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)a4988_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(a4988_init(&_dev, NULL, &_cfg) != A4988_OK);
 }
 
 TEST(test_a4988_init_null_cfg) {
@@ -30,33 +28,27 @@ TEST(test_a4988_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     a4988_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)a4988_init(&_dev, &_hal, NULL);
-    /* must not crash */
+    ASSERT_TRUE(a4988_init(&_dev, &_hal, NULL) != A4988_OK);
 }
 
 TEST(test_a4988_enable_null_dev) {
-    (void)a4988_enable(NULL, true);
-    /* must not crash */
+    ASSERT_TRUE(a4988_enable(NULL, true) != A4988_OK);
 }
 
 TEST(test_a4988_set_direction_null_dev) {
-    (void)a4988_set_direction(NULL, A4988_DIR_CW);
-    /* must not crash */
+    ASSERT_TRUE(a4988_set_direction(NULL, A4988_DIR_CW) != A4988_OK);
 }
 
 TEST(test_a4988_step_null_dev) {
-    (void)a4988_step(NULL);
-    /* must not crash */
+    ASSERT_TRUE(a4988_step(NULL) != A4988_OK);
 }
 
 TEST(test_a4988_step_n_null_dev) {
-    (void)a4988_step_n(NULL, 1, 100);
-    /* must not crash */
+    ASSERT_TRUE(a4988_step_n(NULL, 1, 100) != A4988_OK);
 }
 
 TEST(test_a4988_set_microstep_null_dev) {
-    (void)a4988_set_microstep(NULL, A4988_STEP_FULL);
-    /* must not crash */
+    ASSERT_TRUE(a4988_set_microstep(NULL, A4988_STEP_FULL) != A4988_OK);
 }
 
 TEST_MAIN("null_param_a4988") {

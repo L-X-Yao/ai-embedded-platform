@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_hysteresis_init_null_ctx) {
-    (void)hysteresis_init(NULL, 0.0f, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(hysteresis_init(NULL, 0.0f, 0.0f) != HYSTERESIS_OK);
 }
 
 TEST(test_hysteresis_feed_null_ctx) {
@@ -23,13 +22,11 @@ TEST(test_hysteresis_get_state_null_ctx) {
 }
 
 TEST(test_hysteresis_reset_null_ctx) {
-    (void)hysteresis_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(hysteresis_reset(NULL) != HYSTERESIS_OK);
 }
 
 TEST(test_hysteresis_set_thresholds_null_ctx) {
-    (void)hysteresis_set_thresholds(NULL, 0.0f, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(hysteresis_set_thresholds(NULL, 0.0f, 0.0f) != HYSTERESIS_OK);
 }
 
 TEST_MAIN("null_param_hysteresis") {

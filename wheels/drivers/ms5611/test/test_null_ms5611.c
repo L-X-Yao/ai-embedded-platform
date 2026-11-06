@@ -12,8 +12,7 @@ TEST(test_ms5611_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     ms5611_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ms5611_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_init(NULL, &_i2c, &_cfg) != MS5611_OK);
 }
 
 TEST(test_ms5611_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_ms5611_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     ms5611_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)ms5611_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_init(&_dev, NULL, &_cfg) != MS5611_OK);
 }
 
 TEST(test_ms5611_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_ms5611_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     ms5611_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ms5611_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_init(&_dev, &_i2c, NULL) != MS5611_OK);
 }
 
 TEST(test_ms5611_read_null_dev) {
     ms5611_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ms5611_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_read(NULL, &_out) != MS5611_OK);
 }
 
 TEST(test_ms5611_read_null_out) {
     ms5611_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ms5611_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_read(&_dev, NULL) != MS5611_OK);
 }
 
 TEST(test_ms5611_reset_null_dev) {
-    (void)ms5611_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ms5611_reset(NULL) != MS5611_OK);
 }
 
 TEST_MAIN("null_param_ms5611") {

@@ -22,61 +22,51 @@ TEST(test_pb_encoder_init_null_buf) {
 }
 
 TEST(test_pb_encode_varint_null_enc) {
-    (void)pb_encode_varint(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_varint(NULL, 0, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_sint32_null_enc) {
-    (void)pb_encode_sint32(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_sint32(NULL, 0, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_sint64_null_enc) {
-    (void)pb_encode_sint64(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_sint64(NULL, 0, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_fixed32_null_enc) {
-    (void)pb_encode_fixed32(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_fixed32(NULL, 0, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_fixed64_null_enc) {
-    (void)pb_encode_fixed64(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_fixed64(NULL, 0, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_float_null_enc) {
-    (void)pb_encode_float(NULL, 0, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_float(NULL, 0, 0.0f) != PB_OK);
 }
 
 TEST(test_pb_encode_bytes_null_enc) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)pb_encode_bytes(NULL, 0, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_bytes(NULL, 0, _data, 0) != PB_OK);
 }
 
 TEST(test_pb_encode_bytes_null_data) {
     pb_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)pb_encode_bytes(&_enc, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_bytes(&_enc, 0, NULL, 1) != PB_OK);
 }
 
 TEST(test_pb_encode_string_null_enc) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)pb_encode_string(NULL, 0, _str);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_string(NULL, 0, _str) != PB_OK);
 }
 
 TEST(test_pb_encode_string_null_str) {
     pb_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)pb_encode_string(&_enc, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pb_encode_string(&_enc, 0, NULL) != PB_OK);
 }
 
 TEST(test_pb_encoder_len_null_enc) {
@@ -101,15 +91,13 @@ TEST(test_pb_decoder_init_null_buf) {
 TEST(test_pb_decode_field_null_dec) {
     pb_field_t _field;
     memset(&_field, 0, sizeof(_field));
-    (void)pb_decode_field(NULL, &_field);
-    /* must not crash */
+    ASSERT_TRUE(pb_decode_field(NULL, &_field) != PB_OK);
 }
 
 TEST(test_pb_decode_field_null_field) {
     pb_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)pb_decode_field(&_dec, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pb_decode_field(&_dec, NULL) != PB_OK);
 }
 
 TEST(test_pb_decoder_done_null_dec) {

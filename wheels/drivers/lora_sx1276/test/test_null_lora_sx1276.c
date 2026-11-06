@@ -10,54 +10,45 @@
 TEST(test_lora_init_null_dev) {
     lora_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)lora_init(NULL, &_spi, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_init(NULL, &_spi, 0) != LORA_OK);
 }
 
 TEST(test_lora_init_null_spi) {
     lora_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lora_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_init(&_dev, NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_set_frequency_null_dev) {
-    (void)lora_set_frequency(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_set_frequency(NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_set_bandwidth_null_dev) {
-    (void)lora_set_bandwidth(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_set_bandwidth(NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_set_spreading_factor_null_dev) {
-    (void)lora_set_spreading_factor(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_set_spreading_factor(NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_set_coding_rate_null_dev) {
-    (void)lora_set_coding_rate(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_set_coding_rate(NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_set_tx_power_null_dev) {
-    (void)lora_set_tx_power(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_set_tx_power(NULL, 0) != LORA_OK);
 }
 
 TEST(test_lora_send_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)lora_send(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_send(NULL, _data, 0) != LORA_OK);
 }
 
 TEST(test_lora_send_null_data) {
     lora_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lora_send(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_send(&_dev, NULL, 1) != LORA_OK);
 }
 
 TEST(test_lora_receive_null_dev) {
@@ -65,8 +56,7 @@ TEST(test_lora_receive_null_dev) {
     memset(_data, 0, sizeof(_data));
     uint8_t _len[64];
     memset(_len, 0, sizeof(_len));
-    (void)lora_receive(NULL, _data, _len, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_receive(NULL, _data, _len, 0) != LORA_OK);
 }
 
 TEST(test_lora_receive_null_data) {
@@ -74,8 +64,7 @@ TEST(test_lora_receive_null_data) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _len[64];
     memset(_len, 0, sizeof(_len));
-    (void)lora_receive(&_dev, NULL, _len, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_receive(&_dev, NULL, _len, 0) != LORA_OK);
 }
 
 TEST(test_lora_receive_null_len) {
@@ -83,8 +72,7 @@ TEST(test_lora_receive_null_len) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)lora_receive(&_dev, _data, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(lora_receive(&_dev, _data, NULL, 1) != LORA_OK);
 }
 
 TEST(test_lora_packet_available_null_dev) {
@@ -103,13 +91,11 @@ TEST(test_lora_get_snr_null_dev) {
 }
 
 TEST(test_lora_sleep_null_dev) {
-    (void)lora_sleep(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lora_sleep(NULL) != LORA_OK);
 }
 
 TEST(test_lora_standby_null_dev) {
-    (void)lora_standby(NULL);
-    /* must not crash */
+    ASSERT_TRUE(lora_standby(NULL) != LORA_OK);
 }
 
 TEST_MAIN("null_param_lora_sx1276") {

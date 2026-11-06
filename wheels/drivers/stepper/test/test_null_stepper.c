@@ -10,25 +10,21 @@
 TEST(test_stepper_init_null_s) {
     stepper_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)stepper_init(NULL, &_hal, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(stepper_init(NULL, &_hal, 0, 0) != STEPPER_OK);
 }
 
 TEST(test_stepper_init_null_hal) {
     stepper_t _s;
     memset(&_s, 0, sizeof(_s));
-    (void)stepper_init(&_s, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(stepper_init(&_s, NULL, 0, 0) != STEPPER_OK);
 }
 
 TEST(test_stepper_move_null_s) {
-    (void)stepper_move(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(stepper_move(NULL, 0) != STEPPER_OK);
 }
 
 TEST(test_stepper_move_to_null_s) {
-    (void)stepper_move_to(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(stepper_move_to(NULL, 0) != STEPPER_OK);
 }
 
 TEST(test_stepper_step_once_null_s) {

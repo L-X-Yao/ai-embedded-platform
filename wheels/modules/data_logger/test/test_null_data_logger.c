@@ -12,8 +12,7 @@ TEST(test_data_logger_init_null_dl) {
     memset(&_storage, 0, sizeof(_storage));
     data_logger_field_t _fields;
     memset(&_fields, 0, sizeof(_fields));
-    (void)data_logger_init(NULL, &_storage, &_fields, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_init(NULL, &_storage, &_fields, 0) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_init_null_storage) {
@@ -21,8 +20,7 @@ TEST(test_data_logger_init_null_storage) {
     memset(&_dl, 0, sizeof(_dl));
     data_logger_field_t _fields;
     memset(&_fields, 0, sizeof(_fields));
-    (void)data_logger_init(&_dl, NULL, &_fields, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_init(&_dl, NULL, &_fields, 0) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_init_null_fields) {
@@ -30,52 +28,43 @@ TEST(test_data_logger_init_null_fields) {
     memset(&_dl, 0, sizeof(_dl));
     data_logger_storage_t _storage;
     memset(&_storage, 0, sizeof(_storage));
-    (void)data_logger_init(&_dl, &_storage, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_init(&_dl, &_storage, NULL, 1) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_begin_null_dl) {
-    (void)data_logger_begin(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_begin(NULL, 0) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_add_int_null_dl) {
-    (void)data_logger_add_int(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_add_int(NULL, 0) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_add_uint_null_dl) {
-    (void)data_logger_add_uint(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_add_uint(NULL, 0) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_add_float_null_dl) {
-    (void)data_logger_add_float(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_add_float(NULL, 0.0f) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_add_string_null_dl) {
     char _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)data_logger_add_string(NULL, _value);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_add_string(NULL, _value) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_add_string_null_value) {
     data_logger_t _dl;
     memset(&_dl, 0, sizeof(_dl));
-    (void)data_logger_add_string(&_dl, NULL);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_add_string(&_dl, NULL) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_commit_null_dl) {
-    (void)data_logger_commit(NULL);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_commit(NULL) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_flush_null_dl) {
-    (void)data_logger_flush(NULL);
-    /* must not crash */
+    ASSERT_TRUE(data_logger_flush(NULL) != DATA_LOGGER_OK);
 }
 
 TEST(test_data_logger_get_count_null_dl) {

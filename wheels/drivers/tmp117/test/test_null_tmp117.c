@@ -12,8 +12,7 @@ TEST(test_tmp117_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     tmp117_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)tmp117_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_init(NULL, &_i2c, &_cfg) != TMP117_OK);
 }
 
 TEST(test_tmp117_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_tmp117_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     tmp117_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)tmp117_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_init(&_dev, NULL, &_cfg) != TMP117_OK);
 }
 
 TEST(test_tmp117_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_tmp117_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     tmp117_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)tmp117_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_init(&_dev, &_i2c, NULL) != TMP117_OK);
 }
 
 TEST(test_tmp117_read_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)tmp117_read(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_read(NULL, &_temp_c) != TMP117_OK);
 }
 
 TEST(test_tmp117_read_null_temp_c) {
     tmp117_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tmp117_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_read(&_dev, NULL) != TMP117_OK);
 }
 
 TEST(test_tmp117_reset_null_dev) {
-    (void)tmp117_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tmp117_reset(NULL) != TMP117_OK);
 }
 
 TEST_MAIN("null_param_tmp117") {

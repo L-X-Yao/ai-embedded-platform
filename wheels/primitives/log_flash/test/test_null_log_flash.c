@@ -10,15 +10,13 @@
 TEST(test_log_flash_init_null_f) {
     log_flash_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)log_flash_init(NULL, &_hal, NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(log_flash_init(NULL, &_hal, NULL, 0, 0, 0) != LOG_FLASH_OK);
 }
 
 TEST(test_log_flash_init_null_hal) {
     log_flash_t _f;
     memset(&_f, 0, sizeof(_f));
-    (void)log_flash_init(&_f, NULL, NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(log_flash_init(&_f, NULL, NULL, 0, 0, 0) != LOG_FLASH_OK);
 }
 
 TEST(test_log_flash_init_null_hal_ctx) {
@@ -27,7 +25,7 @@ TEST(test_log_flash_init_null_hal_ctx) {
     log_flash_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
     (void)log_flash_init(&_f, &_hal, NULL, 0, 0, 0);
-    /* must not crash */
+    /* must not crash: ctx goes to the hal unread */
 }
 
 TEST(test_log_flash_sink_null_ctx) {
@@ -57,8 +55,7 @@ TEST(test_log_flash_read_null_dst) {
 }
 
 TEST(test_log_flash_erase_all_null_f) {
-    (void)log_flash_erase_all(NULL);
-    /* must not crash */
+    ASSERT_TRUE(log_flash_erase_all(NULL) != LOG_FLASH_OK);
 }
 
 TEST(test_log_flash_total_null_f) {

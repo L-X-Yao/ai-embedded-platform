@@ -9,12 +9,12 @@
 
 TEST(test_btn_handler_init_null_ctx) {
     (void)btn_handler_init(NULL, NULL, NULL, 0, 0, 0, 0);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_btn_handler_register_null_ctx) {
     (void)btn_handler_register(NULL, 0, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the read callback unread */
 }
 
 TEST_MAIN("null_param_button_handler") {

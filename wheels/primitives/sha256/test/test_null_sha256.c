@@ -8,36 +8,31 @@
 #include <stddef.h>
 
 TEST(test_sha256_init_null_ctx) {
-    (void)sha256_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sha256_init(NULL) != SHA256_OK);
 }
 
 TEST(test_sha256_update_null_ctx) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)sha256_update(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(sha256_update(NULL, _data, 0) != SHA256_OK);
 }
 
 TEST(test_sha256_update_null_data) {
     sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)sha256_update(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(sha256_update(&_ctx, NULL, 1) != SHA256_OK);
 }
 
 TEST(test_sha256_final_null_ctx) {
     uint8_t _hash[64];
     memset(_hash, 0, sizeof(_hash));
-    (void)sha256_final(NULL, _hash);
-    /* must not crash */
+    ASSERT_TRUE(sha256_final(NULL, _hash) != SHA256_OK);
 }
 
 TEST(test_sha256_final_null_hash) {
     sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)sha256_final(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sha256_final(&_ctx, NULL) != SHA256_OK);
 }
 
 TEST(test_sha256_hash_null_data) {

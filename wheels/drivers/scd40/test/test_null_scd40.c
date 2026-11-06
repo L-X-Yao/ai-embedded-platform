@@ -10,77 +10,65 @@
 TEST(test_scd40_init_null_dev) {
     scd40_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)scd40_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(scd40_init(NULL, &_i2c) != SCD40_OK);
 }
 
 TEST(test_scd40_init_null_i2c) {
     scd40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)scd40_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_init(&_dev, NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_start_periodic_null_dev) {
-    (void)scd40_start_periodic(NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_start_periodic(NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_stop_periodic_null_dev) {
-    (void)scd40_stop_periodic(NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_stop_periodic(NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_read_null_dev) {
     scd40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)scd40_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(scd40_read(NULL, &_out) != SCD40_OK);
 }
 
 TEST(test_scd40_read_null_out) {
     scd40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)scd40_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_read(&_dev, NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_data_ready_null_dev) {
     bool _ready;
     memset(&_ready, 0, sizeof(_ready));
-    (void)scd40_data_ready(NULL, &_ready);
-    /* must not crash */
+    ASSERT_TRUE(scd40_data_ready(NULL, &_ready) != SCD40_OK);
 }
 
 TEST(test_scd40_data_ready_null_ready) {
     scd40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)scd40_data_ready(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_data_ready(&_dev, NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_get_serial_null_dev) {
     uint16_t _serial[3];
     memset(_serial, 0, sizeof(_serial));
-    (void)scd40_get_serial(NULL, _serial);
-    /* must not crash */
+    ASSERT_TRUE(scd40_get_serial(NULL, _serial) != SCD40_OK);
 }
 
 TEST(test_scd40_get_serial_null_serial) {
     scd40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)scd40_get_serial(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_get_serial(&_dev, NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_set_altitude_null_dev) {
-    (void)scd40_set_altitude(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(scd40_set_altitude(NULL, 0) != SCD40_OK);
 }
 
 TEST(test_scd40_perform_reset_null_dev) {
-    (void)scd40_perform_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(scd40_perform_reset(NULL) != SCD40_OK);
 }
 
 TEST(test_scd40_crc8_null_data) {

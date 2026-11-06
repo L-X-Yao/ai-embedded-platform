@@ -12,8 +12,7 @@ TEST(test_slip_encode_null_data) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)slip_encode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(slip_encode(NULL, 1, _out, &_out_len) != SLIP_OK);
 }
 
 TEST(test_slip_encode_null_out) {
@@ -21,8 +20,7 @@ TEST(test_slip_encode_null_out) {
     memset(_data, 0, sizeof(_data));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)slip_encode(_data, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(slip_encode(_data, 0, NULL, &_out_len) != SLIP_OK);
 }
 
 TEST(test_slip_encode_null_out_len) {
@@ -30,8 +28,7 @@ TEST(test_slip_encode_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)slip_encode(_data, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(slip_encode(_data, 0, _out, NULL) != SLIP_OK);
 }
 
 TEST(test_slip_decode_null_encoded) {
@@ -39,8 +36,7 @@ TEST(test_slip_decode_null_encoded) {
     memset(_out, 0, sizeof(_out));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)slip_decode(NULL, 0, _out, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(slip_decode(NULL, 1, _out, &_out_len) != SLIP_OK);
 }
 
 TEST(test_slip_decode_null_out) {
@@ -48,8 +44,7 @@ TEST(test_slip_decode_null_out) {
     memset(_encoded, 0, sizeof(_encoded));
     uint16_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)slip_decode(_encoded, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(slip_decode(_encoded, 0, NULL, &_out_len) != SLIP_OK);
 }
 
 TEST(test_slip_decode_null_out_len) {
@@ -57,27 +52,23 @@ TEST(test_slip_decode_null_out_len) {
     memset(_encoded, 0, sizeof(_encoded));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)slip_decode(_encoded, 0, _out, NULL);
-    /* must not crash */
+    ASSERT_TRUE(slip_decode(_encoded, 0, _out, NULL) != SLIP_OK);
 }
 
 TEST(test_slip_decoder_init_null_dec) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)slip_decoder_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(slip_decoder_init(NULL, _buf, 0) != SLIP_OK);
 }
 
 TEST(test_slip_decoder_init_null_buf) {
     slip_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)slip_decoder_init(&_dec, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(slip_decoder_init(&_dec, NULL, 0) != SLIP_OK);
 }
 
 TEST(test_slip_decoder_feed_null_dec) {
-    (void)slip_decoder_feed(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(slip_decoder_feed(NULL, 0) != SLIP_OK);
 }
 
 TEST(test_slip_decoder_ready_null_dec) {

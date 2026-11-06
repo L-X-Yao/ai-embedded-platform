@@ -12,8 +12,7 @@ TEST(test_ota_ab_init_null_m) {
     memset(&_flash, 0, sizeof(_flash));
     ota_ab_layout_t _layout;
     memset(&_layout, 0, sizeof(_layout));
-    (void)ota_ab_init(NULL, &_flash, &_layout);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_init(NULL, &_flash, &_layout) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_init_null_flash) {
@@ -21,8 +20,7 @@ TEST(test_ota_ab_init_null_flash) {
     memset(&_m, 0, sizeof(_m));
     ota_ab_layout_t _layout;
     memset(&_layout, 0, sizeof(_layout));
-    (void)ota_ab_init(&_m, NULL, &_layout);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_init(&_m, NULL, &_layout) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_init_null_layout) {
@@ -30,8 +28,7 @@ TEST(test_ota_ab_init_null_layout) {
     memset(&_m, 0, sizeof(_m));
     ota_ab_flash_t _flash;
     memset(&_flash, 0, sizeof(_flash));
-    (void)ota_ab_init(&_m, &_flash, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_init(&_m, &_flash, NULL) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_active_slot_null_m) {
@@ -50,18 +47,15 @@ TEST(test_ota_ab_slot_addr_null_m) {
 }
 
 TEST(test_ota_ab_mark_pending_null_m) {
-    (void)ota_ab_mark_pending(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_mark_pending(NULL, 1, 0) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_boot_event_null_m) {
-    (void)ota_ab_boot_event(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_boot_event(NULL) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_confirm_null_m) {
-    (void)ota_ab_confirm(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ota_ab_confirm(NULL) != OTA_AB_OK);
 }
 
 TEST(test_ota_ab_crc32_null_data) {

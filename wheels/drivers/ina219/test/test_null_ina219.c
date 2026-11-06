@@ -10,76 +10,65 @@
 TEST(test_ina219_init_null_dev) {
     ina219_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ina219_init(NULL, &_i2c, 0, 0.0f, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ina219_init(NULL, &_i2c, 0, 0.0f, 0, 0) != INA219_OK);
 }
 
 TEST(test_ina219_init_null_i2c) {
     ina219_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina219_init(&_dev, NULL, 0, 0.0f, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(ina219_init(&_dev, NULL, 0, 0.0f, 0, 0) != INA219_OK);
 }
 
 TEST(test_ina219_read_bus_voltage_null_dev) {
     float _voltage_v;
     memset(&_voltage_v, 0, sizeof(_voltage_v));
-    (void)ina219_read_bus_voltage(NULL, &_voltage_v);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_bus_voltage(NULL, &_voltage_v) != INA219_OK);
 }
 
 TEST(test_ina219_read_bus_voltage_null_voltage_v) {
     ina219_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina219_read_bus_voltage(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_bus_voltage(&_dev, NULL) != INA219_OK);
 }
 
 TEST(test_ina219_read_shunt_voltage_null_dev) {
     float _voltage_mv;
     memset(&_voltage_mv, 0, sizeof(_voltage_mv));
-    (void)ina219_read_shunt_voltage(NULL, &_voltage_mv);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_shunt_voltage(NULL, &_voltage_mv) != INA219_OK);
 }
 
 TEST(test_ina219_read_shunt_voltage_null_voltage_mv) {
     ina219_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina219_read_shunt_voltage(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_shunt_voltage(&_dev, NULL) != INA219_OK);
 }
 
 TEST(test_ina219_read_current_null_dev) {
     float _current_ma;
     memset(&_current_ma, 0, sizeof(_current_ma));
-    (void)ina219_read_current(NULL, &_current_ma);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_current(NULL, &_current_ma) != INA219_OK);
 }
 
 TEST(test_ina219_read_current_null_current_ma) {
     ina219_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina219_read_current(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_current(&_dev, NULL) != INA219_OK);
 }
 
 TEST(test_ina219_read_power_null_dev) {
     float _power_mw;
     memset(&_power_mw, 0, sizeof(_power_mw));
-    (void)ina219_read_power(NULL, &_power_mw);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_power(NULL, &_power_mw) != INA219_OK);
 }
 
 TEST(test_ina219_read_power_null_power_mw) {
     ina219_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ina219_read_power(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina219_read_power(&_dev, NULL) != INA219_OK);
 }
 
 TEST(test_ina219_reset_null_dev) {
-    (void)ina219_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ina219_reset(NULL) != INA219_OK);
 }
 
 TEST_MAIN("null_param_ina219") {

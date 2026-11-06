@@ -10,43 +10,37 @@
 TEST(test_hcsr04_init_null_dev) {
     hcsr04_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)hcsr04_init(NULL, &_hal);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_init(NULL, &_hal) != HCSR04_OK);
 }
 
 TEST(test_hcsr04_init_null_hal) {
     hcsr04_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hcsr04_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_init(&_dev, NULL) != HCSR04_OK);
 }
 
 TEST(test_hcsr04_read_cm_null_dev) {
     float _distance_cm;
     memset(&_distance_cm, 0, sizeof(_distance_cm));
-    (void)hcsr04_read_cm(NULL, &_distance_cm);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_read_cm(NULL, &_distance_cm) != HCSR04_OK);
 }
 
 TEST(test_hcsr04_read_cm_null_distance_cm) {
     hcsr04_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hcsr04_read_cm(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_read_cm(&_dev, NULL) != HCSR04_OK);
 }
 
 TEST(test_hcsr04_read_us_null_dev) {
     uint32_t _echo_us;
     memset(&_echo_us, 0, sizeof(_echo_us));
-    (void)hcsr04_read_us(NULL, &_echo_us);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_read_us(NULL, &_echo_us) != HCSR04_OK);
 }
 
 TEST(test_hcsr04_read_us_null_echo_us) {
     hcsr04_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)hcsr04_read_us(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hcsr04_read_us(&_dev, NULL) != HCSR04_OK);
 }
 
 TEST_MAIN("null_param_hcsr04") {

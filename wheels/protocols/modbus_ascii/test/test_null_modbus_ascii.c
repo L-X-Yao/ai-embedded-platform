@@ -15,15 +15,13 @@ TEST(test_modbus_ascii_lrc_null_data) {
 TEST(test_modbus_ascii_decode_null_ascii) {
     modbus_ascii_frame_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)modbus_ascii_decode(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(modbus_ascii_decode(NULL, 1, &_out) != MODBUS_ASCII_OK);
 }
 
 TEST(test_modbus_ascii_decode_null_out) {
     char _ascii[64];
     memset(_ascii, 0, sizeof(_ascii));
-    (void)modbus_ascii_decode(_ascii, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(modbus_ascii_decode(_ascii, 0, NULL) != MODBUS_ASCII_OK);
 }
 
 TEST(test_modbus_ascii_encode_null_frame) {
@@ -31,8 +29,7 @@ TEST(test_modbus_ascii_encode_null_frame) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)modbus_ascii_encode(NULL, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(modbus_ascii_encode(NULL, _buf, 0, &_out_len) != MODBUS_ASCII_OK);
 }
 
 TEST(test_modbus_ascii_encode_null_buf) {
@@ -40,8 +37,7 @@ TEST(test_modbus_ascii_encode_null_buf) {
     memset(&_frame, 0, sizeof(_frame));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)modbus_ascii_encode(&_frame, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(modbus_ascii_encode(&_frame, NULL, 0, &_out_len) != MODBUS_ASCII_OK);
 }
 
 TEST(test_modbus_ascii_encode_null_out_len) {
@@ -49,8 +45,7 @@ TEST(test_modbus_ascii_encode_null_out_len) {
     memset(&_frame, 0, sizeof(_frame));
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)modbus_ascii_encode(&_frame, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(modbus_ascii_encode(&_frame, _buf, 0, NULL) != MODBUS_ASCII_OK);
 }
 
 TEST_MAIN("null_param_modbus_ascii") {

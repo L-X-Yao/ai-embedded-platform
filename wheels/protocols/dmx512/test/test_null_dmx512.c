@@ -10,56 +10,48 @@
 TEST(test_dmx512_init_null_ctx) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)dmx512_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_init(NULL, _buf, 0) != DMX512_OK);
 }
 
 TEST(test_dmx512_init_null_buf) {
     dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)dmx512_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_init(&_ctx, NULL, 0) != DMX512_OK);
 }
 
 TEST(test_dmx512_set_channel_null_ctx) {
-    (void)dmx512_set_channel(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_set_channel(NULL, 0, 0) != DMX512_OK);
 }
 
 TEST(test_dmx512_get_channel_null_ctx) {
     uint8_t _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)dmx512_get_channel(NULL, 0, _value);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_get_channel(NULL, 0, _value) != DMX512_OK);
 }
 
 TEST(test_dmx512_get_channel_null_value) {
     dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)dmx512_get_channel(&_ctx, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_get_channel(&_ctx, 0, NULL) != DMX512_OK);
 }
 
 TEST(test_dmx512_set_range_null_ctx) {
     uint8_t _values[64];
     memset(_values, 0, sizeof(_values));
-    (void)dmx512_set_range(NULL, 0, _values, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_set_range(NULL, 0, _values, 0) != DMX512_OK);
 }
 
 TEST(test_dmx512_set_range_null_values) {
     dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)dmx512_set_range(&_ctx, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_set_range(&_ctx, 0, NULL, 1) != DMX512_OK);
 }
 
 TEST(test_dmx512_get_packet_null_ctx) {
     const uint8_t *_buf = NULL;
     size_t _len;
     memset(&_len, 0, sizeof(_len));
-    (void)dmx512_get_packet(NULL, &_buf, &_len);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_get_packet(NULL, &_buf, &_len) != DMX512_OK);
 }
 
 TEST(test_dmx512_get_packet_null_buf) {
@@ -67,30 +59,26 @@ TEST(test_dmx512_get_packet_null_buf) {
     memset(&_ctx, 0, sizeof(_ctx));
     size_t _len;
     memset(&_len, 0, sizeof(_len));
-    (void)dmx512_get_packet(&_ctx, NULL, &_len);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_get_packet(&_ctx, NULL, &_len) != DMX512_OK);
 }
 
 TEST(test_dmx512_get_packet_null_len) {
     dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
     const uint8_t *_buf = NULL;
-    (void)dmx512_get_packet(&_ctx, &_buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_get_packet(&_ctx, &_buf, NULL) != DMX512_OK);
 }
 
 TEST(test_dmx512_parse_packet_null_ctx) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)dmx512_parse_packet(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_parse_packet(NULL, _data, 0) != DMX512_OK);
 }
 
 TEST(test_dmx512_parse_packet_null_data) {
     dmx512_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)dmx512_parse_packet(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(dmx512_parse_packet(&_ctx, NULL, 1) != DMX512_OK);
 }
 
 TEST_MAIN("null_param_dmx512") {

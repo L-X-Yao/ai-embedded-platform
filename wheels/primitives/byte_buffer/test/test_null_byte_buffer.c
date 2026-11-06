@@ -10,105 +10,89 @@
 TEST(test_byte_buffer_init_null_buf) {
     uint8_t _storage[64];
     memset(_storage, 0, sizeof(_storage));
-    (void)byte_buffer_init(NULL, _storage, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_init(NULL, _storage, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_init_null_storage) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_init(&_buf, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_init(&_buf, NULL, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_reset_null_buf) {
-    (void)byte_buffer_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_reset(NULL) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_put_u8_null_buf) {
-    (void)byte_buffer_put_u8(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_put_u8(NULL, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_put_u16_be_null_buf) {
-    (void)byte_buffer_put_u16_be(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_put_u16_be(NULL, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_put_u32_be_null_buf) {
-    (void)byte_buffer_put_u32_be(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_put_u32_be(NULL, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_put_bytes_null_buf) {
     uint8_t _src[64];
     memset(_src, 0, sizeof(_src));
-    (void)byte_buffer_put_bytes(NULL, _src, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_put_bytes(NULL, _src, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_put_bytes_null_src) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_put_bytes(&_buf, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_put_bytes(&_buf, NULL, 1) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u8_null_buf) {
     uint8_t _val[64];
     memset(_val, 0, sizeof(_val));
-    (void)byte_buffer_get_u8(NULL, _val);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u8(NULL, _val) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u8_null_val) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_get_u8(&_buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u8(&_buf, NULL) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u16_be_null_buf) {
     uint16_t _val;
     memset(&_val, 0, sizeof(_val));
-    (void)byte_buffer_get_u16_be(NULL, &_val);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u16_be(NULL, &_val) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u16_be_null_val) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_get_u16_be(&_buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u16_be(&_buf, NULL) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u32_be_null_buf) {
     uint32_t _val;
     memset(&_val, 0, sizeof(_val));
-    (void)byte_buffer_get_u32_be(NULL, &_val);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u32_be(NULL, &_val) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_u32_be_null_val) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_get_u32_be(&_buf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_u32_be(&_buf, NULL) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_bytes_null_buf) {
     uint8_t _dst[64];
     memset(_dst, 0, sizeof(_dst));
-    (void)byte_buffer_get_bytes(NULL, _dst, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_bytes(NULL, _dst, 0) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_get_bytes_null_dst) {
     byte_buffer_t _buf;
     memset(&_buf, 0, sizeof(_buf));
-    (void)byte_buffer_get_bytes(&_buf, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_get_bytes(&_buf, NULL, 1) != BYTE_BUFFER_OK);
 }
 
 TEST(test_byte_buffer_readable_null_buf) {
@@ -127,8 +111,7 @@ TEST(test_byte_buffer_written_null_buf) {
 }
 
 TEST(test_byte_buffer_compact_null_buf) {
-    (void)byte_buffer_compact(NULL);
-    /* must not crash */
+    ASSERT_TRUE(byte_buffer_compact(NULL) != BYTE_BUFFER_OK);
 }
 
 TEST_MAIN("null_param_byte_buffer") {

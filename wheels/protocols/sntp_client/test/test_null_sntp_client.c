@@ -24,15 +24,13 @@ TEST(test_sntp_client_build_request_null_tx_time) {
 TEST(test_sntp_client_parse_response_null_data) {
     sntp_response_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sntp_client_parse_response(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_parse_response(NULL, 1, &_out) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_parse_response_null_out) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)sntp_client_parse_response(_data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_parse_response(_data, 0, NULL) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_compute_null_resp) {
@@ -42,8 +40,7 @@ TEST(test_sntp_client_compute_null_resp) {
     memset(&_t4, 0, sizeof(_t4));
     sntp_result_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sntp_client_compute(NULL, &_t1, &_t4, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_compute(NULL, &_t1, &_t4, &_out) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_compute_null_t1) {
@@ -53,8 +50,7 @@ TEST(test_sntp_client_compute_null_t1) {
     memset(&_t4, 0, sizeof(_t4));
     sntp_result_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sntp_client_compute(&_resp, NULL, &_t4, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_compute(&_resp, NULL, &_t4, &_out) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_compute_null_t4) {
@@ -64,8 +60,7 @@ TEST(test_sntp_client_compute_null_t4) {
     memset(&_t1, 0, sizeof(_t1));
     sntp_result_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sntp_client_compute(&_resp, &_t1, NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_compute(&_resp, &_t1, NULL, &_out) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_compute_null_out) {
@@ -75,8 +70,7 @@ TEST(test_sntp_client_compute_null_out) {
     memset(&_t1, 0, sizeof(_t1));
     sntp_timestamp_t _t4;
     memset(&_t4, 0, sizeof(_t4));
-    (void)sntp_client_compute(&_resp, &_t1, &_t4, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sntp_client_compute(&_resp, &_t1, &_t4, NULL) != SNTP_CLIENT_OK);
 }
 
 TEST(test_sntp_client_ntp_to_unix_null_ntp) {

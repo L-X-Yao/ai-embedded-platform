@@ -10,96 +10,81 @@
 TEST(test_max17048_init_null_dev) {
     max17048_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)max17048_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(max17048_init(NULL, &_i2c) != MAX17048_OK);
 }
 
 TEST(test_max17048_init_null_i2c) {
     max17048_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max17048_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_init(&_dev, NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_null_dev) {
     max17048_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)max17048_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read(NULL, &_out) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_null_out) {
     max17048_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max17048_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read(&_dev, NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_voltage_null_dev) {
     float _voltage_v;
     memset(&_voltage_v, 0, sizeof(_voltage_v));
-    (void)max17048_read_voltage(NULL, &_voltage_v);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read_voltage(NULL, &_voltage_v) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_voltage_null_voltage_v) {
     max17048_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max17048_read_voltage(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read_voltage(&_dev, NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_soc_null_dev) {
     float _soc_pct;
     memset(&_soc_pct, 0, sizeof(_soc_pct));
-    (void)max17048_read_soc(NULL, &_soc_pct);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read_soc(NULL, &_soc_pct) != MAX17048_OK);
 }
 
 TEST(test_max17048_read_soc_null_soc_pct) {
     max17048_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max17048_read_soc(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_read_soc(&_dev, NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_quickstart_null_dev) {
-    (void)max17048_quickstart(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_quickstart(NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_set_alert_threshold_null_dev) {
-    (void)max17048_set_alert_threshold(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(max17048_set_alert_threshold(NULL, 0) != MAX17048_OK);
 }
 
 TEST(test_max17048_clear_alert_null_dev) {
-    (void)max17048_clear_alert(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_clear_alert(NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_sleep_null_dev) {
-    (void)max17048_sleep(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_sleep(NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_wake_null_dev) {
-    (void)max17048_wake(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_wake(NULL) != MAX17048_OK);
 }
 
 TEST(test_max17048_version_null_dev) {
     uint16_t _ver;
     memset(&_ver, 0, sizeof(_ver));
-    (void)max17048_version(NULL, &_ver);
-    /* must not crash */
+    ASSERT_TRUE(max17048_version(NULL, &_ver) != MAX17048_OK);
 }
 
 TEST(test_max17048_version_null_ver) {
     max17048_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max17048_version(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max17048_version(&_dev, NULL) != MAX17048_OK);
 }
 
 TEST_MAIN("null_param_max17048") {

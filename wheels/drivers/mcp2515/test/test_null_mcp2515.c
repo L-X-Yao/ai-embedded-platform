@@ -10,48 +10,41 @@
 TEST(test_mcp2515_init_null_dev) {
     mcp2515_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)mcp2515_init(NULL, &_spi, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_init(NULL, &_spi, 0) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_init_null_spi) {
     mcp2515_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp2515_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_init(&_dev, NULL, 0) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_set_mode_null_dev) {
-    (void)mcp2515_set_mode(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_set_mode(NULL, 0) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_send_null_dev) {
     mcp2515_msg_t _msg;
     memset(&_msg, 0, sizeof(_msg));
-    (void)mcp2515_send(NULL, &_msg);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_send(NULL, &_msg) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_send_null_msg) {
     mcp2515_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp2515_send(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_send(&_dev, NULL) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_receive_null_dev) {
     mcp2515_msg_t _msg;
     memset(&_msg, 0, sizeof(_msg));
-    (void)mcp2515_receive(NULL, &_msg);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_receive(NULL, &_msg) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_receive_null_msg) {
     mcp2515_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp2515_receive(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_receive(&_dev, NULL) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_has_message_null_dev) {
@@ -60,13 +53,11 @@ TEST(test_mcp2515_has_message_null_dev) {
 }
 
 TEST(test_mcp2515_set_filter_null_dev) {
-    (void)mcp2515_set_filter(NULL, 0, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_set_filter(NULL, 0, 0, false) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_set_mask_null_dev) {
-    (void)mcp2515_set_mask(NULL, 0, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(mcp2515_set_mask(NULL, 0, 0, false) != MCP2515_OK);
 }
 
 TEST(test_mcp2515_read_status_null_dev) {

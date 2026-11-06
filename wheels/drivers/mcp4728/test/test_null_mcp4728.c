@@ -12,8 +12,7 @@ TEST(test_mcp4728_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     mcp4728_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)mcp4728_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_init(NULL, &_i2c, &_cfg) != MCP4728_OK);
 }
 
 TEST(test_mcp4728_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_mcp4728_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     mcp4728_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)mcp4728_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_init(&_dev, NULL, &_cfg) != MCP4728_OK);
 }
 
 TEST(test_mcp4728_init_null_cfg) {
@@ -30,27 +28,23 @@ TEST(test_mcp4728_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     mcp4728_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)mcp4728_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_init(&_dev, &_i2c, NULL) != MCP4728_OK);
 }
 
 TEST(test_mcp4728_write_channel_null_dev) {
-    (void)mcp4728_write_channel(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_write_channel(NULL, 0, 0) != MCP4728_OK);
 }
 
 TEST(test_mcp4728_write_all_null_dev) {
     uint16_t _values[4];
     memset(_values, 0, sizeof(_values));
-    (void)mcp4728_write_all(NULL, _values);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_write_all(NULL, _values) != MCP4728_OK);
 }
 
 TEST(test_mcp4728_write_all_null_values) {
     mcp4728_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)mcp4728_write_all(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mcp4728_write_all(&_dev, NULL) != MCP4728_OK);
 }
 
 TEST_MAIN("null_param_mcp4728") {

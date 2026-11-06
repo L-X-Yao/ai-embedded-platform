@@ -12,8 +12,7 @@ TEST(test_timer_wheel_init_null_tw) {
     memset(&_slots, 0, sizeof(_slots));
     timer_wheel_entry_t _timers;
     memset(&_timers, 0, sizeof(_timers));
-    (void)timer_wheel_init(NULL, &_slots, 0, &_timers, 0);
-    /* must not crash */
+    ASSERT_TRUE(timer_wheel_init(NULL, &_slots, 0, &_timers, 0) != TIMER_WHEEL_OK);
 }
 
 TEST(test_timer_wheel_init_null_slots) {
@@ -21,8 +20,7 @@ TEST(test_timer_wheel_init_null_slots) {
     memset(&_tw, 0, sizeof(_tw));
     timer_wheel_entry_t _timers;
     memset(&_timers, 0, sizeof(_timers));
-    (void)timer_wheel_init(&_tw, NULL, 0, &_timers, 0);
-    /* must not crash */
+    ASSERT_TRUE(timer_wheel_init(&_tw, NULL, 0, &_timers, 0) != TIMER_WHEEL_OK);
 }
 
 TEST(test_timer_wheel_init_null_timers) {
@@ -30,25 +28,22 @@ TEST(test_timer_wheel_init_null_timers) {
     memset(&_tw, 0, sizeof(_tw));
     timer_wheel_slot_t _slots;
     memset(&_slots, 0, sizeof(_slots));
-    (void)timer_wheel_init(&_tw, &_slots, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(timer_wheel_init(&_tw, &_slots, 0, NULL, 0) != TIMER_WHEEL_OK);
 }
 
 TEST(test_timer_wheel_add_null_tw) {
-    (void)timer_wheel_add(NULL, 0, 0, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(timer_wheel_add(NULL, 0, 0, NULL, NULL) != TIMER_WHEEL_OK);
 }
 
 TEST(test_timer_wheel_add_null_ctx) {
     timer_wheel_t _tw;
     memset(&_tw, 0, sizeof(_tw));
     (void)timer_wheel_add(&_tw, 0, 0, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the callback unread */
 }
 
 TEST(test_timer_wheel_cancel_null_tw) {
-    (void)timer_wheel_cancel(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(timer_wheel_cancel(NULL, 0) != TIMER_WHEEL_OK);
 }
 
 TEST(test_timer_wheel_tick_null_tw) {

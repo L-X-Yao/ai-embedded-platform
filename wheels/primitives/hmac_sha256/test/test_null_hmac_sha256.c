@@ -10,43 +10,37 @@
 TEST(test_hmac_sha256_init_null_ctx) {
     uint8_t _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)hmac_sha256_init(NULL, _key, 0);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_init(NULL, _key, 0) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_init_null_key) {
     hmac_sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)hmac_sha256_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_init(&_ctx, NULL, 1) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_update_null_ctx) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)hmac_sha256_update(NULL, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_update(NULL, _data, 0) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_update_null_data) {
     hmac_sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)hmac_sha256_update(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_update(&_ctx, NULL, 1) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_final_null_ctx) {
     uint8_t _mac[64];
     memset(_mac, 0, sizeof(_mac));
-    (void)hmac_sha256_final(NULL, _mac);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_final(NULL, _mac) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_final_null_mac) {
     hmac_sha256_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)hmac_sha256_final(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hmac_sha256_final(&_ctx, NULL) != HMAC_SHA256_OK);
 }
 
 TEST(test_hmac_sha256_compute_null_key) {

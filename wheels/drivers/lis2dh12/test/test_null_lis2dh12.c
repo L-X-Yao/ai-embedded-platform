@@ -12,8 +12,7 @@ TEST(test_lis2dh12_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     lis2dh12_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis2dh12_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis2dh12_init(NULL, &_i2c, &_cfg) != LIS2DH12_OK);
 }
 
 TEST(test_lis2dh12_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_lis2dh12_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     lis2dh12_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis2dh12_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis2dh12_init(&_dev, NULL, &_cfg) != LIS2DH12_OK);
 }
 
 TEST(test_lis2dh12_init_null_cfg) {
@@ -30,22 +28,19 @@ TEST(test_lis2dh12_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     lis2dh12_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lis2dh12_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis2dh12_init(&_dev, &_i2c, NULL) != LIS2DH12_OK);
 }
 
 TEST(test_lis2dh12_read_null_dev) {
     lis2dh12_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lis2dh12_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lis2dh12_read(NULL, &_out) != LIS2DH12_OK);
 }
 
 TEST(test_lis2dh12_read_null_out) {
     lis2dh12_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lis2dh12_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis2dh12_read(&_dev, NULL) != LIS2DH12_OK);
 }
 
 TEST_MAIN("null_param_lis2dh12") {

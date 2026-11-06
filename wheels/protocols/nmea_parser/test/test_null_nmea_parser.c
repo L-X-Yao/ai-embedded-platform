@@ -25,15 +25,13 @@ TEST(test_nmea_parser_identify_null_sentence) {
 TEST(test_nmea_parser_parse_null_sentence) {
     nmea_parser_data_t _data;
     memset(&_data, 0, sizeof(_data));
-    (void)nmea_parser_parse(NULL, &_data);
-    /* must not crash */
+    ASSERT_TRUE(nmea_parser_parse(NULL, &_data) != NMEA_PARSER_OK);
 }
 
 TEST(test_nmea_parser_parse_null_data) {
     char _sentence[64];
     memset(_sentence, 0, sizeof(_sentence));
-    (void)nmea_parser_parse(_sentence, NULL);
-    /* must not crash */
+    ASSERT_TRUE(nmea_parser_parse(_sentence, NULL) != NMEA_PARSER_OK);
 }
 
 TEST_MAIN("null_param_nmea_parser") {

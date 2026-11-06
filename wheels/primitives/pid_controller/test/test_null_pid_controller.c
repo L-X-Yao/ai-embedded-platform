@@ -10,20 +10,17 @@
 TEST(test_pid_controller_init_null_ctx) {
     pid_controller_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)pid_controller_init(NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(pid_controller_init(NULL, &_cfg) != PID_CONTROLLER_OK);
 }
 
 TEST(test_pid_controller_init_null_cfg) {
     pid_controller_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)pid_controller_init(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pid_controller_init(&_ctx, NULL) != PID_CONTROLLER_OK);
 }
 
 TEST(test_pid_controller_reset_null_ctx) {
-    (void)pid_controller_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(pid_controller_reset(NULL) != PID_CONTROLLER_OK);
 }
 
 TEST(test_pid_controller_update_null_ctx) {
@@ -32,13 +29,11 @@ TEST(test_pid_controller_update_null_ctx) {
 }
 
 TEST(test_pid_controller_set_tunings_null_ctx) {
-    (void)pid_controller_set_tunings(NULL, 0.0f, 0.0f, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(pid_controller_set_tunings(NULL, 0.0f, 0.0f, 0.0f) != PID_CONTROLLER_OK);
 }
 
 TEST(test_pid_controller_set_output_limits_null_ctx) {
-    (void)pid_controller_set_output_limits(NULL, 0.0f, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(pid_controller_set_output_limits(NULL, 0.0f, 0.0f) != PID_CONTROLLER_OK);
 }
 
 TEST_MAIN("null_param_pid_controller") {

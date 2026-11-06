@@ -8,18 +8,15 @@
 #include <stddef.h>
 
 TEST(test_rate_limiter_init_null_rl) {
-    (void)rate_limiter_init(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(rate_limiter_init(NULL, 0, 0) != RATE_LIMITER_OK);
 }
 
 TEST(test_rate_limiter_try_null_rl) {
-    (void)rate_limiter_try(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(rate_limiter_try(NULL, 0) != RATE_LIMITER_OK);
 }
 
 TEST(test_rate_limiter_try_n_null_rl) {
-    (void)rate_limiter_try_n(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(rate_limiter_try_n(NULL, 0, 0) != RATE_LIMITER_OK);
 }
 
 TEST(test_rate_limiter_can_proceed_null_rl) {

@@ -12,8 +12,7 @@ TEST(test_bma400_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     bma400_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bma400_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bma400_init(NULL, &_i2c, &_cfg) != BMA400_OK);
 }
 
 TEST(test_bma400_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_bma400_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     bma400_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)bma400_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(bma400_init(&_dev, NULL, &_cfg) != BMA400_OK);
 }
 
 TEST(test_bma400_init_null_cfg) {
@@ -30,32 +28,27 @@ TEST(test_bma400_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     bma400_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)bma400_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bma400_init(&_dev, &_i2c, NULL) != BMA400_OK);
 }
 
 TEST(test_bma400_read_null_dev) {
     bma400_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bma400_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bma400_read(NULL, &_out) != BMA400_OK);
 }
 
 TEST(test_bma400_read_null_out) {
     bma400_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)bma400_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bma400_read(&_dev, NULL) != BMA400_OK);
 }
 
 TEST(test_bma400_set_power_null_dev) {
-    (void)bma400_set_power(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bma400_set_power(NULL, 0) != BMA400_OK);
 }
 
 TEST(test_bma400_set_range_null_dev) {
-    (void)bma400_set_range(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bma400_set_range(NULL, 0) != BMA400_OK);
 }
 
 TEST_MAIN("null_param_bma400") {

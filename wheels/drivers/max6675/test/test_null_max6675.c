@@ -10,43 +10,37 @@
 TEST(test_max6675_init_null_dev) {
     max6675_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)max6675_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(max6675_init(NULL, &_spi) != MAX6675_OK);
 }
 
 TEST(test_max6675_init_null_spi) {
     max6675_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max6675_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max6675_init(&_dev, NULL) != MAX6675_OK);
 }
 
 TEST(test_max6675_read_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)max6675_read(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(max6675_read(NULL, &_temp_c) != MAX6675_OK);
 }
 
 TEST(test_max6675_read_null_temp_c) {
     max6675_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max6675_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max6675_read(&_dev, NULL) != MAX6675_OK);
 }
 
 TEST(test_max6675_read_raw_null_dev) {
     uint16_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)max6675_read_raw(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(max6675_read_raw(NULL, &_raw) != MAX6675_OK);
 }
 
 TEST(test_max6675_read_raw_null_raw) {
     max6675_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max6675_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max6675_read_raw(&_dev, NULL) != MAX6675_OK);
 }
 
 TEST_MAIN("null_param_max6675") {

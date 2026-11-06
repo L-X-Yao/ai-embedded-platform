@@ -10,62 +10,53 @@
 TEST(test_ft6x36_init_null_dev) {
     ft6x36_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)ft6x36_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_init(NULL, &_i2c) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_init_null_i2c) {
     ft6x36_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ft6x36_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_init(&_dev, NULL) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_read_touch_null_dev) {
     ft6x36_touch_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ft6x36_read_touch(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_read_touch(NULL, &_out) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_read_touch_null_out) {
     ft6x36_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ft6x36_read_touch(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_read_touch(&_dev, NULL) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_set_threshold_null_dev) {
-    (void)ft6x36_set_threshold(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_set_threshold(NULL, 0) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_get_chip_id_null_dev) {
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)ft6x36_get_chip_id(NULL, _out);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_get_chip_id(NULL, _out) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_get_chip_id_null_out) {
     ft6x36_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ft6x36_get_chip_id(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_get_chip_id(&_dev, NULL) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_get_firmware_version_null_dev) {
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)ft6x36_get_firmware_version(NULL, _out);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_get_firmware_version(NULL, _out) != FT6X36_OK);
 }
 
 TEST(test_ft6x36_get_firmware_version_null_out) {
     ft6x36_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ft6x36_get_firmware_version(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ft6x36_get_firmware_version(&_dev, NULL) != FT6X36_OK);
 }
 
 TEST_MAIN("null_param_ft6x36") {

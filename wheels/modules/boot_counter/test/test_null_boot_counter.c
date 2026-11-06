@@ -10,25 +10,21 @@
 TEST(test_boot_counter_init_null_ctx) {
     boot_counter_storage_t _storage;
     memset(&_storage, 0, sizeof(_storage));
-    (void)boot_counter_init(NULL, &_storage);
-    /* must not crash */
+    ASSERT_TRUE(boot_counter_init(NULL, &_storage) != BOOT_COUNTER_OK);
 }
 
 TEST(test_boot_counter_init_null_storage) {
     boot_counter_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)boot_counter_init(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(boot_counter_init(&_ctx, NULL) != BOOT_COUNTER_OK);
 }
 
 TEST(test_boot_counter_load_null_ctx) {
-    (void)boot_counter_load(NULL);
-    /* must not crash */
+    ASSERT_TRUE(boot_counter_load(NULL) != BOOT_COUNTER_OK);
 }
 
 TEST(test_boot_counter_increment_null_ctx) {
-    (void)boot_counter_increment(NULL);
-    /* must not crash */
+    ASSERT_TRUE(boot_counter_increment(NULL) != BOOT_COUNTER_OK);
 }
 
 TEST(test_boot_counter_get_count_null_ctx) {
@@ -42,8 +38,7 @@ TEST(test_boot_counter_get_reset_reason_null_ctx) {
 }
 
 TEST(test_boot_counter_set_reset_reason_null_ctx) {
-    (void)boot_counter_set_reset_reason(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(boot_counter_set_reset_reason(NULL, 0) != BOOT_COUNTER_OK);
 }
 
 TEST(test_boot_counter_get_uptime_seconds_null_ctx) {

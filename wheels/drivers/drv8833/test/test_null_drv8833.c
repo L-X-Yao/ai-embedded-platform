@@ -10,30 +10,25 @@
 TEST(test_drv8833_init_null_dev) {
     drv8833_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)drv8833_init(NULL, &_hal, 0);
-    /* must not crash */
+    ASSERT_TRUE(drv8833_init(NULL, &_hal, 0) != DRV8833_OK);
 }
 
 TEST(test_drv8833_init_null_hal) {
     drv8833_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)drv8833_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(drv8833_init(&_dev, NULL, 0) != DRV8833_OK);
 }
 
 TEST(test_drv8833_set_speed_null_dev) {
-    (void)drv8833_set_speed(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(drv8833_set_speed(NULL, 0, 0) != DRV8833_OK);
 }
 
 TEST(test_drv8833_brake_null_dev) {
-    (void)drv8833_brake(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(drv8833_brake(NULL, 0) != DRV8833_OK);
 }
 
 TEST(test_drv8833_coast_null_dev) {
-    (void)drv8833_coast(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(drv8833_coast(NULL, 0) != DRV8833_OK);
 }
 
 TEST(test_drv8833_sleep_null_dev) {

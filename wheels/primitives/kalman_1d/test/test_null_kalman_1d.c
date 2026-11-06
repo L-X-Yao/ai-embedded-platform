@@ -10,15 +10,13 @@
 TEST(test_kalman_1d_init_null_kf) {
     kalman_1d_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)kalman_1d_init(NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(kalman_1d_init(NULL, &_cfg) != KALMAN_1D_OK);
 }
 
 TEST(test_kalman_1d_init_null_cfg) {
     kalman_1d_t _kf;
     memset(&_kf, 0, sizeof(_kf));
-    (void)kalman_1d_init(&_kf, NULL);
-    /* must not crash */
+    ASSERT_TRUE(kalman_1d_init(&_kf, NULL) != KALMAN_1D_OK);
 }
 
 TEST(test_kalman_1d_update_null_kf) {
@@ -42,8 +40,7 @@ TEST(test_kalman_1d_reset_null_kf) {
 }
 
 TEST(test_kalman_1d_set_noise_null_kf) {
-    (void)kalman_1d_set_noise(NULL, 0.0f, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(kalman_1d_set_noise(NULL, 0.0f, 0.0f) != KALMAN_1D_OK);
 }
 
 TEST_MAIN("null_param_kalman_1d") {

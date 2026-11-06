@@ -10,55 +10,47 @@
 TEST(test_sx1262_init_null_dev) {
     sx1262_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)sx1262_init(NULL, &_hal);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_init(NULL, &_hal) != SX1262_OK);
 }
 
 TEST(test_sx1262_init_null_hal) {
     sx1262_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sx1262_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_init(&_dev, NULL) != SX1262_OK);
 }
 
 TEST(test_sx1262_set_frequency_null_dev) {
-    (void)sx1262_set_frequency(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_set_frequency(NULL, 0) != SX1262_OK);
 }
 
 TEST(test_sx1262_configure_lora_null_dev) {
-    (void)sx1262_configure_lora(NULL, SX1262_SF7, SX1262_BW_125K, SX1262_CR_4_5);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_configure_lora(NULL, SX1262_SF7, SX1262_BW_125K, SX1262_CR_4_5) != SX1262_OK);
 }
 
 TEST(test_sx1262_transmit_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)sx1262_transmit(NULL, _data, 1);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_transmit(NULL, _data, 1) != SX1262_OK);
 }
 
 TEST(test_sx1262_transmit_null_data) {
     sx1262_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sx1262_transmit(&_dev, NULL, 1);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_transmit(&_dev, NULL, 1) != SX1262_OK);
 }
 
 TEST(test_sx1262_receive_null_dev) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
     uint8_t _len = 0;
-    (void)sx1262_receive(NULL, _buf, 64, &_len);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_receive(NULL, _buf, 64, &_len) != SX1262_OK);
 }
 
 TEST(test_sx1262_receive_null_buf) {
     sx1262_t _dev;
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _len = 0;
-    (void)sx1262_receive(&_dev, NULL, 64, &_len);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_receive(&_dev, NULL, 64, &_len) != SX1262_OK);
 }
 
 TEST(test_sx1262_receive_null_out_len) {
@@ -66,8 +58,7 @@ TEST(test_sx1262_receive_null_out_len) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)sx1262_receive(&_dev, _buf, 64, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_receive(&_dev, _buf, 64, NULL) != SX1262_OK);
 }
 
 TEST(test_sx1262_get_rssi_null_dev) {
@@ -76,13 +67,11 @@ TEST(test_sx1262_get_rssi_null_dev) {
 }
 
 TEST(test_sx1262_sleep_null_dev) {
-    (void)sx1262_sleep(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_sleep(NULL) != SX1262_OK);
 }
 
 TEST(test_sx1262_standby_null_dev) {
-    (void)sx1262_standby(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sx1262_standby(NULL) != SX1262_OK);
 }
 
 TEST(test_sx1262_get_status_null_dev) {

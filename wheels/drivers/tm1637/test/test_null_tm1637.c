@@ -10,54 +10,45 @@
 TEST(test_tm1637_init_null_dev) {
     tm1637_gpio_t _gpio;
     memset(&_gpio, 0, sizeof(_gpio));
-    (void)tm1637_init(NULL, &_gpio);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_init(NULL, &_gpio) != TM1637_OK);
 }
 
 TEST(test_tm1637_init_null_gpio) {
     tm1637_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tm1637_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_init(&_dev, NULL) != TM1637_OK);
 }
 
 TEST(test_tm1637_set_brightness_null_dev) {
-    (void)tm1637_set_brightness(NULL, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_set_brightness(NULL, 0, false) != TM1637_OK);
 }
 
 TEST(test_tm1637_display_segments_null_dev) {
     uint8_t _segments[64];
     memset(_segments, 0, sizeof(_segments));
-    (void)tm1637_display_segments(NULL, _segments, 0);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_display_segments(NULL, _segments, 0) != TM1637_OK);
 }
 
 TEST(test_tm1637_display_segments_null_segments) {
     tm1637_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)tm1637_display_segments(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_display_segments(&_dev, NULL, 1) != TM1637_OK);
 }
 
 TEST(test_tm1637_display_number_null_dev) {
-    (void)tm1637_display_number(NULL, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_display_number(NULL, 0, false) != TM1637_OK);
 }
 
 TEST(test_tm1637_display_digit_null_dev) {
-    (void)tm1637_display_digit(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_display_digit(NULL, 0, 0) != TM1637_OK);
 }
 
 TEST(test_tm1637_set_colon_null_dev) {
-    (void)tm1637_set_colon(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_set_colon(NULL, false) != TM1637_OK);
 }
 
 TEST(test_tm1637_clear_null_dev) {
-    (void)tm1637_clear(NULL);
-    /* must not crash */
+    ASSERT_TRUE(tm1637_clear(NULL) != TM1637_OK);
 }
 
 TEST_MAIN("null_param_tm1637") {

@@ -8,41 +8,35 @@
 #include <stddef.h>
 
 TEST(test_bcd_to_bin_safe_null_out) {
-    (void)bcd_to_bin_safe(0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bcd_to_bin_safe(0, NULL) != BCD_OK);
 }
 
 TEST(test_bcd_from_bin_safe_null_out) {
-    (void)bcd_from_bin_safe(0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bcd_from_bin_safe(0, NULL) != BCD_OK);
 }
 
 TEST(test_bcd_buf_to_bin_null_bcd) {
     uint8_t _bin[64];
     memset(_bin, 0, sizeof(_bin));
-    (void)bcd_buf_to_bin(NULL, _bin, 0);
-    /* must not crash */
+    ASSERT_TRUE(bcd_buf_to_bin(NULL, _bin, 0) != BCD_OK);
 }
 
 TEST(test_bcd_buf_to_bin_null_bin) {
     uint8_t _bcd[64];
     memset(_bcd, 0, sizeof(_bcd));
-    (void)bcd_buf_to_bin(_bcd, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bcd_buf_to_bin(_bcd, NULL, 1) != BCD_OK);
 }
 
 TEST(test_bcd_buf_from_bin_null_bin) {
     uint8_t _bcd[64];
     memset(_bcd, 0, sizeof(_bcd));
-    (void)bcd_buf_from_bin(NULL, _bcd, 0);
-    /* must not crash */
+    ASSERT_TRUE(bcd_buf_from_bin(NULL, _bcd, 0) != BCD_OK);
 }
 
 TEST(test_bcd_buf_from_bin_null_bcd) {
     uint8_t _bin[64];
     memset(_bin, 0, sizeof(_bin));
-    (void)bcd_buf_from_bin(_bin, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bcd_buf_from_bin(_bin, NULL, 1) != BCD_OK);
 }
 
 TEST_MAIN("null_param_bcd") {

@@ -57,29 +57,25 @@ TEST(test_mqtt5_build_disconnect_null_buf) {
 TEST(test_mqtt5_parse_connack_null_buf) {
     mqtt5_connack_t _ack;
     memset(&_ack, 0, sizeof(_ack));
-    (void)mqtt5_parse_connack(NULL, 0, &_ack);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_parse_connack(NULL, 1, &_ack) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_parse_connack_null_ack) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mqtt5_parse_connack(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_parse_connack(_buf, 0, NULL) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_parse_publish_null_buf) {
     mqtt5_publish_t _pub;
     memset(&_pub, 0, sizeof(_pub));
-    (void)mqtt5_parse_publish(NULL, 0, &_pub);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_parse_publish(NULL, 1, &_pub) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_parse_publish_null_pub) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mqtt5_parse_publish(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_parse_publish(_buf, 0, NULL) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_encode_vbi_null_buf) {
@@ -92,8 +88,7 @@ TEST(test_mqtt5_decode_vbi_null_buf) {
     memset(&_value, 0, sizeof(_value));
     uint8_t _bytes_used[64];
     memset(_bytes_used, 0, sizeof(_bytes_used));
-    (void)mqtt5_decode_vbi(NULL, 0, &_value, _bytes_used);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_decode_vbi(NULL, 1, &_value, _bytes_used) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_decode_vbi_null_value) {
@@ -101,8 +96,7 @@ TEST(test_mqtt5_decode_vbi_null_value) {
     memset(_buf, 0, sizeof(_buf));
     uint8_t _bytes_used[64];
     memset(_bytes_used, 0, sizeof(_bytes_used));
-    (void)mqtt5_decode_vbi(_buf, 0, NULL, _bytes_used);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_decode_vbi(_buf, 0, NULL, _bytes_used) != MQTT5_OK);
 }
 
 TEST(test_mqtt5_decode_vbi_null_bytes_used) {
@@ -110,8 +104,7 @@ TEST(test_mqtt5_decode_vbi_null_bytes_used) {
     memset(_buf, 0, sizeof(_buf));
     uint32_t _value;
     memset(&_value, 0, sizeof(_value));
-    (void)mqtt5_decode_vbi(_buf, 0, &_value, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt5_decode_vbi(_buf, 0, &_value, NULL) != MQTT5_OK);
 }
 
 TEST_MAIN("null_param_mqtt5_packet") {

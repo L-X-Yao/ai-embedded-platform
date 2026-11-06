@@ -10,34 +10,29 @@
 TEST(test_bitstream_init_null_ctx) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)bitstream_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_init(NULL, _buf, 0) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_init_null_buf) {
     bitstream_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)bitstream_init(&_ctx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_init(&_ctx, NULL, 1) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_write_null_ctx) {
-    (void)bitstream_write(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_write(NULL, 0, 0) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_read_null_ctx) {
     uint32_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)bitstream_read(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_read(NULL, 0, &_out) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_read_null_out) {
     bitstream_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)bitstream_read(&_ctx, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_read(&_ctx, 0, NULL) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_tell_null_ctx) {
@@ -46,13 +41,11 @@ TEST(test_bitstream_tell_null_ctx) {
 }
 
 TEST(test_bitstream_seek_null_ctx) {
-    (void)bitstream_seek(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_seek(NULL, 0) != BITSTREAM_OK);
 }
 
 TEST(test_bitstream_reset_null_ctx) {
-    (void)bitstream_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(bitstream_reset(NULL) != BITSTREAM_OK);
 }
 
 TEST_MAIN("null_param_bitstream") {

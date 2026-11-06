@@ -10,15 +10,13 @@
 TEST(test_aes128_init_null_ctx) {
     uint8_t _key[64];
     memset(_key, 0, sizeof(_key));
-    (void)aes128_init(NULL, _key);
-    /* must not crash */
+    ASSERT_TRUE(aes128_init(NULL, _key) != AES128_OK);
 }
 
 TEST(test_aes128_init_null_key) {
     aes128_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)aes128_init(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aes128_init(&_ctx, NULL) != AES128_OK);
 }
 
 TEST(test_aes128_encrypt_block_null_ctx) {
@@ -26,8 +24,7 @@ TEST(test_aes128_encrypt_block_null_ctx) {
     memset(_in, 0, sizeof(_in));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)aes128_encrypt_block(NULL, _in, _out);
-    /* must not crash */
+    ASSERT_TRUE(aes128_encrypt_block(NULL, _in, _out) != AES128_OK);
 }
 
 TEST(test_aes128_encrypt_block_null_in) {
@@ -35,8 +32,7 @@ TEST(test_aes128_encrypt_block_null_in) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)aes128_encrypt_block(&_ctx, NULL, _out);
-    /* must not crash */
+    ASSERT_TRUE(aes128_encrypt_block(&_ctx, NULL, _out) != AES128_OK);
 }
 
 TEST(test_aes128_encrypt_block_null_out) {
@@ -44,8 +40,7 @@ TEST(test_aes128_encrypt_block_null_out) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _in[64];
     memset(_in, 0, sizeof(_in));
-    (void)aes128_encrypt_block(&_ctx, _in, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aes128_encrypt_block(&_ctx, _in, NULL) != AES128_OK);
 }
 
 TEST(test_aes128_decrypt_block_null_ctx) {
@@ -53,8 +48,7 @@ TEST(test_aes128_decrypt_block_null_ctx) {
     memset(_in, 0, sizeof(_in));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)aes128_decrypt_block(NULL, _in, _out);
-    /* must not crash */
+    ASSERT_TRUE(aes128_decrypt_block(NULL, _in, _out) != AES128_OK);
 }
 
 TEST(test_aes128_decrypt_block_null_in) {
@@ -62,8 +56,7 @@ TEST(test_aes128_decrypt_block_null_in) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)aes128_decrypt_block(&_ctx, NULL, _out);
-    /* must not crash */
+    ASSERT_TRUE(aes128_decrypt_block(&_ctx, NULL, _out) != AES128_OK);
 }
 
 TEST(test_aes128_decrypt_block_null_out) {
@@ -71,8 +64,7 @@ TEST(test_aes128_decrypt_block_null_out) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _in[64];
     memset(_in, 0, sizeof(_in));
-    (void)aes128_decrypt_block(&_ctx, _in, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aes128_decrypt_block(&_ctx, _in, NULL) != AES128_OK);
 }
 
 TEST_MAIN("null_param_aes128") {

@@ -8,78 +8,67 @@
 #include <stddef.h>
 
 TEST(test_device_info_init_null_info) {
-    (void)device_info_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_init(NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_firmware_version_null_info) {
     char _version[64];
     memset(_version, 0, sizeof(_version));
-    (void)device_info_set_firmware_version(NULL, _version);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_firmware_version(NULL, _version) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_firmware_version_null_version) {
     device_info_t _info;
     memset(&_info, 0, sizeof(_info));
-    (void)device_info_set_firmware_version(&_info, NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_firmware_version(&_info, NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_hardware_version_null_info) {
     char _version[64];
     memset(_version, 0, sizeof(_version));
-    (void)device_info_set_hardware_version(NULL, _version);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_hardware_version(NULL, _version) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_hardware_version_null_version) {
     device_info_t _info;
     memset(&_info, 0, sizeof(_info));
-    (void)device_info_set_hardware_version(&_info, NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_hardware_version(&_info, NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_serial_number_null_info) {
     char _serial[64];
     memset(_serial, 0, sizeof(_serial));
-    (void)device_info_set_serial_number(NULL, _serial);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_serial_number(NULL, _serial) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_serial_number_null_serial) {
     device_info_t _info;
     memset(&_info, 0, sizeof(_info));
-    (void)device_info_set_serial_number(&_info, NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_serial_number(&_info, NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_build_date_null_info) {
     char _date[64];
     memset(_date, 0, sizeof(_date));
-    (void)device_info_set_build_date(NULL, _date);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_build_date(NULL, _date) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_build_date_null_date) {
     device_info_t _info;
     memset(&_info, 0, sizeof(_info));
-    (void)device_info_set_build_date(&_info, NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_build_date(&_info, NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_device_name_null_info) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)device_info_set_device_name(NULL, _name);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_device_name(NULL, _name) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_device_name_null_name) {
     device_info_t _info;
     memset(&_info, 0, sizeof(_info));
-    (void)device_info_set_device_name(&_info, NULL);
-    /* must not crash */
+    ASSERT_TRUE(device_info_set_device_name(&_info, NULL) != DEVICE_INFO_OK);
 }
 
 TEST(test_device_info_set_boot_count_null_info) {

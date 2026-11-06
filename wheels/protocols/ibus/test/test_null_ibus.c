@@ -10,29 +10,25 @@
 TEST(test_ibus_decode_null_data) {
     ibus_frame_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)ibus_decode(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(ibus_decode(NULL, 1, &_out) != IBUS_OK);
 }
 
 TEST(test_ibus_decode_null_out) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)ibus_decode(_data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ibus_decode(_data, 0, NULL) != IBUS_OK);
 }
 
 TEST(test_ibus_encode_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)ibus_encode(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(ibus_encode(NULL, _buf, 0) != IBUS_OK);
 }
 
 TEST(test_ibus_encode_null_buf) {
     ibus_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)ibus_encode(&_frame, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ibus_encode(&_frame, NULL, 0) != IBUS_OK);
 }
 
 TEST(test_ibus_checksum_null_data) {

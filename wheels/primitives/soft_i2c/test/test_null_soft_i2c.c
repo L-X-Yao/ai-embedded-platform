@@ -10,67 +10,57 @@
 TEST(test_soft_i2c_init_null_bus) {
     soft_i2c_gpio_t _gpio;
     memset(&_gpio, 0, sizeof(_gpio));
-    (void)soft_i2c_init(NULL, &_gpio);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_init(NULL, &_gpio) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_init_null_gpio) {
     soft_i2c_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)soft_i2c_init(&_bus, NULL);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_init(&_bus, NULL) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_write_null_bus) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)soft_i2c_write(NULL, 0, _data, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_write(NULL, 0, _data, 0) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_write_null_data) {
     soft_i2c_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)soft_i2c_write(&_bus, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_write(&_bus, 0, NULL, 1) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_read_null_bus) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)soft_i2c_read(NULL, 0, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_read(NULL, 0, _buf, 0) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_read_null_buf) {
     soft_i2c_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)soft_i2c_read(&_bus, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_read(&_bus, 0, NULL, 1) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_write_reg_null_bus) {
-    (void)soft_i2c_write_reg(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_write_reg(NULL, 0, 0, 0) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_read_regs_null_bus) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)soft_i2c_read_regs(NULL, 0, 0, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_read_regs(NULL, 0, 0, _buf, 0) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_read_regs_null_buf) {
     soft_i2c_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)soft_i2c_read_regs(&_bus, 0, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_read_regs(&_bus, 0, 0, NULL, 1) != SOFT_I2C_OK);
 }
 
 TEST(test_soft_i2c_bus_recover_null_bus) {
-    (void)soft_i2c_bus_recover(NULL);
-    /* must not crash */
+    ASSERT_TRUE(soft_i2c_bus_recover(NULL) != SOFT_I2C_OK);
 }
 
 TEST_MAIN("null_param_soft_i2c") {

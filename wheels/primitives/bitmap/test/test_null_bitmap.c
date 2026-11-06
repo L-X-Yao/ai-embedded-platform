@@ -10,25 +10,21 @@
 TEST(test_bitmap_init_null_bm) {
     uint8_t _storage[64];
     memset(_storage, 0, sizeof(_storage));
-    (void)bitmap_init(NULL, _storage, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_init(NULL, _storage, 0) != BITMAP_OK);
 }
 
 TEST(test_bitmap_init_null_storage) {
     bitmap_t _bm;
     memset(&_bm, 0, sizeof(_bm));
-    (void)bitmap_init(&_bm, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_init(&_bm, NULL, 0) != BITMAP_OK);
 }
 
 TEST(test_bitmap_set_null_bm) {
-    (void)bitmap_set(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_set(NULL, 0) != BITMAP_OK);
 }
 
 TEST(test_bitmap_clear_null_bm) {
-    (void)bitmap_clear(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_clear(NULL, 0) != BITMAP_OK);
 }
 
 TEST(test_bitmap_test_null_bm) {
@@ -37,8 +33,7 @@ TEST(test_bitmap_test_null_bm) {
 }
 
 TEST(test_bitmap_toggle_null_bm) {
-    (void)bitmap_toggle(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_toggle(NULL, 0) != BITMAP_OK);
 }
 
 TEST(test_bitmap_set_all_null_bm) {
@@ -82,8 +77,7 @@ TEST(test_bitmap_alloc_null_bm) {
 }
 
 TEST(test_bitmap_free_null_bm) {
-    (void)bitmap_free(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(bitmap_free(NULL, 0) != BITMAP_OK);
 }
 
 TEST_MAIN("null_param_bitmap") {

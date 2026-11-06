@@ -15,15 +15,13 @@ TEST(test_crsf_crc8_null_data) {
 TEST(test_crsf_decode_frame_null_data) {
     crsf_frame_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)crsf_decode_frame(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(crsf_decode_frame(NULL, 1, &_out) != CRSF_OK);
 }
 
 TEST(test_crsf_decode_frame_null_out) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)crsf_decode_frame(_data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(crsf_decode_frame(_data, 0, NULL) != CRSF_OK);
 }
 
 TEST(test_crsf_encode_frame_null_frame) {
@@ -31,8 +29,7 @@ TEST(test_crsf_encode_frame_null_frame) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)crsf_encode_frame(NULL, _buf, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(crsf_encode_frame(NULL, _buf, 0, &_out_len) != CRSF_OK);
 }
 
 TEST(test_crsf_encode_frame_null_buf) {
@@ -40,8 +37,7 @@ TEST(test_crsf_encode_frame_null_buf) {
     memset(&_frame, 0, sizeof(_frame));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)crsf_encode_frame(&_frame, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(crsf_encode_frame(&_frame, NULL, 0, &_out_len) != CRSF_OK);
 }
 
 TEST(test_crsf_encode_frame_null_out_len) {
@@ -49,36 +45,31 @@ TEST(test_crsf_encode_frame_null_out_len) {
     memset(&_frame, 0, sizeof(_frame));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)crsf_encode_frame(&_frame, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(crsf_encode_frame(&_frame, _buf, 0, NULL) != CRSF_OK);
 }
 
 TEST(test_crsf_unpack_channels_null_payload) {
     crsf_channels_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)crsf_unpack_channels(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(crsf_unpack_channels(NULL, 1, &_out) != CRSF_OK);
 }
 
 TEST(test_crsf_unpack_channels_null_out) {
     uint8_t _payload[64];
     memset(_payload, 0, sizeof(_payload));
-    (void)crsf_unpack_channels(_payload, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(crsf_unpack_channels(_payload, 0, NULL) != CRSF_OK);
 }
 
 TEST(test_crsf_pack_channels_null_channels) {
     uint8_t _payload[64];
     memset(_payload, 0, sizeof(_payload));
-    (void)crsf_pack_channels(NULL, _payload, 0);
-    /* must not crash */
+    ASSERT_TRUE(crsf_pack_channels(NULL, _payload, 0) != CRSF_OK);
 }
 
 TEST(test_crsf_pack_channels_null_payload) {
     crsf_channels_t _channels;
     memset(&_channels, 0, sizeof(_channels));
-    (void)crsf_pack_channels(&_channels, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(crsf_pack_channels(&_channels, NULL, 0) != CRSF_OK);
 }
 
 TEST_MAIN("null_param_crsf") {

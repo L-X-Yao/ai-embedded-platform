@@ -10,55 +10,47 @@
 TEST(test_cc1101_init_null_dev) {
     cc1101_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)cc1101_init(NULL, &_hal);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_init(NULL, &_hal) != CC1101_OK);
 }
 
 TEST(test_cc1101_init_null_hal) {
     cc1101_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)cc1101_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_init(&_dev, NULL) != CC1101_OK);
 }
 
 TEST(test_cc1101_set_frequency_null_dev) {
-    (void)cc1101_set_frequency(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_set_frequency(NULL, 0) != CC1101_OK);
 }
 
 TEST(test_cc1101_set_power_null_dev) {
-    (void)cc1101_set_power(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_set_power(NULL, 0) != CC1101_OK);
 }
 
 TEST(test_cc1101_transmit_null_dev) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)cc1101_transmit(NULL, _data, 1);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_transmit(NULL, _data, 1) != CC1101_OK);
 }
 
 TEST(test_cc1101_transmit_null_data) {
     cc1101_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)cc1101_transmit(&_dev, NULL, 1);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_transmit(&_dev, NULL, 1) != CC1101_OK);
 }
 
 TEST(test_cc1101_receive_null_dev) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
     uint8_t _len = 0;
-    (void)cc1101_receive(NULL, _buf, 64, &_len);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_receive(NULL, _buf, 64, &_len) != CC1101_OK);
 }
 
 TEST(test_cc1101_receive_null_buf) {
     cc1101_t _dev;
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _len = 0;
-    (void)cc1101_receive(&_dev, NULL, 64, &_len);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_receive(&_dev, NULL, 64, &_len) != CC1101_OK);
 }
 
 TEST(test_cc1101_receive_null_out_len) {
@@ -66,8 +58,7 @@ TEST(test_cc1101_receive_null_out_len) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)cc1101_receive(&_dev, _buf, 64, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_receive(&_dev, _buf, 64, NULL) != CC1101_OK);
 }
 
 TEST(test_cc1101_get_rssi_null_dev) {
@@ -76,8 +67,7 @@ TEST(test_cc1101_get_rssi_null_dev) {
 }
 
 TEST(test_cc1101_idle_null_dev) {
-    (void)cc1101_idle(NULL);
-    /* must not crash */
+    ASSERT_TRUE(cc1101_idle(NULL) != CC1101_OK);
 }
 
 TEST_MAIN("null_param_cc1101") {

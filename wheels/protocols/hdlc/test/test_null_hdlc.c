@@ -17,8 +17,7 @@ TEST(test_hdlc_encode_null_data) {
     memset(_out, 0, sizeof(_out));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)hdlc_encode(NULL, 0, _out, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_encode(NULL, 1, _out, 0, &_out_len) != HDLC_OK);
 }
 
 TEST(test_hdlc_encode_null_out) {
@@ -26,8 +25,7 @@ TEST(test_hdlc_encode_null_out) {
     memset(_data, 0, sizeof(_data));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)hdlc_encode(_data, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_encode(_data, 0, NULL, 0, &_out_len) != HDLC_OK);
 }
 
 TEST(test_hdlc_encode_null_out_len) {
@@ -35,22 +33,19 @@ TEST(test_hdlc_encode_null_out_len) {
     memset(_data, 0, sizeof(_data));
     uint8_t _out[64];
     memset(_out, 0, sizeof(_out));
-    (void)hdlc_encode(_data, 0, _out, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_encode(_data, 0, _out, 0, NULL) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_init_null_parser) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)hdlc_parser_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_parser_init(NULL, _buf, 0) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_init_null_buf) {
     hdlc_parser_t _parser;
     memset(&_parser, 0, sizeof(_parser));
-    (void)hdlc_parser_init(&_parser, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_parser_init(&_parser, NULL, 0) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_feed_null_parser) {
@@ -63,8 +58,7 @@ TEST(test_hdlc_parser_get_frame_null_parser) {
     memset(_data, 0, sizeof(_data));
     size_t _data_len;
     memset(&_data_len, 0, sizeof(_data_len));
-    (void)hdlc_parser_get_frame(NULL, _data, 0, &_data_len);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_parser_get_frame(NULL, _data, 0, &_data_len) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_get_frame_null_data) {
@@ -72,8 +66,7 @@ TEST(test_hdlc_parser_get_frame_null_data) {
     memset(&_parser, 0, sizeof(_parser));
     size_t _data_len;
     memset(&_data_len, 0, sizeof(_data_len));
-    (void)hdlc_parser_get_frame(&_parser, NULL, 0, &_data_len);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_parser_get_frame(&_parser, NULL, 0, &_data_len) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_get_frame_null_data_len) {
@@ -81,8 +74,7 @@ TEST(test_hdlc_parser_get_frame_null_data_len) {
     memset(&_parser, 0, sizeof(_parser));
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
-    (void)hdlc_parser_get_frame(&_parser, _data, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(hdlc_parser_get_frame(&_parser, _data, 0, NULL) != HDLC_OK);
 }
 
 TEST(test_hdlc_parser_reset_null_parser) {

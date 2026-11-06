@@ -12,8 +12,7 @@ TEST(test_lis3mdl_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     lis3mdl_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis3mdl_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_init(NULL, &_i2c, &_cfg) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_lis3mdl_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     lis3mdl_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)lis3mdl_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_init(&_dev, NULL, &_cfg) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_init_null_cfg) {
@@ -30,36 +28,31 @@ TEST(test_lis3mdl_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     lis3mdl_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)lis3mdl_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_init(&_dev, &_i2c, NULL) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_read_null_dev) {
     lis3mdl_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)lis3mdl_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_read(NULL, &_out) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_read_null_out) {
     lis3mdl_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lis3mdl_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_read(&_dev, NULL) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_read_raw_null_dev) {
     lis3mdl_raw_t _raw;
     memset(&_raw, 0, sizeof(_raw));
-    (void)lis3mdl_read_raw(NULL, &_raw);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_read_raw(NULL, &_raw) != LIS3MDL_OK);
 }
 
 TEST(test_lis3mdl_read_raw_null_raw) {
     lis3mdl_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)lis3mdl_read_raw(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lis3mdl_read_raw(&_dev, NULL) != LIS3MDL_OK);
 }
 
 TEST_MAIN("null_param_lis3mdl") {

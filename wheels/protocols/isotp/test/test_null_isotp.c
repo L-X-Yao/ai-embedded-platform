@@ -10,29 +10,25 @@
 TEST(test_isotp_rx_init_null_rx) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)isotp_rx_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(isotp_rx_init(NULL, _buf, 0) != ISOTP_OK);
 }
 
 TEST(test_isotp_rx_init_null_buf) {
     isotp_rx_t _rx;
     memset(&_rx, 0, sizeof(_rx));
-    (void)isotp_rx_init(&_rx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(isotp_rx_init(&_rx, NULL, 0) != ISOTP_OK);
 }
 
 TEST(test_isotp_rx_feed_null_rx) {
     uint8_t _can_data[64];
     memset(_can_data, 0, sizeof(_can_data));
-    (void)isotp_rx_feed(NULL, _can_data, 0);
-    /* must not crash */
+    ASSERT_TRUE(isotp_rx_feed(NULL, _can_data, 0) != ISOTP_OK);
 }
 
 TEST(test_isotp_rx_feed_null_can_data) {
     isotp_rx_t _rx;
     memset(&_rx, 0, sizeof(_rx));
-    (void)isotp_rx_feed(&_rx, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(isotp_rx_feed(&_rx, NULL, 0) != ISOTP_OK);
 }
 
 TEST(test_isotp_rx_length_null_rx) {
@@ -41,27 +37,23 @@ TEST(test_isotp_rx_length_null_rx) {
 }
 
 TEST(test_isotp_rx_reset_null_rx) {
-    (void)isotp_rx_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(isotp_rx_reset(NULL) != ISOTP_OK);
 }
 
 TEST(test_isotp_encode_sf_null_payload) {
     uint8_t _can_data[64];
     memset(_can_data, 0, sizeof(_can_data));
-    (void)isotp_encode_sf(NULL, 0, _can_data);
-    /* must not crash */
+    ASSERT_TRUE(isotp_encode_sf(NULL, 1, _can_data) != ISOTP_OK);
 }
 
 TEST(test_isotp_encode_sf_null_can_data) {
     uint8_t _payload[64];
     memset(_payload, 0, sizeof(_payload));
-    (void)isotp_encode_sf(_payload, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(isotp_encode_sf(_payload, 0, NULL) != ISOTP_OK);
 }
 
 TEST(test_isotp_encode_fc_null_can_data) {
-    (void)isotp_encode_fc(0, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(isotp_encode_fc(0, 0, 0, NULL) != ISOTP_OK);
 }
 
 TEST_MAIN("null_param_isotp") {

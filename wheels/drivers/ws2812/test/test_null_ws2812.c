@@ -12,8 +12,7 @@ TEST(test_ws2812_send_null_hal) {
     memset(&_timing, 0, sizeof(_timing));
     ws2812_color_t _colors;
     memset(&_colors, 0, sizeof(_colors));
-    (void)ws2812_send(NULL, &_timing, &_colors, 0);
-    /* must not crash */
+    ASSERT_TRUE(ws2812_send(NULL, &_timing, &_colors, 0) != WS2812_OK);
 }
 
 TEST(test_ws2812_send_null_timing) {
@@ -21,8 +20,7 @@ TEST(test_ws2812_send_null_timing) {
     memset(&_hal, 0, sizeof(_hal));
     ws2812_color_t _colors;
     memset(&_colors, 0, sizeof(_colors));
-    (void)ws2812_send(&_hal, NULL, &_colors, 0);
-    /* must not crash */
+    ASSERT_TRUE(ws2812_send(&_hal, NULL, &_colors, 0) != WS2812_OK);
 }
 
 TEST(test_ws2812_send_null_colors) {
@@ -30,8 +28,7 @@ TEST(test_ws2812_send_null_colors) {
     memset(&_hal, 0, sizeof(_hal));
     ws2812_timing_t _timing;
     memset(&_timing, 0, sizeof(_timing));
-    (void)ws2812_send(&_hal, &_timing, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ws2812_send(&_hal, &_timing, NULL, 0) != WS2812_OK);
 }
 
 TEST(test_ws2812_encode_grb_null_color) {

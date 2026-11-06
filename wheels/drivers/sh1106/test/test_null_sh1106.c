@@ -12,8 +12,7 @@ TEST(test_sh1106_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     uint8_t _framebuf[64];
     memset(_framebuf, 0, sizeof(_framebuf));
-    (void)sh1106_init(NULL, &_i2c, 0, _framebuf);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_init(NULL, &_i2c, 0, _framebuf) != SH1106_OK);
 }
 
 TEST(test_sh1106_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_sh1106_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _framebuf[64];
     memset(_framebuf, 0, sizeof(_framebuf));
-    (void)sh1106_init(&_dev, NULL, 0, _framebuf);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_init(&_dev, NULL, 0, _framebuf) != SH1106_OK);
 }
 
 TEST(test_sh1106_init_null_framebuf) {
@@ -30,13 +28,11 @@ TEST(test_sh1106_init_null_framebuf) {
     memset(&_dev, 0, sizeof(_dev));
     sh1106_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)sh1106_init(&_dev, &_i2c, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_init(&_dev, &_i2c, 0, NULL) != SH1106_OK);
 }
 
 TEST(test_sh1106_display_null_dev) {
-    (void)sh1106_display(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_display(NULL) != SH1106_OK);
 }
 
 TEST(test_sh1106_clear_null_dev) {
@@ -60,18 +56,15 @@ TEST(test_sh1106_fill_null_dev) {
 }
 
 TEST(test_sh1106_set_contrast_null_dev) {
-    (void)sh1106_set_contrast(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_set_contrast(NULL, 0) != SH1106_OK);
 }
 
 TEST(test_sh1106_display_on_null_dev) {
-    (void)sh1106_display_on(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_display_on(NULL) != SH1106_OK);
 }
 
 TEST(test_sh1106_display_off_null_dev) {
-    (void)sh1106_display_off(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sh1106_display_off(NULL) != SH1106_OK);
 }
 
 TEST_MAIN("null_param_sh1106") {

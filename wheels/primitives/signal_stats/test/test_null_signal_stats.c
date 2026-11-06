@@ -8,13 +8,11 @@
 #include <stddef.h>
 
 TEST(test_signal_stats_init_null_ctx) {
-    (void)signal_stats_init(NULL);
-    /* must not crash */
+    ASSERT_TRUE(signal_stats_init(NULL) != SIGNAL_STATS_OK);
 }
 
 TEST(test_signal_stats_feed_null_ctx) {
-    (void)signal_stats_feed(NULL, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(signal_stats_feed(NULL, 0.0f) != SIGNAL_STATS_OK);
 }
 
 TEST(test_signal_stats_mean_null_ctx) {
@@ -48,8 +46,7 @@ TEST(test_signal_stats_range_null_ctx) {
 }
 
 TEST(test_signal_stats_reset_null_ctx) {
-    (void)signal_stats_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(signal_stats_reset(NULL) != SIGNAL_STATS_OK);
 }
 
 TEST_MAIN("null_param_signal_stats") {

@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_canbus_frame_validate_null_frame) {
-    (void)canbus_frame_validate(NULL);
-    /* must not crash */
+    ASSERT_TRUE(canbus_frame_validate(NULL) != CANBUS_OK);
 }
 
 TEST(test_canbus_frame_pack_null_frame) {
@@ -29,15 +28,13 @@ TEST(test_canbus_frame_pack_null_buf) {
 TEST(test_canbus_frame_unpack_null_buf) {
     canbus_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)canbus_frame_unpack(NULL, 0, &_frame);
-    /* must not crash */
+    ASSERT_TRUE(canbus_frame_unpack(NULL, 1, &_frame) != CANBUS_OK);
 }
 
 TEST(test_canbus_frame_unpack_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)canbus_frame_unpack(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(canbus_frame_unpack(_buf, 0, NULL) != CANBUS_OK);
 }
 
 TEST(test_canbus_filter_match_null_filter) {

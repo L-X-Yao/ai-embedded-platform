@@ -8,43 +8,38 @@
 #include <stddef.h>
 
 TEST(test_uuid_v4_generate_null_uuid) {
-    (void)uuid_v4_generate(NULL, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uuid_v4_generate(NULL, 0, NULL) != UUID_OK);
 }
 
 TEST(test_uuid_v4_generate_null_ctx) {
     uuid_t _uuid;
     memset(&_uuid, 0, sizeof(_uuid));
     (void)uuid_v4_generate(&_uuid, 0, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the rng unread */
 }
 
 TEST(test_uuid_to_string_null_uuid) {
     char _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)uuid_to_string(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(uuid_to_string(NULL, _buf, 0) != UUID_OK);
 }
 
 TEST(test_uuid_to_string_null_buf) {
     uuid_t _uuid;
     memset(&_uuid, 0, sizeof(_uuid));
-    (void)uuid_to_string(&_uuid, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(uuid_to_string(&_uuid, NULL, 1) != UUID_OK);
 }
 
 TEST(test_uuid_from_string_null_uuid) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)uuid_from_string(NULL, _str);
-    /* must not crash */
+    ASSERT_TRUE(uuid_from_string(NULL, _str) != UUID_OK);
 }
 
 TEST(test_uuid_from_string_null_str) {
     uuid_t _uuid;
     memset(&_uuid, 0, sizeof(_uuid));
-    (void)uuid_from_string(&_uuid, NULL);
-    /* must not crash */
+    ASSERT_TRUE(uuid_from_string(&_uuid, NULL) != UUID_OK);
 }
 
 TEST(test_uuid_equal_null_a) {

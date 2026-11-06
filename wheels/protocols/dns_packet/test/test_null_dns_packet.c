@@ -24,15 +24,13 @@ TEST(test_dns_build_query_null_name) {
 TEST(test_dns_parse_header_null_buf) {
     dns_header_t _hdr;
     memset(&_hdr, 0, sizeof(_hdr));
-    (void)dns_parse_header(NULL, 0, &_hdr);
-    /* must not crash */
+    ASSERT_TRUE(dns_parse_header(NULL, 1, &_hdr) != DNS_OK);
 }
 
 TEST(test_dns_parse_header_null_hdr) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)dns_parse_header(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dns_parse_header(_buf, 0, NULL) != DNS_OK);
 }
 
 TEST(test_dns_parse_record_null_buf) {
@@ -52,15 +50,13 @@ TEST(test_dns_parse_record_null_record) {
 TEST(test_dns_get_ipv4_null_record) {
     uint8_t _ip[64];
     memset(_ip, 0, sizeof(_ip));
-    (void)dns_get_ipv4(NULL, _ip);
-    /* must not crash */
+    ASSERT_TRUE(dns_get_ipv4(NULL, _ip) != DNS_OK);
 }
 
 TEST(test_dns_get_ipv4_null_ip) {
     dns_record_t _record;
     memset(&_record, 0, sizeof(_record));
-    (void)dns_get_ipv4(&_record, NULL);
-    /* must not crash */
+    ASSERT_TRUE(dns_get_ipv4(&_record, NULL) != DNS_OK);
 }
 
 TEST(test_dns_encode_name_null_name) {

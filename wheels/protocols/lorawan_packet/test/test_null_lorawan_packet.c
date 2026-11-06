@@ -24,15 +24,13 @@ TEST(test_lorawan_build_data_null_frame) {
 TEST(test_lorawan_parse_data_null_buf) {
     lorawan_frame_t _frame;
     memset(&_frame, 0, sizeof(_frame));
-    (void)lorawan_parse_data(NULL, 0, &_frame);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_data(NULL, 1, &_frame) != LORAWAN_OK);
 }
 
 TEST(test_lorawan_parse_data_null_frame) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)lorawan_parse_data(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_data(_buf, 0, NULL) != LORAWAN_OK);
 }
 
 TEST(test_lorawan_build_join_request_null_buf) {
@@ -86,8 +84,7 @@ TEST(test_lorawan_parse_join_request_null_buf) {
     memset(_dev_eui, 0, sizeof(_dev_eui));
     uint8_t _dev_nonce[64];
     memset(_dev_nonce, 0, sizeof(_dev_nonce));
-    (void)lorawan_parse_join_request(NULL, 0, _app_eui, _dev_eui, _dev_nonce);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_join_request(NULL, 1, _app_eui, _dev_eui, _dev_nonce) != LORAWAN_OK);
 }
 
 TEST(test_lorawan_parse_join_request_null_app_eui) {
@@ -97,8 +94,7 @@ TEST(test_lorawan_parse_join_request_null_app_eui) {
     memset(_dev_eui, 0, sizeof(_dev_eui));
     uint8_t _dev_nonce[64];
     memset(_dev_nonce, 0, sizeof(_dev_nonce));
-    (void)lorawan_parse_join_request(_buf, 0, NULL, _dev_eui, _dev_nonce);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_join_request(_buf, 0, NULL, _dev_eui, _dev_nonce) != LORAWAN_OK);
 }
 
 TEST(test_lorawan_parse_join_request_null_dev_eui) {
@@ -108,8 +104,7 @@ TEST(test_lorawan_parse_join_request_null_dev_eui) {
     memset(_app_eui, 0, sizeof(_app_eui));
     uint8_t _dev_nonce[64];
     memset(_dev_nonce, 0, sizeof(_dev_nonce));
-    (void)lorawan_parse_join_request(_buf, 0, _app_eui, NULL, _dev_nonce);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_join_request(_buf, 0, _app_eui, NULL, _dev_nonce) != LORAWAN_OK);
 }
 
 TEST(test_lorawan_parse_join_request_null_dev_nonce) {
@@ -119,8 +114,7 @@ TEST(test_lorawan_parse_join_request_null_dev_nonce) {
     memset(_app_eui, 0, sizeof(_app_eui));
     uint8_t _dev_eui[64];
     memset(_dev_eui, 0, sizeof(_dev_eui));
-    (void)lorawan_parse_join_request(_buf, 0, _app_eui, _dev_eui, NULL);
-    /* must not crash */
+    ASSERT_TRUE(lorawan_parse_join_request(_buf, 0, _app_eui, _dev_eui, NULL) != LORAWAN_OK);
 }
 
 TEST_MAIN("null_param_lorawan_packet") {

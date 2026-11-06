@@ -10,76 +10,65 @@
 TEST(test_sht40_init_null_dev) {
     sht40_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)sht40_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(sht40_init(NULL, &_i2c, 0) != SHT40_OK);
 }
 
 TEST(test_sht40_init_null_i2c) {
     sht40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht40_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(sht40_init(&_dev, NULL, 0) != SHT40_OK);
 }
 
 TEST(test_sht40_read_high_null_dev) {
     sht40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sht40_read_high(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_high(NULL, &_out) != SHT40_OK);
 }
 
 TEST(test_sht40_read_high_null_out) {
     sht40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht40_read_high(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_high(&_dev, NULL) != SHT40_OK);
 }
 
 TEST(test_sht40_read_medium_null_dev) {
     sht40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sht40_read_medium(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_medium(NULL, &_out) != SHT40_OK);
 }
 
 TEST(test_sht40_read_medium_null_out) {
     sht40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht40_read_medium(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_medium(&_dev, NULL) != SHT40_OK);
 }
 
 TEST(test_sht40_read_low_null_dev) {
     sht40_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)sht40_read_low(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_low(NULL, &_out) != SHT40_OK);
 }
 
 TEST(test_sht40_read_low_null_out) {
     sht40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht40_read_low(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_low(&_dev, NULL) != SHT40_OK);
 }
 
 TEST(test_sht40_soft_reset_null_dev) {
-    (void)sht40_soft_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht40_soft_reset(NULL) != SHT40_OK);
 }
 
 TEST(test_sht40_read_serial_null_dev) {
     uint32_t _serial;
     memset(&_serial, 0, sizeof(_serial));
-    (void)sht40_read_serial(NULL, &_serial);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_serial(NULL, &_serial) != SHT40_OK);
 }
 
 TEST(test_sht40_read_serial_null_serial) {
     sht40_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)sht40_read_serial(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(sht40_read_serial(&_dev, NULL) != SHT40_OK);
 }
 
 TEST(test_sht40_crc8_null_data) {

@@ -67,43 +67,37 @@ TEST(test_mqtt_packet_get_type_null_buf) {
 TEST(test_mqtt_packet_parse_connack_null_buf) {
     mqtt_connack_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)mqtt_packet_parse_connack(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_connack(NULL, 1, &_out) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_parse_connack_null_out) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mqtt_packet_parse_connack(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_connack(_buf, 0, NULL) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_parse_publish_null_buf) {
     mqtt_publish_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)mqtt_packet_parse_publish(NULL, 0, &_out);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_publish(NULL, 1, &_out) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_parse_publish_null_out) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mqtt_packet_parse_publish(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_publish(_buf, 0, NULL) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_parse_puback_null_buf) {
     uint16_t _packet_id;
     memset(&_packet_id, 0, sizeof(_packet_id));
-    (void)mqtt_packet_parse_puback(NULL, 0, &_packet_id);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_puback(NULL, 1, &_packet_id) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_parse_puback_null_packet_id) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)mqtt_packet_parse_puback(_buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(mqtt_packet_parse_puback(_buf, 0, NULL) != MQTT_PACKET_OK);
 }
 
 TEST(test_mqtt_packet_encode_remaining_length_null_buf) {

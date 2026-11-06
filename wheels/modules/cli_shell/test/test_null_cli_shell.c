@@ -12,8 +12,7 @@ TEST(test_cli_shell_init_null_sh) {
     memset(&_io, 0, sizeof(_io));
     char _prompt[64];
     memset(_prompt, 0, sizeof(_prompt));
-    (void)cli_shell_init(NULL, &_io, _prompt);
-    /* must not crash */
+    ASSERT_TRUE(cli_shell_init(NULL, &_io, _prompt) != CLI_SHELL_OK);
 }
 
 TEST(test_cli_shell_init_null_io) {
@@ -22,7 +21,7 @@ TEST(test_cli_shell_init_null_io) {
     char _prompt[64];
     memset(_prompt, 0, sizeof(_prompt));
     (void)cli_shell_init(&_sh, NULL, _prompt);
-    /* must not crash */
+    /* must not crash: a shell with no io stays silent */
 }
 
 TEST(test_cli_shell_init_null_prompt) {
@@ -31,7 +30,7 @@ TEST(test_cli_shell_init_null_prompt) {
     cli_shell_io_t _io;
     memset(&_io, 0, sizeof(_io));
     (void)cli_shell_init(&_sh, &_io, NULL);
-    /* must not crash */
+    /* must not crash: the prompt is optional */
 }
 
 TEST(test_cli_shell_register_null_sh) {
@@ -39,8 +38,7 @@ TEST(test_cli_shell_register_null_sh) {
     memset(_name, 0, sizeof(_name));
     char _help[64];
     memset(_help, 0, sizeof(_help));
-    (void)cli_shell_register(NULL, _name, _help, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cli_shell_register(NULL, _name, _help, NULL, NULL) != CLI_SHELL_OK);
 }
 
 TEST(test_cli_shell_register_null_name) {
@@ -48,8 +46,7 @@ TEST(test_cli_shell_register_null_name) {
     memset(&_sh, 0, sizeof(_sh));
     char _help[64];
     memset(_help, 0, sizeof(_help));
-    (void)cli_shell_register(&_sh, NULL, _help, NULL, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cli_shell_register(&_sh, NULL, _help, NULL, NULL) != CLI_SHELL_OK);
 }
 
 TEST(test_cli_shell_register_null_help) {
@@ -58,7 +55,7 @@ TEST(test_cli_shell_register_null_help) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
     (void)cli_shell_register(&_sh, _name, NULL, NULL, NULL);
-    /* must not crash */
+    /* must not crash: help lists a command with no text */
 }
 
 TEST(test_cli_shell_register_null_ctx) {
@@ -69,7 +66,7 @@ TEST(test_cli_shell_register_null_ctx) {
     char _help[64];
     memset(_help, 0, sizeof(_help));
     (void)cli_shell_register(&_sh, _name, _help, NULL, NULL);
-    /* must not crash */
+    /* must not crash: ctx goes to the handler unread */
 }
 
 TEST(test_cli_shell_feed_null_sh) {

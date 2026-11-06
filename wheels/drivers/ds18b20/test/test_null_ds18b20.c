@@ -10,44 +10,37 @@
 TEST(test_ds18b20_init_null_dev) {
     ds18b20_ow_t _ow;
     memset(&_ow, 0, sizeof(_ow));
-    (void)ds18b20_init(NULL, &_ow);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_init(NULL, &_ow) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_init_null_ow) {
     ds18b20_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds18b20_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_init(&_dev, NULL) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_read_rom_null_dev) {
-    (void)ds18b20_read_rom(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_read_rom(NULL) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_start_conversion_null_dev) {
-    (void)ds18b20_start_conversion(NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_start_conversion(NULL) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_read_temperature_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)ds18b20_read_temperature(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_read_temperature(NULL, &_temp_c) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_read_temperature_null_temp_c) {
     ds18b20_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)ds18b20_read_temperature(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_read_temperature(&_dev, NULL) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_set_resolution_null_dev) {
-    (void)ds18b20_set_resolution(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ds18b20_set_resolution(NULL, 0) != DS18B20_OK);
 }
 
 TEST(test_ds18b20_crc8_null_data) {

@@ -12,8 +12,7 @@ TEST(test_tb6612_init_null_dev) {
     memset(&_hal, 0, sizeof(_hal));
     tb6612_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)tb6612_init(NULL, &_hal, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_init(NULL, &_hal, &_cfg) != TB6612_OK);
 }
 
 TEST(test_tb6612_init_null_hal) {
@@ -21,8 +20,7 @@ TEST(test_tb6612_init_null_hal) {
     memset(&_dev, 0, sizeof(_dev));
     tb6612_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)tb6612_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_init(&_dev, NULL, &_cfg) != TB6612_OK);
 }
 
 TEST(test_tb6612_init_null_cfg) {
@@ -30,23 +28,19 @@ TEST(test_tb6612_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     tb6612_hal_t _hal;
     memset(&_hal, 0, sizeof(_hal));
-    (void)tb6612_init(&_dev, &_hal, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_init(&_dev, &_hal, NULL) != TB6612_OK);
 }
 
 TEST(test_tb6612_set_speed_null_dev) {
-    (void)tb6612_set_speed(NULL, TB6612_MOTOR_A, 0);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_set_speed(NULL, TB6612_MOTOR_A, 0) != TB6612_OK);
 }
 
 TEST(test_tb6612_brake_null_dev) {
-    (void)tb6612_brake(NULL, TB6612_MOTOR_A);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_brake(NULL, TB6612_MOTOR_A) != TB6612_OK);
 }
 
 TEST(test_tb6612_standby_null_dev) {
-    (void)tb6612_standby(NULL, true);
-    /* must not crash */
+    ASSERT_TRUE(tb6612_standby(NULL, true) != TB6612_OK);
 }
 
 TEST_MAIN("null_param_tb6612") {

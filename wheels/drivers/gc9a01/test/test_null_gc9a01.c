@@ -10,54 +10,45 @@
 TEST(test_gc9a01_init_null_dev) {
     gc9a01_spi_t _spi;
     memset(&_spi, 0, sizeof(_spi));
-    (void)gc9a01_init(NULL, &_spi);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_init(NULL, &_spi) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_init_null_spi) {
     gc9a01_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)gc9a01_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_init(&_dev, NULL) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_set_window_null_dev) {
-    (void)gc9a01_set_window(NULL, 0, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_set_window(NULL, 0, 0, 0, 0) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_write_pixels_null_dev) {
     uint16_t _pixels;
     memset(&_pixels, 0, sizeof(_pixels));
-    (void)gc9a01_write_pixels(NULL, &_pixels, 0);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_write_pixels(NULL, &_pixels, 0) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_write_pixels_null_pixels) {
     gc9a01_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)gc9a01_write_pixels(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_write_pixels(&_dev, NULL, 1) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_fill_null_dev) {
-    (void)gc9a01_fill(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_fill(NULL, 0) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_set_rotation_null_dev) {
-    (void)gc9a01_set_rotation(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_set_rotation(NULL, 0) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_sleep_null_dev) {
-    (void)gc9a01_sleep(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_sleep(NULL, false) != GC9A01_OK);
 }
 
 TEST(test_gc9a01_display_null_dev) {
-    (void)gc9a01_display(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(gc9a01_display(NULL, false) != GC9A01_OK);
 }
 
 TEST_MAIN("null_param_gc9a01") {

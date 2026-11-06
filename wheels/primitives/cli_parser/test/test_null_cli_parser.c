@@ -29,15 +29,13 @@ TEST(test_cli_parser_feed_null_ctx) {
 TEST(test_cli_parser_run_null_ctx) {
     char _line[64];
     memset(_line, 0, sizeof(_line));
-    (void)cli_parser_run(NULL, _line);
-    /* must not crash */
+    ASSERT_TRUE(cli_parser_run(NULL, _line) != CLI_OK);
 }
 
 TEST(test_cli_parser_run_null_line) {
     cli_parser_t _ctx;
     memset(&_ctx, 0, sizeof(_ctx));
-    (void)cli_parser_run(&_ctx, NULL);
-    /* must not crash */
+    ASSERT_TRUE(cli_parser_run(&_ctx, NULL) != CLI_OK);
 }
 
 TEST_MAIN("null_param_cli_parser") {

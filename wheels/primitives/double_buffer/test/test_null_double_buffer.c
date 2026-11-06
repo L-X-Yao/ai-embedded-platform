@@ -12,8 +12,7 @@ TEST(test_double_buffer_init_null_ctx) {
     memset(_buf_a, 0, sizeof(_buf_a));
     uint8_t _buf_b[64];
     memset(_buf_b, 0, sizeof(_buf_b));
-    (void)double_buffer_init(NULL, _buf_a, _buf_b, 0);
-    /* must not crash */
+    ASSERT_TRUE(double_buffer_init(NULL, _buf_a, _buf_b, 0) != DOUBLE_BUFFER_OK);
 }
 
 TEST(test_double_buffer_init_null_buf_a) {
@@ -21,8 +20,7 @@ TEST(test_double_buffer_init_null_buf_a) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _buf_b[64];
     memset(_buf_b, 0, sizeof(_buf_b));
-    (void)double_buffer_init(&_ctx, NULL, _buf_b, 0);
-    /* must not crash */
+    ASSERT_TRUE(double_buffer_init(&_ctx, NULL, _buf_b, 0) != DOUBLE_BUFFER_OK);
 }
 
 TEST(test_double_buffer_init_null_buf_b) {
@@ -30,8 +28,7 @@ TEST(test_double_buffer_init_null_buf_b) {
     memset(&_ctx, 0, sizeof(_ctx));
     uint8_t _buf_a[64];
     memset(_buf_a, 0, sizeof(_buf_a));
-    (void)double_buffer_init(&_ctx, _buf_a, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(double_buffer_init(&_ctx, _buf_a, NULL, 1) != DOUBLE_BUFFER_OK);
 }
 
 TEST(test_double_buffer_get_size_null_ctx) {
@@ -40,8 +37,7 @@ TEST(test_double_buffer_get_size_null_ctx) {
 }
 
 TEST(test_double_buffer_swap_null_ctx) {
-    (void)double_buffer_swap(NULL);
-    /* must not crash */
+    ASSERT_TRUE(double_buffer_swap(NULL) != DOUBLE_BUFFER_OK);
 }
 
 TEST(test_double_buffer_is_ready_null_ctx) {
@@ -50,8 +46,7 @@ TEST(test_double_buffer_is_ready_null_ctx) {
 }
 
 TEST(test_double_buffer_reset_null_ctx) {
-    (void)double_buffer_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(double_buffer_reset(NULL) != DOUBLE_BUFFER_OK);
 }
 
 TEST_MAIN("null_param_double_buffer") {

@@ -10,78 +10,65 @@
 TEST(test_aw9523_init_null_dev) {
     aw9523_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)aw9523_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_init(NULL, &_i2c, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_init_null_i2c) {
     aw9523_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)aw9523_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_init(&_dev, NULL, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_set_direction_null_dev) {
-    (void)aw9523_set_direction(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_set_direction(NULL, 0, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_write_pin_null_dev) {
-    (void)aw9523_write_pin(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_write_pin(NULL, 0, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_read_pin_null_dev) {
     aw9523_level_t _val;
     memset(&_val, 0, sizeof(_val));
-    (void)aw9523_read_pin(NULL, 0, 0, &_val);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_read_pin(NULL, 0, 0, &_val) != AW9523_OK);
 }
 
 TEST(test_aw9523_read_pin_null_val) {
     aw9523_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)aw9523_read_pin(&_dev, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_read_pin(&_dev, 0, 0, NULL) != AW9523_OK);
 }
 
 TEST(test_aw9523_write_port_null_dev) {
-    (void)aw9523_write_port(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_write_port(NULL, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_read_port_null_dev) {
     uint8_t _val[64];
     memset(_val, 0, sizeof(_val));
-    (void)aw9523_read_port(NULL, 0, _val);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_read_port(NULL, 0, _val) != AW9523_OK);
 }
 
 TEST(test_aw9523_read_port_null_val) {
     aw9523_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)aw9523_read_port(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_read_port(&_dev, 0, NULL) != AW9523_OK);
 }
 
 TEST(test_aw9523_set_led_mode_null_dev) {
-    (void)aw9523_set_led_mode(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_set_led_mode(NULL, 0, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_set_led_current_null_dev) {
-    (void)aw9523_set_led_current(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_set_led_current(NULL, 0, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_set_interrupt_enable_null_dev) {
-    (void)aw9523_set_interrupt_enable(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_set_interrupt_enable(NULL, 0, 0) != AW9523_OK);
 }
 
 TEST(test_aw9523_reset_null_dev) {
-    (void)aw9523_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(aw9523_reset(NULL) != AW9523_OK);
 }
 
 TEST_MAIN("null_param_aw9523") {

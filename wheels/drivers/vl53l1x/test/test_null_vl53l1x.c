@@ -12,8 +12,7 @@ TEST(test_vl53l1x_init_null_dev) {
     memset(&_i2c, 0, sizeof(_i2c));
     vl53l1x_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)vl53l1x_init(NULL, &_i2c, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_init(NULL, &_i2c, &_cfg) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_init_null_i2c) {
@@ -21,8 +20,7 @@ TEST(test_vl53l1x_init_null_i2c) {
     memset(&_dev, 0, sizeof(_dev));
     vl53l1x_cfg_t _cfg;
     memset(&_cfg, 0, sizeof(_cfg));
-    (void)vl53l1x_init(&_dev, NULL, &_cfg);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_init(&_dev, NULL, &_cfg) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_init_null_cfg) {
@@ -30,32 +28,27 @@ TEST(test_vl53l1x_init_null_cfg) {
     memset(&_dev, 0, sizeof(_dev));
     vl53l1x_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)vl53l1x_init(&_dev, &_i2c, NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_init(&_dev, &_i2c, NULL) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_read_distance_null_dev) {
     uint16_t _dist_mm;
     memset(&_dist_mm, 0, sizeof(_dist_mm));
-    (void)vl53l1x_read_distance(NULL, &_dist_mm);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_read_distance(NULL, &_dist_mm) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_read_distance_null_dist_mm) {
     vl53l1x_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)vl53l1x_read_distance(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_read_distance(&_dev, NULL) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_start_ranging_null_dev) {
-    (void)vl53l1x_start_ranging(NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_start_ranging(NULL) != VL53L1X_OK);
 }
 
 TEST(test_vl53l1x_stop_ranging_null_dev) {
-    (void)vl53l1x_stop_ranging(NULL);
-    /* must not crash */
+    ASSERT_TRUE(vl53l1x_stop_ranging(NULL) != VL53L1X_OK);
 }
 
 TEST_MAIN("null_param_vl53l1x") {

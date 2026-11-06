@@ -24,44 +24,37 @@ TEST(test_tlv_encoder_init_null_buf) {
 TEST(test_tlv_encode_null_enc) {
     uint8_t _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)tlv_encode(NULL, 0, _value, 0);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode(NULL, 0, _value, 0) != TLV_OK);
 }
 
 TEST(test_tlv_encode_null_value) {
     tlv_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)tlv_encode(&_enc, 0, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode(&_enc, 0, NULL, 1) != TLV_OK);
 }
 
 TEST(test_tlv_encode_u8_null_enc) {
-    (void)tlv_encode_u8(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode_u8(NULL, 0, 0) != TLV_OK);
 }
 
 TEST(test_tlv_encode_u16_null_enc) {
-    (void)tlv_encode_u16(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode_u16(NULL, 0, 0) != TLV_OK);
 }
 
 TEST(test_tlv_encode_u32_null_enc) {
-    (void)tlv_encode_u32(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode_u32(NULL, 0, 0) != TLV_OK);
 }
 
 TEST(test_tlv_encode_string_null_enc) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)tlv_encode_string(NULL, 0, _str);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode_string(NULL, 0, _str) != TLV_OK);
 }
 
 TEST(test_tlv_encode_string_null_str) {
     tlv_encoder_t _enc;
     memset(&_enc, 0, sizeof(_enc));
-    (void)tlv_encode_string(&_enc, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tlv_encode_string(&_enc, 0, NULL) != TLV_OK);
 }
 
 TEST(test_tlv_encoder_len_null_enc) {
@@ -86,15 +79,13 @@ TEST(test_tlv_decoder_init_null_buf) {
 TEST(test_tlv_decode_next_null_dec) {
     tlv_t _tlv;
     memset(&_tlv, 0, sizeof(_tlv));
-    (void)tlv_decode_next(NULL, &_tlv);
-    /* must not crash */
+    ASSERT_TRUE(tlv_decode_next(NULL, &_tlv) != TLV_OK);
 }
 
 TEST(test_tlv_decode_next_null_tlv) {
     tlv_decoder_t _dec;
     memset(&_dec, 0, sizeof(_dec));
-    (void)tlv_decode_next(&_dec, NULL);
-    /* must not crash */
+    ASSERT_TRUE(tlv_decode_next(&_dec, NULL) != TLV_OK);
 }
 
 TEST(test_tlv_decoder_done_null_dec) {

@@ -10,15 +10,13 @@
 TEST(test_version_parse_null_str) {
     version_t _v;
     memset(&_v, 0, sizeof(_v));
-    (void)version_parse(NULL, &_v);
-    /* must not crash */
+    ASSERT_TRUE(version_parse(NULL, &_v) != VERSION_INFO_OK);
 }
 
 TEST(test_version_parse_null_v) {
     char _str[64];
     memset(_str, 0, sizeof(_str));
-    (void)version_parse(_str, NULL);
-    /* must not crash */
+    ASSERT_TRUE(version_parse(_str, NULL) != VERSION_INFO_OK);
 }
 
 TEST(test_version_compare_null_a) {

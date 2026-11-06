@@ -10,58 +10,49 @@
 TEST(test_pcf8574_init_null_dev) {
     pcf8574_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)pcf8574_init(NULL, &_i2c, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_init(NULL, &_i2c, 0) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_init_null_i2c) {
     pcf8574_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8574_init(&_dev, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_init(&_dev, NULL, 0) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_write_null_dev) {
-    (void)pcf8574_write(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_write(NULL, 0) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_read_null_dev) {
     uint8_t _value[64];
     memset(_value, 0, sizeof(_value));
-    (void)pcf8574_read(NULL, _value);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_read(NULL, _value) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_read_null_value) {
     pcf8574_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8574_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_read(&_dev, NULL) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_write_pin_null_dev) {
-    (void)pcf8574_write_pin(NULL, 0, false);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_write_pin(NULL, 0, false) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_read_pin_null_dev) {
     bool _level;
     memset(&_level, 0, sizeof(_level));
-    (void)pcf8574_read_pin(NULL, 0, &_level);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_read_pin(NULL, 0, &_level) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_read_pin_null_level) {
     pcf8574_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pcf8574_read_pin(&_dev, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_read_pin(&_dev, 0, NULL) != PCF8574_OK);
 }
 
 TEST(test_pcf8574_toggle_pin_null_dev) {
-    (void)pcf8574_toggle_pin(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(pcf8574_toggle_pin(NULL, 0) != PCF8574_OK);
 }
 
 TEST_MAIN("null_param_pcf8574") {

@@ -10,50 +10,41 @@
 TEST(test_pca9685_init_null_dev) {
     pca9685_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)pca9685_init(NULL, &_i2c, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_init(NULL, &_i2c, 0, 0) != PCA9685_OK);
 }
 
 TEST(test_pca9685_init_null_i2c) {
     pca9685_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)pca9685_init(&_dev, NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_init(&_dev, NULL, 0, 0) != PCA9685_OK);
 }
 
 TEST(test_pca9685_set_pwm_null_dev) {
-    (void)pca9685_set_pwm(NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_set_pwm(NULL, 0, 0, 0) != PCA9685_OK);
 }
 
 TEST(test_pca9685_set_duty_null_dev) {
-    (void)pca9685_set_duty(NULL, 0, 0.0f);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_set_duty(NULL, 0, 0.0f) != PCA9685_OK);
 }
 
 TEST(test_pca9685_set_servo_us_null_dev) {
-    (void)pca9685_set_servo_us(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_set_servo_us(NULL, 0, 0) != PCA9685_OK);
 }
 
 TEST(test_pca9685_all_off_null_dev) {
-    (void)pca9685_all_off(NULL);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_all_off(NULL) != PCA9685_OK);
 }
 
 TEST(test_pca9685_set_freq_null_dev) {
-    (void)pca9685_set_freq(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_set_freq(NULL, 0) != PCA9685_OK);
 }
 
 TEST(test_pca9685_sleep_null_dev) {
-    (void)pca9685_sleep(NULL);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_sleep(NULL) != PCA9685_OK);
 }
 
 TEST(test_pca9685_wake_null_dev) {
-    (void)pca9685_wake(NULL);
-    /* must not crash */
+    ASSERT_TRUE(pca9685_wake(NULL) != PCA9685_OK);
 }
 
 TEST_MAIN("null_param_pca9685") {

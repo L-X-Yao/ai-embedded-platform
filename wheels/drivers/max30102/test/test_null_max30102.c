@@ -10,30 +10,25 @@
 TEST(test_max30102_init_null_dev) {
     max30102_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)max30102_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(max30102_init(NULL, &_i2c) != MAX30102_OK);
 }
 
 TEST(test_max30102_init_null_i2c) {
     max30102_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max30102_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max30102_init(&_dev, NULL) != MAX30102_OK);
 }
 
 TEST(test_max30102_set_mode_null_dev) {
-    (void)max30102_set_mode(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(max30102_set_mode(NULL, 0) != MAX30102_OK);
 }
 
 TEST(test_max30102_set_led_current_null_dev) {
-    (void)max30102_set_led_current(NULL, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(max30102_set_led_current(NULL, 0, 0) != MAX30102_OK);
 }
 
 TEST(test_max30102_set_sample_rate_null_dev) {
-    (void)max30102_set_sample_rate(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(max30102_set_sample_rate(NULL, 0) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_fifo_null_dev) {
@@ -41,8 +36,7 @@ TEST(test_max30102_read_fifo_null_dev) {
     memset(&_samples, 0, sizeof(_samples));
     uint8_t _out_count[64];
     memset(_out_count, 0, sizeof(_out_count));
-    (void)max30102_read_fifo(NULL, &_samples, 0, _out_count);
-    /* must not crash */
+    ASSERT_TRUE(max30102_read_fifo(NULL, &_samples, 0, _out_count) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_fifo_null_samples) {
@@ -50,8 +44,7 @@ TEST(test_max30102_read_fifo_null_samples) {
     memset(&_dev, 0, sizeof(_dev));
     uint8_t _out_count[64];
     memset(_out_count, 0, sizeof(_out_count));
-    (void)max30102_read_fifo(&_dev, NULL, 0, _out_count);
-    /* must not crash */
+    ASSERT_TRUE(max30102_read_fifo(&_dev, NULL, 1, _out_count) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_fifo_null_out_count) {
@@ -59,32 +52,27 @@ TEST(test_max30102_read_fifo_null_out_count) {
     memset(&_dev, 0, sizeof(_dev));
     max30102_sample_t _samples;
     memset(&_samples, 0, sizeof(_samples));
-    (void)max30102_read_fifo(&_dev, &_samples, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max30102_read_fifo(&_dev, &_samples, 0, NULL) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_temp_null_dev) {
     float _temp_c;
     memset(&_temp_c, 0, sizeof(_temp_c));
-    (void)max30102_read_temp(NULL, &_temp_c);
-    /* must not crash */
+    ASSERT_TRUE(max30102_read_temp(NULL, &_temp_c) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_temp_null_temp_c) {
     max30102_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)max30102_read_temp(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(max30102_read_temp(&_dev, NULL) != MAX30102_OK);
 }
 
 TEST(test_max30102_shutdown_null_dev) {
-    (void)max30102_shutdown(NULL, false);
-    /* must not crash */
+    ASSERT_TRUE(max30102_shutdown(NULL, false) != MAX30102_OK);
 }
 
 TEST(test_max30102_reset_null_dev) {
-    (void)max30102_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(max30102_reset(NULL) != MAX30102_OK);
 }
 
 TEST(test_max30102_read_part_id_null_dev) {

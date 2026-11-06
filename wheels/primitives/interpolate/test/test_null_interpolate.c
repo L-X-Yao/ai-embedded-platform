@@ -8,27 +8,23 @@
 #include <stddef.h>
 
 TEST(test_interpolate_linear_null_out) {
-    (void)interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL);
-    /* must not crash */
+    ASSERT_TRUE(interpolate_linear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL) != INTERPOLATE_OK);
 }
 
 TEST(test_interpolate_table_null_table) {
     float _out;
     memset(&_out, 0, sizeof(_out));
-    (void)interpolate_table(NULL, 0.0f, &_out);
-    /* must not crash */
+    ASSERT_TRUE(interpolate_table(NULL, 0.0f, &_out) != INTERPOLATE_OK);
 }
 
 TEST(test_interpolate_table_null_out) {
     interpolate_table_t _table;
     memset(&_table, 0, sizeof(_table));
-    (void)interpolate_table(&_table, 0.0f, NULL);
-    /* must not crash */
+    ASSERT_TRUE(interpolate_table(&_table, 0.0f, NULL) != INTERPOLATE_OK);
 }
 
 TEST(test_interpolate_bilinear_null_out) {
-    (void)interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL);
-    /* must not crash */
+    ASSERT_TRUE(interpolate_bilinear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL) != INTERPOLATE_OK);
 }
 
 TEST_MAIN("null_param_interpolate") {

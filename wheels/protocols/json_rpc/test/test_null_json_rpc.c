@@ -14,8 +14,7 @@ TEST(test_json_rpc_build_request_null_buf) {
     memset(_params_json, 0, sizeof(_params_json));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_request(NULL, 0, _method, _params_json, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_request(NULL, 0, _method, _params_json, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_request_null_method) {
@@ -25,8 +24,7 @@ TEST(test_json_rpc_build_request_null_method) {
     memset(_params_json, 0, sizeof(_params_json));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_request(_buf, 0, NULL, _params_json, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_request(_buf, 0, NULL, _params_json, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_request_null_params_json) {
@@ -37,7 +35,7 @@ TEST(test_json_rpc_build_request_null_params_json) {
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
     (void)json_rpc_build_request(_buf, 0, _method, NULL, 0, &_out_len);
-    /* must not crash */
+    /* must not crash: NULL means no params */
 }
 
 TEST(test_json_rpc_build_request_null_out_len) {
@@ -47,8 +45,7 @@ TEST(test_json_rpc_build_request_null_out_len) {
     memset(_method, 0, sizeof(_method));
     char _params_json[64];
     memset(_params_json, 0, sizeof(_params_json));
-    (void)json_rpc_build_request(_buf, 0, _method, _params_json, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_request(_buf, 0, _method, _params_json, 0, NULL) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_response_null_buf) {
@@ -56,8 +53,7 @@ TEST(test_json_rpc_build_response_null_buf) {
     memset(_result_json, 0, sizeof(_result_json));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_response(NULL, 0, _result_json, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_response(NULL, 0, _result_json, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_response_null_result_json) {
@@ -65,8 +61,7 @@ TEST(test_json_rpc_build_response_null_result_json) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_response(_buf, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_response(_buf, 0, NULL, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_response_null_out_len) {
@@ -74,8 +69,7 @@ TEST(test_json_rpc_build_response_null_out_len) {
     memset(_buf, 0, sizeof(_buf));
     char _result_json[64];
     memset(_result_json, 0, sizeof(_result_json));
-    (void)json_rpc_build_response(_buf, 0, _result_json, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_response(_buf, 0, _result_json, 0, NULL) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_error_null_buf) {
@@ -83,8 +77,7 @@ TEST(test_json_rpc_build_error_null_buf) {
     memset(_message, 0, sizeof(_message));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_error(NULL, 0, 0, _message, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_error(NULL, 0, 0, _message, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_error_null_message) {
@@ -92,8 +85,7 @@ TEST(test_json_rpc_build_error_null_message) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)json_rpc_build_error(_buf, 0, 0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_error(_buf, 0, 0, NULL, 0, &_out_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_build_error_null_out_len) {
@@ -101,8 +93,7 @@ TEST(test_json_rpc_build_error_null_out_len) {
     memset(_buf, 0, sizeof(_buf));
     char _message[64];
     memset(_message, 0, sizeof(_message));
-    (void)json_rpc_build_error(_buf, 0, 0, _message, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_build_error(_buf, 0, 0, _message, 0, NULL) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_validate_null_json) {
@@ -115,8 +106,7 @@ TEST(test_json_rpc_extract_method_null_json) {
     memset(&_method_start, 0, sizeof(_method_start));
     size_t _method_len;
     memset(&_method_len, 0, sizeof(_method_len));
-    (void)json_rpc_extract_method(NULL, 0, &_method_start, &_method_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_extract_method(NULL, 1, &_method_start, &_method_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_extract_method_null_method_start) {
@@ -124,8 +114,7 @@ TEST(test_json_rpc_extract_method_null_method_start) {
     memset(_json, 0, sizeof(_json));
     size_t _method_len;
     memset(&_method_len, 0, sizeof(_method_len));
-    (void)json_rpc_extract_method(_json, 0, NULL, &_method_len);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_extract_method(_json, 0, NULL, &_method_len) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_extract_method_null_method_len) {
@@ -133,22 +122,19 @@ TEST(test_json_rpc_extract_method_null_method_len) {
     memset(_json, 0, sizeof(_json));
     size_t _method_start;
     memset(&_method_start, 0, sizeof(_method_start));
-    (void)json_rpc_extract_method(_json, 0, &_method_start, NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_extract_method(_json, 0, &_method_start, NULL) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_extract_id_null_json) {
     int32_t _id;
     memset(&_id, 0, sizeof(_id));
-    (void)json_rpc_extract_id(NULL, 0, &_id);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_extract_id(NULL, 1, &_id) != JSON_RPC_OK);
 }
 
 TEST(test_json_rpc_extract_id_null_id) {
     char _json[64];
     memset(_json, 0, sizeof(_json));
-    (void)json_rpc_extract_id(_json, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(json_rpc_extract_id(_json, 0, NULL) != JSON_RPC_OK);
 }
 
 TEST_MAIN("null_param_json_rpc") {

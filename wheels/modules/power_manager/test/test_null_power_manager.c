@@ -10,15 +10,13 @@
 TEST(test_power_manager_init_null_pm) {
     power_manager_io_t _io;
     memset(&_io, 0, sizeof(_io));
-    (void)power_manager_init(NULL, &_io);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_init(NULL, &_io) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_init_null_io) {
     power_manager_t _pm;
     memset(&_pm, 0, sizeof(_pm));
-    (void)power_manager_init(&_pm, NULL);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_init(&_pm, NULL) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_register_null_pm) {
@@ -26,8 +24,7 @@ TEST(test_power_manager_register_null_pm) {
     memset(_name, 0, sizeof(_name));
     uint8_t _id_out[64];
     memset(_id_out, 0, sizeof(_id_out));
-    (void)power_manager_register(NULL, _name, 0, 0, _id_out);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_register(NULL, _name, 0, 0, _id_out) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_register_null_name) {
@@ -36,7 +33,7 @@ TEST(test_power_manager_register_null_name) {
     uint8_t _id_out[64];
     memset(_id_out, 0, sizeof(_id_out));
     (void)power_manager_register(&_pm, NULL, 0, 0, _id_out);
-    /* must not crash */
+    /* must not crash: the name is only a debug label */
 }
 
 TEST(test_power_manager_register_null_id_out) {
@@ -44,18 +41,15 @@ TEST(test_power_manager_register_null_id_out) {
     memset(&_pm, 0, sizeof(_pm));
     char _name[64];
     memset(_name, 0, sizeof(_name));
-    (void)power_manager_register(&_pm, _name, 0, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_register(&_pm, _name, 0, 0, NULL) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_activity_null_pm) {
-    (void)power_manager_activity(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_activity(NULL, 0) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_release_null_pm) {
-    (void)power_manager_release(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(power_manager_release(NULL, 0) != POWER_MANAGER_OK);
 }
 
 TEST(test_power_manager_poll_null_pm) {

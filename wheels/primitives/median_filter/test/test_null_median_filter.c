@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 TEST(test_median_filter_init_null_f) {
-    (void)median_filter_init(NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(median_filter_init(NULL, 1) != MEDIAN_FILTER_OK);
 }
 
 TEST(test_median_filter_update_null_f) {

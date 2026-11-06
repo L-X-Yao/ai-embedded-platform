@@ -10,15 +10,13 @@
 TEST(test_ring_buffer_init_null_rb) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)ring_buffer_init(NULL, _buf, 0);
-    /* must not crash */
+    ASSERT_TRUE(ring_buffer_init(NULL, _buf, 0) != RING_BUFFER_OK);
 }
 
 TEST(test_ring_buffer_init_null_buf) {
     ring_buffer_t _rb;
     memset(&_rb, 0, sizeof(_rb));
-    (void)ring_buffer_init(&_rb, NULL, 0);
-    /* must not crash */
+    ASSERT_TRUE(ring_buffer_init(&_rb, NULL, 0) != RING_BUFFER_OK);
 }
 
 TEST(test_ring_buffer_write_null_rb) {

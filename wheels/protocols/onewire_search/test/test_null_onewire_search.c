@@ -10,43 +10,37 @@
 TEST(test_onewire_search_init_null_state) {
     onewire_search_bus_t _bus;
     memset(&_bus, 0, sizeof(_bus));
-    (void)onewire_search_init(NULL, &_bus);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_init(NULL, &_bus) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_init_null_bus) {
     onewire_search_state_t _state;
     memset(&_state, 0, sizeof(_state));
-    (void)onewire_search_init(&_state, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_init(&_state, NULL) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_next_null_state) {
     onewire_search_rom_t _rom;
     memset(&_rom, 0, sizeof(_rom));
-    (void)onewire_search_next(NULL, &_rom);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_next(NULL, &_rom) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_next_null_rom) {
     onewire_search_state_t _state;
     memset(&_state, 0, sizeof(_state));
-    (void)onewire_search_next(&_state, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_next(&_state, NULL) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_first_null_state) {
     onewire_search_rom_t _rom;
     memset(&_rom, 0, sizeof(_rom));
-    (void)onewire_search_first(NULL, &_rom);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_first(NULL, &_rom) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_first_null_rom) {
     onewire_search_state_t _state;
     memset(&_state, 0, sizeof(_state));
-    (void)onewire_search_first(&_state, NULL);
-    /* must not crash */
+    ASSERT_TRUE(onewire_search_first(&_state, NULL) != ONEWIRE_SEARCH_OK);
 }
 
 TEST(test_onewire_search_done_null_state) {

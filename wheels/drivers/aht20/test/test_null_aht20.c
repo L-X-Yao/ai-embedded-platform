@@ -10,34 +10,29 @@
 TEST(test_aht20_init_null_dev) {
     aht20_i2c_t _i2c;
     memset(&_i2c, 0, sizeof(_i2c));
-    (void)aht20_init(NULL, &_i2c);
-    /* must not crash */
+    ASSERT_TRUE(aht20_init(NULL, &_i2c) != AHT20_OK);
 }
 
 TEST(test_aht20_init_null_i2c) {
     aht20_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)aht20_init(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aht20_init(&_dev, NULL) != AHT20_OK);
 }
 
 TEST(test_aht20_read_null_dev) {
     aht20_data_t _out;
     memset(&_out, 0, sizeof(_out));
-    (void)aht20_read(NULL, &_out);
-    /* must not crash */
+    ASSERT_TRUE(aht20_read(NULL, &_out) != AHT20_OK);
 }
 
 TEST(test_aht20_read_null_out) {
     aht20_t _dev;
     memset(&_dev, 0, sizeof(_dev));
-    (void)aht20_read(&_dev, NULL);
-    /* must not crash */
+    ASSERT_TRUE(aht20_read(&_dev, NULL) != AHT20_OK);
 }
 
 TEST(test_aht20_reset_null_dev) {
-    (void)aht20_reset(NULL);
-    /* must not crash */
+    ASSERT_TRUE(aht20_reset(NULL) != AHT20_OK);
 }
 
 TEST(test_aht20_is_calibrated_null_dev) {

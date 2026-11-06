@@ -10,15 +10,13 @@
 TEST(test_varint_encode_u64_null_buf) {
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_encode_u64(0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_encode_u64(0, NULL, 0, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_encode_u64_null_out_len) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)varint_encode_u64(0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(varint_encode_u64(0, _buf, 0, NULL) != VARINT_OK);
 }
 
 TEST(test_varint_decode_u64_null_buf) {
@@ -26,8 +24,7 @@ TEST(test_varint_decode_u64_null_buf) {
     memset(&_value, 0, sizeof(_value));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_decode_u64(NULL, 0, &_value, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_u64(NULL, 1, &_value, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_decode_u64_null_value) {
@@ -35,8 +32,7 @@ TEST(test_varint_decode_u64_null_value) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_decode_u64(_buf, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_u64(_buf, 0, NULL, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_decode_u64_null_out_len) {
@@ -44,22 +40,19 @@ TEST(test_varint_decode_u64_null_out_len) {
     memset(_buf, 0, sizeof(_buf));
     uint64_t _value;
     memset(&_value, 0, sizeof(_value));
-    (void)varint_decode_u64(_buf, 0, &_value, NULL);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_u64(_buf, 0, &_value, NULL) != VARINT_OK);
 }
 
 TEST(test_varint_encode_s64_null_buf) {
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_encode_s64(0, NULL, 0, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_encode_s64(0, NULL, 0, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_encode_s64_null_out_len) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)varint_encode_s64(0, _buf, 0, NULL);
-    /* must not crash */
+    ASSERT_TRUE(varint_encode_s64(0, _buf, 0, NULL) != VARINT_OK);
 }
 
 TEST(test_varint_decode_s64_null_buf) {
@@ -67,8 +60,7 @@ TEST(test_varint_decode_s64_null_buf) {
     memset(&_value, 0, sizeof(_value));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_decode_s64(NULL, 0, &_value, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_s64(NULL, 1, &_value, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_decode_s64_null_value) {
@@ -76,8 +68,7 @@ TEST(test_varint_decode_s64_null_value) {
     memset(_buf, 0, sizeof(_buf));
     size_t _out_len;
     memset(&_out_len, 0, sizeof(_out_len));
-    (void)varint_decode_s64(_buf, 0, NULL, &_out_len);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_s64(_buf, 0, NULL, &_out_len) != VARINT_OK);
 }
 
 TEST(test_varint_decode_s64_null_out_len) {
@@ -85,8 +76,7 @@ TEST(test_varint_decode_s64_null_out_len) {
     memset(_buf, 0, sizeof(_buf));
     int64_t _value;
     memset(&_value, 0, sizeof(_value));
-    (void)varint_decode_s64(_buf, 0, &_value, NULL);
-    /* must not crash */
+    ASSERT_TRUE(varint_decode_s64(_buf, 0, &_value, NULL) != VARINT_OK);
 }
 
 TEST_MAIN("null_param_varint") {

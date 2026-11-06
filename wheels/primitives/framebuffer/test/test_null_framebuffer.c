@@ -10,15 +10,13 @@
 TEST(test_framebuffer_init_null_fb) {
     uint8_t _buf[64];
     memset(_buf, 0, sizeof(_buf));
-    (void)framebuffer_init(NULL, _buf, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(framebuffer_init(NULL, _buf, 0, 0, 0) != FRAMEBUFFER_OK);
 }
 
 TEST(test_framebuffer_init_null_buf) {
     framebuffer_t _fb;
     memset(&_fb, 0, sizeof(_fb));
-    (void)framebuffer_init(&_fb, NULL, 0, 0, 0);
-    /* must not crash */
+    ASSERT_TRUE(framebuffer_init(&_fb, NULL, 0, 0, 0) != FRAMEBUFFER_OK);
 }
 
 TEST(test_framebuffer_clear_null_fb) {
