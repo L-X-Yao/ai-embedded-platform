@@ -147,6 +147,83 @@ TEST(test_too_many_headers)
     ASSERT_EQ(http_parser_parse_request(buf, (size_t)pos, &req), HTTP_PARSER_ERR_TOO_MANY);
 }
 
+/* Header blocks that must not frame a message. RFC 7230 3.3.3 item 4 makes an
+   invalid or differing Content-Length an unrecoverable error, 3.3.2 gives
+   Content-Length = 1*DIGIT, and 3.2.4 allows no whitespace before the colon. */
+static const char *const bad_framing[] = {
+    "Content-Length: abc\r\n",
+    "Content-Length: 5a\r\n",
+    "Content-Length: -5\r\n",
+    "Content-Length: +5\r\n",
+    "Content-Length: 99999999999\r\n",
+    "Content-Length:\r\n",
+    "Content-Length: 0\r\nContent-Length: 5\r\n",
+    "Content-Length: 5\r\nContent-Length: 0\r\n",
+    "Content-Length : 5\r\n",
+    "Content-Length\t: 5\r\n",
+    " Content-Length: 5\r\n",
+};
+
+TEST(test_request_refuses_bad_framing)
+{
+    for (size_t i = 0; i < sizeof(bad_framing) / sizeof(bad_framing[0]); i++) {
+        char buf[128];
+        int n = snprintf(buf, sizeof(buf), "POST /a HTTP/1.1\r\n%s\r\nhello",
+                         bad_framing[i]);
+        http_parser_request_t req;
+        ASSERT_EQ(http_parser_parse_request(buf, (size_t)n, &req),
+                  HTTP_PARSER_ERR_MALFORMED);
+    }
+}
+
+TEST(test_response_refuses_bad_framing)
+{
+    for (size_t i = 0; i < sizeof(bad_framing) / sizeof(bad_framing[0]); i++) {
+        char buf[128];
+        int n = snprintf(buf, sizeof(buf), "HTTP/1.1 200 OK\r\n%s\r\nhello",
+                         bad_framing[i]);
+        http_parser_response_t resp;
+        ASSERT_EQ(http_parser_parse_response(buf, (size_t)n, &resp),
+                  HTTP_PARSER_ERR_MALFORMED);
+    }
+}
+
+TEST(test_repeated_equal_content_length_frames_the_body)
+{
+    /* RFC 7230 3.3.2 lets a recipient keep one of several equal values */
+    const char *data = "POST /a HTTP/1.1\r\n"
+                       "Content-Length: 5\r\n"
+                       "Content-Length: 5\r\n"
+                       "\r\n"
+                       "hello";
+    http_parser_request_t req;
+    ASSERT_EQ(http_parser_parse_request(data, strlen(data), &req), HTTP_PARSER_OK);
+    ASSERT_EQ(req.body_len, 5U);
+    ASSERT_EQ(req.total_consumed, strlen(data));
+}
+
+TEST(test_no_content_length_is_still_no_body)
+{
+    const char *data = "GET /a HTTP/1.1\r\nHost: h\r\n\r\n";
+    http_parser_request_t req;
+    ASSERT_EQ(http_parser_parse_request(data, strlen(data), &req), HTTP_PARSER_OK);
+    ASSERT_EQ(req.body_len, 0U);
+    ASSERT_EQ(http_parser_get_content_length(req.headers, req.header_count), -1);
+}
+
+TEST(test_get_content_length_says_invalid_for_bad_values)
+{
+    http_parser_header_t two[2] = {
+        { .name = "Content-Length", .name_len = 14, .value = "0", .value_len = 1 },
+        { .name = "Content-Length", .name_len = 14, .value = "5", .value_len = 1 },
+    };
+    http_parser_header_t empty = {
+        .name = "Content-Length", .name_len = 14, .value = "", .value_len = 0
+    };
+    ASSERT_EQ(http_parser_get_content_length(two, 2), -1);
+    ASSERT_EQ(http_parser_get_content_length(&empty, 1), -1);
+}
+
 TEST_MAIN("http_parser")
     RUN(test_parse_get_request);
     RUN(test_parse_post_with_body);
@@ -160,4 +237,9 @@ TEST_MAIN("http_parser")
     RUN(test_content_length);
     RUN(test_malformed_request);
     RUN(test_too_many_headers);
+    RUN(test_request_refuses_bad_framing);
+    RUN(test_response_refuses_bad_framing);
+    RUN(test_repeated_equal_content_length_frames_the_body);
+    RUN(test_no_content_length_is_still_no_body);
+    RUN(test_get_content_length_says_invalid_for_bad_values);
 TEST_MAIN_END()

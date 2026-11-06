@@ -83,7 +83,8 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
 http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, int count,
                             const char *name, const http_parser_header_t **out);
 
-/** Return the Content-Length value from headers, or -1 if absent/invalid. */
+/** Return the Content-Length value from headers, or -1 if absent or invalid.
+ *  An empty value and two values that differ are invalid. */
 int http_parser_get_content_length(const http_parser_header_t *headers, int count);
 
 #ifdef __cplusplus
