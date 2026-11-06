@@ -80,9 +80,10 @@ static float itime_factor_ms(tsl2591_itime_t t)
     return 100.0f * ((float)(uint8_t)t + 1.0f);
 }
 
-static tsl2591_err_t write_config(tsl2591_t *dev)
+static tsl2591_err_t write_config(const tsl2591_t *dev, tsl2591_gain_t gain,
+                                  tsl2591_itime_t itime)
 {
-    uint8_t cfg = (uint8_t)((uint8_t)dev->gain | (uint8_t)dev->itime);
+    uint8_t cfg = (uint8_t)((uint8_t)gain | (uint8_t)itime);
     return write_reg(dev, TSL2591_REG_CONFIG, cfg);
 }
 
@@ -116,7 +117,7 @@ tsl2591_err_t tsl2591_init(tsl2591_t *dev, const tsl2591_i2c_t *i2c,
         return err;
 
     /* configure gain + integration time */
-    return write_config(dev);
+    return write_config(dev, gain, itime);
 }
 
 tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out)
@@ -185,8 +186,11 @@ tsl2591_err_t tsl2591_set_gain(tsl2591_t *dev, tsl2591_gain_t gain)
     if (!gain_valid(gain))
         return TSL2591_ERR_PARAM;
 
-    dev->gain = gain;
-    return write_config(dev);
+    /* Stored only once written: tsl2591_read scales by what the chip really has */
+    tsl2591_err_t err = write_config(dev, gain, dev->itime);
+    if (err == TSL2591_OK)
+        dev->gain = gain;
+    return err;
 }
 
 tsl2591_err_t tsl2591_set_integration_time(tsl2591_t *dev, tsl2591_itime_t itime)
@@ -196,8 +200,10 @@ tsl2591_err_t tsl2591_set_integration_time(tsl2591_t *dev, tsl2591_itime_t itime
     if (!itime_valid(itime))
         return TSL2591_ERR_PARAM;
 
-    dev->itime = itime;
-    return write_config(dev);
+    tsl2591_err_t err = write_config(dev, dev->gain, itime);
+    if (err == TSL2591_OK)
+        dev->itime = itime;
+    return err;
 }
 
 tsl2591_err_t tsl2591_enable(tsl2591_t *dev)
