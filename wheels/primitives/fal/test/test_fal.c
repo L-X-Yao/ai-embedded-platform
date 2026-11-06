@@ -222,6 +222,40 @@ TEST(test_out_of_bounds)
     ASSERT_TRUE(ret == FAL_ERR_OVERFLOW);
 }
 
+/* addr + size must not wrap past the check. On a 32-bit target 0xFFFFFF00 and
+ * 0x200 come to 0x100: erase then reached the partition below this one. A size
+ * near SIZE_MAX wraps the same sum on any host. */
+TEST(test_range_that_wraps_is_refused)
+{
+    const struct fal_partition *p = fal_partition_find("kvdb");
+    uint8_t buf[8] = {0};
+
+    ASSERT_EQ(fal_partition_read(p, 1, buf, SIZE_MAX), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_write(p, 1, buf, SIZE_MAX), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_erase(p, 1, SIZE_MAX), FAL_ERR_OVERFLOW);
+
+    ASSERT_EQ(fal_partition_read(p, 0x100, buf, SIZE_MAX - 0xFFu), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_write(p, 0x100, buf, SIZE_MAX - 0xFFu), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_erase(p, 0x100, SIZE_MAX - 0xFFu), FAL_ERR_OVERFLOW);
+
+    ASSERT_EQ(fal_partition_read(p, UINT32_MAX, buf, SIZE_MAX), FAL_ERR_OVERFLOW);
+}
+
+/* The check moved, so hold its edges: the partition's last byte and its end. */
+TEST(test_range_up_to_the_partition_end)
+{
+    const struct fal_partition *p = fal_partition_find("config");
+    uint32_t len = (uint32_t)p->len;
+    uint8_t buf[8] = {0};
+
+    ASSERT_EQ(fal_partition_read(p, len - 1u, buf, 1), 1);
+    ASSERT_EQ(fal_partition_read(p, len, buf, 0), 0);
+    ASSERT_EQ(fal_partition_read(p, len, buf, 1), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_read(p, len + 1u, buf, 0), FAL_ERR_OVERFLOW);
+    ASSERT_EQ(fal_partition_erase(p, 0, p->len), (int)p->len);
+    ASSERT_EQ(fal_partition_erase(p, 0, p->len + 1u), FAL_ERR_OVERFLOW);
+}
+
 TEST(test_partition_isolation)
 {
     const struct fal_partition *config = fal_partition_find("config");
@@ -322,6 +356,8 @@ TEST_MAIN("fal")
     RUN(test_erase);
     RUN(test_erase_all);
     RUN(test_out_of_bounds);
+    RUN(test_range_that_wraps_is_refused);
+    RUN(test_range_up_to_the_partition_end);
     RUN(test_partition_isolation);
     RUN(test_flash_write_semantics);
     RUN(test_show_part_table);
