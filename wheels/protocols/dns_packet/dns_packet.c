@@ -84,6 +84,7 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
     uint16_t out = 0;
     int bytes_consumed = -1;   /* set on first pointer */
     int jumps = 0;
+    bool root_reached = false;
 
     while (pos < pkt_len)
     {
@@ -94,6 +95,7 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
             /* end of name */
             if (bytes_consumed < 0)
                 bytes_consumed = (int)(pos + 1 - offset);
+            root_reached = true;
             break;
         }
 
@@ -134,7 +136,7 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
         pos += label_len;
     }
 
-    if (bytes_consumed < 0) return DNS_ERR_FORMAT;  /* ran off end */
+    if (!root_reached) return DNS_ERR_FORMAT;  /* ran off end */
 
     name[out] = '\0';
     return bytes_consumed;
