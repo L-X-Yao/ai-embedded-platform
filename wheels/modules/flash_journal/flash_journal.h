@@ -52,6 +52,8 @@ typedef enum {
 
 /* ---------- Storage abstraction ---------- */
 
+/* Erased flash must read as 0xFF: init looks for bytes an interrupted
+ * append left behind by comparing the rest of the write sector with it. */
 typedef struct {
     flash_journal_err_t (*read)(void *ctx, uint32_t sector, uint32_t offset,
                                 uint8_t *buf, uint32_t len);
@@ -88,7 +90,9 @@ typedef struct {
 /**
  * Initialize journal with storage backend and geometry.
  *
- * Scans all sectors to recover write position and entry count.
+ * Scans all sectors to recover write position and entry count.  If an
+ * interrupted append left bytes at the write position, the rest of that
+ * sector is given up and the next append moves to the next sector.
  *
  * @param jrnl          Journal context (caller-allocated).
  * @param storage       Storage callbacks (must outlive jrnl).
