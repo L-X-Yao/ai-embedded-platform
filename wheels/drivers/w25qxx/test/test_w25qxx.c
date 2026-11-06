@@ -18,6 +18,16 @@ static uint8_t mock_status;
 static int     mock_fail_next;
 static uint32_t mock_jedec;
 static int     mock_stuck_busy;
+
+/* A program or erase cycle: it starts when /CS rises and lasts this many status
+ * reads, the only clock the mock has. */
+#define MOCK_BUSY_READS 3u
+static uint8_t  mock_page_buf[256];
+static uint32_t mock_page_sent;
+static uint8_t  mock_running;
+static uint32_t mock_running_addr;
+static uint32_t mock_busy_left;
+
 static void mock_reset(void)
 {
     memset(mock_mem, 0xFF, MOCK_SIZE);
@@ -30,20 +40,58 @@ static void mock_reset(void)
     mock_fail_next = 0;
     mock_jedec = 0xEF4017; /* W25Q64 */
     mock_stuck_busy = 0;
+    mock_page_sent = 0;
+    mock_running = 0;
+    mock_running_addr = 0;
+    mock_busy_left = 0;
 }
 
-static void mock_cs_low(void *ctx) { (void)ctx; mock_cs = 0; mock_phase = 1; mock_addr_bytes = 0; }
-static void mock_cs_high(void *ctx) {
+static void mock_cs_low(void *ctx)
+{
     (void)ctx;
-    if (mock_cmd == 0x02 && mock_phase >= 3) mock_status = (uint8_t)(mock_status & ~0x01);
-    if (mock_cmd == 0x20 && (mock_status & 0x02)) {
-        uint32_t base = mock_addr & ~0xFFFU;
+    mock_cs = 0;
+    mock_phase = 1;
+    mock_addr_bytes = 0;
+    mock_page_sent = 0;
+}
+
+static void mock_start_cycle(void)
+{
+    mock_running = mock_cmd;
+    mock_running_addr = mock_addr;
+    mock_busy_left = MOCK_BUSY_READS;
+    mock_status |= SR1_BUSY;
+}
+
+/* The array changes, and BUSY and WEL clear (manual p.36) */
+static void mock_end_cycle(void)
+{
+    if (mock_running == 0x02) {
+        uint32_t page = mock_running_addr & ~0xFFU;
+        for (uint32_t i = 0; i < 256u && page + i < MOCK_SIZE; i++)
+            mock_mem[page + i] &= mock_page_buf[i]; /* NOR flash: can only clear bits */
+    } else if (mock_running == 0x20) {
+        uint32_t base = mock_running_addr & ~0xFFFU;
         uint32_t end = base + 4096;
         if (end > MOCK_SIZE) end = MOCK_SIZE;
         for (uint32_t i = base; i < end; i++) mock_mem[i] = 0xFF;
-        mock_status = (uint8_t)(mock_status & ~0x03);
+    } else {
+        memset(mock_mem, 0xFF, MOCK_SIZE);
     }
-    if (mock_cmd == 0xC7) mock_status = (uint8_t)(mock_status & ~0x01);
+    mock_running = 0;
+    mock_status = (uint8_t)(mock_status & ~0x03);
+}
+
+static void mock_cs_high(void *ctx)
+{
+    (void)ctx;
+    if (!(mock_status & SR1_BUSY) && (mock_status & 0x02)) {
+        bool program = mock_cmd == 0x02 && mock_phase == 3 && mock_page_sent != 0;
+        bool sector  = mock_cmd == 0x20 && mock_addr_bytes == 3;
+        bool chip    = mock_cmd == 0xC7;
+        if (program || sector || chip)
+            mock_start_cycle();
+    }
     mock_cs = 1;
     mock_phase = 0;
 }
@@ -54,6 +102,12 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
     if (mock_fail_next) { mock_fail_next = 0; return 0xFF; }
 
     if (mock_phase == 1) {
+        /* p.22: "all instructions except for Read Status Register will be
+         * ignored" until the cycle has finished */
+        if ((mock_status & SR1_BUSY) && tx != 0x05) {
+            mock_phase = 0;
+            return 0xFF;
+        }
         mock_cmd = tx;
         mock_addr = 0;
         mock_addr_bytes = 0;
@@ -61,13 +115,8 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         if (tx == 0x06) { mock_status |= 0x02; return 0xFF; } /* WREN → set WEL */
         if (tx == 0x9F) { mock_phase = 3; return 0xFF; }       /* JEDEC ID */
         if (tx == 0x05) { mock_phase = 3; return 0xFF; }       /* Read SR1 */
-        if (tx == 0xC7) {                                       /* Chip erase */
-            if (mock_status & 0x02) {
-                memset(mock_mem, 0xFF, MOCK_SIZE);
-                mock_status = (uint8_t)(mock_status & ~0x02);
-            }
-            return 0xFF;
-        }
+        if (tx == 0xC7) return 0xFF;                            /* Chip erase */
+        if (tx == 0x02) memset(mock_page_buf, 0xFF, sizeof(mock_page_buf));
         mock_phase = 2;
         return 0xFF;
     }
@@ -86,26 +135,21 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             id_byte = (id_byte + 1) % 3;
             return r;
         }
-        if (mock_cmd == 0x05) return (uint8_t)(mock_status | (mock_stuck_busy ? SR1_BUSY : 0));
+        if (mock_cmd == 0x05) {
+            uint8_t r = (uint8_t)(mock_status | (mock_stuck_busy ? SR1_BUSY : 0));
+            if ((mock_status & SR1_BUSY) && --mock_busy_left == 0)
+                mock_end_cycle();
+            return r;
+        }
         if (mock_cmd == 0x03) {
             uint8_t r = (mock_addr < MOCK_SIZE) ? mock_mem[mock_addr] : 0xFF;
             mock_addr++;
             return r;
         }
         if (mock_cmd == 0x02) {
-            if ((mock_status & 0x02) && mock_addr < MOCK_SIZE)
-                mock_mem[mock_addr] &= tx; /* NOR flash: can only clear bits */
-            mock_addr++;
-            return 0xFF;
-        }
-        if (mock_cmd == 0x20) {
-            if (mock_status & 0x02) {
-                uint32_t base = mock_addr & ~0xFFFU;
-                uint32_t end = base + 4096;
-                if (end > MOCK_SIZE) end = MOCK_SIZE;
-                for (uint32_t i = base; i < end; i++) mock_mem[i] = 0xFF;
-                mock_status = (uint8_t)(mock_status & ~0x02);
-            }
+            /* kept until /CS rises, and wraps inside the page (manual p.36) */
+            mock_page_buf[(mock_addr + mock_page_sent) & 0xFFu] = tx;
+            mock_page_sent++;
             return 0xFF;
         }
     }
@@ -356,6 +400,123 @@ TEST(test_sector_erase_non_aligned)
     ASSERT_EQ(mock_mem[0x1FFF], 0xFF);
 }
 
+/* Raw instructions, to see the mock's own rules without the driver */
+static void raw_begin(uint8_t cmd)
+{
+    mock_cs_low(NULL);
+    (void)mock_xfer(NULL, cmd);
+}
+
+static void raw_addr(uint32_t addr)
+{
+    (void)mock_xfer(NULL, (uint8_t)(addr >> 16));
+    (void)mock_xfer(NULL, (uint8_t)(addr >> 8));
+    (void)mock_xfer(NULL, (uint8_t)addr);
+}
+
+static uint8_t raw_status(void)
+{
+    raw_begin(0x05);
+    uint8_t sr = mock_xfer(NULL, 0xFF);
+    mock_cs_high(NULL);
+    return sr;
+}
+
+static void raw_write_enable(void)
+{
+    raw_begin(0x06);
+    mock_cs_high(NULL);
+}
+
+/* p.36: "After the Page Program cycle has finished the Write Enable Latch (WEL)
+ * bit in the Status Register is cleared to 0." */
+TEST(test_page_program_leaves_wel_clear)
+{
+    mock_reset();
+    uint8_t data = 0x12;
+    ASSERT_EQ(w25qxx_page_program(&mock_spi, 0, &data, 1), W25QXX_OK);
+
+    uint8_t sr = 0xFF;
+    ASSERT_EQ(w25qxx_read_status(&mock_spi, &sr), W25QXX_OK);
+    ASSERT_EQ_HEX(sr, 0x00);
+}
+
+/* p.36: "The BUSY bit is a 1 during the Page Program cycle and becomes a 0 when
+ * the cycle is finished" */
+TEST(test_mock_is_busy_during_the_cycle)
+{
+    mock_reset();
+    raw_write_enable();
+    raw_begin(0x02);
+    raw_addr(0x100);
+    (void)mock_xfer(NULL, 0x12);
+    mock_cs_high(NULL);
+
+    ASSERT_EQ_HEX(raw_status() & SR1_BUSY, SR1_BUSY);
+    while (raw_status() & SR1_BUSY) {
+    }
+    ASSERT_EQ_HEX(mock_mem[0x100], 0x12);
+}
+
+/* p.22: "all instructions except for Read Status Register will be ignored" */
+TEST(test_mock_ignores_instructions_while_busy)
+{
+    mock_reset();
+    mock_mem[0x100] = 0x42;
+    raw_write_enable();
+    raw_begin(0x20);
+    raw_addr(0x100);
+    mock_cs_high(NULL);
+
+    raw_begin(0x03);
+    raw_addr(0x100);
+    ASSERT_EQ_HEX(mock_xfer(NULL, 0xFF), 0xFF);
+    mock_cs_high(NULL);
+    ASSERT_EQ_HEX(mock_mem[0x100], 0x42);
+}
+
+/* p.36 and p.41: nothing happens until /CS is driven high. */
+TEST(test_mock_acts_only_when_cs_rises)
+{
+    mock_reset();
+    mock_mem[0] = 0x42;
+
+    raw_write_enable();
+    raw_begin(0x02);
+    raw_addr(0x100);
+    (void)mock_xfer(NULL, 0x12);
+    ASSERT_EQ_HEX(mock_mem[0x100], 0xFF);
+    mock_cs_high(NULL);
+    while (raw_status() & SR1_BUSY) {
+    }
+
+    raw_write_enable();
+    raw_begin(0xC7);
+    ASSERT_EQ_HEX(mock_mem[0], 0x42);
+    mock_cs_high(NULL);
+    while (raw_status() & SR1_BUSY) {
+    }
+    ASSERT_EQ_HEX(mock_mem[0], 0xFF);
+}
+
+/* p.36: "the addressing will wrap to the beginning of the page." */
+TEST(test_mock_page_program_wraps_inside_the_page)
+{
+    mock_reset();
+    raw_write_enable();
+    raw_begin(0x02);
+    raw_addr(0x1FF);
+    (void)mock_xfer(NULL, 0x11);
+    (void)mock_xfer(NULL, 0x22);
+    mock_cs_high(NULL);
+    while (raw_status() & SR1_BUSY) {
+    }
+
+    ASSERT_EQ_HEX(mock_mem[0x1FF], 0x11);
+    ASSERT_EQ_HEX(mock_mem[0x100], 0x22);
+    ASSERT_EQ_HEX(mock_mem[0x200], 0xFF);
+}
+
 /* ---------- main ---------- */
 
 TEST_MAIN("w25qxx")
@@ -380,5 +541,10 @@ TEST_MAIN("w25qxx")
     RUN(test_init_jedec_zero_manufacturer);
     RUN(test_page_program_end_of_page);
     RUN(test_sector_erase_non_aligned);
+    RUN(test_page_program_leaves_wel_clear);
+    RUN(test_mock_is_busy_during_the_cycle);
+    RUN(test_mock_ignores_instructions_while_busy);
+    RUN(test_mock_acts_only_when_cs_rises);
+    RUN(test_mock_page_program_wraps_inside_the_page);
 TEST_MAIN_END()
 
