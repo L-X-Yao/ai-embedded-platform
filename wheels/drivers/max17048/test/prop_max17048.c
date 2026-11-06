@@ -17,10 +17,18 @@
 #define REG_CONFIG  0x0C
 #define REG_CRATE   0x16
 
+/* Each write is the register, then its bytes, in one transaction */
+static bool mock_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                           uint16_t len)
+{
+    return mock_i2c_write_regs(ctx, dev_addr, data[0], &data[1],
+                               (uint16_t)(len - 1u));
+}
+
 static const max17048_i2c_t mock_bus = {
-    .write_reg = mock_i2c_write_reg,
     .read_regs = mock_i2c_read_regs,
     .ctx       = NULL,
+    .write_raw = mock_write_raw,
 };
 
 static void mock_reset_chip(void)
