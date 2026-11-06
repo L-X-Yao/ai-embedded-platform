@@ -12,8 +12,11 @@
  * - 8KB buffer memory (RXSTART..TXEND) with auto-incrementing R/W pointers
  * - PHY registers accessed indirectly: write MIREGADR, set MICMD.MIIRD,
  *   poll MISTAT.BUSY, read MIRDL/H; or write MIREGADR, MIWRL, MIWRH, poll BUSY
- * - Soft reset (SRC) restores all registers + bank to defaults
+ * - Soft reset (SRC) restores the Table 3-2 values, except CLKRDY and ECOCON
  * - EREVID (bank 3, 0x12) read-only, default 0x06
+ * - BFS and BFC reach ETH registers only, and leave MAC and MII ones alone
+ * - RBM wraps at ERXND, RBM and WBM wrap at 1FFFh, both need ECON2.AUTOINC
+ * - PKTDEC decrements EPKTCNT and clears itself
  *
  * Header-only. Include from test_hw_model_enc28j60.c.
  */
@@ -51,6 +54,8 @@
 #define ENC_ERXNDH    0x0BU
 #define ENC_ERXRDPTL  0x0CU
 #define ENC_ERXRDPTH  0x0DU
+#define ENC_ERXWRPTL  0x0EU
+#define ENC_ERXWRPTH  0x0FU
 
 /* --- Bank 1 registers --- */
 
@@ -65,6 +70,8 @@
 #define ENC_MABBIPG   0x04U
 #define ENC_MAIPGL    0x06U
 #define ENC_MAIPGH    0x07U
+#define ENC_MACLCON1  0x08U
+#define ENC_MACLCON2  0x09U
 #define ENC_MAMXFLL   0x0AU
 #define ENC_MAMXFLH   0x0BU
 #define ENC_MIREGADR  0x14U
@@ -84,6 +91,8 @@
 #define ENC_MAADR1    0x04U
 #define ENC_MAADR2    0x05U
 #define ENC_EREVID    0x12U
+#define ENC_ECOCON    0x15U
+#define ENC_EPAUSH    0x19U
 
 /* --- Common registers (all banks) --- */
 
@@ -101,10 +110,14 @@
 #define ENC_ECON1_TXRTS   0x08U
 #define ENC_ECON1_TXRST   0x80U
 #define ENC_ECON2_PKTDEC  0x40U
+#define ENC_ECON2_AUTOINC 0x80U
+/* Register 3-2: bits 2-0 are unimplemented and read as 0 */
+#define ENC_ECON2_MASK    0xF8U
 #define ENC_EIR_RXERIF    0x01U
 #define ENC_EIR_TXERIF    0x02U
 #define ENC_EIR_TXIF      0x08U
 #define ENC_EIR_DMAIF     0x20U
+#define ENC_EIR_PKTIF     0x40U
 /* Register 12-3: the R/C bits. PKTIF and LINKIF are R and follow the chip. */
 #define ENC_EIR_RC_MASK \
     (ENC_EIR_DMAIF | ENC_EIR_TXIF | ENC_EIR_TXERIF | ENC_EIR_RXERIF)
@@ -136,6 +149,7 @@
 /* --- Model buffer size: 8KB to match real chip --- */
 
 #define ENC_BUF_SIZE  8192U
+#define ENC_BUF_LAST  0x1FFFU
 
 /* --- PHY register count --- */
 
@@ -283,6 +297,10 @@ __attribute__((unused))
 static void enc_bfs_reg(enc28j60_model_t *m, uint8_t addr, uint8_t mask)
 {
     uint8_t *p = enc_reg_ptr(m, addr);
+    /* p.31: "this command cannot be used on the MAC registers, MII registers,
+     * PHY registers or buffer memory" */
+    if (enc_is_mac_mii(m->current_bank, addr))
+        return;
     if (ENC_IS_COMMON(addr)) {
         if (!m->readonly_common[addr])
             *p |= mask;
@@ -297,6 +315,9 @@ __attribute__((unused))
 static void enc_bfc_reg(enc28j60_model_t *m, uint8_t addr, uint8_t mask)
 {
     uint8_t *p = enc_reg_ptr(m, addr);
+    /* p.31: BFC has the same limit as BFS */
+    if (enc_is_mac_mii(m->current_bank, addr))
+        return;
     if (addr == ENC_ESTAT) {
         *p = (uint8_t)(*p & ~(mask & ENC_ESTAT_RC_MASK));
     } else if (addr == ENC_EIR) {
@@ -315,6 +336,22 @@ __attribute__((unused))
 static void enc_update_bank(enc28j60_model_t *m)
 {
     m->current_bank = m->common[ENC_ECON1] & 0x03U;
+}
+
+/* Side effects of any write to ECON2. Register 3-2 note 1: PKTDEC "is
+ * automatically cleared once it is set". p.47: it decrements EPKTCNT, "if
+ * EPKTCNT is '0', the EIR.PKTIF flag will automatically be cleared", and
+ * "Attempts to decrement EPKTCNT below 0 are ignored." */
+__attribute__((unused))
+static void enc_econ2_written(enc28j60_model_t *m)
+{
+    if (m->common[ENC_ECON2] & ENC_ECON2_PKTDEC) {
+        if (m->regs[1][ENC_EPKTCNT] > 0U)
+            m->regs[1][ENC_EPKTCNT]--;
+        if (m->regs[1][ENC_EPKTCNT] == 0U)
+            m->common[ENC_EIR] &= (uint8_t)~ENC_EIR_PKTIF;
+    }
+    m->common[ENC_ECON2] &= (uint8_t)(ENC_ECON2_MASK & ~ENC_ECON2_PKTDEC);
 }
 
 /* DS39662C p.42: the end of a transmission. TXRTS clears and TXIF sets, and
@@ -370,16 +407,42 @@ static void enc_econ1_written(enc28j60_model_t *m, uint8_t old)
 __attribute__((unused))
 static uint16_t enc_get_erdpt(enc28j60_model_t *m)
 {
-    return (uint16_t)(((uint16_t)m->regs[0][ENC_ERDPTH] << 8) |
-           m->regs[0][ENC_ERDPTL]);
+    return (uint16_t)((((uint16_t)m->regs[0][ENC_ERDPTH] << 8) |
+           m->regs[0][ENC_ERDPTL]) & ENC_BUF_LAST);
 }
 
 /* Get the 16-bit buffer write pointer from EWRPTL/H */
 __attribute__((unused))
 static uint16_t enc_get_ewrpt(enc28j60_model_t *m)
 {
-    return (uint16_t)(((uint16_t)m->regs[0][ENC_EWRPTH] << 8) |
-           m->regs[0][ENC_EWRPTL]);
+    return (uint16_t)((((uint16_t)m->regs[0][ENC_EWRPTH] << 8) |
+           m->regs[0][ENC_EWRPTL]) & ENC_BUF_LAST);
+}
+
+/* The programmed ends of the receive buffer */
+__attribute__((unused))
+static uint16_t enc_get_erxst(enc28j60_model_t *m)
+{
+    return (uint16_t)((((uint16_t)m->regs[0][ENC_ERXSTH] << 8) |
+           m->regs[0][ENC_ERXSTL]) & ENC_BUF_LAST);
+}
+
+__attribute__((unused))
+static uint16_t enc_get_erxnd(enc28j60_model_t *m)
+{
+    return (uint16_t)((((uint16_t)m->regs[0][ENC_ERXNDH] << 8) |
+           m->regs[0][ENC_ERXNDL]) & ENC_BUF_LAST);
+}
+
+/* p.30: "if the last byte in the receive buffer is read (ERDPT = ERXND), the
+ * ERDPT Pointer will change to the beginning of the receive buffer (ERXST)",
+ * and past 1FFFh it wraps to 0000h */
+__attribute__((unused))
+static uint16_t enc_next_rd(enc28j60_model_t *m, uint16_t ptr)
+{
+    if (ptr == enc_get_erxnd(m))
+        return enc_get_erxst(m);
+    return (uint16_t)((ptr + 1U) & ENC_BUF_LAST);
 }
 
 /* ================================================================
@@ -391,9 +454,12 @@ static void enc_soft_reset(enc28j60_model_t *m)
 {
     /* CLKRDY resets to 0 on Power-on Reset, unaffected on all other Resets */
     uint8_t clkrdy = m->common[ENC_ESTAT] & ENC_ESTAT_CLKRDY;
+    /* Table 3-2 note 3: ECOCON is '---- -uuu' on all but Power-on Reset */
+    uint8_t ecocon = m->regs[3][ENC_ECOCON];
     memcpy(m->regs, m->reset_regs, sizeof(m->regs));
     memcpy(m->common, m->reset_common, sizeof(m->common));
     m->common[ENC_ESTAT] |= clkrdy;
+    m->regs[3][ENC_ECOCON] = ecocon;
     m->ms_since_src = 0;
     m->current_bank = 0;
     m->buf_rdptr = 0;
@@ -530,6 +596,9 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         if (m->spi_addr == ENC_ECON1) {
             enc_econ1_written(m, econ1);
         }
+        if (m->spi_addr == ENC_ECON2) {
+            enc_econ2_written(m);
+        }
         /* DS39662C p.21: writing MIWRH starts the PHY write */
         if (m->current_bank == 2 && m->spi_addr == ENC_MIWRH) {
             uint8_t phy_addr = m->regs[2][ENC_MIREGADR] & 0x1FU;
@@ -567,6 +636,9 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         if (m->spi_addr == ENC_ECON1) {
             enc_econ1_written(m, econ1);
         }
+        if (m->spi_addr == ENC_ECON2) {
+            enc_econ2_written(m);
+        }
         m->phase = ENC_PH_IDLE;
         return 0xFFU;
     }
@@ -582,14 +654,11 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
     }
 
     case ENC_PH_READ_BUF: {
-        /* Read from buffer memory at buf_rdptr, auto-increment with wrap */
-        uint8_t val = 0x00U;
-        if (m->buf_rdptr < ENC_BUF_SIZE) {
-            val = m->buffer[m->buf_rdptr];
-        }
-        m->buf_rdptr++;
-        if (m->buf_rdptr > ENC_RXEND && m->buf_rdptr < ENC_TXSTART) {
-            /* Wrap within RX buffer space (simplified) */
+        /* Read from buffer memory at buf_rdptr. p.30: with AUTOINC clear the
+         * same byte comes out again. */
+        uint8_t val = m->buffer[m->buf_rdptr];
+        if (m->common[ENC_ECON2] & ENC_ECON2_AUTOINC) {
+            m->buf_rdptr = enc_next_rd(m, m->buf_rdptr);
         }
         /* Update ERDPT registers to track auto-increment */
         m->regs[0][ENC_ERDPTL] = (uint8_t)(m->buf_rdptr & 0xFFU);
@@ -601,15 +670,17 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         /* DS39662C p.42: no touching the bytes of a pending transmission */
         if (m->common[ENC_ECON1] & ENC_ECON1_TXRTS)
             m->tx_write_while_pending++;
-        /* Write to buffer memory at buf_wrptr, auto-increment */
-        if (m->buf_wrptr < ENC_BUF_SIZE) {
-            m->buffer[m->buf_wrptr] = tx;
-        }
+        /* Write to buffer memory at buf_wrptr */
+        m->buffer[m->buf_wrptr] = tx;
         /* Also capture into tx_captured for test verification */
         if (m->tx_captured_len < (int)sizeof(m->tx_captured)) {
             m->tx_captured[m->tx_captured_len++] = tx;
         }
-        m->buf_wrptr++;
+        /* p.31: "If address, 1FFFh, is written with AUTOINC set, the Write
+         * Pointer will increment to 0000h." */
+        if (m->common[ENC_ECON2] & ENC_ECON2_AUTOINC) {
+            m->buf_wrptr = (uint16_t)((m->buf_wrptr + 1U) & ENC_BUF_LAST);
+        }
         /* Update EWRPT registers */
         m->regs[0][ENC_EWRPTL] = (uint8_t)(m->buf_wrptr & 0xFFU);
         m->regs[0][ENC_EWRPTH] = (uint8_t)(m->buf_wrptr >> 8);
@@ -643,6 +714,23 @@ static void enc28j60_model_init(enc28j60_model_t *m)
 
     /* Set reset defaults */
 
+    /* Table 3-2: every Value on Reset that is not 0 */
+    m->reset_regs[0][ENC_ERDPTL]   = 0xFAU;
+    m->reset_regs[0][ENC_ERDPTH]   = 0x05U;
+    m->reset_regs[0][ENC_ERXSTL]   = 0xFAU;
+    m->reset_regs[0][ENC_ERXSTH]   = 0x05U;
+    m->reset_regs[0][ENC_ERXNDL]   = 0xFFU;
+    m->reset_regs[0][ENC_ERXNDH]   = 0x1FU;
+    m->reset_regs[0][ENC_ERXRDPTL] = 0xFAU;
+    m->reset_regs[0][ENC_ERXRDPTH] = 0x05U;
+    m->reset_regs[1][ENC_ERXFCON]  = 0xA1U;
+    m->reset_regs[2][ENC_MACLCON1] = 0x0FU;
+    m->reset_regs[2][ENC_MACLCON2] = 0x37U;
+    m->reset_regs[2][ENC_MAMXFLH]  = 0x06U;
+    m->reset_regs[3][ENC_ECOCON]   = 0x04U;
+    m->reset_regs[3][ENC_EPAUSH]   = 0x10U;
+    m->reset_common[ENC_ECON2]     = ENC_ECON2_AUTOINC;
+
     /* EREVID (bank 3, 0x12) = 0x06 (silicon rev 6) */
     m->reset_regs[3][ENC_EREVID] = 0x06U;
 
@@ -650,8 +738,11 @@ static void enc28j60_model_init(enc28j60_model_t *m)
     m->readonly[3][ENC_EREVID] = true;
     /* Mark ESTAT as read-only */
     m->readonly_common[ENC_ESTAT] = true;
-    /* Mark EIR as read-only (interrupt flags, cleared by hardware) */
+    /* EIR: WCR leaves it alone, BFC clears its R/C bits */
     m->readonly_common[ENC_EIR] = true;
+    /* p.19: ERXWRPT "is read-only" */
+    m->readonly[0][ENC_ERXWRPTL] = true;
+    m->readonly[0][ENC_ERXWRPTH] = true;
     /* EPKTCNT (bank 1) is read-only from SPI perspective; only
      * PKTDEC in ECON2 decrements it */
     m->readonly[1][ENC_EPKTCNT] = true;
@@ -687,6 +778,15 @@ static void enc28j60_model_init(enc28j60_model_t *m)
  * Format: [next_pkt_lo, next_pkt_hi, len_lo, len_hi, status_lo, status_hi]
  * ================================================================ */
 
+/* The receive hardware stores bytes round the buffer as the read pointer
+ * reads them back */
+__attribute__((unused))
+static void enc_rx_put(enc28j60_model_t *m, uint16_t *off, uint8_t val)
+{
+    m->buffer[*off] = val;
+    *off = enc_next_rd(m, *off);
+}
+
 __attribute__((unused))
 static void enc28j60_model_inject_rx(enc28j60_model_t *m, uint16_t addr,
                                      uint16_t next_pkt,
@@ -694,17 +794,19 @@ static void enc28j60_model_inject_rx(enc28j60_model_t *m, uint16_t addr,
 {
     uint16_t off = addr;
     /* Next packet pointer (little-endian) */
-    m->buffer[off++] = (uint8_t)(next_pkt & 0xFFU);
-    m->buffer[off++] = (uint8_t)(next_pkt >> 8);
-    /* Byte count (little-endian) */
-    m->buffer[off++] = (uint8_t)(frame_len & 0xFFU);
-    m->buffer[off++] = (uint8_t)(frame_len >> 8);
-    /* Status (OK) */
-    m->buffer[off++] = 0x00U;
-    m->buffer[off++] = 0x00U;
+    enc_rx_put(m, &off, (uint8_t)(next_pkt & 0xFFU));
+    enc_rx_put(m, &off, (uint8_t)(next_pkt >> 8));
+    /* Byte count (little-endian). Table 7-3 counts the 4 CRC bytes too, and
+     * they follow the data. They are left out here because enc28j60_receive
+     * passes them on to the caller, and whether it should is still open. */
+    enc_rx_put(m, &off, (uint8_t)(frame_len & 0xFFU));
+    enc_rx_put(m, &off, (uint8_t)(frame_len >> 8));
+    /* Status: Table 7-3 bit 23, Received Ok, is bit 7 of this first byte */
+    enc_rx_put(m, &off, 0x80U);
+    enc_rx_put(m, &off, 0x00U);
     /* Frame data */
     for (uint16_t i = 0; i < frame_len; i++) {
-        m->buffer[off++] = frame[i];
+        enc_rx_put(m, &off, frame[i]);
     }
 }
 
@@ -729,6 +831,9 @@ __attribute__((unused))
 static void enc28j60_model_set_pktcnt(enc28j60_model_t *m, uint8_t count)
 {
     m->regs[1][ENC_EPKTCNT] = count;
+    /* p.45: a packet in the buffer also sets EIR.PKTIF */
+    if (count > 0U)
+        m->common[ENC_EIR] |= ENC_EIR_PKTIF;
 }
 
 #endif /* HW_MODEL_ENC28J60_H */

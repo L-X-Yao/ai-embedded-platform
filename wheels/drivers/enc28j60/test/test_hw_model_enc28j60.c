@@ -44,6 +44,50 @@ static void setup_and_init(void)
     model.tx_econ1_read_count = 0;
 }
 
+/* One command byte and one data byte in a single CS cycle */
+static void spi_cmd(uint8_t cmd, uint8_t data)
+{
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, cmd);
+    model_spi.xfer(model_spi.ctx, data);
+    model_spi.cs_high(model_spi.ctx);
+}
+
+/* Table 3-2, p.15 and p.16: Value on Reset of the banked registers the model
+ * names. ETXST, ETXND and EWRPT reset to 0, the receive pointers do not. */
+static const struct { uint8_t bank, addr, val; } table_3_2[] = {
+    {0, ENC_ERDPTL, 0xFA},   {0, ENC_ERDPTH, 0x05},
+    {0, ENC_EWRPTL, 0x00},   {0, ENC_EWRPTH, 0x00},
+    {0, ENC_ETXSTL, 0x00},   {0, ENC_ETXSTH, 0x00},
+    {0, ENC_ETXNDL, 0x00},   {0, ENC_ETXNDH, 0x00},
+    {0, ENC_ERXSTL, 0xFA},   {0, ENC_ERXSTH, 0x05},
+    {0, ENC_ERXNDL, 0xFF},   {0, ENC_ERXNDH, 0x1F},
+    {0, ENC_ERXRDPTL, 0xFA}, {0, ENC_ERXRDPTH, 0x05},
+    {1, ENC_ERXFCON, 0xA1},  {1, ENC_EPKTCNT, 0x00},
+    {2, ENC_MACON1, 0x00},   {2, ENC_MACON3, 0x00},
+    {2, ENC_MACON4, 0x00},   {2, ENC_MABBIPG, 0x00},
+    {2, ENC_MAIPGL, 0x00},   {2, ENC_MAIPGH, 0x00},
+    {2, ENC_MACLCON1, 0x0F}, {2, ENC_MACLCON2, 0x37},
+    {2, ENC_MAMXFLL, 0x00},  {2, ENC_MAMXFLH, 0x06},
+    {2, ENC_MICMD, 0x00},    {2, ENC_MIREGADR, 0x00},
+    {3, ENC_MAADR1, 0x00},   {3, ENC_MAADR2, 0x00},
+    {3, ENC_MAADR3, 0x00},   {3, ENC_MAADR4, 0x00},
+    {3, ENC_MAADR5, 0x00},   {3, ENC_MAADR6, 0x00},
+    {3, ENC_MISTAT, 0x00},   {3, ENC_EPAUSH, 0x10},
+};
+
+static void assert_table_3_2(void)
+{
+    for (size_t i = 0; i < sizeof(table_3_2) / sizeof(table_3_2[0]); i++) {
+        ASSERT_EQ_HEX(model.regs[table_3_2[i].bank][table_3_2[i].addr],
+                      table_3_2[i].val);
+    }
+    ASSERT_EQ(model.common[ENC_ECON1], 0x00);
+    ASSERT_EQ(model.common[ENC_ECON2], 0x80);
+    ASSERT_EQ(model.common[ENC_EIE], 0x00);
+    ASSERT_EQ(model.common[ENC_EIR], 0x00);
+}
+
 /* --- 1. Init sequence: soft reset, buffer pointers, MAC init --- */
 
 TEST(test_init_sequence)
@@ -202,10 +246,12 @@ TEST(test_soft_reset_restores_defaults)
 {
     setup_and_init();
 
-    /* Modify some registers: ERXFCON (bank 1) was set to 0xA1 by init */
-    ASSERT_EQ(model.regs[1][ENC_ERXFCON], 0xA1);
-    /* MAC address (bank 3) was written */
+    /* Init left its own values in these */
     ASSERT_EQ(model.regs[3][ENC_MAADR1], 0x02);
+    ASSERT_EQ(model.regs[2][ENC_MAMXFLH], 0x05);
+    ASSERT_EQ(model.regs[0][ENC_ERXNDH], 0x19);
+    /* Init writes the reset value to ERXFCON, so change it here */
+    model.regs[1][ENC_ERXFCON] = 0x00;
 
     /* Now perform a soft reset through the model directly */
     int prev_reset = model.reset_count;
@@ -215,9 +261,8 @@ TEST(test_soft_reset_restores_defaults)
 
     ASSERT_EQ(model.reset_count, prev_reset + 1);
 
-    /* After reset, modified registers should be back to defaults (0) */
-    ASSERT_EQ(model.regs[1][ENC_ERXFCON], 0x00);
-    ASSERT_EQ(model.regs[3][ENC_MAADR1], 0x00);
+    /* After reset, the registers are back at their Table 3-2 values */
+    assert_table_3_2();
     /* Bank should be reset to 0 */
     ASSERT_EQ(model.current_bank, 0);
     /* EREVID should still be at default 0x06 */
@@ -386,13 +431,14 @@ TEST(test_common_regs_across_banks)
     model_spi.xfer(model_spi.ctx, ENC_ECON1_BSEL0 | ENC_ECON1_BSEL1);
     model_spi.cs_high(model_spi.ctx);
 
-    /* Write ECON2 = 0x42 */
+    /* Write ECON2 = 0x88. Register 3-2 has no bit 1 and PKTDEC clears itself,
+     * so AUTOINC and VRPS are what can be seen again. */
     model_spi.cs_low(model_spi.ctx);
     model_spi.xfer(model_spi.ctx, ENC_OP_WCR | ENC_ECON2);
-    model_spi.xfer(model_spi.ctx, 0x42);
+    model_spi.xfer(model_spi.ctx, 0x88);
     model_spi.cs_high(model_spi.ctx);
 
-    ASSERT_EQ(model.common[ENC_ECON2], 0x42);
+    ASSERT_EQ(model.common[ENC_ECON2], 0x88);
 
     /* Switch to bank 2 */
     model_spi.cs_low(model_spi.ctx);
@@ -400,13 +446,13 @@ TEST(test_common_regs_across_banks)
     model_spi.xfer(model_spi.ctx, ENC_ECON1_BSEL1);
     model_spi.cs_high(model_spi.ctx);
 
-    /* Read ECON2: should still be 0x42 */
+    /* Read ECON2: should still be 0x88 */
     model_spi.cs_low(model_spi.ctx);
     model_spi.xfer(model_spi.ctx, ENC_OP_RCR | ENC_ECON2);
     uint8_t val = model_spi.xfer(model_spi.ctx, 0xFF);
     model_spi.cs_high(model_spi.ctx);
 
-    ASSERT_EQ(val, 0x42);
+    ASSERT_EQ(val, 0x88);
 }
 
 /* --- 13. Oscillator Start-up Timer and the wait after SRC --- */
@@ -788,6 +834,254 @@ TEST(test_model_txrst_clears_a_pending_txrts)
     ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_TXRTS);
 }
 
+/* --- 23. Reset values --- */
+
+TEST(test_model_power_on_follows_table_3_2)
+{
+    setup();
+    assert_table_3_2();
+    /* Note 1: "CLKRDY resets to '0' on Power-on Reset" */
+    ASSERT_EQ(model.common[ENC_ESTAT], 0x00);
+}
+
+/* Table 3-2 note 3: "ECOCON resets to '---- -100' on Power-on Reset and
+ * '---- -uuu' on all other Resets." */
+TEST(test_model_src_leaves_ecocon)
+{
+    setup();
+    ASSERT_EQ(model.regs[3][ENC_ECOCON], 0x04);
+
+    model.regs[3][ENC_ECOCON] = 0x02;
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_SRC);
+    model_spi.cs_high(model_spi.ctx);
+
+    ASSERT_EQ(model.regs[3][ENC_ECOCON], 0x02);
+}
+
+/* --- 24. PKTDEC --- */
+
+/* p.47: "after each packet is fully processed, the host controller must write
+ * a '1' to the ECON2.PKTDEC bit. Doing so will cause the EPKTCNT register to
+ * decrement by 1. After decrementing, if EPKTCNT is '0', the EIR.PKTIF flag
+ * will automatically be cleared." */
+TEST(test_receive_counts_packets_down_with_pktdec)
+{
+    setup_and_init();
+    const uint8_t a[4] = {1, 2, 3, 4};
+    const uint8_t b[4] = {5, 6, 7, 8};
+    uint8_t out[16];
+    uint16_t out_len = 0;
+
+    enc28j60_model_inject_rx(&model, 0x0000, 0x000A, a, 4);
+    enc28j60_model_inject_rx(&model, 0x000A, 0x0014, b, 4);
+    enc28j60_model_set_pktcnt(&model, 2);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out[0], 1);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 1);
+    ASSERT_TRUE(model.common[ENC_EIR] & ENC_EIR_PKTIF);
+    ASSERT_TRUE(enc28j60_has_packet(&dev));
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out[0], 5);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+    ASSERT_FALSE(model.common[ENC_EIR] & ENC_EIR_PKTIF);
+    ASSERT_FALSE(enc28j60_has_packet(&dev));
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len),
+              ENC28J60_ERR_NO_PACKET);
+}
+
+/* A packet the caller has no room for still has to leave the buffer */
+TEST(test_receive_too_small_still_counts_the_packet_down)
+{
+    setup_and_init();
+    const uint8_t a[8] = {0};
+    uint8_t out[4];
+    uint16_t out_len = 0;
+
+    enc28j60_model_inject_rx(&model, 0x0000, 0x000E, a, 8);
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len),
+              ENC28J60_ERR_SIZE);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+}
+
+/* Register 3-2 note 1: PKTDEC "is automatically cleared once it is set", and
+ * p.47: "Attempts to decrement EPKTCNT below 0 are ignored." */
+TEST(test_model_pktdec_clears_itself_and_stops_at_zero)
+{
+    setup_and_init();
+    enc28j60_model_set_pktcnt(&model, 1);
+
+    spi_cmd(ENC_OP_BFS | ENC_ECON2, ENC_ECON2_PKTDEC);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+    ASSERT_FALSE(model.common[ENC_ECON2] & ENC_ECON2_PKTDEC);
+
+    spi_cmd(ENC_OP_BFS | ENC_ECON2, ENC_ECON2_PKTDEC);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+
+    /* WCR writes the same bit */
+    enc28j60_model_set_pktcnt(&model, 1);
+    spi_cmd(ENC_OP_WCR | ENC_ECON2, ENC_ECON2_AUTOINC | ENC_ECON2_PKTDEC);
+    ASSERT_EQ(model.regs[1][ENC_EPKTCNT], 0);
+    ASSERT_EQ(model.common[ENC_ECON2], ENC_ECON2_AUTOINC);
+}
+
+/* --- 25. Buffer pointers --- */
+
+/* p.46: "The Read Pointer would automatically wrap at the end of the circular
+ * receive buffer to the beginning." The packet starts 10 bytes before the end,
+ * so 4 frame bytes come from the end and the rest from ERXST. */
+TEST(test_receive_packet_spanning_the_end_of_the_buffer)
+{
+    setup_and_init();
+    uint8_t frame[32];
+    uint8_t out[32];
+    uint16_t out_len = 0;
+    for (uint8_t i = 0; i < 32U; i++) frame[i] = (uint8_t)(0x40U + i);
+
+    const uint16_t at = ENC_RXEND - 9U;
+    enc28j60_model_inject_rx(&model, at, 0x001C, frame, 32);
+    ASSERT_EQ(model.buffer[ENC_RXEND], frame[3]);
+    ASSERT_EQ(model.buffer[ENC_RXSTART], frame[4]);
+    ASSERT_EQ(model.buffer[ENC_TXSTART], 0x00);    /* TX space untouched */
+    enc28j60_model_set_pktcnt(&model, 1);
+    dev.next_packet_ptr = at;
+
+    ASSERT_EQ(enc28j60_receive(&dev, out, sizeof(out), &out_len), ENC28J60_OK);
+    ASSERT_EQ(out_len, 32);
+    ASSERT_MEMEQ_N(out, frame, 32);
+    ASSERT_EQ(dev.next_packet_ptr, 0x001C);
+}
+
+/* p.30: "if the last byte in the receive buffer is read (ERDPT = ERXND), the
+ * ERDPT Pointer will change to the beginning of the receive buffer (ERXST)." */
+TEST(test_model_rbm_wraps_at_erxnd)
+{
+    setup_and_init();
+    model.regs[0][ENC_ERXSTL] = 0x10;
+    model.regs[0][ENC_ERDPTL] = 0xFF;
+    model.regs[0][ENC_ERDPTH] = 0x19;              /* ERXND, from init */
+    model.buffer[0x19FF] = 0x11;
+    model.buffer[0x1A00] = 0x33;
+    model.buffer[0x0010] = 0x22;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_RBM);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x11);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x22);
+    model_spi.cs_high(model_spi.ctx);
+}
+
+/* p.30: "If AUTOINC is set when address, 1FFFh, is read and ERXND does not
+ * point to this address, the Read Pointer will increment and wrap around to
+ * 0000h." */
+TEST(test_model_rbm_wraps_at_1fffh)
+{
+    setup_and_init();
+    model.regs[0][ENC_ERDPTL] = 0xFF;
+    model.regs[0][ENC_ERDPTH] = 0x1F;
+    model.buffer[0x1FFF] = 0x44;
+    model.buffer[0x0000] = 0x55;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_RBM);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x44);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x55);
+    model_spi.cs_high(model_spi.ctx);
+}
+
+/* p.31: "If address, 1FFFh, is written with AUTOINC set, the Write Pointer
+ * will increment to 0000h." */
+TEST(test_model_wbm_wraps_at_1fffh)
+{
+    setup_and_init();
+    model.regs[0][ENC_EWRPTL] = 0xFF;
+    model.regs[0][ENC_EWRPTH] = 0x1F;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_WBM);
+    model_spi.xfer(model_spi.ctx, 0x66);
+    model_spi.xfer(model_spi.ctx, 0x77);
+    model_spi.cs_high(model_spi.ctx);
+
+    ASSERT_EQ(model.buffer[0x1FFF], 0x66);
+    ASSERT_EQ(model.buffer[0x0000], 0x77);
+}
+
+/* p.30 and p.31: the pointers move only "If the AUTOINC bit in the ECON2
+ * register is set". It is, from reset, and the driver relies on that. */
+TEST(test_model_pointers_hold_without_autoinc)
+{
+    setup_and_init();
+    model.buffer[0x0100] = 0x11;
+    model.buffer[0x0101] = 0x22;
+    model.regs[0][ENC_ERDPTL] = 0x00;
+    model.regs[0][ENC_ERDPTH] = 0x01;
+    spi_cmd(ENC_OP_BFC | ENC_ECON2, ENC_ECON2_AUTOINC);
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_RBM);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x11);
+    ASSERT_EQ(model_spi.xfer(model_spi.ctx, 0xFF), 0x11);
+    model_spi.cs_high(model_spi.ctx);
+}
+
+/* --- 26. Receive status vector --- */
+
+/* Table 7-3, p.46: bit 23 "Received Ok: Indicates that at the packet had a
+ * valid CRC and no symbol errors." Figure 7-3 puts rsv[23:16] at the fifth
+ * header byte. */
+TEST(test_model_injected_packet_is_received_ok)
+{
+    setup_and_init();
+    const uint8_t a[4] = {1, 2, 3, 4};
+
+    enc28j60_model_inject_rx(&model, 0x0100, 0x010A, a, 4);
+
+    ASSERT_EQ(model.buffer[0x0104] & 0x80U, 0x80);
+}
+
+/* --- 27. BFS and BFC reach ETH registers only --- */
+
+/* p.31: BFS and BFC "cannot be used on the MAC registers, MII registers, PHY
+ * registers or buffer memory", and work on "any of the ETH Control registers" */
+TEST(test_model_bfs_bfc_leave_mac_mii_registers_alone)
+{
+    setup_and_init();
+
+    enc28j60_get_revision(&dev);                   /* bank 3 */
+    spi_cmd(ENC_OP_BFS | ENC_MAADR1, 0xFF);
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], test_mac[0]);
+    spi_cmd(ENC_OP_BFC | ENC_MAADR1, 0xFF);
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], test_mac[0]);
+
+    spi_cmd(ENC_OP_BFC | ENC_ECON1, ENC_ECON1_BSEL0);   /* bank 2 */
+    ASSERT_EQ(model.current_bank, 2);
+    spi_cmd(ENC_OP_BFS | ENC_MACON1, 0x04);
+    ASSERT_EQ(model.regs[2][ENC_MACON1], 0x01);
+    spi_cmd(ENC_OP_BFC | ENC_MACON1, 0x01);
+    ASSERT_EQ(model.regs[2][ENC_MACON1], 0x01);
+
+    spi_cmd(ENC_OP_BFC | ENC_ECON1, ENC_ECON1_BSEL1);   /* bank 0 */
+    spi_cmd(ENC_OP_BFS | ENC_ECON1, ENC_ECON1_BSEL0);   /* bank 1 */
+    ASSERT_EQ(model.current_bank, 1);
+    spi_cmd(ENC_OP_BFC | ENC_ERXFCON, 0x80);       /* ETH: this one works */
+    ASSERT_EQ(model.regs[1][ENC_ERXFCON], 0x21);
+}
+
+/* p.19: "The pointer is read-only" */
+TEST(test_model_erxwrpt_is_read_only)
+{
+    setup_and_init();
+    spi_cmd(ENC_OP_BFC | ENC_ECON1, ENC_ECON1_BSEL0 | ENC_ECON1_BSEL1);
+
+    spi_cmd(ENC_OP_WCR | ENC_ERXWRPTL, 0x55);
+    ASSERT_EQ(model.regs[0][ENC_ERXWRPTL], 0x00);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -825,4 +1119,17 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_send_starts_with_txerif_and_txif_clear);
     RUN(test_model_bfc_clears_only_rc_bits_of_eir);
     RUN(test_model_txrst_clears_a_pending_txrts);
+    RUN(test_model_power_on_follows_table_3_2);
+    RUN(test_model_src_leaves_ecocon);
+    RUN(test_receive_counts_packets_down_with_pktdec);
+    RUN(test_receive_too_small_still_counts_the_packet_down);
+    RUN(test_model_pktdec_clears_itself_and_stops_at_zero);
+    RUN(test_receive_packet_spanning_the_end_of_the_buffer);
+    RUN(test_model_rbm_wraps_at_erxnd);
+    RUN(test_model_rbm_wraps_at_1fffh);
+    RUN(test_model_wbm_wraps_at_1fffh);
+    RUN(test_model_pointers_hold_without_autoinc);
+    RUN(test_model_injected_packet_is_received_ok);
+    RUN(test_model_bfs_bfc_leave_mac_mii_registers_alone);
+    RUN(test_model_erxwrpt_is_read_only);
 TEST_MAIN_END()
