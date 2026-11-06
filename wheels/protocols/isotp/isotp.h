@@ -67,6 +67,9 @@ isotp_err_t isotp_rx_init(isotp_rx_t *rx, uint8_t *buf, size_t cap);
  * Returns ISOTP_OK when a complete message is ready (use isotp_rx_get_*).
  * Returns ISOTP_INCOMPLETE when more frames are needed, and for a Flow Control
  * frame, which leaves the reassembly as it was.
+ * Returns ISOTP_ERR_SEQUENCE for a Consecutive Frame out of order, or with no
+ * message in progress. Out of order ends the reassembly: that message is lost
+ * and the next one has to start with a First Frame.
  * @thread_safe: no @isr_safe: no
  */
 isotp_err_t isotp_rx_feed(isotp_rx_t *rx, const uint8_t *can_data, uint8_t dlc);
