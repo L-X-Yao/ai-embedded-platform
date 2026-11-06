@@ -55,14 +55,41 @@ build_fail_names=()
 # Cleanup temp executables on exit
 trap 'rm -f /tmp/gentest_*_$$' EXIT
 
+# A vendored wheel has no <name>.c. These print the sources and include flags of
+# its test_<name> CMake target, from the repo root; empty if there is no target.
+cmake_target_sources() {
+    sed -n "/add_executable(test_$2\$/,/^[[:space:]]*)/p" "$1/CMakeLists.txt" 2>/dev/null \
+        | grep -E '^[[:space:]]*\.\./.*\.c[[:space:]]*$' \
+        | sed -E "s|^[[:space:]]*|$1/|; s/[[:space:]]*$//" | tr '\n' ' '
+}
+
+cmake_target_includes() {
+    sed -n "/target_include_directories(test_$2 /,/^[[:space:]]*)/p" "$1/CMakeLists.txt" 2>/dev/null \
+        | grep 'CMAKE_CURRENT_SOURCE_DIR' \
+        | sed -E "s|^[[:space:]]*\\\$\{CMAKE_CURRENT_SOURCE_DIR\}|-I$1|; s/[[:space:]]*$//" | tr '\n' ' '
+}
+
 while IFS= read -r f; do
     dir=$(dirname "$f")
     wheel_dir=$(dirname "$dir")
     name=$(basename "$wheel_dir")
     src="$wheel_dir/$name.c"
+    main_srcs="$src"
+    target_incs=""
 
-    # Skip if source doesn't exist
-    [ -f "$src" ] || continue
+    if [ ! -f "$src" ]; then
+        # The contract filter asks for sources that include contract.h
+        [[ $FILTER_CONTRACT -eq 1 ]] && continue
+        main_srcs=$(cmake_target_sources "$dir" "$name")
+        target_incs=$(cmake_target_includes "$dir" "$name")
+        if [ -z "$main_srcs" ]; then
+            total=$((total + 1))
+            printf "  BUILD_FAIL %s (no %s.c and no test_%s target)\n" "$name" "$name" "$name"
+            fail=$((fail + 1))
+            build_fail_names+=("$name")
+            continue
+        fi
+    fi
 
     # In use-main-test mode, skip generated tests
     if [[ $USE_MAIN_TEST -eq 1 ]]; then
@@ -101,8 +128,8 @@ while IFS= read -r f; do
     out="/tmp/gentest_${name}_$$"
     # shellcheck disable=SC2086
     if gcc -std=c99 -Wall $EXTRA_CFLAGS $DEFINES \
-           -I"$wheel_dir" -I"$dir" -I"tooling/harness" $dep_incs \
-           "$f" "$src" $dep_srcs $mock_srcs \
+           -I"$wheel_dir" -I"$dir" -I"tooling/harness" $dep_incs $target_incs \
+           "$f" $main_srcs $dep_srcs $mock_srcs \
            -o "$out" -lm 2>/dev/null; then
         # Run
         if "$out" >/dev/null 2>&1; then
@@ -134,4 +161,8 @@ if [ ${#fail_names[@]} -gt 0 ] || [ ${#build_fail_names[@]} -gt 0 ]; then
 fi
 echo "=== SUMMARY ==="
 echo "$total wheels, $fail failures (${#fail_names[@]} run, ${#build_fail_names[@]} build)"
+if [ "$total" -eq 0 ]; then
+    echo "ERROR: nothing ran for $PATTERN under $SEARCH_ROOT"
+    exit 1
+fi
 [ $fail -eq 0 ]
