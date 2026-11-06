@@ -313,6 +313,7 @@ w5500_err_t w5500_socket_recv(w5500_t *dev, uint8_t sock,
 {
     if (!dev || !dev->spi)      return W5500_ERR_PARAM;
     if (!buf || !out_len)       return W5500_ERR_PARAM;
+    if (buf_len == 0)           return W5500_ERR_PARAM;
     if (sock >= W5500_MAX_SOCK) return W5500_ERR_SOCK;
 
     const w5500_spi_t *s = dev->spi;

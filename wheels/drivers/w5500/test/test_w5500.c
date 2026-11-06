@@ -666,6 +666,22 @@ TEST(test_socket_recv_clamped)
     ASSERT_EQ(buf[9], 9);
 }
 
+TEST(test_socket_recv_zero_buf_len)
+{
+    init_dev();
+    /* W5500 Datasheet 1.1.0 p17: variable length mode has "N-Bytes Data
+     * Phase (1 <= N)", so a read of 0 bytes is not a legal frame */
+    mock_sock_regs[0][SN_RX_RSR0] = 0x00;
+    mock_sock_regs[0][SN_RX_RSR1] = 0x04;
+
+    uint8_t buf[4];
+    uint16_t out_len = 99;
+    int cs_before = mock_cs_low_calls;
+    ASSERT_EQ(w5500_socket_recv(&dev, 0, buf, 0, &out_len), W5500_ERR_PARAM);
+    ASSERT_EQ(mock_cs_low_calls, cs_before);
+    ASSERT_EQ(out_len, 99);
+}
+
 TEST(test_socket_recv_no_data)
 {
     init_dev();
@@ -855,6 +871,7 @@ TEST_MAIN("w5500")
     RUN(test_socket_send_null_dev);
     RUN(test_socket_recv);
     RUN(test_socket_recv_clamped);
+    RUN(test_socket_recv_zero_buf_len);
     RUN(test_socket_recv_no_data);
     RUN(test_socket_recv_null_buf);
     RUN(test_socket_recv_null_out_len);
