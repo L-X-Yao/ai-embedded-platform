@@ -93,6 +93,28 @@ static void check_replies(const char *text, int32_t id, int32_t code) {
     if (json_rpc_validate(buf, len) != JSON_RPC_TYPE_ERROR) __builtin_trap();
 }
 
+// Any text has to stay inside its string, so the frame keeps its type and id.
+static void check_any_text(fuzz_input_t *in, int32_t id, int32_t code) {
+    char text[NAME_MAX_LEN + 1];
+    text[fuzz_take(in, text, NAME_MAX_LEN)] = 0;
+
+    char buf[512];
+    size_t len = 0;
+    int32_t got = 0;
+
+    if (json_rpc_build_request(buf, sizeof(buf), text, NULL, id, &len) != JSON_RPC_OK) {
+        __builtin_trap();
+    }
+    if (json_rpc_validate(buf, len) != JSON_RPC_TYPE_REQUEST) __builtin_trap();
+    if (json_rpc_extract_id(buf, len, &got) != JSON_RPC_OK || got != id) __builtin_trap();
+
+    if (json_rpc_build_error(buf, sizeof(buf), code, text, id, &len) != JSON_RPC_OK) {
+        __builtin_trap();
+    }
+    if (json_rpc_validate(buf, len) != JSON_RPC_TYPE_ERROR) __builtin_trap();
+    if (json_rpc_extract_id(buf, len, &got) != JSON_RPC_OK || got != id) __builtin_trap();
+}
+
 static void round_trip(fuzz_input_t *in) {
     static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz._";
     char name[NAME_MAX_LEN + 1];
@@ -109,6 +131,7 @@ static void round_trip(fuzz_input_t *in) {
 
     check_request(name, id);
     check_replies(name, id, code);
+    check_any_text(in, id, code);
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
