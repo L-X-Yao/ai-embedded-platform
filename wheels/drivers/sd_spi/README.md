@@ -55,7 +55,10 @@ static void example(void) {
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `SD_SPI_RETRY_LIMIT` | `8000U` | Iteration limit for response/busy polling; tune for SPI clock speed |
+| `SD_SPI_RETRY_LIMIT` | `8000U` | Bytes to wait for a command response, and ACMD41 tries during init |
+| `SD_SPI_READ_TIMEOUT_MS` | `100U` | How long a read waits for its data token |
+| `SD_SPI_WRITE_TIMEOUT_MS` | `600U` | How long a write waits for the card to leave busy |
+| `SD_SPI_POLLS_PER_MS` | `16U` | Polls of the card in each millisecond of those two waits |
 
 ## Supported platforms
 
@@ -74,6 +77,7 @@ Checked on 2026-11-06 against the SD Physical Layer Simplified Specification v3.
 
 - No multi-block read/write (CMD18/CMD25); single-block only
 - `block_count` is not auto-populated from CSD (CMD9); caller must set it if needed
+- Byte-addressed cards take blocks up to `0x7FFFFF`; above that the byte offset does not fit CMD17 or CMD24, and read and write return `SD_SPI_ERR_PARAM`
 - SPI clock must be <=400kHz during init, then can be raised; caller manages clock speed
 - No CRC verification on read data (CRC bytes are discarded)
 

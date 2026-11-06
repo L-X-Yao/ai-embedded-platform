@@ -35,7 +35,7 @@ bool           keypad_matrix_is_pressed(const keypad_matrix_t *kp, char key);
 | Define          | Default | Purpose                     |
 |-----------------|---------|-----------------------------|
 | KEYPAD_MAX_ROWS | 4       | Maximum number of row lines |
-| KEYPAD_MAX_COLS | 4       | Maximum number of col lines |
+| KEYPAD_MAX_COLS | 4       | Maximum number of col lines, 16 at most: a higher value fails the build |
 
 ## Supported platforms
 

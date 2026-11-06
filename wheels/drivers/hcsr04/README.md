@@ -44,6 +44,11 @@ None. All configuration is via the injected HAL.
   the timing HAL provides real microsecond resolution.
 - Temperature compensation not implemented (speed of sound varies with
   temperature). Uses 343 m/s (20C nominal).
+- Start measurements at least 60 ms apart, the cycle the Elecfreaks data
+  sheet asks for. With no object some modules hold echo high for longer
+  than the 25 ms limit, so a retry can find it still high: the driver waits
+  for it to end, and returns `HCSR04_ERR_TIMEOUT` without triggering if it
+  stays high for another 25 ms.
 
 ## How to test
 

@@ -46,9 +46,9 @@ No compile-time defines. All configuration is runtime via `bme688_cfg_t`:
 
 | Field              | Range    | Purpose                         |
 |--------------------|----------|---------------------------------|
-| osrs_t             | 0-5      | Temperature oversampling        |
-| osrs_p             | 0-5      | Pressure oversampling           |
-| osrs_h             | 0-5      | Humidity oversampling           |
+| osrs_t             | 1-5      | Temperature oversampling; it cannot be skipped, as it compensates the other channels |
+| osrs_p             | 0-5      | Pressure oversampling; 0 skips it, and it reads 0 |
+| osrs_h             | 0-5      | Humidity oversampling; 0 skips it, and it reads 0 |
 | filter             | 0-7      | IIR filter coefficient          |
 | gas_heater_temp_c  | 200-400  | Gas heater target temperature   |
 | gas_heater_dur_ms  | 1-4032   | Gas heater duration             |
