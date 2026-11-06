@@ -67,7 +67,7 @@ pca9685_err_t pca9685_set_servo_us(pca9685_t *dev, uint8_t channel,
 /** Turn all channels off. @thread_safe: no @isr_safe: no */
 pca9685_err_t pca9685_all_off(pca9685_t *dev);
 
-/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode. @thread_safe: no @isr_safe: yes */
+/** Set PWM frequency (24-1526 Hz). Briefly enters sleep mode and always leaves the chip awake. @thread_safe: no @isr_safe: yes */
 pca9685_err_t pca9685_set_freq(pca9685_t *dev, uint16_t freq_hz);
 
 /** Enter low-power sleep mode (outputs off). @thread_safe: no @isr_safe: no */

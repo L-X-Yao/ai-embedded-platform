@@ -87,8 +87,10 @@ static pca9685_err_t set_prescaler(pca9685_t *dev, uint16_t freq_hz)
     /* Datasheet: 500us stabilization after wake before RESTART */
     delay_ms(dev, 1);
 
-    /* Set RESTART to resume any previously active PWM channels */
-    if (!write_reg(dev, REG_MODE1, (uint8_t)(mode1 | MODE1_RESTART)))
+    /* Set RESTART to resume any previously active PWM channels. SLEEP stays
+     * clear: init reads mode1 back with SLEEP set. */
+    if (!write_reg(dev, REG_MODE1,
+                   (uint8_t)((mode1 & ~MODE1_SLEEP) | MODE1_RESTART)))
         return PCA9685_ERR_I2C;
 
     dev->freq_hz = freq_hz;
