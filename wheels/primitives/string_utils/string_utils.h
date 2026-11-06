@@ -96,6 +96,7 @@ string_utils_err_t str_to_int(const char *str, int32_t *val);
  * @param str  NUL-terminated numeric string.
  * @param val  Output value.
  * @return STRING_UTILS_OK on success, STRING_UTILS_ERR_FMT if not valid,
+ *         STRING_UTILS_ERR_RANGE if beyond the float range (val untouched),
  *         STRING_UTILS_ERR_PARAM on NULL.
  * @thread_safe: yes @isr_safe: yes
  */
