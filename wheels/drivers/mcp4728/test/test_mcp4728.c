@@ -534,6 +534,32 @@ TEST(test_channels_independent)
     ASSERT_EQ(mock_ch_value[3], 400);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(mcp4728_t *d)
+{
+    static const uint16_t values[4] = { 1, 2, 3, 4 };
+    ASSERT_EQ(mcp4728_write_channel(d, 0, 100), MCP4728_ERR_PARAM);
+    ASSERT_EQ(mcp4728_write_all(d, values), MCP4728_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    mcp4728_t d;
+    mcp4728_cfg_t gain_on_vdd = default_cfg;
+    gain_on_vdd.gain_x2 = 0x01;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp4728_init(&d, NULL, &default_cfg), MCP4728_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp4728_init(&d, &mock_i2c, &gain_on_vdd), MCP4728_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("mcp4728")
     RUN(test_init_ok);
     RUN(test_null_safety);
@@ -569,4 +595,5 @@ TEST_MAIN("mcp4728")
     RUN(test_init_accepts_gain2_on_internal);
     RUN(test_init_refuses_bits_above_channel_d);
     RUN(test_channels_independent);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

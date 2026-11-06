@@ -10,6 +10,7 @@
 
 #include "mcp2515.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- SPI instructions ---------- */
 
@@ -291,18 +292,10 @@ static const uint8_t filter_base[FILTER_COUNT] = {
 
 /* ---------- public API ---------- */
 
-mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
-                            mcp2515_speed_t speed)
+/* The steps of init that talk to the chip */
+static mcp2515_err_t bring_up(mcp2515_t *dev, const mcp2515_spi_t *spi,
+                              mcp2515_speed_t speed)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
-        return MCP2515_ERR_SPI;
-    if (speed >= MCP2515_SPEED_1MBPS)
-        return MCP2515_ERR_PARAM;
-    if (!spi->delay_us)
-        return MCP2515_ERR_PARAM;
-
-    dev->spi = spi;
-
     /* hardware reset */
     reset_cmd(spi);
     spi->delay_us(spi->ctx, OST_WAIT_US);
@@ -341,6 +334,31 @@ mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
 
     /* switch to normal mode */
     return mcp2515_set_mode(dev, MCP2515_MODE_NORMAL);
+}
+
+mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi,
+                            mcp2515_speed_t speed)
+{
+    if (!dev)
+        return MCP2515_ERR_SPI;
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
+        return MCP2515_ERR_SPI;
+    if (speed >= MCP2515_SPEED_1MBPS)
+        return MCP2515_ERR_PARAM;
+    if (!spi->delay_us)
+        return MCP2515_ERR_PARAM;
+
+    dev->spi = spi;
+
+    mcp2515_err_t err = bring_up(dev, spi, speed);
+    if (err != MCP2515_OK)
+        dev->spi = NULL;
+    return err;
 }
 
 mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode)

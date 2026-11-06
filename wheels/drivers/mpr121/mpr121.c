@@ -22,6 +22,7 @@
 
 #include "mpr121.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- internal constants ---------- */
 
@@ -61,17 +62,10 @@ static mpr121_err_t read_regs(const mpr121_t *dev, uint8_t reg,
 
 /* ---------- public API ---------- */
 
-mpr121_err_t mpr121_init(mpr121_t *dev,
-                         const mpr121_i2c_t *i2c,
-                         const mpr121_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static mpr121_err_t bring_up(const mpr121_t *dev, const mpr121_i2c_t *i2c,
+                             const mpr121_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg) return MPR121_ERR_PARAM;
-    if (!i2c->read_regs || !i2c->write_reg) return MPR121_ERR_PARAM;
-    if (!i2c->delay_ms) return MPR121_ERR_PARAM;
-
-    dev->i2c  = i2c;
-    dev->addr = MPR121_DEV_ADDR;
-
     /* Soft reset: write 0x63 to register 0x80 */
     mpr121_err_t err = write_reg(dev, MPR121_REG_SOFT_RESET, SOFT_RESET_VALUE);
     if (err != MPR121_OK) return err;
@@ -116,8 +110,31 @@ mpr121_err_t mpr121_init(mpr121_t *dev,
     }
 
     /* Enable electrodes via ECR — must be last */
-    err = write_reg(dev, MPR121_REG_ECR, cfg->ecr);
-    if (err != MPR121_OK) return err;
+    return write_reg(dev, MPR121_REG_ECR, cfg->ecr);
+}
+
+mpr121_err_t mpr121_init(mpr121_t *dev,
+                         const mpr121_i2c_t *i2c,
+                         const mpr121_cfg_t *cfg)
+{
+    if (!dev) return MPR121_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) return MPR121_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_reg) return MPR121_ERR_PARAM;
+    if (!i2c->delay_ms) return MPR121_ERR_PARAM;
+
+    dev->i2c  = i2c;
+    dev->addr = MPR121_DEV_ADDR;
+
+    mpr121_err_t err = bring_up(dev, i2c, cfg);
+    if (err != MPR121_OK) {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return MPR121_OK;
@@ -125,7 +142,7 @@ mpr121_err_t mpr121_init(mpr121_t *dev,
 
 mpr121_err_t mpr121_read_touched(mpr121_t *dev, uint16_t *status)
 {
-    if (!dev || !status) return MPR121_ERR_PARAM;
+    if (!dev || !dev->i2c || !status) return MPR121_ERR_PARAM;
 
     uint8_t buf[2];
     mpr121_err_t err = read_regs(dev, MPR121_REG_TOUCH_STATUS_L, buf, 2);
@@ -143,7 +160,7 @@ mpr121_err_t mpr121_read_touched(mpr121_t *dev, uint16_t *status)
 mpr121_err_t mpr121_read_electrode(mpr121_t *dev, uint8_t channel,
                                    uint16_t *value)
 {
-    if (!dev || !value) return MPR121_ERR_PARAM;
+    if (!dev || !dev->i2c || !value) return MPR121_ERR_PARAM;
     if (channel >= MPR121_CHANNEL_COUNT) return MPR121_ERR_PARAM;
 
     /* Each electrode has 2 bytes starting at 0x04, stride = 2 */

@@ -13,6 +13,7 @@
 
 #include "mcp4728.h"
 #include "contract.h"
+#include <string.h>
 
 /* Multi-Write command byte: 0 1 0 0 0 DAC1 DAC0 UDAC (DS22187E Figure 5-8).
  * UDAC = 0 updates VOUT after the 4th byte's ACK. */
@@ -36,7 +37,13 @@ mcp4728_err_t mcp4728_init(mcp4728_t *dev, const mcp4728_i2c_t *i2c,
     REQUIRE(dev != NULL);
     REQUIRE(i2c != NULL);
     REQUIRE(cfg != NULL);
-    if (!dev || !i2c || !cfg) return MCP4728_ERR_PARAM;
+    if (!dev) return MCP4728_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg) return MCP4728_ERR_PARAM;
     if (!i2c->write_regs) return MCP4728_ERR_PARAM;
     if (cfg->vref_internal > ALL_CHANNELS || cfg->gain_x2 > ALL_CHANNELS)
         return MCP4728_ERR_PARAM;

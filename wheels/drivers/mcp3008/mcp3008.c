@@ -15,6 +15,7 @@
 
 #include "mcp3008.h"
 #include "contract.h"
+#include <string.h>
 
 /* 10-bit ADC maximum value */
 #define MCP3008_MAX_RAW  1023u
@@ -24,7 +25,16 @@
 
 mcp3008_err_t mcp3008_init(mcp3008_t *dev, const mcp3008_spi_t *spi)
 {
-    if (!dev || !spi)
+    if (!dev)
+    {
+        return MCP3008_ERR_PARAM;
+    }
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi)
     {
         return MCP3008_ERR_PARAM;
     }
@@ -69,7 +79,7 @@ static mcp3008_err_t do_read(const mcp3008_spi_t *spi, uint8_t config_byte,
 mcp3008_err_t mcp3008_read_single(mcp3008_t *dev, uint8_t channel,
                                   uint16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->spi || !raw)
     {
         return MCP3008_ERR_PARAM;
     }
@@ -86,7 +96,7 @@ mcp3008_err_t mcp3008_read_single(mcp3008_t *dev, uint8_t channel,
 mcp3008_err_t mcp3008_read_diff(mcp3008_t *dev, uint8_t diff_pair,
                                 uint16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->spi || !raw)
     {
         return MCP3008_ERR_PARAM;
     }
@@ -104,7 +114,7 @@ mcp3008_err_t mcp3008_read_diff(mcp3008_t *dev, uint8_t diff_pair,
 mcp3008_err_t mcp3008_read_voltage(mcp3008_t *dev, uint8_t channel,
                                    float vref, float *voltage)
 {
-    if (!dev || !voltage)
+    if (!dev || !dev->spi || !voltage)
     {
         return MCP3008_ERR_PARAM;
     }

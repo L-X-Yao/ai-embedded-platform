@@ -451,6 +451,40 @@ TEST(test_mock_refuses_a_write_over_a_written_cell)
     ASSERT_EQ_HEX(mock_mem[0x24][1], 0xFF);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(mlx90614_t *d)
+{
+    float f = 0.0f;
+    ASSERT_EQ(mlx90614_read_object_temp(d, &f), MLX90614_ERR_PARAM);
+    ASSERT_EQ(mlx90614_read_ambient_temp(d, &f), MLX90614_ERR_PARAM);
+    ASSERT_EQ(mlx90614_read_emissivity(d, &f), MLX90614_ERR_PARAM);
+    ASSERT_EQ(mlx90614_set_emissivity(d, 0.9f), MLX90614_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static mlx90614_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    mlx90614_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mlx90614_init(&d, NULL, &default_cfg), MLX90614_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* Nothing answered the ambient read, and the bus is fine again */
+    mock_fail_at = 0;
+    ASSERT_EQ(mlx90614_init(&d, &mock_i2c, &default_cfg), MLX90614_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("mlx90614")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -476,4 +510,6 @@ TEST_MAIN("mlx90614")
     RUN(test_set_emissivity_eeprom_delay);
     RUN(test_set_emissivity_over_a_written_cell);
     RUN(test_mock_refuses_a_write_over_a_written_cell);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()
