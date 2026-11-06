@@ -378,6 +378,42 @@ TEST(test_ramp_extreme_range)
     ASSERT_TRUE(within_pct(g_ramp_last, 956008, 5));
 }
 
+TEST(test_triangle_3_steps_stays_slow)
+{
+    /* Too short to accelerate: the middle step must not run at 5000 sps. */
+    ramp_run(5000, 1000, 3, 1);
+    ASSERT_EQ(g_ramp_n, 2);
+    ASSERT_TRUE(within_pct(g_ramp[0], 30231, 5));
+    ASSERT_EQ(g_ramp[1], g_ramp[0]);
+}
+
+TEST(test_triangle_odd_peaks_on_the_ramp)
+{
+    /* 500 steps up, one at the peak, 500 down, so 1000 delays.  The peak
+     * is 1e6 / sqrt(2*1000*500) = 1000 us. */
+    ramp_run(5000, 1000, 1001, 1);
+    ASSERT_EQ(g_ramp_n, 1000);
+    ASSERT_TRUE(within_pct(g_ramp[499], 1000, 3));
+    ASSERT_EQ(g_ramp[500], g_ramp[499]);
+    for (uint32_t i = 20; i < 980; i++) {
+        ASSERT_TRUE(within_pct(g_ramp[i], g_ramp[i - 1], 5));
+    }
+    for (uint32_t i = 0; i < 500; i++) {
+        ASSERT_TRUE(within_pct(g_ramp[999 - i], g_ramp[i], 3));
+    }
+}
+
+TEST(test_triangle_even_peaks_on_the_ramp)
+{
+    /* 500 steps up and 500 down give 999 delays, the middle one the peak. */
+    ramp_run(5000, 1000, 1000, 1);
+    ASSERT_EQ(g_ramp_n, 999);
+    ASSERT_TRUE(within_pct(g_ramp[499], 1000, 3));
+    for (uint32_t i = 0; i < 499; i++) {
+        ASSERT_TRUE(within_pct(g_ramp[998 - i], g_ramp[i], 3));
+    }
+}
+
 TEST_MAIN("stepper")
     RUN(test_init_valid);
     RUN(test_init_null);
@@ -402,4 +438,7 @@ TEST_MAIN("stepper")
     RUN(test_ramp_down_mirrors_ramp_up);
     RUN(test_ramp_low_accel);
     RUN(test_ramp_extreme_range);
+    RUN(test_triangle_3_steps_stays_slow);
+    RUN(test_triangle_odd_peaks_on_the_ramp);
+    RUN(test_triangle_even_peaks_on_the_ramp);
 TEST_MAIN_END()
