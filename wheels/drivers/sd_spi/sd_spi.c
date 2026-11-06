@@ -193,6 +193,20 @@ sd_spi_err_t sd_spi_init(sd_spi_t *sd, const sd_spi_hal_t *hal)
     return SD_SPI_OK;
 }
 
+/* The argument of CMD17 and CMD24. SDSC uses byte addressing, so the block
+ * must fit as a byte offset: wrapped, it would reach a low block instead. */
+static bool card_address(const sd_spi_t *sd, uint32_t block_addr, uint32_t *addr)
+{
+    if (sd->card_type == SD_SPI_TYPE_SDV2_HC) {
+        *addr = block_addr;
+        return true;
+    }
+    if (block_addr > UINT32_MAX / SD_SPI_BLOCK_SIZE)
+        return false;
+    *addr = block_addr * SD_SPI_BLOCK_SIZE;
+    return true;
+}
+
 sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
                                 uint8_t *buf)
 {
@@ -201,10 +215,9 @@ sd_spi_err_t sd_spi_read_block(sd_spi_t *sd, uint32_t block_addr,
 
     const sd_spi_hal_t *h = sd->hal;
 
-    /* SDSC uses byte addressing */
-    uint32_t addr = (sd->card_type == SD_SPI_TYPE_SDV2_HC)
-                    ? block_addr
-                    : block_addr * SD_SPI_BLOCK_SIZE;
+    uint32_t addr;
+    if (!card_address(sd, block_addr, &addr))
+        return SD_SPI_ERR_PARAM;
 
     uint8_t r1 = send_cmd(h, CMD17, addr);
     if (r1 != 0x00) { deselect(h); return SD_SPI_ERR_CMD; }
@@ -237,10 +250,9 @@ sd_spi_err_t sd_spi_write_block(sd_spi_t *sd, uint32_t block_addr,
 
     const sd_spi_hal_t *h = sd->hal;
 
-    /* SDSC uses byte addressing */
-    uint32_t addr = (sd->card_type == SD_SPI_TYPE_SDV2_HC)
-                    ? block_addr
-                    : block_addr * SD_SPI_BLOCK_SIZE;
+    uint32_t addr;
+    if (!card_address(sd, block_addr, &addr))
+        return SD_SPI_ERR_PARAM;
 
     uint8_t r1 = send_cmd(h, CMD24, addr);
     if (r1 != 0x00) { deselect(h); return SD_SPI_ERR_CMD; }
