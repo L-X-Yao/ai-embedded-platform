@@ -19,6 +19,7 @@
 #define REG_CHIP_ID    0x00
 #define REG_STATUS     0x03
 #define REG_DATA_0     0x04  /* press XLSB */
+#define REG_EVENT      0x10
 #define REG_CALIB_00   0x31  /* NVM calibration start */
 #define REG_PWR_CTRL   0x1B
 #define REG_OSR        0x1C
@@ -26,6 +27,10 @@
 
 #define RESET_CMD      0xB6
 #define CALIB_LEN      21
+#define POLL_TRIES     500
+
+/* The manual gives no time for a soft reset, only the 2 ms start-up time (p.8) */
+#define RESET_WAIT_MS  2u
 
 /* PWR_CTRL bits: press_en=bit0, temp_en=bit1, mode=bits[5:4] */
 #define PWR_CTRL_PRESS_EN  0x01
@@ -35,6 +40,9 @@
 /* STATUS bit5 = drdy_press, bit6 = drdy_temp */
 #define STATUS_DRDY_PRESS  0x20
 #define STATUS_DRDY_TEMP   0x40
+
+/* EVENT bit0 = por_detected */
+#define EVENT_POR_DETECTED 0x01
 
 static bool write_reg(const bmp388_t *dev, uint8_t reg, uint8_t val)
 {
@@ -51,6 +59,13 @@ static bool read_regs(const bmp388_t *dev, uint8_t reg, uint8_t *buf, uint16_t l
 static uint8_t osr_code(bmp388_oversampling_t os)
 {
     return (os == BMP388_OVERSAMPLING_SKIP) ? 0u : (uint8_t)(os - 1);
+}
+
+/* OSR register 0x1C: bits [2:0] = osr_p, bits [5:3] = osr_t */
+static bool write_osr(const bmp388_t *dev)
+{
+    return write_reg(dev, REG_OSR, (uint8_t)((osr_code(dev->cfg.osrs_t) << 3) |
+                                             osr_code(dev->cfg.osrs_p)));
 }
 
 /*
@@ -186,7 +201,7 @@ static bmp388_err_t measure(const bmp388_t *dev, bool press, bool temp,
         return BMP388_ERR_I2C;
     }
 
-    for (int tries = 0; tries < 500; tries++)
+    for (int tries = 0; tries < POLL_TRIES; tries++)
     {
         uint8_t status;
         if (!read_regs(dev, REG_STATUS, &status, 1))
@@ -197,7 +212,7 @@ static bmp388_err_t measure(const bmp388_t *dev, bool press, bool temp,
         {
             break;
         }
-        if (tries == 499)
+        if (tries == POLL_TRIES - 1)
         {
             return BMP388_ERR_TIMEOUT;
         }
@@ -262,10 +277,8 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
         return err;
     }
 
-    /* Configure oversampling: OSR register 0x1C
-     * bits [2:0] = osr_p, bits [5:3] = osr_t */
-    uint8_t osr = (uint8_t)((osr_code(cfg->osrs_t) << 3) | osr_code(cfg->osrs_p));
-    if (!write_reg(dev, REG_OSR, osr))
+    /* Configure oversampling */
+    if (!write_osr(dev))
     {
         return BMP388_ERR_I2C;
     }
@@ -334,9 +347,40 @@ bmp388_err_t bmp388_reset(bmp388_t *dev)
     {
         return BMP388_ERR_PARAM;
     }
+
+    /* Manual p.11: "Completion of the power-on-reset or soft reset is indicated
+     * by the bit por_detected[0]. The bit is cleared after reading." It is still
+     * set from power-up if nobody has read it, so read it away first. */
+    uint8_t event;
+    if (!read_regs(dev, REG_EVENT, &event, 1))
+    {
+        return BMP388_ERR_I2C;
+    }
     if (!write_reg(dev, REG_CMD, RESET_CMD))
     {
         return BMP388_ERR_I2C;
     }
-    return BMP388_OK;
+    if (dev->i2c->delay_ms)
+    {
+        dev->i2c->delay_ms(dev->i2c->ctx, RESET_WAIT_MS);
+    }
+
+    for (int tries = 0; tries < POLL_TRIES; tries++)
+    {
+        if (!read_regs(dev, REG_EVENT, &event, 1))
+        {
+            return BMP388_ERR_I2C;
+        }
+        if (event & EVENT_POR_DETECTED)
+        {
+            /* p.39: "all user configuration settings are overwritten with their
+             * default state", but the configuration here still stands */
+            return write_osr(dev) ? BMP388_OK : BMP388_ERR_I2C;
+        }
+        if (dev->i2c->delay_ms)
+        {
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
+        }
+    }
+    return BMP388_ERR_TIMEOUT;
 }

@@ -108,7 +108,10 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
  *  @thread_safe: no @isr_safe: no */
 bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out);
 
-/** @thread_safe: no @isr_safe: no */
+/** Soft reset. Waits for por_detected, then writes the configured oversampling
+ *  back, because the reset returns OSR to its default. Takes at least 2 ms and
+ *  can return BMP388_ERR_TIMEOUT.
+ *  @thread_safe: no @isr_safe: no */
 bmp388_err_t bmp388_reset(bmp388_t *dev);
 
 #ifdef __cplusplus
