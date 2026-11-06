@@ -229,7 +229,18 @@ max30102_err_t max30102_read_fifo(max30102_t *dev,
     /* number of available samples (5-bit pointers, wraps at 32) */
     uint8_t available = (uint8_t)((wr_ptr - rd_ptr) & 0x1F);
     if (available == 0)
-        return MAX30102_OK;
+    {
+        /* Equal pointers mean empty or full.  OVF_COUNTER only counts once
+         * the FIFO is full, so non-zero means all 32 are unread.  A FIFO
+         * that has just reached 32 with nothing lost still reads as empty,
+         * until the next sample. */
+        uint8_t ovf = 0;
+        if (!read_regs(dev, REG_OVF_COUNTER, &ovf, 1))
+            return MAX30102_ERR_I2C;
+        if ((ovf & 0x1Fu) == 0)
+            return MAX30102_OK;
+        available = FIFO_DEPTH;
+    }
 
     uint8_t to_read = (available < max_count) ? available : max_count;
 
