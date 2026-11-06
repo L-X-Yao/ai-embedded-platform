@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
+#include <float.h>
 #include <math.h>
 #include "moving_average.h"
 /* === SMA tests === */
@@ -205,6 +206,63 @@ TEST(test_ema_get)
     ASSERT_NEAR(moving_average_ema_get(&ema), 42.0f, 1e-6f);
 }
 
+/* === non-finite input: one bad sample must not poison the running state === */
+
+TEST(test_sma_rejects_infinity)
+{
+    moving_average_sma_t sma;
+    float buf[2];
+    moving_average_sma_init(&sma, buf, 2);
+
+    ASSERT_NEAR(moving_average_sma_feed(&sma, 1.0f), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, INFINITY), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, -INFINITY), 1.0f, 1e-6f);
+    ASSERT_EQ(sma.count, 1);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, 3.0f), 2.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, 5.0f), 4.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, 5.0f), 5.0f, 1e-6f);
+}
+
+TEST(test_sma_rejects_sample_overflowing_sum)
+{
+    moving_average_sma_t sma;
+    float buf[2];
+    moving_average_sma_init(&sma, buf, 2);
+
+    /* Each sample is finite, but their sum is not, and an infinite running
+     * sum never comes back: inf - x is still inf. */
+    moving_average_sma_feed(&sma, FLT_MAX);
+    ASSERT_EQ(sma.count, 1);
+    ASSERT_TRUE(moving_average_sma_feed(&sma, FLT_MAX) == FLT_MAX);
+    ASSERT_EQ(sma.count, 1);
+
+    moving_average_sma_feed(&sma, 0.0f);
+    moving_average_sma_feed(&sma, 2.0f);
+    ASSERT_NEAR(moving_average_sma_feed(&sma, 2.0f), 2.0f, 1e-6f);
+}
+
+TEST(test_ema_rejects_infinity)
+{
+    moving_average_ema_t ema;
+    moving_average_ema_init(&ema, 1.0f);
+
+    /* alpha 1 turned this into 0 * inf = NaN for good. */
+    ASSERT_NEAR(moving_average_ema_feed(&ema, 1.0f), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_ema_feed(&ema, INFINITY), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_ema_feed(&ema, -INFINITY), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_ema_feed(&ema, 2.0f), 2.0f, 1e-6f);
+}
+
+TEST(test_ema_infinity_does_not_prime)
+{
+    moving_average_ema_t ema;
+    moving_average_ema_init(&ema, 0.5f);
+
+    ASSERT_NEAR(moving_average_ema_feed(&ema, INFINITY), 0.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_ema_feed(&ema, 4.0f), 4.0f, 1e-6f);
+    ASSERT_NEAR(moving_average_ema_feed(&ema, 2.0f), 3.0f, 1e-6f);
+}
+
 TEST_MAIN("moving_average")
     RUN(test_sma_init);
     RUN(test_sma_null_safety);
@@ -223,5 +281,9 @@ TEST_MAIN("moving_average")
     RUN(test_ema_convergence);
     RUN(test_ema_reset);
     RUN(test_ema_get);
+    RUN(test_sma_rejects_infinity);
+    RUN(test_sma_rejects_sample_overflowing_sum);
+    RUN(test_ema_rejects_infinity);
+    RUN(test_ema_infinity_does_not_prime);
 TEST_MAIN_END()
 
