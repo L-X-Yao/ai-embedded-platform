@@ -14,6 +14,8 @@ static uint8_t g_slave_response[32];
 static uint16_t g_slave_resp_idx;
 static uint16_t g_slave_resp_len;
 static uint32_t g_delay_count;
+static uint8_t g_scl_fell;   /* SCL fell since the last STOP: mid-transfer */
+static uint8_t g_idle_level; /* SDA as read with the bus idle */
 
 static uint8_t g_trace[TRACE_MAX];
 static uint16_t g_trace_idx;
@@ -23,6 +25,9 @@ enum { TR_SCL_H = 1, TR_SCL_L, TR_SDA_H, TR_SDA_L, TR_SDA_IN, TR_SDA_OUT, TR_DEL
 static void mock_scl_set(void *ctx, bool high)
 {
     (void)ctx;
+    if (!high) {
+        g_scl_fell = 1;
+    }
     g_scl_state = high ? 1 : 0;
     if (g_trace_idx < TRACE_MAX) {
         g_trace[g_trace_idx++] = high ? TR_SCL_H : TR_SCL_L;
@@ -32,6 +37,9 @@ static void mock_scl_set(void *ctx, bool high)
 static void mock_sda_set(void *ctx, bool high)
 {
     (void)ctx;
+    if (high && g_scl_state && !g_sda_state) {
+        g_scl_fell = 0; /* SDA rising with SCL high is a STOP */
+    }
     g_sda_state = high ? 1 : 0;
     if (g_trace_idx < TRACE_MAX) {
         g_trace[g_trace_idx++] = high ? TR_SDA_H : TR_SDA_L;
@@ -59,10 +67,19 @@ static void mock_sda_dir_in(void *ctx)
 static bool mock_sda_get(void *ctx)
 {
     (void)ctx;
+    if (!g_scl_fell) {
+        return g_idle_level != 0; /* idle bus: the script is for transfers */
+    }
     if (g_slave_resp_idx < g_slave_resp_len) {
         return g_slave_response[g_slave_resp_idx++] != 0;
     }
     return true; /* default: NACK / high */
+}
+
+static bool mock_sda_held_low(void *ctx)
+{
+    (void)ctx;
+    return false;
 }
 
 static void mock_delay(void *ctx)
@@ -79,6 +96,8 @@ static void mock_reset(void)
     g_slave_resp_idx = 0;
     g_slave_resp_len = 0;
     g_delay_count = 0;
+    g_scl_fell = 0;
+    g_idle_level = 1;
     g_trace_idx = 0;
     memset(g_trace, 0, sizeof(g_trace));
     memset(g_slave_response, 1, sizeof(g_slave_response));
@@ -282,16 +301,18 @@ TEST(test_read_regs_ok)
     soft_i2c_t bus;
     mock_reset();
     soft_i2c_init(&bus, &g_mock_gpio);
-    /* addr-write ACK + reg ACK + addr-read ACK + 8 data bits */
+    /* addr-write ACK + reg ACK + SDA high before the repeated START +
+     * addr-read ACK + 8 data bits */
     g_slave_response[0] = 0; /* addr-write ACK */
     g_slave_response[1] = 0; /* reg ACK */
-    g_slave_response[2] = 0; /* addr-read ACK */
+    g_slave_response[2] = 1; /* SDA high before the repeated START */
+    g_slave_response[3] = 0; /* addr-read ACK */
     /* byte = 0x42 = 01000010 */
-    g_slave_response[3] = 0; g_slave_response[4] = 1;
-    g_slave_response[5] = 0; g_slave_response[6] = 0;
-    g_slave_response[7] = 0; g_slave_response[8] = 0;
-    g_slave_response[9] = 1; g_slave_response[10] = 0;
-    g_slave_resp_len = 11;
+    g_slave_response[4] = 0; g_slave_response[5] = 1;
+    g_slave_response[6] = 0; g_slave_response[7] = 0;
+    g_slave_response[8] = 0; g_slave_response[9] = 0;
+    g_slave_response[10] = 1; g_slave_response[11] = 0;
+    g_slave_resp_len = 12;
     uint8_t buf[1] = {0};
     ASSERT_EQ(SOFT_I2C_OK, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 1));
     ASSERT_EQ(0x42, buf[0]);
@@ -388,8 +409,9 @@ TEST(test_read_regs_repeated_start_nack)
     soft_i2c_init(&bus, &g_mock_gpio);
     g_slave_response[0] = 0; /* addr-write ACK */
     g_slave_response[1] = 0; /* reg ACK         */
-    g_slave_response[2] = 1; /* addr-read NACK  */
-    g_slave_resp_len = 3;
+    g_slave_response[2] = 1; /* SDA high before the repeated START */
+    g_slave_response[3] = 1; /* addr-read NACK  */
+    g_slave_resp_len = 4;
     uint8_t buf[1] = {0};
     ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 1));
 }
@@ -410,11 +432,10 @@ TEST(test_read_regs_reg_nack)
 }
 
 /*
- * bus_recover always returns OK regardless of slave response.
- * Drive SDA low for all 18 read slots so the loop never breaks early,
- * then verify the function still returns SOFT_I2C_OK.
+ * SDA low for all 18 read slots and after the STOP: the loop must not
+ * break early, and the line never came back, so recovery failed.
  */
-TEST(test_bus_recover_all_18_pulses)
+TEST(test_bus_recover_line_never_released)
 {
     soft_i2c_t bus;
     mock_reset();
@@ -422,7 +443,89 @@ TEST(test_bus_recover_all_18_pulses)
     /* All slave reads return 0 (SDA stuck low for all 18 pulses) */
     memset(g_slave_response, 0, sizeof(g_slave_response));
     g_slave_resp_len = 32;
-    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_bus_recover(&bus));
+    g_idle_level = 0;
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_bus_recover(&bus));
+    ASSERT_EQ(18, g_slave_resp_idx);
+}
+
+/* The verdict comes from the line after the STOP, not from the loop. */
+TEST(test_bus_recover_low_after_stop)
+{
+    soft_i2c_t bus;
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 1; /* released on the first pulse */
+    g_slave_resp_len = 1;
+    g_idle_level = 0;        /* but low again after the STOP */
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_bus_recover(&bus));
+}
+
+/*
+ * SDA held low reads as ACK on every byte, so without a look at the line
+ * before START every transfer would report success with zeros.
+ */
+TEST(test_sda_held_low_refused)
+{
+    soft_i2c_gpio_t held = g_mock_gpio;
+    soft_i2c_t bus;
+    uint8_t data = 0x42;
+    uint8_t buf[2] = {0xA5, 0xA5};
+
+    held.sda_get = mock_sda_held_low;
+    mock_reset();
+    soft_i2c_init(&bus, &held);
+    g_trace_idx = 0;
+
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_write(&bus, 0x50, &data, 1));
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_write(&bus, 0x50, NULL, 0));
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_read(&bus, 0x50, buf, 2));
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_write_reg(&bus, 0x68, 0x0D, 0x40));
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 2));
+    ASSERT_EQ(0xA5, buf[0]);
+    ASSERT_EQ(0xA5, buf[1]);
+    for (uint16_t i = 0; i < g_trace_idx; i++) {
+        ASSERT_TRUE(g_trace[i] != TR_SCL_L); /* the bus never clocked */
+    }
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_bus_recover(&bus));
+}
+
+/* A device can also take the line mid-transfer, after the register byte. */
+TEST(test_sda_low_before_repeated_start)
+{
+    soft_i2c_t bus;
+    uint8_t buf[1] = {0xA5};
+
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr-write ACK */
+    g_slave_response[1] = 0; /* reg ACK */
+    g_slave_response[2] = 0; /* SDA low before the repeated START */
+    g_slave_resp_len = 3;
+    ASSERT_EQ(SOFT_I2C_ERR_BUS, soft_i2c_read_regs(&bus, 0x68, 0x0F, buf, 1));
+    ASSERT_EQ(0xA5, buf[0]);
+    ASSERT_EQ(0, g_scl_fell); /* closed with a STOP */
+}
+
+/*
+ * The flybox barometer NACKs its command byte. That stays a plain ERR_NACK
+ * closed by a STOP, and the next transfer starts normally.
+ */
+TEST(test_data_nack_then_next_transfer)
+{
+    soft_i2c_t bus;
+    uint8_t cmd = 0xAC;
+    uint8_t buf[1] = {0};
+
+    mock_reset();
+    soft_i2c_init(&bus, &g_mock_gpio);
+    g_slave_response[0] = 0; /* addr ACK */
+    g_slave_response[1] = 1; /* command byte NACK */
+    g_slave_response[2] = 0; /* next transfer: addr ACK, then 0xFF */
+    g_slave_resp_len = 11;
+    ASSERT_EQ(SOFT_I2C_ERR_NACK, soft_i2c_write(&bus, 0x78, &cmd, 1));
+    ASSERT_EQ(0, g_scl_fell); /* closed with a STOP */
+    ASSERT_EQ(SOFT_I2C_OK, soft_i2c_read(&bus, 0x78, buf, 1));
+    ASSERT_EQ(0xFF, buf[0]);
 }
 
 /*
@@ -459,10 +562,8 @@ TEST(test_read_byte_zero)
 }
 
 /*
- * SOFT_I2C_ERR_BUS (-3) is defined in the error enum as a reserved code for
- * future bus-level error detection (e.g. arbitration loss, line stuck).
- * No current implementation path returns it, but verify its enum value is
- * correct so that any future caller who branches on it gets the right constant.
+ * SOFT_I2C_ERR_BUS (-3) reports SDA held low: before a START, or still low
+ * after soft_i2c_bus_recover. Callers branch on this constant.
  */
 TEST(test_err_bus_enum_value)
 {
@@ -571,7 +672,11 @@ TEST_MAIN("soft_i2c")
     RUN(test_write_reg_data_nack);
     RUN(test_read_regs_repeated_start_nack);
     RUN(test_read_regs_reg_nack);
-    RUN(test_bus_recover_all_18_pulses);
+    RUN(test_bus_recover_line_never_released);
+    RUN(test_bus_recover_low_after_stop);
+    RUN(test_sda_held_low_refused);
+    RUN(test_sda_low_before_repeated_start);
+    RUN(test_data_nack_then_next_transfer);
     RUN(test_write_zero_len_addr_nack);
     RUN(test_read_byte_zero);
     RUN(test_err_bus_enum_value);
