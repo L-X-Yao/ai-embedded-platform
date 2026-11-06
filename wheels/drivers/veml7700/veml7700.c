@@ -101,9 +101,10 @@ static float resolution(veml7700_gain_t gain, veml7700_it_t it)
     return BASE_RESOLUTION / (gf * itf);
 }
 
-static veml7700_err_t write_conf(veml7700_t *dev, bool shutdown)
+static veml7700_err_t write_conf(const veml7700_t *dev, veml7700_gain_t gain,
+                                 veml7700_it_t it, bool shutdown)
 {
-    uint16_t conf = build_conf(dev->gain, dev->it, shutdown);
+    uint16_t conf = build_conf(gain, it, shutdown);
     return write_reg16(dev, REG_ALS_CONF, conf);
 }
 
@@ -134,7 +135,7 @@ veml7700_err_t veml7700_init(veml7700_t *dev, const veml7700_i2c_t *i2c,
     dev->gain = gain;
     dev->it   = it;
 
-    return write_conf(dev, false);
+    return write_conf(dev, gain, it, false);
 }
 
 veml7700_err_t veml7700_read_als(veml7700_t *dev, uint16_t *raw)
@@ -166,8 +167,11 @@ veml7700_err_t veml7700_read_lux(veml7700_t *dev, float *lux)
 veml7700_err_t veml7700_set_gain(veml7700_t *dev, veml7700_gain_t gain)
 {
     if (!dev || !valid_gain(gain)) return VEML7700_ERR_PARAM;
-    dev->gain = gain;
-    return write_conf(dev, false);
+
+    /* Stored only once written: read_lux scales by what the chip really has */
+    veml7700_err_t err = write_conf(dev, gain, dev->it, false);
+    if (err == VEML7700_OK) dev->gain = gain;
+    return err;
 }
 
 veml7700_err_t veml7700_set_integration_time(veml7700_t *dev,
@@ -175,18 +179,20 @@ veml7700_err_t veml7700_set_integration_time(veml7700_t *dev,
 {
     /* Vishay 84286 p.7, Table 1: ALS_IT has six codes and no others */
     if (!dev || !valid_it(it)) return VEML7700_ERR_PARAM;
-    dev->it = it;
-    return write_conf(dev, false);
+
+    veml7700_err_t err = write_conf(dev, dev->gain, it, false);
+    if (err == VEML7700_OK) dev->it = it;
+    return err;
 }
 
 veml7700_err_t veml7700_power_on(veml7700_t *dev)
 {
     if (!dev) return VEML7700_ERR_PARAM;
-    return write_conf(dev, false);
+    return write_conf(dev, dev->gain, dev->it, false);
 }
 
 veml7700_err_t veml7700_shutdown(veml7700_t *dev)
 {
     if (!dev) return VEML7700_ERR_PARAM;
-    return write_conf(dev, true);
+    return write_conf(dev, dev->gain, dev->it, true);
 }
