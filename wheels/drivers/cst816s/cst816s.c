@@ -50,15 +50,9 @@ static bool chip_id_known(uint8_t id)
 
 /* ---------- public API ---------- */
 
-cst816s_err_t cst816s_init(cst816s_t *dev,
-                           const cst816s_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static cst816s_err_t bring_up(cst816s_t *dev)
 {
-    if (!dev || !i2c) return CST816S_ERR_PARAM;
-    if (!i2c->read_regs || !i2c->write_reg) return CST816S_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* Read and verify chip ID (register 0xA7) */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
@@ -79,10 +73,30 @@ cst816s_err_t cst816s_init(cst816s_t *dev,
     return CST816S_OK;
 }
 
+cst816s_err_t cst816s_init(cst816s_t *dev,
+                           const cst816s_i2c_t *i2c)
+{
+    if (!dev) return CST816S_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c) return CST816S_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_reg) return CST816S_ERR_PARAM;
+
+    dev->i2c = i2c;
+
+    cst816s_err_t err = bring_up(dev);
+    if (err != CST816S_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 cst816s_err_t cst816s_read(cst816s_t *dev,
                            cst816s_touch_t *out)
 {
-    if (!dev || !out) return CST816S_ERR_PARAM;
+    if (!dev || !dev->i2c || !out) return CST816S_ERR_PARAM;
 
     /* Burst read registers 0x01..0x06 (6 bytes) */
     uint8_t buf[6];
@@ -100,7 +114,7 @@ cst816s_err_t cst816s_read(cst816s_t *dev,
 
 cst816s_err_t cst816s_set_auto_sleep(cst816s_t *dev, bool enable)
 {
-    if (!dev) return CST816S_ERR_PARAM;
+    if (!dev || !dev->i2c) return CST816S_ERR_PARAM;
 
     /* 0xFE: 0 = auto-sleep enabled, non-zero = auto-sleep disabled */
     uint8_t val = enable ? (uint8_t)0x00u : (uint8_t)0x01u;
@@ -115,7 +129,7 @@ cst816s_err_t cst816s_set_motion_mask(cst816s_t *dev,
                                       bool double_click,
                                       bool long_press)
 {
-    if (!dev) return CST816S_ERR_PARAM;
+    if (!dev || !dev->i2c) return CST816S_ERR_PARAM;
 
     /* 0xEC: bit 2 = EnConLR, bit 1 = EnConUD, bit 0 = EnDClick */
     (void)long_press;

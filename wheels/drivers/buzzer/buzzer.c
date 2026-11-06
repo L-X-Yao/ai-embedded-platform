@@ -9,6 +9,7 @@
  */
 #include "buzzer.h"
 #include "contract.h"
+#include <string.h>
 
 /*
  * MIDI note frequency table.
@@ -46,7 +47,14 @@ static const uint16_t midi_freq_table[128] = {
 
 buzzer_err_t buzzer_init(buzzer_t *dev, const buzzer_pwm_t *pwm)
 {
-    if (!dev || !pwm)
+    if (!dev)
+        return BUZZER_ERR_PARAM;
+
+    /* dev->pwm stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!pwm)
         return BUZZER_ERR_PARAM;
     if (!pwm->set_freq || !pwm->set_duty || !pwm->delay_ms)
         return BUZZER_ERR_PARAM;

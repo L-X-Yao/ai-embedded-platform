@@ -711,6 +711,46 @@ TEST(test_transmit_ignores_a_corrupt_marcstate)
     ASSERT_EQ(cc1101_transmit(&dev, payload, 2), CC1101_ERR_TIMEOUT);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(cc1101_t *d)
+{
+    uint8_t buf[4] = { 0 };
+    uint8_t len = 0;
+    ASSERT_EQ(cc1101_set_frequency(d, 433000000UL), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_set_power(d, 0x60), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_transmit(d, buf, 1), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_receive(d, buf, sizeof(buf), &len), CC1101_ERR_PARAM);
+    ASSERT_EQ(cc1101_get_rssi(d), 0);
+    ASSERT_EQ(cc1101_idle(d), CC1101_ERR_PARAM);
+}
+
+/* Something else answers: transmit must not drive it */
+TEST(test_device_refused_after_wrong_id)
+{
+    cc1101_t d;
+    mock_reset_all();
+    mock_status_regs[0x00] = 0x99;
+    ASSERT_EQ(cc1101_init(&d, &mock_hal), CC1101_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const cc1101_hal_t no_callbacks;
+    cc1101_t d;
+    mock_reset_all();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(cc1101_init(&d, NULL), CC1101_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(cc1101_init(&d, &no_callbacks), CC1101_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("cc1101")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -751,4 +791,6 @@ TEST_MAIN("cc1101")
     RUN(test_receive_reports_crc_error);
     RUN(test_receive_rejects_length_past_fifo);
     RUN(test_transmit_ignores_a_corrupt_marcstate);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

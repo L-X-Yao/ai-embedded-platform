@@ -442,6 +442,53 @@ TEST(test_init_leaves_a_running_chip_alone)
     ASSERT_TX(0, 0x01, 0x10);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ccs811_t *d)
+{
+    ccs811_data_t data;
+    ASSERT_EQ(ccs811_read(d, &data), CCS811_ERR_PARAM);
+    ASSERT_EQ(ccs811_set_mode(d, CCS811_MODE_1SEC), CCS811_ERR_PARAM);
+    ASSERT_EQ(ccs811_set_env_data(d, 100, 100), CCS811_ERR_PARAM);
+}
+
+/* Something else at this address: set_mode must not write to it */
+TEST(test_device_refused_after_wrong_id)
+{
+    ccs811_t d;
+    mock_reset();
+    mock_regs[0x20] = 0x00;
+    ASSERT_EQ(ccs811_init(&d, &mock_i2c, &default_cfg), CCS811_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ccs811_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ccs811_init(&d, NULL, &default_cfg), CCS811_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    ccs811_t d;
+    ccs811_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(ccs811_init(&d, &bad, &default_cfg), CCS811_ERR_PARAM);
+    assert_device_refused(&d);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(ccs811_init(&d, &bad, &default_cfg), CCS811_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ccs811")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -473,4 +520,7 @@ TEST_MAIN("ccs811")
     RUN(test_one_sample_reads_once);
     RUN(test_read_takes_the_result_from_one_mailbox);
     RUN(test_init_leaves_a_running_chip_alone);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()

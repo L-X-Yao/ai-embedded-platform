@@ -305,6 +305,42 @@ TEST(test_get_firmware_version_null)
     ASSERT_EQ(cst816s_get_firmware_version(NULL), 0);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(cst816s_t *d)
+{
+    cst816s_touch_t touch;
+    ASSERT_EQ(cst816s_read(d, &touch), CST816S_ERR_PARAM);
+    ASSERT_EQ(cst816s_set_auto_sleep(d, true), CST816S_ERR_PARAM);
+    ASSERT_EQ(cst816s_set_motion_mask(d, true, true, false), CST816S_ERR_PARAM);
+}
+
+/* Something else at this address: the read would report touches from it */
+TEST(test_device_refused_after_wrong_id)
+{
+    cst816s_t d;
+    mock_reset();
+    mock_regs[REG_CHIP_ID] = 0x00;
+    ASSERT_EQ(cst816s_init(&d, &mock_i2c), CST816S_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const cst816s_i2c_t no_callbacks;
+    cst816s_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(cst816s_init(&d, NULL), CST816S_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(cst816s_init(&d, &no_callbacks), CST816S_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("cst816s")
     RUN(test_init_null);
     RUN(test_init_wrong_id);
@@ -327,4 +363,6 @@ TEST_MAIN("cst816s")
     RUN(test_motion_mask_i2c_fail);
     RUN(test_get_chip_id_null);
     RUN(test_get_firmware_version_null);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

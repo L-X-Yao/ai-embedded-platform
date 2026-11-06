@@ -175,18 +175,10 @@ static bool frequency_supported(uint32_t freq_hz)
 
 /* ---------- public API ---------- */
 
-cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
+/* The steps of init that talk to the chip */
+static cc1101_err_t bring_up(const cc1101_hal_t *hal)
 {
     uint8_t partnum, version;
-
-    if (!dev || !hal) return CC1101_ERR_PARAM;
-    if (!hal->cs_select || !hal->cs_deselect || !hal->xfer || !hal->delay_ms) {
-        return CC1101_ERR_PARAM;
-    }
-
-    dev->hal = hal;
-    dev->frequency = 0;
-    dev->tx_power = 0;
 
     /* Reset */
     (void)spi_strobe(hal, STROBE_SRES);
@@ -219,6 +211,28 @@ cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
     (void)spi_strobe(hal, STROBE_SIDLE);
 
     return CC1101_OK;
+}
+
+cc1101_err_t cc1101_init(cc1101_t *dev, const cc1101_hal_t *hal)
+{
+    if (!dev) return CC1101_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal) return CC1101_ERR_PARAM;
+    if (!hal->cs_select || !hal->cs_deselect || !hal->xfer || !hal->delay_ms) {
+        return CC1101_ERR_PARAM;
+    }
+
+    dev->hal = hal;
+
+    cc1101_err_t err = bring_up(hal);
+    if (err != CC1101_OK) {
+        dev->hal = NULL;
+    }
+    return err;
 }
 
 cc1101_err_t cc1101_set_frequency(cc1101_t *dev, uint32_t freq_hz)

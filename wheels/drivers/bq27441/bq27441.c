@@ -106,21 +106,9 @@ static bq27441_err_t read_flags(const bq27441_t *dev, uint16_t *flags)
 
 /* ---- public API ---- */
 
-bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static bq27441_err_t bring_up(const bq27441_t *dev)
 {
-    REQUIRE(dev != NULL);
-    REQUIRE(i2c != NULL);
-    if (!dev || !i2c)
-        return BQ27441_ERR_PARAM;
-    REQUIRE(i2c->read_regs != NULL);
-    REQUIRE(i2c->write_reg != NULL);
-    REQUIRE(i2c->delay_ms != NULL);
-    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms)
-        return BQ27441_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* Read device type: write DEVICE_TYPE sub-command, then read back */
     bq27441_err_t err = write_control(dev, CTRL_DEVICE_TYPE);
     if (err != BQ27441_OK)
@@ -137,11 +125,38 @@ bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
     return BQ27441_OK;
 }
 
+bq27441_err_t bq27441_init(bq27441_t *dev, const bq27441_i2c_t *i2c)
+{
+    REQUIRE(dev != NULL);
+    if (!dev)
+        return BQ27441_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    REQUIRE(i2c != NULL);
+    if (!i2c)
+        return BQ27441_ERR_PARAM;
+    REQUIRE(i2c->read_regs != NULL);
+    REQUIRE(i2c->write_reg != NULL);
+    REQUIRE(i2c->delay_ms != NULL);
+    if (!i2c->read_regs || !i2c->write_reg || !i2c->delay_ms)
+        return BQ27441_ERR_PARAM;
+
+    dev->i2c = i2c;
+
+    bq27441_err_t err = bring_up(dev);
+    if (err != BQ27441_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 bq27441_err_t bq27441_read(bq27441_t *dev, bq27441_data_t *out)
 {
     REQUIRE(dev != NULL);
     REQUIRE(out != NULL);
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return BQ27441_ERR_PARAM;
 
     bq27441_err_t err;
@@ -194,7 +209,7 @@ bq27441_err_t bq27441_read_voltage(bq27441_t *dev, uint16_t *voltage_mv)
 {
     REQUIRE(dev != NULL);
     REQUIRE(voltage_mv != NULL);
-    if (!dev || !voltage_mv)
+    if (!dev || !dev->i2c || !voltage_mv)
         return BQ27441_ERR_PARAM;
     return read_reg16(dev, REG_VOLTAGE, voltage_mv);
 }
@@ -203,7 +218,7 @@ bq27441_err_t bq27441_read_soc(bq27441_t *dev, uint16_t *soc_pct)
 {
     REQUIRE(dev != NULL);
     REQUIRE(soc_pct != NULL);
-    if (!dev || !soc_pct)
+    if (!dev || !dev->i2c || !soc_pct)
         return BQ27441_ERR_PARAM;
     return read_reg16(dev, REG_SOC, soc_pct);
 }
@@ -212,7 +227,7 @@ bq27441_err_t bq27441_read_current(bq27441_t *dev, int16_t *current_ma)
 {
     REQUIRE(dev != NULL);
     REQUIRE(current_ma != NULL);
-    if (!dev || !current_ma)
+    if (!dev || !dev->i2c || !current_ma)
         return BQ27441_ERR_PARAM;
 
     uint16_t raw;
@@ -226,7 +241,7 @@ bq27441_err_t bq27441_read_temperature(bq27441_t *dev, int16_t *temperature_01c)
 {
     REQUIRE(dev != NULL);
     REQUIRE(temperature_01c != NULL);
-    if (!dev || !temperature_01c)
+    if (!dev || !dev->i2c || !temperature_01c)
         return BQ27441_ERR_PARAM;
 
     uint16_t raw;
@@ -240,7 +255,7 @@ bq27441_err_t bq27441_read_temperature(bq27441_t *dev, int16_t *temperature_01c)
 bq27441_err_t bq27441_enter_config_mode(bq27441_t *dev)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BQ27441_ERR_PARAM;
 
     /* Unseal first */
@@ -270,7 +285,7 @@ bq27441_err_t bq27441_enter_config_mode(bq27441_t *dev)
 bq27441_err_t bq27441_exit_config_mode(bq27441_t *dev)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BQ27441_ERR_PARAM;
 
     /* Soft reset to exit config mode */
@@ -311,7 +326,7 @@ bq27441_err_t bq27441_set_design_capacity(bq27441_t *dev, uint16_t mah)
 bq27441_err_t bq27441_unseal(bq27441_t *dev)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BQ27441_ERR_PARAM;
 
     /* Write unseal key A then key B to CONTROL */
@@ -338,7 +353,7 @@ bq27441_err_t bq27441_unseal(bq27441_t *dev)
 bq27441_err_t bq27441_seal(bq27441_t *dev)
 {
     REQUIRE(dev != NULL);
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BQ27441_ERR_PARAM;
 
     return write_control(dev, CTRL_SEALED);
