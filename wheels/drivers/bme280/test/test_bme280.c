@@ -7,6 +7,7 @@
 /* ---------- chip-specific mock setup ---------- */
 
 static bool mock_stays_forced;       /* the measurement never ends */
+static bool mock_i2c_read_fail;      /* every read gets no ACK */
 
 static void mock_reset(void)
 {
@@ -62,10 +63,18 @@ static const bme280_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
+static bool chip_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t *buf, uint16_t len)
+{
+    if (mock_i2c_read_fail)
+        return false;
+    return mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+}
+
 /* The same chip with a delay callback */
 static const bme280_i2c_t mock_delay_i2c = {
     .write_reg = chip_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = chip_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
@@ -245,7 +254,7 @@ TEST(test_calib_readback)
 TEST(test_calib_i2c_fail)
 {
     mock_reset();
-    mock_fail_at = 1; /* fail on first bulk read (calibration) */
+    mock_fail_at = 2; /* fail on first bulk read (calibration) */
     bme280_t d;
     bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
     ASSERT_EQ(e, BME280_ERR_I2C);
@@ -302,7 +311,7 @@ TEST(test_init_invalid_oversampling)
 TEST(test_humidity_calib_i2c_fail)
 {
     mock_reset();
-    mock_fail_at = 2; /* fail on second bulk read (humidity calibration at 0xE1) */
+    mock_fail_at = 3; /* fail on second bulk read (humidity calibration at 0xE1) */
     bme280_t d;
     bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
     ASSERT_EQ(e, BME280_ERR_I2C);
@@ -310,18 +319,9 @@ TEST(test_humidity_calib_i2c_fail)
 
 TEST(test_init_config_write_fail)
 {
-    /* init sequence: read_regs(ID)=op0, read_regs(CALIB00)=op1,
-     * read_regs(CALIB_H2)=op2, write_reg(CONFIG)=op3 → fail. */
-    mock_reset();
-    mock_fail_at = 3;
-    bme280_t d;
-    bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
-    ASSERT_EQ(e, BME280_ERR_I2C);
-}
-
-TEST(test_init_ctrl_hum_write_fail)
-{
-    /* init sequence: op0..op3 pass, write_reg(CTRL_HUM)=op4 → fail. */
+    /* init sequence: read_regs(ID)=op0, read_regs(STATUS)=op1,
+     * read_regs(CALIB00)=op2, read_regs(CALIB_H2)=op3,
+     * write_reg(CONFIG)=op4 → fail. */
     mock_reset();
     mock_fail_at = 4;
     bme280_t d;
@@ -329,21 +329,20 @@ TEST(test_init_ctrl_hum_write_fail)
     ASSERT_EQ(e, BME280_ERR_I2C);
 }
 
-TEST(test_read_ctrl_meas_write_fail)
+TEST(test_init_ctrl_hum_write_fail)
 {
-    /* After init (5 ops: op0-op4), in bme280_read:
-     * write(CTRL_HUM)=op5(ok), write(CTRL_MEAS)=op6 → fail. */
-    setup();
-    mock_fail_at = 6;
-    bme280_data_t data;
-    bme280_err_t e = bme280_read(&dev, &data);
+    /* init sequence: op0..op4 pass, write_reg(CTRL_HUM)=op5 → fail. */
+    mock_reset();
+    mock_fail_at = 5;
+    bme280_t d;
+    bme280_err_t e = bme280_init(&d, &mock_i2c, &default_cfg);
     ASSERT_EQ(e, BME280_ERR_I2C);
 }
 
-TEST(test_read_status_i2c_fail)
+TEST(test_read_ctrl_meas_write_fail)
 {
-    /* After init (op0-op4), in read: write(CTRL_HUM)=op5(ok),
-     * write(CTRL_MEAS)=op6(ok), read(STATUS)=op7 → fail. */
+    /* After init (6 ops: op0-op5), in bme280_read:
+     * write(CTRL_HUM)=op6(ok), write(CTRL_MEAS)=op7 → fail. */
     setup();
     mock_fail_at = 7;
     bme280_data_t data;
@@ -351,14 +350,25 @@ TEST(test_read_status_i2c_fail)
     ASSERT_EQ(e, BME280_ERR_I2C);
 }
 
+TEST(test_read_status_i2c_fail)
+{
+    /* After init (op0-op5), in read: write(CTRL_HUM)=op6(ok),
+     * write(CTRL_MEAS)=op7(ok), read(STATUS)=op8 → fail. */
+    setup();
+    mock_fail_at = 8;
+    bme280_data_t data;
+    bme280_err_t e = bme280_read(&dev, &data);
+    ASSERT_EQ(e, BME280_ERR_I2C);
+}
+
 TEST(test_read_data_i2c_fail)
 {
-    /* After init (op0-op4), in read: write(CTRL_HUM)=op5(ok),
-     * write(CTRL_MEAS)=op6(ok), read(STATUS)=op7(returns 0x00 so loop breaks),
-     * read(PRESS_MSB x8)=op8 → fail. */
+    /* After init (op0-op5), in read: write(CTRL_HUM)=op6(ok),
+     * write(CTRL_MEAS)=op7(ok), read(STATUS)=op8(returns 0x00 so loop breaks),
+     * read(PRESS_MSB x8)=op9 → fail. */
     setup();
     mock_regs[0xF3] = 0x00; /* STATUS: not measuring → break immediately */
-    mock_fail_at = 8;
+    mock_fail_at = 9;
     bme280_data_t data;
     bme280_err_t e = bme280_read(&dev, &data);
     ASSERT_EQ(e, BME280_ERR_I2C);
@@ -407,10 +417,10 @@ static const bme280_cfg_t skip_t_cfg = {
 
 TEST(test_init_skip_temperature_i2c_fail)
 {
-    /* op0..op3 as in test_init_config_write_fail, then the measurement:
-     * write(CTRL_HUM)=op4, write(CTRL_MEAS)=op5, read(STATUS)=op6,
-     * read(PRESS_MSB x8)=op7. */
-    for (int op = 4; op <= 7; op++)
+    /* op0..op4 as in test_init_config_write_fail, then the measurement:
+     * write(CTRL_HUM)=op5, write(CTRL_MEAS)=op6, read(STATUS)=op7,
+     * read(PRESS_MSB x8)=op8. */
+    for (int op = 5; op <= 8; op++)
     {
         mock_reset();
         mock_fail_at = op;
@@ -451,6 +461,53 @@ TEST(test_read_gives_up_after_the_section_9_1_time)
     ASSERT_LE(mock_delay_ms_count, 12);
 }
 
+/* Table 21 p.28: "Automatically set to '1' when the NVM data are being copied
+ * to image registers". Calibration read before that ends is not calibration. */
+TEST(test_init_waits_for_the_nvm_copy)
+{
+    mock_reset();
+    mock_regs[0xF3] = 0x01;
+    bme280_t d;
+    ASSERT_EQ(bme280_init(&d, &mock_i2c, &default_cfg), BME280_ERR_TIMEOUT);
+    ASSERT_EQ(d.calib.dig_t1, 0);
+}
+
+/* p.8: the first communication comes 2 ms after power-on. */
+TEST(test_init_waits_out_start_up)
+{
+    mock_reset();
+    bme280_t d;
+    ASSERT_EQ(bme280_init(&d, &mock_delay_i2c, &default_cfg), BME280_OK);
+    ASSERT_GE(mock_delay_ms_count, 1);
+}
+
+/* A NACK in the status poll is a sensor that is not up yet. */
+TEST(test_init_rides_out_a_nack_in_the_status_poll)
+{
+    mock_reset();
+    mock_fail_at = 1;
+    bme280_t d;
+    ASSERT_EQ(bme280_init(&d, &mock_i2c, &default_cfg), BME280_OK);
+}
+
+/* p.27: 0xB6 runs "the complete power-on-reset procedure". */
+TEST(test_reset_waits_for_the_nvm_copy)
+{
+    setup();
+    mock_regs[0xF3] = 0x01;
+    ASSERT_EQ(bme280_reset(&dev), BME280_ERR_TIMEOUT);
+}
+
+TEST(test_reset_reports_a_sensor_that_stays_silent)
+{
+    mock_reset();
+    bme280_init(&dev, &mock_delay_i2c, &default_cfg);
+    mock_fail_at = -1;
+    mock_i2c_read_fail = true;
+    ASSERT_EQ(bme280_reset(&dev), BME280_ERR_I2C);
+    mock_i2c_read_fail = false;
+}
+
 TEST(test_read_skip_temperature_measure_fail)
 {
     /* Nothing has measured a temperature, so this read must, and that fails */
@@ -474,6 +531,11 @@ TEST_MAIN("bme280")
     RUN(test_read_i2c_fail);
     RUN(test_read_waits_for_sleep_mode);
     RUN(test_read_gives_up_after_the_section_9_1_time);
+    RUN(test_init_waits_for_the_nvm_copy);
+    RUN(test_init_waits_out_start_up);
+    RUN(test_init_rides_out_a_nack_in_the_status_poll);
+    RUN(test_reset_waits_for_the_nvm_copy);
+    RUN(test_reset_reports_a_sensor_that_stays_silent);
     RUN(test_reset);
     RUN(test_reset_i2c_fail);
     RUN(test_addr_high);

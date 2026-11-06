@@ -35,6 +35,11 @@
 #define MODE_FORCED     0x01
 #define MODE_MASK       0x03
 #define STATUS_MEASURING 0x08
+#define STATUS_IM_UPDATE 0x01
+
+/* Manual section 1.1: tstartup, "Time to first communication" */
+#define STARTUP_MS      2U
+#define NVM_POLLS       500U
 
 /* A status read with no delay_ms takes at least this long, even at 3.4 MHz */
 #define POLL_MIN_US     10U
@@ -55,6 +60,25 @@ static void wait_ms(const bme280_t *dev, uint32_t ms)
     {
         dev->i2c->delay_ms(dev->i2c->ctx, ms);
     }
+}
+
+/* After a reset the sensor may not answer yet, so a failed read only means
+ * not ready. The calibration is in the image registers once im_update is 0. */
+static bme280_err_t wait_nvm_copy(const bme280_t *dev)
+{
+    bool answered = false;
+
+    for (uint32_t tries = 0; tries < NVM_POLLS; tries++)
+    {
+        uint8_t status = 0;
+        answered = read_regs(dev, REG_STATUS, &status, 1);
+        if (answered && (status & STATUS_IM_UPDATE) == 0)
+        {
+            return BME280_OK;
+        }
+        wait_ms(dev, 1);
+    }
+    return answered ? BME280_ERR_TIMEOUT : BME280_ERR_I2C;
 }
 
 static bme280_err_t read_calibration(bme280_t *dev)
@@ -235,6 +259,9 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
     dev->i2c = i2c;
     dev->cfg = *cfg;
 
+    /* The driver cannot tell how long ago power came */
+    wait_ms(dev, STARTUP_MS);
+
     uint8_t id = 0;
     if (!read_regs(dev, REG_ID, &id, 1))
     {
@@ -245,7 +272,13 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
         return BME280_ERR_ID;
     }
 
-    bme280_err_t err = read_calibration(dev);
+    bme280_err_t err = wait_nvm_copy(dev);
+    if (err != BME280_OK)
+    {
+        return err;
+    }
+
+    err = read_calibration(dev);
     if (err != BME280_OK)
     {
         return err;
@@ -397,5 +430,6 @@ bme280_err_t bme280_reset(bme280_t *dev)
     {
         return BME280_ERR_I2C;
     }
-    return BME280_OK;
+    wait_ms(dev, STARTUP_MS);
+    return wait_nvm_copy(dev);
 }
