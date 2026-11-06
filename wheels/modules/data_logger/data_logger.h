@@ -112,7 +112,8 @@ data_logger_err_t data_logger_add_uint(data_logger_t *dl, uint32_t value);
 data_logger_err_t data_logger_add_float(data_logger_t *dl, float value);
 
 /**
- * Add a string field.
+ * Add a string field. It is written unquoted, so a value holding a comma,
+ * a double quote, CR or LF is refused with DATA_LOGGER_ERR_PARAM.
  * @thread_safe: no
  */
 data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value);

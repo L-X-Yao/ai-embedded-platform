@@ -297,6 +297,31 @@ TEST(test_string_plain)
     ASSERT_TRUE(strcmp((char *)store_buf, "42,hello\n") == 0);
 }
 
+/* a record is one line and a field one column: text must not change that */
+TEST(test_string_cannot_shift_or_forge_records)
+{
+    mock_reset();
+    static const data_logger_field_t f[] = {
+        { "msg", DATA_LOGGER_FIELD_STRING },
+        { "n",   DATA_LOGGER_FIELD_INT32  },
+    };
+    data_logger_init(&dl, &test_storage, f, 2);
+
+    data_logger_begin(&dl, 1000);
+    ASSERT_EQ(data_logger_add_string(&dl, "a,b\n2000,forged"),
+              DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(data_logger_add_string(&dl, "a,b"), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(data_logger_add_string(&dl, "a\"b"), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(data_logger_add_string(&dl, "a\rb"), DATA_LOGGER_ERR_PARAM);
+    ASSERT_EQ(data_logger_add_string(&dl, "a\nb"), DATA_LOGGER_ERR_PARAM);
+
+    /* a refused string leaves no trace, so the field can still be added */
+    ASSERT_EQ(data_logger_add_string(&dl, "a b"), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_add_int(&dl, 7), DATA_LOGGER_OK);
+    ASSERT_EQ(data_logger_commit(&dl), DATA_LOGGER_OK);
+    ASSERT_STR_EQ((char *)store_buf, "1000,a b,7\n");
+}
+
 TEST(test_too_many_fields)
 {
     mock_reset();
@@ -434,6 +459,7 @@ TEST_MAIN("data_logger")
     RUN(test_float_negative);
     RUN(test_float_zero);
     RUN(test_string_plain);
+    RUN(test_string_cannot_shift_or_forge_records);
     RUN(test_too_many_fields);
     RUN(test_wrong_field_type);
     RUN(test_storage_write_failure);

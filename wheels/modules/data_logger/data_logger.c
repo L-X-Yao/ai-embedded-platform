@@ -267,6 +267,10 @@ data_logger_err_t data_logger_add_string(data_logger_t *dl, const char *value)
     if (!value) {
         return DATA_LOGGER_ERR_PARAM;
     }
+    /* A field is one column and a record one line: these would break out */
+    if (value[strcspn(value, ",\"\r\n")] != '\0') {
+        return DATA_LOGGER_ERR_PARAM;
+    }
 
     err = buf_comma(dl);
     if (err != DATA_LOGGER_OK) {
