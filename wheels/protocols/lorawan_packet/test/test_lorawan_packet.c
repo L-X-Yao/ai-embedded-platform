@@ -376,6 +376,58 @@ TEST(test_fcnt_encoding_le)
     ASSERT_EQ_HEX(buf[7], 0x12);
 }
 
+/* ---------- payload length limits ---------- */
+
+/* LoRaWAN Regional Parameters RP002-1.0.3: the largest MACPayload of any
+ * region is M = 250, which leaves N = M - 8 = 242 bytes of FRMPayload when
+ * FOpts is empty. With MHDR(1) and MIC(4) the frame is 255 bytes. */
+static uint8_t big_payload[65535];
+
+TEST(test_build_refuses_a_length_that_wraps_16_bits)
+{
+    /* The other 13 frame bytes take these to 65536, 65543 and 65548. */
+    static const uint16_t wrapping[] = { 65523u, 65530u, 65535u };
+
+    for (size_t i = 0; i < sizeof(wrapping) / sizeof(wrapping[0]); i++) {
+        lorawan_frame_t frame;
+        memset(&frame, 0, sizeof(frame));
+        frame.mtype = LORAWAN_UNCONFIRMED_UP;
+        frame.payload = big_payload;
+        frame.payload_len = wrapping[i];
+
+        uint8_t buf[64];
+        memset(buf, 0x5A, sizeof(buf));
+        ASSERT_EQ(lorawan_build_data(buf, sizeof(buf), &frame), LORAWAN_ERR_SIZE);
+        for (size_t j = 0; j < sizeof(buf); j++)
+            ASSERT_EQ_HEX(buf[j], 0x5A);
+    }
+}
+
+TEST(test_build_takes_the_largest_lorawan_payload)
+{
+    lorawan_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
+    frame.mtype = LORAWAN_UNCONFIRMED_UP;
+    frame.payload = big_payload;
+    frame.payload_len = 242;
+
+    uint8_t buf[255];
+    ASSERT_EQ(lorawan_build_data(buf, 255, &frame), 255);
+    ASSERT_EQ(lorawan_build_data(buf, 254, &frame), LORAWAN_ERR_OVERFLOW);
+}
+
+TEST(test_build_refuses_a_payload_above_the_lorawan_maximum)
+{
+    lorawan_frame_t frame;
+    memset(&frame, 0, sizeof(frame));
+    frame.mtype = LORAWAN_UNCONFIRMED_UP;
+    frame.payload = big_payload;
+    frame.payload_len = 243;
+
+    uint8_t buf[300];
+    ASSERT_EQ(lorawan_build_data(buf, sizeof(buf), &frame), LORAWAN_ERR_SIZE);
+}
+
 TEST_MAIN("lorawan_packet")
     RUN(test_build_unconfirmed_uplink);
     RUN(test_build_confirmed_uplink_with_ack);
@@ -395,4 +447,7 @@ TEST_MAIN("lorawan_packet")
     RUN(test_mtype_extraction);
     RUN(test_devaddr_encoding_le);
     RUN(test_fcnt_encoding_le);
+    RUN(test_build_refuses_a_length_that_wraps_16_bits);
+    RUN(test_build_takes_the_largest_lorawan_payload);
+    RUN(test_build_refuses_a_payload_above_the_lorawan_maximum);
 TEST_MAIN_END()

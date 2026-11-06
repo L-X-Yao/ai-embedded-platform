@@ -14,6 +14,10 @@
 
 /* LoRaWAN wire format is little-endian for DevAddr and FCnt */
 
+/* Largest FRMPayload with FOpts empty. The largest MACPayload of any region
+ * is M = 250 and N = M - 8 (LoRaWAN Regional Parameters RP002-1.0.3). */
+#define LORAWAN_MAX_FRM_PAYLOAD 242u
+
 static void put_le32(uint8_t *buf, uint32_t val)
 {
     buf[0] = (uint8_t)(val & 0xFF);
@@ -56,6 +60,7 @@ int lorawan_build_data(uint8_t *buf, uint16_t buf_size,
 {
     if (!buf || !frame) return LORAWAN_ERR_PARAM;
     if (frame->payload_len > 0 && !frame->payload) return LORAWAN_ERR_PARAM;
+    if (frame->payload_len > LORAWAN_MAX_FRM_PAYLOAD) return LORAWAN_ERR_SIZE;
 
     /*
      * Frame layout:
@@ -65,9 +70,9 @@ int lorawan_build_data(uint8_t *buf, uint16_t buf_size,
      * FPort is present only when payload_len > 0.
      */
     bool has_payload = (frame->payload_len > 0);
-    uint16_t total = (uint16_t)(1 + 4 + 1 + 2
-                     + (has_payload ? 1 + frame->payload_len : 0)
-                     + 4);
+    uint32_t total = 1u + 4u + 1u + 2u
+                     + (has_payload ? 1u + frame->payload_len : 0u)
+                     + 4u;
 
     if (total > buf_size) return LORAWAN_ERR_OVERFLOW;
 
