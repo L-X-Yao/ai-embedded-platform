@@ -70,11 +70,16 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** @thread_safe: no (caller must serialize) @isr_safe: no */
+/** Returns GNSS_FILTER_ERR_PARAM for a NULL pointer, max_hdop not above 0,
+ *  max_vdop below 0, an alpha outside 0..1, or a non-finite float field. A
+ *  refused filter is zeroed and never becomes ready.
+ *  @thread_safe: no (caller must serialize) @isr_safe: no */
 gnss_filter_err_t gnss_filter_init(gnss_filter_t *flt,
                                    const gnss_filter_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** A NaN hdop, a NaN vdop while max_vdop is in use, or a non-finite position
+ *  counts as a bad sample: the gate closes and stable_ms starts again.
+ *  @thread_safe: no @isr_safe: no */
 gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
                                      const gnss_filter_input_t *input,
                                      uint16_t imu_motion_mg,

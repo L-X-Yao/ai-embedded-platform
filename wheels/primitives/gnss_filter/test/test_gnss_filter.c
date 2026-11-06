@@ -459,6 +459,135 @@ TEST(test_getters_before_ready)
     ASSERT_TRUE(fabsf(gnss_filter_alt(&flt)) < 0.0001f);
 }
 
+/* ---------- non-finite values ---------- */
+
+static const float g_non_finite[3] = { NAN, INFINITY, -INFINITY };
+
+/* Feed good fixes for span_ms, leaving *t on the next free tick. */
+static void feed_good(gnss_filter_t *flt, uint32_t *t, uint32_t span_ms)
+{
+    gnss_filter_input_t in = good_fix();
+    for (uint32_t end = *t + span_ms; *t <= end; *t += 200) {
+        gnss_filter_update(flt, &in, 0, *t);
+    }
+}
+
+TEST(test_nan_hdop_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.hdop = NAN;
+
+    for (uint32_t t = 0; t <= 20000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+TEST(test_nan_vdop_blocks)
+{
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &g_default_cfg);
+    gnss_filter_input_t in = good_fix();
+    in.vdop = NAN;
+
+    for (uint32_t t = 0; t <= 20000; t += 200) {
+        gnss_filter_update(&flt, &in, 0, t);
+    }
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
+/* One bad sample closes the gate, nothing of it stays in the filter, and the
+ * gate has to be earned again. */
+TEST(test_non_finite_position_closes_gate)
+{
+    for (size_t field = 0; field < 3; field++) {
+        for (size_t i = 0; i < 3; i++) {
+            gnss_filter_t flt;
+            uint32_t t = 0;
+            gnss_filter_init(&flt, &g_default_cfg);
+            feed_good(&flt, &t, 11000);
+            ASSERT_TRUE(gnss_filter_is_ready(&flt));
+
+            gnss_filter_input_t in = good_fix();
+            if (field == 0) {
+                in.latitude = g_non_finite[i];
+            } else if (field == 1) {
+                in.longitude = g_non_finite[i];
+            } else {
+                in.altitude = g_non_finite[i];
+            }
+            gnss_filter_update(&flt, &in, 0, t);
+            ASSERT_FALSE(gnss_filter_is_ready(&flt));
+
+            t += 200;
+            feed_good(&flt, &t, 11000);
+            ASSERT_TRUE(gnss_filter_is_ready(&flt));
+            ASSERT_NEAR(gnss_filter_lat(&flt), 30.0f, 0.001f);
+            ASSERT_NEAR(gnss_filter_lon(&flt), 120.0f, 0.001f);
+            ASSERT_NEAR(gnss_filter_alt(&flt), 100.0f, 0.001f);
+        }
+    }
+}
+
+TEST(test_init_rejects_bad_float_config)
+{
+    gnss_filter_t flt;
+    gnss_filter_cfg_t cfg;
+
+    for (size_t i = 0; i < 3; i++) {
+        cfg = g_default_cfg;
+        cfg.max_hdop = g_non_finite[i];
+        ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+        cfg = g_default_cfg;
+        cfg.max_vdop = g_non_finite[i];
+        ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+        cfg = g_default_cfg;
+        cfg.static_alpha = g_non_finite[i];
+        ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+        cfg = g_default_cfg;
+        cfg.strong_alpha = g_non_finite[i];
+        ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+    }
+
+    /* No hdop can pass a limit of 0, and an EMA weight lives in 0..1. */
+    cfg = g_default_cfg;
+    cfg.max_hdop = 0.0f;
+    ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+    cfg = g_default_cfg;
+    cfg.max_vdop = -1.0f;
+    ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+    cfg = g_default_cfg;
+    cfg.static_alpha = 1.5f;
+    ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+    cfg = g_default_cfg;
+    cfg.strong_alpha = -0.1f;
+    ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+
+    /* The edges stay legal: max_vdop 0 means ignore it. */
+    cfg = g_default_cfg;
+    cfg.max_vdop = 0.0f;
+    cfg.static_alpha = 1.0f;
+    cfg.strong_alpha = 0.0f;
+    ASSERT_EQ(GNSS_FILTER_OK, gnss_filter_init(&flt, &cfg));
+}
+
+/* A caller that ignores the error still gets a filter that says not ready. */
+TEST(test_refused_init_never_becomes_ready)
+{
+    gnss_filter_t flt;
+    gnss_filter_cfg_t cfg = g_default_cfg;
+    uint32_t t = 0;
+
+    memset(&flt, 0xA5, sizeof(flt));
+    cfg.max_hdop = NAN;
+    ASSERT_EQ(GNSS_FILTER_ERR_PARAM, gnss_filter_init(&flt, &cfg));
+
+    feed_good(&flt, &t, 20000);
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+}
+
 TEST_MAIN("gnss_filter")
     RUN(test_init_null);
     RUN(test_init_ok);
@@ -491,4 +620,9 @@ TEST_MAIN("gnss_filter")
     RUN(test_hdop_zero_blocks);
     RUN(test_vdop_exceeds_max);
     RUN(test_getters_before_ready);
+    RUN(test_nan_hdop_blocks);
+    RUN(test_nan_vdop_blocks);
+    RUN(test_non_finite_position_closes_gate);
+    RUN(test_init_rejects_bad_float_config);
+    RUN(test_refused_init_never_becomes_ready);
 TEST_MAIN_END()
