@@ -46,8 +46,27 @@ typedef struct {
     uint8_t last_command;
 } ds18b20_model_t;
 
-/* Forward-declare CRC8 computation (uses the driver's own CRC function) */
 static void ds18b20_model_update_scratchpad(ds18b20_model_t *m);
+
+/*
+ * The chip's own CRC, from the manual and not from the driver, so that a
+ * wrong driver CRC fails here. DS18B20 REV 042208 p.8: CRC = X8 + X5 + X4 + 1,
+ * shift register bits initialized to 0, least significant bit shifted in first.
+ */
+static uint8_t ds18b20_model_crc8(const uint8_t *data, size_t len)
+{
+    uint8_t sr = 0;
+    for (size_t i = 0; i < len; i++) {
+        for (unsigned bit = 0; bit < 8u; bit++) {
+            unsigned in = ((unsigned)data[i] >> bit) & 1u;
+            unsigned feedback = (sr ^ in) & 1u;
+            sr = (uint8_t)(sr >> 1);
+            if (feedback)
+                sr = (uint8_t)(sr ^ 0x8Cu);
+        }
+    }
+    return sr;
+}
 
 static void ds18b20_model_init(ds18b20_model_t *m)
 {
@@ -61,7 +80,7 @@ static void ds18b20_model_init(ds18b20_model_t *m)
     m->rom[4] = 0x04;
     m->rom[5] = 0x05;
     m->rom[6] = 0x06;
-    m->rom[7] = ds18b20_crc8(m->rom, 7);
+    m->rom[7] = ds18b20_model_crc8(m->rom, 7);
     /* default power-on temperature: 85.0 C */
     m->temperature_c = 85.0f;
     ds18b20_model_update_scratchpad(m);
@@ -103,7 +122,7 @@ static void ds18b20_model_update_scratchpad(ds18b20_model_t *m)
     m->scratchpad[5] = 0xFF; /* reserved */
     m->scratchpad[6] = 0x00; /* reserved */
     m->scratchpad[7] = 0x10; /* reserved */
-    m->scratchpad[8] = ds18b20_crc8(m->scratchpad, 8);
+    m->scratchpad[8] = ds18b20_model_crc8(m->scratchpad, 8);
 }
 
 /* --- HAL callbacks wired to model --- */
