@@ -18,7 +18,7 @@ last_audit_date=${last_audit_date:-unknown}
 # --- Wheels changed since last audit ---
 last_audit_commit=$(git -C "$REPO" log --oneline --grep="audit history" -1 --format=%H 2>/dev/null || echo "")
 if [ -n "$last_audit_commit" ]; then
-    wheels_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep "\.c$" | wc -l | xargs)
+    wheels_changed=$(git -C "$REPO" diff --name-only "$last_audit_commit" HEAD -- wheels/ 2>/dev/null | grep -c "\.c$" || true)
 else
     wheels_changed="unknown"
 fi
