@@ -51,6 +51,15 @@ Eleven protocol fuzz targets only parsed input. They now also build frames from 
 
 A scan of open work then found that `make check` never ran `make test-property`, and 122 of the 193 `prop_*.c` files are not CMake targets, so they ran only by hand. `pac1952` had failed since its VSENSE fix because the property still read VSENSE as signed. `make check`, `make ci-local` and `make wheel-gate` now run property tests.
 
+## High-severity suspects settled from second sources (2026-11-06)
+
+17 suspects went to vendor application notes, vendor drivers, Linux, Zephyr and mainstream libraries: 16 confirmed, 1 dismissed. None of this has run on hardware.
+
+- Fixed: `tcs34725` colour temperature now uses DN40's formula, `ws2812` derives each slot inside the bit loop, `rc522_halt` sends its CRC, `mcp2515` sets zero filters for both frame formats, `drv2605` selects a library in init, `cst816s` accepts the known chip IDs, `apds9960` gets working gesture pulses and gain, `vl53l0x` encodes its timeout as ST does, `mpu6050` init waits for the reset, and `pcf8563_read_time` returns `PCF8563_ERR_VL` until the time is set.
+- Dismissed: `sk6812` sends 4 bytes per LED, which is right for the RGBW parts. Its header now says 24-bit parts are not supported.
+- Confirmed, needing a public API change: `tcs34725_get_lux` needs gain and integration time passed in, `rc522_halt` cannot halt a card because the driver never selects one, and `gc9a01` needs a per-panel init table, so a real panel may show no usable picture.
+- Confirmed in a project: the flybox barometer adapter fails on the NACK its sensor gives to the 0xAC byte, by reading the code. Nobody has seen this on a board.
+
 ## Test models corrected from the manuals (2026-11-06)
 
 The test models and mocks of 77 drivers were corrected to follow their manuals: ignored writes, read-only bits, reset values, busy periods and first-sample waits. Models that no test compiled are now wired in. New assertions failed on the old model first, and many were also checked by putting faults back into the driver. None of this has run on hardware, so a model is still only a reading of the manual.
