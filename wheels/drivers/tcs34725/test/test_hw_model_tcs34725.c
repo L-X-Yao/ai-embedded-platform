@@ -26,6 +26,28 @@ static void setup(void)
     tcs34725_model_init(&model);
 }
 
+/* PON, the 2.4 ms of p.15, then AEN, with ATIME as given */
+static void start_rgbc(uint8_t atime)
+{
+    hw_model__write_reg(&model.hw, TCS_REG_ATIME, atime);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x01);
+    tcs34725_model_delay_ms(&model.hw, 3);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+}
+
+/* p.10: RGBC Init takes 2.4 ms, then p.8: 2.4 ms x (256 - 0xD5) = 103.2 ms */
+#define CYCLE_AT_101MS 106
+
+static uint16_t clear_count(void)
+{
+    return (uint16_t)(model.hw.regs[0x94] | (model.hw.regs[0x95] << 8));
+}
+
+static uint8_t avalid(void)
+{
+    return model.hw.regs[TCS_REG_STATUS] & 0x01u;
+}
+
 /* --- init tests -------------------------------------------------------- */
 
 TEST(test_init_ok)
@@ -112,6 +134,7 @@ TEST(test_read_rgbc)
     setup();
     tcs34725_t dev;
     tcs34725_init(&dev, &model_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
 
     tcs34725_rgbc_t rgbc;
     tcs34725_err_t err = tcs34725_read_rgbc(&dev, &rgbc);
@@ -150,7 +173,9 @@ TEST(test_pon_and_aen_together_start_nothing)
 {
     setup();
     hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    tcs34725_model_delay_ms(&model.hw, 1000);
     ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x00u);
+    ASSERT_EQ(avalid(), 0);
 }
 
 TEST(test_aen_held_from_pon_starts_nothing)
@@ -160,15 +185,16 @@ TEST(test_aen_held_from_pon_starts_nothing)
     hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
     tcs34725_model_delay_ms(&model.hw, 3);
     hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    tcs34725_model_delay_ms(&model.hw, 1000);
     ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x00u);
+    ASSERT_EQ(avalid(), 0);
 }
 
 TEST(test_aen_after_pon_interval_starts_rgbc)
 {
     setup();
-    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x01);
-    tcs34725_model_delay_ms(&model.hw, 3);
-    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    start_rgbc(0xD5);
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
     ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], 0x88u);  /* 5000 = 0x1388 */
 }
 
@@ -181,6 +207,7 @@ TEST(test_enable_waits_after_pon)
 
     model.true_c = 1234;
     ASSERT_EQ(tcs34725_enable(&dev), TCS34725_OK);
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
 
     tcs34725_rgbc_t rgbc;
     ASSERT_EQ(tcs34725_read_rgbc(&dev, &rgbc), TCS34725_OK);
@@ -199,8 +226,10 @@ TEST(test_rgbc_data_readonly)
     setup();
     tcs34725_t dev;
     tcs34725_init(&dev, &model_i2c, TCS34725_INTEG_101MS, TCS34725_GAIN_1X);
+    tcs34725_model_delay_ms(&model.hw, CYCLE_AT_101MS);
 
     uint8_t orig = model.hw.regs[TCS_REG_CDATAL];
+    ASSERT_EQ(orig, 0x88u);
     hw_model__write_reg(&model.hw, TCS_REG_CDATAL, 0xFF);
     ASSERT_EQ(model.hw.regs[TCS_REG_CDATAL], orig);
 }
@@ -227,6 +256,103 @@ TEST(test_change_gain_runtime)
     ASSERT_EQ(model.hw.regs[TCS_REG_CONTROL], 0x03u);
 }
 
+/* --- reset values, Table 3, p.13 --------------------------------------- */
+
+TEST(test_reset_values)
+{
+    setup();
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_ENABLE], 0x00u);
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_ATIME], 0xFFu);
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_WTIME], 0xFFu);
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_CONTROL], 0x00u);
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_STATUS], 0x00u);
+    for (unsigned i = 0; i < 8; i++) {
+        ASSERT_EQ_HEX(model.hw.regs[TCS_REG_CDATAL + i], 0x00u);
+    }
+}
+
+/* Table 3: STATUS is type R, and p.19: "This register is read only." */
+TEST(test_status_is_read_only)
+{
+    setup();
+    hw_model__write_reg(&model.hw, TCS_REG_STATUS, 0x11);
+    ASSERT_EQ_HEX(model.hw.regs[TCS_REG_STATUS], 0x00u);
+}
+
+/* --- the integration cycle --------------------------------------------- */
+
+/* p.10: "The RGBC Init state takes 2.4 ms", and p.8: "Integration Time = 2.4 ms
+ * x (256 - ATIME)". p.19: AVALID "Indicates that the RGBC channels have
+ * completed an integration cycle." 10 cycles make 26.4 ms in all. */
+TEST(test_a_cycle_is_init_plus_integration)
+{
+    setup();
+    start_rgbc(0xF6);
+    tcs34725_model_delay_ms(&model.hw, 26);
+    ASSERT_EQ(avalid(), 0);
+    ASSERT_EQ(clear_count(), 0);
+
+    tcs34725_model_delay_ms(&model.hw, 1);
+    ASSERT_EQ(avalid(), 1);
+    ASSERT_EQ(clear_count(), 5000);
+}
+
+/* Table 3: ATIME resets to 0xFF, a single 2.4 ms step. p.16: that step counts
+ * up to (256 - 255) x 1024. */
+TEST(test_reset_atime_is_the_shortest_cycle)
+{
+    setup();
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x01);
+    tcs34725_model_delay_ms(&model.hw, 3);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x03);
+    tcs34725_model_delay_ms(&model.hw, 4);
+    ASSERT_EQ(avalid(), 0);
+    tcs34725_model_delay_ms(&model.hw, 1);
+    ASSERT_EQ(avalid(), 1);
+    ASSERT_EQ(clear_count(), 1024);
+}
+
+/* p.16: "Max RGBC Count = (256 - ATIME) x 1024 up to a maximum of 65535." */
+TEST(test_counts_stop_at_the_maximum)
+{
+    setup();
+    model.true_c = 65535;
+    start_rgbc(0xF6);
+    tcs34725_model_delay_ms(&model.hw, 27);
+    ASSERT_EQ(clear_count(), 10240);
+
+    setup();
+    model.true_c = 65535;
+    start_rgbc(0x00);
+    tcs34725_model_delay_ms(&model.hw, 617);
+    ASSERT_EQ(clear_count(), 65535);
+}
+
+/* The registers hold the last finished cycle, p.19 */
+TEST(test_new_light_waits_for_the_end_of_a_cycle)
+{
+    setup();
+    start_rgbc(0xF6);
+    tcs34725_model_delay_ms(&model.hw, 27);
+    model.true_c = 700;
+    ASSERT_EQ(clear_count(), 5000);
+    tcs34725_model_delay_ms(&model.hw, 27);
+    ASSERT_EQ(clear_count(), 700);
+}
+
+/* p.15: AEN "Writing a 0 disables the RGBC" */
+TEST(test_no_cycle_after_aen_falls)
+{
+    setup();
+    start_rgbc(0xF6);
+    tcs34725_model_delay_ms(&model.hw, 27);
+    hw_model__write_reg(&model.hw, TCS_REG_ENABLE, 0x01);
+    model.true_c = 700;
+    tcs34725_model_delay_ms(&model.hw, 100);
+    ASSERT_EQ(clear_count(), 5000);
+    ASSERT_EQ(avalid(), 0);
+}
+
 TEST_MAIN("tcs34725 hardware model")
     RUN(test_init_ok);
     RUN(test_init_wrong_chip_id);
@@ -246,4 +372,11 @@ TEST_MAIN("tcs34725 hardware model")
     RUN(test_rgbc_data_readonly);
     RUN(test_disable_clears_enable);
     RUN(test_change_gain_runtime);
+    RUN(test_reset_values);
+    RUN(test_status_is_read_only);
+    RUN(test_a_cycle_is_init_plus_integration);
+    RUN(test_reset_atime_is_the_shortest_cycle);
+    RUN(test_counts_stop_at_the_maximum);
+    RUN(test_new_light_waits_for_the_end_of_a_cycle);
+    RUN(test_no_cycle_after_aen_falls);
 TEST_MAIN_END()
