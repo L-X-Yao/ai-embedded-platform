@@ -153,6 +153,38 @@ TEST(test_read_uid_bad_bcc)
     ASSERT_EQ(rc522_read_card_uid(&dev, &uid), RC522_ERR_COLL);
 }
 
+/* ISO/IEC 14443-3: 0x88 is the cascade tag, which starts a 7 or 10 byte UID.
+ * Level 1 then gives it and three UID bytes with a valid BCC of 0x9F, and those
+ * four bytes are no UID: different cards can share them. */
+TEST(test_read_uid_refuses_cascade_tag)
+{
+    hw_model_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    uint8_t uid_resp[5] = {0x88, 0x04, 0xA1, 0xB2, 0x9F};
+    hw_model_arm_response(uid_resp, 5);
+
+    rc522_uid_t uid;
+    memset(&uid, 0, sizeof(uid));
+    ASSERT_EQ(rc522_read_card_uid(&dev, &uid), RC522_ERR_ID);
+    ASSERT_EQ(uid.len, 0);
+}
+
+/* A corrupted frame stays a collision, whatever its first byte */
+TEST(test_read_uid_cascade_tag_with_bad_bcc)
+{
+    hw_model_reset();
+    rc522_t dev;
+    rc522_init(&dev, &mock_spi);
+
+    uint8_t uid_resp[5] = {0x88, 0x04, 0xA1, 0xB2, 0x00};
+    hw_model_arm_response(uid_resp, 5);
+
+    rc522_uid_t uid;
+    ASSERT_EQ(rc522_read_card_uid(&dev, &uid), RC522_ERR_COLL);
+}
+
 TEST(test_read_uid_null)
 {
     hw_model_reset();
@@ -364,6 +396,8 @@ TEST_MAIN("rc522")
     RUN(test_detect_card_timeout);
     RUN(test_read_uid);
     RUN(test_read_uid_bad_bcc);
+    RUN(test_read_uid_refuses_cascade_tag);
+    RUN(test_read_uid_cascade_tag_with_bad_bcc);
     RUN(test_read_uid_null);
     RUN(test_halt);
     RUN(test_halt_null);

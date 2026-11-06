@@ -22,6 +22,9 @@
 /* TxModeReg bit 7, data sheet p.49: the chip appends the CRC to a sent frame */
 #define TXMODE_TX_CRC_EN 0x80u
 
+/* ISO/IEC 14443-3: the first byte at this cascade level of a longer UID */
+#define PICC_CASCADE_TAG 0x88u
+
 /* ---------- SPI helpers ---------- */
 
 static void reg_write(const rc522_spi_t *spi, uint8_t reg, uint8_t val)
@@ -321,6 +324,10 @@ rc522_err_t rc522_read_card_uid(rc522_t *dev, rc522_uid_t *uid)
     /* Verify BCC (XOR of 4 UID bytes) */
     uint8_t bcc = (uint8_t)(resp[0] ^ resp[1] ^ resp[2] ^ resp[3]);
     if (bcc != resp[4]) return RC522_ERR_COLL;
+
+    /* The rest of this UID needs cascade levels 2 and 3, which do not exist
+     * here, and these four bytes alone do not identify the card */
+    if (resp[0] == PICC_CASCADE_TAG) return RC522_ERR_ID;
 
     uid->len = 4;
     uid->bytes[0] = resp[0];
