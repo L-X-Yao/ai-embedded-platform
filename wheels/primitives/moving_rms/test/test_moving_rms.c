@@ -116,6 +116,39 @@ TEST(test_error_codes)
     ASSERT_EQ((int)MOVING_RMS_ERR_PARAM, -1);
 }
 
+/* --- input that would leave the running sum NaN for good --- */
+
+TEST(test_feed_rejects_infinity)
+{
+    setup();
+    ASSERT_NEAR(moving_rms_feed(&rms, 1.0f), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_rms_feed(&rms, (float)INFINITY), 1.0f, 1e-6f);
+    ASSERT_NEAR(moving_rms_feed(&rms, (float)-INFINITY), 1.0f, 1e-6f);
+    ASSERT_EQ(rms.count, 1);
+
+    /* (1 + 9) / 2 */
+    ASSERT_NEAR(moving_rms_feed(&rms, 3.0f), sqrtf(5.0f), 1e-5f);
+}
+
+TEST(test_feed_rejects_sample_whose_square_overflows)
+{
+    setup();
+    /* 2e19 is finite, its square 4e38 is not: FLT_MAX is about 3.4e38. */
+    ASSERT_NEAR(moving_rms_feed(&rms, 2.0f), 2.0f, 1e-6f);
+    ASSERT_NEAR(moving_rms_feed(&rms, 2e19f), 2.0f, 1e-6f);
+    ASSERT_EQ(rms.count, 1);
+    ASSERT_NEAR(moving_rms_feed(&rms, 2.0f), 2.0f, 1e-6f);
+}
+
+TEST(test_feed_rejects_sample_overflowing_sum)
+{
+    setup();
+    /* Each square is about 2.25e38, finite; together they are not. */
+    float first = moving_rms_feed(&rms, 1.5e19f);
+    ASSERT_TRUE(moving_rms_feed(&rms, 1.5e19f) == first);
+    ASSERT_EQ(rms.count, 1);
+}
+
 TEST_MAIN("moving_rms")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -131,4 +164,7 @@ TEST_MAIN("moving_rms")
     RUN(test_get_null);
     RUN(test_feed_null);
     RUN(test_error_codes);
+    RUN(test_feed_rejects_infinity);
+    RUN(test_feed_rejects_sample_whose_square_overflows);
+    RUN(test_feed_rejects_sample_overflowing_sum);
 TEST_MAIN_END()

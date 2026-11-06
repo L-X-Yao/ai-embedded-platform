@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "moving_rms.h"
+#include <float.h>
 #include <math.h>
 
 moving_rms_err_t moving_rms_init(moving_rms_t *ctx, float *buf, size_t window)
@@ -28,13 +29,17 @@ float moving_rms_feed(moving_rms_t *ctx, float sample)
 {
     if (!ctx)
         return 0.0f;
-    if (!(sample == sample))
-        return moving_rms_get(ctx);
 
     float sq = sample * sample;
-    ctx->sum_sq -= ctx->buf[ctx->head];
+    float sum_sq = ctx->sum_sq - ctx->buf[ctx->head] + sq;
+
+    /* reject NaN, Inf and a sample that overflows the sum: inf - inf would
+     * leave the running sum NaN for good */
+    if (!(sum_sq >= -FLT_MAX && sum_sq <= FLT_MAX))
+        return moving_rms_get(ctx);
+
     ctx->buf[ctx->head] = sq;
-    ctx->sum_sq += sq;
+    ctx->sum_sq = sum_sq;
     if (ctx->sum_sq < 0.0f)
         ctx->sum_sq = 0.0f;
 
