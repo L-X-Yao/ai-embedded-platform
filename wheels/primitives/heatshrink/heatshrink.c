@@ -404,7 +404,7 @@ heatshrink_sink_res_t heatshrink_decoder_sink(heatshrink_decoder_t *dec,
         dec->state = HS_DEC_TAG;
     }
 
-    return HEATSHRINK_SINK_OK;
+    return (to_copy < len) ? HEATSHRINK_SINK_FULL : HEATSHRINK_SINK_OK;
 }
 
 /* ---- bit-level input helpers ---- */
