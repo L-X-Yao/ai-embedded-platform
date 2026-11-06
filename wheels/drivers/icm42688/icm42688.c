@@ -66,6 +66,15 @@ static void reg_read_burst(const icm42688_spi_t *spi, uint8_t reg,
     spi->cs_high(spi->ctx);
 }
 
+/* ---------- ODR helpers ---------- */
+
+/* Codes 1100..1110: 6.25 to 1.5625 Hz on the accel, in LP mode only, and
+ * Reserved on the gyro (DS-000347 Rev 1.6, sections 14.37 and 14.38). */
+static bool odr_is_accel_lp_only(icm42688_odr_t odr)
+{
+    return odr >= ICM42688_ODR_6HZ && odr <= ICM42688_ODR_1HZ;
+}
+
 /* ---------- API ---------- */
 
 icm42688_cfg_t icm42688_default_cfg(void)
@@ -90,6 +99,7 @@ icm42688_err_t icm42688_init(icm42688_t *dev,
     if ((unsigned)cfg->gyro_range > 3) return ICM42688_ERR_PARAM;
     if (cfg->acc_odr < 1 || cfg->acc_odr > 15)  return ICM42688_ERR_PARAM;
     if (cfg->gyro_odr < 1 || cfg->gyro_odr > 15) return ICM42688_ERR_PARAM;
+    if (odr_is_accel_lp_only(cfg->gyro_odr))     return ICM42688_ERR_PARAM;
 
     dev->spi = spi;
 
