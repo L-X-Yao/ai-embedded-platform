@@ -7,7 +7,7 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * SMBus protocol: write command byte, then read 3 bytes (LSB, MSB, PEC).
+ * SMBus protocol: command byte, repeated START, 3 bytes (LSB, MSB, PEC).
  * Temperature = raw * 0.02 - 273.15 (Kelvin to Celsius).
  */
 
@@ -47,11 +47,8 @@ static bool smbus_read_word(const mlx90614_t *dev, uint8_t cmd,
                             uint16_t *out)
 {
     uint8_t tx = cmd;
-    if (!dev->i2c->write(dev->i2c->ctx, dev->cfg.addr, &tx, 1))
-        return false;
-
     uint8_t rx[3]; /* LSB, MSB, PEC (PEC not checked) */
-    if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, rx, 3))
+    if (!dev->i2c->write_read(dev->i2c->ctx, dev->cfg.addr, &tx, 1, rx, 3))
         return false;
 
     *out = (uint16_t)((uint16_t)rx[1] << 8 | rx[0]);
@@ -91,7 +88,7 @@ mlx90614_err_t mlx90614_init(mlx90614_t *dev, const mlx90614_i2c_t *i2c,
 {
     if (!dev || !i2c || !cfg)
         return MLX90614_ERR_PARAM;
-    if (!i2c->write || !i2c->read)
+    if (!i2c->write || !i2c->write_read)
         return MLX90614_ERR_PARAM;
 
     memset(dev, 0, sizeof(*dev));
