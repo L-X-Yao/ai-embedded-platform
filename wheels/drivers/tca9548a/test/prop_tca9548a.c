@@ -8,11 +8,24 @@
 #include "mock_i2c.h"
 #include "tca9548a.h"
 
+/* The chip has one control byte, kept here in mock_regs[0x00]. */
+static bool prop_write_raw(void *ctx, uint8_t dev_addr,
+                           const uint8_t *data, uint16_t len)
+{
+    return len == 1 && mock_i2c_write_reg(ctx, dev_addr, 0x00, data[0]);
+}
+
+static bool prop_read_raw(void *ctx, uint8_t dev_addr,
+                          uint8_t *data, uint16_t len)
+{
+    return mock_i2c_read_regs(ctx, dev_addr, 0x00, data, len);
+}
+
 static const tca9548a_i2c_t prop_i2c = {
-    .write_reg = mock_i2c_write_reg,
-    .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
+    .write_raw = prop_write_raw,
+    .read_raw  = prop_read_raw,
 };
 
 PROPERTY(init_no_crash, 10000)
