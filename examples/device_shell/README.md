@@ -76,7 +76,7 @@ device_name = DevShell-01
 
 - All wheels are passive libraries (no OS, no threads, no heap).
 - `cli_shell` receives bytes via `cli_shell_feed()` -- in production
-  this is called from a UART RX ISR or polling loop.
+  this is called from a task or polling loop, never from a UART RX ISR.
 - `config_store` persistence callbacks (`save`/`load`) are injected at
   init -- this recipe uses a RAM buffer; a real device would use flash
   or EEPROM drivers.

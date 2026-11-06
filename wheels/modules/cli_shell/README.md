@@ -51,7 +51,7 @@ cli_shell_err_t cli_shell_register(cli_shell_t *sh, const char *name,
                                    const char *help,
                                    cli_shell_handler_t handler, void *ctx);
 
-/* Feed one byte from UART RX / polling loop */
+/* Feed one byte from a task or polling loop, never from an ISR */
 void cli_shell_feed(cli_shell_t *sh, uint8_t byte);
 ```
 
@@ -158,7 +158,9 @@ void debug_shell_init(void) {
     cli_shell_register(&shell, "status", "show device status", cmd_status, NULL);
 }
 
-/* Call from UART RX ISR or polling loop */
+/* Call from a task or polling loop, never from an ISR: feed echoes through
+ * the write callback and runs the command handler. A UART RX ISR queues the
+ * byte (ring_buffer, say) and the loop drains the queue into here. */
 void debug_shell_rx(uint8_t byte) {
     cli_shell_feed(&shell, byte);
 }
