@@ -40,6 +40,8 @@
 #define HEATER_MAX_C      400
 #define GAS_WAIT_MAX_MS   4032u  /* gas_wait_x = 0xFF */
 #define T_FINE_25C        128000  /* t_fine for 25 degC */
+#define ADC_SKIPPED_20BIT 0x80000u
+#define ADC_SKIPPED_16BIT 0x8000u
 
 /* --- internal helpers --- */
 
@@ -266,6 +268,9 @@ bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
         return BME688_ERR_PARAM;
     if (!i2c->write_reg || !i2c->read_regs)
         return BME688_ERR_PARAM;
+    /* Temperature cannot be skipped: every other channel is compensated with it */
+    if (cfg->osrs_t == 0)
+        return BME688_ERR_PARAM;
     if (cfg->osrs_t > 5 || cfg->osrs_p > 5 || cfg->osrs_h > 5)
         return BME688_ERR_PARAM;
     if (cfg->filter > 7)
@@ -357,11 +362,12 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
     int32_t temp_comp = compensate_temperature(dev, adc_temp);
     out->temperature_c = (float)temp_comp / 100.0f;
 
+    /* A skipped channel holds a marker value, not a measurement */
     uint32_t pres_comp = compensate_pressure(dev, adc_pres);
-    out->pressure_pa = (float)pres_comp;
+    out->pressure_pa = (adc_pres == ADC_SKIPPED_20BIT) ? 0.0f : (float)pres_comp;
 
     uint32_t hum_comp = compensate_humidity(dev, adc_hum);
-    out->humidity_pct = (float)hum_comp / 1000.0f;
+    out->humidity_pct = (adc_hum == ADC_SKIPPED_16BIT) ? 0.0f : (float)hum_comp / 1000.0f;
 
     /* without heat_stab_r the plate did not reach its target temperature */
     if (gas_valid && heat_stab)

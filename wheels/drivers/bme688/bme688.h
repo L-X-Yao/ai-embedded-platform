@@ -62,9 +62,9 @@ typedef struct {
 } bme688_data_t;
 
 typedef struct {
-    uint8_t  osrs_t;             /* oversampling temp  (0=skip, 1..5 = 1x..16x) */
-    uint8_t  osrs_p;             /* oversampling press (0=skip, 1..5 = 1x..16x) */
-    uint8_t  osrs_h;             /* oversampling hum   (0=skip, 1..5 = 1x..16x) */
+    uint8_t  osrs_t;             /* oversampling temp  (1..5 = 1x..16x, no skip) */
+    uint8_t  osrs_p;             /* oversampling press (0=skip reads 0, 1..5 = 1x..16x) */
+    uint8_t  osrs_h;             /* oversampling hum   (0=skip reads 0, 1..5 = 1x..16x) */
     uint8_t  filter;             /* IIR filter coeff   (0..7) */
     uint16_t gas_heater_temp_c;  /* target heater temp (200..400 C) */
     uint16_t gas_heater_dur_ms;  /* heater duration    (1..4032 ms) */
