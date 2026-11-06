@@ -322,6 +322,159 @@ TEST(test_iaq_changes_between_reads)
     ASSERT_EQ(data.tvoc_ppb, 0);
 }
 
+/* --- the model, from the manual ---------------------------------------- */
+
+/* A command as the master sends it, past any wait left from setup */
+static bool send(uint16_t cmd)
+{
+    uint8_t tx[2] = { (uint8_t)(cmd >> 8), (uint8_t)(cmd & 0xFFu) };
+    return sgp30_model_write(&model, 0x58, tx, 2);
+}
+
+/* Table 10, p.11: the maximum duration of each command without parameters.
+ * p.8: "When the measurement is in progress, no communication with the sensor
+ * is possible and the sensor aborts the communication with a XCK condition." */
+TEST(test_no_communication_for_the_maximum_duration)
+{
+    static const struct { uint16_t cmd; uint16_t max_ms; } table10[] = {
+        {0x2003, 10}, {0x2008, 12}, {0x2015, 10},
+    };
+    for (size_t i = 0; i < 3; i++) {
+        uint8_t buf[6];
+        sgp30_model_init(&model);
+        ASSERT_TRUE(send(table10[i].cmd));
+        ASSERT_FALSE(sgp30_model_read(&model, 0x58, buf, 6));
+        ASSERT_FALSE(send(0x2008));
+        sgp30_model_delay(&model, (uint16_t)(table10[i].max_ms - 1));
+        ASSERT_FALSE(sgp30_model_read(&model, 0x58, buf, 6));
+        sgp30_model_delay(&model, 1);
+        ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 6));
+    }
+}
+
+/* Table 10: set_iaq_baseline and set_absolute_humidity take 10 ms as well */
+TEST(test_set_commands_are_busy_too)
+{
+    uint8_t humidity[5] = { 0x20, 0x61, 0x0C, 0x80, 0x00 };
+    uint8_t baseline[8] = { 0x20, 0x1E, 0x11, 0x11, 0x00, 0x22, 0x22, 0x00 };
+    humidity[4] = sgp30_model_crc8(&humidity[2], 2);
+    baseline[4] = sgp30_model_crc8(&baseline[2], 2);
+    baseline[7] = sgp30_model_crc8(&baseline[5], 2);
+
+    sgp30_model_init(&model);
+    ASSERT_TRUE(sgp30_model_write(&model, 0x58, humidity, 5));
+    sgp30_model_delay(&model, 9);
+    ASSERT_FALSE(send(0x2008));
+    sgp30_model_delay(&model, 1);
+    ASSERT_TRUE(sgp30_model_write(&model, 0x58, baseline, 8));
+    sgp30_model_delay(&model, 9);
+    ASSERT_FALSE(send(0x2008));
+    sgp30_model_delay(&model, 1);
+    ASSERT_TRUE(send(0x2008));
+}
+
+/* p.12: "the sensor needs the time tIDLE = 0.5ms to respond to the I2C read
+ * header with an ACK Bit" */
+TEST(test_serial_id_needs_0_5_ms)
+{
+    uint8_t buf[9];
+    sgp30_model_init(&model);
+    ASSERT_TRUE(send(0x3682));
+    ASSERT_FALSE(sgp30_model_read(&model, 0x58, buf, 9));
+    sgp30_model_delay(&model, 1);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 9));
+}
+
+/* p.8: "Note that the data cannot be read more than once, and access to data
+ * beyond the specified amount will return a pattern of 1s." */
+TEST(test_data_reads_once)
+{
+    uint8_t buf[6];
+    sgp30_model_init(&model);
+    ASSERT_TRUE(send(0x2008));
+    sgp30_model_delay(&model, 12);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 6));
+    ASSERT_EQ_HEX(buf[0], 400 >> 8);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 6));
+    for (int i = 0; i < 6; i++) ASSERT_EQ_HEX(buf[i], 0xFF);
+}
+
+TEST(test_bytes_past_the_response_are_ones)
+{
+    uint8_t buf[9];
+    sgp30_model_init(&model);
+    ASSERT_TRUE(send(0x2008));
+    sgp30_model_delay(&model, 12);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 9));
+    ASSERT_EQ_HEX(buf[0], 400 >> 8);
+    for (int i = 6; i < 9; i++) ASSERT_EQ_HEX(buf[i], 0xFF);
+}
+
+/* p.8: the master "can abort the read transfer ... after any data byte", and
+ * what it left unread is gone as well */
+TEST(test_a_cut_read_ends_the_data)
+{
+    uint8_t buf[6];
+    sgp30_model_init(&model);
+    ASSERT_TRUE(send(0x2008));
+    sgp30_model_delay(&model, 12);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 2));
+    ASSERT_EQ_HEX(buf[0], 400 >> 8);
+    ASSERT_EQ_HEX(buf[1], 400 & 0xFF);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 2));
+    ASSERT_EQ_HEX(buf[0], 0xFF);
+}
+
+/* Table 10: iaq_init has no response, so there is nothing but 1s to read */
+TEST(test_a_command_with_no_response_reads_ones)
+{
+    uint8_t buf[3];
+    sgp30_model_init(&model);
+    ASSERT_TRUE(send(0x2003));
+    sgp30_model_delay(&model, 10);
+    ASSERT_TRUE(sgp30_model_read(&model, 0x58, buf, 3));
+    ASSERT_EQ_HEX(buf[0], 0xFF);
+    ASSERT_EQ_HEX(buf[2], 0xFF);
+}
+
+/* p.8: "the SGP30 only accepts data if it is followed by the correct checksum" */
+TEST(test_data_needs_its_checksum)
+{
+    uint8_t humidity[5] = { 0x20, 0x61, 0x0C, 0x80, 0x00 };
+    humidity[4] = (uint8_t)~sgp30_model_crc8(&humidity[2], 2);
+    sgp30_model_init(&model);
+    ASSERT_TRUE(sgp30_model_write(&model, 0x58, humidity, 5));
+    ASSERT_EQ_HEX(model.abs_humidity, 0x0000);
+}
+
+/* Table 10: the parameter of set_absolute_humidity is 3 bytes, no fewer */
+TEST(test_a_short_parameter_is_not_taken)
+{
+    uint8_t humidity[4] = { 0x20, 0x61, 0x0C, 0x80 };
+    sgp30_model_init(&model);
+    ASSERT_TRUE(sgp30_model_write(&model, 0x58, humidity, 4));
+    ASSERT_EQ_HEX(model.abs_humidity, 0x0000);
+}
+
+/* --- the driver on it --------------------------------------------------- */
+
+/* p.8: the driver waits out every command, so nothing is ever aborted */
+TEST(test_driver_never_talks_to_a_busy_sensor)
+{
+    sgp30_data_t data;
+    sgp30_baseline_t bl;
+    sgp30_serial_t serial;
+
+    setup();
+    ASSERT_EQ(sgp30_set_humidity(&dev, 0x0C80), SGP30_OK);
+    ASSERT_EQ(sgp30_measure_iaq(&dev, &data), SGP30_OK);
+    ASSERT_EQ(sgp30_get_baseline(&dev, &bl), SGP30_OK);
+    ASSERT_EQ(sgp30_set_baseline(&dev, &bl), SGP30_OK);
+    ASSERT_EQ(sgp30_get_serial_id(&dev, &serial), SGP30_OK);
+    ASSERT_EQ(sgp30_measure_iaq(&dev, &data), SGP30_OK);
+    ASSERT_EQ(model.aborted, 0);
+}
+
 TEST_MAIN("sgp30 hardware model")
     RUN(test_init_sends_iaq_init);
     RUN(test_measure_iaq_default_clean_air);
@@ -342,4 +495,14 @@ TEST_MAIN("sgp30 hardware model")
     RUN(test_model_crc_matches_driver_crc);
     RUN(test_full_workflow);
     RUN(test_iaq_changes_between_reads);
+    RUN(test_no_communication_for_the_maximum_duration);
+    RUN(test_set_commands_are_busy_too);
+    RUN(test_serial_id_needs_0_5_ms);
+    RUN(test_data_reads_once);
+    RUN(test_bytes_past_the_response_are_ones);
+    RUN(test_a_cut_read_ends_the_data);
+    RUN(test_a_command_with_no_response_reads_ones);
+    RUN(test_data_needs_its_checksum);
+    RUN(test_a_short_parameter_is_not_taken);
+    RUN(test_driver_never_talks_to_a_busy_sensor);
 TEST_MAIN_END()
