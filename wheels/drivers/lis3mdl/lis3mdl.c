@@ -10,6 +10,7 @@
 
 #include "lis3mdl.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- register map ---------- */
 
@@ -41,20 +42,10 @@ static const float sensitivity_lsb_per_gauss[] = {
 
 /* ---------- API implementation ---------- */
 
-lis3mdl_err_t lis3mdl_init(lis3mdl_t *dev, const lis3mdl_i2c_t *i2c,
-                           const lis3mdl_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static lis3mdl_err_t bring_up(const lis3mdl_i2c_t *i2c,
+                              const lis3mdl_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return LIS3MDL_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return LIS3MDL_ERR_PARAM;
-    if ((unsigned)cfg->range > 3u)
-        return LIS3MDL_ERR_PARAM;
-
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->sensitivity = sensitivity_lsb_per_gauss[(unsigned)cfg->range];
-
     /* Read and verify WHO_AM_I */
     uint8_t id = 0;
     if (!i2c->read_regs(i2c->ctx, cfg->addr, REG_WHO_AM_I, &id, 1))
@@ -76,6 +67,33 @@ lis3mdl_err_t lis3mdl_init(lis3mdl_t *dev, const lis3mdl_i2c_t *i2c,
         return LIS3MDL_ERR_I2C;
 
     return LIS3MDL_OK;
+}
+
+lis3mdl_err_t lis3mdl_init(lis3mdl_t *dev, const lis3mdl_i2c_t *i2c,
+                           const lis3mdl_cfg_t *cfg)
+{
+    if (!dev)
+        return LIS3MDL_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return LIS3MDL_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return LIS3MDL_ERR_PARAM;
+    if ((unsigned)cfg->range > 3u)
+        return LIS3MDL_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->sensitivity = sensitivity_lsb_per_gauss[(unsigned)cfg->range];
+
+    lis3mdl_err_t err = bring_up(i2c, cfg);
+    if (err != LIS3MDL_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 lis3mdl_err_t lis3mdl_read_raw(const lis3mdl_t *dev, lis3mdl_raw_t *raw)

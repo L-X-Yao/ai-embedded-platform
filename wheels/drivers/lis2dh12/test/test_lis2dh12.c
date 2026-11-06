@@ -128,6 +128,78 @@ TEST(test_read_null)
     ASSERT_EQ(lis2dh12_read(&dev, NULL), LIS2DH12_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lis2dh12_t *d)
+{
+    lis2dh12_data_t out;
+    ASSERT_EQ(lis2dh12_read(d, &out), LIS2DH12_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static lis2dh12_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* It answers, but it is not the chip the scale was chosen for */
+TEST(test_device_refused_after_wrong_id)
+{
+    lis2dh12_t d;
+    hw_model_reset();
+    hw_regs[0x0F] = 0x00;
+    ASSERT_EQ(lis2dh12_init(&d, &mock_i2c, &default_cfg), LIS2DH12_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* The model cannot fail, so these let a set number of bus calls through */
+static int calls_left;
+
+static bool flaky_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    if (calls_left-- <= 0) return false;
+    return hw_model_write_reg(ctx, dev_addr, reg, val);
+}
+
+static bool flaky_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                            uint8_t *buf, uint16_t len)
+{
+    if (calls_left-- <= 0) return false;
+    return hw_model_read_regs(ctx, dev_addr, reg, buf, len);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    lis2dh12_t d;
+    lis2dh12_i2c_t flaky = mock_i2c;
+    flaky.write_reg = flaky_write_reg;
+    flaky.read_regs = flaky_read_regs;
+
+    for (int good_calls = 0; good_calls < 3; good_calls++) {
+        hw_model_reset();
+        calls_left = good_calls;  /* the ID read, then the two writes */
+        ASSERT_EQ(lis2dh12_init(&d, &flaky, &default_cfg), LIS2DH12_ERR_I2C);
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    lis2dh12_t d;
+    lis2dh12_cfg_t bad = default_cfg;
+    bad.range = (lis2dh12_range_t)4;
+    hw_model_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis2dh12_init(&d, NULL, &default_cfg), LIS2DH12_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis2dh12_init(&d, &mock_i2c, &bad), LIS2DH12_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lis2dh12")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -142,4 +214,8 @@ TEST_MAIN("lis2dh12")
     RUN(test_read_negative);
     RUN(test_read_4g_range);
     RUN(test_read_null);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

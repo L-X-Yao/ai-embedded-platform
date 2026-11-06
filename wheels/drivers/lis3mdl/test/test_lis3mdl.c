@@ -245,6 +245,59 @@ TEST(test_alternate_address)
     ASSERT_EQ(dev.cfg.addr, LIS3MDL_ADDR_HIGH);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lis3mdl_t *d)
+{
+    lis3mdl_data_t data;
+    lis3mdl_raw_t raw;
+    ASSERT_EQ(lis3mdl_read(d, &data), LIS3MDL_ERR_PARAM);
+    ASSERT_EQ(lis3mdl_read_raw(d, &raw), LIS3MDL_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    lis3mdl_t d;
+    mock_reset();
+    mock_regs[MOCK_WHO_AM_I_REG] = 0x00;
+    ASSERT_EQ(lis3mdl_init(&d, &mock_i2c, &default_cfg), LIS3MDL_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    lis3mdl_t d;
+    for (int step = 0; step < 4; step++) {
+        mock_reset();
+        mock_fail_at = step;  /* the ID read, then the three CTRL writes */
+        ASSERT_EQ(lis3mdl_init(&d, &mock_i2c, &default_cfg), LIS3MDL_ERR_I2C);
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    lis3mdl_t d;
+    lis3mdl_i2c_t no_read = mock_i2c;
+    lis3mdl_cfg_t bad = default_cfg;
+    no_read.read_regs = NULL;
+    bad.range = (lis3mdl_range_t)4;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis3mdl_init(&d, NULL, &default_cfg), LIS3MDL_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis3mdl_init(&d, &no_read, &default_cfg), LIS3MDL_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis3mdl_init(&d, &mock_i2c, &bad), LIS3MDL_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lis3mdl")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -268,4 +321,7 @@ TEST_MAIN("lis3mdl")
     RUN(test_read_i2c_fail);
     RUN(test_error_codes);
     RUN(test_alternate_address);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

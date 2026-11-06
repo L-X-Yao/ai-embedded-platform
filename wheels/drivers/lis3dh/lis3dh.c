@@ -95,18 +95,9 @@ static lis3dh_err_t write_mode(const lis3dh_t *dev, lis3dh_range_t range,
     return LIS3DH_OK;
 }
 
-lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
-                         const lis3dh_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static lis3dh_err_t bring_up(const lis3dh_t *dev)
 {
-    if (!dev || !i2c || !cfg)
-        return LIS3DH_ERR_PARAM;
-    if ((unsigned)cfg->range > 3 || (unsigned)cfg->odr > 9)
-        return LIS3DH_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify chip identity */
     uint8_t id = 0;
     if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr,
@@ -116,9 +107,34 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
         return LIS3DH_ERR_ID;
 
     /* ODR, all axes, BDU, full-scale range and the operating mode */
-    lis3dh_err_t err = write_mode(dev, cfg->range, cfg->odr);
-    if (err != LIS3DH_OK)
+    return write_mode(dev, dev->cfg.range, dev->cfg.odr);
+}
+
+lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
+                         const lis3dh_cfg_t *cfg)
+{
+    if (!dev)
+        return LIS3DH_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no scale and would read infinity */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return LIS3DH_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return LIS3DH_ERR_PARAM;
+    if ((unsigned)cfg->range > 3 || (unsigned)cfg->odr > 9)
+        return LIS3DH_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    lis3dh_err_t err = bring_up(dev);
+    if (err != LIS3DH_OK) {
+        dev->i2c = NULL;
         return err;
+    }
 
     dev->scale = range_scale[cfg->range & 0x03];
     INVARIANT(dev->i2c != NULL);
@@ -127,7 +143,7 @@ lis3dh_err_t lis3dh_init(lis3dh_t *dev, const lis3dh_i2c_t *i2c,
 
 lis3dh_err_t lis3dh_read_accel(const lis3dh_t *dev, lis3dh_accel_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return LIS3DH_ERR_PARAM;
 
     uint8_t buf[6];
@@ -149,7 +165,7 @@ lis3dh_err_t lis3dh_read_accel(const lis3dh_t *dev, lis3dh_accel_t *out)
 
 lis3dh_err_t lis3dh_read_raw(const lis3dh_t *dev, lis3dh_raw_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return LIS3DH_ERR_PARAM;
 
     uint8_t buf[6];
@@ -164,7 +180,7 @@ lis3dh_err_t lis3dh_read_raw(const lis3dh_t *dev, lis3dh_raw_t *out)
 
 lis3dh_err_t lis3dh_set_range(lis3dh_t *dev, lis3dh_range_t range)
 {
-    if (!dev || (unsigned)range > 3)
+    if (!dev || !dev->i2c || (unsigned)range > 3)
         return LIS3DH_ERR_PARAM;
 
     if (!write_reg(dev, REG_CTRL_REG4, ctrl4_value(range, dev->cfg.odr)))
@@ -177,7 +193,7 @@ lis3dh_err_t lis3dh_set_range(lis3dh_t *dev, lis3dh_range_t range)
 
 lis3dh_err_t lis3dh_set_odr(lis3dh_t *dev, lis3dh_odr_t odr)
 {
-    if (!dev || (unsigned)odr > 9)
+    if (!dev || !dev->i2c || (unsigned)odr > 9)
         return LIS3DH_ERR_PARAM;
 
     lis3dh_err_t err = write_mode(dev, dev->cfg.range, odr);

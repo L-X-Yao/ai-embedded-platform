@@ -333,6 +333,68 @@ TEST(test_sub_address_bit_7_is_auto_increment)
     ASSERT_EQ_HEX(buf[1], 0x11);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(lis3dh_t *d)
+{
+    lis3dh_accel_t accel;
+    lis3dh_raw_t raw;
+    ASSERT_EQ(lis3dh_read_accel(d, &accel), LIS3DH_ERR_PARAM);
+    ASSERT_EQ(lis3dh_read_raw(d, &raw), LIS3DH_ERR_PARAM);
+    ASSERT_EQ(lis3dh_set_range(d, LIS3DH_RANGE_4G), LIS3DH_ERR_PARAM);
+    ASSERT_EQ(lis3dh_set_odr(d, LIS3DH_ODR_10HZ), LIS3DH_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static lis3dh_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* It answers, but init returned before it set the scale: x read infinity */
+TEST(test_device_refused_after_wrong_id)
+{
+    lis3dh_t d;
+    mock_reset();
+    mock_regs[0x0F] = 0x00;
+    ASSERT_EQ(lis3dh_init(&d, &mock_i2c, &default_cfg), LIS3DH_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    lis3dh_t d;
+    for (int step = 0; step < 3; step++) {
+        mock_reset();
+        mock_fail_at = step;  /* the ID read, then the two mode writes */
+        ASSERT_EQ(lis3dh_init(&d, &mock_i2c, &default_cfg), LIS3DH_ERR_I2C);
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    lis3dh_t d;
+    lis3dh_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(lis3dh_init(&d, NULL, &default_cfg), LIS3DH_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad.write_reg = NULL;
+    ASSERT_EQ(lis3dh_init(&d, &bad, &default_cfg), LIS3DH_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(lis3dh_init(&d, &bad, &default_cfg), LIS3DH_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("lis3dh")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -356,4 +418,8 @@ TEST_MAIN("lis3dh")
     RUN(test_config_registers);
     RUN(test_low_power_rates_select_low_power_mode);
     RUN(test_sub_address_bit_7_is_auto_increment);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
