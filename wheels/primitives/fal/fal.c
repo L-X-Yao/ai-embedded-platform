@@ -111,6 +111,14 @@ static const struct fal_flash_dev *find_dev_by_part(
     return fal_flash_device_find(part->flash_name);
 }
 
+/* Compared by subtraction, as addr + size can wrap size_t: on a 32-bit target
+ * 0xFFFFFF00 + 0x200 comes to 0x100, and passes as a small range. */
+static bool range_fits_part(const struct fal_partition *part, uint32_t addr,
+                            size_t size)
+{
+    return addr <= part->len && size <= part->len - addr;
+}
+
 int fal_partition_read(const struct fal_partition *part, uint32_t addr,
                        uint8_t *buf, size_t size)
 {
@@ -122,7 +130,7 @@ int fal_partition_read(const struct fal_partition *part, uint32_t addr,
     if (!s_init_ok) {
         return FAL_ERR_NOT_READY;
     }
-    if ((size_t)addr + size > part->len) {
+    if (!range_fits_part(part, addr, size)) {
         return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
@@ -144,7 +152,7 @@ int fal_partition_write(const struct fal_partition *part, uint32_t addr,
     if (!s_init_ok) {
         return FAL_ERR_NOT_READY;
     }
-    if ((size_t)addr + size > part->len) {
+    if (!range_fits_part(part, addr, size)) {
         return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
@@ -165,7 +173,7 @@ int fal_partition_erase(const struct fal_partition *part, uint32_t addr,
     if (!s_init_ok) {
         return FAL_ERR_NOT_READY;
     }
-    if ((size_t)addr + size > part->len) {
+    if (!range_fits_part(part, addr, size)) {
         return FAL_ERR_OVERFLOW;
     }
     const struct fal_flash_dev *dev = find_dev_by_part(part);
