@@ -89,6 +89,7 @@
 
 #define ESTAT_CLKRDY  0x01U
 #define ESTAT_TXABRT  0x02U
+#define ESTAT_RXBUSY  0x04U
 #define ESTAT_LATECOL 0x10U
 
 #define MACON1_MARXEN 0x01U
@@ -249,14 +250,12 @@ static void soft_reset(enc28j60_t *dev)
     dev->spi->delay_ms(dev->spi->ctx, ENC28J60_RESET_DELAY_MS);
 }
 
-/* ---------- wait for the Oscillator Start-up Timer ---------- */
+/* ---------- wait for ESTAT bits ---------- */
 
-/* DS39662C p.7: after a Power-on Reset, poll CLKRDY before any MAC, MII or
- * PHY access and before setting RXEN or TXRTS. */
-static enc28j60_err_t wait_clkrdy(enc28j60_t *dev)
+static enc28j60_err_t wait_estat(enc28j60_t *dev, uint8_t mask, uint8_t want)
 {
     for (uint32_t i = 0; i < ENC28J60_READY_POLLS; i++) {
-        if (spi_read_op(dev->spi, OP_RCR, ESTAT, false) & ESTAT_CLKRDY) {
+        if ((spi_read_op(dev->spi, OP_RCR, ESTAT, false) & mask) == want) {
             return ENC28J60_OK;
         }
         dev->spi->delay_ms(dev->spi->ctx, 1U);
@@ -295,7 +294,9 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
     /* Soft reset */
     soft_reset(dev);
 
-    enc28j60_err_t err = wait_clkrdy(dev);
+    /* DS39662C p.7: after a Power-on Reset, poll CLKRDY before any MAC, MII
+     * or PHY access and before setting RXEN or TXRTS */
+    enc28j60_err_t err = wait_estat(dev, ESTAT_CLKRDY, ESTAT_CLKRDY);
     if (err != ENC28J60_OK) return err;
 
     /* RX buffer: 0x0000 - 0x19FF */
@@ -481,9 +482,22 @@ enc28j60_err_t enc28j60_set_mac(enc28j60_t *dev, const uint8_t *mac_addr)
 {
     if (!dev || !dev->spi) return ENC28J60_ERR_PARAM;
     if (!mac_addr)         return ENC28J60_ERR_PARAM;
-    memcpy(dev->mac_addr, mac_addr, 6);
-    write_mac_regs(dev);
-    return ENC28J60_OK;
+
+    /* DS39662C p.45: clear RXEN before altering the MAC address. A frame
+     * already arriving still has to finish. */
+    bool rx_on = (spi_read_op(dev->spi, OP_RCR, ECON1, false) & ECON1_RXEN) != 0U;
+    bit_field_clear(dev, ECON1, ECON1_RXEN);
+
+    enc28j60_err_t err = wait_estat(dev, ESTAT_RXBUSY, 0U);
+    if (err == ENC28J60_OK) {
+        memcpy(dev->mac_addr, mac_addr, 6);
+        write_mac_regs(dev);
+    }
+
+    if (rx_on) {
+        bit_field_set(dev, ECON1, ECON1_RXEN);
+    }
+    return err;
 }
 
 void enc28j60_enable_reception(enc28j60_t *dev)

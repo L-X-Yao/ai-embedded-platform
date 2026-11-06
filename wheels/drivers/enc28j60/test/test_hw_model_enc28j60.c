@@ -634,6 +634,64 @@ TEST(test_send_leaves_room_for_the_crc)
     ASSERT_EQ(enc28j60_send(&dev, frame, 1518), ENC28J60_ERR_SIZE);
 }
 
+/* --- 20. Changing the MAC address --- */
+
+static const uint8_t new_mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+
+/* DS39662C p.45: "to prevent unexpected packets from arriving, it is
+ * recommended that RXEN be cleared before altering the receive filter
+ * configuration (ERXFCON) and MAC address." */
+TEST(test_set_mac_stops_reception_around_the_write)
+{
+    setup_and_init();
+    ASSERT_TRUE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+
+    ASSERT_EQ(enc28j60_set_mac(&dev, new_mac), ENC28J60_OK);
+
+    ASSERT_EQ(model.mac_write_rx_active, 0);
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], 0xAA);
+    ASSERT_EQ(model.regs[3][ENC_MAADR6], 0xFF);
+    ASSERT_TRUE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
+/* RXBUSY: "Receive logic is receiving a data packet" (p.66). Clearing RXEN
+ * does not stop that frame, so the write waits for it. */
+TEST(test_set_mac_waits_for_the_frame_in_progress)
+{
+    setup_and_init();
+    model.common[ENC_ESTAT] |= ENC_ESTAT_RXBUSY;
+    model.rxbusy_after = 3;
+
+    ASSERT_EQ(enc28j60_set_mac(&dev, new_mac), ENC28J60_OK);
+
+    ASSERT_EQ(model.mac_write_rx_active, 0);
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], 0xAA);
+}
+
+TEST(test_set_mac_timeout_keeps_the_old_address)
+{
+    setup_and_init();
+    model.common[ENC_ESTAT] |= ENC_ESTAT_RXBUSY;
+    model.rxbusy_after = 0;   /* RXBUSY never clears */
+
+    ASSERT_EQ(enc28j60_set_mac(&dev, new_mac), ENC28J60_ERR_TIMEOUT);
+
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], test_mac[0]);
+    ASSERT_EQ(dev.mac_addr[0], test_mac[0]);
+    ASSERT_TRUE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
+TEST(test_set_mac_leaves_reception_off_if_it_was_off)
+{
+    setup_and_init();
+    model.common[ENC_ECON1] &= (uint8_t)~ENC_ECON1_RXEN;
+
+    ASSERT_EQ(enc28j60_set_mac(&dev, new_mac), ENC28J60_OK);
+
+    ASSERT_EQ(model.regs[3][ENC_MAADR1], 0xAA);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -662,4 +720,8 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_model_bfc_clears_only_rc_bits_of_estat);
     RUN(test_send_timeout_cancels_the_transmission);
     RUN(test_send_leaves_room_for_the_crc);
+    RUN(test_set_mac_stops_reception_around_the_write);
+    RUN(test_set_mac_waits_for_the_frame_in_progress);
+    RUN(test_set_mac_timeout_keeps_the_old_address);
+    RUN(test_set_mac_leaves_reception_off_if_it_was_off);
 TEST_MAIN_END()

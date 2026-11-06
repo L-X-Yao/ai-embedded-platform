@@ -94,7 +94,9 @@ bool enc28j60_has_packet(enc28j60_t *dev);
 uint8_t enc28j60_get_revision(enc28j60_t *dev);
 
 /**
- * Update MAC address registers.
+ * Update MAC address registers. Reception stops meanwhile, and a frame already
+ * arriving is waited for. Returns ENC28J60_ERR_TIMEOUT if it does not finish,
+ * with the old address kept.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 enc28j60_err_t enc28j60_set_mac(enc28j60_t *dev, const uint8_t *mac_addr);
