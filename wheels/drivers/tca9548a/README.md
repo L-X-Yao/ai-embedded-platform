@@ -64,8 +64,8 @@ None.
 Checked on 2026-11-06 against TI SCPS207H, May 2012, revised September 2024. Not run on hardware.
 
 - **Matched:** Addresses 0x70-0x77, the control byte, several channels at once, the 0x00 default, no delay needed.
-- **Fixed:** `tca9548a_get_channel` went through `read_regs`, and the chip stored the register byte as the control value: every channel switched off and the call returned `TCA9548A_OK` with mask 0. It now reads one byte through `read_raw` with nothing sent first, as in Figure 7-5. The channel writes sent 0x00 and then the mask, which worked only because the chip keeps the last byte. They now send the mask alone through `write_raw`, as in Figure 7-4. The mock and the model treated reg as a register number, which hid this. The model is now one control byte at bus level, with a NACK for a wrong address. None of this has run on hardware.
-- **Still open:** There is no RESET pin control, the manual's way out of a stuck downstream bus. The model does not turn channels on at STOP.
+- **Fixed:** `tca9548a_get_channel` went through `read_regs`, and the chip stored the register byte as the control value: every channel switched off and the call returned `TCA9548A_OK` with mask 0. It now reads one byte through `read_raw` with nothing sent first, as in Figure 7-5. The channel writes sent 0x00 and then the mask, which worked only because the chip keeps the last byte. They now send the mask alone through `write_raw`, as in Figure 7-4. The mock and the model treated reg as a register number, which hid this. The model is now one control byte at bus level, with a NACK for a wrong address. It now connects channels at the STOP and has the RESET pin. None of this has run on hardware.
+- **Still open:** There is no RESET pin control, the manual's way out of a stuck downstream bus.
 - **Suspected:** `tca9548a_select`, `tca9548a_select_multi` and `tca9548a_disable_all` skip the bus when the cached mask matches, so after a RESET pulse or supply dip they can report success with the channel off, until `tca9548a_init` runs again.
 
 ## Known issues
