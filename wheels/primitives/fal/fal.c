@@ -10,6 +10,7 @@
 
 #include "fal.h"
 #include "contract.h"
+#include <stdbool.h>
 #include <string.h>
 
 #ifndef FAL_FLASH_DEV_TABLE
@@ -28,10 +29,29 @@ static const size_t s_part_count = sizeof(s_parts) / sizeof(s_parts[0]);
 
 static uint8_t s_init_ok;
 
+/* A partition with no device has nothing to fit: its calls report that. The
+ * end is compared by subtraction, as offset + len can wrap size_t. */
+static bool part_fits_device(const struct fal_partition *part)
+{
+    const struct fal_flash_dev *dev = fal_flash_device_find(part->flash_name);
+    if (!dev) {
+        return true;
+    }
+    if (part->offset < 0 || (size_t)part->offset > dev->len) {
+        return false;
+    }
+    return part->len <= dev->len - (size_t)part->offset;
+}
+
 int fal_init(void)
 {
     if (s_init_ok) {
         return (int)s_part_count;
+    }
+    for (size_t i = 0; i < s_part_count; i++) {
+        if (!part_fits_device(&s_parts[i])) {
+            return FAL_ERR_PART_TABLE;
+        }
     }
     for (size_t i = 0; i < s_dev_count; i++) {
         if (s_devs[i]->ops.init) {
