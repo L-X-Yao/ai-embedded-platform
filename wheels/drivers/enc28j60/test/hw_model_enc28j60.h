@@ -161,6 +161,15 @@ typedef struct {
     int      reset_count;
     int      delay_count;
 
+    /* Oscillator Start-up Timer: ESTAT reads until CLKRDY sets, 0 = never */
+    int      clkrdy_after;
+    int      estat_read_count;
+
+    /* ms the driver waited since the last SRC, -1 = no SRC seen yet */
+    int      ms_since_src;
+    /* MAC/MII accesses and RXEN/TXRTS sets made before the chip was ready */
+    int      early_access_count;
+
     /* TX behavior: how many ECON1 reads before TXRTS auto-clears */
     int      tx_complete_after;
     int      tx_econ1_read_count;
@@ -183,6 +192,27 @@ static uint8_t *enc_reg_ptr(enc28j60_model_t *m, uint8_t addr)
     if (ENC_IS_COMMON(addr))
         return &m->common[addr];
     return &m->regs[m->current_bank][addr];
+}
+
+/* MAC and MII registers (Table 3-1): all of bank 2, MAADR and MISTAT in bank 3.
+ * Everything else, EREVID included, is an ETH register. */
+__attribute__((unused))
+static bool enc_is_mac_mii(uint8_t bank, uint8_t addr)
+{
+    if (ENC_IS_COMMON(addr)) return false;
+    if (bank == 2U) return true;
+    return bank == 3U && (addr <= ENC_MAADR2 || addr == ENC_MISTAT);
+}
+
+/* DS39662C p.7: until CLKRDY is set, no MAC, MII or PHY access, no RXEN and no
+ * TXRTS. Errata DS80349C issue 2: an SRC does not clear CLKRDY, so after one
+ * the wait of at least 1 ms is what counts. */
+__attribute__((unused))
+static void enc_note_ready_needed(enc28j60_model_t *m)
+{
+    if (!(m->common[ENC_ESTAT] & ENC_ESTAT_CLKRDY) ||
+        (m->ms_since_src >= 0 && m->ms_since_src < 1))
+        m->early_access_count++;
 }
 
 /* Write to a register, respecting read-only flags */
@@ -256,8 +286,12 @@ static uint16_t enc_get_ewrpt(enc28j60_model_t *m)
 __attribute__((unused))
 static void enc_soft_reset(enc28j60_model_t *m)
 {
+    /* CLKRDY resets to 0 on Power-on Reset, unaffected on all other Resets */
+    uint8_t clkrdy = m->common[ENC_ESTAT] & ENC_ESTAT_CLKRDY;
     memcpy(m->regs, m->reset_regs, sizeof(m->regs));
     memcpy(m->common, m->reset_common, sizeof(m->common));
+    m->common[ENC_ESTAT] |= clkrdy;
+    m->ms_since_src = 0;
     m->current_bank = 0;
     m->buf_rdptr = 0;
     m->buf_wrptr = 0;
@@ -342,6 +376,15 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
          * the result (which is also the register value -- harmless).
          * This means the model returns the register value on every byte
          * and the driver picks up the correct one. */
+        if (enc_is_mac_mii(m->current_bank, m->spi_addr))
+            enc_note_ready_needed(m);
+        /* The Oscillator Start-up Timer runs out after clkrdy_after reads */
+        if (m->spi_addr == ENC_ESTAT) {
+            m->estat_read_count++;
+            if (m->clkrdy_after > 0 &&
+                m->estat_read_count >= m->clkrdy_after)
+                m->common[ENC_ESTAT] |= ENC_ESTAT_CLKRDY;
+        }
         uint8_t val = *enc_reg_ptr(m, m->spi_addr);
         /* Special handling: reading ECON1 may auto-clear TXRTS */
         if (m->spi_addr == ENC_ECON1) {
@@ -358,6 +401,8 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
     }
 
     case ENC_PH_WRITE_DATA: {
+        if (enc_is_mac_mii(m->current_bank, m->spi_addr))
+            enc_note_ready_needed(m);
         enc_write_reg(m, m->spi_addr, tx);
         /* If writing ECON1, update bank selection */
         if (m->spi_addr == ENC_ECON1) {
@@ -380,6 +425,9 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
     }
 
     case ENC_PH_BFS_DATA: {
+        if (m->spi_addr == ENC_ECON1 &&
+            (tx & (ENC_ECON1_RXEN | ENC_ECON1_TXRTS)))
+            enc_note_ready_needed(m);
         enc_bfs_reg(m, m->spi_addr, tx);
         if (m->spi_addr == ENC_ECON1) {
             enc_update_bank(m);
@@ -439,9 +487,10 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
 __attribute__((unused))
 static void enc28j60_model_delay_ms(void *ctx, uint32_t ms)
 {
-    (void)ms;
     enc28j60_model_t *m = (enc28j60_model_t *)ctx;
     m->delay_count++;
+    if (m->ms_since_src >= 0)
+        m->ms_since_src += (int)ms;
 }
 
 /* ================================================================
@@ -457,8 +506,6 @@ static void enc28j60_model_init(enc28j60_model_t *m)
 
     /* EREVID (bank 3, 0x12) = 0x06 (silicon rev 6) */
     m->reset_regs[3][ENC_EREVID] = 0x06U;
-    /* ESTAT.CLKRDY = 1 after reset (clock is ready) */
-    m->reset_common[ENC_ESTAT] = ENC_ESTAT_CLKRDY;
 
     /* Mark EREVID as read-only */
     m->readonly[3][ENC_EREVID] = true;
@@ -485,6 +532,8 @@ static void enc28j60_model_init(enc28j60_model_t *m)
     m->phase = ENC_PH_IDLE;
     m->reset_count = 0;
     m->delay_count = 0;
+    m->clkrdy_after = 3;        /* CLKRDY is 0 at POR, sets on the 3rd read */
+    m->ms_since_src = -1;
     m->tx_complete_after = 1;   /* TXRTS clears after 1 read by default */
     m->tx_econ1_read_count = 0;
     m->tx_captured_len = 0;

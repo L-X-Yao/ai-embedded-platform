@@ -99,12 +99,18 @@
 
 /* ---------- timing ---------- */
 
+/* Errata DS80349C issue 2: wait at least 1 ms after an SPI Reset */
 #ifndef ENC28J60_RESET_DELAY_MS
 #define ENC28J60_RESET_DELAY_MS  2U
 #endif
 
 #ifndef ENC28J60_TX_TIMEOUT
 #define ENC28J60_TX_TIMEOUT  50000U
+#endif
+
+/* Reads of a status bit, 1 ms apart, before giving up */
+#ifndef ENC28J60_READY_POLLS
+#define ENC28J60_READY_POLLS  10U
 #endif
 
 /* ---------- helpers: low-level SPI ---------- */
@@ -195,9 +201,24 @@ static void soft_reset(enc28j60_t *dev)
     dev->spi->xfer(dev->spi->ctx, OP_SRC);
     dev->spi->cs_high(dev->spi->ctx);
     dev->bank = 0;
-    if (dev->spi->delay_ms) {
-        dev->spi->delay_ms(dev->spi->ctx, ENC28J60_RESET_DELAY_MS);
+    /* Errata DS80349C issue 2: SRC stops the PHY clock without clearing
+     * CLKRDY, so only this wait covers it. */
+    dev->spi->delay_ms(dev->spi->ctx, ENC28J60_RESET_DELAY_MS);
+}
+
+/* ---------- wait for the Oscillator Start-up Timer ---------- */
+
+/* DS39662C p.7: after a Power-on Reset, poll CLKRDY before any MAC, MII or
+ * PHY access and before setting RXEN or TXRTS. */
+static enc28j60_err_t wait_clkrdy(enc28j60_t *dev)
+{
+    for (uint32_t i = 0; i < ENC28J60_READY_POLLS; i++) {
+        if (spi_read_op(dev->spi, OP_RCR, ESTAT, false) & ESTAT_CLKRDY) {
+            return ENC28J60_OK;
+        }
+        dev->spi->delay_ms(dev->spi->ctx, 1U);
     }
+    return ENC28J60_ERR_TIMEOUT;
 }
 
 /* ---------- internal: write MAC address to registers ---------- */
@@ -217,7 +238,8 @@ static void write_mac_regs(enc28j60_t *dev)
 enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
                               const uint8_t *mac_addr)
 {
-    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer)
+    if (!dev || !spi || !spi->cs_low || !spi->cs_high || !spi->xfer ||
+        !spi->delay_ms)
         return ENC28J60_ERR_PARAM;
     if (!mac_addr)
         return ENC28J60_ERR_PARAM;
@@ -229,6 +251,9 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
 
     /* Soft reset */
     soft_reset(dev);
+
+    enc28j60_err_t err = wait_clkrdy(dev);
+    if (err != ENC28J60_OK) return err;
 
     /* RX buffer: 0x0000 - 0x19FF */
     write_reg(dev, 0, ERXSTL, (uint8_t)(RXSTART & 0xFFU));

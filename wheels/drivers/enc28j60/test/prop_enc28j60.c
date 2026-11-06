@@ -9,12 +9,17 @@
 #include "mock_time.h"
 #include "enc28j60.h"
 
+/* Answer ESTAT reads with CLKRDY, or init would stop at its poll and the
+ * properties would never reach the rest of it. */
 static uint8_t mock_xfer(void *ctx, uint8_t tx)
 {
+    static uint8_t last;
+    uint8_t rx = (last == 0x1DU) ? 0x01U : 0x00U;
     (void)ctx;
+    last = tx;
     if (mock_spi_should_fail()) return 0xFF;
     mock_spi_log_byte(tx);
-    return 0x00;
+    return rx;
 }
 
 static const enc28j60_spi_t prop_spi = {

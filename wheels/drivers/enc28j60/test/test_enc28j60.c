@@ -17,6 +17,7 @@
 /* Register addresses for test verification */
 #define ECON1     0x1FU
 #define ECON2     0x1EU
+#define ESTAT     0x1DU
 #define EPKTCNT   0x19U
 #define EREVID    0x12U
 #define ERXSTL    0x08U
@@ -28,6 +29,7 @@
 #define ECON1_RXEN   0x04U
 #define ECON1_TXRTS  0x08U
 #define ECON2_PKTDEC 0x40U
+#define ESTAT_CLKRDY 0x01U
 
 static uint8_t xfer_log[1024];
 static int     xfer_log_idx;
@@ -97,6 +99,9 @@ static void mock_reset(void)
 
     /* Set EREVID to a known value */
     mock_regs[3][EREVID] = 0x06;
+
+    /* The oscillator has started: init polls this bit */
+    mock_common[ESTAT] = ESTAT_CLKRDY;
 }
 
 static void mock_cs_low(void *ctx)
