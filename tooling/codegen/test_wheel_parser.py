@@ -512,6 +512,20 @@ class TestGenNullTests:
         assert "(void)demo_clear(NULL);" in text
         assert "(void)demo_count(NULL);" in text
 
+    def test_function_that_cannot_reject_keeps_length_zero(self, tmp_path):
+        header = "uint8_t demo_crc8(const uint8_t *data, size_t len);\n"
+        text = self.generate(tmp_path, "demo", header)
+        assert "(void)demo_crc8(NULL, 0);" in text
+
+    def test_accepted_null_keeps_length_zero(self, tmp_path):
+        header = (
+            "typedef enum { EVENT_BUS_OK = 0 } event_bus_err_t;\n"
+            "event_bus_err_t event_bus_publish(event_bus_t *bus,"
+            " const void *data, size_t data_len);\n"
+        )
+        text = self.generate(tmp_path, "event_bus", header)
+        assert "(void)event_bus_publish(&_bus, NULL, 0);" in text
+
     def test_ok_falls_back_to_zero_when_header_lacks_it(self, tmp_path):
         header = "other_err_t demo_init(demo_t *dev);\n"
         text = self.generate(tmp_path, "demo", header)

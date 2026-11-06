@@ -157,6 +157,9 @@ def generate_test_file(wheel: WheelInfo) -> str:
 
             lines.append(f"TEST({test_name}) {{")
 
+            accepted = NULL_ACCEPTED.get((func.name, pname))
+            must_reject = ret_class == 'err_t' and accepted is None
+
             call_args = []
             decl_lines = []
 
@@ -200,9 +203,10 @@ def generate_test_file(wheel: WheelInfo) -> str:
                         call_args.append(f"&{var}")
                 elif param.is_func_ptr:
                     call_args.append("NULL")
-                elif i == null_idx + 1 and is_length_param(param):
+                elif must_reject and i == null_idx + 1 and is_length_param(param):
                     # NULL with length 0 is a valid empty buffer in many APIs,
-                    # so only a non-zero length tests the rejection.
+                    # so only a non-zero length tests the rejection. A function
+                    # that cannot report an error, like a CRC helper, keeps 0.
                     call_args.append("1")
                 else:
                     call_args.append(scalar_default(param.type_text))
@@ -211,8 +215,7 @@ def generate_test_file(wheel: WheelInfo) -> str:
                 lines.append(dl)
 
             args_str = ", ".join(call_args)
-            accepted = NULL_ACCEPTED.get((func.name, pname))
-            if ret_class == 'err_t' and accepted is None:
+            if must_reject:
                 ok = ok_constant(func.return_type, header_text)
                 lines.append(f"    ASSERT_TRUE({func.name}({args_str}) != {ok});")
             else:
