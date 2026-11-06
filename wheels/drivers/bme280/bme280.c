@@ -242,23 +242,9 @@ static bme280_err_t measure_temperature(bme280_t *dev)
     return BME280_OK;
 }
 
-bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
-                         const bme280_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bme280_err_t bring_up(bme280_t *dev, const bme280_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return BME280_ERR_PARAM;
-    }
-
-    if (!osrs_valid(cfg->osrs_t, cfg->osrs_p, cfg->osrs_h))
-    {
-        return BME280_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* The driver cannot tell how long ago power came */
     wait_ms(dev, STARTUP_MS);
 
@@ -312,6 +298,43 @@ bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
     return BME280_OK;
 }
 
+bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
+                         const bme280_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return BME280_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no calibration */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return BME280_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return BME280_ERR_PARAM;
+    }
+
+    if (!osrs_valid(cfg->osrs_t, cfg->osrs_p, cfg->osrs_h))
+    {
+        return BME280_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bme280_err_t err = bring_up(dev, cfg);
+    if (err != BME280_OK)
+    {
+        dev->i2c = NULL;
+    }
+    return err;
+}
+
 static double compensate_pressure_f(const bme280_t *dev, int32_t adc_p)
 {
     double var1 = ((double)dev->t_fine / 2.0) - 64000.0;
@@ -352,7 +375,7 @@ static uint32_t compensate_humidity(const bme280_t *dev, int32_t adc_h)
 
 bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return BME280_ERR_PARAM;
     }
@@ -422,7 +445,7 @@ bme280_err_t bme280_set_oversampling(bme280_t *dev,
 
 bme280_err_t bme280_reset(bme280_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return BME280_ERR_PARAM;
     }

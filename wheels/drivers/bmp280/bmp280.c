@@ -183,27 +183,9 @@ static bmp280_err_t measure(const bmp280_t *dev, bmp280_oversampling_t osrs_t,
     return BMP280_OK;
 }
 
-bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
-                         const bmp280_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bmp280_err_t bring_up(bmp280_t *dev, const bmp280_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return BMP280_ERR_PARAM;
-    }
-
-    if ((unsigned)cfg->osrs_t > 5 || (unsigned)cfg->osrs_p > 5)
-        return BMP280_ERR_PARAM;
-
-    if (cfg->osrs_t == BMP280_OVERSAMPLING_SKIP &&
-        cfg->osrs_p == BMP280_OVERSAMPLING_SKIP)
-    {
-        return BMP280_ERR_PARAM;   /* nothing left to measure */
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* The driver cannot tell how long ago power came */
     wait_ms(dev, STARTUP_MS);
 
@@ -248,6 +230,49 @@ bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
         compensate_temperature(dev, adc_20bit(&buf[3]));
     }
 
+    return BMP280_OK;
+}
+
+bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
+                         const bmp280_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return BMP280_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no calibration */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return BMP280_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return BMP280_ERR_PARAM;
+    }
+
+    if ((unsigned)cfg->osrs_t > 5 || (unsigned)cfg->osrs_p > 5)
+        return BMP280_ERR_PARAM;
+
+    if (cfg->osrs_t == BMP280_OVERSAMPLING_SKIP &&
+        cfg->osrs_p == BMP280_OVERSAMPLING_SKIP)
+    {
+        return BMP280_ERR_PARAM;   /* nothing left to measure */
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bmp280_err_t err = bring_up(dev, cfg);
+    if (err != BMP280_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return BMP280_OK;
 }
@@ -288,7 +313,7 @@ static uint32_t compensate_pressure(const bmp280_t *dev, int32_t adc_p)
 
 bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return BMP280_ERR_PARAM;
     }
@@ -321,7 +346,7 @@ bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out)
 
 bmp280_err_t bmp280_reset(bmp280_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return BMP280_ERR_PARAM;
     }

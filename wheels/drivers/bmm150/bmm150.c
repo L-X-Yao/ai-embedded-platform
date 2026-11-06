@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "bmm150.h"
+#include <string.h>
 
 #define REG_CHIP_ID    0x40u
 #define REG_DATA_X_LSB 0x42u
@@ -25,17 +26,9 @@
 #define XY_UT_PER_LSB  0.3f
 #define Z_UT_PER_LSB   0.15f
 
-bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
-                          const bmm150_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bmm150_err_t bring_up(const bmm150_i2c_t *i2c, const bmm150_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return BMM150_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
-        return BMM150_ERR_PARAM;
-
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Power on (set power control bit) */
     if (!i2c->write_reg(i2c->ctx, cfg->addr, REG_PWR_CTRL, 0x01))
         return BMM150_ERR_I2C;
@@ -54,9 +47,33 @@ bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
     return BMM150_OK;
 }
 
+bmm150_err_t bmm150_init(bmm150_t *dev, const bmm150_i2c_t *i2c,
+                          const bmm150_cfg_t *cfg)
+{
+    if (!dev)
+        return BMM150_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return BMM150_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
+        return BMM150_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bmm150_err_t err = bring_up(i2c, cfg);
+    if (err != BMM150_OK)
+        dev->i2c = NULL;
+    return err;
+}
+
 bmm150_err_t bmm150_read(bmm150_t *dev, bmm150_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return BMM150_ERR_PARAM;
 
     uint8_t buf[6];
@@ -82,7 +99,7 @@ bmm150_err_t bmm150_read(bmm150_t *dev, bmm150_data_t *out)
 
 bmm150_err_t bmm150_reset(bmm150_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BMM150_ERR_PARAM;
     /* Keep the power bit: writing it as 0 would suspend the chip */
     uint8_t pwr = 0;

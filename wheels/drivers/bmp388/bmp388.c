@@ -234,31 +234,9 @@ static bmp388_err_t measure(const bmp388_t *dev, bool press, bool temp,
     return BMP388_OK;
 }
 
-bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
-                         const bmp388_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bmp388_err_t bring_up(bmp388_t *dev, const bmp388_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return BMP388_ERR_PARAM;
-    }
-    if (!i2c->write_reg || !i2c->read_regs)
-    {
-        return BMP388_ERR_PARAM;
-    }
-    if ((unsigned)cfg->osrs_t > 6 || (unsigned)cfg->osrs_p > 6)
-    {
-        return BMP388_ERR_PARAM;
-    }
-    if (cfg->osrs_t == BMP388_OVERSAMPLING_SKIP &&
-        cfg->osrs_p == BMP388_OVERSAMPLING_SKIP)
-    {
-        return BMP388_ERR_PARAM;   /* nothing left to measure */
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify chip ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
@@ -296,6 +274,49 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
             return err;
         }
         (void)compensate_temperature(dev, raw_temp);
+    }
+
+    return BMP388_OK;
+}
+
+bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
+                         const bmp388_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return BMP388_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, which has no calibration */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return BMP388_ERR_PARAM;
+    }
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return BMP388_ERR_PARAM;
+    }
+    if ((unsigned)cfg->osrs_t > 6 || (unsigned)cfg->osrs_p > 6)
+    {
+        return BMP388_ERR_PARAM;
+    }
+    if (cfg->osrs_t == BMP388_OVERSAMPLING_SKIP &&
+        cfg->osrs_p == BMP388_OVERSAMPLING_SKIP)
+    {
+        return BMP388_ERR_PARAM;   /* nothing left to measure */
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bmp388_err_t err = bring_up(dev, cfg);
+    if (err != BMP388_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);

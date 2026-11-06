@@ -570,6 +570,41 @@ TEST(test_read_data_parsing)
     ASSERT_TRUE(data.pressure_pa == data.pressure_pa);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bmp388_t *d)
+{
+    bmp388_data_t data;
+    ASSERT_EQ(bmp388_read(d, &data), BMP388_ERR_PARAM);
+    ASSERT_EQ(bmp388_reset(d), BMP388_ERR_PARAM);
+}
+
+/* 0x60 is the ID of a BMP390: it answers, but no calibration was ever read */
+TEST(test_device_refused_after_wrong_id)
+{
+    bmp388_t d;
+    mock_reset();
+    mock_regs[0x00] = 0x60;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &default_cfg), BMP388_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bmp388_i2c_t no_callbacks;
+    bmp388_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmp388_init(&d, NULL, &default_cfg), BMP388_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmp388_init(&d, &no_callbacks, &default_cfg), BMP388_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bmp388")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -604,4 +639,6 @@ TEST_MAIN("bmp388")
     RUN(test_error_codes);
     RUN(test_zero_hal_safety);
     RUN(test_read_data_parsing);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

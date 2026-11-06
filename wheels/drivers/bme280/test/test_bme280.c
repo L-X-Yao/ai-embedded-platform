@@ -520,6 +520,57 @@ TEST(test_read_skip_temperature_measure_fail)
     ASSERT_EQ(bme280_read(&dev, &data), BME280_ERR_I2C);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bme280_t *d)
+{
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(d, &data), BME280_ERR_PARAM);
+    ASSERT_EQ(bme280_reset(d), BME280_ERR_PARAM);
+}
+
+/* 0x58 is the ID of a BMP280: it answers, but no calibration was ever read */
+TEST(test_device_refused_after_wrong_id)
+{
+    bme280_t d;
+    mock_reset();
+    mock_regs[0xD0] = 0x58;
+    ASSERT_EQ(bme280_init(&d, &mock_i2c, &default_cfg), BME280_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    bme280_t d;
+    bme280_cfg_t all_skipped = { .addr = BME280_ADDR_LOW };
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bme280_init(&d, NULL, &default_cfg), BME280_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bme280_init(&d, &mock_i2c, &all_skipped), BME280_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    bme280_t d;
+    bme280_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(bme280_init(&d, &bad, &default_cfg), BME280_ERR_PARAM);
+    assert_device_refused(&d);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(bme280_init(&d, &bad, &default_cfg), BME280_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bme280")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -557,4 +608,7 @@ TEST_MAIN("bme280")
     RUN(test_init_skip_temperature_i2c_fail);
     RUN(test_init_skip_temperature_timeout);
     RUN(test_read_skip_temperature_measure_fail);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()

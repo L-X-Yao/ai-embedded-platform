@@ -158,6 +158,41 @@ TEST(test_init_requires_delay)
     ASSERT_EQ(bmm150_init(&dev, &no_wait, &default_cfg), BMM150_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bmm150_t *d)
+{
+    bmm150_data_t data;
+    ASSERT_EQ(bmm150_read(d, &data), BMM150_ERR_PARAM);
+    ASSERT_EQ(bmm150_reset(d), BMM150_ERR_PARAM);
+}
+
+/* Something else at this address: reset must not write to it */
+TEST(test_device_refused_after_wrong_id)
+{
+    bmm150_t d;
+    hw_model_reset();
+    hw_regs[0x40] = 0xFF;
+    ASSERT_EQ(bmm150_init(&d, &mock_i2c, &default_cfg), BMM150_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bmm150_i2c_t no_callbacks;
+    bmm150_t d;
+    hw_model_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmm150_init(&d, NULL, &default_cfg), BMM150_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bmm150_init(&d, &no_callbacks, &default_cfg), BMM150_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bmm150")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -175,4 +210,6 @@ TEST_MAIN("bmm150")
     RUN(test_read_reports_xy_overflow);
     RUN(test_read_reports_z_overflow);
     RUN(test_init_requires_delay);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
