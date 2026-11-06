@@ -295,6 +295,110 @@ def test_chk_werror_fail():
 
 
 @test
+def test_chk_werror_every_target():
+    w = TmpWheel()
+    w.write_test_cmake("add_executable(test_a a.c)\n"
+                       "target_compile_options(test_a PRIVATE -Wall -Werror)\n"
+                       "add_executable(test_b b.c)\n"
+                       "target_compile_options(test_b PRIVATE -Wall)\n"
+                       "add_executable(test_c c.c)\n")
+    result = aw.chk_werror(w.ctx())
+    assert result is not None
+    assert "test_b" in result[0] and "test_c" in result[0]
+    assert "test_a" not in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_werror_flags_variable():
+    w = TmpWheel()
+    w.write_test_cmake("set(STRICT_FLAGS -Wall -Werror)\n"
+                       "add_executable(test_a a.c)\n"
+                       "target_compile_options(test_a PRIVATE ${STRICT_FLAGS})\n")
+    assert aw.chk_werror(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_werror_function_target():
+    w = TmpWheel()
+    w.write_test_cmake("function(add_max name)\n"
+                       "    add_executable(${name} a.c)\n"
+                       "    target_compile_options(${name} PRIVATE -Wall -Werror)\n"
+                       "endfunction()\n")
+    assert aw.chk_werror(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_werror_global_options():
+    w = TmpWheel()
+    w.write_test_cmake("add_compile_options(-Wall -Werror)\n"
+                       "add_executable(test_a a.c)\n")
+    assert aw.chk_werror(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_werror_comment_does_not_count():
+    w = TmpWheel()
+    w.write_test_cmake("# -Werror\n"
+                       "add_executable(test_a a.c)\n"
+                       "target_compile_options(test_a PRIVATE -Wall)\n")
+    assert aw.chk_werror(w.ctx()) is not None
+    w.cleanup()
+
+
+@test
+def test_chk_werror_single_diagnostic_does_not_count():
+    w = TmpWheel()
+    w.write_test_cmake("add_executable(test_a a.c)\n"
+                       "target_compile_options(test_a PRIVATE -Wall -Werror=format)\n")
+    assert aw.chk_werror(w.ctx()) is not None
+    w.cleanup()
+
+
+@test
+def test_chk_c99_pass():
+    w = TmpWheel()
+    w.write_test_cmake("set(CMAKE_C_STANDARD 99)\n")
+    assert aw.chk_c99_standard(w.ctx()) is None
+    w.cleanup()
+
+
+@test
+def test_chk_c99_wrong_value():
+    w = TmpWheel()
+    w.write_test_cmake("set(CMAKE_C_STANDARD 11)\n")
+    result = aw.chk_c99_standard(w.ctx())
+    assert result is not None and "11" in result[0]
+    w.cleanup()
+
+
+@test
+def test_chk_c99_last_set_wins():
+    w = TmpWheel()
+    w.write_test_cmake("set(CMAKE_C_STANDARD 99)\nset(CMAKE_C_STANDARD 11)\n")
+    assert aw.chk_c99_standard(w.ctx()) is not None
+    w.cleanup()
+
+
+@test
+def test_chk_c99_comment_does_not_count():
+    w = TmpWheel()
+    w.write_test_cmake("# CMAKE_C_STANDARD set as a variable, on purpose\n")
+    assert aw.chk_c99_standard(w.ctx()) is not None
+    w.cleanup()
+
+
+@test
+def test_c99_and_werror_block_ci():
+    levels = {row[0]: row[3] for row in aw.CHECK_TABLE}
+    assert levels["c99_standard"] == "FAIL"
+    assert levels["werror"] == "FAIL"
+
+
+@test
 def test_chk_isr_safe_pass():
     w = TmpWheel()
     w.write_h("/** Push. @thread_safe: yes @isr_safe: yes */\nvoid test_wheel_push(void);\n")

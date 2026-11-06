@@ -29,6 +29,8 @@ Rules:
     header per api-conventions §8.
   - Non-draft wheel READMEs SHOULD have candidate-level sections:
     Supported platforms, Test status, Dependencies (wheel-contract §3.2).
+  - Non-vendor test CMakeLists MUST put -Werror on every target, and every
+    test CMakeLists MUST set CMAKE_C_STANDARD to 99 (CI hard FAIL).
 
 Exit 0 if all checks pass; 1 if any failure.
 """
@@ -154,13 +156,28 @@ def chk_ctest_registration(ctx, **_):
             f"add enable_testing() + add_test() to {ctx.path}/test/CMakeLists.txt")
 
 
+_CMAKE_SET_RE = re.compile(r"\bset\s*\(\s*(\w+)\s+([^)]*)\)", re.I)
+_CMAKE_TARGET_RE = re.compile(r"\badd_(?:executable|library)\s*\(\s*([^\s)]+)", re.I)
+_CMAKE_TARGET_OPTS_RE = re.compile(r"\btarget_compile_options\s*\(\s*([^\s)]+)([^)]*)\)", re.I)
+_CMAKE_GLOBAL_OPTS_RE = re.compile(r"\badd_compile_options\s*\(([^)]*)\)", re.I)
+_WERROR_RE = re.compile(r"(?<![\w-])-Werror(?![\w=-])")
+
+
+def _strip_cmake_comments(text):
+    """Scaffolded test CMakeLists name CMAKE_C_STANDARD in a comment."""
+    return re.sub(r"#.*", "", text)
+
+
 def chk_c99_standard(ctx, **_):
     if not ctx.test_cmake or "vsf.cmake" in ctx.test_cmake:
         return None
-    if "CMAKE_C_STANDARD" in ctx.test_cmake:
+    text = _strip_cmake_comments(ctx.test_cmake)
+    values = [v.strip() for n, v in _CMAKE_SET_RE.findall(text) if n == "CMAKE_C_STANDARD"]
+    if values and values[-1] == "99":  # the last set() wins
         return None
-    return ("test CMakeLists.txt missing CMAKE_C_STANDARD 99",
-            f"add set(CMAKE_C_STANDARD 99) to {ctx.path}/test/CMakeLists.txt")
+    found = f"is {values[-1]}" if values else "is not set"
+    return (f"test CMakeLists.txt: CMAKE_C_STANDARD {found}, must be 99",
+            f"set(CMAKE_C_STANDARD 99) in {ctx.path}/test/CMakeLists.txt")
 
 
 def chk_candidate_sections(ctx, **_):
@@ -237,12 +254,29 @@ def chk_balanced_test_run(ctx, **_):
 
 
 def chk_werror(ctx, **_):
-    if not ctx.test_cmake or "-Wall" not in ctx.test_cmake:
+    """-Werror must reach every target: one strict target proves nothing about the rest."""
+    if not ctx.test_cmake or "vsf.cmake" in ctx.test_cmake:
         return None
-    if "-Werror" in ctx.test_cmake:
+    text = _strip_cmake_comments(ctx.test_cmake)
+    variables = dict(_CMAKE_SET_RE.findall(text))
+
+    def expand(flags):
+        return re.sub(r"\$\{(\w+)\}", lambda m: variables.get(m.group(1), ""), flags)
+
+    shared = " ".join(_CMAKE_GLOBAL_OPTS_RE.findall(text)) + " " + variables.get("CMAKE_C_FLAGS", "")
+    if _WERROR_RE.search(expand(shared)):
         return None
-    return ("test CMakeLists.txt missing -Werror",
-            f"add -Werror to {ctx.path}/test/CMakeLists.txt")
+    hint = f"add -Werror to {ctx.path}/test/CMakeLists.txt"
+    targets = _CMAKE_TARGET_RE.findall(text)
+    if not targets:
+        return None if _WERROR_RE.search(text) else ("test CMakeLists.txt missing -Werror", hint)
+    flags_of = {}
+    for name, flags in _CMAKE_TARGET_OPTS_RE.findall(text):
+        flags_of[name] = flags_of.get(name, "") + " " + expand(flags)
+    missing = [t for t in targets if not _WERROR_RE.search(flags_of.get(t, ""))]
+    if not missing:
+        return None
+    return (f"test CMakeLists.txt: -Werror missing on {', '.join(missing)}", hint)
 
 
 def chk_wconversion(ctx, **_):
@@ -1073,14 +1107,14 @@ CHECK_TABLE = [
     ("cross_wheel_deps",    "Cross-wheel deps (ADR-009)",         chk_cross_wheel_deps,    "WARN", None,                      False, False),
     ("api_review",          "API review metadata",                chk_api_review,          "WARN", None,                      True,  True),
     ("ctest_registration",  "ctest registration",                 chk_ctest_registration,  "WARN", None,                      False, False),
-    ("c99_standard",        "CMAKE_C_STANDARD 99",               chk_c99_standard,        "WARN", None,                      False, False),
+    ("c99_standard",        "CMAKE_C_STANDARD 99",               chk_c99_standard,        "FAIL", None,                      False, False),
     ("candidate_sections",  "Candidate README sections",          chk_candidate_sections,  "WARN", None,                      True,  True),
     ("file_header",         "File header (api-conventions §8)",   chk_file_header,         "WARN", None,                      True,  False),
     ("extern_c_guard",      'extern "C" guard',                   chk_extern_c_guard,      "WARN", None,                      True,  False),
     ("thread_safe",         "@thread_safe annotations",           chk_thread_safe,         "WARN", None,                      True,  False),
     ("test_exit_code",      "Test exit code",                     chk_test_exit_code,      "WARN", None,                      True,  False),
     ("test_run_balance",    "TEST/RUN balance",                   chk_balanced_test_run,   "WARN", None,                      True,  False),
-    ("werror",              "-Werror flag",                       chk_werror,              "WARN", None,                      True,  False),
+    ("werror",              "-Werror flag",                       chk_werror,              "FAIL", None,                      True,  False),
     ("wconversion",         "-Wconversion flag",                  chk_wconversion,         "WARN", None,                      True,  False),
     ("responsible_human",   "Responsible human",                  chk_responsible_human,   "WARN", None,                      True,  True),
     ("deviation_heading",   "API convention deviations heading",  chk_deviation_heading,   "WARN", None,                      False, False),
