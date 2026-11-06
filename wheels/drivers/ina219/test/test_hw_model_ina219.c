@@ -468,6 +468,146 @@ TEST(test_calibration_stays_even)
     ASSERT_EQ(model.hw.regs[INA219_REG_CAL_L] & 0x01, 0);
 }
 
+/* --- what the model itself must do (SBOS448G) --- */
+
+#define BUS_CNVR INA219_BUS_CNVR
+#define BUS_OVF  INA219_BUS_OVF
+
+static uint8_t bus_flags(void)
+{
+    return (uint8_t)(model.hw.regs[INA219_REG_BUS_V_L] & 0x07u);
+}
+
+static void write_reg(uint8_t reg, uint16_t val)
+{
+    uint8_t buf[2] = {(uint8_t)(val >> 8), (uint8_t)(val & 0xFFu)};
+    ASSERT_TRUE(ina219_model_i2c_write_regs(&model.hw, 0x40, reg, buf, 2));
+}
+
+static void init_32v(ina219_t *dev)
+{
+    setup();
+    ASSERT_EQ(ina219_init(dev, &model_i2c, 0x40, 0.1f, INA219_RANGE_32V,
+                          INA219_GAIN_320MV), INA219_OK);
+}
+
+/* p23: "The CNVR bit is set after all conversions, averaging, and
+ * multiplications are complete." */
+TEST(test_conversion_sets_cnvr)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+}
+
+/* The bus reading has to drop both flags: 3001 * 4 mV is 12.004 V */
+TEST(test_flags_stay_out_of_the_bus_voltage)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    write_reg(0x05, 0xFFFEu);
+    ina219_model_set_shunt(&model, 3000);
+    ina219_model_set_bus(&model, 3001);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR | BUS_OVF);
+
+    float voltage = 0.0f;
+    ASSERT_EQ(ina219_read_bus_voltage(&dev, &voltage), INA219_OK);
+    ASSERT_NEAR(voltage, 12.004f, 0.0005f);
+}
+
+/* p23: "CNVR will clear under the following conditions: ... 2.) Reading the
+ * Power Register". p10 says "Reading the Status register" instead, but the
+ * part has no such register, so p23 stands. */
+TEST(test_power_read_clears_cnvr)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+    float power = 0.0f;
+    ASSERT_EQ(ina219_read_power(&dev, &power), INA219_OK);
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+}
+
+/* Those are the only two conditions, so the other reads leave it set */
+TEST(test_other_reads_keep_cnvr)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ina219_model_set_bus(&model, 3000);
+    float val = 0.0f;
+    ASSERT_EQ(ina219_read_bus_voltage(&dev, &val), INA219_OK);
+    ASSERT_EQ(ina219_read_shunt_voltage(&dev, &val), INA219_OK);
+    ASSERT_EQ(ina219_read_current(&dev, &val), INA219_OK);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+}
+
+/* p23: "1.) Writing a new mode into the Operating Mode bits in the
+ * Configuration Register (except for Power-Down or Disable)" */
+TEST(test_mode_write_clears_cnvr)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+    write_reg(0x00, 0x399Du);  /* MODE 101, shunt voltage continuous */
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+}
+
+TEST(test_power_down_and_disable_keep_cnvr)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ina219_model_set_bus(&model, 3000);
+    write_reg(0x00, 0x3998u);  /* MODE 000, power-down */
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+    write_reg(0x00, 0x399Cu);  /* MODE 100, ADC off */
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+}
+
+/* p23: OVF "is set when the Power or Current calculations are out of range".
+ * Equation 4: 3000 * 65534 / 4096 = 47999, past the signed 16-bit Current
+ * register. */
+TEST(test_ovf_follows_the_current_calculation)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    write_reg(0x05, 0xFFFEu);
+    ina219_model_set_shunt(&model, 3000);
+    ASSERT_EQ_HEX(bus_flags() & BUS_OVF, BUS_OVF);
+    ina219_model_set_shunt(&model, 1000);
+    ASSERT_EQ_HEX(bus_flags() & BUS_OVF, 0u);
+}
+
+/* p19: RST is "the same as power-on reset" */
+TEST(test_reset_clears_the_flags)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(bus_flags(), BUS_CNVR);
+    ASSERT_EQ(ina219_reset(&dev), INA219_OK);
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+}
+
+/* Power-down and ADC off run no conversion, so the outputs stay as they are */
+TEST(test_no_conversion_with_the_adc_off)
+{
+    ina219_t dev;
+    init_32v(&dev);
+    write_reg(0x00, 0x3998u);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(model.hw.regs[INA219_REG_BUS_V_H], 0u);
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+
+    write_reg(0x00, 0x399Cu);
+    ina219_model_set_bus(&model, 3000);
+    ASSERT_EQ_HEX(model.hw.regs[INA219_REG_BUS_V_H], 0u);
+    ASSERT_EQ_HEX(bus_flags(), 0u);
+}
+
 TEST_MAIN("ina219 hardware model")
     RUN(test_init_success);
     RUN(test_init_writes_config);
@@ -501,4 +641,13 @@ TEST_MAIN("ina219 hardware model")
     RUN(test_read_bus_voltage_null_dev);
     RUN(test_read_shunt_voltage_null_dev);
     RUN(test_calibration_stays_even);
+    RUN(test_conversion_sets_cnvr);
+    RUN(test_flags_stay_out_of_the_bus_voltage);
+    RUN(test_power_read_clears_cnvr);
+    RUN(test_other_reads_keep_cnvr);
+    RUN(test_mode_write_clears_cnvr);
+    RUN(test_power_down_and_disable_keep_cnvr);
+    RUN(test_ovf_follows_the_current_calculation);
+    RUN(test_reset_clears_the_flags);
+    RUN(test_no_conversion_with_the_adc_off);
 TEST_MAIN_END()
