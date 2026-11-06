@@ -10,9 +10,24 @@
 
 #include "gnss_filter.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
 
 /* ---------- internal helpers ---------- */
+
+/* NaN fails both comparisons and an infinity one of them, so no libm. */
+static bool is_finite(float v)
+{
+    return v >= -FLT_MAX && v <= FLT_MAX;
+}
+
+static bool cfg_ok(const gnss_filter_cfg_t *cfg)
+{
+    return is_finite(cfg->max_hdop) && cfg->max_hdop > 0.0f &&
+           is_finite(cfg->max_vdop) && cfg->max_vdop >= 0.0f &&
+           cfg->static_alpha >= 0.0f && cfg->static_alpha <= 1.0f &&
+           cfg->strong_alpha >= 0.0f && cfg->strong_alpha <= 1.0f;
+}
 
 static bool quality_raw_ok(const gnss_filter_t *flt,
                            const gnss_filter_input_t *in)
@@ -23,11 +38,18 @@ static bool quality_raw_ok(const gnss_filter_t *flt,
     if (in->satellites < flt->cfg.min_satellites) {
         return false;
     }
-    if (in->hdop <= 0.0f || in->hdop > flt->cfg.max_hdop) {
+    /* Negated so that NaN fails it: api-conventions 2.5 */
+    if (!(in->hdop > 0.0f && in->hdop <= flt->cfg.max_hdop)) {
         return false;
     }
-    if (flt->cfg.max_vdop > 0.0f && in->vdop > 0.0f &&
-        in->vdop > flt->cfg.max_vdop) {
+    /* vdop 0 means the receiver gave none */
+    if (flt->cfg.max_vdop > 0.0f &&
+        (in->vdop != in->vdop || in->vdop > flt->cfg.max_vdop)) {
+        return false;
+    }
+    /* One NaN in the EMA would stay there for good */
+    if (!is_finite(in->latitude) || !is_finite(in->longitude) ||
+        !is_finite(in->altitude)) {
         return false;
     }
     return true;
@@ -57,6 +79,10 @@ gnss_filter_err_t gnss_filter_init(gnss_filter_t *flt,
         return GNSS_FILTER_ERR_PARAM;
     }
     memset(flt, 0, sizeof(*flt));
+    /* Refused after the memset: a zeroed filter can never pass the gate */
+    if (!cfg_ok(cfg)) {
+        return GNSS_FILTER_ERR_PARAM;
+    }
     flt->cfg = *cfg;
     return GNSS_FILTER_OK;
 }
