@@ -103,6 +103,55 @@ TEST(test_no_timestamp_comparison) {
     ASSERT_EQ(log_dedup_suppressed(&d), 1);
 }
 
+static void feed(log_dedup_t *d, const char *line) {
+    log_dedup_sink(d, line, strlen(line));
+}
+
+/* log.c writes no timestamp by default, so the first bracket is the level:
+ * an ERROR must not be counted as a repeat of the WARN before it. */
+TEST(test_level_is_not_a_timestamp) {
+    reset();
+    log_dedup_t d;
+    log_dedup_init(&d, capture, NULL);
+
+    feed(&d, "[W] [pump] pressure high\n");
+    feed(&d, "[E] [pump] pressure high\n");
+    feed(&d, "[I] [pump] pressure high\n");
+
+    ASSERT_EQ(g_cap_count, 3);
+    ASSERT_EQ(log_dedup_suppressed(&d), 0);
+    ASSERT_TRUE(strstr(g_cap[1], "[E]") != NULL);
+    ASSERT_TRUE(strstr(g_cap[2], "[I]") != NULL);
+}
+
+TEST(test_level_compared_after_timestamp) {
+    reset();
+    log_dedup_t d;
+    log_dedup_init(&d, capture, NULL);
+
+    feed(&d, "[00000100] [W] [pump] pressure high\n");
+    feed(&d, "[00000200] [E] [pump] pressure high\n");
+    feed(&d, "[00000300] [E] [pump] pressure high\n");
+
+    ASSERT_EQ(g_cap_count, 2);
+    ASSERT_EQ(log_dedup_suppressed(&d), 1);
+}
+
+/* Only digits make a timestamp: mixed or empty brackets stay in the text. */
+TEST(test_non_digit_bracket_is_kept) {
+    reset();
+    log_dedup_t d;
+    log_dedup_init(&d, capture, NULL);
+
+    feed(&d, "[12a] body\n");
+    feed(&d, "[12b] body\n");
+    feed(&d, "[] body\n");
+    feed(&d, "[ ] body\n");
+
+    ASSERT_EQ(g_cap_count, 4);
+    ASSERT_EQ(log_dedup_suppressed(&d), 0);
+}
+
 TEST(test_single_line_no_repeat) {
     reset();
     log_dedup_t d;
@@ -155,6 +204,9 @@ TEST_MAIN("log_dedup")
     RUN(test_flush_pending);
     RUN(test_timestamp_ignored_for_comparison);
     RUN(test_no_timestamp_comparison);
+    RUN(test_level_is_not_a_timestamp);
+    RUN(test_level_compared_after_timestamp);
+    RUN(test_non_digit_bracket_is_kept);
     RUN(test_single_line_no_repeat);
     RUN(test_null_safety);
     RUN(test_deinit_flushes_and_clears);
