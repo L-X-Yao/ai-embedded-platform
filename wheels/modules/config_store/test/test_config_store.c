@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include "config_store.h"
+#include <math.h>
 #include <string.h>
 
 /* ---- Mock storage ---- */
@@ -226,6 +227,42 @@ TEST(test_set_float_range_violation)
     ASSERT_EQ(err, CONFIG_STORE_ERR_RANGE);
 }
 
+TEST(test_set_float_and_get)
+{
+    float val = 0.0f;
+
+    setup(NULL);
+    config_store_define_float(&cs, "gain", 1.0f, 0.0f, 10.0f);
+
+    ASSERT_EQ(config_store_set_float(&cs, "gain", 2.5f), CONFIG_STORE_OK);
+    ASSERT_EQ(config_store_get_float(&cs, "gain", &val), CONFIG_STORE_OK);
+    ASSERT_NEAR(val, 2.5f, 0.0001f);
+    ASSERT_TRUE(cs.entries[0].modified);
+
+    /* the limits themselves are in range */
+    ASSERT_EQ(config_store_set_float(&cs, "gain", 0.0f), CONFIG_STORE_OK);
+    ASSERT_EQ(config_store_set_float(&cs, "gain", 10.0f), CONFIG_STORE_OK);
+    ASSERT_EQ(config_store_get_float(&cs, "gain", &val), CONFIG_STORE_OK);
+    ASSERT_NEAR(val, 10.0f, 0.0001f);
+
+    /* back at the default it no longer counts as modified */
+    ASSERT_EQ(config_store_set_float(&cs, "gain", 1.0f), CONFIG_STORE_OK);
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
+TEST(test_set_float_refuses_nan)
+{
+    float val = 0.0f;
+
+    setup(NULL);
+    config_store_define_float(&cs, "gain", 1.0f, 0.0f, 10.0f);
+
+    ASSERT_EQ(config_store_set_float(&cs, "gain", NAN), CONFIG_STORE_ERR_RANGE);
+    ASSERT_EQ(config_store_get_float(&cs, "gain", &val), CONFIG_STORE_OK);
+    ASSERT_NEAR(val, 1.0f, 0.0001f);
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
 TEST(test_type_mismatch_set_int_on_float)
 {
     setup(NULL);
@@ -408,6 +445,105 @@ static void mock_put_raw(const char *key, uint8_t fill)
     memset(raw, fill, sizeof(raw));
     ASSERT_EQ(mock_save(NULL, key, raw, (uint16_t)sizeof(raw)),
               CONFIG_STORE_OK);
+}
+
+/* What an entry holds after a load of the stored value: range 2 to 10,
+ * default 5.  The stored value can be anything, from another firmware's
+ * limits to a corrupt record. */
+static void mock_put_value(const config_value_t *value)
+{
+    ASSERT_EQ(mock_save(NULL, "k", (const uint8_t *)value,
+                        (uint16_t)sizeof(*value)), CONFIG_STORE_OK);
+}
+
+static int32_t load_int(int32_t stored)
+{
+    config_value_t value;
+    int32_t got = 0;
+
+    setup(&mock_storage);
+    config_store_define_int(&cs, "k", 5, 2, 10);
+    memset(&value, 0, sizeof(value));
+    value.i32 = stored;
+    mock_put_value(&value);
+    (void)config_store_load_all(&cs);
+    (void)config_store_get_int(&cs, "k", &got);
+    return got;
+}
+
+static uint32_t load_uint(uint32_t stored)
+{
+    config_value_t value;
+    uint32_t got = 0;
+
+    setup(&mock_storage);
+    config_store_define_uint(&cs, "k", 5, 2, 10);
+    memset(&value, 0, sizeof(value));
+    value.u32 = stored;
+    mock_put_value(&value);
+    (void)config_store_load_all(&cs);
+    (void)config_store_get_uint(&cs, "k", &got);
+    return got;
+}
+
+static float load_float(float stored)
+{
+    config_value_t value;
+    float got = 0.0f;
+
+    setup(&mock_storage);
+    config_store_define_float(&cs, "k", 5.0f, 2.0f, 10.0f);
+    memset(&value, 0, sizeof(value));
+    value.f32 = stored;
+    mock_put_value(&value);
+    (void)config_store_load_all(&cs);
+    (void)config_store_get_float(&cs, "k", &got);
+    return got;
+}
+
+TEST(test_load_int_checks_the_range)
+{
+    ASSERT_EQ(load_int(7), 7);
+    ASSERT_TRUE(cs.entries[0].modified);
+    ASSERT_EQ(load_int(2), 2);
+    ASSERT_EQ(load_int(10), 10);
+
+    ASSERT_EQ(load_int(1), 5);
+    ASSERT_FALSE(cs.entries[0].modified);
+    ASSERT_EQ(load_int(11), 5);
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
+TEST(test_load_uint_checks_the_range)
+{
+    ASSERT_EQ(load_uint(7), 7);
+    ASSERT_EQ(load_uint(2), 2);
+    ASSERT_EQ(load_uint(10), 10);
+
+    ASSERT_EQ(load_uint(1), 5);
+    ASSERT_EQ(load_uint(11), 5);
+    ASSERT_EQ(load_uint(0xFFFFFFFFu), 5);  /* erased flash */
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
+TEST(test_load_float_checks_the_range)
+{
+    ASSERT_NEAR(load_float(7.5f), 7.5f, 0.0001f);
+    ASSERT_NEAR(load_float(2.0f), 2.0f, 0.0001f);
+    ASSERT_NEAR(load_float(10.0f), 10.0f, 0.0001f);
+
+    ASSERT_NEAR(load_float(1.5f), 5.0f, 0.0001f);
+    ASSERT_NEAR(load_float(10.5f), 5.0f, 0.0001f);
+    ASSERT_NEAR(load_float(INFINITY), 5.0f, 0.0001f);
+    ASSERT_NEAR(load_float(-INFINITY), 5.0f, 0.0001f);
+    ASSERT_FALSE(cs.entries[0].modified);
+}
+
+/* NaN compares false with everything, so a range test alone lets it through. */
+TEST(test_load_float_refuses_nan)
+{
+    ASSERT_NEAR(load_float(NAN), 5.0f, 0.0001f);
+    ASSERT_FALSE(cs.entries[0].modified);
 }
 
 /* A bool is 0 or 1: any other stored byte is out of range, like an int
@@ -664,6 +800,12 @@ TEST_MAIN("config_store")
     RUN(test_set_int_range_violation);
     RUN(test_set_uint_range_violation);
     RUN(test_set_float_range_violation);
+    RUN(test_set_float_and_get);
+    RUN(test_set_float_refuses_nan);
+    RUN(test_load_int_checks_the_range);
+    RUN(test_load_uint_checks_the_range);
+    RUN(test_load_float_checks_the_range);
+    RUN(test_load_float_refuses_nan);
     RUN(test_type_mismatch_set_int_on_float);
     RUN(test_type_mismatch_get_uint_on_bool);
     RUN(test_type_mismatch_set_bool_on_string);
