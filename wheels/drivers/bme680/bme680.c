@@ -242,18 +242,9 @@ static uint32_t compensate_gas(const bme680_t *dev, uint16_t adc_gas,
 
 /* --- public API --- */
 
-bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
-                         uint8_t addr)
+/* The steps of init that talk to the chip */
+static bme680_err_t bring_up(bme680_t *dev)
 {
-    if (!dev || !i2c)
-        return BME680_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return BME680_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c  = i2c;
-    dev->addr = addr;
-
     /* verify chip ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
@@ -271,6 +262,33 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
         return err;
 
     dev->amb_temp = AMBIENT_DEFAULT_C;
+    return BME680_OK;
+}
+
+bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
+                         uint8_t addr)
+{
+    if (!dev)
+        return BME680_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, whose calibration was never read */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+        return BME680_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return BME680_ERR_PARAM;
+
+    dev->i2c  = i2c;
+    dev->addr = addr;
+
+    bme680_err_t err = bring_up(dev);
+    if (err != BME680_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return BME680_OK;
@@ -278,7 +296,7 @@ bme680_err_t bme680_init(bme680_t *dev, const bme680_i2c_t *i2c,
 
 bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
 {
-    if (!dev || !data)
+    if (!dev || !dev->i2c || !data)
         return BME680_ERR_PARAM;
 
     /* read current oversampling settings */
@@ -371,7 +389,7 @@ bme680_err_t bme680_read(bme680_t *dev, bme680_data_t *data)
 bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
                                      uint8_t os_hum, uint8_t os_pres)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BME680_ERR_PARAM;
     if (os_temp == 0 || os_temp > 5 || os_hum > 5 || os_pres > 5)
         return BME680_ERR_PARAM;
@@ -389,7 +407,7 @@ bme680_err_t bme680_set_oversampling(bme680_t *dev, uint8_t os_temp,
 bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
                                    uint16_t duration_ms)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BME680_ERR_PARAM;
 
     /* heater resistance register value, Bosch's floating point form */
@@ -437,7 +455,7 @@ bme680_err_t bme680_set_gas_heater(bme680_t *dev, uint16_t temp_c,
 
 bme680_err_t bme680_reset(bme680_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BME680_ERR_PARAM;
     if (!write_reg(dev, REG_RESET, RESET_CMD))
         return BME680_ERR_I2C;
