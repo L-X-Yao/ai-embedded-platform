@@ -78,18 +78,14 @@ TEST(test_step_chunked)
     ASSERT_TRUE(step == bulk);
 }
 
-TEST(test_flybox_compatibility)
+TEST(test_fixed_pattern_regression)
 {
-    /* Regression: flybox telemetry frames are 36 bytes, CRC over first 34.
-     * Construct a known frame and verify the CRC matches what the production
-     * frame_pack.c produced before refactor. Using a deterministic pattern
-     * for repeatability. */
-    uint8_t frame34[34];
-    for (size_t i = 0; i < 34; i++) frame34[i] = (uint8_t)(i * 7 + 3);
+    /* A deterministic 34-byte pattern: if this number ever changes we have a
+     * real regression in the CRC core. */
+    uint8_t pattern[34];
+    for (size_t i = 0; i < 34; i++) pattern[i] = (uint8_t)(i * 7 + 3);
 
-    uint16_t crc = crc16_modbus(frame34, 34);
-    /* Computed once with the production frame_pack.c table; if this number
-     * ever changes we have a real regression in the CRC core. */
+    uint16_t crc = crc16_modbus(pattern, 34);
     ASSERT_TRUE(crc == 0xA655u);
 }
 
@@ -167,7 +163,7 @@ TEST_MAIN("crc16")
     RUN(test_single_byte);
     RUN(test_step_equivalence);
     RUN(test_step_chunked);
-    RUN(test_flybox_compatibility);
+    RUN(test_fixed_pattern_regression);
     RUN(test_all_zeros_buffer);
     RUN(test_all_ones_buffer);
     RUN(test_single_byte_all_distinct);
