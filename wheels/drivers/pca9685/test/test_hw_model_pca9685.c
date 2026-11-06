@@ -112,7 +112,7 @@ TEST(test_set_duty_50_percent)
     pca9685_err_t err = pca9685_set_duty(&dev, 3, 50.0f);
     ASSERT_EQ(err, PCA9685_OK);
 
-    /* 50% of 4095 ≈ 2048. Channel 3 base = 0x06 + 12 = 0x12 */
+    /* 50% of 4096 = 2048. Channel 3 base = 0x06 + 12 = 0x12 */
     uint16_t off_val = pca9685_model_get_channel_off(&model, 3);
     /* Expect ~2047-2048 */
     ASSERT_TRUE(off_val >= 2040 && off_val <= 2055);

@@ -175,7 +175,7 @@ pca9685_err_t pca9685_set_duty(pca9685_t *dev, uint8_t channel, float duty_pct)
         return PCA9685_OK;
     }
 
-    uint16_t off = (uint16_t)(duty_pct * 4095.0f / 100.0f + 0.5f);
+    uint16_t off = (uint16_t)(duty_pct * (float)COUNT_FULL / 100.0f + 0.5f);
     if (off > PCA9685_COUNT_MAX) off = PCA9685_COUNT_MAX;
     if (off == 0u)  /* too short for one count, and would equal ON */
         return set_full_off(dev, channel);
