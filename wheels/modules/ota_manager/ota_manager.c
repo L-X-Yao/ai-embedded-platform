@@ -94,6 +94,7 @@ ota_mgr_err_t ota_manager_check(ota_manager_t *mgr)
     mgr->total_size = new_size;
     mgr->downloaded = 0;
     mgr->progress_pct = 0;
+    mgr->empty_reads = 0;
     mgr->state = OTA_MGR_STATE_DOWNLOADING;
 
     return OTA_MGR_OK;
@@ -122,6 +123,18 @@ ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
         mgr->state = OTA_MGR_STATE_ERROR;
         return OTA_MGR_ERR_DOWNLOAD;
     }
+
+    /* 0 bytes can mean "not yet" on a non-blocking transport, but an image
+     * shorter than announced answers it for ever: bound the wait. */
+    if (bytes_read == 0) {
+        mgr->empty_reads++;
+        if (mgr->empty_reads >= OTA_MGR_MAX_EMPTY_READS) {
+            mgr->state = OTA_MGR_STATE_ERROR;
+            return OTA_MGR_ERR_DOWNLOAD;
+        }
+        return OTA_MGR_OK;
+    }
+    mgr->empty_reads = 0;
 
     /* write the chunk to storage */
     err = mgr->ops->write_chunk(

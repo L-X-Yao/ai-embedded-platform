@@ -70,6 +70,12 @@ typedef struct {
 #define OTA_MGR_VERSION_MAX 32
 #endif
 
+/* Steps in a row on which download_chunk may report 0 bytes before the
+ * download fails.  1 fails on the first empty read. */
+#ifndef OTA_MGR_MAX_EMPTY_READS
+#define OTA_MGR_MAX_EMPTY_READS 1000u
+#endif
+
 /* ---------- Manager context ---------- */
 
 typedef struct {
@@ -79,6 +85,7 @@ typedef struct {
     uint32_t             total_size;
     uint32_t             downloaded;
     uint32_t             progress_pct;
+    uint32_t             empty_reads;   /* internal: 0-byte reads in a row */
 } ota_manager_t;
 
 /* ---------- API ---------- */
@@ -99,6 +106,10 @@ ota_mgr_err_t ota_manager_check(ota_manager_t *mgr);
 
 /**
  * Download one chunk. Call in a loop until state leaves DOWNLOADING.
+ *
+ * download_chunk may report 0 bytes with OTA_MGR_OK for "nothing yet": the
+ * step writes nothing and returns OTA_MGR_OK.  OTA_MGR_MAX_EMPTY_READS such
+ * steps in a row end the download with OTA_MGR_ERR_DOWNLOAD.
  * @thread_safe: no
  */
 ota_mgr_err_t ota_manager_download_step(ota_manager_t *mgr,
