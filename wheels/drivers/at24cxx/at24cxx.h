@@ -130,7 +130,7 @@ at24cxx_err_t at24cxx_read(const at24cxx_t *dev, uint16_t addr,
 at24cxx_err_t at24cxx_write(const at24cxx_t *dev, uint16_t addr,
                             const uint8_t *data, uint16_t len);
 
-/** Write a single byte.  @thread_safe: caller_must_lock @isr_safe: yes */
+/** Write a single byte.  @thread_safe: caller_must_lock @isr_safe: no */
 at24cxx_err_t at24cxx_write_byte(const at24cxx_t *dev, uint16_t addr,
                                  uint8_t val);
 
