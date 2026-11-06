@@ -55,6 +55,7 @@ typedef struct {
     char        line_buf[CLI_LINE_BUFSIZE];
     size_t      line_len;
     uint8_t     last_was_cr;
+    uint8_t     line_overflow;  /* internal: this line lost bytes */
 } cli_parser_t;
 
 /** Initialize parser. @thread_safe: no @isr_safe: no */
@@ -62,7 +63,10 @@ void      cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg);
 
 /** Feed one byte from a task or polling loop. Every printable byte calls
  *  write_fn and end of line runs the command handler inside this call, so a
- *  UART ISR must queue its bytes rather than call this.
+ *  UART ISR must queue its bytes rather than call this. A line that outgrows
+ *  CLI_LINE_BUFSIZE is refused at end of line, with "line too long" sent to
+ *  write_fn, as cli_parser_run refuses it with CLI_ERR_OVERFLOW. The handler
+ *  does not run, and backspace does not undo the refusal.
  *  @thread_safe: caller_must_lock @isr_safe: no */
 void      cli_parser_feed(cli_parser_t *ctx, uint8_t byte);
 

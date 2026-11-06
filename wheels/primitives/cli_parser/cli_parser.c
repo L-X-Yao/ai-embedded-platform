@@ -67,6 +67,7 @@ void cli_parser_init(cli_parser_t *ctx, const cli_cfg_t *cfg)
     ctx->line_len = 0;
     ctx->line_buf[0] = '\0';
     ctx->last_was_cr = 0;
+    ctx->line_overflow = 0;
     ENSURE(ctx->line_len == 0);
     cli_prompt(ctx);
 }
@@ -84,9 +85,15 @@ void cli_parser_feed(cli_parser_t *ctx, uint8_t byte)
         if (ctx->line_len > 0) {
             cli_puts(ctx, "\r\n");
             ctx->line_buf[ctx->line_len] = '\0';
-            (void)cli_parser_run(ctx, ctx->line_buf);
+            if (ctx->line_overflow) {
+                /* What is left is not what was typed: do not run it */
+                cli_puts(ctx, "line too long\r\n");
+            } else {
+                (void)cli_parser_run(ctx, ctx->line_buf);
+            }
             ctx->line_len = 0;
         }
+        ctx->line_overflow = 0;
         cli_prompt(ctx);
         return;
     }
@@ -108,6 +115,8 @@ void cli_parser_feed(cli_parser_t *ctx, uint8_t byte)
                 char c = (char)byte;
                 ctx->cfg.write_fn(&c, 1, ctx->cfg.user_ctx);
             }
+        } else {
+            ctx->line_overflow = 1;
         }
     }
 }
