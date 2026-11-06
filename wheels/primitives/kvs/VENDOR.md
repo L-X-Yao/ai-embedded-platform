@@ -49,6 +49,12 @@ And these to `src/fdb_tsdb.c`, marked the same way:
   sector left blank by a power cut stayed blank through init and
   `fdb_tsl_clean`, and the next boot formatted away the logs written since.
 
+And this to `src/fdb.c`, marked the same way:
+
+- `_fdb_db_path` returns an empty string when `storage.part` is NULL, which it
+  is after a failed partition lookup. Every message on that path prints the
+  path, starting with the failure message of `fdb_tsdb_init` itself.
+
 The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 
 ## Update procedure
@@ -57,5 +63,5 @@ The RT-Thread-specific `fdb_cfg.h` is replaced per-project.
 2. Copy `inc/flashdb.h`, `inc/fdb_def.h`, `inc/fdb_low_lvl.h` to `vendor/inc/`
 3. Copy `src/fdb.c`, `src/fdb_kvdb.c`, `src/fdb_tsdb.c`, `src/fdb_utils.c` to `vendor/src/`
 4. Run tests: `cd test && cmake -GNinja -S . -B build && cmake --build build && ./build/test_kvs`
-5. Reapply the `fdb_kvdb.c` and `fdb_tsdb.c` changes above unless upstream has fixed them
+5. Reapply the `fdb_kvdb.c`, `fdb_tsdb.c` and `fdb.c` changes above unless upstream has fixed them
 6. Update version and date in this file

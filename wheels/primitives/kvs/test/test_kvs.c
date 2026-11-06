@@ -521,6 +521,17 @@ TEST(test_tsdb_clean_progress_repairs_blank_sector)
     }
 }
 
+/* A missing partition leaves storage.part NULL, and the failure message
+ * of init prints the partition name. */
+TEST(test_tsdb_init_missing_partition)
+{
+    struct fdb_tsdb db;
+
+    memset(&db, 0, sizeof(db));
+    ASSERT_EQ(fdb_tsdb_init(&db, "log", "nosuchpart", tsdb_get_time, 64, NULL),
+              FDB_PART_NOT_FOUND);
+}
+
 TEST_MAIN("kvs")
     RUN(test_fal_init);
     RUN(test_kvdb_init);
@@ -540,5 +551,6 @@ TEST_MAIN("kvs")
     RUN(test_tsdb_init_repairs_blank_sector);
     RUN(test_tsdb_clean_repairs_blank_sector);
     RUN(test_tsdb_clean_progress_repairs_blank_sector);
+    RUN(test_tsdb_init_missing_partition);
 TEST_MAIN_END()
 
