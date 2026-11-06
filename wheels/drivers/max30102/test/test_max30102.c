@@ -757,6 +757,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(max30102_init(&d, NULL), MAX30102_ERR_PARAM);
     assert_device_refused(&d);
 
+    static max30102_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max30102_init(&d, &zeroed_hal), MAX30102_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* 0x11 is the part ID of a MAX30100: it answers, but it is another chip */
     mock_regs[REG_PART_ID] = 0x11;
     ASSERT_EQ(max30102_init(&d, &mock_i2c), MAX30102_ERR_ID);
