@@ -111,11 +111,15 @@ gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
         flt->quality_ok_ms = 0;
         flt->quality_ready = false;
     } else {
-        flt->quality_ok_ms += elapsed_ms;
+        /* Quality has held since the last sample only if that one was good */
+        if (flt->last_raw_ok) {
+            flt->quality_ok_ms += elapsed_ms;
+        }
         if (flt->quality_ok_ms >= flt->cfg.stable_ms) {
             flt->quality_ready = true;
         }
     }
+    flt->last_raw_ok = raw_ok;
 
     /* Position filter: only update when quality gate passed */
     if (!flt->quality_ready) {

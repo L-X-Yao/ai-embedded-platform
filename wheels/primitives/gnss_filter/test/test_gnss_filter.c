@@ -115,6 +115,30 @@ TEST(test_quality_resets_on_bad_fix)
     ASSERT_TRUE(gnss_filter_is_ready(&flt));
 }
 
+/* stable_ms is time the quality has held, so the clock starts at the first
+ * good sample and the outage before it counts for nothing. */
+TEST(test_gap_before_good_sample_does_not_count)
+{
+    gnss_filter_cfg_t cfg = g_default_cfg;
+    cfg.stable_ms = 5000;
+
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &cfg);
+    gnss_filter_input_t good = good_fix();
+    gnss_filter_input_t bad = good_fix();
+    bad.fix_valid = false;
+
+    gnss_filter_update(&flt, &bad, 0, 0);
+    gnss_filter_update(&flt, &good, 0, 5000);
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+
+    gnss_filter_update(&flt, &good, 0, 9999);
+    ASSERT_FALSE(gnss_filter_is_ready(&flt));
+
+    gnss_filter_update(&flt, &good, 0, 10000);
+    ASSERT_TRUE(gnss_filter_is_ready(&flt));
+}
+
 TEST(test_ema_stationary)
 {
     gnss_filter_t flt;
@@ -595,6 +619,7 @@ TEST_MAIN("gnss_filter")
     RUN(test_not_ready_without_stable_time);
     RUN(test_ready_after_stable_time);
     RUN(test_quality_resets_on_bad_fix);
+    RUN(test_gap_before_good_sample_does_not_count);
     RUN(test_ema_stationary);
     RUN(test_ema_lon_takes_the_short_way_round);
     RUN(test_ema_lon_result_stays_in_range);
