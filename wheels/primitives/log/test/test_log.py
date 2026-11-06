@@ -15,8 +15,7 @@ TEST_DIR = Path(__file__).parent
 BUILD_DIR = TEST_DIR / "build"
 TEST_BIN = BUILD_DIR / "test_log"
 
-RELEASE_BUILD_DIR = TEST_DIR / "build_release"
-RELEASE_BIN = RELEASE_BUILD_DIR / "test_log"
+RELEASE_BIN = BUILD_DIR / "test_log_max_warn"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -73,27 +72,27 @@ def test_c_case_passed(marker):
 
 # --- release build verification (LOG_LEVEL_MAX=LOG_LEVEL_WARN) ---
 
-@pytest.fixture(scope="session")
-def release_build():
-    """Build with LOG_LEVEL_MAX=WARN to verify compile-time elimination."""
-    RELEASE_BUILD_DIR.mkdir(exist_ok=True)
-    cmake = shutil.which("cmake")
-    subprocess.run(
-        [cmake, "-GNinja", "-S", str(TEST_DIR), "-B", str(RELEASE_BUILD_DIR),
-         "-DCMAKE_C_FLAGS=-DLOG_LEVEL_MAX=LOG_LEVEL_WARN"],
-        check=True, capture_output=True,
-    )
-    subprocess.run(
-        [cmake, "--build", str(RELEASE_BUILD_DIR)],
-        check=True, capture_output=True,
-    )
+@pytest.mark.parametrize("target", [
+    "test_log_max_none",
+    "test_log_max_error",
+    "test_log_max_warn",
+    "test_log_max_info",
+    "test_log_max_debug",
+    "test_log_max_number",
+])
+def test_level_limit(target):
+    """Each build must keep exactly the levels CMakeLists.txt says it keeps."""
+    stdout, rc = _run_bin(BUILD_DIR / target)
+    assert rc == 0, f"{target} failed: rc={rc}\n{stdout}"
 
 
-def test_release_eliminates_debug_info(release_build):
-    """At LOG_LEVEL_MAX=WARN, side_effect counter must be 2 (not 4).
-    This proves DEBUG/INFO macros expanded to ((void)0) and argument
-    evaluation was eliminated at compile time."""
+def test_release_eliminates_debug_info():
+    """At LOG_LEVEL_MAX=WARN, the DEBUG and INFO strings must be gone.
+    test_log_max.c proves the same for their arguments: its side-effect
+    counter must be 2, not 4."""
     stdout, rc = _run_bin(RELEASE_BIN)
     assert rc == 0, f"release build failed: rc={rc}\n{stdout}"
-    assert "PASS test_side_effect_at_default_level" in stdout, \
-        f"side-effect test missing:\n{stdout}"
+    actual = RELEASE_BIN if RELEASE_BIN.exists() else RELEASE_BIN.with_suffix(".exe")
+    image = actual.read_bytes()
+    assert b"MARKER_WARN" in image and b"MARKER_ERROR" in image
+    assert b"MARKER_DEBUG" not in image and b"MARKER_INFO" not in image
