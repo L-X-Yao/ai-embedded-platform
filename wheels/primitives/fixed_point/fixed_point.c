@@ -41,8 +41,10 @@ int16_t fp_to_int(fp_t val)
 int16_t fp_to_int_rounded(fp_t val)
 {
     if (val >= 0) {
-        int64_t r = (int64_t)val + FP_HALF;
-        return (int16_t)(r >> FP_FRAC_BITS);
+        int64_t r = ((int64_t)val + FP_HALF) >> FP_FRAC_BITS;
+        /* 32767.5 and up round to 32768, which int16_t cannot hold */
+        if (r > INT16_MAX) return INT16_MAX;
+        return (int16_t)r;
     }
     /* guard -INT32_MIN which would overflow */
     int64_t neg = -(int64_t)val;

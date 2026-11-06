@@ -44,6 +44,18 @@ TEST(test_to_int_rounded)
     ASSERT_EQ(fp_to_int_rounded(fp_from_float(-1.4f)), -1);
 }
 
+/* 32767.5 and up round to 32768, one past what int16_t holds. */
+TEST(test_to_int_rounded_saturates)
+{
+    ASSERT_EQ(fp_to_int_rounded(FP_MAX), 32767);
+    ASSERT_EQ(fp_to_int_rounded((fp_t)0x7FFF8000), 32767);
+    ASSERT_EQ(fp_to_int_rounded((fp_t)0x7FFF7FFF), 32767);
+
+    /* -32768 is in range, so the low end needs no clamp. */
+    ASSERT_EQ(fp_to_int_rounded(FP_MIN), -32768);
+    ASSERT_EQ(fp_to_int_rounded(FP_MIN + 1), -32768);
+}
+
 /* ── Arithmetic tests ─────────────────────────────────────────── */
 
 TEST(test_add)
@@ -603,6 +615,7 @@ TEST_MAIN("fixed_point")
     RUN(test_from_float_to_float_roundtrip);
     RUN(test_to_int_truncation);
     RUN(test_to_int_rounded);
+    RUN(test_to_int_rounded_saturates);
     RUN(test_add);
     RUN(test_sub);
     RUN(test_mul);
