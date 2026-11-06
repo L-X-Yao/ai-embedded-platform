@@ -11,6 +11,8 @@
  * - A measurement takes the manual's maximum, 180 ms or 24 ms in L mode (p.2),
  *   so a driver that waits less sees the old value, as on a slow chip
  * - Different resolution modes (H-res, H-res2, L-res)
+ * - Reset works only with the power on (p.5)
+ * - The two addresses of the ADDR pin get an ACK, and no others (p.7)
  */
 
 #ifndef HW_MODEL_BH1750_H
@@ -42,6 +44,12 @@ static void bh1750_model_init(bh1750_model_t *m)
     m->cmd_count = 0;
     m->read_count = 0;
     m->last_cmd = 0xFF;
+}
+
+/* p.7: 0100011 with ADDR low, 1011100 with ADDR high */
+static bool bh1750_model_addressed(uint8_t dev_addr)
+{
+    return dev_addr == 0x23 || dev_addr == 0x5C;
 }
 
 static uint32_t bh1750_model_measure_ms(uint8_t mode)
@@ -77,8 +85,8 @@ __attribute__((unused))
 static bool bh1750_model_i2c_write(void *ctx, uint8_t dev_addr,
                                    const uint8_t *data, uint16_t len)
 {
-    (void)dev_addr;
     bh1750_model_t *m = (bh1750_model_t *)ctx;
+    if (!bh1750_model_addressed(dev_addr)) return false;
     if (len < 1) return true;
 
     uint8_t cmd = data[0];
@@ -93,8 +101,9 @@ static bool bh1750_model_i2c_write(void *ctx, uint8_t dev_addr,
         m->powered = false;
         m->measure_left_ms = 0;
         break;
-    case 0x07:  /* Reset */
-        m->data_reg = 0;
+    case 0x07:  /* Reset: "not acceptable in Power Down mode" (p.5) */
+        if (m->powered)
+            m->data_reg = 0;
         break;
     case 0x10: case 0x11: case 0x13:  /* Continuous modes */
     case 0x20: case 0x21: case 0x23:  /* One-shot modes */
@@ -112,8 +121,8 @@ __attribute__((unused))
 static bool bh1750_model_i2c_read(void *ctx, uint8_t dev_addr,
                                   uint8_t *data, uint16_t len)
 {
-    (void)dev_addr;
     bh1750_model_t *m = (bh1750_model_t *)ctx;
+    if (!bh1750_model_addressed(dev_addr)) return false;
     m->read_count++;
 
     if (len >= 2) {
