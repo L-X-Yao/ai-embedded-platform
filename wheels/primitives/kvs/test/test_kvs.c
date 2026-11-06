@@ -989,6 +989,18 @@ TEST(test_tsdb_by_time_returns_the_window_across_sectors)
     ASSERT_EQ(by_time_windows_wrong(n, 3), 0);
 }
 
+/* 62-byte logs fill a sector exactly, so nothing separates the last index from
+ * the log data. An iterator that reads one index too far reads log data. */
+TEST(test_tsdb_by_time_with_no_gap_after_the_last_index)
+{
+    const int n = 130;
+
+    ASSERT_EQ(fresh_tsdb(), FDB_NO_ERR);
+    fill_even_times(n, 62);
+    ASSERT_EQ(by_time_windows_wrong(n, 3), 0);
+    ASSERT_EQ(fdb_tsl_query_count(&test_tsdb, 208, 100, FDB_TSL_WRITE), 55);
+}
+
 /* ---------- kv objects and the integrity check ---------- */
 
 #define KVDB_PART_ADDR 4096 /* the "kvdb" partition in fal_cfg.h */
@@ -1177,6 +1189,7 @@ TEST_MAIN("kvs")
     RUN(test_tsdb_rollover_keeps_the_newest_logs);
     RUN(test_tsdb_without_rollover_reports_full);
     RUN(test_tsdb_by_time_returns_the_window_across_sectors);
+    RUN(test_tsdb_by_time_with_no_gap_after_the_last_index);
     RUN(test_kv_object_reads_back_through_a_blob);
     RUN(test_kv_object_of_a_binary_blob);
     RUN(test_kv_object_of_an_absent_key);

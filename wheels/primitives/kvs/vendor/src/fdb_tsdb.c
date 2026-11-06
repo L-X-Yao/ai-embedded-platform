@@ -717,6 +717,8 @@ __exit:
 static int search_start_tsl_addr(fdb_tsdb_t db, int start, int end, fdb_time_t from, fdb_time_t to)
 {
     struct fdb_tsl tsl;
+    int last = end;
+
     while (true) {
         tsl.addr.index = start + FDB_ALIGN((end - start) / 2, LOG_IDX_DATA_SIZE);
         read_tsl(db, &tsl);
@@ -729,6 +731,12 @@ static int search_start_tsl_addr(fdb_tsdb_t db, int start, int end, fdb_time_t f
         }
 
         if (start > end) {
+            /* Local change: every log here is older than from, so start is
+             * past the last index. Reading it there reads log data when the
+             * sector filled exactly, and the reverse walk then stops. */
+            if (from > to && start > last) {
+                return last;
+            }
             if (from > to) {
                 tsl.addr.index = start;
                 read_tsl(db, &tsl);
