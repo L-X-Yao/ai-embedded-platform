@@ -122,7 +122,9 @@ pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
     dev->i2c      = i2c;
     dev->dev_addr = dev_addr;
 
-    /* Software reset: write MODE1 with SLEEP + AI + ALLCALL */
+    /* MODE1 = SLEEP + AI + ALLCALL. This is no reset, which takes the SWRST
+     * General Call: after a restart of the MCU alone, MODE2, the LED registers
+     * and EXTCLK keep what they held. */
     uint8_t mode1 = MODE1_SLEEP | MODE1_AI | MODE1_ALLCALL;
     if (!write_reg(dev, REG_MODE1, mode1))
         return PCA9685_ERR_I2C;
