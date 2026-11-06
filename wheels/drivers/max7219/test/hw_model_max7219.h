@@ -11,9 +11,10 @@
  * - SHUTDOWN at 0x0C: bit 0 = 0 (shutdown), 1 (normal)
  * - DISPLAY_TEST at 0x0F: bit 0 = 1 (all-on test mode)
  *
- * SPI protocol: 16-bit shift (D15..D8 = register, D7..D0 = data).
- * We model this through an SPI HAL that captures register writes
- * into the hw_reg_model.
+ * SPI protocol: 16-bit shift (D11..D8 = register, D7..D0 = data, D15..D12
+ * don't care). A transfer only fills the shift register, "regardless of the
+ * state of LOAD" (p.6). The register is written on LOAD's rising edge, in
+ * max7219_model_cs_high().
  */
 
 #ifndef HW_MODEL_MAX7219_H
@@ -36,6 +37,8 @@ typedef struct {
     bool            shutdown;       /* true = display off */
     bool            display_test;   /* true = all segments on */
     int             write_count;    /* total SPI writes */
+    uint8_t         shift[2];       /* 16-bit shift register, D15 first */
+    bool            load_high;      /* level of the LOAD pin */
 } max7219_model_t;
 
 /* Callback: SHUTDOWN register */
@@ -107,14 +110,15 @@ static void max7219_model_init(max7219_model_t *m)
     m->shutdown = true;  /* POR: shutdown mode */
     m->display_test = false;
     m->write_count = 0;
+    m->load_high = true;
 
     hw_model_reset(&m->hw);
 }
 
 /* --- SPI HAL shim: converts SPI transfers into register model writes --- */
 
-/* The MAX7219 SPI protocol sends 16 bits: [15:8]=register, [7:0]=data.
- * We intercept the transfer call and route to hw_model. */
+/* The MAX7219 SPI protocol sends 16 bits: [11:8]=register, [7:0]=data.
+ * We intercept the transfer call and keep the last 16 bits. */
 __attribute__((unused))
 static bool max7219_model_spi_transfer(void *ctx, const uint8_t *tx,
                                        uint8_t *rx, uint16_t len)
@@ -123,13 +127,20 @@ static bool max7219_model_spi_transfer(void *ctx, const uint8_t *tx,
     max7219_model_t *m = (max7219_model_t *)ctx;
     if (len != 2 || !tx) return false;
 
-    uint8_t reg = tx[0] & 0x0Fu;  /* D12-D15 are don't care */
-    uint8_t val = tx[1];
-
+    m->shift[0] = tx[0];
+    m->shift[1] = tx[1];
     m->write_count++;
+    return true;
+}
+
+/* p.5: "The last 16 bits of serial data are latched on LOAD's rising edge." */
+static void max7219_model_latch(max7219_model_t *m)
+{
+    uint8_t reg = m->shift[0] & 0x0Fu;  /* D12-D15 are don't care */
+    uint8_t val = m->shift[1];
 
     /* NOOP: ignore */
-    if (reg == MAX7219_REG_NOOP) return true;
+    if (reg == MAX7219_REG_NOOP) return;
 
     /* Valid register range: 0x01-0x0C, 0x0F */
     if (reg >= 0x01 && reg <= 0x0C) {
@@ -138,14 +149,21 @@ static bool max7219_model_spi_transfer(void *ctx, const uint8_t *tx,
         hw_model__write_reg(&m->hw, reg, val);
     }
     /* All other addresses are ignored by the chip */
-
-    return true;
 }
 
 __attribute__((unused))
-static void max7219_model_cs_low(void *ctx) { (void)ctx; }
+static void max7219_model_cs_low(void *ctx)
+{
+    ((max7219_model_t *)ctx)->load_high = false;
+}
 
 __attribute__((unused))
-static void max7219_model_cs_high(void *ctx) { (void)ctx; }
+static void max7219_model_cs_high(void *ctx)
+{
+    max7219_model_t *m = (max7219_model_t *)ctx;
+
+    if (!m->load_high) max7219_model_latch(m);
+    m->load_high = true;
+}
 
 #endif /* HW_MODEL_MAX7219_H */
