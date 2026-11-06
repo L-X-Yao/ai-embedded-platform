@@ -584,6 +584,11 @@ TEST(test_device_refused_after_failed_init)
     ASSERT_EQ(pac1952_init(&d, &mock_i2c_hal, &negative), PAC1952_ERR_PARAM);
     assert_device_refused(&d);
 
+    static pac1952_i2c_t zeroed_hal;
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pac1952_init(&d, &zeroed_hal, &default_cfg), PAC1952_ERR_PARAM);
+    assert_device_refused(&d);
+
     /* Something answers, with no product ID of this family */
     mock_regs[REG_PRODUCT_ID] = 0xAA;
     ASSERT_EQ(pac1952_init(&d, &mock_i2c_hal, &default_cfg), PAC1952_ERR_ID);
