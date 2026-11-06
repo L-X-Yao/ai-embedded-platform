@@ -8,10 +8,18 @@
 static void mock_reset(void)
 {
     mock_i2c_reset();
-    /* PCF8563 POR: control registers read 0x00 (upper bits clear) */
-    mock_regs[0x00] = 0x00;   /* Control_status_1 */
+    /* Rev. 10 Table 27. Registers marked x "are undefined at power-up" and
+     * read 1 here, which leaves VL = 1 and AE_x = 1 (alarm disabled). */
+    memset(mock_regs, 0xFF, 16);
+    mock_regs[0x00] = 0x08;   /* Control_status_1: TESTC = 1 */
     mock_regs[0x01] = 0x00;   /* Control_status_2 */
-    /* Default time: 2026-01-15 Thu 12:30:45 in BCD */
+    mock_regs[0x0D] = 0x80;   /* CLKOUT_control: FE = 1, FD = 00 */
+    mock_regs[0x0E] = 0x03;   /* Timer_control: TE = 0, TD = 11 */
+}
+
+/* 2026-01-15 Thu 12:30:45 in BCD */
+static void plant_time(void)
+{
     mock_regs[0x02] = 0x45;   /* seconds: 45 = 0x45 BCD */
     mock_regs[0x03] = 0x30;   /* minutes: 30 = 0x30 BCD */
     mock_regs[0x04] = 0x12;   /* hours:   12 = 0x12 BCD */
@@ -19,11 +27,6 @@ static void mock_reset(void)
     mock_regs[0x06] = 0x04;   /* weekday: 4 = Thursday */
     mock_regs[0x07] = 0x01;   /* month:   01 = 0x01 BCD */
     mock_regs[0x08] = 0x26;   /* year:    26 = 0x26 BCD */
-    /* Alarms disabled by default */
-    mock_regs[0x09] = 0x80;
-    mock_regs[0x0A] = 0x80;
-    mock_regs[0x0B] = 0x80;
-    mock_regs[0x0C] = 0x80;
 }
 
 static const pcf8563_i2c_t mock_i2c = {
@@ -112,6 +115,7 @@ TEST(test_read_time)
 {
     mock_reset();
     pcf8563_init(&dev, &mock_i2c);
+    plant_time();
 
     pcf8563_time_t t;
     ASSERT_EQ(pcf8563_read_time(&dev, &t), PCF8563_OK);
@@ -500,6 +504,19 @@ TEST(test_clkout_null)
     ASSERT_EQ(pcf8563_set_clkout(NULL, true, PCF8563_CLKOUT_1HZ), PCF8563_ERR_PARAM);
 }
 
+/* Rev. 10 Table 27 */
+TEST(test_mock_starts_at_the_reset_values)
+{
+    mock_reset();
+    ASSERT_EQ_HEX(mock_regs[0x00], 0x08);         /* TESTC = 1 */
+    ASSERT_EQ_HEX(mock_regs[0x01], 0x00);
+    ASSERT_EQ_HEX(mock_regs[0x02] & 0x80u, 0x80); /* VL = 1 */
+    for (int reg = 0x09; reg <= 0x0C; reg++)
+        ASSERT_EQ_HEX(mock_regs[reg] & 0x80u, 0x80);  /* AE_x = 1 */
+    ASSERT_EQ_HEX(mock_regs[0x0D] & 0x83u, 0x80); /* FE = 1, FD = 00 */
+    ASSERT_EQ_HEX(mock_regs[0x0E] & 0x83u, 0x03); /* TE = 0, TD = 11 */
+}
+
 TEST_MAIN("pcf8563")
     RUN(test_init_ok);
     RUN(test_init_accepts_n_bits_high);
@@ -533,4 +550,5 @@ TEST_MAIN("pcf8563")
     RUN(test_clkout_enable);
     RUN(test_clkout_disable);
     RUN(test_clkout_null);
+    RUN(test_mock_starts_at_the_reset_values);
 TEST_MAIN_END()
