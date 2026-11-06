@@ -274,7 +274,11 @@ static power_manager_t   pwr_mgr;
 static bitmap_t          status_flags;
 static uint8_t           flag_storage[2]; /* 16 bits */
 static memory_pool_t     log_pool;
-static uint8_t           pool_buf[POOL_BLOCK_SIZE * POOL_BLOCK_COUNT];
+/* memory_pool needs pointer-aligned storage: a bare uint8_t array is not. */
+static union {
+    void   *align;
+    uint8_t bytes[POOL_BLOCK_SIZE * POOL_BLOCK_COUNT];
+} pool_store;
 static timeout_t         meas_timer;
 
 /* ======================================================================
@@ -289,8 +293,8 @@ TEST(test_init_all)
     ASSERT_EQ(bitmap_count_set(&status_flags), 0);
 
     /* 2. memory_pool -- log entry allocator */
-    memory_pool_err_t mp_err = memory_pool_init(&log_pool, pool_buf,
-                                                 sizeof(pool_buf),
+    memory_pool_err_t mp_err = memory_pool_init(&log_pool, pool_store.bytes,
+                                                 sizeof(pool_store.bytes),
                                                  POOL_BLOCK_SIZE);
     ASSERT_EQ(mp_err, MEMORY_POOL_OK);
     ASSERT_EQ(memory_pool_available(&log_pool), POOL_BLOCK_COUNT);
