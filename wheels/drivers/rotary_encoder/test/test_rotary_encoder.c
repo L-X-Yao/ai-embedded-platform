@@ -143,6 +143,31 @@ TEST(test_poll_null_hal)
     ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
 }
 
+/* init returns void and cannot refuse a HAL, so poll does */
+TEST(test_poll_refuses_a_hal_without_both_reads)
+{
+    static const rotary_encoder_hal_t zeroed;
+    rotary_encoder_hal_t no_a = mock_hal;
+    rotary_encoder_hal_t no_b = mock_hal;
+    rotary_encoder_t enc;
+    no_a.read_a = NULL;
+    no_b.read_b = NULL;
+    mock_pin_a = false;
+    mock_pin_b = true;   /* 00 to 01 is one step clockwise */
+
+    rotary_encoder_init(&enc, &zeroed);
+    rotary_encoder_poll(&enc);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
+
+    rotary_encoder_init(&enc, &no_a);
+    rotary_encoder_poll(&enc);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
+
+    rotary_encoder_init(&enc, &no_b);
+    rotary_encoder_poll(&enc);
+    ASSERT_EQ(rotary_encoder_get_position(&enc), 0);
+}
+
 TEST_MAIN("rotary_encoder")
     RUN(test_init);
     RUN(test_cw_full_cycle);
@@ -154,4 +179,5 @@ TEST_MAIN("rotary_encoder")
     RUN(test_many_steps);
     RUN(test_poll_cw);
     RUN(test_poll_null_hal);
+    RUN(test_poll_refuses_a_hal_without_both_reads);
 TEST_MAIN_END()

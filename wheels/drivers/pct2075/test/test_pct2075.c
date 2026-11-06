@@ -304,6 +304,46 @@ TEST(test_config_write_i2c_fail)
     ASSERT_EQ(pct2075_init(&d, &mock_i2c, &cfg), PCT2075_ERR_I2C);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+TEST(test_device_refused_after_failed_init)
+{
+    pct2075_cfg_t cfg = default_cfg;
+    pct2075_t d;
+    float t;
+
+    mock_reset();
+    mock_fail_next = 1;  /* the first read, which proves the bus */
+    ASSERT_EQ(pct2075_init(&d, &mock_i2c, &default_cfg), PCT2075_ERR_I2C);
+    ASSERT_EQ(pct2075_read(&d, &t), PCT2075_ERR_PARAM);
+
+    mock_reset();
+    cfg.write_config = true;
+    mock_fail_at = 1;    /* the configuration write */
+    ASSERT_EQ(pct2075_init(&d, &mock_i2c, &cfg), PCT2075_ERR_I2C);
+    ASSERT_EQ(pct2075_read(&d, &t), PCT2075_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const pct2075_i2c_t zeroed;
+    pct2075_cfg_t bad_addr = default_cfg;
+    pct2075_t d;
+    float t;
+
+    mock_reset();
+    bad_addr.addr = 0x00;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pct2075_init(&d, &zeroed, &default_cfg), PCT2075_ERR_PARAM);
+    ASSERT_EQ(pct2075_read(&d, &t), PCT2075_ERR_PARAM);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(pct2075_init(&d, &mock_i2c, &bad_addr), PCT2075_ERR_PARAM);
+    ASSERT_EQ(pct2075_read(&d, &t), PCT2075_ERR_PARAM);
+}
+
 TEST_MAIN("pct2075")
     RUN(test_init_ok);
     RUN(test_init_writes_config);
@@ -330,4 +370,6 @@ TEST_MAIN("pct2075")
     RUN(test_table5_addresses);
     RUN(test_read_neg0_125);
     RUN(test_config_write_i2c_fail);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

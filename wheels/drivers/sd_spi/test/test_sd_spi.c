@@ -947,6 +947,41 @@ TEST(test_block_addressed_card_takes_any_block)
     ASSERT_EQ_HEX(mock_last_addr, 0xFFFFFFFFu);
 }
 
+/* ---------- a card init did not finish ---------- */
+
+static void assert_card_refused(sd_spi_t *sd)
+{
+    static uint8_t buf[512];
+    ASSERT_EQ(sd_spi_read_block(sd, 0, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_write_block(sd, 0, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_get_type(sd), SD_SPI_TYPE_UNKNOWN);
+}
+
+TEST(test_card_refused_after_failed_init)
+{
+    sd_spi_t sd;
+    mock_reset();
+    mock_fail_init = 1;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_ERR_INIT);
+    assert_card_refused(&sd);
+}
+
+/* sd holds whatever the stack did, as nothing else wrote it */
+TEST(test_card_refused_after_rejected_init)
+{
+    static const sd_spi_hal_t zeroed;
+    sd_spi_t sd;
+    mock_reset();
+
+    memset(&sd, 0xA5, sizeof(sd));
+    ASSERT_EQ(sd_spi_init(&sd, NULL), SD_SPI_ERR_PARAM);
+    assert_card_refused(&sd);
+
+    memset(&sd, 0xA5, sizeof(sd));
+    ASSERT_EQ(sd_spi_init(&sd, &zeroed), SD_SPI_ERR_PARAM);
+    assert_card_refused(&sd);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -989,4 +1024,6 @@ TEST_MAIN("sd_spi")
     RUN(test_blocks_past_byte_range_are_refused);
     RUN(test_highest_byte_addressed_block);
     RUN(test_block_addressed_card_takes_any_block);
+    RUN(test_card_refused_after_failed_init);
+    RUN(test_card_refused_after_rejected_init);
 TEST_MAIN_END()

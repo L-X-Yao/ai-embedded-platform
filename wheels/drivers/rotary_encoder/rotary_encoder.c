@@ -50,7 +50,7 @@ void rotary_encoder_update(rotary_encoder_t *enc, bool a, bool b)
 
 void rotary_encoder_poll(rotary_encoder_t *enc)
 {
-    if (!enc || !enc->hal) return;
+    if (!enc || !enc->hal || !enc->hal->read_a || !enc->hal->read_b) return;
     bool a = enc->hal->read_a(enc->hal->ctx);
     bool b = enc->hal->read_b(enc->hal->ctx);
     (void)rotary_encoder_update(enc, a, b);

@@ -381,6 +381,45 @@ TEST(test_init_leaves_the_rest_at_reset)
     ASSERT_EQ_HEX(hw_regs[0x26], 0x48);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(rc522_t *d)
+{
+    rc522_uid_t uid;
+    ASSERT_EQ(rc522_self_test(d), RC522_ERR_PARAM);
+    ASSERT_EQ(rc522_detect_card(d), RC522_ERR_PARAM);
+    ASSERT_EQ(rc522_read_card_uid(d, &uid), RC522_ERR_PARAM);
+    ASSERT_EQ(rc522_halt(d), RC522_ERR_PARAM);
+    ASSERT_EQ(rc522_antenna_on(d), RC522_ERR_PARAM);
+    ASSERT_EQ(rc522_get_version(d), 0);
+}
+
+/* 0x12 is the version of a clone, which answers but is not a MFRC522 */
+TEST(test_device_refused_after_wrong_version)
+{
+    rc522_t d;
+    hw_model_reset();
+    hw_regs[0x37] = 0x12;
+    ASSERT_EQ(rc522_init(&d, &mock_spi), RC522_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const rc522_spi_t zeroed;
+    rc522_t d;
+    hw_model_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(rc522_init(&d, NULL), RC522_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(rc522_init(&d, &zeroed), RC522_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("rc522")
     RUN(test_init_ok);
     RUN(test_init_version_v1);
@@ -416,4 +455,6 @@ TEST_MAIN("rc522")
     RUN(test_detect_card_needs_the_field);
     RUN(test_self_test_version_1);
     RUN(test_init_leaves_the_rest_at_reset);
+    RUN(test_device_refused_after_wrong_version);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

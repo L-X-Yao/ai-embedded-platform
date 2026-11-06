@@ -123,7 +123,16 @@ static scd40_err_t read_words(const scd40_t *dev, uint16_t *out,
 
 scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c)
 {
-    if (!dev || !i2c)
+    if (!dev)
+    {
+        return SCD40_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
     {
         return SCD40_ERR_PARAM;
     }
@@ -132,7 +141,6 @@ scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c)
         return SCD40_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c  = i2c;
     dev->addr = SCD40_DEV_ADDR;
 
@@ -141,7 +149,7 @@ scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c)
 
 scd40_err_t scd40_start_periodic(scd40_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SCD40_ERR_PARAM;
     }
@@ -159,7 +167,7 @@ scd40_err_t scd40_start_periodic(scd40_t *dev)
 
 scd40_err_t scd40_stop_periodic(scd40_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SCD40_ERR_PARAM;
     }
@@ -174,7 +182,7 @@ scd40_err_t scd40_stop_periodic(scd40_t *dev)
 
 scd40_err_t scd40_read(scd40_t *dev, scd40_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return SCD40_ERR_PARAM;
     }
@@ -204,7 +212,7 @@ scd40_err_t scd40_read(scd40_t *dev, scd40_data_t *out)
 
 scd40_err_t scd40_data_ready(scd40_t *dev, bool *ready)
 {
-    if (!dev || !ready)
+    if (!dev || !dev->i2c || !ready)
     {
         return SCD40_ERR_PARAM;
     }
@@ -232,7 +240,7 @@ scd40_err_t scd40_data_ready(scd40_t *dev, bool *ready)
 
 scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3])
 {
-    if (!dev || !serial)
+    if (!dev || !dev->i2c || !serial)
     {
         return SCD40_ERR_PARAM;
     }
@@ -253,7 +261,7 @@ scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3])
 
 scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters)
 {
-    if (!dev || meters > SCD40_ALTITUDE_MAX_M)
+    if (!dev || !dev->i2c || meters > SCD40_ALTITUDE_MAX_M)
     {
         return SCD40_ERR_PARAM;
     }
@@ -271,7 +279,7 @@ scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters)
 
 scd40_err_t scd40_perform_reset(scd40_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SCD40_ERR_PARAM;
     }

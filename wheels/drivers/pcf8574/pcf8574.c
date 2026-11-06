@@ -13,14 +13,21 @@
 
 #include "pcf8574.h"
 #include "contract.h"
+#include <string.h>
 
 pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
                            uint8_t dev_addr)
 {
-    if (!dev || !i2c || !i2c->write || !i2c->read)
+    if (!dev)
         return PCF8574_ERR_PARAM;
 
-    dev->i2c          = i2c;
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write || !i2c->read)
+        return PCF8574_ERR_PARAM;
+
     dev->dev_addr     = dev_addr;
     dev->output_state = 0xFFu;   /* all high — quasi-bidirectional input */
 
@@ -28,6 +35,7 @@ pcf8574_err_t pcf8574_init(pcf8574_t *dev, const pcf8574_i2c_t *i2c,
     if (!i2c->write(i2c->ctx, dev_addr, &dev->output_state, 1))
         return PCF8574_ERR_I2C;
 
+    dev->i2c = i2c;
     return PCF8574_OK;
 }
 
