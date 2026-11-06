@@ -116,6 +116,11 @@ static scd40_err_t read_words(const scd40_t *dev, uint16_t *out,
 
 /* ---------- public API ---------- */
 
+/* Sensirion SCD4x datasheet p.9: "While a periodic measurement is running, no
+ * other commands must be issued with the exception of read_measurement,
+ * get_data_ready_status, stop_periodic_measurement, set_ambient_pressure and
+ * get_ambient_pressure." Table 9 marks the others "no" under During meas. */
+
 scd40_err_t scd40_init(scd40_t *dev, const scd40_i2c_t *i2c)
 {
     if (!dev || !i2c)
@@ -140,10 +145,15 @@ scd40_err_t scd40_start_periodic(scd40_t *dev)
     {
         return SCD40_ERR_PARAM;
     }
+    if (dev->periodic)
+    {
+        return SCD40_ERR_BUSY;
+    }
     if (!send_cmd(dev, CMD_START_PERIODIC_MSB, CMD_START_PERIODIC_LSB))
     {
         return SCD40_ERR_I2C;
     }
+    dev->periodic = true;
     return SCD40_OK;
 }
 
@@ -157,6 +167,7 @@ scd40_err_t scd40_stop_periodic(scd40_t *dev)
     {
         return SCD40_ERR_I2C;
     }
+    dev->periodic = false;
     dev->i2c->delay_ms(dev->i2c->ctx, STOP_PERIODIC_TIME_MS);
     return SCD40_OK;
 }
@@ -225,6 +236,10 @@ scd40_err_t scd40_get_serial(scd40_t *dev, uint16_t serial[3])
     {
         return SCD40_ERR_PARAM;
     }
+    if (dev->periodic)
+    {
+        return SCD40_ERR_BUSY;
+    }
 
     if (!send_cmd(dev, CMD_GET_SERIAL_MSB, CMD_GET_SERIAL_LSB))
     {
@@ -242,6 +257,10 @@ scd40_err_t scd40_set_altitude(scd40_t *dev, uint16_t meters)
     {
         return SCD40_ERR_PARAM;
     }
+    if (dev->periodic)
+    {
+        return SCD40_ERR_BUSY;
+    }
     if (!send_cmd_arg(dev, CMD_SET_ALTITUDE_MSB, CMD_SET_ALTITUDE_LSB, meters))
     {
         return SCD40_ERR_I2C;
@@ -255,6 +274,10 @@ scd40_err_t scd40_perform_reset(scd40_t *dev)
     if (!dev)
     {
         return SCD40_ERR_PARAM;
+    }
+    if (dev->periodic)
+    {
+        return SCD40_ERR_BUSY;
     }
     if (!send_cmd(dev, CMD_REINIT_MSB, CMD_REINIT_LSB))
     {
