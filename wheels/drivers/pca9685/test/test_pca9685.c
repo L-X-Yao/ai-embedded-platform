@@ -31,10 +31,25 @@ static void mock_reset(void)
     mock_regs[REG_MODE1] = 0x11;
     /* Default prescaler for ~200Hz */
     mock_regs[REG_PRE_SCALE] = 30;
+    /* Table 7: every channel resets to full OFF */
+    for (uint8_t ch = 0; ch < 16u; ch++)
+        mock_regs[REG_LED0_ON_L + ch * 4u + 3u] = FULL_ON_BIT;
+}
+
+/* p.14: "User writes logic 1 to this bit to clear it to logic 0. A user write
+ * of logic 0 will have no effect." */
+static bool chip_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    uint8_t restart = (uint8_t)(mock_regs[REG_MODE1] & MODE1_RESTART);
+    if (!mock_i2c_write_reg(ctx, dev_addr, reg, val))
+        return false;
+    if (reg == REG_MODE1)
+        mock_regs[reg] = (uint8_t)((val & ~MODE1_RESTART) | (restart & ~val));
+    return true;
 }
 
 static const pca9685_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = chip_write_reg,
     .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_delay_ms,
     .ctx       = NULL,
@@ -53,7 +68,7 @@ static bool log_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
         mode1_log_ms[mode1_log_len] = delay_total_ms;
         mode1_log_len++;
     }
-    return mock_i2c_write_reg(ctx, dev_addr, reg, val);
+    return chip_write_reg(ctx, dev_addr, reg, val);
 }
 
 static const pca9685_i2c_t log_i2c = {
@@ -319,10 +334,33 @@ TEST(test_sleep_wake)
     ASSERT_EQ(pca9685_sleep(&dev), PCA9685_OK);
     ASSERT_TRUE(mock_regs[REG_MODE1] & MODE1_SLEEP);
 
-    /* Wake: MODE1 SLEEP bit should be cleared, RESTART set */
+    /* Wake: MODE1 SLEEP bit should be cleared. p.14: RESTART reads 0 after
+     * wake, as "User writes logic 1 to this bit to clear it to logic 0." */
     ASSERT_EQ(pca9685_wake(&dev), PCA9685_OK);
     ASSERT_FALSE(mock_regs[REG_MODE1] & MODE1_SLEEP);
-    ASSERT_TRUE(mock_regs[REG_MODE1] & MODE1_RESTART);
+    ASSERT_FALSE(mock_regs[REG_MODE1] & MODE1_RESTART);
+}
+
+/* p.14: the same rule for a bit that reads 1, and a written 0 leaves it. */
+TEST(test_mock_restart_follows_table_5)
+{
+    mock_reset();
+    mock_regs[REG_MODE1] = 0x91;
+
+    ASSERT_TRUE(mock_i2c.write_reg(NULL, 0x40, REG_MODE1, 0x11));
+    ASSERT_EQ_HEX(mock_regs[REG_MODE1], 0x91);
+
+    ASSERT_TRUE(mock_i2c.write_reg(NULL, 0x40, REG_MODE1, 0x91));
+    ASSERT_EQ_HEX(mock_regs[REG_MODE1], 0x11);
+}
+
+/* Table 7 p.21: "LED0_OFF_H[4] R/W 1* LED0 full OFF", so a channel must leave
+ * full OFF on the way to full ON or a PWM count. */
+TEST(test_mock_channels_reset_to_full_off)
+{
+    mock_reset();
+    for (uint8_t ch = 0; ch < 16u; ch++)
+        ASSERT_EQ_HEX(mock_regs[REG_LED0_ON_L + ch * 4u + 3u], FULL_ON_BIT);
 }
 
 /* p.15: a sleep with channels active leaves RESTART at 1, and "The SLEEP bit
@@ -434,6 +472,8 @@ TEST_MAIN("pca9685")
     RUN(test_set_freq_prescaler_calc);
     RUN(test_set_freq_range_validation);
     RUN(test_sleep_wake);
+    RUN(test_mock_restart_follows_table_5);
+    RUN(test_mock_channels_reset_to_full_off);
     RUN(test_wake_writes_restart_after_500us);
     RUN(test_set_freq_writes_restart_after_500us);
     RUN(test_sleep_writes_restart_as_zero);
