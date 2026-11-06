@@ -7,6 +7,10 @@
  * - ALS_CONF at register 0x00: gain[12:11], IT[9:6], SD[0]
  * - ALS data at register 0x04 (read-only)
  * - White data at register 0x05 (read-only)
+ * - ALS_CONF writes outside Table 1, by a reserved bit or an ALS_IT code it does
+ *   not list, are counted in bad_conf_writes
+ * - In shutdown the last data stays readable. The manual says waking up refreshes
+ *   it "by new detection" but not how soon, so the model does it at once
  *
  * NOTE: VEML7700 uses write_regs (multi-byte) instead of write_reg.
  *       We provide custom I2C callbacks that operate on 16-bit registers
@@ -32,7 +36,19 @@ typedef struct {
     hw_reg_model_t  hw;
     uint16_t        true_als;    /* simulated ALS raw count */
     uint16_t        true_white;  /* simulated White raw count */
+    int             bad_conf_writes;  /* ALS_CONF values Table 1 does not have */
 } veml7700_model_t;
+
+/* p.7, Table 1: reserved 15:13, 10 and 3:2 are set to 0, and ALS_IT has six codes */
+static bool veml7700_model_conf_ok(uint16_t conf)
+{
+    uint16_t it = (uint16_t)((conf >> 6) & 0x0Fu);
+
+    if (conf & 0xE40Cu) {
+        return false;
+    }
+    return it == 0x0Cu || it == 0x08u || it <= 0x03u;
+}
 
 /* Custom I2C write_regs for 16-bit register model */
 __attribute__((unused))
@@ -45,6 +61,10 @@ static bool veml7700_model_i2c_write_regs(void *ctx, uint8_t dev_addr,
     uint8_t base = VEML_BYTE_ADDR(reg);
     for (uint16_t i = 0; i < len && (base + i) < HW_MODEL_REG_COUNT; i++) {
         hw_model__write_reg(&m->hw, (uint8_t)(base + i), buf[i]);
+    }
+    if (reg == VEML_REG_ALS_CONF && len == 2 &&
+        !veml7700_model_conf_ok((uint16_t)(buf[0] | ((uint16_t)buf[1] << 8)))) {
+        m->bad_conf_writes++;
     }
     return true;
 }

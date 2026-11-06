@@ -8,9 +8,9 @@
 #define REG_ALS_DATA   0x04u
 #define REG_WHITE_DATA 0x05u
 
-/* Each register is 16-bit LE, stored in mock_regs as two consecutive bytes:
- * mock_regs[reg]   = low byte
- * mock_regs[reg+1] = high byte
+/* Each register is 16-bit LE, so register R takes two bytes of mock_regs:
+ * mock_regs[2 * R]     = low byte
+ * mock_regs[2 * R + 1] = high byte
  */
 
 /* ---------- chip-specific mock setup ---------- */
@@ -23,19 +23,32 @@ static void mock_reset(void)
 /* Set a 16-bit LE value at a register address in mock_regs */
 static void mock_set_reg16(uint8_t reg, uint16_t val)
 {
-    mock_regs[reg]     = (uint8_t)(val & 0xFFu);
-    mock_regs[reg + 1] = (uint8_t)((val >> 8u) & 0xFFu);
+    mock_regs[reg * 2u]      = (uint8_t)(val & 0xFFu);
+    mock_regs[reg * 2u + 1u] = (uint8_t)((val >> 8u) & 0xFFu);
 }
 
 static uint16_t mock_get_reg16(uint8_t reg)
 {
-    return (uint16_t)((uint16_t)mock_regs[reg + 1] << 8u |
-           (uint16_t)mock_regs[reg]);
+    return (uint16_t)((uint16_t)mock_regs[reg * 2u + 1u] << 8u |
+           (uint16_t)mock_regs[reg * 2u]);
+}
+
+/* The shared mock counts in bytes, the device in 16-bit command codes */
+static bool mock_write_regs16(void *ctx, uint8_t dev_addr, uint8_t reg,
+                              const uint8_t *buf, uint16_t len)
+{
+    return mock_i2c_write_regs(ctx, dev_addr, (uint8_t)(reg * 2u), buf, len);
+}
+
+static bool mock_read_regs16(void *ctx, uint8_t dev_addr, uint8_t reg,
+                             uint8_t *buf, uint16_t len)
+{
+    return mock_i2c_read_regs(ctx, dev_addr, (uint8_t)(reg * 2u), buf, len);
 }
 
 static const veml7700_i2c_t mock_i2c = {
-    .write_regs = mock_i2c_write_regs,
-    .read_regs  = mock_i2c_read_regs,
+    .write_regs = mock_write_regs16,
+    .read_regs  = mock_read_regs16,
     .ctx        = NULL,
 };
 
@@ -113,6 +126,24 @@ TEST(test_read_white_raw)
     uint16_t raw = 0;
     ASSERT_EQ(veml7700_read_white(&dev, &raw), VEML7700_OK);
     ASSERT_EQ(raw, 2000);
+}
+
+/* p.6: "six 16 bit command codes", so ALS at 04h and WHITE at 05h do not share a
+ * byte. p.7: each is its own 16-bit register. */
+TEST(test_als_and_white_are_separate_registers)
+{
+    mock_reset();
+    ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
+              VEML7700_OK);
+    mock_set_reg16(REG_ALS_DATA, 0x1234);
+    mock_set_reg16(REG_WHITE_DATA, 0xABCD);
+
+    uint16_t als = 0;
+    uint16_t white = 0;
+    ASSERT_EQ(veml7700_read_als(&dev, &als), VEML7700_OK);
+    ASSERT_EQ(veml7700_read_white(&dev, &white), VEML7700_OK);
+    ASSERT_EQ_HEX(als, 0x1234);
+    ASSERT_EQ_HEX(white, 0xABCD);
 }
 
 TEST(test_read_lux_gain1_it100ms)
@@ -234,6 +265,7 @@ TEST_MAIN("veml7700")
     RUN(test_read_als_raw);
     RUN(test_read_als_null_out);
     RUN(test_read_white_raw);
+    RUN(test_als_and_white_are_separate_registers);
     RUN(test_read_lux_gain1_it100ms);
     RUN(test_read_lux_gain2_it800ms);
     RUN(test_read_lux_gain1_8_it25ms);
