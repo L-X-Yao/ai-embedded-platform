@@ -302,7 +302,9 @@ TEST(test_set_power_mode)
 {
     mock_reset();
     icm42688_t dev;
-    icm42688_err_t e = setup_dev(&dev);
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    cfg.acc_odr = ICM42688_ODR_100HZ;                   /* LP needs <= 500 Hz */
+    icm42688_err_t e = icm42688_init(&dev, &mock_spi, &cfg);
     ASSERT_EQ(e, ICM42688_OK);
 
     /* Set accel LP (2), gyro standby (1) → GYRO_MODE=01<<2 | ACCEL_MODE=10 = 0x06 */
@@ -670,6 +672,58 @@ TEST(test_power_mode_accepts_gyro_standby)
     ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x07);          /* 01 << 2 | 11 */
 }
 
+/* 36. accel LP does not support ODR above 500 Hz (DS-000347 Rev 1.6 p.58);
+ * codes 0001..0110 are marked "(LN mode)" alone on p.78 */
+TEST(test_power_mode_refuses_accel_lp_above_500hz)
+{
+    static const uint8_t ln_only[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+
+    for (size_t i = 0; i < sizeof(ln_only); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.acc_odr = (icm42688_odr_t)ln_only[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+
+        ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LP, ICM42688_PM_OFF),
+                  ICM42688_ERR_PARAM);
+        ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x0F);      /* left as init set it */
+    }
+}
+
+/* 37. the codes marked "(LP or LN mode)" on p.78 may go to LP */
+TEST(test_power_mode_accepts_accel_lp_at_500hz_and_below)
+{
+    static const uint8_t lp_ok[] = { 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0F };
+
+    for (size_t i = 0; i < sizeof(lp_ok); i++) {
+        mock_reset();
+        icm42688_t dev;
+        icm42688_cfg_t cfg = icm42688_default_cfg();
+        cfg.acc_odr = (icm42688_odr_t)lp_ok[i];
+        ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+
+        ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LP, ICM42688_PM_OFF),
+                  ICM42688_OK);
+        ASSERT_EQ(mock_regs[REG_PWR_MGMT0], 0x02);      /* ACCEL_MODE = 10 */
+    }
+}
+
+/* 38. the limit follows the chip: ACCEL_CONFIG0 resets to 0x06, which is
+ * 1 kHz (p.78), whatever rate init asked for */
+TEST(test_power_mode_lp_limit_uses_the_chip_odr)
+{
+    mock_reset();
+    icm42688_t dev;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    cfg.acc_odr = ICM42688_ODR_100HZ;
+    ASSERT_EQ(icm42688_init(&dev, &mock_spi, &cfg), ICM42688_OK);
+
+    mock_regs[REG_ACCEL_CONFIG0] = 0x06;
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LP, ICM42688_PM_OFF),
+              ICM42688_ERR_PARAM);
+}
+
 TEST_MAIN("icm42688")
     RUN(test_init_ok);
     RUN(test_init_wrong_who_am_i);
@@ -710,4 +764,7 @@ TEST_MAIN("icm42688")
     RUN(test_power_mode_refuses_gyro_lp);
     RUN(test_power_mode_refuses_accel_standby);
     RUN(test_power_mode_accepts_gyro_standby);
+    RUN(test_power_mode_refuses_accel_lp_above_500hz);
+    RUN(test_power_mode_accepts_accel_lp_at_500hz_and_below);
+    RUN(test_power_mode_lp_limit_uses_the_chip_odr);
 TEST_MAIN_END()
