@@ -33,38 +33,44 @@ static ymodem_err_t send_byte(const ymodem_t *ym, uint8_t byte)
     return ym->io->send_byte(ym->io->ctx, byte);
 }
 
+static void abort_transfer(ymodem_t *ym)
+{
+    (void)send_byte(ym, YMODEM_CAN);
+    (void)send_byte(ym, YMODEM_CAN);
+    ym->state = YMODEM_STATE_ERROR;
+}
+
 /* expected frame size: header(1) + blk(1) + ~blk(1) + data(block_size) + crc(2) */
 static uint16_t frame_size(const ymodem_t *ym)
 {
     return (uint16_t)(3 + ym->block_size + 2);
 }
 
-static void parse_block0(ymodem_t *ym, const uint8_t *data, uint16_t len)
+/* Returns false if the name does not fit filename[]: a shortened name would
+ * be a different file, and the size can only be found after the real NUL. */
+static bool parse_block0(ymodem_t *ym, const uint8_t *data, uint16_t len)
 {
     /* block 0 payload: "filename\0size\0..." or all zeros for end of batch */
-    uint16_t i = 0;
-    uint16_t fname_max = (uint16_t)(sizeof(ym->filename) - 1);
+    const uint8_t *nul = memchr(data, '\0', len);
+    if (!nul || (size_t)(nul - data) >= sizeof(ym->filename)) return false;
 
     /* copy filename */
-    while (i < len && i < fname_max && data[i] != '\0') {
-        ym->filename[i] = (char)data[i];
-        i++;
-    }
+    uint16_t i = (uint16_t)(nul - data);
+    memcpy(ym->filename, data, i);
     ym->filename[i] = '\0';
 
     /* parse file size (decimal ASCII after the null terminator) */
     ym->file_size = 0;
-    if (i < len) {
-        i++; /* skip null terminator after filename */
-        while (i < len && data[i] >= '0' && data[i] <= '9') {
-            if (ym->file_size > UINT32_MAX / 10) {
-                ym->file_size = UINT32_MAX;
-                break;
-            }
-            ym->file_size = ym->file_size * 10 + (uint32_t)(data[i] - '0');
-            i++;
+    i++; /* skip null terminator after filename */
+    while (i < len && data[i] >= '0' && data[i] <= '9') {
+        if (ym->file_size > UINT32_MAX / 10) {
+            ym->file_size = UINT32_MAX;
+            break;
         }
+        ym->file_size = ym->file_size * 10 + (uint32_t)(data[i] - '0');
+        i++;
     }
+    return true;
 }
 
 static ymodem_err_t process_block(ymodem_t *ym)
@@ -109,7 +115,10 @@ static ymodem_err_t process_block(ymodem_t *ym)
             return YMODEM_DONE;
         }
 
-        parse_block0(ym, data, ym->block_size);
+        if (!parse_block0(ym, data, ym->block_size)) {
+            abort_transfer(ym);
+            return YMODEM_ERR_OVERFLOW;
+        }
 
         if (ym->io && ym->io->on_file_start) {
             ym->io->on_file_start(ym->io->ctx, ym->filename, ym->file_size);
@@ -271,7 +280,5 @@ uint32_t ymodem_get_file_size(const ymodem_t *ym)
 void ymodem_cancel(ymodem_t *ym)
 {
     if (!ym) return;
-    (void)send_byte(ym, YMODEM_CAN);
-    (void)send_byte(ym, YMODEM_CAN);
-    ym->state = YMODEM_STATE_ERROR;
+    abort_transfer(ym);
 }
