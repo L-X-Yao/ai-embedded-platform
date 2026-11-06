@@ -21,6 +21,7 @@
 #define MOCK_SLOTS   ((MOCK_SIZE - MOCK_SECTOR) / MOCK_SLOT)
 
 static uint8_t g_flash[MOCK_SIZE];
+static uint32_t g_overprogram;     /* bytes programmed over cells not erased */
 
 static int m_erase(void *c, uint32_t a) {
     (void)c;
@@ -32,7 +33,10 @@ static int m_erase(void *c, uint32_t a) {
 static int m_write(void *c, uint32_t a, const uint8_t *d, uint16_t l) {
     (void)c;
     if (a + l > MOCK_SIZE) return -1;
-    memcpy(&g_flash[a], d, l);
+    for (uint16_t i = 0; i < l; i++) {   /* NOR: a program only clears bits */
+        if (g_flash[a + i] != 0xFF) g_overprogram++;
+        g_flash[a + i] &= d[i];
+    }
     return 0;
 }
 static int m_read(void *c, uint32_t a, uint8_t *b, uint16_t l) {
@@ -130,9 +134,49 @@ PROPERTY(reinit_preserves_state, 5000) {
     PROP_ASSERT_EQ(flash_ring_count(&ring2), count_before);
 }
 
+/* Property: over many laps frames come out whole, in order, none programmed
+ * over, and the newest frame is never lost while it is still unread. */
+PROPERTY(random_laps_keep_order, 2000) {
+    static const flash_ring_cfg_t small = {
+        .slot_size = 1024, .total_slots = 14, .sector_size = MOCK_SECTOR,
+        .header_addr = MOCK_HDR, .data_start_addr = MOCK_DATA,
+        .persist_interval = 5,
+    };
+    memset(g_flash, 0xFF, sizeof(g_flash));
+    g_overprogram = 0;
+    flash_ring_t ring;
+    PROP_ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_io, &small));
+
+    uint32_t next = 1, newest = 0, last_read = 0;
+    int ops = ARBI_RANGE(seed, 50, 200);
+    for (int i = 0; i < ops; i++) {
+        uint32_t frame[2];
+        if (ARBI_UINT8(seed) % 4 != 0) {
+            frame[0] = next;
+            frame[1] = ~next;
+            PROP_ASSERT_EQ(FLASH_RING_OK,
+                           flash_ring_push(&ring, (const uint8_t *)frame,
+                                           (uint16_t)sizeof(frame)));
+            newest = next++;
+        } else if (flash_ring_count(&ring) > 0) {
+            PROP_ASSERT_EQ(FLASH_RING_OK,
+                           flash_ring_peek(&ring, ring.read_idx, (uint8_t *)frame,
+                                           (uint16_t)sizeof(frame)));
+            PROP_ASSERT_EQ(frame[1], ~frame[0]);
+            PROP_ASSERT(frame[0] > last_read);
+            last_read = frame[0];
+            PROP_ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+        }
+        PROP_ASSERT(flash_ring_count(&ring) < small.total_slots);
+        PROP_ASSERT((flash_ring_count(&ring) > 0) == (newest > last_read));
+    }
+    PROP_ASSERT_EQ(0u, g_overprogram);
+}
+
 TEST_MAIN("flash_ring properties")
     RUN(count_invariant);
     RUN(push_peek_roundtrip);
     RUN(discard_resets);
     RUN(reinit_preserves_state);
+    RUN(random_laps_keep_order);
 TEST_MAIN_END()

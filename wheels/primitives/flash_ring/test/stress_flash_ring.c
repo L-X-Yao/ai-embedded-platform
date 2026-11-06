@@ -27,10 +27,12 @@
 #define MOCK_TOTAL_SLOTS  ((MOCK_FLASH_SIZE - MOCK_SECTOR_SIZE) / MOCK_SLOT_SIZE)
 
 static uint8_t g_flash[MOCK_FLASH_SIZE];
+static uint32_t g_overprogram;      /* bytes programmed over cells not erased */
 
 static void mock_flash_reset(void)
 {
     memset(g_flash, 0xFF, sizeof(g_flash));
+    g_overprogram = 0;
 }
 
 static int mock_erase(void *ctx, uint32_t addr)
@@ -46,7 +48,10 @@ static int mock_write(void *ctx, uint32_t addr, const uint8_t *data, uint16_t le
 {
     (void)ctx;
     if (addr + len > MOCK_FLASH_SIZE) return -1;
-    memcpy(&g_flash[addr], data, len);
+    for (uint16_t i = 0; i < len; i++) {    /* NOR: a program only clears bits */
+        if (g_flash[addr + i] != 0xFF) g_overprogram++;
+        g_flash[addr + i] &= data[i];
+    }
     return 0;
 }
 
@@ -129,10 +134,18 @@ TEST(full_wrap_around_overwrite)
     }
     ASSERT_TRUE(ok);
 
-    /* write_idx should have wrapped multiple times */
-    /* Count must reflect the state correctly */
+    /* The ring holds the newest frames, and the oldest of them is intact */
     uint32_t count = flash_ring_count(&ring);
-    ASSERT_TRUE(count <= MOCK_TOTAL_SLOTS);
+    ASSERT_TRUE(count > 0u);
+    ASSERT_TRUE(count < MOCK_TOTAL_SLOTS);
+
+    uint8_t oldest[MOCK_SLOT_SIZE] = {0};
+    uint32_t want = total_pushes - count;
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&ring, ring.read_idx, oldest, MOCK_SLOT_SIZE));
+    ASSERT_EQ((uint8_t)(want & 0xFF), oldest[0]);
+    ASSERT_EQ((uint8_t)((want >> 8) & 0xFF), oldest[1]);
+    ASSERT_EQ(0u, g_overprogram);
 }
 
 TEST(push_heavy_periodic_drain)
