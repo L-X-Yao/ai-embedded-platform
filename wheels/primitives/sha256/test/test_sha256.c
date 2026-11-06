@@ -187,7 +187,58 @@ TEST(test_quick_brown_fox)
     ASSERT_TRUE(hash_eq(hash, expected));
 }
 
+/* NULL data is allowed only with len 0: anything else would hash nothing and
+ * hand back a valid-looking digest of other data. */
+TEST(test_update_refuses_null_data_with_length)
+{
+    /* FIPS 180-4 example: SHA-256("abc") */
+    static const uint8_t abc[32] = {
+        0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+        0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+        0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+        0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+    };
+    sha256_t ctx;
+    uint8_t hash[32];
+
+    sha256_init(&ctx);
+    ASSERT_EQ(sha256_update(&ctx, NULL, 100), SHA256_ERR_PARAM);
+    ASSERT_EQ(sha256_update(&ctx, NULL, 0), SHA256_OK);
+
+    /* the refused call left no trace in the context */
+    ASSERT_EQ(sha256_update(&ctx, (const uint8_t *)"abc", 3), SHA256_OK);
+    ASSERT_EQ(sha256_final(&ctx, hash), SHA256_OK);
+    ASSERT_TRUE(hash_eq(hash, abc));
+}
+
+/* sha256_hash cannot report it, so it gives all zeros: no match for any real
+ * digest, as hmac_sha256_compute does.  Not SHA-256 of the empty string. */
+TEST(test_hash_null_data_with_length_gives_zeros)
+{
+    static const uint8_t zeros[32] = { 0 };
+    uint8_t hash[32];
+
+    memset(hash, 0xA5, sizeof(hash));
+    sha256_hash(NULL, 100, hash);
+    ASSERT_TRUE(hash_eq(hash, zeros));
+
+    /* with len 0 NULL is valid: SHA-256("") starts e3 b0 c4 42 */
+    sha256_hash(NULL, 0, hash);
+    ASSERT_EQ(hash[0], 0xe3);
+    ASSERT_EQ(hash[1], 0xb0);
+}
+
+TEST(test_hash_null_data_and_null_hash_is_safe)
+{
+    uint8_t *no_hash = NULL;
+    sha256_hash(NULL, 100, no_hash);
+    ASSERT_TRUE(1);
+}
+
 TEST_MAIN("sha256")
+    RUN(test_update_refuses_null_data_with_length);
+    RUN(test_hash_null_data_with_length_gives_zeros);
+    RUN(test_hash_null_data_and_null_hash_is_safe);
     RUN(test_abc);
     RUN(test_empty);
     RUN(test_448bit);
