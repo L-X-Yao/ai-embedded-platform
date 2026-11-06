@@ -50,9 +50,7 @@ static bool read_reg(const pca9685_t *dev, uint8_t reg, uint8_t *val)
 
 static void delay_ms(const pca9685_t *dev, uint32_t ms)
 {
-    if (dev->i2c->delay_ms) {
-        dev->i2c->delay_ms(dev->i2c->ctx, ms);
-    }
+    dev->i2c->delay_ms(dev->i2c->ctx, ms);
 }
 
 static uint8_t calc_prescale(uint16_t freq_hz)
@@ -115,7 +113,7 @@ static pca9685_err_t set_full_off(pca9685_t *dev, uint8_t channel)
 pca9685_err_t pca9685_init(pca9685_t *dev, const pca9685_i2c_t *i2c,
                            uint8_t dev_addr, uint16_t freq_hz)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
+    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs || !i2c->delay_ms)
         return PCA9685_ERR_PARAM;
     if (freq_hz < PCA9685_FREQ_MIN || freq_hz > PCA9685_FREQ_MAX)
         return PCA9685_ERR_PARAM;

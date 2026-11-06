@@ -108,6 +108,18 @@ TEST(test_init_null_callbacks)
     ASSERT_EQ(pca9685_init(&dev, &bad, 0x40, 50), PCA9685_ERR_PARAM);
 }
 
+/* p.15: "Allow time for oscillator to stabilize (500 us)", and the only way
+ * to wait is the delay callback. */
+TEST(test_init_null_delay)
+{
+    mock_reset();
+    pca9685_i2c_t no_delay = { .write_reg = mock_i2c_write_reg,
+                               .read_regs = mock_i2c_read_regs,
+                               .delay_ms  = NULL, .ctx = NULL };
+    ASSERT_EQ(pca9685_init(&dev, &no_delay, 0x40, 50), PCA9685_ERR_PARAM);
+    ASSERT_EQ(mock_write_count, 0);
+}
+
 TEST(test_init_freq_too_low)
 {
     mock_reset();
@@ -360,6 +372,7 @@ TEST_MAIN("pca9685")
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
     RUN(test_init_null_callbacks);
+    RUN(test_init_null_delay);
     RUN(test_init_freq_too_low);
     RUN(test_init_freq_too_high);
     RUN(test_set_pwm_channel0);
