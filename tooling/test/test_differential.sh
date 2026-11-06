@@ -53,15 +53,22 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# The lengths come from $RANDOM, so --seed has to pin it as well as the data.
+if [[ -n "$SEED" ]]; then
+    RANDOM=$SEED
+fi
+
 pass_count=0
 fail_count=0
 skip_count=0
+build_fail_count=0
 
 # ---- helpers ---------------------------------------------------------------
 
 log_pass() { printf "${GREEN}  PASS${NC} %s\n" "$1"; (( ++pass_count )) || true; }
 log_fail() { printf "${RED}  FAIL${NC} %s\n" "$1"; (( ++fail_count )) || true; }
 log_skip() { printf "${YELLOW}  SKIP${NC} %s\n" "$1"; (( ++skip_count )) || true; }
+log_build_fail() { printf "${RED}  BUILD_FAIL${NC} %s\n" "$1"; (( ++build_fail_count )) || true; }
 log_info() { printf "${CYAN}  INFO${NC} %s\n" "$1"; }
 
 should_run() {
@@ -101,7 +108,7 @@ build_driver() {
         return 0  # already built and up-to-date
     fi
 
-    gcc -O2 -I "$wheel_inc" -I "$SCRIPT_DIR" \
+    gcc -O2 -I "$wheel_inc" -I "$SCRIPT_DIR" -I "${REPO}/tooling/harness" \
         "$src" $wheel_src \
         -o "$out" 2>&1
 }
@@ -124,7 +131,7 @@ test_base64() {
             "${SCRIPT_DIR}/diff_base64.c" \
             "${REPO}/wheels/primitives/base64/base64.c" \
             "${REPO}/wheels/primitives/base64"; then
-        log_skip "diff_base64 build failed"
+        log_build_fail "diff_base64"
         return
     fi
 
@@ -213,7 +220,7 @@ test_crc16() {
             "${SCRIPT_DIR}/diff_crc16.c" \
             "${REPO}/wheels/primitives/crc16/crc16.c" \
             "${REPO}/wheels/primitives/crc16"; then
-        log_skip "diff_crc16 build failed"
+        log_build_fail "diff_crc16"
         return
     fi
 
@@ -289,7 +296,7 @@ test_hex_codec() {
             "${SCRIPT_DIR}/diff_hex_codec.c" \
             "${REPO}/wheels/primitives/hex_codec/hex_codec.c" \
             "${REPO}/wheels/primitives/hex_codec"; then
-        log_skip "diff_hex_codec build failed"
+        log_build_fail "diff_hex_codec"
         return
     fi
 
@@ -374,11 +381,13 @@ rm -f "${BUILD_DIR}"/*.bin "${BUILD_DIR}"/*.txt
 # ---- summary ---------------------------------------------------------------
 
 printf "\n${BOLD}=== Summary ===${NC}\n"
-printf "${GREEN}%d passed${NC}, ${RED}%d failed${NC}, ${YELLOW}%d skipped${NC}\n" \
-    "$pass_count" "$fail_count" "$skip_count"
+printf "${GREEN}%d passed${NC}, ${RED}%d failed${NC}, ${RED}%d build failures${NC}, ${YELLOW}%d skipped${NC}\n" \
+    "$pass_count" "$fail_count" "$build_fail_count" "$skip_count"
 
 if [[ $fail_count -gt 0 ]]; then
     exit 1
+elif [[ $build_fail_count -gt 0 ]]; then
+    exit 2
 elif [[ $pass_count -eq 0 ]]; then
     printf "${YELLOW}No tests ran.${NC}\n"
     exit 2
