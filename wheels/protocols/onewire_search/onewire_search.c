@@ -145,6 +145,12 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
         return ONEWIRE_SEARCH_ERR_CRC;
     }
 
+    /* A bus stuck low reads 0,0 on every bit, and the CRC of all zeros is 0.
+     * AN187 refuses family code 0 for the same reason. */
+    if (walk[0] == 0u) {
+        return ONEWIRE_SEARCH_ERR_BUS;
+    }
+
     /* Update state for next call */
     memcpy(state->rom, walk, ONEWIRE_SEARCH_ROM_LEN);
     state->last_discrepancy = last_zero;

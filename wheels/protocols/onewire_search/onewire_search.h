@@ -65,7 +65,8 @@ onewire_search_err_t onewire_search_init(onewire_search_state_t *state,
 /** Find the next device on the bus. Returns ROM code in *rom.
  *  Returns ONEWIRE_SEARCH_ERR_NONE_FOUND when all devices have been enumerated.
  *  ONEWIRE_SEARCH_ERR_CRC leaves the search where it was, so calling again
- *  retries the same device.
+ *  retries the same device. So does ONEWIRE_SEARCH_ERR_BUS for a ROM with
+ *  family code 0, which is what a bus stuck low reads as.
  *  @thread_safe: no  @isr_safe: no */
 onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
                                           onewire_search_rom_t *rom);
