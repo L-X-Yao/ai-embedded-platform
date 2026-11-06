@@ -7,7 +7,7 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * Register map and FIFO protocol from MAX30102 datasheet (19-6368, Rev 1).
+ * Register map and FIFO protocol from MAX30102 datasheet (19-7740, Rev 0).
  * 18-bit ADC, up to 32-sample FIFO, RED+IR LEDs for SpO2 computation.
  */
 
@@ -15,7 +15,7 @@
 #include "contract.h"
 #include <string.h>
 
-/* --- register addresses (MAX30102 datasheet Table 1) --- */
+/* --- register addresses (datasheet "Register Maps and Descriptions") --- */
 
 #define REG_INT_STATUS_1   0x00u
 #define REG_INT_STATUS_2   0x01u

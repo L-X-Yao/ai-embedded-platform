@@ -2,7 +2,7 @@
 /*
  * hw_model_max30102.h -- MAX30102 register-based hardware model
  *
- * Models Maxim MAX30102 (datasheet 19-6368 Rev 1) register behavior:
+ * Models Maxim MAX30102 (datasheet 19-7740 Rev 0) register behavior:
  * - Part ID 0x15 at register 0xFF (read-only)
  * - Rev ID at register 0xFE (read-only, default 0x01)
  * - Software reset via MODE_CONFIG (0x09) bit 6, auto-clears
@@ -22,7 +22,7 @@
 
 #include "hw_model.h"
 
-/* --- MAX30102 register addresses (from datasheet Table 1) --- */
+/* --- MAX30102 register addresses (datasheet "Register Maps and Descriptions") --- */
 #define MAX_REG_INT_STATUS_1   0x00u
 #define MAX_REG_INT_STATUS_2   0x01u
 #define MAX_REG_INT_ENABLE_1   0x02u
