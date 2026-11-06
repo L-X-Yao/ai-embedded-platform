@@ -102,7 +102,8 @@ typedef struct {
 /** Initialize decoder with input buffer. @thread_safe: yes (no shared state) */
 void pb_decoder_init(pb_decoder_t *dec, const uint8_t *buf, uint16_t len);
 
-/** Decode the next field from the buffer. @thread_safe: yes (pure function) */
+/** Decode the next field from the buffer. Returns PB_ERR_MALFORMED for field 0
+ *  and for fields above 255, which field_num cannot hold. @thread_safe: yes (pure function) */
 pb_err_t pb_decode_field(pb_decoder_t *dec, pb_field_t *field);
 
 /** Check if all bytes have been consumed. @thread_safe: yes (pure function) */

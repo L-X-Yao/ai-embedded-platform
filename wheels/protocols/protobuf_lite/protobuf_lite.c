@@ -187,7 +187,11 @@ pb_err_t pb_decode_field(pb_decoder_t *dec, pb_field_t *field)
     pb_err_t err = pb_get_varint(dec, &tag);
     if (err != PB_OK) return err;
 
-    field->field_num = (uint8_t)(tag >> 3);
+    /* Protobuf forbids field 0, and field_num cannot hold a field above 255. */
+    uint64_t field_num = tag >> 3;
+    if (field_num == 0 || field_num > UINT8_MAX) return PB_ERR_MALFORMED;
+
+    field->field_num = (uint8_t)field_num;
     field->wire_type = (pb_wire_type_t)(tag & 0x07);
 
     switch (field->wire_type) {
