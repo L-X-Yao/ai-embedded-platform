@@ -317,35 +317,85 @@ TEST(test_updated_flag_tracking)
 
 TEST(test_buffer_overflow)
 {
-    /*
-     * Register enough fields with long names to exceed TELEMETRY_BUF_SIZE.
-     * Use a small buffer by relying on the default 512 bytes and creating
-     * fields that produce long output.
-     */
+    /* Short names, so that only the whole buffer can run out: each field is
+     * ,"f00":-3e38 in full, 47 characters, and 16 of them take 752 bytes. */
     setup(TELEMETRY_FMT_JSON);
 
-    /* fill with max fields having longish names */
-    char names[TELEMETRY_MAX_FIELDS][32];
+    char names[TELEMETRY_MAX_FIELDS][16];
     for (int i = 0; i < TELEMETRY_MAX_FIELDS; i++) {
-        snprintf(names[i], sizeof(names[i]),
-                 "very_long_field_name_%02d", i);
+        snprintf(names[i], sizeof(names[i]), "f%02d", i);
         telemetry_register(&telem, names[i]);
-        telemetry_update_by_index(&telem, (uint8_t)i, 99999.99f);
+        telemetry_update_by_index(&telem, (uint8_t)i, -3e38f);
     }
 
-    /*
-     * With 16 fields of ~20-char names + values in JSON format,
-     * this may or may not overflow depending on exact formatting.
-     * We verify the function returns either OK or ERR_OVERFLOW,
-     * and if overflow, error_count increments.
-     */
-    telemetry_err_t err = telemetry_publish(&telem, 4294967295UL);
-    if (err == TELEMETRY_ERR_OVERFLOW) {
-        ASSERT_EQ(telemetry_get_error_count(&telem), 1);
-        ASSERT_EQ(telemetry_get_send_count(&telem), 0);
-    } else {
-        ASSERT_EQ(err, TELEMETRY_OK);
+    ASSERT_EQ(telemetry_publish(&telem, 7), TELEMETRY_ERR_OVERFLOW);
+    ASSERT_EQ(send_called, 0);
+    ASSERT_EQ(telemetry_get_error_count(&telem), 1);
+    ASSERT_EQ(telemetry_get_send_count(&telem), 0);
+}
+
+/*
+ * CSV of the timestamp 7 and 12 fields of 41 characters takes 493 bytes.  A
+ * 13th of 18 characters makes 511, the most that fits with the NUL in 512
+ * bytes, and one of 19 makes 512.
+ */
+static telemetry_err_t publish_csv_ending_in(float last)
+{
+    setup(TELEMETRY_FMT_CSV);
+    for (uint8_t i = 0; i < 13; i++) {
+        telemetry_register(&telem, "f");
+        telemetry_update_by_index(&telem, i, i < 12 ? -3e38f : last);
     }
+    return telemetry_publish(&telem, 7);
+}
+
+TEST(test_text_of_buf_size_minus_one_fits)
+{
+    ASSERT_EQ(publish_csv_ending_in(1e16f), TELEMETRY_OK);  /* 17 digits */
+    ASSERT_EQ(send_called, 1);
+    ASSERT_EQ(sent_len, TELEMETRY_BUF_SIZE - 1);
+}
+
+TEST(test_text_of_buf_size_is_refused)
+{
+    ASSERT_EQ(publish_csv_ending_in(2e17f), TELEMETRY_ERR_OVERFLOW);  /* 18 */
+    ASSERT_EQ(send_called, 0);
+    ASSERT_EQ(telemetry_get_error_count(&telem), 1);
+}
+
+/* Name lengths bring each piece of the text in turn to the end of the buffer.
+ * rest is the length of the text around the name: whatever runs out, nothing
+ * cut may be sent. */
+static void sweep_name_length(telemetry_format_t fmt, size_t rest)
+{
+    static char name[TELEMETRY_BUF_SIZE + 16];
+
+    for (size_t len = 1; len < sizeof(name); len++) {
+        memset(name, 'n', len);
+        name[len] = '\0';
+        setup(fmt);
+        telemetry_register(&telem, name);
+        telemetry_update_by_index(&telem, 0, 1.5f);
+
+        telemetry_err_t err = telemetry_publish(&telem, 7);
+        if (len + rest < TELEMETRY_BUF_SIZE) {
+            ASSERT_EQ(err, TELEMETRY_OK);
+            ASSERT_EQ(sent_len, len + rest);
+        } else {
+            ASSERT_EQ(err, TELEMETRY_ERR_OVERFLOW);
+            ASSERT_EQ(send_called, 0);
+        }
+    }
+}
+
+TEST(test_json_never_sends_a_cut_text)
+{
+    sweep_name_length(TELEMETRY_FMT_JSON, 15);  /* {"ts":7,"":1.5} */
+}
+
+TEST(test_key_value_never_sends_a_cut_text)
+{
+    sweep_name_length(TELEMETRY_FMT_KEY_VALUE, 9);  /* ts=7 =1.5 */
 }
 
 TEST(test_get_count_null)
@@ -516,6 +566,10 @@ TEST_MAIN("telemetry")
     RUN(test_publish_null);
     RUN(test_updated_flag_tracking);
     RUN(test_buffer_overflow);
+    RUN(test_text_of_buf_size_minus_one_fits);
+    RUN(test_text_of_buf_size_is_refused);
+    RUN(test_json_never_sends_a_cut_text);
+    RUN(test_key_value_never_sends_a_cut_text);
     RUN(test_get_count_null);
     RUN(test_publish_no_fields);
     RUN(test_send_ctx_passed);
