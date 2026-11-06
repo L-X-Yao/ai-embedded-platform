@@ -10,7 +10,7 @@
  * Supports dual-channel bus voltage, sense voltage, current, and power
  * measurement with configurable sense resistors per channel.
  * VBUS: 16-bit unsigned, FSR = 32V, LSB = 32/65536 V.
- * VSENSE: 16-bit signed, FSR = +/-100mV, LSB = 100/32768 mV.
+ * VSENSE: 16-bit unsigned, FSR = 100mV, LSB = 100/65536 mV (POR default).
  * Pure C99, no heap, fully reentrant per-context.
  */
 
@@ -91,7 +91,8 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify chip PRODUCT_ID (reg 0xFD).
+/** Configure and verify chip PRODUCT_ID (reg 0xFD).  Call it at least
+ *  50 ms (tINT_T) after VDD comes up: the driver does not wait for that.
  *  @thread_safe: no @isr_safe: no */
 pac1952_err_t pac1952_init(pac1952_t *dev, const pac1952_i2c_t *i2c,
                            const pac1952_cfg_t *cfg);
