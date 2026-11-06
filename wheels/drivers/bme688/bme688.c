@@ -131,21 +131,27 @@ static int32_t compensate_temperature(bme688_t *dev, uint32_t adc_t)
 
 static uint32_t compensate_pressure(const bme688_t *dev, uint32_t adc_p)
 {
-    int32_t var1 = ((int32_t)dev->t_fine >> 1) - 64000;
-    int32_t var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
-                    (int32_t)dev->par_p6) >> 2;
-    var2 = var2 + (int32_t)((uint32_t)(var1 * (int32_t)dev->par_p5) << 1);
-    var2 = (var2 >> 2) + (int32_t)((uint32_t)(int32_t)dev->par_p4 << 16);
+    /* 64-bit intermediates, here and in compensate_humidity: the manual's
+     * 32-bit formula overflows on calibration it does not expect, and on good
+     * calibration below about -47 C and above about 97 C. Between those it
+     * gives the same result. */
+    int64_t var1 = ((int64_t)dev->t_fine >> 1) - 64000;
+    int64_t var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
+                    (int64_t)dev->par_p6) >> 2;
+    /* Multiplied, not shifted: both values can be negative */
+    var2 = var2 + ((var1 * (int64_t)dev->par_p5) * 2);
+    var2 = (var2 >> 2) + ((int64_t)dev->par_p4 * 65536);
     var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13) *
-             (int32_t)((uint32_t)(int32_t)dev->par_p3 << 5)) >> 3) +
-           (((int32_t)dev->par_p2 * var1) >> 1);
+             ((int64_t)dev->par_p3 * 32)) >> 3) +
+           (((int64_t)dev->par_p2 * var1) >> 1);
     var1 = var1 >> 18;
-    var1 = ((32768 + var1) * (int32_t)dev->par_p1) >> 15;
+    var1 = ((32768 + var1) * (int64_t)dev->par_p1) >> 15;
 
-    if (var1 == 0)
+    /* Only corrupt calibration leaves this range, and var1 is the divisor */
+    if (var1 <= 0)
         return 0;
 
-    uint32_t press = (uint32_t)(((int32_t)1048576 - (int32_t)adc_p) -
+    uint32_t press = (uint32_t)(((int64_t)1048576 - (int64_t)adc_p) -
                                 (var2 >> 12));
     press = press * 3125u;
 
@@ -154,40 +160,42 @@ static uint32_t compensate_pressure(const bme688_t *dev, uint32_t adc_p)
     else
         press = (press << 1) / (uint32_t)var1;
 
-    var1 = ((int32_t)dev->par_p9 *
-            (int32_t)(((press >> 3) * (press >> 3)) >> 13)) >> 12;
-    var2 = ((int32_t)(press >> 2) * (int32_t)dev->par_p8) >> 13;
-    int64_t p8 = (int64_t)(press >> 8);
-    int32_t var3 = (int32_t)((p8 * p8 * p8 * (int64_t)dev->par_p10) >> 17);
+    /* The same goes for this one, whose top bits are cubed below */
+    if (press >= (uint32_t)0x04000000u)
+        return 0;
 
-    press = (uint32_t)((int32_t)press +
-                       ((var1 + var2 + var3 +
-                         (int32_t)((uint32_t)(int32_t)dev->par_p7 << 7)) >> 4));
-    return press;
+    int64_t p = (int64_t)press;
+    var1 = ((int64_t)dev->par_p9 * (((p >> 3) * (p >> 3)) >> 13)) >> 12;
+    var2 = ((p >> 2) * (int64_t)dev->par_p8) >> 13;
+    int64_t p8 = p >> 8;
+    int64_t var3 = (p8 * p8 * p8 * (int64_t)dev->par_p10) >> 17;
+
+    return (uint32_t)(p + ((var1 + var2 + var3 +
+                            ((int64_t)dev->par_p7 * 128)) >> 4));
 }
 
 static uint32_t compensate_humidity(const bme688_t *dev, uint16_t adc_h)
 {
-    int32_t temp_scaled = (int32_t)((dev->t_fine * 5 + 128) >> 8);
-    int32_t var1 = (int32_t)adc_h - (int32_t)((uint32_t)dev->par_h1 << 4) -
-                   (((temp_scaled * (int32_t)dev->par_h3) / 100) >> 1);
-    int32_t var2 = ((int32_t)dev->par_h2 *
-                    (((temp_scaled * (int32_t)dev->par_h4) / 100) +
+    int64_t temp_scaled = ((int64_t)dev->t_fine * 5 + 128) >> 8;
+    int64_t var1 = (int64_t)adc_h - ((int64_t)dev->par_h1 * 16) -
+                   (((temp_scaled * (int64_t)dev->par_h3) / 100) >> 1);
+    int64_t var2 = ((int64_t)dev->par_h2 *
+                    (((temp_scaled * (int64_t)dev->par_h4) / 100) +
                      (((temp_scaled *
-                        ((temp_scaled * (int32_t)dev->par_h5) / 100)) >> 6) /
+                        ((temp_scaled * (int64_t)dev->par_h5) / 100)) >> 6) /
                       100) +
                      (1 << 14))) >> 10;
-    int32_t var3 = var1 * var2;
-    int32_t var4 = (int32_t)((uint32_t)dev->par_h6 << 7);
-    var4 = (var4 + ((temp_scaled * (int32_t)dev->par_h7) / 100)) >> 4;
-    int32_t var5 = (int32_t)(((int64_t)(var3 >> 14) * (var3 >> 14)) >> 10);
-    int32_t var6 = (int32_t)(((int64_t)var4 * var5) >> 1);
-    int64_t hum = ((((int64_t)var3 + var6) >> 10) * 1000) >> 12;
+    int64_t var3 = var1 * var2;
+    int64_t var4 = (int64_t)dev->par_h6 * 128;
+    var4 = (var4 + ((temp_scaled * (int64_t)dev->par_h7) / 100)) >> 4;
+    int64_t var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+    int64_t var6 = (var4 * var5) >> 1;
+    int64_t hum = (((var3 + var6) >> 10) * 1000) >> 12;
     /* clamp to 0..100000 (in units of 1/1000 %RH) */
-    if (hum < 0)
-        hum = 0;
     if (hum > 100000)
         hum = 100000;
+    if (hum < 0)
+        hum = 0;
     return (uint32_t)hum;
 }
 
