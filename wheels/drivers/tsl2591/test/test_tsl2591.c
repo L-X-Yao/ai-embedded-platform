@@ -186,13 +186,14 @@ TEST(test_read_lux_max_gain_600ms)
                            TSL2591_ITIME_600MS), TSL2591_OK);
 
     /* ch0=100, ch1=10 at MAX gain (9876x), 600ms
-     * cpl = (700.0 * 9876.0) / 408.0 = 16944.117...
-     * lux = (100 - 10) / 16944.117 = 0.00531... */
+     * p.13: ATIME 101b is 600 ms
+     * cpl = (600.0 * 9876.0) / 408.0 = 14523.529...
+     * lux = (100 - 10) / 14523.529 = 0.0061968... */
     mock_set_channels(100, 10);
 
     tsl2591_data_t data;
     ASSERT_EQ(tsl2591_read(&dev, &data), TSL2591_OK);
-    ASSERT_NEAR(data.lux, 0.00531f, 0.001f);
+    ASSERT_NEAR(data.lux, 0.0061968f, 0.00001f);
 }
 
 TEST(test_read_zero_channels)
