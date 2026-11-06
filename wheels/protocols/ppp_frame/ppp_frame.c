@@ -10,7 +10,6 @@
 
 #include "ppp_frame.h"
 #include "contract.h"
-#include <string.h>
 
 /* ---------- FCS-16 lookup table (CRC-16/HDLC, poly 0x8408) ---------- */
 
@@ -157,6 +156,23 @@ ppp_frame_err_t ppp_frame_encode(uint16_t protocol,
 
 /* ---------- decode ---------- */
 
+/** Take one wire byte. Returns true with the de-stuffed byte in *out, or
+ *  false for an escape, which only changes how the next byte reads. */
+static bool unstuff(uint8_t wire, bool *escaped, uint8_t *out)
+{
+    if (*escaped) {
+        *escaped = false;
+        *out = (uint8_t)(wire ^ PPP_XOR_MASK);
+        return true;
+    }
+    if (wire == PPP_ESCAPE) {
+        *escaped = true;
+        return false;
+    }
+    *out = wire;
+    return true;
+}
+
 ppp_frame_err_t ppp_frame_decode(const uint8_t *src, size_t src_len,
                                   uint16_t *protocol,
                                   uint8_t *payload_buf, size_t payload_cap,
@@ -170,27 +186,23 @@ ppp_frame_err_t ppp_frame_decode(const uint8_t *src, size_t src_len,
     if (src[0] != PPP_FLAG || src[src_len - 1] != PPP_FLAG)
         return PPP_FRAME_ERR_FORMAT;
 
-    /* De-stuff into temporary buffer on stack.
-     * Max unstuffed = src_len (no expansion possible in reverse). */
-    uint8_t unstuffed[1500];
+    /* First pass: check the frame without storing it, so the stack needs no
+     * frame-sized buffer and payload_buf sees only a good frame. */
+    uint8_t header[4] = {0};
+    uint16_t fcs = PPP_FCS_INIT;
     size_t ulen = 0;
     bool escaped = false;
 
     for (size_t i = 1; i < src_len - 1; i++) {
+        uint8_t b;
         if (src[i] == PPP_FLAG) {
             /* Unexpected flag in middle */
             return PPP_FRAME_ERR_FORMAT;
         }
-        if (escaped) {
-            if (ulen >= sizeof(unstuffed)) return PPP_FRAME_ERR_OVERFLOW;
-            unstuffed[ulen++] = (uint8_t)(src[i] ^ PPP_XOR_MASK);
-            escaped = false;
-        } else if (src[i] == PPP_ESCAPE) {
-            escaped = true;
-        } else {
-            if (ulen >= sizeof(unstuffed)) return PPP_FRAME_ERR_OVERFLOW;
-            unstuffed[ulen++] = src[i];
-        }
+        if (!unstuff(src[i], &escaped, &b)) continue;
+        fcs = (uint16_t)((fcs >> 8) ^ fcs_table[(fcs ^ b) & 0xFF]);
+        if (ulen < sizeof(header)) header[ulen] = b;
+        ulen++;
     }
 
     /* Trailing escape without data */
@@ -199,30 +211,28 @@ ppp_frame_err_t ppp_frame_decode(const uint8_t *src, size_t src_len,
     /* Need at least: addr(1) + control(1) + protocol(2) + FCS(2) = 6 */
     if (ulen < 6) return PPP_FRAME_ERR_SHORT;
 
-    /* Verify FCS: compute over all unstuffed bytes except the last 2 (FCS itself) */
-    uint16_t fcs = PPP_FCS_INIT;
-    for (size_t i = 0; i < ulen - 2; i++) {
-        fcs = (uint16_t)((fcs >> 8) ^ fcs_table[(fcs ^ unstuffed[i]) & 0xFF]);
-    }
-    fcs = (uint16_t)(fcs ^ 0xFFFF);
-
-    uint16_t rx_fcs = (uint16_t)(((uint16_t)unstuffed[ulen - 1] << 8) |
-                      (uint16_t)unstuffed[ulen - 2]);
-    if (fcs != rx_fcs) return PPP_FRAME_ERR_FCS;
+    /* The FCS bytes went through the sum too, which leaves the RFC 1662 residue */
+    if (fcs != PPP_FCS_GOOD) return PPP_FRAME_ERR_FCS;
 
     /* Verify address and control */
-    if (unstuffed[0] != PPP_ADDR || unstuffed[1] != PPP_CONTROL)
+    if (header[0] != PPP_ADDR || header[1] != PPP_CONTROL)
         return PPP_FRAME_ERR_FORMAT;
 
     /* Extract protocol */
-    *protocol = (uint16_t)(((uint16_t)unstuffed[2] << 8) | (uint16_t)unstuffed[3]);
+    *protocol = (uint16_t)(((uint16_t)header[2] << 8) | (uint16_t)header[3]);
 
     /* Extract payload (between protocol and FCS) */
     size_t plen = ulen - 6; /* subtract addr+ctrl+proto+fcs */
     if (plen > payload_cap) return PPP_FRAME_ERR_OVERFLOW;
 
-    if (plen > 0) {
-        memcpy(payload_buf, &unstuffed[4], plen);
+    /* Second pass: the frame is good, so de-stuff its payload into place */
+    size_t seen = 0;
+    size_t out = 0;
+    for (size_t i = 1; i < src_len - 1 && out < plen; i++) {
+        uint8_t b;
+        if (!unstuff(src[i], &escaped, &b)) continue;
+        if (seen < sizeof(header)) seen++;
+        else payload_buf[out++] = b;
     }
     *payload_len = plen;
 

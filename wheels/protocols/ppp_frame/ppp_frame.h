@@ -65,8 +65,9 @@ ppp_frame_err_t ppp_frame_encode(uint16_t protocol,
  *  @param src          Raw frame bytes (must start and end with 0x7E)
  *  @param src_len      Length of raw frame
  *  @param protocol     Receives the protocol field
- *  @param payload_buf  Receives the decoded payload
- *  @param payload_cap  Capacity of payload_buf
+ *  @param payload_buf  Receives the decoded payload; written only on success.
+ *                      Must not overlap src
+ *  @param payload_cap  Capacity of payload_buf, the only limit on payload size
  *  @param payload_len  Receives actual payload length
  *  @return PPP_FRAME_OK on success
  *  @thread_safe: yes  @isr_safe: no */

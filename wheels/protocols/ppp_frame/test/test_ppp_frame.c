@@ -300,6 +300,68 @@ TEST(test_decode_payload_overflow)
     ASSERT_EQ(err, PPP_FRAME_ERR_OVERFLOW);
 }
 
+/* RFC 1661 sets the default MRU to 1500, and a peer may negotiate more, so
+ * the only limit on a payload is the caller's buffer. */
+TEST(test_roundtrip_default_mru_and_above)
+{
+    static const size_t sizes[] = {1494, 1495, 1496, 1498, 1500, 2000};
+    static uint8_t payload[2000];
+    static uint8_t encoded[(2000 + 6) * 2 + 2];
+    static uint8_t decoded[2000];
+
+    for (size_t i = 0; i < sizeof(payload); i++)
+        payload[i] = (uint8_t)(i * 7u);    /* covers every escaped value */
+
+    for (size_t s = 0; s < sizeof(sizes) / sizeof(sizes[0]); s++) {
+        size_t n = sizes[s];
+        size_t elen = 0;
+        ASSERT_EQ(ppp_frame_encode(0x0021, payload, n, encoded,
+                                   sizeof(encoded), &elen), PPP_FRAME_OK);
+
+        uint16_t proto = 0;
+        size_t dlen = 0;
+        memset(decoded, 0, sizeof(decoded));
+        ASSERT_EQ(ppp_frame_decode(encoded, elen, &proto, decoded, n, &dlen),
+                  PPP_FRAME_OK);
+        ASSERT_EQ(proto, 0x0021);
+        ASSERT_EQ(dlen, n);
+        ASSERT_MEMEQ_N(decoded, payload, n);
+
+        ASSERT_EQ(ppp_frame_decode(encoded, elen, &proto, decoded, n - 1, &dlen),
+                  PPP_FRAME_ERR_OVERFLOW);
+    }
+}
+
+/* Only a good frame reaches the caller's buffer, and only its payload: the
+ * FCS must not land just past the end of it. */
+TEST(test_decode_writes_only_a_good_payload)
+{
+    uint8_t payload[] = {0x7E, 0x41, 0x7D, 0x01};
+    uint8_t encoded[64];
+    size_t elen = 0;
+    ASSERT_EQ(ppp_frame_encode(0x0021, payload, sizeof(payload), encoded,
+                               sizeof(encoded), &elen), PPP_FRAME_OK);
+
+    uint8_t pbuf[16];
+    uint16_t proto = 0;
+    size_t dlen = 0;
+    memset(pbuf, 0xA5, sizeof(pbuf));
+    ASSERT_EQ(ppp_frame_decode(encoded, elen, &proto, pbuf, sizeof(pbuf), &dlen),
+              PPP_FRAME_OK);
+    ASSERT_EQ(dlen, sizeof(payload));
+    ASSERT_MEMEQ_N(pbuf, payload, sizeof(payload));
+    for (size_t i = sizeof(payload); i < sizeof(pbuf); i++)
+        ASSERT_EQ(pbuf[i], 0xA5);
+
+    /* Wire: 7E FF 7D 23 7D 20 21 7D 5E 41 ...: spoil the payload byte 0x41. */
+    encoded[9] ^= 0x01;
+    memset(pbuf, 0xA5, sizeof(pbuf));
+    ASSERT_EQ(ppp_frame_decode(encoded, elen, &proto, pbuf, sizeof(pbuf), &dlen),
+              PPP_FRAME_ERR_FCS);
+    for (size_t i = 0; i < sizeof(pbuf); i++)
+        ASSERT_EQ(pbuf[i], 0xA5);
+}
+
 TEST(test_error_codes)
 {
     ASSERT_EQ( 0, (int)PPP_FRAME_OK);
@@ -355,6 +417,8 @@ TEST_MAIN("ppp_frame")
     RUN(test_roundtrip_larger_payload);
     RUN(test_decode_bad_fcs);
     RUN(test_decode_payload_overflow);
+    RUN(test_roundtrip_default_mru_and_above);
+    RUN(test_decode_writes_only_a_good_payload);
     RUN(test_error_codes);
     RUN(test_decode_trailing_escape);
     RUN(test_decode_embedded_flag);
