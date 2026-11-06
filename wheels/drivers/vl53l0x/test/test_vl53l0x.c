@@ -218,6 +218,18 @@ TEST(test_timing_budget_i2c_fail)
     }
 }
 
+/* A write that failed did not set the new budget, so the old one stays */
+TEST(test_timing_budget_kept_when_write_fails)
+{
+    for (int op = 0; op < 3; op++) {
+        setup();
+        mock_fail_at = mock_op_count + op;
+        ASSERT_EQ(vl53l0x_set_measurement_timing_budget(&dev, 50000),
+                  VL53L0X_ERR_I2C);
+        ASSERT_EQ(dev.timing_budget_us, 30000u);
+    }
+}
+
 TEST(test_set_timing_budget_too_low)
 {
     setup();
@@ -303,6 +315,7 @@ TEST_MAIN("vl53l0x")
     RUN(test_timing_budget_follows_vcsel_period);
     RUN(test_timing_budget_long_budgets_differ);
     RUN(test_timing_budget_i2c_fail);
+    RUN(test_timing_budget_kept_when_write_fails);
     RUN(test_set_timing_budget_too_low);
     RUN(test_set_timing_budget_too_high);
     RUN(test_init_writes_sequence_config);

@@ -275,12 +275,12 @@ vl53l0x_err_t vl53l0x_set_measurement_timing_budget(vl53l0x_t *dev,
         return VL53L0X_ERR_PARAM;
     }
 
-    dev->timing_budget_us = budget_us;
-
     if (!write_budget(dev, budget_us))
     {
         return VL53L0X_ERR_I2C;
     }
+
+    dev->timing_budget_us = budget_us;
 
     return VL53L0X_OK;
 }
