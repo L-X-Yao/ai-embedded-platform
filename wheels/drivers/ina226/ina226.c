@@ -63,26 +63,9 @@ static ina226_err_t read_reg16(const ina226_t *dev, uint8_t reg, uint16_t *val)
     return INA226_OK;
 }
 
-/* ---- public API ---- */
-
-ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
-                         const ina226_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static ina226_err_t bring_up(ina226_t *dev, const ina226_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return INA226_ERR_PARAM;
-    if (!i2c->write_regs || !i2c->read_regs)
-        return INA226_ERR_PARAM;
-    if (cfg->shunt_resistance_mohm == 0 || cfg->max_current_ma == 0)
-        return INA226_ERR_PARAM;
-    if ((unsigned)cfg->averaging > 7 ||
-        (unsigned)cfg->bus_conv_time > 7 ||
-        (unsigned)cfg->shunt_conv_time > 7)
-        return INA226_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify manufacturer ID */
     uint16_t mfr_id = 0;
     ina226_err_t err = read_reg16(dev, REG_MFR_ID, &mfr_id);
@@ -128,13 +111,49 @@ ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
     if (err != INA226_OK)
         return err;
 
+    return INA226_OK;
+}
+
+/* ---- public API ---- */
+
+ina226_err_t ina226_init(ina226_t *dev, const ina226_i2c_t *i2c,
+                         const ina226_cfg_t *cfg)
+{
+    if (!dev)
+        return INA226_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return INA226_ERR_PARAM;
+    if (!i2c->write_regs || !i2c->read_regs)
+        return INA226_ERR_PARAM;
+    if (cfg->shunt_resistance_mohm == 0 || cfg->max_current_ma == 0)
+        return INA226_ERR_PARAM;
+    if ((unsigned)cfg->averaging > 7 ||
+        (unsigned)cfg->bus_conv_time > 7 ||
+        (unsigned)cfg->shunt_conv_time > 7)
+        return INA226_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    ina226_err_t err = bring_up(dev, cfg);
+    if (err != INA226_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return INA226_OK;
 }
 
 ina226_err_t ina226_read(ina226_t *dev, ina226_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return INA226_ERR_PARAM;
 
     uint16_t raw;
@@ -169,7 +188,7 @@ ina226_err_t ina226_read(ina226_t *dev, ina226_data_t *out)
 
 ina226_err_t ina226_reset(ina226_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return INA226_ERR_PARAM;
     return write_reg16(dev, REG_CONFIG, CFG_RST);
 }

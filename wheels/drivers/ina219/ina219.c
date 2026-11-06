@@ -61,7 +61,14 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
                          uint8_t dev_addr, float shunt_ohms,
                          ina219_bus_range_t range, ina219_gain_t gain)
 {
-    if (!dev || !i2c)
+    if (!dev)
+        return INA219_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no calibration to scale with */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
         return INA219_ERR_PARAM;
     if (!i2c->write_regs || !i2c->read_regs)
         return INA219_ERR_PARAM;
@@ -70,7 +77,6 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
     if ((unsigned)range > 1 || (unsigned)gain > 3)
         return INA219_ERR_PARAM;
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c       = i2c;
     dev->dev_addr  = dev_addr;
     dev->shunt_ohms = shunt_ohms;
@@ -92,7 +98,10 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
 
     ina219_err_t err = write_reg16(dev, REG_CONFIG, config);
     if (err != INA219_OK)
+    {
+        dev->i2c = NULL;
         return err;
+    }
 
     /* Calibration register = trunc(0.04096 / (current_lsb * shunt_ohms)) */
     float cal_f = 0.04096f / (dev->current_lsb * shunt_ohms);
@@ -104,14 +113,17 @@ ina219_err_t ina219_init(ina219_t *dev, const ina219_i2c_t *i2c,
 
     err = write_reg16(dev, REG_CALIBRATION, cal);
     if (err != INA219_OK)
+    {
+        dev->i2c = NULL;
         return err;
+    }
 
     return INA219_OK;
 }
 
 ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v)
 {
-    if (!dev || !voltage_v)
+    if (!dev || !dev->i2c || !voltage_v)
         return INA219_ERR_PARAM;
 
     uint16_t raw;
@@ -128,7 +140,7 @@ ina219_err_t ina219_read_bus_voltage(const ina219_t *dev, float *voltage_v)
 
 ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv)
 {
-    if (!dev || !voltage_mv)
+    if (!dev || !dev->i2c || !voltage_mv)
         return INA219_ERR_PARAM;
 
     uint16_t raw;
@@ -145,7 +157,7 @@ ina219_err_t ina219_read_shunt_voltage(const ina219_t *dev, float *voltage_mv)
 
 ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma)
 {
-    if (!dev || !current_ma)
+    if (!dev || !dev->i2c || !current_ma)
         return INA219_ERR_PARAM;
 
     uint16_t raw;
@@ -162,7 +174,7 @@ ina219_err_t ina219_read_current(const ina219_t *dev, float *current_ma)
 
 ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw)
 {
-    if (!dev || !power_mw)
+    if (!dev || !dev->i2c || !power_mw)
         return INA219_ERR_PARAM;
 
     uint16_t raw;
@@ -178,7 +190,7 @@ ina219_err_t ina219_read_power(const ina219_t *dev, float *power_mw)
 
 ina219_err_t ina219_reset(ina219_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return INA219_ERR_PARAM;
 
     return write_reg16(dev, REG_CONFIG, CFG_RST);

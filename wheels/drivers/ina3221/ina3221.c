@@ -73,27 +73,9 @@ static float decode_bus(uint16_t raw)
     return (float)signed_raw * BUS_MV_PER_LSB;
 }
 
-/* ---- public API ---- */
-
-ina3221_err_t ina3221_init(ina3221_t *dev,
-                           const ina3221_i2c_t *i2c,
-                           const ina3221_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static ina3221_err_t bring_up(const ina3221_t *dev)
 {
-    if (!dev || !i2c || !cfg)
-        return INA3221_ERR_PARAM;
-    if (!i2c->write_regs || !i2c->read_regs)
-        return INA3221_ERR_PARAM;
-
-    /* Validate shunt resistors: must all be positive */
-    for (int ch = 0; ch < INA3221_NUM_CHANNELS; ch++) {
-        if (!(cfg->shunt_resistor_ohm[ch] > 0.0f))
-            return INA3221_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify manufacturer ID */
     uint16_t mfr_id;
     ina3221_err_t err = read_reg16(dev, REG_MANUFACTURER, &mfr_id);
@@ -111,6 +93,39 @@ ina3221_err_t ina3221_init(ina3221_t *dev,
         return INA3221_ERR_ID;
 
     return INA3221_OK;
+}
+
+/* ---- public API ---- */
+
+ina3221_err_t ina3221_init(ina3221_t *dev,
+                           const ina3221_i2c_t *i2c,
+                           const ina3221_cfg_t *cfg)
+{
+    if (!dev)
+        return INA3221_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose chip was never verified */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return INA3221_ERR_PARAM;
+    if (!i2c->write_regs || !i2c->read_regs)
+        return INA3221_ERR_PARAM;
+
+    /* Validate shunt resistors: must all be positive */
+    for (int ch = 0; ch < INA3221_NUM_CHANNELS; ch++) {
+        if (!(cfg->shunt_resistor_ohm[ch] > 0.0f))
+            return INA3221_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    ina3221_err_t err = bring_up(dev);
+    if (err != INA3221_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 ina3221_err_t ina3221_read_channel(const ina3221_t *dev,

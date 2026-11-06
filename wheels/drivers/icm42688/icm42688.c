@@ -10,6 +10,7 @@
 
 #include "icm42688.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- SPI protocol ---------- */
 
@@ -119,7 +120,13 @@ icm42688_err_t icm42688_init(icm42688_t *dev,
                               const icm42688_spi_t *spi,
                               const icm42688_cfg_t *cfg)
 {
-    if (!dev || !spi || !cfg) return ICM42688_ERR_PARAM;
+    if (!dev) return ICM42688_ERR_PARAM;
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which has no divisors to scale with */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi || !cfg) return ICM42688_ERR_PARAM;
     if (!spi->cs_low || !spi->cs_high || !spi->xfer) return ICM42688_ERR_PARAM;
 
     /* Validate enum ranges */
@@ -138,7 +145,10 @@ icm42688_err_t icm42688_init(icm42688_t *dev,
 
     /* Read and verify WHO_AM_I */
     uint8_t id = reg_read(spi, ICM42688_REG_WHO_AM_I);
-    if (id != ICM42688_WHO_AM_I_VAL) return ICM42688_ERR_ID;
+    if (id != ICM42688_WHO_AM_I_VAL) {
+        dev->spi = NULL;
+        return ICM42688_ERR_ID;
+    }
 
     /* Configure gyro: FS_SEL[7:5] | ODR[3:0] */
     uint8_t gyro_cfg = (uint8_t)(((uint8_t)cfg->gyro_range << 5)

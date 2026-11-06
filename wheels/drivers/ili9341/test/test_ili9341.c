@@ -414,6 +414,33 @@ TEST(test_mock_drops_bytes_with_csx_high)
     ASSERT_EQ(cmd_log_idx, 1);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(ili9341_t *d)
+{
+    ASSERT_EQ(ili9341_set_rotation(d, ILI9341_ROT_90), ILI9341_ERR_PARAM);
+    ASSERT_EQ(ili9341_set_window(d, 0, 0, 1, 1), ILI9341_ERR_PARAM);
+    ASSERT_EQ(ili9341_fill_rect(d, 0, 0, 1, 1, 0), ILI9341_ERR_PARAM);
+    ASSERT_EQ(ili9341_draw_pixel(d, 0, 0, 0), ILI9341_ERR_PARAM);
+    ASSERT_EQ(ili9341_fill_screen(d, 0), ILI9341_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ili9341_t d;
+    ili9341_spi_t no_xfer = mock_spi;
+    no_xfer.xfer = NULL;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ili9341_init(&d, NULL), ILI9341_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ili9341_init(&d, &no_xfer), ILI9341_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ili9341")
     RUN(test_init_ok);
     RUN(test_init_sends_reset);
@@ -451,4 +478,5 @@ TEST_MAIN("ili9341")
     RUN(test_rgb565_black);
     RUN(test_window_after_rotation);
     RUN(test_mock_drops_bytes_with_csx_high);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

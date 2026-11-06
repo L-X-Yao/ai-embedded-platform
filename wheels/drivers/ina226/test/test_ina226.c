@@ -312,6 +312,65 @@ TEST(test_calibration_fits_its_15_bits)
     ASSERT_NEAR(d.current_lsb, 0.00512f / (32767.0f * 0.001f), 0.0000001f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ina226_t *d)
+{
+    ina226_data_t data;
+    ASSERT_EQ(ina226_read(d, &data), INA226_ERR_PARAM);
+    ASSERT_EQ(ina226_reset(d), INA226_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static ina226_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* It answers, but init returned before it set the current LSB */
+TEST(test_device_refused_after_wrong_id)
+{
+    ina226_t d;
+
+    mock_reset_ina226();
+    mock_set_reg16(0xFE, 0x1234);
+    ASSERT_EQ(ina226_init(&d, &mock_i2c, &default_cfg), INA226_ERR_ID);
+    assert_device_refused(&d);
+
+    mock_reset_ina226();
+    mock_set_reg16(0xFF, 0x1234);
+    ASSERT_EQ(ina226_init(&d, &mock_i2c, &default_cfg), INA226_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    ina226_t d;
+    for (int step = 0; step < 4; step++) {
+        mock_reset_ina226();
+        mock_fail_at = step;  /* the two ID reads, then the two writes */
+        ASSERT_EQ(ina226_init(&d, &mock_i2c, &default_cfg), INA226_ERR_I2C);
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ina226_t d;
+    ina226_cfg_t bad = default_cfg;
+    bad.shunt_resistance_mohm = 0;
+    mock_reset_ina226();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina226_init(&d, NULL, &default_cfg), INA226_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina226_init(&d, &mock_i2c, &bad), INA226_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ina226")
     RUN(test_init_ok);
     RUN(test_init_wrong_mfr_id);
@@ -333,4 +392,8 @@ TEST_MAIN("ina226")
     RUN(test_read_current_and_power);
     RUN(test_init_accepts_the_other_die_id);
     RUN(test_calibration_fits_its_15_bits);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

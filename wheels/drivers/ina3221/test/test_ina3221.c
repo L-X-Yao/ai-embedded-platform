@@ -487,6 +487,65 @@ TEST(test_different_address)
     ASSERT_EQ(dev.cfg.addr, 0x43);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(ina3221_t *d)
+{
+    float shunt = 0.0f;
+    float bus = 0.0f;
+    ina3221_data_t data;
+    ASSERT_EQ(ina3221_read_channel(d, 0, &shunt, &bus), INA3221_ERR_PARAM);
+    ASSERT_EQ(ina3221_read_all(d, &data), INA3221_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    ina3221_t d;
+
+    mock16_reset();
+    setup_valid_ids();
+    mock16_set_reg(0xFE, 0x1234);
+    ASSERT_EQ(ina3221_init(&d, &mock_i2c_hal, &default_cfg), INA3221_ERR_ID);
+    assert_device_refused(&d);
+
+    mock16_reset();
+    setup_valid_ids();
+    mock16_set_reg(0xFF, 0x1234);
+    ASSERT_EQ(ina3221_init(&d, &mock_i2c_hal, &default_cfg), INA3221_ERR_ID);
+    assert_device_refused(&d);
+}
+
+TEST(test_device_refused_after_failed_read)
+{
+    ina3221_t d;
+    for (int op = 0; op < 2; op++) {
+        mock16_reset();
+        setup_valid_ids();
+        mock_i2c_fail_after = op;  /* the manufacturer ID, then the die ID */
+        ASSERT_EQ(ina3221_init(&d, &mock_i2c_hal, &default_cfg), INA3221_ERR_I2C);
+        mock_i2c_fail_after = -1;
+        assert_device_refused(&d);
+    }
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    ina3221_t d;
+    ina3221_cfg_t bad = default_cfg;
+    bad.shunt_resistor_ohm[1] = 0.0f;
+    mock16_reset();
+    setup_valid_ids();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina3221_init(&d, NULL, &default_cfg), INA3221_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ina3221_init(&d, &mock_i2c_hal, &bad), INA3221_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ina3221")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -518,4 +577,7 @@ TEST_MAIN("ina3221")
     RUN(test_current_calculation);
     RUN(test_current_negative);
     RUN(test_different_address);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_read);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
