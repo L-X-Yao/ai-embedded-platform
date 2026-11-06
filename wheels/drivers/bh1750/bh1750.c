@@ -112,7 +112,18 @@ bh1750_err_t bh1750_read_lux(const bh1750_t *dev, float *lux)
 bh1750_err_t bh1750_power_on(const bh1750_t *dev)
 {
     if (!dev) return BH1750_ERR_PARAM;
-    return send_cmd(dev, CMD_POWER_ON);
+
+    bh1750_err_t err = send_cmd(dev, CMD_POWER_ON);
+    if (err != BH1750_OK)
+        return err;
+
+    /* Power On alone is "Waiting for measurement command" (manual p.5), so a
+     * continuous mode needs its command again. A one-time mode sends that in
+     * bh1750_read_lux. */
+    if (one_time_mode(dev->cfg.mode))
+        return BH1750_OK;
+
+    return start_measurement(dev);
 }
 
 bh1750_err_t bh1750_power_off(const bh1750_t *dev)
