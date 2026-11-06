@@ -46,7 +46,7 @@ HAL: SPI (transfer + CS control).
 Checked on 2026-11-06 against Maxim 19-4452 Rev 6. Not run on hardware.
 
 - **Matched:** Register addresses, frame format, LOAD/CS timing, shutdown, scan limit, intensity and decode values.
-- **Fixed:** The driver had no confirmed fault. The model took all of the first byte as the address, and it now ignores D12-D15.
+- **Fixed:** The driver had no confirmed fault. The model took all of the first byte as the address, and it now ignores D12-D15. It wrote registers during the transfer, and now latches them on LOAD's rising edge.
 - **Suspected:** In Code B mode `max7219_clear` shows zeros rather than blanks, though the header does say it clears to zero.
 
 ## Known issues
