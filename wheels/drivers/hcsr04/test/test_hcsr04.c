@@ -352,6 +352,33 @@ TEST(test_echo_stuck_high_sends_no_trigger)
     ASSERT_EQ(mock_triggers, 0);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(hcsr04_t *d)
+{
+    float cm = 0.0f;
+    uint32_t us = 0;
+    ASSERT_EQ(hcsr04_read_cm(d, &cm), HCSR04_ERR_PARAM);
+    ASSERT_EQ(hcsr04_read_us(d, &us), HCSR04_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    hcsr04_t d;
+    hcsr04_hal_t no_echo = mock_hal;
+    no_echo.echo_read = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hcsr04_init(&d, NULL), HCSR04_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hcsr04_init(&d, &no_echo), HCSR04_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("hcsr04")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -375,4 +402,5 @@ TEST_MAIN("hcsr04")
     RUN(test_retry_measures_new_pulse_not_old_tail);
     RUN(test_no_object_never_reads_as_distance);
     RUN(test_echo_stuck_high_sends_no_trigger);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

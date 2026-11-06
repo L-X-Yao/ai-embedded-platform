@@ -14,6 +14,7 @@
 
 #include "hcsr04.h"
 #include "contract.h"
+#include <string.h>
 
 /* Timeout in microseconds: ~4.3m max range + margin */
 #define ECHO_TIMEOUT_US  25000u
@@ -30,7 +31,16 @@
 
 hcsr04_err_t hcsr04_init(hcsr04_t *dev, const hcsr04_hal_t *hal)
 {
-    if (!dev || !hal)
+    if (!dev)
+    {
+        return HCSR04_ERR_PARAM;
+    }
+
+    /* dev->hal stays NULL unless init accepts it: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal)
     {
         return HCSR04_ERR_PARAM;
     }

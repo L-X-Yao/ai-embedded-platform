@@ -306,6 +306,53 @@ TEST(test_init_refuses_rows_past_ddram)
     ASSERT_EQ(hd44780_init(&dev, &mock_i2c, 0x27, 40, 2), HD44780_OK);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(hd44780_t *d)
+{
+    ASSERT_EQ(hd44780_clear(d), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_set_cursor(d, 0, 0), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_write_char(d, 'A'), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_write_str(d, "A"), HD44780_ERR_PARAM);
+    ASSERT_EQ(hd44780_backlight(d, true), HD44780_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static hd44780_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+TEST(test_device_refused_after_failed_init)
+{
+    hd44780_t d;
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(hd44780_init(&d, &mock_i2c, 0x27, 16, 2), HD44780_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    hd44780_t d;
+    hd44780_i2c_t no_write = mock_i2c;
+    no_write.write_reg = NULL;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hd44780_init(&d, NULL, 0x27, 16, 2), HD44780_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hd44780_init(&d, &no_write, 0x27, 16, 2), HD44780_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(hd44780_init(&d, &mock_i2c, 0x27, 0, 2), HD44780_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("hd44780")
     RUN(test_init_ok);
     RUN(test_init_20x4);
@@ -330,4 +377,7 @@ TEST_MAIN("hd44780")
     RUN(test_4x_row_addressing);
     RUN(test_init_switches_the_display_on_last);
     RUN(test_init_refuses_rows_past_ddram);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_failed_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

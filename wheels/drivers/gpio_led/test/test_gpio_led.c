@@ -386,6 +386,56 @@ TEST(test_breathe_large_dt)
     ASSERT_TRUE(gpio_led_get_mode(&led) == GPIO_LED_BREATHE);
 }
 
+/* ---------- an LED init could not set up ---------- */
+
+static void assert_led_refused(gpio_led_t *l)
+{
+    int calls = mock_idx;
+
+    gpio_led_on(l);
+    ASSERT_EQ(gpio_led_get_mode(l), GPIO_LED_OFF);
+    gpio_led_blink(l, 10, 10, 1);
+    ASSERT_EQ(gpio_led_get_mode(l), GPIO_LED_OFF);
+    gpio_led_breathe(l, 100);
+    ASSERT_EQ(gpio_led_get_mode(l), GPIO_LED_OFF);
+    gpio_led_pulse(l, 10);
+    ASSERT_EQ(gpio_led_get_mode(l), GPIO_LED_OFF);
+    gpio_led_off(l);
+    gpio_led_tick(l, 10);
+    ASSERT_EQ(gpio_led_get_mode(l), GPIO_LED_OFF);
+    ASSERT_EQ(mock_idx, calls);
+}
+
+TEST(test_zeroed_led_refused)
+{
+    static gpio_led_t zeroed;
+    mock_reset();
+    assert_led_refused(&zeroed);
+}
+
+/* led holds whatever the stack did, as nothing else wrote it */
+TEST(test_led_refused_after_rejected_init)
+{
+    gpio_led_t l;
+    mock_reset();
+
+    memset(&l, 0xA5, sizeof(l));
+    gpio_led_init(&l, NULL);
+    assert_led_refused(&l);
+}
+
+/* init returns nothing and writes the pin itself, so it must not call a
+ * HAL with no set, and neither may the calls after it */
+TEST(test_hal_without_set_refused)
+{
+    gpio_led_t l;
+    gpio_led_hal_t no_set = { .set = NULL, .ctx = NULL };
+    mock_reset();
+
+    gpio_led_init(&l, &no_set);
+    assert_led_refused(&l);
+}
+
 TEST_MAIN("gpio_led")
     RUN(test_init);
     RUN(test_on_off);
@@ -408,5 +458,8 @@ TEST_MAIN("gpio_led")
     RUN(test_breathe_period_zero);
     RUN(test_blink_zero_off);
     RUN(test_breathe_large_dt);
+    RUN(test_zeroed_led_refused);
+    RUN(test_led_refused_after_rejected_init);
+    RUN(test_hal_without_set_refused);
 TEST_MAIN_END()
 

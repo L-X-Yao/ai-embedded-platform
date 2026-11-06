@@ -11,6 +11,7 @@
 #include "gpio_button.h"
 #include "contract.h"
 #include <stddef.h>
+#include <string.h>
 
 gpio_button_cfg_t gpio_button_default_cfg(void)
 {
@@ -25,7 +26,15 @@ gpio_button_cfg_t gpio_button_default_cfg(void)
 void gpio_button_init(gpio_button_t *btn, const gpio_button_hal_t *hal,
                     const gpio_button_cfg_t *cfg)
 {
-    if (btn == NULL || hal == NULL || cfg == NULL) {
+    if (btn == NULL) {
+        return;
+    }
+
+    /* btn->hal stays NULL unless init accepts its arguments: init cannot say
+     * no, so the tick refuses a button without it */
+    memset(btn, 0, sizeof(*btn));
+
+    if (hal == NULL || cfg == NULL) {
         return;
     }
     btn->hal           = hal;
@@ -55,7 +64,8 @@ gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms)
     uint8_t state_changed = 0U;
     gpio_button_evt_t evt = GPIO_BUTTON_EVT_NONE;
 
-    if (btn == NULL || dt_ms == 0U) {
+    if (btn == NULL || btn->hal == NULL || btn->hal->read == NULL ||
+        dt_ms == 0U) {
         return GPIO_BUTTON_EVT_NONE;
     }
 
