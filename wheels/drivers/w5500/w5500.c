@@ -155,6 +155,24 @@ static uint16_t read_sock_reg16(const w5500_spi_t *s, uint8_t sock,
     return (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
 }
 
+/* Sn_TX_FSR and Sn_RX_RSR can change during the 16-bit read: the manual
+ * (p54, p55) says to read them until two reads agree. */
+static w5500_err_t read_size_reg(const w5500_spi_t *s, uint8_t sock,
+                                  uint16_t addr, uint16_t *size)
+{
+    uint16_t prev = read_sock_reg16(s, sock, addr);
+    uint32_t timeout = W5500_CMD_TIMEOUT;
+    while (timeout--) {
+        uint16_t cur = read_sock_reg16(s, sock, addr);
+        if (cur == prev) {
+            *size = cur;
+            return W5500_OK;
+        }
+        prev = cur;
+    }
+    return W5500_ERR_TIMEOUT;
+}
+
 /* ---------- helpers: wait for command completion ---------- */
 
 static w5500_err_t wait_cmd_clear(const w5500_spi_t *s, uint8_t sock)
@@ -288,7 +306,9 @@ w5500_err_t w5500_socket_send(w5500_t *dev, uint8_t sock,
     const w5500_spi_t *s = dev->spi;
 
     /* Check TX free size */
-    uint16_t free_size = read_sock_reg16(s, sock, SN_TX_FSR0);
+    uint16_t free_size = 0;
+    w5500_err_t err = read_size_reg(s, sock, SN_TX_FSR0, &free_size);
+    if (err != W5500_OK) return err;
     if (free_size < len) return W5500_ERR_SIZE;
 
     /* Get TX write pointer */
@@ -319,7 +339,9 @@ w5500_err_t w5500_socket_recv(w5500_t *dev, uint8_t sock,
     const w5500_spi_t *s = dev->spi;
 
     /* Check received data size */
-    uint16_t rx_size = read_sock_reg16(s, sock, SN_RX_RSR0);
+    uint16_t rx_size = 0;
+    w5500_err_t err = read_size_reg(s, sock, SN_RX_RSR0, &rx_size);
+    if (err != W5500_OK) return err;
     if (rx_size == 0) return W5500_ERR_NO_DATA;
 
     /* Clamp to buffer size */
@@ -338,7 +360,7 @@ w5500_err_t w5500_socket_recv(w5500_t *dev, uint8_t sock,
 
     /* Issue RECV command to notify W5500 */
     write_sock_reg(s, sock, SN_CR, CMD_RECV);
-    w5500_err_t err = wait_cmd_clear(s, sock);
+    err = wait_cmd_clear(s, sock);
     if (err != W5500_OK) return err;
 
     *out_len = read_len;

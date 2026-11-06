@@ -80,6 +80,12 @@ static int mock_cmd_read_count[8];
 /* For simulating open: what status to set after OPEN command */
 static uint8_t mock_open_status[8];
 
+/* Sn_TX_FSR and Sn_RX_RSR can change during a 16-bit read (W5500 Datasheet
+ * 1.1.0 p54, p55): the next mock_tear_left[n] reads of either one see a high
+ * byte that is not the register's */
+static int     mock_tear_left[8];
+static uint8_t mock_tear_hi;
+
 static void mock_reset(void)
 {
     memset(mock_common_regs, 0, sizeof(mock_common_regs));
@@ -96,6 +102,8 @@ static void mock_reset(void)
     mock_cmd_clear_delay = 0;
     memset(mock_cmd_read_count, 0, sizeof(mock_cmd_read_count));
     memset(mock_open_status, 0, sizeof(mock_open_status));
+    memset(mock_tear_left, 0, sizeof(mock_tear_left));
+    mock_tear_hi = 0;
 
     /* Set version register */
     mock_common_regs[REG_VERSIONR] = 0x04;
@@ -221,6 +229,13 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                         return 0x00U;
                     }
                     return mock_sock_regs[sock_num][SN_CR];
+                }
+                if ((offset == SN_TX_FSR0 || offset == SN_RX_RSR0) &&
+                    mock_tear_left[sock_num] > 0) {
+                    mock_tear_left[sock_num]--;
+                    /* changes on every read, so a long run never settles */
+                    return (uint8_t)(mock_tear_hi ^
+                                     (uint8_t)mock_tear_left[sock_num]);
                 }
                 return mock_sock_regs[sock_num][offset];
             }
@@ -605,6 +620,33 @@ TEST(test_socket_send_insufficient_free)
     ASSERT_EQ(w5500_socket_send(&dev, 0, data, 100), W5500_ERR_SIZE);
 }
 
+TEST(test_socket_send_rereads_torn_free_size)
+{
+    init_dev();
+    /* W5500 Datasheet 1.1.0 p54: "read all 16-bits twice or more until
+     * getting the same value".  Really 2 bytes free, first read shows 0x0702. */
+    mock_sock_regs[0][SN_TX_FSR0] = 0x00;
+    mock_sock_regs[0][SN_TX_FSR1] = 0x02;
+    mock_tear_hi = 0x07;
+    mock_tear_left[0] = 1;
+
+    uint8_t data[100];
+    memset(data, 0xAA, sizeof(data));
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 100), W5500_ERR_SIZE);
+    ASSERT_EQ(mock_sock_tx[0][0], 0);
+}
+
+TEST(test_socket_send_free_size_never_settles)
+{
+    init_dev();
+    mock_sock_regs[0][SN_TX_FSR0] = 0x08;
+    mock_tear_left[0] = 999999;
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_ERR_TIMEOUT);
+    ASSERT_EQ(mock_sock_tx[0][0], 0);
+}
+
 TEST(test_socket_send_invalid_sock)
 {
     init_dev();
@@ -664,6 +706,37 @@ TEST(test_socket_recv_clamped)
     ASSERT_EQ(out_len, 10);
     ASSERT_EQ(buf[0], 0);
     ASSERT_EQ(buf[9], 9);
+}
+
+TEST(test_socket_recv_rereads_torn_size)
+{
+    init_dev();
+    /* W5500 Datasheet 1.1.0 p55: same note as p54.  4 bytes are really
+     * there, and the first read shows 0x0104. */
+    mock_sock_regs[0][SN_RX_RSR0] = 0x00;
+    mock_sock_regs[0][SN_RX_RSR1] = 0x04;
+    mock_tear_hi = 0x01;
+    mock_tear_left[0] = 1;
+
+    uint8_t buf[512];
+    uint16_t out_len = 0;
+    ASSERT_EQ(w5500_socket_recv(&dev, 0, buf, sizeof(buf), &out_len), W5500_OK);
+    ASSERT_EQ(out_len, 4);
+    ASSERT_EQ(mock_sock_regs[0][SN_RX_RD1], 4);
+}
+
+TEST(test_socket_recv_size_never_settles)
+{
+    init_dev();
+    mock_sock_regs[0][SN_RX_RSR1] = 0x04;
+    mock_tear_left[0] = 999999;
+
+    uint8_t buf[8];
+    uint16_t out_len = 99;
+    ASSERT_EQ(w5500_socket_recv(&dev, 0, buf, sizeof(buf), &out_len),
+              W5500_ERR_TIMEOUT);
+    ASSERT_EQ(out_len, 99);
+    ASSERT_EQ(mock_sock_regs[0][SN_RX_RD1], 0);
 }
 
 TEST(test_socket_recv_zero_buf_len)
@@ -867,10 +940,14 @@ TEST_MAIN("w5500")
     RUN(test_socket_send_zero_len);
     RUN(test_socket_send_oversized);
     RUN(test_socket_send_insufficient_free);
+    RUN(test_socket_send_rereads_torn_free_size);
+    RUN(test_socket_send_free_size_never_settles);
     RUN(test_socket_send_invalid_sock);
     RUN(test_socket_send_null_dev);
     RUN(test_socket_recv);
     RUN(test_socket_recv_clamped);
+    RUN(test_socket_recv_rereads_torn_size);
+    RUN(test_socket_recv_size_never_settles);
     RUN(test_socket_recv_zero_buf_len);
     RUN(test_socket_recv_no_data);
     RUN(test_socket_recv_null_buf);
