@@ -29,6 +29,18 @@ typedef enum {
     LOG_LEVEL_DEBUG = 4,
 } log_level_t;
 
+/* #if reads an enum constant as 0, which would make every LOG_LEVEL_MAX test
+ * below true, so C also gets the levels as numbers. An enum constant is an
+ * int in C, so nothing else changes. C++ cannot pass an int as a log_level_t:
+ * it keeps the enum constants, and LOG_LEVEL_MAX removes nothing there. */
+#ifndef __cplusplus
+#   define LOG_LEVEL_NONE   0
+#   define LOG_LEVEL_ERROR  1
+#   define LOG_LEVEL_WARN   2
+#   define LOG_LEVEL_INFO   3
+#   define LOG_LEVEL_DEBUG  4
+#endif
+
 /* Compile-time maximum level. Higher levels compile out completely.
  * Set to LOG_LEVEL_WARN in release build to drop DEBUG/INFO strings.
  * Override via -DLOG_LEVEL_MAX=... at build time. */

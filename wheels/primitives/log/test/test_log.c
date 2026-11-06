@@ -213,17 +213,8 @@ TEST(test_side_effect_at_default_level) {
 #undef LOG_MODULE
 #define LOG_MODULE "test"
 
-#if LOG_LEVEL_MAX >= LOG_LEVEL_DEBUG
+    /* test_log_max.c covers the builds with a lower LOG_LEVEL_MAX. */
     ASSERT_EQ(g_se_counter, 4);
-#elif LOG_LEVEL_MAX >= LOG_LEVEL_INFO
-    ASSERT_EQ(g_se_counter, 3);
-#elif LOG_LEVEL_MAX >= LOG_LEVEL_WARN
-    ASSERT_EQ(g_se_counter, 2);
-#elif LOG_LEVEL_MAX >= LOG_LEVEL_ERROR
-    ASSERT_EQ(g_se_counter, 1);
-#else
-    ASSERT_EQ(g_se_counter, 0);
-#endif
 }
 
 TEST(test_stdout_sink) {
