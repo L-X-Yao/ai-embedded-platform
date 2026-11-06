@@ -26,11 +26,12 @@ extern "C" {
 /* ---------- error codes ---------- */
 
 typedef enum {
-    ICM42688_OK          =  0,
-    ICM42688_ERR_PARAM   = -1,
-    ICM42688_ERR_SPI     = -2,
-    ICM42688_ERR_ID      = -3,
-    ICM42688_ERR_TIMEOUT = -4,
+    ICM42688_OK            =  0,
+    ICM42688_ERR_PARAM     = -1,
+    ICM42688_ERR_SPI       = -2,
+    ICM42688_ERR_ID        = -3,
+    ICM42688_ERR_TIMEOUT   = -4,
+    ICM42688_ERR_NOT_READY = -5,    /* no first sample yet: read again later */
 } icm42688_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -140,11 +141,16 @@ icm42688_err_t   icm42688_init(icm42688_t *dev,
                                 const icm42688_cfg_t *cfg);
 
 /** Read accel + gyro + temperature sample.
+ *  Returns ICM42688_ERR_NOT_READY with *out untouched until the temperature
+ *  and every sensor that is on have a first sample. Start-up takes about
+ *  10 ms for the accel and 30 ms for the gyro. A sensor that is off is not
+ *  waited for: its fields then show whatever its registers hold.
  *  @thread_safe: caller_must_lock  @isr_safe: no */
 icm42688_err_t   icm42688_read(const icm42688_t *dev,
                                 icm42688_data_t *out);
 
 /** Read die temperature only.
+ *  Returns ICM42688_ERR_NOT_READY with *temp_c untouched before the first sample.
  *  @thread_safe: caller_must_lock  @isr_safe: no */
 icm42688_err_t   icm42688_read_temperature(const icm42688_t *dev,
                                             float *temp_c);

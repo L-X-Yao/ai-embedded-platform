@@ -82,6 +82,27 @@ static bool odr_is_accel_ln_only(uint8_t odr)
     return odr <= (uint8_t)ICM42688_ODR_1KHZ;
 }
 
+/* ---------- first-sample check ---------- */
+
+/* Sense registers read -32768 until a sensor's first sample. With
+ * FIFO_HOLD_LAST_DATA_EN at its reset value of 0, no valid sample takes that
+ * value (DS-000347 Rev 1.6, sections 12.8 and 14.34). */
+#define NO_SAMPLE  INT16_MIN
+
+/* A sensor still showing NO_SAMPLE is only worth waiting for while it samples:
+ * a disabled sensor may show invalid data for good (note under INTF_CONFIG0).
+ * PWR_MGMT0 is read only here, so a normal read stays one burst. */
+static bool sample_pending(const icm42688_spi_t *spi,
+                           bool acc_empty, bool gyro_empty)
+{
+    if (!acc_empty && !gyro_empty) return false;
+
+    uint8_t pwr = reg_read(spi, ICM42688_REG_PWR_MGMT0);
+    bool acc_on  = (pwr & 0x02) != 0;       /* ACCEL_MODE 10 (LP) or 11 (LN) */
+    bool gyro_on = (pwr & 0x0C) == 0x0C;    /* GYRO_MODE 11: standby has no data */
+    return (acc_empty && acc_on) || (gyro_empty && gyro_on);
+}
+
 /* ---------- API ---------- */
 
 icm42688_cfg_t icm42688_default_cfg(void)
@@ -150,23 +171,31 @@ icm42688_err_t icm42688_read(const icm42688_t *dev,
     uint8_t raw[14];
     reg_read_burst(dev->spi, ICM42688_REG_TEMP_DATA1, raw, 14);
 
-    /* Temperature: raw / 132.48 + 25 (datasheet section 14.10) */
     int16_t temp_raw = (int16_t)((uint16_t)raw[0] << 8 | raw[1]);
-    out->temperature_c = (float)temp_raw / 132.48f + 25.0f;
 
     /* Accel: big-endian 16-bit signed, starting at raw[2] */
     int16_t ax = (int16_t)((uint16_t)raw[2] << 8 | raw[3]);
     int16_t ay = (int16_t)((uint16_t)raw[4] << 8 | raw[5]);
     int16_t az = (int16_t)((uint16_t)raw[6] << 8 | raw[7]);
 
-    out->ax_g = (float)ax / dev->acc_div;
-    out->ay_g = (float)ay / dev->acc_div;
-    out->az_g = (float)az / dev->acc_div;
-
     /* Gyro: big-endian 16-bit signed, starting at raw[8] */
     int16_t gx = (int16_t)((uint16_t)raw[8]  << 8 | raw[9]);
     int16_t gy = (int16_t)((uint16_t)raw[10] << 8 | raw[11]);
     int16_t gz = (int16_t)((uint16_t)raw[12] << 8 | raw[13]);
+
+    /* Report a missing first sample before touching *out */
+    if (temp_raw == NO_SAMPLE) return ICM42688_ERR_NOT_READY;
+    if (sample_pending(dev->spi,
+                       ax == NO_SAMPLE || ay == NO_SAMPLE || az == NO_SAMPLE,
+                       gx == NO_SAMPLE || gy == NO_SAMPLE || gz == NO_SAMPLE))
+        return ICM42688_ERR_NOT_READY;
+
+    /* Temperature: raw / 132.48 + 25 (datasheet section 14.10) */
+    out->temperature_c = (float)temp_raw / 132.48f + 25.0f;
+
+    out->ax_g = (float)ax / dev->acc_div;
+    out->ay_g = (float)ay / dev->acc_div;
+    out->az_g = (float)az / dev->acc_div;
 
     out->gx_dps = (float)gx / dev->gyro_div;
     out->gy_dps = (float)gy / dev->gyro_div;
@@ -192,6 +221,8 @@ icm42688_err_t icm42688_read_temperature(const icm42688_t *dev,
     reg_read_burst(dev->spi, ICM42688_REG_TEMP_DATA1, raw, 2);
 
     int16_t temp_raw = (int16_t)((uint16_t)raw[0] << 8 | raw[1]);
+    if (temp_raw == NO_SAMPLE) return ICM42688_ERR_NOT_READY;
+
     *temp_c = (float)temp_raw / 132.48f + 25.0f;
 
     ENSURE(*temp_c == *temp_c);

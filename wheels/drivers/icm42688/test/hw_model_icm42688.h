@@ -145,7 +145,16 @@ static void icm42688_model_init(icm42688_model_t *m)
     hw_model_set_on_write(&m->hw, ICM_REG_DEVICE_CONFIG,
                           icm42688_on_device_config_write);
 
-    /* Data registers default to 0 (no measurement yet) */
+    /* Sense registers read -32768 until the first sample (DS-000347 Rev 1.6
+     * p.60): high bytes reset to 0x80, low bytes to 0x00 (p.65 to p.68) */
+    hw_model_set_reset_value(&m->hw, ICM_REG_TEMP_DATA1,    0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_ACCEL_DATA_X1, 0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_ACCEL_DATA_Y1, 0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_ACCEL_DATA_Z1, 0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_GYRO_DATA_X1,  0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_GYRO_DATA_Y1,  0x80);
+    hw_model_set_reset_value(&m->hw, ICM_REG_GYRO_DATA_Z1,  0x80);
+
     /* PWR_MGMT0 default: 0x00 (all off) */
 
     hw_model_reset(&m->hw);
