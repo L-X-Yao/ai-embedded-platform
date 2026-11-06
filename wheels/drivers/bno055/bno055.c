@@ -104,6 +104,11 @@ bno055_err_t bno055_init(bno055_t *dev, const bno055_i2c_t *i2c,
         return BNO055_ERR_PARAM;
     }
 
+    if (!i2c->write_reg || !i2c->read_regs)
+    {
+        return BNO055_ERR_PARAM;
+    }
+
     /* Mode changes need their settling time, so the delay is not optional */
     if (!i2c->delay_ms)
     {
