@@ -256,6 +256,47 @@ TEST(test_power_on_clears_sd_bit)
     ASSERT_TRUE((conf & 0x01u) == 0u);
 }
 
+/* ---------- a failed write leaves the chip's setting in force ---------- */
+
+/* gain=1/8, IT=100ms -> 0.5376 lux/bit: 128 x the 0.0042 at gain=2, IT=800ms */
+TEST(test_failed_set_gain_keeps_the_scale)
+{
+    veml7700_t dev;
+    float lux = 0.0f;
+    mock_reset();
+    ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1_8, VEML7700_IT_100MS),
+              VEML7700_OK);
+    mock_set_reg16(REG_ALS_DATA, 1000);
+    uint16_t conf = mock_get_reg16(REG_ALS_CONF);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(veml7700_set_gain(&dev, VEML7700_GAIN_2), VEML7700_ERR_I2C);
+
+    ASSERT_EQ(mock_get_reg16(REG_ALS_CONF), conf);
+    ASSERT_EQ(veml7700_read_lux(&dev, &lux), VEML7700_OK);
+    ASSERT_NEAR(lux, 537.6f, 0.1f);
+}
+
+/* gain=1, IT=100ms -> 0.0672 lux/bit */
+TEST(test_failed_set_integration_time_keeps_the_scale)
+{
+    veml7700_t dev;
+    float lux = 0.0f;
+    mock_reset();
+    ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),
+              VEML7700_OK);
+    mock_set_reg16(REG_ALS_DATA, 1000);
+    uint16_t conf = mock_get_reg16(REG_ALS_CONF);
+
+    mock_fail_next = 1;
+    ASSERT_EQ(veml7700_set_integration_time(&dev, VEML7700_IT_800MS),
+              VEML7700_ERR_I2C);
+
+    ASSERT_EQ(mock_get_reg16(REG_ALS_CONF), conf);
+    ASSERT_EQ(veml7700_read_lux(&dev, &lux), VEML7700_OK);
+    ASSERT_NEAR(lux, 67.2f, 0.1f);
+}
+
 TEST_MAIN("veml7700")
     RUN(test_init_ok);
     RUN(test_init_writes_config_register);
@@ -274,4 +315,6 @@ TEST_MAIN("veml7700")
     RUN(test_set_integration_time);
     RUN(test_shutdown_sets_sd_bit);
     RUN(test_power_on_clears_sd_bit);
+    RUN(test_failed_set_gain_keeps_the_scale);
+    RUN(test_failed_set_integration_time_keeps_the_scale);
 TEST_MAIN_END()
