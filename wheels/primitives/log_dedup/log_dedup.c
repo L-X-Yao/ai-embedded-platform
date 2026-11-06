@@ -38,23 +38,25 @@ static void emit_repeat(log_dedup_t *d) {
     }
 }
 
+/* Length of a leading "[12345678] " timestamp, 0 if there is none. Only an
+ * all-digit bracket counts: without a time source the first bracket is the
+ * level, which is part of the message. */
+static size_t timestamp_len(const char *s, size_t len) {
+    size_t i = 1;
+
+    if (len <= 4 || s[0] != '[') return 0;
+    while (i < len && s[i] >= '0' && s[i] <= '9') i++;
+    if (i > 1 && i + 1 < len && s[i] == ']' && s[i + 1] == ' ') return i + 2;
+    return 0;
+}
+
 static int lines_equal(const char *a, size_t a_len, const char *b, size_t b_len) {
-    /* Compare ignoring leading timestamp: skip "[12345678] " prefix if present */
-    const char *sa = a, *sb = b;
-    size_t la = a_len, lb = b_len;
+    /* Compare ignoring the leading timestamp, if present */
+    size_t skip_a = timestamp_len(a, a_len);
+    size_t skip_b = timestamp_len(b, b_len);
+    size_t la = a_len - skip_a, lb = b_len - skip_b;
 
-    if (la > 4 && sa[0] == '[') {
-        for (size_t i = 1; i < la - 1; i++) {
-            if (sa[i] == ']' && sa[i + 1] == ' ') { sa += i + 2; la -= i + 2; break; }
-        }
-    }
-    if (lb > 4 && sb[0] == '[') {
-        for (size_t i = 1; i < lb - 1; i++) {
-            if (sb[i] == ']' && sb[i + 1] == ' ') { sb += i + 2; lb -= i + 2; break; }
-        }
-    }
-
-    return (la == lb) && (la > 0) && (memcmp(sa, sb, la) == 0);
+    return (la == lb) && (la > 0) && (memcmp(a + skip_a, b + skip_b, la) == 0);
 }
 
 void log_dedup_sink(void *ctx, const char *line, size_t len) {
