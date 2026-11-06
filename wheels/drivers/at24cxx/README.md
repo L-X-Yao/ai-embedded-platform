@@ -82,7 +82,7 @@ Checked on 2026-11-06 against AT24C128/256, 0670T-SEEPR-3/07. That manual covers
 - **Matched:** Default address, AT24C128 and AT24C256 sizes, the 64-byte page, two word-address bytes, page splitting in `at24cxx_write`, reads across pages, the end-of-memory check.
 - **Fixed:** `AT24CXX_WRITE_CYCLE_MS` defaulted to 5 ms for every part, but the manual gives 5 ms only to parts with process letter B and up to 20 ms to the others. On those the next page got no acknowledge and a multi-page write stopped half done with `AT24CXX_ERR_I2C`. The default is now 20 ms, so a page write takes four times as long. The 16-bit mock took transfers during a write cycle and now refuses them. Without `write_regs8` the driver waited once per page, so the second byte reached a busy chip: it now waits after every byte. The 8-bit parts' own sheets state that rule, AT24C01D/02D p.9 and AT24C02A/04A p.8. A NULL `delay_ms` skipped the wait, so init now returns `AT24CXX_ERR_PARAM`. The model and the 16-bit mock ran a page write past the page end, read 0xFF past the last byte and ignored the device address, and the model had no write cycle and no 16-bit part, and they now follow the manual. None of this has run on hardware.
 - **Still open:** There is no acknowledge polling, so every page pays the fixed wait. There is no memory reset after an interrupted transfer, and writes inhibited by WP at VCC go unreported.
-- **Suspected:** `at24cxx_write_byte` is tagged ISR-safe although it blocks for the write cycle.
+- **Fixed:** `at24cxx_write_byte` was tagged ISR-safe although it blocks for the write cycle.
 
 ## Known issues
 
