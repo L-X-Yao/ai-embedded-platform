@@ -143,6 +143,51 @@ TEST(test_error_codes)
     ASSERT_EQ((int)SIGNAL_STATS_ERR_PARAM, -1);
 }
 
+/* --- input that would leave mean or m2 NaN for good --- */
+
+TEST(test_feed_rejects_infinity)
+{
+    signal_stats_t s;
+    signal_stats_init(&s);
+
+    ASSERT_EQ(signal_stats_feed(&s, 10.0f), SIGNAL_STATS_OK);
+    ASSERT_EQ(signal_stats_feed(&s, (float)INFINITY), SIGNAL_STATS_ERR_PARAM);
+    ASSERT_EQ(signal_stats_feed(&s, (float)-INFINITY), SIGNAL_STATS_ERR_PARAM);
+    ASSERT_EQ(signal_stats_count(&s), 1u);
+
+    ASSERT_EQ(signal_stats_feed(&s, 12.0f), SIGNAL_STATS_OK);
+    ASSERT_NEAR(signal_stats_mean(&s), 11.0f, 1e-6f);
+    ASSERT_NEAR(signal_stats_variance(&s), 1.0f, 1e-6f);
+    ASSERT_NEAR(signal_stats_min(&s), 10.0f, 1e-6f);
+    ASSERT_NEAR(signal_stats_max(&s), 12.0f, 1e-6f);
+}
+
+TEST(test_feed_rejects_sample_overflowing_mean)
+{
+    signal_stats_t s;
+    signal_stats_init(&s);
+
+    /* Both finite, but sample - mean is about -6e38. */
+    ASSERT_EQ(signal_stats_feed(&s, 3e38f), SIGNAL_STATS_OK);
+    ASSERT_EQ(signal_stats_feed(&s, -3e38f), SIGNAL_STATS_ERR_PARAM);
+    ASSERT_EQ(signal_stats_count(&s), 1u);
+    ASSERT_TRUE(signal_stats_mean(&s) == 3e38f);
+    ASSERT_TRUE(signal_stats_min(&s) == 3e38f);
+}
+
+TEST(test_feed_rejects_sample_overflowing_m2)
+{
+    signal_stats_t s;
+    signal_stats_init(&s);
+
+    /* delta -4e19 times delta2 -2e19 is 8e38: m2 cannot hold it. */
+    ASSERT_EQ(signal_stats_feed(&s, 2e19f), SIGNAL_STATS_OK);
+    ASSERT_EQ(signal_stats_feed(&s, -2e19f), SIGNAL_STATS_ERR_PARAM);
+    ASSERT_EQ(signal_stats_count(&s), 1u);
+    ASSERT_TRUE(signal_stats_mean(&s) == 2e19f);
+    ASSERT_NEAR(signal_stats_variance(&s), 0.0f, 1e-6f);
+}
+
 TEST_MAIN("signal_stats")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -159,4 +204,7 @@ TEST_MAIN("signal_stats")
     RUN(test_reset_null);
     RUN(test_null_getters);
     RUN(test_error_codes);
+    RUN(test_feed_rejects_infinity);
+    RUN(test_feed_rejects_sample_overflowing_mean);
+    RUN(test_feed_rejects_sample_overflowing_m2);
 TEST_MAIN_END()

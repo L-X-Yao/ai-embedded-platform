@@ -37,7 +37,9 @@ typedef struct {
 /** @thread_safe: no @isr_safe: yes */
 signal_stats_err_t signal_stats_init(signal_stats_t *ctx);
 
-/** Feed a sample. @thread_safe: no @isr_safe: yes */
+/** Feed a sample.  Returns SIGNAL_STATS_ERR_PARAM, leaving the state unchanged,
+ *  for NaN, Inf, or a sample that would overflow the mean or the variance sum.
+ *  @thread_safe: no @isr_safe: yes */
 signal_stats_err_t signal_stats_feed(signal_stats_t *ctx, float sample);
 
 /** Get mean. Returns 0 if no samples. @thread_safe: no @isr_safe: yes */
