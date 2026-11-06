@@ -10,6 +10,8 @@ static void mock_reset(void)
     mock_i2c_reset();
     /* model ID register 0xC0 = 0xEE */
     mock_regs[0xC0] = 0xEE;
+    /* final range VCSEL period: 10 PCLKs, the value of ST's tuning table */
+    mock_regs[0x70] = 0x04;
 }
 
 static const vl53l0x_i2c_t mock_i2c = {
@@ -174,12 +176,46 @@ TEST(test_is_ready_false)
 TEST(test_set_timing_budget_ok)
 {
     setup();
-    /* 50000 us -> encoded = 25000 = 0x61A8 (fits uint16) */
+    /* ST API: macro period 2304 * 10 * 1655 ps = 38131 ns, so 50000 us is 1311
+     * macro periods. 1310 in (LSByte * 2^MSByte) + 1 is 0xA3 << 3: 0x03A3 */
     vl53l0x_err_t e = vl53l0x_set_measurement_timing_budget(&dev, 50000);
     ASSERT_EQ(e, VL53L0X_OK);
     ASSERT_EQ(dev.timing_budget_us, 50000u);
-    ASSERT_EQ(mock_regs[0x71], 0x61);
-    ASSERT_EQ(mock_regs[0x72], 0xA8);
+    ASSERT_EQ_HEX(mock_regs[0x71], 0x03);
+    ASSERT_EQ_HEX(mock_regs[0x72], 0xA3);
+}
+
+/* The timeout counts macro periods, so it depends on the VCSEL period */
+TEST(test_timing_budget_follows_vcsel_period)
+{
+    setup();
+    mock_regs[0x70] = 0x06;  /* 14 PCLKs: 53384 ns, 30000 us is 562 periods */
+    ASSERT_EQ(vl53l0x_set_measurement_timing_budget(&dev, 30000), VL53L0X_OK);
+    ASSERT_EQ_HEX(mock_regs[0x71], 0x02);
+    ASSERT_EQ_HEX(mock_regs[0x72], 0x8C);
+}
+
+/* The old encoding clamped at 0xFFFF from about 131 ms */
+TEST(test_timing_budget_long_budgets_differ)
+{
+    setup();
+    ASSERT_EQ(vl53l0x_set_measurement_timing_budget(&dev, 200000), VL53L0X_OK);
+    uint16_t at_200ms = (uint16_t)((mock_regs[0x71] << 8) | mock_regs[0x72]);
+    ASSERT_EQ(vl53l0x_set_measurement_timing_budget(&dev, 500000), VL53L0X_OK);
+    uint16_t at_500ms = (uint16_t)((mock_regs[0x71] << 8) | mock_regs[0x72]);
+    ASSERT_EQ_HEX(at_200ms, 0x05A3);  /* 5245 periods */
+    ASSERT_EQ_HEX(at_500ms, 0x06CC);  /* 13113 periods */
+}
+
+/* One read of the VCSEL period and two writes, each may fail */
+TEST(test_timing_budget_i2c_fail)
+{
+    for (int op = 0; op < 3; op++) {
+        setup();
+        mock_fail_at = mock_op_count + op;
+        ASSERT_EQ(vl53l0x_set_measurement_timing_budget(&dev, 30000),
+                  VL53L0X_ERR_I2C);
+    }
 }
 
 TEST(test_set_timing_budget_too_low)
@@ -221,6 +257,9 @@ TEST_MAIN("vl53l0x")
     RUN(test_is_ready_true);
     RUN(test_is_ready_false);
     RUN(test_set_timing_budget_ok);
+    RUN(test_timing_budget_follows_vcsel_period);
+    RUN(test_timing_budget_long_budgets_differ);
+    RUN(test_timing_budget_i2c_fail);
     RUN(test_set_timing_budget_too_low);
     RUN(test_set_timing_budget_too_high);
     RUN(test_init_writes_sequence_config);

@@ -23,6 +23,7 @@
 #define REG_RESULT_RANGE_STATUS     0x14u
 #define REG_SYSTEM_INTERRUPT_CLEAR  0x0Bu
 #define REG_SYSTEM_SEQUENCE_CONFIG  0x01u
+#define REG_FINAL_RANGE_CONFIG_VCSEL_PERIOD 0x70u
 #define REG_FINAL_RANGE_CONFIG_TIMEOUT_HI  0x71u
 #define REG_FINAL_RANGE_CONFIG_TIMEOUT_LO  0x72u
 #define REG_MSRC_CONFIG_CONTROL     0x60u
@@ -47,20 +48,51 @@ static bool read_reg(const vl53l0x_t *dev, uint8_t reg, uint8_t *val)
 
 /* ---- timing budget encoding ---- */
 
-static uint16_t budget_to_timeout(uint32_t budget_us)
+/* VL53L0X_calc_macro_period_ps: 2304 VCSEL clocks of 1655 ps. The register
+ * holds the VCSEL period as pclks / 2 - 1 (VL53L0X_decode_vcsel_period). */
+static uint32_t macro_period_ns(uint8_t vcsel_reg)
 {
-    /*
-     * Simplified mapping: the full ST API computes elaborate VCSEL
-     * period + macro period conversions. We use a linear approximation
-     * that is good enough for the common 20-200 ms range.
-     * Encoded timeout = budget_us / 2 (clamped to uint16_t).
-     */
-    uint32_t encoded = budget_us / 2u;
-    if (encoded > 0xFFFFu)
+    uint32_t pclks = ((uint32_t)vcsel_reg + 1u) << 1;
+    return (2304u * pclks * 1655u + 500u) / 1000u;
+}
+
+/* VL53L0X_encode_timeout: (LSByte * 2^MSByte) + 1 macro periods. The timing
+ * budget is at least 20 ms, so mclks is never 0. */
+static uint16_t encode_timeout(uint32_t mclks)
+{
+    uint32_t ls_byte = mclks - 1u;
+    uint32_t ms_byte = 0u;
+
+    while (ls_byte > 0xFFu)
     {
-        encoded = 0xFFFFu;
+        ls_byte >>= 1;
+        ms_byte++;
     }
-    return (uint16_t)encoded;
+    return (uint16_t)((ms_byte << 8) | ls_byte);
+}
+
+/*
+ * Give the whole budget to the final range step. The full ST API takes the
+ * time of the earlier sequence steps off the budget first, which needs their
+ * timeouts read back, so a real measurement here takes a little longer.
+ * The period is read, not assumed: this driver loads no tuning settings.
+ */
+static bool write_budget(const vl53l0x_t *dev, uint32_t budget_us)
+{
+    uint8_t vcsel_reg = 0;
+    if (!read_reg(dev, REG_FINAL_RANGE_CONFIG_VCSEL_PERIOD, &vcsel_reg))
+    {
+        return false;
+    }
+
+    uint32_t macro_ns = macro_period_ns(vcsel_reg);
+    uint32_t mclks = (budget_us * 1000u + macro_ns / 2u) / macro_ns;
+    uint16_t timeout = encode_timeout(mclks);
+
+    return write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_HI,
+                     (uint8_t)(timeout >> 8)) &&
+           write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_LO,
+                     (uint8_t)(timeout & 0xFFu));
 }
 
 /* ---- public API ---- */
@@ -102,14 +134,7 @@ vl53l0x_err_t vl53l0x_init(vl53l0x_t *dev, const vl53l0x_i2c_t *i2c,
     }
 
     /* apply default timing budget */
-    uint16_t timeout = budget_to_timeout(dev->timing_budget_us);
-    if (!write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_HI,
-                   (uint8_t)(timeout >> 8)))
-    {
-        return VL53L0X_ERR_I2C;
-    }
-    if (!write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_LO,
-                   (uint8_t)(timeout & 0xFFu)))
+    if (!write_budget(dev, dev->timing_budget_us))
     {
         return VL53L0X_ERR_I2C;
     }
@@ -227,14 +252,7 @@ vl53l0x_err_t vl53l0x_set_measurement_timing_budget(vl53l0x_t *dev,
 
     dev->timing_budget_us = budget_us;
 
-    uint16_t timeout = budget_to_timeout(budget_us);
-    if (!write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_HI,
-                   (uint8_t)(timeout >> 8)))
-    {
-        return VL53L0X_ERR_I2C;
-    }
-    if (!write_reg(dev, REG_FINAL_RANGE_CONFIG_TIMEOUT_LO,
-                   (uint8_t)(timeout & 0xFFu)))
+    if (!write_budget(dev, budget_us))
     {
         return VL53L0X_ERR_I2C;
     }

@@ -10,6 +10,7 @@
  * - RESULT_RANGE_STATUS at 0x14: bit 0 = ready flag (read-only)
  * - Range data at 0x1E-0x1F: 16-bit big-endian millimeters (read-only)
  * - MSRC_CONFIG_CONTROL at 0x60
+ * - FINAL_RANGE_CONFIG_VCSEL_PERIOD at 0x70
  * - FINAL_RANGE_CONFIG_TIMEOUT at 0x71-0x72
  * - Single-shot: write 0x01 to reg 0x00, ready bit set, range populated
  */
@@ -27,6 +28,7 @@
 #define VL_REG_RANGE_DATA_HI          0x1Eu  /* 0x14 + 10 */
 #define VL_REG_RANGE_DATA_LO          0x1Fu  /* 0x14 + 11 */
 #define VL_REG_MSRC_CONFIG_CONTROL    0x60u
+#define VL_REG_FINAL_RANGE_VCSEL      0x70u
 #define VL_REG_TIMEOUT_HI             0x71u
 #define VL_REG_TIMEOUT_LO             0x72u
 #define VL_REG_MODEL_ID               0xC0u
@@ -64,6 +66,9 @@ static void vl53l0x_model_init(vl53l0x_model_t *m)
     /* Model ID: 0xEE at 0xC0 (read-only) */
     hw_model_set_reset_value(&m->hw, VL_REG_MODEL_ID, 0xEEu);
     hw_model_set_readonly(&m->hw, VL_REG_MODEL_ID);
+
+    /* Final range VCSEL period: 10 PCLKs, the value of ST's tuning table */
+    hw_model_set_reset_value(&m->hw, VL_REG_FINAL_RANGE_VCSEL, 0x04u);
 
     /* RESULT_RANGE_STATUS (read-only) */
     hw_model_set_readonly(&m->hw, VL_REG_RESULT_RANGE_STATUS);

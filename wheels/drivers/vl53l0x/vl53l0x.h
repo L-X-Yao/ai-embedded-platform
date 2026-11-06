@@ -65,7 +65,9 @@ vl53l0x_err_t vl53l0x_start_single(vl53l0x_t *dev);
 /** Check if measurement result is ready. @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_is_ready(vl53l0x_t *dev, bool *ready);
 
-/** Set measurement timing budget in microseconds. @thread_safe: no @isr_safe: no */
+/** Set measurement timing budget in microseconds, 20000 to 500000. The whole
+ *  budget goes to the final range step, so a measurement takes a little longer.
+ *  @thread_safe: no @isr_safe: no */
 vl53l0x_err_t vl53l0x_set_measurement_timing_budget(vl53l0x_t *dev,
                                                      uint32_t budget_us);
 

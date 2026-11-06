@@ -72,9 +72,10 @@ TEST(test_init_writes_default_timeout)
     setup();
     vl53l0x_t dev;
     vl53l0x_init(&dev, &model_i2c, &default_cfg);
-    /* Default budget: 30000us -> timeout = 30000/2 = 15000 = 0x3A98 */
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], 0x3Au);
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], 0x98u);
+    /* Default budget: 30000 us at a 38131 ns macro period is 787 periods, and
+     * 786 in the ST format (LSByte * 2^MSByte) + 1 is 0xC4 << 2 */
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], 0x02u);
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], 0xC4u);
 }
 
 /* --- read tests -------------------------------------------------------- */
@@ -134,9 +135,9 @@ TEST(test_set_timing_budget)
 
     vl53l0x_err_t err = vl53l0x_set_measurement_timing_budget(&dev, 100000);
     ASSERT_EQ(err, VL53L0X_OK);
-    /* 100000/2 = 50000 = 0xC350 (fits in uint16) */
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], 0xC3u);
-    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], 0x50u);
+    /* 2623 macro periods, and 2622 is 0xA3 << 4 */
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_HI], 0x04u);
+    ASSERT_EQ(model.hw.regs[VL_REG_TIMEOUT_LO], 0xA3u);
 }
 
 TEST(test_set_timing_budget_out_of_range)
