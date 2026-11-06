@@ -132,8 +132,12 @@ cli_err_t cli_parser_run(cli_parser_t *ctx, const char *line)
     }
 
     for (size_t i = 0; i < ctx->cfg.num_commands; i++) {
-        if (strcmp(argv[0], ctx->cfg.commands[i].name) == 0) {
-            return ctx->cfg.commands[i].handler(argc, argv, ctx->cfg.user_ctx);
+        const cli_cmd_t *cmd = &ctx->cfg.commands[i];
+        if (cmd->name == NULL || cmd->handler == NULL) {
+            continue;
+        }
+        if (strcmp(argv[0], cmd->name) == 0) {
+            return cmd->handler(argc, argv, ctx->cfg.user_ctx);
         }
     }
 
