@@ -361,6 +361,44 @@ TEST(test_single_led)
     ASSERT_EQ(mock_sent_len, 4);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(sk6812_t *d)
+{
+    sk6812_pixel_t buf[4];
+    memset(buf, 0, sizeof(buf));
+    ASSERT_EQ(sk6812_fill(d, buf, 1, 2, 3, 4), SK6812_ERR_PARAM);
+    ASSERT_EQ(sk6812_clear(d, buf), SK6812_ERR_PARAM);
+    ASSERT_EQ(sk6812_set_pixel(d, buf, 0, 1, 2, 3, 4), SK6812_ERR_PARAM);
+    ASSERT_EQ(sk6812_show(d, buf), SK6812_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static sk6812_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* num_leds holds whatever the stack did, far more than the 4 pixels of the
+ * buffer, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sk6812_hal_t zeroed;
+    sk6812_t d;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sk6812_init(&d, NULL, 4), SK6812_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sk6812_init(&d, &zeroed, 4), SK6812_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sk6812_init(&d, &mock_hal, 0), SK6812_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sk6812")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -381,4 +419,6 @@ TEST_MAIN("sk6812")
     RUN(test_set_then_show);
     RUN(test_fill_and_show);
     RUN(test_single_led);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

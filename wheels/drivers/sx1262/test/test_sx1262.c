@@ -924,6 +924,49 @@ TEST(test_low_spreading_factors_get_a_longer_preamble)
     ASSERT_EQ(cmd_log[params][2], 8);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sx1262_t *d)
+{
+    uint8_t buf[4] = { 1, 2, 3, 4 };
+    uint8_t out_len = 0;
+    ASSERT_EQ(sx1262_set_frequency(d, 868000000U), SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_configure_lora(d, SX1262_SF7, SX1262_BW_125K, SX1262_CR_4_5),
+              SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_transmit(d, buf, 4), SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_receive(d, buf, 4, &out_len), SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_get_rssi(d), 0);
+    ASSERT_EQ(sx1262_sleep(d), SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_standby(d), SX1262_ERR_PARAM);
+    ASSERT_EQ(sx1262_get_status(d), 0);
+}
+
+/* Init ends at a chip that does not report standby: nothing answered */
+TEST(test_device_refused_after_wrong_status)
+{
+    sx1262_t d;
+    mock_reset_all();
+    mock_status_byte = 0x00;
+    ASSERT_EQ(sx1262_init(&d, &mock_hal), SX1262_ERR_SPI);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sx1262_hal_t zeroed;
+    sx1262_t d;
+    mock_reset_all();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sx1262_init(&d, NULL), SX1262_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sx1262_init(&d, &zeroed), SX1262_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sx1262")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -974,4 +1017,6 @@ TEST_MAIN("sx1262")
     RUN(test_configure_lora_tx_modulation_workaround);
     RUN(test_standby_wakes_the_chip_from_sleep);
     RUN(test_low_spreading_factors_get_a_longer_preamble);
+    RUN(test_device_refused_after_wrong_status);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

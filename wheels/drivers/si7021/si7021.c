@@ -10,6 +10,7 @@
 
 #include "si7021.h"
 #include "contract.h"
+#include <string.h>
 
 /* --- SI7021 commands --- */
 #define CMD_MEASURE_RH_NOHOLD    0xF5u
@@ -96,7 +97,16 @@ static si7021_err_t measure_nohold(const si7021_t *dev, uint8_t cmd,
 
 si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c)
 {
-    if (!dev || !i2c)
+    if (!dev)
+    {
+        return SI7021_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
     {
         return SI7021_ERR_PARAM;
     }
@@ -112,7 +122,7 @@ si7021_err_t si7021_init(si7021_t *dev, const si7021_i2c_t *i2c)
 
 si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh)
 {
-    if (!dev || !rh)
+    if (!dev || !dev->i2c || !rh)
     {
         return SI7021_ERR_PARAM;
     }
@@ -131,7 +141,7 @@ si7021_err_t si7021_read_humidity(si7021_t *dev, float *rh)
 
 si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->i2c || !temp_c)
     {
         return SI7021_ERR_PARAM;
     }
@@ -150,7 +160,7 @@ si7021_err_t si7021_read_temperature(si7021_t *dev, float *temp_c)
 
 si7021_err_t si7021_read_both(si7021_t *dev, float *rh, float *temp_c)
 {
-    if (!dev || !rh || !temp_c)
+    if (!dev || !dev->i2c || !rh || !temp_c)
     {
         return SI7021_ERR_PARAM;
     }
@@ -183,7 +193,7 @@ si7021_err_t si7021_read_both(si7021_t *dev, float *rh, float *temp_c)
 
 si7021_err_t si7021_set_resolution(si7021_t *dev, si7021_resolution_t res)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SI7021_ERR_PARAM;
     }
@@ -226,7 +236,7 @@ si7021_err_t si7021_set_resolution(si7021_t *dev, si7021_resolution_t res)
 
 si7021_err_t si7021_reset(si7021_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SI7021_ERR_PARAM;
     }
@@ -241,7 +251,7 @@ si7021_err_t si7021_reset(si7021_t *dev)
 si7021_err_t si7021_read_serial(si7021_t *dev, uint32_t *serial_a,
                                 uint32_t *serial_b)
 {
-    if (!dev || !serial_a || !serial_b)
+    if (!dev || !dev->i2c || !serial_a || !serial_b)
     {
         return SI7021_ERR_PARAM;
     }

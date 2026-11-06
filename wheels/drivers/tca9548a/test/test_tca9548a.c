@@ -360,6 +360,46 @@ TEST(test_workflow_select_read_disable)
 
 /* ---------- main ---------- */
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(tca9548a_t *d)
+{
+    uint8_t mask;
+    ASSERT_EQ(tca9548a_select(d, 1), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(tca9548a_select_multi(d, 0x03), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(tca9548a_disable_all(d), TCA9548A_ERR_PARAM);
+    ASSERT_EQ(tca9548a_get_channel(d, &mask), TCA9548A_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_write)
+{
+    tca9548a_t d;
+    mock_reset();
+    mock_fail_next = 1;
+    ASSERT_EQ(tca9548a_init(&d, &mock_i2c, 0x70), TCA9548A_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tca9548a_i2c_t zeroed;
+    tca9548a_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tca9548a_init(&d, NULL, 0x70), TCA9548A_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tca9548a_init(&d, &zeroed, 0x70), TCA9548A_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tca9548a_init(&d, &mock_i2c, 0x10), TCA9548A_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tca9548a")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -392,4 +432,6 @@ TEST_MAIN("tca9548a")
     RUN(test_get_channel_null_dev);
     RUN(test_get_channel_null_mask);
     RUN(test_workflow_select_read_disable);
+    RUN(test_device_refused_after_failed_write);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

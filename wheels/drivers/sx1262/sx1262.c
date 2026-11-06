@@ -358,24 +358,11 @@ static sx1262_err_t clear_irq(const sx1262_hal_t *hal)
 
 /* ---------- public API ---------- */
 
-sx1262_err_t sx1262_init(sx1262_t *dev, const sx1262_hal_t *hal)
+/* The steps of init that talk to the chip */
+static sx1262_err_t bring_up(const sx1262_t *dev, const sx1262_hal_t *hal)
 {
     sx1262_err_t err;
     uint8_t param;
-
-    if (!dev || !hal) return SX1262_ERR_PARAM;
-    if (!hal->cs_select || !hal->cs_deselect || !hal->transfer ||
-        !hal->is_busy || !hal->delay_ms) {
-        return SX1262_ERR_PARAM;
-    }
-
-    dev->hal = hal;
-    dev->asleep = false;
-    dev->frequency = 0;
-    dev->sf = SX1262_SF7;
-    dev->bw = SX1262_BW_125K;
-    dev->cr = SX1262_CR_4_5;
-    dev->tx_power = TX_POWER_DEFAULT;
 
     /* enter standby (RC) */
     param = STDBY_RC;
@@ -412,6 +399,32 @@ sx1262_err_t sx1262_init(sx1262_t *dev, const sx1262_hal_t *hal)
 
     const uint8_t tx_params[2] = { (uint8_t)dev->tx_power, TX_RAMP_200US };
     return send_command(hal, CMD_SET_TX_PARAMS, tx_params, sizeof(tx_params));
+}
+
+sx1262_err_t sx1262_init(sx1262_t *dev, const sx1262_hal_t *hal)
+{
+    if (!dev) return SX1262_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal) return SX1262_ERR_PARAM;
+    if (!hal->cs_select || !hal->cs_deselect || !hal->transfer ||
+        !hal->is_busy || !hal->delay_ms) {
+        return SX1262_ERR_PARAM;
+    }
+
+    dev->sf = SX1262_SF7;
+    dev->bw = SX1262_BW_125K;
+    dev->cr = SX1262_CR_4_5;
+    dev->tx_power = TX_POWER_DEFAULT;
+
+    sx1262_err_t err = bring_up(dev, hal);
+    if (err != SX1262_OK) return err;
+
+    dev->hal = hal;
+    return SX1262_OK;
 }
 
 sx1262_err_t sx1262_set_frequency(sx1262_t *dev, uint32_t freq_hz)

@@ -63,17 +63,10 @@ static bool validate_hal(const st7735_spi_t *spi)
 
 /* ---------- public API ---------- */
 
-st7735_err_t st7735_init(st7735_t *dev, const st7735_spi_t *spi)
+/* The steps of init that talk to the display */
+static st7735_err_t bring_up(const st7735_t *dev)
 {
-    if (!dev || !spi) {
-        return ST7735_ERR_PARAM;
-    }
-    if (!validate_hal(spi)) {
-        return ST7735_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->spi = spi;
+    const st7735_spi_t *spi = dev->spi;
 
     /* Hardware reset */
     spi->reset(spi->ctx);
@@ -112,6 +105,34 @@ st7735_err_t st7735_init(st7735_t *dev, const st7735_spi_t *spi)
         return ST7735_ERR_SPI;
     }
     spi->delay_ms(spi->ctx, 10);
+
+    return ST7735_OK;
+}
+
+st7735_err_t st7735_init(st7735_t *dev, const st7735_spi_t *spi)
+{
+    if (!dev) {
+        return ST7735_ERR_PARAM;
+    }
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi) {
+        return ST7735_ERR_PARAM;
+    }
+    if (!validate_hal(spi)) {
+        return ST7735_ERR_PARAM;
+    }
+
+    dev->spi = spi;
+
+    st7735_err_t err = bring_up(dev);
+    if (err != ST7735_OK) {
+        dev->spi = NULL;
+        return err;
+    }
 
     return ST7735_OK;
 }
