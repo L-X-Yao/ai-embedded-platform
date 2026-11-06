@@ -23,7 +23,10 @@ target_include_directories(test_null_printf_tiny PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
-target_compile_options(test_null_printf_tiny PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+# Generated tests pass empty and NULL formats on purpose, which the format
+# attribute on printf_tiny.h flags. Regeneration keeps this file.
+target_compile_options(test_null_printf_tiny PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion
+    -Wno-format-security -Wno-format-extra-args)
 
 add_executable(test_boundary_printf_tiny
     test_boundary_printf_tiny.c
@@ -33,7 +36,10 @@ target_include_directories(test_boundary_printf_tiny PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
-target_compile_options(test_boundary_printf_tiny PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+# Generated tests pass empty and NULL formats on purpose, which the format
+# attribute on printf_tiny.h flags. Regeneration keeps this file.
+target_compile_options(test_boundary_printf_tiny PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion
+    -Wno-format-security)
 enable_testing()
 add_test(NAME printf_tiny_tests COMMAND test_printf_tiny)
 add_test(NAME printf_tiny_null_tests COMMAND test_null_printf_tiny)
