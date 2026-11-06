@@ -21,11 +21,19 @@ static uint8_t mock_mem[MOCK_MEM_SIZE];
 static int     mock_fail_next;
 static int     mock_delay_calls;
 
+/* Write cycle of the 16-bit parts: "All inputs are disabled during this write
+ * cycle" (manual p.10), so a transfer gets no acknowledge until tWR has passed.
+ * 0 turns this off. */
+static uint32_t mock_twr_ms;
+static uint32_t mock_busy_ms;
+
 static void mock_reset(void)
 {
     memset(mock_mem, 0xFF, sizeof(mock_mem));
     mock_fail_next  = 0;
     mock_delay_calls = 0;
+    mock_twr_ms = 0;
+    mock_busy_ms = 0;
 }
 
 /* 8-bit address callbacks (AT24C01 .. AT24C16) */
@@ -63,10 +71,12 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr,
 {
     (void)ctx; (void)dev_addr;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
+    if (mock_busy_ms) return false;
     for (uint16_t i = 0; i < len; i++) {
         uint16_t a = (uint16_t)(reg + i);
         if (a < MOCK_MEM_SIZE) mock_mem[a] = data[i];
     }
+    mock_busy_ms = mock_twr_ms;
     return true;
 }
 
@@ -75,6 +85,7 @@ static bool mock_read_regs16(void *ctx, uint8_t dev_addr,
 {
     (void)ctx; (void)dev_addr;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
+    if (mock_busy_ms) return false;
     for (uint16_t i = 0; i < len; i++) {
         uint16_t a = (uint16_t)(reg + i);
         buf[i] = (a < MOCK_MEM_SIZE) ? mock_mem[a] : 0xFF;
@@ -84,8 +95,9 @@ static bool mock_read_regs16(void *ctx, uint8_t dev_addr,
 
 static void mock_delay_ms(void *ctx, uint32_t ms)
 {
-    (void)ctx; (void)ms;
+    (void)ctx;
     mock_delay_calls++;
+    mock_busy_ms = (ms >= mock_busy_ms) ? 0 : mock_busy_ms - ms;
 }
 
 /* HAL instances */
@@ -355,6 +367,25 @@ TEST(test_at24c04_address_bit_in_dev_addr)
     ASSERT_EQ(val, 0x77);
 }
 
+/* Manual p.5: tWR is 20 ms at 1.8 V, and 5 ms only with process letter B */
+TEST(test_write_survives_the_slowest_write_cycle)
+{
+    mock_reset();
+    mock_twr_ms = 20;
+    at24cxx_t dev;
+    ASSERT_EQ(at24cxx_init(&dev, &i2c_16bit, 0x50, AT24CXX_C256), AT24CXX_OK);
+
+    /* 62..65 crosses the 64-byte page, so this takes two write cycles */
+    const uint8_t data[4] = { 0x11, 0x22, 0x33, 0x44 };
+    ASSERT_EQ(at24cxx_write(&dev, 62, data, 4), AT24CXX_OK);
+    ASSERT_EQ(mock_delay_calls, 2);
+
+    /* The read straight after the last page must be acknowledged too */
+    uint8_t back[4] = { 0 };
+    ASSERT_EQ(at24cxx_read(&dev, 62, back, 4), AT24CXX_OK);
+    ASSERT_EQ(memcmp(back, data, 4), 0);
+}
+
 /* ============================================================
  * Main
  * ============================================================ */
@@ -379,4 +410,5 @@ TEST_MAIN("at24cxx")
     RUN(test_i2c_write_failure);
     RUN(test_zero_length_operations);
     RUN(test_at24c04_address_bit_in_dev_addr);
+    RUN(test_write_survives_the_slowest_write_cycle);
 TEST_MAIN_END()
