@@ -47,5 +47,17 @@ target_include_directories(prop_dht11 PRIVATE
 target_compile_options(prop_dht11 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -Wno-unused-function -Wno-unused-parameter)
 
 add_test(NAME dht11_prop_tests COMMAND prop_dht11)
+
+add_executable(test_hw_model_dht11
+    test_hw_model_dht11.c
+    ../dht11.c
+)
+target_include_directories(test_hw_model_dht11 PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_hw_model_dht11 PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+add_test(NAME dht11_hw_model_tests COMMAND test_hw_model_dht11)
 add_test(NAME dht11_null_tests COMMAND test_null_dht11)
 add_test(NAME dht11_boundary_tests COMMAND test_boundary_dht11)
