@@ -21,10 +21,9 @@ static uint8_t mock_mem[MOCK_MEM_SIZE];
 static int     mock_fail_next;
 static int     mock_delay_calls;
 
-/* Write cycle of the 16-bit parts: "All inputs are disabled during this write
- * cycle" (manual p.10), so a transfer gets no acknowledge until tWR has passed.
- * 0 turns this off. */
-static uint32_t mock_twr_ms;
+/* Write cycle: "All inputs are disabled during this write cycle" (manual p.10),
+ * so a transfer gets no acknowledge until tWR has passed. */
+#define MOCK_TWR_MS 20u
 static uint32_t mock_busy_ms;
 
 static void mock_reset(void)
@@ -32,7 +31,6 @@ static void mock_reset(void)
     memset(mock_mem, 0xFF, sizeof(mock_mem));
     mock_fail_next  = 0;
     mock_delay_calls = 0;
-    mock_twr_ms = 0;
     mock_busy_ms = 0;
 }
 
@@ -43,10 +41,28 @@ static bool mock_write_reg(void *ctx, uint8_t dev_addr,
 {
     (void)ctx;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
+    if (mock_busy_ms) return false;
     /* For multi-page chips the upper address bits are in dev_addr */
     uint16_t base = (uint16_t)((dev_addr & 0x07u) << 8);
     uint16_t addr = (uint16_t)(base + reg);
     if (addr < MOCK_MEM_SIZE) mock_mem[addr] = val;
+    mock_busy_ms = MOCK_TWR_MS;
+    return true;
+}
+
+/* A page write through one transfer: one write cycle for all of it. The AT24C02
+ * page is 8 bytes, and a page write wraps inside it (manual p.10). */
+static bool mock_write_regs8(void *ctx, uint8_t dev_addr, uint8_t reg,
+                             const uint8_t *data, uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (mock_fail_next) { mock_fail_next = 0; return false; }
+    if (mock_busy_ms) return false;
+    for (uint16_t i = 0; i < len; i++) {
+        uint16_t a = (uint16_t)((reg & ~7u) | ((reg + i) & 7u));
+        mock_mem[a] = data[i];
+    }
+    mock_busy_ms = MOCK_TWR_MS;
     return true;
 }
 
@@ -55,6 +71,7 @@ static bool mock_read_regs(void *ctx, uint8_t dev_addr,
 {
     (void)ctx;
     if (mock_fail_next) { mock_fail_next = 0; return false; }
+    if (mock_busy_ms) return false;
     uint16_t base = (uint16_t)((dev_addr & 0x07u) << 8);
     uint16_t addr = (uint16_t)(base + reg);
     for (uint16_t i = 0; i < len; i++) {
@@ -76,7 +93,7 @@ static bool mock_write_regs(void *ctx, uint8_t dev_addr,
         uint16_t a = (uint16_t)(reg + i);
         if (a < MOCK_MEM_SIZE) mock_mem[a] = data[i];
     }
-    mock_busy_ms = mock_twr_ms;
+    mock_busy_ms = MOCK_TWR_MS;
     return true;
 }
 
@@ -109,6 +126,14 @@ static const at24cxx_i2c_t i2c_8bit = {
     .read_regs16 = NULL,
     .delay_ms   = mock_delay_ms,
     .ctx        = NULL,
+};
+
+static const at24cxx_i2c_t i2c_8bit_page = {
+    .write_reg   = mock_write_reg,
+    .read_regs   = mock_read_regs,
+    .write_regs8 = mock_write_regs8,
+    .delay_ms    = mock_delay_ms,
+    .ctx         = NULL,
 };
 
 static const at24cxx_i2c_t i2c_16bit = {
@@ -214,7 +239,7 @@ TEST(test_write_across_page_boundary)
 {
     mock_reset();
     at24cxx_t dev;
-    at24cxx_init(&dev, &i2c_8bit, 0x50, AT24CXX_C02);
+    at24cxx_init(&dev, &i2c_8bit_page, 0x50, AT24CXX_C02);
     /* AT24CXX_C02 page_size=8.  Write 6 bytes starting at addr 5 --
      * crosses the 8-byte page boundary at addr 8. */
     uint8_t data[6] = {0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5};
@@ -263,7 +288,7 @@ TEST(test_read_write_full_page)
 {
     mock_reset();
     at24cxx_t dev;
-    at24cxx_init(&dev, &i2c_8bit, 0x50, AT24CXX_C02);
+    at24cxx_init(&dev, &i2c_8bit_page, 0x50, AT24CXX_C02);
     /* Write exactly one page (8 bytes) at a page-aligned address */
     uint8_t page[8] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80};
     mock_delay_calls = 0;
@@ -371,7 +396,6 @@ TEST(test_at24c04_address_bit_in_dev_addr)
 TEST(test_write_survives_the_slowest_write_cycle)
 {
     mock_reset();
-    mock_twr_ms = 20;
     at24cxx_t dev;
     ASSERT_EQ(at24cxx_init(&dev, &i2c_16bit, 0x50, AT24CXX_C256), AT24CXX_OK);
 
@@ -384,6 +408,24 @@ TEST(test_write_survives_the_slowest_write_cycle)
     uint8_t back[4] = { 0 };
     ASSERT_EQ(at24cxx_read(&dev, 62, back, 4), AT24CXX_OK);
     ASSERT_EQ(memcmp(back, data, 4), 0);
+}
+
+/* p.10: the STOP after a byte write starts "an internally-timed write cycle, tWR"
+ * and "All inputs are disabled during this write cycle". With no write_regs8
+ * every byte is such a write. */
+TEST(test_byte_by_byte_write_waits_after_every_byte)
+{
+    mock_reset();
+    at24cxx_t dev;
+    at24cxx_init(&dev, &i2c_8bit, 0x50, AT24CXX_C02);
+
+    const uint8_t data[3] = { 0xC1, 0xC2, 0xC3 };
+    ASSERT_EQ(at24cxx_write(&dev, 8, data, 3), AT24CXX_OK);
+    ASSERT_EQ(mock_delay_calls, 3);
+
+    uint8_t back[3] = { 0 };
+    ASSERT_EQ(at24cxx_read(&dev, 8, back, 3), AT24CXX_OK);
+    ASSERT_EQ(memcmp(back, data, 3), 0);
 }
 
 /* ============================================================
@@ -411,4 +453,5 @@ TEST_MAIN("at24cxx")
     RUN(test_zero_length_operations);
     RUN(test_at24c04_address_bit_in_dev_addr);
     RUN(test_write_survives_the_slowest_write_cycle);
+    RUN(test_byte_by_byte_write_waits_after_every_byte);
 TEST_MAIN_END()

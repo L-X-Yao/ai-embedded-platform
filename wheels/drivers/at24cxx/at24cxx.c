@@ -74,6 +74,9 @@ static at24cxx_err_t write_page(const at24cxx_t *dev, uint16_t addr,
                 return AT24CXX_ERR_I2C;
         } else {
             for (uint16_t i = 0; i < len; i++) {
+                /* Every byte is a write of its own, with its own write cycle */
+                if (i > 0u && i2c->delay_ms)
+                    i2c->delay_ms(i2c->ctx, AT24CXX_WRITE_CYCLE_MS);
                 if (!i2c->write_reg(i2c->ctx, daddr, (uint8_t)(reg + i),
                                     data[i]))
                     return AT24CXX_ERR_I2C;

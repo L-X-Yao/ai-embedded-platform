@@ -123,7 +123,8 @@ at24cxx_err_t at24cxx_read(const at24cxx_t *dev, uint16_t addr,
 /**
  * Write len bytes to EEPROM.  Automatically splits across page
  * boundaries and inserts write-cycle delays: calls delay_ms for
- * AT24CXX_WRITE_CYCLE_MS after each page.
+ * AT24CXX_WRITE_CYCLE_MS after each page, or after each byte on an 8-bit
+ * part with no write_regs8.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 at24cxx_err_t at24cxx_write(const at24cxx_t *dev, uint16_t addr,
