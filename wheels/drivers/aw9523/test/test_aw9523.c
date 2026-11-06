@@ -640,6 +640,53 @@ TEST(test_dim_mapping_port1_all_pins)
     }
 }
 
+/* ========== a device init did not finish ========== */
+
+static void assert_device_refused(aw9523_t *d)
+{
+    aw9523_level_t level;
+    uint8_t val;
+    ASSERT_EQ(aw9523_set_direction(d, AW9523_PORT0, 0, AW9523_DIR_OUTPUT), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_write_pin(d, AW9523_PORT0, 0, AW9523_PIN_HIGH), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_read_pin(d, AW9523_PORT0, 0, &level), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_write_port(d, AW9523_PORT0, 0xFF), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_read_port(d, AW9523_PORT0, &val), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_set_led_mode(d, AW9523_PORT0, 0, AW9523_MODE_LED), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_set_led_current(d, AW9523_PORT0, 0, 0x80), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_set_interrupt_enable(d, AW9523_PORT0, 0x01), AW9523_ERR_PARAM);
+    ASSERT_EQ(aw9523_reset(d), AW9523_ERR_PARAM);
+}
+
+/* Something else at this address: the pin calls must not write to it */
+TEST(test_device_refused_after_wrong_id)
+{
+    aw9523_t d;
+    mock_reset();
+    mock_regs[REG_ID] = 0x24;
+    ASSERT_EQ(aw9523_init(&d, &mock_i2c, TEST_ADDR), AW9523_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const aw9523_i2c_t no_callbacks;
+    aw9523_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(aw9523_init(&d, NULL, TEST_ADDR), AW9523_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(aw9523_init(&d, &no_callbacks, TEST_ADDR), AW9523_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(aw9523_init(&d, &mock_i2c, 0x57), AW9523_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("aw9523")
     /* init */
     RUN(test_init_ok);
@@ -712,4 +759,6 @@ TEST_MAIN("aw9523")
     /* DIM mapping */
     RUN(test_dim_mapping_port0_all_pins);
     RUN(test_dim_mapping_port1_all_pins);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

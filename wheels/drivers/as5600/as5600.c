@@ -10,6 +10,7 @@
 
 #include "as5600.h"
 #include "contract.h"
+#include <string.h>
 
 /* Register addresses */
 #define REG_ZPOS_H    0x01u  /* start position high byte */
@@ -58,7 +59,14 @@ static as5600_err_t write_12bit(const as5600_t *dev, uint8_t reg_h,
 
 as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c)
 {
-    if (!dev || !i2c)
+    if (!dev)
+        return AS5600_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
         return AS5600_ERR_PARAM;
     if (!i2c->write_reg || !i2c->read_regs)
         return AS5600_ERR_PARAM;
@@ -67,15 +75,17 @@ as5600_err_t as5600_init(as5600_t *dev, const as5600_i2c_t *i2c)
 
     /* Verify communication by reading status register */
     uint8_t status = 0;
-    if (!read_regs(dev, REG_STATUS, &status, 1))
+    if (!read_regs(dev, REG_STATUS, &status, 1)) {
+        dev->i2c = NULL;
         return AS5600_ERR_I2C;
+    }
 
     return AS5600_OK;
 }
 
 as5600_err_t as5600_read_raw_angle(const as5600_t *dev, uint16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->i2c || !raw)
         return AS5600_ERR_PARAM;
 
     uint8_t buf[2];
@@ -88,7 +98,7 @@ as5600_err_t as5600_read_raw_angle(const as5600_t *dev, uint16_t *raw)
 
 as5600_err_t as5600_read_degrees(const as5600_t *dev, float *degrees)
 {
-    if (!dev || !degrees)
+    if (!dev || !dev->i2c || !degrees)
         return AS5600_ERR_PARAM;
 
     uint16_t raw;
@@ -104,7 +114,7 @@ as5600_err_t as5600_read_degrees(const as5600_t *dev, float *degrees)
 
 as5600_err_t as5600_read_status(const as5600_t *dev, uint8_t *status)
 {
-    if (!dev || !status)
+    if (!dev || !dev->i2c || !status)
         return AS5600_ERR_PARAM;
 
     if (!read_regs(dev, REG_STATUS, status, 1))
@@ -115,7 +125,7 @@ as5600_err_t as5600_read_status(const as5600_t *dev, uint8_t *status)
 
 as5600_err_t as5600_set_start_position(const as5600_t *dev, uint16_t pos)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return AS5600_ERR_PARAM;
     if (pos > ANGLE_MASK)
         return AS5600_ERR_PARAM;
@@ -125,7 +135,7 @@ as5600_err_t as5600_set_start_position(const as5600_t *dev, uint16_t pos)
 
 as5600_err_t as5600_set_max_angle(const as5600_t *dev, uint16_t angle)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return AS5600_ERR_PARAM;
     if (angle > ANGLE_MASK)
         return AS5600_ERR_PARAM;

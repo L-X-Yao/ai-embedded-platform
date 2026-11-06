@@ -269,6 +269,46 @@ TEST(test_read_raw_angle_12bit_mask)
     ASSERT_EQ(raw, 4095);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(as5600_t *d)
+{
+    uint16_t raw;
+    float degrees;
+    uint8_t status;
+    ASSERT_EQ(as5600_read_raw_angle(d, &raw), AS5600_ERR_PARAM);
+    ASSERT_EQ(as5600_read_degrees(d, &degrees), AS5600_ERR_PARAM);
+    ASSERT_EQ(as5600_read_status(d, &status), AS5600_ERR_PARAM);
+    ASSERT_EQ(as5600_set_start_position(d, 100), AS5600_ERR_PARAM);
+    ASSERT_EQ(as5600_set_max_angle(d, 1000), AS5600_ERR_PARAM);
+}
+
+/* The chip has no ID: this status read is all that shows it answers */
+TEST(test_device_refused_after_failed_status_read)
+{
+    as5600_t d;
+    mock_reset();
+    mock_fail_at = 0;
+    ASSERT_EQ(as5600_init(&d, &mock_i2c), AS5600_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const as5600_i2c_t no_callbacks;
+    as5600_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(as5600_init(&d, NULL), AS5600_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(as5600_init(&d, &no_callbacks), AS5600_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("as5600")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -294,4 +334,6 @@ TEST_MAIN("as5600")
     RUN(test_set_12bit_failed_read_writes_nothing);
     RUN(test_set_12bit_write_fail);
     RUN(test_read_raw_angle_12bit_mask);
+    RUN(test_device_refused_after_failed_status_read);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

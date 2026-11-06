@@ -487,6 +487,36 @@ TEST(test_wrong_device_address_gets_no_ack)
  * Main
  * ============================================================ */
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(const at24cxx_t *d)
+{
+    uint8_t buf[1] = { 0 };
+    ASSERT_EQ(at24cxx_read(d, 0, buf, 1), AT24CXX_ERR_PARAM);
+    ASSERT_EQ(at24cxx_write(d, 0, buf, 1), AT24CXX_ERR_PARAM);
+    ASSERT_EQ(at24cxx_write_byte(d, 0, 0x55), AT24CXX_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const at24cxx_i2c_t no_callbacks;
+    at24cxx_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(at24cxx_init(&d, NULL, 0x50, AT24CXX_C02), AT24CXX_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(at24cxx_init(&d, &no_callbacks, 0x50, AT24CXX_C02), AT24CXX_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(at24cxx_init(&d, &i2c_8bit, 0x50, (at24cxx_model_t)1000), AT24CXX_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("at24cxx")
     RUN(test_init_valid);
     RUN(test_init_null_dev);
@@ -513,4 +543,5 @@ TEST_MAIN("at24cxx")
     RUN(test_mock_page_write_wraps_inside_the_page);
     RUN(test_mock_read_rolls_over);
     RUN(test_wrong_device_address_gets_no_ack);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

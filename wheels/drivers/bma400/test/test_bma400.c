@@ -456,6 +456,42 @@ TEST(test_read_after_failed_init_is_rejected)
     ASSERT_EQ(bma400_read(&d, &data), BMA400_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(bma400_t *d)
+{
+    bma400_data_t data;
+    ASSERT_EQ(bma400_read(d, &data), BMA400_ERR_PARAM);
+    ASSERT_EQ(bma400_set_power(d, BMA400_POWER_NORMAL), BMA400_ERR_PARAM);
+    ASSERT_EQ(bma400_set_range(d, BMA400_RANGE_4G), BMA400_ERR_PARAM);
+}
+
+/* The read was refused for its sensitivity, but the setters had no such check */
+TEST(test_device_refused_after_wrong_id)
+{
+    bma400_t d;
+    mock_reset();
+    mock_regs[0x00] = 0x91;
+    ASSERT_EQ(bma400_init(&d, &mock_i2c, &default_cfg), BMA400_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bma400_i2c_t no_callbacks;
+    bma400_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bma400_init(&d, NULL, &default_cfg), BMA400_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bma400_init(&d, &no_callbacks, &default_cfg), BMA400_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bma400")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -491,4 +527,6 @@ TEST_MAIN("bma400")
     RUN(test_set_range_detects_dropped_write);
     RUN(test_read_in_sleep_is_rejected);
     RUN(test_read_after_failed_init_is_rejected);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

@@ -93,20 +93,9 @@ static bma400_err_t write_power(const bma400_t *dev, bma400_power_t mode)
     return BMA400_OK;
 }
 
-bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
-                         const bma400_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bma400_err_t bring_up(bma400_t *dev, const bma400_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return BMA400_ERR_PARAM;
-    if (!i2c->read_regs || !i2c->write_reg)
-        return BMA400_ERR_PARAM;
-    if ((unsigned)cfg->range > 3 || (unsigned)cfg->power > 2)
-        return BMA400_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Verify chip identity */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
@@ -124,6 +113,35 @@ bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
         return err;
 
     dev->sensitivity = range_sensitivity[cfg->range & 0x03u];
+    return BMA400_OK;
+}
+
+bma400_err_t bma400_init(bma400_t *dev, const bma400_i2c_t *i2c,
+                         const bma400_cfg_t *cfg)
+{
+    if (!dev)
+        return BMA400_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return BMA400_ERR_PARAM;
+    if (!i2c->read_regs || !i2c->write_reg)
+        return BMA400_ERR_PARAM;
+    if ((unsigned)cfg->range > 3 || (unsigned)cfg->power > 2)
+        return BMA400_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    bma400_err_t err = bring_up(dev, cfg);
+    if (err != BMA400_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return BMA400_OK;
