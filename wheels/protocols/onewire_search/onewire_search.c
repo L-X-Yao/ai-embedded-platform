@@ -64,9 +64,11 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
 
     /* Reset bus -- check for presence */
     if (!state->bus->reset(state->bus->ctx)) {
-        /* No presence detected -- no devices on bus */
-        state->last_device = true;
-        memset(state->rom, 0, sizeof(state->rom));
+        /* With nothing found yet this is an empty bus and the search is over.
+         * After a device it is a glitch, so leave the state for a retry. */
+        if (state->last_discrepancy == 0) {
+            state->last_device = true;
+        }
         return ONEWIRE_SEARCH_ERR_BUS;
     }
 
@@ -95,10 +97,9 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
         uint8_t direction;
 
         if (id_bit == 1u && cmp_bit == 1u) {
-            /* No devices responding -- bus error or all devices gone */
-            state->last_device = true;
-            memset(state->rom, 0, sizeof(state->rom));
-            return ONEWIRE_SEARCH_ERR_NONE_FOUND;
+            /* No devices responding -- one misread bit deselects them all,
+             * so this says nothing about what is left to find. */
+            return ONEWIRE_SEARCH_ERR_BUS;
         }
 
         if (id_bit != cmp_bit) {

@@ -64,9 +64,12 @@ onewire_search_err_t onewire_search_init(onewire_search_state_t *state,
 
 /** Find the next device on the bus. Returns ROM code in *rom.
  *  Returns ONEWIRE_SEARCH_ERR_NONE_FOUND when all devices have been enumerated.
- *  ONEWIRE_SEARCH_ERR_CRC leaves the search where it was, so calling again
- *  retries the same device. So does ONEWIRE_SEARCH_ERR_BUS for a ROM with
- *  family code 0, which is what a bus stuck low reads as.
+ *  ONEWIRE_SEARCH_ERR_CRC and ONEWIRE_SEARCH_ERR_BUS leave the search where it
+ *  was, so calling again retries the same device. ERR_BUS means no presence, no
+ *  device answering in mid walk, or a ROM with family code 0, which is what a
+ *  bus stuck low reads as. A fault that lasts keeps returning it, so bound any
+ *  retries. The one exception: no presence before any device has been found is
+ *  an empty bus, which ends the search. onewire_search_first looks again.
  *  @thread_safe: no  @isr_safe: no */
 onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
                                           onewire_search_rom_t *rom);
@@ -77,7 +80,7 @@ onewire_search_err_t onewire_search_next(onewire_search_state_t *state,
 onewire_search_err_t onewire_search_first(onewire_search_state_t *state,
                                            onewire_search_rom_t *rom);
 
-/** Check if the last search found the final device.
+/** Check if the last search found the final device, or found the bus empty.
  *  @thread_safe: yes @isr_safe: yes */
 bool onewire_search_done(const onewire_search_state_t *state);
 
