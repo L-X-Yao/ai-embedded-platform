@@ -174,7 +174,7 @@ do_flash() {
         -c "flash write_image erase $BIN_PATH $FLASH_ADDR bin" \
         -c "verify_image $BIN_PATH $FLASH_ADDR bin" \
         -c "reset run" \
-        -c "shutdown" 2>&1)
+        -c "shutdown" 2>&1) || true    # the verified check below decides
     if echo "$output" | grep -q "verified"; then
         echo "$output" | grep "verified"
         echo "[OK] Flash + verify done"
@@ -300,6 +300,12 @@ case "$ACTION" in
     build) do_build ;;
     flash) do_flash ;;
     check) do_check ;;
-    all)   do_build && do_flash && do_check ;;
+    all)
+        # One statement each: in 'do_build && do_flash' set -e is off inside
+        # do_build, so a failed BUILD_CMD would flash the old binary.
+        do_build
+        do_flash
+        do_check
+        ;;
     *)     usage ;;
 esac
