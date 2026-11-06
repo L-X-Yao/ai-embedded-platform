@@ -12,6 +12,12 @@
  * The model intercepts the I2C calls to simulate SMBus command-response
  * behavior over the register map.  A write call ends with STOP, so only
  * write_read, which keeps the repeated START, gets an answer.
+ *
+ * EEPROM: the emissivity cell needs an erase (write 0) first, p.13 and p.19, and
+ * every write or erase keeps the EEPROM busy for 5 ms, p.16.  The manual does
+ * not say what breaking those rules does, so this is the model's choice: a
+ * write over an unerased cell comes out as the OR of old and new, and a write
+ * while busy is lost.  Only the delay callback lets time pass.
  */
 
 #ifndef HW_MODEL_MLX90614_H
@@ -24,6 +30,9 @@
 #define MLX_REG_TOBJ1      0x07u   /* object 1 temperature */
 #define MLX_REG_EMISSIVITY 0x24u   /* emissivity EEPROM */
 
+/* p.16: "Wait at least 5ms (10ms to be on the safe side)" */
+#define MLX_EEPROM_WRITE_MS 5u
+
 /* Internal storage: 16-bit values stored as 2 consecutive byte slots
  * using (reg * 2) mapping to avoid collision in 256-byte space */
 #define MLX_SLOT(reg) ((uint8_t)((reg) * 2))
@@ -35,6 +44,9 @@ typedef struct {
     float            true_ambient_temp_c;  /* simulated ambient temperature */
     uint8_t          last_cmd;             /* last command read */
     int              word_reads;           /* read words answered */
+    uint32_t         eeprom_busy_ms;       /* time left of the last write */
+    int              unerased_writes;      /* writes over an unerased cell */
+    int              busy_writes;          /* writes lost while busy */
 } mlx90614_model_t;
 
 /* Convert Celsius to MLX90614 raw (raw = K * 50 = (C + 273.15) * 50) */
@@ -92,9 +104,24 @@ static bool mlx90614_model_write(void *ctx, uint8_t dev_addr,
         uint8_t frame[4] = { (uint8_t)(dev_addr << 1), data[0], data[1], data[2] };
         if (len != 4 || mlx_model_pec(frame, 4) != data[3]) return false;
 
+        if (m->eeprom_busy_ms != 0) {
+            m->busy_writes++;
+            return true;
+        }
+
         uint8_t slot = MLX_SLOT(MLX_REG_EMISSIVITY);
-        m->hw.regs[slot]     = data[1];  /* LSB */
-        m->hw.regs[slot + 1] = data[2];  /* MSB */
+        uint8_t lsb = data[1];
+        uint8_t msb = data[2];
+        bool erased  = (m->hw.regs[slot] | m->hw.regs[slot + 1]) == 0;
+        bool erasing = (lsb | msb) == 0;
+        if (!erased && !erasing) {
+            m->unerased_writes++;
+            lsb |= m->hw.regs[slot];
+            msb |= m->hw.regs[slot + 1];
+        }
+        m->hw.regs[slot]     = lsb;
+        m->hw.regs[slot + 1] = msb;
+        m->eeprom_busy_ms = MLX_EEPROM_WRITE_MS;
     }
 
     return true;
@@ -144,11 +171,13 @@ static bool mlx90614_model_write_read(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-/* Delay callback (no-op: the model has no EEPROM busy time) */
+/* Delay callback: the EEPROM finishes its write while the host waits */
 __attribute__((unused))
 static void mlx90614_model_delay(void *ctx, uint32_t ms)
 {
-    (void)ctx; (void)ms;
+    mlx90614_model_t *m = (mlx90614_model_t *)ctx;
+
+    m->eeprom_busy_ms = (ms >= m->eeprom_busy_ms) ? 0 : m->eeprom_busy_ms - ms;
 }
 
 static void mlx90614_model_init(mlx90614_model_t *m)
