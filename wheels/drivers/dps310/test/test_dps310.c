@@ -6,28 +6,52 @@
 /* ---------- chip-specific mock setup ---------- */
 
 /*
- * DPS310 uses MEAS_CFG (0x08) for both command writes and status reads.
- * Writing a measurement command to bits [2:0] would overwrite the ready
- * flags in bits [6:4] with the raw mock. We wrap write_reg to simulate
- * the sensor's behavior: when a measurement command is written, the
- * ready flags are immediately asserted (simulating instant completion).
+ * DPS310 uses MEAS_CFG (0x08) for both command writes and status reads, and
+ * p.32 makes everything but MEAS_CTRL read-only. We wrap write_reg so a write
+ * leaves the status bits alone. A command measurement ends at once here: its
+ * ready flag rises and MEAS_CTRL is back at 000, Standby. The time it takes
+ * is in the hardware model.
  */
 static bool dps310_mock_write_reg(void *ctx, uint8_t dev_addr,
                                    uint8_t reg, uint8_t val)
 {
+    uint8_t meas_cfg = mock_regs[0x08];
     bool ok = mock_i2c_write_reg(ctx, dev_addr, reg, val);
     if (!ok) { return false; }
 
-    /* Simulate instant measurement completion on MEAS_CFG writes */
     if (reg == 0x08u)
     {
-        if (val & 0x02u)  /* temperature command */
+        mock_regs[0x08] = (uint8_t)(meas_cfg & 0xF0u);
+        if ((val & 0x07u) == 0x02u)  /* temperature command */
         {
             mock_regs[0x08] |= 0x20u;  /* TMP_RDY */
         }
-        if (val & 0x01u)  /* pressure command */
+        if ((val & 0x07u) == 0x01u)  /* pressure command */
         {
             mock_regs[0x08] |= 0x10u;  /* PRS_RDY */
+        }
+    }
+    return true;
+}
+
+/* p.32: a ready flag is "Cleared when" its result is read */
+static bool dps310_mock_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                  uint8_t *buf, uint16_t len)
+{
+    bool ok = mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+    if (!ok) { return false; }
+
+    for (uint16_t i = 0; i < len; i++)
+    {
+        unsigned r = (unsigned)reg + i;
+
+        if (r <= 0x02u)
+        {
+            mock_regs[0x08] &= (uint8_t)~0x10u;  /* PRS_RDY */
+        }
+        else if (r <= 0x05u)
+        {
+            mock_regs[0x08] &= (uint8_t)~0x20u;  /* TMP_RDY */
         }
     }
     return true;
@@ -98,7 +122,7 @@ static void mock_reset(void)
 
 static const dps310_i2c_t mock_i2c_hal = {
     .write_reg = dps310_mock_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = dps310_mock_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
@@ -505,6 +529,59 @@ TEST(test_init_raw_mock)
     ASSERT_EQ(e, DPS310_OK);
 }
 
+/* ---------- the mock's MEAS_CFG, from p.32 ---------- */
+
+TEST(test_meas_cfg_write_leaves_the_status_bits)
+{
+    mock_reset();
+    /* COEF_RDY, SENSOR_RDY, TMP_RDY and PRS_RDY have type r */
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0x00));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0xF0));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+}
+
+TEST(test_command_measurement_ends_in_standby)
+{
+    mock_reset();
+    /* Figure 3: Manual MM goes back to Standby, so MEAS_CTRL reads 000 */
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0x02));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xE0);
+}
+
+TEST(test_undefined_meas_ctrl_starts_nothing)
+{
+    mock_reset();
+    /* 011 and 100 are "na" */
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0x03));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+}
+
+TEST(test_reading_a_result_clears_its_ready_flag)
+{
+    uint8_t buf[3];
+    mock_reset();
+    /* "Cleared when temperature measurement is read." */
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0x02));
+    ASSERT_TRUE(mock_i2c_hal.read_regs(NULL, DPS310_ADDR_HIGH, 0x03, buf, 3));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+    /* "Cleared when pressurement measurement is read." */
+    ASSERT_TRUE(mock_i2c_hal.write_reg(NULL, DPS310_ADDR_HIGH, 0x08, 0x01));
+    ASSERT_TRUE(mock_i2c_hal.read_regs(NULL, DPS310_ADDR_HIGH, 0x00, buf, 3));
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+}
+
+TEST(test_read_takes_both_results)
+{
+    setup();
+    plant_tmp(131072);
+    plant_prs(524288);
+
+    dps310_data_t data;
+    ASSERT_EQ(dps310_read(&dev, &data), DPS310_OK);
+    ASSERT_EQ_HEX(mock_regs[0x08], 0xC0);
+}
+
 TEST_MAIN("dps310")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -541,4 +618,9 @@ TEST_MAIN("dps310")
     RUN(test_zero_hal_safety);
     RUN(test_read_data_parsing);
     RUN(test_init_raw_mock);
+    RUN(test_meas_cfg_write_leaves_the_status_bits);
+    RUN(test_command_measurement_ends_in_standby);
+    RUN(test_undefined_meas_ctrl_starts_nothing);
+    RUN(test_reading_a_result_clears_its_ready_flag);
+    RUN(test_read_takes_both_results);
 TEST_MAIN_END()
