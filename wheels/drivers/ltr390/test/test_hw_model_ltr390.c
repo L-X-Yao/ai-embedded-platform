@@ -24,6 +24,26 @@ static ltr390_err_t setup(void)
     return ltr390_init(&dev, &hw_i2c, &default_cfg);
 }
 
+/* p.13: "UVS Mode: UVS+UVS Comp channels activated, ALS and Comp channels
+ * deactivated", so UVS data needs UVS mode */
+static void setup_uvs(void)
+{
+    (void)setup();
+    (void)ltr390_set_mode(&dev, LTR390_MODE_UVS);
+}
+
+static void poke(uint8_t reg, uint8_t val)
+{
+    (void)hw_model_write_reg(NULL, LTR390_DEV_ADDR, reg, val);
+}
+
+static uint8_t peek(uint8_t reg)
+{
+    uint8_t val = 0xA5;
+    (void)hw_model_read_regs(NULL, LTR390_DEV_ADDR, reg, &val, 1);
+    return val;
+}
+
 /* ---- init ---- */
 
 TEST(test_hw_init_ok)
@@ -169,6 +189,7 @@ TEST(test_hw_read_als_zero)
 {
     setup();
     hw_model_inject_als(0);
+    hw_model_finish_conversion();
     uint32_t raw = 0xFFFFFFFF;
     ltr390_err_t e = ltr390_read_als(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -179,6 +200,7 @@ TEST(test_hw_read_als_known_value)
 {
     setup();
     hw_model_inject_als(12345);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_als(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -189,6 +211,7 @@ TEST(test_hw_read_als_max_20bit)
 {
     setup();
     hw_model_inject_als(0x000FFFFF);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_als(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -200,6 +223,7 @@ TEST(test_hw_read_als_byte_order)
     /* Inject value 0x0A0B0C: byte0=0x0C, byte1=0x0B, byte2=0x0A */
     setup();
     hw_model_inject_als(0x000A0B0Cu);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_als(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -210,8 +234,9 @@ TEST(test_hw_read_als_byte_order)
 
 TEST(test_hw_read_uvs_zero)
 {
-    setup();
+    setup_uvs();
     hw_model_inject_uvs(0);
+    hw_model_finish_conversion();
     uint32_t raw = 0xFFFFFFFF;
     ltr390_err_t e = ltr390_read_uvs(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -220,8 +245,9 @@ TEST(test_hw_read_uvs_zero)
 
 TEST(test_hw_read_uvs_known_value)
 {
-    setup();
+    setup_uvs();
     hw_model_inject_uvs(54321);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_uvs(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -230,8 +256,9 @@ TEST(test_hw_read_uvs_known_value)
 
 TEST(test_hw_read_uvs_max_20bit)
 {
-    setup();
+    setup_uvs();
     hw_model_inject_uvs(0x000FFFFF);
+    hw_model_finish_conversion();
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_uvs(&dev, &raw);
     ASSERT_EQ(e, LTR390_OK);
@@ -353,6 +380,9 @@ TEST(test_hw_als_uvs_data_isolated)
     setup();
     hw_model_inject_als(0x00012345u);
     hw_model_inject_uvs(0x000ABCDEu);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
+    hw_model_finish_conversion();
 
     uint32_t als = 0, uvs = 0;
     ASSERT_EQ(ltr390_read_als(&dev, &als), LTR390_OK);
@@ -370,6 +400,189 @@ TEST(test_zero_init_safety)
     ltr390_t zero_dev;
     memset(&zero_dev, 0, sizeof(zero_dev));
     ASSERT_TRUE(ltr390_init(&zero_dev, &zero_hal, &default_cfg) < 0);
+}
+
+/* ---- the model against the manual ---- */
+
+/* p.12: the reset values */
+TEST(test_hw_model_reset_values)
+{
+    hw_model_reset();
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x00], 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x04], 0x22);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x05], 0x01);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x06], 0xB2);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x07], 0x20);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x19], 0x10);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x1A], 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x21], 0xFF);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x22], 0xFF);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x23], 0x0F);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x24], 0x00);
+}
+
+/* p.16, Power-On Status: "This flag is cleared after the register is read". Data
+ * status: "will be cleared after read". */
+TEST(test_hw_model_status_clears_on_read)
+{
+    hw_model_reset();
+    ASSERT_EQ_HEX(peek(0x07), 0x20);
+    ASSERT_EQ_HEX(peek(0x07), 0x00);
+
+    poke(0x00, 0x02);
+    hw_model_finish_conversion();
+    ASSERT_EQ_HEX(peek(0x07), 0x08);
+    ASSERT_EQ_HEX(peek(0x07), 0x00);
+}
+
+/* p.16: "UVS/ALS data is old data (Data has been read)" */
+TEST(test_hw_model_reading_the_data_makes_it_old)
+{
+    hw_model_reset();
+    poke(0x00, 0x02);
+    hw_model_finish_conversion();
+    ASSERT_TRUE(ltr390_mdl.regs[0x07] & 0x08);
+
+    (void)peek(0x0D);
+    ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+}
+
+/* p.14: conversion time by resolution. p.5 and p.25: measurement starts after the
+ * wake-up from standby, typically 5 ms. */
+TEST(test_hw_model_conversion_time_follows_the_resolution)
+{
+    static const struct { uint8_t res; uint32_t us; } rows[] = {
+        { 0, 400000 }, { 1, 200000 }, { 2, 100000 },
+        { 3, 50000 },  { 4, 25000 },  { 5, 12500 },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        hw_model_reset();
+        (void)peek(0x07);
+        poke(0x04, (uint8_t)(rows[i].res << 4));
+        poke(0x00, 0x02);
+        hw_model_advance_us(5000u + rows[i].us - 1u);
+        ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+        hw_model_advance_us(1);
+        ASSERT_TRUE(ltr390_mdl.regs[0x07] & 0x08);
+    }
+}
+
+/* p.14: the rate sets the period, unless "the measurement rate is programmed to
+ * be faster than possible for the programmed ADC measurement", when "the rate
+ * will be lowered" */
+TEST(test_hw_model_rate_sets_the_period)
+{
+    hw_model_reset();
+    poke(0x04, 0x24);   /* 18 bit, 500 ms */
+    poke(0x00, 0x02);
+    hw_model_finish_conversion();
+    (void)peek(0x07);
+    hw_model_advance_us(500000u - 1u);
+    ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+    hw_model_advance_us(1);
+    ASSERT_TRUE(ltr390_mdl.regs[0x07] & 0x08);
+
+    hw_model_reset();
+    poke(0x04, 0x00);   /* 20 bit, 25 ms: too fast */
+    poke(0x00, 0x02);
+    hw_model_finish_conversion();
+    (void)peek(0x07);
+    hw_model_advance_us(400000u - 1u);
+    ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+    hw_model_advance_us(1);
+    ASSERT_TRUE(ltr390_mdl.regs[0x07] & 0x08);
+}
+
+/* p.13: "When writing to this register, it will cause a stop to any ongoing
+ * measurements ALS/UVS and start new measurement." */
+TEST(test_hw_model_main_ctrl_restarts_the_measurement)
+{
+    hw_model_reset();
+    poke(0x00, 0x02);
+    hw_model_advance_us(5000u + 99000u);
+    poke(0x00, 0x02);
+    hw_model_advance_us(99000u);
+    ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+    hw_model_advance_us(1000u);
+    ASSERT_TRUE(ltr390_mdl.regs[0x07] & 0x08);
+}
+
+/* p.13: bit 1 clear is standby, and nothing is measured */
+TEST(test_hw_model_standby_measures_nothing)
+{
+    hw_model_reset();
+    hw_model_inject_als(1000);
+    hw_model_advance_us(1000000u);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x0D], 0x00);
+    ASSERT_FALSE(ltr390_mdl.regs[0x07] & 0x08);
+}
+
+/* p.13: each mode runs its own channel */
+TEST(test_hw_model_mode_picks_the_channel)
+{
+    hw_model_reset();
+    hw_model_inject_als(0x11);
+    hw_model_inject_uvs(0x22);
+    poke(0x00, 0x0A);
+    hw_model_finish_conversion();
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x10], 0x22);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x0D], 0x00);
+
+    poke(0x00, 0x02);
+    hw_model_finish_conversion();
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x0D], 0x11);
+}
+
+/* p.13: bit 4, "Software reset is triggered". p.12 gives what it comes back to. */
+TEST(test_hw_model_software_reset)
+{
+    hw_model_reset();
+    poke(0x05, 0x04);
+    poke(0x04, 0x00);
+    poke(0x21, 0x00);
+    poke(0x00, 0x02);
+    (void)peek(0x07);
+
+    poke(0x00, 0x10);
+
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x00], 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x04], 0x22);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x05], 0x01);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x21], 0xFF);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x07], 0x20);
+
+    hw_model_inject_als(1000);
+    hw_model_advance_us(1000000u);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x0D], 0x00);   /* back in standby */
+}
+
+/* p.12: the COMP data registers are read only, like ALS and UVS */
+TEST(test_hw_model_read_only_registers)
+{
+    hw_model_reset();
+    poke(0x13, 0x55);
+    poke(0x18, 0x55);
+    poke(0x07, 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x13], 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x18], 0x00);
+    ASSERT_EQ_HEX(ltr390_mdl.regs[0x07], 0x20);
+}
+
+/* What the driver sees: straight after init no conversion has ended, so the data
+ * is still the reset value. See Suspected in the README. */
+TEST(test_hw_first_data_only_after_the_first_conversion)
+{
+    setup();
+    hw_model_inject_als(1000);
+
+    uint32_t raw = 0xFFFFFFFFu;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 0u);
+
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 1000u);
 }
 
 TEST_MAIN("ltr390_hw_model")
@@ -409,4 +622,15 @@ TEST_MAIN("ltr390_hw_model")
     RUN(test_init_invalid_mode);
     RUN(test_hw_als_uvs_data_isolated);
     RUN(test_zero_init_safety);
+    RUN(test_hw_model_reset_values);
+    RUN(test_hw_model_status_clears_on_read);
+    RUN(test_hw_model_reading_the_data_makes_it_old);
+    RUN(test_hw_model_conversion_time_follows_the_resolution);
+    RUN(test_hw_model_rate_sets_the_period);
+    RUN(test_hw_model_main_ctrl_restarts_the_measurement);
+    RUN(test_hw_model_standby_measures_nothing);
+    RUN(test_hw_model_mode_picks_the_channel);
+    RUN(test_hw_model_software_reset);
+    RUN(test_hw_model_read_only_registers);
+    RUN(test_hw_first_data_only_after_the_first_conversion);
 TEST_MAIN_END()
