@@ -13,6 +13,10 @@
 #            • passing argument of incompatible pointer type (from opaque types)
 #   FAIL — genuine syntax errors: unexpected token, mismatched braces/parens,
 #           unknown type names that prevent parsing, etc.
+#          — stale API: a wrong argument count, or conflicting types that gcc
+#            shows as different, for a function the wheel's own headers
+#            declare (about any other name these stay SKIP: it comes from the
+#            calling context)
 #
 # Usage:
 #   check_readme_examples.sh                  # check all wheels
@@ -23,7 +27,8 @@
 #
 # Exit codes:
 #   0 — all examples pass or skip
-#   1 — one or more examples have hard syntax errors
+#   1 — one or more examples have hard errors
+#   2 — --wheel named no wheel with a README: nothing was checked
 
 set -euo pipefail
 
@@ -274,6 +279,8 @@ prepare_compile_unit() {
 #   - 'unknown type name'               → type used but never declared anywhere
 #   - 'error: expected declaration'
 #   - 'error: stray'                    → stray Unicode characters
+#   - 'conflicting types', 'too few/many arguments' for a function of the
+#     wheel under test                  → the README disagrees with its header
 #
 # Heuristic: if ALL errors in a block are lenient, classify as SKIP.
 # If ANY error is hard, classify as FAIL.
@@ -302,29 +309,77 @@ is_lenient_error() {
     return 1
 }
 
-classify_errors() {
-    local err_file="$1"
-    # Extract lines that contain ": error:"
-    local error_lines
-    error_lines=$(grep ": error:" "$err_file" 2>/dev/null || true)
+# gcc runs under LC_ALL=C, so the name it reports sits in plain quotes.
+API_MISMATCH_RE="(conflicting types for|too few arguments to function|too many arguments to function) '([A-Za-z_][A-Za-z0-9_]*)'"
+HAVE_TYPE_RE="; have '([^']*)'"
+PREV_TYPE_RE=" with type '([^']*)'"
 
-    if [[ -z "$error_lines" ]]; then
+is_own_api_mismatch() {
+    local line="$1" wheel_dir="$2" err_file="$3"
+    [[ "$line" =~ $API_MISMATCH_RE ]] || return 1
+    local kind="${BASH_REMATCH[1]}" name="${BASH_REMATCH[2]}"
+    grep -qE "\b${name}[[:space:]]*\(" \
+        "$wheel_dir"/*.h "$wheel_dir"/include/*/*.h 2>/dev/null || return 1
+    [[ "$kind" == "conflicting types for" ]] || return 0
+
+    # A block that repeats the header's typedefs inside the snippet wrapper
+    # makes even a correct prototype conflict, because the local typedef is a
+    # new type with the same name. Only a difference gcc can show is stale.
+    local have="" prev="" note
+    [[ "$line" =~ $HAVE_TYPE_RE ]] && have="${BASH_REMATCH[1]}"
+    note="$(grep -E "note: previous (declaration|definition) of '$name' with type '" \
+        "$err_file" | head -1 || true)"
+    [[ "$note" =~ $PREV_TYPE_RE ]] && prev="${BASH_REMATCH[1]}"
+    [[ "$have" != "$prev" ]]
+}
+
+# Prints the ": error:" lines that count against the example.
+hard_error_lines() {
+    local err_file="$1" wheel_dir="$2" eline
+    while IFS= read -r eline; do
+        [[ -n "$eline" ]] || continue
+        if is_own_api_mismatch "$eline" "$wheel_dir" "$err_file" || ! is_lenient_error "$eline"; then
+            printf '%s\n' "$eline"
+        fi
+    done < <(grep ": error:" "$err_file" 2>/dev/null || true)
+}
+
+# READMEs known to disagree with their header, waiting for a fix that this
+# list only postpones: nobody has reviewed or approved these. They stay SKIP
+# as long as a stale API is their only hard error. Delete an entry once its
+# README is fixed; the run prints a note when an entry has gone clean.
+PENDING_README_FIXES=(
+    drivers/bh1750
+    drivers/hmc5883l
+    drivers/mpu6050
+    drivers/qmi8658a
+    modules/config_store
+    protocols/modbus_rtu
+)
+
+is_pending_readme() {
+    local label="$1" entry
+    for entry in "${PENDING_README_FIXES[@]}"; do
+        [[ "$entry" == "$label" ]] && return 0
+    done
+    return 1
+}
+
+classify_errors() {
+    local err_file="$1" wheel_dir="$2" wheel_label="$3"
+    if ! grep -q ": error:" "$err_file" 2>/dev/null; then
         echo "pass"
         return
     fi
 
-    local has_hard=false
-    while IFS= read -r eline; do
-        if ! is_lenient_error "$eline"; then
-            has_hard=true
-            break
-        fi
-    done <<< "$error_lines"
-
-    if $has_hard; then
-        echo "fail"
-    else
+    local hard
+    hard="$(hard_error_lines "$err_file" "$wheel_dir")"
+    if [[ -z "$hard" ]]; then
         echo "skip"
+    elif is_pending_readme "$wheel_label" && ! grep -qvE "$API_MISMATCH_RE" <<< "$hard"; then
+        echo "pending"
+    else
+        echo "fail"
     fi
 }
 
@@ -338,6 +393,8 @@ TOTAL_BLOCKS=0
 TOTAL_PASS=0
 TOTAL_SKIP=0
 TOTAL_FAIL=0
+TOTAL_PENDING=0
+pending_seen=""
 
 # JSON accumulation (simple array of result objects)
 json_results=""
@@ -408,7 +465,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
         #   -I<layers>       — cross-wheel type references (best-effort)
         err_file="$WORK_DIR/err_${layer}_${name}_${block_num}.txt"
         compile_rc=0
-        gcc -std=c99 -fsyntax-only -Wall \
+        LC_ALL=C gcc -std=c99 -fsyntax-only -Wall \
             -Wno-implicit-function-declaration \
             -Wno-unused-function \
             ${header:+-I"$(dirname "$header")"} \
@@ -421,7 +478,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
         if [[ $compile_rc -eq 0 ]]; then
             classification="pass"
         else
-            classification="$(classify_errors "$err_file")"
+            classification="$(classify_errors "$err_file" "$wheel_dir" "$wheel_label")"
             # If no ": error:" line at all (only warnings), treat as pass
             if [[ "$classification" == "pass" ]] && [[ $compile_rc -ne 0 ]]; then
                 classification="skip"
@@ -450,14 +507,22 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
                     json_append_result "$wheel_label" "$block_num" "SKIP" "${detail}"
                 fi
                 ;;
+            pending)
+                TOTAL_SKIP=$((TOTAL_SKIP + 1))
+                TOTAL_PENDING=$((TOTAL_PENDING + 1))
+                pending_seen+=" $wheel_label "
+                if ! $QUIET; then
+                    echo -e "  ${YELLOW}PEND${NC}  block $block_num (stale API, README fix pending)"
+                fi
+                if $JSON_MODE; then
+                    detail="$(hard_error_lines "$err_file" "$wheel_dir" | head -1 | sed 's/"/\\"/g' || true)"
+                    json_append_result "$wheel_label" "$block_num" "SKIP" "${detail}"
+                fi
+                ;;
             fail)
                 TOTAL_FAIL=$((TOTAL_FAIL + 1))
                 wheel_failed=true
-                err_lines="$(grep ': error:' "$err_file" 2>/dev/null | \
-                    grep -v 'undeclared\|implicit\|conflicting types\|No such file' | head -5 || true)"
-                if [[ -z "$err_lines" ]]; then
-                    err_lines="$(grep ': error:' "$err_file" 2>/dev/null | head -5 || true)"
-                fi
+                err_lines="$(hard_error_lines "$err_file" "$wheel_dir" | head -5 || true)"
                 if $QUIET; then
                     echo -e "${RED}FAIL${NC}  ${wheel_label} block ${block_num}"
                     echo "$err_lines" | while IFS= read -r eline; do
@@ -471,9 +536,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
                     done
                 fi
                 if $JSON_MODE; then
-                    detail="$(grep ': error:' "$err_file" 2>/dev/null | \
-                        grep -v 'undeclared\|implicit\|conflicting types\|No such file' | \
-                        head -1 | sed 's/"/\\"/g' || true)"
+                    detail="$(hard_error_lines "$err_file" "$wheel_dir" | head -1 | sed 's/"/\\"/g' || true)"
                     json_append_result "$wheel_label" "$block_num" "FAIL" "${detail}"
                 fi
                 ;;
@@ -485,6 +548,19 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
     fi
 done
 
+if [[ -n "$WHEEL_FILTER" && $WHEELS_CHECKED -eq 0 ]]; then
+    echo "ERROR: no wheel named '$WHEEL_FILTER' with a README: nothing checked" >&2
+    exit 2
+fi
+
+if [[ -z "$WHEEL_FILTER" ]] && ! $JSON_MODE; then
+    for entry in "${PENDING_README_FIXES[@]}"; do
+        if [[ "$pending_seen" != *" $entry "* ]]; then
+            echo "NOTE: $entry is clean: delete it from PENDING_README_FIXES"
+        fi
+    done
+fi
+
 # -----------------------------------------------------------------------
 # Summary
 # -----------------------------------------------------------------------
@@ -495,22 +571,22 @@ if ! $QUIET; then
     echo "  Wheels with C examples:  $WHEELS_WITH_BLOCKS"
     echo "  Total C blocks:          $TOTAL_BLOCKS"
     echo -e "  ${GREEN}PASS${NC}:                    $TOTAL_PASS"
-    echo -e "  ${YELLOW}SKIP${NC} (lenient):          $TOTAL_SKIP"
-    echo -e "  ${RED}FAIL${NC} (hard syntax):      $TOTAL_FAIL"
+    echo -e "  ${YELLOW}SKIP${NC} (lenient):          $TOTAL_SKIP ($TOTAL_PENDING pending README fixes)"
+    echo -e "  ${RED}FAIL${NC} (hard):             $TOTAL_FAIL"
     echo "  Wheels with failures:    $WHEELS_FAILED"
     echo ""
     if [[ $TOTAL_FAIL -eq 0 ]]; then
         echo -e "${GREEN}All examples pass or have only lenient issues.${NC}"
     else
-        echo -e "${RED}${TOTAL_FAIL} example(s) have hard syntax errors — see details above.${NC}"
+        echo -e "${RED}${TOTAL_FAIL} example(s) have hard errors — see details above.${NC}"
     fi
 else
     # Compact summary even in quiet mode
     echo ""
     if [[ $TOTAL_FAIL -eq 0 ]]; then
-        echo -e "${GREEN}check-readme-examples: ${TOTAL_PASS} PASS, ${TOTAL_SKIP} SKIP, 0 FAIL${NC}"
+        echo -e "${GREEN}check-readme-examples: ${TOTAL_PASS} PASS, ${TOTAL_SKIP} SKIP (${TOTAL_PENDING} pending README fixes), 0 FAIL${NC}"
     else
-        echo -e "${RED}check-readme-examples: ${TOTAL_PASS} PASS, ${TOTAL_SKIP} SKIP, ${TOTAL_FAIL} FAIL (${WHEELS_FAILED} wheels)${NC}"
+        echo -e "${RED}check-readme-examples: ${TOTAL_PASS} PASS, ${TOTAL_SKIP} SKIP (${TOTAL_PENDING} pending README fixes), ${TOTAL_FAIL} FAIL (${WHEELS_FAILED} wheels)${NC}"
     fi
 fi
 
