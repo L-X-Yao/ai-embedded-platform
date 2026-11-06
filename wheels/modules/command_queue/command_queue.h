@@ -64,7 +64,7 @@ command_queue_err_t command_queue_push(command_queue_t *q,
 command_queue_err_t command_queue_pop(command_queue_t *q,
                                      command_queue_item_t *out);
 
-/** @thread_safe: yes (read only) */
+/** @thread_safe: no — copies an item that push and pop move */
 command_queue_err_t command_queue_peek(const command_queue_t *q,
                                       command_queue_item_t *out);
 
