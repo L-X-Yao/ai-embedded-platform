@@ -11,9 +11,11 @@
 #   3. Remove matching entry from WISHLIST.md
 #   4. Update all projects/*/CLAUDE.md wheel table references
 #   5. Update all CMakeLists.txt / .c / .h that reference the old path
-#   6. Print summary of changes for review
+#   6. Test the wheel and its consumers, and run the audit
+#   7. Print summary of changes for review
 #
 # The script does NOT commit — review the diff and commit manually.
+# Exit 1 if a step 6 check fails; the move stays in the tree for review.
 
 set -euo pipefail
 
@@ -190,27 +192,62 @@ done < <(find "$REPO/projects" -name "CLAUDE.md" 2>/dev/null)
 # --- Step 5: Update source references -----------------------------------------
 
 echo -e "${BOLD}[5/5] Update source references (CMakeLists.txt, .c, .h)${NC}"
-ref_files=$(grep -rl "wheels/$FROM" "$REPO/projects" "$REPO/wheels" \
-    --include="*.txt" --include="*.c" --include="*.h" --include="*.cmake" \
-    --exclude-dir="build" --exclude-dir="build_*" --exclude-dir=".cmake" \
-    2>/dev/null || true)
-if [[ -n "$ref_files" ]]; then
+# A wheel is named four ways: wheels/<layer>/<name> from projects and examples,
+# ${WHEELS}/<layer>/<name> or ${WHEELS_DIR}/... from examples,
+# ../../../<layer>/<name> from any wheel, and ../../<name> from its own layer.
+to_layer=$(echo "$TO" | cut -d'/' -f1)
+REF_FILTER=(--include="*.txt" --include="*.c" --include="*.h" --include="*.cmake"
+            --exclude-dir="build" --exclude-dir="build_*" --exclude-dir=".cmake")
+END='([^a-z0-9_]|$)'    # so crc16 does not match crc16_extra
+ref_count=0
+
+# rewrite_refs <pattern> <sed replacement> <search roots...>
+rewrite_refs() {
+    local pattern="$1" replacement="$2" ref_file
+    shift 2
     while IFS= read -r ref_file; do
         [[ -z "$ref_file" ]] && continue
-        rel=${ref_file#$REPO/}
-        echo "  $rel"
+        echo "  ${ref_file#$REPO/}"
         if ! $DRY_RUN; then
-            sed -i "s|wheels/$FROM|wheels/$TO|g" "$ref_file"
+            sed -i -E "s#$pattern#$replacement#g" "$ref_file"
         fi
-        CHANGES=$((CHANGES + 1))
-    done <<< "$ref_files"
-    echo "  → updated"
-else
-    echo "  No source references to wheels/$FROM"
+        ref_count=$((ref_count + 1))
+    done < <(grep -rlE "$pattern" "$@" "${REF_FILTER[@]}" 2>/dev/null || true)
+}
+
+rewrite_refs "(wheels/|\.\./|\\\$\{WHEELS(_DIR)?\}/)$FROM$END" "\1$TO\3" \
+    "$REPO/projects" "$REPO/wheels" "$REPO/examples"
+
+if [[ "$from_layer" != "$to_layer" ]]; then
+    rewrite_refs "\.\./\.\./$FROM_NAME$END" "../../../$TO\1" "$REPO/wheels/$from_layer"
+
+    # The moved wheel's own ../../<sibling> now lands in the wrong layer.
+    moved_dir="$TO_DIR"
+    $DRY_RUN && moved_dir="$FROM_DIR"
+    while IFS= read -r sibling; do
+        [[ -d "$REPO/wheels/$from_layer/$sibling" ]] || continue
+        rewrite_refs "\.\./\.\./$sibling$END" "../../../$from_layer/$sibling\1" "$moved_dir"
+    done < <(grep -rhoE '\.\./\.\./[a-z0-9_]+/' "$moved_dir" "${REF_FILTER[@]}" 2>/dev/null \
+                 | sed -E 's#^\.\./\.\./##; s#/$##' | sort -u || true)
 fi
 
-# --- Auto-verify (test + audit) -----------------------------------------------
+if [[ $ref_count -gt 0 ]]; then
+    echo "  → updated"
+    CHANGES=$((CHANGES + ref_count))
+else
+    echo "  No source references to $FROM"
+fi
 
+tool_refs=$(grep -rlE "wheels/$FROM$END" "$REPO/tooling" \
+    --include="*.sh" --include="*.py" --include="*.c" 2>/dev/null || true)
+if [[ -n "$tool_refs" ]]; then
+    echo -e "  ${YELLOW}Update these by hand, they list wheels by path:${NC}"
+    echo "$tool_refs" | sed "s|^$REPO/|    |"
+fi
+
+# --- Auto-verify (test + consumers + audit) -----------------------------------
+
+VERIFY_OK=true
 if ! $DRY_RUN; then
     echo ""
     echo -e "${BOLD}[Auto] Running tests for $WHEEL_NAME${NC}"
@@ -218,14 +255,27 @@ if ! $DRY_RUN; then
         echo -e "  ${GREEN}Tests passed${NC}"
     else
         echo -e "  ${RED}Tests FAILED — review before committing${NC}"
+        VERIFY_OK=false
     fi
+
+    echo ""
+    echo -e "${BOLD}[Auto] Testing wheels that use $WHEEL_NAME${NC}"
+    downstream_rc=0
+    bash "$REPO/tooling/test/test_downstream.sh" "$WHEEL_NAME" 2>&1 || downstream_rc=$?
+    case "$downstream_rc" in
+        0) echo -e "  ${GREEN}Downstream passed${NC}" ;;
+        2) echo "  Downstream: no consumers" ;;
+        *) echo -e "  ${RED}Downstream FAILED — review before committing${NC}"
+           VERIFY_OK=false ;;
+    esac
 
     echo ""
     echo -e "${BOLD}[Auto] Running wheel audit${NC}"
     if python3 "$REPO/tooling/audit/audit_wheels.py" --quiet 2>&1; then
         echo -e "  ${GREEN}Audit passed${NC}"
     else
-        echo -e "  ${YELLOW}Audit warnings — review output above${NC}"
+        echo -e "  ${RED}Audit FAILED — review output above${NC}"
+        VERIFY_OK=false
     fi
 fi
 
@@ -242,6 +292,9 @@ fi
 
 if $DRY_RUN; then
     echo -e "  ${YELLOW}Dry run — no files were modified. Remove --dry-run to execute.${NC}"
+elif ! $VERIFY_OK; then
+    echo -e "  ${RED}VERIFICATION FAILED.${NC} The move is left in the tree: review with git diff"
+    exit 1
 else
     echo -e "  ${GREEN}Done.${NC} Review with: git diff"
     echo ""
