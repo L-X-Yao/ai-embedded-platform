@@ -81,7 +81,7 @@ void telemetry_reset(telemetry_t *t);
 
 | Macro | Default | Description |
 |-------|---------|-------------|
-| `TELEMETRY_MAX_FIELDS` | 16 | Max registered fields |
+| `TELEMETRY_MAX_FIELDS` | 16 | Max registered fields, at most 255 |
 | `TELEMETRY_BUF_SIZE` | 512 | Internal format buffer size (bytes) |
 
 ## Supported platforms
@@ -126,7 +126,7 @@ None.
 
 | Aspect | Choice | Rationale |
 |--------|--------|-----------|
-| Float format | snprintf %.2f + trim | Portable, readable, small code |
+| Float format | Integer arithmetic, digits of %.2f + trim | Needs no float printf (newlib-nano) and no heap |
 | Field storage | Static array | No malloc, predictable memory footprint |
 | Name lookup | Linear scan | Simple, fast enough for <= 16 fields |
 | Timestamp | Caller-provided | No OS dependency, application controls time source |

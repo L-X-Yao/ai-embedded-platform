@@ -34,7 +34,7 @@ int         param_table_list(const param_table_t *pt, char *buf, uint16_t size);
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| PARAM_MAX_ENTRIES | 32 | Maximum number of parameters |
+| PARAM_MAX_ENTRIES | 32 | Maximum number of parameters, at most 255 |
 | PARAM_VALUE_SIZE  | 32 | Maximum value string length (including NUL) |
 
 ## Supported platforms

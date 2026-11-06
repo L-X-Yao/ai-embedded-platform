@@ -46,8 +46,8 @@ bencode_err_t bencode_decode_next(bencode_decoder_t *dec,
 
 ## Configuration (compile-time)
 
-`BENCODE_MAX_DEPTH` (default 16) is the deepest nesting the decoder tracks. One
-level more returns `BENCODE_ERR_OVERFLOW`.
+`BENCODE_MAX_DEPTH` (default 16) is the deepest nesting the decoder tracks, at most
+255. One level more returns `BENCODE_ERR_OVERFLOW`.
 
 ## Supported platforms
 

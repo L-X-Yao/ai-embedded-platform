@@ -35,8 +35,12 @@ event_bus_err_t event_bus_publish(event_bus_t *bus, uint16_t event_id,
 
 | Macro | Default | Description |
 |-------|---------|-------------|
-| `EVENT_BUS_MAX_EVENTS` | 16 | Max distinct event types |
-| `EVENT_BUS_MAX_SUBS_PER_EVENT` | 8 | Max subscribers per event |
+| `EVENT_BUS_MAX_EVENTS` | 16 | Max distinct event types, at most 255 |
+| `EVENT_BUS_MAX_SUBS_PER_EVENT` | 8 | Max subscribers per event, at most 255 |
+
+`event_bus_unsubscribe` can be called from a subscriber callback. Once it
+returns, the callback is not called again, not even by the publish in
+progress, so its ctx can be released.
 
 ## Supported platforms
 

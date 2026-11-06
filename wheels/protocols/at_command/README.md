@@ -68,7 +68,7 @@ const char *imei = at_command_get_prev_line(&at);
 |--------|---------|---------|
 | `AT_COMMAND_LINE_SIZE` | 256 | Max line buffer |
 | `AT_COMMAND_MATCH_SIZE` | 256 | Matched/prev-line buffer |
-| `AT_COMMAND_MAX_URCS` | 16 | Max URC handler slots |
+| `AT_COMMAND_MAX_URCS` | 16 | Max URC handler slots, at most 255 |
 
 ## Supported platforms
 
