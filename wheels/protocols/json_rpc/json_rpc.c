@@ -33,6 +33,38 @@ static int safe_snprintf(char *buf, size_t cap, const char *fmt, ...)
     return n;
 }
 
+/**
+ * Append text as the inside of a JSON string: a quote or backslash gets a
+ * backslash and a control character becomes \u00XX (RFC 8259 section 7).
+ * Returns false if it does not fit, with *pos unchanged.
+ */
+static bool put_escaped(char *buf, size_t cap, size_t *pos, const char *text)
+{
+    static const char hex[] = "0123456789abcdef";
+    size_t n = *pos;
+
+    for (; *text != '\0'; text++) {
+        unsigned char c = (unsigned char)*text;
+
+        if (c < 0x20) {
+            if (cap - n < 6) return false;
+            memcpy(&buf[n], "\\u00", 4);
+            buf[n + 4] = hex[c >> 4];
+            buf[n + 5] = hex[c & 0x0F];
+            n += 6;
+        } else if (c == '"' || c == '\\') {
+            if (cap - n < 2) return false;
+            buf[n++] = '\\';
+            buf[n++] = (char)c;
+        } else {
+            if (cap - n < 1) return false;
+            buf[n++] = (char)c;
+        }
+    }
+    *pos = n;
+    return true;
+}
+
 static const char *skip_space(const char *p, const char *end)
 {
     while (p < end && (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n'))
@@ -100,19 +132,21 @@ json_rpc_err_t json_rpc_build_request(char *buf, size_t cap,
 {
     if (!buf || !method || !out_len) return JSON_RPC_ERR_PARAM;
 
-    int n;
+    int n = safe_snprintf(buf, cap, "{\"jsonrpc\":\"2.0\",\"method\":\"");
+    if (n < 0) return JSON_RPC_ERR_OVERFLOW;
+
+    size_t pos = (size_t)n;
+    if (!put_escaped(buf, cap, &pos, method)) return JSON_RPC_ERR_OVERFLOW;
+
     if (params_json) {
-        n = safe_snprintf(buf, cap,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"%s\",\"params\":%s,\"id\":%d}",
-            method, params_json, (int)id);
+        n = safe_snprintf(buf + pos, cap - pos, "\",\"params\":%s,\"id\":%d}",
+                          params_json, (int)id);
     } else {
-        n = safe_snprintf(buf, cap,
-            "{\"jsonrpc\":\"2.0\",\"method\":\"%s\",\"id\":%d}",
-            method, (int)id);
+        n = safe_snprintf(buf + pos, cap - pos, "\",\"id\":%d}", (int)id);
     }
 
     if (n < 0) return JSON_RPC_ERR_OVERFLOW;
-    *out_len = (size_t)n;
+    *out_len = pos + (size_t)n;
     return JSON_RPC_OK;
 }
 
@@ -141,11 +175,15 @@ json_rpc_err_t json_rpc_build_error(char *buf, size_t cap,
     if (!buf || !message || !out_len) return JSON_RPC_ERR_PARAM;
 
     int n = safe_snprintf(buf, cap,
-        "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":%d,\"message\":\"%s\"},\"id\":%d}",
-        (int)code, message, (int)id);
-
+        "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":%d,\"message\":\"", (int)code);
     if (n < 0) return JSON_RPC_ERR_OVERFLOW;
-    *out_len = (size_t)n;
+
+    size_t pos = (size_t)n;
+    if (!put_escaped(buf, cap, &pos, message)) return JSON_RPC_ERR_OVERFLOW;
+
+    n = safe_snprintf(buf + pos, cap - pos, "\"},\"id\":%d}", (int)id);
+    if (n < 0) return JSON_RPC_ERR_OVERFLOW;
+    *out_len = pos + (size_t)n;
     return JSON_RPC_OK;
 }
 
@@ -187,11 +225,10 @@ json_rpc_err_t json_rpc_extract_method(const char *json, size_t len,
     const char *end = json + len;
     if (val >= end || *val != '"') return JSON_RPC_ERR_PARAM;
 
-    val++; /* skip opening quote */
-    const char *close = val;
-    while (close < end && *close != '"') close++;
-    if (close >= end) return JSON_RPC_ERR_PARAM;
+    const char *close = string_end(val, end);
+    if (!close) return JSON_RPC_ERR_PARAM;
 
+    val++; /* skip opening quote */
     *method_start = (size_t)(val - json);
     *method_len   = (size_t)(close - val);
     return JSON_RPC_OK;

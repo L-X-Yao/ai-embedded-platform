@@ -47,7 +47,8 @@ typedef enum {
 /* ---------- API ---------- */
 
 /** Build a JSON-RPC 2.0 request string.
- *  params_json may be NULL for no params.
+ *  method is plain text and is escaped into the JSON string. params_json is
+ *  JSON already and goes in as it stands. It may be NULL for no params.
  *  @thread_safe: yes  @isr_safe: no */
 json_rpc_err_t json_rpc_build_request(char *buf, size_t cap,
                                        const char *method,
@@ -63,6 +64,7 @@ json_rpc_err_t json_rpc_build_response(char *buf, size_t cap,
                                         size_t *out_len);
 
 /** Build a JSON-RPC 2.0 error response string.
+ *  message is plain text and is escaped into the JSON string.
  *  @thread_safe: yes  @isr_safe: no */
 json_rpc_err_t json_rpc_build_error(char *buf, size_t cap,
                                      int32_t code,
@@ -79,7 +81,7 @@ json_rpc_type_t json_rpc_validate(const char *json, size_t len);
 
 /** Extract the method name from a JSON-RPC request string.
  *  Sets *method_start to offset and *method_len to length of the method value
- *  (without quotes).
+ *  (without quotes). The value is the raw JSON text: any escapes stay in it.
  *  Returns JSON_RPC_OK on success, JSON_RPC_ERR_PARAM if not found.
  *  @thread_safe: yes  @isr_safe: no */
 json_rpc_err_t json_rpc_extract_method(const char *json, size_t len,

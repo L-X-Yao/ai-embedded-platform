@@ -446,7 +446,120 @@ TEST(test_only_an_object_has_keys)
     ASSERT_EQ(json_rpc_extract_id(bare, strlen(bare), &id), JSON_RPC_ERR_PARAM);
 }
 
+/* ---------- text goes into strings escaped ---------- */
+
+TEST(test_error_message_escapes_quote)
+{
+    char buf[128];
+    size_t len = 0;
+
+    ASSERT_EQ(json_rpc_build_error(buf, sizeof(buf), -1, "bad \"x\"", 1, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-1,"
+                       "\"message\":\"bad \\\"x\\\"\"},\"id\":1}");
+    ASSERT_EQ(len, strlen(buf));
+}
+
+TEST(test_error_message_escapes_backslash_and_control)
+{
+    char buf[128];
+    size_t len = 0;
+
+    ASSERT_EQ(json_rpc_build_error(buf, sizeof(buf), -1, "a\\b\n\x1f", 2, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-1,"
+                       "\"message\":\"a\\\\b\\u000a\\u001f\"},\"id\":2}");
+    ASSERT_EQ(len, strlen(buf));
+}
+
+TEST(test_method_cannot_add_fields)
+{
+    char buf[128];
+    size_t len = 0;
+    size_t start = 0;
+    size_t mlen = 0;
+    int32_t id = 0;
+    const char *method = "a\",\"id\":5,\"x\":\"b";
+
+    ASSERT_EQ(json_rpc_build_request(buf, sizeof(buf), method, NULL, 1, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, "{\"jsonrpc\":\"2.0\",\"method\":"
+                       "\"a\\\",\\\"id\\\":5,\\\"x\\\":\\\"b\",\"id\":1}");
+    ASSERT_EQ(len, strlen(buf));
+    ASSERT_EQ(json_rpc_extract_id(buf, len, &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 1);
+
+    /* The method's span runs to its real closing quote, escapes and all. */
+    ASSERT_EQ(json_rpc_extract_method(buf, len, &start, &mlen), JSON_RPC_OK);
+    ASSERT_EQ(mlen, strlen("a\\\",\\\"id\\\":5,\\\"x\\\":\\\"b"));
+    ASSERT_TRUE(memcmp(buf + start, "a\\\",\\\"id\\\":5,\\\"x\\\":\\\"b", mlen) == 0);
+}
+
+TEST(test_method_with_params_is_escaped)
+{
+    char buf[128];
+    size_t len = 0;
+
+    ASSERT_EQ(json_rpc_build_request(buf, sizeof(buf), "a\"b", "[1]", 7, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, "{\"jsonrpc\":\"2.0\",\"method\":\"a\\\"b\","
+                       "\"params\":[1],\"id\":7}");
+}
+
+TEST(test_utf8_text_passes_unchanged)
+{
+    char buf[128];
+    size_t len = 0;
+
+    ASSERT_EQ(json_rpc_build_error(buf, sizeof(buf), -1, "\xE6\xB8\xA9\x7F", 1,
+                                   &len), JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-1,"
+                       "\"message\":\"\xE6\xB8\xA9\x7F\"},\"id\":1}");
+}
+
+TEST(test_escaped_text_is_counted_exactly)
+{
+    /* Each of the three parts of the message can be the one that overflows. */
+    const char *want = "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-1,"
+                       "\"message\":\"\\\"\\u0001\"},\"id\":1}";
+    size_t full = strlen(want);
+    char buf[128];
+    size_t len = 0;
+
+    for (size_t cap = 0; cap <= full; cap++) {
+        ASSERT_EQ(json_rpc_build_error(buf, cap, -1, "\"\x01", 1, &len),
+                  JSON_RPC_ERR_OVERFLOW);
+    }
+    ASSERT_EQ(json_rpc_build_error(buf, full + 1, -1, "\"\x01", 1, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, want);
+    ASSERT_EQ(len, full);
+}
+
+TEST(test_escaped_method_is_counted_exactly)
+{
+    const char *want = "{\"jsonrpc\":\"2.0\",\"method\":\"\\\\\",\"id\":1}";
+    size_t full = strlen(want);
+    char buf[64];
+    size_t len = 0;
+
+    for (size_t cap = 0; cap <= full; cap++) {
+        ASSERT_EQ(json_rpc_build_request(buf, cap, "\\", NULL, 1, &len),
+                  JSON_RPC_ERR_OVERFLOW);
+    }
+    ASSERT_EQ(json_rpc_build_request(buf, full + 1, "\\", NULL, 1, &len),
+              JSON_RPC_OK);
+    ASSERT_STR_EQ(buf, want);
+}
+
 TEST_MAIN("json_rpc")
+    RUN(test_error_message_escapes_quote);
+    RUN(test_error_message_escapes_backslash_and_control);
+    RUN(test_method_cannot_add_fields);
+    RUN(test_method_with_params_is_escaped);
+    RUN(test_utf8_text_passes_unchanged);
+    RUN(test_escaped_text_is_counted_exactly);
+    RUN(test_escaped_method_is_counted_exactly);
     RUN(test_id_inside_params_is_not_the_id);
     RUN(test_id_inside_result_is_not_the_id);
     RUN(test_id_inside_an_array_is_not_the_id);
