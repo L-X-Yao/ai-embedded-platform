@@ -35,7 +35,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, NULL = not needed */
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* optional, see bme280_init */
     void *ctx;
 } bme280_i2c_t;
 
@@ -93,7 +93,9 @@ typedef struct {
 #define BME280_ADDR_HIGH  0x77
 #define BME280_CHIP_ID    0x60
 
-/** Check the chip ID, read the calibration and set the oversampling.
+/** Wait for start-up, check the chip ID, read the calibration and set the
+ *  oversampling. With no delay_ms the caller must wait the 2 ms after power-on
+ *  itself. Returns BME280_ERR_TIMEOUT if the NVM copy does not end.
  *  0 in osrs_t, osrs_p or osrs_h is SKIP, so set all three. Returns
  *  BME280_ERR_PARAM if all are SKIP, because nothing would be left to measure.
  *  With osrs_t SKIP this takes one temperature measurement at x1, because
@@ -120,7 +122,11 @@ bme280_err_t bme280_set_oversampling(bme280_t *dev,
                                      bme280_oversampling_t osrs_p,
                                      bme280_oversampling_t osrs_h);
 
-/** @thread_safe: no @isr_safe: no */
+/** Soft reset. Returns once the sensor has started again, or with
+ *  BME280_ERR_TIMEOUT if the NVM copy does not end, or BME280_ERR_I2C if the
+ *  sensor stops answering. Every register is back at its reset state, so call
+ *  bme280_init after it.
+ *  @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_reset(bme280_t *dev);
 
 #ifdef __cplusplus
