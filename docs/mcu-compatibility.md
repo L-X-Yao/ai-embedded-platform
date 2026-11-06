@@ -6,16 +6,18 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 | Bus | Typical MCU support | Driver count |
 |-----|-------------------|-------------|
-| I2C | All modern MCUs (STM32, GD32, ESP32, nRF52, RP2040, RISC-V) | 77 |
-| SPI | All modern MCUs | 20 |
+| I2C | All modern MCUs (STM32, GD32, ESP32, nRF52, RP2040, RISC-V) | 75 |
+| SPI | All modern MCUs | 22 |
 | GPIO | All MCUs | 16 |
 | OneWire | Any MCU with GPIO (bit-banged) | 1 |
 
 > **No `#ifdef` per platform.** You inject your HAL callbacks at init time. The same driver binary runs on Cortex-M0, Cortex-M7, Xtensa, RISC-V, or x86 desktop (mock HAL for testing).
 
+> **Limited** in a row means the driver's README or [known-issues.md](known-issues.md) records it as not usable, or usable only in part, on hardware. A row without the mark is not proof of hardware use.
+
 ---
 
-## I2C drivers (77)
+## I2C drivers (75)
 
 ### Sensors -- Environmental
 
@@ -44,9 +46,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `adxl345` | ADI ADXL345 | 3-axis accel | motion interrupt |
 | `bma400` | Bosch BMA400 | 3-axis accel | ultra-low-power |
 | `bmi160` | Bosch BMI160 | 6-axis (accel + gyro) | step counter |
-| `bmi270` | Bosch BMI270 | 6-axis (accel + gyro) | config file loading (SPI) |
 | `bno055` | Bosch BNO055 | 9-axis (accel + gyro + mag) | onboard sensor fusion |
-| `icm42688` | TDK ICM-42688 | 6-axis (accel + gyro) | high performance |
 | `lis2dh12` | ST LIS2DH12 | 3-axis accel | ultra-low-power |
 | `lis3dh` | ST LIS3DH | 3-axis accel | FIFO buffer |
 | `lsm6dso` | ST LSM6DSO | 6-axis (accel + gyro) | |
@@ -58,7 +58,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | Driver | Chip | Axes | Extras |
 |--------|------|------|--------|
 | `as5600` | ams AS5600 | 12-bit rotary | magnetic position sensor |
-| `bmm150` | Bosch BMM150 | 3-axis mag | compensation algorithm |
+| `bmm150` | Bosch BMM150 | 3-axis mag | **Limited:** no trim compensation, uT values are approximate |
 | `hmc5883l` | Honeywell HMC5883L | 3-axis mag | offset correction |
 | `lis3mdl` | ST LIS3MDL | 3-axis mag | configurable range |
 | `qmc5883p` | QST QMC5883P | 3-axis mag | calibration support |
@@ -67,7 +67,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 | Driver | Chip | Measures | Extras |
 |--------|------|----------|--------|
-| `apds9960` | Broadcom APDS-9960 | proximity, gesture, RGB, ambient | gesture recognition |
+| `apds9960` | Broadcom APDS-9960 | proximity, gesture, RGB, ambient | **Limited:** gesture direction logic needs a rewrite |
 | `bh1750` | ROHM BH1750 | ambient light (lux) | multiple resolutions |
 | `ltr390` | Lite-On LTR-390 | UV index, ambient light | |
 | `opt3001` | TI OPT3001 | ambient light (lux) | |
@@ -89,7 +89,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 | Driver | Chip | Channels | Extras |
 |--------|------|---------|--------|
-| `bq27441` | TI BQ27441 | 1-cell LiPo | fuel gauge |
+| `bq27441` | TI BQ27441 | 1-cell LiPo | fuel gauge. **Limited:** reads only, setting the design capacity is unsupported |
 | `ina219` | TI INA219 | 1 channel | current, voltage, power |
 | `ina226` | TI INA226 | 1 channel | high precision |
 | `ina3221` | TI INA3221 | 3 channels | |
@@ -107,8 +107,8 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 | Driver | Chip | Range | Technology |
 |--------|------|-------|-----------|
-| `vl53l0x` | ST VL53L0X | up to 2m | Time-of-Flight laser |
-| `vl53l1x` | ST VL53L1X | up to 4m | Time-of-Flight laser |
+| `vl53l0x` | ST VL53L0X | up to 2m | Time-of-Flight laser. **Limited:** not usable on hardware yet, init skips the required initialisation and calibration |
+| `vl53l1x` | ST VL53L1X | up to 4m | Time-of-Flight laser. **Limited:** not usable on hardware yet, init does not load ST's configuration |
 
 ### Sensors -- Gas / Air Quality
 
@@ -181,13 +181,13 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 
 ---
 
-## SPI drivers (20)
+## SPI drivers (22)
 
 ### Displays -- SPI
 
 | Driver | Chip | Type | Resolution |
 |--------|------|------|-----------|
-| `gc9a01` | GalaxyCore GC9A01 | round TFT | 240x240 |
+| `gc9a01` | GalaxyCore GC9A01 | round TFT. **Limited:** init sends no panel init table, a real panel may show no usable picture | 240x240 |
 | `ili9341` | Ilitek ILI9341 | TFT | 240x320 |
 | `lcd_st7789` | Sitronix ST7789 | TFT | 240x320 |
 | `st7735` | Sitronix ST7735 | TFT | 128x160 |
@@ -203,7 +203,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `mcp2515` | Microchip MCP2515 | CAN 2.0B | FIFO management |
 | `nrf24l01` | Nordic nRF24L01+ | 2.4GHz proprietary | up to 2Mbps |
 | `sx1262` | Semtech SX1262 | LoRa | busy polling |
-| `w5500` | WIZnet W5500 | TCP/IP Ethernet | hardware stack |
+| `w5500` | WIZnet W5500 | TCP/IP Ethernet | hardware stack in the chip. **Limited:** the driver has no connect or listen API, so TCP and UDP cannot work yet |
 
 ### Storage -- SPI
 
@@ -220,6 +220,8 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 | `max31855` | Maxim MAX31855 | K-type thermocouple | |
 | `max31865` | Maxim MAX31865 | PT100/PT1000 RTD | |
 | `max6675` | Maxim MAX6675 | K-type thermocouple | 12-bit |
+| `bmi270` | Bosch BMI270 | 6-axis (accel + gyro) | **Limited:** not usable on hardware yet, init skips the 8 KB config upload |
+| `icm42688` | TDK ICM-42688 | 6-axis (accel + gyro) | high performance |
 
 ### LEDs -- SPI
 
@@ -307,7 +309,7 @@ All 115 L1 drivers use HAL injection -- they compile on **any MCU with a C99 com
 `icm42688` or `mpu6050` (IMU) + `qmc5883p` (magnetometer) + `bmp388` (barometer) + `mahony_ahrs` (L0, sensor fusion)
 
 ### "I'm building an IoT device"
-`bme280` (sensors) + `mqtt_packet` + `mqtt_client` (L2/L3, protocol) + `lora_sx1276` or `w5500` (connectivity)
+`bme280` (sensors) + `mqtt_packet` + `mqtt_client` (L2/L3, protocol) + a TCP connection you supply, because no wheel here is a TCP/IP stack: for example a cellular modem's TCP socket through `at_command`, as `examples/remote_telemetry` does on a mock UART, or your own stack on `enc28j60`. LoRa carries no TCP, so on a LoRa link use `lora_sx1276` + `lorawan_packet` instead of MQTT.
 
 ### "I'm building a motor controller"
 `a4988` or `stepper` (stepper) + `drv8833` or `tb6612` (DC motor) + `pid_controller` (L0, control loop) + `rotary_encoder` (feedback)
