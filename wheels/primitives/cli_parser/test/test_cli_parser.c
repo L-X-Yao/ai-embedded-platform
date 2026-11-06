@@ -279,6 +279,46 @@ TEST(test_null_commands)
     ASSERT_TRUE(err == CLI_ERR_NOT_FOUND);
 }
 
+/* A table with holes: dispatch steps over them and finds what follows. */
+static const cli_cmd_t no_handler[] = {
+    { "info", NULL,     "no handler" },
+    { "ping", cmd_ping, "test command" },
+};
+
+static const cli_cmd_t no_name[] = {
+    { NULL,   NULL,     NULL },
+    { NULL,   cmd_ping, "no name" },
+    { "ping", cmd_ping, "test command" },
+};
+
+static void setup_table(const cli_cmd_t *table, size_t count)
+{
+    setup(NULL);
+    cli_cfg_t cfg = {
+        .commands = table,
+        .num_commands = count,
+        .write_fn = capture_write,
+    };
+    cli_parser_init(&parser, &cfg);
+}
+
+TEST(test_entry_without_handler)
+{
+    setup_table(no_handler, sizeof(no_handler) / sizeof(no_handler[0]));
+    ASSERT_TRUE(cli_parser_run(&parser, "info") == CLI_ERR_NOT_FOUND);
+    ASSERT_TRUE(strstr(out_buf, "unknown command: info") != NULL);
+    ASSERT_TRUE(cli_parser_run(&parser, "ping") == CLI_OK);
+    ASSERT_TRUE(last_argc == 1);
+}
+
+TEST(test_entry_without_name)
+{
+    setup_table(no_name, sizeof(no_name) / sizeof(no_name[0]));
+    ASSERT_TRUE(cli_parser_run(&parser, "ping") == CLI_OK);
+    ASSERT_TRUE(last_argc == 1);
+    ASSERT_TRUE(cli_parser_run(&parser, "nope") == CLI_ERR_NOT_FOUND);
+}
+
 TEST(test_tab_separated_args)
 {
     setup(NULL);
@@ -356,6 +396,8 @@ TEST_MAIN("cli_parser")
     RUN(test_exact_buffer_plus_one);
     RUN(test_feed_exact_then_enter);
     RUN(test_null_commands);
+    RUN(test_entry_without_handler);
+    RUN(test_entry_without_name);
     RUN(test_tab_separated_args);
     RUN(test_mixed_spaces_tabs);
     RUN(test_feed_cr_only);
