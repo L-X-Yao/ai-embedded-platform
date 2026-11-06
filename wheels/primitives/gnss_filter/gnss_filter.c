@@ -33,6 +33,19 @@ static bool quality_raw_ok(const gnss_filter_t *flt,
     return true;
 }
 
+/* Longitude is circular: bring a value back into -180..180. Both inputs to a
+ * step are already in range, so one turn is enough. */
+static float lon_wrap(float deg)
+{
+    if (deg > 180.0f) {
+        return deg - 360.0f;
+    }
+    if (deg < -180.0f) {
+        return deg + 360.0f;
+    }
+    return deg;
+}
+
 /* ---------- public API ---------- */
 
 gnss_filter_err_t gnss_filter_init(gnss_filter_t *flt,
@@ -101,7 +114,8 @@ gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
                                  : flt->cfg.static_alpha;
 
     flt->filtered_lat += (input->latitude  - flt->filtered_lat) * alpha;
-    flt->filtered_lon += (input->longitude - flt->filtered_lon) * alpha;
+    flt->filtered_lon = lon_wrap(flt->filtered_lon +
+        lon_wrap(input->longitude - flt->filtered_lon) * alpha);
     flt->filtered_alt += (input->altitude  - flt->filtered_alt) * alpha;
 
     return GNSS_FILTER_OK;

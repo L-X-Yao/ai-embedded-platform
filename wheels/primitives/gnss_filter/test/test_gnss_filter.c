@@ -136,6 +136,41 @@ TEST(test_ema_stationary)
     ASSERT_TRUE(lat < 30.0001f); /* barely moved from 30.0 */
 }
 
+/* Seed at one longitude, then take one stationary sample at another. */
+static float lon_after_step(float seed_lon, float sample_lon, float alpha)
+{
+    gnss_filter_cfg_t cfg = g_default_cfg;
+    cfg.stable_ms = 0;
+    cfg.strong_alpha = alpha;
+
+    gnss_filter_t flt;
+    gnss_filter_init(&flt, &cfg);
+    gnss_filter_input_t in = good_fix();
+
+    in.longitude = seed_lon;
+    gnss_filter_update(&flt, &in, 0, 0);
+    in.longitude = sample_lon;
+    gnss_filter_update(&flt, &in, 0, 1000);
+    return gnss_filter_lon(&flt);
+}
+
+TEST(test_ema_lon_takes_the_short_way_round)
+{
+    /* These two are 0.0002 degrees apart, across the 180 degree line. */
+    ASSERT_NEAR(lon_after_step(179.9999f, -179.9999f, 0.1f), 179.9999f, 0.001f);
+    ASSERT_NEAR(lon_after_step(-179.9999f, 179.9999f, 0.1f), -179.9999f, 0.001f);
+
+    /* Away from the line nothing changes: 10 + (20 - 10) * 0.5 = 15. */
+    ASSERT_NEAR(lon_after_step(10.0f, 20.0f, 0.5f), 15.0f, 0.001f);
+}
+
+TEST(test_ema_lon_result_stays_in_range)
+{
+    /* 179.9 + 0.2 is 180.1, which is -179.9. */
+    ASSERT_NEAR(lon_after_step(179.9f, -179.7f, 0.5f), -179.9f, 0.001f);
+    ASSERT_NEAR(lon_after_step(-179.9f, 179.7f, 0.5f), 179.9f, 0.001f);
+}
+
 TEST(test_ema_moving)
 {
     gnss_filter_t flt;
@@ -432,6 +467,8 @@ TEST_MAIN("gnss_filter")
     RUN(test_ready_after_stable_time);
     RUN(test_quality_resets_on_bad_fix);
     RUN(test_ema_stationary);
+    RUN(test_ema_lon_takes_the_short_way_round);
+    RUN(test_ema_lon_result_stays_in_range);
     RUN(test_ema_moving);
     RUN(test_zupt_overrides_speed);
     RUN(test_reset);
