@@ -51,9 +51,7 @@ No compile-time configuration needed. Address selected at runtime (0x44 or 0x45)
 Checked on 2026-11-06 against Sensirion SHT4x datasheet v6.4. Not run on hardware.
 
 - **Matched:** Addresses, commands, wait times, response format, CRC, both conversion formulas, serial number read.
-- **Fixed:** A test used the wrong raw value for 50 %RH. The driver itself had no confirmed fault.
-- **Still open:** `hw_model_sht40.h` returns data on every read and never refuses a read during a measurement.
-- **Suspected:** `sht40_soft_reset` returns at once, and the sensor needs up to 1 ms before the next command.
+- **Fixed:** A test used the wrong raw value for 50 %RH. `sht40_soft_reset` returned at once, so a measurement straight after it failed with `SHT40_ERR_I2C`. It now waits tSR, 1 ms. The model returned data on every read. It now stays busy for the Table 5 maximum, NACKs read headers until then, loses commands sent meanwhile and gives measurement data out once. This fix has not run on hardware.
 
 ## Known issues
 

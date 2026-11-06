@@ -47,9 +47,8 @@ pct2075_err_t pct2075_read(pct2075_t *dev, float *temp_c);
 Checked on 2026-11-06 against NXP PCT2075 Rev. 9 (24 October 2014). Not run on hardware.
 
 - **Matched:** Pointer values, register widths, the 11-bit temperature format and the Table 12 values, byte order, the -55 C to +125 C range, no chip ID.
-- **Fixed:** `pct2075_init` refused every address outside 0x48-0x4F, so a board with an address pin left floating could not start. All 27 addresses in Table 5 now pass.
-- **Still open:** The model leaves Tos and Thyst at 0 instead of 5000h and 4B00h, and shares one byte between the Temp LSB and Conf, so a Conf write changes its temperature. Its header also gives T_idle as 0x01, where Table 7 says 00h. Two tests label conf_val 0x04 as fault queue 2 and 0x0C as queue 6, but the queue is in B[4:3], so 0x04 only sets OS_POL. None of this reaches hardware, but the tests cannot catch a Conf mistake. There is no API for Tos, Thyst or Tidle, so the thermal limits stay at their defaults, and no named Conf bits, so shutdown and the OS output need a raw `conf_val` at init.
-- **Suspected:** `pct2075_init` does not wait, so a read within about 28 ms of power-up returns 0 C with `PCT2075_OK`.
+- **Fixed:** `pct2075_init` refused every address outside 0x48-0x4F, so a board with an address pin left floating could not start. All 27 addresses in Table 5 now pass. `pct2075_init` returned at once, so a read right after it gave 0 C with `PCT2075_OK`. It now waits 40 ms for the first conversion, which takes about 28 ms, and refuses a HAL without `delay_ms`. The model now gives each register its own storage and its Table 7 POR state, so a Conf write no longer changes Temp, keeps Temp at 0 C until the first conversion and holds it in shutdown. Two tests labelled conf_val 0x04 as fault queue 2 and 0x0C as queue 6, and now use 0x08 and 0x18. This fix has not run on hardware.
+- **Still open:** There is no API for Tos, Thyst or Tidle, so the thermal limits stay at their defaults, and no named Conf bits, so shutdown and the OS output need a raw `conf_val` at init.
 
 ## Known issues
 
