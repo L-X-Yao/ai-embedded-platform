@@ -18,6 +18,8 @@ static void mock_reset(void)
     mock_i2c_reset();
     /* Device ID register: expect 0x50 at CMD(0x12) = 0xB2 */
     mock_regs[CMD(TSL2591_REG_ID)] = TSL2591_DEVICE_ID;
+    /* AVALID: these tests start after an integration has finished */
+    mock_regs[CMD(TSL2591_REG_STATUS)] = 0x01;
 }
 
 /* Set raw channel values in mock registers (little-endian) */
@@ -250,6 +252,42 @@ TEST(test_read_i2c_fail)
 
     tsl2591_data_t data;
     ASSERT_EQ(tsl2591_read(&dev, &data), TSL2591_ERR_I2C);
+}
+
+TEST(test_read_data_i2c_fail)
+{
+    mock_reset();
+    ASSERT_EQ(tsl2591_init(&dev, &mock_i2c, TSL2591_GAIN_LOW,
+                           TSL2591_ITIME_100MS), TSL2591_OK);
+    mock_fail_at = mock_op_count + 1;  /* the STATUS read passes */
+
+    tsl2591_data_t data;
+    ASSERT_EQ(tsl2591_read(&dev, &data), TSL2591_ERR_I2C);
+}
+
+/* p.16: AVALID is bit 0 of STATUS, and no other bit stands in for it */
+TEST(test_read_not_ready_without_avalid)
+{
+    mock_reset();
+    ASSERT_EQ(tsl2591_init(&dev, &mock_i2c, TSL2591_GAIN_LOW,
+                           TSL2591_ITIME_100MS), TSL2591_OK);
+    mock_set_channels(1000, 200);
+    mock_regs[CMD(TSL2591_REG_STATUS)] = 0x30;  /* NPINTR, AINT */
+
+    tsl2591_data_t data;
+    memset(&data, 0xA5, sizeof(data));
+    tsl2591_data_t before = data;
+    ASSERT_EQ(tsl2591_read(&dev, &data), TSL2591_ERR_NOT_READY);
+    ASSERT_EQ(memcmp(&data, &before, sizeof(data)), 0);
+
+    uint16_t ch0 = 7, ch1 = 8;
+    ASSERT_EQ(tsl2591_read_raw(&dev, &ch0, &ch1), TSL2591_ERR_NOT_READY);
+    ASSERT_EQ(ch0, 7);
+    ASSERT_EQ(ch1, 8);
+
+    mock_regs[CMD(TSL2591_REG_STATUS)] = 0x31;
+    ASSERT_EQ(tsl2591_read(&dev, &data), TSL2591_OK);
+    ASSERT_EQ(data.ch0_raw, 1000);
 }
 
 /* ---------- raw read tests ---------- */
@@ -489,6 +527,8 @@ TEST_MAIN("tsl2591")
     RUN(test_read_ir_exceeds_visible);
     RUN(test_read_saturation);
     RUN(test_read_i2c_fail);
+    RUN(test_read_data_i2c_fail);
+    RUN(test_read_not_ready_without_avalid);
     RUN(test_read_raw_ok);
     RUN(test_read_raw_i2c_fail);
     RUN(test_set_gain);

@@ -23,6 +23,7 @@ static void mock_reset_chip(void)
 {
     mock_i2c_reset();
     mock_regs[CMD(TSL2591_REG_ID)] = TSL2591_DEVICE_ID;
+    mock_regs[CMD(TSL2591_REG_STATUS)] = 0x01;  /* AVALID: a result is there */
 }
 
 static void mock_set_channels(uint16_t ch0, uint16_t ch1)
