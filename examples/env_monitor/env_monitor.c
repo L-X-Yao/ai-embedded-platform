@@ -150,10 +150,15 @@ static bool sht_read(void *ctx, uint8_t dev_addr, uint8_t *data, uint16_t len)
     return true;
 }
 
+static void sht_delay_ms(void *ctx, uint16_t ms)
+{
+    (void)ctx; (void)ms;
+}
+
 static const sht30_i2c_t sht_i2c = {
     .write    = sht_write,
     .read     = sht_read,
-    .delay_ms = NULL,
+    .delay_ms = sht_delay_ms,
     .ctx      = NULL,
 };
 
