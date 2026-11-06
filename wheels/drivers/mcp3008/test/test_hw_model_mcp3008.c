@@ -106,7 +106,9 @@ TEST(test_hw_model_diff_table_5_2)
     {
         uint8_t tx[3] = { 0x01u, rows[i].cfg, 0x00u };
         uint8_t rx[3] = { 0xFFu, 0xFFu, 0xFFu };
+        ASSERT_TRUE(mcp3008_model_cs_select(&model));
         ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+        mcp3008_model_cs_deselect(&model);
         ASSERT_EQ((rx[1] & 0x03u) << 8 | rx[2], rows[i].raw);
     }
 }
@@ -139,7 +141,116 @@ TEST(test_hw_model_fail_transfer)
     ASSERT_EQ(mcp3008_read_single(&dev, 0, &raw), MCP3008_ERR_SPI);
 }
 
+/* The MCU's receive buffer holds "five unknown bits ..., the null bit and
+ * the highest order 2 bits of the conversion", and the first byte is all
+ * unknown (Figure 6-1 on p21) */
+TEST(test_hw_model_received_byte_layout)
+{
+    static const uint8_t tx[3] = { 0x01u, 0x80u, 0x00u };
+    uint8_t rx[3] = { 0u, 0u, 0u };
+
+    setup();
+    mcp3008_model_set_single(&model, 0, 0x2A5u);
+    model.unknown_bits = 0xFFu;
+    ASSERT_TRUE(mcp3008_model_cs_select(&model));
+    ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+    mcp3008_model_cs_deselect(&model);
+    ASSERT_EQ_HEX(rx[0], 0xFFu);
+    ASSERT_EQ_HEX(rx[1], 0xFAu);  /* 11111, null 0, B9 B8 = 10 */
+    ASSERT_EQ_HEX(rx[2], 0xA5u);
+}
+
+/* Whatever those bits hold, the result is the same */
+TEST(test_driver_masks_the_unknown_bits)
+{
+    static const uint8_t patterns[] = { 0x00u, 0xFFu, 0xA8u, 0x50u };
+
+    setup();
+    mcp3008_model_set_single(&model, 5, 0x155u);
+    mcp3008_model_set_diff(&model, 2, 0x2AAu);
+    for (size_t i = 0; i < sizeof(patterns); i++)
+    {
+        uint16_t raw = 0;
+        model.unknown_bits = patterns[i];
+        ASSERT_EQ(mcp3008_read_single(&dev, 5, &raw), MCP3008_OK);
+        ASSERT_EQ_HEX(raw, 0x155u);
+        ASSERT_EQ(mcp3008_read_diff(&dev, 2, &raw), MCP3008_OK);
+        ASSERT_EQ_HEX(raw, 0x2AAu);
+    }
+}
+
+/* "Initiating communication with either device is done by bringing the CS
+ * line low", p19: with CS high the chip does not take part */
+TEST(test_hw_model_ignores_a_transfer_with_cs_high)
+{
+    static const uint8_t tx[3] = { 0x01u, 0x80u, 0x00u };
+    uint8_t rx[3] = { 0u, 0u, 0u };
+
+    setup();
+    mcp3008_model_set_single(&model, 0, 0x2A5u);
+    model.unknown_bits = 0xFFu;
+    ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+    ASSERT_EQ(model.transfers_without_cs, 1);
+    ASSERT_EQ_HEX(rx[1], 0xFFu);
+    ASSERT_EQ_HEX(rx[2], 0xFFu);
+}
+
+TEST(test_driver_holds_cs_low_for_the_transfer)
+{
+    setup();
+    uint16_t raw;
+    ASSERT_EQ(mcp3008_read_single(&dev, 1, &raw), MCP3008_OK);
+    ASSERT_EQ(mcp3008_read_diff(&dev, 1, &raw), MCP3008_OK);
+    ASSERT_EQ(model.transfers_without_cs, 0);
+    ASSERT_FALSE(model.cs_active);
+}
+
+/* "If the device was powered up with the CS pin low, it must be brought high
+ * and back low to initiate communication", p19 */
+TEST(test_hw_model_powered_up_with_cs_low)
+{
+    static const uint8_t tx[3] = { 0x01u, 0x80u, 0x00u };
+    uint8_t rx[3] = { 0u, 0u, 0u };
+
+    mcp3008_model_init(&model);
+    mcp3008_model_set_single(&model, 0, 0x2A5u);
+    model.unknown_bits = 0xFFu;
+    model.cs_active = true;
+    model.awaiting_cs_high = true;
+
+    ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+    ASSERT_EQ_HEX(rx[2], 0xFFu);
+
+    mcp3008_model_cs_deselect(&model);
+    ASSERT_TRUE(mcp3008_model_cs_select(&model));
+    ASSERT_TRUE(mcp3008_model_transfer(&model, tx, rx, 3));
+    ASSERT_EQ_HEX(rx[2], 0xA5u);
+}
+
+/* The same board through the driver: init has to bring CS high */
+TEST(test_first_read_after_power_up_with_cs_low)
+{
+    mcp3008_model_init(&model);
+    mcp3008_model_set_single(&model, 3, 512u);
+    model.unknown_bits = 0xFFu;
+    model.cs_active = true;
+    model.awaiting_cs_high = true;
+
+    ASSERT_EQ(mcp3008_init(&dev, &hw_spi), MCP3008_OK);
+    ASSERT_FALSE(model.cs_active);
+
+    uint16_t raw = 0;
+    ASSERT_EQ(mcp3008_read_single(&dev, 3, &raw), MCP3008_OK);
+    ASSERT_EQ(raw, 512u);
+}
+
 TEST_MAIN("mcp3008_hw_model")
+    RUN(test_hw_model_received_byte_layout);
+    RUN(test_driver_masks_the_unknown_bits);
+    RUN(test_hw_model_ignores_a_transfer_with_cs_high);
+    RUN(test_driver_holds_cs_low_for_the_transfer);
+    RUN(test_hw_model_powered_up_with_cs_low);
+    RUN(test_first_read_after_power_up_with_cs_low);
     RUN(test_hw_model_init_all_zero);
     RUN(test_hw_model_single_round_trip_all_channels);
     RUN(test_hw_model_clamps_to_10bit);

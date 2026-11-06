@@ -4,10 +4,15 @@
  *
  * Models the MCP3008 3-byte SPI transfer protocol:
  *   TX: [0x01] [(SGL/DIFF | CH) << 4] [0x00]
- *   RX: [x]    [0x00 | (raw >> 8)]    [raw & 0xFF]
+ *   RX: [?]    [? ? ? ? ? 0 B9 B8]    [B7 .. B0]
  *
  * The model stores a raw value per channel (8 single-ended + 4 diff)
  * and responds to transfer() calls with the appropriate rx bytes.
+ *
+ * From DS21295D: the "?" bits of Figure 6-1 (p21) read as unknown_bits, so a
+ * dropped mask shows. The chip answers only while CS is low, and once
+ * powered up with CS low only after CS has been high (p19). Without an
+ * answer every bit reads as unknown_bits.
  */
 
 #ifndef HW_MODEL_MCP3008_H
@@ -25,11 +30,15 @@ typedef struct {
     bool     fail_cs;       /* simulate CS select failure */
     int      transfer_count;
     uint8_t  last_config;   /* tx[1] of the last conversion */
+    uint8_t  unknown_bits;  /* what the bits the manual calls unknown read as */
+    bool     awaiting_cs_high;  /* powered up with CS low, no high seen yet */
+    int      transfers_without_cs;
 } mcp3008_model_t;
 
 static void mcp3008_model_init(mcp3008_model_t *m)
 {
     memset(m, 0, sizeof(*m));
+    m->unknown_bits = 0xFFu;
 }
 
 static void mcp3008_model_set_single(mcp3008_model_t *m, uint8_t ch,
@@ -65,6 +74,7 @@ static void mcp3008_model_cs_deselect(void *ctx)
 {
     mcp3008_model_t *m = (mcp3008_model_t *)ctx;
     m->cs_active = false;
+    m->awaiting_cs_high = false;
 }
 
 static bool mcp3008_model_transfer(void *ctx, const uint8_t *tx,
@@ -78,10 +88,17 @@ static bool mcp3008_model_transfer(void *ctx, const uint8_t *tx,
         return false;
     }
 
-    if (len != 3 || tx[0] != 0x01)
+    /* Until the chip drives DOUT, the MCU reads whatever is on the line */
+    memset(rx, m->unknown_bits, len);
+
+    if (!m->cs_active)
     {
-        /* Unexpected protocol -- fill rx with 0 */
-        memset(rx, 0, len);
+        m->transfers_without_cs++;
+        return true;
+    }
+
+    if (m->awaiting_cs_high || len != 3 || tx[0] != 0x01)
+    {
         return true;
     }
 
@@ -104,8 +121,8 @@ static bool mcp3008_model_transfer(void *ctx, const uint8_t *tx,
         raw = (channel & 0x01u) ? 0 : m->diff[channel >> 1];
     }
 
-    rx[0] = 0x00;
-    rx[1] = (uint8_t)((raw >> 8) & 0x03u);
+    /* rx[0] stays unknown; rx[1] is five unknown bits, null 0, B9, B8 */
+    rx[1] = (uint8_t)((m->unknown_bits & 0xF8u) | ((raw >> 8) & 0x03u));
     rx[2] = (uint8_t)(raw & 0xFFu);
 
     return true;
