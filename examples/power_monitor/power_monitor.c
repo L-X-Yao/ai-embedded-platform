@@ -99,10 +99,15 @@ static void max_mock_reset(void)
     max_regs[0x0D] = 0x1C;
 }
 
-static bool max_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+/* The MAX17048 takes a write only as one word: register, MSB, LSB */
+static bool max_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                          uint16_t len)
 {
     (void)ctx; (void)dev_addr;
-    max_regs[reg] = val;
+    if (len == 3 && data[0] + 1u < sizeof(max_regs)) {
+        max_regs[data[0]]      = data[1];
+        max_regs[data[0] + 1u] = data[2];
+    }
     return true;
 }
 
@@ -117,9 +122,9 @@ static bool max_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
 }
 
 static const max17048_i2c_t max_i2c = {
-    .write_reg = max_write_reg,
     .read_regs = max_read_regs,
     .ctx       = NULL,
+    .write_raw = max_write_raw,
 };
 
 /* INA226 register space */
