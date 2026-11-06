@@ -56,10 +56,14 @@ typedef struct {
 hcsr04_err_t hcsr04_init(hcsr04_t *dev, const hcsr04_hal_t *hal);
 
 /** Trigger measurement and return distance in centimeters.
+ *  Start measurements at least 60 ms apart. A call that finds echo still high
+ *  from the last pulse waits for it to end, and returns HCSR04_ERR_TIMEOUT
+ *  without triggering if it does not end within 25 ms.
  *  @thread_safe: no @isr_safe: no */
 hcsr04_err_t hcsr04_read_cm(hcsr04_t *dev, float *distance_cm);
 
 /** Trigger measurement and return raw echo pulse width in microseconds.
+ *  The same cycle rule as hcsr04_read_cm applies.
  *  @thread_safe: no @isr_safe: no */
 hcsr04_err_t hcsr04_read_us(hcsr04_t *dev, uint32_t *echo_us);
 
