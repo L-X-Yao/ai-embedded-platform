@@ -48,6 +48,14 @@ None. Display dimensions and I2C address are runtime-configurable.
 - [x] Host (sim) — passed 2026-04-29
 - [ ] ARM Cortex-M — not yet verified (uses injected I2C HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against Solomon Systech SSD1306 Advance Information Rev 1.1 with App Note Rev 0.4. Not run on hardware.
+
+- **Matched:** I2C addresses, control bytes, every init command and argument, the charge pump order, horizontal addressing, framebuffer layout, the flush window.
+- **Fixed:** `oled_ssd1306_init` took height 8, which sends an invalid MUX entry, and heights over 64 and widths over 128, which the chip cannot drive.
+- **Still open:** There is no RES# control, so the board has to pulse it after power-up. init turns the display on without a flush, so old RAM may show until the first flush. The charge pump is always on, so a panel with external VCC cannot be used. Widths under 128 are not really supported: with the A1h remap the flush starts at the far end of the panel. The HAL must add the control byte and keep the clock to 400 kHz, and the header does not say so. The model ignores the addressing mode and the column and page window, so a wrong window would pass the tests.
+
 ## Known issues
 
 - No text/font rendering built in — add a font wheel or use LVGL for rich UI.

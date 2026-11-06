@@ -61,6 +61,14 @@ None. Rotation is runtime-configurable.
 - [x] Host (sim)
 - [ ] ARM Cortex-M -- not yet verified (uses injected SPI HAL)
 
+## Datasheet check
+
+Checked on 2026-11-06 against ILI Technology ILI9341 Specification V1.11. Not run on hardware.
+
+- **Matched:** Command codes, MADCTL bits, COLMOD values, the panel size and its swap when MV is set, CASET and PASET formats, the reset and sleep waits, RGB565 packing.
+- **Still open:** Power, VCOM, frame rate and gamma stay at their reset or NV values, so many modules need their vendor's table for correct contrast. Nothing reads the chip ID, so a dead or wrong display still returns `ILI9341_OK`. Frame memory is random at power-on, so garbage shows until the first fill. SCL must stay at 10 MHz or less, and the header does not say so. The model and mock record bytes with chip select high, so a driver that never asserted it would pass, and the model has no time base, so it cannot see a command sent inside a reset wait.
+- **Suspected:** The ROT_0 value sets MX, which may mirror the columns on some modules. Every MADCTL value sets BGR, which would swap red and blue on an RGB-filter panel. The 65k colour look-up table is never sent, and the manual contradicts itself on whether 4-line 16-bit mode uses it.
+
 ## Known issues
 
 - No framebuffer or DMA support; single-byte SPI transfer only.
