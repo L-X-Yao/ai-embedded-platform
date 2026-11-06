@@ -233,6 +233,8 @@ w5500_err_t w5500_socket_open(w5500_t *dev, uint8_t sock,
         protocol != W5500_PROTO_UDP &&
         protocol != W5500_PROTO_MACRAW)
         return W5500_ERR_PARAM;
+    if (protocol == W5500_PROTO_MACRAW && sock != 0)
+        return W5500_ERR_SOCK;
 
     const w5500_spi_t *s = dev->spi;
 

@@ -483,6 +483,19 @@ TEST(test_socket_open_macraw)
     ASSERT_EQ(e, W5500_OK);
 }
 
+TEST(test_socket_open_macraw_only_socket_0)
+{
+    /* W5500 Datasheet 1.1.0 p45: "MACRAW mode should be only used in Socket 0." */
+    for (uint8_t sock = 1; sock < 8; sock++) {
+        init_dev();
+        mock_open_status[sock] = W5500_SOCK_MACRAW;
+        ASSERT_EQ(w5500_socket_open(&dev, sock, W5500_PROTO_MACRAW, 0),
+                  W5500_ERR_SOCK);
+        ASSERT_EQ(mock_sock_regs[sock][SN_MR], 0);
+        ASSERT_EQ(mock_sock_regs[sock][SN_SR], W5500_SOCK_CLOSED);
+    }
+}
+
 TEST(test_socket_open_invalid_sock)
 {
     init_dev();
@@ -825,6 +838,7 @@ TEST_MAIN("w5500")
     RUN(test_socket_open_tcp);
     RUN(test_socket_open_udp);
     RUN(test_socket_open_macraw);
+    RUN(test_socket_open_macraw_only_socket_0);
     RUN(test_socket_open_invalid_sock);
     RUN(test_socket_open_invalid_protocol);
     RUN(test_socket_open_null_dev);
