@@ -339,7 +339,7 @@ void framebuffer_blit_1bpp(framebuffer_t *fb, uint16_t x, uint16_t y,
         for (uint16_t col = 0u; col < bw; col++) {
             uint16_t px = (uint16_t)(x + col);
             if (px >= fb->width) { break; }
-            uint16_t byte_idx = (uint16_t)(row * row_bytes + col / 8u);
+            uint32_t byte_idx = (uint32_t)row * row_bytes + col / 8u;
             uint8_t bit_mask = (uint8_t)(0x80u >> (col & 7u));
             if ((bitmap[byte_idx] & bit_mask) != 0u) {
                 (void)framebuffer_set_pixel(fb, px, py, color);
