@@ -609,6 +609,135 @@ TEST(test_parser_reset_null)
     hdlc_parser_reset(NULL);
 }
 
+/* ---------- one flag between frames ---------- */
+
+/* RFC 1662 3.1: "Only one Flag Sequence is required between two frames." */
+
+/* "123456789" and its FCS, low byte first. CRC-16/IBM-SDLC in the reveng
+   catalogue has check=0x906e. */
+#define CHECK_FRAME_BODY '1', '2', '3', '4', '5', '6', '7', '8', '9', 0x6E, 0x90
+
+/* Feed a stream, taking each frame when the parser completes it. Returns the
+   number of frames the FCS accepted and notes the first byte of each. */
+static int good_frames(const uint8_t *wire, size_t len, uint8_t *first, int max)
+{
+    uint8_t pbuf[64];
+    uint8_t out[64];
+    hdlc_parser_t parser;
+    int frames = 0;
+
+    hdlc_parser_init(&parser, pbuf, sizeof(pbuf));
+    for (size_t i = 0; i < len; i++) {
+        size_t n = 0;
+        if (hdlc_parser_feed(&parser, wire[i]) != HDLC_STATE_COMPLETE)
+            continue;
+        if (hdlc_parser_get_frame(&parser, out, sizeof(out), &n) != HDLC_OK)
+            continue;
+        if (frames < max && n > 0)
+            first[frames] = out[0];
+        frames++;
+    }
+    return frames;
+}
+
+/* Append a frame, leaving out its opening flag unless it is the first:
+   the closing flag before it opens it. */
+static size_t append_sharing_flag(uint8_t *wire, size_t pos,
+                                  const uint8_t *data, size_t len)
+{
+    uint8_t encoded[32];
+    size_t elen = 0;
+    size_t skip = (pos == 0) ? 0 : 1;
+
+    if (hdlc_encode(data, len, encoded, sizeof(encoded), &elen) != HDLC_OK)
+        return pos;
+    memcpy(wire + pos, encoded + skip, elen - skip);
+    return pos + elen - skip;
+}
+
+TEST(test_parser_one_flag_between_catalogue_frames)
+{
+    static const uint8_t wire[] = {
+        HDLC_FLAG, CHECK_FRAME_BODY,
+        HDLC_FLAG, CHECK_FRAME_BODY,
+        HDLC_FLAG, CHECK_FRAME_BODY,
+        HDLC_FLAG,
+    };
+    uint8_t first[3] = {0, 0, 0};
+
+    ASSERT_EQ(good_frames(wire, sizeof(wire), first, 3), 3);
+    ASSERT_EQ(first[2], '1');
+}
+
+TEST(test_parser_four_frames_sharing_flags)
+{
+    uint8_t wire[64];
+    uint8_t first[4] = {0, 0, 0, 0};
+    size_t pos = 0;
+
+    for (uint8_t k = 1; k <= 4; k++) {
+        pos = append_sharing_flag(wire, pos, &k, 1);
+    }
+
+    ASSERT_EQ(good_frames(wire, pos, first, 4), 4);
+    for (uint8_t k = 1; k <= 4; k++) {
+        ASSERT_EQ(first[k - 1], k);
+    }
+}
+
+TEST(test_parser_escape_right_after_a_shared_flag)
+{
+    /* 0x7E stuffed is 7D 5E: the first byte after the flag is an escape */
+    const uint8_t one[] = {0x41};
+    const uint8_t two[] = {HDLC_FLAG, 0x42};
+    uint8_t wire[32];
+    uint8_t first[2] = {0, 0};
+
+    size_t pos = append_sharing_flag(wire, 0, one, sizeof(one));
+    size_t second_at = pos;
+    pos = append_sharing_flag(wire, pos, two, sizeof(two));
+
+    ASSERT_EQ_HEX(wire[second_at - 1], HDLC_FLAG);
+    ASSERT_EQ_HEX(wire[second_at], HDLC_ESCAPE);
+    ASSERT_EQ(good_frames(wire, pos, first, 2), 2);
+    ASSERT_EQ_HEX(first[0], 0x41);
+    ASSERT_EQ_HEX(first[1], HDLC_FLAG);
+}
+
+TEST(test_parser_state_after_a_complete_frame)
+{
+    static const uint8_t frame[] = {HDLC_FLAG, CHECK_FRAME_BODY, HDLC_FLAG};
+    static const uint8_t next[] = {0x55, HDLC_ESCAPE, HDLC_FLAG};
+    static const hdlc_state_t want[] = {HDLC_STATE_ACTIVE, HDLC_STATE_ESCAPE,
+                                        HDLC_STATE_ACTIVE};
+    static const size_t want_idx[] = {1, 0, 0};
+
+    for (size_t k = 0; k < sizeof(next); k++) {
+        uint8_t pbuf[32];
+        hdlc_parser_t parser;
+        hdlc_parser_init(&parser, pbuf, sizeof(pbuf));
+        for (size_t i = 0; i < sizeof(frame); i++) {
+            hdlc_parser_feed(&parser, frame[i]);
+        }
+        ASSERT_EQ((int)parser.state, (int)HDLC_STATE_COMPLETE);
+
+        ASSERT_EQ((int)hdlc_parser_feed(&parser, next[k]), (int)want[k]);
+        ASSERT_EQ(parser.idx, want_idx[k]);
+    }
+}
+
+TEST(test_parser_junk_after_a_frame_costs_the_next_frame_nothing)
+{
+    static const uint8_t wire[] = {
+        HDLC_FLAG, CHECK_FRAME_BODY, HDLC_FLAG,
+        0xAA, 0xBB, 0xCC,
+        HDLC_FLAG, CHECK_FRAME_BODY, HDLC_FLAG,
+    };
+    uint8_t first[2] = {0, 0};
+
+    ASSERT_EQ(good_frames(wire, sizeof(wire), first, 2), 2);
+}
+
 TEST_MAIN("hdlc")
     RUN(test_fcs16_known_vector);
     RUN(test_fcs16_empty);
@@ -639,4 +768,9 @@ TEST_MAIN("hdlc")
     RUN(test_parser_escape_then_flag_aborts);
     RUN(test_parser_overflow_recovery);
     RUN(test_parser_reset_null);
+    RUN(test_parser_one_flag_between_catalogue_frames);
+    RUN(test_parser_four_frames_sharing_flags);
+    RUN(test_parser_escape_right_after_a_shared_flag);
+    RUN(test_parser_state_after_a_complete_frame);
+    RUN(test_parser_junk_after_a_frame_costs_the_next_frame_nothing);
 TEST_MAIN_END()

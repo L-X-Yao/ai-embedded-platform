@@ -111,6 +111,13 @@ hdlc_state_t hdlc_parser_feed(hdlc_parser_t *parser, uint8_t byte)
 {
     if (!parser) return HDLC_STATE_ERROR;
 
+    /* One flag can close a frame and open the next (RFC 1662 section 3.1),
+     * so whatever follows a complete frame belongs to a new one. */
+    if (parser->state == HDLC_STATE_COMPLETE) {
+        parser->idx   = 0;
+        parser->state = HDLC_STATE_ACTIVE;
+    }
+
     switch (parser->state) {
     case HDLC_STATE_IDLE:
         if (byte == HDLC_FLAG) {
@@ -157,16 +164,6 @@ hdlc_state_t hdlc_parser_feed(hdlc_parser_t *parser, uint8_t byte)
             }
             parser->buf[parser->idx++] = decoded;
             parser->state = HDLC_STATE_ACTIVE;
-        }
-        return parser->state;
-
-    case HDLC_STATE_COMPLETE:
-        /* Previous frame not consumed -- if new flag, restart */
-        if (byte == HDLC_FLAG) {
-            parser->idx   = 0;
-            parser->state = HDLC_STATE_ACTIVE;
-        } else {
-            parser->state = HDLC_STATE_IDLE;
         }
         return parser->state;
 
