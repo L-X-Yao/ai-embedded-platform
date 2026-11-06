@@ -109,6 +109,32 @@ TEST(test_read_temperature)
     ASSERT_TRUE(data.temperature_c > 15.0f && data.temperature_c < 45.0f);
 }
 
+TEST(test_read_extreme_calibration_is_defined)
+{
+    /* Corrupt calibration overflowed the 32-bit formula, which is undefined
+     * behaviour. UBSan runs this test, so getting here is the check. */
+    static const uint8_t lo_hi[][2] = {{0xFF, 0x7F}, {0x00, 0x80}, {0xFF, 0xFF}};
+
+    for (size_t i = 0; i < sizeof(lo_hi) / sizeof(lo_hi[0]); i++)
+    {
+        setup();
+        for (int reg = 0x88; reg <= 0x9E; reg += 2)
+        {
+            mock_regs[reg]     = lo_hi[i][0];
+            mock_regs[reg + 1] = lo_hi[i][1];
+        }
+        ASSERT_EQ(bmp280_init(&dev, &mock_i2c, &default_cfg), BMP280_OK);
+
+        static const uint32_t adc[] = {0, 415148, 0xFFFFF};
+        for (size_t j = 0; j < sizeof(adc) / sizeof(adc[0]); j++)
+        {
+            plant_adc(adc[j], adc[j]);
+            bmp280_data_t data;
+            ASSERT_EQ(bmp280_read(&dev, &data), BMP280_OK);
+        }
+    }
+}
+
 TEST(test_read_pressure)
 {
     setup();
@@ -211,6 +237,7 @@ TEST_MAIN("bmp280")
     RUN(test_init_i2c_fail);
     RUN(test_null_safety);
     RUN(test_read_temperature);
+    RUN(test_read_extreme_calibration_is_defined);
     RUN(test_read_pressure);
     RUN(test_read_i2c_fail);
     RUN(test_reset);
