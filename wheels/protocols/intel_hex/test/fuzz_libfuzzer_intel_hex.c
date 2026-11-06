@@ -22,6 +22,14 @@ static void put_byte(char **p, uint8_t value, uint8_t *sum) {
     *sum = (uint8_t)(*sum + value);
 }
 
+// The record shapes from the header: only data records take any byte count.
+static int shape_fits(uint8_t type, uint8_t count, uint16_t address) {
+    if (type == INTEL_HEX_DATA) return 1;
+    if (type == INTEL_HEX_EOF) return count == 0;
+    if (type == INTEL_HEX_EXT_SEGMENT || type == INTEL_HEX_EXT_LINEAR) return count == 2 && address == 0;
+    return count == 4 && address == 0;
+}
+
 static void decode_any_count(fuzz_input_t *in) {
     uint8_t count = fuzz_u8(in);
     uint16_t address = fuzz_u16(in);
@@ -47,7 +55,8 @@ static void decode_any_count(fuzz_input_t *in) {
 
     intel_hex_record_t rec;
     intel_hex_err_t err = intel_hex_decode(line, len, &rec);
-    if (count == n && n <= INTEL_HEX_MAX_DATA && type <= INTEL_HEX_START_LINEAR) {
+    if (count == n && n <= INTEL_HEX_MAX_DATA && type <= INTEL_HEX_START_LINEAR &&
+        shape_fits(type, count, address)) {
         if (err != INTEL_HEX_OK || rec.data_len != n || rec.address != address ||
             rec.type != type || memcmp(rec.data, body, n) != 0) {
             __builtin_trap();
@@ -65,6 +74,15 @@ static void round_trip(fuzz_input_t *in) {
     rec.address = fuzz_u16(in);
     rec.data_len = fuzz_u8(in);
     fuzz_take(in, rec.data, sizeof(rec.data));
+    uint8_t type = (uint8_t)rec.type;
+
+    // Most draws miss the fixed shapes, so one bit snaps a record onto its shape.
+    if (fuzz_u8(in) & 1) {
+        if (type != INTEL_HEX_DATA && type != INTEL_HEX_EOF) rec.address = 0;
+        if (type == INTEL_HEX_EOF) rec.data_len = 0;
+        if (type == INTEL_HEX_EXT_SEGMENT || type == INTEL_HEX_EXT_LINEAR) rec.data_len = 2;
+        if (type == INTEL_HEX_START_SEGMENT || type == INTEL_HEX_START_LINEAR) rec.data_len = 4;
+    }
 
     // Exact-size output, so ASan sees any write past the CRLF.
     size_t need = 13 + (size_t)rec.data_len * 2;
@@ -77,6 +95,8 @@ static void round_trip(fuzz_input_t *in) {
     intel_hex_err_t err = intel_hex_encode(&rec, line, need, &len);
     if (rec.data_len > INTEL_HEX_MAX_DATA) {
         if (err != INTEL_HEX_ERR_OVERFLOW) __builtin_trap();
+    } else if (!shape_fits(type, rec.data_len, rec.address)) {
+        if (err != INTEL_HEX_ERR_FORMAT) __builtin_trap();
     } else {
         intel_hex_record_t back;
         if (err != INTEL_HEX_OK || len != need) __builtin_trap();

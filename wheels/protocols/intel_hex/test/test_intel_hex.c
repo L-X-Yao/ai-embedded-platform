@@ -199,7 +199,100 @@ TEST(test_encode_rejects_undefined_record_type)
     ASSERT_EQ(intel_hex_encode(&rec, buf, sizeof(buf), &len), INTEL_HEX_ERR_PARAM);
 }
 
+/* ---------- the shape of each record type ---------- */
+
+static intel_hex_err_t decode_str(const char *line)
+{
+    intel_hex_record_t rec;
+    return intel_hex_decode(line, strlen(line), &rec);
+}
+
+TEST(test_decode_rejects_wrong_byte_count_for_type)
+{
+    /* Checksums worked out by hand: two's complement of the byte sum. */
+    ASSERT_EQ(decode_str(":02000001AABB98"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":0100000255A8"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":020000031234B5"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":01000004AA51"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":020000050001F8"), INTEL_HEX_ERR_FORMAT);
+}
+
+TEST(test_decode_rejects_address_on_address_records)
+{
+    ASSERT_EQ(decode_str(":020010021234A6"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":0400100300000000E9"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":02123404FFFFB4"), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(decode_str(":0400100500000000E7"), INTEL_HEX_ERR_FORMAT);
+}
+
+TEST(test_decode_accepts_each_valid_shape)
+{
+    intel_hex_record_t rec;
+    const char *ext_seg = ":020000021000EC";
+    const char *start_seg = ":0400000300003800C1";
+    const char *ext_lin = ":020000040800F2";
+    const char *start_lin = ":04000005000000CD2A";
+
+    ASSERT_EQ(intel_hex_decode(ext_seg, strlen(ext_seg), &rec), INTEL_HEX_OK);
+    ASSERT_EQ((int)rec.data_len, 2);
+    ASSERT_EQ(intel_hex_decode(start_seg, strlen(start_seg), &rec), INTEL_HEX_OK);
+    ASSERT_EQ((int)rec.data_len, 4);
+    ASSERT_EQ(intel_hex_decode(ext_lin, strlen(ext_lin), &rec), INTEL_HEX_OK);
+    ASSERT_EQ((int)rec.data_len, 2);
+    ASSERT_EQ(intel_hex_decode(start_lin, strlen(start_lin), &rec), INTEL_HEX_OK);
+    ASSERT_EQ((int)rec.data_len, 4);
+}
+
+TEST(test_decode_accepts_eof_with_address)
+{
+    /* Some tools put the start address here, and it carries no data. */
+    ASSERT_EQ(decode_str(":00123401B9"), INTEL_HEX_OK);
+}
+
+static intel_hex_err_t encode_shape(intel_hex_type_t type, uint16_t address,
+                                    uint8_t data_len)
+{
+    intel_hex_record_t rec;
+    char buf[80];
+    size_t len = 0;
+
+    memset(&rec, 0, sizeof(rec));
+    rec.type = type;
+    rec.address = address;
+    rec.data_len = data_len;
+    return intel_hex_encode(&rec, buf, sizeof(buf), &len);
+}
+
+TEST(test_encode_rejects_wrong_shape)
+{
+    ASSERT_EQ(encode_shape(INTEL_HEX_EOF, 0, 1), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_SEGMENT, 0, 1), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_SEGMENT, 0, 2), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_LINEAR, 0, 4), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_LINEAR, 0, 0), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_SEGMENT, 1, 2), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_SEGMENT, 1, 4), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_LINEAR, 0x8000, 2), INTEL_HEX_ERR_FORMAT);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_LINEAR, 2, 4), INTEL_HEX_ERR_FORMAT);
+}
+
+TEST(test_encode_accepts_each_valid_shape)
+{
+    ASSERT_EQ(encode_shape(INTEL_HEX_DATA, 0x1234, 3), INTEL_HEX_OK);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EOF, 0x1234, 0), INTEL_HEX_OK);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_SEGMENT, 0, 2), INTEL_HEX_OK);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_SEGMENT, 0, 4), INTEL_HEX_OK);
+    ASSERT_EQ(encode_shape(INTEL_HEX_EXT_LINEAR, 0, 2), INTEL_HEX_OK);
+    ASSERT_EQ(encode_shape(INTEL_HEX_START_LINEAR, 0, 4), INTEL_HEX_OK);
+}
+
 TEST_MAIN("intel_hex")
+    RUN(test_decode_rejects_wrong_byte_count_for_type);
+    RUN(test_decode_rejects_address_on_address_records);
+    RUN(test_decode_accepts_each_valid_shape);
+    RUN(test_decode_accepts_eof_with_address);
+    RUN(test_encode_rejects_wrong_shape);
+    RUN(test_encode_accepts_each_valid_shape);
     RUN(test_decode_data);
     RUN(test_decode_eof);
     RUN(test_decode_ext_linear);
