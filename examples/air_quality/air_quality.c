@@ -47,14 +47,14 @@
 #define AQI_UNHEALTHY 200
 
 /* ======================================================================
- * Mock I2C -- CCS811 (register-based: write_reg / read_regs)
+ * Mock I2C -- CCS811 (write_reg / read_regs, plus write_raw for APP_START)
  *
  * Registers:
  *   0x00 STATUS: bit[4]=APP_VALID, bit[7]=FW_MODE, bit[3]=DATA_READY
  *   0x01 MEAS_MODE
  *   0x02 ALG_RESULT: 4 bytes (eCO2 MSB, eCO2 LSB, TVOC MSB, TVOC LSB)
  *   0x20 HW_ID: 0x81
- *   0xF4 APP_START
+ *   0xF4 APP_START: a single byte with no data sets FW_MODE
  * ====================================================================== */
 
 static uint8_t ccs_regs[256];
@@ -66,8 +66,8 @@ static void ccs_mock_reset(void)
     /* Hardware ID */
     ccs_regs[0x20] = CCS811_HW_ID;
 
-    /* STATUS: APP_VALID=1, FW_MODE=1, DATA_READY=1 */
-    ccs_regs[0x00] = (1u << 4) | (1u << 7) | (1u << 3);
+    /* STATUS: APP_VALID=1, DATA_READY=1, FW_MODE=0 until APP_START */
+    ccs_regs[0x00] = (1u << 4) | (1u << 3);
 
     /* Plant eCO2=650 ppm, TVOC=42 ppb */
     ccs_regs[0x02] = (uint8_t)(650 >> 8);
@@ -81,6 +81,16 @@ static bool ccs_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg,
 {
     (void)ctx; (void)dev_addr;
     ccs_regs[reg] = val;
+    return true;
+}
+
+static bool ccs_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                          uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (len == 1 && data[0] == 0xF4) {
+        ccs_regs[0x00] |= (1u << 7);
+    }
     return true;
 }
 
@@ -99,6 +109,7 @@ static const ccs811_i2c_t ccs_i2c = {
     .read_regs = ccs_read_regs,
     .delay_ms  = NULL,
     .ctx       = NULL,
+    .write_raw = ccs_write_raw,
 };
 
 /* ======================================================================
