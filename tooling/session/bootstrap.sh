@@ -37,6 +37,12 @@ else
     echo -e "  Remote: ${GREEN}up to date${NC}"
 fi
 
+hooks_path=$(git -C "$REPO" config --get core.hooksPath 2>/dev/null || true)
+if [[ "$hooks_path" != ".githooks" ]]; then
+    # printf, not echo -e: a Windows path holds backslashes
+    printf "  ${YELLOW}Git hooks not active: core.hooksPath is '%s', run: make install-hooks${NC}\n" "${hooks_path:-unset}"
+fi
+
 dirty_all=$(git -C "$REPO" status --porcelain 2>/dev/null)
 dirty=$(echo "$dirty_all" | head -20)
 if [[ -n "$dirty_all" ]]; then
