@@ -118,7 +118,8 @@ sha256_err_t sha256_init(sha256_t *ctx)
 sha256_err_t sha256_update(sha256_t *ctx, const uint8_t *data, size_t len)
 {
     if (!ctx) return SHA256_ERR_PARAM;
-    if (len == 0 || !data) return SHA256_OK;
+    if (len == 0) return SHA256_OK;
+    if (!data) return SHA256_ERR_PARAM;
 
     size_t buffered = (size_t)(ctx->count & 63u);
 
@@ -203,6 +204,11 @@ void sha256_hash(const uint8_t *data, size_t len, uint8_t hash[32])
 {
     sha256_t ctx;
     (void)sha256_init(&ctx);
-    (void)sha256_update(&ctx, data, len);
+    if (sha256_update(&ctx, data, len) != SHA256_OK) {
+        /* no way to report it: zeros match no real digest, while finishing
+         * here would give SHA-256 of the empty string */
+        if (hash) memset(hash, 0, SHA256_DIGEST_SIZE);
+        return;
+    }
     (void)sha256_final(&ctx, hash);
 }

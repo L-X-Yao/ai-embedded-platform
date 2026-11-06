@@ -56,7 +56,8 @@ sha256_err_t sha256_init(sha256_t *ctx);
  * @param ctx   Initialised context.  Must not be NULL.
  * @param data  Input bytes.  May be NULL only when len == 0.
  * @param len   Number of bytes.
- * @return      SHA256_OK on success, SHA256_ERR_PARAM on NULL ctx.
+ * @return      SHA256_OK on success, SHA256_ERR_PARAM on NULL ctx, or on NULL
+ *              data with len > 0, which leaves the context unchanged.
  * @thread_safe: caller_must_lock
  */
 sha256_err_t sha256_update(sha256_t *ctx, const uint8_t *data, size_t len);
@@ -76,7 +77,8 @@ sha256_err_t sha256_final(sha256_t *ctx, uint8_t hash[32]);
 /**
  * One-shot convenience: hash a complete message.
  *
- * Equivalent to init + update + final.
+ * Equivalent to init + update + final.  If data breaks the rule below, hash
+ * is set to all zeros.
  *
  * @param data  Input bytes.  May be NULL only when len == 0.
  * @param len   Number of bytes.
