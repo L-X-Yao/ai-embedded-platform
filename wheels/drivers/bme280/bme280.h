@@ -40,7 +40,7 @@ typedef struct {
 } bme280_i2c_t;
 
 typedef enum {
-    BME280_OVERSAMPLING_SKIP = 0,
+    BME280_OVERSAMPLING_SKIP = 0,  /* no measurement: see bme280_read */
     BME280_OVERSAMPLING_1    = 1,
     BME280_OVERSAMPLING_2    = 2,
     BME280_OVERSAMPLING_4    = 3,
@@ -93,14 +93,26 @@ typedef struct {
 #define BME280_ADDR_HIGH  0x77
 #define BME280_CHIP_ID    0x60
 
-/** @thread_safe: no @isr_safe: no */
+/** Check the chip ID, read the calibration and set the oversampling.
+ *  0 in osrs_t, osrs_p or osrs_h is SKIP, so set all three. Returns
+ *  BME280_ERR_PARAM if all are SKIP, because nothing would be left to measure.
+ *  With osrs_t SKIP this takes one temperature measurement at x1, because
+ *  pressure and humidity compensation need a temperature, and can then also
+ *  return BME280_ERR_TIMEOUT.
+ *  @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_init(bme280_t *dev, const bme280_i2c_t *i2c,
                          const bme280_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** One forced measurement of what the oversampling enables. A skipped pressure
+ *  or humidity reads 0. A skipped temperature reads the last one measured, and
+ *  pressure and humidity are compensated with it.
+ *  @thread_safe: no @isr_safe: no */
 bme280_err_t bme280_read(bme280_t *dev, bme280_data_t *out);
 
-/** @thread_safe: no @isr_safe: yes */
+/** Takes effect at the next bme280_read. Returns BME280_ERR_PARAM if all three
+ *  are SKIP. With osrs_t SKIP and no temperature measured yet, the next read
+ *  measures one first.
+ *  @thread_safe: no @isr_safe: yes */
 bme280_err_t bme280_set_oversampling(bme280_t *dev,
                                      bme280_oversampling_t osrs_t,
                                      bme280_oversampling_t osrs_p,

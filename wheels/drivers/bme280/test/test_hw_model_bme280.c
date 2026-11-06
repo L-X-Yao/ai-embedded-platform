@@ -220,6 +220,199 @@ TEST(test_multiple_reads_independent)
     ASSERT_EQ(model.measure_count, 2);
 }
 
+/* --- skipped channels (manual Tables 20, 23, 24) ----------------------- */
+
+/* Worked by hand from the manual's code with the model's calibration: adc_T
+ * 519888 gives t_fine 128422 and 25.08 C, adc_H 28000 then gives 52.74 %RH
+ * (section 4.2.3), and adc_P 415148 gives 100653.26 Pa (section 8.1). */
+#define REF_ADC_T    519888
+#define REF_ADC_P    415148
+#define REF_ADC_H    28000
+#define REF_TEMP_C   25.08f
+#define REF_PRESS_PA 100653.26f
+#define REF_HUM_PCT  52.74f
+
+static void setup_reference(void)
+{
+    setup();
+    bme280_model_set_temperature(&model, REF_ADC_T);
+    bme280_model_set_pressure(&model, REF_ADC_P);
+    bme280_model_set_humidity(&model, REF_ADC_H);
+}
+
+static bme280_cfg_t cfg_of(bme280_oversampling_t osrs_t,
+                           bme280_oversampling_t osrs_p,
+                           bme280_oversampling_t osrs_h)
+{
+    bme280_cfg_t cfg = { BME280_ADDR_LOW, osrs_t, osrs_p, osrs_h };
+    return cfg;
+}
+
+TEST(test_model_skip_outputs_placeholders)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x01);
+
+    ASSERT_EQ(model.hw.regs[0xF7], 0x80);
+    ASSERT_EQ(model.hw.regs[0xF8], 0x00);
+    ASSERT_EQ(model.hw.regs[0xF9], 0x00);
+    ASSERT_EQ(model.hw.regs[0xFA], 0x80);
+    ASSERT_EQ(model.hw.regs[0xFB], 0x00);
+    ASSERT_EQ(model.hw.regs[0xFC], 0x00);
+    ASSERT_EQ(model.hw.regs[0xFD], 0x80);
+    ASSERT_EQ(model.hw.regs[0xFE], 0x00);
+}
+
+TEST(test_model_ctrl_hum_waits_for_ctrl_meas)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    ASSERT_EQ(model.hw.regs[0xFD], 0x80);
+
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x01);
+    ASSERT_EQ(model.hw.regs[0xFD], 0x80);
+
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    ASSERT_EQ(model.hw.regs[0xFD], REF_ADC_H >> 8);
+}
+
+TEST(test_all_channels_match_the_manual)
+{
+    setup_reference();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+}
+
+TEST(test_skip_pressure_reads_zero)
+{
+    setup_reference();
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_1, BME280_OVERSAMPLING_SKIP,
+                              BME280_OVERSAMPLING_1);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.pressure_pa, 0.0f, 0.001f);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+}
+
+TEST(test_skip_humidity_reads_zero)
+{
+    setup_reference();
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_1, BME280_OVERSAMPLING_1,
+                              BME280_OVERSAMPLING_SKIP);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.humidity_pct, 0.0f, 0.001f);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+}
+
+TEST(test_skip_temperature_measures_once_in_init)
+{
+    setup_reference();
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_SKIP, BME280_OVERSAMPLING_2,
+                              BME280_OVERSAMPLING_4);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &cfg), BME280_OK);
+
+    ASSERT_EQ(model.measure_count, 1);
+    /* temperature alone at x1: osrs_t 001, osrs_p 000, mode back at sleep */
+    ASSERT_EQ(model.hw.regs[BME280_REG_CTRL_MEAS], 0x20);
+    /* init still leaves ctrl_hum at the configured value */
+    ASSERT_EQ(model.hw.regs[BME280_REG_CTRL_HUM], BME280_OVERSAMPLING_4);
+}
+
+TEST(test_skip_temperature_reuses_the_one_from_init)
+{
+    setup_reference();
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_SKIP, BME280_OVERSAMPLING_1,
+                              BME280_OVERSAMPLING_1);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &cfg), BME280_OK);
+
+    /* A later change cannot reach the driver: temperature is not measured */
+    bme280_model_set_temperature(&model, 400000);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_EQ(model.measure_count, 3);   /* init, then one per read */
+}
+
+TEST(test_skip_temperature_after_a_read_keeps_it)
+{
+    setup_reference();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+
+    ASSERT_EQ(bme280_set_oversampling(&dev, BME280_OVERSAMPLING_SKIP,
+                                      BME280_OVERSAMPLING_1,
+                                      BME280_OVERSAMPLING_1), BME280_OK);
+    bme280_model_set_temperature(&model, 400000);
+
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+    ASSERT_EQ(model.measure_count, 2);
+}
+
+TEST(test_skip_temperature_before_any_read_measures_it)
+{
+    setup_reference();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(bme280_set_oversampling(&dev, BME280_OVERSAMPLING_SKIP,
+                                      BME280_OVERSAMPLING_1,
+                                      BME280_OVERSAMPLING_1), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+    ASSERT_EQ(model.measure_count, 2);   /* the temperature, then the read */
+
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_EQ(model.measure_count, 3);
+}
+
+TEST(test_skip_all_refused)
+{
+    setup();
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_SKIP, BME280_OVERSAMPLING_SKIP,
+                              BME280_OVERSAMPLING_SKIP);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &cfg), BME280_ERR_PARAM);
+
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(bme280_set_oversampling(&dev, BME280_OVERSAMPLING_SKIP,
+                                      BME280_OVERSAMPLING_SKIP,
+                                      BME280_OVERSAMPLING_SKIP), BME280_ERR_PARAM);
+    ASSERT_EQ(dev.cfg.osrs_t, BME280_OVERSAMPLING_1);
+}
+
 TEST_MAIN("bme280 hardware model")
     RUN(test_init_reads_chip_id);
     RUN(test_init_wrong_chip_id);
@@ -237,4 +430,14 @@ TEST_MAIN("bme280 hardware model")
     RUN(test_humidity_calib_readonly);
     RUN(test_different_temperatures);
     RUN(test_multiple_reads_independent);
+    RUN(test_model_skip_outputs_placeholders);
+    RUN(test_model_ctrl_hum_waits_for_ctrl_meas);
+    RUN(test_all_channels_match_the_manual);
+    RUN(test_skip_pressure_reads_zero);
+    RUN(test_skip_humidity_reads_zero);
+    RUN(test_skip_temperature_measures_once_in_init);
+    RUN(test_skip_temperature_reuses_the_one_from_init);
+    RUN(test_skip_temperature_after_a_read_keeps_it);
+    RUN(test_skip_temperature_before_any_read_measures_it);
+    RUN(test_skip_all_refused);
 TEST_MAIN_END()
