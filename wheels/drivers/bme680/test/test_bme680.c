@@ -909,6 +909,44 @@ TEST(test_humidity_stays_defined_at_full_scale)
     ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(void)
+{
+    bme680_data_t data;
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    ASSERT_EQ(bme680_read(&dev, &data), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_oversampling(&dev, 1, 1, 1), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_set_gas_heater(&dev, 320, 150), BME680_ERR_PARAM);
+    ASSERT_EQ(bme680_reset(&dev), BME680_ERR_PARAM);
+}
+
+/* 0x60 is a BME280: it answers, but this calibration was never read */
+TEST(test_device_refused_after_wrong_id)
+{
+    mock_reset();
+    mock_regs[0xD0] = 0x60;
+    ASSERT_EQ(bme680_init(&dev, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_ID);
+    assert_device_refused();
+}
+
+TEST(test_device_refused_after_failed_calibration_read)
+{
+    mock_reset();
+    mock_fail_at = 1;  /* after the ID read */
+    ASSERT_EQ(bme680_init(&dev, &mock_i2c, BME680_ADDR_LOW), BME680_ERR_I2C);
+    assert_device_refused();
+}
+
+/* Refused before the chip, so dev holds whatever it held */
+TEST(test_device_refused_after_rejected_init)
+{
+    mock_reset();
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(bme680_init(&dev, NULL, BME680_ADDR_LOW), BME680_ERR_PARAM);
+    assert_device_refused();
+}
+
 TEST_MAIN("bme680")
     RUN(test_init_ok);
     RUN(test_init_chip_id);
@@ -968,4 +1006,7 @@ TEST_MAIN("bme680")
     RUN(test_tiny_divisor_reads_zero);
     RUN(test_negative_divisor_reads_zero);
     RUN(test_humidity_stays_defined_at_full_scale);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_calibration_read);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
