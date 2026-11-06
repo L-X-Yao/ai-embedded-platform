@@ -53,7 +53,7 @@ def test_all_c_tests_pass():
         "test_single_byte",
         "test_step_equivalence",
         "test_step_chunked",
-        "test_flybox_compatibility",
+        "test_fixed_pattern_regression",
         "test_all_zeros_buffer",
         "test_all_ones_buffer",
         "test_single_byte_all_distinct",
