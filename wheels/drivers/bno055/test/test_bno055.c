@@ -297,6 +297,20 @@ TEST(test_read_euler_refused_after_failed_init)
     ASSERT_EQ(bno055_read_euler(&dev, &euler), BNO055_ERR_PARAM);
 }
 
+TEST(test_init_requires_write_and_read)
+{
+    bno055_i2c_t bad = mock_i2c;
+    bno055_t d;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(bno055_init(&d, &bad, &default_cfg), BNO055_ERR_PARAM);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(bno055_init(&d, &bad, &default_cfg), BNO055_ERR_PARAM);
+}
+
 TEST_MAIN("bno055")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -321,4 +335,5 @@ TEST_MAIN("bno055")
     RUN(test_read_euler_refused_after_failed_mode_change);
     RUN(test_read_euler_works_after_failed_write_into_config);
     RUN(test_read_euler_refused_after_failed_init);
+    RUN(test_init_requires_write_and_read);
 TEST_MAIN_END()
