@@ -64,21 +64,21 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c);
 /** Set high alert threshold in degrees Celsius. Values past the ends of the
  *  12-bit format saturate at 127.9375 C and -128 C; NaN returns
  *  TMP102_ERR_PARAM.
- *  @thread_safe: no @isr_safe: yes */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_set_alert_high(tmp102_t *dev, float temp_c);
 
 /** Set low alert threshold in degrees Celsius. Values past the ends of the
  *  12-bit format saturate at 127.9375 C and -128 C; NaN returns
  *  TMP102_ERR_PARAM.
- *  @thread_safe: no @isr_safe: yes */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_set_alert_low(tmp102_t *dev, float temp_c);
 
 /** Enter shutdown (low-power) mode.
- *  @thread_safe: no @isr_safe: yes */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_shutdown(tmp102_t *dev);
 
 /** Wake from shutdown to continuous conversion.
- *  @thread_safe: no @isr_safe: yes */
+ *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_wake(tmp102_t *dev);
 
 #ifdef __cplusplus
