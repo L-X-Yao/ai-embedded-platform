@@ -67,8 +67,7 @@ static void example(void) {
 Checked on 2026-11-06 against the SD Physical Layer Simplified Specification v3.01. Not run on hardware.
 
 - **Matched:** Command indexes, CMD0 and CMD8 CRC bytes, the 74 clocks before CMD0, CMD8 and ACMD41 arguments, data tokens, addressing by card type.
-- **Fixed:** Card waits counted bytes, about 2.5 ms at 25 MHz, where the spec needs 100 ms for reads and over 500 ms for writes. They now count milliseconds. A write now checks CMD13. Only an illegal CMD8 means a legacy card. A data error token returns `SD_SPI_ERR_READ`.
-- **Still open:** The model and mock do not check the command CRC, ACMD41's HCS bit, or the card state, and the model never goes busy.
+- **Fixed:** Card waits counted bytes, about 2.5 ms at 25 MHz, where the spec needs 100 ms for reads and over 500 ms for writes. They now count milliseconds. A write now checks CMD13. Only an illegal CMD8 means a legacy card. A data error token returns `SD_SPI_ERR_READ`. The model and mock now check the CRC of the first CMD0 and of CMD8, ACMD41's HCS bit and the card state, and the model goes busy after a write, also after a reselect.
 - **Suspected:** `sd_spi_init` never waits before the first clocks. The timing between R1 and the data token is blank in the Simplified Specification.
 
 ## Known issues

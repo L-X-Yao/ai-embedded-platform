@@ -44,8 +44,7 @@ None. All configuration via `lis3dh_cfg_t` at init or runtime setters.
 Checked on 2026-11-06 against ST DocID17530 Rev 2, and Rev 1 of May 2010. Not run on hardware.
 
 - **Matched:** Addresses, WHO_AM_I, register map, ODR and range codes, auto-increment, the scale table, which holds in all three modes.
-- **Fixed:** CTRL_REG4 left HR at 0, so the chip ran 10-bit normal mode where the driver states 12-bit. LPen was never set, so the `_LP` rates did not run as named. LPen and HR now follow the rate, and are never set together.
-- **Still open:** The model mirrors data at 0xA8 as if bit 7 were address, and has no CTRL_REG1 reset value.
+- **Fixed:** CTRL_REG4 left HR at 0, so the chip ran 10-bit normal mode where the driver states 12-bit. LPen was never set, so the `_LP` rates did not run as named. LPen and HR now follow the rate, and are never set together. The model and mocks now treat bit 7 of the sub-address as auto-increment instead of address, and the model resets CTRL_REG1 to 0x07, ignores writes to type r registers and counts writes to reserved ones.
 - **Suspected:** init and `lis3dh_set_odr` do not wait for the turn-on time, and reads do not check ZYXDA. `lis3dh_set_range` changes the scale at once, so the first read after it can apply the new scale to an old sample.
 
 ## Known issues
