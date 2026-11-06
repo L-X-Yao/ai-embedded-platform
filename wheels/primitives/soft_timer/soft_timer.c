@@ -12,6 +12,14 @@
 #include "contract.h"
 #include <string.h>
 
+/* count is a high-water mark: destroy clears a slot and leaves count alone,
+ * so a slot only holds a timer while it has a callback. */
+static bool slot_in_use(const soft_timer_mgr_t *mgr, int id)
+{
+    return mgr && id >= 0 && (size_t)id < mgr->count &&
+           mgr->timers[id].callback != NULL;
+}
+
 soft_timer_err_t soft_timer_init(soft_timer_mgr_t *mgr)
 {
     if (!mgr)
@@ -78,7 +86,7 @@ soft_timer_err_t soft_timer_destroy(soft_timer_mgr_t *mgr, int id)
 
 soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id)
 {
-    if (!mgr || id < 0 || (size_t)id >= mgr->count)
+    if (!slot_in_use(mgr, id))
     {
         return SOFT_TIMER_ERR_PARAM;
     }
@@ -88,7 +96,7 @@ soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id)
 
 soft_timer_err_t soft_timer_stop(soft_timer_mgr_t *mgr, int id)
 {
-    if (!mgr || id < 0 || (size_t)id >= mgr->count)
+    if (!slot_in_use(mgr, id))
     {
         return SOFT_TIMER_ERR_PARAM;
     }
@@ -98,7 +106,7 @@ soft_timer_err_t soft_timer_stop(soft_timer_mgr_t *mgr, int id)
 
 soft_timer_err_t soft_timer_reset(soft_timer_mgr_t *mgr, int id)
 {
-    if (!mgr || id < 0 || (size_t)id >= mgr->count)
+    if (!slot_in_use(mgr, id))
     {
         return SOFT_TIMER_ERR_PARAM;
     }
