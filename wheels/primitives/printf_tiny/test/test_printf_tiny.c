@@ -32,6 +32,17 @@ static int fmt_putc(const char *fmt, ...)
     return ret;
 }
 
+/* Same for a buffer. Both keep the format out of the compiler's sight, which
+ * the tests of bad formats need: the format attribute refuses the literals. */
+static int fmt_buf(char *buf, uint16_t size, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = vsnprintf_tiny(buf, size, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
 /* --- %d tests ------------------------------------------------------ */
 
 TEST(test_d_positive)
@@ -158,7 +169,7 @@ TEST(test_s_string)
 TEST(test_s_null)
 {
     char buf[32];
-    int n = snprintf_tiny(buf, sizeof(buf), "%s", (const char *)NULL);
+    int n = fmt_buf(buf, sizeof(buf), "%s", (const char *)NULL);
     ASSERT_EQ(n, 6);
     ASSERT_TRUE(strcmp(buf, "(null)") == 0);
 }
@@ -311,28 +322,28 @@ TEST(test_putc_null_returns_zero)
 /* A width past the limit saturates: no signed overflow, no 2^31 callbacks. */
 TEST(test_huge_width_saturates)
 {
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
     /* 2^32 + 1 would wrap round to a width of 1 */
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4294967297d", 1), PRINTF_TINY_MAX_WIDTH);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%-99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%099999999999d", 1), PRINTF_TINY_MAX_WIDTH);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999u", 1u), PRINTF_TINY_MAX_WIDTH);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999s", "ab"), PRINTF_TINY_MAX_WIDTH);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%99999999999c", 'a'), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%4294967297d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%-99999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%099999999999d", 1), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%99999999999u", 1u), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%99999999999s", "ab"), PRINTF_TINY_MAX_WIDTH);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%99999999999c", 'a'), PRINTF_TINY_MAX_WIDTH);
 }
 
 TEST(test_width_at_the_limit)
 {
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4094d", 1), 4094);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4095d", 1), 4095);
-    ASSERT_EQ(snprintf_tiny(NULL, 0, "%4096d", 1), 4095);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%4094d", 1), 4094);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%4095d", 1), 4095);
+    ASSERT_EQ(fmt_buf(NULL, 0, "%4096d", 1), 4095);
 }
 
 /* All the digits are consumed, so what follows still formats. */
 TEST(test_format_continues_after_huge_width)
 {
     static char big[PRINTF_TINY_MAX_WIDTH + 8];
-    int n = snprintf_tiny(big, (uint16_t)sizeof(big), "%-99999999999d|%d", 1, 22);
+    int n = fmt_buf(big, (uint16_t)sizeof(big), "%-99999999999d|%d", 1, 22);
 
     ASSERT_EQ(n, PRINTF_TINY_MAX_WIDTH + 3);
     ASSERT_EQ(big[0], '1');
@@ -340,9 +351,62 @@ TEST(test_format_continues_after_huge_width)
     ASSERT_STR_EQ(big + PRINTF_TINY_MAX_WIDTH, "|22");
 }
 
+/* --- unknown specifiers -------------------------------------------- */
+
+/* An unknown specifier may own an argument of any size, so no later one can
+ * be trusted to line up: the rest is copied and no argument is read. */
+TEST(test_unknown_specifier_reads_no_more_arguments)
+{
+    /* the first two read an integer as a pointer, for %s */
+    fmt_putc("%zu bytes from %s", (size_t)300, "uart");
+    ASSERT_STR_EQ(g_buf, "%zu bytes from %s");
+
+    fmt_putc("%lld|%s", 5LL, "uart");
+    ASSERT_STR_EQ(g_buf, "%lld|%s");
+
+    /* this one printed the bits of the pointer for %d */
+    fmt_putc("%.3s|%d", "abcdef", 9);
+    ASSERT_STR_EQ(g_buf, "%.3s|%d");
+}
+
+/* Flags, width and modifier of the unknown one are copied as written. */
+TEST(test_unknown_specifier_copied_as_written)
+{
+    static const char *const formats[] = {
+        "%-08.3f end", "%*d", "%hd", "%hhu", "%jd", "%td", "%e", "%g",
+        "%n", "%q", "%5q%d", "%lq %%",
+    };
+
+    for (size_t i = 0; i < sizeof(formats) / sizeof(formats[0]); i++) {
+        int n = fmt_putc(formats[i], 1, 2);
+        ASSERT_STR_EQ(g_buf, formats[i]);
+        ASSERT_EQ(n, (int)strlen(formats[i]));
+    }
+}
+
+TEST(test_specifiers_before_unknown_still_format)
+{
+    int n = fmt_putc("%d %s %q %d %s", 7, "ok", 8, "no");
+    ASSERT_STR_EQ(g_buf, "7 ok %q %d %s");
+    ASSERT_EQ(n, 13);
+}
+
+/* The count covers what the copy would have written, as for any other text. */
+TEST(test_unknown_specifier_truncated_in_buffer)
+{
+    char b[3];
+    int n = fmt_buf(b, (uint16_t)sizeof(b), "%q%d", 1);
+    ASSERT_EQ(n, 4);
+    ASSERT_STR_EQ(b, "%q");
+}
+
 /* ------------------------------------------------------------------- */
 
 TEST_MAIN("printf_tiny")
+    RUN(test_unknown_specifier_reads_no_more_arguments);
+    RUN(test_unknown_specifier_copied_as_written);
+    RUN(test_specifiers_before_unknown_still_format);
+    RUN(test_unknown_specifier_truncated_in_buffer);
     RUN(test_huge_width_saturates);
     RUN(test_width_at_the_limit);
     RUN(test_format_continues_after_huge_width);

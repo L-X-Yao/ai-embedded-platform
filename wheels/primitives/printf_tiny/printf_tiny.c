@@ -130,6 +130,7 @@ static int format_engine(out_t *o, const char *fmt, va_list ap)
             out_char(o, *fmt++);
             continue;
         }
+        const char *spec = fmt; /* where this conversion starts */
         fmt++; /* skip '%' */
 
         /* flags */
@@ -238,10 +239,11 @@ static int format_engine(out_t *o, const char *fmt, va_list ap)
             /* trailing '%' at end of format string */
             goto done;
         default:
-            /* unknown specifier — emit as-is */
-            out_char(o, '%');
-            out_char(o, *fmt);
-            break;
+            /* unknown specifier — there is no telling what argument it owns,
+             * so a later %s could dereference an integer: read no more
+             * arguments and copy the rest of the format as it stands */
+            out_str(o, spec);
+            goto done;
         }
         fmt++;
     }
