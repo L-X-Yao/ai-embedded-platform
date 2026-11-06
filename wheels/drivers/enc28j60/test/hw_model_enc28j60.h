@@ -101,6 +101,12 @@
 #define ENC_ECON1_TXRTS   0x08U
 #define ENC_ECON2_PKTDEC  0x40U
 #define ENC_ESTAT_CLKRDY  0x01U
+#define ENC_ESTAT_TXABRT  0x02U
+#define ENC_ESTAT_LATECOL 0x10U
+#define ENC_ESTAT_BUFER   0x40U
+/* Register 12-1: the R/C bits, which only the host clears */
+#define ENC_ESTAT_RC_MASK \
+    (ENC_ESTAT_TXABRT | ENC_ESTAT_LATECOL | ENC_ESTAT_BUFER)
 #define ENC_MICMD_MIIRD   0x01U
 #define ENC_MISTAT_BUSY   0x01U
 
@@ -191,6 +197,8 @@ typedef struct {
     /* TX behavior: how many ECON1 reads before TXRTS auto-clears */
     int      tx_complete_after;
     int      tx_econ1_read_count;
+    /* ESTAT bits the next transmission sets as it ends, to model an abort */
+    uint8_t  tx_end_estat;
 
     /* Track buffer writes for verification */
     uint8_t  tx_captured[2048];
@@ -265,7 +273,9 @@ __attribute__((unused))
 static void enc_bfc_reg(enc28j60_model_t *m, uint8_t addr, uint8_t mask)
 {
     uint8_t *p = enc_reg_ptr(m, addr);
-    if (ENC_IS_COMMON(addr)) {
+    if (addr == ENC_ESTAT) {
+        *p = (uint8_t)(*p & ~(mask & ENC_ESTAT_RC_MASK));
+    } else if (ENC_IS_COMMON(addr)) {
         if (!m->readonly_common[addr])
             *p = (uint8_t)(*p & ~mask);
     } else {
@@ -419,6 +429,8 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
                 if (m->tx_complete_after > 0 &&
                     m->tx_econ1_read_count >= m->tx_complete_after) {
                     m->common[ENC_ECON1] &= (uint8_t)~ENC_ECON1_TXRTS;
+                    m->common[ENC_ESTAT] |= m->tx_end_estat;
+                    m->tx_end_estat = 0;
                     val = m->common[ENC_ECON1];
                 }
             }

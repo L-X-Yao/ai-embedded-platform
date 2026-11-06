@@ -88,6 +88,8 @@
 #define ECON2_PKTDEC  0x40U
 
 #define ESTAT_CLKRDY  0x01U
+#define ESTAT_TXABRT  0x02U
+#define ESTAT_LATECOL 0x10U
 
 #define MACON1_MARXEN 0x01U
 #define MACON3_PADCFG0 0x20U
@@ -224,6 +226,11 @@ static void read_buffer(enc28j60_t *dev, uint8_t *data, uint16_t len)
 static void bit_field_set(enc28j60_t *dev, uint8_t addr, uint8_t mask)
 {
     spi_write_op(dev->spi, OP_BFS, addr, mask);
+}
+
+static void bit_field_clear(enc28j60_t *dev, uint8_t addr, uint8_t mask)
+{
+    spi_write_op(dev->spi, OP_BFC, addr, mask);
 }
 
 /* ---------- soft reset ---------- */
@@ -366,15 +373,20 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
     write_reg(dev, 0, ETXNDL, (uint8_t)(txend & 0xFFU));
     write_reg(dev, 0, ETXNDH, (uint8_t)(txend >> 8));
 
+    /* Only the result of this frame counts: the host has to clear these */
+    bit_field_clear(dev, ESTAT, ESTAT_TXABRT | ESTAT_LATECOL);
+
     /* Start transmission */
     bit_field_set(dev, ECON1, ECON1_TXRTS);
 
-    /* Wait for TX complete (TXRTS clears when done) */
+    /* Wait for TX complete (TXRTS clears when done, aborted or not) */
     uint32_t timeout = ENC28J60_TX_TIMEOUT;
     while (timeout--) {
         uint8_t econ1 = spi_read_op(dev->spi, OP_RCR, ECON1, false);
         if (!(econ1 & ECON1_TXRTS)) {
-            return ENC28J60_OK;
+            uint8_t estat = spi_read_op(dev->spi, OP_RCR, ESTAT, false);
+            return (estat & ESTAT_TXABRT) ? ENC28J60_ERR_TX_ABORT
+                                          : ENC28J60_OK;
         }
     }
     return ENC28J60_ERR_TIMEOUT;
