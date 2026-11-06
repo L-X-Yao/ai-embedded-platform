@@ -33,35 +33,58 @@ static int safe_snprintf(char *buf, size_t cap, const char *fmt, ...)
     return n;
 }
 
+static const char *skip_space(const char *p, const char *end)
+{
+    while (p < end && (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n'))
+        p++;
+    return p;
+}
+
+/** Given the opening quote of a string, find its closing quote, or NULL. */
+static const char *string_end(const char *quote, const char *end)
+{
+    const char *p = quote + 1;
+
+    while (p < end && *p != '"')
+        p += (*p == '\\' && end - p > 1) ? 2 : 1;
+    return (p < end) ? p : NULL;
+}
+
 /**
- * Find a JSON key in a string. Returns pointer to the character after
+ * Find a key of the top-level object. Returns pointer to the character after
  * the colon following the key, or NULL if not found.
- * Simple string search -- not a full JSON parser.
+ * Follows strings and nesting, because params and result can hold keys of the
+ * same names, but checks no other syntax -- not a full JSON parser.
  */
 static const char *find_key(const char *json, size_t len, const char *key)
 {
     if (!json || !key) return NULL;
 
     size_t key_len = strlen(key);
-    /* Search for "key" pattern */
     const char *end = json + len;
+    const char *p = skip_space(json, end);
+    size_t depth = 0;
 
-    for (const char *p = json; p < end; p++) {
-        if (*p != '"') continue;
-        /* Check if this quoted string matches key */
-        if ((size_t)(end - p - 1) < key_len + 1) continue;
-        if (memcmp(p + 1, key, key_len) != 0) continue;
-        if (p[1 + key_len] != '"') continue;
+    if (p >= end || *p != '{') return NULL;
 
-        /* Found "key" -- now find the colon */
-        const char *after_key = p + 1 + key_len + 1;
-        while (after_key < end && (*after_key == ' ' || *after_key == '\t'))
-            after_key++;
-        if (after_key < end && *after_key == ':') {
-            after_key++;
-            while (after_key < end && (*after_key == ' ' || *after_key == '\t'))
-                after_key++;
-            return after_key;
+    for (; p < end; p++) {
+        if (*p == '{' || *p == '[') {
+            depth++;
+        } else if (*p == '}' || *p == ']') {
+            if (--depth == 0) return NULL;
+        } else if (*p == '"') {
+            const char *close = string_end(p, end);
+            if (!close) return NULL;
+
+            if (depth == 1 && (size_t)(close - p - 1) == key_len &&
+                memcmp(p + 1, key, key_len) == 0) {
+                /* Found "key" -- a value with that text has no colon after */
+                const char *after_key = skip_space(close + 1, end);
+                if (after_key < end && *after_key == ':') {
+                    return skip_space(after_key + 1, end);
+                }
+            }
+            p = close;
         }
     }
     return NULL;
