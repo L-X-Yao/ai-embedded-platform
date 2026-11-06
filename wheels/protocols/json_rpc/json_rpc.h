@@ -71,6 +71,9 @@ json_rpc_err_t json_rpc_build_error(char *buf, size_t cap,
                                      size_t *out_len);
 
 /** Validate a JSON-RPC string and identify its type.
+ *  This and the extract functions read only the keys of the top-level object,
+ *  so a key inside params or result does not count, and a batch array is
+ *  JSON_RPC_TYPE_INVALID.
  *  @thread_safe: yes  @isr_safe: no */
 json_rpc_type_t json_rpc_validate(const char *json, size_t len);
 

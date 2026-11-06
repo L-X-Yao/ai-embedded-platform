@@ -315,7 +315,150 @@ TEST(test_extract_id_overflow)
     ASSERT_EQ(json_rpc_extract_id(huge, strlen(huge), &id), JSON_RPC_ERR_OVERFLOW);
 }
 
+/* ---------- only top-level keys count ---------- */
+
+TEST(test_id_inside_params_is_not_the_id)
+{
+    char buf[128];
+    size_t len = 0;
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_build_request(buf, sizeof(buf), "m", "{\"id\":99}", 1,
+                                     &len), JSON_RPC_OK);
+    ASSERT_EQ(json_rpc_extract_id(buf, len, &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 1);
+}
+
+TEST(test_id_inside_result_is_not_the_id)
+{
+    char buf[128];
+    size_t len = 0;
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_build_response(buf, sizeof(buf), "{\"id\":7}", 3, &len),
+              JSON_RPC_OK);
+    ASSERT_EQ(json_rpc_extract_id(buf, len, &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 3);
+}
+
+TEST(test_id_inside_an_array_is_not_the_id)
+{
+    const char *req = "{\"params\":[{\"id\":9},[{\"id\":8}]],\"id\":1}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(req, strlen(req), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 1);
+}
+
+TEST(test_method_inside_params_is_not_the_method)
+{
+    const char *req = "{\"jsonrpc\":\"2.0\",\"params\":{\"method\":\"evil\"},"
+                      "\"method\":\"reboot\",\"id\":1}";
+    size_t start = 0;
+    size_t mlen = 0;
+
+    ASSERT_EQ(json_rpc_extract_method(req, strlen(req), &start, &mlen),
+              JSON_RPC_OK);
+    ASSERT_EQ(mlen, 6u);
+    ASSERT_TRUE(memcmp(req + start, "reboot", 6) == 0);
+}
+
+TEST(test_nested_keys_do_not_set_the_type)
+{
+    const char *req = "{\"jsonrpc\":\"2.0\",\"method\":\"m\","
+                      "\"params\":{\"error\":1,\"result\":2},\"id\":1}";
+    const char *resp = "{\"jsonrpc\":\"2.0\",\"result\":{\"error\":1},\"id\":1}";
+
+    ASSERT_EQ(json_rpc_validate(req, strlen(req)), JSON_RPC_TYPE_REQUEST);
+    ASSERT_EQ(json_rpc_validate(resp, strlen(resp)), JSON_RPC_TYPE_RESPONSE);
+}
+
+TEST(test_nested_version_is_not_the_version)
+{
+    const char *bad = "{\"params\":{\"jsonrpc\":\"2.0\"},\"method\":\"m\",\"id\":1}";
+
+    ASSERT_EQ(json_rpc_validate(bad, strlen(bad)), JSON_RPC_TYPE_INVALID);
+}
+
+TEST(test_key_with_only_a_nested_match_is_not_found)
+{
+    const char *req = "{\"jsonrpc\":\"2.0\",\"method\":\"m\",\"params\":{\"id\":5}}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(req, strlen(req), &id), JSON_RPC_ERR_PARAM);
+}
+
+TEST(test_brackets_in_strings_do_not_change_the_depth)
+{
+    const char *open_q = "{\"method\":\"a{[\",\"id\":1}";
+    const char *close_q = "{\"method\":\"a}]\",\"id\":2}";
+    const char *esc_q = "{\"params\":\"a\\\"}\",\"id\":3}";
+    const char *esc_bs = "{\"params\":\"a\\\\\",\"id\":4}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(open_q, strlen(open_q), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 1);
+    ASSERT_EQ(json_rpc_extract_id(close_q, strlen(close_q), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 2);
+    ASSERT_EQ(json_rpc_extract_id(esc_q, strlen(esc_q), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 3);
+    ASSERT_EQ(json_rpc_extract_id(esc_bs, strlen(esc_bs), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 4);
+}
+
+TEST(test_a_string_value_is_not_a_key)
+{
+    const char *req = "{\"method\":\"id\",\"id\":5}";
+    const char *quoted = "{\"params\":\"x\\\",\\\"id\\\":9,\\\"y\",\"id\":5}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(req, strlen(req), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 5);
+    ASSERT_EQ(json_rpc_extract_id(quoted, strlen(quoted), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 5);
+}
+
+TEST(test_whitespace_around_the_object_is_fine)
+{
+    const char *req = " \r\n\t{ \"jsonrpc\" : \"2.0\" , \"id\" : 5 , \"method\" : \"m\" } ";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_validate(req, strlen(req)), JSON_RPC_TYPE_REQUEST);
+    ASSERT_EQ(json_rpc_extract_id(req, strlen(req), &id), JSON_RPC_OK);
+    ASSERT_EQ(id, 5);
+}
+
+TEST(test_keys_after_the_object_are_not_keys)
+{
+    const char *req = "{\"method\":\"m\"}{\"id\":5}";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_extract_id(req, strlen(req), &id), JSON_RPC_ERR_PARAM);
+}
+
+TEST(test_only_an_object_has_keys)
+{
+    const char *batch = "[{\"jsonrpc\":\"2.0\",\"method\":\"m\",\"id\":1}]";
+    const char *bare = "\"id\":5";
+    int32_t id = 0;
+
+    ASSERT_EQ(json_rpc_validate(batch, strlen(batch)), JSON_RPC_TYPE_INVALID);
+    ASSERT_EQ(json_rpc_extract_id(bare, strlen(bare), &id), JSON_RPC_ERR_PARAM);
+}
+
 TEST_MAIN("json_rpc")
+    RUN(test_id_inside_params_is_not_the_id);
+    RUN(test_id_inside_result_is_not_the_id);
+    RUN(test_id_inside_an_array_is_not_the_id);
+    RUN(test_method_inside_params_is_not_the_method);
+    RUN(test_nested_keys_do_not_set_the_type);
+    RUN(test_nested_version_is_not_the_version);
+    RUN(test_key_with_only_a_nested_match_is_not_found);
+    RUN(test_brackets_in_strings_do_not_change_the_depth);
+    RUN(test_a_string_value_is_not_a_key);
+    RUN(test_whitespace_around_the_object_is_fine);
+    RUN(test_keys_after_the_object_are_not_keys);
+    RUN(test_only_an_object_has_keys);
     RUN(test_build_request_with_params);
     RUN(test_build_request_no_params);
     RUN(test_build_request_overflow);
