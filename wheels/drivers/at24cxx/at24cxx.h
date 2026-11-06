@@ -103,8 +103,11 @@ typedef struct {
 
 /* ---------- write-cycle time (ms) ---------- */
 
+/* The longest tWR in the AT24C128/256 manual: 20 ms at 1.8 V, 10 ms at 2.5 V and
+ * 5 V, and 5 ms only on parts with process letter B. Define it lower for a known
+ * part to write faster. */
 #ifndef AT24CXX_WRITE_CYCLE_MS
-#define AT24CXX_WRITE_CYCLE_MS  5u
+#define AT24CXX_WRITE_CYCLE_MS  20u
 #endif
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- @isr_safe: no */
@@ -119,7 +122,8 @@ at24cxx_err_t at24cxx_read(const at24cxx_t *dev, uint16_t addr,
 
 /**
  * Write len bytes to EEPROM.  Automatically splits across page
- * boundaries and inserts write-cycle delays.
+ * boundaries and inserts write-cycle delays: calls delay_ms for
+ * AT24CXX_WRITE_CYCLE_MS after each page.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 at24cxx_err_t at24cxx_write(const at24cxx_t *dev, uint16_t addr,
