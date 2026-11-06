@@ -75,6 +75,7 @@
 
 /* PHY registers (reached through MIREGADR) */
 #define PHCON1    0x00U
+#define PHCON2    0x10U
 
 /* ---------- bit masks ---------- */
 
@@ -94,6 +95,8 @@
 #define MACON3_FULDPX  0x01U
 
 #define MISTAT_BUSY   0x01U
+
+#define PHCON2_HDLDIS 0x0100U
 
 #define ERXFCON_UCEN  0x80U
 #define ERXFCON_CRCEN 0x20U
@@ -321,6 +324,11 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
      * LEDB wiring says, and to an unknown value with no LED. All the other
      * PHCON1 bits reset to 0 as well. */
     err = phy_write(dev, PHCON1, 0x0000U);
+    if (err != ENC28J60_OK) return err;
+
+    /* Half duplex loops transmitted frames back by default, and the filters
+     * above would pass the broadcast ones up to enc28j60_receive */
+    err = phy_write(dev, PHCON2, PHCON2_HDLDIS);
     if (err != ENC28J60_OK) return err;
 
     /* Enable reception */

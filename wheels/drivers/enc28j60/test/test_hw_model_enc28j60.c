@@ -503,6 +503,25 @@ TEST(test_model_dummy_byte_only_on_mac_mii)
     ASSERT_EQ(val, 0x04);
 }
 
+/* --- 15. Half-duplex loopback --- */
+
+/* DS39662C p.55: "the Reset default configuration will loop transmitted
+ * packets back to itself. Unless the receive filter configuration filters
+ * these packets out, they will be written into the circular receive buffer".
+ * The filters accept broadcast, so "the host controller should set the
+ * PHCON2.HDLDIS bit." It is bit 8 of PHCON2 at PHY address 10h (p.39). */
+TEST(test_init_disables_half_duplex_loopback)
+{
+    setup();
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+
+    ASSERT_EQ(model.regs[1][ENC_ERXFCON] & 0x01U, 0x01U);   /* BCEN is on */
+    ASSERT_EQ(model.phy_regs[ENC_PHCON2], 0x0100);
+    /* Two PHY writes now: the second must wait for the first */
+    ASSERT_EQ(model.phy_write_while_busy, 0);
+    ASSERT_EQ(model.phy_write_rx_on, 0);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -523,4 +542,5 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_clears_pdpxmd_strapped_by_ledb);
     RUN(test_init_times_out_when_phy_stays_busy);
     RUN(test_model_dummy_byte_only_on_mac_mii);
+    RUN(test_init_disables_half_duplex_loopback);
 TEST_MAIN_END()
