@@ -49,9 +49,8 @@ None. I2C address is runtime-configurable via `sht30_cfg_t`.
 Checked on 2026-11-06 against Sensirion Datasheet SHT3x-DIS, December 2022 - Version 7. Not run on hardware.
 
 - **Matched:** Addresses, the single-shot and soft reset commands, the 16 ms wait, the read layout, CRC, both conversion formulas.
-- **Fixed:** With a NULL `delay_ms`, `sht30_read` skipped its wait and the sensor would NACK every read, so `sht30_init` now returns `SHT30_ERR_PARAM`. The model and the mock always answered, so both now NACK until the measurement time has passed.
-- **Still open:** Init does not wait out the power-up time, up to 1.5 ms, so a first command sent too early comes back as `SHT30_ERR_I2C`. Periodic mode, low and medium repeatability, clock stretching, the status register, heater, alert limits, general call reset and nRESET are not implemented. The model accepts commands during a soft reset and fills reads shorter than 6 bytes with FFh, so a fault in those paths would pass.
-- **Suspected:** `sht30_init` and `sht30_reset` return straight after the soft reset, while the sensor needs up to 1.5 ms, so a read right after can fail with `SHT30_ERR_I2C`.
+- **Fixed:** With a NULL `delay_ms`, `sht30_read` skipped its wait and the sensor would NACK every read, so `sht30_init` now returns `SHT30_ERR_PARAM`. The model and the mock always answered, so both now NACK until the measurement time has passed. Init sent its first command with no wait for the power-up time, and init and `sht30_reset` returned straight after the soft reset, so a read right after could fail. Each wait is now 2 ms. The model took commands during a soft reset and filled short reads with FFh, and it now refuses commands during tPU, tSR and 1 ms after a command, and gives the bytes of a short read.
+- **Still open:** Periodic mode, low and medium repeatability, clock stretching, the status register, heater, alert limits, general call reset and nRESET are not implemented.
 
 ## Known issues
 

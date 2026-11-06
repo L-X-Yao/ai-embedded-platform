@@ -53,10 +53,11 @@ static void example(void) {
 
 ## Datasheet check
 
-Checked on 2026-11-06 against the QST QMC5883P Datasheet QST-PD-B002-22, Rev E. This check was not run on hardware. Nothing was changed: the owner decided this driver is checked but not fixed, because no board is available to retest it.
+Checked on 2026-11-06 against the QST QMC5883P Datasheet QST-PD-B002-22, Rev E. This check was not run on hardware. The driver was not changed: the owner decided it is checked but not fixed, because no board is available to retest it.
 
 - **Matched:** Address 0x2C, chip ID 0x80, data registers and byte order, the DRDY check, CR1 and CR2 layout, the +/-2 G range and 15000 LSB/G, SIGN 0x29 = 0x06 and the write order of the manual's example.
-- **Still open:** The chip has no 512x setting, so `CR1_OSR_512X` and the "512x" in this README are wrong: OSR1 = 00 means a ratio of 8. The register value is valid, so the chip is unaffected and only the name misleads. The model and mock never clear DRDY on a status read, so a second read returns old data as new where the real chip reports not ready. That path is therefore untested.
+- **Fixed:** The model and mock never cleared DRDY on a status read, so a second read returned old data as new. A status read now clears DRDY, and in the model OVFL too.
+- **Still open:** The chip has no 512x setting, so `CR1_OSR_512X` and the "512x" in this README are wrong: OSR1 = 00 means a ratio of 8. The register value is valid, so the chip is unaffected and only the name misleads.
 - **Suspected:** Init writes 0x40 to register 0x0D, the "hidden wake register" above, which the register map does not have; the board ran with that write, so it may be needed for bring-up. The manual ties ODR to Normal mode and says Continuous mode runs flat out, so the real rate may not be 200 Hz. `qmc5883p_read` tests only DRDY, and reading the status clears OVFL, so data past +/-30000 LSB (about 2 G) comes back as OK.
 
 ## Known issues
