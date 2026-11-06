@@ -10,6 +10,7 @@
 
 #include "apds9960.h"
 #include "contract.h"
+#include <string.h>
 
 /* --- Register map (APDS-9960 datasheet) --- */
 #define REG_ENABLE      0x80u
@@ -81,11 +82,9 @@ static apds9960_err_t read_reg(const apds9960_t *dev, uint8_t reg, uint8_t *val)
 
 /* --- Public API --- */
 
-apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static apds9960_err_t bring_up(const apds9960_t *dev)
 {
-    if (!dev || !i2c) return APDS9960_ERR_PARAM;
-    dev->i2c = i2c;
-
     /* Verify chip ID */
     uint8_t id = 0;
     apds9960_err_t err = read_reg(dev, REG_ID, &id);
@@ -107,6 +106,27 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
     /* Default control: gain x1 for ALS/prox, LED 100mA */
     err = write_reg(dev, REG_CONTROL, 0x00u);
     if (err != APDS9960_OK) return err;
+
+    return APDS9960_OK;
+}
+
+apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
+{
+    if (!dev) return APDS9960_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs) return APDS9960_ERR_PARAM;
+
+    dev->i2c = i2c;
+
+    apds9960_err_t err = bring_up(dev);
+    if (err != APDS9960_OK) {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return APDS9960_OK;

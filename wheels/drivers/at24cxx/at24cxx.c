@@ -10,6 +10,7 @@
 
 #include "at24cxx.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---- helpers ---- */
 
@@ -94,7 +95,13 @@ static at24cxx_err_t write_page(const at24cxx_t *dev, uint16_t addr,
 at24cxx_err_t at24cxx_init(at24cxx_t *dev, const at24cxx_i2c_t *i2c,
                            uint8_t dev_addr, at24cxx_model_t model)
 {
-    if (!dev || !i2c) return AT24CXX_ERR_PARAM;
+    if (!dev) return AT24CXX_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c) return AT24CXX_ERR_PARAM;
 
     /* The chip answers nothing until a write cycle ends, and nothing else waits */
     if (!i2c->delay_ms) return AT24CXX_ERR_PARAM;

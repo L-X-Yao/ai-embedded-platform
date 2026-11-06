@@ -195,6 +195,50 @@ TEST(test_read_once_i2c_fail)
     ASSERT_EQ(bh1750_read_lux(&dev, &lux), BH1750_ERR_I2C);
 }
 
+/* a device init did not finish */
+static void assert_device_refused(bh1750_t *d)
+{
+    float lux;
+    ASSERT_EQ(bh1750_read_lux(d, &lux), BH1750_ERR_PARAM);
+    ASSERT_EQ(bh1750_power_on(d), BH1750_ERR_PARAM);
+    ASSERT_EQ(bh1750_power_off(d), BH1750_ERR_PARAM);
+    ASSERT_EQ(bh1750_reset(d), BH1750_ERR_PARAM);
+}
+
+/* The chip has no ID: the power-on command is all that shows it answers */
+TEST(test_device_refused_after_failed_power_on)
+{
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    bh1750_t d;
+    mock_reset();
+    mock_i2c_fail = true;
+    ASSERT_EQ(bh1750_init(&d, &mock_i2c, &cfg), BH1750_ERR_I2C);
+    mock_i2c_fail = false;
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bh1750_i2c_t no_callbacks;
+    bh1750_cfg_t cfg = { .addr = BH1750_ADDR_LOW, .mode = BH1750_CONT_H_RES };
+    bh1750_cfg_t bad_mode = { .addr = BH1750_ADDR_LOW, .mode = (bh1750_mode_t)0x12 };
+    bh1750_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bh1750_init(&d, NULL, &cfg), BH1750_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bh1750_init(&d, &no_callbacks, &cfg), BH1750_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bh1750_init(&d, &mock_i2c, &bad_mode), BH1750_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bh1750")
     RUN(test_init_null);
     RUN(test_init_sends_power_on_and_mode);
@@ -208,4 +252,6 @@ TEST_MAIN("bh1750")
     RUN(test_reset);
     RUN(test_read_once_sends_the_mode_again);
     RUN(test_read_once_i2c_fail);
+    RUN(test_device_refused_after_failed_power_on);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

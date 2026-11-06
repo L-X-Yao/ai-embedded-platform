@@ -327,6 +327,59 @@ TEST(test_zero_init_safety)
     ASSERT_EQ(apds9960_disable_all(&zero_dev), APDS9960_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(apds9960_t *d)
+{
+    uint8_t prox;
+    apds9960_color_t color;
+    apds9960_gesture_t gesture;
+    ASSERT_EQ(apds9960_enable_proximity(d), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_proximity(d, &prox), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_enable_color(d), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_color(d, &color), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_enable_gesture(d), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_read_gesture(d, &gesture), APDS9960_ERR_PARAM);
+    ASSERT_EQ(apds9960_disable_all(d), APDS9960_ERR_PARAM);
+}
+
+/* 0x9C is the ID of an APDS-9930, which has no gesture engine */
+TEST(test_device_refused_after_wrong_id)
+{
+    apds9960_t d;
+    mock_reset();
+    mock_regs[REG_ID] = 0x9C;
+    ASSERT_EQ(apds9960_init(&d, &mock_i2c), APDS9960_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    apds9960_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(apds9960_init(&d, NULL), APDS9960_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    apds9960_t d;
+    apds9960_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(apds9960_init(&d, &bad), APDS9960_ERR_PARAM);
+    assert_device_refused(&d);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(apds9960_init(&d, &bad), APDS9960_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("apds9960")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -349,4 +402,7 @@ TEST_MAIN("apds9960")
     RUN(test_gesture_below_threshold);
     RUN(test_disable_all);
     RUN(test_zero_init_safety);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()

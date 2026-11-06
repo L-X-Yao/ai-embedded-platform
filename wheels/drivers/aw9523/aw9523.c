@@ -12,6 +12,7 @@
 
 #include "aw9523.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---- DIM register mapping (datasheet Table 3) ----
  * Port1 pin0 = DIM0 (0x20)   Port0 pin0 = DIM4  (0x24)
@@ -73,17 +74,9 @@ static uint8_t dim_reg_for_pin(aw9523_port_t port, uint8_t pin)
 
 /* ---- public API ---- */
 
-aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
-                         uint8_t dev_addr)
+/* The steps of init that talk to the chip */
+static aw9523_err_t bring_up(aw9523_t *dev)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
-        return AW9523_ERR_PARAM;
-    if (dev_addr < 0x58 || dev_addr > 0x5B)
-        return AW9523_ERR_PARAM;
-
-    dev->i2c      = i2c;
-    dev->dev_addr = dev_addr;
-
     /* Read and verify chip ID */
     uint8_t id = 0;
     if (!read_reg(dev, AW9523_REG_ID, &id))
@@ -128,6 +121,30 @@ aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
         return AW9523_ERR_I2C;
 
     return AW9523_OK;
+}
+
+aw9523_err_t aw9523_init(aw9523_t *dev, const aw9523_i2c_t *i2c,
+                         uint8_t dev_addr)
+{
+    if (!dev)
+        return AW9523_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs)
+        return AW9523_ERR_PARAM;
+    if (dev_addr < 0x58 || dev_addr > 0x5B)
+        return AW9523_ERR_PARAM;
+
+    dev->i2c      = i2c;
+    dev->dev_addr = dev_addr;
+
+    aw9523_err_t err = bring_up(dev);
+    if (err != AW9523_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 aw9523_err_t aw9523_set_direction(aw9523_t *dev, aw9523_port_t port,
