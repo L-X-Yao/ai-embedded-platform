@@ -433,6 +433,43 @@ TEST(test_read_sends_measure_cmd)
     ASSERT_EQ(mock_last_write[1], 0x98);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(shtc3_t *d)
+{
+    shtc3_data_t data;
+    ASSERT_EQ(shtc3_read(d, &data), SHTC3_ERR_PARAM);
+    ASSERT_EQ(shtc3_sleep(d), SHTC3_ERR_PARAM);
+    ASSERT_EQ(shtc3_wakeup(d), SHTC3_ERR_PARAM);
+    ASSERT_EQ(shtc3_reset(d), SHTC3_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_wrong_id)
+{
+    shtc3_t d;
+    mock_reset();
+    plant_id(0x0000);
+    ASSERT_EQ(shtc3_init(&d, &mock_i2c), SHTC3_ERR_ID);
+    plant_reading(0x6666, 0x8000);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const shtc3_i2c_t zeroed;
+    shtc3_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(shtc3_init(&d, NULL), SHTC3_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(shtc3_init(&d, &zeroed), SHTC3_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("shtc3")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -467,4 +504,6 @@ TEST_MAIN("shtc3")
     RUN(test_error_codes);
     RUN(test_init_valid_id_variant);
     RUN(test_read_sends_measure_cmd);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

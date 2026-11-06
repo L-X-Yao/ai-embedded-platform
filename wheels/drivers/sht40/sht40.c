@@ -64,7 +64,7 @@ static float clamp_f(float val, float lo, float hi)
 static sht40_err_t measure(sht40_t *dev, uint8_t cmd, uint16_t wait_ms,
                            sht40_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return SHT40_ERR_PARAM;
     }
@@ -114,7 +114,16 @@ static sht40_err_t measure(sht40_t *dev, uint8_t cmd, uint16_t wait_ms,
 
 sht40_err_t sht40_init(sht40_t *dev, const sht40_i2c_t *i2c, uint8_t addr)
 {
-    if (!dev || !i2c)
+    if (!dev)
+    {
+        return SHT40_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
     {
         return SHT40_ERR_PARAM;
     }
@@ -123,13 +132,13 @@ sht40_err_t sht40_init(sht40_t *dev, const sht40_i2c_t *i2c, uint8_t addr)
         return SHT40_ERR_PARAM;
     }
 
-    memset(dev, 0, sizeof(*dev));
     dev->i2c  = i2c;
     dev->addr = addr;
 
     /* Soft reset */
     if (!send_cmd(dev, CMD_SOFT_RESET))
     {
+        dev->i2c = NULL;
         return SHT40_ERR_I2C;
     }
 
@@ -143,6 +152,7 @@ sht40_err_t sht40_init(sht40_t *dev, const sht40_i2c_t *i2c, uint8_t addr)
     sht40_err_t err = sht40_read_serial(dev, &serial);
     if (err != SHT40_OK)
     {
+        dev->i2c = NULL;
         return err;
     }
     dev->serial = serial;
@@ -167,7 +177,7 @@ sht40_err_t sht40_read_low(sht40_t *dev, sht40_data_t *out)
 
 sht40_err_t sht40_soft_reset(sht40_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return SHT40_ERR_PARAM;
     }
@@ -186,7 +196,7 @@ sht40_err_t sht40_soft_reset(sht40_t *dev)
 
 sht40_err_t sht40_read_serial(sht40_t *dev, uint32_t *serial)
 {
-    if (!dev || !serial)
+    if (!dev || !dev->i2c || !serial)
     {
         return SHT40_ERR_PARAM;
     }

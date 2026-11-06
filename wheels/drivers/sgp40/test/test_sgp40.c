@@ -316,6 +316,58 @@ TEST(test_init_refuses_the_failure_pattern)
     ASSERT_EQ(sgp40_init(&d, &mock_i2c), SGP40_ERR_SELFTEST);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sgp40_t *d)
+{
+    sgp40_data_t data;
+    ASSERT_EQ(sgp40_measure_raw(d, &data), SGP40_ERR_PARAM);
+    ASSERT_EQ(sgp40_measure_raw_comp(d, &data, 0x8000, 0x6666), SGP40_ERR_PARAM);
+}
+
+/* A good word, but not the 0xD4 of a passed self-test */
+TEST(test_device_refused_after_failed_selftest)
+{
+    sgp40_t d;
+    mock_reset();
+    plant_sraw(0x4B00);
+    ASSERT_EQ(sgp40_init(&d, &mock_i2c), SGP40_ERR_SELFTEST);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sgp40_i2c_t zeroed;
+    sgp40_i2c_t no_read = mock_i2c;
+    sgp40_t d;
+    no_read.read = NULL;
+    mock_reset();
+    plant_selftest_ok();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sgp40_init(&d, NULL), SGP40_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sgp40_init(&d, &zeroed), SGP40_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sgp40_init(&d, &no_read), SGP40_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_delay_stays_optional)
+{
+    sgp40_i2c_t no_delay = mock_i2c;
+    sgp40_t d;
+    no_delay.delay_ms = NULL;
+    mock_reset();
+    plant_selftest_ok();
+    ASSERT_EQ(sgp40_init(&d, &no_delay), SGP40_OK);
+}
+
 TEST_MAIN("sgp40")
     RUN(test_crc8_known);
     RUN(test_crc8_zeros);
@@ -337,4 +389,7 @@ TEST_MAIN("sgp40")
     RUN(test_selftest_command_bytes);
     RUN(test_init_ignores_second_selftest_byte);
     RUN(test_init_refuses_the_failure_pattern);
+    RUN(test_device_refused_after_failed_selftest);
+    RUN(test_device_refused_after_rejected_init);
+    RUN(test_init_delay_stays_optional);
 TEST_MAIN_END()

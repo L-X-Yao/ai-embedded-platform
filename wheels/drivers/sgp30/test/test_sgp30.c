@@ -488,6 +488,45 @@ TEST(test_zero_init_safety)
     ASSERT_EQ(sgp30_measure_iaq(&zero_dev, &data), SGP30_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(sgp30_t *d)
+{
+    sgp30_data_t data;
+    sgp30_baseline_t baseline = { .eco2_baseline = 0, .tvoc_baseline = 0 };
+    sgp30_serial_t serial;
+    ASSERT_EQ(sgp30_measure_iaq(d, &data), SGP30_ERR_PARAM);
+    ASSERT_EQ(sgp30_get_baseline(d, &baseline), SGP30_ERR_PARAM);
+    ASSERT_EQ(sgp30_set_baseline(d, &baseline), SGP30_ERR_PARAM);
+    ASSERT_EQ(sgp30_get_serial_id(d, &serial), SGP30_ERR_PARAM);
+    ASSERT_EQ(sgp30_set_humidity(d, 0x0F80), SGP30_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_iaq_init)
+{
+    sgp30_t d;
+    mock_reset();
+    mock_fail_next = 1;
+    ASSERT_EQ(sgp30_init(&d, &mock_i2c), SGP30_ERR_I2C);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const sgp30_i2c_t zeroed;
+    sgp30_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sgp30_init(&d, NULL), SGP30_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(sgp30_init(&d, &zeroed), SGP30_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("sgp30")
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
@@ -528,4 +567,6 @@ TEST_MAIN("sgp30")
     RUN(test_init_delay_called);
     RUN(test_measure_delay_called);
     RUN(test_zero_init_safety);
+    RUN(test_device_refused_after_failed_iaq_init);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

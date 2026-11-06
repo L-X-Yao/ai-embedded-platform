@@ -62,20 +62,9 @@ uint8_t shtc3_crc8(const uint8_t *data, uint16_t len)
     return crc;
 }
 
-shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
+/* The steps of init that talk to the chip */
+static shtc3_err_t bring_up(const shtc3_t *dev)
 {
-    if (!dev || !i2c)
-    {
-        return SHTC3_ERR_PARAM;
-    }
-    if (!i2c->write || !i2c->read || !i2c->delay_ms)
-    {
-        return SHTC3_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-
     /* Wakeup the sensor */
     if (!send_cmd(dev, CMD_WAKEUP_MSB, CMD_WAKEUP_LSB))
     {
@@ -114,6 +103,38 @@ shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
     if (!send_cmd(dev, CMD_SLEEP_MSB, CMD_SLEEP_LSB))
     {
         return SHTC3_ERR_I2C;
+    }
+
+    return SHTC3_OK;
+}
+
+shtc3_err_t shtc3_init(shtc3_t *dev, const shtc3_i2c_t *i2c)
+{
+    if (!dev)
+    {
+        return SHTC3_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it, which may not even be a SHTC3 */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c)
+    {
+        return SHTC3_ERR_PARAM;
+    }
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
+    {
+        return SHTC3_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+
+    shtc3_err_t err = bring_up(dev);
+    if (err != SHTC3_OK)
+    {
+        dev->i2c = NULL;
+        return err;
     }
 
     INVARIANT(dev->i2c != NULL);
