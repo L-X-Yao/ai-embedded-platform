@@ -10,6 +10,7 @@
 
 #include "a4988.h"
 #include "contract.h"
+#include <string.h>
 
 /* Minimum step pulse width: 2us (datasheet minimum is 1us) */
 #define STEP_PULSE_US  2U
@@ -38,7 +39,13 @@ static const bool ms_table[5][3] = {
 a4988_err_t a4988_init(a4988_t *dev, const a4988_hal_t *hal,
                        const a4988_cfg_t *cfg)
 {
-    if (!dev || !hal || !cfg) return A4988_ERR_PARAM;
+    if (!dev) return A4988_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal || !cfg) return A4988_ERR_PARAM;
     if (!hal->write_pin || !hal->delay_us) return A4988_ERR_PARAM;
 
     dev->hal = hal;

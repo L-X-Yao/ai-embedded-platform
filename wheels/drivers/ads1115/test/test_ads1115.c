@@ -252,6 +252,31 @@ TEST(test_read_busy_timeout)
     ASSERT_EQ(ads1115_read_raw(&dev, &raw), ADS1115_ERR_BUSY);
 }
 
+/* a device init refused */
+static void assert_device_refused(ads1115_t *d)
+{
+    int16_t raw;
+    float mv;
+    ASSERT_EQ(ads1115_read_raw(d, &raw), ADS1115_ERR_PARAM);
+    ASSERT_EQ(ads1115_read_voltage(d, &mv), ADS1115_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const ads1115_i2c_t no_callbacks;
+    ads1115_t d;
+    ads1115_cfg_t cfg = { .addr = ADS1115_ADDR_GND };
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ads1115_init(&d, NULL, &cfg), ADS1115_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(ads1115_init(&d, &no_callbacks, &cfg), ADS1115_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("ads1115")
     RUN(test_init_null);
     RUN(test_read_raw_positive);
@@ -263,4 +288,5 @@ TEST_MAIN("ads1115")
     RUN(test_set_channel);
     RUN(test_config_bits);
     RUN(test_read_busy_timeout);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

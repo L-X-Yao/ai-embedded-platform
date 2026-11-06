@@ -227,6 +227,52 @@ TEST(test_init_refuses_rates_i2c_cannot_carry)
     ASSERT_EQ(adxl345_init(&dev, &mock_i2c, &cfg), ADXL345_ERR_PARAM);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(adxl345_t *d)
+{
+    adxl345_data_t data;
+    ASSERT_EQ(adxl345_read(d, &data), ADXL345_ERR_PARAM);
+    ASSERT_EQ(adxl345_set_range(d, ADXL345_RANGE_4G), ADXL345_ERR_PARAM);
+}
+
+/* 0xE6 is no ADXL345: it answers, and the reads would go on returning OK */
+TEST(test_device_refused_after_wrong_id)
+{
+    adxl345_t d;
+    mock_reset();
+    mock_regs[0x00] = 0xE6;
+    ASSERT_EQ(adxl345_init(&d, &mock_i2c, &default_cfg), ADXL345_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    adxl345_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(adxl345_init(&d, NULL, &default_cfg), ADXL345_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
+TEST(test_init_needs_write_and_read)
+{
+    adxl345_t d;
+    adxl345_i2c_t bad = mock_i2c;
+    mock_reset();
+
+    bad.write_reg = NULL;
+    ASSERT_EQ(adxl345_init(&d, &bad, &default_cfg), ADXL345_ERR_PARAM);
+    assert_device_refused(&d);
+
+    bad = mock_i2c;
+    bad.read_regs = NULL;
+    ASSERT_EQ(adxl345_init(&d, &bad, &default_cfg), ADXL345_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("adxl345")
     RUN(test_init_ok);
     RUN(test_init_wrong_id);
@@ -245,4 +291,7 @@ TEST_MAIN("adxl345")
     RUN(test_init_bw_rate_i2c_fail);
     RUN(test_full_scale_16g);
     RUN(test_init_refuses_rates_i2c_cannot_carry);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
+    RUN(test_init_needs_write_and_read);
 TEST_MAIN_END()
