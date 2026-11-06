@@ -6,7 +6,10 @@
  * - Command-based I2C (no register addresses)
  * - Power on (0x01), power off (0x00), reset (0x07)
  * - Measurement modes: 0x10/0x11/0x13 (continuous), 0x20/0x21/0x23 (one-shot)
- * - Read returns 2-byte big-endian raw light value
+ * - Read returns the 2-byte big-endian Data Register, which starts at 0 and
+ *   only changes when a measurement ends (p.4)
+ * - A measurement takes the manual's maximum, 180 ms or 24 ms in L mode (p.2),
+ *   so a driver that waits less sees the old value, as on a slow chip
  * - Different resolution modes (H-res, H-res2, L-res)
  */
 
@@ -20,7 +23,11 @@
 typedef struct {
     bool     powered;
     uint8_t  mode;          /* active measurement mode command */
-    uint16_t raw_light;     /* simulated raw light value (big-endian in read) */
+    uint16_t raw_light;     /* simulated light, as the count a measurement gives */
+    uint16_t data_reg;      /* Data Register: what a read returns */
+    uint32_t measure_left_ms;  /* time left in the measurement, 0 = none running */
+    uint32_t delay_total_ms;   /* everything the driver has waited */
+    int      measure_count;    /* measurements finished */
     int      cmd_count;     /* total commands received */
     int      read_count;
     uint8_t  last_cmd;
@@ -35,6 +42,27 @@ static void bh1750_model_init(bh1750_model_t *m)
     m->cmd_count = 0;
     m->read_count = 0;
     m->last_cmd = 0xFF;
+}
+
+static uint32_t bh1750_model_measure_ms(uint8_t mode)
+{
+    return (mode & 0x03) == 0x03 ? 24u : 180u;   /* 0x13 and 0x23 are L mode */
+}
+
+/* Let simulated time pass. A measurement that ends copies the light into the
+ * Data Register, and a continuous mode then starts the next one. */
+__attribute__((unused))
+static void bh1750_model_advance(bh1750_model_t *m, uint32_t ms)
+{
+    while (m->measure_left_ms != 0 && ms >= m->measure_left_ms) {
+        ms -= m->measure_left_ms;
+        m->data_reg = m->raw_light;
+        m->measure_count++;
+        m->measure_left_ms = bh1750_model_measure_ms(m->mode);
+    }
+    if (m->measure_left_ms != 0) {
+        m->measure_left_ms -= ms;
+    }
 }
 
 /* --- I2C HAL callbacks (command-based) --- */
@@ -52,18 +80,21 @@ static bool bh1750_model_i2c_write(void *ctx, uint8_t dev_addr,
     m->cmd_count++;
 
     switch (cmd) {
-    case 0x01:  /* Power on */
+    case 0x01:  /* Power on: waits for a measurement command (p.5) */
         m->powered = true;
         break;
     case 0x00:  /* Power off */
         m->powered = false;
+        m->measure_left_ms = 0;
         break;
     case 0x07:  /* Reset */
-        m->raw_light = 0;
+        m->data_reg = 0;
         break;
     case 0x10: case 0x11: case 0x13:  /* Continuous modes */
     case 0x20: case 0x21: case 0x23:  /* One-shot modes */
         m->mode = cmd;
+        m->powered = true;  /* Power On "is possible to omit" (p.4) */
+        m->measure_left_ms = bh1750_model_measure_ms(cmd);
         break;
     default:
         break;
@@ -80,13 +111,21 @@ static bool bh1750_model_i2c_read(void *ctx, uint8_t dev_addr,
     m->read_count++;
 
     if (len >= 2) {
-        data[0] = (uint8_t)(m->raw_light >> 8);
-        data[1] = (uint8_t)(m->raw_light & 0xFF);
+        data[0] = (uint8_t)(m->data_reg >> 8);
+        data[1] = (uint8_t)(m->data_reg & 0xFF);
     }
     return true;
 }
 
-/* Helper: set simulated raw light value */
+__attribute__((unused))
+static void bh1750_model_delay_ms(void *ctx, uint32_t ms)
+{
+    bh1750_model_t *m = (bh1750_model_t *)ctx;
+    m->delay_total_ms += ms;
+    bh1750_model_advance(m, ms);
+}
+
+/* Helper: set the simulated light, which the next measurement to end picks up */
 static void bh1750_model_set_raw(bh1750_model_t *m, uint16_t raw)
 {
     m->raw_light = raw;
