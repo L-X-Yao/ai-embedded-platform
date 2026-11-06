@@ -205,6 +205,18 @@ static bool i2c_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
     return true;
 }
 
+/* The MAX17048 takes a write only as one word: register, MSB, LSB */
+static bool max_write_raw(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                          uint16_t len)
+{
+    (void)ctx; (void)dev_addr;
+    if (len == 3 && data[0] + 1u < sizeof(max_regs)) {
+        max_regs[data[0]]      = data[1];
+        max_regs[data[0] + 1u] = data[2];
+    }
+    return true;
+}
+
 static bool i2c_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
                           uint8_t *buf, uint16_t len)
 {
@@ -235,9 +247,9 @@ static void i2c_delay_ms(void *ctx, uint32_t ms)
 
 /* HAL bundles for each driver */
 static const max17048_i2c_t max_hal = {
-    .write_reg = i2c_write_reg,
     .read_regs = i2c_read_regs,
     .ctx       = NULL,
+    .write_raw = max_write_raw,
 };
 
 static const ds3231_i2c_t rtc_hal = {
