@@ -75,6 +75,11 @@
 #define CMD_SEND       0x20U
 #define CMD_RECV       0x40U
 
+/* ---------- Socket interrupt bits (Sn_IR, cleared by writing 1) ---------- */
+
+#define SN_IR_SEND_OK  0x10U    /* SEND command completed */
+#define SN_IR_TIMEOUT  0x08U    /* ARPTO or TCPTO occurred */
+
 /* ---------- timing ---------- */
 
 #ifndef W5500_RESET_DELAY_MS
@@ -210,6 +215,26 @@ static w5500_err_t close_sock(const w5500_spi_t *s, uint8_t sock)
                                                    : W5500_ERR_TIMEOUT;
 }
 
+/* A SEND has finished when Sn_IR shows SEND_OK or TIMEOUT (manual p48).  Run
+ * out of reads and the chip may still be trying: its ARP timeout is 1.8 s at
+ * reset values (p39). */
+static w5500_err_t wait_send_done(const w5500_spi_t *s, uint8_t sock)
+{
+    uint32_t timeout = W5500_CMD_TIMEOUT;
+    while (timeout--) {
+        uint8_t ir = read_sock_reg(s, sock, SN_IR);
+        if (ir & SN_IR_SEND_OK) {
+            write_sock_reg(s, sock, SN_IR, SN_IR_SEND_OK);
+            return W5500_OK;
+        }
+        if (ir & SN_IR_TIMEOUT) {
+            write_sock_reg(s, sock, SN_IR, SN_IR_TIMEOUT);
+            return W5500_ERR_TIMEOUT;
+        }
+    }
+    return W5500_ERR_TIMEOUT;
+}
+
 /* ---------- API ---------- */
 
 w5500_err_t w5500_init(w5500_t *dev, const w5500_spi_t *spi)
@@ -341,9 +366,15 @@ w5500_err_t w5500_socket_send(w5500_t *dev, uint8_t sock,
     write_sock_reg(s, sock, SN_TX_WR0, (uint8_t)(tx_wr >> 8));
     write_sock_reg(s, sock, SN_TX_WR1, (uint8_t)(tx_wr & 0xFFU));
 
+    /* A result left from an earlier SEND must not pass for this one */
+    write_sock_reg(s, sock, SN_IR, SN_IR_SEND_OK | SN_IR_TIMEOUT);
+
     /* Issue SEND command */
     write_sock_reg(s, sock, SN_CR, CMD_SEND);
-    return wait_cmd_clear(s, sock);
+    err = wait_cmd_clear(s, sock);
+    if (err != W5500_OK) return err;
+
+    return wait_send_done(s, sock);
 }
 
 w5500_err_t w5500_socket_recv(w5500_t *dev, uint8_t sock,

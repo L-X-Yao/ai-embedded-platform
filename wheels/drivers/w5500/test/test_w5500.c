@@ -30,6 +30,7 @@
 /* Socket register offsets */
 #define SN_MR          0x0000U
 #define SN_CR          0x0001U
+#define SN_IR          0x0002U
 #define SN_SR          0x0003U
 #define SN_PORT0       0x0004U
 #define SN_PORT1       0x0005U
@@ -45,6 +46,11 @@
 #define SN_RX_RD1      0x0029U
 
 #define MR_RST         0x80U
+
+/* Sn_IR bits, W5500 Datasheet 1.1.0 p48 */
+#define IR_SEND_OK     0x10U
+#define IR_TIMEOUT     0x08U
+#define IR_RECV        0x04U
 
 /* Mock register storage */
 #define COMMON_REG_SIZE 0x0040U
@@ -94,6 +100,13 @@ static int     mock_sr_left[8];
 static uint8_t mock_sr_next[8];
 static uint8_t mock_sr_at_open[8];   /* Sn_SR when the OPEN command arrived */
 
+/* How a SEND ends: the Sn_IR bits it sets, on read number mock_ir_lag of Sn_IR
+ * after Sn_CR has cleared (0: at once) */
+static uint8_t mock_send_ir[8];
+static int     mock_ir_lag;
+static int     mock_ir_left[8];
+static int     mock_ir_reads[8];
+
 static void mock_reset(void)
 {
     memset(mock_common_regs, 0, sizeof(mock_common_regs));
@@ -116,15 +129,34 @@ static void mock_reset(void)
     memset(mock_sr_left, 0, sizeof(mock_sr_left));
     memset(mock_sr_next, 0, sizeof(mock_sr_next));
     memset(mock_sr_at_open, 0xEE, sizeof(mock_sr_at_open));
+    memset(mock_send_ir, IR_SEND_OK, sizeof(mock_send_ir));
+    mock_ir_lag = 0;
+    memset(mock_ir_left, 0, sizeof(mock_ir_left));
+    memset(mock_ir_reads, 0, sizeof(mock_ir_reads));
 
     /* Set version register */
     mock_common_regs[REG_VERSIONR] = 0x04;
 }
 
-/* Sn_CR has cleared: apply what the command does to Sn_SR, after the lag */
+static void mock_set_ir(int sock, uint8_t bits)
+{
+    mock_sock_regs[sock][SN_IR] = (uint8_t)(mock_sock_regs[sock][SN_IR] | bits);
+}
+
+/* Sn_CR has cleared: apply what the command does to Sn_SR and Sn_IR, after
+ * the lag */
 static void mock_cmd_done(int sock, uint8_t cmd)
 {
     uint8_t next;
+
+    if (cmd == 0x20) {          /* SEND */
+        if (mock_ir_lag == 0) {
+            mock_set_ir(sock, mock_send_ir[sock]);
+        } else {
+            mock_ir_left[sock] = mock_ir_lag;
+        }
+        return;
+    }
 
     if (cmd == 0x01) {          /* OPEN */
         mock_sr_at_open[sock] = mock_sock_regs[sock][SN_SR];
@@ -227,6 +259,12 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
             /* Socket registers */
             if (offset < SOCK_REG_SIZE) {
                 if (is_write) {
+                    if (offset == SN_IR) {
+                        /* RCW1, p48: "the host should write the bit to '1'" */
+                        mock_sock_regs[sock_num][SN_IR] =
+                            (uint8_t)(mock_sock_regs[sock_num][SN_IR] & ~tx);
+                        return 0x00U;
+                    }
                     mock_sock_regs[sock_num][offset] = tx;
                     /* Simulate command completion */
                     if (offset == SN_CR && tx != 0) {
@@ -252,6 +290,13 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                         return 0x00U;
                     }
                     return mock_sock_regs[sock_num][SN_CR];
+                }
+                if (offset == SN_IR) {
+                    mock_ir_reads[sock_num]++;
+                    if (mock_ir_left[sock_num] > 0 &&
+                        --mock_ir_left[sock_num] == 0) {
+                        mock_set_ir(sock_num, mock_send_ir[sock_num]);
+                    }
                 }
                 if (offset == SN_SR && mock_sr_left[sock_num] > 0) {
                     uint8_t shown = mock_sock_regs[sock_num][SN_SR];
@@ -703,6 +748,72 @@ TEST(test_socket_send_insufficient_free)
     ASSERT_EQ(w5500_socket_send(&dev, 0, data, 100), W5500_ERR_SIZE);
 }
 
+static void set_free_size_2048(uint8_t sock)
+{
+    mock_sock_regs[sock][SN_TX_FSR0] = 0x08;
+    mock_sock_regs[sock][SN_TX_FSR1] = 0x00;
+}
+
+TEST(test_socket_send_reports_chip_timeout)
+{
+    init_dev();
+    set_free_size_2048(0);
+    /* W5500 Datasheet 1.1.0 p48: TIMEOUT "is issued when ARPTO or TCPTO
+     * occurs".  The host clears it by writing 1. */
+    mock_send_ir[0] = IR_TIMEOUT;
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_ERR_TIMEOUT);
+    ASSERT_EQ(mock_sock_regs[0][SN_IR] & IR_TIMEOUT, 0);
+}
+
+TEST(test_socket_send_waits_for_send_ok)
+{
+    init_dev();
+    set_free_size_2048(0);
+    /* p46: Sn_CR clearing does not end the command.  p48: SEND_OK "is issued
+     * when SEND command is completed". */
+    mock_ir_lag = 3;
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_OK);
+    ASSERT_EQ(mock_ir_reads[0], 3);
+    ASSERT_EQ(mock_sock_regs[0][SN_IR] & IR_SEND_OK, 0);
+}
+
+TEST(test_socket_send_no_result_times_out)
+{
+    init_dev();
+    set_free_size_2048(0);
+    mock_send_ir[0] = 0;   /* neither SEND_OK nor TIMEOUT ever comes */
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_ERR_TIMEOUT);
+}
+
+TEST(test_socket_send_ignores_stale_send_ok)
+{
+    init_dev();
+    set_free_size_2048(0);
+    /* a SEND_OK left from an earlier SEND must not pass for this one */
+    mock_sock_regs[0][SN_IR] = IR_SEND_OK;
+    mock_send_ir[0] = IR_TIMEOUT;
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_ERR_TIMEOUT);
+}
+
+TEST(test_socket_send_keeps_other_ir_bits)
+{
+    init_dev();
+    set_free_size_2048(0);
+    mock_sock_regs[0][SN_IR] = IR_RECV;
+
+    uint8_t data[4] = {1, 2, 3, 4};
+    ASSERT_EQ(w5500_socket_send(&dev, 0, data, 4), W5500_OK);
+    ASSERT_EQ(mock_sock_regs[0][SN_IR], IR_RECV);
+}
+
 TEST(test_socket_send_rereads_torn_free_size)
 {
     init_dev();
@@ -1028,6 +1139,11 @@ TEST_MAIN("w5500")
     RUN(test_socket_send_zero_len);
     RUN(test_socket_send_oversized);
     RUN(test_socket_send_insufficient_free);
+    RUN(test_socket_send_reports_chip_timeout);
+    RUN(test_socket_send_waits_for_send_ok);
+    RUN(test_socket_send_no_result_times_out);
+    RUN(test_socket_send_ignores_stale_send_ok);
+    RUN(test_socket_send_keeps_other_ir_bits);
     RUN(test_socket_send_rereads_torn_free_size);
     RUN(test_socket_send_free_size_never_settles);
     RUN(test_socket_send_invalid_sock);
