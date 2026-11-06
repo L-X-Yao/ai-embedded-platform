@@ -175,10 +175,10 @@ clean-worktrees:
 	bash tooling/session/dispatch_agent.sh --cleanup
 
 check:
-	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-property && $(MAKE) test-scaffold && $(MAKE) test-examples && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py && bash tooling/audit/check_line_endings.sh --quiet
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-property && $(MAKE) test-scaffold && $(MAKE) test-examples && python3 tooling/audit/audit_wheels.py --fast --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet --jobs 8 && bash tooling/test/coverage_scan.sh --gate --jobs 4 && bash tooling/audit/check_readme_examples.sh && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py && bash tooling/audit/check_line_endings.sh --quiet
 
 check-full:
-	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-property && $(MAKE) test-scaffold && $(MAKE) test-examples && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
+	bash tooling/test/test_all.sh --parallel && $(MAKE) test-null && $(MAKE) test-sentinel && $(MAKE) test-boundary && $(MAKE) test-property && $(MAKE) test-scaffold && $(MAKE) test-examples && python3 tooling/audit/audit_wheels.py --fast --quiet && bash tooling/test/coverage_scan.sh --gate --jobs 4 && python3 tooling/audit/audit_compile.py --changed --quiet && python3 tooling/audit/audit_sanitizer.py --changed --quiet --jobs 8 && python3 tooling/audit/doc_drift_check.py --fix && python3 tooling/audit/memory_audit.py
 
 ci-local:
 	@echo "══════ ci-local: local CI gate ══════"
@@ -200,7 +200,7 @@ ci-local-full:
 	$(MAKE) ci-local
 	bash tooling/test/coverage_scan.sh --gate --jobs 4
 	python3 tooling/audit/audit_compile.py --changed --quiet
-	python3 tooling/audit/audit_sanitizer.py --changed --quiet
+	python3 tooling/audit/audit_sanitizer.py --changed --quiet --jobs 8
 	@echo "══════ ci-local-full: PASSED ══════"
 
 install-hooks:
