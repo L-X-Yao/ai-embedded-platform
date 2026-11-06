@@ -140,12 +140,12 @@ icm42688_err_t icm42688_init(icm42688_t *dev,
     uint8_t id = reg_read(spi, ICM42688_REG_WHO_AM_I);
     if (id != ICM42688_WHO_AM_I_VAL) return ICM42688_ERR_ID;
 
-    /* Configure gyro: FS_SEL[6:5] | ODR[3:0] */
+    /* Configure gyro: FS_SEL[7:5] | ODR[3:0] */
     uint8_t gyro_cfg = (uint8_t)(((uint8_t)cfg->gyro_range << 5)
                                   | ((uint8_t)cfg->gyro_odr & 0x0F));
     reg_write(spi, ICM42688_REG_GYRO_CONFIG0, gyro_cfg);
 
-    /* Configure accel: FS_SEL[6:5] | ODR[3:0] */
+    /* Configure accel: FS_SEL[7:5] | ODR[3:0] */
     uint8_t accel_cfg = (uint8_t)(((uint8_t)cfg->acc_range << 5)
                                    | ((uint8_t)cfg->acc_odr & 0x0F));
     reg_write(spi, ICM42688_REG_ACCEL_CONFIG0, accel_cfg);
