@@ -148,8 +148,8 @@ void soft_timer_tick(soft_timer_mgr_t *mgr)
 
         if (t->remaining == 0)
         {
-            t->callback(t->user_ctx);
-
+            /* Settle the timer first: the callback may re-arm, stop or
+             * destroy it, and nothing after the call may undo that. */
             if (t->mode == SOFT_TIMER_REPEAT)
             {
                 t->remaining = t->period;
@@ -158,6 +158,8 @@ void soft_timer_tick(soft_timer_mgr_t *mgr)
             {
                 t->active = false;
             }
+
+            t->callback(t->user_ctx);
         }
     }
 }

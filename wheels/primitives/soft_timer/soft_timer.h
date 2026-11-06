@@ -39,6 +39,10 @@ typedef enum {
     SOFT_TIMER_REPEAT,
 } soft_timer_mode_t;
 
+/** Runs inside soft_timer_tick, in its context.  It may call soft_timer_start,
+ *  stop, reset and is_active on any timer, its own included: a one-shot is
+ *  already inactive by then, so it can re-arm itself.  create and destroy are
+ *  also allowed, but only if tick does not run in an ISR. */
 typedef void (*soft_timer_cb_t)(void *user_ctx);
 
 typedef struct {
