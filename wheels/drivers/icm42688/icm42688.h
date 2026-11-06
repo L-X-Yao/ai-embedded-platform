@@ -152,6 +152,8 @@ icm42688_err_t   icm42688_read_temperature(const icm42688_t *dev,
 /** Set accel and gyro power modes independently.
  *  STANDBY is gyro only and LP is accel only: the other way round returns
  *  ICM42688_ERR_PARAM and PWR_MGMT0 is not written.
+ *  Accel LP also needs an ODR of 500 Hz or lower, so it returns
+ *  ICM42688_ERR_PARAM at the 1 kHz of icm42688_default_cfg().
  *  @thread_safe: no  @isr_safe: no */
 icm42688_err_t   icm42688_set_power_mode(const icm42688_t *dev,
                                           icm42688_power_mode_t accel_mode,

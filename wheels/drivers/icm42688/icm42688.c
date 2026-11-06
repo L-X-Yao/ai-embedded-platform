@@ -75,6 +75,13 @@ static bool odr_is_accel_lp_only(icm42688_odr_t odr)
     return odr >= ICM42688_ODR_6HZ && odr <= ICM42688_ODR_1HZ;
 }
 
+/* Codes 0001..0110: 32 kHz to 1 kHz, in LN mode only (section 14.38).
+ * 0000 is Reserved, so it does not count as an LP rate either. */
+static bool odr_is_accel_ln_only(uint8_t odr)
+{
+    return odr <= (uint8_t)ICM42688_ODR_1KHZ;
+}
+
 /* ---------- API ---------- */
 
 icm42688_cfg_t icm42688_default_cfg(void)
@@ -202,6 +209,12 @@ icm42688_err_t icm42688_set_power_mode(const icm42688_t *dev,
     if (gyro_mode == ICM42688_PM_LP) return ICM42688_ERR_PARAM;
     /* ACCEL_MODE 01 turns the accel off: it has no standby to ask for */
     if (accel_mode == ICM42688_PM_STANDBY) return ICM42688_ERR_PARAM;
+    /* LP does not support ODR above 500 Hz. Ask the chip for the rate: a
+     * soft reset puts it back to 1 kHz whatever init configured. */
+    if (accel_mode == ICM42688_PM_LP) {
+        uint8_t accel_cfg = reg_read(dev->spi, ICM42688_REG_ACCEL_CONFIG0);
+        if (odr_is_accel_ln_only(accel_cfg & 0x0F)) return ICM42688_ERR_PARAM;
+    }
 
     /* PWR_MGMT0: GYRO_MODE[3:2] | ACCEL_MODE[1:0] */
     uint8_t pwr = (uint8_t)(((uint8_t)gyro_mode << 2) | (uint8_t)accel_mode);
