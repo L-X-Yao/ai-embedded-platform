@@ -63,7 +63,7 @@ typedef struct {
 /* ---------- clock result ---------- */
 
 typedef struct {
-    int64_t  offset_ms;      /* local clock error: positive = local ahead */
+    int64_t  offset_ms;      /* positive = local behind: add to the local clock */
     uint32_t round_trip_ms;  /* network round-trip delay */
     uint32_t unix_sec;       /* server time as Unix timestamp (seconds since 1970) */
     uint16_t unix_ms;        /* fractional milliseconds of server time */
