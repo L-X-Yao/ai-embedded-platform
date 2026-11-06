@@ -71,6 +71,8 @@ nmea_parser_sentence_t nmea_parser_identify(const char *sentence);
 /** Parse one sentence, updating relevant fields in data. A value out of range
  *  (nan, inf, month 99, ...) is ignored: its field keeps the old value, a bad
  *  course also clears course_valid, and the call still returns NMEA_PARSER_OK.
+ *  A decimal field is a sign, digits and at most one point: anything else in it
+ *  (1e2, 0x10, 12abc) counts as out of range. No field reading uses the heap.
  *  GGA and RMC both set the position, and an empty or invalid GGA position
  *  field keeps the old value. Time and date come from RMC only.
  *  @thread_safe: caller_must_lock */

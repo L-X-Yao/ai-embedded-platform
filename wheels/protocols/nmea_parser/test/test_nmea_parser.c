@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "test_harness.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include "nmea_parser.h"
@@ -748,7 +749,175 @@ TEST(test_gga_bad_hemisphere_keeps_the_old_value)
     }
 }
 
+/* ---------- reading numbers ---------- */
+
+#define GGA_AFTER_ALT   ",M,46.9,M,,"
+#define RMC_AFTER_SPEED ",084.4,230394,,"
+
+/* Only sign, digits and one point make a number, whatever the size it spells. */
+TEST(test_field_that_is_no_plain_decimal_is_ignored)
+{
+    static const char *const bad[] = {
+        "1e2", "1E2", "1e0", "0x10", "12abc", "1.2.3", "--1", "+-1",
+        ".", "-", "+", "-.", " 12", "12 ", "abc", "infinity",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(RMC_SPEED_HEAD, bad[i], RMC_AFTER_SPEED, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.speed_kmh, 22.4f * 1.852f, 0.01f);
+
+        ASSERT_EQ(parse_field(GGA_ALT_HEAD, bad[i], GGA_AFTER_ALT, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.altitude_m, 545.4f, 0.01f);
+
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(GGA_HDOP_HEAD, bad[i], ",545.4" GGA_AFTER_ALT, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.hdop, 1.3f, 0.01f);
+
+        ASSERT_EQ(parse_field(RMC_COURSE_HEAD, bad[i], ",230394,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.course_valid, 0);
+        ASSERT_NEAR(d.course_deg, 84.4f, 0.01f);
+
+        /* In RMC a bad coordinate reads as 0, as the README states. */
+        ASSERT_EQ(parse_field("$GPRMC,123519,A,", bad[i],
+                              ",N,01131.000,E,022.4,084.4,230394,,", &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.latitude_deg, 0.0f, 1e-6f);
+    }
+}
+
+/* The line the audit used: a good checksum on 23 and 22 digit fields. */
+TEST(test_long_digit_fields_keep_their_value)
+{
+    nmea_parser_data_t d;
+
+    nmea_parser_data_init(&d);
+    ASSERT_EQ(parse_field("$GPRMC,123519,A,", "4807.0381234567890123456",
+                          ",N,01131.000,E,022.4123456789012345678,084.4,"
+                          "230394,,", &d), NMEA_PARSER_OK);
+    ASSERT_NEAR(d.latitude_deg, 48.0f + 7.03812346f / 60.0f, 1e-4f);
+    ASSERT_NEAR(d.speed_kmh, 22.4123457f * 1.852f, 0.001f);
+}
+
+TEST(test_zeros_around_a_number_change_nothing)
+{
+    static const char *const same[] = {
+        "12.5", "012.5", "0000000000000000000000000000012.5",
+        "12.50", "12.5000000000000000000000000000000", "+12.5",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(same) / sizeof(same[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(GGA_ALT_HEAD, same[i], GGA_AFTER_ALT, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_EQ(d.altitude_m == 12.5f, 1);
+    }
+}
+
+TEST(test_number_too_long_to_hold_is_past_the_limit)
+{
+    static const char *const big[] = {
+        "1000000000000000", "1000000000000000000000000",
+        "123456789012345678901234567890123456789012345678901234567890.5",
+        "-1000000000000000000000000",
+    };
+    nmea_parser_data_t d;
+
+    for (size_t i = 0; i < sizeof(big) / sizeof(big[0]); i++) {
+        seed_good_fix(&d);
+        ASSERT_EQ(parse_field(GGA_ALT_HEAD, big[i], GGA_AFTER_ALT, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_NEAR(d.altitude_m, 545.4f, 0.01f);
+    }
+}
+
+TEST(test_limit_reached_with_extra_digits_is_kept)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    ASSERT_EQ(parse_field(GGA_ALT_HEAD, "1000000.00000000000000000",
+                          GGA_AFTER_ALT, &d), NMEA_PARSER_OK);
+    ASSERT_EQ(d.altitude_m == 1000000.0f, 1);
+}
+
+TEST(test_empty_last_field_still_counts_as_zero)
+{
+    nmea_parser_data_t d;
+
+    seed_good_fix(&d);
+    ASSERT_EQ(parse_field(GSA_HEAD, "2.5", ",1.3,", &d), NMEA_PARSER_OK);
+    ASSERT_EQ(d.vdop == 0.0f, 1);
+}
+
+static uint32_t next_random(uint32_t *state)
+{
+    uint32_t x = *state;
+
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x;
+    return x;
+}
+
+/* Write sign, up to 6 digits, an optional point and up to 9 digits: what a
+ * receiver sends in any field the limits let through. */
+static void random_decimal(uint32_t *state, char *out)
+{
+    static const char *const signs[] = { "", "", "-", "+" };
+    uint32_t whole = next_random(state) % 7u;
+    uint32_t frac = next_random(state) % 10u;
+    size_t n = strlen(strcpy(out, signs[next_random(state) % 4u]));
+
+    for (uint32_t i = 0; i < whole; i++) {
+        out[n++] = (char)('0' + next_random(state) % 10u);
+    }
+    if (whole == 0u && frac == 0u) {
+        out[n++] = '0';
+    }
+    if (frac != 0u || next_random(state) % 4u == 0u) {
+        out[n++] = '.';
+    }
+    for (uint32_t i = 0; i < frac; i++) {
+        out[n++] = (char)('0' + next_random(state) % 10u);
+    }
+    out[n] = '\0';
+}
+
+/* libc's strtof is the reference: the parser moved off it, not away from it.
+ * Altitude is stored as read and has the widest limits of any field. */
+TEST(test_decimal_fields_match_strtof_bit_for_bit)
+{
+    uint32_t state = 0x2545F491u;
+    nmea_parser_data_t d;
+    char text[24];
+
+    for (int i = 0; i < 50000; i++) {
+        random_decimal(&state, text);
+        float want = strtof(text, NULL);
+
+        nmea_parser_data_init(&d);
+        ASSERT_EQ(parse_field(GGA_ALT_HEAD, text, GGA_AFTER_ALT, &d),
+                  NMEA_PARSER_OK);
+        ASSERT_MEMEQ_N(&d.altitude_m, &want, sizeof(want));
+    }
+}
+
 TEST_MAIN("nmea_parser")
+    RUN(test_field_that_is_no_plain_decimal_is_ignored);
+    RUN(test_long_digit_fields_keep_their_value);
+    RUN(test_zeros_around_a_number_change_nothing);
+    RUN(test_number_too_long_to_hold_is_past_the_limit);
+    RUN(test_limit_reached_with_extra_digits_is_kept);
+    RUN(test_empty_last_field_still_counts_as_zero);
+    RUN(test_decimal_fields_match_strtof_bit_for_bit);
     RUN(test_gga_takes_position);
     RUN(test_gga_south_west_is_negative);
     RUN(test_gga_position_limits);
