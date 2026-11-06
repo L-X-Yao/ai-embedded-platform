@@ -200,6 +200,8 @@ icm42688_err_t icm42688_set_power_mode(const icm42688_t *dev,
         return ICM42688_ERR_PARAM;
     /* GYRO_MODE 10 is Reserved: the gyro has no low-power mode */
     if (gyro_mode == ICM42688_PM_LP) return ICM42688_ERR_PARAM;
+    /* ACCEL_MODE 01 turns the accel off: it has no standby to ask for */
+    if (accel_mode == ICM42688_PM_STANDBY) return ICM42688_ERR_PARAM;
 
     /* PWR_MGMT0: GYRO_MODE[3:2] | ACCEL_MODE[1:0] */
     uint8_t pwr = (uint8_t)(((uint8_t)gyro_mode << 2) | (uint8_t)accel_mode);

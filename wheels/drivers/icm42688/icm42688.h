@@ -78,7 +78,7 @@ typedef enum {
 
 typedef enum {
     ICM42688_PM_OFF      = 0,
-    ICM42688_PM_STANDBY  = 1,       /* accel only: standby */
+    ICM42688_PM_STANDBY  = 1,       /* gyro only: standby */
     ICM42688_PM_LP       = 2,       /* accel only: low-power */
     ICM42688_PM_LN       = 3,       /* low-noise (normal) */
 } icm42688_power_mode_t;
@@ -150,6 +150,8 @@ icm42688_err_t   icm42688_read_temperature(const icm42688_t *dev,
                                             float *temp_c);
 
 /** Set accel and gyro power modes independently.
+ *  STANDBY is gyro only and LP is accel only: the other way round returns
+ *  ICM42688_ERR_PARAM and PWR_MGMT0 is not written.
  *  @thread_safe: no  @isr_safe: no */
 icm42688_err_t   icm42688_set_power_mode(const icm42688_t *dev,
                                           icm42688_power_mode_t accel_mode,
