@@ -76,7 +76,8 @@ Checked on 2026-11-06 against NXP MFRC522 rev 3.9. Not run on hardware.
 ## Known issues
 
 - Only cascade level 1 (4-byte UID) is supported; 7-byte and 10-byte
-  UIDs require cascade levels 2 and 3 (not implemented).
+  UIDs require cascade levels 2 and 3 (not implemented), and
+  `rc522_read_card_uid` returns `RC522_ERR_ID` for those cards.
 - MIFARE authentication and block read/write not implemented.
 
 ## How to test
