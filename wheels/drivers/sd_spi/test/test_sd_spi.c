@@ -895,6 +895,58 @@ TEST(test_read_is_refused_before_init)
     ASSERT_EQ(sd_spi_write_block(&sd, 0, buf), SD_SPI_ERR_CMD);
 }
 
+/* A byte-addressed card takes block * 512 in a 32-bit argument, so the highest
+ * block it can be sent is UINT32_MAX / 512, which is 0x7FFFFF */
+static void assert_past_range_refused(int is_v1)
+{
+    static uint8_t buf[512];
+    sd_spi_t sd;
+    mock_reset();
+    mock_is_sdhc = 0;
+    mock_is_v1 = is_v1;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_OK);
+
+    mock_last_addr = 0x12345678;
+    ASSERT_EQ(sd_spi_write_block(&sd, 0x800000, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_read_block(&sd, 0x800000, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(sd_spi_write_block(&sd, 0xFFFFFFFFu, buf), SD_SPI_ERR_PARAM);
+    ASSERT_EQ(mock_last_addr, 0x12345678);
+}
+
+TEST(test_blocks_past_byte_range_are_refused)
+{
+    assert_past_range_refused(0);
+    assert_past_range_refused(1);
+}
+
+TEST(test_highest_byte_addressed_block)
+{
+    static uint8_t buf[512];
+    sd_spi_t sd;
+    mock_reset();
+    mock_is_sdhc = 0;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_OK);
+
+    ASSERT_EQ(sd_spi_write_block(&sd, 0x7FFFFF, buf), SD_SPI_OK);
+    ASSERT_EQ_HEX(mock_last_addr, 0xFFFFFE00u);
+    ASSERT_EQ(sd_spi_read_block(&sd, 0x7FFFFF, buf), SD_SPI_OK);
+    ASSERT_EQ_HEX(mock_last_addr, 0xFFFFFE00u);
+}
+
+TEST(test_block_addressed_card_takes_any_block)
+{
+    static uint8_t buf[512];
+    sd_spi_t sd;
+    mock_reset();
+    mock_is_sdhc = 1;
+    ASSERT_EQ(sd_spi_init(&sd, &mock_hal), SD_SPI_OK);
+
+    ASSERT_EQ(sd_spi_write_block(&sd, 0x800000, buf), SD_SPI_OK);
+    ASSERT_EQ_HEX(mock_last_addr, 0x800000u);
+    ASSERT_EQ(sd_spi_read_block(&sd, 0xFFFFFFFFu, buf), SD_SPI_OK);
+    ASSERT_EQ_HEX(mock_last_addr, 0xFFFFFFFFu);
+}
+
 TEST_MAIN("sd_spi")
     RUN(test_init_sdhc);
     RUN(test_init_sdsc);
@@ -934,4 +986,7 @@ TEST_MAIN("sd_spi")
     RUN(test_card_idle_state_refuses_transfers);
     RUN(test_card_r1_loses_the_idle_bit_when_ready);
     RUN(test_read_is_refused_before_init);
+    RUN(test_blocks_past_byte_range_are_refused);
+    RUN(test_highest_byte_addressed_block);
+    RUN(test_block_addressed_card_takes_any_block);
 TEST_MAIN_END()
