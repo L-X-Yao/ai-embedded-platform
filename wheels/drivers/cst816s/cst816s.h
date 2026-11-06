@@ -8,7 +8,7 @@
  * Instances: multi
  *
  * Single-point touch with gesture recognition for small displays
- * (smartwatches, wearables). I2C address 0x15, chip ID 0xB5.
+ * (smartwatches, wearables). I2C address 0x15, chip ID 0xB4, 0xB5 or 0xB6.
  * Pure C99, no heap, fully reentrant per-context.
  */
 
@@ -43,7 +43,7 @@ typedef struct {
 /* ---------- constants ---------- */
 
 #define CST816S_DEV_ADDR   0x15u
-#define CST816S_CHIP_ID    0xB5u
+#define CST816S_CHIP_ID    0xB5u   /* one of the IDs init accepts */
 
 /* ---------- gesture IDs ---------- */
 
@@ -86,7 +86,7 @@ typedef struct {
 
 /* ---------- API ---------- */
 
-/** Configure and verify chip ID (0xA7 must read 0xB5).
+/** Configure and verify chip ID (0xA7 must read 0xB4, 0xB5 or 0xB6).
  *  @thread_safe: no @isr_safe: no */
 cst816s_err_t cst816s_init(cst816s_t *dev,
                            const cst816s_i2c_t *i2c);

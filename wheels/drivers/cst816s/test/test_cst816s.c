@@ -65,8 +65,34 @@ TEST(test_init_null)
 TEST(test_init_wrong_id)
 {
     mock_reset();
-    mock_regs[REG_CHIP_ID] = 0x00;  /* not 0xB5 */
+    mock_regs[REG_CHIP_ID] = 0x00;  /* not a known ID */
     ASSERT_EQ(cst816s_init(&dev, &mock_i2c), CST816S_ERR_ID);
+}
+
+/* Neither Hynitron sheet gives a value. Zephyr takes 0xB4 and 0xB5 as a
+ * CST816S, and ESPHome lists 0xB4, 0xB5 and 0xB6 for the S, T and D parts. */
+TEST(test_init_accepts_the_family_ids)
+{
+    static const uint8_t ids[] = { 0xB4, 0xB5, 0xB6 };
+
+    for (unsigned i = 0; i < sizeof(ids); i++) {
+        mock_reset();
+        mock_regs[REG_CHIP_ID] = ids[i];
+        ASSERT_EQ(cst816s_init(&dev, &mock_i2c), CST816S_OK);
+        ASSERT_EQ(cst816s_get_chip_id(&dev), ids[i]);
+    }
+}
+
+/* The check still catches another device and a floating bus */
+TEST(test_init_refuses_other_ids)
+{
+    static const uint8_t ids[] = { 0x00, 0xB3, 0xB7, 0xFF };
+
+    for (unsigned i = 0; i < sizeof(ids); i++) {
+        mock_reset();
+        mock_regs[REG_CHIP_ID] = ids[i];
+        ASSERT_EQ(cst816s_init(&dev, &mock_i2c), CST816S_ERR_ID);
+    }
 }
 
 TEST(test_init_ok)
@@ -282,6 +308,8 @@ TEST(test_get_firmware_version_null)
 TEST_MAIN("cst816s")
     RUN(test_init_null);
     RUN(test_init_wrong_id);
+    RUN(test_init_accepts_the_family_ids);
+    RUN(test_init_refuses_other_ids);
     RUN(test_init_ok);
     RUN(test_init_i2c_fail);
     RUN(test_init_fw_read_i2c_fail);
