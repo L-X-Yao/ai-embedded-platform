@@ -50,7 +50,36 @@ TEST(test_init_null_param)
     ASSERT_EQ(err, SHT30_ERR_PARAM);
 }
 
+/* The driver cannot wait out the measurement without delay_ms, and the sensor
+ * NACKs the read until it ends. */
+TEST(test_init_refuses_null_delay)
+{
+    setup();
+    sht30_i2c_t no_delay = model_i2c;
+    no_delay.delay_ms = NULL;
+    sht30_t dev;
+    ASSERT_EQ(sht30_init(&dev, &no_delay, &default_cfg), SHT30_ERR_PARAM);
+    ASSERT_EQ(model.reset_count, 0);
+}
+
 /* --- read tests -------------------------------------------------------- */
+
+TEST(test_model_nacks_until_measurement_ends)
+{
+    setup();
+    const uint8_t cmd[2] = { SHT30_CMD_SINGLE_HIGH_MSB,
+                             SHT30_CMD_SINGLE_HIGH_LSB };
+    uint8_t buf[6];
+
+    ASSERT_FALSE(sht30_model_read(&model, SHT30_ADDR_A, buf, 6));
+    ASSERT_TRUE(sht30_model_write(&model, SHT30_ADDR_A, cmd, 2));
+    sht30_model_delay(&model, 14);
+    ASSERT_FALSE(sht30_model_read(&model, SHT30_ADDR_A, buf, 6));
+    sht30_model_delay(&model, 1);
+    ASSERT_TRUE(sht30_model_read(&model, SHT30_ADDR_A, buf, 6));
+    /* the data was read out, so none is present any more */
+    ASSERT_FALSE(sht30_model_read(&model, SHT30_ADDR_A, buf, 6));
+}
 
 TEST(test_read_25c_50rh)
 {
@@ -196,6 +225,8 @@ TEST(test_multiple_reads_consistent)
 TEST_MAIN("sht30 hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
+    RUN(test_init_refuses_null_delay);
+    RUN(test_model_nacks_until_measurement_ends);
     RUN(test_read_25c_50rh);
     RUN(test_read_hot_dry);
     RUN(test_read_cold_humid);

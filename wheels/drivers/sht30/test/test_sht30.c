@@ -13,6 +13,11 @@ static int     mock_fail_at;
 static uint8_t mock_read_data[6];
 static uint8_t mock_last_write[8];
 static int     mock_last_write_len;
+static bool     mock_measuring;     /* a single-shot command is running */
+static uint32_t mock_measure_ms;    /* delay time since that command */
+
+/* Table 4: tMEAS,h maximum */
+#define MOCK_TMEAS_H_MS 15u
 
 static void mock_reset(void)
 {
@@ -22,6 +27,8 @@ static void mock_reset(void)
     memset(mock_read_data, 0, sizeof(mock_read_data));
     memset(mock_last_write, 0, sizeof(mock_last_write));
     mock_last_write_len = 0;
+    mock_measuring  = false;
+    mock_measure_ms = 0;
 }
 
 static bool mock_should_fail(void)
@@ -41,13 +48,27 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
         memcpy(mock_last_write, data, len);
         mock_last_write_len = len;
     }
+    if (len == 2 && data[0] == 0x24 && data[1] == 0x00)
+    {
+        mock_measuring  = true;
+        mock_measure_ms = 0;
+    }
     return true;
+}
+
+static void mock_delay(void *ctx, uint16_t ms)
+{
+    (void)ctx;
+    mock_measure_ms += ms;
 }
 
 static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
 {
     (void)ctx; (void)addr;
     if (mock_should_fail()) return false;
+    /* p.10: NACK while no data is present */
+    if (!mock_measuring || mock_measure_ms < MOCK_TMEAS_H_MS) return false;
+    mock_measuring = false;
     for (uint16_t i = 0; i < len && i < sizeof(mock_read_data); i++)
     {
         data[i] = mock_read_data[i];
@@ -56,9 +77,10 @@ static bool mock_read(void *ctx, uint8_t addr, uint8_t *data, uint16_t len)
 }
 
 static const sht30_i2c_t mock_i2c = {
-    .write = mock_write,
-    .read  = mock_read,
-    .ctx   = NULL,
+    .write    = mock_write,
+    .read     = mock_read,
+    .delay_ms = mock_delay,
+    .ctx      = NULL,
 };
 
 static void plant_reading(uint16_t raw_t, uint16_t raw_h)
