@@ -34,6 +34,23 @@ static const max30102_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
+/* 19-7740 Rev 0 p14: FIFO_WR_PTR "can also be changed through the I2C
+ * interface when MODE[2:0] is 010, 011, or 111".  Other writes pass through. */
+static bool chip_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    uint8_t m = (uint8_t)(mock_regs[REG_MODE_CONFIG] & 0x07u);
+    if (reg == REG_FIFO_WR_PTR && m != 2u && m != 3u && m != 7u)
+        return true;
+    return mock_i2c_write_reg(ctx, dev_addr, reg, val);
+}
+
+static const max30102_i2c_t chip_i2c = {
+    .write_reg = chip_write_reg,
+    .read_regs = mock_i2c_read_regs,
+    .delay_ms  = mock_i2c_delay_ms,
+    .ctx       = NULL,
+};
+
 /* ---------- test helpers ---------- */
 static max30102_t dev;
 
@@ -147,6 +164,50 @@ TEST(test_set_mode_spo2)
     max30102_err_t e = max30102_set_mode(&dev, MAX30102_MODE_SPO2);
     ASSERT_EQ(e, MAX30102_OK);
     ASSERT_EQ(mock_regs[REG_MODE_CONFIG] & 0x07, 0x03);
+}
+
+TEST(test_set_mode_clears_fifo)
+{
+    setup();
+    /* p16: pointers "should be cleared (back to 0x00) upon entering SpO2
+     * mode or HR mode, so that there is no old data represented in the FIFO" */
+    mock_regs[REG_FIFO_WR_PTR] = 5;
+    mock_regs[REG_OVF_COUNTER] = 2;
+    mock_regs[REG_FIFO_RD_PTR] = 1;
+
+    ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_HR), MAX30102_OK);
+    ASSERT_EQ(mock_regs[REG_FIFO_WR_PTR], 0);
+    ASSERT_EQ(mock_regs[REG_OVF_COUNTER], 0);
+    ASSERT_EQ(mock_regs[REG_FIFO_RD_PTR], 0);
+}
+
+TEST(test_set_mode_writes_mode_before_clearing)
+{
+    mock_reset();
+    max30102_t d;
+    ASSERT_EQ(max30102_init(&d, &chip_i2c), MAX30102_OK);
+    ASSERT_EQ(max30102_reset(&d), MAX30102_OK);
+
+    /* RESET has self-cleared and MODE is 000 (p19): WR_PTR is not writable
+     * until the new mode is in */
+    mock_regs[REG_MODE_CONFIG] = 0;
+    mock_regs[REG_FIFO_WR_PTR] = 6;
+
+    ASSERT_EQ(max30102_set_mode(&d, MAX30102_MODE_HR), MAX30102_OK);
+    ASSERT_EQ(mock_regs[REG_FIFO_WR_PTR], 0);
+}
+
+TEST(test_set_mode_fifo_clear_i2c_fail)
+{
+    /* ops: SPO2_CONFIG read, MODE read, MODE write, then the three clears */
+    for (int op = 3; op < 6; op++)
+    {
+        setup();
+        mock_fail_at = mock_op_count + op;
+        ASSERT_EQ(max30102_set_mode(&dev, MAX30102_MODE_HR), MAX30102_ERR_I2C);
+        /* the chip is already in HR mode, so samples are 3 bytes from now on */
+        ASSERT_EQ(dev.mode, MAX30102_MODE_HR);
+    }
 }
 
 TEST(test_set_mode_invalid)
@@ -611,13 +672,30 @@ TEST(test_init_missing_callbacks)
 
 TEST(test_init_i2c_fail_during_fifo_clear)
 {
+    /* ops 0-6: part ID, reset, FIFO_CONFIG, SPO2_CONFIG, LED1, LED2, MODE.
+     * ops 7-9 are the three FIFO clears. */
+    for (int op = 7; op < 10; op++)
+    {
+        mock_reset();
+        max30102_t d;
+        mock_fail_at = op;
+        max30102_err_t e = max30102_init(&d, &mock_i2c);
+        ASSERT_EQ(e, MAX30102_ERR_I2C);
+    }
+}
+
+TEST(test_init_clears_fifo_after_mode_write)
+{
     mock_reset();
+    mock_regs[REG_FIFO_WR_PTR] = 7;
+    mock_regs[REG_OVF_COUNTER] = 2;
+    mock_regs[REG_FIFO_RD_PTR] = 3;
+
     max30102_t d;
-    /* Part ID read succeeds (op 0), reset write succeeds (op 1),
-     * FIFO_WR_PTR write (op 2) should fail */
-    mock_fail_at = 2;
-    max30102_err_t e = max30102_init(&d, &mock_i2c);
-    ASSERT_EQ(e, MAX30102_ERR_I2C);
+    ASSERT_EQ(max30102_init(&d, &chip_i2c), MAX30102_OK);
+    ASSERT_EQ(mock_regs[REG_FIFO_WR_PTR], 0);
+    ASSERT_EQ(mock_regs[REG_OVF_COUNTER], 0);
+    ASSERT_EQ(mock_regs[REG_FIFO_RD_PTR], 0);
 }
 
 TEST_MAIN("max30102")
@@ -628,8 +706,12 @@ TEST_MAIN("max30102")
     RUN(test_init_writes_defaults);
     RUN(test_init_missing_callbacks);
     RUN(test_init_i2c_fail_during_fifo_clear);
+    RUN(test_init_clears_fifo_after_mode_write);
     RUN(test_set_mode_hr);
     RUN(test_set_mode_spo2);
+    RUN(test_set_mode_clears_fifo);
+    RUN(test_set_mode_writes_mode_before_clearing);
+    RUN(test_set_mode_fifo_clear_i2c_fail);
     RUN(test_set_mode_invalid);
     RUN(test_set_mode_i2c_fail);
     RUN(test_set_led_current);

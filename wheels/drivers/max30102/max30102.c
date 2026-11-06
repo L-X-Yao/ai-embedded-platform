@@ -101,6 +101,15 @@ static uint8_t max_sr_bits(max30102_mode_t mode, uint8_t spo2_config)
     return (mode == MAX30102_MODE_SPO2) ? spo2[pw] : hr[pw];
 }
 
+/* Empty the FIFO.  Call after writing MODE: FIFO_WR_PTR can only be changed
+ * while MODE is 010, 011 or 111 (data sheet p14). */
+static bool clear_fifo(const max30102_t *dev)
+{
+    return write_reg(dev, REG_FIFO_WR_PTR, 0) &&
+           write_reg(dev, REG_OVF_COUNTER, 0) &&
+           write_reg(dev, REG_FIFO_RD_PTR, 0);
+}
+
 /* --- public API --- */
 
 max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
@@ -125,14 +134,6 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
         return MAX30102_ERR_I2C;
     delay_ms(dev, 100);
 
-    /* clear FIFO pointers */
-    if (!write_reg(dev, REG_FIFO_WR_PTR, 0))
-        return MAX30102_ERR_I2C;
-    if (!write_reg(dev, REG_OVF_COUNTER, 0))
-        return MAX30102_ERR_I2C;
-    if (!write_reg(dev, REG_FIFO_RD_PTR, 0))
-        return MAX30102_ERR_I2C;
-
     /* FIFO config: no averaging, rollover enabled, a_full = 0 (32 unread) */
     if (!write_reg(dev, REG_FIFO_CONFIG, 0x10))
         return MAX30102_ERR_I2C;
@@ -150,6 +151,9 @@ max30102_err_t max30102_init(max30102_t *dev, const max30102_i2c_t *i2c)
     /* default mode: SpO2 */
     dev->mode = MAX30102_MODE_SPO2;
     if (!write_reg(dev, REG_MODE_CONFIG, (uint8_t)MAX30102_MODE_SPO2))
+        return MAX30102_ERR_I2C;
+
+    if (!clear_fifo(dev))
         return MAX30102_ERR_I2C;
 
     INVARIANT(dev->i2c != NULL);
@@ -180,6 +184,11 @@ max30102_err_t max30102_set_mode(max30102_t *dev, max30102_mode_t mode)
         return MAX30102_ERR_I2C;
 
     dev->mode = mode;
+
+    /* samples left from the old mode have the old size */
+    if (!clear_fifo(dev))
+        return MAX30102_ERR_I2C;
+
     return MAX30102_OK;
 }
 
