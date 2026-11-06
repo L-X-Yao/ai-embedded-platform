@@ -28,9 +28,15 @@ extern "C" {
 #ifndef EVENT_BUS_MAX_EVENTS
 #define EVENT_BUS_MAX_EVENTS 16
 #endif
+#if EVENT_BUS_MAX_EVENTS > 255
+#error "EVENT_BUS_MAX_EVENTS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 #ifndef EVENT_BUS_MAX_SUBS_PER_EVENT
 #define EVENT_BUS_MAX_SUBS_PER_EVENT 8
+#endif
+#if EVENT_BUS_MAX_SUBS_PER_EVENT > 255
+#error "EVENT_BUS_MAX_SUBS_PER_EVENT exceeds 255, the most a uint8_t count can hold"
 #endif
 
 /* ---------- error codes ---------- */

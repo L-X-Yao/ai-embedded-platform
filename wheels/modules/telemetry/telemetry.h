@@ -28,6 +28,9 @@ extern "C" {
 #ifndef TELEMETRY_MAX_FIELDS
 #define TELEMETRY_MAX_FIELDS    16
 #endif
+#if TELEMETRY_MAX_FIELDS > 255
+#error "TELEMETRY_MAX_FIELDS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 #ifndef TELEMETRY_BUF_SIZE
 #define TELEMETRY_BUF_SIZE      512

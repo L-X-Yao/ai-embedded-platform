@@ -30,6 +30,9 @@ extern "C" {
 #ifndef CONFIG_STORE_MAX_ENTRIES
 #define CONFIG_STORE_MAX_ENTRIES     16
 #endif
+#if CONFIG_STORE_MAX_ENTRIES > 255
+#error "CONFIG_STORE_MAX_ENTRIES exceeds 255, the most a uint8_t count can hold"
+#endif
 
 #ifndef CONFIG_STORE_STRING_SIZE
 #define CONFIG_STORE_STRING_SIZE     32

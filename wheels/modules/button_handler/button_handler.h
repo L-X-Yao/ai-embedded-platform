@@ -54,6 +54,9 @@ typedef void (*btn_callback_fn)(void *ctx, uint8_t button_id, btn_event_t event)
 #ifndef BTN_HANDLER_MAX_BUTTONS
 #define BTN_HANDLER_MAX_BUTTONS 8
 #endif
+#if BTN_HANDLER_MAX_BUTTONS > 255
+#error "BTN_HANDLER_MAX_BUTTONS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ---------- per-button state ---------- */
 

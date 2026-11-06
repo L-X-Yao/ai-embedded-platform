@@ -109,6 +109,9 @@ typedef struct {
 #ifndef BENCODE_MAX_DEPTH
 #define BENCODE_MAX_DEPTH 16
 #endif
+#if BENCODE_MAX_DEPTH > 255
+#error "BENCODE_MAX_DEPTH exceeds 255, the most a uint8_t count can hold"
+#endif
 
 typedef struct {
     const uint8_t *data;

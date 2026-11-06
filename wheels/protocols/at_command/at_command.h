@@ -26,6 +26,9 @@ extern "C" {
 #ifndef AT_COMMAND_MAX_URCS
 #define AT_COMMAND_MAX_URCS    16
 #endif
+#if AT_COMMAND_MAX_URCS > 255
+#error "AT_COMMAND_MAX_URCS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ---------- events ---------- */
 

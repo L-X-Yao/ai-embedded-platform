@@ -40,6 +40,9 @@ extern "C" {
 #ifndef CLI_SHELL_MAX_CMDS
 #define CLI_SHELL_MAX_CMDS      16
 #endif
+#if CLI_SHELL_MAX_CMDS > 255
+#error "CLI_SHELL_MAX_CMDS exceeds 255, the most a uint8_t count can hold"
+#endif
 
 /* ---------- Error codes ---------- */
 

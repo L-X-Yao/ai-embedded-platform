@@ -28,6 +28,10 @@ extern "C" {
 #ifndef ERROR_HANDLER_MAX_RECORDS
 #define ERROR_HANDLER_MAX_RECORDS 16
 #endif
+/* A uint8_t count, and load needs 0xFF to stay invalid: erased flash reads so */
+#if ERROR_HANDLER_MAX_RECORDS > 254
+#error "ERROR_HANDLER_MAX_RECORDS exceeds 254: 0xFF must stay an invalid count"
+#endif
 
 /* ---------- Error codes ---------- */
 

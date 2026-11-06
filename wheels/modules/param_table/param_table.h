@@ -38,6 +38,9 @@ typedef enum {
 #ifndef PARAM_MAX_ENTRIES
 #define PARAM_MAX_ENTRIES  32
 #endif
+#if PARAM_MAX_ENTRIES > 255
+#error "PARAM_MAX_ENTRIES exceeds 255, the most a uint8_t count can hold"
+#endif
 
 #ifndef PARAM_VALUE_SIZE
 #define PARAM_VALUE_SIZE   32
