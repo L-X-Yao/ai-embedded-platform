@@ -64,6 +64,9 @@ def test(fn):
     return fn
 
 
+test.__test__ = False   # the decorator itself: pytest must not collect it
+
+
 def run_all():
     global _pass, _fail
     for fn in _tests:
