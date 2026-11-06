@@ -6,8 +6,15 @@
  * with power-on-reset defaults. Use in test_hw_model_bmp388.c
  * for round-trip verification against the real driver.
  *
- * A forced measurement runs only what press_en and temp_en ask for. It sets the
- * drdy flag of each result, and reading a data register clears that flag.
+ * A forced measurement runs only what press_en and temp_en ask for. Time passes
+ * through hw_model_delay_ms, and a little with each read over the bus. Pressure
+ * lands first, then temperature, each with its drdy flag, after the time of the
+ * manual's formula. Reading a data register clears that flag, and at the end the
+ * sensor is back in sleep mode.
+ *
+ * A soft reset restores the Table 24 defaults and leaves the NVM alone. It ends
+ * with por_detected set. cmd_rdy is not modelled: Table 24 gives STATUS as 0x00
+ * and the driver does not use it.
  */
 #ifndef HW_MODEL_BMP388_H
 #define HW_MODEL_BMP388_H
@@ -19,6 +26,13 @@
 #define HW_REG_COUNT 256
 #define HW_PWR_CTRL_LOG_MAX 8
 
+/* The manual gives no time for a soft reset, so this is its 2 ms start-up time
+ * (tstartup, p.8), which is the nearest thing it has */
+#define HW_RESET_US 2000u
+
+/* One register read at 400 kHz is about 40 clocks */
+#define HW_BUS_READ_US 100u
+
 static uint8_t  hw_regs[HW_REG_COUNT];
 static int      hw_write_count;
 static int      hw_read_count;
@@ -26,9 +40,30 @@ static uint32_t hw_adc_press;        /* the next pressure measurement */
 static uint32_t hw_adc_temp;         /* the next temperature measurement */
 static int      hw_press_measured;
 static int      hw_temp_measured;
-static int      hw_temp_late_polls;  /* STATUS reads before drdy_temp rises */
+static uint32_t hw_now_us;
+static uint32_t hw_press_done_us;
+static uint32_t hw_temp_done_us;
+static bool     hw_press_busy;
+static bool     hw_temp_busy;
+static uint32_t hw_reset_done_us;
+static bool     hw_resetting;
+static bool     hw_reset_stuck;      /* the reset never finishes */
+static uint32_t hw_reset_us;         /* how long a reset takes */
 static uint8_t  hw_pwr_ctrl_log[HW_PWR_CTRL_LOG_MAX];  /* every byte written */
 static int      hw_pwr_ctrl_len;
+
+/* Table 24, p.30 and p.31: the default of every register below the NVM */
+static void hw_model_defaults(void)
+{
+    memset(&hw_regs[0x01], 0, 0x1Fu);
+    hw_regs[0x06] = 0x80;  /* DATA_2 */
+    hw_regs[0x09] = 0x80;  /* DATA_5 */
+    hw_regs[0x15] = 0x01;  /* FIFO_WTM_0 */
+    hw_regs[0x17] = 0x02;  /* FIFO_CONFIG_1 */
+    hw_regs[0x18] = 0x02;  /* FIFO_CONFIG_2 */
+    hw_regs[0x19] = 0x02;  /* INT_CTRL */
+    hw_regs[0x1C] = 0x02;  /* OSR */
+}
 
 static void hw_model_reset(void)
 {
@@ -39,14 +74,18 @@ static void hw_model_reset(void)
     hw_adc_temp  = 0;
     hw_press_measured = 0;
     hw_temp_measured  = 0;
-    hw_temp_late_polls = 0;
+    hw_now_us = 0;
+    hw_press_busy = false;
+    hw_temp_busy = false;
+    hw_resetting = false;
+    hw_reset_stuck = false;
+    hw_reset_us = HW_RESET_US;
     hw_pwr_ctrl_len = 0;
 
     /* POR defaults from BMP388 datasheet, Table 24. STATUS starts at 0x00. */
     hw_regs[0x00] = 0x50;  /* CHIP_ID */
-    hw_regs[0x06] = 0x80;  /* DATA_2 */
-    hw_regs[0x09] = 0x80;  /* DATA_5 */
-    hw_regs[0x1C] = 0x02;  /* OSR */
+    hw_model_defaults();
+    hw_regs[0x10] = 0x01;  /* EVENT: por_detected */
 
     /* Calibration NVM (same realistic values as test_bmp388.c) */
     /* NVM_PAR_T1 = 26000 LE */
@@ -79,6 +118,14 @@ static void hw_model_reset(void)
     hw_regs[0x45] = 0x00;
 }
 
+static void hw_model_land_press(void)
+{
+    hw_regs[0x04] = (uint8_t)(hw_adc_press & 0xFF);
+    hw_regs[0x05] = (uint8_t)((hw_adc_press >> 8) & 0xFF);
+    hw_regs[0x06] = (uint8_t)((hw_adc_press >> 16) & 0xFF);
+    hw_regs[0x03] |= 0x20;  /* drdy_press */
+}
+
 static void hw_model_land_temp(void)
 {
     hw_regs[0x07] = (uint8_t)(hw_adc_temp & 0xFF);
@@ -87,25 +134,54 @@ static void hw_model_land_temp(void)
     hw_regs[0x03] |= 0x40;  /* drdy_temp */
 }
 
-/* Manual p.13, Figure 5: "skip if press_en = 0", "skip if temp_en = 0". A skipped
- * measurement leaves its data registers and its flag alone. */
+/* Manual p.13, Figure 5: pressure, then temperature, "skip if press_en = 0", "skip
+ * if temp_en = 0". p.27: Tconv = 234 us + press_en * (392 us + 2^osr_p * 2000 us)
+ * + temp_en * (313 us + 2^osr_t * 2000 us). A skipped measurement leaves its data
+ * registers and its flag alone. */
 static void hw_model_measure(uint8_t pwr_ctrl)
 {
+    uint32_t at = hw_now_us + 234u;
+
     if (pwr_ctrl & 0x01)
     {
         hw_press_measured++;
-        hw_regs[0x04] = (uint8_t)(hw_adc_press & 0xFF);
-        hw_regs[0x05] = (uint8_t)((hw_adc_press >> 8) & 0xFF);
-        hw_regs[0x06] = (uint8_t)((hw_adc_press >> 16) & 0xFF);
-        hw_regs[0x03] |= 0x20;  /* drdy_press */
+        at += 392u + (2000u << (hw_regs[0x1C] & 0x07u));
+        hw_press_done_us = at;
+        hw_press_busy = true;
     }
     if (pwr_ctrl & 0x02)
     {
         hw_temp_measured++;
-        if (hw_temp_late_polls == 0)
-        {
-            hw_model_land_temp();
-        }
+        at += 313u + (2000u << ((hw_regs[0x1C] >> 3) & 0x07u));
+        hw_temp_done_us = at;
+        hw_temp_busy = true;
+    }
+}
+
+static void hw_model_advance_us(uint32_t us)
+{
+    bool measuring = hw_press_busy || hw_temp_busy;
+
+    hw_now_us += us;
+    if (hw_resetting && !hw_reset_stuck && hw_now_us >= hw_reset_done_us)
+    {
+        hw_resetting = false;
+        hw_regs[0x10] |= 0x01;  /* por_detected */
+    }
+    if (hw_press_busy && hw_now_us >= hw_press_done_us)
+    {
+        hw_press_busy = false;
+        hw_model_land_press();
+    }
+    if (hw_temp_busy && hw_now_us >= hw_temp_done_us)
+    {
+        hw_temp_busy = false;
+        hw_model_land_temp();
+    }
+    /* p.11: "When the measurement is finished, the sensor returns to sleep mode" */
+    if (measuring && !hw_press_busy && !hw_temp_busy)
+    {
+        hw_regs[0x1B] &= 0x03u;
     }
 }
 
@@ -116,10 +192,32 @@ static bool hw_model_write_reg(void *ctx, uint8_t dev_addr,
     (void)ctx; (void)dev_addr;
     hw_write_count++;
 
-    /* CMD register: soft reset clears data, resets status */
-    if (reg == 0x7E && val == 0xB6)
+    /* A write that lands during the reset is overwritten by it */
+    if (hw_resetting)
     {
-        hw_regs[0x03] = 0x20;  /* re-assert drdy after reset */
+        return true;
+    }
+
+    /* CMD, p.39: "Register will always read as 0x00". softreset: "Triggers a
+     * reset, all user configuration settings are overwritten with their default
+     * state" */
+    if (reg == 0x7E)
+    {
+        if (val == 0xB6)
+        {
+            hw_model_defaults();
+            hw_press_busy = false;
+            hw_temp_busy = false;
+            hw_resetting = true;
+            hw_reset_done_us = hw_now_us + hw_reset_us;
+        }
+        return true;
+    }
+
+    /* Table 24: below 0x15 and at the NVM the registers are read only, and 0x1E
+     * is reserved */
+    if (reg < 0x15 || reg == 0x1E || reg > 0x1F)
+    {
         return true;
     }
 
@@ -147,11 +245,7 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
 {
     (void)ctx; (void)dev_addr;
     hw_read_count++;
-
-    if (reg == 0x03 && hw_temp_late_polls > 0 && --hw_temp_late_polls == 0)
-    {
-        hw_model_land_temp();
-    }
+    hw_model_advance_us(HW_BUS_READ_US);
 
     for (uint16_t i = 0; i < len; i++) {
         uint8_t addr = (uint8_t)(reg + i);
@@ -165,8 +259,25 @@ static bool hw_model_read_regs(void *ctx, uint8_t dev_addr,
         {
             hw_regs[0x03] &= (uint8_t)~0x40u;
         }
+        /* p.33: por_detected is "Clear-on-read", and INT_STATUS "is cleared after
+         * reading". p.31: ERR_REG cmd_err and conf_err are "Cleared on read". */
+        if (addr == 0x10 || addr == 0x11)
+        {
+            hw_regs[addr] = 0;
+        }
+        if (addr == 0x02)
+        {
+            hw_regs[0x02] &= 0x01u;
+        }
     }
     return true;
+}
+
+__attribute__((unused))
+static void hw_model_delay_ms(void *ctx, uint32_t ms)
+{
+    (void)ctx;
+    hw_model_advance_us(ms * 1000u);
 }
 
 /* Inject raw ADC values for a measurement */
