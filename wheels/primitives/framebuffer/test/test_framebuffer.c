@@ -299,6 +299,60 @@ TEST(test_line_bresenham)
     ASSERT_EQ(1, framebuffer_get_pixel(&fb, 4, 4));
 }
 
+/* ---- test_line_long_spans ---- */
+
+static uint32_t lit_pixels(const framebuffer_t *fb)
+{
+    uint32_t n = 0u;
+    for (uint16_t y = 0u; y < fb->height; y++) {
+        for (uint16_t x = 0u; x < fb->width; x++) {
+            if (framebuffer_get_pixel(fb, x, y) != 0u) { n++; }
+        }
+    }
+    return n;
+}
+
+/* Every int16_t pair is a legal end point. A span of 2^14 or more wrapped
+ * the int16_t error term, so the loop never met the end point and this test
+ * hung. Expected values are the ideal line clipped to the 128x64 window:
+ * how many pixels land in it and the last of them. */
+TEST(test_line_long_spans)
+{
+    static const struct {
+        int16_t  x0, y0, x1, y1;
+        uint32_t lit;
+        uint16_t last_x, last_y;
+    } cases[] = {
+        {      0,      0,  16384,     0, 128u, 127u,  0u },
+        {      0,      0,  20000,     0, 128u, 127u,  0u },
+        {      0,      0,  32767,     0, 128u, 127u,  0u },
+        {      0,      0,      0, 16385,  64u,   0u, 63u },
+        {      0,      0,      0, 20000,  64u,   0u, 63u },
+        {      0,      0, -16384,     0,   1u,   0u,  0u },
+        {      0,      0,      0,-16385,   1u,   0u,  0u },
+        {      0,      0,  16384,     1, 128u, 127u,  0u },
+        {      0,      0,  20000,    10, 128u, 127u,  0u },
+        { -20000,      5,  20000,     5, 128u, 127u,  5u },
+        {      5, -20000,      7, 20000,  64u,   6u, 63u },
+        { -32768,      0,  32767,     0, 128u, 127u,  0u },
+        {  32767,      5, -32768,     5, 128u,   0u,  5u },
+        { -32768, -32768,  32767, 32767,  64u,  63u, 63u },
+    };
+    static uint8_t buf[1024]; /* 128x64 VLSB */
+    framebuffer_t fb;
+    ASSERT_EQ(FRAMEBUFFER_OK,
+              framebuffer_init(&fb, buf, 128, 64, FB_FORMAT_MONO_VLSB));
+
+    for (size_t i = 0u; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        framebuffer_clear(&fb, 0);
+        framebuffer_line(&fb, cases[i].x0, cases[i].y0,
+                         cases[i].x1, cases[i].y1, 1);
+        ASSERT_EQ(cases[i].lit, lit_pixels(&fb));
+        ASSERT_EQ(1, framebuffer_get_pixel(&fb, cases[i].last_x,
+                                           cases[i].last_y));
+    }
+}
+
 /* ---- test_circle ---- */
 
 TEST(test_circle)
@@ -495,6 +549,7 @@ TEST_MAIN("framebuffer")
     RUN(test_hline_vline);
     RUN(test_rect_fill_rect);
     RUN(test_line_bresenham);
+    RUN(test_line_long_spans);
     RUN(test_circle);
     RUN(test_blit_1bpp);
     RUN(test_clipping);
