@@ -7,6 +7,7 @@
 /* ---------- chip-specific mock setup ---------- */
 
 static bool mock_stays_forced;       /* the measurement never ends */
+static bool mock_i2c_read_fail;      /* every read gets no ACK */
 
 static void mock_reset(void)
 {
@@ -51,10 +52,18 @@ static const bmp280_i2c_t mock_i2c = {
     .ctx       = NULL,
 };
 
+static bool chip_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                           uint8_t *buf, uint16_t len)
+{
+    if (mock_i2c_read_fail)
+        return false;
+    return mock_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+}
+
 /* The same chip with a delay callback */
 static const bmp280_i2c_t mock_delay_i2c = {
     .write_reg = chip_write_reg,
-    .read_regs = mock_i2c_read_regs,
+    .read_regs = chip_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
 };
@@ -240,7 +249,7 @@ TEST(test_calib_readback)
 TEST(test_calib_i2c_fail)
 {
     mock_reset();
-    mock_fail_at = 1;
+    mock_fail_at = 2;  /* read(ID)=op0, read(STATUS)=op1, read(CALIB)=op2 */
     bmp280_t d;
     bmp280_err_t e = bmp280_init(&d, &mock_i2c, &default_cfg);
     ASSERT_EQ(e, BMP280_ERR_I2C);
@@ -282,6 +291,52 @@ TEST(test_read_gives_up_after_the_table_13_time)
     ASSERT_LE(mock_delay_ms_count, 9);
 }
 
+/* Table 19 p.25: "Automatically set to '1' when the NVM data are being copied
+ * to image registers". Calibration read before that ends is not calibration. */
+TEST(test_init_waits_for_the_nvm_copy)
+{
+    mock_reset();
+    mock_regs[0xF3] = 0x01;
+    bmp280_t d;
+    ASSERT_EQ(bmp280_init(&d, &mock_i2c, &default_cfg), BMP280_ERR_TIMEOUT);
+    ASSERT_EQ(d.calib.dig_t1, 0);
+}
+
+/* p.8: the first communication comes 2 ms after power-on. */
+TEST(test_init_waits_out_start_up)
+{
+    mock_reset();
+    bmp280_t d;
+    ASSERT_EQ(bmp280_init(&d, &mock_delay_i2c, &default_cfg), BMP280_OK);
+    ASSERT_GE(mock_delay_ms_count, 1);
+}
+
+/* A NACK in the status poll is a sensor that is not up yet. */
+TEST(test_init_rides_out_a_nack_in_the_status_poll)
+{
+    mock_reset();
+    mock_fail_at = 1;
+    bmp280_t d;
+    ASSERT_EQ(bmp280_init(&d, &mock_i2c, &default_cfg), BMP280_OK);
+}
+
+/* p.24: 0xB6 runs "the complete power-on-reset procedure". */
+TEST(test_reset_waits_for_the_nvm_copy)
+{
+    setup();
+    mock_regs[0xF3] = 0x01;
+    ASSERT_EQ(bmp280_reset(&dev), BMP280_ERR_TIMEOUT);
+}
+
+TEST(test_reset_reports_a_sensor_that_stays_silent)
+{
+    mock_reset();
+    bmp280_init(&dev, &mock_delay_i2c, &default_cfg);
+    mock_i2c_read_fail = true;
+    ASSERT_EQ(bmp280_reset(&dev), BMP280_ERR_I2C);
+    mock_i2c_read_fail = false;
+}
+
 /* ---------- skipped temperature: the extra measurement can fail ---------- */
 
 static const bmp280_cfg_t skip_t_cfg = {
@@ -292,9 +347,10 @@ static const bmp280_cfg_t skip_t_cfg = {
 
 TEST(test_init_skip_temperature_i2c_fail)
 {
-    /* read(ID)=op0, read(CALIB)=op1, write(CONFIG)=op2, then the measurement:
-     * write(CTRL_MEAS)=op3, read(STATUS)=op4, read(PRESS_MSB x6)=op5. */
-    for (int op = 3; op <= 5; op++)
+    /* read(ID)=op0, read(STATUS)=op1, read(CALIB)=op2, write(CONFIG)=op3, then
+     * the measurement: write(CTRL_MEAS)=op4, read(STATUS)=op5,
+     * read(PRESS_MSB x6)=op6. */
+    for (int op = 4; op <= 6; op++)
     {
         mock_reset();
         mock_fail_at = op;
@@ -327,6 +383,11 @@ TEST_MAIN("bmp280")
     RUN(test_calib_readback);
     RUN(test_calib_i2c_fail);
     RUN(test_read_timeout);
+    RUN(test_init_waits_for_the_nvm_copy);
+    RUN(test_init_waits_out_start_up);
+    RUN(test_init_rides_out_a_nack_in_the_status_poll);
+    RUN(test_reset_waits_for_the_nvm_copy);
+    RUN(test_reset_reports_a_sensor_that_stays_silent);
     RUN(test_read_waits_for_sleep_mode);
     RUN(test_read_gives_up_after_the_table_13_time);
     RUN(test_init_skip_temperature_i2c_fail);
