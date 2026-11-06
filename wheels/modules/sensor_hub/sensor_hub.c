@@ -10,6 +10,7 @@
 
 #include "sensor_hub.h"
 #include "contract.h"
+#include <float.h>
 #include <string.h>
 
 sensor_hub_err_t sensor_hub_init(sensor_hub_t *hub)
@@ -65,8 +66,8 @@ sensor_hub_err_t sensor_hub_poll(sensor_hub_t *hub)
             continue;
         }
 
-        /* reject NaN — treat as read error to avoid poisoning stats */
-        if (val != val) {
+        /* reject NaN and infinity — read errors, to avoid poisoning stats */
+        if (!(val >= -FLT_MAX && val <= FLT_MAX)) {
             e->status = SENSOR_HUB_STATUS_ERROR;
             e->error_count++;
             result = SENSOR_HUB_ERR_READ;
