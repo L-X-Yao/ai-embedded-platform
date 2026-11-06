@@ -11,6 +11,7 @@
  */
 
 #include "../ring_buffer.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
 
