@@ -24,6 +24,32 @@ static const char *method_str(http_method_t m)
     }
 }
 
+/*
+ * Every string below is copied onto the wire as it stands, and a path can
+ * come from a server. A CR or LF in one would end the line early and add a
+ * header or a whole second request; a space in the path would split the
+ * request line (RFC 9112 sections 3 and 5).
+ */
+static int cfg_is_clean(const http_request_cfg_t *cfg)
+{
+    if (strpbrk(cfg->path, " \r\n") != NULL) {
+        return 0;
+    }
+    if (cfg->host && strpbrk(cfg->host, "\r\n") != NULL) {
+        return 0;
+    }
+    for (size_t i = 0; i < cfg->header_count; i++) {
+        if (!cfg->headers || !cfg->headers[i].name || !cfg->headers[i].value) {
+            continue;
+        }
+        if (strpbrk(cfg->headers[i].name, "\r\n") != NULL ||
+            strpbrk(cfg->headers[i].value, "\r\n") != NULL) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 http_request_err_t http_request_build(uint8_t *buf, size_t cap,
                                       const http_request_cfg_t *cfg,
                                       size_t *out_len)
@@ -32,6 +58,10 @@ http_request_err_t http_request_build(uint8_t *buf, size_t cap,
     REQUIRE(cfg != NULL);
     REQUIRE(out_len != NULL);
     if (!buf || !cfg || !out_len || !cfg->path) {
+        return HTTP_REQUEST_ERR_PARAM;
+    }
+    if (!cfg_is_clean(cfg)) {
+        *out_len = 0;
         return HTTP_REQUEST_ERR_PARAM;
     }
 
