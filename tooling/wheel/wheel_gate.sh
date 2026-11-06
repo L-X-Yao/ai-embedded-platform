@@ -223,7 +223,7 @@ for wheel in "${WHEELS[@]}"; do
     spdx_missing=0
     while IFS= read -r f; do
         head -5 "$f" | grep -q "SPDX-License-Identifier" || spdx_missing=$((spdx_missing + 1))
-    done < <(find "$wheel_dir" \( -name "*.c" -o -name "*.h" \) -not -path "*/build_*" -not -path "*/vendor/*" 2>/dev/null)
+    done < <(find "$wheel_dir" \( -name "*.c" -o -name "*.h" \) -not -path "*/build_*" -not -path "*/build/*" -not -path "*/vendor/*" 2>/dev/null)
     if [[ "$spdx_missing" -gt 0 ]]; then
         echo -e "  ${RED}FAIL${NC} SPDX: $spdx_missing files missing header"
         FAIL=$((FAIL + 1))
