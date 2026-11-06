@@ -95,22 +95,27 @@ ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
         return CCS811_ERR_BOOT;
     }
 
-    /* APP_START (0xF4) goes out alone, with no data, to leave boot mode */
-    const uint8_t app_start = REG_APP_START;
-    if (!write_raw(dev, &app_start, 1))
-    {
-        return CCS811_ERR_I2C;
-    }
-    delay(dev, 1);
-
-    /* Verify FW_MODE is set */
-    if (!read_regs(dev, REG_STATUS, &status, 1))
-    {
-        return CCS811_ERR_I2C;
-    }
+    /* APP_START (0xF4) goes out alone, with no data, to leave boot mode. The
+     * application map (p15) has no 0xF4, so a chip that already runs, as after
+     * an MCU restart, does not get it. */
     if (!(status & STATUS_FW_MODE))
     {
-        return CCS811_ERR_BOOT;
+        const uint8_t app_start = REG_APP_START;
+        if (!write_raw(dev, &app_start, 1))
+        {
+            return CCS811_ERR_I2C;
+        }
+        delay(dev, 1);
+
+        /* Verify FW_MODE is set */
+        if (!read_regs(dev, REG_STATUS, &status, 1))
+        {
+            return CCS811_ERR_I2C;
+        }
+        if (!(status & STATUS_FW_MODE))
+        {
+            return CCS811_ERR_BOOT;
+        }
     }
 
     /* Set drive mode */
