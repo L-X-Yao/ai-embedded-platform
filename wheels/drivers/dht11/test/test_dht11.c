@@ -9,8 +9,22 @@ static int  pin_seq_len;
 
 static void mock_set_output(void *ctx) { (void)ctx; }
 static void mock_set_input(void *ctx) { (void)ctx; }
-static void mock_write_pin(void *ctx, bool level) { (void)ctx; (void)level; }
-static void mock_delay_us(void *ctx, uint32_t us) { (void)ctx; (void)us; }
+static uint32_t mock_first_delay_us;
+static int      mock_high_writes;
+
+static void mock_write_pin(void *ctx, bool level)
+{
+    (void)ctx;
+    if (level)
+        mock_high_writes++;
+}
+
+static void mock_delay_us(void *ctx, uint32_t us)
+{
+    (void)ctx;
+    if (mock_first_delay_us == 0)
+        mock_first_delay_us = us;
+}
 
 static bool mock_read_pin(void *ctx)
 {
@@ -24,6 +38,8 @@ static void build_pin_sequence(uint8_t bytes[5])
 {
     pin_seq_idx = 0;
     pin_seq_len = 0;
+    mock_first_delay_us = 0;
+    mock_high_writes = 0;
     pin_seq[pin_seq_len++] = false;
     pin_seq[pin_seq_len++] = true;
     pin_seq[pin_seq_len++] = false;
@@ -155,10 +171,24 @@ TEST(test_read_timeout)
     ASSERT_EQ(dht11_read(&dev, &data), DHT11_ERR_TIMEOUT);
 }
 
+/* p.6: the low start signal is ">18ms" in the figure, and after it the host is
+ * "set to enter the state": it goes to input, and the pull-up raises the line. */
+TEST(test_start_signal_is_long_enough_and_releases_the_bus)
+{
+    setup_mock(50, 0, 25, 0, true);
+    dht11_t dev;
+    dht11_init(&dev, &mock_gpio);
+    dht11_data_t data;
+    ASSERT_EQ(dht11_read(&dev, &data), DHT11_OK);
+    ASSERT_GT(mock_first_delay_us, 18000u);
+    ASSERT_EQ(mock_high_writes, 0);
+}
+
 TEST_MAIN("dht11")
     RUN(test_init_null);
     RUN(test_init_missing_callback);
     RUN(test_read_normal);
+    RUN(test_start_signal_is_long_enough_and_releases_the_bus);
     RUN(test_read_high_humidity);
     RUN(test_read_zero);
     RUN(test_checksum_fail);
