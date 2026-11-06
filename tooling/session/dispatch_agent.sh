@@ -102,6 +102,13 @@ remove_worktree_dir() {
     return 0
 }
 
+# --- print the path of the worktree that has branch $1 checked out, if any ---
+worktree_path_of() {
+    git worktree list --porcelain | awk -v ref="branch refs/heads/$1" '
+        /^worktree / { path = substr($0, length("worktree ") + 1) }
+        $0 == ref    { print path }'
+}
+
 # --- clean up all worktree-* branches and directories ---
 cleanup_worktrees() {
     local branches
@@ -193,6 +200,15 @@ if $MERGE_ALL; then
     MERGED=0
     FAILED=0
     for b in $branches; do
+        # Cleanup force-removes worktrees, so uncommitted work must stop it
+        # here, whether or not the branch has commits to merge.
+        wt_path=$(worktree_path_of "$b")
+        if [[ -n "$wt_path" && -n "$(git -C "$wt_path" status --porcelain 2>/dev/null)" ]]; then
+            echo -e "  ${RED}FAIL${NC}  $b  (uncommitted work kept in $wt_path — commit or discard it, then rerun)"
+            FAILED=$((FAILED + 1))
+            continue
+        fi
+
         commits=$(git log main.."$b" --oneline 2>/dev/null | wc -l)
         if [[ "$commits" -eq 0 ]]; then
             echo -e "  ${YELLOW}SKIP${NC}  $b  (no commits ahead of main)"
