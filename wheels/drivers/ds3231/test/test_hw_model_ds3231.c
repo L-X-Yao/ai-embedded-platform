@@ -15,7 +15,7 @@ static ds3231_model_t model;
 
 static const ds3231_i2c_t model_i2c = {
     .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .read_regs = ds3231_hw_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -58,11 +58,11 @@ TEST(test_get_time_reads_bcd)
     setup();
     ds3231_t dev;
     ds3231_init(&dev, &model_i2c);
+    ds3231_model_set_time(&model, 25, 1, 15, 3, 12, 30, 45);
 
     ds3231_time_t t;
     ds3231_err_t err = ds3231_get_time(&dev, &t);
     ASSERT_EQ(err, DS3231_OK);
-    /* Default: 2025-01-15 Wed 12:30:45 */
     ASSERT_EQ(t.year, 25);
     ASSERT_EQ(t.month, 1);
     ASSERT_EQ(t.day, 15);
@@ -143,7 +143,7 @@ TEST(test_temperature_read)
     ds3231_t dev;
     ds3231_init(&dev, &model_i2c);
 
-    /* Default: 23.25 C */
+    ds3231_model_set_temperature(&model, 23, 1);
     float temp = 0.0f;
     ds3231_err_t err = ds3231_get_temperature(&dev, &temp);
     ASSERT_EQ(err, DS3231_OK);
@@ -190,7 +190,129 @@ TEST(test_temp_registers_readonly)
     ASSERT_EQ(model.hw.regs[DS3231_REG_TEMP_MSB], original);
 }
 
+static void reg_write(uint8_t reg, uint8_t val)
+{
+    model_i2c.write_reg(&model.hw, DS3231_ADDR, reg, val);
+}
+
+static uint8_t reg_read(uint8_t reg)
+{
+    uint8_t val = 0;
+    model_i2c.read_regs(&model.hw, DS3231_ADDR, reg, &val, 1);
+    return val;
+}
+
+/* "the time and date registers are reset to 01/01/00 01 00:00:00" (p10),
+ * Control POR 0001 1100 (p13), Status POR 1000 1xxx (p14), and "a default
+ * temperature of 0C" (p15) */
+TEST(test_power_on_state)
+{
+    static const uint8_t date[7] = { 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x00 };
+    setup();
+    for (uint8_t i = 0; i < 7; i++) {
+        ASSERT_EQ_HEX(reg_read(i), date[i]);
+    }
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_CONTROL), 0x1C);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS) & 0xF8, 0x88);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_TEMP_MSB), 0x00);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_TEMP_LSB), 0x00);
+}
+
+TEST(test_driver_reads_the_power_on_state)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+
+    ds3231_time_t t;
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ(t.year, 0);
+    ASSERT_EQ(t.month, 1);
+    ASSERT_EQ(t.day, 1);
+    ASSERT_EQ(t.weekday, 1);
+    ASSERT_EQ(t.hour, 0);
+    ASSERT_EQ(t.minute, 0);
+    ASSERT_EQ(t.second, 0);
+
+    float temp = -1.0f;
+    ASSERT_EQ(ds3231_get_temperature(&dev, &temp), DS3231_OK);
+    ASSERT_NEAR(temp, 0.0f, 0.01f);
+}
+
+/* "This bit remains at logic 1 until written to logic 0", and A1F and A2F
+ * "can only be written to logic 0. Attempting to write to logic 1 leaves
+ * the value unchanged", p14 */
+TEST(test_status_flags_only_clear)
+{
+    setup();
+    reg_write(DS3231_REG_STATUS, 0x08);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x08);
+
+    reg_write(DS3231_REG_STATUS, 0x8B);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x08);
+
+    model.hw.regs[DS3231_REG_STATUS] = 0x8B;
+    reg_write(DS3231_REG_STATUS, 0x8A);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x8A);
+}
+
+/* EN32kHz is the one status bit that can go both ways, p14 */
+TEST(test_en32khz_follows_writes)
+{
+    setup();
+    reg_write(DS3231_REG_STATUS, 0x80);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x80);
+    reg_write(DS3231_REG_STATUS, 0x88);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x88);
+}
+
+/* BSY shows the chip's own TCXO work, and bits 6:4 are 0 (p14) */
+TEST(test_status_bsy_and_unused_bits_ignore_writes)
+{
+    setup();
+    model.hw.regs[DS3231_REG_STATUS] = 0x0C;
+    reg_write(DS3231_REG_STATUS, 0x78);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x0C);
+    reg_write(DS3231_REG_STATUS, 0x08);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x0C);
+}
+
+/* The century bit is bit 7 of the month register, p12 */
+TEST(test_month_register_holds_the_century_bit)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+    reg_write(DS3231_REG_MONTH, 0x92);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_MONTH), 0x92);
+
+    ds3231_time_t t;
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ(t.month, 12);
+}
+
+/* "when the address pointer reaches the end of the register space (12h), it
+ * wraps around to location 00h", p11 */
+TEST(test_read_wraps_after_12h)
+{
+    setup();
+    ds3231_model_set_temperature(&model, 23, 1);
+    ds3231_model_set_time(&model, 25, 1, 15, 3, 12, 30, 45);
+    uint8_t buf[3];
+    ASSERT_TRUE(model_i2c.read_regs(&model.hw, DS3231_ADDR, DS3231_REG_TEMP_MSB, buf, 3));
+    ASSERT_EQ(buf[0], 23);
+    ASSERT_EQ_HEX(buf[1], 0x40);
+    ASSERT_EQ_HEX(buf[2], 0x45);
+}
+
 TEST_MAIN("ds3231 hardware model")
+    RUN(test_power_on_state);
+    RUN(test_driver_reads_the_power_on_state);
+    RUN(test_status_flags_only_clear);
+    RUN(test_en32khz_follows_writes);
+    RUN(test_status_bsy_and_unused_bits_ignore_writes);
+    RUN(test_month_register_holds_the_century_bit);
+    RUN(test_read_wraps_after_12h);
     RUN(test_init_success);
     RUN(test_init_forces_24h_mode);
     RUN(test_get_time_reads_bcd);
