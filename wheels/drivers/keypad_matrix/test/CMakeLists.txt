@@ -37,6 +37,19 @@ target_compile_options(test_boundary_keypad_matrix PRIVATE -Wall -Wextra -Wpedan
 enable_testing()
 add_test(NAME keypad_matrix_tests COMMAND test_keypad_matrix)
 
+# The same tests with row masks wider than a byte
+add_executable(test_wide_keypad_matrix
+    test_keypad_matrix.c
+    ../keypad_matrix.c
+)
+target_compile_definitions(test_wide_keypad_matrix PRIVATE KEYPAD_MAX_COLS=10)
+target_include_directories(test_wide_keypad_matrix PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_wide_keypad_matrix PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+add_test(NAME keypad_matrix_wide_tests COMMAND test_wide_keypad_matrix)
+
 add_executable(prop_keypad_matrix
     prop_keypad_matrix.c
     ../keypad_matrix.c

@@ -5,7 +5,7 @@
 /* ---------- mock GPIO state ---------- */
 
 /* Simulated column state per row: bit N set = column N pressed (active low). */
-static uint8_t mock_col_state[KEYPAD_MAX_ROWS];
+static uint16_t mock_col_state[KEYPAD_MAX_ROWS];
 
 /* Track which row is currently driven low (-1 = none). */
 static int8_t mock_active_row;
@@ -51,13 +51,13 @@ static void mock_reset(void)
 /* Helper: press key at (row, col) in mock. */
 static void mock_press(uint8_t row, uint8_t col)
 {
-    mock_col_state[row] |= (uint8_t)(1U << col);
+    mock_col_state[row] |= (uint16_t)(1U << col);
 }
 
 /* Helper: release key at (row, col) in mock. */
 static void mock_release(uint8_t row, uint8_t col)
 {
-    mock_col_state[row] &= (uint8_t)~(1U << col);
+    mock_col_state[row] &= (uint16_t)~(1U << col);
 }
 
 /* ---------- tests ---------- */
@@ -321,6 +321,35 @@ TEST(test_init_missing_hal_functions)
     ASSERT_EQ(keypad_matrix_init(&kp, &bad_hal, 4, 4, keymap_4x4), KEYPAD_ERR_PARAM);
 }
 
+#if KEYPAD_MAX_COLS > 8
+/* Only in test_wide_keypad_matrix, built with KEYPAD_MAX_COLS=10 */
+TEST(test_every_column_reports_its_key)
+{
+    static const char keymap[] = "0123456789";
+    keypad_matrix_t kp;
+
+    for (uint8_t c = 0; c < 10; c++) {
+        char key = 0;
+        mock_reset();
+        ASSERT_EQ(keypad_matrix_init(&kp, &mock_hal, 1, 10, keymap), KEYPAD_OK);
+
+        mock_press(0, c);
+        keypad_matrix_scan(&kp);
+        keypad_matrix_scan(&kp);
+        ASSERT_EQ(keypad_matrix_get_event(&kp, &key), KEYPAD_EVENT_PRESS);
+        ASSERT_EQ(key, keymap[c]);
+        ASSERT_EQ(keypad_matrix_get_pressed(&kp), keymap[c]);
+        ASSERT_TRUE(keypad_matrix_is_pressed(&kp, keymap[c]));
+
+        mock_release(0, c);
+        keypad_matrix_scan(&kp);
+        keypad_matrix_scan(&kp);
+        ASSERT_EQ(keypad_matrix_get_event(&kp, &key), KEYPAD_EVENT_RELEASE);
+        ASSERT_EQ(key, keymap[c]);
+    }
+}
+#endif
+
 TEST_MAIN("keypad_matrix")
     RUN(test_init_valid_4x4);
     RUN(test_init_null_params);
@@ -336,4 +365,7 @@ TEST_MAIN("keypad_matrix")
     RUN(test_3x3_non_square);
     RUN(test_rapid_press_release_cycle);
     RUN(test_init_missing_hal_functions);
+#if KEYPAD_MAX_COLS > 8
+    RUN(test_every_column_reports_its_key);
+#endif
 TEST_MAIN_END()
