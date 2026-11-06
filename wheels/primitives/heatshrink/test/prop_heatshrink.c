@@ -114,6 +114,10 @@ static int hs_decompress(const uint8_t *src, uint16_t src_len,
         if (pr == HEATSHRINK_POLL_EMPTY) break;
     }
 
+    if (heatshrink_decoder_finish(&dec) != HEATSHRINK_FINISH_DONE) {
+        return -1;
+    }
+
     *dst_len = total_out;
     return 0;
 }
