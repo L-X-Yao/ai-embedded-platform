@@ -9,7 +9,7 @@
 # Runs for each wheel:
 #   1. Auto-generate null tests if missing (gen_null_tests.py)
 #   2. CMake build + test (all test_* executables)
-#   2.5. UBSan build + run (-fsanitize=undefined)
+#   2.5. ASan + UBSan build, run every test_* and prop_* target
 #   2.7. -Wconversion strict compile (-Wconversion -Wsign-conversion)
 #   2.8. SPDX header check (all .c/.h must have SPDX-License-Identifier)
 #   2.9. README quality check (no TODO placeholders)
@@ -141,29 +141,29 @@ for wheel in "${WHEELS[@]}"; do
         echo -e "  ${YELLOW}SKIP${NC} no test/CMakeLists.txt"
     fi
 
-    # --- 2.5. UBSan build + run ---
+    # --- 2.5. ASan + UBSan build + run ---
     if [[ -d "$test_dir" ]] && [[ -f "$test_dir/CMakeLists.txt" ]]; then
         san_dir="${test_dir}/build_san_gate"
         rm -rf "$san_dir"
         san_log=$(mktemp)
-        san_cflags="-fsanitize=undefined -fno-sanitize-recover=all -w"
-        san_ldflags="-fsanitize=undefined"
+        san_cflags="-fsanitize=address,undefined -fno-sanitize-recover=all -w"
+        san_ldflags="-fsanitize=address,undefined"
         if cmake -S "$test_dir" -B "$san_dir" -DCMAKE_BUILD_TYPE=Debug \
                  -DCMAKE_C_FLAGS_DEBUG="$san_cflags" \
                  -DCMAKE_EXE_LINKER_FLAGS="$san_ldflags" > "$san_log" 2>&1 && \
            cmake --build "$san_dir" >> "$san_log" 2>&1; then
 
             ubsan_ok=true
-            for exe in "$san_dir"/test_*; do
-                [[ -x "$exe" ]] || continue
+            for exe in "$san_dir"/test_* "$san_dir"/prop_*; do
+                [[ -f "$exe" && -x "$exe" ]] || continue
                 if ! "$exe" > /dev/null 2>&1; then
-                    echo -e "  ${RED}FAIL${NC} UBSan: $(basename "$exe")"
+                    echo -e "  ${RED}FAIL${NC} ASan/UBSan: $(basename "$exe")"
                     ubsan_ok=false
                 fi
             done
 
             if $ubsan_ok; then
-                echo -e "  ${GREEN}PASS${NC} UBSan"
+                echo -e "  ${GREEN}PASS${NC} ASan/UBSan"
             else
                 FAIL=$((FAIL + 1))
                 FAILED_WHEELS+=("$wheel")
@@ -171,7 +171,12 @@ for wheel in "${WHEELS[@]}"; do
                 continue
             fi
         else
-            echo -e "  ${YELLOW}SKIP${NC} UBSan build failed (non-blocking)"
+            echo -e "  ${RED}FAIL${NC} ASan/UBSan build"
+            tail -n 20 "$san_log"
+            FAIL=$((FAIL + 1))
+            FAILED_WHEELS+=("$wheel")
+            rm -rf "$san_dir" "$san_log"
+            continue
         fi
         rm -rf "$san_dir" "$san_log"
     fi
