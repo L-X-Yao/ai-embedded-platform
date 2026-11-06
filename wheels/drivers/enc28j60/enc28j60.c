@@ -84,8 +84,12 @@
 #define ECON1_BSEL1   0x02U
 #define ECON1_RXEN    0x04U
 #define ECON1_TXRTS   0x08U
+#define ECON1_TXRST   0x80U
 
 #define ECON2_PKTDEC  0x40U
+
+#define EIR_TXERIF    0x02U
+#define EIR_TXIF      0x08U
 
 #define ESTAT_CLKRDY  0x01U
 #define ESTAT_TXABRT  0x02U
@@ -379,6 +383,13 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
     uint16_t txend = (uint16_t)(TXSTART + 1U + len - 1U);
     write_reg(dev, 0, ETXNDL, (uint8_t)(txend & 0xFFU));
     write_reg(dev, 0, ETXNDH, (uint8_t)(txend >> 8));
+
+    /* Errata DS80349C issue 12: a half duplex abort may stall the transmit
+     * logic, and the next TXRTS would then never clear. Releasing TXRST may
+     * set TXERIF, so Example 1 clears the flags after it. */
+    bit_field_set(dev, ECON1, ECON1_TXRST);
+    bit_field_clear(dev, ECON1, ECON1_TXRST);
+    bit_field_clear(dev, EIR, EIR_TXERIF | EIR_TXIF);
 
     /* Only the result of this frame counts: the host has to clear these */
     bit_field_clear(dev, ESTAT, ESTAT_TXABRT | ESTAT_LATECOL);

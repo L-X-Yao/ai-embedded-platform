@@ -710,6 +710,84 @@ TEST(test_init_programs_an_odd_erxrdpt)
     ASSERT_EQ(model.regs[0][ENC_ERXNDH], model.regs[0][ENC_ERXRDPTH]);
 }
 
+/* --- 22. The transmit logic stalled by an abort --- */
+
+/* Errata DS80349C issue 12: in half duplex an abort "may stall the internal
+ * transmit logic. The next packet transmit initiated by the host controller
+ * may never succeed (ECON1.TXRTS will remain set indefinitely)." Work around:
+ * "Before attempting to transmit a packet (setting ECON1.TXRTS), reset the
+ * internal transmit logic by setting ECON1.TXRST and then clearing
+ * ECON1.TXRST." */
+TEST(test_send_recovers_a_stalled_transmit_logic)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.tx_end_estat = ENC_ESTAT_TXABRT;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_ERR_TX_ABORT);
+    ASSERT_TRUE(model.tx_stalled);
+
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_OK);
+    ASSERT_FALSE(model.tx_stalled);
+    ASSERT_EQ(model.tx_start_in_reset, 0);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_TXRST);
+}
+
+/* Same issue: "Clearing ECON1.TXRST may cause a new transmit error interrupt
+ * event (EIR.TXERIF will become set). Therefore, the interrupt flag should be
+ * cleared after the Reset is completed." Example 1 clears TXIF there too. */
+TEST(test_send_starts_with_txerif_and_txif_clear)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.tx_end_estat = ENC_ESTAT_TXABRT;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_ERR_TX_ABORT);
+    ASSERT_TRUE(model.common[ENC_EIR] & ENC_EIR_TXERIF);
+    ASSERT_TRUE(model.common[ENC_EIR] & ENC_EIR_TXIF);
+
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_OK);
+    ASSERT_FALSE(model.eir_at_tx_start & (ENC_EIR_TXERIF | ENC_EIR_TXIF));
+    ASSERT_FALSE(model.common[ENC_EIR] & ENC_EIR_TXERIF);
+}
+
+/* DS39662C p.70: TXERIF "can only be cleared by the host controller", through
+ * BFC, and Register 12-3 marks PKTIF and LINKIF R, not R/C */
+TEST(test_model_bfc_clears_only_rc_bits_of_eir)
+{
+    setup_and_init();
+    model.common[ENC_EIR] = 0x7BU;   /* every implemented flag */
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_BFC | ENC_EIR);
+    model_spi.xfer(model_spi.ctx, 0xFF);
+    model_spi.cs_high(model_spi.ctx);
+
+    ASSERT_EQ(model.common[ENC_EIR], 0x50);   /* PKTIF and LINKIF stay */
+}
+
+/* p.62: with TXRST set "the hardware will automatically clear the TXRTS bit
+ * and abort the transmission" */
+TEST(test_model_txrst_clears_a_pending_txrts)
+{
+    setup_and_init();
+    model.tx_complete_after = 0;
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_BFS | ENC_ECON1);
+    model_spi.xfer(model_spi.ctx, ENC_ECON1_TXRTS);
+    model_spi.cs_high(model_spi.ctx);
+    ASSERT_TRUE(model.common[ENC_ECON1] & ENC_ECON1_TXRTS);
+
+    model_spi.cs_low(model_spi.ctx);
+    model_spi.xfer(model_spi.ctx, ENC_OP_BFS | ENC_ECON1);
+    model_spi.xfer(model_spi.ctx, ENC_ECON1_TXRST);
+    model_spi.cs_high(model_spi.ctx);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_TXRTS);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -743,4 +821,8 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_set_mac_timeout_keeps_the_old_address);
     RUN(test_set_mac_leaves_reception_off_if_it_was_off);
     RUN(test_init_programs_an_odd_erxrdpt);
+    RUN(test_send_recovers_a_stalled_transmit_logic);
+    RUN(test_send_starts_with_txerif_and_txif_clear);
+    RUN(test_model_bfc_clears_only_rc_bits_of_eir);
+    RUN(test_model_txrst_clears_a_pending_txrts);
 TEST_MAIN_END()
