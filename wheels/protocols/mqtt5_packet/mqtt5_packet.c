@@ -290,6 +290,118 @@ int mqtt5_build_disconnect(uint8_t *buf, uint16_t size,
     return 4;
 }
 
+/* ---- property skipping ------------------------------------------------- */
+
+/*
+ * The spec fixes the type of every property (MQTT 5.0 section 2.2.2.2), so one
+ * with no field here can still be stepped over, and brokers send them by
+ * default. An ID the spec does not allow in the packet stays an error: that
+ * section calls it a Malformed Packet.
+ */
+typedef enum {
+    PROP_INVALID,
+    PROP_BYTE,
+    PROP_U16,
+    PROP_U32,
+    PROP_VBI,
+    PROP_STRING,    /* UTF-8 string or binary data: u16 length, then bytes */
+    PROP_PAIR,      /* two strings */
+} prop_kind_t;
+
+static prop_kind_t connack_prop_kind(uint8_t id)
+{
+    switch (id) {
+    case 0x25:  /* Retain Available */
+    case 0x28:  /* Wildcard Subscription Available */
+    case 0x29:  /* Subscription Identifier Available */
+    case 0x2A:  /* Shared Subscription Available */
+        return PROP_BYTE;
+    case 0x13:  /* Server Keep Alive */
+    case 0x22:  /* Topic Alias Maximum */
+        return PROP_U16;
+    case 0x27:  /* Maximum Packet Size */
+        return PROP_U32;
+    case 0x12:  /* Assigned Client Identifier */
+    case 0x15:  /* Authentication Method */
+    case 0x16:  /* Authentication Data */
+    case 0x1A:  /* Response Information */
+    case 0x1C:  /* Server Reference */
+    case 0x1F:  /* Reason String */
+        return PROP_STRING;
+    case 0x26:  /* User Property */
+        return PROP_PAIR;
+    default:
+        return PROP_INVALID;
+    }
+}
+
+static prop_kind_t publish_prop_kind(uint8_t id)
+{
+    switch (id) {
+    case 0x01:  /* Payload Format Indicator */
+        return PROP_BYTE;
+    case 0x23:  /* Topic Alias */
+        return PROP_U16;
+    case 0x0B:  /* Subscription Identifier */
+        return PROP_VBI;
+    case 0x03:  /* Content Type */
+    case 0x08:  /* Response Topic */
+    case 0x09:  /* Correlation Data */
+        return PROP_STRING;
+    case 0x26:  /* User Property */
+        return PROP_PAIR;
+    default:
+        return PROP_INVALID;
+    }
+}
+
+/* Step *pos over one property value, which has to end by end. */
+static mqtt5_err_t skip_prop(prop_kind_t kind, const uint8_t *buf,
+                             uint16_t *pos, uint32_t end)
+{
+    uint32_t next = *pos;
+    uint32_t strings = 0;
+
+    switch (kind) {
+    case PROP_BYTE:
+        next += 1;
+        break;
+    case PROP_U16:
+        next += 2;
+        break;
+    case PROP_U32:
+        next += 4;
+        break;
+    case PROP_VBI: {
+        uint32_t value;
+        uint8_t used;
+        if (mqtt5_decode_vbi(buf + next, (uint16_t)(end - next),
+                             &value, &used) != MQTT5_OK) {
+            return MQTT5_ERR_PROTOCOL;
+        }
+        next += used;
+        break;
+    }
+    case PROP_STRING:
+        strings = 1;
+        break;
+    case PROP_PAIR:
+        strings = 2;
+        break;
+    default:
+        return MQTT5_ERR_PROTOCOL;
+    }
+
+    for (; strings > 0; strings--) {
+        if (next + 2 > end) return MQTT5_ERR_PROTOCOL;
+        next += 2u + get_u16(buf + next);
+    }
+
+    if (next > end) return MQTT5_ERR_PROTOCOL;
+    *pos = (uint16_t)next;
+    return MQTT5_OK;
+}
+
 /* ---- parsers ----------------------------------------------------------- */
 
 mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
@@ -351,9 +463,9 @@ mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
             ack->max_qos = buf[pos++];
             break;
         default:
-            /* unknown property — skip not possible without knowing length;
-             * strict parse: reject */
-            return MQTT5_ERR_PROTOCOL;
+            err = skip_prop(connack_prop_kind(prop_id), buf, &pos, props_end);
+            if (err != MQTT5_OK) return err;
+            break;
         }
     }
 
@@ -422,7 +534,9 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
                 pos += 4;
                 break;
             default:
-                return MQTT5_ERR_PROTOCOL;
+                err = skip_prop(publish_prop_kind(prop_id), buf, &pos, props_end);
+                if (err != MQTT5_OK) return err;
+                break;
             }
         }
     }
