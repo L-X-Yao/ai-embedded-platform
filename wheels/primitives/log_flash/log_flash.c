@@ -69,12 +69,15 @@ void log_flash_sink(void *ctx, const char *line, size_t len) {
     uint32_t needed = ENTRY_HEADER_SIZE + (uint32_t)len;
 
     if (f->write_pos + needed > f->sector_size) {
-        f->write_sector = (f->write_sector + 1) % f->sector_count;
-        f->write_pos = 0;
-        if (erase_sector(f, f->write_sector) != 0) {
+        /* Move only after the erase worked: flash cannot be programmed over
+         * old data, so the next line has to retry a failed erase. */
+        uint32_t next = (f->write_sector + 1) % f->sector_count;
+        if (erase_sector(f, next) != 0) {
             if (f->dropped < UINT32_MAX) f->dropped++;
             return;
         }
+        f->write_sector = next;
+        f->write_pos = 0;
     }
 
     uint32_t abs_offset = sector_offset(f, f->write_sector) + f->write_pos;
