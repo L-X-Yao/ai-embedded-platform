@@ -77,6 +77,7 @@ static void kvs_example(void) {
 - Upstream warnings on 64-bit host: `cast from pointer to integer of different size` in offset macros. Harmless on 32-bit MCU targets.
 - No thread safety by default — set lock/unlock via `fdb_kvdb_control()` if multi-threaded.
 - TSDB included but optional — disable by omitting `FDB_USING_TSDB` in fdb_cfg.h.
+- `fdb_kv_set` runs garbage collection inline, and only once flash fills, so a task sized from bench runs overflows late. That path goes about 1.8 times as deep as an ordinary call: about 1 KB of frames on Cortex-M4 at -Os. Give any task that writes at least 1.5 KB plus what the flash port needs. On 12 sectors of 4 KB with 200-byte values the first collection came on call 187.
 
 ## How to test
 
