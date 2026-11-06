@@ -222,7 +222,7 @@ TEST(test_soft_reset_restores_defaults)
     ASSERT_EQ(model.current_bank, 0);
     /* EREVID should still be at default 0x06 */
     ASSERT_EQ(model.regs[3][ENC_EREVID], 0x06);
-    /* ESTAT.CLKRDY should be set */
+    /* ESTAT.CLKRDY is unaffected by an SRC: init polled it set */
     ASSERT_TRUE(model.common[ENC_ESTAT] & ENC_ESTAT_CLKRDY);
 }
 
@@ -358,7 +358,7 @@ TEST(test_estat_readonly)
 {
     setup_and_init();
 
-    /* ESTAT should have CLKRDY set from reset defaults */
+    /* ESTAT should have CLKRDY set: init polled until it was */
     ASSERT_TRUE(model.common[ENC_ESTAT] & ENC_ESTAT_CLKRDY);
 
     /* Try to clear ESTAT via WCR */
@@ -409,6 +409,51 @@ TEST(test_common_regs_across_banks)
     ASSERT_EQ(val, 0x42);
 }
 
+/* --- 13. Oscillator Start-up Timer and the wait after SRC --- */
+
+/* DS39662C p.7: "After a Power-on Reset ... the CLKRDY bit must be polled
+ * before transmitting packets, enabling packet reception or accessing any
+ * MAC, MII or PHY registers." */
+TEST(test_init_polls_clkrdy_before_mac_access)
+{
+    setup();
+    model.clkrdy_after = 3;
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+    ASSERT_EQ(model.estat_read_count, 3);
+    ASSERT_EQ(model.early_access_count, 0);
+    ASSERT_TRUE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
+TEST(test_init_times_out_when_clkrdy_never_sets)
+{
+    setup();
+    model.clkrdy_after = 0;   /* no clock: the OST never expires */
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_ERR_TIMEOUT);
+    ASSERT_EQ(model.early_access_count, 0);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_RXEN);
+}
+
+/* Errata DS80349C issue 2: an SRC leaves CLKRDY set, so polling proves
+ * nothing and init has to wait at least 1 ms. */
+TEST(test_init_waits_after_src_when_clkrdy_already_set)
+{
+    setup();
+    model.common[ENC_ESTAT] |= ENC_ESTAT_CLKRDY;   /* warm restart */
+    ASSERT_EQ(enc28j60_init(&dev, &model_spi, test_mac), ENC28J60_OK);
+    ASSERT_TRUE(model.ms_since_src >= 1);
+    ASSERT_EQ(model.early_access_count, 0);
+}
+
+/* A HAL that cannot wait cannot meet the errata's 1 ms */
+TEST(test_init_refuses_hal_without_delay)
+{
+    enc28j60_spi_t no_delay = model_spi;
+    no_delay.delay_ms = NULL;
+    setup();
+    ASSERT_EQ(enc28j60_init(&dev, &no_delay, test_mac), ENC28J60_ERR_PARAM);
+    ASSERT_EQ(model.reset_count, 0);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -422,4 +467,8 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_receive_via_model);
     RUN(test_estat_readonly);
     RUN(test_common_regs_across_banks);
+    RUN(test_init_polls_clkrdy_before_mac_access);
+    RUN(test_init_times_out_when_clkrdy_never_sets);
+    RUN(test_init_waits_after_src_when_clkrdy_already_set);
+    RUN(test_init_refuses_hal_without_delay);
 TEST_MAIN_END()

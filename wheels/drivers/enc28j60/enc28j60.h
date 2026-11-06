@@ -35,7 +35,7 @@ typedef struct {
     void    (*cs_low)(void *ctx);
     void    (*cs_high)(void *ctx);
     uint8_t (*xfer)(void *ctx, uint8_t tx);
-    void    (*delay_ms)(void *ctx, uint32_t ms);
+    void    (*delay_ms)(void *ctx, uint32_t ms);   /* required */
     void    *ctx;
 } enc28j60_spi_t;
 
@@ -56,6 +56,8 @@ typedef struct {
 
 /**
  * Soft-reset, configure buffers, set MAC, enable RX.
+ * Returns ENC28J60_ERR_PARAM if spi has no delay_ms, the chip needs a real wait
+ * after the reset, and ENC28J60_ERR_TIMEOUT if ESTAT.CLKRDY never sets.
  * @thread_safe: no @isr_safe: no
  */
 enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
