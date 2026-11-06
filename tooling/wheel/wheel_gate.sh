@@ -260,11 +260,18 @@ for wheel in "${WHEELS[@]}"; do
     fi
 
     # --- 3. Audit ---
-    audit_output=$(cd "$REPO" && python3 tooling/audit/audit_wheels.py --wheel "$wheel" --quiet 2>&1)
+    audit_rc=0
+    audit_output=$(cd "$REPO" && python3 tooling/audit/audit_wheels.py --wheel "$wheel" --quiet 2>&1) || audit_rc=$?
     warn_count=$(echo "$audit_output" | grep -cE "\[(WARN|FAIL)\]" || true)
     if [[ "$warn_count" -gt 0 ]]; then
         echo -e "  ${RED}FAIL${NC} audit: $warn_count findings"
         echo "$audit_output" | grep -E "\[(WARN|FAIL)\]" | sed 's/^/    /'
+        FAIL=$((FAIL + 1))
+        FAILED_WHEELS+=("$wheel")
+        continue
+    elif [[ "$audit_rc" -ne 0 ]]; then
+        echo -e "  ${RED}FAIL${NC} audit exited $audit_rc with no findings (crash?)"
+        echo "$audit_output" | tail -3 | sed 's/^/    /'
         FAIL=$((FAIL + 1))
         FAILED_WHEELS+=("$wheel")
         continue
