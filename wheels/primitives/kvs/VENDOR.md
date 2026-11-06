@@ -56,6 +56,11 @@ And these to `src/fdb_tsdb.c`, marked the same way:
   log in the sector is older than `from`. It read the slot after that index,
   which is log data in a sector that filled exactly, so `fdb_tsl_iter_by_time`
   with `from` above `to` stopped there and lost the older sectors.
+- `fdb_tsdb_init` picks the last sector as current when no sector is empty or
+  in use, and reads `last_time` from a full sector. It chose on `db->rollover`,
+  which init has just set true, so with every sector full `cur_sec.addr` stayed
+  unset. Init returned OK with no log visible, and the next append overwrote
+  the magic word of sector 0, so the boot after that formatted the database.
 
 And this to `src/fdb.c`, marked the same way:
 

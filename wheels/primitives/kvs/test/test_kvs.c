@@ -938,6 +938,47 @@ TEST(test_tsdb_without_rollover_reports_full)
     ASSERT_EQ(seen.time[stored - 1], stored);
 }
 
+/* Boot with every sector full: the logs are still there and it is still full. */
+TEST(test_tsdb_full_database_survives_a_reboot)
+{
+    static struct tsl_seen seen;
+    static uint8_t before[MOCK_FLASH_SIZE];
+
+    ASSERT_EQ(fresh_tsdb(), FDB_NO_ERR);
+    int stored = fill_tsdb_without_rollover();
+
+    ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+
+    seen.count = 0;
+    fdb_tsl_iter(&test_tsdb, note_tsl_cb, &seen);
+    ASSERT_EQ(seen.count, stored);
+    ASSERT_EQ(seen.time[0], 1);
+    ASSERT_EQ(seen.time[stored - 1], stored);
+
+    seen.count = 0;
+    fdb_tsl_iter_reverse(&test_tsdb, note_tsl_cb, &seen);
+    ASSERT_EQ(seen.count, stored);
+    ASSERT_EQ(seen.time[0], stored);
+
+    ASSERT_EQ(fdb_tsl_query_count(&test_tsdb, 0, 1000, FDB_TSL_WRITE), stored);
+    ASSERT_EQ(fdb_tsl_query_count(&test_tsdb, 1000, 0, FDB_TSL_WRITE), stored);
+    ASSERT_EQ(tsdb_last_time(), stored);
+
+    /* A refused append leaves the flash alone, so the next boot finds them. */
+    memcpy(before, mock_flash_buf, sizeof(before));
+    ASSERT_EQ(append_log(stored + 1, 0, TSDB_BIG_LOG), FDB_SAVED_FULL);
+    ASSERT_MEMEQ_N(mock_flash_buf, before, sizeof(before));
+
+    ASSERT_EQ(init_tsdb(), FDB_NO_ERR);
+    seen.count = 0;
+    fdb_tsl_iter(&test_tsdb, note_tsl_cb, &seen);
+    ASSERT_EQ(seen.count, stored);
+
+    /* Clean still frees it. */
+    ASSERT_EQ(fdb_tsl_clean(&test_tsdb), FDB_NO_ERR);
+    ASSERT_EQ(append_log(1, 1, TSDB_BIG_LOG), FDB_NO_ERR);
+}
+
 /* Logs at the even times 2, 4 ... 2n. Compare every window with what the
  * header promises, worked out from the times alone: the logs from..to, oldest
  * first, or newest first when from is above to. Returns the windows that
@@ -1188,6 +1229,7 @@ TEST_MAIN("kvs")
     RUN(test_tsdb_deinit_stops_the_database);
     RUN(test_tsdb_rollover_keeps_the_newest_logs);
     RUN(test_tsdb_without_rollover_reports_full);
+    RUN(test_tsdb_full_database_survives_a_reboot);
     RUN(test_tsdb_by_time_returns_the_window_across_sectors);
     RUN(test_tsdb_by_time_with_no_gap_after_the_last_index);
     RUN(test_kv_object_reads_back_through_a_blob);

@@ -1258,7 +1258,11 @@ fdb_err_t fdb_tsdb_init(fdb_tsdb_t db, const char *name, const char *path, fdb_g
         if (check_sec_arg.empty_num > 0) {
             latest_addr = check_sec_arg.empty_addr;
         } else {
-            if (db->rollover) {
+            /* Local change: ask whether a sector is in use, not db->rollover,
+             * which is always true here. With every sector full none is, and
+             * cur_sec.addr stayed FDB_DATA_UNUSED: no log could be read, and
+             * the next append wrote over the header of sector 0. */
+            if (db->cur_sec.addr != FDB_DATA_UNUSED) {
                 latest_addr = db->cur_sec.addr;
             } else {
                 /* There is no empty sector. */
@@ -1277,8 +1281,9 @@ fdb_err_t fdb_tsdb_init(fdb_tsdb_t db, const char *name, const char *path, fdb_g
             db->cur_sec.addr);
     /* read the current using sector info */
     read_sector_info(db, db->cur_sec.addr, &db->cur_sec, true);
-    /* get last save time */
-    if (db->cur_sec.status == FDB_SECTOR_STORE_USING) {
+    /* get last save time. Local change: a full sector has one too. */
+    if (db->cur_sec.status == FDB_SECTOR_STORE_USING ||
+            db->cur_sec.status == FDB_SECTOR_STORE_FULL) {
         db->last_time = db->cur_sec.end_time;
     } else if (db->cur_sec.status == FDB_SECTOR_STORE_EMPTY && db_oldest_addr(db) != db->cur_sec.addr) {
         struct tsdb_sec_info sec;
