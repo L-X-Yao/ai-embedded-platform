@@ -15,12 +15,45 @@ static int mock_write_fail_after;
 static int mock_read_fail_after;
 static int mock_write_count;
 static int mock_read_count;
+static int mock_write_scratchpad_left;
+
+/*
+ * Reference CRC, written from the manual so that it shares nothing with the
+ * driver. DS18B20 REV 042208 p.8: CRC = X8 + X5 + X4 + 1, shift register
+ * bits initialized to 0, least significant bit shifted in first.
+ */
+static uint8_t ref_crc8(const uint8_t *data, size_t len)
+{
+    uint8_t sr = 0;
+    for (size_t i = 0; i < len; i++) {
+        for (unsigned bit = 0; bit < 8u; bit++) {
+            unsigned in = ((unsigned)data[i] >> bit) & 1u;
+            unsigned feedback = (sr ^ in) & 1u;
+            sr = (uint8_t)(sr >> 1);
+            if (feedback)
+                sr = (uint8_t)(sr ^ 0x8Cu);
+        }
+    }
+    return sr;
+}
 
 static bool mock_reset(void *ctx)
 {
     (void)ctx;
     mock_read_idx = 0;
+    mock_write_scratchpad_left = 0;
     return mock_presence;
+}
+
+/* p.11: TH goes to byte 2, TL to byte 3, the configuration to byte 4, where
+ * only R1 and R0 can change (p.8). */
+static void mock_write_scratchpad(uint8_t byte)
+{
+    int slot = 5 - mock_write_scratchpad_left;
+    mock_scratchpad[slot] =
+        (slot == 4) ? (uint8_t)((byte & 0x60u) | 0x1Fu) : byte;
+    mock_scratchpad[8] = ref_crc8(mock_scratchpad, 8);
+    mock_write_scratchpad_left--;
 }
 
 static bool mock_write_byte(void *ctx, uint8_t byte)
@@ -30,7 +63,11 @@ static bool mock_write_byte(void *ctx, uint8_t byte)
     if (mock_write_fail_after > 0 && mock_write_count > mock_write_fail_after)
         return false;
     mock_last_cmd = byte;
-    if (byte == 0x33) {
+    if (mock_write_scratchpad_left > 0) {
+        mock_write_scratchpad(byte);
+    } else if (byte == 0x4E) {
+        mock_write_scratchpad_left = 3;
+    } else if (byte == 0x33) {
         memcpy(mock_read_buf, mock_rom, 8);
         mock_read_buf_len = 8;
         mock_read_idx = 0;
@@ -68,26 +105,7 @@ static void mock_bus_reset(void)
     mock_read_fail_after = 0;
     mock_write_count = 0;
     mock_read_count = 0;
-}
-
-/*
- * Reference CRC, written from the manual so that it shares nothing with the
- * driver. DS18B20 REV 042208 p.8: CRC = X8 + X5 + X4 + 1, shift register
- * bits initialized to 0, least significant bit shifted in first.
- */
-static uint8_t ref_crc8(const uint8_t *data, size_t len)
-{
-    uint8_t sr = 0;
-    for (size_t i = 0; i < len; i++) {
-        for (unsigned bit = 0; bit < 8u; bit++) {
-            unsigned in = ((unsigned)data[i] >> bit) & 1u;
-            unsigned feedback = (sr ^ in) & 1u;
-            sr = (uint8_t)(sr >> 1);
-            if (feedback)
-                sr = (uint8_t)(sr ^ 0x8Cu);
-        }
-    }
-    return sr;
+    mock_write_scratchpad_left = 0;
 }
 
 static void setup_scratchpad(int16_t raw_temp)
@@ -96,6 +114,8 @@ static void setup_scratchpad(int16_t raw_temp)
     mock_scratchpad[0] = (uint8_t)(raw_temp & 0xFF);
     mock_scratchpad[1] = (uint8_t)((uint16_t)raw_temp >> 8);
     mock_scratchpad[4] = 0x7F;
+    mock_scratchpad[5] = 0xFF;
+    mock_scratchpad[7] = 0x10;
     mock_scratchpad[8] = ref_crc8(mock_scratchpad, 8);
 }
 
@@ -671,7 +691,50 @@ TEST(test_12bit_keeps_every_bit)
     ASSERT_NEAR(temp, -25.0625f, 0.001f);
 }
 
+/* Figure 7, p.7: "Byte 5 Reserved (FFh) Byte 6 Reserved Byte 7 Reserved
+ * (10h)". The frames the tests feed the driver must look like the chip's. */
+TEST(test_mock_frame_follows_figure_7)
+{
+    setup_scratchpad(0x0190);
+    ASSERT_EQ_HEX(mock_scratchpad[5], 0xFF);
+    ASSERT_EQ_HEX(mock_scratchpad[7], 0x10);
+}
+
+/* p.11: "the third byte is written into the configuration register (byte
+ * 4)". */
+TEST(test_set_resolution_reaches_config_byte)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    setup_scratchpad(0x0000);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+
+    ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_10BIT), DS18B20_OK);
+    ASSERT_EQ_HEX(mock_scratchpad[4], 0x3F);
+    ASSERT_EQ_HEX(ref_crc8(mock_scratchpad, 9), 0x00);
+}
+
+/* The resolution set through the driver decides which bits count, with no
+ * test writing the configuration byte by hand: 000Fh at 9 bits is +0.5. */
+TEST(test_set_resolution_changes_the_reading)
+{
+    mock_presence = true;
+    mock_bus_reset();
+    setup_scratchpad(0x000F);
+    ds18b20_t dev;
+    ds18b20_init(&dev, &mock_ow);
+
+    ASSERT_EQ(ds18b20_set_resolution(&dev, DS18B20_RES_9BIT), DS18B20_OK);
+    float temp;
+    ASSERT_EQ(ds18b20_read_temperature(&dev, &temp), DS18B20_OK);
+    ASSERT_NEAR(temp, 0.5f, 0.001f);
+}
+
 TEST_MAIN("ds18b20")
+    RUN(test_mock_frame_follows_figure_7);
+    RUN(test_set_resolution_reaches_config_byte);
+    RUN(test_set_resolution_changes_the_reading);
     RUN(test_init_null);
     RUN(test_read_25c);
     RUN(test_read_negative);
