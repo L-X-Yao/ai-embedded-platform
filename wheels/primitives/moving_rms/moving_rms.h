@@ -39,7 +39,9 @@ typedef struct {
 /** Init with caller-provided buffer. @thread_safe: no @isr_safe: yes */
 moving_rms_err_t moving_rms_init(moving_rms_t *ctx, float *buf, size_t window);
 
-/** Feed a sample and return current RMS. @thread_safe: no @isr_safe: yes */
+/** Feed a sample and return current RMS.  A sample that is NaN or Inf, or whose
+ *  square would overflow the running sum (any |sample| above about 1.8e19), is
+ *  ignored.  @thread_safe: no @isr_safe: yes */
 float moving_rms_feed(moving_rms_t *ctx, float sample);
 
 /** Get current RMS without feeding. @thread_safe: no @isr_safe: yes */
