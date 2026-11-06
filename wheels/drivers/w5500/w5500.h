@@ -109,7 +109,10 @@ w5500_err_t w5500_socket_open(w5500_t *dev, uint8_t sock,
 w5500_err_t w5500_socket_close(w5500_t *dev, uint8_t sock);
 
 /**
- * Send data on an open socket.
+ * Send data on an open socket.  Blocks until the chip reports the result.
+ * W5500_ERR_TIMEOUT means the chip reported a timeout, or that no result came
+ * within W5500_CMD_TIMEOUT reads.  In the second case the chip may still be
+ * trying, so wait before sending again.
  * @thread_safe: caller_must_lock @isr_safe: no
  */
 w5500_err_t w5500_socket_send(w5500_t *dev, uint8_t sock,
