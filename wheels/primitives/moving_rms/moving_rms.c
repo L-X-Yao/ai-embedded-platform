@@ -28,7 +28,7 @@ moving_rms_err_t moving_rms_init(moving_rms_t *ctx, float *buf, size_t window)
 
 float moving_rms_feed(moving_rms_t *ctx, float sample)
 {
-    if (!ctx)
+    if (!ctx || !ctx->buf || ctx->cap == 0)
         return 0.0f;
 
     float sq = sample * sample;

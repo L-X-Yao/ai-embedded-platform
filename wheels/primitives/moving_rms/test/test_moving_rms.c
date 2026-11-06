@@ -2,6 +2,7 @@
 #include "test_harness.h"
 #include "moving_rms.h"
 #include <math.h>
+#include <string.h>
 
 static float win[8];
 static moving_rms_t rms;
@@ -108,6 +109,30 @@ TEST(test_get_null)
 TEST(test_feed_null)
 {
     ASSERT_NEAR(moving_rms_feed(NULL, 1.0f), 0.0f, 1e-6f);
+}
+
+/* A failed init leaves the context as the caller had it, zeroed here */
+TEST(test_feed_after_failed_init)
+{
+    moving_rms_t r;
+    memset(&r, 0, sizeof(r));
+    ASSERT_EQ(moving_rms_init(&r, NULL, 8), MOVING_RMS_ERR_PARAM);
+
+    ASSERT_NEAR(moving_rms_feed(&r, 1.0f), 0.0f, 1e-6f);
+    ASSERT_NEAR(moving_rms_get(&r), 0.0f, 1e-6f);
+    ASSERT_EQ(r.count, 0);
+}
+
+/* cap 0 would divide by zero when head moves */
+TEST(test_feed_zero_capacity)
+{
+    float buf[1] = { 0.0f };
+    moving_rms_t r;
+    memset(&r, 0, sizeof(r));
+    r.buf = buf;
+
+    ASSERT_NEAR(moving_rms_feed(&r, 1.0f), 0.0f, 1e-6f);
+    ASSERT_EQ(r.count, 0);
 }
 
 TEST(test_error_codes)
@@ -225,6 +250,8 @@ TEST_MAIN("moving_rms")
     RUN(test_reset_null);
     RUN(test_get_null);
     RUN(test_feed_null);
+    RUN(test_feed_after_failed_init);
+    RUN(test_feed_zero_capacity);
     RUN(test_error_codes);
     RUN(test_feed_rejects_infinity);
     RUN(test_feed_rejects_sample_whose_square_overflows);
