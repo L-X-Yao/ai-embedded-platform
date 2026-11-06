@@ -591,6 +591,27 @@ TEST(test_model_bfc_clears_only_rc_bits_of_estat)
     ASSERT_TRUE(model.common[ENC_ESTAT] & ENC_ESTAT_CLKRDY);
 }
 
+/* --- 18. Send timeout --- */
+
+/* DS39662C p.42: while transmitting, "none of the bytes to be transmitted
+ * should be read or written to through the SPI. If the host controller wishes
+ * to cancel the transmission, it can clear the TXRTS bit." */
+TEST(test_send_timeout_cancels_the_transmission)
+{
+    setup_and_init();
+    uint8_t frame[64];
+    memset(frame, 0x5A, sizeof(frame));
+
+    model.tx_complete_after = 0;   /* TXRTS never clears by itself */
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_ERR_TIMEOUT);
+    ASSERT_FALSE(model.common[ENC_ECON1] & ENC_ECON1_TXRTS);
+
+    /* The next frame finds nothing pending */
+    model.tx_complete_after = 1;
+    ASSERT_EQ(enc28j60_send(&dev, frame, 64), ENC28J60_OK);
+    ASSERT_EQ(model.tx_write_while_pending, 0);
+}
+
 TEST_MAIN("enc28j60 hardware model")
     RUN(test_init_sequence);
     RUN(test_bank_selection);
@@ -617,4 +638,5 @@ TEST_MAIN("enc28j60 hardware model")
     RUN(test_send_after_abort_succeeds);
     RUN(test_send_ignores_stale_tx_abort);
     RUN(test_model_bfc_clears_only_rc_bits_of_estat);
+    RUN(test_send_timeout_cancels_the_transmission);
 TEST_MAIN_END()

@@ -389,6 +389,9 @@ enc28j60_err_t enc28j60_send(enc28j60_t *dev, const uint8_t *frame,
                                           : ENC28J60_OK;
         }
     }
+
+    /* Cancel it, or the next send would overwrite a pending transmission */
+    bit_field_clear(dev, ECON1, ECON1_TXRTS);
     return ENC28J60_ERR_TIMEOUT;
 }
 
