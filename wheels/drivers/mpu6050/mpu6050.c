@@ -24,6 +24,12 @@
 #define PWR_RESET         0x80
 #define PWR_CLKSEL_PLL_X  0x01
 
+/* DEVICE_RESET clears itself "once the reset is done" (register map p.42), with
+ * no time given. The nearest figure is 100 ms at most for register access after
+ * start-up (product specification p.14), which this many reads cover even at
+ * 400 kHz with no delay_ms. */
+#define RESET_POLL_TRIES  1000
+
 static const float accel_scales[] = { 16384.0f, 8192.0f, 4096.0f, 2048.0f };
 static const float gyro_scales[]  = { 131.0f, 65.5f, 32.8f, 16.4f };
 
@@ -35,6 +41,38 @@ static bool write_reg(const mpu6050_t *dev, uint8_t reg, uint8_t val)
 static bool read_regs(const mpu6050_t *dev, uint8_t reg, uint8_t *buf, uint16_t len)
 {
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
+}
+
+static mpu6050_err_t write_ranges(const mpu6050_t *dev)
+{
+    if (!write_reg(dev, REG_ACCEL_CONFIG, (uint8_t)(dev->cfg.accel_range << 3)))
+    {
+        return MPU6050_ERR_I2C;
+    }
+    if (!write_reg(dev, REG_GYRO_CONFIG, (uint8_t)(dev->cfg.gyro_range << 3)))
+    {
+        return MPU6050_ERR_I2C;
+    }
+    return MPU6050_OK;
+}
+
+/* A failed read counts as not done: the manual does not say the chip answers
+ * during a reset. */
+static bool wait_reset_done(const mpu6050_t *dev)
+{
+    for (int tries = 0; tries < RESET_POLL_TRIES; tries++)
+    {
+        uint8_t pwr;
+        if (read_regs(dev, REG_PWR_MGMT_1, &pwr, 1) && (pwr & PWR_RESET) == 0)
+        {
+            return true;
+        }
+        if (dev->i2c->delay_ms)
+        {
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
+        }
+    }
+    return false;
 }
 
 mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
@@ -73,13 +111,10 @@ mpu6050_err_t mpu6050_init(mpu6050_t *dev, const mpu6050_i2c_t *i2c,
     {
         return MPU6050_ERR_PARAM;
     }
-    if (!write_reg(dev, REG_ACCEL_CONFIG, (uint8_t)(cfg->accel_range << 3)))
+    mpu6050_err_t err = write_ranges(dev);
+    if (err != MPU6050_OK)
     {
-        return MPU6050_ERR_I2C;
-    }
-    if (!write_reg(dev, REG_GYRO_CONFIG, (uint8_t)(cfg->gyro_range << 3)))
-    {
-        return MPU6050_ERR_I2C;
+        return err;
     }
 
     dev->accel_scale = accel_scales[cfg->accel_range & 0x03];
@@ -153,5 +188,16 @@ mpu6050_err_t mpu6050_reset(mpu6050_t *dev)
     {
         return MPU6050_ERR_I2C;
     }
-    return MPU6050_OK;
+
+    /* The reset leaves register 107 at 0x40, asleep, and both ranges at 0
+     * (register map p.8), while dev keeps its scales: put back what init set. */
+    if (!wait_reset_done(dev))
+    {
+        return MPU6050_ERR_TIMEOUT;
+    }
+    if (!write_reg(dev, REG_PWR_MGMT_1, PWR_CLKSEL_PLL_X))
+    {
+        return MPU6050_ERR_I2C;
+    }
+    return write_ranges(dev);
 }
