@@ -31,6 +31,9 @@
 #define SHT30_CMD_HEATER_OFF_MSB    0x30u
 #define SHT30_CMD_HEATER_OFF_LSB    0x66u
 
+/* Table 4: tMEAS,h maximum */
+#define SHT30_MODEL_TMEAS_H_MS      15u
+
 /* --- Simulated environment --- */
 typedef struct {
     float   true_temp_c;          /* simulated temperature */
@@ -39,6 +42,7 @@ typedef struct {
     uint8_t last_cmd_msb;
     uint8_t last_cmd_lsb;
     bool    measurement_pending;  /* single-shot command was sent */
+    uint32_t measure_elapsed_ms;  /* delay time since that command */
     bool    reset_pending;
     int     measure_count;
     int     reset_count;
@@ -98,6 +102,7 @@ static bool sht30_model_write(void *ctx, uint8_t dev_addr,
          data[1] == SHT30_CMD_SINGLE_MED_LSB ||
          data[1] == SHT30_CMD_SINGLE_LOW_LSB)) {
         m->measurement_pending = true;
+        m->measure_elapsed_ms = 0;
         m->measure_count++;
     }
 
@@ -117,6 +122,12 @@ static bool sht30_model_read(void *ctx, uint8_t dev_addr,
 {
     (void)dev_addr;
     sht30_model_t *m = (sht30_model_t *)ctx;
+
+    /* p.10, no clock stretching: "the sensor responds to a read header with a
+     * not acknowledge (NACK), if no data is present." */
+    if (!m->measurement_pending ||
+        m->measure_elapsed_ms < SHT30_MODEL_TMEAS_H_MS)
+        return false;
 
     if (len < 6) {
         memset(data, 0xFF, len);
@@ -138,11 +149,12 @@ static bool sht30_model_read(void *ctx, uint8_t dev_addr,
     return true;
 }
 
-/* Delay callback (no-op for model) */
+/* Delay callback: the only clock the model has */
 __attribute__((unused))
 static void sht30_model_delay(void *ctx, uint16_t ms)
 {
-    (void)ctx; (void)ms;
+    sht30_model_t *m = (sht30_model_t *)ctx;
+    m->measure_elapsed_ms += ms;
 }
 
 static void sht30_model_init(sht30_model_t *m)

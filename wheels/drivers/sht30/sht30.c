@@ -51,7 +51,7 @@ sht30_err_t sht30_init(sht30_t *dev, const sht30_i2c_t *i2c,
     {
         return SHT30_ERR_PARAM;
     }
-    if (!i2c->write || !i2c->read)
+    if (!i2c->write || !i2c->read || !i2c->delay_ms)
     {
         return SHT30_ERR_PARAM;
     }
@@ -80,10 +80,8 @@ sht30_err_t sht30_read(sht30_t *dev, sht30_data_t *out)
         return SHT30_ERR_I2C;
     }
 
-    if (dev->i2c->delay_ms)
-    {
-        dev->i2c->delay_ms(dev->i2c->ctx, 16);
-    }
+    /* No clock stretching: the sensor NACKs the read until tMEAS,h has passed */
+    dev->i2c->delay_ms(dev->i2c->ctx, 16);
 
     uint8_t buf[6];
     if (!dev->i2c->read(dev->i2c->ctx, dev->cfg.addr, buf, 6))
