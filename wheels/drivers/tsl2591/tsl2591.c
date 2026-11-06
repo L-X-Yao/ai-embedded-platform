@@ -15,6 +15,9 @@
 #define ENABLE_PON   0x01u   /* power on */
 #define ENABLE_AEN   0x02u   /* ALS enable */
 
+/* ---------- STATUS register bits ---------- */
+#define STATUS_AVALID 0x01u  /* an integration cycle finished since AEN */
+
 /* ---------- internal helpers ---------- */
 
 static tsl2591_err_t write_reg(const tsl2591_t *dev, uint8_t reg, uint8_t val)
@@ -32,6 +35,21 @@ static tsl2591_err_t read_regs(const tsl2591_t *dev, uint8_t reg,
     if (!dev->i2c->read_regs(dev->i2c->ctx, TSL2591_DEV_ADDR, cmd, buf, len))
         return TSL2591_ERR_I2C;
     return TSL2591_OK;
+}
+
+/* The four data bytes, once there is a result. Data sheet p.16, AVALID:
+ * "Indicates that the ADC channels have completed an integration cycle since
+ * the AEN bit was asserted." */
+static tsl2591_err_t read_channels(const tsl2591_t *dev, uint8_t *buf)
+{
+    uint8_t status = 0;
+    tsl2591_err_t err = read_regs(dev, TSL2591_REG_STATUS, &status, 1);
+    if (err != TSL2591_OK)
+        return err;
+    if (!(status & STATUS_AVALID))
+        return TSL2591_ERR_NOT_READY;
+
+    return read_regs(dev, TSL2591_REG_C0DATAL, buf, 4);
 }
 
 static bool gain_valid(tsl2591_gain_t g)
@@ -108,7 +126,7 @@ tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out)
 
     /* read all 4 channel data bytes (C0DATAL..C1DATAH) */
     uint8_t buf[4] = {0};
-    tsl2591_err_t err = read_regs(dev, TSL2591_REG_C0DATAL, buf, 4);
+    tsl2591_err_t err = read_channels(dev, buf);
     if (err != TSL2591_OK)
         return err;
 
@@ -151,7 +169,7 @@ tsl2591_err_t tsl2591_read_raw(tsl2591_t *dev, uint16_t *ch0, uint16_t *ch1)
         return TSL2591_ERR_PARAM;
 
     uint8_t buf[4] = {0};
-    tsl2591_err_t err = read_regs(dev, TSL2591_REG_C0DATAL, buf, 4);
+    tsl2591_err_t err = read_channels(dev, buf);
     if (err != TSL2591_OK)
         return err;
 

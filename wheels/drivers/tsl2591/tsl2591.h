@@ -31,6 +31,7 @@ typedef enum {
     TSL2591_ERR_I2C   = -1,
     TSL2591_ERR_ID    = -2,
     TSL2591_ERR_PARAM = -3,
+    TSL2591_ERR_NOT_READY = -4,  /* no integration finished yet: read again later */
 } tsl2591_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -106,10 +107,13 @@ typedef struct {
 tsl2591_err_t tsl2591_init(tsl2591_t *dev, const tsl2591_i2c_t *i2c,
                            tsl2591_gain_t gain, tsl2591_itime_t itime);
 
-/** Read sensor data (both channels + computed lux). @thread_safe: caller_must_lock @isr_safe: no */
+/** Read sensor data (both channels + computed lux). Returns
+ *  TSL2591_ERR_NOT_READY and leaves *out unchanged until an integration cycle
+ *  has finished since the sensor was enabled. @thread_safe: caller_must_lock @isr_safe: no */
 tsl2591_err_t tsl2591_read(tsl2591_t *dev, tsl2591_data_t *out);
 
-/** Read raw channel values without lux computation. @thread_safe: caller_must_lock @isr_safe: no */
+/** Read raw channel values without lux computation. Returns
+ *  TSL2591_ERR_NOT_READY like tsl2591_read. @thread_safe: caller_must_lock @isr_safe: no */
 tsl2591_err_t tsl2591_read_raw(tsl2591_t *dev, uint16_t *ch0, uint16_t *ch1);
 
 /** Set gain. @thread_safe: caller_must_lock @isr_safe: no */
