@@ -42,10 +42,46 @@ flash_ring_err_t flash_ring_discard_all(flash_ring_t *ring);
 flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
 ```
 
-- `push()` -- append a frame (overwrites oldest when full)
-- `peek()` -- read frame by index without consuming
+- `push()` -- append a frame. When the ring is full it drops the oldest
+  frames a sector at a time: see Capacity.
+- `peek()` -- read a frame without consuming it. `idx` is an absolute slot
+  index between `read_idx` and `write_idx - 1`, so the oldest frame is at
+  `ring.read_idx`. Returns `FLASH_RING_ERR_EMPTY` on an empty ring and
+  `FLASH_RING_ERR_PARAM` for any other slot or for `len` above `slot_size`.
 - `pop()` -- discard the oldest frame
 - `flush_header()` -- force-write persistent header to flash
+
+## Capacity
+
+The writer keeps the rest of its own sector blank, and erases the next
+sector just before it programs the last slot of the current one. So:
+
+- The ring needs more than one sector. `flash_ring_init` returns
+  `FLASH_RING_ERR_PARAM` for `total_slots <= sector_size / slot_size`.
+- It holds at most `total_slots - 1` frames, and right after an erase it
+  holds one sector less.
+- Frames are lost a sector at a time: up to `sector_size / slot_size` of the
+  oldest go when the writer erases the sector they are in, and `read_idx`
+  moves past them.
+
+## Power loss
+
+- The header on flash is up to `persist_interval` operations old. Init reads
+  forward from the stored `write_idx` and finds the real one, so no frame that
+  was pushed is lost or programmed over.
+- The header is rewritten before the writer can come back round to the stored
+  position, even if `persist_interval` is larger than that.
+- Frames popped since the last header write come back after a reset, so a
+  reader sees each frame at least once, not exactly once.
+- Blank means 0xFF: the flash must erase to 0xFF. A frame of all 0xFF at the
+  very end of what was written looks blank and is lost at a reset.
+- A cut during a program leaves one torn frame as the newest. Frames carry no
+  checksum here, so put one in the frame if that matters.
+- A reset with `write_idx` on the last slot of a sector gives up the frames in
+  the next sector, because the next push erases them anyway and a cut during
+  that erase cannot be told apart.
+- `test_powercut_flash_ring.c` cuts the power at every erase and program of a
+  three lap script, with the operation lost or half done.
 
 ## Usage
 
@@ -65,7 +101,7 @@ uint8_t frame[64];
 flash_ring_push(&ring, frame, 64);
 
 uint8_t out[64];
-flash_ring_peek(&ring, 0, out, 64);
+flash_ring_peek(&ring, ring.read_idx, out, 64);
 flash_ring_pop(&ring);
 ```
 
@@ -82,6 +118,12 @@ None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
 
 - Slot size is fixed at init time; variable-length frames are not supported.
 - Header sector must be a dedicated flash sector (not shared with data).
+- The header has one copy, so a cut between its erase and its program resets
+  the ring to empty with the frames still in flash.
+- A partial last sector is still erased whole by `erase_sector`, so nothing
+  else can live in the rest of that sector.
+- Flash that a ring written by the old erase-on-entry code left with no blank
+  slot costs one full read at the first init, and that init erases a sector.
 
 ## How to test
 
