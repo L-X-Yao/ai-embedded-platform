@@ -58,62 +58,71 @@ void mahony_ahrs_update(mahony_ahrs_t *f,
     if (!is_finite(gx_dps) || !is_finite(gy_dps) || !is_finite(gz_dps) ||
         !is_finite(ax) || !is_finite(ay) || !is_finite(az)) return;
 
-    float norm;
-    float vx, vy, vz;
-    float ex, ey, ez;
+    float gx = gx_dps * DEG_TO_RAD;
+    float gy = gy_dps * DEG_TO_RAD;
+    float gz = gz_dps * DEG_TO_RAD;
 
-    norm = sqrtf(ax * ax + ay * ay + az * az);
-    if (norm <= 0.0f) return;
-    ax /= norm; ay /= norm; az /= norm;
+    /* A zero vector is no gravity reference: like the reference filter,
+     * skip all the feedback and still integrate the gyro. */
+    float norm = sqrtf(ax * ax + ay * ay + az * az);
+    if (norm > 0.0f) {
+        float vx, vy, vz;
+        float ex, ey, ez;
 
-    vx = 2.0f * (f->q1 * f->q3 - f->q0 * f->q2);
-    vy = 2.0f * (f->q0 * f->q1 + f->q2 * f->q3);
-    vz = f->q0 * f->q0 - f->q1 * f->q1 - f->q2 * f->q2 + f->q3 * f->q3;
+        ax /= norm; ay /= norm; az /= norm;
 
-    ex = (ay * vz - az * vy);
-    ey = (az * vx - ax * vz);
-    ez = (ax * vy - ay * vx);
+        vx = 2.0f * (f->q1 * f->q3 - f->q0 * f->q2);
+        vy = 2.0f * (f->q0 * f->q1 + f->q2 * f->q3);
+        vz = f->q0 * f->q0 - f->q1 * f->q1 - f->q2 * f->q2 + f->q3 * f->q3;
 
-    /* The magnetometer is optional: a bad sample counts as not available */
-    float mag_norm = sqrtf(mx * mx + my * my + mz * mz);
-    if (is_finite(mag_norm) && mag_norm > 0.001f) {
-        mx /= mag_norm; my /= mag_norm; mz /= mag_norm;
+        ex = (ay * vz - az * vy);
+        ey = (az * vx - ax * vz);
+        ez = (ax * vy - ay * vx);
 
-        float hx = 2.0f * (mx * (0.5f - f->q2*f->q2 - f->q3*f->q3) +
-                            my * (f->q1*f->q2 - f->q0*f->q3) +
-                            mz * (f->q1*f->q3 + f->q0*f->q2));
-        float hy = 2.0f * (mx * (f->q1*f->q2 + f->q0*f->q3) +
-                            my * (0.5f - f->q1*f->q1 - f->q3*f->q3) +
-                            mz * (f->q2*f->q3 - f->q0*f->q1));
-        float bx = sqrtf(hx * hx + hy * hy);
-        float bz = 2.0f * (mx * (f->q1*f->q3 - f->q0*f->q2) +
-                            my * (f->q2*f->q3 + f->q0*f->q1) +
-                            mz * (0.5f - f->q1*f->q1 - f->q2*f->q2));
+        /* The magnetometer is optional: a bad sample counts as not available */
+        float mag_norm = sqrtf(mx * mx + my * my + mz * mz);
+        if (is_finite(mag_norm) && mag_norm > 0.001f) {
+            mx /= mag_norm; my /= mag_norm; mz /= mag_norm;
 
-        float wx = bx * (0.5f - f->q2*f->q2 - f->q3*f->q3) + bz * (f->q1*f->q3 - f->q0*f->q2);
-        float wy = bx * (f->q1*f->q2 - f->q0*f->q3)         + bz * (f->q0*f->q1 + f->q2*f->q3);
-        float wz = bx * (f->q0*f->q2 + f->q1*f->q3)         + bz * (0.5f - f->q1*f->q1 - f->q2*f->q2);
+            float hx = 2.0f * (mx * (0.5f - f->q2*f->q2 - f->q3*f->q3) +
+                                my * (f->q1*f->q2 - f->q0*f->q3) +
+                                mz * (f->q1*f->q3 + f->q0*f->q2));
+            float hy = 2.0f * (mx * (f->q1*f->q2 + f->q0*f->q3) +
+                                my * (0.5f - f->q1*f->q1 - f->q3*f->q3) +
+                                mz * (f->q2*f->q3 - f->q0*f->q1));
+            float bx = sqrtf(hx * hx + hy * hy);
+            float bz = 2.0f * (mx * (f->q1*f->q3 - f->q0*f->q2) +
+                                my * (f->q2*f->q3 + f->q0*f->q1) +
+                                mz * (0.5f - f->q1*f->q1 - f->q2*f->q2));
 
-        ex += (my * wz - mz * wy);
-        ey += (mz * wx - mx * wz);
-        ez += (mx * wy - my * wx);
+            float wx = bx * (0.5f - f->q2*f->q2 - f->q3*f->q3) + bz * (f->q1*f->q3 - f->q0*f->q2);
+            float wy = bx * (f->q1*f->q2 - f->q0*f->q3)         + bz * (f->q0*f->q1 + f->q2*f->q3);
+            float wz = bx * (f->q0*f->q2 + f->q1*f->q3)         + bz * (0.5f - f->q1*f->q1 - f->q2*f->q2);
+
+            ex += (my * wz - mz * wy);
+            ey += (mz * wx - mx * wz);
+            ez += (mx * wy - my * wx);
+        }
+
+        f->integral_fb_x += ex * f->ki * f->inv_freq;
+        f->integral_fb_y += ey * f->ki * f->inv_freq;
+        f->integral_fb_z += ez * f->ki * f->inv_freq;
+
+        #define MAHONY_INTEGRAL_MAX 1.0f
+        if (f->integral_fb_x >  MAHONY_INTEGRAL_MAX) f->integral_fb_x =  MAHONY_INTEGRAL_MAX;
+        if (f->integral_fb_x < -MAHONY_INTEGRAL_MAX) f->integral_fb_x = -MAHONY_INTEGRAL_MAX;
+        if (f->integral_fb_y >  MAHONY_INTEGRAL_MAX) f->integral_fb_y =  MAHONY_INTEGRAL_MAX;
+        if (f->integral_fb_y < -MAHONY_INTEGRAL_MAX) f->integral_fb_y = -MAHONY_INTEGRAL_MAX;
+        if (f->integral_fb_z >  MAHONY_INTEGRAL_MAX) f->integral_fb_z =  MAHONY_INTEGRAL_MAX;
+        if (f->integral_fb_z < -MAHONY_INTEGRAL_MAX) f->integral_fb_z = -MAHONY_INTEGRAL_MAX;
+
+        gx += f->kp * ex;
+        gy += f->kp * ey;
+        gz += f->kp * ez;
+        gx += f->integral_fb_x;
+        gy += f->integral_fb_y;
+        gz += f->integral_fb_z;
     }
-
-    f->integral_fb_x += ex * f->ki * f->inv_freq;
-    f->integral_fb_y += ey * f->ki * f->inv_freq;
-    f->integral_fb_z += ez * f->ki * f->inv_freq;
-
-    #define MAHONY_INTEGRAL_MAX 1.0f
-    if (f->integral_fb_x >  MAHONY_INTEGRAL_MAX) f->integral_fb_x =  MAHONY_INTEGRAL_MAX;
-    if (f->integral_fb_x < -MAHONY_INTEGRAL_MAX) f->integral_fb_x = -MAHONY_INTEGRAL_MAX;
-    if (f->integral_fb_y >  MAHONY_INTEGRAL_MAX) f->integral_fb_y =  MAHONY_INTEGRAL_MAX;
-    if (f->integral_fb_y < -MAHONY_INTEGRAL_MAX) f->integral_fb_y = -MAHONY_INTEGRAL_MAX;
-    if (f->integral_fb_z >  MAHONY_INTEGRAL_MAX) f->integral_fb_z =  MAHONY_INTEGRAL_MAX;
-    if (f->integral_fb_z < -MAHONY_INTEGRAL_MAX) f->integral_fb_z = -MAHONY_INTEGRAL_MAX;
-
-    float gx = gx_dps * DEG_TO_RAD + f->kp * ex + f->integral_fb_x;
-    float gy = gy_dps * DEG_TO_RAD + f->kp * ey + f->integral_fb_y;
-    float gz = gz_dps * DEG_TO_RAD + f->kp * ez + f->integral_fb_z;
 
     float nq0 = f->q0 + (-f->q1 * gx - f->q2 * gy - f->q3 * gz) * f->half_t;
     float nq1 = f->q1 + ( f->q0 * gx + f->q2 * gz - f->q3 * gy) * f->half_t;
