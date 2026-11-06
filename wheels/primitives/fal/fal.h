@@ -26,12 +26,17 @@ typedef enum {
     FAL_ERR_OVERFLOW   = -2,  /* addr + size exceeds partition size */
     FAL_ERR_HAL        = -3,  /* underlying device read/write/erase failure */
     FAL_ERR_NOT_READY  = -4,  /* device not found / not initialized */
+    FAL_ERR_PART_TABLE = -5,  /* a partition does not fit inside its device */
 } fal_err_t;
 
 /**
- * Initialise FAL: call ops.init on every registered device.
+ * Initialise FAL: check every partition against its device, then call
+ * ops.init on every registered device.
  * Returns the number of partitions on success (>= 0), or a negative
- * fal_err_t value on failure.
+ * fal_err_t value on failure: FAL_ERR_PART_TABLE if a partition does not
+ * fit its device, and no device is touched. A partition that names no
+ * registered device is not an error here: its calls return
+ * FAL_ERR_NOT_READY.
  * Idempotent — subsequent calls return the partition count without
  * re-initialising devices.
  * @thread_safe: no
