@@ -148,6 +148,69 @@ TEST(test_error_codes)
     ASSERT_EQ((int)IBUS_ERR_CHECKSUM, -4);
 }
 
+/* ---------- top nibble ---------- */
+
+/* Frame written by hand, as a receiver sends it: 1500 is 0x05DC. */
+static void build_raw_1500(uint8_t *buf)
+{
+    buf[0] = 0x20;
+    buf[1] = 0x40;
+    for (int i = 0; i < IBUS_NUM_CHANNELS; i++) {
+        buf[2 + i * 2] = 0xDC;
+        buf[3 + i * 2] = 0x05;
+    }
+}
+
+static void seal_raw(uint8_t *buf)
+{
+    uint16_t chk = ibus_checksum(buf, IBUS_FRAME_LEN - 2);
+    buf[30] = (uint8_t)(chk & 0xFF);
+    buf[31] = (uint8_t)(chk >> 8);
+}
+
+TEST(test_decode_ignores_top_nibble)
+{
+    uint8_t buf[IBUS_FRAME_LEN];
+    build_raw_1500(buf);
+    /* Newer receivers use these bits to carry channels 15 to 18. */
+    buf[3] |= 0x10;
+    buf[5] |= 0x20;
+    buf[7] |= 0x30;
+    seal_raw(buf);
+
+    ibus_frame_t f;
+    ASSERT_EQ(ibus_decode(buf, IBUS_FRAME_LEN, &f), IBUS_OK);
+    for (int i = 0; i < IBUS_NUM_CHANNELS; i++)
+        ASSERT_EQ(f.channels[i], 1500);
+}
+
+TEST(test_decode_ignores_top_nibble_on_every_channel)
+{
+    uint8_t buf[IBUS_FRAME_LEN];
+    build_raw_1500(buf);
+    for (int i = 0; i < IBUS_NUM_CHANNELS; i++)
+        buf[3 + i * 2] |= 0xF0;
+    seal_raw(buf);
+
+    ibus_frame_t f;
+    ASSERT_EQ(ibus_decode(buf, IBUS_FRAME_LEN, &f), IBUS_OK);
+    for (int i = 0; i < IBUS_NUM_CHANNELS; i++)
+        ASSERT_EQ(f.channels[i], 1500);
+}
+
+TEST(test_decode_keeps_all_12_bits)
+{
+    uint8_t buf[IBUS_FRAME_LEN];
+    build_raw_1500(buf);
+    buf[2] = 0xFF;
+    buf[3] = 0x0F;
+    seal_raw(buf);
+
+    ibus_frame_t f;
+    ASSERT_EQ(ibus_decode(buf, IBUS_FRAME_LEN, &f), IBUS_OK);
+    ASSERT_EQ(f.channels[0], 0x0FFF);
+}
+
 /* ---------- fuzz ---------- */
 
 TEST(test_fuzz)
@@ -181,5 +244,8 @@ TEST_MAIN("ibus")
     RUN(test_checksum_empty);
     RUN(test_checksum_known);
     RUN(test_error_codes);
+    RUN(test_decode_ignores_top_nibble);
+    RUN(test_decode_ignores_top_nibble_on_every_channel);
+    RUN(test_decode_keeps_all_12_bits);
     RUN(test_fuzz);
 TEST_MAIN_END()
