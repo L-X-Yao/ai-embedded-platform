@@ -28,7 +28,9 @@
 #define CALIB_LEN      21
 
 /* PWR_CTRL bits: press_en=bit0, temp_en=bit1, mode=bits[5:4] */
-#define PWR_CTRL_FORCED  0x13  /* press_en | temp_en | mode=forced(01) */
+#define PWR_CTRL_PRESS_EN  0x01
+#define PWR_CTRL_TEMP_EN   0x02
+#define PWR_CTRL_FORCED    0x10  /* mode=forced(01) */
 
 /* STATUS bit5 = drdy_press, bit6 = drdy_temp */
 #define STATUS_DRDY_PRESS  0x20
@@ -44,8 +46,8 @@ static bool read_regs(const bmp388_t *dev, uint8_t reg, uint8_t *buf, uint16_t l
     return dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, reg, buf, len);
 }
 
-/* OSR codes run from 000 = x1 to 101 = x32, one below the enum.
- * OSR has no code for skipping, so SKIP measures at x1 */
+/* OSR codes run from 000 = x1 to 101 = x32, one below the enum. OSR has no code
+ * for skipping, which is done with press_en and temp_en, so SKIP writes x1 */
 static uint8_t osr_code(bmp388_oversampling_t os)
 {
     return (os == BMP388_OVERSAMPLING_SKIP) ? 0u : (uint8_t)(os - 1);
@@ -157,6 +159,66 @@ static float compensate_pressure(const bmp388_t *dev, uint32_t raw_press)
     return out1 + out2 + out3;
 }
 
+/*
+ * One forced measurement of what press and temp ask for. A measurement is
+ * skipped by clearing its enable bit (manual p.14), and its drdy flag then never
+ * rises, so the poll waits only for the flags of what was enabled.
+ */
+static bmp388_err_t measure(const bmp388_t *dev, bool press, bool temp,
+                            uint32_t *raw_press, uint32_t *raw_temp)
+{
+    uint8_t pwr_ctrl = PWR_CTRL_FORCED;
+    uint8_t drdy = 0;
+
+    if (press)
+    {
+        pwr_ctrl |= PWR_CTRL_PRESS_EN;
+        drdy |= STATUS_DRDY_PRESS;
+    }
+    if (temp)
+    {
+        pwr_ctrl |= PWR_CTRL_TEMP_EN;
+        drdy |= STATUS_DRDY_TEMP;
+    }
+
+    if (!write_reg(dev, REG_PWR_CTRL, pwr_ctrl))
+    {
+        return BMP388_ERR_I2C;
+    }
+
+    for (int tries = 0; tries < 500; tries++)
+    {
+        uint8_t status;
+        if (!read_regs(dev, REG_STATUS, &status, 1))
+        {
+            return BMP388_ERR_I2C;
+        }
+        if ((status & drdy) == drdy)
+        {
+            break;
+        }
+        if (tries == 499)
+        {
+            return BMP388_ERR_TIMEOUT;
+        }
+        if (dev->i2c->delay_ms)
+        {
+            dev->i2c->delay_ms(dev->i2c->ctx, 1);
+        }
+    }
+
+    /* Read 6 bytes: press XLSB/LSB/MSB, temp XLSB/LSB/MSB */
+    uint8_t buf[6];
+    if (!read_regs(dev, REG_DATA_0, buf, 6))
+    {
+        return BMP388_ERR_I2C;
+    }
+
+    *raw_press = (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16);
+    *raw_temp  = (uint32_t)buf[3] | ((uint32_t)buf[4] << 8) | ((uint32_t)buf[5] << 16);
+    return BMP388_OK;
+}
+
 bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
                          const bmp388_cfg_t *cfg)
 {
@@ -171,6 +233,11 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
     if ((unsigned)cfg->osrs_t > 6 || (unsigned)cfg->osrs_p > 6)
     {
         return BMP388_ERR_PARAM;
+    }
+    if (cfg->osrs_t == BMP388_OVERSAMPLING_SKIP &&
+        cfg->osrs_p == BMP388_OVERSAMPLING_SKIP)
+    {
+        return BMP388_ERR_PARAM;   /* nothing left to measure */
     }
 
     memset(dev, 0, sizeof(*dev));
@@ -203,6 +270,21 @@ bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
         return BMP388_ERR_I2C;
     }
 
+    /* Pressure compensation needs a temperature: t_lin "is needed for pressure
+     * calculation" (manual 9.2). Reads that skip temperature cannot supply it,
+     * so measure it once here and let them keep using it. */
+    if (cfg->osrs_t == BMP388_OVERSAMPLING_SKIP)
+    {
+        uint32_t raw_press;
+        uint32_t raw_temp;
+        err = measure(dev, false, true, &raw_press, &raw_temp);
+        if (err != BMP388_OK)
+        {
+            return err;
+        }
+        (void)compensate_temperature(dev, raw_temp);
+    }
+
     INVARIANT(dev->i2c != NULL);
     return BMP388_OK;
 }
@@ -218,50 +300,23 @@ bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out)
         return BMP388_ERR_PARAM;
     }
 
-    /* Trigger forced measurement: PWR_CTRL = press_en | temp_en | mode=forced */
-    if (!write_reg(dev, REG_PWR_CTRL, PWR_CTRL_FORCED))
+    bool press = dev->cfg.osrs_p != BMP388_OVERSAMPLING_SKIP;
+    bool temp  = dev->cfg.osrs_t != BMP388_OVERSAMPLING_SKIP;
+    uint32_t raw_press;
+    uint32_t raw_temp;
+
+    bmp388_err_t err = measure(dev, press, temp, &raw_press, &raw_temp);
+    if (err != BMP388_OK)
     {
-        return BMP388_ERR_I2C;
+        return err;
     }
 
-    /* Wait for data ready (STATUS bit5 = drdy_press).
-     * In forced mode, drdy_press is set when both temp and press are ready. */
-    for (int tries = 0; tries < 500; tries++)
-    {
-        uint8_t status;
-        if (!read_regs(dev, REG_STATUS, &status, 1))
-        {
-            return BMP388_ERR_I2C;
-        }
-        if (status & STATUS_DRDY_PRESS)
-        {
-            break;
-        }
-        if (tries == 499)
-        {
-            return BMP388_ERR_TIMEOUT;
-        }
-        if (dev->i2c->delay_ms)
-        {
-            dev->i2c->delay_ms(dev->i2c->ctx, 1);
-        }
-    }
-
-    /* Read 6 bytes: press XLSB/LSB/MSB, temp XLSB/LSB/MSB */
-    uint8_t buf[6];
-    if (!read_regs(dev, REG_DATA_0, buf, 6))
-    {
-        return BMP388_ERR_I2C;
-    }
-
-    uint32_t raw_press = (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16);
-    uint32_t raw_temp  = (uint32_t)buf[3] | ((uint32_t)buf[4] << 8) | ((uint32_t)buf[5] << 16);
-
-    /* Compensate temperature first (sets dev->t_lin) */
-    out->temperature_c = compensate_temperature(dev, raw_temp);
+    /* Compensate temperature first (sets dev->t_lin). When it is skipped,
+     * t_lin still holds the temperature init measured. */
+    out->temperature_c = temp ? compensate_temperature(dev, raw_temp) : dev->t_lin;
 
     /* Compensate pressure (uses dev->t_lin) */
-    out->pressure_pa = compensate_pressure(dev, raw_press);
+    out->pressure_pa = press ? compensate_pressure(dev, raw_press) : 0.0f;
 
     /* NaN guard */
     ENSURE(out->temperature_c == out->temperature_c);

@@ -58,6 +58,10 @@ static void plant_calib(void)
     mock_regs[0x45] = 0x00;
 }
 
+/* every PWR_CTRL byte the driver writes, in order */
+static uint8_t pwr_ctrl_log[8];
+static int     pwr_ctrl_len;
+
 static void mock_reset(void)
 {
     mock_i2c_reset();
@@ -65,14 +69,25 @@ static void mock_reset(void)
     /* Chip ID register */
     mock_regs[0x00] = 0x50;
 
-    /* STATUS: drdy_press set (bit5) so read doesn't timeout */
-    mock_regs[0x03] = 0x20;
+    /* STATUS: drdy_press and drdy_temp set so read doesn't timeout */
+    mock_regs[0x03] = 0x60;
+
+    pwr_ctrl_len = 0;
 
     plant_calib();
 }
 
+static bool log_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
+{
+    if (reg == 0x1B && pwr_ctrl_len < (int)sizeof(pwr_ctrl_log))
+    {
+        pwr_ctrl_log[pwr_ctrl_len++] = val;
+    }
+    return mock_i2c_write_reg(ctx, dev_addr, reg, val);
+}
+
 static const bmp388_i2c_t mock_i2c = {
-    .write_reg = mock_i2c_write_reg,
+    .write_reg = log_write_reg,
     .read_regs = mock_i2c_read_regs,
     .delay_ms  = mock_i2c_delay_ms,
     .ctx       = NULL,
@@ -108,6 +123,36 @@ static void plant_adc(uint32_t raw_press, uint32_t raw_temp)
     mock_regs[0x07] = (uint8_t)(raw_temp & 0xFF);
     mock_regs[0x08] = (uint8_t)((raw_temp >> 8) & 0xFF);
     mock_regs[0x09] = (uint8_t)((raw_temp >> 16) & 0xFF);
+}
+
+/* Manual 9.1 and 9.2 in double, from the NVM values plant_calib plants */
+static double manual_t_lin(uint32_t raw)
+{
+    double par_t1 = 26000.0 * 256.0;
+    double par_t2 = 18000.0 / 1073741824.0;     /* 2^30 */
+    double par_t3 = -10.0 / 281474976710656.0;  /* 2^48 */
+    double d = (double)raw - par_t1;
+    return d * par_t2 + d * d * par_t3;
+}
+
+/* Manual 9.1 and 9.3 in double, from the same NVM values */
+static double manual_pressure(uint32_t raw, double t)
+{
+    double p1  = (-4000.0 - 16384.0) / 1048576.0;   /* 2^14, 2^20 */
+    double p2  = (-6000.0 - 16384.0) / 536870912.0; /* 2^14, 2^29 */
+    double p3  = 10.0 / 4294967296.0;               /* 2^32 */
+    double p5  = 25000.0 * 8.0;
+    double p6  = 28000.0 / 64.0;
+    double p7  = 15.0 / 256.0;
+    double p8  = -10.0 / 32768.0;
+    double p9  = 1000.0 / 281474976710656.0;        /* 2^48 */
+    double p10 = 10.0 / 281474976710656.0;          /* 2^48 */
+    double r   = (double)raw;
+
+    /* P4 and P11 are 0 in plant_calib */
+    double out1 = p5 + p6 * t + p7 * t * t + p8 * t * t * t;
+    double out2 = r * (p1 + p2 * t + p3 * t * t);
+    return out1 + out2 + r * r * (p9 + p10 * t);
 }
 
 /* ---------- tests ---------- */
@@ -313,21 +358,98 @@ TEST(test_oversampling_above_x32)
     ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_PARAM);
 }
 
-/* OSR has no skip code: p14 skips through press_en and temp_en, which the
- * driver never clears. SKIP keeps measuring at x1, as it always did */
-TEST(test_oversampling_skip_measures_x1)
+/* OSR has no skip code: p14 skips through press_en and temp_en. With both
+ * skipped there is nothing to measure, so the driver refuses the setting. */
+TEST(test_oversampling_skip_both_refused)
 {
     mock_reset();
     bmp388_t d;
     bmp388_cfg_t cfg = default_cfg;
     cfg.osrs_t = BMP388_OVERSAMPLING_SKIP;
     cfg.osrs_p = BMP388_OVERSAMPLING_SKIP;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_PARAM);
+    ASSERT_EQ(mock_op_count, 0);
+}
+
+/* p14, p36: with press_en clear only drdy_temp can rise, and the pressure field
+ * has nothing to report. Forced mode with temp_en alone is 01 0010. */
+TEST(test_oversampling_skip_pressure)
+{
+    mock_reset();
+    bmp388_t d;
+    bmp388_cfg_t cfg = default_cfg;
+    cfg.osrs_p = BMP388_OVERSAMPLING_SKIP;
     ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_OK);
-    ASSERT_EQ(mock_regs[0x1C], 0x00);
+    ASSERT_EQ(pwr_ctrl_len, 0);
+    ASSERT_EQ(mock_regs[0x1C] & 0x07, 0);
+
+    mock_regs[0x03] = 0x40;
+    plant_adc(6000000, 8000000);
+
+    bmp388_data_t data;
+    memset(&data, 0xA5, sizeof(data));
+    ASSERT_EQ(bmp388_read(&d, &data), BMP388_OK);
+    ASSERT_EQ(pwr_ctrl_len, 1);
+    ASSERT_EQ_HEX(pwr_ctrl_log[0], 0x12);
+    ASSERT_NEAR(data.temperature_c, manual_t_lin(8000000), 0.01);
+    ASSERT_NEAR(data.pressure_pa, 0.0f, 0.0f);
+}
+
+/* p14, p36: with temp_en clear each read is 01 0001. 9.3: the pressure formula
+ * needs t_lin, so init measures temperature once with 01 0010 and the reads use
+ * that, whatever the temperature registers hold by then. */
+TEST(test_oversampling_skip_temperature)
+{
+    mock_reset();
+    plant_adc(6000000, 8000000);
+    bmp388_t d;
+    bmp388_cfg_t cfg = default_cfg;
+    cfg.osrs_t = BMP388_OVERSAMPLING_SKIP;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_OK);
+    ASSERT_EQ(pwr_ctrl_len, 1);
+    ASSERT_EQ_HEX(pwr_ctrl_log[0], 0x12);
+
+    mock_regs[0x03] = 0x20;
+    plant_adc(6000000, 9000000);
 
     bmp388_data_t data;
     ASSERT_EQ(bmp388_read(&d, &data), BMP388_OK);
-    ASSERT_EQ_HEX(mock_regs[0x1B], 0x13);
+    ASSERT_EQ(pwr_ctrl_len, 2);
+    ASSERT_EQ_HEX(pwr_ctrl_log[1], 0x11);
+    ASSERT_NEAR(data.temperature_c, manual_t_lin(8000000), 0.01);
+    ASSERT_NEAR(data.pressure_pa,
+                manual_pressure(6000000, manual_t_lin(8000000)), 2.0);
+}
+
+/* The measurement in init can fail like any other */
+TEST(test_oversampling_skip_temperature_init_errors)
+{
+    bmp388_t d;
+    bmp388_cfg_t cfg = default_cfg;
+    cfg.osrs_t = BMP388_OVERSAMPLING_SKIP;
+
+    mock_reset();
+    mock_regs[0x03] = 0x00;
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_TIMEOUT);
+
+    mock_reset();
+    mock_fail_at = 3;  /* chip ID, calibration, OSR, then PWR_CTRL */
+    ASSERT_EQ(bmp388_init(&d, &mock_i2c, &cfg), BMP388_ERR_I2C);
+}
+
+/* p32: each result has its own flag, and the manual never says that drdy_press
+ * also covers the temperature, so one flag alone is not enough */
+TEST(test_read_waits_for_both_flags)
+{
+    bmp388_data_t data;
+
+    setup();
+    mock_regs[0x03] = 0x20;
+    ASSERT_EQ(bmp388_read(&dev, &data), BMP388_ERR_TIMEOUT);
+
+    setup();
+    mock_regs[0x03] = 0x40;
+    ASSERT_EQ(bmp388_read(&dev, &data), BMP388_ERR_TIMEOUT);
 }
 
 TEST(test_oversampling_32x)
@@ -418,7 +540,11 @@ TEST_MAIN("bmp388")
     RUN(test_oversampling_config);
     RUN(test_oversampling_codes);
     RUN(test_oversampling_above_x32);
-    RUN(test_oversampling_skip_measures_x1);
+    RUN(test_oversampling_skip_both_refused);
+    RUN(test_oversampling_skip_pressure);
+    RUN(test_oversampling_skip_temperature);
+    RUN(test_oversampling_skip_temperature_init_errors);
+    RUN(test_read_waits_for_both_flags);
     RUN(test_oversampling_32x);
     RUN(test_calib_i2c_fail);
     RUN(test_forced_mode_write);

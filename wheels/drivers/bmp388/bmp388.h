@@ -40,7 +40,7 @@ typedef struct {
 } bmp388_i2c_t;
 
 typedef enum {
-    BMP388_OVERSAMPLING_SKIP = 0,  /* does not skip: measures at x1 */
+    BMP388_OVERSAMPLING_SKIP = 0,  /* no measurement: see bmp388_read */
     BMP388_OVERSAMPLING_1    = 1,
     BMP388_OVERSAMPLING_2    = 2,
     BMP388_OVERSAMPLING_4    = 3,
@@ -92,11 +92,20 @@ typedef struct {
 #define BMP388_ADDR_HIGH  0x77
 #define BMP388_CHIP_ID    0x50
 
-/** @thread_safe: no @isr_safe: no */
+/** Check the chip ID, read the calibration and set the oversampling.
+ *  0 in osrs_t or osrs_p is SKIP, so set both. Returns BMP388_ERR_PARAM if both
+ *  are SKIP, because nothing would be left to measure. With osrs_t SKIP this
+ *  takes one temperature measurement at x1, because pressure compensation needs
+ *  a temperature, and can then also return BMP388_ERR_TIMEOUT.
+ *  @thread_safe: no @isr_safe: no */
 bmp388_err_t bmp388_init(bmp388_t *dev, const bmp388_i2c_t *i2c,
                          const bmp388_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** Take one forced measurement of what is not set to SKIP.
+ *  With osrs_p SKIP, pressure_pa is 0. With osrs_t SKIP, temperature_c is the
+ *  temperature from init and pressure_pa is compensated with it, so the pressure
+ *  loses accuracy as the real temperature moves away. Init again to refresh it.
+ *  @thread_safe: no @isr_safe: no */
 bmp388_err_t bmp388_read(bmp388_t *dev, bmp388_data_t *out);
 
 /** @thread_safe: no @isr_safe: no */
