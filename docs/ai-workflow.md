@@ -275,8 +275,10 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 1. `make check` — 确保测试 + 审计干净
 2. `bash tooling/wheel/release.sh --dry-run v<X.Y.Z>` — 预览 changelog
 3. 用户确认版本号
-4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 创建 tag + 更新 CHANGELOG.md
-5. `git add CHANGELOG.md && git commit` + `git push && git push --tags`
+4. `bash tooling/wheel/release.sh v<X.Y.Z>` — 更新 CHANGELOG.md，不打 tag（直接调脚本：`make release` 传不了版本号）
+5. `git add CHANGELOG.md && git commit -m "docs: add v<X.Y.Z> release notes"`
+6. `git tag v<X.Y.Z>` — tag 打在这个 commit 上
+7. `git push && git push --tags`
 
 项目锁定平台版本：在项目 CLAUDE.md 记录 `平台版本: v<X.Y.Z>`。
 
@@ -295,7 +297,7 @@ wsl bash tooling/session/dispatch_agent.sh --merge-all --push
 ### 开源
 
 1. **创建 public GitHub repo**。
-2. **复制 `wheels/` + `tooling/harness/` + `tooling/audit/` + `tooling/codegen/`**。
+2. **用 `git filter-repo` 生成副本，不要手工复制目录**。公开仓就是这样生成的，和本仓是两条历史，不能互相 push。`make check` 要读根目录的 `Makefile`、`README.md`、`CLAUDE.md`、`.gitattributes`，以及 `.github/`、`wheels/`、`tooling/`、`docs/`、`examples/`，副本里这些都要留着。
 3. **写面向社区的 README**（中英双语）。
 4. **验证**：fresh clone → `make check` 独立通过。
 5. **用户确认后公开**：README + 目录结构交用户审阅，确认后再设为 public。
@@ -391,12 +393,15 @@ CI detect-changes 自动检测跨 wheel 依赖：当上游 wheel 变更时，下
 
 ```bash
 # squash merge：每个 worktree 分支合并为主分支上的一个 commit
-wsl bash tooling/session/dispatch_agent.sh --merge-all
-
-# 合并后自动运行 make check
-# 全部通过后推送
+# 合并后自动运行 make check，全部通过才推送
 wsl bash tooling/session/dispatch_agent.sh --merge-all --push
+
+# 想先看结果再推送：去掉 --push，确认后手动推
+wsl bash tooling/session/dispatch_agent.sh --merge-all
+git push
 ```
+
+不要在 `--merge-all` 之后再跑 `--merge-all --push`：第一次已经删掉 worktree 分支，第二次打印 `No worktree branches to merge.` 后以 0 退出，什么也没推。
 
 使用 `--squash` 而非普通 merge，避免工作 agent 的中间 commit 进入主分支历史。
 
@@ -472,7 +477,7 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `tooling/audit/audit_wheels.py` | CI 一致性审计（63 项检查） | `--graph`, `--quiet`, `--json` |
 | `tooling/audit/arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `tooling/ci/update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
-| `tooling/wheel/release.sh` | 平台版本标签 + CHANGELOG | `--list`, `--current`, `--dry-run` |
+| `tooling/wheel/release.sh` | 更新 CHANGELOG（tag 用 `git tag` 手动打） | `--list`, `--current`, `--dry-run` |
 | `tooling/audit/audit_fix.py` | 自动修复机械审计发现 | `--apply`, `--only <类别>`, `--wheel <name>` |
 | `tooling/wheel/batch_fix.sh` | 批量跨 wheel sed/python 变换 | `--sed`, `--py`, `--all`, `--dry-run` |
 | `tooling/ci/commit_suggest.sh` | 从 staged diff 生成 commit message | 无 |
@@ -505,7 +510,7 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | 升级 wheel 从 draft 到 candidate | `tooling/wheel/wheel_promote.sh _draft/X primitives/X` |
 | 查 ARM 二进制体积 | `wsl bash tooling/audit/arm_size_audit.sh --markdown` |
 | 更新 CLAUDE.md 的 wheel 计数 | `make inventory` |
-| 打版本标签 | `tooling/wheel/release.sh v1.0.0` |
+| 打版本标签 | `tooling/wheel/release.sh v1.0.0` 更新 CHANGELOG，commit 后 `git tag v1.0.0` |
 | 查当前版本 | `tooling/wheel/release.sh --current` |
 | 看 wheel 依赖关系图 | `make graph` |
 | 同步 VSF 上游 | `make sync-vsf` |
