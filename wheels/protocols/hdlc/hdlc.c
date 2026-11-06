@@ -177,6 +177,7 @@ hdlc_state_t hdlc_parser_feed(hdlc_parser_t *parser, uint8_t byte)
         }
         return parser->state;
 
+    case HDLC_STATE_COMPLETE:   /* left before the switch */
     default:
         parser->state = HDLC_STATE_IDLE;
         return HDLC_STATE_ERROR;

@@ -352,10 +352,8 @@ TEST(test_rx_flow_control_is_not_a_message)
     static const uint8_t ff[8] = { 0x10, 0x0A, 1, 2, 3, 4, 5, 6 };
     static const uint8_t fc[3] = { 0x30, 0x00, 0x00 };
     static const uint8_t cf[5] = { 0x21, 7, 8, 9, 10 };
-    uint8_t buf[16];
-    isotp_rx_t rx;
 
-    ASSERT_EQ(isotp_rx_init(&rx, buf, sizeof(buf)), ISOTP_OK);
+    setup();
 
     /* With nothing received, a stray FC frame reports no message. */
     ASSERT_EQ(isotp_rx_feed(&rx, fc, sizeof(fc)), ISOTP_INCOMPLETE);

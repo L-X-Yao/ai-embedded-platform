@@ -14,18 +14,14 @@
 TEST(test_boundary_snprintf_tiny_size_zero) {
     char _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    char _safe_fmt_2[64];
-    memset(_safe_fmt_2, 0, sizeof(_safe_fmt_2));
-    (void)snprintf_tiny(_safe_buf_0, 0, _safe_fmt_2);
+    (void)snprintf_tiny(_safe_buf_0, 0, "x");
     /* must not crash */
 }
 
 TEST(test_boundary_snprintf_tiny_size_one) {
     char _safe_buf_0[64];
     memset(_safe_buf_0, 0, sizeof(_safe_buf_0));
-    char _safe_fmt_2[64];
-    memset(_safe_fmt_2, 0, sizeof(_safe_fmt_2));
-    (void)snprintf_tiny(_safe_buf_0, 1, _safe_fmt_2);
+    (void)snprintf_tiny(_safe_buf_0, 1, "x");
     /* must not crash */
 }
 

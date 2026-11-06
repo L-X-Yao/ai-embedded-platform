@@ -266,6 +266,7 @@ static bool scd40_model_read(void *ctx, uint8_t dev_addr,
         scd40_model_encode_word(&resp[6], m->serial[2]);
         resp_len = 9;
         break;
+    case SCD40_MODEL_RESP_NONE:
     default:
         return false;   /* no command waits for a read */
     }

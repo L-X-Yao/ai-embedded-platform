@@ -261,7 +261,6 @@ TEST(test_power_on_clears_sd_bit)
 /* gain=1/8, IT=100ms -> 0.5376 lux/bit: 128 x the 0.0042 at gain=2, IT=800ms */
 TEST(test_failed_set_gain_keeps_the_scale)
 {
-    veml7700_t dev;
     float lux = 0.0f;
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1_8, VEML7700_IT_100MS),
@@ -280,7 +279,6 @@ TEST(test_failed_set_gain_keeps_the_scale)
 /* gain=1, IT=100ms -> 0.0672 lux/bit */
 TEST(test_failed_set_integration_time_keeps_the_scale)
 {
-    veml7700_t dev;
     float lux = 0.0f;
     mock_reset();
     ASSERT_EQ(veml7700_init(&dev, &mock_i2c, VEML7700_GAIN_1, VEML7700_IT_100MS),

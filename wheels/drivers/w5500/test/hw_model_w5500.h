@@ -570,6 +570,8 @@ static uint8_t w5500_model_xfer(void *ctx, uint8_t tx)
             return 0xFFu;
         }
     }
+    default:
+        break;
     } /* switch */
 
     return 0xFFu;
