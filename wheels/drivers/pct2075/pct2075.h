@@ -36,7 +36,7 @@ typedef struct {
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
-    void (*delay_ms)(void *ctx, uint32_t ms);
+    void (*delay_ms)(void *ctx, uint32_t ms);   /* required */
     void *ctx;
 } pct2075_i2c_t;
 
@@ -63,7 +63,10 @@ typedef struct {
 /* ---------- API ---------- */
 
 /** Initialize device, store config, optionally write config register.
- *  Verifies I2C communication by reading the temperature register.
+ *  Verifies I2C communication by reading the temperature register, then
+ *  waits 40 ms for the first conversion, which takes about 28 ms: until it
+ *  ends the temperature register reads 0 C.
+ *  Returns PCT2075_ERR_PARAM if the HAL has no delay_ms.
  *  @thread_safe: no @isr_safe: no */
 pct2075_err_t pct2075_init(pct2075_t *dev, const pct2075_i2c_t *i2c,
                             const pct2075_cfg_t *cfg);
