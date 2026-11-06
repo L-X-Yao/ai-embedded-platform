@@ -86,6 +86,7 @@ uint16_t ring_buffer_skip(ring_buffer_t *rb, uint16_t len)
     if (!rb) { return 0; }
 
     if (len > rb->count) { len = rb->count; }
+    if (len == 0U) { return 0; }
 
     rb->tail  = (uint16_t)((rb->tail + len) % rb->capacity);
     rb->count = (uint16_t)(rb->count - len);

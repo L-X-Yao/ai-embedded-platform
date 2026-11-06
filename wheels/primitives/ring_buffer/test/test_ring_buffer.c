@@ -476,7 +476,18 @@ TEST(test_zero_init_safety)
     ring_buffer_reset(&rb);
 }
 
+/* capacity is 0 here, so skip must not reach its % capacity */
+TEST(test_zero_init_skip)
+{
+    ring_buffer_t rb;
+    memset(&rb, 0, sizeof(rb));
+    ASSERT_EQ(ring_buffer_skip(&rb, 1), 0);
+    ASSERT_EQ(ring_buffer_skip(&rb, 0), 0);
+    ASSERT_EQ(ring_buffer_count(&rb), 0);
+}
+
 TEST_MAIN("ring_buffer")
+    RUN(test_zero_init_skip);
     RUN(test_init_valid);
     RUN(test_init_null_rb);
     RUN(test_init_null_buf);
