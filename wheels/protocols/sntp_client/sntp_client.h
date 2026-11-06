@@ -95,6 +95,9 @@ sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
  * @param t1     Client originate timestamp (when request was sent)
  * @param t4     Client destination timestamp (when response arrived)
  * @param out    Result with offset, round_trip, and unix time
+ *
+ * Differences are taken modulo 2^32 seconds (RFC 4330), so they hold across
+ * the 2036 rollover as long as the clocks agree to within 68 years.
  * @thread_safe: yes (pure) @isr_safe: yes
  */
 sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
@@ -110,6 +113,8 @@ sntp_timestamp_t sntp_client_unix_to_ntp(uint32_t unix_sec, uint16_t ms);
 
 /**
  * Convert NTP timestamp to Unix seconds + milliseconds.
+ * RFC 4330 section 3: seconds with bit 0 clear are 2036-2104. unix_sec is 0
+ * for 1968-1970, which it cannot hold, and for the all-zero timestamp.
  * @thread_safe: yes (pure) @isr_safe: yes
  */
 void sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,

@@ -43,11 +43,30 @@ static void wr_ts(uint8_t *p, const sntp_timestamp_t *ts)
 
 /* ─── timestamp math ─────────────────────────────────────────── */
 
-static int64_t ts_to_ms(const sntp_timestamp_t *ts)
+static int64_t fraction_to_ms(uint32_t fraction)
 {
-    int64_t s  = (int64_t)ts->seconds;
-    int64_t ms = ((int64_t)ts->fraction * 1000LL) >> 32;
-    return s * 1000LL + ms;
+    return ((int64_t)fraction * 1000LL) >> 32;
+}
+
+/* a - b in ms. The seconds differ modulo 2^32, so two stamps either side of
+ * the 2036 rollover stay close; that holds up to 68 years either way. */
+static int64_t ts_diff_ms(const sntp_timestamp_t *a, const sntp_timestamp_t *b)
+{
+    uint32_t d = a->seconds - b->seconds;
+    int64_t s  = (d & 0x80000000u) ? (int64_t)d - 0x100000000LL : (int64_t)d;
+    return s * 1000LL + (fraction_to_ms(a->fraction) - fraction_to_ms(b->fraction));
+}
+
+/* RFC 4330 section 3: bit 0 set is 1968-2036, reckoned from 1900; bit 0 clear
+ * is 2036-2104, reckoned from 2036-02-07, and the subtraction wraps to the
+ * right value for both. 1968-1970 does not fit unix_sec and an all-zero
+ * timestamp means unavailable: both read as 0. */
+static uint32_t ts_to_unix_sec(const sntp_timestamp_t *ts)
+{
+    if (ts->seconds == 0 && ts->fraction == 0) return 0;
+    if ((ts->seconds & 0x80000000u) && ts->seconds < (uint32_t)SNTP_UNIX_OFFSET)
+        return 0;
+    return ts->seconds - (uint32_t)SNTP_UNIX_OFFSET;
 }
 
 /* ─── public API ─────────────────────────────────────────────── */
@@ -108,24 +127,16 @@ sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
     REQUIRE(out != NULL);
     if (!resp || !t1 || !t4 || !out) return SNTP_CLIENT_ERR_PARAM;
 
-    int64_t t1_ms = ts_to_ms(t1);
-    int64_t t2_ms = ts_to_ms(&resp->receive);
-    int64_t t3_ms = ts_to_ms(&resp->transmit);
-    int64_t t4_ms = ts_to_ms(t4);
-
     /* offset = ((T2 - T1) + (T3 - T4)) / 2 */
-    out->offset_ms = ((t2_ms - t1_ms) + (t3_ms - t4_ms)) / 2;
+    out->offset_ms = (ts_diff_ms(&resp->receive, t1) +
+                      ts_diff_ms(&resp->transmit, t4)) / 2;
 
     /* round_trip = (T4 - T1) - (T3 - T2) */
-    int64_t rt = (t4_ms - t1_ms) - (t3_ms - t2_ms);
+    int64_t rt = ts_diff_ms(t4, t1) - ts_diff_ms(&resp->transmit, &resp->receive);
     out->round_trip_ms = (rt > 0) ? (uint32_t)rt : 0;
 
     /* server time = T3 adjusted to Unix epoch */
-    if (resp->transmit.seconds >= (uint32_t)SNTP_UNIX_OFFSET) {
-        out->unix_sec = resp->transmit.seconds - (uint32_t)SNTP_UNIX_OFFSET;
-    } else {
-        out->unix_sec = 0;
-    }
+    out->unix_sec = ts_to_unix_sec(&resp->transmit);
     out->unix_ms = (uint16_t)(((uint64_t)resp->transmit.fraction * 1000ULL) >> 32);
 
     return SNTP_CLIENT_OK;
@@ -147,10 +158,6 @@ void sntp_client_ntp_to_unix(const sntp_timestamp_t *ntp,
     REQUIRE(unix_sec != NULL);
     REQUIRE(ms != NULL);
     if (!ntp || !unix_sec || !ms) return;
-    if (ntp->seconds >= (uint32_t)SNTP_UNIX_OFFSET) {
-        *unix_sec = ntp->seconds - (uint32_t)SNTP_UNIX_OFFSET;
-    } else {
-        *unix_sec = 0;
-    }
-    *ms = (uint16_t)(((uint64_t)ntp->fraction * 1000ULL) >> 32);
+    *unix_sec = ts_to_unix_sec(ntp);
+    *ms =(uint16_t)(((uint64_t)ntp->fraction * 1000ULL) >> 32);
 }

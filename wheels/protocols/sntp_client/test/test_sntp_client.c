@@ -201,10 +201,92 @@ TEST(test_unix_to_ntp_roundtrip)
 
 TEST(test_ntp_to_unix_pre_epoch)
 {
-    sntp_timestamp_t ntp = { .seconds = 100, .fraction = 0 }; /* before 1970 */
-    uint32_t sec; uint16_t ms;
-    sntp_client_ntp_to_unix(&ntp, &sec, &ms);
+    /* Bit 0 set and below the offset is 1968-1970, which unix_sec cannot hold. */
+    static const uint32_t seconds[] = { 0x80000000u, (uint32_t)SNTP_UNIX_OFFSET - 1u };
+    for (size_t i = 0; i < sizeof(seconds) / sizeof(seconds[0]); i++) {
+        sntp_timestamp_t ntp = { .seconds = seconds[i], .fraction = 0 };
+        uint32_t sec = 1; uint16_t ms;
+        sntp_client_ntp_to_unix(&ntp, &sec, &ms);
+        ASSERT_EQ(sec, 0);
+    }
+}
+
+/* RFC 4330 section 3: bit 0 clear means 2036-2104, reckoned from
+ * 2036-02-07 06:28:16 UTC, which is Unix 2^32 - 2208988800 = 2085978496. */
+TEST(test_ntp_to_unix_after_rollover)
+{
+    static const struct { uint32_t ntp; uint32_t unix_sec; } cases[] = {
+        { 0xFFFFFFFFu, 2085978495u },   /* the last second of 1900-2036 */
+        { 1u,          2085978497u },
+        { 31536000u,   2117514496u },   /* 2037-02-06 06:28:16 UTC */
+        { 1914021504u, 4000000000u },
+        { 0x7FFFFFFFu, 4233462143u },   /* 2104-02-26, the last with bit 0 clear */
+    };
+    for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        sntp_timestamp_t ntp = { .seconds = cases[i].ntp, .fraction = 0 };
+        uint32_t sec = 0; uint16_t ms;
+        sntp_client_ntp_to_unix(&ntp, &sec, &ms);
+        ASSERT_EQ(sec, cases[i].unix_sec);
+
+        sntp_timestamp_t back = sntp_client_unix_to_ntp(cases[i].unix_sec, 0);
+        ASSERT_EQ(back.seconds, cases[i].ntp);
+    }
+}
+
+/* RFC 4330 section 3: an all-zero timestamp means invalid or unavailable, but
+ * a fraction makes it a real time just after the rollover. */
+TEST(test_ntp_zero_timestamp_is_unavailable)
+{
+    sntp_timestamp_t zero = { .seconds = 0, .fraction = 0 };
+    uint32_t sec = 1; uint16_t ms = 1;
+    sntp_client_ntp_to_unix(&zero, &sec, &ms);
     ASSERT_EQ(sec, 0);
+    ASSERT_EQ(ms, 0);
+
+    sntp_timestamp_t half = { .seconds = 0, .fraction = 0x80000000u };
+    sntp_client_ntp_to_unix(&half, &sec, &ms);
+    ASSERT_EQ(sec, 2085978496u);
+    ASSERT_EQ(ms, 500);
+}
+
+TEST(test_compute_across_rollover)
+{
+    /* T1 one tick before the seconds wrap, the rest just after it: the
+     * client reads 1 s behind and the path takes 2 s. */
+    sntp_response_t resp = {
+        .receive  = { .seconds = 1, .fraction = 0 },
+        .transmit = { .seconds = 1, .fraction = 0 },
+    };
+    sntp_timestamp_t t1 = { .seconds = 0xFFFFFFFFu, .fraction = 0 };
+    sntp_timestamp_t t4 = { .seconds = 1, .fraction = 0 };
+    sntp_result_t result;
+    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
+    ASSERT_EQ(result.offset_ms, 1000);
+    ASSERT_EQ(result.round_trip_ms, 2000);
+    ASSERT_EQ(result.unix_sec, 2085978497u);
+
+    /* Server past the wrap, client not: +5 s. */
+    resp.receive.seconds = resp.transmit.seconds = 3;
+    t1.seconds = t4.seconds = 0xFFFFFFFEu;
+    sntp_client_compute(&resp, &t1, &t4, &result);
+    ASSERT_EQ(result.offset_ms, 5000);
+    ASSERT_EQ(result.round_trip_ms, 0);
+
+    /* Client past the wrap, server not: -5 s. */
+    resp.receive.seconds = resp.transmit.seconds = 0xFFFFFFFEu;
+    t1.seconds = t4.seconds = 3;
+    sntp_client_compute(&resp, &t1, &t4, &result);
+    ASSERT_EQ(result.offset_ms, -5000);
+    ASSERT_EQ(result.round_trip_ms, 0);
+
+    /* With fractions: T2-T1 = +1 s, T3-T4 = -0.5 s, T4-T1 = 2 s, T3-T2 = 0.5 s. */
+    t1 = (sntp_timestamp_t){ .seconds = 0xFFFFFFFFu, .fraction = 0x80000000u };
+    resp.receive  = (sntp_timestamp_t){ .seconds = 0, .fraction = 0x80000000u };
+    resp.transmit = (sntp_timestamp_t){ .seconds = 1, .fraction = 0 };
+    t4 = (sntp_timestamp_t){ .seconds = 1, .fraction = 0x80000000u };
+    sntp_client_compute(&resp, &t1, &t4, &result);
+    ASSERT_EQ(result.offset_ms, 250);
+    ASSERT_EQ(result.round_trip_ms, 1500);
 }
 
 TEST(test_ntp_to_unix_null)
@@ -267,6 +349,9 @@ TEST_MAIN("sntp_client")
     RUN(test_compute_null);
     RUN(test_unix_to_ntp_roundtrip);
     RUN(test_ntp_to_unix_pre_epoch);
+    RUN(test_ntp_to_unix_after_rollover);
+    RUN(test_ntp_zero_timestamp_is_unavailable);
+    RUN(test_compute_across_rollover);
     RUN(test_ntp_to_unix_null);
     RUN(test_unix_to_ntp_zero);
     RUN(test_parse_fuzz);
