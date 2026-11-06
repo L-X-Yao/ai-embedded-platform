@@ -57,17 +57,21 @@ static void bmp280_model_set_reference_calib(bmp280_model_t *m)
     }
 }
 
-/* Write ADC values for "true" temperature and pressure into data registers */
-static void bmp280_model_set_adc_output(bmp280_model_t *m)
+/* Write ADC values for "true" temperature and pressure into data registers.
+ * A channel whose osrs field is 000 is skipped and reads 0x80000 (Tables 21, 22). */
+static void bmp280_model_set_adc_output(bmp280_model_t *m, uint8_t ctrl_meas)
 {
+    uint8_t osrs_t = (uint8_t)(ctrl_meas >> 5);
+    uint8_t osrs_p = (uint8_t)((ctrl_meas >> 2) & 0x07);
+
     /* pressure: 0xF7..0xF9 (20-bit, MSB first, [3:0] of xlsb) */
-    uint32_t p = (uint32_t)m->true_press_raw & 0xFFFFFu;
+    uint32_t p = osrs_p ? ((uint32_t)m->true_press_raw & 0xFFFFFu) : 0x80000u;
     m->hw.regs[0xF7] = (uint8_t)(p >> 12);
     m->hw.regs[0xF8] = (uint8_t)(p >> 4);
     m->hw.regs[0xF9] = (uint8_t)((p & 0x0F) << 4);
 
     /* temperature: 0xFA..0xFC (20-bit, same layout) */
-    uint32_t t = (uint32_t)m->true_temp_raw & 0xFFFFFu;
+    uint32_t t = osrs_t ? ((uint32_t)m->true_temp_raw & 0xFFFFFu) : 0x80000u;
     m->hw.regs[0xFA] = (uint8_t)(t >> 12);
     m->hw.regs[0xFB] = (uint8_t)(t >> 4);
     m->hw.regs[0xFC] = (uint8_t)((t & 0x0F) << 4);
@@ -84,7 +88,7 @@ static void bmp280_model_on_ctrl_meas(void *user, uint8_t reg,
         /* forced or normal mode → start measurement */
         m->hw.regs[BMP280_REG_STATUS] |= 0x08; /* measuring = 1 */
         /* simulate instant completion: write ADC, clear measuring */
-        bmp280_model_set_adc_output(m);
+        bmp280_model_set_adc_output(m, new_val);
         m->hw.regs[BMP280_REG_STATUS] = (uint8_t)(m->hw.regs[BMP280_REG_STATUS] & ~0x08u);
         if (mode == 0x01) {
             /* forced mode: revert to sleep after measurement */

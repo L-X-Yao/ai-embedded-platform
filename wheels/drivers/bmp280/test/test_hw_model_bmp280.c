@@ -225,6 +225,106 @@ TEST(test_multiple_reads_independent)
     ASSERT_EQ(model.measure_count, 2);
 }
 
+/* --- skipped channels (manual Tables 21, 22) --------------------------- */
+
+/* Worked by hand from the manual's section 8.2 code with the model's
+ * calibration: adc_T 519888 gives t_fine 128422 and 25.08 C, and adc_P 415148
+ * then gives 100656 Pa. */
+#define REF_ADC_T    519888
+#define REF_ADC_P    415148
+#define REF_TEMP_C   25.08f
+#define REF_PRESS_PA 100656.0f
+
+static void setup_reference(void)
+{
+    setup();
+    bmp280_model_set_temperature(&model, REF_ADC_T);
+    bmp280_model_set_pressure(&model, REF_ADC_P);
+}
+
+TEST(test_model_skip_outputs_placeholders)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BMP280_REG_CTRL_MEAS, 0x01);
+
+    ASSERT_EQ(model.hw.regs[0xF7], 0x80);
+    ASSERT_EQ(model.hw.regs[0xF8], 0x00);
+    ASSERT_EQ(model.hw.regs[0xF9], 0x00);
+    ASSERT_EQ(model.hw.regs[0xFA], 0x80);
+    ASSERT_EQ(model.hw.regs[0xFB], 0x00);
+    ASSERT_EQ(model.hw.regs[0xFC], 0x00);
+}
+
+TEST(test_both_channels_match_the_manual)
+{
+    setup_reference();
+    bmp280_t dev;
+    ASSERT_EQ(bmp280_init(&dev, &model_i2c, &default_cfg), BMP280_OK);
+
+    bmp280_data_t data;
+    ASSERT_EQ(bmp280_read(&dev, &data), BMP280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.5f);
+}
+
+TEST(test_skip_pressure_reads_zero)
+{
+    setup_reference();
+    bmp280_cfg_t cfg = { BMP280_ADDR_LOW, BMP280_OVERSAMPLING_1,
+                         BMP280_OVERSAMPLING_SKIP };
+    bmp280_t dev;
+    ASSERT_EQ(bmp280_init(&dev, &model_i2c, &cfg), BMP280_OK);
+    ASSERT_EQ(model.measure_count, 0);
+
+    bmp280_data_t data;
+    ASSERT_EQ(bmp280_read(&dev, &data), BMP280_OK);
+    ASSERT_NEAR(data.pressure_pa, 0.0f, 0.001f);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+}
+
+TEST(test_skip_temperature_measures_once_in_init)
+{
+    setup_reference();
+    bmp280_cfg_t cfg = { BMP280_ADDR_LOW, BMP280_OVERSAMPLING_SKIP,
+                         BMP280_OVERSAMPLING_2 };
+    bmp280_t dev;
+    ASSERT_EQ(bmp280_init(&dev, &model_i2c, &cfg), BMP280_OK);
+
+    ASSERT_EQ(model.measure_count, 1);
+    /* temperature alone at x1: osrs_t 001, osrs_p 000, mode back at sleep */
+    ASSERT_EQ(model.hw.regs[BMP280_REG_CTRL_MEAS], 0x20);
+}
+
+TEST(test_skip_temperature_reuses_the_one_from_init)
+{
+    setup_reference();
+    bmp280_cfg_t cfg = { BMP280_ADDR_LOW, BMP280_OVERSAMPLING_SKIP,
+                         BMP280_OVERSAMPLING_1 };
+    bmp280_t dev;
+    ASSERT_EQ(bmp280_init(&dev, &model_i2c, &cfg), BMP280_OK);
+
+    /* A later change cannot reach the driver: temperature is not measured */
+    bmp280_model_set_temperature(&model, 400000);
+
+    bmp280_data_t data;
+    ASSERT_EQ(bmp280_read(&dev, &data), BMP280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.5f);
+
+    ASSERT_EQ(bmp280_read(&dev, &data), BMP280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_EQ(model.measure_count, 3);   /* init, then one per read */
+}
+
+TEST(test_skip_both_refused)
+{
+    setup();
+    bmp280_cfg_t cfg = { BMP280_ADDR_LOW, BMP280_OVERSAMPLING_SKIP,
+                         BMP280_OVERSAMPLING_SKIP };
+    bmp280_t dev;
+    ASSERT_EQ(bmp280_init(&dev, &model_i2c, &cfg), BMP280_ERR_PARAM);
+}
+
 TEST_MAIN("bmp280 hardware model")
     RUN(test_init_reads_chip_id);
     RUN(test_init_wrong_chip_id);
@@ -240,4 +340,10 @@ TEST_MAIN("bmp280 hardware model")
     RUN(test_adc_registers_readonly);
     RUN(test_different_temperatures);
     RUN(test_multiple_reads_independent);
+    RUN(test_model_skip_outputs_placeholders);
+    RUN(test_both_channels_match_the_manual);
+    RUN(test_skip_pressure_reads_zero);
+    RUN(test_skip_temperature_measures_once_in_init);
+    RUN(test_skip_temperature_reuses_the_one_from_init);
+    RUN(test_skip_both_refused);
 TEST_MAIN_END()

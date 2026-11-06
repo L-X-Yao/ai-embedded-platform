@@ -39,7 +39,7 @@ typedef struct {
 } bmp280_i2c_t;
 
 typedef enum {
-    BMP280_OVERSAMPLING_SKIP = 0,
+    BMP280_OVERSAMPLING_SKIP = 0,  /* no measurement: see bmp280_read */
     BMP280_OVERSAMPLING_1    = 1,
     BMP280_OVERSAMPLING_2    = 2,
     BMP280_OVERSAMPLING_4    = 3,
@@ -84,11 +84,19 @@ typedef struct {
 #define BMP280_ADDR_HIGH  0x77
 #define BMP280_CHIP_ID    0x58
 
-/** @thread_safe: no @isr_safe: no */
+/** Check the chip ID, read the calibration and set the oversampling.
+ *  0 in osrs_t or osrs_p is SKIP, so set both. Returns BMP280_ERR_PARAM if both
+ *  are SKIP, because nothing would be left to measure. With osrs_t SKIP this
+ *  takes one temperature measurement at x1, because pressure compensation needs
+ *  a temperature, and can then also return BMP280_ERR_TIMEOUT.
+ *  @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_init(bmp280_t *dev, const bmp280_i2c_t *i2c,
                          const bmp280_cfg_t *cfg);
 
-/** @thread_safe: no @isr_safe: no */
+/** One forced measurement of what the oversampling enables. A skipped pressure
+ *  reads 0. A skipped temperature reads the one init measured, and pressure is
+ *  compensated with it.
+ *  @thread_safe: no @isr_safe: no */
 bmp280_err_t bmp280_read(bmp280_t *dev, bmp280_data_t *out);
 
 /** @thread_safe: no @isr_safe: no */
