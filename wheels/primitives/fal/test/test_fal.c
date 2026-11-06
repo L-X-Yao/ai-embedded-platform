@@ -18,9 +18,11 @@ static int mock_init(void)
 }
 
 static int mock_fail_next;
+static int mock_calls;      /* read, write and erase calls that reached us */
 
 static int mock_read(long offset, uint8_t *buf, size_t size)
 {
+    mock_calls++;
     if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memcpy(buf, mock_flash_buf + offset, size);
@@ -29,6 +31,7 @@ static int mock_read(long offset, uint8_t *buf, size_t size)
 
 static int mock_write(long offset, const uint8_t *buf, size_t size)
 {
+    mock_calls++;
     if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     for (size_t i = 0; i < size; i++)
@@ -38,6 +41,7 @@ static int mock_write(long offset, const uint8_t *buf, size_t size)
 
 static int mock_erase(long offset, size_t size)
 {
+    mock_calls++;
     if (mock_fail_next) { mock_fail_next = 0; return -1; }
     if (offset < 0 || (size_t)offset + size > MOCK_FLASH_SIZE) return -1;
     memset(mock_flash_buf + offset, 0xFF, size);
@@ -59,6 +63,21 @@ const struct fal_flash_dev mock_flash_dev = {
 };
 
 /* ---------- tests ---------- */
+
+/* Has to run first: nothing has called fal_init yet. */
+TEST(test_partition_calls_before_init)
+{
+    const struct fal_partition *p = fal_partition_find("config");
+    ASSERT_NOT_NULL(p);
+    uint8_t buf[16] = {0};
+
+    ASSERT_EQ(fal_init_check(), 0);
+    ASSERT_EQ(fal_partition_read(p, 0, buf, sizeof(buf)), FAL_ERR_NOT_READY);
+    ASSERT_EQ(fal_partition_write(p, 0, buf, sizeof(buf)), FAL_ERR_NOT_READY);
+    ASSERT_EQ(fal_partition_erase(p, 0, 4096), FAL_ERR_NOT_READY);
+    ASSERT_EQ(fal_partition_erase_all(p), FAL_ERR_NOT_READY);
+    ASSERT_EQ(mock_calls, 0);
+}
 
 TEST(test_init)
 {
@@ -272,6 +291,7 @@ TEST(test_err_hal)
 /* ---------- main ---------- */
 
 TEST_MAIN("fal")
+    RUN(test_partition_calls_before_init);
     RUN(test_init);
     RUN(test_find_partition);
     RUN(test_find_not_exist);
