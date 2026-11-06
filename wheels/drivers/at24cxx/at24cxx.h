@@ -82,7 +82,7 @@ typedef struct {
     bool (*read_regs16)(void *ctx, uint8_t dev_addr, uint16_t reg,
                         uint8_t *buf, uint16_t len);
 
-    /** Delay in milliseconds (used for write-cycle wait). */
+    /** Delay in milliseconds, required: the write-cycle wait. */
     void (*delay_ms)(void *ctx, uint32_t ms);
 
     void *ctx;

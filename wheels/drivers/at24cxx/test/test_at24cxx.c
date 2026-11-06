@@ -180,6 +180,17 @@ TEST(test_init_null_i2c)
     ASSERT_EQ(at24cxx_init(&dev, NULL, 0x50, AT24CXX_C02), AT24CXX_ERR_PARAM);
 }
 
+/* p.10: "the EEPROM will not respond until the write is complete", and the
+ * driver has no other way to wait. */
+TEST(test_init_null_delay)
+{
+    mock_reset();
+    at24cxx_i2c_t no_delay = i2c_8bit;
+    no_delay.delay_ms = NULL;
+    at24cxx_t dev;
+    ASSERT_EQ(at24cxx_init(&dev, &no_delay, 0x50, AT24CXX_C02), AT24CXX_ERR_PARAM);
+}
+
 TEST(test_init_invalid_model)
 {
     mock_reset();
@@ -436,6 +447,7 @@ TEST_MAIN("at24cxx")
     RUN(test_init_valid);
     RUN(test_init_null_dev);
     RUN(test_init_null_i2c);
+    RUN(test_init_null_delay);
     RUN(test_init_invalid_model);
     RUN(test_init_16bit_missing_callbacks);
     RUN(test_read_single_byte);
