@@ -48,7 +48,7 @@ typedef struct {
 | Code | Meaning |
 |------|---------|
 | `STEPPER_OK` | Success |
-| `STEPPER_ERR_PARAMS` | NULL pointer or zero speed/accel |
+| `STEPPER_ERR_PARAM` | NULL pointer, zero speed/accel, or a `stepper_move_to` distance that does not fit `int32_t` |
 | `STEPPER_ERR_BUSY` | Reserved for future non-blocking mode |
 
 ## Configuration (compile-time)
