@@ -113,6 +113,7 @@ TEST(test_go_triggers_playback)
     drv2605_t dev;
     drv2605_init(&dev, &model_i2c);
 
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 1), DRV2605_OK);
     int before = model.go_count;
     drv2605_err_t err = drv2605_go(&dev);
     ASSERT_EQ(err, DRV2605_OK);
@@ -126,6 +127,7 @@ TEST(test_stop_clears_go)
     drv2605_t dev;
     drv2605_init(&dev, &model_i2c);
 
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 1), DRV2605_OK);
     drv2605_go(&dev);
     ASSERT_TRUE(model.playing);
 
@@ -183,6 +185,215 @@ TEST(test_set_realtime_value)
     ASSERT_EQ(model.hw.regs[DRV2605_REG_RTP], 0x7F);
 }
 
+/* --- the model, from SLOS854D ------------------------------------------ */
+
+/* Table 3, p.35, every register */
+TEST(test_reset_values_follow_table_3)
+{
+    static const uint8_t table3[0x23] = {
+        0xE0, 0x40, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x05, 0x19, 0xFF, 0x19, 0xFF, 0x3E, 0x8C,
+        0x0C, 0x6C, 0x36, 0x93, 0xF5, 0xA0, 0x20, 0x80,
+        0x33, 0x00, 0x00,
+    };
+    setup();
+    for (unsigned reg = 0; reg < sizeof(table3); reg++) {
+        ASSERT_EQ_HEX(model.hw.regs[reg], table3[reg]);
+    }
+}
+
+/* Table 3: MODE bits 5:3 and the library bits 7:5 and 3 are reserved */
+TEST(test_reserved_bits_stay_clear)
+{
+    setup();
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x3F);
+    ASSERT_EQ_HEX(model.hw.regs[DRV2605_REG_MODE], 0x07);
+    hw_model__write_reg(&model.hw, 0x03, 0xFF);
+    ASSERT_EQ_HEX(model.hw.regs[0x03], 0x17);
+}
+
+/* A ready chip in internal trigger mode with one effect queued */
+static void ready_with_an_effect(void)
+{
+    setup();
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x00);
+    hw_model__write_reg(&model.hw, DRV2605_REG_WAVEFORM0, 0x01);
+}
+
+/* p.22: "The GO bit remains high until the playback of the haptic waveform
+ * sequence is complete." */
+TEST(test_go_clears_itself_when_playback_ends)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    ASSERT_EQ(model.hw.regs[DRV2605_REG_GO], 0x01);
+    ASSERT_TRUE(model.playing);
+
+    drv2605_model_end_playback(&model);
+    ASSERT_EQ(model.hw.regs[DRV2605_REG_GO], 0x00);
+    ASSERT_FALSE(model.playing);
+    ASSERT_EQ(model.stop_count, 0);
+}
+
+/* p.22: "Clearing the GO bit during waveform playback cancels the waveform
+ * sequence." */
+TEST(test_clearing_go_cancels)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x00);
+    ASSERT_FALSE(model.playing);
+    ASSERT_EQ(model.stop_count, 1);
+}
+
+TEST(test_go_can_fire_again_after_playback)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    drv2605_model_end_playback(&model);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    ASSERT_EQ(model.go_count, 2);
+    ASSERT_TRUE(model.playing);
+}
+
+/* p.39: the sequencer runs "until the sequencer reaches an identifier value of
+ * zero", and p.16 starts identifiers at 1, so a zero at 0x04 queues nothing */
+TEST(test_go_on_an_empty_sequencer_ends_at_once)
+{
+    setup();
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x00);
+    hw_model__write_reg(&model.hw, DRV2605_REG_WAVEFORM0, 0x00);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    ASSERT_FALSE(model.playing);
+    ASSERT_EQ(model.hw.regs[DRV2605_REG_GO], 0x00);
+}
+
+/* p.37: "0: Internal trigger / Waveforms are fired by setting the GO bit" */
+TEST(test_go_plays_only_in_internal_trigger_mode)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x05);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    ASSERT_FALSE(model.playing);
+}
+
+/* p.21: "the DRV2605L device goes into a low-power state" */
+TEST(test_go_plays_nothing_in_standby)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x40);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    ASSERT_FALSE(model.playing);
+}
+
+/* p.21: "if a waveform is played, it immediately stops when the STANDBY bit is
+ * asserted", and "the device retains register values" */
+TEST(test_standby_stops_playback_and_keeps_registers)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_RTP, 0x55);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x40);
+    ASSERT_FALSE(model.playing);
+    ASSERT_EQ(model.hw.regs[DRV2605_REG_GO], 0x00);
+    ASSERT_EQ(model.hw.regs[DRV2605_REG_RTP], 0x55);
+}
+
+/* p.37: "Any playback operations are immediately interrupted, and all registers
+ * are reset to the default values. The DEV_RESET bit self-clears" */
+TEST(test_dev_reset_is_a_power_cycle)
+{
+    ready_with_an_effect();
+    hw_model__write_reg(&model.hw, DRV2605_REG_RTP, 0x55);
+    hw_model__write_reg(&model.hw, DRV2605_REG_GO, 0x01);
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x80);
+    ASSERT_FALSE(model.playing);
+    ASSERT_EQ_HEX(model.hw.regs[DRV2605_REG_MODE], 0x40);
+    ASSERT_EQ_HEX(model.hw.regs[DRV2605_REG_RTP], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[DRV2605_REG_GO], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0x16], 0x3E);
+}
+
+/* p.38: the engine drives RTP_INPUT "when MODE[2:0] = 5 (RTP mode)" */
+TEST(test_rtp_drives_only_in_rtp_mode)
+{
+    setup();
+    ASSERT_FALSE(drv2605_model_rtp_driving(&model));
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x45);
+    ASSERT_FALSE(drv2605_model_rtp_driving(&model));  /* still in standby */
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x05);
+    ASSERT_TRUE(drv2605_model_rtp_driving(&model));
+    hw_model__write_reg(&model.hw, DRV2605_REG_MODE, 0x00);
+    ASSERT_FALSE(drv2605_model_rtp_driving(&model));
+}
+
+/* --- the driver on it --------------------------------------------------- */
+
+TEST(test_driver_plays_again_after_the_chip_finished)
+{
+    setup();
+    drv2605_t dev;
+    ASSERT_EQ(drv2605_init(&dev, &model_i2c), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 47), DRV2605_OK);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    ASSERT_TRUE(model.playing);
+    drv2605_model_end_playback(&model);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    ASSERT_TRUE(model.playing);
+    ASSERT_EQ(model.go_count, 2);
+}
+
+/* A stop after the end has nothing to cancel, and must not fail */
+TEST(test_driver_stop_after_the_chip_finished)
+{
+    setup();
+    drv2605_t dev;
+    ASSERT_EQ(drv2605_init(&dev, &model_i2c), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 47), DRV2605_OK);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    drv2605_model_end_playback(&model);
+    ASSERT_EQ(drv2605_stop(&dev), DRV2605_OK);
+    ASSERT_EQ(model.stop_count, 0);
+}
+
+/* p.33, p.38: RTP drives the motor until the mode changes */
+TEST(test_driver_rtp_runs_until_stop)
+{
+    setup();
+    drv2605_t dev;
+    ASSERT_EQ(drv2605_init(&dev, &model_i2c), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_realtime_value(&dev, 0x40), DRV2605_OK);
+    ASSERT_TRUE(drv2605_model_rtp_driving(&model));
+    ASSERT_EQ(drv2605_stop(&dev), DRV2605_OK);
+    ASSERT_FALSE(drv2605_model_rtp_driving(&model));
+}
+
+/* drv2605_go after RTP has to leave RTP mode, or GO plays nothing */
+TEST(test_driver_go_after_rtp_plays)
+{
+    setup();
+    drv2605_t dev;
+    ASSERT_EQ(drv2605_init(&dev, &model_i2c), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 47), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_realtime_value(&dev, 0x40), DRV2605_OK);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    ASSERT_TRUE(model.playing);
+    ASSERT_FALSE(drv2605_model_rtp_driving(&model));
+}
+
+/* p.59 step 3: "Write the MODE register (address 0x01) to value 0x00 to remove
+ * the device from standby mode", so a play right after init works */
+TEST(test_driver_plays_straight_after_init)
+{
+    setup();
+    drv2605_t dev;
+    ASSERT_EQ(drv2605_init(&dev, &model_i2c), DRV2605_OK);
+    ASSERT_EQ(drv2605_set_waveform(&dev, 0, 1), DRV2605_OK);
+    ASSERT_EQ(drv2605_go(&dev), DRV2605_OK);
+    ASSERT_TRUE(model.playing);
+}
+
 TEST_MAIN("drv2605 hardware model")
     RUN(test_init_verifies_device_id);
     RUN(test_init_rejects_wrong_device_id);
@@ -197,4 +408,20 @@ TEST_MAIN("drv2605 hardware model")
     RUN(test_set_actuator_lra);
     RUN(test_set_actuator_erm);
     RUN(test_set_realtime_value);
+    RUN(test_reset_values_follow_table_3);
+    RUN(test_reserved_bits_stay_clear);
+    RUN(test_go_clears_itself_when_playback_ends);
+    RUN(test_clearing_go_cancels);
+    RUN(test_go_can_fire_again_after_playback);
+    RUN(test_go_on_an_empty_sequencer_ends_at_once);
+    RUN(test_go_plays_only_in_internal_trigger_mode);
+    RUN(test_go_plays_nothing_in_standby);
+    RUN(test_standby_stops_playback_and_keeps_registers);
+    RUN(test_dev_reset_is_a_power_cycle);
+    RUN(test_rtp_drives_only_in_rtp_mode);
+    RUN(test_driver_plays_again_after_the_chip_finished);
+    RUN(test_driver_stop_after_the_chip_finished);
+    RUN(test_driver_rtp_runs_until_stop);
+    RUN(test_driver_go_after_rtp_plays);
+    RUN(test_driver_plays_straight_after_init);
 TEST_MAIN_END()
