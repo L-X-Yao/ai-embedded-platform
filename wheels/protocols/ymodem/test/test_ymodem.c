@@ -751,6 +751,34 @@ TEST(test_block0_name_without_terminator_refused)
     assert_block0_refused(frame);
 }
 
+static uint32_t size_from_header(const char *text)
+{
+    ymodem_t ym;
+    uint8_t frame[133];
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+    build_named_block0(frame, 4, text);
+    feed_bytes(&ym, frame, 133);
+    return ymodem_get_file_size(&ym);
+}
+
+TEST(test_block0_size_at_32_bit_limit)
+{
+    ASSERT_EQ(size_from_header("4294967294"), 4294967294u);
+    ASSERT_EQ(size_from_header("4294967295"), UINT32_MAX);
+}
+
+TEST(test_block0_size_past_32_bits_saturates)
+{
+    /* 2^32 and its neighbours must not wrap to a size of 0 to 3 bytes. */
+    ASSERT_EQ(size_from_header("4294967296"), UINT32_MAX);
+    ASSERT_EQ(size_from_header("4294967299"), UINT32_MAX);
+    ASSERT_EQ(size_from_header("4294967300"), UINT32_MAX);
+    ASSERT_EQ(size_from_header("99999999999"), UINT32_MAX);
+    ASSERT_EQ(size_from_header("18446744073709551616"), UINT32_MAX);
+}
+
 TEST_MAIN("ymodem")
     RUN(test_init_null_params);
     RUN(test_init_ok);
@@ -776,4 +804,6 @@ TEST_MAIN("ymodem")
     RUN(test_block0_longest_name_fits);
     RUN(test_block0_name_too_long_refused);
     RUN(test_block0_name_without_terminator_refused);
+    RUN(test_block0_size_at_32_bit_limit);
+    RUN(test_block0_size_past_32_bits_saturates);
 TEST_MAIN_END()
