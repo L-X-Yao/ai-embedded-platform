@@ -7,8 +7,12 @@
  * Deps:      i2c_hal (injected)
  * Instances: multi
  *
- * Compensation algorithm from Bosch BME280 datasheet (BST-BME280-DS002-15),
- * Section 8.1 (integer 32-bit) for temp/pressure, Section 4.2.3 for humidity.
+ * Compensation from the Bosch BME280 datasheet (BST-BME280-DS001-24): the
+ * Section 4.2.3 fixed-point code for temperature and humidity, widened to 64
+ * bits, and the Section 8.1 double-precision code for pressure. The manual
+ * recommends the 4.2.3 64-bit integer code for pressure on an MCU (Table 15:
+ * about 1400 clocks against 5400 on a Cortex-M3 with no FPU), but that code
+ * overflows on calibration data outside the real range, and doubles do not.
  */
 
 #include "bme280.h"
