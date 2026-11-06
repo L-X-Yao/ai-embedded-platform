@@ -13,7 +13,7 @@
  *   0xFD PRODUCT_ID, 0xFE MANUFACTURER_ID, 0xFF REVISION_ID
  *
  * VBUS:   16-bit unsigned, FSR = 32V,     LSB = 32/65536 V
- * VSENSE: 16-bit signed,   FSR = +/-100mV, LSB = 100/32768 mV
+ * VSENSE: 16-bit unsigned, FSR = 100mV,   LSB = 100/65536 mV (POR default)
  */
 
 #include "pac1952.h"
