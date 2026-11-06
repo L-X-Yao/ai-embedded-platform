@@ -13,6 +13,7 @@
 
 #include "mcp23017.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---- Bank=0 register addresses ---- */
 #define REG_IODIRA      0x00
@@ -55,18 +56,9 @@ static bool valid_port(mcp23017_port_t port)
     return port == MCP23017_PORT_A || port == MCP23017_PORT_B;
 }
 
-mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
-                             uint8_t dev_addr)
+/* The steps of init that talk to the chip */
+static mcp23017_err_t bring_up(const mcp23017_t *dev)
 {
-    if (!dev || !i2c || !i2c->write_reg || !i2c->read_regs)
-        return MCP23017_ERR_PARAM;
-
-    if (dev_addr < 0x20 || dev_addr > 0x27)
-        return MCP23017_ERR_PARAM;
-
-    dev->i2c      = i2c;
-    dev->dev_addr = dev_addr;
-
     /* Write the writable registers back to their POR defaults:
      * IODIR=0xFF (all input), all others=0x00. INTF and INTCAP are read-only. */
     for (uint8_t reg = 0; reg < REG_RESET_COUNT; reg++)
@@ -89,6 +81,31 @@ mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
         return MCP23017_ERR_I2C;
 
     return MCP23017_OK;
+}
+
+mcp23017_err_t mcp23017_init(mcp23017_t *dev, const mcp23017_i2c_t *i2c,
+                             uint8_t dev_addr)
+{
+    if (!dev)
+        return MCP23017_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !i2c->write_reg || !i2c->read_regs)
+        return MCP23017_ERR_PARAM;
+
+    if (dev_addr < 0x20 || dev_addr > 0x27)
+        return MCP23017_ERR_PARAM;
+
+    dev->i2c      = i2c;
+    dev->dev_addr = dev_addr;
+
+    mcp23017_err_t err = bring_up(dev);
+    if (err != MCP23017_OK)
+        dev->i2c = NULL;
+    return err;
 }
 
 mcp23017_err_t mcp23017_set_direction(mcp23017_t *dev, mcp23017_port_t port,

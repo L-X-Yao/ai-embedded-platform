@@ -8,6 +8,7 @@
  * Instances: multi
  */
 #include "max6675.h"
+#include <string.h>
 
 #define MAX6675_OPEN_BIT  (1u << 2)
 #define MAX6675_TEMP_MASK 0x7FF8u
@@ -25,7 +26,14 @@ static uint16_t spi_read16(const max6675_spi_t *spi)
 
 max6675_err_t max6675_init(max6675_t *dev, const max6675_spi_t *spi)
 {
-    if (!dev || !spi)
+    if (!dev)
+        return MAX6675_ERR_PARAM;
+
+    /* dev->spi stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!spi)
         return MAX6675_ERR_PARAM;
     if (!spi->cs_low || !spi->cs_high || !spi->xfer)
         return MAX6675_ERR_PARAM;
@@ -35,7 +43,7 @@ max6675_err_t max6675_init(max6675_t *dev, const max6675_spi_t *spi)
 
 max6675_err_t max6675_read_raw(max6675_t *dev, uint16_t *raw)
 {
-    if (!dev || !raw)
+    if (!dev || !dev->spi || !raw)
         return MAX6675_ERR_PARAM;
     *raw = spi_read16(dev->spi);
     return MAX6675_OK;
@@ -43,7 +51,7 @@ max6675_err_t max6675_read_raw(max6675_t *dev, uint16_t *raw)
 
 max6675_err_t max6675_read(max6675_t *dev, float *temp_c)
 {
-    if (!dev || !temp_c)
+    if (!dev || !dev->spi || !temp_c)
         return MAX6675_ERR_PARAM;
 
     uint16_t raw = spi_read16(dev->spi);

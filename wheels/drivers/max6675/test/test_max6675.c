@@ -145,6 +145,38 @@ TEST(test_read_raw_null)
     ASSERT_EQ(max6675_read_raw(&dev, NULL), MAX6675_ERR_PARAM);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(max6675_t *d)
+{
+    float temp = 0.0f;
+    uint16_t raw = 0;
+    ASSERT_EQ(max6675_read(d, &temp), MAX6675_ERR_PARAM);
+    ASSERT_EQ(max6675_read_raw(d, &raw), MAX6675_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static max6675_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    max6675_t d;
+    max6675_spi_t zeroed;
+    memset(&zeroed, 0, sizeof(zeroed));
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max6675_init(&d, NULL), MAX6675_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max6675_init(&d, &zeroed), MAX6675_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max6675")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -161,4 +193,6 @@ TEST_MAIN("max6675")
     RUN(test_read_null_dev);
     RUN(test_read_null_out);
     RUN(test_read_raw_null);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

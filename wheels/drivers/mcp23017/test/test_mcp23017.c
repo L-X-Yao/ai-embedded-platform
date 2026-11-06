@@ -365,6 +365,44 @@ TEST(test_interrupt_mask_port_b)
     ASSERT_EQ(mock_regs[REG_GPINTENB], 0x42);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(mcp23017_t *d)
+{
+    uint8_t value = 0;
+    bool level = false;
+    ASSERT_EQ(mcp23017_set_direction(d, MCP23017_PORT_A, 0), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_set_pullup(d, MCP23017_PORT_A, 0), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_write_port(d, MCP23017_PORT_A, 0), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_port(d, MCP23017_PORT_A, &value), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_write_pin(d, MCP23017_PORT_A, 0, true), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_pin(d, MCP23017_PORT_A, 0, &level), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_set_interrupt(d, MCP23017_PORT_A, 0), MCP23017_ERR_PARAM);
+    ASSERT_EQ(mcp23017_read_interrupt_flag(d, MCP23017_PORT_A, &value),
+              MCP23017_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_failed_init)
+{
+    mcp23017_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp23017_init(&d, NULL, 0x20), MCP23017_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(mcp23017_init(&d, &mock_i2c, 0x28), MCP23017_ERR_PARAM);
+    assert_device_refused(&d);
+
+    /* IODIR was never written back, and the bus is fine again */
+    mock_fail_at = 0;
+    ASSERT_EQ(mcp23017_init(&d, &mock_i2c, 0x20), MCP23017_ERR_I2C);
+    mock_reset();
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("mcp23017")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -398,4 +436,5 @@ TEST_MAIN("mcp23017")
     RUN(test_read_port_a);
     RUN(test_interrupt_flag_port_a);
     RUN(test_interrupt_mask_port_b);
+    RUN(test_device_refused_after_failed_init);
 TEST_MAIN_END()

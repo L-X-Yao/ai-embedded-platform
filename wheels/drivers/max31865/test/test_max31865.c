@@ -475,6 +475,47 @@ TEST(test_code_one_is_a_result)
     ASSERT_EQ(raw, 1);
 }
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(max31865_t *d)
+{
+    float temp = 0.0f;
+    uint16_t raw = 0;
+    uint8_t fault = 0;
+    ASSERT_EQ(max31865_read_temperature(d, &temp), MAX31865_ERR_PARAM);
+    ASSERT_EQ(max31865_read_rtd_raw(d, &raw), MAX31865_ERR_PARAM);
+    ASSERT_EQ(max31865_read_fault(d, &fault), MAX31865_ERR_PARAM);
+    ASSERT_EQ(max31865_clear_fault(d), MAX31865_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static max31865_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    max31865_t d;
+    max31865_spi_t zeroed;
+    max31865_cfg_t no_ref = pt100_cfg;
+    memset(&zeroed, 0, sizeof(zeroed));
+    no_ref.r_ref = 0.0f;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max31865_init(&d, NULL, &pt100_cfg), MAX31865_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max31865_init(&d, &zeroed, &pt100_cfg), MAX31865_ERR_SPI);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(max31865_init(&d, &mock_spi, &no_ref), MAX31865_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("max31865")
     RUN(test_init_ok);
     RUN(test_init_config_3wire);
@@ -498,4 +539,6 @@ TEST_MAIN("max31865")
     RUN(test_read_before_the_first_conversion);
     RUN(test_code_zero_with_the_flag_is_a_fault);
     RUN(test_code_one_is_a_result);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
