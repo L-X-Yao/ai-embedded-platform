@@ -7,7 +7,7 @@
 #
 #   build       — run BUILD_CMD then optional COPY_CMD + size check
 #   flash       — openocd write_image + verify_image at FLASH_ADDR
-#   check [sec] — capture serial via debug/gd32f4xx/serial_capture.ps1, verdict
+#   check [sec] — capture serial via debug/cortex_m/gd32f4xx/serial_capture.ps1, verdict
 #                  by FAIL_PATTERNS / PASS_PATTERNS in conf
 #   all         — build + flash + check (default)
 #
@@ -99,7 +99,7 @@ PASS_PATTERNS_INFO=()
 # Anchor for relative paths in conf (e.g. SERIAL_CAPTURE_SCRIPT defaults)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONF_DIR="$(cd "$(dirname "$CONF")" && pwd)"
-SERIAL_CAPTURE_SCRIPT="$SCRIPT_DIR/../../debug/gd32f4xx/serial_capture.ps1"
+SERIAL_CAPTURE_SCRIPT="$SCRIPT_DIR/../../debug/cortex_m/gd32f4xx/serial_capture.ps1"
 
 # Validate CONF is within the repo to prevent sourcing arbitrary files
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
