@@ -107,6 +107,8 @@ static bool bme_write_reg(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val)
     (void)ctx; (void)dev_addr;
     bme_op_count++;
     bme_regs[reg] = val;
+    if (reg == 0xF4)
+        bme_regs[reg] &= 0xFC;  /* forced mode ends at once, back to sleep */
     return true;
 }
 
