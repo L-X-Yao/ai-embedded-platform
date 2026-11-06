@@ -123,7 +123,8 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
 
     /* If total steps < 2*n_accel, it's a short move (triangle profile) */
     uint32_t decel_start;
-    if (total <= 2 * n_accel) {
+    bool triangle = (total <= 2 * n_accel);
+    if (triangle) {
         /* triangle: accel for half, decel for half */
         n_accel = total / 2;
         decel_start = total - n_accel;
@@ -168,7 +169,8 @@ stepper_err_t stepper_move(stepper_t *s, int32_t steps)
             }
         } else {
             s->state = STEPPER_STATE_CRUISE;
-            delay_q = min_delay_q;
+            /* An odd triangle has one step here: it holds the peak. */
+            if (!triangle) delay_q = min_delay_q;
         }
 
         uint32_t delay = (delay_q + (1U << (RAMP_Q - 1U))) >> RAMP_Q;
