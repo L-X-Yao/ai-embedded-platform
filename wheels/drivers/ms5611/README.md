@@ -21,7 +21,9 @@ MS5611-01BA03 datasheet.
 
 ## Dependencies
 
-I2C HAL (injected via `ms5611_i2c_t` callbacks). No other dependencies.
+I2C HAL (injected via `ms5611_i2c_t` callbacks). `read_regs`, `delay_ms` and
+`write_raw` are required. `write_reg` is no longer used and may be NULL. No
+other dependencies.
 
 ## API
 
@@ -48,14 +50,14 @@ None. OSR and I2C address are runtime-configurable via `ms5611_cfg_t`.
 Checked on 2026-11-06 against MS5611-01BA03, 06/2017. It prints no document number or revision beyond this, and AN520, which holds the CRC code, is not in the manual set. Not run on hardware.
 
 - **Matched:** Addresses, commands, reset and OSR waits, PROM and ADC byte order, first and second order compensation, units.
-- **Fixed:** The PROM CRC was read from the top nibble of word 7, so a real part would fail `ms5611_init` with `MS5611_ERR_CRC`. It now comes from DB3-DB0 (Figure 16), and the low byte of word 7 is cleared for the calculation. The mask and the CRC-4 loop were checked against ArduPilot's `AP_Baro_MS5611.cpp` and `crc_crc4`, and the test vector is the PROM in its `SIM_MS5611.h`. `ms5611_init` refuses a HAL without `delay_ms`.
-- **Still open:** `write_reg(cmd, 0)` puts a 0x00 data byte after every Reset and Convert command, where Figure 13 ends the message at the command. 0x00 is ADC Read, and an ADC read during conversion gives 0 and spoils the result, so expect wrong readings on hardware until the HAL gains a one-byte raw write. No test builds the model, and neither it nor the mock gives 0 for a repeated or early ADC read. An all-zero PROM passes the CRC, so a bus that reads zeros gets through init; ArduPilot refuses that case. No SPI, no bus recovery, no access to the serial code, one OSR for both conversions, and `ms5611_read` blocks through both.
+- **Fixed:** The PROM CRC was read from the top nibble of word 7, so a real part would fail `ms5611_init` with `MS5611_ERR_CRC`. It now comes from DB3-DB0 (Figure 16), and the low byte of word 7 is cleared for the calculation. The mask and the CRC-4 loop were checked against ArduPilot's `AP_Baro_MS5611.cpp` and `crc_crc4`, and the test vector is the PROM in its `SIM_MS5611.h`. `ms5611_init` refuses a HAL without `delay_ms`. `write_reg(cmd, 0)` put a 0x00 data byte after every Reset and Convert command, where Figures 10 and 13 end the message at the command. 0x00 is ADC Read, and an ADC read during conversion gives 0 and spoils the result. Commands now go out as one byte through the new `write_raw` callback, and `ms5611_init` returns `MS5611_ERR_PARAM` without it. An all-zero PROM passes the CRC, so a bus that reads zeros got through init. `ms5611_init` now refuses it with `MS5611_ERR_CRC`, as ArduPilot does. The model discarded the data byte and no test built it. `test_hw_model_ms5611.c` now builds it and reads the p8 example through the driver. None of these fixes has run on hardware.
+- **Still open:** The model gives 0 for an early ADC read but not for a repeated one, and the mock gives 0 for neither. No SPI, no bus recovery, no access to the serial code, one OSR for both conversions, and `ms5611_read` blocks through both.
 - **Suspected:** `read_adc` accepts 0, the only failure signal the part gives. `read_regs` may join command and data with a repeated START, where Figures 11, 12, 14 and 15 show two messages.
 
 ## Known issues
 
-- Command-based protocol uses write_reg/read_regs as transport; actual
-  MS5611 protocol is different from standard register I2C.
+- Command-based protocol uses read_regs as the transport for PROM and ADC
+  reads; actual MS5611 protocol is different from standard register I2C.
 - Only I2C is implemented (MS5611 also supports SPI).
 
 ## How to test
