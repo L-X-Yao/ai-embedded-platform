@@ -70,6 +70,75 @@ static void setup(void)
     ina3221_model_init(&model);
 }
 
+static uint16_t reg_read(uint8_t reg)
+{
+    uint8_t b[2] = {0, 0};
+    ina3221_model_i2c_read_regs(&model, 0x40, reg, b, 2);
+    return (uint16_t)((uint16_t)b[0] << 8 | b[1]);
+}
+
+static void reg_write(uint8_t reg, uint16_t val)
+{
+    uint8_t b[2] = {(uint8_t)(val >> 8), (uint8_t)(val & 0xFF)};
+    ina3221_model_i2c_write_regs(&model, 0x40, reg, b, 2);
+}
+
+/* p.24 Table 8-1, the POWER-ON RESET column */
+static const struct { uint8_t reg; uint16_t por; } por_table[] = {
+    { 0x00, 0x7127 },                                        /* Configuration */
+    { 0x01, 0x0000 }, { 0x02, 0x0000 }, { 0x03, 0x0000 },    /* shunt, bus */
+    { 0x04, 0x0000 }, { 0x05, 0x0000 }, { 0x06, 0x0000 },
+    { 0x07, 0x7FF8 }, { 0x08, 0x7FF8 }, { 0x09, 0x7FF8 },    /* critical, warning */
+    { 0x0A, 0x7FF8 }, { 0x0B, 0x7FF8 }, { 0x0C, 0x7FF8 },
+    { 0x0D, 0x0000 },                                        /* Shunt-Voltage Sum */
+    { 0x0E, 0x7FFE },                                        /* Sum Limit */
+    { 0x0F, 0x0002 },                                        /* Mask/Enable */
+    { 0x10, 0x2710 }, { 0x11, 0x2328 },                      /* Power-Valid */
+    { 0xFE, 0x5449 }, { 0xFF, 0x3220 },                      /* IDs */
+};
+
+TEST(test_por_value_of_every_register)
+{
+    setup();
+    for (size_t i = 0; i < sizeof(por_table) / sizeof(por_table[0]); i++)
+        ASSERT_EQ_HEX(reg_read(por_table[i].reg), por_table[i].por);
+}
+
+/* p.24 Table 8-1: Shunt-Voltage Sum has TYPE R */
+TEST(test_shunt_voltage_sum_is_read_only)
+{
+    setup();
+    reg_write(0x0D, 0x1234);
+    ASSERT_EQ_HEX(reg_read(0x0D), 0x0000);
+}
+
+/* p.26 "Set this bit = 1 to generate a system reset that is the same as a
+ * power-on reset (POR). This bit resets all registers to default values
+ * and self-clears." */
+TEST(test_rst_restores_por_and_self_clears)
+{
+    setup();
+    ina3221_model_inject_shunt(&model, 0, 400.0f);
+    ina3221_model_inject_bus(&model, 2, 3200.0f);
+    reg_write(0x07, 0x1000);
+    reg_write(0x0E, 0x1000);
+    reg_write(0x0F, 0x1000);
+    reg_write(0x10, 0x1000);
+
+    reg_write(0x00, 0xF127);
+
+    for (size_t i = 0; i < sizeof(por_table) / sizeof(por_table[0]); i++)
+        ASSERT_EQ_HEX(reg_read(por_table[i].reg), por_table[i].por);
+}
+
+/* Without RST the Configuration write stands. */
+TEST(test_config_write_without_rst_is_kept)
+{
+    setup();
+    reg_write(0x00, 0x4127);
+    ASSERT_EQ_HEX(reg_read(0x00), 0x4127);
+}
+
 /* ---------- init tests ---------- */
 
 TEST(test_init_success)
@@ -395,6 +464,10 @@ TEST(test_read_all_null_out_hw)
 }
 
 TEST_MAIN("ina3221 hardware model")
+    RUN(test_por_value_of_every_register);
+    RUN(test_shunt_voltage_sum_is_read_only);
+    RUN(test_rst_restores_por_and_self_clears);
+    RUN(test_config_write_without_rst_is_kept);
     RUN(test_init_success);
     RUN(test_init_verifies_manufacturer_id);
     RUN(test_init_verifies_die_id);
