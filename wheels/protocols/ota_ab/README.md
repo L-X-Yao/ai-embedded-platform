@@ -102,7 +102,7 @@ IDLE ──[mark_pending]──→ PENDING ──[boot_event]──→ SUCCESS (
 ## API review
 
 - **Date**: 2026-04-28
-- **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable.
+- **Key decisions**: Flash HAL injection (erase/write/read callbacks); layout struct parametrizes all addresses (no hardcoded sectors); CRC32 bitwise (no table, saves 1KB RAM); boot_event called by bootloader, confirm called by app; max_boot_count configurable, 1 to 254.
 
 ## Responsible human
 

@@ -69,7 +69,8 @@ No compile-time configuration. All buffer sizes are caller-provided.
 
 ## Known issues
 
-None.
+- `pb_decode_field` returns `PB_ERR_MALFORMED` for fields above 255, which `field_num`
+  cannot hold, so a message using one cannot be read past that field.
 
 ## How to test
 

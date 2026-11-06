@@ -29,7 +29,7 @@ None.
 /* Error codes */
 typedef enum {
     YMODEM_OK, YMODEM_ERR_PARAMS, YMODEM_ERR_CRC, YMODEM_ERR_SEQ,
-    YMODEM_ERR_CANCEL, YMODEM_ERR_WRITE, YMODEM_DONE,
+    YMODEM_ERR_CANCEL, YMODEM_ERR_WRITE, YMODEM_ERR_OVERFLOW, YMODEM_DONE,
 } ymodem_err_t;
 
 /* IO callbacks (caller provides) */
@@ -87,6 +87,7 @@ per YMODEM spec.
 ## Known issues
 
 - Receiver-only. Sender mode is not implemented.
+- A file name of 64 bytes or more ends the transfer with CAN CAN and `YMODEM_ERR_OVERFLOW`.
 - Timeout detection is the caller's responsibility (the wheel is passive).
 - Filename field is capped at 63 characters.
 

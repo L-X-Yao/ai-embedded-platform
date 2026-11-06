@@ -62,8 +62,8 @@ No compile-time configuration needed.
 
 ## Known issues
 
-- Decode uses a 1500-byte stack buffer for de-stuffing. On very constrained targets,
-  this may need to be reduced or made configurable.
+- Decode reads the frame twice instead of buffering it, so `src` and `payload_buf`
+  must not overlap.
 - Only supports standard HDLC framing with address=0xFF and control=0x03.
 - Address/control field compression (RFC 1661) is not implemented.
 - ACCM (async control character map) is not configurable -- all bytes < 0x20 are escaped.
