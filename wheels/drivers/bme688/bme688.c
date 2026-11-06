@@ -212,24 +212,9 @@ static uint32_t compensate_gas(uint16_t adc_gas, uint8_t gas_range)
 
 /* --- public API --- */
 
-bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
-                         const bme688_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static bme688_err_t bring_up(bme688_t *dev, const bme688_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-        return BME688_ERR_PARAM;
-    if (!i2c->write_reg || !i2c->read_regs)
-        return BME688_ERR_PARAM;
-    if (cfg->osrs_t > 5 || cfg->osrs_p > 5 || cfg->osrs_h > 5)
-        return BME688_ERR_PARAM;
-    if (cfg->filter > 7)
-        return BME688_ERR_PARAM;
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-    dev->cfg.gas_heater_dur_ms = 0;  /* set when the heater is configured */
-    dev->t_fine = T_FINE_25C;  /* heater ambient until the first read */
-
     /* verify chip ID */
     uint8_t id = 0;
     if (!read_regs(dev, REG_CHIP_ID, &id, 1))
@@ -264,6 +249,39 @@ bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
         if (err != BME688_OK)
             return err;
     }
+    return BME688_OK;
+}
+
+bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
+                         const bme688_cfg_t *cfg)
+{
+    if (!dev)
+        return BME688_ERR_PARAM;
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it, whose calibration was never read */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+        return BME688_ERR_PARAM;
+    if (!i2c->write_reg || !i2c->read_regs)
+        return BME688_ERR_PARAM;
+    if (cfg->osrs_t > 5 || cfg->osrs_p > 5 || cfg->osrs_h > 5)
+        return BME688_ERR_PARAM;
+    if (cfg->filter > 7)
+        return BME688_ERR_PARAM;
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+    dev->cfg.gas_heater_dur_ms = 0;  /* set when the heater is configured */
+    dev->t_fine = T_FINE_25C;  /* heater ambient until the first read */
+
+    bme688_err_t err = bring_up(dev, cfg);
+    if (err != BME688_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
 
     INVARIANT(dev->i2c != NULL);
     return BME688_OK;
@@ -271,7 +289,7 @@ bme688_err_t bme688_init(bme688_t *dev, const bme688_i2c_t *i2c,
 
 bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
         return BME688_ERR_PARAM;
 
     /* read current oversampling settings */
@@ -367,7 +385,7 @@ bme688_err_t bme688_read(bme688_t *dev, bme688_data_t *out)
 bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
                                    uint16_t dur_ms)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BME688_ERR_PARAM;
 
     /* heater resistance register value, integer code from the manual.
@@ -423,7 +441,7 @@ bme688_err_t bme688_set_gas_heater(bme688_t *dev, uint16_t temp_c,
 
 bme688_err_t bme688_reset(bme688_t *dev)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
         return BME688_ERR_PARAM;
     if (!write_reg(dev, REG_RESET, RESET_CMD))
         return BME688_ERR_HAL;

@@ -938,6 +938,50 @@ TEST(test_humidity_stays_defined_at_full_scale)
     ASSERT_TRUE(data.humidity_pct >= 0.0f && data.humidity_pct <= 100.0f);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(void)
+{
+    bme688_data_t data;
+    plant_data(415148, 500000, 25000, 300, 3, true);
+    ASSERT_EQ(bme688_read(&dev, &data), BME688_ERR_PARAM);
+    ASSERT_EQ(bme688_set_gas_heater(&dev, 320, 150), BME688_ERR_PARAM);
+    ASSERT_EQ(bme688_reset(&dev), BME688_ERR_PARAM);
+}
+
+/* 0x60 is a BME280: it answers, but this calibration was never read */
+TEST(test_device_refused_after_wrong_id)
+{
+    mock_reset();
+    mock_regs[0xD0] = 0x60;
+    ASSERT_EQ(bme688_init(&dev, &mock_i2c, &default_cfg), BME688_ERR_ID);
+    assert_device_refused();
+}
+
+TEST(test_device_refused_after_failed_calibration_read)
+{
+    mock_reset();
+    mock_fail_at = 1;  /* after the ID read */
+    ASSERT_EQ(bme688_init(&dev, &mock_i2c, &default_cfg), BME688_ERR_HAL);
+    assert_device_refused();
+}
+
+/* Refused before the chip, so dev holds whatever it held */
+TEST(test_device_refused_after_rejected_init)
+{
+    bme688_cfg_t bad = default_cfg;
+    mock_reset();
+
+    memset(&dev, 0xA5, sizeof(dev));
+    ASSERT_EQ(bme688_init(&dev, NULL, &default_cfg), BME688_ERR_PARAM);
+    assert_device_refused();
+
+    memset(&dev, 0xA5, sizeof(dev));
+    bad.filter = 8;
+    ASSERT_EQ(bme688_init(&dev, &mock_i2c, &bad), BME688_ERR_PARAM);
+    assert_device_refused();
+}
+
 TEST_MAIN("bme688")
     RUN(test_init_null);
     RUN(test_init_null_callbacks);
@@ -993,4 +1037,7 @@ TEST_MAIN("bme688")
     RUN(test_tiny_divisor_reads_zero);
     RUN(test_negative_divisor_reads_zero);
     RUN(test_humidity_stays_defined_at_full_scale);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_failed_calibration_read);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
