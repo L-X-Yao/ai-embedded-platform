@@ -216,16 +216,16 @@ if $MERGE_ALL; then
         fi
 
         echo -e "  ${CYAN}MERGE${NC} $b  ($commits commits)"
-        merge_output=$(git merge --squash "$b" 2>&1)
-        merge_rc=$?
+        merge_rc=0
+        merge_output=$(git merge --squash "$b" 2>&1) || merge_rc=$?
         if [[ $merge_rc -ne 0 ]] && echo "$merge_output" | grep -q "untracked working tree files would be overwritten"; then
             # Scaffold files on main block the merge — remove them and retry
             echo "$merge_output" | grep $'^\t' | sed 's/^\t//' | while IFS= read -r f; do
                 [[ -f "$REPO_ROOT/$f" ]] && rm -f "$REPO_ROOT/$f"
             done
             echo -e "  ${YELLOW}  RETRY${NC}  removed untracked scaffold files blocking merge"
-            merge_output=$(git merge --squash "$b" 2>&1)
-            merge_rc=$?
+            merge_rc=0
+            merge_output=$(git merge --squash "$b" 2>&1) || merge_rc=$?
         fi
         if [[ $merge_rc -eq 0 ]]; then
             summary=$(git log main.."$b" --oneline | head -1 | sed 's/^[a-f0-9]* //')
@@ -242,7 +242,9 @@ if $MERGE_ALL; then
             fi
         else
             echo -e "  ${RED}FAIL${NC}  $b  (merge conflict — resolve manually)"
-            git merge --abort 2>/dev/null || echo -e "  ${YELLOW}  merge --abort also failed — resolve working tree manually${NC}"
+            echo "$merge_output" | tail -3 | sed 's/^/    /'
+            # A squash leaves no MERGE_HEAD, so git merge --abort cannot undo it
+            git reset --merge 2>/dev/null || echo -e "  ${YELLOW}  reset --merge also failed — resolve working tree manually${NC}"
             FAILED=$((FAILED + 1))
         fi
     done
