@@ -95,12 +95,14 @@ static void round_trip(fuzz_input_t *in) {
 
     int count = 0;
     int depth = 0;
+    int good_depth = 0;
     size_t good = 0;
     while (count < MAX_TOKENS && in->left > 0) {
         bencode_err_t err = encode_one(&enc, &sent[count], stack, &depth, in);
         if (bencode_encoder_len(&enc) > capacity) __builtin_trap();
         if (err != BENCODE_OK) break;
         good = bencode_encoder_len(&enc);
+        good_depth = depth;
         count++;
     }
 
@@ -111,8 +113,10 @@ static void round_trip(fuzz_input_t *in) {
         if (bencode_decode_next(&dec, &got) != BENCODE_OK) __builtin_trap();
         check_token(&sent[i], &got);
     }
+    // Encoding can stop with containers open: that input is cut short.
     bencode_token_t last;
-    if (bencode_decode_next(&dec, &last) != BENCODE_ERR_END) __builtin_trap();
+    bencode_err_t want = good_depth == 0 ? BENCODE_ERR_END : BENCODE_ERR_MALFORMED;
+    if (bencode_decode_next(&dec, &last) != want) __builtin_trap();
     free(buf);
 }
 
