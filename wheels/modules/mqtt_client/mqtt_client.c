@@ -78,12 +78,13 @@ static void dispatch_publish(mqtt_client_t *c, const uint8_t *pkt, uint16_t len)
         return;
     }
 
+    uint16_t session = c->session;
     if (c->on_message) {
         c->on_message(c->msg_ctx, pub.topic, pub.topic_len,
                       pub.payload, (uint16_t)pub.payload_len, pub.qos);
     }
 
-    if (pub.qos == 1 && pub.packet_id != 0) {
+    if (pub.qos == 1 && pub.packet_id != 0 && c->session == session) {
         uint8_t ack[4] = { (MQTT_PUBACK << 4), 2,
                            (uint8_t)(pub.packet_id >> 8),
                            (uint8_t)(pub.packet_id & 0xFF) };
@@ -150,7 +151,10 @@ static mqtt_client_err_t drain_rx(mqtt_client_t *c)
         }
         if (c->rx_len < (uint16_t)total) break;
 
+        uint16_t session = c->session;
         dispatch_packet(c, c->rx_buf, (uint16_t)total);
+        /* A callback reconnected: rx_buf and rx_len are the new session's. */
+        if (c->session != session) break;
 
         uint16_t consumed = (uint16_t)total;
         if (c->rx_len > consumed) {
@@ -205,6 +209,7 @@ mqtt_client_err_t mqtt_client_connect(mqtt_client_t *c)
 
     if (send_raw(c, c->tx_buf, (uint16_t)len) != 0) return MQTT_CLIENT_ERR_IO;
 
+    c->session++;
     c->rx_len           = 0;
     c->rx_skip          = 0;
     c->inflight_pub_id  = 0;
@@ -294,8 +299,11 @@ mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
     if (c->state == MQTT_CLIENT_DISCONNECTED) return MQTT_CLIENT_ERR_STATE;
 
     mqtt_client_err_t result = MQTT_CLIENT_OK;
+    uint16_t session = c->session;
 
-    while (len > 0 && c->state != MQTT_CLIENT_DISCONNECTED) {
+    /* Once a callback reconnects, what is left of data is the old session's. */
+    while (len > 0 && c->state != MQTT_CLIENT_DISCONNECTED &&
+           c->session == session) {
         if (c->rx_skip > 0) {
             uint16_t drop = (c->rx_skip < len) ? (uint16_t)c->rx_skip : len;
             c->rx_skip -= drop;
