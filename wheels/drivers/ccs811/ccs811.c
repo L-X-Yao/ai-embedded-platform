@@ -51,28 +51,9 @@ static void delay(const ccs811_t *dev, uint32_t ms)
     }
 }
 
-ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
-                         const ccs811_cfg_t *cfg)
+/* The steps of init that talk to the chip */
+static ccs811_err_t bring_up(const ccs811_t *dev, const ccs811_cfg_t *cfg)
 {
-    if (!dev || !i2c || !cfg)
-    {
-        return CCS811_ERR_PARAM;
-    }
-
-    if (!i2c->write_raw)
-    {
-        return CCS811_ERR_PARAM;
-    }
-
-    if ((unsigned)cfg->mode > 4)
-    {
-        return CCS811_ERR_PARAM;
-    }
-
-    memset(dev, 0, sizeof(*dev));
-    dev->i2c = i2c;
-    dev->cfg = *cfg;
-
     /* Check hardware ID */
     uint8_t hw_id = 0;
     if (!read_regs(dev, REG_HW_ID, &hw_id, 1))
@@ -125,13 +106,53 @@ ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
         return CCS811_ERR_I2C;
     }
 
+    return CCS811_OK;
+}
+
+ccs811_err_t ccs811_init(ccs811_t *dev, const ccs811_i2c_t *i2c,
+                         const ccs811_cfg_t *cfg)
+{
+    if (!dev)
+    {
+        return CCS811_ERR_PARAM;
+    }
+
+    /* dev->i2c stays NULL unless init succeeds: the other calls refuse a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!i2c || !cfg)
+    {
+        return CCS811_ERR_PARAM;
+    }
+
+    if (!i2c->write_reg || !i2c->read_regs || !i2c->write_raw)
+    {
+        return CCS811_ERR_PARAM;
+    }
+
+    if ((unsigned)cfg->mode > 4)
+    {
+        return CCS811_ERR_PARAM;
+    }
+
+    dev->i2c = i2c;
+    dev->cfg = *cfg;
+
+    ccs811_err_t err = bring_up(dev, cfg);
+    if (err != CCS811_OK)
+    {
+        dev->i2c = NULL;
+        return err;
+    }
+
     INVARIANT(dev->i2c != NULL);
     return CCS811_OK;
 }
 
 ccs811_err_t ccs811_read(const ccs811_t *dev, ccs811_data_t *out)
 {
-    if (!dev || !out)
+    if (!dev || !dev->i2c || !out)
     {
         return CCS811_ERR_PARAM;
     }
@@ -167,7 +188,7 @@ ccs811_err_t ccs811_read(const ccs811_t *dev, ccs811_data_t *out)
 
 ccs811_err_t ccs811_set_mode(ccs811_t *dev, ccs811_drive_mode_t mode)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return CCS811_ERR_PARAM;
     }
@@ -189,7 +210,7 @@ ccs811_err_t ccs811_set_mode(ccs811_t *dev, ccs811_drive_mode_t mode)
 ccs811_err_t ccs811_set_env_data(const ccs811_t *dev, uint16_t humidity,
                                  uint16_t temperature)
 {
-    if (!dev)
+    if (!dev || !dev->i2c)
     {
         return CCS811_ERR_PARAM;
     }

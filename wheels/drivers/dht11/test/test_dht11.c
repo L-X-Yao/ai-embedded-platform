@@ -184,6 +184,24 @@ TEST(test_start_signal_is_long_enough_and_releases_the_bus)
     ASSERT_EQ(mock_high_writes, 0);
 }
 
+/* ---------- a device init refused ---------- */
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const dht11_gpio_t no_callbacks;
+    dht11_t d;
+    dht11_data_t data;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(dht11_init(&d, NULL), DHT11_ERR_PARAM);
+    ASSERT_EQ(dht11_read(&d, &data), DHT11_ERR_PARAM);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(dht11_init(&d, &no_callbacks), DHT11_ERR_PARAM);
+    ASSERT_EQ(dht11_read(&d, &data), DHT11_ERR_PARAM);
+}
+
 TEST_MAIN("dht11")
     RUN(test_init_null);
     RUN(test_init_missing_callback);
@@ -195,4 +213,5 @@ TEST_MAIN("dht11")
     RUN(test_read_null);
     RUN(test_all_ones);
     RUN(test_read_timeout);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

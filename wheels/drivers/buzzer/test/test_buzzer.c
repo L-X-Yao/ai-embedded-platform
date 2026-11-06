@@ -382,6 +382,33 @@ TEST(test_midi_note_127)
 
 /* ---- Main -------------------------------------------------------------- */
 
+/* ---------- a device init refused ---------- */
+
+static void assert_device_refused(buzzer_t *d)
+{
+    static const buzzer_note_t note = { 440, 10 };
+    ASSERT_EQ(buzzer_tone(d, 440, 10), BUZZER_ERR_PARAM);
+    ASSERT_EQ(buzzer_off(d), BUZZER_ERR_PARAM);
+    ASSERT_EQ(buzzer_play(d, &note, 1), BUZZER_ERR_PARAM);
+    ASSERT_EQ(buzzer_beep(d, 1, 10, 10), BUZZER_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const buzzer_pwm_t no_callbacks;
+    buzzer_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(buzzer_init(&d, NULL), BUZZER_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(buzzer_init(&d, &no_callbacks), BUZZER_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("buzzer")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -411,4 +438,5 @@ TEST_MAIN("buzzer")
     RUN(test_midi_c5_523);
     RUN(test_midi_note_0);
     RUN(test_midi_note_127);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

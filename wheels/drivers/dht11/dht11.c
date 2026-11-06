@@ -17,7 +17,14 @@
 
 dht11_err_t dht11_init(dht11_t *dev, const dht11_gpio_t *gpio)
 {
-    if (!dev || !gpio)
+    if (!dev)
+        return DHT11_ERR_PARAM;
+
+    /* dev->gpio stays NULL unless init succeeds: dht11_read refuses a device
+     * without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!gpio)
         return DHT11_ERR_PARAM;
     if (!gpio->set_output || !gpio->set_input || !gpio->write_pin ||
         !gpio->read_pin || !gpio->delay_us)

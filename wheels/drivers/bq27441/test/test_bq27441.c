@@ -524,6 +524,50 @@ TEST(test_set_design_capacity_is_unsupported)
     ASSERT_EQ(bq27441_set_design_capacity(&dev, 2200), BQ27441_ERR_UNSUPPORTED);
 }
 
+/* ========== a device init did not finish ========== */
+
+static void assert_device_refused(bq27441_t *d)
+{
+    bq27441_data_t data;
+    uint16_t u16;
+    int16_t i16;
+    ASSERT_EQ(bq27441_read(d, &data), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_read_voltage(d, &u16), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_read_soc(d, &u16), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_read_current(d, &i16), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_read_temperature(d, &i16), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_enter_config_mode(d), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_exit_config_mode(d), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_unseal(d), BQ27441_ERR_PARAM);
+    ASSERT_EQ(bq27441_seal(d), BQ27441_ERR_PARAM);
+}
+
+/* Something else at this address: seal and unseal must not write to it */
+TEST(test_device_refused_after_wrong_id)
+{
+    bq27441_t d;
+    mock_reset();
+    mock_device_type = 0x1234u;
+    ASSERT_EQ(bq27441_init(&d, &mock_i2c), BQ27441_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const bq27441_i2c_t no_callbacks;
+    bq27441_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bq27441_init(&d, NULL), BQ27441_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(bq27441_init(&d, &no_callbacks), BQ27441_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("bq27441")
     RUN(test_init_ok);
     RUN(test_init_bad_device_id);
@@ -571,4 +615,6 @@ TEST_MAIN("bq27441")
     RUN(test_read_needs_a_battery);
     RUN(test_config_polls_at_most_twice_a_second);
     RUN(test_set_design_capacity_is_unsupported);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
