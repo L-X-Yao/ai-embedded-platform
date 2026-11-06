@@ -61,7 +61,7 @@ sntp_client_parse_response(rx_buf, rx_len, &resp);
 sntp_timestamp_t t4 = sntp_client_unix_to_ntp(arrival_sec, arrival_ms);
 sntp_result_t result;
 sntp_client_compute(&resp, &t1, &t4, &result);
-/* result.offset_ms = local clock error, result.unix_sec = server time */
+/* result.offset_ms: add to the local clock; result.unix_sec = server time */
 ```
 
 ## Supported platforms
