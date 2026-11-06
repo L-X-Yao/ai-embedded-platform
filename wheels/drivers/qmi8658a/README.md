@@ -56,6 +56,14 @@ static void example(void) {
 - [x] Host C99 (mock I2C) — 20 tests, 2026-04-30
 - [x] GD32F405 + QMI8658A @ I2C1 400 kHz (PB10/PB11) — HIL verified 2026-04-26
 
+## Datasheet check
+
+Checked on 2026-11-06 against the QST QMI8658A Datasheet Rev A, document 13-52-25, June 20, 2022. This check was not run on hardware. Nothing was changed: the owner decided this driver is checked but not fixed, because no board is available to retest it.
+
+- **Matched:** WHO_AM_I 0x05, address 0x6B for SA0 low, CTRL1 = 0x40, CTRL2 and CTRL3 fields and encodings, CTRL7 = 0x03, the 12-byte little-endian data block from 0x35, sensitivities, RESET register 0x60.
+- **Still open:** `qmi8658a_reset` returns at once although the reset takes up to 15 ms, so an init straight after it writes during the reset. The reset also turns the sensors off and clears ADDR_AI, yet `qmi8658a_read` keeps returning OK with no live data until init runs again. Register 0x4D is never read, so a failed reset goes unnoticed. flybox never calls reset, so its board run says nothing about these. Reads are not synchronised or locked, so a sample update during the burst can mix two samples, which shows as rare spikes. The driver always runs both sensors, and in that mode the ODR codes give 7174.4 down to 28.025 Hz, about 10% below the enum names: `QMI8658A_ODR_500` is really 448.4 Hz, so a dt taken from the name is about 10% off. The address is fixed at 0x6B, so a board with SA0 high or floating, which gives 0x6A, is not found. The model resets CTRL1 to 0 instead of 0x20, ignores ADDR_AI and BE, and returns data with the sensors off, so the tests cannot show those faults.
+- **Suspected:** Section 7.4 gives the reset value as 0x0B where Table 27 gives the 0xB0 the driver writes, probably a typo in the manual, but no hardware run settles it. Init writes straight after WHO_AM_I, which breaks the 15 ms start-up rule if it runs right after power-up. `qmi8658a_read` never checks STATUS0, so for about 150 ms plus 3/ODR after init it may return zeros or unsettled data with OK.
+
 ## Known issues
 
 - CTRL2/CTRL3 register values are hard-coded to match QMI8658A datasheet defaults for common configs; exotic ODR/range combos should be validated against datasheet Table 19/20

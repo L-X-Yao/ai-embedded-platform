@@ -61,6 +61,14 @@ static void example(void) {
 - [x] Host C99 (mock SPI) — 21 tests, 55 assertions, 2026-04-29
 - [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26
 
+## Datasheet check
+
+Checked on 2026-11-06 against the Winbond W25Q64JV manual, Revision J, March 27, 2018, and that part only: W25Q32, W25Q128 and the other sizes named above were not checked. This check was not run on hardware. Nothing was changed: the owner decided this driver is checked but not fixed, because no board is available to retest it.
+
+- **Matched:** Instruction codes, JEDEC ID order and the W25Q64JV ID EF4017, Status Register-1 BUSY and WEL bits, 24-bit address order, 256-byte page, 4 KB sector, Write Enable before every program and erase, the page-wrap refusal in `w25qxx_page_program`.
+- **Still open:** `w25qxx_chip_erase` shares the 500000-poll limit of every other wait, about 0.4 s at 10.5 MHz, while the chip needs 20 s typical and 100 s at most. A healthy chip therefore gets `W25QXX_ERR_TIMEOUT` while still erasing, and it ignores everything but Read Status until it finishes. No project calls chip erase, so the flybox run never tried it. There is no unlock and no Release Power-down, so a protected page is not programmed while the driver returns `W25QXX_OK`, and a chip left in power-down fails init. The test mock leaves WEL set after a program. The model and mock never set BUSY, act on data before /CS rises, and run past the page end instead of wrapping. That changes nothing on the chip, but the tests cannot catch a driver that skips Write Enable, skips the busy wait, never raises /CS or overruns a page.
+- **Suspected:** The same poll limit may be too short for a 400 ms sector erase at higher SPI clocks. Write Enable is never read back and init has no tPUW wait, so a write within 5 ms of power-up may do nothing and still return OK. Init does not wait for BUSY, so a reset during an erase may fail it with `W25QXX_ERR_JEDEC_ID` on a good chip. Init rejects only manufacturer bytes 0x00 and 0xFF, so noise or another maker's part passes.
+
 ## Known issues
 
 - Page program `len` must be <= 256 and must not cross a 256-byte page boundary; caller is responsible for splitting
