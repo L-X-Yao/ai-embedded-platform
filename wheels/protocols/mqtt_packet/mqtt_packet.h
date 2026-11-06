@@ -94,7 +94,9 @@ mqtt_packet_type_t mqtt_packet_get_type(const uint8_t *buf, size_t len);
 mqtt_packet_err_t mqtt_packet_parse_connack(const uint8_t *buf, size_t len,
                                             mqtt_connack_t *out);
 
-/** Parse incoming PUBLISH packet fields into out struct. @thread_safe: yes (pure function) */
+/** Parse incoming PUBLISH packet fields into out struct. A buffer that ends
+ *  before the remaining length says returns MQTT_PACKET_ERR_MALFORMED, and bytes
+ *  after the packet are ignored. @thread_safe: yes (pure function) */
 mqtt_packet_err_t mqtt_packet_parse_publish(const uint8_t *buf, size_t len,
                                             mqtt_publish_t *out);
 
