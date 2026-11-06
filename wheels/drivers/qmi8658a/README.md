@@ -23,7 +23,7 @@ None. Pure C99 with injected I2C HAL callbacks.
 qmi8658a_cfg_t  qmi8658a_default_cfg(void);
 qmi8658a_err_t  qmi8658a_init(qmi8658a_t *dev, const qmi8658a_i2c_t *i2c,
                                const qmi8658a_cfg_t *cfg);
-qmi8658a_err_t  qmi8658a_read(qmi8658a_t *dev, qmi8658a_data_t *out);
+qmi8658a_err_t  qmi8658a_read(const qmi8658a_t *dev, qmi8658a_data_t *out);
 qmi8658a_err_t  qmi8658a_reset(const qmi8658a_t *dev);
 ```
 
