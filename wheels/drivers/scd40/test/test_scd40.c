@@ -163,6 +163,45 @@ TEST(test_start_stop_periodic)
     ASSERT_EQ(mock_last_write_len, 2);
 }
 
+TEST(test_idle_commands_refused_during_measurement)
+{
+    /* p9: "While a periodic measurement is running, no other commands must
+     * be issued" but the read, status, stop and ambient pressure ones */
+    setup();
+    uint16_t serial[3];
+
+    ASSERT_EQ(scd40_start_periodic(&dev), SCD40_OK);
+    mock_op_count = 0;
+    ASSERT_EQ(scd40_start_periodic(&dev), SCD40_ERR_BUSY);
+    ASSERT_EQ(scd40_get_serial(&dev, serial), SCD40_ERR_BUSY);
+    ASSERT_EQ(scd40_set_altitude(&dev, 100), SCD40_ERR_BUSY);
+    ASSERT_EQ(scd40_perform_reset(&dev), SCD40_ERR_BUSY);
+    ASSERT_EQ(mock_op_count, 0);   /* nothing reached the sensor */
+
+    /* An out of range altitude stays a parameter error */
+    ASSERT_EQ(scd40_set_altitude(&dev, 3001), SCD40_ERR_PARAM);
+
+    ASSERT_EQ(scd40_stop_periodic(&dev), SCD40_OK);
+    ASSERT_EQ(scd40_perform_reset(&dev), SCD40_OK);
+}
+
+TEST(test_failed_start_stays_idle)
+{
+    setup();
+    mock_fail_next = 1;
+    ASSERT_EQ(scd40_start_periodic(&dev), SCD40_ERR_I2C);
+    ASSERT_EQ(scd40_perform_reset(&dev), SCD40_OK);
+}
+
+TEST(test_failed_stop_keeps_running)
+{
+    setup();
+    ASSERT_EQ(scd40_start_periodic(&dev), SCD40_OK);
+    mock_fail_next = 1;
+    ASSERT_EQ(scd40_stop_periodic(&dev), SCD40_ERR_I2C);
+    ASSERT_EQ(scd40_perform_reset(&dev), SCD40_ERR_BUSY);
+}
+
 TEST(test_stop_periodic_waits)
 {
     /* p10: "the sensor will only respond to other commands 500 ms after
@@ -412,6 +451,9 @@ TEST_MAIN("scd40")
     RUN(test_init_ok);
     RUN(test_init_requires_delay);
     RUN(test_start_stop_periodic);
+    RUN(test_idle_commands_refused_during_measurement);
+    RUN(test_failed_start_stays_idle);
+    RUN(test_failed_stop_keeps_running);
     RUN(test_stop_periodic_waits);
     RUN(test_set_altitude_waits);
     RUN(test_read_measurement);
