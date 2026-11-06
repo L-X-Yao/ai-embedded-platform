@@ -7,10 +7,11 @@
  *   RBM (0x3A), WBM (0x7A), SRC (0xFF)
  * - 4-bank register file: bank selected via ECON1[1:0]; registers 0x1B-0x1F
  *   are common across all banks
- * - MAC/MII registers (bank 2/3, addr 0x00-0x19): dummy byte on read
+ * - MAC/MII registers (all of bank 2, MAADR and MISTAT in bank 3): dummy byte
+ *   on read
  * - 8KB buffer memory (RXSTART..TXEND) with auto-incrementing R/W pointers
  * - PHY registers accessed indirectly: write MIREGADR, set MICMD.MIIRD,
- *   poll MISTAT.BUSY, read MIRDL/H
+ *   poll MISTAT.BUSY, read MIRDL/H; or write MIREGADR, MIWRL, MIWRH, poll BUSY
  * - Soft reset (SRC) restores all registers + bank to defaults
  * - EREVID (bank 3, 0x12) read-only, default 0x06
  *
@@ -66,6 +67,8 @@
 #define ENC_MAMXFLL   0x0AU
 #define ENC_MAMXFLH   0x0BU
 #define ENC_MIREGADR  0x14U
+#define ENC_MIWRL     0x16U
+#define ENC_MIWRH     0x17U
 #define ENC_MICMD     0x12U
 #define ENC_MISTAT    0x0AU   /* bank 3 */
 #define ENC_MIRDL     0x18U
@@ -100,6 +103,11 @@
 #define ENC_MICMD_MIIRD   0x01U
 #define ENC_MISTAT_BUSY   0x01U
 
+/* --- PHY registers --- */
+
+#define ENC_PHCON1         0x00U
+#define ENC_PHCON1_PDPXMD  0x0100U
+
 /* --- Buffer layout --- */
 
 #define ENC_RXSTART  0x0000U
@@ -119,6 +127,7 @@
 
 typedef enum {
     ENC_PH_IDLE = 0,
+    ENC_PH_READ_DUMMY,      /* RCR of a MAC/MII register: dummy byte first */
     ENC_PH_READ_DATA,       /* RCR: returning register value on each byte */
     ENC_PH_WRITE_DATA,      /* WCR: waiting for data byte */
     ENC_PH_BFS_DATA,        /* BFS: waiting for mask byte */
@@ -149,6 +158,12 @@ typedef struct {
 
     /* PHY registers (accessed indirectly via MIREGADR/MICMD/MIRDL/H) */
     uint16_t phy_regs[ENC_PHY_REG_COUNT];
+    /* MISTAT reads that still see BUSY after a PHY write, 0 = stays busy */
+    int      phy_busy_after;
+    int      phy_busy_reads;
+    /* PHY writes started while BUSY was set, or with RXEN set */
+    int      phy_write_while_busy;
+    int      phy_write_rx_on;
 
     /* Current bank selection */
     uint8_t  current_bank;
@@ -355,11 +370,11 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         m->spi_addr = addr;
 
         if (op == ENC_OP_RCR) {
-            /* Read Control Register: return register value on every
-             * subsequent byte. For MAC/MII registers, the driver sends
-             * an extra dummy clock (ignoring the returned value), so
-             * we simply return the register value each time. */
-            m->phase = ENC_PH_READ_DATA;
+            /* Read Control Register. DS39662C p.29: an ETH register
+             * shifts out at once, a MAC or MII register after a dummy
+             * byte. */
+            m->phase = enc_is_mac_mii(m->current_bank, addr)
+                     ? ENC_PH_READ_DUMMY : ENC_PH_READ_DATA;
         } else if (op == ENC_OP_WCR) {
             m->phase = ENC_PH_WRITE_DATA;
         } else if (op == ENC_OP_BFS) {
@@ -370,12 +385,12 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         return 0xFFU;
     }
 
+    case ENC_PH_READ_DUMMY:
+        /* Not the register: a driver that skips this byte reads junk */
+        m->phase = ENC_PH_READ_DATA;
+        return 0xFFU;
+
     case ENC_PH_READ_DATA: {
-        /* Return register value. The driver handles the dummy byte for
-         * MAC/MII registers by calling xfer an extra time and discarding
-         * the result (which is also the register value -- harmless).
-         * This means the model returns the register value on every byte
-         * and the driver picks up the correct one. */
         if (enc_is_mac_mii(m->current_bank, m->spi_addr))
             enc_note_ready_needed(m);
         /* The Oscillator Start-up Timer runs out after clkrdy_after reads */
@@ -386,6 +401,14 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
                 m->common[ENC_ESTAT] |= ENC_ESTAT_CLKRDY;
         }
         uint8_t val = *enc_reg_ptr(m, m->spi_addr);
+        /* A PHY write ends after phy_busy_after reads that saw BUSY */
+        if (m->current_bank == 3U && m->spi_addr == ENC_MISTAT &&
+            (val & ENC_MISTAT_BUSY)) {
+            m->phy_busy_reads++;
+            if (m->phy_busy_after > 0 &&
+                m->phy_busy_reads >= m->phy_busy_after)
+                m->regs[3][ENC_MISTAT] &= (uint8_t)~ENC_MISTAT_BUSY;
+        }
         /* Special handling: reading ECON1 may auto-clear TXRTS */
         if (m->spi_addr == ENC_ECON1) {
             if (m->common[ENC_ECON1] & ENC_ECON1_TXRTS) {
@@ -407,6 +430,18 @@ static uint8_t enc28j60_model_xfer(void *ctx, uint8_t tx)
         /* If writing ECON1, update bank selection */
         if (m->spi_addr == ENC_ECON1) {
             enc_update_bank(m);
+        }
+        /* DS39662C p.21: writing MIWRH starts the PHY write */
+        if (m->current_bank == 2 && m->spi_addr == ENC_MIWRH) {
+            uint8_t phy_addr = m->regs[2][ENC_MIREGADR] & 0x1FU;
+            if (m->regs[3][ENC_MISTAT] & ENC_MISTAT_BUSY)
+                m->phy_write_while_busy++;
+            if (m->common[ENC_ECON1] & ENC_ECON1_RXEN)
+                m->phy_write_rx_on++;
+            m->phy_regs[phy_addr] = (uint16_t)(((uint16_t)tx << 8) |
+                                               m->regs[2][ENC_MIWRL]);
+            m->regs[3][ENC_MISTAT] |= ENC_MISTAT_BUSY;
+            m->phy_busy_reads = 0;
         }
         /* If writing MICMD with MIIRD set, simulate PHY read */
         if (m->current_bank == 2 && m->spi_addr == ENC_MICMD) {
@@ -534,6 +569,7 @@ static void enc28j60_model_init(enc28j60_model_t *m)
     m->delay_count = 0;
     m->clkrdy_after = 3;        /* CLKRDY is 0 at POR, sets on the 3rd read */
     m->ms_since_src = -1;
+    m->phy_busy_after = 2;      /* the 10.24 us PHY write outlasts a read */
     m->tx_complete_after = 1;   /* TXRTS clears after 1 read by default */
     m->tx_econ1_read_count = 0;
     m->tx_captured_len = 0;

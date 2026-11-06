@@ -52,6 +52,9 @@
 #define MABBIPG   0x04U
 #define MAIPGL    0x06U
 #define MAIPGH    0x07U
+#define MIREGADR  0x14U
+#define MIWRL     0x16U
+#define MIWRH     0x17U
 
 /* Bank 3 */
 #define MAADR5    0x00U
@@ -60,6 +63,7 @@
 #define MAADR4    0x03U
 #define MAADR1    0x04U
 #define MAADR2    0x05U
+#define MISTAT    0x0AU
 #define EREVID    0x12U
 
 /* Common (all banks) */
@@ -68,6 +72,9 @@
 #define ESTAT     0x1DU
 #define ECON2     0x1EU
 #define ECON1     0x1FU
+
+/* PHY registers (reached through MIREGADR) */
+#define PHCON1    0x00U
 
 /* ---------- bit masks ---------- */
 
@@ -85,6 +92,8 @@
 #define MACON3_TXCRCEN 0x10U
 #define MACON3_FRMLNEN 0x02U
 #define MACON3_FULDPX  0x01U
+
+#define MISTAT_BUSY   0x01U
 
 #define ERXFCON_UCEN  0x80U
 #define ERXFCON_CRCEN 0x20U
@@ -162,6 +171,25 @@ static void write_reg(enc28j60_t *dev, uint8_t bank, uint8_t addr,
 {
     bank_select(dev, bank);
     spi_write_op(dev->spi, OP_WCR, addr, val);
+}
+
+/* ---------- helpers: PHY register write ---------- */
+
+/* DS39662C section 3.3.2: writing MIWRH starts the transfer, which takes
+ * 10.24 us. PHY registers cannot be written bit by bit. */
+static enc28j60_err_t phy_write(enc28j60_t *dev, uint8_t reg, uint16_t val)
+{
+    write_reg(dev, 2, MIREGADR, reg);
+    write_reg(dev, 2, MIWRL, (uint8_t)(val & 0xFFU));
+    write_reg(dev, 2, MIWRH, (uint8_t)(val >> 8));
+
+    for (uint32_t i = 0; i < ENC28J60_READY_POLLS; i++) {
+        if (!(read_reg(dev, 3, MISTAT, true) & MISTAT_BUSY)) {
+            return ENC28J60_OK;
+        }
+        dev->spi->delay_ms(dev->spi->ctx, 1U);
+    }
+    return ENC28J60_ERR_TIMEOUT;
 }
 
 /* ---------- helpers: buffer read/write ---------- */
@@ -288,6 +316,12 @@ enc28j60_err_t enc28j60_init(enc28j60_t *dev, const enc28j60_spi_t *spi,
 
     /* Set MAC address */
     write_mac_regs(dev);
+
+    /* PHY half duplex, to match MACON3.FULDPX = 0: PDPXMD resets to what the
+     * LEDB wiring says, and to an unknown value with no LED. All the other
+     * PHCON1 bits reset to 0 as well. */
+    err = phy_write(dev, PHCON1, 0x0000U);
+    if (err != ENC28J60_OK) return err;
 
     /* Enable reception */
     bit_field_set(dev, ECON1, ECON1_RXEN);

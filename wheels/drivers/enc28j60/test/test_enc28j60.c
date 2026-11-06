@@ -44,6 +44,12 @@ static uint8_t mock_current_bank;
 
 #define IS_COMMON_REG(a) ((a) >= 0x1BU)
 
+/* MAC and MII registers (Table 3-1) read with a dummy byte first: all of bank
+ * 2, and MAADR and MISTAT in bank 3 */
+#define IS_MAC_MII_REG(b, a) \
+    (!IS_COMMON_REG(a) && \
+     ((b) == 2U || ((b) == 3U && ((a) <= 0x05U || (a) == 0x0AU))))
+
 /* Mock RX buffer for receive testing */
 static uint8_t mock_rx_buf[2048];
 static int     mock_rx_buf_idx;
@@ -147,9 +153,8 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         mock_spi_addr = addr;
 
         if (op == OP_RCR) {
-            /* Check if this is a MAC/MII register (bank 2/3, addr 0x00-0x19)
-             * Simplified: we let the driver handle the dummy byte */
-            mock_spi_state = SPI_READ_CMD;
+            mock_spi_state = IS_MAC_MII_REG(mock_current_bank, addr)
+                           ? SPI_READ_DUMMY : SPI_READ_CMD;
         } else if (op == OP_WCR) {
             mock_spi_state = SPI_WRITE_CMD;
         } else if (op == OP_BFS) {
@@ -211,6 +216,9 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
         return 0xFFU;
 
     case SPI_READ_DUMMY:
+        mock_spi_state = SPI_READ_CMD;
+        return 0xFFU;
+
     default:
         return 0xFFU;
     }
