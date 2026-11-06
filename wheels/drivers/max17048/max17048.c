@@ -39,11 +39,9 @@ static bool rd16(const max17048_t *dev, uint8_t reg, uint16_t *val)
 
 static bool wr16(const max17048_t *dev, uint8_t reg, uint16_t val)
 {
-    if (!dev->i2c->write_reg(dev->i2c->ctx, MAX17048_DEV_ADDR, reg,
-                             (uint8_t)(val >> 8)))
-        return false;
-    return dev->i2c->write_reg(dev->i2c->ctx, MAX17048_DEV_ADDR,
-                               (uint8_t)(reg + 1), (uint8_t)(val & 0xFF));
+    /* One transaction: the chip ignores a write without both register bytes */
+    const uint8_t tx[3] = { reg, (uint8_t)(val >> 8), (uint8_t)(val & 0xFF) };
+    return dev->i2c->write_raw(dev->i2c->ctx, MAX17048_DEV_ADDR, tx, sizeof(tx));
 }
 
 /* ─── public API ─────────────────────────────────────────────── */
@@ -52,7 +50,7 @@ max17048_err_t max17048_init(max17048_t *dev, const max17048_i2c_t *i2c)
 {
     REQUIRE(dev != NULL);
     REQUIRE(i2c != NULL);
-    if (!dev || !i2c || !i2c->read_regs || !i2c->write_reg)
+    if (!dev || !i2c || !i2c->read_regs || !i2c->write_raw)
         return MAX17048_ERR_PARAM;
     dev->i2c = i2c;
 

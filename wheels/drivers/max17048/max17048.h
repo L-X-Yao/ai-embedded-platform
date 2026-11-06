@@ -33,10 +33,16 @@ typedef enum {
 /* ---------- I2C HAL (caller provides) ---------- */
 
 typedef struct {
+    /* Unused and may be NULL: the chip ignores 8-bit writes, so every write
+     * goes through write_raw. Kept so that existing initialisers still build. */
     bool (*write_reg)(void *ctx, uint8_t dev_addr, uint8_t reg, uint8_t val);
     bool (*read_regs)(void *ctx, uint8_t dev_addr, uint8_t reg,
                       uint8_t *buf, uint16_t len);
     void *ctx;
+    /* Required. Puts exactly data[0..len-1] on the bus after the address,
+     * then STOP. max17048_init returns MAX17048_ERR_PARAM without it. */
+    bool (*write_raw)(void *ctx, uint8_t dev_addr, const uint8_t *data,
+                      uint16_t len);
 } max17048_i2c_t;
 
 /* ---------- constants ---------- */

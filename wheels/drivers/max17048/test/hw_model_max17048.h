@@ -12,7 +12,9 @@
  * - CRATE (0x16): charge rate, 0.208 %/hr per LSB (signed)
  * - STATUS (0x1A): status flags
  *
- * Uses the standard register-based mock_i2c callbacks.
+ * Writes follow p10 and p17: a register changes only on one transaction of
+ * MAddr, Data0, Data1 through write_raw. "8-bit writes cause no effect", and
+ * "A valid write must include both register bytes".
  * Helpers convert physical units to raw register values.
  */
 
@@ -140,14 +142,30 @@ static bool max17048_model_write_reg(void *ctx, uint8_t dev_addr,
 {
     (void)dev_addr;
     max17048_model_t *m = (max17048_model_t *)ctx;
+    (void)reg; (void)val;
+    m->write_count++;    /* p10: an 8-bit write has no effect */
+    return true;
+}
+
+__attribute__((unused))
+static bool max17048_model_write_raw(void *ctx, uint8_t dev_addr,
+                                     const uint8_t *data, uint16_t len)
+{
+    (void)dev_addr;
+    max17048_model_t *m = (max17048_model_t *)ctx;
     m->write_count++;
-    m->regs[reg] = val;
 
-    /* Detect quickstart: MODE register bit 14 = byte[0] bit 6 */
-    if (reg == HW_REG_MODE && (val & 0x40u)) {
-        m->quickstart_triggered = true;
+    /* p17: the address increments per byte, and a word needs both its bytes */
+    for (uint16_t i = 1; i + 1u < len; i = (uint16_t)(i + 2u)) {
+        uint8_t reg = (uint8_t)(data[0] + i - 1u);
+        m->regs[reg]                = data[i];
+        m->regs[(uint8_t)(reg + 1)] = data[i + 1u];
+
+        /* Detect quickstart: MODE register bit 14 = byte[0] bit 6 */
+        if (reg == HW_REG_MODE && (data[i] & 0x40u)) {
+            m->quickstart_triggered = true;
+        }
     }
-
     return true;
 }
 
