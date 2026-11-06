@@ -3,16 +3,20 @@
 audit_sanitizer.py -- build and run wheel tests under AddressSanitizer + UBSan.
 
 For each wheel with test/CMakeLists.txt, builds with
-  -fsanitize=address,undefined -fno-sanitize-recover=all -O1
-then runs the test binary with a 30-second timeout.
+  -fsanitize=address,undefined -fno-sanitize-recover=all -O1 -w
+then runs every add_executable target, each with a 120-second timeout.
+A wheel has several: the main test, test_null, test_boundary, the hardware
+model test and the property test.
 
 Reports:
-  PASS  -- clean run, exit 0
-  FAIL  -- sanitizer error, crash, or non-zero exit
-  SKIP  -- build failed or no test CMakeLists.txt
+  PASS  -- every target ran clean
+  FAIL  -- sanitizer error, crash, non-zero exit, missing binary or a build
+           that fails under the sanitizer flags
+  SKIP  -- no test CMakeLists.txt or no target in it
 
 Flags:
   --changed   Only test wheels changed vs main (git diff)
+  --jobs N    Audit N wheels at once (default 1)
   --quiet     Suppress per-wheel details, show only summary
   --json      Machine-readable JSON output
 
@@ -23,6 +27,7 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from _audit_build_base import (
     BOLD,
@@ -34,7 +39,7 @@ from _audit_build_base import (
     cleanup_build,
     cmake_build,
     color,
-    extract_test_target,
+    extract_test_targets,
     find_test_binary,
     find_wheels,
     get_changed_wheels,
@@ -42,9 +47,12 @@ from _audit_build_base import (
 )
 
 BUILD_DIR_NAME = "build_san"
-SAN_FLAGS = "-fsanitize=address,undefined -fno-sanitize-recover=all -O1"
+# -w: the instrumentation sets off -Wconversion and -Wformat-truncation under
+# the wheels' -Werror. wheel_gate.sh checks warnings in a separate strict build.
+SAN_FLAGS = "-fsanitize=address,undefined -fno-sanitize-recover=all -O1 -w"
 SAN_LINKER_FLAGS = "-fsanitize=address,undefined"
-TIMEOUT_SEC = 30
+TIMEOUT_SEC = 120
+BUILD_TIMEOUT_SEC = 300
 
 
 def run_test(binary):
@@ -78,9 +86,49 @@ def run_test(binary):
         return False, str(e)
 
 
+def audit_wheel(layer, name, wheel_dir):
+    """Build one wheel's tests and run every target. Returns a result dict."""
+    path = f"wheels/{layer}/{name}"
+    targets = extract_test_targets(wheel_dir)
+    if not targets:
+        return {"wheel": path, "status": "SKIP", "targets": 0,
+                "detail": "no target in CMakeLists.txt"}
+
+    ok, err = cmake_build(wheel_dir, targets[0], BUILD_DIR_NAME, SAN_FLAGS,
+                          SAN_LINKER_FLAGS, build_timeout=BUILD_TIMEOUT_SEC)
+    if not ok:
+        short_err = err.strip().splitlines()[-1][:160] if err.strip() else "unknown"
+        return {"wheel": path, "status": "FAIL", "targets": len(targets),
+                "detail": f"build failed: {short_err}"}
+
+    build_dir = wheel_dir / "test" / BUILD_DIR_NAME
+    failures = []
+    for target in targets:
+        binary = find_test_binary(build_dir, target)
+        if not binary:
+            failures.append(f"{target}: binary not found after build")
+            continue
+        passed, output = run_test(binary)
+        if not passed:
+            lines = output.strip().splitlines()
+            reason = next((ln for ln in lines if "runtime error:" in ln
+                           or "ERROR: " in ln), lines[-1] if lines else "non-zero exit")
+            failures.append(f"{target}: {reason.strip()[:200]}")
+    cleanup_build(build_dir)
+
+    if failures:
+        return {"wheel": path, "status": "FAIL", "targets": len(targets),
+                "detail": "; ".join(failures)}
+    return {"wheel": path, "status": "PASS", "targets": len(targets)}
+
+
 def main():
     parser = parse_args_common(
         "Build and run wheel tests under AddressSanitizer + UBSan"
+    )
+    parser.add_argument(
+        "--jobs", "-j", type=int, default=1,
+        help="Audit this many wheels at once",
     )
     args = parser.parse_args()
 
@@ -93,7 +141,7 @@ def main():
         print("      Windows MinGW lacks -lasan/-lubsan. Skipping.\n")
         return 0
 
-    all_wheels = find_wheels()
+    all_wheels = find_wheels(skip_vendor=False)
 
     if args.changed:
         changed = get_changed_wheels()
@@ -105,74 +153,37 @@ def main():
         if not args.json:
             print("No wheels to test.")
         else:
-            print(json.dumps({"wheels": 0, "pass": 0, "fail": 0, "skip": 0, "results": []}))
+            print(json.dumps({"wheels": 0, "targets": 0, "pass": 0, "fail": 0,
+                              "skip": 0, "results": []}))
         return 0
-
-    results = []
-    pass_count = 0
-    fail_count = 0
-    skip_count = 0
 
     if not args.quiet and not args.json:
         print(f"{BOLD}=== Sanitizer audit ({len(wheels)} wheels) ==={RESET}\n")
 
-    for layer, name, wheel_dir in wheels:
-        path = f"wheels/{layer}/{name}"
-        target = extract_test_target(wheel_dir)
-
-        if not target:
-            entry = {"wheel": path, "status": "SKIP", "detail": "no target in CMakeLists.txt"}
+    results = []
+    labels = {"PASS": color("PASS", GREEN), "FAIL": color("FAIL", RED),
+              "SKIP": color("SKIP", YELLOW)}
+    with ThreadPoolExecutor(max_workers=max(args.jobs, 1)) as pool:
+        futures = [pool.submit(audit_wheel, *w) for w in wheels]
+        for future in as_completed(futures):
+            entry = future.result()
             results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  [{color('SKIP', YELLOW)}]  {path}: no target in CMakeLists.txt")
-            continue
+            show = not args.json and (not args.quiet or entry["status"] == "FAIL")
+            if show:
+                detail = entry.get("detail", f"{entry['targets']} targets")
+                print(f"  [{labels[entry['status']]}]  {entry['wheel']}: {detail}", flush=True)
+    results.sort(key=lambda r: r["wheel"])
 
-        # Build with sanitizers
-        ok, err = cmake_build(wheel_dir, target, BUILD_DIR_NAME, SAN_FLAGS, SAN_LINKER_FLAGS)
-        if not ok:
-            entry = {"wheel": path, "status": "SKIP", "detail": f"build failed: {err[:200]}"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                short_err = err.strip().splitlines()[-1][:120] if err.strip() else "unknown"
-                print(f"  [{color('SKIP', YELLOW)}]  {path}: build failed: {short_err}")
-            continue
-
-        # Find binary
-        build_dir = wheel_dir / "test" / BUILD_DIR_NAME
-        binary = find_test_binary(build_dir, target)
-        if not binary:
-            entry = {"wheel": path, "status": "SKIP", "detail": "binary not found after build"}
-            results.append(entry)
-            skip_count += 1
-            if not args.quiet and not args.json:
-                print(f"  [{color('SKIP', YELLOW)}]  {path}: binary not found after build")
-            cleanup_build(build_dir)
-            continue
-
-        # Run
-        passed, output = run_test(binary)
-        if passed:
-            entry = {"wheel": path, "status": "PASS"}
-            results.append(entry)
-            pass_count += 1
-            if not args.quiet and not args.json:
-                print(f"  [{color('PASS', GREEN)}]  {path}")
-        else:
-            detail = output.strip().splitlines()[-1][:200] if output.strip() else "non-zero exit"
-            entry = {"wheel": path, "status": "FAIL", "detail": detail}
-            results.append(entry)
-            fail_count += 1
-            if not args.json:
-                print(f"  [{color('FAIL', RED)}]  {path}: {detail}")
-
-        cleanup_build(build_dir)
+    pass_count = sum(r["status"] == "PASS" for r in results)
+    fail_count = sum(r["status"] == "FAIL" for r in results)
+    skip_count = sum(r["status"] == "SKIP" for r in results)
+    target_count = sum(r["targets"] for r in results)
 
     # Summary
     if args.json:
         output = {
             "wheels": len(wheels),
+            "targets": target_count,
             "pass": pass_count,
             "fail": fail_count,
             "skip": skip_count,
@@ -182,6 +193,7 @@ def main():
     else:
         print(f"\n{BOLD}=== Summary ==={RESET}")
         print(f"  wheels: {len(wheels)}")
+        print(f"  targets: {target_count}")
         print(f"  {color('PASS', GREEN)}: {pass_count}")
         print(f"  {color('FAIL', RED)}: {fail_count}")
         print(f"  {color('SKIP', YELLOW)}: {skip_count}")

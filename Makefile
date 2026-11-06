@@ -321,7 +321,7 @@ audit-compile:
 	python3 tooling/audit/audit_compile.py
 
 audit-sanitizer:
-	python3 tooling/audit/audit_sanitizer.py
+	python3 tooling/audit/audit_sanitizer.py --jobs 8
 
 audit-coverage:
 	python3 tooling/audit/audit_coverage.py
