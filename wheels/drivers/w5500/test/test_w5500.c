@@ -86,6 +86,14 @@ static uint8_t mock_open_status[8];
 static int     mock_tear_left[8];
 static uint8_t mock_tear_hi;
 
+/* Sn_SR moves after Sn_CR has cleared (W5500 Datasheet 1.1.0 p46: "the command
+ * is still being processed"): the first mock_sr_lag reads of Sn_SR after a
+ * command still show the old status */
+static int     mock_sr_lag;
+static int     mock_sr_left[8];
+static uint8_t mock_sr_next[8];
+static uint8_t mock_sr_at_open[8];   /* Sn_SR when the OPEN command arrived */
+
 static void mock_reset(void)
 {
     memset(mock_common_regs, 0, sizeof(mock_common_regs));
@@ -104,9 +112,36 @@ static void mock_reset(void)
     memset(mock_open_status, 0, sizeof(mock_open_status));
     memset(mock_tear_left, 0, sizeof(mock_tear_left));
     mock_tear_hi = 0;
+    mock_sr_lag = 0;
+    memset(mock_sr_left, 0, sizeof(mock_sr_left));
+    memset(mock_sr_next, 0, sizeof(mock_sr_next));
+    memset(mock_sr_at_open, 0xEE, sizeof(mock_sr_at_open));
 
     /* Set version register */
     mock_common_regs[REG_VERSIONR] = 0x04;
+}
+
+/* Sn_CR has cleared: apply what the command does to Sn_SR, after the lag */
+static void mock_cmd_done(int sock, uint8_t cmd)
+{
+    uint8_t next;
+
+    if (cmd == 0x01) {          /* OPEN */
+        mock_sr_at_open[sock] = mock_sock_regs[sock][SN_SR];
+        if (!mock_open_status[sock]) return;
+        next = mock_open_status[sock];
+    } else if (cmd == 0x10) {   /* CLOSE */
+        next = 0x00;
+    } else {
+        return;
+    }
+
+    if (mock_sr_lag == 0) {
+        mock_sock_regs[sock][SN_SR] = next;
+    } else {
+        mock_sr_next[sock] = next;
+        mock_sr_left[sock] = mock_sr_lag;
+    }
 }
 
 static void mock_cs_low(void *ctx)
@@ -198,14 +233,7 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                         if (mock_cmd_clear_delay == 0) {
                             /* Immediate clear */
                             mock_sock_regs[sock_num][SN_CR] = 0x00;
-                            /* If OPEN command, set status */
-                            if (tx == 0x01 && mock_open_status[sock_num]) {
-                                mock_sock_regs[sock_num][SN_SR] = mock_open_status[sock_num];
-                            }
-                            /* If CLOSE command, set CLOSED status */
-                            if (tx == 0x10) {
-                                mock_sock_regs[sock_num][SN_SR] = 0x00;
-                            }
+                            mock_cmd_done(sock_num, tx);
                         } else {
                             /* Delayed clear: increment counter */
                             mock_cmd_read_count[sock_num] = 0;
@@ -220,15 +248,17 @@ static uint8_t mock_xfer(void *ctx, uint8_t tx)
                     if (mock_cmd_read_count[sock_num] >= mock_cmd_clear_delay) {
                         uint8_t saved_cmd = mock_sock_regs[sock_num][SN_CR];
                         mock_sock_regs[sock_num][SN_CR] = 0x00;
-                        if (saved_cmd == 0x01 && mock_open_status[sock_num]) {
-                            mock_sock_regs[sock_num][SN_SR] = mock_open_status[sock_num];
-                        }
-                        if (saved_cmd == 0x10) {
-                            mock_sock_regs[sock_num][SN_SR] = 0x00;
-                        }
+                        mock_cmd_done(sock_num, saved_cmd);
                         return 0x00U;
                     }
                     return mock_sock_regs[sock_num][SN_CR];
+                }
+                if (offset == SN_SR && mock_sr_left[sock_num] > 0) {
+                    uint8_t shown = mock_sock_regs[sock_num][SN_SR];
+                    if (--mock_sr_left[sock_num] == 0) {
+                        mock_sock_regs[sock_num][SN_SR] = mock_sr_next[sock_num];
+                    }
+                    return shown;
                 }
                 if ((offset == SN_TX_FSR0 || offset == SN_RX_RSR0) &&
                     mock_tear_left[sock_num] > 0) {
@@ -539,7 +569,60 @@ TEST(test_socket_open_wrong_status)
     ASSERT_EQ(e, W5500_ERR_SOCK);
 }
 
+TEST(test_socket_open_waits_for_status)
+{
+    init_dev();
+    /* W5500 Datasheet 1.1.0 p46: "Even though Sn_CR is cleared to 0x00, the
+     * command is still being processed. ... please check the Sn_IR or Sn_SR." */
+    mock_open_status[0] = W5500_SOCK_INIT;
+    mock_sr_lag = 3;
+
+    ASSERT_EQ(w5500_socket_open(&dev, 0, W5500_PROTO_TCP, 5000), W5500_OK);
+    ASSERT_EQ(mock_sock_regs[0][SN_SR], W5500_SOCK_INIT);
+}
+
+TEST(test_socket_open_finishes_close_before_open)
+{
+    init_dev();
+    mock_sock_regs[0][SN_SR] = W5500_SOCK_UDP;    /* already open */
+    mock_open_status[0] = W5500_SOCK_INIT;
+    mock_sr_lag = 2;
+
+    ASSERT_EQ(w5500_socket_open(&dev, 0, W5500_PROTO_TCP, 5000), W5500_OK);
+    ASSERT_EQ(mock_sr_at_open[0], W5500_SOCK_CLOSED);
+}
+
+TEST(test_socket_open_close_never_finishes)
+{
+    init_dev();
+    mock_sock_regs[0][SN_SR] = W5500_SOCK_UDP;
+    mock_sr_lag = 999999;
+
+    ASSERT_EQ(w5500_socket_open(&dev, 0, W5500_PROTO_TCP, 5000),
+              W5500_ERR_TIMEOUT);
+    ASSERT_EQ(mock_sr_at_open[0], 0xEE);          /* OPEN was never sent */
+}
+
 /* ---------- socket close tests ---------- */
+
+TEST(test_socket_close_waits_for_closed)
+{
+    init_dev();
+    mock_sock_regs[0][SN_SR] = W5500_SOCK_UDP;
+    mock_sr_lag = 2;
+
+    ASSERT_EQ(w5500_socket_close(&dev, 0), W5500_OK);
+    ASSERT_EQ(mock_sock_regs[0][SN_SR], W5500_SOCK_CLOSED);
+}
+
+TEST(test_socket_close_status_never_changes)
+{
+    init_dev();
+    mock_sock_regs[0][SN_SR] = W5500_SOCK_UDP;
+    mock_sr_lag = 999999;
+
+    ASSERT_EQ(w5500_socket_close(&dev, 0), W5500_ERR_TIMEOUT);
+}
 
 TEST(test_socket_close)
 {
@@ -932,6 +1015,11 @@ TEST_MAIN("w5500")
     RUN(test_socket_open_invalid_protocol);
     RUN(test_socket_open_null_dev);
     RUN(test_socket_open_wrong_status);
+    RUN(test_socket_open_waits_for_status);
+    RUN(test_socket_open_finishes_close_before_open);
+    RUN(test_socket_open_close_never_finishes);
+    RUN(test_socket_close_waits_for_closed);
+    RUN(test_socket_close_status_never_changes);
     RUN(test_socket_close);
     RUN(test_socket_close_invalid_sock);
     RUN(test_socket_close_null_dev);

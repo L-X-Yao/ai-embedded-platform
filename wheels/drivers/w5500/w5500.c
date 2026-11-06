@@ -187,6 +187,29 @@ static w5500_err_t wait_cmd_clear(const w5500_spi_t *s, uint8_t sock)
     return W5500_ERR_TIMEOUT;
 }
 
+/* Sn_CR clearing only means the command was accepted: it "is still being
+ * processed" (manual p46), and Sn_SR is what shows it has finished. */
+static bool wait_status(const w5500_spi_t *s, uint8_t sock, uint8_t status)
+{
+    uint32_t timeout = W5500_CMD_TIMEOUT;
+    while (timeout--) {
+        if (read_sock_reg(s, sock, SN_SR) == status) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static w5500_err_t close_sock(const w5500_spi_t *s, uint8_t sock)
+{
+    write_sock_reg(s, sock, SN_CR, CMD_CLOSE);
+    w5500_err_t err = wait_cmd_clear(s, sock);
+    if (err != W5500_OK) return err;
+
+    return wait_status(s, sock, W5500_SOCK_CLOSED) ? W5500_OK
+                                                   : W5500_ERR_TIMEOUT;
+}
+
 /* ---------- API ---------- */
 
 w5500_err_t w5500_init(w5500_t *dev, const w5500_spi_t *spi)
@@ -257,8 +280,7 @@ w5500_err_t w5500_socket_open(w5500_t *dev, uint8_t sock,
     const w5500_spi_t *s = dev->spi;
 
     /* Close socket first (in case it's already open) */
-    write_sock_reg(s, sock, SN_CR, CMD_CLOSE);
-    w5500_err_t err = wait_cmd_clear(s, sock);
+    w5500_err_t err = close_sock(s, sock);
     if (err != W5500_OK) return err;
 
     /* Set protocol */
@@ -274,15 +296,13 @@ w5500_err_t w5500_socket_open(w5500_t *dev, uint8_t sock,
     if (err != W5500_OK) return err;
 
     /* Verify socket opened correctly */
-    uint8_t sr = read_sock_reg(s, sock, SN_SR);
-    if (protocol == W5500_PROTO_TCP && sr != W5500_SOCK_INIT)
-        return W5500_ERR_SOCK;
-    if (protocol == W5500_PROTO_UDP && sr != W5500_SOCK_UDP)
-        return W5500_ERR_SOCK;
-    if (protocol == W5500_PROTO_MACRAW && sr != W5500_SOCK_MACRAW)
-        return W5500_ERR_SOCK;
+    uint8_t want = W5500_SOCK_MACRAW;
+    if (protocol == W5500_PROTO_TCP)
+        want = W5500_SOCK_INIT;
+    else if (protocol == W5500_PROTO_UDP)
+        want = W5500_SOCK_UDP;
 
-    return W5500_OK;
+    return wait_status(s, sock, want) ? W5500_OK : W5500_ERR_SOCK;
 }
 
 w5500_err_t w5500_socket_close(w5500_t *dev, uint8_t sock)
@@ -290,8 +310,7 @@ w5500_err_t w5500_socket_close(w5500_t *dev, uint8_t sock)
     if (!dev || !dev->spi)      return W5500_ERR_PARAM;
     if (sock >= W5500_MAX_SOCK) return W5500_ERR_SOCK;
 
-    write_sock_reg(dev->spi, sock, SN_CR, CMD_CLOSE);
-    return wait_cmd_clear(dev->spi, sock);
+    return close_sock(dev->spi, sock);
 }
 
 w5500_err_t w5500_socket_send(w5500_t *dev, uint8_t sock,
