@@ -26,9 +26,9 @@ static void mock_reset(void)
     mock_fail_next  = 0;
     mock_op_count   = 0;
     mock_fail_at    = -1;
-    mock_dac_value  = 0;
+    mock_dac_value  = 0x800u;     /* p.19: EEPROM loaded at reset */
     mock_dac_pd     = 0;
-    mock_eeprom_value = 0;
+    mock_eeprom_value = 0x800u;   /* p.21 Table 5-3: D11 = 1 */
     mock_eeprom_pd  = 0;
     mock_eeprom_busy = false;
     memset(mock_last_write, 0, sizeof(mock_last_write));
@@ -56,6 +56,10 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
         mock_last_write_len = (int)len;
     }
 
+    /* p.25 Note 1 "Any new write command including repeat bytes during the
+     * EEPROM write mode is ignored." */
+    if (mock_eeprom_busy) return true;
+
     if (len == 2) {
         /* Fast mode write */
         mock_dac_pd    = (data[0] >> 4) & 0x03u;
@@ -75,6 +79,7 @@ static bool mock_write(void *ctx, uint8_t addr, const uint8_t *data, uint16_t le
             mock_dac_pd       = pd;
             mock_eeprom_value = val;
             mock_eeprom_pd    = pd;
+            mock_eeprom_busy  = true;
         }
     }
     return true;
@@ -238,6 +243,7 @@ TEST(test_write_command_byte_all_pd_modes)
         ASSERT_EQ_HEX(mock_last_write[0], rows[i].dac);
         ASSERT_EQ(mcp4725_write_eeprom(&dev, 0, rows[i].pd), MCP4725_OK);
         ASSERT_EQ_HEX(mock_last_write[0], rows[i].eeprom);
+        mock_eeprom_busy = false;   /* the EEPROM cycle ends */
     }
 }
 
@@ -299,6 +305,7 @@ TEST(test_read_status_roundtrip)
 
     mcp4725_write_dac(&dev, 3000, MCP4725_PD_NORMAL);
     mcp4725_write_eeprom(&dev, 1500, MCP4725_PD_100K);
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
 
     mcp4725_status_t st;
     ASSERT_EQ(mcp4725_read_status(&dev, &st), MCP4725_OK);
@@ -417,7 +424,8 @@ TEST(test_fast_does_not_touch_eeprom)
     mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
 
     mcp4725_write_eeprom(&dev, 1000, MCP4725_PD_NORMAL);
-    mcp4725_write_fast(&dev, 3000);
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
+    ASSERT_EQ(mcp4725_write_fast(&dev, 3000), MCP4725_OK);
 
     ASSERT_EQ(mock_dac_value, 3000);
     ASSERT_EQ(mock_eeprom_value, 1000);
@@ -429,12 +437,73 @@ TEST(test_dac_does_not_touch_eeprom)
     mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
 
     mcp4725_write_eeprom(&dev, 500, MCP4725_PD_NORMAL);
-    mcp4725_write_dac(&dev, 2000, MCP4725_PD_1K);
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
+    ASSERT_EQ(mcp4725_write_dac(&dev, 2000, MCP4725_PD_1K), MCP4725_OK);
 
     ASSERT_EQ(mock_dac_value, 2000);
     ASSERT_EQ(mock_dac_pd, 1);
     ASSERT_EQ(mock_eeprom_value, 500);
     ASSERT_EQ(mock_eeprom_pd, 0);
+}
+
+/* p.21 "any new write command is ignored (for EEPROM or DAC register)":
+ * the driver sends nothing and says so. */
+TEST(test_writes_refused_during_eeprom_cycle)
+{
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+    ASSERT_EQ(mcp4725_write_eeprom(&dev, 1000, MCP4725_PD_NORMAL), MCP4725_OK);
+
+    int writes = mock_write_count;
+    ASSERT_EQ(mcp4725_write_fast(&dev, 1), MCP4725_ERR_BUSY);
+    ASSERT_EQ(mcp4725_write_dac(&dev, 2, MCP4725_PD_NORMAL), MCP4725_ERR_BUSY);
+    ASSERT_EQ(mcp4725_write_eeprom(&dev, 3, MCP4725_PD_NORMAL), MCP4725_ERR_BUSY);
+    ASSERT_EQ(mock_write_count, writes);
+
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
+    ASSERT_EQ(mcp4725_write_fast(&dev, 1), MCP4725_OK);
+    ASSERT_EQ(mock_dac_value, 1);
+}
+
+/* With no EEPROM write running there is nothing to check. */
+TEST(test_fast_write_is_one_transfer)
+{
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+
+    int reads = mock_read_count;
+    ASSERT_EQ(mcp4725_write_fast(&dev, 1), MCP4725_OK);
+    ASSERT_EQ(mock_read_count, reads);
+    ASSERT_EQ(mock_write_count, 1);
+}
+
+/* Once RDY/BSY was seen high the check is over. */
+TEST(test_ready_seen_once_ends_the_check)
+{
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+    mcp4725_write_eeprom(&dev, 1000, MCP4725_PD_NORMAL);
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
+
+    mcp4725_status_t st;
+    ASSERT_EQ(mcp4725_read_status(&dev, &st), MCP4725_OK);
+
+    int reads = mock_read_count;
+    ASSERT_EQ(mcp4725_write_fast(&dev, 1), MCP4725_OK);
+    ASSERT_EQ(mock_read_count, reads);
+}
+
+TEST(test_ready_check_i2c_fail)
+{
+    mock_reset();
+    mcp4725_init(&dev, &mock_i2c, MCP4725_ADDR_A);
+    mcp4725_write_eeprom(&dev, 1000, MCP4725_PD_NORMAL);
+    mock_eeprom_busy = false;   /* the EEPROM cycle ends */
+
+    int writes = mock_write_count;
+    mock_fail_next = 1;
+    ASSERT_EQ(mcp4725_write_fast(&dev, 1), MCP4725_ERR_I2C);
+    ASSERT_EQ(mock_write_count, writes);
 }
 
 TEST_MAIN("mcp4725")
@@ -454,6 +523,10 @@ TEST_MAIN("mcp4725")
     RUN(test_write_dac_over_max);
     RUN(test_write_eeprom);
     RUN(test_write_eeprom_with_pd);
+    RUN(test_writes_refused_during_eeprom_cycle);
+    RUN(test_fast_write_is_one_transfer);
+    RUN(test_ready_seen_once_ends_the_check);
+    RUN(test_ready_check_i2c_fail);
     RUN(test_write_eeprom_i2c_fail);
     RUN(test_write_eeprom_over_max);
     RUN(test_read_status_roundtrip);
