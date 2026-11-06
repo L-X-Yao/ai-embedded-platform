@@ -116,7 +116,11 @@ while IFS= read -r relpath; do
 
     # Check the git blob (index), not the working tree — on Windows the
     # working tree may have CRLF even when .gitattributes says eol=lf.
-    if git -C "$REPO" show ":$relpath" 2>/dev/null | grep -qP '\r'; then
+    # grep -c reads to the end. grep -q stops at the first match, git show
+    # then dies on SIGPIPE, and pipefail turns that into "no CRLF" for any
+    # blob larger than the pipe buffer.
+    cr_lines=$(git -C "$REPO" show ":$relpath" 2>/dev/null | grep -cP '\r' || true)
+    if [[ "$cr_lines" -gt 0 ]]; then
         crlf_count=$((crlf_count + 1))
         crlf_files+=("$relpath")
         if ! $QUIET; then
