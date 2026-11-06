@@ -298,6 +298,43 @@ TEST(test_set_actuator_picks_the_library)
     ASSERT_EQ(mock_regs[0x03], 0x11);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(drv2605_t *d)
+{
+    ASSERT_EQ(drv2605_set_actuator(d, DRV2605_ACTUATOR_LRA), DRV2605_ERR_PARAM);
+    ASSERT_EQ(drv2605_set_waveform(d, 0, 1), DRV2605_ERR_PARAM);
+    ASSERT_EQ(drv2605_go(d), DRV2605_ERR_PARAM);
+    ASSERT_EQ(drv2605_stop(d), DRV2605_ERR_PARAM);
+    ASSERT_EQ(drv2605_set_realtime_value(d, 0x40), DRV2605_ERR_PARAM);
+}
+
+/* Something else at this address: go must not write to it */
+TEST(test_device_refused_after_wrong_id)
+{
+    drv2605_t d;
+    mock_reset();
+    mock_regs[0x00] = (1u << 5);
+    ASSERT_EQ(drv2605_init(&d, &mock_i2c), DRV2605_ERR_ID);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const drv2605_i2c_t no_callbacks;
+    drv2605_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(drv2605_init(&d, NULL), DRV2605_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(drv2605_init(&d, &no_callbacks), DRV2605_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("drv2605")
     RUN(test_init_ok);
     RUN(test_init_drv2605_non_l);
@@ -325,4 +362,6 @@ TEST_MAIN("drv2605")
     RUN(test_init_library_follows_the_actuator);
     RUN(test_init_library_i2c_fail);
     RUN(test_set_actuator_picks_the_library);
+    RUN(test_device_refused_after_wrong_id);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()
