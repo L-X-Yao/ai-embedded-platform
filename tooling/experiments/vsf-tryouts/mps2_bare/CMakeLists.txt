@@ -46,8 +46,10 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Integration demo: consume wheels/primitives/log from the MCU-sim side to prove
 # the wheel survives outside host pytest (different target, different sink,
-# different time source). See main.c for the semihosting sink.
+# different time source). See main.c for the semihosting sink and time source.
+# log.c includes contract.h, which lives in tooling/harness.
 get_filename_component(LOG_WHEEL_DIR ../../../../wheels/primitives/log ABSOLUTE)
+get_filename_component(HARNESS_DIR ../../../../tooling/harness ABSOLUTE)
 
 target_sources(${CMAKE_PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/main.c
@@ -56,6 +58,7 @@ target_sources(${CMAKE_PROJECT_NAME} PUBLIC
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
     ${LOG_WHEEL_DIR}
+    ${HARNESS_DIR}
 )
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES

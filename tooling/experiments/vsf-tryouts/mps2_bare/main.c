@@ -40,6 +40,13 @@ static void log_sink_semihosting(void *ctx, const char *line, size_t len)
     }
 }
 
+// ------------ log wheel time source: VSF systimer in ms ------------
+// The wheel prints no timestamp until it is given a time function.
+static uint32_t log_time_ms(void)
+{
+    return (uint32_t)vsf_systimer_get_ms();
+}
+
 // ------------ VSF kernel test: teda + sem round-trip ------------
 // Exercises: teda scheduling, vsf_systimer, sem init/post/pend, VSF_EVT
 // dispatch (INIT → TIMER → SYNC). Sender posts on a 1 ms teda timer,
@@ -102,6 +109,7 @@ got_sem:
 int VSF_USER_ENTRY(void)
 {
     log_add_sink(log_sink_semihosting, NULL);
+    log_set_time_fn(log_time_ms);
     LOG_INFO("VSF kernel teda+sem test start");
     vsf_eda_sem_init(&__t.sem, 0);
 
