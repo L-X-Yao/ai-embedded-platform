@@ -449,6 +449,43 @@ TEST(test_delay_called)
     ASSERT_TRUE(mock_time_delay_total_ms >= 25);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(si7021_t *d)
+{
+    float rh;
+    float temp_c;
+    uint32_t serial_a;
+    uint32_t serial_b;
+    ASSERT_EQ(si7021_read_humidity(d, &rh), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_temperature(d, &temp_c), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_both(d, &rh, &temp_c), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_set_resolution(d, SI7021_RES_14BIT_12BIT), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_reset(d), SI7021_ERR_PARAM);
+    ASSERT_EQ(si7021_read_serial(d, &serial_a, &serial_b), SI7021_ERR_PARAM);
+}
+
+TEST(test_zeroed_device_refused)
+{
+    static si7021_t zeroed;
+    assert_device_refused(&zeroed);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const si7021_i2c_t zeroed;
+    si7021_t d;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(si7021_init(&d, NULL), SI7021_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(si7021_init(&d, &zeroed), SI7021_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("si7021")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -482,4 +519,6 @@ TEST_MAIN("si7021")
     RUN(test_known_conversion_rh);
     RUN(test_known_conversion_temp);
     RUN(test_delay_called);
+    RUN(test_zeroed_device_refused);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

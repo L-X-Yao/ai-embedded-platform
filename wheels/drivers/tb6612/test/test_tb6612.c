@@ -391,6 +391,34 @@ TEST(test_both_motors_independent)
     ASSERT_EQ(mock_pwm_duty[PWM_CHB], 300);
 }
 
+/* ---------- a device init did not accept ---------- */
+
+static void assert_device_refused(tb6612_t *d)
+{
+    ASSERT_EQ(tb6612_set_speed(d, TB6612_MOTOR_A, 500), TB6612_ERR_PARAM);
+    ASSERT_EQ(tb6612_brake(d, TB6612_MOTOR_B), TB6612_ERR_PARAM);
+    ASSERT_EQ(tb6612_standby(d, false), TB6612_ERR_PARAM);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const tb6612_hal_t zeroed;
+    tb6612_t d;
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tb6612_init(&d, NULL, &test_cfg), TB6612_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tb6612_init(&d, &zeroed, &test_cfg), TB6612_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(tb6612_init(&d, &mock_hal, NULL), TB6612_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("tb6612")
     RUN(test_init_ok);
     RUN(test_init_null_dev);
@@ -414,4 +442,5 @@ TEST_MAIN("tb6612")
     RUN(test_full_speed_forward);
     RUN(test_full_speed_reverse);
     RUN(test_both_motors_independent);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

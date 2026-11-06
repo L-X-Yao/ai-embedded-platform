@@ -317,6 +317,43 @@ TEST(test_init_spi_fail)
     ASSERT_EQ(e, ST7735_ERR_SPI);
 }
 
+/* ---------- a device init did not finish ---------- */
+
+static void assert_device_refused(st7735_t *d)
+{
+    const uint16_t px = 0xF800;
+    ASSERT_EQ(st7735_set_window(d, 0, 0, 1, 1), ST7735_ERR_PARAM);
+    ASSERT_EQ(st7735_write_pixels(d, &px, 1), ST7735_ERR_PARAM);
+    ASSERT_EQ(st7735_fill_rect(d, 0, 0, 1, 1, px), ST7735_ERR_PARAM);
+    ASSERT_EQ(st7735_fill_screen(d, px), ST7735_ERR_PARAM);
+    ASSERT_EQ(st7735_draw_pixel(d, 0, 0, px), ST7735_ERR_PARAM);
+}
+
+TEST(test_device_refused_after_failed_command)
+{
+    st7735_t d;
+    mock_reset();
+    mock_fail_at = 0;  /* SLPOUT */
+    ASSERT_EQ(st7735_init(&d, &mock_spi), ST7735_ERR_SPI);
+    assert_device_refused(&d);
+}
+
+/* dev holds whatever the stack did, as nothing else wrote it */
+TEST(test_device_refused_after_rejected_init)
+{
+    static const st7735_spi_t zeroed;
+    st7735_t d;
+    mock_reset();
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(st7735_init(&d, NULL), ST7735_ERR_PARAM);
+    assert_device_refused(&d);
+
+    memset(&d, 0xA5, sizeof(d));
+    ASSERT_EQ(st7735_init(&d, &zeroed), ST7735_ERR_PARAM);
+    assert_device_refused(&d);
+}
+
 TEST_MAIN("st7735")
     RUN(test_init_ok);
     RUN(test_init_sequence);
@@ -332,4 +369,6 @@ TEST_MAIN("st7735")
     RUN(test_write_pixels_ok);
     RUN(test_bytes_with_csx_high_are_lost);
     RUN(test_init_spi_fail);
+    RUN(test_device_refused_after_failed_command);
+    RUN(test_device_refused_after_rejected_init);
 TEST_MAIN_END()

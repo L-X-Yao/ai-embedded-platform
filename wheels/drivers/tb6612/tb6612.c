@@ -10,6 +10,7 @@
 
 #include "tb6612.h"
 #include "contract.h"
+#include <string.h>
 
 /* ---------- helpers ---------- */
 
@@ -51,7 +52,13 @@ static void get_motor_pins(const tb6612_t *dev, tb6612_motor_t motor,
 tb6612_err_t tb6612_init(tb6612_t *dev, const tb6612_hal_t *hal,
                          const tb6612_cfg_t *cfg)
 {
-    if (!dev || !hal || !cfg) return TB6612_ERR_PARAM;
+    if (!dev) return TB6612_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal || !cfg) return TB6612_ERR_PARAM;
     if (!hal->write_pin || !hal->set_pwm_duty) return TB6612_ERR_PARAM;
 
     dev->hal = hal;

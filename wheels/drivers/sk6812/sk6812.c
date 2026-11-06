@@ -23,7 +23,13 @@
 sk6812_err_t sk6812_init(sk6812_t *dev, const sk6812_hal_t *hal,
                          uint16_t num_leds)
 {
-    if (!dev || !hal) return SK6812_ERR_PARAM;
+    if (!dev) return SK6812_ERR_PARAM;
+
+    /* dev->hal stays NULL unless init succeeds: the other calls refuse a
+     * device without it, whose num_leds says nothing about the buffer */
+    memset(dev, 0, sizeof(*dev));
+
+    if (!hal) return SK6812_ERR_PARAM;
     if (!hal->send_data || !hal->delay_us) return SK6812_ERR_PARAM;
     if (num_leds == 0) return SK6812_ERR_PARAM;
 
@@ -38,7 +44,7 @@ sk6812_err_t sk6812_set_pixel(sk6812_t *dev, sk6812_pixel_t *buf,
                               uint16_t idx,
                               uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
-    if (!dev || !buf) return SK6812_ERR_PARAM;
+    if (!dev || !dev->hal || !buf) return SK6812_ERR_PARAM;
     if (idx >= dev->num_leds) return SK6812_ERR_PARAM;
 
     buf[idx].g = g;
@@ -72,7 +78,7 @@ sk6812_err_t sk6812_fill(sk6812_t *dev, sk6812_pixel_t *buf,
 {
     uint16_t i;
 
-    if (!dev || !buf) return SK6812_ERR_PARAM;
+    if (!dev || !dev->hal || !buf) return SK6812_ERR_PARAM;
 
     for (i = 0; i < dev->num_leds; i++) {
         buf[i].g = g;
@@ -86,7 +92,7 @@ sk6812_err_t sk6812_fill(sk6812_t *dev, sk6812_pixel_t *buf,
 
 sk6812_err_t sk6812_clear(sk6812_t *dev, sk6812_pixel_t *buf)
 {
-    if (!dev || !buf) return SK6812_ERR_PARAM;
+    if (!dev || !dev->hal || !buf) return SK6812_ERR_PARAM;
 
     memset(buf, 0, (size_t)dev->num_leds * sizeof(sk6812_pixel_t));
 
