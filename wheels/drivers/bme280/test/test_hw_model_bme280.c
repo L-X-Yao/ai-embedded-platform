@@ -4,7 +4,8 @@
  *
  * Validates BME280 driver against a datasheet-accurate register model.
  * The model enforces read-only registers, reset behavior, measurement
- * triggers, humidity calibration, and ADC output layout.
+ * triggers, humidity calibration, ADC output layout, and the time a start-up
+ * and a conversion take.
  */
 
 #include "test_harness.h"
@@ -15,8 +16,16 @@
 static bme280_model_t model;
 
 static const bme280_i2c_t model_i2c = {
-    .write_reg = hw_model_i2c_write_reg,
-    .read_regs = hw_model_i2c_read_regs,
+    .write_reg = bme280_model_write_reg,
+    .read_regs = bme280_model_read_regs,
+    .delay_ms  = bme280_model_delay,
+    .ctx       = &model.hw,
+};
+
+/* delay_ms is optional: only the time of the bus reads then passes. */
+static const bme280_i2c_t no_delay_i2c = {
+    .write_reg = bme280_model_write_reg,
+    .read_regs = bme280_model_read_regs,
     .delay_ms  = NULL,
     .ctx       = &model.hw,
 };
@@ -31,6 +40,19 @@ static const bme280_cfg_t default_cfg = {
 static void setup(void)
 {
     bme280_model_init(&model);
+}
+
+/* Past tstartup and the NVM copy, as a caller with no delay_ms must wait. */
+static void setup_idle(void)
+{
+    setup();
+    bme280_model_advance_us(&model, 2000u + BME280_MODEL_NVM_COPY_US);
+}
+
+/* The longest conversion section 9.1 allows, every channel at x16. */
+static void finish_conversion(void)
+{
+    bme280_model_advance_us(&model, 112800u);
 }
 
 /* --- init tests -------------------------------------------------------- */
@@ -253,6 +275,7 @@ TEST(test_model_skip_outputs_placeholders)
     setup_reference();
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x01);
+    finish_conversion();
 
     ASSERT_EQ(model.hw.regs[0xF7], 0x80);
     ASSERT_EQ(model.hw.regs[0xF8], 0x00);
@@ -269,13 +292,180 @@ TEST(test_model_ctrl_hum_waits_for_ctrl_meas)
     setup_reference();
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    finish_conversion();
     ASSERT_EQ(model.hw.regs[0xFD], 0x80);
 
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x01);
     ASSERT_EQ(model.hw.regs[0xFD], 0x80);
 
     hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    finish_conversion();
     ASSERT_EQ(model.hw.regs[0xFD], REF_ADC_H >> 8);
+}
+
+/* p.27: osrs_h takes effect at the ctrl_meas write, not at the conversion. */
+TEST(test_model_ctrl_hum_is_latched_at_the_trigger)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x01);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
+    finish_conversion();
+    ASSERT_EQ(model.hw.regs[0xFD], REF_ADC_H >> 8);
+}
+
+/* Table 18 p.27: the reset state of the data, control and status registers. */
+TEST(test_model_reset_state)
+{
+    setup();
+    ASSERT_EQ_HEX(model.hw.regs[0xF7], 0x80);
+    ASSERT_EQ_HEX(model.hw.regs[0xF8], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0xF9], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0xFA], 0x80);
+    ASSERT_EQ_HEX(model.hw.regs[0xFB], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0xFC], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[0xFD], 0x80);
+    ASSERT_EQ_HEX(model.hw.regs[0xFE], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_CTRL_HUM], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_CTRL_MEAS], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_CONFIG], 0x00);
+}
+
+/* Table 25 p.29: "01 and 10 Forced mode" */
+TEST(test_model_mode_10_is_forced)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x01);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x26);
+    ASSERT_EQ(model.measure_count, 1);
+
+    finish_conversion();
+    ASSERT_EQ_HEX(model.hw.regs[0xFA], REF_ADC_T >> 12);
+    ASSERT_EQ(model.hw.regs[BME280_REG_CTRL_MEAS] & 0x03, 0);
+}
+
+/* p.27: "Writing other values than 0xB6 has no effect. The readout value is
+ * always 0x00." */
+TEST(test_model_reset_register_reads_zero)
+{
+    setup();
+    hw_model__write_reg(&model.hw, BME280_REG_CONFIG, 0xA0);
+
+    hw_model__write_reg(&model.hw, BME280_REG_RESET, 0x55);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_RESET], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_CONFIG], 0xA0);
+
+    hw_model__write_reg(&model.hw, BME280_REG_RESET, 0xB6);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_RESET], 0x00);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_CONFIG], 0x00);
+}
+
+/* The worked example of section 9.1, p.51: osrs_t x1, osrs_p x4 and no humidity
+ * take 13.325 ms at most. Table 21 p.28: measuring goes "back to '0' when the
+ * results have been transferred to the data registers". p.15: "When the
+ * measurement is finished, the sensor returns to sleep mode". */
+TEST(test_model_conversion_takes_the_section_9_1_time)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x2D);
+
+    bme280_model_advance_us(&model, 13324u);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_STATUS] & 0x08, 0x08);
+    ASSERT_EQ_HEX(model.hw.regs[0xFA], 0x80);
+    ASSERT_EQ(model.hw.regs[BME280_REG_CTRL_MEAS] & 0x03, 1);
+
+    bme280_model_advance_us(&model, 1u);
+    ASSERT_EQ(model.hw.regs[BME280_REG_STATUS] & 0x08, 0);
+    ASSERT_EQ_HEX(model.hw.regs[0xFA], REF_ADC_T >> 12);
+    ASSERT_EQ(model.hw.regs[BME280_REG_CTRL_MEAS] & 0x03, 0);
+}
+
+/* Table 21 p.28: the NVM data "are copied at power-on-reset and before every
+ * conversion", so measuring is not yet 1 right after the trigger. */
+TEST(test_model_nvm_copy_comes_before_the_conversion)
+{
+    setup_reference();
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_STATUS], 0x01);
+
+    bme280_model_advance_us(&model, BME280_MODEL_NVM_COPY_US);
+    ASSERT_EQ_HEX(model.hw.regs[BME280_REG_STATUS], 0x08);
+}
+
+/* A status read at 400 kHz takes 38 clocks, 95 us, so polling alone uses time. */
+TEST(test_model_bus_reads_take_time)
+{
+    setup_reference();
+    bme280_model_advance_us(&model, 2000u + BME280_MODEL_NVM_COPY_US);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_HUM, 0x00);
+    hw_model__write_reg(&model.hw, BME280_REG_CTRL_MEAS, 0x25);
+
+    uint8_t status = 0;
+    /* osrs_t x1, osrs_p x1: 1.25 + 2.3 + 2.875 = 6.425 ms, 68 reads */
+    for (int i = 0; i < 67; i++)
+        ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                           BME280_REG_STATUS, &status, 1));
+    ASSERT_EQ_HEX(status & 0x08, 0x08);
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_STATUS, &status, 1));
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_STATUS, &status, 1));
+    ASSERT_EQ(status & 0x08, 0);
+}
+
+/* p.8: tstartup, "Time to first communication", is 2 ms at most. */
+TEST(test_model_no_access_during_start_up)
+{
+    setup();
+    uint8_t id = 0;
+    ASSERT_FALSE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                        BME280_REG_ID, &id, 1));
+    ASSERT_FALSE(bme280_model_write_reg(&model.hw, BME280_ADDR_LOW,
+                                        BME280_REG_CTRL_HUM, 0x01));
+    bme280_model_advance_us(&model, 1800u);
+    ASSERT_FALSE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                        BME280_REG_ID, &id, 1));
+    bme280_model_advance_us(&model, 200u);
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_ID, &id, 1));
+    ASSERT_EQ_HEX(id, 0x60);
+}
+
+/* p.27: 0xB6 runs "the complete power-on-reset procedure". */
+TEST(test_model_no_access_after_soft_reset)
+{
+    setup_idle();
+    ASSERT_TRUE(bme280_model_write_reg(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_RESET, 0xB6));
+    uint8_t id = 0;
+    ASSERT_FALSE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                        BME280_REG_ID, &id, 1));
+    bme280_model_advance_us(&model, 2000u);
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_ID, &id, 1));
+}
+
+/* Table 21 p.28: im_update is 1 while the NVM data are being copied to the
+ * image registers, so calibration read then is not the calibration. */
+TEST(test_model_calibration_is_not_ready_during_the_nvm_copy)
+{
+    setup();
+    bme280_model_advance_us(&model, 2000u);
+
+    uint8_t status = 0;
+    uint8_t dig_t1[2] = { 0xA5, 0xA5 };
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_STATUS, &status, 1));
+    ASSERT_EQ_HEX(status & 0x01, 0x01);
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_CALIB00, dig_t1, 2));
+    ASSERT_EQ_HEX(dig_t1[0], 0x00);
+
+    bme280_model_advance_us(&model, BME280_MODEL_NVM_COPY_US);
+    ASSERT_TRUE(bme280_model_read_regs(&model.hw, BME280_ADDR_LOW,
+                                       BME280_REG_CALIB00, dig_t1, 2));
+    ASSERT_EQ_HEX(dig_t1[0], 0x70);
 }
 
 TEST(test_all_channels_match_the_manual)
@@ -398,6 +588,127 @@ TEST(test_skip_temperature_before_any_read_measures_it)
     ASSERT_EQ(model.measure_count, 3);
 }
 
+/* --- the wait for a conversion ---------------------------------------- */
+
+/* The sample read must be the one this call asked for. Table 21 p.28: measuring
+ * is 0 during the NVM copy, so that bit alone can end the wait too early. */
+TEST(test_read_gets_this_measurement)
+{
+    setup_reference();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+
+    bme280_model_set_temperature(&model, 400000);
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_TRUE(data.temperature_c < 10.0f);
+}
+
+TEST(test_read_gets_this_measurement_with_no_delay)
+{
+    setup_reference();
+    bme280_model_advance_us(&model, 2000u + BME280_MODEL_NVM_COPY_US);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &no_delay_i2c, &default_cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+
+    bme280_model_set_temperature(&model, 400000);
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_TRUE(data.temperature_c < 10.0f);
+}
+
+/* Section 9.1: every channel at x16 takes 112.8 ms at most. */
+static void check_x16_read(const bme280_i2c_t *i2c)
+{
+    bme280_cfg_t cfg = cfg_of(BME280_OVERSAMPLING_16, BME280_OVERSAMPLING_16,
+                              BME280_OVERSAMPLING_16);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, i2c, &cfg), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+    ASSERT_NEAR(data.pressure_pa, REF_PRESS_PA, 0.05f);
+    ASSERT_NEAR(data.humidity_pct, REF_HUM_PCT, 0.01f);
+}
+
+TEST(test_read_at_x16_finishes)
+{
+    setup_reference();
+    check_x16_read(&model_i2c);
+}
+
+TEST(test_read_at_x16_finishes_with_no_delay)
+{
+    setup_reference();
+    bme280_model_advance_us(&model, 2000u + BME280_MODEL_NVM_COPY_US);
+    check_x16_read(&no_delay_i2c);
+}
+
+/* --- start-up and soft reset ------------------------------------------- */
+
+/* p.8: first communication 2 ms after power-on, and the calibration only once
+ * the NVM copy is over (Table 21 p.28). */
+TEST(test_init_at_power_on_reads_the_calibration)
+{
+    setup();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(dev.calib.dig_t1, 27504);
+    ASSERT_EQ(dev.calib.dig_h1, 75);
+}
+
+/* With no delay_ms the 2 ms are the caller's, as the header says. */
+TEST(test_init_with_no_delay_after_the_caller_waited)
+{
+    setup();
+    bme280_model_advance_us(&model, 2000u);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &no_delay_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(dev.calib.dig_t1, 27504);
+}
+
+TEST(test_read_right_after_reset)
+{
+    setup_reference();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(bme280_reset(&dev), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+}
+
+TEST(test_read_right_after_reset_with_no_delay)
+{
+    setup_reference();
+    bme280_model_advance_us(&model, 2000u + BME280_MODEL_NVM_COPY_US);
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &no_delay_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(bme280_reset(&dev), BME280_OK);
+
+    bme280_data_t data;
+    ASSERT_EQ(bme280_read(&dev, &data), BME280_OK);
+    ASSERT_NEAR(data.temperature_c, REF_TEMP_C, 0.001f);
+}
+
+TEST(test_init_right_after_reset_reads_the_calibration)
+{
+    setup();
+    bme280_t dev;
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(bme280_reset(&dev), BME280_OK);
+    ASSERT_EQ(bme280_init(&dev, &model_i2c, &default_cfg), BME280_OK);
+    ASSERT_EQ(dev.calib.dig_t1, 27504);
+}
+
 TEST(test_skip_all_refused)
 {
     setup();
@@ -432,6 +743,16 @@ TEST_MAIN("bme280 hardware model")
     RUN(test_multiple_reads_independent);
     RUN(test_model_skip_outputs_placeholders);
     RUN(test_model_ctrl_hum_waits_for_ctrl_meas);
+    RUN(test_model_ctrl_hum_is_latched_at_the_trigger);
+    RUN(test_model_reset_state);
+    RUN(test_model_mode_10_is_forced);
+    RUN(test_model_reset_register_reads_zero);
+    RUN(test_model_conversion_takes_the_section_9_1_time);
+    RUN(test_model_nvm_copy_comes_before_the_conversion);
+    RUN(test_model_bus_reads_take_time);
+    RUN(test_model_no_access_during_start_up);
+    RUN(test_model_no_access_after_soft_reset);
+    RUN(test_model_calibration_is_not_ready_during_the_nvm_copy);
     RUN(test_all_channels_match_the_manual);
     RUN(test_skip_pressure_reads_zero);
     RUN(test_skip_humidity_reads_zero);
@@ -439,5 +760,14 @@ TEST_MAIN("bme280 hardware model")
     RUN(test_skip_temperature_reuses_the_one_from_init);
     RUN(test_skip_temperature_after_a_read_keeps_it);
     RUN(test_skip_temperature_before_any_read_measures_it);
+    RUN(test_read_gets_this_measurement);
+    RUN(test_read_gets_this_measurement_with_no_delay);
+    RUN(test_read_at_x16_finishes);
+    RUN(test_read_at_x16_finishes_with_no_delay);
+    RUN(test_init_at_power_on_reads_the_calibration);
+    RUN(test_init_with_no_delay_after_the_caller_waited);
+    RUN(test_read_right_after_reset);
+    RUN(test_read_right_after_reset_with_no_delay);
+    RUN(test_init_right_after_reset_reads_the_calibration);
     RUN(test_skip_all_refused);
 TEST_MAIN_END()

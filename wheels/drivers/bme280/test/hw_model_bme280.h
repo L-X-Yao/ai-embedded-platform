@@ -2,15 +2,23 @@
 /*
  * hw_model_bme280.h — BME280 hardware register model from datasheet
  *
- * Models BST-BME280-DS002-15 register behavior:
+ * Models BST-BME280-DS001-24 register behavior:
  * - Chip ID 0x60 at 0xD0 (read-only)
  * - Calibration data at 0x88..0xA1 (26 bytes, temp+press+h1) (read-only)
  * - Humidity calibration at 0xE1..0xE7 (7 bytes) (read-only)
- * - Soft reset via 0xE0 = 0xB6
- * - ctrl_hum (0xF2): humidity oversampling (must write before ctrl_meas)
- * - ctrl_meas (0xF4): forced measurement via mode bits [1:0]
- * - Status register 0xF3 bit 3 (measuring) auto-clears after trigger
- * - ADC output at 0xF7..0xFE (press[3]+temp[3]+hum[2])
+ * - Soft reset via 0xE0 = 0xB6, which always reads 0x00
+ * - ctrl_hum (0xF2): humidity oversampling, latched at the ctrl_meas write
+ * - ctrl_meas (0xF4): mode bits [1:0], 01 and 10 forced, back to 00 at the end
+ * - Status register 0xF3: bit 0 (im_update) during an NVM copy, then bit 3
+ *   (measuring) for the rest of the conversion
+ * - ADC output at 0xF7..0xFE (press[3]+temp[3]+hum[2]), reset state 0x80 in
+ *   each MSB, changing only when a conversion ends
+ * - No access for tstartup after power-on or a soft reset
+ *
+ * Time passes through bme280_model_advance_us(), the HAL delay and the bus:
+ * a transfer costs its clocks at bus_khz. A conversion takes the maximum of
+ * section 9.1. The manual gives no length for the NVM copy, so
+ * BME280_MODEL_NVM_COPY_US is the model's choice.
  */
 
 #ifndef HW_MODEL_BME280_H
@@ -29,7 +37,16 @@
 #define BME280_REG_CTRL_MEAS  0xF4
 #define BME280_REG_CONFIG     0xF5
 #define BME280_REG_PRESS_MSB  0xF7
+#define BME280_REG_TEMP_MSB   0xFA
 #define BME280_REG_HUM_MSB    0xFD
+
+#define BME280_STATUS_MEASURING 0x08
+#define BME280_STATUS_IM_UPDATE 0x01
+
+/* p.8: tstartup */
+#define BME280_MODEL_STARTUP_US  2000u
+#define BME280_MODEL_NVM_COPY_US 500u
+#define BME280_MODEL_BUS_KHZ     400u
 
 /* --- Simulated physical environment --- */
 typedef struct {
@@ -38,6 +55,13 @@ typedef struct {
     int32_t          true_press_raw;  /* "real" pressure ADC (20-bit) */
     int32_t          true_hum_raw;    /* "real" humidity ADC (16-bit) */
     int              measure_count;
+    uint32_t         bus_khz;
+    uint32_t         startup_left_us;  /* no ACK until 0 */
+    uint32_t         nvm_left_us;      /* NVM copy still running */
+    uint32_t         measure_left_us;  /* conversion after the copy */
+    bool             image_loading;    /* the copy of a power-on reset */
+    uint8_t          latched_ctrl_meas;
+    uint8_t          latched_osrs_h;
 } bme280_model_t;
 
 /* Datasheet reference calibration (producing ~25C / ~101325 Pa / ~50 %RH) */
@@ -84,13 +108,12 @@ static void bme280_model_set_reference_calib(bme280_model_t *m)
 }
 
 /* Write ADC values into data registers. A channel whose osrs field is 000 is
- * skipped and reads 0x80000, or 0x8000 for humidity (Tables 20, 23, 24).
- * ctrl_hum only takes effect at a ctrl_meas write, so it is read here. */
-static void bme280_model_set_adc_output(bme280_model_t *m, uint8_t ctrl_meas)
+ * skipped and reads 0x80000, or 0x8000 for humidity (Tables 20, 23, 24). */
+static void bme280_model_set_adc_output(bme280_model_t *m)
 {
-    uint8_t osrs_t = (uint8_t)(ctrl_meas >> 5);
-    uint8_t osrs_p = (uint8_t)((ctrl_meas >> 2) & 0x07);
-    uint8_t osrs_h = (uint8_t)(m->hw.regs[BME280_REG_CTRL_HUM] & 0x07);
+    uint8_t osrs_t = (uint8_t)(m->latched_ctrl_meas >> 5);
+    uint8_t osrs_p = (uint8_t)((m->latched_ctrl_meas >> 2) & 0x07);
+    uint8_t osrs_h = m->latched_osrs_h;
 
     /* pressure: 0xF7..0xF9 (20-bit, MSB first) */
     uint32_t p = osrs_p ? ((uint32_t)m->true_press_raw & 0xFFFFFu) : 0x80000u;
@@ -110,33 +133,162 @@ static void bme280_model_set_adc_output(bme280_model_t *m, uint8_t ctrl_meas)
     m->hw.regs[0xFE] = (uint8_t)(h & 0xFF);
 }
 
+/* Tables 20, 23, 24: 000 skipped, then x1 to x8, "101, others" x16. */
+static uint32_t bme280_model_oversampling(uint8_t osrs)
+{
+    if (osrs == 0)
+        return 0;
+    return (osrs >= 5u) ? 16u : 1u << (osrs - 1u);
+}
+
+/* Section 9.1, the maximum, in us */
+static uint32_t bme280_model_measure_us(uint8_t ctrl_meas, uint8_t osrs_h)
+{
+    uint8_t osrs_p = (uint8_t)((ctrl_meas >> 2) & 0x07);
+    uint32_t us = 1250u + 2300u * bme280_model_oversampling((uint8_t)(ctrl_meas >> 5));
+
+    if (osrs_p != 0)
+        us += 2300u * bme280_model_oversampling(osrs_p) + 575u;
+    if (osrs_h != 0)
+        us += 2300u * bme280_model_oversampling(osrs_h) + 575u;
+    return us;
+}
+
+static void bme280_model_end_nvm_copy(bme280_model_t *m)
+{
+    m->image_loading = false;
+    m->hw.regs[BME280_REG_STATUS] = (m->measure_left_us != 0) ? BME280_STATUS_MEASURING : 0;
+}
+
+static void bme280_model_end_conversion(bme280_model_t *m)
+{
+    bme280_model_set_adc_output(m);
+    m->hw.regs[BME280_REG_STATUS] = 0;
+    /* p.15: "the sensor returns to sleep mode". Normal mode stays. */
+    if ((m->hw.regs[BME280_REG_CTRL_MEAS] & 0x03) != 0x03)
+        m->hw.regs[BME280_REG_CTRL_MEAS] &= 0xFC;
+}
+
+/* Lets time pass: first the NVM copy, then the conversion after it. */
+static void bme280_model_advance_us(bme280_model_t *m, uint32_t us)
+{
+    m->startup_left_us = (us < m->startup_left_us) ? m->startup_left_us - us : 0u;
+
+    if (m->nvm_left_us != 0) {
+        if (us < m->nvm_left_us) {
+            m->nvm_left_us -= us;
+            return;
+        }
+        us -= m->nvm_left_us;
+        m->nvm_left_us = 0;
+        bme280_model_end_nvm_copy(m);
+    }
+    if (m->measure_left_us != 0) {
+        if (us < m->measure_left_us) {
+            m->measure_left_us -= us;
+            return;
+        }
+        m->measure_left_us = 0;
+        bme280_model_end_conversion(m);
+    }
+}
+
 /* Callback: ctrl_meas write triggers measurement */
 static void bme280_model_on_ctrl_meas(void *user, uint8_t reg,
                                       uint8_t old_val, uint8_t new_val)
 {
     (void)reg; (void)old_val;
     bme280_model_t *m = (bme280_model_t *)user;
-    uint8_t mode = new_val & 0x03;
-    if (mode == 0x01 || mode == 0x03) {
-        m->hw.regs[BME280_REG_STATUS] |= 0x08;
-        bme280_model_set_adc_output(m, new_val);
-        m->hw.regs[BME280_REG_STATUS] = (uint8_t)(m->hw.regs[BME280_REG_STATUS] & ~0x08u);
-        if (mode == 0x01) {
-            m->hw.regs[BME280_REG_CTRL_MEAS] &= 0xFC;
-        }
+
+    /* p.27: ctrl_hum changes "only become effective after a write operation
+     * to ctrl_meas" */
+    m->latched_ctrl_meas = new_val;
+    m->latched_osrs_h = (uint8_t)(m->hw.regs[BME280_REG_CTRL_HUM] & 0x07);
+
+    if ((new_val & 0x03) != 0) {
+        /* Table 21: the data "are copied at power-on-reset and before every
+         * conversion". The copy counts inside the time of section 9.1. */
+        m->nvm_left_us = BME280_MODEL_NVM_COPY_US;
+        m->measure_left_us = bme280_model_measure_us(new_val, m->latched_osrs_h)
+                             - BME280_MODEL_NVM_COPY_US;
+        m->hw.regs[BME280_REG_STATUS] = BME280_STATUS_IM_UPDATE;
         m->measure_count++;
     }
 }
 
-/* Callback: reset register write */
+/* Power-on reset: tstartup with no access, then the NVM copy still runs. */
+static void bme280_model_power_on(bme280_model_t *m)
+{
+    hw_model_reset(&m->hw);
+    m->startup_left_us = BME280_MODEL_STARTUP_US;
+    m->nvm_left_us = BME280_MODEL_STARTUP_US + BME280_MODEL_NVM_COPY_US;
+    m->measure_left_us = 0;
+    m->image_loading = true;
+    m->hw.regs[BME280_REG_STATUS] = BME280_STATUS_IM_UPDATE;
+}
+
+/* Callback: reset register write. p.27: "Writing other values than 0xB6 has no
+ * effect. The readout value is always 0x00." */
 static void bme280_model_on_reset(void *user, uint8_t reg,
                                   uint8_t old_val, uint8_t new_val)
 {
     (void)reg; (void)old_val;
     bme280_model_t *m = (bme280_model_t *)user;
+    m->hw.regs[BME280_REG_RESET] = 0;
     if (new_val == 0xB6) {
-        hw_model_reset(&m->hw);
+        bme280_model_power_on(m);
     }
+}
+
+/* A transfer's clocks: 9 per byte, plus START and STOP */
+static uint32_t bme280_model_bus_us(const bme280_model_t *m, uint32_t bytes)
+{
+    return (9u * bytes + 2u) * 1000u / m->bus_khz;
+}
+
+/* HAL write: p.8, no communication before tstartup has passed */
+__attribute__((unused))
+static bool bme280_model_write_reg(void *ctx, uint8_t dev_addr,
+                                   uint8_t reg, uint8_t val)
+{
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    bme280_model_t *m = (bme280_model_t *)hw->user;
+    bool ack = m->startup_left_us == 0
+               && hw_model_i2c_write_reg(ctx, dev_addr, reg, val);
+
+    bme280_model_advance_us(m, bme280_model_bus_us(m, 3u));
+    return ack;
+}
+
+/* HAL read: the same, and calibration is not there until the copy is over */
+__attribute__((unused))
+static bool bme280_model_read_regs(void *ctx, uint8_t dev_addr, uint8_t reg,
+                                   uint8_t *buf, uint16_t len)
+{
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    bme280_model_t *m = (bme280_model_t *)hw->user;
+    bool ack = m->startup_left_us == 0
+               && hw_model_i2c_read_regs(ctx, dev_addr, reg, buf, len);
+
+    if (ack && m->image_loading) {
+        for (uint16_t i = 0; i < len; i++) {
+            unsigned at = (unsigned)reg + i;
+            if ((at >= BME280_REG_CALIB00 && at <= BME280_REG_CALIB_H1) ||
+                (at >= BME280_REG_CALIB_H2 && at < BME280_REG_CALIB_H2 + 7u))
+                buf[i] = 0;
+        }
+    }
+    bme280_model_advance_us(m, bme280_model_bus_us(m, 3u + len));
+    return ack;
+}
+
+/* HAL delay: the time the driver waits is the time the chip sees. */
+__attribute__((unused))
+static void bme280_model_delay(void *ctx, uint32_t ms)
+{
+    hw_reg_model_t *hw = (hw_reg_model_t *)ctx;
+    hw_model_delay_ms(hw, ms);
+    bme280_model_advance_us((bme280_model_t *)hw->user, ms * 1000u);
 }
 
 static void bme280_model_init(bme280_model_t *m)
@@ -162,6 +314,15 @@ static void bme280_model_init(bme280_model_t *m)
     /* Status register (read-only) */
     hw_model_set_readonly(&m->hw, BME280_REG_STATUS);
 
+    /* Table 18: each MSB of the data registers resets to 0x80 */
+    hw_model_set_reset_value(&m->hw, BME280_REG_PRESS_MSB, 0x80);
+    hw_model_set_reset_value(&m->hw, BME280_REG_TEMP_MSB, 0x80);
+    hw_model_set_reset_value(&m->hw, BME280_REG_HUM_MSB, 0x80);
+
+    /* Table 19: only osrs_h[2:0]. Table 26: bit 1 of config is not used. */
+    hw_model_set_writable_mask(&m->hw, BME280_REG_CTRL_HUM, 0x07);
+    hw_model_set_writable_mask(&m->hw, BME280_REG_CONFIG, 0xFD);
+
     /* ADC output registers 0xF7..0xFE (read-only, 8 bytes) */
     for (int i = 0; i < 8; i++) {
         hw_model_set_readonly(&m->hw, (uint8_t)(BME280_REG_PRESS_MSB + i));
@@ -175,8 +336,9 @@ static void bme280_model_init(bme280_model_t *m)
     m->true_temp_raw = 519888;
     m->true_press_raw = 415680;
     m->true_hum_raw = 28000;
+    m->bus_khz = BME280_MODEL_BUS_KHZ;
 
-    hw_model_reset(&m->hw);
+    bme280_model_power_on(m);
 }
 
 static void bme280_model_set_temperature(bme280_model_t *m, int32_t adc_raw)
