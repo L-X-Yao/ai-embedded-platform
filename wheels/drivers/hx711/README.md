@@ -59,6 +59,15 @@ No compile-time defines. All configuration via runtime API (gain, scale, offset)
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against HX711 24-Bit ADC for Weigh Scales, Avia Semiconductor (no document number or revision printed). Not run on hardware.
+
+- **Matched:** DOUT polarity, 24 data bits MSB first, the 25 to 27 pulses of Table 3, SCK timing, sign extension, the power-down hold.
+- **Fixed:** `hx711_tare` failed on its second sample, because DOUT stays high until the next conversion ends. It now waits for each sample and returns `HX711_ERR_TIMEOUT` after 1.2 s. The first read after init or power up was Channel A at gain 128 whatever `gain` said, so both now do one read to set it. The mock hid both, so it now keeps conversion time and the selected input.
+- **Still open:** Saturation at 800000h or 7FFFFFh comes back as a normal value with no flag. Gain and channel change only through `hx711_init`, which also clears offset and scale. `hx711_power_up` returns nothing, so it cannot report a timeout, but the next read then returns `HX711_ERR_NOT_READY`. There is no hw_model, only the mock.
+- **Suspected:** Nothing waits out the settling time after power up or a gain change, 400 ms at RATE=0 or 50 ms at RATE=DVDD, so the first results may be unsettled. An interrupt that holds SCK high past 60 us powers the chip down in mid-read, and the frame then comes back wrong with `HX711_OK`.
+
 ## Known issues
 
 None.

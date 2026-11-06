@@ -39,6 +39,15 @@ HAL: 1-Wire (reset + write_byte + read_byte).
 - [x] Linux host (sim) — passed 2026-04-29
 - [x] Windows (TDM-GCC) — passed 2026-04-29
 
+## Datasheet check
+
+Checked on 2026-11-06 against DS18B20, REV: 042208 (Maxim, 2008). Not run on hardware.
+
+- **Matched:** The commands and their order, family code 28h in the tests, the temperature format and byte order, the configuration byte values, the scratchpad layout, what each CRC covers.
+- **Fixed:** The CRC table did not follow the polynomial, so a real chip would fail almost every read with `DS18B20_ERR_CRC`. The model and the mock used the same table and hid it, so both now compute the CRC from the polynomial. Below 12 bits the undefined low bits reached the temperature, up to 0.4375 C at 9 bits.
+- **Still open:** Nothing waits for a conversion, so a read before its end returns the old value, or 85 C after power-up, with `DS18B20_OK`. `ds18b20_read_rom` does not check the family code, and an all-zero frame has CRC 0, so a bus held low reads as 0.0 C with `DS18B20_OK`. There is no Search ROM, so a multi-device bus needs `rom` and `use_rom` filled by hand. There is no Copy Scratchpad, so `ds18b20_set_resolution` lasts until power-down. Parasite power needs a strong pullup, which takes a new HAL callback. The model answers any ROM code after Match ROM, ignores Write Scratchpad and so always runs at 12 bits, and gives a temperature with no Convert T. The mock leaves bytes 5 and 7 at 00h. So tests cannot catch a fault in those paths.
+- **Suspected:** `ds18b20_set_resolution` writes 0 to TH and TL, which clears alarm limits or user data until the next power-up. Four functions are tagged `@isr_safe: yes`, although a temperature read takes about 6 ms of bus time.
+
 ## Known issues
 
 None.

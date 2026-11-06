@@ -50,6 +50,15 @@ No compile-time configuration needed. All parameters are runtime.
 - [x] Host (sim) — 2026-05-01
 - [ ] Real hardware target — not yet verified
 
+## Datasheet check
+
+Checked on 2026-11-06 against NXP PCA9685 Product data sheet, Rev. 4, 16 April 2015. Not run on hardware.
+
+- **Matched:** The default address, register map, channel layout, MODE1 bits, full ON and full OFF bits, the prescale formula and its limits, PRE_SCALE written only in sleep, the 1 ms wake wait, the shutdown in `pca9685_all_off`.
+- **Fixed:** `pca9685_init` left the chip asleep, so no channel could produce PWM. The waking write could carry RESTART before the 500 us were up. `pca9685_set_pwm` accepted equal ON and OFF counts, and `pca9685_set_duty` and `pca9685_set_servo_us` could reach them with a count of 0. `delay_ms` was optional although the wake needs it, so init now returns `PCA9685_ERR_PARAM`. `pca9685_set_duty` scaled by 4095 and not 4096. A comment called a MODE1 write a software reset.
+- **Still open:** Init is no reset, so after a restart of the MCU alone MODE2 and the LED registers keep their state and old outputs can run on. MODE2 is never set, so OUTDRV, INVRT, OCH and OUTNE stay at their reset values. There is no EXTCLK or SWRST support, and the board must hold OE low. `dev_addr` is not checked against reserved addresses such as LED All Call 0x70. `pca9685_set_servo_us` uses the requested frequency, not the one the prescaler gives, about 0.3 % on the pulse at 60 Hz. The model resets every LEDn_OFF_H to 0 where the manual gives 10h, stores RESTART as a plain bit and never sets it itself, and does not copy ALL_LED writes to the channels, so a fault in those paths would pass.
+- **Suspected:** `pca9685_set_pwm` writes four registers in four transfers with OCH=0, so a count change can pass through mixed values and glitch a servo pulse. The manual does not give the pin level in sleep, so `pca9685_sleep` may not turn outputs off as the header says.
+
 ## Known issues
 
 None.
