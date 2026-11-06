@@ -1251,8 +1251,10 @@ static fdb_err_t create_kv_blob(fdb_kvdb_t db, kv_sec_info_t sector, const char 
     bool is_full = false;
     uint32_t kv_addr = sector->empty_kv;
 
-    if (strlen(key) > FDB_KV_NAME_MAX) {
-        FDB_INFO("Error: The KV name length is more than %d\n", FDB_KV_NAME_MAX);
+    /* Local change: >= as fdb_def.h says, since read_kv keeps the last byte
+     * of kv->name for the NUL and a full-length key is lost on reboot. */
+    if (strlen(key) >= FDB_KV_NAME_MAX) {
+        FDB_INFO("Error: The KV name length is more than %d\n", FDB_KV_NAME_MAX - 1);
         return FDB_KV_NAME_ERR;
     }
 
