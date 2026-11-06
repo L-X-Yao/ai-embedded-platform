@@ -282,6 +282,63 @@ TEST(test_signal_pack_extract_roundtrip)
     ASSERT_EQ_HEX(extracted, original);
 }
 
+/* Packing has to clear old bits, or a reused frame gets old OR new. */
+
+TEST(test_signal_pack_le_clears_old_bits)
+{
+    uint8_t data[8];
+    memset(data, 0xFF, sizeof(data));
+
+    /* 0xA5 at bits 4 to 11: low nibble 5 up in byte 0, high nibble A in byte 1 */
+    canbus_signal_pack(data, 4, 8, false, 0xA5);
+
+    const uint8_t want[8] = {0x5F, 0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    ASSERT_TRUE(memcmp(data, want, sizeof(want)) == 0);
+}
+
+TEST(test_signal_pack_be_clears_old_bits)
+{
+    uint8_t data[8];
+    memset(data, 0xFF, sizeof(data));
+
+    /* 0xA5 from byte 0 bit 3 down: A in byte 0's low nibble, 5 in byte 1's high */
+    canbus_signal_pack(data, 3, 8, true, 0xA5);
+
+    const uint8_t want[8] = {0xFA, 0x5F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    ASSERT_TRUE(memcmp(data, want, sizeof(want)) == 0);
+}
+
+TEST(test_signal_pack_zero_clears_the_whole_signal)
+{
+    const uint8_t want[8] = {0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    uint8_t data[8];
+
+    memset(data, 0xFF, sizeof(data));
+    canbus_signal_pack(data, 0, 16, false, 0);
+    ASSERT_TRUE(memcmp(data, want, sizeof(want)) == 0);
+
+    memset(data, 0xFF, sizeof(data));
+    canbus_signal_pack(data, 7, 16, true, 0);
+    ASSERT_TRUE(memcmp(data, want, sizeof(want)) == 0);
+}
+
+TEST(test_signal_pack_replaces_the_old_value)
+{
+    uint8_t data[8] = {0};
+
+    canbus_signal_pack(data, 0, 16, false, 0x0F0F);
+    canbus_signal_pack(data, 0, 16, false, 0xF0F0);
+    ASSERT_EQ_HEX(data[0], 0xF0);
+    ASSERT_EQ_HEX(data[1], 0xF0);
+    ASSERT_EQ_HEX(canbus_signal_extract(data, 0, 16, false), 0xF0F0);
+
+    canbus_signal_pack(data, 7, 16, true, 0x1234);
+    canbus_signal_pack(data, 7, 16, true, 0x4321);
+    ASSERT_EQ_HEX(data[0], 0x43);
+    ASSERT_EQ_HEX(data[1], 0x21);
+    ASSERT_EQ_HEX(canbus_signal_extract(data, 7, 16, true), 0x4321);
+}
+
 /* ---------- helpers ---------- */
 
 TEST(test_is_standard_id)
@@ -340,6 +397,10 @@ TEST_MAIN("canbus")
     RUN(test_signal_pack_le);
     RUN(test_signal_pack_be);
     RUN(test_signal_pack_extract_roundtrip);
+    RUN(test_signal_pack_le_clears_old_bits);
+    RUN(test_signal_pack_be_clears_old_bits);
+    RUN(test_signal_pack_zero_clears_the_whole_signal);
+    RUN(test_signal_pack_replaces_the_old_value);
     RUN(test_is_standard_id);
     RUN(test_is_extended_id);
     RUN(test_signal_extract_null);
