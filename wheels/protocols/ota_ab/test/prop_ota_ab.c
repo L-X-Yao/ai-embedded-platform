@@ -81,6 +81,44 @@ PROPERTY(active_slot_valid, 10000) {
     PROP_ASSERT(target != slot);
 }
 
+/* Property: with two copies a reboot finds what the last write stored */
+PROPERTY(two_copies_reload_last_write, 5000) {
+    (void)prop__seed_orig; (void)prop__iter;
+    static const ota_ab_layout_t two = {
+        .slot_a_addr   = 0,
+        .slot_b_addr   = 1024,
+        .slot_max_size = 1024,
+        .params_addr   = 2048,
+        .params_size   = 256,
+        .max_boot_count = 3,
+        .params_addr2  = 2304,
+    };
+    memset(mock_flash, 0xFF, MOCK_FLASH_SIZE);
+
+    ota_ab_t m, r;
+    memset(&m, 0, sizeof(m));
+    memset(&r, 0, sizeof(r));
+    PROP_ASSERT_EQ(ota_ab_init(&m, &mock_flash_ops, &two), OTA_AB_OK);
+
+    uint16_t ops = (uint16_t)ARBI_RANGE(seed, 1, 300);
+    for (uint16_t i = 0; i < ops; i++) {
+        uint8_t op = ARBI_UINT8(seed) % 3;
+        if (op == 0) {
+            ota_ab_mark_pending(&m, 512, ota_ab_crc32(mock_flash + 1024u * (1u - m.params.active_slot), 512));
+        } else if (op == 1) {
+            ota_ab_boot_event(&m);
+        } else {
+            ota_ab_confirm(&m);
+        }
+
+        PROP_ASSERT_EQ(ota_ab_init(&r, &mock_flash_ops, &two), OTA_AB_OK);
+        PROP_ASSERT_EQ(r.params.active_slot, m.params.active_slot);
+        PROP_ASSERT_EQ(r.params.ota_flag, m.params.ota_flag);
+        PROP_ASSERT_EQ(r.params.boot_count, m.params.boot_count);
+        PROP_ASSERT_EQ(r.params.seq, m.params.seq);
+    }
+}
+
 /* Property: slot_addr returns correct addresses */
 PROPERTY(slot_addr_correct, 5000) {
     memset(mock_flash, 0xFF, MOCK_FLASH_SIZE);
@@ -106,6 +144,7 @@ PROPERTY(crc32_determinism, 10000) {
 
 TEST_MAIN("ota_ab properties") {
     RUN(active_slot_valid);
+    RUN(two_copies_reload_last_write);
     RUN(slot_addr_correct);
     RUN(crc32_determinism);
 }

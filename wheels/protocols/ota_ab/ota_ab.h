@@ -44,6 +44,13 @@ typedef struct {
     uint32_t params_addr;
     uint32_t params_size;
     uint8_t  max_boot_count;   /* 1..254; ota_ab_init refuses 0 and 255 */
+    /* Second params region, params_size long, in an erase unit of its own:
+     * erasing one region must not touch the other. Records then alternate
+     * between the two, so a power cut during a write leaves the last good
+     * record. ota_ab_init refuses regions that overlap. 0 keeps one copy at
+     * params_addr, and power lost between its erase and write loses the
+     * record: the next init falls back to slot 0 with no trial state. */
+    uint32_t params_addr2;
 } ota_ab_layout_t;
 
 /* ---------- persistent parameters ---------- */
@@ -55,7 +62,7 @@ typedef struct {
     uint8_t  active_slot;
     uint8_t  ota_flag;
     uint8_t  boot_count;
-    uint8_t  reserved;
+    uint8_t  seq;              /* tells two copies apart; 0 with one copy */
     uint32_t fw_size;
     uint32_t fw_crc;
     uint32_t crc32;
@@ -76,6 +83,8 @@ typedef struct {
     const ota_ab_flash_t  *flash;
     ota_ab_layout_t        layout;
     ota_ab_params_t        params;
+    uint8_t                stored_seq;   /* seq of the newest record on flash */
+    bool                   stored_in_2;  /* that record is at params_addr2 */
 } ota_ab_t;
 
 /* ---------- API ---------- */

@@ -46,30 +46,76 @@ static bool params_valid(const ota_ab_params_t *p)
     return true;
 }
 
+/* seq counts up and wraps, and the two copies stay within one of each other. */
+static bool seq_is_newer(uint8_t seq, uint8_t than)
+{
+    uint8_t ahead = (uint8_t)(seq - than);
+    return ahead != 0 && ahead < 128u;
+}
+
 static ota_ab_err_t params_read(ota_ab_t *m)
 {
+    ota_ab_params_t second;
+    bool second_ok = false;
+
     if (!m->flash->read(m->flash->ctx, m->layout.params_addr,
                         (uint8_t *)&m->params, sizeof(m->params)))
         return OTA_AB_ERR_FLASH;
-    if (!params_valid(&m->params)) {
+    bool first_ok = params_valid(&m->params);
+
+    if (m->layout.params_addr2 != 0) {
+        if (!m->flash->read(m->flash->ctx, m->layout.params_addr2,
+                            (uint8_t *)&second, sizeof(second)))
+            return OTA_AB_ERR_FLASH;
+        second_ok = params_valid(&second);
+    }
+
+    m->stored_in_2 = second_ok &&
+                     (!first_ok || seq_is_newer(second.seq, m->params.seq));
+    if (m->stored_in_2) {
+        m->params = second;
+    } else if (!first_ok) {
         memset(&m->params, 0, sizeof(m->params));
         m->params.magic = OTA_AB_PARAMS_MAGIC;
         m->params.active_slot = 0;
         m->params.ota_flag = OTA_AB_FLAG_IDLE;
         m->params.crc32 = params_crc(&m->params);
     }
+    m->stored_seq = m->params.seq;
     return OTA_AB_OK;
 }
 
 static ota_ab_err_t params_write(ota_ab_t *m)
 {
+    uint32_t addr = m->layout.params_addr;
+
+    /* Never touch the copy that holds the newest good record. A retry after
+     * a failed write reuses the same seq. */
+    if (m->layout.params_addr2 != 0) {
+        if (!m->stored_in_2) addr = m->layout.params_addr2;
+        m->params.seq = (uint8_t)(m->stored_seq + 1u);
+    }
+
     m->params.crc32 = params_crc(&m->params);
-    if (!m->flash->erase(m->flash->ctx, m->layout.params_addr, m->layout.params_size))
+    if (!m->flash->erase(m->flash->ctx, addr, m->layout.params_size))
         return OTA_AB_ERR_FLASH;
-    if (!m->flash->write(m->flash->ctx, m->layout.params_addr,
+    if (!m->flash->write(m->flash->ctx, addr,
                          (const uint8_t *)&m->params, sizeof(m->params)))
         return OTA_AB_ERR_FLASH;
+
+    if (m->layout.params_addr2 != 0) {
+        m->stored_in_2 = !m->stored_in_2;
+        m->stored_seq = m->params.seq;
+    }
     return OTA_AB_OK;
+}
+
+/* Erasing one region must not reach into the other. */
+static bool params_regions_overlap(const ota_ab_layout_t *l)
+{
+    uint32_t a = l->params_addr;
+    uint32_t b = l->params_addr2;
+    return ((a < b) ? b - a : a - b) < l->params_size;
 }
 
 /* ---------- API ---------- */
@@ -83,6 +129,8 @@ ota_ab_err_t ota_ab_init(ota_ab_t *m, const ota_ab_flash_t *flash,
     if (layout->max_boot_count == 0 || layout->max_boot_count == 255)
         return OTA_AB_ERR_PARAM;
     if (layout->params_size < sizeof(ota_ab_params_t)) return OTA_AB_ERR_PARAM;
+    if (layout->params_addr2 != 0 && params_regions_overlap(layout))
+        return OTA_AB_ERR_PARAM;
     m->flash = flash;
     m->layout = *layout;
     ota_ab_err_t err = params_read(m);

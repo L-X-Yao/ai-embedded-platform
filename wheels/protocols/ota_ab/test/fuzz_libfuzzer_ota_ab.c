@@ -21,15 +21,18 @@
 #define SLOT_A      0u
 #define SLOT_B      SLOT_SIZE
 #define PARAMS_ADDR (2u * SLOT_SIZE)
-#define FLASH_SIZE  (PARAMS_ADDR + PARAMS_SIZE)
+#define PARAMS_ADDR2 (PARAMS_ADDR + PARAMS_SIZE)
+#define FLASH_SIZE  (PARAMS_ADDR2 + PARAMS_SIZE)
 
 static uint8_t g_flash[FLASH_SIZE];
 static bool g_flash_fail;
 
-// A region is one slot or the parameter page; no access may cross out of it.
+// A region is one slot or a parameter page; no access may cross out of it.
 static void check_access(uint32_t addr, uint32_t len) {
     uint64_t end = (uint64_t)addr + len;
-    uint32_t start = addr >= PARAMS_ADDR ? PARAMS_ADDR : (addr >= SLOT_B ? SLOT_B : SLOT_A);
+    uint32_t start = addr >= PARAMS_ADDR2 ? PARAMS_ADDR2
+                   : addr >= PARAMS_ADDR ? PARAMS_ADDR
+                   : (addr >= SLOT_B ? SLOT_B : SLOT_A);
     uint32_t size = addr >= PARAMS_ADDR ? PARAMS_SIZE : SLOT_SIZE;
     if (addr >= FLASH_SIZE || end > (uint64_t)start + size) __builtin_trap();
 }
@@ -60,18 +63,20 @@ static bool flash_read(void *ctx, uint32_t addr, uint8_t *buf, uint32_t len) {
 
 static const ota_ab_flash_t flash = { flash_erase, flash_write, flash_read, NULL };
 
-static const ota_ab_layout_t layout = {
+// params_addr2 comes from the input: one copy or two.
+static ota_ab_layout_t layout = {
     .slot_a_addr = SLOT_A, .slot_b_addr = SLOT_B, .slot_max_size = SLOT_SIZE,
     .params_addr = PARAMS_ADDR, .params_size = PARAMS_SIZE, .max_boot_count = 3,
 };
 
 static void store_params(fuzz_input_t *in) {
     ota_ab_params_t params;
+    uint32_t addr = (fuzz_u8(in) & 1) ? PARAMS_ADDR2 : PARAMS_ADDR;
     memset(&params, 0, sizeof(params));
     fuzz_take(in, (uint8_t *)&params, sizeof(params) - sizeof(params.crc32));
     params.magic = OTA_AB_PARAMS_MAGIC;
     params.crc32 = ota_ab_crc32((const uint8_t *)&params, sizeof(params) - sizeof(params.crc32));
-    memcpy(&g_flash[PARAMS_ADDR], &params, sizeof(params));
+    memcpy(&g_flash[addr], &params, sizeof(params));
 }
 
 static void mark_valid_image(ota_ab_t *m, fuzz_input_t *in) {
@@ -111,6 +116,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     memset(g_flash, 0xFF, sizeof(g_flash));
     g_flash_fail = false;
+    layout.params_addr2 = (fuzz_u8(&in) & 1) ? PARAMS_ADDR2 : 0;
     fuzz_take(&in, g_flash, SLOT_SIZE / 4);
     store_params(&in);
 
