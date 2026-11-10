@@ -8,7 +8,10 @@
  * Instances: multi
  *
  * Zero-copy: parsed fields point into the caller's input buffer.
- * Supports chunked parsing (feed partial data).
+ * Partial input: a parse returns HTTP_PARSER_ERR_INCOMPLETE until the whole
+ * message is in the buffer, so call it again from the start with more data.
+ * Bodies are framed by Content-Length only. No transfer coding is decoded,
+ * chunked included: see HTTP_PARSER_ERR_TRANSFER_ENCODING.
  * Pure C99, no heap, fully reentrant per-context.
  * Thread safety: all functions are pure / reentrant (zero-copy, no global state).
  */
@@ -31,6 +34,12 @@ typedef enum {
     HTTP_PARSER_ERR_MALFORMED  = -3,
     HTTP_PARSER_ERR_TOO_MANY   = -4,
     HTTP_PARSER_ERR_NOT_FOUND  = -5,
+    /* The message has a Transfer-Encoding field, which overrides any
+     * Content-Length and which this parser does not decode. The start line and
+     * headers are filled in, body stays NULL, and the coded body starts at
+     * total_consumed. A 1xx, 204, 304 or HEAD reply has no body, so never
+     * returns this. */
+    HTTP_PARSER_ERR_TRANSFER_ENCODING = -6,
 } http_parser_err_t;
 
 typedef struct {

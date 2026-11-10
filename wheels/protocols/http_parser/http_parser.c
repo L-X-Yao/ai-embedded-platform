@@ -67,6 +67,18 @@ static http_parser_err_t scan_content_length(const http_parser_header_t *headers
     return HTTP_PARSER_OK;
 }
 
+/* RFC 7230 section 3.3.3 item 3: Transfer-Encoding frames the body and overrides
+ * Content-Length, and this parser decodes no transfer coding. */
+static bool has_transfer_encoding(const http_parser_header_t *headers, int count)
+{
+    for (int i = 0; i < count; i++) {
+        if (ci_equal(headers[i].name, headers[i].name_len,
+                     "transfer-encoding", 17))
+            return true;
+    }
+    return false;
+}
+
 static http_parser_err_t parse_headers(const char *data, size_t len,
                                 http_parser_header_t *headers, int max_headers,
                                 int *count, const char **body_start,
@@ -161,6 +173,10 @@ http_parser_err_t http_parser_parse_request(const char *data, size_t len,
         return err;
 
     size_t header_end = (size_t)(body_start - data);
+    if (has_transfer_encoding(req->headers, req->header_count)) {
+        req->total_consumed = header_end;
+        return HTTP_PARSER_ERR_TRANSFER_ENCODING;
+    }
     int content_length = -1;
     err = scan_content_length(req->headers, req->header_count, &content_length);
     if (err != HTTP_PARSER_OK)
@@ -237,6 +253,10 @@ static http_parser_err_t parse_response(const char *data, size_t len,
     size_t header_end = (size_t)(body_start - data);
     int content_length = -1;
     if (!to_head && !status_has_no_body(resp->status_code)) {
+        if (has_transfer_encoding(resp->headers, resp->header_count)) {
+            resp->total_consumed = header_end;
+            return HTTP_PARSER_ERR_TRANSFER_ENCODING;
+        }
         err = scan_content_length(resp->headers, resp->header_count,
                                   &content_length);
         if (err != HTTP_PARSER_OK)

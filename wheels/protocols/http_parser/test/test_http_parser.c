@@ -326,6 +326,80 @@ TEST(test_reply_to_head_needs_its_blank_line)
               HTTP_PARSER_ERR_MALFORMED);
 }
 
+/* RFC 7230 3.3.3 item 3: Transfer-Encoding, not Content-Length, frames these.
+   The parser decodes no coding, so it must say so and not return an empty OK */
+TEST(test_chunked_reply_is_reported_with_its_head_parsed)
+{
+    const char *data = "HTTP/1.1 200 OK\r\n"
+                       "Transfer-Encoding: chunked\r\n"
+                       "\r\n"
+                       "5\r\nhello\r\n0\r\n\r\n";
+    http_parser_response_t resp;
+    ASSERT_EQ(http_parser_parse_response(data, strlen(data), &resp),
+              HTTP_PARSER_ERR_TRANSFER_ENCODING);
+    ASSERT_EQ(resp.status_code, 200);
+    ASSERT_EQ(resp.header_count, 1);
+    ASSERT_TRUE(resp.body == NULL);
+    ASSERT_EQ(resp.body_len, 0U);
+    /* 17 + 28 + 2 bytes of head: the coded body starts right after them */
+    ASSERT_EQ(resp.total_consumed, 47U);
+    ASSERT_MEMEQ(data + resp.total_consumed, "5\r\nhello");
+}
+
+static const char *const coded[] = {
+    "Transfer-Encoding: chunked\r\n",
+    "transfer-ENCODING: chunked\r\n",
+    "Transfer-Encoding: gzip, chunked\r\n",
+    "Transfer-Encoding: gzip\r\n",
+    "Transfer-Encoding: chunked\r\nContent-Length: 5\r\n",
+    "Content-Length: 5\r\nTransfer-Encoding: chunked\r\n",
+    "Content-Length: 1000\r\nTransfer-Encoding: chunked\r\n",
+    "Content-Length: abc\r\nTransfer-Encoding: chunked\r\n",
+};
+
+TEST(test_transfer_encoding_overrides_content_length_in_a_reply)
+{
+    for (size_t i = 0; i < sizeof(coded) / sizeof(coded[0]); i++) {
+        char buf[128];
+        int n = snprintf(buf, sizeof(buf), "HTTP/1.1 200 OK\r\n%s\r\nhello",
+                         coded[i]);
+        http_parser_response_t resp;
+        ASSERT_EQ(http_parser_parse_response(buf, (size_t)n, &resp),
+                  HTTP_PARSER_ERR_TRANSFER_ENCODING);
+        ASSERT_EQ(resp.body_len, 0U);
+    }
+}
+
+TEST(test_transfer_encoding_is_reported_in_a_request)
+{
+    for (size_t i = 0; i < sizeof(coded) / sizeof(coded[0]); i++) {
+        char buf[128];
+        int n = snprintf(buf, sizeof(buf), "POST /a HTTP/1.1\r\n%s\r\nhello",
+                         coded[i]);
+        http_parser_request_t req;
+        ASSERT_EQ(http_parser_parse_request(buf, (size_t)n, &req),
+                  HTTP_PARSER_ERR_TRANSFER_ENCODING);
+        ASSERT_EQ(req.body_len, 0U);
+        ASSERT_EQ(req.total_consumed, (size_t)n - 5U);
+    }
+}
+
+/* Item 1 comes before item 3: these end at the blank line even so */
+TEST(test_transfer_encoding_does_not_touch_a_bodiless_reply)
+{
+    const char *not_modified = "HTTP/1.1 304 Not Modified\r\n"
+                               "Transfer-Encoding: chunked\r\n\r\n";
+    const char *to_head = "HTTP/1.1 200 OK\r\n"
+                          "Transfer-Encoding: chunked\r\n\r\n";
+    http_parser_response_t resp;
+    ASSERT_EQ(http_parser_parse_response(not_modified, strlen(not_modified), &resp),
+              HTTP_PARSER_OK);
+    ASSERT_EQ(resp.total_consumed, strlen(not_modified));
+    ASSERT_EQ(http_parser_parse_response_to_head(to_head, strlen(to_head), &resp),
+              HTTP_PARSER_OK);
+    ASSERT_EQ(resp.total_consumed, strlen(to_head));
+}
+
 TEST_MAIN("http_parser")
     RUN(test_parse_get_request);
     RUN(test_parse_post_with_body);
@@ -350,4 +424,8 @@ TEST_MAIN("http_parser")
     RUN(test_statuses_next_to_the_bodiless_ones_still_wait_for_the_body);
     RUN(test_reply_to_head_ends_at_the_blank_line);
     RUN(test_reply_to_head_needs_its_blank_line);
+    RUN(test_chunked_reply_is_reported_with_its_head_parsed);
+    RUN(test_transfer_encoding_overrides_content_length_in_a_reply);
+    RUN(test_transfer_encoding_is_reported_in_a_request);
+    RUN(test_transfer_encoding_does_not_touch_a_bodiless_reply);
 TEST_MAIN_END()
