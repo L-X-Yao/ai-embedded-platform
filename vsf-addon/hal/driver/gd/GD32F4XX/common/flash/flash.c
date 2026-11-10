@@ -34,6 +34,8 @@
 #define VSF_FLASH_CFG_IMP_PREFIX                vsf_hw
 #define VSF_FLASH_CFG_IMP_UPCASE_PREFIX         VSF_HW
 
+#define __VSF_HW_FLASH_SIZE                     (1024U * 1024U)
+
 /*============================ TYPES =========================================*/
 
 typedef struct VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) {
@@ -182,8 +184,15 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
     VSF_HAL_ASSERT(NULL != buffer);
-    VSF_HAL_ASSERT(!(offset & 3));
-    VSF_HAL_ASSERT(!(size & 3));
+
+    // Word programming only: the interrupt walks size_cur down to zero in steps
+    // of 4, so any other size would run on past the end of the buffer.
+    if ((0 == size) || (size & 3) || (offset & 3)) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+    if ((offset >= __VSF_HW_FLASH_SIZE) || (size > __VSF_HW_FLASH_SIZE - offset)) {
+        return VSF_ERR_INVALID_RANGE;
+    }
 
     flash_ptr->erase0_write1 = 1;
     flash_ptr->offset_orig = flash_ptr->offset_cur = offset;
@@ -245,7 +254,7 @@ vsf_flash_capability_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_capability)
     return (vsf_flash_capability_t) {
         .irq_mask                  = VSF_FLASH_IRQ_ALL_BITS_MASK,
         .base_address              = 0x08000000,
-        .max_size                  = 1024 * 1024,
+        .max_size                  = __VSF_HW_FLASH_SIZE,
         .erase_sector_size         = 0x20000, /* largest sector (128KB, sectors 5-11) */
         .write_sector_size         = 4,
         .none_sector_aligned_write = 0,
@@ -275,7 +284,9 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
         if (flash_ptr->erase0_write1) {
             // write: advance by 4 bytes (word programming)
             FMC_CTL &= ~FMC_CTL_PG;
-            VSF_HAL_ASSERT(flash_ptr->size_cur >= 4);
+            if (flash_ptr->size_cur < 4) {
+                return;     // stray END, no write in progress
+            }
             flash_ptr->size_cur -= 4;
             flash_ptr->offset_cur += 4;
             flash_ptr->buffer += 4;
