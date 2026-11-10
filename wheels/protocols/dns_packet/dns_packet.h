@@ -60,8 +60,11 @@ typedef struct {
 
 typedef struct {
     char           name[DNS_NAME_MAX];
-    dns_type_t     type;
-    dns_class_t    cls;
+    /* Wire values, which can be any 16 bits. Compare them with DNS_TYPE_* and
+     * DNS_CLASS_*, but do not copy them into a dns_type_t or dns_class_t:
+     * arm-none-eabi-gcc makes those enums one byte, so 257 would read as 1. */
+    uint16_t       type;
+    uint16_t       cls;
     uint32_t       ttl;         /* only meaningful in answers */
     const uint8_t *rdata;       /* points into input buffer */
     uint16_t       rdlength;

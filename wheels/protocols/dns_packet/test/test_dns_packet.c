@@ -373,6 +373,71 @@ TEST(test_decode_pointer_to_a_terminated_name)
     ASSERT_EQ(strcmp(name, "abc"), 0);
 }
 
+/* RFC 1035 section 3.2.2 and 3.2.4: TYPE and CLASS are 16 bits on the wire.
+   arm-none-eabi-gcc makes an enum as narrow as its values allow, so an enum
+   field would cut 257 down to 1. CMake also builds this file with
+   -fshort-enums to see what the target sees. */
+static const uint8_t a_record_head[] = {
+    0x12, 0x34, 0x81, 0x80, 0, 1, 0, 1, 0, 0, 0, 0, 1, 'a', 0,
+};
+
+static size_t build_answer(uint8_t *pkt, uint16_t type, uint16_t cls)
+{
+    size_t n = sizeof(a_record_head);
+    memcpy(pkt, a_record_head, n);
+    pkt[n++] = (uint8_t)(type >> 8);
+    pkt[n++] = (uint8_t)type;
+    pkt[n++] = (uint8_t)(cls >> 8);
+    pkt[n++] = (uint8_t)cls;
+    memcpy(pkt + n, "\0\0\0\x3C\0\x04\x01\x02\x03\x04", 10);
+    return n + 10;
+}
+
+TEST(test_record_fields_hold_16_bits)
+{
+    dns_record_t rec;
+    ASSERT_EQ(sizeof(rec.type), 2U);
+    ASSERT_EQ(sizeof(rec.cls), 2U);
+}
+
+TEST(test_record_keeps_a_type_past_one_byte)
+{
+    static const uint16_t types[] = { 257, 256 + 28, 0x0100, 0xFFFF };
+    uint8_t pkt[64];
+    dns_record_t rec;
+    uint8_t ip[4];
+
+    for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); i++) {
+        size_t n = build_answer(pkt, types[i], DNS_CLASS_IN);
+        ASSERT_EQ(dns_parse_record(pkt, (uint16_t)n, 12, &rec, true), (int)n);
+        ASSERT_EQ(rec.type, types[i]);
+        ASSERT_EQ(dns_get_ipv4(&rec, ip), DNS_ERR_FORMAT);
+    }
+}
+
+TEST(test_record_keeps_a_class_past_one_byte)
+{
+    uint8_t pkt[64];
+    dns_record_t rec;
+    size_t n = build_answer(pkt, DNS_TYPE_A, 257);
+    ASSERT_EQ(dns_parse_record(pkt, (uint16_t)n, 12, &rec, true), (int)n);
+    ASSERT_EQ(rec.cls, 257);
+    ASSERT_TRUE(rec.cls != DNS_CLASS_IN);
+}
+
+TEST(test_a_record_still_gives_its_address)
+{
+    uint8_t pkt[64];
+    dns_record_t rec;
+    uint8_t ip[4];
+    size_t n = build_answer(pkt, DNS_TYPE_A, DNS_CLASS_IN);
+    ASSERT_EQ(dns_parse_record(pkt, (uint16_t)n, 12, &rec, true), (int)n);
+    ASSERT_EQ(rec.type, DNS_TYPE_A);
+    ASSERT_EQ(rec.cls, DNS_CLASS_IN);
+    ASSERT_EQ(dns_get_ipv4(&rec, ip), DNS_OK);
+    ASSERT_EQ(ip[3], 4);
+}
+
 TEST_MAIN("dns_packet")
     RUN(test_build_query_a_record);
     RUN(test_build_query_aaaa_type);
@@ -394,4 +459,8 @@ TEST_MAIN("dns_packet")
     RUN(test_decode_labels_then_pointer_to_a_name_with_no_root_label);
     RUN(test_decode_label_with_no_root_label);
     RUN(test_decode_pointer_to_a_terminated_name);
+    RUN(test_record_fields_hold_16_bits);
+    RUN(test_record_keeps_a_type_past_one_byte);
+    RUN(test_record_keeps_a_class_past_one_byte);
+    RUN(test_a_record_still_gives_its_address);
 TEST_MAIN_END()

@@ -217,9 +217,9 @@ int dns_parse_record(const uint8_t *buf, uint16_t len, uint16_t offset,
     /* QTYPE + QCLASS = 4 bytes minimum */
     if (pos + 4 > len) return DNS_ERR_FORMAT;
 
-    record->type = (dns_type_t)get_u16(buf + pos);
+    record->type = get_u16(buf + pos);
     pos += 2;
-    record->cls = (dns_class_t)get_u16(buf + pos);
+    record->cls = get_u16(buf + pos);
     pos += 2;
 
     if (is_answer)
