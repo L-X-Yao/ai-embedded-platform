@@ -62,6 +62,21 @@ PROPERTY(random_ops_no_crash, 10000) {
     }
 }
 
+/* Property: bytes that are not a record never load as a count */
+PROPERTY(random_storage_loads_as_zero, 20000) {
+    (void)prop__seed_orig; (void)prop__iter;
+    mock_storage_valid = true;
+    for (size_t i = 0; i < sizeof(mock_storage_buf); i++) {
+        mock_storage_buf[i] = ARBI_UINT8(seed);
+    }
+
+    boot_counter_t bc;
+    boot_counter_init(&bc, &mock_storage);
+    PROP_ASSERT_EQ(boot_counter_load(&bc), BOOT_COUNTER_OK);
+    PROP_ASSERT_EQ(boot_counter_get_count(&bc), 0);
+    PROP_ASSERT_EQ(boot_counter_get_reset_reason(&bc), 0);
+}
+
 /* Property: init twice == init once */
 PROPERTY(init_idempotent, 5000) {
     mock_storage_valid = false;
@@ -106,6 +121,7 @@ PROPERTY(tick_increments_uptime, 10000) {
 
 TEST_MAIN("boot_counter properties") {
     RUN(random_ops_no_crash);
+    RUN(random_storage_loads_as_zero);
     RUN(init_idempotent);
     RUN(increment_monotonic);
     RUN(tick_increments_uptime);

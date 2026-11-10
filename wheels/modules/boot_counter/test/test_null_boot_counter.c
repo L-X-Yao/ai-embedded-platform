@@ -19,6 +19,10 @@ TEST(test_boot_counter_init_null_storage) {
     ASSERT_TRUE(boot_counter_init(&_ctx, NULL) != BOOT_COUNTER_OK);
 }
 
+TEST(test_boot_counter_set_second_copy_null_ctx) {
+    ASSERT_TRUE(boot_counter_set_second_copy(NULL, NULL, NULL) != BOOT_COUNTER_OK);
+}
+
 TEST(test_boot_counter_load_null_ctx) {
     ASSERT_TRUE(boot_counter_load(NULL) != BOOT_COUNTER_OK);
 }
@@ -54,6 +58,7 @@ TEST(test_boot_counter_tick_second_null_ctx) {
 TEST_MAIN("null_param_boot_counter") {
     RUN(test_boot_counter_init_null_ctx);
     RUN(test_boot_counter_init_null_storage);
+    RUN(test_boot_counter_set_second_copy_null_ctx);
     RUN(test_boot_counter_load_null_ctx);
     RUN(test_boot_counter_increment_null_ctx);
     RUN(test_boot_counter_get_count_null_ctx);
