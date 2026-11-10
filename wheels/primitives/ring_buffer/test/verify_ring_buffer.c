@@ -20,8 +20,8 @@
 
 /*
  * The state is head and tail, 0 .. 2*BUF_CAP-1. At up to 4 bytes an operation,
- * the farthest reachable state takes 8 operations, so 12 tries every operation
- * from every state.
+ * all 144 states are reachable and the farthest takes 10 operations, so 12 tries
+ * every operation from every state.
  */
 #ifndef OPS_BOUND
 #define OPS_BOUND 12
