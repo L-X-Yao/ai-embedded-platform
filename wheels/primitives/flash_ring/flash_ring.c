@@ -317,6 +317,12 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
     }
 
     if (io->write(io->ctx, slot_addr(ring, ring->write_idx), frame, len) != 0) {
+        /* The program may have landed anyway, and cells that are not blank
+         * cannot be programmed again: leave such a slot behind. */
+        bool blank = false;
+        if (tail_blank(ring, ring->write_idx, &blank) != FLASH_RING_OK || !blank) {
+            advance_write(ring);
+        }
         return FLASH_RING_ERR_IO;
     }
 

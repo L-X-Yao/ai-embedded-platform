@@ -968,6 +968,47 @@ TEST(test_flush_stays_due_at_the_largest_interval)
     ASSERT_EQ(0xFFFF, ring.since_flush);
 }
 
+/*
+ * A program that reports failure after the data went in: the cells are no
+ * longer blank, so the next push must not program them again.
+ */
+TEST(test_failed_program_that_landed_is_left_behind)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x55, sizeof(frame));
+    g_write_lands_then_fails = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_write_lands_then_fails = false;
+    ASSERT_EQ(1u, ring.write_idx);
+
+    memset(frame, 0xAA, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0, g_overprogram);
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_peek(&ring, 1, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0xAA, buf[0]);
+}
+
+/* A failed program that changed nothing keeps the slot, as a retry can use it. */
+TEST(test_failed_program_that_did_nothing_keeps_the_slot)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x56};
+    g_fail_write = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    g_fail_write = false;
+    ASSERT_EQ(0u, ring.write_idx);
+    ASSERT_EQ(0u, flash_ring_count(&ring));
+}
+
 /* An all-0xFF frame looks blank on its own. Frames after it must still count. */
 TEST(test_reset_walks_past_an_all_ff_frame)
 {
@@ -1165,6 +1206,8 @@ TEST_MAIN("flash_ring")
     RUN(test_resets_more_often_than_the_interval);
     RUN(test_push_is_ok_when_only_the_header_write_fails);
     RUN(test_flush_stays_due_at_the_largest_interval);
+    RUN(test_failed_program_that_landed_is_left_behind);
+    RUN(test_failed_program_that_did_nothing_keeps_the_slot);
     RUN(test_reset_walks_past_an_all_ff_frame);
     RUN(test_reset_of_a_ring_with_no_blank_slot);
     RUN(test_reset_of_a_ring_with_no_blank_slot_mid_sector);
