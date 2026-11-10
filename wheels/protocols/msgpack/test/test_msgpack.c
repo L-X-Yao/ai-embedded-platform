@@ -403,8 +403,9 @@ TEST(test_int32_min)
 
 TEST(test_str8_roundtrip)
 {
-    /* 50-byte string triggers str8 path */
-    static const char s50[50] =
+    /* 50-byte string triggers str8 path. The array also holds the NUL,
+     * which is not sent: GCC 15 rejects an exact fit under -Wextra. */
+    static const char s50[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWX";
 
     msgpack_enc_t enc;
