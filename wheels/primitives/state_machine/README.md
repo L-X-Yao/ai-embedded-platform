@@ -4,7 +4,8 @@
 **Layer: L0 (primitives)**
 
 Table-driven finite state machine with optional entry/exit actions per state
-and guard conditions on transitions. Pure C99, no heap, fully reentrant.
+and guard conditions on transitions. Pure C99, no heap. Machines are
+independent of each other, but one machine runs one transition at a time.
 ## Origin
 
 Proactive build. Table-driven FSMs are used in protocol parsers, UI flows,
@@ -61,8 +62,16 @@ transitions, multiple cycles (9 transitions).
 
 ## Test status
 
-- Unit tests (sim): PASS (15 C tests, 42 assertions)
+- Unit tests (sim): PASS (24 C tests)
 - HIL: N/A
+
+## Migration
+
+### Nested process and reset are refused (2026-11)
+
+- **What changed:** `state_machine_process` and `state_machine_reset` return the new `STATE_MACHINE_ERR_BUSY` when called from a guard, action, on_enter or on_exit of the same machine during a transition, and change nothing. The new `in_process` flag sits in padding: `state_machine_t` stays 28 bytes on a 32-bit target. `state_machine_process` is ISR safe only if its callbacks are.
+- **What a caller has to do:** Do not drive a machine from its own callbacks. Put the event in a queue, such as the `event_queue` wheel, and process it after the outer call returns. The on_enter run by init and reset is not a transition and may still call process.
+- **If they do nothing:** The nested event is refused and not kept, and the machine stays where the outer transition put it. A table that chained states through on_enter worked outside contract builds and now stops one state early. A posting action or on_exit used to corrupt the state or overflow the stack.
 
 ## API convention deviations
 

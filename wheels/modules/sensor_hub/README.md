@@ -97,9 +97,17 @@ cmake -GNinja -S . -B build && cmake --build build
   error-then-recovery, empty hub poll, partial NULL output pointers,
   unit string storage
 
+## Migration
+
+### Name lifetime is now stated (2026-11)
+
+- **What changed:** Nothing in the code. The header now says that `sensor_hub_register` keeps the name and unit by pointer, which is how it always worked.
+- **What a caller has to do:** Pass string literals or static arrays. A name built at run time needs its own storage for each sensor, for as long as the hub is in use.
+- **If they do nothing:** Literals and static arrays are fine. A stack buffer, or one buffer reused for several names, stays a bug: wrong or dead names and no error.
+
 ## API convention deviations
 
-None.
+- **api-conventions 3.3: `sensor_hub_register` keeps the name and unit pointers.** 3.3 says a wheel copies what it needs to keep. A copy needs a length cap, and a name cut to fit would stop matching in `sensor_hub_find`. The header states the lifetime rule instead.
 
 ## Design tradeoffs
 

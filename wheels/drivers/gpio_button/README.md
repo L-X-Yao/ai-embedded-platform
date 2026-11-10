@@ -75,6 +75,14 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS (17 C tests, 44 assertions)
 - HIL: N/A
 
+## Migration
+
+### Every release is reported (2026-11)
+
+- **What changed:** `gpio_button_tick` returns RELEASE on every debounced release edge. DOUBLE_CLICK used to replace the second RELEASE and now comes on the tick after it, as does a CLICK whose `double_click_ms` is under one tick. That next tick reports the gesture without reading the pin, so a press starting on it is seen one tick late. The new `next_evt` sits in padding: `gpio_button_t` stays 32 bytes on a 32-bit target.
+- **What a caller has to do:** Keep ticking after a RELEASE or the gesture is not reported. Code that counts RELEASE events now sees two per double click.
+- **If they do nothing:** PRESS and RELEASE now pair up, so an action started on PRESS gets its stop. DOUBLE_CLICK arrives one tick later than it did.
+
 ## API convention deviations
 
 - **`gpio_button_init` returns void** instead of an error code. Reason: init only copies caller-provided config into the instance struct — no I2C transactions or hardware probes that could fail. With a NULL `hal` or `cfg` it clears the instance and stops there, and `gpio_button_tick` then returns `GPIO_BUTTON_EVT_NONE`, as it does for a HAL with no `read`.
@@ -87,8 +95,8 @@ cmake -GNinja -S . -B build && cmake --build build
 | PRESS | Debounced press edge | Immediately |
 | RELEASE | Debounced release edge | Immediately |
 | LONG_PRESS | Held ≥ `long_press_ms` | During hold |
-| CLICK | Short press + release | After `double_click_ms` idle |
-| DOUBLE_CLICK | Two presses within `double_click_ms` | On second release |
+| CLICK | Short press + release | After `double_click_ms` idle, and always after RELEASE |
+| DOUBLE_CLICK | Two presses within `double_click_ms` | On the tick after the second RELEASE |
 
 LONG_PRESS suppresses CLICK on subsequent release. DOUBLE_CLICK consumes both pending clicks.
 

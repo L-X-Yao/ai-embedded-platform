@@ -81,6 +81,14 @@ cancel-inactive error, large multi-revolution wraparound.
 - Race test (sim): `test_race_timer_wheel`, a host thread for the tick, built -O3 -flto
 - HIL: N/A
 
+## Migration
+
+### Timers added from a callback wait their full delay (2026-11)
+
+- **What changed:** A timer added from inside a callback now always fires its full delay after the current tick, whatever its id. If it landed in the slot being scanned with a higher id, it used to fire on the same tick or a revolution early. `timer_wheel_tick` now marks what is due, then fires it. The new `due` flag sits in padding: `timer_wheel_entry_t` stays 20 bytes on a 32-bit target.
+- **What a caller has to do:** Nothing, unless a delay was shortened to allow for the old early firing.
+- **If they do nothing:** Such a timer fires later than it did, at the tick asked for.
+
 ## API convention deviations
 
 None.

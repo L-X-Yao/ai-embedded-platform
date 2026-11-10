@@ -70,6 +70,14 @@ cmake -GNinja -S . -B build && cmake --build build
 - Null tests: 11 pass
 - HIL: N/A
 
+## Migration
+
+### Oversized packets are refused (2026-11)
+
+- **What changed:** A packet longer than the buffer is dropped with the new `CC1101_ERR_SIZE`, where it used to return OK with a cut copy that looked whole. Nothing is copied, and `*out_len` holds the real length.
+- **What a caller has to do:** Pass a buffer that fits the largest packet, or handle the new error. Code that wanted only the start of a long packet now has to take all of it. A `cap` of 61 fits any packet.
+- **If they do nothing:** A long packet is lost instead of arriving cut. On that return `*out_len` is more than the buffer holds, so check the return value before using it.
+
 ## API convention deviations
 
 None.

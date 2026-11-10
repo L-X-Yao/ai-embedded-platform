@@ -81,9 +81,17 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 56 pass, 0 fail
+- Unit tests (sim): 62 pass, 0 fail
 - Null parameter tests: 15 pass, 0 fail
 - HIL: N/A
+
+## Migration
+
+### Reset and read_rom report a dead bus (2026-11)
+
+- **What changed:** `onewire_reset` returns `ONEWIRE_ERR_PRESENCE` when no device answers, where it returned `ONEWIRE_OK` with `*presence` false. The new `ONEWIRE_ERR_BUS` comes from `onewire_reset` when the line stays low for 250 us before the pulse, and no pulse is then sent, and from `onewire_read_rom` for an all-zero ROM, whose CRC is valid. `*presence` is still written, and is true only with `ONEWIRE_OK`.
+- **What a caller has to do:** Treat `ONEWIRE_ERR_PRESENCE` as an empty bus if that is not a fault for you. A test mock with scripted reads needs one more read, high, ahead of the presence sample.
+- **If they do nothing:** `err == ONEWIRE_OK && presence` works as before, and a shorted bus is now refused. Code that returns on any error now reports an empty bus as one.
 
 ## API convention deviations
 

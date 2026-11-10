@@ -111,9 +111,17 @@ ctest --test-dir build --output-on-failure
   publish null, updated flag tracking, buffer overflow, get count null,
   publish no fields, send context passing, float integer formatting
 
+## Migration
+
+### Name lifetime is now stated (2026-11)
+
+- **What changed:** Nothing in the code. The header now says that `telemetry_register` keeps the name by pointer, which is how it always worked.
+- **What a caller has to do:** Pass string literals or static arrays. A name built at run time needs its own storage for each field, for as long as the context is in use.
+- **If they do nothing:** Literals and static arrays are fine. A stack buffer, or one buffer reused for several names, stays a bug: wrong or dead names and no error.
+
 ## API convention deviations
 
-None.
+- **api-conventions 3.3: `telemetry_register` keeps the name pointer.** 3.3 says a wheel copies what it needs to keep. A copy needs a length cap, and this wheel has none on purpose: `test_long_name_is_sent` pins a 67 byte name. A name cut to fit would stop matching in `telemetry_update`, and 32 bytes a name would add 448 bytes to every `telemetry_t`. The header states the lifetime rule instead.
 
 
 ## Before promoting to stable

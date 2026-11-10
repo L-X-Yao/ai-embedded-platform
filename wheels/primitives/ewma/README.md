@@ -76,6 +76,14 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS
 - HIL: N/A
 
+## Migration
+
+### Scaled accumulator (2026-11)
+
+- **What changed:** `ewma_t` holds the filter state scaled by 2^shift in a new 64-bit `acc`, and `value` is now only the last output, not the state. The struct grows from 8 to 16 bytes and needs 8-byte alignment. Code grows from 96 to 160 bytes on Cortex-M0 and from 86 to 200 on Cortex-M4. The numbers change too: the output now reaches a constant input exactly, in both directions, where it used to stop up to 2^shift - 1 short, and a step below 2^shift now moves it instead of being ignored.
+- **What a caller has to do:** Use `ewma_feed` and `ewma_get`, never the fields: writing `value` no longer seeds the filter, so feed a first sample instead. Recheck thresholds tuned to the old offset. Do not restore an `ewma_t` saved by the old version.
+- **If they do nothing:** Code using the API compiles unchanged and reads the true level, which is higher than before: shift 8 used to stop at 3840 for 4095. No code in this repo uses the wheel.
+
 ## API convention deviations
 
 None.

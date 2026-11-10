@@ -91,6 +91,14 @@ measurement rejection in update.
 - Unit tests (sim): PASS (23 tests, 0 failures)
 - HIL: N/A
 
+## Migration
+
+### Reset keeps q and r (2026-11)
+
+- **What changed:** `kalman_1d_reset` now clears only `x`, `p` and `k`, and keeps `q` and `r`, including a `kalman_1d_set_noise` change. Clearing them made the filter a pass-through with gain 1, and aborted a contract build at the second update.
+- **What a caller has to do:** Nothing. An init after a reset is harmless and can stay.
+- **If they do nothing:** After a reset the filter filters again. Code that reset and updated without an init, as `examples/gps_tracker` did, was getting raw samples and now gets smoothed ones.
+
 ## API convention deviations
 
 - Error codes are plain `#define` integers (`KALMAN_1D_OK`, `KALMAN_1D_ERR_PARAM`)
@@ -104,8 +112,8 @@ measurement rejection in update.
 - **Key decisions**: Bootstrap on p==0 rather than a separate flag keeps
   the struct minimal and avoids a bool field; NaN-safe `!(val > 0.0f)`
   guards reject NaN and negative values in a single expression; reset()
-  zeroes the entire struct (including q/r) for simplicity — caller must
-  re-init before reuse.
+  clears the estimate and keeps q/r, as iir_lowpass and hysteresis do.
+  It cleared q/r too until 2026-11, see Migration.
 
 ## Responsible human
 

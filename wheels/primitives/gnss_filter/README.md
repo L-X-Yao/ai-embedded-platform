@@ -91,6 +91,14 @@ cmake -GNinja -S . -B build && cmake --build build
 - Unit tests (sim): PASS
 - HIL: N/A
 
+## Migration
+
+### Filter state in double (2026-11)
+
+- **What changed:** `filtered_lat`, `filtered_lon` and `filtered_alt` in `gnss_filter_t` are now `double`, so small EMA corrections are no longer lost. Config, input and getters stay `float`. The struct grows from 60 to 80 bytes and needs 8-byte alignment. On a single-precision FPU the wheel now links the soft double routines: about 2 KB of flash on Cortex-M4F (1816 to 3884 bytes in a minimal link), less if the firmware already uses them.
+- **What a caller has to do:** Nothing, unless a flash or RAM budget is tight. The fields are internal and callers go through the getters.
+- **If they do nothing:** Callers compile unchanged, flybox included. The filter now follows a held fix all the way: with alpha 0.02 it used to stop about 14 m short near longitude 121.
+
 ## API convention deviations
 
 None.
