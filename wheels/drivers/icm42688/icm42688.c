@@ -263,10 +263,15 @@ icm42688_err_t icm42688_set_power_mode(const icm42688_t *dev,
     return ICM42688_OK;
 }
 
-icm42688_err_t icm42688_soft_reset(const icm42688_t *dev)
+icm42688_err_t icm42688_soft_reset(icm42688_t *dev)
 {
     if (!dev || !dev->spi) return ICM42688_ERR_PARAM;
     /* DEVICE_CONFIG bit 0: soft_reset_config */
     reg_write(dev->spi, ICM42688_REG_DEVICE_CONFIG, 0x01);
+
+    /* GYRO_CONFIG0 and ACCEL_CONFIG0 reset to FS_SEL 0 (p.77, p.78), so the
+     * scale the chip uses from now on is that one, not what init asked for */
+    dev->acc_div  = acc_scale[ICM42688_ACC_RANGE_16G];
+    dev->gyro_div = gyro_scale[ICM42688_GYRO_RANGE_2000DPS];
     return ICM42688_OK;
 }

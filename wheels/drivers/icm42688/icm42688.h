@@ -166,8 +166,13 @@ icm42688_err_t   icm42688_set_power_mode(const icm42688_t *dev,
                                           icm42688_power_mode_t gyro_mode);
 
 /** Soft-reset the device (write 0x01 to DEVICE_CONFIG).
+ *
+ *  The chip returns to its reset values: both sensors off, +/-16 g, +/-2000 dps,
+ *  1 kHz. dev scales readings for those ranges from here on, so it is no longer
+ *  const. Wait 1 ms before the next access, and run icm42688_init to get the
+ *  configured ranges back.
  *  @thread_safe: no  @isr_safe: no */
-icm42688_err_t   icm42688_soft_reset(const icm42688_t *dev);
+icm42688_err_t   icm42688_soft_reset(icm42688_t *dev);
 
 #ifdef __cplusplus
 }

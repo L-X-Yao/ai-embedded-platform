@@ -95,6 +95,53 @@ TEST(test_hw_soft_reset_restores_reset_values)
     assert_reset_values();
 }
 
+/* p.77 and p.78: GYRO_CONFIG0 and ACCEL_CONFIG0 reset to 0x06, FS_SEL 0, so
+ * +/-2000 dps and +/-16 g. Tables 1 and 2: 16.4 LSB/dps and 2048 LSB/g. The chip
+ * scales by those after a reset, whatever init had set. */
+TEST(test_hw_readings_after_a_soft_reset_use_the_reset_ranges)
+{
+    icm42688_t dev;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    cfg.acc_range = ICM42688_ACC_RANGE_2G;
+    cfg.gyro_range = ICM42688_GYRO_RANGE_250DPS;
+    icm42688_model_init(&model);
+    ASSERT_EQ(icm42688_init(&dev, &hw_spi, &cfg), ICM42688_OK);
+
+    ASSERT_EQ(icm42688_soft_reset(&dev), ICM42688_OK);
+    ASSERT_EQ(icm42688_set_power_mode(&dev, ICM42688_PM_LN, ICM42688_PM_LN),
+              ICM42688_OK);
+    icm42688_model_set_accel(&model, 2048, 0, 0);
+    icm42688_model_set_gyro(&model, 164, 0, 0);
+    icm42688_model_set_temp(&model, 0);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.001f);
+    ASSERT_NEAR(data.gx_dps, 10.0f, 0.01f);
+}
+
+/* Init after the reset programs the ranges again, and the scale follows. */
+TEST(test_hw_init_after_a_soft_reset_brings_the_ranges_back)
+{
+    icm42688_t dev;
+    icm42688_cfg_t cfg = icm42688_default_cfg();
+    cfg.acc_range = ICM42688_ACC_RANGE_2G;
+    cfg.gyro_range = ICM42688_GYRO_RANGE_250DPS;
+    icm42688_model_init(&model);
+    ASSERT_EQ(icm42688_init(&dev, &hw_spi, &cfg), ICM42688_OK);
+    ASSERT_EQ(icm42688_soft_reset(&dev), ICM42688_OK);
+    ASSERT_EQ(icm42688_init(&dev, &hw_spi, &cfg), ICM42688_OK);
+
+    icm42688_model_set_accel(&model, 16384, 0, 0);
+    icm42688_model_set_gyro(&model, 131, 0, 0);
+    icm42688_model_set_temp(&model, 0);
+
+    icm42688_data_t data;
+    ASSERT_EQ(icm42688_read(&dev, &data), ICM42688_OK);
+    ASSERT_NEAR(data.ax_g, 1.0f, 0.001f);
+    ASSERT_NEAR(data.gx_dps, 1.0f, 0.01f);
+}
+
 /* p.77 and p.78: FS_SEL in [7:5], ODR in [3:0]. p.76: GYRO_MODE [3:2] and
  * ACCEL_MODE [1:0], 11 for Low Noise. Init asks for 2000 dps, 8 g, 1 kHz. */
 TEST(test_hw_init_programs_the_sensors)
@@ -232,6 +279,8 @@ TEST(test_hw_read_gyro_off_after_reset_values)
 TEST_MAIN("icm42688 hw model")
     RUN(test_hw_power_on_reset_values);
     RUN(test_hw_soft_reset_restores_reset_values);
+    RUN(test_hw_readings_after_a_soft_reset_use_the_reset_ranges);
+    RUN(test_hw_init_after_a_soft_reset_brings_the_ranges_back);
     RUN(test_hw_init_programs_the_sensors);
     RUN(test_hw_lp_refused_at_the_rate_a_soft_reset_leaves);
     RUN(test_hw_int_status_clears_on_read);
