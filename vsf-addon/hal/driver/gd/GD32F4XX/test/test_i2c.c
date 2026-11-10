@@ -474,6 +474,57 @@ static void test_after_n2(void)
     }
 }
 
+/* H1-21: header is 11110 A9 A8 R/W, then the low address byte, section 20.3.7 */
+static void test_write_10bit(void)
+{
+    static const struct { uint16_t addr; const char *want; } t[] = {
+        { 0x3FF, " S addr=F6 low=FF tx=33 P" },
+        { 0x155, " S addr=F2 low=55 tx=33 P" },
+        { 0x2AA, " S addr=F4 low=AA tx=33 P" },
+        { 0x000, " S addr=F0 low=00 tx=33 P" },
+    };
+    static uint8_t b[1] = { 0x33 };
+
+    for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++) {
+        printf("H1-21 write to 10-bit address 0x%03X\n", t[i].addr);
+        bus_reset(1);
+        CHECK(vsf_hw_i2c_master_request(I2C, t[i].addr, WR | VSF_I2C_CMD_10_BITS, 1, b) == VSF_ERR_NONE);
+        run_bus();
+        if (strcmp(wire, t[i].want) != 0) {
+            printf("  wire:%s\n  want:%s\n", wire, t[i].want);
+        }
+        CHECK(!storm);
+        CHECK(strcmp(wire, t[i].want) == 0);
+        CHECK(callbacks == 1);
+        CHECK(last_mask == DONE_OK);
+    }
+}
+
+/* H1-21: a 10-bit read addresses for write, then repeats START, header with R */
+static void check_read_10bit(int n)
+{
+    static uint8_t b[8];
+    static char want[256];
+
+    printf("H1-21 read %d bytes from 10-bit address 0x3FF\n", n);
+    memset(b, 0, sizeof(b));
+    bus_reset(1);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x3FF, RD | VSF_I2C_CMD_10_BITS, (uint_fast16_t)n, b) == VSF_ERR_NONE);
+    run_bus();
+    expect_read_wire(want, sizeof(want), " S addr=F6 low=FF S addr=F7", n, 0xA1);
+    if (strcmp(wire, want) != 0) {
+        printf("  wire:%s\n  want:%s\n", wire, want);
+    }
+    CHECK(!storm);
+    CHECK(strcmp(wire, want) == 0);
+    for (int i = 0; i < n; i++) {
+        CHECK(b[i] == 0xA1 + i);
+    }
+    CHECK(callbacks == 1);
+    CHECK(last_mask == DONE_OK);
+    CHECK(stops == 1);
+}
+
 /* writes were right before this work: they must stay right */
 static void test_write(void)
 {
@@ -500,5 +551,9 @@ int main(void)
     }
     test_after_n2();
     test_write();
+    test_write_10bit();
+    for (int n = 1; n <= 4; n++) {
+        check_read_10bit(n);
+    }
     return host_summary("i2c");
 }

@@ -54,6 +54,7 @@ typedef struct VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) {
     uint16_t                count;
     uint16_t                transferred;
     bool                    addressed;  // address phase over, data flags are ours
+    bool                    restarted;  // 10-bit read: past the second START
 } VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t);
 
 /*============================ IMPLEMENTATION ================================*/
@@ -182,6 +183,7 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
     // Until the address is out, TBE and BTC still describe the last transfer.
     // A request with no START carries on from that transfer.
     i2c_ptr->addressed = !(cmd & (VSF_I2C_CMD_START | VSF_I2C_CMD_RESTART));
+    i2c_ptr->restarted = false;
 
     // N=2, user manual 20.3.7 scheme B: POAP goes on before START, so that
     // clearing ACKEN at ADDSEND takes effect one byte later. POAP stays set until
@@ -289,19 +291,37 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
     if (stat0 & I2C_STAT0_SBSEND) {
         uint8_t addr_byte;
         if (i2c_ptr->cmd & VSF_I2C_CMD_10_BITS) {
-            addr_byte = 0xF0 | ((i2c_ptr->addr >> 8) & 0x06);
+            // Header 11110 A9 A8 R/W. A 10-bit read addresses the slave for
+            // writing first; R/W is set only in the header after the second START.
+            addr_byte = 0xF0 | ((i2c_ptr->addr >> 7) & 0x06);
+            if (i2c_ptr->restarted) {
+                addr_byte |= 1;
+            }
         } else {
             addr_byte = (uint8_t)(i2c_ptr->addr << 1);
-        }
-        if (i2c_ptr->cmd & VSF_I2C_CMD_READ) {
-            addr_byte |= 1;
+            if (i2c_ptr->cmd & VSF_I2C_CMD_READ) {
+                addr_byte |= 1;
+            }
         }
         I2C_DATA(reg) = addr_byte;
         return;
     }
 
+    // 10-bit header sent, cleared by writing the low address byte
+    if (stat0 & I2C_STAT0_ADD10SEND) {
+        I2C_DATA(reg) = (uint8_t)i2c_ptr->addr;
+        return;
+    }
+
     // EV6: address sent, clear by reading STAT0 then STAT1
     if (stat0 & I2C_STAT0_ADDSEND) {
+        if (    (i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->cmd & VSF_I2C_CMD_10_BITS)
+            &&  !i2c_ptr->restarted) {
+            (void)I2C_STAT1(reg);
+            i2c_ptr->restarted = true;
+            I2C_CTL0(reg) |= I2C_CTL0_START;
+            return;
+        }
         if ((i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->count == 2)) {
             // N=2: with POAP set this NACKs the second byte, not the first
             I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
