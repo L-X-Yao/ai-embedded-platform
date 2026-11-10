@@ -458,6 +458,18 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
         #   -I<layers>       — cross-wheel type references (best-effort)
         err_file="$WORK_DIR/err_${layer}_${name}_${block_num}.txt"
         compile_rc=0
+
+        # A wheel's header may include a dependency's header, whose directory
+        # the layer paths below do not reach.
+        dep_incs=()
+        if [[ -n "${header:-}" ]]; then
+            while IFS= read -r inc; do
+                dep_h=$(find "$REPO/wheels" -name "$inc" -not -path "*/test/*" \
+                        -not -path "*/_draft/*" 2>/dev/null | head -1)
+                [[ -n "$dep_h" ]] && dep_incs+=("-I$(dirname "$dep_h")")
+            done < <(grep -oE '^#include "[^"]+\.h"' "$header" | sed 's/^#include "//;s/"$//')
+        fi
+
         LC_ALL=C gcc -std=c99 -fsyntax-only -Wall \
             -Wno-implicit-function-declaration \
             -Wno-unused-function \
@@ -466,6 +478,7 @@ for wheel_dir in "$REPO"/wheels/*/*/; do
             -I"$REPO/wheels/drivers" \
             -I"$REPO/wheels/protocols" \
             -I"$REPO/wheels/modules" \
+            "${dep_incs[@]}" \
             "$unit_file" > /dev/null 2>"$err_file" || compile_rc=$?
 
         if [[ $compile_rc -eq 0 ]]; then
