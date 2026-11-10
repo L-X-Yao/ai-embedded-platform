@@ -76,6 +76,7 @@ typedef struct {
     at_command_urc_entry_t  urcs[AT_COMMAND_MAX_URCS];
     uint8_t         urc_count;
     uint8_t         waiting;
+    uint8_t         final_wanted;  /* the wait set by at_command_expect_final() */
 } at_command_t;
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
@@ -86,8 +87,24 @@ void          at_command_init(at_command_t *at, const at_command_hal_t *hal);
 void          at_command_send(at_command_t *at, const char *cmd);
 /** Send raw bytes. @thread_safe: caller_must_lock */
 void          at_command_send_raw(at_command_t *at, const uint8_t *data, uint16_t len);
-/** Set expected response prefix. @thread_safe: caller_must_lock */
+/** Wait for the first line that contains expected, and end the wait there.
+ *  Use it when that line ends the command, as "OK", "SEND OK" and "CONNECT OK"
+ *  do. If the modem still owes a final result code it arrives after the wait,
+ *  and an expect for the next command would take it as its own answer: for
+ *  information such as "+CSQ:" use at_command_expect_final().
+ *  Any line that contains "ERROR" also ends the wait, with AT_COMMAND_EVT_ERROR.
+ *  @thread_safe: caller_must_lock */
 void          at_command_expect(at_command_t *at, const char *expected);
+/** Wait for the final result code of a command that answers with information
+ *  text first (V.250 section 5.7). A line that contains info is kept for
+ *  at_command_get_matched() and reported as AT_COMMAND_EVT_LINE, the last one
+ *  wins if there are several, and the wait goes on. A line that is exactly OK
+ *  ends it with AT_COMMAND_EVT_OK, even if no line held info: matched is then
+ *  empty. A line that is exactly ERROR or starts +CME ERROR or +CMS ERROR ends
+ *  it with AT_COMMAND_EVT_ERROR and clears matched. Result codes of a dial
+ *  command (CONNECT, BUSY and so on) do not end it: use at_command_expect().
+ *  @thread_safe: caller_must_lock */
+void          at_command_expect_final(at_command_t *at, const char *info);
 /** Cancel pending expect. @thread_safe: caller_must_lock */
 void          at_command_cancel(at_command_t *at);
 /** Feed one received byte. @thread_safe: caller_must_lock */

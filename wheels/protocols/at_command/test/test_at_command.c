@@ -634,6 +634,139 @@ TEST(test_unregister_urc_null_args)
     ASSERT_TRUE(at_command_unregister_urc(&at, NULL) == -1);
 }
 
+/* V.250 5.7: information text comes first, then one final result code ends
+   the command. The final code must not be left for the next command. */
+TEST(test_expect_final_waits_past_the_information_line)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(&at, "+CSQ:");
+
+    ASSERT_TRUE(feed_string(&at, "\r\n+CSQ: 18,0\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(at.waiting == 1);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), "+CSQ: 18,0") == 0);
+
+    ASSERT_TRUE(feed_string(&at, "\r\nOK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(at.waiting == 0);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), "+CSQ: 18,0") == 0);
+    ASSERT_TRUE(strcmp(at_command_get_prev_line(&at), "+CSQ: 18,0") == 0);
+
+    /* The first command is over, so the next one waits for its own answer */
+    at_command_expect(&at, "OK");
+    ASSERT_TRUE(at.waiting == 1);
+    ASSERT_TRUE(feed_string(&at, "OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(at.waiting == 0);
+}
+
+TEST(test_expect_final_ends_on_every_error_code)
+{
+    static const char *const errors[] = {
+        "ERROR\r\n", "+CME ERROR: 30\r\n", "+CME ERROR: no network\r\n",
+        "+CMS ERROR: 500\r\n",
+    };
+
+    for (size_t i = 0; i < sizeof(errors) / sizeof(errors[0]); i++) {
+        at_command_t at;
+        at_command_evt_t evt;
+        at_command_init(&at, &mock_hal);
+        at_command_expect_final(&at, "+CSQ:");
+        ASSERT_TRUE(feed_string(&at, "+CSQ: 18,0\r\n", &evt) == AT_COMMAND_EVT_LINE);
+        ASSERT_TRUE(feed_string(&at, errors[i], &evt) == AT_COMMAND_EVT_ERROR);
+        ASSERT_TRUE(at.waiting == 0);
+        ASSERT_TRUE(at_command_get_matched(&at)[0] == '\0');
+    }
+}
+
+TEST(test_expect_final_ok_with_no_information_line_leaves_matched_empty)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(&at, "+CSQ:");
+    ASSERT_TRUE(feed_string(&at, "OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(at_command_get_matched(&at)[0] == '\0');
+}
+
+TEST(test_expect_final_takes_only_a_whole_line_as_final)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(&at, "+QSTATE:");
+
+    /* Information text may hold the words without being a result code */
+    ASSERT_TRUE(feed_string(&at, "+QSTATE: OK\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(feed_string(&at, "+QSTATE: ERROR\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(feed_string(&at, "BOOK\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(feed_string(&at, "LAST ERROR 3\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(at.waiting == 1);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), "+QSTATE: ERROR") == 0);
+    ASSERT_TRUE(feed_string(&at, "OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+}
+
+TEST(test_expect_final_passes_a_urc_through)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    urc_reset();
+    at_command_init(&at, &mock_hal);
+    at_command_register_urc(&at, "+CGREG:", urc_handler, NULL);
+    at_command_expect_final(&at, "+CSQ:");
+
+    ASSERT_TRUE(feed_string(&at, "+CSQ: 18,0\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(feed_string(&at, "+CGREG: 1\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(urc_count == 1);
+    ASSERT_TRUE(at.waiting == 1);
+    ASSERT_TRUE(feed_string(&at, "OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), "+CSQ: 18,0") == 0);
+    ASSERT_TRUE(strcmp(at_command_get_prev_line(&at), "+CSQ: 18,0") == 0);
+}
+
+TEST(test_expect_final_keeps_the_last_of_several_lines)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(&at, "+CGDCONT:");
+
+    ASSERT_TRUE(feed_string(&at, "+CGDCONT: 1\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(feed_string(&at, "+CGDCONT: 2\r\n", &evt) == AT_COMMAND_EVT_LINE);
+    ASSERT_TRUE(evt.line_len == 11U);
+    ASSERT_TRUE(feed_string(&at, "OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(strcmp(at_command_get_matched(&at), "+CGDCONT: 2") == 0);
+}
+
+TEST(test_expect_after_expect_final_ends_at_the_match_again)
+{
+    at_command_t at;
+    at_command_evt_t evt;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(&at, "+CSQ:");
+    ASSERT_TRUE(feed_string(&at, "+CSQ: 18,0\r\nOK\r\n", &evt) == AT_COMMAND_EVT_OK);
+
+    /* "SEND OK" ends its own command: no OK follows it */
+    at_command_expect(&at, "SEND OK");
+    ASSERT_TRUE(feed_string(&at, "SEND OK\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(at.waiting == 0);
+
+    at_command_expect_final(&at, "+CSQ:");
+    at_command_cancel(&at);
+    ASSERT_TRUE(at.waiting == 0);
+    at_command_expect(&at, "+CSQ:");
+    ASSERT_TRUE(feed_string(&at, "+CSQ: 18,0\r\n", &evt) == AT_COMMAND_EVT_OK);
+    ASSERT_TRUE(at.waiting == 0);
+}
+
+TEST(test_expect_final_null_safety)
+{
+    at_command_t at;
+    at_command_init(&at, &mock_hal);
+    at_command_expect_final(NULL, "+CSQ:");
+    at_command_expect_final(&at, NULL);
+    ASSERT_TRUE(at.waiting == 0);
+}
+
 TEST_MAIN("at_command")
     RUN(test_init);
     RUN(test_send_command);
@@ -678,5 +811,13 @@ TEST_MAIN("at_command")
     RUN(test_unregister_urc_stops_dispatch);
     RUN(test_unregister_urc_not_found);
     RUN(test_unregister_urc_null_args);
+    RUN(test_expect_final_waits_past_the_information_line);
+    RUN(test_expect_final_ends_on_every_error_code);
+    RUN(test_expect_final_ok_with_no_information_line_leaves_matched_empty);
+    RUN(test_expect_final_takes_only_a_whole_line_as_final);
+    RUN(test_expect_final_passes_a_urc_through);
+    RUN(test_expect_final_keeps_the_last_of_several_lines);
+    RUN(test_expect_after_expect_final_ends_at_the_match_again);
+    RUN(test_expect_final_null_safety);
 TEST_MAIN_END()
 

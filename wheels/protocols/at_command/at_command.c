@@ -31,6 +31,7 @@ void at_command_init(at_command_t *at, const at_command_hal_t *hal)
     at->prev_line[0] = '\0';
     at->urc_count    = 0U;
     at->waiting      = 0U;
+    at->final_wanted = 0U;
     ENSURE(at->line_idx == 0U);
     ENSURE(at->urc_count == 0U);
 }
@@ -61,7 +62,7 @@ void at_command_send_raw(at_command_t *at, const uint8_t *data, uint16_t len)
     at->hal->send(at->hal->ctx, data, len);
 }
 
-void at_command_expect(at_command_t *at, const char *expected)
+static void start_wait(at_command_t *at, const char *expected, uint8_t final_wanted)
 {
     if (at == NULL || expected == NULL) {
         return;
@@ -70,6 +71,17 @@ void at_command_expect(at_command_t *at, const char *expected)
     at->expected[sizeof(at->expected) - 1U] = '\0';
     at->matched[0] = '\0';
     at->waiting = 1U;
+    at->final_wanted = final_wanted;
+}
+
+void at_command_expect(at_command_t *at, const char *expected)
+{
+    start_wait(at, expected, 0U);
+}
+
+void at_command_expect_final(at_command_t *at, const char *info)
+{
+    start_wait(at, info, 1U);
 }
 
 void at_command_cancel(at_command_t *at)
@@ -156,6 +168,30 @@ static int dispatch_urc(at_command_t *at, const char *line)
     return 0;
 }
 
+/** A whole line that reports failure: ERROR is V.250 table 1, +CME ERROR is
+ *  TS 27.007 section 9.2, +CMS ERROR is TS 27.005 section 3.2.5. */
+static int is_final_error(const char *line)
+{
+    return strcmp(line, "ERROR") == 0 ||
+           starts_with(line, "+CME ERROR") ||
+           starts_with(line, "+CMS ERROR");
+}
+
+static at_command_evt_type_t end_wait(at_command_t *at, at_command_evt_t *evt,
+                                      at_command_evt_type_t type)
+{
+    at->expected[0] = '\0';
+    at->waiting = 0U;
+    evt->type = type;
+    return type;
+}
+
+static void keep_line(char *dst, size_t size, const char *line)
+{
+    strncpy(dst, line, size - 1U);
+    dst[size - 1U] = '\0';
+}
+
 static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *evt)
 {
     const char *line = at->line_buf;
@@ -170,31 +206,39 @@ static at_command_evt_type_t process_line(at_command_t *at, at_command_evt_t *ev
     evt->line     = line;
     evt->line_len = len;
 
-    if (at->waiting && at->expected[0] != '\0') {
+    if (at->waiting && at->final_wanted) {
+        /* only a whole line is a final result code: information text can
+         * hold the same words */
+        if (strcmp(line, "OK") == 0) {
+            return end_wait(at, evt, AT_COMMAND_EVT_OK);
+        }
+        if (is_final_error(line)) {
+            at->matched[0] = '\0';
+            return end_wait(at, evt, AT_COMMAND_EVT_ERROR);
+        }
+        if (at->expected[0] != '\0' && contains(line, at->expected)) {
+            keep_line(at->matched, sizeof(at->matched), line);
+            keep_line(at->prev_line, sizeof(at->prev_line), line);
+            evt->type = AT_COMMAND_EVT_LINE;
+            return AT_COMMAND_EVT_LINE;
+        }
+    } else if (at->waiting && at->expected[0] != '\0') {
         /* a prompt is matched in at_command_feed, never as part of a line */
         if (at->expected[0] != '>' && contains(line, at->expected)) {
-            strncpy(at->matched, line, sizeof(at->matched) - 1U);
-            at->matched[sizeof(at->matched) - 1U] = '\0';
-            at->expected[0] = '\0';
-            at->waiting = 0U;
-            evt->type = AT_COMMAND_EVT_OK;
-            return AT_COMMAND_EVT_OK;
+            keep_line(at->matched, sizeof(at->matched), line);
+            return end_wait(at, evt, AT_COMMAND_EVT_OK);
         }
 
         if (contains(line, "ERROR")) {
             at->matched[0] = '\0';
-            at->expected[0] = '\0';
-            at->waiting = 0U;
-            evt->type = AT_COMMAND_EVT_ERROR;
-            return AT_COMMAND_EVT_ERROR;
+            return end_wait(at, evt, AT_COMMAND_EVT_ERROR);
         }
     }
 
     /* not a response match — check URCs, and save a line no handler took
      * as prev_line: a URC must not replace the data of a pending command */
     if (!dispatch_urc(at, line)) {
-        strncpy(at->prev_line, line, sizeof(at->prev_line) - 1U);
-        at->prev_line[sizeof(at->prev_line) - 1U] = '\0';
+        keep_line(at->prev_line, sizeof(at->prev_line), line);
     }
 
     evt->type = at->waiting ? AT_COMMAND_EVT_LINE : AT_COMMAND_EVT_URC;

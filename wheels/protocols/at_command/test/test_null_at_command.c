@@ -63,6 +63,20 @@ TEST(test_at_command_expect_null_expected) {
     /* must not crash */
 }
 
+TEST(test_at_command_expect_final_null_at) {
+    char _info[64];
+    memset(_info, 0, sizeof(_info));
+    (void)at_command_expect_final(NULL, _info);
+    /* must not crash */
+}
+
+TEST(test_at_command_expect_final_null_info) {
+    at_command_t _at;
+    memset(&_at, 0, sizeof(_at));
+    (void)at_command_expect_final(&_at, NULL);
+    /* must not crash */
+}
+
 TEST(test_at_command_cancel_null_at) {
     (void)at_command_cancel(NULL);
     /* must not crash */
@@ -128,6 +142,8 @@ TEST_MAIN("null_param_at_command") {
     RUN(test_at_command_send_raw_null_data);
     RUN(test_at_command_expect_null_at);
     RUN(test_at_command_expect_null_expected);
+    RUN(test_at_command_expect_final_null_at);
+    RUN(test_at_command_expect_final_null_info);
     RUN(test_at_command_cancel_null_at);
     RUN(test_at_command_feed_null_at);
     RUN(test_at_command_feed_null_evt);

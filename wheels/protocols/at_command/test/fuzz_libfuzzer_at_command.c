@@ -59,7 +59,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         // A finished exchange arms the next one, as a modem driver would.
         if (type == AT_COMMAND_EVT_OK || type == AT_COMMAND_EVT_ERROR ||
             type == AT_COMMAND_EVT_PROMPT) {
-            at_command_expect(&at, expectations[data[i] % EXPECTATION_COUNT]);
+            const char *next = expectations[data[i] % EXPECTATION_COUNT];
+            if (data[i] & 0x10U) {
+                at_command_expect_final(&at, next);
+            } else {
+                at_command_expect(&at, next);
+            }
         }
     }
 
