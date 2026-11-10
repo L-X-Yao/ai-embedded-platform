@@ -2,8 +2,8 @@
 // LibFuzzer harness for air780eg -- coverage-guided fuzzing
 //
 // Plays the modem: raw bytes, well-formed URC lines and command replies in the
-// order the input picks. Lines that fit must come back through the callbacks
-// unchanged, and nothing may leave the driver's line buffer.
+// order the input picks. Messages must come back through the callback unchanged,
+// and nothing may leave the driver's buffers.
 //
 // Compile: clang -fsanitize=fuzzer,address,undefined -I.. -I../../../../tooling/harness \
 //          fuzz_libfuzzer_air780eg.c ../air780eg.c -o fuzz_air780eg
@@ -45,8 +45,8 @@ static uint32_t world_tick(void *ctx) {
 
 static void on_mqtt(void *user, const char *topic, const uint8_t *payload, uint16_t len) {
     world_t *w = user;
-    const uint8_t *low = (const uint8_t *)w->dev->line_buf;
-    const uint8_t *high = low + sizeof(w->dev->line_buf);
+    const uint8_t *low = w->dev->msg_payload;
+    const uint8_t *high = low + sizeof(w->dev->msg_payload);
 
     if (strlen(topic) >= sizeof(w->topic)) __builtin_trap();
     if (payload < low || payload + len > high) __builtin_trap();
@@ -79,6 +79,8 @@ static void type_line(air780eg_t *dev, const char *line, size_t len) {
 
 static void check_invariants(const air780eg_t *dev) {
     if (dev->line_pos >= sizeof(dev->line_buf)) __builtin_trap();
+    if (dev->msg_pos > sizeof(dev->msg_payload)) __builtin_trap();
+    if (dev->msg_left > AIR780EG_MSG_MAX) __builtin_trap();
     if (!memchr(dev->matched_line, 0, sizeof(dev->matched_line))) __builtin_trap();
     if (!memchr(dev->prev_line, 0, sizeof(dev->prev_line))) __builtin_trap();
 }
@@ -92,24 +94,35 @@ static size_t take_text(fuzz_input_t *in, char *out, size_t n) {
     return len;
 }
 
-// With no command pending a +MSUB line must reach the callback unchanged.
+// Raw bytes may have left half a message or half a line behind.
+static void settle(air780eg_t *dev) {
+    while (dev->msg_left > 0) air780eg_feed(dev, 'x');
+    air780eg_feed(dev, '\n');
+}
+
+// A message must reach the callback whole, whatever bytes it holds and whether
+// or not a command is pending.
 static void op_msub(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
     char topic[AIR780EG_TOPIC_MAX + 16];
-    char payload[320];
-    static char line[AIR780EG_LINE_MAX * 2];
-    size_t topic_len = take_text(in, topic, fuzz_u8(in) % (sizeof(topic) - 1));
-    size_t payload_len = take_text(in, payload, fuzz_u16(in) % (sizeof(payload) - 1));
-    int n = snprintf(line, sizeof(line), "+MSUB: \"%s\",%zu byte,\"%s\"", topic, payload_len, payload);
+    static uint8_t payload[AIR780EG_PAYLOAD_MAX];
+    static char head[AIR780EG_LINE_MAX];
+    size_t topic_len = take_text(in, topic, fuzz_u16(in) % (sizeof(topic) - 1));
+    size_t payload_len = fuzz_take(in, payload, fuzz_u16(in) % (sizeof(payload) + 1));
+    int n = snprintf(head, sizeof(head), "+MSUB: \"%s\",%zu byte,", topic, payload_len);
 
-    // Raw bytes may have left half a line behind.
-    air780eg_feed(dev, '\n');
+    settle(dev);
     uint32_t before = w->mqtt;
-    bool pending = dev->cmd_status == AIR780EG_CMD_PENDING;
+    uint32_t drops = dev->msg_drop_count;
+    air780eg_cmd_status_t status = dev->cmd_status;
 
-    type_line(dev, line, (size_t)n);
-    if (pending) return;
+    for (int i = 0; i < n; i++) air780eg_feed(dev, (uint8_t)head[i]);
+    for (size_t i = 0; i < payload_len; i++) air780eg_feed(dev, payload[i]);
+    air780eg_feed(dev, '\r');
+    air780eg_feed(dev, '\n');
+
+    if (dev->cmd_status != status) __builtin_trap();
     if (topic_len >= AIR780EG_TOPIC_MAX) {
-        if (w->mqtt != before) __builtin_trap();
+        if (w->mqtt != before || dev->msg_drop_count != drops + 1) __builtin_trap();
         return;
     }
     if (w->mqtt != before + 1 || strcmp(w->topic, topic) != 0 ||
@@ -156,7 +169,7 @@ static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     };
     size_t pick = fuzz_u8(in) % (sizeof(replies) / sizeof(replies[0]));
 
-    air780eg_feed(dev, '\n');
+    settle(dev);
     bool pending = dev->cmd_status == AIR780EG_CMD_PENDING;
 
     type_line(dev, replies[pick], strlen(replies[pick]));

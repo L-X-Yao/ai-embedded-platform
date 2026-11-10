@@ -53,8 +53,21 @@ target_include_directories(test_boundary_air780eg PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+# The same driver as a project short of RAM would build it.
+add_executable(test_small_payload_air780eg
+    test_small_payload_air780eg.c
+    ../air780eg.c
+)
+target_include_directories(test_small_payload_air780eg PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_definitions(test_small_payload_air780eg PRIVATE AIR780EG_PAYLOAD_MAX=16)
+target_compile_options(test_small_payload_air780eg PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
 enable_testing()
 add_test(NAME air780eg_tests COMMAND test_air780eg)
 add_test(NAME air780eg_null  COMMAND test_null_air780eg)
 add_test(NAME air780eg_props COMMAND test_air780eg_props)
 add_test(NAME air780eg_boundary_tests COMMAND test_boundary_air780eg)
+add_test(NAME air780eg_small_payload COMMAND test_small_payload_air780eg)

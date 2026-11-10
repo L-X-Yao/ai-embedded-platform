@@ -19,49 +19,111 @@ static bool starts_with(const char *line, const char *prefix)
     return strncmp(line, prefix, strlen(prefix)) == 0;
 }
 
-static void dispatch_urc(air780eg_t *dev, const char *line)
+/* The message read by length is complete, or there never was anything to read. */
+static void msg_finish(air780eg_t *dev)
 {
-    /* MQTT subscription message: +MSUB: "topic",payload_len,"payload" */
-    if (starts_with(line, "+MSUB:") && dev->mqtt_rx_cb != NULL) {
-        const char *p = line + 6;
-        while (*p == ' ') p++;
-        if (*p != '"') return;
-        p++;
-        const char *topic_end = strchr(p, '"');
-        if (topic_end == NULL) return;
-        char topic[AIR780EG_TOPIC_MAX];
-        size_t tlen = (size_t)(topic_end - p);
-        /* A shortened topic could match a different subscription. */
-        if (tlen >= sizeof(topic)) return;
-        memcpy(topic, p, tlen);
-        topic[tlen] = '\0';
+    if (dev->msg_skip) {
+        dev->msg_drop_count++;
+    } else if (dev->mqtt_rx_cb != NULL) {
+        dev->mqtt_rx_cb(dev->mqtt_rx_user, dev->line_buf + dev->msg_topic_off,
+                        dev->msg_payload, dev->msg_pos);
+    }
+    dev->line_pos = 0;
+}
 
-        /* Skip to payload: after second comma, find quoted payload */
+static void msg_byte(air780eg_t *dev, uint8_t byte)
+{
+    if (!dev->msg_skip) {
+        dev->msg_payload[dev->msg_pos++] = byte;
+    }
+    dev->msg_left--;
+    if (dev->msg_left == 0) {
+        msg_finish(dev);
+    }
+}
+
+/*
+ * Called at each comma of a +MSUB line. The header ends at the comma after <len>:
+ *
+ *   +MSUB: "mqtt/topic",9 byte,SSSSddddd    direct mode, p.248
+ *   +MSUB: mqtt/topic,9 byte,SSSSddddd      read from the cache, p.247
+ *
+ * The syntax line of p.243 has a bare <len>. What follows is <len> bytes of data
+ * with no quotes around it, so it is read by count, not as a line: it can hold
+ * anything, a line end included, and it can be longer than a line.
+ */
+static void msg_header(air780eg_t *dev)
+{
+    dev->line_buf[dev->line_pos] = '\0';
+
+    char *topic = dev->line_buf + 6;
+    while (*topic == ' ') topic++;
+    char *topic_end;
+    const char *p;
+    if (*topic == '"') {
+        topic++;
+        topic_end = strstr(topic, "\",");
+        if (topic_end == NULL) return;
+        p = topic_end + 2;
+    } else {
+        topic_end = strchr(topic, ',');
+        if (topic_end == NULL) return;
         p = topic_end + 1;
-        const char *comma = strchr(p, ',');
-        if (comma == NULL) return;
-        p = comma + 1;
-        comma = strchr(p, ',');
-        if (comma == NULL) return;
-        p = comma + 1;
-        /* Payload may or may not be quoted */
-        uint16_t plen;
-        const uint8_t *payload;
-        if (*p == '"') {
-            p++;
-            const char *end = strrchr(p, '"');
-            if (end == NULL) end = p + strlen(p);
-            plen = (uint16_t)(end - p);
-            payload = (const uint8_t *)p;
-        } else {
-            size_t slen = strlen(p);
-            plen = (slen > UINT16_MAX) ? UINT16_MAX : (uint16_t)slen;
-            payload = (const uint8_t *)p;
+    }
+
+    const char *digits = p;
+    uint32_t len = 0;
+    while (*p >= '0' && *p <= '9') {
+        if (len <= AIR780EG_MSG_MAX) {
+            len = len * 10u + (uint32_t)(*p - '0');
         }
-        dev->mqtt_rx_cb(dev->mqtt_rx_user, topic, payload, plen);
+        p++;
+    }
+    if (p == digits) return;
+    if (starts_with(p, " byte")) p += 5;
+    /* Only the comma just stored ends the header: a later one is in a payload. */
+    if (p[0] != ',' || p[1] != '\0') return;
+
+    /* No module sends this, so it is a garbled line and not a count to trust. */
+    if (len > AIR780EG_MSG_MAX) {
+        dev->msg_drop_count++;
         return;
     }
 
+    size_t tlen = (size_t)(topic_end - topic);
+    *topic_end = '\0';
+    dev->msg_topic_off = (uint16_t)(topic - dev->line_buf);
+    dev->msg_pos = 0;
+    /* A shortened topic could match a different subscription, and a shortened
+     * message is a wrong one: both are skipped whole and counted. */
+    dev->msg_skip = tlen >= AIR780EG_TOPIC_MAX || len > AIR780EG_PAYLOAD_MAX;
+    dev->msg_left = (uint16_t)len;
+    if (len == 0) {
+        msg_finish(dev);
+    }
+}
+
+/* Lost bytes must not leave the parser waiting for a count that never comes.
+ * The abort flag hands the decision to feed, which owns the parser state. */
+static void msg_check_stall(air780eg_t *dev)
+{
+    uint16_t left = dev->msg_left;
+    if (left == 0) {
+        dev->msg_watch_left = 0;
+        return;
+    }
+    uint32_t now = dev->io->get_tick_ms(dev->io->ctx);
+    if (left != dev->msg_watch_left) {
+        dev->msg_watch_left = left;
+        dev->msg_watch_ms = now;
+    } else if ((now - dev->msg_watch_ms) >= AIR780EG_MSG_STALL_MS) {
+        dev->msg_watch_left = 0;
+        dev->msg_abort = true;
+    }
+}
+
+static void dispatch_urc(air780eg_t *dev, const char *line)
+{
     /* TCP/MQTT disconnect (manual p.249) */
     if (starts_with(line, "CLOSED")) {
         if (dev->disconnect_cb != NULL) {
@@ -211,6 +273,19 @@ void air780eg_feed(air780eg_t *dev, uint8_t byte)
     REQUIRE(dev != NULL);
     if (dev == NULL) return;
 
+    if (dev->msg_abort) {
+        dev->msg_abort = false;
+        if (dev->msg_left > 0) {
+            dev->msg_left = 0;
+            dev->msg_drop_count++;
+            dev->line_pos = 0;
+        }
+    }
+    if (dev->msg_left > 0) {
+        msg_byte(dev, byte);
+        return;
+    }
+
     if (byte == '\n') {
         /* Strip trailing CR if present */
         if (dev->line_pos > 0 && dev->line_buf[dev->line_pos - 1] == '\r') {
@@ -224,6 +299,9 @@ void air780eg_feed(air780eg_t *dev, uint8_t byte)
     } else {
         if (dev->line_pos < AIR780EG_LINE_MAX - 1) {
             dev->line_buf[dev->line_pos++] = (char)byte;
+            if (byte == ',' && memcmp(dev->line_buf, "+MSUB:", 6) == 0) {
+                msg_header(dev);
+            }
         }
     }
 }
@@ -239,6 +317,7 @@ void air780eg_poll(air780eg_t *dev)
             dev->cmd_status = AIR780EG_CMD_TIMEOUT;
         }
     }
+    msg_check_stall(dev);
 }
 
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
@@ -363,6 +442,13 @@ uint32_t air780eg_get_rdy_count(const air780eg_t *dev)
     REQUIRE(dev != NULL);
     if (dev == NULL) return 0;
     return dev->rdy_count;
+}
+
+uint32_t air780eg_get_msg_drop_count(const air780eg_t *dev)
+{
+    REQUIRE(dev != NULL);
+    if (dev == NULL) return 0;
+    return dev->msg_drop_count;
 }
 
 int air780eg_get_last_csq(const air780eg_t *dev)

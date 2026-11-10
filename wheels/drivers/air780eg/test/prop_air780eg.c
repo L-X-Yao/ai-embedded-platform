@@ -7,6 +7,7 @@
  */
 
 #include "test_harness.h"
+#include <stdio.h>
 #include "property_test.h"
 #include "../air780eg.h"
 #include <string.h>
@@ -123,6 +124,37 @@ PROPERTY(timeout_elapsed_correct, 10000) {
     PROP_ASSERT_EQ(AIR780EG_CMD_TIMEOUT, air780eg_cmd_status(&dev));
 }
 
+/* Property: a message comes back whole, whatever bytes it holds */
+static uint8_t g_rx[600];
+static uint16_t g_rx_len;
+static int g_rx_count;
+static void rx_cb(void *u, const char *t, const uint8_t *d, uint16_t l) {
+    (void)u; (void)t;
+    memcpy(g_rx, d, l);
+    g_rx_len = l;
+    g_rx_count++;
+}
+
+PROPERTY(msub_payload_roundtrip, 5000) {
+    air780eg_t dev;
+    static uint8_t payload[600];
+    char head[40];
+    g_tx_len = 0; g_tick = 0;
+    air780eg_init(&dev, &g_io);
+    air780eg_on_mqtt_rx(&dev, rx_cb, NULL);
+    g_rx_count = 0;
+
+    int len = ARBI_RANGE(seed, 0, 600);
+    for (int i = 0; i < len; i++) payload[i] = ARBI_UINT8(seed);
+    int n = snprintf(head, sizeof(head), "+MSUB: \"t\",%d byte,", len);
+    for (int i = 0; i < n; i++) air780eg_feed(&dev, (uint8_t)head[i]);
+    for (int i = 0; i < len; i++) air780eg_feed(&dev, payload[i]);
+
+    PROP_ASSERT_EQ(1, g_rx_count);
+    PROP_ASSERT_EQ(len, g_rx_len);
+    PROP_ASSERT(memcmp(g_rx, payload, (size_t)len) == 0);
+}
+
 /* Property: URC callbacks never called after deregistration */
 static int g_cb_count;
 static void counting_cb(void *u) { (void)u; g_cb_count++; }
@@ -154,5 +186,6 @@ TEST_MAIN("air780eg properties")
     RUN(cmd_terminates);
     RUN(reissue_after_complete);
     RUN(timeout_elapsed_correct);
+    RUN(msub_payload_roundtrip);
     RUN(deregistered_cb_silent);
 TEST_MAIN_END()

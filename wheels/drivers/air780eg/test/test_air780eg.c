@@ -47,11 +47,19 @@ static void feed_line(air780eg_t *dev, const char *line)
     air780eg_feed(dev, '\n');
 }
 
+/* Feed bytes with no line end added */
+static void feed_bytes(air780eg_t *dev, const char *data, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        air780eg_feed(dev, (uint8_t)data[i]);
+    }
+}
+
 /* ---------- callback state ---------- */
 
 static int g_mqtt_rx_count;
-static char g_mqtt_rx_topic[128];
-static char g_mqtt_rx_payload[256];
+static char g_mqtt_rx_topic[300];
+static char g_mqtt_rx_payload[4200];
 static uint16_t g_mqtt_rx_payload_len;
 
 static void on_mqtt_rx(void *user, const char *topic, const uint8_t *payload, uint16_t len)
@@ -349,7 +357,7 @@ TEST(test_urc_mqtt_rx)
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
-    feed_line(&dev, "+MSUB: \"/dev/123/down/cmd\",11,\"hello world\"");
+    feed_line(&dev, "+MSUB: \"/dev/123/down/cmd\",11 byte,hello world");
     ASSERT_EQ(1, g_mqtt_rx_count);
     ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "/dev/123/down/cmd") == 0);
     ASSERT_EQ(11, g_mqtt_rx_payload_len);
@@ -539,10 +547,9 @@ TEST(test_urc_during_pending_cmd)
     air780eg_send_cmd(&dev, "AT+CSQ", "+CSQ:", 5000);
     ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
 
-    /* Feed an +MSUB URC while command is pending.
-     * process_line stores line in prev_line then calls dispatch_urc,
-     * so mqtt_rx fires but cmd_status stays PENDING. */
-    feed_line(&dev, "+MSUB: \"/t\",3,\"abc\"");
+    /* Feed an +MSUB URC while command is pending: mqtt_rx fires and
+     * cmd_status stays PENDING. */
+    feed_line(&dev, "+MSUB: \"/t\",3 byte,abc");
     ASSERT_EQ(1, g_mqtt_rx_count);
     ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
 
@@ -581,7 +588,7 @@ TEST(test_timeout_tick_overflow)
 
 TEST(test_msub_unquoted_payload)
 {
-    /* Payload without surrounding quotes: +MSUB: "topic",5,hello */
+    /* The syntax line of p.243 has a bare <len>, the samples add the word byte */
     air780eg_t dev;
     mock_reset();
     cb_reset();
@@ -595,8 +602,7 @@ TEST(test_msub_unquoted_payload)
 
 TEST(test_msub_malformed_no_comma)
 {
-    /* +MSUB without a comma after the topic — second strchr returns NULL,
-     * dispatch_urc returns early, callback must NOT fire. */
+    /* +MSUB without a comma after the topic: no <len>, so no message. */
     air780eg_t dev;
     mock_reset();
     cb_reset();
@@ -606,38 +612,231 @@ TEST(test_msub_malformed_no_comma)
     ASSERT_EQ(0, g_mqtt_rx_count);
 }
 
+/* <topic> is at most 256 bytes (p.243), and such a topic must arrive whole. A
+ * longer one is not legal, and a shortened topic could match another
+ * subscription, so it is dropped and counted. */
 TEST(test_msub_long_topic_is_dropped)
 {
-    /* Topic of 200 'A' chars — exceeds AIR780EG_TOPIC_MAX (128).
-     * Implementation clamps tlen to sizeof(topic)-1 = 127, NUL-terminates,
-     * and still fires the callback. */
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
 
-    /* Build the line: +MSUB: "<200 As>",3,abc */
     char line[300];
     strcpy(line, "+MSUB: \"");
-    int base = (int)strlen(line);
-    int i;
-    for (i = 0; i < 200; i++) {
-        line[base + i] = 'A';
-    }
-    line[base + i] = '\0';
-    strcat(line, "\",3,abc");
+    size_t base = strlen(line);
+    memset(line + base, 'A', 257);
+    strcpy(line + base + 257, "\",3 byte,abc");
     feed_line(&dev, line);
-
-    /* a shortened topic could match a different subscription */
     ASSERT_EQ(0, g_mqtt_rx_count);
+    ASSERT_EQ(1u, air780eg_get_msg_drop_count(&dev));
 
-    /* the longest topic that fits arrives whole */
-    line[base + 127] = '\0';
-    strcat(line, "\",3,abc");
+    strcpy(line + base + 256, "\",3 byte,abc");
     feed_line(&dev, line);
     ASSERT_EQ(1, g_mqtt_rx_count);
-    ASSERT_EQ(127, (int)strlen(g_mqtt_rx_topic));
+    ASSERT_EQ(256, (int)strlen(g_mqtt_rx_topic));
+    ASSERT_EQ(3, g_mqtt_rx_payload_len);
+    ASSERT_EQ(1u, air780eg_get_msg_drop_count(&dev));
+}
+
+/* What AT+MQTTMSGGET prints, p.247: the topic has no quotes. */
+TEST(test_msub_unquoted_topic_from_the_cache)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+
+    air780eg_send_cmd(&dev, "AT+MQTTMSGGET", NULL, 1000);
+    feed_line(&dev, "+MSUB: mqtt/topic,9 byte,SSSSddddd");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "mqtt/topic") == 0);
+    ASSERT_EQ(9, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "SSSSddddd", 9) == 0);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* A quoted topic may hold a comma: only the quote and the comma end it. */
+TEST(test_msub_comma_in_a_quoted_topic)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"a,b\",2 byte,hi");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "a,b") == 0);
+    ASSERT_EQ(2, g_mqtt_rx_payload_len);
+}
+
+/* <message> is at most 4100 bytes (p.243). */
+TEST(test_msub_longest_message_arrives_whole)
+{
+    static char payload[4100];
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    for (size_t i = 0; i < sizeof(payload); i++) {
+        payload[i] = (char)('a' + i % 26);
+    }
+    const char *head = "+MSUB: \"t\",4100 byte,";
+    feed_bytes(&dev, head, strlen(head));
+    feed_bytes(&dev, payload, sizeof(payload));
+    feed_bytes(&dev, "\r\n", 2);
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(4100, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, payload, sizeof(payload)) == 0);
+}
+
+/* The bytes of a message are data, whatever they look like: they neither split
+ * the message nor reach the command or URC matching. */
+TEST(test_msub_payload_with_line_ends_stays_whole)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    air780eg_on_restart(&dev, on_restart, NULL);
+
+    air780eg_send_cmd(&dev, "AT", NULL, 1000);
+    feed_line(&dev, "+MSUB: \"t\",14 byte,a\r\nOK\r\nRDY\r\nb,");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(14, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "a\r\nOK\r\nRDY\r\nb,", 14) == 0);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    ASSERT_EQ(0, g_restart_count);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* The payload has no quotes around it (p.248), so a quote in it is data. */
+TEST(test_msub_payload_quotes_are_data)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"t\",7 byte,\"a\":\"b\"");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(7, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "\"a\":\"b\"", 7) == 0);
+}
+
+TEST(test_msub_empty_message)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB: \"t\",0 byte,");
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(0, g_mqtt_rx_payload_len);
+    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "t") == 0);
+}
+
+/* More than the 4100 of p.243 is a garbled line: dropped and counted, and the
+ * parser stays on lines instead of swallowing what follows. */
+TEST(test_msub_impossible_length_stays_on_lines)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    air780eg_send_cmd(&dev, "AT", NULL, 1000);
+    feed_line(&dev, "+MSUB: \"t\",4101 byte,a,b,c");
+    feed_line(&dev, "+MSUB: \"t\",99999999999999999999 byte,abc");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+    ASSERT_EQ(2u, air780eg_get_msg_drop_count(&dev));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* Bytes lost on the UART must not leave the parser waiting for a length that
+ * never comes: it gives the message up, never delivers it cut, and hears the
+ * next reply. */
+TEST(test_msub_stalled_message_is_given_up)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+
+    const char *head = "+MSUB: \"t\",100 byte,abc";
+    feed_bytes(&dev, head, strlen(head));
+    air780eg_poll(&dev);
+    g_tick_ms = AIR780EG_MSG_STALL_MS - 1;
+    air780eg_poll(&dev);
+    feed_bytes(&dev, "d", 1);          /* still moving */
+    air780eg_poll(&dev);
+    g_tick_ms += AIR780EG_MSG_STALL_MS;
+    air780eg_poll(&dev);
+
+    air780eg_send_cmd(&dev, "AT", NULL, 100000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_EQ(0, g_mqtt_rx_count);
+    ASSERT_EQ(1u, air780eg_get_msg_drop_count(&dev));
+}
+
+/* Traffic that keeps moving is no stall, however long it takes. */
+TEST(test_msub_slow_message_is_not_a_stall)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+
+    const char *head = "+MSUB: \"t\",4 byte,";
+    feed_bytes(&dev, head, strlen(head));
+    for (int i = 0; i < 4; i++) {
+        air780eg_poll(&dev);
+        g_tick_ms += AIR780EG_MSG_STALL_MS - 1;
+        air780eg_poll(&dev);
+        feed_bytes(&dev, "x", 1);
+    }
+    ASSERT_EQ(1, g_mqtt_rx_count);
+    ASSERT_EQ(4, g_mqtt_rx_payload_len);
+    ASSERT_EQ(0u, air780eg_get_msg_drop_count(&dev));
+}
+
+/* A message reads the same with no callback, so its bytes never become lines. */
+TEST(test_msub_without_a_callback_skips_the_payload)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_restart(&dev, on_restart, NULL);
+    feed_line(&dev, "+MSUB: \"t\",5 byte,\r\nRDY");
+    feed_line(&dev, "RDY");
+    ASSERT_EQ(1, g_restart_count);
+    ASSERT_EQ(0u, air780eg_get_msg_drop_count(&dev));
+}
+
+/* The reply to AT+MSUB=? (p.243) is no message. */
+TEST(test_msub_test_reply_is_not_a_message)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    feed_line(&dev, "+MSUB:<topic>,(0-2)");
+    ASSERT_EQ(0, g_mqtt_rx_count);
+    ASSERT_EQ(0u, air780eg_get_msg_drop_count(&dev));
 }
 
 TEST(test_urc_closed_bare)
@@ -731,7 +930,7 @@ TEST(test_deregister_callback_null)
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
     /* Deregister */
     air780eg_on_mqtt_rx(&dev, NULL, NULL);
-    feed_line(&dev, "+MSUB: \"/t\",3,\"abc\"");
+    feed_line(&dev, "+MSUB: \"/t\",3 byte,abc");
     ASSERT_EQ(0, g_mqtt_rx_count);
 }
 
@@ -801,20 +1000,19 @@ TEST(test_urc_nmea_no_cb)
 
 TEST(test_msub_no_opening_quote)
 {
-    /* +MSUB: where payload area starts without '"' — should return early */
+    /* An unquoted topic with no <len> after it is no message */
     air780eg_t dev;
     mock_reset();
     cb_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
-    /* No '"' after the space — dispatch_urc returns early, cb not fired */
     feed_line(&dev, "+MSUB: no_quote_here");
     ASSERT_EQ(0, g_mqtt_rx_count);
 }
 
 TEST(test_msub_no_closing_topic_quote)
 {
-    /* +MSUB: "unclosed_topic — strchr for closing '"' returns NULL */
+    /* +MSUB: "unclosed_topic: the topic never ends, so there is no message */
     air780eg_t dev;
     mock_reset();
     cb_reset();
@@ -822,23 +1020,6 @@ TEST(test_msub_no_closing_topic_quote)
     air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
     feed_line(&dev, "+MSUB: \"unclosed_topic");
     ASSERT_EQ(0, g_mqtt_rx_count);
-}
-
-TEST(test_msub_quoted_payload_no_closing_quote)
-{
-    /* Quoted payload with no closing '"': +MSUB: "t",3,"payload_no_end
-     * strrchr returns NULL so end = p + strlen(p), still fires callback */
-    air780eg_t dev;
-    mock_reset();
-    cb_reset();
-    air780eg_init(&dev, &g_mock_io);
-    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
-    feed_line(&dev, "+MSUB: \"t\",7,\"noquote");
-    ASSERT_EQ(1, g_mqtt_rx_count);
-    ASSERT_TRUE(strcmp(g_mqtt_rx_topic, "t") == 0);
-    /* payload is "noquote" — 7 bytes */
-    ASSERT_EQ(7, g_mqtt_rx_payload_len);
-    ASSERT_TRUE(memcmp(g_mqtt_rx_payload, "noquote", 7) == 0);
 }
 
 TEST(test_init_missing_get_tick)
@@ -1047,6 +1228,17 @@ TEST_MAIN("air780eg")
     RUN(test_msub_unquoted_payload);
     RUN(test_msub_malformed_no_comma);
     RUN(test_msub_long_topic_is_dropped);
+    RUN(test_msub_unquoted_topic_from_the_cache);
+    RUN(test_msub_comma_in_a_quoted_topic);
+    RUN(test_msub_longest_message_arrives_whole);
+    RUN(test_msub_payload_with_line_ends_stays_whole);
+    RUN(test_msub_payload_quotes_are_data);
+    RUN(test_msub_empty_message);
+    RUN(test_msub_impossible_length_stays_on_lines);
+    RUN(test_msub_stalled_message_is_given_up);
+    RUN(test_msub_slow_message_is_not_a_stall);
+    RUN(test_msub_without_a_callback_skips_the_payload);
+    RUN(test_msub_test_reply_is_not_a_message);
     RUN(test_urc_closed_bare);
     RUN(test_urc_pdp_deact_bare);
     RUN(test_feed_overflow_protection);
@@ -1061,7 +1253,6 @@ TEST_MAIN("air780eg")
     RUN(test_urc_nmea_no_cb);
     RUN(test_msub_no_opening_quote);
     RUN(test_msub_no_closing_topic_quote);
-    RUN(test_msub_quoted_payload_no_closing_quote);
     RUN(test_init_missing_get_tick);
     RUN(test_poll_no_op_when_idle);
     RUN(test_send_cmd_null_expect_clears_expect);
