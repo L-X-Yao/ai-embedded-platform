@@ -60,7 +60,7 @@ make bootstrap          # git 状态 / wheel 表 / audit / 最近踩坑
 完整策略见 **[ADR-010](docs/adr/010-adopt-opensource-before-reinvent.md)** + **[ADR-011](docs/adr/011-ecosystem-driven-wheel-building.md)**。
 
 - **不再等项目触发**——按"嵌入式常用"标准主动构建（ADR-011）
-- **2026-11-05 起暂停造新 wheel**：先把现有 wheel 做实，用户明确要求才开工
+- **2026-11-10 起不再开发新功能**：不造新 wheel、不加新 API，只修缺陷和补验证；恢复开发须用户明确说明（此前 2026-11-05 起已暂停造新 wheel）
 - **查通用开源库**（jsmn / LittleFS / cJSON 等），能 vendor 就 vendor（ADR-010）
 - **不查 VSF**——VSF 组件绑定 VSF 内核，与我们的零依赖 wheel 无关
 
@@ -480,15 +480,16 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
   - 阶段 A（结构整合）完成
   - VSF compat 层完成：FreeRTOS API 通过 POSIX shim 运行在 VSF 上，8 个 compat 问题已修，600s HIL soak 0 watchdog reset（2026-04-27）
   - 5 个 wheel 按项目需要重新实现（crc16 / w25qxx / qmi8658a / xgzp6816d / qmc5883p），全部 CI + flybox 真消费
+  - 2026-11 审计记录：`vsf_build` 没有把 `tooling/harness` 加进 include，也没列 `nmea_parser`，当前版本的 wheel 编不进固件；`projects/` 冻结，未改（见 `docs/known-issues.md` 开头）
   - 磁力计功能完成：QMC5883P 驱动 + Mahony 9 轴 + 校准（Flash 持久化）
 - ✅ **第二个真实项目 `projects/drone_light/`**（无人机 LED 灯控，N32G003 裸机）
   - 轻量整合完成：不做 VSF 迁移（30KB Flash 放不下），保持裸机
   - Wheel 候选标记：WS2812 驱动 (L1)、NCP5623 协议解析 (L2)
-- ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，flybox HIL 验证通过（2026-04-26）
+- ✅ **GD32F4xx VSF HAL port**（`vsf-addon/hal/driver/gd/GD32F4XX/`）——GPIO/USART/Flash/SPI/I2C 五个外设驱动，compile-only：没有固件调用它，未在板上跑过。2026-04-26 的 soak 验证的是 flybox 固件和 compat 层，不是这五个驱动（见该目录 README）
 - ✅ **VSF linux shell POSIX 验证**（`tooling/experiments/vsf-tryouts/linux_shell_size/`）——pthread/sem/recursive-mutex 在 QEMU 实跑通过，开销 +56KB Flash +8KB RAM
-- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发
+- ✅ **GitHub Actions CI**（`.github/workflows/ci.yml`）——增量检测：detect-changes 扫描 git diff，只测改动的 wheel（O(changed) 而非 O(N)）；harness/audit 变更触发全量回归；log + crc16 独立 job（pytest）；flybox 按需触发。内部仓的 Actions 已停用，靠 pre-push hook 和 `make ci-local` 守门；公开镜像跑 CI 和 Nightly
 - ✅ **开发效率工具链**（`tooling/harness/` + `tooling/codegen/` + `tooling/test/` + 其他子目录）——test_harness.h（统一测试框架 + 16 种断言含 ASSERT_EQ/EQ_HEX/TRUE/FALSE/NEAR/MEMEQ/NEAR_D/MEMEQ_N/NOT_NULL/NULL/GT/GE/LT/LE/STR_EQ/FAIL）/ _wheel_parser.py（共享 C 头文件解析，gen_null/sentinel/boundary 三生成器统一使用 + 69 个单测）/ test_all.sh / test_downstream.sh / new_wheel.sh（i2c/spi/gpio/onewire/pwm 五种 HAL 模板 + `--commit` + I2C read 自动 HAL 守护 + hw_model 骨架生成）/ gen_null_tests.py（自动生成 NULL 测试 + 自动注册 CMakeLists）/ gen_boundary_tests.py（自动生成边界测试：INT32 极值/NaN/Infinity/FLT_MAX/-0.0f/枚举越界）/ bootstrap.sh / wheel_promote.sh / audit_wheels.py（60 项 CHECK_TABLE + 3 特殊检查 + TEST/RUN 平衡 + --graph + --quiet + --json，含 hw_model 孤儿检测 + HAL NULL 守护 + 轮询延时 + 测试同源 + 规范向量检查 + boundary 盲区前哨）/ dispatch_agent.sh（worktree agent 派发 + --merge-all 合并 + untracked 自动 retry）/ wheel_gate.sh（per-wheel test+audit 卡口，`make wheel-gate` / `make wheel-commit`）/ build_flash / parse_fault.py / sync_vsf.sh / Makefile（`batch-scaffold` 批量脚手架 + `memory-audit` + `doc-drift` 等 76 目标）/ `.githooks/commit-msg`（7 项格式守卫）/ `.githooks/pre-commit`（二进制拦截）/ mock_gpio.h（多 pin 支持）/ 深度审计完成（96 文件逐行，6 轮 23 commit，0 CRITICAL 残留）/ _arm_audit_common.sh（arm size/stack 审计共享模块）
-- ✅ **259 wheels**（全部 candidate，超级审计 0 open findings）：
+- ✅ **259 wheels**（全部标为 candidate，遗留问题见 docs/known-issues.md）：
   - 完整列表：`ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/`
   - L0 原语 77：aes128 base64 bcd bitfield bitmap bitstream byte_buffer checksum cli_parser cobs crc16 crc32 crc8 datetime debounce double_buffer endian event_queue ewma fal fifo_queue fixed_point flash_ring font_5x7 framebuffer gnss_filter hash_fnv heatshrink hex_codec hmac_sha256 hysteresis iir_lowpass interpolate json_parser kalman_1d kvs led_pattern log log_color log_dedup log_file log_filter log_flash log_rate log_ringbuf log_rtt log_uart lookup_table mag_cal mahony_ahrs median_filter memory_pool moving_average moving_rms moving_window onewire peak_detector pid_controller printf_tiny rate_limiter retry ring_buffer rle_codec scale_map sha256 signal_stats slip soft_i2c soft_spi soft_timer state_machine string_utils timeout timer_wheel utf8 uuid varint
   - L1 驱动 115：a4988 ads1015 ads1115 adxl345 aht20 air780eg apa102 apds9960 as5600 at24cxx aw9523 bh1750 bma400 bme280 bme680 bme688 bmi160 bmi270 bmm150 bmp280 bmp388 bno055 bq27441 buzzer cc1101 ccs811 cst816s dht11 dps310 drv2605 drv8833 ds18b20 ds3231 enc28j60 ft6x36 gc9a01 gpio_button gpio_led hcsr04 hd44780 hmc5883l ht16k33 htu21d hx711 icm42688 ili9341 ina219 ina226 ina3221 is31fl3731 keypad_matrix lcd_st7789 lis2dh12 lis3dh lis3mdl lm75 lora_sx1276 lps22hb lsm6dso ltr390 max17048 max30102 max31855 max31865 max6675 max7219 mcp23017 mcp2515 mcp3008 mcp4725 mcp4728 mlx90614 mpr121 mpu6050 ms5611 nrf24l01 oled_ssd1306 opt3001 pac1952 pca9685 pcf8563 pcf8574 pct2075 qmc5883p qmi8658a rc522 rotary_encoder scd40 sd_spi servo sgp30 sgp40 sh1106 sht30 sht40 shtc3 si7021 sk6812 st7735 stepper sx1262 tb6612 tca9548a tcs34725 tm1637 tmp102 tmp117 tsl2591 veml7700 vl53l0x vl53l1x w25qxx w5500 ws2812 xgzp6816d
@@ -497,11 +498,14 @@ Sprint 0 + Sprint 0.1（自审改进）已完成：
 - ✅ **HIL 自动化**（`tooling/hil/hil_runner.py`）——封装 build_flash_check.sh，soak 三档（quick 30s / standard 600s / stress 1800s），结果按时间戳存档，--compare 对比历史
 - ✅ **项目整合模板**（`templates/project-integration/`）——CLAUDE.md 骨架 + 目录结构指南，从 flybox + drone_light 共同模式提取
 
-进行中：
-- 现有 wheel 做实（2026-11-05 起）：补 fuzz 目标、逐颗对照手册；期间暂停造新 wheel
-- 生态驱动 wheel 构建（ADR-011）已暂停：八批共 76 个新 wheel 已完成（第一批 8 + 第二批 20 + 第三批 8 + 第四批 8 + 第五批 8 + 第六批 8 + 第七批 8 + 第八批 8）
+当前阶段（2026-11-10 起）：收尾维护，不再开发新功能
+- 2026-11 做实轮已完成：libFuzzer 57 个目标、104 个驱动逐寄存器对照手册、第十轮超级审计（36 严重 + 250 中等已处理，例外见 `docs/known-issues.md` 开头）
+- 2026-04-27 之后的改动全部没有上过真机，包括 11 月的所有修复；遗留问题和不可用的驱动见 `docs/known-issues.md` 开头
+- 生态驱动 wheel 构建（ADR-011）已停止：八批共 76 个新 wheel 已完成（第一批 8 + 第二批 20 + 第三批 8 + 第四批 8 + 第五批 8 + 第六批 8 + 第七批 8 + 第八批 8）
 
 ## 下一步触发点（Sprint 0 已封版）
+
+**2026-11-10 起项目收尾，不再开发新功能。** 下面的触发点只在用户明确要求恢复开发时适用；修缺陷走任务类型 4。
 
 **无真实项目触发前不改 `docs/`**。文档规则已经被 flybox + drone_light 两个项目检验，当前无新发现驱动的修改需求。
 
