@@ -49,8 +49,10 @@ flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
   next slot.
 - `peek()` -- read a frame without consuming it. `idx` is an absolute slot
   index between `read_idx` and `write_idx - 1`, so the oldest frame is at
-  `ring.read_idx`. Returns `FLASH_RING_ERR_EMPTY` on an empty ring and
-  `FLASH_RING_ERR_PARAM` for any other slot or for `len` above `slot_size`.
+  `ring.read_idx`. That is the one field of `flash_ring_t` a caller may read,
+  and there is no call that returns it. Returns `FLASH_RING_ERR_EMPTY` on an
+  empty ring and `FLASH_RING_ERR_PARAM` for any other slot or for `len` above
+  `slot_size`.
 - `pop()` -- discard the oldest frame
 - `flush_header()` -- force-write persistent header to flash. Unlike push and
   pop this reports a failed header write.
@@ -132,6 +134,12 @@ None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
   the ring to empty with the frames still in flash.
 - A partial last sector is still erased whole by `erase_sector`, so nothing
   else can live in the rest of that sector.
+- The header sector wears much faster than the data. It is erased once per
+  header write, so for each erase of a data sector it sees about
+  `total_slots / persist_interval` erases, and twice that when every frame is
+  also popped. With 32752 slots and an interval of 64, a part rated for
+  100000 cycles reaches that count in the header sector after about 3.2
+  million frames pushed and popped. Size `persist_interval` for the part.
 - Flash that a ring written by the old erase-on-entry code left with no blank
   slot costs one full read at the first init. That init erases a sector and
   rewrites the header. A stored `write_idx` part way through a sector keeps
