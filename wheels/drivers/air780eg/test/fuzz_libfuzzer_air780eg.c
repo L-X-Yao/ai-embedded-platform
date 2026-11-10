@@ -150,7 +150,7 @@ static void op_csq(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
 }
 
 static void op_command(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
-    static const char *const expects[] = { NULL, "OK", "+CSQ:", "CONNECT", "+MSUB" };
+    static const char *const expects[] = { NULL, "OK", "+CSQ:", "CONNECT", ">" };
     char cmd[64];
     take_text(in, cmd, 1 + fuzz_u8(in) % 60);
     const char *expect = expects[fuzz_u8(in) % 5];
@@ -162,6 +162,22 @@ static void op_command(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
         if (err != AIR780EG_BUSY || w->sends != sends) __builtin_trap();
     } else if (err != AIR780EG_OK || w->sends != sends + 2 ||
                dev->cmd_status != AIR780EG_CMD_PENDING) {
+        __builtin_trap();
+    }
+}
+
+static void op_data(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
+    uint8_t data[32];
+    size_t len = fuzz_take(in, data, 1 + fuzz_u8(in) % sizeof(data));
+    bool pending = dev->cmd_status == AIR780EG_CMD_PENDING;
+    uint32_t sends = w->sends;
+
+    air780eg_err_t err = air780eg_send_data(dev, data, (uint16_t)len, ">", fuzz_u16(in));
+    if (len == 0) {
+        if (err != AIR780EG_ERR_PARAM || w->sends != sends) __builtin_trap();
+    } else if (pending) {
+        if (err != AIR780EG_BUSY || w->sends != sends) __builtin_trap();
+    } else if (err != AIR780EG_OK || w->sends != sends + 1) {
         __builtin_trap();
     }
 }
@@ -215,12 +231,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
         for (int step = 0; step < 128 && in.left > 0; step++) {
             uint8_t raw[96];
-            switch (fuzz_u8(&in) % 6) {
+            switch (fuzz_u8(&in) % 7) {
             case 0: op_msub(dev, w, &in); break;
             case 1: op_csq(dev, w, &in); break;
             case 2: op_command(dev, w, &in); break;
             case 3: op_reply(dev, &in); break;
             case 4: op_poll(dev, w, &in); break;
+            case 5: op_data(dev, w, &in); break;
             default: {
                 size_t n = fuzz_take(&in, raw, sizeof(raw));
                 for (size_t i = 0; i < n; i++) air780eg_feed(dev, raw[i]);

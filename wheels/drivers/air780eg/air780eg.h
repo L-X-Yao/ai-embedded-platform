@@ -95,6 +95,7 @@ typedef struct {
     /* command state */
     air780eg_cmd_status_t cmd_status;           /* internal */
     char     expect[64];                        /* internal: expected response token */
+    char     echo[64];                          /* internal: command, until echoed */
     uint32_t cmd_start_ms;                      /* internal */
     uint32_t cmd_timeout_ms;                    /* internal */
     char     matched_line[AIR780EG_LINE_MAX];   /* internal */
@@ -141,9 +142,34 @@ void air780eg_poll(air780eg_t *dev);
  * leaves it pending, because for AT+MCONNECT, AT+MSUB and AT+MIPSTART the OK
  * only says the module took the command. Whatever expect is, ERROR, +CME ERROR,
  * +CMS ERROR or a line ending in FAIL ends the command with AIR780EG_CMD_ERROR.
+ *
+ * expect ">": the command ends on the prompt of a data phase, which has no line
+ * end. Then call air780eg_send_data.
+ *
+ * The line ends in CR, as the manual asks. The echo of ATE1 is recognized and
+ * dropped, so echo may stay on: it never counts as a reply.
  */
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
                                  const char *expect, uint32_t timeout_ms);
+
+/**
+ * @thread_safe: no @isr_safe: no — the bytes of a data phase, with no line end.
+ *
+ * Send the command first, with expect ">", and wait for AIR780EG_CMD_OK:
+ *
+ *   air780eg_send_cmd(dev, "AT+MPUBEX=\"t\",0,0,5", ">", 2000);
+ *   ... AIR780EG_CMD_OK ...
+ *   air780eg_send_data(dev, data, 5, NULL, 9000);
+ *
+ * Works for AT+MPUBEX (ends on OK), AT+CIPSEND (expect "SEND OK") and AT+FSWRITE.
+ * For a variable length, end the data with 0x1A; 0x1B aborts AT+CIPSEND. expect
+ * and timeout_ms work as in send_cmd, and the command is pending again until the
+ * reply. Turn echo off first with ATE0 if the data could look like a reply: the
+ * manual does not say whether the module echoes a data phase. len 0 is refused.
+ */
+air780eg_err_t air780eg_send_data(air780eg_t *dev, const uint8_t *data,
+                                  uint16_t len, const char *expect,
+                                  uint32_t timeout_ms);
 
 /** @thread_safe: no @isr_safe: no */
 air780eg_cmd_status_t air780eg_cmd_status(const air780eg_t *dev);

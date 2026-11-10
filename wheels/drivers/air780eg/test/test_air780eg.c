@@ -140,14 +140,16 @@ TEST(test_init_missing_send)
     ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_init(&dev, &bad));
 }
 
+/* p.13: a command line ends in <CR>, and p.33: 13 is the only terminator. An LF
+ * after it could become the first payload byte of a command with a data phase. */
 TEST(test_send_cmd_formats_correctly)
 {
     air780eg_t dev;
     mock_reset();
     air780eg_init(&dev, &g_mock_io);
     air780eg_send_cmd(&dev, "AT", "OK", 1000);
-    ASSERT_TRUE(g_tx_len >= 4);
-    ASSERT_TRUE(memcmp(g_tx_buf, "AT\r\n", 4) == 0);
+    ASSERT_EQ(3, g_tx_len);
+    ASSERT_TRUE(memcmp(g_tx_buf, "AT\r", 3) == 0);
 }
 
 TEST(test_cmd_gets_ok)
@@ -348,6 +350,255 @@ TEST(test_fail_with_nothing_pending_reaches_the_callback)
     air780eg_on_fail(&dev, NULL, NULL);
     feed_line(&dev, "SEND FAIL");
     ASSERT_EQ(1, g_fail_count);
+}
+
+/* p.159: the prompt is "> ", with no line end to wait for. */
+TEST(test_prompt_ends_a_wait_for_it_at_once)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CIPSEND=5", ">", 2000);
+    feed_bytes(&dev, "\r\n", 2);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_bytes(&dev, ">", 1);
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), ">") == 0);
+}
+
+/* p.159: with no connection the reply is +CME ERROR, not the prompt. */
+TEST(test_error_ends_a_wait_for_the_prompt)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CIPSEND=5", ">", 2000);
+    feed_line(&dev, "+CME ERROR: 50");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+}
+
+/* The prompt opens a line: a > elsewhere is text, here in an AT+CIPSTATUS-style
+ * reply, and a plain OK is no prompt either. */
+TEST(test_gt_inside_a_line_is_no_prompt)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CIPSEND=5", ">", 2000);
+    feed_line(&dev, "+X: a>b");
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+}
+
+/* With no wait for the prompt, > is an ordinary first byte of a line. */
+TEST(test_gt_without_a_wait_is_text)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT", NULL, 2000);
+    feed_line(&dev, "> text");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_prev_line(&dev), "> text") == 0);
+}
+
+/* p.241: AT+MPUBEX gives the prompt, takes len bytes, and answers OK. The bytes
+ * are data: no line end is added, and none in them has any meaning. */
+TEST(test_send_data_after_the_prompt)
+{
+    static const uint8_t data[] = { 'a', '\r', '\n', 0, 'b' };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MPUBEX=\"t\",0,0,5", ">", 2000);
+    feed_bytes(&dev, "\r\n> ", 4);
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+
+    g_tx_len = 0;
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_data(&dev, data, 5, NULL, 9000));
+    ASSERT_EQ(5, g_tx_len);
+    ASSERT_TRUE(memcmp(g_tx_buf, data, 5) == 0);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* The space of the prompt must not spoil a reply with no line end before it. */
+TEST(test_prompt_space_does_not_spoil_the_reply)
+{
+    static const uint8_t data[] = { 'x' };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MPUBEX=\"t\",0,0,1", ">", 2000);
+    feed_bytes(&dev, "> ", 2);
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_data(&dev, data, 1, NULL, 9000));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), "OK") == 0);
+}
+
+/* p.159: after the data AT+CIPSEND answers SEND OK or SEND FAIL. */
+TEST(test_send_data_waits_for_its_expect)
+{
+    static const uint8_t data[] = { 'h', 'i' };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_data(&dev, data, 2, "SEND OK", 9000));
+    feed_line(&dev, "SEND OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_data(&dev, data, 2, "SEND OK", 9000));
+    feed_line(&dev, "SEND FAIL");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+
+    ASSERT_EQ(AIR780EG_OK, air780eg_send_data(&dev, data, 2, "SEND OK", 100));
+    g_tick_ms += 100;
+    air780eg_poll(&dev);
+    ASSERT_EQ(AIR780EG_CMD_TIMEOUT, air780eg_cmd_status(&dev));
+}
+
+TEST(test_send_data_refuses_bad_calls)
+{
+    static const uint8_t data[] = { 'x' };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_send_data(NULL, data, 1, NULL, 100));
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_send_data(&dev, NULL, 1, NULL, 100));
+    ASSERT_EQ(AIR780EG_ERR_PARAM, air780eg_send_data(&dev, data, 0, NULL, 100));
+    ASSERT_EQ(0, g_tx_len);
+    ASSERT_EQ(AIR780EG_CMD_IDLE, air780eg_cmd_status(&dev));
+
+    air780eg_send_cmd(&dev, "AT", NULL, 100);
+    g_tx_len = 0;
+    ASSERT_EQ(AIR780EG_BUSY, air780eg_send_data(&dev, data, 1, NULL, 100));
+    ASSERT_EQ(0, g_tx_len);
+}
+
+/* p.24: ATE1 echoes the command, so the echo must not count as its reply. */
+TEST(test_echo_is_not_a_reply)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CGREG?", "CGREG", 1000);
+    feed_line(&dev, "AT+CGREG?");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    ASSERT_EQ('\0', (int)air780eg_get_prev_line(&dev)[0]);
+    feed_line(&dev, "+CGREG: 0,1");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), "+CGREG: 0,1") == 0);
+}
+
+/* An echo is an echo however long the command is, and once only: the same text
+ * coming back a second time is not filtered. */
+TEST(test_echo_of_a_long_command_is_not_a_reply)
+{
+    char cmd[120];
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    strcpy(cmd, "AT+MPUB=\"t\",0,0,\"");
+    memset(cmd + strlen(cmd), 'x', 90);
+    cmd[17 + 90] = '\0';
+    strcat(cmd, "\"");
+    air780eg_send_cmd(&dev, cmd, "xxx", 1000);
+    feed_line(&dev, cmd);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, cmd);
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* Found by the fuzzer: an echo is the whole line, not the line's first bytes. */
+TEST(test_reply_that_starts_like_the_command_is_no_echo)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+C", NULL, 1000);
+    feed_line(&dev, "AT+CSQ");
+    ASSERT_TRUE(strcmp(air780eg_get_prev_line(&dev), "AT+CSQ") == 0);
+}
+
+/* p.13: command lines start with AT, so other text sent this way has no echo to
+ * filter, and the first reply must not be taken for one. */
+TEST(test_text_that_is_no_command_has_no_echo)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "+", NULL, 1000);
+    feed_line(&dev, "+CME ERROR: 3");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+
+    air780eg_send_cmd(&dev, "OK", NULL, 1000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* p.13 allows lower case as well. */
+TEST(test_echo_of_a_lower_case_command_is_not_a_reply)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "at+cgreg?", "cgreg", 1000);
+    feed_line(&dev, "at+cgreg?");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+}
+
+/* With echo off nothing changes, and a command that ends in FAIL is no failure
+ * when it is only its own echo. */
+TEST(test_echo_of_a_fail_token_is_not_a_failure)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+X=FAIL", NULL, 1000);
+    feed_line(&dev, "AT+X=FAIL");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* Data sent after the prompt has no echo to wait for. */
+TEST(test_send_data_clears_the_echo_of_the_command)
+{
+    static const uint8_t data[] = { 'x' };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+TOKEN", ">", 1000);
+    feed_bytes(&dev, "> ", 2);
+    air780eg_send_data(&dev, data, 1, "AT+TOKEN", 1000);
+    feed_line(&dev, "AT+TOKEN");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* A reply can arrive while send is still running: from then on the line belongs
+ * to feed, so nothing set up for the command may come after the first byte. */
+static air780eg_t *g_inline_dev;
+static void send_and_answer(void *ctx, const uint8_t *data, uint16_t len)
+{
+    (void)ctx; (void)data; (void)len;
+    feed_line(g_inline_dev, "OK");
+}
+
+TEST(test_reply_during_send_is_not_lost)
+{
+    air780eg_t dev;
+    air780eg_io_t io = g_mock_io;
+    io.send = send_and_answer;
+    mock_reset();
+    g_inline_dev = &dev;
+    air780eg_init(&dev, &io);
+    air780eg_send_cmd(&dev, "AT", NULL, 1000);
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), "OK") == 0);
 }
 
 TEST(test_urc_mqtt_rx)
@@ -1265,6 +1516,22 @@ TEST_MAIN("air780eg")
     RUN(test_fail_forms_of_the_manual_end_the_command);
     RUN(test_fail_line_wins_over_an_expect_inside_it);
     RUN(test_fail_with_nothing_pending_reaches_the_callback);
+    RUN(test_prompt_ends_a_wait_for_it_at_once);
+    RUN(test_error_ends_a_wait_for_the_prompt);
+    RUN(test_gt_inside_a_line_is_no_prompt);
+    RUN(test_gt_without_a_wait_is_text);
+    RUN(test_send_data_after_the_prompt);
+    RUN(test_prompt_space_does_not_spoil_the_reply);
+    RUN(test_send_data_waits_for_its_expect);
+    RUN(test_send_data_refuses_bad_calls);
+    RUN(test_echo_is_not_a_reply);
+    RUN(test_echo_of_a_long_command_is_not_a_reply);
+    RUN(test_reply_that_starts_like_the_command_is_no_echo);
+    RUN(test_text_that_is_no_command_has_no_echo);
+    RUN(test_echo_of_a_lower_case_command_is_not_a_reply);
+    RUN(test_echo_of_a_fail_token_is_not_a_failure);
+    RUN(test_send_data_clears_the_echo_of_the_command);
+    RUN(test_reply_during_send_is_not_lost);
     RUN(test_urc_mqtt_rx);
     RUN(test_urc_mqtt_rx_manual_sample);
     RUN(test_urc_disconnect);

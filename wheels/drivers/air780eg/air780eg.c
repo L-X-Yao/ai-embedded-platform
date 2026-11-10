@@ -220,7 +220,23 @@ static bool is_success(const air780eg_t *dev, const char *line)
     if (dev->expect[0] == '\0' || strcmp(dev->expect, "OK") == 0) {
         return strcmp(line, "OK") == 0;
     }
+    /* The prompt has no line end, so feed catches it byte by byte. */
+    if (strcmp(dev->expect, ">") == 0) {
+        return false;
+    }
     return strstr(line, dev->expect) != NULL;
+}
+
+/* An echo is the whole line. echo holds only the start of a long command. */
+static bool is_echo(const air780eg_t *dev, const char *line)
+{
+    if (dev->echo[0] == '\0') {
+        return false;
+    }
+    if (strlen(dev->echo) == sizeof(dev->echo) - 1) {
+        return starts_with(line, dev->echo);
+    }
+    return strcmp(line, dev->echo) == 0;
 }
 
 static void finish_cmd(air780eg_t *dev, const char *line,
@@ -239,6 +255,11 @@ static void process_line(air780eg_t *dev, const char *line)
     /* Check if this line ends the pending command. Failures come first: the
      * token CONNECT is inside CONNECT FAIL. */
     if (dev->cmd_status == AIR780EG_CMD_PENDING) {
+        /* With ATE1 (p.24) the module sends the command back first. */
+        if (is_echo(dev, line)) {
+            dev->echo[0] = '\0';
+            return;
+        }
         if (is_failure(line)) {
             finish_cmd(dev, line, AIR780EG_CMD_ERROR);
             return;
@@ -298,6 +319,17 @@ void air780eg_feed(air780eg_t *dev, uint8_t byte)
         return;
     }
 
+    /* The prompt of a data phase is "> " with no line end (p.159, p.241). */
+    if (byte == '>' && dev->line_pos == 0 &&
+        dev->cmd_status == AIR780EG_CMD_PENDING && strcmp(dev->expect, ">") == 0) {
+        finish_cmd(dev, ">", AIR780EG_CMD_OK);
+        return;
+    }
+    /* Its space would otherwise open the next line: " OK" is not OK. */
+    if (byte == ' ' && dev->line_pos == 0) {
+        return;
+    }
+
     if (byte == '\n') {
         /* Strip trailing CR if present */
         if (dev->line_pos > 0 && dev->line_buf[dev->line_pos - 1] == '\r') {
@@ -332,6 +364,33 @@ void air780eg_poll(air780eg_t *dev)
     msg_check_stall(dev);
 }
 
+/* echo is the command text the module may send back, or NULL. */
+static void cmd_begin(air780eg_t *dev, const char *echo, const char *expect,
+                      uint32_t timeout_ms)
+{
+    /* Set expectation */
+    if (expect != NULL) {
+        strncpy(dev->expect, expect, sizeof(dev->expect) - 1);
+        dev->expect[sizeof(dev->expect) - 1] = '\0';
+    } else {
+        dev->expect[0] = '\0';
+    }
+    /* Only a command line, which starts with AT or at (p.13), comes back. */
+    if (echo != NULL && (starts_with(echo, "AT") || starts_with(echo, "at"))) {
+        strncpy(dev->echo, echo, sizeof(dev->echo) - 1);
+        dev->echo[sizeof(dev->echo) - 1] = '\0';
+    } else {
+        dev->echo[0] = '\0';
+    }
+
+    /* Record start time + timeout (unsigned subtraction in poll is wrap-safe) */
+    dev->cmd_start_ms = dev->io->get_tick_ms(dev->io->ctx);
+    dev->cmd_timeout_ms = timeout_ms;
+    dev->matched_line[0] = '\0';
+    dev->prev_line[0] = '\0';
+    dev->cmd_status = AIR780EG_CMD_PENDING;
+}
+
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
                                  const char *expect, uint32_t timeout_ms)
 {
@@ -344,26 +403,32 @@ air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
         return AIR780EG_BUSY;
     }
 
-    /* Set expectation */
-    if (expect != NULL) {
-        strncpy(dev->expect, expect, sizeof(dev->expect) - 1);
-        dev->expect[sizeof(dev->expect) - 1] = '\0';
-    } else {
-        dev->expect[0] = '\0';
-    }
+    cmd_begin(dev, cmd, expect, timeout_ms);
 
-    /* Record start time + timeout (unsigned subtraction in poll is wrap-safe) */
-    dev->cmd_start_ms = dev->io->get_tick_ms(dev->io->ctx);
-    dev->cmd_timeout_ms = timeout_ms;
-    dev->cmd_status = AIR780EG_CMD_PENDING;
-    dev->matched_line[0] = '\0';
-    dev->prev_line[0] = '\0';
-
-    /* Send command + CRLF */
+    /* Send command + CR, the only terminator (p.13, p.33) */
     size_t cmd_len = strlen(cmd);
     uint16_t len = (cmd_len > UINT16_MAX) ? UINT16_MAX : (uint16_t)cmd_len;
     dev->io->send(dev->io->ctx, (const uint8_t *)cmd, len);
-    dev->io->send(dev->io->ctx, (const uint8_t *)"\r\n", 2);
+    dev->io->send(dev->io->ctx, (const uint8_t *)"\r", 1);
+
+    return AIR780EG_OK;
+}
+
+air780eg_err_t air780eg_send_data(air780eg_t *dev, const uint8_t *data,
+                                  uint16_t len, const char *expect,
+                                  uint32_t timeout_ms)
+{
+    REQUIRE(dev != NULL);
+    REQUIRE(data != NULL);
+    if (dev == NULL || dev->io == NULL || data == NULL || len == 0) {
+        return AIR780EG_ERR_PARAM;
+    }
+    if (dev->cmd_status == AIR780EG_CMD_PENDING) {
+        return AIR780EG_BUSY;
+    }
+
+    cmd_begin(dev, NULL, expect, timeout_ms);
+    dev->io->send(dev->io->ctx, data, len);
 
     return AIR780EG_OK;
 }
