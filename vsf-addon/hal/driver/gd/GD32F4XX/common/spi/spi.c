@@ -46,6 +46,7 @@ typedef struct VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) {
     vsf_hw_peripheral_rst_t rst;
     IRQn_Type               irqn;
     vsf_spi_isr_t           isr;
+    bool                    slave_sw_nss;   // cs_active has SWNSS to drive
 } VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t);
 
 /*============================ IMPLEMENTATION ================================*/
@@ -83,6 +84,8 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_init)(
         ctl0 |= SPI_CTL0_SWNSS;
     }
     SPI_CTL0(reg) = ctl0;
+    spi_ptr->slave_sw_nss = !(cfg_ptr->mode & VSF_SPI_MASTER)
+                        &&  (cfg_ptr->mode & VSF_SPI_CS_SOFTWARE_MODE);
 
     vsf_spi_isr_t *isr_ptr = &cfg_ptr->isr;
     spi_ptr->isr = *isr_ptr;
@@ -245,7 +248,13 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_active)(
     uint_fast8_t index
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    (void)index;
+
+    // A master has no CS line here: cs_count is 0, so the caller drives a GPIO.
+    // SWNSS is the internal NSS, and low in master mode means CONFERR.
+    if (!spi_ptr->slave_sw_nss || (index != 0)) {
+        return VSF_ERR_NOT_SUPPORT;
+    }
+    SPI_CTL0(spi_ptr->reg) &= ~SPI_CTL0_SWNSS;
     return VSF_ERR_NONE;
 }
 
@@ -254,7 +263,11 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_inactive)(
     uint_fast8_t index
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    (void)index;
+
+    if (!spi_ptr->slave_sw_nss || (index != 0)) {
+        return VSF_ERR_NOT_SUPPORT;
+    }
+    SPI_CTL0(spi_ptr->reg) |= SPI_CTL0_SWNSS;
     return VSF_ERR_NONE;
 }
 
@@ -265,7 +278,7 @@ vsf_spi_capability_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_capability)(
         .irq_mask                   = __VSF_HW_SPI_IRQ_MASK,
         .support_hardware_cs              = 0,
         .support_software_cs              = 1,
-        .cs_count                   = 1,
+        .cs_count                   = spi_ptr->slave_sw_nss ? 1 : 0,
         .max_clock_hz               = 0,
         .min_clock_hz               = 0,
     };

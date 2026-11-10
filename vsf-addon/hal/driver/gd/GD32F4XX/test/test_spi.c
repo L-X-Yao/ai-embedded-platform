@@ -22,6 +22,9 @@ vsf_err_t vsf_hw_spi_init(vsf_hw_spi_t *s, vsf_spi_cfg_t *c);
 fsm_rt_t vsf_hw_spi_enable(vsf_hw_spi_t *s);
 void vsf_hw_spi_fifo_transfer(vsf_hw_spi_t *s, void *out, uint_fast32_t *out_off,
                               void *in, uint_fast32_t *in_off, uint_fast32_t count);
+vsf_err_t vsf_hw_spi_cs_active(vsf_hw_spi_t *s, uint_fast8_t index);
+vsf_err_t vsf_hw_spi_cs_inactive(vsf_hw_spi_t *s, uint_fast8_t index);
+vsf_spi_capability_t vsf_hw_spi_capability(vsf_hw_spi_t *s);
 
 static uint32_t regs[4];
 #define CTL0            regs[0]
@@ -260,11 +263,48 @@ static void test_guard(void)
     CHECK(polls < 150000);
 }
 
+/* H1-17: master has no CS line to drive. SWNSS low would raise CONFERR (21.5.2). */
+static void test_cs_master(void)
+{
+    printf("H1-17 master: no CS line, and the capability says so\n");
+    reset_spi(0);
+    CHECK(vsf_hw_spi_capability(S).cs_count == 0);
+    CHECK(vsf_hw_spi_capability(S).support_software_cs == 1);
+    CHECK(vsf_hw_spi_cs_active(S, 0) == VSF_ERR_NOT_SUPPORT);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);
+    CHECK(vsf_hw_spi_cs_inactive(S, 0) == VSF_ERR_NOT_SUPPORT);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);
+}
+
+/* H1-17: a software-NSS slave is selected by SWNSS low only, table 21-3 */
+static void test_cs_slave(void)
+{
+    vsf_spi_cfg_t cfg = {
+        .mode = VSF_SPI_SLAVE | VSF_SPI_MODE_0 | VSF_SPI_CS_SOFTWARE_MODE,
+        .clock_hz = 1000000,
+    };
+
+    printf("H1-17 slave: cs_active drives SWNSS\n");
+    memset(regs, 0, sizeof(regs));
+    CHECK(vsf_hw_spi_init(S, &cfg) == VSF_ERR_NONE);
+    CHECK(CTL0 & SPI_CTL0_SWNSSEN);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);       /* deselected until asked */
+    CHECK(vsf_hw_spi_capability(S).cs_count == 1);
+    CHECK(vsf_hw_spi_cs_active(S, 0) == VSF_ERR_NONE);
+    CHECK(!(CTL0 & SPI_CTL0_SWNSS));
+    CHECK(vsf_hw_spi_cs_inactive(S, 0) == VSF_ERR_NONE);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);
+    CHECK(vsf_hw_spi_cs_active(S, 1) == VSF_ERR_NOT_SUPPORT);
+    CHECK(CTL0 & SPI_CTL0_SWNSS);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
     test_overrun();
     test_shapes();
     test_guard();
+    test_cs_master();
+    test_cs_slave();
     return host_summary("spi");
 }
