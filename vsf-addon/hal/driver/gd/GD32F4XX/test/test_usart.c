@@ -253,11 +253,36 @@ static void test_oversample(void)
     CHECK(CTL0 & USART_CTL0_UEN);
 }
 
+/* H1-5: USARTDIV is 12.4 bits and at least 1, section 19.3.2. UCLK is 84 MHz. */
+static void test_baud_range(void)
+{
+    static const struct { uint32_t baud, over8; vsf_err_t want; uint32_t reg; } t[] = {
+        { 1200,     0, VSF_ERR_INVALID_PARAMETER, 0 },      /* 70000, was cut to 4464 */
+        { 1281,     0, VSF_ERR_INVALID_PARAMETER, 0 },      /* 65574 */
+        { 1282,     0, VSF_ERR_NONE, 0xFFF3 },              /* 65523, the slowest */
+        { 5250000,  0, VSF_ERR_NONE, 0x10 },                /* USARTDIV 1, the fastest */
+        { 6000000,  0, VSF_ERR_INVALID_PARAMETER, 0 },      /* USARTDIV 0.875 */
+        { 2400,     VSF_USART_OVERSAMPLE_8, VSF_ERR_INVALID_PARAMETER, 0 },
+        { 10500000, VSF_USART_OVERSAMPLE_8, VSF_ERR_NONE, 0x10 },
+        { 12000000, VSF_USART_OVERSAMPLE_8, VSF_ERR_INVALID_PARAMETER, 0 },
+        { 0,        0, VSF_ERR_INVALID_PARAMETER, 0 },      /* a division by zero */
+    };
+    for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++) {
+        printf("H1-5 baud %u, oversample %d\n", (unsigned)t[i].baud, t[i].over8 ? 8 : 16);
+        CHECK(reset_and_init(VSF_USART_TX_ENABLE | t[i].over8, t[i].baud) == t[i].want);
+        CHECK(BAUD == t[i].reg);
+        if (t[i].want != VSF_ERR_NONE) {
+            CHECK(CTL0 == 0);           /* refused before anything was touched */
+        }
+    }
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
     test_cts();
     test_parity();
     test_oversample();
+    test_baud_range();
     return host_summary("usart");
 }

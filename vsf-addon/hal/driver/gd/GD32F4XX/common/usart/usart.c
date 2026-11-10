@@ -83,7 +83,9 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
         mode |= VSF_USART_9_BIT_LENGTH;
     }
 
-    vsf_hw_peripheral_enable(usart_ptr->en);
+    if (0 == baudval) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
 
     // baud rate: same formula as H7XX (F4XX BAUD register is identical)
     uint32_t udiv, intdiv, fradiv;
@@ -96,6 +98,13 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
         intdiv = udiv & 0x0000FFF0U;
         fradiv = udiv & 0x0000000FU;
     }
+    // USARTDIV is 12.4 bits and at least 1: anything else would be cut to a rate
+    // nobody asked for
+    if ((udiv < 0x10U) || (udiv > 0xFFFFU)) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+
+    vsf_hw_peripheral_enable(usart_ptr->en);
 
     uint32_t ctl, cfg;
     uint32_t enabled = USART_CTL0(reg) & USART_CTL0_UEN;
