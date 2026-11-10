@@ -64,6 +64,7 @@ static void reset_sim(int with_handler, int with_irq_enable)
     words = 0;
     erased_mask = 0;
     host_asserts = 0;
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_ALL_BITS_MASK);
     vsf_flash_cfg_t cfg = { 0 };
     if (with_handler) {
         cfg.isr.handler_fn = on_irq;
@@ -337,6 +338,51 @@ static void test_busy(void)
     CHECK(calls == 2);
 }
 
+/* H1-13: enable adds to the mask, disable takes away only what it names */
+static void test_irq_mask(void)
+{
+    uint32_t got;
+    const uint32_t both = FMC_CTL_ENDIE | FMC_CTL_ERRIE;
+
+    printf("H1-13 enable ERASE, enable READ, disable READ\n");
+    reset_sim(1, 0);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_ERASE_MASK);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_READ_MASK);
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_READ_MASK);
+    CHECK((sim_fmc_ctl & both) == both);
+
+    printf("H1-13 the same in the middle of a 2-sector erase\n");
+    reset_sim(1, 0);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_ERASE_MASK);
+    CHECK(vsf_hw_flash_erase_multi_sector(F, 0x20000, 0x40000) == VSF_ERR_NONE);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_READ_MASK);
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_READ_MASK);
+    fmc_run(16);
+    CHECK(erased_mask == ((1U << 5) | (1U << 6)));
+    CHECK(calls == 1);
+    CHECK(last_mask == VSF_FLASH_IRQ_ERASE_MASK);
+
+    printf("H1-13 ENDIE goes off with the last hardware bit, not before\n");
+    reset_sim(1, 0);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_ERASE_MASK | VSF_FLASH_IRQ_WRITE_MASK);
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_ERASE_MASK);
+    CHECK((sim_fmc_ctl & both) == both);
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_WRITE_MASK);
+    CHECK((sim_fmc_ctl & both) == 0);
+
+    printf("H1-13 READ is software only: it needs no ENDIE and keeps its callback\n");
+    reset_sim(1, 0);
+    vsf_hw_flash_irq_enable(F, VSF_FLASH_IRQ_READ_MASK);
+    CHECK((sim_fmc_ctl & both) == 0);
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x20000, (uint8_t *)buf, 4) == VSF_ERR_NOT_AVAILABLE);
+    CHECK(vsf_hw_flash_read_multi_sector(F, 0x20000, (uint8_t *)&got, 4) == VSF_ERR_NONE);
+    CHECK(calls == 1);
+    CHECK(last_mask == VSF_FLASH_IRQ_READ_MASK);
+    vsf_hw_flash_irq_disable(F, VSF_FLASH_IRQ_READ_MASK);
+    CHECK(vsf_hw_flash_read_multi_sector(F, 0x20000, (uint8_t *)&got, 4) == VSF_ERR_NONE);
+    CHECK(calls == 1);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);   /* keep earlier lines if a sanitizer aborts */
@@ -359,5 +405,6 @@ int main(void)
     test_erase_refused();
     test_erase_ok();
     test_busy();
+    test_irq_mask();
     return host_summary("flash");
 }

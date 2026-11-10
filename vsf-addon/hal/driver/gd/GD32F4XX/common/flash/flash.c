@@ -182,8 +182,11 @@ void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_irq_enable)(
     vsf_flash_irq_mask_t irq_mask
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
-    flash_ptr->irq_mask = irq_mask;
-    FMC_CTL |= FMC_CTL_ENDIE | FMC_CTL_ERRIE;
+    flash_ptr->irq_mask |= irq_mask;
+    // READ is reported from the read call itself and needs neither bit
+    if (irq_mask & __VSF_HW_FLASH_IRQ_MASK) {
+        FMC_CTL |= FMC_CTL_ENDIE | FMC_CTL_ERRIE;
+    }
 }
 
 void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_irq_disable)(
