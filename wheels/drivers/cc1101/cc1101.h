@@ -33,6 +33,7 @@ typedef enum {
     CC1101_ERR_ID       = -3,
     CC1101_ERR_TIMEOUT  = -4,
     CC1101_ERR_CRC      = -5,
+    CC1101_ERR_SIZE     = -6,  /* packet longer than the buffer */
 } cc1101_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -72,7 +73,10 @@ cc1101_err_t cc1101_set_power(cc1101_t *dev, uint8_t pa_value);
 cc1101_err_t cc1101_transmit(cc1101_t *dev, const uint8_t *data, uint8_t len);
 
 /** Receive packet. Strobes SRX, polls for RX complete, reads RX FIFO.
- *  Returns CC1101_ERR_CRC for a damaged packet. */
+ *  Returns CC1101_ERR_CRC for a damaged packet.
+ *  A packet longer than cap is dropped, never cut: returns CC1101_ERR_SIZE,
+ *  copies nothing and sets *out_len to the real length, which is then more
+ *  than cap. A cap of 61 fits any packet. */
 cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len);
 

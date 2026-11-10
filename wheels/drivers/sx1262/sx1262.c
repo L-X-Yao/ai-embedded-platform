@@ -618,8 +618,12 @@ sx1262_err_t sx1262_receive(sx1262_t *dev, uint8_t *buf, uint8_t cap,
             payload_len = rx_buf_status[0];
             rx_offset   = rx_buf_status[1];
 
+            /* Cut short it would look like a whole packet */
             if (payload_len > cap) {
-                payload_len = cap;
+                *out_len = payload_len;
+                (void)clear_irq(dev->hal);
+                (void)stop_rx_timer(dev->hal);
+                return SX1262_ERR_SIZE;
             }
 
             /* ReadBuffer: opcode + offset + NOP + data */

@@ -479,29 +479,67 @@ TEST(test_receive_ok)
     ASSERT_EQ(buf[2], 0xBA);
 }
 
-TEST(test_receive_truncates)
+/* Set up one received packet of `nb` bytes, the first four of them known. */
+static void inject_rx_packet(uint8_t nb)
+{
+    buf_read_data[0] = 0x11;
+    buf_read_data[1] = 0x22;
+    buf_read_data[2] = 0x33;
+    buf_read_data[3] = 0x44;
+    buf_read_len = 4;
+    mock_rx_payload_len = nb;
+    mock_rx_offset = 0;
+    mock_irq_status = 0x0002;
+}
+
+TEST(test_receive_refuses_a_packet_over_cap)
 {
     mock_reset_all();
     sx1262_t dev;
     memset(&dev, 0, sizeof(dev));
     sx1262_init(&dev, &mock_hal);
 
-    buf_read_data[0] = 0x11;
-    buf_read_data[1] = 0x22;
-    buf_read_data[2] = 0x33;
-    buf_read_data[3] = 0x44;
-    buf_read_len = 4;
-    mock_rx_payload_len = 4;
-    mock_rx_offset = 0;
-    mock_irq_status = 0x0002;
+    inject_rx_packet(4);
 
-    uint8_t buf[2];
+    uint8_t buf[2] = { 0xA5, 0xA5 };
     uint8_t len = 0;
     sx1262_err_t e = sx1262_receive(&dev, buf, 2, &len);
-    ASSERT_EQ(e, SX1262_OK);
-    ASSERT_EQ(len, 2);
+    ASSERT_EQ(e, SX1262_ERR_SIZE);
+    ASSERT_EQ(len, 4);          /* the real length */
+    ASSERT_EQ(buf[0], 0xA5);    /* and no bytes */
+    ASSERT_EQ(buf[1], 0xA5);
+}
+
+TEST(test_receive_refuses_200_bytes_for_a_32_byte_buffer)
+{
+    mock_reset_all();
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    sx1262_init(&dev, &mock_hal);
+
+    inject_rx_packet(200);
+
+    uint8_t buf[32];
+    uint8_t len = 0;
+    ASSERT_EQ(sx1262_receive(&dev, buf, 32, &len), SX1262_ERR_SIZE);
+    ASSERT_EQ(len, 200);
+}
+
+TEST(test_receive_takes_a_packet_of_exactly_cap)
+{
+    mock_reset_all();
+    sx1262_t dev;
+    memset(&dev, 0, sizeof(dev));
+    sx1262_init(&dev, &mock_hal);
+
+    inject_rx_packet(4);
+
+    uint8_t buf[4];
+    uint8_t len = 0;
+    ASSERT_EQ(sx1262_receive(&dev, buf, 4, &len), SX1262_OK);
+    ASSERT_EQ(len, 4);
     ASSERT_EQ(buf[0], 0x11);
-    ASSERT_EQ(buf[1], 0x22);
+    ASSERT_EQ(buf[3], 0x44);
 }
 
 TEST(test_receive_timeout)
@@ -988,7 +1026,9 @@ TEST_MAIN("sx1262")
     RUN(test_transmit_zero_len);
     RUN(test_transmit_timeout);
     RUN(test_receive_ok);
-    RUN(test_receive_truncates);
+    RUN(test_receive_refuses_a_packet_over_cap);
+    RUN(test_receive_refuses_200_bytes_for_a_32_byte_buffer);
+    RUN(test_receive_takes_a_packet_of_exactly_cap);
     RUN(test_receive_timeout);
     RUN(test_receive_null_params);
     RUN(test_get_rssi);

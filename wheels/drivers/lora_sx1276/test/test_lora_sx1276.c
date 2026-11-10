@@ -537,14 +537,9 @@ TEST(test_set_tx_power_high_power_boundary)
     ASSERT_EQ(mock_regs[0x09], (uint8_t)(0x80 | 15)); /* 17-2=15 */
 }
 
-TEST(test_receive_truncates_to_max_len)
+/* Set up one received packet of `nb` bytes, the first eight of them known. */
+static void inject_rx_packet(uint8_t nb)
 {
-    mock_reset_all();
-    lora_t dev;
-    memset(&dev, 0, sizeof(dev));
-    lora_init(&dev, &mock_spi, 433000000UL);
-
-    /* Inject 8 bytes but only accept 4 (max_len=4) */
     fifo_read_data[0] = 0x11;
     fifo_read_data[1] = 0x22;
     fifo_read_data[2] = 0x33;
@@ -555,20 +550,66 @@ TEST(test_receive_truncates_to_max_len)
     fifo_read_data[7] = 0x88;
     fifo_read_len = 8;
 
-    mock_regs[0x13] = 8;   /* RX_NB_BYTES = 8 */
+    mock_regs[0x13] = nb;  /* RX_NB_BYTES */
     mock_regs[0x10] = 0;   /* FIFO_RX_CURRENT */
 
     mock_delay_count = 0;
     mock_irq_after_delays = 1;
     mock_irq_value = 0x40; /* IRQ_RX_DONE */
+}
+
+TEST(test_receive_refuses_a_packet_over_max_len)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    /* 8 bytes for a buffer of 4 */
+    inject_rx_packet(8);
 
     uint8_t buf[16];
+    memset(buf, 0xA5, sizeof(buf));
     uint8_t len = 0;
     lora_err_t e = lora_receive(&dev, buf, &len, 4);
-    ASSERT_EQ(e, LORA_OK);
-    ASSERT_EQ(len, 4);  /* truncated to max_len */
+    ASSERT_EQ(e, LORA_ERR_SIZE);
+    ASSERT_EQ(len, 8);          /* the real length */
+    ASSERT_EQ(buf[0], 0xA5);    /* and no bytes */
+
+    /* Like every other way out of RX: back in standby */
+    ASSERT_EQ(mock_regs[0x01] & 0x07, 0x01);
+}
+
+TEST(test_receive_refuses_200_bytes_for_a_32_byte_buffer)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    inject_rx_packet(200);
+
+    uint8_t buf[32];
+    uint8_t len = 0;
+    ASSERT_EQ(lora_receive(&dev, buf, &len, 32), LORA_ERR_SIZE);
+    ASSERT_EQ(len, 200);
+}
+
+TEST(test_receive_takes_a_packet_of_exactly_max_len)
+{
+    mock_reset_all();
+    lora_t dev;
+    memset(&dev, 0, sizeof(dev));
+    lora_init(&dev, &mock_spi, 433000000UL);
+
+    inject_rx_packet(8);
+
+    uint8_t buf[8];
+    uint8_t len = 0;
+    ASSERT_EQ(lora_receive(&dev, buf, &len, 8), LORA_OK);
+    ASSERT_EQ(len, 8);
     ASSERT_EQ(buf[0], 0x11);
-    ASSERT_EQ(buf[3], 0x44);
+    ASSERT_EQ(buf[7], 0x88);
 }
 
 TEST(test_rssi_hf_boundary)
@@ -915,7 +956,9 @@ TEST_MAIN("lora_sx1276")
     RUN(test_sleep_standby);
     RUN(test_send_zero_len);
     RUN(test_set_tx_power_high_power_boundary);
-    RUN(test_receive_truncates_to_max_len);
+    RUN(test_receive_refuses_a_packet_over_max_len);
+    RUN(test_receive_refuses_200_bytes_for_a_32_byte_buffer);
+    RUN(test_receive_takes_a_packet_of_exactly_max_len);
     RUN(test_rssi_hf_boundary);
     RUN(test_snr_truncation);
     RUN(test_set_bandwidth_all_valid);

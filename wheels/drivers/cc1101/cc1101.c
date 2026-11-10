@@ -348,9 +348,13 @@ cc1101_err_t cc1101_receive(cc1101_t *dev, uint8_t *buf, uint8_t cap,
                 return CC1101_ERR_CRC;
             }
 
-            uint8_t read_len = (pkt_len < cap) ? pkt_len : cap;
-            memcpy(buf, pkt, read_len);
-            *out_len = read_len;
+            /* Cut short it would look like a whole packet. The FIFO is
+             * already empty, so there is nothing left to drop. */
+            *out_len = pkt_len;
+            if (pkt_len > cap) {
+                return CC1101_ERR_SIZE;
+            }
+            memcpy(buf, pkt, pkt_len);
 
             return CC1101_OK;
         }

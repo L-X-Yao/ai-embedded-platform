@@ -33,6 +33,7 @@ typedef enum {
     SX1262_ERR_BUSY     = -3,
     SX1262_ERR_TIMEOUT  = -4,
     SX1262_ERR_CRC      = -5,
+    SX1262_ERR_SIZE     = -6,  /* packet longer than the buffer */
 } sx1262_err_t;
 
 /* ---------- LoRa parameters ---------- */
@@ -111,7 +112,10 @@ sx1262_err_t sx1262_configure_lora(sx1262_t *dev, sx1262_sf_t sf,
 sx1262_err_t sx1262_transmit(sx1262_t *dev, const uint8_t *data, uint8_t len);
 
 /** Receive packet (blocks until RX done or timeout).
- *  Returns SX1262_ERR_CRC for a packet that arrived damaged. */
+ *  Returns SX1262_ERR_CRC for a packet that arrived damaged.
+ *  A packet longer than cap is dropped, never cut: returns SX1262_ERR_SIZE,
+ *  copies nothing and sets *out_len to the real length, which is then more
+ *  than cap. A cap of 255 fits any packet. */
 sx1262_err_t sx1262_receive(sx1262_t *dev, uint8_t *buf, uint8_t cap,
                             uint8_t *out_len);
 

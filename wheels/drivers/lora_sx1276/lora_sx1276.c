@@ -445,7 +445,14 @@ lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
 
             /* read payload length */
             uint8_t nb = reg_read(spi, REG_RX_NB_BYTES);
-            if (nb > max_len) nb = max_len;
+
+            /* Cut short it would look like a whole packet */
+            if (nb > max_len) {
+                *len = nb;
+                reg_write(spi, REG_IRQ_FLAGS, 0xFF);
+                (void)set_mode(spi, MODE_STANDBY);
+                return LORA_ERR_SIZE;
+            }
 
             /* set FIFO pointer to current RX address */
             uint8_t rx_addr = reg_read(spi, REG_FIFO_RX_CURRENT);

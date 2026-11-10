@@ -27,6 +27,7 @@ typedef enum {
     LORA_ERR_TIMEOUT = -3,
     LORA_ERR_CRC     = -4,
     LORA_ERR_VERSION = -5,
+    LORA_ERR_SIZE    = -6,  /* packet longer than the buffer */
 } lora_err_t;
 
 /* ---------- SPI HAL (caller provides) ---------- */
@@ -75,7 +76,10 @@ lora_err_t lora_set_tx_power(lora_t *dev, int8_t dbm);
 /** Transmit packet. Blocks until TxDone or timeout. */
 lora_err_t lora_send(lora_t *dev, const uint8_t *data, uint8_t len);
 
-/** Receive packet (RX single). Blocks until RxDone or timeout. */
+/** Receive packet (RX single). Blocks until RxDone or timeout.
+ *  A packet longer than max_len is dropped, never cut: returns LORA_ERR_SIZE,
+ *  copies nothing and sets *len to the real length, which is then more than
+ *  max_len. A max_len of 255 fits any packet. */
 lora_err_t lora_receive(lora_t *dev, uint8_t *data, uint8_t *len,
                         uint8_t max_len);
 

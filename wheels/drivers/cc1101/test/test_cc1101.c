@@ -442,6 +442,71 @@ TEST(test_receive_ok)
     ASSERT_TRUE(len > 0);
 }
 
+/* Set up one received packet of three bytes with the given status byte. */
+static void inject_rx_packet(uint8_t status)
+{
+    fifo_rx[0] = 3;     /* length byte */
+    fifo_rx[1] = 0xDE;
+    fifo_rx[2] = 0xAD;
+    fifo_rx[3] = 0x42;
+    fifo_rx[4] = 0x40;  /* RSSI */
+    fifo_rx[5] = status;
+    fifo_rx_len = 6;
+
+    mock_delay_count = 0;
+    mock_idle_after_delays = 2;
+}
+
+TEST(test_receive_refuses_a_packet_over_cap)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    inject_rx_packet(0x80);  /* CRC_OK */
+
+    uint8_t buf[2] = { 0xA5, 0xA5 };
+    uint8_t len = 0;
+    cc1101_err_t e = cc1101_receive(&dev, buf, 2, &len);
+    ASSERT_EQ(e, CC1101_ERR_SIZE);
+    ASSERT_EQ(len, 3);          /* the real length */
+    ASSERT_EQ(buf[0], 0xA5);    /* and no bytes */
+    ASSERT_EQ(buf[1], 0xA5);
+}
+
+TEST(test_receive_takes_a_packet_of_exactly_cap)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    inject_rx_packet(0x80);  /* CRC_OK */
+
+    uint8_t buf[3];
+    uint8_t len = 0;
+    ASSERT_EQ(cc1101_receive(&dev, buf, 3, &len), CC1101_OK);
+    ASSERT_EQ(len, 3);
+    ASSERT_EQ(buf[0], 0xDE);
+    ASSERT_EQ(buf[2], 0x42);
+}
+
+TEST(test_receive_damaged_and_too_long_is_a_crc_error)
+{
+    mock_reset_all();
+    cc1101_t dev;
+    memset(&dev, 0, sizeof(dev));
+    cc1101_init(&dev, &mock_hal);
+
+    inject_rx_packet(0x00);  /* CRC_OK clear */
+
+    /* The length byte of a damaged packet cannot be believed */
+    uint8_t buf[2];
+    uint8_t len = 0;
+    ASSERT_EQ(cc1101_receive(&dev, buf, 2, &len), CC1101_ERR_CRC);
+}
+
 TEST(test_receive_null_params)
 {
     mock_reset_all();
@@ -774,6 +839,9 @@ TEST_MAIN("cc1101")
     RUN(test_transmit_null_dev);
     RUN(test_transmit_max_valid_len);
     RUN(test_receive_ok);
+    RUN(test_receive_refuses_a_packet_over_cap);
+    RUN(test_receive_takes_a_packet_of_exactly_cap);
+    RUN(test_receive_damaged_and_too_long_is_a_crc_error);
     RUN(test_receive_null_params);
     RUN(test_receive_timeout);
     RUN(test_receive_null_dev);
