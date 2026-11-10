@@ -79,6 +79,28 @@ static uint32_t __flash_sector_size(int sector)
     return 0x20000U;
 }
 
+// Every sector is aligned to its own size.
+static bool __flash_is_sector_start(uint32_t offset)
+{
+    return !(offset & (__flash_sector_size(__flash_offset_to_sector(offset)) - 1U));
+}
+
+// The hardware erases whole sectors, so a range that starts or ends inside one
+// would destroy data outside it. Capability reports the largest sector, and any
+// multiple of that passes here.
+static vsf_err_t __flash_check_erase_range(uint32_t offset, uint32_t size)
+{
+    if ((offset >= __VSF_HW_FLASH_SIZE) || (size > __VSF_HW_FLASH_SIZE - offset)) {
+        return VSF_ERR_INVALID_RANGE;
+    }
+    uint32_t end = offset + size;
+    if (    (0 == size) || !__flash_is_sector_start(offset)
+        ||  ((end != __VSF_HW_FLASH_SIZE) && !__flash_is_sector_start(end))) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+    return VSF_ERR_NONE;
+}
+
 // FMC_CTL must already be unlocked. The interrupt starts every later sector.
 static void __flash_start_sector_erase(int sector)
 {
@@ -169,22 +191,6 @@ void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_irq_disable)(
     }
 }
 
-vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_one_sector)(
-    VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr,
-    vsf_flash_size_t offset
-) {
-    VSF_HAL_ASSERT(flash_ptr != NULL);
-
-    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
-    if (err != VSF_ERR_NONE) {
-        return err;
-    }
-
-    flash_ptr->erase0_write1 = 0;
-    __flash_start_sector_erase(__flash_offset_to_sector(offset));
-    return VSF_ERR_NONE;
-}
-
 vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
     VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr,
     vsf_flash_size_t offset,
@@ -192,7 +198,10 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
 
-    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
+    vsf_err_t err = __flash_check_erase_range(offset, size);
+    if (err == VSF_ERR_NONE) {
+        err = __flash_check_irq_armed(flash_ptr);
+    }
     if (err != VSF_ERR_NONE) {
         return err;
     }
@@ -202,6 +211,16 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
     flash_ptr->erase0_write1 = 0;
     __flash_start_sector_erase(__flash_offset_to_sector(offset));
     return VSF_ERR_NONE;
+}
+
+vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_one_sector)(
+    VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr,
+    vsf_flash_size_t offset
+) {
+    VSF_HAL_ASSERT(flash_ptr != NULL);
+
+    return VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
+        flash_ptr, offset, __flash_sector_size(__flash_offset_to_sector(offset)));
 }
 
 vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
@@ -337,16 +356,13 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
         } else {
             // erase: advance to next sector
             FMC_CTL &= ~FMC_CTL_SER;
-            if (flash_ptr->size_cur > 0) {
-                int sector = __flash_offset_to_sector(flash_ptr->offset_cur);
-                uint32_t sec_size = __flash_sector_size(sector);
-                if (flash_ptr->size_cur >= sec_size) {
-                    flash_ptr->size_cur -= sec_size;
-                    flash_ptr->offset_cur += sec_size;
-                } else {
-                    flash_ptr->size_cur = 0;
-                }
+            if (0 == flash_ptr->size_cur) {
+                return;     // stray END, no erase in progress
             }
+            // whole sectors only, checked at the request
+            uint32_t sec_size = __flash_sector_size(__flash_offset_to_sector(flash_ptr->offset_cur));
+            flash_ptr->size_cur -= sec_size;
+            flash_ptr->offset_cur += sec_size;
             if (flash_ptr->size_cur > 0) {
                 __flash_start_sector_erase(__flash_offset_to_sector(flash_ptr->offset_cur));
                 return;

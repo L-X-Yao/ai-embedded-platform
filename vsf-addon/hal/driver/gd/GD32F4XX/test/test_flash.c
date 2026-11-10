@@ -28,9 +28,16 @@ void FMC_IRQHandler(void);
 
 volatile uint32_t sim_fmc_ctl = FMC_CTL_LK, sim_fmc_stat, sim_fmc_key;
 
+/* user manual table 2-1, bank 0 */
+static const struct { uint32_t base, size; } sectors[12] = {
+    { 0x00000, 0x04000 }, { 0x04000, 0x04000 }, { 0x08000, 0x04000 }, { 0x0C000, 0x04000 },
+    { 0x10000, 0x10000 }, { 0x20000, 0x20000 }, { 0x40000, 0x20000 }, { 0x60000, 0x20000 },
+    { 0x80000, 0x20000 }, { 0xA0000, 0x20000 }, { 0xC0000, 0x20000 }, { 0xE0000, 0x20000 },
+};
+
 static int calls;
 static uint32_t last_mask;
-static uint32_t words;
+static uint32_t words, erased_mask;
 static uint32_t buf[0x8000 + 8];
 
 static void on_irq(void *t, vsf_flash_t *f, vsf_flash_irq_mask_t m)
@@ -48,6 +55,7 @@ static void reset_sim(int with_handler, int with_irq_enable)
     calls = 0;
     last_mask = 0;
     words = 0;
+    erased_mask = 0;
     host_asserts = 0;
     vsf_flash_cfg_t cfg = { 0 };
     if (with_handler) {
@@ -66,7 +74,13 @@ static void fmc_run(uint32_t limit)
     while (limit-- > 0) {
         uint32_t ctl = sim_fmc_ctl;
         if (ctl & FMC_CTL_START) {
+            uint32_t sn = (ctl & FMC_CTL_SN) >> 3;
+            CHECK(sn < 12);
             sim_fmc_ctl &= ~FMC_CTL_START;
+            if (sn < 12) {
+                memset(FLASH_MEM + sectors[sn].base, 0xFF, sectors[sn].size);
+                erased_mask |= 1U << sn;
+            }
         } else if (ctl & FMC_CTL_PG) {
             words++;
         } else {
@@ -186,6 +200,95 @@ static void test_busy_between_words(void)
     CHECK(!vsf_hw_flash_status(F).is_busy);
 }
 
+/* fills all of flash, so an erase shows up as what it really touched */
+static void fill(void)
+{
+    memset(FLASH_MEM, 0x00, FLASH_SIZE);
+}
+
+static int is_erased(uint32_t base, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        if (FLASH_MEM[base + i] != 0xFF) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* H1-11: the unit is a whole sector, so the range must start and end on one */
+static void test_erase_refused(void)
+{
+    static const struct { uint32_t off, size; vsf_err_t want; const char *why; } t[] = {
+        { 0x18000, 0x10000, VSF_ERR_INVALID_PARAMETER, "start inside sector 4" },
+        { 0x20000, 0,       VSF_ERR_INVALID_PARAMETER, "size 0" },
+        { 0x20000, 0x10000, VSF_ERR_INVALID_PARAMETER, "end inside sector 5" },
+        { 0x24000, 0x20000, VSF_ERR_INVALID_PARAMETER, "16 KB aligned, not a sector start" },
+        { 0xE0000, 0x40000, VSF_ERR_INVALID_RANGE,     "past the end" },
+        { 0x100000, 0x20000, VSF_ERR_INVALID_RANGE,    "offset past the end" },
+    };
+    for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++) {
+        printf("H1-11 erase 0x%x size 0x%x: %s\n", (unsigned)t[i].off, (unsigned)t[i].size, t[i].why);
+        reset_sim(1, 1);
+        fill();
+        CHECK(vsf_hw_flash_erase_multi_sector(F, t[i].off, t[i].size) == t[i].want);
+        fmc_run(16);
+        CHECK(erased_mask == 0);
+        CHECK(calls == 0);
+        CHECK(!(sim_fmc_ctl & FMC_CTL_SER));
+    }
+}
+
+static void check_erase(uint32_t off, uint32_t size, uint32_t want_mask)
+{
+    printf("H1-11 erase 0x%x size 0x%x\n", (unsigned)off, (unsigned)size);
+    reset_sim(1, 1);
+    fill();
+    CHECK(vsf_hw_flash_erase_multi_sector(F, off, size) == VSF_ERR_NONE);
+    CHECK(vsf_hw_flash_status(F).is_busy);
+    fmc_run(16);
+    CHECK(erased_mask == want_mask);
+    CHECK(is_erased(off, size));
+    if (off > 0) {
+        CHECK(FLASH_MEM[off - 1] == 0x00);
+    }
+    if (off + size < FLASH_SIZE) {
+        CHECK(FLASH_MEM[off + size] == 0x00);
+    }
+    CHECK(calls == 1);
+    CHECK(last_mask == VSF_FLASH_IRQ_ERASE_MASK);
+    CHECK(!(sim_fmc_ctl & FMC_CTL_SER));
+    CHECK(!vsf_hw_flash_status(F).is_busy);
+}
+
+static void test_erase_ok(void)
+{
+    check_erase(0x10000, 0x30000, (1U << 4) | (1U << 5));
+    check_erase(0x00000, 0x04000, 1U << 0);
+    check_erase(0x0C000, 0x14000, (1U << 3) | (1U << 4));
+    check_erase(0xE0000, 0x20000, 1U << 11);
+    check_erase(0x00000, FLASH_SIZE, 0xFFF);    /* what the erase_all template asks */
+
+    printf("H1-11 erase_one_sector\n");
+    reset_sim(1, 1);
+    fill();
+    CHECK(vsf_hw_flash_erase_one_sector(F, 0x24000) == VSF_ERR_INVALID_PARAMETER);
+    CHECK(vsf_hw_flash_erase_one_sector(F, FLASH_SIZE) == VSF_ERR_INVALID_RANGE);
+    CHECK(erased_mask == 0);
+    CHECK(vsf_hw_flash_erase_one_sector(F, 0x20000) == VSF_ERR_NONE);
+    CHECK(vsf_hw_flash_status(F).is_busy);
+    fmc_run(16);
+    CHECK(erased_mask == 1U << 5);
+    CHECK(calls == 1);
+    CHECK(last_mask == VSF_FLASH_IRQ_ERASE_MASK);
+
+    printf("H1-11 stray END after a finished erase\n");
+    sim_fmc_stat = FMC_STAT_END;
+    FMC_IRQHandler();
+    sim_fmc_stat = 0;
+    CHECK(calls == 1);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);   /* keep earlier lines if a sanitizer aborts */
@@ -205,5 +308,7 @@ int main(void)
     check_not_armed(1, 0, "handler but no irq_enable");
     check_not_armed(0, 1, "irq_enable but no handler");
     test_busy_between_words();
+    test_erase_refused();
+    test_erase_ok();
     return host_summary("flash");
 }
