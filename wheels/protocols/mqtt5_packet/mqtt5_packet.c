@@ -501,6 +501,7 @@ mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
     pos += 2;
     if (pos + topic_len > packet_end) return MQTT5_ERR_PROTOCOL;
     pub->topic = (const char *)(buf + pos);
+    pub->topic_len = topic_len;
     pos += topic_len;
 
     /* packet id (only for QoS > 0) */

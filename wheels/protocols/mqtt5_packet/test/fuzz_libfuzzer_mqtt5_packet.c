@@ -110,6 +110,7 @@ static void check_publish(const mqtt5_publish_t *pub, size_t topic_len,
     if (mqtt5_parse_publish(wire, (uint16_t)len, &back) != MQTT5_OK ||
         back.qos != pub->qos || back.retain != pub->retain ||
         back.message_expiry != pub->message_expiry ||
+        back.topic_len != topic_len ||
         memcmp(back.topic, pub->topic, topic_len) != 0 ||
         back.payload_len != pub->payload_len ||
         (pub->payload_len > 0 && memcmp(back.payload, pub->payload, pub->payload_len) != 0)) {

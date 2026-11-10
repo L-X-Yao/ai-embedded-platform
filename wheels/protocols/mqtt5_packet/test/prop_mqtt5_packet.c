@@ -42,6 +42,7 @@ PROPERTY(publish_roundtrip, 10000) {
     PROP_ASSERT_EQ(err, MQTT5_OK);
 
     PROP_ASSERT(parsed.topic != NULL);
+    PROP_ASSERT(parsed.topic_len == topic_len);
     PROP_ASSERT(memcmp(parsed.topic, topic, topic_len) == 0);
     PROP_ASSERT_EQ(parsed.payload_len, payload_len);
     if (payload_len > 0) {

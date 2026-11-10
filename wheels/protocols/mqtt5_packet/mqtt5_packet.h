@@ -57,13 +57,16 @@ typedef struct {
 } mqtt5_connack_t;
 
 typedef struct {
-    const char    *topic;
+    const char    *topic;    /* build: a C string. parse: points into the packet
+                              * with no terminator, so read topic_len bytes */
     const uint8_t *payload;
     uint16_t       payload_len;
     uint16_t       packet_id;
     uint8_t        qos;
     bool           retain;
     uint32_t       message_expiry;
+    uint16_t       topic_len; /* set by parse, where 0 is a valid length (a
+                               * Topic Alias stands in). build ignores it */
 } mqtt5_publish_t;
 
 /** Build CONNECT packet (v5.0). Returns bytes written or negative mqtt5_err_t.
@@ -97,6 +100,8 @@ mqtt5_err_t mqtt5_parse_connack(const uint8_t *buf, uint16_t len,
 /** Parse incoming PUBLISH packet (v5.0) including properties. A property with
  *  no field in mqtt5_publish_t is stepped over. One the spec does not allow in
  *  a PUBLISH returns MQTT5_ERR_PROTOCOL.
+ *  topic and payload point into buf. The topic has no terminator: use
+ *  topic_len, and copy it before handing the struct to mqtt5_build_publish().
  *  @thread_safe: yes (pure function) */
 mqtt5_err_t mqtt5_parse_publish(const uint8_t *buf, uint16_t len,
                                 mqtt5_publish_t *pub);

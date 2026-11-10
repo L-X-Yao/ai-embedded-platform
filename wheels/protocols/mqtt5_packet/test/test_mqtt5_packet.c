@@ -484,6 +484,92 @@ TEST(test_build_publish_length_without_payload)
     ASSERT_TRUE(mqtt5_build_publish(buf, sizeof(buf), &pub) > 0);
 }
 
+/* MQTT 5.0 section 3.3.2.1 and 1.5.4: the topic is a length-prefixed string with
+   no terminator, so the byte after it is whatever the packet holds next */
+TEST(test_parse_publish_reports_the_topic_length_at_qos_0)
+{
+    static const uint8_t frame[] = {
+        0x30, 0x08, 0x00, 0x03, 'a', '/', 'b', 0x00, 'h', 'i',
+    };
+    mqtt5_publish_t pub;
+    ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_OK);
+    ASSERT_EQ(pub.topic_len, 3);
+    ASSERT_EQ(memcmp(pub.topic, "a/b", 3), 0);
+    ASSERT_EQ(pub.payload_len, 2);
+}
+
+TEST(test_parse_publish_reports_the_topic_length_at_qos_1)
+{
+    /* Packet id 0x0102 and an expiry of 60 follow the topic, with no zero byte
+       right after it: strlen() would run on into them */
+    static const uint8_t frame[] = {
+        0x32, 0x0F, 0x00, 0x03, 'a', '/', 'b', 0x01, 0x02,
+        0x05, 0x02, 0x00, 0x00, 0x00, 0x3C, 'h', 'i',
+    };
+    mqtt5_publish_t pub;
+    ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_OK);
+    ASSERT_EQ(pub.topic_len, 3);
+    ASSERT_EQ(memcmp(pub.topic, "a/b", 3), 0);
+    ASSERT_EQ(pub.packet_id, 0x0102);
+    ASSERT_EQ(pub.message_expiry, 60U);
+}
+
+TEST(test_parse_publish_reports_a_topic_at_the_end_of_the_buffer)
+{
+    static const uint8_t frame[] = { 0x30, 0x05, 0x00, 0x03, 'a', '/', 'b' };
+    mqtt5_publish_t pub;
+    ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_OK);
+    ASSERT_EQ(pub.topic_len, 3);
+    ASSERT_EQ(pub.topic, (const char *)&frame[4]);
+}
+
+/* MQTT 5.0 section 3.3.2.3.4: with a Topic Alias the topic can be empty */
+TEST(test_parse_publish_reports_an_empty_topic)
+{
+    static const uint8_t frame[] = {
+        0x30, 0x06, 0x00, 0x00, 0x03, 0x23, 0x00, 0x01,
+    };
+    mqtt5_publish_t pub;
+    memset(&pub, 0xFF, sizeof(pub));
+    ASSERT_EQ(mqtt5_parse_publish(frame, sizeof(frame), &pub), MQTT5_OK);
+    ASSERT_EQ(pub.topic_len, 0);
+}
+
+TEST(test_parse_publish_reports_a_topic_past_one_byte_of_length)
+{
+    char topic[301];
+    memset(topic, 't', 300);
+    topic[300] = '\0';
+    mqtt5_publish_t pub;
+    memset(&pub, 0, sizeof(pub));
+    pub.topic = topic;
+
+    uint8_t frame[400];
+    int n = mqtt5_build_publish(frame, sizeof(frame), &pub);
+    ASSERT_TRUE(n > 0);
+
+    mqtt5_publish_t got;
+    ASSERT_EQ(mqtt5_parse_publish(frame, (uint16_t)n, &got), MQTT5_OK);
+    ASSERT_EQ(got.topic_len, 300);
+    ASSERT_EQ(memcmp(got.topic, topic, 300), 0);
+}
+
+TEST(test_build_publish_goes_by_the_string_not_topic_len)
+{
+    mqtt5_publish_t pub;
+    memset(&pub, 0, sizeof(pub));
+    pub.topic = "a/b";
+    pub.topic_len = 1;
+
+    uint8_t frame[32];
+    int n = mqtt5_build_publish(frame, sizeof(frame), &pub);
+    ASSERT_TRUE(n > 0);
+
+    mqtt5_publish_t got;
+    ASSERT_EQ(mqtt5_parse_publish(frame, (uint16_t)n, &got), MQTT5_OK);
+    ASSERT_EQ(got.topic_len, 3);
+}
+
 TEST(test_parse_publish_refuses_both_qos_bits)
 {
     const uint8_t frame[] = { 0x36, 0x06, 0x00, 0x01, 't', 0x00, 0x01, 0x00 };
@@ -706,6 +792,12 @@ TEST_MAIN("mqtt5_packet")
     RUN(test_build_connect_remaining_length_counts_the_frame);
     RUN(test_build_connect_remaining_length_with_properties);
     RUN(test_build_publish_length_without_payload);
+    RUN(test_parse_publish_reports_the_topic_length_at_qos_0);
+    RUN(test_parse_publish_reports_the_topic_length_at_qos_1);
+    RUN(test_parse_publish_reports_a_topic_at_the_end_of_the_buffer);
+    RUN(test_parse_publish_reports_an_empty_topic);
+    RUN(test_parse_publish_reports_a_topic_past_one_byte_of_length);
+    RUN(test_build_publish_goes_by_the_string_not_topic_len);
     RUN(test_parse_publish_refuses_both_qos_bits);
     /* properties the codec does not store */
     RUN(test_parse_connack_from_a_default_broker);
