@@ -121,7 +121,7 @@ def classify(cfsr, hfsr, mmfar, bfar, lr, pc):
         if mmfsr & 0x10:
             causes.append("MemManage stacking fault — STACK OVERFLOW (SP crossed MPU boundary)")
             gdb.append("info reg msp psp sp  # check if SP is below _estack or thread stack base")
-            gdb.append("# Compare with: python3 stack_analyzer.py build --task-config stack_tasks.flybox.json")
+            gdb.append("# Compare with: python3 stack_analyzer.py build --task-config <your stack_tasks.json>")
         if mmfsr & 0x20:
             causes.append("FPU lazy state push MemManage fault — check FPCCR.LSPEN and CPACR[23:20]")
             gdb.append("x/x 0xE000EF34  # FPCCR — bit LSPEN enables lazy stacking")

@@ -15,7 +15,7 @@
   "_comment_14": "Use 'words' (FreeRTOS xTaskCreate stack words) or 'bytes'.",
   "_comment_15": "Final allocated = max(min_bytes, words*4*scale)  or  bytes*scale.",
   "_comment_16": "",
-  "_comment_17": "See stack_tasks.flybox.json for a real-project example.",
+  "_comment_17": "A real project keeps its own copy of this file.",
 
   "stack_scale": 1,
   "min_bytes":   2048,
