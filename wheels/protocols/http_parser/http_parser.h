@@ -75,8 +75,19 @@ typedef struct {
 http_parser_err_t http_parser_parse_request(const char *data, size_t len,
                               http_parser_request_t *req);
 
-/** Parse an HTTP/1.1 response from raw data into a response struct. */
+/** Parse an HTTP/1.1 response from raw data into a response struct.
+ *  A 1xx, 204 or 304 reply ends at the blank line whatever its headers say
+ *  (RFC 7230 section 3.3.3 item 1). Bytes after total_consumed belong to the
+ *  next message, such as the final reply after a 100 Continue.
+ *  A reply to a HEAD request needs http_parser_parse_response_to_head(). */
 http_parser_err_t http_parser_parse_response(const char *data, size_t len,
+                               http_parser_response_t *resp);
+
+/** Parse the reply to a HEAD request. It ends at the blank line whatever its
+ *  status or headers say, so body is NULL and body_len 0, and Content-Length
+ *  stays readable through http_parser_get_content_length(). The parser cannot
+ *  see which request a reply answers: the caller must say so by calling this. */
+http_parser_err_t http_parser_parse_response_to_head(const char *data, size_t len,
                                http_parser_response_t *resp);
 
 /** Find a header by name (case-insensitive) and return a pointer to it. */

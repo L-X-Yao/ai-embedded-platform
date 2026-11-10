@@ -181,8 +181,16 @@ http_parser_err_t http_parser_parse_request(const char *data, size_t len,
     return HTTP_PARSER_OK;
 }
 
-http_parser_err_t http_parser_parse_response(const char *data, size_t len,
-                               http_parser_response_t *resp)
+/* RFC 7230 section 3.3.3 item 1: these replies end at the blank line whatever
+ * their header fields say, so more data can never complete them. */
+static bool status_has_no_body(int status)
+{
+    return (status >= 100 && status <= 199) || status == 204 || status == 304;
+}
+
+static http_parser_err_t parse_response(const char *data, size_t len,
+                                        http_parser_response_t *resp,
+                                        bool to_head)
 {
     if (!data || !resp)
         return HTTP_PARSER_ERR_PARAM;
@@ -228,9 +236,12 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
 
     size_t header_end = (size_t)(body_start - data);
     int content_length = -1;
-    err = scan_content_length(resp->headers, resp->header_count, &content_length);
-    if (err != HTTP_PARSER_OK)
-        return err;
+    if (!to_head && !status_has_no_body(resp->status_code)) {
+        err = scan_content_length(resp->headers, resp->header_count,
+                                  &content_length);
+        if (err != HTTP_PARSER_OK)
+            return err;
+    }
     if (content_length > 0) {
         if (header_end + (size_t)content_length > len)
             return HTTP_PARSER_ERR_INCOMPLETE;
@@ -245,6 +256,18 @@ http_parser_err_t http_parser_parse_response(const char *data, size_t len,
 
     ENSURE(resp->total_consumed <= len);
     return HTTP_PARSER_OK;
+}
+
+http_parser_err_t http_parser_parse_response(const char *data, size_t len,
+                               http_parser_response_t *resp)
+{
+    return parse_response(data, len, resp, false);
+}
+
+http_parser_err_t http_parser_parse_response_to_head(const char *data, size_t len,
+                               http_parser_response_t *resp)
+{
+    return parse_response(data, len, resp, true);
 }
 
 http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, int count,

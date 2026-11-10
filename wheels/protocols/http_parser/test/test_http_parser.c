@@ -242,6 +242,90 @@ TEST(test_get_content_length_says_invalid_for_bad_values)
     ASSERT_EQ(http_parser_get_content_length(&empty, 1), -1);
 }
 
+/* RFC 7230 3.3.3 item 1: a 1xx, 204 or 304 reply ends at the first blank line
+   "regardless of the header fields present", so no more data can complete it */
+TEST(test_bodiless_status_ends_at_the_blank_line)
+{
+    static const char *const replies[] = {
+        "HTTP/1.1 100 Continue\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 101 Switching Protocols\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 199 Misc\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 204 No Content\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 304 Not Modified\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 304 Not Modified\r\nContent-Length: abc\r\n\r\n",
+    };
+
+    for (size_t i = 0; i < sizeof(replies) / sizeof(replies[0]); i++) {
+        http_parser_response_t resp;
+        ASSERT_EQ(http_parser_parse_response(replies[i], strlen(replies[i]), &resp),
+                  HTTP_PARSER_OK);
+        ASSERT_EQ(resp.body_len, 0U);
+        ASSERT_TRUE(resp.body == NULL);
+        ASSERT_EQ(resp.total_consumed, strlen(replies[i]));
+    }
+}
+
+TEST(test_interim_reply_leaves_the_final_reply_to_parse)
+{
+    const char *data = "HTTP/1.1 100 Continue\r\n\r\n"
+                       "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nhi";
+    http_parser_response_t resp;
+    ASSERT_EQ(http_parser_parse_response(data, strlen(data), &resp), HTTP_PARSER_OK);
+    ASSERT_EQ(resp.status_code, 100);
+    ASSERT_EQ(resp.total_consumed, 25U);
+
+    const char *next = data + resp.total_consumed;
+    ASSERT_EQ(http_parser_parse_response(next, strlen(next), &resp), HTTP_PARSER_OK);
+    ASSERT_EQ(resp.status_code, 200);
+    ASSERT_EQ(resp.body_len, 2U);
+    ASSERT_MEMEQ(resp.body, "hi");
+}
+
+TEST(test_statuses_next_to_the_bodiless_ones_still_wait_for_the_body)
+{
+    static const char *const replies[] = {
+        "HTTP/1.1 099 Low\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 203 Non-Authoritative\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 205 Reset Content\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 303 See Other\r\nContent-Length: 1000\r\n\r\n",
+        "HTTP/1.1 305 Use Proxy\r\nContent-Length: 1000\r\n\r\n",
+    };
+
+    for (size_t i = 0; i < sizeof(replies) / sizeof(replies[0]); i++) {
+        http_parser_response_t resp;
+        ASSERT_EQ(http_parser_parse_response(replies[i], strlen(replies[i]), &resp),
+                  HTTP_PARSER_ERR_INCOMPLETE);
+    }
+}
+
+/* RFC 7230 3.3.3 item 1 again: only the caller knows the request was HEAD */
+TEST(test_reply_to_head_ends_at_the_blank_line)
+{
+    const char *data = "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\n";
+    http_parser_response_t resp;
+    ASSERT_EQ(http_parser_parse_response_to_head(data, strlen(data), &resp),
+              HTTP_PARSER_OK);
+    ASSERT_EQ(resp.status_code, 200);
+    ASSERT_EQ(resp.body_len, 0U);
+    ASSERT_TRUE(resp.body == NULL);
+    ASSERT_EQ(resp.total_consumed, strlen(data));
+    /* The headers still say how long a GET would have been */
+    ASSERT_EQ(http_parser_get_content_length(resp.headers, resp.header_count), 1000);
+}
+
+TEST(test_reply_to_head_needs_its_blank_line)
+{
+    const char *data = "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n";
+    http_parser_response_t resp;
+    ASSERT_EQ(http_parser_parse_response_to_head(data, strlen(data), &resp),
+              HTTP_PARSER_ERR_INCOMPLETE);
+    ASSERT_EQ(http_parser_parse_response_to_head("HTTP/1.1 200 OK", 15, &resp),
+              HTTP_PARSER_ERR_INCOMPLETE);
+    ASSERT_EQ(http_parser_parse_response_to_head("nonsense\r\n\r\n", 12, &resp),
+              HTTP_PARSER_ERR_MALFORMED);
+}
+
 TEST_MAIN("http_parser")
     RUN(test_parse_get_request);
     RUN(test_parse_post_with_body);
@@ -261,4 +345,9 @@ TEST_MAIN("http_parser")
     RUN(test_no_content_length_is_still_no_body);
     RUN(test_trailing_whitespace_is_not_part_of_a_value);
     RUN(test_get_content_length_says_invalid_for_bad_values);
+    RUN(test_bodiless_status_ends_at_the_blank_line);
+    RUN(test_interim_reply_leaves_the_final_reply_to_parse);
+    RUN(test_statuses_next_to_the_bodiless_ones_still_wait_for_the_body);
+    RUN(test_reply_to_head_ends_at_the_blank_line);
+    RUN(test_reply_to_head_needs_its_blank_line);
 TEST_MAIN_END()

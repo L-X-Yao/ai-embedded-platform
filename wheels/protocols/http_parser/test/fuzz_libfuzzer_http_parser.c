@@ -36,6 +36,13 @@ static void parse_both(const char *text, size_t size) {
         if (resp.total_consumed > size) __builtin_trap();
         check_headers(resp.headers, resp.header_count);
     }
+
+    // Parse as the reply to a HEAD request, which never has a body
+    memset(&resp, 0, sizeof(resp));
+    if (http_parser_parse_response_to_head(text, size, &resp) == HTTP_PARSER_OK) {
+        if (resp.total_consumed > size || resp.body_len != 0) __builtin_trap();
+        check_headers(resp.headers, resp.header_count);
+    }
 }
 
 // Exact-size message [start line][value][blank line][body], so ASan sees any

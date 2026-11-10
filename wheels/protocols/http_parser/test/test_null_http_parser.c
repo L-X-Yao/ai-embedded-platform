@@ -31,6 +31,18 @@ TEST(test_http_parser_parse_response_null_resp) {
     ASSERT_TRUE(http_parser_parse_response(_data, 0, NULL) != HTTP_PARSER_OK);
 }
 
+TEST(test_http_parser_parse_response_to_head_null_data) {
+    http_parser_response_t _resp;
+    memset(&_resp, 0, sizeof(_resp));
+    ASSERT_TRUE(http_parser_parse_response_to_head(NULL, 1, &_resp) != HTTP_PARSER_OK);
+}
+
+TEST(test_http_parser_parse_response_to_head_null_resp) {
+    char _data[64];
+    memset(_data, 0, sizeof(_data));
+    ASSERT_TRUE(http_parser_parse_response_to_head(_data, 0, NULL) != HTTP_PARSER_OK);
+}
+
 TEST(test_http_parser_find_header_null_headers) {
     char _name[64];
     memset(_name, 0, sizeof(_name));
@@ -63,6 +75,8 @@ TEST_MAIN("null_param_http_parser") {
     RUN(test_http_parser_parse_request_null_req);
     RUN(test_http_parser_parse_response_null_data);
     RUN(test_http_parser_parse_response_null_resp);
+    RUN(test_http_parser_parse_response_to_head_null_data);
+    RUN(test_http_parser_parse_response_to_head_null_resp);
     RUN(test_http_parser_find_header_null_headers);
     RUN(test_http_parser_find_header_null_name);
     RUN(test_http_parser_find_header_null_out);
