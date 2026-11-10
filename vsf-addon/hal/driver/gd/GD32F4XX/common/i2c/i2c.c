@@ -53,6 +53,7 @@ typedef struct VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) {
     uint8_t                 *buffer;
     uint16_t                count;
     uint16_t                transferred;
+    bool                    addressed;  // address phase over, data flags are ours
 } VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t);
 
 /*============================ IMPLEMENTATION ================================*/
@@ -178,6 +179,18 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
     i2c_ptr->buffer = buffer_ptr;
     i2c_ptr->count = count;
     i2c_ptr->transferred = 0;
+    // Until the address is out, TBE and BTC still describe the last transfer.
+    // A request with no START carries on from that transfer.
+    i2c_ptr->addressed = !(cmd & (VSF_I2C_CMD_START | VSF_I2C_CMD_RESTART));
+
+    // N=2, user manual 20.3.7 scheme B: POAP goes on before START, so that
+    // clearing ACKEN at ADDSEND takes effect one byte later. POAP stays set until
+    // here: at the end of the transfer STOP is pending, and CTL0 is left alone.
+    if ((count == 2) && (cmd & VSF_I2C_CMD_READ)) {
+        I2C_CTL0(reg) |= I2C_CTL0_POAP;
+    } else {
+        I2C_CTL0(reg) &= ~I2C_CTL0_POAP;
+    }
 
     if (count == 1 && (cmd & VSF_I2C_CMD_READ)) {
         I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
@@ -185,7 +198,13 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
         I2C_CTL0(reg) |= I2C_CTL0_ACKEN;
     }
 
-    I2C_CTL1(reg) |= I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE;
+    // N=2 ends on BTC alone: with BUFIE on, RBNE would take the first byte
+    // early, BTC would never set, and STOP would never be sent.
+    if ((count == 2) && (cmd & VSF_I2C_CMD_READ)) {
+        I2C_CTL1(reg) = (I2C_CTL1(reg) & ~I2C_CTL1_BUFIE) | I2C_CTL1_EVIE | I2C_CTL1_ERRIE;
+    } else {
+        I2C_CTL1(reg) |= I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE;
+    }
 
     if (cmd & (VSF_I2C_CMD_START | VSF_I2C_CMD_RESTART)) {
         I2C_CTL0(reg) |= I2C_CTL0_START;
@@ -284,10 +303,11 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
     // EV6: address sent, clear by reading STAT0 then STAT1
     if (stat0 & I2C_STAT0_ADDSEND) {
         if ((i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->count == 2)) {
-            // I2C v1 2-byte RX: disable ACK before clearing ADDR
+            // N=2: with POAP set this NACKs the second byte, not the first
             I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
         }
         (void)I2C_STAT1(reg);
+        i2c_ptr->addressed = true;
         if ((i2c_ptr->cmd & VSF_I2C_CMD_READ) && (i2c_ptr->count == 1)) {
             I2C_CTL0(reg) &= ~I2C_CTL0_ACKEN;
             if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
@@ -297,9 +317,17 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
         return;
     }
 
+    // BTC and TBE from the last transfer stay set until START is on the bus
+    if (!i2c_ptr->addressed) {
+        return;
+    }
+
     if (i2c_ptr->cmd & VSF_I2C_CMD_READ) {
-        // 2-byte RX: wait for BTC (both bytes received), then read both
-        if (i2c_ptr->count == 2 && (stat0 & I2C_STAT0_BTC)) {
+        // N=2: wait for BTC (both bytes in), set STOP, then read DATA twice
+        if (i2c_ptr->count == 2) {
+            if (!(stat0 & I2C_STAT0_BTC)) {
+                return;
+            }
             if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
                 I2C_CTL0(reg) |= I2C_CTL0_STOP;
             }
