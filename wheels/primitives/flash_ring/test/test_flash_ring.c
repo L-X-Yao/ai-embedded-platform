@@ -1009,6 +1009,70 @@ TEST(test_failed_program_that_did_nothing_keeps_the_slot)
     ASSERT_EQ(0u, flash_ring_count(&ring));
 }
 
+/*
+ * The erase-on-entry code cleared a sector on entering it and left read_idx
+ * alone, so it can leave read_idx ahead of write_idx in the blank tail.
+ */
+TEST(test_old_ring_with_read_idx_in_the_blank_tail)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    memset(&g_flash[MOCK_DATA_ADDR], 0x5C, MOCK_TOTAL_SLOTS * MOCK_SLOT_SIZE);
+    uint32_t w = MOCK_SLOTS_PER_SECTOR + 5u;
+    memset(&g_flash[MOCK_DATA_ADDR + w * MOCK_SLOT_SIZE], 0xFF,
+           (2u * MOCK_SLOTS_PER_SECTOR - w) * MOCK_SLOT_SIZE);
+    ring.write_idx = w;
+    ring.read_idx = w + 1u;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(w, after.write_idx);
+    ASSERT_EQ(2u * MOCK_SLOTS_PER_SECTOR, after.read_idx);
+
+    uint8_t buf[MOCK_SLOT_SIZE];
+    ASSERT_EQ(FLASH_RING_OK,
+              flash_ring_peek(&after, after.read_idx, buf, MOCK_SLOT_SIZE));
+    ASSERT_EQ(0x5C, buf[0]);
+}
+
+/*
+ * With no blank slot and a stored write_idx part way through a sector, the
+ * rest of that sector was written after the header, so those are the newest
+ * frames: the sector to give up is the next one. The header must then say so,
+ * or the next reset walks from a position that no longer exists.
+ */
+TEST(test_old_full_ring_keeps_the_newest_frames)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    memset(&g_flash[MOCK_DATA_ADDR], 0x5C, MOCK_TOTAL_SLOTS * MOCK_SLOT_SIZE);
+    ring.write_idx = MOCK_TOTAL_SLOTS - 1u;
+    ring.read_idx = 0;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_flush_header(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(0u, after.write_idx);
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, after.read_idx);
+    ASSERT_EQ(0x5C, g_flash[MOCK_DATA_ADDR + (MOCK_TOTAL_SLOTS - 1u) * MOCK_SLOT_SIZE]);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x01};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&after, frame, MOCK_SLOT_SIZE));
+
+    flash_ring_t again;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&again, &g_mock_io, &cfg));
+    ASSERT_EQ(1u, again.write_idx);
+    ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, again.read_idx);
+    ASSERT_EQ(0, g_overprogram);
+}
+
 /* An all-0xFF frame looks blank on its own. Frames after it must still count. */
 TEST(test_reset_walks_past_an_all_ff_frame)
 {
@@ -1062,8 +1126,8 @@ TEST(test_reset_of_a_ring_with_no_blank_slot)
     ASSERT_EQ(0, g_overprogram);
 }
 
-/* The same with write_idx part way through a sector, which only damage can do:
- * write_idx goes back to the start of the sector init has to erase. */
+/* The same with an empty ring and write_idx part way through a sector: the
+ * next sector is the one to erase, and the ring stays empty. */
 TEST(test_reset_of_a_ring_with_no_blank_slot_mid_sector)
 {
     flash_ring_t ring;
@@ -1078,7 +1142,7 @@ TEST(test_reset_of_a_ring_with_no_blank_slot_mid_sector)
 
     flash_ring_t after;
     ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
-    ASSERT_EQ(2u * MOCK_SLOTS_PER_SECTOR, after.write_idx);
+    ASSERT_EQ(3u * MOCK_SLOTS_PER_SECTOR, after.write_idx);
     ASSERT_EQ(0u, flash_ring_count(&after));
 
     uint8_t frame[MOCK_SLOT_SIZE];
@@ -1208,6 +1272,8 @@ TEST_MAIN("flash_ring")
     RUN(test_flush_stays_due_at_the_largest_interval);
     RUN(test_failed_program_that_landed_is_left_behind);
     RUN(test_failed_program_that_did_nothing_keeps_the_slot);
+    RUN(test_old_ring_with_read_idx_in_the_blank_tail);
+    RUN(test_old_full_ring_keeps_the_newest_frames);
     RUN(test_reset_walks_past_an_all_ff_frame);
     RUN(test_reset_of_a_ring_with_no_blank_slot);
     RUN(test_reset_of_a_ring_with_no_blank_slot_mid_sector);

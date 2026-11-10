@@ -191,24 +191,35 @@ static flash_ring_err_t recover_write_pos(flash_ring_t *ring)
 
     if (!blank) {
         /*
-         * No blank tail anywhere, which this code never leaves. A ring written
-         * by the erase-on-entry version can look like this with write_idx on a
-         * sector boundary. Make the blank sector it needs.
+         * No blank tail anywhere, which this code never leaves, but a full ring
+         * from the erase-on-entry version can. That code erased a sector on
+         * entering it, so a stored write_idx on a sector start sits on the
+         * oldest frames, and one part way through a sector means the rest of
+         * that sector holds the newest frames and the next one is the oldest.
+         * Make the blank sector the writer needs, and record it.
          */
-        uint32_t sps   = slots_per_sector(ring);
-        uint32_t start = (stored_write / sps) * sps;
+        uint32_t start = stored_write % slots_per_sector(ring) == 0u
+                       ? stored_write : next_sector_start(ring, stored_write);
 
         ring->write_idx   = start;
         ring->frame_count = stored_count;
         ring->read_idx    = stored_read;
-        if (same_sector(ring, stored_read, start)) {
-            ring->read_idx = (stored_read == stored_write)
-                           ? start : next_sector_start(ring, start);
+        if (stored_read == stored_write) {
+            ring->read_idx = start;
+        } else if (same_sector(ring, stored_read, start)) {
+            ring->read_idx = next_sector_start(ring, start);
         }
         if (io->erase_sector(io->ctx, slot_addr(ring, start)) != 0) {
             return FLASH_RING_ERR_IO;
         }
-        return FLASH_RING_OK;
+        return flush_header(ring);
+    }
+
+    /* The same version could leave read_idx ahead of the writer in a sector it
+     * had just erased: nothing is left there to read. */
+    if (same_sector(ring, ring->read_idx, ring->write_idx) &&
+        ring->read_idx > ring->write_idx) {
+        ring->read_idx = next_sector_start(ring, ring->write_idx);
     }
 
     /*
