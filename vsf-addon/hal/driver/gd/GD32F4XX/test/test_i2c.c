@@ -30,6 +30,7 @@ vsf_err_t vsf_hw_i2c_init(vsf_hw_i2c_t *p, vsf_i2c_cfg_t *c);
 vsf_err_t vsf_hw_i2c_master_request(vsf_hw_i2c_t *p, uint16_t addr, vsf_i2c_cmd_t cmd,
                                     uint_fast16_t count, uint8_t *buf);
 uint_fast16_t vsf_hw_i2c_master_get_transferred_count(vsf_hw_i2c_t *p);
+vsf_i2c_status_t vsf_hw_i2c_status(vsf_hw_i2c_t *p);
 void I2C0_EV_IRQHandler(void);
 void I2C0_ER_IRQHandler(void);
 
@@ -539,6 +540,95 @@ static void test_write(void)
     CHECK(last_mask == DONE_OK);
 }
 
+/* H1-22: requests the interrupt could never finish must not reach the bus */
+static void check_refused(const char *name, uint16_t addr, vsf_i2c_cmd_t cmd,
+                          uint32_t count, uint8_t *b, vsf_err_t want)
+{
+    printf("H1-22 %s\n", name);
+    bus_reset(1);
+    CHECK(vsf_hw_i2c_master_request(I2C, addr, cmd, (uint_fast16_t)count, b) == want);
+    run_bus();
+    CHECK(!storm);
+    CHECK(wire[0] == 0);
+    CHECK(starts == 0);
+    CHECK(callbacks == 0);
+    CHECK(!(CTL0 & I2C_CTL0_START));
+}
+
+static void test_refused(void)
+{
+    static uint8_t b[4];
+
+    check_refused("write of 0 bytes", 0x50, WR, 0, b, VSF_ERR_INVALID_PARAMETER);
+    check_refused("read of 0 bytes", 0x50, RD, 0, b, VSF_ERR_INVALID_PARAMETER);
+    check_refused("read into NULL", 0x50, RD, 4, NULL, VSF_ERR_INVALID_PTR);
+    check_refused("write from NULL", 0x50, WR, 4, NULL, VSF_ERR_INVALID_PTR);
+    check_refused("count too big for the counter", 0x50, RD, 0x10000, b, VSF_ERR_INVALID_PARAMETER);
+    check_refused("7-bit address above 0x7F", 0x80, RD, 1, b, VSF_ERR_INVALID_PARAMETER);
+    check_refused("10-bit address above 0x3FF", 0x400, RD | VSF_I2C_CMD_10_BITS, 1, b,
+                  VSF_ERR_INVALID_PARAMETER);
+
+    printf("H1-22 no handler: no interrupt would ever serve SBSEND\n");
+    bus_reset(0);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, RD, 1, b) == VSF_ERR_NOT_AVAILABLE);
+    run_bus();
+    CHECK(wire[0] == 0);
+}
+
+/* H1-22: a request on top of a running one would rewrite its state */
+static void test_busy(void)
+{
+    static uint8_t b[4], c[4];
+
+    printf("H1-22 a second request while one runs\n");
+    bus_reset(1);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, RD, 3, b) == VSF_ERR_NONE);
+    CHECK(vsf_hw_i2c_status(I2C).is_busy);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x51, RD, 1, c) == VSF_ERR_BUSY);
+    run_bus();
+    CHECK(strcmp(wire, " S addr=A1 rx=A1+ack rx=A2+ack rx=A3+NACK P") == 0);
+    CHECK(callbacks == 1);
+    CHECK(!vsf_hw_i2c_status(I2C).is_busy);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, WR, 1, b) == VSF_ERR_NONE);
+    run_bus();
+    CHECK(callbacks == 2);
+
+    printf("H1-22 after an address NACK the next request goes through\n");
+    bus_reset(1);
+    slave_absent = 1;
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, WR, 1, b) == VSF_ERR_NONE);
+    run_bus();
+    CHECK(callbacks == 1);
+    CHECK(last_mask == VSF_I2C_IRQ_MASK_MASTER_ADDRESS_NACK);
+    CHECK(stops == 1);
+    slave_absent = 0;
+    wire[0] = 0;
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, WR, 1, b) == VSF_ERR_NONE);
+    run_bus();
+    CHECK(callbacks == 2);
+    CHECK(last_mask == DONE_OK);
+}
+
+/* a write that carries on with no START, as vsf_i2c_regacc does */
+static void test_continue_write(void)
+{
+    static uint8_t reg = 0x10, data = 0x55;
+
+    printf("register write: the data follows with no START\n");
+    bus_reset(1);
+    chain.armed = 1;
+    chain.addr = 0x50;
+    chain.cmd = VSF_I2C_CMD_WRITE | VSF_I2C_CMD_STOP;
+    chain.count = 1;
+    chain.buf = &data;
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, VSF_I2C_CMD_START | VSF_I2C_CMD_WRITE, 1, &reg) == VSF_ERR_NONE);
+    run_bus();
+    CHECK(chain_ret == VSF_ERR_NONE);
+    CHECK(strcmp(wire, " S addr=A0 tx=10 tx=55 P") == 0);
+    CHECK(callbacks == 2);
+    CHECK(last_mask == DONE_OK);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
@@ -551,6 +641,9 @@ int main(void)
     }
     test_after_n2();
     test_write();
+    test_refused();
+    test_busy();
+    test_continue_write();
     test_write_10bit();
     for (int n = 1; n <= 4; n++) {
         check_read_10bit(n);

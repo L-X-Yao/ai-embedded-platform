@@ -55,6 +55,7 @@ typedef struct VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) {
     uint16_t                transferred;
     bool                    addressed;  // address phase over, data flags are ours
     bool                    restarted;  // 10-bit read: past the second START
+    volatile bool           busy;       // a request is running
 } VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t);
 
 /*============================ IMPLEMENTATION ================================*/
@@ -160,7 +161,7 @@ vsf_i2c_status_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_status)(
 ) {
     VSF_HAL_ASSERT(NULL != i2c_ptr);
     return (vsf_i2c_status_t) {
-        .is_busy = !!(I2C_STAT1(i2c_ptr->reg) & I2C_STAT1_I2CBSY),
+        .is_busy = i2c_ptr->busy || !!(I2C_STAT1(i2c_ptr->reg) & I2C_STAT1_I2CBSY),
     };
 }
 
@@ -173,8 +174,27 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
 ) {
     VSF_HAL_ASSERT(NULL != i2c_ptr);
 
+    // Each of these would leave the event interrupt with nothing to do and no
+    // way out: there is no address probe, a request moves at least one byte.
+    if (    (0 == count) || (count > 0xFFFFU)
+        ||  (address > ((cmd & VSF_I2C_CMD_10_BITS) ? 0x3FFU : 0x7FU))) {
+        return VSF_ERR_INVALID_PARAMETER;
+    }
+    if (NULL == buffer_ptr) {
+        return VSF_ERR_INVALID_PTR;
+    }
+    // Every step after START is taken in the interrupt, and with no handler the
+    // NVIC lines are off.
+    if (NULL == i2c_ptr->isr.handler_fn) {
+        return VSF_ERR_NOT_AVAILABLE;
+    }
+    if (i2c_ptr->busy) {
+        return VSF_ERR_BUSY;
+    }
+
     uint32_t reg = i2c_ptr->reg;
 
+    i2c_ptr->busy = true;
     i2c_ptr->addr = address;
     i2c_ptr->cmd = cmd;
     i2c_ptr->buffer = buffer_ptr;
@@ -273,6 +293,20 @@ vsf_i2c_capability_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_capability)(
     };
 }
 
+// The callback may start the next request, so everything is settled before it.
+static void __i2c_transfer_end(
+    VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr,
+    vsf_i2c_irq_mask_t irq_mask
+) {
+    I2C_CTL1(i2c_ptr->reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
+    i2c_ptr->busy = false;
+
+    vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
+    if (isr_ptr->handler_fn != NULL) {
+        isr_ptr->handler_fn(isr_ptr->target_ptr, (vsf_i2c_t *)i2c_ptr, irq_mask);
+    }
+}
+
 /*
  * GD32F4XX I2C event IRQ handler (EV5/EV6/EV7/EV8/EV8_2 state machine).
  *
@@ -351,23 +385,15 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
             if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
                 I2C_CTL0(reg) |= I2C_CTL0_STOP;
             }
-            if (i2c_ptr->buffer) {
-                i2c_ptr->buffer[0] = (uint8_t)I2C_DATA(reg);
-                i2c_ptr->buffer[1] = (uint8_t)I2C_DATA(reg);
-            }
+            i2c_ptr->buffer[0] = (uint8_t)I2C_DATA(reg);
+            i2c_ptr->buffer[1] = (uint8_t)I2C_DATA(reg);
             i2c_ptr->transferred = 2;
-            I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
-            vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
-            if (isr_ptr->handler_fn != NULL) {
-                isr_ptr->handler_fn(isr_ptr->target_ptr,
-                    (vsf_i2c_t *)i2c_ptr,
-                    VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
-            }
+            __i2c_transfer_end(i2c_ptr, VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
             return;
         }
         // EV7: RBNE — receive data (N=1 or N>=3)
         if (stat0 & I2C_STAT0_RBNE) {
-            if (i2c_ptr->buffer && i2c_ptr->transferred < i2c_ptr->count) {
+            if (i2c_ptr->transferred < i2c_ptr->count) {
                 i2c_ptr->buffer[i2c_ptr->transferred] = (uint8_t)I2C_DATA(reg);
                 i2c_ptr->transferred++;
             }
@@ -379,13 +405,7 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
                 }
             }
             if (i2c_ptr->transferred >= i2c_ptr->count) {
-                I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
-                vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
-                if (isr_ptr->handler_fn != NULL) {
-                    isr_ptr->handler_fn(isr_ptr->target_ptr,
-                        (vsf_i2c_t *)i2c_ptr,
-                        VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
-                }
+                __i2c_transfer_end(i2c_ptr, VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
             }
         }
     } else {
@@ -401,13 +421,7 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_ev_irqhandler)(
             if (i2c_ptr->cmd & VSF_I2C_CMD_STOP) {
                 I2C_CTL0(reg) |= I2C_CTL0_STOP;
             }
-            I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
-            vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
-            if (isr_ptr->handler_fn != NULL) {
-                isr_ptr->handler_fn(isr_ptr->target_ptr,
-                    (vsf_i2c_t *)i2c_ptr,
-                    VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
-            }
+            __i2c_transfer_end(i2c_ptr, VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE);
         }
     }
 }
@@ -437,13 +451,10 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_er_irqhandler)(
         I2C_STAT0(reg) &= ~I2C_STAT0_OUERR;
     }
 
-    I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
-
     if (irq_mask != 0) {
-        vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;
-        if (isr_ptr->handler_fn != NULL) {
-            isr_ptr->handler_fn(isr_ptr->target_ptr, (vsf_i2c_t *)i2c_ptr, irq_mask);
-        }
+        __i2c_transfer_end(i2c_ptr, irq_mask);
+    } else {
+        I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
     }
 }
 
