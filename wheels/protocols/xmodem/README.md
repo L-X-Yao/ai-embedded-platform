@@ -40,8 +40,10 @@ typedef struct {
 
 /* Lifecycle */
 xmodem_err_t   xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc);
+xmodem_err_t   xmodem_enable_line_idle(xmodem_t *xm);  /* before start */
 xmodem_err_t   xmodem_start(xmodem_t *xm);       /* sends NAK or 'C' */
 xmodem_err_t   xmodem_feed(xmodem_t *xm, uint8_t byte);
+xmodem_err_t   xmodem_line_idle(xmodem_t *xm);   /* the line went quiet */
 xmodem_state_t xmodem_get_state(const xmodem_t *xm);
 uint32_t       xmodem_get_total_bytes(const xmodem_t *xm);
 void           xmodem_cancel(xmodem_t *xm);       /* sends CAN x2 */
@@ -65,6 +67,27 @@ while (xmodem_get_state(&xm) == XMODEM_STATE_RECEIVING ||
 }
 ```
 
+### With a timer
+
+A caller that can tell when the line has been quiet for a second should say
+so. This is what recovers from a lost byte: ymodem.txt 7.3.2 and 7.4 have a
+receiver wait for the line to clear before it NAKs. The wheel owns no timer,
+so the caller reports the quiet line and counts how long is too long.
+
+```c
+xmodem_init(&xm, &io, true);
+xmodem_enable_line_idle(&xm);
+xmodem_start(&xm);
+
+for (;;) {
+    int c = uart_getc_timeout_ms(1000);   /* -1 after a quiet second */
+    xmodem_err_t err = (c < 0) ? xmodem_line_idle(&xm)
+                               : xmodem_feed(&xm, (uint8_t)c);
+    if (err == XMODEM_DONE) break;        /* comes from xmodem_line_idle() */
+    if (err < 0) { /* handle error */ }
+}
+```
+
 ## Configuration (compile-time)
 
 No compile-time defines. Block size is fixed at 128 bytes per XMODEM spec.
@@ -79,6 +102,33 @@ No compile-time defines. Block size is fixed at 128 bytes per XMODEM spec.
 - Receiver-only. Sender mode is not implemented.
 - No XMODEM-1K (STX / 1024-byte blocks) support.
 - Timeout detection is the caller's responsibility (the wheel is passive).
+- Without `xmodem_enable_line_idle()`, a stray 0x04 between two clean blocks
+  still reads as EOT, because plain XMODEM has one EOT and nothing else to
+  check it against. A lost byte may also fail the transfer: a 0x01 in the data
+  can lock a false frame at the same place on every resend until the sender
+  gives up. It cannot end in `XMODEM_DONE` with the file cut short.
+- A noise byte just before the last EOT also makes the receiver refuse that
+  EOT without a timer, because only a good block or a quiet line clears it.
+
+## Migration
+
+### Quiet line and EOT checks (2026-11)
+
+**What changed.** New calls `xmodem_enable_line_idle()` and
+`xmodem_line_idle()`. `xmodem_feed()` now treats a bad block, or a byte that
+cannot start one, as lost framing, and refuses EOT until a block passes its
+checks. When the next block number is 4, the first EOT gets a NAK and the
+sender's repeat gets the ACK, because block 4 with its SOH lost starts with the
+same byte. `xmodem_t` is opaque storage and grew by three `bool` fields.
+
+**What a caller has to do.** Nothing, to keep building and running. To recover
+from a lost byte, follow "With a timer" above. `XMODEM_DONE` then comes from
+`xmodem_line_idle()`, never from `xmodem_feed()`, so check that return value.
+
+**If you do nothing.** Transfers run as before and a lost byte can no longer
+report a short file as complete. A file of exactly 3 blocks needs the sender to
+repeat its EOT, as ymodem.txt 7.3.3 requires it to. The limits under "Known
+issues" stay.
 
 ## How to test
 
@@ -90,7 +140,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 19 tests, all passing
+- Unit tests (sim): 37 tests, all passing, including the loss of each byte of a
+  transfer in turn
 - HIL: N/A
 
 ## API convention deviations

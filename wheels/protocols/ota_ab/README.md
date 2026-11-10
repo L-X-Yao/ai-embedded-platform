@@ -40,6 +40,7 @@ static void app_example(void) {
         .params_addr    = 0x080E0000,
         .params_size    = 4096,
         .max_boot_count = 3,
+        .params_addr2   = 0x080E1000,  /* its own erase unit; see Migration */
     };
     const ota_ab_flash_t flash_hal = {
         .erase = my_erase, .write = my_write, .read = my_read, .ctx = NULL
@@ -66,10 +67,22 @@ static void app_example(void) {
 
 ## Known issues
 
-- Params region must be independently erasable (typically one flash sector).
+- Each params region must be independently erasable (typically one flash sector).
+- With `params_addr2 = 0` there is one copy, and power lost between its erase and its write loses the record: the next init falls back to slot 0 with no trial state, and on an update to slot A that boots an unverified image with no rollback. Set `params_addr2` to close this.
+- A power cut during a write loses that one write, not the record. If it was `mark_pending`, the update has to be marked again. If it was a boot of a trial, the count of that boot is lost, so rollback comes one boot later.
 - CRC32 is not cryptographic — does not protect against malicious firmware. Add signature verification at the application layer.
-- No built-in flash wear leveling — params are erased+rewritten on every state transition.
+- No built-in flash wear leveling — params are erased+rewritten on every state transition. Two copies halve the wear on each region.
 - Boot count rollback is based on boot_event calls, not wall time. If bootloader doesn't call boot_event, rollback won't trigger.
+
+## Migration
+
+### Second params copy (2026-11)
+
+**What changed.** New layout field `params_addr2`. `ota_ab_init` refuses a value that overlaps the first region with `OTA_AB_ERR_PARAM`. The `reserved` byte of `ota_ab_params_t` is now `seq`, at the same offset, so the record keeps its size and format. `ota_ab_t` is opaque storage and grew by two small fields.
+
+**What a caller has to do.** To survive a power cut, set `params_addr2` to a second region in its own erase unit, `params_size` long. A device already in the field needs no flash migration: the existing record loads as sequence 0 and the first write goes to the new region, leaving it intact. Anything that named `reserved` must say `seq`.
+
+**If you do nothing.** With `params_addr2` left 0 the bytes on flash and the behaviour stay exactly as they were, including the power-cut window under "Known issues".
 
 ## How to test
 
@@ -79,11 +92,11 @@ cmake -GNinja -S . -B build && cmake --build build
 ./build/test_ota_ab
 ```
 
-78 assertions across 24 test cases: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback), double-confirm no-op, flash read fail on init, flash erase fail on pending, corrupted CRC recovery, persistence across re-init, mark pending overwrite, invalid active_slot recovery, exact boot_count boundary (rollback at max+1), target_slot bidirectional, CRC32 IEEE 802.3 known vector.
+45 test cases, among them a power cut in every erase and write of two full update cycles, at every byte: fresh init, saved params restore, mark pending, size validation (0 and oversized), slot switching on boot, confirm clears trial, rollback after max boots, idle boot noop, slot addresses, CRC32 test vector, null safety, flash write failure, full OTA cycle (A→B→confirm, B→A→rollback), double-confirm no-op, flash read fail on init, flash erase fail on pending, corrupted CRC recovery, persistence across re-init, mark pending overwrite, invalid active_slot recovery, exact boot_count boundary (rollback at max+1), target_slot bidirectional, CRC32 IEEE 802.3 known vector.
 
 ## Test status
 
-- Unit tests (sim): PASS (24 C tests, 78 assertions)
+- Unit tests (sim): PASS (45 C tests)
 - HIL: N/A
 
 ## API convention deviations
