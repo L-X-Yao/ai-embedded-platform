@@ -67,7 +67,7 @@ int soft_timer_create(soft_timer_mgr_t *mgr, uint32_t period_ticks,
     t->callback = cb;
     t->user_ctx = user_ctx;
     t->mode = mode;
-    t->active = false;
+    t->active = 0U;
 
     ENSURE(id >= 0 && (size_t)id < SOFT_TIMER_MAX);
     INVARIANT(mgr->count <= SOFT_TIMER_MAX);
@@ -80,6 +80,10 @@ soft_timer_err_t soft_timer_destroy(soft_timer_mgr_t *mgr, int id)
     {
         return SOFT_TIMER_ERR_PARAM;
     }
+    /* A tick that lands inside the memset must already see the timer as
+     * inactive: callback sits before active, and a tick would call NULL. */
+    mgr->timers[id].active = 0U;
+    SOFT_TIMER_BARRIER();
     memset(&mgr->timers[id], 0, sizeof(soft_timer_entry_t));
     return SOFT_TIMER_OK;
 }
@@ -96,7 +100,8 @@ soft_timer_err_t soft_timer_start(soft_timer_mgr_t *mgr, int id)
     {
         mgr->timers[id].remaining = mgr->timers[id].period;
     }
-    mgr->timers[id].active = true;
+    SOFT_TIMER_BARRIER(); /* the fields are in place before a tick can use them */
+    mgr->timers[id].active = 1U;
     return SOFT_TIMER_OK;
 }
 
@@ -106,7 +111,7 @@ soft_timer_err_t soft_timer_stop(soft_timer_mgr_t *mgr, int id)
     {
         return SOFT_TIMER_ERR_PARAM;
     }
-    mgr->timers[id].active = false;
+    mgr->timers[id].active = 0U;
     return SOFT_TIMER_OK;
 }
 
@@ -126,7 +131,7 @@ bool soft_timer_is_active(const soft_timer_mgr_t *mgr, int id)
     {
         return false;
     }
-    return mgr->timers[id].active;
+    return mgr->timers[id].active != 0U;
 }
 
 void soft_timer_tick(soft_timer_mgr_t *mgr)
@@ -147,12 +152,20 @@ void soft_timer_tick(soft_timer_mgr_t *mgr)
             continue;
         }
 
-        if (t->remaining > 0)
+        SOFT_TIMER_BARRIER(); /* read the fields after active */
+
+        uint32_t left = t->remaining;
+        if (left == 0U)
         {
-            t->remaining--;
+            /* Only a start beside this tick leaves this: it read remaining
+             * just before a tick fired the one-shot, so it is a re-arm. */
+            t->remaining = t->period;
+            continue;
         }
 
-        if (t->remaining == 0)
+        left--;
+        t->remaining = left;
+        if (left == 0U)
         {
             /* Settle the timer first: the callback may re-arm, stop or
              * destroy it, and nothing after the call may undo that. */
@@ -162,7 +175,7 @@ void soft_timer_tick(soft_timer_mgr_t *mgr)
             }
             else
             {
-                t->active = false;
+                t->active = 0U;
             }
 
             t->callback(t->user_ctx);

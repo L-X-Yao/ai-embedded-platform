@@ -397,6 +397,26 @@ TEST(test_start_keeps_remaining_after_stop)
     ASSERT_EQ(cb_count, 1);
 }
 
+/* What a start leaves if it read remaining just before a tick fired the
+ * one-shot: active with nothing left. It asked for a re-arm, not a second
+ * firing on the next tick. */
+TEST(test_start_that_raced_the_expiry_gets_a_full_period)
+{
+    setup();
+    int id = soft_timer_create(&mgr, 3, SOFT_TIMER_ONE_SHOT, test_callback, NULL);
+    ASSERT_EQ(soft_timer_start(&mgr, id), SOFT_TIMER_OK);
+    mgr.timers[id].remaining = 0;
+
+    for (int i = 0; i < 3; i++) {
+        soft_timer_tick(&mgr);
+        ASSERT_EQ(cb_count, 0);
+        ASSERT_TRUE(soft_timer_is_active(&mgr, id));
+    }
+    soft_timer_tick(&mgr);
+    ASSERT_EQ(cb_count, 1);
+    ASSERT_TRUE(!soft_timer_is_active(&mgr, id));
+}
+
 TEST_MAIN("soft_timer")
     RUN(test_init);
     RUN(test_null_safety);
@@ -421,5 +441,6 @@ TEST_MAIN("soft_timer")
     RUN(test_restart_fired_one_shot);
     RUN(test_one_shot_restarts_from_callback);
     RUN(test_start_keeps_remaining_after_stop);
+    RUN(test_start_that_raced_the_expiry_gets_a_full_period);
 TEST_MAIN_END()
 
