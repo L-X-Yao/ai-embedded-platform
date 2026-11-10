@@ -19,6 +19,8 @@ typedef struct vsf_hw_usart_t vsf_hw_usart_t;
 extern vsf_hw_usart_t vsf_hw_usart0;
 vsf_err_t vsf_hw_usart_init(vsf_hw_usart_t *u, vsf_usart_cfg_t *c);
 void vsf_hw_usart_irq_enable(vsf_hw_usart_t *u, vsf_usart_irq_mask_t m);
+uint_fast32_t vsf_hw_usart_rxfifo_read(vsf_hw_usart_t *u, void *b, uint_fast16_t n);
+uint_fast32_t vsf_hw_usart_txfifo_write(vsf_hw_usart_t *u, void *b, uint_fast16_t n);
 void USART0_IRQHandler(void);
 
 static uint32_t regs[0x90 / 4];
@@ -31,6 +33,33 @@ static int open_off = -1, st0_read;
 static uint16_t rxdata;
 static int callbacks;
 static uint32_t last_mask;
+static uint16_t tx_frames[8];           /* every bit between start and stop */
+static int tx_bits[8], tx_count;
+
+static int ones(uint32_t v)
+{
+    int n = 0;
+    for (; v != 0; v >>= 1) {
+        n += (int)(v & 1);
+    }
+    return n;
+}
+
+/* Section 19.3.1 and 19.4.2: with PCEN the last bit of the frame is parity. */
+static void tx_frame(uint16_t v)
+{
+    int bits = (CTL0 & USART_CTL0_WL) ? 9 : 8;
+    uint16_t frame = v & (uint16_t)((1U << bits) - 1U);
+    if (CTL0 & USART_CTL0_PCEN) {
+        uint16_t data = frame & (uint16_t)((1U << (bits - 1)) - 1U);
+        int odd = !!(CTL0 & USART_CTL0_PM);
+        frame = data | (uint16_t)(((unsigned)(ones(data) & 1) ^ (unsigned)odd) << (bits - 1));
+    }
+    if (tx_count < 8) {
+        tx_frames[tx_count] = frame;
+        tx_bits[tx_count++] = bits;
+    }
+}
 
 static void settle(void)
 {
@@ -46,6 +75,8 @@ static void settle(void)
             if (st0_read) {
                 st0 &= ~READ_CLEARED;
             }
+        } else {
+            tx_frame((uint16_t)cell);
         }
         st0_read = 0;
     }
@@ -103,6 +134,7 @@ static vsf_err_t reset_and_init(uint32_t mode, uint32_t baud)
     open_off = -1;
     st0_read = 0;
     rise_during_write = 0;
+    tx_count = 0;
     callbacks = 0;
     last_mask = 0;
     host_asserts = 0;
@@ -135,9 +167,66 @@ static void test_cts(void)
     CHECK(st0 & USART_STAT0_RBNE);
 }
 
+/* H1-8: 8 data bits plus parity is 9 bits on the wire, so WL has to be 1 */
+static void check_parity(uint32_t parity, int odd)
+{
+    static uint8_t out[2] = { 0xFF, 0x80 };
+
+    printf("H1-8 8 data bits, %s parity\n", odd ? "odd" : "even");
+    CHECK(reset_and_init(VSF_USART_TX_ENABLE | VSF_USART_RX_ENABLE
+                         | VSF_USART_8_BIT_LENGTH | parity, 115200) == VSF_ERR_NONE);
+    CHECK(CTL0 & USART_CTL0_PCEN);
+    CHECK(!!(CTL0 & USART_CTL0_PM) == odd);
+    CHECK(vsf_hw_usart_txfifo_write(U, out, 2) == 2);
+    settle();
+    CHECK(tx_count == 2);
+    for (int i = 0; i < 2; i++) {
+        CHECK(tx_bits[i] == 9);
+        CHECK((tx_frames[i] & 0xFF) == out[i]);
+        CHECK(((ones(tx_frames[i]) & 1) != 0) == odd);
+    }
+
+    /* the frame a peer sends: parity in bit 8, which the caller must not see */
+    uint8_t in[3] = { 0, 0x5A, 0x5A };
+    rxdata = 0x1A5;
+    st0 |= USART_STAT0_RBNE;
+    CHECK(vsf_hw_usart_rxfifo_read(U, in, 1) == 1);
+    CHECK(in[0] == 0xA5);
+    CHECK(in[1] == 0x5A);               /* one byte stored, not two */
+}
+
+static void test_parity(void)
+{
+    static uint16_t out9[1] = { 0x1A5 };
+
+    check_parity(VSF_USART_EVEN_PARITY, 0);
+    check_parity(VSF_USART_ODD_PARITY, 1);
+
+    printf("H1-8 9 data bits with parity has no frame format\n");
+    CHECK(reset_and_init(VSF_USART_TX_ENABLE | VSF_USART_9_BIT_LENGTH
+                         | VSF_USART_EVEN_PARITY, 115200) == VSF_ERR_NOT_SUPPORT);
+    CHECK(!(CTL0 & USART_CTL0_PCEN));
+
+    printf("H1-8 no parity keeps 8 and 9 bit frames\n");
+    CHECK(reset_and_init(VSF_USART_TX_ENABLE | VSF_USART_8_BIT_LENGTH, 115200) == VSF_ERR_NONE);
+    CHECK(!(CTL0 & USART_CTL0_WL));
+    CHECK(reset_and_init(VSF_USART_TX_ENABLE | VSF_USART_9_BIT_LENGTH, 115200) == VSF_ERR_NONE);
+    CHECK(CTL0 & USART_CTL0_WL);
+    CHECK(vsf_hw_usart_txfifo_write(U, out9, 1) == 1);
+    settle();
+    CHECK(tx_bits[0] == 9);
+    CHECK(tx_frames[0] == 0x1A5);
+    uint16_t in9 = 0;
+    rxdata = 0x1A5;
+    st0 |= USART_STAT0_RBNE;
+    CHECK(vsf_hw_usart_rxfifo_read(U, &in9, 1) == 1);
+    CHECK(in9 == 0x1A5);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
     test_cts();
+    test_parity();
     return host_summary("usart");
 }

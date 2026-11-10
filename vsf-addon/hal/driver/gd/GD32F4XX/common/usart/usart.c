@@ -51,6 +51,14 @@ typedef struct VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) {
 
 /*============================ IMPLEMENTATION ================================*/
 
+// Elements are 16 bits wide for 9 data bits only. With parity on, WL=1 carries
+// 8 data bits and bit 8 of USART_DATA is the parity bit.
+static bool __usart_is_9bit(uint32_t reg)
+{
+    uint32_t ctl0 = USART_CTL0(reg);
+    return (ctl0 & USART_CTL0_WL) && !(ctl0 & USART_CTL0_PCEN);
+}
+
 vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr,
     vsf_usart_cfg_t *cfg_ptr
@@ -65,6 +73,15 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
     uint32_t over8 = (mode & VSF_USART_OVERSAMPLE_MASK) >> 3;
     mode &= ~VSF_USART_OVERSAMPLE_MASK;
     uint32_t baudval = cfg_ptr->baudrate;
+
+    // PCEN makes the last bit of the frame the parity bit and a frame is 9 bits
+    // at most, so 8 data bits need WL=1 and 9 data bits cannot have parity.
+    if (mode & USART_CTL0_PCEN) {
+        if (mode & VSF_USART_9_BIT_LENGTH) {
+            return VSF_ERR_NOT_SUPPORT;
+        }
+        mode |= VSF_USART_9_BIT_LENGTH;
+    }
 
     vsf_hw_peripheral_enable(usart_ptr->en);
 
@@ -196,7 +213,7 @@ uint_fast32_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_rxfifo_read)(
 
     uint32_t reg = usart_ptr->reg;
     uint_fast32_t cnt = 0;
-    uint32_t is9bit = USART_CTL0(reg) & USART_CTL0_WL;
+    bool is9bit = __usart_is_9bit(reg);
     while (cnt < count) {
         if (USART_STAT0(reg) & USART_STAT0_RBNE) {
             if (is9bit) {
@@ -231,7 +248,7 @@ uint_fast32_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_txfifo_write)(
 
     uint32_t reg = usart_ptr->reg;
     uint_fast32_t cnt = 0;
-    uint32_t is9bit = USART_CTL0(reg) & USART_CTL0_WL;
+    bool is9bit = __usart_is_9bit(reg);
     while (cnt < count) {
         if (USART_STAT0(reg) & USART_STAT0_TBE) {
             if (is9bit) {
