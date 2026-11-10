@@ -43,6 +43,7 @@ state_machine_err_t state_machine_init(state_machine_t *ctx, const sm_cfg_t *cfg
     }
     ctx->cfg = *cfg;
     ctx->current = initial_state;
+    ctx->in_process = false;
     ctx->transition_count = 0;
 
     const sm_state_def_t *def = find_state_def(ctx, initial_state);
@@ -54,13 +55,9 @@ state_machine_err_t state_machine_init(state_machine_t *ctx, const sm_cfg_t *cfg
     return STATE_MACHINE_OK;
 }
 
-state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event)
+/* Find the transition for this event and run it. in_process is set. */
+static state_machine_err_t run_transition(state_machine_t *ctx, sm_event_t event)
 {
-    if (!ctx)
-    {
-        return STATE_MACHINE_ERR_PARAM;
-    }
-
     for (size_t i = 0; i < ctx->cfg.num_transitions; i++)
     {
         const sm_transition_t *tr = &ctx->cfg.transitions[i];
@@ -111,6 +108,26 @@ state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event
     return STATE_MACHINE_ERR_NO_TRANSITION;
 }
 
+state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event)
+{
+    if (!ctx)
+    {
+        return STATE_MACHINE_ERR_PARAM;
+    }
+
+    /* A nested transition would start from a half-finished one: on_exit and
+     * the action run before current moves, and it moves regardless after. */
+    if (ctx->in_process)
+    {
+        return STATE_MACHINE_ERR_BUSY;
+    }
+
+    ctx->in_process = true;
+    state_machine_err_t err = run_transition(ctx, event);
+    ctx->in_process = false;
+    return err;
+}
+
 sm_state_t state_machine_current(const state_machine_t *ctx)
 {
     if (!ctx)
@@ -134,6 +151,10 @@ state_machine_err_t state_machine_reset(state_machine_t *ctx, sm_state_t state)
     if (!ctx)
     {
         return STATE_MACHINE_ERR_PARAM;
+    }
+    if (ctx->in_process)
+    {
+        return STATE_MACHINE_ERR_BUSY;
     }
     ctx->current = state;
     ctx->transition_count = 0;

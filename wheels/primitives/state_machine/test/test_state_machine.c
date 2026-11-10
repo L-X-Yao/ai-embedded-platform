@@ -251,6 +251,227 @@ TEST(test_multiple_cycles)
     ASSERT_EQ(state_machine_transition_count(&sm), 9);
 }
 
+/* --- Calls made from inside a callback --- */
+
+enum { N_A = 0, N_B, N_C, N_STATES };
+enum { NE_GO = 0, NE_NEXT };
+
+static state_machine_t     nest_sm;
+static state_machine_err_t nest_rc;   /* what the call from the callback got */
+static int nest_enter[N_STATES];
+static int nest_exit[N_STATES];
+
+static void post_next(void *ctx)
+{
+    (void)ctx;
+    nest_rc = state_machine_process(&nest_sm, NE_NEXT);
+}
+
+static void reset_to_c(void *ctx)
+{
+    (void)ctx;
+    nest_rc = state_machine_reset(&nest_sm, N_C);
+}
+
+static bool guard_posts_next(void *ctx)
+{
+    post_next(ctx);
+    return true;
+}
+
+static void enter_a(void *ctx) { (void)ctx; nest_enter[N_A]++; }
+static void exit_a(void *ctx)  { (void)ctx; nest_exit[N_A]++; }
+static void enter_b(void *ctx) { (void)ctx; nest_enter[N_B]++; }
+static void exit_b(void *ctx)  { (void)ctx; nest_exit[N_B]++; }
+static void enter_c(void *ctx) { (void)ctx; nest_enter[N_C]++; }
+static void exit_c(void *ctx)  { (void)ctx; nest_exit[N_C]++; }
+static void enter_b_and_post(void *ctx) { enter_b(ctx); post_next(ctx); }
+static void exit_a_and_post(void *ctx)  { exit_a(ctx); post_next(ctx); }
+
+static const sm_state_def_t nest_defs[] = {
+    { N_A, enter_a, exit_a },
+    { N_B, enter_b, exit_b },
+    { N_C, enter_c, exit_c },
+};
+
+static const sm_state_def_t nest_defs_enter_posts[] = {
+    { N_A, enter_a, exit_a },
+    { N_B, enter_b_and_post, exit_b },
+    { N_C, enter_c, exit_c },
+};
+
+static const sm_state_def_t nest_defs_exit_posts[] = {
+    { N_A, enter_a, exit_a_and_post },
+    { N_B, enter_b, exit_b },
+    { N_C, enter_c, exit_c },
+};
+
+static const sm_transition_t nest_plain[] = {
+    { N_A, NE_GO,   NULL, N_B, NULL },
+    { N_A, NE_NEXT, NULL, N_C, NULL },
+    { N_B, NE_NEXT, NULL, N_C, NULL },
+};
+
+static const sm_transition_t nest_action_posts[] = {
+    { N_A, NE_GO,   NULL, N_B, post_next },
+    { N_A, NE_NEXT, NULL, N_C, NULL },
+    { N_B, NE_NEXT, NULL, N_C, NULL },
+};
+
+static const sm_transition_t nest_guard_posts[] = {
+    { N_A, NE_GO,   guard_posts_next, N_B, NULL },
+    { N_A, NE_NEXT, NULL, N_C, NULL },
+    { N_B, NE_NEXT, NULL, N_C, NULL },
+};
+
+static const sm_transition_t nest_action_resets[] = {
+    { N_A, NE_GO,   NULL, N_B, reset_to_c },
+    { N_B, NE_NEXT, NULL, N_C, NULL },
+};
+
+static const sm_transition_t nest_guard_blocks[] = {
+    { N_A, NE_GO,   guard_false, N_B, NULL },
+    { N_A, NE_NEXT, NULL, N_C, NULL },
+};
+
+static state_machine_err_t nest_setup(const sm_transition_t *tr, size_t n_tr,
+                                      const sm_state_def_t *defs,
+                                      sm_state_t initial)
+{
+    sm_cfg_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.transitions     = tr;
+    cfg.num_transitions = n_tr;
+    cfg.state_defs      = defs;
+    cfg.num_state_defs  = N_STATES;
+
+    memset(nest_enter, 0, sizeof(nest_enter));
+    memset(nest_exit, 0, sizeof(nest_exit));
+    nest_rc = STATE_MACHINE_OK;
+    return state_machine_init(&nest_sm, &cfg, initial);
+}
+
+#define NEST_TABLE(t) (t), (sizeof(t) / sizeof((t)[0]))
+
+/* After a refused call the machine must have made exactly the one
+ * transition A to B, and must then take the next event normally. */
+TEST(test_process_from_action_is_refused)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_action_posts), nest_defs, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_ERR_BUSY);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_B);
+    ASSERT_EQ(nest_exit[N_A], 1);
+    ASSERT_EQ(nest_enter[N_B], 1);
+    ASSERT_EQ(nest_enter[N_C], 0);
+    ASSERT_EQ(state_machine_transition_count(&nest_sm), 1);
+
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_NEXT), STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+}
+
+TEST(test_process_from_on_enter_is_refused)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_plain), nest_defs_enter_posts, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_ERR_BUSY);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_B);
+    ASSERT_EQ(nest_exit[N_B], 0);
+    ASSERT_EQ(nest_enter[N_C], 0);
+    ASSERT_EQ(state_machine_transition_count(&nest_sm), 1);
+
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_NEXT), STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+}
+
+TEST(test_process_from_on_exit_is_refused)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_plain), nest_defs_exit_posts, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_ERR_BUSY);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_B);
+    ASSERT_EQ(nest_exit[N_A], 1);
+    ASSERT_EQ(nest_enter[N_C], 0);
+    ASSERT_EQ(state_machine_transition_count(&nest_sm), 1);
+}
+
+TEST(test_process_from_guard_is_refused)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_guard_posts), nest_defs, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_ERR_BUSY);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_B);
+    ASSERT_EQ(nest_exit[N_A], 1);
+    ASSERT_EQ(nest_enter[N_C], 0);
+    ASSERT_EQ(state_machine_transition_count(&nest_sm), 1);
+}
+
+TEST(test_reset_from_action_is_refused)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_action_resets), nest_defs, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_ERR_BUSY);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_B);
+    ASSERT_EQ(nest_enter[N_C], 0);
+    ASSERT_EQ(state_machine_transition_count(&nest_sm), 1);
+}
+
+TEST(test_no_transition_leaves_the_machine_usable)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_guard_blocks), nest_defs, N_A),
+              STATE_MACHINE_OK);
+
+    /* A guard said no, and then an event with no row at all */
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_GO),
+              STATE_MACHINE_ERR_NO_TRANSITION);
+    ASSERT_EQ(state_machine_process(&nest_sm, 99),
+              STATE_MACHINE_ERR_NO_TRANSITION);
+
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_NEXT), STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+}
+
+TEST(test_reset_leaves_the_machine_usable)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_plain), nest_defs, N_A),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_reset(&nest_sm, N_B), STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_process(&nest_sm, NE_NEXT), STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+}
+
+TEST(test_process_from_on_enter_during_init_still_runs)
+{
+    /* No transition is under way, so nothing can overwrite the result. */
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_plain), nest_defs_enter_posts, N_B),
+              STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+    ASSERT_EQ(nest_exit[N_B], 1);
+    ASSERT_EQ(nest_enter[N_C], 1);
+}
+
+TEST(test_process_from_on_enter_during_reset_still_runs)
+{
+    ASSERT_EQ(nest_setup(NEST_TABLE(nest_plain), nest_defs_enter_posts, N_C),
+              STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_reset(&nest_sm, N_B), STATE_MACHINE_OK);
+
+    ASSERT_EQ(nest_rc, STATE_MACHINE_OK);
+    ASSERT_EQ(state_machine_current(&nest_sm), N_C);
+}
+
 TEST_MAIN("state_machine")
     RUN(test_init);
     RUN(test_null_safety);
@@ -267,5 +488,14 @@ TEST_MAIN("state_machine")
     RUN(test_no_state_defs);
     RUN(test_no_transitions);
     RUN(test_multiple_cycles);
+    RUN(test_process_from_action_is_refused);
+    RUN(test_process_from_on_enter_is_refused);
+    RUN(test_process_from_on_exit_is_refused);
+    RUN(test_process_from_guard_is_refused);
+    RUN(test_reset_from_action_is_refused);
+    RUN(test_no_transition_leaves_the_machine_usable);
+    RUN(test_reset_leaves_the_machine_usable);
+    RUN(test_process_from_on_enter_during_init_still_runs);
+    RUN(test_process_from_on_enter_during_reset_still_runs);
 TEST_MAIN_END()
 

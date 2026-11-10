@@ -9,7 +9,8 @@
  *
  * Table-driven FSM with optional entry/exit actions per state and
  * guard conditions on transitions. Caller defines states, events,
- * and a static transition table. No heap, fully reentrant per-context.
+ * and a static transition table. No heap, and machines are independent of
+ * each other, but one machine runs one transition at a time.
  * Thread safety: not thread-safe. Callers must serialize access.
  */
 
@@ -28,11 +29,29 @@ typedef enum {
     STATE_MACHINE_OK              =  0,
     STATE_MACHINE_ERR_PARAM       = -1,
     STATE_MACHINE_ERR_NO_TRANSITION = -2,
+    STATE_MACHINE_ERR_BUSY        = -3, /* called from inside a transition */
 } state_machine_err_t;
 
 typedef uint16_t sm_state_t;
 typedef uint16_t sm_event_t;
 
+/*
+ * Rules for guards, actions, on_enter and on_exit.
+ *
+ * They run in the context of the call that triggered them, so a machine
+ * driven from an ISR needs callbacks that are safe in an ISR.
+ *
+ * During a transition a callback may read state_machine_current() and
+ * state_machine_transition_count(), and may drive other machines. It may not
+ * drive this one: state_machine_process() and state_machine_reset() return
+ * STATE_MACHINE_ERR_BUSY and change nothing. The event is not kept: put it in
+ * a queue, such as the event_queue wheel, and process it after the outer
+ * state_machine_process() has returned.
+ *
+ * The on_enter run by state_machine_init() and state_machine_reset() is not
+ * part of a transition, so it may call state_machine_process().
+ * state_machine_init() must never be called from a callback.
+ */
 typedef void (*sm_action_t)(void *user_ctx);
 typedef bool (*sm_guard_t)(void *user_ctx);
 
@@ -61,6 +80,7 @@ typedef struct {
 typedef struct {
     sm_cfg_t    cfg;
     sm_state_t  current;
+    bool        in_process;   /* internal: a transition is running */
     uint32_t    transition_count;
 } state_machine_t;
 
@@ -68,7 +88,9 @@ typedef struct {
 state_machine_err_t state_machine_init(state_machine_t *ctx, const sm_cfg_t *cfg,
                                        sm_state_t initial_state);
 
-/** @thread_safe: no @isr_safe: yes */
+/** Returns STATE_MACHINE_ERR_BUSY when called from a callback of this machine
+ *  during a transition; see the rules above sm_action_t.
+ *  @thread_safe: no @isr_safe: yes (if every callback in the table is) */
 state_machine_err_t state_machine_process(state_machine_t *ctx, sm_event_t event);
 
 /** @thread_safe: no @isr_safe: yes */
@@ -77,7 +99,9 @@ sm_state_t state_machine_current(const state_machine_t *ctx);
 /** @thread_safe: no @isr_safe: yes */
 uint32_t state_machine_transition_count(const state_machine_t *ctx);
 
-/** @thread_safe: no @isr_safe: no */
+/** Returns STATE_MACHINE_ERR_BUSY when called from a callback of this machine
+ *  during a transition; see the rules above sm_action_t.
+ *  @thread_safe: no @isr_safe: no */
 state_machine_err_t state_machine_reset(state_machine_t *ctx, sm_state_t state);
 
 #ifdef __cplusplus
