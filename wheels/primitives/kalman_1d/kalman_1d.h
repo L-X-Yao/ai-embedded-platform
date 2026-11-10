@@ -42,7 +42,9 @@ float kalman_1d_get(const kalman_1d_t *kf);
 /* @thread_safe: yes  @isr_safe: yes */
 float kalman_1d_get_gain(const kalman_1d_t *kf);
 
-/* @thread_safe: no  @isr_safe: no */
+/* Forget the estimate and keep q and r, including any set_noise() change.
+ * The next update bootstraps, as after init; no second init is needed.
+ * @thread_safe: no  @isr_safe: no */
 void kalman_1d_reset(kalman_1d_t *kf);
 
 /* Change noise parameters at runtime. Both must be > 0.

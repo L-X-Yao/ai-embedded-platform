@@ -116,7 +116,11 @@ void kalman_1d_reset(kalman_1d_t *kf)
     {
         return;
     }
-    memset(kf, 0, sizeof(*kf));
+    /* q and r are configuration, so they stay. p == 0 makes the next update
+     * bootstrap, as after init. */
+    kf->x = 0.0f;
+    kf->p = 0.0f;
+    kf->k = 0.0f;
 }
 
 kalman_1d_err_t kalman_1d_set_noise(kalman_1d_t *kf, float q, float r)

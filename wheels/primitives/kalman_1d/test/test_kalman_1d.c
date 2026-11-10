@@ -236,8 +236,45 @@ TEST(test_reset)
     ASSERT_NEAR(kf.x, 0.0f, 1e-9f);
     ASSERT_NEAR(kf.p, 0.0f, 1e-9f);
     ASSERT_NEAR(kf.k, 0.0f, 1e-9f);
-    ASSERT_NEAR(kf.q, 0.0f, 1e-9f);
-    ASSERT_NEAR(kf.r, 0.0f, 1e-9f);
+
+    /* The tuning is configuration, not state: it stays. */
+    ASSERT_NEAR(kf.q, 0.1f, 1e-9f);
+    ASSERT_NEAR(kf.r, 1.0f, 1e-9f);
+}
+
+TEST(test_reset_then_update_filters_as_after_init)
+{
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.01f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+
+    kalman_1d_update(&kf, 500.0f);
+    kalman_1d_update(&kf, 700.0f);
+    kalman_1d_reset(&kf);
+
+    /* By hand, from K = P / (P + R) with P = p + q:
+     *   10       bootstrap, p = 1
+     *   15.0249  K = 1.01   / 2.01   = 0.5025
+     *   13.3223  K = 0.5125 / 1.5125 = 0.3388
+     *   15.0493  K = 0.3488 / 1.3488 = 0.2586 */
+    ASSERT_NEAR(kalman_1d_update(&kf, 10.0f), 10.0f, 0.001f);
+    ASSERT_NEAR(kalman_1d_update(&kf, 20.0f), 15.0249f, 0.001f);
+    ASSERT_NEAR(kalman_1d_get_gain(&kf), 0.5025f, 0.001f);
+    ASSERT_NEAR(kalman_1d_update(&kf, 10.0f), 13.3223f, 0.001f);
+    ASSERT_NEAR(kalman_1d_update(&kf, 20.0f), 15.0493f, 0.001f);
+    ASSERT_NEAR(kalman_1d_get_gain(&kf), 0.2586f, 0.001f);
+}
+
+TEST(test_reset_keeps_noise_set_at_runtime)
+{
+    kalman_1d_t kf;
+    kalman_1d_cfg_t cfg = {0.1f, 1.0f};
+    kalman_1d_init(&kf, &cfg);
+    ASSERT_EQ(kalman_1d_set_noise(&kf, 0.5f, 2.0f), KALMAN_1D_OK);
+
+    kalman_1d_reset(&kf);
+    ASSERT_NEAR(kf.q, 0.5f, 1e-9f);
+    ASSERT_NEAR(kf.r, 2.0f, 1e-9f);
 }
 
 TEST(test_set_noise)
@@ -388,6 +425,8 @@ TEST_MAIN("kalman_1d")
     RUN(test_high_q_fast_response);
     RUN(test_high_r_slow_response);
     RUN(test_reset);
+    RUN(test_reset_then_update_filters_as_after_init);
+    RUN(test_reset_keeps_noise_set_at_runtime);
     RUN(test_set_noise);
     RUN(test_set_noise_invalid);
     RUN(test_set_noise_nan);
