@@ -58,7 +58,7 @@ typedef struct {
     const flash_ring_io_t *io;        /* internal */
     flash_ring_cfg_t       cfg;       /* internal */
     uint32_t               write_idx; /* internal */
-    uint32_t               read_idx;  /* internal */
+    uint32_t               read_idx;  /* read-only for callers: slot of the oldest frame */
     uint32_t               frame_count; /* internal: monotonic total writes */
     uint16_t               since_flush; /* internal */
 } flash_ring_t;
@@ -74,7 +74,12 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
 flash_ring_err_t flash_ring_push(flash_ring_t *ring,
                                  const uint8_t *frame, uint16_t len);
 
-/** @thread_safe: no @isr_safe: no */
+/**
+ * Read the frame in slot idx without consuming it. idx is an absolute slot:
+ * the oldest frame is in ring->read_idx and the next one in
+ * (ring->read_idx + 1) % total_slots.
+ * @thread_safe: no @isr_safe: no
+ */
 flash_ring_err_t flash_ring_peek(const flash_ring_t *ring, uint32_t idx,
                                  uint8_t *buf, uint16_t len);
 
