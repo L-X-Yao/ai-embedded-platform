@@ -1061,6 +1061,7 @@ TEST(test_old_full_ring_keeps_the_newest_frames)
     ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
     ASSERT_EQ(0u, after.write_idx);
     ASSERT_EQ(MOCK_SLOTS_PER_SECTOR, after.read_idx);
+    ASSERT_EQ(0u, after.since_flush);   /* the header says so already */
     ASSERT_EQ(0x5C, g_flash[MOCK_DATA_ADDR + (MOCK_TOTAL_SLOTS - 1u) * MOCK_SLOT_SIZE]);
 
     uint8_t frame[MOCK_SLOT_SIZE] = {0x01};
