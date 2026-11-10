@@ -42,6 +42,7 @@ static flash_ring_err_t flush_header(flash_ring_t *ring)
         return FLASH_RING_ERR_IO;
     }
 
+    ring->hdr_write_idx = ring->write_idx;
     ring->since_flush = 0;
     return FLASH_RING_OK;
 }
@@ -292,12 +293,14 @@ flash_ring_err_t flash_ring_init(flash_ring_t *ring,
         ring->write_idx   = hdr.write_idx;
         ring->read_idx    = hdr.read_idx;
         ring->frame_count = hdr.frame_count;
+        ring->hdr_write_idx = hdr.write_idx;
         return recover_write_pos(ring);
     }
 
     ring->write_idx   = 0;
     ring->read_idx    = 0;
     ring->frame_count = 0;
+    ring->hdr_write_idx = 0;
     if (io->erase_sector(io->ctx, cfg->data_start_addr) != 0) {
         return FLASH_RING_ERR_IO;
     }
@@ -337,6 +340,13 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
     /* Before the last slot, not after it: a cut in between keeps the rule. */
     if (last_in_sector(ring, ring->write_idx)) {
         uint32_t next = next_sector_start(ring, ring->write_idx);
+        /* Init starts its walk at the write_idx in the header, so that slot
+         * has to outlive the header that names it: the header moves first,
+         * and if it cannot, the sector stays. */
+        if (same_sector(ring, ring->hdr_write_idx, next) &&
+            flush_header(ring) != FLASH_RING_OK) {
+            return FLASH_RING_ERR_IO;
+        }
         drop_next_sector(ring);
         if (io->erase_sector(io->ctx, slot_addr(ring, next)) != 0) {
             return FLASH_RING_ERR_IO;

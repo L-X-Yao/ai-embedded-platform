@@ -18,6 +18,7 @@ static int g_erase_count;
 static int g_write_count;
 static int g_read_count;
 static bool g_fail_erase;
+static bool g_fail_header_erase;        /* only the header sector refuses */
 static bool g_fail_write;
 static bool g_fail_read;
 static int g_fail_read_after;   /* fail reads after this many, -1 = never */
@@ -33,6 +34,7 @@ static void mock_flash_reset(void)
     g_write_count = 0;
     g_read_count = 0;
     g_fail_erase = false;
+    g_fail_header_erase = false;
     g_fail_write = false;
     g_fail_read = false;
     g_fail_read_after = -1;
@@ -46,6 +48,7 @@ static int mock_erase(void *ctx, uint32_t addr)
     if (g_erase_count < MOCK_ERASE_LOG) g_erase_log[g_erase_count] = addr;
     g_erase_count++;
     if (g_fail_erase) return -1;
+    if (g_fail_header_erase && addr == MOCK_HDR_ADDR) return -1;
     uint32_t end = addr + MOCK_SECTOR_SIZE;
     if (end > MOCK_FLASH_SIZE) end = MOCK_FLASH_SIZE;
     memset(&g_flash[addr], 0xFF, end - addr);
@@ -1120,6 +1123,58 @@ TEST(test_reset_after_an_unread_failed_program_finds_later_frames)
     }
 }
 
+/*
+ * Init starts its walk at the write_idx in the header, so that slot has to
+ * outlive the header that names it. With the header stuck, push must not erase
+ * the sector it points into: a reset after that erase finds the stored slot
+ * blank, takes it for the write position and loses what came after.
+ */
+TEST(test_push_keeps_the_sector_the_header_points_into)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.slot_size = MOCK_SECTOR_SIZE / 2;   /* two slots a sector, four in all */
+    cfg.total_slots = 4;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    static uint8_t frame[MOCK_SECTOR_SIZE / 2];
+    uint16_t len = (uint16_t)sizeof(frame);
+    memset(frame, 0x61, sizeof(frame));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));   /* header: slot 2 */
+
+    g_fail_header_erase = true;             /* from here the header stays there */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));   /* slot 2 */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));   /* slot 3 */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));   /* slot 0 */
+    ASSERT_EQ(1u, ring.write_idx);
+
+    /* Slot 1 is next, and before it the sector of slots 2 and 3 would go.
+     * The program is made to fail as well, as a cut after the erase would. */
+    g_fail_write = true;
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&ring, frame, len));
+    ASSERT_EQ(0x61, g_flash[MOCK_DATA_ADDR + 2u * len]);
+    ASSERT_EQ(0x61, g_flash[MOCK_DATA_ADDR + 3u * len]);
+
+    /* A reset here finds the writer, and knows where the header points */
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(ring.write_idx, after.write_idx);
+    ASSERT_EQ(FLASH_RING_ERR_IO, flash_ring_push(&after, frame, len));
+    ASSERT_EQ(0x61, g_flash[MOCK_DATA_ADDR + 2u * len]);
+    g_fail_write = false;
+
+    /* Once the header can be written it moves first, then the sector goes */
+    g_fail_header_erase = false;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, len));
+    ASSERT_EQ(2u, ring.write_idx);
+    ASSERT_EQ(0, g_overprogram);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &cfg));
+    ASSERT_EQ(2u, after.write_idx);
+    ASSERT_EQ(2u, flash_ring_count(&after));
+}
+
 /* A reset forgets the unread slot: init reads the flash for itself. */
 TEST(test_init_forgets_an_unread_slot)
 {
@@ -1465,6 +1520,7 @@ TEST_MAIN("flash_ring")
     RUN(test_failed_program_that_cannot_be_read_back_is_not_counted);
     RUN(test_unread_slot_is_checked_before_the_next_program);
     RUN(test_reset_after_an_unread_failed_program_finds_later_frames);
+    RUN(test_push_keeps_the_sector_the_header_points_into);
     RUN(test_init_forgets_an_unread_slot);
     RUN(test_old_ring_with_read_idx_in_the_blank_tail);
     RUN(test_old_full_ring_keeps_the_newest_frames);
