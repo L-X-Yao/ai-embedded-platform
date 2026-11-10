@@ -31,6 +31,7 @@
 #define REG_MEAS_RATE      0x04u
 #define REG_GAIN           0x05u
 #define REG_PART_ID        0x06u
+#define REG_MAIN_STATUS    0x07u
 #define REG_ALS_DATA_0     0x0Du
 #define REG_UVS_DATA_0     0x10u
 
@@ -46,6 +47,7 @@
 /* ---------- masks ---------- */
 
 #define DATA_20BIT_MASK    0x000FFFFFu
+#define STATUS_NEW_DATA    0x08u   /* p.16: bit 3, cleared by reading it */
 
 /* ---------- internal helpers ---------- */
 
@@ -83,6 +85,36 @@ static uint8_t build_main_ctrl(ltr390_mode_t mode)
         val |= MAIN_CTRL_UVS_MODE;
     }
     return val;
+}
+
+/* A MAIN_CTRL write stops the measurement and starts a new one (p.13), but a
+ * new-data bit left by the old one stays set until read, and it would pass for
+ * a result of the new measurement. */
+static bool drop_old_data_status(const ltr390_t *dev)
+{
+    uint8_t status = 0;
+    return read_regs(dev, REG_MAIN_STATUS, &status, 1);
+}
+
+/* The new-data bit clears when read, so it is 0 between conversions too: it is
+ * remembered once it has been seen, and later reads return the last result. */
+static ltr390_err_t check_data_ready(ltr390_t *dev, ltr390_mode_t mode)
+{
+    if (dev->mode != mode) {
+        return LTR390_ERR_NOT_READY;
+    }
+    if (dev->have_data) {
+        return LTR390_OK;
+    }
+    uint8_t status = 0;
+    if (!read_regs(dev, REG_MAIN_STATUS, &status, 1)) {
+        return LTR390_ERR_I2C;
+    }
+    if ((status & STATUS_NEW_DATA) == 0) {
+        return LTR390_ERR_NOT_READY;
+    }
+    dev->have_data = true;
+    return LTR390_OK;
 }
 
 /** Read 3-byte 20-bit little-endian data starting at reg. */
@@ -130,6 +162,9 @@ static ltr390_err_t bring_up(ltr390_t *dev, const ltr390_cfg_t *cfg)
     if (!write_reg(dev, REG_MAIN_CTRL, build_main_ctrl(dev->mode))) {
         return LTR390_ERR_I2C;
     }
+    if (!drop_old_data_status(dev)) {
+        return LTR390_ERR_I2C;
+    }
 
     return LTR390_OK;
 }
@@ -173,6 +208,10 @@ ltr390_err_t ltr390_read_als(ltr390_t *dev, uint32_t *raw)
     if (!dev || !dev->i2c || !raw) {
         return LTR390_ERR_PARAM;
     }
+    ltr390_err_t err = check_data_ready(dev, LTR390_MODE_ALS);
+    if (err != LTR390_OK) {
+        return err;
+    }
     return read_20bit(dev, REG_ALS_DATA_0, raw);
 }
 
@@ -180,6 +219,10 @@ ltr390_err_t ltr390_read_uvs(ltr390_t *dev, uint32_t *raw)
 {
     if (!dev || !dev->i2c || !raw) {
         return LTR390_ERR_PARAM;
+    }
+    ltr390_err_t err = check_data_ready(dev, LTR390_MODE_UVS);
+    if (err != LTR390_OK) {
+        return err;
     }
     return read_20bit(dev, REG_UVS_DATA_0, raw);
 }
@@ -197,5 +240,9 @@ ltr390_err_t ltr390_set_mode(ltr390_t *dev, ltr390_mode_t mode)
         return LTR390_ERR_I2C;
     }
     dev->mode = mode;
+    dev->have_data = false;
+    if (!drop_old_data_status(dev)) {
+        return LTR390_ERR_I2C;
+    }
     return LTR390_OK;
 }

@@ -30,6 +30,7 @@ typedef enum {
     LTR390_ERR_I2C   = -1,
     LTR390_ERR_ID    = -2,
     LTR390_ERR_PARAM = -3,
+    LTR390_ERR_NOT_READY = -4,  /* no current result for this channel, see ltr390_read_als */
 } ltr390_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -87,6 +88,7 @@ typedef struct {
 typedef struct {
     const ltr390_i2c_t *i2c;
     ltr390_mode_t       mode;
+    bool                have_data;  /* internal: a conversion ended in this mode */
 } ltr390_t;
 
 /* ---------- API ---------- */
@@ -95,10 +97,16 @@ typedef struct {
 ltr390_err_t ltr390_init(ltr390_t *dev, const ltr390_i2c_t *i2c,
                          const ltr390_cfg_t *cfg);
 
-/** Read ambient light raw value (20-bit). @thread_safe: caller_must_lock @isr_safe: no */
+/**
+ * Read ambient light raw value (20-bit). @thread_safe: caller_must_lock @isr_safe: no
+ *
+ * LTR390_ERR_NOT_READY, with raw left alone, until the first conversion has ended
+ * after ltr390_init or ltr390_set_mode, and always while the sensor is in the other
+ * mode. Once a result exists, reads between conversions return it with LTR390_OK.
+ */
 ltr390_err_t ltr390_read_als(ltr390_t *dev, uint32_t *raw);
 
-/** Read UV raw value (20-bit). @thread_safe: caller_must_lock @isr_safe: no */
+/** Read UV raw value (20-bit), as ltr390_read_als. @thread_safe: caller_must_lock @isr_safe: no */
 ltr390_err_t ltr390_read_uvs(ltr390_t *dev, uint32_t *raw);
 
 /** Switch measurement mode (ALS or UVS). @thread_safe: caller_must_lock @isr_safe: no */

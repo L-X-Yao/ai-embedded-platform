@@ -319,7 +319,7 @@ TEST(test_hw_read_als_i2c_fail)
 
 TEST(test_hw_read_uvs_i2c_fail)
 {
-    setup();
+    setup_uvs();
     ltr390_mdl.fail_next_read = true;
     uint32_t raw = 0;
     ltr390_err_t e = ltr390_read_uvs(&dev, &raw);
@@ -381,11 +381,10 @@ TEST(test_hw_als_uvs_data_isolated)
     hw_model_inject_als(0x00012345u);
     hw_model_inject_uvs(0x000ABCDEu);
     hw_model_finish_conversion();
-    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
-    hw_model_finish_conversion();
-
     uint32_t als = 0, uvs = 0;
     ASSERT_EQ(ltr390_read_als(&dev, &als), LTR390_OK);
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
+    hw_model_finish_conversion();
     ASSERT_EQ(ltr390_read_uvs(&dev, &uvs), LTR390_OK);
     ASSERT_EQ_HEX(als, 0x00012345u);
     ASSERT_EQ_HEX(uvs, 0x000ABCDEu);
@@ -577,12 +576,127 @@ TEST(test_hw_first_data_only_after_the_first_conversion)
     hw_model_inject_als(1000);
 
     uint32_t raw = 0xFFFFFFFFu;
-    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
-    ASSERT_EQ(raw, 0u);
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_NOT_READY);
+    ASSERT_EQ(raw, 0xFFFFFFFFu);
 
     hw_model_finish_conversion();
     ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
     ASSERT_EQ(raw, 1000u);
+}
+
+/* p.13: a MAIN_CTRL write stops the measurement and starts a new one, so until
+ * that ends the data registers hold zero or a result of before the switch. */
+TEST(test_read_after_set_mode_waits_for_the_new_conversion)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_inject_uvs(2000);
+    hw_model_finish_conversion();
+    uint32_t raw = 0;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
+    raw = 7;
+    ASSERT_EQ(ltr390_read_uvs(&dev, &raw), LTR390_ERR_NOT_READY);
+    ASSERT_EQ(raw, 7u);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_read_uvs(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 2000u);
+
+    /* back to ALS: the registers hold the old 1000 until a new result */
+    hw_model_inject_als(1500);
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_ALS), LTR390_OK);
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_NOT_READY);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 1500u);
+}
+
+/* The same mode restarts the measurement as well, and the write says so (p.13). */
+TEST(test_read_after_setting_the_same_mode_waits_too)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_finish_conversion();
+    uint32_t raw = 0;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_ALS), LTR390_OK);
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_NOT_READY);
+}
+
+/* The new-data bit of a conversion of the old mode, never read, says nothing
+ * about the new mode. */
+TEST(test_new_data_of_the_old_mode_does_not_count)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_inject_uvs(2000);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
+
+    uint32_t raw = 7;
+    ASSERT_EQ(ltr390_read_uvs(&dev, &raw), LTR390_ERR_NOT_READY);
+    ASSERT_EQ(raw, 7u);
+}
+
+/* The same after a warm restart: the chip still holds an unread result. */
+TEST(test_new_data_from_before_init_does_not_count)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_init(&dev, &hw_i2c, &default_cfg), LTR390_OK);
+
+    uint32_t raw = 7;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_NOT_READY);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 1000u);
+}
+
+/* p.13: in UVS mode the ALS channel is off, and the other way round, so that
+ * channel has no current result however long the caller waits. */
+TEST(test_read_in_the_other_mode_is_not_ready)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_finish_conversion();
+
+    uint32_t raw = 7;
+    ASSERT_EQ(ltr390_read_uvs(&dev, &raw), LTR390_ERR_NOT_READY);
+    ASSERT_EQ(raw, 7u);
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 1000u);
+
+    ASSERT_EQ(ltr390_set_mode(&dev, LTR390_MODE_UVS), LTR390_OK);
+    hw_model_finish_conversion();
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_NOT_READY);
+}
+
+/* Once a result exists a read between conversions stays what it was: the last
+ * result and OK, although the new-data bit is 0 by then (p.16). */
+TEST(test_read_between_conversions_stays_ok)
+{
+    setup();
+    hw_model_inject_als(1000);
+    hw_model_finish_conversion();
+
+    uint32_t raw = 0;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    raw = 0;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
+    ASSERT_EQ(raw, 1000u);
+}
+
+/* The status read of a first read can fail like any other. */
+TEST(test_status_read_failure_is_reported)
+{
+    setup();
+    hw_model_finish_conversion();
+    ltr390_mdl.fail_next_read = true;
+    uint32_t raw = 0;
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_ERR_I2C);
+    ASSERT_EQ(ltr390_read_als(&dev, &raw), LTR390_OK);
 }
 
 TEST_MAIN("ltr390_hw_model")
@@ -633,4 +747,11 @@ TEST_MAIN("ltr390_hw_model")
     RUN(test_hw_model_software_reset);
     RUN(test_hw_model_read_only_registers);
     RUN(test_hw_first_data_only_after_the_first_conversion);
+    RUN(test_read_after_set_mode_waits_for_the_new_conversion);
+    RUN(test_read_after_setting_the_same_mode_waits_too);
+    RUN(test_new_data_of_the_old_mode_does_not_count);
+    RUN(test_new_data_from_before_init_does_not_count);
+    RUN(test_read_in_the_other_mode_is_not_ready);
+    RUN(test_read_between_conversions_stays_ok);
+    RUN(test_status_read_failure_is_reported);
 TEST_MAIN_END()
