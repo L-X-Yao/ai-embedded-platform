@@ -35,9 +35,8 @@ typedef struct {
     uint8_t *buf;
     uint16_t capacity;
     uint16_t elem_size;
-    uint16_t head;
-    uint16_t tail;
-    uint16_t count;
+    volatile uint32_t head;  /* read index: only the consumer stores it  */
+    volatile uint32_t tail;  /* write index: only the producer stores it */
 } fifo_queue_t;
 
 fifo_queue_err_t fifo_queue_init(fifo_queue_t *q, void *storage,
@@ -52,14 +51,22 @@ bool       fifo_queue_is_full(const fifo_queue_t *q);
 void       fifo_queue_clear(fifo_queue_t *q);
 ```
 
+One producer and one consumer may run at once with no lock, for example an ISR
+and the main loop. `fifo_queue.h` says which side may call what.
+
 ## Configuration (compile-time)
 
-None. All parameters set at runtime via `fifo_queue_init`.
+- `FIFO_QUEUE_BARRIER()`: the barrier around the index accesses. It defaults to
+  a compiler barrier on GCC and Clang. Define it as a real fence if the two
+  sides run on different cores, and on any other compiler, where the build
+  stops with `#error` until you do.
+
+All other parameters are set at runtime via `fifo_queue_init`.
 
 ## Supported platforms
 
 - [x] Host (sim) — 2026-05-01
-- [ ] Real hardware target — not yet verified
+- [ ] Real hardware target — emulated only (QEMU mps2, M3, M4 and M7, 2026-11-07), no hardware yet
 
 ## Known issues
 
@@ -75,7 +82,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 15 tests, all green
+- Unit tests (sim): 17 tests, all green
+- Race test (sim): `test_race_fifo_queue`, host threads for the ISR and main loop
 - HIL: N/A
 
 ## API convention deviations
@@ -86,6 +94,24 @@ None.
 
 - **Date**: 2026-05-01
 - **Key decisions**: uint16_t indices (64K element cap suits embedded); caller-provided storage; memcpy-based element transfer for type safety without generics
+
+## Migration
+
+**2026-11: one producer and one consumer are safe with no lock.** Both sides
+used to update one `count` field, so an interrupt between its load and store
+lost the update and unread items were overwritten with no error.
+
+- What changed: `count` is gone. `head` and `tail` are `volatile uint32_t` and
+  run over `0 .. 2*capacity-1`, so a direct read of them no longer gives a slot.
+  `fifo_queue_t` stays 16 bytes on Cortex-M. `fifo_queue_clear` is consumer
+  side only and moves `head` up to `tail` instead of zeroing both.
+- What a caller has to do: use `fifo_queue_count` and the other functions in
+  place of the fields. Call each function from the side `fifo_queue.h` gives it.
+  Two producers or two consumers still need a lock. On a compiler other than
+  GCC or Clang, define `FIFO_QUEUE_BARRIER()`.
+- If they do nothing: code that uses only the functions from one context, or
+  from the sides named, keeps working unchanged. Code that read `q.count` stops
+  compiling. A `clear` from the producer side now corrupts the queue.
 
 ## Responsible human
 

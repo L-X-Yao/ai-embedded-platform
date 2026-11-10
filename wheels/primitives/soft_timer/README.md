@@ -48,7 +48,9 @@ uint32_t         soft_timer_get_tick(const soft_timer_mgr_t *mgr);
 
 ## Known issues
 
-None.
+- Tick must be able to interrupt the other side, and not the reverse. If tick
+  runs in the main loop and an ISR calls start, stop or reset, mask that
+  interrupt around tick.
 
 ## How to test
 
@@ -65,7 +67,9 @@ invalid ID handling, tick counter, null tick no-crash, period=1 every-tick.
 
 ## Test status
 
-- Unit tests (sim): PASS (13 C tests, 46 assertions)
+- Unit tests (sim): PASS (24 C tests)
+- Race test (sim): `test_race_soft_timer`, a host thread for the tick, built -O2 -flto
+- `test_destroy_tick_soft_timer`: a tick after every byte `destroy` clears
 - HIL: N/A
 
 ## API convention deviations
@@ -76,6 +80,22 @@ None.
 
 - **Date**: 2026-04-29
 - **Key decisions**: Static array (not linked list) for O(1) access and no heap; create returns int ID (not pointer) to avoid dangling pointer issues; timer is not auto-started on create (explicit start required); one-shot auto-deactivates after firing; tick must be called from one context (not ISR-safe by design — caller wraps if needed).
+
+## Migration
+
+**2026-11: timers are safe beside a tick in an ISR.** Polls of `is_active` and
+`get_tick` could hang, and `destroy` beside a tick could call a NULL callback.
+
+- What changed: `remaining`, `active`, `count` and `tick_count` are volatile.
+  `active` is `volatile uint8_t`, not `bool`, because GCC 13's
+  `-fsanitize=bool` drops the volatile from a bool load. The structs keep their
+  size. `destroy` clears `active` first. A `start` that races a one-shot's
+  expiry now re-arms it for a full period; it used to fire again on the next
+  tick. `soft_timer_reset` is labelled `@isr_safe: yes`, which a callback could
+  already rely on.
+- What a caller has to do: keep to the sides `soft_timer.h` gives. On a
+  compiler other than GCC or Clang, define `SOFT_TIMER_BARRIER()`.
+- If they do nothing: existing calls keep working.
 
 ## Responsible human
 @user

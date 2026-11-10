@@ -57,7 +57,9 @@ different sizes.
 
 ## Known issues
 
-None.
+- `add` and `cancel` must run in the tick's context, or with its interrupt
+  masked. `add` reads the cursor, so a tick landing inside an unmasked `add`
+  makes the timer fire a whole revolution late.
 
 ## How to test
 
@@ -75,7 +77,8 @@ cancel-inactive error, large multi-revolution wraparound.
 
 ## Test status
 
-- Unit tests (sim): PASS (16 C tests)
+- Unit tests (sim): PASS (18 C tests)
+- Race test (sim): `test_race_timer_wheel`, a host thread for the tick, built -O3 -flto
 - HIL: N/A
 
 ## API convention deviations
@@ -86,6 +89,21 @@ None.
 
 - **Date**: 2026-05-01
 - **Key decisions**: Caller provides slot and timer storage arrays (no heap); timer IDs are caller-chosen (0..max_timers-1) for direct indexing; timers are one-shot only (repeating can be implemented by re-adding in the callback); tick is O(max_timers) — scans all entries each tick (linear, fast for typical embedded sizes up to a few hundred); add/cancel are O(1); add/cancel from within expiry callbacks is allowed.
+
+## Migration
+
+**2026-11: a timer is published only once it is whole.** Nothing ordered the
+fields around `active`, so a tick beside `add` could call a NULL callback, and a
+retry of `add` could hang.
+
+- What changed: `active` is `volatile uint8_t`, not `bool`, because GCC 13's
+  `-fsanitize=bool` drops the volatile from a bool load. `current_pos` and
+  `count` are volatile. The structs keep their size. No function changed.
+- What a caller has to do: if tick runs in an ISR and `add` or `cancel` run
+  elsewhere, mask that interrupt around each call. On a compiler other than GCC
+  or Clang, define `TIMER_WHEEL_BARRIER()`.
+- If they do nothing: code running everything in one context is unaffected.
+  Unmasked `add` no longer crashes, but a timer can still fire a revolution late.
 
 ## Responsible human
 

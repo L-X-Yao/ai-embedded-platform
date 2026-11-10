@@ -49,7 +49,7 @@ None. No compile-time options.
 ## Supported platforms
 
 - [x] Host (sim) — 2026-05-07
-- [ ] ARM Cortex-M — not yet verified (pure C99, expected to work)
+- [ ] ARM Cortex-M — emulated only (QEMU mps2, M3, M4 and M7, 2026-11-07), no hardware yet
 
 ## Known issues
 
@@ -65,7 +65,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 17 tests (6 RFC 4231 vectors + streaming + edge cases + 7 NULL guards)
+- Unit tests (sim): 22 tests (RFC 4231 vectors, streaming, edge cases, NULL guards, context placement)
 - HIL: N/A
 
 ## API convention deviations
@@ -75,7 +75,22 @@ None.
 ## API review
 
 - **Date**: 2026-05-07
-- **Key decisions**: Opaque storage for inner sha256_t avoids exposing sha256.h in public header. Constant-time verify uses volatile accumulator.
+- **Key decisions**: The inner hash is a real sha256_t, not opaque bytes, so the type has the alignment it needs; see Migration. Constant-time verify uses volatile accumulator.
+
+## Migration
+
+**2026-11: `hmac_sha256_t` holds a `sha256_t`.** It kept the inner hash in a
+byte array, so the type had alignment 1, and a context inside a caller's struct
+took a HardFault on Cortex-M.
+
+- What changed: `hmac_sha256.h` includes `sha256.h`. The field `i_ctx_buf` is
+  gone, replaced by `sha256_t inner`. The type's alignment goes from 1 to 8.
+  Its size stays 168 bytes.
+- What a caller has to do: put the `sha256` directory on the include path of
+  every file that includes `hmac_sha256.h`. Everything already linking this
+  wheel links `sha256.c`, so most builds have it.
+- If they do nothing: a build missing that path stops with a clear error. A
+  struct holding a context may grow, because the compiler now pads for it.
 
 ## Responsible human
 
