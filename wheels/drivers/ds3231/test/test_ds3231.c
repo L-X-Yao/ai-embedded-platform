@@ -286,6 +286,48 @@ TEST(test_i2c_fail_get_time)
     ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_I2C);
 }
 
+/* The status read can fail on its own, and that must not pass as a valid time */
+TEST(test_get_time_status_read_failure)
+{
+    mock_reset();
+    ds3231_init(&dev, &mock_i2c);
+    mock_fail_at = mock_op_count + 1;
+
+    ds3231_time_t t;
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_I2C);
+}
+
+/* OSF stays until the time is really written: a set_time that fails on any of its
+ * writes leaves it, so the old time cannot pass as valid. */
+TEST(test_failed_set_time_keeps_osf)
+{
+    ds3231_time_t t = { .second = 1, .minute = 2, .hour = 3, .weekday = 4,
+                        .day = 5, .month = 6, .year = 26 };
+    for (int write = 0; write < 7; write++) {
+        mock_reset();
+        mock_regs[0x0F] = 0x80u;
+        ds3231_init(&dev, &mock_i2c);
+        mock_fail_at = mock_op_count + write;
+        ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_I2C);
+        ASSERT_EQ_HEX(mock_regs[0x0F], 0x80u);
+    }
+}
+
+/* The clearing itself can fail, and then the time is not known to be good. */
+TEST(test_set_time_reports_a_failed_clear)
+{
+    ds3231_time_t t = { .second = 1, .minute = 2, .hour = 3, .weekday = 4,
+                        .day = 5, .month = 6, .year = 26 };
+    for (int step = 7; step < 9; step++) {
+        mock_reset();
+        mock_regs[0x0F] = 0x80u;
+        ds3231_init(&dev, &mock_i2c);
+        mock_fail_at = mock_op_count + step;
+        ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_ERR_I2C);
+        ASSERT_EQ_HEX(mock_regs[0x0F], 0x80u);
+    }
+}
+
 TEST(test_i2c_fail_set_time)
 {
     mock_reset();
@@ -509,4 +551,7 @@ TEST_MAIN("ds3231")
     RUN(test_set_time_refuses_a_day_the_month_lacks);
     RUN(test_device_refused_after_failed_init);
     RUN(test_device_refused_after_rejected_init);
+    RUN(test_get_time_status_read_failure);
+    RUN(test_failed_set_time_keeps_osf);
+    RUN(test_set_time_reports_a_failed_clear);
 TEST_MAIN_END()

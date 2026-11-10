@@ -26,6 +26,7 @@ typedef enum {
     DS3231_OK         =  0,
     DS3231_ERR_I2C    = -1,
     DS3231_ERR_PARAM = -2,
+    DS3231_ERR_TIME_INVALID = -3,   /* the oscillator stopped: set the time */
 } ds3231_err_t;
 
 typedef struct {
@@ -55,10 +56,17 @@ typedef struct {
 /** Initialize driver context. @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_init(ds3231_t *dev, const ds3231_i2c_t *i2c);
 
-/** Read current time from RTC. @thread_safe: no @isr_safe: no */
+/**
+ * Read current time from RTC. @thread_safe: no @isr_safe: no
+ *
+ * DS3231_ERR_TIME_INVALID if the oscillator has stopped since the time was last
+ * set, which includes the first power-up and a flat battery. time is still filled
+ * with what the registers hold, but it is not the real time. ds3231_set_time ends
+ * this state.
+ */
 ds3231_err_t ds3231_get_time(const ds3231_t *dev, ds3231_time_t *time);
 
-/** Write time to RTC. @thread_safe: no @isr_safe: no */
+/** Write time to RTC, and clear the oscillator stop flag once all of it is written. @thread_safe: no @isr_safe: no */
 ds3231_err_t ds3231_set_time(const ds3231_t *dev, const ds3231_time_t *time);
 
 /** Read on-chip temperature (0.25C resolution). @thread_safe: no @isr_safe: no */

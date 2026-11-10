@@ -8,6 +8,7 @@
  */
 
 #include "test_harness.h"
+#include <string.h>
 #include "hw_model_ds3231.h"
 #include "../ds3231.h"
 
@@ -23,6 +24,12 @@ static const ds3231_i2c_t model_i2c = {
 static void setup(void)
 {
     ds3231_model_init(&model);
+}
+
+/* A clock that was set earlier and has run since: OSF is 0. */
+static void clock_has_run(void)
+{
+    model.hw.regs[DS3231_REG_STATUS] &= (uint8_t)~0x80u;
 }
 
 /* --- init tests --- */
@@ -59,6 +66,7 @@ TEST(test_get_time_reads_bcd)
     ds3231_t dev;
     ds3231_init(&dev, &model_i2c);
     ds3231_model_set_time(&model, 25, 1, 15, 3, 12, 30, 45);
+    clock_has_run();
 
     ds3231_time_t t;
     ds3231_err_t err = ds3231_get_time(&dev, &t);
@@ -80,9 +88,10 @@ TEST(test_get_time_after_model_change)
 
     /* Simulate RTC ticking to 2026-06-20 Sat 08:15:00 */
     ds3231_model_set_time(&model, 26, 6, 20, 6, 8, 15, 0);
+    clock_has_run();
 
     ds3231_time_t t;
-    ds3231_get_time(&dev, &t);
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
     ASSERT_EQ(t.year, 26);
     ASSERT_EQ(t.month, 6);
     ASSERT_EQ(t.day, 20);
@@ -224,8 +233,10 @@ TEST(test_driver_reads_the_power_on_state)
     ds3231_t dev;
     ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
 
+    /* p14: OSF is set "the first time power is applied", so these registers
+     * are no time yet, though they read as the p11 reset values */
     ds3231_time_t t;
-    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_TIME_INVALID);
     ASSERT_EQ(t.year, 0);
     ASSERT_EQ(t.month, 1);
     ASSERT_EQ(t.day, 1);
@@ -277,6 +288,75 @@ TEST(test_status_bsy_and_unused_bits_ignore_writes)
     ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x0C);
 }
 
+/* p14: OSF "may be used to judge the validity of the timekeeping data". What the
+ * registers hold is still handed over, for a caller that wants it anyway. */
+TEST(test_get_time_reports_a_stopped_oscillator)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+    ds3231_model_set_time(&model, 26, 6, 20, 6, 8, 15, 0);
+
+    ds3231_time_t t;
+    memset(&t, 0, sizeof(t));
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_TIME_INVALID);
+    ASSERT_EQ(t.year, 26);
+    ASSERT_EQ(t.hour, 8);
+
+    /* p14: it "remains at logic 1 until written to logic 0" */
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_TIME_INVALID);
+}
+
+/* The way out: a caller that sets the time has made it valid. */
+TEST(test_set_time_clears_osf)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+
+    ds3231_time_t t = { .second = 0, .minute = 15, .hour = 8, .weekday = 6,
+                        .day = 20, .month = 6, .year = 26 };
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ(reg_read(DS3231_REG_STATUS) & 0x80, 0);
+
+    ds3231_time_t got;
+    ASSERT_EQ(ds3231_get_time(&dev, &got), DS3231_OK);
+    ASSERT_EQ(got.hour, 8);
+}
+
+/* p14: A1F and A2F clear on a written 0, so clearing OSF must write 1 there, or
+ * an alarm raised between the read and the write would be lost. EN32kHz stays. */
+TEST(test_set_time_leaves_the_other_status_bits)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+    model.hw.regs[DS3231_REG_STATUS] = 0x8Bu;    /* OSF, EN32kHz, A2F, A1F */
+
+    ds3231_time_t t = { .second = 0, .minute = 0, .hour = 0, .weekday = 1,
+                        .day = 1, .month = 1, .year = 26 };
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x0Bu);
+
+    model.hw.regs[DS3231_REG_STATUS] = 0x80u;    /* EN32kHz off, no alarm */
+    ASSERT_EQ(ds3231_set_time(&dev, &t), DS3231_OK);
+    ASSERT_EQ_HEX(reg_read(DS3231_REG_STATUS), 0x00u);
+}
+
+/* p14: "any time that the oscillator stops", so also on a clock that ran. */
+TEST(test_oscillator_stopping_later_is_seen)
+{
+    setup();
+    ds3231_t dev;
+    ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
+    clock_has_run();
+
+    ds3231_time_t t;
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
+    model.hw.regs[DS3231_REG_STATUS] |= 0x80u;
+    ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_ERR_TIME_INVALID);
+}
+
 /* The century bit is bit 7 of the month register, p12 */
 TEST(test_month_register_holds_the_century_bit)
 {
@@ -285,6 +365,7 @@ TEST(test_month_register_holds_the_century_bit)
     ASSERT_EQ(ds3231_init(&dev, &model_i2c), DS3231_OK);
     reg_write(DS3231_REG_MONTH, 0x92);
     ASSERT_EQ_HEX(reg_read(DS3231_REG_MONTH), 0x92);
+    clock_has_run();
 
     ds3231_time_t t;
     ASSERT_EQ(ds3231_get_time(&dev, &t), DS3231_OK);
@@ -311,6 +392,10 @@ TEST_MAIN("ds3231 hardware model")
     RUN(test_status_flags_only_clear);
     RUN(test_en32khz_follows_writes);
     RUN(test_status_bsy_and_unused_bits_ignore_writes);
+    RUN(test_get_time_reports_a_stopped_oscillator);
+    RUN(test_set_time_clears_osf);
+    RUN(test_set_time_leaves_the_other_status_bits);
+    RUN(test_oscillator_stopping_later_is_seen);
     RUN(test_month_register_holds_the_century_bit);
     RUN(test_read_wraps_after_12h);
     RUN(test_init_success);

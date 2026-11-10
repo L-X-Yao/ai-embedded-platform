@@ -25,8 +25,13 @@
 #define REG_MONTH     0x05u
 #define REG_YEAR      0x06u
 #define REG_CONTROL   0x0Eu
+#define REG_STATUS    0x0Fu
 #define REG_TEMP_MSB  0x11u
 #define REG_TEMP_LSB  0x12u
+
+#define STATUS_OSF    0x80u
+#define STATUS_A2F    0x02u
+#define STATUS_A1F    0x01u
 
 /* --- BCD helpers --- */
 static uint8_t bcd_to_bin(uint8_t bcd)
@@ -130,6 +135,12 @@ ds3231_err_t ds3231_get_time(const ds3231_t *dev, ds3231_time_t *time)
         return DS3231_ERR_I2C;
     }
 
+    uint8_t status = 0;
+    if (!read_regs(dev, REG_STATUS, &status, 1))
+    {
+        return DS3231_ERR_I2C;
+    }
+
     time->second  = bcd_to_bin(buf[0] & 0x7Fu);
     time->minute  = bcd_to_bin(buf[1] & 0x7Fu);
     time->hour    = bcd_to_bin(buf[2] & 0x3Fu); /* 24-hour mask */
@@ -138,7 +149,9 @@ ds3231_err_t ds3231_get_time(const ds3231_t *dev, ds3231_time_t *time)
     time->month   = bcd_to_bin(buf[5] & 0x1Fu);
     time->year    = bcd_to_bin(buf[6]);
 
-    return DS3231_OK;
+    /* p14: OSF stays 1 from the moment the oscillator stops, which includes the
+     * first power-up, until it is written to 0 */
+    return (status & STATUS_OSF) ? DS3231_ERR_TIME_INVALID : DS3231_OK;
 }
 
 ds3231_err_t ds3231_set_time(const ds3231_t *dev, const ds3231_time_t *time)
@@ -166,6 +179,19 @@ ds3231_err_t ds3231_set_time(const ds3231_t *dev, const ds3231_time_t *time)
         return DS3231_ERR_I2C;
     if (!write_reg(dev, REG_YEAR,    bin_to_bcd(time->year)))
         return DS3231_ERR_I2C;
+
+    /* The time is good now, and only now. A written 0 clears A1F and A2F and a
+     * 1 leaves them (p14), so they get a 1: an alarm that fires between this
+     * read and write stays flagged. */
+    uint8_t status = 0;
+    if (!read_regs(dev, REG_STATUS, &status, 1))
+        return DS3231_ERR_I2C;
+    if (status & STATUS_OSF)
+    {
+        uint8_t val = (uint8_t)((status & (uint8_t)~STATUS_OSF) | STATUS_A2F | STATUS_A1F);
+        if (!write_reg(dev, REG_STATUS, val))
+            return DS3231_ERR_I2C;
+    }
 
     return DS3231_OK;
 }
