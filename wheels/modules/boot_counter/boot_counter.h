@@ -33,12 +33,20 @@ typedef enum {
 
 /* ---------- Storage callbacks ---------- */
 
+/** What a read callback returns when nothing has been stored yet, as a
+ *  key-value store says of an unknown key. Load then starts from zero and the
+ *  first save creates the record. Every other non-zero result stays a failure
+ *  and load refuses, because zeroing on a transient read error would wipe a
+ *  count that is still stored. */
+#define BOOT_COUNTER_READ_NO_RECORD 0x4E52
+
 /**
  * Read persistent data.
  * @param buf      destination buffer
  * @param size     bytes to read
  * @param user_ctx opaque pointer passed through from init
- * @return 0 on success, non-zero on failure
+ * @return 0 on success, BOOT_COUNTER_READ_NO_RECORD if nothing is stored yet,
+ *         any other non-zero value on failure
  */
 typedef int (*boot_counter_storage_read_fn)(uint8_t *buf, size_t size,
                                             void *user_ctx);
@@ -105,9 +113,12 @@ boot_counter_err_t boot_counter_set_second_copy(boot_counter_t *ctx,
 /** @thread_safe: no (caller serializes)
  *  Load record from persistent storage into ctx. A record that fails its
  *  magic or CRC, as erased flash does, is no record: the count starts from
- *  zero and this returns BOOT_COUNTER_OK. With one copy that is also what a
+ *  zero and this returns BOOT_COUNTER_OK, as it does when the read callback
+ *  answers BOOT_COUNTER_READ_NO_RECORD. With one copy that is also what a
  *  backend gets if it loses power between erase and program, so the count
- *  is lost: boot_counter_set_second_copy() is what keeps it. */
+ *  is lost: boot_counter_set_second_copy() is what keeps it.
+ *  Any other read failure returns BOOT_COUNTER_ERR_STORAGE, and increment and
+ *  set_reset_reason then refuse until a load succeeds. */
 boot_counter_err_t boot_counter_load(boot_counter_t *ctx);
 
 /** @thread_safe: no (caller serializes)

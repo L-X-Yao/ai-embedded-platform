@@ -71,8 +71,13 @@ static boot_counter_err_t read_copy(const boot_counter_t *ctx,
                                     boot_counter_storage_read_fn read,
                                     boot_counter_record_t *rec, bool *valid)
 {
+    int rc = read((uint8_t *)rec, sizeof(*rec), ctx->storage.user_ctx);
+
     *valid = false;
-    if (read((uint8_t *)rec, sizeof(*rec), ctx->storage.user_ctx) != 0) {
+    if (rc == BOOT_COUNTER_READ_NO_RECORD) {
+        return BOOT_COUNTER_OK;   /* nothing stored yet, and that is no fault */
+    }
+    if (rc != 0) {
         return BOOT_COUNTER_ERR_STORAGE;
     }
     *valid = record_valid(rec);

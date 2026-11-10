@@ -717,6 +717,105 @@ TEST(test_failed_reload_refuses_to_save)
     ASSERT_EQ(boot_counter_get_count(&next), 5);
 }
 
+/* ================================================================
+ * A key-value backend: reading a key nobody has written
+ * ================================================================ */
+
+static bool g_kv_exists;
+
+static int kv_read(uint8_t *buf, size_t size, void *user_ctx)
+{
+    if (!g_kv_exists) return BOOT_COUNTER_READ_NO_RECORD;
+    return mock_read(buf, size, user_ctx);
+}
+
+static int kv_write(const uint8_t *buf, size_t size, void *user_ctx)
+{
+    int rc = mock_write(buf, size, user_ctx);
+    if (rc == 0) g_kv_exists = true;
+    return rc;
+}
+
+static boot_counter_storage_t make_kv_storage(void)
+{
+    boot_counter_storage_t s;
+    memset(&s, 0, sizeof(s));
+    s.read = kv_read;
+    s.write = kv_write;
+    return s;
+}
+
+/* The run from the finding: three boots used to give load=-2 increment=-1
+ * set_reset_reason=-1 and never one write. */
+TEST(test_no_record_yet_is_created_by_the_first_save)
+{
+    mock_reset();
+    g_kv_exists = false;
+    boot_counter_storage_t stor = make_kv_storage();
+
+    for (uint32_t boot = 1; boot <= 3; boot++) {
+        boot_counter_t ctx;
+        boot_counter_init(&ctx, &stor);
+        ASSERT_EQ(boot_counter_load(&ctx), BOOT_COUNTER_OK);
+        ASSERT_EQ(boot_counter_get_count(&ctx), boot - 1);
+        ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_OK);
+        ASSERT_EQ(boot_counter_set_reset_reason(&ctx, boot), BOOT_COUNTER_OK);
+    }
+    ASSERT_EQ(g_write_count, 6);
+}
+
+/* Any other failed read stays a failure and leaves the stored count alone. */
+TEST(test_other_read_failure_is_not_no_record)
+{
+    mock_reset();
+    g_kv_exists = false;
+    boot_counter_storage_t stor = make_kv_storage();
+    boot_counter_t ctx;
+    boot_counter_init(&ctx, &stor);
+    boot_counter_load(&ctx);
+    boot_counter_increment(&ctx);
+
+    boot_counter_t next;
+    boot_counter_init(&next, &stor);
+    g_fail_read = true;
+    ASSERT_EQ(boot_counter_load(&next), BOOT_COUNTER_ERR_STORAGE);
+    ASSERT_EQ(boot_counter_increment(&next), BOOT_COUNTER_ERR_PARAM);
+    g_fail_read = false;
+    ASSERT_EQ(g_write_count, 1);
+}
+
+static int no_record(uint8_t *buf, size_t size, void *user_ctx)
+{
+    (void)buf; (void)size; (void)user_ctx;
+    return BOOT_COUNTER_READ_NO_RECORD;
+}
+
+/* With two copies, one key missing is just one copy missing. */
+TEST(test_second_copy_with_no_record_yet)
+{
+    sector_reset();
+    g_fail_write = false;
+    put_record(0, 5, 10);
+
+    boot_counter_t ctx;
+    boot_counter_storage_t s;
+    memset(&s, 0, sizeof(s));
+    s.read = read_a;
+    s.write = write_a;
+    boot_counter_init(&ctx, &s);
+    boot_counter_set_second_copy(&ctx, no_record, write_b);
+    ASSERT_EQ(boot_counter_load(&ctx), BOOT_COUNTER_OK);
+    ASSERT_EQ(boot_counter_get_count(&ctx), 5);
+
+    /* Neither copy written yet: a clean start. */
+    s.read = no_record;
+    boot_counter_init(&ctx, &s);
+    boot_counter_set_second_copy(&ctx, no_record, write_b);
+    ASSERT_EQ(boot_counter_load(&ctx), BOOT_COUNTER_OK);
+    ASSERT_EQ(boot_counter_get_count(&ctx), 0);
+    ASSERT_EQ(boot_counter_increment(&ctx), BOOT_COUNTER_OK);
+}
+
 TEST_MAIN("boot_counter")
     RUN(test_init_valid);
     RUN(test_init_null_ctx);
@@ -749,4 +848,7 @@ TEST_MAIN("boot_counter")
     RUN(test_failed_write_keeps_the_good_copy);
     RUN(test_wrong_magic_with_good_crc_starts_from_zero);
     RUN(test_failed_reload_refuses_to_save);
+    RUN(test_no_record_yet_is_created_by_the_first_save);
+    RUN(test_other_read_failure_is_not_no_record);
+    RUN(test_second_copy_with_no_record_yet);
 TEST_MAIN_END()
