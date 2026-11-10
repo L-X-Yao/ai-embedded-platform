@@ -430,9 +430,33 @@ TEST(test_cancel_from_sender)
     ymodem_init(&ym, &g_io);
     ymodem_start(&ym);
 
+    /* ymodem.txt 4.1: two consecutive CANs, so a line hit cannot abort. */
     ymodem_err_t err = ymodem_feed(&ym, YMODEM_CAN);
+    ASSERT_EQ(err, YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+
+    err = ymodem_feed(&ym, YMODEM_CAN);
     ASSERT_EQ(err, YMODEM_ERR_CANCEL);
     ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_ERROR);
+}
+
+TEST(test_can_split_by_another_byte_does_not_cancel)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, 'x'), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_CAN), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+
+    /* A block still gets through after the stray CAN. */
+    uint8_t hdr[133];
+    build_block0(hdr, "fw.bin", 128);
+    feed_bytes(&ym, hdr, 133);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
 }
 
 TEST(test_cancel_by_receiver)
@@ -883,6 +907,7 @@ TEST_MAIN("ymodem")
     RUN(test_eot_sequence);
     RUN(test_crc_check_bad_crc_nak);
     RUN(test_cancel_from_sender);
+    RUN(test_can_split_by_another_byte_does_not_cancel);
     RUN(test_cancel_by_receiver);
     RUN(test_batch_end_empty_block0);
     RUN(test_state_transitions);

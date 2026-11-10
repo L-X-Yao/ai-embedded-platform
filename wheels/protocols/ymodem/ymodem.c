@@ -204,11 +204,17 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
         return YMODEM_ERR_PARAM;
     }
 
-    /* CAN detection — only at frame boundary */
+    /* CAN detection — only at frame boundary, and two in a row, so that a
+     * line hit cannot abort (ymodem.txt 4.1) */
     if (byte == YMODEM_CAN && ym->buf_pos == 0) {
-        ym->state = YMODEM_STATE_ERROR;
-        return YMODEM_ERR_CANCEL;
+        ym->can_count++;
+        if (ym->can_count >= 2) {
+            ym->state = YMODEM_STATE_ERROR;
+            return YMODEM_ERR_CANCEL;
+        }
+        return YMODEM_OK;
     }
+    ym->can_count = 0;
 
     /* EOT handling: first EOT -> NAK, second EOT -> ACK + 'C' for next file */
     if (byte == YMODEM_EOT && ym->buf_pos == 0) {

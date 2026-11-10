@@ -82,6 +82,7 @@ typedef struct {
     uint32_t           file_size;
     uint32_t           total_received;
     bool               eot_seen;         /* first EOT received, awaiting second */
+    uint8_t            can_count;        /* consecutive CAN bytes received */
 } ymodem_t;
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
