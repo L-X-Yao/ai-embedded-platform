@@ -974,6 +974,39 @@ TEST(test_csq_outside_the_at_range_is_ignored)
     ASSERT_EQ(99, g_csq_value);
 }
 
+/* p.67 defines 0 to 31 and 99, and nothing between. */
+TEST(test_csq_between_31_and_99_is_ignored)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_csq(&dev, on_csq, NULL);
+
+    feed_line(&dev, "+CSQ: 31,99");
+    ASSERT_EQ(31, g_csq_value);
+    g_csq_value = -1;
+    feed_line(&dev, "+CSQ: 32,99");
+    feed_line(&dev, "+CSQ: 98,99");
+    ASSERT_EQ(-1, g_csq_value);
+    ASSERT_EQ(31, air780eg_get_last_csq(&dev));
+}
+
+/* p.67: AT+CSQ=? answers with lists, so there is no reading in the line. */
+TEST(test_csq_test_reply_is_not_a_reading)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_csq(&dev, on_csq, NULL);
+
+    feed_line(&dev, "+CSQ: (0-31,99),(0-7,99)");
+    feed_line(&dev, "+CSQ:");
+    ASSERT_EQ(-1, g_csq_value);
+    ASSERT_EQ(-1, air780eg_get_last_csq(&dev));
+}
+
 TEST_MAIN("air780eg")
     RUN(test_init_ok);
     RUN(test_init_null);
@@ -1040,4 +1073,6 @@ TEST_MAIN("air780eg")
     RUN(test_send_cmd_null_dev);
     RUN(test_feed_cr_lf_sequence);
     RUN(test_csq_outside_the_at_range_is_ignored);
+    RUN(test_csq_between_31_and_99_is_ignored);
+    RUN(test_csq_test_reply_is_not_a_reading);
 TEST_MAIN_END()

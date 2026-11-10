@@ -128,7 +128,7 @@ static void op_csq(air780eg_t *dev, world_t *w, fuzz_input_t *in) {
     for (size_t i = 0; i < count; i++) line[len++] = (char)('0' + digits[i] % 10);
     memcpy(line + len, ",99", 3);
     type_line(dev, line, len + 3);
-    if (w->csq > 0 && (w->rssi < 0 || w->rssi > 99)) __builtin_trap();
+    if (w->csq > 0 && (w->rssi < 0 || (w->rssi > 31 && w->rssi != 99))) __builtin_trap();
 }
 
 static void op_command(air780eg_t *dev, world_t *w, fuzz_input_t *in) {

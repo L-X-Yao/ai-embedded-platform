@@ -106,12 +106,16 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
     if (starts_with(line, "+CSQ:")) {
         const char *p = line + 5;
         while (*p == ' ') p++;
+        /* The reply to AT+CSQ=? is a list, with no number here (p.67). */
+        if (*p < '0' || *p > '9') return;
         int rssi = 0;
         while (*p >= '0' && *p <= '9') {
             rssi = rssi * 10 + (*p - '0');
-            if (rssi > 99) return;  /* 3GPP TS 27.007: 0-31, or 99 for unknown */
+            if (rssi > 99) return;
             p++;
         }
+        /* p.67: 0 to 31, or 99 for unknown */
+        if (rssi > 31 && rssi != 99) return;
         dev->last_csq = rssi;
         if (dev->csq_cb != NULL) {
             dev->csq_cb(dev->csq_user, rssi);
