@@ -124,6 +124,38 @@ typedef struct {
 #define VSF_HW_I2C0_ER_IRQHandler   I2C0_ER_IRQHandler
 #endif
 
+/* ---- spi ---- */
+#if VSF_HAL_USE_SPI == ENABLED
+#define VSF_SPI_CFG_MULTI_CLASS     DISABLED
+typedef struct vsf_spi_t vsf_spi_t;
+#include "common/spi/spi.h"
+typedef void vsf_spi_isr_handler_t(void *target, vsf_spi_t *s, vsf_spi_irq_mask_t m);
+typedef struct {
+    vsf_spi_isr_handler_t *handler_fn;
+    void *target_ptr;
+    int prio;
+} vsf_spi_isr_t;
+typedef struct {
+    uint32_t mode;
+    uint32_t clock_hz;
+    vsf_spi_isr_t isr;
+} vsf_spi_cfg_t;
+typedef struct { uint32_t is_busy; } vsf_spi_status_t;
+typedef struct {
+    uint32_t irq_mask;
+    uint8_t support_hardware_cs : 1;
+    uint8_t support_software_cs : 1;
+    uint8_t cs_count : 6;
+    uint32_t max_clock_hz, min_clock_hz;
+} vsf_spi_capability_t;
+#define VSF_HW_SPI0_REG_BASE        0
+#define VSF_HW_SPI0_PCLK_HZ         42000000U
+#define VSF_HW_SPI0_EN              VSF_HW_EN_SPI0
+#define VSF_HW_SPI0_RST             VSF_HW_RST_SPI0
+#define VSF_HW_SPI0_IRQN            35
+#define VSF_HW_SPI0_IRQHandler      SPI0_IRQHandler
+#endif
+
 /* ---- usart ---- */
 #if VSF_HAL_USE_USART == ENABLED
 #define VSF_USART_CFG_MULTI_CLASS   DISABLED

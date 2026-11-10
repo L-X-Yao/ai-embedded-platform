@@ -151,18 +151,27 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_fifo_transfer)(
     uint_fast32_t count
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
+    VSF_HAL_ASSERT((NULL != out_buffer_ptr) || (NULL != in_buffer_ptr));
+    VSF_HAL_ASSERT((NULL == out_buffer_ptr) == (NULL == out_offset_ptr));
+    VSF_HAL_ASSERT((NULL == in_buffer_ptr) == (NULL == in_offset_ptr));
 
     uint32_t reg = spi_ptr->reg;
     uint32_t stat;
     uint32_t is16bit = SPI_CTL0(reg) & SPI_CTL0_FF16;
-    uint_fast32_t tx_offset = out_offset_ptr ? *out_offset_ptr : 0;
-    uint_fast32_t rx_offset = in_offset_ptr  ? *in_offset_ptr  : 0;
+    // A direction with no offset pointer keeps step with the other one, so a
+    // call that resumes a short transfer does not send or wait for it all again.
+    uint_fast32_t rx_offset = in_offset_ptr ? *in_offset_ptr
+                                            : (out_offset_ptr ? *out_offset_ptr : 0);
+    uint_fast32_t tx_offset = out_offset_ptr ? *out_offset_ptr : rx_offset;
 
     uint32_t guard = 0;
     while (tx_offset < count || rx_offset < count) {
         stat = SPI_STAT(reg);
         bool progress = false;
-        if ((tx_offset < count) && (stat & SPI_STAT_TBE)) {
+        // One frame in flight at most: with a second one queued behind the shift
+        // register, an interrupt of about two frames overruns RX, and the manual
+        // says the new frame is then lost. A slower transfer cannot overrun.
+        if ((tx_offset < count) && (tx_offset <= rx_offset) && (stat & SPI_STAT_TBE)) {
             if (out_buffer_ptr != NULL) {
                 if (is16bit) {
                     SPI_DATA(reg) = ((uint16_t *)out_buffer_ptr)[tx_offset];
@@ -187,8 +196,18 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_fifo_transfer)(
             rx_offset++;
             progress = true;
         }
-        if (!progress && ++guard > 100000U) break;
-        if (progress) guard = 0;
+        if (progress) {
+            guard = 0;
+        } else if (++guard > 100000U) {
+            // Stuck: the short offsets tell the caller. Clear RXORERR so that the
+            // next call does not start with it (read DATA, then read STAT).
+            if (stat & SPI_STAT_RXORERR) {
+                volatile uint32_t __dummy = SPI_DATA(reg);
+                (void)__dummy;
+                (void)SPI_STAT(reg);
+            }
+            break;
+        }
     }
 
     if (out_offset_ptr) *out_offset_ptr = tx_offset;
