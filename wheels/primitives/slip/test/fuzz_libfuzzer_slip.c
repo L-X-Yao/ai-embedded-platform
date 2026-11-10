@@ -39,9 +39,20 @@ static void decode_stream(const uint8_t *data, size_t size) {
     slip_decoder_t dec;
     if (slip_decoder_init(&dec, buf, capacity) != SLIP_OK) __builtin_trap();
 
+    bool broken = false;  // the frame in progress lost a byte
     for (size_t i = 1; i < size; i++) {
-        slip_decoder_feed(&dec, data[i]);
-        if (slip_decoder_ready(&dec)) {
+        bool was_ready = slip_decoder_ready(&dec);
+        slip_err_t err = slip_decoder_feed(&dec, data[i]);
+        bool ready = slip_decoder_ready(&dec);
+        if (ready && !was_ready && broken) __builtin_trap();
+        if (data[i] == SLIP_END) {
+            broken = false;
+        } else if (err != SLIP_OK) {
+            broken = true;
+        }
+
+        // Odd bytes collect the frame, so others arrive while one is waiting.
+        if (ready && (data[i] & 1u)) {
             const uint8_t *frame = NULL;
             uint16_t frame_len = slip_decoder_frame(&dec, &frame);
             if (frame_len > capacity || (frame_len > 0 && !frame)) __builtin_trap();

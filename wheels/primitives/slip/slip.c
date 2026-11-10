@@ -144,9 +144,18 @@ slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacit
     dec->pos         = 0;
     dec->escaped     = false;
     dec->frame_ready = false;
+    dec->discarding  = false;
 
     ENSURE(dec->pos == 0 && !dec->escaped && !dec->frame_ready);
     return SLIP_OK;
+}
+
+/* The frame in progress lost a byte: give it up, and drop the rest of it. */
+static slip_err_t give_up_frame(slip_decoder_t *dec, slip_err_t err)
+{
+    dec->pos        = 0;
+    dec->discarding = true;
+    return err;
 }
 
 slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte)
@@ -155,9 +164,12 @@ slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte)
         return SLIP_ERR_PARAM;
     }
 
-    /* if a frame is already ready, ignore until reset */
-    if (dec->frame_ready) {
-        return SLIP_OK;
+    /* With a frame waiting for reset there is nowhere to put a byte, and SLIP
+     * has no checksum to catch a frame that lost one, so all of that frame goes.
+     * END carries no data and closes whatever was being dropped. */
+    if (dec->frame_ready || dec->discarding) {
+        dec->discarding = (byte != (uint8_t)SLIP_END);
+        return dec->discarding ? SLIP_ERR_DROPPED : SLIP_OK;
     }
 
     if (byte == (uint8_t)SLIP_END) {
@@ -183,14 +195,12 @@ slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte)
         } else if (byte == (uint8_t)SLIP_ESC_ESC) {
             decoded = (uint8_t)SLIP_ESC;
         } else {
-            /* invalid escape sequence — reset */
-            dec->pos = 0;
-            return SLIP_ERR_INVALID;
+            /* invalid escape sequence */
+            return give_up_frame(dec, SLIP_ERR_INVALID);
         }
 
         if (dec->pos >= dec->capacity) {
-            dec->pos = 0;
-            return SLIP_ERR_OVERFLOW;
+            return give_up_frame(dec, SLIP_ERR_OVERFLOW);
         }
         dec->buf[dec->pos++] = decoded;
         return SLIP_OK;
@@ -203,8 +213,7 @@ slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte)
 
     /* regular data byte */
     if (dec->pos >= dec->capacity) {
-        dec->pos = 0;
-        return SLIP_ERR_OVERFLOW;
+        return give_up_frame(dec, SLIP_ERR_OVERFLOW);
     }
     dec->buf[dec->pos++] = byte;
     return SLIP_OK;

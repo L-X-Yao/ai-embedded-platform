@@ -29,6 +29,7 @@ typedef enum {
     SLIP_ERR_PARAM   = -1,
     SLIP_ERR_OVERFLOW = -2,
     SLIP_ERR_INVALID  = -3,
+    SLIP_ERR_DROPPED  = -4,  /* streaming: this byte is lost, see slip_decoder_feed() */
 } slip_err_t;
 
 /* SLIP special bytes (RFC 1055) */
@@ -86,6 +87,7 @@ typedef struct {
     uint16_t  pos;          /* internal: current write position */
     bool      escaped;      /* internal: previous byte was ESC */
     bool      frame_ready;  /* internal: complete frame received */
+    bool      discarding;   /* internal: dropping bytes up to the next END */
 } slip_decoder_t;
 
 /**
@@ -103,10 +105,18 @@ slip_err_t slip_decoder_init(slip_decoder_t *dec, uint8_t *buf, uint16_t capacit
  * Feed one byte to the streaming decoder.
  * When a complete frame is received, slip_decoder_ready() returns true.
  *
+ * SLIP has no checksum, so a frame that lost a byte must not come out at all.
+ * After SLIP_ERR_OVERFLOW or SLIP_ERR_INVALID every byte up to the next END is
+ * dropped. So is a byte fed while a frame waits for reset, along with the rest
+ * of its frame. Call reset promptly: frames arriving before it are lost, and
+ * each lost byte returns SLIP_ERR_DROPPED. The END itself returns SLIP_OK, and
+ * the frame after it comes through as usual.
+ *
  * @param dec   Decoder instance.
  * @param byte  Received byte.
  * @return      SLIP_OK normally, SLIP_ERR_OVERFLOW if frame exceeds buffer,
- *              SLIP_ERR_INVALID if bad escape sequence.
+ *              SLIP_ERR_INVALID if bad escape sequence, SLIP_ERR_DROPPED if
+ *              this byte was dropped.
  * @thread_safe: no (use external lock if fed from ISR + task) @isr_safe: yes
  */
 slip_err_t slip_decoder_feed(slip_decoder_t *dec, uint8_t byte);
@@ -132,7 +142,9 @@ bool slip_decoder_ready(const slip_decoder_t *dec);
 uint16_t slip_decoder_frame(const slip_decoder_t *dec, const uint8_t **data);
 
 /**
- * Reset decoder for the next frame.
+ * Reset decoder for the next frame. A frame that lost a byte stays lost: its
+ * drop goes on to the next END, as the rest of it is still arriving.
+ * slip_decoder_init() starts afresh instead.
  *
  * @param dec   Decoder instance.
  * @thread_safe: no @isr_safe: no

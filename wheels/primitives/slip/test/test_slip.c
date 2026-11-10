@@ -426,6 +426,164 @@ TEST(test_encode_long_input_that_fits)
     ASSERT_EQ(out_len, 40002);
 }
 
+/* ── resync: SLIP has no checksum, so a broken frame must never come out ── */
+
+static void feed_ok(slip_decoder_t *dec, const uint8_t *bytes, uint16_t n,
+                    int *failures)
+{
+    for (uint16_t i = 0; i < n; i++) {
+        if (slip_decoder_feed(dec, bytes[i]) != SLIP_OK) (*failures)++;
+    }
+}
+
+TEST(test_overflow_drops_the_rest_of_the_frame)
+{
+    static const uint8_t head[] = { 0xC0, 1, 2, 3, 4 };
+    static const uint8_t next[] = { 0x0A, 0x0B, 0xC0 };
+    uint8_t buf[4];
+    slip_decoder_t dec;
+    int failures = 0;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    feed_ok(&dec, head, sizeof(head), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_EQ(slip_decoder_feed(&dec, 5), SLIP_ERR_OVERFLOW);
+    ASSERT_EQ(slip_decoder_feed(&dec, 6), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, 7), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_FALSE(slip_decoder_ready(&dec));
+
+    /* That END closed the broken frame, so the next one comes through */
+    feed_ok(&dec, next, sizeof(next), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+    const uint8_t *frame;
+    ASSERT_EQ(slip_decoder_frame(&dec, &frame), 2);
+    ASSERT_EQ_HEX(frame[0], 0x0A);
+}
+
+TEST(test_bad_escape_drops_the_rest_of_the_frame)
+{
+    static const uint8_t head[] = { 0xC0, 0xA1, 0xA2, 0xDB };
+    static const uint8_t next[] = { 0xB1, 0xC0 };
+    uint8_t buf[16];
+    slip_decoder_t dec;
+    int failures = 0;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    feed_ok(&dec, head, sizeof(head), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_EQ(slip_decoder_feed(&dec, 0x55), SLIP_ERR_INVALID);
+    ASSERT_EQ(slip_decoder_feed(&dec, 0xA3), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, 0xA4), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_FALSE(slip_decoder_ready(&dec));
+
+    feed_ok(&dec, next, sizeof(next), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+    const uint8_t *frame;
+    ASSERT_EQ(slip_decoder_frame(&dec, &frame), 1);
+    ASSERT_EQ_HEX(frame[0], 0xB1);
+}
+
+TEST(test_byte_lost_while_a_frame_waits_breaks_the_next_frame)
+{
+    static const uint8_t first[] = { 0xC0, 0xA1, 0xC0 };
+    static const uint8_t after[] = { 0xD1, 0xC0 };
+    uint8_t buf[16];
+    slip_decoder_t dec;
+    int failures = 0;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    feed_ok(&dec, first, sizeof(first), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+
+    /* The next frame starts while the caller still holds this one */
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_EQ(slip_decoder_feed(&dec, 0xB1), SLIP_ERR_DROPPED);
+    const uint8_t *frame;
+    ASSERT_EQ(slip_decoder_frame(&dec, &frame), 1);
+    ASSERT_EQ_HEX(frame[0], 0xA1);
+
+    /* Reset does not bring B1 back: what is left of its frame must go too */
+    slip_decoder_reset(&dec);
+    ASSERT_EQ(slip_decoder_feed(&dec, 0xB2), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_FALSE(slip_decoder_ready(&dec));
+
+    feed_ok(&dec, after, sizeof(after), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+    ASSERT_EQ(slip_decoder_frame(&dec, &frame), 1);
+    ASSERT_EQ_HEX(frame[0], 0xD1);
+}
+
+TEST(test_end_while_a_frame_waits_loses_nothing)
+{
+    static const uint8_t first[] = { 0xC0, 0xA1, 0xC0 };
+    static const uint8_t next[] = { 0xB1, 0xC0 };
+    uint8_t buf[16];
+    slip_decoder_t dec;
+    int failures = 0;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    feed_ok(&dec, first, sizeof(first), &failures);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    slip_decoder_reset(&dec);
+    feed_ok(&dec, next, sizeof(next), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+}
+
+TEST(test_esc_then_end_closes_the_frame_by_itself)
+{
+    /* The END has already arrived, so the next byte belongs to a new frame */
+    static const uint8_t head[] = { 0xC0, 0x11, 0xDB };
+    static const uint8_t next[] = { 0xB1, 0xC0 };
+    uint8_t buf[16];
+    slip_decoder_t dec;
+    int failures = 0;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    feed_ok(&dec, head, sizeof(head), &failures);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_ERR_INVALID);
+    feed_ok(&dec, next, sizeof(next), &failures);
+    ASSERT_EQ(failures, 0);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+}
+
+TEST(test_escape_inside_a_dropped_frame_is_only_dropped)
+{
+    uint8_t buf[1];
+    slip_decoder_t dec;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    ASSERT_EQ(slip_decoder_feed(&dec, 1), SLIP_OK);
+    ASSERT_EQ(slip_decoder_feed(&dec, 2), SLIP_ERR_OVERFLOW);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_ESC), SLIP_ERR_DROPPED);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_EQ(slip_decoder_feed(&dec, 3), SLIP_OK);
+    ASSERT_EQ(slip_decoder_feed(&dec, (uint8_t)SLIP_END), SLIP_OK);
+    ASSERT_TRUE(slip_decoder_ready(&dec));
+}
+
+TEST(test_reset_does_not_end_a_drop_but_init_does)
+{
+    uint8_t buf[1];
+    slip_decoder_t dec;
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+
+    ASSERT_EQ(slip_decoder_feed(&dec, 1), SLIP_OK);
+    ASSERT_EQ(slip_decoder_feed(&dec, 2), SLIP_ERR_OVERFLOW);
+    slip_decoder_reset(&dec);
+    ASSERT_EQ(slip_decoder_feed(&dec, 3), SLIP_ERR_DROPPED);
+
+    slip_decoder_init(&dec, buf, (uint16_t)sizeof(buf));
+    ASSERT_EQ(slip_decoder_feed(&dec, 3), SLIP_OK);
+}
+
 TEST_MAIN("slip")
     RUN(test_encode_empty);
     RUN(test_encode_no_special);
@@ -455,4 +613,11 @@ TEST_MAIN("slip")
     RUN(test_zero_init_safety);
     RUN(test_encode_long_input_past_capacity);
     RUN(test_encode_long_input_that_fits);
+    RUN(test_overflow_drops_the_rest_of_the_frame);
+    RUN(test_bad_escape_drops_the_rest_of_the_frame);
+    RUN(test_byte_lost_while_a_frame_waits_breaks_the_next_frame);
+    RUN(test_end_while_a_frame_waits_loses_nothing);
+    RUN(test_esc_then_end_closes_the_frame_by_itself);
+    RUN(test_escape_inside_a_dropped_frame_is_only_dropped);
+    RUN(test_reset_does_not_end_a_drop_but_init_does);
 TEST_MAIN_END()
