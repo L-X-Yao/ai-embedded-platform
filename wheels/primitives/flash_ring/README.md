@@ -49,7 +49,9 @@ flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
   its slot behind, and the retry takes the next slot. The slot left behind
   stays in the ring as a frame, torn, or whole if only the driver's report
   was wrong. So after a retry the reader can see a torn frame first, or the
-  same frame twice.
+  same frame twice. If the slot cannot be read back after the failed program,
+  the ring stays on it: the next push reads it first, and returns
+  `FLASH_RING_ERR_IO` without programming for as long as that read fails.
 - `peek()` -- read a frame without consuming it. `idx` is an absolute slot
   index between `read_idx` and `write_idx - 1`, so the oldest frame is at
   `ring.read_idx`. That is the one field of `flash_ring_t` a caller may read,
@@ -141,6 +143,9 @@ None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
   check, and a wrong `read_idx` then serves blank or old slots as frames.
 - A partial last sector is still erased whole by `erase_sector`, so nothing
   else can live in the rest of that sector.
+- A slot that is waiting to be read back after a failed program is not part
+  of the ring yet, so `discard_all()` does not discard it. If the program
+  wrote something, it joins the ring at the next push as the oldest frame.
 - The header sector wears much faster than the data. It is erased once per
   header write, so for each erase of a data sector it sees about
   `total_slots / persist_interval` erases, and twice that when every frame is
