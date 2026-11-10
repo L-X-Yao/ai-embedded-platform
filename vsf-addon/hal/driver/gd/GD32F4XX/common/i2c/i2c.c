@@ -102,6 +102,7 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_init)(
 
     vsf_i2c_isr_t *isr_ptr = &cfg_ptr->isr;
     i2c_ptr->isr = *isr_ptr;
+    i2c_ptr->busy = false;
     if (isr_ptr->handler_fn != NULL) {
         NVIC_SetPriority(i2c_ptr->ev_irqn, (uint32_t)isr_ptr->prio);
         NVIC_EnableIRQ(i2c_ptr->ev_irqn);
@@ -204,6 +205,11 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
     // A request with no START carries on from that transfer.
     i2c_ptr->addressed = !(cmd & (VSF_I2C_CMD_START | VSF_I2C_CMD_RESTART));
     i2c_ptr->restarted = false;
+
+    // A read cut short by an error can leave bytes in DATA and the shift register
+    for (int i = 0; (i < 2) && (I2C_STAT0(reg) & I2C_STAT0_RBNE); i++) {
+        (void)I2C_DATA(reg);
+    }
 
     // N=2, user manual 20.3.7 scheme B: POAP goes on before START, so that
     // clearing ACKEN at ADDSEND takes effect one byte later. POAP stays set until
@@ -437,6 +443,7 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_er_irqhandler)(
 
     if (stat0 & I2C_STAT0_BERR) {
         I2C_STAT0(reg) &= ~I2C_STAT0_BERR;
+        irq_mask |= VSF_I2C_IRQ_MASK_MASTER_BUS_ERR | VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST;
     }
     if (stat0 & I2C_STAT0_LOSTARB) {
         I2C_STAT0(reg) &= ~I2C_STAT0_LOSTARB;
@@ -449,13 +456,19 @@ static void VSF_MCONNECT(__, VSF_I2C_CFG_IMP_PREFIX, _i2c_er_irqhandler)(
     }
     if (stat0 & I2C_STAT0_OUERR) {
         I2C_STAT0(reg) &= ~I2C_STAT0_OUERR;
+        irq_mask |= VSF_I2C_IRQ_MASK_MASTER_BUS_ERR | VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST;
     }
 
-    if (irq_mask != 0) {
-        __i2c_transfer_end(i2c_ptr, irq_mask);
-    } else {
-        I2C_CTL1(reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
+    // Nothing of ours is set: the transfer goes on
+    if (0 == irq_mask) {
+        return;
     }
+    // Still master after a bus fault, so let go of the bus. On LOSTARB the
+    // hardware has already gone back to slave mode.
+    if ((stat0 & (I2C_STAT0_BERR | I2C_STAT0_OUERR)) && !(stat0 & I2C_STAT0_LOSTARB)) {
+        I2C_CTL0(reg) |= I2C_CTL0_STOP;
+    }
+    __i2c_transfer_end(i2c_ptr, irq_mask);
 }
 
 /*============================ TEMPLATE INSTANTIATION ========================*/

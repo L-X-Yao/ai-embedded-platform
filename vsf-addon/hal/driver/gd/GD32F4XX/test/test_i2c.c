@@ -45,6 +45,8 @@ enum { IDLE, HOLD, ADDR, ADDRLOW, RX, TX } phase;
 static uint8_t addrbyte, dreg, shiftr, tx_dreg, next_b;
 static int shift_full, tx_shift, tx_dreg_full, is_read, rx_inflight, ack_next, nacked;
 static int slave_absent;
+static int inject_at_byte = -1, bytes_done;     /* raise an error flag after this byte */
+static uint32_t inject_flag;
 static char wire[1024];
 static int stops, starts, callbacks;
 static uint32_t last_mask;
@@ -171,6 +173,17 @@ static void start_now(void)
     tx_shift = tx_dreg_full = 0;
 }
 
+static void maybe_inject(void)
+{
+    if (bytes_done++ == inject_at_byte) {
+        st0 |= inject_flag;
+        if (inject_flag & I2C_STAT0_LOSTARB) {
+            phase = IDLE;               /* "I2C returns to slave mode", 20.4.6 */
+            rx_inflight = 0;
+        }
+    }
+}
+
 static void rx_end_of_byte(void)
 {
     uint8_t b = nacked ? 0xFF : next_b++;
@@ -192,6 +205,7 @@ static void rx_end_of_byte(void)
         st0 |= I2C_STAT0_RBNE;
     }
     rx_inflight = !(st0 & I2C_STAT0_BTC);   /* the next byte follows unless SCL is held */
+    maybe_inject();
 }
 
 /* One bus event. Returns 0 when the bus cannot move until software acts. */
@@ -262,6 +276,7 @@ static int bus_step(void)
         } else {
             st0 |= I2C_STAT0_TBE | I2C_STAT0_BTC;
         }
+        maybe_inject();
         return 1;
     default:
         return 0;
@@ -355,6 +370,9 @@ static void bus_reset(int with_handler)
     chain_ret = VSF_ERR_NONE;
     poap_at_start = acken_at_addclr = btc_at_first_read = stop_at_first_read = data_reads = 0;
     isr_calls = 0;
+    inject_at_byte = -1;
+    bytes_done = 0;
+    inject_flag = 0;
     host_asserts = 0;
     vsf_i2c_cfg_t cfg = { .mode = VSF_I2C_MODE_MASTER, .clock_hz = 100000 };
     if (with_handler) {
@@ -629,6 +647,68 @@ static void test_continue_write(void)
     CHECK(last_mask == DONE_OK);
 }
 
+#define BUS_FAULT   (VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST | VSF_I2C_IRQ_MASK_MASTER_BUS_ERR)
+
+/* the bus must work again after any of these */
+static void check_next_read(void)
+{
+    static uint8_t b[3];
+
+    wire[0] = 0;
+    next_b = 0xC1;
+    nacked = 0;
+    inject_at_byte = -1;
+    memset(b, 0, sizeof(b));
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, RD, 3, b) == VSF_ERR_NONE);
+    run_bus();
+    if (strcmp(wire, " S addr=A1 rx=C1+ack rx=C2+ack rx=C3+NACK P") != 0) {
+        printf("  next read wire:%s\n", wire);
+    }
+    CHECK(strcmp(wire, " S addr=A1 rx=C1+ack rx=C2+ack rx=C3+NACK P") == 0);
+    CHECK((b[0] == 0xC1) && (b[1] == 0xC2) && (b[2] == 0xC3));
+}
+
+/* H1-23: one glitch must end the request, not strand the caller */
+static void check_error(const char *name, uint32_t flag, vsf_i2c_cmd_t cmd, uint32_t want, int want_stops)
+{
+    static uint8_t b[4] = { 0x11, 0x22, 0x33, 0x44 };
+
+    printf("H1-23 %s\n", name);
+    bus_reset(1);
+    inject_at_byte = 1;
+    inject_flag = flag;
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, cmd, 4, b) == VSF_ERR_NONE);
+    run_bus();
+    CHECK(!storm);
+    CHECK(callbacks == 1);
+    CHECK(last_mask == want);
+    CHECK(stops == want_stops);
+    CHECK(!(CTL1 & (I2C_CTL1_EVIE | I2C_CTL1_BUFIE)));
+    CHECK(!(st0 & flag));
+    CHECK(!vsf_hw_i2c_status(I2C).is_busy);
+    check_next_read();
+}
+
+static void test_errors(void)
+{
+    check_error("BERR in a read", I2C_STAT0_BERR, RD, BUS_FAULT, 1);
+    check_error("BERR in a write", I2C_STAT0_BERR, WR, BUS_FAULT, 1);
+    check_error("OUERR in a read", I2C_STAT0_OUERR, RD, BUS_FAULT, 1);
+    check_error("lost arbitration in a read", I2C_STAT0_LOSTARB, RD,
+                VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST, 0);
+    check_error("NACK in a write", I2C_STAT0_AERR, WR, VSF_I2C_IRQ_MASK_MASTER_ADDRESS_NACK, 1);
+
+    static uint8_t b[3];
+    printf("H1-23 an ER entry with no flag leaves the transfer alone\n");
+    bus_reset(1);
+    CHECK(vsf_hw_i2c_master_request(I2C, 0x50, RD, 3, b) == VSF_ERR_NONE);
+    I2C0_ER_IRQHandler();
+    run_bus();
+    CHECK(strcmp(wire, " S addr=A1 rx=A1+ack rx=A2+ack rx=A3+NACK P") == 0);
+    CHECK(callbacks == 1);
+    CHECK(last_mask == DONE_OK);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);
@@ -644,6 +724,7 @@ int main(void)
     test_refused();
     test_busy();
     test_continue_write();
+    test_errors();
     test_write_10bit();
     for (int n = 1; n <= 4; n++) {
         check_read_10bit(n);

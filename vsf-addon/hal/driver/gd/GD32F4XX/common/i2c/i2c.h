@@ -91,6 +91,9 @@ typedef enum vsf_i2c_irq_mask_t {
     VSF_I2C_IRQ_MASK_MASTER_NACK_DETECT         = (1 << 5),
 
     VSF_I2C_IRQ_MASK_MASTER_TX_NACK_DETECT      = (1 << 6),
+    // BERR or OUERR. The template has no bus error, so this always comes with
+    // ARBITRATION_LOST, the error that template-only consumers act on.
+    VSF_I2C_IRQ_MASK_MASTER_BUS_ERR             = (1 << 7),
     VSF_I2C_IRQ_MASK_MASTER_STARTED             = (1 << 10),
     VSF_I2C_IRQ_MASK_MASTER_STOPPED             = (1 << 11),
     VSF_I2C_IRQ_MASK_MASTER_START_OR_RESTART_DETECT = (1 << 12),
@@ -106,7 +109,8 @@ typedef enum vsf_i2c_irq_mask_t {
     __VSF_HW_I2C_IRQ_MASK              = VSF_I2C_IRQ_MASK_MASTER_TRANSFER_COMPLETE
                                         | VSF_I2C_IRQ_MASK_MASTER_ARBITRATION_LOST
                                         | VSF_I2C_IRQ_MASK_MASTER_ADDRESS_NACK
-                                        | VSF_I2C_IRQ_MASK_MASTER_NACK_DETECT,
+                                        | VSF_I2C_IRQ_MASK_MASTER_NACK_DETECT
+                                        | VSF_I2C_IRQ_MASK_MASTER_BUS_ERR,
 } vsf_i2c_irq_mask_t;
 
 /*============================ PROTOTYPES ====================================*/
