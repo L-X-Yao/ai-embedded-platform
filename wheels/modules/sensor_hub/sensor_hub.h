@@ -83,7 +83,12 @@ typedef struct {
 sensor_hub_err_t sensor_hub_init(sensor_hub_t *hub);
 
 /** @thread_safe: not thread-safe, caller serializes
- *  Register a sensor. Returns ERR_FULL if table is full. */
+ *  Register a sensor. Returns ERR_FULL if table is full.
+ *
+ *  name and unit are kept by pointer, not copied, and name is read again by
+ *  every sensor_hub_find(). Both must stay valid and unchanged for as long as
+ *  hub is in use: string literals or static arrays. A stack buffer, or one
+ *  buffer reused for several names, gives wrong or dead names and no error. */
 sensor_hub_err_t sensor_hub_register(sensor_hub_t *hub, const char *name,
                                      const char *unit,
                                      sensor_hub_read_fn read, void *ctx);

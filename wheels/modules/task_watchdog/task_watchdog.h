@@ -72,6 +72,12 @@ task_wd_err_t task_watchdog_init(task_watchdog_t *wd);
 /**
  * Start watching a task.  A name already registered is restarted with the new
  * timeout: enabled, status OK, and fed as of now.
+ *
+ * The name is kept by pointer, not copied, and is the pointer the expiry
+ * callback gets. It must stay valid and unchanged for as long as wd is in use:
+ * a string literal or a static array. A stack buffer gives a dead name, and
+ * one buffer reused for two tasks reads as a restart of the first, so only
+ * one task is watched, with no error.
  * @thread_safe: caller_must_lock
  */
 task_wd_err_t task_watchdog_register(task_watchdog_t *wd, const char *name,

@@ -380,6 +380,22 @@ TEST(test_unit_stored)
     ASSERT_TRUE(strcmp(hub.sensors[0].unit, "degC") == 0);
 }
 
+/* The header's rule, pinned: name and unit are kept by pointer. */
+TEST(test_name_and_unit_are_kept_by_pointer)
+{
+    char name[] = "old";
+    char unit[] = "C";
+
+    setup();
+    sensor_hub_register(&hub, name, unit, mock_temp_read, NULL);
+    ASSERT_TRUE(hub.sensors[0].unit == unit);
+    ASSERT_EQ(sensor_hub_find(&hub, "old"), 0);
+
+    memcpy(name, "new", sizeof(name));
+    ASSERT_EQ(sensor_hub_find(&hub, "old"), -1);
+    ASSERT_EQ(sensor_hub_find(&hub, "new"), 0);
+}
+
 /* ================================================================ */
 
 /* One reading that is not a number must not reach the statistics, where only
@@ -452,6 +468,7 @@ TEST_MAIN("sensor_hub")
     RUN(test_get_stats_partial_null_out);
     RUN(test_get_value_null_out);
     RUN(test_unit_stored);
+    RUN(test_name_and_unit_are_kept_by_pointer);
     RUN(test_non_finite_reading_is_a_read_error);
     RUN(test_largest_finite_readings_are_accepted);
 TEST_MAIN_END()

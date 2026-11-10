@@ -499,6 +499,29 @@ TEST(test_disable_reaches_only_the_named_task)
     ASSERT_STR_EQ(cb_last_name, "first");
 }
 
+/* The header's rule, pinned: the name is kept by pointer. */
+TEST(test_name_is_kept_by_pointer)
+{
+    task_watchdog_t wd;
+    char name[] = "t0";
+
+    reset_spy();
+    task_watchdog_init(&wd);
+    task_watchdog_set_callback(&wd, spy_cb, NULL);
+    ASSERT_EQ(task_watchdog_register(&wd, name, 5), TASK_WD_OK);
+
+    /* A second task named in the same buffer reads as a restart of the first */
+    name[1] = '1';
+    ASSERT_EQ(task_watchdog_register(&wd, name, 5), TASK_WD_OK);
+    ASSERT_EQ(task_watchdog_count(&wd), 1);
+
+    /* The expiry callback gets the pointer it was given */
+    advance_ticks(&wd, 6);
+    task_watchdog_check(&wd);
+    ASSERT_EQ(cb_count, 1);
+    ASSERT_TRUE(cb_last_name == name);
+}
+
 TEST(test_enable_reaches_only_the_named_task)
 {
     task_watchdog_t wd;
@@ -549,4 +572,5 @@ TEST_MAIN("task_watchdog")
     RUN(test_feed_reaches_only_the_named_task);
     RUN(test_disable_reaches_only_the_named_task);
     RUN(test_enable_reaches_only_the_named_task);
+    RUN(test_name_is_kept_by_pointer);
 TEST_MAIN_END()

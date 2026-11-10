@@ -89,6 +89,11 @@ telemetry_err_t telemetry_init(telemetry_t *t, telemetry_send_fn send,
 
 /**
  * Register a named field. Returns ERR_FULL if table is full.
+ *
+ * The name is kept by pointer, not copied, and is read again on every publish
+ * and every update by name. It must stay valid and unchanged for as long as t
+ * is in use: a string literal or a static array. A stack buffer, or one buffer
+ * reused for several names, gives wrong or dead names and no error.
  * @thread_safe: no
  */
 telemetry_err_t telemetry_register(telemetry_t *t, const char *name);

@@ -540,6 +540,25 @@ TEST(test_long_name_is_sent)
     ASSERT_TRUE(strstr(sent_buf, "_to_be\":1.5}") != NULL);
 }
 
+/* The header's rule, pinned: names are kept by pointer, so three made in one
+ * buffer all read as the last. This is the misuse the header warns about. A
+ * copy would need a length cap, which test_long_name_is_sent rules out. */
+TEST(test_name_is_kept_by_pointer)
+{
+    char name[] = "ch0";
+
+    setup(TELEMETRY_FMT_KEY_VALUE);
+    for (uint8_t i = 0; i < 3; i++) {
+        name[2] = (char)('0' + i);
+        ASSERT_EQ(telemetry_register(&telem, name), TELEMETRY_OK);
+        ASSERT_EQ(telemetry_update_by_index(&telem, i, (float)(i + 1)),
+                  TELEMETRY_OK);
+    }
+
+    ASSERT_EQ(telemetry_publish(&telem, 7), TELEMETRY_OK);
+    ASSERT_TRUE(strncmp(sent_buf, "ts=7 ch2=1 ch2=2 ch2=3", 22) == 0);
+}
+
 /* ================================================================ */
 
 TEST_MAIN("telemetry")
@@ -581,4 +600,5 @@ TEST_MAIN("telemetry")
     RUN(test_long_value_is_sent_in_every_format);
     RUN(test_field_is_limited_only_by_the_buffer);
     RUN(test_long_name_is_sent);
+    RUN(test_name_is_kept_by_pointer);
 TEST_MAIN_END()
