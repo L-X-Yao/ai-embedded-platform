@@ -28,6 +28,8 @@ void FMC_IRQHandler(void);
 
 volatile uint32_t sim_fmc_ctl = FMC_CTL_LK, sim_fmc_stat, sim_fmc_key;
 
+static uint32_t buf[0x8000 + 8];
+
 /* user manual table 2-1, bank 0 */
 static const struct { uint32_t base, size; } sectors[12] = {
     { 0x00000, 0x04000 }, { 0x04000, 0x04000 }, { 0x08000, 0x04000 }, { 0x0C000, 0x04000 },
@@ -38,13 +40,18 @@ static const struct { uint32_t base, size; } sectors[12] = {
 static int calls;
 static uint32_t last_mask;
 static uint32_t words, erased_mask;
-static uint32_t buf[0x8000 + 8];
+/* a write started from the completion callback, as a chained caller does */
+static struct { int armed; uint32_t off; vsf_err_t ret; } chain;
 
 static void on_irq(void *t, vsf_flash_t *f, vsf_flash_irq_mask_t m)
 {
     (void)t; (void)f;
     calls++;
     last_mask = (uint32_t)m;
+    if (chain.armed) {
+        chain.armed = 0;
+        chain.ret = vsf_hw_flash_write_multi_sector(F, chain.off, (uint8_t *)buf, 8);
+    }
 }
 
 static void reset_sim(int with_handler, int with_irq_enable)
@@ -289,6 +296,47 @@ static void test_erase_ok(void)
     CHECK(calls == 1);
 }
 
+/* H1-12: step 2 of both sequences is BUSY=0, sections 2.3.5 and 2.3.7 */
+static void test_busy(void)
+{
+    printf("H1-12 BUSY set by an operation the driver did not start\n");
+    reset_sim(1, 1);
+    sim_fmc_stat = FMC_STAT_BUSY;
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x40000, (uint8_t *)buf, 8) == VSF_ERR_BUSY);
+    CHECK(word_at(0x40000) == 0xFFFFFFFFU);
+    CHECK(!(sim_fmc_ctl & FMC_CTL_PG));
+    CHECK(vsf_hw_flash_erase_multi_sector(F, 0x40000, 0x20000) == VSF_ERR_BUSY);
+    CHECK(vsf_hw_flash_erase_one_sector(F, 0x40000) == VSF_ERR_BUSY);
+    CHECK(!(sim_fmc_ctl & (FMC_CTL_SER | FMC_CTL_START)));
+    CHECK(vsf_hw_flash_status(F).is_busy);
+    sim_fmc_stat = 0;
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x40000, (uint8_t *)buf, 8) == VSF_ERR_NONE);
+    fmc_run(16);
+    CHECK(word_at(0x40004) == buf[1]);
+
+    printf("H1-12 a second request while one runs, BUSY low between words\n");
+    reset_sim(1, 1);
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x20000, (uint8_t *)buf, 16) == VSF_ERR_NONE);
+    fmc_run(1);
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x60000, (uint8_t *)buf, 8) == VSF_ERR_BUSY);
+    CHECK(vsf_hw_flash_erase_multi_sector(F, 0x60000, 0x20000) == VSF_ERR_BUSY);
+    CHECK(word_at(0x60000) == 0xFFFFFFFFU);
+    fmc_run(16);
+    CHECK(memcmp(FLASH_MEM + 0x20000, buf, 16) == 0);
+    CHECK(calls == 1);
+
+    printf("H1-12 the next write can start from the callback\n");
+    reset_sim(1, 1);
+    chain.armed = 1;
+    chain.off = 0x60000;
+    chain.ret = VSF_ERR_FAIL;
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x20000, (uint8_t *)buf, 8) == VSF_ERR_NONE);
+    fmc_run(16);
+    CHECK(chain.ret == VSF_ERR_NONE);
+    CHECK(memcmp(FLASH_MEM + 0x60000, buf, 8) == 0);
+    CHECK(calls == 2);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);   /* keep earlier lines if a sanitizer aborts */
@@ -310,5 +358,6 @@ int main(void)
     test_busy_between_words();
     test_erase_refused();
     test_erase_ok();
+    test_busy();
     return host_summary("flash");
 }

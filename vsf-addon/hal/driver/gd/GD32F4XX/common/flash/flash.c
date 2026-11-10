@@ -116,12 +116,18 @@ static void __flash_start_sector_erase(int sector)
 // Write and erase advance only in the interrupt. Without a handler the NVIC line
 // is off, and without irq_enable ENDIE is: one word would land, the call would
 // return OK, and the rest of the request would never happen.
-static vsf_err_t __flash_check_irq_armed(
+//
+// Both sequences need BUSY=0 first (user manual 2.3.5 and 2.3.7, step 2). A busy
+// FMC is reported, not waited for: an erase takes far too long to spin on here.
+static vsf_err_t __flash_check_ready(
     VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr
 ) {
     if (    (NULL == flash_ptr->isr.handler_fn)
         ||  ((FMC_CTL & (FMC_CTL_ENDIE | FMC_CTL_ERRIE)) != (FMC_CTL_ENDIE | FMC_CTL_ERRIE))) {
         return VSF_ERR_NOT_AVAILABLE;
+    }
+    if ((flash_ptr->size_cur != 0) || (FMC_STAT & FMC_STAT_BUSY)) {
+        return VSF_ERR_BUSY;
     }
     return VSF_ERR_NONE;
 }
@@ -200,7 +206,7 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
 
     vsf_err_t err = __flash_check_erase_range(offset, size);
     if (err == VSF_ERR_NONE) {
-        err = __flash_check_irq_armed(flash_ptr);
+        err = __flash_check_ready(flash_ptr);
     }
     if (err != VSF_ERR_NONE) {
         return err;
@@ -240,7 +246,7 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     if ((offset >= __VSF_HW_FLASH_SIZE) || (size > __VSF_HW_FLASH_SIZE - offset)) {
         return VSF_ERR_INVALID_RANGE;
     }
-    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
+    vsf_err_t err = __flash_check_ready(flash_ptr);
     if (err != VSF_ERR_NONE) {
         return err;
     }
@@ -250,7 +256,6 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     flash_ptr->size_orig = flash_ptr->size_cur = size;
     flash_ptr->buffer = buffer;
 
-    { uint32_t guard = 500000; while ((FMC_STAT & FMC_STAT_BUSY) && --guard) { } }
     FMC_CTL |= FMC_CTL_PG;
     __ISB();
     __DSB();
