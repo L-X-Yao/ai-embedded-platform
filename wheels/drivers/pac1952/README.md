@@ -43,6 +43,8 @@ HAL: `read_regs` is required. `pac1952_refresh` and `pac1952_set_sample_rate` al
 need `write_raw` and `delay_ms`, and without them return `PAC1952_ERR_PARAM` and
 send nothing. `write_reg` stays in the struct but is unused.
 
+`pac1952_cfg_t.addr` is the address the ADDRSEL resistor picks, 0x10 to 0x1F (Table 6-1). 0 means 0x10, and anything else outside the table returns `PAC1952_ERR_PARAM`.
+
 ```c
 #include "pac1952.h"
 
@@ -76,8 +78,8 @@ Both calls block for 1 ms. Call `pac1952_init` at least 50 ms after VDD comes up
 Checked on 2026-11-05 against Microchip DS20006539E. Not run on hardware.
 
 - **Matched:** CTRL, ACC_COUNT, VBUS, VSENSE and ID register addresses, register widths, VBUS format and LSB, current and power formulas.
-- **Fixed:** Product ID was 0x59, which matches no part; PAC1952-1 is 0x79 and PAC1952-2 is 0x7D. VSENSE was read as signed, but the default range is unipolar, so 25 mV read as 50 mV. Removed the wrong VPOWER addresses. `pac1952_refresh` sent REFRESH_V (0x1F) with a data byte and did not wait. It now sends REFRESH at 0x00 as a Send Byte through `write_raw` and waits 1 ms through `delay_ms`, because the registers settle in that time and the chip NACKs commands sent sooner. `pac1952_set_sample_rate` wrote the GPIO_ALERT2 bits and ACC_COUNT, and then refused with `PAC1952_ERR_UNSUPPORTED`. It now reads CTRL, sets SAMPLE_MODE in bits 15-12, sends both bytes in one Block Write and then REFRESH. It uses the plain rate modes, and the new rate can start after the call returns, at the end of the conversion cycle. The model encoded the old mistakes and had no test; it is now a bus model from the manual. None of the 2026-11-06 fixes have run on hardware.
-- **Still open:** The I2C address is fixed at 0x10, which is the ADDRSEL-to-GND case only. High byte first in CTRL comes from the register drawing, as no sentence in the manual states it.
+- **Fixed:** Product ID was 0x59, which matches no part; PAC1952-1 is 0x79 and PAC1952-2 is 0x7D. VSENSE was read as signed, but the default range is unipolar, so 25 mV read as 50 mV. Removed the wrong VPOWER addresses. `pac1952_refresh` sent REFRESH_V (0x1F) with a data byte and did not wait. It now sends REFRESH at 0x00 as a Send Byte through `write_raw` and waits 1 ms through `delay_ms`, because the registers settle in that time and the chip NACKs commands sent sooner. `pac1952_set_sample_rate` wrote the GPIO_ALERT2 bits and ACC_COUNT, and then refused with `PAC1952_ERR_UNSUPPORTED`. It now reads CTRL, sets SAMPLE_MODE in bits 15-12, sends both bytes in one Block Write and then REFRESH. It uses the plain rate modes, and the new rate can start after the call returns, at the end of the conversion cycle. The model encoded the old mistakes and had no test; it is now a bus model from the manual. None of the 2026-11-06 fixes have run on hardware. The I2C address was fixed at 0x10, the ADDRSEL-to-GND case only. It now comes from `pac1952_cfg_t.addr`, and all 16 addresses of Table 6-1 work.
+- **Still open:** High byte first in CTRL comes from the register drawing, as no sentence in the manual states it.
 
 ## Known issues
 
@@ -93,9 +95,18 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 44 pass (+ 12 generated null tests)
-- Model tests (sim): 22 pass
+- Unit tests (sim): 46 pass (+ 12 generated null tests)
+- Model tests (sim): 26 pass
 - HIL: N/A
+
+## Migration
+
+From the fixes of 2026-11.
+
+| Change | What a caller has to do | If they do nothing |
+|--------|-------------------------|--------------------|
+| `pac1952_cfg_t` gained `addr`, where 0 means the old 0x10 | Set it if ADDRSEL is not tied to GND. Zero the struct or use a designated initializer | With a zeroed config, nothing changes. An uninitialized one can now return `PAC1952_ERR_PARAM`, or use a wrong address |
+| `pac1952_t` grew with the config | Nothing: treat it as opaque storage | Nothing changes for the caller |
 
 ## API convention deviations
 

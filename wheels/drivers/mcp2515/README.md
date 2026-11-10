@@ -23,6 +23,7 @@ None. Pure C99 with injected SPI HAL callbacks.
 mcp2515_err_t mcp2515_init(mcp2515_t *dev, const mcp2515_spi_t *spi, mcp2515_speed_t speed);
 mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode);
 mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg);
+mcp2515_err_t mcp2515_abort_tx(mcp2515_t *dev);
 mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg);
 bool          mcp2515_has_message(mcp2515_t *dev);
 mcp2515_err_t mcp2515_set_filter(mcp2515_t *dev, uint8_t filter_num, uint32_t id, bool extended);
@@ -73,8 +74,8 @@ static void example(void) {
 Checked on 2026-11-06 against Microchip DS20001801J. Not run on hardware.
 
 - **Matched:** SPI opcodes, register addresses, mode encodings and polling, BIT MODIFY targets, ID packing, the 125 to 500 kbps timing values.
-- **Fixed:** The 1 Mbps setting broke the 2 TQ minimum for PS2 and no legal one exists at 8 MHz, so it is now refused. Standard remote frames read as data frames. Read-backs of TXREQ and RXnIF turned a fast send or a busy bus into `MCP2515_ERR_SPI`. Two comments were wrong. The models use the CANCTRL reset value and clear TXREQ. `mcp2515_init` read CANSTAT straight after RESET, inside the Oscillator Start-up Timer. It now waits through the new `delay_us`, for 128 us, which covers 128 OSC1 cycles at the slowest clock the chip allows. `mcp2515_set_mode` could not leave Sleep, because nothing set WAKIF, so any mode after Sleep timed out. It now sets WAKIE and WAKIF, waits the same time, requests the mode and puts both flags back; INT goes low meanwhile. The model and mock changed mode out of Sleep at once, which hid this, and the model now counts SPI operations inside the timer. These two fixes have not run on hardware. `mcp2515_send` returned OK in Listen-Only, Sleep and Configuration mode, where the frame can never go out and then holds up every mode change; it now returns `MCP2515_ERR_PARAM`. The model holds a mode change while a frame is pending, takes CNF, TXRTSCTRL, filter and mask writes only in Configuration mode and reads filters and masks as 0 elsewhere, and it has read-only bits, a running address pointer, BIT MODIFY as a write outside Table 11-1 and wake-up by bus activity. `mcp2515_init` promised to accept all messages but cleared only the masks, while EXIDE is unknown after power-on and gives each filter one frame format (p.35). It now writes six zero filters, even ones standard and odd ones extended, as arduino-mcp2515 and MCP_CAN_lib do. Both formats still need a check on a real bus.
-- **Still open:** init cannot know when power came up, so the caller must not call it during the power-on start-up. The manual defines the wake-up wait as 128 TOSC and gives no crystal start-up time, so only hardware can show whether 128 us is enough before the mode request. After `MCP2515_ERR_TIMEOUT` on a pending frame the request stays in REQOP, so the chip changes mode once the frame is out, and the driver has no call to abort a frame.
+- **Fixed:** The 1 Mbps setting broke the 2 TQ minimum for PS2 and no legal one exists at 8 MHz, so it is now refused. Standard remote frames read as data frames. Read-backs of TXREQ and RXnIF turned a fast send or a busy bus into `MCP2515_ERR_SPI`. Two comments were wrong. The models use the CANCTRL reset value and clear TXREQ. `mcp2515_init` read CANSTAT straight after RESET, inside the Oscillator Start-up Timer. It now waits through the new `delay_us`, for 128 us, which covers 128 OSC1 cycles at the slowest clock the chip allows. `mcp2515_set_mode` could not leave Sleep, because nothing set WAKIF, so any mode after Sleep timed out. It now sets WAKIE and WAKIF, waits the same time, requests the mode and puts both flags back; INT goes low meanwhile. The model and mock changed mode out of Sleep at once, which hid this, and the model now counts SPI operations inside the timer. These two fixes have not run on hardware. `mcp2515_send` returned OK in Listen-Only, Sleep and Configuration mode, where the frame can never go out and then holds up every mode change; it now returns `MCP2515_ERR_PARAM`. The model holds a mode change while a frame is pending, takes CNF, TXRTSCTRL, filter and mask writes only in Configuration mode and reads filters and masks as 0 elsewhere, and it has read-only bits, a running address pointer, BIT MODIFY as a write outside Table 11-1 and wake-up by bus activity. `mcp2515_init` promised to accept all messages but cleared only the masks, while EXIDE is unknown after power-on and gives each filter one frame format (p.35). It now writes six zero filters, even ones standard and odd ones extended, as arduino-mcp2515 and MCP_CAN_lib do. Both formats still need a check on a real bus. There was no way to take back a frame that could not go out. `mcp2515_abort_tx` clears TXREQ of the buffer `mcp2515_send` uses, which also frees a mode change the frame holds up. A frame already on the bus goes on, so `MCP2515_OK` only says the buffer is free. The manual does not say what TXREQ reads during such a frame: `MCP2515_ERR_TX_BUSY` covers it staying set, which the model assumes.
+- **Still open:** init cannot know when power came up, so the caller must not call it during the power-on start-up. The manual defines the wake-up wait as 128 TOSC and gives no crystal start-up time, so only hardware can show whether 128 us is enough before the mode request. After `MCP2515_ERR_TIMEOUT` on a pending frame the request stays in REQOP, so the chip changes mode once the frame is out, unless `mcp2515_abort_tx` takes the frame back first.
 
 ## Known issues
 
@@ -92,8 +93,17 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Host mock tests: PASS (17 tests — init, NULL safety, set mode normal/loopback, send standard/extended frame, receive standard/extended, has_message, no message, set filter, set mask, read status, read errors, speed config (all 4 rates), TX busy, DLC validation)
+- Host mock tests: PASS (41 tests — init, NULL safety, set mode normal/loopback, send standard/extended frame, receive standard/extended, has_message, no message, set filter, set mask, read status, read errors, speed config (all 4 rates), TX busy, DLC validation)
+- Model tests (sim): 53 pass
 - HIL: N/A
+
+## Migration
+
+From the fixes of 2026-11.
+
+| Change | What a caller has to do | If they do nothing |
+|--------|-------------------------|--------------------|
+| New `mcp2515_abort_tx` | Nothing. Call it to take back a pending frame | Nothing changes for the caller |
 
 ## API convention deviations
 

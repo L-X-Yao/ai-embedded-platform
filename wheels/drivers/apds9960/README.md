@@ -33,6 +33,8 @@ apds9960_err_t apds9960_read_gesture(apds9960_t *dev, apds9960_gesture_t *gestur
 apds9960_err_t apds9960_disable_all(apds9960_t *dev);
 ```
 
+`apds9960_read_proximity` and `apds9960_read_color` return `APDS9960_ERR_NOT_READY` until a cycle has ended since that engine was enabled. After that, reads between cycles return the last result.
+
 ## Configuration (compile-time)
 
 None. All configuration is handled at runtime via the API.
@@ -47,9 +49,9 @@ None. All configuration is handled at runtime via the API.
 Checked on 2026-11-06 against Avago APDS-9960 data sheet, AV02-4191EN, November 8, 2013. Not run on hardware.
 
 - **Matched:** I2C address, ID 0xAB, all register addresses, ENABLE bits, ATIME, CONTROL, GCONF2 gain and drive, the RGBC block read, gesture FIFO order.
-- **Fixed:** `apds9960_init` wrote PPULSE 0x87, which is 16 us pulses, under a comment saying 8 us. It now writes 0x47, 8 pulses of 8 us as in the manual's test conditions, so proximity counts are lower at the same distance. The GCONF1, GCONF2 and GCONF4 comments described bits the written values do not set; the values are unchanged. The model fills data only from cycles of enabled engines, sets AVALID and PVALID, and holds 32 gesture datasets with page reads. `apds9960_enable_gesture` never wrote GPULSE and set 1x gain, so gesture ran on one 8 us pulse. It now writes GPULSE 0xC9 and GGAIN 4x, the values of SparkFun's and Adafruit's libraries, which may need tuning on the real optics.
+- **Fixed:** `apds9960_init` wrote PPULSE 0x87, which is 16 us pulses, under a comment saying 8 us. It now writes 0x47, 8 pulses of 8 us as in the manual's test conditions, so proximity counts are lower at the same distance. The GCONF1, GCONF2 and GCONF4 comments described bits the written values do not set; the values are unchanged. The model fills data only from cycles of enabled engines, sets AVALID and PVALID, and holds 32 gesture datasets with page reads. `apds9960_enable_gesture` never wrote GPULSE and set 1x gain, so gesture ran on one 8 us pulse. It now writes GPULSE 0xC9 and GGAIN 4x, the values of SparkFun's and Adafruit's libraries, which may need tuning on the real optics. Reads never checked AVALID or PVALID, so a read before the first cycle returned zeros with `APDS9960_OK`. It now returns `APDS9960_ERR_NOT_READY`. The flags clear on each data read and proximity 0 is a normal result, so a flag is remembered once seen.
 - **Still open:** `apds9960_read_gesture` sums U-D and L-R and maps the sign to a direction, but the manual has the same diode larger on entry and smaller on exit, so a whole swipe sums to about zero and parts of it read as opposite directions. Expect wrong or missing gestures on hardware. This is not fixed: it needs datasets collected across calls until GMODE returns to 0, and the sign needs hardware because the p17 text and Figure 11 disagree. GFOV and the saturation flags are never read, and the HAL cannot do the address-only write that clears interrupts. `apds9960_enable_gesture` changes gesture registers while other engines may run, which p20 warns against. `delay_ms` is never called. No thresholds, persistence, WTIME, offsets, GDIMS, LED_BOOST or lux calculation.
-- **Suspected:** Reads never check AVALID or PVALID, so an early read may return zeros with `APDS9960_OK`. `apds9960_init` does not wait the 5.7 ms after POR. ID 0xA8 is accepted, which this manual does not list.
+- **Suspected:** `apds9960_init` does not wait the 5.7 ms after POR. ID 0xA8 is accepted, which this manual does not list.
 
 ## Known issues
 
@@ -65,8 +67,18 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 21 tests, all passing
+- Unit tests (sim): 73 tests (24 main + 34 hw_model + 12 null + 3 prop), all passing
 - HIL: N/A
+
+## Migration
+
+From the fixes of 2026-11.
+
+| Change | What a caller has to do | If they do nothing |
+|--------|-------------------------|--------------------|
+| A read before the first cycle, or with the engine off, returns the new `APDS9960_ERR_NOT_READY` and leaves the output alone | Enable the engine and retry on this code | A caller that treats any error as fatal stops there. One that ignores the return keeps its old value |
+| `apds9960_enable_proximity` and `apds9960_enable_color` start that wait again | Nothing, unless you call them while running | The next read waits for a new cycle |
+| `apds9960_t` grew by two `bool` | Nothing: treat it as opaque storage | Nothing changes for the caller |
 
 ## API convention deviations
 

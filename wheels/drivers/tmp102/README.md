@@ -31,6 +31,8 @@ tmp102_err_t tmp102_shutdown(tmp102_t *dev);
 tmp102_err_t tmp102_wake(tmp102_t *dev);
 ```
 
+The register reads 0 until the first conversion ends, up to 15 ms after power-up, and in continuous mode no flag tells that from a real 0 C. So the first read after init returns `TMP102_ERR_NOT_READY` if it finds 0. Wait 15 ms and read again: that read is believed, so a sensor really at 0 C costs one retry, and a retry with no wait can still return 0 C.
+
 ## Configuration (compile-time)
 
 No compile-time configuration. All settings via runtime API.
@@ -45,9 +47,9 @@ No compile-time configuration. All settings via runtime API.
 Checked on 2026-11-06 against TI SBOS397I (June 2024). Not run on hardware.
 
 - **Matched:** Addresses, pointer values, the SD bit and its read-modify-write, the 12-bit temperature format and the Table 6-2 values, the model's power-up values, no chip ID.
-- **Fixed:** An alert limit of 128 C or more wrapped to the other sign: 128 C became -128 C and 150 C became -106 C, which turns ALERT on at once. Limits now saturate at 127.9375 C and -128 C, and NaN returns `TMP102_ERR_PARAM`. In the model R1, R0 and AL are read-only, and results come from conversions, which stop with SD set.
+- **Fixed:** An alert limit of 128 C or more wrapped to the other sign: 128 C became -128 C and 150 C became -106 C, which turns ALERT on at once. Limits now saturate at 127.9375 C and -128 C, and NaN returns `TMP102_ERR_PARAM`. In the model R1, R0 and AL are read-only, and results come from conversions, which stop with SD set. A read straight after `tmp102_init` returned 0 C with `TMP102_OK`, and the first read now returns `TMP102_ERR_NOT_READY` when it finds 0.
 - **Still open:** There is no extended mode, so nothing above 128 C can be read or set, and no one-shot, conversion rate, thermostat mode, ALERT polarity, fault queue, AL status, limit read-back, SMBus alert response or general-call reset.
-- **Suspected:** A read straight after `tmp102_init` returns 0 C, and one after `tmp102_wake` the old result, both with `TMP102_OK`. `tmp102_init` leaves EM as it finds it, so extended mode left on by earlier firmware halves the temperature.
+- **Suspected:** A read after `tmp102_wake` returns the old result with `TMP102_OK` until the next conversion ends. `tmp102_init` leaves EM as it finds it, so extended mode left on by earlier firmware halves the temperature.
 
 ## Known issues
 
@@ -63,8 +65,17 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 22 tests, all passing
+- Unit tests (sim): 66 tests (24 main + 31 hw_model + 9 null + 2 prop), all passing
 - HIL: N/A
+
+## Migration
+
+From the fixes of 2026-11.
+
+| Change | What a caller has to do | If they do nothing |
+|--------|-------------------------|--------------------|
+| The first read after init returns the new `TMP102_ERR_NOT_READY` if the register reads 0, and leaves `temp_c` alone | Wait 15 ms after init, or retry on this code after 15 ms. A chip really at 0 C needs that one retry | A caller that treats any error as fatal stops there. One that ignores the return keeps its old `temp_c` |
+| `tmp102_t` grew by one `bool` | Nothing: treat it as opaque storage | Nothing changes for the caller |
 
 ## API convention deviations
 

@@ -31,6 +31,7 @@ typedef enum {
     LIS3MDL_ERR_I2C   = -1,
     LIS3MDL_ERR_ID    = -2,
     LIS3MDL_ERR_PARAM = -3,
+    LIS3MDL_ERR_NOT_READY = -4,   /* no sample yet: the first comes 100 ms after init */
 } lis3mdl_err_t;
 
 /* Configure and verify WHO_AM_I. Sets range + continuous mode. */
@@ -60,9 +61,9 @@ lis3mdl_err_t lis3mdl_read_raw(const lis3mdl_t *dev, lis3mdl_raw_t *raw);
 Checked on 2026-11-06 against ST DocID024204 Rev 6, May 2017. Not run on hardware. The reference above cites DocID025866 Rev 3, which needs confirming.
 
 - **Matched:** Addresses, WHO_AM_I, CTRL_REG1 to CTRL_REG3 addresses and values, full-scale codes, sensitivities and the conversion to microtesla, the 0xA8 burst read, the output order and format.
-- **Fixed:** The model stepped the address without SUB bit 7, started CTRL_REG1 and CTRL_REG3 at 0x00, had no STATUS_REG and dropped REBOOT, SOFT_RST, LP and SIM. It now has the manual's reset values and masks, and samples come from a clock, so tests wait for one.
+- **Fixed:** The model stepped the address without SUB bit 7, started CTRL_REG1 and CTRL_REG3 at 0x00, had no STATUS_REG and dropped REBOOT, SOFT_RST, LP and SIM. It now has the manual's reset values and masks, and samples come from a clock, so tests wait for one. A read before the first sample returned `LIS3MDL_OK` with zeros, and now returns `LIS3MDL_ERR_NOT_READY`. ZYXDA is 0 between samples too, so only ZYXDA 0 with all outputs zero counts, and reads between samples go on returning the last sample.
 - **Still open:** ODR and performance mode are fixed at 10 Hz and medium. Temperature output, self-test, soft reset, reboot, interrupts, overrun reporting and SPI are not implemented.
-- **Suspected:** `lis3mdl_read_raw` never reads STATUS_REG, so a read in the first 100 ms after init, or polling faster than 10 Hz, returns old data with `LIS3MDL_OK`. BDU stays 0, so a sample landing mid-read can pair bytes from two samples. CTRL_REG4 is never written, so the Z axis stays in low-power mode while X and Y run at medium performance.
+- **Suspected:** Polling faster than 10 Hz returns the last sample again with `LIS3MDL_OK`. BDU stays 0, so a sample landing mid-read can pair bytes from two samples. CTRL_REG4 is never written, so the Z axis stays in low-power mode while X and Y run at medium performance.
 
 ## Known issues
 
@@ -78,8 +79,17 @@ ctest --test-dir build_ta --output-on-failure
 
 ## Test status
 
-- Unit tests (sim): 47 tests (22 main + 7 null + 2 prop + 16 hw_model), all passing
+- Unit tests (sim): 66 tests (25 main + 7 null + 2 prop + 32 hw_model), all passing
 - HIL: N/A
+
+## Migration
+
+From the fixes of 2026-11.
+
+| Change | What a caller has to do | If they do nothing |
+|--------|-------------------------|--------------------|
+| A read in the 100 ms after init returns the new `LIS3MDL_ERR_NOT_READY` instead of `LIS3MDL_OK` with zeros, and leaves `out` alone | Wait 100 ms after init, or retry on this code | A caller that treats any error as fatal stops there. One that ignores the return keeps its old `out` |
+| Each read makes one more I2C read, of STATUS_REG | Nothing | Nothing changes for the caller |
 
 ## API convention deviations
 
