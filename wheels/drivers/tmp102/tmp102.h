@@ -26,6 +26,7 @@ typedef enum {
     TMP102_OK        =  0,
     TMP102_ERR_I2C   = -1,
     TMP102_ERR_PARAM = -3,
+    TMP102_ERR_NOT_READY = -4,  /* the first read found no result, see tmp102_read_temp */
 } tmp102_err_t;
 
 typedef struct {
@@ -45,6 +46,7 @@ typedef struct {
 typedef struct {
     const tmp102_i2c_t *i2c;
     tmp102_cfg_t cfg;
+    bool first_read;    /* internal: no read since init */
 } tmp102_t;
 
 #define TMP102_ADDR_GND  0x48u
@@ -58,6 +60,15 @@ tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
                          const tmp102_cfg_t *cfg);
 
 /** Read temperature in degrees Celsius (0.0625 C resolution).
+ *
+ *  TMP102_ERR_NOT_READY, with temp_c left alone, if the first read after init finds
+ *  the register at 0: the chip reads 0 until its first conversion ends, up to 15 ms
+ *  after power-up. Wait those 15 ms and read again. That read is believed, so a
+ *  sensor really at 0 C costs one retry, and a retry with no wait can still return
+ *  0 C with TMP102_OK. Later reads are never refused.
+ *
+ *  After tmp102_wake the register holds the last result until the next conversion
+ *  ends, up to 15 ms later, and a read then returns that older result.
  *  @thread_safe: no @isr_safe: no */
 tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c);
 

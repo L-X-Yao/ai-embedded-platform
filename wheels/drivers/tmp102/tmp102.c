@@ -109,6 +109,7 @@ tmp102_err_t tmp102_init(tmp102_t *dev, const tmp102_i2c_t *i2c,
         return TMP102_ERR_I2C;
     }
 
+    dev->first_read = true;
     return TMP102_OK;
 }
 
@@ -120,6 +121,14 @@ tmp102_err_t tmp102_read_temp(tmp102_t *dev, float *temp_c)
     uint8_t buf[2];
     if (!read16(dev, REG_TEMP, buf))
         return TMP102_ERR_I2C;
+
+    /* The register reads 0 until the first conversion is complete (p8), and in
+     * continuous mode no flag tells that from a real 0 C. So the first read
+     * doubts a 0, once: a sensor that really is at 0 C still answers the retry. */
+    bool first = dev->first_read;
+    dev->first_read = false;
+    if (first && buf[0] == 0u && buf[1] == 0u)
+        return TMP102_ERR_NOT_READY;
 
     *temp_c = raw_to_c(buf[0], buf[1]);
     ENSURE(*temp_c == *temp_c);  /* not NaN */

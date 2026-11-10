@@ -115,6 +115,8 @@ TEST(test_read_0c)
     setup();
     plant_temp(0);
     float temp;
+    /* the first read after init doubts a 0, the retry is believed */
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_ERR_NOT_READY);
     ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
     ASSERT_NEAR(temp, 0.0f, 0.001f);
 }

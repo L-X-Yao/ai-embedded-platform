@@ -88,6 +88,74 @@ TEST(test_init_clears_shutdown_bit)
 
 /* --- read tests -------------------------------------------------------- */
 
+/* p8: "the temperature register reads 0 C until the first conversion is
+ * complete", and p5: a conversion takes at most 15 ms. */
+TEST(test_read_before_the_first_conversion_is_not_ready)
+{
+    setup();
+    tmp102_model_set_temperature(&model, 25.0f);
+    tmp102_t dev;
+    tmp102_init(&dev, &model_i2c, &default_cfg);
+
+    float temp = 99.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_ERR_NOT_READY);
+    ASSERT_NEAR(temp, 99.0f, 0.001f);
+
+    tmp102_model_run_ms(&model, 15);
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+    ASSERT_NEAR(temp, 25.0f, 0.1f);
+}
+
+/* No flag tells a real 0 C from no result in continuous mode. It must cost one
+ * retry and no more, or a sensor in an ice bath would never answer. */
+TEST(test_real_zero_costs_one_retry)
+{
+    setup();
+    tmp102_model_set_temperature(&model, 0.0f);
+    tmp102_t dev;
+    tmp102_init(&dev, &model_i2c, &default_cfg);
+    tmp102_model_run_ms(&model, 15);
+
+    float temp = 99.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_ERR_NOT_READY);
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+    ASSERT_NEAR(temp, 0.0f, 0.001f);
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+}
+
+/* After the first read a 0 is believed at once. */
+TEST(test_zero_after_the_first_read_is_a_result)
+{
+    setup();
+    tmp102_model_set_temperature(&model, 25.0f);
+    tmp102_t dev;
+    tmp102_init(&dev, &model_i2c, &default_cfg);
+    tmp102_model_run_ms(&model, 15);
+
+    float temp = 99.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+
+    tmp102_model_set_temperature(&model, 0.0f);
+    tmp102_model_run_ms(&model, 250);
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+    ASSERT_NEAR(temp, 0.0f, 0.001f);
+}
+
+/* A warm restart finds a result in the register: nothing to wait for. */
+TEST(test_init_on_a_running_chip_reads_at_once)
+{
+    setup();
+    tmp102_model_set_temperature(&model, 25.0f);
+    tmp102_t dev;
+    tmp102_init(&dev, &model_i2c, &default_cfg);
+    tmp102_model_run_ms(&model, 15);
+    ASSERT_EQ(tmp102_init(&dev, &model_i2c, &default_cfg), TMP102_OK);
+
+    float temp = 99.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
+    ASSERT_NEAR(temp, 25.0f, 0.1f);
+}
+
 TEST(test_read_25c)
 {
     setup();
@@ -123,8 +191,9 @@ TEST(test_read_zero)
     tmp102_init(&dev, &model_i2c, &default_cfg);
     tmp102_model_run_ms(&model, 10);
 
-    float temp;
-    tmp102_read_temp(&dev, &temp);
+    float temp = 99.0f;
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_ERR_NOT_READY);
+    ASSERT_EQ(tmp102_read_temp(&dev, &temp), TMP102_OK);
     ASSERT_NEAR(temp, 0.0f, 0.1f);
 }
 
@@ -477,6 +546,10 @@ TEST_MAIN("tmp102 hardware model")
     RUN(test_init_ok);
     RUN(test_init_null_param);
     RUN(test_init_clears_shutdown_bit);
+    RUN(test_read_before_the_first_conversion_is_not_ready);
+    RUN(test_real_zero_costs_one_retry);
+    RUN(test_zero_after_the_first_read_is_a_result);
+    RUN(test_init_on_a_running_chip_reads_at_once);
     RUN(test_read_25c);
     RUN(test_read_negative);
     RUN(test_read_zero);
