@@ -267,6 +267,74 @@ TEST(test_width_1_is_the_parity_of_the_message)
     ASSERT_EQ_HEX(crc, 0);
 }
 
+/* ── crc_any_finalize: what the header promises streaming callers ── */
+
+static crc_any_err_t stream_in_two_parts(const crc_any_config_t *cfg, uint32_t *out)
+{
+    uint32_t crc = crc_any_update(cfg, cfg->init, check_data, 4);
+    crc = crc_any_update(cfg, crc, check_data + 4, check_len - 4);
+    return crc_any_finalize(cfg, crc, out);
+}
+
+TEST(test_finalize_gives_the_catalogue_check_values)
+{
+    crc_any_config_t modbus = CRC_ANY_CRC16_MODBUS;
+    crc_any_config_t ccitt  = CRC_ANY_CRC16_CCITT;
+    crc_any_config_t iso    = CRC_ANY_CRC32_ISO;
+    crc_any_config_t maxim  = CRC_ANY_CRC8_MAXIM;
+    uint32_t crc = 0;
+
+    ASSERT_EQ(stream_in_two_parts(&modbus, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0x4B37);
+    ASSERT_EQ(stream_in_two_parts(&ccitt, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0x29B1);
+    ASSERT_EQ(stream_in_two_parts(&iso, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0xCBF43926);
+    ASSERT_EQ(stream_in_two_parts(&maxim, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0xA1);
+}
+
+TEST(test_finalize_gives_the_narrow_catalogue_values)
+{
+    size_t n = sizeof(narrow_vectors) / sizeof(narrow_vectors[0]);
+    for (size_t i = 0; i < n; i++) {
+        uint32_t crc = 0xFFFFFFFFu;
+        ASSERT_EQ(stream_in_two_parts(&narrow_vectors[i].cfg, &crc), CRC_ANY_OK);
+        ASSERT_EQ_HEX(crc, narrow_vectors[i].check);
+    }
+}
+
+TEST(test_finalize_reflects_out_when_in_was_not)
+{
+    /* CRC-12/UMTS: refin false, refout true, check 0xDAF */
+    const crc_any_config_t umts = { 12, 0x80F, 0x000, false, true, 0x000 };
+    uint32_t crc = 0;
+    ASSERT_EQ(stream_in_two_parts(&umts, &crc), CRC_ANY_OK);
+    ASSERT_EQ_HEX(crc, 0xDAF);
+}
+
+TEST(test_finalize_with_no_data_matches_compute)
+{
+    crc_any_config_t iso = CRC_ANY_CRC32_ISO;
+    uint32_t bulk = 1, streamed = 2;
+    ASSERT_EQ(crc_any_compute(&iso, NULL, 0, &bulk), CRC_ANY_OK);
+    ASSERT_EQ(crc_any_finalize(&iso, iso.init, &streamed), CRC_ANY_OK);
+    ASSERT_EQ_HEX(streamed, bulk);
+}
+
+TEST(test_finalize_refuses_bad_input)
+{
+    crc_any_config_t cfg = CRC_ANY_CRC32_ISO;
+    uint32_t out = 0x5A5A5A5Au;
+    ASSERT_EQ(crc_any_finalize(NULL, 0, &out), CRC_ANY_ERR_PARAM);
+    ASSERT_EQ(crc_any_finalize(&cfg, 0, NULL), CRC_ANY_ERR_PARAM);
+    cfg.width = 0;
+    ASSERT_EQ(crc_any_finalize(&cfg, 0, &out), CRC_ANY_ERR_PARAM);
+    cfg.width = 33;
+    ASSERT_EQ(crc_any_finalize(&cfg, 0, &out), CRC_ANY_ERR_PARAM);
+    ASSERT_EQ_HEX(out, 0x5A5A5A5Au);
+}
+
 TEST_MAIN("crc_any")
     RUN(test_crc16_modbus_vector);
     RUN(test_crc16_ccitt_vector);
@@ -287,4 +355,9 @@ TEST_MAIN("crc_any")
     RUN(test_catalogue_vectors_below_width_8);
     RUN(test_narrow_width_streaming_matches_the_catalogue);
     RUN(test_width_1_is_the_parity_of_the_message);
+    RUN(test_finalize_gives_the_catalogue_check_values);
+    RUN(test_finalize_gives_the_narrow_catalogue_values);
+    RUN(test_finalize_reflects_out_when_in_was_not);
+    RUN(test_finalize_with_no_data_matches_compute);
+    RUN(test_finalize_refuses_bad_input);
 TEST_MAIN_END()

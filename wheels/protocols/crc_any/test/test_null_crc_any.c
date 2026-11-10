@@ -21,6 +21,18 @@ TEST(test_crc_any_update_null_data) {
     /* must not crash */
 }
 
+TEST(test_crc_any_finalize_null_cfg) {
+    uint32_t _out;
+    memset(&_out, 0, sizeof(_out));
+    ASSERT_TRUE(crc_any_finalize(NULL, 0, &_out) != CRC_ANY_OK);
+}
+
+TEST(test_crc_any_finalize_null_out) {
+    crc_any_config_t _cfg;
+    memset(&_cfg, 0, sizeof(_cfg));
+    ASSERT_TRUE(crc_any_finalize(&_cfg, 0, NULL) != CRC_ANY_OK);
+}
+
 TEST(test_crc_any_verify_null_cfg) {
     uint8_t _data[64];
     memset(_data, 0, sizeof(_data));
@@ -38,6 +50,8 @@ TEST(test_crc_any_verify_null_data) {
 TEST_MAIN("null_param_crc_any") {
     RUN(test_crc_any_update_null_cfg);
     RUN(test_crc_any_update_null_data);
+    RUN(test_crc_any_finalize_null_cfg);
+    RUN(test_crc_any_finalize_null_out);
     RUN(test_crc_any_verify_null_cfg);
     RUN(test_crc_any_verify_null_data);
 }

@@ -89,6 +89,18 @@ uint32_t crc_any_update(const crc_any_config_t *cfg, uint32_t crc,
     return crc;
 }
 
+crc_any_err_t crc_any_finalize(const crc_any_config_t *cfg, uint32_t crc,
+                               uint32_t *out)
+{
+    if (!cfg || !out)
+        return CRC_ANY_ERR_PARAM;
+    if (cfg->width < 1 || cfg->width > 32)
+        return CRC_ANY_ERR_PARAM;
+
+    *out = finalize(cfg, crc);
+    return CRC_ANY_OK;
+}
+
 crc_any_err_t crc_any_compute(const crc_any_config_t *cfg,
                               const uint8_t *data, size_t len,
                               uint32_t *out)

@@ -96,6 +96,21 @@ uint32_t crc_any_update(const crc_any_config_t *cfg, uint32_t crc,
                         const uint8_t *data, size_t len);
 
 /**
+ * Turn the running value of crc_any_update() into the final CRC, by applying
+ * refout and xorout. Call it once, after the last update. Streaming a message
+ * this way gives what crc_any_compute() gives for the whole of it.
+ *
+ * @param cfg   Algorithm configuration. Must not be NULL.
+ *              Width must be 1..32.
+ * @param crc   Running CRC accumulator, or cfg->init if no data was fed.
+ * @param out   Receives the final CRC. Must not be NULL.
+ * @return      CRC_ANY_OK on success, CRC_ANY_ERR_PARAM on bad input.
+ * @thread_safe: yes (pure function)
+ */
+crc_any_err_t crc_any_finalize(const crc_any_config_t *cfg, uint32_t crc,
+                               uint32_t *out);
+
+/**
  * Verify that data + appended CRC is consistent.
  *
  * Computes CRC over the buffer and compares with expected value.
