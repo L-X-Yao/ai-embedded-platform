@@ -61,6 +61,19 @@ if (crsf_decode_frame(uart_buf, uart_len, &frame) == CRSF_OK) {
 None.
 
 
+## Migration
+
+- `CRSF_MAX_PAYLOAD` (60) and `CRSF_ERR_FORMAT` are new. `CRSF_MAX_FRAME_SIZE` is
+  still 64, and now limits what it always said: a whole frame.
+- Encoding a payload of 61 to 64 bytes now returns `CRSF_ERR_OVERFLOW`: split it.
+  Such a frame was over the spec's limit, and receivers must discard it.
+- Decoding a length byte outside 2 to 62 now returns `CRSF_ERR_FORMAT` as soon as
+  the byte is there. It used to be `CRSF_ERR_SHORT` or `CRSF_ERR_OVERFLOW`, or OK
+  for 63 to 66. A stream reader that waits on `CRSF_ERR_SHORT` should treat
+  `CRSF_ERR_FORMAT` as a bad frame and look for the next sync byte. One that goes
+  on waiting for any non-OK result needs that change, or it stalls on a bad byte.
+- `crsf_frame_t` keeps its size.
+
 ## How to test
 
 ```bash

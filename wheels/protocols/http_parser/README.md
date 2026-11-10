@@ -26,6 +26,7 @@ None.
 
 http_parser_err_t http_parser_parse_request(const char *data, size_t len, http_parser_request_t *req);
 http_parser_err_t http_parser_parse_response(const char *data, size_t len, http_parser_response_t *resp);
+http_parser_err_t http_parser_parse_response_to_head(const char *data, size_t len, http_parser_response_t *resp);
 http_parser_err_t http_parser_find_header(const http_parser_header_t *headers, int count,
                             const char *name, const http_parser_header_t **out);
 int        http_parser_get_content_length(const http_parser_header_t *headers, int count);
@@ -44,7 +45,23 @@ int        http_parser_get_content_length(const http_parser_header_t *headers, i
 
 ## Known issues
 
-None.
+- Bodies are framed by Content-Length only. No transfer coding is decoded:
+  a message with Transfer-Encoding returns `HTTP_PARSER_ERR_TRANSFER_ENCODING`.
+- A reply with neither header, whose body ends when the connection closes
+  (RFC 7230 section 3.3.3 item 7), reads as having no body.
+
+## Migration
+
+- A 1xx, 204 or 304 reply now ends at the blank line whatever its headers say.
+  Nothing to do: such a reply used to return `HTTP_PARSER_ERR_INCOMPLETE` for
+  ever, or `HTTP_PARSER_ERR_MALFORMED` on a bad Content-Length.
+- `http_parser_parse_response_to_head()` is new. Call it for the reply to a HEAD
+  request. If you keep calling `http_parser_parse_response()`, a HEAD reply with
+  a Content-Length still waits for a body that never comes.
+- `HTTP_PARSER_ERR_TRANSFER_ENCODING` is new, for requests and replies. The head
+  is filled in and the coded body starts at `total_consumed`, so decode it
+  yourself or give up. A caller that only tests for `HTTP_PARSER_OK` now sees a
+  failure where it used to read an empty message.
 
 ## How to test
 
@@ -56,7 +73,7 @@ ctest --test-dir build --output-on-failure
 
 ## Test status
 
-- Unit tests: **10 C cases** — GET request, POST with body, 200/404 response,
+- Unit tests: **27 C cases** — GET request, POST with body, 200/404 response,
   incomplete request/body, header lookup, missing header, NULL safety, content-length
 
 ## API convention deviations

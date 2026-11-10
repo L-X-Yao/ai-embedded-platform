@@ -67,6 +67,17 @@ No compile-time defines. All behavior controlled via function parameters.
   packet, by the type it gives the ID, and drop the value. An ID it does
   not allow there is refused: section 2.2.2.2 calls that a Malformed Packet.
 
+## Migration
+
+- `mqtt5_publish_t` has a new `topic_len`, at the end, set by
+  `mqtt5_parse_publish()`. The parsed `topic` has no terminator, so read
+  `topic_len` bytes of it. 0 is valid there, when a Topic Alias stands in.
+- `mqtt5_build_publish()` ignores the field and still reads `topic` as a C string,
+  so copy a parsed topic and terminate it before building from it.
+- A caller that used `strlen()` on a parsed topic gets the wrong length, or reads
+  past the buffer, and must change. Nothing else needs to. The struct grows on
+  32-bit targets, so rebuild whatever holds one.
+
 ## How to test
 
 ```bash
@@ -77,7 +88,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 45 pass, 0 fail
+- Unit tests (sim): 51 pass, 0 fail
 - libFuzzer: parses raw input, builds frames in exact-size buffers and reads them back
 - HIL: N/A
 

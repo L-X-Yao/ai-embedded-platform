@@ -113,6 +113,15 @@ for input staging).
   contents.  For best compression, feed all data before polling, or use a
   larger window.
 
+## Migration
+
+- `HEATSHRINK_SINK_ERR_PARAM`, `HEATSHRINK_POLL_ERR_PARAM` and
+  `HEATSHRINK_FINISH_ERR_PARAM` are new, all -1, equal to `HEATSHRINK_ERR_PARAM`.
+- Nothing to do. On arm-none-eabi-gcc a NULL argument used to arrive as 255, which
+  matched no code. It now arrives as -1, so a test against `HEATSHRINK_ERR_PARAM`
+  or for a negative result works. A `switch` over a result type with no `default`
+  gains one more case to handle under `-Wswitch`.
+
 ## How to test
 
 ```bash
@@ -123,7 +132,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (9 tests)
+- Unit tests (sim): PASS (17 tests), also built with -fshort-enums to match
+  arm-none-eabi-gcc, which makes these enums one byte
   - NULL/bad parameter rejection (encoder + decoder)
   - Empty input (finish with no data)
   - Round-trip: "Hello, World!" (short string)

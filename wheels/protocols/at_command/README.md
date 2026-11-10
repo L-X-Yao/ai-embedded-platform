@@ -36,13 +36,13 @@ at_command_register_urc(&at, "$GP", on_nmea_sentence, NULL);
 
 /* Send command and set expected response */
 at_command_send(&at, "AT+CSQ");
-at_command_expect(&at, "+CSQ:");
+at_command_expect_final(&at, "+CSQ:");  /* the modem ends with OK: wait for it */
 
 /* In RX loop: feed bytes one at a time */
 at_command_evt_t evt;
 at_command_evt_type_t r = at_command_feed(&at, byte, &evt);
 switch (r) {
-case AT_COMMAND_EVT_OK:     /* response matched */
+case AT_COMMAND_EVT_OK:     /* final OK, or the line a plain expect waited for */
     parse_csq(at_command_get_matched(&at));
     break;
 case AT_COMMAND_EVT_ERROR:  /* ERROR/+CME ERROR */
@@ -82,6 +82,19 @@ const char *imei = at_command_get_prev_line(&at);
 - No binary/fixed-length data mode (HTTP chunked, MQTT payload). Consumer handles mode switching externally.
 - URC matching is prefix-only (`starts_with`), not substring. Register `"+CME"` not `"CME"`.
 
+## Migration
+
+- `at_command_expect_final()` is new. Use it for a command that answers with
+  information text and then a final result code, such as `+CSQ:` then `OK`. The
+  matching line arrives as `AT_COMMAND_EVT_LINE`, and `AT_COMMAND_EVT_OK` comes
+  at the final `OK`, with the line in `at_command_get_matched()`, which is empty
+  if no such line came. `ERROR`, `+CME ERROR` and `+CMS ERROR` end the wait.
+- `at_command_expect()` is unchanged, and right when the line ends the command,
+  as `SEND OK` and `CONNECT OK` do. If you keep it for `+CSQ:`, the trailing `OK`
+  can answer your next `at_command_expect("OK")` and every later reply runs one
+  command behind.
+- `at_command_t` has one more byte, so rebuild whatever holds one.
+
 ## How to test
 
 ```bash
@@ -94,7 +107,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): PASS (35 C tests, 90 assertions)
+- Unit tests (sim): PASS (51 C tests)
 - HIL: N/A
 
 ## API convention deviations

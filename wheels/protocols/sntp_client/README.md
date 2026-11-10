@@ -73,6 +73,20 @@ sntp_client_compute(&resp, &t1, &t4, &result);
 None.
 
 
+## Migration
+
+- `sntp_client_parse_response()` now refuses a reply with LI 3, a stratum above 15
+  or a zero Transmit Timestamp (`SNTP_CLIENT_ERR_UNSYNC`), or a version other than
+  3 or 4 (`SNTP_CLIENT_ERR_VERSION`). Treat them as no answer, and ask again or
+  try another server. Stratum 0 stays `SNTP_CLIENT_ERR_KISS`.
+- `sntp_client_compute()` now returns `SNTP_CLIENT_ERR_ORIGINATE` and leaves `out`
+  alone unless the reply's originate equals `t1`.
+- Give `sntp_client_build_request()` the same `t1` you give compute, as the usage
+  above does. A caller that sent a NULL or zero `tx_time` gets that error for
+  every reply, because the server echoes zero: it must start sending `t1`.
+- A caller that fills `sntp_response_t` by hand must set `originate`. A broadcast
+  carries zero, so give it a zero `t1`, and read only `unix_sec` and `unix_ms`.
+
 ## How to test
 
 ```bash

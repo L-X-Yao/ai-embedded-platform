@@ -50,6 +50,10 @@ crc_any_err_t crc_any_compute(const crc_any_config_t *cfg,
 uint32_t crc_any_update(const crc_any_config_t *cfg, uint32_t crc,
                         const uint8_t *data, size_t len);
 
+/* Finish a stream: applies refout and xorout */
+crc_any_err_t crc_any_finalize(const crc_any_config_t *cfg, uint32_t crc,
+                               uint32_t *out);
+
 /* Verify data against expected CRC */
 bool crc_any_verify(const crc_any_config_t *cfg,
                     const uint8_t *data, size_t len,
@@ -69,6 +73,13 @@ None required. Algorithm selection is entirely runtime via `crc_any_config_t`.
 
 None.
 
+## Migration
+
+- `crc_any_finalize()` is new and is the function the header always named. Call it
+  once after the last `crc_any_update()`. Nothing changes if you do not use it, and
+  the old way of computing over nothing with `init` set to the running value still
+  works.
+
 ## How to test
 
 ```bash
@@ -79,7 +90,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 15 tests, all passing
+- Unit tests (sim): 24 tests, all passing
 - HIL: N/A (pure software wheel)
 
 ## API convention deviations

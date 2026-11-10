@@ -64,7 +64,9 @@ mqtt_client_connect(&client);
 
 /* main loop */
 mqtt_client_feed(&client, rx_data, rx_len);
-mqtt_client_poll(&client);
+if (mqtt_client_poll(&client) == MQTT_CLIENT_ERR_TIMEOUT) {
+    /* no PUBACK for the last QoS 1 publish: publish it again if it matters */
+}
 
 if (mqtt_client_get_state(&client) == MQTT_CLIENT_CONNECTED) {
     mqtt_client_publish(&client, "sensor/temp", payload, len, 0);
@@ -88,6 +90,20 @@ if (mqtt_client_get_state(&client) == MQTT_CLIENT_CONNECTED) {
 - QoS 2 not supported.
 - Only one inflight QoS 1 publish and one inflight subscribe at a time.
 - A refused subscription is not reported: a SUBACK failure code clears the inflight id like a grant.
+- A SUBACK timeout is not reported either: poll clears the inflight id and returns OK.
+- A QoS 1 message is not resent: the client keeps no copy. Poll reports the timeout and the caller decides.
+
+## Migration
+
+- `mqtt_client_poll()` now returns the new `MQTT_CLIENT_ERR_TIMEOUT` from the one
+  call that gives up on a QoS 1 publish. The connection stays up, no event fires,
+  and the slot is free again, as before.
+- To tell a lost message from a delivered one, test that return, and publish
+  again if the message matters. It may then arrive twice, as QoS 1 allows.
+- Do nothing and all is as before: a timed-out publish looks delivered. A caller
+  that treats any poll error as fatal should let this one through.
+- If the link drops with a publish pending, `mqtt_client_pub_inflight()` stays true
+  until the next connect, so read it in the DISCONNECTED event.
 
 ## How to test
 
@@ -99,7 +115,7 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 40 pass, 0 fail
+- Unit tests (sim): 59 pass, 0 fail
 - libFuzzer: runs sessions in input order, compares a stream fed whole and byte by byte, and checks that an oversized packet is dropped whole
 - HIL: N/A
 

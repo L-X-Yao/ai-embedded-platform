@@ -71,6 +71,16 @@ int dns_decode_name(const uint8_t *pkt, uint16_t pkt_len,
 
 None.
 
+## Migration
+
+- `dns_record_t.type` and `.cls` are `uint16_t` now, not `dns_type_t` and
+  `dns_class_t`, and the struct is a different size on the target.
+- Comparing them with `DNS_TYPE_*` and `DNS_CLASS_*` works unchanged. Copying one
+  into a `dns_type_t` or `dns_class_t` variable still cuts it to a byte on
+  arm-none-eabi-gcc, so make that variable a `uint16_t`.
+- Do nothing else: a record of type 257 now reads as 257, and `dns_get_ipv4()`
+  refuses it, where on the target it read as an A record.
+
 ## How to test
 
 ```bash
@@ -81,7 +91,8 @@ cmake -GNinja -S . -B build && cmake --build build
 
 ## Test status
 
-- Unit tests (sim): 16 pass, 0 fail
+- Unit tests (sim): 24 pass, 0 fail, also built with -fshort-enums to match
+  arm-none-eabi-gcc, which makes these enums one byte
 - HIL: N/A
 
 ## API convention deviations
