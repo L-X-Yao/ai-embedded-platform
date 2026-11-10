@@ -16,7 +16,9 @@
 
 /* ---- Lookup tables ---------------------------------------------------- */
 
-static const char enc_table[64] =
+/* 64 symbols. The array also holds the literal's NUL, which is never read:
+ * GCC 15 warns under -Wextra when a string literal fills an array exactly. */
+static const char enc_table[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /*
