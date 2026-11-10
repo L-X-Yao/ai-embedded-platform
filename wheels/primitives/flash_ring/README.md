@@ -44,7 +44,8 @@ flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
 
 - `push()` -- append a frame. When the ring is full it drops the oldest
   frames a sector at a time: see Capacity. OK means the frame is stored.
-  `FLASH_RING_ERR_IO` means the erase or the program failed. A retry never
+  `FLASH_RING_ERR_IO` means the erase or the program failed, or the header
+  could not be moved out of the way of an erase (see Power loss). A retry never
   programs over used cells: a program that failed but wrote something leaves
   its slot behind, and the retry takes the next slot. The slot left behind
   stays in the ring as a frame, torn, or whole if only the driver's report
@@ -84,8 +85,11 @@ sector just before it programs the last slot of the current one. So:
 - The header is rewritten before the writer can come back round to the stored
   position, even if `persist_interval` is larger than that, and however often
   the device resets: init counts what it walked over towards the next write.
-- A failed header write does not fail push or pop. The write stays due, so the
-  next push or pop tries again.
+  If that write keeps failing, push returns `FLASH_RING_ERR_IO` rather than
+  erase the sector the header points into, and goes on once the header can be
+  written.
+- A failed header write does not fail push or pop, with the one exception
+  above. The write stays due, so the next push or pop tries again.
 - Frames popped since the last header write come back after a reset, so a
   reader sees each frame at least once, not exactly once.
 - Blank means 0xFF: the flash must erase to 0xFF. A frame of all 0xFF at the
