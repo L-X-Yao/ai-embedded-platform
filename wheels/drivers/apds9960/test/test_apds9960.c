@@ -9,6 +9,7 @@
 #define REG_PPULSE  0x8Eu
 #define REG_CONTROL 0x8Fu
 #define REG_ID      0x92u
+#define REG_STATUS  0x93u
 #define REG_CDATAL  0x94u
 #define REG_RDATAL  0x96u
 #define REG_GDATAL  0x98u
@@ -31,6 +32,7 @@ static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[REG_ID] = CHIP_ID;
+    mock_regs[REG_STATUS] = 0x03u;   /* PVALID, AVALID: this mock has data at once */
 }
 
 static const apds9960_i2c_t mock_i2c = {

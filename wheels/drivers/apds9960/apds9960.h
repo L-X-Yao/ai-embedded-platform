@@ -28,6 +28,7 @@ typedef enum {
     APDS9960_ERR_I2C     = -1,
     APDS9960_ERR_PARAM  = -2,
     APDS9960_ERR_ID      = -3,
+    APDS9960_ERR_NOT_READY = -4,  /* no cycle has ended since the engine was enabled */
 } apds9960_err_t;
 
 typedef enum {
@@ -52,6 +53,8 @@ typedef struct {
 
 typedef struct {
     const apds9960_i2c_t *i2c;
+    bool have_prox;     /* internal: PVALID seen since PEN */
+    bool have_color;    /* internal: AVALID seen since AEN */
 } apds9960_t;
 
 #define APDS9960_DEV_ADDR  0x39u
@@ -62,13 +65,19 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c);
 /** Enable proximity sensing. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_enable_proximity(apds9960_t *dev);
 
-/** Read 8-bit proximity value (0=far, 255=near). @thread_safe: caller_must_lock @isr_safe: no */
+/**
+ * Read 8-bit proximity value (0=far, 255=near). @thread_safe: caller_must_lock @isr_safe: no
+ *
+ * APDS9960_ERR_NOT_READY, with prox left alone, until a cycle has ended since
+ * apds9960_enable_proximity. After that, reads between cycles return the last
+ * result with APDS9960_OK.
+ */
 apds9960_err_t apds9960_read_proximity(apds9960_t *dev, uint8_t *prox);
 
 /** Enable RGBC color sensing. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_enable_color(apds9960_t *dev);
 
-/** Read 16-bit RGBC color data. @thread_safe: caller_must_lock @isr_safe: no */
+/** Read 16-bit RGBC color data, ready as apds9960_read_proximity, after apds9960_enable_color. @thread_safe: caller_must_lock @isr_safe: no */
 apds9960_err_t apds9960_read_color(apds9960_t *dev, apds9960_color_t *color);
 
 /** Enable gesture engine. @thread_safe: caller_must_lock @isr_safe: no */

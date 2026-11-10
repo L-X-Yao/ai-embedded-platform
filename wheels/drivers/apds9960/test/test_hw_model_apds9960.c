@@ -131,7 +131,131 @@ TEST(test_read_proximity)
     ASSERT_EQ(prox, 128);
 }
 
+/* p25: PVALID says "a proximity cycle has completed since PEN was asserted",
+ * and until then PDATA holds no measurement. */
+TEST(test_read_proximity_before_the_first_cycle_is_not_ready)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_proximity(&dev);
+
+    uint8_t prox = 7;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_ERR_NOT_READY);
+    ASSERT_EQ(prox, 7);
+
+    apds9960_model_cycle(&model);
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+    ASSERT_EQ(prox, 128);
+}
+
+/* The same before the engine is on at all. */
+TEST(test_read_without_the_engine_is_not_ready)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_model_cycle(&model);
+
+    uint8_t prox = 7;
+    apds9960_color_t color;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_ERR_NOT_READY);
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_ERR_NOT_READY);
+}
+
+/* p25: reading PDATA clears PVALID, so it is 0 between cycles too. Once there
+ * is a result those reads stay what they were: the last result and OK. */
+TEST(test_read_proximity_between_cycles_stays_ok)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_proximity(&dev);
+    apds9960_model_cycle(&model);
+
+    uint8_t prox = 0;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+    prox = 0;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+    ASSERT_EQ(prox, 128);
+}
+
+/* Nothing near reads 0, the usual result, and it is a result. */
+TEST(test_proximity_of_zero_is_a_result)
+{
+    setup();
+    model.true_prox = 0;
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_proximity(&dev);
+    apds9960_model_cycle(&model);
+
+    uint8_t prox = 7;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+    ASSERT_EQ(prox, 0);
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+}
+
+/* p25: the flags count from the moment the engine is asserted, so turning it on
+ * again asks for a new cycle. */
+TEST(test_enabling_again_waits_for_a_new_cycle)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_proximity(&dev);
+    apds9960_model_cycle(&model);
+    uint8_t prox = 0;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+
+    ASSERT_EQ(apds9960_disable_all(&dev), APDS9960_OK);
+    ASSERT_EQ(apds9960_enable_proximity(&dev), APDS9960_OK);
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_ERR_NOT_READY);
+    apds9960_model_cycle(&model);
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+}
+
 /* --- color tests ------------------------------------------------------- */
+
+/* p25: AVALID says "an ALS cycle has completed since AEN was asserted". */
+TEST(test_read_color_before_the_first_cycle_is_not_ready)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_color(&dev);
+
+    apds9960_color_t color = { .c = 1 };
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_ERR_NOT_READY);
+    ASSERT_EQ(color.c, 1);
+
+    apds9960_model_cycle(&model);
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_OK);
+    ASSERT_EQ(color.c, 1200);
+
+    /* AVALID is 0 again, and the last result stands */
+    color.c = 0;
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_OK);
+    ASSERT_EQ(color.c, 1200);
+}
+
+/* Each engine has its own flag: a proximity result says nothing about color. */
+TEST(test_engines_are_ready_on_their_own)
+{
+    setup();
+    apds9960_t dev;
+    apds9960_init(&dev, &model_i2c);
+    apds9960_enable_proximity(&dev);
+    apds9960_model_cycle(&model);
+    apds9960_enable_color(&dev);
+
+    uint8_t prox = 0;
+    apds9960_color_t color;
+    ASSERT_EQ(apds9960_read_proximity(&dev, &prox), APDS9960_OK);
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_ERR_NOT_READY);
+    apds9960_model_cycle(&model);
+    ASSERT_EQ(apds9960_read_color(&dev, &color), APDS9960_OK);
+}
 
 TEST(test_read_color)
 {
@@ -462,6 +586,13 @@ TEST_MAIN("apds9960 hardware model")
     RUN(test_init_sets_ppulse);
     RUN(test_enable_proximity);
     RUN(test_read_proximity);
+    RUN(test_read_proximity_before_the_first_cycle_is_not_ready);
+    RUN(test_read_without_the_engine_is_not_ready);
+    RUN(test_read_proximity_between_cycles_stays_ok);
+    RUN(test_proximity_of_zero_is_a_result);
+    RUN(test_enabling_again_waits_for_a_new_cycle);
+    RUN(test_read_color_before_the_first_cycle_is_not_ready);
+    RUN(test_engines_are_ready_on_their_own);
     RUN(test_read_color);
     RUN(test_chip_id_readonly);
     RUN(test_color_data_readonly);

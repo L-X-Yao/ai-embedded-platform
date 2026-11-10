@@ -51,6 +51,9 @@
 #define ENABLE_PEN   (1u << 2)
 #define ENABLE_GEN   (1u << 6)
 
+#define STATUS_AVALID (1u << 0)
+#define STATUS_PVALID (1u << 1)
+
 /* Expected chip IDs (0xAB = original, 0xA8 = common variant) */
 #define CHIP_ID_AB   0xABu
 #define CHIP_ID_A8   0xA8u
@@ -132,10 +135,28 @@ apds9960_err_t apds9960_init(apds9960_t *dev, const apds9960_i2c_t *i2c)
     return APDS9960_OK;
 }
 
+/* A read before the first cycle gets no measurement. The flags clear on each
+ * data read (p25), so they are 0 between cycles too, and proximity 0 is a normal
+ * result: a flag is remembered once it has been seen, and later reads return the
+ * last result as they always did. */
+static apds9960_err_t check_ready(const apds9960_t *dev, bool *have, uint8_t flag)
+{
+    if (*have) return APDS9960_OK;
+
+    uint8_t status = 0;
+    apds9960_err_t err = read_reg(dev, REG_STATUS, &status);
+    if (err != APDS9960_OK) return err;
+    if ((status & flag) == 0) return APDS9960_ERR_NOT_READY;
+
+    *have = true;
+    return APDS9960_OK;
+}
+
 apds9960_err_t apds9960_enable_proximity(apds9960_t *dev)
 {
     if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
 
+    dev->have_prox = false;
     uint8_t en = 0;
     apds9960_err_t err = read_reg(dev, REG_ENABLE, &en);
     if (err != APDS9960_OK) return err;
@@ -147,6 +168,9 @@ apds9960_err_t apds9960_enable_proximity(apds9960_t *dev)
 apds9960_err_t apds9960_read_proximity(apds9960_t *dev, uint8_t *prox)
 {
     if (!dev || !prox || !dev->i2c) return APDS9960_ERR_PARAM;
+
+    apds9960_err_t err = check_ready(dev, &dev->have_prox, STATUS_PVALID);
+    if (err != APDS9960_OK) return err;
     return read_reg(dev, REG_PDATA, prox);
 }
 
@@ -154,6 +178,7 @@ apds9960_err_t apds9960_enable_color(apds9960_t *dev)
 {
     if (!dev || !dev->i2c) return APDS9960_ERR_PARAM;
 
+    dev->have_color = false;
     uint8_t en = 0;
     apds9960_err_t err = read_reg(dev, REG_ENABLE, &en);
     if (err != APDS9960_OK) return err;
@@ -166,8 +191,11 @@ apds9960_err_t apds9960_read_color(apds9960_t *dev, apds9960_color_t *color)
 {
     if (!dev || !color || !dev->i2c) return APDS9960_ERR_PARAM;
 
+    apds9960_err_t err = check_ready(dev, &dev->have_color, STATUS_AVALID);
+    if (err != APDS9960_OK) return err;
+
     uint8_t buf[8];
-    apds9960_err_t err = read_regs(dev, REG_CDATAL, buf, 8);
+    err = read_regs(dev, REG_CDATAL, buf, 8);
     if (err != APDS9960_OK) return err;
 
     color->c = (uint16_t)((uint16_t)buf[1] << 8 | buf[0]);
