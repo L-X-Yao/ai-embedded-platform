@@ -37,17 +37,24 @@ typedef enum {
     HEATSHRINK_ERR_EMPTY = -3,
 } heatshrink_err_t;
 
+/* Each result type below has a negative member on purpose. arm-none-eabi-gcc
+ * sizes an enum by its values, so with only 0 and 1 it would be one unsigned
+ * byte and -1 would arrive as 255. All three equal HEATSHRINK_ERR_PARAM. */
+
 typedef enum {
+    HEATSHRINK_SINK_ERR_PARAM = -1, /* NULL argument                 */
     HEATSHRINK_SINK_OK   = 0,   /* data accepted                     */
     HEATSHRINK_SINK_FULL = 1,   /* input buffer full, poll first     */
 } heatshrink_sink_res_t;
 
 typedef enum {
+    HEATSHRINK_POLL_ERR_PARAM = -1, /* NULL argument                 */
     HEATSHRINK_POLL_MORE  = 0,  /* output available, call again      */
     HEATSHRINK_POLL_EMPTY = 1,  /* no more output right now          */
 } heatshrink_poll_res_t;
 
 typedef enum {
+    HEATSHRINK_FINISH_ERR_PARAM = -1, /* NULL argument               */
     HEATSHRINK_FINISH_MORE = 0, /* more output pending               */
     HEATSHRINK_FINISH_DONE = 1, /* compression/decompression done    */
 } heatshrink_finish_res_t;
@@ -115,7 +122,7 @@ heatshrink_err_t heatshrink_encoder_reset(heatshrink_encoder_t *enc);
  * @param len      Number of input bytes.
  * @param consumed [out] How many bytes were actually consumed.
  * @return HEATSHRINK_SINK_OK or HEATSHRINK_SINK_FULL.
- *         HEATSHRINK_ERR_PARAM on NULL args.
+ *         HEATSHRINK_SINK_ERR_PARAM on NULL args.
  * @thread_safe: no
  */
 heatshrink_sink_res_t heatshrink_encoder_sink(heatshrink_encoder_t *enc,
@@ -131,7 +138,7 @@ heatshrink_sink_res_t heatshrink_encoder_sink(heatshrink_encoder_t *enc,
  * @param out_size Size of output buffer.
  * @param produced [out] How many bytes were written to out.
  * @return HEATSHRINK_POLL_MORE or HEATSHRINK_POLL_EMPTY.
- *         HEATSHRINK_ERR_PARAM on NULL args.
+ *         HEATSHRINK_POLL_ERR_PARAM on NULL args.
  * @thread_safe: no
  */
 heatshrink_poll_res_t heatshrink_encoder_poll(heatshrink_encoder_t *enc,
@@ -219,7 +226,7 @@ heatshrink_err_t heatshrink_decoder_reset(heatshrink_decoder_t *dec);
  * @param len      Number of bytes.
  * @param consumed [out] How many bytes were actually consumed.
  * @return HEATSHRINK_SINK_OK or HEATSHRINK_SINK_FULL.
- *         HEATSHRINK_ERR_PARAM on NULL args.
+ *         HEATSHRINK_SINK_ERR_PARAM on NULL args.
  * @thread_safe: no
  */
 heatshrink_sink_res_t heatshrink_decoder_sink(heatshrink_decoder_t *dec,
@@ -235,7 +242,7 @@ heatshrink_sink_res_t heatshrink_decoder_sink(heatshrink_decoder_t *dec,
  * @param out_size Size of output buffer.
  * @param produced [out] How many bytes were written to out.
  * @return HEATSHRINK_POLL_MORE or HEATSHRINK_POLL_EMPTY.
- *         HEATSHRINK_ERR_PARAM on NULL args.
+ *         HEATSHRINK_POLL_ERR_PARAM on NULL args.
  * @thread_safe: no
  */
 heatshrink_poll_res_t heatshrink_decoder_poll(heatshrink_decoder_t *dec,

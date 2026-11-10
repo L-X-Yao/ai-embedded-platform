@@ -667,6 +667,52 @@ TEST(test_decoder_sink_exact_fit_is_ok)
     ASSERT_EQ(consumed, 28);
 }
 
+/* With only 0 and 1 in a result enum, arm-none-eabi-gcc makes it one unsigned
+   byte and -1 arrives as 255. CMake also builds this file with -fshort-enums
+   to see what the target sees. */
+TEST(test_null_errors_arrive_negative_in_every_result_type)
+{
+    uint8_t buf[4] = { 0 };
+    uint16_t n = 0;
+
+    heatshrink_sink_res_t sink = heatshrink_encoder_sink(NULL, buf, 1, &n);
+    ASSERT_EQ((int)sink, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(sink == HEATSHRINK_SINK_ERR_PARAM);
+    ASSERT_TRUE(sink < 0);
+    sink = heatshrink_decoder_sink(NULL, buf, 1, &n);
+    ASSERT_EQ((int)sink, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(sink == HEATSHRINK_SINK_ERR_PARAM);
+    ASSERT_TRUE(sink < 0);
+
+    heatshrink_poll_res_t poll = heatshrink_encoder_poll(NULL, buf, 1, &n);
+    ASSERT_EQ((int)poll, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(poll == HEATSHRINK_POLL_ERR_PARAM);
+    ASSERT_TRUE(poll < 0);
+    poll = heatshrink_decoder_poll(NULL, buf, 1, &n);
+    ASSERT_EQ((int)poll, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(poll == HEATSHRINK_POLL_ERR_PARAM);
+    ASSERT_TRUE(poll < 0);
+
+    heatshrink_finish_res_t finish = heatshrink_encoder_finish(NULL);
+    ASSERT_EQ((int)finish, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(finish == HEATSHRINK_FINISH_ERR_PARAM);
+    ASSERT_TRUE(finish < 0);
+    finish = heatshrink_decoder_finish(NULL);
+    ASSERT_EQ((int)finish, (int)HEATSHRINK_ERR_PARAM);
+    ASSERT_TRUE(finish == HEATSHRINK_FINISH_ERR_PARAM);
+    ASSERT_TRUE(finish < 0);
+}
+
+TEST(test_success_results_keep_their_values)
+{
+    ASSERT_EQ((int)HEATSHRINK_SINK_OK, 0);
+    ASSERT_EQ((int)HEATSHRINK_SINK_FULL, 1);
+    ASSERT_EQ((int)HEATSHRINK_POLL_MORE, 0);
+    ASSERT_EQ((int)HEATSHRINK_POLL_EMPTY, 1);
+    ASSERT_EQ((int)HEATSHRINK_FINISH_MORE, 0);
+    ASSERT_EQ((int)HEATSHRINK_FINISH_DONE, 1);
+}
+
 TEST_MAIN("heatshrink")
     RUN(test_decoder_sink_reports_partial_take);
     RUN(test_decoder_sink_exact_fit_is_ok);
@@ -683,4 +729,6 @@ TEST_MAIN("heatshrink")
     RUN(test_reset);
     RUN(test_roundtrip_one_byte_output_chunks);
     RUN(test_roundtrip_input_larger_than_window);
+    RUN(test_null_errors_arrive_negative_in_every_result_type);
+    RUN(test_success_results_keep_their_values);
 TEST_MAIN_END()

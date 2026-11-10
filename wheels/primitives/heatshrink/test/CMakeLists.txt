@@ -50,8 +50,20 @@ target_include_directories(test_boundary_heatshrink PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
 )
 target_compile_options(test_boundary_heatshrink PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion)
+
+# arm-none-eabi-gcc sizes an enum by its values, which a host build does not show
+add_executable(test_heatshrink_short_enums
+    test_heatshrink.c
+    ../heatshrink.c
+)
+target_include_directories(test_heatshrink_short_enums PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../tooling/harness
+)
+target_compile_options(test_heatshrink_short_enums PRIVATE -Wall -Wextra -Wpedantic -Werror -Wconversion -fshort-enums)
 enable_testing()
 add_test(NAME heatshrink_tests COMMAND test_heatshrink)
 add_test(NAME heatshrink_prop  COMMAND prop_heatshrink)
 add_test(NAME heatshrink_null_tests COMMAND test_null_heatshrink)
 add_test(NAME heatshrink_boundary_tests COMMAND test_boundary_heatshrink)
+add_test(NAME heatshrink_short_enums_tests COMMAND test_heatshrink_short_enums)

@@ -98,7 +98,7 @@ heatshrink_sink_res_t heatshrink_encoder_sink(heatshrink_encoder_t *enc,
                                               uint16_t *consumed)
 {
     if (!enc || !data || !consumed) {
-        return (heatshrink_sink_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_SINK_ERR_PARAM;
     }
 
     if (enc->state == HS_ENC_DONE) {
@@ -212,7 +212,7 @@ heatshrink_poll_res_t heatshrink_encoder_poll(heatshrink_encoder_t *enc,
                                               uint16_t *produced)
 {
     if (!enc || !out || !produced) {
-        return (heatshrink_poll_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_POLL_ERR_PARAM;
     }
 
     *produced = 0;
@@ -285,7 +285,7 @@ heatshrink_poll_res_t heatshrink_encoder_poll(heatshrink_encoder_t *enc,
 heatshrink_finish_res_t heatshrink_encoder_finish(heatshrink_encoder_t *enc)
 {
     if (!enc) {
-        return (heatshrink_finish_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_FINISH_ERR_PARAM;
     }
 
     enc->finishing = 1;
@@ -379,7 +379,7 @@ heatshrink_sink_res_t heatshrink_decoder_sink(heatshrink_decoder_t *dec,
                                               uint16_t *consumed)
 {
     if (!dec || !data || !consumed) {
-        return (heatshrink_sink_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_SINK_ERR_PARAM;
     }
 
     if (dec->state == HS_DEC_DONE) {
@@ -446,7 +446,7 @@ heatshrink_poll_res_t heatshrink_decoder_poll(heatshrink_decoder_t *dec,
                                               uint16_t *produced)
 {
     if (!dec || !out || !produced) {
-        return (heatshrink_poll_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_POLL_ERR_PARAM;
     }
 
     *produced = 0;
@@ -612,7 +612,7 @@ static uint16_t dec_bits_needed(const heatshrink_decoder_t *dec)
 heatshrink_finish_res_t heatshrink_decoder_finish(heatshrink_decoder_t *dec)
 {
     if (!dec) {
-        return (heatshrink_finish_res_t)HEATSHRINK_ERR_PARAM;
+        return HEATSHRINK_FINISH_ERR_PARAM;
     }
 
     dec->finishing = 1;
