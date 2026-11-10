@@ -101,7 +101,7 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
     uint32_t ctl, cfg;
     uint32_t enabled = USART_CTL0(reg) & USART_CTL0_UEN;
     if (enabled) {
-        USART_CTL0(reg) &= ~USART_CTL0_UEN;
+        vsf_atom32_op(&USART_CTL0(reg), _ & ~USART_CTL0_UEN);
     }
 
     // CTL0: REN, TEN, PM, PCEN, WL (direct bit positions in mode)
@@ -127,7 +127,7 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_init)(
     USART_CTL2(reg) = ctl;
 
     if (enabled) {
-        USART_CTL0(reg) |= USART_CTL0_UEN;
+        vsf_atom32_op(&USART_CTL0(reg), _ | USART_CTL0_UEN);
     }
 
     vsf_usart_isr_t *isr_ptr = &cfg_ptr->isr;
@@ -153,7 +153,7 @@ fsm_rt_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_enable)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    USART_CTL0(usart_ptr->reg) |= USART_CTL0_UEN;
+    vsf_atom32_op(&USART_CTL0(usart_ptr->reg), _ | USART_CTL0_UEN);
     return fsm_rt_cpl;
 }
 
@@ -161,7 +161,7 @@ fsm_rt_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_disable)(
     VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_t) *usart_ptr
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
-    USART_CTL0(usart_ptr->reg) &= ~USART_CTL0_UEN;
+    vsf_atom32_op(&USART_CTL0(usart_ptr->reg), _ & ~USART_CTL0_UEN);
     return fsm_rt_cpl;
 }
 
@@ -172,8 +172,8 @@ void VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_irq_enable)(
     VSF_HAL_ASSERT(NULL != usart_ptr);
     VSF_HAL_ASSERT(!(irq_mask & ~__VSF_HW_USART_IRQ_MASK));
 
-    USART_CTL0(usart_ptr->reg) |= irq_mask & __VSF_HW_USART_CTL0_IRQ_MASK;
-    USART_CTL2(usart_ptr->reg) |= irq_mask & __VSF_HW_USART_CTL2_IRQ_MASK;
+    vsf_atom32_op(&USART_CTL0(usart_ptr->reg), _ | (irq_mask & __VSF_HW_USART_CTL0_IRQ_MASK));
+    vsf_atom32_op(&USART_CTL2(usart_ptr->reg), _ | (irq_mask & __VSF_HW_USART_CTL2_IRQ_MASK));
 }
 
 void VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_irq_disable)(
@@ -182,8 +182,8 @@ void VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_irq_disable)(
 ) {
     VSF_HAL_ASSERT(NULL != usart_ptr);
 
-    USART_CTL0(usart_ptr->reg) &= ~(irq_mask & __VSF_HW_USART_CTL0_IRQ_MASK);
-    USART_CTL2(usart_ptr->reg) &= ~(irq_mask & __VSF_HW_USART_CTL2_IRQ_MASK);
+    vsf_atom32_op(&USART_CTL0(usart_ptr->reg), _ & ~(irq_mask & __VSF_HW_USART_CTL0_IRQ_MASK));
+    vsf_atom32_op(&USART_CTL2(usart_ptr->reg), _ & ~(irq_mask & __VSF_HW_USART_CTL2_IRQ_MASK));
 }
 
 vsf_usart_status_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_status)(
@@ -273,7 +273,7 @@ vsf_err_t VSF_MCONNECT(VSF_USART_CFG_IMP_PREFIX, _usart_ctrl)(
 ) {
     VSF_HAL_ASSERT(!(cmd & ~__VSF_HW_USART_SUPPORT_CMD_MASK));
     if (cmd & VSF_USART_CTRL_SEND_BREAK) {
-        USART_CTL0(usart_ptr->reg) |= USART_CTL0_SBKCMD;
+        vsf_atom32_op(&USART_CTL0(usart_ptr->reg), _ | USART_CTL0_SBKCMD);
     }
     return VSF_ERR_NONE;
 }

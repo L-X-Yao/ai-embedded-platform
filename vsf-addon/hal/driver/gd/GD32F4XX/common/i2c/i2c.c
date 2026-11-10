@@ -146,7 +146,7 @@ void VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_irq_enable)(
     vsf_i2c_irq_mask_t irq_mask
 ) {
     VSF_HAL_ASSERT(NULL != i2c_ptr);
-    I2C_CTL1(i2c_ptr->reg) |= I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE;
+    vsf_atom32_op(&I2C_CTL1(i2c_ptr->reg), _ | (I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE));
 }
 
 void VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_irq_disable)(
@@ -154,7 +154,7 @@ void VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_irq_disable)(
     vsf_i2c_irq_mask_t irq_mask
 ) {
     VSF_HAL_ASSERT(NULL != i2c_ptr);
-    I2C_CTL1(i2c_ptr->reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE);
+    vsf_atom32_op(&I2C_CTL1(i2c_ptr->reg), _ & ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE));
 }
 
 vsf_i2c_status_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_status)(
@@ -229,9 +229,9 @@ vsf_err_t VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_master_request)(
     // N=2 ends on BTC alone: with BUFIE on, RBNE would take the first byte
     // early, BTC would never set, and STOP would never be sent.
     if ((count == 2) && (cmd & VSF_I2C_CMD_READ)) {
-        I2C_CTL1(reg) = (I2C_CTL1(reg) & ~I2C_CTL1_BUFIE) | I2C_CTL1_EVIE | I2C_CTL1_ERRIE;
+        vsf_atom32_op(&I2C_CTL1(reg), (_ & ~I2C_CTL1_BUFIE) | I2C_CTL1_EVIE | I2C_CTL1_ERRIE);
     } else {
-        I2C_CTL1(reg) |= I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE;
+        vsf_atom32_op(&I2C_CTL1(reg), _ | (I2C_CTL1_EVIE | I2C_CTL1_BUFIE | I2C_CTL1_ERRIE));
     }
 
     if (cmd & (VSF_I2C_CMD_START | VSF_I2C_CMD_RESTART)) {
@@ -304,7 +304,7 @@ static void __i2c_transfer_end(
     VSF_MCONNECT(VSF_I2C_CFG_IMP_PREFIX, _i2c_t) *i2c_ptr,
     vsf_i2c_irq_mask_t irq_mask
 ) {
-    I2C_CTL1(i2c_ptr->reg) &= ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE);
+    vsf_atom32_op(&I2C_CTL1(i2c_ptr->reg), _ & ~(I2C_CTL1_EVIE | I2C_CTL1_BUFIE));
     i2c_ptr->busy = false;
 
     vsf_i2c_isr_t *isr_ptr = &i2c_ptr->isr;

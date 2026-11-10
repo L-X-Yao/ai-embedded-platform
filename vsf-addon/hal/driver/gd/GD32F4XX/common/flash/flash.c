@@ -104,11 +104,9 @@ static vsf_err_t __flash_check_erase_range(uint32_t offset, uint32_t size)
 // FMC_CTL must already be unlocked. The interrupt starts every later sector.
 static void __flash_start_sector_erase(int sector)
 {
-    uint32_t ctl = FMC_CTL;
-    ctl &= ~(FMC_CTL_SN | FMC_CTL_PG | FMC_CTL_MER0 | FMC_CTL_MER1);
-    ctl |= FMC_CTL_SER | ((uint32_t)sector << 3);
-    FMC_CTL = ctl;
-    FMC_CTL = ctl | FMC_CTL_START;
+    uint32_t set = FMC_CTL_SER | ((uint32_t)sector << 3);
+    vsf_atom32_op(&FMC_CTL, (_ & ~(FMC_CTL_SN | FMC_CTL_PG | FMC_CTL_MER0 | FMC_CTL_MER1)) | set);
+    vsf_atom32_op(&FMC_CTL, _ | FMC_CTL_START);
 }
 
 /*============================ IMPLEMENTATION ================================*/
@@ -160,7 +158,7 @@ void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_fini)(
     VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
-    FMC_CTL |= FMC_CTL_LK;
+    vsf_atom32_op(&FMC_CTL, _ | FMC_CTL_LK);
 }
 
 fsm_rt_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_enable)(
@@ -185,7 +183,7 @@ void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_irq_enable)(
     flash_ptr->irq_mask |= irq_mask;
     // READ is reported from the read call itself and needs neither bit
     if (irq_mask & __VSF_HW_FLASH_IRQ_MASK) {
-        FMC_CTL |= FMC_CTL_ENDIE | FMC_CTL_ERRIE;
+        vsf_atom32_op(&FMC_CTL, _ | (FMC_CTL_ENDIE | FMC_CTL_ERRIE));
     }
 }
 
@@ -196,7 +194,7 @@ void VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_irq_disable)(
     VSF_HAL_ASSERT(flash_ptr != NULL);
     flash_ptr->irq_mask &= ~irq_mask;
     if (!(flash_ptr->irq_mask & __VSF_HW_FLASH_IRQ_MASK)) {
-        FMC_CTL &= ~(FMC_CTL_ENDIE | FMC_CTL_ERRIE);
+        vsf_atom32_op(&FMC_CTL, _ & ~(FMC_CTL_ENDIE | FMC_CTL_ERRIE));
     }
 }
 
@@ -259,7 +257,7 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     flash_ptr->size_orig = flash_ptr->size_cur = size;
     flash_ptr->buffer = buffer;
 
-    FMC_CTL |= FMC_CTL_PG;
+    vsf_atom32_op(&FMC_CTL, _ | FMC_CTL_PG);
     __ISB();
     __DSB();
     *(volatile uint32_t *)(flash_ptr->addr + offset) = ((uint32_t *)buffer)[0];
@@ -335,7 +333,7 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
     FMC_STAT = stat;
 
     if (stat & (FMC_STAT_WPERR | FMC_STAT_PGMERR | FMC_STAT_PGSERR | FMC_STAT_RDDERR | FMC_STAT_OPERR)) {
-        FMC_CTL &= ~(FMC_CTL_PG | FMC_CTL_SER);
+        vsf_atom32_op(&FMC_CTL, _ & ~(FMC_CTL_PG | FMC_CTL_SER));
         flash_ptr->size_cur = 0;
         irq_mask = flash_ptr->erase0_write1
                  ? VSF_FLASH_IRQ_WRITE_ERROR_MASK
@@ -343,7 +341,7 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
     } else if (stat & FMC_STAT_END) {
         if (flash_ptr->erase0_write1) {
             // write: advance by 4 bytes (word programming)
-            FMC_CTL &= ~FMC_CTL_PG;
+            vsf_atom32_op(&FMC_CTL, _ & ~FMC_CTL_PG);
             if (flash_ptr->size_cur < 4) {
                 return;     // stray END, no write in progress
             }
@@ -351,7 +349,7 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
             flash_ptr->offset_cur += 4;
             flash_ptr->buffer += 4;
             if (flash_ptr->size_cur > 0) {
-                FMC_CTL |= FMC_CTL_PG;
+                vsf_atom32_op(&FMC_CTL, _ | FMC_CTL_PG);
                 __ISB();
                 __DSB();
                 *(volatile uint32_t *)(flash_ptr->addr + flash_ptr->offset_cur) =
@@ -363,7 +361,7 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
             irq_mask = VSF_FLASH_IRQ_WRITE_MASK;
         } else {
             // erase: advance to next sector
-            FMC_CTL &= ~FMC_CTL_SER;
+            vsf_atom32_op(&FMC_CTL, _ & ~FMC_CTL_SER);
             if (0 == flash_ptr->size_cur) {
                 return;     // stray END, no erase in progress
             }

@@ -24,6 +24,16 @@ cp "$T"/host/vendor/*.h "$B/common/vendor/Include/"
 : > "$B/utilities/ooc_class.h"
 
 rc=0
+
+# A task and an interrupt handler both change these registers. A race cannot be
+# run on a host, so check the source: every read-modify-write must be atomic, as
+# in gpio.c. An exception return clears the exclusive monitor, so a task's
+# vsf_atom32_op retries if a handler got in between its load and its store.
+if grep -nE '(USART_CTL[02]|SPI_CTL[01]|I2C_CTL1)\(.*\) *[|&]=|FMC_CTL *[|&]=' "$P"/common/*/*.c; then
+    echo "plain read-modify-write of a register shared with an interrupt (see above)"
+    rc=1
+fi
+
 [ $# -gt 0 ] || set -- flash i2c spi usart gpio
 for p in "$@"; do
     [ -f "$T/test_$p.c" ] || { echo "$p: no model yet"; continue; }

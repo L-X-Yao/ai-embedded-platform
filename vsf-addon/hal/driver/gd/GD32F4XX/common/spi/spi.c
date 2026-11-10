@@ -80,7 +80,7 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_init)(
     vsf_hw_peripheral_enable(spi_ptr->en);
 
     // disable SPI before configuration
-    SPI_CTL0(reg) &= ~SPI_CTL0_SPIEN;
+    vsf_atom32_op(&SPI_CTL0(reg), _ & ~SPI_CTL0_SPIEN);
 
     uint8_t psc = __spi_calc_prescaler(spi_ptr->pclk_hz, cfg_ptr->clock_hz);
     uint32_t ctl0 = mode & __VSF_HW_SPI_CTL0_MASK;
@@ -116,7 +116,7 @@ fsm_rt_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_enable)(
     VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    SPI_CTL0(spi_ptr->reg) |= SPI_CTL0_SPIEN;
+    vsf_atom32_op(&SPI_CTL0(spi_ptr->reg), _ | SPI_CTL0_SPIEN);
     return fsm_rt_cpl;
 }
 
@@ -124,7 +124,7 @@ fsm_rt_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_disable)(
     VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_t) *spi_ptr
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    SPI_CTL0(spi_ptr->reg) &= ~SPI_CTL0_SPIEN;
+    vsf_atom32_op(&SPI_CTL0(spi_ptr->reg), _ & ~SPI_CTL0_SPIEN);
     return fsm_rt_cpl;
 }
 
@@ -133,7 +133,7 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_irq_enable)(
     vsf_spi_irq_mask_t irq_mask
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    SPI_CTL1(spi_ptr->reg) |= irq_mask & __VSF_HW_SPI_IRQ_MASK;
+    vsf_atom32_op(&SPI_CTL1(spi_ptr->reg), _ | (irq_mask & __VSF_HW_SPI_IRQ_MASK));
 }
 
 void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_irq_disable)(
@@ -141,7 +141,7 @@ void VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_irq_disable)(
     vsf_spi_irq_mask_t irq_mask
 ) {
     VSF_HAL_ASSERT(NULL != spi_ptr);
-    SPI_CTL1(spi_ptr->reg) &= ~(irq_mask & __VSF_HW_SPI_IRQ_MASK);
+    vsf_atom32_op(&SPI_CTL1(spi_ptr->reg), _ & ~(irq_mask & __VSF_HW_SPI_IRQ_MASK));
 }
 
 vsf_spi_status_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_status)(
@@ -260,7 +260,7 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_active)(
     if (!spi_ptr->slave_sw_nss || (index != 0)) {
         return VSF_ERR_NOT_SUPPORT;
     }
-    SPI_CTL0(spi_ptr->reg) &= ~SPI_CTL0_SWNSS;
+    vsf_atom32_op(&SPI_CTL0(spi_ptr->reg), _ & ~SPI_CTL0_SWNSS);
     return VSF_ERR_NONE;
 }
 
@@ -273,7 +273,7 @@ vsf_err_t VSF_MCONNECT(VSF_SPI_CFG_IMP_PREFIX, _spi_cs_inactive)(
     if (!spi_ptr->slave_sw_nss || (index != 0)) {
         return VSF_ERR_NOT_SUPPORT;
     }
-    SPI_CTL0(spi_ptr->reg) |= SPI_CTL0_SWNSS;
+    vsf_atom32_op(&SPI_CTL0(spi_ptr->reg), _ | SPI_CTL0_SWNSS);
     return VSF_ERR_NONE;
 }
 
