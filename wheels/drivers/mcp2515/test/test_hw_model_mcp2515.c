@@ -12,6 +12,7 @@
 #include "test_harness.h"
 #include "hw_model_mcp2515.h"
 #include "../mcp2515.h"
+#include <string.h>
 
 static mcp2515_model_t model;
 
@@ -697,6 +698,104 @@ TEST(test_model_abort_by_clearing_txreq_ends_the_wait)
     ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF, 0);
 }
 
+/* p.16: "The MCU can request to abort a message in a specific message buffer by
+ * clearing the associated TXREQ bit". mcp2515_send uses buffer 0. */
+TEST(test_abort_takes_back_a_pending_frame)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 1, .data = {0xAA}, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_ERR_TX_BUSY);
+
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+    ASSERT_EQ(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ, 0);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF, 0);
+
+    /* the buffer is the caller's again */
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+}
+
+/* p.16: unlike ABAT, which "MUST be reset", TXREQ leaves nothing to undo, and
+ * "Aborting a message by resetting the TXREQ bit does NOT cause the ABTF bit to be
+ * set". The priority bits of the buffer stay as they are. */
+TEST(test_abort_touches_only_txreq)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    spi_write(MCP_REG_TXB0CTRL, 0x03);
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 0, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+
+    ASSERT_EQ_HEX(model.hw.regs[MCP_REG_TXB0CTRL], 0x03);
+    ASSERT_EQ(model.hw.regs[MCP_REG_CANCTRL] & 0x10, 0);    /* ABAT stays 0 */
+}
+
+/* The case the README left open: a frame that cannot go out holds up a mode change
+ * (p.59), and the abort is the way out. */
+TEST(test_abort_releases_a_held_mode_change)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 0, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_ERR_TIMEOUT);
+
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+    ASSERT_EQ(mcp2515_set_mode(&dev, MCP2515_MODE_CONFIG), MCP2515_OK);
+    ASSERT_EQ(dev.mode, MCP2515_MODE_CONFIG);
+}
+
+/* Nothing pending is no fault: the frame may just have gone out. */
+TEST(test_abort_with_nothing_pending)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 0, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    mcp2515_model_finish_tx(&model);
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF);
+}
+
+/* p.16 note 1: a frame on the bus goes on, so the abort must not claim the buffer
+ * is free, and a later call sees the end of it. */
+TEST(test_abort_of_a_frame_on_the_bus_is_busy)
+{
+    setup();
+    mcp2515_t dev;
+    ASSERT_EQ(mcp2515_init(&dev, &model_spi, MCP2515_SPEED_500KBPS), MCP2515_OK);
+
+    mcp2515_msg_t msg = { .id = 0x123, .dlc = 0, .extended = false, .rtr = false };
+    ASSERT_EQ(mcp2515_send(&dev, &msg), MCP2515_OK);
+    model.tx_on_wire = true;
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_ERR_TX_BUSY);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_TXB0CTRL] & MCP_TXB_TXREQ);
+
+    model.tx_on_wire = false;
+    mcp2515_model_finish_tx(&model);
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_OK);
+    ASSERT_TRUE(model.hw.regs[MCP_REG_CANINTF] & MCP_CANINTF_TX0IF);
+}
+
+TEST(test_abort_without_a_device)
+{
+    mcp2515_t dev;
+    memset(&dev, 0, sizeof(dev));
+    ASSERT_EQ(mcp2515_abort_tx(NULL), MCP2515_ERR_SPI);
+    ASSERT_EQ(mcp2515_abort_tx(&dev), MCP2515_ERR_SPI);
+}
+
 /* p.59 and p.60: Listen-Only and Sleep send nothing, and Normal "is also the only
  * mode in which the MCP2515 will transmit messages over the CAN bus" */
 TEST(test_model_only_normal_and_loopback_finish_a_transmission)
@@ -989,6 +1088,12 @@ TEST_MAIN("mcp2515 hardware model")
     RUN(test_send_succeeds_when_the_frame_goes_out_at_once);
     RUN(test_receive_succeeds_when_the_next_frame_is_already_in);
     RUN(test_mode_change_waits_for_a_pending_transmission);
+    RUN(test_abort_takes_back_a_pending_frame);
+    RUN(test_abort_touches_only_txreq);
+    RUN(test_abort_releases_a_held_mode_change);
+    RUN(test_abort_with_nothing_pending);
+    RUN(test_abort_of_a_frame_on_the_bus_is_busy);
+    RUN(test_abort_without_a_device);
     RUN(test_model_abort_by_clearing_txreq_ends_the_wait);
     RUN(test_model_only_normal_and_loopback_finish_a_transmission);
     RUN(test_send_refused_where_no_frame_can_go_out);

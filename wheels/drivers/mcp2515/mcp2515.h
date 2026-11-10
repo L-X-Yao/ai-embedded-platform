@@ -108,6 +108,14 @@ mcp2515_err_t mcp2515_set_mode(mcp2515_t *dev, mcp2515_mode_t mode);
  *  Listen-Only, Sleep and Configuration mode, where the chip sends nothing. */
 mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg);
 
+/** Abort the frame mcp2515_send left pending, which also frees a mode change it
+ *  holds up. MCP2515_OK says the buffer is free for the next send. A frame already
+ *  on the bus cannot be called back: it goes on, and is dropped only if it fails.
+ *  So MCP2515_OK does not say nothing went out, the TX0IF flag in CANINTF does.
+ *  Returns MCP2515_ERR_TX_BUSY if the buffer is still pending: ask again, and by then
+ *  the frame has gone out or been dropped. */
+mcp2515_err_t mcp2515_abort_tx(mcp2515_t *dev);
+
 /** Receive a CAN frame from RX buffer 0 or 1. */
 mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg);
 

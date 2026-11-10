@@ -419,6 +419,18 @@ mcp2515_err_t mcp2515_send(mcp2515_t *dev, const mcp2515_msg_t *msg)
     return MCP2515_OK;
 }
 
+mcp2515_err_t mcp2515_abort_tx(mcp2515_t *dev)
+{
+    if (!dev || !dev->spi) return MCP2515_ERR_SPI;
+
+    /* p.16: clearing TXREQ aborts this buffer, and needs none of the undoing of
+     * ABAT, which would reach all three */
+    bit_modify(dev->spi, REG_TXB0CTRL, TXB_TXREQ, 0x00);
+
+    if (reg_read(dev->spi, REG_TXB0CTRL) & TXB_TXREQ) return MCP2515_ERR_TX_BUSY;
+    return MCP2515_OK;
+}
+
 mcp2515_err_t mcp2515_receive(mcp2515_t *dev, mcp2515_msg_t *msg)
 {
     if (!dev || !dev->spi || !msg) return MCP2515_ERR_SPI;

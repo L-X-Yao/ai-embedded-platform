@@ -122,6 +122,10 @@ typedef struct {
     uint32_t         ost_left_us;
     int              spi_during_ost;
     uint32_t         delay_us_total;
+    /* p.16 note 1: a frame already on the bus "will continue to transmit". The
+     * manual does not say what TXREQ reads meanwhile. p.15 clears it when the
+     * transmission has completed, so here a write of 0 does not take. */
+    bool             tx_on_wire;
     /* TX behavior: auto-clear TXREQ after send */
     bool             auto_clear_txreq;
 } mcp2515_model_t;
@@ -291,6 +295,10 @@ static void mcp2515_on_txbctrl_write(void *user, uint8_t reg,
             mcp2515_model_finish_tx(m);
         }
     } else if (!(new_val & MCP_TXB_TXREQ)) {
+        if ((old_val & MCP_TXB_TXREQ) && m->tx_on_wire) {
+            m->hw.regs[reg] |= MCP_TXB_TXREQ;
+            return;
+        }
         /* p.16: clearing TXREQ aborts the message, so it is no longer pending */
         mcp2515_mirror_mode(m);
     }
