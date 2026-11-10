@@ -147,6 +147,63 @@ TEST(test_hw_read_round_trip)
     ASSERT_EQ(raw.z, model.true_z);
 }
 
+/* p.28: ZYXDA says a sample is there. The first comes 1/ODR after init, 100 ms
+ * at 10 Hz, and until then the output registers hold no measurement. */
+TEST(test_read_before_the_first_sample_is_not_ready)
+{
+    setup();
+    lis3mdl_t dev;
+    lis3mdl_init(&dev, &model_i2c, &default_cfg);
+
+    lis3mdl_raw_t raw = { 1, 2, 3 };
+    lis3mdl_data_t data;
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &raw), LIS3MDL_ERR_NOT_READY);
+    ASSERT_EQ(raw.x, 1);
+    ASSERT_EQ(lis3mdl_read(&dev, &data), LIS3MDL_ERR_NOT_READY);
+
+    wait_ms(99);
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &raw), LIS3MDL_ERR_NOT_READY);
+    wait_ms(1);
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &raw), LIS3MDL_OK);
+    ASSERT_EQ(raw.x, model.true_x);
+}
+
+/* Once a sample exists a read between samples stays what it was: the last
+ * sample and OK, so a caller polling faster than the ODR notices nothing. */
+TEST(test_read_between_samples_stays_ok)
+{
+    setup();
+    lis3mdl_t dev;
+    lis3mdl_init(&dev, &model_i2c, &default_cfg);
+    wait_ms(100);
+
+    lis3mdl_raw_t first;
+    lis3mdl_raw_t again;
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &first), LIS3MDL_OK);
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &again), LIS3MDL_OK);
+    ASSERT_EQ(first.x, again.x);
+    ASSERT_EQ(first.y, again.y);
+    ASSERT_EQ(first.z, again.z);
+}
+
+/* A real sample of exactly zero is a sample: ZYXDA tells it from no sample. */
+TEST(test_sample_of_zero_is_a_sample)
+{
+    setup();
+    model.true_x = 0;
+    model.true_y = 0;
+    model.true_z = 0;
+    lis3mdl_t dev;
+    lis3mdl_init(&dev, &model_i2c, &default_cfg);
+    wait_ms(100);
+
+    lis3mdl_raw_t raw = { 1, 2, 3 };
+    ASSERT_EQ(lis3mdl_read_raw(&dev, &raw), LIS3MDL_OK);
+    ASSERT_EQ(raw.x, 0);
+    ASSERT_EQ(raw.y, 0);
+    ASSERT_EQ(raw.z, 0);
+}
+
 TEST(test_hw_read_ut_4g)
 {
     setup();
@@ -436,6 +493,9 @@ TEST_MAIN("lis3mdl hardware model")
     RUN(test_hw_init_sets_ctrl_reg2_16g);
     RUN(test_hw_init_sets_continuous_mode);
     RUN(test_hw_read_round_trip);
+    RUN(test_read_before_the_first_sample_is_not_ready);
+    RUN(test_read_between_samples_stays_ok);
+    RUN(test_sample_of_zero_is_a_sample);
     RUN(test_hw_read_ut_4g);
     RUN(test_hw_read_ut_16g);
     RUN(test_who_am_i_readonly);

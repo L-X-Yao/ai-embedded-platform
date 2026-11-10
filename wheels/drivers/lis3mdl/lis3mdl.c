@@ -18,9 +18,11 @@
 #define REG_CTRL_REG1  0x20u
 #define REG_CTRL_REG2  0x21u
 #define REG_CTRL_REG3  0x22u
+#define REG_STATUS     0x27u
 #define REG_OUT_X_L    0x28u   /* data block: 0x28..0x2D (XL,XH,YL,YH,ZL,ZH) */
 
 #define WHO_AM_I_VAL   0x3Du
+#define STATUS_ZYXDA   0x08u   /* a new sample on all three axes (p.28) */
 
 /* LIS3MDL auto-increment: set bit 7 of sub-address register */
 #define AUTO_INC(reg)  ((uint8_t)((reg) | 0x80u))
@@ -103,10 +105,21 @@ lis3mdl_err_t lis3mdl_read_raw(const lis3mdl_t *dev, lis3mdl_raw_t *raw)
     if (!dev->i2c || !dev->i2c->read_regs)
         return LIS3MDL_ERR_PARAM;
 
+    uint8_t status = 0;
+    if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr, REG_STATUS, &status, 1))
+        return LIS3MDL_ERR_I2C;
+
     uint8_t buf[6];
     if (!dev->i2c->read_regs(dev->i2c->ctx, dev->cfg.addr,
                              AUTO_INC(REG_OUT_X_L), buf, 6))
         return LIS3MDL_ERR_I2C;
+
+    /* Before the first sample the outputs are zero and ZYXDA is 0. ZYXDA alone
+     * cannot say so: reading a sample clears it, so it is 0 between samples too,
+     * and those reads go on returning the last sample. */
+    if ((status & STATUS_ZYXDA) == 0 &&
+        (buf[0] | buf[1] | buf[2] | buf[3] | buf[4] | buf[5]) == 0)
+        return LIS3MDL_ERR_NOT_READY;
 
     /* Little-endian: XL,XH,YL,YH,ZL,ZH */
     raw->x = (int16_t)(uint16_t)((uint16_t)buf[1] << 8 | (uint16_t)buf[0]);

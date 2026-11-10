@@ -31,6 +31,7 @@ typedef enum {
     LIS3MDL_ERR_I2C   = -1,
     LIS3MDL_ERR_ID    = -2,
     LIS3MDL_ERR_PARAM = -3,
+    LIS3MDL_ERR_NOT_READY = -4,   /* no sample yet: the first comes 100 ms after init */
 } lis3mdl_err_t;
 
 /* ---------- I2C HAL (caller provides) ---------- */
@@ -87,10 +88,15 @@ typedef struct {
 lis3mdl_err_t lis3mdl_init(lis3mdl_t *dev, const lis3mdl_i2c_t *i2c,
                            const lis3mdl_cfg_t *cfg);
 
-/** Read magnetometer in microtesla. @thread_safe: caller_must_lock @isr_safe: no */
+/**
+ * Read magnetometer in microtesla. @thread_safe: caller_must_lock @isr_safe: no
+ *
+ * LIS3MDL_ERR_NOT_READY before the first sample, and out is left alone. Later reads
+ * between samples return the last sample with LIS3MDL_OK.
+ */
 lis3mdl_err_t lis3mdl_read(lis3mdl_t *dev, lis3mdl_data_t *out);
 
-/** Read raw 16-bit magnetometer values. @thread_safe: caller_must_lock @isr_safe: no */
+/** Read raw 16-bit magnetometer values, as lis3mdl_read. @thread_safe: caller_must_lock @isr_safe: no */
 lis3mdl_err_t lis3mdl_read_raw(const lis3mdl_t *dev, lis3mdl_raw_t *raw);
 
 #ifdef __cplusplus

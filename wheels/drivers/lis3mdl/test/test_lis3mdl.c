@@ -9,11 +9,14 @@
 #define MOCK_WHO_AM_I_REG 0x0Fu
 #define MOCK_WHO_AM_I_VAL 0x3Du
 #define MOCK_OUT_X_L      0x28u
+#define MOCK_STATUS_REG   0x27u
+#define MOCK_ZYXDA        0x08u
 
 static void mock_reset(void)
 {
     mock_i2c_reset();
     mock_regs[MOCK_WHO_AM_I_REG] = MOCK_WHO_AM_I_VAL;
+    mock_regs[MOCK_STATUS_REG] = MOCK_ZYXDA;   /* this mock has a sample at once */
 }
 
 static const lis3mdl_i2c_t mock_i2c = {
