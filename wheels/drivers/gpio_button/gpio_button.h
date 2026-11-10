@@ -57,6 +57,7 @@ typedef struct {
     uint32_t idle_cnt;
     uint8_t  click_pending;
     uint8_t  long_fired;
+    uint8_t  next_evt;   /* gesture to report on the next tick, or EVT_NONE */
 } gpio_button_t;
 
 /* ---------- API ---------- */
@@ -66,7 +67,11 @@ gpio_button_cfg_t gpio_button_default_cfg(void);
 /** Initialize button instance. @thread_safe: no @isr_safe: no */
 void           gpio_button_init(gpio_button_t *btn, const gpio_button_hal_t *hal,
                               const gpio_button_cfg_t *cfg);
-/** Advance debounce/click state machine. @thread_safe: caller_must_lock @isr_safe: no */
+/** Advance debounce/click state machine. Returns one event per tick at most.
+ *  PRESS and RELEASE always alternate, and RELEASE comes on the debounced edge.
+ *  A gesture found on that same tick, DOUBLE_CLICK or a CLICK whose window is
+ *  under one tick, comes on the next tick, which reports it without reading
+ *  the pin. @thread_safe: caller_must_lock @isr_safe: no */
 gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms);
 /** Query current stable press state. @thread_safe: caller_must_lock @isr_safe: yes */
 uint8_t        gpio_button_is_pressed(const gpio_button_t *btn);

@@ -47,6 +47,7 @@ void gpio_button_init(gpio_button_t *btn, const gpio_button_hal_t *hal,
     btn->idle_cnt      = 0U;
     btn->click_pending = 0U;
     btn->long_fired    = 0U;
+    btn->next_evt      = (uint8_t)GPIO_BUTTON_EVT_NONE;
 }
 
 uint8_t gpio_button_is_pressed(const gpio_button_t *btn)
@@ -67,6 +68,15 @@ gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms)
     if (btn == NULL || btn->hal == NULL || btn->hal->read == NULL ||
         dt_ms == 0U) {
         return GPIO_BUTTON_EVT_NONE;
+    }
+
+    /* RELEASE went out on the last tick and its gesture goes now. Not reading
+     * the pin on this tick means it can never make a second event, so one
+     * slot is enough however fast the edges come with debounce_ms 0. */
+    if (btn->next_evt != (uint8_t)GPIO_BUTTON_EVT_NONE) {
+        evt = (gpio_button_evt_t)btn->next_evt;
+        btn->next_evt = (uint8_t)GPIO_BUTTON_EVT_NONE;
+        return evt;
     }
 
     sample = btn->hal->read(btn->hal->ctx);
@@ -103,7 +113,8 @@ gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms)
             if (!btn->long_fired) {
                 if (btn->click_pending) {
                     btn->click_pending = 0U;
-                    return GPIO_BUTTON_EVT_DOUBLE_CLICK;
+                    btn->next_evt = (uint8_t)GPIO_BUTTON_EVT_DOUBLE_CLICK;
+                    return evt;
                 }
                 btn->click_pending = 1U;
                 btn->idle_cnt = 0U;
@@ -125,6 +136,11 @@ gpio_button_evt_t gpio_button_tick(gpio_button_t *btn, uint16_t dt_ms)
             btn->idle_cnt += dt_ms;
         if (btn->idle_cnt >= btn->cfg.double_click_ms) {
             btn->click_pending = 0U;
+            /* A window under one tick ends on the release tick itself */
+            if (evt != GPIO_BUTTON_EVT_NONE) {
+                btn->next_evt = (uint8_t)GPIO_BUTTON_EVT_CLICK;
+                return evt;
+            }
             return GPIO_BUTTON_EVT_CLICK;
         }
     }

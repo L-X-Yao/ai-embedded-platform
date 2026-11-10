@@ -134,6 +134,168 @@ TEST(test_double_click)
     ASSERT_TRUE(e == GPIO_BUTTON_EVT_DOUBLE_CLICK);
 }
 
+/* ---------- every event, not just the last ---------- */
+
+#define EVT_LOG_MAX 16
+static gpio_button_evt_t evt_log[EVT_LOG_MAX];
+static uint16_t          evt_log_len;
+
+static void log_ticks(gpio_button_t *btn, uint16_t ticks, uint16_t dt_ms)
+{
+    for (uint16_t i = 0; i < ticks; i++) {
+        gpio_button_evt_t e = gpio_button_tick(btn, dt_ms);
+        if (e != GPIO_BUTTON_EVT_NONE && evt_log_len < EVT_LOG_MAX) {
+            evt_log[evt_log_len++] = e;
+        }
+    }
+}
+
+TEST(test_double_click_keeps_every_release)
+{
+    static const gpio_button_evt_t want[] = {
+        GPIO_BUTTON_EVT_PRESS, GPIO_BUTTON_EVT_RELEASE,
+        GPIO_BUTTON_EVT_PRESS, GPIO_BUTTON_EVT_RELEASE,
+        GPIO_BUTTON_EVT_DOUBLE_CLICK,
+    };
+    gpio_button_t btn;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+    evt_log_len = 0;
+    mock_level = 1;
+    gpio_button_init(&btn, &mock_hal, &cfg);
+
+    for (int click = 0; click < 2; click++) {
+        mock_level = 0;
+        log_ticks(&btn, 25, 1);
+        mock_level = 1;
+        log_ticks(&btn, 25, 1);
+    }
+
+    ASSERT_EQ(evt_log_len, 5);
+    for (uint16_t i = 0; i < 5; i++) {
+        ASSERT_EQ(evt_log[i], want[i]);
+    }
+}
+
+TEST(test_click_window_under_a_tick_keeps_the_release)
+{
+    /* double_click_ms 5 with 10 ms ticks: the window ends on the release
+     * tick itself, so CLICK has to wait for the next one. */
+    static const gpio_button_evt_t want[] = {
+        GPIO_BUTTON_EVT_PRESS, GPIO_BUTTON_EVT_RELEASE, GPIO_BUTTON_EVT_CLICK,
+    };
+    gpio_button_t btn;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+    cfg.double_click_ms = 5;
+    evt_log_len = 0;
+    mock_level = 1;
+    gpio_button_init(&btn, &mock_hal, &cfg);
+
+    mock_level = 0;
+    log_ticks(&btn, 5, 10);
+    mock_level = 1;
+    log_ticks(&btn, 5, 10);
+
+    ASSERT_EQ(evt_log_len, 3);
+    for (uint16_t i = 0; i < 3; i++) {
+        ASSERT_EQ(evt_log[i], want[i]);
+    }
+}
+
+TEST(test_double_click_comes_one_tick_after_the_release)
+{
+    gpio_button_t btn;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+    cfg.debounce_ms = 2;
+    mock_level = 1;
+    gpio_button_init(&btn, &mock_hal, &cfg);
+
+    mock_level = 0;
+    tick_ms(&btn, 5);
+    mock_level = 1;
+    tick_ms(&btn, 5);
+    mock_level = 0;
+    tick_ms(&btn, 5);
+    mock_level = 1;
+
+    /* The change is seen on tick 1, and 2 ms of debounce end on tick 3. */
+    ASSERT_EQ(gpio_button_tick(&btn, 1), GPIO_BUTTON_EVT_NONE);
+    ASSERT_EQ(gpio_button_tick(&btn, 1), GPIO_BUTTON_EVT_NONE);
+    ASSERT_EQ(gpio_button_tick(&btn, 1), GPIO_BUTTON_EVT_RELEASE);
+    ASSERT_EQ(gpio_button_tick(&btn, 1), GPIO_BUTTON_EVT_DOUBLE_CLICK);
+    ASSERT_EQ(gpio_button_tick(&btn, 1), GPIO_BUTTON_EVT_NONE);
+}
+
+TEST(test_gesture_tick_does_not_lose_the_next_press)
+{
+    /* No debounce, so edges can land on consecutive ticks: a press right
+     * behind the second release must survive the tick the gesture uses. */
+    static const gpio_button_evt_t want[] = {
+        GPIO_BUTTON_EVT_PRESS, GPIO_BUTTON_EVT_RELEASE,
+        GPIO_BUTTON_EVT_PRESS, GPIO_BUTTON_EVT_RELEASE,
+        GPIO_BUTTON_EVT_DOUBLE_CLICK, GPIO_BUTTON_EVT_PRESS,
+        GPIO_BUTTON_EVT_RELEASE,
+    };
+    static const uint8_t level[] = { 0, 1, 0, 1, 0, 0, 1 };
+    gpio_button_t btn;
+    gpio_button_cfg_t cfg = gpio_button_default_cfg();
+    cfg.debounce_ms = 0;
+    evt_log_len = 0;
+    mock_level = 1;
+    gpio_button_init(&btn, &mock_hal, &cfg);
+
+    for (uint16_t i = 0; i < 7; i++) {
+        mock_level = level[i];
+        log_ticks(&btn, 1, 1);
+    }
+
+    ASSERT_EQ(evt_log_len, 7);
+    for (uint16_t i = 0; i < 7; i++) {
+        ASSERT_EQ(evt_log[i], want[i]);
+    }
+}
+
+TEST(test_press_and_release_always_alternate)
+{
+    /* debounce, long press, double click, active level */
+    static const gpio_button_cfg_t cfgs[] = {
+        {  20, 1000, 300, 0 },
+        {   0, 1000, 300, 0 },
+        {   0,   30,   5, 1 },
+        {   5,   60,   1, 0 },
+        {  10,   20,  10, 1 },
+    };
+
+    uint32_t lcg = 1u;
+    for (size_t c = 0; c < sizeof(cfgs) / sizeof(cfgs[0]); c++) {
+        gpio_button_t btn;
+        uint8_t held = 0;
+        uint8_t idle = (uint8_t)!cfgs[c].active_level;
+
+        mock_level = idle;
+        gpio_button_init(&btn, &mock_hal, &cfgs[c]);
+
+        for (uint32_t t = 0; t < 40000u; t++) {
+            lcg = lcg * 1664525u + 1013904223u;
+            if (t >= 39000u) {
+                mock_level = idle;              /* end with the button up */
+            } else if (((lcg >> 16) & 7u) == 0u) {
+                mock_level = (uint8_t)!mock_level;
+            }
+
+            gpio_button_evt_t e = gpio_button_tick(&btn, 10);
+            if (e == GPIO_BUTTON_EVT_PRESS) {
+                ASSERT_EQ(held, 0);
+                held = 1;
+            } else if (e == GPIO_BUTTON_EVT_RELEASE) {
+                ASSERT_EQ(held, 1);
+                held = 0;
+            }
+            ASSERT_EQ(gpio_button_is_pressed(&btn), held);
+        }
+        ASSERT_EQ(held, 0);
+    }
+}
+
 TEST(test_long_press)
 {
     gpio_button_t btn;
@@ -416,5 +578,10 @@ TEST_MAIN("gpio_button")
     RUN(test_zeroed_button_refused);
     RUN(test_button_refused_after_rejected_init);
     RUN(test_tick_refuses_a_hal_without_read);
+    RUN(test_double_click_keeps_every_release);
+    RUN(test_click_window_under_a_tick_keeps_the_release);
+    RUN(test_double_click_comes_one_tick_after_the_release);
+    RUN(test_gesture_tick_does_not_lose_the_next_press);
+    RUN(test_press_and_release_always_alternate);
 TEST_MAIN_END()
 
