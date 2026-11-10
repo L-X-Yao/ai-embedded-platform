@@ -47,6 +47,25 @@ PROPERTY(feed_no_crash, 50000) {
     }
 }
 
+/* Property: with the timer on, no byte stream ends a transfer by itself */
+PROPERTY(feed_never_done_with_line_idle, 20000) {
+    (void)prop__seed_orig; (void)prop__iter;
+    xmodem_t xm;
+    memset(&xm, 0, sizeof(xm));
+    xmodem_init(&xm, &mock_io, (bool)(ARBI_UINT8(seed) & 1));
+    PROP_ASSERT_EQ(xmodem_enable_line_idle(&xm), XMODEM_OK);
+    xmodem_start(&xm);
+
+    uint8_t num_bytes = (uint8_t)ARBI_RANGE(seed, 1, 200);
+    for (uint8_t i = 0; i < num_bytes; i++) {
+        uint8_t byte = ARBI_UINT8(seed);
+        if (byte < 64) byte = XMODEM_EOT;
+        xmodem_err_t err = xmodem_feed(&xm, byte);
+        PROP_ASSERT(err != XMODEM_DONE);
+        if (err < 0) break;
+    }
+}
+
 /* Property: init is idempotent (init twice == init once) */
 PROPERTY(init_idempotent, 5000) {
     (void)prop__seed_orig; (void)prop__iter;
@@ -90,6 +109,7 @@ PROPERTY(state_consistent, 10000) {
 
 TEST_MAIN("xmodem properties") {
     RUN(feed_no_crash);
+    RUN(feed_never_done_with_line_idle);
     RUN(init_idempotent);
     RUN(state_consistent);
 }

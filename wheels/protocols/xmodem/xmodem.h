@@ -76,6 +76,9 @@ typedef struct {
     bool               use_crc;         /* true = XMODEM-CRC (CRC-16), false = checksum */
     uint32_t           total_bytes;
     uint8_t            can_count;       /* consecutive CAN bytes received */
+    bool               line_idle_on;    /* caller will call xmodem_line_idle() */
+    bool               purging;         /* frame sync lost, see xmodem_feed() */
+    bool               eot_pending;     /* EOT seen, its proof still to come */
 } xmodem_t;
 
 /* ---------- API (all @thread_safe: caller_must_lock) ---------- */
@@ -83,12 +86,41 @@ typedef struct {
 /** Initialize receiver state. */
 xmodem_err_t   xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc);
 
+/** Promise to call xmodem_line_idle() whenever the line goes quiet. Call it
+ *  between xmodem_init() and xmodem_start(); XMODEM_ERR_PARAM after that.
+ *
+ *  From then on a bad block or header gets no NAK at once. Every byte is
+ *  dropped until xmodem_line_idle() reports a quiet line, and the NAK goes
+ *  out then, as ymodem.txt 7.3.2 and 7.4 ask. EOT needs a quiet line too:
+ *  xmodem_line_idle() returns XMODEM_DONE, and xmodem_feed() never does. */
+xmodem_err_t   xmodem_enable_line_idle(xmodem_t *xm);
+
 /** Send initial handshake: 'C' (CRC mode) or NAK (checksum mode). */
 xmodem_err_t   xmodem_start(xmodem_t *xm);
 
 /** Feed one received byte. Returns XMODEM_OK while receiving, XMODEM_DONE on
- *  successful completion, or negative error code. */
+ *  successful completion, or negative error code.
+ *
+ *  After a bad block or a byte that cannot start one, the framing is lost:
+ *  the rest of a resent block may be arriving. Without
+ *  xmodem_enable_line_idle() the NAK still goes out at once and blocks are
+ *  still taken, but EOT is refused until a block passes its checks, so 0x04
+ *  in file data cannot end the transfer. When the next block number is 4, EOT
+ *  also looks like block 4 with its SOH lost, so it is NAKed and the sender's
+ *  repeat is taken. A stray 0x04 between clean blocks still reads as EOT:
+ *  only xmodem_enable_line_idle() closes that. */
 xmodem_err_t   xmodem_feed(xmodem_t *xm, uint8_t byte);
+
+/** Report that nothing has arrived for the quiet period, one second in
+ *  ymodem.txt 7.4. Call it every time that period passes, from the context
+ *  that calls xmodem_feed(), which also has to count how many quiet periods
+ *  in a row mean the sender has gone.
+ *
+ *  Drops a part frame and, if a block was lost, asks for it again with NAK,
+ *  or with the handshake byte until a block has been taken. Returns XMODEM_OK,
+ *  XMODEM_DONE if the quiet line proves an EOT, or the send_byte error.
+ *  XMODEM_ERR_PARAM without xmodem_enable_line_idle() or outside a transfer. */
+xmodem_err_t   xmodem_line_idle(xmodem_t *xm);
 
 /** Get current state. */
 xmodem_state_t xmodem_get_state(const xmodem_t *xm);

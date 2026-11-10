@@ -48,6 +48,34 @@ static uint8_t frame_size(const xmodem_t *xm)
     return xm->use_crc ? (uint8_t)133 : (uint8_t)132;
 }
 
+/* The framing can no longer be trusted: what follows may be the tail of a
+ * resent block. Only a block that passes its checks, or a quiet line, ends
+ * this. */
+static void lose_sync(xmodem_t *xm)
+{
+    xm->buf_pos = 0;
+    xm->purging = true;
+}
+
+/* recoverable — sender will retry */
+static xmodem_err_t reject_block(xmodem_t *xm)
+{
+    lose_sync(xm);
+    if (!xm->line_idle_on) {
+        (void)send_byte(xm, XMODEM_NAK);
+    }
+    return XMODEM_OK;
+}
+
+/* A sender that has not started reads NAK as "use checksums", so CRC mode
+ * keeps asking with 'C' until a block has been taken. A sender that has
+ * started treats 'C' as a NAK of its first block. */
+static uint8_t retry_byte(const xmodem_t *xm)
+{
+    return (xm->use_crc && xm->total_bytes == 0) ? (uint8_t)XMODEM_C
+                                                 : (uint8_t)XMODEM_NAK;
+}
+
 static xmodem_err_t process_block(xmodem_t *xm)
 {
     uint8_t blk     = xm->buf[1];
@@ -56,8 +84,7 @@ static xmodem_err_t process_block(xmodem_t *xm)
 
     /* block number complement check */
     if ((uint8_t)(blk + blk_inv) != 0xFF) {
-        (void)send_byte(xm, XMODEM_NAK);
-        return XMODEM_OK;  /* recoverable — sender will retry */
+        return reject_block(xm);
     }
 
     /* verify checksum or CRC */
@@ -65,17 +92,18 @@ static xmodem_err_t process_block(xmodem_t *xm)
         uint16_t expected = (uint16_t)(((uint16_t)xm->buf[131] << 8) | xm->buf[132]);
         uint16_t actual   = xmodem_crc16(data, XMODEM_BLOCK_SIZE);
         if (actual != expected) {
-            (void)send_byte(xm, XMODEM_NAK);
-            return XMODEM_OK;
+            return reject_block(xm);
         }
     } else {
         uint8_t expected = xm->buf[131];
         uint8_t actual   = xmodem_checksum(data, XMODEM_BLOCK_SIZE);
         if (actual != expected) {
-            (void)send_byte(xm, XMODEM_NAK);
-            return XMODEM_OK;
+            return reject_block(xm);
         }
     }
+
+    /* a block that passes its checks means the framing is back */
+    xm->purging = false;
 
     /* sequence check */
     if (blk != xm->block_num) {
@@ -122,6 +150,15 @@ xmodem_err_t xmodem_init(xmodem_t *xm, const xmodem_io_t *io, bool use_crc)
     return XMODEM_OK;
 }
 
+xmodem_err_t xmodem_enable_line_idle(xmodem_t *xm)
+{
+    if (!xm) return XMODEM_ERR_PARAM;
+    if (xm->state != XMODEM_STATE_IDLE) return XMODEM_ERR_PARAM;
+
+    xm->line_idle_on = true;
+    return XMODEM_OK;
+}
+
 xmodem_err_t xmodem_start(xmodem_t *xm)
 {
     if (!xm) return XMODEM_ERR_PARAM;
@@ -142,6 +179,12 @@ xmodem_err_t xmodem_feed(xmodem_t *xm, uint8_t byte)
         return XMODEM_ERR_PARAM;
     }
 
+    /* the line is still clearing: nothing on it can be trusted */
+    if (xm->purging && xm->line_idle_on) return XMODEM_OK;
+
+    /* an EOT only counts if nothing but EOT follows it */
+    if (byte != XMODEM_EOT) xm->eot_pending = false;
+
     /* CAN detection — spec requires 2 consecutive CAN to cancel */
     if (byte == XMODEM_CAN && xm->buf_pos == 0) {
         xm->can_count++;
@@ -153,8 +196,24 @@ xmodem_err_t xmodem_feed(xmodem_t *xm, uint8_t byte)
     }
     xm->can_count = 0;
 
-    /* EOT — transfer complete */
+    /* EOT — transfer complete, unless the byte can be something else */
     if (byte == XMODEM_EOT && xm->buf_pos == 0) {
+        if (xm->purging) return XMODEM_OK;  /* file data, not an EOT */
+
+        if (xm->line_idle_on) {
+            xm->eot_pending = true;         /* xmodem_line_idle() decides */
+            return XMODEM_OK;
+        }
+
+        /* Block 4 with its SOH lost starts with this same byte. The sender
+         * resends EOT until it gets an ACK (ymodem.txt 7.3.3). */
+        if (xm->block_num == XMODEM_EOT && !xm->eot_pending) {
+            xm->eot_pending = true;
+            (void)send_byte(xm, XMODEM_NAK);
+            return XMODEM_OK;
+        }
+
+        xm->eot_pending = false;
         (void)send_byte(xm, XMODEM_ACK);
         xm->state = XMODEM_STATE_COMPLETE;
         return XMODEM_DONE;
@@ -180,6 +239,38 @@ xmodem_err_t xmodem_feed(xmodem_t *xm, uint8_t byte)
             xm->buf_pos = 0;
             return process_block(xm);
         }
+        return XMODEM_OK;
+    }
+
+    /* A byte that cannot start a block: its SOH was lost, or this is the
+     * tail of one. Either way what follows is file data. */
+    lose_sync(xm);
+    return XMODEM_OK;
+}
+
+xmodem_err_t xmodem_line_idle(xmodem_t *xm)
+{
+    if (!xm || !xm->line_idle_on) return XMODEM_ERR_PARAM;
+
+    if (xm->state != XMODEM_STATE_WAIT_HEADER &&
+        xm->state != XMODEM_STATE_RECEIVING) {
+        return XMODEM_ERR_PARAM;
+    }
+
+    /* two CANs with a quiet gap between them are not consecutive */
+    xm->can_count = 0;
+
+    if (xm->eot_pending) {
+        xm->eot_pending = false;
+        (void)send_byte(xm, XMODEM_ACK);
+        xm->state = XMODEM_STATE_COMPLETE;
+        return XMODEM_DONE;
+    }
+
+    if (xm->purging || xm->buf_pos > 0) {
+        xm->purging = false;
+        xm->buf_pos = 0;
+        return send_byte(xm, retry_byte(xm));
     }
 
     return XMODEM_OK;

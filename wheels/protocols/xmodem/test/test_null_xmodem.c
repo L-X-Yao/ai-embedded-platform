@@ -19,12 +19,20 @@ TEST(test_xmodem_init_null_io) {
     ASSERT_TRUE(xmodem_init(&_xm, NULL, false) != XMODEM_OK);
 }
 
+TEST(test_xmodem_enable_line_idle_null_xm) {
+    ASSERT_TRUE(xmodem_enable_line_idle(NULL) != XMODEM_OK);
+}
+
 TEST(test_xmodem_start_null_xm) {
     ASSERT_TRUE(xmodem_start(NULL) != XMODEM_OK);
 }
 
 TEST(test_xmodem_feed_null_xm) {
     ASSERT_TRUE(xmodem_feed(NULL, 0) != XMODEM_OK);
+}
+
+TEST(test_xmodem_line_idle_null_xm) {
+    ASSERT_TRUE(xmodem_line_idle(NULL) != XMODEM_OK);
 }
 
 TEST(test_xmodem_get_state_null_xm) {
@@ -45,8 +53,10 @@ TEST(test_xmodem_cancel_null_xm) {
 TEST_MAIN("null_param_xmodem") {
     RUN(test_xmodem_init_null_xm);
     RUN(test_xmodem_init_null_io);
+    RUN(test_xmodem_enable_line_idle_null_xm);
     RUN(test_xmodem_start_null_xm);
     RUN(test_xmodem_feed_null_xm);
+    RUN(test_xmodem_line_idle_null_xm);
     RUN(test_xmodem_get_state_null_xm);
     RUN(test_xmodem_get_total_bytes_null_xm);
     RUN(test_xmodem_cancel_null_xm);

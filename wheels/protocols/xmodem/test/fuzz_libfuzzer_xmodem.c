@@ -90,14 +90,22 @@ static size_t build_block(uint8_t *frame, uint8_t blk, const uint8_t *payload,
     return data_end + 1;
 }
 
+// With the timer on, only xmodem_line_idle() may end a transfer.
+static bool feed_one(xmodem_t *xm, uint8_t byte, bool use_idle) {
+    xmodem_err_t err = xmodem_feed(xm, byte);
+    if (use_idle && err == XMODEM_DONE) __builtin_trap();
+    return err == XMODEM_OK;
+}
+
 // Block stream built from the input. Each record is [op][arg][payload]:
 //   op bits 0-1: 0 valid block, 1 bad check field, 2 bad complement, 3 raw byte
 //   op bits 2-3: 0 next block, 1 duplicate, 2 skip ahead, 3 arbitrary number
+//   op bit 6:    with the timer on, report a quiet line instead
 //   op bit 7:    fail the write callback from this block on
 // For a raw byte, arg is the byte. Otherwise arg is the payload length and the
 // block is zero padded.
 static void fuzz_blocks(const xmodem_io_t *io, const uint8_t *data, size_t size,
-                        bool use_crc) {
+                        bool use_crc, bool use_idle) {
     fuzz_input_t in;
     fuzz_input_init(&in, data, size);
     reset_io();
@@ -105,6 +113,7 @@ static void fuzz_blocks(const xmodem_io_t *io, const uint8_t *data, size_t size,
     xmodem_t xm;
     memset(&xm, 0, sizeof(xm));
     xmodem_init(&xm, io, use_crc);
+    if (use_idle) xmodem_enable_line_idle(&xm);
     xmodem_start(&xm);
 
     bool running = true;
@@ -112,8 +121,13 @@ static void fuzz_blocks(const xmodem_io_t *io, const uint8_t *data, size_t size,
         uint8_t op = fuzz_u8(&in);
         uint8_t arg = fuzz_u8(&in);
 
+        if (use_idle && (op & 0x40)) {
+            running = xmodem_line_idle(&xm) == XMODEM_OK;
+            continue;
+        }
+
         if ((op & 3) == 3) {
-            running = xmodem_feed(&xm, arg) == XMODEM_OK;
+            running = feed_one(&xm, arg, use_idle);
             continue;
         }
 
@@ -129,7 +143,7 @@ static void fuzz_blocks(const xmodem_io_t *io, const uint8_t *data, size_t size,
         g_write_fail = (op & 0x80) != 0;
 
         for (size_t i = 0; running && i < frame_len; i++) {
-            running = xmodem_feed(&xm, frame[i]) == XMODEM_OK;
+            running = feed_one(&xm, frame[i], use_idle);
         }
     }
 
@@ -194,8 +208,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         (void)xmodem_get_state(&xm);
     }
 
-    fuzz_blocks(&io, data, size, true);
-    fuzz_blocks(&io, data, size, false);
+    fuzz_blocks(&io, data, size, true, false);
+    fuzz_blocks(&io, data, size, false, false);
+    fuzz_blocks(&io, data, size, true, true);
+    fuzz_blocks(&io, data, size, false, true);
 
     return 0;
 }
