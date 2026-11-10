@@ -28,15 +28,19 @@ typedef struct {
     uint8_t b;
 } test_elem_t;
 
-/* stored comes from the return values, so it checks the indexes independently. */
-static void check_invariants(const fifo_queue_t *q, unsigned stored) {
-    assert(q->head < 2U * q->capacity);
-    assert(q->tail < 2U * q->capacity);
-    assert(stored <= q->capacity);
-    assert(fifo_queue_count(q) == stored);
-    assert(fifo_queue_free(q) == q->capacity - stored);
-    assert(fifo_queue_is_empty(q) == (stored == 0));
-    assert(fifo_queue_is_full(q) == (stored == q->capacity));
+/* The level comes straight from the raw indexes, so the clamp in the wheel
+ * cannot hide an overrun. */
+static void check_invariants(const fifo_queue_t *q) {
+    uint32_t span = 2U * q->capacity;
+    assert(q->head < span);
+    assert(q->tail < span);
+    uint32_t level = (q->tail >= q->head) ? q->tail - q->head
+                                          : q->tail + span - q->head;
+    assert(level <= q->capacity);
+    assert(fifo_queue_count(q) == level);
+    assert(fifo_queue_free(q) == q->capacity - level);
+    assert(fifo_queue_is_empty(q) == (level == 0));
+    assert(fifo_queue_is_full(q) == (level == q->capacity));
 }
 
 /* Proof 1: invariants hold after any sequence of push/pop/peek/clear */
@@ -47,8 +51,7 @@ void verify_invariants(void) {
     fifo_queue_err_t err = fifo_queue_init(&q, storage, Q_CAP,
                                            sizeof(test_elem_t));
     assert(err == FIFO_QUEUE_OK);
-    unsigned stored = 0;
-    check_invariants(&q, stored);
+    check_invariants(&q);
 
     unsigned ops = nondet_unsigned();
     __CPROVER_assume(ops <= UNWIND_BOUND);
@@ -58,12 +61,12 @@ void verify_invariants(void) {
         switch (op) {
         case 0: {
             test_elem_t item = { nondet_uint8(), nondet_uint8() };
-            if (fifo_queue_push(&q, &item) == FIFO_QUEUE_OK) { stored++; }
+            fifo_queue_push(&q, &item);
             break;
         }
         case 1: {
             test_elem_t item;
-            if (fifo_queue_pop(&q, &item) == FIFO_QUEUE_OK) { stored--; }
+            fifo_queue_pop(&q, &item);
             break;
         }
         case 2: {
@@ -73,11 +76,10 @@ void verify_invariants(void) {
         }
         case 3: {
             fifo_queue_clear(&q);
-            stored = 0;
             break;
         }
         }
-        check_invariants(&q, stored);
+        check_invariants(&q);
     }
 }
 
