@@ -44,9 +44,12 @@ flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
 
 - `push()` -- append a frame. When the ring is full it drops the oldest
   frames a sector at a time: see Capacity. OK means the frame is stored.
-  `FLASH_RING_ERR_IO` means it is not, and a retry is safe: a program that
-  failed but wrote something leaves its slot behind, so the retry takes the
-  next slot.
+  `FLASH_RING_ERR_IO` means the erase or the program failed. A retry never
+  programs over used cells: a program that failed but wrote something leaves
+  its slot behind, and the retry takes the next slot. The slot left behind
+  stays in the ring as a frame, torn, or whole if only the driver's report
+  was wrong. So after a retry the reader can see a torn frame first, or the
+  same frame twice.
 - `peek()` -- read a frame without consuming it. `idx` is an absolute slot
   index between `read_idx` and `write_idx - 1`, so the oldest frame is at
   `ring.read_idx`. That is the one field of `flash_ring_t` a caller may read,
@@ -87,8 +90,9 @@ sector just before it programs the last slot of the current one. So:
   very end of what was written looks blank and is lost at a reset. On the last
   slot of a sector it also hides anything written after it that the header
   does not yet know about, so give frames a field that is never all 0xFF.
-- A cut during a program leaves one torn frame as the newest. Frames carry no
-  checksum here, so put one in the frame if that matters.
+- A cut during a program leaves one torn frame as the newest, and so does a
+  program that fails part way. Frames carry no checksum here, so put one in
+  the frame if that matters, and a sequence number if a repeat matters.
 - A reset with `write_idx` on the last slot of a sector gives up the frames in
   the next sector, because the next push erases them anyway and a cut during
   that erase cannot be told apart.
@@ -132,6 +136,9 @@ None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
 - Header sector must be a dedicated flash sector (not shared with data).
 - The header has one copy, so a cut between its erase and its program resets
   the ring to empty with the frames still in flash.
+- The header has no checksum. One that a cut left half erased or half
+  written is believed if its magic and both indexes still pass the range
+  check, and a wrong `read_idx` then serves blank or old slots as frames.
 - A partial last sector is still erased whole by `erase_sector`, so nothing
   else can live in the rest of that sector.
 - The header sector wears much faster than the data. It is erased once per
