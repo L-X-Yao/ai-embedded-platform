@@ -124,4 +124,35 @@ typedef struct {
 #define VSF_HW_I2C0_ER_IRQHandler   I2C0_ER_IRQHandler
 #endif
 
+/* ---- usart ---- */
+#if VSF_HAL_USE_USART == ENABLED
+#define VSF_USART_CFG_MULTI_CLASS   DISABLED
+typedef struct vsf_usart_t vsf_usart_t;
+#include "common/usart/usart.h"
+typedef void vsf_usart_isr_handler_t(void *target, vsf_usart_t *u, vsf_usart_irq_mask_t m);
+typedef struct {
+    vsf_usart_isr_handler_t *handler_fn;
+    void *target_ptr;
+    int prio;
+} vsf_usart_isr_t;
+typedef struct {
+    uint32_t mode;
+    uint32_t baudrate;
+    uint32_t rx_timeout;
+    vsf_usart_isr_t isr;
+} vsf_usart_cfg_t;
+typedef struct {
+    uint32_t irq_mask, max_baudrate, min_baudrate;
+    uint8_t min_data_bits, max_data_bits, txfifo_depth, rxfifo_depth;
+    uint8_t support_rx_timeout, support_send_break;
+} vsf_usart_capability_t;
+#define VSF_HW_USART0_REG_BASE      0
+#define VSF_HW_USART0_PCLK_HZ       84000000U
+#define VSF_HW_USART0_EN            VSF_HW_EN_USART0
+#define VSF_HW_USART0_RST           VSF_HW_RST_USART0
+#define VSF_HW_USART0_SYNC          true
+#define VSF_HW_USART0_IRQN          37
+#define VSF_HW_USART0_IRQHandler    USART0_IRQHandler
+#endif
+
 #endif

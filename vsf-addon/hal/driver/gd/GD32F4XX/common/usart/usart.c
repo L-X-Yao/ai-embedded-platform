@@ -305,6 +305,11 @@ static void VSF_MCONNECT(__, VSF_USART_CFG_IMP_PREFIX, _usart_irqhandler)(
         volatile uint32_t __dummy = USART_DATA(reg);
         (void)__dummy;
     }
+    // CTSF: only software clears it (rc_w0). A plain store, not &=, so that RBNE
+    // or TC set after the read above is written as 1 and survives.
+    if (irq_mask & VSF_USART_IRQ_MASK_CTS) {
+        USART_STAT0(reg) = ~USART_STAT0_CTSF;
+    }
 
     if ((irq_mask != 0) && (isr_ptr->handler_fn != NULL)) {
         isr_ptr->handler_fn(isr_ptr->target_ptr, (vsf_usart_t *)usart_ptr, irq_mask);
