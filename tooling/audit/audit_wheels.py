@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-audit_wheels.py — 63-check automated audit covering structure, API, code safety, and consistency.
+audit_wheels.py — automated audit of structure, API, code safety and consistency.
+
+It runs 60 checks on each wheel (CHECK_TABLE) and 3 on the repository
+(consumer, wishlist_stale, project_hygiene), 63 in all.
 
 Codifies feedback_wheel_commit_not_sunk.md as a CI guardrail. The orphan
 problem we hit twice (w25qxx, qmi8658a both committed but never wired)
