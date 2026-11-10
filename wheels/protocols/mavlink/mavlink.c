@@ -49,6 +49,20 @@ uint8_t mavlink_msg_crc_extra(uint32_t msgid)
     }
 }
 
+/* The caller's table first, then the built-in values. Returns 1 if found. */
+static uint8_t find_crc_extra(const mavlink_parser_t *parser, uint32_t msgid,
+                              uint8_t *extra)
+{
+    for (uint16_t i = 0; i < parser->crc_table_len; i++) {
+        if (parser->crc_table[i].msgid == msgid) {
+            *extra = parser->crc_table[i].crc_extra;
+            return 1;
+        }
+    }
+    *extra = mavlink_msg_crc_extra(msgid);
+    return *extra != 0 ? 1 : 0;
+}
+
 /* ---------- parser ---------- */
 
 /*
@@ -85,13 +99,24 @@ mavlink_err_t mavlink_parser_init(mavlink_parser_t *parser)
     return MAVLINK_OK;
 }
 
+mavlink_err_t mavlink_parser_set_crc_table(mavlink_parser_t *parser,
+                                           const mavlink_crc_extra_t *table,
+                                           uint16_t count)
+{
+    if (!parser || (!table && count != 0)) return MAVLINK_ERR_PARAM;
+    parser->crc_table     = table;
+    parser->crc_table_len = count;
+    return MAVLINK_OK;
+}
+
 mavlink_parse_state_t mavlink_parse_byte(mavlink_parser_t *parser, uint8_t byte)
 {
     if (!parser) return MAVLINK_PARSE_ERROR;
 
     /* Auto-reset after terminal states */
     if (parser->state == MAVLINK_PARSE_COMPLETE ||
-        parser->state == MAVLINK_PARSE_ERROR) {
+        parser->state == MAVLINK_PARSE_ERROR ||
+        parser->state == MAVLINK_PARSE_UNKNOWN_MSG) {
         parser->state    = MAVLINK_PARSE_IDLE;
         parser->rx_count = 0;
         parser->crc      = 0;
@@ -154,8 +179,10 @@ mavlink_parse_state_t mavlink_parse_byte(mavlink_parser_t *parser, uint8_t byte)
 
     /* Checksum byte 1 (low) */
     if (idx == payload_end) {
-        /* Fold in CRC_EXTRA before comparing */
-        uint8_t extra = mavlink_msg_crc_extra(parser->msg.msgid);
+        /* Fold in CRC_EXTRA before comparing. Without it nothing can be
+         * compared, so the frame is only counted to its end. */
+        uint8_t extra = 0;
+        parser->extra_known = find_crc_extra(parser, parser->msg.msgid, &extra);
         parser->crc = crc_accumulate(extra, parser->crc);
 
         parser->msg.checksum = (uint16_t)byte;
@@ -169,7 +196,9 @@ mavlink_parse_state_t mavlink_parse_byte(mavlink_parser_t *parser, uint8_t byte)
         parser->msg.checksum |= (uint16_t)((uint16_t)byte << 8);
         parser->rx_count++;
 
-        if (parser->msg.checksum == parser->crc) {
+        if (!parser->extra_known) {
+            parser->state = MAVLINK_PARSE_UNKNOWN_MSG;
+        } else if (parser->msg.checksum == parser->crc) {
             parser->state = MAVLINK_PARSE_COMPLETE;
         } else {
             parser->state = MAVLINK_PARSE_ERROR;

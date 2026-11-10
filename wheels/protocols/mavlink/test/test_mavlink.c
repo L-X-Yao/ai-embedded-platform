@@ -303,11 +303,13 @@ TEST(test_serialize_24bit_msgid)
     msg.payload[0] = 0x11; msg.payload[1] = 0x22;
     msg.payload[2] = 0x33; msg.payload[3] = 0x44;
     uint8_t buf[32]; uint16_t out_len;
-    ASSERT_EQ(mavlink_serialize(&msg, buf, sizeof(buf), &out_len, 0), MAVLINK_OK);
+    ASSERT_EQ(mavlink_serialize(&msg, buf, sizeof(buf), &out_len, 200), MAVLINK_OK);
     ASSERT_EQ(buf[7], 0xEF);
     ASSERT_EQ(buf[8], 0xCD);
     ASSERT_EQ(buf[9], 0xAB);
+    static const mavlink_crc_extra_t table[] = { { 0xABCDEF, 200 } };
     mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, table, 1), MAVLINK_OK);
     ASSERT_EQ(parse_frame(&p, buf, out_len), MAVLINK_PARSE_COMPLETE);
     ASSERT_EQ(mavlink_get_msg(&p)->msgid, (uint32_t)0xABCDEF);
 }
@@ -319,9 +321,11 @@ TEST(test_roundtrip_max_payload)
     msg.len = 255; msg.sysid = 1; msg.compid = 1; msg.seq = 77; msg.msgid = 42;
     for (int i = 0; i < 255; i++) msg.payload[i] = (uint8_t)i;
     uint8_t buf[MAVLINK_FRAME_MAX]; uint16_t out_len;
-    ASSERT_EQ(mavlink_serialize(&msg, buf, sizeof(buf), &out_len, 0), MAVLINK_OK);
+    ASSERT_EQ(mavlink_serialize(&msg, buf, sizeof(buf), &out_len, 7), MAVLINK_OK);
     ASSERT_EQ(out_len, MAVLINK_FRAME_MAX);
+    static const mavlink_crc_extra_t table[] = { { 42, 7 } };
     mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, table, 1), MAVLINK_OK);
     ASSERT_EQ(parse_frame(&p, buf, out_len), MAVLINK_PARSE_COMPLETE);
     const mavlink_msg_t *parsed = mavlink_get_msg(&p);
     ASSERT_TRUE(parsed != NULL);
@@ -385,6 +389,149 @@ TEST(test_parse_back_to_back_frames)
     ASSERT_EQ(last_seq, 11);
 }
 
+/* COMMAND_LONG (id 76) as pymavlink packs it from common.xml, with seq 7,
+   target 1/1, command 400 and param1 1.0. Its CRC_EXTRA there is 152. */
+static const uint8_t command_long_frame[] = {
+    0xFD, 0x20, 0x00, 0x00, 0x07, 0x01, 0x01, 0x4C, 0x00, 0x00,
+    0x00, 0x00, 0x80, 0x3F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90, 0x01,
+    0x01, 0x01, 0xA0, 0x0F,
+};
+static const mavlink_crc_extra_t command_long_table[] = { { 76, 152 } };
+
+/* The same message signed with the CRC_EXTRA given, to play a wrong sender */
+static uint16_t build_command_long(uint8_t *buf, uint16_t buf_len, uint8_t extra)
+{
+    mavlink_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.len = 32; msg.seq = 7; msg.sysid = 1; msg.compid = 1; msg.msgid = 76;
+    memcpy(msg.payload, &command_long_frame[MAVLINK_HEADER_LEN], 32);
+    uint16_t out_len = 0;
+    mavlink_serialize(&msg, buf, buf_len, &out_len, extra);
+    return out_len;
+}
+
+/* A frame of a message nothing knows reports that, not a CRC failure */
+TEST(test_real_frame_of_an_unknown_message_is_not_a_crc_failure)
+{
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_UNKNOWN_MSG);
+    ASSERT_TRUE(mavlink_get_msg(&p) == NULL);
+    ASSERT_EQ(p.msg.msgid, 76U);
+}
+
+/* No sender uses 0 for this message, and without its CRC_EXTRA the parser
+   has no business calling the frame valid, whatever its CRC happens to be */
+TEST(test_unknown_message_is_never_valid)
+{
+    uint8_t frame[64];
+    uint16_t len = build_command_long(frame, sizeof(frame), 0);
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_UNKNOWN_MSG);
+    ASSERT_TRUE(mavlink_get_msg(&p) == NULL);
+}
+
+TEST(test_stream_stays_in_step_after_an_unknown_message)
+{
+    uint8_t heartbeat[64];
+    uint16_t len = build_heartbeat_frame(heartbeat, sizeof(heartbeat), 1, 1, 1);
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_UNKNOWN_MSG);
+    ASSERT_EQ(parse_frame(&p, heartbeat, len), MAVLINK_PARSE_COMPLETE);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_UNKNOWN_MSG);
+    ASSERT_EQ(parse_frame(&p, heartbeat, len), MAVLINK_PARSE_COMPLETE);
+}
+
+TEST(test_table_validates_a_real_frame)
+{
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, command_long_table, 1), MAVLINK_OK);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_COMPLETE);
+    const mavlink_msg_t *msg = mavlink_get_msg(&p);
+    ASSERT_TRUE(msg != NULL);
+    ASSERT_EQ(msg->msgid, 76U);
+    ASSERT_EQ(msg->len, 32);
+    ASSERT_EQ(msg->seq, 7);
+    ASSERT_EQ(msg->payload[28], 0x90);
+    ASSERT_EQ(msg->payload[29], 0x01);
+
+    /* The table outlives one frame, and the built-in five still work */
+    uint8_t heartbeat[64];
+    uint16_t len = build_heartbeat_frame(heartbeat, sizeof(heartbeat), 1, 1, 1);
+    ASSERT_EQ(parse_frame(&p, heartbeat, len), MAVLINK_PARSE_COMPLETE);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_COMPLETE);
+}
+
+TEST(test_table_still_catches_a_bad_frame)
+{
+    uint8_t frame[64];
+    memcpy(frame, command_long_frame, sizeof(command_long_frame));
+    frame[12] ^= 0x01;
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, command_long_table, 1), MAVLINK_OK);
+    ASSERT_EQ(parse_frame(&p, frame, sizeof(command_long_frame)), MAVLINK_PARSE_ERROR);
+
+    uint16_t len = build_command_long(frame, sizeof(frame), 151);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_ERROR);
+    ASSERT_TRUE(mavlink_get_msg(&p) == NULL);
+}
+
+TEST(test_table_entry_of_zero_is_a_value)
+{
+    static const mavlink_crc_extra_t table[] = { { 9, 3 }, { 76, 0 } };
+    uint8_t frame[64];
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, table, 2), MAVLINK_OK);
+
+    uint16_t len = build_command_long(frame, sizeof(frame), 0);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_COMPLETE);
+    len = build_command_long(frame, sizeof(frame), 152);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_ERROR);
+}
+
+TEST(test_table_entry_wins_over_a_built_in_value)
+{
+    static const mavlink_crc_extra_t table[] = { { MAVLINK_MSG_ID_HEARTBEAT, 51 } };
+    mavlink_msg_t msg;
+    memset(&msg, 0, sizeof(msg));
+    msg.msgid = MAVLINK_MSG_ID_HEARTBEAT;
+    uint8_t frame[32]; uint16_t len = 0;
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, table, 1), MAVLINK_OK);
+
+    ASSERT_EQ(mavlink_serialize(&msg, frame, sizeof(frame), &len, 51), MAVLINK_OK);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_COMPLETE);
+    ASSERT_EQ(mavlink_serialize(&msg, frame, sizeof(frame), &len, 50), MAVLINK_OK);
+    ASSERT_EQ(parse_frame(&p, frame, len), MAVLINK_PARSE_ERROR);
+}
+
+TEST(test_set_crc_table_refuses_what_it_cannot_use)
+{
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(NULL, command_long_table, 1), MAVLINK_ERR_PARAM);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, NULL, 1), MAVLINK_ERR_PARAM);
+}
+
+TEST(test_table_can_be_removed_and_init_clears_it)
+{
+    mavlink_parser_t p; mavlink_parser_init(&p);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, command_long_table, 1), MAVLINK_OK);
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, NULL, 0), MAVLINK_OK);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_UNKNOWN_MSG);
+
+    ASSERT_EQ(mavlink_parser_set_crc_table(&p, command_long_table, 1), MAVLINK_OK);
+    mavlink_parser_init(&p);
+    ASSERT_EQ(parse_frame(&p, command_long_frame, sizeof(command_long_frame)),
+              MAVLINK_PARSE_UNKNOWN_MSG);
+}
+
 TEST_MAIN("mavlink")
     RUN(test_parser_init);
     RUN(test_parser_init_null);
@@ -417,4 +564,13 @@ TEST_MAIN("mavlink")
     RUN(test_parse_adversarial);
     RUN(test_parse_mini_fuzz);
     RUN(test_parse_back_to_back_frames);
+    RUN(test_real_frame_of_an_unknown_message_is_not_a_crc_failure);
+    RUN(test_unknown_message_is_never_valid);
+    RUN(test_stream_stays_in_step_after_an_unknown_message);
+    RUN(test_table_validates_a_real_frame);
+    RUN(test_table_still_catches_a_bad_frame);
+    RUN(test_table_entry_of_zero_is_a_value);
+    RUN(test_table_entry_wins_over_a_built_in_value);
+    RUN(test_set_crc_table_refuses_what_it_cannot_use);
+    RUN(test_table_can_be_removed_and_init_clears_it);
 TEST_MAIN_END()

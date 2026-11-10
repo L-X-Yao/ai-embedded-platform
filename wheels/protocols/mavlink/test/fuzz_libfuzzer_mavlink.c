@@ -62,6 +62,7 @@ static void check_same(const mavlink_msg_t *a, const mavlink_msg_t *b) {
 //   op bit 0: arbitrary incompat_flags, which the parser has to refuse
 //   op bit 1: arbitrary message id, otherwise a known one
 //   op bit 2: flip one payload bit, which the CRC has to catch
+//   op bit 3: give the parser the message's CRC_EXTRA through a table
 static void round_trip(fuzz_input_t *in) {
     mavlink_parser_t parser;
     mavlink_parser_init(&parser);
@@ -78,6 +79,15 @@ static void round_trip(fuzz_input_t *in) {
 
         uint16_t frame_len = 0;
         uint8_t extra = mavlink_msg_crc_extra(msg.msgid);
+        bool known = extra != 0;
+        mavlink_crc_extra_t entry = { msg.msgid, fuzz_u8(in) };
+        if (op & 0x08) {
+            extra = entry.crc_extra;
+            known = true;
+            mavlink_parser_set_crc_table(&parser, &entry, 1);
+        } else {
+            mavlink_parser_set_crc_table(&parser, NULL, 0);
+        }
         if (mavlink_serialize(&msg, frame, (uint16_t)(need - 1), &frame_len, extra) !=
             MAVLINK_ERR_SIZE) {
             __builtin_trap();
@@ -103,6 +113,11 @@ static void round_trip(fuzz_input_t *in) {
             mavlink_parser_init(&parser);
         } else if (flip) {
             if (state == MAVLINK_PARSE_COMPLETE) __builtin_trap();
+        } else if (!known) {
+            // Nothing can check this frame, so nothing may call it valid.
+            if (state != MAVLINK_PARSE_UNKNOWN_MSG || mavlink_get_msg(&parser)) {
+                __builtin_trap();
+            }
         } else {
             const mavlink_msg_t *got = mavlink_get_msg(&parser);
             if (state != MAVLINK_PARSE_COMPLETE || !got) __builtin_trap();

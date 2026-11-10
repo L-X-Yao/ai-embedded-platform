@@ -11,6 +11,18 @@ TEST(test_mavlink_parser_init_null_parser) {
     ASSERT_TRUE(mavlink_parser_init(NULL) != MAVLINK_OK);
 }
 
+TEST(test_mavlink_parser_set_crc_table_null_parser) {
+    mavlink_crc_extra_t _table;
+    memset(&_table, 0, sizeof(_table));
+    ASSERT_TRUE(mavlink_parser_set_crc_table(NULL, &_table, 0) != MAVLINK_OK);
+}
+
+TEST(test_mavlink_parser_set_crc_table_null_table) {
+    mavlink_parser_t _parser;
+    memset(&_parser, 0, sizeof(_parser));
+    ASSERT_TRUE(mavlink_parser_set_crc_table(&_parser, NULL, 1) != MAVLINK_OK);
+}
+
 TEST(test_mavlink_parse_byte_null_parser) {
     (void)mavlink_parse_byte(NULL, 0);
     /* must not crash */
@@ -47,6 +59,8 @@ TEST(test_mavlink_crc16_null_data) {
 
 TEST_MAIN("null_param_mavlink") {
     RUN(test_mavlink_parser_init_null_parser);
+    RUN(test_mavlink_parser_set_crc_table_null_parser);
+    RUN(test_mavlink_parser_set_crc_table_null_table);
     RUN(test_mavlink_parse_byte_null_parser);
     RUN(test_mavlink_serialize_null_msg);
     RUN(test_mavlink_serialize_null_buf);
