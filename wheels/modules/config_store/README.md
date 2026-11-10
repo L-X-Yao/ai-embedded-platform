@@ -41,27 +41,30 @@ config_store_err_t config_store_init(config_store_t *cs,
                                      const config_store_storage_t *storage);
 
 /* Define entries with defaults and ranges */
-config_store_err_t config_store_define_int(cs, key, default_val, min, max);
-config_store_err_t config_store_define_uint(cs, key, default_val, min, max);
+config_store_err_t config_store_define_int(config_store_t *cs, const char *key,
+                                           int32_t default_val, int32_t min, int32_t max);
+config_store_err_t config_store_define_uint(config_store_t *cs, const char *key,
+                                            uint32_t default_val, uint32_t min, uint32_t max);
 config_store_err_t config_store_define_float(config_store_t *cs, const char *key,
                                              float default_val, float min, float max);
 config_store_err_t config_store_define_bool(config_store_t *cs, const char *key,
                                             bool default_val);
-config_store_err_t config_store_define_string(cs, key, default_val);
+config_store_err_t config_store_define_string(config_store_t *cs, const char *key,
+                                              const char *default_val);
 
 /* Set values (validated) */
-config_store_err_t config_store_set_int(cs, key, val);
+config_store_err_t config_store_set_int(config_store_t *cs, const char *key, int32_t val);
 /* ... similar for uint, float, bool, string */
 
 /* Get values */
-config_store_err_t config_store_get_int(cs, key, val_ptr);
+config_store_err_t config_store_get_int(const config_store_t *cs, const char *key, int32_t *val);
 /* ... similar for uint, float, bool, string */
 
 /* Persistence + reset */
-config_store_err_t config_store_save_all(cs);
-config_store_err_t config_store_load_all(cs);
-config_store_err_t config_store_reset_defaults(cs);
-uint8_t config_store_count(cs);
+config_store_err_t config_store_save_all(config_store_t *cs);
+config_store_err_t config_store_load_all(config_store_t *cs);
+config_store_err_t config_store_reset_defaults(config_store_t *cs);
+uint8_t config_store_count(const config_store_t *cs);
 ```
 
 ## Configuration (compile-time)

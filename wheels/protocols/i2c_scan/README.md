@@ -31,7 +31,8 @@ typedef struct {
 } i2c_scan_result_t;
 
 /* Scan default range 0x08..0x77 */
-i2c_scan_err_t i2c_scan(probe, probe_ctx, result);
+i2c_scan_err_t i2c_scan(i2c_scan_probe_fn probe, void *probe_ctx,
+                         i2c_scan_result_t *result);
 
 /* Scan sub-range [start, end] inclusive */
 i2c_scan_err_t i2c_scan_range(i2c_scan_probe_fn probe, void *probe_ctx,
@@ -39,7 +40,8 @@ i2c_scan_err_t i2c_scan_range(i2c_scan_probe_fn probe, void *probe_ctx,
                                i2c_scan_result_t *result);
 
 /* Scan with per-device callback (no array limit) */
-i2c_scan_err_t i2c_scan_callback(probe, probe_ctx, found, found_ctx);
+i2c_scan_err_t i2c_scan_callback(i2c_scan_probe_fn probe, void *probe_ctx,
+                                  i2c_scan_found_fn found, void *found_ctx);
 
 /* Identify known address -> human-readable name or NULL */
 const char *i2c_scan_identify(uint8_t addr);
