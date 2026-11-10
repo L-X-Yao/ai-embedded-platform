@@ -375,10 +375,14 @@ mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
         }
     }
 
-    /* PUBACK timeout */
+    mqtt_client_err_t result = MQTT_CLIENT_OK;
+
+    /* PUBACK timeout: whether the message arrived is now unknown, and only the
+     * caller can send it again, since the client keeps no copy */
     if (c->inflight_pub_id != 0 &&
         (t - c->inflight_pub_ms) >= c->cfg.ack_timeout_ms) {
         c->inflight_pub_id = 0;
+        result = MQTT_CLIENT_ERR_TIMEOUT;
     }
 
     /* SUBACK timeout */
@@ -387,7 +391,7 @@ mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c)
         c->inflight_sub_id = 0;
     }
 
-    return MQTT_CLIENT_OK;
+    return result;
 }
 
 mqtt_client_state_t mqtt_client_get_state(const mqtt_client_t *c)

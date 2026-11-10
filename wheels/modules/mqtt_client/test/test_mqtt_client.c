@@ -260,6 +260,102 @@ TEST(test_puback_timeout_clears_inflight)
     ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
 }
 
+/* With no PUBACK the client cannot say the message arrived, so a timed-out
+   publish must not read the same as a delivered one */
+TEST(test_puback_timeout_is_reported_once)
+{
+    setup_connected();
+    int events = g_evt_count;
+    ASSERT_EQ(mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1), MQTT_CLIENT_OK);
+    uint16_t on_wire = g_sent_len;
+
+    g_tick_ms = T0 + 2999;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_ERR_TIMEOUT);
+    ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+
+    /* The link may be fine, and the client keeps no copy to send again */
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_CONNECTED);
+    ASSERT_EQ(g_evt_count, events);
+    ASSERT_EQ(g_sent_len, on_wire);
+}
+
+TEST(test_delivered_publish_reports_no_timeout)
+{
+    setup_connected();
+    mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1);
+    uint16_t id = g_c.inflight_pub_id;
+    uint8_t puback[] = { 0x40, 0x02, (uint8_t)(id >> 8), (uint8_t)(id & 0xFF) };
+    mqtt_client_feed(&g_c, puback, sizeof(puback));
+
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+}
+
+TEST(test_qos0_publish_reports_no_timeout)
+{
+    setup_connected();
+    mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 0);
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+}
+
+TEST(test_late_puback_does_not_free_the_next_publish)
+{
+    setup_connected();
+    mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1);
+    uint16_t first = g_c.inflight_pub_id;
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_ERR_TIMEOUT);
+
+    ASSERT_EQ(mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1), MQTT_CLIENT_OK);
+    uint16_t second = g_c.inflight_pub_id;
+    ASSERT_TRUE(second != first);
+
+    uint8_t late[] = { 0x40, 0x02, (uint8_t)(first >> 8), (uint8_t)(first & 0xFF) };
+    mqtt_client_feed(&g_c, late, sizeof(late));
+    ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
+
+    uint8_t right[] = { 0x40, 0x02, (uint8_t)(second >> 8), (uint8_t)(second & 0xFF) };
+    mqtt_client_feed(&g_c, right, sizeof(right));
+    ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
+}
+
+TEST(test_puback_timeout_leaves_the_suback_check_to_run)
+{
+    setup_connected();
+    mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1);
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s", 0), MQTT_CLIENT_OK);
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_ERR_TIMEOUT);
+    ASSERT_EQ(g_c.inflight_sub_id, 0);
+}
+
+TEST(test_suback_timeout_is_not_a_publish_timeout)
+{
+    setup_connected();
+    ASSERT_EQ(mqtt_client_subscribe(&g_c, "s", 0), MQTT_CLIENT_OK);
+    g_tick_ms = T0 + 3000;
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+}
+
+/* The header tells a caller to look at pub_inflight when the link drops */
+TEST(test_lost_link_leaves_the_publish_in_flight_until_connect)
+{
+    setup_connected();
+    mqtt_client_publish(&g_c, "t", (const uint8_t *)"x", 1, 1);
+    g_tick_ms = T0 + 90000;  /* keepalive 60 s, given up at 1.5 times that */
+    ASSERT_EQ(mqtt_client_poll(&g_c), MQTT_CLIENT_OK);
+    ASSERT_EQ(mqtt_client_get_state(&g_c), MQTT_CLIENT_DISCONNECTED);
+    ASSERT_EQ(g_evt_reason, 0xFE);
+    ASSERT_TRUE(mqtt_client_pub_inflight(&g_c));
+
+    ASSERT_EQ(mqtt_client_connect(&g_c), MQTT_CLIENT_OK);
+    ASSERT_FALSE(mqtt_client_pub_inflight(&g_c));
+}
+
 /* ─── subscribe tests ────────────────────────────────────────── */
 
 TEST(test_subscribe_and_suback)
@@ -912,6 +1008,13 @@ TEST_MAIN("mqtt_client")
     RUN(test_publish_null_topic);
     RUN(test_publish_qos2_rejected);
     RUN(test_puback_timeout_clears_inflight);
+    RUN(test_puback_timeout_is_reported_once);
+    RUN(test_delivered_publish_reports_no_timeout);
+    RUN(test_qos0_publish_reports_no_timeout);
+    RUN(test_late_puback_does_not_free_the_next_publish);
+    RUN(test_puback_timeout_leaves_the_suback_check_to_run);
+    RUN(test_suback_timeout_is_not_a_publish_timeout);
+    RUN(test_lost_link_leaves_the_publish_in_flight_until_connect);
     RUN(test_subscribe_and_suback);
     RUN(test_subscribe_busy);
     RUN(test_incoming_publish_qos0);

@@ -43,6 +43,7 @@ typedef enum {
     MQTT_CLIENT_ERR_SIZE     = -4,
     MQTT_CLIENT_ERR_PROTOCOL = -5,
     MQTT_CLIENT_ERR_IO       = -6,
+    MQTT_CLIENT_ERR_TIMEOUT  = -7,  /* from poll only: no PUBACK came in time */
 } mqtt_client_err_t;
 
 /* ---------- connection state ---------- */
@@ -142,7 +143,13 @@ mqtt_client_err_t mqtt_client_subscribe(mqtt_client_t *c,
 mqtt_client_err_t mqtt_client_feed(mqtt_client_t *c,
                                    const uint8_t *data, uint16_t len);
 
-/** Poll for keepalive / timeout. Call periodically. @thread_safe: no @isr_safe: no */
+/** Poll for keepalive / timeout. Call periodically.
+ *  Returns MQTT_CLIENT_ERR_TIMEOUT from the one call that gives up on a QoS 1
+ *  publish: no PUBACK came within ack_timeout_ms, so whether the message
+ *  arrived is unknown. The connection stays up, no event fires, and the slot is
+ *  free again. The client keeps no copy of the message: if it matters, publish
+ *  it again, which may deliver it twice, as QoS 1 allows.
+ *  A SUBACK timeout is not reported. @thread_safe: no @isr_safe: no */
 mqtt_client_err_t mqtt_client_poll(mqtt_client_t *c);
 
 /** Get current connection state. @thread_safe: no @isr_safe: yes */
@@ -157,7 +164,11 @@ void mqtt_client_on_event(mqtt_client_t *c, mqtt_client_evt_cb_t cb, void *ctx);
 /** Allocate next packet ID (1-65535, wraps). @thread_safe: no @isr_safe: no */
 uint16_t mqtt_client_next_id(mqtt_client_t *c);
 
-/** Check if QoS 1 publish is still awaiting PUBACK. @thread_safe: no @isr_safe: yes */
+/** Check if QoS 1 publish is still awaiting PUBACK. false only means nothing is
+ *  pending, not that the last message arrived: mqtt_client_poll() reports the
+ *  one that timed out. If the connection drops with a publish pending this stays
+ *  true until the next connect, so read it in the DISCONNECTED event.
+ *  @thread_safe: no @isr_safe: yes */
 bool mqtt_client_pub_inflight(const mqtt_client_t *c);
 
 #ifdef __cplusplus

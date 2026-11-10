@@ -212,10 +212,15 @@ static void run_session(fuzz_input_t *in) {
             case 2: op_broker_frame(c, in); break;
             case 3: op_publish(c, w, in); break;
             case 4: op_subscribe(c, w, in); break;
-            case 5:
+            case 5: {
                 w->now += fuzz_u16(in) * 32u;
-                mqtt_client_poll(c);
+                bool pending = mqtt_client_pub_inflight(c);
+                mqtt_client_err_t err = mqtt_client_poll(c);
+                // Only a publish that was waiting can time out, and it stops waiting.
+                if (err == MQTT_CLIENT_ERR_TIMEOUT &&
+                    (!pending || mqtt_client_pub_inflight(c))) __builtin_trap();
                 break;
+            }
             default:
                 mqtt_client_disconnect(c);
                 break;
