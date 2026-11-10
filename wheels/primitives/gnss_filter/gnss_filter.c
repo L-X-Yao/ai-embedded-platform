@@ -57,13 +57,13 @@ static bool quality_raw_ok(const gnss_filter_t *flt,
 
 /* Longitude is circular: bring a value back into -180..180. Both inputs to a
  * step are already in range, so one turn is enough. */
-static float lon_wrap(float deg)
+static double lon_wrap(double deg)
 {
-    if (deg > 180.0f) {
-        return deg - 360.0f;
+    if (deg > 180.0) {
+        return deg - 360.0;
     }
-    if (deg < -180.0f) {
-        return deg + 360.0f;
+    if (deg < -180.0) {
+        return deg + 360.0;
     }
     return deg;
 }
@@ -139,14 +139,16 @@ gnss_filter_err_t gnss_filter_update(gnss_filter_t *flt,
         return GNSS_FILTER_OK;
     }
 
-    /* EMA filter: tighter alpha when ZUPT indicates stationary */
-    float alpha = imu_stationary ? flt->cfg.strong_alpha
-                                 : flt->cfg.static_alpha;
+    /* EMA filter: tighter alpha when ZUPT indicates stationary. In double
+     * because a float step near longitude 121 is 0.85 m: with alpha 0.02 any
+     * correction under half a step was lost, 14 m short of the input. */
+    double alpha = (double)(imu_stationary ? flt->cfg.strong_alpha
+                                           : flt->cfg.static_alpha);
 
-    flt->filtered_lat += (input->latitude  - flt->filtered_lat) * alpha;
+    flt->filtered_lat += ((double)input->latitude - flt->filtered_lat) * alpha;
     flt->filtered_lon = lon_wrap(flt->filtered_lon +
-        lon_wrap(input->longitude - flt->filtered_lon) * alpha);
-    flt->filtered_alt += (input->altitude  - flt->filtered_alt) * alpha;
+        lon_wrap((double)input->longitude - flt->filtered_lon) * alpha);
+    flt->filtered_alt += ((double)input->altitude - flt->filtered_alt) * alpha;
 
     return GNSS_FILTER_OK;
 }
@@ -174,21 +176,21 @@ float gnss_filter_lat(const gnss_filter_t *flt)
 {
     REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
-    return flt->filtered_lat;
+    return (float)flt->filtered_lat;
 }
 
 float gnss_filter_lon(const gnss_filter_t *flt)
 {
     REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
-    return flt->filtered_lon;
+    return (float)flt->filtered_lon;
 }
 
 float gnss_filter_alt(const gnss_filter_t *flt)
 {
     REQUIRE(flt != NULL);
     if (flt == NULL || !flt->filter_valid) return 0.0f;
-    return flt->filtered_alt;
+    return (float)flt->filtered_alt;
 }
 
 /* ---------- utility ---------- */

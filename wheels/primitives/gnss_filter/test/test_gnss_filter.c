@@ -195,6 +195,59 @@ TEST(test_ema_lon_result_stays_in_range)
     ASSERT_NEAR(lon_after_step(-179.9f, 179.7f, 0.5f), 179.9f, 0.001f);
 }
 
+/* Seed the filter at one fix, then hold another, stationary, with alpha 0.02.
+ * 0.98^5000 is about 1e-44: in real arithmetic the step is complete. */
+static void hold_after_seed(gnss_filter_t *flt, gnss_filter_input_t *seed,
+                            float lat, float lon, float alt)
+{
+    gnss_filter_cfg_t cfg = g_default_cfg;
+    cfg.stable_ms = 0;
+    cfg.strong_alpha = 0.02f;
+    gnss_filter_init(flt, &cfg);
+
+    gnss_filter_update(flt, seed, 0, 0);
+    seed->latitude  = lat;
+    seed->longitude = lon;
+    seed->altitude  = alt;
+    for (uint32_t t = 1; t <= 5000; t++) {
+        gnss_filter_update(flt, seed, 0, t * 1000u);
+    }
+}
+
+TEST(test_ema_reaches_a_fix_closer_than_a_float_step_allows)
+{
+    gnss_filter_t flt;
+    gnss_filter_input_t in = good_fix();
+    in.latitude  = 31.230000f;
+    in.longitude = 121.470000f;
+    in.altitude  = 8848.00f;
+
+    /* About 4 m, 17 m and 4 cm away: each correction starts below half a
+     * float step of the value it is added to. */
+    hold_after_seed(&flt, &in, 31.230040f, 121.470154f, 8848.04f);
+
+    /* The tolerances are well under one float step of each value, so these
+     * only hold when the filter returns the input itself. */
+    ASSERT_NEAR(gnss_filter_lat(&flt), 31.230040f, 0.000001f);
+    ASSERT_NEAR(gnss_filter_lon(&flt), 121.470154f, 0.000001f);
+    ASSERT_NEAR(gnss_filter_alt(&flt), 8848.04f, 0.0001f);
+}
+
+TEST(test_ema_reaches_a_fix_across_the_180_line)
+{
+    gnss_filter_t flt;
+    gnss_filter_input_t in = good_fix();
+    in.longitude = 179.9999f;
+
+    hold_after_seed(&flt, &in, 30.0f, -179.9999f, 100.0f);
+    ASSERT_NEAR(gnss_filter_lon(&flt), -179.9999f, 0.000001f);
+
+    in = good_fix();
+    in.longitude = -179.9999f;
+    hold_after_seed(&flt, &in, 30.0f, 179.9999f, 100.0f);
+    ASSERT_NEAR(gnss_filter_lon(&flt), 179.9999f, 0.000001f);
+}
+
 TEST(test_ema_moving)
 {
     gnss_filter_t flt;
@@ -650,4 +703,6 @@ TEST_MAIN("gnss_filter")
     RUN(test_non_finite_position_closes_gate);
     RUN(test_init_rejects_bad_float_config);
     RUN(test_refused_init_never_becomes_ready);
+    RUN(test_ema_reaches_a_fix_closer_than_a_float_step_allows);
+    RUN(test_ema_reaches_a_fix_across_the_180_line);
 TEST_MAIN_END()

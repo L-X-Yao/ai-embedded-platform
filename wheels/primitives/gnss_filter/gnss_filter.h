@@ -58,9 +58,9 @@ typedef struct {
 
 typedef struct {
     gnss_filter_cfg_t cfg;            /* internal */
-    float             filtered_lat;   /* internal */
-    float             filtered_lon;   /* internal */
-    float             filtered_alt;   /* internal */
+    double            filtered_lat;   /* internal: double so small EMA steps */
+    double            filtered_lon;   /* internal: are not lost; inputs and  */
+    double            filtered_alt;   /* internal: getters stay float        */
     bool              filter_valid;   /* internal */
     uint32_t          quality_ok_ms;  /* internal: accumulated quality time */
     bool              quality_ready;  /* internal */
