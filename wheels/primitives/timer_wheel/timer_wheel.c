@@ -74,7 +74,8 @@ timer_wheel_err_t timer_wheel_add(timer_wheel_t *tw,
     e->slot             = target_slot;
     e->callback         = callback;
     e->ctx              = ctx;
-    e->active           = true;
+    TIMER_WHEEL_BARRIER(); /* the fields are in place before a tick can use them */
+    e->active           = 1U;
 
     tw->count++;
 
@@ -98,7 +99,8 @@ timer_wheel_err_t timer_wheel_cancel(timer_wheel_t *tw, uint32_t id)
         return TIMER_WHEEL_ERR_PARAM;
     }
 
-    e->active   = false;
+    e->active   = 0U;
+    TIMER_WHEEL_BARRIER(); /* a tick must see inactive before the callback goes */
     e->callback = NULL;
     tw->count--;
 
@@ -128,7 +130,13 @@ void timer_wheel_tick(timer_wheel_t *tw)
     {
         timer_wheel_entry_t *e = &tw->timers[i];
 
-        if (!e->active || e->slot != slot)
+        if (!e->active)
+        {
+            continue;
+        }
+        TIMER_WHEEL_BARRIER(); /* read the fields after active */
+
+        if (e->slot != slot)
         {
             continue;
         }
@@ -143,7 +151,7 @@ void timer_wheel_tick(timer_wheel_t *tw)
         timer_wheel_cb_t cb  = e->callback;
         void            *ctx = e->ctx;
 
-        e->active   = false;
+        e->active   = 0U;
         e->callback = NULL;
         tw->count--;
 
