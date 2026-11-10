@@ -12,6 +12,17 @@
 #include "contract.h"
 #include <string.h>
 
+/* cmd_status hands the command state between main code and feed, which may run
+ * in an ISR, so the writes around it must stay on their side of it. A port on
+ * another compiler defines its own. */
+#ifndef AIR780EG_BARRIER
+#if defined(__GNUC__)
+#define AIR780EG_BARRIER() __asm__ volatile("" ::: "memory")
+#else
+#define AIR780EG_BARRIER() ((void)0)
+#endif
+#endif
+
 /* ---------- internal helpers ---------- */
 
 static bool starts_with(const char *line, const char *prefix)
@@ -244,6 +255,7 @@ static void finish_cmd(air780eg_t *dev, const char *line,
 {
     strncpy(dev->matched_line, line, AIR780EG_LINE_MAX - 1);
     dev->matched_line[AIR780EG_LINE_MAX - 1] = '\0';
+    AIR780EG_BARRIER();
     dev->cmd_status = status;
 }
 
@@ -388,6 +400,7 @@ static void cmd_begin(air780eg_t *dev, const char *echo, const char *expect,
     dev->cmd_timeout_ms = timeout_ms;
     dev->matched_line[0] = '\0';
     dev->prev_line[0] = '\0';
+    AIR780EG_BARRIER();
     dev->cmd_status = AIR780EG_CMD_PENDING;
 }
 
@@ -437,7 +450,9 @@ air780eg_cmd_status_t air780eg_cmd_status(const air780eg_t *dev)
 {
     REQUIRE(dev != NULL);
     if (dev == NULL) return AIR780EG_CMD_IDLE;
-    return dev->cmd_status;
+    air780eg_cmd_status_t status = dev->cmd_status;
+    AIR780EG_BARRIER();
+    return status;
 }
 
 const char *air780eg_get_matched_line(const air780eg_t *dev)

@@ -6,6 +6,20 @@
  * Status:    candidate
  * Deps:      (none, transport injected)
  * Instances: multi
+ *
+ * Who may call what, on a single core:
+ *
+ *   air780eg_feed  One context only: the UART RX interrupt or the main loop. It
+ *                  calls no io function. The URC callbacks run inside it, so from
+ *                  an ISR they must be short and must not call this driver.
+ *   All the rest   Main code only, one caller at a time, with no interrupt masked.
+ *                  Register callbacks before the first feed, or with that
+ *                  interrupt masked: cb and user are two writes.
+ *
+ * air780eg_cmd_status is the hand-over. While it says PENDING the command state
+ * is feed's, otherwise it is main code's, so read the matched and previous line
+ * only once it has left PENDING. A reply that lands in the very instant poll sees
+ * the deadline may still be reported as a timeout.
  */
 
 #ifndef AIR780EG_H
@@ -93,7 +107,7 @@ typedef struct {
     uint16_t msg_watch_left;                    /* internal: poll's last look */
     uint32_t msg_watch_ms;                      /* internal */
     /* command state */
-    air780eg_cmd_status_t cmd_status;           /* internal */
+    volatile air780eg_cmd_status_t cmd_status;  /* internal: the hand-over */
     char     expect[64];                        /* internal: expected response token */
     char     echo[64];                          /* internal: command, until echoed */
     uint32_t cmd_start_ms;                      /* internal */
@@ -118,9 +132,9 @@ typedef struct {
     air780eg_fail_cb_t    fail_cb;              /* internal */
     void *fail_user;                            /* internal */
     /* diagnostics */
-    uint32_t rdy_count;                         /* internal */
-    uint32_t msg_drop_count;                    /* internal */
-    int      last_csq;                          /* internal */
+    volatile uint32_t rdy_count;                /* internal */
+    volatile uint32_t msg_drop_count;           /* internal */
+    volatile int last_csq;                      /* internal */
 } air780eg_t;
 
 /* ---------- API ---------- */
@@ -128,10 +142,10 @@ typedef struct {
 /** @thread_safe: no @isr_safe: no */
 air780eg_err_t air780eg_init(air780eg_t *dev, const air780eg_io_t *io);
 
-/** @thread_safe: no @isr_safe: yes (feed from ISR OK) — call from UART RX ISR or polling loop */
+/** @thread_safe: no @isr_safe: yes — from the UART RX ISR or the polling loop, not both; see the top of this file */
 void air780eg_feed(air780eg_t *dev, uint8_t byte);
 
-/** @thread_safe: no @isr_safe: no — call periodically to check timeouts */
+/** @thread_safe: no @isr_safe: no — call periodically: it checks command timeouts and stalled messages */
 void air780eg_poll(air780eg_t *dev);
 
 /**
