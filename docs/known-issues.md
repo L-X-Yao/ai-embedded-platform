@@ -32,6 +32,21 @@ Open by decision, or because nothing here can test it:
 
 The 223 minor items of the tenth super audit are recorded and not fixed, except where a larger fix covered them.
 
+## Fixes at the close (2026-11-10)
+
+Two checks ran on the last day. Neither result has run on hardware.
+
+**`flash_ring` under power cuts and I/O faults.** A randomized test drove small rings through pushes, pops, discards, header flushes and resets, with a power cut or a failing erase, program or read injected at any flash operation. It does not model the ring. It tracks what was programmed and which pushes were acknowledged, and checks that a live slot is never blank, that acknowledged frames stay in order and go only by a documented rule, and that after a reset the writer is where the last program ended. It found two faults in the November rewrite, each fixed with a failing unit test first:
+
+- A program that failed, followed by a read-back that failed too, was counted as a frame. If nothing had been written, a blank slot sat among the live ones. On the last slot of a sector a reset stopped its walk there, and the next push erased the frames stored after it. The ring now stays on that slot and the next push reads it first. While the read fails, push returns `FLASH_RING_ERR_IO` and programs nothing. `discard_all` does not reach a slot in that state.
+- After a failed header write, push still erased ahead. A lap later that erase took the sector the header pointed into, and a reset then started from a blank slot, served blank slots as frames and lost what was stored after it. Push now rewrites the header before such an erase, and returns `FLASH_RING_ERR_IO` without erasing if it cannot. This is the one case where a failed header write fails a push.
+
+After both fixes 900,000 runs passed: about 850 million operations with about 32 million power cuts, on rings of 2 to 8 sectors with 1 to 8 slots each. The test is a review tool and is not in the repository. It leaves out a half-written header, a frame of all 0xFF and flash images from older code, which the README lists as known. `flash_ring_t` grew by 4 bytes. Mutation testing of the unit test also found three changes it let through, now pinned: a ring emptied part way through a sector, and a header whose write or read index equals `total_slots`.
+
+**GCC 15.** GitHub moved `ubuntu-latest` to Ubuntu 26.04 on about 2026-11-07, and the Nightly coverage job of the public mirror failed from then on. GCC 15 rejects, under `-Wextra` and `-Werror`, a string literal that fills a `char` array and leaves no room for its NUL: `base64` and the `msgpack` tests each had one. Two README API summaries listed calls with bare parameter names, which GCC 14 and later refuse as declarations. All three are fixed, `make check` passes with GCC 13 and with GCC 15, and the mirror's workflows now name their runner image. GCC 15's static analyzer, run over the wheel sources, reported two items, both in `mqtt5_packet.c` and both wrong: `mqtt5_encode_vbi` returns the number of bytes it wrote, and the analyzer does not connect the two.
+
+`docs/arm-binary-sizes.md` was regenerated on 2026-11-11. The November fixes took the total from 157.5 KB to 173.9 KB of `.text`.
+
 ## Super audit, second run (2026-11-07)
 
 The tenth super audit reported 36 critical, 250 moderate and 223 minor items in 20 slices. The first 57 fixes are in "Super audit, first fixes" below. This run handled the other critical and moderate items, each fix with a failing test or a forced failure first. The exceptions are in the section above. Two items were wrong as written: `signal_stats` could no longer divide by zero after an earlier fix (W1C-17), and `gpio_led_on` on a zeroed LED reported ON, it did not crash (W2-11). None of this has run on hardware.
@@ -40,7 +55,7 @@ What changed for callers, by layer. Each README has the detail.
 
 Primitives:
 
-- `flash_ring`: init refuses single-sector rings and erases the first data sector on fresh flash. Push erases one sector ahead and drops the oldest frames a sector at a time when full, so the ring holds at most `total_slots - 1` frames. Init walks forward from the stored `write_idx` to the real one, and frames popped since the last header write come back after a reset. Push and pop return OK when only the header write failed. `peek` refuses a length above `slot_size` and a slot outside the live range, and returns EMPTY on an empty ring.
+- `flash_ring`: init refuses single-sector rings and erases the first data sector on fresh flash. Push erases one sector ahead and drops the oldest frames a sector at a time when full, so the ring holds at most `total_slots - 1` frames. Init walks forward from the stored `write_idx` to the real one, and frames popped since the last header write come back after a reset. Push and pop return OK when only the header write failed, with one exception since 2026-11-10 (see the section above). `peek` refuses a length above `slot_size` and a slot outside the live range, and returns EMPTY on an empty ring.
 - `fal`: partition calls return `FAL_ERR_NOT_READY` until `fal_init` succeeds, and `fal_init` can return `FAL_ERR_HAL` or the new `FAL_ERR_PART_TABLE`. A range that wraps returns `FAL_ERR_OVERFLOW`.
 - `gnss_filter`: `gnss_datetime_to_unix` returns -1 for a month outside 1 to 12. Init refuses non-finite floats, a `max_hdop` not above 0, a `max_vdop` below 0 and an alpha outside 0 to 1. A non-finite position or a NaN hdop closes the gate. The longitude filter wraps at 180 degrees.
 - `cli_parser`, `cli_shell`: an over-long line prints `line too long` and does not run. `cli_parser` skips table entries with a NULL name or handler. Feed and run are not ISR safe.
