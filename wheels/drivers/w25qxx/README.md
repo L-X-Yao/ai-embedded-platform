@@ -59,7 +59,7 @@ static void example(void) {
 ## Supported platforms
 
 - [x] Host C99 (mock SPI) — 21 tests, 55 assertions, 2026-04-29
-- [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26
+- [x] GD32F405 + W25Q64 @ SPI1 10.5 MHz — HIL verified 2026-04-26 (the code as of that date; later changes have not run on a board)
 
 ## Datasheet check
 

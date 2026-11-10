@@ -54,7 +54,7 @@ static void example(void) {
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 20 tests, 2026-04-30
-- [x] GD32F405 + QMI8658A @ I2C1 400 kHz (PB10/PB11) — HIL verified 2026-04-26
+- [x] GD32F405 + QMI8658A @ I2C1 400 kHz (PB10/PB11) — HIL verified 2026-04-26 (the code as of that date; later changes have not run on a board)
 
 ## Datasheet check
 

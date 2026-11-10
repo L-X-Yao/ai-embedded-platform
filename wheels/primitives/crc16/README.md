@@ -37,7 +37,7 @@ uint16_t crc16_modbus_step(uint16_t crc, uint8_t byte);
 
 - [x] Linux host (sim) — passed 2026-04-26
 - [x] WSL Ubuntu 24.04 — passed 2026-04-26
-- [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified
+- [x] ARM Cortex-M4 (GD32F405 cross-compile) — integrated into flybox 2026-04-26, HIL verified (the code as of that date; later changes have not run on a board)
 
 ## Known issues
 

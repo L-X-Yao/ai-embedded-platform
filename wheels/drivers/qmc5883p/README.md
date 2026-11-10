@@ -49,7 +49,7 @@ static void example(void) {
 ## Supported platforms
 
 - [x] Host C99 (mock I2C) — 20 tests, 45 assertions, 2026-04-29
-- [x] GD32F405 + QMC5883P @ soft I2C (PA11/PA12, open-drain) — HIL verified 2026-04-27
+- [x] GD32F405 + QMC5883P @ soft I2C (PA11/PA12, open-drain) — HIL verified 2026-04-27 (the code as of that date; later changes have not run on a board)
 
 ## Datasheet check
 
