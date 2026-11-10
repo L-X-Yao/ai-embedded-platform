@@ -152,7 +152,7 @@ static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     static const char *const replies[] = {
         "OK", "ERROR", "+CME ERROR: 3", "+CMS ERROR: 1", "RDY", "CLOSED", "+PDP:DEACT",
         "+PDP DEACT", "+CGEV: NW PDN DEACT 1", "$GNGGA,1", "$GPRMC,2", "$GNRMC", "$GNGSA",
-        "$GPGGA", "text", "",
+        "$GPGGA", "text", "", "CONNECT FAIL", "2,SEND FAIL",
     };
     size_t pick = fuzz_u8(in) % (sizeof(replies) / sizeof(replies[0]));
 
@@ -160,10 +160,11 @@ static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     bool pending = dev->cmd_status == AIR780EG_CMD_PENDING;
 
     type_line(dev, replies[pick], strlen(replies[pick]));
-    if (pending && pick == 0 && dev->cmd_status != AIR780EG_CMD_OK) __builtin_trap();
-    if (pending && pick >= 1 && pick <= 3 && dev->cmd_status != AIR780EG_CMD_ERROR) {
-        __builtin_trap();
-    }
+    bool ok_ends = dev->expect[0] == '\0' || strcmp(dev->expect, "OK") == 0;
+    if (pending && pick == 0 && ok_ends && dev->cmd_status != AIR780EG_CMD_OK) __builtin_trap();
+    if (pending && pick == 0 && !ok_ends && dev->cmd_status != AIR780EG_CMD_PENDING) __builtin_trap();
+    bool fails = (pick >= 1 && pick <= 3) || pick >= 16;
+    if (pending && fails && dev->cmd_status != AIR780EG_CMD_ERROR) __builtin_trap();
 }
 
 static void op_poll(air780eg_t *dev, world_t *w, fuzz_input_t *in) {

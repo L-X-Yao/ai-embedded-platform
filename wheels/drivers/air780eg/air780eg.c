@@ -120,30 +120,61 @@ static void dispatch_urc(air780eg_t *dev, const char *line)
     }
 }
 
+static bool ends_with(const char *line, const char *suffix)
+{
+    size_t llen = strlen(line);
+    size_t slen = strlen(suffix);
+    return llen >= slen && strcmp(line + (llen - slen), suffix) == 0;
+}
+
+/* CONNECT FAIL and SEND FAIL (manual p.155, p.159, p.239), with or without the
+ * link number in front, are reports like ERROR. */
+static bool is_failure(const char *line)
+{
+    return strcmp(line, "ERROR") == 0 || starts_with(line, "+CME ERROR") ||
+           starts_with(line, "+CMS ERROR") || ends_with(line, "FAIL");
+}
+
+/* While the caller waits for a later token such as CONNACK OK, a plain OK only
+ * says the module took the command (p.240). */
+static bool is_success(const air780eg_t *dev, const char *line)
+{
+    if (dev->expect[0] == '\0' || strcmp(dev->expect, "OK") == 0) {
+        return strcmp(line, "OK") == 0;
+    }
+    return strstr(line, dev->expect) != NULL;
+}
+
+static void finish_cmd(air780eg_t *dev, const char *line,
+                       air780eg_cmd_status_t status)
+{
+    strncpy(dev->matched_line, line, AIR780EG_LINE_MAX - 1);
+    dev->matched_line[AIR780EG_LINE_MAX - 1] = '\0';
+    dev->cmd_status = status;
+}
+
 static void process_line(air780eg_t *dev, const char *line)
 {
     /* Skip empty lines */
     if (line[0] == '\0') return;
 
-    /* Check if this line matches expected response for pending command */
+    /* Check if this line ends the pending command. Failures come first: the
+     * token CONNECT is inside CONNECT FAIL. */
     if (dev->cmd_status == AIR780EG_CMD_PENDING) {
-        if (strcmp(line, "OK") == 0 ||
-            (dev->expect[0] != '\0' && strstr(line, dev->expect) != NULL)) {
-            strncpy(dev->matched_line, line, AIR780EG_LINE_MAX - 1);
-            dev->matched_line[AIR780EG_LINE_MAX - 1] = '\0';
-            dev->cmd_status = AIR780EG_CMD_OK;
+        if (is_failure(line)) {
+            finish_cmd(dev, line, AIR780EG_CMD_ERROR);
             return;
         }
-        if (strcmp(line, "ERROR") == 0 || starts_with(line, "+CME ERROR") ||
-            starts_with(line, "+CMS ERROR")) {
-            strncpy(dev->matched_line, line, AIR780EG_LINE_MAX - 1);
-            dev->matched_line[AIR780EG_LINE_MAX - 1] = '\0';
-            dev->cmd_status = AIR780EG_CMD_ERROR;
+        if (is_success(dev, line)) {
+            finish_cmd(dev, line, AIR780EG_CMD_OK);
             return;
         }
         /* Store as prev_line (for responses that come before "OK") */
         strncpy(dev->prev_line, line, AIR780EG_LINE_MAX - 1);
         dev->prev_line[AIR780EG_LINE_MAX - 1] = '\0';
+    } else if (ends_with(line, "FAIL") && dev->fail_cb != NULL) {
+        dev->fail_cb(dev->fail_user, line);
+        return;
     }
 
     /* Dispatch as URC (unsolicited result code) */
@@ -311,6 +342,14 @@ void air780eg_on_csq(air780eg_t *dev, air780eg_csq_cb_t cb, void *user)
     if (dev == NULL) return;
     dev->csq_cb = cb;
     dev->csq_user = user;
+}
+
+void air780eg_on_fail(air780eg_t *dev, air780eg_fail_cb_t cb, void *user)
+{
+    REQUIRE(dev != NULL);
+    if (dev == NULL) return;
+    dev->fail_cb = cb;
+    dev->fail_user = user;
 }
 
 /* --- diagnostics --- */

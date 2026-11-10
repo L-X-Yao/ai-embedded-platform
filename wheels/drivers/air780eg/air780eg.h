@@ -54,6 +54,7 @@ typedef void (*air780eg_mqtt_rx_cb_t)(void *user, const char *topic,
 typedef void (*air780eg_event_cb_t)(void *user);
 typedef void (*air780eg_nmea_cb_t)(void *user, const char *line);
 typedef void (*air780eg_csq_cb_t)(void *user, int rssi);
+typedef void (*air780eg_fail_cb_t)(void *user, const char *line);
 
 /* ---------- configuration ---------- */
 
@@ -87,6 +88,8 @@ typedef struct {
     void *nmea_user;                            /* internal */
     air780eg_csq_cb_t     csq_cb;              /* internal */
     void *csq_user;                             /* internal */
+    air780eg_fail_cb_t    fail_cb;              /* internal */
+    void *fail_user;                            /* internal */
     /* diagnostics */
     uint32_t rdy_count;                         /* internal */
     int      last_csq;                          /* internal */
@@ -103,7 +106,15 @@ void air780eg_feed(air780eg_t *dev, uint8_t byte);
 /** @thread_safe: no @isr_safe: no — call periodically to check timeouts */
 void air780eg_poll(air780eg_t *dev);
 
-/** @thread_safe: no @isr_safe: no — send raw AT command, set expected response */
+/**
+ * @thread_safe: no @isr_safe: no — send raw AT command, set expected response.
+ *
+ * expect NULL or "OK": the command ends on a line that is exactly OK.
+ * Any other expect: the command ends on a line containing it, and a plain OK
+ * leaves it pending, because for AT+MCONNECT, AT+MSUB and AT+MIPSTART the OK
+ * only says the module took the command. Whatever expect is, ERROR, +CME ERROR,
+ * +CMS ERROR or a line ending in FAIL ends the command with AIR780EG_CMD_ERROR.
+ */
 air780eg_err_t air780eg_send_cmd(air780eg_t *dev, const char *cmd,
                                  const char *expect, uint32_t timeout_ms);
 
@@ -135,6 +146,9 @@ void air780eg_on_nmea(air780eg_t *dev, air780eg_nmea_cb_t cb, void *user);
 
 /** @thread_safe: no @isr_safe: no */
 void air780eg_on_csq(air780eg_t *dev, air780eg_csq_cb_t cb, void *user);
+
+/** @thread_safe: no @isr_safe: no — a line ending in FAIL with no command pending */
+void air780eg_on_fail(air780eg_t *dev, air780eg_fail_cb_t cb, void *user);
 
 /* --- diagnostics --- */
 

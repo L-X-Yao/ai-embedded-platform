@@ -207,6 +207,141 @@ TEST(test_cmd_custom_expect)
     ASSERT_TRUE(strcmp(air780eg_get_prev_line(&dev), "862345678901234") == 0);
 }
 
+/* p.240: the OK only says the command was taken, CONNACK OK comes later. */
+TEST(test_plain_ok_does_not_end_a_wait_for_connack)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MCONNECT=1,60", "CONNACK OK", 9000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "CONNACK OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), "CONNACK OK") == 0);
+}
+
+/* p.240: a failed session reports ERROR after the OK, and it must not be lost. */
+TEST(test_error_after_the_ok_ends_the_wait)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MCONNECT=1,60", "CONNACK OK", 9000);
+    feed_line(&dev, "OK");
+    feed_line(&dev, "ERROR");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+}
+
+/* p.243 and p.247: OK then SUBACK. */
+TEST(test_plain_ok_does_not_end_a_wait_for_suback)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MSUB=\"mqtt/topic\",0", "SUBACK", 9000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "SUBACK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+}
+
+/* With expect OK or none, the final result is a line that is exactly OK: not
+ * the tail of CONNECT OK, which arrives after the command has ended anyway. */
+TEST(test_expect_ok_needs_the_whole_line)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CIPSTATUS", "OK", 1000);
+    feed_line(&dev, "STATE: CONNECT OK");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_prev_line(&dev), "STATE: CONNECT OK") == 0);
+}
+
+/* p.239: OK, then STATE:<state> and CONNECT FAIL. */
+TEST(test_connect_fail_ends_the_command)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+MIPSTART=\"a.b\",1883", "CONNECT OK", 9000);
+    feed_line(&dev, "OK");
+    feed_line(&dev, "STATE: IP INITIAL");
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    feed_line(&dev, "CONNECT FAIL");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+    ASSERT_TRUE(strcmp(air780eg_get_matched_line(&dev), "CONNECT FAIL") == 0);
+    ASSERT_TRUE(strcmp(air780eg_get_prev_line(&dev), "STATE: IP INITIAL") == 0);
+}
+
+/* p.155 and p.159: the multi-link forms carry the link number first. */
+TEST(test_fail_forms_of_the_manual_end_the_command)
+{
+    static const char *const fails[] = {
+        "7,CONNECT FAIL", "SEND FAIL", "2,SEND FAIL",
+    };
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    for (size_t i = 0; i < sizeof(fails) / sizeof(fails[0]); i++) {
+        ASSERT_EQ(AIR780EG_OK, air780eg_send_cmd(&dev, "AT+CIPSEND=5", "SEND OK", 9000));
+        feed_line(&dev, fails[i]);
+        ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+    }
+}
+
+/* p.155: CONNECT is the transparent-mode success, and it is inside CONNECT FAIL. */
+TEST(test_fail_line_wins_over_an_expect_inside_it)
+{
+    air780eg_t dev;
+    mock_reset();
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_send_cmd(&dev, "AT+CIPSTART=\"TCP\",\"a.b\",80", "CONNECT", 9000);
+    feed_line(&dev, "CONNECT FAIL");
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+}
+
+static int g_fail_count;
+static char g_fail_line[64];
+static void on_fail(void *user, const char *line)
+{
+    (void)user;
+    g_fail_count++;
+    strncpy(g_fail_line, line, sizeof(g_fail_line) - 1);
+}
+
+/* The URC can come after the command that caused it has ended. */
+TEST(test_fail_with_nothing_pending_reaches_the_callback)
+{
+    air780eg_t dev;
+    mock_reset();
+    g_fail_count = 0;
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_fail(&dev, on_fail, NULL);
+
+    air780eg_send_cmd(&dev, "AT+MIPSTART=\"a.b\",1883", NULL, 9000);
+    feed_line(&dev, "OK");
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+    feed_line(&dev, "CONNECT FAIL");
+    ASSERT_EQ(1, g_fail_count);
+    ASSERT_TRUE(strcmp(g_fail_line, "CONNECT FAIL") == 0);
+    ASSERT_EQ(AIR780EG_CMD_OK, air780eg_cmd_status(&dev));
+
+    /* while a command is pending the line ends it instead */
+    air780eg_send_cmd(&dev, "AT", NULL, 1000);
+    feed_line(&dev, "SEND FAIL");
+    ASSERT_EQ(1, g_fail_count);
+    ASSERT_EQ(AIR780EG_CMD_ERROR, air780eg_cmd_status(&dev));
+
+    /* no callback registered must be safe */
+    air780eg_on_fail(&dev, NULL, NULL);
+    feed_line(&dev, "SEND FAIL");
+    ASSERT_EQ(1, g_fail_count);
+}
+
 TEST(test_urc_mqtt_rx)
 {
     air780eg_t dev;
@@ -850,6 +985,14 @@ TEST_MAIN("air780eg")
     RUN(test_cmd_timeout);
     RUN(test_cmd_busy);
     RUN(test_cmd_custom_expect);
+    RUN(test_plain_ok_does_not_end_a_wait_for_connack);
+    RUN(test_error_after_the_ok_ends_the_wait);
+    RUN(test_plain_ok_does_not_end_a_wait_for_suback);
+    RUN(test_expect_ok_needs_the_whole_line);
+    RUN(test_connect_fail_ends_the_command);
+    RUN(test_fail_forms_of_the_manual_end_the_command);
+    RUN(test_fail_line_wins_over_an_expect_inside_it);
+    RUN(test_fail_with_nothing_pending_reaches_the_callback);
     RUN(test_urc_mqtt_rx);
     RUN(test_urc_mqtt_rx_manual_sample);
     RUN(test_urc_disconnect);
