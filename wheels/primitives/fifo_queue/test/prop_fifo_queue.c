@@ -104,19 +104,25 @@ PROPERTY(random_ops_no_corruption, 10000) {
     fifo_queue_init(&q, storage, 16, sizeof(uint32_t));
 
     unsigned ops = ARBI_RANGE(seed, 0, 200);
+    unsigned stored = 0;
     for (unsigned i = 0; i < ops; i++) {
         uint8_t op = ARBI_UINT8(seed) % 3;
         if (op <= 1) { /* push biased */
             uint32_t val = ARBI_UINT32(seed);
-            fifo_queue_push(&q, &val);
+            if (fifo_queue_push(&q, &val) == FIFO_QUEUE_OK) {
+                stored++;
+            }
         } else {
             uint32_t val;
-            fifo_queue_pop(&q, &val);
+            if (fifo_queue_pop(&q, &val) == FIFO_QUEUE_OK) {
+                stored--;
+            }
         }
 
-        PROP_ASSERT(fifo_queue_count(&q) <= 16);
-        PROP_ASSERT(q.head < q.capacity);
-        PROP_ASSERT(q.tail < q.capacity);
+        PROP_ASSERT(stored <= 16);
+        PROP_ASSERT(fifo_queue_count(&q) == stored);
+        PROP_ASSERT(q.head < 2U * q.capacity);
+        PROP_ASSERT(q.tail < 2U * q.capacity);
     }
 }
 

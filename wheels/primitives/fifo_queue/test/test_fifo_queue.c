@@ -260,6 +260,87 @@ TEST(test_zero_init_safety)
     ASSERT_EQ(FIFO_QUEUE_ERR_PARAM, fifo_queue_peek(&q, &out));
 }
 
+/* -- index laps -------------------------------------------------------- */
+
+/* Fill to capacity and take half out, again and again, until the indexes have
+ * gone round more than twice. Returns the number of wrong answers. */
+static long lap_errors(uint16_t *storage, uint16_t capacity)
+{
+    fifo_queue_t q;
+    long errors = 0;
+    uint32_t sent = 0;
+    uint32_t got = 0;
+    uint32_t target = 5U * capacity + 3U;
+    uint16_t step = (uint16_t)(capacity / 2U + 1U);
+
+    if (fifo_queue_init(&q, storage, capacity, sizeof(uint16_t)) != FIFO_QUEUE_OK) {
+        return -1;
+    }
+    while (got < target) {
+        while (!fifo_queue_is_full(&q)) {
+            uint16_t item = (uint16_t)sent;
+
+            if (fifo_queue_push(&q, &item) != FIFO_QUEUE_OK) {
+                return -1;
+            }
+            sent++;
+        }
+        uint16_t extra = 0;
+
+        errors += (fifo_queue_count(&q) != capacity);
+        errors += (fifo_queue_free(&q) != 0U);
+        errors += (fifo_queue_push(&q, &extra) != FIFO_QUEUE_ERR_FULL);
+
+        for (uint16_t i = 0; i < step; i++) {
+            uint16_t item = 0;
+
+            errors += (fifo_queue_pop(&q, &item) != FIFO_QUEUE_OK);
+            errors += (item != (uint16_t)got);
+            got++;
+        }
+        errors += (fifo_queue_count(&q) != (uint16_t)(capacity - step));
+    }
+    return errors;
+}
+
+TEST(test_all_of_capacity_is_usable_across_index_laps)
+{
+    static uint16_t storage[65535];
+    static const uint16_t sizes[] = {1, 2, 3, 8, 13, 32768, 65535};
+
+    for (unsigned i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        ASSERT_EQ(0, lap_errors(storage, sizes[i]));
+    }
+}
+
+TEST(test_clear_away_from_zero_empties_and_keeps_capacity)
+{
+    uint32_t storage[3];
+    fifo_queue_t q;
+    uint32_t item = 7;
+    uint32_t out = 0;
+
+    fifo_queue_init(&q, storage, 3, sizeof(uint32_t));
+    ASSERT_EQ(FIFO_QUEUE_OK, fifo_queue_push(&q, &item));
+    ASSERT_EQ(FIFO_QUEUE_OK, fifo_queue_push(&q, &item));
+    ASSERT_EQ(FIFO_QUEUE_OK, fifo_queue_pop(&q, &out));
+
+    fifo_queue_clear(&q);
+    ASSERT_TRUE(fifo_queue_is_empty(&q));
+    ASSERT_EQ(0, fifo_queue_count(&q));
+    ASSERT_EQ(3, fifo_queue_free(&q));
+    ASSERT_EQ(FIFO_QUEUE_ERR_EMPTY, fifo_queue_pop(&q, &out));
+
+    for (uint32_t i = 10; i < 13; i++) {
+        ASSERT_EQ(FIFO_QUEUE_OK, fifo_queue_push(&q, &i));
+    }
+    ASSERT_TRUE(fifo_queue_is_full(&q));
+    for (uint32_t i = 10; i < 13; i++) {
+        ASSERT_EQ(FIFO_QUEUE_OK, fifo_queue_pop(&q, &out));
+        ASSERT_EQ(i, out);
+    }
+}
+
 TEST_MAIN("fifo_queue")
     RUN(test_init_ok);
     RUN(test_init_null_params);
@@ -276,4 +357,6 @@ TEST_MAIN("fifo_queue")
     RUN(test_large_elements);
     RUN(test_interleaved_push_pop);
     RUN(test_zero_init_safety);
+    RUN(test_all_of_capacity_is_usable_across_index_laps);
+    RUN(test_clear_away_from_zero_empties_and_keeps_capacity);
 TEST_MAIN_END()

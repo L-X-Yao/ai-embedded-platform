@@ -28,14 +28,15 @@ typedef struct {
     uint8_t b;
 } test_elem_t;
 
-static void check_invariants(const fifo_queue_t *q) {
-    assert(q->head < q->capacity);
-    assert(q->tail < q->capacity);
-    assert(q->count <= q->capacity);
-    assert(fifo_queue_count(q) == q->count);
-    assert(fifo_queue_free(q) == q->capacity - q->count);
-    assert(fifo_queue_is_empty(q) == (q->count == 0));
-    assert(fifo_queue_is_full(q) == (q->count == q->capacity));
+/* stored comes from the return values, so it checks the indexes independently. */
+static void check_invariants(const fifo_queue_t *q, unsigned stored) {
+    assert(q->head < 2U * q->capacity);
+    assert(q->tail < 2U * q->capacity);
+    assert(stored <= q->capacity);
+    assert(fifo_queue_count(q) == stored);
+    assert(fifo_queue_free(q) == q->capacity - stored);
+    assert(fifo_queue_is_empty(q) == (stored == 0));
+    assert(fifo_queue_is_full(q) == (stored == q->capacity));
 }
 
 /* Proof 1: invariants hold after any sequence of push/pop/peek/clear */
@@ -46,7 +47,8 @@ void verify_invariants(void) {
     fifo_queue_err_t err = fifo_queue_init(&q, storage, Q_CAP,
                                            sizeof(test_elem_t));
     assert(err == FIFO_QUEUE_OK);
-    check_invariants(&q);
+    unsigned stored = 0;
+    check_invariants(&q, stored);
 
     unsigned ops = nondet_unsigned();
     __CPROVER_assume(ops <= UNWIND_BOUND);
@@ -56,12 +58,12 @@ void verify_invariants(void) {
         switch (op) {
         case 0: {
             test_elem_t item = { nondet_uint8(), nondet_uint8() };
-            fifo_queue_push(&q, &item);
+            if (fifo_queue_push(&q, &item) == FIFO_QUEUE_OK) { stored++; }
             break;
         }
         case 1: {
             test_elem_t item;
-            fifo_queue_pop(&q, &item);
+            if (fifo_queue_pop(&q, &item) == FIFO_QUEUE_OK) { stored--; }
             break;
         }
         case 2: {
@@ -71,10 +73,11 @@ void verify_invariants(void) {
         }
         case 3: {
             fifo_queue_clear(&q);
+            stored = 0;
             break;
         }
         }
-        check_invariants(&q);
+        check_invariants(&q, stored);
     }
 }
 
