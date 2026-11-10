@@ -26,6 +26,16 @@ static void build_server_response(uint8_t *pkt, uint8_t stratum, uint8_t mode,
     pkt[42] = (uint8_t)(tx_s >>  8); pkt[43] = (uint8_t)(tx_s);
 }
 
+/* Compute for a reply that answers the request: the server copied T1 back */
+static sntp_client_err_t compute_answered(sntp_response_t *resp,
+                                          const sntp_timestamp_t *t1,
+                                          const sntp_timestamp_t *t4,
+                                          sntp_result_t *out)
+{
+    resp->originate = *t1;
+    return sntp_client_compute(resp, t1, t4, out);
+}
+
 /* ─── build request tests ────────────────────────────────────── */
 
 TEST(test_build_request_ok)
@@ -230,7 +240,7 @@ TEST(test_compute_zero_offset)
     sntp_timestamp_t t1 = { .seconds = 100, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = 100, .fraction = 0 };
     sntp_result_t result;
-    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
+    ASSERT_EQ(compute_answered(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
     ASSERT_EQ(result.offset_ms, 0);
     ASSERT_EQ(result.round_trip_ms, 0);
 }
@@ -245,7 +255,7 @@ TEST(test_compute_positive_offset)
     sntp_timestamp_t t1 = { .seconds = 10, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = 10, .fraction = 0 };
     sntp_result_t result;
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.offset_ms, 2000);
     ASSERT_EQ(result.round_trip_ms, 0);
 }
@@ -260,7 +270,7 @@ TEST(test_compute_with_rtt)
     sntp_timestamp_t t1 = { .seconds = 10, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = 11, .fraction = 0 };
     sntp_result_t result;
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.offset_ms, 500);
     ASSERT_EQ(result.round_trip_ms, 1000);
 }
@@ -275,7 +285,7 @@ TEST(test_compute_unix_time)
     sntp_timestamp_t t1 = { .seconds = ntp_2024, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = ntp_2024, .fraction = 0 };
     sntp_result_t result;
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.unix_sec, 1700000000UL);
     ASSERT_TRUE(result.unix_ms >= 499 && result.unix_ms <= 500);
 }
@@ -363,7 +373,7 @@ TEST(test_compute_across_rollover)
     sntp_timestamp_t t1 = { .seconds = 0xFFFFFFFFu, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = 1, .fraction = 0 };
     sntp_result_t result;
-    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
+    ASSERT_EQ(compute_answered(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
     ASSERT_EQ(result.offset_ms, 1000);
     ASSERT_EQ(result.round_trip_ms, 2000);
     ASSERT_EQ(result.unix_sec, 2085978497u);
@@ -371,14 +381,14 @@ TEST(test_compute_across_rollover)
     /* Server past the wrap, client not: +5 s. */
     resp.receive.seconds = resp.transmit.seconds = 3;
     t1.seconds = t4.seconds = 0xFFFFFFFEu;
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.offset_ms, 5000);
     ASSERT_EQ(result.round_trip_ms, 0);
 
     /* Client past the wrap, server not: -5 s. */
     resp.receive.seconds = resp.transmit.seconds = 0xFFFFFFFEu;
     t1.seconds = t4.seconds = 3;
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.offset_ms, -5000);
     ASSERT_EQ(result.round_trip_ms, 0);
 
@@ -387,9 +397,92 @@ TEST(test_compute_across_rollover)
     resp.receive  = (sntp_timestamp_t){ .seconds = 0, .fraction = 0x80000000u };
     resp.transmit = (sntp_timestamp_t){ .seconds = 1, .fraction = 0 };
     t4 = (sntp_timestamp_t){ .seconds = 1, .fraction = 0x80000000u };
-    sntp_client_compute(&resp, &t1, &t4, &result);
+    compute_answered(&resp, &t1, &t4, &result);
     ASSERT_EQ(result.offset_ms, 250);
     ASSERT_EQ(result.round_trip_ms, 1500);
+}
+
+/* RFC 4330 section 5 check 3: the Originate Timestamp in the reply should match
+   the Transmit Timestamp of the request. Section 4: that is how a client tells a
+   legitimate reply from a replay. */
+TEST(test_compute_refuses_a_reply_to_some_other_request)
+{
+    sntp_response_t resp = {
+        .originate = { .seconds = 12345, .fraction = 0 },
+        .receive   = { .seconds = 3900001000u, .fraction = 0 },
+        .transmit  = { .seconds = 3900001000u, .fraction = 0 },
+    };
+    sntp_timestamp_t t1 = { .seconds = 3900000000u, .fraction = 0 };
+    sntp_timestamp_t t4 = { .seconds = 3900000000u, .fraction = 0 };
+    sntp_result_t result;
+    memset(&result, 0x5A, sizeof(result));
+    sntp_result_t untouched = result;
+
+    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result),
+              SNTP_CLIENT_ERR_ORIGINATE);
+    ASSERT_EQ(memcmp(&result, &untouched, sizeof(result)), 0);
+}
+
+TEST(test_compute_compares_the_fraction_as_well)
+{
+    sntp_response_t resp = {
+        .originate = { .seconds = 100, .fraction = 1 },
+        .receive   = { .seconds = 100, .fraction = 0 },
+        .transmit  = { .seconds = 100, .fraction = 0 },
+    };
+    sntp_timestamp_t t1 = { .seconds = 100, .fraction = 2 };
+    sntp_timestamp_t t4 = { .seconds = 100, .fraction = 3 };
+    sntp_result_t result;
+    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result),
+              SNTP_CLIENT_ERR_ORIGINATE);
+}
+
+/* A zero Originate proves nothing, and a forger could always send one */
+TEST(test_compute_refuses_a_zero_originate_for_a_real_request)
+{
+    sntp_response_t resp = {
+        .receive  = { .seconds = 100, .fraction = 0 },
+        .transmit = { .seconds = 100, .fraction = 0 },
+    };
+    sntp_timestamp_t t1 = { .seconds = 100, .fraction = 0 };
+    sntp_timestamp_t t4 = { .seconds = 100, .fraction = 0 };
+    sntp_result_t result;
+    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result),
+              SNTP_CLIENT_ERR_ORIGINATE);
+}
+
+TEST(test_whole_exchange_answers_its_own_request)
+{
+    sntp_timestamp_t t1 = { .seconds = 3900000000u, .fraction = 0x12345678u };
+    uint8_t request[SNTP_PACKET_SIZE];
+    ASSERT_EQ(sntp_client_build_request(request, sizeof(request), &t1),
+              SNTP_PACKET_SIZE);
+
+    /* Section 6: the server copies Transmit Timestamp to Originate Timestamp */
+    uint8_t reply[SNTP_PACKET_SIZE];
+    build_server_response(reply, 2, 4, 3900000000u, 0, 3900000001u, 3900000001u);
+    memcpy(&reply[24], &request[40], 8);
+
+    sntp_response_t resp;
+    ASSERT_EQ(sntp_client_parse_response(reply, sizeof(reply), &resp), SNTP_CLIENT_OK);
+    sntp_timestamp_t t4 = { .seconds = 3900000002u, .fraction = 0 };
+    sntp_result_t result;
+    ASSERT_EQ(sntp_client_compute(&resp, &t1, &t4, &result), SNTP_CLIENT_OK);
+}
+
+/* Section 6: a broadcast has no request, so its Originate Timestamp is 0 */
+TEST(test_compute_takes_a_broadcast_with_no_t1)
+{
+    uint8_t pkt[SNTP_PACKET_SIZE];
+    build_server_response(pkt, 1, 5, 0, 0, 0, 3900000001u);
+    sntp_response_t resp;
+    ASSERT_EQ(sntp_client_parse_response(pkt, sizeof(pkt), &resp), SNTP_CLIENT_OK);
+
+    sntp_timestamp_t none = { .seconds = 0, .fraction = 0 };
+    sntp_timestamp_t t4 = { .seconds = 3900000002u, .fraction = 0 };
+    sntp_result_t result;
+    ASSERT_EQ(sntp_client_compute(&resp, &none, &t4, &result), SNTP_CLIENT_OK);
+    ASSERT_EQ(result.unix_sec, 3900000001u - (uint32_t)SNTP_UNIX_OFFSET);
 }
 
 TEST(test_ntp_to_unix_null)
@@ -461,6 +554,11 @@ TEST_MAIN("sntp_client")
     RUN(test_ntp_to_unix_after_rollover);
     RUN(test_ntp_zero_timestamp_is_unavailable);
     RUN(test_compute_across_rollover);
+    RUN(test_compute_refuses_a_reply_to_some_other_request);
+    RUN(test_compute_compares_the_fraction_as_well);
+    RUN(test_compute_refuses_a_zero_originate_for_a_real_request);
+    RUN(test_whole_exchange_answers_its_own_request);
+    RUN(test_compute_takes_a_broadcast_with_no_t1);
     RUN(test_ntp_to_unix_null);
     RUN(test_unix_to_ntp_zero);
     RUN(test_parse_fuzz);

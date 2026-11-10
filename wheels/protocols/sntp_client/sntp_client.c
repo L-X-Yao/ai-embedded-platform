@@ -137,6 +137,12 @@ sntp_client_err_t sntp_client_compute(const sntp_response_t *resp,
     REQUIRE(out != NULL);
     if (!resp || !t1 || !t4 || !out) return SNTP_CLIENT_ERR_PARAM;
 
+    /* RFC 4330 section 5 check 3: the server copies the request's Transmit
+     * Timestamp here, so a stale or forged reply shows up as a difference. */
+    if (resp->originate.seconds != t1->seconds ||
+        resp->originate.fraction != t1->fraction)
+        return SNTP_CLIENT_ERR_ORIGINATE;
+
     /* offset = ((T2 - T1) + (T3 - T4)) / 2 */
     out->offset_ms = (ts_diff_ms(&resp->receive, t1) +
                       ts_diff_ms(&resp->transmit, t4)) / 2;

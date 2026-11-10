@@ -65,6 +65,14 @@ static void check_packet(const uint8_t *data, fuzz_input_t *in) {
     sntp_timestamp_t t1 = read_timestamp(in);
     sntp_timestamp_t t4 = read_timestamp(in);
     sntp_result_t result;
+
+    bool same = t1.seconds == resp.originate.seconds &&
+                t1.fraction == resp.originate.fraction;
+    sntp_client_err_t err = sntp_client_compute(&resp, &t1, &t4, &result);
+    if (err != (same ? SNTP_CLIENT_OK : SNTP_CLIENT_ERR_ORIGINATE)) __builtin_trap();
+
+    // As the reply to this request, so the sums run whatever t1 was.
+    resp.originate = t1;
     if (sntp_client_compute(&resp, &t1, &t4, &result) != SNTP_CLIENT_OK) __builtin_trap();
     if (result.unix_ms >= 1000) __builtin_trap();
 

@@ -109,6 +109,7 @@ PROPERTY(equal_timestamps_zero_offset, 5000) {
     sntp_timestamp_t t1 = { .seconds = s, .fraction = 0 };
     sntp_timestamp_t t4 = { .seconds = s, .fraction = 0 };
     sntp_result_t result;
+    resp.originate = t1;  /* the server copies T1 into its reply */
     rc = sntp_client_compute(&resp, &t1, &t4, &result);
     PROP_ASSERT_EQ(rc, SNTP_CLIENT_OK);
     PROP_ASSERT_EQ(result.offset_ms, 0);

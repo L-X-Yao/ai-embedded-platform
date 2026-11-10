@@ -40,6 +40,7 @@ typedef enum {
     SNTP_CLIENT_ERR_UNSYNC   = -5,  /* server has no good time to give: LI 3,
                                      * stratum above 15 or zero Transmit Timestamp */
     SNTP_CLIENT_ERR_VERSION  = -6,  /* version other than 3 or 4 in response */
+    SNTP_CLIENT_ERR_ORIGINATE = -7, /* reply does not answer this request */
 } sntp_client_err_t;
 
 /* ---------- NTP timestamp (64-bit: 32 seconds + 32 fraction) ---------- */
@@ -78,7 +79,12 @@ typedef struct {
  * Build a 48-byte SNTP request packet.
  * @param buf        Output buffer (must be >= SNTP_PACKET_SIZE)
  * @param buf_size   Buffer capacity
- * @param tx_time    Client transmit timestamp (from local clock, or zero)
+ * @param tx_time    Client transmit timestamp from the local clock, which need
+ *                   not be synchronized. Pass the t1 you will give
+ *                   sntp_client_compute(): the server copies it into its reply,
+ *                   and that is the only proof the reply answers this request.
+ *                   With NULL or zero, compute refuses the reply, and only the
+ *                   server's transmit time can be read from it.
  * @return SNTP_PACKET_SIZE on success, negative on error
  * @thread_safe: yes (pure) @isr_safe: yes
  */
@@ -99,9 +105,15 @@ sntp_client_err_t sntp_client_parse_response(const uint8_t *data, size_t len,
 /**
  * Compute clock offset and round-trip delay.
  * @param resp   Parsed server response (contains T2, T3)
- * @param t1     Client originate timestamp (when request was sent)
+ * @param t1     Client originate timestamp (when request was sent), the value
+ *               given to sntp_client_build_request()
  * @param t4     Client destination timestamp (when response arrived)
  * @param out    Result with offset, round_trip, and unix time
+ *
+ * Returns SNTP_CLIENT_ERR_ORIGINATE, and leaves out alone, unless resp->originate
+ * equals t1 (RFC 4330 section 5): the reply is then stale, forged or meant for
+ * another request. A broadcast has no request and carries zero, so it takes a
+ * zero t1, and then only unix_sec and unix_ms mean anything.
  *
  * Differences are taken modulo 2^32 seconds (RFC 4330), so they hold across
  * the 2036 rollover as long as the clocks agree to within 68 years.
