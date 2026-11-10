@@ -63,20 +63,22 @@ PROPERTY(no_overflow, 50000) {
     ring_buffer_init(&rb, storage, BUF_CAP);
 
     unsigned ops = ARBI_RANGE(seed, 0, 200);
+    unsigned stored = 0;
     for (unsigned i = 0; i < ops; i++) {
         uint8_t data[8];
         uint16_t n = (uint16_t)ARBI_RANGE(seed, 0, 8);
         ARBI_FILL(seed, data, n);
 
         if (ARBI_UINT8(seed) % 2 == 0) {
-            ring_buffer_write(&rb, data, n);
+            stored += ring_buffer_write(&rb, data, n);
         } else {
-            ring_buffer_read(&rb, data, n);
+            stored -= ring_buffer_read(&rb, data, n);
         }
 
-        PROP_ASSERT(rb.head < rb.capacity);
-        PROP_ASSERT(rb.tail < rb.capacity);
-        PROP_ASSERT(rb.count <= rb.capacity);
+        PROP_ASSERT(rb.head < 2U * rb.capacity);
+        PROP_ASSERT(rb.tail < 2U * rb.capacity);
+        PROP_ASSERT(stored <= rb.capacity);
+        PROP_ASSERT(ring_buffer_count(&rb) == stored);
     }
 }
 

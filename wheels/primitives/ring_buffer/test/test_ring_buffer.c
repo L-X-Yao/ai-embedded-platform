@@ -486,6 +486,83 @@ TEST(test_zero_init_skip)
     ASSERT_EQ(ring_buffer_count(&rb), 0);
 }
 
+/* -- index laps -------------------------------------------------------- */
+
+/* Fill to capacity and take half out, again and again, until the indexes have
+ * gone round more than twice. Returns the number of wrong answers. */
+static long lap_errors(uint8_t *storage, uint16_t capacity)
+{
+    ring_buffer_t rb;
+    long errors = 0;
+    uint32_t sent = 0;
+    uint32_t got = 0;
+    uint32_t target = 5U * capacity + 3U;
+    uint16_t step = (uint16_t)(capacity / 2U + 1U);
+
+    if (ring_buffer_init(&rb, storage, capacity) != RING_BUFFER_OK) {
+        return -1;
+    }
+    while (got < target) {
+        while (!ring_buffer_is_full(&rb)) {
+            uint8_t byte = (uint8_t)sent;
+
+            if (ring_buffer_write(&rb, &byte, 1) != 1U) {
+                return -1;
+            }
+            sent++;
+        }
+        uint8_t extra = 0;
+
+        errors += (ring_buffer_count(&rb) != capacity);
+        errors += (ring_buffer_free(&rb) != 0U);
+        errors += (ring_buffer_write(&rb, &extra, 1) != 0U);
+
+        for (uint16_t i = 0; i < step; i++) {
+            uint8_t byte = 0;
+
+            errors += (ring_buffer_read(&rb, &byte, 1) != 1U);
+            errors += (byte != (uint8_t)got);
+            got++;
+        }
+        errors += (ring_buffer_count(&rb) != (uint16_t)(capacity - step));
+    }
+    return errors;
+}
+
+TEST(test_all_of_capacity_is_usable_across_index_laps)
+{
+    static uint8_t storage[65535];
+    static const uint16_t sizes[] = {1, 2, 3, 8, 251, 32768, 65535};
+
+    for (unsigned i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        ASSERT_EQ(0, lap_errors(storage, sizes[i]));
+    }
+}
+
+TEST(test_reset_away_from_zero_empties_and_keeps_capacity)
+{
+    uint8_t storage[5];
+    ring_buffer_t rb;
+    const uint8_t first[3] = {1, 2, 3};
+    const uint8_t second[5] = {5, 6, 7, 8, 9};
+    uint8_t out[5];
+
+    ring_buffer_init(&rb, storage, 5);
+    ASSERT_EQ(3, ring_buffer_write(&rb, first, 3));
+    ASSERT_EQ(2, ring_buffer_read(&rb, out, 2));
+
+    ring_buffer_reset(&rb);
+    ASSERT_TRUE(ring_buffer_is_empty(&rb));
+    ASSERT_EQ(0, ring_buffer_count(&rb));
+    ASSERT_EQ(5, ring_buffer_free(&rb));
+    ASSERT_EQ(0, ring_buffer_read(&rb, out, 5));
+
+    ASSERT_EQ(5, ring_buffer_write(&rb, second, 5));
+    ASSERT_TRUE(ring_buffer_is_full(&rb));
+    ASSERT_EQ(5, ring_buffer_read(&rb, out, 5));
+    ASSERT_MEMEQ_N(second, out, 5);
+}
+
 TEST_MAIN("ring_buffer")
     RUN(test_zero_init_skip);
     RUN(test_init_valid);
@@ -518,4 +595,6 @@ TEST_MAIN("ring_buffer")
     RUN(test_free_null_rb);
     RUN(test_peek_exact_bytes);
     RUN(test_zero_init_safety);
+    RUN(test_all_of_capacity_is_usable_across_index_laps);
+    RUN(test_reset_away_from_zero_empties_and_keeps_capacity);
 TEST_MAIN_END()

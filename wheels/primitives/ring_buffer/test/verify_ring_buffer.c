@@ -26,14 +26,15 @@ extern uint8_t  nondet_uint8(void);
 extern uint16_t nondet_uint16(void);
 extern unsigned  nondet_unsigned(void);
 
-static void check_invariants(const ring_buffer_t *rb) {
-    assert(rb->head < rb->capacity);
-    assert(rb->tail < rb->capacity);
-    assert(rb->count <= rb->capacity);
-    assert(ring_buffer_count(rb) == rb->count);
-    assert(ring_buffer_free(rb) == rb->capacity - rb->count);
-    assert(ring_buffer_is_empty(rb) == (rb->count == 0));
-    assert(ring_buffer_is_full(rb) == (rb->count == rb->capacity));
+/* stored comes from the return values, so it checks the indexes independently. */
+static void check_invariants(const ring_buffer_t *rb, unsigned stored) {
+    assert(rb->head < 2U * rb->capacity);
+    assert(rb->tail < 2U * rb->capacity);
+    assert(stored <= rb->capacity);
+    assert(ring_buffer_count(rb) == stored);
+    assert(ring_buffer_free(rb) == rb->capacity - stored);
+    assert(ring_buffer_is_empty(rb) == (stored == 0));
+    assert(ring_buffer_is_full(rb) == (stored == rb->capacity));
 }
 
 /* Proof 1: invariants hold after any sequence of operations */
@@ -43,7 +44,8 @@ void verify_invariants_all_ops(void) {
 
     ring_buffer_err_t err = ring_buffer_init(&rb, storage, BUF_CAP);
     assert(err == RING_BUFFER_OK);
-    check_invariants(&rb);
+    unsigned stored = 0;
+    check_invariants(&rb, stored);
 
     unsigned ops = nondet_unsigned();
     __CPROVER_assume(ops <= UNWIND_BOUND);
@@ -53,33 +55,33 @@ void verify_invariants_all_ops(void) {
         switch (op) {
         case 0: {
             uint8_t data = nondet_uint8();
-            ring_buffer_write(&rb, &data, 1);
+            stored += ring_buffer_write(&rb, &data, 1);
             break;
         }
         case 1: {
             uint8_t data;
-            ring_buffer_read(&rb, &data, 1);
+            stored -= ring_buffer_read(&rb, &data, 1);
             break;
         }
         case 2: {
             uint8_t data[4];
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            ring_buffer_write(&rb, data, n);
+            stored += ring_buffer_write(&rb, data, n);
             break;
         }
         case 3: {
             uint8_t data[4];
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            ring_buffer_read(&rb, data, n);
+            stored -= ring_buffer_read(&rb, data, n);
             break;
         }
         case 4: {
             uint16_t n = (uint16_t)(nondet_uint8() % 5);
-            ring_buffer_skip(&rb, n);
+            stored -= ring_buffer_skip(&rb, n);
             break;
         }
         }
-        check_invariants(&rb);
+        check_invariants(&rb, stored);
     }
 }
 
