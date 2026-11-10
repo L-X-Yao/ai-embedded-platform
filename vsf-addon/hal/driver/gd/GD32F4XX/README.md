@@ -92,5 +92,4 @@ vendor 库来源：GigaDevice SDK（CMSIS 头文件和外设库）。
 
 - GD32F405RGT6
 - CI cross-compile: gcc-arm-none-eabi 13.x
-- HIL 验证: GD32F405 上跑 600s soak，0 watchdog reset (2026-04-26)
-- 已验证外设: SPI1, I2C1, 软件 I2C, USART0/1, GPIO, FMC
+- 板上验证：无，见 Status
