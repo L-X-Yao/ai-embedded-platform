@@ -188,6 +188,144 @@ TEST(test_readd_after_expire)
     ASSERT_EQ(cb_count, 2);
 }
 
+/* ---- add and cancel from inside a callback ------------------------- */
+
+typedef struct {
+    timer_wheel_t *w;
+    uint32_t       id;
+    uint32_t       ticks;
+} rearm_t;
+
+/* A callback that starts another timer running test_cb. */
+static void add_from_cb(void *ctx)
+{
+    rearm_t *r = ctx;
+    timer_wheel_add(r->w, r->id, r->ticks, test_cb, NULL);
+}
+
+/* A callback that cancels another timer, then starts it again. */
+static void cancel_and_add_from_cb(void *ctx)
+{
+    rearm_t *r = ctx;
+    timer_wheel_cancel(r->w, r->id);
+    timer_wheel_add(r->w, r->id, r->ticks, test_cb, NULL);
+}
+
+/* A callback that cancels another timer. */
+static void cancel_from_cb(void *ctx)
+{
+    rearm_t *r = ctx;
+    timer_wheel_cancel(r->w, r->id);
+}
+
+/* A callback that starts itself again. */
+static void periodic_cb(void *ctx)
+{
+    rearm_t *r = ctx;
+    cb_count++;
+    timer_wheel_add(r->w, r->id, r->ticks, periodic_cb, r);
+}
+
+/* The tick number, counting from 1, on which test_cb first ran; 0 if never. */
+static uint32_t tick_of_first_fire(timer_wheel_t *w, uint32_t limit)
+{
+    for (uint32_t t = 1; t <= limit; t++) {
+        timer_wheel_tick(w);
+        if (cb_count > 0) {
+            return t;
+        }
+    }
+    return 0;
+}
+
+TEST(test_add_in_cb_full_revolution_higher_id)
+{
+    /* id 0 fires at tick 1 and adds id 1 for 8 ticks: 1 + 8 = 9. Slot
+     * (pos + 8) % 8 is the one being scanned, and id 1 is still ahead. */
+    setup();
+    rearm_t r = { &tw, 1, 8 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, add_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 9);
+}
+
+TEST(test_add_in_cb_full_revolution_lower_id)
+{
+    setup();
+    rearm_t r = { &tw, 0, 8 };
+    ASSERT_EQ(timer_wheel_add(&tw, 1, 1, add_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 9);
+}
+
+TEST(test_add_in_cb_several_revolutions)
+{
+    /* 1 + 24 = 25: the scan under way must not count as a revolution. */
+    setup();
+    rearm_t r = { &tw, 1, 24 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, add_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 25);
+}
+
+TEST(test_add_in_cb_single_slot_wheel)
+{
+    /* Every timer lives in the one slot: 1 + 8 = 9. */
+    timer_wheel_t        w;
+    timer_wheel_slot_t   one_slot[1];
+    setup();
+    ASSERT_EQ(timer_wheel_init(&w, one_slot, 1, timers, MAX_TIMERS),
+              TIMER_WHEEL_OK);
+
+    rearm_t r = { &w, 1, 8 };
+    ASSERT_EQ(timer_wheel_add(&w, 0, 1, add_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(tick_of_first_fire(&w, 40), 9);
+}
+
+TEST(test_add_in_cb_other_slot)
+{
+    /* 1 + 3 = 4, in a slot the scan is not on. */
+    setup();
+    rearm_t r = { &tw, 1, 3 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, add_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 4);
+}
+
+TEST(test_readd_self_in_cb_stays_periodic)
+{
+    /* Fires at ticks 1, 9, 17 and 25. */
+    setup();
+    rearm_t r = { &tw, 0, 8 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, periodic_cb, &r), TIMER_WHEEL_OK);
+
+    for (uint32_t t = 1; t <= 25; t++) {
+        timer_wheel_tick(&tw);
+        ASSERT_EQ((uint32_t)cb_count, (t + 7) / 8);
+    }
+}
+
+TEST(test_cancel_in_cb_stops_a_timer_due_on_the_same_tick)
+{
+    setup();
+    rearm_t r = { &tw, 1, 0 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, cancel_from_cb, &r), TIMER_WHEEL_OK);
+    ASSERT_EQ(timer_wheel_add(&tw, 1, 1, test_cb, NULL), TIMER_WHEEL_OK);
+
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 0);
+    ASSERT_EQ(tw.count, 0);
+}
+
+TEST(test_cancel_and_add_in_cb_restarts_a_timer_due_on_the_same_tick)
+{
+    /* id 1 was due at tick 1, but the callback restarts it first: 1 + 8. */
+    setup();
+    rearm_t r = { &tw, 1, 8 };
+    ASSERT_EQ(timer_wheel_add(&tw, 0, 1, cancel_and_add_from_cb, &r),
+              TIMER_WHEEL_OK);
+    ASSERT_EQ(timer_wheel_add(&tw, 1, 1, test_cb2, NULL), TIMER_WHEEL_OK);
+
+    ASSERT_EQ(tick_of_first_fire(&tw, 40), 9);
+    ASSERT_EQ(cb2_count, 0);
+    ASSERT_EQ(tw.count, 0);
+}
+
 TEST(test_readd_after_cancel)
 {
     setup();
@@ -360,6 +498,14 @@ TEST_MAIN("timer_wheel")
     RUN(test_multiple_same_slot);
     RUN(test_wraparound);
     RUN(test_readd_after_expire);
+    RUN(test_add_in_cb_full_revolution_higher_id);
+    RUN(test_add_in_cb_full_revolution_lower_id);
+    RUN(test_add_in_cb_several_revolutions);
+    RUN(test_add_in_cb_single_slot_wheel);
+    RUN(test_add_in_cb_other_slot);
+    RUN(test_readd_self_in_cb_stays_periodic);
+    RUN(test_cancel_in_cb_stops_a_timer_due_on_the_same_tick);
+    RUN(test_cancel_and_add_in_cb_restarts_a_timer_due_on_the_same_tick);
     RUN(test_readd_after_cancel);
     RUN(test_tick_empty);
     RUN(test_max_timers);

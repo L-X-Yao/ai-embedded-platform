@@ -65,7 +65,8 @@ typedef enum {
  * Called from timer_wheel_tick() context. Keep short, do not call
  * timer_wheel_tick() from within the callback (re-entrancy is not supported).
  * Calling timer_wheel_add() / timer_wheel_cancel() from inside the callback
- * is allowed.
+ * is allowed. A timer added there waits its full delay from this tick,
+ * whatever its id. Cancelling a timer due on this same tick stops it.
  */
 typedef void (*timer_wheel_cb_t)(void *ctx);
 
@@ -79,6 +80,7 @@ typedef struct {
     timer_wheel_cb_t  callback;          /* NULL means slot is free       */
     void             *ctx;
     volatile uint8_t  active;            /* set last, cleared first */
+    bool              due;               /* expires in the tick under way  */
 } timer_wheel_entry_t;
 
 typedef struct {

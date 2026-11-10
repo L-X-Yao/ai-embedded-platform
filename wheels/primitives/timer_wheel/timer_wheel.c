@@ -74,6 +74,7 @@ timer_wheel_err_t timer_wheel_add(timer_wheel_t *tw,
     e->slot             = target_slot;
     e->callback         = callback;
     e->ctx              = ctx;
+    e->due              = false;
     TIMER_WHEEL_BARRIER(); /* the fields are in place before a tick can use them */
     e->active           = 1U;
 
@@ -119,12 +120,16 @@ void timer_wheel_tick(timer_wheel_t *tw)
 
     tw->current_pos = (tw->current_pos + 1) % tw->num_slots;
 
-    uint32_t slot = tw->current_pos;
+    uint32_t slot    = tw->current_pos;
+    bool     any_due = false;
 
     /*
      * Scan all timer entries that belong to this slot.
      * For small max_timers (typical embedded use), a linear scan is
      * fast and avoids the complexity of per-slot linked lists.
+     *
+     * No callback runs in this pass, so what is due is settled before any
+     * callback can add a timer to the slot being scanned.
      */
     for (uint32_t i = 0; i < tw->max_timers; i++)
     {
@@ -147,11 +152,34 @@ void timer_wheel_tick(timer_wheel_t *tw)
             continue;
         }
 
-        /* Timer expired — fire callback, then deactivate */
+        e->due  = true;
+        any_due = true;
+    }
+
+    if (!any_due)
+    {
+        return;
+    }
+
+    /*
+     * Fire what is due. A callback may cancel an entry here, which clears
+     * active, or add one, which clears due: either way it does not fire.
+     */
+    for (uint32_t i = 0; i < tw->max_timers; i++)
+    {
+        timer_wheel_entry_t *e = &tw->timers[i];
+
+        if (!e->active || !e->due)
+        {
+            continue;
+        }
+
+        /* Timer expired — deactivate, then fire callback */
         timer_wheel_cb_t cb  = e->callback;
         void            *ctx = e->ctx;
 
         e->active   = 0U;
+        e->due      = false;
         e->callback = NULL;
         tw->count--;
 
