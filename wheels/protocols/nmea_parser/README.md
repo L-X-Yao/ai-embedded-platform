@@ -49,7 +49,8 @@ No compile-time configuration needed.
 ## Known issues
 
 - Only handles GGA, RMC, GSA. Other sentence types (VTG, GLL, ZDA) return `NMEA_PARSER_ERR_UNKNOWN`.
-- Coordinate parsing uses single-precision float (~7 significant digits ≈ ~1cm at equator). Sufficient for consumer GNSS.
+- Coordinates are single-precision floats in degrees, so they move in steps of about 0.85 m in latitude
+  and up to 1.7 m in longitude (2^-17 and 2^-16 degree). That is enough for consumer GNSS, not for RTK.
 - Year field uses 80-threshold: YY≥80 → 19XX, YY<80 → 20XX (standard NMEA convention).
 - `nmea_parser_parse()` verifies the checksum itself and returns `NMEA_PARSER_ERR_CHECKSUM` on a mismatch, so a sentence without a valid `*HH` is refused.
 
