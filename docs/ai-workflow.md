@@ -474,7 +474,7 @@ AI 自己定 API 结构 = 长期风格漂移。**必须等人拍板**。
 | `tooling/wheel/new_wheel.sh` | Wheel 脚手架生成器 | `--layer`, `--vendor` |
 | `tooling/session/bootstrap.sh` | AI 会话上下文初始化（替代 5-8 个 tool call） | `--short`（仅 git 状态） |
 | `tooling/wheel/wheel_promote.sh` | Wheel 阶段升级（draft→candidate→stable） | `<wheel-path>` |
-| `tooling/audit/audit_wheels.py` | CI 一致性审计（63 项检查） | `--graph`, `--quiet`, `--json` |
+| `tooling/audit/audit_wheels.py` | CI 一致性审计（63 项检查：每个 wheel 60 项，仓库级 3 项） | `--graph`, `--quiet`, `--json` |
 | `tooling/audit/arm_size_audit.sh` | ARM 交叉编译体积报告 | `--csv`, `--markdown` |
 | `tooling/ci/update_wheel_inventory.sh` | 自动更新 CLAUDE.md wheel 计数 | `--apply` |
 | `tooling/wheel/release.sh` | 更新 CHANGELOG（tag 用 `git tag` 手动打） | `--list`, `--current`, `--dry-run` |

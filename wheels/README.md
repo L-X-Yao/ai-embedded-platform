@@ -13,7 +13,7 @@ HAL callbacks.
 | L3 Modules | `modules/` | 20 | Higher-level application modules |
 
 All components are MIT-licensed, tested on host (gcc/clang), and
-verified by a 63-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
+verified by a 60-check automated audit. See [wheel-contract.md](../docs/wheel-contract.md)
 for quality criteria.
 
 **Limited** in a row below means the component's README or
