@@ -294,6 +294,52 @@ TEST(test_powercut_partial_sector_every_push)  { sweep(14u, 0u); }
 TEST(test_powercut_partial_sector_interval_3)  { sweep(14u, 3u); }
 TEST(test_powercut_partial_sector_interval_16) { sweep(14u, 16u); }
 
+/* No cut at all, just resets every few pushes: the ring must keep its place. */
+static void reset_storm(uint32_t total_slots, uint16_t interval, uint32_t every)
+{
+    const flash_ring_cfg_t cfg = {
+        .slot_size = SLOT, .total_slots = total_slots, .sector_size = SECTOR,
+        .header_addr = HDR_ADDR, .data_start_addr = DATA_ADDR,
+        .persist_interval = interval,
+    };
+    memset(g_flash, 0xFF, sizeof(g_flash));
+    g_ops = 0;
+    g_cut_at = -1;
+    g_dead = false;
+    g_overprogram = 0;
+
+    script_t sc = { .next_seq = 1u, .acked = 0u, .popped = 0u };
+    flash_ring_t ring;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_io, &cfg));
+    uint8_t f[SLOT];
+    for (uint32_t i = 0; i < 6u * total_slots; i++) {
+        make_frame(f, sc.next_seq);
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, f, SLOT));
+        sc.acked = sc.next_seq++;
+        if ((i + 1u) % every == 0u) {
+            ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_io, &cfg));
+        }
+    }
+    ASSERT_EQ(0, g_overprogram);
+    check_ring(&ring, &sc, total_slots - 2u * SPS, "reset storm");
+}
+
+TEST(test_reset_storms)
+{
+    static const uint16_t intervals[] = { 1u, 3u, 8u, 12u, 16u, 0xFFFFu };
+    for (uint32_t k = 0; k < sizeof(intervals) / sizeof(intervals[0]); k++) {
+        for (uint32_t every = 1u; every <= 20u; every++) {
+            reset_storm(16u, intervals[k], every);
+            reset_storm(14u, intervals[k], every);
+            if (tests_fail > 0) {
+                printf("  failed at interval %u, reset every %u\n",
+                       (unsigned)intervals[k], (unsigned)every);
+                return;
+            }
+        }
+    }
+}
+
 /* The sweep must actually have cut, and hit the header window too. */
 TEST(test_powercut_sweep_ran)
 {
@@ -310,4 +356,5 @@ TEST_MAIN("flash_ring power cuts")
     RUN(test_powercut_partial_sector_interval_3);
     RUN(test_powercut_partial_sector_interval_16);
     RUN(test_powercut_sweep_ran);
+    RUN(test_reset_storms);
 TEST_MAIN_END()

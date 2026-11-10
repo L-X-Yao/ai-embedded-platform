@@ -21,6 +21,7 @@ static bool g_fail_erase;
 static bool g_fail_write;
 static bool g_fail_read;
 static int g_fail_read_after;   /* fail reads after this many, -1 = never */
+static bool g_write_lands_then_fails;   /* data goes in, the call says no */
 static int g_overprogram;       /* bytes programmed over cells not erased */
 #define MOCK_ERASE_LOG 512
 static uint32_t g_erase_log[MOCK_ERASE_LOG];
@@ -35,6 +36,7 @@ static void mock_flash_reset(void)
     g_fail_write = false;
     g_fail_read = false;
     g_fail_read_after = -1;
+    g_write_lands_then_fails = false;
     g_overprogram = 0;
 }
 
@@ -61,7 +63,7 @@ static int mock_write(void *ctx, uint32_t addr, const uint8_t *data, uint16_t le
         if (g_flash[addr + i] != 0xFF) g_overprogram++;
         g_flash[addr + i] &= data[i];
     }
-    return 0;
+    return g_write_lands_then_fails ? -1 : 0;
 }
 
 static int mock_read(void *ctx, uint32_t addr, uint8_t *buf, uint16_t len)
@@ -883,6 +885,89 @@ TEST(test_header_is_flushed_before_the_writer_laps_it)
     ASSERT_EQ(0, g_overprogram);
 }
 
+/*
+ * Resets more often than persist_interval: no push ever reaches the interval,
+ * so a counter that starts again at each init never writes the header. The
+ * walk has to count the pushes it finds, or the writer laps the stored position
+ * and the ring loses its place.
+ */
+TEST(test_resets_more_often_than_the_interval)
+{
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.total_slots = 3u * MOCK_SLOTS_PER_SECTOR;
+    cfg.persist_interval = 12;
+
+    uint8_t frame[MOCK_SLOT_SIZE];
+    memset(frame, 0x3E, sizeof(frame));
+    uint32_t pushed = 0;
+    for (uint32_t boot = 0; boot < 60u; boot++) {
+        flash_ring_t ring;
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &cfg));
+        ASSERT_EQ(pushed % cfg.total_slots, ring.write_idx);
+        for (int i = 0; i < 8; i++) {
+            ASSERT_EQ(FLASH_RING_OK,
+                      flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+            pushed++;
+        }
+    }
+    ASSERT_EQ(0, g_overprogram);
+}
+
+/*
+ * OK from push means the frame is stored. A header write that fails afterwards
+ * only leaves the header older, and the next operation tries again. Reporting
+ * it as a failed push makes a caller store the same frame twice.
+ */
+TEST(test_push_is_ok_when_only_the_header_write_fails)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 3;
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x71};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+
+    g_fail_erase = true;                /* the third push wants the header */
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(3u, flash_ring_count(&ring));
+
+    /* Still due, so the very next operation tries again */
+    int before = g_erase_count;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    ASSERT_EQ(before + 1, g_erase_count);
+    g_fail_erase = false;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    ASSERT_EQ(0, ring.since_flush);
+}
+
+/* The counter must not wrap past the interval while the header keeps failing. */
+TEST(test_flush_stays_due_at_the_largest_interval)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_cfg_t cfg = g_mock_cfg;
+    cfg.persist_interval = 0xFFFF;
+    cfg.total_slots = 0x20000u;         /* the limit from the ring size is higher */
+    /* init only reads and erases near the start, so the mock is big enough */
+    flash_ring_init(&ring, &g_mock_io, &cfg);
+    ring.since_flush = 0xFFFE;
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x72};
+    g_fail_erase = true;
+    for (int i = 0; i < 3; i++) {
+        int before = g_erase_count;
+        ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+        if (i > 0) {
+            ASSERT_EQ(before + 1, g_erase_count);
+        }
+    }
+    ASSERT_EQ(0xFFFF, ring.since_flush);
+}
+
 /* An all-0xFF frame looks blank on its own. Frames after it must still count. */
 TEST(test_reset_walks_past_an_all_ff_frame)
 {
@@ -1077,6 +1162,9 @@ TEST_MAIN("flash_ring")
     RUN(test_reset_moves_read_idx_out_of_an_erased_sector);
     RUN(test_reset_after_a_cut_between_erase_and_program);
     RUN(test_header_is_flushed_before_the_writer_laps_it);
+    RUN(test_resets_more_often_than_the_interval);
+    RUN(test_push_is_ok_when_only_the_header_write_fails);
+    RUN(test_flush_stays_due_at_the_largest_interval);
     RUN(test_reset_walks_past_an_all_ff_frame);
     RUN(test_reset_of_a_ring_with_no_blank_slot);
     RUN(test_reset_of_a_ring_with_no_blank_slot_mid_sector);

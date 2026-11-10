@@ -95,6 +95,15 @@ static void drop_next_sector(flash_ring_t *ring)
     }
 }
 
+/* One more change the header on flash does not show. It must not wrap: a
+ * flush that keeps failing has to stay due. */
+static void count_unflushed(flash_ring_t *ring)
+{
+    if (ring->since_flush < UINT16_MAX) {
+        ring->since_flush++;
+    }
+}
+
 /* The index step of a push, shared with init so the two cannot disagree. */
 static void advance_write(flash_ring_t *ring)
 {
@@ -103,6 +112,7 @@ static void advance_write(flash_ring_t *ring)
     }
     ring->write_idx = (ring->write_idx + 1u) % ring->cfg.total_slots;
     ring->frame_count++;
+    count_unflushed(ring);
 }
 
 /*
@@ -156,7 +166,9 @@ static flash_ring_err_t tail_blank(const flash_ring_t *ring, uint32_t idx,
 
 /*
  * The header is up to persist_interval pushes old. Walk forward over what was
- * written since, replaying each push, until the rule above holds again.
+ * written since, replaying each push, until the rule above holds again. Each
+ * step counts towards the next flush, so a ring that resets more often than the
+ * interval still rewrites its header in time.
  */
 static flash_ring_err_t recover_write_pos(flash_ring_t *ring)
 {
@@ -309,11 +321,12 @@ flash_ring_err_t flash_ring_push(flash_ring_t *ring,
     }
 
     advance_write(ring);
-    ring->since_flush++;
 
-    /* Auto-persist header at configured interval */
+    /* Auto-persist header at configured interval. The frame is stored: a
+     * failed flush only leaves the header older and stays due, so report OK
+     * rather than have the caller store the frame twice. */
     if (flush_due(ring)) {
-        return flush_header(ring);
+        (void)flush_header(ring);
     }
 
     return FLASH_RING_OK;
@@ -363,10 +376,11 @@ flash_ring_err_t flash_ring_pop(flash_ring_t *ring)
     }
 
     ring->read_idx = (ring->read_idx + 1) % ring->cfg.total_slots;
-    ring->since_flush++;
+    count_unflushed(ring);
 
+    /* The frame is popped: a failed flush must not read as a failed pop. */
     if (flush_due(ring)) {
-        return flush_header(ring);
+        (void)flush_header(ring);
     }
 
     return FLASH_RING_OK;
