@@ -54,9 +54,13 @@ TEST(test_decode_null)
 
 TEST(test_decode_short)
 {
-    uint8_t buf[2] = {0};
+    /* A valid length byte promises 24 more bytes: waiting for them is right */
+    uint8_t buf[4] = { CRSF_ADDR_FC, 24, CRSF_TYPE_RC_CHANNELS, 0 };
     crsf_frame_t f;
+    ASSERT_EQ(crsf_decode_frame(buf, 0, &f), CRSF_ERR_SHORT);
+    ASSERT_EQ(crsf_decode_frame(buf, 1, &f), CRSF_ERR_SHORT);
     ASSERT_EQ(crsf_decode_frame(buf, 2, &f), CRSF_ERR_SHORT);
+    ASSERT_EQ(crsf_decode_frame(buf, 4, &f), CRSF_ERR_SHORT);
 }
 
 TEST(test_decode_bad_crc)
@@ -213,6 +217,7 @@ TEST(test_error_codes)
     ASSERT_EQ((int)CRSF_ERR_SHORT, -2);
     ASSERT_EQ((int)CRSF_ERR_CRC, -3);
     ASSERT_EQ((int)CRSF_ERR_OVERFLOW, -4);
+    ASSERT_EQ((int)CRSF_ERR_FORMAT, -5);
 }
 
 /* ---------- fuzz ---------- */
@@ -245,6 +250,89 @@ TEST(test_encode_rejects_payload_len_past_array)
     ASSERT_EQ(crsf_encode_frame(&frame, buf, sizeof(buf), &out_len), CRSF_ERR_OVERFLOW);
 }
 
+/* ---------- frame limits ---------- */
+
+/* tbs-crsf-spec crsf.md: "Each CRSF frame is not longer than 64 bytes (including
+   the Sync and CRC bytes)", and of the length byte: "Valid range is between 2
+   and 62. If this uint8 value is out of valid range the frame must be
+   discarded." Sync, length, type and CRC leave 60 bytes of payload. */
+
+/* A frame with this length byte and a good CRC. Returns its size. */
+static size_t build_with_length_byte(uint8_t *buf, uint8_t length_byte)
+{
+    buf[0] = CRSF_ADDR_FC;
+    buf[1] = length_byte;
+    buf[2] = 0x14;
+    for (size_t i = 3; i + 1U < (size_t)length_byte + 2U; i++) {
+        buf[i] = (uint8_t)i;
+    }
+    buf[length_byte + 1U] = crsf_crc8(&buf[2], (size_t)length_byte - 1U);
+    return (size_t)length_byte + 2U;
+}
+
+TEST(test_encode_stops_at_a_64_byte_frame)
+{
+    crsf_frame_t f;
+    uint8_t buf[256];
+    size_t out = 0;
+    memset(&f, 0, sizeof(f));
+    f.addr = CRSF_ADDR_FC;
+    f.type = 0x14;
+
+    f.payload_len = 60;
+    ASSERT_EQ(crsf_encode_frame(&f, buf, sizeof(buf), &out), CRSF_OK);
+    ASSERT_EQ(out, 64U);
+    ASSERT_EQ(buf[1], 62);
+
+    f.payload_len = 61;
+    ASSERT_EQ(crsf_encode_frame(&f, buf, sizeof(buf), &out), CRSF_ERR_OVERFLOW);
+    f.payload_len = 64;
+    ASSERT_EQ(crsf_encode_frame(&f, buf, sizeof(buf), &out), CRSF_ERR_OVERFLOW);
+}
+
+TEST(test_decode_takes_both_ends_of_the_valid_range)
+{
+    uint8_t buf[300];
+    crsf_frame_t f;
+
+    size_t total = build_with_length_byte(buf, 62);
+    ASSERT_EQ(total, 64U);
+    ASSERT_EQ(crsf_decode_frame(buf, total, &f), CRSF_OK);
+    ASSERT_EQ(f.payload_len, 60);
+    ASSERT_EQ(f.payload[59], 62);
+
+    total = build_with_length_byte(buf, 2);
+    ASSERT_EQ(total, 4U);
+    ASSERT_EQ(crsf_decode_frame(buf, total, &f), CRSF_OK);
+    ASSERT_EQ(f.payload_len, 0);
+}
+
+TEST(test_decode_discards_a_length_byte_past_62)
+{
+    static const uint8_t lengths[] = { 63, 64, 65, 66, 67, 200, 255 };
+    uint8_t buf[300];
+    crsf_frame_t f;
+
+    for (size_t i = 0; i < sizeof(lengths); i++) {
+        size_t total = build_with_length_byte(buf, lengths[i]);
+        ASSERT_EQ(crsf_decode_frame(buf, total, &f), CRSF_ERR_FORMAT);
+        /* The byte alone settles it: no more data can make this frame good */
+        ASSERT_EQ(crsf_decode_frame(buf, 2, &f), CRSF_ERR_FORMAT);
+    }
+}
+
+TEST(test_decode_discards_a_length_byte_under_2)
+{
+    uint8_t zero[8] = { CRSF_ADDR_FC, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t one[8]  = { CRSF_ADDR_FC, 1, 0, 0, 0, 0, 0, 0 };
+    crsf_frame_t f;
+
+    ASSERT_EQ(crsf_decode_frame(zero, sizeof(zero), &f), CRSF_ERR_FORMAT);
+    ASSERT_EQ(crsf_decode_frame(one, sizeof(one), &f), CRSF_ERR_FORMAT);
+    ASSERT_EQ(crsf_decode_frame(zero, 2, &f), CRSF_ERR_FORMAT);
+    ASSERT_EQ(crsf_decode_frame(one, 2, &f), CRSF_ERR_FORMAT);
+}
+
 TEST_MAIN("crsf")
     RUN(test_crc8_empty);
     RUN(test_crc8_known);
@@ -267,4 +355,8 @@ TEST_MAIN("crsf")
     RUN(test_error_codes);
     RUN(test_fuzz);
     RUN(test_encode_rejects_payload_len_past_array);
+    RUN(test_encode_stops_at_a_64_byte_frame);
+    RUN(test_decode_takes_both_ends_of_the_valid_range);
+    RUN(test_decode_discards_a_length_byte_past_62);
+    RUN(test_decode_discards_a_length_byte_under_2);
 TEST_MAIN_END()

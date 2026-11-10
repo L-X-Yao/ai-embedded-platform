@@ -32,22 +32,21 @@ crsf_err_t crsf_decode_frame(const uint8_t *data, size_t len,
 {
     if (!data || !out)
         return CRSF_ERR_PARAM;
-    if (len < 4)
+    if (len < 2)
         return CRSF_ERR_SHORT;
 
     uint8_t addr = data[0];
     uint8_t frame_len = data[1];
 
+    /* The spec discards a frame whose length byte is outside 2 to 62, and more
+     * bytes could not change that, so this comes before the wait for them */
+    if (frame_len < 2 || frame_len > CRSF_MAX_PAYLOAD + 2)
+        return CRSF_ERR_FORMAT;
     if ((size_t)frame_len + 2 > len)
-        return CRSF_ERR_SHORT;
-    if (frame_len < 2)
         return CRSF_ERR_SHORT;
 
     uint8_t type = data[2];
     uint8_t payload_len = (uint8_t)(frame_len - 2);
-
-    if (payload_len > CRSF_MAX_FRAME_SIZE)
-        return CRSF_ERR_OVERFLOW;
 
     /* CRC over type + payload */
     uint8_t expected_crc = crsf_crc8(&data[2], (size_t)frame_len - 1);
@@ -69,7 +68,7 @@ crsf_err_t crsf_encode_frame(const crsf_frame_t *frame,
 {
     if (!frame || !buf || !out_len)
         return CRSF_ERR_PARAM;
-    if (frame->payload_len > CRSF_MAX_FRAME_SIZE)
+    if (frame->payload_len > CRSF_MAX_PAYLOAD)
         return CRSF_ERR_OVERFLOW;
 
     size_t total = (size_t)frame->payload_len + 4;

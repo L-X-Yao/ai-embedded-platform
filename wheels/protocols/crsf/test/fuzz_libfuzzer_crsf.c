@@ -46,8 +46,8 @@ static void decode_wrapped(fuzz_input_t *in) {
 
     crsf_frame_t frame;
     crsf_err_t err = crsf_decode_frame(wire, total, &frame);
-    if (payload_len > CRSF_MAX_FRAME_SIZE) {
-        if (err != CRSF_ERR_OVERFLOW) __builtin_trap();
+    if (payload_len > CRSF_MAX_PAYLOAD) {
+        if (err != CRSF_ERR_FORMAT) __builtin_trap();
     } else {
         if (err != CRSF_OK || frame.addr != addr || frame.type != type ||
             frame.payload_len != payload_len ||
