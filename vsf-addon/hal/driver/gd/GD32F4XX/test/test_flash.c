@@ -22,6 +22,7 @@ vsf_err_t vsf_hw_flash_erase_multi_sector(vsf_hw_flash_t *f, vsf_flash_size_t of
 vsf_err_t vsf_hw_flash_write_multi_sector(vsf_hw_flash_t *f, vsf_flash_size_t off, uint8_t *b, vsf_flash_size_t size);
 void vsf_hw_flash_irq_enable(vsf_hw_flash_t *f, vsf_flash_irq_mask_t m);
 void vsf_hw_flash_irq_disable(vsf_hw_flash_t *f, vsf_flash_irq_mask_t m);
+vsf_err_t vsf_hw_flash_read_multi_sector(vsf_hw_flash_t *f, vsf_flash_size_t off, uint8_t *b, vsf_flash_size_t size);
 vsf_flash_status_t vsf_hw_flash_status(vsf_hw_flash_t *f);
 void FMC_IRQHandler(void);
 
@@ -152,6 +153,39 @@ static void test_stray_end(void)
     CHECK(host_asserts == 0);
 }
 
+/* H1-10: only the interrupt moves a request on, so no armed interrupt, no request */
+static void check_not_armed(int with_handler, int with_irq_enable, const char *name)
+{
+    printf("H1-10 %s\n", name);
+    reset_sim(with_handler, with_irq_enable);
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x20000, (uint8_t *)buf, 256) == VSF_ERR_NOT_AVAILABLE);
+    CHECK(word_at(0x20000) == 0xFFFFFFFFU);
+    CHECK(!(sim_fmc_ctl & FMC_CTL_PG));
+    CHECK(vsf_hw_flash_erase_multi_sector(F, 0x20000, 0x20000) == VSF_ERR_NOT_AVAILABLE);
+    CHECK(vsf_hw_flash_erase_one_sector(F, 0x20000) == VSF_ERR_NOT_AVAILABLE);
+    CHECK(!(sim_fmc_ctl & (FMC_CTL_SER | FMC_CTL_START)));
+
+    /* reading needs no interrupt */
+    uint32_t got = 0;
+    CHECK(vsf_hw_flash_read_multi_sector(F, 0x20000, (uint8_t *)&got, 4) == VSF_ERR_NONE);
+    CHECK(got == 0xFFFFFFFFU);
+}
+
+/* H1-10: BUSY is low between words, but the request is not over */
+static void test_busy_between_words(void)
+{
+    printf("H1-10 is_busy holds across a multi-word write\n");
+    reset_sim(1, 1);
+    CHECK(vsf_hw_flash_write_multi_sector(F, 0x20000, (uint8_t *)buf, 8) == VSF_ERR_NONE);
+    CHECK(vsf_hw_flash_status(F).is_busy);
+    fmc_run(1);
+    CHECK(words == 1);
+    CHECK(vsf_hw_flash_status(F).is_busy);
+    fmc_run(0x8000);
+    CHECK(words == 2);
+    CHECK(!vsf_hw_flash_status(F).is_busy);
+}
+
 int main(void)
 {
     setvbuf(stdout, NULL, _IOLBF, 0);   /* keep earlier lines if a sanitizer aborts */
@@ -167,5 +201,9 @@ int main(void)
     test_write_range();
     test_write_ok();
     test_stray_end();
+    check_not_armed(0, 0, "no handler, no irq_enable");
+    check_not_armed(1, 0, "handler but no irq_enable");
+    check_not_armed(0, 1, "irq_enable but no handler");
+    test_busy_between_words();
     return host_summary("flash");
 }

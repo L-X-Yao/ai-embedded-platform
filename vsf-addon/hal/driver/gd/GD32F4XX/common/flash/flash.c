@@ -52,7 +52,8 @@ typedef struct VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) {
     vsf_flash_size_t        offset_orig;
     vsf_flash_size_t        size_orig;
     vsf_flash_size_t        offset_cur;
-    vsf_flash_size_t        size_cur;
+    // not zero while a request is running; the interrupt counts it down
+    volatile vsf_flash_size_t size_cur;
     uint8_t                 *buffer;
 } VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t);
 
@@ -78,7 +79,30 @@ static uint32_t __flash_sector_size(int sector)
     return 0x20000U;
 }
 
+// FMC_CTL must already be unlocked. The interrupt starts every later sector.
+static void __flash_start_sector_erase(int sector)
+{
+    uint32_t ctl = FMC_CTL;
+    ctl &= ~(FMC_CTL_SN | FMC_CTL_PG | FMC_CTL_MER0 | FMC_CTL_MER1);
+    ctl |= FMC_CTL_SER | ((uint32_t)sector << 3);
+    FMC_CTL = ctl;
+    FMC_CTL = ctl | FMC_CTL_START;
+}
+
 /*============================ IMPLEMENTATION ================================*/
+
+// Write and erase advance only in the interrupt. Without a handler the NVIC line
+// is off, and without irq_enable ENDIE is: one word would land, the call would
+// return OK, and the rest of the request would never happen.
+static vsf_err_t __flash_check_irq_armed(
+    VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr
+) {
+    if (    (NULL == flash_ptr->isr.handler_fn)
+        ||  ((FMC_CTL & (FMC_CTL_ENDIE | FMC_CTL_ERRIE)) != (FMC_CTL_ENDIE | FMC_CTL_ERRIE))) {
+        return VSF_ERR_NOT_AVAILABLE;
+    }
+    return VSF_ERR_NONE;
+}
 
 vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_init)(
     VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr,
@@ -151,15 +175,13 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_one_sector)(
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
 
+    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
+    if (err != VSF_ERR_NONE) {
+        return err;
+    }
+
     flash_ptr->erase0_write1 = 0;
-
-    int sector = __flash_offset_to_sector(offset);
-    uint32_t ctl = FMC_CTL;
-    ctl &= ~(FMC_CTL_SN | FMC_CTL_PG | FMC_CTL_MER0 | FMC_CTL_MER1);
-    ctl |= FMC_CTL_SER | ((uint32_t)sector << 3);
-    FMC_CTL = ctl;
-    FMC_CTL = ctl | FMC_CTL_START;
-
+    __flash_start_sector_erase(__flash_offset_to_sector(offset));
     return VSF_ERR_NONE;
 }
 
@@ -170,10 +192,16 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_multi_sector)(
 ) {
     VSF_HAL_ASSERT(flash_ptr != NULL);
 
+    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
+    if (err != VSF_ERR_NONE) {
+        return err;
+    }
+
     flash_ptr->offset_orig = flash_ptr->offset_cur = offset;
     flash_ptr->size_orig = flash_ptr->size_cur = size;
-    return VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_one_sector)(
-        flash_ptr, offset);
+    flash_ptr->erase0_write1 = 0;
+    __flash_start_sector_erase(__flash_offset_to_sector(offset));
+    return VSF_ERR_NONE;
 }
 
 vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
@@ -192,6 +220,10 @@ vsf_err_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_write_multi_sector)(
     }
     if ((offset >= __VSF_HW_FLASH_SIZE) || (size > __VSF_HW_FLASH_SIZE - offset)) {
         return VSF_ERR_INVALID_RANGE;
+    }
+    vsf_err_t err = __flash_check_irq_armed(flash_ptr);
+    if (err != VSF_ERR_NONE) {
+        return err;
     }
 
     flash_ptr->erase0_write1 = 1;
@@ -244,7 +276,8 @@ vsf_flash_status_t VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_status)(
     VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_t) *flash_ptr
 ) {
     return (vsf_flash_status_t) {
-        .is_busy = !!(FMC_STAT & FMC_STAT_BUSY),
+        // BUSY drops between words and sectors: size_cur covers the whole request
+        .is_busy = !!(FMC_STAT & FMC_STAT_BUSY) || (flash_ptr->size_cur != 0),
     };
 }
 
@@ -315,8 +348,7 @@ static void VSF_MCONNECT(__, VSF_FLASH_CFG_IMP_PREFIX, _flash_irqhandler)(
                 }
             }
             if (flash_ptr->size_cur > 0) {
-                VSF_MCONNECT(VSF_FLASH_CFG_IMP_PREFIX, _flash_erase_one_sector)(
-                    flash_ptr, flash_ptr->offset_cur);
+                __flash_start_sector_erase(__flash_offset_to_sector(flash_ptr->offset_cur));
                 return;
             }
             irq_mask = VSF_FLASH_IRQ_ERASE_MASK;
