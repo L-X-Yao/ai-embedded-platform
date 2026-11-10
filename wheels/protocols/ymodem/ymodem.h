@@ -42,6 +42,7 @@ typedef enum {
     YMODEM_ERR_CANCEL   = -4,
     YMODEM_ERR_WRITE    = -5,
     YMODEM_ERR_OVERFLOW = -6,   /* block 0 name does not fit filename[] */
+    YMODEM_ERR_SHORT    = -7,   /* EOT before the size block 0 announced */
     YMODEM_DONE         =  1,
 } ymodem_err_t;
 
@@ -104,7 +105,9 @@ ymodem_err_t   ymodem_enable_line_idle(ymodem_t *ym);
 ymodem_err_t   ymodem_start(ymodem_t *ym);
 
 /** Feed one received byte. Returns YMODEM_OK while receiving, YMODEM_DONE on
- *  successful completion, or negative error code.
+ *  successful completion, or negative error code. The second EOT of a file
+ *  that stopped short of the size in its block 0 gets CAN CAN and
+ *  YMODEM_ERR_SHORT.
  *
  *  After a bad block or a byte that cannot start one, the framing is lost:
  *  the rest of a resent block may be arriving. Without
@@ -132,6 +135,11 @@ const char    *ymodem_get_filename(const ymodem_t *ym);
 
 /** Get file size from block 0 header (0 if not yet received). */
 uint32_t       ymodem_get_file_size(const ymodem_t *ym);
+
+/** Get the bytes of the current file passed to write_block. Block 0 need not
+ *  carry a size, and then YMODEM_ERR_SHORT cannot fire: this count, which
+ *  includes the padding of the last block, is all a caller has to check. */
+uint32_t       ymodem_get_total_received(const ymodem_t *ym);
 
 /** Send CAN (cancel) and move to error state. */
 void           ymodem_cancel(ymodem_t *ym);

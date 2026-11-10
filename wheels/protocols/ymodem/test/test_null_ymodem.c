@@ -45,6 +45,11 @@ TEST(test_ymodem_get_file_size_null_ym) {
     /* must not crash */
 }
 
+TEST(test_ymodem_get_total_received_null_ym) {
+    (void)ymodem_get_total_received(NULL);
+    /* must not crash */
+}
+
 TEST(test_ymodem_cancel_null_ym) {
     (void)ymodem_cancel(NULL);
     /* must not crash */
@@ -59,6 +64,7 @@ TEST_MAIN("null_param_ymodem") {
     RUN(test_ymodem_line_idle_null_ym);
     RUN(test_ymodem_get_state_null_ym);
     RUN(test_ymodem_get_file_size_null_ym);
+    RUN(test_ymodem_get_total_received_null_ym);
     RUN(test_ymodem_cancel_null_ym);
 }
 TEST_MAIN_END()

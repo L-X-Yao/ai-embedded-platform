@@ -786,6 +786,127 @@ TEST(test_block_between_eots_restarts_the_pair)
     ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_DATA);
 }
 
+/* The run from the finding: 5000 announced, 128 sent, then the two EOTs. */
+TEST(test_short_transfer_is_an_error)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 5000);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_get_total_received(&ym), 128);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    int sent = g_sent.count;
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_ERR_SHORT);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_ERROR);
+
+    /* The sender hears CAN CAN, not an ACK for a file we refuse. */
+    ASSERT_EQ(g_sent.count, sent + 2);
+    ASSERT_EQ(g_sent.bytes[sent], YMODEM_CAN);
+    ASSERT_EQ(g_sent.bytes[sent + 1], YMODEM_CAN);
+
+    /* And the batch cannot go on to report DONE. */
+    build_empty_block0(frame);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_ERR_PARAM);
+}
+
+/* One byte short of the size, the last block padded out to 128. */
+TEST(test_one_byte_short_is_an_error)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 129);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_ERR_SHORT);
+}
+
+/* Padding does not count: 100 announced, a 128-byte block, a whole file. */
+TEST(test_padded_last_block_is_not_short)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 100);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_get_total_received(&ym), 100);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+
+    build_empty_block0(frame);
+    ASSERT_EQ(feed_frame(&ym, frame, 133), YMODEM_DONE);
+}
+
+/* No size in block 0: nothing to compare, and the count is the caller's. */
+TEST(test_no_announced_size_is_not_short)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "fw.bin", 0);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_get_state(&ym), YMODEM_STATE_HEADER);
+    ASSERT_EQ(ymodem_get_total_received(&ym), 128);
+}
+
+/* A whole first file does not excuse a short second one. */
+TEST(test_short_second_file_is_an_error)
+{
+    ymodem_t ym;
+    mock_reset();
+    ymodem_init(&ym, &g_io);
+    ymodem_start(&ym);
+
+    uint8_t frame[133];
+    build_block0(frame, "a.bin", 128);
+    feed_bytes(&ym, frame, 133);
+    build_soh_data_frame(frame, 1, 0x11);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+
+    build_block0(frame, "b.bin", 256);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_get_total_received(&ym), 0);
+    build_soh_data_frame(frame, 1, 0x22);
+    feed_bytes(&ym, frame, 133);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_OK);
+    ASSERT_EQ(ymodem_feed(&ym, YMODEM_EOT), YMODEM_ERR_SHORT);
+}
+
+TEST(test_get_total_received_null)
+{
+    ASSERT_EQ(ymodem_get_total_received(NULL), 0);
+}
+
 TEST(test_line_idle_needs_enable)
 {
     ymodem_t ym;
@@ -1307,6 +1428,12 @@ TEST_MAIN("ymodem")
     RUN(test_lost_byte_data_eots_are_not_an_eot_pair);
     RUN(test_eot_pair_split_by_data_is_not_a_pair);
     RUN(test_block_between_eots_restarts_the_pair);
+    RUN(test_short_transfer_is_an_error);
+    RUN(test_one_byte_short_is_an_error);
+    RUN(test_padded_last_block_is_not_short);
+    RUN(test_no_announced_size_is_not_short);
+    RUN(test_short_second_file_is_an_error);
+    RUN(test_get_total_received_null);
     RUN(test_line_idle_needs_enable);
     RUN(test_line_idle_outside_a_transfer_refused);
     RUN(test_line_idle_holds_the_nak_until_quiet);

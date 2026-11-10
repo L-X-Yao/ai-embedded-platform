@@ -261,8 +261,15 @@ ymodem_err_t ymodem_feed(ymodem_t *ym, uint8_t byte)
             (void)send_byte(ym, YMODEM_NAK);
             return YMODEM_OK;
         }
-        /* second EOT — ACK + send 'C' to request next file header */
         ym->eot_seen = false;
+
+        /* block 0 promised more than arrived: the file was cut short */
+        if (ym->file_size > 0 && ym->total_received < ym->file_size) {
+            abort_transfer(ym);
+            return YMODEM_ERR_SHORT;
+        }
+
+        /* second EOT — ACK + send 'C' to request next file header */
         (void)send_byte(ym, YMODEM_ACK);
         (void)send_byte(ym, YMODEM_C);
         ym->state = YMODEM_STATE_HEADER;
@@ -345,6 +352,12 @@ uint32_t ymodem_get_file_size(const ymodem_t *ym)
 {
     if (!ym) return 0;
     return ym->file_size;
+}
+
+uint32_t ymodem_get_total_received(const ymodem_t *ym)
+{
+    if (!ym) return 0;
+    return ym->total_received;
 }
 
 void ymodem_cancel(ymodem_t *ym)
