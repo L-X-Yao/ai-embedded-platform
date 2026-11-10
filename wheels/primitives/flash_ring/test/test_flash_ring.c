@@ -1226,6 +1226,64 @@ TEST(test_push_min_len)
     ASSERT_EQ(0xA7, buf[0]);
 }
 
+/*
+ * A ring emptied part way through a sector has read_idx == write_idx there.
+ * That is not a reader stranded in the blank tail: the ring must stay empty.
+ */
+TEST(test_reset_of_an_emptied_ring_stays_empty)
+{
+    flash_ring_t ring;
+    mock_flash_reset();
+    flash_ring_init(&ring, &g_mock_io, &g_mock_cfg);
+
+    uint8_t frame[MOCK_SLOT_SIZE] = {0x31};
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_push(&ring, frame, MOCK_SLOT_SIZE));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_pop(&ring));
+    ASSERT_EQ(0u, flash_ring_count(&ring));
+
+    flash_ring_t after;
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&after, &g_mock_io, &g_mock_cfg));
+    ASSERT_EQ(2u, after.write_idx);
+    ASSERT_EQ(2u, after.read_idx);
+    ASSERT_EQ(0u, flash_ring_count(&after));
+}
+
+static void put_header(uint32_t write_idx, uint32_t read_idx)
+{
+    uint32_t hdr[4] = { FLASH_RING_MAGIC, write_idx, read_idx, 0u };
+    memcpy(&g_flash[MOCK_HDR_ADDR], hdr, sizeof(hdr));
+}
+
+/*
+ * An index equal to total_slots points one slot past the data area. A header
+ * that holds one is not valid, or the next push would program outside it.
+ */
+TEST(test_init_refuses_a_header_index_one_past_the_end)
+{
+    flash_ring_t ring;
+
+    mock_flash_reset();
+    put_header(MOCK_TOTAL_SLOTS, 0u);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+    ASSERT_EQ(0u, ring.write_idx);
+    ASSERT_EQ(0u, ring.read_idx);
+
+    mock_flash_reset();
+    put_header(0u, MOCK_TOTAL_SLOTS);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+    ASSERT_EQ(0u, ring.write_idx);
+    ASSERT_EQ(0u, ring.read_idx);
+
+    /* The last slot itself is a position a ring can be in. */
+    mock_flash_reset();
+    put_header(MOCK_TOTAL_SLOTS - 1u, MOCK_TOTAL_SLOTS - 1u);
+    ASSERT_EQ(FLASH_RING_OK, flash_ring_init(&ring, &g_mock_io, &g_mock_cfg));
+    ASSERT_EQ(MOCK_TOTAL_SLOTS - 1u, ring.write_idx);
+    ASSERT_EQ(MOCK_TOTAL_SLOTS - 1u, ring.read_idx);
+}
+
 TEST_MAIN("flash_ring")
     RUN(test_init_null);
     RUN(test_init_bad_cfg);
@@ -1282,4 +1340,6 @@ TEST_MAIN("flash_ring")
     RUN(test_reset_read_error_during_the_walk);
     RUN(test_discard_io_fail);
     RUN(test_push_min_len);
+    RUN(test_reset_of_an_emptied_ring_stays_empty);
+    RUN(test_init_refuses_a_header_index_one_past_the_end);
 TEST_MAIN_END()
