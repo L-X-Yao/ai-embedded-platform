@@ -127,10 +127,10 @@ Gates every component passes before it is allowed into `wheels/`:
 
 | Gate | Scope | Tooling |
 |------|-------|---------|
-| Host unit tests | 259/259 components, 1,172 test sources, 11,454 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
+| Host unit tests | 259/259 components, 1,199 test sources, 13,852 `TEST()` cases | `tooling/harness/test_harness.h`, ctest |
 | 60-check static audit (API naming, NULL guards, error codes, polling delays, test/run balance, ...) | 259/259 | `tooling/audit/audit_wheels.py` |
 | Line coverage >= 80% | 259/259 (nightly gate) | `tooling/test/coverage_scan.sh` |
-| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 components, all 931 test targets (nightly) | `tooling/audit/audit_sanitizer.py` |
+| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259 components, all 965 test targets (nightly) | `tooling/audit/audit_sanitizer.py` |
 | Generated NULL-argument and boundary-value tests | every public API | `tooling/codegen/` |
 | ARM cross-compile, Cortex-M4 `-Os` | 259/259, per-component sizes in [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) | `tooling/audit/arm_size_audit.sh` |
 | libFuzzer harnesses | 57 targets (42 protocols, 11 primitives, 3 modules, 1 driver), parsers and encoders | `tooling/test/run_libfuzzer.sh` |

@@ -14,10 +14,10 @@
 
 | 门 | 范围 |
 |---|---|
-| host 单元测试 | 259/259，1431 个测试文件，11138 个 `TEST()` 用例 |
+| host 单元测试 | 259/259，1199 个测试源文件，13852 个 `TEST()` 用例 |
 | 60 项静态审计（命名、NULL 守卫、错误码、轮询延时、测试平衡等） | 259/259 |
 | 行覆盖率 ≥ 80% | 259/259（夜间门禁） |
-| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259，全部 931 个测试目标（每晚） |
+| AddressSanitizer + UndefinedBehaviorSanitizer | 259/259，全部 965 个测试目标（每晚） |
 | 自动生成的 NULL 参数测试和边界值测试 | 全部公开 API |
 | ARM 交叉编译（Cortex-M4，`-Os`） | 259/259，体积表在 [docs/arm-binary-sizes.md](docs/arm-binary-sizes.md) |
 | libFuzzer | 57 个目标（42 个协议、11 个原语、3 个模块、1 个驱动），解析和编码都覆盖 |
@@ -29,7 +29,7 @@ host 之外的证据：
 |---|---|
 | 真机：GD32F405 遥测固件，600 s 压力测试，零看门狗复位（2026-04-27） | `crc16`、`w25qxx`、`qmi8658a`、`xgzp6816d`、`qmc5883p` |
 | 寄存器表和换算公式对照参考实现（Linux 内核、厂商参考代码、Adafruit、betaflight） | 10 个 L1 驱动，清单在 [docs/known-issues.md](docs/known-issues.md) |
-| 逐寄存器对照 datasheet | 2026 年 11 月查了 82 个驱动，此前有一批抽检，结果见下节 |
+| 逐寄存器对照 datasheet | 2026 年 11 月查了全部 104 个有寄存器或协议的驱动，结果见下节 |
 
 ## 哪里还不可信
 
