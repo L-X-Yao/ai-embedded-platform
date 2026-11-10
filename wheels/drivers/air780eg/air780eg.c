@@ -124,6 +124,18 @@ static void msg_check_stall(air780eg_t *dev)
 
 static void dispatch_urc(air780eg_t *dev, const char *line)
 {
+    /* Cache mode: +MSUB: <store_addr>, 0 to 3 (p.243). Messages themselves are
+     * read in feed and never come here. */
+    if (starts_with(line, "+MSUB:")) {
+        const char *p = line + 6;
+        while (*p == ' ') p++;
+        if (p[0] >= '0' && p[0] <= '3' && p[1] == '\0' &&
+            dev->mqtt_cached_cb != NULL) {
+            dev->mqtt_cached_cb(dev->mqtt_cached_user, (uint8_t)(p[0] - '0'));
+        }
+        return;
+    }
+
     /* TCP/MQTT disconnect (manual p.249) */
     if (starts_with(line, "CLOSED")) {
         if (dev->disconnect_cb != NULL) {
@@ -385,6 +397,15 @@ void air780eg_on_mqtt_rx(air780eg_t *dev, air780eg_mqtt_rx_cb_t cb, void *user)
     if (dev == NULL) return;
     dev->mqtt_rx_cb = cb;
     dev->mqtt_rx_user = user;
+}
+
+void air780eg_on_mqtt_cached(air780eg_t *dev, air780eg_mqtt_cached_cb_t cb,
+                             void *user)
+{
+    REQUIRE(dev != NULL);
+    if (dev == NULL) return;
+    dev->mqtt_cached_cb = cb;
+    dev->mqtt_cached_user = user;
 }
 
 void air780eg_on_disconnect(air780eg_t *dev, air780eg_event_cb_t cb, void *user)

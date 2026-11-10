@@ -826,6 +826,64 @@ TEST(test_msub_without_a_callback_skips_the_payload)
     ASSERT_EQ(0u, air780eg_get_msg_drop_count(&dev));
 }
 
+static int g_cached_count;
+static int g_cached_addr;
+static void on_cached(void *user, uint8_t store_addr)
+{
+    (void)user;
+    g_cached_count++;
+    g_cached_addr = store_addr;
+}
+
+/* Cache mode, p.243 and p.247: +MSUB: <store_addr>, 0 to 3, says a message is
+ * waiting for AT+MQTTMSGGET. */
+TEST(test_msub_store_addr_reaches_the_callback)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    g_cached_count = 0;
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_rx(&dev, on_mqtt_rx, NULL);
+    air780eg_on_mqtt_cached(&dev, on_cached, NULL);
+
+    feed_line(&dev, "+MSUB: 0");
+    ASSERT_EQ(1, g_cached_count);
+    ASSERT_EQ(0, g_cached_addr);
+    feed_line(&dev, "+MSUB: 3");
+    ASSERT_EQ(2, g_cached_count);
+    ASSERT_EQ(3, g_cached_addr);
+
+    /* also while a command is pending */
+    air780eg_send_cmd(&dev, "AT+CSQ", "+CSQ:", 1000);
+    feed_line(&dev, "+MSUB: 1");
+    ASSERT_EQ(3, g_cached_count);
+    ASSERT_EQ(1, g_cached_addr);
+    ASSERT_EQ(AIR780EG_CMD_PENDING, air780eg_cmd_status(&dev));
+    ASSERT_EQ(0, g_mqtt_rx_count);
+}
+
+TEST(test_msub_other_short_lines_are_no_store_addr)
+{
+    air780eg_t dev;
+    mock_reset();
+    cb_reset();
+    g_cached_count = 0;
+    air780eg_init(&dev, &g_mock_io);
+    air780eg_on_mqtt_cached(&dev, on_cached, NULL);
+
+    feed_line(&dev, "+MSUB: 4");
+    feed_line(&dev, "+MSUB: 01");
+    feed_line(&dev, "+MSUB:");
+    feed_line(&dev, "+MSUB: x");
+    ASSERT_EQ(0, g_cached_count);
+
+    /* no callback registered must be safe */
+    air780eg_on_mqtt_cached(&dev, NULL, NULL);
+    feed_line(&dev, "+MSUB: 0");
+    ASSERT_EQ(0, g_cached_count);
+}
+
 /* The reply to AT+MSUB=? (p.243) is no message. */
 TEST(test_msub_test_reply_is_not_a_message)
 {
@@ -1238,6 +1296,8 @@ TEST_MAIN("air780eg")
     RUN(test_msub_stalled_message_is_given_up);
     RUN(test_msub_slow_message_is_not_a_stall);
     RUN(test_msub_without_a_callback_skips_the_payload);
+    RUN(test_msub_store_addr_reaches_the_callback);
+    RUN(test_msub_other_short_lines_are_no_store_addr);
     RUN(test_msub_test_reply_is_not_a_message);
     RUN(test_urc_closed_bare);
     RUN(test_urc_pdp_deact_bare);

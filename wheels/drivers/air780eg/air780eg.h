@@ -51,6 +51,7 @@ typedef struct {
 
 typedef void (*air780eg_mqtt_rx_cb_t)(void *user, const char *topic,
                                       const uint8_t *payload, uint16_t len);
+typedef void (*air780eg_mqtt_cached_cb_t)(void *user, uint8_t store_addr);
 typedef void (*air780eg_event_cb_t)(void *user);
 typedef void (*air780eg_nmea_cb_t)(void *user, const char *line);
 typedef void (*air780eg_csq_cb_t)(void *user, int rssi);
@@ -101,6 +102,8 @@ typedef struct {
     /* callbacks */
     air780eg_mqtt_rx_cb_t mqtt_rx_cb;           /* internal */
     void *mqtt_rx_user;                         /* internal */
+    air780eg_mqtt_cached_cb_t mqtt_cached_cb;   /* internal */
+    void *mqtt_cached_user;                     /* internal */
     air780eg_event_cb_t   disconnect_cb;        /* internal */
     void *disconnect_user;                      /* internal */
     air780eg_event_cb_t   pdp_deact_cb;         /* internal */
@@ -163,6 +166,15 @@ const char *air780eg_get_prev_line(const air780eg_t *dev);
  * expect NULL: the callback gets the messages and the final OK ends the command.
  */
 void air780eg_on_mqtt_rx(air780eg_t *dev, air780eg_mqtt_rx_cb_t cb, void *user);
+
+/**
+ * @thread_safe: no @isr_safe: no
+ *
+ * Cache mode (AT+MQTTMSGSET=1): a message waits at store_addr, 0 to 3, and
+ * AT+MQTTMSGGET prints it to the callback of air780eg_on_mqtt_rx.
+ */
+void air780eg_on_mqtt_cached(air780eg_t *dev, air780eg_mqtt_cached_cb_t cb,
+                             void *user);
 
 /** @thread_safe: no @isr_safe: no */
 void air780eg_on_disconnect(air780eg_t *dev, air780eg_event_cb_t cb, void *user);

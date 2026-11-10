@@ -60,6 +60,11 @@ static void on_event(void *user) {
     ((world_t *)user)->events++;
 }
 
+static void on_cached(void *user, uint8_t store_addr) {
+    if (store_addr > 3) __builtin_trap();
+    ((world_t *)user)->events++;
+}
+
 static void on_nmea(void *user, const char *line) {
     if (line[0] != '$') __builtin_trap();
     ((world_t *)user)->nmea++;
@@ -165,7 +170,7 @@ static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     static const char *const replies[] = {
         "OK", "ERROR", "+CME ERROR: 3", "+CMS ERROR: 1", "RDY", "CLOSED", "+PDP:DEACT",
         "+PDP DEACT", "+CGEV: NW PDN DEACT 1", "$GNGGA,1", "$GPRMC,2", "$GNRMC", "$GNGSA",
-        "$GPGGA", "text", "", "CONNECT FAIL", "2,SEND FAIL",
+        "$GPGGA", "text", "", "CONNECT FAIL", "2,SEND FAIL", "+MSUB: 2",
     };
     size_t pick = fuzz_u8(in) % (sizeof(replies) / sizeof(replies[0]));
 
@@ -176,7 +181,7 @@ static void op_reply(air780eg_t *dev, fuzz_input_t *in) {
     bool ok_ends = dev->expect[0] == '\0' || strcmp(dev->expect, "OK") == 0;
     if (pending && pick == 0 && ok_ends && dev->cmd_status != AIR780EG_CMD_OK) __builtin_trap();
     if (pending && pick == 0 && !ok_ends && dev->cmd_status != AIR780EG_CMD_PENDING) __builtin_trap();
-    bool fails = (pick >= 1 && pick <= 3) || pick >= 16;
+    bool fails = (pick >= 1 && pick <= 3) || pick == 16 || pick == 17;
     if (pending && fails && dev->cmd_status != AIR780EG_CMD_ERROR) __builtin_trap();
 }
 
@@ -201,6 +206,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         w->dev = dev;
         if (air780eg_init(dev, &io) != AIR780EG_OK) __builtin_trap();
         air780eg_on_mqtt_rx(dev, on_mqtt, w);
+        air780eg_on_mqtt_cached(dev, on_cached, w);
         air780eg_on_disconnect(dev, on_event, w);
         air780eg_on_pdp_deact(dev, on_event, w);
         air780eg_on_restart(dev, on_event, w);
