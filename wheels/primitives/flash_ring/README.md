@@ -43,13 +43,17 @@ flash_ring_err_t flash_ring_flush_header(flash_ring_t *ring);
 ```
 
 - `push()` -- append a frame. When the ring is full it drops the oldest
-  frames a sector at a time: see Capacity.
+  frames a sector at a time: see Capacity. OK means the frame is stored.
+  `FLASH_RING_ERR_IO` means it is not, and a retry is safe: a program that
+  failed but wrote something leaves its slot behind, so the retry takes the
+  next slot.
 - `peek()` -- read a frame without consuming it. `idx` is an absolute slot
   index between `read_idx` and `write_idx - 1`, so the oldest frame is at
   `ring.read_idx`. Returns `FLASH_RING_ERR_EMPTY` on an empty ring and
   `FLASH_RING_ERR_PARAM` for any other slot or for `len` above `slot_size`.
 - `pop()` -- discard the oldest frame
-- `flush_header()` -- force-write persistent header to flash
+- `flush_header()` -- force-write persistent header to flash. Unlike push and
+  pop this reports a failed header write.
 
 ## Capacity
 
@@ -62,7 +66,8 @@ sector just before it programs the last slot of the current one. So:
   holds one sector less.
 - Frames are lost a sector at a time: up to `sector_size / slot_size` of the
   oldest go when the writer erases the sector they are in, and `read_idx`
-  moves past them.
+  moves past them. It moves even if that erase fails, because the sector may
+  be damaged and the retry erases it anyway.
 
 ## Power loss
 
@@ -70,11 +75,16 @@ sector just before it programs the last slot of the current one. So:
   forward from the stored `write_idx` and finds the real one, so no frame that
   was pushed is lost or programmed over.
 - The header is rewritten before the writer can come back round to the stored
-  position, even if `persist_interval` is larger than that.
+  position, even if `persist_interval` is larger than that, and however often
+  the device resets: init counts what it walked over towards the next write.
+- A failed header write does not fail push or pop. The write stays due, so the
+  next push or pop tries again.
 - Frames popped since the last header write come back after a reset, so a
   reader sees each frame at least once, not exactly once.
 - Blank means 0xFF: the flash must erase to 0xFF. A frame of all 0xFF at the
-  very end of what was written looks blank and is lost at a reset.
+  very end of what was written looks blank and is lost at a reset. On the last
+  slot of a sector it also hides anything written after it that the header
+  does not yet know about, so give frames a field that is never all 0xFF.
 - A cut during a program leaves one torn frame as the newest. Frames carry no
   checksum here, so put one in the frame if that matters.
 - A reset with `write_idx` on the last slot of a sector gives up the frames in
@@ -123,7 +133,10 @@ None. All parameters are runtime-configurable via `flash_ring_cfg_t`.
 - A partial last sector is still erased whole by `erase_sector`, so nothing
   else can live in the rest of that sector.
 - Flash that a ring written by the old erase-on-entry code left with no blank
-  slot costs one full read at the first init, and that init erases a sector.
+  slot costs one full read at the first init. That init erases a sector and
+  rewrites the header. A stored `write_idx` part way through a sector keeps
+  the rest of that sector, which holds the newest frames, and gives up the next
+  one.
 
 ## How to test
 
