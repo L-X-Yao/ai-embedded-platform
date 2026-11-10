@@ -53,6 +53,7 @@ GD32F4XX/
 │   ├── spi/                SPI 驱动（从零编写，master + FIFO 轮询）
 │   ├── i2c/                I2C 驱动（从零编写，master 事件状态机）
 │   └── vendor/             GD32F4xx 官方外设库头文件（需手动放置）
+├── test/                   主机模型：真实源码跑在外设模型上（`test/run.sh`）
 └── README.md               本文件
 ```
 
