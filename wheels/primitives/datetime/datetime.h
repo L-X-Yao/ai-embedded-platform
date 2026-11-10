@@ -100,7 +100,7 @@ uint8_t datetime_days_in_month(uint16_t year, uint8_t month);
  * @param seconds  Seconds to add (negative = subtract).
  * @return         DATETIME_OK on success, DATETIME_ERR_PARAM on NULL or
  *                 if the result would underflow below epoch 0.
- * @thread_safe: yes (pure function, no state) @isr_safe: yes
+ * @thread_safe: yes (no shared state, the caller owns dt) @isr_safe: yes
  */
 datetime_err_t datetime_add_seconds(datetime_t *dt, int32_t seconds);
 
