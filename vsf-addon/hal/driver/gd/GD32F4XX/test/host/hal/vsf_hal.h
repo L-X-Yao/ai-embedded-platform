@@ -124,6 +124,28 @@ typedef struct {
 #define VSF_HW_I2C0_ER_IRQHandler   I2C0_ER_IRQHandler
 #endif
 
+/* ---- gpio ---- */
+#if VSF_HAL_USE_GPIO == ENABLED
+#define VSF_GPIO_CFG_MULTI_CLASS    DISABLED
+typedef struct vsf_gpio_t vsf_gpio_t;
+typedef uint16_t vsf_gpio_pin_mask_t;
+#include "common/gpio/gpio.h"
+typedef struct {
+    uint32_t mode;
+    uint16_t alternate_function;
+} vsf_gpio_cfg_t;
+typedef struct { uint32_t pin_mask; } vsf_gpio_exti_irq_cfg_t;
+typedef struct {
+    uint8_t is_async, support_output_and_set, support_output_and_clear, support_interrupt;
+    uint8_t pin_count;
+    uint32_t pin_mask;
+} vsf_gpio_capability_t;
+#define VSF_HW_GPIO_PIN_COUNT       16
+#define VSF_HW_GPIO_PORT0_REG_BASE  0
+#define VSF_HW_GPIO_PORT0_EN        VSF_HW_EN_GPIOA
+#define VSF_HW_GPIO_PORT0_RST       VSF_HW_RST_GPIOA
+#endif
+
 /* ---- spi ---- */
 #if VSF_HAL_USE_SPI == ENABLED
 #define VSF_SPI_CFG_MULTI_CLASS     DISABLED

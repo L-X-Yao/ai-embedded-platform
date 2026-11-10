@@ -67,6 +67,11 @@ vsf_err_t VSF_MCONNECT(VSF_GPIO_CFG_IMP_PREFIX, _gpio_port_config_pins)(
     uint32_t current_pin_mask;
     uint32_t function = cfg_ptr->alternate_function, offset_len4;
 
+    // On a gated port these writes go nowhere. Done here and in set_direction, not
+    // in vsf_driver_init: every VSF firmware runs that one, this only when it uses
+    // this driver, and a port that startup code has clocked just stays on.
+    vsf_hw_peripheral_enable(gpio_ptr->en);
+
     for (int pin = 0; pin < VSF_HW_GPIO_PIN_COUNT; pin++) {
         current_pin_mask = 1 << pin;
         if (pin_mask & current_pin_mask) {
@@ -99,6 +104,8 @@ void VSF_MCONNECT(VSF_GPIO_CFG_IMP_PREFIX, _gpio_set_direction)(
 
     uint32_t reg = gpio_ptr->reg, offset_len2;
     uint32_t ctl, current_pin_mask;
+
+    vsf_hw_peripheral_enable(gpio_ptr->en);
 
     for (int i = 0; i < VSF_HW_GPIO_PIN_COUNT; i++) {
         current_pin_mask = 1 << i;
