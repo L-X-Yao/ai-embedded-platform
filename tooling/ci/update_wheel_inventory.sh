@@ -71,7 +71,7 @@ if ! $APPLY; then
 fi
 
 # Build replacement block
-BLOCK="- ✅ **${total} wheels**（全部 candidate，超级审计 0 open findings）：
+BLOCK="- ✅ **${total} wheels**（全部标为 candidate，遗留问题见 docs/known-issues.md）：
   - 完整列表：\`ls wheels/primitives/ wheels/drivers/ wheels/protocols/ wheels/modules/\`
   - L0 原语 ${count_l0}：${l0_list}
   - L1 驱动 ${count_l1}：${l1_list}
